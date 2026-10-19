@@ -31,7 +31,7 @@ The chapters are in three parts, in reading order: each builds on the ones befor
 | 1 | [Overview](overview.md) | The main ideas of the language and the chapter that defines each |
 | 2 | [Lexical Structure](lexical.md) | Characters, white space, `//` and nested `/* ... */` comments, identifiers, keywords, literals, escape sequences, punctuation and adjacency |
 | 3 | [Grammar Files](grammar-files.md) | The optional package clause, Type and Rule Definition Statements, names, source metadata and grammar representations |
-| 4 | [Type System](types.md) | Built-in and reserved types, struct, union and terminal types, names of types, assignability |
+| 4 | [Type System](types.md) | Built-in types, node type names, struct and union types, text structs, names of types, assignability |
 | 5 | [Rule Expressions](parser-expressions.md) | The expressions that match input, the values they build, captures, cut, rule calls and left recursion |
 | 6 | [Operators Rule](operators-rule.md) | Operator expressions declared by precedence and associativity |
 | 7 | [Predicates and Variables](predicates.md) | Predicates, variables and their scope, and context-sensitive parsing |

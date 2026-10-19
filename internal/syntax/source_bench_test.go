@@ -19,7 +19,7 @@ func sourceMetadataSamples(b *testing.B) []sourceMetadataSample {
 	}
 	var comments strings.Builder
 	var actionComments strings.Builder
-	actionComments.WriteString("type Int terminal\n")
+	actionComments.WriteString("type Int = { Text string }\n")
 	for i := 0; i < 64; i++ {
 		fmt.Fprintf(&comments, "// detached %d\n\n// documentation %d\nrule r%d = \"x\" // trailing %d\n// detached after inline\n\n", i, i, i, i)
 		fmt.Fprintf(&actionComments, "rule r%d = \"x\" => Int{/* value %d */ \"0\"}\n", i, i)

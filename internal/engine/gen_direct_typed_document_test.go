@@ -31,25 +31,25 @@ func TestGenerateDirectTypedDocument(t *testing.T) {
 		grammar string
 		inputs  []string
 	}{
-		{`type Token terminal
+		{`type Token = { Text string }
 rule main []Token = xs:token* => $xs.Value
-rule token Token = [aé😀]`, []string{"", "aaé😀", "b", "a\xff"}},
-		{`type Token terminal
+rule token Token = t:([aé😀]) #atomic => Token{Text: text($t)}`, []string{"", "aaé😀", "b", "a\xff"}},
+		{`type Token = { Text string }
 rule main Token = t:token [bc]? => $t
-rule token Token = "a" &"b" / "a"`, []string{"ab", "ac", "a", "ad"}},
-		{`type Token terminal
+rule token Token = t:("a" &"b" / "a") #atomic => Token{Text: text($t)}`, []string{"ab", "ac", "a", "ad"}},
+		{`type Token = { Text string }
 rule main Token | error = t:(token #recover(skip=[^;]+ ";")) => $t
-rule token Token = "a;" @error(message="expected token")`, []string{"a;", "?;", "??;", "?"}},
-		{`type Token terminal
-rule main Token = "a" !.`, []string{"a", "ab", ""}},
-		{`type Token terminal
+rule token Token = t:("a;" @error(message="expected token")) #atomic => Token{Text: text($t)}`, []string{"a;", "?;", "??;", "?"}},
+		{`type Token = { Text string }
+rule main Token = t:("a" !.) #atomic => Token{Text: text($t)}`, []string{"a", "ab", ""}},
+		{`type Token = { Text string }
 type Count = { N int }
 rule main Count = {x := 0} token* => Count{N: x}
-rule token Token = {x < 2} "a" {x := x+1}`, []string{"", "a", "aa", "aaa"}},
-		{`type Token terminal
-rule main Token = main "+" atom / atom
-rule atom Token = [aé😀]`, []string{"a", "a+a", "é+a+😀", "a+", "+a"}},
-		{`type Atom terminal
+rule token Token = t:({x < 2} "a" {x := x+1}) #atomic => Token{Text: text($t)}`, []string{"", "a", "aa", "aaa"}},
+		{`type Token = { Text string }
+rule main Token = t:(main "+" atom / atom) #atomic => Token{Text: text($t)}
+rule atom Token = t:([aé😀]) #atomic => Token{Text: text($t)}`, []string{"a", "a+a", "é+a+😀", "a+", "+a"}},
+		{`type Atom = { Text string }
 type Sum = { L Expr; R Expr }
 type Expr ~ Atom | Sum
 rule main Expr = operators {
@@ -57,16 +57,16 @@ rule main Expr = operators {
  operand "(" x:main ")" => $x
  level add { infix left "+" => Sum{L: $lhs, R: $rhs} }
 }
-rule atom Atom = [aé😀]`, []string{"a", "a+a", "(a+a)+é", "a+", "(a"}},
-		{`type Token terminal
+rule atom Atom = t:([aé😀]) #atomic => Atom{Text: text($t)}`, []string{"a", "a+a", "(a+a)+é", "a+", "(a"}},
+		{`type Token = { Text string }
 rule main Token = expression
 rule expression Token = operators {
  operand atom
 }
-rule atom Token = [aé😀]`, []string{"a", "é", "😀", "", "aa"}},
-		{`type Token terminal
+rule atom Token = t:([aé😀]) #atomic => Token{Text: text($t)}`, []string{"a", "é", "😀", "", "aa"}},
+		{`type Token = { Text string }
 rule main *Token = token?
-rule token Token = "é"`, []string{"", "é", "a"}},
+rule token Token = t:("é") #atomic => Token{Text: text($t)}`, []string{"", "é", "a"}},
 		{`type Text = { S string }
 rule main Text = v1:[aé😀]* #atomic => Text{S: text($v1)}`, []string{"", "aé😀", "b", "\xff"}},
 	} {

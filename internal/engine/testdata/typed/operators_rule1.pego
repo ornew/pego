@@ -1,6 +1,6 @@
-type Number terminal
-type Binary = { Left Expr; Op Match; Right Expr }
-type Unary = { Op Match; X *Expr }
+type Number = { Text string }
+type Binary = { Left Expr; Op node[string]; Right Expr }
+type Unary = { Op node[string]; X *Expr }
 type Post = { X Expr; Op node; Args []Expr }
 type Expr ~ Number | Binary | Unary | Post
 rule main Expr = e:expr ws $$ => $e
@@ -18,5 +18,5 @@ rule expr Expr = operators {
     }
     level { infix right "^" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
 }
-rule number Number = [0-9]+ #recover(skip=[a-z]+)
+rule number Number = t:([0-9]+ #recover(skip=[a-z]+)) #atomic => Number{Text: text($t)}
 rule ws = [ ]*

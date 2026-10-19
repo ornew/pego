@@ -36,9 +36,9 @@ func TestGeneratedDepthBenchmarkWorkloads(t *testing.T) {
 		}
 	}
 	write("go.mod", []byte("module depthbench\n\ngo 1.27.1\n"))
-	g, err := syntax.Parse(`type Word terminal
-rule main Word = n+
-rule n Word = "(" n ")" / "é"`)
+	g, err := syntax.Parse(`type Word = { Text string }
+rule main Word = t:(n+) #atomic => Word{Text: text($t)}
+rule n Word = t:("(" n ")" / "é") #atomic => Word{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}

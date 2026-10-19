@@ -28,25 +28,25 @@ func TestGeneratedDocumentObservation(t *testing.T) {
 	}
 	write("go.mod", "module documentobserve\n\ngo 1.27.1\n")
 	for _, f := range []struct{ name, grammar, input string }{
-		{"plain", "type W terminal\nrule main W = part part part\nrule part W = [a-b]", "aaa"},
-		{"list", "type W terminal\nrule main []W = p:part+ => $p.Value\nrule part W = [a-b]", "aaa"},
-		{"predicate", "type W terminal\nrule main W = {x:=1} &part p:part {x==1} => $p\nrule part W = [a-z]", "a"},
-		{"framed", "type W terminal\ntype N = { Value W }\nrule main N = p:part => N{Value:$p}\nrule part W = [a-z]+", "abc"},
-		{"memo", "type W terminal\nrule main W = &part &part &part p:part => $p\nrule part W = letter\nrule letter = \"a\"", "a"},
-		{"leftrec", "type W terminal\nrule main W = expr\nrule expr W = expr \"a\" / \"a\"", "aaa"},
-		{"dispatch", "type W terminal\nrule main W = first / second\nrule first W = \"a\"\nrule second W = \"b\"", "b"},
-		{"recover", "type W terminal\nrule main W = (first / second) #recover(skip=\"!\")\nrule first W = \"a\"\nrule second W = \"b\"", "!"},
-		{"operators", "type W terminal\ntype B = { Left Expr; Right Expr }\ntype Expr ~ W | B\nrule main Expr = l:level(expr, product) \"+\" r:expr => B{Left:$l,Right:$r}\nrule expr Expr = operators {operand num;level sum {infix left \"+\" => B{Left:$lhs,Right:$rhs}};level product {infix left \"*\" => B{Left:$lhs,Right:$rhs}}}\nrule num W = [0-9]+", "1+2*3"},
-		{"unicode", "type W terminal\nrule main W = part part part\nrule part W = \"é\"", "ééé"},
+		{"plain", "type W = { Text string }\nrule main W = t:(part part part) #atomic => W{Text: text($t)}\nrule part W = t:([a-b]) #atomic => W{Text: text($t)}", "aaa"},
+		{"list", "type W = { Text string }\nrule main []W = p:part+ => $p.Value\nrule part W = t:([a-b]) #atomic => W{Text: text($t)}", "aaa"},
+		{"predicate", "type W = { Text string }\nrule main W = {x:=1} &part p:part {x==1} => $p\nrule part W = t:([a-z]) #atomic => W{Text: text($t)}", "a"},
+		{"framed", "type W = { Text string }\ntype N = { Value W }\nrule main N = p:part => N{Value:$p}\nrule part W = t:([a-z]+) #atomic => W{Text: text($t)}", "abc"},
+		{"memo", "type W = { Text string }\nrule main W = &part &part &part p:part => $p\nrule part W = t:(letter) #atomic => W{Text: text($t)}\nrule letter = \"a\"", "a"},
+		{"leftrec", "type W = { Text string }\nrule main W = t:(expr) #atomic => W{Text: text($t)}\nrule expr W = t:(expr \"a\" / \"a\") #atomic => W{Text: text($t)}", "aaa"},
+		{"dispatch", "type W = { Text string }\nrule main W = t:(first / second) #atomic => W{Text: text($t)}\nrule first W = t:(\"a\") #atomic => W{Text: text($t)}\nrule second W = t:(\"b\") #atomic => W{Text: text($t)}", "b"},
+		{"recover", "type W = { Text string }\nrule main W = t:((first / second) #recover(skip=\"!\")) #atomic => W{Text: text($t)}\nrule first W = t:(\"a\") #atomic => W{Text: text($t)}\nrule second W = t:(\"b\") #atomic => W{Text: text($t)}", "!"},
+		{"operators", "type W = { Text string }\ntype B = { Left Expr; Right Expr }\ntype Expr ~ W | B\nrule main Expr = l:level(expr, product) \"+\" r:expr => B{Left:$l,Right:$r}\nrule expr Expr = operators {operand num;level sum {infix left \"+\" => B{Left:$lhs,Right:$rhs}};level product {infix left \"*\" => B{Left:$lhs,Right:$rhs}}}\nrule num W = t:([0-9]+) #atomic => W{Text: text($t)}", "1+2*3"},
+		{"unicode", "type W = { Text string }\nrule main W = t:(part part part) #atomic => W{Text: text($t)}\nrule part W = t:(\"é\") #atomic => W{Text: text($t)}", "ééé"},
 		{"integer", "type N = { Value int }\nrule main N = part => N{Value:7}\nrule part = \"a\"", "a"},
 		{"boolean", "type N = { Value bool }\nrule main N = part => N{Value:true}\nrule part = \"a\"", "a"},
 		{"string", "type N = { Value string }\nrule main N = part => N{Value:\"hello\"}\nrule part = \"a\"", "a"},
-		{"nilvalue", "type W terminal\nrule main *W = part => nil\nrule part W = \"a\"", "a"},
+		{"nilvalue", "type W = { Text string }\nrule main *W = part => nil\nrule part W = t:(\"a\") #atomic => W{Text: text($t)}", "a"},
 		// The start rule examines the whole input before calling part, whose own
 		// frontier stays near its match.
-		{"lookahead", "type W terminal\nrule main W = &\"abcd\" p:part \"bcd\" => $p\nrule part W = \"a\"", "abcd"},
+		{"lookahead", "type W = { Text string }\nrule main W = &\"abcd\" p:part \"bcd\" => $p\nrule part W = t:(\"a\") #atomic => W{Text: text($t)}", "abcd"},
 		// inner's memo result depends on its lookahead, which nothing after part reads again.
-		{"innerlookahead", "type W terminal\nrule main W = p:inner \"bcd\" => $p\nrule inner W = &\"abcd\" p:part => $p\nrule part W = \"a\"", "abcd"},
+		{"innerlookahead", "type W = { Text string }\nrule main W = p:inner \"bcd\" => $p\nrule inner W = &\"abcd\" p:part => $p\nrule part W = t:(\"a\") #atomic => W{Text: text($t)}", "abcd"},
 	} {
 		g, err := syntax.Parse(f.grammar)
 		if err != nil {

@@ -201,7 +201,7 @@ func (a *analysis) completeControlled(off int, control *renderControl) []Complet
 	if a.isIdent(st, "type") {
 		switch {
 		case prev == st+1:
-			return keywordItems(typeKeywords)
+			return items // only = or ~ follows the name
 		case prev == st+2 && pt.Text == "=":
 			return items // only a struct body follows; aliases are written with ~
 		case pt.Text == "{" || pt.Text == ";":

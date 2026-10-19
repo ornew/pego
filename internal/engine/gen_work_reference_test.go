@@ -19,7 +19,7 @@ func TestGeneratedGoWorkLayoutReference(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generation-time work-layout references")
 	}
-	g, err := syntax.Parse(`type Word terminal
+	g, err := syntax.Parse(`type Word = { Text string }
 
 type WordOrError ~ Word | error
 
@@ -28,13 +28,13 @@ type Bag = {
     Count int
 }
 
-type WithContext terminal
+type WithContext = { Text string }
 
-rule collision WithContext = "z"
+rule collision WithContext = t:("z") #atomic => WithContext{Text: text($t)}
 
 rule main Bag = {n := 1} x:word* #cut => Bag{Items: $x.Value, Count: len($x) + n}
 
-rule word Word = "a" / "é"
+rule word Word = t:("a" / "é") #atomic => Word{Text: text($t)}
 
 rule recovered Bag = x:word #recover(skip="!") #cut => Bag{Items: list($x)}
 
@@ -42,7 +42,9 @@ rule bad Bag = v1:"a" #cut => Bag{Count: 1 / (len($v1) - 1)}
 
 rule anynil any = t:word? => $t
 
-rule ptrnil *node = t:word? => $t
+rule seq = "a" "é"?
+
+rule ptrnil *node = t:seq? => $t
 
 // A nil result is converted from nodes, so the reference also covers the converter.
 rule converted = "a" => nil`)
@@ -171,9 +173,9 @@ func TestOrdinaryReferenceParity(t *testing.T){
 `
 
 func TestGeneratedGoWorkLayoutReferenceDrift(t *testing.T) {
-	g, err := syntax.Parse(`type Word terminal
+	g, err := syntax.Parse(`type Word = { Text string }
 
-rule main Word = "a"
+rule main Word = t:("a") #atomic => Word{Text: text($t)}
 
 rule other any = "a" => nil
 

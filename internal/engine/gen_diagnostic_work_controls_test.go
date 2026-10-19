@@ -15,11 +15,11 @@ func TestGeneratedGoDiagnosticWork(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated diagnostic-control consumers")
 	}
-	g, err := syntax.Parse(`type Word terminal
+	g, err := syntax.Parse(`type Word = { Text string }
 
-rule main Word = letter #recover(skip="!")
+rule main Word = t:(letter #recover(skip="!")) #atomic => Word{Text: text($t)}
 
-rule letter Word = "z" / "a" / "é"`)
+rule letter Word = t:("z" / "a" / "é") #atomic => Word{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,7 +144,7 @@ func TestGeneratedGoRecoveryMessageWork(t *testing.T) {
 		t.Skip("builds generated long recovery-message consumers")
 	}
 	message := strings.Repeat("details λ; ", 512)
-	g, err := syntax.Parse(fmt.Sprintf(`type Text ~ Match | error
+	g, err := syntax.Parse(fmt.Sprintf(`type Text ~ node[string] | error
 type Doc = { Text Text }
  rule main Doc = x:(("z" @error(message=%q)) #recover(skip="!")) => Doc{Text: $x}`, message))
 	if err != nil {

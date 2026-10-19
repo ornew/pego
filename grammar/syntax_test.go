@@ -13,7 +13,7 @@ func TestFormatSyntax(t *testing.T) {
 	const src = `// grammar documentation
 package sample
 
-type Node = { Text Match }
+type Node = { Text node[string] }
 rule main Node = {count:=0} x:((v1:"a" => Node{Text: $v1}) #repeat(2, 3) #atomic @error(message="a") #recover(skip=";")) #stream => Node{Text: $x}
 rule expr Node = operators {
  skip " "*

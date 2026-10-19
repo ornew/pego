@@ -18,14 +18,14 @@ func TestGeneratedTypedFramedCutWorkloads(t *testing.T) {
 	}
 	control := GenOptions{disableTypedFramedCuts: true}
 	t.Run("LR", func(t *testing.T) {
-		testGeneratedTypedBodyWorkload(t, `type Doc = { Items []Match; N int }
+		testGeneratedTypedBodyWorkload(t, `type Doc = { Items []node[string]; N int }
 rule main Doc = e:expr $$ => $e
 rule expr Doc = previous:expr ";" #cut items:(x:[a-z] #atomic #cut -",") #repeat(3) / items:(x:[a-z] #atomic #cut -",") #repeat(3) => Doc{Items: map($items, (e) => e.$x), N: len($items)}
 `, typedLRActionWorkloadFixture, filepath.Join(dir, "lr"), "(typed LR body inlined)", control)
 	})
 	t.Run("OperatorsRule", func(t *testing.T) {
-		testGeneratedTypedBodyWorkload(t, `type Atom terminal
-type Post = { X Expr; Items []Match; N int }
+		testGeneratedTypedBodyWorkload(t, `type Atom = { Text string }
+type Post = { X Expr; Items []node[string]; N int }
 type Expr ~ Atom | Post
 rule main Expr = e:expr $$ => $e
 rule expr Expr = operators {
@@ -35,7 +35,7 @@ rule expr Expr = operators {
         postfix "[" #cut items:(x:[a-z] #atomic #cut {len($x) == 1} -",") #repeat(3) "]" => Post{X: $lhs, Items: map($items, (e) => e.$x), N: len($items)}
     }
 }
-rule atom Atom = "a"
+rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}
 `, typedOperatorsRuleActionWorkloadFixture, filepath.Join(dir, "operatorsRule"), "(typed OperatorsRule body inlined)", control)
 	})
 }

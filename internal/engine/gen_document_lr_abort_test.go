@@ -38,14 +38,14 @@ rule x = x "+" #cut "a" / "a"`, "a+a+a+a"},
 rule x = x "+" t / t
 rule t = t "*" "a" / "a"`, "a*a+a+a*a*a"},
 		// Typed rules reach typed Documents' own rule calls.
-		{`type A terminal
+		{`type A = { Text string }
 type S = { L E; R A }
 type E ~ S | A
 rule main E = v:x $$ => $v
 rule x E = sum / a
 rule sum S = l:y "+" r:a => S{L: $l, R: $r}
 rule y E = x
-rule a A = "a"`, "a+a+a+a"},
+rule a A = t:("a") #atomic => A{Text: text($t)}`, "a+a+a+a"},
 	}
 	files := map[string]string{"go.mod": "module fixture\n\ngo 1.27.1\n"}
 	for i, g := range grammars {

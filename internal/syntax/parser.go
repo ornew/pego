@@ -71,8 +71,9 @@ func Parse(src string) (*grammar.Grammar, error) {
 }
 
 // ParseLegacy parses src like Parse but accepts the removed syntax that pego fix rewrites:
-// positional captures and lambda parameters written $x. It serves Fix and tests of grammars that still reach the engine in
-// that form through JSON.
+// positional captures, lambda parameters written $x, terminal types and the retired names of
+// concrete syntax tree types. It serves Fix and tests of grammars that still reach the engine
+// in that form through JSON.
 func ParseLegacy(src string) (*grammar.Grammar, error) {
 	errs := &errorList{}
 	p := &parser{toks: lex(src, errs), errs: errs, legacy: true}
@@ -443,7 +444,12 @@ func (p *parser) typeDef() (sourceResult *grammar.TypeDef) {
 		st := &grammar.StructSpec{}
 		st.Fields, st.CloseBreak, st.OneLine = p.structFields()
 		td.Spec = st
-	case p.accept("terminal"):
+	case p.is("terminal"):
+		if !p.legacy {
+			p.errorf("a terminal type is the struct type %s = { Text string }; run pego fix to rewrite type %s terminal", name.text, name.text)
+			panic(bail{})
+		}
+		p.next()
 		p.header = false
 		td.Spec = &grammar.TerminalSpec{}
 	case p.is("="):
@@ -453,7 +459,7 @@ func (p *parser) typeDef() (sourceResult *grammar.TypeDef) {
 		p.header = false
 		td.Spec = &grammar.AliasSpec{Type: p.typeExpr()}
 	default:
-		p.errorf("expected '=', '~', or 'terminal', found %s", p.tok())
+		p.errorf("expected '=' or '~', found %s", p.tok())
 		panic(bail{})
 	}
 	p.sourceNode(td.Spec, specStart)
@@ -557,6 +563,9 @@ func (p *parser) typeTerm() (sourceResult grammar.TypeExpr) {
 		return &grammar.TypeRef{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Name: t.text}
 	}
 	name := p.ident()
+	if replacement, ok := valueTypeNames[name.text]; ok && !p.legacy {
+		p.errs.add(name.pos, fmt.Sprintf("%s is not a type; write %s (pego fix rewrites it)", name.text, replacement))
+	}
 	if p.is("[") {
 		// The lexer makes "[" a bracket only directly after the name: T[U].
 		p.next()
@@ -1683,7 +1692,15 @@ func (p *parser) newTerm() (sourceResult grammar.Term) {
 	nameToken := p.ident()
 	p.expect("{")
 	if !p.is("}") && !(p.tok().kind == tIdent && p.peek(1).text == ":") {
-		return &grammar.TerminalConstructor{SourceInfo: grammar.SourceInfo{Pos: nameToken.pos}, Type: nameToken.text, Args: p.constructorArgs()}
+		c := &grammar.TerminalConstructor{SourceInfo: grammar.SourceInfo{Pos: nameToken.pos}, Type: nameToken.text, Args: p.constructorArgs()}
+		if !p.legacy {
+			msg := fmt.Sprintf("a constructor names its fields: write %s{Text: ...} for a text struct", nameToken.text)
+			if len(c.Args) == 1 {
+				msg += fmt.Sprintf(" (pego fix rewrites %s{...})", nameToken.text)
+			}
+			p.errs.add(nameToken.pos, msg)
+		}
+		return c
 	}
 	n := &grammar.New{SourceInfo: grammar.SourceInfo{Pos: nameToken.pos}, Type: nameToken.text}
 	for !p.accept("}") {

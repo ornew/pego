@@ -20,7 +20,7 @@ func call[T any](t *testing.T, method string, req any) T {
 	return v
 }
 
-const pairs = `type Pair = { Key Match; Value Match }
+const pairs = `type Pair = { Key node[string]; Value node[string] }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
@@ -44,7 +44,7 @@ func TestCompileInfo(t *testing.T) {
 	if c.Rules[1].Type != "Pair" || c.Rules[1].Line != 4 || c.Rules[1].Col != 1 {
 		t.Errorf("pair = %+v", c.Rules[1])
 	}
-	if len(c.Types) != 1 || c.Types[0].Kind != "struct" || c.Types[0].Spec != "{ Key Match; Value Match }" {
+	if len(c.Types) != 1 || c.Types[0].Kind != "struct" || c.Types[0].Spec != "{ Key node[string]; Value node[string] }" {
 		t.Errorf("types = %+v", c.Types)
 	}
 	if c.Start != "main" {

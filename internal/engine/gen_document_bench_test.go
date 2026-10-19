@@ -38,7 +38,7 @@ rule record = k:"é" ":" v:("0" / "1") ";"`)
 			t.Fatal(err)
 		}
 	}
-	typedGrammar, err := syntax.Parse(`type Item = { Key Match; Value Match; N int; S string; B bool }
+	typedGrammar, err := syntax.Parse(`type Item = { Key node[string]; Value node[string]; N int; S string; B bool }
 rule main []Item = item*
 rule item Item = k:[a-zé😀]+ #atomic "=" v:[0-9]+ #atomic ";" => Item{Key: $k, Value: $v, N: len($v), S: text($k), B: true}`)
 	if err != nil {

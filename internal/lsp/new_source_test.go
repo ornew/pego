@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewSourceServices(t *testing.T) {
-	src := "type N terminal\n/* A number\nwith a name. */\nrule main = v1:digit @error(message=\"number\") => $v1\nrule expr N = operators {\n    operand digit\n    level { infix left \"+\" => $lhs }\n}\nrule digit N = [0-9]+ #atomic\n"
+	src := "type N = { Text string }\n/* A number\nwith a name. */\nrule main = v1:digit @error(message=\"number\") => $v1\nrule expr N = operators {\n    operand digit\n    level { infix left \"+\" => $lhs }\n}\nrule digit N = t:([0-9]+) #atomic => N{Text: text($t)}\n"
 	a := analyze(src)
 	if len(a.diags) != 0 {
 		t.Fatalf("diagnostics: %+v", a.diags)
@@ -73,7 +73,7 @@ func TestNewSourceAttributeAndCommentContexts(t *testing.T) {
 			t.Fatalf("missing recovery rule completion: %+v", a.complete(off))
 		}
 	}
-	src := `type N = { X Match }
+	src := `type N = { X node[string] }
 rule digit = [0-9]
 rule expr N = operators { operand digit:digit => N{X:$digit} }`
 
@@ -104,7 +104,7 @@ rule expr N = operators { operand digit:digit => N{X:$digit} }`
 }
 
 func TestNewSourceFirstCaptureCompletion(t *testing.T) {
-	src := "type N = { F Match }\nrule main = x:\"a\" => N{F: $x}"
+	src := "type N = { F node[string] }\nrule main = x:\"a\" => N{F: $x}"
 	a := analyze(src)
 	off := strings.Index(src, "$x") + 1
 	var labels []string

@@ -1,3 +1,3 @@
-type Span = { A Match }
+type Span = { A node[string] }
 type Tnode = { Span Span }
 rule main Tnode = a:"x" => Tnode{Span: Span{A: $a}}

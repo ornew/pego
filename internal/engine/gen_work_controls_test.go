@@ -15,13 +15,13 @@ func TestGeneratedGoWorkControls(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated work-control consumers")
 	}
-	g, err := syntax.Parse(`type Word terminal
+	g, err := syntax.Parse(`type Word = { Text string }
 
-rule main Word = "a"* "é"
+rule main Word = t:("a"* "é") #atomic => Word{Text: text($t)}
 
-rule recovering Word = ("a"* "é") #recover(skip="?")
+rule recovering Word = t:(("a"* "é") #recover(skip="?")) #atomic => Word{Text: text($t)}
 
-rule predicate Word = !("a"* "é") "a"* "b"`)
+rule predicate Word = t:(!("a"* "é") "a"* "b") #atomic => Word{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -217,7 +217,7 @@ func TestGeneratedGoConversionWork(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated conversion consumers")
 	}
-	g, err := syntax.Parse(`type Leaf terminal
+	g, err := syntax.Parse(`type Leaf = { Text string }
 
 type Branch = {
     Leaves []Leaf
@@ -225,7 +225,7 @@ type Branch = {
 
 rule main = xs:(x:leaf)+ => Branch{Leaves: map($xs, (x) => x.$x)}
 
-rule leaf Leaf = "é"`)
+rule leaf Leaf = t:("é") #atomic => Leaf{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -267,9 +267,10 @@ func TestConversionVisits(t *testing.T){
  a:=astConv{control:c};v:=a.toBranch(n)
  if v==nil || len(v.Leaves)!=100{t.Fatal("conversion failed")}
  if reference {if c.stepsUsed!=0 || c.inputUsed!=0{t.Fatal("reference work charged")};return}
- // Branch dispatch, field scan, list dispatch, each list edge, each leaf.
- if c.stepsUsed!=203 || c.inputUsed!=0{t.Fatalf("conversion work: steps=%d input=%d",c.stepsUsed,c.inputUsed)}
- for _,ceiling:=range []uint64{1,2,3,4,202}{
+ // Branch dispatch, field scan, list dispatch, each list edge, and for each leaf its dispatch
+ // and the scan of its Text field.
+ if c.stepsUsed!=303 || c.inputUsed!=0{t.Fatalf("conversion work: steps=%d input=%d",c.stepsUsed,c.inputUsed)}
+ for _,ceiling:=range []uint64{1,2,3,4,302}{
   c:=newWorkControl(context.Background(),WorkLimits{MaxSteps:ceiling})
   func(){defer func(){f,ok:=recover().(fatal);var e *WorkLimitError;if !ok || !errors.As(f.err,&e) || e.Kind!=StepWorkLimit || e.Used!=ceiling || e.Requested!=1{t.Fatalf("conversion ceiling %d interruption: %+v",ceiling,f)}}();(&astConv{control:c}).toBranch(n)}()
  }
@@ -278,12 +279,12 @@ func TestParseConversionSharesCounter(t *testing.T){
  if reference{return}
  input:=strings.Repeat("é",100)
  beforeSteps,beforeInput:=uint64(0),uint64(0)
- conv:=func(n *Node,c *workControl,parseErr error)*Branch{beforeSteps,beforeInput=c.stepsUsed,c.inputUsed;v:=(&astConv{control:c}).toBranch(n);if c.stepsUsed!=beforeSteps+203 || c.inputUsed!=beforeInput{t.Fatal("conversion counter changed independently")};return v}
+ conv:=func(n *Node,c *workControl,parseErr error)*Branch{beforeSteps,beforeInput=c.stepsUsed,c.inputUsed;v:=(&astConv{control:c}).toBranch(n);if c.stepsUsed!=beforeSteps+303 || c.inputUsed!=beforeInput{t.Fatal("conversion counter changed independently")};return v}
  o:=parseOptions{maxDepth:defaultMaxDepth,limits:WorkLimits{MaxSteps:100000}}
  retained,err:=parseConverted(rules[0],nseen,input,o,conv)
  if err!=nil || retained==nil{t.Fatal(err)}
  snapshot:=*retained.Leaves[0]
- total:=beforeSteps+203
+ total:=beforeSteps+303
  for _,limit:=range []uint64{beforeSteps+1,total-1,total}{
   o.limits.MaxSteps=limit
   got,err:=parseConverted(rules[0],nseen,input,o,func(n *Node,c *workControl,parseErr error)*Branch{return (&astConv{control:c}).toBranch(n)})
@@ -302,9 +303,9 @@ func TestGeneratedGoWorkControlNameCollisions(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated public-name collision consumers")
 	}
-	g, err := syntax.Parse(`type WorkLimits terminal
+	g, err := syntax.Parse(`type WorkLimits = { Text string }
 
-type WorkLimits_ terminal
+type WorkLimits_ = { Text string }
 
 type WorkLimitError = {
     Value WorkLimits
@@ -322,7 +323,7 @@ type InputWorkLimit ~ WorkLimits
 
 type StepWorkLimit ~ WorkLimits
 
-rule main WorkLimits = "é"`)
+rule main WorkLimits = t:("é") #atomic => WorkLimits{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -385,13 +386,13 @@ func TestGeneratedGoNilWorkPublication(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds typed nil publication consumer")
 	}
-	g, err := syntax.Parse(`type Word terminal
+	g, err := syntax.Parse(`type Word = { Text string }
 
 type Maybe ~ *Word
 
 rule main Maybe = x:letter? => $x
 
-rule letter Word = "é"`)
+rule letter Word = t:("é") #atomic => Word{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -469,11 +470,11 @@ func TestGeneratedGoLegacyNilControls(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds configured legacy nil consumers")
 	}
-	g, err := syntax.Parse(`type Word terminal
+	g, err := syntax.Parse(`type Word = { Text string }
 
 rule main any = x:leaf? => $x
 
-rule leaf Word = "é"`)
+rule leaf Word = t:("é") #atomic => Word{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}

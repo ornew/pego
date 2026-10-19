@@ -115,7 +115,7 @@ func TestIndexTypeErrors(t *testing.T) {
 	for _, tc := range []struct {
 		field string
 		ok    bool
-	}{{"Match", true}, {"*Match", true}, {"int", false}} {
+	}{{"node[string]", true}, {"*node[string]", true}, {"int", false}} {
 		g, err := syntax.Parse("type Out = { First " + tc.field + " }\nrule main = xs:\"a\"+ => Out{First: $xs[0]}")
 		if err != nil {
 			t.Fatal(err)
@@ -242,7 +242,7 @@ func TestIndexGeneratedGoWork(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	g, err := syntax.Parse(`type Out = { First Match }
+	g, err := syntax.Parse(`type Out = { First node[string] }
 rule main = xs:item+ $$ => Out{First: $xs[1]}
 rule item = [a-z]`)
 	if err != nil {

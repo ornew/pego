@@ -12,7 +12,7 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-const typedFilterIdentityGrammar = `type Word terminal
+const typedFilterIdentityGrammar = `type Word = { Text string }
 type Alias ~ Word
 type Result = { First *Alias; Items []Alias; Optional []*Alias; Empty []Alias; NilInput []Alias }
 rule main Result = w:word $$ => Result{
@@ -29,7 +29,7 @@ rule empty Result = $$ => Result{
     Empty: filter(nil, (item) => true),
     NilInput: filter(nil, (item) => true)
 }
-rule word Word = [a-zé]+`
+rule word Word = t:([a-zé]+) #atomic => Word{Text: text($t)}`
 
 // A separate typed consumer observes pointer identity rather than comparing
 // serialized duplicate values. Both direct construction and Node conversion

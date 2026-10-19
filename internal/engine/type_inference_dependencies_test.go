@@ -34,7 +34,7 @@ func TestInferenceDependencyChains(t *testing.T) {
 	for _, depth := range []int{45, 50, 128, 512} {
 		for _, reverse := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%d/reversed=%v", depth, reverse), func(t *testing.T) {
-				g, err := syntax.Parse(inferredChain(depth, reverse, ":Match"))
+				g, err := syntax.Parse(inferredChain(depth, reverse, ":node[string]"))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -165,7 +165,7 @@ func TestInferenceFiniteUnionCycle(t *testing.T) {
 	var src strings.Builder
 	src.WriteString("rule main = r0\n")
 	for i := range count {
-		fmt.Fprintf(&src, "type T%d terminal\nrule n%d T%d = \"a\"\nrule r%d = r%d / r%d / n%d\n", i, i, i, i, (i+1)%count, (i+count-1)%count, i)
+		fmt.Fprintf(&src, "type T%d = { Text string }\nrule n%d T%d = t:\"a\" #atomic => T%d{Text: text($t)}\nrule r%d = r%d / r%d / n%d\n", i, i, i, i, i, (i+1)%count, (i+count-1)%count, i)
 	}
 	p := compile(t, src.String())
 	for i := range count {
@@ -240,7 +240,7 @@ func TestInferenceCanonicalTypes(t *testing.T) {
 }
 
 func TestInferenceChainFieldMismatch(t *testing.T) {
-	src := "type Holder = { Value Match }\n" + strings.Replace(inferredChain(128, false, ""), "rule main = r0", "rule main = r0:r0 => Holder{Value: $r0}", 1)
+	src := "type Holder = { Value node[string] }\n" + strings.Replace(inferredChain(128, false, ""), "rule main = r0", "rule main = r0:r0 => Holder{Value: $r0}", 1)
 	g, err := syntax.Parse(src)
 	if err != nil {
 		t.Fatal(err)

@@ -95,7 +95,7 @@ func TestExpressionSourceInlineRejection(t *testing.T) {
 func TestExpressionSourceHeaderComments(t *testing.T) {
 	for _, src := range []string{
 		`rule /*header*/ main = "a"`,
-		`type /*header*/ A terminal; rule main = "a"`,
+		`type /*header*/ A = { Text string }; rule main = "a"`,
 		`package /*header*/ demo; rule main = "a"`,
 		`rule main = operators { operand "a"; level /*header*/ { infix left "+" } }`,
 		`rule main = operators { operand "a"; level { infix /*header*/ left "+" } }`,

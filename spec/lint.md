@@ -132,7 +132,7 @@ element that `&x` does not have.
 
 A capture is reported when nothing can read its value: it is not referred to by
 the action or a predicate of its scope, and the rule has no action: the capture of a
-rule without an action names an element of the rule's value. A terminal type keeps no captures, and
+rule without an action names an element of the rule's value. A rule of a terminal type ([Grammar JSON](grammar-files.md#grammar-json)) keeps no captures, and
 the list of a repetition whose action discards it is not read. A `map` or `foldl`
 parameter is not a capture.
 

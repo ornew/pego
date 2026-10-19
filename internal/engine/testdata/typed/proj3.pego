@@ -1,2 +1,2 @@
-type Out = { A []Match; B []Match; T string }
+type Out = { A []node[string]; B []node[string]; T string }
 rule main Out = "(" xs:(n:"x" #atomic " "*)* ")" => Out{A: map($xs, (e) => e.$n), B: map($xs, (e) => e.$n), T: text($xs)}

@@ -34,16 +34,16 @@ func TestGeneratedTSProfile(t *testing.T) {
 	var files []string
 	var harness strings.Builder
 	for _, f := range []struct{ name, grammar, input, checks string }{
-		{"plain", "type W terminal\nrule main W = part part\nrule part W = \"a\"", "aa", `check(s.entered===3&&s.calls===3&&s.evals===3&&s.skipped===0,"exact plain totals");check(s.rules.find(r=>r.rule==="part")!.consumed===2,"exact consumption");`},
-		{"dispatch", "type W terminal\nrule main W = first / second\nrule first W = \"a\"\nrule second W = \"b\"", "b", `check(s.skipped===1&&s.entered===2,"exact dispatch totals");`},
-		{"memo", "type W terminal\nrule main W = &part &part &part part\nrule part W = letter\nrule letter W = \"a\"", "a", `check(s.memoHits>0,"memo counters");`},
-		{"leftrec", "type W terminal\nrule main W = expr\nrule expr W = expr \"a\" / \"a\"", "aaa", `check(s.evals>s.calls-s.memoHits,"growth counters");`},
-		{"repeat", "type W terminal\nrule main W = (&part \"x\" / &part) p:part => $p\nrule part W = [a-z]", "b", `check(s.rules.some(r=>r.repeats>0),"repeated position evaluations");`},
-		{"operators", "type W terminal\ntype B = { Left Expr; Right Expr }\ntype Expr ~ W | B\nrule main Expr = l:level(expr, product) \"+\" r:expr => B{Left:$l,Right:$r}\nrule expr Expr = operators {operand num;level sum {infix left \"+\" => B{Left:$lhs,Right:$rhs}};level product {infix left \"*\" => B{Left:$lhs,Right:$rhs}}}\nrule num W = [0-9]+", "1+2*3", ``},
-		{"recover", "type W terminal\nrule main W = (first / second) #recover(skip=\"!\")\nrule first W = \"a\"\nrule second W = \"b\"", "!", `check(s.skipped===2,"recovery skips");`},
-		{"unicode", "type W terminal\nrule main W = part part\nrule part W = \"é\"", "éé", `check(s.rules.find(r=>r.rule==="main")!.consumed===(unit===p.Bytes?4:2),"position units");`},
-		{"nilvalue", "type W terminal\nrule main *W = part => nil\nrule part W = \"a\"", "a", ``},
-		{"collision", "type Profile terminal\ntype ProfileSnapshot terminal\ntype RuleProfile terminal\ntype ProfileLocation terminal\ntype SkipReasonCount terminal\ntype ProfileObservation terminal\ntype ProfileFrame terminal\ntype ProfileData terminal\ntype WeakMap terminal\nrule main Profile = part\nrule part Profile = \"a\"", "a", ``},
+		{"plain", "type W = { Text string }\nrule main W = t:(part part) #atomic => W{Text: text($t)}\nrule part W = t:(\"a\") #atomic => W{Text: text($t)}", "aa", `check(s.entered===3&&s.calls===3&&s.evals===3&&s.skipped===0,"exact plain totals");check(s.rules.find(r=>r.rule==="part")!.consumed===2,"exact consumption");`},
+		{"dispatch", "type W = { Text string }\nrule main W = t:(first / second) #atomic => W{Text: text($t)}\nrule first W = t:(\"a\") #atomic => W{Text: text($t)}\nrule second W = t:(\"b\") #atomic => W{Text: text($t)}", "b", `check(s.skipped===1&&s.entered===2,"exact dispatch totals");`},
+		{"memo", "type W = { Text string }\nrule main W = t:(&part &part &part part) #atomic => W{Text: text($t)}\nrule part W = t:(letter) #atomic => W{Text: text($t)}\nrule letter W = t:(\"a\") #atomic => W{Text: text($t)}", "a", `check(s.memoHits>0,"memo counters");`},
+		{"leftrec", "type W = { Text string }\nrule main W = t:(expr) #atomic => W{Text: text($t)}\nrule expr W = t:(expr \"a\" / \"a\") #atomic => W{Text: text($t)}", "aaa", `check(s.evals>s.calls-s.memoHits,"growth counters");`},
+		{"repeat", "type W = { Text string }\nrule main W = (&part \"x\" / &part) p:part => $p\nrule part W = t:([a-z]) #atomic => W{Text: text($t)}", "b", `check(s.rules.some(r=>r.repeats>0),"repeated position evaluations");`},
+		{"operators", "type W = { Text string }\ntype B = { Left Expr; Right Expr }\ntype Expr ~ W | B\nrule main Expr = l:level(expr, product) \"+\" r:expr => B{Left:$l,Right:$r}\nrule expr Expr = operators {operand num;level sum {infix left \"+\" => B{Left:$lhs,Right:$rhs}};level product {infix left \"*\" => B{Left:$lhs,Right:$rhs}}}\nrule num W = t:([0-9]+) #atomic => W{Text: text($t)}", "1+2*3", ``},
+		{"recover", "type W = { Text string }\nrule main W = t:((first / second) #recover(skip=\"!\")) #atomic => W{Text: text($t)}\nrule first W = t:(\"a\") #atomic => W{Text: text($t)}\nrule second W = t:(\"b\") #atomic => W{Text: text($t)}", "!", `check(s.skipped===2,"recovery skips");`},
+		{"unicode", "type W = { Text string }\nrule main W = t:(part part) #atomic => W{Text: text($t)}\nrule part W = t:(\"é\") #atomic => W{Text: text($t)}", "éé", `check(s.rules.find(r=>r.rule==="main")!.consumed===(unit===p.Bytes?4:2),"position units");`},
+		{"nilvalue", "type W = { Text string }\nrule main *W = part => nil\nrule part W = t:(\"a\") #atomic => W{Text: text($t)}", "a", ``},
+		{"collision", "type Profile = { Text string }\ntype ProfileSnapshot = { Text string }\ntype RuleProfile = { Text string }\ntype ProfileLocation = { Text string }\ntype SkipReasonCount = { Text string }\ntype ProfileObservation = { Text string }\ntype ProfileFrame = { Text string }\ntype ProfileData = { Text string }\ntype WeakMap = { Text string }\nrule main Profile = t:(part) #atomic => Profile{Text: text($t)}\nrule part Profile = t:(\"a\") #atomic => Profile{Text: text($t)}", "a", ``},
 	} {
 		g, err := syntax.Parse(f.grammar)
 		if err != nil {

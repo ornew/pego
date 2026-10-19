@@ -15,7 +15,7 @@ func TestGeneratedGoGraphWork(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated graph-control consumers")
 	}
-	g, err := syntax.Parse(`type Leaf terminal
+	g, err := syntax.Parse(`type Leaf = { Text string }
 
 type Bag = {
     Items  []Leaf
@@ -24,7 +24,7 @@ type Bag = {
 
 rule main Bag = x:leaf* #cut => Bag{Items: $x.Value, Nested: list($x.Value, $x.Value)}
 
-rule leaf Leaf = "a"
+rule leaf Leaf = t:("a") #atomic => Leaf{Text: text($t)}
 
 rule rollback Bag = (x:leaf "z" / x:leaf) rest:(part:leaf "b")* last:leaf #cut => Bag{Items: list($x, $last), Nested: list(map($rest, (r) => r.$part))}`)
 	if err != nil {

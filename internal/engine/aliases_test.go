@@ -5,35 +5,35 @@ import (
 )
 
 var aliasCases = []genCase{
-	{"terminal singleton union", `type Num terminal
-rule main Num | Num = "é"+ $$`, []string{"éé", "", "x"}},
-	{"alias terminal", `type Num terminal
+	{"terminal singleton union", `type Num = { Text string }
+rule main Num | Num = t:("é"+ $$) #atomic => Num{Text: text($t)}`, []string{"éé", "", "x"}},
+	{"alias terminal", `type Num = { Text string }
 type Alias ~ Num
 type Deep ~ Alias
-rule main Deep = "é"+ $$`, []string{"éé", "", "x"}},
-	{"alias terminals in structs", `type Num terminal
+rule main Deep = t:("é"+ $$) #atomic => Num{Text: text($t)}`, []string{"éé", "", "x"}},
+	{"alias terminals in structs", `type Num = { Text string }
 type Alias ~ Num
 type Deep ~ Alias
 type Box = { Value Num }
 rule main Box = v:num $$ => Box{Value: $v}
-rule num Deep = "é"+`, []string{"éé", "", "x"}},
-	{"alias constructors", `type Num terminal
+rule num Deep = t:("é"+) #atomic => Num{Text: text($t)}`, []string{"éé", "", "x"}},
+	{"alias constructors", `type Num = { Text string }
 type NumAlias ~ Num
 type P = { Value Num; N int }
 type Alias ~ P
 type Deep ~ Alias
 rule main Deep = v:num $$ => Deep{Value: $v, N: 7}
-rule num NumAlias = "é"+`, []string{"éé", "", "x"}},
-	{"alias singleton unions", `type Num terminal
+rule num NumAlias = t:("é"+) #atomic => Num{Text: text($t)}`, []string{"éé", "", "x"}},
+	{"alias singleton unions", `type Num = { Text string }
 type Alias ~ Num | Num
 type P = { Value Alias }
 type Deep ~ P | P
 rule main Deep = v:num $$ => Deep{Value: $v}
-rule num Alias = "é"+`, []string{"éé", "", "x"}},
-	{"alias terminal action", `type Num terminal
+rule num Alias = t:("é"+) #atomic => Num{Text: text($t)}`, []string{"éé", "", "x"}},
+	{"alias terminal action", `type Num = { Text string }
 type Alias ~ Num
 rule main Alias = v:num $$ => $v
-rule num Num = "é"+`, []string{"éé", "", "x"}},
+rule num Num = t:("é"+) #atomic => Num{Text: text($t)}`, []string{"éé", "", "x"}},
 }
 
 var aliasTypedGoldens = map[string]string{

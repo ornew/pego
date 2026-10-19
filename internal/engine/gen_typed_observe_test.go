@@ -19,66 +19,66 @@ func TestGeneratedTypedTrace(t *testing.T) {
 		name, grammar, input, checks string
 		fallback, general            bool
 	}{
-		{name: "plain", grammar: `type W terminal
-rule main W = part
-rule part W = "a"`, input: "a", checks: `expectedEvents:=[]TraceEvent{{Kind:TraceEnter,Rule:"main",Depth:1},{Kind:TraceEnter,Rule:"part",Depth:2},{Kind:TraceExit,Rule:"part",Depth:2,Matched:true,End:1,Evals:1},{Kind:TraceExit,Rule:"main",Depth:1,Matched:true,End:1,Evals:1}};if !reflect.DeepEqual(events,expectedEvents){t.Fatal("exact plain calls",events)}`},
-		{name: "lean", grammar: `type W terminal
-rule main W = -space part
+		{name: "plain", grammar: `type W = { Text string }
+rule main W = t:(part) #atomic => W{Text: text($t)}
+rule part W = t:("a") #atomic => W{Text: text($t)}`, input: "a", checks: `expectedEvents:=[]TraceEvent{{Kind:TraceEnter,Rule:"main",Depth:1},{Kind:TraceEnter,Rule:"part",Depth:2},{Kind:TraceExit,Rule:"part",Depth:2,Matched:true,End:1,Evals:1},{Kind:TraceExit,Rule:"main",Depth:1,Matched:true,End:1,Evals:1}};if !reflect.DeepEqual(events,expectedEvents){t.Fatal("exact plain calls",events)}`},
+		{name: "lean", grammar: `type W = { Text string }
+rule main W = t:(-space part) #atomic => W{Text: text($t)}
 rule space = " "
-rule part W = "a"`, input: " a", checks: `if count("space",TraceEnter)!=1 || count("part",TraceEnter)!=1 {t.Fatal(events)}`},
-		{name: "memo", grammar: `type W terminal
+rule part W = t:("a") #atomic => W{Text: text($t)}`, input: " a", checks: `if count("space",TraceEnter)!=1 || count("part",TraceEnter)!=1 {t.Fatal(events)}`},
+		{name: "memo", grammar: `type W = { Text string }
 rule main W = &part &part &part p:part => $p
-rule part W = letter
+rule part W = t:(letter) #atomic => W{Text: text($t)}
 rule letter = "a"`, input: "a", checks: `hits:=0;for _,e:=range events {if e.Memo {hits++}};if hits==0 {t.Fatal("missing memo",events)}`},
-		{name: "framed", grammar: `type W terminal
+		{name: "framed", grammar: `type W = { Text string }
 type N = { Value W }
 rule main N = p:part => N{Value:$p}
-rule part W = "a"`, input: "a", checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
-		{name: "general", grammar: `type W terminal
+rule part W = t:("a") #atomic => W{Text: text($t)}`, input: "a", checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
+		{name: "general", grammar: `type W = { Text string }
 rule main W = {x:=1} #cut p:part {x==1} => $p
-rule part W = "a"`, input: "a", general: true, checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
-		{name: "leftrec", grammar: `type W terminal
-rule main W = expr
-rule expr W = expr "a" / "a"`, input: "aaa", checks: `growth:=false;for _,e:=range events {if e.Rule=="expr"&&e.Kind==TraceExit&&e.Evals>1 {growth=true}};if !growth {t.Fatal("missing growth",events)}`},
-		{name: "dispatch", grammar: `type W terminal
-rule main W = first / second
-rule first W = "a"
-rule second W = "b"`, input: "b", checks: `if count("first",TraceEnter)!=0 || count("first",TraceSkipped)!=1 {t.Fatal(events)}`},
-		{name: "recovery", grammar: `type W terminal
-rule main W = part #recover(skip="!")
-rule part W = "a"`, input: "!", checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
-		{name: "operators", grammar: `type W terminal
+rule part W = t:("a") #atomic => W{Text: text($t)}`, input: "a", general: true, checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
+		{name: "leftrec", grammar: `type W = { Text string }
+rule main W = t:(expr) #atomic => W{Text: text($t)}
+rule expr W = t:(expr "a" / "a") #atomic => W{Text: text($t)}`, input: "aaa", checks: `growth:=false;for _,e:=range events {if e.Rule=="expr"&&e.Kind==TraceExit&&e.Evals>1 {growth=true}};if !growth {t.Fatal("missing growth",events)}`},
+		{name: "dispatch", grammar: `type W = { Text string }
+rule main W = t:(first / second) #atomic => W{Text: text($t)}
+rule first W = t:("a") #atomic => W{Text: text($t)}
+rule second W = t:("b") #atomic => W{Text: text($t)}`, input: "b", checks: `if count("first",TraceEnter)!=0 || count("first",TraceSkipped)!=1 {t.Fatal(events)}`},
+		{name: "recovery", grammar: `type W = { Text string }
+rule main W = t:(part #recover(skip="!")) #atomic => W{Text: text($t)}
+rule part W = t:("a") #atomic => W{Text: text($t)}`, input: "!", checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
+		{name: "operators", grammar: `type W = { Text string }
 type B = { Left Expr; Right Expr }
 type Expr ~ W | B
 rule main Expr = l:level(expr, product) "+" r:expr => B{Left:$l,Right:$r}
 rule expr Expr = operators {operand num;level sum {infix left "+" => B{Left:$lhs,Right:$rhs}};level product {infix left "*" => B{Left:$lhs,Right:$rhs}}}
-rule num W = [0-9]+`, input: "1+2*3", checks: `nested:=false;for _,e:=range events {if e.Rule=="expr"&&e.Kind==TraceEnter&&e.Level>0 {nested=true}};if !nested {t.Fatal("missing level",events)}`},
-		{name: "mixed", grammar: `type W terminal
-rule main W = part
-rule part W = "a"
+rule num W = t:([0-9]+) #atomic => W{Text: text($t)}`, input: "1+2*3", checks: `nested:=false;for _,e:=range events {if e.Rule=="expr"&&e.Kind==TraceEnter&&e.Level>0 {nested=true}};if !nested {t.Fatal("missing level",events)}`},
+		{name: "mixed", grammar: `type W = { Text string }
+rule main W = t:(part) #atomic => W{Text: text($t)}
+rule part W = t:("a") #atomic => W{Text: text($t)}
 rule cst = part ";"`, input: "a", checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
-		{name: "field", grammar: `type W terminal
+		{name: "field", grammar: `type W = { Text string }
 type N = { Value W }
 rule main W = n:box => $n.Value
 rule box N = p:part => N{Value:$p}
-rule part W = "a"`, input: "a", fallback: true, checks: `if count("box",TraceEnter)!=1 {t.Fatal(events)}`},
-		{name: "unicode", grammar: `type W terminal
-rule main W = part part
-rule part W = "é"`, input: "éé", checks: `last:=events[len(events)-1];end:=2;if unit==Bytes {end=4};if last.End!=end {t.Fatal(last)}`},
-		{name: "nilvalue", grammar: `type W terminal
+rule part W = t:("a") #atomic => W{Text: text($t)}`, input: "a", fallback: true, checks: `if count("box",TraceEnter)!=1 {t.Fatal(events)}`},
+		{name: "unicode", grammar: `type W = { Text string }
+rule main W = t:(part part) #atomic => W{Text: text($t)}
+rule part W = t:("é") #atomic => W{Text: text($t)}`, input: "éé", checks: `last:=events[len(events)-1];end:=2;if unit==Bytes {end=4};if last.End!=end {t.Fatal(last)}`},
+		{name: "nilvalue", grammar: `type W = { Text string }
 rule main *W = part => nil
-rule part W = "a"`, input: "a", checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
-		{name: "collision", grammar: `type TraceKind terminal
+rule part W = t:("a") #atomic => W{Text: text($t)}`, input: "a", checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
+		{name: "collision", grammar: `type TraceKind = { Text string }
 type TraceEvent = { Value WithTrace }
-type TraceEnter terminal
-type TraceExit terminal
-type TraceSkipped terminal
-type WithTrace terminal
-type WithTraceFilter terminal
-type WithTraceMaxDepth terminal
-type TraceEvent_ terminal
+type TraceEnter = { Text string }
+type TraceExit = { Text string }
+type TraceSkipped = { Text string }
+type WithTrace = { Text string }
+type WithTraceFilter = { Text string }
+type WithTraceMaxDepth = { Text string }
+type TraceEvent_ = { Text string }
 rule main TraceEvent = p:part => TraceEvent{Value:$p}
-rule part WithTrace = "a"`, input: "a", checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
+rule part WithTrace = t:("a") #atomic => WithTrace{Text: text($t)}`, input: "a", checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
 	}
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module typedtracefixture\n\ngo 1.27.1\n"), 0644); err != nil {
@@ -193,7 +193,7 @@ func TestTypedTraceLifecycle(t *testing.T){
 
 func TestGeneratedTracePrivateTypeNamesRemainInvalid(t *testing.T) {
 	for _, name := range []string{"observation", "observationCall", "tracePanic"} {
-		g, err := syntax.Parse("type " + name + " terminal\nrule main = \"a\"")
+		g, err := syntax.Parse("type " + name + " = { Text string }\nrule main = \"a\"")
 		if err != nil {
 			t.Fatal(err)
 		}

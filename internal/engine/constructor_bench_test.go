@@ -18,7 +18,7 @@ func BenchmarkNodeListConstruction(b *testing.B) {
 		b.Run(workload.name, func(b *testing.B) {
 			var want string
 			for _, variant := range []struct{ name, action string }{{"Function", workload.function}, {"Typed", workload.typed}} {
-				g, err := syntax.Parse("type Word terminal\nrule word Word = \"x\"\nrule main = " + workload.body + " => " + variant.action)
+				g, err := syntax.Parse("type Word = { Text string }\nrule word Word = t:(\"x\") #atomic => Word{Text: text($t)}\nrule main = " + workload.body + " => " + variant.action)
 				if err != nil {
 					b.Fatal(err)
 				}

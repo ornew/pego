@@ -100,12 +100,12 @@ func TestSourceGrammarMatchesDocumentation(t *testing.T) {
 
 func TestSourceGrammarNodeConstructors(t *testing.T) {
 	p, _ := sourceGrammar(t)
-	const src = `type Foo = { A Match; B []Foo }
-type Word terminal
-rule word = "x" => Word{"0"}
+	const src = `type Foo = { A node[string]; B []Foo }
+type Word = { Text string }
+rule word = "x" => Word{Text: "0"}
 rule empty = "x" => []Foo{}
 rule nested = v1:"x" => [][]Foo{[]Foo{Foo{A: $v1}},}
-rule args = "x" => Word{"a", "b",}
+rule args = "x" => Word{Text: "a", Text: "b",}
 rule index = xs:"x"+ => list($xs)[0][len($xs) - 1]
 rule capture = xs:(y:"x")+ => map($xs, (i) => i.$y)
 rule cast = x:"x" => $x.([]Foo | *Word).Len
@@ -116,15 +116,23 @@ type Unnamed ~ {} | []{ A Foo; B { C Word } }
 	if _, err := pego.ParseGrammar(src); err != nil {
 		t.Fatal(err)
 	}
+	// A positional constructor built a terminal, which grammars no longer declare.
+	const positional = "type Word = { Text string }\nrule word = \"x\" => Word{\"0\"}"
+	if _, err := pego.ParseGrammar(positional); err == nil {
+		t.Fatal("the reader accepts a positional constructor")
+	}
 	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
+		if _, err := p.Parse(positional, pego.WithBackend(backend)); err == nil {
+			t.Fatalf("%v: the source grammar accepts a positional constructor", backend)
+		}
 		n, err := p.Parse(src, pego.WithBackend(backend))
 		if err != nil {
 			t.Fatal(err)
 		}
 		defs := sourceDefs(t, n)
-		terminal := sourceField(t, defs[2], "Action")
-		if terminal.Type() != "TerminalConstructor" || len(elems(sourceField(t, terminal, "Args"))) != 1 {
-			t.Fatal("terminal source arguments lost")
+		text := sourceField(t, defs[2], "Action")
+		if text.Type() != "Constructor" || len(elems(sourceField(t, text, "Inits"))) != 1 {
+			t.Fatal("text struct source fields lost")
 		}
 		empty := sourceField(t, defs[3], "Action")
 		if empty.Type() != "ListConstructor" || len(elems(sourceField(t, empty, "Items"))) != 0 {
@@ -134,8 +142,8 @@ type Unnamed ~ {} | []{ A Foo; B { C Word } }
 		if sourceField(t, nested, "Elem").Type() != "ListType" || elems(sourceField(t, nested, "Items"))[0].Type() != "ListConstructor" {
 			t.Fatal("nested typed source list lost")
 		}
-		if args := sourceField(t, sourceField(t, defs[5], "Action"), "Args"); len(elems(args)) != 2 {
-			t.Fatal("invalid terminal arity must remain parseable")
+		if inits := sourceField(t, sourceField(t, defs[5], "Action"), "Inits"); len(elems(inits)) != 2 {
+			t.Fatal("repeated fields and a trailing comma must remain parseable")
 		}
 		index := sourceField(t, defs[6], "Action")
 		if index.Type() != "BinaryOp" || index.Field("Op") != "[]" || sourceField(t, index, "L").Type() != "BinaryOp" || sourceField(t, index, "R").Type() != "BinaryOp" {
@@ -297,12 +305,12 @@ func TestSourceGrammarRecovery(t *testing.T) {
 	}{
 		{"declaration", "rule broken =\nrule after = \"ok\"", "expected rule expression", 2},
 		{"header", "rule = \"bad\"; rule after = \"ok\"", "expected rule name", 2},
-		{"field", "type T = {\n Broken\n Good Match\n}\nrule after = \"ok\"", "expected field type", 2},
+		{"field", "type T = {\n Broken\n Good node\n}\nrule after = \"ok\"", "expected field type", 2},
 		{"operand", "rule expression = operators {\n operand\n operand \"ok\"\n level { infix left \"+\" }\n}\nrule after = \"ok\"", "expected operand expression", 2},
 		{"operator", "rule expression = operators {\n operand \"ok\"\n level {\n infix left\n postfix \"!\"\n }\n}\nrule after = \"ok\"", "expected infix expression", 2},
 		{"action", "rule predicate = {\n x :=\n true\n}\nrule after = \"ok\"", "expected assignment value", 2},
-		{"literal delimiter", "type T = { Bad = \"}\", Good Match }\nrule after = \"ok\"", "expected field type", 2},
-		{"comment delimiter", "type T = { Bad = /* } */ 1; Good Match }\nrule after = \"ok\"", "expected field type", 2},
+		{"literal delimiter", "type T = { Bad = \"}\", Good node }\nrule after = \"ok\"", "expected field type", 2},
+		{"comment delimiter", "type T = { Bad = /* } */ 1; Good node }\nrule after = \"ok\"", "expected field type", 2},
 		{"action delimiter", "rule predicate = { bad = \"}\"; true }\nrule after = \"ok\"", "expected semicolon", 2},
 		{"broken multiline group", "rule broken = (\nrule after = \"ok\"\n)", "expected rule expression", 3},
 		{"end of file", "rule broken =", "expected rule expression", 1},

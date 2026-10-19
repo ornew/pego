@@ -21,6 +21,46 @@ import (
 // field, for the expected messages; W wraps the result in a field of type rt, so that generated
 // parsers use the typed runtime when rt is representable.
 func resultCheckGrammar(typ, rt string) string {
+	return `type Int = { Text string }
+type Alias ~ Int
+type Box = { Value Int }
+type S = { F ` + typ + ` }
+type W = { V ` + rt + ` }
+rule main W = ma / mb / mc / md / me / mp / mq
+rule ma W = &(. ".") v:rA "." => W{V: $v}
+rule mb W = &(. ",") v:rB "," => W{V: $v}
+rule mc W = &(. ":") v:rC ":" => W{V: $v}
+rule md W = &(. "+") v:rD "+" => W{V: $v}
+rule me W = &(. "=") v:rE => W{V: $v}
+rule mp W = &(. "!") v:rA {$v == nil || $v != nil} "!" => W{V: $v}
+rule mq W = &(. "~") v:rB {$v == nil || $v != nil} "~" => W{V: $v}
+rule rA ` + rt + ` = v:val => $v
+rule rB ` + rt + ` = val
+rule rC ` + rt + ` = operators {
+    operand val
+}
+rule rD ` + rt + ` = operators {
+    operand v:val => $v
+}
+rule rE ` + rt + ` = {x := 0} ("i" {x := 1} / "s" {x := "s"} / "b" {x := true}) "=" => x
+rule val any = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz
+rule vm = "m"
+rule vt = "t" => Int{Text: "t"}
+rule vl = "l" => []Int{Int{Text: "a"}}
+rule vk = k:"k" => list($k)
+rule ve = "e" => list(nil)
+rule vn = "n" => list()
+rule vq = "q" => Box{Value: Int{Text: "q"}}
+rule vr = ("r" ";") #recover(skip="?")
+rule vw = "w" => [][]Int{[]Int{Int{Text: "w"}}}
+rule vp = "p" => list(Int{Text: "a"}, nil)
+rule vz = "z" => nil
+`
+}
+
+// resultCheckGrammarLegacy is resultCheckGrammar with a terminal type Int, in the retired syntax that
+// only syntax.ParseLegacy accepts: grammars that reach the engine as JSON ASTs may still use it.
+func resultCheckGrammarLegacy(typ, rt string) string {
 	return `type Int terminal
 type Alias ~ Int
 type Box = { Value Int }
@@ -72,9 +112,11 @@ func resultCheckInputs() []string {
 }
 
 // resultCheckTypes are the types of fieldCheckFields that a rule can declare.
-func resultCheckTypes() []string {
+func resultCheckTypes() []string { return resultCheckTypesOf(fieldCheckFields) }
+
+func resultCheckTypesOf(fields map[string]string) []string {
 	var types []string
-	for _, typ := range fieldCheckTypes() {
+	for _, typ := range fieldCheckTypesOf(fields) {
 		switch typ {
 		case "int", "string", "bool", "Int | string", "*(Box | bool)":
 		default:
@@ -103,9 +145,29 @@ func resultChecked(prog *Program, route byte) bool {
 // without type checking, and that the values it accepts give the same results as when the rules
 // are declared any.
 func TestRuleResultChecks(t *testing.T) {
-	for _, typ := range resultCheckTypes() {
-		t.Run(typ, func(t *testing.T) {
-			g, err := syntax.Parse(resultCheckGrammar(typ, typ))
+	// The terminal type still reaches the engine from JSON grammars: its model is read with
+	// syntax.ParseLegacy.
+	for _, model := range []struct {
+		name    string
+		grammar func(typ, rt string) string
+		parse   func(string) (*grammar.Grammar, error)
+		fields  map[string]string
+	}{
+		{"text struct", resultCheckGrammar, syntax.Parse, fieldCheckFields},
+		{"terminal", resultCheckGrammarLegacy, syntax.ParseLegacy, fieldCheckFieldsLegacy},
+	} {
+		t.Run(model.name, func(t *testing.T) {
+			for _, typ := range resultCheckTypesOf(model.fields) {
+				t.Run(typ, func(t *testing.T) { checkRuleResultType(t, typ, model.grammar, model.parse, model.fields) })
+			}
+		})
+	}
+}
+
+func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt string) string, parse func(string) (*grammar.Grammar, error), fields map[string]string) {
+	{
+		{
+			g, err := parse(resultGrammar(typ, typ))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -133,13 +195,20 @@ func TestRuleResultChecks(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			untyped := compileBare(t, resultCheckGrammar(typ, "any"))
+			ug, err := parse(resultGrammar(typ, "any"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			untyped, err := Compile(ug, Options{})
+			if err != nil {
+				t.Fatal(err)
+			}
 			limits := WorkLimits{MaxSteps: 1 << 30}
 			declared := checked.typed.fields["S"][0].t.String()
 			for _, in := range resultCheckInputs() {
 				value := fieldCheckValues[in[:1]]
 				rule := resultCheckRoutes[in[1]]
-				accepted := strings.Contains(fieldCheckFields[typ], in[:1])
+				accepted := strings.Contains(fields[typ], in[:1])
 				runs := []struct {
 					name string
 					prog *Program
@@ -236,7 +305,7 @@ func TestRuleResultChecks(t *testing.T) {
 					t.Errorf("%q (%s) accepted or misreported: %s\nwant %s", in, value, want, msg)
 				}
 			}
-		})
+		}
 	}
 }
 
@@ -244,19 +313,19 @@ func TestRuleResultChecks(t *testing.T) {
 // checked, that an actionless rule's value is checked like an action's, and that compiled files
 // and generated parsers keep the decisions.
 func TestRuleResultChecksAreSelective(t *testing.T) {
-	src := `type Int terminal
+	src := `type Int = { Text string }
 type S = { F Int }
 type O = { X Int }
 rule main = s:static d:dynamic p:pass o:ops => S{F: $d}
-rule static Int = "s" => Int{"s"}
+rule static Int = "s" => Int{Text: "s"}
 rule dynamic Int = v:val => $v
 rule pass node = val
 rule ops Int | O = operators {
     operand val
-    operand "o" => Int{"o"}
-    level { infix left "+" => Int{"+"} }
+    operand "o" => Int{Text: "o"}
+    level { infix left "+" => Int{Text: "+"} }
 }
-rule val any = "v" => Int{"v"}
+rule val any = "v" => Int{Text: "v"}
 `
 	prog := compile(t, src)
 	var checked []string
@@ -323,7 +392,7 @@ rule val any = "v" => Int{"v"}
 // rule lr, which generated typed parsers call like Operators Rules, through their rule table, and
 // "@<value>@" the rule rr, whose recovery expression keeps it from a direct typed body. Input
 // "%<value>%" constructs W in a rule with a recovery expression, which compiling copies.
-const operatorResultCheckGrammar = `type Int terminal
+const operatorResultCheckGrammar = `type Int = { Text string }
 type W = { V []Int }
 rule main W = ml / mr / mf / me
 rule mf W = "%" v:val ("%" #recover(skip="%")) => W{V: $v}
@@ -333,15 +402,15 @@ rule ml W = "<" v:lr => W{V: $v}
 rule me W = v:e => W{V: $v}
 rule lr []Int = (v:lr "^" / v:val "#") => $v
 rule e []Int = operators {
-    operand "o" => []Int{Int{"o"}}
+    operand "o" => []Int{Int{Text: "o"}}
     level { infix left "+" v:val => $v }
     level { prefix "!" v:val => $v }
     level { postfix v:val "^" => $v }
 }
 rule val any = vm / vt / vl / vz
 rule vm = "m"
-rule vt = "t" => Int{"t"}
-rule vl = "l" => []Int{Int{"l"}}
+rule vt = "t" => Int{Text: "t"}
+rule vl = "l" => []Int{Int{Text: "l"}}
 rule vz = "z" => nil
 `
 
@@ -413,16 +482,28 @@ rule e Int = operators {
 rule val any = "m"
 `
 
+// textStructOperatorsRuleGrammar is the text struct counterpart of terminalOperatorsRuleGrammar:
+// the Operators Rule produces the text struct through its actions.
+const textStructOperatorsRuleGrammar = `type Int = { Text string }
+type S = { F Int }
+rule main = v:e => S{F: $v}
+rule e Int = operators {
+    operand v:val => $v
+    level { infix left "+" v:val => $v }
+}
+rule val Int = t:"m" #atomic => Int{Text: text($t)}
+`
+
 var terminalOperatorsRuleInputs = []string{"m", "m+m", "m+", ""}
 
 func TestTerminalOperatorsRuleIsNotChecked(t *testing.T) {
-	prog := compile(t, terminalOperatorsRuleGrammar)
+	prog := compileLegacy(t, terminalOperatorsRuleGrammar)
 	if prog.checks != nil && len(prog.checks.results) != 0 {
 		t.Fatalf("checked lines: %d", len(prog.checks.results))
 	}
-	unchecked := compile(t, terminalOperatorsRuleGrammar, Options{NoTypeCheck: true})
+	unchecked := compileLegacy(t, terminalOperatorsRuleGrammar, Options{NoTypeCheck: true})
 	// Without type checking, operators without actions are allowed too.
-	plain := compile(t, `type Num terminal
+	plain := compileLegacy(t, `type Num terminal
 rule main = e
 rule e Num = operators {
     operand [0-9]+
@@ -459,7 +540,7 @@ func resultCheckCases() []genCase {
 	}
 	return append(cases,
 		genCase{"operator result check", operatorResultCheckGrammar, operatorResultCheckInputs},
-		genCase{"terminal Operators Rule", terminalOperatorsRuleGrammar, terminalOperatorsRuleInputs})
+		genCase{"text struct Operators Rule", textStructOperatorsRuleGrammar, terminalOperatorsRuleInputs})
 }
 
 func TestGeneratedRuleResultChecks(t *testing.T) {
@@ -480,12 +561,12 @@ func TestGeneratedRuleResultChecks(t *testing.T) {
 // TestGeneratedCheckTypeName checks that a grammar type named like the generated check type
 // is renamed in typed TypeScript.
 func TestGeneratedCheckTypeName(t *testing.T) {
-	src := `type Int terminal
-type FieldType terminal
+	src := `type Int = { Text string }
+type FieldType = { Text string }
 type S = { F Int }
 rule main = v:val f:ft => S{F: $v}
-rule ft FieldType = "f" => FieldType{"f"}
-rule val any = "v" => Int{"v"}
+rule ft FieldType = "f" => FieldType{Text: "f"}
+rule val any = "v" => Int{Text: "v"}
 `
 	consumer := `import * as p from "./parser.ts";
 ` + tsTypedAssert + `const ok = p.parseAST("vf");

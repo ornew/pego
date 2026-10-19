@@ -50,13 +50,13 @@ definition and the place where the term is defined.
 | sequence | `a b`: matches `a` and then `b`. See [Sequence](parser-expressions.md#sequence). |
 | start rule | The rule with which parsing begins. It is chosen when the grammar is compiled or parsed, not in the grammar file. See [Start rule](parsing.md#start-rule). |
 | stream | A `#stream` repetition whose elements are handed to the caller as soon as they match, so that earlier input can be released. See [Streaming](streaming.md). |
-| struct type | A user-defined node type with named fields. See [Struct types](types.md#struct-types). |
-| string node | A node whose value is the matched input text: the node of a literal, a character class, `.` or an atomic expression, or of a terminal type. See [Nodes and Values](nodes.md#node-model). |
-| terminal | A string node, called by the type names `Match` and, for a user-defined type, a terminal type. See [Nodes and Values](nodes.md#node-model). |
-| terminal type | A user-defined type for string nodes. See [Terminal types](types.md#terminal-types). |
+| struct type | A user-defined type of values with named fields, which an action builds. See [Struct types](types.md#struct-types). |
+| string node | A node whose value is the matched input text: the node of a literal, a character class, `.` or an atomic expression. Its type is `node[string]`. See [Nodes and Values](nodes.md#node-model). |
+| terminal | A string node. `Node.IsTerminal` reports it. See [Nodes and Values](nodes.md#node-model). |
+| text struct | A struct type whose only field is `Text string`, which gives a token a type of its own. See [Text Structs](types.md#text-structs). |
 | token | A lexical element of a grammar file: an identifier, a literal, a capture reference or punctuation. See [Tokens](lexical.md#tokens). |
 | tuple | The value of a sequence: the values of its elements, in order. A rule without a valued element produces the empty tuple, the unit `()`. See [Nodes and Values](nodes.md#node-model). |
-| Type Definition Statement | A statement that declares a type name in one of three forms: a struct type (`=`), an alias (`~`), which includes a union type, or a terminal type. See [Type Definitions](types.md#type-definitions). |
+| Type Definition Statement | A statement that declares a type name in one of two forms: a struct type (`=`) or an alias (`~`), which includes a union type. See [Type Definitions](types.md#type-definitions). |
 | Type Expression | An expression that specifies a type, including the declared value type of a rule or a type alias. See [Type Definitions](types.md#type-definitions). |
 | union type | A type whose values are values of any one of its member types. See [Type aliases and union types](types.md#type-aliases-and-union-types). |
 | value | What a Rule Expression, a rule or an action produces: a node, `nil`, an error value, a struct, or an integer, string or boolean inside actions. See [Rule Expressions](parser-expressions.md#values-and-the-concrete-syntax-tree). |

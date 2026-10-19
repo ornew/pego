@@ -118,19 +118,19 @@ func TestInvalidUTF8LiteralStream(t *testing.T) {
 
 func invalidLiteralCorpus() []genCase {
 	cases := []genCase{
-		{"text predicate", `type N = { T Match }
+		{"text predicate", `type N = { T node[string] }
 rule main N = t:"�" {len(text($t)) == len($t)} $$ => N{T: $t}`, []string{"\xff", "\x80", "\xc3", "�", "é"}},
-		{"replacement", `type N = { T Match }
+		{"replacement", `type N = { T node[string] }
 rule main N = t:"�" $$ => N{T: $t}`, []string{"\xff", "\x80", "\xc3", "�", "é", "", "\xffx"}},
-		{"multiple", `type N = { T Match }
+		{"multiple", `type N = { T node[string] }
 rule main N = t:"���" $$ => N{T: $t}`, []string{"\xed\xa0\x80", "\xe0\x80\x80", "���", "\xff", "\xff\x80\x80x"}},
-		{"mixed", `type N = { T Match }
+		{"mixed", `type N = { T node[string] }
 rule main N = t:"é�x" $$ => N{T: $t}`, []string{"é\xffx", "é\xc3x", "é�x", "é\xffy", "é\xff", "éx"}},
-		{"long", `type N = { T Match }
+		{"long", `type N = { T node[string] }
 rule main N = t:"abcdefghijk�xyz" $$ => N{T: $t}`, []string{"abcdefghijk\xffxyz", "abcdefghijk�xyz", "abcdefghijk\xc3xyz", "abcdefghijk\xffxyq"}},
-		{"choice", `type N = { T Match }
+		{"choice", `type N = { T node[string] }
 rule main N = t:("x" / "�") $$ => N{T: $t}`, []string{"\xff", "\x80", "\xc3", "�", "x", "y"}},
-		{"class", `type N = { T Match }
+		{"class", `type N = { T node[string] }
 rule main N = t:[�] $$ => N{T: $t}`, []string{"\xff", "\x80", "\xc3", "�", "é"}},
 	}
 	return append(cases, rawLiteralGenCorpus()...)

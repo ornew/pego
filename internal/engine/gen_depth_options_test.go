@@ -66,32 +66,32 @@ func TestGeneratedDepthOptions(t *testing.T) {
 		t.Skip("runs generated code")
 	}
 	fixtures := []genCase{
-		{"ordinary", `type Word terminal
-rule main Word = n
-rule n Word = "(" n ")" / "é"`, []string{"é", "(é)", "((é))", "((((é))))", "?", "(é"}},
-		{"left recursion", `type Word terminal
-rule main Word = n
-rule n Word = n "+" "é" / "(" n ")" / "é"`, []string{"é", "é+é+é", "(é)", "((é+é))", "é+", "?"}},
-		{"OperatorsRule", `type Word terminal
-rule main Word = n
+		{"ordinary", `type Word = { Text string }
+rule main Word = t:(n) #atomic => Word{Text: text($t)}
+rule n Word = t:("(" n ")" / "é") #atomic => Word{Text: text($t)}`, []string{"é", "(é)", "((é))", "((((é))))", "?", "(é"}},
+		{"left recursion", `type Word = { Text string }
+rule main Word = t:(n) #atomic => Word{Text: text($t)}
+rule n Word = t:(n "+" "é" / "(" n ")" / "é") #atomic => Word{Text: text($t)}`, []string{"é", "é+é+é", "(é)", "((é+é))", "é+", "?"}},
+		{"OperatorsRule", `type Word = { Text string }
+rule main Word = t:(n) #atomic => Word{Text: text($t)}
 rule n Word = operators {
     operand w:base => $w
     operand "(" w:n ")" => $w
     level { prefix "-" => $rhs }
     level { infix right "^" => $rhs }
 }
-rule base Word = "é"`, []string{"é", "--é", "é^é^é", "(-é^é)", "((é))", "?"}},
-		{"dispatch", `type Word terminal
-rule main Word = "a" one / "b" two / "c" three
-rule one Word = two
-rule two Word = three
-rule three Word = four
-rule four Word = "é"`, []string{"aé", "bé", "cé", "a?", "b?", "c?"}},
+rule base Word = t:"é" #atomic => Word{Text: text($t)}`, []string{"é", "--é", "é^é^é", "(-é^é)", "((é))", "?"}},
+		{"dispatch", `type Word = { Text string }
+rule main Word = t:("a" one / "b" two / "c" three) #atomic => Word{Text: text($t)}
+rule one Word = t:(two) #atomic => Word{Text: text($t)}
+rule two Word = t:(three) #atomic => Word{Text: text($t)}
+rule three Word = t:(four) #atomic => Word{Text: text($t)}
+rule four Word = t:("é") #atomic => Word{Text: text($t)}`, []string{"aé", "bé", "cé", "a?", "b?", "c?"}},
 		{"action", `type Word = { N int }
 rule main = x:"a"* #atomic => Word{N: 1 / len($x)}`, []string{"", "a", "aa", "?"}},
-		{"recovery", `type Word terminal
-rule main Word = n
-rule n Word = ("(" n ")" / "é") #recover(skip="?")`, []string{"é", "(é)", "((é))", "?", "(?)"}},
+		{"recovery", `type Word = { Text string }
+rule main Word = t:(n) #atomic => Word{Text: text($t)}
+rule n Word = t:(("(" n ")" / "é") #recover(skip="?")) #atomic => Word{Text: text($t)}`, []string{"é", "(é)", "((é))", "?", "(?)"}},
 	}
 	dir := t.TempDir()
 	write := func(name string, b []byte) {
@@ -205,11 +205,11 @@ func TestGeneratedDepthNameCollisions(t *testing.T) {
 	if testing.Short() {
 		t.Skip("runs generated code")
 	}
-	src := `type ParseOption terminal
-type ParseOption_ terminal
+	src := `type ParseOption = { Text string }
+type ParseOption_ = { Text string }
 type WithUnit ~ ParseOption
 type WithMaxDepth = { Item WithUnit }
-rule main WithUnit = "é"`
+rule main WithUnit = t:("é") #atomic => ParseOption{Text: text($t)}`
 	g, err := syntax.Parse(src)
 	if err != nil {
 		t.Fatal(err)

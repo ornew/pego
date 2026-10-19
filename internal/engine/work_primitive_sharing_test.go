@@ -22,8 +22,10 @@ func TestWorkPrimitiveASTAliases(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			source := fmt.Sprintf("type Token terminal\nrule token Token = %s\nrule value = %s\nrule main = a:value b:token c:value $$", tc.expr, tc.expr)
-			reference := compile(t, source)
-			g, err := syntax.Parse(source)
+			// The terminal type still reaches the engine from JSON grammars, read here with
+			// syntax.ParseLegacy.
+			reference := compileLegacy(t, source)
+			g, err := syntax.ParseLegacy(source)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -170,7 +170,7 @@ func TestCompileContextOrdinaryParity(t *testing.T) {
 		`rule main = "" / "a"`,
 		`rule main = ("a" #cut "b") / ""`,
 		`rule main = "a" / missing`,
-		`type P = { X Match }; rule main = "a" => P{X: 1}`,
+		`type P = { X node[string] }; rule main = "a" => P{X: 1}`,
 	} {
 		g, err := syntax.Parse(src)
 		if err != nil {

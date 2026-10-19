@@ -93,7 +93,11 @@ func TestGenerateTypedDocumentNilAndRecovery(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
 	}
-	g, err := syntax.Parse(namedASTGrammar)
+	// The union S | node does not generate in Document mode: its conversion returns any, which does
+	// not implement the union interface (S | Seq did). This test is about nil results and
+	// recovery, so the grammar uses a string node member instead.
+	source := strings.NewReplacer("type Mixed ~ S | node\n", "type Mixed ~ S | node[string]\n", "rule mixed Mixed = cst\n", "rule mixed Mixed = \"t\"\n").Replace(namedASTGrammar)
+	g, err := syntax.Parse(source)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,10 +227,10 @@ func TestGenerateTypedDocumentNameCollisions(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds a standalone generated parser")
 	}
-	g, err := syntax.Parse(`type Document terminal
-type NewDocument terminal
-type ParseStats terminal
-rule main Document = "a"`)
+	g, err := syntax.Parse(`type Document = { Text string }
+type NewDocument = { Text string }
+type ParseStats = { Text string }
+rule main Document = t:("a") #atomic => Document{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -272,8 +276,8 @@ func TestGenerateObservedDocumentNameCollisions(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds a standalone generated parser")
 	}
-	g, err := syntax.Parse(`type ErrDocumentBusy terminal
-rule main ErrDocumentBusy = "a"`)
+	g, err := syntax.Parse(`type ErrDocumentBusy = { Text string }
+rule main ErrDocumentBusy = t:("a") #atomic => ErrDocumentBusy{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -21,8 +21,8 @@ func captureAccessCases() []genCase {
 		{"predicate", `rule main = xs:(y:"a"? "b")+ ({$xs[0].$y != nil} "!" / "?") $$`, []string{"ab!", "b?", "b!", "ab?"}},
 		{"chained", `rule main = xs:(ys:(z:"a" "b")+ "c")+ $$ => $xs[0].$ys[0].$z`, []string{"abc", "ababc", "c", ""}},
 		{"indexed", `rule main = xs:(y:[a-z] [0-9])+ $$ => $xs[len($xs) - 1].$y`, []string{"a1b2", ""}},
-		{"struct field", "type Out = { Y *Match; Z *Match }\nrule main = xs:(y:\"a\"? z:\"b\")+ $$ => Out{Y: $xs[0].$y, Z: $xs[0].$z}", []string{"ab", "b", ""}},
-		{"struct list", "type Out = { Ys []Match }\nrule main = xs:(-\",\" y:[a-z])* $$ => Out{Ys: map($xs, (i) => i.$y)}", []string{",a,b", "", ",a,"}},
+		{"struct field", "type Out = { Y *node[string]; Z *node[string] }\nrule main = xs:(y:\"a\"? z:\"b\")+ $$ => Out{Y: $xs[0].$y, Z: $xs[0].$z}", []string{"ab", "b", ""}},
+		{"struct list", "type Out = { Ys []node[string] }\nrule main = xs:(-\",\" y:[a-z])* $$ => Out{Ys: map($xs, (i) => i.$y)}", []string{",a,b", "", ",a,"}},
 	}
 }
 
@@ -47,15 +47,30 @@ func TestCaptureAccessAcrossBackends(t *testing.T) {
 	}
 }
 
-// A value of a terminal type is a string node, with the members of a node.
+// A value of a terminal type is a string node, with the members of a node. The terminal type still
+// reaches the engine from JSON grammars, so it is read with syntax.ParseLegacy.
 func TestNodeMembersOfTerminalTypes(t *testing.T) {
-	program := compile(t, `type Num terminal
+	program := compileLegacy(t, `type Num terminal
 type Out = { S int; E int; V string }
 rule main = "-" n:num $$ => Out{S: $n.Start, E: $n.End, V: $n.Value}
 rule num Num = [0-9]+ #atomic`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		n, err := program.ParseWith("main", "-12", ParseOptions{Backend: backend})
 		if err != nil || n.String() != `Out{E: 3, S: 1, V: "12"}` {
+			t.Fatalf("%s: %v %v", backend, n, err)
+		}
+	}
+}
+
+// A text struct value reads its text through its declared field.
+func TestTextStructFieldRead(t *testing.T) {
+	program := compile(t, `type Num = { Text string }
+type Out = { V string; N int }
+rule main = "-" n:num $$ => Out{V: $n.Text, N: len($n.Text)}
+rule num Num = t:([0-9]+ #atomic) => Num{Text: text($t)}`)
+	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		n, err := program.ParseWith("main", "-12", ParseOptions{Backend: backend})
+		if err != nil || n.String() != `Out{N: 2, V: "12"}` {
 			t.Fatalf("%s: %v %v", backend, n, err)
 		}
 	}
@@ -92,7 +107,7 @@ func TestCaptureAccessMatchesField(t *testing.T) {
 func TestCaptureAccessErrors(t *testing.T) {
 	for _, tc := range []struct{ src, want string }{
 		{`rule main = x:(y:"a" "b") => $x.$z`, "has no capture z"},
-		{"type T = { A Match }\nrule main = x:t => $x.$A\nrule t = a:\"a\" => T{A: $a}", "T has no capture A"},
+		{"type T = { A node[string] }\nrule main = x:t => $x.$A\nrule t = a:\"a\" => T{A: $a}", "T has no capture A"},
 		{`rule main = x:(y:"a" "b")? => $x.$y`, "the value may be nil"},
 		{`rule main = "a" => (1).$y`, "int has no capture y"},
 		{`rule main = x:(y:"a" "b") => $x.$y`, "Seq has no capture y"},
@@ -107,7 +122,7 @@ func TestCaptureAccessErrors(t *testing.T) {
 		}
 	}
 	// A struct value has no captures at run time either.
-	program := compile(t, "type T = { A Match }\nrule main = x:t => $x.$A\nrule t = a:\"a\" => T{A: $a}", Options{NoTypeCheck: true})
+	program := compile(t, "type T = { A node[string] }\nrule main = x:t => $x.$A\nrule t = a:\"a\" => T{A: $a}", Options{NoTypeCheck: true})
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		_, err := program.ParseWith("main", "a", ParseOptions{Backend: backend})
 		if err == nil || !strings.Contains(err.Error(), "T has no capture A") {

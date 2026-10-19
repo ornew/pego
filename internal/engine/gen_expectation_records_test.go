@@ -18,17 +18,17 @@ func wideExpectationsGrammar() string {
 	for i := 0; i < 80; i++ {
 		choices = append(choices, fmt.Sprintf("%q", fmt.Sprintf("%02d", i)))
 	}
-	return `type Token terminal
+	return `type Token = { Text string }
 rule main = ("s" &(wide "!") wide "!" / "m" (wide "!" / wide "?") / "r" (wide #recover(skip=[^;]+ ";"))+ / "e" (wide @error(message="expected a word"))) $$
-rule wide Token = ("é" (` + strings.Join(choices, " / ") + `)) #atomic`
+rule wide Token = t:("é" (` + strings.Join(choices, " / ") + `)) #atomic => Token{Text: text($t)}`
 }
 
 func TestGeneratedExpectationRecords(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(`type N terminal
-rule main N = "é"`)
+	g, err := syntax.Parse(`type N = { Text string }
+rule main N = t:("é") #atomic => N{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}

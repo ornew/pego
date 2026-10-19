@@ -57,32 +57,32 @@ rule discarded = -("é" / _) #repeat(2, )
 rule projected = xs:(f:("é" / _)) #repeat(2, ) => map($xs, (x) => x.$f)
 rule fallback = ("é" / _) #repeat(3) / "é"`,
 			[]string{"z", "zé", "o", "oé", "oéé", "t", "té", "téé", "tééé", "u", "ué", "uéé", "uééé", "a", "aé", "aéé", "d", "dé", "déé", "p", "pé", "péé", "f", "fé", "féé", "fééé", ""}},
-		{"stream capture recognition", `type N = { T []Match }
+		{"stream capture recognition", `type N = { T []node[string] }
 rule main = items:(x:"é" #atomic {text($x) == "é"}) #repeat(0, 2) #stream $$ => N{T: map($items, (i) => i.$x)}`,
 			[]string{"", "é", "éé", "ééé", "a", "éa"}},
-		{"literal text predicate dispatch", `type R = { X *Match }
+		{"literal text predicate dispatch", `type R = { X *node[string] }
 rule main = w:[^!]+ #atomic {text($w) == "a" || "b" == text($w) || text($w) == "c" || text($w) == "é" || text($w) == "😀" || text($w) == "λ" || text($w) == "日本語" || text($w) == "long-literal"} $$ => R{X: $w}`,
 			[]string{"a", "b", "c", "é", "😀", "λ", "日本語", "long-literal", "absent", "A", ""}},
-		{"literal text predicate controls", `type R = { X *Match }
+		{"literal text predicate controls", `type R = { X *node[string] }
 rule main = n:[0-9]+ #atomic {len($n) == 1 || len($n) == 2} {text($n) != "0" && text($n) != "00"} $$ => R{X: $n}`,
 			[]string{"1", "2", "0", "00", "123", "x", ""}},
-		{"literal text mixed control", `type R = { X *Match }
+		{"literal text mixed control", `type R = { X *node[string] }
 rule main = w:[a-z]+ #atomic {text($w) == "a" || len($w) == 1} $$ => R{X: $w}`,
 			[]string{"a", "b", "ab", ""}},
-		{"literal text different captures control", `type R = { X *Match }
+		{"literal text different captures control", `type R = { X *node[string] }
 rule main = x:[a-z] #atomic y:[a-z] #atomic {text($x) == "a" || text($y) == "b"} $$ => R{X: $x}`,
 			[]string{"ab", "ac", "cb", "ca", "a", ""}},
-		{"literal text negation control", `type R = { X *Match }
+		{"literal text negation control", `type R = { X *node[string] }
 rule main = w:[a-z]+ #atomic {text($w) == "a" || !(text($w) == "b")} $$ => R{X: $w}`,
 			[]string{"a", "b", "c", ""}},
-		{"literal text missing capture", `type R = { X *Match }
+		{"literal text missing capture", `type R = { X *node[string] }
 rule main = (w:[a-z] #atomic)? {text($w) == "" || text($w) == "a" || text($w) == "b" || text($w) == "a"} $$ => R{X: $w}`,
 			[]string{"", "a", "b", "c"}},
-		{"literal text variable alias control", `type R = { X Match }
+		{"literal text variable alias control", `type R = { X node[string] }
 rule main = w:[a-z]+ #atomic {alias := text($w)} {alias == "a" || alias == "b"} $$ => R{X: $w}`,
 			[]string{"a", "b", "c", ""}},
 		{"stream empty capture recognition", `rule main = (x:_) #repeat(1) #stream $$`, []string{"", "a", "é"}},
-		{"unicode scalar boundaries", `type N = { T Match }
+		{"unicode scalar boundaries", `type N = { T node[string] }
 rule main = t:("f" [\u{0}-\u{10ffff}] / "e" [\u{d7ff}-\u{e000}] / "n" [^\u{d7ff}-\u{e000}] / "l" ("\u{10ffff}" / "�" / "\u{ffff}")) #atomic $$ => N{T: $t}`,
 			[]string{"f\x00", "fa", "f\ud7ff", "f\ue000", "f\ufffd", "f\uffff", "f\U0010ffff", "e\ud7ff", "e\ue000", "e\ue001", "na", "n\ue000", "l\U0010ffff", "l\ufffd", "l\uffff", "la", "f", "f😀x"}},
 		{"long inferred chain", inferredChain(64, false, ""), []string{"a", "", "aa", "b"}},
@@ -108,14 +108,14 @@ rule number = ([0-9]+ "." [0-9]+) @diagnostic(name="number")`, []string{"n12x", 
 rule a = b "x" / "y"
 rule b = a "z" / c
 rule c = a "w" / "v"`, []string{"y", "vx", "yzxwx", "yz"}},
-		{"fold and lists", `type Op = { Left Node; Op Match; Right Node }
-type Node ~ Op | Match
-type Args = { Items []Match; N int; S string; B bool }
+		{"fold and lists", `type Op = { Left Node; Op node[string]; Right Node }
+type Node ~ Op | node[string]
+type Args = { Items []node[string]; N int; S string; B bool }
 rule main = e:(expr #atomic) ";" a:args => Args{Items: concat($a.Items, $a.Items), N: len($a.Items) * 2 - 1, S: text($e) + "!", B: !($a.N == 0) || false}
 rule expr Node = l:num rest:(op:("+" / "-") #atomic r:num)* => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.$op, Right: i.$r})
 rule args Args = first:num rest:(-"," x:num)* => Args{Items: concat(list($first), map($rest, (r) => r.$x)), N: len($rest)}
 rule num = [0-9]+ #atomic`, []string{"1+2-3;4,5,6", "1;2", "1-;2"}},
-		{"projected and indexed repetition", `type L = { Items []Match; Rest node; N int }
+		{"projected and indexed repetition", `type L = { Items []node[string]; Rest node; N int }
 rule main = first:x rest:(-"," r:x)* => L{Items: concat(list($first), map($rest, (e) => e.$r)), Rest: $rest, N: len($rest)}
 rule x = [a-z]+ #atomic`, []string{"a,b,c", "a", "a,"}},
 		{"runtime error", `type A = { N int }
@@ -510,17 +510,17 @@ func mutants(inputs []string, n int, seed uint64) []string {
 // typedGrammar exercises typed values: unions with CST members, lists of lists, optional
 // matches (s always matches, maybe empty; o may be nil), int and bool fields, a user type named like a runtime type (Node) and Error nodes
 // left by #recover.
-const typedGrammar = `type Name terminal
-type Num terminal
-type Node ~ Call | Name | Num | Seq | Error
-type Call = { Fn Name; Args []Node; Span Match; N int; Opt *Match; Rows [][]Num; Ok bool }
+const typedGrammar = `type Name = { Text string }
+type Num = { Text string }
+type Node ~ Call | Name | Num | node | error
+type Call = { Fn Name; Args []Node; Span node[string]; N int; Opt *node[string]; Rows [][]Num; Ok bool }
 rule main []Node = xs:item* $$ => concat(map($xs, (x) => x))
 rule item Node = (call / name / num / grp) #recover(skip=[^;]+ ";")
 rule call Call = f:name "(" a:args? ")" s:"!"? #atomic o:"?"? ";" => Call{Fn: $f, Args: concat($a), Span: $s, N: len($a), Opt: $o, Rows: list(list()), Ok: true}
 rule args = first:item rest:(-"," x:item)* => concat(list($first), map($rest, (r) => r.$x))
 rule grp = "[" n:num "]" ";"
-rule name Name = [a-z]+
-rule num Num = [0-9]+`
+rule name Name = t:([a-z]+) #atomic => Name{Text: text($t)}
+rule num Num = t:([0-9]+) #atomic => Num{Text: text($t)}`
 
 // TestGeneratedTypes checks ParseAST of parsers generated with Types: it compiles for every
 // grammar of the corpus and returns the errors of Parse, and it converts the trees of
@@ -535,7 +535,7 @@ func TestGeneratedTypes(t *testing.T) {
 	}
 	// Exactly at and just beyond the nesting limit, through direct rules (as in
 	// TestGeneratedParsersMatchEngine).
-	cases := append(genCorpus(t), genCase{"nesting limit", `type R = { T Match }
+	cases := append(genCorpus(t), genCase{"nesting limit", `type R = { T node[string] }
 rule main R = t:n #atomic => R{T: $t}
 rule n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2),
 		strings.Repeat("(", DefaultMaxDepth-1) + "x" + strings.Repeat(")", DefaultMaxDepth-1)}})

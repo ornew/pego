@@ -47,7 +47,7 @@ func TestPackageClause(t *testing.T) {
 }
 
 func TestSetSpanPreservesOwnership(t *testing.T) {
-	p := NewPositions("// 😀\r\ntype T terminal // trailing")
+	p := NewPositions("// 😀\r\ntype T = { Text string } // trailing")
 	dst := grammar.SourceInfo{
 		LeadingComments: " leading\r\n", TrailingComments: " trailing",
 		LeadingDetachedComments: []string{"", " detached\n"},

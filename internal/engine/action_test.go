@@ -34,14 +34,14 @@ rule main = x:-"a" "b" => T{S: text($x), N: len($x.Value)}`, ok("ab", `T{N: 0, S
 	})
 	t.Run("backtracking resets captures", func(t *testing.T) {
 		check(t, `rule main = x:"a" "b" / "a" "c" => R{X: $x}
-type R = { X *Match }`,
+type R = { X *node[string] }`,
 			ok("ac", `R{X: nil}`),
 		)
 	})
 }
 
 func TestActions(t *testing.T) {
-	check(t, `type KV = { Key Match; Op Match; Value Match }
+	check(t, `type KV = { Key node[string]; Op node[string]; Value node[string] }
 rule main = k:[a-z]+ #atomic op:"=" v:[0-9]+ #atomic => KV{Key: $k, Op: $op, Value: $v}`,
 		ok("abc=12", `KV{Key: "abc", Op: "=", Value: "12"}`),
 	)
@@ -49,7 +49,7 @@ rule main = k:[a-z]+ #atomic op:"=" v:[0-9]+ #atomic => KV{Key: $k, Op: $op, Val
 rule inner = [a-z]+ #atomic`,
 		ok("(ab)", `"ab"@inner`),
 	)
-	check(t, `type Pair = { All []Match; N int; S string; B bool }
+	check(t, `type Pair = { All []node[string]; N int; S string; B bool }
 rule main = v1:"a" v2:"b" => Pair{All: list($v1, $v2), N: 1 + 2 * 3, S: "x" + text($v2), B: !false && 1 < 2}`,
 		ok("ab", `Pair{All: ["a" "b"], B: true, N: 7, S: "xb"}`),
 	)
@@ -92,7 +92,7 @@ func TestOptionalResults(t *testing.T) {
 		ok("a", `"a"`),
 		ok("", `nil`),
 	)
-	check(t, `type C = { X Match; Next *C }
+	check(t, `type C = { X node[string]; Next *C }
 rule main *C = xs:"a"* => foldr(nil, $xs, (acc, x) => C{X: x, Next: acc})`,
 		ok("", `nil`),
 		ok("aa", `C{Next: C{Next: nil, X: "a"}, X: "a"}`),
@@ -100,8 +100,8 @@ rule main *C = xs:"a"* => foldr(nil, $xs, (acc, x) => C{X: x, Next: acc})`,
 }
 
 func TestFold(t *testing.T) {
-	src := `type Op = { Left Node; Op Match; Right Node }
-type Node ~ Op | Match
+	src := `type Op = { Left Node; Op node[string]; Right Node }
+type Node ~ Op | node[string]
 rule main Node = (
     l:num rest:(op:("+" / "-") #atomic r:num)*
 ) => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.$op, Right: i.$r})
@@ -116,7 +116,7 @@ rule num = [0-9]+ #atomic`
 }
 
 func TestListBuiltins(t *testing.T) {
-	check(t, `type Args = { Items []Match; N int }
+	check(t, `type Args = { Items []node[string]; N int }
 rule main = (
     first:item rest:(-"," x:item)*
 ) => Args{Items: concat(list($first), map($rest, (r) => r.$x)), N: len($rest) + 1}
@@ -124,7 +124,7 @@ rule item = [a-z]+ #atomic`,
 		ok("a,bc,d", `Args{Items: ["a"@item "bc"@item "d"@item], N: 3}`),
 	)
 	// An inner lambda reads a parameter of the enclosing lambda.
-	check(t, `type Pair = { G Match; X Match }
+	check(t, `type Pair = { G node[string]; X node[string] }
 rule main = gs:group* => map($gs, (g) => map(g.$xs, (x) => Pair{G: g.$k, X: x.$v}))
 rule group = k:[a-z] #atomic "=" xs:(v:[0-9] #atomic)* ";"`,
 		ok("a=12;b=3;", `[[Pair{G: "a", X: "1"} Pair{G: "a", X: "2"}] [Pair{G: "b", X: "3"}]]`),
@@ -141,7 +141,7 @@ rule word = [a-z] [a-z]`,
 
 func TestNodePositions(t *testing.T) {
 	prog := compile(t, `type Op = { Left Node; Right Node }
-type Node ~ Op | Match
+type Node ~ Op | node[string]
 rule main Node = l:num rest:(-" "* -"+" r:num)* => foldl($l, $rest, (acc, i) => Op{Left: acc, Right: i.$r})
 rule num = -" "* n:[0-9]+ #atomic => $n`)
 	n, err := prog.Parse("main", " 1 + 22+3")
@@ -207,18 +207,18 @@ func TestCompileErrors(t *testing.T) {
 		{`rule main = x`, `1:13: undefined rule x`},
 		{`rule main = "a"
 rule main = "b"`, `2:1: rule main is already defined`},
-		{`type Match terminal`, `type Match is reserved`},
-		{`type foo terminal
+		{`type Match = { Text string }`, `type Match is reserved`},
+		{`type foo = { Text string }
 rule main = "a"`, `type foo must start with an uppercase letter`},
-		{`type Foo = { bar Match }
+		{`type Foo = { bar node[string] }
 rule main = "a"`, `field bar of Foo must start with an uppercase letter`},
-		{`type A terminal
-type A terminal`, `type A is already defined`},
+		{`type A = { Text string }
+type A = { Text string }`, `type A is already defined`},
 		{`rule main = "a" => $x`, `1:20: undefined capture $x`},
 		{`rule main = "a" => Nope{}`, `Nope is not a struct type`},
-		{`type A = { X Match }
+		{`type A = { X node[string] }
 rule main = v1:"a" => A{Y: $v1}`, `A has no field Y`},
-		{`type A = { X Match }
+		{`type A = { X node[string] }
 rule main = v1:"a" => A{X: $v1, X: $v1}`, `duplicate field X`},
 		{`rule main = "a" => nope(1)`, `unknown function nope`},
 		{`rule main = "a" => len(1, 2)`, `len takes 1 arguments, got 2`},
@@ -303,7 +303,7 @@ func TestIntegerWrapAround(t *testing.T) {
 	}
 }
 
-const actionEnvironmentGrammar = `type Item = { Depth int; Tag string; Size int; Name Match; Note *Match }
+const actionEnvironmentGrammar = `type Item = { Depth int; Tag string; Size int; Name node[string]; Note *node[string] }
 type Out = { Items []Item; Count int; Sum int; Tag string }
 rule main Out = {depth := 0} {tag := "top"} peek? xs:item* $$ => Out{Items: $xs.Value, Count: len($xs), Sum: foldl(depth, $xs, (s, i) => s + i.Depth * 10 + i.Size), Tag: tag}
 rule peek = {depth := 5} (item "%" / plain "%")

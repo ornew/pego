@@ -17,11 +17,11 @@ func TestGeneratedDocumentCompletesUTF8Prefix(t *testing.T) {
 		t.Skip("builds standalone generated parsers")
 	}
 	const nodeGrammar = "rule main = (euro / other)* $$\nrule euro = [€😀]\nrule other = .\n"
-	const typedGrammar = `type Char terminal
+	const typedGrammar = `type Char = { Text string }
 type Result = { Wide []Char; Other []Char }
 rule main Result = w:wide* o:other* $$ => Result{Wide: $w.Value, Other: $o.Value}
-rule wide Char = [€😀]
-rule other Char = .
+rule wide Char = t:([€😀]) #atomic => Char{Text: text($t)}
+rule other Char = t:(.) #atomic => Char{Text: text($t)}
 `
 	const cases = `
 type documentEdit struct{ start, end int; text string }

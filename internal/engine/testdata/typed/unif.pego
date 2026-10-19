@@ -1,4 +1,4 @@
-type W terminal
-type T = { Ws []W; Any Match; L int; Txt string }
+type W = { Text string }
+type T = { Ws []W; Any node[string]; L int; Txt string }
 rule main T = ws:(w:word " "?)* a:. $$ => T{Ws: map($ws, (e) => e.$w), Any: $a, L: len($a) + len(text($ws)), Txt: text($ws) + text($a)}
-rule word W = [a-zé]+
+rule word W = t:([a-zé]+) #atomic => W{Text: text($t)}

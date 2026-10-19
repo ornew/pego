@@ -139,7 +139,7 @@ func TestParseStreamDiscardsInput(t *testing.T) {
 func TestParseStreamMemoryIsBounded(t *testing.T) {
 	grammars := map[string]string{
 		"records": records,
-		"action": `type Pair = { Key Match; Value Match }
+		"action": `type Pair = { Key node[string]; Value node[string] }
 rule main = item* #stream $$
 rule item Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" => Pair{Key: $k, Value: $v}`,
 		"lines": `rule main = line* #stream $$

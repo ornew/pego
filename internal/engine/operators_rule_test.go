@@ -56,16 +56,16 @@ func TestOperatorsRulePositions(t *testing.T) {
 	}
 }
 
-const ast = `type Num terminal
-type Bin = { L Expr; Op Match; R Expr }
+const ast = `type Num = { Text string }
+type Bin = { L Expr; Op node[string]; R Expr }
 type Neg = { X Expr }
 type Cond = { C Expr; T Expr; F Expr }
 type Call = { Fn Expr; Args []Expr }
 type Index = { X Expr; I Expr }
-type Expr ~ Num | Bin | Neg | Cond | Call | Index | Match
+type Expr ~ Num | Bin | Neg | Cond | Call | Index | node[string]
 
 rule main = x:e $$ => $x
-rule num Num = [0-9]+
+rule num Num = t:([0-9]+) #atomic => Num{Text: text($t)}
 rule ident = [a-z]+ #atomic
 rule args = (
     first:level(e, assignment) rest:(" "* "," r:level(e, assignment))*
@@ -89,13 +89,13 @@ rule e Expr = operators {
 
 func TestOperatorsRuleActions(t *testing.T) {
 	check(t, ast,
-		ok("1+2-3", `Bin{L: Bin{L: "1"@num, Op: "+", R: "2"@num}, Op: "-", R: "3"@num}`),
+		ok("1+2-3", `Bin{L: Bin{L: Num{Text: "1"}, Op: "+", R: Num{Text: "2"}}, Op: "-", R: Num{Text: "3"}}`),
 		ok("a ? b : c ? d : e", `Cond{C: "a"@ident, F: Cond{C: "c"@ident, F: "e"@ident, T: "d"@ident}, T: "b"@ident}`),
 		ok("a ? b = c : d", `Cond{C: "a"@ident, F: "d"@ident, T: Bin{L: "b"@ident, Op: "=", R: "c"@ident}}`),
-		ok("-a(1)[2]", `Neg{X: Index{I: "2"@num, X: Call{Args: ["1"@num], Fn: "a"@ident}}}`),
+		ok("-a(1)[2]", `Neg{X: Index{I: Num{Text: "2"}, X: Call{Args: [Num{Text: "1"}], Fn: "a"@ident}}}`),
 		ok("f()", `Call{Args: [], Fn: "f"@ident}`),
 		// The comma operator is not parsed inside arguments.
-		ok("f(a = 1, b), c", `Bin{L: Call{Args: [Bin{L: "a"@ident, Op: "=", R: "1"@num} "b"@ident], Fn: "f"@ident}, Op: ",", R: "c"@ident}`),
+		ok("f(a = 1, b), c", `Bin{L: Call{Args: [Bin{L: "a"@ident, Op: "=", R: Num{Text: "1"}} "b"@ident], Fn: "f"@ident}, Op: ",", R: "c"@ident}`),
 		// "-" and "->" are distinguished by longest match even at different binding levels.
 		ok("a->b-c", `Bin{L: "a"@ident, Op: "->", R: Bin{L: "b"@ident, Op: "-", R: "c"@ident}}`),
 		ok("a-b->c", `Bin{L: Bin{L: "a"@ident, Op: "-", R: "b"@ident}, Op: "->", R: "c"@ident}`),
@@ -119,7 +119,7 @@ func TestOperatorsRulePositionsWithActions(t *testing.T) {
 
 func TestOperatorsRuleJuxtaposition(t *testing.T) {
 	check(t, `type App = { F Expr; X Expr }
-type Expr ~ App | Match
+type Expr ~ App | node[string]
 rule main = x:e $$ => $x
 rule e Expr = operators {
     skip " "*
@@ -177,14 +177,14 @@ rule e = operators {
 	)
 }
 
-const restrictedPrefix = `type Atom terminal
-type Prefix = { Op Match; X Expr }
-type Binary = { L Expr; Op Match; R Expr }
-type Postfix = { X Expr; Op Match }
+const restrictedPrefix = `type Atom = { Text string }
+type Prefix = { Op node[string]; X Expr }
+type Binary = { L Expr; Op node[string]; R Expr }
+type Postfix = { X Expr; Op node[string] }
 type Expr ~ Atom | Prefix | Binary | Postfix
 
 rule main = x:level(e, mul) $$ => $x
-rule atom Atom = "é" / "x" / "y" / "z"
+rule atom Atom = t:("é" / "x" / "y" / "z") #atomic => Atom{Text: text($t)}
 rule e Expr = operators {
     operand atom
     level loose {
@@ -202,15 +202,15 @@ rule e Expr = operators {
 
 func TestOperatorsRuleRestrictedPrefix(t *testing.T) {
 	check(t, restrictedPrefix,
-		ok("~é", `Prefix{Op: "~", X: "é"@atom}`),
-		ok("~~x", `Prefix{Op: "~", X: Prefix{Op: "~", X: "x"@atom}}`),
-		ok("x*y", `Binary{L: "x"@atom, Op: "*", R: "y"@atom}`),
-		ok("é!", `Postfix{Op: "!", X: "é"@atom}`),
-		ok("x^y^z", `Binary{L: "x"@atom, Op: "^", R: Binary{L: "y"@atom, Op: "^", R: "z"@atom}}`),
+		ok("~é", `Prefix{Op: "~", X: Atom{Text: "é"}}`),
+		ok("~~x", `Prefix{Op: "~", X: Prefix{Op: "~", X: Atom{Text: "x"}}}`),
+		ok("x*y", `Binary{L: Atom{Text: "x"}, Op: "*", R: Atom{Text: "y"}}`),
+		ok("é!", `Postfix{Op: "!", X: Atom{Text: "é"}}`),
+		ok("x^y^z", `Binary{L: Atom{Text: "x"}, Op: "^", R: Binary{L: Atom{Text: "y"}, Op: "^", R: Atom{Text: "z"}}}`),
 		// A lower-level prefix still uses its own level for its right operand.
-		ok("~é+y", `Prefix{Op: "~", X: Binary{L: "é"@atom, Op: "+", R: "y"@atom}}`),
-		ok("x*~y+z", `Binary{L: "x"@atom, Op: "*", R: Prefix{Op: "~", X: Binary{L: "y"@atom, Op: "+", R: "z"@atom}}}`),
-		ok("x^~y+z", `Binary{L: "x"@atom, Op: "^", R: Prefix{Op: "~", X: Binary{L: "y"@atom, Op: "+", R: "z"@atom}}}`),
+		ok("~é+y", `Prefix{Op: "~", X: Binary{L: Atom{Text: "é"}, Op: "+", R: Atom{Text: "y"}}}`),
+		ok("x*~y+z", `Binary{L: Atom{Text: "x"}, Op: "*", R: Prefix{Op: "~", X: Binary{L: Atom{Text: "y"}, Op: "+", R: Atom{Text: "z"}}}}`),
+		ok("x^~y+z", `Binary{L: Atom{Text: "x"}, Op: "^", R: Prefix{Op: "~", X: Binary{L: Atom{Text: "y"}, Op: "+", R: Atom{Text: "z"}}}}`),
 		// Tail operators below the active minimum are left for the caller.
 		fails("x+y", "end of input"),
 		fails("x|y", "end of input"),
@@ -224,7 +224,7 @@ func TestOperatorsRuleRestrictedPrefix(t *testing.T) {
 	// not share a result with a different minimum level, even after a prefix.
 	check(t, strings.Replace(restrictedPrefix, `rule main = x:level(e, mul) $$ => $x`,
 		`rule main = &(level(e, mul) "|") x:e $$ => $x`, 1),
-		ok("~é+y|z", `Binary{L: Prefix{Op: "~", X: Binary{L: "é"@atom, Op: "+", R: "y"@atom}}, Op: "|", R: "z"@atom}`),
+		ok("~é+y|z", `Binary{L: Prefix{Op: "~", X: Binary{L: Atom{Text: "é"}, Op: "+", R: Atom{Text: "y"}}}, Op: "|", R: Atom{Text: "z"}}`),
 		fails("~é+y", `1:1: syntax error`),
 	)
 }

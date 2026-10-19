@@ -13,7 +13,7 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-const castRules = "type Num terminal\ntype P = { N Num }\nrule n Num = [0-9]+\nrule w = [a-z]+\nrule pair = n:n \"=\" => P{N: $n}\n"
+const castRules = "type Num = { Text string }\ntype P = { N Num }\nrule n Num = t:([0-9]+) #atomic => Num{Text: text($t)}\nrule w = [a-z]+\nrule pair = n:n \"=\" => P{N: $n}\n"
 
 func castCases() []genCase {
 	return []genCase{
@@ -52,11 +52,11 @@ func TestCastAcrossBackends(t *testing.T) {
 
 func TestCastValues(t *testing.T) {
 	for _, tc := range []struct{ src, input, want string }{
-		{"rule main = x:(n / w) $$ => $x.(Num)\n" + castRules, "12", `"value":"12","rule":"n"`},
+		{"rule main = x:(n / w) $$ => $x.(Num)\n" + castRules, "12", `"type":"Num","fields":{"Text":"12"}`},
 		{"rule main = x:(n / w) $$ => $x.(Num)\n" + castRules, "ab", "cannot cast List to Num"},
 		{"rule main = x:(n+ / w) $$ => $x.([]Num)\n" + castRules, "ab", "cannot cast List to []Num"},
 		{"rule main = x:(n / w)? $$ => $x.(*Num)\n" + castRules, "", "null"},
-		{"rule main = x:(pair / w) $$ => $x.(P).N\n" + castRules, "1=", `"value":"1","rule":"n"`},
+		{"rule main = x:(pair / w) $$ => $x.(P).N\n" + castRules, "1=", `"type":"Num","fields":{"Text":"1"}`},
 		{"rule main = x:(n / w) ({$x.(Num) == $x} \"!\" / \"?\") $$\n" + castRules, "a?", `"value":"?"`},
 	} {
 		program := compile(t, tc.src)
@@ -103,7 +103,7 @@ func TestCastErrors(t *testing.T) {
 }
 
 func TestCastSyntax(t *testing.T) {
-	g, err := syntax.Parse("type Foo = { A Match }\ntype Word terminal\nrule main = x:\"a\" => $x.( []Foo | *Word ).Start\nrule one = \"a\" => (1).(int)")
+	g, err := syntax.Parse("type Foo = { A node[string] }\ntype Word = { Text string }\nrule main = x:\"a\" => $x.( []Foo | *Word ).Start\nrule one = \"a\" => (1).(int)")
 	if err != nil {
 		t.Fatal(err)
 	}

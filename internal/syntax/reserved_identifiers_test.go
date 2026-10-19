@@ -10,7 +10,7 @@ import (
 func TestReservedIdentifierPrefix(t *testing.T) {
 	for _, src := range []string{
 		`package _example; rule main = "x"`,
-		`rule _main = "x"`, `rule _ = "x"`, `type _Node terminal`,
+		`rule _main = "x"`, `rule _ = "x"`, `type _Node = { Text string }`,
 		`rule main = _helper`, `rule main = _capture:"x"`,
 		`rule main = _:"x"`,
 		`rule main = __proto__:"x"`,

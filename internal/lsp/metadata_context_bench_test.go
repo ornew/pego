@@ -15,11 +15,11 @@ import (
 func metadataWideSource(n int, invalid bool) string {
 	var b strings.Builder
 	for i := range n {
-		fmt.Fprintf(&b, "// Definition %d\ntype T%d terminal\nrule r%d T%d = ", i, i, i, i)
+		fmt.Fprintf(&b, "// Definition %d\ntype T%d = { Text string }\nrule r%d T%d = ", i, i, i, i)
 		if invalid {
 			b.WriteString("missing\n")
 		} else {
-			b.WriteString("\"a\"\n")
+			fmt.Fprintf(&b, "t:(\"a\") #atomic => T%d{Text: text($t)}\n", i)
 		}
 	}
 	return b.String()

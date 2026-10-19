@@ -9,7 +9,8 @@ import (
 )
 
 func TestOutputSchemaListQueries(t *testing.T) {
-	token := QueryPattern{Category: "node", Value: &QueryPattern{Category: "string"}, Capture: "value"}
+	token := QueryPattern{Type: "Token", Fields: []QueryFieldPattern{{Name: "Text", Pattern: QueryPattern{Category: "string"}}}, Capture: "value"}
+	nodeToken := QueryPattern{Category: "node", Value: &QueryPattern{Category: "string"}, Capture: "value"}
 	list := func(child QueryPattern) QueryPattern {
 		return QueryPattern{Category: "list", Elements: []QueryPattern{child}}
 	}
@@ -23,21 +24,21 @@ func TestOutputSchemaListQueries(t *testing.T) {
 		name, source, input string
 		pattern             QueryPattern
 	}{
-		{"repetition", `rule main = "x"*`, "x", listNode(token)},
+		{"repetition", `rule main = "x"*`, "x", listNode(nodeToken)},
 		{"empty repetition", `rule main = "x"*`, "", QueryPattern{Category: "node", Value: &QueryPattern{Category: "list"}, Capture: "value"}},
-		{"typed field", `type Token terminal
+		{"typed field", `type Token = { Text string }
 type Holder = { Values []Token }
-rule main = "x" => Holder{Values: []Token{Token{"one"}}}`, "x", holder(list(token))},
-		{"empty typed field", `type Token terminal
+rule main = "x" => Holder{Values: []Token{Token{Text: "one"}}}`, "x", holder(list(token))},
+		{"empty typed field", `type Token = { Text string }
 type Holder = { Values []Token }
 rule main = "x" => Holder{Values: []Token{}}`, "x", holder(QueryPattern{Category: "list", Capture: "value"})},
-		{"aliased field", `type Token terminal
+		{"aliased field", `type Token = { Text string }
 type Tokens ~ []Token
 type Holder = { Values Tokens }
-rule main = "x" => Holder{Values: []Token{Token{"one"}}}`, "x", holder(list(token))},
-		{"nested typed field", `type Token terminal
+rule main = "x" => Holder{Values: []Token{Token{Text: "one"}}}`, "x", holder(list(token))},
+		{"nested typed field", `type Token = { Text string }
 type Holder = { Values [][]Token }
-rule main = "x" => Holder{Values: [][]Token{[]Token{Token{"one"}}}}`, "x", holder(list(list(token)))},
+rule main = "x" => Holder{Values: [][]Token{[]Token{Token{Text: "one"}}}}`, "x", holder(list(list(token)))},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			g, err := syntax.Parse(tc.source)

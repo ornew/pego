@@ -7,9 +7,11 @@ import (
 	"github.com/ornew/pego/grammar"
 )
 
+// The positional constructors are terminal constructors, which only grammar ASTs of earlier
+// versions hold; ParseLegacy reads them.
 func TestTypedConstructorsParseAndFormat(t *testing.T) {
 	const src = `type Foo = { Name string; Children []Foo }
-type Int terminal
+type Int = { Text string }
 type Pair = { Left []Foo; Right []Foo }
 rule empty = "x" => []Foo{}
 rule nested = "x" => [][]Foo{[]Foo{Foo{}}}
@@ -22,7 +24,7 @@ rule grouped = "x" => (
     [][]Foo{[]Foo{Foo{}}}
 )
 `
-	g, err := Parse(src)
+	g, err := ParseLegacy(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +86,7 @@ rule grouped = "x" => (
 			t.Errorf("formatted grammar lacks %q:\n%s", want, formatted)
 		}
 	}
-	if again, err := Parse(formatted); err != nil {
+	if again, err := ParseLegacy(formatted); err != nil {
 		t.Fatalf("formatted source does not parse: %v\n%s", err, formatted)
 	} else if out := grammar.Format(again); out != formatted {
 		t.Fatalf("format is not stable:\n%s\n%s", formatted, out)

@@ -30,15 +30,15 @@ func TestGeneratedTypedOutputRetentionFixture(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(`type Token terminal
+	g, err := syntax.Parse(`type Token = { Text string }
 type Pair = { Text string; Left Token; Right Token }
 type Values = { Items []Token }
 type LargeValues = { Items []Pair }
 type SmallValues = { Items []Pair }
 rule main = leaf
 rule leaf Token = x:discarded x:small => $x
-rule match Match = discardedMatch y:"b" #atomic => $y
-rule discardedMatch Match = x:"é"+ #atomic => $x
+rule match node[string] = discardedMatch y:"b" #atomic => $y
+rule discardedMatch node[string] = x:"é"+ #atomic => $x
 rule structure Pair = discardedPair y:small => Pair{Text: "b", Left: $y, Right: $y}
 rule list Values = discarded ys:small+ => Values{Items: $ys.Value}
 rule slice SmallValues = discardedHolder filler filler filler filler filler filler filler xs:smallPair+ => SmallValues{Items: $xs.Value}
@@ -47,9 +47,9 @@ rule largePair Pair = x:"é"+ #atomic => Pair{Text: text($x)}
 rule filler Pair = "f" => Pair{Text: "f"}
 rule smallPair Pair = "b" => Pair{Text: "b"}
 rule discardedPair Pair = x:"é"+ #atomic => Pair{Text: text($x)}
-rule discarded Token = large "!" / large
-rule large Token = "é"+
-rule small Token = "b"
+rule discarded Token = t:(large "!" / large) #atomic => Token{Text: text($t)}
+rule large Token = t:("é"+) #atomic => Token{Text: text($t)}
+rule small Token = t:("b") #atomic => Token{Text: text($t)}
 `)
 	if err != nil {
 		t.Fatal(err)

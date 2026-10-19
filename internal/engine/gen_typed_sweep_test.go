@@ -13,23 +13,23 @@ import (
 )
 
 const typedSweepClosedGrammar = `
-type Token terminal
+type Token = { Text string }
 type ScalarOwner = { Active bool; Count int; Text string; Child *Token; Next *string }
-type Pair = { Left Token; Right Token; M Match; Label string }
+type Pair = { Left Token; Right Token; M node[string]; Label string }
 type Box = { Items []Pair; Nested [][]Token; S []string; N []int; B []bool; Opt *string; PI *int; PB *bool }
 type Tree ~ Branch | Token | error
 type Branch = { Left Tree; Right Tree }
 type Expr ~ Bin | Token
-type Bin = { Left Expr; Right Expr; Op Match }
+type Bin = { Left Expr; Right Expr; Op node[string] }
 rule main Box = discarded x:token => Box{Items: []Pair{Pair{Left: $x, Right: $x, Label: "b"}}, Nested: [][]Token{[]Token{$x}}, Opt: "b", PI: 7, PB: true}
-rule discarded Token = "é"+
-rule token Token = "b"
-rule constructed Token = discarded "b" => Token{"b"}
-rule match Match = "b" #atomic
-rule discardedMatch Match = "é"+ #atomic
-rule matches Match = discardedMatch y:"b" #atomic => $y
+rule discarded Token = t:("é"+) #atomic => Token{Text: text($t)}
+rule token Token = t:("b") #atomic => Token{Text: text($t)}
+rule constructed Token = discarded "b" => Token{Text: "b"}
+rule match node[string] = "b" #atomic
+rule discardedMatch node[string] = "é"+ #atomic
+rule matches node[string] = discardedMatch y:"b" #atomic => $y
 rule recovery []Tree = xs:(recoverItem #recover(skip=([^;]+ ";")))* => $xs.Value
-rule recoverItem Token = "b;"
+rule recoverItem Token = t:("b;") #atomic => Token{Text: text($t)}
 rule fold Tree = first:token rest:token* => foldl($first, $rest, (acc, i) => Branch{Left: acc, Right: acc})
 rule lr Tree = branch / token
 rule branch Branch = prev:lr "b" => Branch{Left: $prev, Right: $prev}
@@ -45,28 +45,28 @@ rule nilValue = "n" => nil
 `
 
 const typedSweepOpenGrammar = `
-type Token terminal
-type Choice ~ Token | Match | error
-type Mixed ~ Token | Match | int | error
-type Record = { A any; Raw Seq; Items []Choice; M Mixed; O *string }
+type Token = { Text string }
+type Choice ~ Token | node[string] | error
+type Mixed ~ Token | node[string] | int | error
+type Record = { A any; Raw node; Items []Choice; M Mixed; O *string }
 rule main Record = x:"b" #atomic raw:("?" "?") => Record{A: $x, Raw: $raw, Items: []Choice{$x}, M: $x, O: "b"}
-rule token Token = "b"
+rule token Token = t:("b") #atomic => Token{Text: text($t)}
 rule recovery Record = x:(token #recover(skip=([^;]+ ";"))) => Record{A: $x, M: $x, Items: []Choice{$x}}
 `
 
 const typedSweepCollisionGrammar = `
-type ParseAST terminal
-type ParseAST_ terminal
-type ParseRuleAST terminal
-type WithMaxDepth terminal
-type ParseOption terminal
-type Span terminal
+type ParseAST = { Text string }
+type ParseAST_ = { Text string }
+type ParseRuleAST = { Text string }
+type WithMaxDepth = { Text string }
+type ParseOption = { Text string }
+type Span = { Text string }
 type Tokens ~ []ParseAST
 type Matrix ~ []Tokens
 type AliasBox = { Items Tokens; Nested Matrix }
 rule main AliasBox = x:token => AliasBox{Items: []ParseAST{$x}, Nested: [][]ParseAST{[]ParseAST{$x}}}
-rule token ParseAST = "b"
-rule cascade ParseAST_ = "c"
+rule token ParseAST = t:("b") #atomic => ParseAST{Text: text($t)}
+rule cascade ParseAST_ = t:("c") #atomic => ParseAST_{Text: text($t)}
 `
 
 // PEGO_TYPED_OUTPUT_SWEEP_DIR exports same-generator reference/prototype modules
@@ -315,7 +315,7 @@ func TestSweepOpenValues(t *testing.T) {
   recovered,e:=ParseRuleAST("recovery","1;",WithUnit(unit)); if _,ok:=e.(SyntaxErrors); !ok {t.Fatal("open recovery",e)}
   r:=recovered.(*Record); if r.A.(*Error).Text!="1;" || r.M.(*Error).Text!="1;" || r.Items[0].(*Error).Text!="1;" {t.Fatal("open recovered values")}
   if _,e:=ParseAST("b",WithUnit(unit)); e==nil {t.Fatal("failed input")}
-  if v.A.(*TNode[string]).Value!="b" || v.Raw.Value.([]any)[0].(*TNode[string]).Value!="?" || r.A.(*Error).Text!="1;" {t.Fatal("conversion ownership")}
+  if v.A.(*TNode[string]).Value!="b" || v.Raw.(*TNode[any]).Value.([]any)[0].(*TNode[string]).Value!="?" || r.A.(*Error).Text!="1;" {t.Fatal("conversion ownership")}
  }
 }
 `

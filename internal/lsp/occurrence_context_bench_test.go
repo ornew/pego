@@ -79,7 +79,7 @@ type occurrenceResponseCase struct {
 // Use only the existing request API so this corpus can also run at the parent
 // revision. Both success values and exact error responses are fingerprinted.
 func occurrenceResponseCorpus() []occurrenceResponseCase {
-	src := "type T terminal\ntype U terminal\nrule atom T = \"a\"\nrule other = \"b\"\nrule main = atom atom\n"
+	src := "type T = { Text string }\ntype U = { Text string }\nrule atom T = t:(\"a\") #atomic => T{Text: text($t)}\nrule other = \"b\"\nrule main = atom atom\n"
 	a := analyze(src)
 	var cases []occurrenceResponseCase
 	add := func(name string, a *analysis, method string, line, char int, include bool, newName string) {
@@ -99,7 +99,7 @@ func occurrenceResponseCorpus() []occurrenceResponseCase {
 		add("rename/type/"+name, a, "rename", 0, 6, true, name)
 	}
 	for _, method := range []string{"prepareRename", "rename"} {
-		add(method+"/builtin", analyze("type T = { M Match }\nrule a = \"a\"\n"), method, 0, 14, true, "Renamed")
+		add(method+"/builtin", analyze("type T = { M node[string] }\nrule a = \"a\"\n"), method, 0, 14, true, "Renamed")
 		add(method+"/undefined", analyze("rule a = missing\n"), method, 0, 10, true, "renamed")
 		add(method+"/syntax-error", analyze("rule a = b }\nrule b = ("), method, 0, 5, true, "renamed")
 	}

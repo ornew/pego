@@ -21,7 +21,7 @@ func TestDuplicateCaptureTypes(t *testing.T) {
 		{"repetition scope", `rule main = v1:(x:"a" x:"b")* $$ => $v1`, "[]Seq{x: Match}", ""},
 		{"nil action", "rule empty = \"\" => nil\nrule main = x:empty x:empty", "Seq{x: nil}", ""},
 		{"action and predicate", `rule main = x:"a" x:"b" {text($x) == "b"} => $x`, "Match", ""},
-		{"incompatible action", "type R = { X Match }\nrule item = k:\"a\" v:(y:\"b\")*\nrule main = x:item x:item => R{X: $x}", "R", "3:32: cannot use Seq{k: Match, v: []Seq{y: Match}} as Match in field X of R"},
+		{"incompatible action", "type R = { X node[string] }\nrule item = k:\"a\" v:(y:\"b\")*\nrule main = x:item x:item => R{X: $x}", "R", "3:32: cannot use Seq{k: Match, v: []Seq{y: Match}} as Match in field X of R"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p, err := captureCheckProgram(tc.src)
@@ -73,7 +73,7 @@ func TestDuplicateCaptureDiagnosticPositions(t *testing.T) {
 	for _, n := range []int{1, 64, 1024} {
 		t.Run(fmt.Sprint(n), func(t *testing.T) {
 			line := `rule main = ` + strings.Repeat(`"😀" x:item `, n) + `=> R{X: $x}`
-			src := "type R = { X Match }\nrule item = k:\"a\" v:(y:\"b\")*\n" + line
+			src := "type R = { X node[string] }\nrule item = k:\"a\" v:(y:\"b\")*\n" + line
 			col := utf8.RuneCountInString(line[:strings.Index(line, "X:")]) + 1
 			want := fmt.Sprintf("3:%d: cannot use Seq{k: Match, v: []Seq{y: Match}} as Match in field X of R", col)
 			if got := compileError(t, src); got != want {

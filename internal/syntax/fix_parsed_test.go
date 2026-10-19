@@ -143,7 +143,7 @@ func TestFixLambdaParams(t *testing.T) {
 		{"rule main = xs:(y:\"a\" \"b\")+ => $xs[0].y", "rule main = xs:(y:\"a\" \"b\")+ => $xs[0].$y", []string{"abab"}},
 		{"rule main = xs:(y:\"a\" \"b\")* => filter(map($xs, (i) => i.y), (j) => j.endPos > 1)", "rule main = xs:(y:\"a\" \"b\")* => filter(map($xs, (i) => i.$y), (j) => j.End > 1)", []string{"abab"}},
 		{"rule main = x:\"a\" {$x.startPos == 0 && $x.endPos == 1}", "rule main = x:\"a\" {$x.Start == 0 && $x.End == 1}", []string{"a"}},
-		{"type T = { A Match }\nrule main = x:t => $x.A\nrule t = a:\"a\" => T{A: $a}", "type T = { A node[string] }\nrule main = x:t => $x.A\nrule t = a:\"a\" => T{A: $a}", []string{"a"}},
+		{"type T = { A node[string] }\nrule main = x:t => $x.A\nrule t = a:\"a\" => T{A: $a}", "type T = { A node[string] }\nrule main = x:t => $x.A\nrule t = a:\"a\" => T{A: $a}", []string{"a"}},
 		{"rule main = xs:(y:\"a\" \"b\")* => map($xs, (i) => i.$y)", "rule main = xs:(y:\"a\" \"b\")* => map($xs, (i) => i.$y)", []string{"ab"}},
 		// Positional captures and parameters in one lambda.
 		{"rule main = \"b\" xs:\"a\"* => map($2, (e) => list($1, $e))", "rule main = v1:\"b\" xs:\"a\"* => map($xs, (e) => list($v1, e))", []string{"baa"}},
@@ -215,7 +215,7 @@ func TestCaptureMemberRejected(t *testing.T) {
 	for _, src := range []string{
 		`rule main = x:"a" => list($x.children)`,
 		`rule main = x:"a" {$x.startPos == 0 && $x.endPos == 1}`,
-		"type T = { A Match }\nrule main = x:t => $x.A\nrule t = a:\"a\" => T{A: $a}",
+		"type T = { A node[string] }\nrule main = x:t => $x.A\nrule t = a:\"a\" => T{A: $a}",
 	} {
 		if _, err := syntax.Parse(src); err != nil {
 			t.Errorf("%q: %v", src, err)

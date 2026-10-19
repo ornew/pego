@@ -89,7 +89,7 @@ function stable(x: unknown): string { return JSON.stringify(x, (_key, v: unknown
 `
 
 func TestGeneratedTSTypedConsumers(t *testing.T) {
-	src := `type Word terminal
+	src := `type Word = { Text string }
 type W ~ Word
 type Words ~ []Word
 type Optional ~ *Word
@@ -97,14 +97,14 @@ type Integer ~ int
 type Text ~ string
 type Flag ~ bool
 type MaybeInteger ~ *int
-type Choice ~ Word | Match
-type ChoiceAgain ~ Match | Word
+type Choice ~ Word | node[string]
+type ChoiceAgain ~ node[string] | Word
 type Mixed ~ Word | int
 type Open ~ any
-type Raw ~ Seq
+type Raw ~ node
 type R = { W W; Items Words; Missing Words; Empty Words; Optional Optional; I Integer; Big Integer; S Text; B Flag; OpenItems []any; O MaybeInteger; M Mixed; U Choice; Any Open; Raw Raw }
-rule main R = w:word xs:word* raw:("!"? "?"?) => R{W: $w, Items: $xs.Value, OpenItems: $xs.Value, Empty: list(), I: -7 / 2, Big: 9223372036854775807, S: text($w), B: true, M: 9007199254740992, U: $w, Any: $raw, Raw: $raw}
-rule word Word = [a-zあ-ん😀]+`
+rule main R = w:word xs:word* raw:("!"? "?"?) => R{W: $w, Items: $xs.Value, OpenItems: $xs.Value, Empty: list(), I: -7 / 2, Big: 9223372036854775807, S: $w.Text, B: true, M: 9007199254740992, U: $w, Any: $raw, Raw: $raw}
+rule word Word = t:([a-zあ-ん😀]+) #atomic => Word{Text: text($t)}`
 	consumer := `import { parse, parseAST, parseASTWithOptions, CodePoints, Bytes, Node } from "./parser.ts";
 import type { R_, W, Words, Optional, Integer, Text, Flag, MaybeInteger, Choice, ChoiceAgain, Mixed, Open, Raw, TypedParseResult } from "./parser.ts";
 ` + tsTypedAssert + `
@@ -112,10 +112,10 @@ const r: TypedParseResult<R_ | null> = parseAST("😀あ!?");
 check(r.error === null && r.value !== null, "parse success");
 const v = r.value;
 const types: [W, Words, Optional, Integer, Text, Flag, MaybeInteger, Choice, ChoiceAgain, Mixed, Open, Raw] = [v.W, v.Items, v.Optional, v.I, v.S, v.B, v.O, v.U, v.U, v.M, v.Any, v.Raw];
-check(types.length === 12 && v.W?.type === "Word" && v.W.text === "😀あ", "exported types/terminal");
+check(types.length === 12 && v.W?.type === "Word" && v.W.Text === "😀あ", "exported types/text struct");
 check(v.Items?.length === 0 && v.Empty?.length === 0 && v.Missing === null && v.Optional === null && v.O === null, "nil/empty/optionals");
 check(v.I === -3 && v.Big === 9223372036854775807n && v.M === 9007199254740992n && v.S === "😀あ" && v.B, "scalar representation");
-check(v.Raw !== null && !(v.Raw instanceof Node) && v.Raw.type === "Seq" && v.Any === v.Raw, "CST types convert to shared TNode values");
+check(v.Raw !== null && !(v.Raw instanceof Node) && (v.Raw as {type?: string}).type === "Seq" && v.Any === v.Raw, "CST types convert to shared TNode values");
 check(v.Items !== v.OpenItems, "list representations stay distinct");
 check(v.start === 0 && v.end === 4 && v.W.end === 2, "code point spans");
 const b = parseASTWithOptions("😀あ!?", {unit: Bytes, maxDepth: 0});
@@ -128,7 +128,7 @@ let units = 0, depths = 0;
 let nested: ReturnType<typeof parseAST> | null = null;
 const o = { get unit() { units++; nested = parseAST("z"); return Bytes; }, get maxDepth() { depths++; return 0; } };
 check(parseASTWithOptions("a", o).error === null && units === 1 && depths === 1, "options read once");
-check((nested as ReturnType<typeof parseAST> | null)?.value?.W?.text === "z", "reentrant getter invocation");
+check((nested as ReturnType<typeof parseAST> | null)?.value?.W?.Text === "z", "reentrant getter invocation");
 for (const d of [-1, 1.5, Number.NaN, Number.MAX_SAFE_INTEGER + 1]) {
   const bad = parseASTWithOptions("a", {maxDepth:d});
   check(bad.value === null && bad.error?.message.includes("non-negative safe integer"), "invalid depth");
@@ -149,7 +149,7 @@ func TestGeneratedTSTypedNameCollisions(t *testing.T) {
 		if name == "Match" || name == "Error" {
 			continue
 		}
-		fmt.Fprintf(&src, "type %s terminal\nrule n%d %s = \"x\"\n", name, i, name)
+		fmt.Fprintf(&src, "type %s = { Text string }\nrule n%d %s = t:(\"x\") #atomic => %s{Text: text($t)}\n", name, i, name, name)
 		export := name + "_"
 		if name == "R0_" {
 			export = "R0__"
@@ -163,13 +163,13 @@ func TestGeneratedTSTypedNameCollisions(t *testing.T) {
 }
 
 func TestGeneratedTSTypedRecovery(t *testing.T) {
-	src := `type Word terminal
-type U ~ Word | Match | error
+	src := `type Word = { Text string }
+type U ~ Word | node[string] | error
 type Mixed ~ Word | int | error
 type WE ~ Word | error
 type R = { Specific WE; U U; M Mixed; A any; Items []WE; OpenItems []any }
 rule main R = w:word #recover(skip=[^;]+ ";") xs:word #recover(skip=[^;]+ ";")* => R{Specific: $w, U: $w, M: $w, A: $w, Items: $xs.Value, OpenItems: $xs.Value}
-rule word Word = [a-z]+ ";"`
+rule word Word = t:([a-z]+ ";") #atomic => Word{Text: text($t)}`
 	consumer := `import {parse, parseAST, SyntaxErrors, Bytes, CodePoints} from "./parser.ts";
 ` + tsTypedAssert + `
 for (const unit of [CodePoints, Bytes]) {
@@ -181,7 +181,7 @@ for (const unit of [CodePoints, Bytes]) {
   check(typeof v.A === "object" && v.A !== null && !Array.isArray(v.A) && v.A.type === "Error", "any recovery");
   check(v.M === v.A && v.M === v.U && v.Specific === v.U, "equivalent representations share converted Error");
   const first = v.Items?.[0];
-  check(v.Items?.length === 2 && first != null && "text" in first && first.text === "abc;" && v.Items[1]?.type === "Error", "list recovery Error element");
+  check(v.Items?.length === 2 && first != null && "Text" in first && first.Text === "abc;" && v.Items[1]?.type === "Error", "list recovery Error element");
   check(v.OpenItems !== v.Items && v.OpenItems?.[0] === v.Items?.[0], "list recipes/cache sharing");
   const openError = v.OpenItems?.[1]; check(typeof openError === "object" && openError !== null && !Array.isArray(openError) && openError?.type === "Error", "open list retains Error");
   const before = stable(v); parseAST("abc;"); check(stable(v) === before, "recovery ownership");
@@ -191,7 +191,7 @@ for (const unit of [CodePoints, Bytes]) {
 }
 
 func TestGeneratedTSTypedUnicodeIntegers(t *testing.T) {
-	src := `type R = { Text string; Token Match; A int; B int; C int; D int; E int; F int; G int; O *int }
+	src := `type R = { Text string; Token node[string]; A int; B int; C int; D int; E int; F int; G int; O *int }
 rule main R = x:.* #atomic => R{Text: text($x), Token: $x, A: 9007199254740991, B: 9007199254740992, C: -9007199254740992, D: 9223372036854775807 + 1, E: -7 % 2, F: -7 / 2, G: 9223372036854775807}`
 	consumer := `import {parse, parseAST, Bytes, CodePoints, Node} from "./parser.ts";
 ` + tsTypedAssert + `
@@ -208,10 +208,10 @@ check(parseAST(new Uint8Array([0xff]), CodePoints).value?.Text === "�", "decod
 	runTypedTSFixture(t, src, consumer, GenOptions{}, "")
 }
 
-const tsTypedDAGTypes = `type Leaf terminal
+const tsTypedDAGTypes = `type Leaf = { Text string }
 type Tree ~ Branch | Leaf
 type Branch = { Left Tree; Right Tree }
-rule leaf Leaf = "x"
+rule leaf Leaf = t:("x") #atomic => Leaf{Text: text($t)}
 `
 
 func TestGeneratedTSTypedSharedDAG(t *testing.T) {
@@ -251,17 +251,17 @@ func TestGeneratedTSTypedNilAndDepth(t *testing.T) {
 	for name, src := range map[string]string{
 		"any":  `rule main any = "" => nil`,
 		"node": `rule main *node = "" => nil`,
-		"union": `type T terminal
-type U ~ T | Match
+		"union": `type T = { Text string }
+type U ~ T | node[string]
 rule main *U = "" => nil`,
-		"list": `rule main *[]Match = "" => nil`,
+		"list": `rule main *[]node[string] = "" => nil`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			runTypedTSFixture(t, src, `import {parse, parseAST} from "./parser.ts";
 `+tsTypedAssert+`const r = parseAST(""); check(r.error === null && r.value === null && parse("").error === null, "nil success"); check(stable(r.value) === "null", "nil transport");`, GenOptions{}, "")
 		})
 	}
-	runTypedTSFixture(t, `type T = { X Match }
+	runTypedTSFixture(t, `type T = { X node[string] }
 rule main T = x:n #atomic => T{X: $x}
 rule n = "(" n ")" / "x"`, `import {parseAST, parseASTWithOptions} from "./parser.ts";
 `+tsTypedAssert+`check(parseAST("(((x)))").error?.message.includes("nesting too deep"), "generated limit"); check(parseASTWithOptions("(((x)))", {maxDepth:20}).value?.X?.value === "(((x)))", "override"); check(stable(parseASTWithOptions("x", {maxDepth:0}).value).includes("T"), "zero default");`, GenOptions{MaxDepth: 3}, "")
@@ -282,12 +282,12 @@ func TestGeneratedTSTypedWorkloads(t *testing.T) {
 	cases := []struct {
 		name, src, small, large string
 	}{
-		{"fields", `type Item = { Key Match; Value Match; N int; S string; B bool }
+		{"fields", `type Item = { Key node[string]; Value node[string]; N int; S string; B bool }
 rule main []Item = xs:item* => $xs.Value
 rule item Item = k:[a-zé😀]+ #atomic "=" v:[0-9]+ #atomic ";" => Item{Key: $k, Value: $v, N: len($v), S: text($k), B: true}`, "a=1;", strings.Repeat("é😀=123;", 4000)},
 		{"capture-free", `rule main = [a-zé😀]* #atomic`, "a", strings.Repeat("é😀a", 8000)},
-		{"recovery", `type Good = { Token Match }
-type Item ~ Good | Match | error
+		{"recovery", `type Good = { Token node[string] }
+type Item ~ Good | node[string] | error
 rule main []Item = xs:item #recover(skip=[^;]+ ";")* => $xs.Value
 rule item Good = x:[a-zé😀]+ #atomic ";" => Good{Token: $x}`, "a;1;", strings.Repeat("é😀;1;", 2000)},
 	}
@@ -367,9 +367,9 @@ import type {TypedValue, TypedParseResult} from "./parser.ts";
 }
 
 func TestGeneratedTSByteStringSurrogateEncoding(t *testing.T) {
-	src := `type Text terminal
-rule main Text = .*
-rule wrapped Text = "x�y"`
+	src := `type Text = { Text string }
+rule main Text = t:(.*) #atomic => Text{Text: text($t)}
+rule wrapped Text = t:("x�y") #atomic => Text{Text: text($t)}`
 	for _, start := range []string{"main", "wrapped"} {
 		t.Run(start, func(t *testing.T) {
 			consumer := strings.ReplaceAll(tsByteStringSurrogateConsumer, "START_WRAPPED", fmt.Sprint(start == "wrapped"))
@@ -384,7 +384,9 @@ import type { Text as ParsedText } from "./parser.ts";
 const startIsWrapped = START_WRAPPED;
 const samples = ["", "x�y", "\uD800", "\uDC00", "\uDC7F", "\uDD00", "\uDFFF", "\uD800\uDC80", "a\uD800\uDC80\uDC80z"];
 for (let c=0xDC80;c<=0xDCFF;c++) samples.push(String.fromCharCode(c),"x"+String.fromCharCode(c)+"y");
-interface Result { node: { readonly text: string; readonly start: number; readonly end: number } | null; error: Error | null }
+interface Result { node: { readonly start: number; readonly end: number } | null; error: Error | null }
+// The text of a text struct: a field of a generic node, a property of a typed value.
+const textOf = (n: { readonly start: number } | null): string | undefined => n === null ? undefined : n instanceof p.Node ? String(n.field("Text")) : (n as ParsedText).Text;
 for (const unit of [p.CodePoints,p.Bytes]) {
  const routes: { name: string; run: (s: string | Uint8Array) => Result }[] = [
   {name:"Node",run:s=>p.parse(s,unit)},
@@ -401,7 +403,7 @@ for (const unit of [p.CodePoints,p.Bytes]) {
    check(stable(actual.node)===stable(wanted.node)&&actual.error?.message===wanted.error?.message,r.name+" lone surrogate parity "+unit+" "+JSON.stringify(s));
    if (wanted.error===null) {
     const end=unit===p.Bytes?Array.from(normalized).reduce((n,ch)=>{const c=ch.codePointAt(0)!;return n+(c<0x80?1:c<0x800?2:c<0x10000?3:4)},0):Array.from(normalized).length;
-    check(actual.node!==null&&actual.node.text===normalized&&actual.node.start===0&&actual.node.end===end,r.name+" normalized text/span");
+    check(actual.node!==null&&textOf(actual.node)===normalized&&actual.node.start===0&&actual.node.end===end,r.name+" normalized text/span");
    }
   }
   check(p.recognize(s,unit)?.message===p.recognize(normalized,unit)?.message,"recognition parity");
@@ -410,11 +412,11 @@ for (const unit of [p.CodePoints,p.Bytes]) {
   check(stable(named.node)===stable(wanted.node)&&named.error?.message===wanted.error?.message,"literal match preserves normalized suffix");
  }
  if (!startIsWrapped) {
-  for(const r of routes){const raw=r.run(new Uint8Array([120,255,121]));check(raw.error===null&&raw.node?.text===(unit===p.Bytes?"x\uDCFFy":"x�y")&&raw.node.end===3,"raw-byte text unchanged");}
+  for(const r of routes){const raw=r.run(new Uint8Array([120,255,121]));check(raw.error===null&&raw.node!==null&&textOf(raw.node)===(unit===p.Bytes?"x\uDCFFy":"x�y")&&raw.node.end===3,"raw-byte text unchanged");}
  }
 }
 if (!startIsWrapped) {
  const typed: ParsedText|null=p.parseAST("\uDCFF",p.Bytes).value;
- check(typed!==null&&typed.text==="�"&&typed.end===3,"typed public string uses full replacement bytes");
+ check(typed!==null&&typed.Text==="�"&&typed.end===3,"typed public string uses full replacement bytes");
 }
 `

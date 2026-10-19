@@ -1,4 +1,4 @@
-type Item = { Name Match }
+type Item = { Name node[string] }
 type Box = { Items node; N int; S string; B bool; F Item | error; FT string }
 type Out = { Box Box; Start int; End int; Text string; Same bool; NNil bool; SNil bool; BNil bool; FNil bool; FText string }
 rule main Out = b:box => Out{Box: $b, Start: $b.Items.Start, End: $b.Items.End, Text: text($b.Items), Same: $b.Items == $b.Items, NNil: $b.N == nil, SNil: $b.S == nil, BNil: $b.B == nil, FNil: $b.F == nil, FText: $b.FT}

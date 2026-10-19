@@ -189,7 +189,7 @@ rule val = [0-9]+ #atomic`
 
 var streamCorpus = []genCase{
 	{"records", records, []string{"#records\na=1\nbc=22\n", "#records\nx\n", "#records\n", "", "#records\na=1\nb"}},
-	{"actions", `type Pair = { Key Match; Value Match }
+	{"actions", `type Pair = { Key node[string]; Value node[string] }
 rule main = item* #stream $$
 rule item Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" => Pair{Key: $k, Value: $v}`, []string{"a=1\nb=2\n", "a=1\nb=x\n", ""}},
 	{"discarded text", `type T = { H string; N int }
@@ -547,20 +547,20 @@ var typedStreamCorpus = []struct {
 	name, src, batch string
 	inputs           []string
 }{
-	{"structs", `type Pair = { Key Match; Value Match }
+	{"structs", `type Pair = { Key node[string]; Value node[string] }
 rule main = item* #stream
 rule item Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" => Pair{Key: $k, Value: $v}`, "bv.Value", []string{"a=1\nbc=22\n", "a=1\nb=x\n", "", strings.Repeat("ab=12\n", 1500)}},
-	{"unions", `type A terminal
-type B terminal
+	{"unions", `type A = { Text string }
+type B = { Text string }
 type U ~ A | B
 rule main = item* #stream
 rule item U = a / b
-rule a A = "a"
-rule b B = "b"`, "bv.Value", []string{"abba", "abc", ""}},
+rule a A = t:("a") #atomic => A{Text: text($t)}
+rule b B = t:("b") #atomic => B{Text: text($t)}`, "bv.Value", []string{"abba", "abc", ""}},
 	{"records", `rule main = item* #stream
 rule item = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic ";"`, "bv.Value", []string{"a=1;bc=22;", "a=1;b", strings.Repeat("ab=1;", 2000)}},
 	{"inline records", `rule main = (k:[a-z] v:[0-9]?)* #stream $$`, "", []string{"a1bc2", "a1!"}},
-	{"recovered", `type S = { N Match }
+	{"recovered", `type S = { N node[string] }
 rule main = (stmt #recover(skip=[^;]+ ";"))* #stream
 rule stmt S = n:[a-z]+ #atomic ";" => S{N: $n}`, "bv.Value", []string{"ab;1x;cd;9;", "1x;ab", "ab;"}},
 	{"nil", `rule main = item* #stream
@@ -568,12 +568,12 @@ rule item = "a" => nil`, "bv.Value", []string{"aaa", "ab"}},
 	{"matches", `rule main = ("a" / "é")* #stream`, "bv.Value", []string{"aéa", "é\xc3", "a\xffa"}},
 	{"lists", `rule main = item* #stream
 rule item = xs:[a-z]* ";" => $xs`, "bv.Value", []string{"ab;;c;", "ab;c"}},
-	{"aliases", `type P = { A Match; B Match }
+	{"aliases", `type P = { A node[string]; B node[string] }
 rule main = item* #stream
 rule item P = x:[a-z] => P{A: $x, B: $x}`, "bv.Value", []string{"abc", "a1"}},
 	{"surrounded", `rule main = h:"#" xs:item* #stream t:"!"?
 rule item = [a-z] #atomic`, "", []string{"#ab!", "#", "#a?"}},
-	{"captured", `type I = { C Match }
+	{"captured", `type I = { C node[string] }
 rule main = "<" xs:(item* #stream) ">"
 rule item I = c:[a-z] ";" => I{C: $c}`, "", []string{"<a;b;>", "<>", "<a;b"}},
 }
@@ -912,7 +912,7 @@ func TestGeneratedStreamAPI(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds a generated standalone stream consumer")
 	}
-	g, err := syntax.Parse(`type Pair = { Key Match; Value Match }
+	g, err := syntax.Parse(`type Pair = { Key node[string]; Value node[string] }
 rule main = item* #stream $$
 rule item Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" => Pair{Key: $k, Value: $v}`)
 	if err != nil {
@@ -945,7 +945,7 @@ rule atom = [a-z] #atomic " "?`)
 		t.Fatal(err)
 	}
 	files["memo/parser.go"] = string(code)
-	typed, err := syntax.Parse(`type P = { A Match; B Match; Xs []Match }
+	typed, err := syntax.Parse(`type P = { A node[string]; B node[string]; Xs []node[string] }
 rule main = item* #stream $$
 rule item P = x:[a-z] ys:[0-9]* ";" => P{A: $x, B: $x, Xs: $ys.Value}`)
 	if err != nil {
@@ -956,7 +956,7 @@ rule item P = x:[a-z] ys:[0-9]* ";" => P{A: $x, B: $x, Xs: $ys.Value}`)
 		t.Fatal(err)
 	}
 	files["typed/parser.go"] = string(code)
-	recovering, err := syntax.Parse(`type S = { N Match }
+	recovering, err := syntax.Parse(`type S = { N node[string] }
 rule main = (stmt #recover(skip=[^;]+ ";"))* #stream $$
 rule stmt S = n:[a-z]+ #atomic ";" => S{N: $n}`)
 	if err != nil {

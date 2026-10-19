@@ -14,8 +14,8 @@ Expression. An Operators Rule is a specialized Rule Definition Statement.
 
 ```pego
 package example
-type Number terminal
-rule main Number = [0-9]+
+type Number = { Text string }
+rule main Number = t:([0-9]+) #atomic => Number{Text: text($t)}
 rule expr Expr = operators { ... }
 ```
 
@@ -144,8 +144,8 @@ normalized executable form rather than those grouping nodes.
 ### Type Definition Statements
 
 A Type Definition Statement (`type`) declares a type name: it defines a struct
-type (`type T = {...}`) or a terminal type (`type T terminal`), or declares an
-alias of a type or union (`type T ~ U`). The forms and their meaning are defined
+type (`type T = {...}`) or declares an alias of a type or union
+(`type T ~ U`). The forms and their meaning are defined
 in the [Type System](types.md#type-definitions).
 
 ### Rule Definition Statements
@@ -309,6 +309,16 @@ and exact comment tokens are omitted.
 
 A null field is reported by path (for example `$.statements[0].spec.fields[0]`)
 and does not cause a panic during compilation.
+
+A grammar AST can hold two type forms that PEGO source no longer accepts and that
+`pego fix` rewrites, so that grammar JSON written for earlier versions still
+compiles. A `TerminalSpec` (`"@type": "TerminalSpec"`) declares a terminal type: a
+type of string nodes, and a rule declared with it and without an action produces a
+string node of that type holding the matched text. A `TypeRef` may name
+`terminal` or `Match`, which stand for string nodes, `Seq`, `List` or `Operator`,
+which stand for the nodes of that shape (see
+[Node Type Names](types.md#node-type-names)), or `Error`. `grammar.Format` writes
+these forms as they are, so its output is accepted only by `pego fix`.
 
 An attribute (`Attributed`, `Attribute`) holds `args`, an ordered list of integers,
 strings, booleans, null slots and expression nodes, and `kwArgs`, which maps names to

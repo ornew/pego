@@ -8,9 +8,9 @@ import (
 )
 
 // One shared grammar keeps the same scope/selection cases in the engine and generated Go/TS corpus.
-const prefixPartCuts = `type Atom terminal
+const prefixPartCuts = `type Atom = { Text string }
 type Prefix = { Op node; X Expr; Tag int }
-type Expr ~ Atom | Prefix | Error
+type Expr ~ Atom | Prefix | error
 rule main Expr = value:entry $$ => $value
 rule entry Expr = case0 / case1 / case2 / case3 / case4 / case5 / case6 / case7 / case8 / case9 / case10 / case11 / case12 / case13 / case14 / case15 / case16 / case17 / case18 / case19 / case20
 rule case0 Expr = "c" x:committed => $x
@@ -35,7 +35,7 @@ rule case18 Expr = "l" !committed x:atom => $x
 rule case19 Expr = "r" x:recovered => $x
 rule case20 Expr = "i" x:operatorsRulePartLocal => $x
 
-rule atom Atom = "~-x" / "-xy" / "¬é" / "-x" / "-z" / "-" / "a" / "é"
+rule atom Atom = t:("~-x" / "-xy" / "¬é" / "-x" / "-z" / "-" / "a" / "é") #atomic => Atom{Text: text($t)}
 rule committed Expr = operators {
     operand atom
     level { prefix "-" #cut "z" => Prefix{Op: $op, X: $rhs, Tag: 1} }

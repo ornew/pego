@@ -82,7 +82,7 @@ rule type_def_body = (
     "type" -word_end #cut ident -ws
     type_spec
 )
-rule type_spec = struct_spec / terminal_spec / type_alias_spec
+rule type_spec = struct_spec / type_alias_spec
 rule struct_spec = (
     "=" -ws "{" #cut {ml := false} field_spec* comments
     -"}"
@@ -92,13 +92,12 @@ rule field = (
     comments ident -ws
     type_expr field_end
 )
-rule terminal_spec = "terminal" !ident_char
 rule type_alias_spec = "~" -ws type_expr
 rule type_expr = operators {
     skip ws
     operand bottom
-    operand ident type_args
-    operand ident
+    operand !retired_type ident type_args
+    operand !retired_type ident
     operand type_group
     operand struct_type
     level union { infix left "|" }
@@ -114,6 +113,9 @@ rule struct_type = (
     "{" {ml := false} field_spec* comments
     -"}"
 )
+
+// The names of node types other than Missing, and terminal, are not types.
+rule retired_type = ("terminal" / "Match" / "Seq" / "List" / "Operator" / "Error") !ident_char
 
 // The brackets of type arguments follow the name directly.
 rule type_args = "[" {ml := true} -ws type_expr (-ws "," -ws type_expr)* -ws ","? -ws "]"
@@ -258,7 +260,7 @@ rule action_assign_stmt = ident -ws ":=" -ws action_expr
 rule action_expr = lambda / action_ops
 rule action_ops = operators {
     skip ws
-    operand list_constructor / terminal_constructor / constructor / call / action_group / int / string / true / false / nil / capture_ref / var_ref
+    operand list_constructor / constructor / call / action_group / int / string / true / false / nil / capture_ref / var_ref
     level disjunction { infix left "||" }
     level conjunction { infix left "&&" }
     level comparison { infix none "==" / "!=" / "<=" / ">=" / "<" / ">" }
@@ -293,10 +295,6 @@ rule list_constructor = (
     "[]" -ws #cut level(type_expr, prefix) -ws
     -"{" {ml := true} -ws
     action_args? comments -"}"
-)
-rule terminal_constructor = (
-    var_name -ws "{" {ml := true} -ws !("}" / ident -ws ":") #cut
-    action_args comments -"}"
 )
 rule constructor = (
     var_name -ws "{" {ml := true} -ws #cut constructor_fields? comments

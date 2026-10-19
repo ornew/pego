@@ -12,8 +12,7 @@ A **node** is a value produced by a parse with a range `[start, end)` of the
 input. The value of a node is one of the following.
 
 - A string: the input text that a literal, a character class, `.`, an
-  [atomic](pragmas.md#atomic) expression or a [terminal type](types.md#terminal-types)
-  rule matched.
+  [atomic](pragmas.md#atomic) expression matched.
 - A tuple: the values of the elements of a sequence, in order.
 - A list: the values of the iterations of a repetition, in order.
 
@@ -36,7 +35,7 @@ that contains it; a capture is a name for its location and not a second copy of 
 
 | Kind | Produced by | Where the data is |
 |:--|:--|:--|
-| String | A literal, a character class, `.`, an atomic expression, a terminal type | The range and the text, which is the value |
+| String | A literal, a character class, `.`, an atomic expression | The range and the text, which is the value |
 | Tuple | A sequence in a rule without an action; an [Operators Rule](operators-rule.md) operator application without an action | The range and the elements: the values of the elements of the sequence that have a value, in order. An element is `nil` where an optional expression or a choice alternative without a value matched |
 | List | A repetition | The range and the elements: the values of the iterations |
 | Error | A range skipped by `#recover`, or a `#missing` literal insertion | The range, the message and, for an insertion, the expected text |

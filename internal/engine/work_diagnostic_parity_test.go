@@ -39,7 +39,7 @@ rule wide = ("é" "0" / "é" "1") #atomic`,
 		{
 			name: "recovery succeeds",
 			grammar: `type Doc = {
-    Text *Match
+    Text *node[string]
     N    int
 }
 
@@ -52,7 +52,7 @@ rule item Doc = v:(x:"é" #atomic {n := 1} "!") #recover(skip="é" {n := n + 2} 
 		{
 			name: "recovery skip fails",
 			grammar: `type Doc = {
-    Text Match
+    Text node[string]
     N    int
 }
 
@@ -62,9 +62,9 @@ rule main Doc = {n := 0} x:("ab" #recover(skip={n := 8} "x" "!") / {n == 0} "x" 
 		},
 		{
 			name: "zero progress recovery",
-			grammar: `type Atom terminal
+			grammar: `type Atom = { Text string }
 
-rule main Atom = "ab" #recover(skip="x"?) $$`,
+rule main Atom = t:("ab" #recover(skip="x"?) $$) #atomic => Atom{Text: text($t)}`,
 			inputs:        []string{"ab", "x", "y", ""},
 			wantRecovered: true,
 		},
@@ -82,7 +82,7 @@ rule item = ("a" #atomic ";") #recover(skip=[^;]+ ";")`,
 		{
 			name: "left recursive recovery",
 			grammar: `type Doc = {
-    Text Match
+    Text node[string]
 }
 
 rule main Doc = x:expr #atomic $$ => Doc{Text: $x}
@@ -93,7 +93,7 @@ rule expr = (expr "+" #cut "a") #recover(skip="a?") / "a"`,
 		},
 		{
 			name: "OperatorsRule operator recovery",
-			grammar: `type Atom terminal
+			grammar: `type Atom = { Text string }
 
 type Post = {
     X    Expr
@@ -113,7 +113,7 @@ rule expr Expr = operators {
     }
 }
 
-rule atom Atom = "a"`,
+rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}`,
 			inputs:        []string{"a", "-za", "-?a", "a[é]", "a[?]", " !a", " ?a", "-a", "a[", "-?", "", "a ?[?]"},
 			wantRecovered: true,
 		},

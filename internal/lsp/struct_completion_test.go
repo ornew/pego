@@ -11,9 +11,9 @@ func TestStructDeclarationCompletionProtocol(t *testing.T) {
 		fieldName    bool
 	}{
 		{"empty", "type Box = {|}", true},
-		{"semicolon", "type Box = { Old Match; |}", true},
+		{"semicolon", "type Box = { Old node[string]; |}", true},
 		{"partial-name", "type Box = { Na|}", true},
-		{"partial-name-after-semicolon", "type Box = { Old Match; Na|}", true},
+		{"partial-name-after-semicolon", "type Box = { Old node[string]; Na|}", true},
 		{"block-comment", "type Box = { /* field documentation */ |}", true},
 		{"field-type", "type Box = { Name |}", false},
 		{"partial-field-type", "type Box = { Name Ma|}", false},
@@ -26,8 +26,8 @@ func TestStructDeclarationCompletionProtocol(t *testing.T) {
 	}
 	for _, newline := range []string{"\n", "\r\n", "\r"} {
 		t.Run("newline-"+strings.ReplaceAll(newline, "\r", "CR"), func(t *testing.T) {
-			assertStructCompletion(t, "type Box = { Old Match"+newline+"|}", true, true)
-			assertStructCompletion(t, "type Box = { Old Match"+newline+"Na|}", true, true)
+			assertStructCompletion(t, "type Box = { Old node[string]"+newline+"|}", true, true)
+			assertStructCompletion(t, "type Box = { Old node[string]"+newline+"Na|}", true, true)
 			assertStructCompletion(t, "type Box = {"+newline+"// field documentation"+newline+"|}", true, true)
 		})
 	}
@@ -44,7 +44,7 @@ func assertStructCompletion(t *testing.T, source string, fieldName, snippets boo
 	}}})
 	c.notify("initialized", map[string]any{})
 	defer c.exit()
-	source = "type Other terminal\n" + source
+	source = "type Other = { Text string }\n" + source
 	off := strings.Index(source, "|")
 	source = strings.Replace(source, "|", "", 1)
 	const uri = "file:///struct-completion.pego"
@@ -56,7 +56,7 @@ func assertStructCompletion(t *testing.T, source string, fieldName, snippets boo
 	for _, item := range got.Items {
 		items[item.Label] = item
 	}
-	for _, name := range []string{"Box", "Other", "Match", "string"} {
+	for _, name := range []string{"Box", "Other", "node", "string"} {
 		if _, ok := items[name]; !ok {
 			t.Errorf("missing type %s: %+v", name, got.Items)
 		}
@@ -88,7 +88,7 @@ func TestStructDeclarationCompletionPreservesConstructors(t *testing.T) {
 	c := newInitialized(t)
 	defer c.exit()
 	const uri = "file:///constructor-completion.pego"
-	source := "type Box = { Name Match; Count int }\nrule main = a:\"a\" => Box{Name: $a, |}"
+	source := "type Box = { Name node[string]; Count int }\nrule main = a:\"a\" => Box{Name: $a, |}"
 	off := strings.Index(source, "|")
 	source = strings.Replace(source, "|", "", 1)
 	c.open(uri, source)

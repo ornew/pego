@@ -205,6 +205,7 @@ func TestValueActionTypes(t *testing.T) {
 		{"type Foo = {}\nrule a Foo = _ => Foo{}", "a", `Foo`},
 		{`rule a node = x:"x" => $x`, "a", `node[string]`},
 		{"type Word terminal\nrule a Word = [a-z]+", "a", `node[string]`},
+		{"type Word = { Text string }\nrule a Word = t:([a-z]+) #atomic => Word{Text: text($t)}", "a", `Word`},
 		// A rule whose action depends on its own value sees it as not known.
 		{"rule a = \"(\" x:b \")\" => $x.Value\nrule b = a / \"y\"", "a", `any`},
 		// _|_ | T is T, so a _|_ alternative does not make a choice optional.
@@ -258,6 +259,7 @@ func TestValueActionErrors(t *testing.T) {
 		{"type Foo = { Name Match }\nrule a = x:\"x\" #missing => Foo{Name: $x}", "cannot use node[string] | error as node[string] in field Name of Foo"},
 		{"type Foo = {}\nrule a = x:\"x\" => []Foo{$x}", "cannot use node[string] as Foo in list constructor"},
 		{"type Word terminal\nrule a = _ => Word{1}", `terminal constructor requires a string, got int`},
+		{"type Word = { Text string }\nrule a = _ => Word{Text: 1}", `cannot use int as string in field Text of Word`},
 		{"type Foo = {}\nrule a Foo = x:\"x\" => $x", "rule a produces node[string], which is not assignable to Foo"},
 		{`rule a = x:"x" => filter($x.Value, (i) => i)`, "filter: expected a list, got string"},
 		{"rule a = x:\"x\" y:b => list($x, $y.Value)\nrule b = z:a => $z", "[]node[string] | []any has no field Value"},

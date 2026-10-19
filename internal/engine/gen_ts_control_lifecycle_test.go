@@ -22,9 +22,9 @@ func runGeneratedTSControlGCTest(t *testing.T, consumer string, hooks string) {
 	if err != nil {
 		t.Skip("tsc not found")
 	}
-	g, err := syntax.Parse(`type Text terminal
+	g, err := syntax.Parse(`type Text = { Text string }
 
-rule main Text = [a]* #atomic`)
+rule main Text = t:([a]* #atomic) => Text{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,8 +109,11 @@ function makeCase(route:Route,unit:p.Unit,mode:Mode,index:number){
    if(index===3)check(retained.value===null,"recognition intentionally returns no tree");
    else {
     check(retained.value!==null,"successful output is retained during GC");
-    const value=retained.value as {type:string;text:string;start:number;end:number};
-    check(value.type==="Text"&&value.text==="a".repeat(2048)&&value.start===0&&value.end===2048,"successful retained Text shape and span");
+    // The generic node of a text struct reads its text through field("Text"), the typed value
+    // through the property.
+    const value=retained.value as {type:string;Text?:string;field?:(name:string)=>unknown;start:number;end:number};
+    const text=index===2?value.Text:value.field?.("Text");
+    check(value.type==="Text"&&text==="a".repeat(2048)&&value.start===0&&value.end===2048,"successful retained Text shape and span");
    }
   }
   if(mode==="syntax")check(retained.value===null&&retained.error instanceof p.SyntaxError,"ordinary syntax failure");

@@ -105,8 +105,8 @@ func TestQuerySchemaConcurrentCompile(t *testing.T) {
 		t.Fatal(err)
 	}
 	patterns := []QueryPattern{
-		{Type: "Pair", Fields: []QueryFieldPattern{field("Value", stringNode)}},
-		{Type: "Box", Fields: []QueryFieldPattern{field("Inner", QueryPattern{Fields: []QueryFieldPattern{field("Value", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", stringNode)}})}})}},
+		{Type: "Pair", Fields: []QueryFieldPattern{field("Value", textStruct("Int"))}},
+		{Type: "Box", Fields: []QueryFieldPattern{field("Inner", QueryPattern{Fields: []QueryFieldPattern{field("Value", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", textStruct("Int"))}})}})}},
 		{Type: "Pair", Fields: []QueryFieldPattern{field("Value", QueryPattern{Type: "Box"})}},
 	}
 	var wg sync.WaitGroup

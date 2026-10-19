@@ -29,13 +29,13 @@ func TestGeneratedTypedFrameLayoutWorkloads(t *testing.T) {
 	})
 }
 
-const typedFrameLayoutLRWorkload = `type Doc = { Items []Match; N int; Missing *Match }
+const typedFrameLayoutLRWorkload = `type Doc = { Items []node[string]; N int; Missing *node[string] }
 rule main Doc = e:expr $$ => $e
 rule expr Doc = _|_ ignored:"z" #atomic / previous:expr ";" items:(x:[a-z] #atomic -",") #repeat(3) / items:(x:[a-z] #atomic -",") #repeat(3) => Doc{Items: map($items, (e) => e.$x), N: len($items), Missing: $ignored}
 `
 
-const typedFrameLayoutOperatorsRuleWorkload = `type Atom terminal
-type Post = { X Expr; Items []Match; N int; Missing *Match }
+const typedFrameLayoutOperatorsRuleWorkload = `type Atom = { Text string }
+type Post = { X Expr; Items []node[string]; N int; Missing *node[string] }
 type Expr ~ Atom | Post
 rule main Expr = e:expr $$ => $e
 rule expr Expr = operators {
@@ -45,7 +45,7 @@ rule expr Expr = operators {
         postfix _|_ ignored:"z" #atomic / "[" items:(x:[a-z] #atomic {len($x) == 1} -",") #repeat(3) "]" => Post{X: $lhs, Items: map($items, (e) => e.$x), N: len($items), Missing: $ignored}
     }
 }
-rule atom Atom = "a"
+rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}
 `
 
 // This measures generation separately from matching, using the same source

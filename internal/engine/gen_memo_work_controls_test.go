@@ -15,11 +15,11 @@ func TestGeneratedGoMemoEnvironmentWork(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated memo/environment consumers")
 	}
-	source := `type Word terminal
+	source := `type Word = { Text string }
 
-rule main Word = {v := "a"} &word {v := "b"} word / {v := "b"} word
+rule main Word = t:({v := "a"} &word {v := "b"} word / {v := "b"} word) #atomic => Word{Text: text($t)}
 
-rule word Word = x:[a-z]+ #atomic {text($x) == v}`
+rule word Word = t:(x:[a-z]+ #atomic {text($x) == v}) => Word{Text: text($t)}`
 	// Each helper has a callee and two references, making more than 64
 	// rules eligible for deferred memoization in the emitted runtime.
 	var alternatives []string

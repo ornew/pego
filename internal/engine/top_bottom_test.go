@@ -12,12 +12,13 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-const topBottomRules = "type Num terminal\nrule n Num = [0-9]+\nrule w = [a-z]+\n"
+const topBottomRules = "type Num = { Text string }\nrule n Num = t:([0-9]+) #atomic => Num{Text: text($t)}\nrule w = [a-z]+\n"
 
 func topBottomCases() []genCase {
 	return []genCase{
 		{"top field", "type T = { A _ }\nrule main = x:(n / w) $$ => T{A: $x}\n" + topBottomRules, []string{"1", "a"}},
-		{"top primitive", "type T = { A _ }\nrule main = x:(n / w) $$ => T{A: len(text($x))}\n" + topBottomRules, []string{"12", "a"}},
+		// text applies to nodes of string values, so both alternatives are plain nodes here.
+		{"top primitive", "type T = { A _ }\nrule main = x:(n / w) $$ => T{A: len(text($x))}\nrule n = [0-9]+ #atomic\nrule w = [a-z]+\n", []string{"12", "a"}},
 		{"top cast", "type T = { A _ }\nrule main = x:(n / w) $$ => T{A: $x}.A.(Num)\n" + topBottomRules, []string{"1", "a"}},
 		{"top compare", "type T = { A _ }\nrule main = x:(n / w) {T{A: $x}.A == $x} $$\n" + topBottomRules, []string{"1", "a"}},
 		{"meet field", "type T = { A (Num | int) & node }\nrule main = x:n $$ => T{A: $x}\n" + topBottomRules, []string{"1", "a"}},
@@ -47,7 +48,7 @@ func TestTopBottomTypes(t *testing.T) {
 	for _, tc := range []struct{ src, want string }{
 		// A _ value is assignable only to _.
 		{"type T = { A _ }\nrule main = x:\"a\" => T{A: $x}.A", "must produce a node, got _"},
-		{"type T = { A _ }\ntype U = { B Match }\nrule main = x:\"a\" => U{B: T{A: $x}.A}", "_"},
+		{"type T = { A _ }\ntype U = { B node[string] }\nrule main = x:\"a\" => U{B: T{A: $x}.A}", "_"},
 		{"rule main _ = \"a\"", "rule main must produce a node, but its type is _"},
 		// No value has type _|_.
 		{"type T = { A _|_ }\nrule main = \"a\"", "field A of T has type _|_, which has no values"},
@@ -55,11 +56,11 @@ func TestTopBottomTypes(t *testing.T) {
 		{"type B ~ *_|_\nrule main = x:\"a\" => $x.(B)", "the cast has type _|_, which has no values"},
 		{"rule main = \"a\" => []_|_{}", "the list element has type _|_, which has no values"},
 		{"type T = { A int & string }\nrule main = \"a\"", "field A of T has type _|_"},
-		{"type T = { A Match & []Match }\nrule main = \"a\"", "field A of T has type _|_"},
-		{"type T = { A []Match & []int }\nrule main = \"a\"", "field A of T has type _|_"},
-		{"type T = { A *[]Match & []int }\nrule main = \"a\"", "field A of T has type _|_"},
+		{"type T = { A node[string] & []node[string] }\nrule main = \"a\"", "field A of T has type _|_"},
+		{"type T = { A []node[string] & []int }\nrule main = \"a\"", "field A of T has type _|_"},
+		{"type T = { A *[]node[string] & []int }\nrule main = \"a\"", "field A of T has type _|_"},
 		// A meet is the type assignable to both: here Match, which an int is not.
-		{"type T = { A (Match | int) & node }\nrule main = \"a\" => T{A: 1}", "cannot use int as Match"},
+		{"type T = { A (node[string] | int) & node }\nrule main = \"a\" => T{A: 1}", "cannot use int as Match"},
 	} {
 		g, err := syntax.Parse(tc.src)
 		if err != nil {
@@ -70,16 +71,16 @@ func TestTopBottomTypes(t *testing.T) {
 		}
 	}
 	for _, src := range []string{
-		"type T = { A _ | Match }\nrule main = \"a\" => T{A: 1}",
-		"type T = { A _|_ | Match }\nrule main = x:\"a\" => T{A: $x}",
-		"type T = { A Match & _ }\nrule main = x:\"a\" => T{A: $x}\nrule other = x:\"a\" => T{A: $x}.A",
-		"type T = { A _ }\nrule main = x:\"a\" => T{A: $x}.A.(Match | Seq)",
+		"type T = { A _ | node[string] }\nrule main = \"a\" => T{A: 1}",
+		"type T = { A _|_ | node[string] }\nrule main = x:\"a\" => T{A: $x}",
+		"type T = { A node[string] & _ }\nrule main = x:\"a\" => T{A: $x}\nrule other = x:\"a\" => T{A: $x}.A",
+		"type T = { A _ }\nrule main = x:\"a\" => T{A: $x}.A.(node[string] | node)",
 		"type B ~ _|_\nrule main = \"a\"", // an alias is not a location
 		// Meets look inside lists: []Seq is assignable to both.
-		"type T = { A [](Match | Seq) & [](Seq | List) }\nrule main = x:(\"a\" \"b\")* => T{A: $x.Value}",
-		"type T = { A *Match & *Seq }\nrule main = \"a\" => T{A: nil}",
-		"type T = { A *[](Match | Seq) & [](Seq | List) }\nrule main = x:(\"a\" \"b\")* => T{A: $x.Value}",
-		"type T = { A ([]Match | int) & []node }\nrule main = x:\"a\"* => T{A: $x.Value}",
+		"type T = { A [](node[string] | node) & [](node | node) }\nrule main = x:(\"a\" \"b\")* => T{A: $x.Value}",
+		"type T = { A *node[string] & *node }\nrule main = \"a\" => T{A: nil}",
+		"type T = { A *[](node[string] | node) & [](node | node) }\nrule main = x:(\"a\" \"b\")* => T{A: $x.Value}",
+		"type T = { A ([]node[string] | int) & []node }\nrule main = x:\"a\"* => T{A: $x.Value}",
 	} {
 		g, err := syntax.Parse(src)
 		if err != nil {
@@ -148,7 +149,7 @@ func TestTopBottomReportedOnce(t *testing.T) {
 		t.Fatalf("got %v, want one _|_ error", err)
 	}
 	// An empty meet (only an AST can hold one) is _.
-	g, err = syntax.Parse("type T = { A Match }\nrule main = x:\"a\" => T{A: $x}")
+	g, err = syntax.Parse("type T = { A node[string] }\nrule main = x:\"a\" => T{A: $x}")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -179,7 +180,7 @@ func TestTopBottomWithoutTypeCheck(t *testing.T) {
 		}
 	}
 	// Other type errors stay unreported without type checking.
-	g, err := syntax.Parse("type T = { A Match }\nrule main = \"a\" => T{A: 1}")
+	g, err := syntax.Parse("type T = { A node[string] }\nrule main = \"a\" => T{A: 1}")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,7 +190,7 @@ func TestTopBottomWithoutTypeCheck(t *testing.T) {
 }
 
 func TestTopBottomSyntax(t *testing.T) {
-	src := "type A ~ []B & *C | _ & (D | B) | _|_\ntype E ~ [](B & C) & *(B | C)\ntype B terminal\ntype C terminal\ntype D terminal\nrule main = x:\"a\" => $x.(_ & node)"
+	src := "type A ~ []B & *C | _ & (D | B) | _|_\ntype E ~ [](B & C) & *(B | C)\ntype B = { Text string }\ntype C = { Text string }\ntype D = { Text string }\nrule main = x:\"a\" => $x.(_ & node)"
 	g, err := syntax.Parse(src)
 	if err != nil {
 		t.Fatal(err)
@@ -242,7 +243,7 @@ func TestTopBottomSyntax(t *testing.T) {
 }
 
 func TestTopBottomSchema(t *testing.T) {
-	program := compile(t, "type T = { A _; B (Match | int) & node; C U }\ntype U ~ _\nrule main = x:\"a\" => T{A: $x, B: $x, C: 1}")
+	program := compile(t, "type T = { A _; B (node[string] | int) & node; C U }\ntype U ~ _\nrule main = x:\"a\" => T{A: $x, B: $x, C: 1}")
 	schema, err := program.OutputSchemaPrototype("main", false)
 	if err != nil {
 		t.Fatal(err)
@@ -269,7 +270,7 @@ func TestTopBottomSchema(t *testing.T) {
 		}
 	}
 	// _|_ adds nothing to a union.
-	program = compile(t, "type B ~ _|_ | Match\ntype T = { A _|_ | Match; C B }\nrule main = x:\"a\" => T{A: $x, C: $x}")
+	program = compile(t, "type B ~ _|_ | node[string]\ntype T = { A _|_ | node[string]; C B }\nrule main = x:\"a\" => T{A: $x, C: $x}")
 	schema, err = program.OutputSchemaPrototype("main", false)
 	if err != nil {
 		t.Fatal(err)

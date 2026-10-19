@@ -32,20 +32,20 @@ func TestGeneratedTypedRecoveryWorkloads(t *testing.T) {
 
 var typedRecoveryWorkloads = []struct{ name, src, accepted, recovered, errors string }{
 	{"ordinary", `rule expr Expr = atom #recover(skip=[^;]+)
-rule atom Atom = "é" "b" "c"
+rule atom Atom = t:("é" "b" "c") #atomic => Atom{Text: text($t)}
 `, "ébc;", "?;", "1"},
 	{"operatorsRule", `rule expr Expr = operators {
     operand atom #recover(skip="?")
     level { postfix ("[" atom "]") #recover(skip="[?]") => Post{X: $lhs} }
 }
-rule atom Atom = "é"
+rule atom Atom = t:("é") #atomic => Atom{Text: text($t)}
 `, "é[é];", "?[?];", "2"},
 	{"lr", `rule expr Post = previous:expr "+" x:atom #recover(skip="?") / x:atom #recover(skip="?") => Post{X: $x}
-rule atom Atom = "é"
+rule atom Atom = t:("é") #atomic => Atom{Text: text($t)}
 `, "é+é;", "?+?;", "2"},
 }
 
-const typedRecoveryWorkloadTypes = `type Atom terminal
+const typedRecoveryWorkloadTypes = `type Atom = { Text string }
 type Post = { X Expr }
 type Expr ~ Atom | Post | error
 type Doc = { Items []Expr; N int }

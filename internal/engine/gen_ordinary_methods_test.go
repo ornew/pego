@@ -54,9 +54,9 @@ func ordinaryFunctions(t *testing.T, src []byte) map[ordinaryMethodKey]*goast.Fu
 }
 
 func TestGeneratedOrdinaryControlledBodiesPreserved(t *testing.T) {
-	g, err := syntax.Parse(`type Text terminal
-rule main Text = (a:("a"* #atomic) "b") #recover(skip="?") => Text{text($a)}
-rule recursive Text = recursive "+" "a" / "a"
+	g, err := syntax.Parse(`type Text = { Text string }
+rule main Text = (a:("a"* #atomic) "b") #recover(skip="?") => Text{Text: text($a)}
+rule recursive Text = t:(recursive "+" "a" / "a") #atomic => Text{Text: text($t)}
 rule expr Text = operators {
  operand main
  level sum { infix left "+" => $lhs }

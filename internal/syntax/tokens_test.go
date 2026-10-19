@@ -43,7 +43,7 @@ func TestTokenizeSkipsInvalidCharacters(t *testing.T) {
 }
 
 func TestParsePartial(t *testing.T) {
-	src := "rule a = b\nrule broken = (\nrule b = \"x\"\ntype T = { A }\ntype U terminal\n"
+	src := "rule a = b\nrule broken = (\nrule b = \"x\"\ntype T = { A }\ntype U = { Text string }\n"
 	g, errs := ParsePartial(src)
 	if len(errs) != 2 {
 		t.Fatalf("errors: %v", errs)
@@ -91,8 +91,8 @@ func TestUnicodeIdentifiersAreRejected(t *testing.T) {
 	for _, src := range []string{
 		`package 名前; rule main = "x"`,
 		`rule 名前 = "x"`,
-		`type Café terminal`,
-		`type T = { 名前 Match }`,
+		`type Café = { Text string }`,
+		`type T = { 名前 node[string] }`,
 		`rule main = 名前`,
 		`rule main = 名:"x"`,
 		`rule main = {名前 := 1}`,

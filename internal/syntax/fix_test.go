@@ -32,6 +32,7 @@ func TestFix(t *testing.T) {
 		{"type N terminal\nrule n N = \"a\" / \"b\" => ...", "type N = { Text string }\nrule n N = t:(\"a\" / \"b\") #atomic => N{Text: text($t)}"},
 		{"type N terminal\ntype A ~ N\nrule n A = t:\"a\" t1:\"b\"", "type N = { Text string }\ntype A ~ N\nrule n A = t2:(t:\"a\" t1:\"b\") => N{Text: text($t2)}"},
 		{"type N terminal\nrule n N = x:[0-9]+ => N{text($x)}\nrule m terminal = \"m\"", "type N = { Text string }\nrule n N = x:[0-9]+ => N{Text: text($x)}\nrule m node[string] = \"m\""},
+		{"type N terminal\nrule n N = [0-9]+\nrule m = x:n y:(n / \"y\") {len($x) > 1} => list(len($y))", "type N = { Text string }\nrule n N = t:([0-9]+) #atomic => N{Text: text($t)}\nrule m = x:n y:(n / \"y\") {len($x.Text) > 1} => list(len($y))"},
 		{"type N terminal\nrule n N = [0-9]+\nrule m = x:(n / n) {text($x) != \"0\"} y:(n / \"y\") => list(text($x), text($y))", "type N = { Text string }\nrule n N = t:([0-9]+) #atomic => N{Text: text($t)}\nrule m = x:(n / n) {$x.Text != \"0\"} y:(n / \"y\") => list($x.Text, text($y))"},
 		{"type P = { A Match; B []Seq; C *List; D Operator; E Error }\nrule a = x:\"a\" => $x.(Match)", "type P = { A node[string]; B []node; C *node; D node; E error }\nrule a = x:\"a\" => $x.(node[string])"},
 		{"type L =[]P\ntype P = {}", "type L ~ []P\ntype P = {}"},

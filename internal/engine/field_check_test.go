@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -23,9 +24,31 @@ var fieldCheckValues = map[string]string{
 }
 
 // fieldCheckFields maps the declared types of fieldCheckGrammar's field F to the values they
-// accept. Matches and terminal values are both string nodes, lists built by actions are list
-// values, which are not nodes, and an error value fits only a type that admits error.
+// accept. A match is a string node and a value of the text struct Int is a node of its own type,
+// lists built by actions are list values, which are not nodes, and an error value fits only a type
+// that admits error.
 var fieldCheckFields = map[string]string{
+	"Alias":                    "t",
+	"*Int":                     "tz",
+	"[]Int":                    "ln",
+	"[]*Int":                   "lnep",
+	"Int | string":             "ts",
+	"int":                      "i",
+	"string":                   "s",
+	"bool":                     "b",
+	"any":                      "mtlkenq?wpzisb",
+	"node":                     "m",
+	"[][]Int":                  "wn",
+	"*(Box | bool)":            "qzb",
+	"node[string]":             "m",
+	"*[]*Int":                  "lnepz",
+	"Int | error":              "t?",
+	"[](node[string] | error)": "kn",
+}
+
+// fieldCheckFieldsLegacy is fieldCheckFields for fieldCheckGrammarLegacy, where a terminal value is a
+// string node like a match.
+var fieldCheckFieldsLegacy = map[string]string{
 	"Alias":             "mt",
 	"*Int":              "mtz",
 	"[]Int":             "lkn",
@@ -50,6 +73,35 @@ var fieldCheckFields = map[string]string{
 // (input "<value>.") and is an action error otherwise; in a predicate (input "<value>!") the
 // rejected value makes the predicate fail, so the rule no matches instead.
 func fieldCheckGrammar(typ string) string {
+	return `type Int = { Text string }
+type Alias ~ Int
+type Box = { Value Int }
+type S = { F ` + typ + ` }
+type Result ~ S | Int
+rule main Result = nodeCase / nodePred / scalarCase / scalarPred / no
+rule nodeCase = v:val "." => S{F: $v}
+rule nodePred = v:val {S{F: $v} != nil} "!" => Int{Text: "yes"}
+rule scalarCase = {x := 0} ("i" {x := 1} / "s" {x := "s"} / "b" {x := true}) "." => S{F: x}
+rule scalarPred = {x := 0} ("i" {x := 1} / "s" {x := "s"} / "b" {x := true}) {S{F: x} != nil} "!" => Int{Text: "yes"}
+rule no = [a-z!.?;]+ => Int{Text: "no"}
+rule val any = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz
+rule vm = "m"
+rule vt = "t" => Int{Text: "t"}
+rule vl = "l" => []Int{Int{Text: "a"}}
+rule vk = k:"k" => list($k)
+rule ve = "e" => list(nil)
+rule vn = "n" => list()
+rule vq = "q" => Box{Value: Int{Text: "q"}}
+rule vr = ("r" ";") #recover(skip="?")
+rule vw = "w" => [][]Int{[]Int{Int{Text: "w"}}}
+rule vp = "p" => list(Int{Text: "a"}, nil)
+rule vz = "z" => nil
+`
+}
+
+// fieldCheckGrammarLegacy is fieldCheckGrammar with a terminal type Int, in the retired syntax that
+// only syntax.ParseLegacy accepts: grammars that reach the engine as JSON ASTs may still use it.
+func fieldCheckGrammarLegacy(typ string) string {
 	return `type Int terminal
 type Alias ~ Int
 type Box = { Value Int }
@@ -76,9 +128,11 @@ rule vz = "z" => nil
 `
 }
 
-func fieldCheckTypes() []string {
+func fieldCheckTypes() []string { return fieldCheckTypesOf(fieldCheckFields) }
+
+func fieldCheckTypesOf(fields map[string]string) []string {
 	var types []string
-	for typ := range fieldCheckFields {
+	for typ := range fields {
 		types = append(types, typ)
 	}
 	sort.Strings(types)
@@ -97,9 +151,34 @@ func fieldCheckInputs() []string {
 // TestConstructedFieldChecks checks which dynamically typed values each declared field type
 // accepts, on every backend, with and without type checking, and from a compiled file.
 func TestConstructedFieldChecks(t *testing.T) {
-	for _, typ := range fieldCheckTypes() {
-		t.Run(typ, func(t *testing.T) {
-			g, err := syntax.Parse(fieldCheckGrammar(typ))
+	// The terminal type still reaches the engine from JSON grammars: its model is read with
+	// syntax.ParseLegacy.
+	for _, model := range []struct {
+		name    string
+		grammar func(string) string
+		parse   func(string) (*grammar.Grammar, error)
+		fields  map[string]string
+	}{
+		{"text struct", fieldCheckGrammar, syntax.Parse, fieldCheckFields},
+		{"terminal", fieldCheckGrammarLegacy, syntax.ParseLegacy, fieldCheckFieldsLegacy},
+	} {
+		t.Run(model.name, func(t *testing.T) {
+			for _, typ := range fieldCheckTypesOf(model.fields) {
+				t.Run(typ, func(t *testing.T) { checkConstructedFieldType(t, typ, model.grammar(typ), model.parse, model.fields) })
+			}
+		})
+	}
+}
+
+func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string) (*grammar.Grammar, error), fields map[string]string) {
+	// A text struct value shows its field where a terminal value shows its text.
+	yes, no := `"Text":"yes"`, `"Text":"no"`
+	if strings.Contains(src, "type Int terminal") {
+		yes, no = `"value":"yes"`, `"value":"no"`
+	}
+	{
+		{
+			g, err := parse(src)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -129,7 +208,7 @@ func TestConstructedFieldChecks(t *testing.T) {
 			}
 			for _, in := range fieldCheckInputs() {
 				value := fieldCheckValues[in[:1]]
-				accepted := strings.Contains(fieldCheckFields[typ], in[:1])
+				accepted := strings.Contains(fields[typ], in[:1])
 				var want string
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, run := range []struct {
@@ -159,11 +238,11 @@ func TestConstructedFieldChecks(t *testing.T) {
 				msg := fmt.Sprintf("cannot use %s as %s in field F of S", name, checked.typed.fields["S"][0].t)
 				switch {
 				case in[1] == '!' && accepted:
-					if !strings.Contains(want, `"value":"yes"`) {
+					if !strings.Contains(want, yes) {
 						t.Errorf("predicate %q (%s) rejected: %s", in, value, want)
 					}
 				case in[1] == '!':
-					if !strings.Contains(want, `"value":"no"`) {
+					if !strings.Contains(want, no) {
 						t.Errorf("predicate %q (%s) accepted: %s", in, value, want)
 					}
 				case accepted:
@@ -174,17 +253,17 @@ func TestConstructedFieldChecks(t *testing.T) {
 					t.Errorf("%q (%s) accepted or misreported: %s", in, value, want)
 				}
 			}
-		})
+		}
 	}
 }
 
 // TestConstructedFieldChecksAreSelective checks that only values not statically known to fit get
 // a run-time check, which needs instruction set 9.
 func TestConstructedFieldChecksAreSelective(t *testing.T) {
-	src := `type Int terminal
+	src := `type Int = { Text string }
 type S = { Static Int; Var int; Dynamic Int; Elements []Int; Union *Int; Untyped any; Empty []Int; Joined []Int }
 rule main = {x := 1} a:item d:val l:item* o:item? => S{Static: $a, Var: x, Dynamic: $d, Elements: $l.Value, Union: $o, Untyped: x, Empty: filter(nil, (e) => true), Joined: concat(nil, $l.Value)}
-rule item Int = "i" => Int{"i"}
+rule item Int = "i" => Int{Text: "i"}
 rule val any = "v" => list()
 `
 	prog := compile(t, src)
@@ -203,10 +282,10 @@ rule val any = "v" => list()
 	if d := m.Disassemble(); strings.Count(d, "ECHECK") != 2 || !strings.Contains(d, `"Int" field=Dynamic of=S`) {
 		t.Fatalf("disassembly:\n%s", d)
 	}
-	plain := compile(t, `type Int terminal
+	plain := compile(t, `type Int = { Text string }
 type S = { Static Int }
 rule main = a:item => S{Static: $a}
-rule item Int = "i" => Int{"i"}
+rule item Int = "i" => Int{Text: "i"}
 `)
 	if v := plain.Module().instructionSetVersion(); v != isaVersion {
 		t.Fatalf("unchecked module instruction set %d", v)
@@ -215,10 +294,10 @@ rule item Int = "i" => Int{"i"}
 		t.Fatalf("dynamic list: %s", got)
 	}
 	// The recognizer, built without type checking, checks the same fields as its program.
-	pred := compile(t, `type Int terminal
+	pred := compile(t, `type Int = { Text string }
 type S = { Static Int; Dynamic Int }
 rule main = a:item d:val {S{Static: $a, Dynamic: $d} != nil}
-rule item Int = "i" => Int{"i"}
+rule item Int = "i" => Int{Text: "i"}
 rule val any = "v"
 `)
 	rec, err := pred.recognizer()
@@ -244,7 +323,7 @@ rule val any = "v"
 // TestCompiledFieldChecksValidation checks that loading rejects files of an earlier
 // instruction set and field-check type texts that do not name a known type.
 func TestCompiledFieldChecksValidation(t *testing.T) {
-	prog := compile(t, fieldCheckGrammar("[]*(Int | Match)"))
+	prog := compile(t, fieldCheckGrammar("[]*(Int | node[string])"))
 	data, err := prog.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)

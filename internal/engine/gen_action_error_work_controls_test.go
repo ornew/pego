@@ -22,9 +22,9 @@ func TestGeneratedGoActionErrorWork(t *testing.T) {
 	}{
 		{"prefix", rule, `type A = { N int }
  rule ` + rule + ` A = a:"a" #cut => A{N:1 / (len($a)-1)}`, "action in " + rule + ": division by zero", false},
-		{"predicate", "main", `type Word terminal
- rule main Word = (({` + variable + `} leaf) / leaf) #cut
- rule leaf Word = "a"`, "", true},
+		{"predicate", "main", `type Word = { Text string }
+ rule main Word = (({` + variable + `} x:leaf) / x:leaf) #cut => $x
+ rule leaf Word = t:("a") #atomic => Word{Text: text($t)}`, "", true},
 		{"captured", "main", `type A = { N int }
  rule main A = x:` + rule + ` {$x != nil} $$ #cut => $x
  rule ` + rule + ` A = a:"a" #cut => A{N:1 / (len($a)-1)}`, "action in " + rule + ": division by zero", true},

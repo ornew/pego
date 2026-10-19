@@ -35,8 +35,8 @@ func TestGeneratedTypedOperatorsRuleActionWorkload(t *testing.T) {
 	} else {
 		dir = filepath.Join(dir, "actions")
 	}
-	testGeneratedTypedBodyWorkload(t, `type Atom terminal
-type Post = { X Expr; Items []Match; N int }
+	testGeneratedTypedBodyWorkload(t, `type Atom = { Text string }
+type Post = { X Expr; Items []node[string]; N int }
 type Expr ~ Atom | Post
 rule main Expr = e:expr $$ => $e
 rule expr Expr = operators {
@@ -46,7 +46,7 @@ rule expr Expr = operators {
         postfix "[" items:(x:[a-z] #atomic {len($x) == 1} -",") #repeat(3) "]" => Post{X: $lhs, Items: map($items, (e) => e.$x), N: len($items)}
     }
 }
-rule atom Atom = "a"
+rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}
 `, typedOperatorsRuleActionWorkloadFixture, dir, "(typed OperatorsRule body inlined)", GenOptions{disableTypedOperatorsRuleBodies: true})
 }
 

@@ -6,13 +6,13 @@ precedence and an associativity. Operand and operator shapes are ordinary Rule E
 Their combination follows a parsing algorithm inspired by Pratt parsing.
 
 ```pego
-type Num terminal
-type Ident terminal
+type Num = { Text string }
+type Ident = { Text string }
 type Comma = { L Expr; R Expr }
 type Assign = { L Expr; R Expr }
 type Cond = { Cond Expr; Then Expr; Else Expr }
-type Bin = { L Expr; Op Match; R Expr }
-type Unary = { Op Match; X Expr }
+type Bin = { L Expr; Op node[string]; R Expr }
+type Unary = { Op node[string]; X Expr }
 type Call = { Fn Expr; Args []Expr }
 type Index = { X Expr; Index Expr }
 type Member = { X Expr; Name Ident }
@@ -41,8 +41,8 @@ rule expr Expr = operators {
 
 rule args = first:level(expr, assignment) rest:(-ws "," x:level(expr, assignment))* => concat(list($first), map($rest, (r) => r.$x))
 
-rule number Num = [0-9]+
-rule ident Ident = [a-z]+
+rule number Num = t:([0-9]+) #atomic => Num{Text: text($t)}
+rule ident Ident = t:([a-z]+) #atomic => Ident{Text: text($t)}
 rule ws = [ \t\r\n]*
 ```
 
@@ -227,16 +227,17 @@ operand (or of the postfix operator).
 
 If the rule is declared with type `T`, the values of all `operand` items and of
 all operators MUST be assignable to `T`, and `$lhs` and `$rhs` have type `T`.
-An operator without an action produces an `Operator` tuple, so when `T` does not
-accept `Operator`, every operator needs an action.
+An operator without an action produces an `Operator` tuple node, so when `T` does not
+accept `node`, every operator needs an action.
 
 If the rule has no declared type, its type is the union of the types of all
 `operand` items and operators.
 
 ## Concrete Syntax Tree
 
-An operator without an action produces a tuple node of the reserved type
-`Operator`, whose range covers the operator expression.
+An operator without an action produces a tuple node whose
+[node type name](types.md#node-type-names) is `Operator` and whose range covers
+the operator expression.
 
 | Operator | Elements |
 |:--|:--|

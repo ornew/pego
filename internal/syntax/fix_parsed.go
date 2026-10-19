@@ -177,9 +177,9 @@ func typeEdits(o *fixOffsets, src string, g *grammar.Grammar) ([]fixEdit, error)
 			}
 		}
 	}
-	// A terminal of a rule held its matched text, which text read; the struct holds it in Text.
-	// text($x) becomes $x.Text where every capture x in the rule is a call of a rule of a
-	// terminal type, or a choice of such calls.
+	// A terminal of a rule held its matched text, which text and len read; the struct holds it
+	// in Text. text($x) becomes $x.Text and len($x) becomes len($x.Text) where every capture x
+	// in the rule is a call of a rule of a terminal type, or a choice of such calls.
 	var terminalCall func(e grammar.Expr) bool
 	terminalCall = func(e grammar.Expr) bool {
 		switch e := ungroup(e).(type) {
@@ -209,12 +209,19 @@ func typeEdits(o *fixOffsets, src string, g *grammar.Grammar) ([]fixEdit, error)
 		})
 		inspectAST(rd, func(n any) {
 			c, ok := n.(*grammar.Call)
-			if !ok || c.Func != "text" || len(c.Args) != 1 {
+			if !ok || (c.Func != "text" && c.Func != "len") || len(c.Args) != 1 {
 				return
 			}
-			if r, ok := c.Args[0].(*grammar.CaptureRef); ok && !r.Param && terminalCapture[r.Name] {
+			r, ok := c.Args[0].(*grammar.CaptureRef)
+			if !ok || r.Param || !terminalCapture[r.Name] {
+				return
+			}
+			if c.Func == "text" {
 				src := c.Source()
 				edits = append(edits, fixEdit{o.at(src.Pos), o.at(src.End), "$" + r.Name + ".Text"})
+			} else {
+				end := o.at(r.Source().End)
+				edits = append(edits, fixEdit{end, end, ".Text"})
 			}
 		})
 	}

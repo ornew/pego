@@ -31,7 +31,7 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ["z",new Uint8Array(
 	})
 	t.Run("lists-and-folds", func(t *testing.T) {
 		src := `type Box = {
-    Items []Match
+    Items []node[string]
     Left  int
     Right int
 }

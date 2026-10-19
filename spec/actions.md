@@ -25,7 +25,7 @@ not implemented. PEGO has no rule-initialization action block.
 ```
 
 ```pego
-type KV = { Key Match; Op Match; Value Match }
+type KV = { Key node[string]; Op node[string]; Value node[string] }
 rule key_value KV = (k:[a-z]+ #atomic op:"=" v:[0-9]+ #atomic) => KV{Key: $k, Op: $op, Value: $v}
 ```
 
@@ -67,7 +67,7 @@ Inside a lambda body, the lambda's parameters are variables too and are read
 the same way; see [Operators and Functions](#operators-and-functions).
 
 ```pego
-type Item = { Depth int; Name Match }
+type Item = { Depth int; Name node[string] }
 rule item Item = {depth := 1} n:name => Item{Depth: depth, Name: $n}
 ```
 
@@ -77,10 +77,8 @@ Action Expressions operate on nodes, integers, strings, booleans, `nil`, and
 restricted lambda functions. String and integer literals use the same escapes
 and decimal syntax as grammar literals. `T{Field: value, ...}` constructs a
 node of struct type `T`; unset fields read as `nil`. A typed node-list literal
-`[]T{value, ...}` constructs a list value whose element Type is explicitly `T`. A
-terminal Type can be constructed positionally as `T{text}`, which builds a string
-node; the sole argument must be a string-valued Action Expression. These forms never stringify or filter
-values implicitly.
+`[]T{value, ...}` constructs a list value whose element Type is explicitly `T`.
+These forms never stringify or filter values implicitly.
 
 ```pego
 type NameNode = { Name string }
@@ -89,9 +87,9 @@ rule name NameNode = v1:[a-z]+ => NameNode{Name: text($v1)}
 rule twoNames []NameNode = a:name "," b:name => []NameNode{$a, $b}
 rule noNames []NameNode = "" => []NameNode{}
 
-type Identifier terminal
-rule identifier Identifier = [a-z]+
-rule normalized Identifier = n:identifier => Identifier{text($n)}
+type Identifier = { Text string }
+rule identifier Identifier = t:([a-z]+) #atomic => Identifier{Text: text($t)}
+rule normalized Identifier = n:identifier => Identifier{Text: $n.Text}
 ```
 
 A typed node-list literal has the form `[]T{value, ...}`. Every element must
@@ -102,15 +100,15 @@ concrete node list. An empty literal such as `[]NameNode{}` has Type
 `[]*NameNode{nil}`. Elements are evaluated once, left to right; no element is
 dropped implicitly. Primitive-valued lists such as `[]int` are unsupported.
 
-A terminal constructor has the form `T{stringValue}` when `T` resolves to a
-terminal Type. It requires exactly one string-valued argument. Wrong arity or a
-statically known non-string argument is a compile-time error; `T{}` remains an empty struct
-constructor syntactically and is rejected if `T` resolves to a terminal. The
-provided string becomes the terminal text without being parsed again. Its
-source range follows the ordinary newly constructed node rule.
-
-A dynamically typed `any` argument uses the ordinary runtime string check.
-A mismatch aborts a Value Action; inside a Predicate Action it makes the
+In a grammar AST that declares a terminal type (see
+[Grammar JSON](grammar-files.md#grammar-json)), a terminal constructor
+`T{stringValue}` builds a string node of the terminal type `T`. It requires
+exactly one string-valued argument. Wrong arity or a statically known
+non-string argument is a compile-time error; `T{}` is rejected if `T` resolves
+to a terminal. The provided string becomes the terminal text without being
+parsed again. Its source range follows the ordinary newly constructed node
+rule. A dynamically typed `any` argument uses the ordinary runtime string
+check. A mismatch aborts a Value Action; inside a Predicate Action it makes the
 predicate fail and permits the existing backtracking behavior.
 
 A struct field value whose Type the checker does not know, such as a variable,
@@ -121,8 +119,8 @@ evaluated:
 - `int`, `string` and `bool` admit only values of that kind, and `nil` only `nil`;
 - an optional Type `*T` admits `nil` and the values `T` admits;
 - a union admits the values any of its alternatives admits;
-- a struct, terminal or generic node Type admits only nodes of that Type, `node`
-  admits every node, and `terminal` every string node;
+- a struct Type admits only nodes of that Type, `node` admits every node, and
+  `node[string]` every string node;
 - `[]T` admits a list node or list value whose every element `T` admits; list
   elements are nodes or `nil`, so `[]_` and `[]any` admit every list;
 - Error values from error recovery and `Missing` nodes stand for every node Type

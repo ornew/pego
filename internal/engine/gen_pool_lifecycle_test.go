@@ -16,11 +16,11 @@ func TestGeneratedTypedPoolRetention(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(`type A terminal
+	g, err := syntax.Parse(`type A = { Text string }
 rule main A = x:large x:small #cut => $x
-rule large A = [a]*
-rule small A = "b"
-rule repeated A = (x:"b") #repeat(2) #cut`)
+rule large A = t:([a]*) #atomic => A{Text: text($t)}
+rule small A = t:("b") #atomic => A{Text: text($t)}
+rule repeated A = t:((x:"b") #repeat(2) #cut) => A{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,10 +72,10 @@ func TestGeneratedUntypedPoolRetention(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(`type A terminal
+	g, err := syntax.Parse(`type A = { Text string }
 rule main A = lead value:small => $value
 rule lead = [^b]*
-rule small A = "b"`)
+rule small A = t:("b") #atomic => A{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}

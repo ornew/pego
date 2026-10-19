@@ -51,9 +51,9 @@ func TestGeneratedNodeTrace(t *testing.T) {
 rule part = "a"`, "aa", `if count("part",TraceEnter)!=2 {t.Fatal(events)}`},
 		{"lean", `rule main = -part part
 rule part = "a"`, "aa", `if count("part",TraceEnter)!=2 {t.Fatal(events)}`},
-		{"memo", `type Word terminal
+		{"memo", `type Word = { Text string }
 rule main = &part &part &part part
-rule part Word = letter
+rule part Word = t:(letter) #atomic => Word{Text: text($t)}
 rule letter = "a"`, "a", `hits:=0;for _,e:=range events {if e.Memo {hits++;if e.Evals!=0 {t.Fatal(e)}}};if hits==0 {t.Fatal("missing memo hit",events)}`},
 		{"leftrec", `rule main = expr
 rule expr = expr "a" / "a"`, "aaa", `growth:=false;for _,e:=range events {if e.Rule=="expr"&&e.Kind==TraceExit&&e.Evals>1 {growth=true}};if !growth {t.Fatal("missing growth",events)}`},

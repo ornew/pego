@@ -146,7 +146,7 @@ func TestGeneratedTreeTraversal(t *testing.T) {
 // DuckDB supplies Walk(any, func(any) bool) for its typed AST. Compile its actual
 // helper beside a fresh generated parser and exercise both traversal surfaces.
 func TestGeneratedDuckDBWalkCompatibility(t *testing.T) {
-	grammar, err := syntax.Parse("type Leaf terminal\nrule main Leaf = \"é\"\n")
+	grammar, err := syntax.Parse("type Leaf = { Text string }\nrule main Leaf = t:(\"é\") #atomic => Leaf{Text: text($t)}\n")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +174,8 @@ func TestBothWalkAPIs(t *testing.T) {
  node, err := Parse("é")
  if err != nil { t.Fatal(err) }
  generic := 0
- if err := WalkTree(node,func(v WalkVisit)(WalkAction,error){generic++;return WalkContinue,nil});err!=nil||generic!=1 {t.Fatal(generic,err)}
+ // A text struct node and its Text field value.
+ if err := WalkTree(node,func(v WalkVisit)(WalkAction,error){generic++;return WalkContinue,nil});err!=nil||generic!=2 {t.Fatal(generic,err)}
  generic=0
  if err := (Cursor{Root:node,Unit:CodePoints}).At(0,func(v WalkVisit)(WalkAction,error){generic++;return WalkContinue,nil});err!=nil||generic!=1 {t.Fatal(generic,err)}
  typed, err := ParseAST("é")

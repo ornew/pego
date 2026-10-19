@@ -28,14 +28,14 @@ func TestGeneratedGoProfile(t *testing.T) {
 	}
 	write("go.mod", []byte("module profilefixture\n\ngo 1.27.1\n"))
 	for _, f := range []struct{ name, grammar, input, checks string }{
-		{"plain", "type N terminal\nrule main N = part part\nrule part = \"a\"", "aa", `if s.Entered!=3||s.Calls!=3||s.Evals!=3||s.Skipped!=0{t.Fatal(s)};for _,r:=range s.Rules{if r.Rule=="part"&&(r.Calls!=2||r.Consumed!=2){t.Fatal(r)}}`},
+		{"plain", "type N = { Text string }\nrule main N = t:(part part) #atomic => N{Text: text($t)}\nrule part = \"a\"", "aa", `if s.Entered!=3||s.Calls!=3||s.Evals!=3||s.Skipped!=0{t.Fatal(s)};for _,r:=range s.Rules{if r.Rule=="part"&&(r.Calls!=2||r.Consumed!=2){t.Fatal(r)}}`},
 		{"dispatch", "rule main = first / second\nrule first = \"a\"\nrule second = \"b\"", "b", `if s.Skipped!=1||s.Entered!=2{t.Fatal(s)};for _,r:=range s.Rules{if r.Rule=="first"&&(r.Calls!=0||r.Skipped!=1||len(r.SkipReasons)!=1||r.SkipReasons[0].Reason!="first-character"){t.Fatal(r)}}`},
-		{"memo", "type N terminal\nrule main = &part &part &part part\nrule part N = letter\nrule letter = \"a\"", "a", `if s.MemoHits==0{t.Fatal("missing memo",s)}`},
+		{"memo", "type N = { Text string }\nrule main = &part &part &part part\nrule part N = t:(letter) #atomic => N{Text: text($t)}\nrule letter = \"a\"", "a", `if s.MemoHits==0{t.Fatal("missing memo",s)}`},
 		{"leftrec", "rule main = expr\nrule expr = expr \"a\" / \"a\"", "aaa", `if s.Evals<=s.Calls-s.MemoHits{t.Fatal("missing growth",s)}`},
 		{"operators", "rule main = level(expr, product) \"+\" expr\nrule num = [0-9]+\nrule expr = operators {operand num;level sum {infix left \"+\"};level product {infix left \"*\"}}", "1+2*3", ``},
 		{"recover", "rule main = (first / second) #recover(skip=\"!\")\nrule first = \"a\"\nrule second = \"b\"", "!", `if s.Skipped!=2{t.Fatal(s)}`},
-		{"unicode", "type N terminal\nrule main N = part part\nrule part = \"é\"", "éé", `for _,r:=range s.Rules{if r.Rule=="main"{n:=2;if unit==Bytes{n=4};if r.Consumed!=n{t.Fatal(r)}}}`},
-		{"collision", "type Profile terminal\ntype ProfileSnapshot terminal\ntype RuleProfile terminal\ntype ProfileLocation terminal\ntype SkipReasonCount terminal\ntype WithProfile terminal\nrule main Profile = part\nrule part WithProfile = \"a\"", "a", ``},
+		{"unicode", "type N = { Text string }\nrule main N = t:(part part) #atomic => N{Text: text($t)}\nrule part = \"é\"", "éé", `for _,r:=range s.Rules{if r.Rule=="main"{n:=2;if unit==Bytes{n=4};if r.Consumed!=n{t.Fatal(r)}}}`},
+		{"collision", "type Profile = { Text string }\ntype ProfileSnapshot = { Text string }\ntype RuleProfile = { Text string }\ntype ProfileLocation = { Text string }\ntype SkipReasonCount = { Text string }\ntype WithProfile = { Text string }\nrule main Profile = t:(part) #atomic => Profile{Text: text($t)}\nrule part WithProfile = t:(\"a\") #atomic => WithProfile{Text: text($t)}", "a", ``},
 	} {
 		g, err := syntax.Parse(f.grammar)
 		if err != nil {

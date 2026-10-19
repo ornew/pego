@@ -14,15 +14,15 @@ func TestGeneratedTypedDocumentPublicationClone(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds a standalone generated parser")
 	}
-	g, err := syntax.Parse(`type Token terminal
-type Document terminal
-type ParseStats terminal
-type Span terminal
+	g, err := syntax.Parse(`type Token = { Text string }
+type Document = { Text string }
+type ParseStats = { Text string }
+type Span = { Text string }
 type Link = { Label *string; Next *Link }
 type Alt ~ Token | Link
 type Box = { First Token; Again Token; Items []Token; AgainItems []Token; Optional []*Token; Nested [][]Token; Empty []Token; NilList []Token; Choice Alt; Link *Link }
 rule main = x:token => Box{First: $x, Again: $x, Items: []Token{$x, $x}, Optional: []*Token{nil, $x}, Nested: [][]Token{[]Token{$x}}, Choice: $x}
-rule token Token = "x"`)
+rule token Token = t:("x") #atomic => Token{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}

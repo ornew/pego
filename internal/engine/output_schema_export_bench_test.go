@@ -19,7 +19,7 @@ func BenchmarkOutputSchemaExport(b *testing.B) {
 	}
 	for _, count := range []int{1, 128} {
 		var source strings.Builder
-		source.WriteString("type Token terminal; type Holder = { ")
+		source.WriteString("type Token = { Text string }; type Holder = { ")
 		for i := range count {
 			fmt.Fprintf(&source, "F%03d []Token; ", i)
 		}

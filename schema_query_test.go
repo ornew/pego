@@ -251,7 +251,7 @@ rule main = x:"a" => Item{Value: text($x)}`, "main")
 }
 
 func TestPublicPreparedQuerySchema(t *testing.T) {
-	p, err := pego.CompileSource(`type Item = { Value Match }
+	p, err := pego.CompileSource(`type Item = { Value node[string] }
 rule main = x:"a" "b" => Item{Value: $x}`, "main")
 	if err != nil {
 		t.Fatal(err)

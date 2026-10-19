@@ -11,11 +11,11 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-const namedASTGrammar = `type T terminal
+const namedASTGrammar = `type T = { Text string }
 type S = { T T }
 type U ~ S | T
 type Alias ~ T
-type Mixed ~ S | Seq
+type Mixed ~ S | node
 type Number ~ int
 type Values = { N Number; Text string; Flag bool }
 type Recovery = { T T | error }
@@ -23,8 +23,8 @@ type Items ~ []S
 type ParseRuleAST = { T T }
 type ParseRuleAST_ ~ ParseRuleAST
 rule main = t:term => ParseRuleAST{T: $t}
-rule term T = "é"
-rule aliased Alias = "é"
+rule term T = t:("é") #atomic => T{Text: text($t)}
+rule aliased Alias = t:("é") #atomic => T{Text: text($t)}
 rule mixed Mixed = cst
 rule structure = t:term => S{T: $t}
 rule values = "v" => Values{N: 42, Text: "yes", Flag: true}
@@ -34,7 +34,7 @@ rule union U = structure / term
 rule cst = "x" "y"
 rule open node = "z"
 rule arbitrary any = "a" => S{}
-rule abstract terminal = "t"
+rule abstract node[string] = "t"
 rule recursive S = "(" s:recursive ")" / s:structure => $s
 rule abort = x:"a"* #atomic => Values{N: 10 / len($x)}
 rule recoverStruct S | error = structure #recover(skip="?")
@@ -278,13 +278,14 @@ func TestGeneratedNamedASTSuccessfulNil(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated nil-result consumers")
 	}
-	g, err := syntax.Parse(`type T terminal
+	g, err := syntax.Parse(`type T = { Text string }
 type S = { T T }
 type U ~ S | T
 type MaybeU ~ *U
-rule term T = "é"
+rule term T = t:("é") #atomic => T{Text: text($t)}
 rule nilAny any = t:term? => $t
-rule nilNode *node = t:term? => $t
+rule seq = "é" "é"?
+rule nilNode *node = t:seq? => $t
 rule nilUnion MaybeU = t:term? => $t
 `)
 	if err != nil {
@@ -325,7 +326,7 @@ func TestSuccessfulNil(t *testing.T) {
   for _,name:=range []string{"nilAny","nilNode","nilUnion"} {
    n,err:=p.ParseRule(name,"",p.WithUnit(unit));if err!=nil||n!=nil {t.Fatalf("%s generic nil success: %v %v",name,n,err)}
    v,err:=p.ParseRuleAST(name,"",p.WithUnit(unit));if err!=nil||v!=nil {t.Fatalf("%s typed nil success: %T %v %v",name,v,v,err)}
-   v,err=p.ParseRuleAST(name,"é",p.WithUnit(unit));if err!=nil {t.Fatal(err)};x,ok:=v.(*p.T);if !ok||x.Text!="é" {t.Fatalf("%s nonnil result changed: %T %v",name,v,v)}
+   v,err=p.ParseRuleAST(name,"é",p.WithUnit(unit));if err!=nil {t.Fatal(err)};if name=="nilNode" {if v==nil {t.Fatalf("%s nonnil result changed: %T %v",name,v,v)}} else {x,ok:=v.(*p.T);if !ok||x.Text!="é" {t.Fatalf("%s nonnil result changed: %T %v",name,v,v)}}
   }
   legacy,err:=p.ParseAST("",p.WithUnit(unit));if err!=nil {t.Fatal(err)}
   boxed:=any(legacy)

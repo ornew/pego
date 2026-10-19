@@ -1,2 +1,2 @@
-type Out = { A []*Match }
+type Out = { A []*node[string] }
 rule main Out = "(" xs:(n:"a"?)* ")" => Out{A: map($xs, (e) => e.$n)}

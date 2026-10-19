@@ -138,9 +138,9 @@ func TestWorkTextStepBudgetAndLazyOffsets(t *testing.T) {
 
 func TestWorkTextNodeRoutesParity(t *testing.T) {
 	input := strings.Repeat("é\x00😀\xff", 40)
-	for _, src := range []string{`rule main = .* #atomic $$`, `type Token terminal
+	for _, src := range []string{`rule main = .* #atomic $$`, `type Token = { Text string }
 
-rule main Token = .* $$`, `rule main = item $$
+rule main Token = t:(.* $$) #atomic => Token{Text: text($t)}`, `rule main = item $$
 
 rule item = "!" #recover(skip=.*)`} {
 		prog := compile(t, src)

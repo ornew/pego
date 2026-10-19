@@ -121,13 +121,13 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
 |:--|:--|
 | `int`, `string`, `bool` | The same |
 | Struct type `T` | `*T` with the same fields and an embedded `Span{Start, End int}` |
-| Terminal type `T` | `*T` with `Span` and `Text` |
-| `Match`, a string node | `*TNode[string]`, with `Span` and `Value`, the text |
-| `error` (from `#recover`), `Error` | `*Error` with `Span`, `Text` and `Message` |
+| Terminal type `T` of a grammar AST ([Grammar JSON](grammar-files.md#grammar-json)) | `*T` with `Span` and `Text` |
+| `node[string]`, a string node | `*TNode[string]`, with `Span` and `Value`, the text |
+| `error` (from `#recover`) | `*Error` with `Span`, `Text` and `Message` |
 | Union `U ~ A \| B` of node types | An interface `U` implemented by `*A`, `*B` and `*Error` (and by every `*TNode[T]` if a member is a node type) |
 | `[]T` | A slice; an empty list is an empty slice and not `nil` |
 | `*T` | `*int`, `*string` or `*bool` for basic types; otherwise the Go type of `T`, `nil` when absent |
-| A rule without an action whose type is not declared, or is declared `Seq`, `List`, `Operator`, `node` or `terminal` | The Go type of its value: `*TNode[TupleN[E0, ..., En]]` for a tuple of known elements, `*TNode[[]E]` for a list, `*TNode[Unit]` for the unit `()`; `*TNode[any]` when the elements are not known |
+| A rule without an action whose type is not declared, or is declared `node` | The Go type of its value: `*TNode[TupleN[E0, ..., En]]` for a tuple of known elements, `*TNode[[]E]` for a list, `*TNode[Unit]` for the unit `()`; `*TNode[any]` when the elements are not known |
 | `node`, `any`, unions with basic members or members of different shapes, a value that closes a cycle of rules | `any`, holding the converted value |
 | Alias `Alias ~ T` | A Go alias to the value type of `T` |
 
@@ -158,14 +158,14 @@ mapping is:
 | Grammar type | TypeScript value |
 |:--|:--|
 | Struct, terminal | An interface with `type` (the grammar name), `start`, `end` and the fields; terminals also have `text`; nullable where an absent or incompatible recovered value becomes nil |
-| `Match`, a string node | `Match`, which extends `TNode<string>` (`type`, `start`, `end` and `value`) |
+| `node[string]`, a string node | `Match`, which extends `TNode<string>` (`type`, `start`, `end` and `value`) |
 | `[]T` | A readonly array, or null; null differs from an empty array |
 | `*T` | A nullable target |
 | `int` | `number \| bigint`, with signed 64-bit arithmetic and safe-number canonicalization |
 | `string`, `bool` | `string`, `boolean`; an absent non-optional scalar field is `""`, `false` or `0` |
 | Declared alias | The complete target type |
 | Declared pure node union | The member interfaces, `RecoveredError` and null; tuple and list node members remain `Node` |
-| Mixed or undeclared union, `any`, `node`, `terminal` | `TypedValue`, following the conversion of `any` in Go |
+| Mixed or undeclared union, `any`, `node` | `TypedValue`, following the conversion of `any` in Go |
 | Tuple and list nodes | `Node` |
 
 Names collide the same way as in Go, with trailing underscores. Typed parsing by

@@ -9,12 +9,12 @@ import (
 
 func TestExpressionRuleSource(t *testing.T) {
 	src := `package example
-type Num terminal
+type Num = { Text string }
 type Box = { Value Num }
 rule main Box = (
     (n:number {x := len($n)} {x > 0}) @error(message="expected a box")
 ) => Box{Value: $n}
-rule number Num = [0-9]+ #atomic
+rule number Num = t:([0-9]+) #atomic => Num{Text: text($t)}
 rule expr Num = operators {
     operand number
     level additive { infix left "+" => $lhs }
@@ -32,8 +32,12 @@ rule inferred = number:number => $number
 	if _, ok := rs[0].Action.(*grammar.New); !ok {
 		t.Fatalf("constructor: %T", rs[0].Action)
 	}
-	if _, ok := rs[1].Expr.(*grammar.Atomic); !ok {
-		t.Fatalf("atomic: %T", rs[1].Expr)
+	capture, ok := rs[1].Expr.(*grammar.Capture)
+	if !ok {
+		t.Fatalf("capture: %T", rs[1].Expr)
+	}
+	if _, ok := capture.Expr.(*grammar.Atomic); !ok {
+		t.Fatalf("atomic: %T", capture.Expr)
 	}
 	if _, ok := rs[2].Expr.(*grammar.OperatorsRule); !ok {
 		t.Fatalf("operators rule: %T", rs[2].Expr)

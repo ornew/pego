@@ -49,9 +49,9 @@ func TestGeneratedTSWorkControlOperatorsRuleCapturePreservation(t *testing.T) {
 		captures[i] = fmt.Sprintf(`c%d:"-"`, i)
 	}
 	sequence := strings.Join(captures, " ")
-	src := `type Word terminal
- type Op = { Token Match }
- type Box = { Token Match; Rhs Expr }
+	src := `type Word = { Text string }
+ type Op = { Token node[string] }
+ type Box = { Token node[string]; Rhs Expr }
  type Expr ~ Word | Box
  rule main Expr = operators {
   operand word
@@ -59,7 +59,7 @@ func TestGeneratedTSWorkControlOperatorsRuleCapturePreservation(t *testing.T) {
  }
  rule fast Box = o:operator operator? x:word => Box{Token:$o.Token,Rhs:$x}
  rule operator Op = ` + sequence + ` => Op{Token:$c0}
- rule word Word = "z"`
+ rule word Word = t:("z") #atomic => Word{Text: text($t)}`
 	consumer := `import * as p from "./parser.ts";
 ` + tsTypedAssert + `
 function minimum(fits:(n:number)=>boolean):number {
@@ -154,10 +154,10 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ` + string(inputs) +
 }
 
 func TestGeneratedTSWorkControlOperatorsRuleRecoveredTransfer(t *testing.T) {
-	src := `type Word terminal
+	src := `type Word = { Text string }
 
 type Box = {
-    Token Match
+    Token node[string]
     Rhs   Expr
 }
 
@@ -174,7 +174,7 @@ rule fast Box = t:(bad #repeat(512) #atomic) (-bad #repeat(512))? x:word => Box{
 
 rule bad = ("a" "!") #recover(skip="a" "?")
 
-rule word Word = "z"`
+rule word Word = t:("z") #atomic => Word{Text: text($t)}`
 	consumer := `import * as p from "./parser.ts";
 ` + tsTypedAssert + `
 function minimum(fits:(n:number)=>boolean):number {

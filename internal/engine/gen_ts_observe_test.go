@@ -24,56 +24,56 @@ func TestGeneratedTSTrace(t *testing.T) {
 		t.Skip("tsc not found")
 	}
 	fixtures := []struct{ name, grammar, input, checks string }{
-		{"plain", `type W terminal
-rule main W = part
-rule part W = "a"`, "a", `check(stable(events.map(e=>[e.kind,e.rule,e.depth,e.evals,e.end,e.matched]))===stable([["enter","main",1,0,0,false],["enter","part",2,0,0,false],["exit","part",2,1,1,true],["exit","main",1,1,1,true]]),"exact plain calls");`},
-		{"lean", `type W terminal
-rule main W = -space part
+		{"plain", `type W = { Text string }
+rule main W = t:(part) #atomic => W{Text: text($t)}
+rule part W = t:("a") #atomic => W{Text: text($t)}`, "a", `check(stable(events.map(e=>[e.kind,e.rule,e.depth,e.evals,e.end,e.matched]))===stable([["enter","main",1,0,0,false],["enter","part",2,0,0,false],["exit","part",2,1,1,true],["exit","main",1,1,1,true]]),"exact plain calls");`},
+		{"lean", `type W = { Text string }
+rule main W = t:(-space part) #atomic => W{Text: text($t)}
 rule space = " "
-rule part W = "a"`, " a", `check(count("space","enter")===1&&count("part","enter")===1,"lean calls");`},
-		{"memo", `type W terminal
+rule part W = t:("a") #atomic => W{Text: text($t)}`, " a", `check(count("space","enter")===1&&count("part","enter")===1,"lean calls");`},
+		{"memo", `type W = { Text string }
 rule main W = &part &part &part p:part => $p
-rule part W = letter
+rule part W = t:(letter) #atomic => W{Text: text($t)}
 rule letter = "a"`, "a", `check(events.some(e=>e.memo&&e.evals===0),"memo hit");`},
-		{"framed", `type W terminal
+		{"framed", `type W = { Text string }
 type N = { Value W }
 rule main N = p:part => N{Value:$p}
-rule part W = "a"`, "a", `check(count("part","enter")===1,"framed calls");`},
-		{"predicate", `type W terminal
+rule part W = t:("a") #atomic => W{Text: text($t)}`, "a", `check(count("part","enter")===1,"framed calls");`},
+		{"predicate", `type W = { Text string }
 rule main W = {x:=1} #cut p:part {x==1} => $p
-rule part W = "a"`, "a", `check(count("part","enter")===1,"predicate calls");`},
-		{"leftrec", `type W terminal
-rule main W = expr
-rule expr W = expr "a" / "a"`, "aaa", `check(events.some(e=>e.rule==="expr"&&e.kind==="exit"&&e.evals>1),"growth evaluations");`},
-		{"dispatch", `type W terminal
-rule main W = first / second
-rule first W = "a"
-rule second W = "b"`, "b", `check(count("first","enter")===0&&count("first","skipped")===1,"dispatch skip");`},
-		{"recovery", `type W terminal
-rule main W = part #recover(skip="!")
-rule part W = "a"`, "!", `check(count("part","enter")===1,"recovery calls");`},
-		{"operators", `type W terminal
+rule part W = t:("a") #atomic => W{Text: text($t)}`, "a", `check(count("part","enter")===1,"predicate calls");`},
+		{"leftrec", `type W = { Text string }
+rule main W = t:(expr) #atomic => W{Text: text($t)}
+rule expr W = t:(expr "a" / "a") #atomic => W{Text: text($t)}`, "aaa", `check(events.some(e=>e.rule==="expr"&&e.kind==="exit"&&e.evals>1),"growth evaluations");`},
+		{"dispatch", `type W = { Text string }
+rule main W = t:(first / second) #atomic => W{Text: text($t)}
+rule first W = t:("a") #atomic => W{Text: text($t)}
+rule second W = t:("b") #atomic => W{Text: text($t)}`, "b", `check(count("first","enter")===0&&count("first","skipped")===1,"dispatch skip");`},
+		{"recovery", `type W = { Text string }
+rule main W = t:(part #recover(skip="!")) #atomic => W{Text: text($t)}
+rule part W = t:("a") #atomic => W{Text: text($t)}`, "!", `check(count("part","enter")===1,"recovery calls");`},
+		{"operators", `type W = { Text string }
 type B = { Left Expr; Right Expr }
 type Expr ~ W | B
 rule main Expr = l:level(expr, product) "+" r:expr => B{Left:$l,Right:$r}
 rule expr Expr = operators {operand num;level sum {infix left "+" => B{Left:$lhs,Right:$rhs}};level product {infix left "*" => B{Left:$lhs,Right:$rhs}}}
-rule num W = [0-9]+`, "1+2*3", `check(events.some(e=>e.rule==="expr"&&e.kind==="enter"&&e.level>0),"named level");`},
-		{"unicode", `type W terminal
-rule main W = part part
-rule part W = "é"`, "éé", `check(events[events.length-1]!.end===(unit===p.Bytes?4:2),"position units");`},
-		{"nilvalue", `type W terminal
+rule num W = t:([0-9]+) #atomic => W{Text: text($t)}`, "1+2*3", `check(events.some(e=>e.rule==="expr"&&e.kind==="enter"&&e.level>0),"named level");`},
+		{"unicode", `type W = { Text string }
+rule main W = t:(part part) #atomic => W{Text: text($t)}
+rule part W = t:("é") #atomic => W{Text: text($t)}`, "éé", `check(events[events.length-1]!.end===(unit===p.Bytes?4:2),"position units");`},
+		{"nilvalue", `type W = { Text string }
 rule main *W = part => nil
-rule part W = "a"`, "a", `check(count("part","enter")===1,"nil value call");`},
-		{"anchors", `type W terminal
-rule main W = part
-rule part W = "input, o.unit, o.maxDepth, control)"`, "input, o.unit, o.maxDepth, control)", `check(count("part","enter")===1,"runtime-like literal remains unchanged");`},
-		{"collision", `type TraceKind terminal
+rule part W = t:("a") #atomic => W{Text: text($t)}`, "a", `check(count("part","enter")===1,"nil value call");`},
+		{"anchors", `type W = { Text string }
+rule main W = t:(part) #atomic => W{Text: text($t)}
+rule part W = t:("input, o.unit, o.maxDepth, control)") #atomic => W{Text: text($t)}`, "input, o.unit, o.maxDepth, control)", `check(count("part","enter")===1,"runtime-like literal remains unchanged");`},
+		{"collision", `type TraceKind = { Text string }
 type TraceEvent = { Value Observation }
-type Observation terminal
-type ObservationCall terminal
-type TraceFailure terminal
+type Observation = { Text string }
+type ObservationCall = { Text string }
+type TraceFailure = { Text string }
 rule main TraceEvent = p:part => TraceEvent{Value:$p}
-rule part Observation = "a"`, "a", `check(count("part","enter")===1,"collision calls");`},
+rule part Observation = t:("a") #atomic => Observation{Text: text($t)}`, "a", `check(count("part","enter")===1,"collision calls");`},
 	}
 	dir := t.TempDir()
 	write := func(name, data string) {

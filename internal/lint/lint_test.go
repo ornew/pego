@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/engine"
 	"github.com/ornew/pego/internal/syntax"
 )
@@ -16,7 +17,14 @@ import (
 // "line:col severity check".
 func lintSource(t *testing.T, src string, opts Options) ([]string, []Finding) {
 	t.Helper()
-	g, err := syntax.Parse(src)
+	return lintSourceWith(t, syntax.Parse, src, opts)
+}
+
+// lintSourceWith is lintSource with the given parser, so a case can use the retired syntax
+// through syntax.ParseLegacy.
+func lintSourceWith(t *testing.T, parse func(string) (*grammar.Grammar, error), src string, opts Options) ([]string, []Finding) {
+	t.Helper()
+	g, err := parse(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,13 +45,20 @@ type lintCase struct {
 	want []string // "line:col severity check", in order
 	// msg, if set, must appear in the message of the first finding.
 	msg string
+	// legacy parses src with syntax.ParseLegacy, for grammars that reach the engine as JSON in
+	// the retired syntax.
+	legacy bool
 }
 
 func runCases(t *testing.T, cases []lintCase) {
 	t.Helper()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, fs := lintSource(t, tc.src, Options{})
+			parse := syntax.Parse
+			if tc.legacy {
+				parse = syntax.ParseLegacy
+			}
+			got, fs := lintSourceWith(t, parse, tc.src, Options{})
 			if !slices.Equal(got, tc.want) {
 				var msgs []string
 				for _, f := range fs {
@@ -199,7 +214,9 @@ func TestUnusedCapture(t *testing.T) {
 		{name: "lambda parameter of the same name", src: `rule main = r:(x:"a")* x:"b" => map($r, (x) => x.$x)`,
 			want: []string{"1:24 warning unused-capture"}},
 		{name: "terminal type", src: "type T terminal\nrule main T = a:\"x\"", want: []string{"2:15 warning unused-capture"},
-			msg: "terminal of type T"},
+			msg: "terminal of type T", legacy: true},
+		{name: "text struct", src: "type T = { Text string }\nrule main T = t:(a:\"x\") => T{Text: text($t)}", want: []string{"2:18 warning unused-capture"},
+			msg: "the action does not refer to it"},
 		{name: "operatorsRule operator action", src: "rule main = operators {\n    operand [0-9]\n    level { infix left o:\"+\" => $lhs }\n}",
 			want: []string{"3:24 warning unused-capture"}},
 		{name: "operatorsRule operator without action", src: "rule main = operators {\n    operand [0-9]\n    level { infix left o:\"+\" }\n}"},
@@ -251,7 +268,7 @@ func TestRightRecursion(t *testing.T) {
 }
 
 func TestPositions(t *testing.T) {
-	const at = "type At = { Pos int; Text Match }\n"
+	const at = "type At = { Pos int; Text node[string] }\n"
 	runCases(t, []lintCase{
 		{name: "repeated", src: at + "rule main = num*\nrule num At = t:[0-9]+ #atomic => At{Pos: $t.Start, Text: $t}",
 			want: []string{"3:46 hint positions"}, msg: "nor those of the 1 rule that calls it"},

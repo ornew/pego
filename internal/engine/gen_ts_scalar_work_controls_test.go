@@ -100,9 +100,9 @@ for(const unit of [p.CodePoints,p.Bytes]) {
 }
 
 func TestGeneratedTSScalarIteratorNamespace(t *testing.T) {
-	src := `type Generator terminal
+	src := `type Generator = { Text string }
 
-rule main Generator = "z"`
+rule main Generator = t:("z") #atomic => Generator{Text: text($t)}`
 	consumer := `import {parseAST} from "./parser.ts";
  import type {Generator} from "./parser.ts";
 ` + tsTypedAssert + `

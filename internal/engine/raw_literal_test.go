@@ -52,7 +52,7 @@ func TestRawInvalidASTLiterals(t *testing.T) {
 	for _, raw := range rawLiteralValues() {
 		for _, shape := range []string{`t:"�"`, `t:"�" .`, `t:("�" / "other")`, `t:("�" #repeat(2)) #atomic`} {
 			t.Run(fmt.Sprintf("%x/%s", raw, shape), func(t *testing.T) {
-				src := "type N = { T Match; S string }\nrule main N = " + shape + ` $$ => N{T:$t, S:"constant"}`
+				src := "type N = { T node[string]; S string }\nrule main N = " + shape + ` $$ => N{T:$t, S:"constant"}`
 				g := mustParse(src)
 				lit := replaceFirstLiteral(g.Rules()[0].Expr, raw)
 				if lit == nil {
@@ -170,7 +170,7 @@ func rawLiteralGenCorpus() []genCase {
 				expr = "(" + expr + ` / "other")`
 			}
 			cases = append(cases, genCase{fmt.Sprintf("raw AST/%x/%s", raw, shape),
-				"type N = { T Match }\nrule main N = t:" + expr + predicate + " $$ => N{T:$t}",
+				"type N = { T node[string] }\nrule main N = t:" + expr + predicate + " $$ => N{T:$t}",
 				[]string{raw, canonical, raw + "x", canonical + "x", "é", "éx", "other", "", "\xffx", "\x80x"}})
 		}
 	}

@@ -11,7 +11,7 @@ import (
 // Tuple types and type arguments are reserved syntax: they parse, format and round-trip through
 // JSON, but grammars using them do not compile, with or without type checking.
 func TestReservedTypeSyntax(t *testing.T) {
-	src := "type A ~ () | (B,) | (B, *C) | node[B] | []node[(B, C), D]\ntype B terminal\ntype C terminal\ntype D terminal\nrule main = \"a\""
+	src := "type A ~ () | (B,) | (B, *C) | node[B] | []node[(B, C), D]\ntype B = { Text string }\ntype C = { Text string }\ntype D = { Text string }\nrule main = \"a\""
 	g, err := syntax.Parse(src)
 	if err != nil {
 		t.Fatal(err)
@@ -47,15 +47,15 @@ func TestReservedTypeSyntax(t *testing.T) {
 	}
 
 	for _, tc := range []struct{ src, want string }{
-		{"type A ~ (B, C)\ntype B terminal\ntype C terminal\nrule main = \"a\"", "1:10: tuple types are not supported yet"},
+		{"type A ~ (B, C)\ntype B = { Text string }\ntype C = { Text string }\nrule main = \"a\"", "1:10: tuple types are not supported yet"},
 		{"rule main () = \"a\"", "1:11: tuple types are not supported yet"},
 		{"type T = { F (int,) }\nrule main = \"a\"", "1:14: tuple types are not supported yet"},
-		{"rule main = x:\"a\" => $x.(node[Match])", "type arguments of node other than node[string] are not supported yet"},
+		{"rule main = x:\"a\" => $x.(node[node[string]])", "type arguments of node other than node[string] are not supported yet"},
 		{"rule main = x:\"a\" => $x.(node[string, int])", "type arguments of node other than node[string] are not supported yet"},
-		{"rule main = \"a\" => [](Match, Seq){}", "tuple types are not supported yet"},
-		{"type B terminal\nrule main B[Match] = \"a\"", "type B takes no type arguments"},
-		{"rule main int[Match] = \"a\"", "type int takes no type arguments"},
-		{"rule main _[Match] = \"a\"", "type _ takes no type arguments"},
+		{"rule main = \"a\" => [](node[string], node){}", "tuple types are not supported yet"},
+		{"type B = { Text string }\nrule main B[node[string]] = \"a\"", "type B takes no type arguments"},
+		{"rule main int[node[string]] = \"a\"", "type int takes no type arguments"},
+		{"rule main _[node[string]] = \"a\"", "type _ takes no type arguments"},
 		// An undefined name is rejected without type checking too.
 		{"type A ~ Nope[int]\nrule main = \"a\"", "undefined type Nope"},
 		{"type T = { F Nope[int] }\nrule main = \"a\"", "undefined type Nope"},
@@ -84,8 +84,8 @@ func TestReservedTypeSyntax(t *testing.T) {
 	}
 	// A type used from several places, also by the checks of separate actions, is reported once.
 	for _, src := range []string{
-		"type A ~ node[Match]\nrule main A = \"a\"\nrule other A = \"b\"",
-		"type A ~ (Match,)\nrule main = x:\"a\" {$x.(A) == $x} => $x.(A)",
+		"type A ~ node[node[string]]\nrule main A = \"a\"\nrule other A = \"b\"",
+		"type A ~ (node[string],)\nrule main = x:\"a\" {$x.(A) == $x} => $x.(A)",
 	} {
 		for _, opts := range []Options{{}, {NoTypeCheck: true}} {
 			g, err := syntax.Parse(src)
@@ -183,12 +183,12 @@ func TestReservedUnnamedStructType(t *testing.T) {
 		{"type A ~ { X int }\nrule main = \"a\"", "1:10"},
 		{"type T = { F { G int } }\nrule main = \"a\"", "1:14"},
 		{"rule main {} = \"a\"", "1:11"},
-		{"rule main = x:\"a\" => $x.({ Y Match })", "1:26"},
-		{"rule main = \"a\" => []{ A Match }{}", "1:22"},
+		{"rule main = x:\"a\" => $x.({ Y node[string] })", "1:26"},
+		{"rule main = \"a\" => []{ A node[string] }{}", "1:22"},
 		// A list constructor of an unsupported type adds no error of its own, also where the
 		// type was reported elsewhere.
-		{"type A ~ { A Match }\nrule main = x:\"a\" => []A{$x}\nrule b = x:\"a\" => []A{$x}", "1:10"},
-		{"type A ~ { A Match }\nrule main = x:\"a\" {[]A{$x} == nil} => []A{$x}", "1:10"},
+		{"type A ~ { A node[string] }\nrule main = x:\"a\" => []A{$x}\nrule b = x:\"a\" => []A{$x}", "1:10"},
+		{"type A ~ { A node[string] }\nrule main = x:\"a\" {[]A{$x} == nil} => []A{$x}", "1:10"},
 	} {
 		for _, opts := range []Options{{}, {NoTypeCheck: true}} {
 			g, err := syntax.Parse(tc.src)

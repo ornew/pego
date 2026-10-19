@@ -17,8 +17,8 @@ offending construct.
 | `bool` | A boolean. |
 | `node` | Any node. |
 | `node[string]` | A string node: the node of a literal, a character class, `.` or an atomic expression. |
-| `terminal` | Any string node: a `Match` node or a node of a terminal type. |
-| `[]T` | A list of `T`: a list value that an action builds. The node of a repetition is a `List`, whose list is its `.Value`. |
+| `error` | The value of [error recovery](pragmas.md#recover): an error value or a `#missing` insertion. |
+| `[]T` | A list of `T`: a list value that an action builds. The node of a repetition is a list node, a `node` whose list is its `.Value`. |
 | `*T` | A `T` or `nil`. |
 | `T & U` | The values that are both a `T` and a `U` (see [Top, Bottom and Meet](#top-bottom-and-meet)). |
 | `_` | Every value: the top type. |
@@ -71,7 +71,7 @@ do not compile, also when types are otherwise not checked:
   takes type arguments, and of its applications only `node[string]` is
   supported; any other type takes none.
 - An unnamed struct type is written with the braces and fields of a struct
-  definition, as in `type T ~ { Key Match; Value Match }` or a field of type
+  definition, as in `type T ~ { Key node[string]; Value node[string] }` or a field of type
   `{ Line int }`. `type T = {...}` remains the way to define a struct type.
 
 ### Top, Bottom and Meet
@@ -89,51 +89,58 @@ types are otherwise not checked.
 `T & U` is the meet of `T` and `U`, the largest type assignable to both: the
 one assignable to the other, `[]V & []W` is `[](V & W)`, and for unions and
 optional types it is the union of the meets of their members. A meet of unrelated types is `_|_`, so
-`(Match | int) & node` is `Match` while `int & string` is an error where a
+`(node[string] | int) & node` is `node[string]` while `int & string` is an error where a
 location has that type.
 
-### Reserved Node Types
+### Node Type Names
 
-The types of the values that Rule Expressions produce are predefined and can be
-used as types. They name the value shapes defined in [Nodes and Values](nodes.md#node-model);
-`Node.Type()` returns these names for nodes that are not structs.
+The values that Rule Expressions produce have the shapes defined in
+[Nodes and Values](nodes.md#node-model). `Node.Type()` returns the following
+names for nodes that are not structs, and type-checking diagnostics use them
+for the inferred types of such values. Except for `Missing`, they are not
+types of the grammar language: a Type Expression that names one is an error,
+which `pego fix` rewrites to the type in the second column.
 
-| Type | Values |
-|:--|:--|
-| `Match` | String nodes produced by literals, character classes, `.` and `a #atomic` |
-| `Seq` | Tuple nodes: values of sequences |
-| `List` | List nodes: values of repetitions |
-| `Operator` | Tuple nodes of [Operators Rule operators](operators-rule.md#concrete-syntax-tree) without an action |
-| `Error` | Error values: ranges skipped by [error recovery](pragmas.md#recover) |
-| `Missing` | Opt-in literal insertions with empty text/range and `expected`/`message` string fields; Closure whole-input parsing only |
+| Name | Values | Type |
+|:--|:--|:--|
+| `Match` | String nodes produced by literals, character classes, `.` and `a #atomic` | `node[string]` |
+| `Seq` | Tuple nodes: values of sequences | `node` |
+| `List` | List nodes: values of repetitions | `node` |
+| `Operator` | Tuple nodes of [Operators Rule operators](operators-rule.md#concrete-syntax-tree) without an action | `node` |
+| `Error` | Error values: ranges skipped by [error recovery](pragmas.md#recover) | `error` |
+| `Missing` | Opt-in literal insertions with empty text/range and `expected`/`message` string fields; Closure whole-input parsing only | `Missing` |
+
+`terminal`, the former type of every string node, is likewise an error that
+`pego fix` rewrites to `node[string]`.
 
 ## Names
 
 User-defined type names and field names MUST begin with an uppercase ASCII
 letter. Identifiers that begin with a lowercase ASCII letter are reserved for
-the built-in types (`int`, `string`, `bool`, `node`, `terminal`), and `_` and
-`_|_` name the top and bottom types. The names of
-the reserved node types (`Match`, `Seq`, `List`, `Operator`, `Error`, `Missing`) MUST NOT
+the built-in types (`int`, `string`, `bool`, `node`, `error`), and `_` and
+`_|_` name the top and bottom types. The [node type names](#node-type-names)
+(`Match`, `Seq`, `List`, `Operator`, `Error`, `Missing`) MUST NOT
 be defined.
 Each type name MUST be defined at most once, and types and rules have separate
 namespaces (see [Names](grammar-files.md#names)).
 
 ## Type Definitions
 
-The `type` keyword declares a type name in one of three forms:
+The `type` keyword declares a type name in one of two forms:
 
 | Form | Declares |
 |:--|:--|
 | `type T = {...}` | a type definition: a new struct type `T` |
 | `type T ~ U` | an alias: another name for the type `U`, which creates no type |
-| `type T terminal` | a new terminal type `T` |
 
 Only struct types can be defined with `=`: `type T = U` with any other
 right-hand side is an error, and an alias is written `type T ~ U`.
 
 ### Struct Types
 
-A struct type is a node type with named fields. `type T = {...}` defines it.
+A struct type is a type of values with named fields. `type T = {...}` defines it.
+A struct is a value that an action builds, not a node of the parse, so a struct
+type is not assignable to `node`.
 Fields are separated by newlines
 or semicolons. Field names MUST be unique within a struct. Constructor fields
 and function arguments remain comma-separated.
@@ -143,7 +150,7 @@ type MyNode = {
     Field1 SomeType
     Field2 AnotherType
 }
-type Pair = { Key Match; Value Match }
+type Pair = { Key node[string]; Value node[string] }
 ```
 
 A node of a struct type is created with a constructor such as `T{Field: value}` in an [action](actions.md#values-and-constructors).
@@ -151,10 +158,8 @@ A node of a struct type is created with a constructor such as `T{Field: value}` 
 `[]T{value, ...}` constructs a list value with explicit element Type `T`,
 including an empty list. Every element must have a known static type assignable
 to `T`; `nil` requires an optional element type, and nested lists are checked
-recursively. Primitive-valued list construction is unsupported. A declared
-terminal or its alias can be constructed as `T{stringValue}`. The single string
-becomes its text without being parsed again. Constructor fields and arguments
-use commas.
+recursively. Primitive-valued list construction is unsupported. Constructor
+fields and arguments use commas.
 
 ### Type Aliases and Union Types
 
@@ -168,27 +173,27 @@ type Node ~ Expression | Statement | Declaration
 
 A type alias MUST NOT refer to itself, directly or indirectly. Unions are
 normalized: nested unions are flattened and duplicate members are removed (so
-`Match | Match` is `Match`), and a union with an optional member is optional
+`T | T` is `T`), and a union with an optional member is optional
 (`A | *B` is `*(A | B)`).
 
-An alias that resolves to a single struct or terminal type preserves that
-type's identity. A constructor accepts aliases of struct types and produces a node of
-the underlying struct type. A rule declared with an alias of a terminal type
-has the same terminal conversion as a rule declared with that terminal type.
-This also applies to unions normalized to a single type, such as `T | T`.
+An alias that resolves to a single struct type preserves that type's
+identity. A constructor accepts aliases of struct types and produces a node of
+the underlying struct type. This also applies to unions normalized to a single
+type, such as `T | T`.
 
-### Terminal Types
+### Text Structs
 
-`type T terminal` defines a terminal type: a type for string nodes, which have
-no internal structure. A rule declared with a terminal type and without an
-action produces, whatever its body, a terminal of that type holding the matched
-text. If the rule has an action, the action's value is the rule's value, and it
-must be assignable to the terminal type like any other declared type.
+A text struct is a struct type whose only field is `Text string`. It gives a
+token a type of its own: a rule builds it from the text of an atomic match.
 
 ```pego
-type Identifier terminal
-rule ident Identifier = [a-z]+ // produces a string node "abc" of type Identifier, not a list
+type Identifier = { Text string }
+rule ident Identifier = t:([a-z]+) #atomic => Identifier{Text: text($t)}
 ```
+
+A text struct is an ordinary struct type. `type T terminal`, which declared a type for string nodes, is an error that
+`pego fix` rewrites to a text struct, and the rules declared with it to rules
+like the one above.
 
 ## Assignability
 
@@ -201,10 +206,8 @@ declared type of a rule, and so on) if any of the following holds:
 - `T` is a union type and `V` is assignable to one of its members.
 - `T` is `*U`, and `V` is `nil`, or `V` is `*W` with `W` assignable to `U`, or
   `V` is assignable to `U`.
-- `T` is `node` and `V` is a node type.
-- `T` is `terminal` and `V` is `Match`, a terminal type or `terminal`.
+- `T` is `node` and `V` is the type of a node: a string, tuple or list node.
 - `T` is `[]U` and `V` is `[]W` with `W` assignable to `U`.
-- `T` is `Seq`, `List` or `Operator` and `V` is the same type; the run-time check of a value that the checker could not type accepts every string, tuple or list node for them (see [Type Checking](type-checking.md#action-expression-types)).
 
 An error value from [error recovery](pragmas.md#recover) is assignable only to a
 type that admits `error`, such as `T | error`.

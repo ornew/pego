@@ -3,10 +3,10 @@ package engine
 import "testing"
 
 func TestGeneratedTSConversionControlCheckpoints(t *testing.T) {
-	src := `type Word terminal
+	src := `type Word = { Text string }
  type Bag = { Items []Word }
  rule main Bag = x:word* #cut => Bag{Items: $x.Value}
- rule word Word = "a"`
+ rule word Word = t:("a") #atomic => Word{Text: text($t)}`
 	runTypedTSFixture(t, src, tsConversionControlConsumer, GenOptions{Start: "main", Types: true}, "")
 }
 

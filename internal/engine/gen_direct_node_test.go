@@ -13,12 +13,12 @@ import (
 )
 
 var nodeDirectCases = []genCase{
-	{"node/direct_memo_action", `type Pair = { Left Match; Right Match }
+	{"node/direct_memo_action", `type Pair = { Left node[string]; Right node[string] }
 rule main = pair "!" $$ / pair "?" $$
 rule pair Pair = left:[a-z] #atomic "-" right:number => Pair{Left: $left, Right: $right}
 rule number = [0-9]+ #atomic
 `, []string{"a-12!", "a-12?", "a-x?", "a-12", "é-12?", ""}},
-	{"node/direct_nested_frames", `type Item = { Name Match; Value Match }
+	{"node/direct_nested_frames", `type Item = { Name node[string]; Value node[string] }
 type Doc = { Items []Item }
 rule main Doc = items:item #repeat(1, 3) $$ => Doc{Items: $items.Value}
 rule item Item = name:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" => Item{Name: $name, Value: $value}
@@ -31,7 +31,7 @@ rule name = [a-z]+ #atomic
 
 func TestGeneratedNodeDirectFrameRoutes(t *testing.T) {
 	for _, src := range []string{
-		`type N = { Items []Match }
+		`type N = { Items []node[string] }
 rule main N = items:(x:[a-z] #atomic ",")+ $$ => N{Items: map($items, (e) => e.$x)}`,
 		`rule main = n:[0-9] #atomic {size := len($n)} {size == 1} "é" $$ => $n`,
 	} {

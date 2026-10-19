@@ -16,14 +16,14 @@ func TestGeneratedTypedChunkOwnership(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(`type Token terminal
+	g, err := syntax.Parse(`type Token = { Text string }
 type Item = { Token Token }
 type Group = { Items []Item }
 type Root = { Groups []Group; Missing *Group }
 rule main = gs:group* $$ => Root{Groups: $gs.Value}
 rule group = "[" xs:item* "]" => Group{Items: $xs.Value}
 rule item = x:token => Item{Token: $x}
-rule token Token = "é"`)
+rule token Token = t:("é") #atomic => Token{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -19,14 +19,14 @@ func TestGeneratedGoClassDispatchWork(t *testing.T) {
 	for i := 0; i < 320; i++ {
 		chars.WriteRune(rune(0x1000 + i*2))
 	}
-	source := `type Text terminal
-rule main Text = wide #cut
-rule wide Text = [` + chars.String() + `]
-rule scan Text = ([` + chars.String() + `]+) #atomic
-rule negative Text = [^` + chars.String() + `]
-rule negative_scan Text = ([^` + chars.String() + `]+) #atomic
-rule optional Text = ([` + chars.String() + `]? "z") #atomic
-rule fallback Text = [` + chars.String() + `] / "z"`
+	source := `type Text = { Text string }
+rule main Text = x:wide #cut => $x
+rule wide Text = t:[` + chars.String() + `] #atomic => Text{Text: text($t)}
+rule scan Text = t:([` + chars.String() + `]+) #atomic => Text{Text: text($t)}
+rule negative Text = t:[^` + chars.String() + `] #atomic => Text{Text: text($t)}
+rule negative_scan Text = t:([^` + chars.String() + `]+) #atomic => Text{Text: text($t)}
+rule optional Text = t:([` + chars.String() + `]? "z") #atomic => Text{Text: text($t)}
+rule fallback Text = t:([` + chars.String() + `] / "z") #atomic => Text{Text: text($t)}`
 	g, err := syntax.Parse(source)
 	if err != nil {
 		t.Fatal(err)

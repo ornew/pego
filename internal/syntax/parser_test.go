@@ -70,8 +70,8 @@ func TestParseExprStructure(t *testing.T) {
 const calc = `package calc
 
 // --- Type definitions ---
-type Number terminal
-type OpType terminal
+type Number = { Text string }
+type OpType = { Text string }
 
 type Op = {
     Left  Node
@@ -86,9 +86,9 @@ rule expr Node = (
     l:term rest:(op:term_binary_op r:term)*
 ) => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.$op, Right: i.$r})
 
-rule term_binary_op OpType = ("+" / "-") #atomic
+rule term_binary_op OpType = t:(("+" / "-") #atomic) => OpType{Text: text($t)}
 rule group Node = "(" e:expr ")" => $e
-rule number Number = [0-9]+ #atomic
+rule number Number = t:([0-9]+ #atomic) => Number{Text: text($t)}
 rule main = ^^ expr $$
 
 rule e = operators {
@@ -165,7 +165,7 @@ func TestParseErrors(t *testing.T) {
 		{`type A = { X }`, `1:14: expected identifier, found '}'`},
 		{`type A struct { X }`, `1:8: a struct type is defined as type A = {...}; run pego fix to rewrite type A struct`},
 		{`type A = B`, `1:8: only struct types can be defined with =; write type A ~ <type> for an alias (pego fix rewrites type A = <type>)`},
-		{`type A B`, `1:8: expected '=', '~', or 'terminal', found 'B'`},
+		{`type A B`, `1:8: expected '=' or '~', found 'B'`},
 		{`rule a = operators { level { infix "+" } }`, `1:36: expected 'left', 'right', or 'none', found "+"`},
 		{`rule a = x => A{X 1}`, `1:19: expected ',', found 1`},
 		{"rule a = %\nrule b = c", `1:10: expected an expression, found '%'`},
@@ -255,5 +255,129 @@ func TestExprPositions(t *testing.T) {
 	want := "&a@1 !b@4 c #atomic@9 -d@17 _@20 _|_@22 #cut@26 ^^@31 ^@34 $@36 $$@38 .@41 (x y)*@43 z+@50 (w)?@53 v #repeat(2)@58"
 	if s := strings.Join(got, " "); s != want {
 		t.Errorf("got  %s\nwant %s", s, want)
+	}
+}
+
+func TestParseRejectsTerminalType(t *testing.T) {
+	const src = "type T terminal"
+	_, err := Parse(src)
+	list, ok := err.(ErrorList)
+	if !ok || len(list) != 1 {
+		t.Fatalf("got %v, want exactly one error", err)
+	}
+	const want = "a terminal type is the struct type T = { Text string }; run pego fix to rewrite type T terminal"
+	if list[0].Msg != want || list[0].Pos != (grammar.Pos{Line: 1, Col: 8}) {
+		t.Errorf("got %v, want 1:8: %s", err, want)
+	}
+	g, err := ParseLegacy(src)
+	if err != nil {
+		t.Fatalf("ParseLegacy: %v", err)
+	}
+	if _, ok := g.Statements[0].(*grammar.TypeDef).Spec.(*grammar.TerminalSpec); !ok {
+		t.Errorf("ParseLegacy: spec is %T, want *grammar.TerminalSpec", g.Statements[0].(*grammar.TypeDef).Spec)
+	}
+}
+
+func TestParseRejectsPositionalConstructor(t *testing.T) {
+	const src = "type T = { Text string }\nrule r T = \"x\" => T{\"x\"}"
+	_, err := Parse(src)
+	list, ok := err.(ErrorList)
+	if !ok || len(list) != 1 {
+		t.Fatalf("got %v, want exactly one error", err)
+	}
+	const want = "a constructor names its fields: write T{Text: ...} for a text struct (pego fix rewrites T{...})"
+	if list[0].Msg != want || list[0].Pos != (grammar.Pos{Line: 2, Col: 19}) {
+		t.Errorf("got %v, want 2:19: %s", err, want)
+	}
+	g, err := ParseLegacy(src)
+	if err != nil {
+		t.Fatalf("ParseLegacy: %v", err)
+	}
+	if _, ok := g.Statements[1].(*grammar.RuleDef).Action.(*grammar.TerminalConstructor); !ok {
+		t.Errorf("ParseLegacy: action is %T, want *grammar.TerminalConstructor", g.Statements[1].(*grammar.RuleDef).Action)
+	}
+}
+
+// pego fix rewrites a positional constructor of one argument, which built a terminal; a
+// constructor of any other number of arguments was an error before.
+func TestParseRejectsPositionalConstructorArity(t *testing.T) {
+	const src = "type T = { Text string }\nrule r T = \"x\" => T{\"x\", \"y\"}"
+	_, err := Parse(src)
+	list, ok := err.(ErrorList)
+	if !ok || len(list) != 1 {
+		t.Fatalf("got %v, want exactly one error", err)
+	}
+	const want = "a constructor names its fields: write T{Text: ...} for a text struct"
+	if list[0].Msg != want || list[0].Pos != (grammar.Pos{Line: 2, Col: 19}) {
+		t.Errorf("got %v, want 2:19: %s", err, want)
+	}
+}
+
+func TestParseRejectsRetiredTypeNames(t *testing.T) {
+	replacements := map[string]string{
+		"terminal": "node[string]",
+		"Match":    "node[string]",
+		"Seq":      "node",
+		"List":     "node",
+		"Operator": "node",
+		"Error":    "error",
+	}
+	for name, replacement := range replacements {
+		for _, position := range []struct{ name, src string }{
+			{"struct field", "type R = { F NAME }"},
+			{"alias", "type R ~ NAME"},
+			{"rule type", "rule r NAME = \"x\""},
+			{"list", "type R ~ []NAME"},
+			{"pointer", "type R = { F *NAME }"},
+			{"union", "type R ~ int | NAME"},
+			{"nested", "type R = { F []*NAME }"},
+			{"type application", "type R = { F NAME[int] }"},
+			{"cast", "rule r = x:\"x\" => $x.(NAME)"},
+		} {
+			t.Run(name+"/"+position.name, func(t *testing.T) {
+				src := strings.Replace(position.src, "NAME", name, 1)
+				_, err := Parse(src)
+				list, ok := err.(ErrorList)
+				if !ok || len(list) != 1 {
+					t.Fatalf("got %v, want exactly one error", err)
+				}
+				want := fmt.Sprintf("%s is not a type; write %s (pego fix rewrites it)", name, replacement)
+				col := strings.Index(src, name) + 1
+				if list[0].Msg != want || list[0].Pos != (grammar.Pos{Line: 1, Col: col}) {
+					t.Errorf("got %v, want 1:%d: %s", err, col, want)
+				}
+				if _, err := ParseLegacy(src); err != nil {
+					t.Errorf("ParseLegacy: %v", err)
+				}
+			})
+		}
+	}
+}
+
+func TestParseAcceptsValueTypeNames(t *testing.T) {
+	for _, src := range []string{
+		"type R = { F Missing }",
+		"type R = { F node[string] }",
+		"type R = { F node }",
+		"type R = { F error }",
+		"type R ~ Missing | node[string] | node | error",
+		"type R ~ []node[string] | *error",
+		"rule r node[string] = \"x\"",
+		"rule r error = \"x\"",
+	} {
+		if _, err := Parse(src); err != nil {
+			t.Errorf("Parse(%q): %v", src, err)
+		}
+	}
+}
+
+// A field may be named like a retired type: only type positions are rejected.
+func TestParseAcceptsFieldsNamedLikeRetiredTypes(t *testing.T) {
+	const src = `type R = { Match *node[string]; Operator node; Seq node; List []node; Error error; terminal string }
+rule main R = x:"a" => R{Match: nil, Operator: nil, Seq: nil, List: nil, Error: nil, terminal: "t"}
+rule use = r:main => list($r.Match, $r.Operator)
+`
+	if _, err := Parse(src); err != nil {
+		t.Fatal(err)
 	}
 }

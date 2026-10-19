@@ -23,9 +23,8 @@ type SourceBoundary = { Trailing string; Leading string; Detached []SourceCommen
 type Def ~ TypeDef | RuleDef | error
 type TypeDef = { Name Ident; Spec TypeSpec; Comments []Comment; SourceSpan TypeDefBody }
 type TypeDefBody = { Name Ident; Spec TypeSpec }
-type TypeSpec ~ TypeAliasSpec | TerminalSpec | StructSpec
+type TypeSpec ~ TypeAliasSpec | StructSpec
 type TypeAliasSpec = { Type Type }
-type TerminalSpec = {}
 type StructSpec = { Fields []FieldSpec; Comments []Comment }
 type FieldSpec ~ Field | error
 type Field = { Name Ident; Type Type; Comments []Comment }
@@ -105,7 +104,7 @@ type ActionBlock = { Actions []ActionStmt; Comments []Comment }
 type DefaultAction = { Text string }
 type ActionExpr ~ (
   Int | String | True | False | Nil | CaptureRef | VarRef
-  | BinaryOp | UnaryOp | FieldAccess | CaptureAccess | Cast | Call | Constructor | ListConstructor | TerminalConstructor | ActionGroup | Lambda
+  | BinaryOp | UnaryOp | FieldAccess | CaptureAccess | Cast | Call | Constructor | ListConstructor | ActionGroup | Lambda
 )
 type BinaryOp = { Op string; L ActionExpr; R ActionExpr }
 type UnaryOp = { Op string; X ActionExpr }
@@ -115,7 +114,6 @@ type Cast = { X ActionExpr; Type Type } // x.(T)
 type Call = { X ActionExpr; Args []ActionExpr }
 type Constructor = { X ActionExpr; Inits []InitField; Comments []Comment }
 type ListConstructor = { Elem Type; Items []ActionExpr; Comments []Comment }
-type TerminalConstructor = { Type VarRef; Args []ActionExpr; Comments []Comment }
 type InitField = { Name Ident; Val ActionExpr; Comments []Comment }
 type ActionGroup = { Expr ActionExpr }
 type Lambda = { Params []Ident; Body ActionExpr }
@@ -188,9 +186,9 @@ rule type_def_stmt TypeDef = (
 // Its typed node retains the actual parse span without repeating recovery.
 rule type_def_body TypeDefBody = (
   "type" -word_end #cut name:(ident @error(message="expected type name")) -ws
-  spec:(type_spec @error(message="expected '= {', '~' or terminal"))
+  spec:(type_spec @error(message="expected '= {' or '~'"))
 ) => TypeDefBody{Name: $name, Spec: $spec}
-rule type_spec TypeSpec = struct_spec / terminal_spec / type_alias_spec
+rule type_spec TypeSpec = struct_spec / type_alias_spec
 rule struct_spec StructSpec = (
   "=" -ws "{" #cut {ml := false} fields:(f:field_spec)* cs:comments
   -("}" @error(message="expected closing brace for struct"))
@@ -200,13 +198,12 @@ rule field Field = (
   cs:comments name:(ident @error(message="expected field name")) -ws
   t:(type_expr @error(message="expected field type")) tc:field_end
 ) => Field{Name: $name, Type: $t, Comments: concat($cs, $tc)}
-rule terminal_spec TerminalSpec = "terminal" !ident_char => TerminalSpec{}
 rule type_alias_spec TypeAliasSpec = "~" -ws t:type_expr => TypeAliasSpec{Type: $t}
 rule type_expr Type = operators {
   skip ws
   operand bottom
-  operand name:ident args:type_args => TypeApp{Name: $name, Args: $args}
-  operand name:ident => TypeRef{Name: $name}
+  operand !retired_type name:ident args:type_args => TypeApp{Name: $name, Args: $args}
+  operand !retired_type name:ident => TypeRef{Name: $name}
   operand t:type_group => $t
   operand t:struct_type => $t
   level union { infix left "|" => UnionType{L: $lhs, R: $rhs} }
@@ -222,6 +219,9 @@ rule struct_type StructType = (
   "{" {ml := false} fields:(f:field_spec)* cs:comments
   -("}" @error(message="expected closing brace for struct"))
 ) => StructType{Fields: map($fields, (x) => x.$f), Comments: $cs}
+
+// The names of node types other than Missing, and terminal, are not types.
+rule retired_type = ("terminal" / "Match" / "Seq" / "List" / "Operator" / "Error") !ident_char
 
 // The brackets of type arguments follow the name directly.
 rule type_args []Type = (
@@ -387,7 +387,7 @@ rule action_assign_stmt ActionAssign = (
 rule action_expr ActionExpr = lambda / action_ops
 rule action_ops ActionExpr = operators {
   skip ws
-  operand list_constructor / terminal_constructor / constructor / call / action_group / int / string / true / false / nil / capture_ref / var_ref
+  operand list_constructor / constructor / call / action_group / int / string / true / false / nil / capture_ref / var_ref
   level disjunction { infix left "||" => BinaryOp{Op: text($op), L: $lhs, R: $rhs} }
   level conjunction { infix left "&&" => BinaryOp{Op: text($op), L: $lhs, R: $rhs} }
   level comparison { infix none "==" / "!=" / "<=" / ">=" / "<" / ">" => BinaryOp{Op: text($op), L: $lhs, R: $rhs} }
@@ -427,10 +427,6 @@ rule list_constructor ListConstructor = (
   -("{" @error(message="expected opening brace for list constructor")) {ml := true} -ws
   items:action_args? cs:comments -("}" @error(message="expected closing brace for list constructor"))
 ) => ListConstructor{Elem: $elem, Items: concat($items), Comments: $cs}
-rule terminal_constructor TerminalConstructor = (
-  name:var_name -ws "{" {ml := true} -ws !("}" / ident -ws ":") #cut
-  args:action_args cs:comments -("}" @error(message="expected closing brace for terminal constructor"))
-) => TerminalConstructor{Type: $name, Args: $args, Comments: $cs}
 rule constructor Constructor = (
   name:var_name -ws "{" {ml := true} -ws #cut fields:constructor_fields? cs:comments
   -("}" @error(message="expected closing brace for constructor"))

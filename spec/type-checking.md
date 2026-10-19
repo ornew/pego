@@ -11,10 +11,10 @@ reports. The types themselves and the relation "assignable" are defined in the
 
 | Rule Expression | Type |
 |:--|:--|
-| Literal, character class, `.`, `a #atomic`, `_` | `Match` |
-| `a b` | `Seq`; if the sequence has captures, a `Seq` with the corresponding fields |
+| Literal, character class, `.`, `a #atomic`, `_` | `node[string]` |
+| `a b` | A tuple node of the types of the elements, a `node`; if the sequence has captures, a tuple node with the corresponding fields |
 | `a / b` | The union of the types of `a` and `b` |
-| `a*`, `a+`, `a #repeat(...)` | `[]T`, where `T` is the type of the element; if the element has captures, `T` is a `Seq` with the corresponding fields |
+| `a*`, `a+`, `a #repeat(...)` | `[]T`, where `T` is the type of the element; if the element has captures, `T` is a tuple node with the corresponding fields |
 | `a?` | `*T`, where `T` is the type of `a` |
 | Rule call | The type of the called rule |
 
@@ -25,7 +25,7 @@ in some alternatives of a choice, or inside an optional expression, it may not
 match, and its type is `*T` instead.
 
 ```pego
-rule r = x:"a"? y:("b" / z:"c") // $x: *Match, $y: Match, $z: *Match
+rule r = x:"a"? y:("b" / z:"c") // $x: *node[string], $y: node[string], $z: *node[string]
 ```
 
 ## Action Expression Types
@@ -42,7 +42,7 @@ have the following types.
 | `nil` | `nil`, assignable to any optional type |
 | `$label` | The type of the capture (see above) |
 | `T{Field: value, ...}` | Struct Type `T` |
-| `T{stringValue}` | Terminal Type `T`; exactly one string-valued argument is required |
+| `T{stringValue}` | Terminal Type `T` of a grammar AST ([Grammar JSON](grammar-files.md#grammar-json)); exactly one string-valued argument is required |
 | `[]T{a, b, ...}` | `[]T`; every element must have a known Type assignable to `T` |
 | `x.Name` | The type of the field `Name`; optional (`*T`) if `x` has a union type and only some members declare the field |
 | `x.$y` | The join of the types of capture `y` of the node types `x` may have |
@@ -85,12 +85,11 @@ produces, the lines of such a rule when it is an Operators Rule, and the
 
 Diagnostics print the shape of a value type as `node[string]` for a string node,
 `(node[string], node[string])` for a tuple of two and `[]node[string]` for a list;
-the declared names `Match`, `Seq` and `List` describe the same values (see
-[Type System](types.md#reserved-node-types)).
+the [node type names](types.md#node-type-names) `Match`, `Seq` and `List` that
+some diagnostics print describe the same values.
 
-A run-time check tests a value as the value types describe it. `Match`,
-`terminal` and a terminal Type take a string node; `node`, `Seq`, `List` and
-`Operator` take every node; a list Type takes a list value, such as one an
+A run-time check tests a value as the value types describe it. `node[string]`
+and a terminal Type take a string node; `node` takes every node; a list Type takes a list value, such as one an
 action builds, and not the node of a repetition, whose list is its `Value`;
 `[]_` and `[]any` take every list value; and an error value from recovery fits
 only a Type that admits `error`. Predicates are checked like actions, and a
@@ -121,8 +120,8 @@ growth: a finite recursive type can also reach them. Declare recursive result
 types when precise checking is required.
 
 ```pego
-rule num = [0-9]+ #atomic // Match
-rule pair = k:num "=" v:num // Seq{k: Match, v: Match}
+rule num = [0-9]+ #atomic // node[string]
+rule pair = k:num "=" v:num // a tuple node of three string nodes, with captures k and v; diagnostics print Seq{k: Match, v: Match}
 ```
 
 The type of the accumulator of `foldl` and `foldr` is widened to the union of

@@ -1,4 +1,4 @@
 type B = { N int }
-type Out = { A []Match }
+type Out = { A []node[string] }
 rule main Out = -bad? xs:(n:"x" #atomic bad)* => Out{A: map($xs, (e) => e.$n)}
 rule bad B = "!" => B{N: nope}

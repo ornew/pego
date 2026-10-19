@@ -19,71 +19,93 @@ import (
 func TestCompiledRoundTrip(t *testing.T) {
 	for _, c := range genCorpus(t) {
 		t.Run(c.name, func(t *testing.T) {
-			prog := compile(t, c.src)
-			data, err := prog.MarshalBinary("main")
-			if err != nil {
-				t.Fatal(err)
-			}
-			loaded, start, err := LoadProgram(data, Options{})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if start != "main" {
-				t.Errorf("start %q", start)
-			}
-			for _, in := range c.inputs {
-				n1, err1 := prog.Parse("main", in)
-				n2, err2 := loaded.Parse(start, in)
-				if a, b := resultJSON(n1, err1), resultJSON(n2, err2); a != b {
-					t.Errorf("input %q\n original %s\n loaded   %s", in, a, b)
-				}
-			}
-			// Saving the loaded program again produces the same bytes.
-			again, err := loaded.MarshalBinary("main")
-			if err != nil || !bytes.Equal(data, again) {
-				t.Errorf("re-marshaled data differs (%v)", err)
-			}
-			// An AST-less file carries a recognition bundle and returns the same
-			// results on the bytecode backend. The bundle can make it larger.
-			bare, err := prog.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if data[len(compiledMagic)] != 2 || bare[len(compiledMagic)] != 3 {
-				t.Fatalf("compiled versions: with AST %d, without AST %d", data[len(compiledMagic)], bare[len(compiledMagic)])
-			}
-			bareProg, _, err := LoadProgram(bare, Options{})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if bareProg.Grammar != nil || strings.Join(bareProg.Rules(), ",") != strings.Join(prog.Rules(), ",") {
-				t.Errorf("bare program: grammar %v, rules %v", bareProg.Grammar, bareProg.Rules())
-			}
-			if _, err := bareProg.ParseWith("main", "", ParseOptions{Backend: Closure}); err == nil || !strings.Contains(err.Error(), "closure backend") {
-				t.Errorf("closure backend without the AST: %v", err)
-			}
-			if again, err := bareProg.MarshalBinary("main"); err != nil || !bytes.Equal(bare, again) {
-				t.Errorf("re-marshaled bare data differs (%v)", err)
-			}
-			// Version 1 files can also be loaded. They predate source information,
-			// so the loader takes it from the options.
-			v1, _, err := LoadProgram(marshalV1(prog, "main"), Options{SourceInfo: prog.sourceInfo})
-			if err != nil {
-				t.Fatal(err)
-			}
-			for _, in := range c.inputs {
-				want := resultJSON(prog.Parse("main", in))
-				for _, l := range []struct {
-					name string
-					prog *Program
-					b    Backend
-				}{{"bare", bareProg, Default}, {"bytecode", loaded, Bytecode}, {"v1", v1, Default}, {"v1 bytecode", v1, Bytecode}, {"iterative", bareProg, BytecodeIterative}} {
-					if got := resultJSON(l.prog.ParseWith("main", in, ParseOptions{Backend: l.b})); got != want {
-						t.Errorf("%s: input %q\n original %s\n loaded   %s", l.name, in, want, got)
-					}
-				}
-			}
+			// A version 1 file predates the run-time checks of constructed fields, so the field
+			// type errors of these programs do not survive it.
+			v1Unchecked := c.name == "terminal constructor value error" || c.name == "terminal constructor predicate error"
+			checkCompiledRoundTrip(t, compile(t, c.src), c.inputs, v1Unchecked)
 		})
+	}
+}
+
+// The terminal type still reaches the engine from JSON grammars: its constructors are read with
+// syntax.ParseLegacy, and check their values without a field check.
+func TestCompiledRoundTripTerminalConstructors(t *testing.T) {
+	for name, src := range map[string]string{
+		"value error":     "type Int terminal\nrule main = {value := 1} \"x\" => Int{value}",
+		"predicate error": "type Int terminal\nrule main = {value := 1} {Int{value} != nil} \"x\" / \"x\"",
+	} {
+		t.Run(name, func(t *testing.T) {
+			checkCompiledRoundTrip(t, compileLegacy(t, src), []string{"x", ""}, false)
+		})
+	}
+}
+
+func checkCompiledRoundTrip(t *testing.T, prog *Program, inputs []string, v1Unchecked bool) {
+	data, err := prog.MarshalBinary("main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	loaded, start, err := LoadProgram(data, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if start != "main" {
+		t.Errorf("start %q", start)
+	}
+	for _, in := range inputs {
+		n1, err1 := prog.Parse("main", in)
+		n2, err2 := loaded.Parse(start, in)
+		if a, b := resultJSON(n1, err1), resultJSON(n2, err2); a != b {
+			t.Errorf("input %q\n original %s\n loaded   %s", in, a, b)
+		}
+	}
+	// Saving the loaded program again produces the same bytes.
+	again, err := loaded.MarshalBinary("main")
+	if err != nil || !bytes.Equal(data, again) {
+		t.Errorf("re-marshaled data differs (%v)", err)
+	}
+	// An AST-less file carries a recognition bundle and returns the same
+	// results on the bytecode backend. The bundle can make it larger.
+	bare, err := prog.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if data[len(compiledMagic)] != 2 || bare[len(compiledMagic)] != 3 {
+		t.Fatalf("compiled versions: with AST %d, without AST %d", data[len(compiledMagic)], bare[len(compiledMagic)])
+	}
+	bareProg, _, err := LoadProgram(bare, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bareProg.Grammar != nil || strings.Join(bareProg.Rules(), ",") != strings.Join(prog.Rules(), ",") {
+		t.Errorf("bare program: grammar %v, rules %v", bareProg.Grammar, bareProg.Rules())
+	}
+	if _, err := bareProg.ParseWith("main", "", ParseOptions{Backend: Closure}); err == nil || !strings.Contains(err.Error(), "closure backend") {
+		t.Errorf("closure backend without the AST: %v", err)
+	}
+	if again, err := bareProg.MarshalBinary("main"); err != nil || !bytes.Equal(bare, again) {
+		t.Errorf("re-marshaled bare data differs (%v)", err)
+	}
+	// Version 1 files can also be loaded. They predate source information,
+	// so the loader takes it from the options.
+	v1, _, err := LoadProgram(marshalV1(prog, "main"), Options{SourceInfo: prog.sourceInfo})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, in := range inputs {
+		want := resultJSON(prog.Parse("main", in))
+		for _, l := range []struct {
+			name string
+			prog *Program
+			b    Backend
+		}{{"bare", bareProg, Default}, {"bytecode", loaded, Bytecode}, {"v1", v1, Default}, {"v1 bytecode", v1, Bytecode}, {"iterative", bareProg, BytecodeIterative}} {
+			if v1Unchecked && strings.HasPrefix(l.name, "v1") {
+				continue
+			}
+			if got := resultJSON(l.prog.ParseWith("main", in, ParseOptions{Backend: l.b})); got != want {
+				t.Errorf("%s: input %q\n original %s\n loaded   %s", l.name, in, want, got)
+			}
+		}
 	}
 }
 

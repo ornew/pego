@@ -12,13 +12,13 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-const filterIdentitySource = `type Out = { First Match; Kept []Match; Empty []Match }
+const filterIdentitySource = `type Out = { First node[string]; Kept []node[string]; Empty []node[string] }
 rule main = first:"a" second:"b" $$ => Out{First: $first, Kept: filter(list($first, $second, $first), (x) => text(x) == "a"), Empty: filter(nil, (x) => true)}`
 
 func filterCases() []genCase {
 	return []genCase{
 		{"identity and nil input", filterIdentitySource, []string{"ab", "a", "ac", ""}},
-		{"nil elements", `type Out = { Items []*Match }
+		{"nil elements", `type Out = { Items []*node[string] }
 rule main = x:"é" $$ => Out{Items: filter(list(nil, $x, nil, $x), (item) => item == nil || text(item) == "é")}`, []string{"é", "a", ""}},
 		{"remove all", `rule main = v1:"é" $$ => filter(list($v1), (item) => false)`, []string{"é", "", "a"}},
 		{"keep order", `rule main = x:[a-z]* #atomic $$ => filter(list($x, nil, $x), (item) => item != nil)`, []string{"ab", "", "é"}},
@@ -79,7 +79,7 @@ func TestFilterTypeAndRuntimeValidation(t *testing.T) {
 		`rule main = v1:"a" => filter(list($v1), true)`,
 		`rule main = "a" => filter(1, (x) => true)`,
 		`rule main = v1:"a" => filter(list($v1))`,
-		`type Out = { Items []Match }
+		`type Out = { Items []node[string] }
 rule main = v1:"a" => Out{Items: filter(list($v1, nil), (x) => x != nil)}`,
 	} {
 		g, err := syntax.Parse(source)

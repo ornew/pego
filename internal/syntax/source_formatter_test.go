@@ -18,8 +18,8 @@ rule main = "x" => A{X: /* value */ 1}`,
 rule main = "x" => A{/* field */ X: 1}`,
 		`rule main = "x" => 1 + /* right */ 2`,
 		`rule main = {x := /* assignment */ 1} "x"`,
-		`type Int terminal
-rule main = "x" => Int{/* terminal */ "0"}`,
+		`type Int = { Text string }
+rule main = "x" => Int{/* terminal */ Text: "0"}`,
 		`rule main = "x" => list(/* same */ 1, /* same */ 2)`,
 		`rule main = "x" => map(list(), /* lambda */ (x) => x)`,
 		`rule main = "x" => int(/* unary */ -1)`,

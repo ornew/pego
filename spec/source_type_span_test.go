@@ -15,13 +15,13 @@ func TestCanonicalTypeDeclarationSpans(t *testing.T) {
 		name, source string
 		spans        []string
 	}{
-		{"terminal", "// leading\ntype T terminal // trailing\nrule main = \"x\"", []string{"type T terminal"}},
-		{"same line separator", "type A terminal; /* next */ type B ~ []A", []string{"type A terminal", "type B ~ []A"}},
+		{"terminal", "// leading\ntype T = { Text string } // trailing\nrule main = \"x\"", []string{"type T = { Text string }"}},
+		{"same line separator", "type A = { Text string }; /* next */ type B ~ []A", []string{"type A = { Text string }", "type B ~ []A"}},
 		{"alias trailing block", "type T ~ A /* outside */\nrule main = \"x\"", []string{"type T ~ A"}},
 		{"multiline alias", "/* detached */\n\n// leading\ntype T ~ (\n []A | *B\n)\n// trailing\n", []string{"type T ~ (\n []A | *B\n)"}},
-		{"struct", "type T = {\n // field\n A Match\n B []Match; // previous\n // unowned\n}\n\n// eof", []string{"type T = {\n // field\n A Match\n B []Match; // previous\n // unowned\n}"}},
-		{"unicode and CRLF", "// 😀\r\ntype T = { A /* β */ Match }\r\n", []string{"type T = { A /* β */ Match }"}},
-		{"CR separators", "type T terminal\rtype U ~ *T\r", []string{"type T terminal", "type U ~ *T"}},
+		{"struct", "type T = {\n // field\n A node[string]\n B []node[string]; // previous\n // unowned\n}\n\n// eof", []string{"type T = {\n // field\n A node[string]\n B []node[string]; // previous\n // unowned\n}"}},
+		{"unicode and CRLF", "// 😀\r\ntype T = { A /* β */ node[string] }\r\n", []string{"type T = { A /* β */ node[string] }"}},
+		{"CR separators", "type T = { Text string }\rtype U ~ *T\r", []string{"type T = { Text string }", "type U ~ *T"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			assertCanonicalTypeSpans(t, p, tc.source, tc.spans)

@@ -13,9 +13,9 @@ import (
 )
 
 func TestOutputSchemaPrototype(t *testing.T) {
-	g, err := syntax.Parse(`type Item = { Value string; Next *Item; Count int; Flag bool; Values []Match }
-type Unused terminal
-type Either ~ Item | Match
+	g, err := syntax.Parse(`type Item = { Value string; Next *Item; Count int; Flag bool; Values []node[string] }
+type Unused = { Text string }
+type Either ~ Item | node[string]
 rule main = item
 rule item = x:"a" => Item{Value: text($x), Next: nil, Count: 0, Flag: false, Values: list($x)}
 rule unused = "z"`)

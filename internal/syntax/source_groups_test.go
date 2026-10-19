@@ -9,7 +9,7 @@ import (
 )
 
 func TestSourceGroups(t *testing.T) {
-	const src = `type Number terminal
+	const src = `type Number = { Text string }
 type Alias ~ (
  // type documentation
  (Number) // type tail
@@ -141,18 +141,18 @@ func TestMultilineFieldTypeIndentation(t *testing.T) {
 func TestTypeFormattingIdempotence(t *testing.T) {
 	for _, src := range []string{
 		"type T = {\n  F (\n    /* a\n  b */\n    int\n  )\n}\n",
-		"type T = {\n  F {\n    /* a\nb */\n    A Match\n  }\n}\n",
+		"type T = {\n  F {\n    /* a\nb */\n    A node[string]\n  }\n}\n",
 		"type A ~ ((\n  /* a\n  b */\n  int\n))\n",
 		"type A ~ (\n  // x /* y\n  (\n    int\n  )\n)\n",
-		"type A ~ { A Match /* c */ }\n",
-		"rule main { A Match /* c */ } = \"a\"\n",
-		"type T = { F { A Match /* c */ } }\n",
-		"rule main = x:\"a\" => []{ A Match /* c */ }{}\n",
-		"type A ~ ({ A Match /* c */ })\n",
-		"type A ~ ({ A Match /* c */ },)\n",
-		"rule main = x:\"a\" => $x.({ A Match /* c */ })\n",
-		"type A ~ node[{ A Match /* c */ }]\n",
-		"type T = { F ({ A Match /* c */ }); G int }\n",
+		"type A ~ { A node[string] /* c */ }\n",
+		"rule main { A node[string] /* c */ } = \"a\"\n",
+		"type T = { F { A node[string] /* c */ } }\n",
+		"rule main = x:\"a\" => []{ A node[string] /* c */ }{}\n",
+		"type A ~ ({ A node[string] /* c */ })\n",
+		"type A ~ ({ A node[string] /* c */ },)\n",
+		"rule main = x:\"a\" => $x.({ A node[string] /* c */ })\n",
+		"type A ~ node[{ A node[string] /* c */ }]\n",
+		"type T = { F ({ A node[string] /* c */ }); G int }\n",
 	} {
 		g, err := Parse(src)
 		if err != nil {

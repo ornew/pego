@@ -31,11 +31,11 @@ func TestGeneratedDocumentInvalidUTF8EditEquivalence(t *testing.T) {
 		"rule main = item* $$\nrule item = [é日😀�]",
 		"rule main = x $$\nrule x = .",
 		"rule main = (euro / other)* $$\nrule euro = [€😀]\nrule other = .",
-		`type Char terminal
+		`type Char = { Text string }
 type Result = { Wide []Char; Other []Char }
 rule main Result = w:wide* o:other* $$ => Result{Wide: $w.Value, Other: $o.Value}
-rule wide Char = [€😀é]
-rule other Char = .`,
+rule wide Char = t:([€😀é]) #atomic => Char{Text: text($t)}
+rule other Char = t:(.) #atomic => Char{Text: text($t)}`,
 	}
 	files := map[string]string{"go.mod": "module fixture\n\ngo 1.27.1\n"}
 	for i, src := range grammars {

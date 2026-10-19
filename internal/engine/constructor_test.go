@@ -13,15 +13,23 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-const constructorGrammar = `type Int terminal
+const constructorGrammar = `type Int = { Text string }
+type Alias ~ Int
+type Values = { Items []Int; Nested [][]Int; Maybe []*Int; Default Int; Empty []Int }
+rule main Values = v1:"😀" => Values{Items: []Int{Int{Text: "0"}, Alias{Text: text($v1)}}, Nested: [][]Int{[]Int{}, []Int{Int{Text: "1"}}}, Maybe: []*Int{nil, Int{Text: "2"}}, Default: Int{Text: "0"}, Empty: []Int{}}
+`
+
+// legacyConstructorGrammar is constructorGrammar in the retired terminal type syntax, which
+// grammars that reach the engine as JSON ASTs may still use; it is read with syntax.ParseLegacy.
+const legacyConstructorGrammar = `type Int terminal
 type Alias ~ Int
 type Values = { Items []Int; Nested [][]Int; Maybe []*Int; Default Int; Empty []Int }
 rule main Values = v1:"😀" => Values{Items: []Int{Int{"0"}, Alias{text($v1)}}, Nested: [][]Int{[]Int{}, []Int{Int{"1"}}}, Maybe: []*Int{nil, Int{"2"}}, Default: Int{"0"}, Empty: []Int{}}
 `
 
 func TestTypedNodeConstructors(t *testing.T) {
-	const source = constructorGrammar
-	g, err := syntax.Parse(source)
+	const source = legacyConstructorGrammar
+	g, err := syntax.ParseLegacy(source)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,18 +90,18 @@ func TestTypedNodeConstructors(t *testing.T) {
 func constructorCases() []genCase {
 	return []genCase{
 		{"typed node constructors", constructorGrammar, []string{"😀", "", "x"}},
-		{"terminal constructor root", `type Int terminal
+		{"terminal constructor root", `type Int = { Text string }
 type Alias ~ Int
-rule main Alias = "é" => Alias{"0"}`, []string{"é", "", "e"}},
-		{"typed list root", `type T terminal
-rule main []T = "x" => []T{T{"0"}}`, []string{"x", "", "xx"}},
-		{"typed nullable union list", `type T terminal
-type R = { Values []*(T | Match) }
-rule main R = x:"é" => R{Values: []*(T | Match){nil, T{"0"}, $x}}`, []string{"é", "", "x"}},
-		{"terminal constructor value error", `type Int terminal
-rule main = {value := 1} "x" => Int{value}`, []string{"x", ""}},
-		{"terminal constructor predicate error", `type Int terminal
-rule main = {value := 1} {Int{value} != nil} "x" / "x"`, []string{"x", ""}},
+rule main Alias = "é" => Alias{Text: "0"}`, []string{"é", "", "e"}},
+		{"typed list root", `type T = { Text string }
+rule main []T = "x" => []T{T{Text: "0"}}`, []string{"x", "", "xx"}},
+		{"typed nullable union list", `type T = { Text string }
+type R = { Values []*(T | node[string]) }
+rule main R = x:"é" => R{Values: []*(T | node[string]){nil, T{Text: "0"}, $x}}`, []string{"é", "", "x"}},
+		{"terminal constructor value error", `type Int = { Text string }
+rule main = {value := 1} "x" => Int{Text: value}`, []string{"x", ""}},
+		{"terminal constructor predicate error", `type Int = { Text string }
+rule main = {value := 1} {Int{Text: value} != nil} "x" / "x"`, []string{"x", ""}},
 	}
 }
 
@@ -120,9 +128,9 @@ for (const unit of [CodePoints, Bytes]) {
   check(r.error === null && r.value !== null, "parse");
   const v = r.value;
   check(stable(v).length > 0, "serializable output");
-  check(v.Items?.length === 2 && v.Items[0]?.text === "0" && v.Items[1]?.type === "Int" && v.Items[1]?.text === "😀", "terminal aliases");
-  check(v.Nested?.length === 2 && v.Nested[0]?.length === 0 && v.Nested[1]?.[0]?.text === "1", "nested lists");
-  check(v.Maybe?.length === 2 && v.Maybe[0] === null && v.Maybe[1]?.text === "2" && v.Empty?.length === 0, "nil and empty lists");
+  check(v.Items?.length === 2 && v.Items[0]?.Text === "0" && v.Items[1]?.type === "Int" && v.Items[1]?.Text === "😀", "text struct aliases");
+  check(v.Nested?.length === 2 && v.Nested[0]?.length === 0 && v.Nested[1]?.[0]?.Text === "1", "nested lists");
+  check(v.Maybe?.length === 2 && v.Maybe[0] === null && v.Maybe[1]?.Text === "2" && v.Empty?.length === 0, "nil and empty lists");
   check(v.start === 0 && v.end === (unit === Bytes ? 4 : 1), "span");
   check(parse("😀", unit).error === null, "generic output");
 }
@@ -146,7 +154,7 @@ func TestTypedNodeConstructorErrors(t *testing.T) {
 		{`Other{"x"}`, "declared terminal type"},
 	} {
 		t.Run(tc.action, func(t *testing.T) {
-			g, err := syntax.Parse(`type Int terminal
+			g, err := syntax.ParseLegacy(`type Int terminal
 type Other = {}
 rule main = {x := 1} "x" => ` + tc.action)
 			if err != nil {
@@ -167,7 +175,7 @@ rule main = {value := 1} "x" => Int{value}`,
 		`type Int terminal
 rule main = {value := 1} {Int{value} != nil} "x" / "x"`,
 	} {
-		g, err := syntax.Parse(source)
+		g, err := syntax.ParseLegacy(source)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -188,9 +196,32 @@ rule main = {value := 1} {Int{value} != nil} "x" / "x"`,
 	}
 }
 
+// The text struct counterpart: a field of the wrong type is an error in the action and a failed
+// predicate backtracks.
+func TestConstructedTextStructEvaluationErrors(t *testing.T) {
+	for _, source := range []string{
+		`type Int = { Text string }
+rule main = {value := 1} "x" => Int{Text: value}`,
+		`type Int = { Text string }
+rule main = {value := 1} {Int{Text: value} != nil} "x" / "x"`,
+	} {
+		p := compile(t, source)
+		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+			n, err := p.ParseWith("main", "x", ParseOptions{Backend: backend})
+			if strings.Contains(source, "=>") {
+				if n != nil || err == nil || !strings.Contains(err.Error(), "cannot use int as string in field Text of Int") {
+					t.Fatalf("%s: %v / %v", backend, n, err)
+				}
+			} else if n == nil || err != nil {
+				t.Fatalf("predicate must backtrack: %s: %v", backend, err)
+			}
+		}
+	}
+}
+
 func TestNodeConstructorCompiledVersions(t *testing.T) {
 	for _, omit := range []bool{false, true} {
-		p := compile(t, constructorGrammar)
+		p := compileLegacy(t, legacyConstructorGrammar)
 		data, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: omit})
 		if err != nil || data[len(compiledMagic)+1] != isaVersion {
 			t.Fatalf("terminal ISA: %v", err)
@@ -223,7 +254,7 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 			t.Fatal("invalid terminal type accepted")
 		}
 	}
-	for _, source := range []string{`rule main = "x"`, `rule main = v1:"x" => []Match{$v1}`} {
+	for _, source := range []string{`rule main = "x"`, `rule main = v1:"x" => []node[string]{$v1}`} {
 		p := compile(t, source)
 		data, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
 		if err != nil || data[len(compiledMagic)+1] != isaVersion {
@@ -235,7 +266,7 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 func TestNodeConstructorsWithoutTypeChecking(t *testing.T) {
 	const header = "type Int terminal\ntype Other = {}\nrule main = \"x\" => "
 	for _, action := range []string{`[]int{}`, `[][]string{}`, `Int{}`, `Int{"a", "b"}`, `Other{"a"}`} {
-		g, err := syntax.Parse(header + action)
+		g, err := syntax.ParseLegacy(header + action)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -244,7 +275,7 @@ func TestNodeConstructorsWithoutTypeChecking(t *testing.T) {
 		}
 	}
 	for _, action := range []string{`[]Int{nil}`, `[]Int{Other{}}`, `[]Int{1}`, `Int{1}`} {
-		g, err := syntax.Parse(header + action)
+		g, err := syntax.ParseLegacy(header + action)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -264,7 +295,7 @@ func TestNodeConstructorsWithoutTypeChecking(t *testing.T) {
 		}
 	}
 	for _, action := range []string{`[]Int{1}`, `Int{1}`} {
-		g, err := syntax.Parse("type Int terminal\nrule main = {" + action + " != nil} \"x\" / \"x\"")
+		g, err := syntax.ParseLegacy("type Int terminal\nrule main = {" + action + " != nil} \"x\" / \"x\"")
 		if err != nil {
 			t.Fatal(err)
 		}

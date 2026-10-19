@@ -8,8 +8,8 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-const queryShapeGrammar = `type Int terminal
-type Name terminal
+const queryShapeGrammar = `type Int = { Text string }
+type Name = { Text string }
 type Pair = { Key Name; Value *(Int | Name | Pair); Items []Int }
 type Box = { Inner *Pair }
 rule main = b:box $$ => $b
@@ -18,8 +18,8 @@ rule pair Pair = k:name "=" v:value i:int* => Pair{Key: $k, Value: $v, Items: $i
 rule value *(Int | Name | Pair) = int / name / nested / none
 rule none *Int = "_" => nil
 rule nested Pair = "(" p:pair ")" => $p
-rule int Int = [0-9]
-rule name Name = [a-z]
+rule int Int = t:([0-9]) #atomic => Int{Text: text($t)}
+rule name Name = t:([a-z]) #atomic => Name{Text: text($t)}
 `
 
 func queryShapeSchema(t *testing.T) *OutputSchema {
@@ -35,8 +35,10 @@ func field(name string, p QueryPattern) QueryFieldPattern {
 	return QueryFieldPattern{Name: name, Pattern: p}
 }
 
-// stringNode matches a node whose value is a string, such as a value of a terminal type.
-var stringNode = QueryPattern{Category: "node", Value: &QueryPattern{Category: "string"}}
+// textStruct matches a value of the text struct type name, such as Int or Name.
+func textStruct(name string) QueryPattern {
+	return QueryPattern{Type: name, Fields: []QueryFieldPattern{{Name: "Text", Pattern: QueryPattern{Category: "string"}}}}
+}
 
 // TestStructuralQueryNestedShapes checks that a pattern compiles if, and only if, some value of the
 // schema can match it where it is applied, through unions, optional values, lists and nesting.
@@ -51,12 +53,12 @@ func TestStructuralQueryNestedShapes(t *testing.T) {
 		pattern QueryPattern
 		err     string // "" if the pattern compiles
 	}{
-		{"union alternative", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", stringNode)}}, ""},
-		{"nested union alternative", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", QueryPattern{Fields: []QueryFieldPattern{field("Key", stringNode)}})}}, ""},
+		{"union alternative", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", textStruct("Int"))}}, ""},
+		{"nested union alternative", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", QueryPattern{Fields: []QueryFieldPattern{field("Key", textStruct("Name"))}})}}, ""},
 		{"nil alternative", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", QueryPattern{Category: "nil"})}}, ""},
 		{"through optional", QueryPattern{Type: "Box", Fields: []QueryFieldPattern{field("Inner", QueryPattern{Fields: []QueryFieldPattern{field("Items", QueryPattern{})}})}}, ""},
-		{"list element", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Items", QueryPattern{Category: "list", Elements: []QueryPattern{stringNode}})}}, ""},
-		{"deep", QueryPattern{Type: "Box", Fields: []QueryFieldPattern{field("Inner", QueryPattern{Fields: []QueryFieldPattern{field("Value", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", stringNode)}})}})}}, ""},
+		{"list element", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Items", QueryPattern{Category: "list", Elements: []QueryPattern{textStruct("Int")}})}}, ""},
+		{"deep", QueryPattern{Type: "Box", Fields: []QueryFieldPattern{field("Inner", QueryPattern{Fields: []QueryFieldPattern{field("Value", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", textStruct("Int"))}})}})}}, ""},
 		{"untyped root", QueryPattern{Fields: []QueryFieldPattern{field("Anything", QueryPattern{Category: "int"})}}, ""},
 		{"rule result elements", QueryPattern{Category: "node", Elements: []QueryPattern{{Type: "Box"}}}, ""},
 
@@ -65,8 +67,8 @@ func TestStructuralQueryNestedShapes(t *testing.T) {
 		{"scalar category in node union", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Value", QueryPattern{Category: "string"})}}, "alternatives matches"},
 		{"wrong type", QueryPattern{Type: "Box", Fields: []QueryFieldPattern{field("Inner", QueryPattern{Type: "Box"})}}, "value is a struct Pair, not Box"},
 		{"nested wrong field", QueryPattern{Type: "Box", Fields: []QueryFieldPattern{field("Inner", QueryPattern{Fields: []QueryFieldPattern{field("Inner", QueryPattern{})}})}}, "a struct Pair has no field Inner"},
-		{"terminal has no fields", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Key", QueryPattern{Fields: []QueryFieldPattern{field("X", QueryPattern{})}})}}, "value is a node, which has no fields"},
-		{"terminal value", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Key", QueryPattern{Value: &QueryPattern{Category: "int"}})}}, "node value: value is string, not int"},
+		{"text struct has no such field", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Key", QueryPattern{Fields: []QueryFieldPattern{field("X", QueryPattern{})}})}}, "a struct Name has no field X"},
+		{"text struct is not a node", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Key", QueryPattern{Value: &QueryPattern{Category: "int"}})}}, "value is a struct Name, not a node"},
 		{"list element type", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Items", QueryPattern{Elements: []QueryPattern{{Category: "int"}}})}}, "element 0"},
 		{"terminal has no elements", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Key", QueryPattern{Elements: []QueryPattern{{}}})}}, "has no elements"},
 		{"named type below unknown", QueryPattern{Fields: []QueryFieldPattern{field("X", QueryPattern{Type: "Pair", Fields: []QueryFieldPattern{field("Key", QueryPattern{Category: "int"})}})}}, "field Key"},
@@ -155,16 +157,16 @@ func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
 
 // queryRecoveryCases put Error and Missing nodes where declared types expect other nodes.
 var queryRecoveryCases = []genCase{
-	{"query recovery in terminal field", `type Num terminal
+	{"query recovery in terminal field", `type Num = { Text string }
 type P = { V Num | error; W Num }
 rule main = "(" v:(num #recover(skip=[^),]+)) "," w:num ")" $$ => P{V: $v, W: $w}
-rule num Num = [0-9]`, []string{"(1,2)", "(x,2)", "(1,y)"}},
-	{"query recovery in list field", `type Num terminal
+rule num Num = t:([0-9]) #atomic => Num{Text: text($t)}`, []string{"(1,2)", "(x,2)", "(1,y)"}},
+	{"query recovery in list field", `type Num = { Text string }
 type P = { L []Num }
 rule main = "(" l:(nums #recover(skip=[^)]+)) ")" $$ => P{L: $l}
 rule nums []Num = (num #recover(skip=[a-z]))+
-rule num Num = [0-9]`, []string{"(12)", "(x)", "(1a2)"}},
-	{"query missing token", `type P = { S Match | error }
+rule num Num = t:([0-9]) #atomic => Num{Text: text($t)}`, []string{"(12)", "(x)", "(1a2)"}},
+	{"query missing token", `type P = { S node[string] | error }
 rule main = "(" s:semi ")" $$ => P{S: $s}
 rule semi = ";" #missing`, []string{"(;)", "()"}},
 }
@@ -217,11 +219,11 @@ func TestStructuralQueryRecoveryNodes(t *testing.T) {
 // TestStructuralQueryErrorSize checks that the reason a deeply nested pattern over unions matches
 // nothing stays small.
 func TestStructuralQueryErrorSize(t *testing.T) {
-	src := "type Num terminal\ntype E ~ A | B | C | D | Num\n"
+	src := "type Num = { Text string }\ntype E ~ A | B | C | D | Num\n"
 	for _, n := range []string{"A", "B", "C", "D"} {
 		src += "type " + n + " = { X E }\n"
 	}
-	src += "rule main E = e\nrule e E = n:[0-9] => Num{text($n)}\n"
+	src += "rule main E = e\nrule e E = n:[0-9] => Num{Text: text($n)}\n"
 	s, err := compile(t, src).OutputSchemaPrototype("main", true)
 	if err != nil {
 		t.Fatal(err)

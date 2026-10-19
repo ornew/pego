@@ -115,17 +115,14 @@
           "end": "(?=;)|$"
         },
         {
-          "comment": "type Name terminal, and a type definition being written",
-          "match": "(?:^|(?<=;))[ \\t]*(type)\\b(?:[ \\t]+([A-Za-z_][A-Za-z0-9_]*)(?:[ \\t]+(terminal)\\b)?)?",
+          "comment": "A type definition being written",
+          "match": "(?:^|(?<=;))[ \\t]*(type)\\b(?:[ \\t]+([A-Za-z_][A-Za-z0-9_]*))?",
           "captures": {
             "1": {
               "name": "storage.type.pego"
             },
             "2": {
               "name": "entity.name.type.pego"
-            },
-            "3": {
-              "name": "storage.type.$3.pego"
             }
           }
         }
@@ -160,7 +157,7 @@
           "name": "support.type.builtin.pego"
         },
         {
-          "match": "\\b(int|string|bool|node|terminal|Match|Seq|List|Operator|Error|Missing)\\b",
+          "match": "\\b(int|string|bool|node|error|Missing)\\b",
           "name": "support.type.builtin.pego"
         },
         {

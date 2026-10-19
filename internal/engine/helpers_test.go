@@ -42,6 +42,26 @@ func compileBare(t *testing.T, src string, opts ...Options) *Program {
 	return prog
 }
 
+// compileLegacy compiles source that still uses the retired terminal type syntax, which only
+// syntax.ParseLegacy accepts; the engine still accepts grammar.TerminalSpec from JSON ASTs.
+func compileLegacy(t *testing.T, src string, opts ...Options) *Program {
+	t.Helper()
+	g, err := syntax.ParseLegacy(src)
+	if err != nil {
+		t.Fatalf("syntax error: %v\n%s", err, src)
+	}
+	var o Options
+	if len(opts) > 0 {
+		o = opts[0]
+	}
+	o.SourceInfo = true
+	prog, err := Compile(g, o)
+	if err != nil {
+		t.Fatalf("compile error: %v\n%s", err, src)
+	}
+	return prog
+}
+
 // compileError returns the compile error message.
 func compileError(t *testing.T, src string) string {
 	t.Helper()

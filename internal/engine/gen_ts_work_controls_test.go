@@ -6,7 +6,7 @@ import (
 )
 
 func TestGeneratedTSWorkControlFoundation(t *testing.T) {
-	src := `type Word terminal
+	src := `type Word = { Text string }
 
 type Bag = {
     Items []Word
@@ -14,15 +14,15 @@ type Bag = {
 
 rule main Bag = x:word* #cut => Bag{Items: $x.Value}
 
-rule word Word = "a" / "é" / "😀" / "�"
+rule word Word = t:("a" / "é" / "😀" / "�") #atomic => Word{Text: text($t)}
 
-type CancellationSignal terminal
+type CancellationSignal = { Text string }
 
-type ParseInterruptionError terminal
+type ParseInterruptionError = { Text string }
 
-type WorkControl terminal
+type WorkControl = { Text string }
 
-type ResolvedParseOptions terminal`
+type ResolvedParseOptions = { Text string }`
 	runTypedTSFixture(t, src, tsWorkControlFoundationConsumer, GenOptions{Start: "main", Types: true, Recognize: true}, "")
 }
 
@@ -105,9 +105,9 @@ for (const unit of [p.CodePoints,p.Bytes]) {
 `
 
 func TestGeneratedTSWorkControlErrorLibraries(t *testing.T) {
-	src := `type Word terminal
+	src := `type Word = { Text string }
 
-rule main Word = "a"`
+rule main Word = t:("a") #atomic => Word{Text: text($t)}`
 	for _, lib := range []string{"es2022", "es2022,dom"} {
 		t.Run(lib, func(t *testing.T) {
 			consumer := tsWorkControlErrorLibraryConsumer
@@ -135,9 +135,9 @@ check(canceled.value===null&&canceled.error instanceof ParseInterruptionError&&c
 `
 
 func TestGeneratedTSWorkControlMalformedText(t *testing.T) {
-	src := `type Text terminal
+	src := `type Text = { Text string }
 
-rule main Text = .*`
+rule main Text = t:(.*) #atomic => Text{Text: text($t)}`
 	consumer := `import * as p from "./parser.ts";
 ` + tsTypedAssert + `
 for(const unit of [p.CodePoints,p.Bytes]) {
@@ -145,8 +145,8 @@ for(const unit of [p.CodePoints,p.Bytes]) {
  for(const input of ["\uDC80","\uDCFF","a\uDCFFé","😀\uDCFF",new Uint8Array([255]),new Uint8Array([195]),new Uint8Array([240,159]),new Uint8Array([237,160,128])]) {
   const normal=p.parse(input,unit),active=p.parseWithOptions(input,options);
   check(normal.error===null&&normal.node!==null&&active.error===null&&active.node!==null,"permissive malformed parse succeeds");
-  check(normal.node.text.length>0&&normal.node.end>normal.node.start,"malformed terminal produces text and span");
-  check(stable(active.node)===stable(normal.node)&&active.node.text===normal.node.text&&active.node.start===normal.node.start&&active.node.end===normal.node.end,"controlled malformed terminal text/span parity");
+  check(String(normal.node.field("Text")).length>0&&normal.node.end>normal.node.start,"malformed text struct produces text and span");
+  check(stable(active.node)===stable(normal.node)&&active.node.field("Text")===normal.node.field("Text")&&active.node.start===normal.node.start&&active.node.end===normal.node.end,"controlled malformed text struct text/span parity");
   const typed=p.parseAST(input,unit),controlled=p.parseASTWithOptions(input,options);
   check(typed.error===null&&typed.value!==null&&controlled.error===null&&controlled.value!==null,"permissive malformed typed parse succeeds");
   check(stable(controlled.value)===stable(typed.value),"controlled malformed typed value parity");
@@ -157,13 +157,13 @@ for(const unit of [p.CodePoints,p.Bytes]) {
 }
 
 func TestGeneratedTSWorkControlMatcherBudgets(t *testing.T) {
-	src := `type Text terminal
+	src := `type Text = { Text string }
 
-rule main Text = reread #recover(skip=.+)
+rule main Text = t:(reread #recover(skip=.+)) #atomic => Text{Text: text($t)}
 
-rule fast Text = .* #atomic
+rule fast Text = t:(.* #atomic) => Text{Text: text($t)}
 
-rule reread Text = &.* #atomic fast`
+rule reread Text = t:(&.* #atomic fast) #atomic => Text{Text: text($t)}`
 	consumer := `import * as p from "./parser.ts";
 ` + tsTypedAssert + `
 function threshold(input:string|Uint8Array,unit:p.Unit,key:"maxInputWork"|"maxSteps"):number {
@@ -219,11 +219,11 @@ for(const unit of [p.CodePoints,p.Bytes]) {
 
 func TestGeneratedTSWorkControlMemoKeys(t *testing.T) {
 	t.Run("rollback", func(t *testing.T) {
-		src := `type Word terminal
+		src := `type Word = { Text string }
 
-rule main Word = {v := "a"} &word {v := "b"} word / {v := "b"} word
+rule main Word = t:({v := "a"} &word {v := "b"} word / {v := "b"} word) #atomic => Word{Text: text($t)}
 
-rule word Word = x:letters {text($x) == v}
+rule word Word = t:(x:letters {text($x) == v}) => Word{Text: text($t)}
 
 rule letters = [a-z]+ #atomic`
 		consumer := `import * as p from "./parser.ts";
@@ -240,10 +240,10 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ["a","b","aa","bb",n
 	})
 	t.Run("long-string", func(t *testing.T) {
 		key := strings.Repeat("a", 1600)
-		src := `type Word terminal
- rule main Word = {v := "` + key + `"} &word &word &word word
- rule fast Word = {v := "` + key + `"} word
- rule word Word = {v != ""} letter
+		src := `type Word = { Text string }
+ rule main Word = {v := "` + key + `"} &word &word &word x:word => $x
+ rule fast Word = {v := "` + key + `"} x:word => $x
+ rule word Word = {v != ""} t:letter #atomic => Word{Text: text($t)}
  rule letter = "z"`
 		consumer := `import * as p from "./parser.ts";
 ` + tsTypedAssert + `

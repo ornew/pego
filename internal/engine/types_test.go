@@ -14,10 +14,10 @@ func TestTypeErrors(t *testing.T) {
 		{`type A ~ B
 type B ~ A
 rule main = "a"`, `type A refers to itself`},
-		{`type P = { X Match }
+		{`type P = { X node[string] }
 type Alias ~ P
 rule main = "a" => Alias{X: 1}`, `cannot use int as Match in field X of Alias`},
-		{`type P = { X Match }
+		{`type P = { X node[string] }
 type Alias ~ P
 rule main = v1:"a" => Alias{Y: $v1}`, `Alias has no field Y`},
 		{`type P = {}
@@ -30,16 +30,16 @@ rule main = "a" => Alias{}`, `Alias is not a struct type`},
 		{`type A ~ B
 type B ~ A
 rule main = "a" => A{}`, `A is not a struct type`},
-		{`type A = { X Match; X Match }`, `duplicate field X in A`},
+		{`type A = { X node[string]; X node[string] }`, `duplicate field X in A`},
 		{`rule main int = "a"`, `rule main must produce a node, but its type is int`},
-		{`type P = { X Match }
+		{`type P = { X node[string] }
 rule main = "a" => P{X: 1}`, `cannot use int as Match in field X of P`},
-		{`type Num terminal
+		{`type Num = { Text string }
 type P = { N Num }
 rule main = n:"1" #atomic => P{N: $n}`, `cannot use Match as Num in field N of P`},
-		{`type P = { X Match }
+		{`type P = { X node[string] }
 rule main = x:"a"? => P{X: $x}`, `cannot use *Match as Match in field X of P`},
-		{`type P = { X Match }
+		{`type P = { X node[string] }
 rule main = x:"a" / "b" => P{X: $x}`, `cannot use *Match as Match in field X of P`},
 		{`rule main = x:("a" y:"b")? => $x.$y`, `cannot access .$y of *Seq: the value may be nil`},
 		{`rule main = xs:(k:"a")* => $xs.$k`, `[]Seq{k: Match} has no capture k`},
@@ -47,9 +47,9 @@ rule main = x:"a" / "b" => P{X: $x}`, `cannot use *Match as Match in field X of 
 		{`rule main = "a" => len(1)`, `len: invalid argument int`},
 		{`rule main = "a" => 1`, `action of main must produce a node, got int`},
 		{`rule main = "a" {x := (y) => 1}`, `functions can only be passed to filter, foldl, foldr, or map`},
-		{`type Op = { X Match }
+		{`type Op = { X node[string] }
 rule main Op = "a"`, `rule main produces Match, which is not assignable to Op`},
-		{`type E = { X Match }
+		{`type E = { X node[string] }
 rule e E = operators {
     operand v1:"1" => E{X: $v1}
     level { infix left "+" }
@@ -70,24 +70,24 @@ rule e E = operators {
 func TestWellTyped(t *testing.T) {
 	for _, src := range []string{
 		// Union types and the type of the foldl accumulator
-		`type Number terminal
-type Op = { Left Node; Op Match; Right Node }
+		`type Number = { Text string }
+type Op = { Left Node; Op node[string]; Right Node }
 type Node ~ Op | Number
 rule expr Node = l:num rest:(op:("+" / "-") #atomic r:num)* => foldl($l, $rest, (acc, i) => Op{Left: acc, Op: i.$op, Right: i.$r})
-rule num Number = [0-9]+`,
+rule num Number = t:([0-9]+) #atomic => Number{Text: text($t)}`,
 		// The accumulator type is widened by inference
-		`type Op = { L Match | Op; R Match }
+		`type Op = { L node[string] | Op; R node[string] }
 rule expr = l:"x" #atomic rest:(r:"y" #atomic)* => foldl($l, $rest, (acc, i) => Op{L: acc, R: i.$r})
 rule main = e:expr => $e`,
 		// Inferred rule types and optional types
-		`type P = { X *Match; Y []Match; Z Seq }
+		`type P = { X *node[string]; Y []node[string]; Z node }
 rule main = x:"a"? y:item* z:pair => P{X: $x, Y: $y.Value, Z: $z}
 rule item = [a-z] #atomic
 rule pair = "(" ")"`,
 		// Optional values as results of rules, actions and map functions
 		`rule main = x:"a"? => $x`,
-		`rule main *Match = "a"?`,
-		`type C = { X Match; Next *C }
+		`rule main *node[string] = "a"?`,
+		`type C = { X node[string]; Next *C }
 rule main *C = xs:"a"* => foldr(nil, $xs, (acc, x) => C{X: x, Next: acc})`,
 		`rule main = xs:p* => map($xs, (p) => p.$x)
 rule p = x:"a"? #atomic ";"`,
@@ -99,7 +99,7 @@ rule main = l:list => $l`,
 		// concat over a union of list types (foldl widens []never with []Match) and over a recovered Error
 		`rule main = xs:item* => concat(foldl(list(), $xs, (acc, x) => concat(acc, list(x))))
 rule item = "a" #atomic`,
-		`type S = { X Match }
+		`type S = { X node[string] }
 rule main = xs:stmts => $xs
 rule stmts = stmt* #recover(skip=[^;]+ ";")
 rule stmt S = x:"x" #atomic ";" => S{X: $x}`,
@@ -140,9 +140,9 @@ rule r3 = ((c1:r3 {v := len($c1)}) c2:r1 ";" #recover(skip=[^;]* ";")) @error(me
 }
 
 func TestRuleType(t *testing.T) {
-	prog := compile(t, `type N terminal
+	prog := compile(t, `type N = { Text string }
 type P = { X N }
-rule n N = "1" #atomic
+rule n N = t:("1" #atomic) => N{Text: text($t)}
 rule p = x:n => P{X: $x}
 rule ps = p*
 rule opt = "a"?

@@ -135,7 +135,7 @@ func TestFormatSource(t *testing.T) {
 package demo // trailing
 
 // about A
-type A terminal
+type A = { Text string }
 rule a = "a"
 `,
 			want: `// header
@@ -144,7 +144,7 @@ rule a = "a"
 package demo // trailing
 
 // about A
-type A terminal
+type A = { Text string }
 rule a = "a"
 `,
 		},

@@ -190,10 +190,10 @@ rule c = "c"+ #atomic`,
 }
 
 func TestTerminalType(t *testing.T) {
-	check(t, `type Number terminal
+	check(t, `type Number = { Text string }
 rule main = n:number "+" number
-rule number Number = [0-9]+`,
-		ok("12+3", `(n:"12"@number "+" "3"@number)@main`),
+rule number Number = t:([0-9]+) #atomic => Number{Text: text($t)}`,
+		ok("12+3", `(n:Number{Text: "12"} "+" Number{Text: "3"})@main`),
 	)
 }
 

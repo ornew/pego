@@ -281,11 +281,11 @@ func TestMissingTokensValidationAndRepresentations(t *testing.T) {
 			t.Fatal(expression, message)
 		}
 	}
-	if message := compileError(t, `type Missing terminal
+	if message := compileError(t, `type Missing = { Text string }
 rule main = "a"`); !strings.Contains(message, "type Missing is reserved") {
 		t.Fatal(message)
 	}
-	const source = `type Item ~ Match | Missing
+	const source = `type Item ~ node[string] | Missing
 type Root = { Token Item }
 rule main Root = x:(";" #missing) => Root{Token: $x}`
 	prog := compile(t, source)
