@@ -25,7 +25,7 @@ func normalizeAttributesControlled(g *grammar.Grammar, eager bool, control *comp
 	if control != nil {
 		n.poll = control.poll
 	}
-	statements, changed := normalizeItems(g.Statements, eager, n.statement, control)
+	statements, changed := normalizeItems(g.File.Decls, eager, n.decl, control)
 	control.check()
 	if len(n.errors) != 0 {
 		return nil, n.errors
@@ -34,7 +34,7 @@ func normalizeAttributesControlled(g *grammar.Grammar, eager bool, control *comp
 		return g, nil
 	}
 	copy := *g
-	copy.Statements = statements
+	copy.File.Decls = statements
 	return &copy, nil
 }
 
@@ -45,8 +45,8 @@ type attributeNormalizer struct {
 	poll    func()
 }
 
-func (n *attributeNormalizer) statement(statement grammar.Statement) grammar.Statement {
-	switch rd := statement.(type) {
+func (n *attributeNormalizer) decl(decl grammar.Decl) grammar.Decl {
+	switch rd := decl.(type) {
 	case *grammar.RuleDef:
 		expr := n.expr(rd.Expr)
 		typ := grammaranalysis.UngroupTypeWithPoll(rd.Type, n.poll)
@@ -57,10 +57,10 @@ func (n *attributeNormalizer) statement(statement grammar.Statement) grammar.Sta
 		rule := *rd
 		rule.Expr, rule.Type, rule.Action = expr, typ, action
 		return &rule
-	case *grammar.TypeDef:
-		return n.typeDef(rd)
+	case grammar.TypeDecl:
+		return n.typeDecl(rd)
 	default:
-		return statement
+		return decl
 	}
 }
 
@@ -451,41 +451,37 @@ func (n *attributeNormalizer) wrap(e grammar.Expr, a *grammar.Attribute) grammar
 
 // Source grouping lowers before checking/generation; unchanged children stay
 // shared so ordinary action and type trees need no extra copies.
-func (n *attributeNormalizer) typeDef(td *grammar.TypeDef) *grammar.TypeDef {
-	spec := td.Spec
-	switch s := spec.(type) {
-	case *grammar.AliasSpec:
+func (n *attributeNormalizer) typeDecl(td grammar.TypeDecl) grammar.TypeDecl {
+	switch s := td.(type) {
+	case *grammar.TypeAlias:
 		child := grammaranalysis.UngroupTypeWithPoll(s.Type, n.poll)
 		if child != s.Type {
 			v := *s
 			v.Type = child
-			spec = &v
+			return &v
 		}
-	case *grammar.StructSpec:
+	case *grammar.TypeDef:
 		var fields []*grammar.Field
-		for i, f := range s.Fields {
+		for i, f := range s.Type.Fields {
 			n.control.poll()
 			child := grammaranalysis.UngroupTypeWithPoll(f.Type, n.poll)
 			if child == f.Type {
 				continue
 			}
 			if fields == nil {
-				fields = normalizationClone(s.Fields, n.control)
+				fields = normalizationClone(s.Type.Fields, n.control)
 			}
 			v := *f
 			v.Type = child
 			fields[i] = &v
 		}
 		if fields != nil {
+			st := *s.Type
+			st.Fields = fields
 			v := *s
-			v.Fields = fields
-			spec = &v
+			v.Type = &st
+			return &v
 		}
 	}
-	if spec == td.Spec {
-		return td
-	}
-	v := *td
-	v.Spec = spec
-	return &v
+	return td
 }

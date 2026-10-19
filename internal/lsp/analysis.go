@@ -40,7 +40,7 @@ type definition struct {
 	// kwStart is the byte offset of the keyword (rule or type).
 	kwStart int
 	rule    *grammar.RuleDef
-	typ     *grammar.TypeDef
+	typ     grammar.TypeDecl
 	// doc is the documentation comment: the comment lines directly above the definition, or the
 	// comment at the end of a one-line definition.
 	doc string
@@ -287,8 +287,8 @@ func (a *analysis) previousSignificantTokenControlled(i int, control *renderCont
 // collect records the definitions and the occurrences of names in the grammar.
 func (a *analysis) collectControlled(control *renderControl) {
 	control.poll()
-	a.mark(a.g.PackageSource.Diagnostic(), semKeyword, 0)
-	for _, s := range a.g.Statements {
+	a.mark(a.g.File.Pkg.SourceInfo.Diagnostic(), semKeyword, 0)
+	for _, s := range a.g.File.Decls {
 		control.poll()
 		switch s := s.(type) {
 		case *grammar.RuleDef:
@@ -308,15 +308,15 @@ func (a *analysis) collectControlled(control *renderControl) {
 			if s.Action != nil {
 				a.walkTermControlled(s.Action, control)
 			}
-		case *grammar.TypeDef:
+		case grammar.TypeDecl:
 			a.mark(s.Diagnostic(), semKeyword, 0)
-			d := a.defineControlled(kindType, s.Name, s.Diagnostic(), control)
+			d := a.defineControlled(kindType, s.DeclName(), s.Diagnostic(), control)
 			if d == nil {
 				continue
 			}
 			d.typ = s
-			if a.types[s.Name] == nil {
-				a.types[s.Name] = d
+			if a.types[s.DeclName()] == nil {
+				a.types[s.DeclName()] = d
 			}
 			if i, ok := a.tokenIndex(s.Diagnostic()); ok {
 				name := a.significantTokenControlled(i+1, control)
@@ -325,14 +325,14 @@ func (a *analysis) collectControlled(control *renderControl) {
 					a.markToken(spec, semKeyword, 0)
 				}
 			}
-			switch spec := s.Spec.(type) {
-			case *grammar.StructSpec:
-				for _, f := range spec.Fields {
+			switch spec := s.(type) {
+			case *grammar.TypeDef:
+				for _, f := range spec.Type.Fields {
 					control.poll()
 					a.mark(f.Diagnostic(), semProperty, modDeclaration)
 					a.walkTypeControlled(f.Type, control)
 				}
-			case *grammar.AliasSpec:
+			case *grammar.TypeAlias:
 				a.walkTypeControlled(spec.Type, control)
 			}
 		}

@@ -10,13 +10,13 @@ TypeScript generation use the same compiler.
 It returns the first `*grammar.ValidationError` without changing the AST:
 
 ```go
-g := &grammar.Grammar{Statements: []grammar.Statement{
+g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{
     &grammar.RuleDef{Name: "main", Expr: &grammar.Optional{}},
-}}
+}}}
 err := grammar.Validate(g)
 var problem *grammar.ValidationError
 if errors.As(err, &problem) {
-    fmt.Println(problem.Path) // $.statements[0].expr.expr
+    fmt.Println(problem.Path) // $.file.decls[0].expr.expr
 }
 ```
 
@@ -45,7 +45,7 @@ A character range's `Lo` and `Hi` must be Unicode scalar values (0 through
 0x10FFFF except 0xD800–0xDFFF), with `Lo <= Hi`. A valid range can span the
 surrogate interval; overlapping ranges and empty AST classes retain their
 existing meanings. Invalid endpoints are reported at paths such as
-`$.statements[0].expr.ranges[0].lo`. This also applies to JSON intake,
+`$.file.decls[0].expr.ranges[0].lo`. This also applies to JSON intake,
 compilation and generation. Remove unreachable surrogate exclusions from
 older grammars and recompile AST-bearing saved parsers that contain them.
 
@@ -85,7 +85,7 @@ though that constant becomes a subtraction expression in the source AST.
 ## Print a Simplified Syntax View
 
 Use `grammar.FormatSyntax(g)` for documentation that shows the grammar's
-recognition syntax. It leaves the input AST unchanged and omits Type Definition
+recognition syntax. It leaves the input AST unchanged and omits Type Declaration
 Statements, result types, Value Actions, metadata attributes, captures and
 `#recover` wrappers. It removes Rule Expression groups whose parentheses are not
 needed for precedence or layout, while retaining parentheses required to express grouping
@@ -164,11 +164,11 @@ followed by optional whitespace, and runs structural validation before
 returning a grammar. It rejects JSON `null` as a grammar, trailing values or
 garbage, and numeric fields that overflow their Go destination type.
 For example, a null struct field reports
-`$.statements[0].spec.fields[0]` rather than panicking during compilation.
+`$.file.decls[0].type.fields[0]` rather than panicking during compilation.
 
 The representation uses the AST fields' `json` tags. Each interface node has
 an `"@type"` member, such as `"RuleDef"` or `"Literal"`. Parsed source metadata
-is serialized under `source`, `packageSource` or `skipSource`; formatter layout
+is serialized under `source` (including `file.source` and `file.pkg.source`) or `skipSource`; formatter layout
 and exact comment tokens are omitted. Unknown fields are ignored and duplicate object keys
 follow `encoding/json`'s behavior. Use `grammar.DecodeJSON(data)` when the
 input should reject unknown fields and duplicate keys at every object. Its
@@ -210,8 +210,9 @@ comment-normalization contract. `DiagnosticPos` preserves a diagnostic token
 that differs from the span start; `Diagnostic()` returns it when valid and
 otherwise returns `Pos`.
 
-The grammar root keeps its package name in `Package` and the clause metadata in
-`PackageSource`. An Operators Rule's `SkipSource` holds metadata for the whole
+The package clause is `File.Pkg`: `File.Pkg.Name` is the package name, and `File.Pkg.SourceInfo`
+holds the clause metadata. `File.Decls` holds the declarations in order, each a `*TypeDef`, a `*TypeAlias`
+or a `*RuleDef`; `Grammar.Rules()` and `Grammar.Types()` list the rule and type declarations. An Operators Rule's `SkipSource` holds metadata for the whole
 skip clause, from its `skip` keyword through the expression. `Grammar.Clone()`
 returns an independent copy of the supported grammar AST and attribute
 argument values, including detached-comment slices.

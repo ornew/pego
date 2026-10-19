@@ -131,21 +131,21 @@ func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSch
 	}
 	all := map[string]SchemaType{}
 	for _, td := range p.Grammar.Types() {
-		spec, ok := td.Spec.(*grammar.StructSpec)
+		spec, ok := td.(*grammar.TypeDef)
 		if !ok {
 			continue // aliases name other types
 		}
 		shape := SchemaShape{Kind: "struct"}
-		for _, f := range spec.Fields {
+		for _, f := range spec.Type.Fields {
 			fieldShape, err := p.schemaDeclared(f.Type)
 			if err != nil {
-				return nil, fmt.Errorf("schema type %q field %q: %w", td.Name, f.Name, err)
+				return nil, fmt.Errorf("schema type %q field %q: %w", td.DeclName(), f.Name, err)
 			}
 			shape.Fields = append(shape.Fields, SchemaField{f.Name, fieldShape})
 		}
 		sort.Slice(shape.Fields, func(i, j int) bool { return shape.Fields[i].Name < shape.Fields[j].Name })
-		id := "declared/" + td.Name
-		all[id] = SchemaType{id, td.Name, "declared", shape}
+		id := "declared/" + td.DeclName()
+		all[id] = SchemaType{id, td.DeclName(), "declared", shape}
 	}
 	s := &OutputSchema{Format: "pego-output-schema", Version: OutputSchemaVersion, Start: start, PositionUnitIndependent: true, SourceInfo: p.sourceInfo, Types: []SchemaType{}, Rules: []SchemaRule{}}
 	selected := map[string]bool{}

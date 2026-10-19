@@ -188,7 +188,7 @@ func TestFmtRejectsOtherFormats(t *testing.T) {
 func TestConvert(t *testing.T) {
 	g := writeFile(t, "kv.pego", messy)
 	js, err := runCLI(t, "", "convert", g)
-	if err != nil || !strings.Contains(js, `"package": "kv"`) {
+	if err != nil || !strings.Contains(js, `"name": "kv"`) {
 		t.Fatalf("got %q, %v", js, err)
 	}
 	if !strings.Contains(js, `"leadingComments": " key-value pairs\n"`) || strings.Contains(js, "//") {

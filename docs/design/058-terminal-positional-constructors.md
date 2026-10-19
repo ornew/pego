@@ -17,7 +17,7 @@ constructors retain their named-field syntax.
 
 ## Motivation
 
-A terminal-typed Rule Definition Statement can produce a terminal by matching
+A terminal-typed Rule Definition can produce a terminal by matching
 input. An Action Expression may also need to construct that terminal from a
 string already produced or transformed by another expression. Positional
 construction expresses this directly without representing a terminal as a

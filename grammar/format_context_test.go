@@ -11,7 +11,7 @@ import (
 )
 
 func TestFormatContextParityAndCancellation(t *testing.T) {
-	g := &Grammar{Package: "example"}
+	g := &Grammar{File: File{Pkg: Pkg{Name: "example"}}}
 	seq := &Seq{}
 	call := &Call{Func: "list"}
 	union := &UnionType{}
@@ -22,7 +22,7 @@ func TestFormatContextParityAndCancellation(t *testing.T) {
 		call.Args = append(call.Args, &StringLit{Value: value})
 		union.Types = append(union.Types, &TypeRef{Name: fmt.Sprintf("T%d", i)})
 		attrs.KwArgs[fmt.Sprintf("k%04d", 1024-i)] = value
-		g.Statements = append(g.Statements, &RuleDef{Name: fmt.Sprintf("r%d", i), Expr: &Literal{Value: value}})
+		g.File.Decls = append(g.File.Decls, &RuleDef{Name: fmt.Sprintf("r%d", i), Expr: &Literal{Value: value}})
 	}
 	attrExpr := &Attributed{Expr: seq, Attrs: []*Attribute{attrs}}
 	cases := []struct {
@@ -241,5 +241,12 @@ func TestFormatCancellationDuringRecursiveReturn(t *testing.T) {
 				t.Fatalf("return traversal did not cancel before final check: %d bytes / %v at depth %d", len(result), err, ctx.cancelledDepth)
 			}
 		})
+	}
+}
+
+func TestFormatEmptyTypeDef(t *testing.T) {
+	got := Format(&Grammar{File: File{Decls: []Decl{&TypeDef{Name: "T"}}}})
+	if !strings.Contains(got, "type T = {}") {
+		t.Errorf("got %q, want type T = {}", got)
 	}
 }

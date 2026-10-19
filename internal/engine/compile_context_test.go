@@ -70,9 +70,9 @@ func TestCompileContextCancelsDuringGrammarValidation(t *testing.T) {
 		items[i] = &grammar.Literal{Value: "a"}
 	}
 	items[len(items)-1] = nil
-	g := &grammar.Grammar{Statements: []grammar.Statement{
+	g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{
 		&grammar.RuleDef{Name: "main", Expr: &grammar.Seq{Items: items}},
-	}}
+	}}}
 	if _, err := Compile(g, Options{}); err == nil {
 		t.Fatal("fixture must fail ordinary grammar validation")
 	}

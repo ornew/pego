@@ -13,14 +13,14 @@ package grammar
 // attached only to removed forms may be omitted.
 func FormatSyntax(g *Grammar) string {
 	view := *g
-	view.Statements = nil
+	view.File.Decls = nil
 	p := syntaxProjection{seen: make(map[Expr]Expr)}
-	for _, statement := range g.Statements {
+	for _, statement := range g.File.Decls {
 		if rule, ok := statement.(*RuleDef); ok {
 			r := *rule
 			r.Type, r.Action, r.DefaultAction, r.ActionBreak = nil, nil, false, nil
 			r.Expr = p.expr(rule.Expr)
-			view.Statements = append(view.Statements, &r)
+			view.File.Decls = append(view.File.Decls, &r)
 		}
 	}
 	return Format(&view)

@@ -335,20 +335,20 @@ func (p *parser) file() *grammar.Grammar {
 
 	if p.is("package") {
 		packageStart := p.i
-		g.PackageBreak = p.lineBreak()
+		g.File.Pkg.Break = p.lineBreak()
 		restore := p.statement()
-		g.PackageSource.Pos = p.next().pos
+		g.File.Pkg.SourceInfo.Pos = p.next().pos
 		p.header = true
-		p.headerPos = g.PackageSource.Pos
+		p.headerPos = g.File.Pkg.SourceInfo.Pos
 		func() {
 			defer func() { p.header = false }()
 			defer p.recover() // a missing name skips to the first definition
-			g.Package = p.ident().text
+			g.File.Pkg.Name = p.ident().text
 		}()
 		restore()
-		p.source(&g.PackageSource, packageStart)
+		p.source(&g.File.Pkg.SourceInfo, packageStart)
 		p.declarationEnd()
-		p.sourceTrailing(&g.PackageSource)
+		p.sourceTrailing(&g.File.Pkg.SourceInfo)
 	}
 	for p.tok().kind != tEOF {
 		start := p.i
@@ -358,13 +358,13 @@ func (p *parser) file() *grammar.Grammar {
 			defer p.recover()
 			switch {
 			case p.is("type"):
-				t := p.typeDef()
-				statement = t
-				g.Statements = append(g.Statements, t)
+				t := p.typeDecl()
+				statement = t.(grammar.SourceNode)
+				g.File.Decls = append(g.File.Decls, t)
 			case p.is("rule"):
 				r := p.ruleDef()
 				statement = r
-				g.Statements = append(g.Statements, r)
+				g.File.Decls = append(g.File.Decls, r)
 			default:
 				p.errorf("expected 'rule' or 'type', found %s", p.tok())
 				panic(bail{})
@@ -378,12 +378,12 @@ func (p *parser) file() *grammar.Grammar {
 			p.sourceTrailing(statement.Source())
 		}
 	}
-	g.EndBreak = p.lineBreak()
-	g.HeaderComments = p.headerComments
-	g.Pos = p.toks[0].pos
-	g.End = g.Pos
+	g.File.EndBreak = p.lineBreak()
+	g.File.HeaderComments = p.headerComments
+	g.File.Pos = p.toks[0].pos
+	g.File.End = g.File.Pos
 	if p.i > 0 {
-		g.End = p.toks[p.i-1].end
+		g.File.End = p.toks[p.i-1].end
 	}
 	return g
 }
@@ -427,7 +427,7 @@ func (p *parser) recover() {
 	}
 }
 
-func (p *parser) typeDef() (sourceResult *grammar.TypeDef) {
+func (p *parser) typeDecl() (sourceResult grammar.TypeDecl) {
 	sourceStart := p.i
 	defer func() {
 		if sourceResult != nil {
@@ -442,7 +442,10 @@ func (p *parser) typeDef() (sourceResult *grammar.TypeDef) {
 	p.headerPos = pos
 	defer func() { p.header = false }()
 	name := p.ident()
-	td := &grammar.TypeDef{SourceInfo: grammar.SourceInfo{Pos: pos}, Name: name.text, Break: br}
+	info := grammar.SourceInfo{Pos: pos}
+	def := func(st *grammar.StructType) *grammar.TypeDef {
+		return &grammar.TypeDef{SourceInfo: info, Name: name.text, Type: st, Break: br}
+	}
 	specStart := p.i
 	switch {
 	case p.is("struct"):
@@ -452,9 +455,10 @@ func (p *parser) typeDef() (sourceResult *grammar.TypeDef) {
 		p.next()
 		p.header = false
 		p.layout, p.layoutDepth = false, 0
-		st := &grammar.StructSpec{}
+		st := &grammar.StructType{}
 		st.Fields, st.CloseBreak, st.OneLine = p.structFields()
-		td.Spec = st
+		p.sourceNode(st, specStart)
+		return def(st)
 	case p.is("terminal"):
 		if p.legacy == nil {
 			p.errorf("a terminal type is the struct type %s = { Text string }; run pego fix to rewrite type %s terminal", name.text, name.text)
@@ -462,20 +466,21 @@ func (p *parser) typeDef() (sourceResult *grammar.TypeDef) {
 		}
 		p.next()
 		p.header = false
-		td.Spec = &grammar.StructSpec{Fields: []*grammar.Field{{Name: "Text", Type: &grammar.TypeRef{Name: "string"}}}}
+		st := &grammar.StructType{Fields: []*grammar.Field{{Name: "Text", Type: &grammar.TypeRef{Name: "string"}}}}
+		p.sourceNode(st, specStart)
+		td := def(st)
 		p.legacy.terminals[td] = true
+		return td
 	case p.is("="):
 		p.errorf("only struct types can be defined with =; write type %s ~ <type> for an alias (pego fix rewrites type %s = <type>)", name.text, name.text)
 		panic(bail{})
 	case p.accept("~"):
 		p.header = false
-		td.Spec = &grammar.AliasSpec{Type: p.typeExpr()}
+		return &grammar.TypeAlias{SourceInfo: info, Name: name.text, Type: p.typeExpr(), Break: br}
 	default:
 		p.errorf("expected '=' or '~', found %s", p.tok())
 		panic(bail{})
 	}
-	p.sourceNode(td.Spec, specStart)
-	return td
 }
 
 func (p *parser) typeExpr() (sourceResult grammar.TypeExpr) {

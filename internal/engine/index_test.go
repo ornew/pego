@@ -174,7 +174,7 @@ rule item = [a-z]`)
 	}
 	// Parentheses that the source does not keep are added where "[" would not index.
 	for _, x := range []grammar.Term{&grammar.IntLit{Value: 1}, &grammar.StringLit{Value: "a"}, &grammar.New{Type: "T"}} {
-		formatted := grammar.Format(&grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "main", Expr: &grammar.Any{}, Action: &grammar.Binary{Op: "[]", L: x, R: &grammar.IntLit{Value: 0}}}}})
+		formatted := grammar.Format(&grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: &grammar.Any{}, Action: &grammar.Binary{Op: "[]", L: x, R: &grammar.IntLit{Value: 0}}}}}})
 		if !strings.Contains(formatted, ")[0]") {
 			t.Errorf("formatted %T index: %s", x, formatted)
 		}

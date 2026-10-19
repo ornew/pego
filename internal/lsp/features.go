@@ -221,7 +221,7 @@ func (a *analysis) symbolsControlled(control *renderControl) []DocumentSymbol {
 			}
 		} else {
 			sym.Kind, sym.Detail = typeSymbolKindControlled(d.typ, control)
-			if st, ok := d.typ.Spec.(*grammar.StructSpec); ok {
+			if st, ok := d.typ.(*grammar.TypeDef); ok {
 				sym.Children = a.fieldSymbolsControlled(d, st, control)
 			}
 		}
@@ -230,12 +230,12 @@ func (a *analysis) symbolsControlled(control *renderControl) []DocumentSymbol {
 	return syms
 }
 
-func typeSymbolKindControlled(td *grammar.TypeDef, control *renderControl) (int, string) {
+func typeSymbolKindControlled(td grammar.TypeDecl, control *renderControl) (int, string) {
 	control.poll()
-	switch spec := td.Spec.(type) {
-	case *grammar.StructSpec:
+	switch spec := td.(type) {
+	case *grammar.TypeDef:
 		return symbolKindStruct, "struct"
-	case *grammar.AliasSpec:
+	case *grammar.TypeAlias:
 		return symbolKindInterface, "~ " + control.formatType(spec.Type)
 	}
 	return symbolKindClass, ""
@@ -243,18 +243,18 @@ func typeSymbolKindControlled(td *grammar.TypeDef, control *renderControl) (int,
 
 // fieldSymbols returns the symbols of the fields of the struct type d: each spans from its name to
 // the last token before the next field (or the closing brace).
-func (a *analysis) fieldSymbolsControlled(d *definition, st *grammar.StructSpec, control *renderControl) []DocumentSymbol {
+func (a *analysis) fieldSymbolsControlled(d *definition, st *grammar.TypeDef, control *renderControl) []DocumentSymbol {
 	control.poll()
 	var out []DocumentSymbol
-	for k, f := range st.Fields {
+	for k, f := range st.Type.Fields {
 		control.poll()
 		i, ok := a.tokenIndex(f.Diagnostic())
 		if !ok {
 			continue
 		}
 		limit := d.end // the closing brace ends the definition
-		if k+1 < len(st.Fields) {
-			limit = a.idx.pegoOffset(st.Fields[k+1].Diagnostic())
+		if k+1 < len(st.Type.Fields) {
+			limit = a.idx.pegoOffset(st.Type.Fields[k+1].Diagnostic())
 		}
 		last := i
 		for j := i + 1; j < len(a.toks) && a.toks[j].end < limit; j++ {
@@ -366,9 +366,19 @@ func (a *analysis) ruleHoverControlled(d *definition, control *renderControl) st
 
 func typeHoverControlled(d *definition, control *renderControl) string {
 	control.poll()
-	td := *d.typ
-	td.Break = nil // without the comments before it
-	src := control.trimSpace(control.formatGrammar(&grammar.Grammar{Statements: []grammar.Statement{&td}}))
+	// The declaration without the comments before it.
+	var td grammar.Decl
+	switch t := d.typ.(type) {
+	case *grammar.TypeDef:
+		v := *t
+		v.Break = nil
+		td = &v
+	case *grammar.TypeAlias:
+		v := *t
+		v.Break = nil
+		td = &v
+	}
+	src := control.trimSpace(control.formatGrammar(&grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{td}}}))
 	parts := []string{code(src)}
 	if d.doc != "" {
 		parts = append(parts, d.doc)

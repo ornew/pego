@@ -345,7 +345,7 @@ function tupleConforms(p: Parser, ts: readonly FieldType[], elems: readonly (Nod
 
 // checkedTSField wraps the code of a constructed field's value in its run-time check when the
 // value is not statically known to fit the field's declared type (Program.fieldCheckType).
-func (g *tsGen) checkedTSField(spec *grammar.StructSpec, typ string, fi *grammar.FieldInit, code string) string {
+func (g *tsGen) checkedTSField(spec *grammar.TypeDef, typ string, fi *grammar.FieldInit, code string) string {
 	ft := g.prog.fieldCheckType(spec, fi)
 	if ft == nil {
 		return code
@@ -635,14 +635,14 @@ func (g *tsGen) rules() {
 	// Struct fields, used to detect references to undeclared fields at run time.
 	var names []string
 	for name, spec := range g.prog.types {
-		if _, ok := spec.(*grammar.StructSpec); ok {
+		if _, ok := spec.(*grammar.TypeDef); ok {
 			names = append(names, name)
 		}
 	}
 	sort.Strings(names)
 	for _, name := range names {
 		var fields []string
-		for _, f := range g.prog.types[name].(*grammar.StructSpec).Fields {
+		for _, f := range g.prog.types[name].(*grammar.TypeDef).Type.Fields {
 			fields = append(fields, f.Name)
 		}
 		fmt.Fprintf(init, "structFields.set(%s, new Set(%s));\n", tsString(name), tsStrings(fields))

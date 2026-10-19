@@ -49,8 +49,8 @@ func assertCanonicalTypeSpans(t *testing.T, p *pego.Parser, source string, expec
 		}
 		var got []string
 		index := 0
-		for _, def := range sourceDefs(t, n) {
-			if def.Type() != "TypeDef" {
+		for _, def := range sourceDecls(t, n) {
+			if def.Type() != "TypeDef" && def.Type() != "TypeAlias" {
 				continue
 			}
 			if index >= len(manual.Types()) {
@@ -58,7 +58,7 @@ func assertCanonicalTypeSpans(t *testing.T, p *pego.Parser, source string, expec
 			}
 			span := sourceField(t, def, "SourceSpan")
 			got = append(got, string([]rune(source)[int(span.Start()):int(span.End())]))
-			want := manual.Types()[index].SourceInfo
+			want := *manual.Types()[index].(grammar.SourceNode).Source()
 			adapted := want
 			if err := sourceast.NewPositions(source).SetSpan(&adapted, int(span.Start()), int(span.End())); err != nil {
 				t.Fatal(err)

@@ -24,7 +24,7 @@ func (c *validationPollContext) Err() error {
 }
 
 func TestValidateContextCancellationWithinWideNodes(t *testing.T) {
-	statements := make([]Statement, 4096)
+	statements := make([]Decl, 4096)
 	for i := range statements {
 		statements[i] = &RuleDef{Name: "item", Expr: &Top{}}
 	}
@@ -36,7 +36,7 @@ func TestValidateContextCancellationWithinWideNodes(t *testing.T) {
 		name string
 		g    *Grammar
 	}{
-		{"wide statement list", &Grammar{Statements: statements}},
+		{"wide statement list", &Grammar{File: File{Decls: statements}}},
 		{"wide character class", expressionGrammar(&CharClass{Ranges: ranges})},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

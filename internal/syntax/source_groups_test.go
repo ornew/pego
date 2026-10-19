@@ -23,7 +23,7 @@ rule main (Alias) = v1:"x" => (
 	if err != nil {
 		t.Fatal(err)
 	}
-	typ := g.Types()[1].Spec.(*grammar.AliasSpec).Type.(*grammar.TypeGroup)
+	typ := g.Types()[1].(*grammar.TypeAlias).Type.(*grammar.TypeGroup)
 	innerType := typ.Type.(*grammar.TypeGroup)
 	action := g.Rules()[0].Action.(*grammar.TermGroup)
 	innerAction := action.Term.(*grammar.TermGroup)
@@ -58,7 +58,7 @@ rule main (Alias) = v1:"x" => (
 	if err != nil {
 		t.Fatal(err)
 	}
-	gotType := reparsed.Types()[1].Spec.(*grammar.AliasSpec).Type.(*grammar.TypeGroup).Type.(*grammar.TypeGroup)
+	gotType := reparsed.Types()[1].(*grammar.TypeAlias).Type.(*grammar.TypeGroup).Type.(*grammar.TypeGroup)
 	gotAction := reparsed.Rules()[0].Action.(*grammar.TermGroup).Term.(*grammar.TermGroup)
 	if gotType.LeadingComments != innerType.LeadingComments || gotType.TrailingComments != innerType.TrailingComments || gotAction.LeadingComments != innerAction.LeadingComments || gotAction.TrailingComments != innerAction.TrailingComments {
 		t.Fatalf("owner paths changed:\n%s\n%+v %+v", out, gotType.SourceInfo, gotAction.SourceInfo)
@@ -92,7 +92,7 @@ func TestInlineGroupCommentOwnership(t *testing.T) {
 			}
 			owners := func(g *grammar.Grammar) []grammar.SourceInfo {
 				if len(g.Types()) > 0 {
-					group := g.Types()[0].Spec.(*grammar.AliasSpec).Type.(*grammar.TypeGroup)
+					group := g.Types()[0].(*grammar.TypeAlias).Type.(*grammar.TypeGroup)
 					return []grammar.SourceInfo{group.SourceInfo, *group.Type.(grammar.SourceNode).Source()}
 				}
 				group := g.Rules()[0].Action.(*grammar.TermGroup)

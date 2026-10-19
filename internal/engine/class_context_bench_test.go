@@ -13,7 +13,7 @@ func BenchmarkClassCompileCancellation(b *testing.B) {
 		ranges[i] = grammar.CharRange{Lo: rune(256 + 2*i), Hi: rune(256 + 2*i)}
 	}
 	class := &grammar.CharClass{Ranges: ranges}
-	g := &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "main", Expr: &grammar.Choice{Alts: []grammar.Expr{class, &grammar.Discard{Expr: &grammar.Repeat{Expr: class, Min: 1, Max: -1}}}}}}}
+	g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: &grammar.Choice{Alts: []grammar.Expr{class, &grammar.Discard{Expr: &grammar.Repeat{Expr: class, Min: 1, Max: -1}}}}}}}}
 	for _, controlled := range []bool{false, true} {
 		name := "ordinary"
 		if controlled {

@@ -39,11 +39,11 @@ rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`, 
 }
 
 func TestCompileAST(t *testing.T) {
-	g := &grammar.Grammar{Statements: []grammar.Statement{
+	g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{
 		&grammar.RuleDef{Name: "main", Expr: &grammar.Seq{Items: []grammar.Expr{
 			&grammar.Literal{Value: "a"}, &grammar.Literal{Value: "b"},
 		}}},
-	}}
+	}}}
 	p, err := pego.Compile(g, "main", pego.WithSourceInfo())
 	if err != nil {
 		t.Fatal(err)

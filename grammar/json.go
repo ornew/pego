@@ -11,8 +11,8 @@ import (
 	"strings"
 )
 
-// In the JSON representation, a value of an interface type (Statement,
-// TypeSpec, TypeExpr, Expr, or Term) is an object whose "@type" member
+// In the JSON representation, a value of an interface type (Decl,
+// TypeExpr, Expr, or Term) is an object whose "@type" member
 // holds the Go type name. Field names follow the json tags.
 
 var registry = map[string]reflect.Type{}
@@ -26,8 +26,7 @@ func register(vs ...any) {
 
 func init() {
 	register(
-		(*TypeDef)(nil), (*RuleDef)(nil),
-		(*StructSpec)(nil), (*AliasSpec)(nil),
+		(*TypeDef)(nil), (*TypeAlias)(nil), (*RuleDef)(nil),
 		(*TypeRef)(nil), (*ListType)(nil), (*OptionalType)(nil), (*UnionType)(nil), (*IntersectionType)(nil), (*TupleType)(nil), (*TypeApp)(nil), (*StructType)(nil), (*TypeGroup)(nil),
 		(*Ref)(nil), (*Literal)(nil), (*CharClass)(nil), (*Any)(nil), (*Seq)(nil),
 		(*Choice)(nil), (*Group)(nil), (*InlineAction)(nil), (*Repeat)(nil), (*Optional)(nil), (*And)(nil), (*Not)(nil),
@@ -230,6 +229,10 @@ func decode(raw any, t reflect.Type, path string) (reflect.Value, error) {
 		obj, ok := raw.(map[string]any)
 		if !ok {
 			return reflect.Value{}, fmt.Errorf("%s: expected an object", path)
+		}
+		// A concrete node type takes no discriminator, but a present one must name it.
+		if name, ok := obj["@type"]; ok && name != t.Name() {
+			return reflect.Value{}, fmt.Errorf("%s: @type %v is not a %s", path, name, t.Name())
 		}
 		v := reflect.New(t).Elem()
 		for i := 0; i < t.NumField(); i++ {

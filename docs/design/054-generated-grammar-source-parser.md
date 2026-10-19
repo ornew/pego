@@ -64,7 +64,7 @@ Rules and malformed-input recovery.
 
 #### Struct Definition Field Separators
 
-Fields in a Struct Type Definition Statement use semicolons or hard newlines.
+Fields in a struct type definition (`type a = { ... }`) use semicolons or hard newlines.
 Constructor fields and function arguments use commas. The source parser and
 adapter must preserve field order, comments, positions and diagnostics while
 checking separator parity against the manual parser. This changes source

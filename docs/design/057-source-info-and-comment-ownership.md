@@ -74,7 +74,7 @@ supported grammar AST and attribute argument value domain; it does not cover
 arbitrary application values or cyclic maps and slices embedded in attribute
 arguments. Shared AST subtrees stay shared in the clone, and AST pointer cycles
 are preserved for `Validate` to report.
-Preserve the `Grammar.Package` string and use `Grammar.PackageSource` for the
+Keep the package name in `File.Pkg.Name` and use `File.Pkg.SourceInfo` for the
 package clause span and owned comments. Use `OperatorsRule.SkipSource` for the
 whole skip clause, from the `skip` keyword through its expression. Do not
 retain the old `PackagePos` field.
@@ -147,7 +147,7 @@ source whitespace detail.
 ### JSON and Formatting
 
 Serialize embedded node metadata in an explicit nested `source` object; package
-and skip metadata use `packageSource` and `skipSource`. Do not rely on Go
+and skip metadata use `pkg.source` and `skipSource`. Do not rely on Go
 embedding to flatten fields. Keep AST type tags and position units. Older JSON
 without these optional metadata objects decodes to zero values. Example:
 
@@ -299,8 +299,8 @@ the tested inputs; they are not a statistical-significance claim. They do not
 measure parsing user input, JSON marshal latency, or runtime speed. Source spans
 exclude leading/trailing boundary comments but include comments inside their
 continuous interval; `DiagnosticPos` preserves a diagnostic token when it
-differs from the span start. The package clause uses `PackageSource` while
-retaining `Package` as its existing string field; the Operators Rule skip
+differs from the span start. The package clause uses `File.Pkg.SourceInfo` while
+retaining `File.Pkg.Name` as its string field; the Operators Rule skip
 clause uses `SkipSource`. Raw markers and comments with no normalized owner
 remain formatter trivia and are not preserved by JSON.
 

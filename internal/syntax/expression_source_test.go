@@ -104,15 +104,15 @@ func TestExpressionSourceHeaderComments(t *testing.T) {
 		if err != nil {
 			t.Fatalf("parsing should preserve header comments: %v", err)
 		}
-		if len(g.HeaderComments) != 1 {
-			t.Fatalf("header comments: %d", len(g.HeaderComments))
+		if len(g.File.HeaderComments) != 1 {
+			t.Fatalf("header comments: %d", len(g.File.HeaderComments))
 		}
 		formatted := grammar.Format(g)
 		again, parseErr := syntax.Parse(formatted)
 		if parseErr != nil {
 			t.Fatalf("header format no longer parses: %v\n%s", parseErr, formatted)
 		}
-		if len(again.HeaderComments) == 0 {
+		if len(again.File.HeaderComments) == 0 {
 			t.Fatalf("formatter removed header placement error:\n%s", formatted)
 		}
 		if _, err := engine.Compile(again, engine.Options{}); err == nil {
@@ -135,7 +135,7 @@ rule main = v1:"a" "b" {x := 1} => N{Value: len($v1)} /*after action*/`
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(g.HeaderComments) != 0 {
+	if len(g.File.HeaderComments) != 0 {
 		t.Fatal("expression comments marked as headers")
 	}
 	if _, err := engine.Compile(g, engine.Options{}); err != nil {

@@ -235,22 +235,18 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			}
 		}
 	}
-	add(g.PackageBreak)
-	for _, s := range g.Statements {
+	add(g.File.Pkg.Break)
+	for _, s := range g.File.Decls {
 		control.poll()
 		switch s := s.(type) {
 		case *TypeDef:
 			add(s.Break)
-			if st, ok := s.Spec.(*StructSpec); ok {
-				add(st.CloseBreak)
-				for _, f := range st.Fields {
-					add(f.Break)
-					typ(f.Type)
-				}
+			if s.Type != nil {
+				typ(s.Type)
 			}
-			if alias, ok := s.Spec.(*AliasSpec); ok {
-				typ(alias.Type)
-			}
+		case *TypeAlias:
+			add(s.Break)
+			typ(s.Type)
 		case *RuleDef:
 			typ(s.Type)
 			add(s.Break)
@@ -261,6 +257,6 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			term(s.Action)
 		}
 	}
-	add(g.EndBreak)
+	add(g.File.EndBreak)
 	return cs
 }

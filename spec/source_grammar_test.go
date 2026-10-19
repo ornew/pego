@@ -60,12 +60,12 @@ func elems(n *pego.Node) []*pego.Node {
 	return out
 }
 
-func sourceDefs(t *testing.T, n *pego.Node) []*pego.Node {
+func sourceDecls(t *testing.T, n *pego.Node) []*pego.Node {
 	t.Helper()
 	if n == nil || n.Type() != "File" {
 		t.Fatalf("source root: %v", n)
 	}
-	return elems(sourceField(t, n, "Defs"))
+	return elems(sourceField(t, n, "Decls"))
 }
 
 func TestSourceGrammarMatchesDocumentation(t *testing.T) {
@@ -129,7 +129,7 @@ type Unnamed ~ {} | []{ A Foo; B { C Word } }
 		if err != nil {
 			t.Fatal(err)
 		}
-		defs := sourceDefs(t, n)
+		defs := sourceDecls(t, n)
 		text := sourceField(t, defs[2], "Action")
 		if text.Type() != "Constructor" || len(elems(sourceField(t, text, "Inits"))) != 1 {
 			t.Fatal("text struct source fields lost")
@@ -158,7 +158,7 @@ type Unnamed ~ {} | []{ A Foo; B { C Word } }
 			t.Fatal("cast structure lost")
 		}
 		// & binds tighter than |; _ is a name and _|_ is one token.
-		meet := sourceField(t, sourceField(t, defs[9], "Spec"), "Type")
+		meet := sourceField(t, defs[9], "Type")
 		l, r := sourceField(t, meet, "L"), sourceField(t, meet, "R")
 		if meet.Type() != "UnionType" || l.Type() != "IntersectionType" || r.Type() != "IntersectionType" ||
 			sourceField(t, r, "L").Type() != "TypeRef" || sourceField(t, r, "R").Type() != "Bottom" {
@@ -166,7 +166,7 @@ type Unnamed ~ {} | []{ A Foo; B { C Word } }
 		}
 		// One type without a comma is a group, and type arguments follow the name directly.
 		var alts []*pego.Node
-		for u := sourceField(t, sourceField(t, defs[10], "Spec"), "Type"); ; u = sourceField(t, u, "L") {
+		for u := sourceField(t, defs[10], "Type"); ; u = sourceField(t, u, "L") {
 			if u.Type() != "UnionType" {
 				alts = append([]*pego.Node{u}, alts...)
 				break
@@ -192,7 +192,7 @@ type Unnamed ~ {} | []{ A Foo; B { C Word } }
 		if sourceField(t, alts[4], "Type").Type() != "TypeApp" {
 			t.Fatal("[] must apply to a type application")
 		}
-		unnamed := sourceField(t, sourceField(t, defs[11], "Spec"), "Type")
+		unnamed := sourceField(t, defs[11], "Type")
 		empty, list := sourceField(t, unnamed, "L"), sourceField(t, unnamed, "R")
 		if empty.Type() != "StructType" || len(elems(sourceField(t, empty, "Fields"))) != 0 || list.Type() != "ListType" {
 			t.Fatal("unnamed struct structure lost")
@@ -245,16 +245,16 @@ func TestSourceGrammarTree(t *testing.T) {
 			if n.Field("Text") != src {
 				t.Fatal("original source lost")
 			}
-			pkg := sourceField(t, n, "Package")
+			pkg := sourceField(t, n, "Pkg")
 			cs := elems(sourceField(t, pkg, "Comments"))
 			if len(cs) != 1 || len(elems(sourceField(t, cs[0], "Lines"))) != 2 {
 				t.Fatalf("line comment grouping lost: %v", cs)
 			}
-			defs := sourceDefs(t, n)
+			defs := sourceDecls(t, n)
 			if len(defs) != 5 {
 				t.Fatalf("definitions: %d", len(defs))
 			}
-			typ := sourceField(t, sourceField(t, defs[0], "Spec"), "Type")
+			typ := sourceField(t, defs[0], "Type")
 			if typ.Type() != "TypeGroup" || sourceField(t, typ, "Type").Type() != "UnionType" {
 				t.Fatal("type grouping lost")
 			}
@@ -327,7 +327,7 @@ func TestSourceGrammarRecovery(t *testing.T) {
 				if !errors.As(err, &syntaxErrors) || len(syntaxErrors) != wantErrors || !strings.Contains(err.Error(), tc.message) {
 					t.Fatalf("%v: diagnostics: %v", backend, err)
 				}
-				ds := sourceDefs(t, n)
+				ds := sourceDecls(t, n)
 				if len(ds) != tc.defs {
 					t.Fatalf("%v: recovered definitions %d, want %d", backend, len(ds), tc.defs)
 				}
@@ -345,7 +345,7 @@ func TestSourceGrammarRecovery(t *testing.T) {
 					t.Fatalf("backend recovery differs for %v", backend)
 				}
 				if tc.name == "field" {
-					fs := elems(sourceField(t, sourceField(t, ds[0], "Spec"), "Fields"))
+					fs := elems(sourceField(t, sourceField(t, ds[0], "Type"), "Fields"))
 					if len(fs) != 2 || fs[0].Type() != "error" || sourceText(t, fs[1], "Name") != "Good" {
 						t.Fatalf("field recovery: %v", fs)
 					}
@@ -372,7 +372,7 @@ func TestSourceGrammarGeneratedGo(t *testing.T) {
 		Source string
 		Tree   json.RawMessage
 		Error  string
-		Defs   int
+		Decls  int
 	}
 	var fixtures []fixture
 	for _, input := range []string{
@@ -394,7 +394,7 @@ func TestSourceGrammarGeneratedGo(t *testing.T) {
 		if parseErr != nil {
 			errorText = parseErr.Error()
 		}
-		fixtures = append(fixtures, fixture{input, b, errorText, len(sourceDefs(t, n))})
+		fixtures = append(fixtures, fixture{input, b, errorText, len(sourceDecls(t, n))})
 	}
 	dir := t.TempDir()
 	write := func(name string, b []byte) {
@@ -413,7 +413,7 @@ func TestSourceGrammarGeneratedGo(t *testing.T) {
 	write("parser_test.go", []byte(`package sourceparser
 import("encoding/json";"os";"testing")
 func TestSource(t *testing.T){
- var fixtures []struct{Source string;Tree json.RawMessage;Error string;Defs int}
+ var fixtures []struct{Source string;Tree json.RawMessage;Error string;Decls int}
  data,err:=os.ReadFile("fixtures.json");if err!=nil{t.Fatal(err)}
  if err=json.Unmarshal(data,&fixtures);err!=nil{t.Fatal(err)}
  for i,f:=range fixtures{
@@ -423,15 +423,24 @@ func TestSource(t *testing.T){
   if string(b)!=string(f.Tree){t.Fatalf("fixture %d: generated tree differs",i)}
   ast,e:=ParseAST(f.Source);gotErr="";if e!=nil{gotErr=e.Error()}
   if ast==nil||gotErr!=f.Error{t.Fatalf("fixture %d: typed parse: %v",i,e)}
-  if ast.Text!=f.Source||len(ast.Defs)!=f.Defs{t.Fatalf("fixture %d: typed fields lost",i)}
+  if ast.Text!=f.Source||len(ast.Decls)!=f.Decls{t.Fatalf("fixture %d: typed fields lost",i)}
   for _,c:=range ast.Comments{if c==nil{t.Fatalf("fixture %d: nil comment",i)}}
-  defs:=n.Field("Defs").(*Node)
-  for j,d:=range ast.Defs{
-   if x,ok:=d.(*TypeDef);ok{
-    span,ok:=defs.Elem(j).Field("SourceSpan").(*Node)
-    if !ok||span==nil||x==nil||x.SourceSpan==nil{t.Fatalf("fixture %d: missing type syntax span",i)}
-    if x.SourceSpan.Start!=span.Start()||x.SourceSpan.End!=span.End(){t.Fatalf("fixture %d: typed type syntax span differs",i)}
+  decls:=n.Field("Decls").(*Node)
+  for j,d:=range ast.Decls{
+   var start,end int
+   switch x:=d.(type){
+   case *TypeDef:
+    if x==nil||x.SourceSpan==nil{t.Fatalf("fixture %d: missing type syntax span",i)}
+    start,end=x.SourceSpan.Start,x.SourceSpan.End
+   case *TypeAlias:
+    if x==nil||x.SourceSpan==nil{t.Fatalf("fixture %d: missing type syntax span",i)}
+    start,end=x.SourceSpan.Start,x.SourceSpan.End
+   default:
+    continue
    }
+   span,ok:=decls.Elem(j).Field("SourceSpan").(*Node)
+   if !ok||span==nil{t.Fatalf("fixture %d: missing type syntax span",i)}
+   if start!=span.Start()||end!=span.End(){t.Fatalf("fixture %d: typed type syntax span differs",i)}
   }
  }
 }
@@ -500,10 +509,10 @@ func TestSourceGrammarPackageRecovery(t *testing.T) {
 			if !errors.As(err, &syntaxErrors) || len(syntaxErrors) != 1 || !strings.Contains(err.Error(), "expected package name") {
 				t.Fatalf("%v: %v", backend, err)
 			}
-			if sourceField(t, n, "Package").Type() != "error" {
+			if sourceField(t, n, "Pkg").Type() != "error" {
 				t.Fatal("package error lost")
 			}
-			ds := sourceDefs(t, n)
+			ds := sourceDecls(t, n)
 			if len(ds) != 1 || sourceText(t, ds[0], "Name") != "after" {
 				t.Fatal("package recovery lost next declaration")
 			}

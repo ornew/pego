@@ -8,7 +8,7 @@ import (
 )
 
 func TestConstructorJSONRoundTrip(t *testing.T) {
-	g := &Grammar{Statements: []Statement{
+	g := &Grammar{File: File{Decls: []Decl{
 		&RuleDef{Name: "list", Expr: &Literal{Value: "x"}, Action: &ListConstructor{
 			Elem: &ListType{Elem: &TypeRef{Name: "Foo"}},
 			Items: []Term{&ListConstructor{Elem: &TypeRef{Name: "Foo"}, Items: []Term{
@@ -19,7 +19,7 @@ func TestConstructorJSONRoundTrip(t *testing.T) {
 			{Name: "Text", Value: &StringLit{Value: "a"}}, {Name: "Rest", Value: &StringLit{Value: "b"}},
 		}}},
 		&RuleDef{Name: "empty", Expr: &Literal{Value: "x"}, Action: &ListConstructor{Elem: &TypeRef{Name: "Foo"}, Items: []Term{}}},
-	}}
+	}}}
 	data, err := MarshalJSON(g)
 	if err != nil {
 		t.Fatal(err)
@@ -47,9 +47,9 @@ func TestConstructorValidationChildrenAndCycles(t *testing.T) {
 		term Term
 		path string
 	}{
-		{"missing list element type", &ListConstructor{Items: []Term{}}, "$.statements[0].action.elem"},
-		{"typed nil list item", &ListConstructor{Elem: &TypeRef{Name: "Foo"}, Items: []Term{(*StringLit)(nil)}}, "$.statements[0].action.items[0]"},
-		{"typed nil field value", &New{Type: "Int", Fields: []*FieldInit{{Name: "Text", Value: (*StringLit)(nil)}}}, "$.statements[0].action.fields[0].value"},
+		{"missing list element type", &ListConstructor{Items: []Term{}}, "$.file.decls[0].action.elem"},
+		{"typed nil list item", &ListConstructor{Elem: &TypeRef{Name: "Foo"}, Items: []Term{(*StringLit)(nil)}}, "$.file.decls[0].action.items[0]"},
+		{"typed nil field value", &New{Type: "Int", Fields: []*FieldInit{{Name: "Text", Value: (*StringLit)(nil)}}}, "$.file.decls[0].action.fields[0].value"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			g := listGrammar(tc.term)
@@ -62,25 +62,25 @@ func TestConstructorValidationChildrenAndCycles(t *testing.T) {
 
 	cyclic := &ListConstructor{Elem: &TypeRef{Name: "Foo"}}
 	cyclic.Items = []Term{cyclic}
-	assertValidationError(t, Validate(listGrammar(cyclic)), "$.statements[0].action.items[0]")
+	assertValidationError(t, Validate(listGrammar(cyclic)), "$.file.decls[0].action.items[0]")
 }
 
 func TestDecodeJSONConstructorRequiresListElementType(t *testing.T) {
-	input := `{"statements":[{"@type":"RuleDef","name":"p","expr":{"@type":"Literal","value":"x"},"action":{"@type":"ListConstructor","items":[]}}]}`
+	input := `{"file":{"decls":[{"@type":"RuleDef","name":"p","expr":{"@type":"Literal","value":"x"},"action":{"@type":"ListConstructor","items":[]}}]}}`
 	got, err := DecodeJSON([]byte(input))
 	if got != nil || err == nil {
 		t.Fatalf("DecodeJSON accepted missing list element type: %#v, %v", got, err)
 	}
 	var validation *ValidationError
-	if !errors.As(err, &validation) || validation.Path != "$.statements[0].action.elem" {
-		t.Fatalf("got %v; want validation error at $.statements[0].action.elem", err)
+	if !errors.As(err, &validation) || validation.Path != "$.file.decls[0].action.elem" {
+		t.Fatalf("got %v; want validation error at $.file.decls[0].action.elem", err)
 	}
 }
 
 func TestDecodeJSONRejectsTerminalNodes(t *testing.T) {
 	for _, input := range []string{
-		`{"statements":[{"@type":"TypeDef","name":"Num","spec":{"@type":"TerminalSpec"}}]}`,
-		`{"statements":[{"@type":"RuleDef","name":"p","expr":{"@type":"Literal","value":"x"},"action":{"@type":"TerminalConstructor","type":"Num","args":[{"@type":"StringLit","value":"x"}]}}]}`,
+		`{"file":{"decls":[{"@type":"TypeDef","name":"Num","type":{"@type":"TerminalSpec"}}]}}`,
+		`{"file":{"decls":[{"@type":"RuleDef","name":"p","expr":{"@type":"Literal","value":"x"},"action":{"@type":"TerminalConstructor","type":"Num","args":[{"@type":"StringLit","value":"x"}]}}]}}`,
 	} {
 		if g, err := DecodeJSON([]byte(input)); g != nil || err == nil {
 			t.Errorf("DecodeJSON accepted %s: %#v", input, g)

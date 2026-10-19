@@ -195,7 +195,7 @@ func (prog *Program) MarshalBinaryWith(start string, o MarshalOptions) ([]byte, 
 	w.str(start)
 	pkg := prog.pkg
 	if prog.Grammar != nil {
-		pkg = prog.Grammar.Package
+		pkg = prog.Grammar.File.Pkg.Name
 	}
 	w.str(pkg)
 	w.module(m)
@@ -244,14 +244,14 @@ func (w *encoder) finish(out *bytes.Buffer) {
 // each rule definition ends with the run-time checks of its values (checkInfo): the numbers of its
 // checked constructed fields (ruleFieldInits) and of its checked results (ruleResults).
 func (w *encoder) statements(prog *Program, version int, checks bool) {
-	w.uint(len(prog.Grammar.Statements))
+	w.uint(len(prog.Grammar.File.Decls))
 	ri := 0
-	for _, st := range prog.Grammar.Statements {
+	for _, st := range prog.Grammar.File.Decls {
 		switch st := st.(type) {
-		case *grammar.TypeDef:
+		case grammar.TypeDecl:
 			w.byte(kTypeDef)
-			w.str(st.Name)
-			w.typeSpec(st.Spec)
+			w.str(st.DeclName())
+			w.typeDecl(st)
 		case *grammar.RuleDef:
 			r := prog.rules[ri]
 			ri++
@@ -295,16 +295,17 @@ func (w *encoder) checks(prog *Program, rd *grammar.RuleDef) {
 	}
 }
 
-func (w *encoder) typeSpec(s grammar.TypeSpec) {
+// typeDecl writes the kind and the type of a type declaration; its name is written before.
+func (w *encoder) typeDecl(s grammar.TypeDecl) {
 	switch s := s.(type) {
-	case *grammar.StructSpec:
+	case *grammar.TypeDef:
 		w.byte(kStruct)
-		w.uint(len(s.Fields))
-		for _, f := range s.Fields {
+		w.uint(len(s.Type.Fields))
+		for _, f := range s.Type.Fields {
 			w.str(f.Name)
 			w.typeExpr(f.Type)
 		}
-	case *grammar.AliasSpec:
+	case *grammar.TypeAlias:
 		w.byte(kAlias)
 		w.typeExpr(s.Type)
 	}
@@ -785,7 +786,7 @@ func (r *decoder) strings() {
 }
 
 func (r *decoder) statements(pkg string, version int, checked bool) (*grammar.Grammar, []ruleFlags, *checkInfo) {
-	g := &grammar.Grammar{Package: pkg}
+	g := &grammar.Grammar{File: grammar.File{Pkg: grammar.Pkg{Name: pkg}}}
 	flags := []ruleFlags{}
 	var checks *checkInfo
 	if checked {
@@ -795,7 +796,7 @@ func (r *decoder) statements(pkg string, version int, checked bool) (*grammar.Gr
 	for i := 0; i < n && r.err == nil; i++ {
 		switch k := r.byte(); k {
 		case kTypeDef:
-			g.Statements = append(g.Statements, &grammar.TypeDef{Name: r.str(), Spec: r.typeSpec()})
+			g.File.Decls = append(g.File.Decls, r.typeDecl(r.str()))
 		case kRuleDef:
 			rd := &grammar.RuleDef{Name: r.str()}
 			if r.bool() {
@@ -811,7 +812,7 @@ func (r *decoder) statements(pkg string, version int, checked bool) (*grammar.Gr
 			if checked {
 				r.checks(rd, checks)
 			}
-			g.Statements = append(g.Statements, rd)
+			g.File.Decls = append(g.File.Decls, rd)
 		default:
 			r.fail("invalid statement kind %d", k)
 		}
@@ -850,20 +851,21 @@ func (r *decoder) checkIndices(rd *grammar.RuleDef, n int) []int {
 	return list
 }
 
-func (r *decoder) typeSpec() grammar.TypeSpec {
+// typeDecl reads the type declaration of the given name.
+func (r *decoder) typeDecl(name string) grammar.TypeDecl {
 	switch k := r.byte(); k {
 	case kStruct:
-		st := &grammar.StructSpec{Fields: []*grammar.Field{}}
+		st := &grammar.StructType{Fields: []*grammar.Field{}}
 		n := r.count()
 		for i := 0; i < n && r.err == nil; i++ {
 			st.Fields = append(st.Fields, &grammar.Field{Name: r.str(), Type: r.typeExpr()})
 		}
-		return st
+		return &grammar.TypeDef{Name: name, Type: st}
 	case kAlias:
-		return &grammar.AliasSpec{Type: r.typeExpr()}
+		return &grammar.TypeAlias{Name: name, Type: r.typeExpr()}
 	default:
-		r.fail("invalid type spec %d", k)
-		return &grammar.StructSpec{}
+		r.fail("invalid type declaration %d", k)
+		return &grammar.TypeDef{Name: name, Type: &grammar.StructType{}}
 	}
 }
 

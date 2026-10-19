@@ -375,7 +375,7 @@ var fieldCheckMarker = regexp.MustCompile(`(?m)^// fieldcheck:typed:(begin|end)\
 
 // checkedField wraps the code of a constructed field's value in its run-time check when the
 // value is not statically known to fit the field's declared type (Program.fieldCheckType).
-func (g *generator) checkedField(spec *grammar.StructSpec, typ string, fi *grammar.FieldInit, code string) string {
+func (g *generator) checkedField(spec *grammar.TypeDef, typ string, fi *grammar.FieldInit, code string) string {
 	ft := g.prog.fieldCheckType(spec, fi)
 	if ft == nil {
 		return code
@@ -754,14 +754,14 @@ func (g *generator) rules() {
 	// Struct fields, used to detect references to undeclared fields at run time.
 	var names []string
 	for name, spec := range g.prog.types {
-		if _, ok := spec.(*grammar.StructSpec); ok {
+		if _, ok := spec.(*grammar.TypeDef); ok {
 			names = append(names, name)
 		}
 	}
 	sort.Strings(names)
 	for _, name := range names {
 		var fields []string
-		for _, f := range g.prog.types[name].(*grammar.StructSpec).Fields {
+		for _, f := range g.prog.types[name].(*grammar.TypeDef).Type.Fields {
 			fields = append(fields, fmt.Sprintf("%q: true", f.Name))
 		}
 		fmt.Fprintf(init, "\tstructFields[%q] = map[string]bool{%s}\n", name, strings.Join(fields, ", "))
@@ -1561,7 +1561,7 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 				fmt.Fprintf(&b, "%s := %s; ", v, g.checkedField(spec, name, given, g.term(given.Value, s, locals)))
 			}
 			args := []string{"c", strconv.FormatBool(grammar.Term(t) == g.final)}
-			for _, f := range spec.Fields {
+			for _, f := range spec.Type.Fields {
 				if v, ok := vars[f.Name]; ok {
 					args = append(args, v)
 				} else {

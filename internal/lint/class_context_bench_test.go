@@ -13,7 +13,7 @@ func BenchmarkClassLintCancellation(b *testing.B) {
 		ranges[i] = grammar.CharRange{Lo: rune(256 + 2*(len(ranges)-i)), Hi: rune(256 + 2*(len(ranges)-i))}
 	}
 	class := &grammar.CharClass{Ranges: ranges}
-	g := &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "main", Expr: &grammar.Choice{Alts: []grammar.Expr{class, &grammar.Literal{Value: "a"}, &grammar.CharClass{Ranges: ranges}}}}}}
+	g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: &grammar.Choice{Alts: []grammar.Expr{class, &grammar.Literal{Value: "a"}, &grammar.CharClass{Ranges: ranges}}}}}}}
 	for _, controlled := range []bool{false, true} {
 		name := "ordinary"
 		if controlled {

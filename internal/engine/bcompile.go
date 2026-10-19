@@ -120,10 +120,10 @@ func b2i(b bool) int32 {
 func (c *bcompiler) compile() {
 	// Type table
 	for _, td := range c.prog.Grammar.Types() {
-		switch spec := td.Spec.(type) {
-		case *grammar.StructSpec:
-			ti := TypeInfo{Name: int(c.str(td.Name))}
-			for _, f := range spec.Fields {
+		switch spec := td.(type) {
+		case *grammar.TypeDef:
+			ti := TypeInfo{Name: int(c.str(td.DeclName()))}
+			for _, f := range spec.Type.Fields {
 				ti.Fields = append(ti.Fields, int(c.str(f.Name)))
 			}
 			c.m.Types = append(c.m.Types, ti)

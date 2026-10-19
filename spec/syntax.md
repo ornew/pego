@@ -39,7 +39,7 @@ rule file = &source_comments &.* #atomic file_contents
 rule file_contents = (
     {ml := false}
     package_entry?
-    (-empty_stmts def_stmt)*
+    (-empty_stmts decl)*
     -empty_stmts comments $$
 )
 rule empty_stmts = (";" -comments)*
@@ -50,9 +50,9 @@ rule package_stmt = (
 )
 rule package_body = "package" -word_end #cut ident
 rule source_package_tail = -";"? source_after_boundary
-rule def_stmt = (
+rule decl = (
     !(comments $$)
-    (type_def_stmt / rule_def_stmt / _|_)
+    (type_decl / rule_decl / _|_)
 )
 rule stmt_end = horizontal stmt_sep
 rule item_end = horizontal item_sep
@@ -75,24 +75,24 @@ rule sync_paren = "(" (sync_token / !("(" / ")" / nl) .)* ")"
 rule sync_brace = "{" (sync_token / !("{" / "}" / nl) .)* "}"
 
 // Types. Union is the weakest operation; list and optional prefixes nest.
-rule type_def_stmt = comments type_def_body stmt_end
-// The body starts at the keyword and ends before the statement separator.
+// A type declaration is a type alias (type Name ~ Type) or a type definition
+// (type Name = { ... }).
+rule type_decl = type_alias / type_def
+rule type_alias_head = comments "type" -word_end ident -ws "~"
+rule type_alias = &type_alias_head comments type_alias_body stmt_end
+rule type_def = comments type_def_body stmt_end
+// A body starts at the keyword and ends before the statement separator.
 // Its typed node retains the actual parse span without repeating recovery.
+rule type_alias_body = "type" -word_end #cut ident -ws "~" -ws type_expr
 rule type_def_body = (
     "type" -word_end #cut ident -ws
-    type_spec
-)
-rule type_spec = struct_spec / type_alias_spec
-rule struct_spec = (
-    "=" -ws "{" #cut {ml := false} field_spec* comments
-    -"}"
+    -("=" -ws &"{") struct_type
 )
 rule field_spec = !(comments "}") field
 rule field = (
     comments ident -ws
     type_expr field_end
 )
-rule type_alias_spec = "~" -ws type_expr
 rule type_expr = operators {
     skip ws
     operand bottom
@@ -128,7 +128,7 @@ rule type_tuple = "(" {ml := true} -ws (type_expr -ws "," -ws)* type_expr? -ws "
 
 // Rule expressions. The empty infix operator represents adjacency, so
 // juxtaposition does not need a separate sequence parser or require a space.
-rule rule_def_stmt = (
+rule rule_decl = (
     comments "rule" -word_end #cut ident -ws type_expr? -ws
     -"=" -ws (ops_rule_expr / rule_expr) -ws whole_action? stmt_end
 )

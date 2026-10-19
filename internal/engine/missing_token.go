@@ -236,14 +236,14 @@ func (prog *Program) markMissingRules(control *compileControl) {
 		return false
 	}
 	for _, td := range control.types(prog.Grammar) {
-		switch t := td.Spec.(type) {
-		case *grammar.StructSpec:
-			for _, f := range t.Fields {
+		switch t := td.(type) {
+		case *grammar.TypeDef:
+			for _, f := range t.Type.Fields {
 				if usesMissingType(f.Type) {
 					prog.hasMissing = true
 				}
 			}
-		case *grammar.AliasSpec:
+		case *grammar.TypeAlias:
 			if usesMissingType(t.Type) {
 				prog.hasMissing = true
 			}

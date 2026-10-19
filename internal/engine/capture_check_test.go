@@ -97,9 +97,9 @@ func captureCheckProgram(src string) (*Program, error) {
 	if err != nil {
 		return nil, err
 	}
-	p := &Program{Grammar: g, types: map[string]grammar.TypeSpec{}}
+	p := &Program{Grammar: g, types: map[string]grammar.TypeDecl{}}
 	for _, d := range g.Types() {
-		p.types[d.Name] = d.Spec
+		p.types[d.DeclName()] = d
 	}
 	return p, nil
 }

@@ -79,12 +79,12 @@ func metadataFingerprint(tb testing.TB, a *analysis) []byte {
 		Start, End int
 	}
 	ruleStatements := map[*grammar.RuleDef]int{}
-	typeStatements := map[*grammar.TypeDef]int{}
-	for i, stmt := range a.g.Statements {
+	typeStatements := map[grammar.TypeDecl]int{}
+	for i, stmt := range a.g.File.Decls {
 		switch stmt := stmt.(type) {
 		case *grammar.RuleDef:
 			ruleStatements[stmt] = i
-		case *grammar.TypeDef:
+		case grammar.TypeDecl:
 			typeStatements[stmt] = i
 		}
 	}

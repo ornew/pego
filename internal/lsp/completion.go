@@ -647,11 +647,11 @@ func (a *analysis) memberItemsControlled(control *renderControl) []CompletionIte
 		if d.typ == nil {
 			continue
 		}
-		st, ok := d.typ.Spec.(*grammar.StructSpec)
+		st, ok := d.typ.(*grammar.TypeDef)
 		if !ok {
 			continue
 		}
-		for _, f := range st.Fields {
+		for _, f := range st.Type.Fields {
 			control.poll()
 			if !seen[f.Name] {
 				seen[f.Name] = true

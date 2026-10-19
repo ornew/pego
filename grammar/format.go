@@ -13,29 +13,32 @@ const indentUnit = "    "
 func formatGrammar(g *Grammar, control *metadataControl) string {
 	pollFormat(control)
 	p := &printer{start: true, headers: map[Pos][]*Comment{}, control: control}
-	for _, comment := range g.HeaderComments {
+	for _, comment := range g.File.HeaderComments {
 		pollFormat(control)
 		if comment != nil {
 			p.headers[comment.Header] = append(p.headers[comment.Header], comment)
 		}
 	}
-	if g.Package != "" {
-		p.lineBreak(g.PackageBreak, "", false)
-		p.header("package", g.PackageSource.Pos)
-		p.write(" " + g.Package)
+	if g.File.Pkg.Name != "" {
+		p.lineBreak(g.File.Pkg.Break, "", false)
+		p.header("package", g.File.Pkg.Pos)
+		p.write(" " + g.File.Pkg.Name)
 	}
-	for _, s := range g.Statements {
+	for _, s := range g.File.Decls {
 		pollFormat(control)
 		switch s := s.(type) {
 		case *TypeDef:
 			p.lineBreak(s.Break, "", true)
 			p.typeDef(s)
+		case *TypeAlias:
+			p.lineBreak(s.Break, "", true)
+			p.typeAlias(s)
 		case *RuleDef:
 			p.lineBreak(s.Break, "", true)
 			p.ruleDef(s)
 		}
 	}
-	p.comments(g.EndBreak, "", true)
+	p.comments(g.File.EndBreak, "", true)
 	p.flush()
 	return p.String()
 }
@@ -190,18 +193,18 @@ func (p *printer) typeDef(t *TypeDef) {
 	pollFormat(p.control)
 	p.header("type", t.Pos)
 	p.write(" " + t.Name + " ")
-	switch spec := t.Spec.(type) {
-	case *StructSpec:
-		p.structSpec(spec, "")
-	case *AliasSpec:
-		p.write("~ " + formatType(spec.Type, p.control))
+	p.write("= ")
+	st := t.Type
+	if st == nil {
+		st = &StructType{OneLine: true}
 	}
+	p.structBody(st.Fields, st.CloseBreak, st.OneLine, "")
 }
 
-func (p *printer) structSpec(s *StructSpec, indent string) {
+func (p *printer) typeAlias(t *TypeAlias) {
 	pollFormat(p.control)
-	p.write("= ")
-	p.structBody(s.Fields, s.CloseBreak, s.OneLine, indent)
+	p.header("type", t.Pos)
+	p.write(" " + t.Name + " ~ " + formatType(t.Type, p.control))
 }
 
 // structBody writes the braces and fields of a struct type.

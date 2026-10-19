@@ -99,13 +99,13 @@ func TestMetadataInteriorCancellation(t *testing.T) {
 	t.Run("definition", func(t *testing.T) {
 		a := metadataPrepared(t, "rule main = "+strings.Repeat("\"a\" ", n))
 		a.indexDeclarationStarts()
-		r := a.g.Statements[0].(*grammar.RuleDef)
+		r := a.g.File.Decls[0].(*grammar.RuleDef)
 		assertMetadataPhaseCancels(t, func(c *renderControl) { a.defineControlled(kindRule, r.Name, r.Diagnostic(), c) })
 	})
 	t.Run("documentation", func(t *testing.T) {
 		a := metadataPrepared(t, strings.Repeat("// documentation\n", n)+"rule main = \"a\"")
 		a.indexDeclarationStarts()
-		r := a.g.Statements[0].(*grammar.RuleDef)
+		r := a.g.File.Decls[0].(*grammar.RuleDef)
 		assertMetadataPhaseCancels(t, func(c *renderControl) { a.defineControlled(kindRule, r.Name, r.Diagnostic(), c) })
 	})
 	t.Run("comment-trim", func(t *testing.T) {

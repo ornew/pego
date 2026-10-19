@@ -87,7 +87,7 @@ func TestSourceCommentOwners(t *testing.T) {
 		leading, trailing string
 		detached          []string
 	}{
-		{&g.PackageSource, " foo\n", " trailing\n", []string{" orphan\n"}},
+		{&g.File.Pkg.SourceInfo, " foo\n", " trailing\n", []string{" orphan\n"}},
 		{g.Rules()[0].Source(), " B1\n B1\n", " trailing\n", []string{" trailing\n", " B2\n B2\n"}},
 	}
 	for _, check := range checks {
@@ -112,7 +112,7 @@ func TestSourceCommentOwners(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !reflect.DeepEqual(g.PackageSource, copy.PackageSource) || !reflect.DeepEqual(g.Rules()[0].SourceInfo, copy.Rules()[0].SourceInfo) {
+		if !reflect.DeepEqual(g.File.Pkg.SourceInfo, copy.File.Pkg.SourceInfo) || !reflect.DeepEqual(g.Rules()[0].SourceInfo, copy.Rules()[0].SourceInfo) {
 			t.Fatal("JSON lost owned comments")
 		}
 	}
@@ -141,7 +141,7 @@ rule main = operators {
 	if err != nil {
 		t.Fatal(err)
 	}
-	field := g.Types()[0].Spec.(*grammar.StructSpec).Fields[0].Source()
+	field := g.Types()[0].(*grammar.TypeDef).Type.Fields[0].Source()
 	op := g.Rules()[0].Expr.(*grammar.OperatorsRule)
 	for _, check := range []struct {
 		s    *grammar.SourceInfo

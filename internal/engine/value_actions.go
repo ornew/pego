@@ -504,7 +504,7 @@ func (v *valueInference) member(x ty, m *grammar.Member) ty {
 			if a == tyMissing && (m.Name == "Start" || m.Name == "End") {
 				found = append(found, tyInt)
 			}
-			if st, ok := v.prog.types[a.name].(*grammar.StructSpec); ok {
+			if st, ok := v.prog.types[a.name].(*grammar.TypeDef); ok {
 				if f := fieldOf(st, m.Name); f != nil {
 					found = append(found, v.resolve(f.Type))
 				}

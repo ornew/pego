@@ -357,12 +357,12 @@ func (t *typedGen) name() {
 	}
 	for _, name := range all {
 		switch t.g.prog.types[name].(type) {
-		case *grammar.StructSpec:
+		case *grammar.TypeDef:
 			t.structs = append(t.structs, name)
 			for _, f := range t.info.fields[name] {
 				used[f.name] = true
 			}
-		case *grammar.AliasSpec:
+		case *grammar.TypeAlias:
 			if u, ok := t.info.aliases[name].(unionTy); ok && t.nodeUnion(u) {
 				if _, dup := t.unions[u.String()]; !dup {
 					t.unions[u.String()] = t.names[name]

@@ -325,7 +325,7 @@ func TestCommentsAndSourceInfoInJSON(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if decoded.PackageSource.LeadingComments != " file\n" || decoded.Rules()[0].TrailingComments != " result\n" {
+	if decoded.File.Pkg.SourceInfo.LeadingComments != " file\n" || decoded.Rules()[0].TrailingComments != " result\n" {
 		t.Fatal("owned comments lost")
 	}
 }

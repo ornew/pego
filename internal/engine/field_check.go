@@ -355,7 +355,7 @@ func (prog *Program) resolveCheck(t grammar.TypeExpr) ty {
 // fieldCheckType returns the declared type a constructor must check the value of field fi of
 // struct spec against at run time, or nil if it needs no check: the type checker proved every
 // value of the field's expression assignable, or the type is any.
-func (prog *Program) fieldCheckType(spec *grammar.StructSpec, fi *grammar.FieldInit) ty {
+func (prog *Program) fieldCheckType(spec *grammar.TypeDef, fi *grammar.FieldInit) ty {
 	ci := prog.checks
 	if ci.empty() {
 		return nil

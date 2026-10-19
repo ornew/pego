@@ -236,9 +236,9 @@ func (k *typeResolver) resolveNamed(name string, pos grammar.Pos) ty {
 		return tyErr
 	}
 	switch spec := k.prog.types[name].(type) {
-	case *grammar.StructSpec:
+	case *grammar.TypeDef:
 		return namedTy{name, 's'}
-	case *grammar.AliasSpec:
+	case *grammar.TypeAlias:
 		if k.resolving == nil {
 			k.resolving = map[string]bool{}
 		}
@@ -276,22 +276,22 @@ var retiredTypeNames = map[string]string{
 func (k *typeResolver) checkTypeDefinitions() {
 	for _, td := range k.control.types(k.prog.Grammar) {
 		k.control.poll()
-		switch spec := td.Spec.(type) {
-		case *grammar.StructSpec:
+		switch spec := td.(type) {
+		case *grammar.TypeDef:
 			seen := map[string]bool{}
-			for _, f := range spec.Fields {
+			for _, f := range spec.Type.Fields {
 				k.control.poll()
 				if seen[f.Name] {
-					k.errorf(f.Diagnostic(), "duplicate field %s in %s", f.Name, td.Name)
+					k.errorf(f.Diagnostic(), "duplicate field %s in %s", f.Name, td.DeclName())
 				}
 				if !startsUpper(f.Name) {
-					k.errorf(f.Diagnostic(), "field %s of %s must start with an uppercase letter", f.Name, td.Name)
+					k.errorf(f.Diagnostic(), "field %s of %s must start with an uppercase letter", f.Name, td.DeclName())
 				}
 				seen[f.Name] = true
-				k.resolveLocation(f.Type, f.Diagnostic(), "field "+f.Name+" of "+td.Name)
+				k.resolveLocation(f.Type, f.Diagnostic(), "field "+f.Name+" of "+td.DeclName())
 			}
-		case *grammar.AliasSpec:
-			k.resolveNamed(td.Name, td.Diagnostic())
+		case *grammar.TypeAlias:
+			k.resolveNamed(td.DeclName(), td.Diagnostic())
 		}
 	}
 }

@@ -148,7 +148,7 @@ func TestAnalysisDependencyCyclesAndCoverage(t *testing.T) {
 	}
 	rng := rand.New(rand.NewPCG(3, 7))
 	for round := range 30 {
-		rng.Shuffle(len(g.Statements), func(i, j int) { g.Statements[i], g.Statements[j] = g.Statements[j], g.Statements[i] })
+		rng.Shuffle(len(g.File.Decls), func(i, j int) { g.File.Decls[i], g.File.Decls[j] = g.File.Decls[j], g.File.Decls[i] })
 		in := checkAnalysisSweeps(t, g)
 		for name, want := range map[string][2]int{"leaf": {0, 2}, "shared": {0, 2}, "left": {1, 4}, "cycle": {0, 1}, "other": {1, 2}, "pure": {inf, inf}, "missing": {inf, inf}} {
 			r := in.rules[name]

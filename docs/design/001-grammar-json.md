@@ -34,9 +34,7 @@ By enabling `Grammar` <-> JSON conversion, we can:
 
 ## Design Details
 
-The `Grammar` will be represented as a list of `statements`. Each statement is either a `TypeDef` or a `RuleDef`, distinguished by a `@type` discriminator. This ensures definition order is preserved.
-
-> **Update (2026-10)**: The grammar AST was rewritten. The structures below describe the current format; the principles (ordered `statements`, `@type` discriminators, camelCase fields) are unchanged.
+The `Grammar` holds a `File` whose `decls` is a list of declarations. Each declaration is a `TypeDef`, a `TypeAlias` or a `RuleDef`, distinguished by a `@type` discriminator. This ensures definition order is preserved.
 
 ### Go Data Structures
 
@@ -44,8 +42,9 @@ The AST lives in the `grammar` package (`grammar/ast.go`). The interface types a
 
 | Interface | Implementations |
 |:--|:--|
-| `Statement` | `TypeDef`, `RuleDef` |
-| `TypeSpec` | `StructSpec`, `AliasSpec` |
+| `Decl` | `TypeDef`, `TypeAlias`, `RuleDef` |
+| `TypeDecl` | `TypeDef`, `TypeAlias` |
+| `RuleDecl` | `RuleDef` |
 | `TypeExpr` | `TypeRef`, `ListType`, `OptionalType`, `UnionType` |
 | `Expr` (parser expressions) | `Ref`, `Literal`, `CharClass`, `Any`, `Seq`, `Choice`, `Repeat`, `Optional`, `And`, `Not`, `Atomic`, `Discard`, `Capture`, `Cut`, `Top`, `Bottom`, `BeginInput`, `EndInput`, `BeginLine`, `EndLine`, `Predicate`, `Attributed`, `Recovery`, `Stream`, `InlineAction`, `OperatorsRule` |
 | `Term` (action and predicate expressions) | `IntLit`, `StringLit`, `BoolLit`, `NilLit`, `CaptureRef`, `IndexRef`, `VarRef`, `Member`, `New`, `Call`, `Lambda`, `Binary`, `Unary`, `Assign` |
@@ -62,6 +61,8 @@ type RuleDef struct {
 }
 ```
 
+A type definition holds its struct body directly, `TypeDef{Name string; Type *StructType}`, and a type alias holds a type expression, `TypeAlias{Name string; Type TypeExpr}`.
+
 Source positions (`Pos`) are not serialized.
 
 ### JSON Representation
@@ -74,39 +75,42 @@ use dedicated expression nodes rather than generic source attributes. Inline
 actions can be represented but are rejected by compilation until their
 execution contract is implemented.
 
+The example omits the optional `source` objects.
+
 ```json
 {
-  "package": "calc",
-  "statements": [
-    {
-      "@type": "TypeDef",
-      "name": "Pair",
-      "spec": {
-        "@type": "StructSpec",
-        "fields": [
-          { "name": "Key", "type": { "@type": "TypeRef", "name": "Match" } }
-        ]
-      }
-    },
-    {
-      "@type": "RuleDef",
-      "name": "main",
-      "expr": {
-        "@type": "Seq",
-        "items": [
-          { "@type": "Capture", "name": "k", "expr": { "@type": "Ref", "name": "key" } },
-          { "@type": "Literal", "value": "=" }
-        ]
+  "file": {
+    "pkg": { "name": "calc" },
+    "decls": [
+      {
+        "@type": "TypeDef",
+        "name": "Pair",
+        "type": {
+          "fields": [
+            { "name": "Key", "type": { "@type": "TypeRef", "name": "Match" } }
+          ]
+        }
       },
-      "action": {
-        "@type": "New",
-        "type": "Pair",
-        "fields": [
-          { "name": "Key", "value": { "@type": "CaptureRef", "name": "k" } }
-        ]
+      {
+        "@type": "RuleDef",
+        "name": "main",
+        "expr": {
+          "@type": "Seq",
+          "items": [
+            { "@type": "Capture", "name": "k", "expr": { "@type": "Ref", "name": "key" } },
+            { "@type": "Literal", "value": "=" }
+          ]
+        },
+        "action": {
+          "@type": "New",
+          "type": "Pair",
+          "fields": [
+            { "name": "Key", "value": { "@type": "CaptureRef", "name": "k" } }
+          ]
+        }
       }
-    }
-  ]
+    ]
+  }
 }
 ```
 

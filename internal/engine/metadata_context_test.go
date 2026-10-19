@@ -12,7 +12,7 @@ func TestCompileMetadataCollectionCancellation(t *testing.T) {
 	g := &grammar.Grammar{}
 	a := &grammar.Attribute{Name: "error"}
 	for range 1024 {
-		g.Statements = append(g.Statements, &grammar.TypeDef{Name: "T"}, &grammar.RuleDef{Name: "a"})
+		g.File.Decls = append(g.File.Decls, &grammar.TypeDef{Name: "T"}, &grammar.RuleDef{Name: "a"})
 		a.Args = append(a.Args, "label")
 	}
 	expr := &grammar.Attributed{Expr: &grammar.Literal{Value: "a"}, Attrs: []*grammar.Attribute{a}}

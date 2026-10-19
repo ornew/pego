@@ -21,7 +21,7 @@ func TestValidateUnicodeRanges(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			path := "$.statements[0].expr.ranges[1]." + field
+			path := "$.file.decls[0].expr.ranges[1]." + field
 			assertValidationError(t, Validate(g), path)
 			if out, err := UnmarshalJSON(before); out != nil || err == nil {
 				t.Fatalf("JSON accepted invalid endpoint: %v, %v", out, err)
@@ -35,7 +35,7 @@ func TestValidateUnicodeRanges(t *testing.T) {
 		}
 	}
 	g := expressionGrammar(&CharClass{Ranges: []CharRange{{Lo: 'z', Hi: 'a'}}})
-	assertValidationError(t, Validate(g), "$.statements[0].expr.ranges[0].hi")
+	assertValidationError(t, Validate(g), "$.file.decls[0].expr.ranges[0].hi")
 	// Scalar endpoints can span the surrogate interval. Empty AST classes,
 	// overlapping ranges and negation retain their existing meanings.
 	for _, ranges := range [][]CharRange{nil, {{Lo: 0, Hi: utf8.MaxRune}}, {{Lo: 0xd7ff, Hi: 0xe000}}, {{Lo: 0xfffd, Hi: 0xffff}, {Lo: 0xfffe, Hi: utf8.MaxRune}}} {
@@ -58,7 +58,7 @@ func TestValidateUnicodeRanges(t *testing.T) {
 func TestUnicodeRangeErrorPosition(t *testing.T) {
 	e := &CharClass{SourceInfo: SourceInfo{Pos: Pos{Line: 3, Col: 7}}, Ranges: []CharRange{{Lo: 0xd800, Hi: 0xdfff}}}
 	err := Validate(expressionGrammar(e))
-	assertValidationError(t, err, "$.statements[0].expr.ranges[0].lo")
+	assertValidationError(t, err, "$.file.decls[0].expr.ranges[0].lo")
 	if e := err.(*ValidationError); e.Pos != (Pos{Line: 3, Col: 7}) || !strings.HasPrefix(e.Error(), "3:7:") {
 		t.Fatal(e)
 	}

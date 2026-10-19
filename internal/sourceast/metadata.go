@@ -76,6 +76,6 @@ func (p *Positions) PackageClause(g *grammar.Grammar, name string, m Metadata) e
 	if err != nil {
 		return err
 	}
-	g.Package, g.PackageSource = name, s
+	g.File.Pkg.Name, g.File.Pkg.SourceInfo = name, s
 	return nil
 }

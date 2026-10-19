@@ -71,7 +71,7 @@ func (c *lintControl) rules(g *grammar.Grammar) []*grammar.RuleDef {
 	return result
 }
 
-func (c *lintControl) types(g *grammar.Grammar) []*grammar.TypeDef {
+func (c *lintControl) types(g *grammar.Grammar) []grammar.TypeDecl {
 	if c == nil {
 		return g.Types()
 	}

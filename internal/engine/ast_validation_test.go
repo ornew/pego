@@ -14,9 +14,9 @@ func TestCompileMalformedAST(t *testing.T) {
 		want string
 	}{
 		{"nil grammar", nil, "$"},
-		{"negative index", &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "p", Expr: &grammar.Literal{Value: "a"}, Action: &grammar.IndexRef{Index: -1}}}}, "$.statements[0].action.index"},
-		{"nil field", &grammar.Grammar{Statements: []grammar.Statement{&grammar.TypeDef{Name: "T", Spec: &grammar.StructSpec{Fields: []*grammar.Field{nil}}}}}, "$.statements[0].spec.fields[0]"},
-		{"reversed repeat", &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "p", Expr: &grammar.Repeat{Expr: &grammar.Literal{Value: "a"}, Min: 2, Max: 1}}}}, "$.statements[0].expr.max"},
+		{"negative index", &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "p", Expr: &grammar.Literal{Value: "a"}, Action: &grammar.IndexRef{Index: -1}}}}}, "$.file.decls[0].action.index"},
+		{"nil field", &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.TypeDef{Name: "T", Type: &grammar.StructType{Fields: []*grammar.Field{nil}}}}}}, "$.file.decls[0].type.fields[0]"},
+		{"reversed repeat", &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "p", Expr: &grammar.Repeat{Expr: &grammar.Literal{Value: "a"}, Min: 2, Max: 1}}}}}, "$.file.decls[0].expr.max"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, opts := range []Options{{}, {NoTypeCheck: true}} {
@@ -39,7 +39,7 @@ func TestCompileMalformedAST(t *testing.T) {
 func TestMalformedASTEntryPointsAndPosition(t *testing.T) {
 	e := &grammar.Optional{SourceInfo: grammar.SourceInfo{Pos: grammar.Pos{Line: 3, Col: 4}}}
 	e.Expr = e
-	g := &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "p", Expr: e}}}
+	g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "p", Expr: e}}}}
 	for name, run := range map[string]func() error{
 		"compile":            func() error { _, err := Compile(g, Options{}); return err },
 		"saved AST rebuild":  func() error { _, err := build(g, Options{}, []ruleFlags{{}}); return err },
@@ -49,7 +49,7 @@ func TestMalformedASTEntryPointsAndPosition(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			err := run()
-			if errs, ok := err.(ErrorList); !ok || len(errs) != 1 || errs[0].Pos != e.Pos || !strings.Contains(err.Error(), "$.statements[0].expr.expr") {
+			if errs, ok := err.(ErrorList); !ok || len(errs) != 1 || errs[0].Pos != e.Pos || !strings.Contains(err.Error(), "$.file.decls[0].expr.expr") {
 				t.Fatalf("got %v; want positioned pointer-cycle error", err)
 			}
 		})

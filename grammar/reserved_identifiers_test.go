@@ -7,13 +7,13 @@ import (
 
 func TestReservedASTIdentifiers(t *testing.T) {
 	cases := []*Grammar{
-		{Package: "_pkg"},
-		{Statements: []Statement{&RuleDef{Name: "_rule", Expr: &Top{}}}},
-		{Statements: []Statement{&RuleDef{Name: "main", Expr: &Ref{Name: "_callee"}}}},
-		{Statements: []Statement{&RuleDef{Name: "main", Expr: &Capture{Name: "_capture", Expr: &Top{}}}}},
-		{Statements: []Statement{&RuleDef{Name: "main", Expr: &Predicate{Term: &Assign{Name: "_var", Value: &IntLit{Value: 0}}}}}},
-		{Statements: []Statement{&RuleDef{Name: "main", Expr: &Top{}, Action: &Lambda{Params: []string{"_arg"}, Body: &NilLit{}}}}},
-		{Statements: []Statement{&RuleDef{Name: "main", Expr: &Attributed{Expr: &Top{}, Attrs: []*Attribute{{Name: "error", KwArgs: map[string]any{"_b": "x", "_a": "y"}}}}}}},
+		{File: File{Pkg: Pkg{Name: "_pkg"}}},
+		{File: File{Decls: []Decl{&RuleDef{Name: "_rule", Expr: &Top{}}}}},
+		{File: File{Decls: []Decl{&RuleDef{Name: "main", Expr: &Ref{Name: "_callee"}}}}},
+		{File: File{Decls: []Decl{&RuleDef{Name: "main", Expr: &Capture{Name: "_capture", Expr: &Top{}}}}}},
+		{File: File{Decls: []Decl{&RuleDef{Name: "main", Expr: &Predicate{Term: &Assign{Name: "_var", Value: &IntLit{Value: 0}}}}}}},
+		{File: File{Decls: []Decl{&RuleDef{Name: "main", Expr: &Top{}, Action: &Lambda{Params: []string{"_arg"}, Body: &NilLit{}}}}}},
+		{File: File{Decls: []Decl{&RuleDef{Name: "main", Expr: &Attributed{Expr: &Top{}, Attrs: []*Attribute{{Name: "error", KwArgs: map[string]any{"_b": "x", "_a": "y"}}}}}}}},
 	}
 	for _, g := range cases {
 		err := Validate(g)
@@ -29,7 +29,7 @@ func TestReservedASTIdentifiers(t *testing.T) {
 		}
 	}
 
-	g := &Grammar{Statements: []Statement{&RuleDef{Name: "main", Expr: &Literal{Value: "_data"}, Action: &StringLit{Value: "_data"}}}}
+	g := &Grammar{File: File{Decls: []Decl{&RuleDef{Name: "main", Expr: &Literal{Value: "_data"}, Action: &StringLit{Value: "_data"}}}}}
 	if err := Validate(g); err != nil {
 		t.Fatal(err)
 	}

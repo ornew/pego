@@ -25,13 +25,13 @@ The parser records layout in `grammar.LineBreak` values. A `LineBreak` belongs t
 
 Line breaks are recorded at:
 
-- the package clause, every `type` and `rule`, and the end of the file (`Grammar.PackageBreak`, `TypeDef.Break`, `RuleDef.Break`, `Grammar.EndBreak`);
-- struct fields and the closing brace of a struct (`Field.Break`, `StructSpec.CloseBreak`);
+- the package clause, every `type` and `rule`, and the end of the file (`Pkg.Break`, `TypeDef.Break`, `TypeAlias.Break`, `RuleDef.Break`, `File.EndBreak`);
+- struct fields and the closing brace of a struct (`Field.Break`, `StructType.CloseBreak`);
 - the `skip`, `operand` and `level` items of an Operators Rule, the operators of a level, and their closing braces;
 - optional line breaks in a rule body: after the opening brace (`RuleDef.BodyBreak`), before `=>` (`RuleDef.ActionBreak`), before the alternatives of the top-level choice (`Choice.Breaks`), before the items of the top-level sequences (`Seq.Breaks`), and before the attributes of those items (`Attributed.Breaks`).
   These are recorded only when the source has a line break there, and `Format` keeps them.
 
-`StructSpec.OneLine` and `OperatorsRuleLevel.OneLine` record that a struct or level was written on one line; `Format` keeps such blocks on one line.
+`StructType.OneLine` and `OperatorsRuleLevel.OneLine` record that a struct or level was written on one line; `Format` keeps such blocks on one line.
 
 All of these fields are tagged `json:"-"`, so `grammar.MarshalJSON` produces the same bytes as before, whether or not the grammar came from source with comments.
 The compiled grammar format (`.pegoc`) does not store them either.

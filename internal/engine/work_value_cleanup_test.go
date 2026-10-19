@@ -46,12 +46,12 @@ func TestWorkValueCopyInterruptionPreservesChildren(t *testing.T) {
 
 func TestWorkValueFieldAndEnvironmentWalks(t *testing.T) {
 	fields := make(Fields, 300)
-	st := &grammar.StructSpec{}
+	st := &grammar.TypeDef{Type: &grammar.StructType{}}
 	var bindings *env
 	for i := range fields {
 		name := fmt.Sprintf("v%d", i)
 		fields[i] = NodeField{Name: name, Value: i}
-		st.Fields = append(st.Fields, &grammar.Field{Name: name})
+		st.Type.Fields = append(st.Type.Fields, &grammar.Field{Name: name})
 		bindings = &env{name: name, val: i, next: bindings}
 	}
 	for _, run := range []struct {

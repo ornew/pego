@@ -109,8 +109,8 @@ func TestParseFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if g.Package != "calc" {
-		t.Errorf("package %q", g.Package)
+	if g.File.Pkg.Name != "calc" {
+		t.Errorf("package %q", g.File.Pkg.Name)
 	}
 	if n := len(g.Types()); n != 5 {
 		t.Errorf("%d types", n)
@@ -273,10 +273,9 @@ func TestParseRejectsTerminalType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parseLegacy: %v", err)
 	}
-	td := g.Statements[0].(*grammar.TypeDef)
-	spec, ok := td.Spec.(*grammar.StructSpec)
-	if !ok || len(spec.Fields) != 1 || spec.Fields[0].Name != "Text" || !forms.terminals[td] {
-		t.Errorf("parseLegacy: spec is %#v, want the struct { Text string }", td.Spec)
+	td := g.File.Decls[0].(*grammar.TypeDef)
+	if fields := td.Type.Fields; len(fields) != 1 || fields[0].Name != "Text" || !forms.terminals[td] {
+		t.Errorf("parseLegacy: spec is %#v, want the struct { Text string }", td)
 	}
 }
 
@@ -295,8 +294,8 @@ func TestParseRejectsPositionalConstructor(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parseLegacy: %v", err)
 	}
-	if n, ok := g.Statements[1].(*grammar.RuleDef).Action.(*grammar.New); !ok || !forms.positional[n] {
-		t.Errorf("parseLegacy: action is %#v, want a positional constructor", g.Statements[1].(*grammar.RuleDef).Action)
+	if n, ok := g.File.Decls[1].(*grammar.RuleDef).Action.(*grammar.New); !ok || !forms.positional[n] {
+		t.Errorf("parseLegacy: action is %#v, want a positional constructor", g.File.Decls[1].(*grammar.RuleDef).Action)
 	}
 }
 

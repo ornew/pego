@@ -25,7 +25,7 @@ func marshalV2NoRecognition(prog *Program, start string) []byte {
 	w.str(start)
 	pkg := prog.pkg
 	if prog.Grammar != nil {
-		pkg = prog.Grammar.Package
+		pkg = prog.Grammar.File.Pkg.Name
 	}
 	w.str(pkg)
 	w.module(m)
@@ -48,7 +48,7 @@ func marshalV3WithAST(prog *Program, start string, recognition *Program) []byte 
 		w.list = append(w.list, s)
 	}
 	w.str(start)
-	w.str(prog.Grammar.Package)
+	w.str(prog.Grammar.File.Pkg.Name)
 	w.module(m)
 	w.bool(true)
 	bundle := encodeRecognition(recognition)

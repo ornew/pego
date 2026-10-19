@@ -9,9 +9,9 @@ import (
 // Fixtures are built outside timing and cover polling sites in different AST
 // shapes; this does not measure cancellation latency or source parsing.
 func BenchmarkValidate(b *testing.B) {
-	wide := &Grammar{Statements: make([]Statement, 4096)}
-	for i := range wide.Statements {
-		wide.Statements[i] = &RuleDef{Name: fmt.Sprintf("item%d", i), Expr: &Literal{Value: "a"}}
+	wide := &Grammar{File: File{Decls: make([]Decl, 4096)}}
+	for i := range wide.File.Decls {
+		wide.File.Decls[i] = &RuleDef{Name: fmt.Sprintf("item%d", i), Expr: &Literal{Value: "a"}}
 	}
 	var deep Expr = &Top{}
 	for range 4096 {

@@ -160,7 +160,7 @@ func TestTopBottomReportedOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	g.Types()[0].Spec.(*grammar.StructSpec).Fields[0].Type = &grammar.IntersectionType{}
+	g.Types()[0].(*grammar.TypeDef).Type.Fields[0].Type = &grammar.IntersectionType{}
 	if _, err := Compile(g, Options{}); err != nil {
 		t.Fatal(err)
 	}
@@ -208,7 +208,7 @@ func TestTopBottomSyntax(t *testing.T) {
 			t.Fatalf("formatted lacks %q:\n%s", want, formatted)
 		}
 	}
-	alias := g.Types()[0].Spec.(*grammar.AliasSpec).Type.(*grammar.UnionType)
+	alias := g.Types()[0].(*grammar.TypeAlias).Type.(*grammar.UnionType)
 	if len(alias.Types) != 3 {
 		t.Fatalf("union %#v", alias)
 	}

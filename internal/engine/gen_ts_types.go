@@ -64,7 +64,7 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 	open := []string{"Node", "StringNode", "TNode<unknown>", "TypedValue[]", "RecoveredError", "number", "bigint", "string", "boolean", "null"}
 	for _, name := range t.all {
 		switch spec := g.prog.types[name].(type) {
-		case *grammar.StructSpec:
+		case *grammar.TypeDef:
 			open = append(open, t.names[name])
 			fmt.Fprintf(&b, "/** Grammar struct %s. */\nexport interface %s extends Span {\n  readonly type: %s;\n", name, t.names[name], tsString(name))
 			for _, f := range t.info.fields[name] {
@@ -73,7 +73,7 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 			}
 			b.WriteString("}\n\n")
 			t.recipe(namedTy{name, 's'})
-		case *grammar.AliasSpec:
+		case *grammar.TypeAlias:
 			fmt.Fprintf(&b, "/** Grammar alias %s = %s. */\nexport type %s = %s;\n\n", name, grammar.FormatType(spec.Type), t.names[name], t.tsType(t.info.aliases[name]))
 			t.recipe(t.info.aliases[name])
 		}
@@ -113,7 +113,7 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 		fmt.Fprintf(&b, "  [%s, %d],\n", tsString(name), elemsID)
 	}
 	for _, name := range t.all {
-		if _, ok := g.prog.types[name].(*grammar.StructSpec); ok {
+		if _, ok := g.prog.types[name].(*grammar.TypeDef); ok {
 			fmt.Fprintf(&b, "  [%s, %d],\n", tsString(name), t.recipe(namedTy{name, 's'}))
 		}
 	}

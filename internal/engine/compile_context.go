@@ -72,7 +72,7 @@ func (c *compileControl) rules(g *grammar.Grammar) []*grammar.RuleDef {
 	return result
 }
 
-func (c *compileControl) types(g *grammar.Grammar) []*grammar.TypeDef {
+func (c *compileControl) types(g *grammar.Grammar) []grammar.TypeDecl {
 	if c == nil {
 		return g.Types()
 	}

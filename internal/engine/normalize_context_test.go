@@ -37,11 +37,11 @@ func TestNormalizationContextCancellation(t *testing.T) {
 		"keyword-arguments":    &grammar.Attributed{Expr: &grammar.Literal{Value: "a"}, Attrs: []*grammar.Attribute{{Name: "custom", Args: []any{}, KwArgs: keywords}}},
 		"predicate-block":      &grammar.Predicate{Term: block},
 	} {
-		fixtures[name] = &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "main", Expr: expr}}}
+		fixtures[name] = &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: expr}}}}
 	}
-	fixtures["type-groups"] = &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "main", Type: groupedType, Expr: &grammar.Literal{Value: "a"}}}}
-	fixtures["action-groups"] = &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "main", Expr: &grammar.Literal{Value: "a"}, Action: groupedTerm}}}
-	fixtures["struct-fields"] = &grammar.Grammar{Statements: []grammar.Statement{&grammar.TypeDef{Name: "T", Spec: &grammar.StructSpec{Fields: fields}}}}
+	fixtures["type-groups"] = &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Type: groupedType, Expr: &grammar.Literal{Value: "a"}}}}}
+	fixtures["action-groups"] = &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: &grammar.Literal{Value: "a"}, Action: groupedTerm}}}}
+	fixtures["struct-fields"] = &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.TypeDef{Name: "T", Type: &grammar.StructType{Fields: fields}}}}}
 	union := &grammar.UnionType{Types: make([]grammar.TypeExpr, size)}
 	action := &grammar.Call{Func: "list", Args: make([]grammar.Term, size)}
 	for i := 0; i < size; i++ {
@@ -50,8 +50,8 @@ func TestNormalizationContextCancellation(t *testing.T) {
 	}
 	union.Types[0] = &grammar.TypeGroup{Type: union.Types[0]}
 	action.Args[0] = &grammar.TermGroup{Term: action.Args[0]}
-	fixtures["grouped-type-copy"] = &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "main", Type: union, Expr: &grammar.Literal{Value: "a"}}}}
-	fixtures["grouped-action-copy"] = &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "main", Expr: &grammar.Literal{Value: "a"}, Action: action}}}
+	fixtures["grouped-type-copy"] = &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Type: union, Expr: &grammar.Literal{Value: "a"}}}}}
+	fixtures["grouped-action-copy"] = &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: &grammar.Literal{Value: "a"}, Action: action}}}}
 	for name, g := range fixtures {
 		for _, eager := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s/eager=%v", name, eager), func(t *testing.T) {
@@ -184,7 +184,7 @@ func TestNormalizationCopiesObserveCancellation(t *testing.T) {
 }
 
 func TestNormalizationFinalCheckpoint(t *testing.T) {
-	g := &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "main", Expr: &grammar.Literal{Value: "a"}}}}
+	g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: &grammar.Literal{Value: "a"}}}}}
 	ctx := compileTestContext(t, 2)
 	defer func() {
 		cancelled, ok := recover().(compileCancellation)

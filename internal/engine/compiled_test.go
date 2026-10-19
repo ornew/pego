@@ -112,7 +112,7 @@ func checkCompiledRoundTrip(t *testing.T, prog *Program, inputs []string, v1Unch
 // marshalV1 saves in the version 1 format (the AST and the static analysis results).
 func marshalV1(prog *Program, start string) []byte {
 	w := &encoder{strs: map[string]int{}}
-	w.str(prog.Grammar.Package)
+	w.str(prog.Grammar.File.Pkg.Name)
 	w.str(start)
 	w.statements(prog, 1, false)
 	var out bytes.Buffer
@@ -352,16 +352,16 @@ rule pair node[(string)] = [a-z]`
 // layout, which compiled grammars do not keep.
 func grammarTypes(prog *Program) string {
 	var b strings.Builder
-	for _, s := range prog.Grammar.Statements {
+	for _, s := range prog.Grammar.File.Decls {
 		switch s := s.(type) {
-		case *grammar.TypeDef:
-			fmt.Fprintf(&b, "type %s", s.Name)
-			switch spec := s.Spec.(type) {
-			case *grammar.StructSpec:
-				for _, f := range spec.Fields {
+		case grammar.TypeDecl:
+			fmt.Fprintf(&b, "type %s", s.DeclName())
+			switch spec := s.(type) {
+			case *grammar.TypeDef:
+				for _, f := range spec.Type.Fields {
 					fmt.Fprintf(&b, " %s %s;", f.Name, grammar.FormatType(f.Type))
 				}
-			case *grammar.AliasSpec:
+			case *grammar.TypeAlias:
 				b.WriteString(" ~ " + grammar.FormatType(spec.Type))
 			}
 			b.WriteString("\n")

@@ -22,8 +22,8 @@ type wrappedType struct {
 	*grammar.TypeRef
 	Data []int
 }
-type wrappedSpec struct {
-	*grammar.StructSpec
+type wrappedTypeDecl struct {
+	*grammar.TypeDef
 	Data []int
 }
 type wrappedTerm struct {
@@ -33,12 +33,12 @@ type wrappedTerm struct {
 
 func TestValidateUnsupportedEmbeddedNodes(t *testing.T) {
 	for _, g := range []*grammar.Grammar{
-		{Statements: []grammar.Statement{wrappedStatement{}}},
-		{Statements: []grammar.Statement{&grammar.TypeDef{Name: "T", Spec: wrappedSpec{}}}},
-		{Statements: []grammar.Statement{&grammar.RuleDef{Name: "p", Type: wrappedType{}, Expr: &grammar.Top{}}}},
-		{Statements: []grammar.Statement{&grammar.RuleDef{Name: "p", Expr: wrappedExpr{}}}},
-		{Statements: []grammar.Statement{&grammar.RuleDef{Name: "p", Expr: &wrappedExpr{}}}},
-		{Statements: []grammar.Statement{&grammar.RuleDef{Name: "p", Expr: &grammar.Top{}, Action: wrappedTerm{}}}},
+		{File: grammar.File{Decls: []grammar.Decl{wrappedStatement{}}}},
+		{File: grammar.File{Decls: []grammar.Decl{wrappedTypeDecl{}}}},
+		{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "p", Type: wrappedType{}, Expr: &grammar.Top{}}}}},
+		{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "p", Expr: wrappedExpr{}}}}},
+		{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "p", Expr: &wrappedExpr{}}}}},
+		{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "p", Expr: &grammar.Top{}, Action: wrappedTerm{}}}}},
 	} {
 		var e *grammar.ValidationError
 		if err := grammar.Validate(g); !errors.As(err, &e) || !strings.Contains(e.Msg, "unsupported") {

@@ -15,7 +15,7 @@ func TestInvalidCharacterClassEntryPoints(t *testing.T) {
 	for _, cr := range []grammar.CharRange{{Lo: -1, Hi: 'z'}, {Lo: 'a', Hi: 0xd800}, {Lo: 0xdfff, Hi: utf8.MaxRune}, {Lo: 0, Hi: utf8.MaxRune + 1}, {Lo: 'z', Hi: 'a'}} {
 		t.Run(fmt.Sprintf("%x-%x", cr.Lo, cr.Hi), func(t *testing.T) {
 			cc := &grammar.CharClass{SourceInfo: grammar.SourceInfo{Pos: grammar.Pos{Line: 3, Col: 7}}, Ranges: []grammar.CharRange{cr}}
-			g := &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "main", Expr: cc}}}
+			g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: cc}}}}
 			for name, run := range map[string]func() error{
 				"compile":            func() error { _, err := Compile(g, Options{}); return err },
 				"unchecked compile":  func() error { _, err := Compile(g, Options{NoTypeCheck: true}); return err },
@@ -26,7 +26,7 @@ func TestInvalidCharacterClassEntryPoints(t *testing.T) {
 			} {
 				t.Run(name, func(t *testing.T) {
 					err := run()
-					if errs, ok := err.(ErrorList); !ok || len(errs) != 1 || errs[0].Pos != cc.Pos || !strings.Contains(err.Error(), "$.statements[0].expr.ranges[0]") {
+					if errs, ok := err.(ErrorList); !ok || len(errs) != 1 || errs[0].Pos != cc.Pos || !strings.Contains(err.Error(), "$.file.decls[0].expr.ranges[0]") {
 						t.Fatalf("got %v, want positioned range error", err)
 					}
 				})

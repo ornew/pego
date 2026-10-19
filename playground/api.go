@@ -247,7 +247,7 @@ func compileSource(src string) *compiled {
 		return c
 	}
 	c.g = g
-	c.info.Package = g.Package
+	c.info.Package = g.File.Pkg.Name
 	for _, r := range g.Rules() {
 		ri := ruleInfo{Name: r.Name, Line: r.Pos.Line, Col: r.Pos.Col}
 		if r.Type != nil {
@@ -290,20 +290,21 @@ func defaultStart(rules []ruleInfo) string {
 	return rules[0].Name
 }
 
-func describeType(t *grammar.TypeDef) typeInfo {
-	ti := typeInfo{Name: t.Name, Line: t.Pos.Line, Col: t.Pos.Col}
-	switch s := t.Spec.(type) {
-	case *grammar.StructSpec:
+func describeType(t grammar.TypeDecl) typeInfo {
+	pos := t.Diagnostic()
+	ti := typeInfo{Name: t.DeclName(), Line: pos.Line, Col: pos.Col}
+	switch s := t.(type) {
+	case *grammar.TypeDef:
 		ti.Kind = "struct"
-		fields := make([]string, len(s.Fields))
-		for i, f := range s.Fields {
+		fields := make([]string, len(s.Type.Fields))
+		for i, f := range s.Type.Fields {
 			fields[i] = f.Name + " " + grammar.FormatType(f.Type)
 		}
 		ti.Spec = "{ " + strings.Join(fields, "; ") + " }"
 		if len(fields) == 0 {
 			ti.Spec = "{}"
 		}
-	case *grammar.AliasSpec:
+	case *grammar.TypeAlias:
 		ti.Kind = "alias"
 		ti.Spec = grammar.FormatType(s.Type)
 	}

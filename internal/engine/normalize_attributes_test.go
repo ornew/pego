@@ -92,15 +92,15 @@ func TestNormalizationContainerShapes(t *testing.T) {
 		&grammar.Attributed{Expr: literal, Attrs: []*grammar.Attribute{{Name: "custom", Args: []any{}, KwArgs: map[string]any{}, KeywordOrder: []string{}}}},
 		&grammar.Attributed{Expr: literal, Attrs: []*grammar.Attribute{{Name: "custom", Args: []any{nil, map[string]any{"x": []int{1, 2}}}, KwArgs: map[string]any{"x": []int{3}}}}},
 	} {
-		g := &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "main", Expr: expr}}}
+		g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: expr}}}}
 		got, gotErr := normalizeAttributesWithCopies(g, false)
 		want, wantErr := normalizeAttributesWithCopies(g, true)
 		if !reflect.DeepEqual(gotErr, wantErr) || !reflect.DeepEqual(got, want) {
 			t.Fatalf("%T: normalized shape differs", expr)
 		}
 	}
-	for _, statements := range [][]grammar.Statement{nil, {}} {
-		g := &grammar.Grammar{Statements: statements}
+	for _, statements := range [][]grammar.Decl{nil, {}} {
+		g := &grammar.Grammar{File: grammar.File{Decls: statements}}
 		got, _ := normalizeAttributesWithCopies(g, false)
 		want, _ := normalizeAttributesWithCopies(g, true)
 		if !reflect.DeepEqual(got, want) {

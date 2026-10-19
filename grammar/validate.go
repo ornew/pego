@@ -244,26 +244,22 @@ func validate(g *Grammar, control *validationControl) error {
 		// Push children in reverse order so diagnostics visit source order.
 		switch n := f.node.(type) {
 		case *Grammar:
-			for i := len(n.Statements) - 1; i >= 0; i-- {
-				push(n.Statements[i], "statements", i, false)
+			for i := len(n.File.Decls) - 1; i >= 0; i-- {
+				push(n.File.Decls[i], "file.decls", i, false)
 			}
 		case *TypeDef:
-			push(n.Spec, "spec", -1, false)
+			push(n.Type, "type", -1, false)
+		case *TypeAlias:
+			push(n.Type, "type", -1, false)
 		case *RuleDef:
 			push(n.Action, "action", -1, true)
 			push(n.Expr, "expr", -1, false)
 			push(n.Type, "type", -1, true)
-		case *StructSpec:
-			for i := len(n.Fields) - 1; i >= 0; i-- {
-				push(n.Fields[i], "fields", i, false)
-			}
 		case *StructType:
 			for i := len(n.Fields) - 1; i >= 0; i-- {
 				push(n.Fields[i], "fields", i, false)
 			}
 		case *Field:
-			push(n.Type, "type", -1, false)
-		case *AliasSpec:
 			push(n.Type, "type", -1, false)
 		case *ListType:
 			push(n.Elem, "elem", -1, false)
@@ -441,13 +437,15 @@ func invalidIdentifier(node any, control *validationControl) (field, name string
 	}
 	switch n := node.(type) {
 	case *Grammar:
-		if n.Package == "" {
+		if n.File.Pkg.Name == "" {
 			return "", ""
 		}
-		field, name = "package", n.Package
+		field, name = "file.pkg.name", n.File.Pkg.Name
 	case *RuleDef:
 		field, name = "name", n.Name
 	case *TypeDef:
+		field, name = "name", n.Name
+	case *TypeAlias:
 		field, name = "name", n.Name
 	case *TypeRef:
 		if n.Name == "_" || n.Name == "_|_" {

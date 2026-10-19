@@ -28,7 +28,7 @@ rule grouped = "x" => (
 		t.Fatal(err)
 	}
 	rules := make(map[string]*grammar.RuleDef)
-	for _, stmt := range g.Statements {
+	for _, stmt := range g.File.Decls {
 		if r, ok := stmt.(*grammar.RuleDef); ok {
 			rules[r.Name] = r
 		}
@@ -72,7 +72,7 @@ rule grouped = "x" => (
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n := g2.Statements[1].(*grammar.RuleDef).Action.(*grammar.New); len(n.Fields) != 2 || forms2.positional[n] {
+	if n := g2.File.Decls[1].(*grammar.RuleDef).Action.(*grammar.New); len(n.Fields) != 2 || forms2.positional[n] {
 		t.Fatalf("positional constructor of two arguments: %#v", n)
 	}
 	if _, ok := rules["fields"].Action.(*grammar.New); !ok {

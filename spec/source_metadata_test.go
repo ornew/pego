@@ -34,7 +34,7 @@ func TestCanonicalPackageMetadataParity(t *testing.T) {
 				if err != nil {
 					continue
 				}
-				pkg := sourceField(t, n, "Package")
+				pkg := sourceField(t, n, "Pkg")
 				metadata := sourceField(t, pkg, "Source")
 				span := sourceField(t, metadata, "Span")
 				var detached []string
@@ -46,8 +46,8 @@ func TestCanonicalPackageMetadataParity(t *testing.T) {
 				if err := sourceast.NewPositions(src).PackageClause(adapted, sourceText(t, pkg, "Name"), m); err != nil {
 					t.Fatal(err)
 				}
-				if adapted.Package != manual.Package || !reflect.DeepEqual(adapted.PackageSource, manual.PackageSource) {
-					t.Fatalf("package metadata differs: canonical=%+v manual=%+v", adapted.PackageSource, manual.PackageSource)
+				if adapted.File.Pkg.Name != manual.File.Pkg.Name || !reflect.DeepEqual(adapted.File.Pkg.SourceInfo, manual.File.Pkg.SourceInfo) {
+					t.Fatalf("package metadata differs: canonical=%+v manual=%+v", adapted.File.Pkg.SourceInfo, manual.File.Pkg.SourceInfo)
 				}
 			}
 		})

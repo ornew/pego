@@ -27,7 +27,7 @@ func fixParsed(src string, positional bool) (string, []int, error) {
 	}
 	o := newFixOffsets(src)
 	var edits []fixEdit
-	for _, s := range g.Statements {
+	for _, s := range g.File.Decls {
 		rd, ok := s.(*grammar.RuleDef)
 		if !ok {
 			continue
@@ -133,11 +133,13 @@ const bareNode = "node takes a type argument: write node[T] with the type T of t
 // text, builds the struct from that text instead; and T{s} becomes T{Text: s}. node without a
 // type argument becomes node[_]; the offsets of those edits are returned as well.
 func typeEdits(o *fixOffsets, src string, g *grammar.Grammar, forms *legacyForms) ([]fixEdit, map[int]bool, error) {
-	defs := map[string]grammar.TypeSpec{}
+	defs := map[string]grammar.TypeDecl{}
 	terminals := map[string]bool{}
 	for _, td := range g.Types() {
-		defs[td.Name] = td.Spec
-		terminals[td.Name] = forms.terminals[td]
+		defs[td.DeclName()] = td
+		if d, ok := td.(*grammar.TypeDef); ok {
+			terminals[d.Name] = forms.terminals[d]
+		}
 	}
 	// terminal returns the terminal type that name stands for, through aliases, or "".
 	terminal := func(name string) string {
@@ -147,7 +149,7 @@ func typeEdits(o *fixOffsets, src string, g *grammar.Grammar, forms *legacyForms
 				return name
 			}
 			switch spec := defs[name].(type) {
-			case *grammar.AliasSpec:
+			case *grammar.TypeAlias:
 				r, ok := spec.Type.(*grammar.TypeRef)
 				if !ok {
 					return ""
@@ -161,8 +163,8 @@ func typeEdits(o *fixOffsets, src string, g *grammar.Grammar, forms *legacyForms
 	}
 	var edits, last []fixEdit
 	for _, td := range g.Types() {
-		if forms.terminals[td] {
-			src := td.Spec.(grammar.SourceNode).Source()
+		if d, ok := td.(*grammar.TypeDef); ok && forms.terminals[d] {
+			src := d.Type.Source()
 			edits = append(edits, fixEdit{o.at(src.Pos), o.at(src.End), "= { Text string }"})
 		}
 	}
@@ -197,17 +199,17 @@ func typeEdits(o *fixOffsets, src string, g *grammar.Grammar, forms *legacyForms
 		for seen := map[string]bool{}; !seen[name]; {
 			seen[name] = true
 			switch spec := defs[name].(type) {
-			case *grammar.AliasSpec:
+			case *grammar.TypeAlias:
 				r, ok := spec.Type.(*grammar.TypeRef)
 				if !ok {
 					return false
 				}
 				name = r.Name
-			case *grammar.StructSpec:
-				if len(spec.Fields) != 1 || spec.Fields[0].Name != "Text" {
+			case *grammar.TypeDef:
+				if len(spec.Type.Fields) != 1 || spec.Type.Fields[0].Name != "Text" {
 					return false
 				}
-				r, ok := spec.Fields[0].Type.(*grammar.TypeRef)
+				r, ok := spec.Type.Fields[0].Type.(*grammar.TypeRef)
 				return ok && r.Name == "string"
 			default:
 				return false
@@ -218,7 +220,7 @@ func typeEdits(o *fixOffsets, src string, g *grammar.Grammar, forms *legacyForms
 	// ruleTerminal returns the terminal type a rule is declared with, or "". ruleText holds the
 	// rules declared with a terminal type or a text struct.
 	ruleTerminal, ruleText := map[string]string{}, map[string]bool{}
-	for _, s := range g.Statements {
+	for _, s := range g.File.Decls {
 		if rd, ok := s.(*grammar.RuleDef); ok {
 			if ref, ok := rd.Type.(*grammar.TypeRef); ok {
 				ruleTerminal[rd.Name] = terminal(ref.Name)
@@ -248,7 +250,7 @@ func typeEdits(o *fixOffsets, src string, g *grammar.Grammar, forms *legacyForms
 	}
 	terminalCall := func(e grammar.Expr) bool { return calls(e, func(r string) bool { return ruleTerminal[r] != "" }) }
 	textCall := func(e grammar.Expr) bool { return calls(e, func(r string) bool { return ruleText[r] }) }
-	for _, s := range g.Statements {
+	for _, s := range g.File.Decls {
 		rd, ok := s.(*grammar.RuleDef)
 		if !ok {
 			continue
@@ -286,7 +288,7 @@ func typeEdits(o *fixOffsets, src string, g *grammar.Grammar, forms *legacyForms
 			}
 		})
 	}
-	for _, s := range g.Statements {
+	for _, s := range g.File.Decls {
 		rd, ok := s.(*grammar.RuleDef)
 		if !ok || rd.Action != nil {
 			continue

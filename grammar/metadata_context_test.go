@@ -36,7 +36,7 @@ func TestMetadataCollectionFactsAndOwnership(t *testing.T) {
 	t1, t2 := &TypeDef{Name: "A"}, &TypeDef{Name: "B"}
 	c1, c2, c3 := &Comment{Text: "// first"}, &Comment{Text: "// body"}, &Comment{Text: "// last"}
 	r1.Expr = &Group{BodyBreak: &LineBreak{Comments: []*Comment{c2}}, Expr: &Literal{Value: "a"}}
-	g := &Grammar{Statements: []Statement{t1, r1, t2, r2}, PackageBreak: &LineBreak{Comments: []*Comment{c1}}, EndBreak: &LineBreak{Trailing: c3}}
+	g := &Grammar{File: File{Pkg: Pkg{Break: &LineBreak{Comments: []*Comment{c1}}}, Decls: []Decl{t1, r1, t2, r2}, EndBreak: &LineBreak{Trailing: c3}}}
 	x, y, z := &Literal{Value: "x"}, &Literal{Value: "y"}, &Literal{Value: "z"}
 	a := &Attribute{Args: []any{nil, 1, "scalar", x}, KwArgs: map[string]any{"z": z, "a": y, "scalar": true}}
 	before, err := json.Marshal(g)
@@ -49,7 +49,7 @@ func TestMetadataCollectionFactsAndOwnership(t *testing.T) {
 			t.Fatalf("rules: %v / %v", rules, err)
 		}
 		types, err := g.TypesContext(ctx)
-		if err != nil || !reflect.DeepEqual(types, []*TypeDef{t1, t2}) {
+		if err != nil || !reflect.DeepEqual(types, []TypeDecl{t1, t2}) {
 			t.Fatalf("types: %v / %v", types, err)
 		}
 		comments, err := g.AllCommentsContext(ctx)
@@ -85,7 +85,7 @@ func TestMetadataCollectionEmptyAndCancellation(t *testing.T) {
 		}
 	}
 	for range 1024 {
-		g.Statements = append(g.Statements, &RuleDef{Name: "a"}, &TypeDef{Name: "A"})
+		g.File.Decls = append(g.File.Decls, &RuleDef{Name: "a"}, &TypeDef{Name: "A"})
 		a.Args = append(a.Args, &Literal{})
 	}
 	for _, cancelAt := range []int{1, 2} {
@@ -115,16 +115,16 @@ func TestMetadataCollectionEmptyAndCancellation(t *testing.T) {
 
 func TestMetadataTraversalStopsWithinCollection(t *testing.T) {
 	rules, types := &Grammar{}, &Grammar{}
-	comments := &Grammar{PackageBreak: &LineBreak{}}
+	comments := &Grammar{File: File{Pkg: Pkg{Break: &LineBreak{}}}}
 	attrs := &Attribute{KwArgs: map[string]any{}}
 	var term Term = &IntLit{}
 	var typ TypeExpr = &TypeRef{Name: "A"}
 	var expr Expr = &Literal{}
 	for i := range 1024 {
 		// Even statements and arguments excluded from the result need polling.
-		rules.Statements = append(rules.Statements, &TypeDef{Name: "A"})
-		types.Statements = append(types.Statements, &RuleDef{Name: "a"})
-		comments.PackageBreak.Comments = append(comments.PackageBreak.Comments, &Comment{})
+		rules.File.Decls = append(rules.File.Decls, &TypeDef{Name: "A"})
+		types.File.Decls = append(types.File.Decls, &RuleDef{Name: "a"})
+		comments.File.Pkg.Break.Comments = append(comments.File.Pkg.Break.Comments, &Comment{})
 		attrs.Args = append(attrs.Args, i)
 		attrs.KwArgs[fmt.Sprintf("key%04d", 1024-i)] = i
 		term = &TermGroup{Term: term}
@@ -145,11 +145,11 @@ func TestMetadataTraversalStopsWithinCollection(t *testing.T) {
 		{"comment-copy", func(c *metadataControl) { comments.allComments(c) }, 1},
 		{"scalar-arguments", func(c *metadataControl) { attrs.expressionArgs(c) }, 1},
 		{"keyword-sort", func(c *metadataControl) { (&Attribute{KwArgs: attrs.KwArgs}).expressionArgs(c) }, 5},
-		{"nested-terms", func(c *metadataControl) { (&Grammar{Statements: []Statement{&RuleDef{Action: term}}}).allComments(c) }, 1},
-		{"nested-types", func(c *metadataControl) { (&Grammar{Statements: []Statement{&RuleDef{Type: typ}}}).allComments(c) }, 1},
-		{"nested-expressions", func(c *metadataControl) { (&Grammar{Statements: []Statement{&RuleDef{Expr: expr}}}).allComments(c) }, 1},
+		{"nested-terms", func(c *metadataControl) { (&Grammar{File: File{Decls: []Decl{&RuleDef{Action: term}}}}).allComments(c) }, 1},
+		{"nested-types", func(c *metadataControl) { (&Grammar{File: File{Decls: []Decl{&RuleDef{Type: typ}}}}).allComments(c) }, 1},
+		{"nested-expressions", func(c *metadataControl) { (&Grammar{File: File{Decls: []Decl{&RuleDef{Expr: expr}}}}).allComments(c) }, 1},
 		{"shared-small-arguments", func(c *metadataControl) {
-			(&Grammar{Statements: []Statement{&RuleDef{Expr: &Attributed{Expr: &Literal{}, Attrs: smallAttrs}}}}).allComments(c)
+			(&Grammar{File: File{Decls: []Decl{&RuleDef{Expr: &Attributed{Expr: &Literal{}, Attrs: smallAttrs}}}}}).allComments(c)
 		}, 1},
 	} {
 		t.Run(phase.name, func(t *testing.T) {

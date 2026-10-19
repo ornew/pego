@@ -16,7 +16,7 @@ func (a *analysis) symbols() []DocumentSymbol {
 func typeSymbolKind(td *grammar.TypeDef) (int, string) {
 	return typeSymbolKindControlled(td, nil)
 }
-func (a *analysis) fieldSymbols(d *definition, st *grammar.StructSpec) []DocumentSymbol {
+func (a *analysis) fieldSymbols(d *definition, st *grammar.TypeDef) []DocumentSymbol {
 	return a.fieldSymbolsControlled(d, st, nil)
 }
 func (s *Server) hover(params json.RawMessage) (any, *rpcError) {

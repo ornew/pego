@@ -118,7 +118,7 @@ generates grammars, or to embed a tiny grammar in a test. This builds the equiva
 `rule main = word $$` and `rule word =  [a-z]+ #atomic `:
 
 ```go
-g := &grammar.Grammar{Statements: []grammar.Statement{
+g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{
 	&grammar.RuleDef{
 		Name: "main",
 		Expr: &grammar.Seq{Items: []grammar.Expr{
@@ -134,7 +134,7 @@ g := &grammar.Grammar{Statements: []grammar.Statement{
 			Max:  -1, // no upper bound
 		}},
 	},
-}}
+}}}
 fmt.Print(grammar.Format(g))
 
 p, err := pego.Compile(g, "main")
@@ -157,9 +157,9 @@ through the same analysis and type checking as one parsed from source, so mistak
 errors have no line numbers because there is no source:
 
 ```go
-bad := &grammar.Grammar{Statements: []grammar.Statement{
+bad := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{
 	&grammar.RuleDef{Name: "main", Expr: &grammar.Ref{Name: "missing"}},
-}}
+}}}
 _, err = pego.Compile(bad, "main")
 fmt.Println(err) // undefined rule missing
 ```

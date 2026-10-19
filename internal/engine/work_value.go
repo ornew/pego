@@ -223,11 +223,11 @@ func (p *parser) setValueField(fs *Fields, name string, v any) {
 	*fs = append(*fs, NodeField{name, v})
 }
 
-func (p *parser) hasValueField(st *grammar.StructSpec, name string) bool {
+func (p *parser) hasValueField(st *grammar.TypeDef, name string) bool {
 	if !workControlsEnabled || p.control == nil {
 		return fieldOf(st, name) != nil
 	}
-	for _, f := range st.Fields {
+	for _, f := range st.Type.Fields {
 		p.stepWork()
 		if p.valueEqual(f.Name, name) {
 			return true

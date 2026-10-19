@@ -32,7 +32,7 @@ type Program struct {
 	// sourceInfo reports that nodes record source information (Options.SourceInfo).
 	sourceInfo bool
 	byName     map[string]*rule
-	types      map[string]grammar.TypeSpec
+	types      map[string]grammar.TypeDecl
 	// fieldTypes caches the closure backend's field checks by constructor (constructorChecks)
 	// and the types of casts (castType).
 	fieldTypes sync.Map
@@ -298,7 +298,7 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 		return nil, ErrorList{&Error{Pos: e.Pos, Msg: e.Path + ": " + e.Msg}}
 	}
 	var unsupported ErrorList
-	for _, comment := range g.HeaderComments {
+	for _, comment := range g.File.HeaderComments {
 		control.poll()
 		unsupported = append(unsupported, &Error{Pos: comment.Pos, Msg: "comments are not allowed inside statement headers"})
 	}
@@ -375,7 +375,7 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 		}
 		opts.checks = checks
 	}
-	prog := &Program{Grammar: g, byName: map[string]*rule{}, types: map[string]grammar.TypeSpec{},
+	prog := &Program{Grammar: g, byName: map[string]*rule{}, types: map[string]grammar.TypeDecl{},
 		descTable: append([]string(nil), fixedDescs...)}
 	c := &compiler{control: control, prog: prog, opts: opts, plainDispatch: !opts.controlledDispatch}
 	if control != nil {
@@ -396,14 +396,14 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 	for _, td := range control.types(g) {
 		control.poll()
 		switch {
-		case builtinTypes[td.Name]:
-			c.errorf(td.Diagnostic(), "type %s is reserved", td.Name)
-		case !startsUpper(td.Name):
-			c.errorf(td.Diagnostic(), "type %s must start with an uppercase letter", td.Name)
-		case prog.types[td.Name] != nil:
-			c.errorf(td.Diagnostic(), "type %s is already defined", td.Name)
+		case builtinTypes[td.DeclName()]:
+			c.errorf(td.Diagnostic(), "type %s is reserved", td.DeclName())
+		case !startsUpper(td.DeclName()):
+			c.errorf(td.Diagnostic(), "type %s must start with an uppercase letter", td.DeclName())
+		case prog.types[td.DeclName()] != nil:
+			c.errorf(td.Diagnostic(), "type %s is already defined", td.DeclName())
 		default:
-			prog.types[td.Name] = td.Spec
+			prog.types[td.DeclName()] = td
 		}
 	}
 	rules := control.rules(g)
@@ -478,7 +478,7 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 	for name, spec := range prog.types {
 		control.poll()
 		canonical := name
-		if _, alias := spec.(*grammar.AliasSpec); alias {
+		if _, alias := spec.(*grammar.TypeAlias); alias {
 			if resolved, concrete := prog.concreteType(&grammar.TypeRef{Name: name}); concrete != nil {
 				canonical = resolved
 			}
@@ -566,7 +566,7 @@ func (prog *Program) textStructRule(rd *grammar.RuleDef) (string, grammar.Expr, 
 	if !ok || len(n.Fields) != 1 || n.Fields[0].Name != "Text" {
 		return "", nil, false
 	}
-	st, ok := prog.types[n.Type].(*grammar.StructSpec)
+	st, ok := prog.types[n.Type].(*grammar.TypeDef)
 	if !ok {
 		return "", nil, false
 	}

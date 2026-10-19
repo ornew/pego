@@ -196,10 +196,10 @@ func TestAttributeOmittedSlots(t *testing.T) {
 func TestAttributeNativeIntegerRoundTrip(t *testing.T) {
 	maximum := int(^uint(0) >> 1)
 	minimum := -maximum - 1
-	g := &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{
+	g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{
 		Name: "main", Expr: &grammar.Attributed{Expr: &grammar.Literal{Value: "a"},
 			Attrs: []*grammar.Attribute{{Name: "custom", Args: []any{minimum, maximum, -1}, KwArgs: map[string]any{"minimum": minimum}}}},
-	}}}
+	}}}}
 	source := grammar.Format(g)
 	parsed, err := syntax.Parse(source)
 	if err != nil {

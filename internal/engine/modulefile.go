@@ -510,13 +510,13 @@ func validateStreamRecovery(code []Instr) error {
 
 // moduleProgram builds a program without an AST (it can only be run by the bytecode backend).
 func moduleProgram(m *Module) *Program {
-	prog := &Program{byName: map[string]*rule{}, types: map[string]grammar.TypeSpec{}, sourceInfo: m.SourceInfo}
+	prog := &Program{byName: map[string]*rule{}, types: map[string]grammar.TypeDecl{}, sourceInfo: m.SourceInfo}
 	for _, t := range m.Types {
-		st := &grammar.StructSpec{}
+		st := &grammar.StructType{}
 		for _, f := range t.Fields {
 			st.Fields = append(st.Fields, &grammar.Field{Name: m.Strings[f]})
 		}
-		prog.types[m.Strings[t.Name]] = st
+		prog.types[m.Strings[t.Name]] = &grammar.TypeDef{Name: m.Strings[t.Name], Type: st}
 	}
 	prog.moduleOnce.Do(func() { prog.module = m })
 	return prog

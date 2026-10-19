@@ -55,14 +55,14 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 	k.report = false
 	for _, td := range control.types(prog.Grammar) {
 		control.poll()
-		switch spec := td.Spec.(type) {
-		case *grammar.StructSpec:
-			for _, f := range spec.Fields {
+		switch spec := td.(type) {
+		case *grammar.TypeDef:
+			for _, f := range spec.Type.Fields {
 				control.poll()
-				info.fields[td.Name] = append(info.fields[td.Name], typedField{f.Name, k.resolve(f.Type)})
+				info.fields[td.DeclName()] = append(info.fields[td.DeclName()], typedField{f.Name, k.resolve(f.Type)})
 			}
-		case *grammar.AliasSpec:
-			info.aliases[td.Name] = unionMembers(k.resolveNamed(td.Name, td.Diagnostic()))
+		case *grammar.TypeAlias:
+			info.aliases[td.DeclName()] = unionMembers(k.resolveNamed(td.DeclName(), td.Diagnostic()))
 		}
 	}
 	prog.typed = info
@@ -144,12 +144,12 @@ func checkBottomLocations(prog *Program, errs *ErrorList, control *compileContro
 		}
 	}
 	for _, td := range control.types(prog.Grammar) {
-		switch spec := td.Spec.(type) {
-		case *grammar.StructSpec:
-			for _, f := range spec.Fields {
-				located(f.Type, f.Diagnostic(), "field "+f.Name+" of "+td.Name)
+		switch spec := td.(type) {
+		case *grammar.TypeDef:
+			for _, f := range spec.Type.Fields {
+				located(f.Type, f.Diagnostic(), "field "+f.Name+" of "+td.DeclName())
 			}
-		case *grammar.AliasSpec:
+		case *grammar.TypeAlias:
 			k.resolve(spec.Type) // an alias is not a location, but may use unsupported syntax
 		}
 	}
@@ -162,10 +162,10 @@ func checkBottomLocations(prog *Program, errs *ErrorList, control *compileContro
 
 // concreteType resolves aliases and normalized singleton unions to their node type.
 // It does not report errors; validation still uses the type expression as written.
-func (prog *Program) concreteType(t grammar.TypeExpr) (string, grammar.TypeSpec) {
+func (prog *Program) concreteType(t grammar.TypeExpr) (string, grammar.TypeDecl) {
 	if ref, ok := t.(*grammar.TypeRef); ok {
 		switch spec := prog.types[ref.Name].(type) {
-		case *grammar.StructSpec:
+		case *grammar.TypeDef:
 			return ref.Name, spec
 		}
 	}
@@ -176,17 +176,17 @@ func (prog *Program) concreteType(t grammar.TypeExpr) (string, grammar.TypeSpec)
 	return "", nil
 }
 
-func (prog *Program) structType(name string) (string, *grammar.StructSpec) {
+func (prog *Program) structType(name string) (string, *grammar.TypeDef) {
 	switch spec := prog.types[name].(type) {
-	case *grammar.StructSpec:
+	case *grammar.TypeDef:
 		return name, spec
-	case *grammar.AliasSpec:
+	case *grammar.TypeAlias:
 		// Resolve only aliases; ordinary constructors need no temporary type expression.
 	default:
 		return "", nil
 	}
 	canonical, spec := prog.concreteType(&grammar.TypeRef{Name: name})
-	st, _ := spec.(*grammar.StructSpec)
+	st, _ := spec.(*grammar.TypeDef)
 	return canonical, st
 }
 

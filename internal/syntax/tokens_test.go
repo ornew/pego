@@ -49,13 +49,8 @@ func TestParsePartial(t *testing.T) {
 		t.Fatalf("errors: %v", errs)
 	}
 	var names []string
-	for _, s := range g.Statements {
-		switch s := s.(type) {
-		case *grammar.RuleDef:
-			names = append(names, s.Name)
-		case *grammar.TypeDef:
-			names = append(names, s.Name)
-		}
+	for _, s := range g.File.Decls {
+		names = append(names, s.DeclName())
 	}
 	if got := strings.Join(names, " "); got != "a b U" {
 		t.Errorf("statements %q", got)
@@ -234,8 +229,8 @@ func TestIncompletePackageClause(t *testing.T) {
 		if len(errs) != 1 || !strings.HasPrefix(errs[0].Msg, "expected identifier") {
 			t.Errorf("%q: errors %v", src, errs)
 		}
-		if strings.Contains(src, "rule a") && (len(g.Statements) != 1 || g.Rules()[0].Name != "a") {
-			t.Errorf("%q: statements %v", src, g.Statements)
+		if strings.Contains(src, "rule a") && (len(g.File.Decls) != 1 || g.Rules()[0].Name != "a") {
+			t.Errorf("%q: statements %v", src, g.File.Decls)
 		}
 		if _, err := Parse(src); err == nil {
 			t.Errorf("%q: Parse accepted it", src)

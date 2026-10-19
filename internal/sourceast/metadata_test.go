@@ -38,10 +38,10 @@ func TestPackageClause(t *testing.T) {
 	if err := p.PackageClause(g, "p", Metadata{End: 9}); err != nil {
 		t.Fatal(err)
 	}
-	if g.Package != "p" || g.PackageSource.Pos != (grammar.Pos{Line: 1, Col: 1}) || g.PackageSource.End != (grammar.Pos{Line: 1, Col: 10}) {
+	if g.File.Pkg.Name != "p" || g.File.Pkg.SourceInfo.Pos != (grammar.Pos{Line: 1, Col: 1}) || g.File.Pkg.SourceInfo.End != (grammar.Pos{Line: 1, Col: 10}) {
 		t.Fatalf("package: %+v", g)
 	}
-	if err := p.PackageClause(g, "other", Metadata{End: 100}); err == nil || g.Package != "p" {
+	if err := p.PackageClause(g, "other", Metadata{End: 100}); err == nil || g.File.Pkg.Name != "p" {
 		t.Fatal("failed conversion mutated package")
 	}
 }

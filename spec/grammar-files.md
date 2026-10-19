@@ -56,14 +56,13 @@ when the span begins earlier. Each such node provides `Source() *SourceInfo`
 and implements `SourceNode` for generic inspection. Programmatically built AST
 nodes may leave source metadata zero-valued.
 
-`Grammar.Package` remains the package name; `Grammar.PackageSource` carries the
-package clause metadata. `OperatorsRule.SkipSource` carries metadata for the
+The package clause is `File.Pkg`: `File.Pkg.Name` is the package name, and
+`File.Pkg.SourceInfo` carries the clause metadata. `OperatorsRule.SkipSource` carries metadata for the
 whole skip clause, from the `skip` keyword through its expression.
 `Grammar.Clone()` deep-copies source metadata, including
 detached-comment storage; `SourceInfo` itself does not expose a clone method.
 
-Normalized ownership is serialized in explicit `source`, `packageSource` and
-`skipSource` objects. Exact comment tokens and formatter layout are not part of
+Normalized ownership is serialized in explicit `source` and `skipSource` objects. Exact comment tokens and formatter layout are not part of
 those objects. JSON-decoded grammar ASTs therefore do not guarantee lossless
 source formatting. Normalized comment strings preserve content whitespace and
 line endings; each detached entry is one paragraph. Older JSON may omit these
@@ -273,7 +272,7 @@ bound on latency. Both functions walk iteratively, impose no size or depth limit
 and MUST NOT run concurrently with a mutation of the AST.
 
 A `ValidationError` has a `Path` that uses JSON field names and zero-based indexes
-(`$.statements[0].expr.expr`), the closest known diagnostic position `Pos`, and a
+(`$.file.decls[0].expr.expr`), the closest known diagnostic position `Pos`, and a
 message `Msg`.
 
 | Rejected | Allowed |
@@ -300,7 +299,7 @@ standard unbounded representation to the bytecode.
 
 `grammar.MarshalJSON` serializes the AST using the `json` tags of its fields. Each
 interface node has an `"@type"` member such as `"RuleDef"` or `"Literal"`. Parsed
-metadata is written under `source`, `packageSource` or `skipSource`; formatter layout
+metadata is written under `source` or `skipSource`; formatter layout
 and exact comment tokens are omitted.
 
 | Function | Behavior |
@@ -308,7 +307,7 @@ and exact comment tokens are omitted.
 | `grammar.UnmarshalJSON(data)` | Accepts exactly one complete JSON value, optionally followed by white space, and runs structural validation. It rejects `null`, trailing values or other data, and numbers that overflow their Go destination. Unknown fields are ignored; duplicate keys follow `encoding/json` |
 | `grammar.DecodeJSON(data)` | As `UnmarshalJSON`, and also rejects unknown fields and duplicate keys at every object. A `*grammar.JSONDecodeError` reports the JSON path and the zero-based byte offset of such an error; malformed JSON wraps the standard syntax error |
 
-A null field is reported by path (for example `$.statements[0].spec.fields[0]`)
+A null field is reported by path (for example `$.file.decls[0].type.fields[0]`)
 and does not cause a panic during compilation.
 
 
@@ -367,7 +366,7 @@ cooperative in every case, and the AST MUST NOT be mutated while these functions
 ### Syntax Projection
 
 `grammar.FormatSyntax(g)` (command line: `pego fmt -syntax`) prints the recognition
-syntax of a grammar and leaves the AST unchanged. It omits Type Definition
+syntax of a grammar and leaves the AST unchanged. It omits Type Declaration
 Statements, result types, Value Actions, metadata attributes, captures and `#recover`
 wrappers; it removes groups whose parentheses are not required for precedence or
 layout; and it keeps Predicate Actions and the pragmas that affect recognition,

@@ -316,13 +316,13 @@ func (c *evalCtx) memberOperand(x any, name string) (operand, error) {
 	}
 	if capture, ok := strings.CutPrefix(name, "$"); ok {
 		// x.$y reads a capture, which struct values do not have; an unmatched capture is nil.
-		if _, ok := c.p.prog.types[n.Type()].(*grammar.StructSpec); ok {
+		if _, ok := c.p.prog.types[n.Type()].(*grammar.TypeDef); ok {
 			return operand{}, c.p.actionError(n.Type(), " has no capture ", capture)
 		}
 		v, _ := c.p.valueField(n.fields, capture)
 		return operand{v: unboxValue(v)}, nil
 	}
-	if st, ok := c.p.prog.types[n.Type()].(*grammar.StructSpec); ok && !c.p.hasValueField(st, name) {
+	if st, ok := c.p.prog.types[n.Type()].(*grammar.TypeDef); ok && !c.p.hasValueField(st, name) {
 		return operand{}, c.p.actionError(n.Type(), " has no field ", name)
 	}
 	// Unset fields and unmatched captures are nil.
@@ -1029,8 +1029,8 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 	}
 }
 
-func fieldOf(st *grammar.StructSpec, name string) *grammar.Field {
-	for _, f := range st.Fields {
+func fieldOf(st *grammar.TypeDef, name string) *grammar.Field {
+	for _, f := range st.Type.Fields {
 		if f.Name == name {
 			return f
 		}

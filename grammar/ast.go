@@ -1,7 +1,8 @@
 // Package grammar defines the abstract syntax tree (AST) of PEGO grammars.
 //
-// A grammar is a sequence of statements: type definitions (TypeDef) and
-// rule definitions (RuleDef). A rule body is a parser expression (Expr),
+// A grammar file (File) is a package clause and a list of declarations (Decl):
+// type definitions (TypeDef), type aliases (TypeAlias) and rule definitions
+// (RuleDef). A rule body is a parser expression (Expr),
 // and actions and predicates are value expressions (Term).
 package grammar
 
@@ -21,66 +22,105 @@ type Pos struct {
 // IsValid reports whether the position is known.
 func (p Pos) IsValid() bool { return p.Line > 0 }
 
-// Grammar is a whole grammar.
+// Grammar is a whole grammar. It is made of one file.
 type Grammar struct {
-	SourceInfo `json:"source,omitempty"`
-	Package    string      `json:"package,omitempty"`
-	Statements []Statement `json:"statements"`
+	File File `json:"file"`
+}
 
-	// PackageBreak holds the comments before the package clause, and
-	// EndBreak those at the end of the file (see LineBreak).
-	PackageSource SourceInfo `json:"packageSource,omitempty"`
-	PackageBreak  *LineBreak `json:"-"`
-	EndBreak      *LineBreak `json:"-"`
-	// HeaderComments records source comments inside statement headers.
+// File is a grammar file: a package clause and a list of declarations.
+type File struct {
+	SourceInfo `json:"source,omitempty"`
+	Pkg        Pkg    `json:"pkg,omitempty"`
+	Decls      []Decl `json:"decls"`
+
+	// EndBreak holds the comments at the end of the file (see LineBreak).
+	EndBreak *LineBreak `json:"-"`
+	// HeaderComments records source comments inside declaration headers.
 	// Parsing accepts them as trivia; compilation rejects their placement.
 	HeaderComments []*Comment `json:"-"`
 }
 
-// Rules returns the rule definitions of the grammar in declaration order.
+// Pkg is the package clause (package Name). A file without one has the zero Pkg.
+type Pkg struct {
+	SourceInfo `json:"source,omitempty"`
+	Name       string `json:"name,omitempty"`
+
+	// Break holds the comments before the package clause (see LineBreak).
+	Break *LineBreak `json:"-"`
+}
+
+// Rules returns the rule declarations of the grammar in declaration order.
 func (g *Grammar) Rules() []*RuleDef {
 	return g.rules(nil)
 }
 
 func (g *Grammar) rules(control *metadataControl) []*RuleDef {
 	var rs []*RuleDef
-	for _, s := range g.Statements {
+	for _, d := range g.File.Decls {
 		control.poll()
-		if r, ok := s.(*RuleDef); ok {
+		if r, ok := d.(*RuleDef); ok {
 			rs = append(rs, r)
 		}
 	}
 	return rs
 }
 
-// Types returns the type definitions of the grammar in declaration order.
-func (g *Grammar) Types() []*TypeDef {
+// Types returns the type declarations of the grammar in declaration order.
+func (g *Grammar) Types() []TypeDecl {
 	return g.types(nil)
 }
 
-func (g *Grammar) types(control *metadataControl) []*TypeDef {
-	var ts []*TypeDef
-	for _, s := range g.Statements {
+func (g *Grammar) types(control *metadataControl) []TypeDecl {
+	var ts []TypeDecl
+	for _, d := range g.File.Decls {
 		control.poll()
-		if t, ok := s.(*TypeDef); ok {
+		if t, ok := d.(TypeDecl); ok {
 			ts = append(ts, t)
 		}
 	}
 	return ts
 }
 
-// Statement is a top-level definition in a grammar.
-type Statement interface{ statement() }
+// Decl is a declaration of a file: a type declaration or a rule declaration.
+type Decl interface {
+	// DeclName returns the declared name.
+	DeclName() string
+	// Diagnostic returns the position of the declaration for diagnostics.
+	Diagnostic() Pos
+	decl()
+}
 
-// TypeDef is a type definition (type Name Spec).
+// TypeDecl is a type declaration: a type definition or a type alias.
+type TypeDecl interface {
+	Decl
+	typeDecl()
+}
+
+// RuleDecl is a rule declaration: a rule definition.
+type RuleDecl interface {
+	Decl
+	ruleDecl()
+}
+
+// TypeDef is a type definition (type Name = { ... }). It defines a new struct type.
 type TypeDef struct {
 	SourceInfo `json:"source,omitempty"`
-	Name       string   `json:"name"`
-	Spec       TypeSpec `json:"spec"`
+	Name       string      `json:"name"`
+	Type       *StructType `json:"type"`
 
-	// Break holds the comments before the definition. When it is nil,
-	// Format separates the definition from the previous one with a blank
+	// Break holds the comments before the declaration. When it is nil,
+	// Format separates the declaration from the previous one with a blank
 	// line.
+	Break *LineBreak `json:"-"`
+}
+
+// TypeAlias is a type alias (type Name ~ Type). It names a type without defining a new one.
+type TypeAlias struct {
+	SourceInfo `json:"source,omitempty"`
+	Name       string   `json:"name"`
+	Type       TypeExpr `json:"type"`
+
+	// Break holds the comments before the declaration, as for TypeDef.
 	Break *LineBreak `json:"-"`
 }
 
@@ -95,9 +135,7 @@ type RuleDef struct {
 	// semantics as an omitted action.
 	DefaultAction bool `json:"defaultAction,omitempty"`
 
-	// Break holds the comments before the definition. When it is nil,
-	// Format separates the definition from the previous one with a blank
-	// line.
+	// Break holds the comments before the declaration, as for TypeDef.
 	Break *LineBreak `json:"-"`
 	// BodyBreak, when not nil, puts the body on a new line after "=", and
 	// ActionBreak puts "=>" on a new line.
@@ -106,42 +144,18 @@ type RuleDef struct {
 	CloseBreak  *LineBreak `json:"-"`
 }
 
-func (*TypeDef) statement() {}
-func (*RuleDef) statement() {}
+func (d *TypeDef) DeclName() string   { return d.Name }
+func (d *TypeAlias) DeclName() string { return d.Name }
+func (d *RuleDef) DeclName() string   { return d.Name }
+
+func (*TypeDef) decl()       {}
+func (*TypeAlias) decl()     {}
+func (*RuleDef) decl()       {}
+func (*TypeDef) typeDecl()   {}
+func (*TypeAlias) typeDecl() {}
+func (*RuleDef) ruleDecl()   {}
 
 // --- Types ---
-
-// TypeSpec is the right-hand side of a type definition.
-type TypeSpec interface{ typeSpec() }
-
-// StructSpec is a struct type.
-type StructSpec struct {
-	SourceInfo `json:"source,omitempty"`
-	Fields     []*Field `json:"fields"`
-
-	// OneLine writes the struct on one line ("= { A T; B U }").
-	OneLine bool `json:"-"`
-	// CloseBreak holds the comments before the closing brace.
-	CloseBreak *LineBreak `json:"-"`
-}
-
-// Field is a field of a struct type.
-type Field struct {
-	SourceInfo `json:"source,omitempty"`
-	Name       string   `json:"name"`
-	Type       TypeExpr `json:"type"`
-
-	Break *LineBreak `json:"-"`
-}
-
-// AliasSpec is a type alias (type Name ~ Type), including an alias of a union type.
-type AliasSpec struct {
-	SourceInfo `json:"source,omitempty"`
-	Type       TypeExpr `json:"type"`
-}
-
-func (*StructSpec) typeSpec() {}
-func (*AliasSpec) typeSpec()  {}
 
 // TypeExpr is a reference to a type.
 type TypeExpr interface{ typeExpr() }
@@ -192,6 +206,15 @@ type TypeApp struct {
 	SourceInfo `json:"source,omitempty"`
 	Name       string     `json:"name"`
 	Args       []TypeExpr `json:"args"`
+}
+
+// Field is a field of a struct type.
+type Field struct {
+	SourceInfo `json:"source,omitempty"`
+	Name       string   `json:"name"`
+	Type       TypeExpr `json:"type"`
+
+	Break *LineBreak `json:"-"`
 }
 
 // StructType is an unnamed struct type written in a type expression: { A T; B U }. Its braces

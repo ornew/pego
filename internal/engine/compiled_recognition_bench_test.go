@@ -28,7 +28,7 @@ func marshalRecognitionV2(prog *Program, start string, omitAST bool) []byte {
 	w.str(start)
 	pkg := prog.pkg
 	if prog.Grammar != nil {
-		pkg = prog.Grammar.Package
+		pkg = prog.Grammar.File.Pkg.Name
 	}
 	w.str(pkg)
 	w.module(m)
@@ -61,7 +61,7 @@ func marshalRecognitionV3AST(prog *Program, start string) ([]byte, error) {
 		w.list = append(w.list, s)
 	}
 	w.str(start)
-	w.str(prog.Grammar.Package)
+	w.str(prog.Grammar.File.Pkg.Name)
 	w.module(m)
 	prog.recognitionBytesOnce.Do(func() {
 		prog.recognitionBytes = encodeRecognition(recognition)

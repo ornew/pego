@@ -9,9 +9,9 @@ import (
 func TestSourceInfoJSON(t *testing.T) {
 	source := SourceInfo{Pos: Pos{Line: 2, Col: 3}, End: Pos{Line: 4, Col: 5}, DiagnosticPos: Pos{Line: 3, Col: 7}, LeadingComments: " leading\n", TrailingComments: " tail\n", LeadingDetachedComments: []string{"first\n", ""}}
 	g := expressionGrammar(&Literal{SourceInfo: source, Value: "x"})
-	g.SourceInfo = source
-	g.Package = "p"
-	g.PackageSource = source
+	g.File.SourceInfo = source
+	g.File.Pkg.Name = "p"
+	g.File.Pkg.SourceInfo = source
 	data, err := MarshalJSON(g)
 	if err != nil {
 		t.Fatal(err)
@@ -26,13 +26,13 @@ func TestSourceInfoJSON(t *testing.T) {
 		}
 	}
 	// Grammars made before source metadata existed remain valid JSON inputs.
-	old := []byte(`{"statements":[{"@type":"RuleDef","name":"main","expr":{"@type":"Literal","value":"x"}}]}`)
+	old := []byte(`{"file":{"decls":[{"@type":"RuleDef","name":"main","expr":{"@type":"Literal","value":"x"}}]}}`)
 	for _, decode := range []func([]byte) (*Grammar, error){UnmarshalJSON, DecodeJSON} {
 		copy, err := decode(old)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !reflect.DeepEqual(copy.SourceInfo, SourceInfo{}) || !reflect.DeepEqual(copy.Rules()[0].SourceInfo, SourceInfo{}) {
+		if !reflect.DeepEqual(copy.File.SourceInfo, SourceInfo{}) || !reflect.DeepEqual(copy.Rules()[0].SourceInfo, SourceInfo{}) {
 			t.Fatal("old JSON must have unknown positions")
 		}
 		data, err := MarshalJSON(copy)
@@ -56,9 +56,9 @@ func TestGrammarCloneSourcesAndSharing(t *testing.T) {
 	comment := &Comment{Text: "// raw", Content: " raw\n"}
 	shared := &Optional{SourceInfo: SourceInfo{LeadingDetachedComments: []string{"child"}}, Expr: &Literal{Value: "x"}}
 	g := expressionGrammar(&Seq{Items: []Expr{shared, shared}})
-	g.LeadingDetachedComments = []string{"root"}
-	g.PackageSource.LeadingDetachedComments = []string{"package"}
-	g.EndBreak = &LineBreak{Comments: []*Comment{comment}, Trailing: comment}
+	g.File.LeadingDetachedComments = []string{"root"}
+	g.File.Pkg.SourceInfo.LeadingDetachedComments = []string{"package"}
+	g.File.EndBreak = &LineBreak{Comments: []*Comment{comment}, Trailing: comment}
 	copy := g.Clone()
 	if !reflect.DeepEqual(g, copy) {
 		t.Fatal("clone changed AST")
@@ -67,14 +67,14 @@ func TestGrammarCloneSourcesAndSharing(t *testing.T) {
 	if seq.Items[0] != seq.Items[1] || seq.Items[0] == shared {
 		t.Fatal("shared children not preserved independently")
 	}
-	copy.LeadingDetachedComments[0] = "changed"
-	copy.PackageSource.LeadingDetachedComments[0] = "changed"
+	copy.File.LeadingDetachedComments[0] = "changed"
+	copy.File.Pkg.SourceInfo.LeadingDetachedComments[0] = "changed"
 	seq.Items[0].(*Optional).LeadingDetachedComments[0] = "changed"
-	copy.EndBreak.Comments[0].Content = "changed"
-	if g.LeadingDetachedComments[0] != "root" || g.PackageSource.LeadingDetachedComments[0] != "package" || shared.LeadingDetachedComments[0] != "child" || comment.Content != " raw\n" {
+	copy.File.EndBreak.Comments[0].Content = "changed"
+	if g.File.LeadingDetachedComments[0] != "root" || g.File.Pkg.SourceInfo.LeadingDetachedComments[0] != "package" || shared.LeadingDetachedComments[0] != "child" || comment.Content != " raw\n" {
 		t.Fatal("clone aliases original metadata")
 	}
-	if copy.EndBreak.Comments[0] != copy.EndBreak.Trailing {
+	if copy.File.EndBreak.Comments[0] != copy.File.EndBreak.Trailing {
 		t.Fatal("raw comment sharing lost")
 	}
 	if (*Grammar)(nil).Clone() != nil {

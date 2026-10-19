@@ -59,9 +59,9 @@ func TestGrammarValidationCancellationDoesNotPublishDiagnostics(t *testing.T) {
 	}
 	items[len(items)-1] = nil
 	a := newAnalysis(`rule main = "a"`)
-	a.g = &grammar.Grammar{Statements: []grammar.Statement{
+	a.g = &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{
 		&grammar.RuleDef{Name: "main", Expr: &grammar.Seq{Items: items}},
-	}}
+	}}}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	controlled := &lspCompilePollContext{Context: ctx, cancel: cancel, left: 4}

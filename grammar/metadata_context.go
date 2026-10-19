@@ -19,7 +19,7 @@ func (g *Grammar) RulesContext(ctx context.Context) (result []*RuleDef, err erro
 }
 
 // TypesContext is Types with the same cancellation contract as RulesContext.
-func (g *Grammar) TypesContext(ctx context.Context) (result []*TypeDef, err error) {
+func (g *Grammar) TypesContext(ctx context.Context) (result []TypeDecl, err error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}

@@ -32,10 +32,10 @@ func workGuardedChoiceProgram(t *testing.T) (*Program, *grammar.Choice) {
 		}},
 		&grammar.Ref{Name: "fallback"},
 	}}
-	g := &grammar.Grammar{Statements: []grammar.Statement{
+	g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{
 		&grammar.RuleDef{Name: "main", Expr: main},
 		&grammar.RuleDef{Name: "fallback", Expr: &grammar.Literal{Value: "z"}},
-	}}
+	}}}
 	prog, err := Compile(g, Options{})
 	if err != nil {
 		t.Fatalf("compile guarded-choice grammar: %v", err)
