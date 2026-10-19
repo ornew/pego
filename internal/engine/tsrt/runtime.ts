@@ -3032,7 +3032,23 @@ class Actx {
   // listNode returns a list value with the child list kids (which it takes over). Its range, which
   // the value model does not show, covers the elements that are nodes.
   listNode(kids: (Node | null)[]): Node {
-    const n = new Node(typeListValue, "", this.start, this.start, "", kids, noFields, false, false);
+    return this.valueNode(typeListValue, kids);
+  }
+
+  // tuple returns a tuple value of the arguments, as a tuple literal builds it.
+  tuple(...args: Value[]): Value {
+    const base = this.p.kidStack.length;
+    this.work();
+    for (const a of args) {
+      this.work();
+      const v = this.element("tuple", a);
+      this.p.kidStack.push(v);
+    }
+    return this.valueNode(typeTupleValue, this.p.kids(base));
+  }
+
+  valueNode(type: string, kids: (Node | null)[]): Node {
+    const n = new Node(type, "", this.start, this.start, "", kids, noFields, false, false);
     let first = true;
     for (const it of kids) {
       this.work();
@@ -3272,7 +3288,7 @@ function asNode(fn: string, v: Value): Node | null {
   if (v === null || v instanceof Node) {
     return v;
   }
-  return evalError(`${fn}: list elements must be values, got ${typeName(v)}`);
+  return evalError(`${fn}: elements must be values, got ${typeName(v)}`);
 }
 
 function rtFold(fn: string, right: boolean, acc: Value, list: Value, f: (acc: Value, item: Value) => Value, control: WorkControl | null = null): Value {

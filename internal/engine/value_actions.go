@@ -425,6 +425,12 @@ func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
 			return tyAny
 		}
 		return namedTy{name, 's'}
+	case *grammar.TupleLit:
+		elems := make([]ty, len(t.Elems))
+		for i, x := range t.Elems {
+			elems[i] = v.term(x, env)
+		}
+		return tupleTy{elems}
 	case *grammar.ListConstructor:
 		elem := v.resolve(t.Elem)
 		for _, item := range t.Items {

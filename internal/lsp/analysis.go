@@ -640,6 +640,11 @@ func (a *analysis) walkTermControlled(t grammar.Term, control *renderControl) {
 			control.poll()
 			a.walkTermControlled(item, control)
 		}
+	case *grammar.TupleLit:
+		for _, x := range t.Elems {
+			control.poll()
+			a.walkTermControlled(x, control)
+		}
 	case *grammar.Lambda:
 		a.walkTermControlled(t.Body, control)
 	case *grammar.Binary:

@@ -223,6 +223,8 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		return n, err
 	case *grammar.ListConstructor:
 		return c.evalList(t.Items)
+	case *grammar.TupleLit:
+		return c.evalTuple(t.Elems)
 
 	case *grammar.Call:
 		if c.p.prog.projected[t] {
@@ -311,6 +313,33 @@ func (c *evalCtx) evalList(items []grammar.Term) (any, error) {
 	value, err := c.builtin("list", p.estack[base:])
 	p.estack = p.estack[:base]
 	return value, err
+}
+
+// evalTuple evaluates the elements of a tuple literal, left to right, and returns the tuple value.
+func (c *evalCtx) evalTuple(elems []grammar.Term) (any, error) {
+	p := c.p
+	base := len(p.estack)
+	for _, e := range elems {
+		value, err := c.eval(e)
+		if err != nil {
+			p.estack = p.estack[:base]
+			return nil, err
+		}
+		p.estack = append(p.estack, value)
+	}
+	kb := len(p.kidStack)
+	for _, v := range p.estack[base:] {
+		p.stepWork()
+		n, err := c.element("tuple", v)
+		if err != nil {
+			p.dropKids(kb)
+			p.estack = p.estack[:base]
+			return nil, err
+		}
+		p.kidStack = append(p.kidStack, n)
+	}
+	p.estack = p.estack[:base]
+	return c.tupleNode(p.kids(kb)), nil
 }
 
 // nodeMembers are the members of a node, and the removed ones that the checker reports: they are
@@ -423,8 +452,13 @@ func (c *evalCtx) newList(items []*Node) *Node {
 
 // listNode returns a list value with the child slice kids (which it takes over). Its range,
 // which the value model does not show, covers the elements that are nodes.
-func (c *evalCtx) listNode(kids []*Node) *Node {
-	n := c.p.newNode(Node{kind: kindListValue, children: kids, start: int32(c.start), end: int32(c.start)})
+func (c *evalCtx) listNode(kids []*Node) *Node { return c.valueNode(kindListValue, kids) }
+
+// tupleNode is listNode for a tuple value.
+func (c *evalCtx) tupleNode(kids []*Node) *Node { return c.valueNode(kindTupleValue, kids) }
+
+func (c *evalCtx) valueNode(kind *nodeKind, kids []*Node) *Node {
+	n := c.p.newNode(Node{kind: kind, children: kids, start: int32(c.start), end: int32(c.start)})
 	first := true
 	for _, it := range kids {
 		c.p.stepWork()
@@ -906,7 +940,7 @@ func (c *evalCtx) element(fn string, v any) (*Node, error) {
 	case int, string, bool:
 		return c.p.newNode(Node{kind: kindBox, box: x, start: int32(c.start), end: int32(c.end)}), nil
 	}
-	return nil, c.p.actionError(fn, ": list elements must be values, got ", typeName(v))
+	return nil, c.p.actionError(fn, ": elements must be values, got ", typeName(v))
 }
 
 func (f *closure) apply(x, y any) (any, error) {
@@ -1049,6 +1083,10 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 		}
 		for _, item := range t.Items {
 			c.checkTerm(item, s, locals)
+		}
+	case *grammar.TupleLit:
+		for _, x := range t.Elems {
+			c.checkTerm(x, s, locals)
 		}
 	case *grammar.Call:
 		n, ok := builtins[t.Func]

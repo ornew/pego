@@ -771,6 +771,11 @@ func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 			c.term(item, s, locals)
 		}
 		c.eemit(ECall, bList, int32(len(t.Items)))
+	case *grammar.TupleLit:
+		for _, x := range t.Elems {
+			c.term(x, s, locals)
+		}
+		c.eemit(ETuple, int32(len(t.Elems)), 0)
 	case *grammar.Call:
 		if t.Func == "concat" && fusable(t) {
 			// Gather the elements of list, map and concat arguments directly (see fusable).

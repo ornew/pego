@@ -469,6 +469,10 @@ func walkTerm(t grammar.Term, f func(grammar.Term)) {
 		for _, x := range t.Args {
 			walkTerm(x, f)
 		}
+	case *grammar.TupleLit:
+		for _, x := range t.Elems {
+			walkTerm(x, f)
+		}
 	case *grammar.ListConstructor:
 		for _, item := range t.Items {
 			walkTerm(item, f)

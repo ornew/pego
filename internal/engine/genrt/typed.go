@@ -1459,8 +1459,20 @@ func (c *tctx) newList(items []any) any {
 
 // listNode returns a list value with the child list kids (which it takes over). Its range, which
 // the value model does not show, covers the elements that are nodes.
-func (c *tctx) listNode(kids []any) *tnode {
-	n := c.p.newNode(typeListValue, c.start, c.start, kids)
+func (c *tctx) listNode(kids []any) *tnode { return c.valueNode(typeListValue, kids) }
+
+// tuple returns a tuple value of the arguments, as a tuple literal builds it.
+func (c *tctx) tuple(args ...any) any {
+	base := len(c.p.kidStack)
+	for _, a := range args {
+		c.p.stepWork()
+		c.p.kidStack = append(c.p.kidStack, c.asNode("tuple", a))
+	}
+	return c.valueNode(typeTupleValue, c.p.kids(base))
+}
+
+func (c *tctx) valueNode(typ string, kids []any) *tnode {
+	n := c.p.newNode(typ, c.start, c.start, kids)
 	n.fresh = false
 	first := true
 	for _, it := range kids {
@@ -1716,7 +1728,7 @@ func tasNode(fn string, v any) any {
 	case tval, int, string, bool:
 		return v
 	}
-	evalErrorf("%s: list elements must be values, got %s", fn, ttypeName(v))
+	evalErrorf("%s: elements must be values, got %s", fn, ttypeName(v))
 	return nil
 }
 
@@ -2257,7 +2269,7 @@ func tasNodeWork(p *parser, fn string, v any) any {
 	case tval, int, string, bool:
 		return v
 	}
-	p.evalErrorf("%s: list elements must be values, got %s", fn, ttypeName(v))
+	p.evalErrorf("%s: elements must be values, got %s", fn, ttypeName(v))
 	return nil
 }
 

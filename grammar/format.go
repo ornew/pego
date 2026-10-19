@@ -1185,6 +1185,18 @@ func formatTerm(t Term, outer int, control *metadataControl) (formatted string) 
 			fields = append(fields, formatTerm(x, 0, control))
 		}
 		return t.Type + "{" + joinFormatParts(fields, ", ", control) + "}"
+	case *TupleLit:
+		parts := make([]string, len(t.Elems))
+		for i, x := range t.Elems {
+			pollFormat(control)
+			parts[i] = formatTerm(x, 0, control)
+		}
+		body := joinFormatParts(parts, ", ", control)
+		if len(parts) == 1 {
+			body += "," // (x) would be a group
+		}
+		oneLine := (t.OneLine || t.OpenBreak == nil) && !hasFormatNewline(body, control)
+		return formatSourceGroup(body, t.OpenBreak, t.BodyBreak, t.CloseBreak, oneLine, control)
 	case *ListConstructor:
 		items := make([]string, len(t.Items))
 		for i, item := range t.Items {

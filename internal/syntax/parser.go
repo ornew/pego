@@ -1699,7 +1699,13 @@ func (p *parser) termPrimary() (sourceResult grammar.Term) {
 			g := &grammar.TermGroup{OpenBreak: &grammar.LineBreak{}}
 			p.cur = g.OpenBreak
 			g.BodyBreak = p.lineBreak()
+			if p.is(")") {
+				return p.tupleLit(open, &grammar.TupleLit{OpenBreak: g.OpenBreak, BodyBreak: g.BodyBreak}) // the unit ()
+			}
 			g.Term = p.term()
+			if p.is(",") {
+				return p.tupleLit(open, &grammar.TupleLit{OpenBreak: g.OpenBreak, BodyBreak: g.BodyBreak, Elems: []grammar.Term{g.Term}})
+			}
 			g.CloseBreak = p.lineBreak()
 			g.OneLine = !p.multiline(open, p.i)
 			p.expect(")")
@@ -1708,6 +1714,22 @@ func (p *parser) termPrimary() (sourceResult grammar.Term) {
 	}
 	p.errorf("expected a value, found %s", t)
 	panic(bail{})
+}
+
+// tupleLit finishes a tuple value whose "(" and first element, if any, were read as a group's.
+// A trailing comma is optional, and required after a single element.
+func (p *parser) tupleLit(open int, t *grammar.TupleLit) grammar.Term {
+	if len(t.Elems) > 0 {
+		for p.accept(",") && !p.is(")") {
+			t.Elems = append(t.Elems, p.term())
+		}
+	} else {
+		t.Elems = []grammar.Term{}
+	}
+	t.CloseBreak = p.lineBreak()
+	t.OneLine = !p.multiline(open, p.i)
+	p.expect(")")
+	return t
 }
 
 func (p *parser) newTerm() (sourceResult grammar.Term) {

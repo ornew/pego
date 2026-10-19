@@ -34,7 +34,7 @@ const (
 	// isaVersion is the instruction set of the value model, the only one supported. Earlier
 	// versions built the previous syntax trees, so their files are not loaded and need to be
 	// compiled again.
-	isaVersion = 17
+	isaVersion = 18
 	maxDepth   = 10000
 )
 
@@ -100,6 +100,7 @@ const (
 	tParam                      // a reference to a lambda parameter, a CaptureRef with Param set
 	tCast
 	tConvert // a node type constructor, T{x}
+	tTuple   // a tuple literal, (x, y)
 )
 
 // Type and statement kinds
@@ -563,6 +564,9 @@ func (w *encoder) term(t grammar.Term) {
 		w.byte(tCall)
 		w.str(t.Func)
 		w.terms(t.Args)
+	case *grammar.TupleLit:
+		w.byte(tTuple)
+		w.terms(t.Elems)
 	case *grammar.ListConstructor:
 		w.byte(tListConstructor)
 		w.typeExpr(t.Elem)
@@ -1112,6 +1116,8 @@ func (r *decoder) term() grammar.Term {
 		return &grammar.New{Type: r.str(), Args: r.terms()}
 	case tCall:
 		return &grammar.Call{Func: r.str(), Args: r.terms()}
+	case tTuple:
+		return &grammar.TupleLit{Elems: r.terms()}
 	case tListConstructor:
 		return &grammar.ListConstructor{Elem: r.typeExpr(), Items: r.terms()}
 	case tLambda:

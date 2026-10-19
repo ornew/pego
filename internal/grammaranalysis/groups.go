@@ -140,6 +140,13 @@ func ungroupTerm(t grammar.Term, poll func()) grammar.Term {
 			v.X = child
 			return &v
 		}
+	case *grammar.TupleLit:
+		elems := ungroupTerms(t.Elems, poll)
+		if elems != nil {
+			v := *t
+			v.Elems = elems
+			return &v
+		}
 	case *grammar.ListConstructor:
 		elem, items := ungroupType(t.Elem, poll), ungroupTerms(t.Items, poll)
 		if elem != t.Elem || items != nil {

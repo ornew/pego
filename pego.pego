@@ -106,7 +106,7 @@ type ActionBlock = { Actions []ActionStmt; Comments []Comment }
 type DefaultAction = { Text string }
 type ActionExpr ~ (
   Int | String | True | False | Nil | CaptureRef | VarRef
-  | BinaryOp | UnaryOp | FieldAccess | CaptureAccess | Cast | Call | Constructor | ListConstructor | ActionGroup | Lambda
+  | BinaryOp | UnaryOp | FieldAccess | CaptureAccess | Cast | Call | Constructor | ListConstructor | ActionTuple | ActionGroup | Lambda
 )
 type BinaryOp = { Op string; L ActionExpr; R ActionExpr }
 type UnaryOp = { Op string; X ActionExpr }
@@ -117,6 +117,7 @@ type Call = { X ActionExpr; Args []ActionExpr }
 type Constructor = { X ActionExpr; Inits []InitField; Args []ActionExpr; Comments []Comment }
 type ListConstructor = { Elem Type; Items []ActionExpr; Comments []Comment }
 type InitField = { Name Ident; Val ActionExpr; Comments []Comment }
+type ActionTuple = { Elems []ActionExpr } // (), (x,), (x, y)
 type ActionGroup = { Expr ActionExpr }
 type Lambda = { Params []Ident; Body ActionExpr }
 
@@ -399,7 +400,7 @@ rule action_assign_stmt ActionAssign = (
 rule action_expr ActionExpr = lambda / action_ops
 rule action_ops ActionExpr = operators {
   skip ws
-  operand list_constructor / constructor / call / action_group / int / string / true / false / nil / capture_ref / var_ref
+  operand list_constructor / constructor / call / action_tuple / action_group / int / string / true / false / nil / capture_ref / var_ref
   level disjunction { infix left "||" => BinaryOp{Op: text($op), L: $lhs, R: $rhs} }
   level conjunction { infix left "&&" => BinaryOp{Op: text($op), L: $lhs, R: $rhs} }
   level comparison { infix none "==" / "!=" / "<=" / ">=" / "<" / ">" => BinaryOp{Op: text($op), L: $lhs, R: $rhs} }
@@ -423,6 +424,14 @@ rule lambda Lambda = (
   "(" {ml := true} -ws names:lambda_params? -ws ")" -ws "=>" -ws x:action_expr
 ) => Lambda{Params: concat($names), Body: $x}
 rule lambda_params []Ident = first:ident rest:(-ws "," -ws name:ident)* => concat(list($first), map($rest, (x) => x.$name))
+// Parentheses around one expression without a comma group it; any other
+// parentheses form a tuple. The tuple rules fail on a group without an error.
+rule action_tuple ActionTuple = action_unit / action_elems
+rule action_unit ActionTuple = "(" {ml := true} -ws ")" => ActionTuple{Elems: []ActionExpr{}}
+rule action_elems ActionTuple = (
+  "(" {ml := true} -ws xs:(e:action_expr -ws "," -ws)+ last:action_expr? -ws
+  -(")" @error(message="expected closing parenthesis for tuple"))
+) => ActionTuple{Elems: concat(map($xs, (x) => x.$e), filter(list($last), (x) => x != nil)).([]ActionExpr)}
 rule action_group ActionGroup = (
   "(" {ml := true} -ws x:action_expr -ws
   -(")" @error(message="expected closing parenthesis for action expression"))

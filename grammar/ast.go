@@ -732,6 +732,17 @@ type New struct {
 	Args       []Term       `json:"args,omitempty"`
 }
 
+// TupleLit is a tuple value: () is the unit, (x,) has one element and (x, y) two. Its
+// parentheses keep their source layout like a TermGroup's.
+type TupleLit struct {
+	SourceInfo `json:"source,omitempty"`
+	Elems      []Term     `json:"elems"`
+	OpenBreak  *LineBreak `json:"-"`
+	BodyBreak  *LineBreak `json:"-"`
+	CloseBreak *LineBreak `json:"-"`
+	OneLine    bool       `json:"-"`
+}
+
 // ListConstructor builds a node list with an explicit element type: []T{...}.
 type ListConstructor struct {
 	SourceInfo `json:"source,omitempty"`
@@ -813,6 +824,7 @@ func (*VarRef) term()          {}
 func (*Member) term()          {}
 func (*New) term()             {}
 func (*ListConstructor) term() {}
+func (*TupleLit) term()        {}
 func (*Call) term()            {}
 func (*Lambda) term()          {}
 func (*Binary) term()          {}

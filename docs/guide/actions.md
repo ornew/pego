@@ -111,6 +111,19 @@ pego parse -g derived.pego -f sexpr -i '  hello '
 Word{From: 2, Length: 5, Long: true, Text: "hello", To: 7}
 ```
 
+## Tuples
+
+A tuple literal builds a tuple value of its elements: `()` is the unit, `(x,)` has one element and
+`(x, y)` two. It follows the form of a tuple type, and parentheses around one expression without a
+comma stay a group. The elements may be nodes, ints, strings, bools or `nil`, and the literal fits
+a declared tuple type of the same arity elementwise.
+
+```pego
+type Entry = { Key (int, string) }
+rule entry Entry = "a" => Entry{Key: (1, "a")}
+rule pair (node[string], node[string]) = a:"a" b:"b" => ($a, $b)
+```
+
 ## Built-In Functions and Lambdas
 
 | Function | Result |

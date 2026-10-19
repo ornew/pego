@@ -1056,6 +1056,10 @@ func walkChildren(t grammar.Term, f func(grammar.Term)) {
 		for _, item := range t.Items {
 			f(item)
 		}
+	case *grammar.TupleLit:
+		for _, x := range t.Elems {
+			f(x)
+		}
 	case *grammar.Call:
 		for _, a := range t.Args {
 			f(a)

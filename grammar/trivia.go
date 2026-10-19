@@ -92,6 +92,13 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			for _, x := range t.Args {
 				term(x)
 			}
+		case *TupleLit:
+			add(t.OpenBreak)
+			add(t.BodyBreak)
+			add(t.CloseBreak)
+			for _, x := range t.Elems {
+				term(x)
+			}
 		case *ListConstructor:
 			typ(t.Elem)
 			for _, item := range t.Items {

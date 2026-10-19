@@ -402,6 +402,10 @@ func validate(g *Grammar, control *validationControl) error {
 			for i := len(n.Fields) - 1; i >= 0; i-- {
 				push(n.Fields[i], "fields", i, false)
 			}
+		case *TupleLit:
+			for i := len(n.Elems) - 1; i >= 0; i-- {
+				push(n.Elems[i], "elems", i, false)
+			}
 		case *ListConstructor:
 			for i := len(n.Items) - 1; i >= 0; i-- {
 				push(n.Items[i], "items", i, false)

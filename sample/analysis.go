@@ -712,6 +712,10 @@ func walkTerm(t grammar.Term, f func(grammar.Term)) {
 		for _, fi := range t.Fields {
 			walkTerm(fi.Value, f)
 		}
+	case *grammar.TupleLit:
+		for _, x := range t.Elems {
+			walkTerm(x, f)
+		}
 	case *grammar.Call:
 		for _, a := range t.Args {
 			walkTerm(a, f)

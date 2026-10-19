@@ -1669,6 +1669,12 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 		return "c.newStruct(" + strings.Join(args, ", ") + ")"
 	case *grammar.ListConstructor:
 		return g.term(&grammar.Call{Func: "list", Args: t.Items}, s, locals)
+	case *grammar.TupleLit:
+		args := make([]string, len(t.Elems))
+		for i, x := range t.Elems {
+			args[i] = g.term(x, s, locals)
+		}
+		return "c.tuple(" + strings.Join(args, ", ") + ")"
 	case *grammar.Call:
 		if t.Func == "concat" && fusable(t) {
 			// Push the elements of list, map and concat arguments directly (see fusable and

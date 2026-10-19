@@ -266,7 +266,7 @@ rule action_assign_stmt = ident -ws ":=" -ws action_expr
 rule action_expr = lambda / action_ops
 rule action_ops = operators {
     skip ws
-    operand list_constructor / constructor / call / action_group / int / string / true / false / nil / capture_ref / var_ref
+    operand list_constructor / constructor / call / action_tuple / action_group / int / string / true / false / nil / capture_ref / var_ref
     level disjunction { infix left "||" }
     level conjunction { infix left "&&" }
     level comparison { infix none "==" / "!=" / "<=" / ">=" / "<" / ">" }
@@ -288,6 +288,14 @@ rule action_ops = operators {
 rule cast_type = "(" {ml := true} -ws type_expr -ws ")"
 rule lambda = "(" {ml := true} -ws lambda_params? -ws ")" -ws "=>" -ws action_expr
 rule lambda_params = ident (-ws "," -ws ident)*
+// Parentheses around one expression without a comma group it; any other
+// parentheses form a tuple. The tuple rules fail on a group without an error.
+rule action_tuple = action_unit / action_elems
+rule action_unit = "(" {ml := true} -ws ")"
+rule action_elems = (
+    "(" {ml := true} -ws (action_expr -ws "," -ws)+ action_expr? -ws
+    -")"
+)
 rule action_group = (
     "(" {ml := true} -ws action_expr -ws
     -")"

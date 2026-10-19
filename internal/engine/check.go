@@ -226,6 +226,8 @@ func termPos(t grammar.Term, def grammar.Pos) grammar.Pos {
 		return t.Diagnostic()
 	case *grammar.ListConstructor:
 		return t.Diagnostic()
+	case *grammar.TupleLit:
+		return t.Diagnostic()
 	case *grammar.Call:
 		return t.Diagnostic()
 	case *grammar.Binary:

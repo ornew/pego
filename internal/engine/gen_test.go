@@ -196,7 +196,7 @@ rule e = operators {
 		}
 		cases = append(cases, c)
 	}
-	return append(constructorCases(), cases...)
+	return append(append(constructorCases(), tupleLiteralCases...), cases...)
 }
 
 func resultJSON(n *Node, err error) string {

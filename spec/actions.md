@@ -100,6 +100,22 @@ concrete node list. An empty literal such as `[]NameNode{}` has Type
 `[]*NameNode{nil}`. Elements are evaluated once, left to right; no element is
 dropped implicitly. The elements may be of any type, as in `[]int{1, 2}`.
 
+A tuple literal is written like a tuple type: `()` is the unit, `(x,)` has one
+element and `(x, y)` two, and a trailing comma is optional after two or more
+elements. Parentheses around one expression without a comma are a group. A
+tuple literal constructs a tuple value of its elements, which are evaluated once,
+left to right, and keep their kinds (`nil` stays `nil`; functions are not
+values). Its Type is the tuple of the element Types, so it is assignable to a
+declared tuple Type of the same arity whose elements admit those Types, as in
+`rule pair (node[string], int) = a:"a" => ($a, 1)`. The value has no range, like
+a list value, and `x[i]` reads its element `i`.
+
+```pego
+type Entry = { Key (int, string) }
+rule entry Entry = "a" => Entry{Key: (1, "a")}
+rule pair = a:"a" b:"b" => ($a, $b)
+```
+
 
 A struct field value whose Type the checker does not know, such as a variable,
 a result of type `any`, or a list with elements of unknown Type, is checked
@@ -136,8 +152,8 @@ and instead checks every struct field whose declared
 Type is not `_` or `any` at run time as described above, and every rule value as
 described in [Types and Errors](#types-and-errors).
 
-In the public source AST, parentheses around an action expression are retained
-as `TermGroup{Term}`. The group is semantically transparent: it affects
+In the public source AST, a tuple literal is `TupleLit{Elems}`, and parentheses around
+one action expression are retained as `TermGroup{Term}`. The group is semantically transparent: it affects
 precedence and source formatting, but creates no value or evaluation scope. See
 [Parenthesized Groups in the Public AST](grammar-files.md#parenthesized-groups-in-the-public-ast)
 for comment and layout preservation.

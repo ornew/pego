@@ -1207,6 +1207,19 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 				return nil, err
 			}
 			stack = stack[:top]
+		case ETuple:
+			top := len(stack) - int(in.A)
+			base := len(p.kidStack)
+			for _, v := range stack[top:] {
+				p.stepWork()
+				n, err := ctx.element("tuple", v)
+				if err != nil {
+					p.dropKids(base)
+					return nil, err
+				}
+				p.kidStack = append(p.kidStack, n)
+			}
+			stack = append(stack[:top], ctx.tupleNode(p.kids(base)))
 		case EMapPush:
 			top := len(stack) - 2
 			p.estack = stack // the function's calls push above its arguments

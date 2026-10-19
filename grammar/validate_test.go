@@ -57,6 +57,7 @@ func TestValidateRequiredChildren(t *testing.T) {
 		{"field initializer", termGrammar(&New{Type: "T", Fields: []*FieldInit{nil}}), "$.file.decls[0].action.fields[0]"},
 		{"field value", termGrammar(&New{Type: "T", Fields: []*FieldInit{{Name: "F"}}}), "$.file.decls[0].action.fields[0].value"},
 		{"call", termGrammar(&Call{Func: "len", Args: []Term{nil}}), "$.file.decls[0].action.args[0]"},
+		{"tuple literal", termGrammar(&TupleLit{Elems: []Term{nil}}), "$.file.decls[0].action.elems[0]"},
 		{"lambda", termGrammar(&Lambda{}), "$.file.decls[0].action.body"},
 		{"binary left", termGrammar(&Binary{Op: "+", R: &IntLit{Value: 1}}), "$.file.decls[0].action.l"},
 		{"binary right", termGrammar(&Binary{Op: "+", L: &IntLit{Value: 1}}), "$.file.decls[0].action.r"},

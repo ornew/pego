@@ -2754,8 +2754,20 @@ func (c *actx) newList(items []*Node) *Node {
 
 // listNode returns a list value with the child list kids (which it takes over). Its range, which
 // the value model does not show, covers the elements that are nodes.
-func (c *actx) listNode(kids []*Node) *Node {
-	n := c.p.newNode(Node{kind: kindListValue, children: kids, start: int32(c.start), end: int32(c.start)})
+func (c *actx) listNode(kids []*Node) *Node { return c.valueNode(kindListValue, kids) }
+
+// tuple returns a tuple value of the arguments, as a tuple literal builds it.
+func (c *actx) tuple(args ...any) any {
+	base := len(c.p.kidStack)
+	for _, a := range args {
+		c.p.stepWork()
+		c.p.kidStack = append(c.p.kidStack, c.asNode("tuple", a))
+	}
+	return c.valueNode(kindTupleValue, c.p.kids(base))
+}
+
+func (c *actx) valueNode(kind *nodeKind, kids []*Node) *Node {
+	n := c.p.newNode(Node{kind: kind, children: kids, start: int32(c.start), end: int32(c.start)})
 	first := true
 	for _, it := range kids {
 		c.p.stepWork()
@@ -3011,7 +3023,7 @@ func asNode(fn string, v any) *Node {
 	case *Node:
 		return x
 	}
-	evalErrorf("%s: list elements must be values, got %s", fn, typeName(v))
+	evalErrorf("%s: elements must be values, got %s", fn, typeName(v))
 	return nil
 }
 
@@ -3481,7 +3493,7 @@ func asNodeWork(p *parser, fn string, v any) *Node {
 	case *Node:
 		return x
 	}
-	p.evalErrorf("%s: list elements must be values, got %s", fn, typeName(v))
+	p.evalErrorf("%s: elements must be values, got %s", fn, typeName(v))
 	return nil
 }
 

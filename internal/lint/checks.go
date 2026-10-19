@@ -750,6 +750,11 @@ func captureRefsControlled(t grammar.Term, params []string, refs map[string]bool
 			control.poll()
 			captureRefsControlled(item, params, refs, control)
 		}
+	case *grammar.TupleLit:
+		for _, x := range t.Elems {
+			control.poll()
+			captureRefsControlled(x, params, refs, control)
+		}
 	case *grammar.Call:
 		for _, a := range t.Args {
 			control.poll()

@@ -114,6 +114,7 @@ type Tuple ~ () | (Foo) | (Foo,) | ( Foo , node[Word, (Foo, Word,)] ) | []node[W
 type Unnamed ~ {} | []{ A Foo; B { C Word } }
 type Num = node[string]
 rule num = x:"1" => Num{$x,}
+rule tuples = "x" => ((), (Foo{},), ( 1 , "a" , ), (2), (1, (2,)))
 `
 	if _, err := pego.ParseGrammar(src); err != nil {
 		t.Fatal(err)
@@ -208,6 +209,20 @@ rule num = x:"1" => Num{$x,}
 		}
 		if conv := sourceField(t, defs[13], "Action"); conv.Type() != "Constructor" || len(elems(sourceField(t, conv, "Args"))) != 1 || len(elems(sourceField(t, conv, "Inits"))) != 0 {
 			t.Fatal("positional constructor lost")
+		}
+		// One expression without a comma is a group; any other parentheses form a tuple.
+		tuples := elems(sourceField(t, sourceField(t, defs[14], "Action"), "Elems"))
+		wantTuple := []struct {
+			typ   string
+			count int
+		}{{"ActionTuple", 0}, {"ActionTuple", 1}, {"ActionTuple", 2}, {"ActionGroup", -1}, {"ActionTuple", 2}}
+		if len(tuples) != len(wantTuple) || sourceField(t, defs[14], "Action").Type() != "ActionTuple" {
+			t.Fatalf("tuple literal: got %d elements", len(tuples))
+		}
+		for i, w := range wantTuple {
+			if tuples[i].Type() != w.typ || w.count >= 0 && len(elems(sourceField(t, tuples[i], "Elems"))) != w.count {
+				t.Fatalf("tuple literal element %d: got %s", i, tuples[i].Type())
+			}
 		}
 	}
 }

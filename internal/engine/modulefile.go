@@ -455,7 +455,7 @@ func validateModule(m *Module) error {
 		case EInt, ENil, ERet, ETextChk, EListBegin, EMapPush, EListEnd:
 		case ETextEq:
 			flag(x.A, 1)
-		case EListPush:
+		case EListPush, ETuple:
 			nonneg(x.A)
 		case EBool:
 			flag(x.A, 1)

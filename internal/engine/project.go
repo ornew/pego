@@ -132,6 +132,11 @@ func ruleProjectionsControlled(prog *Program, r *rule, control *compileControl) 
 				control.poll()
 				use(item, shadow)
 			}
+		case *grammar.TupleLit:
+			for _, x := range t.Elems {
+				control.poll()
+				use(x, shadow)
+			}
 		case *grammar.Binary:
 			use(t.L, shadow)
 			use(t.R, shadow)
@@ -214,6 +219,11 @@ func markProjectedMapsControlled(t grammar.Term, proj map[string]string, set map
 			for _, item := range t.Items {
 				control.poll()
 				walk(item, shadow)
+			}
+		case *grammar.TupleLit:
+			for _, x := range t.Elems {
+				control.poll()
+				walk(x, shadow)
 			}
 		case *grammar.Binary:
 			walk(t.L, shadow)
@@ -340,7 +350,7 @@ func lineNonNilControlled(prog *Program, e grammar.Expr, t grammar.Term, operato
 	switch t := t.(type) {
 	case nil:
 		return nonNilControlled(prog, e, seen, control)
-	case *grammar.New, *grammar.ListConstructor:
+	case *grammar.New, *grammar.ListConstructor, *grammar.TupleLit:
 		return true
 	case *grammar.CaptureRef:
 		if operator && (t.Name == "lhs" || t.Name == "rhs" || t.Name == "op") {

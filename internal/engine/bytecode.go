@@ -287,6 +287,8 @@ const (
 	// ENODE t, c: pop a node and push it converted to the named node type t. If c is not -1, fail
 	// unless the value fits type c, the underlying node type of t, first (ISA 16).
 	ENode
+	// ETUPLE n: pop n values and push a tuple value of them, in order.
+	ETuple
 )
 
 // Built-in function indices
@@ -317,7 +319,7 @@ var opNames = map[Op]string{
 	EAnd: "EAND", EOr: "EOR", EBoolChk: "EBOOLCHK", EFunc: "EFUNC", ECall: "ECALL", ERet: "ERET",
 	ETextChk: "ETEXTCHK", ETextEq: "ETEXTEQ", EListBegin: "ELISTBEGIN", EListPush: "ELISTPUSH",
 	EMapPush: "EMAPPUSH", EListEnd: "ELISTEND",
-	ECheck: "ECHECK", ECast: "ECAST", ENode: "ENODE",
+	ECheck: "ECHECK", ECast: "ECAST", ENode: "ENODE", ETuple: "ETUPLE",
 }
 
 func (o Op) String() string {
