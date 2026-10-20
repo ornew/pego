@@ -144,7 +144,7 @@ pego gen -g grammar.pego -module example.com/calc -types -o calc # ... with Go t
 pego gen -g grammar.pego -module example.com/calc -recognize -o calc # ... with Recognize, which validates without a tree
 pego gen -lang ts -g grammar.pego -o parser.ts     # generate a standalone TypeScript module
 pego gen -lang ts -g grammar.pego -types -o parser.ts # also emit declarations and parseAST
-pego gen -g grammar.pego -module example.com/parser -max-depth 600000 -o parser # set its nested rule-call default
+pego gen -g grammar.pego -module example.com/calc -max-depth 600000 -o calc # set its nested rule-call default
 pego sample -g grammar.pego -n 20 -coverage      # generate inputs the grammar accepts (tests, fuzz seeds)
 pego edit-fuzz -g grammar.pego -minimize -save-failures out  # check Document edits against fresh parses
 ```

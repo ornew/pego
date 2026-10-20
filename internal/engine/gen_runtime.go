@@ -400,12 +400,17 @@ func (opts GenOptions) typedEntryNames() []string {
 	return names
 }
 
-// reservedNames returns the names that the types of a typed grammar must not take, because the
-// generated package declares them: those of api.go, those declared by the part of parser.go that
-// is generated before the types (head), and typedEntryNames. The runtime's own names are not
-// reserved, since the generated code refers to them by qualified names.
+// reservedNames returns the names that the types of a typed grammar must not take: those of
+// api.go, those declared by the part of parser.go that is generated before the types (head),
+// typedEntryNames, Unit (the type of the empty tuple, which the generator declares when a grammar
+// uses it) and emittedRuntimeNames. The set depends only on the options, never on what the output
+// of the grammar happens to use, so a type has the same Go name in every grammar generated with
+// the same options. Other names of the runtime are free.
 func (opts GenOptions) reservedNames(head string) map[string]bool {
-	reserved := map[string]bool{}
+	reserved := map[string]bool{"Unit": true}
+	for _, name := range emittedRuntimeNames {
+		reserved[name] = true
+	}
 	for _, name := range opts.apiNames() {
 		if name != "Span" { // a grammar type may take the name; api.go then leaves it out
 			reserved[apiPubName(name)] = true
@@ -422,20 +427,35 @@ func (opts GenOptions) reservedNames(head string) map[string]bool {
 	return reserved
 }
 
-// checkNoClash reports a name that both the body of parser.go (declared) and api.go declare.
+// checkNoClash reports a top-level name that parser.go (declared) declares twice, or that both
+// parser.go and api.go declare. reservedNames should keep the types away from such names; the
+// check makes a name missing from it fail the generation instead of the build of the output.
 func checkNoClash(declared []string, api string) error {
 	apiDeclared, err := declaredNames(api)
 	if err != nil {
 		return err
 	}
-	inAPI := map[string]bool{}
+	seen := map[string]string{}
 	for _, name := range apiDeclared {
-		inAPI[name] = true
+		if name == "_" {
+			continue
+		}
+		if seen[name] == "api.go" {
+			return fmt.Errorf("the generated package declares %s twice in api.go", name)
+		}
+		seen[name] = "api.go"
 	}
 	for _, name := range declared {
-		if inAPI[name] {
-			return fmt.Errorf("the grammar declares %s, which the generated package also declares for the users of the parser; rename the type", name)
+		if name == "_" {
+			continue
 		}
+		switch seen[name] {
+		case "api.go":
+			return fmt.Errorf("the grammar declares %s, which the generated package also declares for the users of the parser; rename the type", name)
+		case "parser.go":
+			return fmt.Errorf("the generated parser.go declares %s twice; rename the type", name)
+		}
+		seen[name] = "parser.go"
 	}
 	return nil
 }

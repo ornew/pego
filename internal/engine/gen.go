@@ -132,45 +132,17 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	if opts.Runtime == RuntimeOnly {
 		return runtimeFiles()
 	}
-	files, clash, _, err := generate(g, opts, nil)
-	if err != nil || len(clash) == 0 {
-		return files, err
-	}
-	// The grammar has types named like exports of the runtime. The generated code names the
-	// runtime's exports unqualified until qualifyRuntime resolves them, so a type takes the
-	// place of the export only if the code does not use it. Generate again with the types
-	// renamed to see which exports the code uses, and then with only those types renamed.
-	rename := map[string]bool{}
-	for _, name := range clash {
-		rename[name] = true
-	}
-	_, _, used, err := generate(g, opts, rename)
-	if err != nil {
-		return nil, err
-	}
-	need := map[string]bool{}
-	for _, name := range clash {
-		if used[name] {
-			need[name] = true
-		}
-	}
-	if len(need) == 0 {
-		return files, nil
-	}
-	files, _, _, err = generate(g, opts, need)
-	return files, err
+	return generate(g, opts)
 }
 
 // designedRuntimeNames are the names of the runtime that the generated code declares on purpose
 // (aliases or types in the typed part, and Span, which a grammar type may take).
 var designedRuntimeNames = map[string]bool{"Error": true, "TNode": true, "Document": true, "ParseStats": true, "Span": true}
 
-// generate generates the files of Generate. The types of a typed grammar named like a member of
-// rename are renamed. It returns the names the code declares that are also exports of the runtime
-// (other than on purpose), and the exports of the runtime that the code refers to.
-func generate(g *grammar.Grammar, opts GenOptions, rename map[string]bool) (files []GeneratedFile, clash []string, used map[string]bool, err error) {
+// generate generates the files of Generate (other than for RuntimeOnly).
+func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err error) {
 	if opts.Module == "" && (opts.Runtime == RuntimeEmbed || opts.Package == "") {
-		return nil, nil, nil, fmt.Errorf("module path is required")
+		return nil, fmt.Errorf("module path is required")
 	}
 	derived := opts.Package == ""
 	if derived {
@@ -178,34 +150,34 @@ func generate(g *grammar.Grammar, opts GenOptions, rename map[string]bool) (file
 	}
 	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		if derived {
-			return nil, nil, nil, fmt.Errorf("the module path %q gives the package name %q, which is not a valid Go identifier; choose the package name with -pkg (WithPackageName)", opts.Module, opts.Package)
+			return nil, fmt.Errorf("the module path %q gives the package name %q, which is not a valid Go identifier; choose the package name with -pkg (WithPackageName)", opts.Module, opts.Package)
 		}
-		return nil, nil, nil, fmt.Errorf("invalid package name %q", opts.Package)
+		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}
 	if err := opts.validateMaxDepth(false); err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 	if err := opts.validateDefaultValue(); err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 	info, err := loadRuntime()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 	prog, err := Compile(g, Options{SourceInfo: opts.SourceInfo, DefaultValue: opts.DefaultValue})
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 	if prog.hasMissing {
-		return nil, nil, nil, missingUnsupported("generated parsers")
+		return nil, missingUnsupported("generated parsers")
 	}
 	start := prog.byName[opts.Start]
 	if start == nil {
-		return nil, nil, nil, fmt.Errorf("start rule %s is not defined", opts.Start)
+		return nil, fmt.Errorf("start rule %s is not defined", opts.Start)
 	}
 	if opts.Stream {
 		if !start.stream {
-			return nil, nil, nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
+			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
 		}
 	}
 	gen := &generator{observability: opts.Observability, document: opts.Document, goWorkControls: true, prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap}
@@ -215,14 +187,14 @@ func generate(g *grammar.Grammar, opts GenOptions, rename map[string]bool) (file
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	if gen.streamErr != nil {
-		return nil, nil, nil, gen.streamErr
+		return nil, gen.streamErr
 	}
 	var rec *Program
 	if opts.Recognize {
 		// The recognizer: the program in which no rule builds a value (Program.recognizer), in a
 		// rule table of its own.
 		if rec, err = prog.recognizer(); err != nil {
-			return nil, nil, nil, err
+			return nil, err
 		}
 		gen.prog, gen.table = rec, "recRules"
 		gen.rules()
@@ -303,12 +275,9 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 `)
 	if opts.Types {
 		gen.reserved = opts.reservedNames(out.String())
-		for name := range rename {
-			gen.reserved[name] = true
-		}
 		typed, span, err := gen.typedGo(start, opts.convertTypes)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, err
 		}
 		out.WriteString("\n// --- Typed values ---\n\n")
 		if span != "Span" {
@@ -349,7 +318,7 @@ var tpubHooks = &pegort.TPubHooks{
 	out.WriteString(gen.methods.String())
 	whole, err := format.Source([]byte("package " + opts.Package + "\n" + out.String()))
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("generated code does not compile: %w\n%s", err, out.String())
+		return nil, fmt.Errorf("generated code does not compile: %w\n%s", err, out.String())
 	}
 	if !opts.disableOrdinaryWorkSpecialization {
 		guard := "p.Control == nil"
@@ -357,22 +326,22 @@ var tpubHooks = &pegort.TPubHooks{
 			guard += " && p.Document == nil"
 		}
 		if whole, err = specializeOrdinaryMethods(whole, gen.methods.String(), guard); err != nil {
-			return nil, nil, nil, err
+			return nil, err
 		}
 	}
 	body := strings.TrimPrefix(string(whole), "package "+opts.Package+"\n")
 	declared, err := declaredNames("package p\n" + body)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
+	}
+	body, used, err := qualifyRuntime(opts.Package, opts.runtimeImport(), body, info)
+	if err != nil {
+		return nil, err
 	}
 	for _, name := range declared {
-		if _, ok := info.decls[name]; ok && !designedRuntimeNames[name] {
-			clash = append(clash, name)
+		if used[name] && !designedRuntimeNames[name] {
+			return nil, fmt.Errorf("the generated code declares %s and also refers to the runtime's %s; add the name to emittedRuntimeNames", name, name)
 		}
-	}
-	body, used, err = qualifyRuntime(opts.Package, opts.runtimeImport(), body, info)
-	if err != nil {
-		return nil, nil, nil, err
 	}
 	var file strings.Builder
 	file.WriteString(generatedHeader + "\n\n")
@@ -382,24 +351,24 @@ var tpubHooks = &pegort.TPubHooks{
 	fmt.Fprintf(&file, "package %s\n\n%s", opts.Package, body)
 	src, err := format.Source([]byte(file.String()))
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("generated code does not compile: %w", err)
+		return nil, fmt.Errorf("generated code does not compile: %w", err)
 	}
 	api, err := opts.apiSource(info, slices.Contains(declared, "Span"))
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 	if err := checkNoClash(declared, api); err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 	files = []GeneratedFile{{"parser.go", src}, {"api.go", []byte(api)}}
 	if opts.Runtime == RuntimeEmbed {
 		rt, err := runtimeFiles()
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, err
 		}
 		files = append(files, rt...)
 	}
-	return files, clash, used, nil
+	return files, nil
 }
 
 // validateDefaultValue rejects typed output with default values: the types come from the actions and

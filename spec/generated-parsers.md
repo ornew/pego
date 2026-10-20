@@ -140,15 +140,20 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
 
 - `TNode[T]` is `struct { Span; Value T }`; `TupleN` is `struct { E0 E0; ...; En En }`
   and `Unit` is `struct{}`. A missing element of a tuple is `nil`. A list node's `Value` is a slice.
-- A grammar type whose name collides with a name that the generated package
-  declares (`Node`, `TNode`, `Error`, `Parse`, `ParseOption`, `ParseRuleAST`
-  and the other names `api.go` and `parser.go` define) gets a trailing
-  underscore. Names are assigned in sorted order, so `Node` becomes `Node_` and an
-  existing `Node_` becomes `Node__`. A name that the runtime package exports but the
-  generated package does not declare (`Walk`, for example) is not a collision, since
-  generated code refers to the runtime by qualified names; the type keeps its name,
-  unless the generated code of the grammar uses that runtime name itself, in which
-  case the type gets the underscore too. A struct field named like a method of the
+- A grammar type whose name is reserved gets a trailing underscore. The reserved
+  names are fixed by the generation options alone, never by what the output of a
+  particular grammar uses, so a type has the same Go name in every grammar generated
+  with the same options. They are: the names that `api.go` declares for those options
+  (`Node`, `ParseOption`, ...; `Walk` is declared as `WalkTree`); the names that
+  `parser.go` declares (`Parse`, `ParseRule`, ..., and with `-types` `ParseAST`,
+  `ParseRuleAST`, `TNode`, `Error`, and `Document`, `ParseStreamAST`, ... for the
+  options that add them); `Unit`, the type of the empty tuple; and the exports of the
+  runtime that the generators can write into `parser.go` (`Mark`, `TSeq`,
+  `NewStreamIterator`, `TOperand`, ...), whether or not a given parser uses them.
+  Exports that no generator writes (`Walk`, `SetNodeText`, ...) are free. Names are
+  assigned in sorted order, so `Node` becomes `Node_` and an existing `Node_` becomes
+  `Node__`. Generation fails, naming the type, if `parser.go` and `api.go` would
+  declare the same name twice. A struct field named like a method of the
   embedded `Span` (`Range`) or of the typed values (`TName`, ...) gets a trailing
   underscore in Go; the value still reads back under the grammar name. Every declared
   alias is exported.
@@ -373,9 +378,8 @@ program, so a TypeScript parser can reject nesting that the engine accepts.
 | Tracing and profiling | With `-observability` | With `-observability` (batch parsers) |
 
 A generated parser carries the runtime of the generator that produced it (`embed`) or imports it
-(`import`), and does not follow later changes of the grammar or of the generator. Regenerating can rename grammar types that collide with names that the new generated package
-declares, and can change exported signatures (for example, entry points that took
-a variable number of `Unit` values take `ParseOption` values).
+(`import`), and does not follow later changes of the grammar or of the generator. Regenerating
+can rename grammar types that collide with names that the new generated package declares.
 
 ## Conformance
 

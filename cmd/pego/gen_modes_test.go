@@ -187,6 +187,7 @@ func TestGenFlagMisuse(t *testing.T) {
 		{"types with only", []string{"-runtime", "only", "-types", "-o", out}, "-types cannot be combined with -runtime only"},
 		{"recognize with only", []string{"-runtime", "only", "-recognize", "-o", out}, "-recognize cannot be combined"},
 		{"pkg with only", []string{"-runtime", "only", "-pkg", "x", "-o", out}, "-pkg cannot be combined"},
+		{"module with only", []string{"-runtime", "only", "-module", "example.com/x", "-o", out}, "-module cannot be combined"},
 		{"runtime with ts", []string{"-lang", "ts", "-g", g, "-runtime", "import"}, "-runtime is not supported with -lang ts"},
 		{"embed without module", []string{"-g", g, "-pkg", "kv", "-o", out}, "-module"},
 		{"import without module or pkg", []string{"-g", g, "-runtime", "import", "-o", out}, "-pkg or -module"},

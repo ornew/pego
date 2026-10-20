@@ -777,7 +777,7 @@ func gen(args []string, stdout io.Writer) error {
 		}
 		switch mode {
 		case pego.RuntimeOnly:
-			for _, name := range []string{"g", "s", "pkg", "types", "document", "stream", "observability", "recognize", "max-depth", "nodoc", "source-info", "default-value"} {
+			for _, name := range []string{"g", "s", "pkg", "module", "types", "document", "stream", "observability", "recognize", "max-depth", "nodoc", "source-info", "default-value"} {
 				if isFlagSet(fs, name) {
 					return fmt.Errorf("-%s cannot be combined with -runtime only, which writes just the runtime", name)
 				}

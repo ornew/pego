@@ -174,23 +174,15 @@ Previously returned results stay valid, and a later invocation can retry.
 Cancellation is cooperative during engine work and is checked before input
 preparation and before publishing a result.
 
-## Regenerating Older Callers
+## Type Names
 
-Regenerating an older Go parser requires an explicit source migration:
-
-- Change `Parse(input, Bytes)` to `Parse(input, WithUnit(Bytes))`, and likewise for the other entry points.
-- Replace `[]Unit` expansion with `[]ParseOption`. To preserve the old first-unit policy, append `WithUnit(units[0])`
-  when the old unit slice is nonempty; otherwise use no options. Applying every unit option makes the last one win.
-- Update function values from `func(string, ...Unit)` to `func(string, ...ParseOption)`, with the corresponding
-  `ParseRule`, `Recognize` and typed `ParseAST` return signatures. Calls with no options keep their syntax.
-
-New exports `ParseOption`, `WithUnit`, `WithMaxDepth`, `WithContext`, `WithWorkLimits`,
-`WorkLimits`, `WorkLimitKind`, `WorkLimitError`, `ErrWorkLimit`, `InputWorkLimit` and
-`StepWorkLimit` reserve their names in typed generation. Grammar types
-colliding with runtime names gain underscores in stable sorted order: `ParseOption` becomes `ParseOption_` and an
-existing `ParseOption_` becomes `ParseOption__`. Aliases and typed result signatures follow those names. Update
-consumers of renamed types and typed function values. Handwritten declarations in the generated package that use
-these new names must be renamed by the consumer; the generator cannot inspect those files.
+A typed parser declares the grammar's types next to the names this page lists, and the generated code refers to
+the runtime's exports by name. A grammar type whose name is one of those gets underscores appended: `ParseOption`
+becomes `ParseOption_`, and if the grammar also has a type `ParseOption_`, that one becomes `ParseOption__`. Types are
+renamed in stable sorted order, and aliases and typed result signatures follow the new names. Which names are taken
+depends only on the generation options, not on the grammar, so a type has the same Go name in every grammar generated
+with the same options. Declarations that you add by hand to the generated package must not use these names either;
+the generator cannot inspect those files. The [generated parser contract](../../spec/generated-parsers.md) lists the rule.
 
 ## Related Topics
 

@@ -456,8 +456,8 @@ trace/profile API.
 Generate a standalone Go parser with tracing hooks using `pego gen -observability`. Add `-types` to trace typed entry points too:
 
 ```bash
-pego gen -g pairs.pego -module example.com/pairsparser -observability -o pairsparser
-pego gen -g pairs.pego -module example.com/pairsparser -types -observability -o pairsparser
+pego gen -g pairs.pego -module example.com/pairs/pairsparser -observability -o pairsparser
+pego gen -g pairs.pego -module example.com/pairs/pairsparser -types -observability -o pairsparser
 ```
 
 A parser generated without `-observability` has no tracing: it returns an error for the trace and profile options
@@ -565,7 +565,7 @@ TypeScript batch profiling has its own `Profile` API, described below.
 Generate the Go Document with observability enabled:
 
 ```bash
-pego gen -g pairs.pego -module example.com/pairsparser -document -observability -o pairsparser
+pego gen -g pairs.pego -module example.com/pairs/pairsparser -document -observability -o pairsparser
 ```
 
 Constructor trace and profile options are defaults for later parses. They do
