@@ -74,6 +74,25 @@ rule main R = j:"b"* => R{V: list(1, "s", true)[len($j)]}`, []string{"", "b", "b
 type P = { A Id; B []Id; C (Id, int) }
 rule main P = a:id b:id* => P{A: $a, B: $b.Value, C: ($a, 1)}
 rule id Id = t:([a-z]+) #atomic => Id{$t}`, []string{"a", "abc", ""}})
+	cases = append(cases, genCase{"named node types everywhere", `type Id = node[string]
+type Pair = node[(Id, int)]
+type P = { A Id; B []Id; C (Id, int); D *Id }
+rule main P = a:id b:id* => P{A: $a, B: $b.Value, C: ($a, 1), D: nil}
+rule id Id = t:([a-z]+) #atomic => Id{$t}`, []string{"a", "abc", ""}},
+		genCase{"named node type root", `type Id = node[string]
+rule main Id = t:([a-z]+) #atomic => Id{$t}`, []string{"a", "", "1"}},
+		genCase{"named node type list root", `type Id = node[string]
+rule main []Id = xs:id* => $xs.Value
+rule id Id = t:([a-z]) #atomic => Id{$t}`, []string{"", "a", "abc"}},
+		genCase{"named node type tuple root", `type Id = node[string]
+rule main (Id, Id) = a:id b:id => ($a, $b)
+rule id Id = t:([a-z]) #atomic => Id{$t}`, []string{"ab", "a", ""}},
+		genCase{"named node type sequence", `type Id = node[string]
+type Num = node[string]
+type S = { Items [](Id, Num) }
+rule main S = xs:(a:id n:num)* => S{Items: map($xs.Value, (x) => (x.$a, x.$n))}
+rule id Id = t:([a-z]) #atomic => Id{$t}
+rule num Num = t:([0-9]) #atomic => Num{$t}`, []string{"", "a1", "a1b2"}})
 	dir := t.TempDir()
 	write := func(path, text string) {
 		t.Helper()
@@ -89,6 +108,7 @@ rule id Id = t:([a-z]+) #atomic => Id{$t}`, []string{"a", "abc", ""}})
 	write("package.json", `{"type":"module"}`)
 	var imports, parsers, recognizers, terminalNames, valueNames strings.Builder
 	var inputs [][]string
+	var named [][]string
 	var files []string
 	for i, c := range cases {
 		g, err := syntax.Parse(c.src)
@@ -105,6 +125,7 @@ rule id Id = t:([a-z]+) #atomic => Id{$t}`, []string{"a", "abc", ""}})
 		}
 		meta := &typedGen{g: &generator{prog: prog}, info: prog.typed, names: map[string]string{}, unions: map[string]string{}}
 		meta.name()
+		named = append(named, append([]string{}, meta.nodeTypes...))
 		for name, exported := range meta.names {
 			fmt.Fprintf(&valueNames, "%q:%q,\n", fmt.Sprintf("replay/g%d.%s", i, exported), name)
 		}
@@ -128,6 +149,8 @@ rule id Id = t:([a-z]+) #atomic => Id{$t}`, []string{"a", "abc", ""}})
 	}
 	b, _ := json.Marshal(inputs)
 	write("inputs.json", string(b))
+	nb, _ := json.Marshal(named)
+	write("named.json", string(nb))
 	write("main.go", "package main\nimport (\"encoding/base64\";\"encoding/json\";\"fmt\";\"os\";\"reflect\";\"strconv\";\"strings\";"+imports.String()+")\nvar parsers=[]func(string,bool)(any,error){"+parsers.String()+"}\nvar recognizers=[]func(string,bool)error{"+recognizers.String()+"}\nvar terminalTypes=map[string]bool{"+terminalNames.String()+"}\nvar valueNames=map[string]string{"+valueNames.String()+"}\n"+tsTypedGoOracle)
 	write("replay.mjs", tsTypedReplayHarness)
 	cmd := exec.Command(tsc, append([]string{"--noEmit", "--target", "es2020", "--lib", "es2020", "--strict", "--noUnusedLocals", "--noUnusedParameters", "--noUncheckedIndexedAccess", "--noPropertyAccessFromIndexSignature", "--erasableSyntaxOnly"}, files...)...)
@@ -198,7 +221,7 @@ func normal(v reflect.Value) any {
   case reflect.Slice:
     if v.IsNil(){return nil};out:=make([]any,v.Len());for i:=range out {out[i]=normal(v.Index(i))};return out
   case reflect.Struct:
-    if v.NumField()==1&&v.Type().Field(0).Anonymous&&strings.HasPrefix(v.Type().Field(0).Type.Name(),"TNode["){return normal(v.Field(0))}
+    if v.NumField()==1&&v.Type().Field(0).Anonymous&&strings.HasPrefix(v.Type().Field(0).Type.Name(),"TNode["){inner:=normal(v.Field(0));if n,ok:=valueNames[v.Type().PkgPath()+"."+v.Type().Name()];ok{if m,ok:=inner.(map[string]any);ok{m["type"]=n}};return inner}
     typeKey:=v.Type().PkgPath()+"."+v.Type().Name();name:=v.Type().Name();if n,ok:=valueNames[typeKey];ok{name=n}else if strings.HasPrefix(name,"TNode["){return map[string]any{"start":v.FieldByName("Start").Int(),"end":v.FieldByName("End").Int(),"value":normal(v.FieldByName("Value"))}}else if name=="Unit"||strings.HasPrefix(name,"Tuple"){out:=make([]any,v.NumField());for i:=range out{out[i]=normal(v.Field(i))};return out};if _,ok:=valueNames[typeKey];!ok&&name=="Error"{name="error"};out:=map[string]any{"type":name}
     for i:=0;i<v.NumField();i++ {if v.Type().Field(i).Anonymous {sp:=v.Field(i);out["start"]=sp.FieldByName("Start").Int();out["end"]=sp.FieldByName("End").Int()}}
     for i:=0;i<v.NumField();i++ {name:=v.Type().Field(i).Name;if v.Type().Field(i).Anonymous{continue};if name=="Text"&&terminalTypes[typeKey]{name="text"};if name=="Message"&&v.Type().Name()=="Error"{name="message"};out[name]=normal(v.Field(i))};return out
@@ -209,8 +232,8 @@ func main(){data,_:=os.ReadFile(os.Args[1]);var inputs [][]string;json.Unmarshal
 `
 
 const tsTypedReplayHarness = `import {readFileSync} from "node:fs";
-const inputs=JSON.parse(readFileSync("inputs.json","utf8"));
+const inputs=JSON.parse(readFileSync("inputs.json","utf8"));const named=JSON.parse(readFileSync("named.json","utf8"));
 function text(s){const out=[];for(const ch of s){const c=ch.codePointAt(0);if(c>=0xdc80&&c<=0xdcff)out.push(c&255);else out.push(...Buffer.from(ch,"utf8"));}return Buffer.from(out).toString("base64");}
-function normal(v,m){if(v===null)return null;if(typeof v==="number"||typeof v==="bigint")return "int:"+v;if(typeof v==="string")return text(v);if(typeof v==="boolean")return v;if(Array.isArray(v))return v.map(x=>normal(x,m));if(v instanceof m.Node){const fs={};for(const f of v.fields)fs[f.name]=normal(f.value,m);return {type:v.type,rule:v.rule,start:v.start,end:v.end,text:text(v.text),children:v.children.length===0?null:v.children.map(x=>normal(x,m)),fields:fs};}const out={};const keys=Object.keys(v);const tnode=keys.length===4&&"value" in v&&"type" in v;for(const [k,x] of Object.entries(v)){if(tnode&&k==="type")continue;out[k]=k==="type"||k==="start"||k==="end"?x:normal(x,m);}return out;}
-for(let i=0;i<inputs.length;i++){const m=await import("./g"+i+".ts");for(const b64 of inputs[i]){const input=new Uint8Array(Buffer.from(b64,"base64"));for(const unit of [m.CodePoints,m.Bytes]){const r=m.parseAST(input,unit),n=m.parse(input,unit),rec=m.recognize(input,unit);if(r.error?.message!==n.error?.message)throw new Error("typed error changed");console.log(JSON.stringify({grammar:i,bytes:unit===m.Bytes,input:b64,value:normal(r.value,m),error:r.error?.message??null,recognize:rec?.message??null}));}}}
+function normal(v,m,nt){if(v===null)return null;if(typeof v==="number"||typeof v==="bigint")return "int:"+v;if(typeof v==="string")return text(v);if(typeof v==="boolean")return v;if(Array.isArray(v))return v.map(x=>normal(x,m,nt));if(v instanceof m.Node){const fs={};for(const f of v.fields)fs[f.name]=normal(f.value,m,nt);return {type:v.type,rule:v.rule,start:v.start,end:v.end,text:text(v.text),children:v.children.length===0?null:v.children.map(x=>normal(x,m,nt)),fields:fs};}const out={};const keys=Object.keys(v);const tnode=keys.length===4&&"value" in v&&"type" in v;for(const [k,x] of Object.entries(v)){if(tnode&&k==="type"&&!nt.includes(x))continue;out[k]=k==="type"||k==="start"||k==="end"?x:normal(x,m,nt);}return out;}
+for(let i=0;i<inputs.length;i++){const m=await import("./g"+i+".ts");for(const b64 of inputs[i]){const input=new Uint8Array(Buffer.from(b64,"base64"));for(const unit of [m.CodePoints,m.Bytes]){const r=m.parseAST(input,unit),n=m.parse(input,unit),rec=m.recognize(input,unit);if(r.error?.message!==n.error?.message)throw new Error("typed error changed");console.log(JSON.stringify({grammar:i,bytes:unit===m.Bytes,input:b64,value:normal(r.value,m,named[i]),error:r.error?.message??null,recognize:rec?.message??null}));}}}
 `

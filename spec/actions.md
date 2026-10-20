@@ -268,7 +268,8 @@ result, so the right operand may not be evaluated.
 
 `xs[i]` is the element of the list `xs` at the zero-based index `i`, an
 `int`; its static type is the list's element type, and a `nil` list has no
-elements. An index outside the list is a runtime action error, as is a
+elements. Indexing applies equally to a tuple, whose elements are indexed in
+order. An index outside the list is a runtime action error, as is a
 dynamically typed index that is not an `int`. The `[` follows the indexed
 value directly: `$xs[0]`, `f(x)[0]` and `xs[0][1]` index, while in a Rule
 Expression `name [a-z]` with a space is a name and a character class, and
