@@ -2882,6 +2882,10 @@ class Parser {
     }
     const n = new Node("tuple", sourceInfo ? r.name : "", start, end, "", kids, fields, false, false);
     n.labeled = sourceInfo;
+    if (l.check !== null) {
+      // Without type checking, the tuple node is checked like an action's result.
+      l.check(this, n);
+    }
     return r.opNodeType !== "" ? this.convertOperator(r, n) : n;
   }
 

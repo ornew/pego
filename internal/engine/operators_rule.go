@@ -406,10 +406,18 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 		fields = Fields{{"lhs", nodeOrNil(lhs)}, {"op", nodeOrNil(opv)}, {"rhs", nodeOrNil(rhs)}}
 	}
 	kind := kindSeq
-	if r.opKinds != nil {
+	if r.opKinds != nil && l.check == nil {
 		kind = r.opKinds[baseTuple] // made with the named node type of the operators
 	} else if p.prog.sourceInfo {
 		kind = r.kinds.named(kindSeq, r.name)
 	}
-	return p.newNode(Node{kind: kind, start: int32(start), end: int32(end), children: kids, fields: fields, labeled: p.prog.sourceInfo})
+	n := p.newNode(Node{kind: kind, start: int32(start), end: int32(end), children: kids, fields: fields, labeled: p.prog.sourceInfo})
+	if l.check != nil {
+		// Without type checking, the tuple node is checked like an action's result.
+		p.checkResult(l.check, n, r.name)
+		if r.opKinds != nil {
+			n = p.convertOperator(r, n)
+		}
+	}
+	return n
 }

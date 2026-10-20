@@ -46,6 +46,19 @@ rule expr Expr = operators {
 }
 rule num = [0-9]+ #atomic
 rule ws = [ ]*`, []string{"", "1", "1+2", "-1+2!", "(1+2)!"}},
+		{"operators named through an alias", `type Expr = node[_]
+type Alias ~ Expr
+rule main Alias = e:expr ws $$ => $e
+rule expr Alias = operators {
+    skip ws
+    operand num
+    operand "(" e:expr ws ")" => $e
+    level { infix left "+" / "-" }
+    level { prefix "-" }
+    level { postfix "!" }
+}
+rule num Alias = [0-9]+ #atomic
+rule ws = [ ]*`, []string{"", "1", "1+2", "-1+2!", "(1+2)!", "1+"}},
 	}
 }
 
@@ -160,6 +173,7 @@ func TestOperatorsRuleNamedNodeTypeGenerated(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	cases := operatorsNamedNodeCases()
 	t.Run("go", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, GenOptions{}) })
+	t.Run("go source info", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, GenOptions{SourceInfo: true}) })
 	t.Run("typed go", func(t *testing.T) { testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true}, len(cases)) })
 	t.Run("typescript", func(t *testing.T) {
 		node, err := exec.LookPath("node")
@@ -212,13 +226,33 @@ func main() {
 `)
 }
 
-// Without type checking, an operator whose value cannot be converted fails the parse.
+// Without type checking, an operator whose value does not fit the named node type fails the parse,
+// the tuple node of an operator without an action included, as the value of an ordinary rule does.
+// Generated parsers are always type checked, so they reject these grammars when they are generated.
 func TestOperatorsRuleNamedNodeTypeRuntimeError(t *testing.T) {
-	prog := compileBare(t, "type Expr = node[string]\nrule expr Expr = operators {\n operand num\n level { infix left \"+\" => 1 }\n}\nrule num Expr = [0-9]+ #atomic", Options{NoTypeCheck: true})
-	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		_, err := prog.ParseWith("expr", "1+2", ParseOptions{Backend: backend})
-		if err == nil || !strings.Contains(err.Error(), "cannot use int as node[string] in result of rule expr") {
-			t.Errorf("%s: got %v", backend, err)
+	const defs = "type Expr = node[string]\nrule num Expr = [0-9]+ #atomic\n"
+	for _, tc := range []struct{ src, want string }{
+		{"rule expr Expr = operators {\n operand num\n level { infix left \"+\" => 1 }\n}", "cannot use int as node[string] in result of rule expr"},
+		{"rule expr Expr = operators {\n operand num\n level { infix left \"+\" }\n}", "cannot use node[(_, _, _)] as node[string] in result of rule expr"},
+		{"rule expr Expr = operators {\n operand num\n level { prefix \"-\" }\n}", "cannot use node[(_, _)] as node[string] in result of rule expr"},
+	} {
+		prog := compileBare(t, defs+tc.src, Options{NoTypeCheck: true})
+		input := "1+2"
+		if strings.Contains(tc.src, "prefix") {
+			input = "-1"
+		}
+		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+			n, err := prog.ParseWith("expr", input, ParseOptions{Backend: backend})
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Errorf("%s %q: got %v (%s), want %q", backend, tc.src, err, operatorsNodeTypeNames(n), tc.want)
+			}
+		}
+		g, err := syntax.Parse(defs + tc.src)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Generate(g, GenOptions{Package: "p", Start: "expr"}); err == nil {
+			t.Errorf("%q: the generator accepted a grammar that cannot be type checked", tc.src)
 		}
 	}
 }

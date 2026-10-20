@@ -2403,7 +2403,15 @@ func (p *TParser) operatorsRuleBuild(r *TRule, a *toperatorsRuleAttempt, lhs, rh
 	n := p.NewNode("tuple", start, end, kids)
 	n.fresh = false
 	n.fields = fields
-	n.nt = r.OpNt // made with the named node type of the operators, if any
+	if l.check != nil {
+		// Without type checking, the tuple node is checked like an action's result.
+		l.check(p, n)
+		if r.OpNt != 0 {
+			return p.convertOperator(r, n)
+		}
+	} else {
+		n.nt = r.OpNt // made with the named node type of the operators, if any
+	}
 	return n
 }
 

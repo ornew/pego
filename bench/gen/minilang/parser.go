@@ -3652,12 +3652,20 @@ func (p *Parser) operatorsRuleBuild(r *Rule, a *operatorsRuleAttempt, lhs, rhs *
 		fields = Fields{{"lhs", nodeOrNil(lhs)}, {"op", nodeOrNil(opv)}, {"rhs", nodeOrNil(rhs)}}
 	}
 	kind := RawKindSeq
-	if r.opKinds != nil {
+	if r.opKinds != nil && l.check == nil {
 		kind = r.opKinds[baseTuple] // made with the named node type of the operators
 	} else if p.sourceInfo {
 		kind = r.kinds.named(RawKindSeq, r.Name)
 	}
-	return p.NewNode(Node{RawKind: kind, RawStart: int32(start), RawEnd: int32(end), RawChildren: kids, RawFields: fields, labeled: p.sourceInfo})
+	n := p.NewNode(Node{RawKind: kind, RawStart: int32(start), RawEnd: int32(end), RawChildren: kids, RawFields: fields, labeled: p.sourceInfo})
+	if l.check != nil {
+		// Without type checking, the tuple node is checked like an action's result.
+		l.check(p, n)
+		if r.opKinds != nil {
+			n = p.convertOperator(r, n)
+		}
+	}
+	return n
 }
 
 func rtUnaryWork(p *Parser, op string, x any) any {
@@ -7929,7 +7937,15 @@ func (p *TParser) operatorsRuleBuild(r *TRule, a *toperatorsRuleAttempt, lhs, rh
 	n := p.NewNode("tuple", start, end, kids)
 	n.fresh = false
 	n.fields = fields
-	n.nt = r.OpNt // made with the named node type of the operators, if any
+	if l.check != nil {
+		// Without type checking, the tuple node is checked like an action's result.
+		l.check(p, n)
+		if r.OpNt != 0 {
+			return p.convertOperator(r, n)
+		}
+	} else {
+		n.nt = r.OpNt // made with the named node type of the operators, if any
+	}
 	return n
 }
 

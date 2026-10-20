@@ -36,7 +36,7 @@ that contains it; a capture is a name for its location and not a second copy of 
 | Kind | Produced by | Where the data is |
 |:--|:--|:--|
 | String | A literal, a character class, `.`, an atomic expression | The range and the text, which is the value |
-| Tuple | A sequence in a rule without an action; an [Operators Rule](operators-rule.md) operator application without an action | The range and the elements: the values of the elements of the sequence that have a value, in order. An element is `nil` where an optional expression or a choice alternative without a value matched |
+| Tuple | A sequence in a rule without an action; an [Operators Rule](operators-rule.md) operator application without an action (a node of the rule's declared [named node type](operators-rule.md#named-node-types) when it has one) | The range and the elements: the values of the elements of the sequence that have a value, in order. An element is `nil` where an optional expression or a choice alternative without a value matched |
 | List | A repetition | The range and the elements: the values of the iterations |
 | Error | A range skipped by `#recover`, or a `#missing` literal insertion | The range, the message and, for an insertion, the expected text |
 | Struct | `T{...}` in an action | The fields, named by the struct type; the range of the node that the action replaced |

@@ -588,6 +588,11 @@ pego: raw-typed.pego:3:1: operatorsRule t produces node[string], which is not as
 raw-typed.pego:3:1: operators of t without an action produce a tuple node, which is not assignable to Bin
 ```
 
+A rule declared with exactly a named node type, as `type E = node[_]` and `rule t E = operators { ... }`, converts every
+operator node it builds to `E`, at every nesting level, with or without an action; the tuple above then has type `E`, and
+typed output yields `*E` for each operator. Operands are not converted: each operand rule must produce `E` itself (declare
+it `rule num E = ...`), or the Operators Rule must be declared as a union that includes the operand types.
+
 ### Captures and Operators
 
 Operator actions refer to their operands as `$lhs`, `$rhs` and `$op`, and to the captures in the operator part. Operand

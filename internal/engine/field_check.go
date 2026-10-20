@@ -452,9 +452,6 @@ func (prog *Program) resultCheckType(key any, rd *grammar.RuleDef) ty {
 		if t, ok := ci.results[key]; !ci.all && (!ok || t != nil) {
 			return t
 		}
-		if op, isOp := key.(*grammar.OperatorsRuleOperator); isOp && op.Action == nil {
-			return nil // the tuple node of an operator
-		}
 		return n.underlying()
 	}
 	t, ok := ci.results[key]

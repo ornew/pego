@@ -85,7 +85,7 @@ Likewise, a rule value whose Type is unknown, from an action, a called rule or
 an Operators Rule line, is not reported; the rule checks the value against its
 declared Type at run time (see [Types and Errors](actions.md#types-and-errors)).
 Without type checking, every rule value is checked against a declared Type other
-than `any`, except the tuple node of an operator line without an action.
+than `any`, including the tuple node of an operator without an action.
 
 Diagnostics print a type as written in a grammar: `node[string]` for a string
 node, `node[(node[string], node[string])]` for a tuple node of two string nodes,
