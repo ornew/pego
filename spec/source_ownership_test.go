@@ -273,12 +273,27 @@ var ownershipCorpus = []string{
 	"rule a = \"x\" #atomic // pragma\nrule b = \"y\"",
 	"rule a = \"x\" @name(1) // attr\nrule b = \"y\"",
 	"rule a T = \"x\" // typed\nrule b []T = \"y\"",
+	// Expression and type operands.
+	"rule a = /* l */ b /* t */ c // x\n",
+	"rule a = b // t\n  / c // u\n  / d\n",
+	"rule a = (\n // l\n b // t\n c\n // end\n) // g\n",
+	"rule a = b /* x */ #atomic /* y */ #repeat(2) /* z */ @n /* w */\n",
+	"rule a = x:/* l */ b* /* t */\n",
+	"rule a = b => /* l */ f(/* a */ 1 /* b */, /* c */ x /* d */) /* t */\n",
+	"rule a = b => x /* m */ . /* n */ Foo /* o */ + /* p */ y.$z\n",
+	"rule a = b => N{ /* l */ A: /* v */ 1 /* t */ , B: [] /* e */ int{ /* i */ 1 } }\n",
+	"rule a = b => (/* l */ x /* t */) + (a /* a */, /* b */ b) + ((i) /* p */ => /* q */ i)\n",
+	"type T = { A /* a */ []int /* b */ | /* c */ string; B (/* d */ int /* e */, string /* f */) }\n",
+	"type T /* a */ = /* b */ { /* c */ A int }\ntype U /* a */ ~ /* b */ T /* c */\n",
+	"rule a = {\n // l\n x := 1; // t\n y // u\n} // v\n",
+	"rule a = operators {\n operand /* a */ b /* b */ => /* c */ N{} /* d */\n level { infix /* e */ left /* f */ \"+\" /* g */ }\n}\n",
 }
 
 func TestCanonicalOwnerParity(t *testing.T) {
 	p, _ := sourceGrammar(t)
 	for i, src := range ownershipCorpus {
 		assertOwnerParity(t, p, fmt.Sprintf("case %d", i), src)
+		assertNodeParity(t, p, fmt.Sprintf("case %d", i), src)
 	}
 }
 
@@ -331,6 +346,7 @@ func TestCanonicalOwnerParityRepository(t *testing.T) {
 			}
 			checked++
 			assertOwnerParity(t, p, path, string(src))
+			assertNodeParity(t, p, path, string(src))
 		case ".md":
 			src, err := os.ReadFile(path)
 			if err != nil {
@@ -339,6 +355,7 @@ func TestCanonicalOwnerParityRepository(t *testing.T) {
 			for i, block := range pegoCodeBlocks(string(src)) {
 				checked++
 				assertOwnerParity(t, p, fmt.Sprintf("%s block %d", path, i+1), block)
+				assertNodeParity(t, p, fmt.Sprintf("%s block %d", path, i+1), block)
 			}
 		}
 		return nil

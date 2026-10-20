@@ -11,7 +11,7 @@ type Nil = node[string]
 type CaptureRef = node[string]
 type VarRef = node[string]
 
-type File = { Pkg *PkgDecl; Decls []Decl; Comments []Comment; TrailingComments []Comment; Text string; Head SourceLead }
+type File = { Pkg *PkgDecl; Decls []Decl; Comments []Comment; TrailingComments []Comment; Text string; Head SourceLead; Gaps []CommentGap }
 type PkgDecl ~ Pkg | error
 type Pkg = { Name Ident; Comments []Comment; Source SourceMetadata }
 type PkgBody = { Name Ident }
@@ -25,6 +25,12 @@ type SourceMetadata = { Span SourceSpan; Leading string; Trailing string; Detach
 type SourceItem = { Trailing string; Next SourceLead }
 type SourceLead = { Leading string; Detached []SourceComment; HasNext bool }
 type SourceComment = { Text string }
+// A gap is the trivia between two tokens that holds at least one comment. Its
+// node spans exactly that trivia, so a source node starting where a gap ends
+// can lead it and a node ending where a gap starts can trail it. The grammar
+// keeps the groups of each gap; the adapter assigns them to owners.
+type CommentGap = { Trailing string; HasTrailing bool; Leading string; Detached []SourceComment; HasNext bool }
+type GapFlag = { }
 type SourceBoundary = { Trailing string; Leading string; Detached []SourceComment; HasNext bool }
 type Decl ~ TypeDef | TypeAlias | RuleDef | error
 type TypeDecl ~ TypeDef | TypeAlias
@@ -138,7 +144,7 @@ type Lambda = { Params []Ident; Body ActionExpr }
 // declaration and item lists keep physical newlines as statement boundaries.
 rule main File = f:file => $f
 rule file File = (
-  &cs:source_comments &src:(.* #atomic) f:file_contents
+  &cs:source_comments &gaps:source_gaps &src:(.* #atomic) f:file_contents
 ) => File{
   Pkg: $f.Pkg,
   Decls: $f.Decls,
@@ -146,6 +152,7 @@ rule file File = (
   TrailingComments: $f.TrailingComments,
   Text: text($src),
   Head: $f.Head,
+  Gaps: $gaps,
 }
 rule file_contents File = (
   {ml := false}
@@ -654,3 +661,23 @@ rule source_nl = "\r\n" / [\r\n]
 rule source_horizontal = source_horizontal_char*
 rule source_horizontal_char = [ \t\u{b}\u{c}\u{85}\u{a0}\u{1680}\u{2000}-\u{200a}\u{2028}\u{2029}\u{202f}\u{205f}\u{3000}]
 rule source_space = source_horizontal_char / source_nl
+
+// Every gap between tokens that holds a comment, in source order. Tokens are
+// the characters between trivia; strings and classes hide comment markers.
+// A gap at the start of the input has no token before it and so no trailing
+// group. The scan never fails, so recording gaps cannot change what is accepted.
+rule source_gaps []CommentGap = (
+  head:source_gap_head? -source_gap_skip* xs:(g:source_gap -source_gap_skip*)* $$
+) => concat(filter(list($head), (x) => x != nil), map($xs, (x) => x.$g)).([]CommentGap)
+// A bracket directly after a name, ")" or "]" is a bracket, not a character class.
+rule source_gap_skip = source_string / source_bracket / source_class / incomplete_comment / (source_space+ !(source_line_comment / source_block_comment)) / !(source_space / source_comment_start) .
+rule source_bracket = (ident_char / ")" / "]") "["
+// A gap starts with a comment, after any space, and runs to the next token.
+rule source_gap_run = -source_space* (source_line_comment / source_block_comment) (source_space / source_line_comment / source_block_comment)*
+rule source_gap_head CommentGap = (
+  ^^ &source_gap_run &b:(source_remaining / source_empty_boundary) -source_gap_run
+) => CommentGap{Trailing: "", HasTrailing: false, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+rule source_gap CommentGap = (
+  &source_gap_run &b:(source_after_boundary / source_empty_boundary) t:source_gap_flag? -source_gap_run
+) => CommentGap{Trailing: $b.Trailing, HasTrailing: $t != nil, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+rule source_gap_flag GapFlag = &source_after_boundary_trailing => GapFlag{}

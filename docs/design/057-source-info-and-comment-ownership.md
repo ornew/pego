@@ -245,12 +245,36 @@ opening delimiter, or the start of the file. The source adapter
 hand-written frontend is tested over crafted comment cases and every grammar in
 the repository.
 
-Ownership for the other source forms is not yet constructed by the canonical
-grammar and remains before this design is complete: expression and type
-operands, member markers, closing delimiters, callee-open boundaries and the
-type-expression header. Each needs a formatter gate: byte-identical output on
-the existing format corpus and no lost comment. The focused fixtures are an
-oracle for covered boundaries, not a substitute for those gates.
+Expression and type operands, member markers, closing delimiters, callee-open
+boundaries and the type-expression header have no boundary of their own in the
+canonical grammar. A comment at a token belongs to the outermost node that starts
+(leading and detached groups) or ends (trailing group) at that token, and
+`pego.pego` cannot say that without a wrapper node per expression. The grammar
+instead keeps every comment-bearing gap between two tokens (`File.Gaps`): the
+trailing, leading and detached groups of the gap, whether the trailing group
+exists and whether a token follows. A gap node spans exactly the trivia, so the
+gap a node starts at and the gap it ends at follow from the node's span. The
+source adapter (`internal/sourceast`, `Positions.Claim`) replays the claims the
+hand-written parser makes as it completes nodes, inner before outer: the node
+completed last at a token takes its groups and the inner node loses them, a gap
+with no next token leads nobody, a node completed again by a later suffix keeps
+what it took, and a node keeps its trailing group before a separator unless the
+gap after the separator has one. No group moves between gaps. The same rule
+covers statements, which complete outermost, and every operand, member marker,
+closing delimiter and header of a rule expression, value expression or type.
+Parity with the hand-written frontend, including the diagnostic position, is
+tested for every node of the public AST over crafted cases, a comment inserted
+at every offset of grammars with every kind of node, pairs of comments at random offsets and
+every grammar in the repository.
+
+The canonical tree has no public-AST adapter yet: the parity test builds the
+nodes of the public AST (flat sequences, choices, unions and intersections, the
+pragma and attribute completions, hidden literals) from the canonical tree and
+passes them to `Claim`, and that construction moves into the adapter with the
+parser selection. Raw formatter state (`SourceInfo.Layout`) is still not
+constructed by the canonical grammar. It needs a formatter gate: byte-identical
+output on the existing format corpus and no lost comment. The focused fixtures
+are an oracle for covered boundaries, not a substitute for that gate.
 
 ## Alternatives Considered
 
@@ -328,10 +352,11 @@ validated, including owned boundary comments, strict and permissive JSON,
 structural validation and equivalent generated code and parse results.
 The in-progress raw interior-layout formatter increment is scoped to selected
 unary/lambda value boundaries and constructor field names. Canonical metadata
-construction in `pego.pego` covers statements and list elements and matches the
-hand-written frontend on the parity corpus. Ownership of expression and type
-operands, member markers, closing delimiters, callee-open boundaries and the
-type-expression header is still follow-up scope. Keep the overall record
+construction in `pego.pego` covers statements, list elements and, through the
+comment-bearing gaps between tokens and the claim in the source adapter, every
+node of expressions and types, and matches the hand-written frontend on the
+parity corpus. The public-AST adapter that builds those nodes from the canonical
+tree and the raw formatter state remain follow-up scope. Keep the overall record
 Proposed until those parts of the contract are implemented and validated.
 
 ### Parenthesized Source Groups: Incremental Cost

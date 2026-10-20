@@ -110,8 +110,16 @@ delimiter (`Head`). `Positions.Items` joins these records. Reclassifying a raw
 comment list in the adapter would duplicate or move ownership and is not part of
 this design.
 
-This increment is a source-span contract, not a complete public-AST adapter or a
-parser selection change. Differential span cases cover aliases, terminals,
+Expressions and types have no statement boundary to record. The canonical tree
+keeps each comment-bearing gap between two tokens in `File.Gaps`, with its
+groups, and the adapter assigns a gap's groups to the outermost node that starts
+or ends at its token (`Positions.Claim`), in the order the hand-written parser
+completes nodes. The grammar adds no wrapper node per expression.
+
+This increment is a source-span and ownership contract, not a complete
+public-AST adapter or a parser selection change: the parity test builds the
+public AST's nodes from the canonical tree, and the raw formatter state is not
+constructed. Differential span cases cover aliases, terminals,
 structs, multiline groups, comments, separators, Unicode and CR/LF/CRLF. The
 existing generated-consumer gate also compares typed type spans with the runtime
 source tree; full diagnostic and formatting parity remain required before the

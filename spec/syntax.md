@@ -35,7 +35,7 @@ package pego
 // File and statements. Delimiter-owned expressions enable multiline trivia;
 // declaration and item lists keep physical newlines as statement boundaries.
 rule main = file
-rule file = &source_comments &.* #atomic file_contents
+rule file = &source_comments &source_gaps &.* #atomic file_contents
 rule file_contents = (
     {ml := false}
     &source_head
@@ -432,6 +432,20 @@ rule source_nl = "\r\n" / [\r\n]
 rule source_horizontal = source_horizontal_char*
 rule source_horizontal_char = [ \t\u{b}\u{c}\u{85}\u{a0}\u{1680}\u{2000}-\u{200a}\u{2028}\u{2029}\u{202f}\u{205f}\u{3000}]
 rule source_space = source_horizontal_char / source_nl
+
+// Every gap between tokens that holds a comment, in source order. Tokens are
+// the characters between trivia; strings and classes hide comment markers.
+// A gap at the start of the input has no token before it and so no trailing
+// group. The scan never fails, so recording gaps cannot change what is accepted.
+rule source_gaps = source_gap_head? -source_gap_skip* (source_gap -source_gap_skip*)* $$
+// A bracket directly after a name, ")" or "]" is a bracket, not a character class.
+rule source_gap_skip = source_string / source_bracket / source_class / incomplete_comment / source_space+ !(source_line_comment / source_block_comment) / !(source_space / source_comment_start) .
+rule source_bracket = (ident_char / ")" / "]") "["
+// A gap starts with a comment, after any space, and runs to the next token.
+rule source_gap_run = -source_space* (source_line_comment / source_block_comment) (source_space / source_line_comment / source_block_comment)*
+rule source_gap_head = ^^ &source_gap_run &(source_remaining / source_empty_boundary) -source_gap_run
+rule source_gap = &source_gap_run &(source_after_boundary / source_empty_boundary) source_gap_flag? -source_gap_run
+rule source_gap_flag = &source_after_boundary_trailing
 ```
 
 ## What the Grammar Does Not Express
