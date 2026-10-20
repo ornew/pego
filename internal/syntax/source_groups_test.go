@@ -168,3 +168,34 @@ func TestTypeFormattingIdempotence(t *testing.T) {
 		}
 	}
 }
+
+// A group that holds only comments has no body line; formatting it must neither add a blank
+// line nor change the result on later passes.
+func TestCommentOnlyGroupFormatting(t *testing.T) {
+	for _, tc := range []struct{ name, src, want string }{
+		{"action tuple", "rule main = \"x\" => (\n\t// lead\n)\n", "rule main = \"x\" => (\n    // lead\n)\n"},
+		{"action tuple block comment", "rule main = \"x\" => (\n\t/* c */\n)\n", "rule main = \"x\" => (\n    /* c */\n)\n"},
+		{"action tuple comments", "rule main = \"x\" => (\n\t// a\n\t// b\n)\n", "rule main = \"x\" => (\n    // a\n    // b\n)\n"},
+		{"action tuple blank between", "rule main = \"x\" => (\n\t// a\n\n\t// b\n)\n", "rule main = \"x\" => (\n    // a\n\n    // b\n)\n"},
+		{"action tuple inline", "rule main = \"x\" => ( /* c */ )\n", "rule main = \"x\" => ( /* c */ )\n"},
+		{"action tuple trailing", "rule main = \"x\" => ( // t\n)\n", "rule main = \"x\" => ( // t\n)\n"},
+		{"nested action tuple", "rule main = \"x\" => (\n\t(\n\t\t// lead\n\t)\n)\n", "rule main = \"x\" => (\n    (\n        // lead\n    )\n)\n"},
+		{"tuple type", "type T ~ (\n\t// lead\n)\n", "type T ~ (\n    // lead\n)\n"},
+		{"nested tuple type", "type T ~ (int, (\n\t// lead\n))\n", "type T ~ (\n    int, (\n        // lead\n    )\n)\n"},
+		{"tuple type inline", "type T ~ ( /* c */ )\n", "type T ~ ( /* c */ )\n"},
+		{"tuple type trailing", "type T ~ ( // t\n)\n", "type T ~ ( // t\n)\n"},
+		{"struct type", "type T ~ {\n\t// lead\n}\n", "type T ~ {\n    // lead\n}\n"},
+		{"empty struct", "type T ~ {\n}\n", "type T ~ {}\n"},
+		{"action block", "rule main = \"x\" => {\n\t// lead\n}\n", "rule main = \"x\" => {\n    // lead\n}\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			out := checkFormat(t, tc.src)
+			if out != tc.want {
+				t.Errorf("got:\n%s\nwant:\n%s", out, tc.want)
+			}
+			if again := checkFormat(t, out); again != out {
+				t.Errorf("second pass changed the result:\n%s", again)
+			}
+		})
+	}
+}

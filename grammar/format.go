@@ -773,8 +773,15 @@ func formatSourceGroupIndented(body string, open, first, close *LineBreak, oneLi
 	p.inline(open)
 	p.start = true
 	p.comments(open, indentUnit, false)
-	p.lineBreak(first, indentUnit, false)
-	p.write(indentLines(body, indentUnit))
+	if body != "" {
+		p.lineBreak(first, indentUnit, false)
+		p.write(indentLines(body, indentUnit))
+	} else {
+		// An empty group has no body line; one would print as a blank line that the next pass
+		// reads back as a blank before the closing delimiter.
+		p.comments(first, indentUnit, true)
+		p.inline(first)
+	}
 	p.comments(close, indentUnit, true)
 	p.newLine("")
 	p.write(")")
