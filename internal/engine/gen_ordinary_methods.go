@@ -11,6 +11,8 @@ import (
 	"sort"
 )
 
+// ordinaryMethodKey identifies a generated execution function by the parser type of its first
+// parameter, which is named p.
 type ordinaryMethodKey struct{ receiver, name string }
 
 func ordinaryExecutionMethods(src string) (map[ordinaryMethodKey]bool, error) {
@@ -21,41 +23,43 @@ func ordinaryExecutionMethods(src string) (map[ordinaryMethodKey]bool, error) {
 	methods := make(map[ordinaryMethodKey]bool)
 	for _, decl := range file.Decls {
 		fn, ok := decl.(*goast.FuncDecl)
-		if !ok || fn.Recv == nil {
+		if !ok {
 			continue
 		}
 		key, ok := ordinaryMethodIdentity(fn)
 		if !ok {
-			return nil, fmt.Errorf("unexpected generated execution receiver for %s", fn.Name.Name)
+			continue
 		}
 		if _, exists := methods[key]; exists {
-			return nil, fmt.Errorf("duplicate generated execution method %s", fn.Name.Name)
+			return nil, fmt.Errorf("duplicate generated execution function %s", fn.Name.Name)
 		}
 		methods[key] = false
 	}
 	if len(methods) == 0 {
-		return nil, fmt.Errorf("missing generated execution methods")
+		return nil, fmt.Errorf("missing generated execution functions")
 	}
 	return methods, nil
 }
 
+// ordinaryMethodIdentity recognizes a rule body or other generated function whose first parameter
+// is the parser p, a *Parser or a *TParser.
 func ordinaryMethodIdentity(fn *goast.FuncDecl) (ordinaryMethodKey, bool) {
-	if fn.Recv == nil || len(fn.Recv.List) != 1 {
+	if fn.Recv != nil || fn.Type.Params == nil || len(fn.Type.Params.List) == 0 {
 		return ordinaryMethodKey{}, false
 	}
-	recv := fn.Recv.List[0]
-	ptr, ok := recv.Type.(*goast.StarExpr)
+	first := fn.Type.Params.List[0]
+	ptr, ok := first.Type.(*goast.StarExpr)
 	if !ok {
 		return ordinaryMethodKey{}, false
 	}
 	typ, ok := ptr.X.(*goast.Ident)
-	if !ok || (typ.Name != "parser" && typ.Name != "tparser") || len(recv.Names) != 1 || recv.Names[0].Name != "p" {
+	if !ok || (typ.Name != "Parser" && typ.Name != "TParser") || len(first.Names) != 1 || first.Names[0].Name != "p" {
 		return ordinaryMethodKey{}, false
 	}
 	return ordinaryMethodKey{typ.Name, fn.Name.Name}, true
 }
 
-// specializeOrdinaryMethods gives generated execution methods a branch for
+// specializeOrdinaryMethods gives generated execution functions a branch for
 // ordinary parses, which runs under guard (p.control == nil, and outside a
 // Document if the parser has Documents). The general body remains unchanged.
 func specializeOrdinaryMethods(src []byte, executionSource, guard string) ([]byte, error) {
@@ -75,7 +79,7 @@ func specializeOrdinaryMethods(src []byte, executionSource, guard string) ([]byt
 	var insertions []insertion
 	for _, decl := range file.Decls {
 		fn, ok := decl.(*goast.FuncDecl)
-		if !ok || fn.Recv == nil || len(fn.Recv.List) != 1 || fn.Body == nil {
+		if !ok || fn.Body == nil {
 			continue
 		}
 		key, validReceiver := ordinaryMethodIdentity(fn)
@@ -117,7 +121,7 @@ func specializeOrdinaryMethods(src []byte, executionSource, guard string) ([]byt
 			}
 			return true
 		})
-		// Rewrite only reads of the receiver's control. Generated methods never
+		// Rewrite only reads of the parser's control. Generated functions never
 		// change invocation control ownership; reject a future writer explicitly.
 		var writer, shadow bool
 		goast.Inspect(plain, func(n goast.Node) bool {
@@ -163,10 +167,10 @@ func specializeOrdinaryMethods(src []byte, executionSource, guard string) ([]byt
 			return true
 		})
 		if writer {
-			return nil, fmt.Errorf("generated method %s writes invocation control", fn.Name.Name)
+			return nil, fmt.Errorf("generated function %s writes invocation control", fn.Name.Name)
 		}
 		if shadow {
-			return nil, fmt.Errorf("generated method %s shadows or replaces parser receiver", fn.Name.Name)
+			return nil, fmt.Errorf("generated function %s shadows or replaces the parser parameter", fn.Name.Name)
 		}
 		rewriteOrdinaryControl(plain)
 		var plainText bytes.Buffer
@@ -180,7 +184,7 @@ func specializeOrdinaryMethods(src []byte, executionSource, guard string) ([]byt
 	}
 	for key, found := range methods {
 		if !found {
-			return nil, fmt.Errorf("missing generated method %s.%s", key.receiver, key.name)
+			return nil, fmt.Errorf("missing generated function %s.%s", key.receiver, key.name)
 		}
 	}
 	// Positions from independently parsed clones must never be interpreted
@@ -207,7 +211,7 @@ func ordinaryReceiver(x goast.Expr) bool {
 	if id, ok := x.(*goast.Ident); ok {
 		return id.Name == "p"
 	}
-	if s, ok := x.(*goast.SelectorExpr); ok && s.Sel.Name == "p" {
+	if s, ok := x.(*goast.SelectorExpr); ok && s.Sel.Name == "P" {
 		if id, ok := s.X.(*goast.Ident); ok {
 			return id.Name == "c"
 		}
@@ -216,7 +220,7 @@ func ordinaryReceiver(x goast.Expr) bool {
 }
 func ordinaryControl(x goast.Expr) bool {
 	s, ok := x.(*goast.SelectorExpr)
-	return ok && s.Sel.Name == "control" && ordinaryReceiver(s.X)
+	return ok && s.Sel.Name == "Control" && ordinaryReceiver(s.X)
 }
 func stripOrdinaryWork(stmts []goast.Stmt) []goast.Stmt {
 	out := stmts[:0]
@@ -225,8 +229,8 @@ func stripOrdinaryWork(stmts []goast.Stmt) []goast.Stmt {
 		if e, ok := s.(*goast.ExprStmt); ok {
 			if c, ok := e.X.(*goast.CallExpr); ok {
 				if sel, ok := c.Fun.(*goast.SelectorExpr); ok && ordinaryReceiver(sel.X) {
-					drop = sel.Sel.Name == "stepWork" && len(c.Args) == 0
-					if sel.Sel.Name == "inputWork" && len(c.Args) == 1 {
+					drop = sel.Sel.Name == "StepWork" && len(c.Args) == 0
+					if sel.Sel.Name == "InputWork" && len(c.Args) == 1 {
 						if v, ok := c.Args[0].(*goast.BasicLit); ok {
 							drop = v.Kind == token.INT && v.Value == "1"
 						}
@@ -280,8 +284,8 @@ func rewriteOrdinaryControl(root goast.Node) {
 // the nil-control branch calls instead (the runtime writes them by hand).
 func ordinaryHelperName(name string) bool {
 	switch name {
-	case "newNode", "newMatch", "setCapture", "expect", "peek", "matchLiteral", "matchAny",
-		"atEnd", "atLineStart", "atLineEnd", "inputWork":
+	case "NewNode", "NewMatch", "SetCapture", "Expect", "Peek", "MatchLiteral", "MatchAny",
+		"AtEnd", "AtLineStart", "AtLineEnd", "InputWork":
 		return true
 	}
 	return false
@@ -293,10 +297,10 @@ func removeControlRead(field reflect.Value) {
 		return
 	}
 	selector, ok := field.Interface().(*goast.SelectorExpr)
-	if !ok || selector.Sel.Name != "control" {
+	if !ok || selector.Sel.Name != "Control" {
 		return
 	}
 	// The nil expression preserves signatures and ordinary converter mappings.
-	nilControl := &goast.CallExpr{Fun: &goast.ParenExpr{X: &goast.StarExpr{X: goast.NewIdent("workControl")}}, Args: []goast.Expr{goast.NewIdent("nil")}}
+	nilControl := &goast.CallExpr{Fun: &goast.ParenExpr{X: &goast.StarExpr{X: goast.NewIdent("WorkControl")}}, Args: []goast.Expr{goast.NewIdent("nil")}}
 	field.Set(reflect.ValueOf(nilControl))
 }

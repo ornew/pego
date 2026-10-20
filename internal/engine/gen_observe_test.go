@@ -185,8 +185,8 @@ func TestFilteringAndIsolation(t *testing.T){
  // A later invocation must have no prior callback, even after pooling.
  calls:=0;Parse(INPUT,WithTrace(func(TraceEvent){calls++}));before:=calls
  Parse(INPUT);if calls!=before{t.Fatal("observer leaked across parses")}
- private:=&parser{observation:&observation{trace:func(TraceEvent){}}}
- private.release();if private.observation!=nil {t.Fatal("pool retained observer")}
+ private:=&Parser{Observation:&observation{trace:func(TraceEvent){}}}
+ private.release();if private.Observation!=nil {t.Fatal("pool retained observer")}
 }
 func TestCallbackPanicAndInterruption(t *testing.T){
  marker:=&struct{n int}{7}

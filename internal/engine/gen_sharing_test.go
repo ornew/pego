@@ -54,13 +54,13 @@ func TestGeneratedSharingIdentity(t *testing.T) {
 	}
 	g.table = "rules"
 	for _, body := range []string{
-		"return p.matchLiteral(lit1, \"x\", 4, false)\n",
-		"return p.matchLiteral(lit1, \"x\", 5, false)\n",
-		"return p.matchLiteral(lit1, \"x\", 4, true)\n",
-		"return p.call(rules[0], 0)\n",
-		"return p.call(recRules[0], 0)\n",
-		"return p.frame.vals[0], true\n",
-		"return p.frame.vals[1], true\n",
+		"return p.MatchLiteral(lit1, \"x\", 4, false)\n",
+		"return p.MatchLiteral(lit1, \"x\", 5, false)\n",
+		"return p.MatchLiteral(lit1, \"x\", 4, true)\n",
+		"return p.Call(rules[0], 0)\n",
+		"return p.Call(recRules[0], 0)\n",
+		"return p.Frame.Vals[0], true\n",
+		"return p.Frame.Vals[1], true\n",
 	} {
 		before := g.methods.Len()
 		g.method("", body)

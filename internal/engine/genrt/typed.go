@@ -10,19 +10,21 @@ import (
 // The typed runtime, appended to generated parsers made with pego gen -types. It parses like the
 // runtime in runtime.go, but builds the values of the grammar's types directly, as Go values,
 // instead of Node trees: the value of an expression is an any holding a pointer to a struct
-// type, *tmatch (a string node), *terror (an error value), an int, string or bool, nil,
-// or a *tnode: a tuple node, a list node, or a tuple or list value. Values other than
+// type, *TMatch (a string node), *TError (an error value), an int, string or bool, nil,
+// or a *TSeq: a tuple node, a list node, or a tuple or list value. Values other than
 // nodes need no carrier, as they do in Node trees. Every step mirrors runtime.go, so the result is
 // that of converting the Node tree that Parse returns.
 //
-// tparser embeds the parser and redefines the methods that handle values; the generated
+// TParser embeds the parser and redefines the methods that handle values; the generated
 // methods of the typed rules (trules) run on it.
 
 // Span is the range of input a typed value covers, in the parse's position unit (End is exclusive).
+//
+// Of its fields and methods, TSetSpan, TSpan are for generated parsers; not a stable API.
 type Span struct{ Start, End int }
 
-func (s *Span) tspan() (int, int)       { return s.Start, s.End }
-func (s *Span) tsetSpan(start, end int) { s.Start, s.End = start, end }
+func (s *Span) TSpan() (int, int)       { return s.Start, s.End }
+func (s *Span) TSetSpan(start, end int) { s.Start, s.End = start, end }
 
 // TNode is a node whose Value has type T: a string node (TNode[string]) holds the text a
 // literal, a character class, ., a #atomic or _ matched, and a tuple or list node holds its
@@ -40,34 +42,38 @@ type Error struct {
 	Message string
 }
 
-// tmatch and terror are a string node and an Error while the typed runtime handles them: whether
-// the value is fresh (see Node.fresh) is part of the state of the parse, not of the result. The
-// result holds pointers to the embedded TNode[string] and Error (tpub). A string node of a named
-// node type has nt, the type's registered index (tregisterNodeType; 0 for a plain string node).
-type tmatch struct {
+// TMatch and TError are a string node and an Error while the typed runtime handles them: whether
+// the value is fresh (see Node.RawFresh) is part of the state of the parse, not of the result. The
+// result holds pointers to the embedded TNode[string] and Error (TPub). A string node of a named
+// node type has nt, the type's registered index (TRegisterNodeType; 0 for a plain string node).
+//
+// TMatch is for generated parsers; not a stable API.
+type TMatch struct {
 	TNode[string]
 	fresh bool
-	nt    uint16
+	Nt    uint16
 }
 
 // tnodeType is a registered named node type: its name, and pub, which returns the public form of
 // a value x of the type with the generated code's chunks a (a *tslabs, or nil).
 type tnodeType struct {
 	name string
-	pub  func(a any, x tval) any
+	pub  func(a any, x TVal) any
 }
 
-// tnodeTypes holds the registered named node types of all grammars by their index (nt) in tmatch
-// and tnode; index 0 is no named node type. Registration copies the table, so readers never
+// tnodeTypes holds the registered named node types of all grammars by their index (nt) in TMatch
+// and TSeq; index 0 is no named node type. Registration copies the table, so readers never
 // lock.
 var (
 	tnodeTypes   atomic.Pointer[[]tnodeType]
 	tnodeTypesMu sync.Mutex
 )
 
-// tregisterNodeType registers a named node type of a grammar and returns its index. Types of
+// TRegisterNodeType registers a named node type of a grammar and returns its index. Types of
 // different grammars have different indexes even when their names are the same.
-func tregisterNodeType(name string, pub func(a any, x tval) any) uint16 {
+//
+// TRegisterNodeType is for generated parsers; not a stable API.
+func TRegisterNodeType(name string, pub func(a any, x TVal) any) uint16 {
 	tnodeTypesMu.Lock()
 	defer tnodeTypesMu.Unlock()
 	old := []tnodeType{{}}
@@ -87,28 +93,33 @@ func tnodeTypeOf(nt uint16) *tnodeType {
 	return &(*tnodeTypes.Load())[nt]
 }
 
-type terror struct {
+// TError is for generated parsers; not a stable API.
+type TError struct {
 	Error
 	fresh bool
 }
 
-// tpub returns the public form of a value: *TNode[string] and *Error for tmatch and terror, a
+// TPub returns the public form of a value: *TNode[string] and *Error for TMatch and TError, a
 // *TNode[any] for a tuple or list node and a []any for a tuple or list value, with the public
 // forms of their elements.
-func tpub(v any) any { return tpubIn(nil, v) }
+//
+// TPub is for generated parsers; not a stable API.
+func TPub(v any) any { return TPubIn(nil, v) }
 
-// tpubIn is tpub with the generated code's chunks a (a *tslabs, or nil), which the public forms of
+// TPubIn is TPub with the generated code's chunks a (a *tslabs, or nil), which the public forms of
 // values of named node types (tnodeType.pub) are made from and remembered in.
-func tpubIn(a any, v any) any {
+//
+// TPubIn is for generated parsers; not a stable API.
+func TPubIn(a any, v any) any {
 	switch x := v.(type) {
-	case *tmatch:
-		if x.nt != 0 {
-			return tnodeTypeOf(x.nt).pub(a, x)
+	case *TMatch:
+		if x.Nt != 0 {
+			return tnodeTypeOf(x.Nt).pub(a, x)
 		}
 		return &x.TNode
-	case *terror:
+	case *TError:
 		return &x.Error
-	case *tnode:
+	case *TSeq:
 		if x.nt != 0 {
 			return tnodeTypeOf(x.nt).pub(a, x)
 		}
@@ -119,27 +130,31 @@ func tpubIn(a any, v any) any {
 
 // tpubElems returns the public form of a tuple or list node, or a tuple or list value, x as a
 // plain node or value (also for a node of a named node type).
-func tpubElems(a any, x *tnode) any {
-	elems := make([]any, len(x.kids))
-	for i, k := range x.kids {
-		elems[i] = tpubIn(a, k)
+func tpubElems(a any, x *TSeq) any {
+	elems := make([]any, len(x.Kids))
+	for i, k := range x.Kids {
+		elems[i] = TPubIn(a, k)
 	}
-	if x.typ == typeTupleValue || x.typ == typeListValue {
+	if x.Typ == TypeTupleValue || x.Typ == TypeListValue {
 		return elems
 	}
 	return &TNode[any]{x.Span, elems}
 }
 
-// tpubNode returns the public form of a node of a statically unknown value: a TNode[any], also for
+// TPubNode returns the public form of a node of a statically unknown value: a TNode[any], also for
 // a node of a named node type, as the node it was converted from.
-func tpubNode(v any) *TNode[any] { return tpubNodeIn(nil, v) }
+//
+// TPubNode is for generated parsers; not a stable API.
+func TPubNode(v any) *TNode[any] { return TPubNodeIn(nil, v) }
 
-// tpubNodeIn is tpubNode with the chunks a (see tpubIn).
-func tpubNodeIn(a any, v any) *TNode[any] {
+// TPubNodeIn is TPubNode with the chunks a (see TPubIn).
+//
+// TPubNodeIn is for generated parsers; not a stable API.
+func TPubNodeIn(a any, v any) *TNode[any] {
 	switch x := v.(type) {
-	case *tmatch:
+	case *TMatch:
 		return &TNode[any]{x.Span, x.Value}
-	case *tnode:
+	case *TSeq:
 		if n, ok := tpubElems(a, x).(*TNode[any]); ok {
 			return n
 		}
@@ -147,74 +162,100 @@ func tpubNodeIn(a any, v any) *TNode[any] {
 	return nil
 }
 
-// tmatchAs returns the public form of x, a string node of a named node type whose Go type N is
+// TMatchAs returns the public form of x, a string node of a named node type whose Go type N is
 // struct{ TNode[string] }: N has the layout of TNode[string] (the generated code asserts their
 // sizes are equal), so the public value is x's own TNode seen as an N. A node so publishes as one
 // value wherever it appears, as a plain string node does, without allocating or remembering it.
-func tmatchAs[N any](x *tmatch) *N {
+//
+// TMatchAs is for generated parsers; not a stable API.
+func TMatchAs[N any](x *TMatch) *N {
 	return (*N)(unsafe.Pointer(&x.TNode))
 }
 
-func tpubMatch(v any) *TNode[string] {
-	if x, ok := v.(*tmatch); ok {
+// TPubMatch is for generated parsers; not a stable API.
+func TPubMatch(v any) *TNode[string] {
+	if x, ok := v.(*TMatch); ok {
 		return &x.TNode
 	}
 	return nil
 }
 
-func tpubError(v any) *Error {
-	if x, ok := v.(*terror); ok {
+// TPubError is for generated parsers; not a stable API.
+func TPubError(v any) *Error {
+	if x, ok := v.(*TError); ok {
 		return &x.Error
 	}
 	return nil
 }
 
-// tval is a node value of the typed runtime: a value of a struct type, *tmatch,
-// *terror or *tnode.
-type tval interface {
-	tspan() (int, int)
-	tsetSpan(start, end int)
-	tname() string                  // type name
-	ttext() (string, bool)          // text of a string node or an error value
-	tkids() []any                   // children of a CST node
-	tfield(name string) (any, bool) // field value, and whether the type has the field (structs)
-	tstruct() bool                  // a struct type
-	tfresh() bool
-	tsetFresh(bool)
+// workControlSetter is implemented by the output values a typed parse hands its work control to
+// (the generated converters).
+//
+// SetWorkControl is for generated parsers; not a stable API.
+type workControlSetter interface{ SetWorkControl(*WorkControl) }
+
+// tfieldWorker is implemented by struct values that read a field while charging work.
+//
+// TFieldWork is for generated parsers; not a stable API.
+type tfieldWorker interface {
+	TFieldWork(*TParser, string) (any, bool)
 }
 
-func (m *tmatch) tname() string {
-	if m.nt != 0 {
-		return tnodeTypeOf(m.nt).name
+// stepCharger charges steps to a work control.
+//
+// Step is for generated parsers; not a stable API.
+type stepCharger interface{ Step(uint64) }
+
+// TVal is a node value of the typed runtime: a value of a struct type, *TMatch,
+// *TError or *TSeq.
+//
+// TVal is for generated parsers; not a stable API.
+type TVal interface {
+	TSpan() (int, int)
+	TSetSpan(start, end int)
+	TName() string                  // type name
+	TText() (string, bool)          // text of a string node or an error value
+	TKids() []any                   // children of a CST node
+	TField(name string) (any, bool) // field value, and whether the type has the field (structs)
+	TStruct() bool                  // a struct type
+	TFresh() bool
+	TSetFresh(bool)
+}
+
+func (m *TMatch) TName() string {
+	if m.Nt != 0 {
+		return tnodeTypeOf(m.Nt).name
 	}
 	return "string"
 }
-func (m *tmatch) ttext() (string, bool)     { return m.Value, true }
-func (m *tmatch) tkids() []any              { return nil }
-func (m *tmatch) tfield(string) (any, bool) { return nil, true }
-func (m *tmatch) tstruct() bool             { return false }
-func (m *tmatch) tfresh() bool              { return m.fresh }
-func (m *tmatch) tsetFresh(f bool)          { m.fresh = f }
-func (e *terror) tname() string             { return "error" }
-func (e *terror) ttext() (string, bool)     { return e.Text, true }
-func (e *terror) tkids() []any              { return nil }
-func (e *terror) tstruct() bool             { return false }
-func (e *terror) tfresh() bool              { return e.fresh }
-func (e *terror) tsetFresh(f bool)          { e.fresh = f }
-func (e *terror) tfield(name string) (any, bool) {
+func (m *TMatch) TText() (string, bool)     { return m.Value, true }
+func (m *TMatch) TKids() []any              { return nil }
+func (m *TMatch) TField(string) (any, bool) { return nil, true }
+func (m *TMatch) TStruct() bool             { return false }
+func (m *TMatch) TFresh() bool              { return m.fresh }
+func (m *TMatch) TSetFresh(f bool)          { m.fresh = f }
+func (e *TError) TName() string             { return "error" }
+func (e *TError) TText() (string, bool)     { return e.Text, true }
+func (e *TError) TKids() []any              { return nil }
+func (e *TError) TStruct() bool             { return false }
+func (e *TError) TFresh() bool              { return e.fresh }
+func (e *TError) TSetFresh(f bool)          { e.fresh = f }
+func (e *TError) TField(name string) (any, bool) {
 	if name == "message" {
 		return e.Message, true
 	}
 	return nil, true
 }
 
-// tnode is a tuple node, a list node, a tuple value (typeTupleValue) or a list value
-// (typeListValue) of the typed runtime. A tuple node's fields are its captures. A tuple or list
-// node of a named node type has nt, as tmatch does; typ stays "tuple" or "list".
-type tnode struct {
+// TSeqis a tuple node, a list node, a tuple value (TypeTupleValue) or a list value
+// (TypeListValue) of the typed runtime. A tuple node's fields are its captures. A tuple or list
+// node of a named node type has nt, as TMatch does; typ stays "tuple" or "list".
+//
+// TSeq is for generated parsers; not a stable API.
+type TSeq struct {
 	Span
-	typ    string
-	kids   []any
+	Typ    string
+	Kids   []any
 	fields []tfield
 	fresh  bool
 	nt     uint16
@@ -225,18 +266,18 @@ type tfield struct {
 	val  any
 }
 
-func (n *tnode) tname() string {
+func (n *TSeq) TName() string {
 	if n.nt != 0 {
 		return tnodeTypeOf(n.nt).name
 	}
-	return n.typ
+	return n.Typ
 }
-func (n *tnode) ttext() (string, bool) { return "", false }
-func (n *tnode) tkids() []any          { return n.kids }
-func (n *tnode) tstruct() bool         { return false }
-func (n *tnode) tfresh() bool          { return n.fresh }
-func (n *tnode) tsetFresh(f bool)      { n.fresh = f }
-func (n *tnode) tfield(name string) (any, bool) {
+func (n *TSeq) TText() (string, bool) { return "", false }
+func (n *TSeq) TKids() []any          { return n.Kids }
+func (n *TSeq) TStruct() bool         { return false }
+func (n *TSeq) TFresh() bool          { return n.fresh }
+func (n *TSeq) TSetFresh(f bool)      { n.fresh = f }
+func (n *TSeq) TField(name string) (any, bool) {
 	for _, f := range n.fields {
 		if f.name == name {
 			return f.val, true
@@ -245,7 +286,7 @@ func (n *tnode) tfield(name string) (any, bool) {
 	return nil, true
 }
 
-func (n *tnode) set(name string, v any) {
+func (n *TSeq) set(name string, v any) {
 	for i := range n.fields {
 		if n.fields[i].name == name {
 			n.fields[i].val = v
@@ -255,127 +296,139 @@ func (n *tnode) set(name string, v any) {
 	n.fields = append(n.fields, tfield{name, v})
 }
 
-// tshape is Node.shape for the values of the typed runtime that are tval.
-func tshape(n tval) nodeShape {
+// tshape is Node.shape for the values of the typed runtime that are TVal.
+func tshape(n TVal) nodeShape {
 	switch x := n.(type) {
-	case *terror:
+	case *TError:
 		return shapeError
-	case *tnode:
-		switch x.typ {
+	case *TSeq:
+		switch x.Typ {
 		case "list":
 			return shapeList
-		case typeTupleValue:
+		case TypeTupleValue:
 			return shapeTupleValue
-		case typeListValue:
+		case TypeListValue:
 			return shapeListValue
 		}
 		return shapeTuple
 	}
-	if n.tstruct() {
+	if n.TStruct() {
 		return shapeStruct
 	}
 	return shapeString
 }
 
-// asTval returns v as a node value, or nil. Values never hold nil pointers: nil is always the
+// AsTval returns v as a node value, or nil. Values never hold nil pointers: nil is always the
 // untyped nil.
-func asTval(v any) tval {
-	n, _ := v.(tval)
+//
+// AsTval is for generated parsers; not a stable API.
+func AsTval(v any) TVal {
+	n, _ := v.(TVal)
 	return n
 }
 
 // tisNode reports whether n is a node of the value model (a string node, a tuple or list node,
 // or an error value) rather than a struct or a list or tuple value; see Node.isNode.
-func tisNode(n tval) bool {
-	if t, ok := n.(*tnode); ok {
-		return t.typ == "tuple" || t.typ == "list"
+func tisNode(n TVal) bool {
+	if t, ok := n.(*TSeq); ok {
+		return t.Typ == "tuple" || t.Typ == "list"
 	}
-	return !n.tstruct()
+	return !n.TStruct()
 }
 
 // nodeValue returns the Value of the node n: its text for a string node or an error value, and a
 // tuple or list value sharing its elements otherwise (see parser.nodeValue).
-func (p *tparser) nodeValue(n tval) any {
-	if text, ok := n.ttext(); ok {
+func (p *TParser) nodeValue(n TVal) any {
+	if text, ok := n.TText(); ok {
 		return text
 	}
-	s, e := n.tspan()
-	typ := typeTupleValue
-	if t, ok := n.(*tnode); ok && t.typ == "list" {
-		typ = typeListValue
+	s, e := n.TSpan()
+	typ := TypeTupleValue
+	if t, ok := n.(*TSeq); ok && t.Typ == "list" {
+		typ = TypeListValue
 	}
-	v := p.newNode(typ, s, e, n.tkids())
+	v := p.NewNode(typ, s, e, n.TKids())
 	v.fresh = false
 	return v
 }
 
 // --- Rules ---
 
-// trule is a rule of the typed runtime: the rule's analysis results and its typed body.
-type trule struct {
-	*rule
-	body          func(p *tparser, min int) (any, bool)
-	action        func(c *tctx) any
-	operatorsRule *toperatorsRule
+// TRule is a rule of the typed runtime: the rule's analysis results and its typed body.
+//
+// TRule is for generated parsers; not a stable API.
+type TRule struct {
+	*Rule
+	Body          func(p *TParser, min int) (any, bool)
+	Action        func(c *TActCtx) any
+	OperatorsRule *TOperatorsRule
 	// tcheck checks the rule's value against its declared type (nil if it needs no check).
-	tcheck func(p *tparser, v any)
-	// entry is the generated method that calls the rule as call(r, 0) does (u<id> or s<id>), for
+	tcheck func(p *TParser, v any)
+	// Entry is the generated method that calls the rule as call(r, 0) does (u<id> or s<id>), for
 	// rules that have one. A direct rule (see gen_direct.go) has no body or action and is called
 	// only through it.
-	entry func(p *tparser) (any, bool)
-	// nt is the registered index of the named node type the rule's value is converted to
-	// (rule.nodeType), or 0.
-	nt uint16
+	Entry func(p *TParser) (any, bool)
+	// Nt is the registered index of the named node type the rule's value is converted to
+	// (rule.NodeType), or 0.
+	Nt uint16
 }
 
-// tAs returns v as a T, or the zero T (nil) if it is not one.
-func tAs[T any](v any) T {
+// TAs returns v as a T, or the zero T (nil) if it is not one.
+//
+// TAs is for generated parsers; not a stable API.
+func TAs[T any](v any) T {
 	t, _ := v.(T)
 	return t
 }
 
-// tptr and tderef return the value of a field of a pointer type as a value of the typed runtime.
-func tptr[T any](p *T) any {
+// TPtr and tderef return the value of a field of a pointer type as a value of the typed runtime.
+//
+// TPtr is for generated parsers; not a stable API.
+func TPtr[T any](p *T) any {
 	if p == nil {
 		return nil
 	}
 	return p
 }
 
-// tback returns the value of a field of an open type (a string node, a tuple or list node, an
+// TBack returns the value of a field of an open type (a string node, a tuple or list node, an
 // error value, a union, node or any) as a value of the typed runtime: the inverse of
-// tpub, except that a tuple or list node becomes a tuple node and a []any a tuple value.
-func tback(v any) any {
+// TPub, except that a tuple or list node becomes a tuple node and a []any a tuple value.
+//
+// TBack is for generated parsers; not a stable API.
+func TBack(v any) any {
 	switch x := v.(type) {
 	case *TNode[string]:
 		if x == nil {
 			return nil
 		}
-		return &tmatch{TNode: *x}
+		return &TMatch{TNode: *x}
 	case *Error:
 		if x == nil {
 			return nil
 		}
-		return &terror{Error: *x}
+		return &TError{Error: *x}
 	case *TNode[any]:
 		if x == nil {
 			return nil
 		}
 		switch y := x.Value.(type) {
 		case string:
-			return &tmatch{TNode: TNode[string]{x.Span, y}}
+			return &TMatch{TNode: TNode[string]{x.Span, y}}
 		case []any:
-			return &tnode{Span: x.Span, typ: "tuple", kids: tbackAll(y)}
+			return &TSeq{Span: x.Span, Typ: "tuple", Kids: tbackAll(y)}
 		}
 		return nil
 	case []any:
-		return &tnode{typ: typeTupleValue, kids: tbackAll(x)}
+		return &TSeq{Typ: TypeTupleValue, Kids: tbackAll(x)}
 	}
 	return v
 }
 
-// tkid returns element i of a tuple's elements (nil if there is none).
-func tkid(kids []any, i int) any {
+// TKid returns element i of a tuple's elements (nil if there is none).
+//
+// TKid is for generated parsers; not a stable API.
+func TKid(kids []any, i int) any {
 	if i < len(kids) {
 		return kids[i]
 	}
@@ -383,18 +436,18 @@ func tkid(kids []any, i int) any {
 }
 
 // tnodeValue returns the Value of a tuple or list node as a tuple or list value.
-func tnodeValue(n *tnode) any {
-	typ := typeTupleValue
-	if n.typ == "list" {
-		typ = typeListValue
+func tnodeValue(n *TSeq) any {
+	typ := TypeTupleValue
+	if n.Typ == "list" {
+		typ = TypeListValue
 	}
-	return &tnode{Span: n.Span, typ: typ, kids: n.kids}
+	return &TSeq{Span: n.Span, Typ: typ, Kids: n.Kids}
 }
 
 func tbackAll(vs []any) []any {
 	out := make([]any, len(vs))
 	for i, v := range vs {
-		out[i] = tback(v)
+		out[i] = TBack(v)
 	}
 	return out
 }
@@ -406,16 +459,18 @@ func tderef[T any](p *T) any {
 	return *p
 }
 
-// tlistOf returns a list value of kids, for reading a list field of a struct in an action.
-func tlistOf(kids []any) any {
-	n := &tnode{typ: typeListValue, kids: kids}
+// TListOf returns a list value of kids, for reading a list field of a struct in an action.
+//
+// TListOf is for generated parsers; not a stable API.
+func TListOf(kids []any) any {
+	n := &TSeq{Typ: TypeListValue, Kids: kids}
 	first := true
 	for _, it := range kids {
-		t := asTval(it)
+		t := AsTval(it)
 		if t == nil {
 			continue
 		}
-		s, e := t.tspan()
+		s, e := t.TSpan()
 		if first || s < n.Start {
 			n.Start = s
 		}
@@ -427,58 +482,62 @@ func tlistOf(kids []any) any {
 	return n
 }
 
-// tparse parses the whole input with the typed rule r, and returns the result converted by conv
+// TParse parses the whole input with the typed rule r, and returns the result converted by conv
 // (before the parser's scratch memory, which the result may be in, is cleared). ext holds the
 // generated code's chunks.
-func tparse[T any](r *trule, input string, opts []ParseOption, ext any, conv func(any) T) (T, error) {
-	o, err := resolveOptions(r.g, opts)
+//
+// TParse is for generated parsers; not a stable API.
+func TParse[T any](r *TRule, input string, opts []ParseOption, ext any, conv func(any) T) (T, error) {
+	o, err := ResolveOptions(r.g, opts)
 	if err != nil {
 		var zero T
 		return zero, err
 	}
-	return tparseResolved(r, input, o, ext, conv)
+	return TParseResolved(r, input, o, ext, conv)
 }
 
-// tparseResolved consumes options already applied by the public entry point.
-func tparseResolved[T any](r *trule, input string, o parseOptions, ext any, conv func(any) T) (res T, err error) {
+// TParseResolved consumes options already applied by the public entry point.
+//
+// TParseResolved is for generated parsers; not a stable API.
+func TParseResolved[T any](r *TRule, input string, o parseOptions, ext any, conv func(any) T) (res T, err error) {
 	defer recoverParse(&res, &err)
 	o = prepareOptions(o)
-	p, _ := tpool.Get().(*tparser)
+	p, _ := tpool.Get().(*TParser)
 	if p == nil {
-		p = &tparser{parser: &parser{}}
+		p = &TParser{Parser: &Parser{}}
 	}
 	defer func() { p.recycle(); tpool.Put(p) }()
-	p.control = o.control
-	p.observation = newObservation(&o.observe)
+	p.Control = o.control
+	p.Observation = newObservation(&o.observe)
 	if o.control != nil {
-		if target, ok := ext.(interface{ setWorkControl(*workControl) }); ok {
-			target.setWorkControl(o.control)
-			defer target.setWorkControl(nil)
+		if target, ok := ext.(workControlSetter); ok {
+			target.SetWorkControl(o.control)
+			defer target.SetWorkControl(nil)
 		}
 	}
 	v, err := p.run(r, input, o, ext)
 	if v == nil {
 		return res, err
 	}
-	o.control.check()
+	o.control.Check()
 	res = conv(v)
-	o.control.check()
+	o.control.Check()
 	return res, err
 }
 
 // run parses the whole input with the typed rule r.
-func (p *tparser) run(r *trule, input string, o parseOptions, ext any) (v any, err error) {
-	p.maxDepth = o.maxDepth
-	p.ext = ext
+func (p *TParser) run(r *TRule, input string, o parseOptions, ext any) (v any, err error) {
+	p.MaxDepth = o.maxDepth
+	p.Ext = ext
 	p.setGrammar(r.g)
 	if o.unit == Bytes {
-		// p.in stays empty: direct rules read code points from it while p.pos < len(p.in).
-		p.unit, p.bs, p.n, p.in = Bytes, input, len(input), p.in[:0]
+		// p.In stays empty: direct rules read code points from it while p.Pos < len(p.In).
+		p.unit, p.bs, p.n, p.In = Bytes, input, len(input), p.In[:0]
 	} else {
 		p.setSource(input)
 	}
-	if p.typedDocument != nil {
-		p.document = p.typedDocument.owner
+	if p.TypedDocument != nil {
+		p.Document = p.TypedDocument.owner
 	}
 	p.memo.sparse = p.memo.stride > 64 && p.n > 1024
 	defer func() {
@@ -487,34 +546,34 @@ func (p *tparser) run(r *trule, input string, o parseOptions, ext any) (v any, e
 			case fatal:
 				v, err = nil, x.err
 			case evalError: // in an action (predicates recover their own)
-				v, err = nil, p.wrapEvalError(p.where, x.msg)
+				v, err = nil, p.wrapEvalError(p.Where, x.msg)
 			default:
 				panic(x)
 			}
 		}
 	}()
 	var ok bool
-	if r.entry != nil {
-		v, ok = r.entry(p)
+	if r.Entry != nil {
+		v, ok = r.Entry(p)
 	} else {
-		v, ok = p.call(r, 0)
+		v, ok = p.Call(r, 0)
 	}
 	// Normal completion polls even for a nil typed value. Fatal unwinding
 	// returns through the recovery above without replacing its established error.
-	p.control.check()
-	if ok && p.pos == p.n {
-		if len(p.recovered) > 0 {
-			errors := p.copyErrors(nil, p.recovered)
-			p.control.check()
+	p.Control.Check()
+	if ok && p.Pos == p.n {
+		if len(p.Recovered) > 0 {
+			errors := p.copyErrors(nil, p.Recovered)
+			p.Control.Check()
 			return v, SyntaxErrors(errors)
 		}
 		return v, nil
 	}
 	if ok {
-		p.expect(p.pos, idEndInput)
+		p.Expect(p.Pos, IdEndInput)
 	}
-	e := p.makeError(p.farthest, p.exp[p.expBase:])
-	p.control.check()
+	e := p.MakeError(p.farthest, p.exp[p.expBase:])
+	p.Control.Check()
 	return nil, e
 }
 
@@ -524,32 +583,32 @@ func (p *tparser) run(r *trule, input string, o parseOptions, ext any) (v any, e
 var tpool sync.Pool
 
 // recycle clears the parser for the next parse, keeping its scratch memory.
-func (p *tparser) recycle() {
-	q := p.parser
+func (p *TParser) recycle() {
+	q := p.Parser
 	memo := memoTable{seen: q.memo.seen, calls: q.memo.calls, pages: q.memo.pages, bitPages: q.memo.bitPages}
 	// Retain useful sparse pages for large inputs, capped at 32 MiB of backing
 	// storage. The next small parse trims this cache when it finishes.
 	memo.resetSeen(max(1<<20, min(q.n, 4<<20)))
-	in, offs := q.in[:0], q.offs[:0]
+	in, offs := q.In[:0], q.offs[:0]
 	if cap(in) > 1<<20 { // do not keep the buffers of a large input for every later parse
 		in, offs = nil, nil
 	}
-	*q = parser{in: in, offs: offs, exp: q.exp[:0], arena: q.arena[:0]}
+	*q = Parser{In: in, offs: offs, exp: q.exp[:0], arena: q.arena[:0]}
 	q.memo = memo
 	p.nodes.reset()
 	p.vals.reset()
 	p.frames.reset()
 	p.fields.reset()
 	p.memoSlab.reset()
-	clear(p.trail[:cap(p.trail)])
-	clear(p.kidStack)
+	clear(p.Trail[:cap(p.Trail)])
+	clear(p.KidStack)
 	clear(p.saved[:cap(p.saved)])
 	clear(p.memoSlots)
 	free := p.free
 	for i := range free {
 		free[i] = free[i][:0]
 	}
-	*p = tparser{parser: q, trail: p.trail[:0], kidStack: p.kidStack[:0], saved: p.saved[:0], memoSlots: p.memoSlots[:0],
+	*p = TParser{Parser: q, Trail: p.Trail[:0], KidStack: p.KidStack[:0], saved: p.saved[:0], memoSlots: p.memoSlots[:0],
 		nodes: p.nodes, vals: p.vals, frames: p.frames, fields: p.fields, memoSlab: p.memoSlab, free: free}
 }
 
@@ -589,148 +648,152 @@ func (a *tarena[T]) reset() {
 	a.ci, a.off = 0, 0
 }
 
-// tparser is the parser state of the typed runtime.
-type tparser struct {
-	*parser
-	ext      any    // the generated code's allocation chunks
-	where    string // the rule whose action is being evaluated
-	frame    *tframe
-	trail    []tundo
-	created  []tval // struct values made by the action being evaluated
-	kidStack []any
-	ac       tctx
+// TParser is the parser state of the typed runtime.
+//
+// TParser is for generated parsers; not a stable API.
+type TParser struct {
+	*Parser
+	Ext      any    // the generated code's allocation chunks
+	Where    string // the rule whose action is being evaluated
+	Frame    *TCaptureFrame
+	Trail    []tundo
+	Created  []TVal // struct values made by the action being evaluated
+	KidStack []any
+	ac       TActCtx
 	saved    []any
-	matches  []tmatch // returned in values, so not kept for the next parse
+	matches  []TMatch // returned in values, so not kept for the next parse
 	// Scratch memory, kept for the next parse (recycle).
-	nodes     tarena[tnode]
+	nodes     tarena[TSeq]
 	vals      tarena[any]
-	frames    tarena[tframe]
+	frames    tarena[TCaptureFrame]
 	fields    tarena[tfield]
 	memoSlab  tarena[tmemoEntry]
 	memoSlots []*tmemoEntry // memo entries by position (chains)
-	// typedDocument is set only by typed Document parses (typedDocumentParse).
-	typedDocument *typedDocumentState
-	free          [8][]*tframe // frames freed by freeFrame, by size
+	// TypedDocument is set only by typed Document parses (TypedDocumentParse).
+	TypedDocument *typedDocumentState
+	free          [8][]*TCaptureFrame // frames freed by FreeFrame, by size
 }
 
-type tframe struct{ vals []any }
+// TCaptureFramereFrame is for generated parsers; not a stable API.
+type TCaptureFrame struct{ Vals []any }
 
-// freeFrame makes the frame f, which nothing refers to any more, available to newFrame. A rule's
+// FreeFrame makes the frame f, which nothing refers to any more, available to NewFrame. A rule's
 // frame is dead when the rule returns: the values have been copied into its result, and the
 // trail entries that refer to it are gone.
-func (p *tparser) freeFrame(f *tframe) {
-	n := len(f.vals)
+func (p *TParser) FreeFrame(f *TCaptureFrame) {
+	n := len(f.Vals)
 	if n == 0 || n >= len(p.free) {
 		return
 	}
-	clear(f.vals)
+	clear(f.Vals)
 	p.free[n] = append(p.free[n], f)
 }
 
-var emptyTFrame = &tframe{}
+// EmptyTFrame is for generated parsers; not a stable API.
+var EmptyTFrame = &TCaptureFrame{}
 
 type tundo struct {
-	f    *tframe
+	f    *TCaptureFrame
 	slot int
 	old  any
 }
 
-func (p *tparser) mark() mark {
-	return mark{pos: p.pos, env: p.env, trail: len(p.trail), recovered: len(p.recovered)}
+func (p *TParser) Mark() Mark {
+	return Mark{Pos: p.Pos, env: p.Env, Trail: len(p.Trail), recovered: len(p.Recovered)}
 }
 
-func (p *tparser) reset(m mark) {
-	p.pos = m.pos
-	p.env = m.env
-	p.recovered = p.recovered[:m.recovered]
-	p.undoCaptures(m.trail)
-	p.dropTrail(m.trail)
+func (p *TParser) Reset(m Mark) {
+	p.Pos = m.Pos
+	p.Env = m.env
+	p.Recovered = p.Recovered[:m.recovered]
+	p.undoCaptures(m.Trail)
+	p.DropTrail(m.Trail)
 }
 
-// dropTrail discards undo history whose effects are already restored or whose
+// DropTrail discards undo history whose effects are already restored or whose
 // frame is returning. Clear its references before truncating the backing slice.
-func (p *tparser) dropTrail(base int) {
-	clear(p.trail[base:])
-	p.trail = p.trail[:base]
+func (p *TParser) DropTrail(base int) {
+	clear(p.Trail[base:])
+	p.Trail = p.Trail[:base]
 }
 
-func (p *tparser) setCapture(slot int, v any) {
-	p.stepWork()
-	p.trail = append(p.trail, tundo{f: p.frame, slot: slot, old: p.frame.vals[slot]})
-	p.frame.vals[slot] = v
+func (p *TParser) SetCapture(slot int, v any) {
+	p.StepWork()
+	p.Trail = append(p.Trail, tundo{f: p.Frame, slot: slot, old: p.Frame.Vals[slot]})
+	p.Frame.Vals[slot] = v
 }
 
-// setCaptureOrdinary is setCapture in an ordinary parse (parser.expectOrdinary); so are
-// newNodeOrdinary and newMatchOrdinary.
-func (p *tparser) setCaptureOrdinary(slot int, v any) {
-	p.trail = append(p.trail, tundo{f: p.frame, slot: slot, old: p.frame.vals[slot]})
-	p.frame.vals[slot] = v
+// SetCaptureOrdinary is SetCapture in an ordinary parse (parser.ExpectOrdinary); so are
+// NewNodeOrdinary and NewMatchOrdinary.
+func (p *TParser) SetCaptureOrdinary(slot int, v any) {
+	p.Trail = append(p.Trail, tundo{f: p.Frame, slot: slot, old: p.Frame.Vals[slot]})
+	p.Frame.Vals[slot] = v
 }
 
 // --- Allocation ---
 
-func (p *tparser) newNode(typ string, start, end int, kids []any) *tnode {
-	p.stepWork()
+func (p *TParser) NewNode(typ string, start, end int, kids []any) *TSeq {
+	p.StepWork()
 	n := p.nodes.one()
-	*n = tnode{Span: Span{start, end}, typ: typ, kids: kids, fresh: true}
+	*n = TSeq{Span: Span{start, end}, Typ: typ, Kids: kids, fresh: true}
 	return n
 }
 
-func (p *tparser) newMatch(start, end int, text string, fresh bool) *tmatch {
-	p.stepWork()
+func (p *TParser) NewMatch(start, end int, text string, fresh bool) *TMatch {
+	p.StepWork()
 	if len(p.matches) == 0 {
-		p.matches = make([]tmatch, nodeChunk)
+		p.matches = make([]TMatch, nodeChunk)
 	}
 	m := &p.matches[0]
 	p.matches = p.matches[1:]
-	*m = tmatch{TNode: TNode[string]{Span{start, end}, text}, fresh: fresh}
+	*m = TMatch{TNode: TNode[string]{Span{start, end}, text}, fresh: fresh}
 	return m
 }
 
-func (p *tparser) newNodeOrdinary(typ string, start, end int, kids []any) *tnode {
+func (p *TParser) NewNodeOrdinary(typ string, start, end int, kids []any) *TSeq {
 	n := p.nodes.one()
-	*n = tnode{Span: Span{start, end}, typ: typ, kids: kids, fresh: true}
+	*n = TSeq{Span: Span{start, end}, Typ: typ, Kids: kids, fresh: true}
 	return n
 }
 
-func (p *tparser) newMatchOrdinary(start, end int, text string, fresh bool) *tmatch {
+func (p *TParser) NewMatchOrdinary(start, end int, text string, fresh bool) *TMatch {
 	if len(p.matches) == 0 {
-		p.matches = make([]tmatch, nodeChunk)
+		p.matches = make([]TMatch, nodeChunk)
 	}
 	m := &p.matches[0]
 	p.matches = p.matches[1:]
-	*m = tmatch{TNode: TNode[string]{Span{start, end}, text}, fresh: fresh}
+	*m = TMatch{TNode: TNode[string]{Span{start, end}, text}, fresh: fresh}
 	return m
 }
 
-// newVals returns a value list of length and capacity n.
-func (p *tparser) newVals(n int) []any {
+// NewVals returns a value list of length and capacity n.
+func (p *TParser) NewVals(n int) []any {
 	if n == 0 {
 		return []any{}
 	}
 	return p.vals.slice(n)
 }
 
-func (p *tparser) tfields(n int) []tfield {
+func (p *TParser) tfields(n int) []tfield {
 	return p.fields.slice(n)[:0]
 }
 
-// kids returns p.kidStack[base:] as a value list and pops it.
-func (p *tparser) kids(base int) []any {
-	ks := p.newVals(len(p.kidStack) - base)
-	copyWork(p.parser, ks, p.kidStack[base:])
-	p.dropKids(base)
+// Kids returns p.KidStack[base:] as a value list and pops it.
+func (p *TParser) Kids(base int) []any {
+	ks := p.NewVals(len(p.KidStack) - base)
+	copyWork(p.Parser, ks, p.KidStack[base:])
+	p.DropKids(base)
 	return ks
 }
 
-func (p *tparser) dropKids(base int) {
-	clear(p.kidStack[base:])
-	p.kidStack = p.kidStack[:base]
+func (p *TParser) DropKids(base int) {
+	clear(p.KidStack[base:])
+	p.KidStack = p.KidStack[:base]
 }
 
-func (p *tparser) newFrame(n int) *tframe {
+func (p *TParser) NewFrame(n int) *TCaptureFrame {
 	if n == 0 {
-		return emptyTFrame
+		return EmptyTFrame
 	}
 	if n < len(p.free) {
 		if fs := p.free[n]; len(fs) > 0 {
@@ -740,18 +803,18 @@ func (p *tparser) newFrame(n int) *tframe {
 		}
 	}
 	f := p.frames.one()
-	f.vals = p.newVals(n)
+	f.Vals = p.NewVals(n)
 	return f
 }
 
 // --- Memo ---
 
-// The memo of typed results (tparser.memoSlots, chains of entries by position) is keyed like
-// memoTable, whose firstCall bookkeeping the typed runtime shares.
+// The memo of typed results (TParser.memoSlots, chains of entries by position) is keyed like
+// memoTable, whose FirstCall bookkeeping the typed runtime shares.
 type tmemoEntry struct {
 	val      any
 	errs     []*SyntaxError
-	expected []expID
+	expected []ExpID
 	next     *tmemoEntry
 	env      []any
 	end      int
@@ -763,16 +826,16 @@ type tmemoEntry struct {
 	growing  bool
 }
 
-func (p *tparser) memoGet(rule, pos, min int, key []any) *tmemoEntry {
-	if !workControlsEnabled || p.control == nil {
+func (p *TParser) memoGet(rule, pos, min int, key []any) *tmemoEntry {
+	if !WorkControlsEnabled || p.Control == nil {
 		return p.memoGetOrdinary(rule, pos, min, key)
 	}
-	p.stepWork()
+	p.StepWork()
 	if pos >= len(p.memoSlots) {
 		return nil
 	}
 	for e := p.memoSlots[pos]; e != nil; e = e.next {
-		p.stepWork()
+		p.StepWork()
 		if e.rule == int32(rule) && e.min == int32(min) && p.memoKeyEqual(e.env, key) {
 			return e
 		}
@@ -780,7 +843,7 @@ func (p *tparser) memoGet(rule, pos, min int, key []any) *tmemoEntry {
 	return nil
 }
 
-func (p *tparser) memoGetOrdinary(rule, pos, min int, env []any) *tmemoEntry {
+func (p *TParser) memoGetOrdinary(rule, pos, min int, env []any) *tmemoEntry {
 	if pos >= len(p.memoSlots) {
 		return nil
 	}
@@ -792,32 +855,32 @@ func (p *tparser) memoGetOrdinary(rule, pos, min int, env []any) *tmemoEntry {
 	return nil
 }
 
-func (p *tparser) memoPut(rule, pos, min int, key []any, e *tmemoEntry) {
-	if !workControlsEnabled || p.control == nil {
+func (p *TParser) memoPut(rule, pos, min int, key []any, e *tmemoEntry) {
+	if !WorkControlsEnabled || p.Control == nil {
 		p.memoPutOrdinary(rule, pos, min, key, e)
 		return
 	}
-	p.stepWork()
+	p.StepWork()
 	slots := p.memoSlots
 	if pos >= len(slots) {
 		if pos < cap(slots) {
 			slots = slots[:pos+1]
 		} else {
 			grown := make([]*tmemoEntry, pos+1, max(2*cap(slots), pos+1, 64))
-			copyWork(p.parser, grown, slots)
+			copyWork(p.Parser, grown, slots)
 			slots = grown
 		}
 	}
 	link := &slots[pos]
 	var replaced *tmemoEntry
 	for x := *link; x != nil; link, x = &x.next, x.next {
-		p.stepWork()
+		p.StepWork()
 		if x == e || x.rule == int32(rule) && x.min == int32(min) && p.memoKeyEqual(x.env, key) {
 			replaced = x
 			break
 		}
 	}
-	p.stepWork()
+	p.StepWork()
 	p.memoSlots = slots
 	e.rule, e.min, e.env = int32(rule), int32(min), key
 	if replaced != nil {
@@ -829,7 +892,7 @@ func (p *tparser) memoPut(rule, pos, min int, key []any, e *tmemoEntry) {
 	slots[pos] = e
 }
 
-func (p *tparser) memoPutOrdinary(rule, pos, min int, env []any, e *tmemoEntry) {
+func (p *TParser) memoPutOrdinary(rule, pos, min int, env []any, e *tmemoEntry) {
 	if pos >= len(p.memoSlots) {
 		if pos < cap(p.memoSlots) {
 			p.memoSlots = p.memoSlots[:pos+1]
@@ -854,7 +917,7 @@ func (p *tparser) memoPutOrdinary(rule, pos, min int, env []any, e *tmemoEntry) 
 
 // --- Typed Document memo ---
 
-// typedDocumentState owns private typed memo values of a typed Document (typedDocumentParse). The
+// typedDocumentState owns private typed memo values of a typed Document (TypedDocumentParse). The
 // fresh invocation arenas that contain those values must never be reset or returned to the batch
 // pool.
 type typedDocumentState struct {
@@ -890,370 +953,372 @@ func (d *typedDocumentState) invalidate(start int) {
 	d.slots, d.meta = kept, meta
 }
 
-// documentCall memoizes typed rule entries (rule.docMemo), including generated
+// DocumentCall memoizes typed rule entries (rule.DocMemo), including generated
 // direct wrappers. Examined and provisional metadata stays outside batch memo
 // entries.
-func (p *tparser) documentCall(r *trule, min int, inv func(*tparser) (any, bool)) (any, bool) {
-	p.stepWork()
-	start := p.pos
+func (p *TParser) DocumentCall(r *TRule, min int, inv func(*TParser) (any, bool)) (any, bool) {
+	p.StepWork()
+	start := p.Pos
 	oldHigh, oldProvisional := p.docHigh, p.docProvisional
 	p.docHigh, p.docProvisional = start+1, false
 	defer func() { p.docHigh = max(oldHigh, p.docHigh); p.docProvisional = oldProvisional || p.docProvisional }()
-	if !r.docMemo {
-		rec := len(p.recovered)
+	if !r.DocMemo {
+		rec := len(p.Recovered)
 		var v any
 		var ok bool
 		if inv != nil {
-			p.document.stats.Evaluated++
+			p.Document.stats.Evaluated++
 			v, ok = inv(p)
 		} else {
 			v, ok = p.invoke(r, min)
 		}
 		if !ok {
-			p.pos = start
-			p.recovered = p.recovered[:rec]
+			p.Pos = start
+			p.Recovered = p.Recovered[:rec]
 		}
 		return v, ok
 	}
-	env := p.envValues(r.vars)
-	old := p.memoGet(r.id, start, min, env)
-	if old != nil && (old.growing || (!old.silent || p.silent > 0) && (len(old.errs) == 0 || old.silent == (p.silent > 0))) {
-		m := p.typedDocument.meta[old]
+	env := p.envValues(r.Vars)
+	old := p.memoGet(r.Id, start, min, env)
+	if old != nil && (old.growing || (!old.silent || p.Silent > 0) && (len(old.errs) == 0 || old.silent == (p.Silent > 0))) {
+		m := p.TypedDocument.meta[old]
 		p.documentTouch(m.examined)
 		p.docProvisional = p.docProvisional || old.growing || m.provisional
-		p.document.stats.Reused++
-		p.observation.memoHit()
+		p.Document.stats.Reused++
+		p.Observation.memoHit()
 		if !old.growing {
-			p.mergeExpected(old.far, old.expected)
+			p.MergeExpected(old.far, old.expected)
 		}
 		if !old.ok {
 			return nil, false
 		}
-		p.pos = old.end
-		p.recovered = p.copyErrors(p.recovered, old.errs)
+		p.Pos = old.end
+		p.Recovered = p.copyErrors(p.Recovered, old.errs)
 		return old.val, true
 	}
 	// A context-incompatible entry may be replaced. Do not keep it alive through
 	// stale metadata once its memo chain no longer refers to it.
 	if old != nil {
-		delete(p.typedDocument.meta, old)
+		delete(p.TypedDocument.meta, old)
 	}
-	rec := len(p.recovered)
-	m := p.isolate(start)
+	rec := len(p.Recovered)
+	m := p.Isolate(start)
 	var v any
 	var ok bool
 	var e *tmemoEntry
-	if r.leader {
+	if r.Leader {
 		v, ok = p.grow(r, min, env)
-		e = p.memoGet(r.id, start, min, env)
+		e = p.memoGet(r.Id, start, min, env)
 	} else {
 		if inv != nil {
-			p.document.stats.Evaluated++
+			p.Document.stats.Evaluated++
 			v, ok = inv(p)
 		} else {
 			v, ok = p.invoke(r, min)
 		}
 		if !ok {
-			p.recovered = p.recovered[:rec]
+			p.Recovered = p.Recovered[:rec]
 		}
 		e = p.memoSlab.one()
-		*e = tmemoEntry{val: v, ok: ok, end: p.pos, silent: p.silent > 0, errs: p.copyErrors(nil, p.recovered[rec:])}
-		p.memoPut(r.id, start, min, env, e)
+		*e = tmemoEntry{val: v, ok: ok, end: p.Pos, silent: p.Silent > 0, errs: p.copyErrors(nil, p.Recovered[rec:])}
+		p.memoPut(r.Id, start, min, env, e)
 	}
-	far, inner := p.unisolate(m)
-	e.far, e.expected = far, p.keep(inner)
-	p.documentTouch(p.pos + 1)
-	p.typedDocument.meta[e] = typedDocumentMeta{examined: p.docHigh, provisional: p.docProvisional || r.leader}
-	p.mergeExpected(far, inner)
+	far, inner := p.Unisolate(m)
+	e.far, e.expected = far, p.Keep(inner)
+	p.documentTouch(p.Pos + 1)
+	p.TypedDocument.meta[e] = typedDocumentMeta{examined: p.docHigh, provisional: p.docProvisional || r.Leader}
+	p.MergeExpected(far, inner)
 	if !ok {
-		p.pos = start
+		p.Pos = start
 	}
 	return v, ok
 }
 
 // --- Rule calls ---
 
-func (p *tparser) call(r *trule, min int) (any, bool) {
-	if p.observation != nil {
+func (p *TParser) Call(r *TRule, min int) (any, bool) {
+	if p.Observation != nil {
 		return p.callObserved(r, min)
 	}
 	return p.callBody(r, min)
 }
 
 // callObserved is call in an observed parse.
-func (p *tparser) callObserved(r *trule, min int) (any, bool) {
-	p.observation.enter(r.name, p.pos, min)
-	h := p.examinedBegin()
+func (p *TParser) callObserved(r *TRule, min int) (any, bool) {
+	p.Observation.Enter(r.Name, p.Pos, min)
+	h := p.ExaminedBegin()
 	v, ok := p.callBody(r, min)
-	x, known := p.examinedEnd(h)
-	p.observation.exit(ok, p.pos, x, known)
+	x, known := p.ExaminedEnd(h)
+	p.Observation.Exit(ok, p.Pos, x, known)
 	return v, ok
 }
 
 // callBody is call without observation.
-func (p *tparser) callBody(r *trule, min int) (any, bool) {
-	if p.typedDocument != nil {
-		return p.documentCall(r, min, nil)
+func (p *TParser) callBody(r *TRule, min int) (any, bool) {
+	if p.TypedDocument != nil {
+		return p.DocumentCall(r, min, nil)
 	}
-	p.stepWork()
-	start := p.pos
-	if !r.memo && !r.leader || p.firstCall(r.rule) {
-		if len(r.scope) == 0 {
+	p.StepWork()
+	start := p.Pos
+	if !r.Memo && !r.Leader || p.FirstCall(r.Rule) {
+		if len(r.Scope) == 0 {
 			return p.invokePlainBody(r, min)
 		}
-		rec := len(p.recovered)
+		rec := len(p.Recovered)
 		v, ok := p.invoke(r, min)
 		if !ok {
-			p.pos = start
-			p.recovered = p.recovered[:rec]
+			p.Pos = start
+			p.Recovered = p.Recovered[:rec]
 		}
 		return v, ok
 	}
-	env := p.envValues(r.vars)
-	if e := p.memoGet(r.id, start, min, env); e != nil && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
-		p.observation.memoHit()
+	env := p.envValues(r.Vars)
+	if e := p.memoGet(r.Id, start, min, env); e != nil && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
+		p.Observation.memoHit()
 		if !e.growing {
-			p.mergeExpected(e.far, e.expected)
+			p.MergeExpected(e.far, e.expected)
 		}
 		if !e.ok {
 			return nil, false
 		}
-		p.pos = e.end
-		p.recovered = p.copyErrors(p.recovered, e.errs)
+		p.Pos = e.end
+		p.Recovered = p.copyErrors(p.Recovered, e.errs)
 		return e.val, true
 	}
-	rec := len(p.recovered)
-	m := p.isolate(start)
+	rec := len(p.Recovered)
+	m := p.Isolate(start)
 	var v any
 	var ok bool
 	var e *tmemoEntry
-	if r.leader {
+	if r.Leader {
 		v, ok = p.grow(r, min, env)
-		e = p.memoGet(r.id, start, min, env)
+		e = p.memoGet(r.Id, start, min, env)
 	} else {
 		v, ok = p.invoke(r, min)
 		if !ok {
-			p.recovered = p.recovered[:rec]
+			p.Recovered = p.Recovered[:rec]
 		}
 		e = p.memoSlab.one()
-		*e = tmemoEntry{val: v, ok: ok, end: p.pos, silent: p.silent > 0,
-			errs: p.copyErrors(nil, p.recovered[rec:])}
-		p.memoPut(r.id, start, min, env, e)
+		*e = tmemoEntry{val: v, ok: ok, end: p.Pos, silent: p.Silent > 0,
+			errs: p.copyErrors(nil, p.Recovered[rec:])}
+		p.memoPut(r.Id, start, min, env, e)
 	}
-	far, inner := p.unisolate(m)
-	e.far, e.expected = far, p.keep(inner)
-	p.mergeExpected(far, inner)
+	far, inner := p.Unisolate(m)
+	e.far, e.expected = far, p.Keep(inner)
+	p.MergeExpected(far, inner)
 	if !ok {
-		p.pos = start
+		p.Pos = start
 	}
 	return v, ok
 }
 
-// callMemo is the memoized part of call, for the rule r invoked by inv (the generated i<id>):
+// CallMemo is the memoized part of call, for the rule r invoked by inv (the generated i<id>):
 // the rule is called at the position again, or its memoization is no longer deferred.
-func (p *tparser) callMemo(r *trule, inv func(*tparser) (any, bool)) (any, bool) {
-	if p.typedDocument != nil {
-		return p.documentCall(r, 0, inv)
+func (p *TParser) CallMemo(r *TRule, inv func(*TParser) (any, bool)) (any, bool) {
+	if p.TypedDocument != nil {
+		return p.DocumentCall(r, 0, inv)
 	}
-	start := p.pos
-	env := p.envValues(r.vars)
-	if e := p.memoGet(r.id, start, 0, env); e != nil && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
-		p.observation.memoHit()
+	start := p.Pos
+	env := p.envValues(r.Vars)
+	if e := p.memoGet(r.Id, start, 0, env); e != nil && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
+		p.Observation.memoHit()
 		if !e.growing {
-			p.mergeExpected(e.far, e.expected)
+			p.MergeExpected(e.far, e.expected)
 		}
 		if !e.ok {
 			return nil, false
 		}
-		p.pos = e.end
-		p.recovered = p.copyErrors(p.recovered, e.errs)
+		p.Pos = e.end
+		p.Recovered = p.copyErrors(p.Recovered, e.errs)
 		return e.val, true
 	}
-	rec := len(p.recovered)
-	m := p.isolate(start)
+	rec := len(p.Recovered)
+	m := p.Isolate(start)
 	v, ok := inv(p)
 	if !ok {
-		p.recovered = p.recovered[:rec]
+		p.Recovered = p.Recovered[:rec]
 	}
 	e := p.memoSlab.one()
-	*e = tmemoEntry{val: v, ok: ok, end: p.pos, silent: p.silent > 0,
-		errs: p.copyErrors(nil, p.recovered[rec:])}
-	p.memoPut(r.id, start, 0, env, e)
-	far, inner := p.unisolate(m)
-	e.far, e.expected = far, p.keep(inner)
-	p.mergeExpected(far, inner)
+	*e = tmemoEntry{val: v, ok: ok, end: p.Pos, silent: p.Silent > 0,
+		errs: p.copyErrors(nil, p.Recovered[rec:])}
+	p.memoPut(r.Id, start, 0, env, e)
+	far, inner := p.Unisolate(m)
+	e.far, e.expected = far, p.Keep(inner)
+	p.MergeExpected(far, inner)
 	if !ok {
-		p.pos = start
+		p.Pos = start
 	}
 	return v, ok
 }
 
-func (p *tparser) grow(r *trule, min int, env []any) (any, bool) {
-	start := p.pos
-	rec := len(p.recovered)
+func (p *TParser) grow(r *TRule, min int, env []any) (any, bool) {
+	start := p.Pos
+	rec := len(p.Recovered)
 	best := p.memoSlab.one()
 	*best = tmemoEntry{end: start, growing: true}
-	p.memoPut(r.id, start, min, env, best)
+	p.memoPut(r.Id, start, min, env, best)
 	for {
 		v, ok := p.invoke(r, min)
-		if !ok || (best.ok && p.pos <= best.end) {
+		if !ok || (best.ok && p.Pos <= best.end) {
 			break
 		}
 		best = p.memoSlab.one()
-		*best = tmemoEntry{val: v, ok: true, end: p.pos, growing: true, errs: p.copyErrors(nil, p.recovered[rec:])}
-		p.memoPut(r.id, start, min, env, best)
-		p.pos = start
-		p.recovered = p.recovered[:rec]
+		*best = tmemoEntry{val: v, ok: true, end: p.Pos, growing: true, errs: p.copyErrors(nil, p.Recovered[rec:])}
+		p.memoPut(r.Id, start, min, env, best)
+		p.Pos = start
+		p.Recovered = p.Recovered[:rec]
 	}
 	best.growing = false
-	best.silent = p.silent > 0
-	p.pos = best.end
-	p.recovered = p.copyErrors(p.recovered[:rec], best.errs)
+	best.silent = p.Silent > 0
+	p.Pos = best.end
+	p.Recovered = p.copyErrors(p.Recovered[:rec], best.errs)
 	return best.val, best.ok
 }
 
-func (p *tparser) invoke(r *trule, min int) (any, bool) {
-	if p.typedDocument != nil {
-		p.document.stats.Evaluated++
+func (p *TParser) invoke(r *TRule, min int) (any, bool) {
+	if p.TypedDocument != nil {
+		p.Document.stats.Evaluated++
 	}
-	f := p.newFrame(len(r.scope))
-	prevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)
-	p.frame, p.cut = f, false
-	p.depth++
-	if p.depth > p.maxDepth {
-		p.tooDeep()
+	f := p.NewFrame(len(r.Scope))
+	prevFrame, prevEnv, prevCut, trail := p.Frame, p.Env, p.Cut, len(p.Trail)
+	p.Frame, p.Cut = f, false
+	p.Depth++
+	if p.Depth > p.MaxDepth {
+		p.TooDeep()
 	}
-	start := p.pos
-	p.observation.evaluated()
-	v, ok := r.body(p, min)
-	p.depth--
-	p.frame, p.cut = prevFrame, prevCut
-	p.dropTrail(trail)
+	start := p.Pos
+	p.Observation.Evaluated()
+	v, ok := r.Body(p, min)
+	p.Depth--
+	p.Frame, p.Cut = prevFrame, prevCut
+	p.DropTrail(trail)
 	if ok {
-		v = p.finish(r, f, v, start)
+		v = p.Finish(r, f, v, start)
 	}
-	p.env = prevEnv
-	p.freeFrame(f)
+	p.Env = prevEnv
+	p.FreeFrame(f)
 	return v, ok
 }
 
-func (p *tparser) invokePlain(r *trule, min int) (any, bool) {
-	if p.observation != nil {
+func (p *TParser) InvokePlain(r *TRule, min int) (any, bool) {
+	if p.Observation != nil {
 		return p.invokePlainObserved(r, min)
 	}
 	return p.invokePlainBody(r, min)
 }
 
-// invokePlainObserved is invokePlain in an observed parse.
-func (p *tparser) invokePlainObserved(r *trule, min int) (any, bool) {
-	p.observation.enter(r.name, p.pos, min)
-	h := p.examinedBegin()
+// invokePlainObserved is InvokePlain in an observed parse.
+func (p *TParser) invokePlainObserved(r *TRule, min int) (any, bool) {
+	p.Observation.Enter(r.Name, p.Pos, min)
+	h := p.ExaminedBegin()
 	v, ok := p.invokePlainBody(r, min)
-	x, known := p.examinedEnd(h)
-	p.observation.exit(ok, p.pos, x, known)
+	x, known := p.ExaminedEnd(h)
+	p.Observation.Exit(ok, p.Pos, x, known)
 	return v, ok
 }
 
-// invokePlainBody is invokePlain without observation.
-func (p *tparser) invokePlainBody(r *trule, min int) (any, bool) {
-	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
-	prevEnv, prevCut := p.env, p.cut
-	p.cut = false
-	p.depth++
-	if p.depth > p.maxDepth {
-		p.tooDeep()
+// invokePlainBody is InvokePlain without observation.
+func (p *TParser) invokePlainBody(r *TRule, min int) (any, bool) {
+	start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
+	prevEnv, prevCut := p.Env, p.Cut
+	p.Cut = false
+	p.Depth++
+	if p.Depth > p.MaxDepth {
+		p.TooDeep()
 	}
-	p.observation.evaluated()
-	v, ok := r.body(p, min)
-	p.depth--
-	p.cut = prevCut
-	p.dropTrail(trail)
+	p.Observation.Evaluated()
+	v, ok := r.Body(p, min)
+	p.Depth--
+	p.Cut = prevCut
+	p.DropTrail(trail)
 	if ok {
-		v = p.finish(r, emptyTFrame, v, start)
+		v = p.Finish(r, EmptyTFrame, v, start)
 	} else {
-		p.pos = start
-		p.recovered = p.recovered[:rec]
+		p.Pos = start
+		p.Recovered = p.Recovered[:rec]
 	}
-	p.env = prevEnv
+	p.Env = prevEnv
 	return v, ok
 }
 
-// finish makes the rule's value from the value of its body, and checks it against the rule's
+// Finish makes the rule's value from the value of its body, and checks it against the rule's
 // declared type if needed.
-func (p *tparser) finish(r *trule, f *tframe, v any, start int) any {
+func (p *TParser) Finish(r *TRule, f *TCaptureFrame, v any, start int) any {
 	var body any
-	if r.nt != 0 && r.action == nil {
-		body = tfreshNode(v)
+	if r.Nt != 0 && r.Action == nil {
+		body = TFreshNode(v)
 	}
 	v = p.finishValue(r, f, v, start)
 	if r.tcheck != nil {
 		r.tcheck(p, v)
 	}
-	if r.nt != 0 {
-		v = p.tconvertResultOwned(r, v, body)
+	if r.Nt != 0 {
+		v = p.TConvertResultOwned(r, v, body)
 	}
 	return v
 }
 
-// tfreshNode returns v if it is a fresh string, tuple or list node, and otherwise nil. Taken from
+// TFreshNode returns v if it is a fresh string, tuple or list node, and otherwise nil. Taken from
 // the value of a rule's body before the rule finishes it, it is the node the body made and nothing
-// else holds yet (see tconvertResultOwned).
-func tfreshNode(v any) any {
+// else holds yet (see TConvertResultOwned).
+//
+// TFreshNode is for generated parsers; not a stable API.
+func TFreshNode(v any) any {
 	switch x := v.(type) {
-	case *tmatch:
+	case *TMatch:
 		if x.fresh {
 			return x
 		}
-	case *tnode:
-		if x.fresh && (x.typ == "tuple" || x.typ == "list") {
+	case *TSeq:
+		if x.fresh && (x.Typ == "tuple" || x.Typ == "list") {
 			return x
 		}
 	}
 	return nil
 }
 
-// tconvertResultOwned converts v, the value of rule r, to the rule's named node type, like
-// tconvertResult. If v is body, the fresh node of the rule's body (tfreshNode), the rule returns
+// TConvertResultOwned converts v, the value of rule r, to the rule's named node type, like
+// TConvertResult. If v is body, the fresh node of the rule's body (TFreshNode), the rule returns
 // the node it made itself, which nothing else holds, so it gets the type in place instead of
 // being copied: the copy tconvert makes keeps a node that others hold as it is.
-func (p *tparser) tconvertResultOwned(r *trule, v, body any) any {
+func (p *TParser) TConvertResultOwned(r *TRule, v, body any) any {
 	if body != nil && v == body {
 		switch x := v.(type) {
-		case *tmatch:
-			x.nt = r.nt
+		case *TMatch:
+			x.Nt = r.Nt
 			return x
-		case *tnode:
-			x.nt = r.nt
+		case *TSeq:
+			x.nt = r.Nt
 			return x
 		}
 	}
-	return p.tconvertResult(r, v)
+	return p.TConvertResult(r, v)
 }
 
 // tnamed reports whether n is a node of a named node type.
-func tnamed(n tval) bool {
+func tnamed(n TVal) bool {
 	switch x := n.(type) {
-	case *tmatch:
-		return x.nt != 0
-	case *tnode:
+	case *TMatch:
+		return x.Nt != 0
+	case *TSeq:
 		return x.nt != 0
 	}
 	return false
 }
 
-// tconvert is nodeTypeKinds.convert for the values of the typed runtime: it returns the node of
+// tconvert is nodeTypeKinds.Convert for the values of the typed runtime: it returns the node of
 // the named node type nt that v converts to (a copy of v with the same range and content, or v
 // itself if it already has the type), and reports false if v is not a string, tuple or list node.
-func (p *tparser) tconvert(nt uint16, v any) (any, bool) {
+func (p *TParser) tconvert(nt uint16, v any) (any, bool) {
 	switch x := v.(type) {
-	case *tmatch:
-		if x.nt == nt {
+	case *TMatch:
+		if x.Nt == nt {
 			return x, true
 		}
-		m := &tmatch{TNode: x.TNode, nt: nt}
+		m := &TMatch{TNode: x.TNode, Nt: nt}
 		return m, true
-	case *tnode:
-		if x.typ != "tuple" && x.typ != "list" {
+	case *TSeq:
+		if x.Typ != "tuple" && x.Typ != "list" {
 			return nil, false
 		}
 		if x.nt == nt {
@@ -1264,7 +1329,7 @@ func (p *tparser) tconvert(nt uint16, v any) (any, bool) {
 		c.nt, c.fresh = nt, false
 		if x.fresh {
 			// The rule that made x may still change it; the copy keeps what it holds now.
-			c.kids = append([]any(nil), x.kids...)
+			c.Kids = append([]any(nil), x.Kids...)
 		}
 		c.fields = append([]tfield(nil), x.fields...)
 		return c, true
@@ -1272,64 +1337,66 @@ func (p *tparser) tconvert(nt uint16, v any) (any, bool) {
 	return nil, false
 }
 
-// tconvertResult converts v, the value of rule r, to the rule's named node type.
-func (p *tparser) tconvertResult(r *trule, v any) any {
-	n, ok := p.tconvert(r.nt, v)
+// TConvertResult converts v, the value of rule r, to the rule's named node type.
+func (p *TParser) TConvertResult(r *TRule, v any) any {
+	n, ok := p.tconvert(r.Nt, v)
 	if !ok {
-		panic(fatal{fmt.Errorf("cannot convert %s to %s in result of rule %s", ttypeName(v), r.nodeType, r.name)})
+		panic(fatal{fmt.Errorf("cannot convert %s to %s in result of rule %s", ttypeName(v), r.NodeType, r.Name)})
 	}
 	return n
 }
 
-// convert evaluates a node type constructor T{v} (actx.convert): it converts v to the named node
+// Convert evaluates a node type constructor T{v} (ActCtx.Convert): it converts v to the named node
 // type with the index nt (after convertCheck, where the value needs a check).
-func (c *tctx) convert(nt uint16, v any) any {
-	n, ok := c.p.tconvert(nt, v)
+func (c *TActCtx) Convert(nt uint16, v any) any {
+	n, ok := c.P.tconvert(nt, v)
 	if !ok {
-		c.p.evalErrorf("cannot convert %s to %s", ttypeName(v), tnodeTypeOf(nt).name)
+		c.P.evalErrorf("cannot convert %s to %s", ttypeName(v), tnodeTypeOf(nt).name)
 	}
 	return n
 }
 
-// tsetNodeType gives v, a string, tuple or list node that back made, the named node type nt.
-func tsetNodeType(v any, nt uint16) any {
+// TSetNodeType gives v, a string, tuple or list node that back made, the named node type nt.
+//
+// TSetNodeType is for generated parsers; not a stable API.
+func TSetNodeType(v any, nt uint16) any {
 	switch x := v.(type) {
-	case *tmatch:
-		x.nt = nt
-	case *tnode:
+	case *TMatch:
+		x.Nt = nt
+	case *TSeq:
 		x.nt = nt
 	}
 	return v
 }
 
-func (p *tparser) finishValue(r *trule, f *tframe, v any, start int) any {
-	if r.novalue {
+func (p *TParser) finishValue(r *TRule, f *TCaptureFrame, v any, start int) any {
+	if r.Novalue {
 		return nil
 	}
-	if r.action != nil {
-		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
-		return c.result(r.action, r.name)
+	if r.Action != nil {
+		c := p.UseCtx(TActCtx{P: p, F: f, Start: start, End: p.Pos, Cbase: len(p.Created)})
+		return c.Result(r.Action, r.Name)
 	}
-	v = p.scopeValue(r.value, v, start)
-	if len(r.scope) > 0 {
-		v = p.attachCaptures(v, r.scope, f.vals, start, p.pos)
+	v = p.ScopeValue(r.Value, v, start)
+	if len(r.Scope) > 0 {
+		v = p.AttachCaptures(v, r.Scope, f.Vals, start, p.Pos)
 	}
-	n := asTval(v)
+	n := AsTval(v)
 	if n == nil {
 		return nil
 	}
-	n.tsetFresh(false)
+	n.TSetFresh(false)
 	return n
 }
 
-// attachCaptures attaches the non-nil captures vals (named names) as fields of the value (a CST
+// AttachCaptures attaches the non-nil captures vals (named names) as fields of the value (a CST
 // node), first wrapping it in a tuple node unless it is a fresh one that is not itself captured.
-func (p *tparser) attachCaptures(v any, names []string, vals []any, start, end int) any {
-	n := asTval(v)
+func (p *TParser) AttachCaptures(v any, names []string, vals []any, start, end int) any {
+	n := AsTval(v)
 	found := false
-	wrap := n == nil || !n.tfresh()
+	wrap := n == nil || !n.TFresh()
 	for _, c := range vals {
-		p.stepWork()
+		p.StepWork()
 		if c != nil {
 			found = true
 		}
@@ -1340,17 +1407,17 @@ func (p *tparser) attachCaptures(v any, names []string, vals []any, start, end i
 	if !found {
 		return v
 	}
-	t, isNode := n.(*tnode)
+	t, isNode := n.(*TSeq)
 	if wrap || !isNode {
-		kids := p.newVals(1)
+		kids := p.NewVals(1)
 		kids[0] = v
-		t = p.newNode("tuple", start, end, kids)
+		t = p.NewNode("tuple", start, end, kids)
 	}
 	if t.fields == nil {
 		t.fields = p.tfields(len(names))
 	}
 	for i, name := range names {
-		p.stepWork()
+		p.StepWork()
 		if vals[i] != nil {
 			p.setValueField(t, name, vals[i])
 		}
@@ -1360,35 +1427,35 @@ func (p *tparser) attachCaptures(v any, names []string, vals []any, start, end i
 
 // --- Shapes of values (see runtime.go) ---
 
-// shapeTuple returns the tuple node of the result v of a match of [start, p.pos).
-func (p *tparser) shapeTuple(s shaper, v any, start int) any {
-	if s.elems {
+// shapeTuple returns the tuple node of the result v of a match of [start, p.Pos).
+func (p *TParser) shapeTuple(s Shaper, v any, start int) any {
+	if s.Elems {
 		return v
 	}
 	var kids []any
-	if s.k == 1 {
-		kids = p.newVals(1)
+	if s.K == 1 {
+		kids = p.NewVals(1)
 		kids[0] = v
 	}
-	return p.newNode("tuple", start, p.pos, kids)
+	return p.NewNode("tuple", start, p.Pos, kids)
 }
 
 // tone returns the one element of the result v.
-func tone(s shaper, v any) any {
-	if s.elems {
-		n, _ := v.(*tnode)
-		if n == nil || len(n.kids) == 0 {
+func tone(s Shaper, v any) any {
+	if s.Elems {
+		n, _ := v.(*TSeq)
+		if n == nil || len(n.Kids) == 0 {
 			return nil
 		}
-		return n.kids[0]
+		return n.Kids[0]
 	}
 	return v
 }
 
-// shapeSingle returns the value of the result v where the expression takes one element; ok is
+// ShapeSingle returns the value of the result v where the expression takes one element; ok is
 // false when it has no value.
-func (p *tparser) shapeSingle(s shaper, v any, start int) (any, bool) {
-	switch s.mode {
+func (p *TParser) ShapeSingle(s Shaper, v any, start int) (any, bool) {
+	switch s.Mode {
 	case singlePass:
 		return tone(s, v), true
 	case singleTuple:
@@ -1397,19 +1464,19 @@ func (p *tparser) shapeSingle(s shaper, v any, start int) (any, bool) {
 	return nil, false
 }
 
-// shapeCapture is shapeSingle for a capture or a recovered expression, whose value is the unit
+// ShapeCapture is ShapeSingle for a capture or a recovered expression, whose value is the unit
 // node of the range matched when the expression has no value.
-func (p *tparser) shapeCapture(s shaper, v any, start int) any {
-	v, ok := p.shapeSingle(s, v, start)
+func (p *TParser) ShapeCapture(s Shaper, v any, start int) any {
+	v, ok := p.ShapeSingle(s, v, start)
 	if !ok {
-		v = p.newNode("tuple", start, p.pos, nil)
+		v = p.NewNode("tuple", start, p.Pos, nil)
 	}
 	return v
 }
 
-// scopeValue returns the value of a scope whose body matched [start, p.pos) with the result v.
-func (p *tparser) scopeValue(s shaper, v any, start int) any {
-	if s.tuple {
+// ScopeValue returns the value of a scope whose body matched [start, p.Pos) with the result v.
+func (p *TParser) ScopeValue(s Shaper, v any, start int) any {
+	if s.Tuple {
 		return p.shapeTuple(s, v, start)
 	}
 	return tone(s, v)
@@ -1417,190 +1484,192 @@ func (p *tparser) scopeValue(s shaper, v any, start int) any {
 
 // --- Terminals ---
 
-func (p *tparser) matchLiteral(rs []rune, text string, desc expID, build bool) (any, bool) {
-	start := p.pos
-	if _, ok := p.parser.matchLiteral(rs, text, desc, false); !ok {
+func (p *TParser) MatchLiteral(rs []rune, text string, desc ExpID, build bool) (any, bool) {
+	start := p.Pos
+	if _, ok := p.Parser.MatchLiteral(rs, text, desc, false); !ok {
 		return nil, false
 	}
 	if !build {
 		return nil, true
 	}
-	return p.newMatch(start, p.pos, p.literalText(start, text), true), true
+	return p.NewMatch(start, p.Pos, p.literalText(start, text), true), true
 }
 
-// matchLiteralOrdinary is matchLiteral in an ordinary parse (parser.expectOrdinary).
-func (p *tparser) matchLiteralOrdinary(rs []rune, text string, desc expID, build bool) (any, bool) {
-	start := p.pos
-	if _, ok := p.parser.matchLiteralOrdinary(rs, text, desc, false); !ok {
+// MatchLiteralOrdinary is MatchLiteral in an ordinary parse (parser.ExpectOrdinary).
+func (p *TParser) MatchLiteralOrdinary(rs []rune, text string, desc ExpID, build bool) (any, bool) {
+	start := p.Pos
+	if _, ok := p.Parser.MatchLiteralOrdinary(rs, text, desc, false); !ok {
 		return nil, false
 	}
 	if !build {
 		return nil, true
 	}
-	return p.newMatchOrdinary(start, p.pos, p.literalText(start, text), true), true
+	return p.NewMatchOrdinary(start, p.Pos, p.literalText(start, text), true), true
 }
 
-// matchAnyOrdinary is matchAny in an ordinary parse (parser.expectOrdinary).
-func (p *tparser) matchAnyOrdinary(build bool) (any, bool) {
-	_, size, ok := p.peekOrdinary()
+// MatchAnyOrdinary is MatchAny in an ordinary parse (parser.ExpectOrdinary).
+func (p *TParser) MatchAnyOrdinary(build bool) (any, bool) {
+	_, size, ok := p.PeekOrdinary()
 	if !ok {
-		p.expectOrdinary(p.pos, idAny)
+		p.ExpectOrdinary(p.Pos, IdAny)
 		return nil, false
 	}
-	return p.single(size, build)
+	return p.Single(size, build)
 }
 
-func (p *tparser) matchAny(build bool) (any, bool) {
-	_, size, ok := p.peek()
+func (p *TParser) MatchAny(build bool) (any, bool) {
+	_, size, ok := p.Peek()
 	if !ok {
-		p.expect(p.pos, idAny)
+		p.Expect(p.Pos, IdAny)
 		return nil, false
 	}
-	return p.single(size, build)
+	return p.Single(size, build)
 }
 
-func (p *tparser) single(size int, build bool) (any, bool) {
-	start := p.pos
-	p.pos += size
+func (p *TParser) Single(size int, build bool) (any, bool) {
+	start := p.Pos
+	p.Pos += size
 	if !build {
 		return nil, true
 	}
-	return p.newMatch(start, p.pos, p.text(start, p.pos), true), true
+	return p.NewMatch(start, p.Pos, p.Text(start, p.Pos), true), true
 }
 
-func (p *tparser) anchor(ok bool, desc expID) (any, bool) {
+func (p *TParser) Anchor(ok bool, desc ExpID) (any, bool) {
 	if ok {
 		return nil, true
 	}
-	p.expect(p.pos, desc)
+	p.Expect(p.Pos, desc)
 	return nil, false
 }
 
 // --- Attributes ---
 
-type tmatcher = func(p *tparser) (any, bool)
+type tmatcher = func(p *TParser) (any, bool)
 
-func (p *tparser) tracked(m tmatcher) (v any, ok bool, far int, expected []expID) {
-	mark := p.isolate(p.pos)
+func (p *TParser) tracked(m tmatcher) (v any, ok bool, far int, expected []ExpID) {
+	mark := p.Isolate(p.Pos)
 	v, ok = m(p)
-	far, expected = p.unisolate(mark)
+	far, expected = p.Unisolate(mark)
 	return v, ok, far, expected
 }
 
-func (p *tparser) errorAttr(m tmatcher, msg expID) (any, bool) {
+func (p *TParser) ErrorAttr(m tmatcher, msg ExpID) (any, bool) {
 	v, ok, far, expected := p.tracked(m)
 	if ok {
-		p.mergeExpected(far, expected)
+		p.MergeExpected(far, expected)
 		return v, true
 	}
-	p.expect(far, msg)
+	p.Expect(far, msg)
 	return nil, false
 }
 
-func (p *tparser) diagnosticAttr(m tmatcher, name expID) (any, bool) {
+func (p *TParser) DiagnosticAttr(m tmatcher, name ExpID) (any, bool) {
 	v, ok, far, expected := p.tracked(m)
 	if ok {
-		p.mergeExpected(far, expected)
+		p.MergeExpected(far, expected)
 		return v, true
 	}
-	p.mergeExpected(far, renamedExpected(p.parser, expected, name))
+	p.MergeExpected(far, RenamedExpected(p.Parser, expected, name))
 	return nil, false
 }
 
-func (p *tparser) recoverAttr(m, skip tmatcher, build bool) (any, bool) {
-	m0 := p.mark()
+func (p *TParser) RecoverAttr(m, skip tmatcher, build bool) (any, bool) {
+	m0 := p.Mark()
 	v, ok, far, expected := p.tracked(m)
 	if ok {
-		p.mergeExpected(far, expected)
+		p.MergeExpected(far, expected)
 		return v, true
 	}
-	expected = p.keep(expected)
-	p.reset(m0)
-	if _, ok := skip(p); !ok || p.pos == m0.pos {
-		p.reset(m0)
-		p.mergeExpected(far, expected)
+	expected = p.Keep(expected)
+	p.Reset(m0)
+	if _, ok := skip(p); !ok || p.Pos == m0.Pos {
+		p.Reset(m0)
+		p.MergeExpected(far, expected)
 		return nil, false
 	}
-	e := p.makeError(far, expected)
-	p.recovered = append(p.recovered, e)
+	e := p.MakeError(far, expected)
+	p.Recovered = append(p.Recovered, e)
 	if !build {
 		return nil, true
 	}
-	return &terror{Error{Span: Span{m0.pos, p.pos}, Text: p.text(m0.pos, p.pos), Message: p.recoveryErrorText(e)}, true}, true
+	return &TError{Error{Span: Span{m0.Pos, p.Pos}, Text: p.Text(m0.Pos, p.Pos), Message: p.RecoveryErrorText(e)}, true}, true
 }
 
 // --- Actions and predicates ---
 
-// tctx is the context of evaluating an action or a predicate (actx in the typed runtime).
-type tctx struct {
-	p            *tparser
-	f            *tframe
-	start, end   int
-	cbase        int
-	lhs, rhs, op any
+// TActCtxCtx is the context of evaluating an action or a predicate (ActCtx in the typed runtime).
+//
+// TActCtx is for generated parsers; not a stable API.
+type TActCtx struct {
+	P            *TParser
+	F            *TCaptureFrame
+	Start, End   int
+	Cbase        int
+	Lhs, Rhs, Op any
 }
 
-func (p *tparser) useCtx(c tctx) *tctx {
+func (p *TParser) UseCtx(c TActCtx) *TActCtx {
 	p.ac = c
 	return &p.ac
 }
 
-// result evaluates an action. Its errors fail the parse: tparse reports them with the rule
-// name, which result records in p.where instead of deferring a recovery for each action.
-func (c *tctx) result(action func(*tctx) any, where string) (n any) {
-	prev := c.p.where
-	c.p.where = where
-	n = c.finish(action(c))
-	c.p.where = prev
+// Result evaluates an action. Its errors fail the parse: tparse reports them with the rule
+// name, which result records in p.Where instead of deferring a recovery for each action.
+func (c *TActCtx) Result(action func(*TActCtx) any, where string) (n any) {
+	prev := c.P.Where
+	c.P.Where = where
+	n = c.Finish(action(c))
+	c.P.Where = prev
 	return n
 }
 
-// finish checks and finishes the value v of an action (see result): a struct the action made
+// Finish checks and finishes the value v of an action (see result): a struct the action made
 // takes the rule's range, and the value is no longer fresh. A value other than a node needs no
 // carrier here.
-func (c *tctx) finish(v any) any {
-	t := asTval(v)
+func (c *TActCtx) Finish(v any) any {
+	t := AsTval(v)
 	if t != nil {
-		for _, x := range c.p.created[c.cbase:] {
-			c.p.stepWork()
+		for _, x := range c.P.Created[c.Cbase:] {
+			c.P.StepWork()
 			if x == t {
-				t.tsetSpan(c.start, c.end)
+				t.TSetSpan(c.Start, c.End)
 				break
 			}
 		}
 	}
-	c.p.dropCreated(c.cbase)
+	c.P.DropCreated(c.Cbase)
 	if v == nil {
 		return nil
 	}
 	if t == nil {
 		if _, isFn := v.(func(...any) any); isFn {
-			c.p.evalErrorf("result must be a value, got a function")
+			c.P.evalErrorf("result must be a value, got a function")
 		}
 		return v
 	}
-	t.tsetFresh(false)
+	t.TSetFresh(false)
 	return t
 }
 
-func (p *tparser) dropCreated(base int) {
-	clear(p.created[base:])
-	p.created = p.created[:base]
+func (p *TParser) DropCreated(base int) {
+	clear(p.Created[base:])
+	p.Created = p.Created[:base]
 }
 
-func (p *tparser) predicate(t func(*tctx) any) (ok bool) {
-	base, kids := len(p.created), len(p.kidStack)
+func (p *TParser) Predicate(t func(*TActCtx) any) (ok bool) {
+	base, kids := len(p.Created), len(p.KidStack)
 	defer func() {
-		p.dropCreated(base)
+		p.DropCreated(base)
 		if x := recover(); x != nil {
 			if _, isEval := x.(evalError); !isEval {
 				panic(x)
 			}
-			p.dropKids(kids)
+			p.DropKids(kids)
 			ok = false
 		}
 	}()
-	c := p.useCtx(tctx{p: p, f: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
+	c := p.UseCtx(TActCtx{P: p, F: p.Frame, Start: p.Pos, End: p.Pos, Cbase: len(p.Created)})
 	v := t(c)
 	if b, isBool := v.(bool); isBool && !b {
 		return false
@@ -1608,19 +1677,19 @@ func (p *tparser) predicate(t func(*tctx) any) (ok bool) {
 	return true
 }
 
-func (p *tparser) assign(name string, t func(*tctx) any) (ok bool) {
-	base, kids := len(p.created), len(p.kidStack)
+func (p *TParser) Assign(name string, t func(*TActCtx) any) (ok bool) {
+	base, kids := len(p.Created), len(p.KidStack)
 	defer func() {
-		p.dropCreated(base)
+		p.DropCreated(base)
 		if x := recover(); x != nil {
 			if _, isEval := x.(evalError); !isEval {
 				panic(x)
 			}
-			p.dropKids(kids)
+			p.DropKids(kids)
 			ok = false
 		}
 	}()
-	c := p.useCtx(tctx{p: p, f: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
+	c := p.UseCtx(TActCtx{P: p, F: p.Frame, Start: p.Pos, End: p.Pos, Cbase: len(p.Created)})
 	v := t(c)
 	if _, isFn := v.(func(...any) any); isFn {
 		return false
@@ -1632,23 +1701,23 @@ func (p *tparser) assign(name string, t func(*tctx) any) (ok bool) {
 // tvalOrNil is the typed runtime's nodeOrNil: values are already any, with the untyped nil.
 func tvalOrNil(v any) any { return v }
 
-func (c *tctx) cap(slot int) any { return tvalOrNil(c.f.vals[slot]) }
+func (c *TActCtx) Cap(slot int) any { return tvalOrNil(c.F.Vals[slot]) }
 
-func (c *tctx) lookup(name string) any {
-	if workControlsEnabled && c.p.control != nil {
-		if v, ok := c.p.lookupEnvControlled(name); ok {
+func (c *TActCtx) Lookup(name string) any {
+	if WorkControlsEnabled && c.P.Control != nil {
+		if v, ok := c.P.lookupEnvControlled(name); ok {
 			return v
 		}
-		c.p.evalErrorf("variable %s is not defined", name)
+		c.P.evalErrorf("variable %s is not defined", name)
 		return nil
 	}
 
-	for e := c.p.env; e != nil; e = e.next {
+	for e := c.P.Env; e != nil; e = e.next {
 		if e.name == name {
 			return e.val
 		}
 	}
-	c.p.evalErrorf("variable %s is not defined", name)
+	c.P.evalErrorf("variable %s is not defined", name)
 	return nil
 }
 
@@ -1664,23 +1733,25 @@ func ttypeName(v any) string {
 	case bool:
 		return "bool"
 	}
-	if t, ok := v.(tval); ok {
+	if t, ok := v.(TVal); ok {
 		if tnamed(t) {
-			return t.tname()
+			return t.TName()
 		}
-		return valueTypeName(tshape(t), t.tname(), len(t.tkids()))
+		return valueTypeName(tshape(t), t.TName(), len(t.TKids()))
 	}
 	return fmt.Sprintf("%T", v)
 }
 
-// spanOf widens the range [*start, *end) to cover the field value v if it is a node (first is
-// set until a node has been seen), as newStruct does.
-func spanOf(v any, first *bool, start, end *int) {
-	child := asTval(v)
+// FieldSpanOf widens the range [*start, *end) to cover the field value v if it is a node (first is
+// set until a node has been seen), as NewStruct does.
+//
+// FieldSpanOf is for generated parsers; not a stable API.
+func FieldSpanOf(v any, first *bool, start, end *int) {
+	child := AsTval(v)
 	if child == nil {
 		return
 	}
-	s, e := child.tspan()
+	s, e := child.TSpan()
 	if *first || s < *start {
 		*start = s
 	}
@@ -1690,47 +1761,47 @@ func spanOf(v any, first *bool, start, end *int) {
 	*first = false
 }
 
-// made finishes a struct value n made by an action with the given range (see newStruct).
-func (c *tctx) made(n tval, first bool, start, end int) any {
+// Made finishes a struct value n made by an action with the given range (see NewStruct).
+func (c *TActCtx) Made(n TVal, first bool, start, end int) any {
 	if first {
-		start, end = c.start, c.end
+		start, end = c.Start, c.End
 	}
-	n.tsetSpan(start, end)
-	c.p.created = append(c.p.created, n)
+	n.TSetSpan(start, end)
+	c.P.Created = append(c.P.Created, n)
 	return n
 }
 
-func (c *tctx) newList(items []any) any {
-	kids := c.p.newVals(len(items))
-	copyWork(c.p.parser, kids, items)
+func (c *TActCtx) NewList(items []any) any {
+	kids := c.P.NewVals(len(items))
+	copyWork(c.P.Parser, kids, items)
 	return c.listNode(kids)
 }
 
 // listNode returns a list value with the child list kids (which it takes over). Its range, which
 // the value model does not show, covers the elements that are nodes.
-func (c *tctx) listNode(kids []any) *tnode { return c.valueNode(typeListValue, kids) }
+func (c *TActCtx) listNode(kids []any) *TSeq { return c.valueNode(TypeListValue, kids) }
 
-// tuple returns a tuple value of the arguments, as a tuple literal builds it.
-func (c *tctx) tuple(args ...any) any {
-	base := len(c.p.kidStack)
+// Tuple returns a tuple value of the arguments, as a tuple literal builds it.
+func (c *TActCtx) Tuple(args ...any) any {
+	base := len(c.P.KidStack)
 	for _, a := range args {
-		c.p.stepWork()
-		c.p.kidStack = append(c.p.kidStack, c.asNode("tuple", a))
+		c.P.StepWork()
+		c.P.KidStack = append(c.P.KidStack, c.asNode("tuple", a))
 	}
-	return c.valueNode(typeTupleValue, c.p.kids(base))
+	return c.valueNode(TypeTupleValue, c.P.Kids(base))
 }
 
-func (c *tctx) valueNode(typ string, kids []any) *tnode {
-	n := c.p.newNode(typ, c.start, c.start, kids)
+func (c *TActCtx) valueNode(typ string, kids []any) *TSeq {
+	n := c.P.NewNode(typ, c.Start, c.Start, kids)
 	n.fresh = false
 	first := true
 	for _, it := range kids {
-		c.p.stepWork()
-		t := asTval(it)
+		c.P.StepWork()
+		t := AsTval(it)
 		if t == nil {
 			continue
 		}
-		s, e := t.tspan()
+		s, e := t.TSpan()
 		if first || s < n.Start {
 			n.Start = s
 		}
@@ -1742,25 +1813,27 @@ func (c *tctx) valueNode(typ string, kids []any) *tnode {
 	return n
 }
 
-// tstrFields is implemented by the generated struct types: tstrField returns the value of a
+// tstrFields is implemented by the generated struct types: TStrField returns the value of a
 // string field without boxing it.
+//
+// TStrField is for generated parsers; not a stable API.
 type tstrFields interface {
-	tstrField(name string) (string, bool)
+	TStrField(name string) (string, bool)
 }
 
-// fieldOperand reads x.name as member does, keeping a string field of a struct unboxed.
-func (c *tctx) fieldOperand(x any, name string) toperand {
-	// A string field of a struct costs no steps to read under work controls either: see tfieldWork.
+// fieldOperand reads x.Name as member does, keeping a string field of a struct unboxed.
+func (c *TActCtx) fieldOperand(x any, name string) toperand {
+	// A string field of a struct costs no steps to read under work controls either: see TFieldWork.
 	if n, ok := x.(tstrFields); ok {
-		if s, ok := n.tstrField(name); ok {
+		if s, ok := n.TStrField(name); ok {
 			return toperand{str: s, isStr: true}
 		}
 	}
-	return toperand{v: c.member(x, name)}
+	return toperand{v: c.Member(x, name)}
 }
 
 // compare applies a comparison operator as binary does, comparing two strings directly.
-func (c *tctx) compare(op string, l, r toperand) any {
+func (c *TActCtx) compare(op string, l, r toperand) any {
 	if !l.isStr {
 		l.str, l.isStr = l.v.(string)
 	}
@@ -1768,45 +1841,45 @@ func (c *tctx) compare(op string, l, r toperand) any {
 		r.str, r.isStr = r.v.(string)
 	}
 	if l.isStr && r.isStr {
-		if v, ok := c.p.compareStrings(op, l.str, r.str); ok {
+		if v, ok := c.P.compareStrings(op, l.str, r.str); ok {
 			return v
 		}
 	}
-	return c.binary(op, l.value(), r.value())
+	return c.Binary(op, l.value(), r.value())
 }
 
-func (c *tctx) member(x any, name string) any {
-	n := asTval(x)
+func (c *TActCtx) Member(x any, name string) any {
+	n := AsTval(x)
 	if n == nil {
-		c.p.evalErrorf("cannot access .%s of %s", name, ttypeName(x))
+		c.P.evalErrorf("cannot access .%s of %s", name, ttypeName(x))
 	}
 	if tisNode(n) {
 		switch name {
 		case "Start":
-			s, _ := n.tspan()
+			s, _ := n.TSpan()
 			return s
 		case "End":
-			_, e := n.tspan()
+			_, e := n.TSpan()
 			return e
 		case "Value":
-			return c.p.nodeValue(n)
+			return c.P.nodeValue(n)
 		}
 	}
 	if len(name) > 1 && name[0] == '$' {
 		capture := name[1:]
 		// x.$y reads a capture, which struct values do not have; an unmatched capture is nil.
-		v, ok := c.p.valueField(n, capture)
-		if n.tstruct() {
-			c.p.evalErrorf("%s has no capture %s", n.tname(), capture)
+		v, ok := c.P.valueField(n, capture)
+		if n.TStruct() {
+			c.P.evalErrorf("%s has no capture %s", n.TName(), capture)
 		}
 		if !ok {
 			return nil
 		}
 		return tvalOrNil(v)
 	}
-	v, ok := c.p.valueField(n, name)
+	v, ok := c.P.valueField(n, name)
 	if !ok {
-		c.p.evalErrorf("%s has no field %s", n.tname(), name)
+		c.P.evalErrorf("%s has no field %s", n.TName(), name)
 	}
 	return tvalOrNil(v)
 }
@@ -1855,11 +1928,11 @@ func trtEqual(a, b any) bool {
 	case nil:
 		return b == nil
 	}
-	an, ok := a.(tval)
+	an, ok := a.(TVal)
 	if !ok {
 		return false
 	}
-	bn, ok := b.(tval)
+	bn, ok := b.(TVal)
 	return ok && an == bn
 }
 
@@ -1921,40 +1994,40 @@ func trtBinary(op string, l, r any) any {
 	return nil
 }
 
-func (c *tctx) length(x any) any {
+func (c *TActCtx) Length(x any) any {
 	switch x := x.(type) {
 	case string:
-		return c.p.unitLen(x)
+		return c.P.unitLen(x)
 	case nil:
 		return 0
 	}
-	if n, ok := x.(tval); ok {
-		if text, ok := n.ttext(); ok {
-			return c.p.unitLen(text)
+	if n, ok := x.(TVal); ok {
+		if text, ok := n.TText(); ok {
+			return c.P.unitLen(text)
 		}
-		return len(n.tkids())
+		return len(n.TKids())
 	}
-	c.p.evalErrorf("len: invalid argument %s", ttypeName(x))
+	c.P.evalErrorf("len: invalid argument %s", ttypeName(x))
 	return nil
 }
 
-func (c *tctx) text(x any) any { return c.textStr(x) }
+func (c *TActCtx) Text(x any) any { return c.TextStr(x) }
 
-func (c *tctx) textStr(x any) string {
+func (c *TActCtx) TextStr(x any) string {
 	switch x := x.(type) {
 	case nil:
 		return ""
 	case string:
 		return x
 	}
-	if n, ok := x.(tval); ok {
-		if text, ok := n.ttext(); ok {
+	if n, ok := x.(TVal); ok {
+		if text, ok := n.TText(); ok {
 			return text
 		}
-		s, e := n.tspan()
-		return c.p.text(s, e)
+		s, e := n.TSpan()
+		return c.P.Text(s, e)
 	}
-	c.p.evalErrorf("text: invalid argument %s", ttypeName(x))
+	c.P.evalErrorf("text: invalid argument %s", ttypeName(x))
 	return ""
 }
 
@@ -1962,8 +2035,8 @@ func tlistItems(fn string, v any) []any {
 	if v == nil {
 		return nil
 	}
-	if n, ok := v.(tval); ok {
-		return n.tkids()
+	if n, ok := v.(TVal); ok {
+		return n.TKids()
 	}
 	evalErrorf("%s: expected a list, got %s", fn, ttypeName(v))
 	return nil
@@ -1974,7 +2047,7 @@ func tasNode(fn string, v any) any {
 		return nil
 	}
 	switch v.(type) {
-	case tval, int, string, bool:
+	case TVal, int, string, bool:
 		return v
 	}
 	evalErrorf("%s: elements must be values, got %s", fn, ttypeName(v))
@@ -1993,246 +2066,249 @@ func trtFold(fn string, right bool, acc, list any, f func(acc, item any) any) an
 	return acc
 }
 
-func (c *tctx) mapList(list any, f func(item any) any) any {
-	base := len(c.p.kidStack)
-	c.pushMap(list, f)
-	return c.endList(base)
+func (c *TActCtx) MapList(list any, f func(item any) any) any {
+	base := len(c.P.KidStack)
+	c.PushMap(list, f)
+	return c.EndList(base)
 }
 
-func (c *tctx) filterList(list any, f func(item any) any) any {
-	base := len(c.p.kidStack)
-	for _, item := range c.listItems("filter", list) {
-		c.p.stepWork()
+func (c *TActCtx) filterList(list any, f func(item any) any) any {
+	base := len(c.P.KidStack)
+	for _, item := range c.ListItems("filter", list) {
+		c.P.StepWork()
 		value := f(tvalOrNil(item))
 		keep, ok := value.(bool)
 		if !ok {
-			c.p.evalErrorf("filter: predicate must produce a bool, got %s", ttypeName(value))
+			c.P.evalErrorf("filter: predicate must produce a bool, got %s", ttypeName(value))
 		}
 		if keep {
-			c.p.kidStack = append(c.p.kidStack, item)
+			c.P.KidStack = append(c.P.KidStack, item)
 		}
 	}
-	return c.endList(base)
+	return c.EndList(base)
 }
 
-func (c *tctx) list(args ...any) any {
-	base := len(c.p.kidStack)
-	c.pushList(args...)
-	return c.endList(base)
+func (c *TActCtx) List(args ...any) any {
+	base := len(c.P.KidStack)
+	c.PushList(args...)
+	return c.EndList(base)
 }
 
-func (c *tctx) concat(args ...any) any {
-	base := len(c.p.kidStack)
+func (c *TActCtx) Concat(args ...any) any {
+	base := len(c.P.KidStack)
 	for _, a := range args {
-		c.p.stepWork()
-		c.pushItems(a)
+		c.P.StepWork()
+		c.PushItems(a)
 	}
-	return c.endList(base)
+	return c.EndList(base)
 }
 
-func (c *tctx) pushMap(list any, f func(item any) any) {
-	for _, it := range c.listItems("map", list) {
-		c.p.stepWork()
-		c.p.kidStack = append(c.p.kidStack, c.asNode("map", f(tvalOrNil(it))))
+func (c *TActCtx) PushMap(list any, f func(item any) any) {
+	for _, it := range c.ListItems("map", list) {
+		c.P.StepWork()
+		c.P.KidStack = append(c.P.KidStack, c.asNode("map", f(tvalOrNil(it))))
 	}
 }
 
-func (c *tctx) pushList(args ...any) {
+func (c *TActCtx) PushList(args ...any) {
 	for _, a := range args {
-		c.p.stepWork()
-		c.p.kidStack = append(c.p.kidStack, c.asNode("list", a))
+		c.P.StepWork()
+		c.P.KidStack = append(c.P.KidStack, c.asNode("list", a))
 	}
 }
 
-func (c *tctx) pushItems(v any) {
-	c.p.kidStack = appendWork(c.p.parser, c.p.kidStack, c.listItems("concat", v))
+func (c *TActCtx) PushItems(v any) {
+	c.P.KidStack = appendWork(c.P.Parser, c.P.KidStack, c.ListItems("concat", v))
 }
 
-func (c *tctx) endList(base int) any {
-	return c.listNode(c.p.kids(base))
+func (c *TActCtx) EndList(base int) any {
+	return c.listNode(c.P.Kids(base))
 }
 
 // --- Operators Rule expressions ---
 
-type toperatorsRule struct {
-	skip     tmatcher
-	operands []*toperatorsRuleLine
-	prefix   []*toperatorsRuleOp
-	led      []*toperatorsRuleOp
+// TOperatorsRule is for generated parsers; not a stable API.
+type TOperatorsRule struct {
+	Skip     tmatcher
+	Operands []*TOperatorsRuleLine
+	Prefix   []*TOperatorsRuleOp
+	Led      []*TOperatorsRuleOp
 }
 
-type toperatorsRuleLine struct {
-	scope  []string
-	m      tmatcher
-	action func(*tctx) any
-	// value makes the value of an operand line without an action, and of an operator line's
+// TOperatorsRuleLine is for generated parsers; not a stable API.
+type TOperatorsRuleLine struct {
+	Scope  []string
+	M      tmatcher
+	Action func(*TActCtx) any
+	// Value makes the value of an operand line without an action, and of an operator line's
 	// operator, from the value of the line's expression.
-	value shaper
-	check func(p *tparser, v any) // checks the line's value against the rule's declared type
+	Value Shaper
+	check func(p *TParser, v any) // checks the line's value against the rule's declared type
 }
 
-type toperatorsRuleOp struct {
-	id    int
-	kind  string
-	assoc string
-	level int
-	line  *toperatorsRuleLine
+// TOperatorsRuleOp is for generated parsers; not a stable API.
+type TOperatorsRuleOp struct {
+	Id    int
+	Kind  string
+	Assoc string
+	Level int
+	Line  *TOperatorsRuleLine
 }
 
 type toperatorsRuleAttempt struct {
-	op         *toperatorsRuleOp
-	frame      *tframe
+	op         *TOperatorsRuleOp
+	frame      *TCaptureFrame
 	v          any
 	start, end int
-	env        *env
+	env        *Env
 	cut        bool
 	errs       []*SyntaxError
 }
 
-func (p *tparser) skipTrivia(pr *toperatorsRule) {
-	if pr.skip == nil {
+func (p *TParser) skipTrivia(pr *TOperatorsRule) {
+	if pr.Skip == nil {
 		return
 	}
-	m := p.mark()
-	p.silent++
-	_, ok := pr.skip(p)
-	p.silent--
+	m := p.Mark()
+	p.Silent++
+	_, ok := pr.Skip(p)
+	p.Silent--
 	if !ok {
-		p.reset(m)
+		p.Reset(m)
 	}
 }
 
-func (p *tparser) longest(ops []*toperatorsRuleOp) (best toperatorsRuleAttempt, cutFailed bool) {
-	m0 := p.mark()
+func (p *TParser) longest(ops []*TOperatorsRuleOp) (best toperatorsRuleAttempt, cutFailed bool) {
+	m0 := p.Mark()
 	for _, op := range ops {
-		p.stepWork()
-		prevFrame, prevCut := p.frame, p.cut
-		f := p.newFrame(len(op.line.scope))
-		p.frame, p.cut = f, false
-		v, ok := op.line.m(p)
-		cut := p.cut
-		p.frame, p.cut = prevFrame, prevCut
-		if ok && p.pos == m0.pos && op.kind != "infix" {
+		p.StepWork()
+		prevFrame, prevCut := p.Frame, p.Cut
+		f := p.NewFrame(len(op.Line.Scope))
+		p.Frame, p.Cut = f, false
+		v, ok := op.Line.M(p)
+		cut := p.Cut
+		p.Frame, p.Cut = prevFrame, prevCut
+		if ok && p.Pos == m0.Pos && op.Kind != "infix" {
 			ok = false
 		}
-		if ok && (best.op == nil || p.pos > best.end) {
-			best = toperatorsRuleAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
-				errs: p.copyErrors(nil, p.recovered[m0.recovered:])}
+		if ok && (best.op == nil || p.Pos > best.end) {
+			best = toperatorsRuleAttempt{op: op, frame: f, v: v, start: m0.Pos, end: p.Pos, env: p.Env, cut: cut,
+				errs: p.copyErrors(nil, p.Recovered[m0.recovered:])}
 		}
 		if !ok && cut {
 			cutFailed = true
 		}
-		if len(f.vals) == 0 {
-			p.reset(m0)
+		if len(f.Vals) == 0 {
+			p.Reset(m0)
 			continue
 		}
-		p.saved = appendWork(p.parser, p.saved[:0], f.vals)
-		p.reset(m0)
-		copyWork(p.parser, f.vals, p.saved)
+		p.saved = appendWork(p.Parser, p.saved[:0], f.Vals)
+		p.Reset(m0)
+		copyWork(p.Parser, f.Vals, p.saved)
 	}
 	return best, cutFailed
 }
 
-func (p *tparser) apply(a *toperatorsRuleAttempt) {
-	p.pos, p.env = a.end, a.env
-	p.recovered = p.copyErrors(p.recovered, a.errs)
+func (p *TParser) apply(a *toperatorsRuleAttempt) {
+	p.Pos, p.Env = a.end, a.env
+	p.Recovered = p.copyErrors(p.Recovered, a.errs)
 }
 
-// operatorsRuleParse is parser.operatorsRuleParse for typed values.
-func (p *tparser) operatorsRuleParse(r *trule, min int) (any, bool) {
-	p.depth++
-	if p.depth > p.maxDepth {
-		p.tooDeep()
+// OperatorsRuleParse is parser.OperatorsRuleParse for typed values.
+func (p *TParser) OperatorsRuleParse(r *TRule, min int) (any, bool) {
+	p.Depth++
+	if p.Depth > p.MaxDepth {
+		p.TooDeep()
 	}
 	v, ok := p.operatorsRuleExpr(r, min)
-	p.depth--
+	p.Depth--
 	return v, ok
 }
 
-func (p *tparser) operatorsRuleExpr(r *trule, min int) (any, bool) {
-	pr := r.operatorsRule
+func (p *TParser) operatorsRuleExpr(r *TRule, min int) (any, bool) {
+	pr := r.OperatorsRule
 	lhs, ok := p.operatorsRuleNud(r)
 	if !ok {
 		return nil, false
 	}
 	lastNone := -1
 	for {
-		m0 := p.mark()
+		m0 := p.Mark()
 		p.skipTrivia(pr)
-		a, cutFailed := p.longest(pr.led)
+		a, cutFailed := p.longest(pr.Led)
 		if a.op == nil {
-			p.reset(m0)
+			p.Reset(m0)
 			if cutFailed {
 				return nil, false
 			}
 			break
 		}
-		if a.op.level <= min || a.op.assoc == "none" && a.op.level == lastNone {
-			p.reset(m0)
+		if a.op.Level <= min || a.op.Assoc == "none" && a.op.Level == lastNone {
+			p.Reset(m0)
 			break
 		}
 		p.apply(&a)
-		if a.op.kind == "postfix" {
+		if a.op.Kind == "postfix" {
 			lhs = p.operatorsRuleBuild(r, &a, lhs, nil)
 			lastNone = -1
-			if p.pos == m0.pos {
+			if p.Pos == m0.Pos {
 				break
 			}
 			continue
 		}
-		rmin := a.op.level
-		if a.op.assoc == "right" {
+		rmin := a.op.Level
+		if a.op.Assoc == "right" {
 			rmin--
 		}
-		rhs, ok := p.operatorsRuleParse(r, rmin)
+		rhs, ok := p.OperatorsRuleParse(r, rmin)
 		if !ok {
 			if a.cut {
 				return nil, false
 			}
-			p.reset(m0)
+			p.Reset(m0)
 			break
 		}
 		lhs = p.operatorsRuleBuild(r, &a, lhs, rhs)
 		lastNone = -1
-		if a.op.assoc == "none" {
-			lastNone = a.op.level
+		if a.op.Assoc == "none" {
+			lastNone = a.op.Level
 		}
-		if p.pos == m0.pos { // as in runtime.go
+		if p.Pos == m0.Pos { // as in runtime.go
 			break
 		}
 	}
 	return lhs, true
 }
 
-func (p *tparser) operatorsRuleNud(r *trule) (any, bool) {
-	pr := r.operatorsRule
+func (p *TParser) operatorsRuleNud(r *TRule) (any, bool) {
+	pr := r.OperatorsRule
 	p.skipTrivia(pr)
-	m0 := p.mark()
-	if a, cutFailed := p.longest(pr.prefix); a.op != nil {
+	m0 := p.Mark()
+	if a, cutFailed := p.longest(pr.Prefix); a.op != nil {
 		p.apply(&a)
-		rhs, ok := p.operatorsRuleParse(r, a.op.level)
+		rhs, ok := p.OperatorsRuleParse(r, a.op.Level)
 		if ok {
 			return p.operatorsRuleBuild(r, &a, nil, rhs), true
 		}
 		if a.cut {
 			return nil, false
 		}
-		p.reset(m0)
+		p.Reset(m0)
 	} else if cutFailed {
 		return nil, false
 	}
-	for _, o := range pr.operands {
-		p.stepWork()
-		prevFrame, prevCut := p.frame, p.cut
-		f := p.newFrame(len(o.scope))
-		p.frame, p.cut = f, false
-		v, ok := o.m(p)
-		cut := p.cut
-		p.frame, p.cut = prevFrame, prevCut
+	for _, o := range pr.Operands {
+		p.StepWork()
+		prevFrame, prevCut := p.Frame, p.Cut
+		f := p.NewFrame(len(o.Scope))
+		p.Frame, p.Cut = f, false
+		v, ok := o.M(p)
+		cut := p.Cut
+		p.Frame, p.Cut = prevFrame, prevCut
 		if ok {
-			return p.lineResult(r, o, f, v, m0.pos), true
+			return p.lineResult(r, o, f, v, m0.Pos), true
 		}
-		p.reset(m0)
+		p.Reset(m0)
 		if cut {
 			return nil, false
 		}
@@ -2240,8 +2316,8 @@ func (p *tparser) operatorsRuleNud(r *trule) (any, bool) {
 	return nil, false
 }
 
-func (p *tparser) lineResult(r *trule, l *toperatorsRuleLine, f *tframe, v any, start int) any {
-	if r.novalue {
+func (p *TParser) lineResult(r *TRule, l *TOperatorsRuleLine, f *TCaptureFrame, v any, start int) any {
+	if r.Novalue {
 		return nil
 	}
 	v = p.lineValue(r, l, f, v, start)
@@ -2251,50 +2327,50 @@ func (p *tparser) lineResult(r *trule, l *toperatorsRuleLine, f *tframe, v any, 
 	return v
 }
 
-func (p *tparser) lineValue(r *trule, l *toperatorsRuleLine, f *tframe, v any, start int) any {
-	if l.action != nil {
-		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
-		return c.result(l.action, r.name)
+func (p *TParser) lineValue(r *TRule, l *TOperatorsRuleLine, f *TCaptureFrame, v any, start int) any {
+	if l.Action != nil {
+		c := p.UseCtx(TActCtx{P: p, F: f, Start: start, End: p.Pos, Cbase: len(p.Created)})
+		return c.Result(l.Action, r.Name)
 	}
-	v = p.scopeValue(l.value, v, start)
-	if len(l.scope) > 0 {
-		v = p.attachCaptures(v, l.scope, f.vals, start, p.pos)
+	v = p.ScopeValue(l.Value, v, start)
+	if len(l.Scope) > 0 {
+		v = p.AttachCaptures(v, l.Scope, f.Vals, start, p.Pos)
 	}
-	if n := asTval(v); n != nil {
-		n.tsetFresh(false)
+	if n := AsTval(v); n != nil {
+		n.TSetFresh(false)
 		return n
 	}
 	return nil
 }
 
-func (p *tparser) operatorsRuleBuild(r *trule, a *toperatorsRuleAttempt, lhs, rhs any) any {
-	if r.novalue {
+func (p *TParser) operatorsRuleBuild(r *TRule, a *toperatorsRuleAttempt, lhs, rhs any) any {
+	if r.Novalue {
 		return nil
 	}
-	start, end := a.start, p.pos
-	if l := asTval(lhs); l != nil {
-		start, _ = l.tspan()
+	start, end := a.start, p.Pos
+	if l := AsTval(lhs); l != nil {
+		start, _ = l.TSpan()
 	}
-	if a.op.kind == "postfix" {
+	if a.op.Kind == "postfix" {
 		end = a.end
 	}
-	l := a.op.line
+	l := a.op.Line
 	// The operator's value is its one element, or the node of its tuple, which has the line's
 	// captures.
-	opv, ok := p.shapeSingle(l.value, a.v, a.start)
+	opv, ok := p.ShapeSingle(l.Value, a.v, a.start)
 	if !ok {
-		opv = p.newNode("tuple", a.start, a.end, nil)
+		opv = p.NewNode("tuple", a.start, a.end, nil)
 	}
-	if l.value.mode == singleTuple && len(l.scope) > 0 {
-		opv = p.attachCaptures(opv, l.scope, a.frame.vals, a.start, a.end)
+	if l.Value.Mode == singleTuple && len(l.Scope) > 0 {
+		opv = p.AttachCaptures(opv, l.Scope, a.frame.Vals, a.start, a.end)
 	}
-	if n := asTval(opv); n != nil {
-		n.tsetFresh(false)
+	if n := AsTval(opv); n != nil {
+		n.TSetFresh(false)
 	}
-	if l.action != nil {
-		c := p.useCtx(tctx{p: p, f: a.frame, start: start, end: end, cbase: len(p.created),
-			op: opv, lhs: lhs, rhs: rhs})
-		v := c.result(l.action, r.name)
+	if l.Action != nil {
+		c := p.UseCtx(TActCtx{P: p, F: a.frame, Start: start, End: end, Cbase: len(p.Created),
+			Op: opv, Lhs: lhs, Rhs: rhs})
+		v := c.Result(l.Action, r.Name)
 		if l.check != nil {
 			l.check(p, v)
 		}
@@ -2304,88 +2380,86 @@ func (p *tparser) operatorsRuleBuild(r *trule, a *toperatorsRuleAttempt, lhs, rh
 	// kind, with those captures.
 	var kids []any
 	var fields []tfield
-	switch a.op.kind {
+	switch a.op.Kind {
 	case "prefix":
-		kids = p.newVals(2)
+		kids = p.NewVals(2)
 		kids[0], kids[1] = opv, rhs
 		fields = []tfield{{"op", opv}, {"rhs", rhs}}
 	case "postfix":
-		kids = p.newVals(2)
+		kids = p.NewVals(2)
 		kids[0], kids[1] = lhs, opv
 		fields = []tfield{{"lhs", lhs}, {"op", opv}}
 	default:
-		kids = p.newVals(3)
+		kids = p.NewVals(3)
 		kids[0], kids[1], kids[2] = lhs, opv, rhs
 		fields = []tfield{{"lhs", lhs}, {"op", opv}, {"rhs", rhs}}
 	}
-	n := p.newNode("tuple", start, end, kids)
+	n := p.NewNode("tuple", start, end, kids)
 	n.fresh = false
 	n.fields = fields
 	return n
 }
 
-func (c *tctx) binary(op string, l, r any) any {
-	if v, ok := c.p.stringBinary(op, l, r); ok {
+func (c *TActCtx) Binary(op string, l, r any) any {
+	if v, ok := c.P.stringBinary(op, l, r); ok {
 		return v
 	}
-	if workControlsEnabled && c.p.control != nil {
-		return trtBinaryWork(c.p.parser, op, l, r)
+	if WorkControlsEnabled && c.P.Control != nil {
+		return trtBinaryWork(c.P.Parser, op, l, r)
 	}
 	return trtBinary(op, l, r)
 }
 
-func (p *tparser) pushKid(v any) { p.stepWork(); p.kidStack = append(p.kidStack, v) }
-func (p *tparser) setValueField(n *tnode, name string, v any) {
-	if !workControlsEnabled || p.control == nil {
+func (p *TParser) PushKid(v any) { p.StepWork(); p.KidStack = append(p.KidStack, v) }
+func (p *TParser) setValueField(n *TSeq, name string, v any) {
+	if !WorkControlsEnabled || p.Control == nil {
 		n.set(name, v)
 		return
 	}
 	for i := range n.fields {
-		p.stepWork()
+		p.StepWork()
 		if p.rawValueEqual(n.fields[i].name, name) {
 			n.fields[i].val = v
 			return
 		}
 	}
-	p.stepWork()
+	p.StepWork()
 	n.fields = append(n.fields, tfield{name, v})
 }
-func (p *tparser) undoCaptures(from int) {
-	for i := len(p.trail) - 1; i >= from; i-- {
-		p.stepWork()
-		u := p.trail[i]
-		u.f.vals[u.slot] = u.old
+func (p *TParser) undoCaptures(from int) {
+	for i := len(p.Trail) - 1; i >= from; i-- {
+		p.StepWork()
+		u := p.Trail[i]
+		u.f.Vals[u.slot] = u.old
 	}
 }
 
-func (p *tparser) valueField(n tval, name string) (any, bool) {
-	if !workControlsEnabled || p.control == nil {
-		return n.tfield(name)
+func (p *TParser) valueField(n TVal, name string) (any, bool) {
+	if !WorkControlsEnabled || p.Control == nil {
+		return n.TField(name)
 	}
-	t, transient := n.(*tnode)
+	t, transient := n.(*TSeq)
 	if !transient {
-		if controlled, ok := n.(interface {
-			tfieldWork(*tparser, string) (any, bool)
-		}); ok {
-			return controlled.tfieldWork(p, name)
+		if controlled, ok := n.(tfieldWorker); ok {
+			return controlled.TFieldWork(p, name)
 		}
-		return n.tfield(name)
+		return n.TField(name)
 	}
 	for _, field := range t.fields {
-		p.stepWork()
+		p.StepWork()
 		if p.rawValueEqual(field.name, name) {
 			return field.val, true
 		}
 	}
 	return nil, true
 }
-func (c *tctx) fold(fn string, right bool, acc, list any, f func(acc, item any) any) any {
-	if !workControlsEnabled || c.p.control == nil {
+func (c *TActCtx) Fold(fn string, right bool, acc, list any, f func(acc, item any) any) any {
+	if !WorkControlsEnabled || c.P.Control == nil {
 		return trtFold(fn, right, acc, list, f)
 	}
-	items := c.listItems(fn, list)
+	items := c.ListItems(fn, list)
 	for i := range items {
-		c.p.stepWork()
+		c.P.StepWork()
 		item := items[i]
 		if right {
 			item = items[len(items)-1-i]
@@ -2395,18 +2469,18 @@ func (c *tctx) fold(fn string, right bool, acc, list any, f func(acc, item any) 
 	return acc
 }
 
-// listField materializes a typed struct's list field during an action read.
-// The ordinary tfield path remains independent of a parser or work controller.
-func (p *tparser) listField(kids []any) any {
-	n := &tnode{typ: typeListValue, kids: kids}
+// ListField materializes a typed struct's list field during an action read.
+// The ordinary TField path remains independent of a parser or work controller.
+func (p *TParser) ListField(kids []any) any {
+	n := &TSeq{Typ: TypeListValue, Kids: kids}
 	first := true
 	for _, it := range kids {
-		p.stepWork()
-		t := asTval(it)
+		p.StepWork()
+		t := AsTval(it)
 		if t == nil {
 			continue
 		}
-		start, end := t.tspan()
+		start, end := t.TSpan()
 		if first || start < n.Start {
 			n.Start = start
 		}
@@ -2418,7 +2492,7 @@ func (p *tparser) listField(kids []any) any {
 	return n
 }
 
-func trtUnaryWork(p *parser, op string, x any) any {
+func trtUnaryWork(p *Parser, op string, x any) any {
 	switch op {
 	case "-":
 		if i, ok := x.(int); ok {
@@ -2433,7 +2507,7 @@ func trtUnaryWork(p *parser, op string, x any) any {
 	return nil
 }
 
-func trtBoolWork(p *parser, op string, v any) bool {
+func trtBoolWork(p *Parser, op string, v any) bool {
 	b, ok := v.(bool)
 	if !ok {
 		p.evalErrorf("invalid operand %s for %s", ttypeName(v), op)
@@ -2441,7 +2515,7 @@ func trtBoolWork(p *parser, op string, v any) bool {
 	return b
 }
 
-func trtBinaryWork(p *parser, op string, l, r any) any {
+func trtBinaryWork(p *Parser, op string, l, r any) any {
 	switch op {
 	case "==":
 		return trtEqual(l, r)
@@ -2499,62 +2573,62 @@ func trtBinaryWork(p *parser, op string, l, r any) any {
 	return nil
 }
 
-func tlistItemsWork(p *parser, fn string, v any) []any {
+func tlistItemsWork(p *Parser, fn string, v any) []any {
 	if v == nil {
 		return nil
 	}
-	if n, ok := v.(tval); ok {
-		return n.tkids()
+	if n, ok := v.(TVal); ok {
+		return n.TKids()
 	}
 	p.evalErrorf("%s: expected a list, got %s", fn, ttypeName(v))
 	return nil
 }
 
-func tasNodeWork(p *parser, fn string, v any) any {
+func tasNodeWork(p *Parser, fn string, v any) any {
 	if v == nil {
 		return nil
 	}
 	switch v.(type) {
-	case tval, int, string, bool:
+	case TVal, int, string, bool:
 		return v
 	}
 	p.evalErrorf("%s: elements must be values, got %s", fn, ttypeName(v))
 	return nil
 }
 
-func (c *tctx) unary(op string, v any) any {
-	if !workControlsEnabled || c.p.control == nil {
+func (c *TActCtx) Unary(op string, v any) any {
+	if !WorkControlsEnabled || c.P.Control == nil {
 		return trtUnary(op, v)
 	}
-	return trtUnaryWork(c.p.parser, op, v)
+	return trtUnaryWork(c.P.Parser, op, v)
 }
-func (c *tctx) and(l any, r func() any) any {
-	if !workControlsEnabled || c.p.control == nil {
+func (c *TActCtx) And(l any, r func() any) any {
+	if !WorkControlsEnabled || c.P.Control == nil {
 		return trtAnd(l, r)
 	}
-	if !trtBoolWork(c.p.parser, "&&", l) {
+	if !trtBoolWork(c.P.Parser, "&&", l) {
 		return false
 	}
-	return trtBoolWork(c.p.parser, "&&", r())
+	return trtBoolWork(c.P.Parser, "&&", r())
 }
-func (c *tctx) or(l any, r func() any) any {
-	if !workControlsEnabled || c.p.control == nil {
+func (c *TActCtx) Or(l any, r func() any) any {
+	if !WorkControlsEnabled || c.P.Control == nil {
 		return trtOr(l, r)
 	}
-	if trtBoolWork(c.p.parser, "||", l) {
+	if trtBoolWork(c.P.Parser, "||", l) {
 		return true
 	}
-	return trtBoolWork(c.p.parser, "||", r())
+	return trtBoolWork(c.P.Parser, "||", r())
 }
-func (c *tctx) listItems(fn string, v any) []any {
-	if !workControlsEnabled || c.p.control == nil {
+func (c *TActCtx) ListItems(fn string, v any) []any {
+	if !WorkControlsEnabled || c.P.Control == nil {
 		return tlistItems(fn, v)
 	}
-	return tlistItemsWork(c.p.parser, fn, v)
+	return tlistItemsWork(c.P.Parser, fn, v)
 }
-func (c *tctx) asNode(fn string, v any) any {
-	if !workControlsEnabled || c.p.control == nil {
+func (c *TActCtx) asNode(fn string, v any) any {
+	if !WorkControlsEnabled || c.P.Control == nil {
 		return tasNode(fn, v)
 	}
-	return tasNodeWork(c.p.parser, fn, v)
+	return tasNodeWork(c.P.Parser, fn, v)
 }

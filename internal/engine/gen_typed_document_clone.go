@@ -80,7 +80,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 	terminals := []struct{ name, goType, chunk string }{{"Match", "TNode[string]", "match"}, {"Error", "Error", "error"}}
 	for _, terminal := range terminals {
 		fmt.Fprintf(&methods, `func (c *typedDocumentClone) to%[1]s(v *%[3]s) *%[3]s {
- c.step(1)
+ c.Step(1)
  if v == nil { return nil }
  if old, ok := c.seen%[1]s[v]; ok { return old }
  out := astNew(&c.%[2]s)
@@ -122,7 +122,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 			deferred = deferred || containsStruct(f.t)
 		}
 		fmt.Fprintf(&methods, `func (c *typedDocumentClone) to%[1]s(v *%[1]s) *%[1]s {
- c.step(1)
+ c.Step(1)
  if v == nil { return nil }
  if old, ok := c.seen%[1]s[v]; ok { return old }
  out := astNew(&c.t%[1]s)
@@ -131,12 +131,12 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 `, goName, t.span)
 		target := &methods
 		if deferred {
-			methods.WriteString(" c.tasks = append(c.tasks, typedDocumentCloneTask{v, out})\n return out\n}\n")
-			fmt.Fprintf(&tasks, " case *%s:\n out := task.target.(*%s)\n _ = out; _ = v\n", goName, goName)
+			methods.WriteString(" c.Tasks = append(c.Tasks, TypedDocumentCloneTask{v, out})\n return out\n}\n")
+			fmt.Fprintf(&tasks, " case *%s:\n out := task.Target.(*%s)\n _ = out; _ = v\n", goName, goName)
 			target = &tasks
 		}
 		for _, f := range t.info.fields[name] {
-			fmt.Fprintf(target, " c.step(1)\n out.%s = %s\n", f.name, clone(f.t, "v."+f.name))
+			fmt.Fprintf(target, " c.Step(1)\n out.%s = %s\n", f.name, clone(f.t, "v."+f.name))
 		}
 		if !deferred {
 			methods.WriteString(" return out\n}\n")
@@ -147,7 +147,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 		if !t.representable(u) {
 			continue
 		}
-		fmt.Fprintf(&methods, "func (c *typedDocumentClone) to%s(v %s) %s {\n c.step(1)\n switch v := v.(type) {\n case *Error: return c.toError(v)\n", t.names[name], t.names[name], t.names[name])
+		fmt.Fprintf(&methods, "func (c *typedDocumentClone) to%s(v %s) %s {\n c.Step(1)\n switch v := v.(type) {\n case *Error: return c.toError(v)\n", t.names[name], t.names[name], t.names[name])
 		seen := map[string]bool{"*Error": true}
 		open := false
 		for _, alternative := range u.alts {
@@ -172,7 +172,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 	// Values of open types (node, any, unions without a Go type of their own) are cloned by
 	// their dynamic types.
 	methods.WriteString(`func (c *typedDocumentClone) toOpen(v any) any {
- c.step(1)
+ c.Step(1)
  switch v := v.(type) {
  case *TNode[string]: return c.toMatch(v)
  case *TNode[any]: return c.toNode(v)
@@ -190,16 +190,16 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
  return v
 }
 func (c *typedDocumentClone) toNode(v *TNode[any]) *TNode[any] {
- c.step(1)
+ c.Step(1)
  if v == nil { return nil }
- if old, ok := c.values[v]; ok { return old.(*TNode[any]) }
+ if old, ok := c.Values[v]; ok { return old.(*TNode[any]) }
  out := &TNode[any]{` + t.span + `: v.` + t.span + `}
- c.remember(v, out)
+ c.Remember(v, out)
  if elems, ok := v.Value.([]any); ok { out.Value = c.toElems(elems) } else { out.Value = v.Value }
  return out
 }
 func (c *typedDocumentClone) toElems(v []any) []any {
- c.step(uint64(len(v)))
+ c.Step(uint64(len(v)))
  out := make([]any, len(v))
  for i, x := range v { out[i] = c.toOpen(x) }
  return out
@@ -211,7 +211,7 @@ func (c *typedDocumentClone) toElems(v []any) []any {
 		for ; helpers < len(t.chelpers.order); helpers++ {
 			h := t.chelpers.order[helpers]
 			g := t.goType(h.x)
-			fmt.Fprintf(&methods, "func (c *typedDocumentClone) %s(v %s) %s {\n c.step(1)\n", h.name, g, g)
+			fmt.Fprintf(&methods, "func (c *typedDocumentClone) %s(v %s) %s {\n c.Step(1)\n", h.name, g, g)
 			switch x := h.x.(type) {
 			case vrule:
 				fmt.Fprintf(&methods, " return %s\n", clone(t.vres[x.name], "v"))
@@ -226,10 +226,10 @@ func (c *typedDocumentClone) toElems(v []any) []any {
 			case nodeTy:
 				if x.name != "" {
 					// A node of a named node type clones the node it embeds.
-					fmt.Fprintf(&methods, " if v == nil { return nil }\n if old, ok := c.values[v]; ok { return old.(%s) }\n out := &%s{}\n c.remember(v, out)\n if u := %s; u != nil { out.TNode = *u }\n return out\n", g, g[1:], clone(x.underlying(), "&v.TNode"))
+					fmt.Fprintf(&methods, " if v == nil { return nil }\n if old, ok := c.Values[v]; ok { return old.(%s) }\n out := &%s{}\n c.Remember(v, out)\n if u := %s; u != nil { out.TNode = *u }\n return out\n", g, g[1:], clone(x.underlying(), "&v.TNode"))
 					break
 				}
-				fmt.Fprintf(&methods, " if v == nil { return nil }\n if old, ok := c.values[v]; ok { return old.(%s) }\n out := &%s{%s: v.%s}\n c.remember(v, out)\n out.Value = %s\n return out\n", g, g[1:], t.span, t.span, clone(x.value, "v.Value"))
+				fmt.Fprintf(&methods, " if v == nil { return nil }\n if old, ok := c.Values[v]; ok { return old.(%s) }\n out := &%s{%s: v.%s}\n c.Remember(v, out)\n out.Value = %s\n return out\n", g, g[1:], t.span, t.span, clone(x.value, "v.Value"))
 			}
 			methods.WriteString("}\n")
 		}
@@ -240,14 +240,14 @@ func (c *typedDocumentClone) toElems(v []any) []any {
 		elem := t.goType(list.elem)
 		value := clone(list.elem, "item")
 		fmt.Fprintf(&methods, `func (c *typedDocumentClone) %[1]s(v []%[2]s) []%[2]s {
- c.step(1)
+ c.Step(1)
  if v == nil { return nil }
- key := documentSliceKey{length: len(v), capacity: cap(v)}
- if cap(v) > 0 { key.first = &v[:1][0] }
- if key.first != nil { if old, ok := c.slices[key]; ok { return old.([]%[2]s) } }
- c.step(uint64(len(v)))
+ key := DocumentSliceKey{Length: len(v), Capacity: cap(v)}
+ if cap(v) > 0 { key.First = &v[:1][0] }
+ if key.First != nil { if old, ok := c.Slices[key]; ok { return old.([]%[2]s) } }
+ c.Step(uint64(len(v)))
  out := astSlice(&c.%[1]sChunk, len(v))
- if key.first != nil { if c.slices == nil { c.slices = make(map[documentSliceKey]any) }; c.slices[key] = out }
+ if key.First != nil { if c.Slices == nil { c.Slices = make(map[DocumentSliceKey]any) }; c.Slices[key] = out }
  for i, item := range v { out[i] = %[3]s }
  return out
 }
@@ -255,7 +255,7 @@ func (c *typedDocumentClone) toElems(v []any) []any {
 	}
 	b.WriteString(`// typedDocumentClone publishes independent values without exposing cached nodes.
 type typedDocumentClone struct {
- typedDocumentCloneBase
+ TypedDocumentCloneBase
  match astChunk[TNode[string]]
  error astChunk[Error]
 `)
@@ -275,23 +275,23 @@ type typedDocumentClone struct {
 		fmt.Fprintf(b, " %sChunk astChunk[%s]\n", list.name, t.goType(list.elem))
 	}
 	b.WriteString(`}
-func (c *typedDocumentClone) finish() {
- for len(c.tasks) > 0 {
-  i := len(c.tasks)-1
-  task := c.tasks[i]
-  c.tasks[i] = typedDocumentCloneTask{}
-  c.tasks = c.tasks[:i]
-  switch v := task.source.(type) {
+func (c *typedDocumentClone) Finish() {
+ for len(c.Tasks) > 0 {
+  i := len(c.Tasks)-1
+  task := c.Tasks[i]
+  c.Tasks[i] = TypedDocumentCloneTask{}
+  c.Tasks = c.Tasks[:i]
+  switch v := task.Source.(type) {
 `)
 	b.WriteString(tasks.String())
 	b.WriteString(`
  default: _ = v
  }
  }
- c.control.check()
+ c.Control.Check()
 }
-func (c *typedDocumentClone) release() {
- c.releaseBase()
+func (c *typedDocumentClone) Release() {
+ c.ReleaseBase()
 `)
 	for _, name := range append([]string{"Match", "Error"}, t.structs...) {
 		if g, ok := t.names[name]; ok {
@@ -302,12 +302,12 @@ func (c *typedDocumentClone) release() {
 	b.WriteString(`
 }
 func typedDocumentClonePointer[T any](c *typedDocumentClone, v *T) *T {
- c.step(1)
+ c.Step(1)
  if v == nil { return nil }
- if old, ok := c.values[v]; ok { return old.(*T) }
+ if old, ok := c.Values[v]; ok { return old.(*T) }
  out := new(T)
  *out = *v
- c.remember(v, out)
+ c.Remember(v, out)
  return out
 }
 `)

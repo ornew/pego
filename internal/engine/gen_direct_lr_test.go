@@ -89,7 +89,7 @@ func TestGeneratedTypedLRBodies(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		if !strings.Contains(string(code), "tparse(trules") {
+		if !strings.Contains(string(code), "TParse(trules") {
 			t.Fatalf("%s: typed runtime is not exercised", c.name)
 		}
 		inlined := strings.Contains(string(code), "(typed LR body inlined)")

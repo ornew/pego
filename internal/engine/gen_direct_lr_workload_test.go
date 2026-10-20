@@ -127,7 +127,7 @@ func TestLRWorkload(t *testing.T) {
 			t.Fatalf("typed capture result: %v %v", saved, err)
 		}
 		before, _ := json.Marshal(saved)
-		p := &tparser{parser: &parser{}}
+		p := &TParser{Parser: &Parser{}}
 		for _, input := range []string{lrInput(1), lrInput(128), "a,b,c,", "a,b,", "a,b,c,;", "a,b,c,d,", "a,b,c,;d,é,f,", ""} {
 			v, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
 			data, _ := json.Marshal(struct { Value any; Error string }{v, fmt.Sprint(err)})
@@ -138,10 +138,10 @@ func TestLRWorkload(t *testing.T) {
 			if (err == nil) != (input == lrInput(1) || input == lrInput(128) || input == "a,b,c,") {
 				t.Fatalf("acceptance %q: %v", input, err)
 			}
-			if p.depth != 0 || len(p.trail) != 0 || p.frame != nil {
+			if p.Depth != 0 || len(p.Trail) != 0 || p.Frame != nil {
 				t.Fatal("LR invocation left live frame, depth or undo state")
 			}
-			for _, u := range p.trail[:cap(p.trail)] {
+			for _, u := range p.Trail[:cap(p.Trail)] {
 				if u.f != nil || u.old != nil || u.slot != 0 { t.Fatal("discarded undo retained") }
 			}
 			p.recycle()
@@ -189,7 +189,7 @@ func TestLRWorkload(t *testing.T) {
 			t.Fatal(err)
 		}
 		before, _ := json.Marshal(saved)
-		p := &tparser{parser: &parser{}}
+		p := &TParser{Parser: &Parser{}}
 		for _, input := range []string{"1", "1+2*3", lrInput(32), "(1+2)*3", "2^-1", "1+", "1+2*", "(1+2", "é+1", ""} {
 			v, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
 			data, _ := json.Marshal(struct { Value any; Error string }{v, fmt.Sprint(err)})
@@ -197,10 +197,10 @@ func TestLRWorkload(t *testing.T) {
 			if _, err := ParseAST(input, WithUnit(unit)); (err == nil) != (input == "1" || input == "1+2*3" || input == lrInput(32) || input == "(1+2)*3" || input == "2^-1") {
 				t.Fatalf("acceptance %q: %v", input, err)
 			}
-			if p.depth != 0 || len(p.trail) != 0 || p.frame != nil {
+			if p.Depth != 0 || len(p.Trail) != 0 || p.Frame != nil {
 				t.Fatal("LR invocation left live frame, depth or undo state")
 			}
-			for _, u := range p.trail[:cap(p.trail)] {
+			for _, u := range p.Trail[:cap(p.Trail)] {
 				if u.f != nil || u.old != nil || u.slot != 0 {
 					t.Fatal("LR undo tail retains discarded state")
 				}

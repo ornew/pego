@@ -892,7 +892,7 @@ func TestGenerateStreamKeepsBatchBodies(t *testing.T) {
 			}
 			table := func(code []byte) string {
 				src := string(code)
-				i := strings.Index(src, "rules = []*rule{")
+				i := strings.Index(src, "rules = []*Rule{")
 				return src[i : i+strings.Index(src[i:], "\n\t}\n")]
 			}
 			if table(plain) != table(stream) {

@@ -53,7 +53,7 @@ rule letter Word = t:("z" / "a" / "é") #atomic => Word{Text: text($t)}`)
 
 const generatedGoDiagnosticConsumer = `package PACKAGE
 import("context";"errors";"fmt";"reflect";"slices";"sort";"strings";"testing")
-func diagnosticParser(limits WorkLimits)*parser{return &parser{control:newWorkControl(nil,limits)}}
+func diagnosticParser(limits WorkLimits)*Parser{return &Parser{Control:newWorkControl(nil,limits)}}
 func catchFatal(t *testing.T,f func())(err error){t.Helper();defer func(){if v:=recover();v!=nil{fatal,ok:=v.(fatal);if !ok{panic(v)};err=fatal.err}}();f();return nil}
 type pollingContext struct{context.Context}
 func(*pollingContext)Done()<-chan struct{}{return make(chan struct{})}
@@ -72,19 +72,19 @@ func TestDiagnosticTextParityAndBudget(t *testing.T){
   want:=e.Error();parts:=e.Messages;if len(parts)==0{parts=e.Expected}
   steps:=uint64(len(want)+2*len(parts))
   p:=diagnosticParser(WorkLimits{MaxSteps:steps})
-  retained:=p.recoveryErrorText(e)
+  retained:=p.RecoveryErrorText(e)
   if retained!=want{t.Fatal("message parity",retained,want)}
-  if p.control.stepsUsed()!=steps || p.control.inputUsed()!=0{t.Fatalf("text work %+v",p.control)}
-  p.control=newWorkControl(nil,WorkLimits{MaxSteps:steps-1})
-  if err:=catchFatal(t,func(){p.recoveryErrorText(e)});!errors.Is(err,ErrWorkLimit){t.Fatal("one-short text",err)}
-  p.control=newWorkControl(nil,WorkLimits{MaxSteps:100000})
-  p.recoveryErrorText(&SyntaxError{Line:1,Col:2,Messages:[]string{"other"}})
+  if p.Control.stepsUsed()!=steps || p.Control.inputUsed()!=0{t.Fatalf("text work %+v",p.Control)}
+  p.Control=newWorkControl(nil,WorkLimits{MaxSteps:steps-1})
+  if err:=catchFatal(t,func(){p.RecoveryErrorText(e)});!errors.Is(err,ErrWorkLimit){t.Fatal("one-short text",err)}
+  p.Control=newWorkControl(nil,WorkLimits{MaxSteps:100000})
+  p.RecoveryErrorText(&SyntaxError{Line:1,Col:2,Messages:[]string{"other"}})
   if retained!=want || e.Error()!=want{t.Fatal("retained message overwritten")}
  })}
  p:=diagnosticParser(WorkLimits{MaxSteps:100000})
- p.control.ctx=&pollingContext{Context:context.Background()}
+ p.Control.ctx=&pollingContext{Context:context.Background()}
  var partial string
- if err:=catchFatal(t,func(){partial=p.recoveryErrorText(rows[5])});!errors.Is(err,context.Canceled)||partial!=""{t.Fatal("format cancellation published partial",partial,err)}
+ if err:=catchFatal(t,func(){partial=p.RecoveryErrorText(rows[5])});!errors.Is(err,context.Canceled)||partial!=""{t.Fatal("format cancellation published partial",partial,err)}
 }
 func TestDiagnosticSortingAndSnapshots(t *testing.T){
  for _,n:=range []int{0,1,2,3,7,8,9,127,128,129,511}{
@@ -96,17 +96,17 @@ func TestDiagnosticSortingAndSnapshots(t *testing.T){
  }
  p:=diagnosticParser(WorkLimits{MaxSteps:128})
  if err:=catchFatal(t,func(){p.sortExpected(make([]string,320))});!errors.Is(err,ErrWorkLimit){t.Fatal("sort moves unbounded",err)}
- ids:=make([]expID,320);for i:=range ids{ids[i]=expID(i)}
+ ids:=make([]ExpID,320);for i:=range ids{ids[i]=ExpID(i)}
  p=diagnosticParser(WorkLimits{MaxSteps:100000})
- kept:=p.keep(ids);before:=slices.Clone(kept)
- p.control=newWorkControl(nil,WorkLimits{MaxSteps:319})
- if err:=catchFatal(t,func(){p.keep(ids)});!errors.Is(err,ErrWorkLimit){t.Fatal("snapshot equality unbounded",err)}
+ kept:=p.Keep(ids);before:=slices.Clone(kept)
+ p.Control=newWorkControl(nil,WorkLimits{MaxSteps:319})
+ if err:=catchFatal(t,func(){p.Keep(ids)});!errors.Is(err,ErrWorkLimit){t.Fatal("snapshot equality unbounded",err)}
  if !slices.Equal(kept,before){t.Fatal("snapshot overwritten")}
  p=diagnosticParser(WorkLimits{MaxSteps:319})
- if err:=catchFatal(t,func(){p.keep(ids)});!errors.Is(err,ErrWorkLimit){t.Fatal("snapshot copy unbounded",err)}
- p=diagnosticParser(WorkLimits{MaxSteps:100000});p.mergeExpected(0,ids)
- p.control=newWorkControl(nil,WorkLimits{MaxSteps:128})
- if err:=catchFatal(t,func(){p.mergeExpected(0,ids)});!errors.Is(err,ErrWorkLimit){t.Fatal("merged expectations unbounded",err)}
+ if err:=catchFatal(t,func(){p.Keep(ids)});!errors.Is(err,ErrWorkLimit){t.Fatal("snapshot copy unbounded",err)}
+ p=diagnosticParser(WorkLimits{MaxSteps:100000});p.MergeExpected(0,ids)
+ p.Control=newWorkControl(nil,WorkLimits{MaxSteps:128})
+ if err:=catchFatal(t,func(){p.MergeExpected(0,ids)});!errors.Is(err,ErrWorkLimit){t.Fatal("merged expectations unbounded",err)}
  errorsList:=make([]*SyntaxError,320)
  p=diagnosticParser(WorkLimits{MaxSteps:319})
  if err:=catchFatal(t,func(){p.copyErrors(nil,errorsList)});!errors.Is(err,ErrWorkLimit){t.Fatal("recovered error copies unbounded",err)}

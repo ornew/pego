@@ -94,7 +94,7 @@ func (c *converter) next(off int) int {
 
 // spanOf returns the range of a value of the typed AST.
 func rangeOf(n any) (int, int) {
-	return n.(interface{ tspan() (int, int) }).tspan()
+	return n.(interface{ TSpan() (int, int) }).TSpan()
 }
 
 func end(n any) int {

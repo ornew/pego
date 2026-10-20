@@ -20,14 +20,14 @@ func BenchmarkLiteralMatcher(b *testing.B) {
 			}
 			for _, unit := range []PositionUnit{Bytes, CodePoints} {
 				b.Run(fmt.Sprintf("%x/%t/%d", text, match, unit), func(b *testing.B) {
-					p := parser{unit: unit, bs: input, n: len(input), in: []rune(input), silent: 1}
+					p := Parser{unit: unit, bs: input, n: len(input), In: []rune(input), Silent: 1}
 					if unit == CodePoints {
 						p.n = utf8.RuneCountInString(input)
 					}
 					b.ReportAllocs()
 					for b.Loop() {
-						p.pos = 0
-						if _, ok := p.matchLiteral(rs, text, 0, false); ok != match {
+						p.Pos = 0
+						if _, ok := p.MatchLiteral(rs, text, 0, false); ok != match {
 							b.Fatalf("match=%v want %v", ok, match)
 						}
 					}

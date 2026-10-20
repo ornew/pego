@@ -22,7 +22,7 @@ func TestGeneratedTypedLocalLayoutWorkloads(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			testGeneratedTypedBodyWorkload(t, typedLocalLayoutWorkloadTypes+c.src,
 				typedLocalLayoutWorkloadFixture, filepath.Join(dir, c.name),
-				"// body, invoked as by invoke (body inlined)\nfunc (p *tparser)",
+				"// body, invoked as by invoke (body inlined)\nfunc i",
 				GenOptions{disableTypedLocalLayouts: true})
 		})
 	}
@@ -117,20 +117,20 @@ func TestLocalLayoutWorkload(t *testing.T) {
         saved, err := ParseAST(localInput(3,false),WithUnit(unit))
         if !checkLocal(saved,err,3,false,unit) { t.Fatalf("saved value %v %v",saved,err) }
         before, _ := json.Marshal(saved)
-        p := &tparser{parser:&parser{}}
+        p := &TParser{Parser:&Parser{}}
         for _, n := range []int{1,128,1} {
             for _, rejected := range []bool{false,true} {
                 input := localInput(n,rejected)
                 value, err := p.run(trules[0],input,parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth},&tslabs{})
-                v := tAs[*Doc](value)
+                v := TAs[*Doc](value)
                 if !checkLocal(v,err,n,rejected,unit) { t.Fatalf("%d/%v: %v %v",n,rejected,v,err) }
                 data, _ := json.Marshal(struct { Value any; Error string }{v,fmt.Sprint(err)})
                 pooled, pooledErr := ParseAST(input,WithUnit(unit))
                 pooledData, _ := json.Marshal(struct { Value any; Error string }{pooled,fmt.Sprint(pooledErr)})
                 if string(data) != string(pooledData) { t.Fatal("manual and pooled parsers differ") }
                 fmt.Printf("OBS %v %d/%v %s\n",unit,n,rejected,data)
-                if p.depth != 0 || p.frame != nil || len(p.trail) != 0 { t.Fatal("live invocation state") }
-                for _, u := range p.trail[:cap(p.trail)] {
+                if p.Depth != 0 || p.Frame != nil || len(p.Trail) != 0 { t.Fatal("live invocation state") }
+                for _, u := range p.Trail[:cap(p.Trail)] {
                     if u.f != nil || u.old != nil || u.slot != 0 { t.Fatal("retained undo state") }
                 }
                 p.recycle()

@@ -22,10 +22,10 @@ rule leaf = "a"
 		t.Fatal(err)
 	}
 	source := string(code)
-	if !strings.Contains(source, `p.where = "main"`) || !strings.Contains(source, "p.where = w") {
-		t.Fatalf("direct typed action does not restore its prior p.where:\n%s", source)
+	if !strings.Contains(source, `p.Where = "main"`) || !strings.Contains(source, "p.Where = w") {
+		t.Fatalf("direct typed action does not restore its prior p.Where:\n%s", source)
 	}
-	if strings.Contains(source, "p.depth+0") {
+	if strings.Contains(source, "p.Depth+0") {
 		t.Fatal("generated Go contains a zero-depth addition")
 	}
 	if strings.Contains(source, "!!(") {

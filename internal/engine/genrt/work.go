@@ -54,17 +54,20 @@ func (e *WorkLimitError) Error() string {
 // Is reports whether target is the work-limit sentinel.
 func (e *WorkLimitError) Is(target error) bool { return e != nil && target == ErrWorkLimit }
 
-const workControlsEnabled = true
+// WorkControlsEnabled is for generated parsers; not a stable API.
+const WorkControlsEnabled = true
 
 const (
 	workCheckStepInterval  = uint64(256)
 	workCheckInputInterval = uint64(4096)
 )
 
-// workControl is private state for a single parser invocation. Callers must
+// WorkControl is private state for a single parser invocation. Callers must
 // split long operations into bounded reservations so cancellation can be
 // observed between chunks.
-type workControl struct {
+//
+// WorkControl is for generated parsers; not a stable API.
+type WorkControl struct {
 	ctx    context.Context
 	limits WorkLimits
 
@@ -85,25 +88,25 @@ type workControl struct {
 
 // newWorkControl returns nil when neither cancellation nor a finite budget is
 // active. A nil context is equivalent to context.Background.
-func newWorkControl(ctx context.Context, limits WorkLimits) *workControl {
+func newWorkControl(ctx context.Context, limits WorkLimits) *WorkControl {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	if ctx.Done() == nil && limits.MaxInputWork == 0 && limits.MaxSteps == 0 {
 		return nil
 	}
-	c := &workControl{ctx: ctx, limits: limits}
+	c := &WorkControl{ctx: ctx, limits: limits}
 	c.refill()
 	return c
 }
 
 // inputUsed and stepsUsed return the input-work and step units reserved so far.
-func (c *workControl) inputUsed() uint64 { return c.inputBase + (c.inputGrant - c.inputRoom) }
-func (c *workControl) stepsUsed() uint64 { return c.stepsBase + (c.stepsGrant - c.stepsRoom) }
+func (c *WorkControl) inputUsed() uint64 { return c.inputBase + (c.inputGrant - c.inputRoom) }
+func (c *WorkControl) stepsUsed() uint64 { return c.stepsBase + (c.stepsGrant - c.stepsRoom) }
 
 // settle moves what the fast path of charge reserved into the bases and the
 // poll counters, leaving no room.
-func (c *workControl) settle() {
+func (c *WorkControl) settle() {
 	in, steps := c.inputGrant-c.inputRoom, c.stepsGrant-c.stepsRoom
 	c.inputBase, c.stepsBase = c.inputBase+in, c.stepsBase+steps
 	c.inputSinceCheck, c.stepsSinceCheck = c.inputSinceCheck+in, c.stepsSinceCheck+steps
@@ -111,7 +114,7 @@ func (c *workControl) settle() {
 }
 
 // refill grants the fast path of charge the room left by the settled counters.
-func (c *workControl) refill() {
+func (c *WorkControl) refill() {
 	c.inputGrant = workRoom(c.inputBase, c.inputSinceCheck, c.limits.MaxInputWork, workCheckInputInterval)
 	c.stepsGrant = workRoom(c.stepsBase, c.stepsSinceCheck, c.limits.MaxSteps, workCheckStepInterval)
 	c.inputRoom, c.stepsRoom = c.inputGrant, c.stepsGrant
@@ -153,9 +156,9 @@ func contextErr(ctx context.Context) error {
 	return ctx.Err()
 }
 
-// check observes cancellation at an explicit engine checkpoint. It is safe on
+// Check observes cancellation at an explicit engine checkpoint. It is safe on
 // a nil receiver.
-func (c *workControl) check() {
+func (c *WorkControl) Check() {
 	if c == nil || c.ctx == nil {
 		return
 	}
@@ -169,11 +172,11 @@ func (c *workControl) check() {
 	c.refill()
 }
 
-// charge atomically reserves input-work and step units. Cancellation wins when
+// Charge atomically reserves input-work and step units. Cancellation wins when
 // it is observed at a poll or when either reservation would fail; otherwise
 // input-work exhaustion takes priority over step exhaustion. A failed
 // reservation leaves both counters unchanged.
-func (c *workControl) charge(inputWork, steps uint64) {
+func (c *WorkControl) Charge(inputWork, steps uint64) {
 	if c != nil && inputWork < c.inputRoom && steps < c.stepsRoom {
 		c.inputRoom -= inputWork
 		c.stepsRoom -= steps
@@ -186,7 +189,7 @@ func (c *workControl) charge(inputWork, steps uint64) {
 // matchers and rule calls. c must not be nil in chargeInput; chargeStep does
 // nothing on a nil receiver. chargeStep need not test inputRoom: outside
 // chargeSlow it is at least 1, which is the room of a request of no input.
-func (c *workControl) chargeInput(n uint64) {
+func (c *WorkControl) chargeInput(n uint64) {
 	if n < c.inputRoom && c.stepsRoom > 1 {
 		c.inputRoom -= n
 		c.stepsRoom--
@@ -195,7 +198,7 @@ func (c *workControl) chargeInput(n uint64) {
 	}
 }
 
-func (c *workControl) chargeStep() {
+func (c *WorkControl) chargeStep() {
 	if c == nil {
 		return
 	}
@@ -207,7 +210,7 @@ func (c *workControl) chargeStep() {
 }
 
 // chargeSlow is charge at a poll boundary or a limit, or on a nil receiver.
-func (c *workControl) chargeSlow(inputWork, steps uint64) {
+func (c *WorkControl) chargeSlow(inputWork, steps uint64) {
 	if c == nil {
 		return
 	}
@@ -276,49 +279,49 @@ func saturatingAdd(a, b uint64) uint64 {
 
 // Work helpers keep long engine-owned scans between bounded reservations.
 //
-// inputWork has one guarded call so that it inlines into the matchers.
-func (p *parser) inputWork(n uint64) {
-	if p.document != nil {
+// InputWork has one guarded call so that it inlines into the matchers.
+func (p *Parser) InputWork(n uint64) {
+	if p.Document != nil {
 		p.inputWorkTracked(n)
-	} else if workControlsEnabled && p.control != nil {
-		p.control.chargeInput(n)
+	} else if WorkControlsEnabled && p.Control != nil {
+		p.Control.chargeInput(n)
 	}
 }
 
-// inputWorkOrdinary is inputWork in an ordinary parse (expectOrdinary), which tracks no input.
-func (p *parser) inputWorkOrdinary(uint64) {}
+// inputWorkOrdinary is InputWork in an ordinary parse (ExpectOrdinary), which tracks no input.
+func (p *Parser) inputWorkOrdinary(uint64) {}
 
-// inputWorkTracked is inputWork in a Document or controlled parse.
-func (p *parser) inputWorkTracked(n uint64) {
-	if p.document != nil {
+// inputWorkTracked is InputWork in a Document or controlled parse.
+func (p *Parser) inputWorkTracked(n uint64) {
+	if p.Document != nil {
 		// Generated matchers can read directly after charging input work.
 		// Overestimating the dependency only discards a reusable memo entry.
-		if n > uint64(int(^uint(0)>>1)-p.pos) {
+		if n > uint64(int(^uint(0)>>1)-p.Pos) {
 			p.documentTouch(int(^uint(0) >> 1))
 		} else {
-			p.documentTouch(p.pos + int(n))
+			p.documentTouch(p.Pos + int(n))
 		}
 	}
-	if workControlsEnabled && p.control != nil {
-		p.control.charge(n, 1)
+	if WorkControlsEnabled && p.Control != nil {
+		p.Control.Charge(n, 1)
 	}
 }
-func (p *parser) stepWork() {
-	p.control.chargeStep()
+func (p *Parser) StepWork() {
+	p.Control.chargeStep()
 }
 
-func (p *parser) setControlledSource(s string) {
+func (p *Parser) setControlledSource(s string) {
 	n, valid := 0, len(s) <= 1<<31-1
-	// Outside a Document, charge the control directly: inputWork is too large to inline.
-	c := p.control
-	if p.document != nil {
+	// Outside a Document, charge the control directly: InputWork is too large to inline.
+	c := p.Control
+	if p.Document != nil {
 		c = nil
 	}
 	for off := 0; off < len(s); {
 		if w := uint64(min(utf8.UTFMax, len(s)-off)); c != nil {
 			c.chargeInput(w)
 		} else {
-			p.inputWork(w)
+			p.InputWork(w)
 		}
 		r, size := utf8.DecodeRuneInString(s[off:])
 		if r == utf8.RuneError && size == 1 {
@@ -327,10 +330,10 @@ func (p *parser) setControlledSource(s string) {
 		n++
 		off += size
 	}
-	if cap(p.in) >= n {
-		p.in = p.in[:n]
+	if cap(p.In) >= n {
+		p.In = p.In[:n]
 	} else {
-		p.in = make([]rune, n)
+		p.In = make([]rune, n)
 	}
 	p.n = n
 	var offs []int32
@@ -343,9 +346,9 @@ func (p *parser) setControlledSource(s string) {
 		offs[n] = int32(len(s))
 	}
 	for off, i := 0, 0; off < len(s); i++ {
-		p.inputWork(uint64(min(utf8.UTFMax, len(s)-off)))
+		p.InputWork(uint64(min(utf8.UTFMax, len(s)-off)))
 		r, size := utf8.DecodeRuneInString(s[off:])
-		p.in[i] = r
+		p.In[i] = r
 		if valid {
 			offs[i] = int32(off)
 		}
@@ -357,12 +360,12 @@ func (p *parser) setControlledSource(s string) {
 	}
 }
 
-func (p *parser) literalHasReplacement(rs []rune) bool {
-	if !workControlsEnabled || p.control == nil {
+func (p *Parser) literalHasReplacement(rs []rune) bool {
+	if !WorkControlsEnabled || p.Control == nil {
 		return slices.Contains(rs, utf8.RuneError)
 	}
 	for _, r := range rs {
-		p.stepWork()
+		p.StepWork()
 		if r == utf8.RuneError {
 			return true
 		}
@@ -370,18 +373,18 @@ func (p *parser) literalHasReplacement(rs []rune) bool {
 	return false
 }
 
-func (p *parser) hasLiteralPrefix(text string) bool {
-	src := p.bs[p.pos:]
-	if !workControlsEnabled || p.control == nil {
+func (p *Parser) hasLiteralPrefix(text string) bool {
+	src := p.bs[p.Pos:]
+	if !WorkControlsEnabled || p.Control == nil {
 		return strings.HasPrefix(src, text)
 	}
 	if len(src) < len(text) {
-		p.inputWork(1)
+		p.InputWork(1)
 		return false
 	}
 	for off := 0; off < len(text); {
 		n := min(4096, len(text)-off)
-		p.inputWork(uint64(n))
+		p.InputWork(uint64(n))
 		if src[off:off+n] != text[off:off+n] {
 			return false
 		}
@@ -390,21 +393,23 @@ func (p *parser) hasLiteralPrefix(text string) bool {
 	return true
 }
 
-// parseConverted shares admission and counters with a Node-to-typed converter.
-func parseConverted[T any](r *rule, input string, o parseOptions, conv func(*Node, *workControl, error) T) (res T, err error) {
+// RunParseConvertedted shares admission and counters with a Node-to-typed converter.
+//
+// RunParseConverted is for generated parsers; not a stable API.
+func RunParseConverted[T any](r *Rule, input string, o parseOptions, conv func(*Node, *WorkControl, error) T) (res T, err error) {
 	defer recoverParse(&res, &err)
 	o = prepareOptions(o)
 	n, err := parseConversionInput(r, input, o)
-	o.control.check()
+	o.control.Check()
 	res = conv(n, o.control, err)
-	o.control.check()
+	o.control.Check()
 	return res, err
 }
 
 // Ordinary runtime/depth errors retain the configured ParseAST converter's
 // historical nil mapping. Work interruptions bypass conversion without calling
 // methods on a caller-owned error to classify it.
-func parseConversionInput(r *rule, input string, o parseOptions) (n *Node, err error) {
+func parseConversionInput(r *Rule, input string, o parseOptions) (n *Node, err error) {
 	defer func() {
 		if x := recover(); x != nil {
 			if f, ok := x.(fatal); ok && (o.control == nil || !o.control.interrupted) {
@@ -417,11 +422,12 @@ func parseConversionInput(r *rule, input string, o parseOptions) (n *Node, err e
 	return parseResolvedWork(r, input, o)
 }
 
-type workRange struct{ lo, hi rune }
+// WorkRange is for generated parsers; not a stable API.
+type WorkRange struct{ lo, hi rune }
 
-func (p *parser) rejectWorkClass(ch rune, ranges []workRange, negated bool) bool {
+func (p *Parser) RejectWorkClass(ch rune, ranges []WorkRange, negated bool) bool {
 	for _, r := range ranges {
-		p.stepWork()
+		p.StepWork()
 		if ch >= r.lo && ch <= r.hi {
 			return negated
 		}
@@ -432,14 +438,14 @@ func (p *parser) rejectWorkClass(ch rune, ranges []workRange, negated bool) bool
 // Value strings may be action-created, so their scans consume steps alone.
 const valueWorkChunk = 128
 
-func (p *parser) valueWork(n int) {
-	if workControlsEnabled && p.control != nil {
-		p.control.charge(0, uint64(n))
+func (p *Parser) valueWork(n int) {
+	if WorkControlsEnabled && p.Control != nil {
+		p.Control.Charge(0, uint64(n))
 	}
 }
 
-func (p *parser) compareText(l, r string) int {
-	if !workControlsEnabled || p.control == nil {
+func (p *Parser) compareText(l, r string) int {
+	if !WorkControlsEnabled || p.Control == nil {
 		return strings.Compare(l, r)
 	}
 	for off, end := 0, min(len(l), len(r)); off < end; {
@@ -459,14 +465,14 @@ func (p *parser) compareText(l, r string) int {
 	return 0
 }
 
-func (p *parser) textEqual(l, r string) bool {
+func (p *Parser) TextEqual(l, r string) bool {
 	return len(l) == len(r) && p.compareText(l, r) == 0
 }
 
 // stringBinary handles only string pairs; callers retain their existing
 // runtime's scalar, pointer-identity and invalid-operand behavior.
-func (p *parser) stringBinary(op string, l, r any) (any, bool) {
-	if !workControlsEnabled || p.control == nil {
+func (p *Parser) stringBinary(op string, l, r any) (any, bool) {
+	if !WorkControlsEnabled || p.Control == nil {
 		return nil, false
 	}
 	ls, lok := l.(string)
@@ -476,9 +482,9 @@ func (p *parser) stringBinary(op string, l, r any) (any, bool) {
 	}
 	switch op {
 	case "==":
-		return p.textEqual(ls, rs), true
+		return p.TextEqual(ls, rs), true
 	case "!=":
-		return !p.textEqual(ls, rs), true
+		return !p.TextEqual(ls, rs), true
 	case "<":
 		return p.compareText(ls, rs) < 0, true
 	case "<=":
@@ -504,12 +510,12 @@ func (p *parser) stringBinary(op string, l, r any) (any, bool) {
 }
 
 // compareStrings applies the comparison operator op to two strings as stringBinary does.
-func (p *parser) compareStrings(op string, l, r string) (bool, bool) {
+func (p *Parser) compareStrings(op string, l, r string) (bool, bool) {
 	switch op {
 	case "==":
-		return p.textEqual(l, r), true
+		return p.TextEqual(l, r), true
 	case "!=":
-		return !p.textEqual(l, r), true
+		return !p.TextEqual(l, r), true
 	case "<":
 		return p.compareText(l, r) < 0, true
 	case "<=":
@@ -522,24 +528,24 @@ func (p *parser) compareStrings(op string, l, r string) (bool, bool) {
 	return false, false
 }
 
-func (c *actx) binary(op string, l, r any) any {
-	if v, ok := c.p.stringBinary(op, l, r); ok {
+func (c *ActCtx) Binary(op string, l, r any) any {
+	if v, ok := c.P.stringBinary(op, l, r); ok {
 		return v
 	}
-	if workControlsEnabled && c.p.control != nil {
-		return rtBinaryWork(c.p, op, l, r)
+	if WorkControlsEnabled && c.P.Control != nil {
+		return rtBinaryWork(c.P, op, l, r)
 	}
 	return rtBinary(op, l, r)
 }
 
 // detachedText constructs normalized text when malformed source bytes prevent
 // slicing the original string. Allocation and Grow remain nonpreemptible.
-func (p *parser) detachedText(start, end int) string {
-	src := p.in[start:end]
+func (p *Parser) detachedText(start, end int) string {
+	src := p.In[start:end]
 	size := 0
 	for off := 0; off < len(src); {
 		n := min(valueWorkChunk, len(src)-off)
-		p.control.charge(uint64(n), uint64(n))
+		p.Control.Charge(uint64(n), uint64(n))
 		for _, r := range src[off : off+n] {
 			width := utf8.RuneLen(r)
 			if width < 0 {
@@ -553,7 +559,7 @@ func (p *parser) detachedText(start, end int) string {
 	out.Grow(size)
 	for off := 0; off < len(src); {
 		n := min(valueWorkChunk, len(src)-off)
-		p.control.charge(uint64(n), uint64(n))
+		p.Control.Charge(uint64(n), uint64(n))
 		for _, r := range src[off : off+n] {
 			out.WriteRune(r)
 		}
@@ -569,8 +575,8 @@ func checkedTextSize(size, width int) int {
 	return size + width
 }
 
-func copyWork[T any](p *parser, dst, src []T) {
-	if !workControlsEnabled || p.control == nil {
+func copyWork[T any](p *Parser, dst, src []T) {
+	if !WorkControlsEnabled || p.Control == nil {
 		copy(dst, src)
 		return
 	}
@@ -586,8 +592,8 @@ func copyWork[T any](p *parser, dst, src []T) {
 
 // growWork bounds the explicit copy of existing values when capacity must
 // grow. Allocation and runtime zeroing remain nonpreemptible intervals.
-func growWork[T any](p *parser, values []T, extra int) []T {
-	if !workControlsEnabled || p.control == nil {
+func growWork[T any](p *Parser, values []T, extra int) []T {
+	if !WorkControlsEnabled || p.Control == nil {
 		return slices.Grow(values, extra)
 	}
 	if extra < 0 {
@@ -611,8 +617,8 @@ func growWork[T any](p *parser, values []T, extra int) []T {
 	return out
 }
 
-func appendWork[T any](p *parser, dst, src []T) []T {
-	if !workControlsEnabled || p.control == nil {
+func appendWork[T any](p *Parser, dst, src []T) []T {
+	if !WorkControlsEnabled || p.Control == nil {
 		return append(dst, src...)
 	}
 	for off := 0; off < len(src); {
@@ -626,15 +632,15 @@ func appendWork[T any](p *parser, dst, src []T) []T {
 
 // equalExpected preserves the native snapshot-identity fast path while charging
 // each comparison under active work controls. Snapshots are never modified.
-func (p *parser) equalExpected(a, b []expID) bool {
-	if !workControlsEnabled || p.control == nil {
+func (p *Parser) equalExpected(a, b []ExpID) bool {
+	if !WorkControlsEnabled || p.Control == nil {
 		return slices.Equal(a, b)
 	}
 	if len(a) != len(b) {
 		return false
 	}
 	for i, x := range a {
-		p.stepWork()
+		p.StepWork()
 		if x != b[i] {
 			return false
 		}
@@ -645,8 +651,8 @@ func (p *parser) equalExpected(a, b []expID) bool {
 // sortExpected sorts a newly constructed, parser-owned diagnostic. Comparisons
 // and explicit moves are bounded; allocation and GC remain nonpreemptible.
 // Published or memoized errors must never be passed to this helper.
-func (p *parser) sortExpected(values []string) {
-	if !workControlsEnabled || p.control == nil {
+func (p *Parser) sortExpected(values []string) {
+	if !WorkControlsEnabled || p.Control == nil {
 		sort.Strings(values)
 		return
 	}
@@ -661,7 +667,7 @@ func (p *parser) sortExpected(values []string) {
 			i, j, k := lo, mid, lo
 			for i < mid && j < hi {
 				order := p.compareText(src[i], src[j])
-				p.stepWork()
+				p.StepWork()
 				if order <= 0 {
 					dst[k] = src[i]
 					i++
@@ -688,11 +694,11 @@ func (p *parser) sortExpected(values []string) {
 	}
 }
 
-// recoveryErrorText is only for engine-owned Error-node materialization.
+// RecoveryErrorText is only for engine-owned Error-node materialization.
 // Public post-return Error/Message calls remain caller work. The local builder
 // owns its immutable output and is never pooled or written after return.
-func (p *parser) recoveryErrorText(e *SyntaxError) string {
-	if !workControlsEnabled || p.control == nil {
+func (p *Parser) RecoveryErrorText(e *SyntaxError) string {
+	if !WorkControlsEnabled || p.Control == nil {
 		return e.Error()
 	}
 	prefix := fmt.Sprintf("%d:%d: ", e.Line, e.Col) // bounded integer formatting
@@ -707,7 +713,7 @@ func (p *parser) recoveryErrorText(e *SyntaxError) string {
 	}
 	size := checkedDiagnosticSize(len(prefix), len(intro))
 	for i, part := range parts {
-		p.stepWork()
+		p.StepWork()
 		if i > 0 {
 			size = checkedDiagnosticSize(size, len(sep))
 		}
@@ -718,7 +724,7 @@ func (p *parser) recoveryErrorText(e *SyntaxError) string {
 	p.writeDiagnosticText(&out, prefix)
 	p.writeDiagnosticText(&out, intro)
 	for i, part := range parts {
-		p.stepWork()
+		p.StepWork()
 		if i > 0 {
 			p.writeDiagnosticText(&out, sep)
 		}
@@ -727,7 +733,7 @@ func (p *parser) recoveryErrorText(e *SyntaxError) string {
 	return out.String()
 }
 
-func (p *parser) writeDiagnosticText(out *strings.Builder, text string) {
+func (p *Parser) writeDiagnosticText(out *strings.Builder, text string) {
 	for off := 0; off < len(text); {
 		n := min(valueWorkChunk, len(text)-off)
 		p.valueWork(n)
@@ -745,19 +751,19 @@ func checkedDiagnosticSize(size, width int) int {
 
 // makeControlledError owns any partially assembled diagnostic until completion.
 // Interrupted invocations release their partial line table with parser scratch.
-func (p *parser) makeControlledError(pos int, expected []expID) *SyntaxError {
+func (p *Parser) makeControlledError(pos int, expected []ExpID) *SyntaxError {
 	e := &SyntaxError{Pos: pos}
 	for _, x := range expected {
-		p.stepWork()
-		if x&msgBit != 0 {
-			e.Messages = append(e.Messages, p.g.descs[x & ^msgBit])
+		p.StepWork()
+		if x&MsgBit != 0 {
+			e.Messages = append(e.Messages, p.g.Descs[x & ^MsgBit])
 		} else {
-			e.Expected = append(e.Expected, p.g.descs[x])
+			e.Expected = append(e.Expected, p.g.Descs[x])
 		}
 	}
 	p.sortExpected(e.Expected)
 	// stream:begin
-	if p.stream != nil {
+	if p.Stream != nil {
 		e.Line, e.Col = p.streamLineCol(pos)
 		return e
 	}
@@ -765,8 +771,8 @@ func (p *parser) makeControlledError(pos int, expected []expID) *SyntaxError {
 	if p.lines == nil {
 		p.lines = append(p.lines, 0)
 		for i := 0; i < p.n; i++ {
-			p.inputWork(1)
-			if p.unit == Bytes && p.bs[i] == '\n' || p.unit == CodePoints && p.in[i] == '\n' {
+			p.InputWork(1)
+			if p.unit == Bytes && p.bs[i] == '\n' || p.unit == CodePoints && p.In[i] == '\n' {
 				p.lines = append(p.lines, i+1)
 			}
 		}
@@ -774,7 +780,7 @@ func (p *parser) makeControlledError(pos int, expected []expID) *SyntaxError {
 	pos = min(pos, p.n)
 	lo, hi := 0, len(p.lines)
 	for lo < hi {
-		p.stepWork()
+		p.StepWork()
 		mid := lo + (hi-lo)/2
 		if p.lines[mid] < pos+1 {
 			lo = mid + 1
@@ -783,16 +789,16 @@ func (p *parser) makeControlledError(pos int, expected []expID) *SyntaxError {
 		}
 	}
 	e.Line, e.Col = lo, pos-p.lines[lo-1]+1
-	p.control.check()
+	p.Control.Check()
 	return e
 }
 
-func (p *parser) copyErrors(dst, src []*SyntaxError) []*SyntaxError { return appendWork(p, dst, src) }
+func (p *Parser) copyErrors(dst, src []*SyntaxError) []*SyntaxError { return appendWork(p, dst, src) }
 
 // rawValueEqual preserves the interface equality of memo keys and bindings.
 // In particular, a typed nil pointer differs from a nil interface. Action
 // valueEqual has different nil semantics and must not be used for these keys.
-func (p *parser) rawValueEqual(l, r any) bool {
+func (p *Parser) rawValueEqual(l, r any) bool {
 	if s, ok := l.(string); ok {
 		t, ok := r.(string)
 		return ok && len(s) == len(t) && p.compareText(s, t) == 0
@@ -800,12 +806,12 @@ func (p *parser) rawValueEqual(l, r any) bool {
 	return l == r
 }
 
-func (p *parser) memoKeyEqual(l, r []any) bool {
+func (p *Parser) memoKeyEqual(l, r []any) bool {
 	if len(l) != len(r) {
 		return false
 	}
 	for i, v := range l {
-		p.stepWork()
+		p.StepWork()
 		if !p.rawValueEqual(v, r[i]) {
 			return false
 		}
@@ -813,20 +819,20 @@ func (p *parser) memoKeyEqual(l, r []any) bool {
 	return true
 }
 
-func (p *parser) bindControlled(name string, val any) {
-	p.stepWork()
-	e := p.env
+func (p *Parser) bindControlled(name string, val any) {
+	p.StepWork()
+	e := p.Env
 	if p.bound == nil {
 		p.bound = make(map[string]bool)
 	}
 	if e == nil {
 		p.bound[name] = true
-		p.env = &env{name: name, val: val}
+		p.Env = &Env{name: name, val: val}
 		return
 	}
 	if p.rawValueEqual(e.name, name) {
 		if !p.rawValueEqual(e.val, val) {
-			p.env = &env{name: name, val: val, next: e.next}
+			p.Env = &Env{name: name, val: val, next: e.next}
 		}
 		return
 	}
@@ -834,38 +840,38 @@ func (p *parser) bindControlled(name string, val any) {
 	// into engine checkpoints. Explicit name comparisons above/below can be.
 	if !p.bound[name] {
 		p.bound[name] = true
-		p.env = &env{name: name, val: val, next: e}
+		p.Env = &Env{name: name, val: val, next: e}
 		return
 	}
 	old := e
 	for old != nil {
-		p.stepWork()
+		p.StepWork()
 		if p.rawValueEqual(old.name, name) {
 			break
 		}
 		old = old.next
 	}
 	if old == nil {
-		p.env = &env{name: name, val: val, next: e}
+		p.Env = &Env{name: name, val: val, next: e}
 		return
 	}
 	if p.rawValueEqual(old.val, val) {
 		return
 	}
-	head := &env{name: name, val: val}
+	head := &Env{name: name, val: val}
 	tail := head
 	for cur := e; cur != old; cur = cur.next {
-		p.stepWork()
-		tail.next = &env{name: cur.name, val: cur.val}
+		p.StepWork()
+		tail.next = &Env{name: cur.name, val: cur.val}
 		tail = tail.next
 	}
 	tail.next = old.next
 	// Saved environments are immutable; only publish a completed prefix.
-	p.env = head
+	p.Env = head
 }
 
-func clearWork[T any](p *parser, values []T) {
-	if !workControlsEnabled || p.control == nil {
+func clearWork[T any](p *Parser, values []T) {
+	if !WorkControlsEnabled || p.Control == nil {
 		clear(values)
 		return
 	}
@@ -877,19 +883,19 @@ func clearWork[T any](p *parser, values []T) {
 	}
 }
 
-func (p *parser) controlledEnvValues(names []string) []any {
-	p.stepWork()
+func (p *Parser) controlledEnvValues(names []string) []any {
+	p.StepWork()
 	if len(names) == 0 {
 		return nil
 	}
-	if p.env == nil && len(names) <= len(noVals) {
+	if p.Env == nil && len(names) <= len(noVals) {
 		return noVals[:len(names):len(names)]
 	}
 	vals := make([]any, len(names))
 	for i, name := range names {
-		p.stepWork()
-		for e := p.env; e != nil; e = e.next {
-			p.stepWork()
+		p.StepWork()
+		for e := p.Env; e != nil; e = e.next {
+			p.StepWork()
 			if p.rawValueEqual(e.name, name) {
 				vals[i] = e.val
 				break
@@ -899,9 +905,9 @@ func (p *parser) controlledEnvValues(names []string) []any {
 	return vals
 }
 
-func (p *parser) lookupEnvControlled(name string) (any, bool) {
-	for e := p.env; e != nil; e = e.next {
-		p.stepWork()
+func (p *Parser) lookupEnvControlled(name string) (any, bool) {
+	for e := p.Env; e != nil; e = e.next {
+		p.StepWork()
 		if p.rawValueEqual(e.name, name) {
 			return e.val, true
 		}
@@ -909,25 +915,25 @@ func (p *parser) lookupEnvControlled(name string) (any, bool) {
 	return nil, false
 }
 
-func (p *parser) memoGet(rule, pos, min int, key []any) *memoEntry {
+func (p *Parser) memoGet(rule, pos, min int, key []any) *memoEntry {
 	// stream:begin
-	if p.stream != nil {
+	if p.Stream != nil {
 		// A call at a position before the pruned memo needs no entry (a
 		// start rule called at 0, or still growing there).
-		if pos -= p.stream.memoBase; pos < 0 {
+		if pos -= p.Stream.memoBase; pos < 0 {
 			return nil
 		}
 	}
 	// stream:end
-	if !workControlsEnabled || p.control == nil {
+	if !WorkControlsEnabled || p.Control == nil {
 		return p.memo.get(rule, pos, min, key)
 	}
-	p.stepWork()
+	p.StepWork()
 	if pos >= len(p.memo.slots) {
 		return nil
 	}
 	for e := p.memo.slots[pos]; e != nil; e = e.next {
-		p.stepWork()
+		p.StepWork()
 		if e.rule == int32(rule) && e.min == int32(min) && p.memoKeyEqual(e.env, key) {
 			return e
 		}
@@ -935,19 +941,19 @@ func (p *parser) memoGet(rule, pos, min int, key []any) *memoEntry {
 	return nil
 }
 
-func (p *parser) memoPut(rule, pos, min int, key []any, e *memoEntry) {
+func (p *Parser) memoPut(rule, pos, min int, key []any, e *memoEntry) {
 	// stream:begin
-	if p.stream != nil {
-		if pos -= p.stream.memoBase; pos < 0 {
+	if p.Stream != nil {
+		if pos -= p.Stream.memoBase; pos < 0 {
 			return
 		}
 	}
 	// stream:end
-	if !workControlsEnabled || p.control == nil {
+	if !WorkControlsEnabled || p.Control == nil {
 		p.memo.put(rule, pos, min, key, e)
 		return
 	}
-	p.stepWork()
+	p.StepWork()
 	slots := p.memo.slots
 	if pos >= len(slots) {
 		if pos < cap(slots) {
@@ -961,13 +967,13 @@ func (p *parser) memoPut(rule, pos, min int, key []any, e *memoEntry) {
 	link := &slots[pos]
 	var replaced *memoEntry
 	for x := *link; x != nil; link, x = &x.next, x.next {
-		p.stepWork()
+		p.StepWork()
 		if x == e || x.rule == int32(rule) && x.min == int32(min) && p.memoKeyEqual(x.env, key) {
 			replaced = x
 			break
 		}
 	}
-	p.stepWork()
+	p.StepWork()
 	// Commit the completed key/slot array and link together, with no further
 	// checkpoint between mutations. A resident self-entry retains its successor.
 	p.memo.slots = slots
@@ -981,28 +987,28 @@ func (p *parser) memoPut(rule, pos, min int, key []any, e *memoEntry) {
 	slots[pos] = e
 }
 
-func (p *parser) controlledFirstCall(r *rule) bool {
-	if r.seen < 0 {
+func (p *Parser) controlledFirstCall(r *Rule) bool {
+	if r.Seen < 0 {
 		return false
 	}
-	p.stepWork()
+	p.StepWork()
 	t := &p.memo
 	if t.calls == nil {
 		t.calls = make([]seenCalls, t.stride)
 	}
-	if !t.calls[r.seen].eager && t.sparse {
+	if !t.calls[r.Seen].eager && t.sparse {
 		if len(t.pages) != t.stride {
-			p.stepWork()
+			p.StepWork()
 			t.pages = make([]seenRulePages, t.stride)
 		}
-		dir := &t.pages[r.seen]
-		at := p.pos >> 10
+		dir := &t.pages[r.Seen]
+		at := p.Pos >> 10
 		if at >= len(dir.pages) {
 			pages := growWork(p, dir.pages, at+1-len(dir.pages))
 			dir.pages = pages[:at+1]
 		}
 		if dir.pages[at] == nil {
-			p.stepWork()
+			p.StepWork()
 			// Reserve capacity before alloc's append so copying a large arena
 			// directory uses the invocation's bounded copy helper.
 			if t.bitPages.n/64 == len(t.bitPages.chunks) {
@@ -1011,8 +1017,8 @@ func (p *parser) controlledFirstCall(r *rule) bool {
 			dir.pages[at] = t.bitPages.alloc()
 		}
 		dir.last, dir.at = dir.pages[at], at
-	} else if !t.calls[r.seen].eager {
-		w := (p.pos*t.stride + r.seen) >> 6
+	} else if !t.calls[r.Seen].eager {
+		w := (p.Pos*t.stride + r.Seen) >> 6
 		if w >= len(t.seen) {
 			n := len(t.seen) + max(w+1-len(t.seen), len(t.seen), 64)
 			seen := t.seen
@@ -1030,50 +1036,50 @@ func (p *parser) controlledFirstCall(r *rule) bool {
 }
 
 // Graph helpers account for normal construction and capture restoration.
-// Release/recycle, dropKids/dropTrail and arena reset remain unconditional.
-func (p *parser) valueField(fs Fields, name string) (any, bool) {
-	if !workControlsEnabled || p.control == nil {
+// Release/recycle, DropKids/DropTrail and arena reset remain unconditional.
+func (p *Parser) valueField(fs Fields, name string) (any, bool) {
+	if !WorkControlsEnabled || p.Control == nil {
 		return fs.Get(name)
 	}
 	for _, f := range fs {
-		p.stepWork()
+		p.StepWork()
 		if p.rawValueEqual(f.Name, name) {
 			return f.Value, true
 		}
 	}
 	return nil, false
 }
-func (p *parser) setValueField(fs *Fields, name string, v any) {
-	if !workControlsEnabled || p.control == nil {
+func (p *Parser) setValueField(fs *Fields, name string, v any) {
+	if !WorkControlsEnabled || p.Control == nil {
 		fs.set(name, v)
 		return
 	}
 	for i := range *fs {
-		p.stepWork()
+		p.StepWork()
 		if p.rawValueEqual((*fs)[i].Name, name) {
 			(*fs)[i].Value = v
 			return
 		}
 	}
-	p.stepWork()
+	p.StepWork()
 	*fs = append(*fs, NodeField{name, v})
 }
-func (p *parser) pushKid(v *Node) { p.stepWork(); p.kidStack = append(p.kidStack, v) }
-func (p *parser) undoCaptures(from int) {
-	for i := len(p.trail) - 1; i >= from; i-- {
-		p.stepWork()
-		u := p.trail[i]
-		u.f.vals[u.slot] = u.old
+func (p *Parser) pushKid(v *Node) { p.StepWork(); p.KidStack = append(p.KidStack, v) }
+func (p *Parser) undoCaptures(from int) {
+	for i := len(p.Trail) - 1; i >= from; i-- {
+		p.StepWork()
+		u := p.Trail[i]
+		u.f.Vals[u.slot] = u.old
 	}
 }
 
-func (c *actx) fold(fn string, right bool, acc, list any, f func(acc, item any) any) any {
-	if !workControlsEnabled || c.p.control == nil {
+func (c *ActCtx) Fold(fn string, right bool, acc, list any, f func(acc, item any) any) any {
+	if !WorkControlsEnabled || c.P.Control == nil {
 		return rtFold(fn, right, acc, list, f)
 	}
-	items := c.listItems(fn, list)
+	items := c.ListItems(fn, list)
 	for i := range items {
-		c.p.stepWork()
+		c.P.StepWork()
 		item := items[i]
 		if right {
 			item = items[len(items)-1-i]
@@ -1085,16 +1091,16 @@ func (c *actx) fold(fn string, right bool, acc, list any, f func(acc, item any) 
 
 // actionErrorText accounts for eager engine-owned error text, including errors
 // discarded by predicates. Counter reservations precede each fragment copy.
-func (p *parser) actionErrorText(parts ...string) string {
+func (p *Parser) actionErrorText(parts ...string) string {
 	size := 0
 	for _, part := range parts {
-		p.stepWork()
+		p.StepWork()
 		size = checkedDiagnosticSize(size, len(part))
 	}
 	var out strings.Builder
 	out.Grow(size)
 	for _, part := range parts {
-		p.stepWork()
+		p.StepWork()
 		p.writeDiagnosticText(&out, part)
 	}
 	return out.String()
@@ -1102,8 +1108,8 @@ func (p *parser) actionErrorText(parts ...string) string {
 
 // evalErrorf accepts the engine's fixed %s/%d leaf formats. The inactive path
 // retains fmt semantics; active formatting splits known pieces before copying.
-func (p *parser) evalErrorf(format string, args ...any) {
-	if !workControlsEnabled || p == nil || p.control == nil {
+func (p *Parser) evalErrorf(format string, args ...any) {
+	if !WorkControlsEnabled || p == nil || p.Control == nil {
 		evalErrorf(format, args...)
 		return
 	}
@@ -1135,51 +1141,51 @@ func (p *parser) evalErrorf(format string, args ...any) {
 	parts = append(parts, format[start:])
 	panic(evalError{p.actionErrorText(parts...)})
 }
-func (p *parser) wrapEvalError(where, message string) error {
-	if !workControlsEnabled || p.control == nil {
+func (p *Parser) wrapEvalError(where, message string) error {
+	if !WorkControlsEnabled || p.Control == nil {
 		return fmt.Errorf("action in %s: %s", where, message)
 	}
 	return errors.New(p.actionErrorText("action in ", where, ": ", message))
 }
 
-func (c *actx) unary(op string, v any) any {
-	if !workControlsEnabled || c.p.control == nil {
+func (c *ActCtx) Unary(op string, v any) any {
+	if !WorkControlsEnabled || c.P.Control == nil {
 		return rtUnary(op, v)
 	}
-	return rtUnaryWork(c.p, op, v)
+	return rtUnaryWork(c.P, op, v)
 }
-func (c *actx) and(l any, r func() any) any {
-	if !workControlsEnabled || c.p.control == nil {
+func (c *ActCtx) And(l any, r func() any) any {
+	if !WorkControlsEnabled || c.P.Control == nil {
 		return rtAnd(l, r)
 	}
-	if !rtBoolWork(c.p, "&&", l) {
+	if !rtBoolWork(c.P, "&&", l) {
 		return false
 	}
-	return rtBoolWork(c.p, "&&", r())
+	return rtBoolWork(c.P, "&&", r())
 }
-func (c *actx) or(l any, r func() any) any {
-	if !workControlsEnabled || c.p.control == nil {
+func (c *ActCtx) Or(l any, r func() any) any {
+	if !WorkControlsEnabled || c.P.Control == nil {
 		return rtOr(l, r)
 	}
-	if rtBoolWork(c.p, "||", l) {
+	if rtBoolWork(c.P, "||", l) {
 		return true
 	}
-	return rtBoolWork(c.p, "||", r())
+	return rtBoolWork(c.P, "||", r())
 }
-func (c *actx) listItems(fn string, v any) []*Node {
-	if !workControlsEnabled || c.p.control == nil {
+func (c *ActCtx) ListItems(fn string, v any) []*Node {
+	if !WorkControlsEnabled || c.P.Control == nil {
 		return listItems(fn, v)
 	}
-	return listItemsWork(c.p, fn, v)
+	return listItemsWork(c.P, fn, v)
 }
-func (c *actx) asNode(fn string, v any) *Node {
+func (c *ActCtx) asNode(fn string, v any) *Node {
 	switch v.(type) {
 	case int, string, bool:
 		// An int, string or bool element travels boxed, as the result of an action does.
-		return c.p.newNode(Node{kind: kindBox, box: v, start: int32(c.start), end: int32(c.end)})
+		return c.P.NewNode(Node{RawKind: kindBox, box: v, RawStart: int32(c.start), RawEnd: int32(c.end)})
 	}
-	if !workControlsEnabled || c.p.control == nil {
+	if !WorkControlsEnabled || c.P.Control == nil {
 		return asNode(fn, v)
 	}
-	return asNodeWork(c.p, fn, v)
+	return asNodeWork(c.P, fn, v)
 }

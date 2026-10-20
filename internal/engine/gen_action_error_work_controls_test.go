@@ -84,38 +84,38 @@ func TestPublicActionErrorAccounting(t *testing.T){
 func catchActionText(f func())(text string,err error){defer func(){if x:=recover();x!=nil{switch x:=x.(type){case evalError:text=x.msg;case fatal:err=x.err;default:panic(x)}}}();f();return}
 func TestActionTextFragmentsAndFlatPrefix(t *testing.T){
  for _,parts:=range [][]string{{""},{"","",""},{"a","","λ\xff"},{strings.Repeat("n",8192)}}{
-  want:=strings.Join(parts,"");steps:=uint64(len(want)+2*len(parts));p:=&parser{control:newWorkControl(nil,WorkLimits{MaxSteps:steps})}
-  retained:=p.actionErrorText(parts...);if retained!=want || p.control.stepsUsed()!=steps || p.control.inputUsed()!=0{t.Fatal("fragment text/counters")}
-  p.control=newWorkControl(nil,WorkLimits{MaxSteps:steps-1});var partial string
+  want:=strings.Join(parts,"");steps:=uint64(len(want)+2*len(parts));p:=&Parser{Control:newWorkControl(nil,WorkLimits{MaxSteps:steps})}
+  retained:=p.actionErrorText(parts...);if retained!=want || p.Control.stepsUsed()!=steps || p.Control.inputUsed()!=0{t.Fatal("fragment text/counters")}
+  p.Control=newWorkControl(nil,WorkLimits{MaxSteps:steps-1});var partial string
   _,e:=catchActionText(func(){partial=p.actionErrorText(parts...)});if !errors.Is(e,ErrWorkLimit) || partial!=""{t.Fatal("one-short message",e)}
-  p.control=newWorkControl(nil,WorkLimits{MaxSteps:100});if p.actionErrorText("retry")!="retry" || retained!=want{t.Fatal("retained message changed")}
+  p.Control=newWorkControl(nil,WorkLimits{MaxSteps:100});if p.actionErrorText("retry")!="retry" || retained!=want{t.Fatal("retained message changed")}
  }
  where:=strings.Repeat("rule",512);message:="division by zero";want:="action in "+where+": "+message
- p:=&parser{control:newWorkControl(nil,WorkLimits{MaxSteps:uint64(len(want)+8)})};e:=p.wrapEvalError(where,message)
- if e.Error()!=want || errors.Unwrap(e)!=nil || p.control.stepsUsed()!=uint64(len(want)+8){t.Fatal("flat wrapper contract",e)}
- p.control=newWorkControl(nil,WorkLimits{MaxSteps:uint64(len(want)+7)});_,e=catchActionText(func(){p.wrapEvalError(where,message)});if !errors.Is(e,ErrWorkLimit){t.Fatal("one-short wrapper",e)}
+ p:=&Parser{Control:newWorkControl(nil,WorkLimits{MaxSteps:uint64(len(want)+8)})};e:=p.wrapEvalError(where,message)
+ if e.Error()!=want || errors.Unwrap(e)!=nil || p.Control.stepsUsed()!=uint64(len(want)+8){t.Fatal("flat wrapper contract",e)}
+ p.Control=newWorkControl(nil,WorkLimits{MaxSteps:uint64(len(want)+7)});_,e=catchActionText(func(){p.wrapEvalError(where,message)});if !errors.Is(e,ErrWorkLimit){t.Fatal("one-short wrapper",e)}
 }
 func TestActionHelperErrorsAndShortCircuit(t *testing.T){
- long:=strings.Repeat("Kind",2048);n:=&Node{kind:kindOf(long,"")};tn:=&tnode{typ:"tuple",kids:make([]any,2048)}
+ long:=strings.Repeat("Kind",2048);n:=&Node{RawKind:KindOf(long,"")};tn:=&TSeq{Typ:"tuple",Kids:make([]any,2048)}
  for _,typed:=range []bool{false,true}{
-  p:=&parser{};tp:=&tparser{parser:p};called:=0
+  p:=&Parser{};tp:=&TParser{Parser:p};called:=0
   cases:=[]func(){
-   func(){if typed{(&tctx{p:tp}).unary("-",tn)}else{(&actx{p:p}).unary("-",n)}},
-   func(){if typed{(&tctx{p:tp}).binary("+",tn,1)}else{(&actx{p:p}).binary("+",n,1)}},
-   func(){right:=func()any{called++;return true};if typed{(&tctx{p:tp}).and(tn,right)}else{(&actx{p:p}).and(n,right)}},
-   func(){right:=func()any{called++;return false};if typed{(&tctx{p:tp}).or(tn,right)}else{(&actx{p:p}).or(n,right)}},
-   func(){if typed{(&tctx{p:tp}).listItems(long,1)}else{(&actx{p:p}).listItems(long,1)}},
-   func(){fn:=func(...any)any{return nil};if typed{(&tctx{p:tp}).asNode(long,fn)}else{(&actx{p:p}).asNode(long,fn)}},
+   func(){if typed{(&TActCtx{P:tp}).Unary("-",tn)}else{(&ActCtx{P:p}).Unary("-",n)}},
+   func(){if typed{(&TActCtx{P:tp}).Binary("+",tn,1)}else{(&ActCtx{P:p}).Binary("+",n,1)}},
+   func(){right:=func()any{called++;return true};if typed{(&TActCtx{P:tp}).And(tn,right)}else{(&ActCtx{P:p}).And(n,right)}},
+   func(){right:=func()any{called++;return false};if typed{(&TActCtx{P:tp}).Or(tn,right)}else{(&ActCtx{P:p}).Or(n,right)}},
+   func(){if typed{(&TActCtx{P:tp}).ListItems(long,1)}else{(&ActCtx{P:p}).ListItems(long,1)}},
+   func(){fn:=func(...any)any{return nil};if typed{(&TActCtx{P:tp}).asNode(long,fn)}else{(&ActCtx{P:p}).asNode(long,fn)}},
   }
   for _,run:=range cases{
-   p.control=nil;ordinary,e:=catchActionText(run);if e!=nil || ordinary==""{t.Fatal("ordinary helper error",e)}
-   p.control=newWorkControl(nil,WorkLimits{MaxSteps:1<<50});active,e:=catchActionText(run);if e!=nil || active!=ordinary{t.Fatal("active helper error changed",e)}
-   p.control=newWorkControl(nil,WorkLimits{MaxSteps:256});partial,e:=catchActionText(run);if partial!="" || !errors.Is(e,ErrWorkLimit) || p.control.inputUsed()!=0{t.Fatal("helper error unbounded",e)}
+   p.Control=nil;ordinary,e:=catchActionText(run);if e!=nil || ordinary==""{t.Fatal("ordinary helper error",e)}
+   p.Control=newWorkControl(nil,WorkLimits{MaxSteps:1<<50});active,e:=catchActionText(run);if e!=nil || active!=ordinary{t.Fatal("active helper error changed",e)}
+   p.Control=newWorkControl(nil,WorkLimits{MaxSteps:256});partial,e:=catchActionText(run);if partial!="" || !errors.Is(e,ErrWorkLimit) || p.Control.inputUsed()!=0{t.Fatal("helper error unbounded",e)}
   }
   if called!=0{t.Fatal("invalid boolean operand evaluated RHS")}
-  p.control=newWorkControl(nil,WorkLimits{MaxSteps:1<<50});called=0
+  p.Control=newWorkControl(nil,WorkLimits{MaxSteps:1<<50});called=0
   right:=func()any{called++;return true};var and,or any
-  if typed{c:=&tctx{p:tp};and=c.and(false,right);or=c.or(true,right)}else{c:=&actx{p:p};and=c.and(false,right);or=c.or(true,right)}
+  if typed{c:=&TActCtx{P:tp};and=c.And(false,right);or=c.Or(true,right)}else{c:=&ActCtx{P:p};and=c.And(false,right);or=c.Or(true,right)}
   if and!=false || or!=true || called!=0{t.Fatal("valid short circuit changed")}
  }
 }

@@ -7,10 +7,10 @@ import (
 )
 
 func TestWalkEdgeOrderAndSharedParents(t *testing.T) {
-	shared := &Node{text: "shared"}
-	left := &Node{children: []*Node{shared}}
-	right := &Node{fields: Fields{{"nested", []any{shared, nil, 7}}}}
-	root := &Node{children: []*Node{left, right, nil}, fields: Fields{{"z", false}, {"a", shared}}}
+	shared := &Node{RawText: "shared"}
+	left := &Node{RawChildren: []*Node{shared}}
+	right := &Node{RawFields: Fields{{"nested", []any{shared, nil, 7}}}}
+	root := &Node{RawChildren: []*Node{left, right, nil}, RawFields: Fields{{"z", false}, {"a", shared}}}
 	var got []string
 	var parents []*Node
 	err := Walk(root, func(v WalkVisit) (WalkAction, error) {
@@ -39,14 +39,14 @@ func TestWalkEdgeOrderAndSharedParents(t *testing.T) {
 	if !reflect.DeepEqual(parents, []*Node{left, right, root}) {
 		t.Fatal("shared edge parents lost")
 	}
-	if root.fields[0].Name != "z" {
+	if root.RawFields[0].Name != "z" {
 		t.Fatal("walk sorted fields in place")
 	}
 }
 
 func TestWalkCyclesAndControls(t *testing.T) {
 	n := &Node{}
-	n.children = []*Node{n}
+	n.RawChildren = []*Node{n}
 	var cycle *CycleError
 	err := Walk(n, func(WalkVisit) (WalkAction, error) { return WalkContinue, nil })
 	if !errors.As(err, &cycle) || len(cycle.Path) != 2 || cycle.Path[1].Kind != WalkChild {
@@ -54,7 +54,7 @@ func TestWalkCyclesAndControls(t *testing.T) {
 	}
 	list := make([]any, 1)
 	list[0] = list
-	n = &Node{fields: Fields{{"x", list}}}
+	n = &Node{RawFields: Fields{{"x", list}}}
 	err = Walk(n, func(WalkVisit) (WalkAction, error) { return WalkContinue, nil })
 	if !errors.As(err, &cycle) || len(cycle.Path) != 3 {
 		t.Fatalf("list cycle = %v", err)
@@ -85,7 +85,7 @@ func TestWalkDeep(t *testing.T) {
 	n := &Node{}
 	const depth = 20000
 	for i := 0; i < depth; i++ {
-		n = &Node{fields: Fields{{"next", []any{n}}}}
+		n = &Node{RawFields: Fields{{"next", []any{n}}}}
 	}
 	count := 0
 	if err := Walk(n, func(v WalkVisit) (WalkAction, error) {
@@ -100,8 +100,8 @@ func TestWalkDeep(t *testing.T) {
 
 func TestCursorBoundariesAndUncontainedChildren(t *testing.T) {
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
-		a, b, z := &Node{start: 1, end: 3}, &Node{start: 3, end: 4}, &Node{start: 3, end: 3}
-		root := &Node{start: 20, end: 21, children: []*Node{a, b, z, a}}
+		a, b, z := &Node{RawStart: 1, RawEnd: 3}, &Node{RawStart: 3, RawEnd: 4}, &Node{RawStart: 3, RawEnd: 3}
+		root := &Node{RawStart: 20, RawEnd: 21, RawChildren: []*Node{a, b, z, a}}
 		c := Cursor{Root: root, Unit: unit}
 		var got []*Node
 		callback := func(v WalkVisit) (WalkAction, error) { got = append(got, v.Node); return WalkContinue, nil }
@@ -137,7 +137,7 @@ func TestCursorBoundariesAndUncontainedChildren(t *testing.T) {
 func TestWalkSliceIdentityIgnoresCapacity(t *testing.T) {
 	x := make([]any, 1, 2)
 	x[0] = x[:1:1]
-	root := &Node{fields: Fields{{Name: "x", Value: x}}}
+	root := &Node{RawFields: Fields{{Name: "x", Value: x}}}
 	visits := 0
 	err := Walk(root, func(WalkVisit) (WalkAction, error) {
 		visits++

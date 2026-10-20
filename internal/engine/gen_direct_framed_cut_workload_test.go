@@ -36,6 +36,6 @@ rule expr Expr = operators {
     }
 }
 rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}
-`, typedOperatorsRuleActionWorkloadFixture, filepath.Join(dir, "operatorsRule"), "(typed OperatorsRule body inlined)", control)
+`, typedOperatorsRuleActionWorkloadFixture, filepath.Join(dir, "OperatorsRule"), "(typed OperatorsRule body inlined)", control)
 	})
 }

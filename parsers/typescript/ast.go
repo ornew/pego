@@ -14,7 +14,7 @@ import (
 // ForEachChild and Inspect take them as they are.
 type ASTNode interface {
 	Range() (start, end int)
-	tspan() (int, int) // the generated method of *Span: only the types of this package are nodes
+	TSpan() (int, int) // the generated method of *Span: only the types of this package are nodes
 }
 
 // AsNode returns v, a node or the value of a field of a union type such as Expression, as an ASTNode, or nil if it

@@ -69,7 +69,7 @@ func TestOperatorsRuleWorkload(t *testing.T) {
 			t.Fatalf("typed capture result: %v %v", saved, err)
 		}
 		before, _ := json.Marshal(saved)
-		p := &tparser{parser: &parser{}}
+		p := &TParser{Parser: &Parser{}}
 		for _, input := range []string{operatorsRuleInput(1), operatorsRuleInput(128), "a", "a[b,c,]", "a[b,c,d,", "a[b,c,d,e,]", "a[b,é,d,]", "", "a[b,c,d,]?"} {
 			v, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
 			data, _ := json.Marshal(struct { Value any; Error string }{v, fmt.Sprint(err)})
@@ -80,10 +80,10 @@ func TestOperatorsRuleWorkload(t *testing.T) {
 			if (err == nil) != (input == operatorsRuleInput(1) || input == operatorsRuleInput(128) || input == "a") {
 				t.Fatalf("acceptance %q: %v", input, err)
 			}
-			if p.depth != 0 || len(p.trail) != 0 || p.frame != nil {
+			if p.Depth != 0 || len(p.Trail) != 0 || p.Frame != nil {
 				t.Fatal("OperatorsRule invocation left live frame, depth or undo state")
 			}
-			for _, u := range p.trail[:cap(p.trail)] {
+			for _, u := range p.Trail[:cap(p.Trail)] {
 				if u.f != nil || u.old != nil || u.slot != 0 { t.Fatal("discarded undo retained") }
 			}
 			p.recycle()

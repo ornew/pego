@@ -120,31 +120,31 @@ func TestUntypedPoolRetention(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			input := tc.prefix + "b"
-			p := &parser{maxDepth: pegoGrammar.maxDepth}
+			p := &Parser{MaxDepth: pegoGrammar.maxDepth}
 			p.setGrammar(pegoGrammar)
 			if tc.unit == Bytes {
 				p.unit, p.bs, p.n = Bytes, input, len(input)
 			} else {
 				p.setSource(input)
 			}
-			n, ok := p.call(rules[0], 0)
-			if !ok || p.pos != p.n {
-				t.Fatalf("large parse failed at %d/%d", p.pos, p.n)
+			n, ok := p.Call(rules[0], 0)
+			if !ok || p.Pos != p.n {
+				t.Fatalf("large parse failed at %d/%d", p.Pos, p.n)
 			}
 			before, err := json.Marshal(n)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if n.Type() != "A" || n.text != "b" || n.start != tc.start || n.end != tc.start+1 {
-				t.Fatalf("large result: type=%s span=[%d,%d) text=%q", n.Type(), n.start, n.end, n.text)
+			if n.Type() != "A" || n.RawText != "b" || n.RawStart != tc.start || n.RawEnd != tc.start+1 {
+				t.Fatalf("large result: type=%s span=[%d,%d) text=%q", n.Type(), n.RawStart, n.RawEnd, n.RawText)
 			}
 
 			p.release()
-			if p.bs != "" || p.src != "" || p.n != 0 || p.pos != 0 || len(p.in) != 0 || len(p.offs) != 0 {
+			if p.bs != "" || p.src != "" || p.n != 0 || p.Pos != 0 || len(p.In) != 0 || len(p.offs) != 0 {
 				t.Fatal("released parser still references the input")
 			}
-			if cap(p.in) != 0 || cap(p.offs) != 0 {
-				t.Fatalf("oversized input buffers retained: in=%d offsets=%d", cap(p.in), cap(p.offs))
+			if cap(p.In) != 0 || cap(p.offs) != 0 {
+				t.Fatalf("oversized input buffers retained: in=%d offsets=%d", cap(p.In), cap(p.offs))
 			}
 			for i, entry := range p.memo.slots[:cap(p.memo.slots)] {
 				if entry != nil {
@@ -167,7 +167,7 @@ func TestUntypedPoolRetention(t *testing.T) {
 				t.Fatal("invalid small input accepted")
 			}
 			got, err := Parse(tc.retry, WithUnit(tc.unit))
-			if err != nil || got == nil || got.Type() != "A" || got.text != "b" || got.start != tc.retryStart || got.end != tc.retryStart+1 {
+			if err != nil || got == nil || got.Type() != "A" || got.RawText != "b" || got.RawStart != tc.retryStart || got.RawEnd != tc.retryStart+1 {
 				t.Fatalf("small retry: node=%v error=%v", got, err)
 			}
 			after, err = json.Marshal(n)
@@ -190,9 +190,9 @@ import (
 
 const generalCapture = false
 
-func checkTrail(t *testing.T, p *tparser) {
+func checkTrail(t *testing.T, p *TParser) {
 	t.Helper()
-	for i, u := range p.trail[:cap(p.trail)] {
+	for i, u := range p.Trail[:cap(p.Trail)] {
 		if u.f != nil || u.old != nil || u.slot != 0 {
 			t.Errorf("trail slot %d retains discarded undo", i)
 		}
@@ -201,12 +201,12 @@ func checkTrail(t *testing.T, p *tparser) {
 
 func TestTypedPoolRules(t *testing.T) {
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
-		p := &tparser{parser: &parser{maxDepth: pegoGrammar.maxDepth}}
+		p := &TParser{Parser: &Parser{MaxDepth: pegoGrammar.maxDepth}}
 		v, err := p.run(trules[0], strings.Repeat("a", 2<<20)+"b", parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
 		if err != nil || v.(*A).Text != "b" {
 			t.Fatalf("large parse: %v", err)
 		}
-		if len(p.trail) != 0 || (generalCapture && cap(p.trail) == 0) || (!generalCapture && cap(p.trail) != 0) {
+		if len(p.Trail) != 0 || (generalCapture && cap(p.Trail) == 0) || (!generalCapture && cap(p.Trail) != 0) {
 			t.Fatal("capture rule did not use and discard the expected undo trail")
 		}
 		checkTrail(t, p)
@@ -234,46 +234,46 @@ func TestTypedPoolRules(t *testing.T) {
 }
 
 func TestTypedPoolUndoAndSaved(t *testing.T) {
-	p := &tparser{parser: &parser{maxDepth: pegoGrammar.maxDepth}}
-	f := &tframe{vals: []any{"before"}}
-	p.frame = f
-	m := p.mark()
-	p.setCapture(0, "outer")
-	inner := p.mark()
-	p.setCapture(0, "inner")
-	p.reset(inner)
-	if f.vals[0] != "outer" || len(p.trail) != 1 || p.trail[0].old != "before" {
+	p := &TParser{Parser: &Parser{MaxDepth: pegoGrammar.maxDepth}}
+	f := &TCaptureFrame{Vals: []any{"before"}}
+	p.Frame = f
+	m := p.Mark()
+	p.SetCapture(0, "outer")
+	inner := p.Mark()
+	p.SetCapture(0, "inner")
+	p.Reset(inner)
+	if f.Vals[0] != "outer" || len(p.Trail) != 1 || p.Trail[0].old != "before" {
 		t.Fatal("reset damaged live undo")
 	}
-	for _, u := range p.trail[len(p.trail):cap(p.trail)] {
+	for _, u := range p.Trail[len(p.Trail):cap(p.Trail)] {
 		if u.f != nil || u.old != nil {
 			t.Error("reset retained undo tail")
 		}
 	}
-	p.reset(m)
-	if f.vals[0] != "before" {
+	p.Reset(m)
+	if f.Vals[0] != "before" {
 		t.Fatal("reset lost original capture")
 	}
 	checkTrail(t, p)
-	// invokePlain still creates trails for captures in repeated element frames.
-	p.setCapture(0, "outer")
-	r := &trule{rule: &rule{novalue: true}, body: func(p *tparser, _ int) (any, bool) {
-		prev := p.frame
-		p.frame = p.newFrame(1)
-		p.setCapture(0, "changed")
-		p.frame = prev
+	// InvokePlain still creates trails for captures in repeated element frames.
+	p.SetCapture(0, "outer")
+	r := &TRule{Rule: &Rule{Novalue: true}, Body: func(p *TParser, _ int) (any, bool) {
+		prev := p.Frame
+		p.Frame = p.NewFrame(1)
+		p.SetCapture(0, "changed")
+		p.Frame = prev
 		return nil, true
 	}}
-	p.invokePlain(r, 0)
-	if len(p.trail) != 1 || p.trail[0].old != "before" || f.vals[0] != "outer" {
+	p.InvokePlain(r, 0)
+	if len(p.Trail) != 1 || p.Trail[0].old != "before" || f.Vals[0] != "outer" {
 		t.Fatal("call damaged parent undo")
 	}
-	for _, u := range p.trail[len(p.trail):cap(p.trail)] {
+	for _, u := range p.Trail[len(p.Trail):cap(p.Trail)] {
 		if u.f != nil || u.old != nil {
 			t.Error("call retained undo tail")
 		}
 	}
-	p.reset(m)
+	p.Reset(m)
 	checkTrail(t, p)
 	// OperatorsRule's saved-capture scratch can shrink after a wider candidate.
 	p.saved = []any{&A{Text: strings.Repeat("a", 1024)}, &A{Text: "tail"}}
@@ -288,8 +288,8 @@ func TestTypedPoolUndoAndSaved(t *testing.T) {
 
 // The parser is kept explicitly, so GC cannot hide references by emptying
 // sync.Pool. Returned terminals are dropped before measuring scratch retention.
-func retainedTypedParser(unit PositionUnit, n int) *tparser {
-	p := &tparser{parser: &parser{maxDepth: pegoGrammar.maxDepth}}
+func retainedTypedParser(unit PositionUnit, n int) *TParser {
+	p := &TParser{Parser: &Parser{MaxDepth: pegoGrammar.maxDepth}}
 	v, err := p.run(trules[0], strings.Repeat("a", n)+"b", parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
 	if err != nil || v.(*A).Text != "b" {
 		panic(err)
@@ -309,7 +309,7 @@ func TestTypedPoolHeap(t *testing.T) {
 		p := retainedTypedParser(unit, 2<<20)
 		runtime.GC()
 		runtime.ReadMemStats(&after)
-		t.Logf("unit=%v retained_heap_delta=%d bytes trail_capacity=%d", unit, int64(after.HeapAlloc)-int64(before.HeapAlloc), cap(p.trail))
+		t.Logf("unit=%v retained_heap_delta=%d bytes trail_capacity=%d", unit, int64(after.HeapAlloc)-int64(before.HeapAlloc), cap(p.Trail))
 		runtime.KeepAlive(p)
 	}
 }

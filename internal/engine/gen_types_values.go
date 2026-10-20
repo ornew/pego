@@ -242,15 +242,15 @@ func (t *typedGen) nodeHelpers(b *strings.Builder, done *int) bool {
 		case tupleTy:
 			fmt.Fprintf(b, "\tvar out %s\n\tn := astNode(v)\n\tif n == nil {\n\t\treturn out\n\t}\n", g)
 			for i, e := range x.elems {
-				fmt.Fprintf(b, "\tout.E%d = %s\n", i, t.conv(e, fmt.Sprintf("astKid(n.children, %d)", i)))
+				fmt.Fprintf(b, "\tout.E%d = %s\n", i, t.conv(e, fmt.Sprintf("astKid(n.RawChildren, %d)", i)))
 			}
 			b.WriteString("\treturn out\n")
 		case nodeTy:
-			fmt.Fprintf(b, "\tn := astNode(v)\n\tif n == nil || n.Type() == \"error\" {\n\t\treturn nil\n\t}\n\tout := &%s{%s: %s{int(n.start), int(n.end)}}\n", g[1:], t.span, t.span)
+			fmt.Fprintf(b, "\tn := astNode(v)\n\tif n == nil || n.Type() == \"error\" {\n\t\treturn nil\n\t}\n\tout := &%s{%s: %s{int(n.RawStart), int(n.RawEnd)}}\n", g[1:], t.span, t.span)
 			switch value := x.value.(type) {
 			case basicTy:
 				if value == tyString {
-					b.WriteString("\tout.Value = n.text\n")
+					b.WriteString("\tout.Value = n.RawText\n")
 				} else {
 					fmt.Fprintf(b, "\tout.Value = %s\n", t.conv(value, "a.nodeValue(n)"))
 				}
@@ -280,9 +280,9 @@ func (t *typedGen) typedHelpers(b *strings.Builder, done *int) bool {
 		case optTy:
 			fmt.Fprintf(b, "\tif v == nil {\n\t\treturn nil\n\t}\n\tx := %s\n\treturn &x\n", t.dconv(x.elem, "v", "a"))
 		case tupleTy:
-			fmt.Fprintf(b, "\tvar out %s\n\tx, _ := v.(*tnode)\n\tif x == nil {\n\t\treturn out\n\t}\n", g)
+			fmt.Fprintf(b, "\tvar out %s\n\tx, _ := v.(*TSeq)\n\tif x == nil {\n\t\treturn out\n\t}\n", g)
 			for i, e := range x.elems {
-				fmt.Fprintf(b, "\tout.E%d = %s\n", i, t.dconv(e, fmt.Sprintf("tkid(x.kids, %d)", i), "a"))
+				fmt.Fprintf(b, "\tout.E%d = %s\n", i, t.dconv(e, fmt.Sprintf("TKid(x.Kids, %d)", i), "a"))
 			}
 			b.WriteString("\treturn out\n")
 		case nodeTy:
@@ -290,18 +290,18 @@ func (t *typedGen) typedHelpers(b *strings.Builder, done *int) bool {
 				// A string node of a named node type is its own public value (tmatchAs).
 				g := t.names[x.name]
 				fmt.Fprintf(b, "\tconst _ = -(unsafe.Sizeof(%s{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)\n", g)
-				fmt.Fprintf(b, "\tx, _ := v.(*tmatch)\n\tif x == nil || x.nt != %s {\n\t\treturn nil\n\t}\n\treturn tmatchAs[%s](x)\n", t.g.nodeTypeID(x.name), g)
+				fmt.Fprintf(b, "\tx, _ := v.(*TMatch)\n\tif x == nil || x.Nt != %s {\n\t\treturn nil\n\t}\n\treturn TMatchAs[%s](x)\n", t.g.nodeTypeID(x.name), g)
 				break
 			}
 			if x.name != "" {
 				// A tuple or list node of a named node type, as the node it was converted from,
 				// remembered so that the node converts to one value everywhere (as astConv does).
 				g := t.names[x.name]
-				fmt.Fprintf(b, "\tx := asTval(v)\n\tif x == nil || x.tname() != %q {\n\t\treturn nil\n\t}\n\tif out, ok := a.named[x]; ok {\n\t\treturn out.(*%s)\n\t}\n", x.name, g)
+				fmt.Fprintf(b, "\tx := AsTval(v)\n\tif x == nil || x.TName() != %q {\n\t\treturn nil\n\t}\n\tif out, ok := a.named[x]; ok {\n\t\treturn out.(*%s)\n\t}\n", x.name, g)
 				fmt.Fprintf(b, "\tu := %s\n\tif u == nil {\n\t\treturn nil\n\t}\n\tout := astNew(&a.t%s)\n\tout.TNode = *u\n\tif a.named == nil {\n\t\ta.named = map[any]any{}\n\t}\n\ta.named[x] = out\n\treturn out\n", t.dconv(x.underlying(), "v", "a"), g)
 				break
 			}
-			fmt.Fprintf(b, "\tswitch x := v.(type) {\n\tcase *tnode:\n\t\tif x.typ == typeTupleValue || x.typ == typeListValue {\n\t\t\treturn nil\n\t\t}\n\t\tout := &%s{%s: x.%s}\n", g[1:], t.span, t.span)
+			fmt.Fprintf(b, "\tswitch x := v.(type) {\n\tcase *TSeq:\n\t\tif x.Typ == TypeTupleValue || x.Typ == TypeListValue {\n\t\t\treturn nil\n\t\t}\n\t\tout := &%s{%s: x.%s}\n", g[1:], t.span, t.span)
 			switch value := x.value.(type) {
 			case tupleTy, listTy:
 				fmt.Fprintf(b, "\t\tout.Value = %s\n", t.dconv(value, "x", "a"))
@@ -310,7 +310,7 @@ func (t *typedGen) typedHelpers(b *strings.Builder, done *int) bool {
 					fmt.Fprintf(b, "\t\tout.Value = %s\n", t.dconv(value, "tnodeValue(x)", "a"))
 				}
 			}
-			fmt.Fprintf(b, "\t\treturn out\n\tcase *terror:\n\t\treturn nil\n\tcase tval:\n\t\tif x.tstruct() {\n\t\t\treturn nil\n\t\t}\n\t\ts, e := x.tspan()\n\t\ttext, _ := x.ttext()\n\t\t_ = text\n\t\tout := &%s{%s: %s{s, e}}\n", g[1:], t.span, t.span)
+			fmt.Fprintf(b, "\t\treturn out\n\tcase *TError:\n\t\treturn nil\n\tcase TVal:\n\t\tif x.TStruct() {\n\t\t\treturn nil\n\t\t}\n\t\ts, e := x.TSpan()\n\t\ttext, _ := x.TText()\n\t\t_ = text\n\t\tout := &%s{%s: %s{s, e}}\n", g[1:], t.span, t.span)
 			fmt.Fprintf(b, "\t\tout.Value = %s\n\t\treturn out\n\t}\n\treturn nil\n", t.dconv(x.value, "text", "a"))
 		}
 		b.WriteString("}\n\n")
@@ -371,24 +371,24 @@ func (t *typedGen) backHelpers(b *strings.Builder, done *int) bool {
 			fmt.Fprintf(b, "\tif v == nil {\n\t\treturn nil\n\t}\n\treturn %s\n", t.back(x.elem, "(*v)"))
 		case tupleTy:
 			if len(x.elems) == 0 {
-				b.WriteString("\treturn &tnode{typ: typeTupleValue}\n")
+				b.WriteString("\treturn &TSeq{Typ: TypeTupleValue}\n")
 			} else {
-				fmt.Fprintf(b, "\treturn &tnode{typ: typeTupleValue, kids: %s}\n", elems(x, "v"))
+				fmt.Fprintf(b, "\treturn &TSeq{Typ: TypeTupleValue, Kids: %s}\n", elems(x, "v"))
 			}
 		case nodeTy:
 			b.WriteString("\tif v == nil {\n\t\treturn nil\n\t}\n")
 			if x.name != "" {
-				fmt.Fprintf(b, "\treturn tsetNodeType(%s, %s)\n}\n\n", t.back(x.underlying(), "&v.TNode"), t.g.nodeTypeID(x.name))
+				fmt.Fprintf(b, "\treturn TSetNodeType(%s, %s)\n}\n\n", t.back(x.underlying(), "&v.TNode"), t.g.nodeTypeID(x.name))
 				continue
 			}
 			switch value := x.value.(type) {
 			case listTy:
-				fmt.Fprintf(b, "\tkids := make([]any, len(v.Value))\n\tfor i, x := range v.Value {\n\t\tkids[i] = %s\n\t}\n\treturn &tnode{%[2]s: v.%[2]s, typ: \"list\", kids: kids}\n", t.back(value.elem, "x"), t.span)
+				fmt.Fprintf(b, "\tkids := make([]any, len(v.Value))\n\tfor i, x := range v.Value {\n\t\tkids[i] = %s\n\t}\n\treturn &TSeq{%[2]s: v.%[2]s, Typ: \"list\", Kids: kids}\n", t.back(value.elem, "x"), t.span)
 			case tupleTy:
 				if len(value.elems) == 0 {
-					fmt.Fprintf(b, "\treturn &tnode{%[1]s: v.%[1]s, typ: \"tuple\"}\n", t.span)
+					fmt.Fprintf(b, "\treturn &TSeq{%[1]s: v.%[1]s, Typ: \"tuple\"}\n", t.span)
 				} else {
-					fmt.Fprintf(b, "\treturn &tnode{%[1]s: v.%[1]s, typ: \"tuple\", kids: %[2]s}\n", t.span, elems(value, "v.Value"))
+					fmt.Fprintf(b, "\treturn &TSeq{%[1]s: v.%[1]s, Typ: \"tuple\", Kids: %[2]s}\n", t.span, elems(value, "v.Value"))
 				}
 			default:
 				b.WriteString("\treturn nil\n")

@@ -101,6 +101,7 @@ func (o *observation) dropDiscarded(pos int) {
 	}
 }
 
+// Of its fields and methods, Enter, Evaluated, Exit, Skipped are for generated parsers; not a stable API.
 type observation struct {
 	trace    func(TraceEvent)
 	profile  *profileObservation
@@ -134,7 +135,7 @@ func (o *observation) selected(rule string) bool {
 	return len(o.rules) == 0 || o.rules[rule] || len(o.stack) > 0 && o.stack[len(o.stack)-1].selected
 }
 
-func (o *observation) enter(rule string, pos, level int) {
+func (o *observation) Enter(rule string, pos, level int) {
 	selected := o.selected(rule)
 	e := TraceEvent{Kind: TraceEnter, Rule: rule, Pos: pos, Level: level, Depth: len(o.stack) + 1}
 	o.stack = append(o.stack, observationCall{event: e, selected: selected})
@@ -142,7 +143,7 @@ func (o *observation) enter(rule string, pos, level int) {
 	o.deliver(e, selected)
 }
 
-func (o *observation) evaluated() {
+func (o *observation) Evaluated() {
 	if o != nil && len(o.stack) > 0 {
 		o.stack[len(o.stack)-1].event.Evals++
 	}
@@ -154,7 +155,7 @@ func (o *observation) memoHit() {
 	}
 }
 
-func (o *observation) exit(matched bool, end, examined int, examinedKnown bool) {
+func (o *observation) Exit(matched bool, end, examined int, examinedKnown bool) {
 	i := len(o.stack) - 1
 	call := o.stack[i]
 	o.stack = o.stack[:i]
@@ -173,7 +174,7 @@ func (o *observation) exit(matched bool, end, examined int, examinedKnown bool) 
 	o.deliver(e, call.selected)
 }
 
-func (o *observation) skipped(rule string, pos, level int) {
+func (o *observation) Skipped(rule string, pos, level int) {
 	if o != nil {
 		e := TraceEvent{Kind: TraceSkipped, Rule: rule, Pos: pos, Level: level,
 			Depth: len(o.stack) + 1, SkipReason: "first-character"}

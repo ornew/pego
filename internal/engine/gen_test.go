@@ -233,7 +233,7 @@ rule leaf = "x"`, []string{strings.Repeat("(", DefaultMaxDepth-3) + "x" + string
 		strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2)}})
 	// Chains of prefix and right-associative operators count against the limit too (a OperatorsRule
 	// expression parses them by recursion).
-	cases = append(cases, genCase{"operatorsRule nesting limit", `rule main = x
+	cases = append(cases, genCase{"OperatorsRule nesting limit", `rule main = x
 rule x = operators {
     operand "x"
     level { infix right "^" }
@@ -574,10 +574,10 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, refer
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		if strings.Contains(string(code), "tparse(trules") {
+		if strings.Contains(string(code), "TParse(trules") {
 			typedRuntime++
 		}
-		if c.name == "OperatorsRule prefix-part cuts" && !strings.Contains(string(code), "tparse(trules") {
+		if c.name == "OperatorsRule prefix-part cuts" && !strings.Contains(string(code), "TParse(trules") {
 			t.Error("OperatorsRule prefix-part cuts: typed runtime is not exercised")
 		}
 		// The grammars written for direct rules (gen_direct.go) must compile rules that way.

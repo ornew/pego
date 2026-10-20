@@ -180,14 +180,14 @@ func parseWith(markers, input string, unit []PositionUnit) (*SourceFile, error) 
 	return f, shiftError(err, len(markers))
 }
 
-type spanSetter interface{ tsetSpan(start, end int) }
+type spanSetter interface{ TSetSpan(start, end int) }
 
 // shiftSpans moves the range of every node of f d positions back.
 func shiftSpans(f *SourceFile, d int) {
 	Inspect(f, func(n ASTNode) bool {
 		if n != nil {
 			s, e := n.Range()
-			n.(spanSetter).tsetSpan(max(s-d, 0), max(e-d, 0))
+			n.(spanSetter).TSetSpan(max(s-d, 0), max(e-d, 0))
 		}
 		return true
 	})

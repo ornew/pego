@@ -1,13 +1,14 @@
 # G050: Generated Work-Control Specialization
 
 Resource checks can cost ordinary generated parsing even when no work control is
-active. Specializing ordinary methods avoids some nil-control checks while
+active. Specializing ordinary functions avoids some nil-control checks while
 preserving metered invocation behavior.
 
 ## Mechanism and Invariants
 
-The generator emits ordinary method bodies and specializes only selected runtime
-helpers (`newNode`, `newMatch`, `setCapture`, `expect`). Metered paths retain
+The generator emits ordinary function bodies (rule bodies are functions taking the
+parser as their first parameter) and specializes only selected runtime helpers
+(`NewNode`, `NewMatch`, `SetCapture`, `Expect`). Metered paths retain
 their checks, cancellation and budgets. The method registry tracks complete
 emitted bodies; synchronous emitter callbacks preserve parser/call-local state.
 Broader helper cloning and an additional method split were measured and

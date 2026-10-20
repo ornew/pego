@@ -7,29 +7,33 @@ import (
 
 // Document incrementally parses the configured start rule. It belongs to one
 // goroutine; returned nodes may be shared with later parses.
+//
+// Of its fields and methods, BeginParse, EndParse, ResolveParseOptions, State are for generated parsers; not a stable API.
 type Document struct {
-	state     *documentState
+	State     *documentState
 	defaults  parseOptions
 	typedMemo interface{ invalidate(int) }
 	// parsing is set while a parse runs, whose observation callbacks must not
-	// parse or edit the Document again (beginParse).
+	// parse or edit the Document again (BeginParse).
 	parsing bool
 }
 
-// errDocumentBusy is returned by a Parse, ParseAST or Edit of a Document that is
+// DocumentBusy returned by a Parse, ParseAST or Edit of a Document that is
 // already parsing. Only a trace callback of that parse can make one; parsers
 // generated with observability export it as ErrDocumentBusy.
-var errDocumentBusy = fmt.Errorf("document is already parsing")
+//
+// DocumentBusy is for generated parsers; not a stable API.
+var DocumentBusy = fmt.Errorf("document is already parsing")
 
-func (d *Document) beginParse() error {
+func (d *Document) BeginParse() error {
 	if d.parsing {
-		return errDocumentBusy
+		return DocumentBusy
 	}
 	d.parsing = true
 	return nil
 }
 
-func (d *Document) endParse() { d.parsing = false }
+func (d *Document) EndParse() { d.parsing = false }
 
 // ParseStats counts rule evaluations and reused memo results in the last Parse.
 type ParseStats struct {
@@ -37,8 +41,9 @@ type ParseStats struct {
 	Reused    int
 }
 
-func makeDocument(root *rule, text string, opts []ParseOption) (d *Document, err error) {
-	o, err := resolveOptions(root.g, opts)
+// MakeDocument is for generated parsers; not a stable API.
+func MakeDocument(root *Rule, text string, opts []ParseOption) (d *Document, err error) {
+	o, err := ResolveOptions(root.g, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -46,27 +51,27 @@ func makeDocument(root *rule, text string, opts []ParseOption) (d *Document, err
 	o = prepareOptions(o)
 	// Construction performs the same input decoding and work checks as a parse,
 	// but its counters do not carry into subsequent invocations.
-	p := &parser{unit: o.unit, control: o.control}
+	p := &Parser{unit: o.unit, Control: o.control}
 	p.setGrammar(root.g)
 	if o.unit == CodePoints {
 		p.setSource(text)
 	} else if o.control != nil {
-		p.inputWork(uint64(len(text)))
+		p.InputWork(uint64(len(text)))
 	}
-	o.control.check()
+	o.control.Check()
 	o.control, o.prepared = nil, false
-	return &Document{state: newDocumentState(root, text, o.unit), defaults: o}, nil
+	return &Document{State: newDocumentState(root, text, o.unit), defaults: o}, nil
 }
 
 // Text returns the current exact input, including invalid UTF-8 bytes.
-func (d *Document) Text() string { return d.state.text }
+func (d *Document) Text() string { return d.State.text }
 
 // Edit replaces [start,end) in the Document's position unit.
 func (d *Document) Edit(start, end int, text string) error {
 	if d.parsing {
-		return errDocumentBusy
+		return DocumentBusy
 	}
-	reuse, err := d.state.editReuse(start, end, text)
+	reuse, err := d.State.editReuse(start, end, text)
 	if err != nil {
 		return err
 	}
@@ -79,18 +84,18 @@ func (d *Document) Edit(start, end int, text string) error {
 // Parse parses the current text, applying invocation options after the
 // Document's construction defaults. An invocation cannot change its unit.
 func (d *Document) Parse(opts ...ParseOption) (*Node, error) {
-	if err := d.beginParse(); err != nil {
+	if err := d.BeginParse(); err != nil {
 		return nil, err
 	}
-	defer d.endParse()
-	o, err := d.resolveParseOptions(opts)
+	defer d.EndParse()
+	o, err := d.ResolveParseOptions(opts)
 	if err != nil {
 		return nil, err
 	}
-	return d.state.parse(o)
+	return d.State.parse(o)
 }
 
-func (d *Document) resolveParseOptions(opts []ParseOption) (parseOptions, error) {
+func (d *Document) ResolveParseOptions(opts []ParseOption) (parseOptions, error) {
 	o := d.defaults
 	for _, opt := range opts {
 		opt(&o)
@@ -99,9 +104,9 @@ func (d *Document) resolveParseOptions(opts []ParseOption) (parseOptions, error)
 		return o, fmt.Errorf("max depth must be non-negative: %d", o.maxDepth)
 	}
 	if o.maxDepth == 0 {
-		o.maxDepth = d.state.root.g.maxDepth
+		o.maxDepth = d.State.root.g.maxDepth
 	}
-	if !workControlsEnabled && (o.context != nil || o.limits != (WorkLimits{})) {
+	if !WorkControlsEnabled && (o.context != nil || o.limits != (WorkLimits{})) {
 		return o, fmt.Errorf("work controls are disabled in this generated reference parser")
 	}
 	// stream:begin
@@ -114,7 +119,7 @@ func (d *Document) resolveParseOptions(opts []ParseOption) (parseOptions, error)
 
 // Stats returns the evaluation and reuse counts of the last Parse.
 func (d *Document) Stats() ParseStats {
-	s := d.state.stats
+	s := d.State.stats
 	return ParseStats{Evaluated: s.Evaluated, Reused: s.Reused}
 }
 
@@ -123,24 +128,26 @@ func (d *Document) Stats() ParseStats {
 func (n *Node) Clone() *Node {
 	state := documentCloneState{
 		nodes:  make(map[*Node]*Node),
-		slices: make(map[documentSliceKey]any),
+		slices: make(map[DocumentSliceKey]any),
 	}
 	return cloneDocumentNode(n, &state)
 }
 
 type documentCloneState struct {
 	nodes  map[*Node]*Node
-	slices map[documentSliceKey]any
+	slices map[DocumentSliceKey]any
 }
 
 // A slice's first element, length and capacity identify an exact slice view.
 // The element pointer keeps the backing array visible to the collector while
 // cloning. Empty slices without capacity have no elements or mutable backing
 // array to share.
-type documentSliceKey struct {
-	first    any
-	length   int
-	capacity int
+//
+// DocumentSliceKey is for generated parsers; not a stable API.
+type DocumentSliceKey struct {
+	First    any
+	Length   int
+	Capacity int
 }
 
 func cloneDocumentNode(n *Node, state *documentCloneState) *Node {
@@ -153,14 +160,14 @@ func cloneDocumentNode(n *Node, state *documentCloneState) *Node {
 	c := new(Node)
 	*c = *n
 	state.nodes[n] = c
-	if n.children != nil {
-		c.children = cloneDocumentValue(n.children, state).([]*Node)
+	if n.RawChildren != nil {
+		c.RawChildren = cloneDocumentValue(n.RawChildren, state).([]*Node)
 	}
-	if n.fields != nil {
-		c.fields = make(Fields, len(n.fields))
-		for i, field := range n.fields {
+	if n.RawFields != nil {
+		c.RawFields = make(Fields, len(n.RawFields))
+		for i, field := range n.RawFields {
 			field.Value = cloneDocumentValue(field.Value, state)
-			c.fields[i] = field
+			c.RawFields[i] = field
 		}
 	}
 	return c
@@ -175,7 +182,7 @@ func cloneDocumentValue(v any, state *documentCloneState) any {
 			return v
 		}
 		if cap(v) > 0 {
-			key := documentSliceKey{first: &v[:1][0], length: len(v), capacity: cap(v)}
+			key := DocumentSliceKey{First: &v[:1][0], Length: len(v), Capacity: cap(v)}
 			if out, ok := state.slices[key]; ok {
 				return out
 			}
@@ -197,7 +204,7 @@ func cloneDocumentValue(v any, state *documentCloneState) any {
 			return v
 		}
 		if cap(v) > 0 {
-			key := documentSliceKey{first: &v[:1][0], length: len(v), capacity: cap(v)}
+			key := DocumentSliceKey{First: &v[:1][0], Length: len(v), Capacity: cap(v)}
 			if out, ok := state.slices[key]; ok {
 				return out
 			}
@@ -220,7 +227,7 @@ func cloneDocumentValue(v any, state *documentCloneState) any {
 }
 
 // newDocumentState parses only the configured start rule.
-func newDocumentState(root *rule, text string, unit PositionUnit) *documentState {
+func newDocumentState(root *Rule, text string, unit PositionUnit) *documentState {
 	return &documentState{root: root, text: text, unit: unit}
 }
 
@@ -319,12 +326,14 @@ func documentByteBoundary(text string, pos int) error {
 // panic or work interruption discards all entries because they may depend on
 // unfinished left-recursion growth or partially evaluated actions.
 func (d *documentState) parse(o parseOptions) (*Node, error) {
-	return documentParseConverted(d, o, func(n *Node, _ *workControl, _ error) *Node { return n })
+	return DocumentParseConverted(d, o, func(n *Node, _ *WorkControl, _ error) *Node { return n })
 }
 
-// documentParseConverted keeps Node parsing and final typed conversion inside
+// DocumentParseConverted keeps Node parsing and final typed conversion inside
 // the same work-controlled invocation and memo cleanup boundary.
-func documentParseConverted[T any](d *documentState, o parseOptions, convert func(*Node, *workControl, error) T) (res T, err error) {
+//
+// DocumentParseConverted is for generated parsers; not a stable API.
+func DocumentParseConverted[T any](d *documentState, o parseOptions, convert func(*Node, *WorkControl, error) T) (res T, err error) {
 	defer recoverParse(&res, &err)
 	if o.unit != d.unit {
 		return res, fmt.Errorf("document parse cannot change unit")
@@ -333,16 +342,16 @@ func documentParseConverted[T any](d *documentState, o parseOptions, convert fun
 		return res, fmt.Errorf("document start rule is missing")
 	}
 	o = prepareOptions(o)
-	p := &parser{unit: d.unit, maxDepth: o.maxDepth, control: o.control}
+	p := &Parser{unit: d.unit, MaxDepth: o.maxDepth, Control: o.control}
 	p.setGrammar(d.root.g)
-	p.observation = newObservation(&o.observe)
+	p.Observation = newObservation(&o.observe)
 	defer p.releaseObservation()
 	if d.unit == Bytes {
 		p.bs, p.n = d.text, len(d.text)
 	} else {
 		p.setSource(d.text)
 	}
-	p.document, p.memo = d, d.memo
+	p.Document, p.memo = d, d.memo
 	d.stats = documentStats{}
 	defer func() {
 		if x := recover(); x != nil {
@@ -351,31 +360,31 @@ func documentParseConverted[T any](d *documentState, o parseOptions, convert fun
 		}
 		d.memo = p.memo
 	}()
-	p.control.check()
-	v, ok := p.call(d.root, 0)
-	p.control.check()
+	p.Control.Check()
+	v, ok := p.Call(d.root, 0)
+	p.Control.Check()
 	var n *Node
-	if ok && p.pos == p.n {
+	if ok && p.Pos == p.n {
 		n = v
-		if len(p.recovered) > 0 {
-			err = SyntaxErrors(p.recovered)
+		if len(p.Recovered) > 0 {
+			err = SyntaxErrors(p.Recovered)
 		}
 	} else {
 		if ok {
-			p.expect(p.pos, idEndInput)
+			p.Expect(p.Pos, IdEndInput)
 		}
-		err = p.makeError(p.farthest, p.exp[p.expBase:])
+		err = p.MakeError(p.farthest, p.exp[p.expBase:])
 	}
 	err = publishDocumentError(p, err)
 	res = convert(n, o.control, err)
-	p.control.check()
+	p.Control.Check()
 	return res, err
 }
 
 // publishDocumentError separates caller-owned diagnostics from private memo
 // entries. Strings are immutable, but the error objects and slice containers
 // must not be shared with a later invocation.
-func publishDocumentError(p *parser, err error) error {
+func publishDocumentError(p *Parser, err error) error {
 	switch e := err.(type) {
 	case SyntaxErrors:
 		if e == nil {
@@ -388,12 +397,12 @@ func publishDocumentError(p *parser, err error) error {
 		}
 		return out
 	}
-	// Ordinary failures are freshly assembled by makeError, not memoized.
+	// Ordinary failures are freshly assembled by MakeError, not memoized.
 	return err
 }
 
-func cloneDocumentError(p *parser, e *SyntaxError) *SyntaxError {
-	p.stepWork()
+func cloneDocumentError(p *Parser, e *SyntaxError) *SyntaxError {
+	p.StepWork()
 	if e == nil {
 		return nil
 	}

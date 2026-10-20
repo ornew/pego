@@ -6,11 +6,11 @@ import (
 )
 
 func TestDiagnosticRenameAccountsForLargeExpectationSets(t *testing.T) {
-	ids := make([]expID, 512)
+	ids := make([]ExpID, 512)
 	for i := range ids {
-		ids[i] = expID(i + 1)
+		ids[i] = ExpID(i + 1)
 	}
-	p := &parser{control: newWorkControl(nil, WorkLimits{MaxSteps: 64})}
+	p := &Parser{Control: newWorkControl(nil, WorkLimits{MaxSteps: 64})}
 	var got error
 	func() {
 		defer func() {
@@ -22,12 +22,12 @@ func TestDiagnosticRenameAccountsForLargeExpectationSets(t *testing.T) {
 				got = f.err
 			}
 		}()
-		renamedExpected(p, ids, 999)
+		RenamedExpected(p, ids, 999)
 	}()
 	if !errors.Is(got, ErrWorkLimit) {
 		t.Fatalf("rename work limit = %v, want ErrWorkLimit", got)
 	}
-	if p.control.stepsUsed() != 64 {
-		t.Fatalf("rename steps = %d, want 64", p.control.stepsUsed())
+	if p.Control.stepsUsed() != 64 {
+		t.Fatalf("rename steps = %d, want 64", p.Control.stepsUsed())
 	}
 }

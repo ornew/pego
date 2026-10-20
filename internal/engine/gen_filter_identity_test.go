@@ -62,7 +62,7 @@ func TestGeneratedTypedFilterIdentity(t *testing.T) {
 			if err != nil {
 				t.Fatalf("conversion=%t start=%s: %v", conversion, start, err)
 			}
-			if !conversion && !strings.Contains(string(code), "tparse(trules") {
+			if !conversion && !strings.Contains(string(code), "TParse(trules") {
 				t.Fatalf("%s did not select the typed runtime", pkg)
 			}
 			write(pkg+"/parser.go", code)

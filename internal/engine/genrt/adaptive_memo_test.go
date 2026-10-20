@@ -31,8 +31,8 @@ func TestAdaptiveMemoCounters(t *testing.T) {
 				{"rescale above threshold", maxCalls, 1 << 27, true, 1 << 30, 1<<26 + 1, true},
 			} {
 				t.Run(tc.name, func(t *testing.T) {
-					p := parser{memo: memoTable{stride: 1, sparse: mode == "sparse"}}
-					r := &rule{seen: 0}
+					p := Parser{memo: memoTable{stride: 1, sparse: mode == "sparse"}}
+					r := &Rule{Seen: 0}
 					if tc.repeat {
 						if p.memo.sparse {
 							p.memo.markSparseSeen(0, 0)
@@ -41,14 +41,14 @@ func TestAdaptiveMemoCounters(t *testing.T) {
 						}
 					}
 					p.memo.calls = []seenCalls{{calls: tc.calls, repeats: tc.repeats}}
-					if got := p.firstCall(r); got != !tc.repeat {
+					if got := p.FirstCall(r); got != !tc.repeat {
 						t.Fatalf("first=%v, want %v", got, !tc.repeat)
 					}
 					c := p.memo.calls[0]
 					if c.calls != tc.wantCalls || c.repeats != tc.wantRepeats || c.eager != tc.eager {
 						t.Fatalf("counters=%+v, want (%d,%d,%v)", c, tc.wantCalls, tc.wantRepeats, tc.eager)
 					}
-					if tc.eager && (p.firstCall(r) || p.memo.calls[0] != c) {
+					if tc.eager && (p.FirstCall(r) || p.memo.calls[0] != c) {
 						t.Fatal("eager mode resumed counting")
 					}
 				})

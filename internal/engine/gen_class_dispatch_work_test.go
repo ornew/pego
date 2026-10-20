@@ -68,7 +68,7 @@ func(c *classContext)Done()<-chan struct{}{return c.done}
 func(c *classContext)Err()error{
  if c.inside{return context.Canceled}
  var pcs [32]uintptr;n:=runtime.Callers(2,pcs[:]);f:=runtime.CallersFrames(pcs[:n])
- for{frame,more:=f.Next();if strings.HasSuffix(frame.Function,".(*parser).rejectWorkClass"){c.inside=true;close(c.done);return context.Canceled};if !more{break}}
+ for{frame,more:=f.Next();if strings.HasSuffix(frame.Function,".(*Parser).RejectWorkClass"){c.inside=true;close(c.done);return context.Canceled};if !more{break}}
  return nil
 }
 func TestClassDispatch(t *testing.T){

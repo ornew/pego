@@ -64,7 +64,7 @@ func TestExportGeneratedTypedTraceBenchmarks(t *testing.T) {
 				manifest[path] = struct {
 					Bytes       int
 					DirectStart bool
-				}{len(code), strings.Contains(string(code), "return tparse(trules[")}
+				}{len(code), strings.Contains(string(code), "return TParse(trules[")}
 				write(path+"/parser.go", code)
 				driver := strings.NewReplacer("PACKAGE", pkg, "INPUT", fmt.Sprintf("%q", fixture.input)).Replace(generatedTypedTraceBenchmark)
 				if enabled {

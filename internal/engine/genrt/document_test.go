@@ -7,26 +7,26 @@ import (
 	"testing"
 )
 
-func documentTestRules() (*rule, *rule) {
-	item := &rule{id: 1, name: "item", memo: true, docMemo: true, seen: -1}
-	item.body = func(p *parser, _ int) (*Node, bool) {
-		return p.matchLiteral([]rune("a"), "a", idAny, true)
+func documentTestRules() (*Rule, *Rule) {
+	item := &Rule{Id: 1, Name: "item", Memo: true, DocMemo: true, Seen: -1}
+	item.Body = func(p *Parser, _ int) (*Node, bool) {
+		return p.MatchLiteral([]rune("a"), "a", IdAny, true)
 	}
-	main := &rule{id: 0, name: "main", memo: true, docMemo: true, seen: -1}
-	main.body = func(p *parser, _ int) (*Node, bool) {
-		start := p.pos
+	main := &Rule{Id: 0, Name: "main", Memo: true, DocMemo: true, Seen: -1}
+	main.Body = func(p *Parser, _ int) (*Node, bool) {
+		start := p.Pos
 		var children []*Node
 		for {
-			v, ok := p.call(item, 0)
+			v, ok := p.Call(item, 0)
 			if !ok {
 				break
 			}
 			children = append(children, v)
 		}
-		if !p.atEnd() {
+		if !p.AtEnd() {
 			return nil, false
 		}
-		return &Node{kind: kindList, start: int32(start), end: int32(p.pos), children: children}, true
+		return &Node{RawKind: RawKindList, RawStart: int32(start), RawEnd: int32(p.Pos), RawChildren: children}, true
 	}
 	return main, item
 }
@@ -37,17 +37,17 @@ func TestPrivateDocumentPrefixReuseAndFreshResult(t *testing.T) {
 		d := testDocumentState(main, "aa", unit)
 		o := parseOptions{unit: unit, maxDepth: defaultMaxDepth}
 		first, err := d.parse(o)
-		if err != nil || first == nil || len(first.children) != 2 {
+		if err != nil || first == nil || len(first.RawChildren) != 2 {
 			t.Fatalf("unit %d: first parse = %v, %v", unit, first, err)
 		}
 		if err := d.edit(2, 2, "a"); err != nil {
 			t.Fatal(err)
 		}
 		second, err := d.parse(o)
-		if err != nil || second == nil || len(second.children) != 3 || d.stats.Reused < 1 {
+		if err != nil || second == nil || len(second.RawChildren) != 3 || d.stats.Reused < 1 {
 			t.Fatalf("unit %d: edited parse = %v, %v; stats = %+v", unit, second, err, d.stats)
 		}
-		if first.children[0] != second.children[0] {
+		if first.RawChildren[0] != second.RawChildren[0] {
 			t.Fatalf("unit %d: safe prefix memo was not reused", unit)
 		}
 		if err := d.edit(0, 1, "b"); err != nil {
@@ -60,31 +60,31 @@ func TestPrivateDocumentPrefixReuseAndFreshResult(t *testing.T) {
 }
 
 func TestPrivateDocumentExaminedSuffixAndEOF(t *testing.T) {
-	item := &rule{id: 1, name: "item", memo: true, docMemo: true, seen: -1}
-	item.body = func(p *parser, _ int) (*Node, bool) {
-		start := p.pos
-		v, ok := p.matchLiteral([]rune("a"), "a", idAny, true)
+	item := &Rule{Id: 1, Name: "item", Memo: true, DocMemo: true, Seen: -1}
+	item.Body = func(p *Parser, _ int) (*Node, bool) {
+		start := p.Pos
+		v, ok := p.MatchLiteral([]rune("a"), "a", IdAny, true)
 		if !ok {
 			return nil, false
 		}
-		_, _, ok = p.peek() // lookahead that extends beyond the consumed text
-		p.pos = start + 1
+		_, _, ok = p.Peek() // lookahead that extends beyond the consumed text
+		p.Pos = start + 1
 		return v, ok
 	}
-	main := &rule{id: 0, name: "main", memo: true, docMemo: true, seen: -1}
-	main.body = func(p *parser, _ int) (*Node, bool) { return p.call(item, 0) }
+	main := &Rule{Id: 0, Name: "main", Memo: true, DocMemo: true, Seen: -1}
+	main.Body = func(p *Parser, _ int) (*Node, bool) { return p.Call(item, 0) }
 	d := testDocumentState(main, "ab", CodePoints)
 	o := parseOptions{maxDepth: defaultMaxDepth}
 	if _, err := d.parse(o); err == nil { // suffix remains after the rule
 		t.Fatal("expected whole-input failure")
 	}
-	if e := d.memo.get(item.id, 0, 0, nil); e == nil || e.examined <= 1 {
+	if e := d.memo.get(item.Id, 0, 0, nil); e == nil || e.examined <= 1 {
 		t.Fatalf("lookahead dependency was not recorded: %+v", e)
 	}
 	if err := d.edit(1, 2, ""); err != nil {
 		t.Fatal(err)
 	}
-	if e := d.memo.get(item.id, 0, 0, nil); e != nil {
+	if e := d.memo.get(item.Id, 0, 0, nil); e != nil {
 		t.Fatal("lookahead-dependent memo survived edit")
 	}
 	if _, err := d.parse(o); err == nil {
@@ -127,7 +127,7 @@ func TestPrivateDocumentInterruptionDiscardsMemo(t *testing.T) {
 	if err := d.edit(2, 2, "a"); err != nil {
 		t.Fatal(err)
 	}
-	main.body = func(*parser, int) (*Node, bool) { panic(fatal{err: ErrWorkLimit}) }
+	main.Body = func(*Parser, int) (*Node, bool) { panic(fatal{err: ErrWorkLimit}) }
 	if _, err := d.parse(o); !errors.Is(err, ErrWorkLimit) {
 		t.Fatalf("interruption = %v", err)
 	}
@@ -137,11 +137,11 @@ func TestPrivateDocumentInterruptionDiscardsMemo(t *testing.T) {
 }
 
 func TestDocumentReturnedRecoveryErrorOwnership(t *testing.T) {
-	r := &rule{id: 0, name: "main", memo: true, docMemo: true, seen: -1}
-	r.body = func(p *parser, _ int) (*Node, bool) {
-		p.pos = 1
-		p.recovered = append(p.recovered, &SyntaxError{Line: 1, Col: 1, Expected: []string{"original"}, Messages: []string{"original"}})
-		return &Node{kind: kindError, end: 1}, true
+	r := &Rule{Id: 0, Name: "main", Memo: true, DocMemo: true, Seen: -1}
+	r.Body = func(p *Parser, _ int) (*Node, bool) {
+		p.Pos = 1
+		p.Recovered = append(p.Recovered, &SyntaxError{Line: 1, Col: 1, Expected: []string{"original"}, Messages: []string{"original"}})
+		return &Node{RawKind: kindError, RawEnd: 1}, true
 	}
 	d := testDocumentState(r, "x", CodePoints)
 	o := parseOptions{maxDepth: defaultMaxDepth}
@@ -164,16 +164,16 @@ func TestDocumentReturnedRecoveryErrorOwnership(t *testing.T) {
 
 func TestDocumentDiagnosticPublicationBudget(t *testing.T) {
 	calls := 0
-	r := &rule{id: 0, name: "main", memo: true, docMemo: true, seen: -1}
-	r.body = func(p *parser, _ int) (*Node, bool) {
+	r := &Rule{Id: 0, Name: "main", Memo: true, DocMemo: true, Seen: -1}
+	r.Body = func(p *Parser, _ int) (*Node, bool) {
 		calls++
-		p.pos = 1
+		p.Pos = 1
 		expected := make([]string, 2048)
 		for i := range expected {
 			expected[i] = "original"
 		}
-		p.recovered = append(p.recovered, &SyntaxError{Line: 1, Col: 1, Expected: expected, Messages: []string{"original"}})
-		return &Node{kind: kindError, end: 1}, true
+		p.Recovered = append(p.Recovered, &SyntaxError{Line: 1, Col: 1, Expected: expected, Messages: []string{"original"}})
+		return &Node{RawKind: kindError, RawEnd: 1}, true
 	}
 	d := testDocumentState(r, "x", CodePoints)
 	normal := parseOptions{maxDepth: defaultMaxDepth}
@@ -221,11 +221,11 @@ func (c *diagnosticCancelContext) Err() error {
 }
 
 func TestDocumentDiagnosticPublicationCancellation(t *testing.T) {
-	r := &rule{id: 0, name: "main", memo: true, docMemo: true, seen: -1}
-	r.body = func(p *parser, _ int) (*Node, bool) {
-		p.pos = 1
-		p.recovered = append(p.recovered, &SyntaxError{Expected: make([]string, 2048)})
-		return &Node{kind: kindError, end: 1}, true
+	r := &Rule{Id: 0, Name: "main", Memo: true, DocMemo: true, Seen: -1}
+	r.Body = func(p *Parser, _ int) (*Node, bool) {
+		p.Pos = 1
+		p.Recovered = append(p.Recovered, &SyntaxError{Expected: make([]string, 2048)})
+		return &Node{RawKind: kindError, RawEnd: 1}, true
 	}
 	d := testDocumentState(r, "x", CodePoints)
 	normal := parseOptions{maxDepth: defaultMaxDepth}
@@ -236,7 +236,7 @@ func TestDocumentDiagnosticPublicationCancellation(t *testing.T) {
 	o := normal
 	o.context = ctx
 	converted := false
-	out, err := documentParseConverted(d, o, func(n *Node, _ *workControl, _ error) *Node {
+	out, err := DocumentParseConverted(d, o, func(n *Node, _ *WorkControl, _ error) *Node {
 		converted = true
 		return n
 	})
@@ -256,9 +256,9 @@ const defaultMaxDepth = 100_000
 
 // testDocumentState gives root a grammar with the fixed expectations and
 // returns a document state for it.
-func testDocumentState(root *rule, text string, unit PositionUnit) *documentState {
-	g := newGrammar(defaultMaxDepth)
-	g.descs = []string{"any", "begin input", "end input", "begin line", "end line"}
+func testDocumentState(root *Rule, text string, unit PositionUnit) *documentState {
+	g := NewGrammar(defaultMaxDepth)
+	g.Descs = []string{"any", "begin input", "end input", "begin line", "end line"}
 	root.g = g
 	return newDocumentState(root, text, unit)
 }

@@ -315,15 +315,15 @@ type dmark struct {
 // mark saves the state before e; with saves, also the captures e may set in the scope s.
 func (d *dgen) mark(s *dscope, e grammar.Expr, saves bool) dmark {
 	if d.nodeBody {
-		v := d.decl("x", "mark")
-		d.line("%s = p.mark()", v)
-		return dmark{pos: v + ".pos", frameMark: v}
+		v := d.decl("x", "Mark")
+		d.line("%s = p.Mark()", v)
+		return dmark{pos: v + ".Pos", frameMark: v}
 	}
 	m := dmark{pos: d.decl("x", "int"), rec: d.decl("x", "int")}
-	d.line("%s, %s = p.pos, len(p.recovered)", m.pos, m.rec)
+	d.line("%s, %s = p.Pos, len(p.Recovered)", m.pos, m.rec)
 	if assigns(e) {
-		m.env = d.decl("x", "*env")
-		d.line("%s = p.env", m.env)
+		m.env = d.decl("x", "*Env")
+		d.line("%s = p.Env", m.env)
 	}
 	if saves && d.g.table == "trules" {
 		seen := map[string]bool{}
@@ -335,7 +335,7 @@ func (d *dgen) mark(s *dscope, e grammar.Expr, saves bool) dmark {
 			k := d.capVar(s, name)
 			sv := d.decl("x", "any")
 			if d.g.goWorkControls {
-				d.line("p.stepWork()")
+				d.line("p.StepWork()")
 			}
 			d.line("%s = %s", sv, d.rd(k))
 			m.saves = append(m.saves, [2]string{k, sv})
@@ -347,17 +347,17 @@ func (d *dgen) mark(s *dscope, e grammar.Expr, saves bool) dmark {
 // reset restores the state saved by m.
 func (d *dgen) reset(m dmark) {
 	if m.frameMark != "" {
-		d.line("p.reset(%s)", d.rd(m.frameMark))
+		d.line("p.Reset(%s)", d.rd(m.frameMark))
 		return
 	}
-	d.line("p.pos = %s", d.rd(m.pos))
-	d.line("p.recovered = p.recovered[:%s]", d.rd(m.rec))
+	d.line("p.Pos = %s", d.rd(m.pos))
+	d.line("p.Recovered = p.Recovered[:%s]", d.rd(m.rec))
 	if m.env != "" {
-		d.line("p.env = %s", d.rd(m.env))
+		d.line("p.Env = %s", d.rd(m.env))
 	}
 	for _, kv := range m.saves {
 		if d.g.goWorkControls {
-			d.line("p.stepWork()")
+			d.line("p.StepWork()")
 		}
 		d.line("%s = %s", kv[0], d.rd(kv[1]))
 	}
@@ -373,7 +373,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		return "nil"
 	}
 	g := d.g
-	d.line("p.stepWork()")
+	d.line("p.StepWork()")
 	switch e := e.(type) {
 	case *grammar.Literal:
 		value := literalValue(e.Value)
@@ -382,30 +382,30 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		var start string
 		if build {
 			start = d.decl("x", "int")
-			d.line("%s = p.pos", start)
+			d.line("%s = p.Pos", start)
 		}
 		ok := d.ok()
-		match := fmt.Sprintf("_, %s = p.%smatchLiteral(%s, %q, %d, false); !%s", ok, g.pick("", "parser."), lit, value, desc, ok)
+		match := fmt.Sprintf("_, %s = p.%sMatchLiteral(%s, %q, %d, false); !%s", ok, g.pick("", "Parser."), lit, value, desc, ok)
 		if rs := []rune(value); len(rs) > 0 && len(rs) <= maxInlineLiteral {
 			// The code points compared in place (see peek); matchLiteral records the expectation
 			// when they differ, and does the work in Bytes.
-			cond := fmt.Sprintf("p.pos+%d <= len(p.in)", len(rs))
+			cond := fmt.Sprintf("p.Pos+%d <= len(p.In)", len(rs))
 			if len(rs) == 1 {
-				cond = "p.pos < len(p.in)"
+				cond = "p.Pos < len(p.In)"
 			}
 			for i, r := range rs {
 				if i == 0 {
-					cond += fmt.Sprintf(" && p.in[p.pos] == %d", r)
+					cond += fmt.Sprintf(" && p.In[p.Pos] == %d", r)
 				} else {
-					cond += fmt.Sprintf(" && p.in[p.pos+%d] == %d", i, r)
+					cond += fmt.Sprintf(" && p.In[p.Pos+%d] == %d", i, r)
 				}
 			}
 			// A Document records the full examined range in matchLiteral. Its
 			// direct-read fast path has no equivalent dependency record yet.
 			if g.document {
-				cond = "p.document == nil && (!workControlsEnabled || p.control == nil) && (" + cond + ")"
+				cond = "p.Document == nil && (!WorkControlsEnabled || p.Control == nil) && (" + cond + ")"
 			} else {
-				cond = "(!workControlsEnabled || p.control == nil) && (" + cond + ")"
+				cond = "(!WorkControlsEnabled || p.Control == nil) && (" + cond + ")"
 			}
 			if !d.dead {
 				d.used[fail] = true
@@ -427,12 +427,12 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 	case *grammar.CharClass:
 		ch, size, ok := d.rd(d.shared("ch", "rune")), d.rd(d.shared("size", "int")), d.ok()
 		d.line("%s", d.peek(ch, size, ok))
-		d.failIf(fmt.Sprintf("!%s || %s", ok, g.controlledClassReject(e)), fail, fmt.Sprintf("p.expect(p.pos, %d)", g.desc(charClassString(e))))
+		d.failIf(fmt.Sprintf("!%s || %s", ok, g.controlledClassReject(e)), fail, fmt.Sprintf("p.Expect(p.Pos, %d)", g.desc(charClassString(e))))
 		return d.single(build)
 	case *grammar.Any:
 		size, ok := d.rd(d.shared("size", "int")), d.ok()
 		d.line("%s", d.peek("_", size, ok))
-		d.failIf("!"+ok, fail, "p.expect(p.pos, idAny)")
+		d.failIf("!"+ok, fail, "p.Expect(p.Pos, IdAny)")
 		return d.single(build)
 	case *grammar.Ref:
 		call, ok := g.refCall(e, build), d.ok()
@@ -447,15 +447,15 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		var start, kids string
 		if build {
 			start, kids = d.decl("x", "int"), d.decl("x", g.pick("[]*Node", "[]any"))
-			d.line("%s = p.pos", start)
-			d.line("%s = p.%s(%d)[:0]", kids, g.pick("nodes", "newVals"), valuedCount(e))
+			d.line("%s = p.Pos", start)
+			d.line("%s = p.%s(%d)[:0]", kids, g.pick("Nodes", "NewVals"), valuedCount(e))
 		}
 		// The value is the tuple node of the elements, flattened through nested sequences.
 		for _, it := range e.Items {
 			v := d.expr(it, s, build, fail)
 			switch {
 			case build && isElems(it):
-				d.line("%s = append(%s, %s...)", kids, d.rd(kids), fmt.Sprintf(g.pick("%s.children", "asTval(%s).tkids()"), d.rd(v)))
+				d.line("%s = append(%s, %s...)", kids, d.rd(kids), fmt.Sprintf(g.pick("%s.RawChildren", "AsTval(%s).TKids()"), d.rd(v)))
 			case build && valuedCount(it) == 1:
 				d.line("%s = append(%s, %s)", kids, d.rd(kids), d.rd(v))
 			}
@@ -497,51 +497,51 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		return v
 	case *grammar.And:
 		start := d.decl("x", "int")
-		d.line("%s = p.pos", start)
-		d.line("p.silent++")
+		d.line("%s = p.Pos", start)
+		d.line("p.Silent++")
 		f, done := d.label(), d.label()
 		prevCut := d.cut
 		d.cut = ""
 		d.expr(e.Expr, s, build && hasCaptures(e.Expr), f)
 		d.cut = prevCut
-		d.line("p.silent--")
-		d.line("p.pos = %s", d.rd(start))
+		d.line("p.Silent--")
+		d.line("p.Pos = %s", d.rd(start))
 		if d.used[f] {
 			d.jump(done)
 			d.place(f)
-			d.line("p.silent--")
-			d.line("p.pos = %s", start)
+			d.line("p.Silent--")
+			d.line("p.Pos = %s", start)
 			d.jump(fail)
 			d.place(done)
 		}
 		return "nil"
 	case *grammar.Not:
 		m := d.mark(s, e.Expr, true)
-		d.line("p.silent++")
+		d.line("p.Silent++")
 		f := d.label()
 		prevCut := d.cut
 		d.cut = ""
 		d.expr(e.Expr, s, false, f)
 		d.cut = prevCut
-		d.line("p.silent--")
+		d.line("p.Silent--")
 		d.reset(m)
 		d.jump(fail)
 		d.place(f)
-		d.line("p.silent--")
+		d.line("p.Silent--")
 		d.reset(m)
 		return "nil"
 	case *grammar.Atomic:
 		var start string
 		if build {
 			start = d.decl("x", "int")
-			d.line("%s = p.pos", start)
+			d.line("%s = p.Pos", start)
 		}
 		d.expr(e.Expr, s, false, fail)
 		if !build {
 			return "nil"
 		}
 		v := d.decl("v", d.g.valType())
-		d.line("%s = %s", v, d.match(d.rd(start), fmt.Sprintf("p.text(%s, p.pos)", start)))
+		d.line("%s = %s", v, d.match(d.rd(start), fmt.Sprintf("p.Text(%s, p.Pos)", start)))
 		return v
 	case *grammar.Discard:
 		d.expr(e.Expr, s, false, fail)
@@ -583,16 +583,16 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		}
 		return "nil"
 	case *grammar.BeginInput:
-		d.failIf("p.pos != 0", fail, "p.expect(p.pos, idBeginInput)")
+		d.failIf("p.Pos != 0", fail, "p.Expect(p.Pos, IdBeginInput)")
 		return "nil"
 	case *grammar.EndInput:
-		d.failIf("!p.atEnd()", fail, "p.expect(p.pos, idEndInput)")
+		d.failIf("!p.AtEnd()", fail, "p.Expect(p.Pos, IdEndInput)")
 		return "nil"
 	case *grammar.BeginLine:
-		d.failIf("!p.atLineStart()", fail, "p.expect(p.pos, idBeginLine)")
+		d.failIf("!p.AtLineStart()", fail, "p.Expect(p.Pos, IdBeginLine)")
 		return "nil"
 	case *grammar.EndLine:
-		d.failIf("!p.atLineEnd()", fail, "p.expect(p.pos, idEndLine)")
+		d.failIf("!p.AtLineEnd()", fail, "p.Expect(p.Pos, IdEndLine)")
 		return "nil"
 	case *grammar.Predicate:
 		return d.predicate(e, s, fail)
@@ -615,9 +615,9 @@ func indexOf(xs []string, x string) (int, bool) {
 // advance returns the statement that moves the position n units forward.
 func advance(n int) string {
 	if n == 1 {
-		return "p.pos++"
+		return "p.Pos++"
 	}
-	return fmt.Sprintf("p.pos += %d", n)
+	return fmt.Sprintf("p.Pos += %d", n)
 }
 
 // maxInlineLiteral is the longest literal (in code points) compared in place.
@@ -626,23 +626,23 @@ const maxInlineLiteral = 4
 // peek returns the statement that assigns what p.peek returns to ch, size and ok, with the
 // common case written out: the compiler does not inline peek. In Bytes, p.in is empty.
 func (d *dgen) peek(ch, size, ok string) string {
-	guard := "p.pos < len(p.in)"
+	guard := "p.Pos < len(p.In)"
 	if d.g.document {
-		guard = "p.document == nil && " + guard
+		guard = "p.Document == nil && " + guard
 	}
-	return fmt.Sprintf("if %s {\np.inputWork(1)\n%s, %s, %s = p.in[p.pos], 1, true\n} else {\n%[2]s, %[3]s, %[4]s = p.peek()\n}", guard, ch, size, ok)
+	return fmt.Sprintf("if %s {\np.InputWork(1)\n%s, %s, %s = p.In[p.Pos], 1, true\n} else {\n%[2]s, %[3]s, %[4]s = p.Peek()\n}", guard, ch, size, ok)
 }
 
 // single consumes the character whose size is in size (after a successful peek), as single.
 func (d *dgen) single(build bool) string {
 	if !build {
-		d.line("p.pos += size")
+		d.line("p.Pos += size")
 		return "nil"
 	}
 	start, v := d.decl("x", "int"), d.decl("v", d.g.valType())
-	d.line("%s = p.pos", start)
-	d.line("p.pos += size")
-	d.line("%s = %s", v, d.match(d.rd(start), fmt.Sprintf("p.text(%s, p.pos)", start)))
+	d.line("%s = p.Pos", start)
+	d.line("p.Pos += size")
+	d.line("%s = %s", v, d.match(d.rd(start), fmt.Sprintf("p.Text(%s, p.Pos)", start)))
 	return v
 }
 
@@ -698,7 +698,7 @@ func (d *dgen) choice(e *grammar.Choice, s *dscope, build bool, fail string) str
 			}
 			skip = d.label()
 			d.failIf(fmt.Sprintf("!(%s && (%s)) && %s", d.rd(more), chIdent.ReplaceAllString(cond, d.rd(ch)), depthLimit(depth)), skip,
-				fmt.Sprintf("p.expect(p.pos, %d)", desc)+g.traceSkip(alt))
+				fmt.Sprintf("p.Expect(p.Pos, %d)", desc)+g.traceSkip(alt))
 		}
 		f := d.label()
 		x, cut := d.cutExpr(alt, s, build, f)
@@ -756,7 +756,7 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 	var start, base string
 	if build {
 		start, base = d.decl("x", "int"), d.decl("x", "int")
-		d.line("%s, %s = p.pos, len(p.kidStack)", start, base)
+		d.line("%s, %s = p.Pos, len(p.KidStack)", start, base)
 	}
 	count := d.decl("x", "int")
 	d.line("%s = 0", count)
@@ -772,20 +772,20 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 	}
 	if own && build {
 		attached := d.decl("v", d.g.valType())
-		d.line("%s = p.attachCaptures(%s, %s, %s, %s, p.pos)", attached, d.rd(v), d.scopeVar(es), d.vals(es), d.rd(m.pos))
+		d.line("%s = p.AttachCaptures(%s, %s, %s, %s, p.Pos)", attached, d.rd(v), d.scopeVar(es), d.vals(es), d.rd(m.pos))
 		v = attached
 	}
 	d.line("%s++", count)
 	if build {
-		d.line("p.pushKid(%s)", d.rd(v))
+		d.line("p.PushKid(%s)", d.rd(v))
 	}
-	d.line("if p.pos == %s {\nbreak\n}", d.rd(m.pos))
+	d.line("if p.Pos == %s {\nbreak\n}", d.rd(m.pos))
 	if d.used[f] {
 		d.exit("continue")
 		d.place(f)
 		d.reset(m)
 		if build {
-			d.cutFail(cut, fail, fmt.Sprintf("p.dropKids(%s)", d.rd(base)))
+			d.cutFail(cut, fail, fmt.Sprintf("p.DropKids(%s)", d.rd(base)))
 		} else {
 			d.cutFail(cut, fail)
 		}
@@ -794,7 +794,7 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 	d.endLoop()
 	if e.Min > 0 {
 		if build {
-			d.failIf(fmt.Sprintf("%s < %d", count, e.Min), fail, fmt.Sprintf("p.dropKids(%s)", d.rd(base)))
+			d.failIf(fmt.Sprintf("%s < %d", count, e.Min), fail, fmt.Sprintf("p.DropKids(%s)", d.rd(base)))
 		} else {
 			d.failIf(fmt.Sprintf("%s < %d", count, e.Min), fail)
 		}
@@ -803,7 +803,7 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 		return "nil"
 	}
 	list := d.decl("v", d.g.valType())
-	d.line("%s = %s", list, d.node("list", d.rd(start), fmt.Sprintf("p.kids(%s)", d.rd(base))))
+	d.line("%s = %s", list, d.node("list", d.rd(start), fmt.Sprintf("p.Kids(%s)", d.rd(base))))
 	return list
 }
 
@@ -816,9 +816,9 @@ func (d *dgen) shapeOne(e grammar.Expr, x, start string, capture bool) string {
 	}
 	v := d.decl("v", d.g.valType())
 	if capture {
-		d.line("%s = p.shapeCapture(%s, %s, %s)", v, shaperLit(e), d.rd(x), d.rd(start))
+		d.line("%s = p.ShapeCapture(%s, %s, %s)", v, shaperLit(e), d.rd(x), d.rd(start))
 	} else {
-		d.line("%s, _ = p.shapeSingle(%s, %s, %s)", v, shaperLit(e), d.rd(x), d.rd(start))
+		d.line("%s, _ = p.ShapeSingle(%s, %s, %s)", v, shaperLit(e), d.rd(x), d.rd(start))
 	}
 	return v
 }
@@ -826,7 +826,7 @@ func (d *dgen) shapeOne(e grammar.Expr, x, start string, capture bool) string {
 // captured writes the expression e of a capture and returns its captured value.
 func (d *dgen) captured(e grammar.Expr, s *dscope, fail string) string {
 	start := d.decl("x", "int")
-	d.line("%s = p.pos", start)
+	d.line("%s = p.Pos", start)
 	return d.shapeOne(e, d.expr(e, s, true, fail), start, true)
 }
 
@@ -834,7 +834,7 @@ func (d *dgen) captured(e grammar.Expr, s *dscope, fail string) string {
 // matched from start, to the scope's value.
 func (d *dgen) scopeValue(e grammar.Expr, x, start string) string {
 	v := d.decl("v", d.g.valType())
-	d.line("%s = p.scopeValue(%s, %s, %s)", v, shaperLit(e), d.rd(x), d.rd(start))
+	d.line("%s = p.ScopeValue(%s, %s, %s)", v, shaperLit(e), d.rd(x), d.rd(start))
 	return v
 }
 
@@ -845,7 +845,7 @@ func (d *dgen) clearScope(es *dscope, e grammar.Expr) {
 		if !seen[name] {
 			seen[name] = true
 			if d.g.goWorkControls {
-				d.line("p.stepWork()")
+				d.line("p.StepWork()")
 			}
 			d.line("%s = nil", d.capVar(es, name))
 		}
@@ -873,10 +873,10 @@ func (d *dgen) scan(e *grammar.Repeat, fail string) (string, bool) {
 	var cond string
 	switch x := e.Expr.(type) {
 	case *grammar.CharClass:
-		cond = fmt.Sprintf("%s\nif !%s || %s {\np.expect(p.pos, %d)", d.peek(d.rd(d.shared("ch", "rune")), d.rd(d.shared("size", "int")), d.ok()), d.ok(),
+		cond = fmt.Sprintf("%s\nif !%s || %s {\np.Expect(p.Pos, %d)", d.peek(d.rd(d.shared("ch", "rune")), d.rd(d.shared("size", "int")), d.ok()), d.ok(),
 			d.g.controlledClassReject(x), d.g.desc(charClassString(x)))
 	case *grammar.Any:
-		cond = fmt.Sprintf("%s\nif !%s {\np.expect(p.pos, idAny)", d.peek("_", d.rd(d.shared("size", "int")), d.ok()), d.ok())
+		cond = fmt.Sprintf("%s\nif !%s {\np.Expect(p.Pos, IdAny)", d.peek("_", d.rd(d.shared("size", "int")), d.ok()), d.ok())
 	default:
 		return "", false
 	}
@@ -891,7 +891,7 @@ func (d *dgen) scan(e *grammar.Repeat, fail string) (string, bool) {
 		d.raw(fmt.Sprintf("for %s < %d {\n", d.rd(count), e.Max))
 	}
 	d.line("%s\nbreak\n}", cond)
-	d.line("p.pos += size")
+	d.line("p.Pos += size")
 	if count != "" {
 		d.line("%s++", count)
 	}
@@ -907,7 +907,7 @@ func (d *dgen) scan(e *grammar.Repeat, fail string) (string, bool) {
 func (d *dgen) projectRepeat(e *grammar.Repeat, field, fail string) string {
 	es := d.localElementScope(e.Expr, false)
 	start, base, count := d.decl("x", "int"), d.decl("x", "int"), d.decl("x", "int")
-	d.line("%s, %s, %s = p.pos, len(p.kidStack), 0", start, base, count)
+	d.line("%s, %s, %s = p.Pos, len(p.KidStack), 0", start, base, count)
 	d.loop(e.Max)
 	m := d.mark(es, e.Expr, false)
 	d.clearScope(es, e.Expr)
@@ -919,21 +919,21 @@ func (d *dgen) projectRepeat(e *grammar.Repeat, field, fail string) string {
 		return "nil"
 	}
 	d.line("%s++", count)
-	d.line("p.pushKid(%s)", d.rd(fv))
-	d.line("if p.pos == %s {\nbreak\n}", d.rd(m.pos))
+	d.line("p.PushKid(%s)", d.rd(fv))
+	d.line("if p.Pos == %s {\nbreak\n}", d.rd(m.pos))
 	if d.used[f] {
 		d.exit("continue")
 		d.place(f)
 		d.reset(m)
-		d.cutFail(cut, fail, fmt.Sprintf("p.dropKids(%s)", d.rd(base)))
+		d.cutFail(cut, fail, fmt.Sprintf("p.DropKids(%s)", d.rd(base)))
 		d.exit("break")
 	}
 	d.endLoop()
 	if e.Min > 0 {
-		d.failIf(fmt.Sprintf("%s < %d", count, e.Min), fail, fmt.Sprintf("p.dropKids(%s)", d.rd(base)))
+		d.failIf(fmt.Sprintf("%s < %d", count, e.Min), fail, fmt.Sprintf("p.DropKids(%s)", d.rd(base)))
 	}
 	v := d.decl("v", d.g.valType())
-	d.line("%s = %s", v, d.node("list", d.rd(start), fmt.Sprintf("p.kids(%s)", d.rd(base))))
+	d.line("%s = %s", v, d.node("list", d.rd(start), fmt.Sprintf("p.Kids(%s)", d.rd(base))))
 	return v
 }
 
@@ -957,9 +957,9 @@ func (d *dgen) predicate(e *grammar.Predicate, s *dscope, fail string) string {
 			term = d.g.predicateTerm(t, f, nil)
 		}
 		if a, ok := e.Term.(*grammar.Assign); ok {
-			d.failIf(fmt.Sprintf("!p.assign(%q, func(c *%s) any { return %s })", a.Name, d.g.ctxType(), term), fail)
+			d.failIf(fmt.Sprintf("!p.Assign(%q, func(c *%s) any { return %s })", a.Name, d.g.ctxType(), term), fail)
 		} else {
-			d.failIf(fmt.Sprintf("!p.predicate(func(c *%s) any { return %s })", d.g.ctxType(), term), fail)
+			d.failIf(fmt.Sprintf("!p.Predicate(func(c *%s) any { return %s })", d.g.ctxType(), term), fail)
 		}
 		return "nil"
 	}
@@ -998,9 +998,9 @@ func (d *dgen) predicate(e *grammar.Predicate, s *dscope, fail string) string {
 	d.rdTerm(t, caps)
 	g.caps = prev
 	if a, ok := e.Term.(*grammar.Assign); ok {
-		d.failIf(fmt.Sprintf("!p.assign(%q, func(c *tctx) any { return %s })", a.Name, term), fail)
+		d.failIf(fmt.Sprintf("!p.Assign(%q, func(c *TActCtx) any { return %s })", a.Name, term), fail)
 	} else {
-		d.failIf(fmt.Sprintf("!p.predicate(func(c *tctx) any { return %s })", term), fail)
+		d.failIf(fmt.Sprintf("!p.Predicate(func(c *TActCtx) any { return %s })", term), fail)
 	}
 	return "nil"
 }
@@ -1088,8 +1088,8 @@ func (d *dgen) attr(e *grammar.Attributed, i int, s *dscope, build bool, fail st
 	switch a.Name {
 	case "error", "diagnostic":
 		// Isolate the inner expectations so the wrapper changes only a failed expression.
-		mark, far, exp := d.decl("x", "expMark"), d.decl("x", "int"), d.decl("x", "[]expID")
-		d.line("%s = p.isolate(p.pos)", mark)
+		mark, far, exp := d.decl("x", "ExpMark"), d.decl("x", "int"), d.decl("x", "[]ExpID")
+		d.line("%s = p.Isolate(p.Pos)", mark)
 		f, done := d.label(), d.label()
 		v := d.attr(e, i-1, s, build, f)
 		var value string
@@ -1099,20 +1099,20 @@ func (d *dgen) attr(e *grammar.Attributed, i int, s *dscope, build bool, fail st
 			value = attributeMessage(a)
 		}
 		msg := d.g.desc(value)
-		d.line("%s, %s = p.unisolate(%s)", far, exp, d.rd(mark))
-		d.line("p.mergeExpected(%s, %s)", d.rd(far), d.rd(exp))
+		d.line("%s, %s = p.Unisolate(%s)", far, exp, d.rd(mark))
+		d.line("p.MergeExpected(%s, %s)", d.rd(far), d.rd(exp))
 		if d.used[f] {
 			d.jump(done)
 			d.place(f)
-			d.line("%s, %s = p.unisolate(%s)", far, exp, mark)
+			d.line("%s, %s = p.Unisolate(%s)", far, exp, mark)
 			if a.Name == "error" {
-				d.line("p.expect(%s, msgBit|%d)", far, msg)
+				d.line("p.Expect(%s, MsgBit|%d)", far, msg)
 			} else {
 				pp := "p"
 				if d.g.table == "trules" {
-					pp = "p.parser"
+					pp = "p.Parser"
 				}
-				d.line("p.mergeExpected(%s, renamedExpected(%s, %s, %d))", far, pp, exp, msg)
+				d.line("p.MergeExpected(%s, RenamedExpected(%s, %s, %d))", far, pp, exp, msg)
 			}
 			d.jump(fail)
 			d.place(done)
@@ -1227,7 +1227,7 @@ func (d *dgen) finish(r *rule, s *dscope, body string) (start, ctx bool) {
 	owned := ""
 	if d.g.table == "trules" && d.g.ownsBody(r) {
 		owned = d.shared("bv", "any")
-		d.line("%s = tfreshNode(%s)", owned, d.rd(body))
+		d.line("%s = TFreshNode(%s)", owned, d.rd(body))
 	}
 	start, ctx = d.finishValue(r, s, body)
 	if check := d.g.resultCheck(r, r.def, "v"); check != "" && !d.bad {
@@ -1256,7 +1256,7 @@ func (d *dgen) finishValue(r *rule, s *dscope, body string) (start, ctx bool) {
 			d.bad = true
 			return false, false
 		}
-		d.line("c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})")
+		d.line("c = p.UseCtx(TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})")
 		// The action's errors are reported with the rule's name (see tctx.result). Keep that
 		// context on panic for the parse-level evalError handler; restore it after normal return.
 		g.caps, g.final = caps, r.action
@@ -1264,8 +1264,8 @@ func (d *dgen) finishValue(r *rule, s *dscope, body string) (start, ctx bool) {
 		d.rdTerm(r.action, caps)
 		g.caps, g.final = nil, nil
 		prevWhere := d.shared("w", "string")
-		d.line("%s = p.where", prevWhere)
-		d.line("p.where = %q", r.name)
+		d.line("%s = p.Where", prevWhere)
+		d.line("p.Where = %q", r.name)
 		d.line("v = %s", action)
 		if _, isNew := r.action.(*grammar.New); isNew {
 			// A struct made with the rule's range (tmk_T with final): what result checks holds.
@@ -1277,21 +1277,21 @@ func (d *dgen) finishValue(r *rule, s *dscope, body string) (start, ctx bool) {
 				}
 			})
 			if nested > 1 {
-				d.line("p.dropCreated(c.cbase)")
+				d.line("p.DropCreated(c.Cbase)")
 			}
 		} else {
-			d.line("v = c.finish(v)")
+			d.line("v = c.Finish(v)")
 		}
 		// After finish, whose errors (a result that is not a node) also name the rule.
-		d.line("p.where = %s", d.rd(prevWhere))
+		d.line("p.Where = %s", d.rd(prevWhere))
 		return true, true
 	default:
-		d.line("v = p.scopeValue(%s, %s, start)", shaperLit(r.bodyExpr()), d.rd(body))
+		d.line("v = p.ScopeValue(%s, %s, start)", shaperLit(r.bodyExpr()), d.rd(body))
 		start = true
 		if len(s.names) > 0 {
-			d.line("v = p.attachCaptures(v, %s, %s, start, p.pos)", d.scopeVar(s), d.vals(s))
+			d.line("v = p.AttachCaptures(v, %s, %s, start, p.Pos)", d.scopeVar(s), d.vals(s))
 		}
-		d.line("if n := asTval(v); n != nil {\nn.tsetFresh(false)\n}")
+		d.line("if n := AsTval(v); n != nil {\nn.TSetFresh(false)\n}")
 	}
 	return start, false
 }
@@ -1304,9 +1304,9 @@ func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain
 		name = g.tracePlainWrapper(r, name)
 	}
 	m := &g.methods
-	fmt.Fprintf(m, "// %s, %s (body inlined)\nfunc (p *%s) %s() (%s, bool) {\n\tp.stepWork()\n", r.name, comment, g.recv(), name, g.valType())
+	fmt.Fprintf(m, "// %s, %s (body inlined)\nfunc %s(p *%s) (%s, bool) {\n\tp.StepWork()\n", r.name, comment, name, g.recv(), g.valType())
 	if observeBody {
-		m.WriteString("p.observation.evaluated()\n")
+		m.WriteString("p.Observation.Evaluated()\n")
 	}
 	start, rec := d.start || plain && d.fail, plain && d.fail
 	m.WriteString("\tvar (\n")
@@ -1317,41 +1317,41 @@ func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain
 		fmt.Fprintf(m, "\t\tv %s\n", g.valType())
 	}
 	if d.ctx {
-		m.WriteString("\t\tc *tctx\n")
+		m.WriteString("\t\tc *TActCtx\n")
 	}
 	if rec {
 		m.WriteString("\t\trec int\n")
 	}
 	if d.assigns {
-		m.WriteString("\t\tprevEnv *env\n")
+		m.WriteString("\t\tprevEnv *Env\n")
 	}
 	m.WriteString(d.decls)
 	m.WriteString("\t)\n")
 	switch {
 	case rec:
-		m.WriteString("\tstart, rec = p.pos, len(p.recovered)\n")
+		m.WriteString("\tstart, rec = p.Pos, len(p.Recovered)\n")
 	case start:
-		m.WriteString("\tstart = p.pos\n")
+		m.WriteString("\tstart = p.Pos\n")
 	}
 	if d.assigns {
-		m.WriteString("\tprevEnv = p.env\n")
+		m.WriteString("\tprevEnv = p.Env\n")
 	}
-	m.WriteString("\tp.depth++\n\tif p.depth > p.maxDepth {\n\t\tp.tooDeep()\n\t}\n")
+	m.WriteString("\tp.Depth++\n\tif p.Depth > p.MaxDepth {\n\t\tp.TooDeep()\n\t}\n")
 	m.WriteString(d.body)
 	if d.succeed {
-		m.WriteString("\tp.depth--\n")
+		m.WriteString("\tp.Depth--\n")
 		if d.assigns {
-			m.WriteString("\tp.env = prevEnv\n")
+			m.WriteString("\tp.Env = prevEnv\n")
 		}
 		m.WriteString("\treturn v, true\n")
 	}
 	if d.fail {
-		m.WriteString("fail:\n\tp.depth--\n")
+		m.WriteString("fail:\n\tp.Depth--\n")
 		if rec {
-			m.WriteString("\tp.pos = start\n\tp.recovered = p.recovered[:rec]\n")
+			m.WriteString("\tp.Pos = start\n\tp.Recovered = p.Recovered[:rec]\n")
 		}
 		if d.assigns {
-			m.WriteString("\tp.env = prevEnv\n")
+			m.WriteString("\tp.Env = prevEnv\n")
 		}
 		m.WriteString("\treturn nil, false\n")
 	}
@@ -1387,8 +1387,8 @@ func (d *dgen) recoverAttr(e *grammar.Attributed, i int, s *dscope, build bool, 
 	}
 	d.line("// Recovery inlined under the runtime-owned frame.")
 	m := d.mark(s, e, true)
-	mark, far, expected := d.decl("x", "expMark"), d.decl("x", "int"), d.decl("x", "[]expID")
-	d.line("%s = p.isolate(p.pos)", mark)
+	mark, far, expected := d.decl("x", "ExpMark"), d.decl("x", "int"), d.decl("x", "[]ExpID")
+	d.line("%s = p.Isolate(p.Pos)", mark)
 	f, done := d.label(), d.label()
 	var v string
 	if build {
@@ -1398,30 +1398,30 @@ func (d *dgen) recoverAttr(e *grammar.Attributed, i int, s *dscope, build bool, 
 	if build {
 		d.line("%s = %s", v, d.rd(d.shapeOne(e.Expr, inner, m.pos, true)))
 	}
-	d.line("%s, %s = p.unisolate(%s)", far, expected, d.rd(mark))
-	d.line("p.mergeExpected(%s, %s)", d.rd(far), d.rd(expected))
+	d.line("%s, %s = p.Unisolate(%s)", far, expected, d.rd(mark))
+	d.line("p.MergeExpected(%s, %s)", d.rd(far), d.rd(expected))
 	if d.used[f] {
 		d.jump(done)
 		d.place(f)
-		d.line("%s, %s = p.unisolate(%s)", far, expected, mark)
-		d.line("%s = p.keep(%s)", expected, d.rd(expected))
+		d.line("%s, %s = p.Unisolate(%s)", far, expected, mark)
+		d.line("%s = p.Keep(%s)", expected, d.rd(expected))
 		d.reset(m)
 		skipFail := d.label()
 		skip, _ := e.Attrs[i].Arg("skip")
 		d.expr(skip, s, false, skipFail)
-		d.failIf("p.pos == "+d.rd(m.pos), skipFail)
+		d.failIf("p.Pos == "+d.rd(m.pos), skipFail)
 		err := d.decl("x", "*SyntaxError")
-		d.line("%s = p.makeError(%s, %s)", err, d.rd(far), d.rd(expected))
-		d.line("p.recovered = append(p.recovered, %s)", d.rd(err))
+		d.line("%s = p.MakeError(%s, %s)", err, d.rd(far), d.rd(expected))
+		d.line("p.Recovered = append(p.Recovered, %s)", d.rd(err))
 		if build {
-			d.line("%s = &terror{Error{%s: %s{%s, p.pos}, Text: p.text(%s, p.pos), Message: p.recoveryErrorText(%s)}, true}", v, d.g.typedSpan, d.g.typedSpan, d.rd(m.pos), d.rd(m.pos), d.rd(err))
+			d.line("%s = &TError{Error{%s: %s{%s, p.Pos}, Text: p.Text(%s, p.Pos), Message: p.RecoveryErrorText(%s)}, true}", v, d.g.typedSpan, d.g.typedSpan, d.rd(m.pos), d.rd(m.pos), d.rd(err))
 		} else if build {
 			d.line("%s = nil", v)
 		}
 		d.jump(done)
 		d.place(skipFail)
 		d.reset(m)
-		d.line("p.mergeExpected(%s, %s)", d.rd(far), d.rd(expected))
+		d.line("p.MergeExpected(%s, %s)", d.rd(far), d.rd(expected))
 		d.jump(fail)
 		d.place(done)
 	}

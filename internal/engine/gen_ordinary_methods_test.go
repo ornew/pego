@@ -90,7 +90,7 @@ rule expr Text = operators {
 					t.Fatalf("missing controlled body %v", key)
 				}
 				guard, ok := got.Body.List[0].(*goast.IfStmt)
-				if !ok || guard.Else != nil || ordinaryTokens(t, guard.Cond) != ordinaryTokens(t, &goast.BinaryExpr{X: &goast.SelectorExpr{X: goast.NewIdent("p"), Sel: goast.NewIdent("control")}, Op: token.EQL, Y: goast.NewIdent("nil")}) {
+				if !ok || guard.Else != nil || ordinaryTokens(t, guard.Cond) != ordinaryTokens(t, &goast.BinaryExpr{X: &goast.SelectorExpr{X: goast.NewIdent("p"), Sel: goast.NewIdent("Control")}, Op: token.EQL, Y: goast.NewIdent("nil")}) {
 					t.Fatalf("unexpected dispatch %v", key)
 				}
 				tail := &goast.BlockStmt{List: got.Body.List[1:]}
@@ -102,8 +102,8 @@ rule expr Text = operators {
 			if branches == 0 {
 				t.Fatal("no ordinary branches tested")
 			}
-			for _, name := range []string{"newNodeOrdinary", "setCaptureOrdinary", "expectOrdinary"} {
-				if actual[ordinaryMethodKey{"parser", name}] == nil {
+			for _, name := range []string{"NewNodeOrdinary", "SetCaptureOrdinary", "ExpectOrdinary"} {
+				if !strings.Contains(string(specialized), "func (p *Parser) "+name+"(") {
 					t.Fatalf("missing helper %s", name)
 				}
 			}
@@ -123,26 +123,26 @@ func TestGeneratedOrdinaryGuardExcludesDocuments(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		guarded := strings.Contains(string(src), "if p.control == nil && p.document == nil {")
-		if guarded != document || !strings.Contains(string(src), "if p.control == nil") {
+		guarded := strings.Contains(string(src), "if p.Control == nil && p.Document == nil {")
+		if guarded != document || !strings.Contains(string(src), "if p.Control == nil") {
 			t.Fatalf("Document %v: unexpected ordinary guard", document)
 		}
 	}
 }
 
 func TestOrdinaryTransformLabelsAndSynchronousLambda(t *testing.T) {
-	method := `func (p *parser) e0() (int,bool) {
- p.stepWork()
- c := p.useCtx(actx{p:p})
- _ = func() int {p.inputWork(1); if c.p.control != nil {return 1}; return 0}()
- loop: for {if p.pos>0 {break loop}; p.pos++; goto done}
- done: return p.pos,true
+	method := `func e0(p *Parser) (int,bool) {
+ p.StepWork()
+ c := p.UseCtx(ActCtx{P:p})
+ _ = func() int {p.InputWork(1); if c.P.Control != nil {return 1}; return 0}()
+ loop: for {if p.Pos>0 {break loop}; p.Pos++; goto done}
+ done: return p.Pos,true
  }`
-	src, err := specializeOrdinaryMethods([]byte("package fixture\n"+method), method, "p.control == nil")
+	src, err := specializeOrdinaryMethods([]byte("package fixture\n"+method), method, "p.Control == nil")
 	if err != nil {
 		t.Fatal(err)
 	}
-	f := ordinaryFunctions(t, src)[ordinaryMethodKey{"parser", "e0"}]
+	f := ordinaryFunctions(t, src)[ordinaryMethodKey{"Parser", "e0"}]
 	guard := f.Body.List[0].(*goast.IfStmt)
 	labels, branches := map[string]bool{}, 0
 	goast.Inspect(guard.Body, func(n goast.Node) bool {
@@ -157,7 +157,7 @@ func TestOrdinaryTransformLabelsAndSynchronousLambda(t *testing.T) {
 				branches++
 			}
 		case *goast.CallExpr:
-			if s, ok := x.Fun.(*goast.SelectorExpr); ok && (s.Sel.Name == "stepWork" || s.Sel.Name == "inputWork") {
+			if s, ok := x.Fun.(*goast.SelectorExpr); ok && (s.Sel.Name == "StepWork" || s.Sel.Name == "InputWork") {
 				t.Fatal("retained work call")
 			}
 		case *goast.SelectorExpr:
@@ -173,37 +173,37 @@ func TestOrdinaryTransformLabelsAndSynchronousLambda(t *testing.T) {
 }
 
 func TestOrdinaryTransformFailsOnEmitterDrift(t *testing.T) {
-	method := `func(p *parser)e0()(int,bool){return 0,true}`
+	method := `func e0(p *Parser)(int,bool){return 0,true}`
 	for _, tc := range []struct{ src, methods string }{
 		{"package fixture", method},
 		{"package fixture\n" + method, ""},
-		{"package fixture\nfunc(p *parser)e0()(int,bool){p.control=nil;return 0,true}", method},
-		{"package fixture\n" + method, `func(q *parser)e0()(int,bool){return 0,true}`},
-		{"package fixture\nfunc(p *parser)e0()(int,bool){q:=&p.control;_=q;return 0,true}", method},
-		{"package fixture\nfunc(p *parser)e0()(int,bool){p:=other;_=p;return 0,true}", method},
+		{"package fixture\nfunc e0(p *Parser)(int,bool){p.Control=nil;return 0,true}", method},
+		{"package fixture\n" + method, `func e0(q *Parser)(int,bool){return 0,true}`},
+		{"package fixture\nfunc e0(p *Parser)(int,bool){q:=&p.Control;_=q;return 0,true}", method},
+		{"package fixture\nfunc e0(p *Parser)(int,bool){p:=other;_=p;return 0,true}", method},
 		{"package fixture\n" + method, method + "\n" + method},
 	} {
-		if _, err := specializeOrdinaryMethods([]byte(tc.src), tc.methods, "p.control == nil"); err == nil {
+		if _, err := specializeOrdinaryMethods([]byte(tc.src), tc.methods, "p.Control == nil"); err == nil {
 			t.Fatal("accepted emitter drift")
 		}
 	}
 }
 
 func TestOrdinaryTransformPreservesCommentsAndFormatting(t *testing.T) {
-	method := `func (p *parser) e0() (int, bool) {
+	method := `func e0(p *Parser) (int, bool) {
  // controlled marker
- p.stepWork()
+ p.StepWork()
  s := "} {"
  return len(s), true
  }`
-	helper := `func (p *parser) newNode(v Node) *Node {
- p.stepWork()
+	helper := `func (p *Parser) NewNode(v Node) *Node {
+ p.StepWork()
  return &v
  }`
 	// Large original offsets must not interpret clone positions in the
 	// original FileSet or scatter a short helper across artificial lines.
 	source := "package fixture\n" + strings.Repeat("// padding\n", 20000) + method + "\n" + helper
-	result, err := specializeOrdinaryMethods([]byte(source), method, "p.control == nil")
+	result, err := specializeOrdinaryMethods([]byte(source), method, "p.Control == nil")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -211,13 +211,13 @@ func TestOrdinaryTransformPreservesCommentsAndFormatting(t *testing.T) {
 		t.Fatal("controlled comment lost or duplicated")
 	}
 	// The runtime defines the ordinary helpers; the transform leaves runtime methods as they are.
-	if strings.Contains(string(result), "func (p *parser) newNodeOrdinary") {
+	if strings.Contains(string(result), "func (p *Parser) NewNodeOrdinary") {
 		t.Fatal("derived an ordinary helper")
 	}
-	if got, want := strings.TrimSpace(string(result[strings.Index(string(result), "func (p *parser) newNode("):])), "func (p *parser) newNode(v Node) *Node {\n\tp.stepWork()\n\treturn &v\n}"; got != want {
+	if got, want := strings.TrimSpace(string(result[strings.Index(string(result), "func (p *Parser) NewNode("):])), "func (p *Parser) NewNode(v Node) *Node {\n\tp.StepWork()\n\treturn &v\n}"; got != want {
 		t.Fatalf("unexpected helper formatting:\n%s", got)
 	}
-	f := ordinaryFunctions(t, result)[ordinaryMethodKey{"parser", "e0"}]
+	f := ordinaryFunctions(t, result)[ordinaryMethodKey{"Parser", "e0"}]
 	ordinary := f.Body.List[0].(*goast.IfStmt).Body
 	if ordinaryTokens(t, ordinary) != ordinaryTokens(t, &goast.BlockStmt{List: f.Body.List[1:][1:]}) {
 		// The controlled-only initial work call is absent from the ordinary branch.

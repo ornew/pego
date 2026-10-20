@@ -49,7 +49,7 @@ func TestGeneratedMaxDepthValidation(t *testing.T) {
 				}
 				continue
 			}
-			want := fmt.Sprintf("var pegoGrammar = newGrammar(%d)", n)
+			want := fmt.Sprintf("var pegoGrammar = NewGrammar(%d)", n)
 			if ts {
 				want = fmt.Sprintf("const defaultMaxDepth = %d", n)
 			}
@@ -151,7 +151,7 @@ func TestLimitsAndReuse(t *testing.T) {
   for _,unit:=range []PositionUnit{CodePoints,Bytes,PositionUnit(99)} {
    opts:=[]ParseOption{WithUnit(Bytes),WithUnit(unit),WithMaxDepth(20)}
    n,err:=Parse(c.input,opts...);wantEnd:=len([]rune(c.input));if unit==Bytes {wantEnd=len(c.input)}
-   if err!=nil || int(n.end)!=wantEnd {t.Fatalf("last unit option: %v",err)}
+   if err!=nil || int(n.RawEnd)!=wantEnd {t.Fatalf("last unit option: %v",err)}
    v,err:=ParseAST(c.input,opts...);if err!=nil || v.End!=wantEnd {t.Fatalf("typed last unit option: %v",err)}
   }
  }}

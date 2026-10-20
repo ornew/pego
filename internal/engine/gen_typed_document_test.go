@@ -22,7 +22,7 @@ func TestGenerateTypedDocument(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(code), "func (d *Document) ParseAST(") || !strings.Contains(string(code), "tparse(trules") {
+	if !strings.Contains(string(code), "func (d *Document) ParseAST(") || !strings.Contains(string(code), "TParse(trules") {
 		t.Fatal("typed Document conversion or existing direct batch path missing")
 	}
 	dir := t.TempDir()

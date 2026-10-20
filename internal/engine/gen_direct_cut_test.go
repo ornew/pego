@@ -64,7 +64,7 @@ func TestGeneratedTypedDirectCuts(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		if !strings.Contains(string(code), "tparse(trules") {
+		if !strings.Contains(string(code), "TParse(trules") {
 			t.Fatalf("%s: typed runtime must be exercised", c.name)
 		}
 		if !strings.Contains(string(code), "// main, invoked as by invoke (body inlined)") &&

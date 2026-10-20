@@ -8,46 +8,46 @@ package genrt
 // KindString node, elems the elements of a tuple or list, typ the type name of a KindStruct node,
 // fields its fields (or captures), and value the value of a KindValue node.
 func NewNode(k NodeKind, start, end int, text string, elems []*Node, typ string, fields Fields, value any) *Node {
-	n := &Node{start: int32(start), end: int32(end), text: text, children: elems, fields: fields, box: value}
+	n := &Node{RawStart: int32(start), RawEnd: int32(end), RawText: text, RawChildren: elems, RawFields: fields, box: value}
 	switch k {
 	case KindString:
-		n.kind, n.terminal = kindMatch, true
+		n.RawKind, n.RawTerminal = RawKindMatch, true
 	case KindTuple:
-		n.kind = kindSeq
+		n.RawKind = RawKindSeq
 	case KindList:
-		n.kind = kindList
+		n.RawKind = RawKindList
 	case KindError:
-		n.kind = kindError
+		n.RawKind = kindError
 	case KindStruct:
-		n.kind = kindOf(typ, "")
+		n.RawKind = KindOf(typ, "")
 	case KindTupleValue:
-		n.kind = kindTupleValue
+		n.RawKind = kindTupleValue
 	case KindListValue:
-		n.kind = kindListValue
+		n.RawKind = kindListValue
 	case KindValue:
-		n.kind = kindBox
+		n.RawKind = kindBox
 	}
 	return n
 }
 
 // SetNodeElems replaces the elements of the tuple or list n, which can make a cycle.
-func SetNodeElems(n *Node, elems []*Node) { n.children = elems }
+func SetNodeElems(n *Node, elems []*Node) { n.RawChildren = elems }
 
 // SetNodeText replaces the string of the KindString node n.
 func SetNodeText(n *Node, text string) {
-	n.text = text
+	n.RawText = text
 }
 
 // SetNodeStart replaces the start of the range of n.
-func SetNodeStart(n *Node, start int) { n.start = int32(start) }
+func SetNodeStart(n *Node, start int) { n.RawStart = int32(start) }
 
 // SetNodeField sets the field name of n to v, adding it if absent.
 func SetNodeField(n *Node, name string, v any) {
-	for i := range n.fields {
-		if n.fields[i].Name == name {
-			n.fields[i].Value = v
+	for i := range n.RawFields {
+		if n.RawFields[i].Name == name {
+			n.RawFields[i].Value = v
 			return
 		}
 	}
-	n.fields = append(n.fields, NodeField{Name: name, Value: v})
+	n.RawFields = append(n.RawFields, NodeField{Name: name, Value: v})
 }

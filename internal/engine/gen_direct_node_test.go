@@ -123,19 +123,19 @@ func TestGeneratedNodeDirectRoutes(t *testing.T) {
 			if strings.Contains(c.name, "memo_action") {
 				name = "pair"
 			}
-			body := regexp.MustCompile(`// ` + name + ` \(Node body inlined\)\s+func \(p \*parser\) (\w+)\(`).FindSubmatch(code)
+			body := regexp.MustCompile(`// ` + name + ` \(Node body inlined\)\s+func (\w+)\(p \*Parser\)`).FindSubmatch(code)
 			if len(body) != 2 {
 				t.Fatalf("no direct Node body for %s", name)
 			}
-			if !strings.Contains(string(code), "return p."+string(body[1])+"() }") {
+			if !strings.Contains(string(code), "return "+string(body[1])+"(p) }") {
 				t.Fatalf("%s is not used by the rule-table body", body[1])
 			}
 			if name == "pair" {
-				metadata := regexp.MustCompile(`\{id: (\d+), name: "pair",[^\n]+memo: true,`).FindSubmatch(code)
+				metadata := regexp.MustCompile(`\{Id: (\d+), Name: "pair",[^\n]+Memo: true,`).FindSubmatch(code)
 				if len(metadata) != 2 {
 					t.Fatal("pair must retain memoization")
 				}
-				if !strings.Contains(string(code), "p.call(rules["+string(metadata[1])+"],") {
+				if !strings.Contains(string(code), "p.Call(rules["+string(metadata[1])+"],") {
 					t.Fatal("pair must use the memo-aware call route")
 				}
 			}

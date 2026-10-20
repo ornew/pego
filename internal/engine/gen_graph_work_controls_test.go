@@ -65,38 +65,38 @@ rule rollback Bag = (x:leaf "z" / x:leaf) rest:(part:leaf "b")* last:leaf #cut =
 }
 
 // generatedGoGraphTypedRuleCheck needs the typed rule table, which conversion output omits.
-const generatedGoGraphTypedRuleCheck = `for _,name:=range []string{"main","rollback"}{found:=false;for _,r:=range trules{if r.name==name{found=true;if general && r.body==nil{t.Fatal("fixture did not exercise a general typed body",name)};if !general && (r.entry==nil || r.body!=nil){t.Fatal("fixture did not exercise a direct typed body",name)}}};if !found{t.Fatal("missing typed rule",name)}}
+const generatedGoGraphTypedRuleCheck = `for _,name:=range []string{"main","rollback"}{found:=false;for _,r:=range trules{if r.Name==name{found=true;if general && r.Body==nil{t.Fatal("fixture did not exercise a general typed body",name)};if !general && (r.Entry==nil || r.Body!=nil){t.Fatal("fixture did not exercise a direct typed body",name)}}};if !found{t.Fatal("missing typed rule",name)}}
 `
 
 const generatedGoGraphConsumer = `package PACKAGE
 import("context";"errors";"fmt";"reflect";"strings";"testing")
 const conversion = CONVERT
 const general = GENERAL
-func graphParser(limit uint64)*parser{p:=&parser{control:newWorkControl(nil,WorkLimits{MaxSteps:limit})};p.setGrammar(pegoGrammar);return p}
+func graphParser(limit uint64)*Parser{p:=&Parser{Control:newWorkControl(nil,WorkLimits{MaxSteps:limit})};p.setGrammar(pegoGrammar);return p}
 func graphFatal(f func())(err error){defer func(){if x:=recover();x!=nil{v,ok:=x.(fatal);if !ok{panic(x)};err=v.err}}();f();return nil}
-func requireGraphLimit(t *testing.T,p *parser,f func()){
+func requireGraphLimit(t *testing.T,p *Parser,f func()){
  t.Helper();err:=graphFatal(f)
  if !errors.Is(err,ErrWorkLimit){t.Fatal("operation escaped work budget",err)}
- if p.control.inputUsed()!=0{t.Fatal("graph work charged input")}
+ if p.Control.inputUsed()!=0{t.Fatal("graph work charged input")}
 }
 func graphKids()([]*Node,[]any){
  nodes:=make([]*Node,300);values:=make([]any,300)
- for i:=range nodes{nodes[i]=&Node{start:int32(i+3),end:int32(i+4),text:"a"};values[i]=&tmatch{TNode:TNode[string]{Span:Span{Start:i+3,End:i+4},Value:"a"}}}
+ for i:=range nodes{nodes[i]=&Node{RawStart:int32(i+3),RawEnd:int32(i+4),RawText:"a"};values[i]=&TMatch{TNode:TNode[string]{Span:Span{Start:i+3,End:i+4},Value:"a"}}}
  return nodes,values
 }
 func TestGraphFields(t *testing.T){
- nodes,_:=graphKids();fs:=make(Fields,300);tn:=&tnode{typ:"tuple",fields:make([]tfield,300)}
+ nodes,_:=graphKids();fs:=make(Fields,300);tn:=&TSeq{Typ:"tuple",fields:make([]tfield,300)}
  for i:=range fs{name:=fmt.Sprintf("field%d",i);fs[i]=NodeField{name,i};tn.fields[i]=tfield{name,i}}
  for _,typed:=range []bool{false,true}{
-  p:=graphParser(32);tp:=&tparser{parser:p};node:=&Node{fields:fs}
-  requireGraphLimit(t,p,func(){if typed{(&tctx{p:tp}).member(tn,"absent-field-with-distinct-length")}else{(&actx{p:p}).member(node,"absent-field-with-distinct-length")}})
-  p.control=newWorkControl(nil,WorkLimits{MaxSteps:100000})
-  var got any;if typed{got=(&tctx{p:tp}).member(tn,"field299")}else{got=(&actx{p:p}).member(node,"field299")}
+  p:=graphParser(32);tp:=&TParser{Parser:p};node:=&Node{RawFields:fs}
+  requireGraphLimit(t,p,func(){if typed{(&TActCtx{P:tp}).Member(tn,"absent-field-with-distinct-length")}else{(&ActCtx{P:p}).Member(node,"absent-field-with-distinct-length")}})
+  p.Control=newWorkControl(nil,WorkLimits{MaxSteps:100000})
+  var got any;if typed{got=(&TActCtx{P:tp}).Member(tn,"field299")}else{got=(&ActCtx{P:p}).Member(node,"field299")}
   if got!=299{t.Fatal("field read changed",got)}
-  p.control=newWorkControl(nil,WorkLimits{MaxSteps:32})
+  p.Control=newWorkControl(nil,WorkLimits{MaxSteps:32})
   requireGraphLimit(t,p,func(){if typed{tp.setValueField(tn,"field299",nodes[0])}else{p.setValueField(&fs,"field299",nodes[0])}})
   if typed && tn.fields[299].val!=299 || !typed && fs[299].Value!=299{t.Fatal("failed setter changed value")}
-  p.control=newWorkControl(nil,WorkLimits{MaxSteps:100000})
+  p.Control=newWorkControl(nil,WorkLimits{MaxSteps:100000})
   if typed{tp.setValueField(tn,"field299",nodes[0]);if len(tn.fields)!=300 || tn.fields[299].val!=nodes[0]{t.Fatal("typed replacement")};tn.fields[299].val=299}else{p.setValueField(&fs,"field299",nodes[0]);if len(fs)!=300 || fs[299].Value!=nodes[0]{t.Fatal("Node replacement")};fs[299].Value=299}
  }
 }
@@ -104,56 +104,56 @@ func TestGraphListsAndOwnership(t *testing.T){
  nodes,values:=graphKids()
  for _,typed:=range []bool{false,true}{
   for _,spanOnly:=range []bool{false,true}{
-   p:=graphParser(129);tp:=&tparser{parser:p};var result any
-   requireGraphLimit(t,p,func(){if typed{c:=&tctx{p:tp};if spanOnly{result=c.listNode(values)}else{result=c.newList(values)}}else{c:=&actx{p:p};if spanOnly{result=c.listNode(nodes)}else{result=c.newList(nodes)}}})
+   p:=graphParser(129);tp:=&TParser{Parser:p};var result any
+   requireGraphLimit(t,p,func(){if typed{c:=&TActCtx{P:tp};if spanOnly{result=c.listNode(values)}else{result=c.NewList(values)}}else{c:=&ActCtx{P:p};if spanOnly{result=c.listNode(nodes)}else{result=c.NewList(nodes)}}})
    if result!=nil{t.Fatal("partial list returned")}
-   p.control=newWorkControl(nil,WorkLimits{MaxSteps:100000})
-   if typed{n:=(&tctx{p:tp}).newList(values).(*tnode);if n.Start!=3 || n.End!=303 || len(n.kids)!=300{t.Fatal("typed list spans")};n.kids[0]=nil;if values[0]==nil{t.Fatal("typed list aliases source")}}else{n:=(&actx{p:p}).newList(nodes);if n.start!=3 || n.end!=303 || len(n.children)!=300{t.Fatal("Node list spans")};n.children[0]=nil;if nodes[0]==nil{t.Fatal("Node list aliases source")}}
+   p.Control=newWorkControl(nil,WorkLimits{MaxSteps:100000})
+   if typed{n:=(&TActCtx{P:tp}).NewList(values).(*TSeq);if n.Start!=3 || n.End!=303 || len(n.Kids)!=300{t.Fatal("typed list spans")};n.Kids[0]=nil;if values[0]==nil{t.Fatal("typed list aliases source")}}else{n:=(&ActCtx{P:p}).NewList(nodes);if n.RawStart!=3 || n.RawEnd!=303 || len(n.RawChildren)!=300{t.Fatal("Node list spans")};n.RawChildren[0]=nil;if nodes[0]==nil{t.Fatal("Node list aliases source")}}
   }
-  p:=graphParser(129);tp:=&tparser{parser:p}
-  requireGraphLimit(t,p,func(){if typed{tp.kidStack=append([]any(nil),values...);tp.kids(0)}else{p.kidStack=append([]*Node(nil),nodes...);p.kids(0)}})
-  p.control=newWorkControl(nil,WorkLimits{MaxSteps:100000})
-  if typed{tp.kidStack=append([]any(nil),values...);got:=tp.kids(0);if len(got)!=300{t.Fatal("typed kids")};got[0]=nil;if values[0]==nil{t.Fatal("typed children alias")}}else{p.kidStack=append([]*Node(nil),nodes...);got:=p.kids(0);if len(got)!=300{t.Fatal("Node kids")};got[0]=nil;if nodes[0]==nil{t.Fatal("Node children alias")}}
+  p:=graphParser(129);tp:=&TParser{Parser:p}
+  requireGraphLimit(t,p,func(){if typed{tp.KidStack=append([]any(nil),values...);tp.Kids(0)}else{p.KidStack=append([]*Node(nil),nodes...);p.Kids(0)}})
+  p.Control=newWorkControl(nil,WorkLimits{MaxSteps:100000})
+  if typed{tp.KidStack=append([]any(nil),values...);got:=tp.Kids(0);if len(got)!=300{t.Fatal("typed kids")};got[0]=nil;if values[0]==nil{t.Fatal("typed children alias")}}else{p.KidStack=append([]*Node(nil),nodes...);got:=p.Kids(0);if len(got)!=300{t.Fatal("Node kids")};got[0]=nil;if nodes[0]==nil{t.Fatal("Node children alias")}}
  }
 }
 func TestGraphCaptureUndoAndCleanup(t *testing.T){
  for _,typed:=range []bool{false,true}{
-  p:=graphParser(32);tp:=&tparser{parser:p}
-  n:=&Node{text:"old"};changed:=&Node{text:"new"};f:=&frame{vals:make([]*Node,300)};tf:=&tframe{vals:make([]any,300)}
-  for i:=0;i<300;i++{f.vals[i]=changed;tf.vals[i]=changed;p.trail=append(p.trail,undo{f:f,slot:i,old:n});tp.trail=append(tp.trail,tundo{f:tf,slot:i,old:n})}
-  requireGraphLimit(t,p,func(){if typed{tp.reset(mark{})}else{p.reset(mark{})}})
-  if typed && len(tp.trail)!=300 || !typed && len(p.trail)!=300{t.Fatal("fatal lost undo records")}
-  p.control=newWorkControl(nil,WorkLimits{MaxSteps:100000})
-  if typed{tp.reset(mark{});for _,v:=range tf.vals{if v!=n{t.Fatal("typed undo retry")}};if len(tp.trail)!=0{t.Fatal("typed trail retained")};tp.trail=append(tp.trail,tundo{f:tf,old:n});tp.control=newWorkControl(nil,WorkLimits{MaxSteps:1});tp.recycle();for _,v:=range tp.trail[:cap(tp.trail)]{if v.f!=nil || v.old!=nil{t.Fatal("typed cleanup blocked")}}}else{p.reset(mark{});for _,v:=range f.vals{if v!=n{t.Fatal("Node undo retry")}};if len(p.trail)!=0{t.Fatal("Node trail retained")};p.trail=append(p.trail,undo{f:f,old:n});p.control=newWorkControl(nil,WorkLimits{MaxSteps:1});p.release();for _,v:=range p.trail[:cap(p.trail)]{if v.f!=nil || v.old!=nil{t.Fatal("Node cleanup blocked")}}}
+  p:=graphParser(32);tp:=&TParser{Parser:p}
+  n:=&Node{RawText:"old"};changed:=&Node{RawText:"new"};f:=&CaptureFrame{Vals:make([]*Node,300)};tf:=&TCaptureFrame{Vals:make([]any,300)}
+  for i:=0;i<300;i++{f.Vals[i]=changed;tf.Vals[i]=changed;p.Trail=append(p.Trail,undo{f:f,slot:i,old:n});tp.Trail=append(tp.Trail,tundo{f:tf,slot:i,old:n})}
+  requireGraphLimit(t,p,func(){if typed{tp.Reset(Mark{})}else{p.Reset(Mark{})}})
+  if typed && len(tp.Trail)!=300 || !typed && len(p.Trail)!=300{t.Fatal("fatal lost undo records")}
+  p.Control=newWorkControl(nil,WorkLimits{MaxSteps:100000})
+  if typed{tp.Reset(Mark{});for _,v:=range tf.Vals{if v!=n{t.Fatal("typed undo retry")}};if len(tp.Trail)!=0{t.Fatal("typed trail retained")};tp.Trail=append(tp.Trail,tundo{f:tf,old:n});tp.Control=newWorkControl(nil,WorkLimits{MaxSteps:1});tp.recycle();for _,v:=range tp.Trail[:cap(tp.Trail)]{if v.f!=nil || v.old!=nil{t.Fatal("typed cleanup blocked")}}}else{p.Reset(Mark{});for _,v:=range f.Vals{if v!=n{t.Fatal("Node undo retry")}};if len(p.Trail)!=0{t.Fatal("Node trail retained")};p.Trail=append(p.Trail,undo{f:f,old:n});p.Control=newWorkControl(nil,WorkLimits{MaxSteps:1});p.release();for _,v:=range p.Trail[:cap(p.Trail)]{if v.f!=nil || v.old!=nil{t.Fatal("Node cleanup blocked")}}}
  }
 }
 func TestTypedFieldMaterialization(t *testing.T){
  bag:=&Bag{Items:make([]*Leaf,300),Nested:make([][]*Leaf,300)}
  for i:=range bag.Items{bag.Items[i]=&Leaf{Span:Span{Start:i+3,End:i+4},Text:"a"};bag.Nested[i]=[]*Leaf{bag.Items[i]}}
  for _,name:=range []string{"Items","Nested"}{
-  p:=graphParser(32);tp:=&tparser{parser:p};var result any
-  requireGraphLimit(t,p,func(){result=(&tctx{p:tp}).member(bag,name)})
+  p:=graphParser(32);tp:=&TParser{Parser:p};var result any
+  requireGraphLimit(t,p,func(){result=(&TActCtx{P:tp}).Member(bag,name)})
   if result!=nil{t.Fatal("partial field published")}
-  p.control=newWorkControl(nil,WorkLimits{MaxSteps:100000})
-  got:=(&tctx{p:tp}).member(bag,name).(*tnode);ordinary,_:=bag.tfield(name)
-  want:=ordinary.(*tnode)
+  p.Control=newWorkControl(nil,WorkLimits{MaxSteps:100000})
+  got:=(&TActCtx{P:tp}).Member(bag,name).(*TSeq);ordinary,_:=bag.TField(name)
+  want:=ordinary.(*TSeq)
   if !reflect.DeepEqual(got,want) || got.Start!=3 || got.End!=303{t.Fatal("field materialization changed",name)}
-  wantSteps:=uint64(2*len(bag.Items));if name=="Nested"{wantSteps+=uint64(2*len(bag.Nested))};if p.control.stepsUsed()!=wantSteps{t.Fatal("list field work omitted",name,p.control.stepsUsed(),wantSteps)}
-  if name=="Items"{got.kids[0]=nil;if bag.Items[0]==nil{t.Fatal("field result aliases input")}}
+  wantSteps:=uint64(2*len(bag.Items));if name=="Nested"{wantSteps+=uint64(2*len(bag.Nested))};if p.Control.stepsUsed()!=wantSteps{t.Fatal("list field work omitted",name,p.Control.stepsUsed(),wantSteps)}
+  if name=="Items"{got.Kids[0]=nil;if bag.Items[0]==nil{t.Fatal("field result aliases input")}}
  }
- p:=graphParser(32);tp:=&tparser{parser:p};empty:=&Bag{Items:[]*Leaf{},Nested:nil}
- if got:=(&tctx{p:tp}).member(empty,"Items");got==nil || len(got.(*tnode).kids)!=0{t.Fatal("empty field changed")}
- if got:=(&tctx{p:tp}).member(empty,"Nested");got!=nil{t.Fatal("nil field changed")}
+ p:=graphParser(32);tp:=&TParser{Parser:p};empty:=&Bag{Items:[]*Leaf{},Nested:nil}
+ if got:=(&TActCtx{P:tp}).Member(empty,"Items");got==nil || len(got.(*TSeq).Kids)!=0{t.Fatal("empty field changed")}
+ if got:=(&TActCtx{P:tp}).Member(empty,"Nested");got!=nil{t.Fatal("nil field changed")}
 }
 func TestGraphFoldOrderAndBudget(t *testing.T){
  nodes,values:=graphKids()
  for _,typed:=range []bool{false,true}{for _,right:=range []bool{false,true}{
-  p:=graphParser(32);tp:=&tparser{parser:p};visits:=0
+  p:=graphParser(32);tp:=&TParser{Parser:p};visits:=0
   f:=func(acc,item any)any{visits++;return item}
-  requireGraphLimit(t,p,func(){if typed{(&tctx{p:tp}).fold("foldl",right,nil,&tnode{typ:"list",kids:values},f)}else{(&actx{p:p}).fold("foldl",right,nil,&Node{kind:kindList,children:nodes},f)}})
+  requireGraphLimit(t,p,func(){if typed{(&TActCtx{P:tp}).Fold("foldl",right,nil,&TSeq{Typ:"list",Kids:values},f)}else{(&ActCtx{P:p}).Fold("foldl",right,nil,&Node{RawKind:RawKindList,RawChildren:nodes},f)}})
   if visits!=32{t.Fatal("fold advanced past budget",visits)}
-  p.control=newWorkControl(nil,WorkLimits{MaxSteps:100000});visits=0
-  var got any;if typed{got=(&tctx{p:tp}).fold("foldl",right,nil,&tnode{typ:"list",kids:values},f)}else{got=(&actx{p:p}).fold("foldl",right,nil,&Node{kind:kindList,children:nodes},f)}
+  p.Control=newWorkControl(nil,WorkLimits{MaxSteps:100000});visits=0
+  var got any;if typed{got=(&TActCtx{P:tp}).Fold("foldl",right,nil,&TSeq{Typ:"list",Kids:values},f)}else{got=(&ActCtx{P:p}).Fold("foldl",right,nil,&Node{RawKind:RawKindList,RawChildren:nodes},f)}
   index:=299;if right{index=0};want:=any(nodes[index]);if typed{want=values[index]};if visits!=300 || got!=want{t.Fatal("fold order changed",visits)}
  }}
 }
@@ -180,11 +180,11 @@ func TestGraphCaptureAttachment(t *testing.T){
  for i:=range names{names[i]=fmt.Sprintf("capture%d",i)}
  names[299]=names[0]
  for _,typed:=range []bool{false,true}{
-  p:=graphParser(32);tp:=&tparser{parser:p};var result any
-  requireGraphLimit(t,p,func(){if typed{result=tp.attachCaptures(nil,names,values,3,303)}else{result=p.attachCaptures(nil,names,&frame{vals:nodes},3,303)}})
+  p:=graphParser(32);tp:=&TParser{Parser:p};var result any
+  requireGraphLimit(t,p,func(){if typed{result=tp.AttachCaptures(nil,names,values,3,303)}else{result=p.AttachCaptures(nil,names,&CaptureFrame{Vals:nodes},3,303)}})
   if result!=nil{t.Fatal("partial capture node published")}
-  p.control=newWorkControl(nil,WorkLimits{MaxSteps:10000000})
-  if typed{n:=tp.attachCaptures(nil,names,values,3,303).(*tnode);if len(n.fields)!=299 || n.fields[0].val!=values[299] || n.fields[1].name!=names[1]{t.Fatal("typed capture order/replacement")}}else{n:=p.attachCaptures(nil,names,&frame{vals:nodes},3,303);if len(n.fields)!=299 || n.fields[0].Value!=nodes[299] || n.fields[1].Name!=names[1]{t.Fatal("Node capture order/replacement")}}
+  p.Control=newWorkControl(nil,WorkLimits{MaxSteps:10000000})
+  if typed{n:=tp.AttachCaptures(nil,names,values,3,303).(*TSeq);if len(n.fields)!=299 || n.fields[0].val!=values[299] || n.fields[1].name!=names[1]{t.Fatal("typed capture order/replacement")}}else{n:=p.AttachCaptures(nil,names,&CaptureFrame{Vals:nodes},3,303);if len(n.RawFields)!=299 || n.RawFields[0].Value!=nodes[299] || n.RawFields[1].Name!=names[1]{t.Fatal("Node capture order/replacement")}}
  }
 }
 func TestGraphOperatorsRuleSnapshots(t *testing.T){
@@ -192,18 +192,18 @@ func TestGraphOperatorsRuleSnapshots(t *testing.T){
  for i:=range names{names[i]=fmt.Sprintf("p%d",i)}
  for _,typed:=range []bool{false,true}{
   for _,limit:=range []uint64{129,430,100000}{
-   p:=graphParser(limit);tp:=&tparser{parser:p};var bestNode operatorsRuleAttempt;var bestTyped toperatorsRuleAttempt
+   p:=graphParser(limit);tp:=&TParser{Parser:p};var bestNode operatorsRuleAttempt;var bestTyped toperatorsRuleAttempt
    err:=graphFatal(func(){if typed{
-    op:=&toperatorsRuleOp{kind:"prefix",line:&toperatorsRuleLine{scope:names,m:func(p *tparser)(any,bool){for i,v:=range values{p.frame.vals[i]=v};p.pos=1;return values[0],true}}}
-    bestTyped,_=tp.longest([]*toperatorsRuleOp{op})
+    op:=&TOperatorsRuleOp{Kind:"prefix",Line:&TOperatorsRuleLine{Scope:names,M:func(p *TParser)(any,bool){for i,v:=range values{p.Frame.Vals[i]=v};p.Pos=1;return values[0],true}}}
+    bestTyped,_=tp.longest([]*TOperatorsRuleOp{op})
    }else{
-    op:=&operatorsRuleOp{kind:"prefix",line:&operatorsRuleLine{scope:names,m:func(p *parser)(*Node,bool){for i,v:=range nodes{p.frame.vals[i]=v};p.pos=1;return nodes[0],true}}}
-    bestNode,_=p.longest([]*operatorsRuleOp{op})
+    op:=&OperatorsRuleOp{Kind:"prefix",Line:&OperatorsRuleLine{Scope:names,M:func(p *Parser)(*Node,bool){for i,v:=range nodes{p.Frame.Vals[i]=v};p.Pos=1;return nodes[0],true}}}
+    bestNode,_=p.longest([]*OperatorsRuleOp{op})
    }})
    if limit<100000{if !errors.Is(err,ErrWorkLimit) || bestNode.op!=nil || bestTyped.op!=nil{t.Fatal("partial OperatorsRule attempt",limit,err)};if typed{tp.recycle()}else{p.release()};continue}
-   if err!=nil || p.pos!=0 || p.frame!=nil || tp.frame!=nil{t.Fatal("OperatorsRule selection changed state",err)}
-   if typed{if bestTyped.op==nil || bestTyped.end!=1 || !reflect.DeepEqual(bestTyped.frame.vals,values){t.Fatal("typed OperatorsRule snapshot changed")}}else{if bestNode.op==nil || bestNode.end!=1 || !reflect.DeepEqual(bestNode.frame.vals,nodes){t.Fatal("Node OperatorsRule snapshot changed")}}
-   if p.control.stepsUsed()!=uint64(1+2*len(names)){t.Fatal("OperatorsRule snapshot copy work omitted",p.control.stepsUsed())}
+   if err!=nil || p.Pos!=0 || p.Frame!=nil || tp.Frame!=nil{t.Fatal("OperatorsRule selection changed state",err)}
+   if typed{if bestTyped.op==nil || bestTyped.end!=1 || !reflect.DeepEqual(bestTyped.frame.Vals,values){t.Fatal("typed OperatorsRule snapshot changed")}}else{if bestNode.op==nil || bestNode.end!=1 || !reflect.DeepEqual(bestNode.frame.Vals,nodes){t.Fatal("Node OperatorsRule snapshot changed")}}
+   if p.Control.stepsUsed()!=uint64(1+2*len(names)){t.Fatal("OperatorsRule snapshot copy work omitted",p.Control.stepsUsed())}
   }
  }
 }

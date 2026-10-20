@@ -96,13 +96,13 @@ func TestGeneratedTypedRecoveryBodies(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		if !strings.Contains(string(candidate), "tparse(trules") || !strings.Contains(string(candidate), marker) {
+		if !strings.Contains(string(candidate), "TParse(trules") || !strings.Contains(string(candidate), marker) {
 			t.Fatalf("%s: typed recovery route not exercised", c.name)
 		}
 		opts.disableTypedRecoveryBodies = true
 		reference, err := Generate(g, opts)
 		if err != nil || strings.Contains(string(reference), marker) || strings.Contains(string(candidate), "disableTypedRecoveryBodies") {
-			t.Fatalf("%s: invalid generation-only control: %v", c.name, err)
+			t.Fatalf("%s: invalid generation-only Control: %v", c.name, err)
 		}
 		opts.Types = false
 		nodeReference, err := Generate(g, opts)

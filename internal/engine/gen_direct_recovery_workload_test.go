@@ -34,7 +34,7 @@ var typedRecoveryWorkloads = []struct{ name, src, accepted, recovered, errors st
 	{"ordinary", `rule expr Expr = atom #recover(skip=[^;]+)
 rule atom Atom = t:("é" "b" "c") #atomic => Atom{Text: text($t)}
 `, "ébc;", "?;", "1"},
-	{"operatorsRule", `rule expr Expr = operators {
+	{"OperatorsRule", `rule expr Expr = operators {
     operand atom #recover(skip="?")
     level { postfix ("[" atom "]") #recover(skip="[?]") => Post{X: $lhs} }
 }
@@ -134,20 +134,20 @@ func TestRecoveryWorkload(t *testing.T) {
         saved, savedErr := ParseAST(recoveryInput("recovered", 2), WithUnit(unit))
         if !checkRecovery(saved, savedErr, "recovered", 2) { t.Fatalf("saved value %v %v", saved, savedErr) }
         before, _ := json.Marshal(struct { Value any; Error any }{saved, savedErr})
-        p := &tparser{parser:&parser{}}
+        p := &TParser{Parser:&Parser{}}
         for _, n := range []int{1,128,1} {
             for _, mode := range []string{"accepted","recovered","rejected"} {
                 input := recoveryInput(mode,n)
                 value, err := p.run(trules[0],input,parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth},&tslabs{})
-                v := tAs[*Doc](value)
+                v := TAs[*Doc](value)
                 if !checkRecovery(v,err,mode,n) { t.Fatalf("%s/%d: %v %v",mode,n,v,err) }
                 data, _ := json.Marshal(struct { Value any; Error any }{v,err})
                 pooled, pooledErr := ParseAST(input,WithUnit(unit))
                 pooledData, _ := json.Marshal(struct { Value any; Error any }{pooled,pooledErr})
                 if string(data) != string(pooledData) { t.Fatal("manual and pooled parsers differ") }
                 fmt.Printf("OBS %v %s/%d %s\n",unit,mode,n,data)
-                if p.depth != 0 || p.frame != nil || len(p.trail) != 0 { t.Fatal("live invocation state") }
-                for _, u := range p.trail[:cap(p.trail)] {
+                if p.Depth != 0 || p.Frame != nil || len(p.Trail) != 0 { t.Fatal("live invocation state") }
+                for _, u := range p.Trail[:cap(p.Trail)] {
                     if u.f != nil || u.old != nil || u.slot != 0 { t.Fatal("retained undo state") }
                 }
                 p.recycle()

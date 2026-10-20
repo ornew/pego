@@ -162,7 +162,7 @@ func TestGeneratedTypedOperatorsRuleBodies(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		if !strings.Contains(string(code), "tparse(trules") {
+		if !strings.Contains(string(code), "TParse(trules") {
 			t.Fatalf("%s: typed runtime is not exercised", c.name)
 		}
 		inlined := strings.Contains(string(code), "(typed OperatorsRule body inlined)")
@@ -176,7 +176,7 @@ func TestGeneratedTypedOperatorsRuleBodies(t *testing.T) {
 		opts.disableTypedOperatorsRuleBodies = true
 		ref, err := Generate(g, opts)
 		if err != nil || strings.Contains(string(ref), "(typed OperatorsRule body inlined)") || strings.Contains(string(code), "disableTypedOperatorsRuleBodies") {
-			t.Fatalf("%s: invalid generation-only control: %v", c.name, err)
+			t.Fatalf("%s: invalid generation-only Control: %v", c.name, err)
 		}
 		opts.Types = false
 		nodeRef, err := Generate(g, opts)

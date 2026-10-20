@@ -83,13 +83,13 @@ func TestGeneratedTypedLocalLayouts(t *testing.T) {
 		}
 		opts := GenOptions{Package: "localfixture", Start: "main", Types: true, Recognize: true}
 		code, err := Generate(ast, opts)
-		if err != nil || !strings.Contains(string(code), "tparse(trules") || !localBodyInlined(code) {
+		if err != nil || !strings.Contains(string(code), "TParse(trules") || !localBodyInlined(code) {
 			t.Fatalf("%s: typed local body unavailable: %v", c.name, err)
 		}
 		opts.disableTypedLocalLayouts = true
 		reference, err := Generate(ast, opts)
 		if err != nil || localBodyInlined(reference) || strings.Contains(string(code), "disableTypedLocalLayouts") {
-			t.Fatalf("%s: invalid generation-only control: %v", c.name, err)
+			t.Fatalf("%s: invalid generation-only Control: %v", c.name, err)
 		}
 		opts.Types = false
 		nodeReference, err := Generate(ast, opts)
@@ -113,7 +113,7 @@ func localBodyInlined(code []byte) bool {
 	lines := strings.Split(string(code), "\n")
 	for i, line := range lines {
 		if strings.HasPrefix(line, "// body, ") && strings.Contains(line, "(body inlined)") &&
-			i+1 < len(lines) && strings.HasPrefix(lines[i+1], "func (p *tparser)") {
+			i+1 < len(lines) && strings.HasPrefix(lines[i+1], "func i") && strings.Contains(lines[i+1], "(p *TParser)") {
 			return true
 		}
 	}

@@ -129,11 +129,11 @@ func TestGeneratedTreeTraversal(t *testing.T) {
 	write("go.mod", []byte("module tree\n\ngo 1.27.1\n"))
 	write("parser.go", code)
 	for _, name := range []string{"node_json_test.go", "node_walk_test.go"} {
-		data, err := os.ReadFile(name)
+		data, err := os.ReadFile(filepath.Join("genrt", name))
 		if err != nil {
 			t.Fatal(err)
 		}
-		data = bytes.Replace(data, []byte("package engine"), []byte("package tree"), 1)
+		data = bytes.Replace(data, []byte("package genrt"), []byte("package tree"), 1)
 		write(name, bytes.ReplaceAll(data, []byte("Walk("), []byte("WalkTree(")))
 	}
 	cmd := exec.Command("go", "test", "-count=1", "./...")

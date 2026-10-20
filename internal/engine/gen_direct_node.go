@@ -12,20 +12,20 @@ import (
 // emitter's construction or ownership policy.
 func (d *dgen) match(start, text string) string {
 	if d.g.table == "trules" {
-		return fmt.Sprintf("p.newMatch(%s, p.pos, %s, true)", start, text)
+		return fmt.Sprintf("p.NewMatch(%s, p.Pos, %s, true)", start, text)
 	}
-	return fmt.Sprintf("p.newNode(Node{kind: kindMatch, start: int32(%s), end: int32(p.pos), text: %s, terminal: true, fresh: true})", start, text)
+	return fmt.Sprintf("p.NewNode(Node{RawKind: RawKindMatch, RawStart: int32(%s), RawEnd: int32(p.Pos), RawText: %s, RawTerminal: true, RawFresh: true})", start, text)
 }
 
 func (d *dgen) node(typ, start, kids string) string {
 	if d.g.table == "trules" {
-		return fmt.Sprintf("p.newNode(%q, %s, p.pos, %s)", typ, start, kids)
+		return fmt.Sprintf("p.NewNode(%q, %s, p.Pos, %s)", typ, start, kids)
 	}
-	kind := "kindSeq"
+	kind := "RawKindSeq"
 	if typ == TypeList {
-		kind = "kindList"
+		kind = "RawKindList"
 	}
-	return fmt.Sprintf("p.newNode(Node{kind: %s, start: int32(%s), end: int32(p.pos), children: %s, fresh: true})", kind, start, kids)
+	return fmt.Sprintf("p.NewNode(Node{RawKind: %s, RawStart: int32(%s), RawEnd: int32(p.Pos), RawChildren: %s, RawFresh: true})", kind, start, kids)
 }
 
 func (d *dgen) frameScope(s *dscope) *scope {
@@ -60,7 +60,7 @@ func (d *dgen) nodeCapture(e *grammar.Capture, s *dscope, build bool, fail strin
 	} else {
 		v = d.captured(e.Expr, s, fail)
 	}
-	d.line("p.setCapture(%d, %s)", slot, d.rd(v))
+	d.line("p.SetCapture(%d, %s)", slot, d.rd(v))
 	if !build {
 		return "nil"
 	}
@@ -83,28 +83,28 @@ func (d *dgen) nodeRepeat(e *grammar.Repeat, s *dscope, build bool, fail, field 
 	var start, base, frame, prev, names string
 	if build {
 		start, base = d.decl("x", "int"), d.decl("x", "int")
-		d.line("%s, %s = p.pos, len(p.kidStack)", start, base)
+		d.line("%s, %s = p.Pos, len(p.KidStack)", start, base)
 	}
 	if own {
-		frame, prev = d.decl("x", d.g.pick("*frame", "*tframe")), d.decl("x", d.g.pick("*frame", "*tframe"))
+		frame, prev = d.decl("x", d.g.pick("*CaptureFrame", "*TCaptureFrame")), d.decl("x", d.g.pick("*CaptureFrame", "*TCaptureFrame"))
 		names = d.g.name("scope")
 		if field != "" {
-			d.line("%s = p.newFrame(len(%s))", frame, names)
+			d.line("%s = p.NewFrame(len(%s))", frame, names)
 		}
 	}
 	count := d.decl("x", "int")
 	d.line("%s = 0", count)
 	d.loop(e.Max)
 	if field != "" {
-		d.line("clear(%s.vals)", d.rd(frame))
+		d.line("clear(%s.Vals)", d.rd(frame))
 	}
 	m := d.mark(s, e.Expr, true)
 	if own {
-		d.line("%s = p.frame", prev)
+		d.line("%s = p.Frame", prev)
 		if field == "" {
-			d.line("%s = p.newFrame(len(%s))", frame, names)
+			d.line("%s = p.NewFrame(len(%s))", frame, names)
 		}
-		d.line("p.frame = %s", d.rd(frame))
+		d.line("p.Frame = %s", d.rd(frame))
 	}
 	f := d.label()
 	v, cut := d.cutExpr(e.Expr, es, build && field == "", f)
@@ -112,44 +112,44 @@ func (d *dgen) nodeRepeat(e *grammar.Repeat, s *dscope, build bool, fail, field 
 		v = d.scopeValue(e.Expr, v, m.pos)
 	}
 	if own {
-		d.line("p.frame = %s", d.rd(prev))
+		d.line("p.Frame = %s", d.rd(prev))
 		if build {
 			if field != "" {
 				slot, ok := d.frameScope(es).slots[field]
 				if !ok {
 					d.bad = true
 				}
-				v = fmt.Sprintf("%s.vals[%d]", d.rd(frame), slot)
+				v = fmt.Sprintf("%s.Vals[%d]", d.rd(frame), slot)
 			} else {
 				attached := d.decl("v", d.g.valType())
 				vals := d.rd(frame)
 				if d.g.table == "trules" {
-					vals += ".vals"
+					vals += ".Vals"
 				}
-				d.line("%s = p.attachCaptures(%s, %s, %s, %s, p.pos)", attached, d.rd(v), names, vals, d.rd(m.pos))
+				d.line("%s = p.AttachCaptures(%s, %s, %s, %s, p.Pos)", attached, d.rd(v), names, vals, d.rd(m.pos))
 				v = attached
 			}
 		}
 		fmt.Fprintf(&d.g.vars, "var %s = %s\n", names, goStrings(d.frameScope(es).names))
 		if d.g.table == "trules" && field == "" {
-			d.line("p.dropTrail(%s.trail)", d.rd(m.frameMark))
-			d.line("p.freeFrame(%s)", d.rd(frame))
+			d.line("p.DropTrail(%s.Trail)", d.rd(m.frameMark))
+			d.line("p.FreeFrame(%s)", d.rd(frame))
 		}
 	}
 	d.line("%s++", count)
 	if build {
-		d.line("p.kidStack = append(p.kidStack, %s)", d.rd(v))
+		d.line("p.KidStack = append(p.KidStack, %s)", d.rd(v))
 	}
-	d.line("if p.pos == %s {\nbreak\n}", d.rd(m.pos))
+	d.line("if p.Pos == %s {\nbreak\n}", d.rd(m.pos))
 	if d.used[f] {
 		d.exit("continue")
 		d.place(f)
 		if own {
-			d.line("p.frame = %s", d.rd(prev))
+			d.line("p.Frame = %s", d.rd(prev))
 		}
 		d.reset(m)
 		if build {
-			d.cutFail(cut, fail, fmt.Sprintf("p.dropKids(%s)", d.rd(base)))
+			d.cutFail(cut, fail, fmt.Sprintf("p.DropKids(%s)", d.rd(base)))
 		} else {
 			d.cutFail(cut, fail)
 		}
@@ -158,7 +158,7 @@ func (d *dgen) nodeRepeat(e *grammar.Repeat, s *dscope, build bool, fail, field 
 	d.endLoop()
 	if e.Min > 0 {
 		if build {
-			d.failIf(fmt.Sprintf("%s < %d", d.rd(count), e.Min), fail, fmt.Sprintf("p.dropKids(%s)", d.rd(base)))
+			d.failIf(fmt.Sprintf("%s < %d", d.rd(count), e.Min), fail, fmt.Sprintf("p.DropKids(%s)", d.rd(base)))
 		} else {
 			d.failIf(fmt.Sprintf("%s < %d", d.rd(count), e.Min), fail)
 		}
@@ -167,7 +167,7 @@ func (d *dgen) nodeRepeat(e *grammar.Repeat, s *dscope, build bool, fail, field 
 		return "nil"
 	}
 	list := d.decl("v", d.g.valType())
-	d.line("%s = %s", list, d.node("list", d.rd(start), fmt.Sprintf("p.kids(%s)", d.rd(base))))
+	d.line("%s = %s", list, d.node("list", d.rd(start), fmt.Sprintf("p.Kids(%s)", d.rd(base))))
 	return list
 }
 
@@ -232,14 +232,14 @@ func (g *generator) directFrameBody(r *rule, scope *scope, comment string) strin
 func (g *generator) finishFrameBody(d *dgen, s *dscope, scope *scope, v, comment string) string {
 	if !d.dead {
 		if d.localCuts {
-			d.line("p.cut = %s", d.rd(d.cut))
+			d.line("p.Cut = %s", d.rd(d.cut))
 		}
 		d.line("return %s, true", d.rd(v))
 	}
 	if d.used["fail"] {
 		d.place("fail")
 		if d.localCuts {
-			d.line("p.cut = %s", d.rd(d.cut))
+			d.line("p.Cut = %s", d.rd(d.cut))
 		}
 		d.line("return nil, false")
 	}
@@ -269,7 +269,7 @@ func (d *dgen) frameCuts(e grammar.Expr) {
 	}
 	d.localCuts = true
 	d.cut = d.decl("cut", "bool")
-	d.line("%s = p.cut", d.cut)
+	d.line("%s = p.Cut", d.cut)
 }
 
 // frameBodyScope preserves the general emitter's layout even when

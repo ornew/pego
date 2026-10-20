@@ -73,13 +73,13 @@ func TestGeneratedTypedFramedCuts(t *testing.T) {
 		if c.name == "typed/framed_cut_LR_elements" {
 			marker = "(typed LR body inlined)"
 		}
-		if !strings.Contains(string(code), "tparse(trules") || !strings.Contains(string(code), marker) {
+		if !strings.Contains(string(code), "TParse(trules") || !strings.Contains(string(code), marker) {
 			t.Fatalf("%s: cut-bearing typed body must be exercised", c.name)
 		}
 		opts.disableTypedFramedCuts = true
 		ref, err := Generate(g, opts)
 		if err != nil || strings.Contains(string(ref), marker) || strings.Contains(string(code), "disableTypedFramedCuts") {
-			t.Fatalf("%s: invalid generation-only cut control: %v", c.name, err)
+			t.Fatalf("%s: invalid generation-only cut Control: %v", c.name, err)
 		}
 		opts.Types = false
 		nodeRef, err := Generate(g, opts)

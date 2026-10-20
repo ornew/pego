@@ -71,22 +71,22 @@ func TestGeneratedDocumentObservation(t *testing.T) {
 				t.Fatal(name, "nondeterministic source", err)
 			}
 			// Keep invocation teardown observable without exporting parser internals.
-			instrumented := strings.ReplaceAll(string(code), "p.observation = newObservation(&o.observe)\n\tdefer p.releaseObservation()", "p.observation = newObservation(&o.observe)\n recordDocumentProbe(p.observation)\n\tdefer p.releaseObservation()")
+			instrumented := strings.ReplaceAll(string(code), "p.Observation = newObservation(&o.observe)\n\tdefer p.releaseObservation()", "p.Observation = newObservation(&o.observe)\n recordDocumentProbe(p.Observation)\n\tdefer p.releaseObservation()")
 			// Report the frontier each new memo entry keeps for edit reuse.
 			frontier := "\t\te.examined = p.docHigh\n"
-			typedFrontier := "\tp.typedDocument.meta[e] = typedDocumentMeta{examined: p.docHigh,"
+			typedFrontier := "\tp.TypedDocument.meta[e] = typedDocumentMeta{examined: p.docHigh,"
 			if n, m := strings.Count(instrumented, frontier), strings.Count(instrumented, typedFrontier); n > 1 || m > 1 || n+m == 0 || (m == 1) != (route != "node") {
 				t.Fatal(name, "memo frontier anchors changed", n, m)
 			}
-			instrumented = strings.Replace(instrumented, frontier, frontier+"\t\trecordFrontier(r.name, start, min, p.docHigh, false)\n", 1)
-			instrumented = strings.Replace(instrumented, typedFrontier, "\trecordFrontier(r.name, start, min, p.docHigh, false)\n"+typedFrontier, 1)
+			instrumented = strings.Replace(instrumented, frontier, frontier+"\t\trecordFrontier(r.Name, start, min, p.docHigh, false)\n", 1)
+			instrumented = strings.Replace(instrumented, typedFrontier, "\trecordFrontier(r.Name, start, min, p.docHigh, false)\n"+typedFrontier, 1)
 			// Report the stored frontier each memo hit reuses.
 			hit, typedHit := "p.documentTouch(e.examined)\n", "p.documentTouch(m.examined)\n"
 			if strings.Count(instrumented, hit) != strings.Count(instrumented, frontier) || strings.Count(instrumented, typedHit) != strings.Count(instrumented, typedFrontier) {
 				t.Fatal(name, "memo hit anchors changed")
 			}
-			instrumented = strings.Replace(instrumented, hit, hit+"recordFrontier(r.name, start, min, e.examined, true)\n", 1)
-			instrumented = strings.Replace(instrumented, typedHit, typedHit+"recordFrontier(r.name, start, min, m.examined, true)\n", 1)
+			instrumented = strings.Replace(instrumented, hit, hit+"recordFrontier(r.Name, start, min, e.examined, true)\n", 1)
+			instrumented = strings.Replace(instrumented, typedHit, typedHit+"recordFrontier(r.Name, start, min, m.examined, true)\n", 1)
 			write(name+"/parser.go", instrumented)
 			typed := ""
 			if route != "node" {
@@ -99,7 +99,7 @@ func TestGeneratedDocumentObservation(t *testing.T) {
 	cmd := exec.Command("go", "test", "-p", "1", "-race", "-count=1", "./...")
 	cmd.Dir = dir
 	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("generated Document observation: %v\n%s", err, out)
+		t.Fatalf("generated Document Observation: %v\n%s", err, out)
 	}
 }
 

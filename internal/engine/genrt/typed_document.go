@@ -6,56 +6,64 @@ import "fmt"
 // -document: Document.ParseAST parses directly into typed values, which a typed Document keeps
 // privately (typedDocumentState) and publishes as independent copies.
 
-// typedDocumentCloneBase is the state of a publication of the private values of a typed Document
+// TypedDocumentCloneBase is the state of a publication of the private values of a typed Document
 // parse. The generated typedDocumentClone embeds it and adds the copies of the grammar's types.
-type typedDocumentCloneBase struct {
-	control *workControl
-	values  map[any]any
-	slices  map[documentSliceKey]any
-	tasks   []typedDocumentCloneTask
+//
+// TypedDocumentCloneBase is for generated parsers; not a stable API.
+type TypedDocumentCloneBase struct {
+	Control *WorkControl
+	Values  map[any]any
+	Slices  map[DocumentSliceKey]any
+	Tasks   []TypedDocumentCloneTask
 }
 
-// typedDocumentCloneTask is a value whose copy (target) has yet to be filled from source.
-type typedDocumentCloneTask struct{ source, target any }
+// TypedDocumentCloneTask is a value whose copy (target) has yet to be filled from source.
+//
+// TypedDocumentCloneTask is for generated parsers; not a stable API.
+type TypedDocumentCloneTask struct{ Source, Target any }
 
 // typedDocumentPublisher publishes the values of a typed Document parse (a *typedDocumentClone).
+//
+// Of its fields and methods, Begin, Finish, Release, Step are for generated parsers; not a stable API.
 type typedDocumentPublisher interface {
-	begin(c *workControl)
-	step(n uint64)
-	finish()
-	release()
+	Begin(c *WorkControl)
+	Step(n uint64)
+	Finish()
+	Release()
 }
 
-func (c *typedDocumentCloneBase) begin(control *workControl) { c.control = control }
+func (c *TypedDocumentCloneBase) Begin(control *WorkControl) { c.Control = control }
 
-func (c *typedDocumentCloneBase) step(n uint64) {
-	if workControlsEnabled && c.control != nil {
-		c.control.charge(0, n)
+func (c *TypedDocumentCloneBase) Step(n uint64) {
+	if WorkControlsEnabled && c.Control != nil {
+		c.Control.Charge(0, n)
 	}
 }
 
-func (c *typedDocumentCloneBase) remember(from, to any) {
-	if c.values == nil {
-		c.values = make(map[any]any)
+func (c *TypedDocumentCloneBase) Remember(from, to any) {
+	if c.Values == nil {
+		c.Values = make(map[any]any)
 	}
-	c.values[from] = to
+	c.Values[from] = to
 }
 
-func (c *typedDocumentCloneBase) releaseBase() {
-	c.control, c.values, c.slices, c.tasks = nil, nil, nil, nil
+func (c *TypedDocumentCloneBase) ReleaseBase() {
+	c.Control, c.Values, c.Slices, c.Tasks = nil, nil, nil, nil
 }
 
-// typedDocumentParse parses the Document d with the typed rule root, publishing the value with
+// TypedDocumentParse parses the Document d with the typed rule root, publishing the value with
 // publish, which copies it with c. a is the generated code's allocation chunks.
-func typedDocumentParse[T any](d *Document, root *trule, o parseOptions, a interface{ setWorkControl(*workControl) }, c typedDocumentPublisher, publish func(any) T) (res T, err error) {
+//
+// TypedDocumentParse is for generated parsers; not a stable API.
+func TypedDocumentParse[T any](d *Document, root *TRule, o parseOptions, a workControlSetter, c typedDocumentPublisher, publish func(any) T) (res T, err error) {
 	defer recoverParse(&res, &err)
-	if o.unit != d.state.unit {
+	if o.unit != d.State.unit {
 		return res, fmt.Errorf("document parse cannot change unit")
 	}
 	o = prepareOptions(o)
 	cache, ok := d.typedMemo.(*typedDocumentState)
 	if !ok {
-		cache = &typedDocumentState{owner: d.state, meta: make(map[*tmemoEntry]typedDocumentMeta)}
+		cache = &typedDocumentState{owner: d.State, meta: make(map[*tmemoEntry]typedDocumentMeta)}
 		d.typedMemo = cache
 	}
 	// Admission leaves reusable state untouched. Once execution can begin,
@@ -66,16 +74,16 @@ func typedDocumentParse[T any](d *Document, root *trule, o parseOptions, a inter
 			d.typedMemo = nil
 		}
 	}()
-	p := &tparser{parser: &parser{control: o.control}, typedDocument: cache, memoSlots: cache.slots}
-	p.observation = newObservation(&o.observe)
+	p := &TParser{Parser: &Parser{Control: o.control}, TypedDocument: cache, memoSlots: cache.slots}
+	p.Observation = newObservation(&o.observe)
 	defer p.releaseObservation()
 	// Do not recycle p: memo values and expectations may refer into its arenas.
-	a.setWorkControl(o.control)
-	defer a.setWorkControl(nil)
-	c.begin(o.control)
-	defer c.release()
-	d.state.stats = documentStats{}
-	v, parseErr := p.run(root, d.state.text, o, a)
+	a.SetWorkControl(o.control)
+	defer a.SetWorkControl(nil)
+	c.Begin(o.control)
+	defer c.Release()
+	d.State.stats = documentStats{}
+	v, parseErr := p.run(root, d.State.text, o, a)
 	// Context implementations may return any public error type. Fatal work
 	// interruption must not be mistaken for a completed syntax failure.
 	if o.control != nil && o.control.interrupted {
@@ -88,12 +96,12 @@ func typedDocumentParse[T any](d *Document, root *trule, o parseOptions, a inter
 			return res, parseErr
 		}
 	}
-	o.control.check()
+	o.control.Check()
 	if v != nil {
 		res = publish(v)
 	}
 	err = typedDocumentError(parseErr, c)
-	c.finish()
+	c.Finish()
 	cache.slots = p.memoSlots
 	completed = true
 	return res, err
@@ -102,27 +110,27 @@ func typedDocumentParse[T any](d *Document, root *trule, o parseOptions, a inter
 // typedDocumentError copies the diagnostics of err, charging c. Diagnostics are private memo data
 // too; publishing their original pointers or Expected/Messages slices would let caller mutation
 // alter a later parse.
-func typedDocumentError(err error, c interface{ step(uint64) }) error {
+func typedDocumentError(err error, c stepCharger) error {
 	clone := func(e *SyntaxError) *SyntaxError {
-		c.step(1)
+		c.Step(1)
 		if e == nil {
 			return nil
 		}
 		out := new(SyntaxError)
 		*out = *e
 		if e.Expected != nil {
-			c.step(uint64(len(e.Expected)))
+			c.Step(uint64(len(e.Expected)))
 			out.Expected = make([]string, len(e.Expected))
 			for i, s := range e.Expected {
-				c.step(1)
+				c.Step(1)
 				out.Expected[i] = s
 			}
 		}
 		if e.Messages != nil {
-			c.step(uint64(len(e.Messages)))
+			c.Step(uint64(len(e.Messages)))
 			out.Messages = make([]string, len(e.Messages))
 			for i, s := range e.Messages {
-				c.step(1)
+				c.Step(1)
 				out.Messages[i] = s
 			}
 		}
@@ -132,7 +140,7 @@ func typedDocumentError(err error, c interface{ step(uint64) }) error {
 	case *SyntaxError:
 		return clone(e)
 	case SyntaxErrors:
-		c.step(uint64(len(e)))
+		c.Step(uint64(len(e)))
 		out := make(SyntaxErrors, len(e))
 		for i, item := range e {
 			out[i] = clone(item)

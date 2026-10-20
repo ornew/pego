@@ -23,9 +23,9 @@ func TestGeneratedTypedFrameLayoutWorkloads(t *testing.T) {
 		fixture := strings.ReplaceAll(typedLRActionWorkloadFixture, "saved.N != 3", "saved.Missing != nil || saved.N != 3")
 		testGeneratedTypedBodyWorkload(t, typedFrameLayoutLRWorkload, fixture, filepath.Join(dir, "lr"), "(typed LR body inlined)", GenOptions{disableTypedFrameLayouts: true})
 	})
-	t.Run("operatorsRule", func(t *testing.T) {
+	t.Run("OperatorsRule", func(t *testing.T) {
 		fixture := strings.ReplaceAll(typedOperatorsRuleActionWorkloadFixture, "post.N != 3", "post.Missing != nil || post.N != 3")
-		testGeneratedTypedBodyWorkload(t, typedFrameLayoutOperatorsRuleWorkload, fixture, filepath.Join(dir, "operatorsRule"), "(typed OperatorsRule body inlined)", GenOptions{disableTypedFrameLayouts: true}, 2)
+		testGeneratedTypedBodyWorkload(t, typedFrameLayoutOperatorsRuleWorkload, fixture, filepath.Join(dir, "OperatorsRule"), "(typed OperatorsRule body inlined)", GenOptions{disableTypedFrameLayouts: true}, 2)
 	})
 }
 
@@ -62,7 +62,7 @@ func BenchmarkTypedFrameLayoutGeneration(b *testing.B) {
 	opts := GenOptions{Package: "layoutfixture", Start: "main", Types: true, Recognize: true,
 		disableTypedFrameLayouts: os.Getenv("PEGO_REFERENCE_FRAME_LAYOUTS") == "1"}
 	for _, c := range []struct{ name, src string }{
-		{"lr", typedFrameLayoutLRWorkload}, {"operatorsRule", typedFrameLayoutOperatorsRuleWorkload},
+		{"lr", typedFrameLayoutLRWorkload}, {"OperatorsRule", typedFrameLayoutOperatorsRuleWorkload},
 		{"calculator", string(calculator)}, {"typescript", string(typescript)},
 	} {
 		b.Run(c.name, func(b *testing.B) {

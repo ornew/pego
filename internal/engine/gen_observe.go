@@ -14,20 +14,20 @@ func (g *generator) traceCallWrapper(r *rule, name string, evaluated bool) strin
 	body := name + "ObservedBody"
 	eval := ""
 	if evaluated {
-		eval = "p.observation.evaluated()\n"
+		eval = "p.Observation.Evaluated()\n"
 	}
-	fmt.Fprintf(&g.methods, `// %s observes one actual direct rule call.
-func (p *%s) %s() (%s, bool) {
- if p.observation == nil { return p.%s() }
- p.observation.enter(%q, p.pos, 0)
- h := p.examinedBegin()
- %sv, ok := p.%s()
- x, known := p.examinedEnd(h)
- p.observation.exit(ok, p.pos, x, known)
+	fmt.Fprintf(&g.methods, `// %[1]s observes one actual direct rule call.
+func %[1]s(p *%[2]s) (%[3]s, bool) {
+ if p.Observation == nil { return %[4]s(p) }
+ p.Observation.Enter(%[5]q, p.Pos, 0)
+ h := p.ExaminedBegin()
+ %[6]sv, ok := %[4]s(p)
+ x, known := p.ExaminedEnd(h)
+ p.Observation.Exit(ok, p.Pos, x, known)
  return v, ok
 }
 
-`, name, g.recv(), name, g.valType(), body, r.name, eval, body)
+`, name, g.recv(), g.valType(), body, r.name, eval)
 	return body
 }
 
@@ -51,7 +51,7 @@ func (g *generator) traceSkip(expr grammar.Expr) string {
 		case *grammar.Discard:
 			expr = e.Expr
 		case *grammar.Ref:
-			return fmt.Sprintf("\np.observation.skipped(%q, p.pos, 0)\n", e.Name)
+			return fmt.Sprintf("\np.Observation.Skipped(%q, p.Pos, 0)\n", e.Name)
 		default:
 			return ""
 		}

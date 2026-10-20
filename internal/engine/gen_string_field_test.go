@@ -95,7 +95,7 @@ func TestGeneratedStringFieldReads(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		if got := strings.Contains(string(code), "tparse(trules"); got != c.direct {
+		if got := strings.Contains(string(code), "TParse(trules"); got != c.direct {
 			t.Errorf("%s: typed runtime %t, want %t", c.name, got, c.direct)
 		}
 		if c.direct {

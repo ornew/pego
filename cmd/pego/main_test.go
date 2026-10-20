@@ -496,7 +496,7 @@ func TestGenMaxDepth(t *testing.T) {
 			}
 		}
 		got, err := runCLI(t, "", append(args, "-max-depth", "12")...)
-		want := "var pegoGrammar = newGrammar(12)"
+		want := "var pegoGrammar = NewGrammar(12)"
 		if lang == "ts" {
 			want = "const defaultMaxDepth = 12"
 		}

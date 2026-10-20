@@ -54,8 +54,8 @@ func TestPublicationOwnershipAndAliases(t *testing.T) {
  input := &Box{First:token,Again:token,Items:items,AgainItems:items,Optional:[]*Token{nil,token},Nested:[][]*Token{items},Empty:make([]*Token,0,8),Choice:token,Link:link}
  c := &typedDocumentClone{}
  output := c.toBox(input)
- c.finish()
- c.release()
+ c.Finish()
+ c.Release()
  if output==input || output.First==token || output.First!=output.Again || output.Items[0]!=output.First || output.Optional[0]!=nil || output.Optional[1]!=output.First || output.Choice.(*Token)!=output.First {t.Fatal("typed identity changed")}
  if &output.Items[0]!=&output.AgainItems[0] || &output.Items[0]!=&output.Nested[0][0] {t.Fatal("shared slice views changed")}
  if output.Empty==nil || output.NilList!=nil {t.Fatal("nil and empty changed")}
@@ -63,44 +63,44 @@ func TestPublicationOwnershipAndAliases(t *testing.T) {
  output.First.Text="public"
  *output.Link.Label="public"
  if token.Text!="private" || label!="private" {t.Fatal("publication exposed memo values")}
- if c.control!=nil || c.values!=nil || c.slices!=nil || c.tasks!=nil {t.Fatal("publication retained private metadata")}
+ if c.Control!=nil || c.Values!=nil || c.Slices!=nil || c.Tasks!=nil {t.Fatal("publication retained private metadata")}
 }
 func TestPublicationDeepGraph(t *testing.T) {
  var input *Link
  for i:=0;i<100001;i++ {input=&Link{Next:input}}
  c := &typedDocumentClone{}
  output:=c.toLink(input)
- c.finish()
- c.release()
+ c.Finish()
+ c.Release()
  count:=0
  for output!=nil {count++;output=output.Next}
  if count!=100001 {t.Fatalf("deep clone length: %d",count)}
 }
 func cloneWithControl(input *Box, c *typedDocumentClone,beforeFinish ...func())(output *Box,err error) {
  defer recoverParse(&output,&err)
- defer c.release()
+ defer c.Release()
  output=c.toBox(input)
  if len(beforeFinish)>0 {beforeFinish[0]()}
- c.finish()
+ c.Finish()
  return output,nil
 }
 func TestPublicationControls(t *testing.T) {
  input:=&Box{First:&Token{Text:"private"},Items:make([]*Token,1000)}
- c:=&typedDocumentClone{control:newWorkControl(nil,WorkLimits{MaxSteps:1})}
+ c:=&typedDocumentClone{TypedDocumentCloneBase: TypedDocumentCloneBase{Control: newWorkControl(nil,WorkLimits{MaxSteps:1})}}
  if output,err:=cloneWithControl(input,c);output!=nil || !errors.Is(err,ErrWorkLimit) {t.Fatalf("budget: %v %v",output,err)}
- if c.control!=nil || c.values!=nil || c.slices!=nil || c.tasks!=nil {t.Fatal("interrupted clone retained state")}
+ if c.Control!=nil || c.Values!=nil || c.Slices!=nil || c.Tasks!=nil {t.Fatal("interrupted clone retained state")}
  ctx,cancel:=context.WithCancel(context.Background());cancel()
- c=&typedDocumentClone{control:newWorkControl(ctx,WorkLimits{})}
+ c=&typedDocumentClone{TypedDocumentCloneBase: TypedDocumentCloneBase{Control: newWorkControl(ctx,WorkLimits{})}}
  if output,err:=cloneWithControl(input,c);output!=nil || !errors.Is(err,context.Canceled) {t.Fatalf("cancel: %v %v",output,err)}
  ctx,cancel=context.WithCancel(context.Background())
- c=&typedDocumentClone{control:newWorkControl(ctx,WorkLimits{})}
+ c=&typedDocumentClone{TypedDocumentCloneBase: TypedDocumentCloneBase{Control: newWorkControl(ctx,WorkLimits{})}}
  if output,err:=cloneWithControl(&Box{First:&Token{}},c,cancel);output!=nil || !errors.Is(err,context.Canceled) {t.Fatalf("final cancellation poll: %v %v",output,err)}
  if output,err:=cloneWithControl(input,&typedDocumentClone{});output==nil || err!=nil {t.Fatalf("retry: %v",err)}
 }
 func TestPublicationCollidingNames(t *testing.T) {
  c:=&typedDocumentClone{}
  if c.toDocument_(&Document_{Text:"m"}).Text!="m" || c.toParseStats_(&ParseStats_{Text:"e"}).Text!="e" || c.toSpan(&Span{Text:"s"}).Text!="s" {t.Fatal("runtime name collision")}
- c.finish();c.release()
+ c.Finish();c.Release()
 }
 `,
 	} {

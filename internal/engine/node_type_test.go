@@ -183,7 +183,7 @@ rule main A = x:"a" => A{$x}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(goCode), `c.convert("N", `) || !strings.Contains(string(tsCode), `c.convert("N", `) {
+	if !strings.Contains(string(goCode), `c.Convert("N", `) || !strings.Contains(string(tsCode), `c.convert("N", `) {
 		t.Errorf("generated conversions do not name N")
 	}
 }
@@ -649,7 +649,7 @@ func TestGeneratedNamedNodeTypesTypedRuntime(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		direct := strings.Contains(string(code), "return tparse(trules[") && !strings.Contains(string(code), "parseConverted(")
+		direct := strings.Contains(string(code), "return TParse(trules[") && !strings.Contains(string(code), "RunParseConverted(")
 		if direct == converted[c.name] {
 			t.Errorf("%s: generated typed Go uses the typed runtime: %v, want %v", c.name, direct, !converted[c.name])
 		}
@@ -713,7 +713,7 @@ rule a A = [a-zé] #atomic`, []string{"()abcd", "(()(()))abcd", "((é))éaéa", 
 		if err != nil {
 			t.Fatalf("%s: %v", pkg, err)
 		}
-		if !strings.Contains(string(code), "return typedDocumentParse(") {
+		if !strings.Contains(string(code), "return TypedDocumentParse(") {
 			t.Fatalf("%s uses conversion instead of direct matching", pkg)
 		}
 		write(pkg+"/parser.go", string(code))
@@ -770,7 +770,7 @@ func TestGeneratedDeclaredNodeAny(t *testing.T) {
 	for _, want := range []string{
 		"func ParseAST(input string, opts ...ParseOption) (*TNode[any], error)",
 		"//\tmain: *TNode[any]\n",
-		"return tparse(trules[",
+		"return TParse(trules[",
 	} {
 		if !strings.Contains(string(code), want) {
 			t.Errorf("generated Go lacks %q", want)
@@ -796,7 +796,7 @@ func TestGeneratedDeclaredNodeAny(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		if !strings.Contains(string(code), "return tparse(trules[") || strings.Contains(string(code), "parseConverted(") {
+		if !strings.Contains(string(code), "return TParse(trules[") || strings.Contains(string(code), "RunParseConverted(") {
 			t.Errorf("%s: generated typed Go converts nodes instead of using the typed runtime", c.name)
 		}
 	}

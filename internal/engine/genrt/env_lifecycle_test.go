@@ -6,39 +6,39 @@ import (
 )
 
 func TestBindingSnapshots(t *testing.T) {
-	p := &parser{}
+	p := &Parser{}
 	p.bind("x", 1)
-	first := p.env
+	first := p.Env
 	for i := 0; i < 100; i++ {
 		p.bind("x", 1)
 	}
-	if p.env != first {
+	if p.Env != first {
 		t.Fatal("equal head assignment allocates state")
 	}
 	p.bind("y", "two")
-	second := p.env
+	second := p.Env
 	p.bind("x", 1)
-	if p.env != second {
+	if p.Env != second {
 		t.Fatal("equal non-head assignment replaces state")
 	}
 	p.bind("x", 3)
 	if got, _ := lookupBinding(second, "x"); got != 1 {
 		t.Fatal("replacement changed saved environment")
 	}
-	if got, _ := lookupBinding(p.env, "y"); got != "two" {
+	if got, _ := lookupBinding(p.Env, "y"); got != "two" {
 		t.Fatal("replacement lost prefix")
 	}
-	p.env = first
+	p.Env = first
 	p.bind("y", false)
-	if got, _ := lookupBinding(p.env, "y"); got != false {
+	if got, _ := lookupBinding(p.Env, "y"); got != false {
 		t.Fatal("seen name absent after rollback was not bound")
 	}
-	p.env = nil
+	p.Env = nil
 	p.bind("z", true)
 	p.bind("w", "four")
 	p.bind("z", false)
 	names := make(map[string]bool)
-	for e := p.env; e != nil; e = e.next {
+	for e := p.Env; e != nil; e = e.next {
 		if names[e.name] {
 			t.Fatalf("duplicate binding %s", e.name)
 		}
@@ -52,7 +52,7 @@ func TestBindingSnapshots(t *testing.T) {
 	}
 }
 
-func lookupBinding(e *env, name string) (any, bool) {
+func lookupBinding(e *Env, name string) (any, bool) {
 	for ; e != nil; e = e.next {
 		if e.name == name {
 			return e.val, true
@@ -65,10 +65,10 @@ func lookupBinding(e *env, name string) (any, bool) {
 // and restores, including names first seen only in abandoned branches.
 func TestBindingRestoresReferenceValues(t *testing.T) {
 	type snapshot struct {
-		env    *env
+		env    *Env
 		values map[string]any
 	}
-	p := &parser{}
+	p := &Parser{}
 	values := map[string]any{}
 	saved := []snapshot{{}}
 	clone := func(m map[string]any) map[string]any {
@@ -78,7 +78,7 @@ func TestBindingRestoresReferenceValues(t *testing.T) {
 		}
 		return n
 	}
-	verify := func(e *env, want map[string]any) {
+	verify := func(e *Env, want map[string]any) {
 		t.Helper()
 		seen := make(map[string]bool)
 		for ; e != nil; e = e.next {
@@ -94,7 +94,7 @@ func TestBindingRestoresReferenceValues(t *testing.T) {
 	for i := 0; i < 500; i++ {
 		if i%5 == 0 {
 			s := saved[(i*13)%len(saved)]
-			p.env = s.env
+			p.Env = s.env
 			values = clone(s.values)
 		}
 		name := fmt.Sprintf("v%d", (i*7)%16)
@@ -109,9 +109,9 @@ func TestBindingRestoresReferenceValues(t *testing.T) {
 		}
 		p.bind(name, value)
 		values[name] = value
-		verify(p.env, values)
+		verify(p.Env, values)
 		if i%7 == 0 {
-			saved = append(saved, snapshot{p.env, clone(values)})
+			saved = append(saved, snapshot{p.Env, clone(values)})
 		}
 		for _, s := range saved {
 			verify(s.env, s.values)
@@ -122,17 +122,17 @@ func TestBindingRestoresReferenceValues(t *testing.T) {
 // A hint created after switching between single-name snapshots must still know
 // names from the earlier snapshot when it is restored behind another binding.
 func TestBindingRestoresBeforeSecondName(t *testing.T) {
-	p := &parser{}
+	p := &Parser{}
 	p.bind("x", 1)
-	saved := p.env
-	p.env = nil
+	saved := p.Env
+	p.Env = nil
 	p.bind("y", 2)
 	p.bind("z", 3)
-	p.env = saved
+	p.Env = saved
 	p.bind("w", 4)
 	p.bind("x", 5)
 	count := 0
-	for e := p.env; e != nil; e = e.next {
+	for e := p.Env; e != nil; e = e.next {
 		count++
 	}
 	if count != 2 {

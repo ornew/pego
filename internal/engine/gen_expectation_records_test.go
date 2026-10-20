@@ -36,6 +36,9 @@ rule main N = ("é") #atomic`)
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The fixture is also an engine test; the generated runtime exports the names it uses.
+	fixture = []byte(strings.NewReplacer("*parser", "*Parser", "&parser{", "&Parser{", "expID", "ExpID", "expMark", "ExpMark", "msgBit", "MsgBit",
+		".keep(", ".Keep(", ".silent", ".Silent", ".mergeExpected(", ".MergeExpected(", ".unisolate(", ".Unisolate(", ".isolate(", ".Isolate(", ".expect(", ".Expect(").Replace(string(fixture)))
 	for _, mode := range []string{"plain", "direct", "conversion"} {
 		t.Run(mode, func(t *testing.T) {
 			code, err := Generate(g, GenOptions{Package: "engine", Start: "main", Types: mode != "plain", convertTypes: mode == "conversion"})
@@ -44,14 +47,14 @@ rule main N = ("é") #atomic`)
 			}
 			extra := `
 func TestExpectationPoolReuse(t *testing.T) {
- p := &parser{}
- for id := expID(0); id < 160; id++ { p.expect(0,id) }
+ p := &Parser{}
+ for id := ExpID(0); id < 160; id++ { p.Expect(0,id) }
  p.release()
  if p.expBits != 0 || len(p.exp) != 0 { t.Fatal("plain release retained record") }
  for _,unit := range []PositionUnit{CodePoints,Bytes} {
   for i:=0;i<3;i++ {
    if _,err:=Parse("!",WithUnit(unit));err==nil { t.Fatal("invalid input accepted") }
-   if n,err:=Parse("é",WithUnit(unit));err!=nil || n.text!="é" { t.Fatalf("plain reuse: %v",err) }
+   if n,err:=Parse("é",WithUnit(unit));err!=nil || n.RawText!="é" { t.Fatalf("plain reuse: %v",err) }
   }
  }
 }
@@ -59,8 +62,8 @@ func TestExpectationPoolReuse(t *testing.T) {
 			if mode == "direct" {
 				extra += `
 func TestTypedExpectationPoolReuse(t *testing.T) {
- p := &tparser{parser:&parser{}}
- for id := expID(0); id < 160; id++ { p.expect(0,id|msgBit) }
+ p := &TParser{Parser:&Parser{}}
+ for id := ExpID(0); id < 160; id++ { p.Expect(0,id|MsgBit) }
  p.recycle()
  if p.expBits != 0 || len(p.exp) != 0 { t.Fatal("typed recycle retained record") }
  for _,unit := range []PositionUnit{CodePoints,Bytes} {

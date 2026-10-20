@@ -24,14 +24,14 @@ func TestLiteralTextPredicateDispatchGeneration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(code), `switch c.textStr(`) || !strings.Contains(string(code), `case "a", "b":`) {
+	if !strings.Contains(string(code), `switch c.TextStr(`) || !strings.Contains(string(code), `case "a", "b":`) {
 		t.Fatal("typed Go generator did not emit literal text dispatch")
 	}
 	baseline, err := Generate(g, GenOptions{Package: "dispatch", Start: "main", Types: true, disableLiteralTextDispatch: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(baseline), `switch c.textStr(`) || strings.Contains(string(code), "disableLiteralTextDispatch") {
+	if strings.Contains(string(baseline), `switch c.TextStr(`) || strings.Contains(string(code), "disableLiteralTextDispatch") {
 		t.Fatal("generation-only control did not preserve the general baseline")
 	}
 	ts, err := GenerateTS(g, GenOptions{Start: "main"})
@@ -67,7 +67,7 @@ func TestLiteralTextPredicateDispatchRejectsUnsafeShapes(t *testing.T) {
 		if err != nil {
 			t.Fatalf("case %d: %v", i, err)
 		}
-		if strings.Contains(string(code), `switch c.textStr(`) {
+		if strings.Contains(string(code), `switch c.TextStr(`) {
 			t.Errorf("unsafe case %d was specialized", i)
 		}
 	}

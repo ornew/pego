@@ -39,16 +39,16 @@ rule main = "a" => Outer{Inner: Inner{N: 1}}`, "a"},
 import "fmt"
 func main() {
     for _, unit := range []PositionUnit{CodePoints, Bytes} {
-        p := &parser{maxDepth: pegoGrammar.maxDepth}
+        p := &Parser{MaxDepth: pegoGrammar.maxDepth}
         if unit == Bytes { p.unit, p.bs, p.n = Bytes, %[1]q, len(%[1]q) } else { p.setSource(%[1]q) }
         p.setGrammar(pegoGrammar)
-        n, ok := p.call(rules[0], 0)
-        if !ok || p.pos != p.n || n == nil { panic("Node parse failed") }
+        n, ok := p.Call(rules[0], 0)
+        if !ok || p.Pos != p.n || n == nil { panic("Node parse failed") }
         if len(p.created) != 0 { panic("Node tracking length") }
         for _, n := range p.created[:cap(p.created)] { if n != nil { panic("Node tracking tail") } }
         // Clearing tracking must preserve the returned result and its fields.
         if _, err := n.MarshalJSON(); err != nil { panic(err) }
-        tp := &tparser{parser: &parser{}}
+        tp := &TParser{Parser: &Parser{}}
         v, err := tp.run(trules[0], %[1]q, parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
         if err != nil || v == nil { panic(fmt.Sprintf("typed parse: %%v", err)) }
         if len(tp.created) != 0 { panic("typed tracking length") }
@@ -148,13 +148,13 @@ import "strings"
 func main() {
  for _, unit := range []PositionUnit{CodePoints, Bytes} {
   input := strings.Repeat("a", 10000)
-  p := &parser{maxDepth: pegoGrammar.maxDepth}
+  p := &Parser{MaxDepth: pegoGrammar.maxDepth}
   if unit == Bytes { p.unit, p.bs, p.n = Bytes, input, len(input) } else { p.setSource(input) }
   p.setGrammar(pegoGrammar)
-  p.frame = p.newFrame(len(rules[0].scope))
-  if _, ok := rules[0].body(p, 0); !ok || p.pos != p.n { panic("parse failed") }
+  p.Frame = p.NewFrame(len(rules[0].Scope))
+  if _, ok := rules[0].Body(p, 0); !ok || p.Pos != p.n { panic("parse failed") }
   names := make(map[string]bool)
-  for e := p.env; e != nil; e = e.next {
+  for e := p.Env; e != nil; e = e.next {
    if names[e.name] { panic("retained shadowed binding") }
    names[e.name] = true
   }
@@ -169,7 +169,7 @@ func main() {
 	cmd := exec.Command("go", "run", ".")
 	cmd.Dir = dir
 	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("generated binding state: %v\n%s", err, out)
+		t.Fatalf("generated binding State: %v\n%s", err, out)
 	}
 }
 
@@ -232,6 +232,6 @@ for (const unit of [CodePoints, Bytes]) {
 	cmd := exec.Command(node, "parser.ts")
 	cmd.Dir = dir
 	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("generated TS binding state: %v\n%s", err, out)
+		t.Fatalf("generated TS binding State: %v\n%s", err, out)
 	}
 }

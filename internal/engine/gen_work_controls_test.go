@@ -134,30 +134,30 @@ func TestFatalNotRecovered(t *testing.T){
 }
 func TestStringAndMalformedTextWork(t *testing.T){
  text:=strings.Repeat("a",300)+"é"
- p:=&parser{control:newWorkControl(context.Background(),WorkLimits{MaxSteps:100000})}
- c:=&actx{p:p}
+ p:=&Parser{Control:newWorkControl(context.Background(),WorkLimits{MaxSteps:100000})}
+ c:=&ActCtx{P:p}
  for _,op:=range []string{"==","!=","<","<=",">",">=","+"}{
-  got:=c.binary(op,text,text)
+  got:=c.Binary(op,text,text)
   want:=rtBinary(op,text,text)
   if !reflect.DeepEqual(got,want){t.Fatalf("string %s: %v want %v",op,got,want)}
  }
- if p.control.stepsUsed()==0 || p.control.inputUsed()!=0{t.Fatal("string accounting mixed input and value work")}
- for _,invoke:=range []func(*parser){
-  func(p *parser){(&actx{p:p}).binary("==",text,text)},
-  func(p *parser){(&actx{p:p}).binary("+",text,text)},
-  func(p *parser){p.unitLen(text)},
+ if p.Control.stepsUsed()==0 || p.Control.inputUsed()!=0{t.Fatal("string accounting mixed input and value work")}
+ for _,invoke:=range []func(*Parser){
+  func(p *Parser){(&ActCtx{P:p}).Binary("==",text,text)},
+  func(p *Parser){(&ActCtx{P:p}).Binary("+",text,text)},
+  func(p *Parser){p.unitLen(text)},
  }{
-  p:=&parser{control:newWorkControl(context.Background(),WorkLimits{MaxSteps:127})}
+  p:=&Parser{Control:newWorkControl(context.Background(),WorkLimits{MaxSteps:127})}
   func(){defer func(){f,ok:=recover().(fatal);if !ok || !errors.Is(f.err,ErrWorkLimit){t.Fatal("string work not bounded",f)}}();invoke(p)}()
-  if p.control.inputUsed()!=0{t.Fatal("action value charged input")}
+  if p.Control.inputUsed()!=0{t.Fatal("action value charged input")}
  }
  // Malformed-source normalization must account for both sizing and copying.
  runes:=[]rune(strings.Repeat("�",300))
- p=&parser{in:runes,control:newWorkControl(context.Background(),WorkLimits{MaxInputWork:600,MaxSteps:600})}
- if got:=p.text(0,len(runes));got!=string(runes){t.Fatal("normalized text mismatch")}
- if p.control.inputUsed()!=600 || p.control.stepsUsed()!=600{t.Fatalf("normalized counters: %+v",p.control)}
- p=&parser{in:runes,control:newWorkControl(context.Background(),WorkLimits{MaxInputWork:599})}
- func(){defer func(){f,ok:=recover().(fatal);if !ok || !errors.Is(f.err,ErrWorkLimit){t.Fatal("normalized text unbounded",f)}}();p.text(0,len(runes))}()
+ p=&Parser{In:runes,Control:newWorkControl(context.Background(),WorkLimits{MaxInputWork:600,MaxSteps:600})}
+ if got:=p.Text(0,len(runes));got!=string(runes){t.Fatal("normalized text mismatch")}
+ if p.Control.inputUsed()!=600 || p.Control.stepsUsed()!=600{t.Fatalf("normalized counters: %+v",p.Control)}
+ p=&Parser{In:runes,Control:newWorkControl(context.Background(),WorkLimits{MaxInputWork:599})}
+ func(){defer func(){f,ok:=recover().(fatal);if !ok || !errors.Is(f.err,ErrWorkLimit){t.Fatal("normalized text unbounded",f)}}();p.Text(0,len(runes))}()
 }
 
 func TestFailureDiagnosticsBounded(t *testing.T){
@@ -172,18 +172,18 @@ func TestFailureDiagnosticsBounded(t *testing.T){
 func TestLineDiagnosticReservations(t *testing.T){
  for _,unit:=range []PositionUnit{Bytes,CodePoints}{
   input:=strings.Repeat("é\n",300)
-  makeParser:=func(limit uint64)*parser{
-   p:=&parser{unit:unit,bs:input,in:[]rune(input)};p.n=len(p.in);if unit==Bytes{p.n=len(input)}
-   p.control=newWorkControl(context.Background(),WorkLimits{MaxInputWork:limit})
+  makeParser:=func(limit uint64)*Parser{
+   p:=&Parser{unit:unit,bs:input,In:[]rune(input)};p.n=len(p.In);if unit==Bytes{p.n=len(input)}
+   p.Control=newWorkControl(context.Background(),WorkLimits{MaxInputWork:limit})
    return p
   }
-  p:=makeParser(100000);e:=p.makeError(p.n-1,nil)
+  p:=makeParser(100000);e:=p.MakeError(p.n-1,nil)
   if e.Line!=300 || e.Col!=map[PositionUnit]int{Bytes:3,CodePoints:2}[unit]{t.Fatal("line coordinate changed",e)}
-  if p.control.inputUsed()!=uint64(p.n){t.Errorf("diagnostic input uncharged: %d for %d",p.control.inputUsed(),p.n)}
+  if p.Control.inputUsed()!=uint64(p.n){t.Errorf("diagnostic input uncharged: %d for %d",p.Control.inputUsed(),p.n)}
   p=makeParser(uint64(p.n))
-  if e:=p.makeError(p.n-1,nil);e.Line!=300{t.Fatal("exact diagnostic ceiling",e)}
+  if e:=p.MakeError(p.n-1,nil);e.Line!=300{t.Fatal("exact diagnostic ceiling",e)}
   p=makeParser(uint64(p.n-1))
-  func(){defer func(){f,ok:=recover().(fatal);var exhausted *WorkLimitError;if !ok || !errors.As(f.err,&exhausted) || exhausted.Kind!=InputWorkLimit{t.Error("one-short diagnostic unbounded",f)}}();p.makeError(p.n-1,nil)}()
+  func(){defer func(){f,ok:=recover().(fatal);var exhausted *WorkLimitError;if !ok || !errors.As(f.err,&exhausted) || exhausted.Kind!=InputWorkLimit{t.Error("one-short diagnostic unbounded",f)}}();p.MakeError(p.n-1,nil)}()
  }
 }
 
@@ -256,21 +256,21 @@ func TestConversionVisits(t *testing.T){
 func TestParseConversionSharesCounter(t *testing.T){
  input:=strings.Repeat("é",100)
  beforeSteps,beforeInput:=uint64(0),uint64(0)
- conv:=func(n *Node,c *workControl,parseErr error)*Branch{beforeSteps,beforeInput=c.stepsUsed(),c.inputUsed();v:=(&astConv{control:c}).toBranch(n);if c.stepsUsed()!=beforeSteps+303 || c.inputUsed()!=beforeInput{t.Fatal("conversion counter changed independently")};return v}
+ conv:=func(n *Node,c *WorkControl,parseErr error)*Branch{beforeSteps,beforeInput=c.stepsUsed(),c.inputUsed();v:=(&astConv{control:c}).toBranch(n);if c.stepsUsed()!=beforeSteps+303 || c.inputUsed()!=beforeInput{t.Fatal("conversion counter changed independently")};return v}
  o:=parseOptions{maxDepth:pegoGrammar.maxDepth,limits:WorkLimits{MaxSteps:100000}}
- retained,err:=parseConverted(rules[0],input,o,conv)
+ retained,err:=RunParseConverted(rules[0],input,o,conv)
  if err!=nil || retained==nil{t.Fatal(err)}
  snapshot:=*retained.Leaves[0]
  total:=beforeSteps+303
  for _,limit:=range []uint64{beforeSteps+1,total-1,total}{
   o.limits.MaxSteps=limit
-  got,err:=parseConverted(rules[0],input,o,func(n *Node,c *workControl,parseErr error)*Branch{return (&astConv{control:c}).toBranch(n)})
+  got,err:=RunParseConverted(rules[0],input,o,func(n *Node,c *WorkControl,parseErr error)*Branch{return (&astConv{control:c}).toBranch(n)})
   if limit==total {if err!=nil || len(got.Leaves)!=100{t.Fatal("exact conversion ceiling",err)}}else if got!=nil || !errors.Is(err,ErrWorkLimit){t.Fatalf("partial conversion leaked at %d: %v %v",limit,got,err)}
  }
  if !reflect.DeepEqual(*retained.Leaves[0],snapshot){t.Fatal("earlier result was overwritten")}
  // Cancellation raised inside conversion is surfaced at the same outer boundary.
  ctx,cancel:=context.WithCancel(context.Background());o.context=ctx;o.limits=WorkLimits{}
- v,err:=parseConverted(rules[0],input,o,func(n *Node,c *workControl,parseErr error)*Branch{cancel();c.check();return (&astConv{control:c}).toBranch(n)})
+ v,err:=RunParseConverted(rules[0],input,o,func(n *Node,c *WorkControl,parseErr error)*Branch{cancel();c.Check();return (&astConv{control:c}).toBranch(n)})
  if v!=nil || !errors.Is(err,context.Canceled){t.Fatalf("conversion cancellation: %v %v",v,err)}
  if _,err:=ParseAST(input);err!=nil{t.Fatal("retry",err)}
 }
@@ -393,11 +393,11 @@ rule letter Word = t:("é") #atomic => Word{Text: text($t)}`)
 const generatedGoNilPublicationConsumer = `package nilpublication
 import("context";"errors";"reflect";"testing")
 func TestNilPublication(t *testing.T){
- original:=trules[0].entry;defer func(){trules[0].entry=original}()
+ original:=trules[0].Entry;defer func(){trules[0].Entry=original}()
  for _,named:=range []bool{false,true}{for _,ok:=range []bool{false,true}{
   ctx,cancel:=context.WithCancel(context.Background())
   // Cancel exactly at the last execution operation, with no guessed poll count.
-  trules[0].entry=func(p *tparser)(any,bool){cancel();return nil,ok}
+  trules[0].Entry=func(p *TParser)(any,bool){cancel();return nil,ok}
   var v any;var err error
   if named{v,err=ParseRuleAST("main","",WithContext(ctx))}else{v,err=ParseAST("",WithContext(ctx))}
   if (v!=nil && !reflect.ValueOf(v).IsZero()) || !errors.Is(err,context.Canceled){t.Errorf("named=%v successful=%v value=%v err=%v",named,ok,v,err)}
@@ -405,17 +405,17 @@ func TestNilPublication(t *testing.T){
  for _,named:=range []bool{false,true}{
   ctx,cancel:=context.WithCancel(context.Background())
   established:=&WorkLimitError{Kind:StepWorkLimit,Limit:1,Used:1,Requested:1}
-  trules[0].entry=func(p *tparser)(any,bool){cancel();panic(fatal{err:established})}
+  trules[0].Entry=func(p *TParser)(any,bool){cancel();panic(fatal{err:established})}
   var err error
   if named{_,err=ParseRuleAST("main","",WithContext(ctx))}else{_,err=ParseAST("",WithContext(ctx))}
   if err!=established{t.Fatalf("established fatal was masked: %v",err)}
  }
- trules[0].entry=original
+ trules[0].Entry=original
  if v,err:=ParseAST("");v!=nil || err!=nil{t.Fatalf("nil success retry: %v %v",v,err)}
  if v,err:=ParseAST("é");v==nil || v.Text!="é" || err!=nil{t.Fatalf("value retry: %v %v",v,err)}
 }
 
-type clonePhaseContext struct{context.Context;control *workControl;marker any;calls int}
+type clonePhaseContext struct{context.Context;control *WorkControl;marker any;calls int}
 func(c *clonePhaseContext)Done()<-chan struct{}{return make(chan struct{})}
 func(c *clonePhaseContext)Err()error{
  c.calls++
@@ -423,18 +423,18 @@ func(c *clonePhaseContext)Err()error{
  return nil
 }
 func TestRecoveredNilClonePublication(t *testing.T){
- original:=trules[0].entry;defer func(){trules[0].entry=original}()
+ original:=trules[0].Entry;defer func(){trules[0].Entry=original}()
  recovered:=make([]*SyntaxError,300)
  for i:=range recovered{recovered[i]=&SyntaxError{Line:i+1,Col:1}}
  for _,named:=range []bool{false,true}{for _,panicMode:=range []bool{false,true}{
   ctx:=&clonePhaseContext{Context:context.Background()};if panicMode{ctx.marker=new(int)}
-  trules[0].entry=func(p *tparser)(any,bool){ctx.control=p.control;p.recovered=recovered;return nil,true}
+  trules[0].Entry=func(p *TParser)(any,bool){ctx.control=p.Control;p.Recovered=recovered;return nil,true}
   call:=func()(any,error){if named{return ParseRuleAST("main","",WithContext(ctx))};return ParseAST("",WithContext(ctx))}
   if panicMode{func(){defer func(){if got:=recover();got!=ctx.marker{t.Errorf("clone panic missed or changed: %T",got)}}();call()}()}else{
    v,err:=call()
    if (v!=nil && !reflect.ValueOf(v).IsZero()) || !errors.Is(err,context.Canceled){t.Errorf("nil clone cancellation missed named=%v: value=%T error=%T",named,v,err)}
   }
-  before:=ctx.calls;trules[0].entry=original
+  before:=ctx.calls;trules[0].Entry=original
   if v,err:=ParseAST("");v!=nil || err!=nil{t.Fatal("nil retry after clone interruption",err)}
   if v,err:=ParseAST("é");v==nil || err!=nil{t.Fatal("value retry after clone interruption",err)}
   if ctx.calls!=before{t.Fatal("clone context retained by parser")}

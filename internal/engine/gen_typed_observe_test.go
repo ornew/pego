@@ -115,10 +115,10 @@ rule part WithTrace = t:("a") #atomic => WithTrace{Text: text($t)}`, input: "a",
 			if err != nil {
 				t.Fatal(pkg, err)
 			}
-			if !convert && !f.fallback && !strings.Contains(string(code), "return tparse(trules[") {
+			if !convert && !f.fallback && !strings.Contains(string(code), "return TParse(trules[") {
 				t.Fatal(pkg, "direct start unexpectedly unavailable")
 			}
-			if (convert || f.fallback) && !strings.Contains(string(code), "return parseConverted(rules[") {
+			if (convert || f.fallback) && !strings.Contains(string(code), "return RunParseConverted(rules[") {
 				t.Fatal(pkg, "missing Node conversion")
 			}
 			write(pkg, "parser.go", code)
@@ -161,10 +161,10 @@ func TestTypedTraceParity(t *testing.T){
    if input==INPUT{count:=func(rule string,kind TraceKind)int{n:=0;for _,e:=range events{if e.Rule==rule&&e.Kind==kind{n++}};return n};_=count;CHECKS}
    seenRules:=map[string]bool{}
    for _,r:=range rules {
-    if seenRules[r.name]{continue};seenRules[r.name]=true
-    want,werr:=reference.ParseRuleAST(r.name,input,refOpts...);events=nil
-    got,gerr:=ParseRuleAST(r.name,input,append(append([]ParseOption{},opts...),WithTrace(func(e TraceEvent){events=append(events,e)}))...)
-    a,_:=json.Marshal(want);b,_:=json.Marshal(got);if string(a)!=string(b)||fmt.Sprint(werr)!=fmt.Sprint(gerr){t.Fatal("named typed parity",r.name,string(a),string(b),werr,gerr)}
+    if seenRules[r.Name]{continue};seenRules[r.Name]=true
+    want,werr:=reference.ParseRuleAST(r.Name,input,refOpts...);events=nil
+    got,gerr:=ParseRuleAST(r.Name,input,append(append([]ParseOption{},opts...),WithTrace(func(e TraceEvent){events=append(events,e)}))...)
+    a,_:=json.Marshal(want);b,_:=json.Marshal(got);if string(a)!=string(b)||fmt.Sprint(werr)!=fmt.Sprint(gerr){t.Fatal("named typed parity",r.Name,string(a),string(b),werr,gerr)}
     checkTypedTrace(t,events)
    }
   }
@@ -187,7 +187,7 @@ func TestTypedTraceLifecycle(t *testing.T){
   events=nil;_,err=parse(WithWorkLimits(WorkLimits{MaxSteps:1}),WithTrace(func(e TraceEvent){events=append(events,e)}));if !errors.Is(err,ErrWorkLimit){t.Fatal("typed budget",err)};for _,e:=range events{if e.Kind==TraceExit&&e.Rule=="main"{t.Fatal("fabricated typed exit",events)}}
  }
  var wg sync.WaitGroup;for i:=0;i<4;i++{wg.Go(func(){for j:=0;j<4;j++{ParseAST(INPUT,WithTrace(func(TraceEvent){}))}})};wg.Wait()
- p:=&tparser{parser:&parser{observation:&observation{trace:func(TraceEvent){}}}};p.recycle();if p.observation!=nil{t.Fatal("typed pool retained observer")}
+ p:=&TParser{Parser:&Parser{Observation:&observation{trace:func(TraceEvent){}}}};p.recycle();if p.Observation!=nil{t.Fatal("typed pool retained observer")}
 }
 `
 

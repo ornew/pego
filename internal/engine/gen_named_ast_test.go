@@ -70,7 +70,7 @@ func TestGeneratedNamedAST(t *testing.T) {
 			named := string(code)[strings.Index(string(code), "func ParseRuleAST("):]
 			scalar := named[strings.Index(named, `case "structure":`):]
 			scalar = scalar[:strings.Index(scalar, "\n\tcase")]
-			direct := strings.Contains(scalar, "tparseResolved")
+			direct := strings.Contains(scalar, "TParseResolved")
 			// An open field type (global-field) keeps the typed runtime; forced conversion and
 			// reading a field back do not.
 			if direct != (variant.name != "conversion" && variant.name != "field-read") {
