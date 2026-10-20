@@ -391,9 +391,7 @@ func (p *parser) file() *grammar.Grammar {
 // declarationEnd consumes explicit separators, otherwise requiring a new
 // declaration after a newline.
 func (p *parser) declarationEnd() {
-	if p.accept(";") {
-		for p.accept(";") {
-		}
+	if p.separator() {
 		return
 	}
 	if p.tok().kind != tEOF && !p.tok().lineBefore {
@@ -401,10 +399,10 @@ func (p *parser) declarationEnd() {
 	}
 }
 
-// separator consumes the semicolon that ends a struct field or an action
-// statement. A newline ends the statement too, so a semicolon on a later line
-// starts an empty statement, which these lists reject when they expect the next
-// field or statement.
+// separator consumes the semicolon that ends a statement. A newline ends the
+// statement too, so a semicolon on a later line, or a second semicolon, starts
+// an empty statement, which every statement list rejects when it expects the
+// next statement.
 func (p *parser) separator() bool {
 	if p.tok().lineBefore {
 		return false
@@ -905,9 +903,7 @@ func (p *parser) operatorsRule() (sourceResult *grammar.OperatorsRule) {
 }
 
 func (p *parser) itemEnd() {
-	if p.accept(";") {
-		for p.accept(";") {
-		}
+	if p.separator() {
 		return
 	}
 	if !p.is("}") && !p.tok().lineBefore {
@@ -1629,6 +1625,10 @@ func (p *parser) unary() (sourceResult grammar.Term) {
 		}
 		x = &grammar.Member{SourceInfo: grammar.SourceInfo{Pos: name.pos}, X: x, Name: name.text}
 		p.sourceNode(x, sourceStart)
+	}
+	if t := p.tok(); t.kind == tCharClass && !p.boundary() {
+		p.errorf("an index [ must directly follow the indexed value, without white space or a comment")
+		panic(bail{})
 	}
 	return x
 }

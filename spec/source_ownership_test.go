@@ -234,11 +234,7 @@ var ownershipCorpus = []string{
 	"rule a = \"x\" /* t */\nrule b = \"y\" /* t2 */\n",
 	"rule a = \"x\" /* amb */ rule b = \"y\"",
 	"rule a = \"x\"; // after semicolon\n// next\nrule b = \"y\"",
-	"rule a = \"x\" // before\n; // after\n// next\nrule b = \"y\"",
 	"rule a = \"x\" /* before */ ; /* after */\nrule b = \"y\"",
-	"rule a = \"x\";; // after\nrule b = \"y\"",
-	"rule a = \"x\" ;/* x */; // after\nrule b = \"y\"",
-	"rule a = \"x\" ;/* x */;\n// lead\nrule b = \"y\"",
 	"rule a = \"x\" // inline\n// standalone\n\nrule b = \"y\"",
 	"rule a = \"x\"\n// standalone\n\n// lead\nrule b = \"y\"",
 	"rule a = \"x\"\n/* one */\n/* two */\nrule b = \"y\"",
@@ -266,7 +262,6 @@ var ownershipCorpus = []string{
 	"rule a = \"x\"\rrule b = \"y\" // t\r// c\rrule c = \"z\"",
 	"rule a = \"😀\" // 😀\n// ß\nrule b = \"y\"",
 	"package p; rule a = \"x\"",
-	"package p // t\n; // t2\nrule a = \"x\"",
 	"rule a = \"x\" => ... // d\nrule b = \"y\"",
 	"rule a = x:\"x\" { true } // p\nrule b = \"y\"",
 	"rule a = (\"x\" /* in */) // g\nrule b = \"y\"",
@@ -365,5 +360,41 @@ func TestCanonicalOwnerParityRepository(t *testing.T) {
 	}
 	if checked == 0 {
 		t.Fatal("no grammar checked")
+	}
+}
+
+// emptyStatements hold a statement that is empty: a semicolon that follows a
+// newline or another semicolon. Both frontends reject them, at the same place.
+var emptyStatements = []string{
+	"rule a = \"x\" // before\n; // after\n// next\nrule b = \"y\"",
+	"rule a = \"x\";; // after\nrule b = \"y\"",
+	"rule a = \"x\" ;/* x */; // after\nrule b = \"y\"",
+	"rule a = \"x\" ;/* x */;\n// lead\nrule b = \"y\"",
+	"package p // t\n; // t2\nrule a = \"x\"",
+	"type T = { A int\n; B int }",
+	"rule a = {x\n; y}",
+	"rule x = operators { operand \"1\";; operand \"2\" }",
+	"rule x = operators { level { infix left \"+\" // c\n; postfix \"!\" } }",
+}
+
+func TestEmptyStatementsAreRejected(t *testing.T) {
+	p, _ := sourceGrammar(t)
+	for _, src := range emptyStatements {
+		_, merr := pego.ParseGrammar(src)
+		_, cerr := p.Parse(src)
+		if merr == nil || cerr == nil {
+			t.Errorf("%q: hand-written error %v, canonical error %v; both must reject", src, merr, cerr)
+			continue
+		}
+		var mline, mcol, cline, ccol int
+		if _, err := fmt.Sscanf(merr.Error(), "%d:%d:", &mline, &mcol); err != nil {
+			t.Errorf("%q: hand-written error %q has no position", src, merr)
+		}
+		if _, err := fmt.Sscanf(cerr.Error(), "%d:%d:", &cline, &ccol); err != nil {
+			t.Errorf("%q: canonical error %q has no position", src, cerr)
+		}
+		if mline != cline || mcol != ccol {
+			t.Errorf("%q: hand-written error at %d:%d (%v), canonical at %d:%d (%v)", src, mline, mcol, merr, cline, ccol, cerr)
+		}
 	}
 }

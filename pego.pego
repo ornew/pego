@@ -158,10 +158,9 @@ rule file_contents File = (
   {ml := false}
   &head:source_head
   pkg:package_entry?
-  decls:(-empty_stmts d:decl)*
-  -empty_stmts tc:comments $$
+  decls:(d:decl)*
+  tc:comments $$
 ) => File{Pkg: $pkg, Decls: map($decls, (x) => x.$d), TrailingComments: $tc, Head: $head}
-rule empty_stmts = (-comments ";" -comments)*
 rule package_entry PkgDecl = &(comments "package" !ident_char) p:(package_stmt #recover(skip=stmt_sync)) => $p
 rule package_stmt Pkg = (
   &lead:source_remaining cs:comments
@@ -374,7 +373,7 @@ rule signed_int Int = (("-" -ws)? digit+ #atomic) #atomic
 // Operators Rule items and each level recover independently. An absent level
 // name remains nil; level(rule, name) can target only named levels.
 rule ops_rule_expr OperatorsRule = (
-  "operators" !ident_char -ws &"{" #cut "{" {ml := false} &head:source_head_open items:(-empty_stmts i:ops_stmt)* -empty_stmts
+  "operators" !ident_char -ws &"{" #cut "{" {ml := false} &head:source_head_open items:(i:ops_stmt)*
   cs:comments -("}" @error(message="expected closing brace for operators"))
 ) => OperatorsRule{Items: map($items, (x) => x.$i), Comments: $cs, Head: $head}
 rule ops_stmt OperatorsStmt = (
@@ -398,8 +397,8 @@ rule ops_level_stmt OperatorsLevel = (
 ) => OperatorsLevel{Name: $d.Name, Operators: $d.Operators, Comments: concat($cs, $d.Comments, $end), Head: $d.Head, SourceSpan: $d, Source: $tail}
 rule ops_level_body OperatorsLevelBody = (
   "level" -word_end #cut name:ident? -ws
-  -("{" @error(message="expected opening brace for level")) &head:source_head_open xs:(-empty_stmts o:ops_operator)*
-  -empty_stmts tc:comments -("}" @error(message="expected closing brace for level"))
+  -("{" @error(message="expected opening brace for level")) &head:source_head_open xs:(o:ops_operator)*
+  tc:comments -("}" @error(message="expected closing brace for level"))
 ) => OperatorsLevelBody{Name: $name, Operators: map($xs, (x) => x.$o), Head: $head, Comments: $tc}
 rule ops_operator OpsOperator = (
   !(comments "}")
@@ -442,7 +441,7 @@ rule action_assign_stmt ActionAssign = (
 ) => ActionAssign{Name: $name, Expr: $x}
 rule action_expr ActionExpr = lambda / action_ops
 rule action_ops ActionExpr = operators {
-  skip ws
+  skip (!(ws "[" !"]") ws)
   operand list_constructor / constructor / call / action_tuple / action_group / int / string / true / false / nil / capture_ref / var_ref
   level disjunction { infix left "||" => BinaryOp{Op: text($op), L: $lhs, R: $rhs} }
   level conjunction { infix left "&&" => BinaryOp{Op: text($op), L: $lhs, R: $rhs} }
@@ -450,22 +449,24 @@ rule action_ops ActionExpr = operators {
   level addition { infix left "+" / "-" !("-" / ">") => BinaryOp{Op: text($op), L: $lhs, R: $rhs} }
   level multiplication { infix left "*" / "/" / "%" => BinaryOp{Op: text($op), L: $lhs, R: $rhs} }
   level unary { prefix "-" !"-" / "!" !"=" => UnaryOp{Op: text($op), X: $rhs} }
-  // x[i] indexes a list. The reference parser takes "[" as an index only directly after a name,
-  // a capture, ")" or "]", and reads it as a character class elsewhere. This grammar is looser
-  // both ways: skip ws accepts "x [i]", and a rule body accepts "name[a-z]" as a reference
-  // followed by a character class, which the reference parser rejects.
+  // x[i] indexes a list. The "[" of an index follows its operand directly: the skip leaves
+  // white space and comments before a "[" unconsumed, so "x [i]" is an error. A list
+  // constructor starts with "[]" and keeps its skip.
   level field_access {
     postfix "." -ws c:capture_ref => CaptureAccess{X: $lhs, Capture: $c}
     postfix "." -ws t:cast_type => Cast{X: $lhs, Type: $t}
     postfix "." -ws name:ident => FieldAccess{X: $lhs, Name: $name}
-    postfix "[" -ws i:action_expr -ws "]" => BinaryOp{Op: "[]", L: $lhs, R: $i}
+    postfix i:index_suffix => BinaryOp{Op: "[]", L: $lhs, R: $i}
   }
 }
+// The brackets of an index open their own delimiter, and a rule of its own keeps ml from
+// reaching the rest of the action.
+rule index_suffix ActionExpr = "[" {ml := true} -ws i:action_expr -ws "]" => $i
 // A rule of its own keeps ml from reaching the rest of the action.
 rule cast_type Type = "(" {ml := true} -ws t:type_expr -ws ")" => $t
-rule lambda Lambda = (
-  "(" {ml := true} -ws names:lambda_params? -ws ")" -ws "=>" -ws x:action_expr
-) => Lambda{Params: concat($names), Body: $x}
+rule lambda Lambda = names:lambda_head -ws "=>" -ws x:action_expr => Lambda{Params: $names, Body: $x}
+// A rule of its own keeps ml from reaching the arrow and the body.
+rule lambda_head []Ident = "(" {ml := true} -ws names:lambda_params? -ws ")" => concat($names)
 rule lambda_params []Ident = first:ident rest:(-ws "," -ws name:ident)* => concat(list($first), map($rest, (x) => x.$name))
 // Parentheses around one expression without a comma group it; any other
 // parentheses form a tuple. The tuple rules fail on a group without an error.
@@ -669,9 +670,9 @@ rule source_space = source_horizontal_char / source_nl
 rule source_gaps []CommentGap = (
   head:source_gap_head? -source_gap_skip* xs:(g:source_gap -source_gap_skip*)* $$
 ) => concat(filter(list($head), (x) => x != nil), map($xs, (x) => x.$g)).([]CommentGap)
-// A bracket directly after a name, ")" or "]" is a bracket, not a character class.
+// A bracket directly after a name, ")", "]" or "}" is a bracket, not a character class.
 rule source_gap_skip = source_string / source_bracket / source_class / incomplete_comment / (source_space+ !(source_line_comment / source_block_comment)) / !(source_space / source_comment_start) .
-rule source_bracket = (ident_char / ")" / "]") "["
+rule source_bracket = (ident_char / ")" / "]" / "}") "["
 // A gap starts with a comment, after any space, and runs to the next token.
 rule source_gap_run = -source_space* (source_line_comment / source_block_comment) (source_space / source_line_comment / source_block_comment)*
 rule source_gap_head CommentGap = (

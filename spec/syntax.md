@@ -40,10 +40,9 @@ rule file_contents = (
     {ml := false}
     &source_head
     package_entry?
-    (-empty_stmts decl)*
-    -empty_stmts comments $$
+    decl*
+    comments $$
 )
-rule empty_stmts = (-comments ";" -comments)*
 rule package_entry = &(comments "package" !ident_char) package_stmt
 rule package_stmt = (
     &source_remaining comments
@@ -217,7 +216,7 @@ rule signed_int = (("-" -ws)? digit+ #atomic) #atomic
 // Operators Rule items and each level recover independently. An absent level
 // name remains nil; level(rule, name) can target only named levels.
 rule ops_rule_expr = (
-    "operators" !ident_char -ws &"{" #cut "{" {ml := false} &source_head_open (-empty_stmts ops_stmt)* -empty_stmts
+    "operators" !ident_char -ws &"{" #cut "{" {ml := false} &source_head_open ops_stmt*
     comments -"}"
 )
 rule ops_stmt = (
@@ -231,8 +230,8 @@ rule ops_operand_body = "operand" -word_end #cut rule_expr trailing_action?
 rule ops_level_stmt = comments ops_level_body &source_item_tail item_end
 rule ops_level_body = (
     "level" -word_end #cut ident? -ws
-    -"{" &source_head_open (-empty_stmts ops_operator)*
-    -empty_stmts comments -"}"
+    -"{" &source_head_open ops_operator*
+    comments -"}"
 )
 rule ops_operator = (
     !(comments "}")
@@ -263,7 +262,7 @@ rule action_stmt = action_assign_stmt / action_expr
 rule action_assign_stmt = ident -ws ":=" -ws action_expr
 rule action_expr = lambda / action_ops
 rule action_ops = operators {
-    skip ws
+    skip !(ws "[" !"]") ws
     operand list_constructor / constructor / call / action_tuple / action_group / int / string / true / false / nil / capture_ref / var_ref
     level disjunction { infix left "||" }
     level conjunction { infix left "&&" }
@@ -271,20 +270,24 @@ rule action_ops = operators {
     level addition { infix left "+" / "-" !("-" / ">") }
     level multiplication { infix left "*" / "/" / "%" }
     level unary { prefix "-" !"-" / "!" !"=" }
-    // x[i] indexes a list. The reference parser takes "[" as an index only directly after a name,
-    // a capture, ")" or "]", and reads it as a character class elsewhere. This grammar is looser
-    // both ways: skip ws accepts "x [i]", and a rule body accepts "name[a-z]" as a reference
-    // followed by a character class, which the reference parser rejects.
+    // x[i] indexes a list. The "[" of an index follows its operand directly: the skip leaves
+    // white space and comments before a "[" unconsumed, so "x [i]" is an error. A list
+    // constructor starts with "[]" and keeps its skip.
     level field_access {
         postfix "." -ws capture_ref
         postfix "." -ws cast_type
         postfix "." -ws ident
-        postfix "[" -ws action_expr -ws "]"
+        postfix index_suffix
     }
 }
+// The brackets of an index open their own delimiter, and a rule of its own keeps ml from
+// reaching the rest of the action.
+rule index_suffix = "[" {ml := true} -ws action_expr -ws "]"
 // A rule of its own keeps ml from reaching the rest of the action.
 rule cast_type = "(" {ml := true} -ws type_expr -ws ")"
-rule lambda = "(" {ml := true} -ws lambda_params? -ws ")" -ws "=>" -ws action_expr
+rule lambda = lambda_head -ws "=>" -ws action_expr
+// A rule of its own keeps ml from reaching the arrow and the body.
+rule lambda_head = "(" {ml := true} -ws lambda_params? -ws ")"
 rule lambda_params = ident (-ws "," -ws ident)*
 // Parentheses around one expression without a comma group it; any other
 // parentheses form a tuple. The tuple rules fail on a group without an error.
@@ -438,9 +441,9 @@ rule source_space = source_horizontal_char / source_nl
 // A gap at the start of the input has no token before it and so no trailing
 // group. The scan never fails, so recording gaps cannot change what is accepted.
 rule source_gaps = source_gap_head? -source_gap_skip* (source_gap -source_gap_skip*)* $$
-// A bracket directly after a name, ")" or "]" is a bracket, not a character class.
+// A bracket directly after a name, ")", "]" or "}" is a bracket, not a character class.
 rule source_gap_skip = source_string / source_bracket / source_class / incomplete_comment / source_space+ !(source_line_comment / source_block_comment) / !(source_space / source_comment_start) .
-rule source_bracket = (ident_char / ")" / "]") "["
+rule source_bracket = (ident_char / ")" / "]" / "}") "["
 // A gap starts with a comment, after any space, and runs to the next token.
 rule source_gap_run = -source_space* (source_line_comment / source_block_comment) (source_space / source_line_comment / source_block_comment)*
 rule source_gap_head = ^^ &source_gap_run &(source_remaining / source_empty_boundary) -source_gap_run
@@ -461,17 +464,20 @@ additional constraints are checked outside this source grammar.
 - **Character class ranges.** In `lo-hi`, `hi` MUST NOT be less than `lo`, and a
   class MUST contain at least one item.
 - **Repetition bounds.** In `a #repeat(n,m)`, `m` MUST NOT be less than `n`.
-- **Statement boundaries.** Newlines and semicolons separate Declaration Statements and
-  Operators Rule items. Struct fields and action-block statements use semicolons or
-  newlines. A newline ends a statement, and a semicolon ends it only on the same line:
-  `a string // t` followed by a line holding `; b string` reads as `a string`, an empty
-  statement, then `b string`. An empty statement, such as a repeated semicolon or one
-  that starts a line, is rejected in a struct type and in an action block; the
-  top level and an Operators Rule item list accept empty statements. An expression
-  may cross a newline only within its own open delimiter, so a type definition keeps
-  `=` and its `{` or `node[` on one line, and `=>` keeps its action or action block
-  on its line unless a group encloses both. Statement-list braces do not enable
-  continuation of every nested expression. Indentation is not syntax.
+- **Statement boundaries.** Newlines and semicolons separate Declaration Statements,
+  Operators Rule items, struct fields and action-block statements. A newline ends a
+  statement, and a semicolon ends it only on the same line: `a string // t` followed by a
+  line holding `; b string` reads as `a string`, an empty statement, then `b string`. An
+  empty statement, such as a repeated semicolon or a semicolon that starts a line, is an
+  error in every statement list; comments between statements are fine. An expression may
+  cross a newline only within its own open delimiter, so a type definition keeps `=` and its
+  `{` or `node[` on one line, `=>` keeps its action or action block on its line, and in an
+  action a newline before a binary operator, `.`, `=>`, a constructor `{` or an index `[`
+  ends the expression. Statement-list braces do not enable continuation of every nested
+  expression. Indentation is not syntax.
+- **Index brackets.** In an action expression the `[` of an index follows the indexed value
+  directly, such as `x[0]`, `f(x)[0]` or `[]int{1, 2}[0]`. White space or a comment before it
+  is an error; the brackets are an open delimiter, so their contents may span lines.
 - **Attribute arguments.** Positional arguments follow the generic value
   forms and precede named arguments; repeated named keys are rejected. The
   grammar models argument shape and ordering, not key uniqueness.

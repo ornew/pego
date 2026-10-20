@@ -38,7 +38,7 @@ var nodeBases = []string{
 	"rule a []T = x\n",
 	"rule a = b => {x; y := 2\n z}\n",
 	"rule a = b => N{A: x, B: y,}\n",
-	"package p // t\n; // u\nrule a = x; // v\n// w\nrule b = (y) ;; z\n",
+	"package p // t\nrule a = x; // v\n// w\nrule b = (y) ; // z\n",
 	"type T = {\n A int; // a\n B int;\n}\ntype U ~ A\n",
 	"rule a = (\n x // t\n / y\n)* z\n",
 	"rule a = b => (i) => N{A: i} + map(list($x), (j) => j) + $x.(*[]int) + x[0][1]\n",
@@ -97,6 +97,37 @@ func TestCanonicalNodeParityNegativeControl(t *testing.T) {
 	}
 }
 
+// inClass marks the offsets of a source that lie inside a character class,
+// where text is class content and no comment can start. A "[" opens a class
+// unless it follows a name, ")" or "]" directly, or starts "[]".
+func inClass(rs []rune) []bool {
+	in := make([]bool, len(rs)+1)
+	for i := 0; i < len(rs); i++ {
+		if rs[i] != '[' || i+1 < len(rs) && rs[i+1] == ']' {
+			continue
+		}
+		if i > 0 {
+			prev := rs[i-1]
+			if prev == '_' || prev == ')' || prev == ']' || prev == '}' || prev >= '0' && prev <= '9' ||
+				prev >= 'a' && prev <= 'z' || prev >= 'A' && prev <= 'Z' {
+				continue
+			}
+		}
+		j := i + 1
+		for j < len(rs) && rs[j] != ']' {
+			if rs[j] == '\\' {
+				j++
+			}
+			j++
+		}
+		for k := i + 1; k <= j && k < len(in); k++ {
+			in[k] = true
+		}
+		i = j
+	}
+	return in
+}
+
 // crlf rewrites the line ends of a source.
 func crlf(s string) string { return strings.ReplaceAll(s, "\n", "\r\n") }
 
@@ -108,14 +139,18 @@ func TestCanonicalNodeParityPairs(t *testing.T) {
 	for bi, base := range nodeBases {
 		for _, b := range []string{base, crlf(base)} {
 			rs := []rune(b)
+			class := inClass(rs)
 			for i := 0; i < 600; i++ {
 				a, c := rng.Intn(len(rs)+1), rng.Intn(len(rs)+1)
 				if a > c {
 					a, c = c, a
 				}
+				if class[a] || class[c] {
+					continue
+				}
 				x, y := insertions[rng.Intn(len(insertions))], insertions[rng.Intn(len(insertions))]
 				src := string(rs[:a]) + x + string(rs[a:c]) + y + string(rs[c:])
-				if !compareNodes(t, p, fmt.Sprintf("base %d pair (%q)", bi, src), base, src) {
+				if !compareNodes(t, p, fmt.Sprintf("base %d pair (%q)", bi, src), src) {
 					failed++
 					if failed >= 8 {
 						t.Fatal("too many differences")
@@ -127,9 +162,9 @@ func TestCanonicalNodeParityPairs(t *testing.T) {
 }
 
 func TestCanonicalNodeParityInsertions(t *testing.T) {
-	compared, manualRejected = 0, 0
+	compared = 0
 	defer func() {
-		t.Logf("compared %d sources; the hand-written parser rejects %d more for a known reason", compared, manualRejected)
+		t.Logf("compared %d sources", compared)
 		if compared < 4000 {
 			t.Errorf("only %d sources were compared", compared)
 		}
@@ -138,13 +173,17 @@ func TestCanonicalNodeParityInsertions(t *testing.T) {
 	failed := 0
 	for bi, base := range nodeBases {
 		rs := []rune(base)
+		class := inClass(rs)
 		for off := 0; off <= len(rs); off++ {
+			if class[off] {
+				continue
+			}
 			for ii, ins := range insertions {
 				src := string(rs[:off]) + ins + string(rs[off:])
 				if off%2 == 1 {
 					src = crlf(src)
 				}
-				if !compareNodes(t, p, fmt.Sprintf("base %d offset %d insertion %d (%q)", bi, off, ii, src), base, src) {
+				if !compareNodes(t, p, fmt.Sprintf("base %d offset %d insertion %d (%q)", bi, off, ii, src), src) {
 					failed++
 					if failed >= 8 {
 						t.Fatal("too many differences")

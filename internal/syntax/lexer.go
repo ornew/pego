@@ -85,10 +85,15 @@ type lexer struct {
 	// State of the white space and comments before the next token.
 	ntoks int // tokens read so far
 	// prev is the previous token, which decides whether a "[" directly after it is a bracket.
-	prev        token
-	newlines    int // line breaks since the previous token or comment
-	lineComment *grammar.Comment
-	comments    []*grammar.Comment
+	prev token
+	// Action tracking: a "}" directly followed by "[" is an index only inside an
+	// action, which starts at "=>" and ends with its statement or enclosing delimiter.
+	// depth counts the open delimiters; actionDepth is the depth at the "=>".
+	depth, actionDepth int
+	inAction           bool
+	newlines           int // line breaks since the previous token or comment
+	lineComment        *grammar.Comment
+	comments           []*grammar.Comment
 }
 
 func (l *lexer) pos() grammar.Pos { return grammar.Pos{Line: l.line, Col: l.col} }
@@ -271,6 +276,7 @@ func lexContext(ctx context.Context, src string, errs *errorList) (toks []token,
 		}
 		toks = append(toks, t)
 		l.prev = t
+		l.track(t)
 		if t.kind == tEOF {
 			l.checkCancel()
 			return toks, nil
@@ -280,16 +286,43 @@ func lexContext(ctx context.Context, src string, errs *errorList) (toks []token,
 }
 
 // bracketAfter reports whether a "[" directly after the previous token is a bracket rather than a
-// character class: after a name, a capture, ")" or "]". A character class after one of those
+// character class: after a name, a capture, ")", "]" or the "}" of a constructor or list literal. A character class after one of those
 // is written with a space before it.
 func (l *lexer) bracketAfter() bool {
 	switch t := l.prev; t.kind {
 	case tIdent, tCapture:
 		return true
 	case tPunct:
-		return t.text == ")" || t.text == "]"
+		return t.text == ")" || t.text == "]" || t.text == "}" && l.inAction
 	}
 	return false
+}
+
+// track follows the delimiters and actions of the tokens read so far.
+func (l *lexer) track(t token) {
+	if l.inAction && t.lineBefore && l.depth <= l.actionDepth {
+		l.inAction = false
+	}
+	if t.kind != tPunct {
+		return
+	}
+	switch t.text {
+	case "(", "{", "[":
+		l.depth++
+	case ")", "}", "]":
+		l.depth--
+		if l.inAction && l.depth < l.actionDepth {
+			l.inAction = false
+		}
+	case ";":
+		if l.inAction && l.depth <= l.actionDepth {
+			l.inAction = false
+		}
+	case "=>":
+		if !l.inAction {
+			l.inAction, l.actionDepth = true, l.depth
+		}
+	}
 }
 
 func isIdentStart(r rune) bool { return r == '_' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' }
