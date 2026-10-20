@@ -53,6 +53,7 @@ rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}
 const typedOperatorsRuleActionWorkloadFixture = `package lrfixture
 
 import (
+	pegort "github.com/ornew/pego/runtime"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -69,9 +70,9 @@ func TestOperatorsRuleWorkload(t *testing.T) {
 			t.Fatalf("typed capture result: %v %v", saved, err)
 		}
 		before, _ := json.Marshal(saved)
-		p := &TParser{Parser: &Parser{}}
+		p := &pegort.TParser{Parser: &pegort.Parser{}}
 		for _, input := range []string{operatorsRuleInput(1), operatorsRuleInput(128), "a", "a[b,c,]", "a[b,c,d,", "a[b,c,d,e,]", "a[b,é,d,]", "", "a[b,c,d,]?"} {
-			v, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
+			v, err := p.X_run(trules[0], input, pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
 			data, _ := json.Marshal(struct { Value any; Error string }{v, fmt.Sprint(err)})
 			pooled, pooledErr := ParseAST(input, WithUnit(unit))
 			pooledData, _ := json.Marshal(struct { Value any; Error string }{pooled, fmt.Sprint(pooledErr)})
@@ -84,10 +85,10 @@ func TestOperatorsRuleWorkload(t *testing.T) {
 				t.Fatal("OperatorsRule invocation left live frame, depth or undo state")
 			}
 			for _, u := range p.Trail[:cap(p.Trail)] {
-				if u.f != nil || u.old != nil || u.slot != 0 { t.Fatal("discarded undo retained") }
+				if u.X_f != nil || u.X_old != nil || u.X_slot != 0 { t.Fatal("discarded undo retained") }
 			}
-			p.recycle()
-			for _, v := range p.saved[:cap(p.saved)] {
+			p.X_recycle()
+			for _, v := range p.X_saved[:cap(p.X_saved)] {
 				if v != nil { t.Fatal("OperatorsRule saved captures retained after recycle") }
 			}
 		}

@@ -89,4 +89,4 @@
   each revision separately with `go test -c -o bench.test ./bench`, then
   alternate those binaries with the same selectors and `-test.benchmem`.
   For the memo case, generate the grammar above with
-  `pego gen -g memo.pego -pkg memo -o parser.go`, then use the loop above.
+  `pego gen -g memo.pego -module example.com/memo -o .`, then use the loop above.

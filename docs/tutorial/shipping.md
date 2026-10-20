@@ -21,7 +21,7 @@ The generated file uses only the standard library. Generate it into a `config` p
 
 ```bash
 mkdir config
-pego gen -g config.pego -pkg config -o config/parser.go
+pego gen -g config.pego -module example.com/config -o config
 ```
 
 and call it:

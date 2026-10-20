@@ -136,7 +136,6 @@ func TestSourceCommentBoundaryGeneratedGo(t *testing.T) {
 	dir := t.TempDir()
 	for name, data := range map[string][]byte{
 		"go.mod":     []byte("module comments\n\ngo 1.27.1\n"),
-		"parser.go":  code,
 		"input.pego": []byte(commentOwnerExample),
 		"parser_test.go": []byte(`package comments
 import("os";"testing")
@@ -151,6 +150,15 @@ func TestOwners(t *testing.T){
 `),
 	} {
 		if err := os.WriteFile(filepath.Join(dir, name), data, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, f := range code {
+		path := filepath.Join(dir, filepath.FromSlash(f.Path))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, f.Content, 0600); err != nil {
 			t.Fatal(err)
 		}
 	}

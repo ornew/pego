@@ -296,7 +296,7 @@ rule val any = "v"
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := Generate(g, GenOptions{Package: "p", Start: "main", Types: true, Recognize: true})
+	code, err := generateCode(g, GenOptions{Package: "p", Start: "main", Types: true, Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}

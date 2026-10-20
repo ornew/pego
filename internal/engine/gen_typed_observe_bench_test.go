@@ -28,7 +28,7 @@ func TestExportGeneratedTypedTraceBenchmarks(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte("module typedtracebench\n\ngo 1.27.1\n"))
+	write("go.mod", []byte(testGoMod("typedtracebench")))
 	manifest := map[string]struct {
 		Bytes       int
 		DirectStart bool
@@ -56,7 +56,7 @@ func TestExportGeneratedTypedTraceBenchmarks(t *testing.T) {
 				if enabled {
 					pkg = "observed"
 				}
-				code, err := Generate(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, Observability: enabled, convertTypes: convert})
+				code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, Observability: enabled, convertTypes: convert})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -64,7 +64,7 @@ func TestExportGeneratedTypedTraceBenchmarks(t *testing.T) {
 				manifest[path] = struct {
 					Bytes       int
 					DirectStart bool
-				}{len(code), strings.Contains(string(code), "return TParse(trules[")}
+				}{len(code), strings.Contains(string(code), "return pegort.TParse(trules[")}
 				write(path+"/parser.go", code)
 				driver := strings.NewReplacer("PACKAGE", pkg, "INPUT", fmt.Sprintf("%q", fixture.input)).Replace(generatedTypedTraceBenchmark)
 				if enabled {

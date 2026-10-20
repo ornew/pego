@@ -67,12 +67,12 @@ rule expr Text = operators {
 	for _, types := range []bool{false, true} {
 		for _, convert := range []bool{false, true} {
 			opts := GenOptions{Package: "ordinaryfixture", Types: types, Recognize: true, Start: "main", convertTypes: convert}
-			specialized, err := Generate(g, opts)
+			specialized, err := generateCode(g, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
 			opts.disableOrdinaryWorkSpecialization = true
-			reference, err := Generate(g, opts)
+			reference, err := generateCode(g, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -102,8 +102,9 @@ rule expr Text = operators {
 			if branches == 0 {
 				t.Fatal("no ordinary branches tested")
 			}
+			// The helpers the branches call are methods of the runtime.
 			for _, name := range []string{"NewNodeOrdinary", "SetCaptureOrdinary", "ExpectOrdinary"} {
-				if !strings.Contains(string(specialized), "func (p *Parser) "+name+"(") {
+				if !strings.Contains(string(specialized), "."+name+"(") {
 					t.Fatalf("missing helper %s", name)
 				}
 			}
@@ -119,7 +120,7 @@ func TestGeneratedOrdinaryGuardExcludesDocuments(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, document := range []bool{false, true} {
-		src, err := Generate(g, GenOptions{Package: "ordinaryguard", Start: "main", Document: document})
+		src, err := generateCode(g, GenOptions{Package: "ordinaryguard", Start: "main", Document: document})
 		if err != nil {
 			t.Fatal(err)
 		}

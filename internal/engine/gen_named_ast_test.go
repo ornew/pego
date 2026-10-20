@@ -63,7 +63,7 @@ func TestGeneratedNamedAST(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			code, err := Generate(g, GenOptions{Package: "named", Start: variant.start, Types: true, convertTypes: variant.force, MaxDepth: 32})
+			code, err := generateCode(g, GenOptions{Package: "named", Start: variant.start, Types: true, convertTypes: variant.force, MaxDepth: 32})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -84,7 +84,7 @@ func TestGeneratedNamedAST(t *testing.T) {
 			if err := os.Mkdir(filepath.Join(dir, "named"), 0755); err != nil {
 				t.Fatal(err)
 			}
-			for name, data := range map[string]string{"go.mod": "module namedfixture\n\ngo 1.27.1\n", "named/parser.go": string(code), "named_test.go": strings.NewReplacer("START_CST", fmt.Sprint(variant.start == "cst"), "FIELD_READ", fmt.Sprint(variant.name == "field-read"), "START_TYPE", map[bool]string{true: "*p.TNode[p.Tuple2[*p.TNode[string], *p.TNode[string]]]", false: "*p.ParseRuleAST_"}[variant.start == "cst"]).Replace(namedASTConsumer)} {
+			for name, data := range map[string]string{"go.mod": testGoMod("namedfixture"), "named/parser.go": string(code), "named_test.go": strings.NewReplacer("START_CST", fmt.Sprint(variant.start == "cst"), "FIELD_READ", fmt.Sprint(variant.name == "field-read"), "START_TYPE", map[bool]string{true: "*p.TNode[p.Tuple2[*p.TNode[string], *p.TNode[string]]]", false: "*p.ParseRuleAST_"}[variant.start == "cst"]).Replace(namedASTConsumer)} {
 				if err := os.WriteFile(filepath.Join(dir, name), []byte(data), 0644); err != nil {
 					t.Fatal(err)
 				}
@@ -104,7 +104,7 @@ func TestGeneratedNamedASTUntypedAndTS(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	plain, err := Generate(g, GenOptions{Package: "plain", Start: "main"})
+	plain, err := generateCode(g, GenOptions{Package: "plain", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,11 +132,11 @@ func TestGeneratedNamedASTScalarResults(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		out, err := Generate(g, GenOptions{Package: "named", Start: "main", Types: true})
+		out, err := generateCode(g, GenOptions{Package: "named", Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%q: %v", tc.source, err)
 		}
-		if want := "func ParseAST(input string, opts ...ParseOption) " + tc.want; !strings.Contains(string(out), want) {
+		if want := "func ParseAST(input string, opts ...pegort.ParseOption) " + tc.want; !strings.Contains(string(out), want) {
 			t.Errorf("%q: no %q", tc.source, want)
 		}
 	}
@@ -144,7 +144,7 @@ func TestGeneratedNamedASTScalarResults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = Generate(g, GenOptions{Package: "named", Start: "main", Types: true}); err == nil || !strings.Contains(err.Error(), "not assignable to int") {
+	if _, err = generateCode(g, GenOptions{Package: "named", Start: "main", Types: true}); err == nil || !strings.Contains(err.Error(), "not assignable to int") {
 		t.Fatalf("got %v", err)
 	}
 }
@@ -235,7 +235,7 @@ func TestGeneratedNamedASTXMLFragments(t *testing.T) {
 	}
 	for _, convert := range []bool{false, true} {
 		t.Run(fmt.Sprint(convert), func(t *testing.T) {
-			code, err := Generate(g, GenOptions{Package: "xml", Start: "main", Types: true, convertTypes: convert})
+			code, err := generateCode(g, GenOptions{Package: "xml", Start: "main", Types: true, convertTypes: convert})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -243,7 +243,7 @@ func TestGeneratedNamedASTXMLFragments(t *testing.T) {
 			if err := os.Mkdir(filepath.Join(dir, "xml"), 0755); err != nil {
 				t.Fatal(err)
 			}
-			for name, data := range map[string]string{"go.mod": "module xmlfixture\n\ngo 1.27.1\n", "xml/parser.go": string(code), "xml_test.go": namedXMLConsumer} {
+			for name, data := range map[string]string{"go.mod": testGoMod("xmlfixture"), "xml/parser.go": string(code), "xml_test.go": namedXMLConsumer} {
 				if err := os.WriteFile(filepath.Join(dir, name), []byte(data), 0644); err != nil {
 					t.Fatal(err)
 				}
@@ -312,7 +312,7 @@ rule nilUnion MaybeU = t:term? => $t
 	for _, start := range []string{"nilAny", "nilNode", "nilUnion"} {
 		for _, conversion := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s/%v", start, conversion), func(t *testing.T) {
-				code, err := Generate(g, GenOptions{Package: "named", Start: start, Types: true, convertTypes: conversion})
+				code, err := generateCode(g, GenOptions{Package: "named", Start: start, Types: true, convertTypes: conversion})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -321,7 +321,7 @@ rule nilUnion MaybeU = t:term? => $t
 					t.Fatal(err)
 				}
 				consumer := strings.ReplaceAll(namedNilConsumer, "START_UNION", fmt.Sprint(start == "nilUnion"))
-				for name, data := range map[string]string{"go.mod": "module namedfixture\n\ngo 1.27.1\n", "named/parser.go": string(code), "nil_test.go": consumer} {
+				for name, data := range map[string]string{"go.mod": testGoMod("namedfixture"), "named/parser.go": string(code), "nil_test.go": consumer} {
 					if err := os.WriteFile(filepath.Join(dir, name), []byte(data), 0644); err != nil {
 						t.Fatal(err)
 					}

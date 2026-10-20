@@ -485,29 +485,71 @@ func WithoutPackageDoc() GenOption {
 	return func(o *engine.GenOptions) { o.OmitPackageDoc = true }
 }
 
-// GenerateGo generates the source code of a standalone Go parser for g in package pkg. The generated code
-// depends only on the standard library; its Parse(input) parses from the rule start.
-// WithDocument adds incremental Node parsing; combined with WithTypes it also
-// generates typed Document.ParseAST. WithStream adds Node stream parsing.
-func GenerateGo(g *grammar.Grammar, pkg, start string, opts ...GenOption) ([]byte, error) {
-	o := engine.GenOptions{Package: pkg, Start: start}
+// RuntimeMode selects how generated Go code reaches the runtime package.
+type RuntimeMode = engine.RuntimeMode
+
+// The runtime modes of GenerateGo.
+const (
+	// RuntimeEmbed writes a copy of the runtime into the generated package's internal/runtime
+	// directory, so that the generated code depends only on the standard library. It is the default.
+	RuntimeEmbed = engine.RuntimeEmbed
+	// RuntimeImport imports the runtime, github.com/ornew/pego/runtime, from this module.
+	RuntimeImport = engine.RuntimeImport
+	// RuntimeOnly generates only the embedded copy of the runtime, to refresh a package generated
+	// with RuntimeEmbed without regenerating its parser.
+	RuntimeOnly = engine.RuntimeOnly
+)
+
+// WithRuntime selects how generated Go code reaches the runtime (RuntimeEmbed by default).
+func WithRuntime(mode RuntimeMode) GenOption {
+	return func(o *engine.GenOptions) { o.Runtime = mode }
+}
+
+// WithPackageName sets the package name of generated Go code. It defaults to the last element
+// of the module path.
+func WithPackageName(name string) GenOption {
+	return func(o *engine.GenOptions) { o.Package = name }
+}
+
+// GeneratedFile is a file of generated code. Path is relative to the directory of the generated
+// package and uses slashes.
+type GeneratedFile = engine.GeneratedFile
+
+// GenerateGo generates the files of a Go parser for g in the package with import path module: its
+// Parse(input) parses from the rule start. The files are parser.go, with the code generated from
+// the grammar, api.go, which re-exports the runtime names the parser's users need, and, with
+// RuntimeEmbed, the files of a copy of the runtime in internal/runtime. WithRuntime selects another
+// mode. WithDocument adds incremental Node parsing; combined with WithTypes it also generates
+// typed Document.ParseAST. WithStream adds Node stream parsing.
+func GenerateGo(g *grammar.Grammar, module, start string, opts ...GenOption) ([]GeneratedFile, error) {
+	o := engine.GenOptions{Module: module, Start: start}
 	for _, opt := range opts {
 		opt(&o)
 	}
 	return engine.Generate(g, o)
 }
 
+// GenerateGoRuntime generates only the embedded copy of the runtime for the package with import
+// path module (RuntimeOnly).
+func GenerateGoRuntime(module string) ([]GeneratedFile, error) {
+	return engine.Generate(nil, engine.GenOptions{Module: module, Runtime: RuntimeOnly})
+}
+
 // GenerateTypeScript generates the source code of a standalone TypeScript parser for g: a single ES
 // module without dependencies, whose parse(input) parses from the rule start and returns the same
 // trees and errors as the engine. WithRecognize also generates recognize; WithTypes adds typed
 // declarations and configured-start parseAST/parseASTWithOptions. It does not
-// support stream or incremental parsing.
-func GenerateTypeScript(g *grammar.Grammar, start string, opts ...GenOption) ([]byte, error) {
+// support stream or incremental parsing. The result has one file, parser.ts.
+func GenerateTypeScript(g *grammar.Grammar, start string, opts ...GenOption) ([]GeneratedFile, error) {
 	o := engine.GenOptions{Start: start}
 	for _, opt := range opts {
 		opt(&o)
 	}
-	return engine.GenerateTS(g, o)
+	code, err := engine.GenerateTS(g, o)
+	if err != nil {
+		return nil, err
+	}
+	return []GeneratedFile{{Path: "parser.ts", Content: code}}, nil
 }
 
 // MarshalBinary encodes the parser (bytecode, grammar AST and start rule) in the .pegoc format.
@@ -565,3 +607,6 @@ func (p *Parser) Start() string { return p.start }
 // Grammar returns the parser's grammar. The grammar of a loaded parser has no source positions, and it is
 // nil for a parser saved without the AST.
 func (p *Parser) Grammar() *grammar.Grammar { return p.prog.Grammar }
+
+// ParseRuntimeMode returns the runtime mode named s: "embed", "import" or "only".
+func ParseRuntimeMode(s string) (RuntimeMode, error) { return engine.ParseRuntimeMode(s) }

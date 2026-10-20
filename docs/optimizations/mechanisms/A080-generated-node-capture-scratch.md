@@ -36,7 +36,7 @@ GC-sensitive uncertainty, rather than a general speed claim.
 Evidence records: [092](../092-reuse-generated-node-capture-scratch.md).
 
 Source owners: [`node frame/slot scratch and parser
-release`](../../../internal/engine/genrt/runtime.go), [`capture scratch
+release`](../../../runtime/runtime.go), [`capture scratch
 checks`](../../../internal/engine/gen_frame_scratch_test.go).
 
 The [comparison policy](../../design/024-optimization-mechanism-controls.md)

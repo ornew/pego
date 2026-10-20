@@ -159,7 +159,7 @@ func TestGeneratedTypedOperatorsRuleBodies(t *testing.T) {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 		opts := GenOptions{Package: "operatorsRulebody", Start: "main", Types: true, Recognize: true}
-		code, err := Generate(g, opts)
+		code, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -175,17 +175,17 @@ func TestGeneratedTypedOperatorsRuleBodies(t *testing.T) {
 			t.Fatal("mixed routes: all three operands must use unfinished bodies")
 		}
 		opts.disableTypedOperatorsRuleBodies = true
-		ref, err := Generate(g, opts)
+		ref, err := generateCode(g, opts)
 		if err != nil || strings.Contains(string(ref), "(typed OperatorsRule body inlined)") || strings.Contains(string(code), "disableTypedOperatorsRuleBodies") {
 			t.Fatalf("%s: invalid generation-only control: %v", c.name, err)
 		}
 		opts.Types = false
-		nodeRef, err := Generate(g, opts)
+		nodeRef, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
 		opts.disableTypedOperatorsRuleBodies = false
-		node, err := Generate(g, opts)
+		node, err := generateCode(g, opts)
 		if err != nil || !bytes.Equal(nodeRef, node) {
 			t.Fatalf("%s: typed control changes Node output: %v", c.name, err)
 		}

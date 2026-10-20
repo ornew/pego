@@ -35,7 +35,7 @@ func TestGeneratedDepthBenchmarkWorkloads(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte("module depthbench\n\ngo 1.27.1\n"))
+	write("go.mod", []byte(testGoMod("depthbench")))
 	g, err := syntax.Parse(`type Word = { Text string }
 rule main Word = t:(n+) #atomic => Word{Text: text($t)}
 rule n Word = t:("(" n ")" / "é") #atomic => Word{Text: text($t)}`)
@@ -48,7 +48,7 @@ rule n Word = t:("(" n ")" / "é") #atomic => Word{Text: text($t)}`)
 		if convert {
 			pkg = "convert"
 		}
-		code, err := Generate(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, convertTypes: convert})
+		code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, convertTypes: convert})
 		if err != nil {
 			t.Fatal(err)
 		}

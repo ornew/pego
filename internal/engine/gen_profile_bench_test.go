@@ -27,7 +27,7 @@ func TestExportGeneratedGoProfileBenchmarks(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte("module profilebench\n\ngo 1.27.1\n"))
+	write("go.mod", []byte(testGoMod("profilebench")))
 	sizes := map[string]int{}
 	for _, f := range []struct{ name, path, input string }{
 		{"json", "parsers/json/json.pego", "[" + strings.TrimSuffix(strings.Repeat(`{"name":"éclair","n":123,"ok":true},`, 64), ",") + "]"},
@@ -52,7 +52,7 @@ func TestExportGeneratedGoProfileBenchmarks(t *testing.T) {
 				if observed {
 					variant = "observed"
 				}
-				code, err := Generate(g, GenOptions{Package: variant, Start: "main", Types: typed, Recognize: true, Observability: observed})
+				code, err := generateCode(g, GenOptions{Package: variant, Start: "main", Types: typed, Recognize: true, Observability: observed})
 				if err != nil {
 					t.Fatal(err)
 				}

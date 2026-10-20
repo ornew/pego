@@ -28,7 +28,7 @@ import (
 
 // typedGo returns the Go source of the typed values for a parser starting at rule start, and
 // the name of the helper type Span. Unless conv is set, ParseAST runs the typed runtime
-// (genrt/typed.go) when every value it can produce has a Go type of its own; otherwise it converts
+// (runtime/typed.go) when every value it can produce has a Go type of its own; otherwise it converts
 // the result of Parse.
 func (g *generator) typedGo(start *rule, conv bool) (string, string, error) {
 	info := g.prog.typed
@@ -231,7 +231,7 @@ func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
  if err != nil { var zero %s; return zero, err }
  a := &tslabs{}
  c := &typedDocumentClone{}
- return TypedDocumentParse(d, trules[%d], o, a, c, func(v any) %s {
+ return TypedDocumentParse(d.Document, trules[%d], o, a, c, func(v any) %s {
   value := %s
   return %s
  })
@@ -341,24 +341,8 @@ func (t *typedGen) name() {
 	for n := range runtimeHookNames {
 		used[n] = true
 	}
-	if t.g.observability {
-		for _, name := range []string{"TraceKind", "TraceEvent", "TraceEnter", "TraceExit", "TraceSkipped", "WithTrace", "WithTraceFilter", "WithTraceMaxDepth", "WithProfile", "Profile", "ProfileSnapshot", "RuleProfile", "ProfileLocation", "SkipReasonCount"} {
-			used[name] = true
-		}
-	}
-	if t.g.streamStart != nil {
-		for _, name := range []string{"ParseStream", "ParseStreamAST", "StreamValue", "Iterate", "IterateAST", "StreamIterator",
-			"StreamASTIterator", "ErrStreamClosed", "WithDiagnosticCallback", "WithDiagnosticLimit", "TruncatedSyntaxErrors"} {
-			used[name] = true
-		}
-	}
-	if t.g.document {
-		for _, name := range []string{"Document", "NewDocument", "ParseStats"} {
-			used[name] = true
-		}
-		if t.g.observability {
-			used["ErrDocumentBusy"] = true
-		}
+	for _, name := range t.g.modeRuntimeNames(true) {
+		used[name] = true
 	}
 	var all []string
 	for name := range t.g.prog.types {
@@ -659,7 +643,7 @@ func (a *astConv) toMatch(n *Node) *TNode[string] {
 		if v, ok := a.values[n]; ok { return v.(*TNode[string]) }
 	}
 	v := astNew(&a.match)
-	*v = TNode[string]{%[1]s: %[1]s{int(n.RawStart), int(n.RawEnd)}, Value: n.RawText}
+	*v = TNode[string]{Span: %[1]s{Start: int(n.RawStart), End: int(n.RawEnd)}, Value: n.RawText}
 	if !named {
 		a.remember(n, v)
 	}
@@ -676,7 +660,7 @@ func (a *astConv) toNode(n *Node) *TNode[any] {
 	if v, ok := a.values[n]; ok {
 		if v, ok := v.(*TNode[any]); ok { return v }
 	}
-	v := &TNode[any]{%[1]s: %[1]s{int(n.RawStart), int(n.RawEnd)}}
+	v := &TNode[any]{Span: %[1]s{Start: int(n.RawStart), End: int(n.RawEnd)}}
 	if !n.RawKind.NodeType() {
 		a.remember(n, v) // as toMatch
 	}
@@ -706,7 +690,7 @@ func (a *astConv) toError(n *Node) *Error {
 	if v, ok := a.values[n]; ok { return v.(*Error) }
 	msg, _ := a.field(n, "message").(string)
 	v := astNew(&a.error)
-	*v = Error{%[1]s: %[1]s{int(n.RawStart), int(n.RawEnd)}, Text: n.RawText, Message: msg}
+	*v = Error{Span: %[1]s{Start: int(n.RawStart), End: int(n.RawEnd)}, Text: n.RawText, Message: msg}
 	a.remember(n, v)
 	return v
 }
@@ -1027,27 +1011,27 @@ func (t *typedGen) back(x ty, v string) string {
 		if x == tyInt || x == tyString || x == tyBool {
 			return "any(" + v + ")"
 		}
-		return "TBack(" + v + ")"
+		return "TBack(tpubHooks, " + v + ")"
 	case namedTy:
 		if x.kind == 's' {
 			return "TPtr(" + v + ")"
 		}
-		return "TBack(" + v + ")"
+		return "TBack(tpubHooks, " + v + ")"
 	case recordTy, unionTy:
-		return "TBack(" + v + ")"
+		return "TBack(tpubHooks, " + v + ")"
 	case nodeTy:
 		if x.name != "" {
 			return t.backHelper(x) + "(" + v + ")"
 		}
 		if x.value == tyString || x.value == tyTop || x.value == tyAny {
-			return "TBack(" + v + ")"
+			return "TBack(tpubHooks, " + v + ")"
 		}
 		return t.backHelper(x) + "(" + v + ")"
 	case tupleTy, vrule:
 		return t.backHelper(x) + "(" + v + ")"
 	case optTy:
 		if b, ok := x.elem.(basicTy); ok && (b == tyInt || b == tyString || b == tyBool) {
-			return "tderef(" + v + ")"
+			return "TDeref(" + v + ")"
 		}
 		if _, ok := x.elem.(tupleTy); ok {
 			return t.backHelper(x) + "(" + v + ")"
@@ -1089,7 +1073,7 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 		case tyBool:
 			return "astBool(" + v + ")"
 		case tyErr:
-			return "TPubError(" + v + ")"
+			return "(*Error)(TPubError(" + v + "))"
 		}
 		return t.tpub(v, a)
 	case vrule:
@@ -1107,7 +1091,7 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 		case x.value == tyTop || x.value == tyAny:
 			return t.tpubNode(v, a)
 		case x.value == tyString && len(x.caps) == 0:
-			return "TPubMatch(" + v + ")"
+			return "(*TNode[string])(TPubMatch(" + v + "))"
 		}
 		return t.vdconvHelper(x) + "(" + a + ", " + v + ")"
 	case recordTy:
@@ -1115,9 +1099,9 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 	case namedTy:
 		switch {
 		case x == tyMatch:
-			return "TPubMatch(" + v + ")"
+			return "(*TNode[string])(TPubMatch(" + v + "))"
 		case x == tyError:
-			return "TPubError(" + v + ")"
+			return "(*Error)(TPubError(" + v + "))"
 		case x.kind == 'c':
 			return t.tpubNode(v, a)
 		}
@@ -1156,17 +1140,17 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 // chunks a and remembered there (tpubIn), so that a node converts to one value everywhere.
 func (t *typedGen) tpub(v, a string) string {
 	if len(t.nodeTypes) == 0 {
-		return "TPub(" + v + ")"
+		return "TPubIn(tpubHooks, nil, " + v + ")"
 	}
-	return "TPubIn(" + a + ", " + v + ")"
+	return "TPubIn(tpubHooks, " + a + ", " + v + ")"
 }
 
 // tpubNode is tpub for the runtime's tpubNode.
 func (t *typedGen) tpubNode(v, a string) string {
 	if len(t.nodeTypes) == 0 {
-		return "TPubNode(" + v + ")"
+		return "(*TNode[any])(TPubNodeIn(tpubHooks, nil, " + v + "))"
 	}
-	return "TPubNodeIn(" + a + ", " + v + ")"
+	return "(*TNode[any])(TPubNodeIn(tpubHooks, " + a + ", " + v + "))"
 }
 
 // typedRuntime writes the constructors of the struct types and the list converters
@@ -1205,7 +1189,7 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 		for i, f := range fields {
 			fmt.Fprintf(&cons, "\tc.P.StepWork()\n\tv.%s = %s\n", t.fieldGo(f.name), t.dconv(f.t, fmt.Sprintf("f%d", i), "a"))
 		}
-		fmt.Fprintf(&cons, "\tif final {\n\t\tv.%[1]s = %[1]s{c.Start, c.End}\n\t\treturn v\n\t}\n\tfirst, start, end := true, 0, 0\n", span)
+		fmt.Fprintf(&cons, "\tif final {\n\t\tv.%[1]s = %[1]s{Start: c.Start, End: c.End}\n\t\treturn v\n\t}\n\tfirst, start, end := true, 0, 0\n", span)
 		for i := range fields {
 			fmt.Fprintf(&cons, "\tc.P.StepWork()\n\tFieldSpanOf(f%d, &first, &start, &end)\n", i)
 		}
@@ -1410,4 +1394,26 @@ func tupleName(name string) bool {
 		return false
 	}
 	return strings.Trim(digits, "0123456789") == ""
+}
+
+// modeRuntimeNames returns the runtime names that only the generated package of an enabled option
+// (observability, streaming, Documents) uses. Typed values avoid them when the option is on; with
+// it off they are free for the grammar, so enabled selects the names of the options that are on, and
+// otherwise the names of the options that are off.
+func (g *generator) modeRuntimeNames(enabled bool) []string {
+	var out []string
+	if g.observability == enabled {
+		out = append(out, "TraceKind", "TraceEvent", "TraceEnter", "TraceExit", "TraceSkipped", "WithTrace", "WithTraceFilter", "WithTraceMaxDepth", "WithProfile", "Profile", "ProfileSnapshot", "RuleProfile", "ProfileLocation", "SkipReasonCount")
+	}
+	if (g.streamStart != nil) == enabled {
+		out = append(out, "ParseStream", "ParseStreamAST", "StreamValue", "Iterate", "IterateAST", "StreamIterator",
+			"StreamASTIterator", "ErrStreamClosed", "WithDiagnosticCallback", "WithDiagnosticLimit", "TruncatedSyntaxErrors")
+	}
+	if g.document == enabled {
+		out = append(out, "Document", "NewDocument", "ParseStats")
+	}
+	if (g.document && g.observability) == enabled {
+		out = append(out, "ErrDocumentBusy")
+	}
+	return out
 }

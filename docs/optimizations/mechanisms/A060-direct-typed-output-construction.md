@@ -34,7 +34,7 @@ Evidence records: [048](../048-a-typed-runtime-for-parseast.md).
 
 Source owners: [`typed constructors and conversion
 generation`](../../../internal/engine/gen_types.go),
-[`tparser`](../../../internal/engine/genrt/typed.go), [`typed runtime
+[`tparser`](../../../runtime/typed.go), [`typed runtime
 design`](../../design/012-typed-values.md).
 
 The [comparison policy](../../design/024-optimization-mechanism-controls.md)

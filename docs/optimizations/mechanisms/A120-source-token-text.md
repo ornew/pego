@@ -33,7 +33,7 @@ Evidence records:
 [010](../010-zero-copy-token-text-reusable-evaluation-context.md).
 
 Source owners: [`input.text and buildOffs`](../../../internal/engine/input.go),
-[`generated text extraction`](../../../internal/engine/genrt/runtime.go),
+[`generated text extraction`](../../../runtime/runtime.go),
 [`TypeScript text extraction`](../../../internal/engine/tsrt/runtime.ts).
 
 The [comparison policy](../../design/024-optimization-mechanism-controls.md)

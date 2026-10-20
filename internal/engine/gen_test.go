@@ -400,7 +400,7 @@ func testGeneratedParsersCorpus(t *testing.T, goBin string, cases []genCase, opt
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", "module gentest\n\ngo 1.24\n")
+	write("go.mod", testGoMod("gentest"))
 	var imports, parsers, recognizers, viewers strings.Builder
 	var inputs [][]string
 	var want []string
@@ -410,7 +410,7 @@ func testGeneratedParsersCorpus(t *testing.T, goBin string, cases []genCase, opt
 			t.Fatalf("%s: %v", c.name, err)
 		}
 		opts.Package, opts.Start, opts.Recognize = fmt.Sprintf("g%d", i), "main", true
-		code, err := Generate(g, opts)
+		code, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -497,19 +497,19 @@ func main() {
 
 func TestGenerateErrors(t *testing.T) {
 	g, _ := syntax.Parse(`rule main = "a"`)
-	if _, err := Generate(g, GenOptions{Package: "p", Start: "nope"}); err == nil || err.Error() != "start rule nope is not defined" {
+	if _, err := generateCode(g, GenOptions{Package: "p", Start: "nope"}); err == nil || err.Error() != "start rule nope is not defined" {
 		t.Errorf("got %v", err)
 	}
-	if _, err := Generate(g, GenOptions{Start: "main"}); err == nil {
+	if _, err := generateCode(g, GenOptions{Start: "main"}); err == nil {
 		t.Error("expected an error for a missing package name")
 	}
 	for _, pkg := range []string{"foo-bar", "type", "1p", "_"} {
-		if _, err := Generate(g, GenOptions{Package: pkg, Start: "main"}); err == nil || err.Error() != fmt.Sprintf("invalid package name %q", pkg) {
+		if _, err := generateCode(g, GenOptions{Package: pkg, Start: "main"}); err == nil || err.Error() != fmt.Sprintf("invalid package name %q", pkg) {
 			t.Errorf("package %q: got %v", pkg, err)
 		}
 	}
 	bad, _ := syntax.Parse(`rule main = x`)
-	if _, err := Generate(bad, GenOptions{Package: "p", Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
+	if _, err := generateCode(bad, GenOptions{Package: "p", Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
 		t.Errorf("got %v", err)
 	}
 }
@@ -607,7 +607,7 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, refer
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", "module gentest\n\ngo 1.24\n")
+	write("go.mod", testGoMod("gentest"))
 	var imports, parsers, converters strings.Builder
 	var inputs [][]string
 	var wantErr []string
@@ -617,7 +617,7 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, refer
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := Generate(g, GenOptions{Package: fmt.Sprintf("g%d", i), Start: "main", Types: true})
+		code, err := generateCode(g, GenOptions{Package: fmt.Sprintf("g%d", i), Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -636,7 +636,7 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, refer
 		// corpus, or a disabled optimization for focused differential tests.
 		refOpts := reference
 		refOpts.Package, refOpts.Start, refOpts.Types = fmt.Sprintf("c%d", i), "main", true
-		code, err = Generate(g, refOpts)
+		code, err = generateCode(g, refOpts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

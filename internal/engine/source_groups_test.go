@@ -61,7 +61,7 @@ rule number Alias = v1:[0-9]+ => Number{Text: text($v1)}
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, generate := range []func(*grammar.Grammar, GenOptions) ([]byte, error){Generate, GenerateTS} {
+			for _, generate := range []func(*grammar.Grammar, GenOptions) ([]byte, error){generateCode, GenerateTS} {
 				got, err := generate(input, opts)
 				if err != nil {
 					t.Fatal(err)

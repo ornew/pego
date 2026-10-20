@@ -30,7 +30,7 @@ rule repeated A = t:((x:"b") #repeat(2) #cut) => A{Text: text($t)}`)
 			name = "general"
 		}
 		t.Run(name, func(t *testing.T) {
-			code, err := Generate(g, GenOptions{Package: "poolfixture", Start: "main", Types: true, disableTypedCuts: reference})
+			code, err := generateCode(g, GenOptions{Package: "poolfixture", Start: "main", Types: true, disableTypedCuts: reference})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -50,7 +50,7 @@ rule repeated A = t:((x:"b") #repeat(2) #cut) => A{Text: text($t)}`)
 				fixture = strings.Replace(fixture, "const generalCapture = false", "const generalCapture = true", 1)
 			}
 			for name, contents := range map[string][]byte{
-				"parser.go": code, "pool_test.go": []byte(fixture), "go.mod": []byte("module poolfixture\n\ngo 1.27.1\n"),
+				"parser.go": code, "pool_test.go": []byte(fixture), "go.mod": []byte(testGoMod("poolfixture")),
 			} {
 				if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
 					t.Fatal(err)
@@ -79,13 +79,13 @@ rule small A = ("b") #atomic`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := Generate(g, GenOptions{Package: "main", Start: "main"})
+	code, err := generateCode(g, GenOptions{Package: "main", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
 	for name, contents := range map[string][]byte{
-		"parser.go": code, "pool_test.go": []byte(untypedPoolFixture), "go.mod": []byte("module untypedpool\n\ngo 1.27.1\n"),
+		"parser.go": code, "pool_test.go": []byte(untypedPoolFixture), "go.mod": []byte(testGoMod("untypedpool")),
 	} {
 		if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
 			t.Fatal(err)
@@ -101,6 +101,7 @@ rule small A = ("b") #atomic`)
 const untypedPoolFixture = `package main
 
 import (
+	pegort "github.com/ornew/pego/runtime"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -120,16 +121,16 @@ func TestUntypedPoolRetention(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			input := tc.prefix + "b"
-			p := &Parser{MaxDepth: pegoGrammar.maxDepth}
-			p.setGrammar(pegoGrammar)
+			p := &pegort.Parser{MaxDepth: pegoGrammar.X_maxDepth}
+			p.X_setGrammar(pegoGrammar)
 			if tc.unit == Bytes {
-				p.unit, p.bs, p.n = Bytes, input, len(input)
+				p.X_unit, p.X_bs, p.X_n = Bytes, input, len(input)
 			} else {
-				p.setSource(input)
+				p.X_setSource(input)
 			}
 			n, ok := p.Call(rules[0], 0)
-			if !ok || p.Pos != p.n {
-				t.Fatalf("large parse failed at %d/%d", p.Pos, p.n)
+			if !ok || p.Pos != p.X_n {
+				t.Fatalf("large parse failed at %d/%d", p.Pos, p.X_n)
 			}
 			before, err := json.Marshal(n)
 			if err != nil {
@@ -139,21 +140,21 @@ func TestUntypedPoolRetention(t *testing.T) {
 				t.Fatalf("large result: type=%s span=[%d,%d) text=%q", n.Type(), n.RawStart, n.RawEnd, n.RawText)
 			}
 
-			p.release()
-			if p.bs != "" || p.src != "" || p.n != 0 || p.Pos != 0 || len(p.In) != 0 || len(p.offs) != 0 {
+			p.X_release()
+			if p.X_bs != "" || p.X_src != "" || p.X_n != 0 || p.Pos != 0 || len(p.In) != 0 || len(p.X_offs) != 0 {
 				t.Fatal("released parser still references the input")
 			}
-			if cap(p.In) != 0 || cap(p.offs) != 0 {
-				t.Fatalf("oversized input buffers retained: in=%d offsets=%d", cap(p.In), cap(p.offs))
+			if cap(p.In) != 0 || cap(p.X_offs) != 0 {
+				t.Fatalf("oversized input buffers retained: in=%d offsets=%d", cap(p.In), cap(p.X_offs))
 			}
-			for i, entry := range p.memo.slots[:cap(p.memo.slots)] {
+			for i, entry := range p.X_memo.X_slots[:cap(p.X_memo.X_slots)] {
 				if entry != nil {
 					t.Fatalf("memo slot %d retains an entry", i)
 				}
 			}
-			for i, chunk := range p.memo.chunks {
+			for i, chunk := range p.X_memo.X_chunks {
 				for j, entry := range chunk {
-					if entry.node != nil || entry.errs != nil || entry.expected != nil || entry.next != nil || entry.env != nil {
+					if entry.X_node != nil || entry.X_errs != nil || entry.X_expected != nil || entry.X_next != nil || entry.X_env != nil {
 						t.Fatalf("memo chunk %d entry %d retains parse state", i, j)
 					}
 				}
@@ -182,6 +183,7 @@ func TestUntypedPoolRetention(t *testing.T) {
 const typedPoolFixture = `package poolfixture
 
 import (
+	pegort "github.com/ornew/pego/runtime"
 	"fmt"
 	"runtime"
 	"strings"
@@ -190,10 +192,10 @@ import (
 
 const generalCapture = false
 
-func checkTrail(t *testing.T, p *TParser) {
+func checkTrail(t *testing.T, p *pegort.TParser) {
 	t.Helper()
 	for i, u := range p.Trail[:cap(p.Trail)] {
-		if u.f != nil || u.old != nil || u.slot != 0 {
+		if u.X_f != nil || u.X_old != nil || u.X_slot != 0 {
 			t.Errorf("trail slot %d retains discarded undo", i)
 		}
 	}
@@ -201,8 +203,8 @@ func checkTrail(t *testing.T, p *TParser) {
 
 func TestTypedPoolRules(t *testing.T) {
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
-		p := &TParser{Parser: &Parser{MaxDepth: pegoGrammar.maxDepth}}
-		v, err := p.run(trules[0], strings.Repeat("a", 2<<20)+"b", parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
+		p := &pegort.TParser{Parser: &pegort.Parser{MaxDepth: pegoGrammar.X_maxDepth}}
+		v, err := p.X_run(trules[0], strings.Repeat("a", 2<<20)+"b", pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
 		if err != nil || v.(*A).Text != "b" {
 			t.Fatalf("large parse: %v", err)
 		}
@@ -210,43 +212,43 @@ func TestTypedPoolRules(t *testing.T) {
 			t.Fatal("capture rule did not use and discard the expected undo trail")
 		}
 		checkTrail(t, p)
-		p.recycle()
+		p.X_recycle()
 		checkTrail(t, p)
 		// Recycling scratch must leave the caller's returned terminal unchanged.
 		if v.(*A).Text != "b" {
 			t.Fatal("returned value changed")
 		}
-		if _, err := p.run(trules[0], "", parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{}); err == nil {
+		if _, err := p.X_run(trules[0], "", pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{}); err == nil {
 			t.Fatal("empty parse accepted")
 		}
-		p.recycle()
+		p.X_recycle()
 		checkTrail(t, p)
-		if v, err := p.run(trules[0], "ab", parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{}); err != nil || v.(*A).Text != "b" {
+		if v, err := p.X_run(trules[0], "ab", pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{}); err != nil || v.(*A).Text != "b" {
 			t.Fatalf("small followup: %v", err)
 		}
-		p.recycle()
-		if v, err := p.run(trules[3], "bb", parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{}); err != nil || v.(*A).Text != "bb" {
+		p.X_recycle()
+		if v, err := p.X_run(trules[3], "bb", pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{}); err != nil || v.(*A).Text != "bb" {
 			t.Fatalf("repeated capture: %v", err)
 		}
 		checkTrail(t, p)
-		p.recycle()
+		p.X_recycle()
 	}
 }
 
 func TestTypedPoolUndoAndSaved(t *testing.T) {
-	p := &TParser{Parser: &Parser{MaxDepth: pegoGrammar.maxDepth}}
-	f := &TCaptureFrame{Vals: []any{"before"}}
+	p := &pegort.TParser{Parser: &pegort.Parser{MaxDepth: pegoGrammar.X_maxDepth}}
+	f := &pegort.TCaptureFrame{Vals: []any{"before"}}
 	p.Frame = f
 	m := p.Mark()
 	p.SetCapture(0, "outer")
 	inner := p.Mark()
 	p.SetCapture(0, "inner")
 	p.Reset(inner)
-	if f.Vals[0] != "outer" || len(p.Trail) != 1 || p.Trail[0].old != "before" {
+	if f.Vals[0] != "outer" || len(p.Trail) != 1 || p.Trail[0].X_old != "before" {
 		t.Fatal("reset damaged live undo")
 	}
 	for _, u := range p.Trail[len(p.Trail):cap(p.Trail)] {
-		if u.f != nil || u.old != nil {
+		if u.X_f != nil || u.X_old != nil {
 			t.Error("reset retained undo tail")
 		}
 	}
@@ -257,7 +259,7 @@ func TestTypedPoolUndoAndSaved(t *testing.T) {
 	checkTrail(t, p)
 	// InvokePlain still creates trails for captures in repeated element frames.
 	p.SetCapture(0, "outer")
-	r := &TRule{Rule: &Rule{Novalue: true}, Body: func(p *TParser, _ int) (any, bool) {
+	r := &pegort.TRule{Rule: &pegort.Rule{Novalue: true}, Body: func(p *pegort.TParser, _ int) (any, bool) {
 		prev := p.Frame
 		p.Frame = p.NewFrame(1)
 		p.SetCapture(0, "changed")
@@ -265,21 +267,21 @@ func TestTypedPoolUndoAndSaved(t *testing.T) {
 		return nil, true
 	}}
 	p.InvokePlain(r, 0)
-	if len(p.Trail) != 1 || p.Trail[0].old != "before" || f.Vals[0] != "outer" {
+	if len(p.Trail) != 1 || p.Trail[0].X_old != "before" || f.Vals[0] != "outer" {
 		t.Fatal("call damaged parent undo")
 	}
 	for _, u := range p.Trail[len(p.Trail):cap(p.Trail)] {
-		if u.f != nil || u.old != nil {
+		if u.X_f != nil || u.X_old != nil {
 			t.Error("call retained undo tail")
 		}
 	}
 	p.Reset(m)
 	checkTrail(t, p)
 	// OperatorsRule's saved-capture scratch can shrink after a wider candidate.
-	p.saved = []any{&A{Text: strings.Repeat("a", 1024)}, &A{Text: "tail"}}
-	p.saved = append(p.saved[:0], nil)
-	p.recycle()
-	for _, v := range p.saved[:cap(p.saved)] {
+	p.X_saved = []any{&A{Text: strings.Repeat("a", 1024)}, &A{Text: "tail"}}
+	p.X_saved = append(p.X_saved[:0], nil)
+	p.X_recycle()
+	for _, v := range p.X_saved[:cap(p.X_saved)] {
 		if v != nil {
 			t.Error("saved capture tail survived recycling")
 		}
@@ -288,13 +290,13 @@ func TestTypedPoolUndoAndSaved(t *testing.T) {
 
 // The parser is kept explicitly, so GC cannot hide references by emptying
 // sync.Pool. Returned terminals are dropped before measuring scratch retention.
-func retainedTypedParser(unit PositionUnit, n int) *TParser {
-	p := &TParser{Parser: &Parser{MaxDepth: pegoGrammar.maxDepth}}
-	v, err := p.run(trules[0], strings.Repeat("a", n)+"b", parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
+func retainedTypedParser(unit PositionUnit, n int) *pegort.TParser {
+	p := &pegort.TParser{Parser: &pegort.Parser{MaxDepth: pegoGrammar.X_maxDepth}}
+	v, err := p.X_run(trules[0], strings.Repeat("a", n)+"b", pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
 	if err != nil || v.(*A).Text != "b" {
 		panic(err)
 	}
-	p.recycle()
+	p.X_recycle()
 	return p
 }
 

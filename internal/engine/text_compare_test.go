@@ -64,14 +64,14 @@ func TestGeneratedTextFieldComparisons(t *testing.T) {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module comparefixture\n\ngo 1.27.1\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("comparefixture")), 0644); err != nil {
 		t.Fatal(err)
 	}
 	inputs := fmt.Sprintf("%#v", textCompareInputs)
 	pkg := func(convert, boxed bool) string { return fmt.Sprintf("compare_%v_%v", convert, boxed) }
 	for _, convert := range []bool{false, true} {
 		for _, boxed := range []bool{false, true} {
-			code, err := Generate(g, GenOptions{Package: pkg(convert, boxed), Start: "main", Types: true, convertTypes: convert, boxedComparisons: boxed})
+			code, err := generateCode(g, GenOptions{Package: pkg(convert, boxed), Start: "main", Types: true, convertTypes: convert, boxedComparisons: boxed})
 			if err != nil {
 				t.Fatal(err)
 			}

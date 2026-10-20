@@ -53,12 +53,12 @@ func TestGeneratedTypedFilterIdentity(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte("module filteridentity\n\ngo 1.24\n"))
+	write("go.mod", []byte(testGoMod("filteridentity")))
 	var imports, consumers strings.Builder
 	for i, conversion := range []bool{false, true} {
 		for _, start := range []string{"main", "empty"} {
 			pkg := fmt.Sprintf("p%d%s", i, start)
-			code, err := Generate(grammar, GenOptions{Package: pkg, Start: start, Types: true, convertTypes: conversion})
+			code, err := generateCode(grammar, GenOptions{Package: pkg, Start: start, Types: true, convertTypes: conversion})
 			if err != nil {
 				t.Fatalf("conversion=%t start=%s: %v", conversion, start, err)
 			}

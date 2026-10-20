@@ -63,7 +63,7 @@ func (s *commentScanner) code(depth int, attr bool) {
 				if strings.IndexByte(text, '\r') >= 0 {
 					text = strings.ReplaceAll(text, "\r", "")
 				}
-				s.out = append(s.out, Comment{Span{start, start + len(src[start:s.i])}, text})
+				s.out = append(s.out, Comment{Span{Start: start, End: start + len(src[start:s.i])}, text})
 			}
 		case c == '"' || c == '\'' || c == '#':
 			j := s.i

@@ -71,14 +71,14 @@ func BenchmarkTypedLocalLayoutGeneration(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			code, err := Generate(g, opts)
+			code, err := generateCode(g, opts)
 			if err != nil {
 				b.Fatal(err)
 			}
 			b.ReportAllocs()
 			b.ResetTimer()
 			for b.Loop() {
-				if _, err := Generate(g, opts); err != nil {
+				if _, err := generateCode(g, opts); err != nil {
 					b.Fatal(err)
 				}
 			}
@@ -90,6 +90,7 @@ func BenchmarkTypedLocalLayoutGeneration(b *testing.B) {
 const typedLocalLayoutWorkloadFixture = `package lrfixture
 
 import (
+	pegort "github.com/ornew/pego/runtime"
     "encoding/json"
     "fmt"
     "strings"
@@ -118,12 +119,12 @@ func TestLocalLayoutWorkload(t *testing.T) {
         saved, err := ParseAST(localInput(3,false),WithUnit(unit))
         if !checkLocal(saved,err,3,false,unit) { t.Fatalf("saved value %v %v",saved,err) }
         before, _ := json.Marshal(saved)
-        p := &TParser{Parser:&Parser{}}
+        p := &pegort.TParser{Parser:&pegort.Parser{}}
         for _, n := range []int{1,128,1} {
             for _, rejected := range []bool{false,true} {
                 input := localInput(n,rejected)
-                value, err := p.run(trules[0],input,parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth},&tslabs{})
-                v := TAs[*Doc](value)
+                value, err := p.X_run(trules[0],input,pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth},&tslabs{})
+                v := pegort.TAs[*Doc](value)
                 if !checkLocal(v,err,n,rejected,unit) { t.Fatalf("%d/%v: %v %v",n,rejected,v,err) }
                 data, _ := json.Marshal(struct { Value any; Error string }{v,fmt.Sprint(err)})
                 pooled, pooledErr := ParseAST(input,WithUnit(unit))
@@ -132,9 +133,9 @@ func TestLocalLayoutWorkload(t *testing.T) {
                 fmt.Printf("OBS %v %d/%v %s\n",unit,n,rejected,data)
                 if p.Depth != 0 || p.Frame != nil || len(p.Trail) != 0 { t.Fatal("live invocation state") }
                 for _, u := range p.Trail[:cap(p.Trail)] {
-                    if u.f != nil || u.old != nil || u.slot != 0 { t.Fatal("retained undo state") }
+                    if u.X_f != nil || u.X_old != nil || u.X_slot != 0 { t.Fatal("retained undo state") }
                 }
-                p.recycle()
+                p.X_recycle()
                 after, _ := json.Marshal(struct { Value any; Error string }{v,fmt.Sprint(err)})
                 if string(after) != string(data) { t.Fatal("recycle changed returned result") }
             }

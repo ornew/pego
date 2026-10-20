@@ -65,7 +65,7 @@ rule main Tok = t:(("é" / "�")* $$) #atomic => Tok{Text: text($t)}`, `func fr
 			}
 			{
 				variant := "scratch"
-				code, err := Generate(g, GenOptions{Package: "framefixture", Start: "main", Types: true, Recognize: true})
+				code, err := generateCode(g, GenOptions{Package: "framefixture", Start: "main", Types: true, Recognize: true})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -76,14 +76,14 @@ rule main Tok = t:(("é" / "�")* $$) #atomic => Tok{Text: text($t)}`, `func fr
 				depthLimit := "maxDepth"
 				if strings.Contains(string(code), "type ParseOption ") {
 					workload = strings.ReplaceAll(workload, ", unit)", ", WithUnit(unit))")
-					depthLimit = "pegoGrammar.maxDepth"
+					depthLimit = "pegoGrammar.X_maxDepth"
 				}
 				fixture = strings.ReplaceAll(fixture, "FRAME_DEPTH_LIMIT", depthLimit)
 				path := filepath.Join(dir, c.name, variant)
 				if err := os.MkdirAll(path, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				for name, data := range map[string][]byte{"parser.go": code, "frames_test.go": []byte(fixture), "bench_test.go": []byte(workload), "go.mod": []byte("module framefixture\n\ngo 1.27.1\n")} {
+				for name, data := range map[string][]byte{"parser.go": code, "frames_test.go": []byte(fixture), "bench_test.go": []byte(workload), "go.mod": []byte(testGoMod("framefixture"))} {
 					if err := os.WriteFile(filepath.Join(path, name), data, 0o644); err != nil {
 						t.Fatal(err)
 					}
@@ -103,16 +103,18 @@ rule main Tok = t:(("é" / "�")* $$) #atomic => Tok{Text: text($t)}`, `func fr
 }
 
 const frameScratchFixture = `package framefixture
+
+import pegort "github.com/ornew/pego/runtime"
 import("crypto/sha256";"encoding/json";"fmt";"strings";"sync";"testing")
 const captureCase = CAPTURE_CASE
 func frameJSON(n *Node,err error)string {out:=map[string]any{"node":n};if err!=nil {out["err"]=err.Error()};b,_:=json.Marshal(out);return string(b)}
-func frameCleared(t *testing.T,p *Parser) {
+func frameCleared(t *testing.T,p *pegort.Parser) {
  t.Helper()
- if p.captureScratch.frameN!=0 || p.captureScratch.slotCI!=0 || p.captureScratch.slotOff!=0 {t.Fatal("scratch cursor survived release")}
- for _,chunk:=range p.captureScratch.frames {for _,f:=range chunk {if f.Vals!=nil {t.Fatal("released frame retains values")}}}
- for _,chunk:=range p.captureScratch.slots {for _,v:=range chunk {if v!=nil {t.Fatal("released slot retains values")}}}
- for _,u:=range p.Trail[:cap(p.Trail)] {if u.f!=nil || u.old!=nil {t.Fatal("released trail retains frame or value")}}
- for _,v:=range p.saved[:cap(p.saved)] {if v!=nil {t.Fatal("released saved captures retain a value")}}
+ if p.X_captureScratch.X_frameN!=0 || p.X_captureScratch.X_slotCI!=0 || p.X_captureScratch.X_slotOff!=0 {t.Fatal("scratch cursor survived release")}
+ for _,chunk:=range p.X_captureScratch.X_frames {for _,f:=range chunk {if f.Vals!=nil {t.Fatal("released frame retains values")}}}
+ for _,chunk:=range p.X_captureScratch.X_slots {for _,v:=range chunk {if v!=nil {t.Fatal("released slot retains values")}}}
+ for _,u:=range p.Trail[:cap(p.Trail)] {if u.X_f!=nil || u.X_old!=nil {t.Fatal("released trail retains frame or value")}}
+ for _,v:=range p.X_saved[:cap(p.X_saved)] {if v!=nil {t.Fatal("released saved captures retain a value")}}
 }
 func TestFrameResults(t *testing.T) {
  small,large,invalid:=frameInputs()
@@ -144,20 +146,20 @@ func TestFrameResults(t *testing.T) {
  }
 }
 func TestFrameAbortCleanup(t *testing.T) {
- var observed *Parser
- r:=&Rule{Name:"abort-test",Seen:-1,Scope:[]string{"x"},Body:func(p *Parser,_ int)(*Node,bool){
-  observed=p;p.SetCapture(0,p.NewNode(Node{RawText:"abandoned"}));p.saved=append(p.saved,p.Frame.Vals[0]);panic(fatal{fmt.Errorf("fixture abort")})
+ var observed *pegort.Parser
+ r:=&pegort.Rule{Name:"abort-test",Seen:-1,Scope:[]string{"x"},Body:func(p *pegort.Parser,_ int)(*Node,bool){
+  observed=p;p.SetCapture(0,p.NewNode(Node{RawText:"abandoned"}));p.X_saved=append(p.X_saved,p.Frame.Vals[0]);panic(pegort.X_fatal{fmt.Errorf("fixture abort")})
  }}
- g:=NewGrammar(0);g.SetRules([]*Rule{r},0);g.Share(pegoGrammar)
- if _,err:=RunParse(r,"",nil);err==nil || err.Error()!="fixture abort" {t.Fatal("abort did not propagate")}
+ g:=pegort.NewGrammar(0);g.SetRules([]*pegort.Rule{r},0);g.Share(pegoGrammar)
+ if _,err:=pegort.RunParse(r,"",nil);err==nil || err.Error()!="fixture abort" {t.Fatal("abort did not propagate")}
  frameCleared(t,observed)
 }
 func TestFrameDepthAbortCleanup(t *testing.T) {
- var observed *Parser
- r:=&Rule{Name:"depth-abort",Seen:-1,Scope:[]string{"x"}}
- r.Body=func(p *Parser,_ int)(*Node,bool){observed=p;p.SetCapture(0,p.NewNode(Node{RawText:"abandoned"}));p.Depth=FRAME_DEPTH_LIMIT;return p.Call(r,0)}
- g:=NewGrammar(0);g.SetRules([]*Rule{r},0);g.Share(pegoGrammar)
- if _,err:=RunParse(r,"",nil);err==nil || !strings.Contains(err.Error(),"nesting too deep") {t.Fatal("depth abort did not propagate")}
+ var observed *pegort.Parser
+ r:=&pegort.Rule{Name:"depth-abort",Seen:-1,Scope:[]string{"x"}}
+ r.Body=func(p *pegort.Parser,_ int)(*Node,bool){observed=p;p.SetCapture(0,p.NewNode(Node{RawText:"abandoned"}));p.Depth=FRAME_DEPTH_LIMIT;return p.Call(r,0)}
+ g:=pegort.NewGrammar(0);g.SetRules([]*pegort.Rule{r},0);g.Share(pegoGrammar)
+ if _,err:=pegort.RunParse(r,"",nil);err==nil || !strings.Contains(err.Error(),"nesting too deep") {t.Fatal("depth abort did not propagate")}
  frameCleared(t,observed)
 }
 func TestFrameConcurrentReuse(t *testing.T) {

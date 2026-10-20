@@ -50,7 +50,7 @@ func TestGeneratedOrdinaryWorkBenchmarkOverlay(t *testing.T) {
 		}
 		for _, variant := range []string{"enabled", "disabled"} {
 			opts := GenOptions{Package: workload.pkg, Start: "main", Types: true, Recognize: true, disableOrdinaryWorkSpecialization: variant == "disabled"}
-			code, err := Generate(g, opts)
+			code, err := generateCode(g, opts)
 			if err != nil {
 				t.Fatal(err)
 			}

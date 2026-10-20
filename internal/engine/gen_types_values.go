@@ -246,7 +246,7 @@ func (t *typedGen) nodeHelpers(b *strings.Builder, done *int) bool {
 			}
 			b.WriteString("\treturn out\n")
 		case nodeTy:
-			fmt.Fprintf(b, "\tn := astNode(v)\n\tif n == nil || n.Type() == \"error\" {\n\t\treturn nil\n\t}\n\tout := &%s{%s: %s{int(n.RawStart), int(n.RawEnd)}}\n", g[1:], t.span, t.span)
+			fmt.Fprintf(b, "\tn := astNode(v)\n\tif n == nil || n.Type() == \"error\" {\n\t\treturn nil\n\t}\n\tout := &%s{Span: %s{Start: int(n.RawStart), End: int(n.RawEnd)}}\n", g[1:], t.span)
 			switch value := x.value.(type) {
 			case basicTy:
 				if value == tyString {
@@ -301,7 +301,7 @@ func (t *typedGen) typedHelpers(b *strings.Builder, done *int) bool {
 				fmt.Fprintf(b, "\tu := %s\n\tif u == nil {\n\t\treturn nil\n\t}\n\tout := astNew(&a.t%s)\n\tout.TNode = *u\n\tif a.named == nil {\n\t\ta.named = map[any]any{}\n\t}\n\ta.named[x] = out\n\treturn out\n", t.dconv(x.underlying(), "v", "a"), g)
 				break
 			}
-			fmt.Fprintf(b, "\tswitch x := v.(type) {\n\tcase *TSeq:\n\t\tif x.Typ == TypeTupleValue || x.Typ == TypeListValue {\n\t\t\treturn nil\n\t\t}\n\t\tout := &%s{%s: x.%s}\n", g[1:], t.span, t.span)
+			fmt.Fprintf(b, "\tswitch x := v.(type) {\n\tcase *TSeq:\n\t\tif x.Typ == TypeTupleValue || x.Typ == TypeListValue {\n\t\t\treturn nil\n\t\t}\n\t\tout := &%s{Span: x.Span}\n", g[1:])
 			switch value := x.value.(type) {
 			case tupleTy, listTy:
 				fmt.Fprintf(b, "\t\tout.Value = %s\n", t.dconv(value, "x", "a"))
@@ -310,7 +310,7 @@ func (t *typedGen) typedHelpers(b *strings.Builder, done *int) bool {
 					fmt.Fprintf(b, "\t\tout.Value = %s\n", t.dconv(value, "tnodeValue(x)", "a"))
 				}
 			}
-			fmt.Fprintf(b, "\t\treturn out\n\tcase *TError:\n\t\treturn nil\n\tcase TVal:\n\t\tif x.TStruct() {\n\t\t\treturn nil\n\t\t}\n\t\ts, e := x.TSpan()\n\t\ttext, _ := x.TText()\n\t\t_ = text\n\t\tout := &%s{%s: %s{s, e}}\n", g[1:], t.span, t.span)
+			fmt.Fprintf(b, "\t\treturn out\n\tcase *TError:\n\t\treturn nil\n\tcase TVal:\n\t\tif x.TStruct() {\n\t\t\treturn nil\n\t\t}\n\t\ts, e := x.TSpan()\n\t\ttext, _ := x.TText()\n\t\t_ = text\n\t\tout := &%s{Span: %s{Start: s, End: e}}\n", g[1:], t.span)
 			fmt.Fprintf(b, "\t\tout.Value = %s\n\t\treturn out\n\t}\n\treturn nil\n", t.dconv(x.value, "text", "a"))
 		}
 		b.WriteString("}\n\n")
@@ -383,12 +383,12 @@ func (t *typedGen) backHelpers(b *strings.Builder, done *int) bool {
 			}
 			switch value := x.value.(type) {
 			case listTy:
-				fmt.Fprintf(b, "\tkids := make([]any, len(v.Value))\n\tfor i, x := range v.Value {\n\t\tkids[i] = %s\n\t}\n\treturn &TSeq{%[2]s: v.%[2]s, Typ: \"list\", Kids: kids}\n", t.back(value.elem, "x"), t.span)
+				fmt.Fprintf(b, "\tkids := make([]any, len(v.Value))\n\tfor i, x := range v.Value {\n\t\tkids[i] = %s\n\t}\n\treturn &TSeq{Span: v.Span, Typ: \"list\", Kids: kids}\n", t.back(value.elem, "x"))
 			case tupleTy:
 				if len(value.elems) == 0 {
-					fmt.Fprintf(b, "\treturn &TSeq{%[1]s: v.%[1]s, Typ: \"tuple\"}\n", t.span)
+					fmt.Fprintf(b, "\treturn &TSeq{Span: v.Span, Typ: \"tuple\"}\n")
 				} else {
-					fmt.Fprintf(b, "\treturn &TSeq{%[1]s: v.%[1]s, Typ: \"tuple\", Kids: %[2]s}\n", t.span, elems(value, "v.Value"))
+					fmt.Fprintf(b, "\treturn &TSeq{Span: v.Span, Typ: \"tuple\", Kids: %s}\n", elems(value, "v.Value"))
 				}
 			default:
 				b.WriteString("\treturn nil\n")

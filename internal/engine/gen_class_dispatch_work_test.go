@@ -32,12 +32,12 @@ rule fallback Text = t:([` + chars.String() + `] / "z") #atomic => Text{Text: te
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	if err = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module classfixture\n\ngo 1.27.1\n"), 0644); err != nil {
+	if err = os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("classfixture")), 0644); err != nil {
 		t.Fatal(err)
 	}
 	for _, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("class_%v", convert)
-		code, e := Generate(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, convertTypes: convert})
+		code, e := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, convertTypes: convert})
 		if e != nil {
 			t.Fatal(e)
 		}

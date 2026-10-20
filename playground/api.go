@@ -558,13 +558,15 @@ func generate(req generateRequest) generateResult {
 	if req.Recognize {
 		opts = append(opts, pego.WithRecognize())
 	}
-	var code []byte
+	var files []pego.GeneratedFile
 	var err error
 	switch req.Language {
 	case "", "go":
-		code, err = pego.GenerateGo(c.g, pkg, start, opts...)
+		// The runtime is imported, so the files shown are the generated package without a copy of it.
+		opts = append(opts, pego.WithRuntime(pego.RuntimeImport), pego.WithPackageName(pkg))
+		files, err = pego.GenerateGo(c.g, "example.com/"+pkg, start, opts...)
 	case "typescript":
-		code, err = pego.GenerateTypeScript(c.g, start, opts...)
+		files, err = pego.GenerateTypeScript(c.g, start, opts...)
 	default:
 		res.Diagnostics = []diagnostic{{Message: fmt.Sprintf("unknown generation language %q", req.Language)}}
 		return res
@@ -573,7 +575,17 @@ func generate(req generateRequest) generateResult {
 		res.Diagnostics = diagnostics(err)
 		return res
 	}
-	res.Code = string(code)
+	var code strings.Builder
+	for i, f := range files {
+		if len(files) > 1 {
+			if i > 0 {
+				code.WriteString("\n")
+			}
+			fmt.Fprintf(&code, "// ===== %s =====\n\n", f.Path)
+		}
+		code.Write(f.Content)
+	}
+	res.Code = code.String()
 	return res
 }
 

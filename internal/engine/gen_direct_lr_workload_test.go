@@ -62,7 +62,7 @@ func testGeneratedTypedBodyWorkload(t *testing.T, src, fixture, dir, marker stri
 			opts = reference
 		}
 		opts.Package, opts.Start, opts.Types, opts.Recognize = "lrfixture", "main", true, true
-		code, err := Generate(g, opts)
+		code, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -79,7 +79,7 @@ func testGeneratedTypedBodyWorkload(t *testing.T, src, fixture, dir, marker stri
 			t.Fatal(err)
 		}
 		for name, contents := range map[string][]byte{
-			"parser.go": code, "lr_test.go": []byte(fixture), "go.mod": []byte("module lrfixture\n\ngo 1.24\n"),
+			"parser.go": code, "lr_test.go": []byte(fixture), "go.mod": []byte(testGoMod("lrfixture")),
 		} {
 			if err := os.WriteFile(filepath.Join(path, name), contents, 0o644); err != nil {
 				t.Fatal(err)
@@ -112,6 +112,7 @@ func testGeneratedTypedBodyWorkload(t *testing.T, src, fixture, dir, marker stri
 const typedLRActionWorkloadFixture = `package lrfixture
 
 import (
+	pegort "github.com/ornew/pego/runtime"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -127,9 +128,9 @@ func TestLRWorkload(t *testing.T) {
 			t.Fatalf("typed capture result: %v %v", saved, err)
 		}
 		before, _ := json.Marshal(saved)
-		p := &TParser{Parser: &Parser{}}
+		p := &pegort.TParser{Parser: &pegort.Parser{}}
 		for _, input := range []string{lrInput(1), lrInput(128), "a,b,c,", "a,b,", "a,b,c,;", "a,b,c,d,", "a,b,c,;d,é,f,", ""} {
-			v, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
+			v, err := p.X_run(trules[0], input, pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
 			data, _ := json.Marshal(struct { Value any; Error string }{v, fmt.Sprint(err)})
 			pooled, pooledErr := ParseAST(input, WithUnit(unit))
 			pooledData, _ := json.Marshal(struct { Value any; Error string }{pooled, fmt.Sprint(pooledErr)})
@@ -142,9 +143,9 @@ func TestLRWorkload(t *testing.T) {
 				t.Fatal("LR invocation left live frame, depth or undo state")
 			}
 			for _, u := range p.Trail[:cap(p.Trail)] {
-				if u.f != nil || u.old != nil || u.slot != 0 { t.Fatal("discarded undo retained") }
+				if u.X_f != nil || u.X_old != nil || u.X_slot != 0 { t.Fatal("discarded undo retained") }
 			}
-			p.recycle()
+			p.X_recycle()
 		}
 		after, _ := json.Marshal(saved)
 		if string(before) != string(after) { t.Fatal("returned LR AST changed") }
@@ -174,6 +175,7 @@ func BenchmarkTypedLR(b *testing.B) {
 const typedLRWorkloadFixture = `package lrfixture
 
 import (
+	pegort "github.com/ornew/pego/runtime"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -189,9 +191,9 @@ func TestLRWorkload(t *testing.T) {
 			t.Fatal(err)
 		}
 		before, _ := json.Marshal(saved)
-		p := &TParser{Parser: &Parser{}}
+		p := &pegort.TParser{Parser: &pegort.Parser{}}
 		for _, input := range []string{"1", "1+2*3", lrInput(32), "(1+2)*3", "2^-1", "1+", "1+2*", "(1+2", "é+1", ""} {
-			v, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
+			v, err := p.X_run(trules[0], input, pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
 			data, _ := json.Marshal(struct { Value any; Error string }{v, fmt.Sprint(err)})
 			fmt.Printf("OBS %v %q %s\n", unit, input, data)
 			if _, err := ParseAST(input, WithUnit(unit)); (err == nil) != (input == "1" || input == "1+2*3" || input == lrInput(32) || input == "(1+2)*3" || input == "2^-1") {
@@ -201,11 +203,11 @@ func TestLRWorkload(t *testing.T) {
 				t.Fatal("LR invocation left live frame, depth or undo state")
 			}
 			for _, u := range p.Trail[:cap(p.Trail)] {
-				if u.f != nil || u.old != nil || u.slot != 0 {
+				if u.X_f != nil || u.X_old != nil || u.X_slot != 0 {
 					t.Fatal("LR undo tail retains discarded state")
 				}
 			}
-			p.recycle()
+			p.X_recycle()
 		}
 		after, _ := json.Marshal(saved)
 		if string(before) != string(after) {

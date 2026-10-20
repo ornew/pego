@@ -154,7 +154,7 @@ What an ordinary parse executes in addition, exactly:
 | `parser` struct | | one pointer (`tr`) and one bool (`noPlain`) |
 
 Nothing changes in `invoke`, `invokePlain`, `callBegin`, `callEnd`, the memo, or the code of expressions. The
-generated parsers' runtimes (`genrt`) are untouched by this engine-side design; generated Go tracing is specified separately in [design 043](043-generated-parser-observability.md).
+generated parsers' runtimes (`runtime`) are untouched by this engine-side design; generated Go tracing is specified separately in [design 043](043-generated-parser-observability.md).
 
 With tracing on, every call also goes through `tracedCall`, isolates its expectations and examined range, and calls the
 trace function; plain calls lose their shortcut. The trace function itself (formatting, or the profile's map of

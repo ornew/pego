@@ -32,7 +32,7 @@ Evidence records:
 [032](../032-matching-literals-against-loaded-input-in-one-loop.md).
 
 Source owners: [`parser.matchLiteral`](../../../internal/engine/input.go),
-[`generated literal matcher`](../../../internal/engine/genrt/runtime.go),
+[`generated literal matcher`](../../../runtime/runtime.go),
 [`TypeScript literal matcher`](../../../internal/engine/tsrt/runtime.ts).
 
 The [comparison policy](../../design/024-optimization-mechanism-controls.md)

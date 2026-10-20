@@ -26,7 +26,7 @@ func TestGeneratedGoProfile(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte("module profilefixture\n\ngo 1.27.1\n"))
+	write("go.mod", []byte(testGoMod("profilefixture")))
 	for _, f := range []struct{ name, grammar, input, checks string }{
 		{"plain", "type N = { Text string }\nrule main N = t:(part part) #atomic => N{Text: text($t)}\nrule part = \"a\"", "aa", `if s.Entered!=3||s.Calls!=3||s.Evals!=3||s.Skipped!=0{t.Fatal(s)};for _,r:=range s.Rules{if r.Rule=="part"&&(r.Calls!=2||r.Consumed!=2){t.Fatal(r)}}`},
 		{"dispatch", "rule main = first / second\nrule first = \"a\"\nrule second = \"b\"", "b", `if s.Skipped!=1||s.Entered!=2{t.Fatal(s)};for _,r:=range s.Rules{if r.Rule=="first"&&(r.Calls!=0||r.Skipped!=1||len(r.SkipReasons)!=1||r.SkipReasons[0].Reason!="first-character"){t.Fatal(r)}}`},
@@ -44,7 +44,7 @@ func TestGeneratedGoProfile(t *testing.T) {
 		for _, route := range []string{"node", "direct", "convert"} {
 			pkg := f.name + "_" + route
 			opts := GenOptions{Package: pkg, Start: "main", Recognize: true, Observability: true, Types: route != "node", convertTypes: route == "convert"}
-			code, err := Generate(g, opts)
+			code, err := generateCode(g, opts)
 			if err != nil {
 				t.Fatal(pkg, err)
 			}
@@ -66,13 +66,15 @@ func TestGeneratedGoProfile(t *testing.T) {
 }
 
 const generatedProfileConsumer = `package PACKAGE
+
+import pegort "github.com/ornew/pego/runtime"
 import("context";"encoding/json";"fmt";"reflect";"sync";"testing";"time")
 func TestProfile(t *testing.T){
  operations:=[]func(...ParseOption)(any,error){func(opts ...ParseOption)(any,error){return Parse(INPUT,opts...)},func(opts ...ParseOption)(any,error){return ParseRule("main",INPUT,opts...)},func(opts ...ParseOption)(any,error){return nil,Recognize(INPUT,opts...)}}
  TYPED
  for _,unit:=range []PositionUnit{CodePoints,Bytes}{for op,parse:=range operations{
-  var pr Profile;var events []TraceEvent
-  got,err:=parse(WithUnit(unit),WithProfile(&pr),WithTrace(func(e TraceEvent){events=append(events,e)}));expected,base:=parse(WithUnit(unit));if !reflect.DeepEqual(got,expected){t.Fatal("profile changed value")}
+  var pr pegort.Profile;var events []pegort.TraceEvent
+  got,err:=parse(WithUnit(unit),pegort.WithProfile(&pr),pegort.WithTrace(func(e pegort.TraceEvent){events=append(events,e)}));expected,base:=parse(WithUnit(unit));if !reflect.DeepEqual(got,expected){t.Fatal("profile changed value")}
   if fmt.Sprint(err)!=fmt.Sprint(base){t.Fatal("error changed",err,base)}
   s:=pr.Snapshot();checkProfile(t,s,events)
   if op<2{CHECKS}
@@ -80,20 +82,20 @@ func TestProfile(t *testing.T){
   bytes1,_:=json.Marshal(s);bytes2,_:=json.Marshal(pr.Snapshot());if string(bytes1)!=string(bytes2){t.Fatal("unstable snapshot")}
   if len(s.Rules)>0{s.Rules[0].Rule="mutated";if len(s.Rules[0].SkipReasons)>0{s.Rules[0].SkipReasons[0].Count=999}}
   if b,_:=json.Marshal(pr.Snapshot());string(b)!=string(bytes1){t.Fatal("snapshot aliases sink")}
-  before:=pr.Snapshot();parse(WithUnit(unit),WithProfile(&pr),WithTrace(func(TraceEvent){t.Fatal("filtered event")}),WithTraceFilter("absent"),WithTraceMaxDepth(1));after:=pr.Snapshot()
+  before:=pr.Snapshot();parse(WithUnit(unit),pegort.WithProfile(&pr),pegort.WithTrace(func(pegort.TraceEvent){t.Fatal("filtered event")}),pegort.WithTraceFilter("absent"),pegort.WithTraceMaxDepth(1));after:=pr.Snapshot()
   if after.Parses!=2||after.Calls!=2*before.Calls||after.Evals!=2*before.Evals||after.Skipped!=2*before.Skipped{t.Fatal("filter affected profile",before,after)}
   for i,r:=range after.Rules{if r.Repeats!=2*before.Rules[i].Repeats||r.MaxEvals!=before.Rules[i].MaxEvals{t.Fatal("history crossed invocation",r,before.Rules[i])}}
-  saved:=pr.Snapshot();parse(WithProfile(nil));if !reflect.DeepEqual(saved,pr.Snapshot()){t.Fatal("sink retained")}
-  var reentrant Profile;once:=false;parse(WithProfile(&reentrant),WithTrace(func(TraceEvent){if !once{once=true;parse(WithProfile(&reentrant))}}));re:=reentrant.Snapshot();if re.Parses!=2||re.Calls!=2*before.Calls{t.Fatal("reentrant state",re,before)}
-  var aborted Profile;marker:=new(int);func(){defer func(){if recover()!=marker{t.Fatal("panic identity")}}();parse(WithProfile(&aborted),WithTrace(func(TraceEvent){panic(marker)}));t.Fatal("missing panic")}();a:=aborted.Snapshot();if a.Parses!=1||a.Entered!=1||a.Calls!=0||a.Evals!=0||a.Time!=0{t.Fatal("fabricated completion",a)}
-  parse(WithProfile(&aborted));a=aborted.Snapshot();if a.Parses!=2||a.Calls!=before.Calls||a.Entered!=before.Entered+1{t.Fatal("abort poisoned next parse",a)}
-  var exitPanic Profile;func(){defer func(){if recover()!=marker{t.Fatal("exit panic identity")}}();parse(WithProfile(&exitPanic),WithTrace(func(e TraceEvent){if e.Kind==TraceExit{panic(marker)}}));t.Fatal("missing exit panic")}();if x:=exitPanic.Snapshot();x.Calls!=1{t.Fatal("exit panic lost completed call",x)}
-  if PLAIN&&op==0{var timed Profile;var delay time.Duration;parse(WithProfile(&timed),WithTrace(func(e TraceEvent){if e.Rule=="part"&&e.Kind==TraceExit{start:=time.Now();time.Sleep(time.Millisecond);delay+=time.Since(start)}}));for _,r:=range timed.Snapshot().Rules{if r.Rule=="part"&&r.Time<delay{t.Fatal("child exit callback attributed outside child",r.Time,delay)}}}
-  ctx,cancel:=context.WithCancel(context.Background());cancel();var canceled Profile;parse(WithProfile(&canceled),WithContext(ctx));if canceled.Snapshot().Entered!=0{t.Fatal("canceled call entered")}
-  var wg sync.WaitGroup;for range 4{wg.Go(func(){var p Profile;parse(WithProfile(&p));if p.Snapshot().Parses!=1{t.Error("concurrent isolation")}})};wg.Wait()
+  saved:=pr.Snapshot();parse(pegort.WithProfile(nil));if !reflect.DeepEqual(saved,pr.Snapshot()){t.Fatal("sink retained")}
+  var reentrant pegort.Profile;once:=false;parse(pegort.WithProfile(&reentrant),pegort.WithTrace(func(pegort.TraceEvent){if !once{once=true;parse(pegort.WithProfile(&reentrant))}}));re:=reentrant.Snapshot();if re.Parses!=2||re.Calls!=2*before.Calls{t.Fatal("reentrant state",re,before)}
+  var aborted pegort.Profile;marker:=new(int);func(){defer func(){if recover()!=marker{t.Fatal("panic identity")}}();parse(pegort.WithProfile(&aborted),pegort.WithTrace(func(pegort.TraceEvent){panic(marker)}));t.Fatal("missing panic")}();a:=aborted.Snapshot();if a.Parses!=1||a.Entered!=1||a.Calls!=0||a.Evals!=0||a.Time!=0{t.Fatal("fabricated completion",a)}
+  parse(pegort.WithProfile(&aborted));a=aborted.Snapshot();if a.Parses!=2||a.Calls!=before.Calls||a.Entered!=before.Entered+1{t.Fatal("abort poisoned next parse",a)}
+  var exitPanic pegort.Profile;func(){defer func(){if recover()!=marker{t.Fatal("exit panic identity")}}();parse(pegort.WithProfile(&exitPanic),pegort.WithTrace(func(e pegort.TraceEvent){if e.Kind==pegort.TraceExit{panic(marker)}}));t.Fatal("missing exit panic")}();if x:=exitPanic.Snapshot();x.Calls!=1{t.Fatal("exit panic lost completed call",x)}
+  if PLAIN&&op==0{var timed pegort.Profile;var delay time.Duration;parse(pegort.WithProfile(&timed),pegort.WithTrace(func(e pegort.TraceEvent){if e.Rule=="part"&&e.Kind==pegort.TraceExit{start:=time.Now();time.Sleep(time.Millisecond);delay+=time.Since(start)}}));for _,r:=range timed.Snapshot().Rules{if r.Rule=="part"&&r.Time<delay{t.Fatal("child exit callback attributed outside child",r.Time,delay)}}}
+  ctx,cancel:=context.WithCancel(context.Background());cancel();var canceled pegort.Profile;parse(pegort.WithProfile(&canceled),WithContext(ctx));if canceled.Snapshot().Entered!=0{t.Fatal("canceled call entered")}
+  var wg sync.WaitGroup;for range 4{wg.Go(func(){var p pegort.Profile;parse(pegort.WithProfile(&p));if p.Snapshot().Parses!=1{t.Error("concurrent isolation")}})};wg.Wait()
  }}
- var rejected Profile;_,rejectedError:=Parse("\x00",WithProfile(&rejected));if rejectedError==nil{t.Fatal("invalid input accepted")};failedRoot:=false;for _,r:=range rejected.Snapshot().Rules{if r.Rule=="main"&&r.Failed==1{failedRoot=true}};if !failedRoot{t.Fatal("failed root unrecorded",rejected.Snapshot())}
- var nilProfile *Profile;if len(nilProfile.Snapshot().Rules)!=0{t.Fatal("nil snapshot")}
+ var rejected pegort.Profile;_,rejectedError:=Parse("\x00",pegort.WithProfile(&rejected));if rejectedError==nil{t.Fatal("invalid input accepted")};failedRoot:=false;for _,r:=range rejected.Snapshot().Rules{if r.Rule=="main"&&r.Failed==1{failedRoot=true}};if !failedRoot{t.Fatal("failed root unrecorded",rejected.Snapshot())}
+ var nilProfile *pegort.Profile;if len(nilProfile.Snapshot().Rules)!=0{t.Fatal("nil snapshot")}
 }
 ` + generatedProfileCheck
 

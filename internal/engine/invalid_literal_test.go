@@ -153,7 +153,7 @@ func TestGeneratedInvalidUTF8Literals(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte("module literaltest\n\ngo 1.24\n"))
+	write("go.mod", []byte(testGoMod("literaltest")))
 	var imports, harness, want strings.Builder
 	harness.WriteString(`func main(){`)
 	i := 0
@@ -167,7 +167,7 @@ func TestGeneratedInvalidUTF8Literals(t *testing.T) {
 			pkg := fmt.Sprintf("g%d", i)
 			i++
 			opts := GenOptions{Package: pkg, Start: "main", Recognize: true, Types: mode != "untyped", convertTypes: mode == "convert"}
-			code, err := Generate(g, opts)
+			code, err := generateCode(g, opts)
 			if err != nil {
 				t.Fatal(err)
 			}

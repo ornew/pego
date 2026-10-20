@@ -66,7 +66,7 @@ func TestGeneratedTypedFramedCuts(t *testing.T) {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 		opts := GenOptions{Package: "framedcuts", Start: "main", Types: true, Recognize: true}
-		code, err := Generate(g, opts)
+		code, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -78,17 +78,17 @@ func TestGeneratedTypedFramedCuts(t *testing.T) {
 			t.Fatalf("%s: cut-bearing typed body must be exercised", c.name)
 		}
 		opts.disableTypedFramedCuts = true
-		ref, err := Generate(g, opts)
+		ref, err := generateCode(g, opts)
 		if err != nil || strings.Contains(string(ref), marker) || strings.Contains(string(code), "disableTypedFramedCuts") {
 			t.Fatalf("%s: invalid generation-only cut control: %v", c.name, err)
 		}
 		opts.Types = false
-		nodeRef, err := Generate(g, opts)
+		nodeRef, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
 		opts.disableTypedFramedCuts = false
-		node, err := Generate(g, opts)
+		node, err := generateCode(g, opts)
 		if err != nil || !bytes.Equal(nodeRef, node) {
 			t.Fatalf("%s: framed-cut control changes Node output: %v", c.name, err)
 		}

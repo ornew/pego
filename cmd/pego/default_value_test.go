@@ -35,10 +35,10 @@ func TestParseDefaultValue(t *testing.T) {
 		t.Errorf("got %v", err)
 	}
 	// Generated parsers drop actions too, but not with typed output.
-	if _, err := runCLI(t, "", "gen", "-g", g, "-pkg", "p", "-default-value", "-types"); err == nil || !strings.Contains(err.Error(), "default values") {
+	if _, err := runGenGo(t, "-g", g, "-pkg", "p", "-default-value", "-types"); err == nil || !strings.Contains(err.Error(), "default values") {
 		t.Errorf("gen -types: got %v", err)
 	}
-	if out, err := runCLI(t, "", "gen", "-g", g, "-pkg", "p", "-default-value"); err != nil || !strings.Contains(out, "package p") {
+	if out, err := runGenGo(t, "-g", g, "-pkg", "p", "-default-value"); err != nil || !strings.Contains(out, "package p") {
 		t.Errorf("gen: %v", err)
 	}
 }

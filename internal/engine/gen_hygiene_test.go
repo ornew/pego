@@ -17,7 +17,7 @@ rule leaf = "a"
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := Generate(grammar, GenOptions{Package: "hygiene", Start: "main", Types: true})
+	code, err := generateCode(grammar, GenOptions{Package: "hygiene", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}

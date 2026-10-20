@@ -46,7 +46,7 @@ Each directory holds:
 | File | Contents |
 |:--|:--|
 | `<language>.pego` | The grammar. It can be used with the engine too (`pego.CompileSource`), for streaming, incremental parsing or the `pego` tools. |
-| `parser.go` | The parser generated from the grammar. Do not edit it. |
+| `parser.go`, `api.go`, `internal/runtime/` | The parser generated from the grammar, the names it re-exports from its runtime, and the runtime itself, which the parser embeds so that the module needs nothing else. Do not edit them. |
 | other `.go` files | Code written for the language: documentation, conversions to Go values, helpers |
 | `*_test.go` | Tests against the language's specification, conformance suites and reference implementations; examples; benchmarks |
 | `testdata/*.txt`, `*.golden` | Inputs and the expected trees and errors, checked on the generated parser here and on every backend of the engine by [parsers_test.go](parsers_test.go) |
@@ -55,15 +55,12 @@ Each directory holds:
 ## Development
 
 ```bash
-go generate ./parsers                 # regenerate every parser.go (after changing a grammar or the generator)
-go test ./parsers                     # parser.go up to date; golden files on every backend of the engine
+go generate ./parsers                 # regenerate every parser (after changing a grammar, the runtime or the generator)
+go test ./parsers                     # generated files up to date; golden files on every backend of the engine
 go test ./parsers -update             # rewrite the golden files from the engine
 parsers/test.sh                       # both, and the tests of every module
 cd parsers/json && go test ./...      # the tests of one module
 ```
-
-The generated `parser.go` declares unexported names of its runtime (such as `parse`, `parser` and `rule`) in the
-package, so hand-written code must avoid them.
 
 The generation commands are the `go:generate` lines of [generate.go](generate.go); the up-to-date test reads them, so a
 new parser needs only a new line there. The modules are not part of the main module's `go test ./...`: run

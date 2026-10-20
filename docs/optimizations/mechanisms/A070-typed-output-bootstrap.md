@@ -41,7 +41,7 @@ Evidence records:
 
 Source owners: [`typed allocation helper
 emission`](../../../internal/engine/gen_types.go), [`typed allocator
-state`](../../../internal/engine/genrt/typed.go),
+state`](../../../runtime/typed.go),
 [`disableTypedOutputBootstrap`](../../../internal/engine/gen.go),
 [`retained-output
 fixture`](../../../internal/engine/gen_typed_output_retention_test.go).

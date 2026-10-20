@@ -76,7 +76,7 @@ func TestGeneratedTypedFrameLayouts(t *testing.T) {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 		opts := GenOptions{Package: "layouts", Start: "main", Types: true, Recognize: true}
-		candidate, err := Generate(g, opts)
+		candidate, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -88,7 +88,7 @@ func TestGeneratedTypedFrameLayouts(t *testing.T) {
 			t.Fatalf("%s: candidate route not exercised", c.name)
 		}
 		opts.disableTypedFrameLayouts = true
-		reference, err := Generate(g, opts)
+		reference, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -102,12 +102,12 @@ func TestGeneratedTypedFrameLayouts(t *testing.T) {
 			t.Fatalf("%s: invalid generation-only control", c.name)
 		}
 		opts.Types = false
-		nodeReference, err := Generate(g, opts)
+		nodeReference, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
 		opts.disableTypedFrameLayouts = false
-		node, err := Generate(g, opts)
+		node, err := generateCode(g, opts)
 		if err != nil || !bytes.Equal(nodeReference, node) {
 			t.Fatalf("%s: typed layout control changes Node output: %v", c.name, err)
 		}

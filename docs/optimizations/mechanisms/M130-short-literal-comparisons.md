@@ -32,7 +32,7 @@ Evidence records:
 
 Source owners: [`dgen literal comparison
 emission`](../../../internal/engine/gen_direct.go),
-[`parser.matchLiteral`](../../../internal/engine/genrt/runtime.go).
+[`parser.matchLiteral`](../../../runtime/runtime.go).
 
 The [comparison policy](../../design/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

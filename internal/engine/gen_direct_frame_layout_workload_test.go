@@ -70,14 +70,14 @@ func BenchmarkTypedFrameLayoutGeneration(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			code, err := Generate(g, opts)
+			code, err := generateCode(g, opts)
 			if err != nil {
 				b.Fatal(err)
 			}
 			b.ReportAllocs()
 			b.ResetTimer()
 			for b.Loop() {
-				if _, err := Generate(g, opts); err != nil {
+				if _, err := generateCode(g, opts); err != nil {
 					b.Fatal(err)
 				}
 			}

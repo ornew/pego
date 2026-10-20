@@ -37,7 +37,7 @@ func TestGeneratedSharingWorkloads(t *testing.T) {
 					disableMethodSharing:   mode == "methods" || mode == "both",
 					disableLiteralSharing:  mode == "literals" || mode == "both",
 					enableTSLiteralSharing: mode != "default"}
-				code, err := Generate(g, opts)
+				code, err := generateCode(g, opts)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -48,7 +48,7 @@ func TestGeneratedSharingWorkloads(t *testing.T) {
 				fixture := strings.ReplaceAll(generatedSharingFixture, "LANG", lang)
 				for name, data := range map[string][]byte{
 					"parser.go": code, "sharing_test.go": []byte(fixture),
-					"go.mod": []byte("module sharingfixture\n\ngo 1.24\n"),
+					"go.mod": []byte(testGoMod("sharingfixture")),
 				} {
 					if err := os.WriteFile(filepath.Join(path, name), data, 0o644); err != nil {
 						t.Fatal(err)

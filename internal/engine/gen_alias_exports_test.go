@@ -55,18 +55,18 @@ func TestGeneratedAliasExports(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte("module aliasexports\n\ngo 1.24\n"))
+	write("go.mod", []byte(testGoMod("aliasexports")))
 	var tests strings.Builder
 	tests.WriteString("package aliasexports\nimport (\"testing\"\n")
 	var bodies strings.Builder
 	for i, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("g%d", i)
 		opts := GenOptions{Package: pkg, Start: "main", Types: true, convertTypes: convert}
-		code, err := Generate(g, opts)
+		code, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
-		again, err := Generate(g, opts)
+		again, err := generateCode(g, opts)
 		if err != nil || !bytes.Equal(code, again) {
 			t.Fatalf("generation is not deterministic: %v", err)
 		}
@@ -131,7 +131,7 @@ func BenchmarkGenerateAliasExports(b *testing.B) {
 			}
 			b.ReportAllocs()
 			for b.Loop() {
-				if _, err := Generate(g, GenOptions{Package: "bench", Start: "main", Types: true}); err != nil {
+				if _, err := generateCode(g, GenOptions{Package: "bench", Start: "main", Types: true}); err != nil {
 					b.Fatal(err)
 				}
 			}

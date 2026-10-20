@@ -12,7 +12,7 @@ Add opt-in rule-call tracing and per-rule profiling to standalone generated Go, 
 
 Design 014 provides `pego.WithTrace`, `pego.Profile`, `pego.WithProfile`, and the `trace`, `profile` and `explain` CLI commands for the engine. Generated Go Node, typed Go, Go Document and TypeScript batch parsers support generation-time opt-in tracing and profiling. Generated APIs have their own event/profile contracts and do not promise engine equivalence. The engine event reports rule, position, binding level, depth, match, memo use, body evaluations and examined input; callbacks are synchronous, and their panic is re-raised unchanged. Profiles accumulate per-rule call/evaluation/memo/match/failure counts, consumed positions, repeats and inclusive/self time.
 
-Generated Go and TypeScript runtimes specialize calls into direct generated methods/functions and common call sites bypass the generic `call` path (`internal/engine/gen.go`, `gen_direct.go`, `gen_ts.go`, `genrt/runtime.go`, `tsrt/runtime.ts`). Generated Go has ordinary and typed runtimes; TypeScript has its own runtime and can convert node results to typed values. Literal/first-character dispatch can skip a call, and deferred memoization changes which calls evaluate a body. Adding a hook only to `parser.call` would therefore miss optimized calls and produce incomplete counts. The Go and TypeScript slices have focused synthetic measurements below; broader workload measurements remain unavailable.
+Generated Go and TypeScript runtimes specialize calls into direct generated methods/functions and common call sites bypass the generic `call` path (`internal/engine/gen.go`, `gen_direct.go`, `gen_ts.go`, `runtime/runtime.go`, `tsrt/runtime.ts`). Generated Go has ordinary and typed runtimes; TypeScript has its own runtime and can convert node results to typed values. Literal/first-character dispatch can skip a call, and deferred memoization changes which calls evaluate a body. Adding a hook only to `parser.call` would therefore miss optimized calls and produce incomplete counts. The Go and TypeScript slices have focused synthetic measurements below; broader workload measurements remain unavailable.
 
 ### Go Node Batch Trace
 
@@ -410,7 +410,7 @@ go test -run '^$' -bench '^(Benchmark(Parse|ParseAST|Recognize|TraceParse)|Bench
 ```
 
 The comparison with the prior trace-enabled generator used the same exporter
-with `gen.go`, `gen_observe.go`, `gen_types.go` and `genrt/trace.go` under
+with `gen.go`, `gen_observe.go`, `gen_types.go` and `runtime/trace.go` under
 `internal/engine/` overlaid from `6592f45`, and `PEGO_PROFILE_BASE=1` to omit
 profile-specific benchmark references.
 

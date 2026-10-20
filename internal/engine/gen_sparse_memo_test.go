@@ -59,7 +59,7 @@ func TestGeneratedSparseMemo(t *testing.T) {
 	}
 	var fingerprint string
 	for _, name := range []string{"optimized"} {
-		code, err := Generate(g, GenOptions{Package: "memofixture", Start: "main", Types: true,
+		code, err := generateCode(g, GenOptions{Package: "memofixture", Start: "main", Types: true,
 			Recognize: true})
 		if err != nil {
 			t.Fatal(err)
@@ -73,7 +73,7 @@ func TestGeneratedSparseMemo(t *testing.T) {
 		}
 		fixture := sparseMemoGeneratedFixture
 		for file, data := range map[string][]byte{
-			"go.mod":    []byte("module memofixture\n\ngo 1.27.1\n"),
+			"go.mod":    []byte(testGoMod("memofixture")),
 			"parser.go": code, "memo_test.go": []byte(fixture),
 		} {
 			if err := os.WriteFile(filepath.Join(path, file), data, 0o644); err != nil {
@@ -232,6 +232,7 @@ for (const unit of [CodePoints, Bytes]) {
 const sparseMemoGeneratedFixture = `package memofixture
 
 import (
+	pegort "github.com/ornew/pego/runtime"
     "crypto/sha256"
     "encoding/json"
     "fmt"
@@ -241,7 +242,7 @@ import (
 )
 
 func TestSparseGeneratedResults(t *testing.T) {
-    if pegoGrammar.nseen <= 64 || pegoRecGrammar.nseen <= 64 { t.Fatal("fixture no longer exercises sparse tables") }
+    if pegoGrammar.X_nseen <= 64 || pegoRecGrammar.X_nseen <= 64 { t.Fatal("fixture no longer exercises sparse tables") }
     inputs := []string{
         "const 日本語 = \"😀\"; const v = [1, 2].map(x => x + 1);",
         strings.Repeat("const 日本語 = 1 + 2;\n", 1200),
@@ -262,7 +263,7 @@ func TestSparseGeneratedResults(t *testing.T) {
 }
 
 func TestSparseGeneratedInputSelection(t *testing.T) {
-    p := &TParser{Parser: &Parser{}, Ext: &tslabs{}}
+    p := &pegort.TParser{Parser: &pegort.Parser{}, Ext: &tslabs{}}
     for _, input := range []string{
         "/*" + strings.Repeat("a", 1020) + "*/",
         "/*" + strings.Repeat("a", 1021) + "*/",
@@ -270,12 +271,12 @@ func TestSparseGeneratedInputSelection(t *testing.T) {
         "/*" + strings.Repeat("a", 1020) + "*/",
     } {
         for _, unit := range []PositionUnit{CodePoints, Bytes} {
-            _, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
+            _, err := p.X_run(trules[0], input, pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
             if err != nil { t.Fatal(err) }
             want := len([]rune(input)) > 1024
             if unit == Bytes { want = len(input) > 1024 }
-            if p.memo.sparse != want { t.Fatal("typed input cutoff mismatch") }
-            p.recycle()
+            if p.X_memo.X_sparse != want { t.Fatal("typed input cutoff mismatch") }
+            p.X_recycle()
         }
     }
 }
@@ -287,17 +288,17 @@ func TestSparseGeneratedRealCorpusReuse(t *testing.T) {
     if path == "" { t.Skip("PEGO_SPARSE_MEMO_INPUT not set") }
     data, err := os.ReadFile(path); if err != nil { t.Fatal(err) }
     for _, unit := range []PositionUnit{CodePoints, Bytes} {
-        p := &TParser{Parser: &Parser{}}
+        p := &pegort.TParser{Parser: &pegort.Parser{}}
         for i, input := range []string{string(data), "const x=1;", string(data)+"\nfunction (", "const x=1;", string(data)} {
-            _, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
+            _, err := p.X_run(trules[0], input, pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth}, &tslabs{})
             if (err != nil) != (i == 2) { t.Fatalf("unit=%d step=%d err=%v", unit, i, err) }
-            p.recycle()
-            if p.memo.bitPages.n != 0 { t.Fatal("used pages survived recycle") }
-            for _, dir := range p.memo.pages {
-                if dir.last != nil || dir.at != 0 { t.Fatal("cached pointer survived recycle") }
-                for _, page := range dir.pages { if page != nil { t.Fatal("directory pointer survived recycle") } }
+            p.X_recycle()
+            if p.X_memo.X_bitPages.X_n != 0 { t.Fatal("used pages survived recycle") }
+            for _, dir := range p.X_memo.X_pages {
+                if dir.X_last != nil || dir.X_at != 0 { t.Fatal("cached pointer survived recycle") }
+                for _, page := range dir.X_pages { if page != nil { t.Fatal("directory pointer survived recycle") } }
             }
-            for _, chunk := range p.memo.bitPages.chunks {
+            for _, chunk := range p.X_memo.X_bitPages.X_chunks {
                 for _, page := range chunk {
                     for _, word := range page { if word != 0 { t.Fatal("seen bits survived recycle") } }
                 }

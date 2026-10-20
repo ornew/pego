@@ -40,7 +40,7 @@ rule main = n:[0-9] #atomic {size := len($n)} {size == 1} "é" $$ => $n`,
 		if err != nil {
 			t.Fatal(err)
 		}
-		code, err := Generate(g, GenOptions{Package: "node", Start: "main"})
+		code, err := generateCode(g, GenOptions{Package: "node", Start: "main"})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -61,7 +61,7 @@ func TestGeneratedNodeDirectRetention(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := Generate(g, GenOptions{Package: "node", Start: "main"})
+	code, err := generateCode(g, GenOptions{Package: "node", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func TestRetainedTrees(t *testing.T) {
 }
 `
 	dir := t.TempDir()
-	for name, data := range map[string][]byte{"parser.go": code, "node_test.go": []byte(test), "go.mod": []byte("module node\n\ngo 1.27.1\n")} {
+	for name, data := range map[string][]byte{"parser.go": code, "node_test.go": []byte(test), "go.mod": []byte(testGoMod("node"))} {
 		if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -116,7 +116,7 @@ func TestGeneratedNodeDirectRoutes(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			code, err := Generate(g, GenOptions{Package: "node", Start: "main", Recognize: true})
+			code, err := generateCode(g, GenOptions{Package: "node", Start: "main", Recognize: true})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -124,7 +124,7 @@ func TestGeneratedNodeDirectRoutes(t *testing.T) {
 			if strings.Contains(c.name, "memo_action") {
 				name = "pair"
 			}
-			body := regexp.MustCompile(`// ` + name + ` \(Node body inlined\)\s+func (\w+)\(p \*Parser\)`).FindSubmatch(code)
+			body := regexp.MustCompile(`// ` + name + ` \(Node body inlined\)\s+func (\w+)\(p \*pegort\.Parser\)`).FindSubmatch(code)
 			if len(body) != 2 {
 				t.Fatalf("no direct Node body for %s", name)
 			}

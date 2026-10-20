@@ -92,7 +92,7 @@ func TestGeneratedStringFieldReads(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := Generate(g, GenOptions{Package: "p", Start: "main", Types: true})
+		code, err := generateCode(g, GenOptions{Package: "p", Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

@@ -37,11 +37,12 @@ rule main N = ("é") #atomic`)
 		t.Fatal(err)
 	}
 	// The fixture is also an engine test; the generated runtime exports the names it uses.
-	fixture = []byte(strings.NewReplacer("*parser", "*Parser", "&parser{", "&Parser{", "expID", "ExpID", "expMark", "ExpMark", "msgBit", "MsgBit",
+	fixture = []byte(strings.NewReplacer("*parser", "*pegort.Parser", "&parser{", "&pegort.Parser{", "expID", "pegort.ExpID", "expMark", "pegort.ExpMark", "msgBit", "pegort.MsgBit",
 		".keep(", ".Keep(", ".silent", ".Silent", ".mergeExpected(", ".MergeExpected(", ".unisolate(", ".Unisolate(", ".isolate(", ".Isolate(", ".expect(", ".Expect(").Replace(string(fixture)))
+	fixture = []byte(strings.Replace(string(fixture), "import (", "import (\n\tpegort \"github.com/ornew/pego/runtime\"", 1))
 	for _, mode := range []string{"plain", "direct", "conversion"} {
 		t.Run(mode, func(t *testing.T) {
-			code, err := Generate(g, GenOptions{Package: "engine", Start: "main", Types: mode != "plain", convertTypes: mode == "conversion"})
+			code, err := generateCode(g, GenOptions{Package: "engine", Start: "main", Types: mode != "plain", convertTypes: mode == "conversion"})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -76,7 +77,7 @@ func TestTypedExpectationPoolReuse(t *testing.T) {
 `
 			}
 			dir := t.TempDir()
-			for name, data := range map[string][]byte{"parser.go": code, "records_test.go": append(append([]byte(nil), fixture...), []byte(extra)...), "go.mod": []byte("module records\n\ngo 1.27.1\n")} {
+			for name, data := range map[string][]byte{"parser.go": code, "records_test.go": exportNames(append(append([]byte(nil), fixture...), []byte(qualifyFixtureNames.Replace(extra))...)), "go.mod": []byte(testGoMod("records"))} {
 				if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
 					t.Fatal(err)
 				}
@@ -89,3 +90,6 @@ func TestTypedExpectationPoolReuse(t *testing.T) {
 		})
 	}
 }
+
+// qualifyFixtureNames qualifies the runtime names that the code of the fixtures above uses.
+var qualifyFixtureNames = strings.NewReplacer("TParser", "pegort.TParser", "Parser:", "Parser:", "Parser", "pegort.Parser", "ExpID", "pegort.ExpID", "MsgBit", "pegort.MsgBit")

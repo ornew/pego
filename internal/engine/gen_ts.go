@@ -33,7 +33,7 @@ const tsRuntimeMarker = "// --- Runtime ---\n"
 // without dependencies that behaves exactly like the engine (and the generated Go parsers).
 //
 // Each parsing expression becomes a function and actions and predicates become TypeScript
-// expressions, as in Generate; the embedded runtime (tsrt/runtime.ts) mirrors genrt. opts.Package
+// expressions, as in Generate; the embedded runtime (tsrt/runtime.ts) mirrors runtime. opts.Package
 // is not used. opts.Types adds declarations and Node-to-value conversion entry points.
 func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if opts.Document {
@@ -214,7 +214,7 @@ var tsPrintRuns = sync.OnceValue(func() string {
 	return b.String()
 })
 
-// fieldCheckSource returns the run-time type checks the parser uses, as genrt/fieldcheck.go
+// fieldCheckSource returns the run-time type checks the parser uses, as runtime/fieldcheck.go
 // declares them: tsFieldCheckSource with checkField, castValue and checkResult if called.
 func (g *tsGen) fieldCheckSource() string {
 	src := tsFieldCheckSource
@@ -262,7 +262,7 @@ function checkResult(p: Parser, v: Node | null, t: FieldType, rule: string): voi
 }
 
 // tsFieldCheckSource declares the check types and fieldConforms, which checks constructed field
-// values and rule results, as genrt/fieldcheck.go does.
+// values and rule results, as runtime/fieldcheck.go does.
 const tsFieldCheckSource = `
 // --- Run-time type checks ---
 
@@ -493,7 +493,7 @@ func tsJoinCondition(parts []string, op string) string {
 	return "(" + tsJoinCondition(parts[:mid], op) + op + tsJoinCondition(parts[mid:], op) + ")"
 }
 
-// tsMark declares the variables of a mark (parser.mark in genrt) with the given indentation, and
+// tsMark declares the variables of a mark (parser.mark in runtime) with the given indentation, and
 // tsReset returns to it.
 func tsMark(indent string) string {
 	return indent + "const m0pos = p.pos;\n" + indent + "const m0env = p.env;\n" + indent + "const m0trail = p.trail.length;\n" + indent + "const m0rec = p.recovered.length;\n"

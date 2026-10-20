@@ -16,7 +16,7 @@ This document describes the repository layout and architecture, how to run tests
 | `pego.pego` | Typed source grammar and recoverable syntax tree; the generated source-parser integration is [proposed](design/054-generated-grammar-source-parser.md). |
 | `internal/syntax/` | Lexer and parser for PEGO source code (source → `grammar.Grammar`) |
 | `internal/engine/` | Compiler, static analysis, parser runtime, action evaluation, bytecode VMs and Go and TypeScript code generation |
-| `internal/engine/genrt/` | Runtime code embedded in generated Go parsers |
+| `runtime/` | Runtime package of generated Go parsers, imported by them or copied into them (`github.com/ornew/pego/runtime`) |
 | `internal/engine/tsrt/` | Runtime code embedded in generated TypeScript parsers |
 | `cmd/pego/` | Command-line tool |
 | `examples/` | Small example grammars that show the features, with golden tests |
@@ -50,7 +50,7 @@ This document describes the repository layout and architecture, how to run tests
 | Bytecode | `bytecode.go`, `bcompile.go`, `vm.go`, `ivm.go` | Runs the same grammar semantics with recursive and iterative VMs; see the [bytecode specification](../spec/bytecode.md). |
 | Input and documents | `input.go`, `stream_text.go`, `document.go`, `resume.go` | Tracks position units, streaming input, versioned atomic edit batches, edits and resumable repetitions; VM-backed Documents reuse cleared stacks ([record 086](optimizations/086-reuse-document-vm-values.md)), and streaming shares bounded immutable text snapshots ([record 088](optimizations/088-share-bounded-stream-text-snapshots.md)). |
 | Compiled grammars | `compiled.go`, `modulefile.go` | Saves and loads bytecode modules, optionally with AST and analysis data. |
-| Code generation | `gen.go`, `gen_direct.go`, `genrt/`, `gen_ts.go`, `tsrt/` | Emits standalone Go and TypeScript parsers; exact generated helpers are shared where enabled ([090](optimizations/090-share-identical-generated-helpers.md)), eligible literal-text predicates use switch dispatch ([091](optimizations/091-specialize-pure-literal-text-disjunctions.md)), and generated Node capture scratch is bounded at recycle ([092](optimizations/092-reuse-generated-node-capture-scratch.md)). |
+| Code generation | `gen.go`, `gen_direct.go`, `runtime/`, `gen_ts.go`, `tsrt/` | Emits standalone Go and TypeScript parsers; exact generated helpers are shared where enabled ([090](optimizations/090-share-identical-generated-helpers.md)), eligible literal-text predicates use switch dispatch ([091](optimizations/091-specialize-pure-literal-text-disjunctions.md)), and generated Node capture scratch is bounded at recycle ([092](optimizations/092-reuse-generated-node-capture-scratch.md)). |
 | Language tools | `internal/lint/`, `internal/lsp/`, `editors/vscode/` | Provides static checks, editor requests and the VS Code client. |
 | Input generation | `sample/` | Generates accepted inputs and coverage; generated inputs are checked by the parser. |
 

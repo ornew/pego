@@ -14,7 +14,7 @@ export GOMAXPROCS
 export PEGO_SOURCE_ROOT="$sourcebench_repo"
 mkdir "$sourcebench_dir/generated"
 cd "$sourcebench_repo"
-go run ./cmd/pego gen -g pego.pego -pkg generated -types -o "$sourcebench_dir/generated/parser.go"
+go run ./cmd/pego gen -g pego.pego -module sourcebaseline/generated -types -o "$sourcebench_dir/generated"
 cat > "$sourcebench_dir/go.mod" <<'MOD'
 module sourcebaseline
 

@@ -59,7 +59,7 @@ rule small Token = t:("b") #atomic => Token{Text: text($t)}
 				name += "-conversion"
 			}
 			t.Run(name, func(t *testing.T) {
-				code, err := Generate(g, GenOptions{Package: "typedoutput", Start: "main", Types: true,
+				code, err := generateCode(g, GenOptions{Package: "typedoutput", Start: "main", Types: true,
 					convertTypes: conversion, disableTypedObjectSlabs: variant.objects, disableTypedListSlabs: variant.lists, disableTypedOutputBootstrap: variant.legacy})
 				if err != nil {
 					t.Fatal(err)
@@ -82,7 +82,7 @@ rule small Token = t:("b") #atomic => Token{Text: text($t)}
 				for name, contents := range map[string][]byte{
 					"parser.go":                code,
 					"output_retention_test.go": []byte(typedOutputRetentionFixture + "\nconst forceOutputConversion = " + strconv.FormatBool(conversion) + "\n"),
-					"go.mod":                   []byte("module typedoutput\n\ngo 1.27.1\n"),
+					"go.mod":                   []byte(testGoMod("typedoutput")),
 				} {
 					if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
 						t.Fatal(err)

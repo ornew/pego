@@ -14,11 +14,11 @@ Generate Go source code for a parser that depends only on the standard library, 
 
 | Part | Contents |
 |:--|:--|
-| Runtime | Parser state, memoization, left recursion, the Operators Rule loop, attributes and the built-in functions of actions. `internal/engine/genrt/runtime.go` is embedded as is. Everything the generated code reaches in the runtime has an exported name (`p.Pos`, `p.Peek`, `NewGrammar`); these hooks are for generated parsers and not a stable API. |
+| Runtime | Parser state, memoization, left recursion, the Operators Rule loop, attributes and the built-in functions of actions. The runtime is the package `github.com/ornew/pego/runtime`, which generated code imports as `pegort`, or a copy of its files in the generated package's `internal/runtime` directory (the default, so that the generated package depends only on the standard library). Everything the generated code reaches in the runtime has an exported name (`p.Pos`, `p.Peek`, `NewGrammar`); these hooks are for generated parsers and not a stable API. |
 | Rule table | For each rule: whether it is memoized, whether it is a left-recursion leader, its capture names and so on (the results of the engine's static analysis) |
 | Parser expressions | General fallback: one function per expression, taking the parser as its first parameter (`func e18(p *Parser) (*Node, bool)`). Supported direct Node rules inline their expressions into a shared raw body used by call wrappers and rule-table entries. |
 | Actions and predicates | Go expressions (returning `any`). Lambdas become Go function literals. |
-| Public API | `Parse(input)`, `ParseRule(name, input)`, `Node`, `SyntaxError`, `SyntaxErrors` |
+| Public API | `parser.go` defines `Parse(input)` and `ParseRule(name, input)`; `api.go` re-exports the runtime names users need (`Node`, `SyntaxError`, `SyntaxErrors`, ...) as aliases and wrappers |
 
 Because the grammar is not interpreted at run time, no grammar loading or compilation is needed, and expression evaluation is optimized by the Go compiler.
 The node representation (`Node`) and the JSON format are the same as the engine's, so replacing the engine with a generated parser, or the reverse, gives the same results.
@@ -57,7 +57,7 @@ The runtime code is written separately from the engine, so the two can diverge. 
 2. Build the generated code together in a temporary module and run it.
 3. For every input, check that the node tree (as JSON, including positions) and the error strings match the engine's.
 
-`genrt` is also compiled as an ordinary package, so `go vet ./...` checks it as well.
+`runtime` is also compiled as an ordinary package, so `go vet ./...` checks it as well.
 
 ## Limitations
 

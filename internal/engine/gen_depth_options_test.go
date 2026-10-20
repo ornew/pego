@@ -27,7 +27,7 @@ func TestGeneratedMaxDepthValidation(t *testing.T) {
 		}
 	}
 	for _, ts := range []bool{false, true} {
-		generate := Generate
+		generate := generateCode
 		if ts {
 			generate = GenerateTS
 		}
@@ -49,7 +49,7 @@ func TestGeneratedMaxDepthValidation(t *testing.T) {
 				}
 				continue
 			}
-			want := fmt.Sprintf("var pegoGrammar = NewGrammar(%d)", n)
+			want := fmt.Sprintf("var pegoGrammar = pegort.NewGrammar(%d)", n)
 			if ts {
 				want = fmt.Sprintf("const defaultMaxDepth = %d", n)
 			}
@@ -108,7 +108,7 @@ rule n Word = t:(("(" n ")" / "é") #recover(skip="?")) #atomic => Word{Text: te
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte("module depthoptions\n\ngo 1.27.1\n"))
+	write("go.mod", []byte(testGoMod("depthoptions")))
 	for i, c := range fixtures {
 		g, err := syntax.Parse(c.src)
 		if err != nil {
@@ -117,7 +117,7 @@ rule n Word = t:(("(" n ")" / "é") #recover(skip="?")) #atomic => Word{Text: te
 		prog := compile(t, c.src)
 		for _, conv := range []bool{false, true} {
 			pkg := fmt.Sprintf("g%d_%v", i, conv)
-			code, err := Generate(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, MaxDepth: 4, convertTypes: conv})
+			code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, MaxDepth: 4, convertTypes: conv})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -134,7 +134,7 @@ rule n Word = t:(("(" n ")" / "é") #recover(skip="?")) #atomic => Word{Text: te
 				}
 			}
 			harness := `package ` + pkg + `
-import("fmt";"strings";"sync";"testing")
+import("fmt";"strings";"sync";"testing";pegort "github.com/ornew/pego/runtime")
 func TestLimitsAndReuse(t *testing.T) {
  rows:=[]struct{name,input string;unit PositionUnit;limit int;want,recWant string}{` + rows.String() + `}
  for repeat:=0;repeat<3;repeat++ {for _,c:=range rows {
@@ -180,7 +180,7 @@ func TestConfiguration(t *testing.T) {
  if _,err:=Parse("?",WithMaxDepth(20),bad);err==nil || !strings.Contains(err.Error(),"max depth") {t.Fatal("last setting not applied")}
  if _,err:=Parse("?",WithMaxDepth(int(^uint(0)>>1)));err!=nil && strings.Contains(err.Error(),"max depth") {t.Fatal("largest native int rejected")}
  called:=0
- option:=func(o *parseOptions){called++;o.maxDepth=20;_,err:=Parse("?",WithMaxDepth(1));_ = err}
+ option:=func(o *pegort.X_parseOptions){called++;o.X_maxDepth=20;_,err:=Parse("?",WithMaxDepth(1));_ = err}
  Parse("?",option);ParseAST("?",option);Recognize("?",option)
  if called!=3 {t.Fatal("options retained or evaluated more than once")}
  for _,invoke:=range []func(){func(){Parse("?",nil)},func(){ParseRule("missing","?",nil)},func(){ParseAST("?",nil)},func(){Recognize("?",nil)}} {
@@ -219,22 +219,22 @@ rule main WithUnit = t:("é") #atomic => ParseOption{Text: text($t)}`
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module collisions\n\ngo 1.27.1\n"), 0644)
+	os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("collisions")), 0644)
 	for _, conv := range []bool{false, true} {
 		name := "direct"
 		if conv {
 			name = "convert"
 		}
 		opts := GenOptions{Package: name, Start: "main", Types: true, convertTypes: conv}
-		code, err := Generate(g, opts)
+		code, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
-		again, err := Generate(g, opts)
+		again, err := generateCode(g, opts)
 		if err != nil || !bytes.Equal(code, again) {
 			t.Fatal("unstable collision mapping")
 		}
-		for _, want := range []string{"type ParseOption_ struct", "type ParseOption__ struct", "type WithUnit_ = *ParseOption_", "type WithMaxDepth_ struct", "opts ...ParseOption) (*ParseOption_, error)"} {
+		for _, want := range []string{"type ParseOption_ struct", "type ParseOption__ struct", "type WithUnit_ = *ParseOption_", "type WithMaxDepth_ struct", "opts ...pegort.ParseOption) (*ParseOption_, error)"} {
 			if !strings.Contains(string(code), want) {
 				t.Errorf("missing %s", want)
 			}

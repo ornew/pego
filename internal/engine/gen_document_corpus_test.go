@@ -34,7 +34,7 @@ func TestGeneratedDocumentsMatchBatchOnCorpus(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", "module doctest\n\ngo 1.24\n")
+	write("go.mod", testGoMod("doctest"))
 	var imports, checks strings.Builder
 	cases := genCorpus(t)
 	for i, c := range cases {
@@ -42,7 +42,7 @@ func TestGeneratedDocumentsMatchBatchOnCorpus(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := Generate(g, GenOptions{Package: fmt.Sprintf("g%d", i), Start: "main", Types: true, Document: true})
+		code, err := generateCode(g, GenOptions{Package: fmt.Sprintf("g%d", i), Start: "main", Types: true, Document: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

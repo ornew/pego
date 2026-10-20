@@ -1,6 +1,6 @@
 # Streams in Generated Go
 
-Generate with `pego gen -g grammar.pego -pkg parser -stream -o parser/parser.go`, or pass `pego.WithStream()` to
+Generate with `pego gen -g grammar.pego -module example.com/parser -stream -o parser`, or pass `pego.WithStream()` to
 `GenerateGo`. The start rule must have a [`#stream`](../../spec/pragmas.md#stream) repetition; otherwise generation
 fails. This adds a Go `ParseStream` beside the ordinary `Parse`, which still treats `#stream` as a plain repetition.
 

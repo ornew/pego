@@ -63,7 +63,7 @@ func TestGeneratedTypedDirectCuts(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := Generate(g, GenOptions{Package: "cuts", Start: "main", Types: true})
+		code, err := generateCode(g, GenOptions{Package: "cuts", Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -80,7 +80,7 @@ func TestGeneratedTypedDirectCuts(t *testing.T) {
 		if c.name == "typed/direct_cut_callee" && !strings.Contains(string(code), "// part, called as by invokePlain (body inlined)") {
 			t.Fatal("callee containing cuts must use the direct typed route")
 		}
-		reference, err := Generate(g, GenOptions{Package: "cuts", Start: "main", Types: true, disableTypedCuts: true})
+		reference, err := generateCode(g, GenOptions{Package: "cuts", Start: "main", Types: true, disableTypedCuts: true})
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -17,12 +17,15 @@ func TestInvalidCharacterClassEntryPoints(t *testing.T) {
 			cc := &grammar.CharClass{SourceInfo: grammar.SourceInfo{Pos: grammar.Pos{Line: 3, Col: 7}}, Ranges: []grammar.CharRange{cr}}
 			g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: cc}}}}
 			for name, run := range map[string]func() error{
-				"compile":            func() error { _, err := Compile(g, Options{}); return err },
-				"unchecked compile":  func() error { _, err := Compile(g, Options{NoTypeCheck: true}); return err },
-				"saved AST rebuild":  func() error { _, err := build(g, Options{}, []ruleFlags{{}}); return err },
-				"Go generator":       func() error { _, err := Generate(g, GenOptions{Start: "main", Package: "p"}); return err },
-				"typed Go generator": func() error { _, err := Generate(g, GenOptions{Start: "main", Package: "p", Types: true}); return err },
-				"TS generator":       func() error { _, err := GenerateTS(g, GenOptions{Start: "main"}); return err },
+				"compile":           func() error { _, err := Compile(g, Options{}); return err },
+				"unchecked compile": func() error { _, err := Compile(g, Options{NoTypeCheck: true}); return err },
+				"saved AST rebuild": func() error { _, err := build(g, Options{}, []ruleFlags{{}}); return err },
+				"Go generator":      func() error { _, err := generateCode(g, GenOptions{Start: "main", Package: "p"}); return err },
+				"typed Go generator": func() error {
+					_, err := generateCode(g, GenOptions{Start: "main", Package: "p", Types: true})
+					return err
+				},
+				"TS generator": func() error { _, err := GenerateTS(g, GenOptions{Start: "main"}); return err },
 			} {
 				t.Run(name, func(t *testing.T) {
 					err := run()

@@ -42,9 +42,9 @@ existing boundary:
   [input loops](../../internal/engine/input.go), and
   [repetition resumption](../../internal/engine/resume.go) contain work outside a
   rule-entry depth check.
-- [Generated Go](../../internal/engine/genrt/runtime.go) resolves options per
+- [Generated Go](../../runtime/runtime.go) resolves options per
   invocation, pools private scratch, and separately supports
-  [typed execution](../../internal/engine/genrt/typed.go). Depth options already
+  [typed execution](../../runtime/typed.go). Depth options already
   apply to Node, recognition, and typed entry points under
   [design 022](022-generated-parser-depth-limits.md).
 

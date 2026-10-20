@@ -1,6 +1,6 @@
 # The Generated Go API
 
-A Go parser written by [`pego gen`](code-generation.md) has a small API defined in the file itself. This guide describes
+A Go parser written by [`pego gen`](code-generation.md) has a small API: `parser.go` defines the functions that parse, and `api.go` re-exports the types and options of the runtime package (the copy in `internal/runtime`, or `github.com/ornew/pego/runtime` with `-runtime import`) under their own names. This guide describes
 it, the call options that all entry points share, and recognition. Options that add typed values, incremental documents
 and streams have their own guides:
 
@@ -15,7 +15,7 @@ It assumes you have generated a parser as in the [quick start](code-generation.m
 
 ## The Generated API
 
-Every generated package has the same small API, defined in the file itself:
+Every generated package has the same small API, spread over `parser.go` and `api.go`:
 
 ```go
 // Parse parses the whole input with the start rule. Options select position units and the nested rule-call limit.
@@ -24,7 +24,7 @@ func Parse(input string, opts ...ParseOption) (*Node, error)
 // ParseRule parses the whole input with the rule name.
 func ParseRule(name, input string, opts ...ParseOption) (*Node, error)
 
-type ParseOption func(*parseOptions) // parseOptions is internal to the generated package
+type ParseOption = runtime.ParseOption // an alias; the options are internal to the runtime
 func WithUnit(unit PositionUnit) ParseOption
 func WithMaxDepth(n int) ParseOption
 

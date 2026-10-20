@@ -26,7 +26,7 @@ func TestGenerateDirectTypedDocument(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", "module directtypeddocument\n\ngo 1.27.1\n")
+	write("go.mod", testGoMod("directtypeddocument"))
 	for i, c := range []struct {
 		grammar string
 		inputs  []string
@@ -76,19 +76,19 @@ rule main Text = v1:[aé😀]* #atomic => Text{S: text($v1)}`, []string{"", "aé
 		if err != nil {
 			t.Fatalf("%s: %v", pkg, err)
 		}
-		code, err := Generate(g, GenOptions{Package: pkg, Start: "main", Types: true, Document: true})
+		code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Document: true})
 		if err != nil {
 			t.Fatalf("%s: %v", pkg, err)
 		}
-		if !strings.Contains(string(code), "return TypedDocumentParse(") {
+		if !strings.Contains(string(code), "return pegort.TypedDocumentParse(") {
 			t.Fatalf("%s uses conversion instead of direct matching", pkg)
 		}
 		write(pkg+"/parser.go", string(code))
-		reference, err := Generate(g, GenOptions{Package: "reference", Start: "main", Types: true, Document: true, convertTypes: true})
+		reference, err := generateCode(g, GenOptions{Package: "reference", Start: "main", Types: true, Document: true, convertTypes: true})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if strings.Contains(string(reference), "return TypedDocumentParse(") {
+		if strings.Contains(string(reference), "return pegort.TypedDocumentParse(") {
 			t.Fatal("reference contains direct matching")
 		}
 		write(pkg+"/reference/parser.go", string(reference))
@@ -106,6 +106,7 @@ rule main Text = v1:[aé😀]* #atomic => Text{S: text($v1)}`, []string{"", "aé
 
 const directTypedDocumentTests = `package PACKAGE
 import (
+	pegort "github.com/ornew/pego/runtime"
  "context"
  "encoding/json"
  "errors"
@@ -126,7 +127,7 @@ func assertDirect(t *testing.T,d *Document,unit PositionUnit){
  if !reflect.DeepEqual(got,want)||!reflect.DeepEqual(gotErr,wantErr){t.Fatalf("unit %v input %q: Document %#v / %#v; batch %#v / %#v",unit,d.Text(),got,gotErr,want,wantErr)}
  ref,refErr:=reference.ParseAST(d.Text(),reference.WithUnit(reference.PositionUnit(unit)))
  if jsonValue(t,got)!=jsonValue(t,ref)||errorValue(gotErr)!=errorValue(refErr){t.Fatalf("unit %v input %q differs from conversion: %s / %s; %v / %v",unit,d.Text(),jsonValue(t,got),jsonValue(t,ref),gotErr,refErr)}
- if _,ok:=d.typedMemo.(*typedDocumentState);!ok{t.Fatal("direct typed cache not retained")}
+ if _,ok:=d.X_typedMemo.(*pegort.X_typedDocumentState);!ok{t.Fatal("direct typed cache not retained")}
 }
 func TestEditsAndReuse(t *testing.T){
  for _,unit:=range []PositionUnit{CodePoints,Bytes}{
@@ -159,9 +160,9 @@ func TestControlsAndInvalidOptions(t *testing.T){
   d,err:=NewDocument(inputs[0],WithUnit(unit));if err!=nil{t.Fatal(err)}
   assertDirect(t,d,unit)
   assertDirect(t,d,unit)
-  before,old:=d.Stats(),d.typedMemo
+  before,old:=d.Stats(),d.X_typedMemo
   if before.Evaluated!=0||before.Reused!=1{t.Fatal("root was not warm",before)}
-  unchanged:=func(){t.Helper();if d.typedMemo!=old||d.Stats()!=before{t.Fatal("pre-admission failure changed cache or stats",d.Stats())}}
+  unchanged:=func(){t.Helper();if d.X_typedMemo!=old||d.Stats()!=before{t.Fatal("pre-admission failure changed cache or stats",d.Stats())}}
   reused:=func(){t.Helper();assertDirect(t,d,unit);if d.Stats()!=before{t.Fatal("valid cache was not reused after pre-admission failure",d.Stats())}}
   if _,err:=d.ParseAST(WithMaxDepth(-1));err==nil{t.Fatal("invalid depth accepted")};unchanged();reused()
   if _,err:=d.ParseAST(WithUnit(PositionUnit(1-int(unit))));err==nil{t.Fatal("unit change accepted")};unchanged();reused()
@@ -173,7 +174,7 @@ func TestControlsAndInvalidOptions(t *testing.T){
    func(){defer func(){if recover()!=token{t.Fatal("context panic identity changed")}}();d.ParseAST(WithContext(ctx));t.Fatal("context did not panic")}()
    unchanged();reused()
   }
-  if _,err:=d.ParseAST(WithWorkLimits(WorkLimits{MaxSteps:1}));!errors.Is(err,ErrWorkLimit)||d.typedMemo!=nil{t.Fatalf("execution budget cleanup: %v",err)}
+  if _,err:=d.ParseAST(WithWorkLimits(WorkLimits{MaxSteps:1}));!errors.Is(err,ErrWorkLimit)||d.X_typedMemo!=nil{t.Fatalf("execution budget cleanup: %v",err)}
   assertDirect(t,d,unit)
  }
 }
@@ -208,7 +209,7 @@ func TestInterruptionWithSyntaxErrorPayload(t *testing.T){
   assertDirect(t,d,CodePoints)
   ctx:=&syntaxErrorContext{Context:context.Background(),err:failure,done:make(chan struct{})}
   _,err=d.ParseAST(WithContext(ctx))
-  if errorValue(err)!=errorValue(failure)||d.typedMemo!=nil{t.Fatalf("interrupted cache retained: %v",err)}
+  if errorValue(err)!=errorValue(failure)||d.X_typedMemo!=nil{t.Fatalf("interrupted cache retained: %v",err)}
   assertDirect(t,d,CodePoints)
  }
 }

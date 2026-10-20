@@ -131,7 +131,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 `, goName, t.span)
 		target := &methods
 		if deferred {
-			methods.WriteString(" c.Tasks = append(c.Tasks, TypedDocumentCloneTask{v, out})\n return out\n}\n")
+			methods.WriteString(" c.Tasks = append(c.Tasks, TypedDocumentCloneTask{Source: v, Target: out})\n return out\n}\n")
 			fmt.Fprintf(&tasks, " case *%s:\n out := task.Target.(*%s)\n _ = out; _ = v\n", goName, goName)
 			target = &tasks
 		}
@@ -193,7 +193,7 @@ func (c *typedDocumentClone) toNode(v *TNode[any]) *TNode[any] {
  c.Step(1)
  if v == nil { return nil }
  if old, ok := c.Values[v]; ok { return old.(*TNode[any]) }
- out := &TNode[any]{` + t.span + `: v.` + t.span + `}
+ out := &TNode[any]{Span: v.Span}
  c.Remember(v, out)
  if elems, ok := v.Value.([]any); ok { out.Value = c.toElems(elems) } else { out.Value = v.Value }
  return out
@@ -229,7 +229,7 @@ func (c *typedDocumentClone) toElems(v []any) []any {
 					fmt.Fprintf(&methods, " if v == nil { return nil }\n if old, ok := c.Values[v]; ok { return old.(%s) }\n out := &%s{}\n c.Remember(v, out)\n if u := %s; u != nil { out.TNode = *u }\n return out\n", g, g[1:], clone(x.underlying(), "&v.TNode"))
 					break
 				}
-				fmt.Fprintf(&methods, " if v == nil { return nil }\n if old, ok := c.Values[v]; ok { return old.(%s) }\n out := &%s{%s: v.%s}\n c.Remember(v, out)\n out.Value = %s\n return out\n", g, g[1:], t.span, t.span, clone(x.value, "v.Value"))
+				fmt.Fprintf(&methods, " if v == nil { return nil }\n if old, ok := c.Values[v]; ok { return old.(%s) }\n out := &%s{Span: v.Span}\n c.Remember(v, out)\n out.Value = %s\n return out\n", g, g[1:], clone(x.value, "v.Value"))
 			}
 			methods.WriteString("}\n")
 		}

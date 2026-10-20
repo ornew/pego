@@ -38,7 +38,7 @@ Evidence records: [096](../096-specialize-generated-go-method-helpers.md).
 Source owners: [`ordinary method specialization
 selection`](../../../internal/engine/gen.go), [`work-control method
 generation`](../../../internal/engine/gen_ordinary_methods.go), [`metered
-runtime helpers`](../../../internal/engine/genrt/work.go).
+runtime helpers`](../../../runtime/work.go).
 
 The [comparison policy](../../design/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

@@ -27,9 +27,6 @@ func AsNode(v any) ASTNode {
 	return n
 }
 
-// Range returns the start and the end (exclusive) of the node in the input.
-func (s Span) Range() (start, end int) { return s.Start, s.End }
-
 // Kind returns the name of the node's SyntaxKind in the TypeScript compiler, such as "Identifier",
 // "CallExpression", "PlusToken" or "ExportKeyword". Most types are named after their kind; the terminals that
 // stand for several kinds (Token, Modifier, KeywordTypeNode, BooleanLiteral) have the kind of their text.

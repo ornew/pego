@@ -423,11 +423,16 @@ func TestSourceGrammarGeneratedGo(t *testing.T) {
 	dir := t.TempDir()
 	write := func(name string, b []byte) {
 		t.Helper()
+		if err := os.MkdirAll(filepath.Dir(filepath.Join(dir, name)), 0o755); err != nil {
+			t.Fatal(err)
+		}
 		if err := os.WriteFile(filepath.Join(dir, name), b, 0600); err != nil {
 			t.Fatal(err)
 		}
 	}
-	write("parser.go", code)
+	for _, f := range code {
+		write(filepath.FromSlash(f.Path), f.Content)
+	}
 	write("go.mod", []byte("module sourceparser\n\ngo 1.27.1\n"))
 	data, err := json.Marshal(fixtures)
 	if err != nil {

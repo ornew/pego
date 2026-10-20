@@ -30,7 +30,7 @@ rule token Token = t:("é") #atomic => Token{Text: text($t)}`)
 	for _, conv := range []bool{false, true} {
 		for _, variant := range typedAllocatorControls {
 			t.Run(strconv.FormatBool(conv)+"/"+variant.name, func(t *testing.T) {
-				code, err := Generate(g, GenOptions{Package: "chunks", Start: "main", Types: true, convertTypes: conv, disableTypedObjectSlabs: variant.objects, disableTypedListSlabs: variant.lists, disableTypedOutputBootstrap: variant.legacy})
+				code, err := generateCode(g, GenOptions{Package: "chunks", Start: "main", Types: true, convertTypes: conv, disableTypedObjectSlabs: variant.objects, disableTypedListSlabs: variant.lists, disableTypedOutputBootstrap: variant.legacy})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -47,7 +47,7 @@ rule token Token = t:("é") #atomic => Token{Text: text($t)}`)
 					}
 				}
 				for name, data := range map[string][]byte{
-					"parser.go": code, "chunks_test.go": []byte(typedChunksFixture), "go.mod": []byte("module chunks\n\ngo 1.27.1\n"),
+					"parser.go": code, "chunks_test.go": []byte(typedChunksFixture), "go.mod": []byte(testGoMod("chunks")),
 				} {
 					if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
 						t.Fatal(err)

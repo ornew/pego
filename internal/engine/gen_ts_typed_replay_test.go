@@ -104,7 +104,7 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, []string{"", "a1", "a1b2"}})
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", "module replay\n\ngo 1.24\n")
+	write("go.mod", testGoMod("replay"))
 	write("package.json", `{"type":"module"}`)
 	var imports, parsers, recognizers, terminalNames, valueNames strings.Builder
 	var inputs [][]string
@@ -115,7 +115,7 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, []string{"", "a1", "a1b2"}})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		goCode, err := Generate(g, GenOptions{Start: "main", Package: fmt.Sprintf("g%d", i), Types: true, convertTypes: true, Recognize: true})
+		goCode, err := generateCode(g, GenOptions{Start: "main", Package: fmt.Sprintf("g%d", i), Types: true, convertTypes: true, Recognize: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

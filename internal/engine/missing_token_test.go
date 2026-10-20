@@ -505,7 +505,7 @@ rule main = "a"`)
 	if _, err := prog.MarshalBinary("main"); err == nil {
 		t.Fatal("saved a reserved type without a supported binary representation")
 	}
-	if _, err := Generate(prog.Grammar, GenOptions{Package: "example", Start: "main"}); err == nil {
+	if _, err := generateCode(prog.Grammar, GenOptions{Package: "example", Start: "main"}); err == nil {
 		t.Fatal("generated unsupported Missing type")
 	}
 }

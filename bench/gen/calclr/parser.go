@@ -4,5593 +4,39 @@
 package calclr
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"iter"
-	"math"
-	"reflect"
-	"slices"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
-	"sync/atomic"
-	"unicode/utf8"
 	"unsafe"
+
+	pegort "github.com/ornew/pego/runtime"
 )
-
-// Node is a value of a parse result: a node, whose value is a string, a tuple or a list, an error
-// value of recovery, a struct built by an action, or a carrier of another value. In JSON a node is
-// an object with the members start, end and value, and, with source information, rule and
-// captures.
-//
-// Of its fields and methods, BaseNode, RawChildren, RawEnd, RawField, RawFields, RawFresh, RawKind, RawStart, RawTerminal, RawText are for generated parsers; not a stable API.
-type Node struct {
-	RawKind     *nodeKind // the type and rule names (Type, Rule)
-	RawStart    int32     // the range in the input, in the parse's position unit (End is exclusive)
-	RawEnd      int32
-	RawText     string  // the text of a string node
-	RawChildren []*Node // the elements of a tuple or list
-	RawFields   Fields  // struct fields and captures
-
-	RawFresh    bool
-	RawTerminal bool
-	labeled     bool // the captures in Fields are output (source information)
-	box         any  // the value carried by a box
-}
-
-// Type returns the node's type name: string, tuple, list or error for the kinds of nodes,
-// or the name of a type of the grammar.
-func (n *Node) Type() string { return n.RawKind.typeName() }
-
-// Rule returns the name of the rule that produced the node, with source information, or "".
-func (n *Node) Rule() string { return n.RawKind.ruleName() }
-
-// MarshalJSON encodes the node as an object (see Node).
-func (n *Node) MarshalJSON() ([]byte, error) {
-	var b bytes.Buffer
-	if err := n.WriteJSON(&b); err != nil {
-		return nil, err
-	}
-	return b.Bytes(), nil
-}
-
-// nodeKind is a pair of type and rule names, interned (KindOf) so that a node holds one pointer
-// for both.
-//
-// Of its fields and methods, Base, NodeType are for generated parsers; not a stable API.
-type nodeKind struct {
-	typ, rule string
-	reserved  int // the index of a reserved type in reservedTypes with no rule, or -1
-	// Base is the index in reservedTypes of what the nodes are: the reserved type itself, with or
-	// without a rule, or for a named node type the string, tuple or list node it converts. It is
-	// -1 for a struct.
-	Base int
-}
-
-// NodeType reports whether k is the kind of a named node type.
-func (k *nodeKind) NodeType() bool {
-	return k != nil && k.Base >= 0 && k.typ != reservedTypes[k.Base]
-}
-
-func (k *nodeKind) typeName() string {
-	if k == nil {
-		return ""
-	}
-	return k.typ
-}
-
-func (k *nodeKind) ruleName() string {
-	if k == nil {
-		return ""
-	}
-	return k.rule
-}
-
-// Kinds of the value model that are not nodes. Their names cannot be type names.
-// TypeTupleValue and TypeListValue are for generated parsers; not a stable API.
-const (
-	typeBox        = "(box)"   // a value other than a node, carried where a node pointer is expected
-	TypeTupleValue = "(tuple)" // a tuple value: the Value of a tuple node
-	TypeListValue  = "(list)"  // a list value: the Value of a list node, or a list made by an action
-)
-
-var reservedTypes = [...]string{"string", "tuple", "list", "error", typeBox, TypeTupleValue, TypeListValue}
-
-var (
-	// RawKindMatch, RawKindSeq and RawKindList are for generated parsers; not a stable API.
-	RawKindMatch = KindOf("string", "")
-	RawKindSeq   = KindOf("tuple", "")
-	RawKindList  = KindOf("list", "")
-	kindError    = KindOf("error", "")
-
-	kindBox        = KindOf(typeBox, "")
-	kindTupleValue = KindOf(TypeTupleValue, "")
-	kindListValue  = KindOf(TypeListValue, "")
-)
-
-// isNode reports whether n is a node of the value model (a string node, a tuple or list node, or
-// an error value) rather than a struct, a box or a list or tuple value.
-func (n *Node) isNode() bool {
-	if k := n.RawKind; k != nil && k.Base >= 0 && k.Base <= baseError {
-		return true
-	}
-	return n.RawTerminal
-}
-
-// UnboxNode returns the value that the carrier n stands for: the box's value for a box, nil for
-// nil, and n otherwise.
-//
-// UnboxNode is for generated parsers; not a stable API.
-func UnboxNode(n *Node) any {
-	if n == nil {
-		return nil
-	}
-	if n.RawKind == kindBox {
-		return n.box
-	}
-	return n
-}
-
-// UnboxValue is UnboxNode for a value that may be a carrier.
-//
-// UnboxValue is for generated parsers; not a stable API.
-func UnboxValue(v any) any {
-	if n, ok := v.(*Node); ok {
-		return UnboxNode(n)
-	}
-	return v
-}
-
-// nodeValue returns the Value of the node n: its text for a string node, and a tuple or list
-// value sharing its elements otherwise.
-func (p *Parser) nodeValue(n *Node) any {
-	switch {
-	case n.RawTerminal:
-		return n.RawText
-	case n.RawKind != nil && n.RawKind.Base == baseList:
-		return p.NewNode(Node{RawKind: kindListValue, RawStart: n.RawStart, RawEnd: n.RawEnd, RawChildren: n.RawChildren})
-	}
-	return p.NewNode(Node{RawKind: kindTupleValue, RawStart: n.RawStart, RawEnd: n.RawEnd, RawChildren: n.RawChildren})
-}
-
-var kinds sync.Map // [2]string → *nodeKind
-
-// KindOf returns the interned kind of the type and rule names (rules and actions prepare theirs).
-//
-// KindOf is for generated parsers; not a stable API.
-func KindOf(typ, rule string) *nodeKind {
-	key := [2]string{typ, rule}
-	if k, ok := kinds.Load(key); ok {
-		return k.(*nodeKind)
-	}
-	k := &nodeKind{typ: typ, rule: rule, reserved: -1, Base: -1}
-	for i, t := range reservedTypes {
-		if t == typ {
-			k.Base = i
-			if rule == "" {
-				k.reserved = i
-			}
-		}
-	}
-	actual, _ := kinds.LoadOrStore(key, k)
-	return actual.(*nodeKind)
-}
-
-// The indexes in reservedTypes of the bases of node kinds. BaseString is for generated
-// parsers; not a stable API.
-const (
-	BaseString = iota
-	baseTuple
-	baseList
-	baseError
-)
-
-// nodeTypeKinds are the kinds of the nodes of a named node type, by the base (BaseString,
-// baseTuple, baseList) of the node converted to it. They have no rule.
-type nodeTypeKinds [baseList + 1]*nodeKind
-
-// NewNodeTypeKinds returns the interned kinds of the named node type typ.
-//
-// NewNodeTypeKinds is for generated parsers; not a stable API.
-func NewNodeTypeKinds(typ string) *nodeTypeKinds {
-	var ks nodeTypeKinds
-	for base := range ks {
-		// The key cannot be that of a rule, whose name has no NUL.
-		key := [2]string{typ, "\x00" + reservedTypes[base]}
-		k, ok := kinds.Load(key)
-		if !ok {
-			k, _ = kinds.LoadOrStore(key, &nodeKind{typ: typ, reserved: -1, Base: base})
-		}
-		ks[base] = k.(*nodeKind)
-	}
-	return &ks
-}
-
-// convert returns the node of the named node type of ks that the value v converts to: a copy of
-// v with the same range and content, or v itself if it already has the type. It reports false if
-// v is not a string, tuple or list node.
-func (ks *nodeTypeKinds) convert(v any) (*Node, bool) {
-	n, ok := v.(*Node)
-	if !ok || n == nil || n.RawKind == nil || n.RawKind.Base < 0 || n.RawKind.Base > baseList {
-		return nil, false
-	}
-	k := ks[n.RawKind.Base]
-	if n.RawKind == k {
-		return n, true
-	}
-	c := *n
-	c.RawKind, c.RawFresh = k, false
-	if n.RawFresh {
-		// The rule that made n may still change it; the copy keeps what it holds now.
-		c.RawChildren = append([]*Node(nil), n.RawChildren...)
-	}
-	c.RawFields = append(Fields(nil), n.RawFields...)
-	return &c, true
-}
-
-// convertOwned gives n, a node that nothing else holds, the named node type of ks in place. It
-// reports false if n is not a string, tuple or list node.
-func (ks *nodeTypeKinds) convertOwned(n *Node) bool {
-	if n == nil || n.RawKind == nil || n.RawKind.Base < 0 || n.RawKind.Base > baseList {
-		return false
-	}
-	n.RawKind = ks[n.RawKind.Base]
-	return true
-}
-
-// BaseNode returns the node n of a named node type as the string, tuple or list node it was
-// converted from: a copy with the kind of that node (n itself for other nodes).
-func (n *Node) BaseNode() *Node {
-	if !n.RawKind.NodeType() {
-		return n
-	}
-	c := *n
-	c.RawKind = KindOf(reservedTypes[n.RawKind.Base], "")
-	return &c
-}
-
-// Convert evaluates a node type constructor T{v}: it converts v to the named node type typ (after
-// convertCheck, where the value needs a check).
-func (c *ActCtx) Convert(typ string, v any) any {
-	v = UnboxValue(v)
-	n, ok := c.P.g.NodeTypes[typ].convert(v)
-	if !ok {
-		c.P.evalErrorf("cannot convert %s to %s", typeName(v), typ)
-	}
-	return n
-}
-
-// ruleKinds are the kinds of a rule's nodes: the reserved types with the rule's name.
-type ruleKinds struct {
-	reserved [len(reservedTypes)]*nodeKind
-}
-
-func newRuleKinds(rule string) ruleKinds {
-	var rk ruleKinds
-	for i, t := range reservedTypes {
-		rk.reserved[i] = KindOf(t, rule)
-	}
-	return rk
-}
-
-// named returns the kind k with the rule's name. A node of a named node type keeps no rule.
-func (rk *ruleKinds) named(k *nodeKind, rule string) *nodeKind {
-	if k.reserved >= 0 {
-		return rk.reserved[k.reserved]
-	}
-	if k.Base >= 0 {
-		return k
-	}
-	return KindOf(k.typ, rule)
-}
-
-// NodeField is a field of a node.
-type NodeField struct {
-	Name  string
-	Value any
-}
-
-// Fields lists the fields of a node. It encodes to JSON as an object with keys in sorted order.
-type Fields []NodeField
-
-// Get returns the value of the field name.
-func (fs Fields) Get(name string) (any, bool) {
-	for i := range fs {
-		if fs[i].Name == name {
-			return fs[i].Value, true
-		}
-	}
-	return nil, false
-}
-
-func (fs *Fields) set(name string, v any) {
-	for i := range *fs {
-		if (*fs)[i].Name == name {
-			(*fs)[i].Value = v
-			return
-		}
-	}
-	*fs = append(*fs, NodeField{name, v})
-}
-
-func (fs Fields) sorted() Fields {
-	c := append(Fields(nil), fs...)
-	sort.Slice(c, func(i, j int) bool { return c[i].Name < c[j].Name })
-	return c
-}
-
-// MarshalJSON encodes the fields as an object with keys in sorted order.
-func (fs Fields) MarshalJSON() ([]byte, error) {
-	var b bytes.Buffer
-	b.WriteByte('{')
-	for i, f := range fs.sorted() {
-		if i > 0 {
-			b.WriteByte(',')
-		}
-		k, _ := json.Marshal(f.Name)
-		b.Write(k)
-		b.WriteByte(':')
-		if err := writeJSONValue(&b, f.Value); err != nil {
-			return nil, err
-		}
-	}
-	b.WriteByte('}')
-	return b.Bytes(), nil
-}
-
-// IsTerminal reports whether the node is a terminal.
-func (n *Node) IsTerminal() bool { return n != nil && n.RawTerminal }
-
-// NodeKind is what a Node stands for in the value model.
-type NodeKind uint8
-
-const (
-	// KindString is a node whose value is a string, the text it matched: Text.
-	KindString NodeKind = iota
-	// KindTuple is a node whose value is a tuple: Len and Elem.
-	KindTuple
-	// KindList is a node whose value is a list: Len and Elem.
-	KindList
-	// KindError is an error value of recovery: Text is its message.
-	KindError
-	// KindStruct is a struct built by an action: Type and Field.
-	KindStruct
-	// KindTupleValue is a tuple built by an action, without a range: Len and Elem.
-	KindTupleValue
-	// KindListValue is a list built by an action, without a range: Len and Elem.
-	KindListValue
-	// KindValue is any other value built by an action, such as an int or a bool: Value.
-	KindValue
-)
-
-var nodeKindNames = [...]string{"string", "tuple", "list", "error", "struct", "tuple value", "list value", "value"}
-
-func (k NodeKind) String() string {
-	if int(k) < len(nodeKindNames) {
-		return nodeKindNames[k]
-	}
-	return fmt.Sprintf("NodeKind(%d)", k)
-}
-
-// Kind returns what the node stands for.
-func (n *Node) Kind() NodeKind {
-	switch n.shape() {
-	case shapeString:
-		return KindString
-	case shapeTuple:
-		return KindTuple
-	case shapeList:
-		return KindList
-	case shapeError:
-		return KindError
-	case shapeBox:
-		return KindValue
-	case shapeTupleValue:
-		return KindTupleValue
-	case shapeListValue:
-		return KindListValue
-	}
-	return KindStruct
-}
-
-// Start returns the start of the range of the input that the node spans, in the position unit of
-// the parse.
-func (n *Node) Start() int { return int(n.RawStart) }
-
-// End returns the end of the range of the input that the node spans (exclusive), in the position
-// unit of the parse.
-func (n *Node) End() int { return int(n.RawEnd) }
-
-// Text returns the string value of a KindString node, and the message of a KindError value; it
-// returns "" for other nodes and nil.
-func (n *Node) Text() string {
-	if n == nil {
-		return ""
-	}
-	switch n.shape() {
-	case shapeString:
-		return n.RawText
-	case shapeError:
-		msg, _ := n.RawFields.Get("message")
-		s, _ := msg.(string)
-		return s
-	}
-	return ""
-}
-
-// Len returns the number of elements of a tuple or a list (KindTuple, KindList, KindTupleValue,
-// KindListValue), and 0 for other nodes and nil.
-func (n *Node) Len() int {
-	if n == nil {
-		return 0
-	}
-	switch n.shape() {
-	case shapeTuple, shapeList, shapeTupleValue, shapeListValue:
-		return len(n.RawChildren)
-	}
-	return 0
-}
-
-// Elem returns the element i of a tuple or a list: a node, or nil for an optional that did not
-// match. It panics if i is out of the range [0, Len()).
-func (n *Node) Elem(i int) *Node {
-	if i < 0 || i >= n.Len() {
-		panic(fmt.Sprintf("element %d of a node with %d elements", i, n.Len()))
-	}
-	return n.RawChildren[i]
-}
-
-// Elems returns the elements of a tuple or a list in order, as Elem does.
-func (n *Node) Elems() iter.Seq2[int, *Node] {
-	return func(yield func(int, *Node) bool) {
-		for i := range n.Len() {
-			if !yield(i, n.RawChildren[i]) {
-				return
-			}
-		}
-	}
-}
-
-// Value returns the value of a KindValue node (such as an int, a string or a bool) and the string
-// of a KindString node; it returns nil for other nodes and nil.
-func (n *Node) Value() any {
-	if n == nil {
-		return nil
-	}
-	switch n.shape() {
-	case shapeBox:
-		return n.box
-	case shapeString:
-		return n.RawText
-	}
-	return nil
-}
-
-// Field returns the value of the field name of a struct, and, with source information, the value
-// of the capture name of a node: a *Node, an int, a string, a bool, or nil.
-func (n *Node) Field(name string) any {
-	if !n.fieldsVisible() {
-		return nil
-	}
-	return n.RawField(name)
-}
-
-// RawField returns the value of the field or capture name, whether or not it is public.
-func (n *Node) RawField(name string) any {
-	if n == nil {
-		return nil
-	}
-	v, _ := n.RawFields.Get(name)
-	return v
-}
-
-// fieldsVisible reports whether the fields of n are public: those of a struct, and the captures
-// of a node with source information.
-func (n *Node) fieldsVisible() bool {
-	return n != nil && (n.labeled || n.shape() == shapeStruct)
-}
-
-// Fields returns the fields of a struct, and, with source information, the captures of a node,
-// in the order the action wrote them.
-func (n *Node) Fields() iter.Seq2[string, any] {
-	return func(yield func(string, any) bool) {
-		if !n.fieldsVisible() {
-			return
-		}
-		for _, f := range n.RawFields {
-			if !yield(f.Name, f.Value) {
-				return
-			}
-		}
-	}
-}
-
-// nodeShape is what a Node stands for in the value model.
-type nodeShape uint8
-
-const (
-	shapeString     nodeShape = iota // a node whose value is a string (Text)
-	shapeTuple                       // a node whose value is a tuple (Children)
-	shapeList                        // a node whose value is a list (Children)
-	shapeError                       // an error value of recovery
-	shapeBox                         // a box carrying a value other than a node
-	shapeTupleValue                  // a tuple value (Children)
-	shapeListValue                   // a list value (Children)
-	shapeStruct                      // a struct value (Fields)
-)
-
-// baseShapes are the shapes of the nodes of the kinds of each base (nodeKind.Base).
-var baseShapes = [len(reservedTypes)]nodeShape{shapeString, shapeTuple, shapeList, shapeError, shapeBox, shapeTupleValue, shapeListValue}
-
-func (n *Node) shape() nodeShape {
-	if k := n.RawKind; k != nil && k.Base >= 0 {
-		return baseShapes[k.Base]
-	}
-	if n.RawTerminal {
-		return shapeString
-	}
-	return shapeStruct
-}
-
-// valueTypeName names the type of a value of the given shape in messages, in the terms of the
-// value model: node[string] for a string node, node[(_, _)] and node[[]_] for tuple and list
-// nodes (a tuple has elems elements), error for an error value, (_, _) and []_ for tuple and list
-// values, and name for a struct.
-func valueTypeName(shape nodeShape, name string, elems int) string {
-	switch shape {
-	case shapeString:
-		return "node[string]"
-	case shapeTuple:
-		return "node[" + tupleTerm(elems) + "]"
-	case shapeList:
-		return "node[[]_]"
-	case shapeError:
-		return "error"
-	case shapeTupleValue:
-		return tupleTerm(elems)
-	case shapeListValue:
-		return "[]_"
-	}
-	return name
-}
-
-// tupleTerm is the type term of a tuple of n elements of unknown types.
-func tupleTerm(n int) string {
-	if n == 1 {
-		return "(_,)"
-	}
-	return "(" + strings.TrimSuffix(strings.Repeat("_, ", n), ", ") + ")"
-}
-
-// captureLocation is where a capture of a node is: a path of tuple indexes into the node's
-// value, or, for a capture whose value is not an element (one in a positive lookahead), its value.
-type captureLocation struct {
-	name  string
-	path  []int
-	side  bool
-	value any
-}
-
-// captureLocations returns the locations of the captures of the tuple node n, in name order.
-func captureLocations(n *Node) []captureLocation {
-	var out []captureLocation
-	for _, f := range n.RawFields.sorted() {
-		v, ok := f.Value.(*Node)
-		if !ok || v == nil {
-			if f.Value != nil {
-				out = append(out, captureLocation{name: f.Name, side: true, value: f.Value})
-			}
-			continue
-		}
-		if path, found := findElement(n, v); found {
-			out = append(out, captureLocation{name: f.Name, path: path})
-		} else {
-			out = append(out, captureLocation{name: f.Name, side: true, value: v})
-		}
-	}
-	return out
-}
-
-// findElement returns the path of x among the elements of the tuple node n and of the tuple nodes
-// nested in it, breadth first.
-// WalkFields returns the fields that Walk visits, in name order: the fields of a struct, and the
-// captures of a node with source information except those whose values are its elements, which
-// WalkTree visits as elements. Visiting those again would make Walk exponential in the nesting of
-// operator nodes, whose captures are their operands. The captures of a node without source
-// information are not part of the tree.
-//
-// WalkFields is for generated parsers; not a stable API.
-func WalkFields(n *Node) Fields {
-	if !n.fieldsVisible() {
-		return nil
-	}
-	fields := n.RawFields.sorted()
-	if !n.labeled {
-		return fields
-	}
-	out := fields[:0]
-	for _, f := range fields {
-		if v, ok := f.Value.(*Node); ok && v != nil {
-			if _, found := findElement(n, v); found {
-				continue
-			}
-		}
-		out = append(out, f)
-	}
-	return out
-}
-
-func findElement(n, x *Node) ([]int, bool) {
-	type item struct {
-		n    *Node
-		path []int
-	}
-	queue := []item{{n, nil}}
-	for len(queue) > 0 {
-		it := queue[0]
-		queue = queue[1:]
-		for i, c := range it.n.RawChildren {
-			if c == nil {
-				continue
-			}
-			path := append(append([]int{}, it.path...), i)
-			if c == x {
-				return path, true
-			}
-			if c.shape() == shapeTuple && c.Rule() == "" {
-				queue = append(queue, item{c, path})
-			}
-		}
-	}
-	return nil, false
-}
-
-// String renders the value as an S-expression of its shape, without positions: a string is
-// quoted, a tuple is ( ), a list [ ], nil is nil, a struct is Name{Field: value}, and an error is
-// error("message"). A node of a named node type N is written with N before its brackets:
-// N("text"), N( ) and N[ ]. With source information, a node is followed by @rule, a captured element is
-// preceded by name:, and a capture whose value is not an element is written after the elements
-// as &name:value.
-func (n *Node) String() string {
-	var b strings.Builder
-	writeValue(&b, n)
-	return b.String()
-}
-
-// sexprFrame is a step of writeValue, which keeps its own stack for deep trees.
-type sexprFrame struct {
-	v      any
-	i      int
-	enter  bool
-	labels map[*Node][]string
-	side   []captureLocation
-	close  string
-}
-
-func writeValue(b *strings.Builder, v any) {
-	stack := []sexprFrame{{v: v, enter: true}}
-	for len(stack) > 0 {
-		f := &stack[len(stack)-1]
-		n, isNode := f.v.(*Node)
-		if !isNode || n == nil {
-			writeScalar(b, f.v)
-			stack = stack[:len(stack)-1]
-			continue
-		}
-		sh := n.shape()
-		if f.enter {
-			f.enter = false
-			switch sh {
-			case shapeBox:
-				f.v, f.enter = n.box, true
-				continue
-			case shapeString:
-				if n.RawKind.NodeType() {
-					b.WriteString(n.Type() + "(" + strconv.Quote(n.RawText))
-					f.close = ")" + ruleSuffix(n)
-				} else {
-					b.WriteString(strconv.Quote(n.RawText))
-					f.close = ruleSuffix(n)
-				}
-				f.i = -1
-			case shapeError:
-				msg, _ := n.RawFields.Get("message")
-				b.WriteString("error(" + strconv.Quote(fmt.Sprint(msg)))
-				if expected, ok := n.RawFields.Get("expected"); ok {
-					b.WriteString(" expected " + strconv.Quote(fmt.Sprint(expected)))
-				}
-				b.WriteString(")")
-				f.i = -1
-			case shapeTuple, shapeTupleValue:
-				b.WriteString(nodeTypePrefix(n) + "(")
-				f.close = ")" + ruleSuffix(n)
-				if sh == shapeTuple && n.labeled {
-					f.labels = map[*Node][]string{}
-					for _, c := range captureLocations(n) {
-						if c.side {
-							f.side = append(f.side, c)
-							continue
-						}
-						x := n
-						for _, i := range c.path {
-							x = x.RawChildren[i]
-						}
-						f.labels[x] = append(f.labels[x], c.name)
-					}
-				}
-			case shapeList, shapeListValue:
-				b.WriteString(nodeTypePrefix(n) + "[")
-				f.close = "]" + ruleSuffix(n)
-			case shapeStruct:
-				b.WriteString(n.Type() + "{")
-				f.close = "}"
-			}
-		}
-		if f.i < 0 {
-			b.WriteString(f.close)
-			stack = stack[:len(stack)-1]
-			continue
-		}
-		if sh == shapeStruct {
-			fields := n.RawFields.sorted()
-			if f.i == len(fields) {
-				b.WriteString(f.close)
-				stack = stack[:len(stack)-1]
-				continue
-			}
-			if f.i > 0 {
-				b.WriteString(", ")
-			}
-			b.WriteString(fields[f.i].Name + ": ")
-			f.i++
-			stack = append(stack, sexprFrame{v: fields[f.i-1].Value, enter: true})
-			continue
-		}
-		if f.i == len(n.RawChildren) {
-			for j, c := range f.side {
-				if f.i > 0 || j > 0 {
-					b.WriteString(" ")
-				}
-				b.WriteString("&" + c.name + ":")
-				var side strings.Builder
-				writeValue(&side, c.value)
-				b.WriteString(side.String())
-			}
-			b.WriteString(f.close)
-			stack = stack[:len(stack)-1]
-			continue
-		}
-		if f.i > 0 {
-			b.WriteString(" ")
-		}
-		c := n.RawChildren[f.i]
-		f.i++
-		labels := f.labels
-		for _, name := range labels[c] {
-			b.WriteString(name + ":")
-		}
-		next := sexprFrame{v: c, enter: true}
-		if c != nil && c.shape() == shapeTuple && c.Rule() == "" {
-			// A tuple nested in the node's own tuple holds the node's captures too.
-			next.labels = labels
-		}
-		stack = append(stack, next)
-	}
-}
-
-// nodeTypePrefix returns the name that a node of a named node type puts before its opening
-// bracket, or "".
-func nodeTypePrefix(n *Node) string {
-	if n.RawKind.NodeType() {
-		return n.Type()
-	}
-	return ""
-}
-
-func ruleSuffix(n *Node) string {
-	if r := n.Rule(); r != "" {
-		return "@" + r
-	}
-	return ""
-}
-
-func writeScalar(b *strings.Builder, v any) {
-	switch v := v.(type) {
-	case nil:
-		b.WriteString("nil")
-	case *Node:
-		b.WriteString("nil")
-	case string:
-		b.WriteString(strconv.Quote(v))
-	case int:
-		b.WriteString(strconv.Itoa(v))
-	case bool:
-		b.WriteString(strconv.FormatBool(v))
-	default:
-		fmt.Fprintf(b, "%v", v)
-	}
-}
-
-// SyntaxError reports that the input does not match the grammar.
-type SyntaxError struct {
-	Pos      int
-	Line     int
-	Col      int
-	Expected []string
-	Messages []string
-}
-
-func (e *SyntaxError) Error() string {
-	return fmt.Sprintf("%d:%d: %s", e.Line, e.Col, e.Message())
-}
-
-// Message describes the error without its position.
-func (e *SyntaxError) Message() string {
-	if len(e.Messages) > 0 {
-		return strings.Join(e.Messages, "; ")
-	}
-	if len(e.Expected) > 0 {
-		return "syntax error: expected " + strings.Join(e.Expected, ", ")
-	}
-	return "syntax error"
-}
-
-// SyntaxErrors lists the syntax errors recovered from with #recover.
-type SyntaxErrors []*SyntaxError
-
-func (l SyntaxErrors) Error() string {
-	msgs := make([]string, len(l))
-	for i, e := range l {
-		msgs[i] = e.Error()
-	}
-	return strings.Join(msgs, "\n")
-}
-
-// --- Rules ---
-
-// Rule is for generated parsers; not a stable API.
-type Rule struct {
-	kinds  ruleKinds // the node kinds the rule makes (set by setKinds)
-	Id     int
-	Name   string
-	Scope  []string // capture names of the rule body, in slot order
-	Body   func(p *Parser, min int) (*Node, bool)
-	Action func(c *ActCtx) any
-	Value  Shaper // makes the rule's value from the value of its body, without an action
-	// check checks the rule's value against its declared type (nil if it needs no check).
-	check func(p *Parser, v *Node)
-	// NodeType, if not "", is the named node type the rule's value is converted to, whose kinds
-	// are nodeKinds.
-	NodeType  string
-	nodeKinds *nodeTypeKinds
-	// OpNodeType, if not "", is the named node type every operator node of an Operators Rule is
-	// converted to, whose kinds are opKinds.
-	OpNodeType string
-	opKinds    *nodeTypeKinds
-	// Memo means the rule's results are memoized. It is false for transient rules, whose entries
-	// could never be reused.
-	Memo bool
-	// Leader is the leader of a left-recursive cycle; its results are always memoized.
-	Leader bool
-	// DocMemo means Documents memoize the rule, transient or not. It is false
-	// for the other rules of a left-recursive cycle, whose results depend on
-	// the leader's growing seed, as in the engine.
-	DocMemo bool
-	// Seen is the rule's index among the memoized rules whose memoization is deferred to the
-	// second call at a position (FirstCall), or -1.
-	Seen          int
-	OperatorsRule *OperatorsRule
-	Novalue       bool // value-free twin, called where the value is discarded
-	// Vars are the variables the rule or its callees read, sorted. Memo entries are keyed by their
-	// values at the call, since definitions inside the rule are undone when it returns.
-	Vars []string
-	// initVals are the initial values of Vars (grammar.SetVars), or nil when Vars is empty.
-	initVals []any
-	g        *grammar // the grammar whose rule table holds the rule (grammar.SetRules)
-}
-
-// grammar holds the tables of one generated grammar. The generated code builds
-// one for its rule table and, with Recognize, one for the recognizer's rule
-// table, which shares the other tables. Every rule refers to its grammar.
-//
-// Of its fields and methods, Descs, NodeTypes, RuleByName, SetRules, Share, SourceInfo, StructFields, TypeKinds are for generated parsers; not a stable API.
-type grammar struct {
-	// rules is the rule table and nseen the number of its rules with rule.Seen set.
-	rules []*Rule
-	nseen int
-	// Descs maps expectation IDs to their descriptions. It starts with the fixed expectations
-	// below.
-	Descs []string
-	// StructFields holds the field names of each struct type.
-	StructFields map[string]map[string]bool
-	// TypeKinds holds the node kinds of the struct types.
-	TypeKinds map[string]*nodeKind
-	// NodeTypes holds the kinds of the grammar's named node types, also under the names of the
-	// aliases of them.
-	NodeTypes map[string]*nodeTypeKinds
-	// SourceInfo reports that values record source information: the rule that produced each
-	// node and where its captures are.
-	SourceInfo bool
-	// MaxDepth is the default maximum nesting of rule calls.
-	maxDepth int
-	// initEnv is the environment every parse starts from, with each variable bound to its
-	// initial value, and initBound holds the names of those variables (Parser.bound).
-	initEnv   *Env
-	initBound map[string]bool
-}
-
-// SetVars makes the variables names, with the initial values vals, the starting environment of
-// every parse.
-//
-// SetVars is for generated parsers; not a stable API.
-func (g *grammar) SetVars(names []string, vals []any) {
-	g.initEnv, g.initBound = nil, map[string]bool{}
-	for i, name := range names {
-		g.initEnv = &Env{name: name, val: vals[i], next: g.initEnv}
-		g.initBound[name] = true
-	}
-	g.indexInitVals()
-}
-
-// indexInitVals computes the initial values of the variables each rule reads, so that the memo
-// key of a call made before any binding shares them instead of allocating.
-func (g *grammar) indexInitVals() {
-	for _, r := range g.rules {
-		r.initVals = nil
-		if len(r.Vars) == 0 {
-			continue
-		}
-		r.initVals = make([]any, len(r.Vars))
-		for i, name := range r.Vars {
-			for e := g.initEnv; e != nil; e = e.next {
-				if e.name == name {
-					r.initVals[i] = e.val
-					break
-				}
-			}
-		}
-	}
-}
-
-// NewGrammar returns an empty grammar with the default rule-call limit MaxDepth.
-//
-// NewGrammar is for generated parsers; not a stable API.
-func NewGrammar(maxDepth int) *grammar {
-	return &grammar{maxDepth: maxDepth, StructFields: map[string]map[string]bool{},
-		TypeKinds: map[string]*nodeKind{}, NodeTypes: map[string]*nodeTypeKinds{}}
-}
-
-// SetRules makes rules, of which nseen have rule.Seen set, the rule table of g.
-func (g *grammar) SetRules(rules []*Rule, nseen int) {
-	g.rules, g.nseen = rules, nseen
-	defer g.indexInitVals()
-	for _, r := range rules {
-		r.g = g
-		r.kinds = newRuleKinds(r.Name)
-		if r.NodeType != "" {
-			r.nodeKinds = NewNodeTypeKinds(r.NodeType)
-		}
-		if r.OpNodeType != "" {
-			r.opKinds = NewNodeTypeKinds(r.OpNodeType)
-		}
-	}
-}
-
-// Share gives g, the grammar of a recognizer, the tables of base other than its rules.
-func (g *grammar) Share(base *grammar) {
-	rules, nseen := g.rules, g.nseen
-	*g = *base
-	g.rules, g.nseen = rules, nseen
-}
-
-func (g *grammar) RuleByName(name string) *Rule {
-	for _, r := range g.rules {
-		if r.Name == name {
-			return r
-		}
-	}
-	return nil
-}
-
-// PositionUnit is the unit of input positions.
-type PositionUnit int
-
-const (
-	// CodePoints counts Unicode code points. It is the default.
-	CodePoints PositionUnit = iota
-	// Bytes counts UTF-8 bytes.
-	Bytes
-)
-
-// ParseOption configures an individual parsing invocation. Options apply in order.
-type ParseOption func(*parseOptions)
-
-type parseOptions struct {
-	unit     PositionUnit
-	maxDepth int
-	context  context.Context
-	limits   WorkLimits
-	control  *WorkControl
-	prepared bool
-	// observe selects the observation of the parse (trace.go).
-	observe observeOptions
-}
-
-// WithUnit selects the unit of input positions (CodePoints by default).
-func WithUnit(unit PositionUnit) ParseOption { return func(o *parseOptions) { o.unit = unit } }
-
-// WithMaxDepth limits nested rule calls. Zero selects the generated default;
-// a negative effective limit returns an error before parsing.
-// A larger limit does not guarantee that the host stack can accommodate it.
-func WithMaxDepth(n int) ParseOption { return func(o *parseOptions) { o.maxDepth = n } }
-
-// WithContext selects cooperative cancellation for one invocation.
-// A nil context is equivalent to context.Background.
-func WithContext(ctx context.Context) ParseOption { return func(o *parseOptions) { o.context = ctx } }
-
-// WithWorkLimits bounds cumulative examined input and execution work.
-// Zero leaves a counter unlimited; counters are never rolled back.
-func WithWorkLimits(limits WorkLimits) ParseOption {
-	return func(o *parseOptions) { o.limits = limits }
-}
-
-// ResolveOptions applies opts to the defaults of grammar g.
-//
-// ResolveOptions is for generated parsers; not a stable API.
-func ResolveOptions(g *grammar, opts []ParseOption) (parseOptions, error) {
-	if len(opts) == 0 {
-		return parseOptions{maxDepth: g.maxDepth}, nil
-	}
-	o := parseOptions{maxDepth: g.maxDepth}
-	for _, opt := range opts {
-		opt(&o)
-	}
-	if o.maxDepth < 0 {
-		return o, fmt.Errorf("max depth must be non-negative: %d", o.maxDepth)
-	}
-	if o.maxDepth == 0 {
-		o.maxDepth = g.maxDepth
-	}
-	if !WorkControlsEnabled && (o.context != nil || o.limits != (WorkLimits{})) {
-		return o, fmt.Errorf("work controls are disabled in this generated reference parser")
-	}
-	return o, nil
-}
-
-// prepareOptions is called after fixed option and rule-name validation.
-// The resolved state can be shared with a result converter without new counters.
-func prepareOptions(o parseOptions) parseOptions {
-	if !o.prepared {
-		o.prepared = true
-		if WorkControlsEnabled && (o.context != nil || o.limits != (WorkLimits{})) {
-			o.control = newWorkControl(o.context, o.limits)
-		}
-	}
-	o.control.Check()
-	return o
-}
-
-// recoverParse returns engine interruptions and preserves caller panic identity.
-func recoverParse[T any](v *T, err *error) {
-	if x := recover(); x != nil {
-		switch x := x.(type) {
-		case fatal:
-			var zero T
-			*v, *err = zero, x.err
-		case tracePanic:
-			panic(x.value)
-		case contextPanic:
-			panic(x.value)
-		default:
-			panic(x)
-		}
-	}
-}
-
-// RunParse parses the whole input with rule r.
-//
-// RunParse is for generated parsers; not a stable API.
-func RunParse(r *Rule, input string, opts []ParseOption) (n *Node, err error) {
-	o, err := ResolveOptions(r.g, opts)
-	if err != nil {
-		return nil, err
-	}
-	return RunParseResolved(r, input, o)
-}
-
-// RunParseResolved is for generated parsers; not a stable API.
-func RunParseResolved(r *Rule, input string, o parseOptions) (n *Node, err error) {
-	defer recoverParse(&n, &err)
-	return parseResolvedWork(r, input, o)
-}
-
-// parseResolvedWork lets a conversion boundary distinguish engine interruption
-// from an ordinary nil result without inspecting caller-owned error values.
-func parseResolvedWork(r *Rule, input string, o parseOptions) (n *Node, err error) {
-	o = prepareOptions(o)
-	p, _ := ppool.Get().(*Parser)
-	if p == nil {
-		p = &Parser{}
-	}
-	defer p.release()
-	p.setGrammar(r.g)
-	p.Control = o.control
-	p.Observation = newObservation(&o.observe)
-	p.MaxDepth = o.maxDepth
-	if o.unit == Bytes {
-		p.unit, p.bs, p.n = Bytes, input, len(input)
-	} else {
-		p.setSource(input)
-	}
-	p.memo.sparse = p.memo.stride > 64 && p.n > 1024
-	p.Control.Check()
-	v, ok := p.Call(r, 0)
-	p.Control.Check()
-	if ok && p.Pos == p.n {
-		if len(p.Recovered) > 0 {
-			return v, SyntaxErrors(p.Recovered)
-		}
-		return v, nil
-	}
-	if ok {
-		p.Expect(p.Pos, IdEndInput)
-	}
-	return nil, p.MakeError(p.farthest, p.exp[p.expBase:])
-}
-
-// ppool keeps parsers of parse, with their scratch memory, for later parses. What a parse returns
-// never refers to that memory: nodes, child lists and fields come from slabs that are not kept,
-// capture frames and slots are private scratch, and node text slices the input string.
-var ppool sync.Pool
-
-// release clears the parser and returns it to ppool, keeping decoded input, memo storage,
-// capture scratch and construction stacks within their retention bounds.
-func (p *Parser) release() {
-	m := &p.memo
-	discardMemo := cap(m.slots) > 1<<20 || len(m.chunks) > 1<<12 || cap(m.seen) > 1<<20
-	clear(m.slots)
-	for _, c := range m.chunks[:m.used] {
-		clear(c)
-	}
-	m.resetSeen(1 << 20)
-	clear(p.KidStack[:cap(p.KidStack)])
-	clear(p.Trail[:cap(p.Trail)])
-	clear(p.saved[:cap(p.saved)])
-	frames := p.captureScratch
-	if nodeFrameScratch && (frames.frames != nil || frames.slots != nil) {
-		frames.reset()
-	}
-	in, offs := p.In[:0], p.offs[:0]
-	if cap(in) > 1<<20 { // do not keep the buffers of a large input for every later parse
-		in, offs = nil, nil
-	}
-	memo := memoTable{slots: m.slots[:0], chunks: m.chunks, seen: m.seen[:0], calls: m.calls, pages: m.pages, bitPages: m.bitPages}
-	if discardMemo {
-		memo = memoTable{}
-	}
-	*p = Parser{In: in, offs: offs, exp: p.exp[:0], arena: p.arena[:0], KidStack: p.KidStack[:0],
-		Trail: p.Trail[:0], saved: p.saved[:0], memo: memo, captureScratch: frames}
-	ppool.Put(p)
-}
-
-// --- Parser state ---
-
-// ExpID is an expectation: an index into descs. With MsgBit set, it is an @error message.
-//
-// ExpID is for generated parsers; not a stable API.
-type ExpID int32
-
-// MsgBit is for generated parsers; not a stable API.
-const MsgBit ExpID = 1 << 30
-
-// Expectations at the start of every descs table. They are for generated parsers; not a
-// stable API.
-const (
-	IdAny ExpID = iota
-	IdBeginInput
-	IdEndInput
-	IdBeginLine
-	IdEndLine
-)
-
-// Parser is for generated parsers; not a stable API.
-type Parser struct {
-	Control *WorkControl
-	g       *grammar // the grammar of the rules being parsed (setGrammar)
-	// Observation observes the parse; it is nil unless the parse options select it.
-	Observation *observation
-	// SourceInfo is g.SourceInfo, read where values are made.
-	sourceInfo bool
-	// Document is set only by the private incremental runner.
-	Document       *documentState
-	docHigh        int  // exclusive upper bound examined by the active rule call
-	docProvisional bool // active call observed an unresolved LR result
-	unit           PositionUnit
-	In             []rune // code points (CodePoints)
-	bs             string // the input (Bytes)
-	n              int    // input length in units
-	// src and offs give token text without copying in CodePoints mode: offs[i] is the byte offset
-	// of code point i (len(in)+1 entries). offs is nil for invalid UTF-8, whose text is built
-	// from in so that U+FFFD replacement stays the same.
-	src  string
-	offs []int32
-	Pos  int
-
-	MaxDepth int     // invocation-local maximum nesting
-	Depth    int     // nesting of rule calls
-	created  []*Node // struct nodes made by the action being evaluated (from ActCtx.Cbase)
-	Env      *Env
-	bound    map[string]bool // names assigned anywhere in this parse (a lookup hint)
-	Frame    *CaptureFrame
-	Trail    []undo
-	Cut      bool
-	memo     memoTable
-
-	// Silent is positive inside lookaheads, where expectations are not recorded.
-	Silent   int
-	farthest int
-	// exp is the stack of expectations; the current record is exp[expBase:], all expected at
-	// farthest.
-	exp     []ExpID
-	expBase int
-	// expBits cheaply excludes IDs absent from the current record. Collisions still scan.
-	expBits uint64
-	// arena holds expectation sets kept by memo entries and recoveries (append-only chunks).
-	arena    []ExpID
-	lastKept []ExpID
-
-	Recovered []*SyntaxError
-
-	// Result slabs, the stack that gathers repetition children, and the reused
-	// evaluation context.
-	nodeSlab  []Node
-	ptrSlab   []*Node
-	KidStack  []*Node
-	frameSlab []CaptureFrame // per-parse reference allocation only
-	// Capture slots are private scratch, separate from returned child lists.
-	captureScratch frameScratch
-	fieldSlab      []NodeField
-	lines          []int // positions where lines start (MakeError)
-	ac             ActCtx
-	saved          []*Node // captures saved across a reset in longest
-}
-
-// documentState owns reusable memo entries. The regular Parse path never sets
-// parser.Document.
-type documentState struct {
-	root  *Rule
-	text  string
-	unit  PositionUnit
-	memo  memoTable
-	stats documentStats
-}
-
-type documentStats struct {
-	Evaluated int
-	Reused    int
-}
-
-// setGrammar prepares p to parse with the rules of g.
-func (p *Parser) setGrammar(g *grammar) {
-	p.g, p.sourceInfo, p.memo.stride = g, g.SourceInfo, g.nseen
-	p.Env, p.bound = g.initEnv, nil
-	if g.initEnv != nil {
-		p.bound = make(map[string]bool, len(g.initBound))
-		for name := range g.initBound {
-			p.bound[name] = true
-		}
-	}
-	if len(p.memo.calls) != g.nseen {
-		p.memo.calls = nil // kept from a parse with another rule table
-	}
-}
-
-func (p *Parser) documentTouch(end int) {
-	if p.Document != nil && end > p.docHigh {
-		p.docHigh = end
-	}
-}
-
-// memoTable maps (rule, position, level) to results. Each position has a chain of entries;
-// entries are allocated in slabs.
-type memoTable struct {
-	slots []*memoEntry
-	slab  []memoEntry
-	// chunks are the areas slab came from, kept for later parses (release); used counts those in use.
-	chunks [][]memoEntry
-	used   int
-	// seen is a bit set of the (position, rule) pairs called once (FirstCall), with stride bits per
-	// position.
-	seen   []uint64
-	stride int
-	sparse bool // selected once from rule count and input length
-	// Large rule tables allocate only visited per-rule 1,024-position regions.
-	pages    []seenRulePages
-	bitPages seenPageArena
-	// calls counts, per rule number, the calls and the repeated calls at a position; once repeats
-	// are frequent, the rule is memoized on the first call (eager).
-	calls []seenCalls
-}
-
-// seenRulePages caches the last visited page beside its directory. Most calls
-// of a rule stay within one region, avoiding a second dependent pointer lookup.
-type seenRulePages struct {
-	pages []*[16]uint64
-	last  *[16]uint64
-	at    int
-}
-
-type seenCalls struct {
-	calls, repeats int32
-	eager          bool
-}
-
-// FirstCall records a call of rule r at the current position and reports whether its
-// memoization is deferred: it is the first call there, and repeated calls of the rule have been
-// rare so far. Results are reused only when a rule is called again at a position, which is rare,
-// so memoizing every first call cost an entry each for nothing; deferring memoization to the
-// second call evaluates a rule at most twice per position, which keeps parse time linear.
-func (p *Parser) FirstCall(r *Rule) bool {
-	// Documents memoize on the first call and never get here (callDocument).
-	if WorkControlsEnabled && p.Control != nil {
-		return p.controlledFirstCall(r)
-	}
-	return p.firstCallOrdinary(r)
-}
-
-func (p *Parser) firstCallOrdinary(r *Rule) bool {
-	if r.Seen < 0 {
-		return false
-	}
-	t := &p.memo
-	if t.calls == nil {
-		t.calls = make([]seenCalls, t.stride)
-	}
-	c := &t.calls[r.Seen]
-	if c.eager {
-		return false
-	}
-	// Discount old observations before the compact counters can wrap. Eager
-	// mode is sticky; this estimator only chooses when to enter it.
-	calls := uint32(c.calls) + 1
-	if calls&(1<<31) != 0 {
-		calls >>= 1
-		c.repeats >>= 1
-	}
-	c.calls = int32(calls)
-	var first bool
-	if t.sparse {
-		pos := p.Pos
-		page := t.cachedSeenPage(pos, r.Seen)
-		if page == nil {
-			page = t.sparsePage(pos, r.Seen)
-		}
-		first = markSeenPage(page, pos)
-	} else {
-		first = t.markSeen(p.Pos, r.Seen)
-	}
-	if first {
-		return true
-	}
-	// Deferring costs an extra evaluation for each position where the rule is called again, and
-	// saves a memo entry for each position where it is not.
-	c.repeats++
-	if c.repeats > c.calls>>4 {
-		c.eager = true
-	}
-	return false
-}
-
-// seenPageArena batches stable bit pages without one allocation per page.
-type seenPageArena struct {
-	chunks []*[64][16]uint64
-	n      int
-}
-
-func (a *seenPageArena) alloc() *[16]uint64 {
-	c := a.n / 64
-	if c == len(a.chunks) {
-		a.chunks = append(a.chunks, new([64][16]uint64))
-	}
-	page := &a.chunks[c][a.n%64]
-	a.n++
-	return page
-}
-
-func (a *seenPageArena) reset() {
-	for i := 0; i < a.n; i++ {
-		a.chunks[i/64][i%64] = [16]uint64{}
-	}
-	a.n = 0
-}
-
-// resetSeen clears first-call state and bounds sparse scratch storage by limit
-// words, including unused directories and complete arena chunks.
-func (t *memoTable) resetSeen(limit int) {
-	clear(t.seen)
-	clear(t.calls)
-	if cap(t.seen) > 1<<20 {
-		t.seen = nil
-	}
-	if cap(t.pages) > limit/5 || len(t.bitPages.chunks) > limit/(64*16) || cap(t.bitPages.chunks) > limit {
-		t.pages, t.bitPages = nil, seenPageArena{}
-		return
-	}
-	words := 5*cap(t.pages) + len(t.bitPages.chunks)*64*16 + cap(t.bitPages.chunks)
-	if words <= limit {
-		for _, dir := range t.pages {
-			if cap(dir.pages) > limit-words {
-				words = limit + 1
-				break
-			}
-			words += cap(dir.pages)
-		}
-	}
-	if words > limit {
-		t.pages, t.bitPages = nil, seenPageArena{}
-		return
-	}
-	for i := range t.pages {
-		dir := &t.pages[i]
-		clear(dir.pages)
-		dir.last, dir.at = nil, 0
-	}
-	t.bitPages.reset()
-}
-
-func (t *memoTable) markSeen(pos, r int) bool {
-	i := pos*t.stride + r
-	w, b := i>>6, uint64(1)<<(i&63)
-	if w >= len(t.seen) {
-		t.seen = append(t.seen, make([]uint64, max(w+1-len(t.seen), len(t.seen), 64))...)
-	}
-	if t.seen[w]&b != 0 {
-		return false
-	}
-	t.seen[w] |= b
-	return true
-}
-
-// markSparseSeen records only visited per-rule regions, with page allocation
-// batched to keep the directory savings from adding one allocation per page.
-func (t *memoTable) markSparseSeen(pos, r int) bool {
-	page := t.cachedSeenPage(pos, r)
-	if page == nil {
-		page = t.sparsePage(pos, r)
-	}
-	return markSeenPage(page, pos)
-}
-
-// cachedSeenPage and markSeenPage inline into FirstCall. Keeping allocation
-// separate avoids another function call when a rule remains in its last page.
-func (t *memoTable) cachedSeenPage(pos, r int) *[16]uint64 {
-	if r < len(t.pages) {
-		dir := &t.pages[r]
-		if dir.at == pos>>10 {
-			return dir.last
-		}
-	}
-	return nil
-}
-
-func markSeenPage(page *[16]uint64, pos int) bool {
-	w, b := (pos>>6)&15, uint64(1)<<(pos&63)
-	first := page[w]&b == 0
-	page[w] |= b
-	return first
-}
-
-// sparsePage handles directory growth and page allocation off the hot path.
-func (t *memoTable) sparsePage(pos, r int) *[16]uint64 {
-	if len(t.pages) != t.stride {
-		t.pages = make([]seenRulePages, t.stride)
-	}
-	dir := &t.pages[r]
-	at := pos >> 10
-	page := dir.last
-	if page == nil || dir.at != at {
-		pages := dir.pages
-		if at >= len(pages) {
-			if at < cap(pages) {
-				pages = pages[:at+1]
-			} else {
-				grown := make([]*[16]uint64, at+1, max(at+1, 2*cap(pages), 4))
-				copy(grown, pages)
-				pages = grown
-			}
-			dir.pages = pages
-		}
-		page = pages[at]
-		if page == nil {
-			page = t.bitPages.alloc()
-			pages[at] = page
-		}
-		dir.last, dir.at = page, at
-	}
-	return page
-}
-
-type memoEntry struct {
-	node     *Node
-	errs     []*SyntaxError // errors recovered in this call, recorded again on reuse
-	expected []ExpID        // expectations at far, recorded again on reuse
-	next     *memoEntry     // next entry at the same position
-	env      []any          // values of the rule's variables at the call (memo key)
-	end      int
-	examined int // exclusive upper bound examined by a Document call
-	far      int
-	rule     int32
-	min      int32
-	ok       bool
-	// silent means the result was computed inside a lookahead without recording expectations;
-	// outside lookaheads it is computed again.
-	silent bool
-	// growing marks a provisional result of a growing left-recursive call.
-	growing     bool
-	provisional bool // a completed result observed a provisional LR seed
-}
-
-func (t *memoTable) get(rule, pos, min int, env []any) *memoEntry {
-	if pos >= len(t.slots) {
-		return nil
-	}
-	for e := t.slots[pos]; e != nil; e = e.next {
-		if e.rule == int32(rule) && e.min == int32(min) && sameValues(e.env, env) {
-			return e
-		}
-	}
-	return nil
-}
-
-// put stores e under the key, replacing an entry with the same key.
-func (t *memoTable) put(rule, pos, min int, env []any, e *memoEntry) {
-	if pos >= len(t.slots) {
-		if pos < cap(t.slots) {
-			t.slots = t.slots[:pos+1]
-		} else {
-			grown := make([]*memoEntry, pos+1, max(2*cap(t.slots), pos+1, 64))
-			copy(grown, t.slots)
-			t.slots = grown
-		}
-	}
-	e.rule, e.min, e.env = int32(rule), int32(min), env
-	link := &t.slots[pos]
-	for x := *link; x != nil; link, x = &x.next, x.next {
-		if x.rule == e.rule && x.min == e.min && sameValues(x.env, env) {
-			e.next = x.next
-			*link = e
-			return
-		}
-	}
-	e.next = t.slots[pos]
-	t.slots[pos] = e
-}
-
-// sameValues reports whether two lists of variable values are equal.
-func sameValues(a, b []any) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
-// noVals are the values of variables where no variable is defined (all nil): the memo key of
-// most calls of a rule that reads variables, shared instead of allocated for each call. Memo
-// entries only compare their keys, so nothing writes to it.
-var noVals [16]any
-
-// envValues returns the current values of the variables names (nil for an undefined variable).
-func (p *Parser) envValues(names []string) []any {
-	if WorkControlsEnabled && p.Control != nil {
-		return p.controlledEnvValues(names)
-	}
-
-	if len(names) == 0 {
-		return nil
-	}
-	if p.Env == nil && len(names) <= len(noVals) {
-		return noVals[:len(names):len(names)]
-	}
-	vals := make([]any, len(names))
-	for i, name := range names {
-		for e := p.Env; e != nil; e = e.next {
-			if e.name == name {
-				vals[i] = e.val
-				break
-			}
-		}
-	}
-	return vals
-}
-
-// memoEnv returns the values of the variables the memoized rule r reads, for its memo key. While
-// nothing has been bound since the parse began they are the initial values, computed once: the
-// key only compares them, so the slice is shared instead of allocated for each call.
-func (p *Parser) memoEnv(r *Rule) []any {
-	if p.Env != nil && p.Env == p.g.initEnv && r.initVals != nil && !(WorkControlsEnabled && p.Control != nil) {
-		return r.initVals
-	}
-	return p.envValues(r.Vars)
-}
-
-func (t *memoTable) alloc() *memoEntry {
-	if len(t.slab) == 0 {
-		if t.used < len(t.chunks) {
-			t.slab = t.chunks[t.used]
-		} else {
-			t.slab = make([]memoEntry, 256)
-			t.chunks = append(t.chunks, t.slab)
-		}
-		t.used++
-	}
-	e := &t.slab[0]
-	t.slab = t.slab[1:]
-	return e
-}
-
-// CaptureFrame is for generated parsers; not a stable API.
-type CaptureFrame struct{ Vals []*Node }
-
-// EmptyFrame is for generated parsers; not a stable API.
-var EmptyFrame = &CaptureFrame{}
-
-const (
-	nodeChunk = 256
-	ptrChunk  = 1024
-)
-
-// NewNode returns a copy of v allocated from the node slab. A slab stays alive while any of its
-// nodes is referenced.
-func (p *Parser) NewNode(v Node) *Node {
-	p.StepWork()
-	if len(p.nodeSlab) == 0 {
-		p.nodeSlab = make([]Node, nodeChunk)
-	}
-	n := &p.nodeSlab[0]
-	p.nodeSlab = p.nodeSlab[1:]
-	*n = v
-	return n
-}
-
-// NewNodeOrdinary is NewNode in an ordinary parse (ExpectOrdinary).
-func (p *Parser) NewNodeOrdinary(v Node) *Node {
-	if len(p.nodeSlab) == 0 {
-		p.nodeSlab = make([]Node, nodeChunk)
-	}
-	n := &p.nodeSlab[0]
-	p.nodeSlab = p.nodeSlab[1:]
-	*n = v
-	return n
-}
-
-// Nodes returns a child list of length and capacity n from the pointer slab.
-func (p *Parser) Nodes(n int) []*Node {
-	if n == 0 {
-		return []*Node{}
-	}
-	if n > ptrChunk/4 {
-		return make([]*Node, n)
-	}
-	if len(p.ptrSlab) < n {
-		p.ptrSlab = make([]*Node, ptrChunk)
-	}
-	s := p.ptrSlab[:n:n]
-	p.ptrSlab = p.ptrSlab[n:]
-	return s
-}
-
-// fields returns an empty field list with capacity n from a chunk. Appending beyond n
-// reallocates, so neighbouring lists in the chunk are never overwritten.
-func (p *Parser) fields(n int) Fields {
-	if n > nodeChunk/4 {
-		return make(Fields, 0, n)
-	}
-	if len(p.fieldSlab) < n {
-		p.fieldSlab = make([]NodeField, nodeChunk)
-	}
-	fs := p.fieldSlab[:0:n]
-	p.fieldSlab = p.fieldSlab[n:]
-	return fs
-}
-
-// Kids returns p.KidStack[base:] as a child list and pops it.
-func (p *Parser) Kids(base int) []*Node {
-	ks := p.Nodes(len(p.KidStack) - base)
-	copyWork(p, ks, p.KidStack[base:])
-	p.DropKids(base)
-	return ks
-}
-
-// DropKids pops p.KidStack[base:].
-func (p *Parser) DropKids(base int) {
-	clear(p.KidStack[base:])
-	p.KidStack = p.KidStack[:base]
-}
-
-// NewFrame returns a capture frame with n slots.
-func (p *Parser) NewFrame(n int) *CaptureFrame {
-	if n == 0 {
-		return EmptyFrame // never written, so shared
-	}
-	if nodeFrameScratch {
-		return p.captureScratch.alloc(n)
-	}
-	if len(p.frameSlab) == 0 {
-		p.frameSlab = make([]CaptureFrame, nodeChunk)
-	}
-	f := &p.frameSlab[0]
-	p.frameSlab = p.frameSlab[1:]
-	f.Vals = p.Nodes(n)
-	return f
-}
-
-// nodeFrameScratch selects capture frames from parser scratch; the per-parse
-// frame slab remains only as the disabled alternative.
-const nodeFrameScratch = true
-
-// frameScratch keeps stable capture frames and slots until the parse returns.
-// Neither array can be reached through a returned Node's children or fields.
-// Append-only allocation also preserves retained OperatorsRule attempts and undo marks.
-type frameScratch struct {
-	frames  []*[nodeChunk]CaptureFrame
-	slots   []*[ptrChunk]*Node
-	frameN  int
-	slotCI  int
-	slotOff int
-}
-
-const frameScratchLimit = 1 << 20 // native words of complete reusable backing
-
-func (a *frameScratch) alloc(n int) *CaptureFrame {
-	if n > ptrChunk/4 {
-		// Large individual scopes are exact allocations, never pooled.
-		return &CaptureFrame{Vals: make([]*Node, n)}
-	}
-	ci := a.frameN / nodeChunk
-	if ci == len(a.frames) {
-		a.frames = append(a.frames, new([nodeChunk]CaptureFrame))
-	}
-	f := &a.frames[ci][a.frameN%nodeChunk]
-	a.frameN++
-	if a.slotOff+n > ptrChunk {
-		a.slotCI++
-		a.slotOff = 0
-	}
-	if a.slotCI == len(a.slots) {
-		a.slots = append(a.slots, new([ptrChunk]*Node))
-	}
-	f.Vals = a.slots[a.slotCI][a.slotOff : a.slotOff+n : a.slotOff+n]
-	a.slotOff += n
-	return f
-}
-
-// reset clears the complete pointer-bearing backing before reuse or discard.
-// Count three native words per frame slice header and nine for the arena state,
-// plus whole chunks and directory capacity, including their unused elements.
-func (a *frameScratch) reset() {
-	for _, chunk := range a.frames {
-		clear(chunk[:])
-	}
-	for _, chunk := range a.slots {
-		clear(chunk[:])
-	}
-	clear(a.frames[len(a.frames):cap(a.frames)])
-	clear(a.slots[len(a.slots):cap(a.slots)])
-	if len(a.frames) > frameScratchLimit/(3*nodeChunk) || len(a.slots) > frameScratchLimit/ptrChunk ||
-		cap(a.frames) > frameScratchLimit || cap(a.slots) > frameScratchLimit {
-		*a = frameScratch{}
-		return
-	}
-	words := 9 + 3*nodeChunk*len(a.frames) + ptrChunk*len(a.slots) + cap(a.frames) + cap(a.slots)
-	if words > frameScratchLimit {
-		*a = frameScratch{}
-		return
-	}
-	a.frameN, a.slotCI, a.slotOff = 0, 0, 0
-}
-
-type undo struct {
-	f    *CaptureFrame
-	slot int
-	old  *Node
-}
-
-// Env is for generated parsers; not a stable API.
-type Env struct {
-	name string
-	val  any
-	next *Env
-}
-
-// bind replaces a binding by copying its prefix, preserving saved environments.
-// bound tracks names ever assigned, so first assignments need no linear search.
-// Names from abandoned branches may be absent now; that only causes a search.
-func (p *Parser) bind(name string, val any) {
-	if WorkControlsEnabled && p.Control != nil {
-		p.bindControlled(name, val)
-		return
-	}
-
-	e := p.Env
-	if p.bound == nil {
-		p.bound = make(map[string]bool)
-	}
-	if e == nil {
-		p.bound[name] = true
-		p.Env = &Env{name: name, val: val}
-		return
-	}
-	if e.name == name {
-		if e.val != val {
-			p.Env = &Env{name: name, val: val, next: e.next}
-		}
-		return
-	}
-	if !p.bound[name] {
-		p.bound[name] = true
-		p.Env = &Env{name: name, val: val, next: e}
-		return
-	}
-	old := e
-	for old != nil && old.name != name {
-		old = old.next
-	}
-	if old == nil {
-		p.Env = &Env{name: name, val: val, next: e}
-		return
-	}
-	// Variables are checked scalar values; an equal assignment has no effect.
-	if old.val == val {
-		return
-	}
-	head := &Env{name: name, val: val}
-	tail := head
-	for cur := e; cur != old; cur = cur.next {
-		tail.next = &Env{name: cur.name, val: cur.val}
-		tail = tail.next
-	}
-	tail.next = old.next
-	p.Env = head
-}
-
-// Mark is for generated parsers; not a stable API.
-type Mark struct {
-	Pos, Trail, recovered int
-	env                   *Env
-}
-
-func (p *Parser) Mark() Mark {
-	return Mark{Pos: p.Pos, env: p.Env, Trail: len(p.Trail), recovered: len(p.Recovered)}
-}
-
-func (p *Parser) Reset(m Mark) {
-	p.Pos = m.Pos
-	p.Env = m.env
-	p.Recovered = p.Recovered[:m.recovered]
-	p.undoCaptures(m.Trail)
-	p.Trail = p.Trail[:m.Trail]
-}
-
-func (p *Parser) SetCapture(slot int, v *Node) {
-	p.StepWork()
-	p.Trail = append(p.Trail, undo{f: p.Frame, slot: slot, old: p.Frame.Vals[slot]})
-	p.Frame.Vals[slot] = v
-}
-
-// SetCaptureOrdinary is SetCapture in an ordinary parse (ExpectOrdinary).
-func (p *Parser) SetCaptureOrdinary(slot int, v *Node) {
-	p.Trail = append(p.Trail, undo{f: p.Frame, slot: slot, old: p.Frame.Vals[slot]})
-	p.Frame.Vals[slot] = v
-}
-
-// setSource decodes the input s into code points and, if s is valid UTF-8, records the offset
-// table for token text, all in one pass (a U+FFFD that decodes from three bytes is valid).
-func (p *Parser) setSource(s string) {
-	if WorkControlsEnabled && p.Control != nil {
-		p.setControlledSource(s)
-		return
-	}
-	n := utf8.RuneCountInString(s)
-	// The buffers of a parser used before are reused (the typed runtime keeps parsers).
-	if cap(p.In) >= n {
-		p.In = p.In[:n]
-	} else {
-		p.In = make([]rune, n)
-	}
-	p.n = n
-	offs := p.offs[:0]
-	if cap(offs) >= n+1 {
-		offs = offs[:n+1]
-	} else {
-		offs = make([]int32, n+1)
-	}
-	valid := len(s) <= 1<<31-1
-	i := 0
-	for off, r := range s {
-		if r == utf8.RuneError && valid {
-			if _, size := utf8.DecodeRuneInString(s[off:]); size == 1 {
-				valid = false
-			}
-		}
-		p.In[i] = r
-		offs[i] = int32(off)
-		i++
-	}
-	offs[n] = int32(len(s))
-	if valid {
-		p.src, p.offs = s, offs
-	} else {
-		p.offs = nil
-	}
-}
-
-// Peek returns the character at the current position and its size in units.
-func (p *Parser) Peek() (rune, int, bool) {
-	p.InputWork(1)
-	if p.Pos >= p.n {
-		p.documentTouch(p.Pos + 1)
-		return 0, 0, false
-	}
-	if p.unit == Bytes {
-		if c := p.bs[p.Pos]; c < utf8.RuneSelf {
-			p.documentTouch(p.Pos + 1)
-			return rune(c), 1, true
-		}
-		p.InputWork(uint64(min(utf8.UTFMax, p.n-p.Pos)))
-		r, size := utf8.DecodeRuneInString(p.bs[p.Pos:])
-		p.documentTouch(p.Pos + size)
-		return r, size, true
-	}
-	p.documentTouch(p.Pos + 1)
-	return p.In[p.Pos], 1, true
-}
-
-// PeekOrdinary is peek in an ordinary parse (ExpectOrdinary).
-func (p *Parser) PeekOrdinary() (rune, int, bool) {
-	if p.Pos >= p.n {
-		return 0, 0, false
-	}
-	if p.unit == Bytes {
-		if c := p.bs[p.Pos]; c < utf8.RuneSelf {
-			return rune(c), 1, true
-		}
-		r, size := utf8.DecodeRuneInString(p.bs[p.Pos:])
-		return r, size, true
-	}
-	return p.In[p.Pos], 1, true
-}
-
-func (p *Parser) unitLen(s string) int {
-	if WorkControlsEnabled && p.Control != nil && p.unit != Bytes {
-		count := 0
-		for off := 0; off < len(s); {
-			p.valueWork(min(utf8.UTFMax, len(s)-off))
-			_, size := utf8.DecodeRuneInString(s[off:])
-			off += size
-			count++
-		}
-		return count
-	}
-
-	if p.unit == Bytes {
-		return len(s)
-	}
-	return utf8.RuneCountInString(s)
-}
-
-// Expect records that id was expected at pos.
-func (p *Parser) Expect(pos int, id ExpID) {
-	p.documentTouch(pos + 1)
-	if p.Silent > 0 || pos < p.farthest {
-		return
-	}
-	if pos > p.farthest {
-		p.farthest = pos
-		p.exp = p.exp[:p.expBase]
-		p.expBits = 0
-	}
-	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
-	if p.expBits&bit != 0 {
-		for _, e := range p.exp[p.expBase:] {
-			p.StepWork()
-			if e == id {
-				return
-			}
-		}
-	}
-	p.expBits |= bit
-	p.exp = append(p.exp, id)
-}
-
-// ExpectOrdinary is expect in an ordinary parse: one without work controls and outside a
-// Document (p.Control == nil && p.Document == nil). The generated rule bodies have a branch for
-// such parses that calls the Ordinary forms of the runtime helpers, which leave out the work
-// charges and the Document's record of the examined input.
-func (p *Parser) ExpectOrdinary(pos int, id ExpID) {
-	if p.Silent > 0 || pos < p.farthest {
-		return
-	}
-	if pos > p.farthest {
-		p.farthest = pos
-		p.exp = p.exp[:p.expBase]
-		p.expBits = 0
-	}
-	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
-	if p.expBits&bit != 0 {
-		for _, e := range p.exp[p.expBase:] {
-			if e == id {
-				return
-			}
-		}
-	}
-	p.expBits |= bit
-	p.exp = append(p.exp, id)
-}
-
-// ExpMark is the expectation record before isolate.
-//
-// ExpMark is for generated parsers; not a stable API.
-type ExpMark struct {
-	far, base int
-	bits      uint64
-}
-
-// Isolate starts a separate expectation record whose farthest position is pos.
-func (p *Parser) Isolate(pos int) ExpMark {
-	m := ExpMark{p.farthest, p.expBase, p.expBits}
-	p.expBase, p.farthest, p.expBits = len(p.exp), pos, 0
-	return m
-}
-
-// Unisolate ends the separate record and returns its farthest position and expectations. The
-// expectations alias the stack and are valid only until the next record (passing them to
-// MergeExpected is fine; keep copies them).
-func (p *Parser) Unisolate(m ExpMark) (far int, inner []ExpID) {
-	far, inner = p.farthest, p.exp[p.expBase:]
-	p.exp = p.exp[:p.expBase]
-	p.expBase, p.farthest, p.expBits = m.base, m.far, m.bits
-	return far, inner
-}
-
-// Keep copies ids into the append-only arena.
-func (p *Parser) Keep(ids []ExpID) []ExpID {
-	if len(ids) == 0 {
-		return nil
-	}
-	if p.equalExpected(ids, p.lastKept) { // the same set often repeats
-		return p.lastKept
-	}
-	if cap(p.arena)-len(p.arena) < len(ids) {
-		// A new chunk; the previous one lives while slices into it remain.
-		p.arena = make([]ExpID, 0, max(1024, len(ids)))
-	}
-	off := len(p.arena)
-	p.arena = appendWork(p, p.arena, ids)
-	p.lastKept = p.arena[off:len(p.arena):len(p.arena)]
-	return p.lastKept
-}
-
-func slicesEqual(a, b []ExpID) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
-// MergeExpected records the expectations ids at far. ids may alias the stack above the
-// current record (writes only happen below the read position).
-func (p *Parser) MergeExpected(far int, ids []ExpID) {
-	for _, x := range ids {
-		p.StepWork()
-		p.Expect(far, x)
-	}
-}
-
-func (p *Parser) Text(start, end int) string {
-	if p.unit == Bytes {
-		return p.bs[start:end]
-	}
-	if p.offs != nil {
-		return p.src[p.offs[start]:p.offs[end]]
-	}
-	if WorkControlsEnabled && p.Control != nil {
-		return p.detachedText(start, end)
-	}
-	return string(p.In[start:end])
-}
-
-type fatal struct{ err error }
-
-func (p *Parser) MakeError(pos int, expected []ExpID) *SyntaxError {
-	if WorkControlsEnabled && p.Control != nil {
-		return p.makeControlledError(pos, expected)
-	}
-	e := &SyntaxError{Pos: pos}
-	for _, x := range expected {
-		if x&MsgBit != 0 {
-			e.Messages = append(e.Messages, p.g.Descs[x&^MsgBit])
-		} else {
-			e.Expected = append(e.Expected, p.g.Descs[x])
-		}
-	}
-	sort.Strings(e.Expected)
-	// Look the line up in a table of line starts, built on the first error, instead of scanning
-	// from the start of the input for each error.
-	if p.lines == nil {
-		p.lines = append(p.lines, 0)
-		for i := 0; i < p.n; i++ {
-			if p.unit == Bytes && p.bs[i] == '\n' || p.unit == CodePoints && p.In[i] == '\n' {
-				p.lines = append(p.lines, i+1)
-			}
-		}
-	}
-	pos = min(pos, p.n)
-	i := sort.SearchInts(p.lines, pos+1)
-	e.Line, e.Col = i, pos-p.lines[i-1]+1
-	return e
-}
-
-// --- Rule calls ---
-
-// Call calls rule r at level min. An observed or Document parse takes
-// callTracked, so that the call path of other parses has no observation or
-// Document bookkeeping; callBody has the same logic with that bookkeeping.
-func (p *Parser) Call(r *Rule, min int) (*Node, bool) {
-	if p.Observation != nil || p.Document != nil {
-		return p.callTracked(r, min)
-	}
-	p.StepWork()
-	start := p.Pos
-	if (!r.Memo && !r.Leader) || p.FirstCall(r) {
-		// Unmemoized call: no memo bookkeeping, and expectations need no isolation.
-		if len(r.Scope) == 0 {
-			return p.invokePlainBody(r, min)
-		}
-		rec := len(p.Recovered)
-		v, ok := p.invoke(r, min)
-		if !ok {
-			p.Pos = start
-			p.Recovered = p.Recovered[:rec]
-		}
-		return v, ok
-	}
-	env := p.memoEnv(r)
-	// See the engine's callBegin: entries with recovered errors are reused only in the same kind of
-	// context (inside or outside a lookahead) they were computed in.
-	if e := p.memoGet(r.Id, start, min, env); e != nil && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
-		if !e.growing {
-			p.MergeExpected(e.far, e.expected)
-		}
-		if !e.ok {
-			return nil, false
-		}
-		p.Pos = e.end
-		p.Recovered = p.copyErrors(p.Recovered, e.errs)
-		return e.node, true
-	}
-	rec := len(p.Recovered)
-	// The memoized result includes the expectations recorded in this call.
-	m := p.Isolate(start)
-	var v *Node
-	var ok bool
-	var e *memoEntry
-	if r.Leader {
-		v, ok = p.grow(r, min, env)
-		e = p.memoGet(r.Id, start, min, env)
-	} else {
-		v, ok = p.invoke(r, min)
-		if !ok {
-			p.Recovered = p.Recovered[:rec]
-		}
-		e = p.memo.alloc()
-		*e = memoEntry{node: v, ok: ok, end: p.Pos, silent: p.Silent > 0,
-			errs: p.copyErrors(nil, p.Recovered[rec:])}
-		p.memoPut(r.Id, start, min, env, e)
-	}
-	far, inner := p.Unisolate(m)
-	e.far, e.expected = far, p.Keep(inner)
-	p.MergeExpected(far, inner)
-	if !ok {
-		p.Pos = start
-	}
-	return v, ok
-}
-
-// callTracked is call in an observed or Document parse.
-func (p *Parser) callTracked(r *Rule, min int) (*Node, bool) {
-	if p.Observation != nil {
-		return p.callObserved(r, min)
-	}
-	return p.callBody(r, min)
-}
-
-// ExaminedBegin starts measuring an observed call's examined frontier in a
-// Document parse, returning the enclosing frontier for ExaminedEnd. The call
-// itself, and any memo entry it reads or records, extends the frontier as in an
-// unobserved parse, so observation does not change reuse.
-func (p *Parser) ExaminedBegin() int {
-	h := p.docHigh
-	if p.Document != nil {
-		p.docHigh = p.Pos
-	}
-	return h
-}
-
-// ExaminedEnd returns the call's frontier and merges it into the enclosing one.
-// Outside a Document parse the frontier is unknown. A call that reuses a
-// growing left-recursive seed sees the frontier recorded with an earlier seed;
-// such results are provisional and never reused after an edit, so in a
-// provisional context the report is raised to the call's end without changing the frontier the Document keeps.
-func (p *Parser) ExaminedEnd(enclosing int) (int, bool) {
-	if p.Document == nil {
-		return 0, false
-	}
-	x := p.docHigh
-	p.docHigh = max(enclosing, x)
-	if p.docProvisional {
-		x = max(x, p.Pos)
-	}
-	return x, true
-}
-
-// releaseObservation ends the parse's observation.
-func (p *Parser) releaseObservation() {
-	p.Observation.release()
-	p.Observation = nil
-}
-
-// callObserved is call in an observed parse.
-func (p *Parser) callObserved(r *Rule, min int) (*Node, bool) {
-	p.Observation.Enter(r.Name, p.Pos, min)
-	h := p.ExaminedBegin()
-	v, ok := p.callBody(r, min)
-	x, known := p.ExaminedEnd(h)
-	p.Observation.Exit(ok, p.Pos, x, known)
-	return v, ok
-}
-
-// callBody is call with the Document bookkeeping and without observation. A
-// Document parse takes callDocument.
-func (p *Parser) callBody(r *Rule, min int) (*Node, bool) {
-	p.StepWork()
-	if p.Document != nil {
-		return p.callDocument(r, min)
-	}
-	if (!r.Memo && !r.Leader) || p.FirstCall(r) {
-		return p.callUnmemoized(r, min)
-	}
-	return p.callMemo(r, min)
-}
-
-// callDocument is callBody in a Document parse, which memoizes the rules that
-// the Document reuses and records how far each call examined the input.
-func (p *Parser) callDocument(r *Rule, min int) (*Node, bool) {
-	oldHigh, oldProvisional := p.docHigh, p.docProvisional
-	p.docHigh, p.docProvisional = p.Pos+1, false
-	defer func() {
-		p.docHigh = max(oldHigh, p.docHigh)
-		p.docProvisional = oldProvisional || p.docProvisional
-	}()
-	if !r.DocMemo {
-		return p.callUnmemoized(r, min)
-	}
-	return p.callMemo(r, min)
-}
-
-// callUnmemoized is a call without memo bookkeeping, whose expectations need no isolation.
-func (p *Parser) callUnmemoized(r *Rule, min int) (*Node, bool) {
-	if len(r.Scope) == 0 {
-		return p.invokePlainBody(r, min)
-	}
-	start, rec := p.Pos, len(p.Recovered)
-	v, ok := p.invoke(r, min)
-	if !ok {
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
-	}
-	return v, ok
-}
-
-// callMemo is a memoized call: it reuses the result at the position or evaluates and records
-// it. Its logic is that of the memoized path of call.
-func (p *Parser) callMemo(r *Rule, min int) (*Node, bool) {
-	start := p.Pos
-	env := p.memoEnv(r)
-	// See the engine's callBegin: entries with recovered errors are reused only in the same kind of
-	// context (inside or outside a lookahead) they were computed in.
-	if e := p.memoGet(r.Id, start, min, env); e != nil && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
-		if p.Document != nil {
-			p.documentTouch(e.examined)
-			p.docProvisional = p.docProvisional || e.growing || e.provisional
-			p.Document.stats.Reused++
-		}
-		p.Observation.memoHit()
-		if !e.growing {
-			p.MergeExpected(e.far, e.expected)
-		}
-		if !e.ok {
-			return nil, false
-		}
-		p.Pos = e.end
-		p.Recovered = p.copyErrors(p.Recovered, e.errs)
-		return e.node, true
-	}
-	rec := len(p.Recovered)
-	// The memoized result includes the expectations recorded in this call.
-	m := p.Isolate(start)
-	var v *Node
-	var ok bool
-	var e *memoEntry
-	if r.Leader {
-		v, ok = p.grow(r, min, env)
-		e = p.memoGet(r.Id, start, min, env)
-	} else {
-		v, ok = p.invoke(r, min)
-		if !ok {
-			p.Recovered = p.Recovered[:rec]
-		}
-		e = p.memo.alloc()
-		*e = memoEntry{node: v, ok: ok, end: p.Pos, silent: p.Silent > 0,
-			errs: p.copyErrors(nil, p.Recovered[rec:])}
-		p.memoPut(r.Id, start, min, env, e)
-	}
-	far, inner := p.Unisolate(m)
-	e.far, e.expected = far, p.Keep(inner)
-	if p.Document != nil {
-		p.documentTouch(p.Pos + 1)
-		e.examined = p.docHigh
-		e.provisional = p.docProvisional || r.Leader
-	}
-	p.MergeExpected(far, inner)
-	if !ok {
-		p.Pos = start
-	}
-	return v, ok
-}
-
-// grow grows the seed of a left-recursive leader: it memoizes a failure, then evaluates the
-// body again while the match gets longer, and keeps the last longer result.
-func (p *Parser) grow(r *Rule, min int, env []any) (*Node, bool) {
-	start := p.Pos
-	rec := len(p.Recovered)
-	best := p.memo.alloc()
-	*best = memoEntry{end: start, growing: true}
-	p.memoPut(r.Id, start, min, env, best)
-	for {
-		v, ok := p.invoke(r, min)
-		if !ok || (best.ok && p.Pos <= best.end) {
-			break
-		}
-		best = p.memo.alloc()
-		*best = memoEntry{node: v, ok: true, end: p.Pos, growing: true, errs: p.copyErrors(nil, p.Recovered[rec:])}
-		p.memoPut(r.Id, start, min, env, best)
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
-	}
-	best.growing = false
-	best.silent = p.Silent > 0
-	p.Pos = best.end
-	p.Recovered = p.copyErrors(p.Recovered[:rec], best.errs)
-	return best.node, best.ok
-}
-
-// invoke evaluates the body of r and makes the rule's value.
-func (p *Parser) invoke(r *Rule, min int) (*Node, bool) {
-	if p.Document != nil || p.Observation != nil {
-		p.evaluating()
-	}
-	f := p.NewFrame(len(r.Scope))
-	prevFrame, prevEnv, prevCut, trail := p.Frame, p.Env, p.Cut, len(p.Trail)
-	p.Frame, p.Cut = f, false
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", p.MaxDepth)})
-	}
-	start := p.Pos
-	v, ok := r.Body(p, min)
-	p.Depth--
-	p.Frame, p.Cut = prevFrame, prevCut
-	p.Trail = p.Trail[:trail]
-	if ok {
-		v = p.Finish(r, f, v, start)
-	}
-	p.Env = prevEnv
-	return v, ok
-}
-
-// InvokePlain is an unmemoized call of a rule without captures: invoke without the capture
-// frame (the body never writes one, so the caller's stays current), with the failure handling of
-// call.
-func (p *Parser) InvokePlain(r *Rule, min int) (*Node, bool) {
-	if p.Observation != nil {
-		return p.invokePlainObserved(r, min)
-	}
-	return p.invokePlainBody(r, min)
-}
-
-// invokePlainObserved is InvokePlain in an observed parse.
-func (p *Parser) invokePlainObserved(r *Rule, min int) (*Node, bool) {
-	p.Observation.Enter(r.Name, p.Pos, min)
-	h := p.ExaminedBegin()
-	v, ok := p.invokePlainBody(r, min)
-	x, known := p.ExaminedEnd(h)
-	p.Observation.Exit(ok, p.Pos, x, known)
-	return v, ok
-}
-
-// invokePlainBody is InvokePlain without observation.
-func (p *Parser) invokePlainBody(r *Rule, min int) (*Node, bool) {
-	if p.Document != nil || p.Observation != nil {
-		p.evaluating()
-	}
-	start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
-	prevEnv, prevCut := p.Env, p.Cut
-	p.Cut = false
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
-	v, ok := r.Body(p, min)
-	p.Depth--
-	p.Cut = prevCut
-	p.Trail = p.Trail[:trail]
-	if ok {
-		v = p.Finish(r, EmptyFrame, v, start)
-	} else {
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
-	}
-	p.Env = prevEnv
-	return v, ok
-}
-
-// evaluating counts an evaluation of a rule body for the Document's statistics and the
-// observation.
-func (p *Parser) evaluating() {
-	if p.Document != nil {
-		p.Document.stats.Evaluated++
-	}
-	p.Observation.Evaluated()
-}
-
-// TooDeep fails the parse for exceeding the nesting limit.
-func (p *Parser) TooDeep() {
-	panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", p.MaxDepth)})
-}
-
-// Finish makes the rule's value from the value of its body, and checks it against the rule's
-// declared type if needed.
-func (p *Parser) Finish(r *Rule, f *CaptureFrame, v *Node, start int) *Node {
-	v, owned := p.finishValue(r, f, v, start)
-	if r.check != nil {
-		r.check(p, v)
-	}
-	if r.nodeKinds != nil {
-		if owned && r.nodeKinds.convertOwned(v) {
-			return v
-		}
-		v = p.convertResult(r, v)
-	}
-	return v
-}
-
-// convertResult converts v, the value of rule r, to the rule's named node type.
-func (p *Parser) convertResult(r *Rule, v *Node) *Node {
-	n, ok := r.nodeKinds.convert(UnboxNode(v))
-	if !ok {
-		panic(fatal{fmt.Errorf("cannot convert %s to %s in result of rule %s", typeName(UnboxNode(v)), r.NodeType, r.Name)})
-	}
-	return n
-}
-
-func (p *Parser) finishValue(r *Rule, f *CaptureFrame, v *Node, start int) (*Node, bool) {
-	if r.Novalue {
-		return nil, false
-	}
-	if r.Action != nil {
-		c := p.useCtx(ActCtx{P: p, f: f, start: start, end: p.Pos, cbase: len(p.created)})
-		return c.result(r.Action, r.Name), false
-	}
-	v = p.ScopeValue(r.Value, v, start)
-	if len(r.Scope) > 0 {
-		v = p.AttachCaptures(v, r.Scope, f, start, p.Pos)
-	}
-	if v == nil {
-		return nil, false
-	}
-	owned := v.RawFresh
-	if owned {
-		if p.sourceInfo && v.RawKind.rule == "" {
-			v.RawKind = r.kinds.named(v.RawKind, r.Name)
-		}
-		v.RawFresh = false
-	}
-	return v, owned
-}
-
-// AttachCaptures attaches the non-nil captures as fields of the node. A node of another rule, or
-// one that is itself captured, is first wrapped in a tuple node.
-func (p *Parser) AttachCaptures(v *Node, names []string, f *CaptureFrame, start, end int) *Node {
-	found := false
-	wrap := v == nil || !v.RawFresh
-	for _, c := range f.Vals {
-		p.StepWork()
-		if c != nil {
-			found = true
-		}
-		if c != nil && c == v {
-			wrap = true
-		}
-	}
-	if !found {
-		return v
-	}
-	if wrap {
-		v = p.NewNode(Node{RawKind: RawKindSeq, RawStart: int32(start), RawEnd: int32(end), RawChildren: append(p.Nodes(1)[:0], v), RawFresh: true})
-	}
-	if v.RawFields == nil {
-		v.RawFields = p.fields(len(names))
-	}
-	v.labeled = p.sourceInfo
-	for i, name := range names {
-		p.StepWork()
-		if f.Vals[i] != nil {
-			p.setValueField(&v.RawFields, name, f.Vals[i])
-		}
-	}
-	return v
-}
-
-func nodeOrNil(n *Node) any {
-	if n == nil {
-		return nil
-	}
-	return n
-}
-
-// --- Shapes of values ---
-
-// singleMode is how an expression gives its value where it takes one element: an alternative,
-// the operand of ?, a capture or a recovered expression.
-type singleMode uint8
-
-const (
-	singleNone  singleMode = iota // no value
-	singlePass                    // the one element
-	singleTuple                   // the node of the tuple of the elements
-)
-
-// Shaper converts the result of an expression's method to the value where the expression takes
-// one element or is a scope (a rule body, a repetition element or an Operators Rule line). The
-// generator fills it from the expression's static shape, as the engine does.
-//
-// Shaper is for generated parsers; not a stable API.
-type Shaper struct {
-	Elems bool       // the method returns the tuple node of its elements
-	K     int        // the number of valued elements
-	Mode  singleMode // how the expression takes one element
-	Tuple bool       // the value of a scope is the node of its tuple, rather than its one element
-}
-
-// shapeTuple returns the tuple node of the result v of a match of [start, p.Pos).
-func (p *Parser) shapeTuple(s Shaper, v *Node, start int) *Node {
-	if s.Elems {
-		return v
-	}
-	var kids []*Node
-	if s.K == 1 {
-		kids = p.Nodes(1)
-		kids[0] = v
-	}
-	return p.NewNode(Node{RawKind: RawKindSeq, RawStart: int32(start), RawEnd: int32(p.Pos), RawChildren: kids, RawFresh: true})
-}
-
-// one returns the one element of the result v.
-func (s Shaper) one(v *Node) *Node {
-	if s.Elems {
-		if v == nil || len(v.RawChildren) == 0 {
-			return nil
-		}
-		return v.RawChildren[0]
-	}
-	return v
-}
-
-// ShapeSingle returns the value of the result v where the expression takes one element; ok is
-// false when it has no value.
-func (p *Parser) ShapeSingle(s Shaper, v *Node, start int) (*Node, bool) {
-	switch s.Mode {
-	case singlePass:
-		return s.one(v), true
-	case singleTuple:
-		return p.shapeTuple(s, v, start), true
-	}
-	return nil, false
-}
-
-// ShapeCapture is ShapeSingle for a capture or a recovered expression, whose value is the unit
-// node of the range matched when the expression has no value.
-func (p *Parser) ShapeCapture(s Shaper, v *Node, start int) *Node {
-	v, ok := p.ShapeSingle(s, v, start)
-	if !ok {
-		v = p.NewNode(Node{RawKind: RawKindSeq, RawStart: int32(start), RawEnd: int32(p.Pos), RawFresh: true})
-	}
-	return v
-}
-
-// ScopeValue returns the value of a scope whose body matched [start, p.Pos) with the result v.
-func (p *Parser) ScopeValue(s Shaper, v *Node, start int) *Node {
-	if s.Tuple {
-		return p.shapeTuple(s, v, start)
-	}
-	return s.one(v)
-}
-
-// --- Terminals ---
-
-// literalText returns source bytes if replacement decoding accepted a shorter
-// spelling than the literal, retaining the usual constant-text success path.
-func (p *Parser) literalText(start int, text string) string {
-	if p.unit == Bytes && p.Pos-start != len(text) {
-		return p.Text(start, p.Pos)
-	}
-	return text
-}
-
-func (p *Parser) MatchLiteral(rs []rune, text string, desc ExpID, build bool) (*Node, bool) {
-	start := p.Pos
-	if p.unit == Bytes {
-		p.documentTouch(start + len(text))
-		if !p.hasLiteralPrefix(text) {
-			return p.matchReplacementLiteral(rs, text, desc, build)
-		}
-		p.Pos += len(text)
-	} else {
-		p.documentTouch(start + len(rs))
-		for _, r := range rs {
-			p.InputWork(1)
-			if p.Pos >= p.n || p.In[p.Pos] != r {
-				p.Expect(start, desc)
-				return nil, false
-			}
-			p.Pos++
-		}
-	}
-	if !build {
-		return nil, true
-	}
-	return p.NewNode(Node{RawKind: RawKindMatch, RawStart: int32(start), RawEnd: int32(p.Pos), RawText: p.literalText(start, text), RawTerminal: true, RawFresh: true}), true
-}
-
-// matchReplacementLiteral is the cold path for raw-byte mismatches. An
-// invalid input byte and valid U+FFFD decode alike, but occupy different sizes.
-func (p *Parser) matchReplacementLiteral(rs []rune, text string, desc ExpID, build bool) (*Node, bool) {
-	start := p.Pos
-	if !p.literalHasReplacement(rs) {
-		p.Expect(start, desc)
-		return nil, false
-	}
-	for _, want := range rs {
-		got, size, ok := p.Peek()
-		if !ok || got != want {
-			p.Expect(start, desc)
-			return nil, false
-		}
-		p.Pos += size
-	}
-	if !build {
-		return nil, true
-	}
-	return p.NewNode(Node{RawKind: RawKindMatch, RawStart: int32(start), RawEnd: int32(p.Pos), RawText: p.literalText(start, text), RawTerminal: true, RawFresh: true}), true
-}
-
-// MatchLiteralOrdinary is MatchLiteral in an ordinary parse (ExpectOrdinary).
-func (p *Parser) MatchLiteralOrdinary(rs []rune, text string, desc ExpID, build bool) (*Node, bool) {
-	start := p.Pos
-	if p.unit == Bytes {
-		if !strings.HasPrefix(p.bs[p.Pos:], text) {
-			return p.matchReplacementLiteral(rs, text, desc, build)
-		}
-		p.Pos += len(text)
-	} else {
-		for _, r := range rs {
-			if p.Pos >= p.n || p.In[p.Pos] != r {
-				p.ExpectOrdinary(start, desc)
-				return nil, false
-			}
-			p.Pos++
-		}
-	}
-	if !build {
-		return nil, true
-	}
-	return p.NewNodeOrdinary(Node{RawKind: RawKindMatch, RawStart: int32(start), RawEnd: int32(p.Pos), RawText: p.literalText(start, text), RawTerminal: true, RawFresh: true}), true
-}
-
-// MatchAnyOrdinary is MatchAny in an ordinary parse (ExpectOrdinary).
-func (p *Parser) MatchAnyOrdinary(build bool) (*Node, bool) {
-	_, size, ok := p.PeekOrdinary()
-	if !ok {
-		p.ExpectOrdinary(p.Pos, IdAny)
-		return nil, false
-	}
-	return p.Single(size, build)
-}
-
-func (p *Parser) MatchAny(build bool) (*Node, bool) {
-	_, size, ok := p.Peek()
-	if !ok {
-		p.Expect(p.Pos, IdAny)
-		return nil, false
-	}
-	return p.Single(size, build)
-}
-
-// Single consumes one character of size units.
-func (p *Parser) Single(size int, build bool) (*Node, bool) {
-	start := p.Pos
-	p.Pos += size
-	if !build {
-		return nil, true
-	}
-	return p.NewNode(Node{RawKind: RawKindMatch, RawStart: int32(start), RawEnd: int32(p.Pos), RawText: p.Text(start, p.Pos), RawTerminal: true, RawFresh: true}), true
-}
-
-func (p *Parser) Anchor(ok bool, desc ExpID) (*Node, bool) {
-	if ok {
-		return nil, true
-	}
-	p.Expect(p.Pos, desc)
-	return nil, false
-}
-
-func (p *Parser) AtLineStart() bool {
-	p.documentTouch(p.Pos)
-	if p.Pos == 0 {
-		return true
-	}
-	if p.unit == Bytes {
-		return p.bs[p.Pos-1] == '\n'
-	}
-	return p.In[p.Pos-1] == '\n'
-}
-
-// AtLineStartOrdinary is AtLineStart in an ordinary parse (ExpectOrdinary).
-func (p *Parser) AtLineStartOrdinary() bool {
-	if p.Pos == 0 {
-		return true
-	}
-	if p.unit == Bytes {
-		return p.bs[p.Pos-1] == '\n'
-	}
-	return p.In[p.Pos-1] == '\n'
-}
-
-// AtLineEndOrdinary is AtLineEnd in an ordinary parse (ExpectOrdinary).
-func (p *Parser) AtLineEndOrdinary() bool {
-	ch, _, ok := p.PeekOrdinary()
-	return !ok || ch == '\n' || ch == '\r'
-}
-
-// AtEndOrdinary is AtEnd in an ordinary parse (ExpectOrdinary).
-func (p *Parser) AtEndOrdinary() bool {
-	return p.Pos == p.n
-}
-
-func (p *Parser) AtLineEnd() bool {
-	ch, _, ok := p.Peek()
-	return !ok || ch == '\n' || ch == '\r'
-}
-
-func (p *Parser) AtEnd() bool {
-	p.documentTouch(p.Pos + 1)
-	return p.Pos == p.n
-}
-
-// --- Attributes ---
-
-type matcher = func(p *Parser) (*Node, bool)
-
-// tracked runs m with a separate expectation record and returns its farthest position and
-// expectations (valid only until the next record; see unisolate).
-func (p *Parser) tracked(m matcher) (v *Node, ok bool, far int, expected []ExpID) {
-	mark := p.Isolate(p.Pos)
-	v, ok = m(p)
-	far, expected = p.Unisolate(mark)
-	return v, ok, far, expected
-}
-
-// ErrorAttr replaces the expectations of a failing m with the message msg (an ID with MsgBit),
-// reported at the farthest position m reached.
-func (p *Parser) ErrorAttr(m matcher, msg ExpID) (*Node, bool) {
-	v, ok, far, expected := p.tracked(m)
-	if ok {
-		p.MergeExpected(far, expected)
-		return v, true
-	}
-	p.Expect(far, msg)
-	return nil, false
-}
-
-func (p *Parser) DiagnosticAttr(m matcher, name ExpID) (*Node, bool) {
-	v, ok, far, expected := p.tracked(m)
-	if ok {
-		p.MergeExpected(far, expected)
-		return v, true
-	}
-	p.MergeExpected(far, RenamedExpected(p, expected, name))
-	return nil, false
-}
-
-// RenamedExpected is for generated parsers; not a stable API.
-func RenamedExpected(p *Parser, expected []ExpID, name ExpID) []ExpID {
-	// The isolated record is no longer in the active expectation stack. Charge
-	// each conversion and reuse its storage before MergeExpected appends to it.
-	for i, id := range expected {
-		p.StepWork()
-		if id&MsgBit == 0 {
-			expected[i] = name
-		}
-	}
-	return expected
-}
-
-// RecoverAttr records the error of a failing m, skips what skip matches and returns an Error
-// node. It fails without recovering when skip fails or skips nothing.
-func (p *Parser) RecoverAttr(m, skip matcher, build bool) (*Node, bool) {
-	m0 := p.Mark()
-	v, ok, far, expected := p.tracked(m)
-	if ok {
-		p.MergeExpected(far, expected)
-		return v, true
-	}
-	expected = p.Keep(expected) // keep them while skipping
-	p.Reset(m0)
-	if _, ok := skip(p); !ok || p.Pos == m0.Pos {
-		p.Reset(m0)
-		p.MergeExpected(far, expected)
-		return nil, false
-	}
-	e := p.MakeError(far, expected)
-	p.Recovered = append(p.Recovered, e)
-	if !build {
-		return nil, true
-	}
-	return p.NewNode(Node{RawKind: kindError, RawStart: int32(m0.Pos), RawEnd: int32(p.Pos), RawText: p.Text(m0.Pos, p.Pos), RawFields: Fields{{"message", p.RecoveryErrorText(e)}}, RawFresh: true, RawTerminal: true}), true
-}
-
-// --- Actions and predicates ---
-
-// evalError is an error in evaluating a value expression. It fails the whole parse in an action and
-// makes a predicate fail.
-type evalError struct{ msg string }
-
-func evalErrorf(format string, args ...any) { panic(evalError{fmt.Sprintf(format, args...)}) }
-
-// rtIndex returns the index i of a list or tuple of n elements, failing the action if i is not an int in
-// range; typeName names the type of i.
-func rtIndex(p *Parser, i any, n int, typeName func(any) string) int {
-	k, ok := i.(int)
-	if !ok {
-		p.evalErrorf("index must be int, got %s", typeName(i))
-	} else if k < 0 || k >= n {
-		p.evalErrorf("index %d out of range for %d elements", k, n)
-	}
-	return k
-}
-
-// ActCtx is the context of evaluating an action or a predicate.
-//
-// ActCtx is for generated parsers; not a stable API.
-type ActCtx struct {
-	P            *Parser
-	f            *CaptureFrame
-	start, end   int
-	cbase        int // start of p.Created made by this evaluation
-	Lhs, Rhs, Op any
-}
-
-// UseCtx places the evaluation context in the parser's single context and returns it.
-// Evaluations never nest, and no reference to the context survives one (function values
-// cannot be stored in fields or variables), so one context per parser can be reused.
-func (p *Parser) useCtx(c ActCtx) *ActCtx {
-	p.ac = c
-	return &p.ac
-}
-
-func (c *ActCtx) result(action func(*ActCtx) any, where string) (n *Node) {
-	defer func() {
-		c.P.dropCreated(c.cbase)
-		if x := recover(); x != nil {
-			e, ok := x.(evalError)
-			if !ok {
-				panic(x)
-			}
-			panic(fatal{c.P.wrapEvalError(where, e.msg)})
-		}
-	}()
-	v := action(c)
-	if v == nil {
-		return nil
-	}
-	n, ok := v.(*Node)
-	if !ok {
-		if _, isFn := v.(func(...any) any); isFn {
-			c.P.evalErrorf("result must be a value, got a function")
-		}
-		// A value other than a node travels boxed, with the range of the action's input.
-		return c.P.NewNode(Node{RawKind: kindBox, box: v, RawStart: int32(c.start), RawEnd: int32(c.end)})
-	}
-	for _, x := range c.P.created[c.cbase:] {
-		c.P.StepWork()
-		if x == n {
-			n.RawStart, n.RawEnd = int32(c.start), int32(c.end)
-			break
-		}
-	}
-	if n != nil {
-		n.RawFresh = false // the value of an action is final (see the engine's actionResult)
-	}
-	return n
-}
-
-// DropCreated releases tracking references without changing the created values.
-func (p *Parser) dropCreated(base int) {
-	clear(p.created[base:])
-	p.created = p.created[:base]
-}
-
-func (p *Parser) Predicate(t func(*ActCtx) any) (ok bool) {
-	base, kids := len(p.created), len(p.KidStack)
-	defer func() {
-		p.dropCreated(base)
-		if x := recover(); x != nil {
-			if _, isEval := x.(evalError); !isEval {
-				panic(x)
-			}
-			p.DropKids(kids) // elements gathered by a list built-in that failed
-			ok = false
-		}
-	}()
-	c := p.useCtx(ActCtx{P: p, f: p.Frame, start: p.Pos, end: p.Pos, cbase: len(p.created)})
-	v := t(c)
-	if b, isBool := v.(bool); isBool && !b {
-		return false
-	}
-	return true
-}
-
-// Assign evaluates the value of a binding and binds it to the variable name. A non-empty typ is the
-// declared type of the variable, which the value is checked against.
-func (p *Parser) Assign(name, typ string, t func(*ActCtx) any) (ok bool) {
-	base, kids := len(p.created), len(p.KidStack)
-	defer func() {
-		p.dropCreated(base)
-		if x := recover(); x != nil {
-			if _, isEval := x.(evalError); !isEval {
-				panic(x)
-			}
-			p.DropKids(kids) // elements gathered by a list built-in that failed
-			ok = false
-		}
-	}()
-	c := p.useCtx(ActCtx{P: p, f: p.Frame, start: p.Pos, end: p.Pos, cbase: len(p.created)})
-	v := t(c)
-	if _, isFn := v.(func(...any) any); isFn {
-		return false
-	}
-	if typ != "" && typeName(v) != typ {
-		return false // cannot use <value type> as <typ> in the binding of variable <name>
-	}
-	p.bind(name, v)
-	return true
-}
-
-func (c *ActCtx) Cap(slot int) any { return UnboxNode(c.f.Vals[slot]) }
-
-func (c *ActCtx) Lookup(name string) any {
-	if WorkControlsEnabled && c.P.Control != nil {
-		if v, ok := c.P.lookupEnvControlled(name); ok {
-			return v
-		}
-		c.P.evalErrorf("variable %s is not defined", name)
-		return nil
-	}
-
-	for e := c.P.Env; e != nil; e = e.next {
-		if e.name == name {
-			return e.val
-		}
-	}
-	c.P.evalErrorf("variable %s is not defined", name)
-	return nil
-}
-
-func typeName(v any) string {
-	switch v := v.(type) {
-	case nil:
-		return "nil"
-	case *Node:
-		if v == nil {
-			return "nil"
-		}
-		if v.RawKind == kindBox {
-			return typeName(v.box)
-		}
-		if v.RawKind.NodeType() {
-			return v.Type()
-		}
-		return valueTypeName(v.shape(), v.Type(), len(v.RawChildren))
-	case int:
-		return "int"
-	case string:
-		return "string"
-	case bool:
-		return "bool"
-	}
-	return fmt.Sprintf("%T", v)
-}
-
-func (c *ActCtx) NewStruct(typ string, kv ...any) any {
-	k := c.P.g.TypeKinds[typ]
-	if k == nil {
-		k = KindOf(typ, "")
-	}
-	n := c.P.NewNode(Node{RawKind: k, RawFields: c.P.fields(len(kv) / 2)})
-	first := true
-	for i := 0; i < len(kv); i += 2 {
-		c.P.StepWork()
-		v := kv[i+1]
-		c.P.setValueField(&n.RawFields, kv[i].(string), v)
-		if child, ok := v.(*Node); ok && child != nil {
-			if first || child.RawStart < n.RawStart {
-				n.RawStart = child.RawStart
-			}
-			if first || child.RawEnd > n.RawEnd {
-				n.RawEnd = child.RawEnd
-			}
-			first = false
-		}
-	}
-	if first {
-		n.RawStart, n.RawEnd = int32(c.start), int32(c.end)
-	}
-	c.P.created = append(c.P.created, n)
-	return n
-}
-
-func (c *ActCtx) NewList(items []*Node) *Node {
-	kids := c.P.Nodes(len(items))
-	copyWork(c.P, kids, items)
-	return c.listNode(kids)
-}
-
-// listNode returns a list value with the child list kids (which it takes over). Its range, which
-// the value model does not show, covers the elements that are nodes.
-func (c *ActCtx) listNode(kids []*Node) *Node { return c.valueNode(kindListValue, kids) }
-
-// Tuple returns a tuple value of the arguments, as a tuple literal builds it.
-func (c *ActCtx) Tuple(args ...any) any {
-	base := len(c.P.KidStack)
-	for _, a := range args {
-		c.P.StepWork()
-		c.P.KidStack = append(c.P.KidStack, c.asNode("tuple", a))
-	}
-	return c.valueNode(kindTupleValue, c.P.Kids(base))
-}
-
-func (c *ActCtx) valueNode(kind *nodeKind, kids []*Node) *Node {
-	n := c.P.NewNode(Node{RawKind: kind, RawChildren: kids, RawStart: int32(c.start), RawEnd: int32(c.start)})
-	first := true
-	for _, it := range kids {
-		c.P.StepWork()
-		if it == nil {
-			continue
-		}
-		if first || it.RawStart < n.RawStart {
-			n.RawStart = it.RawStart
-		}
-		if first || it.RawEnd > n.RawEnd {
-			n.RawEnd = it.RawEnd
-		}
-		first = false
-	}
-	return n
-}
-
-// toperand is an operand of a comparison: a string field read without boxing it (str, with
-// isStr), or any other value (v).
-type toperand struct {
-	v     any
-	str   string
-	isStr bool
-}
-
-func (o toperand) value() any {
-	if o.isStr && o.v == nil {
-		return o.str
-	}
-	return o.v
-}
-
-// Member reads x.Name.
-func (c *ActCtx) Member(x any, name string) any {
-	n, ok := x.(*Node)
-	if !ok || n == nil {
-		c.P.evalErrorf("cannot access .%s of %s", name, typeName(x))
-	}
-	if n.isNode() {
-		switch name {
-		case "Start":
-			return int(n.RawStart)
-		case "End":
-			return int(n.RawEnd)
-		case "Value":
-			return c.P.nodeValue(n)
-		}
-	}
-	if capture, ok := strings.CutPrefix(name, "$"); ok {
-		// x.$y reads a capture, which struct values do not have; an unmatched capture is nil.
-		if _, ok := c.P.g.StructFields[n.Type()]; ok {
-			c.P.evalErrorf("%s has no capture %s", n.Type(), capture)
-		}
-		v, _ := c.P.valueField(n.RawFields, capture)
-		return UnboxValue(v)
-	}
-	if fields, ok := c.P.g.StructFields[n.Type()]; ok && !fields[name] {
-		c.P.evalErrorf("%s has no field %s", n.Type(), name)
-	}
-	v, _ := c.P.valueField(n.RawFields, name)
-	return v
-}
-
-func rtUnary(op string, x any) any {
-	switch op {
-	case "-":
-		if i, ok := x.(int); ok {
-			return -i
-		}
-	case "!":
-		if b, ok := x.(bool); ok {
-			return !b
-		}
-	}
-	evalErrorf("invalid operand %s for unary %s", typeName(x), op)
-	return nil
-}
-
-func rtBool(op string, v any) bool {
-	b, ok := v.(bool)
-	if !ok {
-		evalErrorf("invalid operand %s for %s", typeName(v), op)
-	}
-	return b
-}
-
-func rtAnd(l any, r func() any) any {
-	if !rtBool("&&", l) {
-		return false
-	}
-	return rtBool("&&", r())
-}
-
-func rtOr(l any, r func() any) any {
-	if rtBool("||", l) {
-		return true
-	}
-	return rtBool("||", r())
-}
-
-func rtEqual(a, b any) bool {
-	switch a := a.(type) {
-	case *Node:
-		if a == nil {
-			return b == nil
-		}
-		bn, ok := b.(*Node)
-		return ok && a == bn
-	case nil:
-		if bn, ok := b.(*Node); ok {
-			return bn == nil
-		}
-		return b == nil
-	case int, string, bool:
-		return a == b
-	}
-	return false
-}
-
-func rtBinary(op string, l, r any) any {
-	switch op {
-	case "==":
-		return rtEqual(l, r)
-	case "!=":
-		return !rtEqual(l, r)
-	case "[]":
-		items := listItems("[]", l)
-		return UnboxNode(items[rtIndex(nil, r, len(items), typeName)])
-	}
-	switch l := l.(type) {
-	case int:
-		if r, ok := r.(int); ok {
-			switch op {
-			case "+":
-				return l + r
-			case "-":
-				return l - r
-			case "*":
-				return l * r
-			case "/", "%":
-				if r == 0 {
-					evalErrorf("division by zero")
-				}
-				if op == "/" {
-					return l / r
-				}
-				return l % r
-			case "<":
-				return l < r
-			case "<=":
-				return l <= r
-			case ">":
-				return l > r
-			case ">=":
-				return l >= r
-			}
-		}
-	case string:
-		if r, ok := r.(string); ok {
-			switch op {
-			case "+":
-				return l + r
-			case "<":
-				return l < r
-			case "<=":
-				return l <= r
-			case ">":
-				return l > r
-			case ">=":
-				return l >= r
-			}
-		}
-	}
-	evalErrorf("invalid operands %s and %s for %s", typeName(l), typeName(r), op)
-	return nil
-}
-
-func (c *ActCtx) Length(x any) any {
-	switch x := x.(type) {
-	case string:
-		return c.P.unitLen(x)
-	case *Node:
-		if x == nil {
-			return 0
-		}
-		if x.RawTerminal {
-			return c.P.unitLen(x.RawText)
-		}
-		return len(x.RawChildren)
-	case nil:
-		return 0
-	}
-	c.P.evalErrorf("len: invalid argument %s", typeName(x))
-	return nil
-}
-
-func (c *ActCtx) Text(x any) any { return c.TextStr(x) }
-
-// TextStr returns text(x) as a string. Comparisons of two texts use it directly, since storing a
-// string in an interface allocates.
-func (c *ActCtx) TextStr(x any) string {
-	switch x := x.(type) {
-	case nil:
-		return ""
-	case string:
-		return x
-	case *Node:
-		if x == nil {
-			return ""
-		}
-		if x.RawTerminal {
-			return x.RawText
-		}
-		return c.P.Text(int(x.RawStart), int(x.RawEnd))
-	}
-	c.P.evalErrorf("text: invalid argument %s", typeName(x))
-	return ""
-}
-
-func listItems(fn string, v any) []*Node {
-	switch x := v.(type) {
-	case nil:
-		return nil
-	case *Node:
-		if x == nil {
-			return nil
-		}
-		return x.RawChildren
-	}
-	evalErrorf("%s: expected a list, got %s", fn, typeName(v))
-	return nil
-}
-
-func asNode(fn string, v any) *Node {
-	switch x := v.(type) {
-	case nil:
-		return nil
-	case *Node:
-		return x
-	}
-	evalErrorf("%s: elements must be values, got %s", fn, typeName(v))
-	return nil
-}
-
-func rtFold(fn string, right bool, acc, list any, f func(acc, item any) any) any {
-	items := listItems(fn, list)
-	for i := range items {
-		it := items[i]
-		if right {
-			it = items[len(items)-1-i]
-		}
-		acc = f(acc, UnboxNode(it))
-	}
-	return acc
-}
-
-// The list built-ins gather the elements on KidStack (lambdas that build lists push above them)
-// and hand the copied-out slice to the list node. If one fails, the error unwinds to the action
-// (which fails the parse) or the predicate (which pops what was gathered).
-
-func (c *ActCtx) MapList(list any, f func(item any) any) any {
-	base := len(c.P.KidStack)
-	c.PushMap(list, f)
-	return c.EndList(base)
-}
-
-func (c *ActCtx) filterList(list any, f func(item any) any) any {
-	base := len(c.P.KidStack)
-	for _, item := range c.ListItems("filter", list) {
-		c.P.StepWork()
-		value := f(UnboxNode(item))
-		keep, ok := value.(bool)
-		if !ok {
-			c.P.evalErrorf("filter: predicate must produce a bool, got %s", typeName(value))
-		}
-		if keep {
-			c.P.KidStack = append(c.P.KidStack, item)
-		}
-	}
-	return c.EndList(base)
-}
-
-func (c *ActCtx) List(args ...any) any {
-	base := len(c.P.KidStack)
-	c.PushList(args...)
-	return c.EndList(base)
-}
-
-func (c *ActCtx) Concat(args ...any) any {
-	base := len(c.P.KidStack)
-	for _, a := range args {
-		c.P.StepWork()
-		c.PushItems(a)
-	}
-	return c.EndList(base)
-}
-
-// PushMap, PushList and PushItems push the elements that map, list and concat make from their
-// arguments. A concat call whose arguments are all list, map or such concat calls is generated
-// as pushes for its arguments followed by EndList, so that they build no intermediate list.
-
-func (c *ActCtx) PushMap(list any, f func(item any) any) {
-	for _, it := range c.ListItems("map", list) {
-		c.P.StepWork()
-		c.P.KidStack = append(c.P.KidStack, c.asNode("map", f(UnboxNode(it))))
-	}
-}
-
-func (c *ActCtx) PushList(args ...any) {
-	for _, a := range args {
-		c.P.StepWork()
-		c.P.KidStack = append(c.P.KidStack, c.asNode("list", a))
-	}
-}
-
-func (c *ActCtx) PushItems(v any) {
-	c.P.KidStack = appendWork(c.P, c.P.KidStack, c.ListItems("concat", v))
-}
-
-// EndList returns a list of the elements pushed since base.
-func (c *ActCtx) EndList(base int) any {
-	return c.listNode(c.P.Kids(base))
-}
-
-// --- Operators Rule expressions ---
-
-// OperatorsRule is for generated parsers; not a stable API.
-type OperatorsRule struct {
-	Skip     matcher
-	Operands []*OperatorsRuleLine
-	Prefix   []*OperatorsRuleOp
-	Led      []*OperatorsRuleOp
-}
-
-// OperatorsRuleLine is for generated parsers; not a stable API.
-type OperatorsRuleLine struct {
-	Scope  []string
-	M      matcher
-	Action func(*ActCtx) any
-	// Value makes the value of an operand line without an action, and of an operator line's
-	// operator, from the value of the line's expression.
-	Value Shaper
-	check func(p *Parser, v *Node) // checks the line's value against the rule's declared type
-}
-
-// OperatorsRuleOp is for generated parsers; not a stable API.
-type OperatorsRuleOp struct {
-	Id    int
-	Kind  string
-	Assoc string
-	Level int
-	Line  *OperatorsRuleLine
-}
-
-type operatorsRuleAttempt struct {
-	op         *OperatorsRuleOp
-	frame      *CaptureFrame
-	v          *Node
-	start, end int
-	env        *Env
-	cut        bool
-	errs       []*SyntaxError
-}
-
-func (p *Parser) skipTrivia(pr *OperatorsRule) {
-	if pr.Skip == nil {
-		return
-	}
-	m := p.Mark()
-	p.Silent++
-	_, ok := pr.Skip(p)
-	p.Silent--
-	if !ok {
-		p.Reset(m)
-	}
-}
-
-// longest tries every operator and returns the longest match (the first declared among equals);
-// best.Op is nil when none matched. cutFailed reports a candidate that failed after a cut. The
-// attempt is returned by value, so trying operators allocates nothing for lines without captures.
-func (p *Parser) longest(ops []*OperatorsRuleOp) (best operatorsRuleAttempt, cutFailed bool) {
-	m0 := p.Mark()
-	for _, op := range ops {
-		p.StepWork()
-		prevFrame, prevCut := p.Frame, p.Cut
-		f := p.NewFrame(len(op.Line.Scope))
-		p.Frame, p.Cut = f, false
-		v, ok := op.Line.M(p)
-		cut := p.Cut
-		p.Frame, p.Cut = prevFrame, prevCut
-		if ok && p.Pos == m0.Pos && op.Kind != "infix" {
-			ok = false // an empty prefix or postfix match could be applied forever
-		}
-		if ok && (best.op == nil || p.Pos > best.end) {
-			best = operatorsRuleAttempt{op: op, frame: f, v: v, start: m0.Pos, end: p.Pos, env: p.Env, cut: cut,
-				errs: p.copyErrors(nil, p.Recovered[m0.recovered:])}
-		}
-		if !ok && cut {
-			cutFailed = true
-		}
-		if len(f.Vals) == 0 {
-			p.Reset(m0)
-			continue
-		}
-		// reset undoes this candidate's captures; restore them. Nothing parses between saving
-		// and restoring, so one buffer per parser suffices.
-		p.saved = appendWork(p, p.saved[:0], f.Vals)
-		p.Reset(m0)
-		copyWork(p, f.Vals, p.saved)
-	}
-	return best, cutFailed
-}
-
-func (p *Parser) apply(a *operatorsRuleAttempt) {
-	p.Pos, p.Env = a.end, a.env
-	p.Recovered = p.copyErrors(p.Recovered, a.errs)
-}
-
-// OperatorsRuleParse parses an expression with operators that bind tighter than min. Each level of its
-// recursion (the operand of a prefix operator, the right operand of an infix operator) counts
-// against the nesting limit, like a rule call.
-func (p *Parser) OperatorsRuleParse(r *Rule, min int) (*Node, bool) {
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
-	v, ok := p.operatorsRuleExpr(r, min)
-	p.Depth--
-	return v, ok
-}
-
-func (p *Parser) operatorsRuleExpr(r *Rule, min int) (*Node, bool) {
-	pr := r.OperatorsRule
-	lhs, ok := p.operatorsRuleNud(r)
-	if !ok {
-		return nil, false
-	}
-	lastNone := -1
-	for {
-		m0 := p.Mark()
-		p.skipTrivia(pr)
-		a, cutFailed := p.longest(pr.Led)
-		if a.op == nil {
-			p.Reset(m0)
-			if cutFailed {
-				return nil, false
-			}
-			break
-		}
-		if a.op.Level <= min || a.op.Assoc == "none" && a.op.Level == lastNone {
-			p.Reset(m0)
-			break
-		}
-		p.apply(&a)
-		if a.op.Kind == "postfix" {
-			lhs = p.operatorsRuleBuild(r, &a, lhs, nil)
-			lastNone = -1
-			if p.Pos == m0.Pos {
-				break
-			}
-			continue
-		}
-		rmin := a.op.Level
-		if a.op.Assoc == "right" {
-			rmin--
-		}
-		rhs, ok := p.OperatorsRuleParse(r, rmin)
-		if !ok {
-			if a.cut {
-				return nil, false
-			}
-			p.Reset(m0)
-			break
-		}
-		lhs = p.operatorsRuleBuild(r, &a, lhs, rhs)
-		lastNone = -1
-		if a.op.Assoc == "none" {
-			lastNone = a.op.Level
-		}
-		// An application that consumed no input ends the loop, as an empty iteration ends a repetition:
-		// otherwise an operator that can match empty after an operand that can loops forever.
-		if p.Pos == m0.Pos {
-			break
-		}
-	}
-	return lhs, true
-}
-
-func (p *Parser) operatorsRuleNud(r *Rule) (*Node, bool) {
-	pr := r.OperatorsRule
-	p.skipTrivia(pr)
-	m0 := p.Mark()
-	if a, cutFailed := p.longest(pr.Prefix); a.op != nil {
-		p.apply(&a)
-		rhs, ok := p.OperatorsRuleParse(r, a.op.Level)
-		if ok {
-			return p.operatorsRuleBuild(r, &a, nil, rhs), true
-		}
-		if a.cut {
-			return nil, false
-		}
-		p.Reset(m0)
-	} else if cutFailed {
-		return nil, false
-	}
-	for _, o := range pr.Operands {
-		p.StepWork()
-		prevFrame, prevCut := p.Frame, p.Cut
-		f := p.NewFrame(len(o.Scope))
-		p.Frame, p.Cut = f, false
-		v, ok := o.M(p)
-		cut := p.Cut
-		p.Frame, p.Cut = prevFrame, prevCut
-		if ok {
-			return p.lineResult(r, o, f, v, m0.Pos), true
-		}
-		p.Reset(m0)
-		if cut {
-			return nil, false
-		}
-	}
-	return nil, false
-}
-
-func (p *Parser) lineResult(r *Rule, l *OperatorsRuleLine, f *CaptureFrame, v *Node, start int) *Node {
-	if r.Novalue {
-		return nil
-	}
-	v = p.lineValue(r, l, f, v, start)
-	if l.check != nil {
-		l.check(p, v)
-	}
-	return v
-}
-
-func (p *Parser) lineValue(r *Rule, l *OperatorsRuleLine, f *CaptureFrame, v *Node, start int) *Node {
-	if l.Action != nil {
-		c := p.useCtx(ActCtx{P: p, f: f, start: start, end: p.Pos, cbase: len(p.created)})
-		return c.result(l.Action, r.Name)
-	}
-	v = p.ScopeValue(l.Value, v, start)
-	if len(l.Scope) > 0 {
-		v = p.AttachCaptures(v, l.Scope, f, start, p.Pos)
-	}
-	if v != nil && v.RawFresh {
-		if p.sourceInfo && v.RawKind.rule == "" {
-			v.RawKind = r.kinds.named(v.RawKind, r.Name)
-		}
-		v.RawFresh = false
-	}
-	return v
-}
-
-// convertOperator converts v, the value of an operator of rule r, to the named node type of the
-// rule's operators.
-func (p *Parser) convertOperator(r *Rule, v *Node) *Node {
-	n, ok := r.opKinds.convert(UnboxNode(v))
-	if !ok {
-		panic(fatal{fmt.Errorf("cannot convert %s to %s in result of rule %s", typeName(UnboxNode(v)), r.OpNodeType, r.Name)})
-	}
-	return n
-}
-
-func (p *Parser) operatorsRuleBuild(r *Rule, a *operatorsRuleAttempt, lhs, rhs *Node) *Node {
-	if r.Novalue {
-		return nil
-	}
-	start, end := a.start, p.Pos
-	if lhs != nil {
-		start = int(lhs.RawStart)
-	}
-	if a.op.Kind == "postfix" {
-		end = a.end
-	}
-	l := a.op.Line
-	// The operator's value is its one element, or the node of its tuple, which has the line's
-	// captures.
-	opv, ok := p.ShapeSingle(l.Value, a.v, a.start)
-	if !ok {
-		opv = p.NewNode(Node{RawKind: RawKindSeq, RawStart: int32(a.start), RawEnd: int32(a.end)})
-	}
-	if l.Value.Mode == singleTuple && len(l.Scope) > 0 {
-		opv = p.AttachCaptures(opv, l.Scope, a.frame, a.start, a.end)
-	}
-	if opv != nil {
-		opv.RawFresh = false
-	}
-	if l.Action != nil {
-		c := p.useCtx(ActCtx{P: p, f: a.frame, start: start, end: end, cbase: len(p.created),
-			Op: UnboxNode(opv), Lhs: UnboxNode(lhs), Rhs: UnboxNode(rhs)})
-		v := c.result(l.Action, r.Name)
-		if l.check != nil {
-			l.check(p, v)
-		}
-		if r.opKinds != nil {
-			v = p.convertOperator(r, v)
-		}
-		return v
-	}
-	// Without an action, the application is the node of the tuple (lhs, op, rhs) of the line's
-	// kind, with those captures.
-	var kids []*Node
-	var fields Fields
-	switch a.op.Kind {
-	case "prefix":
-		kids = p.Nodes(2)
-		kids[0], kids[1] = opv, rhs
-		fields = Fields{{"op", nodeOrNil(opv)}, {"rhs", nodeOrNil(rhs)}}
-	case "postfix":
-		kids = p.Nodes(2)
-		kids[0], kids[1] = lhs, opv
-		fields = Fields{{"lhs", nodeOrNil(lhs)}, {"op", nodeOrNil(opv)}}
-	default:
-		kids = p.Nodes(3)
-		kids[0], kids[1], kids[2] = lhs, opv, rhs
-		fields = Fields{{"lhs", nodeOrNil(lhs)}, {"op", nodeOrNil(opv)}, {"rhs", nodeOrNil(rhs)}}
-	}
-	kind := RawKindSeq
-	if r.opKinds != nil && l.check == nil {
-		kind = r.opKinds[baseTuple] // made with the named node type of the operators
-	} else if p.sourceInfo {
-		kind = r.kinds.named(RawKindSeq, r.Name)
-	}
-	n := p.NewNode(Node{RawKind: kind, RawStart: int32(start), RawEnd: int32(end), RawChildren: kids, RawFields: fields, labeled: p.sourceInfo})
-	if l.check != nil {
-		// Without type checking, the tuple node is checked like an action's result.
-		l.check(p, n)
-		if r.opKinds != nil {
-			n = p.convertOperator(r, n)
-		}
-	}
-	return n
-}
-
-func rtUnaryWork(p *Parser, op string, x any) any {
-	switch op {
-	case "-":
-		if i, ok := x.(int); ok {
-			return -i
-		}
-	case "!":
-		if b, ok := x.(bool); ok {
-			return !b
-		}
-	}
-	p.evalErrorf("invalid operand %s for unary %s", typeName(x), op)
-	return nil
-}
-
-func rtBoolWork(p *Parser, op string, v any) bool {
-	b, ok := v.(bool)
-	if !ok {
-		p.evalErrorf("invalid operand %s for %s", typeName(v), op)
-	}
-	return b
-}
-
-func rtBinaryWork(p *Parser, op string, l, r any) any {
-	switch op {
-	case "==":
-		return rtEqual(l, r)
-	case "!=":
-		return !rtEqual(l, r)
-	case "[]":
-		items := listItemsWork(p, "[]", l)
-		return UnboxNode(items[rtIndex(p, r, len(items), typeName)])
-	}
-	switch l := l.(type) {
-	case int:
-		if r, ok := r.(int); ok {
-			switch op {
-			case "+":
-				return l + r
-			case "-":
-				return l - r
-			case "*":
-				return l * r
-			case "/", "%":
-				if r == 0 {
-					p.evalErrorf("division by zero")
-				}
-				if op == "/" {
-					return l / r
-				}
-				return l % r
-			case "<":
-				return l < r
-			case "<=":
-				return l <= r
-			case ">":
-				return l > r
-			case ">=":
-				return l >= r
-			}
-		}
-	case string:
-		if r, ok := r.(string); ok {
-			switch op {
-			case "+":
-				return l + r
-			case "<":
-				return l < r
-			case "<=":
-				return l <= r
-			case ">":
-				return l > r
-			case ">=":
-				return l >= r
-			}
-		}
-	}
-	p.evalErrorf("invalid operands %s and %s for %s", typeName(l), typeName(r), op)
-	return nil
-}
-
-func listItemsWork(p *Parser, fn string, v any) []*Node {
-	switch x := v.(type) {
-	case nil:
-		return nil
-	case *Node:
-		if x == nil {
-			return nil
-		}
-		return x.RawChildren
-	}
-	p.evalErrorf("%s: expected a list, got %s", fn, typeName(v))
-	return nil
-}
-
-func asNodeWork(p *Parser, fn string, v any) *Node {
-	switch x := v.(type) {
-	case nil:
-		return nil
-	case *Node:
-		return x
-	}
-	p.evalErrorf("%s: elements must be values, got %s", fn, typeName(v))
-	return nil
-}
-
-// --- Iterative tree API: node_json (mirrors internal/engine/node_json.go) ---
-
-type nodeJSONFrame struct {
-	value  any
-	fields Fields
-	caps   []captureLocation
-	index  int
-	phase  uint8
-	slice  nodeJSONSliceID
-	// closeSide reports that the value of a capture beside the tuple was written and its object
-	// needs closing.
-	closeSide bool
-}
-
-const (
-	nodeJSONEnter uint8 = iota
-	nodeJSONChildren
-	nodeJSONFieldsStart
-	nodeJSONFields
-	nodeJSONExit
-	nodeJSONSliceItems
-	nodeJSONCaptures
-)
-
-// writeJSONRange writes prefix and the members start and end of n.
-func writeJSONRange(out *jsonOutput, n *Node, prefix string) error {
-	if err := out.raw(prefix); err != nil {
-		return err
-	}
-	if err := out.number(n.RawStart); err != nil {
-		return err
-	}
-	if err := out.raw(`,"end":`); err != nil {
-		return err
-	}
-	return out.number(n.RawEnd)
-}
-
-type nodeJSONSliceID struct {
-	ptr uintptr
-	len int
-}
-
-// jsonOutput coalesces the small fragments of a node while preserving writer errors
-// and the already-written prefix when an unsupported value is encountered.
-type jsonOutput struct {
-	w   io.Writer
-	buf []byte
-}
-
-func (out *jsonOutput) flush() error {
-	if len(out.buf) == 0 {
-		return nil
-	}
-	if err := writeJSONBytes(out.w, out.buf); err != nil {
-		return err
-	}
-	out.buf = out.buf[:0]
-	return nil
-}
-
-func (out *jsonOutput) bytes(data []byte) error {
-	if len(out.buf)+len(data) > cap(out.buf) {
-		if err := out.flush(); err != nil {
-			return err
-		}
-	}
-	if len(data) > cap(out.buf) {
-		return writeJSONBytes(out.w, data)
-	}
-	out.buf = append(out.buf, data...)
-	return nil
-}
-
-func (out *jsonOutput) raw(s string) error {
-	if len(out.buf)+len(s) > cap(out.buf) {
-		if err := out.flush(); err != nil {
-			return err
-		}
-	}
-	out.buf = append(out.buf, s...)
-	return nil
-}
-
-func (out *jsonOutput) number(n int32) error {
-	if len(out.buf)+11 > cap(out.buf) {
-		if err := out.flush(); err != nil {
-			return err
-		}
-	}
-	out.buf = strconv.AppendInt(out.buf, int64(n), 10)
-	return nil
-}
-
-func (out *jsonOutput) encoded(value any) error {
-	data, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-	return out.bytes(data)
-}
-
-// writeJSONValue encodes PEGO nodes and []any values without recursive calls through their nested
-// edges. Other values are delegated to encoding/json, preserving its scalar and custom-marshaler
-// behavior. []byte intentionally stays in that fallback so it keeps encoding as base64.
-func writeJSONValue(w io.Writer, value any) error {
-	out := jsonOutput{w: w, buf: make([]byte, 0, 512)}
-	stack := []nodeJSONFrame{{value: value}}
-	activeNodes := make(map[*Node]struct{})
-	activeSlices := make(map[nodeJSONSliceID]struct{})
-	for len(stack) != 0 {
-		frame := &stack[len(stack)-1]
-		var err error
-		switch value := frame.value.(type) {
-		case *Node:
-			if value == nil {
-				err = out.raw("null")
-				stack = stack[:len(stack)-1]
-				break
-			}
-			switch frame.phase {
-			case nodeJSONEnter:
-				if _, ok := activeNodes[value]; ok {
-					err = jsonCycleError(value)
-					break
-				}
-				activeNodes[value] = struct{}{}
-				switch shape := value.shape(); shape {
-				case shapeBox:
-					// The box stands for its value.
-					delete(activeNodes, value)
-					stack[len(stack)-1] = nodeJSONFrame{value: value.box}
-				case shapeString, shapeTuple, shapeList:
-					prefix := `{"start":`
-					if value.RawKind.NodeType() {
-						// A node of a named node type names its type.
-						if err = out.raw(`{"type":`); err == nil {
-							err = out.encoded(value.Type())
-						}
-						prefix = `,"start":`
-					}
-					if err != nil {
-						break
-					}
-					if err = writeJSONRange(&out, value, prefix); err != nil {
-						break
-					}
-					if err = out.raw(`,"value":`); err != nil {
-						break
-					}
-					if shape == shapeString {
-						err = out.encoded(value.RawText)
-						frame.phase = nodeJSONFieldsStart
-						break
-					}
-					err = out.raw("[")
-					frame.phase = nodeJSONChildren
-				case shapeError:
-					if err = writeJSONRange(&out, value, `{"start":`); err != nil {
-						break
-					}
-					msg, _ := value.RawFields.Get("message")
-					if err = out.raw(`,"error":`); err == nil {
-						err = out.encoded(msg)
-					}
-					if expected, ok := value.RawFields.Get("expected"); ok && err == nil {
-						if err = out.raw(`,"expected":`); err == nil {
-							err = out.encoded(expected)
-						}
-					}
-					frame.phase = nodeJSONExit
-				case shapeTupleValue, shapeListValue:
-					err = out.raw("[")
-					frame.phase = nodeJSONSliceItems
-				default: // a struct
-					if err = out.raw(`{"type":`); err == nil {
-						err = out.encoded(value.Type())
-					}
-					if err == nil {
-						err = out.raw(`,"fields":{`)
-					}
-					frame.fields = value.RawFields.sorted()
-					frame.index = 0
-					frame.phase = nodeJSONFields
-				}
-			case nodeJSONChildren, nodeJSONSliceItems:
-				if frame.index < len(value.RawChildren) {
-					if frame.index != 0 {
-						if err = out.raw(","); err != nil {
-							break
-						}
-					}
-					child := value.RawChildren[frame.index]
-					frame.index++
-					stack = append(stack, nodeJSONFrame{value: child})
-					break
-				}
-				if err = out.raw("]"); err != nil {
-					break
-				}
-				if frame.phase == nodeJSONSliceItems {
-					delete(activeNodes, value)
-					stack = stack[:len(stack)-1]
-					break
-				}
-				frame.phase = nodeJSONFieldsStart
-			case nodeJSONFieldsStart:
-				// Source information: the rule, and where the captures are.
-				if r := value.Rule(); r != "" {
-					if err = out.raw(`,"rule":`); err != nil {
-						break
-					}
-					if err = out.encoded(r); err != nil {
-						break
-					}
-				}
-				frame.phase = nodeJSONExit
-				if !value.labeled || len(value.RawFields) == 0 {
-					break
-				}
-				frame.caps = captureLocations(value)
-				frame.index = 0
-				frame.phase = nodeJSONCaptures
-				err = out.raw(`,"captures":{`)
-			case nodeJSONCaptures:
-				if frame.closeSide {
-					frame.closeSide = false
-					if err = out.raw("}"); err != nil {
-						break
-					}
-				}
-				if frame.index == len(frame.caps) {
-					err = out.raw("}")
-					frame.phase = nodeJSONExit
-					break
-				}
-				c := frame.caps[frame.index]
-				if frame.index != 0 {
-					if err = out.raw(","); err != nil {
-						break
-					}
-				}
-				frame.index++
-				if err = out.encoded(c.name); err != nil {
-					break
-				}
-				if c.side {
-					if err = out.raw(`:{"value":`); err != nil {
-						break
-					}
-					frame.closeSide = true
-					stack = append(stack, nodeJSONFrame{value: c.value})
-					break
-				}
-				if err = out.raw(`:{"path":`); err == nil {
-					err = out.encoded(c.path)
-				}
-				if err == nil {
-					err = out.raw("}")
-				}
-			case nodeJSONFields:
-				if frame.index < len(frame.fields) {
-					if frame.index != 0 {
-						if err = out.raw(","); err != nil {
-							break
-						}
-					}
-					field := frame.fields[frame.index]
-					if err = out.encoded(field.Name); err != nil {
-						break
-					}
-					if err = out.raw(":"); err != nil {
-						break
-					}
-					frame.index++
-					stack = append(stack, nodeJSONFrame{value: field.Value})
-				} else {
-					if err = out.raw("}"); err != nil {
-						break
-					}
-					frame.phase = nodeJSONExit
-				}
-			case nodeJSONExit:
-				delete(activeNodes, value)
-				err = out.raw("}")
-				stack = stack[:len(stack)-1]
-			}
-		case []any:
-			if value == nil {
-				err = out.raw("null")
-				stack = stack[:len(stack)-1]
-				break
-			}
-			if frame.phase == nodeJSONEnter {
-				id := SliceIdentity(value)
-				if _, ok := activeSlices[id]; ok {
-					err = jsonCycleError(value)
-					break
-				}
-				activeSlices[id] = struct{}{}
-				frame.slice = id
-				frame.phase = nodeJSONSliceItems
-				err = out.raw("[")
-			} else if frame.index < len(value) {
-				if frame.index != 0 {
-					if err = out.raw(","); err != nil {
-						break
-					}
-				}
-				item := value[frame.index]
-				frame.index++
-				stack = append(stack, nodeJSONFrame{value: item})
-			} else {
-				delete(activeSlices, frame.slice)
-				err = out.raw("]")
-				stack = stack[:len(stack)-1]
-			}
-		default:
-			err = out.encoded(value)
-			stack = stack[:len(stack)-1]
-		}
-		if err != nil {
-			if flushErr := out.flush(); flushErr != nil {
-				return flushErr
-			}
-			return err
-		}
-	}
-	return out.flush()
-}
-
-func jsonCycleError(value any) error {
-	t := reflect.TypeOf(value)
-	return &json.UnsupportedValueError{Value: reflect.ValueOf(value), Str: fmt.Sprintf("encountered a cycle via %s", t)}
-}
-
-func writeJSONBytes(w io.Writer, data []byte) error {
-	n, err := w.Write(data)
-	if err != nil {
-		return err
-	}
-	if n != len(data) {
-		return io.ErrShortWrite
-	}
-	return nil
-}
-
-// WriteJSON writes the live node graph as JSON without recursive Node or []any traversal.
-// A nil receiver writes null. Shared edges are encoded separately; active-path cycles fail.
-// It does not close or flush w, and an error may leave a prefix written. Maps and other
-// containers delegate to encoding/json and are outside the iterative depth guarantee.
-// Callers must not mutate reachable values concurrently with this method.
-func (n *Node) WriteJSON(w io.Writer) error {
-	return writeJSONValue(w, n)
-}
-
-// SliceIdentity is for generated parsers; not a stable API.
-func SliceIdentity(value []any) nodeJSONSliceID {
-	return nodeJSONSliceID{ptr: reflect.ValueOf(value).Pointer(), len: len(value)}
-}
-
-// --- Iterative tree API: node_walk (mirrors internal/engine/node_walk.go) ---
-
-// WalkAction controls descent after a visit.
-type WalkAction uint8
-
-const (
-	WalkContinue WalkAction = iota
-	WalkSkip
-	WalkStop
-)
-
-// WalkEdgeKind identifies the incoming edge of a value.
-type WalkEdgeKind uint8
-
-const (
-	WalkRoot WalkEdgeKind = iota
-	WalkChild
-	WalkField
-	WalkListElement
-)
-
-// WalkEdge identifies an incoming edge. Only its Kind's index or name is meaningful.
-type WalkEdge struct {
-	Kind       WalkEdgeKind
-	ChildIndex int
-	FieldName  string
-	ListIndex  int
-}
-
-// WalkVisit describes a live value and its nearest owning node. Depth counts edges.
-// Node is populated only for non-nil *Node values; Value retains typed nil leaves.
-type WalkVisit struct {
-	Value  any
-	Node   *Node
-	Parent *Node
-	Depth  int
-	Edge   WalkEdge
-}
-
-// CycleError describes an active-path back-edge, including the root and failing edge.
-type CycleError struct{ Path []WalkEdge }
-
-func (e *CycleError) Error() string {
-	return fmt.Sprintf("pego: tree cycle at depth %d", len(e.Path)-1)
-}
-
-// WalkTask is for generated parsers; not a stable API.
-type WalkTask struct {
-	Visit    WalkVisit
-	Exit     bool
-	Identity any
-}
-
-// Walk visits the root, then children in slice order, then fields in sorted name order.
-// Nested []any values are visited in index order. Other containers are leaves. Shared
-// nodes and lists are visited per edge; only cycles on the active path are rejected.
-// Callback errors return unchanged; Stop succeeds; Skip omits the value's descendants.
-// The graph must not be mutated concurrently. Walk does not mutate or retain it.
-func WalkTree(root *Node, visit func(WalkVisit) (WalkAction, error)) error {
-	if visit == nil {
-		return fmt.Errorf("pego: nil walk callback")
-	}
-	var value any = root
-	if root == nil {
-		value = nil
-	}
-	stack := []WalkTask{{Visit: WalkVisit{Value: value, Node: root, Edge: WalkEdge{Kind: WalkRoot}}}}
-	active := make(map[any]bool)
-	var path []WalkEdge
-	for len(stack) > 0 {
-		t := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-		if t.Exit {
-			delete(active, t.Identity)
-			path = path[:len(path)-1]
-			continue
-		}
-		v := t.Visit
-		var identity any
-		switch x := v.Value.(type) {
-		case *Node:
-			if x != nil {
-				identity = x
-				v.Node = x
-			}
-		case []any:
-			if len(x) > 0 {
-				identity = SliceIdentity(x)
-			}
-		}
-		if identity != nil && active[identity] {
-			p := append([]WalkEdge(nil), path...)
-			return &CycleError{Path: append(p, v.Edge)}
-		}
-		action, err := visit(v)
-		if err != nil {
-			return err
-		}
-		switch action {
-		case WalkStop:
-			return nil
-		case WalkSkip:
-			continue
-		case WalkContinue:
-		default:
-			return fmt.Errorf("pego: invalid walk action %d", action)
-		}
-		if identity == nil {
-			continue
-		}
-		active[identity] = true
-		path = append(path, v.Edge)
-		stack = append(stack, WalkTask{Exit: true, Identity: identity})
-		push := func(value any, parent *Node, edge WalkEdge) {
-			stack = append(stack, WalkTask{Visit: WalkVisit{Value: value, Parent: parent, Depth: v.Depth + 1, Edge: edge}})
-		}
-		switch x := v.Value.(type) {
-		case *Node:
-			fields := WalkFields(x)
-			for i := len(fields) - 1; i >= 0; i-- {
-				push(fields[i].Value, x, WalkEdge{Kind: WalkField, FieldName: fields[i].Name})
-			}
-			for i := len(x.RawChildren) - 1; i >= 0; i-- {
-				push(x.RawChildren[i], x, WalkEdge{Kind: WalkChild, ChildIndex: i})
-			}
-		case []any:
-			for i := len(x) - 1; i >= 0; i-- {
-				push(x[i], v.Parent, WalkEdge{Kind: WalkListElement, ListIndex: i})
-			}
-		}
-	}
-	return nil
-}
-
-// --- Iterative tree API: node_cursor (mirrors internal/engine/node_cursor.go) ---
-
-// Cursor filters edge-oriented node visits using spans in Unit. Unit must match
-// the parse that populated Root's positions; it is never inferred or converted.
-// Parent spans do not prune traversal. Scalar and list values have no spans.
-type Cursor struct {
-	Root *Node
-	Unit PositionUnit
-}
-
-func (c Cursor) validate(start, end int32) error {
-	if c.Unit != CodePoints && c.Unit != Bytes {
-		return fmt.Errorf("pego: invalid cursor unit %d", c.Unit)
-	}
-	if start < 0 || end < start {
-		return fmt.Errorf("pego: invalid cursor range [%d,%d)", start, end)
-	}
-	return nil
-}
-
-// At visits nodes containing position, including zero-width nodes at position.
-func (c Cursor) At(position int32, visit func(WalkVisit) (WalkAction, error)) error {
-	if err := c.validate(position, position); err != nil {
-		return err
-	}
-	return c.filter(visit, func(n *Node) bool {
-		return n.RawStart == n.RawEnd && n.RawStart == position || n.RawStart <= position && position < n.RawEnd
-	})
-}
-
-// Range visits nodes overlapping [start,end). An empty range matches no nodes.
-// Zero-width nodes match when start <= node.Start < end.
-func (c Cursor) Range(start, end int32, visit func(WalkVisit) (WalkAction, error)) error {
-	if err := c.validate(start, end); err != nil {
-		return err
-	}
-	return c.filter(visit, func(n *Node) bool {
-		if start == end {
-			return false
-		}
-		if n.RawStart == n.RawEnd {
-			return start <= n.RawStart && n.RawStart < end
-		}
-		return n.RawStart < end && start < n.RawEnd
-	})
-}
-
-func (c Cursor) filter(visit func(WalkVisit) (WalkAction, error), matches func(*Node) bool) error {
-	if visit == nil {
-		return fmt.Errorf("pego: nil cursor callback")
-	}
-	return WalkTree(c.Root, func(v WalkVisit) (WalkAction, error) {
-		if v.Node != nil && matches(v.Node) {
-			return visit(v)
-		}
-		return WalkContinue, nil
-	})
-}
-
-// --- Rule tracing (not generated) ---
-
-type observeOptions struct{}
-
-// Of its fields and methods, Enter, Evaluated, Exit, Skipped are for generated parsers; not a stable API.
-type observation struct{}
-
-type tracePanic struct{ value any }
-
-func newObservation(*observeOptions) *observation { return nil }
-
-func (o *observation) Enter(string, int, int)    {}
-func (o *observation) Exit(bool, int, int, bool) {}
-func (o *observation) Evaluated()                {}
-func (o *observation) memoHit()                  {}
-func (o *observation) dropDiscarded(int)         {}
-func (o *observation) release()                  {}
-
-// --- Invocation work controls ---
-
-// WorkLimits bounds cumulative engine work for one parse invocation. A zero
-// limit leaves that counter unlimited.
-type WorkLimits struct {
-	MaxInputWork uint64
-	MaxSteps     uint64
-}
-
-// ErrWorkLimit is matched by errors.Is for any WorkLimitError.
-var ErrWorkLimit = errors.New("parse work limit exceeded")
-
-// WorkLimitKind identifies the counter that exhausted its limit.
-type WorkLimitKind uint8
-
-const (
-	InputWorkLimit WorkLimitKind = iota
-	StepWorkLimit
-)
-
-// WorkLimitError reports a reservation that would exceed one work limit.
-// Used is the counter value before the rejected reservation; Requested is the
-// complete atomic reservation that could not be made.
-type WorkLimitError struct {
-	Kind      WorkLimitKind
-	Limit     uint64
-	Used      uint64
-	Requested uint64
-}
-
-func (e *WorkLimitError) Error() string {
-	if e == nil {
-		return ErrWorkLimit.Error()
-	}
-	name := "input work"
-	if e.Kind == StepWorkLimit {
-		name = "steps"
-	}
-	return fmt.Sprintf("parse %s limit exceeded: limit %d, used %d, requested %d", name, e.Limit, e.Used, e.Requested)
-}
-
-// Is reports whether target is the work-limit sentinel.
-func (e *WorkLimitError) Is(target error) bool { return e != nil && target == ErrWorkLimit }
-
-// WorkControlsEnabled is for generated parsers; not a stable API.
-const WorkControlsEnabled = true
-
-const (
-	workCheckStepInterval  = uint64(256)
-	workCheckInputInterval = uint64(4096)
-)
-
-// WorkControl is private state for a single parser invocation. Callers must
-// split long operations into bounded reservations so cancellation can be
-// observed between chunks.
-//
-// WorkControl is for generated parsers; not a stable API.
-type WorkControl struct {
-	ctx    context.Context
-	limits WorkLimits
-
-	// The units reserved are inputBase and stepsBase, which the slow path of
-	// charge keeps, plus what the fast path reserved since (inputUsed,
-	// stepsUsed). inputRoom and stepsRoom are the units the fast path can still
-	// reserve without reaching a poll boundary or exceeding a limit, out of the
-	// inputGrant and stepsGrant that refill computed, so that the common charge
-	// is two subtractions that inline into the matchers.
-	inputBase, stepsBase   uint64
-	inputGrant, stepsGrant uint64
-	inputRoom, stepsRoom   uint64
-
-	inputSinceCheck uint64
-	stepsSinceCheck uint64
-	interrupted     bool // distinguishes work interruptions from ordinary parse errors
-}
-
-// newWorkControl returns nil when neither cancellation nor a finite budget is
-// active. A nil context is equivalent to context.Background.
-func newWorkControl(ctx context.Context, limits WorkLimits) *WorkControl {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	if ctx.Done() == nil && limits.MaxInputWork == 0 && limits.MaxSteps == 0 {
-		return nil
-	}
-	c := &WorkControl{ctx: ctx, limits: limits}
-	c.refill()
-	return c
-}
-
-// inputUsed and stepsUsed return the input-work and step units reserved so far.
-func (c *WorkControl) inputUsed() uint64 { return c.inputBase + (c.inputGrant - c.inputRoom) }
-func (c *WorkControl) stepsUsed() uint64 { return c.stepsBase + (c.stepsGrant - c.stepsRoom) }
-
-// settle moves what the fast path of charge reserved into the bases and the
-// poll counters, leaving no room.
-func (c *WorkControl) settle() {
-	in, steps := c.inputGrant-c.inputRoom, c.stepsGrant-c.stepsRoom
-	c.inputBase, c.stepsBase = c.inputBase+in, c.stepsBase+steps
-	c.inputSinceCheck, c.stepsSinceCheck = c.inputSinceCheck+in, c.stepsSinceCheck+steps
-	c.inputGrant, c.stepsGrant, c.inputRoom, c.stepsRoom = 0, 0, 0, 0
-}
-
-// refill grants the fast path of charge the room left by the settled counters.
-func (c *WorkControl) refill() {
-	c.inputGrant = workRoom(c.inputBase, c.inputSinceCheck, c.limits.MaxInputWork, workCheckInputInterval)
-	c.stepsGrant = workRoom(c.stepsBase, c.stepsSinceCheck, c.limits.MaxSteps, workCheckStepInterval)
-	c.inputRoom, c.stepsRoom = c.inputGrant, c.stepsGrant
-}
-
-// workRoom returns the smallest request that reaches the poll interval
-// (reachesInterval) or exceeds the limit (exceedsLimit).
-func workRoom(used, since, limit, interval uint64) uint64 {
-	var room uint64
-	if since < interval {
-		room = interval - since
-	}
-	if limit != 0 {
-		if used > limit {
-			return 0
-		}
-		if l := limit - used + 1; l != 0 && l < room {
-			room = l
-		}
-	}
-	return room
-}
-
-// contextPanic attributes a panic to caller-owned context code rather than VM
-// execution. Parse boundaries re-raise its original value after cleanup.
-type contextPanic struct{ value any }
-
-func contextErr(ctx context.Context) error {
-	defer func() {
-		if x := recover(); x != nil {
-			switch x.(type) {
-			case fatal, contextPanic:
-				panic(x) // preserve engine interruption and an already attributed panic
-			default:
-				panic(contextPanic{value: x})
-			}
-		}
-	}()
-	return ctx.Err()
-}
-
-// Check observes cancellation at an explicit engine checkpoint. It is safe on
-// a nil receiver.
-func (c *WorkControl) Check() {
-	if c == nil || c.ctx == nil {
-		return
-	}
-	if err := contextErr(c.ctx); err != nil {
-		c.interrupted = true
-		panic(fatal{err: err})
-	}
-	c.settle()
-	c.inputSinceCheck = 0
-	c.stepsSinceCheck = 0
-	c.refill()
-}
-
-// Charge atomically reserves input-work and step units. Cancellation wins when
-// it is observed at a poll or when either reservation would fail; otherwise
-// input-work exhaustion takes priority over step exhaustion. A failed
-// reservation leaves both counters unchanged.
-func (c *WorkControl) Charge(inputWork, steps uint64) {
-	if c != nil && inputWork < c.inputRoom && steps < c.stepsRoom {
-		c.inputRoom -= inputWork
-		c.stepsRoom -= steps
-		return
-	}
-	c.chargeSlow(inputWork, steps)
-}
-
-// chargeInput is charge(n, 1), and chargeStep is charge(0, 1), for the
-// matchers and rule calls. c must not be nil in chargeInput; chargeStep does
-// nothing on a nil receiver. chargeStep need not test inputRoom: outside
-// chargeSlow it is at least 1, which is the room of a request of no input.
-func (c *WorkControl) chargeInput(n uint64) {
-	if n < c.inputRoom && c.stepsRoom > 1 {
-		c.inputRoom -= n
-		c.stepsRoom--
-	} else {
-		c.chargeSlow(n, 1)
-	}
-}
-
-func (c *WorkControl) chargeStep() {
-	if c == nil {
-		return
-	}
-	if c.stepsRoom > 1 {
-		c.stepsRoom--
-	} else {
-		c.chargeSlow(0, 1)
-	}
-}
-
-// chargeSlow is charge at a poll boundary or a limit, or on a nil receiver.
-func (c *WorkControl) chargeSlow(inputWork, steps uint64) {
-	if c == nil {
-		return
-	}
-	c.settle()
-
-	inputExceeded := exceedsLimit(c.inputBase, inputWork, c.limits.MaxInputWork)
-	stepsExceeded := exceedsLimit(c.stepsBase, steps, c.limits.MaxSteps)
-	poll := reachesInterval(c.inputSinceCheck, inputWork, workCheckInputInterval) ||
-		reachesInterval(c.stepsSinceCheck, steps, workCheckStepInterval)
-
-	// Check on each poll boundary and on a failed reservation so an already
-	// canceled invocation wins over a simultaneously exhausted budget.
-	if poll || inputExceeded || stepsExceeded {
-		if c.ctx != nil {
-			if err := contextErr(c.ctx); err != nil {
-				c.interrupted = true
-				panic(fatal{err: err})
-			}
-		}
-	}
-	if inputExceeded {
-		c.interrupted = true
-		panic(fatal{err: &WorkLimitError{
-			Kind: InputWorkLimit, Limit: c.limits.MaxInputWork,
-			Used: c.inputBase, Requested: inputWork,
-		}})
-	}
-	if stepsExceeded {
-		c.interrupted = true
-		panic(fatal{err: &WorkLimitError{
-			Kind: StepWorkLimit, Limit: c.limits.MaxSteps,
-			Used: c.stepsBase, Requested: steps,
-		}})
-	}
-
-	c.inputBase = saturatingAdd(c.inputBase, inputWork)
-	c.stepsBase = saturatingAdd(c.stepsBase, steps)
-	if poll {
-		c.inputSinceCheck = 0
-		c.stepsSinceCheck = 0
-	} else {
-		c.inputSinceCheck = saturatingAdd(c.inputSinceCheck, inputWork)
-		c.stepsSinceCheck = saturatingAdd(c.stepsSinceCheck, steps)
-	}
-	c.refill()
-}
-
-// exceedsLimit checks a reservation without computing a potentially
-// overflowing used+requested sum. A zero limit is unlimited.
-func exceedsLimit(used, requested, limit uint64) bool {
-	return limit != 0 && (used > limit || requested > limit-used)
-}
-
-// reachesInterval checks whether adding requested would meet or cross interval
-// without overflowing. Progress counters are kept below their interval.
-func reachesInterval(used, requested, interval uint64) bool {
-	return used >= interval || requested >= interval-used
-}
-
-func saturatingAdd(a, b uint64) uint64 {
-	if math.MaxUint64-a < b {
-		return math.MaxUint64
-	}
-	return a + b
-}
-
-// Work helpers keep long engine-owned scans between bounded reservations.
-//
-// InputWork has one guarded call so that it inlines into the matchers.
-func (p *Parser) InputWork(n uint64) {
-	if p.Document != nil {
-		p.inputWorkTracked(n)
-	} else if WorkControlsEnabled && p.Control != nil {
-		p.Control.chargeInput(n)
-	}
-}
-
-// inputWorkOrdinary is InputWork in an ordinary parse (ExpectOrdinary), which tracks no input.
-func (p *Parser) inputWorkOrdinary(uint64) {}
-
-// inputWorkTracked is InputWork in a Document or controlled parse.
-func (p *Parser) inputWorkTracked(n uint64) {
-	if p.Document != nil {
-		// Generated matchers can read directly after charging input work.
-		// Overestimating the dependency only discards a reusable memo entry.
-		if n > uint64(int(^uint(0)>>1)-p.Pos) {
-			p.documentTouch(int(^uint(0) >> 1))
-		} else {
-			p.documentTouch(p.Pos + int(n))
-		}
-	}
-	if WorkControlsEnabled && p.Control != nil {
-		p.Control.Charge(n, 1)
-	}
-}
-func (p *Parser) StepWork() {
-	p.Control.chargeStep()
-}
-
-func (p *Parser) setControlledSource(s string) {
-	n, valid := 0, len(s) <= 1<<31-1
-	// Outside a Document, charge the control directly: InputWork is too large to inline.
-	c := p.Control
-	if p.Document != nil {
-		c = nil
-	}
-	for off := 0; off < len(s); {
-		if w := uint64(min(utf8.UTFMax, len(s)-off)); c != nil {
-			c.chargeInput(w)
-		} else {
-			p.InputWork(w)
-		}
-		r, size := utf8.DecodeRuneInString(s[off:])
-		if r == utf8.RuneError && size == 1 {
-			valid = false
-		}
-		n++
-		off += size
-	}
-	if cap(p.In) >= n {
-		p.In = p.In[:n]
-	} else {
-		p.In = make([]rune, n)
-	}
-	p.n = n
-	var offs []int32
-	if valid {
-		if cap(p.offs) >= n+1 {
-			offs = p.offs[:n+1]
-		} else {
-			offs = make([]int32, n+1)
-		}
-		offs[n] = int32(len(s))
-	}
-	for off, i := 0, 0; off < len(s); i++ {
-		p.InputWork(uint64(min(utf8.UTFMax, len(s)-off)))
-		r, size := utf8.DecodeRuneInString(s[off:])
-		p.In[i] = r
-		if valid {
-			offs[i] = int32(off)
-		}
-		off += size
-	}
-	p.src, p.offs = "", nil
-	if valid {
-		p.src, p.offs = s, offs
-	}
-}
-
-func (p *Parser) literalHasReplacement(rs []rune) bool {
-	if !WorkControlsEnabled || p.Control == nil {
-		return slices.Contains(rs, utf8.RuneError)
-	}
-	for _, r := range rs {
-		p.StepWork()
-		if r == utf8.RuneError {
-			return true
-		}
-	}
-	return false
-}
-
-func (p *Parser) hasLiteralPrefix(text string) bool {
-	src := p.bs[p.Pos:]
-	if !WorkControlsEnabled || p.Control == nil {
-		return strings.HasPrefix(src, text)
-	}
-	if len(src) < len(text) {
-		p.InputWork(1)
-		return false
-	}
-	for off := 0; off < len(text); {
-		n := min(4096, len(text)-off)
-		p.InputWork(uint64(n))
-		if src[off:off+n] != text[off:off+n] {
-			return false
-		}
-		off += n
-	}
-	return true
-}
-
-// RunParseConverted shares admission and counters with a Node-to-typed converter.
-//
-// RunParseConverted is for generated parsers; not a stable API.
-func RunParseConverted[T any](r *Rule, input string, o parseOptions, conv func(*Node, *WorkControl, error) T) (res T, err error) {
-	defer recoverParse(&res, &err)
-	o = prepareOptions(o)
-	n, err := parseConversionInput(r, input, o)
-	o.control.Check()
-	res = conv(n, o.control, err)
-	o.control.Check()
-	return res, err
-}
-
-// Ordinary runtime/depth errors retain the configured ParseAST converter's
-// historical nil mapping. Work interruptions bypass conversion without calling
-// methods on a caller-owned error to classify it.
-func parseConversionInput(r *Rule, input string, o parseOptions) (n *Node, err error) {
-	defer func() {
-		if x := recover(); x != nil {
-			if f, ok := x.(fatal); ok && (o.control == nil || !o.control.interrupted) {
-				n, err = nil, f.err
-			} else {
-				panic(x)
-			}
-		}
-	}()
-	return parseResolvedWork(r, input, o)
-}
-
-// WorkRange is for generated parsers; not a stable API.
-type WorkRange struct{ lo, hi rune }
-
-func (p *Parser) RejectWorkClass(ch rune, ranges []WorkRange, negated bool) bool {
-	for _, r := range ranges {
-		p.StepWork()
-		if ch >= r.lo && ch <= r.hi {
-			return negated
-		}
-	}
-	return !negated
-}
-
-// Value strings may be action-created, so their scans consume steps alone.
-const valueWorkChunk = 128
-
-func (p *Parser) valueWork(n int) {
-	if WorkControlsEnabled && p.Control != nil {
-		p.Control.Charge(0, uint64(n))
-	}
-}
-
-func (p *Parser) compareText(l, r string) int {
-	if !WorkControlsEnabled || p.Control == nil {
-		return strings.Compare(l, r)
-	}
-	for off, end := 0, min(len(l), len(r)); off < end; {
-		n := min(valueWorkChunk, end-off)
-		p.valueWork(2 * n)
-		if order := strings.Compare(l[off:off+n], r[off:off+n]); order != 0 {
-			return order
-		}
-		off += n
-	}
-	if len(l) < len(r) {
-		return -1
-	}
-	if len(l) > len(r) {
-		return 1
-	}
-	return 0
-}
-
-func (p *Parser) TextEqual(l, r string) bool {
-	return len(l) == len(r) && p.compareText(l, r) == 0
-}
-
-// stringBinary handles only string pairs; callers retain their existing
-// runtime's scalar, pointer-identity and invalid-operand behavior.
-func (p *Parser) stringBinary(op string, l, r any) (any, bool) {
-	if !WorkControlsEnabled || p.Control == nil {
-		return nil, false
-	}
-	ls, lok := l.(string)
-	rs, rok := r.(string)
-	if !lok || !rok {
-		return nil, false
-	}
-	switch op {
-	case "==":
-		return p.TextEqual(ls, rs), true
-	case "!=":
-		return !p.TextEqual(ls, rs), true
-	case "<":
-		return p.compareText(ls, rs) < 0, true
-	case "<=":
-		return p.compareText(ls, rs) <= 0, true
-	case ">":
-		return p.compareText(ls, rs) > 0, true
-	case ">=":
-		return p.compareText(ls, rs) >= 0, true
-	case "+":
-		var out strings.Builder
-		out.Grow(checkedTextSize(len(ls), len(rs)))
-		for _, s := range [...]string{ls, rs} {
-			for off := 0; off < len(s); {
-				n := min(valueWorkChunk, len(s)-off)
-				p.valueWork(n)
-				out.WriteString(s[off : off+n])
-				off += n
-			}
-		}
-		return out.String(), true
-	}
-	return nil, false
-}
-
-// compareStrings applies the comparison operator op to two strings as stringBinary does.
-func (p *Parser) compareStrings(op string, l, r string) (bool, bool) {
-	switch op {
-	case "==":
-		return p.TextEqual(l, r), true
-	case "!=":
-		return !p.TextEqual(l, r), true
-	case "<":
-		return p.compareText(l, r) < 0, true
-	case "<=":
-		return p.compareText(l, r) <= 0, true
-	case ">":
-		return p.compareText(l, r) > 0, true
-	case ">=":
-		return p.compareText(l, r) >= 0, true
-	}
-	return false, false
-}
-
-func (c *ActCtx) Binary(op string, l, r any) any {
-	if v, ok := c.P.stringBinary(op, l, r); ok {
-		return v
-	}
-	if WorkControlsEnabled && c.P.Control != nil {
-		return rtBinaryWork(c.P, op, l, r)
-	}
-	return rtBinary(op, l, r)
-}
-
-// detachedText constructs normalized text when malformed source bytes prevent
-// slicing the original string. Allocation and Grow remain nonpreemptible.
-func (p *Parser) detachedText(start, end int) string {
-	src := p.In[start:end]
-	size := 0
-	for off := 0; off < len(src); {
-		n := min(valueWorkChunk, len(src)-off)
-		p.Control.Charge(uint64(n), uint64(n))
-		for _, r := range src[off : off+n] {
-			width := utf8.RuneLen(r)
-			if width < 0 {
-				width = utf8.RuneLen(utf8.RuneError)
-			}
-			size = checkedTextSize(size, width)
-		}
-		off += n
-	}
-	var out strings.Builder
-	out.Grow(size)
-	for off := 0; off < len(src); {
-		n := min(valueWorkChunk, len(src)-off)
-		p.Control.Charge(uint64(n), uint64(n))
-		for _, r := range src[off : off+n] {
-			out.WriteRune(r)
-		}
-		off += n
-	}
-	return out.String()
-}
-
-func checkedTextSize(size, width int) int {
-	if size < 0 || width < 0 || size > int(^uint(0)>>1)-width {
-		panic(fatal{err: fmt.Errorf("input text exceeds maximum string size")})
-	}
-	return size + width
-}
-
-func copyWork[T any](p *Parser, dst, src []T) {
-	if !WorkControlsEnabled || p.Control == nil {
-		copy(dst, src)
-		return
-	}
-	// Engine callers use disjoint storage; overlapping moves need their own
-	// direction-aware implementation rather than a chunked forward copy.
-	for off, end := 0, min(len(dst), len(src)); off < end; {
-		n := min(valueWorkChunk, end-off)
-		p.valueWork(n)
-		copy(dst[off:off+n], src[off:off+n])
-		off += n
-	}
-}
-
-// growWork bounds the explicit copy of existing values when capacity must
-// grow. Allocation and runtime zeroing remain nonpreemptible intervals.
-func growWork[T any](p *Parser, values []T, extra int) []T {
-	if !WorkControlsEnabled || p.Control == nil {
-		return slices.Grow(values, extra)
-	}
-	if extra < 0 {
-		return slices.Grow(values, extra) // reject negative growth before spare-capacity checks
-	}
-	if extra <= cap(values)-len(values) {
-		return values
-	}
-	maxInt := int(^uint(0) >> 1)
-	if extra > maxInt-len(values) {
-		return slices.Grow(values, extra) // preserve the library's invalid-size panic
-	}
-	capacity := len(values) + extra
-	if cap(values) <= maxInt/2 {
-		// Keep repeated single-element additions amortized; allocating only
-		// the exact new length would repeatedly copy the accumulated prefix.
-		capacity = max(capacity, 2*cap(values))
-	}
-	out := make([]T, len(values), capacity)
-	copyWork(p, out, values)
-	return out
-}
-
-func appendWork[T any](p *Parser, dst, src []T) []T {
-	if !WorkControlsEnabled || p.Control == nil {
-		return append(dst, src...)
-	}
-	for off := 0; off < len(src); {
-		n := min(valueWorkChunk, len(src)-off)
-		p.valueWork(n)
-		dst = append(dst, src[off:off+n]...)
-		off += n
-	}
-	return dst
-}
-
-// equalExpected preserves the native snapshot-identity fast path while charging
-// each comparison under active work controls. Snapshots are never modified.
-func (p *Parser) equalExpected(a, b []ExpID) bool {
-	if !WorkControlsEnabled || p.Control == nil {
-		return slices.Equal(a, b)
-	}
-	if len(a) != len(b) {
-		return false
-	}
-	for i, x := range a {
-		p.StepWork()
-		if x != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
-// sortExpected sorts a newly constructed, parser-owned diagnostic. Comparisons
-// and explicit moves are bounded; allocation and GC remain nonpreemptible.
-// Published or memoized errors must never be passed to this helper.
-func (p *Parser) sortExpected(values []string) {
-	if !WorkControlsEnabled || p.Control == nil {
-		sort.Strings(values)
-		return
-	}
-	if len(values) < 2 {
-		return
-	}
-	src, dst := values, make([]string, len(values))
-	for width := 1; width < len(values); {
-		for lo := 0; lo < len(values); {
-			mid := lo + min(width, len(values)-lo)
-			hi := mid + min(width, len(values)-mid)
-			i, j, k := lo, mid, lo
-			for i < mid && j < hi {
-				order := p.compareText(src[i], src[j])
-				p.StepWork()
-				if order <= 0 {
-					dst[k] = src[i]
-					i++
-				} else {
-					dst[k] = src[j]
-					j++
-				}
-				k++
-			}
-			copyWork(p, dst[k:k+mid-i], src[i:mid])
-			k += mid - i
-			copyWork(p, dst[k:hi], src[j:hi])
-			lo = hi
-		}
-		src, dst = dst, src
-		// Stop before doubling can overflow; this pass merged the last run.
-		if width >= len(values)-width {
-			break
-		}
-		width *= 2
-	}
-	if &src[0] != &values[0] {
-		copyWork(p, values, src)
-	}
-}
-
-// RecoveryErrorText is only for engine-owned Error-node materialization.
-// Public post-return Error/Message calls remain caller work. The local builder
-// owns its immutable output and is never pooled or written after return.
-func (p *Parser) RecoveryErrorText(e *SyntaxError) string {
-	if !WorkControlsEnabled || p.Control == nil {
-		return e.Error()
-	}
-	prefix := fmt.Sprintf("%d:%d: ", e.Line, e.Col) // bounded integer formatting
-	intro, sep := "", "; "
-	parts := e.Messages
-	if len(parts) == 0 {
-		parts, sep = e.Expected, ", "
-		intro = "syntax error"
-		if len(parts) > 0 {
-			intro += ": expected "
-		}
-	}
-	size := checkedDiagnosticSize(len(prefix), len(intro))
-	for i, part := range parts {
-		p.StepWork()
-		if i > 0 {
-			size = checkedDiagnosticSize(size, len(sep))
-		}
-		size = checkedDiagnosticSize(size, len(part))
-	}
-	var out strings.Builder
-	out.Grow(size)
-	p.writeDiagnosticText(&out, prefix)
-	p.writeDiagnosticText(&out, intro)
-	for i, part := range parts {
-		p.StepWork()
-		if i > 0 {
-			p.writeDiagnosticText(&out, sep)
-		}
-		p.writeDiagnosticText(&out, part)
-	}
-	return out.String()
-}
-
-func (p *Parser) writeDiagnosticText(out *strings.Builder, text string) {
-	for off := 0; off < len(text); {
-		n := min(valueWorkChunk, len(text)-off)
-		p.valueWork(n)
-		out.WriteString(text[off : off+n])
-		off += n
-	}
-}
-
-func checkedDiagnosticSize(size, width int) int {
-	if size < 0 || width < 0 || size > int(^uint(0)>>1)-width {
-		panic(fatal{err: fmt.Errorf("diagnostic text exceeds maximum string size")})
-	}
-	return size + width
-}
-
-// makeControlledError owns any partially assembled diagnostic until completion.
-// Interrupted invocations release their partial line table with parser scratch.
-func (p *Parser) makeControlledError(pos int, expected []ExpID) *SyntaxError {
-	e := &SyntaxError{Pos: pos}
-	for _, x := range expected {
-		p.StepWork()
-		if x&MsgBit != 0 {
-			e.Messages = append(e.Messages, p.g.Descs[x & ^MsgBit])
-		} else {
-			e.Expected = append(e.Expected, p.g.Descs[x])
-		}
-	}
-	p.sortExpected(e.Expected)
-	if p.lines == nil {
-		p.lines = append(p.lines, 0)
-		for i := 0; i < p.n; i++ {
-			p.InputWork(1)
-			if p.unit == Bytes && p.bs[i] == '\n' || p.unit == CodePoints && p.In[i] == '\n' {
-				p.lines = append(p.lines, i+1)
-			}
-		}
-	}
-	pos = min(pos, p.n)
-	lo, hi := 0, len(p.lines)
-	for lo < hi {
-		p.StepWork()
-		mid := lo + (hi-lo)/2
-		if p.lines[mid] < pos+1 {
-			lo = mid + 1
-		} else {
-			hi = mid
-		}
-	}
-	e.Line, e.Col = lo, pos-p.lines[lo-1]+1
-	p.Control.Check()
-	return e
-}
-
-func (p *Parser) copyErrors(dst, src []*SyntaxError) []*SyntaxError { return appendWork(p, dst, src) }
-
-// rawValueEqual preserves the interface equality of memo keys and bindings.
-// In particular, a typed nil pointer differs from a nil interface. Action
-// valueEqual has different nil semantics and must not be used for these keys.
-func (p *Parser) rawValueEqual(l, r any) bool {
-	if s, ok := l.(string); ok {
-		t, ok := r.(string)
-		return ok && len(s) == len(t) && p.compareText(s, t) == 0
-	}
-	return l == r
-}
-
-func (p *Parser) memoKeyEqual(l, r []any) bool {
-	if len(l) != len(r) {
-		return false
-	}
-	for i, v := range l {
-		p.StepWork()
-		if !p.rawValueEqual(v, r[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-func (p *Parser) bindControlled(name string, val any) {
-	p.StepWork()
-	e := p.Env
-	if p.bound == nil {
-		p.bound = make(map[string]bool)
-	}
-	if e == nil {
-		p.bound[name] = true
-		p.Env = &Env{name: name, val: val}
-		return
-	}
-	if p.rawValueEqual(e.name, name) {
-		if !p.rawValueEqual(e.val, val) {
-			p.Env = &Env{name: name, val: val, next: e.next}
-		}
-		return
-	}
-	// Map hashing and allocation are runtime operations that cannot be split
-	// into engine checkpoints. Explicit name comparisons above/below can be.
-	if !p.bound[name] {
-		p.bound[name] = true
-		p.Env = &Env{name: name, val: val, next: e}
-		return
-	}
-	old := e
-	for old != nil {
-		p.StepWork()
-		if p.rawValueEqual(old.name, name) {
-			break
-		}
-		old = old.next
-	}
-	if old == nil {
-		p.Env = &Env{name: name, val: val, next: e}
-		return
-	}
-	if p.rawValueEqual(old.val, val) {
-		return
-	}
-	head := &Env{name: name, val: val}
-	tail := head
-	for cur := e; cur != old; cur = cur.next {
-		p.StepWork()
-		tail.next = &Env{name: cur.name, val: cur.val}
-		tail = tail.next
-	}
-	tail.next = old.next
-	// Saved environments are immutable; only publish a completed prefix.
-	p.Env = head
-}
-
-func clearWork[T any](p *Parser, values []T) {
-	if !WorkControlsEnabled || p.Control == nil {
-		clear(values)
-		return
-	}
-	for off := 0; off < len(values); {
-		n := min(valueWorkChunk, len(values)-off)
-		p.valueWork(n)
-		clear(values[off : off+n])
-		off += n
-	}
-}
-
-func (p *Parser) controlledEnvValues(names []string) []any {
-	p.StepWork()
-	if len(names) == 0 {
-		return nil
-	}
-	if p.Env == nil && len(names) <= len(noVals) {
-		return noVals[:len(names):len(names)]
-	}
-	vals := make([]any, len(names))
-	for i, name := range names {
-		p.StepWork()
-		for e := p.Env; e != nil; e = e.next {
-			p.StepWork()
-			if p.rawValueEqual(e.name, name) {
-				vals[i] = e.val
-				break
-			}
-		}
-	}
-	return vals
-}
-
-func (p *Parser) lookupEnvControlled(name string) (any, bool) {
-	for e := p.Env; e != nil; e = e.next {
-		p.StepWork()
-		if p.rawValueEqual(e.name, name) {
-			return e.val, true
-		}
-	}
-	return nil, false
-}
-
-func (p *Parser) memoGet(rule, pos, min int, key []any) *memoEntry {
-	if !WorkControlsEnabled || p.Control == nil {
-		return p.memo.get(rule, pos, min, key)
-	}
-	p.StepWork()
-	if pos >= len(p.memo.slots) {
-		return nil
-	}
-	for e := p.memo.slots[pos]; e != nil; e = e.next {
-		p.StepWork()
-		if e.rule == int32(rule) && e.min == int32(min) && p.memoKeyEqual(e.env, key) {
-			return e
-		}
-	}
-	return nil
-}
-
-func (p *Parser) memoPut(rule, pos, min int, key []any, e *memoEntry) {
-	if !WorkControlsEnabled || p.Control == nil {
-		p.memo.put(rule, pos, min, key, e)
-		return
-	}
-	p.StepWork()
-	slots := p.memo.slots
-	if pos >= len(slots) {
-		if pos < cap(slots) {
-			slots = slots[:pos+1]
-		} else {
-			grown := make([]*memoEntry, pos+1, max(2*cap(slots), pos+1, 64))
-			copyWork(p, grown, slots)
-			slots = grown
-		}
-	}
-	link := &slots[pos]
-	var replaced *memoEntry
-	for x := *link; x != nil; link, x = &x.next, x.next {
-		p.StepWork()
-		if x == e || x.rule == int32(rule) && x.min == int32(min) && p.memoKeyEqual(x.env, key) {
-			replaced = x
-			break
-		}
-	}
-	p.StepWork()
-	// Commit the completed key/slot array and link together, with no further
-	// checkpoint between mutations. A resident self-entry retains its successor.
-	p.memo.slots = slots
-	e.rule, e.min, e.env = int32(rule), int32(min), key
-	if replaced != nil {
-		e.next = replaced.next
-		*link = e
-		return
-	}
-	e.next = slots[pos]
-	slots[pos] = e
-}
-
-func (p *Parser) controlledFirstCall(r *Rule) bool {
-	if r.Seen < 0 {
-		return false
-	}
-	p.StepWork()
-	t := &p.memo
-	if t.calls == nil {
-		t.calls = make([]seenCalls, t.stride)
-	}
-	if !t.calls[r.Seen].eager && t.sparse {
-		if len(t.pages) != t.stride {
-			p.StepWork()
-			t.pages = make([]seenRulePages, t.stride)
-		}
-		dir := &t.pages[r.Seen]
-		at := p.Pos >> 10
-		if at >= len(dir.pages) {
-			pages := growWork(p, dir.pages, at+1-len(dir.pages))
-			dir.pages = pages[:at+1]
-		}
-		if dir.pages[at] == nil {
-			p.StepWork()
-			// Reserve capacity before alloc's append so copying a large arena
-			// directory uses the invocation's bounded copy helper.
-			if t.bitPages.n/64 == len(t.bitPages.chunks) {
-				t.bitPages.chunks = growWork(p, t.bitPages.chunks, 1)
-			}
-			dir.pages[at] = t.bitPages.alloc()
-		}
-		dir.last, dir.at = dir.pages[at], at
-	} else if !t.calls[r.Seen].eager {
-		w := (p.Pos*t.stride + r.Seen) >> 6
-		if w >= len(t.seen) {
-			n := len(t.seen) + max(w+1-len(t.seen), len(t.seen), 64)
-			seen := t.seen
-			if n <= cap(seen) {
-				seen = seen[:n]
-				clearWork(p, seen[len(t.seen):])
-			} else {
-				seen = make([]uint64, n)
-				copyWork(p, seen, t.seen)
-			}
-			t.seen = seen
-		}
-	}
-	return p.firstCallOrdinary(r)
-}
-
-// Graph helpers account for normal construction and capture restoration.
-// Release/recycle, DropKids/DropTrail and arena reset remain unconditional.
-func (p *Parser) valueField(fs Fields, name string) (any, bool) {
-	if !WorkControlsEnabled || p.Control == nil {
-		return fs.Get(name)
-	}
-	for _, f := range fs {
-		p.StepWork()
-		if p.rawValueEqual(f.Name, name) {
-			return f.Value, true
-		}
-	}
-	return nil, false
-}
-func (p *Parser) setValueField(fs *Fields, name string, v any) {
-	if !WorkControlsEnabled || p.Control == nil {
-		fs.set(name, v)
-		return
-	}
-	for i := range *fs {
-		p.StepWork()
-		if p.rawValueEqual((*fs)[i].Name, name) {
-			(*fs)[i].Value = v
-			return
-		}
-	}
-	p.StepWork()
-	*fs = append(*fs, NodeField{name, v})
-}
-func (p *Parser) pushKid(v *Node) { p.StepWork(); p.KidStack = append(p.KidStack, v) }
-func (p *Parser) undoCaptures(from int) {
-	for i := len(p.Trail) - 1; i >= from; i-- {
-		p.StepWork()
-		u := p.Trail[i]
-		u.f.Vals[u.slot] = u.old
-	}
-}
-
-func (c *ActCtx) Fold(fn string, right bool, acc, list any, f func(acc, item any) any) any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return rtFold(fn, right, acc, list, f)
-	}
-	items := c.ListItems(fn, list)
-	for i := range items {
-		c.P.StepWork()
-		item := items[i]
-		if right {
-			item = items[len(items)-1-i]
-		}
-		acc = f(acc, nodeOrNil(item))
-	}
-	return acc
-}
-
-// actionErrorText accounts for eager engine-owned error text, including errors
-// discarded by predicates. Counter reservations precede each fragment copy.
-func (p *Parser) actionErrorText(parts ...string) string {
-	size := 0
-	for _, part := range parts {
-		p.StepWork()
-		size = checkedDiagnosticSize(size, len(part))
-	}
-	var out strings.Builder
-	out.Grow(size)
-	for _, part := range parts {
-		p.StepWork()
-		p.writeDiagnosticText(&out, part)
-	}
-	return out.String()
-}
-
-// evalErrorf accepts the engine's fixed %s/%d leaf formats. The inactive path
-// retains fmt semantics; active formatting splits known pieces before copying.
-func (p *Parser) evalErrorf(format string, args ...any) {
-	if !WorkControlsEnabled || p == nil || p.Control == nil {
-		evalErrorf(format, args...)
-		return
-	}
-	parts := make([]string, 0, 2*len(args)+1)
-	arg, start := 0, 0
-	for i := 0; i < len(format); i++ {
-		if format[i] != '%' {
-			continue
-		}
-		parts = append(parts, format[start:i])
-		i++
-		if i >= len(format) || arg >= len(args) {
-			panic("invalid internal action-error format")
-		}
-		switch format[i] {
-		case 's':
-			parts = append(parts, args[arg].(string))
-		case 'd':
-			parts = append(parts, strconv.Itoa(args[arg].(int)))
-		default:
-			panic("unsupported internal action-error format")
-		}
-		arg++
-		start = i + 1
-	}
-	if arg != len(args) {
-		panic("invalid internal action-error arguments")
-	}
-	parts = append(parts, format[start:])
-	panic(evalError{p.actionErrorText(parts...)})
-}
-func (p *Parser) wrapEvalError(where, message string) error {
-	if !WorkControlsEnabled || p.Control == nil {
-		return fmt.Errorf("action in %s: %s", where, message)
-	}
-	return errors.New(p.actionErrorText("action in ", where, ": ", message))
-}
-
-func (c *ActCtx) Unary(op string, v any) any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return rtUnary(op, v)
-	}
-	return rtUnaryWork(c.P, op, v)
-}
-func (c *ActCtx) And(l any, r func() any) any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return rtAnd(l, r)
-	}
-	if !rtBoolWork(c.P, "&&", l) {
-		return false
-	}
-	return rtBoolWork(c.P, "&&", r())
-}
-func (c *ActCtx) Or(l any, r func() any) any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return rtOr(l, r)
-	}
-	if rtBoolWork(c.P, "||", l) {
-		return true
-	}
-	return rtBoolWork(c.P, "||", r())
-}
-func (c *ActCtx) ListItems(fn string, v any) []*Node {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return listItems(fn, v)
-	}
-	return listItemsWork(c.P, fn, v)
-}
-func (c *ActCtx) asNode(fn string, v any) *Node {
-	switch v.(type) {
-	case int, string, bool:
-		// An int, string or bool element travels boxed, as the result of an action does.
-		return c.P.NewNode(Node{RawKind: kindBox, box: v, RawStart: int32(c.start), RawEnd: int32(c.end)})
-	}
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return asNode(fn, v)
-	}
-	return asNodeWork(c.P, fn, v)
-}
 
 // --- Generated code ---
 
 // Parse parses the whole input with the rule main. Options select position units, depth, cancellation and work limits.
 // If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.
-func Parse(input string, opts ...ParseOption) (*Node, error) { return RunParse(rules[0], input, opts) }
+func Parse(input string, opts ...pegort.ParseOption) (*pegort.Node, error) {
+	return pegort.RunParse(rules[0], input, opts)
+}
 
 // Recognize checks that the whole input matches the rule main without building a tree, and returns the
 // syntax errors Parse would return (SyntaxErrors for errors recovered with #recover). Actions needed by
 // predicates are evaluated and can report runtime errors; other actions are skipped.
-func Recognize(input string, opts ...ParseOption) error {
-	_, err := RunParse(recRules[0], input, opts)
+func Recognize(input string, opts ...pegort.ParseOption) error {
+	_, err := pegort.RunParse(recRules[0], input, opts)
 	return err
 }
 
 // recRules is the rule table of Recognize, and pegoRecGrammar its grammar.
-var recRules []*Rule
-var pegoRecGrammar = NewGrammar(100000)
+var recRules []*pegort.Rule
+var pegoRecGrammar = pegort.NewGrammar(100000)
 
 // rules is the rule table, and pegoGrammar its grammar.
-var rules []*Rule
-var pegoGrammar = NewGrammar(100000)
+var rules []*pegort.Rule
+var pegoGrammar = pegort.NewGrammar(100000)
 
 // ParseRule parses the whole input with the rule name.
-func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
-	o, err := ResolveOptions(pegoGrammar, opts)
+func ParseRule(name, input string, opts ...pegort.ParseOption) (*pegort.Node, error) {
+	o, err := pegort.ResolveOptions(pegoGrammar, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -5598,2671 +44,43 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	if r == nil {
 		return nil, fmt.Errorf("rule %s is not defined", name)
 	}
-	return RunParseResolved(r, input, o)
+	return pegort.RunParseResolved(r, input, o)
 }
 
-// --- Typed runtime ---
-
-// The typed runtime, appended to generated parsers made with pego gen -types. It parses like the
-// runtime in runtime.go, but builds the values of the grammar's types directly, as Go values,
-// instead of Node trees: the value of an expression is an any holding a pointer to a struct
-// type, *TMatch (a string node), *TError (an error value), an int, string or bool, nil,
-// or a *TSeq: a tuple node, a list node, or a tuple or list value. Values other than
-// nodes need no carrier, as they do in Node trees. Every step mirrors runtime.go, so the result is
-// that of converting the Node tree that Parse returns.
-//
-// TParser embeds the parser and redefines the methods that handle values; the generated
-// methods of the typed rules (trules) run on it.
-
-// Span is the range of input a typed value covers, in the parse's position unit (End is exclusive).
-//
-// Of its fields and methods, TSetSpan, TSpan are for generated parsers; not a stable API.
-type Span struct{ Start, End int }
-
-func (s *Span) TSpan() (int, int)       { return s.Start, s.End }
-func (s *Span) TSetSpan(start, end int) { s.Start, s.End = start, end }
+// --- Typed values ---
 
 // TNode is a node whose Value has type T: a string node (TNode[string]) holds the text a
 // literal, a character class, ., a #atomic or _ matched, and a tuple or list node holds its
 // elements. A node of a statically unknown value is a TNode[any] whose Value is a string, or a
 // []any of the elements of a tuple or list.
-type TNode[T any] struct {
-	Span
-	Value T
-}
+type TNode[T any] pegort.TNode[T]
 
 // Error is input skipped by error recovery (#recover).
-type Error struct {
-	Span
-	Text    string
-	Message string
-}
-
-// TMatch and TError are a string node and an Error while the typed runtime handles them: whether
-// the value is fresh (see Node.RawFresh) is part of the state of the parse, not of the result. The
-// result holds pointers to the embedded TNode[string] and Error (TPub). A string node of a named
-// node type has nt, the type's registered index (TRegisterNodeType; 0 for a plain string node).
-//
-// TMatch is for generated parsers; not a stable API.
-type TMatch struct {
-	TNode[string]
-	fresh bool
-	Nt    uint16
-}
-
-// tnodeType is a registered named node type: its name, and pub, which returns the public form of
-// a value x of the type with the generated code's chunks a (a *tslabs, or nil).
-type tnodeType struct {
-	name string
-	pub  func(a any, x TVal) any
-}
-
-// tnodeTypes holds the registered named node types of all grammars by their index (nt) in TMatch
-// and TSeq; index 0 is no named node type. Registration copies the table, so readers never
-// lock.
-var (
-	tnodeTypes   atomic.Pointer[[]tnodeType]
-	tnodeTypesMu sync.Mutex
-)
-
-// TRegisterNodeType registers a named node type of a grammar and returns its index. Types of
-// different grammars have different indexes even when their names are the same.
-//
-// TRegisterNodeType is for generated parsers; not a stable API.
-func TRegisterNodeType(name string, pub func(a any, x TVal) any) uint16 {
-	tnodeTypesMu.Lock()
-	defer tnodeTypesMu.Unlock()
-	old := []tnodeType{{}}
-	if p := tnodeTypes.Load(); p != nil {
-		old = *p
-	}
-	if len(old) > 1<<16-1 {
-		panic("too many named node types")
-	}
-	types := append(old[:len(old):len(old)], tnodeType{name, pub})
-	tnodeTypes.Store(&types)
-	return uint16(len(types) - 1)
-}
-
-// tnodeTypeOf returns the registered named node type nt (not 0).
-func tnodeTypeOf(nt uint16) *tnodeType {
-	return &(*tnodeTypes.Load())[nt]
-}
-
-// TError is for generated parsers; not a stable API.
-type TError struct {
-	Error
-	fresh bool
-}
-
-// TPub returns the public form of a value: *TNode[string] and *Error for TMatch and TError, a
-// *TNode[any] for a tuple or list node and a []any for a tuple or list value, with the public
-// forms of their elements.
-//
-// TPub is for generated parsers; not a stable API.
-func TPub(v any) any { return TPubIn(nil, v) }
-
-// TPubIn is TPub with the generated code's chunks a (a *tslabs, or nil), which the public forms of
-// values of named node types (tnodeType.pub) are made from and remembered in.
-//
-// TPubIn is for generated parsers; not a stable API.
-func TPubIn(a any, v any) any {
-	switch x := v.(type) {
-	case *TMatch:
-		if x.Nt != 0 {
-			return tnodeTypeOf(x.Nt).pub(a, x)
-		}
-		return &x.TNode
-	case *TError:
-		return &x.Error
-	case *TSeq:
-		if x.nt != 0 {
-			return tnodeTypeOf(x.nt).pub(a, x)
-		}
-		return tpubElems(a, x)
-	}
-	return v
-}
-
-// tpubElems returns the public form of a tuple or list node, or a tuple or list value, x as a
-// plain node or value (also for a node of a named node type).
-func tpubElems(a any, x *TSeq) any {
-	elems := make([]any, len(x.Kids))
-	for i, k := range x.Kids {
-		elems[i] = TPubIn(a, k)
-	}
-	if x.Typ == TypeTupleValue || x.Typ == TypeListValue {
-		return elems
-	}
-	return &TNode[any]{x.Span, elems}
-}
-
-// TPubNode returns the public form of a node of a statically unknown value: a TNode[any], also for
-// a node of a named node type, as the node it was converted from.
-//
-// TPubNode is for generated parsers; not a stable API.
-func TPubNode(v any) *TNode[any] { return TPubNodeIn(nil, v) }
-
-// TPubNodeIn is TPubNode with the chunks a (see TPubIn).
-//
-// TPubNodeIn is for generated parsers; not a stable API.
-func TPubNodeIn(a any, v any) *TNode[any] {
-	switch x := v.(type) {
-	case *TMatch:
-		return &TNode[any]{x.Span, x.Value}
-	case *TSeq:
-		if n, ok := tpubElems(a, x).(*TNode[any]); ok {
-			return n
-		}
-	}
-	return nil
-}
-
-// TMatchAs returns the public form of x, a string node of a named node type whose Go type N is
-// struct{ TNode[string] }: N has the layout of TNode[string] (the generated code asserts their
-// sizes are equal), so the public value is x's own TNode seen as an N. A node so publishes as one
-// value wherever it appears, as a plain string node does, without allocating or remembering it.
-//
-// TMatchAs is for generated parsers; not a stable API.
-func TMatchAs[N any](x *TMatch) *N {
-	return (*N)(unsafe.Pointer(&x.TNode))
-}
-
-// TPubMatch is for generated parsers; not a stable API.
-func TPubMatch(v any) *TNode[string] {
-	if x, ok := v.(*TMatch); ok {
-		return &x.TNode
-	}
-	return nil
-}
-
-// TPubError is for generated parsers; not a stable API.
-func TPubError(v any) *Error {
-	if x, ok := v.(*TError); ok {
-		return &x.Error
-	}
-	return nil
-}
-
-// workControlSetter is implemented by the output values a typed parse hands its work control to
-// (the generated converters).
-//
-// SetWorkControl is for generated parsers; not a stable API.
-type workControlSetter interface{ SetWorkControl(*WorkControl) }
-
-// tfieldWorker is implemented by struct values that read a field while charging work.
-//
-// TFieldWork is for generated parsers; not a stable API.
-type tfieldWorker interface {
-	TFieldWork(*TParser, string) (any, bool)
-}
-
-// stepCharger charges steps to a work control.
-//
-// Step is for generated parsers; not a stable API.
-type stepCharger interface{ Step(uint64) }
-
-// TVal is a node value of the typed runtime: a value of a struct type, *TMatch,
-// *TError or *TSeq.
-//
-// TVal is for generated parsers; not a stable API.
-type TVal interface {
-	TSpan() (int, int)
-	TSetSpan(start, end int)
-	TName() string                  // type name
-	TText() (string, bool)          // text of a string node or an error value
-	TKids() []any                   // children of a CST node
-	TField(name string) (any, bool) // field value, and whether the type has the field (structs)
-	TStruct() bool                  // a struct type
-	TFresh() bool
-	TSetFresh(bool)
-}
-
-func (m *TMatch) TName() string {
-	if m.Nt != 0 {
-		return tnodeTypeOf(m.Nt).name
-	}
-	return "string"
-}
-func (m *TMatch) TText() (string, bool)     { return m.Value, true }
-func (m *TMatch) TKids() []any              { return nil }
-func (m *TMatch) TField(string) (any, bool) { return nil, true }
-func (m *TMatch) TStruct() bool             { return false }
-func (m *TMatch) TFresh() bool              { return m.fresh }
-func (m *TMatch) TSetFresh(f bool)          { m.fresh = f }
-func (e *TError) TName() string             { return "error" }
-func (e *TError) TText() (string, bool)     { return e.Text, true }
-func (e *TError) TKids() []any              { return nil }
-func (e *TError) TStruct() bool             { return false }
-func (e *TError) TFresh() bool              { return e.fresh }
-func (e *TError) TSetFresh(f bool)          { e.fresh = f }
-func (e *TError) TField(name string) (any, bool) {
-	if name == "message" {
-		return e.Message, true
-	}
-	return nil, true
-}
-
-// TSeq is a tuple node, a list node, a tuple value (TypeTupleValue) or a list value
-// (TypeListValue) of the typed runtime. A tuple node's fields are its captures. A tuple or list
-// node of a named node type has nt, as TMatch does; typ stays "tuple" or "list".
-//
-// TSeq is for generated parsers; not a stable API.
-type TSeq struct {
-	Span
-	Typ    string
-	Kids   []any
-	fields []tfield
-	fresh  bool
-	nt     uint16
-}
-
-type tfield struct {
-	name string
-	val  any
-}
-
-func (n *TSeq) TName() string {
-	if n.nt != 0 {
-		return tnodeTypeOf(n.nt).name
-	}
-	return n.Typ
-}
-func (n *TSeq) TText() (string, bool) { return "", false }
-func (n *TSeq) TKids() []any          { return n.Kids }
-func (n *TSeq) TStruct() bool         { return false }
-func (n *TSeq) TFresh() bool          { return n.fresh }
-func (n *TSeq) TSetFresh(f bool)      { n.fresh = f }
-func (n *TSeq) TField(name string) (any, bool) {
-	for _, f := range n.fields {
-		if f.name == name {
-			return f.val, true
-		}
-	}
-	return nil, true
-}
-
-func (n *TSeq) set(name string, v any) {
-	for i := range n.fields {
-		if n.fields[i].name == name {
-			n.fields[i].val = v
-			return
-		}
-	}
-	n.fields = append(n.fields, tfield{name, v})
-}
-
-// tshape is Node.shape for the values of the typed runtime that are TVal.
-func tshape(n TVal) nodeShape {
-	switch x := n.(type) {
-	case *TError:
-		return shapeError
-	case *TSeq:
-		switch x.Typ {
-		case "list":
-			return shapeList
-		case TypeTupleValue:
-			return shapeTupleValue
-		case TypeListValue:
-			return shapeListValue
-		}
-		return shapeTuple
-	}
-	if n.TStruct() {
-		return shapeStruct
-	}
-	return shapeString
-}
-
-// AsTval returns v as a node value, or nil. Values never hold nil pointers: nil is always the
-// untyped nil.
-//
-// AsTval is for generated parsers; not a stable API.
-func AsTval(v any) TVal {
-	n, _ := v.(TVal)
-	return n
-}
-
-// tisNode reports whether n is a node of the value model (a string node, a tuple or list node,
-// or an error value) rather than a struct or a list or tuple value; see Node.isNode.
-func tisNode(n TVal) bool {
-	if t, ok := n.(*TSeq); ok {
-		return t.Typ == "tuple" || t.Typ == "list"
-	}
-	return !n.TStruct()
-}
-
-// nodeValue returns the Value of the node n: its text for a string node or an error value, and a
-// tuple or list value sharing its elements otherwise (see parser.nodeValue).
-func (p *TParser) nodeValue(n TVal) any {
-	if text, ok := n.TText(); ok {
-		return text
-	}
-	s, e := n.TSpan()
-	typ := TypeTupleValue
-	if t, ok := n.(*TSeq); ok && t.Typ == "list" {
-		typ = TypeListValue
-	}
-	v := p.NewNode(typ, s, e, n.TKids())
-	v.fresh = false
-	return v
-}
-
-// --- Rules ---
-
-// TRule is a rule of the typed runtime: the rule's analysis results and its typed body.
-//
-// TRule is for generated parsers; not a stable API.
-type TRule struct {
-	*Rule
-	Body          func(p *TParser, min int) (any, bool)
-	Action        func(c *TActCtx) any
-	OperatorsRule *TOperatorsRule
-	// tcheck checks the rule's value against its declared type (nil if it needs no check).
-	tcheck func(p *TParser, v any)
-	// Entry is the generated method that calls the rule as call(r, 0) does (u<id> or s<id>), for
-	// rules that have one. A direct rule (see gen_direct.go) has no body or action and is called
-	// only through it.
-	Entry func(p *TParser) (any, bool)
-	// Nt is the registered index of the named node type the rule's value is converted to
-	// (rule.NodeType), or 0.
-	Nt uint16
-	// OpNt is the registered index of the named node type every operator node of an Operators
-	// Rule is converted to (rule.OpNodeType), or 0.
-	OpNt uint16
-}
-
-// TAs returns v as a T, or the zero T (nil) if it is not one.
-//
-// TAs is for generated parsers; not a stable API.
-func TAs[T any](v any) T {
-	t, _ := v.(T)
-	return t
-}
-
-// TPtr and tderef return the value of a field of a pointer type as a value of the typed runtime.
-//
-// TPtr is for generated parsers; not a stable API.
-func TPtr[T any](p *T) any {
-	if p == nil {
-		return nil
-	}
-	return p
-}
-
-// TBack returns the value of a field of an open type (a string node, a tuple or list node, an
-// error value, a union, node or any) as a value of the typed runtime: the inverse of
-// TPub, except that a tuple or list node becomes a tuple node and a []any a tuple value.
-//
-// TBack is for generated parsers; not a stable API.
-func TBack(v any) any {
-	switch x := v.(type) {
-	case *TNode[string]:
-		if x == nil {
-			return nil
-		}
-		return &TMatch{TNode: *x}
-	case *Error:
-		if x == nil {
-			return nil
-		}
-		return &TError{Error: *x}
-	case *TNode[any]:
-		if x == nil {
-			return nil
-		}
-		switch y := x.Value.(type) {
-		case string:
-			return &TMatch{TNode: TNode[string]{x.Span, y}}
-		case []any:
-			return &TSeq{Span: x.Span, Typ: "tuple", Kids: tbackAll(y)}
-		}
-		return nil
-	case []any:
-		return &TSeq{Typ: TypeTupleValue, Kids: tbackAll(x)}
-	}
-	return v
-}
-
-// TKid returns element i of a tuple's elements (nil if there is none).
-//
-// TKid is for generated parsers; not a stable API.
-func TKid(kids []any, i int) any {
-	if i < len(kids) {
-		return kids[i]
-	}
-	return nil
-}
-
-// tnodeValue returns the Value of a tuple or list node as a tuple or list value.
-func tnodeValue(n *TSeq) any {
-	typ := TypeTupleValue
-	if n.Typ == "list" {
-		typ = TypeListValue
-	}
-	return &TSeq{Span: n.Span, Typ: typ, Kids: n.Kids}
-}
-
-func tbackAll(vs []any) []any {
-	out := make([]any, len(vs))
-	for i, v := range vs {
-		out[i] = TBack(v)
-	}
-	return out
-}
-
-func tderef[T any](p *T) any {
-	if p == nil {
-		return nil
-	}
-	return *p
-}
-
-// TListOf returns a list value of kids, for reading a list field of a struct in an action.
-//
-// TListOf is for generated parsers; not a stable API.
-func TListOf(kids []any) any {
-	n := &TSeq{Typ: TypeListValue, Kids: kids}
-	first := true
-	for _, it := range kids {
-		t := AsTval(it)
-		if t == nil {
-			continue
-		}
-		s, e := t.TSpan()
-		if first || s < n.Start {
-			n.Start = s
-		}
-		if first || e > n.End {
-			n.End = e
-		}
-		first = false
-	}
-	return n
-}
-
-// TParse parses the whole input with the typed rule r, and returns the result converted by conv
-// (before the parser's scratch memory, which the result may be in, is cleared). ext holds the
-// generated code's chunks.
-//
-// TParse is for generated parsers; not a stable API.
-func TParse[T any](r *TRule, input string, opts []ParseOption, ext any, conv func(any) T) (T, error) {
-	o, err := ResolveOptions(r.g, opts)
-	if err != nil {
-		var zero T
-		return zero, err
-	}
-	return TParseResolved(r, input, o, ext, conv)
-}
-
-// TParseResolved consumes options already applied by the public entry point.
-//
-// TParseResolved is for generated parsers; not a stable API.
-func TParseResolved[T any](r *TRule, input string, o parseOptions, ext any, conv func(any) T) (res T, err error) {
-	defer recoverParse(&res, &err)
-	o = prepareOptions(o)
-	p, _ := tpool.Get().(*TParser)
-	if p == nil {
-		p = &TParser{Parser: &Parser{}}
-	}
-	defer func() { p.recycle(); tpool.Put(p) }()
-	p.Control = o.control
-	p.Observation = newObservation(&o.observe)
-	if o.control != nil {
-		if target, ok := ext.(workControlSetter); ok {
-			target.SetWorkControl(o.control)
-			defer target.SetWorkControl(nil)
-		}
-	}
-	v, err := p.run(r, input, o, ext)
-	if v == nil {
-		return res, err
-	}
-	o.control.Check()
-	res = conv(v)
-	o.control.Check()
-	return res, err
-}
-
-// run parses the whole input with the typed rule r.
-func (p *TParser) run(r *TRule, input string, o parseOptions, ext any) (v any, err error) {
-	p.MaxDepth = o.maxDepth
-	p.Ext = ext
-	p.setGrammar(r.g)
-	if o.unit == Bytes {
-		// p.In stays empty: direct rules read code points from it while p.Pos < len(p.In).
-		p.unit, p.bs, p.n, p.In = Bytes, input, len(input), p.In[:0]
-	} else {
-		p.setSource(input)
-	}
-	if p.TypedDocument != nil {
-		p.Document = p.TypedDocument.owner
-	}
-	p.memo.sparse = p.memo.stride > 64 && p.n > 1024
-	defer func() {
-		if x := recover(); x != nil {
-			switch x := x.(type) {
-			case fatal:
-				v, err = nil, x.err
-			case evalError: // in an action (predicates recover their own)
-				v, err = nil, p.wrapEvalError(p.Where, x.msg)
-			default:
-				panic(x)
-			}
-		}
-	}()
-	var ok bool
-	if r.Entry != nil {
-		v, ok = r.Entry(p)
-	} else {
-		v, ok = p.Call(r, 0)
-	}
-	// Normal completion polls even for a nil typed value. Fatal unwinding
-	// returns through the recovery above without replacing its established error.
-	p.Control.Check()
-	if ok && p.Pos == p.n {
-		if len(p.Recovered) > 0 {
-			errors := p.copyErrors(nil, p.Recovered)
-			p.Control.Check()
-			return v, SyntaxErrors(errors)
-		}
-		return v, nil
-	}
-	if ok {
-		p.Expect(p.Pos, IdEndInput)
-	}
-	e := p.MakeError(p.farthest, p.exp[p.expBase:])
-	p.Control.Check()
-	return nil, e
-}
-
-// tpool keeps parsers of the typed runtime, with their scratch memory, for later parses. What a
-// parse returns never refers to that memory: CST nodes, value lists, frames and memo entries are
-// consumed by the parse itself (typed values come from the generated code's chunks, ext).
-var tpool sync.Pool
-
-// recycle clears the parser for the next parse, keeping its scratch memory.
-func (p *TParser) recycle() {
-	q := p.Parser
-	memo := memoTable{seen: q.memo.seen, calls: q.memo.calls, pages: q.memo.pages, bitPages: q.memo.bitPages}
-	// Retain useful sparse pages for large inputs, capped at 32 MiB of backing
-	// storage. The next small parse trims this cache when it finishes.
-	memo.resetSeen(max(1<<20, min(q.n, 4<<20)))
-	in, offs := q.In[:0], q.offs[:0]
-	if cap(in) > 1<<20 { // do not keep the buffers of a large input for every later parse
-		in, offs = nil, nil
-	}
-	*q = Parser{In: in, offs: offs, exp: q.exp[:0], arena: q.arena[:0]}
-	q.memo = memo
-	p.nodes.reset()
-	p.vals.reset()
-	p.frames.reset()
-	p.fields.reset()
-	p.memoSlab.reset()
-	clear(p.Trail[:cap(p.Trail)])
-	clear(p.KidStack)
-	clear(p.saved[:cap(p.saved)])
-	clear(p.memoSlots)
-	free := p.free
-	for i := range free {
-		free[i] = free[i][:0]
-	}
-	*p = TParser{Parser: q, Trail: p.Trail[:0], KidStack: p.KidStack[:0], saved: p.saved[:0], memoSlots: p.memoSlots[:0],
-		nodes: p.nodes, vals: p.vals, frames: p.frames, fields: p.fields, memoSlab: p.memoSlab, free: free}
-}
-
-// tarena allocates values of type T in chunks that are kept from one parse to the next (tpool):
-// reset clears what was used and starts again at the first chunk.
-type tarena[T any] struct {
-	chunks [][]T
-	ci     int // the chunk in use
-	off    int // the next free element in it
-}
-
-const tchunk = 512
-
-// slice returns n zero elements (capacity n).
-func (a *tarena[T]) slice(n int) []T {
-	if n > tchunk/4 {
-		return make([]T, n)
-	}
-	if a.ci < len(a.chunks) && a.off+n > len(a.chunks[a.ci]) {
-		a.ci++
-		a.off = 0
-	}
-	if a.ci == len(a.chunks) {
-		a.chunks = append(a.chunks, make([]T, tchunk))
-	}
-	s := a.chunks[a.ci][a.off : a.off+n : a.off+n]
-	a.off += n
-	return s
-}
-
-func (a *tarena[T]) one() *T { return &a.slice(1)[0] }
-
-func (a *tarena[T]) reset() {
-	for i := 0; i <= a.ci && i < len(a.chunks); i++ {
-		clear(a.chunks[i])
-	}
-	a.ci, a.off = 0, 0
-}
-
-// TParser is the parser state of the typed runtime.
-//
-// TParser is for generated parsers; not a stable API.
-type TParser struct {
-	*Parser
-	Ext      any    // the generated code's allocation chunks
-	Where    string // the rule whose action is being evaluated
-	Frame    *TCaptureFrame
-	Trail    []tundo
-	Created  []TVal // struct values made by the action being evaluated
-	KidStack []any
-	ac       TActCtx
-	saved    []any
-	matches  []TMatch // returned in values, so not kept for the next parse
-	// Scratch memory, kept for the next parse (recycle).
-	nodes     tarena[TSeq]
-	vals      tarena[any]
-	frames    tarena[TCaptureFrame]
-	fields    tarena[tfield]
-	memoSlab  tarena[tmemoEntry]
-	memoSlots []*tmemoEntry // memo entries by position (chains)
-	// TypedDocument is set only by typed Document parses (TypedDocumentParse).
-	TypedDocument *typedDocumentState
-	free          [8][]*TCaptureFrame // frames freed by FreeFrame, by size
-}
-
-// TCaptureFrame is for generated parsers; not a stable API.
-type TCaptureFrame struct{ Vals []any }
-
-// FreeFrame makes the frame f, which nothing refers to any more, available to NewFrame. A rule's
-// frame is dead when the rule returns: the values have been copied into its result, and the
-// trail entries that refer to it are gone.
-func (p *TParser) FreeFrame(f *TCaptureFrame) {
-	n := len(f.Vals)
-	if n == 0 || n >= len(p.free) {
-		return
-	}
-	clear(f.Vals)
-	p.free[n] = append(p.free[n], f)
-}
-
-// EmptyTFrame is for generated parsers; not a stable API.
-var EmptyTFrame = &TCaptureFrame{}
-
-type tundo struct {
-	f    *TCaptureFrame
-	slot int
-	old  any
-}
-
-func (p *TParser) Mark() Mark {
-	return Mark{Pos: p.Pos, env: p.Env, Trail: len(p.Trail), recovered: len(p.Recovered)}
-}
-
-func (p *TParser) Reset(m Mark) {
-	p.Pos = m.Pos
-	p.Env = m.env
-	p.Recovered = p.Recovered[:m.recovered]
-	p.undoCaptures(m.Trail)
-	p.DropTrail(m.Trail)
-}
-
-// DropTrail discards undo history whose effects are already restored or whose
-// frame is returning. Clear its references before truncating the backing slice.
-func (p *TParser) DropTrail(base int) {
-	clear(p.Trail[base:])
-	p.Trail = p.Trail[:base]
-}
-
-func (p *TParser) SetCapture(slot int, v any) {
-	p.StepWork()
-	p.Trail = append(p.Trail, tundo{f: p.Frame, slot: slot, old: p.Frame.Vals[slot]})
-	p.Frame.Vals[slot] = v
-}
-
-// SetCaptureOrdinary is SetCapture in an ordinary parse (parser.ExpectOrdinary); so are
-// NewNodeOrdinary and NewMatchOrdinary.
-func (p *TParser) SetCaptureOrdinary(slot int, v any) {
-	p.Trail = append(p.Trail, tundo{f: p.Frame, slot: slot, old: p.Frame.Vals[slot]})
-	p.Frame.Vals[slot] = v
-}
-
-// --- Allocation ---
-
-func (p *TParser) NewNode(typ string, start, end int, kids []any) *TSeq {
-	p.StepWork()
-	n := p.nodes.one()
-	*n = TSeq{Span: Span{start, end}, Typ: typ, Kids: kids, fresh: true}
-	return n
-}
-
-func (p *TParser) NewMatch(start, end int, text string, fresh bool) *TMatch {
-	p.StepWork()
-	if len(p.matches) == 0 {
-		p.matches = make([]TMatch, nodeChunk)
-	}
-	m := &p.matches[0]
-	p.matches = p.matches[1:]
-	*m = TMatch{TNode: TNode[string]{Span{start, end}, text}, fresh: fresh}
-	return m
-}
-
-func (p *TParser) NewNodeOrdinary(typ string, start, end int, kids []any) *TSeq {
-	n := p.nodes.one()
-	*n = TSeq{Span: Span{start, end}, Typ: typ, Kids: kids, fresh: true}
-	return n
-}
-
-func (p *TParser) NewMatchOrdinary(start, end int, text string, fresh bool) *TMatch {
-	if len(p.matches) == 0 {
-		p.matches = make([]TMatch, nodeChunk)
-	}
-	m := &p.matches[0]
-	p.matches = p.matches[1:]
-	*m = TMatch{TNode: TNode[string]{Span{start, end}, text}, fresh: fresh}
-	return m
-}
-
-// NewVals returns a value list of length and capacity n.
-func (p *TParser) NewVals(n int) []any {
-	if n == 0 {
-		return []any{}
-	}
-	return p.vals.slice(n)
-}
-
-func (p *TParser) tfields(n int) []tfield {
-	return p.fields.slice(n)[:0]
-}
-
-// Kids returns p.KidStack[base:] as a value list and pops it.
-func (p *TParser) Kids(base int) []any {
-	ks := p.NewVals(len(p.KidStack) - base)
-	copyWork(p.Parser, ks, p.KidStack[base:])
-	p.DropKids(base)
-	return ks
-}
-
-func (p *TParser) DropKids(base int) {
-	clear(p.KidStack[base:])
-	p.KidStack = p.KidStack[:base]
-}
-
-func (p *TParser) NewFrame(n int) *TCaptureFrame {
-	if n == 0 {
-		return EmptyTFrame
-	}
-	if n < len(p.free) {
-		if fs := p.free[n]; len(fs) > 0 {
-			f := fs[len(fs)-1]
-			p.free[n] = fs[:len(fs)-1]
-			return f
-		}
-	}
-	f := p.frames.one()
-	f.Vals = p.NewVals(n)
-	return f
-}
-
-// --- Memo ---
-
-// The memo of typed results (TParser.memoSlots, chains of entries by position) is keyed like
-// memoTable, whose FirstCall bookkeeping the typed runtime shares.
-type tmemoEntry struct {
-	val      any
-	errs     []*SyntaxError
-	expected []ExpID
-	next     *tmemoEntry
-	env      []any
-	end      int
-	far      int
-	rule     int32
-	min      int32
-	ok       bool
-	silent   bool
-	growing  bool
-}
-
-func (p *TParser) memoGet(rule, pos, min int, key []any) *tmemoEntry {
-	if !WorkControlsEnabled || p.Control == nil {
-		return p.memoGetOrdinary(rule, pos, min, key)
-	}
-	p.StepWork()
-	if pos >= len(p.memoSlots) {
-		return nil
-	}
-	for e := p.memoSlots[pos]; e != nil; e = e.next {
-		p.StepWork()
-		if e.rule == int32(rule) && e.min == int32(min) && p.memoKeyEqual(e.env, key) {
-			return e
-		}
-	}
-	return nil
-}
-
-func (p *TParser) memoGetOrdinary(rule, pos, min int, env []any) *tmemoEntry {
-	if pos >= len(p.memoSlots) {
-		return nil
-	}
-	for e := p.memoSlots[pos]; e != nil; e = e.next {
-		if e.rule == int32(rule) && e.min == int32(min) && sameValues(e.env, env) {
-			return e
-		}
-	}
-	return nil
-}
-
-func (p *TParser) memoPut(rule, pos, min int, key []any, e *tmemoEntry) {
-	if !WorkControlsEnabled || p.Control == nil {
-		p.memoPutOrdinary(rule, pos, min, key, e)
-		return
-	}
-	p.StepWork()
-	slots := p.memoSlots
-	if pos >= len(slots) {
-		if pos < cap(slots) {
-			slots = slots[:pos+1]
-		} else {
-			grown := make([]*tmemoEntry, pos+1, max(2*cap(slots), pos+1, 64))
-			copyWork(p.Parser, grown, slots)
-			slots = grown
-		}
-	}
-	link := &slots[pos]
-	var replaced *tmemoEntry
-	for x := *link; x != nil; link, x = &x.next, x.next {
-		p.StepWork()
-		if x == e || x.rule == int32(rule) && x.min == int32(min) && p.memoKeyEqual(x.env, key) {
-			replaced = x
-			break
-		}
-	}
-	p.StepWork()
-	p.memoSlots = slots
-	e.rule, e.min, e.env = int32(rule), int32(min), key
-	if replaced != nil {
-		e.next = replaced.next
-		*link = e
-		return
-	}
-	e.next = slots[pos]
-	slots[pos] = e
-}
-
-func (p *TParser) memoPutOrdinary(rule, pos, min int, env []any, e *tmemoEntry) {
-	if pos >= len(p.memoSlots) {
-		if pos < cap(p.memoSlots) {
-			p.memoSlots = p.memoSlots[:pos+1]
-		} else {
-			grown := make([]*tmemoEntry, pos+1, max(2*cap(p.memoSlots), pos+1, 64))
-			copy(grown, p.memoSlots)
-			p.memoSlots = grown
-		}
-	}
-	e.rule, e.min, e.env = int32(rule), int32(min), env
-	link := &p.memoSlots[pos]
-	for x := *link; x != nil; link, x = &x.next, x.next {
-		if x.rule == e.rule && x.min == e.min && sameValues(x.env, env) {
-			e.next = x.next
-			*link = e
-			return
-		}
-	}
-	e.next = p.memoSlots[pos]
-	p.memoSlots[pos] = e
-}
-
-// --- Typed Document memo ---
-
-// typedDocumentState owns private typed memo values of a typed Document (TypedDocumentParse). The
-// fresh invocation arenas that contain those values must never be reset or returned to the batch
-// pool.
-type typedDocumentState struct {
-	owner *documentState
-	slots []*tmemoEntry
-	meta  map[*tmemoEntry]typedDocumentMeta
-}
-
-type typedDocumentMeta struct {
-	examined    int
-	provisional bool
-}
-
-func (d *typedDocumentState) invalidate(start int) {
-	kept := make([]*tmemoEntry, min(start, len(d.slots)))
-	meta := make(map[*tmemoEntry]typedDocumentMeta, min(len(d.meta), start))
-	var entries tarena[tmemoEntry]
-	for pos, head := range d.slots[:len(kept)] {
-		for e := head; e != nil; e = e.next {
-			m, complete := d.meta[e]
-			if !complete || e.growing || m.provisional || m.examined > start {
-				continue
-			}
-			out := entries.one()
-			*out = *e
-			// Environments, expectations and private diagnostic slices are immutable.
-			// Their arenas are never recycled; only the memo chain link needs copying.
-			out.next = kept[pos]
-			kept[pos] = out
-			meta[out] = m
-		}
-	}
-	d.slots, d.meta = kept, meta
-}
-
-// DocumentCall memoizes typed rule entries (rule.DocMemo), including generated
-// direct wrappers. Examined and provisional metadata stays outside batch memo
-// entries.
-func (p *TParser) DocumentCall(r *TRule, min int, inv func(*TParser) (any, bool)) (any, bool) {
-	p.StepWork()
-	start := p.Pos
-	oldHigh, oldProvisional := p.docHigh, p.docProvisional
-	p.docHigh, p.docProvisional = start+1, false
-	defer func() { p.docHigh = max(oldHigh, p.docHigh); p.docProvisional = oldProvisional || p.docProvisional }()
-	if !r.DocMemo {
-		rec := len(p.Recovered)
-		var v any
-		var ok bool
-		if inv != nil {
-			p.Document.stats.Evaluated++
-			v, ok = inv(p)
-		} else {
-			v, ok = p.invoke(r, min)
-		}
-		if !ok {
-			p.Pos = start
-			p.Recovered = p.Recovered[:rec]
-		}
-		return v, ok
-	}
-	env := p.memoEnv(r.Rule)
-	old := p.memoGet(r.Id, start, min, env)
-	if old != nil && (old.growing || (!old.silent || p.Silent > 0) && (len(old.errs) == 0 || old.silent == (p.Silent > 0))) {
-		m := p.TypedDocument.meta[old]
-		p.documentTouch(m.examined)
-		p.docProvisional = p.docProvisional || old.growing || m.provisional
-		p.Document.stats.Reused++
-		p.Observation.memoHit()
-		if !old.growing {
-			p.MergeExpected(old.far, old.expected)
-		}
-		if !old.ok {
-			return nil, false
-		}
-		p.Pos = old.end
-		p.Recovered = p.copyErrors(p.Recovered, old.errs)
-		return old.val, true
-	}
-	// A context-incompatible entry may be replaced. Do not keep it alive through
-	// stale metadata once its memo chain no longer refers to it.
-	if old != nil {
-		delete(p.TypedDocument.meta, old)
-	}
-	rec := len(p.Recovered)
-	m := p.Isolate(start)
-	var v any
-	var ok bool
-	var e *tmemoEntry
-	if r.Leader {
-		v, ok = p.grow(r, min, env)
-		e = p.memoGet(r.Id, start, min, env)
-	} else {
-		if inv != nil {
-			p.Document.stats.Evaluated++
-			v, ok = inv(p)
-		} else {
-			v, ok = p.invoke(r, min)
-		}
-		if !ok {
-			p.Recovered = p.Recovered[:rec]
-		}
-		e = p.memoSlab.one()
-		*e = tmemoEntry{val: v, ok: ok, end: p.Pos, silent: p.Silent > 0, errs: p.copyErrors(nil, p.Recovered[rec:])}
-		p.memoPut(r.Id, start, min, env, e)
-	}
-	far, inner := p.Unisolate(m)
-	e.far, e.expected = far, p.Keep(inner)
-	p.documentTouch(p.Pos + 1)
-	p.TypedDocument.meta[e] = typedDocumentMeta{examined: p.docHigh, provisional: p.docProvisional || r.Leader}
-	p.MergeExpected(far, inner)
-	if !ok {
-		p.Pos = start
-	}
-	return v, ok
-}
-
-// --- Rule calls ---
-
-func (p *TParser) Call(r *TRule, min int) (any, bool) {
-	if p.Observation != nil {
-		return p.callObserved(r, min)
-	}
-	return p.callBody(r, min)
-}
-
-// callObserved is call in an observed parse.
-func (p *TParser) callObserved(r *TRule, min int) (any, bool) {
-	p.Observation.Enter(r.Name, p.Pos, min)
-	h := p.ExaminedBegin()
-	v, ok := p.callBody(r, min)
-	x, known := p.ExaminedEnd(h)
-	p.Observation.Exit(ok, p.Pos, x, known)
-	return v, ok
-}
-
-// callBody is call without observation.
-func (p *TParser) callBody(r *TRule, min int) (any, bool) {
-	if p.TypedDocument != nil {
-		return p.DocumentCall(r, min, nil)
-	}
-	p.StepWork()
-	start := p.Pos
-	if !r.Memo && !r.Leader || p.FirstCall(r.Rule) {
-		if len(r.Scope) == 0 {
-			return p.invokePlainBody(r, min)
-		}
-		rec := len(p.Recovered)
-		v, ok := p.invoke(r, min)
-		if !ok {
-			p.Pos = start
-			p.Recovered = p.Recovered[:rec]
-		}
-		return v, ok
-	}
-	env := p.memoEnv(r.Rule)
-	if e := p.memoGet(r.Id, start, min, env); e != nil && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
-		p.Observation.memoHit()
-		if !e.growing {
-			p.MergeExpected(e.far, e.expected)
-		}
-		if !e.ok {
-			return nil, false
-		}
-		p.Pos = e.end
-		p.Recovered = p.copyErrors(p.Recovered, e.errs)
-		return e.val, true
-	}
-	rec := len(p.Recovered)
-	m := p.Isolate(start)
-	var v any
-	var ok bool
-	var e *tmemoEntry
-	if r.Leader {
-		v, ok = p.grow(r, min, env)
-		e = p.memoGet(r.Id, start, min, env)
-	} else {
-		v, ok = p.invoke(r, min)
-		if !ok {
-			p.Recovered = p.Recovered[:rec]
-		}
-		e = p.memoSlab.one()
-		*e = tmemoEntry{val: v, ok: ok, end: p.Pos, silent: p.Silent > 0,
-			errs: p.copyErrors(nil, p.Recovered[rec:])}
-		p.memoPut(r.Id, start, min, env, e)
-	}
-	far, inner := p.Unisolate(m)
-	e.far, e.expected = far, p.Keep(inner)
-	p.MergeExpected(far, inner)
-	if !ok {
-		p.Pos = start
-	}
-	return v, ok
-}
-
-// CallMemo is the memoized part of call, for the rule r invoked by inv (the generated i<id>):
-// the rule is called at the position again, or its memoization is no longer deferred.
-func (p *TParser) CallMemo(r *TRule, inv func(*TParser) (any, bool)) (any, bool) {
-	if p.TypedDocument != nil {
-		return p.DocumentCall(r, 0, inv)
-	}
-	start := p.Pos
-	env := p.memoEnv(r.Rule)
-	if e := p.memoGet(r.Id, start, 0, env); e != nil && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
-		p.Observation.memoHit()
-		if !e.growing {
-			p.MergeExpected(e.far, e.expected)
-		}
-		if !e.ok {
-			return nil, false
-		}
-		p.Pos = e.end
-		p.Recovered = p.copyErrors(p.Recovered, e.errs)
-		return e.val, true
-	}
-	rec := len(p.Recovered)
-	m := p.Isolate(start)
-	v, ok := inv(p)
-	if !ok {
-		p.Recovered = p.Recovered[:rec]
-	}
-	e := p.memoSlab.one()
-	*e = tmemoEntry{val: v, ok: ok, end: p.Pos, silent: p.Silent > 0,
-		errs: p.copyErrors(nil, p.Recovered[rec:])}
-	p.memoPut(r.Id, start, 0, env, e)
-	far, inner := p.Unisolate(m)
-	e.far, e.expected = far, p.Keep(inner)
-	p.MergeExpected(far, inner)
-	if !ok {
-		p.Pos = start
-	}
-	return v, ok
-}
-
-func (p *TParser) grow(r *TRule, min int, env []any) (any, bool) {
-	start := p.Pos
-	rec := len(p.Recovered)
-	best := p.memoSlab.one()
-	*best = tmemoEntry{end: start, growing: true}
-	p.memoPut(r.Id, start, min, env, best)
-	for {
-		v, ok := p.invoke(r, min)
-		if !ok || (best.ok && p.Pos <= best.end) {
-			break
-		}
-		best = p.memoSlab.one()
-		*best = tmemoEntry{val: v, ok: true, end: p.Pos, growing: true, errs: p.copyErrors(nil, p.Recovered[rec:])}
-		p.memoPut(r.Id, start, min, env, best)
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
-	}
-	best.growing = false
-	best.silent = p.Silent > 0
-	p.Pos = best.end
-	p.Recovered = p.copyErrors(p.Recovered[:rec], best.errs)
-	return best.val, best.ok
-}
-
-func (p *TParser) invoke(r *TRule, min int) (any, bool) {
-	if p.TypedDocument != nil {
-		p.Document.stats.Evaluated++
-	}
-	f := p.NewFrame(len(r.Scope))
-	prevFrame, prevEnv, prevCut, trail := p.Frame, p.Env, p.Cut, len(p.Trail)
-	p.Frame, p.Cut = f, false
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
-	start := p.Pos
-	p.Observation.Evaluated()
-	v, ok := r.Body(p, min)
-	p.Depth--
-	p.Frame, p.Cut = prevFrame, prevCut
-	p.DropTrail(trail)
-	if ok {
-		v = p.Finish(r, f, v, start)
-	}
-	p.Env = prevEnv
-	p.FreeFrame(f)
-	return v, ok
-}
-
-func (p *TParser) InvokePlain(r *TRule, min int) (any, bool) {
-	if p.Observation != nil {
-		return p.invokePlainObserved(r, min)
-	}
-	return p.invokePlainBody(r, min)
-}
-
-// invokePlainObserved is InvokePlain in an observed parse.
-func (p *TParser) invokePlainObserved(r *TRule, min int) (any, bool) {
-	p.Observation.Enter(r.Name, p.Pos, min)
-	h := p.ExaminedBegin()
-	v, ok := p.invokePlainBody(r, min)
-	x, known := p.ExaminedEnd(h)
-	p.Observation.Exit(ok, p.Pos, x, known)
-	return v, ok
-}
-
-// invokePlainBody is InvokePlain without observation.
-func (p *TParser) invokePlainBody(r *TRule, min int) (any, bool) {
-	start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
-	prevEnv, prevCut := p.Env, p.Cut
-	p.Cut = false
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
-	p.Observation.Evaluated()
-	v, ok := r.Body(p, min)
-	p.Depth--
-	p.Cut = prevCut
-	p.DropTrail(trail)
-	if ok {
-		v = p.Finish(r, EmptyTFrame, v, start)
-	} else {
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
-	}
-	p.Env = prevEnv
-	return v, ok
-}
-
-// Finish makes the rule's value from the value of its body, and checks it against the rule's
-// declared type if needed.
-func (p *TParser) Finish(r *TRule, f *TCaptureFrame, v any, start int) any {
-	var body any
-	if r.Nt != 0 && r.Action == nil {
-		body = TFreshNode(v)
-	}
-	v = p.finishValue(r, f, v, start)
-	if r.tcheck != nil {
-		r.tcheck(p, v)
-	}
-	if r.Nt != 0 {
-		v = p.TConvertResultOwned(r, v, body)
-	}
-	return v
-}
-
-// TFreshNode returns v if it is a fresh string, tuple or list node, and otherwise nil. Taken from
-// the value of a rule's body before the rule finishes it, it is the node the body made and nothing
-// else holds yet (see TConvertResultOwned).
-//
-// TFreshNode is for generated parsers; not a stable API.
-func TFreshNode(v any) any {
-	switch x := v.(type) {
-	case *TMatch:
-		if x.fresh {
-			return x
-		}
-	case *TSeq:
-		if x.fresh && (x.Typ == "tuple" || x.Typ == "list") {
-			return x
-		}
-	}
-	return nil
-}
-
-// TConvertResultOwned converts v, the value of rule r, to the rule's named node type, like
-// TConvertResult. If v is body, the fresh node of the rule's body (TFreshNode), the rule returns
-// the node it made itself, which nothing else holds, so it gets the type in place instead of
-// being copied: the copy tconvert makes keeps a node that others hold as it is.
-func (p *TParser) TConvertResultOwned(r *TRule, v, body any) any {
-	if body != nil && v == body {
+type Error pegort.Error
+
+// tpubHooks makes the values of the types above from those the typed runtime builds, and back.
+var tpubHooks = &pegort.TPubHooks{
+	Match: func(m *pegort.TNode[string]) any { return (*TNode[string])(m) },
+	Error: func(e *pegort.Error) any { return (*Error)(e) },
+	Node:  func(n *pegort.TNode[any]) any { return (*TNode[any])(n) },
+	Back: func(v any) any {
 		switch x := v.(type) {
-		case *TMatch:
-			x.Nt = r.Nt
-			return x
-		case *TSeq:
-			x.nt = r.Nt
-			return x
-		}
-	}
-	return p.TConvertResult(r, v)
-}
-
-// tnamed reports whether n is a node of a named node type.
-func tnamed(n TVal) bool {
-	switch x := n.(type) {
-	case *TMatch:
-		return x.Nt != 0
-	case *TSeq:
-		return x.nt != 0
-	}
-	return false
-}
-
-// tconvert is nodeTypeKinds.Convert for the values of the typed runtime: it returns the node of
-// the named node type nt that v converts to (a copy of v with the same range and content, or v
-// itself if it already has the type), and reports false if v is not a string, tuple or list node.
-func (p *TParser) tconvert(nt uint16, v any) (any, bool) {
-	switch x := v.(type) {
-	case *TMatch:
-		if x.Nt == nt {
-			return x, true
-		}
-		m := &TMatch{TNode: x.TNode, Nt: nt}
-		return m, true
-	case *TSeq:
-		if x.Typ != "tuple" && x.Typ != "list" {
-			return nil, false
-		}
-		if x.nt == nt {
-			return x, true
-		}
-		c := p.nodes.one()
-		*c = *x
-		c.nt, c.fresh = nt, false
-		if x.fresh {
-			// The rule that made x may still change it; the copy keeps what it holds now.
-			c.Kids = append([]any(nil), x.Kids...)
-		}
-		c.fields = append([]tfield(nil), x.fields...)
-		return c, true
-	}
-	return nil, false
-}
-
-// TConvertResult converts v, the value of rule r, to the rule's named node type.
-func (p *TParser) TConvertResult(r *TRule, v any) any {
-	n, ok := p.tconvert(r.Nt, v)
-	if !ok {
-		panic(fatal{fmt.Errorf("cannot convert %s to %s in result of rule %s", ttypeName(v), r.NodeType, r.Name)})
-	}
-	return n
-}
-
-// Convert evaluates a node type constructor T{v} (ActCtx.Convert): it converts v to the named node
-// type with the index nt (after convertCheck, where the value needs a check).
-func (c *TActCtx) Convert(nt uint16, v any) any {
-	n, ok := c.P.tconvert(nt, v)
-	if !ok {
-		c.P.evalErrorf("cannot convert %s to %s", ttypeName(v), tnodeTypeOf(nt).name)
-	}
-	return n
-}
-
-// TSetNodeType gives v, a string, tuple or list node that back made, the named node type nt.
-//
-// TSetNodeType is for generated parsers; not a stable API.
-func TSetNodeType(v any, nt uint16) any {
-	switch x := v.(type) {
-	case *TMatch:
-		x.Nt = nt
-	case *TSeq:
-		x.nt = nt
-	}
-	return v
-}
-
-func (p *TParser) finishValue(r *TRule, f *TCaptureFrame, v any, start int) any {
-	if r.Novalue {
-		return nil
-	}
-	if r.Action != nil {
-		c := p.UseCtx(TActCtx{P: p, F: f, Start: start, End: p.Pos, Cbase: len(p.Created)})
-		return c.Result(r.Action, r.Name)
-	}
-	v = p.ScopeValue(r.Value, v, start)
-	if len(r.Scope) > 0 {
-		v = p.AttachCaptures(v, r.Scope, f.Vals, start, p.Pos)
-	}
-	n := AsTval(v)
-	if n == nil {
-		return nil
-	}
-	n.TSetFresh(false)
-	return n
-}
-
-// AttachCaptures attaches the non-nil captures vals (named names) as fields of the value (a CST
-// node), first wrapping it in a tuple node unless it is a fresh one that is not itself captured.
-func (p *TParser) AttachCaptures(v any, names []string, vals []any, start, end int) any {
-	n := AsTval(v)
-	found := false
-	wrap := n == nil || !n.TFresh()
-	for _, c := range vals {
-		p.StepWork()
-		if c != nil {
-			found = true
-		}
-		if c != nil && n != nil && c == any(n) {
-			wrap = true
-		}
-	}
-	if !found {
-		return v
-	}
-	t, isNode := n.(*TSeq)
-	if wrap || !isNode {
-		kids := p.NewVals(1)
-		kids[0] = v
-		t = p.NewNode("tuple", start, end, kids)
-	}
-	if t.fields == nil {
-		t.fields = p.tfields(len(names))
-	}
-	for i, name := range names {
-		p.StepWork()
-		if vals[i] != nil {
-			p.setValueField(t, name, vals[i])
-		}
-	}
-	return t
-}
-
-// --- Shapes of values (see runtime.go) ---
-
-// shapeTuple returns the tuple node of the result v of a match of [start, p.Pos).
-func (p *TParser) shapeTuple(s Shaper, v any, start int) any {
-	if s.Elems {
-		return v
-	}
-	var kids []any
-	if s.K == 1 {
-		kids = p.NewVals(1)
-		kids[0] = v
-	}
-	return p.NewNode("tuple", start, p.Pos, kids)
-}
-
-// tone returns the one element of the result v.
-func tone(s Shaper, v any) any {
-	if s.Elems {
-		n, _ := v.(*TSeq)
-		if n == nil || len(n.Kids) == 0 {
-			return nil
-		}
-		return n.Kids[0]
-	}
-	return v
-}
-
-// ShapeSingle returns the value of the result v where the expression takes one element; ok is
-// false when it has no value.
-func (p *TParser) ShapeSingle(s Shaper, v any, start int) (any, bool) {
-	switch s.Mode {
-	case singlePass:
-		return tone(s, v), true
-	case singleTuple:
-		return p.shapeTuple(s, v, start), true
-	}
-	return nil, false
-}
-
-// ShapeCapture is ShapeSingle for a capture or a recovered expression, whose value is the unit
-// node of the range matched when the expression has no value.
-func (p *TParser) ShapeCapture(s Shaper, v any, start int) any {
-	v, ok := p.ShapeSingle(s, v, start)
-	if !ok {
-		v = p.NewNode("tuple", start, p.Pos, nil)
-	}
-	return v
-}
-
-// ScopeValue returns the value of a scope whose body matched [start, p.Pos) with the result v.
-func (p *TParser) ScopeValue(s Shaper, v any, start int) any {
-	if s.Tuple {
-		return p.shapeTuple(s, v, start)
-	}
-	return tone(s, v)
-}
-
-// --- Terminals ---
-
-func (p *TParser) MatchLiteral(rs []rune, text string, desc ExpID, build bool) (any, bool) {
-	start := p.Pos
-	if _, ok := p.Parser.MatchLiteral(rs, text, desc, false); !ok {
-		return nil, false
-	}
-	if !build {
-		return nil, true
-	}
-	return p.NewMatch(start, p.Pos, p.literalText(start, text), true), true
-}
-
-// MatchLiteralOrdinary is MatchLiteral in an ordinary parse (parser.ExpectOrdinary).
-func (p *TParser) MatchLiteralOrdinary(rs []rune, text string, desc ExpID, build bool) (any, bool) {
-	start := p.Pos
-	if _, ok := p.Parser.MatchLiteralOrdinary(rs, text, desc, false); !ok {
-		return nil, false
-	}
-	if !build {
-		return nil, true
-	}
-	return p.NewMatchOrdinary(start, p.Pos, p.literalText(start, text), true), true
-}
-
-// MatchAnyOrdinary is MatchAny in an ordinary parse (parser.ExpectOrdinary).
-func (p *TParser) MatchAnyOrdinary(build bool) (any, bool) {
-	_, size, ok := p.PeekOrdinary()
-	if !ok {
-		p.ExpectOrdinary(p.Pos, IdAny)
-		return nil, false
-	}
-	return p.Single(size, build)
-}
-
-func (p *TParser) MatchAny(build bool) (any, bool) {
-	_, size, ok := p.Peek()
-	if !ok {
-		p.Expect(p.Pos, IdAny)
-		return nil, false
-	}
-	return p.Single(size, build)
-}
-
-func (p *TParser) Single(size int, build bool) (any, bool) {
-	start := p.Pos
-	p.Pos += size
-	if !build {
-		return nil, true
-	}
-	return p.NewMatch(start, p.Pos, p.Text(start, p.Pos), true), true
-}
-
-func (p *TParser) Anchor(ok bool, desc ExpID) (any, bool) {
-	if ok {
-		return nil, true
-	}
-	p.Expect(p.Pos, desc)
-	return nil, false
-}
-
-// --- Attributes ---
-
-type tmatcher = func(p *TParser) (any, bool)
-
-func (p *TParser) tracked(m tmatcher) (v any, ok bool, far int, expected []ExpID) {
-	mark := p.Isolate(p.Pos)
-	v, ok = m(p)
-	far, expected = p.Unisolate(mark)
-	return v, ok, far, expected
-}
-
-func (p *TParser) ErrorAttr(m tmatcher, msg ExpID) (any, bool) {
-	v, ok, far, expected := p.tracked(m)
-	if ok {
-		p.MergeExpected(far, expected)
-		return v, true
-	}
-	p.Expect(far, msg)
-	return nil, false
-}
-
-func (p *TParser) DiagnosticAttr(m tmatcher, name ExpID) (any, bool) {
-	v, ok, far, expected := p.tracked(m)
-	if ok {
-		p.MergeExpected(far, expected)
-		return v, true
-	}
-	p.MergeExpected(far, RenamedExpected(p.Parser, expected, name))
-	return nil, false
-}
-
-func (p *TParser) RecoverAttr(m, skip tmatcher, build bool) (any, bool) {
-	m0 := p.Mark()
-	v, ok, far, expected := p.tracked(m)
-	if ok {
-		p.MergeExpected(far, expected)
-		return v, true
-	}
-	expected = p.Keep(expected)
-	p.Reset(m0)
-	if _, ok := skip(p); !ok || p.Pos == m0.Pos {
-		p.Reset(m0)
-		p.MergeExpected(far, expected)
-		return nil, false
-	}
-	e := p.MakeError(far, expected)
-	p.Recovered = append(p.Recovered, e)
-	if !build {
-		return nil, true
-	}
-	return &TError{Error{Span: Span{m0.Pos, p.Pos}, Text: p.Text(m0.Pos, p.Pos), Message: p.RecoveryErrorText(e)}, true}, true
-}
-
-// --- Actions and predicates ---
-
-// TActCtx is the context of evaluating an action or a predicate (ActCtx in the typed runtime).
-//
-// TActCtx is for generated parsers; not a stable API.
-type TActCtx struct {
-	P            *TParser
-	F            *TCaptureFrame
-	Start, End   int
-	Cbase        int
-	Lhs, Rhs, Op any
-}
-
-func (p *TParser) UseCtx(c TActCtx) *TActCtx {
-	p.ac = c
-	return &p.ac
-}
-
-// Result evaluates an action. Its errors fail the parse: tparse reports them with the rule
-// name, which result records in p.Where instead of deferring a recovery for each action.
-func (c *TActCtx) Result(action func(*TActCtx) any, where string) (n any) {
-	prev := c.P.Where
-	c.P.Where = where
-	n = c.Finish(action(c))
-	c.P.Where = prev
-	return n
-}
-
-// Finish checks and finishes the value v of an action (see result): a struct the action made
-// takes the rule's range, and the value is no longer fresh. A value other than a node needs no
-// carrier here.
-func (c *TActCtx) Finish(v any) any {
-	t := AsTval(v)
-	if t != nil {
-		for _, x := range c.P.Created[c.Cbase:] {
-			c.P.StepWork()
-			if x == t {
-				t.TSetSpan(c.Start, c.End)
-				break
-			}
-		}
-	}
-	c.P.DropCreated(c.Cbase)
-	if v == nil {
-		return nil
-	}
-	if t == nil {
-		if _, isFn := v.(func(...any) any); isFn {
-			c.P.evalErrorf("result must be a value, got a function")
+		case *TNode[string]:
+			return (*pegort.TNode[string])(x)
+		case *Error:
+			return (*pegort.Error)(x)
+		case *TNode[any]:
+			return (*pegort.TNode[any])(x)
 		}
 		return v
-	}
-	t.TSetFresh(false)
-	return t
-}
-
-func (p *TParser) DropCreated(base int) {
-	clear(p.Created[base:])
-	p.Created = p.Created[:base]
-}
-
-func (p *TParser) Predicate(t func(*TActCtx) any) (ok bool) {
-	base, kids := len(p.Created), len(p.KidStack)
-	defer func() {
-		p.DropCreated(base)
-		if x := recover(); x != nil {
-			if _, isEval := x.(evalError); !isEval {
-				panic(x)
-			}
-			p.DropKids(kids)
-			ok = false
-		}
-	}()
-	c := p.UseCtx(TActCtx{P: p, F: p.Frame, Start: p.Pos, End: p.Pos, Cbase: len(p.Created)})
-	v := t(c)
-	if b, isBool := v.(bool); isBool && !b {
-		return false
-	}
-	return true
-}
-
-// Assign is Parser.Assign for the typed runtime.
-func (p *TParser) Assign(name, typ string, t func(*TActCtx) any) (ok bool) {
-	base, kids := len(p.Created), len(p.KidStack)
-	defer func() {
-		p.DropCreated(base)
-		if x := recover(); x != nil {
-			if _, isEval := x.(evalError); !isEval {
-				panic(x)
-			}
-			p.DropKids(kids)
-			ok = false
-		}
-	}()
-	c := p.UseCtx(TActCtx{P: p, F: p.Frame, Start: p.Pos, End: p.Pos, Cbase: len(p.Created)})
-	v := t(c)
-	if _, isFn := v.(func(...any) any); isFn {
-		return false
-	}
-	if typ != "" && ttypeName(v) != typ {
-		return false // cannot use <value type> as <typ> in the binding of variable <name>
-	}
-	p.bind(name, v)
-	return true
-}
-
-// tvalOrNil is the typed runtime's nodeOrNil: values are already any, with the untyped nil.
-func tvalOrNil(v any) any { return v }
-
-func (c *TActCtx) Cap(slot int) any { return tvalOrNil(c.F.Vals[slot]) }
-
-func (c *TActCtx) Lookup(name string) any {
-	if WorkControlsEnabled && c.P.Control != nil {
-		if v, ok := c.P.lookupEnvControlled(name); ok {
-			return v
-		}
-		c.P.evalErrorf("variable %s is not defined", name)
-		return nil
-	}
-
-	for e := c.P.Env; e != nil; e = e.next {
-		if e.name == name {
-			return e.val
-		}
-	}
-	c.P.evalErrorf("variable %s is not defined", name)
-	return nil
-}
-
-// ttypeName is typeName for values of the typed runtime.
-func ttypeName(v any) string {
-	switch v.(type) {
-	case nil:
-		return "nil"
-	case int:
-		return "int"
-	case string:
-		return "string"
-	case bool:
-		return "bool"
-	}
-	if t, ok := v.(TVal); ok {
-		if tnamed(t) {
-			return t.TName()
-		}
-		return valueTypeName(tshape(t), t.TName(), len(t.TKids()))
-	}
-	return fmt.Sprintf("%T", v)
-}
-
-// FieldSpanOf widens the range [*start, *end) to cover the field value v if it is a node (first is
-// set until a node has been seen), as NewStruct does.
-//
-// FieldSpanOf is for generated parsers; not a stable API.
-func FieldSpanOf(v any, first *bool, start, end *int) {
-	child := AsTval(v)
-	if child == nil {
-		return
-	}
-	s, e := child.TSpan()
-	if *first || s < *start {
-		*start = s
-	}
-	if *first || e > *end {
-		*end = e
-	}
-	*first = false
-}
-
-// Made finishes a struct value n made by an action with the given range (see NewStruct).
-func (c *TActCtx) Made(n TVal, first bool, start, end int) any {
-	if first {
-		start, end = c.Start, c.End
-	}
-	n.TSetSpan(start, end)
-	c.P.Created = append(c.P.Created, n)
-	return n
-}
-
-func (c *TActCtx) NewList(items []any) any {
-	kids := c.P.NewVals(len(items))
-	copyWork(c.P.Parser, kids, items)
-	return c.listNode(kids)
-}
-
-// listNode returns a list value with the child list kids (which it takes over). Its range, which
-// the value model does not show, covers the elements that are nodes.
-func (c *TActCtx) listNode(kids []any) *TSeq { return c.valueNode(TypeListValue, kids) }
-
-// Tuple returns a tuple value of the arguments, as a tuple literal builds it.
-func (c *TActCtx) Tuple(args ...any) any {
-	base := len(c.P.KidStack)
-	for _, a := range args {
-		c.P.StepWork()
-		c.P.KidStack = append(c.P.KidStack, c.asNode("tuple", a))
-	}
-	return c.valueNode(TypeTupleValue, c.P.Kids(base))
-}
-
-func (c *TActCtx) valueNode(typ string, kids []any) *TSeq {
-	n := c.P.NewNode(typ, c.Start, c.Start, kids)
-	n.fresh = false
-	first := true
-	for _, it := range kids {
-		c.P.StepWork()
-		t := AsTval(it)
-		if t == nil {
-			continue
-		}
-		s, e := t.TSpan()
-		if first || s < n.Start {
-			n.Start = s
-		}
-		if first || e > n.End {
-			n.End = e
-		}
-		first = false
-	}
-	return n
-}
-
-// tstrFields is implemented by the generated struct types: TStrField returns the value of a
-// string field without boxing it.
-//
-// TStrField is for generated parsers; not a stable API.
-type tstrFields interface {
-	TStrField(name string) (string, bool)
-}
-
-// fieldOperand reads x.Name as member does, keeping a string field of a struct unboxed.
-func (c *TActCtx) fieldOperand(x any, name string) toperand {
-	// A string field of a struct costs no steps to read under work controls either: see TFieldWork.
-	if n, ok := x.(tstrFields); ok {
-		if s, ok := n.TStrField(name); ok {
-			return toperand{str: s, isStr: true}
-		}
-	}
-	return toperand{v: c.Member(x, name)}
-}
-
-// compare applies a comparison operator as binary does, comparing two strings directly.
-func (c *TActCtx) compare(op string, l, r toperand) any {
-	if !l.isStr {
-		l.str, l.isStr = l.v.(string)
-	}
-	if !r.isStr {
-		r.str, r.isStr = r.v.(string)
-	}
-	if l.isStr && r.isStr {
-		if v, ok := c.P.compareStrings(op, l.str, r.str); ok {
-			return v
-		}
-	}
-	return c.Binary(op, l.value(), r.value())
-}
-
-func (c *TActCtx) Member(x any, name string) any {
-	n := AsTval(x)
-	if n == nil {
-		c.P.evalErrorf("cannot access .%s of %s", name, ttypeName(x))
-	}
-	if tisNode(n) {
-		switch name {
-		case "Start":
-			s, _ := n.TSpan()
-			return s
-		case "End":
-			_, e := n.TSpan()
-			return e
-		case "Value":
-			return c.P.nodeValue(n)
-		}
-	}
-	if len(name) > 1 && name[0] == '$' {
-		capture := name[1:]
-		// x.$y reads a capture, which struct values do not have; an unmatched capture is nil.
-		v, ok := c.P.valueField(n, capture)
-		if n.TStruct() {
-			c.P.evalErrorf("%s has no capture %s", n.TName(), capture)
-		}
-		if !ok {
-			return nil
-		}
-		return tvalOrNil(v)
-	}
-	v, ok := c.P.valueField(n, name)
-	if !ok {
-		c.P.evalErrorf("%s has no field %s", n.TName(), name)
-	}
-	return tvalOrNil(v)
-}
-
-func trtUnary(op string, x any) any {
-	switch op {
-	case "-":
-		if i, ok := x.(int); ok {
-			return -i
-		}
-	case "!":
-		if b, ok := x.(bool); ok {
-			return !b
-		}
-	}
-	evalErrorf("invalid operand %s for unary %s", ttypeName(x), op)
-	return nil
-}
-
-func trtBool(op string, v any) bool {
-	b, ok := v.(bool)
-	if !ok {
-		evalErrorf("invalid operand %s for %s", ttypeName(v), op)
-	}
-	return b
-}
-
-func trtAnd(l any, r func() any) any {
-	if !trtBool("&&", l) {
-		return false
-	}
-	return trtBool("&&", r())
-}
-
-func trtOr(l any, r func() any) any {
-	if trtBool("||", l) {
-		return true
-	}
-	return trtBool("||", r())
-}
-
-func trtEqual(a, b any) bool {
-	switch a.(type) {
-	case int, string, bool:
-		return a == b
-	case nil:
-		return b == nil
-	}
-	an, ok := a.(TVal)
-	if !ok {
-		return false
-	}
-	bn, ok := b.(TVal)
-	return ok && an == bn
-}
-
-func trtBinary(op string, l, r any) any {
-	switch op {
-	case "==":
-		return trtEqual(l, r)
-	case "!=":
-		return !trtEqual(l, r)
-	case "[]":
-		items := tlistItems("[]", l)
-		return items[rtIndex(nil, r, len(items), ttypeName)]
-	}
-	switch l := l.(type) {
-	case int:
-		if r, ok := r.(int); ok {
-			switch op {
-			case "+":
-				return l + r
-			case "-":
-				return l - r
-			case "*":
-				return l * r
-			case "/", "%":
-				if r == 0 {
-					evalErrorf("division by zero")
-				}
-				if op == "/" {
-					return l / r
-				}
-				return l % r
-			case "<":
-				return l < r
-			case "<=":
-				return l <= r
-			case ">":
-				return l > r
-			case ">=":
-				return l >= r
-			}
-		}
-	case string:
-		if r, ok := r.(string); ok {
-			switch op {
-			case "+":
-				return l + r
-			case "<":
-				return l < r
-			case "<=":
-				return l <= r
-			case ">":
-				return l > r
-			case ">=":
-				return l >= r
-			}
-		}
-	}
-	evalErrorf("invalid operands %s and %s for %s", ttypeName(l), ttypeName(r), op)
-	return nil
-}
-
-func (c *TActCtx) Length(x any) any {
-	switch x := x.(type) {
-	case string:
-		return c.P.unitLen(x)
-	case nil:
-		return 0
-	}
-	if n, ok := x.(TVal); ok {
-		if text, ok := n.TText(); ok {
-			return c.P.unitLen(text)
-		}
-		return len(n.TKids())
-	}
-	c.P.evalErrorf("len: invalid argument %s", ttypeName(x))
-	return nil
-}
-
-func (c *TActCtx) Text(x any) any { return c.TextStr(x) }
-
-func (c *TActCtx) TextStr(x any) string {
-	switch x := x.(type) {
-	case nil:
-		return ""
-	case string:
-		return x
-	}
-	if n, ok := x.(TVal); ok {
-		if text, ok := n.TText(); ok {
-			return text
-		}
-		s, e := n.TSpan()
-		return c.P.Text(s, e)
-	}
-	c.P.evalErrorf("text: invalid argument %s", ttypeName(x))
-	return ""
-}
-
-func tlistItems(fn string, v any) []any {
-	if v == nil {
-		return nil
-	}
-	if n, ok := v.(TVal); ok {
-		return n.TKids()
-	}
-	evalErrorf("%s: expected a list, got %s", fn, ttypeName(v))
-	return nil
-}
-
-func tasNode(fn string, v any) any {
-	if v == nil {
-		return nil
-	}
-	switch v.(type) {
-	case TVal, int, string, bool:
-		return v
-	}
-	evalErrorf("%s: elements must be values, got %s", fn, ttypeName(v))
-	return nil
-}
-
-func trtFold(fn string, right bool, acc, list any, f func(acc, item any) any) any {
-	items := tlistItems(fn, list)
-	for i := range items {
-		it := items[i]
-		if right {
-			it = items[len(items)-1-i]
-		}
-		acc = f(acc, tvalOrNil(it))
-	}
-	return acc
-}
-
-func (c *TActCtx) MapList(list any, f func(item any) any) any {
-	base := len(c.P.KidStack)
-	c.PushMap(list, f)
-	return c.EndList(base)
-}
-
-func (c *TActCtx) filterList(list any, f func(item any) any) any {
-	base := len(c.P.KidStack)
-	for _, item := range c.ListItems("filter", list) {
-		c.P.StepWork()
-		value := f(tvalOrNil(item))
-		keep, ok := value.(bool)
-		if !ok {
-			c.P.evalErrorf("filter: predicate must produce a bool, got %s", ttypeName(value))
-		}
-		if keep {
-			c.P.KidStack = append(c.P.KidStack, item)
-		}
-	}
-	return c.EndList(base)
-}
-
-func (c *TActCtx) List(args ...any) any {
-	base := len(c.P.KidStack)
-	c.PushList(args...)
-	return c.EndList(base)
-}
-
-func (c *TActCtx) Concat(args ...any) any {
-	base := len(c.P.KidStack)
-	for _, a := range args {
-		c.P.StepWork()
-		c.PushItems(a)
-	}
-	return c.EndList(base)
-}
-
-func (c *TActCtx) PushMap(list any, f func(item any) any) {
-	for _, it := range c.ListItems("map", list) {
-		c.P.StepWork()
-		c.P.KidStack = append(c.P.KidStack, c.asNode("map", f(tvalOrNil(it))))
-	}
-}
-
-func (c *TActCtx) PushList(args ...any) {
-	for _, a := range args {
-		c.P.StepWork()
-		c.P.KidStack = append(c.P.KidStack, c.asNode("list", a))
-	}
-}
-
-func (c *TActCtx) PushItems(v any) {
-	c.P.KidStack = appendWork(c.P.Parser, c.P.KidStack, c.ListItems("concat", v))
-}
-
-func (c *TActCtx) EndList(base int) any {
-	return c.listNode(c.P.Kids(base))
-}
-
-// --- Operators Rule expressions ---
-
-// TOperatorsRule is for generated parsers; not a stable API.
-type TOperatorsRule struct {
-	Skip     tmatcher
-	Operands []*TOperatorsRuleLine
-	Prefix   []*TOperatorsRuleOp
-	Led      []*TOperatorsRuleOp
-}
-
-// TOperatorsRuleLine is for generated parsers; not a stable API.
-type TOperatorsRuleLine struct {
-	Scope  []string
-	M      tmatcher
-	Action func(*TActCtx) any
-	// Value makes the value of an operand line without an action, and of an operator line's
-	// operator, from the value of the line's expression.
-	Value Shaper
-	check func(p *TParser, v any) // checks the line's value against the rule's declared type
-}
-
-// TOperatorsRuleOp is for generated parsers; not a stable API.
-type TOperatorsRuleOp struct {
-	Id    int
-	Kind  string
-	Assoc string
-	Level int
-	Line  *TOperatorsRuleLine
-}
-
-type toperatorsRuleAttempt struct {
-	op         *TOperatorsRuleOp
-	frame      *TCaptureFrame
-	v          any
-	start, end int
-	env        *Env
-	cut        bool
-	errs       []*SyntaxError
-}
-
-func (p *TParser) skipTrivia(pr *TOperatorsRule) {
-	if pr.Skip == nil {
-		return
-	}
-	m := p.Mark()
-	p.Silent++
-	_, ok := pr.Skip(p)
-	p.Silent--
-	if !ok {
-		p.Reset(m)
-	}
-}
-
-func (p *TParser) longest(ops []*TOperatorsRuleOp) (best toperatorsRuleAttempt, cutFailed bool) {
-	m0 := p.Mark()
-	for _, op := range ops {
-		p.StepWork()
-		prevFrame, prevCut := p.Frame, p.Cut
-		f := p.NewFrame(len(op.Line.Scope))
-		p.Frame, p.Cut = f, false
-		v, ok := op.Line.M(p)
-		cut := p.Cut
-		p.Frame, p.Cut = prevFrame, prevCut
-		if ok && p.Pos == m0.Pos && op.Kind != "infix" {
-			ok = false
-		}
-		if ok && (best.op == nil || p.Pos > best.end) {
-			best = toperatorsRuleAttempt{op: op, frame: f, v: v, start: m0.Pos, end: p.Pos, env: p.Env, cut: cut,
-				errs: p.copyErrors(nil, p.Recovered[m0.recovered:])}
-		}
-		if !ok && cut {
-			cutFailed = true
-		}
-		if len(f.Vals) == 0 {
-			p.Reset(m0)
-			continue
-		}
-		p.saved = appendWork(p.Parser, p.saved[:0], f.Vals)
-		p.Reset(m0)
-		copyWork(p.Parser, f.Vals, p.saved)
-	}
-	return best, cutFailed
-}
-
-func (p *TParser) apply(a *toperatorsRuleAttempt) {
-	p.Pos, p.Env = a.end, a.env
-	p.Recovered = p.copyErrors(p.Recovered, a.errs)
-}
-
-// OperatorsRuleParse is parser.OperatorsRuleParse for typed values.
-func (p *TParser) OperatorsRuleParse(r *TRule, min int) (any, bool) {
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
-	v, ok := p.operatorsRuleExpr(r, min)
-	p.Depth--
-	return v, ok
-}
-
-func (p *TParser) operatorsRuleExpr(r *TRule, min int) (any, bool) {
-	pr := r.OperatorsRule
-	lhs, ok := p.operatorsRuleNud(r)
-	if !ok {
-		return nil, false
-	}
-	lastNone := -1
-	for {
-		m0 := p.Mark()
-		p.skipTrivia(pr)
-		a, cutFailed := p.longest(pr.Led)
-		if a.op == nil {
-			p.Reset(m0)
-			if cutFailed {
-				return nil, false
-			}
-			break
-		}
-		if a.op.Level <= min || a.op.Assoc == "none" && a.op.Level == lastNone {
-			p.Reset(m0)
-			break
-		}
-		p.apply(&a)
-		if a.op.Kind == "postfix" {
-			lhs = p.operatorsRuleBuild(r, &a, lhs, nil)
-			lastNone = -1
-			if p.Pos == m0.Pos {
-				break
-			}
-			continue
-		}
-		rmin := a.op.Level
-		if a.op.Assoc == "right" {
-			rmin--
-		}
-		rhs, ok := p.OperatorsRuleParse(r, rmin)
-		if !ok {
-			if a.cut {
-				return nil, false
-			}
-			p.Reset(m0)
-			break
-		}
-		lhs = p.operatorsRuleBuild(r, &a, lhs, rhs)
-		lastNone = -1
-		if a.op.Assoc == "none" {
-			lastNone = a.op.Level
-		}
-		if p.Pos == m0.Pos { // as in runtime.go
-			break
-		}
-	}
-	return lhs, true
-}
-
-func (p *TParser) operatorsRuleNud(r *TRule) (any, bool) {
-	pr := r.OperatorsRule
-	p.skipTrivia(pr)
-	m0 := p.Mark()
-	if a, cutFailed := p.longest(pr.Prefix); a.op != nil {
-		p.apply(&a)
-		rhs, ok := p.OperatorsRuleParse(r, a.op.Level)
-		if ok {
-			return p.operatorsRuleBuild(r, &a, nil, rhs), true
-		}
-		if a.cut {
-			return nil, false
-		}
-		p.Reset(m0)
-	} else if cutFailed {
-		return nil, false
-	}
-	for _, o := range pr.Operands {
-		p.StepWork()
-		prevFrame, prevCut := p.Frame, p.Cut
-		f := p.NewFrame(len(o.Scope))
-		p.Frame, p.Cut = f, false
-		v, ok := o.M(p)
-		cut := p.Cut
-		p.Frame, p.Cut = prevFrame, prevCut
-		if ok {
-			return p.lineResult(r, o, f, v, m0.Pos), true
-		}
-		p.Reset(m0)
-		if cut {
-			return nil, false
-		}
-	}
-	return nil, false
-}
-
-func (p *TParser) lineResult(r *TRule, l *TOperatorsRuleLine, f *TCaptureFrame, v any, start int) any {
-	if r.Novalue {
-		return nil
-	}
-	v = p.lineValue(r, l, f, v, start)
-	if l.check != nil {
-		l.check(p, v)
-	}
-	return v
-}
-
-func (p *TParser) lineValue(r *TRule, l *TOperatorsRuleLine, f *TCaptureFrame, v any, start int) any {
-	if l.Action != nil {
-		c := p.UseCtx(TActCtx{P: p, F: f, Start: start, End: p.Pos, Cbase: len(p.Created)})
-		return c.Result(l.Action, r.Name)
-	}
-	v = p.ScopeValue(l.Value, v, start)
-	if len(l.Scope) > 0 {
-		v = p.AttachCaptures(v, l.Scope, f.Vals, start, p.Pos)
-	}
-	if n := AsTval(v); n != nil {
-		n.TSetFresh(false)
-		return n
-	}
-	return nil
-}
-
-func (p *TParser) operatorsRuleBuild(r *TRule, a *toperatorsRuleAttempt, lhs, rhs any) any {
-	if r.Novalue {
-		return nil
-	}
-	start, end := a.start, p.Pos
-	if l := AsTval(lhs); l != nil {
-		start, _ = l.TSpan()
-	}
-	if a.op.Kind == "postfix" {
-		end = a.end
-	}
-	l := a.op.Line
-	// The operator's value is its one element, or the node of its tuple, which has the line's
-	// captures.
-	opv, ok := p.ShapeSingle(l.Value, a.v, a.start)
-	if !ok {
-		opv = p.NewNode("tuple", a.start, a.end, nil)
-	}
-	if l.Value.Mode == singleTuple && len(l.Scope) > 0 {
-		opv = p.AttachCaptures(opv, l.Scope, a.frame.Vals, a.start, a.end)
-	}
-	if n := AsTval(opv); n != nil {
-		n.TSetFresh(false)
-	}
-	if l.Action != nil {
-		c := p.UseCtx(TActCtx{P: p, F: a.frame, Start: start, End: end, Cbase: len(p.Created),
-			Op: opv, Lhs: lhs, Rhs: rhs})
-		v := c.Result(l.Action, r.Name)
-		if l.check != nil {
-			l.check(p, v)
-		}
-		if r.OpNt != 0 {
-			v = p.convertOperator(r, v)
-		}
-		return v
-	}
-	// Without an action, the application is the node of the tuple (lhs, op, rhs) of the line's
-	// kind, with those captures.
-	var kids []any
-	var fields []tfield
-	switch a.op.Kind {
-	case "prefix":
-		kids = p.NewVals(2)
-		kids[0], kids[1] = opv, rhs
-		fields = []tfield{{"op", opv}, {"rhs", rhs}}
-	case "postfix":
-		kids = p.NewVals(2)
-		kids[0], kids[1] = lhs, opv
-		fields = []tfield{{"lhs", lhs}, {"op", opv}}
-	default:
-		kids = p.NewVals(3)
-		kids[0], kids[1], kids[2] = lhs, opv, rhs
-		fields = []tfield{{"lhs", lhs}, {"op", opv}, {"rhs", rhs}}
-	}
-	n := p.NewNode("tuple", start, end, kids)
-	n.fresh = false
-	n.fields = fields
-	if l.check != nil {
-		// Without type checking, the tuple node is checked like an action's result.
-		l.check(p, n)
-		if r.OpNt != 0 {
-			return p.convertOperator(r, n)
-		}
-	} else {
-		n.nt = r.OpNt // made with the named node type of the operators, if any
-	}
-	return n
-}
-
-// convertOperator converts v, the value of an operator of rule r, to the named node type of the
-// rule's operators.
-func (p *TParser) convertOperator(r *TRule, v any) any {
-	n, ok := p.tconvert(r.OpNt, v)
-	if !ok {
-		panic(fatal{fmt.Errorf("cannot convert %s to %s in result of rule %s", ttypeName(v), r.OpNodeType, r.Name)})
-	}
-	return n
-}
-
-func (c *TActCtx) Binary(op string, l, r any) any {
-	if v, ok := c.P.stringBinary(op, l, r); ok {
-		return v
-	}
-	if WorkControlsEnabled && c.P.Control != nil {
-		return trtBinaryWork(c.P.Parser, op, l, r)
-	}
-	return trtBinary(op, l, r)
-}
-
-func (p *TParser) PushKid(v any) { p.StepWork(); p.KidStack = append(p.KidStack, v) }
-func (p *TParser) setValueField(n *TSeq, name string, v any) {
-	if !WorkControlsEnabled || p.Control == nil {
-		n.set(name, v)
-		return
-	}
-	for i := range n.fields {
-		p.StepWork()
-		if p.rawValueEqual(n.fields[i].name, name) {
-			n.fields[i].val = v
-			return
-		}
-	}
-	p.StepWork()
-	n.fields = append(n.fields, tfield{name, v})
-}
-func (p *TParser) undoCaptures(from int) {
-	for i := len(p.Trail) - 1; i >= from; i-- {
-		p.StepWork()
-		u := p.Trail[i]
-		u.f.Vals[u.slot] = u.old
-	}
-}
-
-func (p *TParser) valueField(n TVal, name string) (any, bool) {
-	if !WorkControlsEnabled || p.Control == nil {
-		return n.TField(name)
-	}
-	t, transient := n.(*TSeq)
-	if !transient {
-		if controlled, ok := n.(tfieldWorker); ok {
-			return controlled.TFieldWork(p, name)
-		}
-		return n.TField(name)
-	}
-	for _, field := range t.fields {
-		p.StepWork()
-		if p.rawValueEqual(field.name, name) {
-			return field.val, true
-		}
-	}
-	return nil, true
-}
-func (c *TActCtx) Fold(fn string, right bool, acc, list any, f func(acc, item any) any) any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return trtFold(fn, right, acc, list, f)
-	}
-	items := c.ListItems(fn, list)
-	for i := range items {
-		c.P.StepWork()
-		item := items[i]
-		if right {
-			item = items[len(items)-1-i]
-		}
-		acc = f(acc, tvalOrNil(item))
-	}
-	return acc
-}
-
-// ListField materializes a typed struct's list field during an action read.
-// The ordinary TField path remains independent of a parser or work controller.
-func (p *TParser) ListField(kids []any) any {
-	n := &TSeq{Typ: TypeListValue, Kids: kids}
-	first := true
-	for _, it := range kids {
-		p.StepWork()
-		t := AsTval(it)
-		if t == nil {
-			continue
-		}
-		start, end := t.TSpan()
-		if first || start < n.Start {
-			n.Start = start
-		}
-		if first || end > n.End {
-			n.End = end
-		}
-		first = false
-	}
-	return n
-}
-
-func trtUnaryWork(p *Parser, op string, x any) any {
-	switch op {
-	case "-":
-		if i, ok := x.(int); ok {
-			return -i
-		}
-	case "!":
-		if b, ok := x.(bool); ok {
-			return !b
-		}
-	}
-	p.evalErrorf("invalid operand %s for unary %s", ttypeName(x), op)
-	return nil
-}
-
-func trtBoolWork(p *Parser, op string, v any) bool {
-	b, ok := v.(bool)
-	if !ok {
-		p.evalErrorf("invalid operand %s for %s", ttypeName(v), op)
-	}
-	return b
-}
-
-func trtBinaryWork(p *Parser, op string, l, r any) any {
-	switch op {
-	case "==":
-		return trtEqual(l, r)
-	case "!=":
-		return !trtEqual(l, r)
-	case "[]":
-		items := tlistItemsWork(p, "[]", l)
-		return items[rtIndex(p, r, len(items), ttypeName)]
-	}
-	switch l := l.(type) {
-	case int:
-		if r, ok := r.(int); ok {
-			switch op {
-			case "+":
-				return l + r
-			case "-":
-				return l - r
-			case "*":
-				return l * r
-			case "/", "%":
-				if r == 0 {
-					p.evalErrorf("division by zero")
-				}
-				if op == "/" {
-					return l / r
-				}
-				return l % r
-			case "<":
-				return l < r
-			case "<=":
-				return l <= r
-			case ">":
-				return l > r
-			case ">=":
-				return l >= r
-			}
-		}
-	case string:
-		if r, ok := r.(string); ok {
-			switch op {
-			case "+":
-				return l + r
-			case "<":
-				return l < r
-			case "<=":
-				return l <= r
-			case ">":
-				return l > r
-			case ">=":
-				return l >= r
-			}
-		}
-	}
-	p.evalErrorf("invalid operands %s and %s for %s", ttypeName(l), ttypeName(r), op)
-	return nil
-}
-
-func tlistItemsWork(p *Parser, fn string, v any) []any {
-	if v == nil {
-		return nil
-	}
-	if n, ok := v.(TVal); ok {
-		return n.TKids()
-	}
-	p.evalErrorf("%s: expected a list, got %s", fn, ttypeName(v))
-	return nil
-}
-
-func tasNodeWork(p *Parser, fn string, v any) any {
-	if v == nil {
-		return nil
-	}
-	switch v.(type) {
-	case TVal, int, string, bool:
-		return v
-	}
-	p.evalErrorf("%s: elements must be values, got %s", fn, ttypeName(v))
-	return nil
-}
-
-func (c *TActCtx) Unary(op string, v any) any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return trtUnary(op, v)
-	}
-	return trtUnaryWork(c.P.Parser, op, v)
-}
-func (c *TActCtx) And(l any, r func() any) any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return trtAnd(l, r)
-	}
-	if !trtBoolWork(c.P.Parser, "&&", l) {
-		return false
-	}
-	return trtBoolWork(c.P.Parser, "&&", r())
-}
-func (c *TActCtx) Or(l any, r func() any) any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return trtOr(l, r)
-	}
-	if trtBoolWork(c.P.Parser, "||", l) {
-		return true
-	}
-	return trtBoolWork(c.P.Parser, "||", r())
-}
-func (c *TActCtx) ListItems(fn string, v any) []any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return tlistItems(fn, v)
-	}
-	return tlistItemsWork(c.P.Parser, fn, v)
-}
-func (c *TActCtx) asNode(fn string, v any) any {
-	if !WorkControlsEnabled || c.P.Control == nil {
-		return tasNode(fn, v)
-	}
-	return tasNodeWork(c.P.Parser, fn, v)
+	},
 }
 
 // --- Typed values (pego gen -types; Span, TNode and Error are in the typed runtime above) ---
 
 // Binary is the struct type Binary.
 type Binary struct {
-	Span
+	pegort.Span
 	Left  Expr
 	Op    *TNode[string]
 	Right Expr
@@ -8270,7 +88,7 @@ type Binary struct {
 
 // Unary is the struct type Unary.
 type Unary struct {
-	Span
+	pegort.Span
 	Op *TNode[string]
 	X  Expr
 }
@@ -8295,23 +113,23 @@ func (v *Binary) TSetFresh(bool)        {}
 func (v *Binary) TField(name string) (any, bool) {
 	switch name {
 	case "Left":
-		return TBack(v.Left), true
+		return pegort.TBack(tpubHooks, v.Left), true
 	case "Op":
-		return TBack(v.Op), true
+		return pegort.TBack(tpubHooks, v.Op), true
 	case "Right":
-		return TBack(v.Right), true
+		return pegort.TBack(tpubHooks, v.Right), true
 	}
 	return nil, false
 }
 
-func (v *Binary) TFieldWork(p *TParser, name string) (any, bool) {
+func (v *Binary) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 	switch name {
 	case "Left":
-		return TBack(v.Left), true
+		return pegort.TBack(tpubHooks, v.Left), true
 	case "Op":
-		return TBack(v.Op), true
+		return pegort.TBack(tpubHooks, v.Op), true
 	case "Right":
-		return TBack(v.Right), true
+		return pegort.TBack(tpubHooks, v.Right), true
 	}
 	return nil, false
 }
@@ -8325,52 +143,52 @@ func (v *Unary) TSetFresh(bool)        {}
 func (v *Unary) TField(name string) (any, bool) {
 	switch name {
 	case "Op":
-		return TBack(v.Op), true
+		return pegort.TBack(tpubHooks, v.Op), true
 	case "X":
-		return TBack(v.X), true
+		return pegort.TBack(tpubHooks, v.X), true
 	}
 	return nil, false
 }
 
-func (v *Unary) TFieldWork(p *TParser, name string) (any, bool) {
+func (v *Unary) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 	switch name {
 	case "Op":
-		return TBack(v.Op), true
+		return pegort.TBack(tpubHooks, v.Op), true
 	case "X":
-		return TBack(v.X), true
+		return pegort.TBack(tpubHooks, v.X), true
 	}
 	return nil, false
 }
 
-func astNode(v any) *Node { n, _ := v.(*Node); return n }
-func astIsNil(v any) bool { n, ok := v.(*Node); return v == nil || ok && n == nil }
+func astNode(v any) *pegort.Node { n, _ := v.(*pegort.Node); return n }
+func astIsNil(v any) bool        { n, ok := v.(*pegort.Node); return v == nil || ok && n == nil }
 
 // astKid returns the value of element i of a tuple node's children (nil if there is none).
-func astKid(kids []*Node, i int) any {
+func astKid(kids []*pegort.Node, i int) any {
 	if i < len(kids) {
-		return UnboxNode(kids[i])
+		return pegort.UnboxNode(kids[i])
 	}
 	return nil
 }
 
 // The value of a rule, and a list element, holds an int, string or bool in a box.
-func astInt(v any) int       { i, _ := UnboxValue(v).(int); return i }
-func astString(v any) string { s, _ := UnboxValue(v).(string); return s }
-func astBool(v any) bool     { x, _ := UnboxValue(v).(bool); return x }
+func astInt(v any) int       { i, _ := pegort.UnboxValue(v).(int); return i }
+func astString(v any) string { s, _ := pegort.UnboxValue(v).(string); return s }
+func astBool(v any) bool     { x, _ := pegort.UnboxValue(v).(bool); return x }
 func astPtrInt(v any) *int {
-	if i, ok := UnboxValue(v).(int); ok {
+	if i, ok := pegort.UnboxValue(v).(int); ok {
 		return &i
 	}
 	return nil
 }
 func astPtrString(v any) *string {
-	if s, ok := UnboxValue(v).(string); ok {
+	if s, ok := pegort.UnboxValue(v).(string); ok {
 		return &s
 	}
 	return nil
 }
 func astPtrBool(v any) *bool {
-	if x, ok := UnboxValue(v).(bool); ok {
+	if x, ok := pegort.UnboxValue(v).(bool); ok {
 		return &x
 	}
 	return nil
@@ -8439,7 +257,7 @@ func astSlice[T any](s *astChunk[T], n int) []T {
 
 // tinit sets up the typed rules (called at the end of init, after the rule tables).
 func tinit() {
-	tnamedPub := func(a any, x TVal) any {
+	tnamedPub := func(a any, x pegort.TVal) any {
 		s, _ := a.(*tslabs)
 		if s == nil {
 			s = &tslabs{}
@@ -8451,65 +269,65 @@ func tinit() {
 		return nil
 	}
 	for i, name := range []string{"Number"} {
-		tnt[i+1] = TRegisterNodeType(name, tnamedPub)
+		tnt[i+1] = pegort.TRegisterNodeType(name, tnamedPub)
 	}
 	trules[11].Nt = tnt[1]
 }
 
 // tmk_Binary makes a Binary in an action (newStruct in the typed runtime).
-func tmk_Binary(c *TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_Binary(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tBinary)
 	c.P.StepWork()
-	v.Left = TAs[Expr](TPubIn(a, f0))
+	v.Left = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f0))
 	c.P.StepWork()
-	v.Op = TPubMatch(f1)
+	v.Op = (*TNode[string])(pegort.TPubMatch(f1))
 	c.P.StepWork()
-	v.Right = TAs[Expr](TPubIn(a, f2))
+	v.Right = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f2))
 	if final {
-		v.Span = Span{c.Start, c.End}
+		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 	c.P.StepWork()
-	FieldSpanOf(f0, &first, &start, &end)
+	pegort.FieldSpanOf(f0, &first, &start, &end)
 	c.P.StepWork()
-	FieldSpanOf(f1, &first, &start, &end)
+	pegort.FieldSpanOf(f1, &first, &start, &end)
 	c.P.StepWork()
-	FieldSpanOf(f2, &first, &start, &end)
+	pegort.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 // tmk_Unary makes a Unary in an action (newStruct in the typed runtime).
-func tmk_Unary(c *TActCtx, final bool, f0 any, f1 any) any {
+func tmk_Unary(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tUnary)
 	c.P.StepWork()
-	v.Op = TPubMatch(f0)
+	v.Op = (*TNode[string])(pegort.TPubMatch(f0))
 	c.P.StepWork()
-	v.X = TAs[Expr](TPubIn(a, f1))
+	v.X = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f1))
 	if final {
-		v.Span = Span{c.Start, c.End}
+		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 	c.P.StepWork()
-	FieldSpanOf(f0, &first, &start, &end)
+	pegort.FieldSpanOf(f0, &first, &start, &end)
 	c.P.StepWork()
-	FieldSpanOf(f1, &first, &start, &end)
+	pegort.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tv0(a *tslabs, v any) *Number {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(Number{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
-	x, _ := v.(*TMatch)
+	x, _ := v.(*pegort.TMatch)
 	if x == nil || x.Nt != tnt[1] {
 		return nil
 	}
-	return TMatchAs[Number](x)
+	return pegort.TMatchAs[Number](x)
 }
 
 func tv1(a *tslabs, v any) *TNode[[]*TNode[string]] {
@@ -8520,23 +338,23 @@ func tv1(a *tslabs, v any) *TNode[[]*TNode[string]] {
 func tv2(a *tslabs, v any) *TNode[[]*TNode[string]] {
 	a.stepWork()
 	switch x := v.(type) {
-	case *TSeq:
-		if x.Typ == TypeTupleValue || x.Typ == TypeListValue {
+	case *pegort.TSeq:
+		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
 		out := &TNode[[]*TNode[string]]{Span: x.Span}
 		out.Value = tl0(a, x)
 		return out
-	case *TError:
+	case *pegort.TError:
 		return nil
-	case TVal:
+	case pegort.TVal:
 		if x.TStruct() {
 			return nil
 		}
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[[]*TNode[string]]{Span: Span{s, e}}
+		out := &TNode[[]*TNode[string]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tl0(a, text)
 		return out
 	}
@@ -8548,29 +366,29 @@ func tl0(a *tslabs, v any) []*TNode[string] {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*TSeq)
+	n, _ := v.(*pegort.TSeq)
 	if n == nil {
 		return []*TNode[string]{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = TPubMatch(c)
+		out[i] = (*TNode[string])(pegort.TPubMatch(c))
 	}
 	return out
 }
 
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
-	control  *WorkControl
+	control  *pegort.WorkControl
 	tBinary  astChunk[Binary]
 	tUnary   astChunk[Unary]
 	tl0Chunk astChunk[*TNode[string]]
 }
 
-func (a *tslabs) SetWorkControl(c *WorkControl) { a.control = c }
+func (a *tslabs) SetWorkControl(c *pegort.WorkControl) { a.control = c }
 func (a *tslabs) stepWork() {
-	if WorkControlsEnabled && a.control != nil {
+	if pegort.WorkControlsEnabled && a.control != nil {
 		a.control.Charge(0, 1)
 	}
 }
@@ -8583,9 +401,9 @@ var tnt [2]uint16
 // from errors, the result is returned together with SyntaxErrors; an Error node where a struct
 // type is expected becomes nil.
 // It builds the values directly, without the nodes Parse returns.
-func ParseAST(input string, opts ...ParseOption) (Expr, error) {
+func ParseAST(input string, opts ...pegort.ParseOption) (Expr, error) {
 	a := &tslabs{}
-	return TParse(trules[0], input, opts, a, func(v any) Expr { return TAs[Expr](TPubIn(a, v)) })
+	return pegort.TParse(trules[0], input, opts, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
 }
 
 // ParseRuleAST parses the whole input with the named rule and returns its typed value.
@@ -8605,51 +423,51 @@ func ParseAST(input string, opts ...ParseOption) (Expr, error) {
 //	group: Expr
 //	number: *Number
 //	ws: *TNode[[]*TNode[string]]
-func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
-	o, err := ResolveOptions(pegoGrammar, opts)
+func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
+	o, err := pegort.ResolveOptions(pegoGrammar, opts)
 	if err != nil {
 		return nil, err
 	}
 	switch name {
 	case "main":
 		a := &tslabs{}
-		return TParseResolved(trules[0], input, o, a, func(v any) Expr { return TAs[Expr](TPubIn(a, v)) })
+		return pegort.TParseResolved(trules[0], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
 	case "expr":
 		a := &tslabs{}
-		return TParseResolved(trules[1], input, o, a, func(v any) Expr { return TAs[Expr](TPubIn(a, v)) })
+		return pegort.TParseResolved(trules[1], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
 	case "add":
 		a := &tslabs{}
-		return TParseResolved(trules[2], input, o, a, func(v any) Expr { return TAs[Expr](TPubIn(a, v)) })
+		return pegort.TParseResolved(trules[2], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
 	case "term":
 		a := &tslabs{}
-		return TParseResolved(trules[3], input, o, a, func(v any) Expr { return TAs[Expr](TPubIn(a, v)) })
+		return pegort.TParseResolved(trules[3], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
 	case "mul":
 		a := &tslabs{}
-		return TParseResolved(trules[4], input, o, a, func(v any) Expr { return TAs[Expr](TPubIn(a, v)) })
+		return pegort.TParseResolved(trules[4], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
 	case "unary":
 		a := &tslabs{}
-		return TParseResolved(trules[5], input, o, a, func(v any) Expr { return TAs[Expr](TPubIn(a, v)) })
+		return pegort.TParseResolved(trules[5], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
 	case "neg":
 		a := &tslabs{}
-		return TParseResolved(trules[6], input, o, a, func(v any) Expr { return TAs[Expr](TPubIn(a, v)) })
+		return pegort.TParseResolved(trules[6], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
 	case "power":
 		a := &tslabs{}
-		return TParseResolved(trules[7], input, o, a, func(v any) Expr { return TAs[Expr](TPubIn(a, v)) })
+		return pegort.TParseResolved(trules[7], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
 	case "pow":
 		a := &tslabs{}
-		return TParseResolved(trules[8], input, o, a, func(v any) Expr { return TAs[Expr](TPubIn(a, v)) })
+		return pegort.TParseResolved(trules[8], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
 	case "primary":
 		a := &tslabs{}
-		return TParseResolved(trules[9], input, o, a, func(v any) Expr { return TAs[Expr](TPubIn(a, v)) })
+		return pegort.TParseResolved(trules[9], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
 	case "group":
 		a := &tslabs{}
-		return TParseResolved(trules[10], input, o, a, func(v any) Expr { return TAs[Expr](TPubIn(a, v)) })
+		return pegort.TParseResolved(trules[10], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
 	case "number":
 		a := &tslabs{}
-		return TParseResolved(trules[11], input, o, a, func(v any) *Number { return tv0(a, v) })
+		return pegort.TParseResolved(trules[11], input, o, a, func(v any) *Number { return tv0(a, v) })
 	case "ws":
 		a := &tslabs{}
-		return TParseResolved(trules[12], input, o, a, func(v any) *TNode[[]*TNode[string]] { return tv1(a, v) })
+		return pegort.TParseResolved(trules[12], input, o, a, func(v any) *TNode[[]*TNode[string]] { return tv1(a, v) })
 	default:
 		return nil, fmt.Errorf("rule %s is not defined", name)
 	}
@@ -8666,101 +484,101 @@ var lit22 = []rune(")")
 var lit24 = []rune(".")
 
 func init() {
-	rules = []*Rule{
-		{Id: 0, Name: "main", Scope: []string{"e"}, Value: Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 1, Name: "expr", Scope: []string{}, Value: Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: true, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 2, Name: "add", Scope: []string{"l", "op", "r"}, Value: Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 3, Name: "term", Scope: []string{}, Value: Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: true, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 4, Name: "mul", Scope: []string{"l", "op", "r"}, Value: Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 5, Name: "unary", Scope: []string{}, Value: Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 0, Novalue: false, Vars: []string{}},
-		{Id: 6, Name: "neg", Scope: []string{"op", "x"}, Value: Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 7, Name: "power", Scope: []string{}, Value: Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 8, Name: "pow", Scope: []string{"l", "op", "r"}, Value: Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 9, Name: "primary", Scope: []string{"p"}, Value: Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 1, Novalue: false, Vars: []string{}},
-		{Id: 10, Name: "group", Scope: []string{"e"}, Value: Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 11, Name: "number", Scope: []string{}, Value: Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, NodeType: "Number", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 12, Name: "ws", Scope: []string{}, Value: Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 13, Name: "ws", Scope: []string{}, Value: Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+	rules = []*pegort.Rule{
+		{Id: 0, Name: "main", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 1, Name: "expr", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: true, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 2, Name: "add", Scope: []string{"l", "op", "r"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 3, Name: "term", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: true, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 4, Name: "mul", Scope: []string{"l", "op", "r"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 5, Name: "unary", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 0, Novalue: false, Vars: []string{}},
+		{Id: 6, Name: "neg", Scope: []string{"op", "x"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 7, Name: "power", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 8, Name: "pow", Scope: []string{"l", "op", "r"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 9, Name: "primary", Scope: []string{"p"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 1, Novalue: false, Vars: []string{}},
+		{Id: 10, Name: "group", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 11, Name: "number", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, NodeType: "Number", Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 12, Name: "ws", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 13, Name: "ws", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
 	}
 	pegoGrammar.SetRules(rules, 2)
-	rules[0].Body = func(p *Parser, _ int) (*Node, bool) { return e1(p) }
-	rules[0].Action = func(c *ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
-	rules[1].Body = func(p *Parser, _ int) (*Node, bool) { return e4(p) }
-	rules[2].Body = func(p *Parser, _ int) (*Node, bool) { return e7(p) }
-	rules[2].Action = func(c *ActCtx) any {
+	rules[0].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e1(p) }
+	rules[0].Action = func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[1].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e4(p) }
+	rules[2].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e7(p) }
+	rules[2].Action = func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.NewStruct("Binary", "Left", func() any { c.P.StepWork(); return c.Cap(0) }(), "Op", func() any { c.P.StepWork(); return c.Cap(1) }(), "Right", func() any { c.P.StepWork(); return c.Cap(2) }())
 		}()
 	}
-	rules[3].Body = func(p *Parser, _ int) (*Node, bool) { return e10(p) }
-	rules[4].Body = func(p *Parser, _ int) (*Node, bool) { return e14(p) }
-	rules[4].Action = func(c *ActCtx) any {
+	rules[3].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e10(p) }
+	rules[4].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e14(p) }
+	rules[4].Action = func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.NewStruct("Binary", "Left", func() any { c.P.StepWork(); return c.Cap(0) }(), "Op", func() any { c.P.StepWork(); return c.Cap(1) }(), "Right", func() any { c.P.StepWork(); return c.Cap(2) }())
 		}()
 	}
-	rules[5].Body = func(p *Parser, _ int) (*Node, bool) { return e15(p) }
-	rules[6].Body = func(p *Parser, _ int) (*Node, bool) { return e16(p) }
-	rules[6].Action = func(c *ActCtx) any {
+	rules[5].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e15(p) }
+	rules[6].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e16(p) }
+	rules[6].Action = func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.NewStruct("Unary", "Op", func() any { c.P.StepWork(); return c.Cap(0) }(), "X", func() any { c.P.StepWork(); return c.Cap(1) }())
 		}()
 	}
-	rules[7].Body = func(p *Parser, _ int) (*Node, bool) { return e17(p) }
-	rules[8].Body = func(p *Parser, _ int) (*Node, bool) { return e19(p) }
-	rules[8].Action = func(c *ActCtx) any {
+	rules[7].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e17(p) }
+	rules[8].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e19(p) }
+	rules[8].Action = func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.NewStruct("Binary", "Left", func() any { c.P.StepWork(); return c.Cap(0) }(), "Op", func() any { c.P.StepWork(); return c.Cap(1) }(), "Right", func() any { c.P.StepWork(); return c.Cap(2) }())
 		}()
 	}
-	rules[9].Body = func(p *Parser, _ int) (*Node, bool) { return e20(p) }
-	rules[9].Action = func(c *ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
-	rules[10].Body = func(p *Parser, _ int) (*Node, bool) { return e23(p) }
-	rules[10].Action = func(c *ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
-	rules[11].Body = func(p *Parser, _ int) (*Node, bool) { return e25(p) }
-	rules[12].Body = func(p *Parser, _ int) (*Node, bool) { return e26(p) }
-	rules[13].Body = func(p *Parser, _ int) (*Node, bool) { return e27(p) }
+	rules[9].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e20(p) }
+	rules[9].Action = func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[10].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e23(p) }
+	rules[10].Action = func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[11].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e25(p) }
+	rules[12].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e26(p) }
+	rules[13].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e27(p) }
 	pegoGrammar.StructFields["Binary"] = map[string]bool{"Left": true, "Op": true, "Right": true}
-	pegoGrammar.TypeKinds["Binary"] = KindOf("Binary", "")
+	pegoGrammar.TypeKinds["Binary"] = pegort.KindOf("Binary", "")
 	pegoGrammar.StructFields["Unary"] = map[string]bool{"Op": true, "X": true}
-	pegoGrammar.TypeKinds["Unary"] = KindOf("Unary", "")
-	pegoGrammar.NodeTypes["Number"] = NewNodeTypeKinds("Number")
-	recRules = []*Rule{
-		{Id: 0, Name: "main", Scope: []string{}, Value: Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 1, Name: "expr", Scope: []string{}, Value: Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: true, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 2, Name: "add", Scope: []string{}, Value: Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 3, Name: "term", Scope: []string{}, Value: Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: true, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 4, Name: "mul", Scope: []string{}, Value: Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 5, Name: "unary", Scope: []string{}, Value: Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 0, Novalue: true, Vars: []string{}},
-		{Id: 6, Name: "neg", Scope: []string{}, Value: Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 7, Name: "power", Scope: []string{}, Value: Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 8, Name: "pow", Scope: []string{}, Value: Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 9, Name: "primary", Scope: []string{}, Value: Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 1, Novalue: true, Vars: []string{}},
-		{Id: 10, Name: "group", Scope: []string{}, Value: Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 11, Name: "number", Scope: []string{}, Value: Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 12, Name: "ws", Scope: []string{}, Value: Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+	pegoGrammar.TypeKinds["Unary"] = pegort.KindOf("Unary", "")
+	pegoGrammar.NodeTypes["Number"] = pegort.NewNodeTypeKinds("Number")
+	recRules = []*pegort.Rule{
+		{Id: 0, Name: "main", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 1, Name: "expr", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: true, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 2, Name: "add", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 3, Name: "term", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: true, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 4, Name: "mul", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 5, Name: "unary", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 0, Novalue: true, Vars: []string{}},
+		{Id: 6, Name: "neg", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 7, Name: "power", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 8, Name: "pow", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 9, Name: "primary", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 1, Novalue: true, Vars: []string{}},
+		{Id: 10, Name: "group", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 11, Name: "number", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 12, Name: "ws", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
 	}
 	pegoRecGrammar.SetRules(recRules, 2)
-	recRules[0].Body = func(p *Parser, _ int) (*Node, bool) { return e28(p) }
-	recRules[1].Body = func(p *Parser, _ int) (*Node, bool) { return e31(p) }
-	recRules[2].Body = func(p *Parser, _ int) (*Node, bool) { return e32(p) }
-	recRules[3].Body = func(p *Parser, _ int) (*Node, bool) { return e35(p) }
-	recRules[4].Body = func(p *Parser, _ int) (*Node, bool) { return e36(p) }
-	recRules[5].Body = func(p *Parser, _ int) (*Node, bool) { return e37(p) }
-	recRules[6].Body = func(p *Parser, _ int) (*Node, bool) { return e38(p) }
-	recRules[7].Body = func(p *Parser, _ int) (*Node, bool) { return e39(p) }
-	recRules[8].Body = func(p *Parser, _ int) (*Node, bool) { return e40(p) }
-	recRules[9].Body = func(p *Parser, _ int) (*Node, bool) { return e41(p) }
-	recRules[10].Body = func(p *Parser, _ int) (*Node, bool) { return e42(p) }
-	recRules[11].Body = func(p *Parser, _ int) (*Node, bool) { return e43(p) }
-	recRules[12].Body = func(p *Parser, _ int) (*Node, bool) { return e27(p) }
+	recRules[0].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e28(p) }
+	recRules[1].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e31(p) }
+	recRules[2].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e32(p) }
+	recRules[3].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e35(p) }
+	recRules[4].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e36(p) }
+	recRules[5].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e37(p) }
+	recRules[6].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e38(p) }
+	recRules[7].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e39(p) }
+	recRules[8].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e40(p) }
+	recRules[9].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e41(p) }
+	recRules[10].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e42(p) }
+	recRules[11].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e43(p) }
+	recRules[12].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e27(p) }
 	pegoGrammar.Descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"+\"", "\"-\"", "\"*\"", "\"/\"", "\"%\"", "\"^\"", "\"(\"", "\")\"", "[0-9]", "\".\"", "[ \\t\\r\\n]"}
 	pegoRecGrammar.Share(pegoGrammar)
-	trules = []*TRule{
+	trules = []*pegort.TRule{
 		{Rule: rules[0]},
 		{Rule: rules[1]},
 		{Rule: rules[2]},
@@ -8778,9 +596,9 @@ func init() {
 	}
 	defer tinit()
 	trules[0].Entry = u0
-	trules[1].Body = func(p *TParser, _ int) (any, bool) { return e44(p) }
+	trules[1].Body = func(p *pegort.TParser, _ int) (any, bool) { return e44(p) }
 	trules[2].Entry = u2
-	trules[3].Body = func(p *TParser, _ int) (any, bool) { return e48(p) }
+	trules[3].Body = func(p *pegort.TParser, _ int) (any, bool) { return e48(p) }
 	trules[4].Entry = u4
 	trules[5].Entry = u5
 	trules[6].Entry = u6
@@ -8794,13 +612,13 @@ func init() {
 }
 
 // main (Node body inlined)
-func e1(p *Parser) (*Node, bool) {
+func e1(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
 			x1 int
 			ok bool
-			v2 *Node
+			v2 *pegort.Node
 		)
 		_ = x1
 
@@ -8815,8 +633,8 @@ func e1(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.AtEndOrdinary() {
-			p.ExpectOrdinary(p.Pos, IdEndInput)
+		if !p.AtEndBatchOrdinary() {
+			p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
 			goto fail_ordinary
 		}
 		return nil, true
@@ -8828,7 +646,7 @@ func e1(p *Parser) (*Node, bool) {
 	var (
 		x1 int
 		ok bool
-		v2 *Node
+		v2 *pegort.Node
 	)
 	_ = x1
 	p.StepWork()
@@ -8844,8 +662,8 @@ func e1(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.AtEnd() {
-		p.Expect(p.Pos, IdEndInput)
+	if !p.AtEndBatch() {
+		p.Expect(p.Pos, pegort.IdEndInput)
 		goto fail
 	}
 	return nil, true
@@ -8854,7 +672,7 @@ fail:
 }
 
 // add
-func e2(p *Parser) (*Node, bool) {
+func e2(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		return p.Call(rules[2], 0)
@@ -8865,7 +683,7 @@ func e2(p *Parser) (*Node, bool) {
 }
 
 // term
-func e3(p *Parser) (*Node, bool) {
+func e3(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		return p.Call(rules[3], 0)
@@ -8876,7 +694,7 @@ func e3(p *Parser) (*Node, bool) {
 }
 
 // add / term
-func e4(p *Parser) (*Node, bool) {
+func e4(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		m0 := p.Mark()
@@ -8945,21 +763,21 @@ func e4(p *Parser) (*Node, bool) {
 }
 
 // add (Node body inlined)
-func e7(p *Parser) (*Node, bool) {
+func e7(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
 			x1  int
 			ok  bool
-			v2  *Node
+			v2  *pegort.Node
 			x3  int
 			x4  int
-			x5  Mark
+			x5  pegort.Mark
 			x7  rune
 			x8  bool
-			v13 *Node
+			v13 *pegort.Node
 			x14 int
-			v15 *Node
+			v15 *pegort.Node
 		)
 		_, _, _ = x1, x3, x14
 
@@ -8990,7 +808,7 @@ func e7(p *Parser) (*Node, bool) {
 			goto L9_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit5, "+", 5, false); !ok {
 			goto L10_ordinary
@@ -9004,7 +822,7 @@ func e7(p *Parser) (*Node, bool) {
 			goto L11_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit6, "-", 6, false); !ok {
 			goto L12_ordinary
@@ -9015,7 +833,7 @@ func e7(p *Parser) (*Node, bool) {
 	L11_ordinary:
 		goto fail_ordinary
 	L6_ordinary:
-		v13 = p.NewNodeOrdinary(Node{RawKind: RawKindMatch, RawStart: int32(x4), RawEnd: int32(p.Pos), RawText: p.Text(x4, p.Pos), RawTerminal: true, RawFresh: true})
+		v13 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x4), RawEnd: int32(p.Pos), RawText: p.Text(x4, p.Pos), RawTerminal: true, RawFresh: true})
 		p.SetCaptureOrdinary(1, v13)
 
 		x14 = p.Pos
@@ -9033,15 +851,15 @@ func e7(p *Parser) (*Node, bool) {
 	var (
 		x1  int
 		ok  bool
-		v2  *Node
+		v2  *pegort.Node
 		x3  int
 		x4  int
-		x5  Mark
+		x5  pegort.Mark
 		x7  rune
 		x8  bool
-		v13 *Node
+		v13 *pegort.Node
 		x14 int
-		v15 *Node
+		v15 *pegort.Node
 	)
 	_, _, _ = x1, x3, x14
 	p.StepWork()
@@ -9073,7 +891,7 @@ func e7(p *Parser) (*Node, bool) {
 		goto L9
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit5, "+", 5, false); !ok {
 		goto L10
@@ -9087,7 +905,7 @@ L9:
 		goto L11
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit6, "-", 6, false); !ok {
 		goto L12
@@ -9098,7 +916,7 @@ L12:
 L11:
 	goto fail
 L6:
-	v13 = p.NewNode(Node{RawKind: RawKindMatch, RawStart: int32(x4), RawEnd: int32(p.Pos), RawText: p.Text(x4, p.Pos), RawTerminal: true, RawFresh: true})
+	v13 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x4), RawEnd: int32(p.Pos), RawText: p.Text(x4, p.Pos), RawTerminal: true, RawFresh: true})
 	p.SetCapture(1, v13)
 	p.StepWork()
 	x14 = p.Pos
@@ -9113,7 +931,7 @@ fail:
 }
 
 // mul
-func e8(p *Parser) (*Node, bool) {
+func e8(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		return p.Call(rules[4], 0)
@@ -9124,7 +942,7 @@ func e8(p *Parser) (*Node, bool) {
 }
 
 // unary
-func e9(p *Parser) (*Node, bool) {
+func e9(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		return p.Call(rules[5], 0)
@@ -9135,7 +953,7 @@ func e9(p *Parser) (*Node, bool) {
 }
 
 // mul / unary
-func e10(p *Parser) (*Node, bool) {
+func e10(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		m0 := p.Mark()
@@ -9204,21 +1022,21 @@ func e10(p *Parser) (*Node, bool) {
 }
 
 // mul (Node body inlined)
-func e14(p *Parser) (*Node, bool) {
+func e14(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
 			x1  int
 			ok  bool
-			v2  *Node
+			v2  *pegort.Node
 			x3  int
 			x4  int
-			x5  Mark
+			x5  pegort.Mark
 			x7  rune
 			x8  bool
-			v15 *Node
+			v15 *pegort.Node
 			x16 int
-			v17 *Node
+			v17 *pegort.Node
 		)
 		_, _, _ = x1, x3, x16
 
@@ -9249,7 +1067,7 @@ func e14(p *Parser) (*Node, bool) {
 			goto L9_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 42) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 42) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit11, "*", 7, false); !ok {
 			goto L10_ordinary
@@ -9263,7 +1081,7 @@ func e14(p *Parser) (*Node, bool) {
 			goto L11_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 47) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 47) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit12, "/", 8, false); !ok {
 			goto L12_ordinary
@@ -9277,7 +1095,7 @@ func e14(p *Parser) (*Node, bool) {
 			goto L13_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 37) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 37) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit13, "%", 9, false); !ok {
 			goto L14_ordinary
@@ -9288,7 +1106,7 @@ func e14(p *Parser) (*Node, bool) {
 	L13_ordinary:
 		goto fail_ordinary
 	L6_ordinary:
-		v15 = p.NewNodeOrdinary(Node{RawKind: RawKindMatch, RawStart: int32(x4), RawEnd: int32(p.Pos), RawText: p.Text(x4, p.Pos), RawTerminal: true, RawFresh: true})
+		v15 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x4), RawEnd: int32(p.Pos), RawText: p.Text(x4, p.Pos), RawTerminal: true, RawFresh: true})
 		p.SetCaptureOrdinary(1, v15)
 
 		x16 = p.Pos
@@ -9306,15 +1124,15 @@ func e14(p *Parser) (*Node, bool) {
 	var (
 		x1  int
 		ok  bool
-		v2  *Node
+		v2  *pegort.Node
 		x3  int
 		x4  int
-		x5  Mark
+		x5  pegort.Mark
 		x7  rune
 		x8  bool
-		v15 *Node
+		v15 *pegort.Node
 		x16 int
-		v17 *Node
+		v17 *pegort.Node
 	)
 	_, _, _ = x1, x3, x16
 	p.StepWork()
@@ -9346,7 +1164,7 @@ func e14(p *Parser) (*Node, bool) {
 		goto L9
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 42) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 42) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit11, "*", 7, false); !ok {
 		goto L10
@@ -9360,7 +1178,7 @@ L9:
 		goto L11
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 47) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 47) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit12, "/", 8, false); !ok {
 		goto L12
@@ -9374,7 +1192,7 @@ L11:
 		goto L13
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 37) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 37) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit13, "%", 9, false); !ok {
 		goto L14
@@ -9385,7 +1203,7 @@ L14:
 L13:
 	goto fail
 L6:
-	v15 = p.NewNode(Node{RawKind: RawKindMatch, RawStart: int32(x4), RawEnd: int32(p.Pos), RawText: p.Text(x4, p.Pos), RawTerminal: true, RawFresh: true})
+	v15 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x4), RawEnd: int32(p.Pos), RawText: p.Text(x4, p.Pos), RawTerminal: true, RawFresh: true})
 	p.SetCapture(1, v15)
 	p.StepWork()
 	x16 = p.Pos
@@ -9400,15 +1218,15 @@ fail:
 }
 
 // unary (Node body inlined)
-func e15(p *Parser) (*Node, bool) {
+func e15(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
-			x1 Mark
-			v2 *Node
+			x1 pegort.Mark
+			v2 *pegort.Node
 			ok bool
-			v5 *Node
-			v7 *Node
+			v5 *pegort.Node
+			v7 *pegort.Node
 		)
 
 		x1 = p.Mark()
@@ -9437,11 +1255,11 @@ func e15(p *Parser) (*Node, bool) {
 
 	p.StepWork()
 	var (
-		x1 Mark
-		v2 *Node
+		x1 pegort.Mark
+		v2 *pegort.Node
 		ok bool
-		v5 *Node
-		v7 *Node
+		v5 *pegort.Node
+		v7 *pegort.Node
 	)
 	p.StepWork()
 	x1 = p.Mark()
@@ -9469,19 +1287,19 @@ fail:
 }
 
 // neg (Node body inlined)
-func e16(p *Parser) (*Node, bool) {
+func e16(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
 			ok  bool
 			x1  int
 			x2  int
-			x3  Mark
+			x3  pegort.Mark
 			x5  rune
 			x6  bool
-			v11 *Node
+			v11 *pegort.Node
 			x12 int
-			v13 *Node
+			v13 *pegort.Node
 		)
 		_, _ = x1, x12
 
@@ -9505,7 +1323,7 @@ func e16(p *Parser) (*Node, bool) {
 			goto L7_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit6, "-", 6, false); !ok {
 			goto L8_ordinary
@@ -9519,7 +1337,7 @@ func e16(p *Parser) (*Node, bool) {
 			goto L9_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit5, "+", 5, false); !ok {
 			goto L10_ordinary
@@ -9530,7 +1348,7 @@ func e16(p *Parser) (*Node, bool) {
 	L9_ordinary:
 		goto fail_ordinary
 	L4_ordinary:
-		v11 = p.NewNodeOrdinary(Node{RawKind: RawKindMatch, RawStart: int32(x2), RawEnd: int32(p.Pos), RawText: p.Text(x2, p.Pos), RawTerminal: true, RawFresh: true})
+		v11 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x2), RawEnd: int32(p.Pos), RawText: p.Text(x2, p.Pos), RawTerminal: true, RawFresh: true})
 		p.SetCaptureOrdinary(0, v11)
 
 		x12 = p.Pos
@@ -9549,12 +1367,12 @@ func e16(p *Parser) (*Node, bool) {
 		ok  bool
 		x1  int
 		x2  int
-		x3  Mark
+		x3  pegort.Mark
 		x5  rune
 		x6  bool
-		v11 *Node
+		v11 *pegort.Node
 		x12 int
-		v13 *Node
+		v13 *pegort.Node
 	)
 	_, _ = x1, x12
 	p.StepWork()
@@ -9579,7 +1397,7 @@ func e16(p *Parser) (*Node, bool) {
 		goto L7
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit6, "-", 6, false); !ok {
 		goto L8
@@ -9593,7 +1411,7 @@ L7:
 		goto L9
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit5, "+", 5, false); !ok {
 		goto L10
@@ -9604,7 +1422,7 @@ L10:
 L9:
 	goto fail
 L4:
-	v11 = p.NewNode(Node{RawKind: RawKindMatch, RawStart: int32(x2), RawEnd: int32(p.Pos), RawText: p.Text(x2, p.Pos), RawTerminal: true, RawFresh: true})
+	v11 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x2), RawEnd: int32(p.Pos), RawText: p.Text(x2, p.Pos), RawTerminal: true, RawFresh: true})
 	p.SetCapture(0, v11)
 	p.StepWork()
 	x12 = p.Pos
@@ -9619,15 +1437,15 @@ fail:
 }
 
 // power (Node body inlined)
-func e17(p *Parser) (*Node, bool) {
+func e17(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
-			x1 Mark
-			v2 *Node
+			x1 pegort.Mark
+			v2 *pegort.Node
 			ok bool
-			v5 *Node
-			v7 *Node
+			v5 *pegort.Node
+			v7 *pegort.Node
 		)
 
 		x1 = p.Mark()
@@ -9656,11 +1474,11 @@ func e17(p *Parser) (*Node, bool) {
 
 	p.StepWork()
 	var (
-		x1 Mark
-		v2 *Node
+		x1 pegort.Mark
+		v2 *pegort.Node
 		ok bool
-		v5 *Node
-		v7 *Node
+		v5 *pegort.Node
+		v7 *pegort.Node
 	)
 	p.StepWork()
 	x1 = p.Mark()
@@ -9688,18 +1506,18 @@ fail:
 }
 
 // pow (Node body inlined)
-func e19(p *Parser) (*Node, bool) {
+func e19(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
 			x1 int
 			ok bool
-			v2 *Node
+			v2 *pegort.Node
 			x3 int
 			x4 int
-			v5 *Node
+			v5 *pegort.Node
 			x6 int
-			v7 *Node
+			v7 *pegort.Node
 		)
 		_, _, _ = x1, x3, x6
 
@@ -9717,12 +1535,12 @@ func e19(p *Parser) (*Node, bool) {
 		x3 = p.Pos
 
 		x4 = p.Pos
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 94) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 94) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit18, "^", 10, false); !ok {
 			goto fail_ordinary
 		}
-		v5 = p.NewNodeOrdinary(Node{RawKind: RawKindMatch, RawStart: int32(x4), RawEnd: int32(p.Pos), RawText: "^", RawTerminal: true, RawFresh: true})
+		v5 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x4), RawEnd: int32(p.Pos), RawText: "^", RawTerminal: true, RawFresh: true})
 		p.SetCaptureOrdinary(1, v5)
 
 		x6 = p.Pos
@@ -9740,12 +1558,12 @@ func e19(p *Parser) (*Node, bool) {
 	var (
 		x1 int
 		ok bool
-		v2 *Node
+		v2 *pegort.Node
 		x3 int
 		x4 int
-		v5 *Node
+		v5 *pegort.Node
 		x6 int
-		v7 *Node
+		v7 *pegort.Node
 	)
 	_, _, _ = x1, x3, x6
 	p.StepWork()
@@ -9764,12 +1582,12 @@ func e19(p *Parser) (*Node, bool) {
 	x3 = p.Pos
 	p.StepWork()
 	x4 = p.Pos
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 94) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 94) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit18, "^", 10, false); !ok {
 		goto fail
 	}
-	v5 = p.NewNode(Node{RawKind: RawKindMatch, RawStart: int32(x4), RawEnd: int32(p.Pos), RawText: "^", RawTerminal: true, RawFresh: true})
+	v5 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x4), RawEnd: int32(p.Pos), RawText: "^", RawTerminal: true, RawFresh: true})
 	p.SetCapture(1, v5)
 	p.StepWork()
 	x6 = p.Pos
@@ -9784,18 +1602,18 @@ fail:
 }
 
 // primary (Node body inlined)
-func e20(p *Parser) (*Node, bool) {
+func e20(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
 			ok  bool
 			x1  int
-			x2  Mark
-			v3  *Node
-			v6  *Node
+			x2  pegort.Mark
+			v3  *pegort.Node
+			v6  *pegort.Node
 			x7  rune
 			x8  bool
-			v11 *Node
+			v11 *pegort.Node
 		)
 		_ = x1
 
@@ -9845,12 +1663,12 @@ func e20(p *Parser) (*Node, bool) {
 	var (
 		ok  bool
 		x1  int
-		x2  Mark
-		v3  *Node
-		v6  *Node
+		x2  pegort.Mark
+		v3  *pegort.Node
+		v6  *pegort.Node
 		x7  rune
 		x8  bool
-		v11 *Node
+		v11 *pegort.Node
 	)
 	_ = x1
 	p.StepWork()
@@ -9898,17 +1716,17 @@ fail:
 }
 
 // group (Node body inlined)
-func e23(p *Parser) (*Node, bool) {
+func e23(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
 			ok bool
 			x1 int
-			v2 *Node
+			v2 *pegort.Node
 		)
 		_ = x1
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit21, "(", 11, false); !ok {
 			goto fail_ordinary
@@ -9925,7 +1743,7 @@ func e23(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 41) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 41) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit22, ")", 12, false); !ok {
 			goto fail_ordinary
@@ -9939,12 +1757,12 @@ func e23(p *Parser) (*Node, bool) {
 	var (
 		ok bool
 		x1 int
-		v2 *Node
+		v2 *pegort.Node
 	)
 	_ = x1
 	p.StepWork()
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit21, "(", 11, false); !ok {
 		goto fail
@@ -9961,7 +1779,7 @@ func e23(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 41) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 41) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit22, ")", 12, false); !ok {
 		goto fail
@@ -9972,7 +1790,7 @@ fail:
 }
 
 // number (Node body inlined)
-func e25(p *Parser) (*Node, bool) {
+func e25(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
@@ -9981,9 +1799,9 @@ func e25(p *Parser) (*Node, bool) {
 			size int
 			ok   bool
 			x2   int
-			x3   Mark
+			x3   pegort.Mark
 			x6   int
-			v7   *Node
+			v7   *pegort.Node
 		)
 
 		x1 = p.Pos
@@ -10009,7 +1827,7 @@ func e25(p *Parser) (*Node, bool) {
 
 		x3 = p.Mark()
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit24, ".", 14, false); !ok {
 			goto L4_ordinary
@@ -10037,7 +1855,7 @@ func e25(p *Parser) (*Node, bool) {
 	L4_ordinary:
 		p.Reset(x3)
 	L5_ordinary:
-		v7 = p.NewNodeOrdinary(Node{RawKind: RawKindMatch, RawStart: int32(x1), RawEnd: int32(p.Pos), RawText: p.Text(x1, p.Pos), RawTerminal: true, RawFresh: true})
+		v7 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x1), RawEnd: int32(p.Pos), RawText: p.Text(x1, p.Pos), RawTerminal: true, RawFresh: true})
 		return v7, true
 	fail_ordinary:
 		return nil, false
@@ -10050,9 +1868,9 @@ func e25(p *Parser) (*Node, bool) {
 		size int
 		ok   bool
 		x2   int
-		x3   Mark
+		x3   pegort.Mark
 		x6   int
-		v7   *Node
+		v7   *pegort.Node
 	)
 	p.StepWork()
 	x1 = p.Pos
@@ -10080,7 +1898,7 @@ func e25(p *Parser) (*Node, bool) {
 	x3 = p.Mark()
 	p.StepWork()
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit24, ".", 14, false); !ok {
 		goto L4
@@ -10108,28 +1926,28 @@ func e25(p *Parser) (*Node, bool) {
 L4:
 	p.Reset(x3)
 L5:
-	v7 = p.NewNode(Node{RawKind: RawKindMatch, RawStart: int32(x1), RawEnd: int32(p.Pos), RawText: p.Text(x1, p.Pos), RawTerminal: true, RawFresh: true})
+	v7 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x1), RawEnd: int32(p.Pos), RawText: p.Text(x1, p.Pos), RawTerminal: true, RawFresh: true})
 	return v7, true
 fail:
 	return nil, false
 }
 
 // ws (Node body inlined)
-func e26(p *Parser) (*Node, bool) {
+func e26(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
 			x1   int
 			x2   int
 			x3   int
-			x4   Mark
+			x4   pegort.Mark
 			ch   rune
 			size int
 			ok   bool
 			x6   int
-			v7   *Node
-			v8   *Node
-			v9   *Node
+			v7   *pegort.Node
+			v8   *pegort.Node
+			v9   *pegort.Node
 		)
 		_ = x3
 
@@ -10150,8 +1968,8 @@ func e26(p *Parser) (*Node, bool) {
 			}
 			x6 = p.Pos
 			p.Pos += size
-			v7 = p.NewNodeOrdinary(Node{RawKind: RawKindMatch, RawStart: int32(x6), RawEnd: int32(p.Pos), RawText: p.Text(x6, p.Pos), RawTerminal: true, RawFresh: true})
-			v8 = p.ScopeValue(Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v7, x4.Pos)
+			v7 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x6), RawEnd: int32(p.Pos), RawText: p.Text(x6, p.Pos), RawTerminal: true, RawFresh: true})
+			v8 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v7, x4.Pos)
 			x3++
 			p.KidStack = append(p.KidStack, v8)
 			if p.Pos == x4.Pos {
@@ -10162,7 +1980,7 @@ func e26(p *Parser) (*Node, bool) {
 			p.Reset(x4)
 			break
 		}
-		v9 = p.NewNodeOrdinary(Node{RawKind: RawKindList, RawStart: int32(x1), RawEnd: int32(p.Pos), RawChildren: p.Kids(x2), RawFresh: true})
+		v9 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindList, RawStart: int32(x1), RawEnd: int32(p.Pos), RawChildren: p.Kids(x2), RawFresh: true})
 		return v9, true
 	}
 
@@ -10171,14 +1989,14 @@ func e26(p *Parser) (*Node, bool) {
 		x1   int
 		x2   int
 		x3   int
-		x4   Mark
+		x4   pegort.Mark
 		ch   rune
 		size int
 		ok   bool
 		x6   int
-		v7   *Node
-		v8   *Node
-		v9   *Node
+		v7   *pegort.Node
+		v8   *pegort.Node
+		v9   *pegort.Node
 	)
 	_ = x3
 	p.StepWork()
@@ -10199,8 +2017,8 @@ func e26(p *Parser) (*Node, bool) {
 		}
 		x6 = p.Pos
 		p.Pos += size
-		v7 = p.NewNode(Node{RawKind: RawKindMatch, RawStart: int32(x6), RawEnd: int32(p.Pos), RawText: p.Text(x6, p.Pos), RawTerminal: true, RawFresh: true})
-		v8 = p.ScopeValue(Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v7, x4.Pos)
+		v7 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x6), RawEnd: int32(p.Pos), RawText: p.Text(x6, p.Pos), RawTerminal: true, RawFresh: true})
+		v8 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v7, x4.Pos)
 		x3++
 		p.KidStack = append(p.KidStack, v8)
 		if p.Pos == x4.Pos {
@@ -10211,16 +2029,16 @@ func e26(p *Parser) (*Node, bool) {
 		p.Reset(x4)
 		break
 	}
-	v9 = p.NewNode(Node{RawKind: RawKindList, RawStart: int32(x1), RawEnd: int32(p.Pos), RawChildren: p.Kids(x2), RawFresh: true})
+	v9 = p.NewNode(pegort.Node{RawKind: pegort.RawKindList, RawStart: int32(x1), RawEnd: int32(p.Pos), RawChildren: p.Kids(x2), RawFresh: true})
 	return v9, true
 }
 
 // ws (value-free body inlined)
-func e27(p *Parser) (*Node, bool) {
+func e27(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
-			v    *Node
+			v    *pegort.Node
 			ch   rune
 			size int
 			ok   bool
@@ -10245,7 +2063,7 @@ func e27(p *Parser) (*Node, bool) {
 
 	p.StepWork()
 	var (
-		v    *Node
+		v    *pegort.Node
 		ch   rune
 		size int
 		ok   bool
@@ -10269,7 +2087,7 @@ func e27(p *Parser) (*Node, bool) {
 }
 
 // power, called as by invokePlain
-func r7(p *Parser) (*Node, bool) {
+func r7(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
@@ -10284,7 +2102,7 @@ func r7(p *Parser) (*Node, bool) {
 		p.Cut = prevCut
 		p.Trail = p.Trail[:trail]
 		if ok {
-			v = p.Finish(rules[7], EmptyFrame, v, start)
+			v = p.Finish(rules[7], pegort.EmptyFrame, v, start)
 		} else {
 			p.Pos = start
 			p.Recovered = p.Recovered[:rec]
@@ -10306,7 +2124,7 @@ func r7(p *Parser) (*Node, bool) {
 	p.Cut = prevCut
 	p.Trail = p.Trail[:trail]
 	if ok {
-		v = p.Finish(rules[7], EmptyFrame, v, start)
+		v = p.Finish(rules[7], pegort.EmptyFrame, v, start)
 	} else {
 		p.Pos = start
 		p.Recovered = p.Recovered[:rec]
@@ -10316,7 +2134,7 @@ func r7(p *Parser) (*Node, bool) {
 }
 
 // number, called as by invokePlain
-func r11(p *Parser) (*Node, bool) {
+func r11(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
@@ -10331,7 +2149,7 @@ func r11(p *Parser) (*Node, bool) {
 		p.Cut = prevCut
 		p.Trail = p.Trail[:trail]
 		if ok {
-			v = p.Finish(rules[11], EmptyFrame, v, start)
+			v = p.Finish(rules[11], pegort.EmptyFrame, v, start)
 		} else {
 			p.Pos = start
 			p.Recovered = p.Recovered[:rec]
@@ -10353,7 +2171,7 @@ func r11(p *Parser) (*Node, bool) {
 	p.Cut = prevCut
 	p.Trail = p.Trail[:trail]
 	if ok {
-		v = p.Finish(rules[11], EmptyFrame, v, start)
+		v = p.Finish(rules[11], pegort.EmptyFrame, v, start)
 	} else {
 		p.Pos = start
 		p.Recovered = p.Recovered[:rec]
@@ -10363,7 +2181,7 @@ func r11(p *Parser) (*Node, bool) {
 }
 
 // ws, called as by invokePlain
-func r12(p *Parser) (*Node, bool) {
+func r12(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
@@ -10378,7 +2196,7 @@ func r12(p *Parser) (*Node, bool) {
 		p.Cut = prevCut
 		p.Trail = p.Trail[:trail]
 		if ok {
-			v = p.Finish(rules[12], EmptyFrame, v, start)
+			v = p.Finish(rules[12], pegort.EmptyFrame, v, start)
 		} else {
 			p.Pos = start
 			p.Recovered = p.Recovered[:rec]
@@ -10400,7 +2218,7 @@ func r12(p *Parser) (*Node, bool) {
 	p.Cut = prevCut
 	p.Trail = p.Trail[:trail]
 	if ok {
-		v = p.Finish(rules[12], EmptyFrame, v, start)
+		v = p.Finish(rules[12], pegort.EmptyFrame, v, start)
 	} else {
 		p.Pos = start
 		p.Recovered = p.Recovered[:rec]
@@ -10410,11 +2228,11 @@ func r12(p *Parser) (*Node, bool) {
 }
 
 // ws, called as by invokePlain (body inlined)
-func r13(p *Parser) (*Node, bool) {
+func r13(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
-			v    *Node
+			v    *pegort.Node
 			ch   rune
 			size int
 			ok   bool
@@ -10444,7 +2262,7 @@ func r13(p *Parser) (*Node, bool) {
 
 	p.StepWork()
 	var (
-		v    *Node
+		v    *pegort.Node
 		ch   rune
 		size int
 		ok   bool
@@ -10473,11 +2291,11 @@ func r13(p *Parser) (*Node, bool) {
 }
 
 // main (value-free body inlined)
-func e28(p *Parser) (*Node, bool) {
+func e28(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
-			v  *Node
+			v  *pegort.Node
 			ok bool
 		)
 
@@ -10489,8 +2307,8 @@ func e28(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.AtEndOrdinary() {
-			p.ExpectOrdinary(p.Pos, IdEndInput)
+		if !p.AtEndBatchOrdinary() {
+			p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
 			goto fail_ordinary
 		}
 		v = nil
@@ -10501,7 +2319,7 @@ func e28(p *Parser) (*Node, bool) {
 
 	p.StepWork()
 	var (
-		v  *Node
+		v  *pegort.Node
 		ok bool
 	)
 	p.StepWork()
@@ -10515,8 +2333,8 @@ func e28(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.AtEnd() {
-		p.Expect(p.Pos, IdEndInput)
+	if !p.AtEndBatch() {
+		p.Expect(p.Pos, pegort.IdEndInput)
 		goto fail
 	}
 	v = nil
@@ -10526,7 +2344,7 @@ fail:
 }
 
 // add
-func e29(p *Parser) (*Node, bool) {
+func e29(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		return q2(p)
@@ -10537,7 +2355,7 @@ func e29(p *Parser) (*Node, bool) {
 }
 
 // term
-func e30(p *Parser) (*Node, bool) {
+func e30(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		return p.Call(recRules[3], 0)
@@ -10548,7 +2366,7 @@ func e30(p *Parser) (*Node, bool) {
 }
 
 // add / term
-func e31(p *Parser) (*Node, bool) {
+func e31(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		m0 := p.Mark()
@@ -10617,11 +2435,11 @@ func e31(p *Parser) (*Node, bool) {
 }
 
 // add (value-free body inlined)
-func e32(p *Parser) (*Node, bool) {
+func e32(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
-			v  *Node
+			v  *pegort.Node
 			ok bool
 			x1 int
 			x2 int
@@ -10649,7 +2467,7 @@ func e32(p *Parser) (*Node, bool) {
 			goto L6_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit5, "+", 5, false); !ok {
 			goto L7_ordinary
@@ -10664,7 +2482,7 @@ func e32(p *Parser) (*Node, bool) {
 			goto L8_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit6, "-", 6, false); !ok {
 			goto L9_ordinary
@@ -10689,7 +2507,7 @@ func e32(p *Parser) (*Node, bool) {
 
 	p.StepWork()
 	var (
-		v  *Node
+		v  *pegort.Node
 		ok bool
 		x1 int
 		x2 int
@@ -10721,7 +2539,7 @@ func e32(p *Parser) (*Node, bool) {
 		goto L6
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit5, "+", 5, false); !ok {
 		goto L7
@@ -10736,7 +2554,7 @@ L6:
 		goto L8
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit6, "-", 6, false); !ok {
 		goto L9
@@ -10760,7 +2578,7 @@ fail:
 }
 
 // mul
-func e33(p *Parser) (*Node, bool) {
+func e33(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		return q4(p)
@@ -10771,7 +2589,7 @@ func e33(p *Parser) (*Node, bool) {
 }
 
 // unary
-func e34(p *Parser) (*Node, bool) {
+func e34(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		return p.Call(recRules[5], 0)
@@ -10782,7 +2600,7 @@ func e34(p *Parser) (*Node, bool) {
 }
 
 // mul / unary
-func e35(p *Parser) (*Node, bool) {
+func e35(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		m0 := p.Mark()
@@ -10851,11 +2669,11 @@ func e35(p *Parser) (*Node, bool) {
 }
 
 // mul (value-free body inlined)
-func e36(p *Parser) (*Node, bool) {
+func e36(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
-			v  *Node
+			v  *pegort.Node
 			ok bool
 			x1 int
 			x2 int
@@ -10883,7 +2701,7 @@ func e36(p *Parser) (*Node, bool) {
 			goto L6_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 42) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 42) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit11, "*", 7, false); !ok {
 			goto L7_ordinary
@@ -10898,7 +2716,7 @@ func e36(p *Parser) (*Node, bool) {
 			goto L8_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 47) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 47) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit12, "/", 8, false); !ok {
 			goto L9_ordinary
@@ -10913,7 +2731,7 @@ func e36(p *Parser) (*Node, bool) {
 			goto L10_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 37) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 37) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit13, "%", 9, false); !ok {
 			goto L11_ordinary
@@ -10938,7 +2756,7 @@ func e36(p *Parser) (*Node, bool) {
 
 	p.StepWork()
 	var (
-		v  *Node
+		v  *pegort.Node
 		ok bool
 		x1 int
 		x2 int
@@ -10970,7 +2788,7 @@ func e36(p *Parser) (*Node, bool) {
 		goto L6
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 42) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 42) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit11, "*", 7, false); !ok {
 		goto L7
@@ -10985,7 +2803,7 @@ L6:
 		goto L8
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 47) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 47) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit12, "/", 8, false); !ok {
 		goto L9
@@ -11000,7 +2818,7 @@ L8:
 		goto L10
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 37) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 37) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit13, "%", 9, false); !ok {
 		goto L11
@@ -11024,11 +2842,11 @@ fail:
 }
 
 // unary (Node body inlined)
-func e37(p *Parser) (*Node, bool) {
+func e37(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
-			x1 Mark
+			x1 pegort.Mark
 			ok bool
 		)
 
@@ -11056,7 +2874,7 @@ func e37(p *Parser) (*Node, bool) {
 
 	p.StepWork()
 	var (
-		x1 Mark
+		x1 pegort.Mark
 		ok bool
 	)
 	p.StepWork()
@@ -11083,11 +2901,11 @@ fail:
 }
 
 // neg (value-free body inlined)
-func e38(p *Parser) (*Node, bool) {
+func e38(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
-			v  *Node
+			v  *pegort.Node
 			ok bool
 			x1 int
 			x2 int
@@ -11111,7 +2929,7 @@ func e38(p *Parser) (*Node, bool) {
 			goto L6_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit6, "-", 6, false); !ok {
 			goto L7_ordinary
@@ -11126,7 +2944,7 @@ func e38(p *Parser) (*Node, bool) {
 			goto L8_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit5, "+", 5, false); !ok {
 			goto L9_ordinary
@@ -11151,7 +2969,7 @@ func e38(p *Parser) (*Node, bool) {
 
 	p.StepWork()
 	var (
-		v  *Node
+		v  *pegort.Node
 		ok bool
 		x1 int
 		x2 int
@@ -11178,7 +2996,7 @@ func e38(p *Parser) (*Node, bool) {
 		goto L6
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit6, "-", 6, false); !ok {
 		goto L7
@@ -11193,7 +3011,7 @@ L6:
 		goto L8
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit5, "+", 5, false); !ok {
 		goto L9
@@ -11217,11 +3035,11 @@ fail:
 }
 
 // power (value-free body inlined)
-func e39(p *Parser) (*Node, bool) {
+func e39(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
-			v  *Node
+			v  *pegort.Node
 			x1 int
 			x2 int
 			ok bool
@@ -11254,7 +3072,7 @@ func e39(p *Parser) (*Node, bool) {
 
 	p.StepWork()
 	var (
-		v  *Node
+		v  *pegort.Node
 		x1 int
 		x2 int
 		ok bool
@@ -11286,11 +3104,11 @@ fail:
 }
 
 // pow (value-free body inlined)
-func e40(p *Parser) (*Node, bool) {
+func e40(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
-			v  *Node
+			v  *pegort.Node
 			ok bool
 		)
 
@@ -11302,7 +3120,7 @@ func e40(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 94) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 94) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit18, "^", 10, false); !ok {
 			goto fail_ordinary
@@ -11319,7 +3137,7 @@ func e40(p *Parser) (*Node, bool) {
 
 	p.StepWork()
 	var (
-		v  *Node
+		v  *pegort.Node
 		ok bool
 	)
 	p.StepWork()
@@ -11334,7 +3152,7 @@ func e40(p *Parser) (*Node, bool) {
 	}
 	p.StepWork()
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 94) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 94) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit18, "^", 10, false); !ok {
 		goto fail
@@ -11351,12 +3169,12 @@ fail:
 }
 
 // primary (Node body inlined)
-func e41(p *Parser) (*Node, bool) {
+func e41(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
 			ok bool
-			x1 Mark
+			x1 pegort.Mark
 			x4 rune
 			x5 bool
 		)
@@ -11401,7 +3219,7 @@ func e41(p *Parser) (*Node, bool) {
 	p.StepWork()
 	var (
 		ok bool
-		x1 Mark
+		x1 pegort.Mark
 		x4 rune
 		x5 bool
 	)
@@ -11446,15 +3264,15 @@ fail:
 }
 
 // group (value-free body inlined)
-func e42(p *Parser) (*Node, bool) {
+func e42(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
-			v  *Node
+			v  *pegort.Node
 			ok bool
 		)
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit21, "(", 11, false); !ok {
 			goto fail_ordinary
@@ -11468,7 +3286,7 @@ func e42(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 41) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 41) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit22, ")", 12, false); !ok {
 			goto fail_ordinary
@@ -11481,12 +3299,12 @@ func e42(p *Parser) (*Node, bool) {
 
 	p.StepWork()
 	var (
-		v  *Node
+		v  *pegort.Node
 		ok bool
 	)
 	p.StepWork()
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit21, "(", 11, false); !ok {
 		goto fail
@@ -11501,7 +3319,7 @@ func e42(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 41) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 41) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit22, ")", 12, false); !ok {
 		goto fail
@@ -11513,11 +3331,11 @@ fail:
 }
 
 // number (value-free body inlined)
-func e43(p *Parser) (*Node, bool) {
+func e43(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
-			v    *Node
+			v    *pegort.Node
 			ch   rune
 			size int
 			ok   bool
@@ -11548,7 +3366,7 @@ func e43(p *Parser) (*Node, bool) {
 
 		x2, x3 = p.Pos, len(p.Recovered)
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit24, ".", 14, false); !ok {
 			goto L4_ordinary
@@ -11585,7 +3403,7 @@ func e43(p *Parser) (*Node, bool) {
 
 	p.StepWork()
 	var (
-		v    *Node
+		v    *pegort.Node
 		ch   rune
 		size int
 		ok   bool
@@ -11619,7 +3437,7 @@ func e43(p *Parser) (*Node, bool) {
 	x2, x3 = p.Pos, len(p.Recovered)
 	p.StepWork()
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit24, ".", 14, false); !ok {
 		goto L4
@@ -11655,12 +3473,12 @@ fail:
 }
 
 // main, called as by invokePlain (body inlined)
-func q0(p *Parser) (*Node, bool) {
+func q0(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
 			start int
-			v     *Node
+			v     *pegort.Node
 			rec   int
 			ok    bool
 		)
@@ -11678,8 +3496,8 @@ func q0(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.AtEndOrdinary() {
-			p.ExpectOrdinary(p.Pos, IdEndInput)
+		if !p.AtEndBatchOrdinary() {
+			p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
 			goto fail_ordinary
 		}
 		v = nil
@@ -11695,7 +3513,7 @@ func q0(p *Parser) (*Node, bool) {
 	p.StepWork()
 	var (
 		start int
-		v     *Node
+		v     *pegort.Node
 		rec   int
 		ok    bool
 	)
@@ -11715,8 +3533,8 @@ func q0(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.AtEnd() {
-		p.Expect(p.Pos, IdEndInput)
+	if !p.AtEndBatch() {
+		p.Expect(p.Pos, pegort.IdEndInput)
 		goto fail
 	}
 	v = nil
@@ -11730,12 +3548,12 @@ fail:
 }
 
 // add, called as by invokePlain (body inlined)
-func q2(p *Parser) (*Node, bool) {
+func q2(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
 			start int
-			v     *Node
+			v     *pegort.Node
 			rec   int
 			ok    bool
 			x1    int
@@ -11769,7 +3587,7 @@ func q2(p *Parser) (*Node, bool) {
 			goto L6_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit5, "+", 5, false); !ok {
 			goto L7_ordinary
@@ -11784,7 +3602,7 @@ func q2(p *Parser) (*Node, bool) {
 			goto L8_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit6, "-", 6, false); !ok {
 			goto L9_ordinary
@@ -11814,7 +3632,7 @@ func q2(p *Parser) (*Node, bool) {
 	p.StepWork()
 	var (
 		start int
-		v     *Node
+		v     *pegort.Node
 		rec   int
 		ok    bool
 		x1    int
@@ -11852,7 +3670,7 @@ func q2(p *Parser) (*Node, bool) {
 		goto L6
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit5, "+", 5, false); !ok {
 		goto L7
@@ -11867,7 +3685,7 @@ L6:
 		goto L8
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit6, "-", 6, false); !ok {
 		goto L9
@@ -11895,12 +3713,12 @@ fail:
 }
 
 // mul, called as by invokePlain (body inlined)
-func q4(p *Parser) (*Node, bool) {
+func q4(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
 			start int
-			v     *Node
+			v     *pegort.Node
 			rec   int
 			ok    bool
 			x1    int
@@ -11934,7 +3752,7 @@ func q4(p *Parser) (*Node, bool) {
 			goto L6_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 42) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 42) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit11, "*", 7, false); !ok {
 			goto L7_ordinary
@@ -11949,7 +3767,7 @@ func q4(p *Parser) (*Node, bool) {
 			goto L8_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 47) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 47) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit12, "/", 8, false); !ok {
 			goto L9_ordinary
@@ -11964,7 +3782,7 @@ func q4(p *Parser) (*Node, bool) {
 			goto L10_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 37) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 37) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit13, "%", 9, false); !ok {
 			goto L11_ordinary
@@ -11994,7 +3812,7 @@ func q4(p *Parser) (*Node, bool) {
 	p.StepWork()
 	var (
 		start int
-		v     *Node
+		v     *pegort.Node
 		rec   int
 		ok    bool
 		x1    int
@@ -12032,7 +3850,7 @@ func q4(p *Parser) (*Node, bool) {
 		goto L6
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 42) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 42) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit11, "*", 7, false); !ok {
 		goto L7
@@ -12047,7 +3865,7 @@ L6:
 		goto L8
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 47) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 47) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit12, "/", 8, false); !ok {
 		goto L9
@@ -12062,7 +3880,7 @@ L8:
 		goto L10
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 37) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 37) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit13, "%", 9, false); !ok {
 		goto L11
@@ -12090,12 +3908,12 @@ fail:
 }
 
 // neg, called as by invokePlain (body inlined)
-func q6(p *Parser) (*Node, bool) {
+func q6(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
 			start int
-			v     *Node
+			v     *pegort.Node
 			rec   int
 			ok    bool
 			x1    int
@@ -12125,7 +3943,7 @@ func q6(p *Parser) (*Node, bool) {
 			goto L6_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit6, "-", 6, false); !ok {
 			goto L7_ordinary
@@ -12140,7 +3958,7 @@ func q6(p *Parser) (*Node, bool) {
 			goto L8_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit5, "+", 5, false); !ok {
 			goto L9_ordinary
@@ -12170,7 +3988,7 @@ func q6(p *Parser) (*Node, bool) {
 	p.StepWork()
 	var (
 		start int
-		v     *Node
+		v     *pegort.Node
 		rec   int
 		ok    bool
 		x1    int
@@ -12203,7 +4021,7 @@ func q6(p *Parser) (*Node, bool) {
 		goto L6
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit6, "-", 6, false); !ok {
 		goto L7
@@ -12218,7 +4036,7 @@ L6:
 		goto L8
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit5, "+", 5, false); !ok {
 		goto L9
@@ -12246,12 +4064,12 @@ fail:
 }
 
 // power, called as by invokePlain (body inlined)
-func q7(p *Parser) (*Node, bool) {
+func q7(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
 			start int
-			v     *Node
+			v     *pegort.Node
 			rec   int
 			x1    int
 			x2    int
@@ -12295,7 +4113,7 @@ func q7(p *Parser) (*Node, bool) {
 	p.StepWork()
 	var (
 		start int
-		v     *Node
+		v     *pegort.Node
 		rec   int
 		x1    int
 		x2    int
@@ -12337,12 +4155,12 @@ fail:
 }
 
 // pow, called as by invokePlain (body inlined)
-func q8(p *Parser) (*Node, bool) {
+func q8(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
 			start int
-			v     *Node
+			v     *pegort.Node
 			rec   int
 			ok    bool
 		)
@@ -12360,7 +4178,7 @@ func q8(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 94) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 94) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit18, "^", 10, false); !ok {
 			goto fail_ordinary
@@ -12382,7 +4200,7 @@ func q8(p *Parser) (*Node, bool) {
 	p.StepWork()
 	var (
 		start int
-		v     *Node
+		v     *pegort.Node
 		rec   int
 		ok    bool
 	)
@@ -12403,7 +4221,7 @@ func q8(p *Parser) (*Node, bool) {
 	}
 	p.StepWork()
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 94) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 94) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit18, "^", 10, false); !ok {
 		goto fail
@@ -12424,12 +4242,12 @@ fail:
 }
 
 // group, called as by invokePlain (body inlined)
-func q10(p *Parser) (*Node, bool) {
+func q10(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
 			start int
-			v     *Node
+			v     *pegort.Node
 			rec   int
 			ok    bool
 		)
@@ -12439,7 +4257,7 @@ func q10(p *Parser) (*Node, bool) {
 			p.TooDeep()
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit21, "(", 11, false); !ok {
 			goto fail_ordinary
@@ -12453,7 +4271,7 @@ func q10(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 41) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 41) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit22, ")", 12, false); !ok {
 			goto fail_ordinary
@@ -12471,7 +4289,7 @@ func q10(p *Parser) (*Node, bool) {
 	p.StepWork()
 	var (
 		start int
-		v     *Node
+		v     *pegort.Node
 		rec   int
 		ok    bool
 	)
@@ -12482,7 +4300,7 @@ func q10(p *Parser) (*Node, bool) {
 	}
 	p.StepWork()
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit21, "(", 11, false); !ok {
 		goto fail
@@ -12497,7 +4315,7 @@ func q10(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 41) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 41) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit22, ")", 12, false); !ok {
 		goto fail
@@ -12513,12 +4331,12 @@ fail:
 }
 
 // number, called as by invokePlain (body inlined)
-func q11(p *Parser) (*Node, bool) {
+func q11(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
 			start int
-			v     *Node
+			v     *pegort.Node
 			rec   int
 			ch    rune
 			size  int
@@ -12555,7 +4373,7 @@ func q11(p *Parser) (*Node, bool) {
 
 		x2, x3 = p.Pos, len(p.Recovered)
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit24, ".", 14, false); !ok {
 			goto L4_ordinary
@@ -12597,7 +4415,7 @@ func q11(p *Parser) (*Node, bool) {
 	p.StepWork()
 	var (
 		start int
-		v     *Node
+		v     *pegort.Node
 		rec   int
 		ch    rune
 		size  int
@@ -12637,7 +4455,7 @@ func q11(p *Parser) (*Node, bool) {
 	x2, x3 = p.Pos, len(p.Recovered)
 	p.StepWork()
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit24, ".", 14, false); !ok {
 		goto L4
@@ -12677,11 +4495,11 @@ fail:
 }
 
 // ws, called as by invokePlain (body inlined)
-func q12(p *Parser) (*Node, bool) {
+func q12(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 
 		var (
-			v    *Node
+			v    *pegort.Node
 			ch   rune
 			size int
 			ok   bool
@@ -12711,7 +4529,7 @@ func q12(p *Parser) (*Node, bool) {
 
 	p.StepWork()
 	var (
-		v    *Node
+		v    *pegort.Node
 		ch   rune
 		size int
 		ok   bool
@@ -12740,11 +4558,11 @@ func q12(p *Parser) (*Node, bool) {
 }
 
 // expr (typed LR body inlined)
-func e44(p *TParser) (any, bool) {
+func e44(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 
 		var (
-			x1 Mark
+			x1 pegort.Mark
 			v2 any
 			ok bool
 			v5 any
@@ -12777,7 +4595,7 @@ func e44(p *TParser) (any, bool) {
 
 	p.StepWork()
 	var (
-		x1 Mark
+		x1 pegort.Mark
 		v2 any
 		ok bool
 		v5 any
@@ -12809,11 +4627,11 @@ fail:
 }
 
 // term (typed LR body inlined)
-func e48(p *TParser) (any, bool) {
+func e48(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 
 		var (
-			x1 Mark
+			x1 pegort.Mark
 			v2 any
 			ok bool
 			v5 any
@@ -12846,7 +4664,7 @@ func e48(p *TParser) (any, bool) {
 
 	p.StepWork()
 	var (
-		x1 Mark
+		x1 pegort.Mark
 		v2 any
 		ok bool
 		v5 any
@@ -12878,10 +4696,10 @@ fail:
 }
 
 // trules is the typed rule table.
-var trules []*TRule
+var trules []*pegort.TRule
 
 // main, called as by call
-func u0(p *TParser) (any, bool) {
+func u0(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start, rec := p.Pos, len(p.Recovered)
 		v, ok := i0(p)
@@ -12902,13 +4720,13 @@ func u0(p *TParser) (any, bool) {
 }
 
 // main, invoked as by invoke (body inlined)
-func i0(p *TParser) (any, bool) {
+func i0(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 
 		var (
 			start int
 			v     any
-			c     *TActCtx
+			c     *pegort.TActCtx
 			k1    any
 			x2    int
 			ok    bool
@@ -12933,11 +4751,11 @@ func i0(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.AtEndOrdinary() {
-			p.ExpectOrdinary(p.Pos, IdEndInput)
+		if !p.AtEndBatchOrdinary() {
+			p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
 			goto fail_ordinary
 		}
-		c = p.UseCtx(TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+		c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		w = p.Where
 		p.Where = "main"
 		v = func() any { return k1 }()
@@ -12954,7 +4772,7 @@ func i0(p *TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		c     *TActCtx
+		c     *pegort.TActCtx
 		k1    any
 		x2    int
 		ok    bool
@@ -12980,11 +4798,11 @@ func i0(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.AtEnd() {
-		p.Expect(p.Pos, IdEndInput)
+	if !p.AtEndBatch() {
+		p.Expect(p.Pos, pegort.IdEndInput)
 		goto fail
 	}
-	c = p.UseCtx(TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	w = p.Where
 	p.Where = "main"
 	v = func() any { c.P.StepWork(); return k1 }()
@@ -12998,7 +4816,7 @@ fail:
 }
 
 // add, called as by call
-func u2(p *TParser) (any, bool) {
+func u2(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start, rec := p.Pos, len(p.Recovered)
 		v, ok := i2(p)
@@ -13019,13 +4837,13 @@ func u2(p *TParser) (any, bool) {
 }
 
 // add, invoked as by invoke (body inlined)
-func i2(p *TParser) (any, bool) {
+func i2(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 
 		var (
 			start int
 			v     any
-			c     *TActCtx
+			c     *pegort.TActCtx
 			k1    any
 			x2    int
 			ok    bool
@@ -13077,7 +4895,7 @@ func i2(p *TParser) (any, bool) {
 			goto L12_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit5, "+", 5, false); !ok {
 			goto L13_ordinary
@@ -13092,7 +4910,7 @@ func i2(p *TParser) (any, bool) {
 			goto L14_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit6, "-", 6, false); !ok {
 			goto L15_ordinary
@@ -13113,7 +4931,7 @@ func i2(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 		k17 = v19
-		c = p.UseCtx(TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+		c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		w = p.Where
 		p.Where = "add"
 		v = func() any {
@@ -13137,7 +4955,7 @@ func i2(p *TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		c     *TActCtx
+		c     *pegort.TActCtx
 		k1    any
 		x2    int
 		ok    bool
@@ -13190,7 +5008,7 @@ func i2(p *TParser) (any, bool) {
 		goto L12
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit5, "+", 5, false); !ok {
 		goto L13
@@ -13205,7 +5023,7 @@ L12:
 		goto L14
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit6, "-", 6, false); !ok {
 		goto L15
@@ -13226,7 +5044,7 @@ L9:
 		goto fail
 	}
 	k17 = v19
-	c = p.UseCtx(TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	w = p.Where
 	p.Where = "add"
 	v = func() any {
@@ -13247,7 +5065,7 @@ fail:
 }
 
 // mul, called as by call
-func u4(p *TParser) (any, bool) {
+func u4(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start, rec := p.Pos, len(p.Recovered)
 		v, ok := i4(p)
@@ -13268,13 +5086,13 @@ func u4(p *TParser) (any, bool) {
 }
 
 // mul, invoked as by invoke (body inlined)
-func i4(p *TParser) (any, bool) {
+func i4(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 
 		var (
 			start int
 			v     any
-			c     *TActCtx
+			c     *pegort.TActCtx
 			k1    any
 			x2    int
 			ok    bool
@@ -13326,7 +5144,7 @@ func i4(p *TParser) (any, bool) {
 			goto L12_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 42) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 42) {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit11, "*", 7, false); !ok {
 			goto L13_ordinary
@@ -13341,7 +5159,7 @@ func i4(p *TParser) (any, bool) {
 			goto L14_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 47) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 47) {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit12, "/", 8, false); !ok {
 			goto L15_ordinary
@@ -13356,7 +5174,7 @@ func i4(p *TParser) (any, bool) {
 			goto L16_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 37) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 37) {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit13, "%", 9, false); !ok {
 			goto L17_ordinary
@@ -13377,7 +5195,7 @@ func i4(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 		k19 = v21
-		c = p.UseCtx(TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+		c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		w = p.Where
 		p.Where = "mul"
 		v = func() any {
@@ -13401,7 +5219,7 @@ func i4(p *TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		c     *TActCtx
+		c     *pegort.TActCtx
 		k1    any
 		x2    int
 		ok    bool
@@ -13454,7 +5272,7 @@ func i4(p *TParser) (any, bool) {
 		goto L12
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 42) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 42) {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit11, "*", 7, false); !ok {
 		goto L13
@@ -13469,7 +5287,7 @@ L12:
 		goto L14
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 47) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 47) {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit12, "/", 8, false); !ok {
 		goto L15
@@ -13484,7 +5302,7 @@ L14:
 		goto L16
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 37) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 37) {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit13, "%", 9, false); !ok {
 		goto L17
@@ -13505,7 +5323,7 @@ L9:
 		goto fail
 	}
 	k19 = v21
-	c = p.UseCtx(TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	w = p.Where
 	p.Where = "mul"
 	v = func() any {
@@ -13526,7 +5344,7 @@ fail:
 }
 
 // unary, called as by call
-func u5(p *TParser) (any, bool) {
+func u5(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[5]) {
 			return p.CallMemo(trules[5], i5)
@@ -13541,7 +5359,7 @@ func u5(p *TParser) (any, bool) {
 }
 
 // unary, called as by invokePlain (body inlined)
-func v5(p *TParser) (any, bool) {
+func v5(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 
 		var (
@@ -13582,8 +5400,8 @@ func v5(p *TParser) (any, bool) {
 		p.Recovered = p.Recovered[:x2]
 		goto fail_ordinary
 	L4_ordinary:
-		v = p.ScopeValue(Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
-		if n := AsTval(v); n != nil {
+		v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+		if n := pegort.AsTval(v); n != nil {
 			n.TSetFresh(false)
 		}
 		p.Depth--
@@ -13634,8 +5452,8 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
-	if n := AsTval(v); n != nil {
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -13648,7 +5466,7 @@ fail:
 }
 
 // unary, invoked as by invoke (body inlined)
-func i5(p *TParser) (any, bool) {
+func i5(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 
 		var (
@@ -13688,8 +5506,8 @@ func i5(p *TParser) (any, bool) {
 		p.Recovered = p.Recovered[:x2]
 		goto fail_ordinary
 	L4_ordinary:
-		v = p.ScopeValue(Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
-		if n := AsTval(v); n != nil {
+		v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+		if n := pegort.AsTval(v); n != nil {
 			n.TSetFresh(false)
 		}
 		p.Depth--
@@ -13737,8 +5555,8 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
-	if n := AsTval(v); n != nil {
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -13749,7 +5567,7 @@ fail:
 }
 
 // neg, called as by call
-func u6(p *TParser) (any, bool) {
+func u6(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start, rec := p.Pos, len(p.Recovered)
 		v, ok := i6(p)
@@ -13770,13 +5588,13 @@ func u6(p *TParser) (any, bool) {
 }
 
 // neg, invoked as by invoke (body inlined)
-func i6(p *TParser) (any, bool) {
+func i6(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 
 		var (
 			start int
 			v     any
-			c     *TActCtx
+			c     *pegort.TActCtx
 			ok    bool
 			k1    any
 			x2    int
@@ -13818,7 +5636,7 @@ func i6(p *TParser) (any, bool) {
 			goto L9_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit6, "-", 6, false); !ok {
 			goto L10_ordinary
@@ -13833,7 +5651,7 @@ func i6(p *TParser) (any, bool) {
 			goto L11_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit5, "+", 5, false); !ok {
 			goto L12_ordinary
@@ -13854,7 +5672,7 @@ func i6(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 		k14 = v16
-		c = p.UseCtx(TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+		c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		w = p.Where
 		p.Where = "neg"
 		v = func() any {
@@ -13877,7 +5695,7 @@ func i6(p *TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		c     *TActCtx
+		c     *pegort.TActCtx
 		ok    bool
 		k1    any
 		x2    int
@@ -13920,7 +5738,7 @@ func i6(p *TParser) (any, bool) {
 		goto L9
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit6, "-", 6, false); !ok {
 		goto L10
@@ -13935,7 +5753,7 @@ L9:
 		goto L11
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 43) {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit5, "+", 5, false); !ok {
 		goto L12
@@ -13956,7 +5774,7 @@ L6:
 		goto fail
 	}
 	k14 = v16
-	c = p.UseCtx(TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	w = p.Where
 	p.Where = "neg"
 	v = func() any {
@@ -13976,7 +5794,7 @@ fail:
 }
 
 // power, called as by invokePlain (body inlined)
-func s7(p *TParser) (any, bool) {
+func s7(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 
 		var (
@@ -14017,8 +5835,8 @@ func s7(p *TParser) (any, bool) {
 		p.Recovered = p.Recovered[:x2]
 		goto fail_ordinary
 	L4_ordinary:
-		v = p.ScopeValue(Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
-		if n := AsTval(v); n != nil {
+		v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+		if n := pegort.AsTval(v); n != nil {
 			n.TSetFresh(false)
 		}
 		p.Depth--
@@ -14069,8 +5887,8 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
-	if n := AsTval(v); n != nil {
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -14083,7 +5901,7 @@ fail:
 }
 
 // pow, called as by call
-func u8(p *TParser) (any, bool) {
+func u8(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start, rec := p.Pos, len(p.Recovered)
 		v, ok := i8(p)
@@ -14104,13 +5922,13 @@ func u8(p *TParser) (any, bool) {
 }
 
 // pow, invoked as by invoke (body inlined)
-func i8(p *TParser) (any, bool) {
+func i8(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 
 		var (
 			start int
 			v     any
-			c     *TActCtx
+			c     *pegort.TActCtx
 			k1    any
 			x2    int
 			ok    bool
@@ -14145,7 +5963,7 @@ func i8(p *TParser) (any, bool) {
 		x5 = p.Pos
 
 		x6 = p.Pos
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 94) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 94) {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit18, "^", 10, false); !ok {
 			goto fail_ordinary
@@ -14159,7 +5977,7 @@ func i8(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 		k8 = v10
-		c = p.UseCtx(TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+		c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		w = p.Where
 		p.Where = "pow"
 		v = func() any {
@@ -14183,7 +6001,7 @@ func i8(p *TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		c     *TActCtx
+		c     *pegort.TActCtx
 		k1    any
 		x2    int
 		ok    bool
@@ -14219,7 +6037,7 @@ func i8(p *TParser) (any, bool) {
 	x5 = p.Pos
 	p.StepWork()
 	x6 = p.Pos
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 94) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 94) {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit18, "^", 10, false); !ok {
 		goto fail
@@ -14233,7 +6051,7 @@ func i8(p *TParser) (any, bool) {
 		goto fail
 	}
 	k8 = v10
-	c = p.UseCtx(TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	w = p.Where
 	p.Where = "pow"
 	v = func() any {
@@ -14254,7 +6072,7 @@ fail:
 }
 
 // primary, called as by call
-func u9(p *TParser) (any, bool) {
+func u9(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[9]) {
 			return p.CallMemo(trules[9], i9)
@@ -14281,13 +6099,13 @@ func u9(p *TParser) (any, bool) {
 }
 
 // primary, invoked as by invoke (body inlined)
-func i9(p *TParser) (any, bool) {
+func i9(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 
 		var (
 			start int
 			v     any
-			c     *TActCtx
+			c     *pegort.TActCtx
 			ok    bool
 			k1    any
 			x2    int
@@ -14346,7 +6164,7 @@ func i9(p *TParser) (any, bool) {
 		goto fail_ordinary
 	L6_ordinary:
 		k1 = v5
-		c = p.UseCtx(TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+		c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		w = p.Where
 		p.Where = "primary"
 		v = func() any { return k1 }()
@@ -14363,7 +6181,7 @@ func i9(p *TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		c     *TActCtx
+		c     *pegort.TActCtx
 		ok    bool
 		k1    any
 		x2    int
@@ -14423,7 +6241,7 @@ L11:
 	goto fail
 L6:
 	k1 = v5
-	c = p.UseCtx(TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	w = p.Where
 	p.Where = "primary"
 	v = func() any { c.P.StepWork(); return k1 }()
@@ -14437,7 +6255,7 @@ fail:
 }
 
 // group, called as by call
-func u10(p *TParser) (any, bool) {
+func u10(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start, rec := p.Pos, len(p.Recovered)
 		v, ok := i10(p)
@@ -14458,13 +6276,13 @@ func u10(p *TParser) (any, bool) {
 }
 
 // group, invoked as by invoke (body inlined)
-func i10(p *TParser) (any, bool) {
+func i10(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 
 		var (
 			start int
 			v     any
-			c     *TActCtx
+			c     *pegort.TActCtx
 			ok    bool
 			k1    any
 			x2    int
@@ -14478,7 +6296,7 @@ func i10(p *TParser) (any, bool) {
 		}
 		_ = x2
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit21, "(", 11, false); !ok {
 			goto fail_ordinary
@@ -14495,12 +6313,12 @@ func i10(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 41) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 41) {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit22, ")", 12, false); !ok {
 			goto fail_ordinary
 		}
-		c = p.UseCtx(TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+		c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		w = p.Where
 		p.Where = "group"
 		v = func() any { return k1 }()
@@ -14517,7 +6335,7 @@ func i10(p *TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		c     *TActCtx
+		c     *pegort.TActCtx
 		ok    bool
 		k1    any
 		x2    int
@@ -14532,7 +6350,7 @@ func i10(p *TParser) (any, bool) {
 	_ = x2
 	p.StepWork()
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit21, "(", 11, false); !ok {
 		goto fail
@@ -14549,12 +6367,12 @@ func i10(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 41) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 41) {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit22, ")", 12, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	w = p.Where
 	p.Where = "group"
 	v = func() any { c.P.StepWork(); return k1 }()
@@ -14568,7 +6386,7 @@ fail:
 }
 
 // number, called as by invokePlain (body inlined)
-func s11(p *TParser) (any, bool) {
+func s11(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 
 		var (
@@ -14615,7 +6433,7 @@ func s11(p *TParser) (any, bool) {
 
 		x3, x4 = p.Pos, len(p.Recovered)
 
-		if (!WorkControlsEnabled || (*WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
+		if (!pegort.WorkControlsEnabled || (*pegort.WorkControl)(nil) == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit24, ".", 14, false); !ok {
 			goto L5_ordinary
@@ -14645,9 +6463,9 @@ func s11(p *TParser) (any, bool) {
 		p.Recovered = p.Recovered[:x4]
 	L6_ordinary:
 		v8 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-		bv = TFreshNode(v8)
-		v = p.ScopeValue(Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v8, start)
-		if n := AsTval(v); n != nil {
+		bv = pegort.TFreshNode(v8)
+		v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v8, start)
+		if n := pegort.AsTval(v); n != nil {
 			n.TSetFresh(false)
 		}
 		v = p.TConvertResultOwned(trules[11], v, bv)
@@ -14707,7 +6525,7 @@ func s11(p *TParser) (any, bool) {
 	x3, x4 = p.Pos, len(p.Recovered)
 	p.StepWork()
 	p.StepWork()
-	if (!WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
+	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit24, ".", 14, false); !ok {
 		goto L5
@@ -14737,9 +6555,9 @@ L5:
 	p.Recovered = p.Recovered[:x4]
 L6:
 	v8 = p.NewMatch(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = TFreshNode(v8)
-	v = p.ScopeValue(Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v8, start)
-	if n := AsTval(v); n != nil {
+	bv = pegort.TFreshNode(v8)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v8, start)
+	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[11], v, bv)
@@ -14753,7 +6571,7 @@ fail:
 }
 
 // ws, called as by invokePlain (body inlined)
-func s12(p *TParser) (any, bool) {
+func s12(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 
 		var (
@@ -14797,7 +6615,7 @@ func s12(p *TParser) (any, bool) {
 			x7 = p.Pos
 			p.Pos += size
 			v8 = p.NewMatchOrdinary(x7, p.Pos, p.Text(x7, p.Pos), true)
-			v9 = p.ScopeValue(Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v8, x4)
+			v9 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v8, x4)
 			x3++
 			p.PushKid(v9)
 			if p.Pos == x4 {
@@ -14810,8 +6628,8 @@ func s12(p *TParser) (any, bool) {
 			break
 		}
 		v10 = p.NewNodeOrdinary("list", x1, p.Pos, p.Kids(x2))
-		v = p.ScopeValue(Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v10, start)
-		if n := AsTval(v); n != nil {
+		v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v10, start)
+		if n := pegort.AsTval(v); n != nil {
 			n.TSetFresh(false)
 		}
 		p.Depth--
@@ -14860,7 +6678,7 @@ func s12(p *TParser) (any, bool) {
 		x7 = p.Pos
 		p.Pos += size
 		v8 = p.NewMatch(x7, p.Pos, p.Text(x7, p.Pos), true)
-		v9 = p.ScopeValue(Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v8, x4)
+		v9 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v8, x4)
 		x3++
 		p.PushKid(v9)
 		if p.Pos == x4 {
@@ -14873,8 +6691,8 @@ func s12(p *TParser) (any, bool) {
 		break
 	}
 	v10 = p.NewNode("list", x1, p.Pos, p.Kids(x2))
-	v = p.ScopeValue(Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v10, start)
-	if n := AsTval(v); n != nil {
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v10, start)
+	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -14882,7 +6700,7 @@ func s12(p *TParser) (any, bool) {
 }
 
 // ws, called as by invokePlain (body inlined)
-func s13(p *TParser) (any, bool) {
+func s13(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 
 		var (

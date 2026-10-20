@@ -15,33 +15,28 @@ func TestGenerateDocumentNode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := Generate(g, GenOptions{Package: "fixture", Start: "main", Document: true})
+	code, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Document: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(code), "func newDocumentState(") {
-		t.Fatal("Document runner missing from requested source")
-	}
-	if !strings.Contains(string(code), "func NewDocument(") || !strings.Contains(string(code), "func (n *Node) Clone()") {
+	if !strings.Contains(string(code), "func NewDocument(") || !strings.Contains(string(code), "type Document = pegort.Document") {
 		t.Fatal("Document public API missing from requested source")
 	}
-	ordinary, err := Generate(g, GenOptions{Package: "fixture", Start: "main"})
+	ordinary, err := generateCode(g, GenOptions{Package: "fixture", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(ordinary), "func newDocumentState(") {
-		t.Fatal("ordinary generated source includes the Document runner")
-	}
-	if strings.Contains(string(ordinary), "func NewDocument(") || strings.Contains(string(ordinary), "func (n *Node) Clone()") {
+	if strings.Contains(string(ordinary), "func NewDocument(") || strings.Contains(string(ordinary), "type Document = pegort.Document") {
 		t.Fatal("ordinary generated source includes the Document API")
 	}
 	dir := t.TempDir()
 	for name, source := range map[string]string{
-		"go.mod":          "module fixture\n\ngo 1.27.1\n",
+		"go.mod":          testGoMod("fixture"),
 		"parser.go":       string(code),
 		"batch/parser.go": string(ordinary),
 		"parser_test.go": `package fixture
 import (
+	pegort "github.com/ornew/pego/runtime"
   "context"
   "encoding/json"
   "fmt"
@@ -50,7 +45,7 @@ import (
 func TestGeneratedDocumentAgainstBatch(t *testing.T) {
   for _, unit := range []PositionUnit{CodePoints, Bytes} {
    count := 0
-   d, err := NewDocument("aa", func(o *parseOptions) { count++; o.unit = unit })
+   d, err := NewDocument("aa", func(o *pegort.X_parseOptions) { count++; o.X_unit = unit })
    if err != nil || count != 1 { t.Fatalf("new document: %v, option count %d", err, count) }
    for _, change := range []struct{ start, end int; text string }{{2, 2, "a"}, {1, 2, "b"}, {1, 2, "a"}} {
     node, err := d.Parse()
@@ -158,7 +153,7 @@ func TestGenerateDocumentCombinations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	typed, err := Generate(g, GenOptions{Package: "fixture", Start: "main", Document: true, Types: true})
+	typed, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Document: true, Types: true})
 	if err != nil || !strings.Contains(string(typed), "func (d *Document) ParseAST(") {
 		t.Fatalf("typed Document generation: %v", err)
 	}

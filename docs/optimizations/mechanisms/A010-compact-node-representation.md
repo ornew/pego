@@ -37,7 +37,7 @@ Evidence records: [003](../003-node-fields-as-a-slice-54a5774.md),
 [064](../064-a-smaller-node-in-generated-parsers.md).
 
 Source owners: [`Node and nodeKind`](../../../internal/engine/node.go),
-[`generated Node and Fields`](../../../internal/engine/genrt/runtime.go).
+[`generated Node and Fields`](../../../runtime/runtime.go).
 
 The [comparison policy](../../design/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

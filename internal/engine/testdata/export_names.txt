@@ -1,0 +1,20 @@
+actionErrorText stepsUsed inputUsed wrapEvalError recycle release setValueField setGrammar sortExpected setSource copyErrors
+captureScratch saved created memo bound slot old fields run
+f n name val next unit src ctx bs err msg value
+fatal evalError contextPanic tracePanic observation tfield parseOptions tundo
+maxDepth nseen newWorkControl
+slots slotOff slotCI frames frameN bitPages offs memoEntry tmemoEntry
+expBits expBase farthest exp
+rule ok node envValues bind trace
+memoPut memoGet memoSlots longest undo toperatorsRuleAttempt operatorsRuleAttempt
+seen calls stride op listNode seenCalls
+seenRulePages repeats pages last at sparse
+frame end
+typedMemo
+typedDocumentState
+asNode
+chunks
+profile rules stack
+errs expected env
+limits
+rtBinary unitLen recoverParse

@@ -75,14 +75,14 @@ func BenchmarkTypedRecoveryGeneration(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			code, err := Generate(g, opts)
+			code, err := generateCode(g, opts)
 			if err != nil {
 				b.Fatal(err)
 			}
 			b.ReportAllocs()
 			b.ResetTimer()
 			for b.Loop() {
-				if _, err := Generate(g, opts); err != nil {
+				if _, err := generateCode(g, opts); err != nil {
 					b.Fatal(err)
 				}
 			}
@@ -94,6 +94,7 @@ func BenchmarkTypedRecoveryGeneration(b *testing.B) {
 const typedRecoveryWorkloadFixture = `package lrfixture
 
 import (
+	pegort "github.com/ornew/pego/runtime"
     "encoding/json"
     "fmt"
     "strings"
@@ -134,12 +135,12 @@ func TestRecoveryWorkload(t *testing.T) {
         saved, savedErr := ParseAST(recoveryInput("recovered", 2), WithUnit(unit))
         if !checkRecovery(saved, savedErr, "recovered", 2) { t.Fatalf("saved value %v %v", saved, savedErr) }
         before, _ := json.Marshal(struct { Value any; Error any }{saved, savedErr})
-        p := &TParser{Parser:&Parser{}}
+        p := &pegort.TParser{Parser:&pegort.Parser{}}
         for _, n := range []int{1,128,1} {
             for _, mode := range []string{"accepted","recovered","rejected"} {
                 input := recoveryInput(mode,n)
-                value, err := p.run(trules[0],input,parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth},&tslabs{})
-                v := TAs[*Doc](value)
+                value, err := p.X_run(trules[0],input,pegort.X_parseOptions{X_unit: unit, X_maxDepth: pegoGrammar.X_maxDepth},&tslabs{})
+                v := pegort.TAs[*Doc](value)
                 if !checkRecovery(v,err,mode,n) { t.Fatalf("%s/%d: %v %v",mode,n,v,err) }
                 data, _ := json.Marshal(struct { Value any; Error any }{v,err})
                 pooled, pooledErr := ParseAST(input,WithUnit(unit))
@@ -148,9 +149,9 @@ func TestRecoveryWorkload(t *testing.T) {
                 fmt.Printf("OBS %v %s/%d %s\n",unit,mode,n,data)
                 if p.Depth != 0 || p.Frame != nil || len(p.Trail) != 0 { t.Fatal("live invocation state") }
                 for _, u := range p.Trail[:cap(p.Trail)] {
-                    if u.f != nil || u.old != nil || u.slot != 0 { t.Fatal("retained undo state") }
+                    if u.X_f != nil || u.X_old != nil || u.X_slot != 0 { t.Fatal("retained undo state") }
                 }
-                p.recycle()
+                p.X_recycle()
                 recycled, _ := json.Marshal(struct { Value any; Error any }{v,err})
                 if string(data) != string(recycled) { t.Fatal("recycle changed returned values or diagnostics") }
             }

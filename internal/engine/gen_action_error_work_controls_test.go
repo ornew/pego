@@ -31,7 +31,7 @@ func TestGeneratedGoActionErrorWork(t *testing.T) {
  rule ` + rule + ` A = a:"a" #cut => A{N:1 / (len($a)-1)}`, "action in " + rule + ": division by zero", true},
 	}
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module actionerrorfixture\n\ngo 1.27.1\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("actionerrorfixture")), 0644); err != nil {
 		t.Fatal(err)
 	}
 	for _, c := range cases {
@@ -42,7 +42,7 @@ func TestGeneratedGoActionErrorWork(t *testing.T) {
 		for _, convert := range []bool{false, true} {
 			for _, general := range []bool{false, true} {
 				pkg := fmt.Sprintf("action_%s_%v_%v", c.name, convert, general)
-				code, err := Generate(g, GenOptions{Package: pkg, Start: c.start, Types: true, Recognize: true, convertTypes: convert, disableTypedCuts: general})
+				code, err := generateCode(g, GenOptions{Package: pkg, Start: c.start, Types: true, Recognize: true, convertTypes: convert, disableTypedCuts: general})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -67,6 +67,8 @@ func TestGeneratedGoActionErrorWork(t *testing.T) {
 }
 
 const generatedGoActionErrorConsumer = `package PACKAGE
+
+import pegort "github.com/ornew/pego/runtime"
 import("context";"errors";"reflect";"strings";"testing")
 const wantError=WANT_ERROR
 const recognize=CHECK_RECOGNIZE
@@ -82,41 +84,41 @@ func TestPublicActionErrorAccounting(t *testing.T){
   retry,retryErr:=actionCall(mode);if (retryErr==nil)!=(e==nil) || retryErr!=nil && retryErr.Error()!=e.Error() || !reflect.DeepEqual(retry,n){t.Fatal("action error retry changed output",retryErr)}
  }
 }
-func catchActionText(f func())(text string,err error){defer func(){if x:=recover();x!=nil{switch x:=x.(type){case evalError:text=x.msg;case fatal:err=x.err;default:panic(x)}}}();f();return}
+func catchActionText(f func())(text string,err error){defer func(){if x:=recover();x!=nil{switch x:=x.(type){case pegort.X_evalError:text=x.X_msg;case pegort.X_fatal:err=x.X_err;default:panic(x)}}}();f();return}
 func TestActionTextFragmentsAndFlatPrefix(t *testing.T){
  for _,parts:=range [][]string{{""},{"","",""},{"a","","λ\xff"},{strings.Repeat("n",8192)}}{
-  want:=strings.Join(parts,"");steps:=uint64(len(want)+2*len(parts));p:=&Parser{Control:newWorkControl(nil,WorkLimits{MaxSteps:steps})}
-  retained:=p.actionErrorText(parts...);if retained!=want || p.Control.stepsUsed()!=steps || p.Control.inputUsed()!=0{t.Fatal("fragment text/counters")}
-  p.Control=newWorkControl(nil,WorkLimits{MaxSteps:steps-1});var partial string
-  _,e:=catchActionText(func(){partial=p.actionErrorText(parts...)});if !errors.Is(e,ErrWorkLimit) || partial!=""{t.Fatal("one-short message",e)}
-  p.Control=newWorkControl(nil,WorkLimits{MaxSteps:100});if p.actionErrorText("retry")!="retry" || retained!=want{t.Fatal("retained message changed")}
+  want:=strings.Join(parts,"");steps:=uint64(len(want)+2*len(parts));p:=&pegort.Parser{Control:pegort.X_newWorkControl(nil,WorkLimits{MaxSteps:steps})}
+  retained:=p.X_actionErrorText(parts...);if retained!=want || p.Control.X_stepsUsed()!=steps || p.Control.X_inputUsed()!=0{t.Fatal("fragment text/counters")}
+  p.Control=pegort.X_newWorkControl(nil,WorkLimits{MaxSteps:steps-1});var partial string
+  _,e:=catchActionText(func(){partial=p.X_actionErrorText(parts...)});if !errors.Is(e,ErrWorkLimit) || partial!=""{t.Fatal("one-short message",e)}
+  p.Control=pegort.X_newWorkControl(nil,WorkLimits{MaxSteps:100});if p.X_actionErrorText("retry")!="retry" || retained!=want{t.Fatal("retained message changed")}
  }
  where:=strings.Repeat("rule",512);message:="division by zero";want:="action in "+where+": "+message
- p:=&Parser{Control:newWorkControl(nil,WorkLimits{MaxSteps:uint64(len(want)+8)})};e:=p.wrapEvalError(where,message)
- if e.Error()!=want || errors.Unwrap(e)!=nil || p.Control.stepsUsed()!=uint64(len(want)+8){t.Fatal("flat wrapper contract",e)}
- p.Control=newWorkControl(nil,WorkLimits{MaxSteps:uint64(len(want)+7)});_,e=catchActionText(func(){p.wrapEvalError(where,message)});if !errors.Is(e,ErrWorkLimit){t.Fatal("one-short wrapper",e)}
+ p:=&pegort.Parser{Control:pegort.X_newWorkControl(nil,WorkLimits{MaxSteps:uint64(len(want)+8)})};e:=p.X_wrapEvalError(where,message)
+ if e.Error()!=want || errors.Unwrap(e)!=nil || p.Control.X_stepsUsed()!=uint64(len(want)+8){t.Fatal("flat wrapper contract",e)}
+ p.Control=pegort.X_newWorkControl(nil,WorkLimits{MaxSteps:uint64(len(want)+7)});_,e=catchActionText(func(){p.X_wrapEvalError(where,message)});if !errors.Is(e,ErrWorkLimit){t.Fatal("one-short wrapper",e)}
 }
 func TestActionHelperErrorsAndShortCircuit(t *testing.T){
- long:=strings.Repeat("Kind",2048);n:=&Node{RawKind:KindOf(long,"")};tn:=&TSeq{Typ:"tuple",Kids:make([]any,2048)}
+ long:=strings.Repeat("Kind",2048);n:=&Node{RawKind:pegort.KindOf(long,"")};tn:=&pegort.TSeq{Typ:"tuple",Kids:make([]any,2048)}
  for _,typed:=range []bool{false,true}{
-  p:=&Parser{};tp:=&TParser{Parser:p};called:=0
+  p:=&pegort.Parser{};tp:=&pegort.TParser{Parser:p};called:=0
   cases:=[]func(){
-   func(){if typed{(&TActCtx{P:tp}).Unary("-",tn)}else{(&ActCtx{P:p}).Unary("-",n)}},
-   func(){if typed{(&TActCtx{P:tp}).Binary("+",tn,1)}else{(&ActCtx{P:p}).Binary("+",n,1)}},
-   func(){right:=func()any{called++;return true};if typed{(&TActCtx{P:tp}).And(tn,right)}else{(&ActCtx{P:p}).And(n,right)}},
-   func(){right:=func()any{called++;return false};if typed{(&TActCtx{P:tp}).Or(tn,right)}else{(&ActCtx{P:p}).Or(n,right)}},
-   func(){if typed{(&TActCtx{P:tp}).ListItems(long,1)}else{(&ActCtx{P:p}).ListItems(long,1)}},
-   func(){fn:=func(...any)any{return nil};if typed{(&TActCtx{P:tp}).asNode(long,fn)}else{(&ActCtx{P:p}).asNode(long,fn)}},
+   func(){if typed{(&pegort.TActCtx{P:tp}).Unary("-",tn)}else{(&pegort.ActCtx{P:p}).Unary("-",n)}},
+   func(){if typed{(&pegort.TActCtx{P:tp}).Binary("+",tn,1)}else{(&pegort.ActCtx{P:p}).Binary("+",n,1)}},
+   func(){right:=func()any{called++;return true};if typed{(&pegort.TActCtx{P:tp}).And(tn,right)}else{(&pegort.ActCtx{P:p}).And(n,right)}},
+   func(){right:=func()any{called++;return false};if typed{(&pegort.TActCtx{P:tp}).Or(tn,right)}else{(&pegort.ActCtx{P:p}).Or(n,right)}},
+   func(){if typed{(&pegort.TActCtx{P:tp}).ListItems(long,1)}else{(&pegort.ActCtx{P:p}).ListItems(long,1)}},
+   func(){fn:=func(...any)any{return nil};if typed{(&pegort.TActCtx{P:tp}).X_asNode(long,fn)}else{(&pegort.ActCtx{P:p}).X_asNode(long,fn)}},
   }
   for _,run:=range cases{
    p.Control=nil;ordinary,e:=catchActionText(run);if e!=nil || ordinary==""{t.Fatal("ordinary helper error",e)}
-   p.Control=newWorkControl(nil,WorkLimits{MaxSteps:1<<50});active,e:=catchActionText(run);if e!=nil || active!=ordinary{t.Fatal("active helper error changed",e)}
-   p.Control=newWorkControl(nil,WorkLimits{MaxSteps:256});partial,e:=catchActionText(run);if partial!="" || !errors.Is(e,ErrWorkLimit) || p.Control.inputUsed()!=0{t.Fatal("helper error unbounded",e)}
+   p.Control=pegort.X_newWorkControl(nil,WorkLimits{MaxSteps:1<<50});active,e:=catchActionText(run);if e!=nil || active!=ordinary{t.Fatal("active helper error changed",e)}
+   p.Control=pegort.X_newWorkControl(nil,WorkLimits{MaxSteps:256});partial,e:=catchActionText(run);if partial!="" || !errors.Is(e,ErrWorkLimit) || p.Control.X_inputUsed()!=0{t.Fatal("helper error unbounded",e)}
   }
   if called!=0{t.Fatal("invalid boolean operand evaluated RHS")}
-  p.Control=newWorkControl(nil,WorkLimits{MaxSteps:1<<50});called=0
+  p.Control=pegort.X_newWorkControl(nil,WorkLimits{MaxSteps:1<<50});called=0
   right:=func()any{called++;return true};var and,or any
-  if typed{c:=&TActCtx{P:tp};and=c.And(false,right);or=c.Or(true,right)}else{c:=&ActCtx{P:p};and=c.And(false,right);or=c.Or(true,right)}
+  if typed{c:=&pegort.TActCtx{P:tp};and=c.And(false,right);or=c.Or(true,right)}else{c:=&pegort.ActCtx{P:p};and=c.And(false,right);or=c.Or(true,right)}
   if and!=false || or!=true || called!=0{t.Fatal("valid short circuit changed")}
  }
 }

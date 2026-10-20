@@ -34,12 +34,12 @@ rule main Pair = a:"a" => Pair{TName: "n", TText: "t", TKids: "k", TStruct: "s",
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", "module fieldclash\n\ngo 1.27.1\n")
+	write("go.mod", testGoMod("fieldclash"))
 	for _, c := range []struct {
 		pkg      string
 		document bool
 	}{{"plain", false}, {"document", true}} {
-		code, err := Generate(g, GenOptions{Package: c.pkg, Start: "main", Types: true, Document: c.document})
+		code, err := generateCode(g, GenOptions{Package: c.pkg, Start: "main", Types: true, Document: c.document})
 		if err != nil {
 			t.Fatalf("%s: %v", c.pkg, err)
 		}

@@ -186,13 +186,13 @@ func TestDefaultValueCompiledRoundTrip(t *testing.T) {
 
 func TestDefaultValueGeneratedRejectsTypes(t *testing.T) {
 	g := mustParse("rule main = \"a\" => 1")
-	if _, err := Generate(g, GenOptions{Package: "p", Start: "main", Types: true, DefaultValue: true}); err == nil || !strings.Contains(err.Error(), "default values") {
+	if _, err := generateCode(g, GenOptions{Package: "p", Start: "main", Types: true, DefaultValue: true}); err == nil || !strings.Contains(err.Error(), "default values") {
 		t.Errorf("typed output with default values: %v", err)
 	}
 	if _, err := GenerateTS(g, GenOptions{Start: "main", Types: true, DefaultValue: true}); err == nil || !strings.Contains(err.Error(), "default values") {
 		t.Errorf("typed TypeScript output with default values: %v", err)
 	}
-	if _, err := Generate(g, GenOptions{Package: "p", Start: "main", DefaultValue: true}); err != nil {
+	if _, err := generateCode(g, GenOptions{Package: "p", Start: "main", DefaultValue: true}); err != nil {
 		t.Errorf("generation with default values: %v", err)
 	}
 }

@@ -37,7 +37,7 @@ Source owners: [`generator.directRule and
 dgen`](../../../internal/engine/gen_direct.go), [`typed framed body
 lowering`](../../../internal/engine/gen_direct_node.go), [`GenOptions private
 typed controls`](../../../internal/engine/gen.go), [`runtime invocation
-ownership`](../../../internal/engine/genrt/typed.go).
+ownership`](../../../runtime/typed.go).
 
 The [comparison policy](../../design/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

@@ -270,7 +270,7 @@ func testGeneratedStreams(t *testing.T, goBin string, cases []genCase, opts GenO
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", "module streamtest\n\ngo 1.24\n")
+	write("go.mod", testGoMod("streamtest"))
 	var imports, parsers strings.Builder
 	var runs []streamRun
 	var want []string
@@ -281,7 +281,7 @@ func testGeneratedStreams(t *testing.T, goBin string, cases []genCase, opts GenO
 			t.Fatalf("%s: %v", c.name, err)
 		}
 		opts.Package, opts.Start, opts.Stream, opts.SourceInfo = fmt.Sprintf("g%d", i), "main", true, true // compile gives the engine source information
-		code, err := Generate(g, opts)
+		code, err := generateCode(g, opts)
 		if err != nil {
 			if strings.Contains(err.Error(), "needs a #stream repetition") {
 				continue // the corpus grammar has #stream elsewhere
@@ -507,7 +507,7 @@ rule other = "b"`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	plain, err := Generate(g, GenOptions{Package: "fixture", Start: "main"})
+	plain, err := generateCode(g, GenOptions{Package: "fixture", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -516,7 +516,7 @@ rule other = "b"`)
 			t.Errorf("ordinary output contains %s", marker)
 		}
 	}
-	code, err := Generate(g, GenOptions{Package: "fixture", Start: "main", Stream: true})
+	code, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Stream: true})
 	if err != nil || !strings.Contains(string(code), "func ParseStream(") || strings.Contains(string(code), "stream:") {
 		t.Fatalf("stream output: %v", err)
 	}
@@ -527,18 +527,18 @@ rule other = "b"`)
 		{GenOptions{Start: "other", Stream: true}, "needs a #stream repetition"},
 	} {
 		tc.opts.Package = "fixture"
-		if _, err := Generate(g, tc.opts); err == nil || !strings.Contains(err.Error(), tc.want) {
+		if _, err := generateCode(g, tc.opts); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%+v: %v, want %q", tc.opts, err, tc.want)
 		}
 	}
 	if _, err := GenerateTS(g, GenOptions{Start: "main", Stream: true}); err == nil {
 		t.Error("TypeScript accepted stream generation")
 	}
-	typed, err := Generate(g, GenOptions{Package: "fixture", Start: "main", Stream: true, Types: true})
+	typed, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Stream: true, Types: true})
 	if err != nil || !strings.Contains(string(typed), "func ParseStreamAST(") || !strings.Contains(string(typed), "type StreamValue = ") {
 		t.Fatalf("typed stream output: %v", err)
 	}
-	if typed, err := Generate(g, GenOptions{Package: "fixture", Start: "main", Types: true}); err != nil || strings.Contains(string(typed), "ParseStreamAST") {
+	if typed, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Types: true}); err != nil || strings.Contains(string(typed), "ParseStreamAST") {
 		t.Fatalf("typed output without streams: %v", err)
 	}
 }
@@ -601,7 +601,7 @@ func TestGeneratedTypedStreamMatchesBatch(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", "module typedstream\n\ngo 1.24\n")
+	write("go.mod", testGoMod("typedstream"))
 	var imports, parsers strings.Builder
 	var runs []streamRun
 	var names []string
@@ -610,7 +610,7 @@ func TestGeneratedTypedStreamMatchesBatch(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := Generate(g, GenOptions{Package: fmt.Sprintf("g%d", i), Start: "main", Stream: true, Types: true})
+		code, err := generateCode(g, GenOptions{Package: fmt.Sprintf("g%d", i), Start: "main", Stream: true, Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -874,12 +874,12 @@ func TestGenerateStreamKeepsBatchBodies(t *testing.T) {
 		}
 		for _, opts := range []GenOptions{{}, {Observability: true}} {
 			opts.Package, opts.Start = "p", "main"
-			plain, err := Generate(g, opts)
+			plain, err := generateCode(g, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
 			opts.Stream = true
-			stream, err := Generate(g, opts)
+			stream, err := generateCode(g, opts)
 			if err != nil {
 				if strings.Contains(err.Error(), "needs a #stream repetition") {
 					continue
@@ -895,7 +895,7 @@ func TestGenerateStreamKeepsBatchBodies(t *testing.T) {
 			}
 			table := func(code []byte) string {
 				src := string(code)
-				i := strings.Index(src, "rules = []*Rule{")
+				i := strings.Index(src, "rules = []*pegort.Rule{")
 				return src[i : i+strings.Index(src[i:], "\n\t}\n")]
 			}
 			if table(plain) != table(stream) {
@@ -921,12 +921,12 @@ rule item Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" => Pair{Key: $k, Val
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := Generate(g, GenOptions{Package: "fixture", Start: "main", Stream: true, Observability: true})
+	code, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Stream: true, Observability: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	files := map[string]string{
-		"go.mod":         "module fixture\n\ngo 1.27.1\n",
+		"go.mod":         testGoMod("fixture"),
 		"parser.go":      string(code),
 		"parser_test.go": generatedStreamConsumer,
 	}
@@ -943,7 +943,7 @@ rule atom = [a-z] #atomic " "?`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err = Generate(memo, GenOptions{Package: "memo", Start: "main", Stream: true, Observability: true})
+	code, err = generateCode(memo, GenOptions{Package: "memo", Start: "main", Stream: true, Observability: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -954,7 +954,7 @@ rule item P = x:[a-z] ys:[0-9]* ";" => P{A: $x, B: $x, Xs: $ys.Value}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err = Generate(typed, GenOptions{Package: "typed", Start: "main", Stream: true, Types: true})
+	code, err = generateCode(typed, GenOptions{Package: "typed", Start: "main", Stream: true, Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -965,7 +965,7 @@ rule stmt S = n:[a-z]+ #atomic ";" => S{N: $n}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err = Generate(recovering, GenOptions{Package: "recovering", Start: "main", Stream: true, Types: true, Document: true, Recognize: true})
+	code, err = generateCode(recovering, GenOptions{Package: "recovering", Start: "main", Stream: true, Types: true, Document: true, Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -974,7 +974,7 @@ rule stmt S = n:[a-z]+ #atomic ";" => S{N: $n}`)
 	files["typed/parser_test.go"] = generatedTypedStreamConsumer
 	files["memo/parser_test.go"] = generatedStreamMemoConsumer
 	for _, pkg := range []string{"lists"} {
-		code, err := Generate(lists, GenOptions{Package: pkg, Start: "main", Stream: true, Observability: true})
+		code, err := generateCode(lists, GenOptions{Package: pkg, Start: "main", Stream: true, Observability: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -999,6 +999,7 @@ rule stmt S = n:[a-z]+ #atomic ";" => S{N: $n}`)
 const generatedRecoveringStreamConsumer = `package recovering
 
 import (
+	pegort "github.com/ornew/pego/runtime"
 	"errors"
 	"io"
 	"runtime"
@@ -1040,8 +1041,8 @@ func TestDiagnosticLimitBoundsMemory(t *testing.T) {
 				at[count/(2*n)] = ms.HeapAlloc
 			}
 			return nil
-		}, WithUnit(unit), WithDiagnosticLimit(3), WithDiagnosticCallback(func(*SyntaxError) error { diags++; return nil }))
-		var truncated *TruncatedSyntaxErrors
+		}, WithUnit(unit), pegort.WithDiagnosticLimit(3), pegort.WithDiagnosticCallback(func(*SyntaxError) error { diags++; return nil }))
+		var truncated *pegort.TruncatedSyntaxErrors
 		if !errors.As(err, &truncated) || truncated.Total != n || truncated.Dropped != n-3 || truncated.CountsSaturated || count != 2*n || diags != n {
 			t.Fatal(err, count, diags)
 		}
@@ -1056,7 +1057,7 @@ func TestDiagnosticLimitBoundsMemory(t *testing.T) {
 }
 
 func TestDiagnosticOptionsAreStreamOnly(t *testing.T) {
-	for _, opt := range []ParseOption{WithDiagnosticLimit(0), WithDiagnosticCallback(func(*SyntaxError) error { return nil })} {
+	for _, opt := range []ParseOption{pegort.WithDiagnosticLimit(0), pegort.WithDiagnosticCallback(func(*SyntaxError) error { return nil })} {
 		check := func(name string, err error) {
 			if err == nil || !strings.Contains(err.Error(), "only supported for stream parsing") {
 				t.Errorf("%s: %v", name, err)
@@ -1080,15 +1081,15 @@ func TestDiagnosticOptionsAreStreamOnly(t *testing.T) {
 		check("Document.ParseAST", err)
 	}
 	// A nil callback is not an option to reject.
-	if _, err := Parse("ab;", WithDiagnosticCallback(nil)); err != nil {
+	if _, err := Parse("ab;", pegort.WithDiagnosticCallback(nil)); err != nil {
 		t.Error(err)
 	}
 	read := false
 	r := readFunc(func([]byte) (int, error) { read = true; return 0, io.EOF })
-	if err := ParseStream(r, nil, WithDiagnosticLimit(-1)); err == nil || !strings.Contains(err.Error(), "nonnegative") {
+	if err := ParseStream(r, nil, pegort.WithDiagnosticLimit(-1)); err == nil || !strings.Contains(err.Error(), "nonnegative") {
 		t.Error(err)
 	}
-	if _, err := Iterate(r, WithDiagnosticLimit(-1)); err == nil {
+	if _, err := Iterate(r, pegort.WithDiagnosticLimit(-1)); err == nil {
 		t.Error("Iterate accepted a negative limit")
 	}
 	if _, err := IterateAST(r, WithMaxDepth(-1)); err == nil {
@@ -1111,7 +1112,7 @@ func TestIterateAST(t *testing.T) {
 		t.Fatal(err, want)
 	}
 	var diags []*SyntaxError
-	it, err := IterateAST(strings.NewReader("ab;1x;cd;"), WithDiagnosticCallback(func(e *SyntaxError) error { diags = append(diags, e); return nil }))
+	it, err := IterateAST(strings.NewReader("ab;1x;cd;"), pegort.WithDiagnosticCallback(func(e *SyntaxError) error { diags = append(diags, e); return nil }))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1138,12 +1139,12 @@ func TestIterateAST(t *testing.T) {
 		t.Fatal(ok, err)
 	}
 	it.Close()
-	if _, ok, err := it.Next(); ok || err != ErrStreamClosed {
+	if _, ok, err := it.Next(); ok || err != pegort.ErrStreamClosed {
 		t.Fatal(ok, err)
 	}
 	// A callback panic reaches the caller of Next unchanged.
 	type marker struct{}
-	nodes, _ := Iterate(strings.NewReader("1x;"), WithDiagnosticCallback(func(*SyntaxError) error { panic(marker{}) }))
+	nodes, _ := Iterate(strings.NewReader("1x;"), pegort.WithDiagnosticCallback(func(*SyntaxError) error { panic(marker{}) }))
 	func() {
 		defer func() {
 			if x := recover(); x != (marker{}) {
@@ -1229,6 +1230,7 @@ func TestParseStreamASTWorkControls(t *testing.T) {
 const generatedStreamConsumer = `package fixture
 
 import (
+	pegort "github.com/ornew/pego/runtime"
 	"context"
 	"errors"
 	"io"
@@ -1240,26 +1242,26 @@ import (
 const input = "a=1\nbc=22\nd=3\n"
 
 func TestTraceAndProfile(t *testing.T) {
-	var events []TraceEvent
-	profile := &Profile{}
+	var events []pegort.TraceEvent
+	profile := &pegort.Profile{}
 	n := 0
 	err := ParseStream(strings.NewReader(input), func(*Node) error { n++; return nil },
-		WithTrace(func(e TraceEvent) { events = append(events, e) }), WithProfile(profile))
+		pegort.WithTrace(func(e pegort.TraceEvent) { events = append(events, e) }), pegort.WithProfile(profile))
 	if err != nil || n != 3 {
 		t.Fatal(err, n)
 	}
-	if len(events) == 0 || events[0].Rule != "main" || events[0].Kind != TraceEnter {
+	if len(events) == 0 || events[0].Rule != "main" || events[0].Kind != pegort.TraceEnter {
 		t.Fatal(events)
 	}
 	depth, items := 0, 0
 	for _, e := range events {
 		switch e.Kind {
-		case TraceEnter:
+		case pegort.TraceEnter:
 			depth++
 			if e.Rule == "item" {
 				items++
 			}
-		case TraceExit:
+		case pegort.TraceExit:
 			depth--
 		}
 		if e.ExaminedKnown {
@@ -1362,6 +1364,7 @@ func TestMemoryIsBounded(t *testing.T) {
 const generatedStreamListsConsumer = `package lists
 
 import (
+	pegort "github.com/ornew/pego/runtime"
 	"io"
 	"runtime"
 	"testing"
@@ -1401,7 +1404,7 @@ func TestMemoryIsBounded(t *testing.T) {
 			count := 0
 			opts := []ParseOption{WithUnit(unit)}
 			if profiled {
-				opts = append(opts, WithProfile(&Profile{}))
+				opts = append(opts, pegort.WithProfile(&pegort.Profile{}))
 			}
 			err := ParseStream(&listReader{n: n, seed: 1}, func(*Node) error {
 				count++
@@ -1427,6 +1430,7 @@ func TestMemoryIsBounded(t *testing.T) {
 const generatedStreamMemoConsumer = `package memo
 
 import (
+	pegort "github.com/ornew/pego/runtime"
 	"io"
 	"runtime"
 	"testing"
@@ -1461,7 +1465,7 @@ func TestMemoryIsBounded(t *testing.T) {
 			count := 0
 			opts := []ParseOption{WithUnit(unit)}
 			if profiled {
-				opts = append(opts, WithProfile(&Profile{}))
+				opts = append(opts, pegort.WithProfile(&pegort.Profile{}))
 			}
 			err := ParseStream(&lineReader{line: "key=42\n", n: n}, func(*Node) error {
 				count++

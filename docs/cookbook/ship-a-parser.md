@@ -59,7 +59,7 @@ import (
 	"example.com/ship/versionparser"
 )
 
-//go:generate go tool pego gen -g version.pego -pkg versionparser -types -o versionparser/parser.go
+//go:generate go tool pego gen -g version.pego -module example.com/versionparser -types -o versionparser
 
 func main() {
 	v, err := versionparser.ParseAST(os.Args[1])
@@ -112,7 +112,7 @@ func TestGeneratedIsUpToDate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want, err := pego.GenerateGo(g, "versionparser", "main", pego.WithTypes())
+	want, err := pego.GenerateGo(g, "example.com/versionparser", "main", pego.WithTypes())
 	if err != nil {
 		t.Fatal(err)
 	}

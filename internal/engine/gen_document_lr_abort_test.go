@@ -47,7 +47,7 @@ rule sum S = l:y "+" r:a => S{L: $l, R: $r}
 rule y E = x
 rule a A = t:("a") #atomic => A{Text: text($t)}`, "a+a+a+a"},
 	}
-	files := map[string]string{"go.mod": "module fixture\n\ngo 1.27.1\n"}
+	files := map[string]string{"go.mod": testGoMod("fixture")}
 	for i, g := range grammars {
 		parsed, err := syntax.Parse(g.src)
 		if err != nil {
@@ -58,7 +58,7 @@ rule a A = t:("a") #atomic => A{Text: text($t)}`, "a+a+a+a"},
 			if typed {
 				pkg, route = fmt.Sprintf("t%d", i), generatedDocumentTypedRoute
 			}
-			code, err := Generate(parsed, GenOptions{Package: pkg, Start: "main", Document: true, Types: typed, Observability: true})
+			code, err := generateCode(parsed, GenOptions{Package: pkg, Start: "main", Document: true, Types: typed, Observability: true})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -115,6 +115,7 @@ func matchesTyped(t *testing.T, d *Document, unit PositionUnit) {
 const generatedDocumentGrowthConsumer = `package fixture
 
 import (
+	pegort "github.com/ornew/pego/runtime"
 	"context"
 	"encoding/json"
 	"errors"
@@ -183,8 +184,8 @@ func TestInterruptedGrowth(t *testing.T) {
 		for _, cause := range []string{"cancel", "panic"} {
 			grown := 0
 			_, err := interrupt(t, unit, func(cancel context.CancelFunc) []ParseOption {
-				return []ParseOption{WithTrace(func(e TraceEvent) {
-					if e.Kind != TraceExit || !e.Memo || !e.Matched || e.Rule == "main" {
+				return []ParseOption{pegort.WithTrace(func(e pegort.TraceEvent) {
+					if e.Kind != pegort.TraceExit || !e.Memo || !e.Matched || e.Rule == "main" {
 						return
 					}
 					if grown++; grown == 2 {

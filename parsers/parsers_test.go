@@ -15,7 +15,7 @@ var update = flag.Bool("update", false, "update golden files")
 
 // generation is a pego gen command of generate.go.
 type generation struct {
-	grammar, pkg, out string
+	grammar, module, out string
 	opts              []pego.GenOption
 }
 
@@ -41,9 +41,9 @@ func generations(t *testing.T) []generation {
 			case "-g":
 				i++
 				g.grammar = fs[i]
-			case "-pkg":
+			case "-module":
 				i++
-				g.pkg = fs[i]
+				g.module = fs[i]
 			case "-o":
 				i++
 				g.out = fs[i]
@@ -65,8 +65,8 @@ func generations(t *testing.T) []generation {
 	return gens
 }
 
-// TestGeneratedParsersAreUpToDate checks that every parser.go is what pego gen generates from its
-// grammar (run go generate ./parsers after changing a grammar or the generator).
+// TestGeneratedParsersAreUpToDate checks that every file of a generated package is what pego gen
+// generates from its grammar (run go generate ./parsers after changing a grammar or the generator).
 func TestGeneratedParsersAreUpToDate(t *testing.T) {
 	for _, g := range generations(t) {
 		src, err := os.ReadFile(g.grammar)
@@ -77,16 +77,19 @@ func TestGeneratedParsersAreUpToDate(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s:%v", g.grammar, err)
 		}
-		want, err := pego.GenerateGo(gr, g.pkg, "main", g.opts...)
+		want, err := pego.GenerateGo(gr, g.module, "main", g.opts...)
 		if err != nil {
 			t.Fatal(err)
 		}
-		got, err := os.ReadFile(g.out)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if string(got) != string(want) {
-			t.Errorf("%s is out of date; run go generate ./parsers", g.out)
+		for _, f := range want {
+			path := filepath.Join(g.out, filepath.FromSlash(f.Path))
+			got, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(got) != string(f.Content) {
+				t.Errorf("%s is out of date; run go generate ./parsers", path)
+			}
 		}
 	}
 }

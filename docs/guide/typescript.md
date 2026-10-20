@@ -516,7 +516,7 @@ embedded runtime comes from the version of `pego` that generated it). In a Go mo
 the grammar keeps both parsers in step:
 
 ```go
-//go:generate go tool pego gen -g pairs.pego -pkg pairsparser -o pairsparser/parser.go
+//go:generate go tool pego gen -g pairs.pego -module example.com/pairsparser -o pairsparser
 //go:generate go tool pego gen -lang ts -g pairs.pego -o web/src/pairs.ts
 ```
 

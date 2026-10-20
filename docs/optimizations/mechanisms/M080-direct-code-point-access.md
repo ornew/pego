@@ -31,7 +31,7 @@ Evidence records: [061](../061-reading-code-points-directly-in-direct-rules.md).
 
 Source owners: [`peek emission and
 dgen.single`](../../../internal/engine/gen_direct.go), [`input
-preparation`](../../../internal/engine/genrt/runtime.go).
+preparation`](../../../runtime/runtime.go).
 
 The [comparison policy](../../design/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

@@ -82,7 +82,7 @@ rule main TraceEvent = p:part => TraceEvent{Value:$p}
 rule part WithTrace = t:("a") #atomic => WithTrace{Text: text($t)}`, input: "a", checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
 	}
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module typedtracefixture\n\ngo 1.27.1\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("typedtracefixture")), 0644); err != nil {
 		t.Fatal(err)
 	}
 	write := func(pkg, name string, data []byte) {
@@ -106,20 +106,20 @@ rule part WithTrace = t:("a") #atomic => WithTrace{Text: text($t)}`, input: "a",
 				pkg += "_converted"
 			}
 			opts := GenOptions{Package: "reference_" + pkg, Start: "main", Types: true, Recognize: true, convertTypes: convert, disableTypedCuts: f.general, disableTypedFrameLayouts: f.general}
-			reference, err := Generate(g, opts)
+			reference, err := generateCode(g, opts)
 			if err != nil {
 				t.Fatal(pkg, err)
 			}
 			write(opts.Package, "parser.go", reference)
 			opts.Package, opts.Observability = pkg, true
-			code, err := Generate(g, opts)
+			code, err := generateCode(g, opts)
 			if err != nil {
 				t.Fatal(pkg, err)
 			}
-			if !convert && !f.fallback && !strings.Contains(string(code), "return TParse(trules[") {
+			if !convert && !f.fallback && !strings.Contains(string(code), "return pegort.TParse(trules[") {
 				t.Fatal(pkg, "direct start unexpectedly unavailable")
 			}
-			if (convert || f.fallback) && !strings.Contains(string(code), "return RunParseConverted(rules[") {
+			if (convert || f.fallback) && !strings.Contains(string(code), "return pegort.RunParseConverted(rules[") {
 				t.Fatal(pkg, "missing Node conversion")
 			}
 			write(pkg, "parser.go", code)
@@ -175,7 +175,7 @@ func TestTypedTraceLifecycle(t *testing.T){
  routes:=[]func(...ParseOption)(any,error){func(opts ...ParseOption)(any,error){return ParseAST(INPUT,opts...)},func(opts ...ParseOption)(any,error){return ParseRuleAST("main",INPUT,opts...)}}
  for _,parse:=range routes{
   marker:=&struct{n int}{11}
-  for _,value:=range []any{marker,fatal{errors.New("private marker")},evalError{msg:"private marker"},contextPanic{marker},tracePanic{marker}}{func(){defer func(){if got:=recover();got!=value{t.Fatalf("typed panic %T %v want %T %v",got,got,value,value)}}();parse(WithTrace(func(TraceEvent){panic(value)}));t.Fatal("panic absent")}()}
+  for _,value:=range []any{marker,pegort.X_fatal{errors.New("private marker")},pegort.X_evalError{X_msg:"private marker"},pegort.X_contextPanic{marker},pegort.X_tracePanic{marker}}{func(){defer func(){if got:=recover();got!=value{t.Fatalf("typed panic %T %v want %T %v",got,got,value,value)}}();parse(WithTrace(func(TraceEvent){panic(value)}));t.Fatal("panic absent")}()}
   late:=0;func(){defer func(){if recover()!=marker{t.Fatal("late typed panic")}}();parse(WithTrace(func(TraceEvent){late++;if late==2{panic(marker)}}));t.Fatal("late panic absent")}()
   var events []TraceEvent;parse(WithTrace(func(e TraceEvent){events=append(events,e)}));checkTypedTrace(t,events)
   seen:=0;parse(WithTrace(func(TraceEvent){seen++}));before:=seen;parse();if seen!=before{t.Fatal("typed callback retained")}
@@ -188,7 +188,7 @@ func TestTypedTraceLifecycle(t *testing.T){
   events=nil;_,err=parse(WithWorkLimits(WorkLimits{MaxSteps:1}),WithTrace(func(e TraceEvent){events=append(events,e)}));if !errors.Is(err,ErrWorkLimit){t.Fatal("typed budget",err)};for _,e:=range events{if e.Kind==TraceExit&&e.Rule=="main"{t.Fatal("fabricated typed exit",events)}}
  }
  var wg sync.WaitGroup;for i:=0;i<4;i++{wg.Go(func(){for j:=0;j<4;j++{ParseAST(INPUT,WithTrace(func(TraceEvent){}))}})};wg.Wait()
- p:=&TParser{Parser:&Parser{Observation:&observation{trace:func(TraceEvent){}}}};p.recycle();if p.Observation!=nil{t.Fatal("typed pool retained observer")}
+ p:=&pegort.TParser{Parser:&pegort.Parser{Observation:&pegort.X_observation{X_trace:func(pegort.TraceEvent){}}}};p.X_recycle();if p.Observation!=nil{t.Fatal("typed pool retained observer")}
 }
 `
 
@@ -199,7 +199,7 @@ func TestGeneratedTracePrivateTypeNamesRemainInvalid(t *testing.T) {
 			t.Fatal(err)
 		}
 		for _, observed := range []bool{false, true} {
-			if _, err := Generate(g, GenOptions{Package: "fixture", Start: "main", Types: true, Observability: observed}); err == nil || !strings.Contains(err.Error(), "must start with an uppercase letter") {
+			if _, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Types: true, Observability: observed}); err == nil || !strings.Contains(err.Error(), "must start with an uppercase letter") {
 				t.Fatalf("%s observed=%v: %v", name, observed, err)
 			}
 		}

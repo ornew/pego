@@ -50,7 +50,7 @@ When every value `ParseAST` can return has a Go type of its own (`runtimeOK`: no
 `node`, `terminal` or `any` in the result type or in any struct field) and no action or predicate reads a field of a
 struct (a typed value keeps its fields converted, so reading one back would differ from the node's field: a list
 would be a new list, an omitted `int` 0 rather than nil, an `Error` nil), the generated parser builds the values
-directly. `genrt/typed.go` is a second runtime that mirrors `genrt/runtime.go` step by step, with values of type
+directly. `runtime/typed.go` is a second runtime that mirrors `runtime/runtime.go` step by step, with values of type
 `any` instead of `*Node`: a value is a pointer to a struct or terminal type, `*Match`, `*Error`, an int, string or
 bool, nil, or a `*tnode` for the CST values that actions consume (Seq, List and Operator nodes, which never reach the
 result). `tparser` embeds the parser and redefines only the methods that handle values, so matching, expectations,

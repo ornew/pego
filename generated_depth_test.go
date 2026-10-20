@@ -15,11 +15,13 @@ func TestWithGeneratedMaxDepth(t *testing.T) {
 	}
 	for _, ts := range []bool{false, true} {
 		generate := func(opts ...pego.GenOption) ([]byte, error) {
-			return pego.GenerateGo(parser.Grammar(), "depth", "main", opts...)
+			files, err := pego.GenerateGo(parser.Grammar(), "depth", "main", append(opts, pego.WithRuntime(pego.RuntimeImport))...)
+			return joinFiles(files), err
 		}
 		if ts {
 			generate = func(opts ...pego.GenOption) ([]byte, error) {
-				return pego.GenerateTypeScript(parser.Grammar(), "main", opts...)
+				files, err := pego.GenerateTypeScript(parser.Grammar(), "main", opts...)
+				return joinFiles(files), err
 			}
 		}
 		base, err := generate()
@@ -33,7 +35,7 @@ func TestWithGeneratedMaxDepth(t *testing.T) {
 			}
 		}
 		got, err := generate(pego.WithGeneratedMaxDepth(-1), pego.WithGeneratedMaxDepth(7))
-		want := "var pegoGrammar = NewGrammar(7)"
+		want := "var pegoGrammar = pegort.NewGrammar(7)"
 		if ts {
 			want = "const defaultMaxDepth = 7"
 		}
@@ -44,4 +46,13 @@ func TestWithGeneratedMaxDepth(t *testing.T) {
 			t.Fatal("invalid generated max depth accepted")
 		}
 	}
+}
+
+// joinFiles returns the contents of the generated files one after the other.
+func joinFiles(files []pego.GeneratedFile) []byte {
+	var out []byte
+	for _, f := range files {
+		out = append(out, f.Content...)
+	}
+	return out
 }

@@ -86,7 +86,7 @@ func TestGeneratedTypedLRBodies(t *testing.T) {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 		opts := GenOptions{Package: "lrbody", Start: "main", Types: true, Recognize: true}
-		code, err := Generate(g, opts)
+		code, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -102,7 +102,7 @@ func TestGeneratedTypedLRBodies(t *testing.T) {
 			t.Fatalf("%s: no unfinished typed LR body", c.name)
 		}
 		opts.disableTypedLRBodies = true
-		ref, err := Generate(g, opts)
+		ref, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -116,12 +116,12 @@ func TestGeneratedTypedLRBodies(t *testing.T) {
 		}
 		// The selector must not change Node parsing or recognition output.
 		opts.Types = false
-		nodeRef, err := Generate(g, opts)
+		nodeRef, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
 		opts.disableTypedLRBodies = false
-		node, err := Generate(g, opts)
+		node, err := generateCode(g, opts)
 		if err != nil || !bytes.Equal(nodeRef, node) {
 			t.Fatalf("%s: typed control changes Node code: %v", c.name, err)
 		}

@@ -37,14 +37,14 @@ rule main Result = w:wide* o:other* $$ => Result{Wide: $w.Value, Other: $o.Value
 rule wide Char = t:([€😀é]) #atomic => Char{Text: text($t)}
 rule other Char = t:(.) #atomic => Char{Text: text($t)}`,
 	}
-	files := map[string]string{"go.mod": "module fixture\n\ngo 1.27.1\n"}
+	files := map[string]string{"go.mod": testGoMod("fixture")}
 	for i, src := range grammars {
 		g, err := syntax.Parse(src)
 		if err != nil {
 			t.Fatal(err)
 		}
 		pkg := fmt.Sprintf("g%d", i)
-		code, err := Generate(g, GenOptions{Package: pkg, Start: "main", Types: true, Document: true})
+		code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Document: true})
 		if err != nil {
 			t.Fatal(err)
 		}

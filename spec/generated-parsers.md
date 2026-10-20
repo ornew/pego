@@ -23,7 +23,8 @@ runtime, which is the same for every grammar of one generator release.
 ### The Generator
 
 ```text
-pego gen -g <grammar> [-lang go|ts] [-pkg <package>] [-s <rule>] [-o <file>]
+pego gen -g <grammar> [-lang go|ts] [-module <import path>] [-pkg <package>]
+         [-runtime embed|import|only] [-s <rule>] [-o <path>]
          [-types] [-document] [-stream] [-recognize] [-observability]
          [-source-info] [-default-value] [-nodoc] [-max-depth <n>]
 ```
@@ -32,9 +33,11 @@ pego gen -g <grammar> [-lang go|ts] [-pkg <package>] [-s <rule>] [-o <file>]
 |:--|:--|:--|
 | `-lang` | `GenerateGo`, `GenerateTypeScript` | `go` (default) or `ts` |
 | `-g` | the grammar argument | The grammar: `.pego`, `.json`, or a compiled grammar that holds the AST |
-| `-pkg` | the package name argument | Required for Go; MUST be a valid Go identifier; rejected with `-lang ts` |
+| `-module` | the import path argument | Required for Go (with `-runtime import` only when `-pkg` is omitted); the import path of the generated package; rejected with `-lang ts` |
+| `-pkg` | `WithPackageName(name)` | The package name; MUST be a valid Go identifier; default: the last element of the import path; rejected with `-lang ts` |
+| `-runtime` | `WithRuntime(mode)` | Go only. `embed` (default) writes a copy of the runtime to `internal/runtime`, `import` imports `github.com/ornew/pego/runtime`, `only` writes just the copy |
 | `-s` | the start rule argument | The start rule. Default: the rule saved in a compiled grammar, otherwise `main` |
-| `-o` | | The output file; standard output if omitted. The command does not create directories |
+| `-o` | | For Go, the output directory (required), which the command creates; it writes `parser.go`, `api.go` and, with `embed`, `internal/runtime/*.go`, and removes generated files of an earlier generation that it did not write again. For TypeScript, the output file; standard output if omitted |
 | `-types` | `WithTypes()` | Generate typed values (see [Typed values](#typed-values)) |
 | `-document` | `WithDocument()` | Generate the Go `Document` (Go only) |
 | `-stream` | `WithStream()` | Generate `ParseStream` (Go only; the start rule MUST contain a `#stream` repetition) |
@@ -47,8 +50,8 @@ pego gen -g <grammar> [-lang go|ts] [-pkg <package>] [-s <rule>] [-o <file>]
 
 - The output is deterministic: generating twice yields identical bytes. Omitted,
   zero and an explicit 100,000 depth default generate identical source.
-- Go output is formatted as by `gofmt`. Generated Go depends only on the standard
-  library, and generated TypeScript has no dependencies. Generated TypeScript uses
+- Go output is formatted as by `gofmt`. Generated Go with the default `embed` runtime depends only on the
+  standard library, and generated TypeScript has no dependencies. Generated TypeScript uses
   only erasable syntax and needs ES2020; it is type-checked under strict
   settings.
 - Grammar errors are reported with positions before any file is written, in the
@@ -57,7 +60,8 @@ pego gen -g <grammar> [-lang go|ts] [-pkg <package>] [-s <rule>] [-o <file>]
   `-stream` without a `#stream` repetition in the start rule and a grammar that
   contains `#missing` are errors.
 - A Go package may contain only one generated parser, because every generated file
-  defines the same names.
+  defines the same names. `api.go` re-exports the runtime names the users of the
+  parser need, as aliases of the runtime's types and wrappers of its functions.
 
 ### Generated Go API
 
@@ -82,7 +86,8 @@ const (
   the named rule; an unknown name is the error `rule <name> is not defined`. Both
   require the rule to consume the whole input.
 - `Node`, `Fields`, `NodeField`, `SyntaxError` and `SyntaxErrors` are types of the
-  generated package with the members of their engine counterparts, defined in
+  generated package (aliases of the types of its runtime) with the members of their
+  engine counterparts, defined in
   [Nodes and Values](nodes.md) and [Parsing](parsing.md#syntax-errors). They are
   different Go types from those of package `pego`; errors are tested with
   `errors.As` against the generated types. Node JSON is identical to the engine's.

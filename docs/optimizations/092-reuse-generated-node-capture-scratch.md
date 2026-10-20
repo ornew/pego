@@ -150,7 +150,7 @@ The generated fixture test preserves optimized/reference parsers under
 workload. Run the focused checks and export fixtures with:
 
 ```sh
-go test ./internal/engine/genrt -run '^TestNodeFrameScratch' -count=1
+go test ./runtime -run '^TestNodeFrameScratch' -count=1
 go test ./internal/engine -run '^TestGeneratedNodeFrameScratch' -count=1
 PEGO_NODE_FRAME_DIR=/tmp/pego-node-frame \
   PEGO_NODE_FRAME_TYPESCRIPT=1 \

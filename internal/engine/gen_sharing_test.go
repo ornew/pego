@@ -80,7 +80,7 @@ rule a = ("é" / "ab")+ #atomic`)
 		name string
 		fn   func(GenOptions) ([]byte, error)
 	}{
-		{"Go", func(opts GenOptions) ([]byte, error) { return Generate(g, opts) }},
+		{"Go", func(opts GenOptions) ([]byte, error) { return generateCode(g, opts) }},
 		{"TypeScript", func(opts GenOptions) ([]byte, error) { return GenerateTS(g, opts) }},
 	} {
 		t.Run(generate.name, func(t *testing.T) {
@@ -163,7 +163,7 @@ func BenchmarkGeneratedSharing(b *testing.B) {
 		}
 		for _, lang := range []string{"Go", "TypeScript"} {
 			b.Run(name+"/"+lang, func(b *testing.B) {
-				generate := func() ([]byte, error) { return Generate(g, opts) }
+				generate := func() ([]byte, error) { return generateCode(g, opts) }
 				if lang == "TypeScript" {
 					tsOpts := opts
 					tsOpts.Types = false

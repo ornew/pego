@@ -1,6 +1,6 @@
 # Incremental Documents in Generated Go
 
-Generate with `pego gen -g grammar.pego -pkg parser -document -o parser/parser.go`, or pass
+Generate with `pego gen -g grammar.pego -module example.com/parser -document -o parser`, or pass
 `pego.WithDocument()` to `GenerateGo`. This adds a mutable Node `Document` alongside the ordinary batch `Parse` and
 `ParseRule` functions. The engine's version of the same feature is described in
 [Incremental Parsing](incremental.md).

@@ -1,6 +1,6 @@
 # 21. Changes 18 and 19 in the Generated Parsers
 
-- The generated runtime (`internal/engine/genrt`) now defers memoization to the second call at a position with the
+- The generated runtime (`runtime`) now defers memoization to the second call at a position with the
   same per-rule switch to eager memoization (the generator emits each rule's `seen` number and their count), and calls
   unmemoized rules without captures through `invokePlain`. The generated files in `bench/gen` and
   `examples/json/generated` were regenerated.

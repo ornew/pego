@@ -2,7 +2,7 @@
 //
 // pego gen copies everything after the "--- Runtime ---" line below and appends the code generated
 // from a grammar (the expression functions and the statements that set up the rule table), producing
-// a single module without dependencies. It mirrors internal/engine/genrt/runtime.go, the runtime of
+// a single module without dependencies. It mirrors runtime/runtime.go, the runtime of
 // generated Go parsers, line for line where it can: the results must equal the engine's exactly, which
 // the generator tests in internal/engine check by running the generated code with Node.js.
 //

@@ -52,11 +52,19 @@ func ordinaryMethodIdentity(fn *goast.FuncDecl) (ordinaryMethodKey, bool) {
 	if !ok {
 		return ordinaryMethodKey{}, false
 	}
-	typ, ok := ptr.X.(*goast.Ident)
-	if !ok || (typ.Name != "Parser" && typ.Name != "TParser") || len(first.Names) != 1 || first.Names[0].Name != "p" {
+	// The finished source names the runtime's types with its package, the source being
+	// specialized without.
+	var name string
+	switch x := ptr.X.(type) {
+	case *goast.Ident:
+		name = x.Name
+	case *goast.SelectorExpr:
+		name = x.Sel.Name
+	}
+	if (name != "Parser" && name != "TParser") || len(first.Names) != 1 || first.Names[0].Name != "p" {
 		return ordinaryMethodKey{}, false
 	}
-	return ordinaryMethodKey{typ.Name, fn.Name.Name}, true
+	return ordinaryMethodKey{name, fn.Name.Name}, true
 }
 
 // specializeOrdinaryMethods gives generated execution functions a branch for
@@ -285,7 +293,7 @@ func rewriteOrdinaryControl(root goast.Node) {
 func ordinaryHelperName(name string) bool {
 	switch name {
 	case "NewNode", "NewMatch", "SetCapture", "Expect", "Peek", "MatchLiteral", "MatchAny",
-		"AtEnd", "AtLineStart", "AtLineEnd", "InputWork":
+		"AtEnd", "AtLineStart", "AtEndBatch", "AtLineStartBatch", "AtLineEnd", "InputWork":
 		return true
 	}
 	return false

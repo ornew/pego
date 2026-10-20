@@ -1,6 +1,6 @@
 # 11. Generated Parsers Catch up with Changes 4–10
 
-- Generated Go parsers (`internal/engine/genrt` plus the code from `gen.go`) had kept the old runtime: `[]string`
+- Generated Go parsers (`runtime` plus the code from `gen.go`) had kept the old runtime: `[]string`
   expected sets copied per memoized call, a Go map for the memo, a heap object per node, child list and frame, and
   token text copied out of `[]rune`. They had become 1.5–2.3× slower than the closure backend while allocating up to
   5× as often.

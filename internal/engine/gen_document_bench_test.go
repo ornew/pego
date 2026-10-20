@@ -30,7 +30,7 @@ rule record = k:"é" ":" v:("0" / "1") ";"`)
 		{"generatedbatch", false},
 		{"generateddocument", true},
 	} {
-		code, err := Generate(g, GenOptions{Package: variant.name, Start: "main", Document: variant.document, Observability: observability})
+		code, err := generateCode(g, GenOptions{Package: variant.name, Start: "main", Document: variant.document, Observability: observability})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -51,7 +51,7 @@ rule item Item = k:[a-zé😀]+ #atomic "=" v:[0-9]+ #atomic ";" => Item{Key: $k
 		{"typedbatch", false},
 		{"typeddocument", true},
 	} {
-		code, err := Generate(typedGrammar, GenOptions{Package: variant.name, Start: "main", Types: true, Document: variant.document, Observability: observability, convertTypes: os.Getenv("PEGO_GENERATED_DOCUMENT_CONVERSION_REFERENCE") == "1"})
+		code, err := generateCode(typedGrammar, GenOptions{Package: variant.name, Start: "main", Types: true, Document: variant.document, Observability: observability, convertTypes: os.Getenv("PEGO_GENERATED_DOCUMENT_CONVERSION_REFERENCE") == "1"})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -94,7 +94,7 @@ rule item Item = k:[a-zé😀]+ #atomic "=" v:[0-9]+ #atomic ";" => Item{Key: $k
 			t.Fatal(err)
 		}
 	}
-	if err := writeGeneratedDocumentBenchmarkFile(dir, "go.mod", []byte("module generateddocumentbench\n\ngo 1.27.1\n")); err != nil {
+	if err := writeGeneratedDocumentBenchmarkFile(dir, "go.mod", []byte(testGoMod("generateddocumentbench"))); err != nil {
 		t.Fatal(err)
 	}
 }

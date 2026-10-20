@@ -35,7 +35,7 @@ Evidence records: [075](../075-exclude-absent-expectations-before-scanning.md).
 
 Source owners: [`parser.expect and record
 marks`](../../../internal/engine/runtime.go), [`generated expectation
-filter`](../../../internal/engine/genrt/runtime.go), [`VM label/recovery
+filter`](../../../runtime/runtime.go), [`VM label/recovery
 state`](../../../internal/engine/vm.go).
 
 The [comparison policy](../../design/024-optimization-mechanism-controls.md)

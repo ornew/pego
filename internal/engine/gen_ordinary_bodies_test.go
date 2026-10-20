@@ -25,7 +25,7 @@ rule expr Text = operators {
 	for _, types := range []bool{false, true} {
 		for _, document := range []bool{false, true} {
 			opts := GenOptions{Package: "ordinaryfixture", Types: types, Document: document, Recognize: true, Start: "main"}
-			src, err := Generate(g, opts)
+			src, err := generateCode(g, opts)
 			if err != nil {
 				t.Fatal(err)
 			}

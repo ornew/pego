@@ -129,7 +129,8 @@ func TestMain(m *testing.M) {
 	// Tests build generated programs in fresh temporary directories. Without -trimpath their
 	// build cache entries depend on the directory and are never reused, so every run would add
 	// tens of gigabytes of builds to the cache. Commands that set GOFLAGS add it themselves.
-	os.Setenv("GOFLAGS", strings.TrimSpace(os.Getenv("GOFLAGS")+" -trimpath"))
+	// -mod=mod lets the temporary modules that replace this module resolve it without a go.sum.
+	os.Setenv("GOFLAGS", strings.TrimSpace(os.Getenv("GOFLAGS")+" -trimpath -mod=mod"))
 	m.Run()
 }
 

@@ -28,7 +28,7 @@ func TestExportGeneratedTraceBenchmarks(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte("module tracebench\n\ngo 1.27.1\n"))
+	write("go.mod", []byte(testGoMod("tracebench")))
 	cases := []struct{ name, path, input string }{
 		{"json", "parsers/json/json.pego", "[" + strings.TrimSuffix(strings.Repeat(`{"name":"éclair","n":123,"ok":true},`, 64), ",") + "]"},
 		{"xml", "parsers/xml/xml.pego", "<root>" + strings.Repeat(`<item name="éclair">123</item>`, 64) + "</root>"},
@@ -49,7 +49,7 @@ func TestExportGeneratedTraceBenchmarks(t *testing.T) {
 			if enabled {
 				variant = "observed"
 			}
-			code, err := Generate(g, GenOptions{Package: variant, Start: "main", Recognize: true, Observability: enabled})
+			code, err := generateCode(g, GenOptions{Package: variant, Start: "main", Recognize: true, Observability: enabled})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -104,7 +104,7 @@ func BenchmarkGeneratedObservabilityGeneration(b *testing.B) {
 					b.ReportAllocs()
 					for b.Loop() {
 						var err error
-						generatedTraceBenchmarkSource, err = Generate(g, GenOptions{Package: "fixture", Start: "main", Recognize: true, Observability: enabled})
+						generatedTraceBenchmarkSource, err = generateCode(g, GenOptions{Package: "fixture", Start: "main", Recognize: true, Observability: enabled})
 						if err != nil {
 							b.Fatal(err)
 						}

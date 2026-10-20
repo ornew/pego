@@ -34,8 +34,8 @@ Evidence records: [011](../011-generated-parsers-catch-up-with-changes-410.md),
 Source owners: [`parser.longest and saved
 captures`](../../../internal/engine/runtime.go), [`Operators Rule attempt
 state`](../../../internal/engine/ivm.go), [`generated
-longest`](../../../internal/engine/genrt/runtime.go), [`typed Operators Rule
-attempts`](../../../internal/engine/genrt/typed.go).
+longest`](../../../runtime/runtime.go), [`typed Operators Rule
+attempts`](../../../runtime/typed.go).
 
 The [comparison policy](../../design/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

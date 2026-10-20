@@ -39,7 +39,7 @@ rule left = left "+" "é" / "é"
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := Generate(g, GenOptions{Package: "depth", Start: "main", Recognize: true})
+	code, err := generateCode(g, GenOptions{Package: "depth", Start: "main", Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,10 +53,10 @@ rule left = left "+" "é" / "é"
 			t.Fatalf("unsupported direct route for %s", name)
 		}
 	}
-	if !strings.Contains(string(code), "var pegoGrammar = NewGrammar(100000)") {
+	if !strings.Contains(string(code), "var pegoGrammar = pegort.NewGrammar(100000)") {
 		t.Fatal("generated depth default not found")
 	}
-	code = []byte(strings.Replace(string(code), "var pegoGrammar = NewGrammar(100000)", "var pegoGrammar = NewGrammar(5)", 1))
+	code = []byte(strings.Replace(string(code), "var pegoGrammar = pegort.NewGrammar(100000)", "var pegoGrammar = pegort.NewGrammar(5)", 1))
 	prog := compile(t, src)
 	var rows strings.Builder
 	// Go literals preserve invalid UTF-8 bytes; the JSON-transport corpus would
@@ -70,21 +70,21 @@ rule left = left "+" "é" / "é"
 		}
 	}
 	tests := `package depth
-import("fmt";"testing")
+import("fmt";"testing";pegort "github.com/ornew/pego/runtime")
 func TestRoutesAndReuse(t *testing.T) {
  cases:=[]struct{name,input string; unit PositionUnit; want string}{` + rows.String() + `}
  for repeat:=0;repeat<3;repeat++ { for _,c:=range cases {
-  var selected *Rule
+  var selected *pegort.Rule
   for _,r:=range recRules {if r.Name==c.name {selected=r;break}}
   if selected==nil {t.Fatal(c.name)}
-  n,err:=RunParse(selected,c.input,[]ParseOption{WithUnit(c.unit)})
+  n,err:=pegort.RunParse(selected,c.input,[]ParseOption{WithUnit(c.unit)})
   if n!=nil {t.Fatalf("recognition built a value for %s",c.name)}
   if got:=fmt.Sprint(err);got!=c.want {t.Fatalf("%s %q unit%d: got %s want %s",c.name,c.input,c.unit,got,c.want)}
  }}
 }
 `
 	dir := t.TempDir()
-	for name, data := range map[string][]byte{"parser.go": code, "depth_test.go": []byte(tests), "go.mod": []byte("module depth\n\ngo 1.27.1\n")} {
+	for name, data := range map[string][]byte{"parser.go": code, "depth_test.go": []byte(tests), "go.mod": []byte(testGoMod("depth"))} {
 		if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
 			t.Fatal(err)
 		}

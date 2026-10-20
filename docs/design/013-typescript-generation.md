@@ -20,7 +20,7 @@ plain rules, projected repetitions, first-character dispatch, the recognizer) an
 expression and a function per action and predicate. It shares the expectation table, the naming and `first` with the
 Go generator (`tsGen` embeds `generator`).
 
-The runtime, `internal/engine/tsrt/runtime.ts`, is a port of `genrt/runtime.go`, function for function: rule calls with
+The runtime, `internal/engine/tsrt/runtime.ts`, is a port of `runtime/runtime.go`, function for function: rule calls with
 deferred memoization (`firstCall`, with the per-rule eager switch), left recursion by growing the seed, memo entries
 keyed by variable values, expectation records isolated in memoized calls and kept for reuse, captures with frames and
 the trail, `attachCaptures` and `finish`, `@error` and `#recover`, the Operators Rule loop, and every built-in function including
@@ -66,7 +66,7 @@ The runtime hides each difference, so that results are the engine's, not merely 
   Go's table into the module instead: the lengths of the alternating runs of rejected and accepted code points, in
   base 36, about 3 KB. The table is that of the Go that generates the parser.
 - **No `panic`.** Fatal errors and evaluation errors are thrown as plain objects (`Fatal`, `EvalError`, not `Error`
-  subclasses, so throwing them captures no stack trace), and caught where `genrt` recovers. Results are
+  subclasses, so throwing them captures no stack trace), and caught where `runtime` recovers. Results are
   `Node | null` on success and `undefined` on failure, instead of `(value, ok)` pairs.
 - **The stack is small.** Rule calls recurse, as in Go, but Node.js's default stack holds only some hundreds to a few
   thousand nested rule calls. The generated code calls literals and rules inline to save frames, the runtime turns a

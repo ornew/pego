@@ -92,7 +92,7 @@ func TestCompletedPrefix(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			code, err := Generate(g, tc.opts)
+			code, err := generateCode(g, tc.opts)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -113,7 +113,7 @@ var _ = json.Marshal
 			}
 			dir := t.TempDir()
 			for name, source := range map[string]string{
-				"go.mod":         "module fixture\n\ngo 1.27.1\n",
+				"go.mod":         testGoMod("fixture"),
 				"parser.go":      string(code),
 				"parser_test.go": "package fixture\n" + imports + cases + tc.test,
 			} {

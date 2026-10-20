@@ -29,7 +29,7 @@ more work and cannot isolate frame release.
 Evidence records: [048](../048-a-typed-runtime-for-parseast.md).
 
 Source owners: [`typed frame allocation and
-freeFrame`](../../../internal/engine/genrt/typed.go), [`direct local
+freeFrame`](../../../runtime/typed.go), [`direct local
 captures`](../../../internal/engine/gen_direct.go).
 
 The [comparison policy](../../design/024-optimization-mechanism-controls.md)

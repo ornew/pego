@@ -11,19 +11,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/engine/genrt"
 	"github.com/ornew/pego/internal/syntax"
+	pegort "github.com/ornew/pego/runtime"
 )
 
 // Exercise the exported APIs against the same hand-built DAG, including nil,
 // nested lists and a shared value reached through different owning parents.
 func TestTreeRuntimeParity(t *testing.T) {
 	leaf := &Node{kind: kindMatch, terminal: true, text: "é<&>", start: 1, end: 3}
-	gLeaf := genrt.NewNode(genrt.KindString, 1, 3, leaf.text, nil, "", nil, nil)
+	gLeaf := pegort.NewNode(pegort.KindString, 1, 3, leaf.text, nil, "", nil, nil)
 	child := &Node{children: []*Node{leaf}, fields: Fields{{"list", []any{leaf, nil, []byte{1, 2}}}}}
-	gChild := genrt.NewNode(genrt.KindStruct, 0, 0, "", []*genrt.Node{gLeaf}, "", genrt.Fields{{Name: "list", Value: []any{gLeaf, nil, []byte{1, 2}}}}, nil)
+	gChild := pegort.NewNode(pegort.KindStruct, 0, 0, "", []*pegort.Node{gLeaf}, "", pegort.Fields{{Name: "list", Value: []any{gLeaf, nil, []byte{1, 2}}}}, nil)
 	root := &Node{children: []*Node{child, nil, leaf}, fields: Fields{{"z", true}, {"a", leaf}}}
-	gRoot := genrt.NewNode(genrt.KindStruct, 0, 0, "", []*genrt.Node{gChild, nil, gLeaf}, "", genrt.Fields{{Name: "z", Value: true}, {Name: "a", Value: gLeaf}}, nil)
+	gRoot := pegort.NewNode(pegort.KindStruct, 0, 0, "", []*pegort.Node{gChild, nil, gLeaf}, "", pegort.Fields{{Name: "z", Value: true}, {Name: "a", Value: gLeaf}}, nil)
 	core, err := root.MarshalJSON()
 	if err != nil {
 		t.Fatal(err)
@@ -47,7 +47,7 @@ func TestTreeRuntimeParity(t *testing.T) {
 		a = append(a, describe(v.Depth, uint8(v.Edge.Kind), v.Edge.ChildIndex, v.Edge.FieldName, v.Edge.ListIndex, n, p))
 		return WalkContinue, nil
 	}
-	cb := func(v genrt.WalkVisit) (genrt.WalkAction, error) {
+	cb := func(v pegort.WalkVisit) (pegort.WalkAction, error) {
 		n, p := "", ""
 		if v.Node != nil {
 			n = v.Node.Text()
@@ -56,12 +56,12 @@ func TestTreeRuntimeParity(t *testing.T) {
 			p = v.Parent.Text()
 		}
 		b = append(b, describe(v.Depth, uint8(v.Edge.Kind), v.Edge.ChildIndex, v.Edge.FieldName, v.Edge.ListIndex, n, p))
-		return genrt.WalkContinue, nil
+		return pegort.WalkContinue, nil
 	}
 	if err := Walk(root, ca); err != nil {
 		t.Fatal(err)
 	}
-	if err := genrt.Walk(gRoot, cb); err != nil {
+	if err := pegort.Walk(gRoot, cb); err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(a, b) {
@@ -73,7 +73,7 @@ func TestTreeRuntimeParity(t *testing.T) {
 			if err := (Cursor{Root: root, Unit: unit}).Range(span[0], span[1], ca); err != nil {
 				t.Fatal(err)
 			}
-			if err := (genrt.Cursor{Root: gRoot, Unit: genrt.PositionUnit(unit)}).Range(span[0], span[1], cb); err != nil {
+			if err := (pegort.Cursor{Root: gRoot, Unit: pegort.PositionUnit(unit)}).Range(span[0], span[1], cb); err != nil {
 				t.Fatal(err)
 			}
 			if !reflect.DeepEqual(a, b) {
@@ -82,10 +82,10 @@ func TestTreeRuntimeParity(t *testing.T) {
 		}
 	}
 	root.children = []*Node{root}
-	genrt.SetNodeElems(gRoot, []*genrt.Node{gRoot})
+	pegort.SetNodeElems(gRoot, []*pegort.Node{gRoot})
 	var c *CycleError
-	var gc *genrt.CycleError
-	if !errors.As(Walk(root, ca), &c) || !errors.As(genrt.Walk(gRoot, cb), &gc) {
+	var gc *pegort.CycleError
+	if !errors.As(Walk(root, ca), &c) || !errors.As(pegort.Walk(gRoot, cb), &gc) {
 		t.Fatal("missing cycle errors")
 	}
 	if len(c.Path) != len(gc.Path) || uint8(c.Path[1].Kind) != uint8(gc.Path[1].Kind) {
@@ -95,7 +95,7 @@ func TestTreeRuntimeParity(t *testing.T) {
 
 // Compile the emitted single-file parser and exercise the same depth, cycle,
 // encoding and cursor regressions used by the core. This catches imports and
-// typed-name collisions that direct genrt-package tests cannot establish.
+// typed-name collisions that direct runtime package tests cannot establish.
 func TestGeneratedTreeTraversal(t *testing.T) {
 	if testing.Short() {
 		t.Skip("runs generated code")
@@ -110,7 +110,7 @@ func TestGeneratedTreeTraversal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := Generate(grammar, GenOptions{Package: "tree", Start: "main", Types: true})
+	code, err := generateCode(grammar, GenOptions{Package: "tree", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,16 +126,26 @@ func TestGeneratedTreeTraversal(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte("module tree\n\ngo 1.27.1\n"))
+	write("go.mod", []byte(testGoMod("tree")))
 	write("parser.go", code)
-	for _, name := range []string{"node_json_test.go", "node_walk_test.go"} {
-		data, err := os.ReadFile(filepath.Join("genrt", name))
-		if err != nil {
-			t.Fatal(err)
-		}
-		data = bytes.Replace(data, []byte("package genrt"), []byte("package tree"), 1)
-		write(name, bytes.ReplaceAll(data, []byte("Walk("), []byte("WalkTree(")))
+	// The traversal itself is the runtime's and is tested there; this checks that the generated
+	// package declares the colliding grammar types beside the runtime's names and walks a tree.
+	var consumer strings.Builder
+	consumer.WriteString("package tree\n\nimport (\n\t\"testing\"\n\n\tpegort \"github.com/ornew/pego/runtime\"\n)\n\nfunc TestWalk(t *testing.T) {\n")
+	for _, name := range names {
+		fmt.Fprintf(&consumer, "\t_ = %s_{Value: 1}\n", name)
 	}
+	consumer.WriteString(`	root := &pegort.Node{RawChildren: []*pegort.Node{{RawText: "é"}}}
+	visits := 0
+	if err := pegort.Walk(root, func(v pegort.WalkVisit) (pegort.WalkAction, error) {
+		visits++
+		return pegort.WalkContinue, nil
+	}); err != nil || visits != 2 {
+		t.Fatalf("visits=%d err=%v", visits, err)
+	}
+}
+`)
+	write("tree_test.go", []byte(consumer.String()))
 	cmd := exec.Command("go", "test", "-count=1", "./...")
 	cmd.Dir = dir
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -150,7 +160,7 @@ func TestGeneratedDuckDBWalkCompatibility(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := Generate(grammar, GenOptions{Package: "duckdb", Start: "main", Types: true})
+	code, err := generateCode(grammar, GenOptions{Package: "duckdb", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,11 +175,13 @@ func TestGeneratedDuckDBWalkCompatibility(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte("module duckdbwalk\n\ngo 1.27.1\n"))
+	write("go.mod", []byte(testGoMod("duckdbwalk")))
 	write("parser.go", code)
 	write("walk.go", helper)
 	write("walk_test.go", []byte(`package duckdb
-import "testing"
+import (
+	"testing"
+)
 func TestBothWalkAPIs(t *testing.T) {
  node, err := Parse("é")
  if err != nil { t.Fatal(err) }

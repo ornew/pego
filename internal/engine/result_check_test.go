@@ -381,11 +381,11 @@ rule val any = "v" => Int{Text: "v"}
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := Generate(g, GenOptions{Package: "p", Start: "main"})
+	code, err := generateCode(g, GenOptions{Package: "p", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n := strings.Count(string(code), "p.checkResult("); n != 3 {
+	if n := strings.Count(string(code), "p.CheckResult("); n != 3 {
 		t.Fatalf("generated %d result checks", n)
 	}
 }

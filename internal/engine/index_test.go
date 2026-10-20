@@ -251,12 +251,12 @@ rule item = [a-z]`)
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module indexwork\n\ngo 1.27.1\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("indexwork")), 0644); err != nil {
 		t.Fatal(err)
 	}
 	for _, types := range []bool{false, true} {
 		pkg := fmt.Sprintf("index_%v", types)
-		code, err := Generate(g, GenOptions{Package: pkg, Start: "main", Types: types})
+		code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: types})
 		if err != nil {
 			t.Fatal(err)
 		}

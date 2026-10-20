@@ -241,7 +241,7 @@ func (d *dumper) extent(x any) Span {
 		if !ok1 || !ok2 || d.src[d.lines.Offset(b-1)] != '(' || d.src[d.lines.Offset(e)] != ')' {
 			return s
 		}
-		s = Span{b - 1, e + 1}
+		s = Span{Start: b - 1, End: e + 1}
 	}
 }
 
@@ -692,7 +692,7 @@ func (d *dumper) debugSpan(field Span, text string) Span {
 	if !d.bytes {
 		n = utf8.RuneCountInString(text)
 	}
-	return Span{field.Start + 1, field.Start + 1 + n}
+	return Span{Start: field.Start + 1, End: field.Start + 1 + n}
 }
 
 // debugText is the text of a replacement field with '=' that comes before its value: the

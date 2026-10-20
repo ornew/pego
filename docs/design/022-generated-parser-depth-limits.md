@@ -51,11 +51,11 @@ override permits that distinction without regenerating or changing concurrent ca
 ### Generation-Time Default
 
 ```go
-code, err := pego.GenerateGo(g, "parser", "main", pego.WithGeneratedMaxDepth(600_000))
+code, err := pego.GenerateGo(g, "example.com/parser", "main", pego.WithGeneratedMaxDepth(600_000))
 ```
 
 ```sh
-pego gen -g grammar.pego -pkg parser -max-depth 600000 -o parser.go
+pego gen -g grammar.pego -module example.com/parser -max-depth 600000 -o parser
 ```
 
 `GenOptions.MaxDepth` stores the option internally. Zero selects the existing default of 100,000; a positive value

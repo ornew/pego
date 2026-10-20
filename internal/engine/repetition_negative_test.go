@@ -352,7 +352,7 @@ func TestGeneratedNegativeMaximum(t *testing.T) {
 	want := strings.Join(expected, "\n") + "\n"
 	for _, typed := range []bool{false, true} {
 		t.Run(fmt.Sprintf("Go typed=%v", typed), func(t *testing.T) {
-			code, err := Generate(g, GenOptions{Package: "main", Start: "main", Types: typed})
+			code, err := generateCode(g, GenOptions{Package: "main", Start: "main", Types: typed})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -374,7 +374,7 @@ func main() {
  }
 }`
 			dir := t.TempDir()
-			for name, content := range map[string]string{"go.mod": "module negative\n\ngo 1.24\n", "parser.go": string(code), "main.go": harness} {
+			for name, content := range map[string]string{"go.mod": testGoMod("negative"), "parser.go": string(code), "main.go": harness} {
 				if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
 					t.Fatal(err)
 				}

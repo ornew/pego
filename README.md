@@ -139,12 +139,12 @@ pego lsp                                         # language server for editors (
 pego fmt -w grammar.pego                         # format in place, comments kept
 pego fix -w grammar.pego                         # rewrite older syntax to the current one
 pego compile -g grammar.pego -o grammar.pegoc    # precompile
-pego gen -g grammar.pego -pkg calc -o parser.go  # generate a standalone Go parser
-pego gen -g grammar.pego -pkg calc -types        # ... with Go types for the grammar's types
-pego gen -g grammar.pego -pkg calc -recognize    # ... with Recognize, which validates without a tree
+pego gen -g grammar.pego -module example.com/calc -o calc  # generate a standalone Go parser
+pego gen -g grammar.pego -module example.com/calc -types -o calc # ... with Go types for the grammar's types
+pego gen -g grammar.pego -module example.com/calc -recognize -o calc # ... with Recognize, which validates without a tree
 pego gen -lang ts -g grammar.pego -o parser.ts     # generate a standalone TypeScript module
 pego gen -lang ts -g grammar.pego -types -o parser.ts # also emit declarations and parseAST
-pego gen -g grammar.pego -pkg parser -max-depth 600000 -o parser.go # set its nested rule-call default
+pego gen -g grammar.pego -module example.com/parser -max-depth 600000 -o parser # set its nested rule-call default
 pego sample -g grammar.pego -n 20 -coverage      # generate inputs the grammar accepts (tests, fuzz seeds)
 pego edit-fuzz -g grammar.pego -minimize -save-failures out  # check Document edits against fresh parses
 ```

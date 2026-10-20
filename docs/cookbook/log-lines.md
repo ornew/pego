@@ -68,7 +68,7 @@ import (
 	"example.com/logs/logparser"
 )
 
-//go:generate go tool pego gen -g logs.pego -pkg logparser -types -recognize -o logparser/parser.go
+//go:generate go tool pego gen -g logs.pego -module example.com/logparser -types -recognize -o logparser
 
 func main() {
 	data, err := io.ReadAll(os.Stdin)

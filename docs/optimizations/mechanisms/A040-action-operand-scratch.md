@@ -43,8 +43,8 @@ Evidence records: [014](../014-one-operand-stack-for-vm-expression-code.md),
 Source owners: [`evalCtx and termEvaluator`](../../../internal/engine/eval.go),
 [`vmProgram.eval`](../../../internal/engine/vm.go), [`parser.estack and operator
 locals`](../../../internal/engine/runtime.go), [`generated
-evalCtx`](../../../internal/engine/genrt/runtime.go), [`typed evaluation
-scratch`](../../../internal/engine/genrt/typed.go), [`Parser action
+evalCtx`](../../../runtime/runtime.go), [`typed evaluation
+scratch`](../../../runtime/typed.go), [`Parser action
 context`](../../../internal/engine/tsrt/runtime.ts).
 
 The [comparison policy](../../design/024-optimization-mechanism-controls.md)

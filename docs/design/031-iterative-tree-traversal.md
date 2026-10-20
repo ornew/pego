@@ -10,7 +10,7 @@ PEGO exposes mutable parse-result `Node` values. The Go API now provides iterati
 
 ## Motivation
 
-`internal/engine/node.go` and the generated Go runtime in `internal/engine/genrt/runtime.go` expose nodes with `Children` and `Fields`; fields may refer to nodes and are mutable through the Go representation. `Node.Clone` preserves shared subtrees. Go `Node.MarshalJSON` and `Fields.MarshalJSON` now use an iterative writer for nested node graphs; `Node.WriteJSON` also streams that representation to an `io.Writer`. `Node.String` still descends through `writeNode`/`writeValue` recursively.
+`internal/engine/node.go` and the generated Go runtime in `runtime/runtime.go` expose nodes with `Children` and `Fields`; fields may refer to nodes and are mutable through the Go representation. `Node.Clone` preserves shared subtrees. Go `Node.MarshalJSON` and `Fields.MarshalJSON` now use an iterative writer for nested node graphs; `Node.WriteJSON` also streams that representation to an `io.Writer`. `Node.String` still descends through `writeNode`/`writeValue` recursively.
 
 The TypeScript runtime in `internal/engine/tsrt/runtime.ts` already formats `toString()` and exports `marshal(Node | null)` iteratively with a `Pending` stack. `marshal` preserves Go-compatible JSON field order, BigInt number formatting, null children, and escaping. Separately, `toJSON()` constructs nested objects and converts BigInt to `Number`; native `JSON.stringify` controls recursion on that object representation. The core and generated Go runtimes now provide a common node walker and cursor; the parser-specific `parsers/duckdb/walk.go` helper remains separate.
 
@@ -110,7 +110,7 @@ Use explicit frames containing the current node/value, next child/field/list ind
 
 The JSON writer uses the same ordered edge model, emitting object delimiters and commas from frame state. Node and field formatting share the iterative value encoder so `MarshalJSON` and `WriteJSON` stay consistent. Nil behavior is tested. A cycle is a newly handled graph condition; ordinary encoding errors preserve their underlying error identity and `errors.As` behavior, while exact wrapping layers are not a compatibility guarantee.
 
-Generated Go parsers embed `internal/engine/genrt/runtime.go`, so the core and generated runtime must implement identical behavior and be covered by generator parity tests. TypeScript is a separate compatibility surface and should not claim safe native `JSON.stringify` at arbitrary depth.
+Generated Go parsers embed `runtime/runtime.go`, so the core and generated runtime must implement identical behavior and be covered by generator parity tests. TypeScript is a separate compatibility surface and should not claim safe native `JSON.stringify` at arbitrary depth.
 
 ### Compatibility and Backend Support
 

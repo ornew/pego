@@ -34,7 +34,7 @@ Evidence records: [069](../069-bound-persistent-variable-binding-histories.md).
 
 Source owners: [`environment lookup and
 replacement`](../../../internal/engine/runtime.go), [`generated environment
-binding`](../../../internal/engine/genrt/runtime.go), [`TypeScript persistent
+binding`](../../../runtime/runtime.go), [`TypeScript persistent
 environment`](../../../internal/engine/tsrt/runtime.ts).
 
 The [comparison policy](../../design/024-optimization-mechanism-controls.md)

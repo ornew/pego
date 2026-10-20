@@ -30,14 +30,14 @@ rule token Token = t:("a;" @error(message="want token")) #atomic => Token{Text: 
 			t.Fatal(err)
 		}
 	}
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module documentdiagnostics\n\ngo 1.27.1\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("documentdiagnostics")), 0644); err != nil {
 		t.Fatal(err)
 	}
 	for _, variant := range []struct {
 		name  string
 		types bool
 	}{{"node", false}, {"conversion", true}} {
-		code, err := Generate(g, GenOptions{Package: variant.name, Start: "main", Document: true, Types: variant.types})
+		code, err := generateCode(g, GenOptions{Package: variant.name, Start: "main", Document: true, Types: variant.types})
 		if err != nil {
 			t.Fatal(err)
 		}

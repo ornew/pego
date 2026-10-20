@@ -26,12 +26,12 @@ rule row Row = "let" " " #cut key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" / 
 	}
 	// The control must affect only the typed cut route.
 	nodeOpts := GenOptions{Package: "cutfixture", Start: "main"}
-	node, err := Generate(g, nodeOpts)
+	node, err := generateCode(g, nodeOpts)
 	if err != nil {
 		t.Fatal(err)
 	}
 	nodeOpts.disableTypedCuts = true
-	nodeRef, err := Generate(g, nodeOpts)
+	nodeRef, err := generateCode(g, nodeOpts)
 	if err != nil || !bytes.Equal(node, nodeRef) {
 		t.Fatalf("typed cut control changed Node output: %v", err)
 	}
@@ -41,7 +41,7 @@ rule row Row = "let" " " #cut key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" / 
 	}
 	var want []byte
 	for _, variant := range []string{"direct", "general"} {
-		code, err := Generate(g, GenOptions{Package: "cutfixture", Start: "main", Types: true, disableTypedCuts: variant == "general"})
+		code, err := generateCode(g, GenOptions{Package: "cutfixture", Start: "main", Types: true, disableTypedCuts: variant == "general"})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -50,7 +50,7 @@ rule row Row = "let" " " #cut key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" / 
 			t.Fatal(err)
 		}
 		for name, contents := range map[string][]byte{
-			"parser.go": code, "cut_test.go": []byte(typedCutWorkloadFixture), "go.mod": []byte("module cutfixture\n\ngo 1.24\n"),
+			"parser.go": code, "cut_test.go": []byte(typedCutWorkloadFixture), "go.mod": []byte(testGoMod("cutfixture")),
 		} {
 			if err := os.WriteFile(filepath.Join(path, name), contents, 0o644); err != nil {
 				t.Fatal(err)

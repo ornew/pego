@@ -175,7 +175,7 @@ rule main A = x:"a" => A{$x}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	goCode, err := Generate(g, GenOptions{Package: "p", Start: "main"})
+	goCode, err := generateCode(g, GenOptions{Package: "p", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -262,13 +262,13 @@ func runGeneratedNamedNodeProgram(t *testing.T, src, body, want string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := Generate(g, GenOptions{Package: "p", Start: "main", Types: true})
+	code, err := generateCode(g, GenOptions{Package: "p", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
 	for name, content := range map[string]string{
-		"go.mod":      "module gentest\n\ngo 1.24\n",
+		"go.mod":      testGoMod("gentest"),
 		"p/parser.go": string(code),
 		"main.go":     "package main\n\nimport (\n\t\"fmt\"\n\n\t\"gentest/p\"\n)\n\n" + body,
 	} {
@@ -645,11 +645,11 @@ func TestGeneratedNamedNodeTypesTypedRuntime(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := Generate(g, GenOptions{Package: "p", Start: "main", Types: true})
+		code, err := generateCode(g, GenOptions{Package: "p", Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		direct := strings.Contains(string(code), "return TParse(trules[") && !strings.Contains(string(code), "RunParseConverted(")
+		direct := strings.Contains(string(code), "return pegort.TParse(trules[") && !strings.Contains(string(code), "pegort.RunParseConverted(")
 		if direct == converted[c.name] {
 			t.Errorf("%s: generated typed Go uses the typed runtime: %v, want %v", c.name, direct, !converted[c.name])
 		}
@@ -676,7 +676,7 @@ func TestGeneratedNamedNodeTypesDocument(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", "module directtypeddocument\n\ngo 1.27.1\n")
+	write("go.mod", testGoMod("directtypeddocument"))
 	for i, c := range []struct {
 		grammar string
 		inputs  []string
@@ -709,15 +709,15 @@ rule a A = [a-zé] #atomic`, []string{"()abcd", "(()(()))abcd", "((é))éaéa", 
 		if err != nil {
 			t.Fatalf("%s: %v", pkg, err)
 		}
-		code, err := Generate(g, GenOptions{Package: pkg, Start: "main", Types: true, Document: true})
+		code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Document: true})
 		if err != nil {
 			t.Fatalf("%s: %v", pkg, err)
 		}
-		if !strings.Contains(string(code), "return TypedDocumentParse(") {
+		if !strings.Contains(string(code), "return pegort.TypedDocumentParse(") {
 			t.Fatalf("%s uses conversion instead of direct matching", pkg)
 		}
 		write(pkg+"/parser.go", string(code))
-		reference, err := Generate(g, GenOptions{Package: "reference", Start: "main", Types: true, Document: true, convertTypes: true})
+		reference, err := generateCode(g, GenOptions{Package: "reference", Start: "main", Types: true, Document: true, convertTypes: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -763,14 +763,14 @@ func TestGeneratedDeclaredNodeAny(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := Generate(g, GenOptions{Package: "p", Start: "main", Types: true})
+	code, err := generateCode(g, GenOptions{Package: "p", Start: "main", Types: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, want := range []string{
-		"func ParseAST(input string, opts ...ParseOption) (*TNode[any], error)",
+		"func ParseAST(input string, opts ...pegort.ParseOption) (*TNode[any], error)",
 		"//\tmain: *TNode[any]\n",
-		"return TParse(trules[",
+		"return pegort.TParse(trules[",
 	} {
 		if !strings.Contains(string(code), want) {
 			t.Errorf("generated Go lacks %q", want)
@@ -792,11 +792,11 @@ func TestGeneratedDeclaredNodeAny(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := Generate(g, GenOptions{Package: "p", Start: "main", Types: true})
+		code, err := generateCode(g, GenOptions{Package: "p", Start: "main", Types: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		if !strings.Contains(string(code), "return TParse(trules[") || strings.Contains(string(code), "RunParseConverted(") {
+		if !strings.Contains(string(code), "return pegort.TParse(trules[") || strings.Contains(string(code), "pegort.RunParseConverted(") {
 			t.Errorf("%s: generated typed Go converts nodes instead of using the typed runtime", c.name)
 		}
 	}

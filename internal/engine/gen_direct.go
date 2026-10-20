@@ -11,7 +11,7 @@ import (
 
 // Direct rules of the typed runtime and inlined expression bodies of the Node runtime.
 //
-// The typed runtime (genrt/typed.go) runs a rule like the Node runtime does: a method per
+// The typed runtime (runtime/typed.go) runs a rule like the Node runtime does: a method per
 // expression, captures in a frame with a trail that backtracking undoes, and an action evaluated
 // in a context that reads the frame. A rule whose body uses only the constructs handled here is
 // instead compiled into the one method that calls it (a direct rule):
@@ -420,7 +420,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		v := d.decl("v", d.g.valType())
 		text := fmt.Sprintf("%q", value)
 		if strings.ContainsRune(value, '\uFFFD') {
-			text = fmt.Sprintf("p.literalText(%s, %q)", d.rd(start), value)
+			text = fmt.Sprintf("p.LiteralText(%s, %q)", d.rd(start), value)
 		}
 		d.line("%s = %s", v, d.match(d.rd(start), text))
 		return v
@@ -586,10 +586,10 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		d.failIf("p.Pos != 0", fail, "p.Expect(p.Pos, IdBeginInput)")
 		return "nil"
 	case *grammar.EndInput:
-		d.failIf("!p.AtEnd()", fail, "p.Expect(p.Pos, IdEndInput)")
+		d.failIf("!p."+g.atEnd()+"()", fail, "p.Expect(p.Pos, IdEndInput)")
 		return "nil"
 	case *grammar.BeginLine:
-		d.failIf("!p.AtLineStart()", fail, "p.Expect(p.Pos, IdBeginLine)")
+		d.failIf("!p."+g.atLineStart()+"()", fail, "p.Expect(p.Pos, IdBeginLine)")
 		return "nil"
 	case *grammar.EndLine:
 		d.failIf("!p.AtLineEnd()", fail, "p.Expect(p.Pos, IdEndLine)")
@@ -1414,7 +1414,7 @@ func (d *dgen) recoverAttr(e *grammar.Attributed, i int, s *dscope, build bool, 
 		d.line("%s = p.MakeError(%s, %s)", err, d.rd(far), d.rd(expected))
 		d.line("p.Recovered = append(p.Recovered, %s)", d.rd(err))
 		if build {
-			d.line("%s = &TError{Error{%s: %s{%s, p.Pos}, Text: p.Text(%s, p.Pos), Message: p.RecoveryErrorText(%s)}, true}", v, d.g.typedSpan, d.g.typedSpan, d.rd(m.pos), d.rd(m.pos), d.rd(err))
+			d.line("%s = NewTError(%s, p.Pos, p.Text(%s, p.Pos), p.RecoveryErrorText(%s))", v, d.rd(m.pos), d.rd(m.pos), d.rd(err))
 		} else if build {
 			d.line("%s = nil", v)
 		}

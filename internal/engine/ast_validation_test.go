@@ -43,8 +43,8 @@ func TestMalformedASTEntryPointsAndPosition(t *testing.T) {
 	for name, run := range map[string]func() error{
 		"compile":            func() error { _, err := Compile(g, Options{}); return err },
 		"saved AST rebuild":  func() error { _, err := build(g, Options{}, []ruleFlags{{}}); return err },
-		"Go generator":       func() error { _, err := Generate(g, GenOptions{Start: "p", Package: "p"}); return err },
-		"typed Go generator": func() error { _, err := Generate(g, GenOptions{Start: "p", Package: "p", Types: true}); return err },
+		"Go generator":       func() error { _, err := generateCode(g, GenOptions{Start: "p", Package: "p"}); return err },
+		"typed Go generator": func() error { _, err := generateCode(g, GenOptions{Start: "p", Package: "p", Types: true}); return err },
 		"TS generator":       func() error { _, err := GenerateTS(g, GenOptions{Start: "p"}); return err },
 	} {
 		t.Run(name, func(t *testing.T) {
