@@ -53,7 +53,7 @@ Each linked mechanism page describes its source, eligibility, interactions, cont
 |:--|:--|:--|:-:|:-:|:-:|:-:|:-:|:-:|:--|:--|
 | [R010](mechanisms/R010-per-position-memo-chains.md) | Per-position memo chains and key storage | C/RVM/IVM/GN/TG/TS; exact per-backend route | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
 | [R020](mechanisms/R020-deferred-memoization.md) | Defer memo allocation until a second same-position call | C/RVM/IVM/GN/TG/TS; no universal control | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
-| [R030](mechanisms/R030-sparse-seen-position-storage.md) | Sparse deferred-memo seen positions with dense small-input path | C/RVM/IVM/GN/TG/TS; core build-tag and generation controls differ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | pego_reference_sparse_memo; GenOptions.disableSparseMemo |
+| [R030](mechanisms/R030-sparse-seen-position-storage.md) | Sparse deferred-memo seen positions with dense small-input path | C/RVM/IVM/GN/TG/TS; core build-tag and generation controls differ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | pego_reference_sparse_memo; GenOptions.disableSparseMemo (TypeScript) |
 | [R040](mechanisms/R040-memo-entry-retirement.md) | Retire obsolete memo entries | C/RVM/IVM only; active seed ownership preserved | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
 | [R050](mechanisms/R050-bounded-variable-bindings.md) | Bound variable binding histories | All six default; persistent prefix replacement | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
 | [R060](mechanisms/R060-chunked-document-input.md) | Chunked Document text storage | C/RVM/IVM Document only | ✓ | ✓ | ✓ | — | — | — | Default | pego_reference_document_pieces |
@@ -79,8 +79,8 @@ Each linked mechanism page describes its source, eligibility, interactions, cont
 | [A050](mechanisms/A050-streaming-state-reuse.md) | Bounded stream input and memo storage | C/RVM/IVM streaming only | ✓ | ✓ | ✓ | — | — | — | Default | None maintained |
 | [A060](mechanisms/A060-direct-typed-output-construction.md) | Construct typed output directly | TG eligible direct path; conversion remains fallback | — | — | — | — | Partial | — | Default | None maintained |
 | [A070](mechanisms/A070-typed-output-bootstrap.md) | Independent initial typed allocations before slab growth | TG only; default applied, control `disableTypedOutputBootstrap` | — | — | — | — | ✓ | — | Default | GenOptions.disableTypedOutputBootstrap |
-| [A080](mechanisms/A080-generated-node-capture-scratch.md) | Reusable generated Node capture scratch | Generated Go Node capture frames | — | — | — | ✓ | — | — | Default | GenOptions.disableNodeFrameScratch |
-| [A090](mechanisms/A090-typed-output-liveness-cleanup.md) | Clear unreachable generated typed output slots | TG experimental/private/default-off; not adopted | — | — | — | — | Private off | — | Private off | GenOptions.enableTypedOutputSweep / enableBoundedTypedOutputSweep; both off |
+| [A080](mechanisms/A080-generated-node-capture-scratch.md) | Reusable generated Node capture scratch | Generated Go Node capture frames | — | — | — | ✓ | — | — | Default | — |
+| [A090](mechanisms/A090-typed-output-liveness-cleanup.md) | Clear unreachable generated typed output slots | TG measured; not adopted or implemented | — | — | — | — | — | — | — | — |
 | [A100](mechanisms/A100-document-vm-value-stack.md) | Reuse bounded VM value stack for Document parses | RVM/IVM Document paths only | — | ✓ | ✓ | — | — | — | Default | pego_reference_document_vm_values |
 | [A110](mechanisms/A110-expected-set-ids.md) | Interned expectation IDs and shared windows | All six; backend storage differs | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |
 | [A120](mechanisms/A120-source-token-text.md) | Source substring token text | All six subject to input representation; stream separately | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Default | None maintained |

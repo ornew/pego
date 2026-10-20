@@ -2,10 +2,7 @@ package engine
 
 import (
 	"os/exec"
-	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGeneratedNodeFrameScratchCorpus(t *testing.T) {
@@ -35,35 +32,5 @@ func TestGeneratedNodeFrameScratchCorpus(t *testing.T) {
 	if len(wanted) != 0 {
 		t.Fatalf("missing selected capture cases: %v", wanted)
 	}
-	for _, reference := range []bool{false, true} {
-		name := "scratch"
-		if reference {
-			name = "reference"
-		}
-		t.Run(name, func(t *testing.T) {
-			testGeneratedParsersCorpus(t, goBin, cases, GenOptions{disableNodeFrameScratch: reference})
-		})
-	}
-}
-
-// Typed parsing keeps its independent arenas; its source must be unaffected.
-func TestGeneratedNodeFrameScratchTypedSource(t *testing.T) {
-	g, err := syntax.Parse(nodeFrameScratchGrammar)
-	if err != nil {
-		t.Fatal(err)
-	}
-	optimized, err := Generate(g, GenOptions{Package: "frames", Start: "main", Types: true, Recognize: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	reference, err := Generate(g, GenOptions{Package: "frames", Start: "main", Types: true, Recognize: true, disableNodeFrameScratch: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(optimized), "tparse(trules") || !strings.Contains(string(reference), "const nodeFrameScratch = false") {
-		t.Fatal("missing typed route or static reference")
-	}
-	if string(optimized) != strings.Replace(string(reference), "const nodeFrameScratch = false", "const nodeFrameScratch = true", 1) {
-		t.Fatal("reference changed more than the Node allocation control")
-	}
+	testGeneratedParsersCorpus(t, goBin, cases, GenOptions{})
 }

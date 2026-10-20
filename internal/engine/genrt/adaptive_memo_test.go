@@ -34,7 +34,7 @@ func TestAdaptiveMemoCounters(t *testing.T) {
 					p := parser{memo: memoTable{stride: 1, sparse: mode == "sparse"}}
 					r := &rule{seen: 0}
 					if tc.repeat {
-						if sparseSeen && p.memo.sparse {
+						if p.memo.sparse {
 							p.memo.markSparseSeen(0, 0)
 						} else {
 							p.memo.seen = []uint64{1}

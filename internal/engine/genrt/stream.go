@@ -105,18 +105,18 @@ func (r *streamReader) Read(dst []byte) (int, error) {
 
 // parseStream parses the input read from reader with rule r, passing each
 // committed element of the rule's #stream repetition to emit.
-func parseStream(r *rule, seen int, reader io.Reader, emit func(*Node) error, opts []ParseOption) error {
+func parseStream(r *rule, reader io.Reader, emit func(*Node) error, opts []ParseOption) error {
 	var e func(*Node, *workControl) error
 	if emit != nil {
 		e = func(n *Node, _ *workControl) error { return emit(n) }
 	}
-	return parseStreamWork(r, seen, reader, e, opts)
+	return parseStreamWork(r, reader, e, opts)
 }
 
 // parseStreamWork is parseStream with emit also given the parse's work
 // control, so that converting elements to typed values is charged to it.
-func parseStreamWork(r *rule, seen int, reader io.Reader, emit func(*Node, *workControl) error, opts []ParseOption) (err error) {
-	o, err := resolveOptions(append(opts[:len(opts):len(opts)], streaming))
+func parseStreamWork(r *rule, reader io.Reader, emit func(*Node, *workControl) error, opts []ParseOption) (err error) {
+	o, err := resolveOptions(r.g, append(opts[:len(opts):len(opts)], streaming))
 	if err != nil {
 		return err
 	}
@@ -131,10 +131,11 @@ func parseStreamWork(r *rule, seen int, reader io.Reader, emit func(*Node, *work
 		reader = &streamReader{reader: reader, control: o.control}
 	}
 	p := &parser{unit: o.unit, maxDepth: o.maxDepth}
+	p.setGrammar(r.g)
 	p.control = o.control
+	p.observation = newObservation(&o.observe)
 	p.stream = &streamInput{reader: bufio.NewReader(reader), baseLine: 1, baseCol: 1, emit: emit, diagnostic: o.diagnostic}
 	p.stream.tail.limit = o.diagnosticLimit
-	p.memo.stride = seen
 	p.control.check()
 	_, ok := p.call(r, 0)
 	p.control.check()
@@ -217,6 +218,7 @@ func (p *parser) streamCommit(pos int) {
 		// its inactive capacity can still refer to committed elements.
 		clear(p.trail[:cap(p.trail)])
 		p.pruneStreamMemo(pos)
+		p.observation.dropDiscarded(pos)
 		s.pruned = pos
 	}
 	if s.tail.limit > 0 {
@@ -373,10 +375,10 @@ type streamPull[T any] struct {
 	err      error
 }
 
-// iterateStream validates the options of a stream entry point and returns a
+// iterateStream validates the options of a stream entry point of grammar g and returns a
 // lazy iterator over the elements that parse passes to emit.
-func iterateStream[T any](opts []ParseOption, parse func(emit func(T) error) error) (*streamPull[T], error) {
-	if _, err := resolveOptions(append(opts[:len(opts):len(opts)], streaming)); err != nil {
+func iterateStream[T any](g *grammar, opts []ParseOption, parse func(emit func(T) error) error) (*streamPull[T], error) {
+	if _, err := resolveOptions(g, append(opts[:len(opts):len(opts)], streaming)); err != nil {
 		return nil, err
 	}
 	it := &streamPull[T]{}

@@ -22,8 +22,7 @@ specializer.
 ## Reference Control
 
 Private generation control `disableOrdinaryWorkSpecialization` produces the
-same-source unspecialized route. `referenceWorkControls` disables a larger
-feature group and cannot isolate this mechanism.
+same-source unspecialized route.
 
 ## Evidence and Implementation
 

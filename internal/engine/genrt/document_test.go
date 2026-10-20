@@ -8,7 +8,6 @@ import (
 )
 
 func documentTestRules() (*rule, *rule) {
-	descs = []string{"any", "begin input", "end input", "begin line", "end line"}
 	item := &rule{id: 1, name: "item", memo: true, docMemo: true, seen: -1}
 	item.body = func(p *parser, _ int) (*Node, bool) {
 		return p.matchLiteral([]rune("a"), "a", idAny, true)
@@ -35,7 +34,7 @@ func documentTestRules() (*rule, *rule) {
 func TestPrivateDocumentPrefixReuseAndFreshResult(t *testing.T) {
 	main, _ := documentTestRules()
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
-		d := newDocumentState(main, "aa", unit)
+		d := testDocumentState(main, "aa", unit)
 		o := parseOptions{unit: unit, maxDepth: defaultMaxDepth}
 		first, err := d.parse(o)
 		if err != nil || first == nil || len(first.children) != 2 {
@@ -61,7 +60,6 @@ func TestPrivateDocumentPrefixReuseAndFreshResult(t *testing.T) {
 }
 
 func TestPrivateDocumentExaminedSuffixAndEOF(t *testing.T) {
-	descs = []string{"any", "begin input", "end input", "begin line", "end line"}
 	item := &rule{id: 1, name: "item", memo: true, docMemo: true, seen: -1}
 	item.body = func(p *parser, _ int) (*Node, bool) {
 		start := p.pos
@@ -75,7 +73,7 @@ func TestPrivateDocumentExaminedSuffixAndEOF(t *testing.T) {
 	}
 	main := &rule{id: 0, name: "main", memo: true, docMemo: true, seen: -1}
 	main.body = func(p *parser, _ int) (*Node, bool) { return p.call(item, 0) }
-	d := newDocumentState(main, "ab", CodePoints)
+	d := testDocumentState(main, "ab", CodePoints)
 	o := parseOptions{maxDepth: defaultMaxDepth}
 	if _, err := d.parse(o); err == nil { // suffix remains after the rule
 		t.Fatal("expected whole-input failure")
@@ -96,7 +94,7 @@ func TestPrivateDocumentExaminedSuffixAndEOF(t *testing.T) {
 
 func TestPrivateDocumentEditBoundariesAndUnit(t *testing.T) {
 	main, _ := documentTestRules()
-	d := newDocumentState(main, "é", Bytes)
+	d := testDocumentState(main, "é", Bytes)
 	if err := d.edit(1, 1, "x"); err == nil || d.text != "é" {
 		t.Fatalf("interior UTF-8 edit = %v, text = %q", err, d.text)
 	}
@@ -113,7 +111,7 @@ func TestPrivateDocumentEditBoundariesAndUnit(t *testing.T) {
 
 func TestPrivateDocumentInterruptionDiscardsMemo(t *testing.T) {
 	main, _ := documentTestRules()
-	d := newDocumentState(main, "aa", CodePoints)
+	d := testDocumentState(main, "aa", CodePoints)
 	o := parseOptions{maxDepth: defaultMaxDepth}
 	if _, err := d.parse(o); err != nil {
 		t.Fatal(err)
@@ -145,7 +143,7 @@ func TestDocumentReturnedRecoveryErrorOwnership(t *testing.T) {
 		p.recovered = append(p.recovered, &SyntaxError{Line: 1, Col: 1, Expected: []string{"original"}, Messages: []string{"original"}})
 		return &Node{kind: kindError, end: 1}, true
 	}
-	d := newDocumentState(r, "x", CodePoints)
+	d := testDocumentState(r, "x", CodePoints)
 	o := parseOptions{maxDepth: defaultMaxDepth}
 	_, first := d.parse(o)
 	e, ok := first.(SyntaxErrors)
@@ -177,7 +175,7 @@ func TestDocumentDiagnosticPublicationBudget(t *testing.T) {
 		p.recovered = append(p.recovered, &SyntaxError{Line: 1, Col: 1, Expected: expected, Messages: []string{"original"}})
 		return &Node{kind: kindError, end: 1}, true
 	}
-	d := newDocumentState(r, "x", CodePoints)
+	d := testDocumentState(r, "x", CodePoints)
 	normal := parseOptions{maxDepth: defaultMaxDepth}
 	if _, err := d.parse(normal); err == nil {
 		t.Fatal("missing recovered diagnostic")
@@ -229,7 +227,7 @@ func TestDocumentDiagnosticPublicationCancellation(t *testing.T) {
 		p.recovered = append(p.recovered, &SyntaxError{Expected: make([]string, 2048)})
 		return &Node{kind: kindError, end: 1}, true
 	}
-	d := newDocumentState(r, "x", CodePoints)
+	d := testDocumentState(r, "x", CodePoints)
 	normal := parseOptions{maxDepth: defaultMaxDepth}
 	if _, err := d.parse(normal); err == nil {
 		t.Fatal("missing recovered diagnostic")
@@ -251,4 +249,16 @@ func TestDocumentDiagnosticPublicationCancellation(t *testing.T) {
 	if len(d.memo.slots) != 0 {
 		t.Fatal("cancelled publication retained memo")
 	}
+}
+
+// defaultMaxDepth is the rule-call limit of the test grammars.
+const defaultMaxDepth = 100_000
+
+// testDocumentState gives root a grammar with the fixed expectations and
+// returns a document state for it.
+func testDocumentState(root *rule, text string, unit PositionUnit) *documentState {
+	g := newGrammar(defaultMaxDepth)
+	g.descs = []string{"any", "begin input", "end input", "begin line", "end line"}
+	root.g = g
+	return newDocumentState(root, text, unit)
 }

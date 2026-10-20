@@ -11,7 +11,25 @@ type Document struct {
 	state     *documentState
 	defaults  parseOptions
 	typedMemo interface{ invalidate(int) }
+	// parsing is set while a parse runs, whose observation callbacks must not
+	// parse or edit the Document again (beginParse).
+	parsing bool
 }
+
+// errDocumentBusy is returned by a Parse, ParseAST or Edit of a Document that is
+// already parsing. Only a trace callback of that parse can make one; parsers
+// generated with observability export it as ErrDocumentBusy.
+var errDocumentBusy = fmt.Errorf("document is already parsing")
+
+func (d *Document) beginParse() error {
+	if d.parsing {
+		return errDocumentBusy
+	}
+	d.parsing = true
+	return nil
+}
+
+func (d *Document) endParse() { d.parsing = false }
 
 // ParseStats counts rule evaluations and reused memo results in the last Parse.
 type ParseStats struct {
@@ -20,7 +38,7 @@ type ParseStats struct {
 }
 
 func makeDocument(root *rule, text string, opts []ParseOption) (d *Document, err error) {
-	o, err := resolveOptions(opts)
+	o, err := resolveOptions(root.g, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -29,6 +47,7 @@ func makeDocument(root *rule, text string, opts []ParseOption) (d *Document, err
 	// Construction performs the same input decoding and work checks as a parse,
 	// but its counters do not carry into subsequent invocations.
 	p := &parser{unit: o.unit, control: o.control}
+	p.setGrammar(root.g)
 	if o.unit == CodePoints {
 		p.setSource(text)
 	} else if o.control != nil {
@@ -44,6 +63,9 @@ func (d *Document) Text() string { return d.state.text }
 
 // Edit replaces [start,end) in the Document's position unit.
 func (d *Document) Edit(start, end int, text string) error {
+	if d.parsing {
+		return errDocumentBusy
+	}
 	reuse, err := d.state.editReuse(start, end, text)
 	if err != nil {
 		return err
@@ -57,6 +79,10 @@ func (d *Document) Edit(start, end int, text string) error {
 // Parse parses the current text, applying invocation options after the
 // Document's construction defaults. An invocation cannot change its unit.
 func (d *Document) Parse(opts ...ParseOption) (*Node, error) {
+	if err := d.beginParse(); err != nil {
+		return nil, err
+	}
+	defer d.endParse()
 	o, err := d.resolveParseOptions(opts)
 	if err != nil {
 		return nil, err
@@ -73,7 +99,7 @@ func (d *Document) resolveParseOptions(opts []ParseOption) (parseOptions, error)
 		return o, fmt.Errorf("max depth must be non-negative: %d", o.maxDepth)
 	}
 	if o.maxDepth == 0 {
-		o.maxDepth = defaultMaxDepth
+		o.maxDepth = d.state.root.g.maxDepth
 	}
 	if !workControlsEnabled && (o.context != nil || o.limits != (WorkLimits{})) {
 		return o, fmt.Errorf("work controls are disabled in this generated reference parser")
@@ -308,6 +334,9 @@ func documentParseConverted[T any](d *documentState, o parseOptions, convert fun
 	}
 	o = prepareOptions(o)
 	p := &parser{unit: d.unit, maxDepth: o.maxDepth, control: o.control}
+	p.setGrammar(d.root.g)
+	p.observation = newObservation(&o.observe)
+	defer p.releaseObservation()
 	if d.unit == Bytes {
 		p.bs, p.n = d.text, len(d.text)
 	} else {

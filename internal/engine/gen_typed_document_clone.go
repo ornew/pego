@@ -255,10 +255,7 @@ func (c *typedDocumentClone) toElems(v []any) []any {
 	}
 	b.WriteString(`// typedDocumentClone publishes independent values without exposing cached nodes.
 type typedDocumentClone struct {
- control *workControl
- values map[any]any
- slices map[documentSliceKey]any
- tasks []typedDocumentCloneTask
+ typedDocumentCloneBase
  match astChunk[TNode[string]]
  error astChunk[Error]
 `)
@@ -278,14 +275,6 @@ type typedDocumentClone struct {
 		fmt.Fprintf(b, " %sChunk astChunk[%s]\n", list.name, t.goType(list.elem))
 	}
 	b.WriteString(`}
-type typedDocumentCloneTask struct {source, target any}
-func (c *typedDocumentClone) step(n uint64) {
- if workControlsEnabled && c.control != nil { c.control.charge(0, n) }
-}
-func (c *typedDocumentClone) remember(from, to any) {
- if c.values == nil { c.values = make(map[any]any) }
- c.values[from] = to
-}
 func (c *typedDocumentClone) finish() {
  for len(c.tasks) > 0 {
   i := len(c.tasks)-1
@@ -302,7 +291,7 @@ func (c *typedDocumentClone) finish() {
  c.control.check()
 }
 func (c *typedDocumentClone) release() {
- c.control, c.values, c.slices, c.tasks = nil, nil, nil, nil
+ c.releaseBase()
 `)
 	for _, name := range append([]string{"Match", "Error"}, t.structs...) {
 		if g, ok := t.names[name]; ok {

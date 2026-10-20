@@ -63,13 +63,9 @@ rule main Tok = t:(("é" / "�")* $$) #atomic => Tok{Text: text($t)}`, `func fr
 					}
 				}
 			}
-			var want string
-			for _, reference := range []bool{false, true} {
+			{
 				variant := "scratch"
-				if reference {
-					variant = "reference"
-				}
-				code, err := Generate(g, GenOptions{Package: "framefixture", Start: "main", Types: true, Recognize: true, disableNodeFrameScratch: reference})
+				code, err := Generate(g, GenOptions{Package: "framefixture", Start: "main", Types: true, Recognize: true})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -80,7 +76,7 @@ rule main Tok = t:(("é" / "�")* $$) #atomic => Tok{Text: text($t)}`, `func fr
 				depthLimit := "maxDepth"
 				if strings.Contains(string(code), "type ParseOption ") {
 					workload = strings.ReplaceAll(workload, ", unit)", ", WithUnit(unit))")
-					depthLimit = "defaultMaxDepth"
+					depthLimit = "pegoGrammar.maxDepth"
 				}
 				fixture = strings.ReplaceAll(fixture, "FRAME_DEPTH_LIMIT", depthLimit)
 				path := filepath.Join(dir, c.name, variant)
@@ -98,17 +94,9 @@ rule main Tok = t:(("é" / "�")* $$) #atomic => Tok{Text: text($t)}`, `func fr
 				if err != nil {
 					t.Fatalf("%s: %v\n%s", variant, err, output)
 				}
-				var got strings.Builder
-				for _, line := range strings.Split(string(output), "\n") {
-					if at := strings.Index(line, "FRAME_RESULT "); at >= 0 {
-						got.WriteString(line[at:])
-						got.WriteByte('\n')
-					}
+				if !strings.Contains(string(output), "FRAME_RESULT ") {
+					t.Fatalf("%s: no frame results\n%s", variant, output)
 				}
-				if reference && (got.Len() == 0 || got.String() != want) {
-					t.Fatalf("paired results differ:\n%s\n%s", want, got.String())
-				}
-				want = got.String()
 			}
 		})
 	}
@@ -160,14 +148,16 @@ func TestFrameAbortCleanup(t *testing.T) {
  r:=&rule{name:"abort-test",seen:-1,scope:[]string{"x"},body:func(p *parser,_ int)(*Node,bool){
   observed=p;p.setCapture(0,p.newNode(Node{text:"abandoned"}));p.saved=append(p.saved,p.frame.vals[0]);panic(fatal{fmt.Errorf("fixture abort")})
  }}
- if _,err:=parse(r,0,"",nil);err==nil || err.Error()!="fixture abort" {t.Fatal("abort did not propagate")}
+ g:=newGrammar(0);g.setRules([]*rule{r},0);g.share(pegoGrammar)
+ if _,err:=parse(r,"",nil);err==nil || err.Error()!="fixture abort" {t.Fatal("abort did not propagate")}
  frameCleared(t,observed)
 }
 func TestFrameDepthAbortCleanup(t *testing.T) {
  var observed *parser
  r:=&rule{name:"depth-abort",seen:-1,scope:[]string{"x"}}
  r.body=func(p *parser,_ int)(*Node,bool){observed=p;p.setCapture(0,p.newNode(Node{text:"abandoned"}));p.depth=FRAME_DEPTH_LIMIT;return p.call(r,0)}
- if _,err:=parse(r,0,"",nil);err==nil || !strings.Contains(err.Error(),"nesting too deep") {t.Fatal("depth abort did not propagate")}
+ g:=newGrammar(0);g.setRules([]*rule{r},0);g.share(pegoGrammar)
+ if _,err:=parse(r,"",nil);err==nil || !strings.Contains(err.Error(),"nesting too deep") {t.Fatal("depth abort did not propagate")}
  frameCleared(t,observed)
 }
 func TestFrameConcurrentReuse(t *testing.T) {

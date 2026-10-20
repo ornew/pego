@@ -8,7 +8,7 @@
 
 Generated typed parsers allocate returned structs, terminals, matches and list backing cells in chunks. A small returned value can keep unused siblings in those chunks alive. This design considers preserving slab allocation while clearing only storage proven unreachable from the final returned value. Clearing must wait until parsing, recovery, conversion and publication have finished; clearing during backtracking or action evaluation is unsafe.
 
-The current prototype has separate full-sweep and bounded-sweep generation controls. Both are private, generation-only and disabled by default. They apply to generated Go typed results on direct typed and conversion-based `ParseAST`/`ParseRuleAST` paths, including returned `Match` values and owned backing cells. Plain Node `Parse`, `Recognize`, the engine/VM backends and generated TypeScript do not use these controls. The full and bounded sweep controls remain default-off.
+The measured candidate had separate full-sweep and bounded-sweep variants, selected only at generation time and disabled by default, for generated Go typed results on direct typed and conversion-based `ParseAST`/`ParseRuleAST` paths, including returned `Match` values and owned backing cells. The generator no longer contains them: they rewrote the generated runtime's source, and generated parsers share one grammar-independent runtime. A future candidate must be a runtime mechanism selected per parse or per grammar.
 A separate per-owner allocation bootstrap is adopted in [optimization record 098](../optimizations/098-bootstrap-generated-typed-output-allocations.md). It changes the allocation pattern before slab growth rather than clearing unreachable cells; its measurements do not change the status of these sweep controls.
 
 ## Current Candidate Scope
@@ -48,7 +48,7 @@ Traversal must preserve aliases and cycles. Mark pointer identity before descend
 
 Run cleanup once at the final publication boundary, after conversion has allocated its result and before temporary ownership metadata is dropped. Direct, conversion and named-rule entries must use the selected result's ownership description. Errors and successfully recovered values follow the same rule as other returned results.
 
-The full-sweep and bounded-sweep controls are private, independent generation-time options and both default off. Bounded-only generation emits bounded hooks; ordinary and full-reference output remain unchanged. No public selector or runtime flag is added.
+The measured full-sweep and bounded-sweep variants were private, independent generation-time options, both default off. A new candidate must be selected inside the shared generated runtime instead, without a public selector.
 
 ## Alternatives considered
 

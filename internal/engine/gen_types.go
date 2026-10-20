@@ -51,7 +51,7 @@ func (g *generator) typedGo(start *rule, conv bool) (string, string, error) {
 `
 	st := ruleType(start)
 	directStart := !conv && t.runtimeOK(st)
-	g.directTypedDocument = g.document && directStart && !g.disableDirectTypedDocument
+	g.directTypedDocument = g.document && directStart
 	needTyped, needNodes := false, false
 	if directStart {
 		needTyped = true
@@ -59,10 +59,10 @@ func (g *generator) typedGo(start *rule, conv bool) (string, string, error) {
 		fmt.Fprintf(&entries, `%s// It builds the values directly, without the nodes Parse returns.
 func ParseAST(input string, opts ...ParseOption) (%s, error) {
 	a := &tslabs{}
-		return tparse(trules[%d], input, opts, a, func(v any) %s { return %s }%s)
+		return tparse(trules[%d], input, opts, a, func(v any) %s { return %s })
 }
 
-`, doc, t.goType(st), start.id, t.goType(st), result, t.outputPublication(st))
+`, doc, t.goType(st), start.id, t.goType(st), result)
 	} else {
 		needNodes = true
 		result := t.conv(st, "n")
@@ -71,15 +71,12 @@ func ParseAST(input string, opts ...ParseOption) (%s, error) {
 			newConv = "\t\ta := &astConv{control: c}\n"
 		}
 		returnResult := "\t\treturn " + result + "\n"
-		if (g.enableTypedOutputSweep || g.enableBoundedTypedOutputSweep) && newConv != "" {
-			returnResult = "\t\tres := " + result + "\n\t\ta.publish(res, err)\n\t\treturn res\n"
-		}
 		fmt.Fprintf(&entries, `%sfunc ParseAST(input string, opts ...ParseOption) (%s, error) {
  convert := func(n *Node, c *workControl, err error) %s {
 %s%s }
- o, err := resolveOptions(opts)
+ o, err := resolveOptions(pegoGrammar, opts)
  if err != nil { return convert(nil, nil, err), err }
- return parseConverted(rules[%d], nseen, input, o, convert)
+ return parseConverted(rules[%d], input, o, convert)
 }
 
 `, doc, t.goType(st), t.goType(st), newConv, returnResult, start.id)
@@ -94,9 +91,6 @@ func ParseAST(input string, opts ...ParseOption) (%s, error) {
 			newConv = "\t\ta := &astConv{control: c}\n"
 		}
 		returnResult := "\t\treturn " + result + "\n"
-		if (g.enableTypedOutputSweep || g.enableBoundedTypedOutputSweep) && newConv != "" {
-			returnResult = "\t\tres := " + result + "\n\t\ta.publish(res, parseErr)\n\t\treturn res\n"
-		}
 		fmt.Fprintf(&entries, `// ParseAST converts the current Document result to typed values. Typed values
 // belong to this call; CST Node members may still share the Document's Node graph.
 func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
@@ -106,7 +100,7 @@ func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
 %s%s })
 }
 
-`, t.goType(st), generatedDocumentParseGuard(g.observability, t.goType(st)), t.goType(st), t.goType(st), newConv, returnResult)
+`, t.goType(st), generatedDocumentParseGuard(t.goType(st)), t.goType(st), t.goType(st), newConv, returnResult)
 	}
 	if r := g.streamStart; r != nil {
 		// Elements are converted from the committed nodes that ParseStream
@@ -142,7 +136,7 @@ func ParseStreamAST(r io.Reader, emit func(StreamValue) error, opts ...ParseOpti
 %[3]s			return emit(%[4]s)
 		}
 	}
-	return parseStreamWork(streamRule, nseen, r, e, opts)
+	return parseStreamWork(streamRule, r, e, opts)
 }
 
 // StreamASTIterator returns the typed elements of a stream one at a time, like StreamIterator.
@@ -151,7 +145,7 @@ type StreamASTIterator struct{ pull *streamPull[StreamValue] }
 // IterateAST returns an iterator over the typed elements that ParseStreamAST would pass to emit, parsing
 // only as far as each call to Next needs. Options are validated before it returns; r is first read by Next.
 func IterateAST(r io.Reader, opts ...ParseOption) (*StreamASTIterator, error) {
-	pull, err := iterateStream(opts, func(emit func(StreamValue) error) error { return ParseStreamAST(r, emit, opts...) })
+	pull, err := iterateStream(pegoGrammar, opts, func(emit func(StreamValue) error) error { return ParseStreamAST(r, emit, opts...) })
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +168,7 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 		fmt.Fprintf(&named, "//\t%s: %s\n", r.name, t.goType(ruleType(r)))
 	}
 	named.WriteString(`func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
-	o, err := resolveOptions(opts)
+	o, err := resolveOptions(pegoGrammar, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -186,33 +180,21 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 		if !conv && t.runtimeOK(x) {
 			needTyped = true
 			result := t.dconv(x, "v", "a")
-			fmt.Fprintf(&named, "\t\ta := &tslabs{}\n\t\treturn tparseResolved(trules[%d], input, o, a, func(v any) %s { return %s }%s)\n", r.id, t.goType(x), result, t.outputPublication(x))
+			fmt.Fprintf(&named, "\t\ta := &tslabs{}\n\t\treturn tparseResolved(trules[%d], input, o, a, func(v any) %s { return %s })\n", r.id, t.goType(x), result)
 		} else {
 			needNodes = true
 			result := t.conv(x, "n")
-			fmt.Fprintf(&named, "\t\treturn parseConverted(rules[%d], nseen, input, o, func(n *Node, c *workControl, err error) %s {\n", r.id, t.goType(x))
+			fmt.Fprintf(&named, "\t\treturn parseConverted(rules[%d], input, o, func(n *Node, c *workControl, err error) %s {\n", r.id, t.goType(x))
 			fmt.Fprintf(&named, "\t\t\tif n == nil { var zero %s; return zero }\n", t.goType(x))
 			if strings.Contains(result, "a.") {
 				named.WriteString("\t\t\ta := &astConv{control: c}\n")
-				if g.enableTypedOutputSweep || g.enableBoundedTypedOutputSweep {
-					fmt.Fprintf(&named, "\t\t\tres := %s\n\t\t\ta.publish(res, err)\n\t\t\treturn res\n\t\t})\n", result)
-					continue
-				}
 			}
 			fmt.Fprintf(&named, "\t\t\treturn %s\n\t\t})\n", result)
 		}
 	}
 	named.WriteString("\tdefault:\n\t\treturn nil, fmt.Errorf(\"rule %s is not defined\", name)\n\t}\n}\n")
-	helpers := astHelpers
-	if g.enableTypedOutputSweep || g.enableBoundedTypedOutputSweep {
-		var err error
-		helpers, err = typedOutputSweepHelpers(helpers)
-		if err != nil {
-			return "", "", err
-		}
-	}
-	b.WriteString(helpers)
-	bootstrap := !g.disableTypedOutputBootstrap && !g.enableTypedOutputSweep && !g.enableBoundedTypedOutputSweep
+	b.WriteString(astHelpers)
+	bootstrap := !g.disableTypedOutputBootstrap
 	if g.disableTypedObjectSlabs {
 		b.WriteString(astIndividualObjectHelper)
 	} else if bootstrap {
@@ -242,32 +224,23 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 	}
 	if g.directTypedDocument {
 		publication := t.documentClone(&b, st)
-		document := typedDocumentSource
-		if g.observability {
-			var err error
-			document, err = generatedTypedDocumentTraceRuntime(document)
-			if err != nil {
-				return "", "", err
-			}
-		}
-		b.WriteString(document)
 		result := t.dconv(st, "v", "a")
 		fmt.Fprintf(&entries, `// ParseAST directly parses the Document and returns independently owned typed values.
 func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
 %s o, err := d.resolveParseOptions(opts)
  if err != nil { var zero %s; return zero, err }
  a := &tslabs{}
- return typedDocumentParse(d, trules[%d], o, a, func(v any, c *typedDocumentClone) %s {
+ c := &typedDocumentClone{}
+ return typedDocumentParse(d, trules[%d], o, a, c, func(v any) %s {
   value := %s
   return %s
  })
 }
-`, t.goType(st), generatedDocumentParseGuard(g.observability, t.goType(st)), t.goType(st), start.id, t.goType(st), result, publication)
+`, t.goType(st), generatedDocumentParseGuard(t.goType(st)), t.goType(st), start.id, t.goType(st), result, publication)
 	}
-	if g.enableBoundedTypedOutputSweep {
-		t.outputBoundedSweep(&b, needTyped, needNodes)
-	} else if g.enableTypedOutputSweep {
-		t.outputSweep(&b, needTyped, needNodes)
+	if len(t.nodeTypes) > 0 {
+		// Registered by tinit when the typed runtime is used; the value helpers compare with it.
+		fmt.Fprintf(&b, "// tnt holds the registered indexes of the named node types (tregisterNodeType) by their\n// generated index; index 0 is no named node type.\nvar tnt [%d]uint16\n\n", len(t.nodeTypes)+1)
 	}
 	t.tupleDecls(&b)
 	b.WriteString(entries.String())
@@ -975,17 +948,15 @@ func (t *typedGen) valueMethods(b *strings.Builder) {
 			}
 			b.WriteString("\t}\n\treturn \"\", false\n}\n\n")
 		}
-		if t.g.goWorkControls {
-			fmt.Fprintf(b, "func (v *%s) tfieldWork(p *tparser, name string) (any, bool) {\n\tswitch name {\n", g)
-			for _, f := range t.info.fields[name] {
-				if t.representable(f.t) {
-					fmt.Fprintf(b, "\tcase %q:\n\t\treturn %s, true\n", f.name, t.backWork(f.t, "v."+f.name))
-				} else {
-					fmt.Fprintf(b, "\tcase %q:\n\t\treturn nil, true\n", f.name)
-				}
+		fmt.Fprintf(b, "func (v *%s) tfieldWork(p *tparser, name string) (any, bool) {\n\tswitch name {\n", g)
+		for _, f := range t.info.fields[name] {
+			if t.representable(f.t) {
+				fmt.Fprintf(b, "\tcase %q:\n\t\treturn %s, true\n", f.name, t.backWork(f.t, "v."+f.name))
+			} else {
+				fmt.Fprintf(b, "\tcase %q:\n\t\treturn nil, true\n", f.name)
 			}
-			b.WriteString("\t}\n\treturn nil, false\n}\n\n")
 		}
+		b.WriteString("\t}\n\treturn nil, false\n}\n\n")
 	}
 }
 
@@ -1145,18 +1116,19 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 	span := t.span
 	var reg strings.Builder
 	if len(t.nodeTypes) > 0 {
-		// The named node types by index (nt), and the public forms of their nodes.
-		fmt.Fprintf(&reg, "\ttnodeTypeNames = %s\n", goStrings(append([]string{""}, t.nodeTypes...)))
-		reg.WriteString("\ttnamedPub = func(a any, x tval) any {\n\ts, _ := a.(*tslabs)\n\tif s == nil {\n\t\ts = &tslabs{}\n\t}\n\tswitch x.tname() {\n")
+		// The public forms of the nodes of the named node types, and their registration
+		// (tnt holds the registered indexes, nt, by the generated index).
+		reg.WriteString("\ttnamedPub := func(a any, x tval) any {\n\ts, _ := a.(*tslabs)\n\tif s == nil {\n\t\ts = &tslabs{}\n\t}\n\tswitch x.tname() {\n")
 		for _, name := range t.nodeTypes {
 			n, _ := t.g.prog.nodeTypeOf(name)
 			fmt.Fprintf(&reg, "\tcase %q:\n\t\treturn %s\n", name, t.dconv(n, "x", "s"))
 		}
 		reg.WriteString("\t}\n\treturn nil\n\t}\n")
+		fmt.Fprintf(&reg, "\tfor i, name := range %s {\n\t\ttnt[i+1] = tregisterNodeType(name, tnamedPub)\n\t}\n", goStrings(t.nodeTypes))
 	}
 	for _, r := range append(append([]*rule(nil), t.g.prog.rules...), t.g.prog.twins...) {
 		if r.nodeType != "" {
-			fmt.Fprintf(&reg, "\ttrules[%d].nt = %d\n", r.id, t.g.nodeTypeIndex(r.nodeType))
+			fmt.Fprintf(&reg, "\ttrules[%d].nt = %s\n", r.id, t.g.nodeTypeID(r.nodeType))
 		}
 	}
 	var cons strings.Builder

@@ -22,9 +22,6 @@ func TestGenerateDocumentNode(t *testing.T) {
 	if !strings.Contains(string(code), "func newDocumentState(") {
 		t.Fatal("Document runner missing from requested source")
 	}
-	if !strings.Contains(string(code), "const documentEnabled = true") {
-		t.Fatal("requested generated source does not enable Document branches")
-	}
 	if !strings.Contains(string(code), "func NewDocument(") || !strings.Contains(string(code), "func (n *Node) Clone()") {
 		t.Fatal("Document public API missing from requested source")
 	}
@@ -34,9 +31,6 @@ func TestGenerateDocumentNode(t *testing.T) {
 	}
 	if strings.Contains(string(ordinary), "func newDocumentState(") {
 		t.Fatal("ordinary generated source includes the Document runner")
-	}
-	if !strings.Contains(string(ordinary), "const documentEnabled = false") {
-		t.Fatal("ordinary generated source does not eliminate Document branches")
 	}
 	if strings.Contains(string(ordinary), "func NewDocument(") || strings.Contains(string(ordinary), "func (n *Node) Clone()") {
 		t.Fatal("ordinary generated source includes the Document API")

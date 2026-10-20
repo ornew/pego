@@ -21,10 +21,8 @@ allocators.
 
 ## Reference Control
 
-Private generation control `disableNodeFrameScratch` selects the former
-allocator through emitted static configuration. The same-source reference
-retains nine words of allocator state, so parent comparisons additionally
-include layout cost. No public parse option selects it.
+None. The shared generated runtime always reuses the scratch; the former
+allocator is reproducible only from the revisions of record 092.
 
 ## Evidence and Implementation
 
@@ -38,8 +36,7 @@ GC-sensitive uncertainty, rather than a general speed claim.
 Evidence records: [092](../092-reuse-generated-node-capture-scratch.md).
 
 Source owners: [`node frame/slot scratch and parser
-release`](../../../internal/engine/genrt/runtime.go),
-[`disableNodeFrameScratch`](../../../internal/engine/gen.go), [`capture scratch
+release`](../../../internal/engine/genrt/runtime.go), [`capture scratch
 checks`](../../../internal/engine/gen_frame_scratch_test.go).
 
 The [comparison policy](../../design/024-optimization-mechanism-controls.md)

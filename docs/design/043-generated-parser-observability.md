@@ -188,8 +188,8 @@ eight alternating rounds of 400 iterations. Median time ratios were
 0.974–1.017, except for the profiled warm byte-unit node parse, a 0.4 µs memo
 hit whose ratio was 1.069 (0.97–1.48). Allocations per parse were unchanged.
 An earlier version that kept unknown rules in a map measured up to 1.040 for
-profiled batch parses; a flag on each rule row removed that lookup. Ordinary
-generated source is unchanged. Profiles sum `Examined - Pos` per
+profiled batch parses; a flag on each rule row removed that lookup. Without
+observability the same hooks are no-ops behind a nil observation. Profiles sum `Examined - Pos` per
 rule over completed calls into `Examined`, and over completed failed non-memo
 calls into `Wasted`; a rule's values are known only when every completed call
 in the profile was a Document call.
@@ -202,9 +202,10 @@ observer and profile state is released after return or panic; constructor
 defaults remain for later calls. While a Document parses, its `Parse`,
 `ParseAST` and `Edit` return the generated `ErrDocumentBusy` without changing
 it, so a callback cannot re-enter the same Document; callers can schedule later
-work or use another Document. The guard is generated only with observability,
-whose callbacks are the documented way to run caller code during a parse, so
-ordinary generated sources remain unchanged. A `context.Context` passed with
+work or use another Document. Every generated Document has the guard, but only
+observability callbacks, the documented way to run caller code during a parse,
+can trigger it, so only sources generated with observability export
+`ErrDocumentBusy`. A `context.Context` passed with
 `WithContext` also runs caller code, but re-entry from it is not detected. The
 check precedes option validation, so a re-entrant call with invalid options
 still reports `ErrDocumentBusy`.
@@ -220,8 +221,10 @@ On the same fixture, observed source without a trace or profile was compared
 with ordinary generated source. Median time ratios were 1.000–1.044, except
 for the warm byte-unit parse: it is a 0.2 µs memo hit, and its ratio was 1.18
 (0.83–1.28). Warm parses allocate 48 more bytes per call; cold and edit parses
-allocate within a few bytes of the ordinary source. Ordinary generated source
-does not pay this cost, because it is unchanged.
+allocate within a few bytes of the ordinary source. Sources generated without
+observability share the runtime: each observed call path is a separate method
+selected by a nil check of the parse's observation, and the other hooks return
+at once when it is nil.
 
 Generated Document race tests with Go Profile behavior, regeneration coverage,
 full root, nested-module and site validation pass. The broader design remains

@@ -39,9 +39,9 @@ rule main = "a" => Outer{Inner: Inner{N: 1}}`, "a"},
 import "fmt"
 func main() {
     for _, unit := range []PositionUnit{CodePoints, Bytes} {
-        p := &parser{maxDepth: defaultMaxDepth}
+        p := &parser{maxDepth: pegoGrammar.maxDepth}
         if unit == Bytes { p.unit, p.bs, p.n = Bytes, %[1]q, len(%[1]q) } else { p.setSource(%[1]q) }
-        p.memo.stride = nseen
+        p.setGrammar(pegoGrammar)
         n, ok := p.call(rules[0], 0)
         if !ok || p.pos != p.n || n == nil { panic("Node parse failed") }
         if len(p.created) != 0 { panic("Node tracking length") }
@@ -49,7 +49,7 @@ func main() {
         // Clearing tracking must preserve the returned result and its fields.
         if _, err := n.MarshalJSON(); err != nil { panic(err) }
         tp := &tparser{parser: &parser{}}
-        v, err := tp.run(trules[0], %[1]q, parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{})
+        v, err := tp.run(trules[0], %[1]q, parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
         if err != nil || v == nil { panic(fmt.Sprintf("typed parse: %%v", err)) }
         if len(tp.created) != 0 { panic("typed tracking length") }
         for _, n := range tp.created[:cap(tp.created)] { if n != nil { panic("typed tracking tail") } }
@@ -148,9 +148,9 @@ import "strings"
 func main() {
  for _, unit := range []PositionUnit{CodePoints, Bytes} {
   input := strings.Repeat("a", 10000)
-  p := &parser{maxDepth: defaultMaxDepth}
+  p := &parser{maxDepth: pegoGrammar.maxDepth}
   if unit == Bytes { p.unit, p.bs, p.n = Bytes, input, len(input) } else { p.setSource(input) }
-  p.memo.stride = nseen
+  p.setGrammar(pegoGrammar)
   p.frame = p.newFrame(len(rules[0].scope))
   if _, ok := rules[0].body(p, 0); !ok || p.pos != p.n { panic("parse failed") }
   names := make(map[string]bool)

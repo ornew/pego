@@ -20,7 +20,7 @@ func TestGeneratedTraceOptions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, marker := range []string{"type TraceEvent", "observation *observation", "func WithTrace"} {
+	for _, marker := range []string{"type TraceEvent", "func newProfileObservation", "func WithTrace"} {
 		if strings.Contains(string(plain), marker) {
 			t.Fatalf("ordinary output contains %s", marker)
 		}

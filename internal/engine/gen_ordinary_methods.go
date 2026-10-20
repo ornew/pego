@@ -55,9 +55,10 @@ func ordinaryMethodIdentity(fn *goast.FuncDecl) (ordinaryMethodKey, bool) {
 	return ordinaryMethodKey{typ.Name, fn.Name.Name}, true
 }
 
-// specializeOrdinaryMethods gives generated execution methods an invocation-
-// local nil-control branch. The controlled body remains unchanged.
-func specializeOrdinaryMethods(src []byte, executionSource string) ([]byte, error) {
+// specializeOrdinaryMethods gives generated execution methods a branch for
+// ordinary parses, which runs under guard (p.control == nil, and outside a
+// Document if the parser has Documents). The general body remains unchanged.
+func specializeOrdinaryMethods(src []byte, executionSource, guard string) ([]byte, error) {
 	methods, err := ordinaryExecutionMethods(executionSource)
 	if err != nil {
 		return nil, err
@@ -72,7 +73,6 @@ func specializeOrdinaryMethods(src []byte, executionSource string) ([]byte, erro
 		text   []byte
 	}
 	var insertions []insertion
-	var helpers bytes.Buffer
 	for _, decl := range file.Decls {
 		fn, ok := decl.(*goast.FuncDecl)
 		if !ok || fn.Recv == nil || len(fn.Recv.List) != 1 || fn.Body == nil {
@@ -82,14 +82,10 @@ func specializeOrdinaryMethods(src []byte, executionSource string) ([]byte, erro
 		if !validReceiver {
 			continue
 		}
-		_, execution := methods[key]
-		helper := ordinaryHelperName(fn.Name.Name)
-		if !helper && !execution {
+		if _, execution := methods[key]; !execution {
 			continue
 		}
-		if execution {
-			methods[key] = true
-		}
+		methods[key] = true
 		var body bytes.Buffer
 		if err := format.Node(&body, fset, fn.Body); err != nil {
 			return nil, err
@@ -178,20 +174,9 @@ func specializeOrdinaryMethods(src []byte, executionSource string) ([]byte, erro
 			return nil, err
 		}
 		brace := fset.Position(fn.Body.Lbrace).Offset
-		if helper {
-			start := fset.Position(fn.Pos()).Offset
-			name := fset.Position(fn.Name.Pos()).Offset
-			helpers.WriteString("\n")
-			helpers.Write(src[start:name])
-			helpers.WriteString(fn.Name.Name + "Ordinary")
-			helpers.Write(src[name+len(fn.Name.Name) : brace])
-			helpers.Write(plainText.Bytes())
-			helpers.WriteString("\n")
-			continue
-		}
-		guard := append([]byte("\nif p.control == nil "), plainText.Bytes()...)
-		guard = append(guard, '\n')
-		insertions = append(insertions, insertion{brace + 1, guard})
+		branch := append([]byte("\nif "+guard+" "), plainText.Bytes()...)
+		branch = append(branch, '\n')
+		insertions = append(insertions, insertion{brace + 1, branch})
 	}
 	for key, found := range methods {
 		if !found {
@@ -203,7 +188,7 @@ func specializeOrdinaryMethods(src []byte, executionSource string) ([]byte, erro
 	// original text so comments and controlled bodies retain their locations.
 	sort.Slice(insertions, func(i, j int) bool { return insertions[i].offset < insertions[j].offset })
 	var result []byte
-	extra := helpers.Len()
+	extra := 0
 	for _, edit := range insertions {
 		extra += len(edit.text)
 	}
@@ -215,7 +200,6 @@ func specializeOrdinaryMethods(src []byte, executionSource string) ([]byte, erro
 		offset = edit.offset
 	}
 	result = append(result, src[offset:]...)
-	result = append(result, helpers.Bytes()...)
 	return format.Source(result)
 }
 
@@ -292,10 +276,27 @@ func rewriteOrdinaryControl(root goast.Node) {
 	})
 }
 
+// ordinaryHelperName reports whether the runtime has an Ordinary form of the method name, which
+// the nil-control branch calls instead (the runtime writes them by hand).
 func ordinaryHelperName(name string) bool {
 	switch name {
-	case "newNode", "newMatch", "setCapture", "expect":
+	case "newNode", "newMatch", "setCapture", "expect", "peek", "matchLiteral", "matchAny",
+		"atEnd", "atLineStart", "atLineEnd", "inputWork":
 		return true
 	}
 	return false
+}
+
+// removeControlRead replaces a read of the receiver's control with a typed nil.
+func removeControlRead(field reflect.Value) {
+	if !field.CanSet() || field.IsNil() {
+		return
+	}
+	selector, ok := field.Interface().(*goast.SelectorExpr)
+	if !ok || selector.Sel.Name != "control" {
+		return
+	}
+	// The nil expression preserves signatures and ordinary converter mappings.
+	nilControl := &goast.CallExpr{Fun: &goast.ParenExpr{X: &goast.StarExpr{X: goast.NewIdent("workControl")}}, Args: []goast.Expr{goast.NewIdent("nil")}}
+	field.Set(reflect.ValueOf(nilControl))
 }

@@ -38,24 +38,19 @@ rule word Word = t:(x:[a-z]+ #atomic {text($x) == v}) => Word{Text: text($t)}`
 		t.Fatal(err)
 	}
 	for _, general := range []bool{false, true} {
-		for _, reference := range []bool{false, true} {
-			pkg := fmt.Sprintf("memo_%v_%v", general, reference)
-			code, err := Generate(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, disableTypedCuts: general, referenceWorkControls: reference})
-			if err != nil {
+		pkg := fmt.Sprintf("memo_%v", general)
+		code, err := Generate(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, disableTypedCuts: general})
+		if err != nil {
+			t.Fatal(err)
+		}
+		path := filepath.Join(dir, pkg)
+		if err := os.Mkdir(path, 0755); err != nil {
+			t.Fatal(err)
+		}
+		fixture := strings.NewReplacer("PACKAGE", pkg).Replace(generatedGoMemoConsumer)
+		for name, data := range map[string][]byte{"parser.go": code, "memo_test.go": []byte(fixture)} {
+			if err := os.WriteFile(filepath.Join(path, name), data, 0644); err != nil {
 				t.Fatal(err)
-			}
-			if !strings.Contains(string(code), "const sparseSeen = true") {
-				t.Fatal("memo-work fixture must emit the sparse runtime")
-			}
-			path := filepath.Join(dir, pkg)
-			if err := os.Mkdir(path, 0755); err != nil {
-				t.Fatal(err)
-			}
-			fixture := strings.NewReplacer("PACKAGE", pkg, "REFERENCE", fmt.Sprint(reference)).Replace(generatedGoMemoConsumer)
-			for name, data := range map[string][]byte{"parser.go": code, "memo_test.go": []byte(fixture)} {
-				if err := os.WriteFile(filepath.Join(path, name), data, 0644); err != nil {
-					t.Fatal(err)
-				}
 			}
 		}
 	}
@@ -68,7 +63,6 @@ rule word Word = t:(x:[a-z]+ #atomic {text($x) == v}) => Word{Text: text($t)}`
 
 const generatedGoMemoConsumer = `package PACKAGE
 import("context";"errors";"fmt";"reflect";"strings";"testing")
-const reference = REFERENCE
 func catchMemoFatal(f func())(err error){defer func(){if x:=recover();x!=nil{v,ok:=x.(fatal);if !ok{panic(x)};err=v.err}}();f();return nil}
 func makeEnvParser(limit uint64)*parser{
  p:=&parser{bound:make(map[string]bool),control:newWorkControl(nil,WorkLimits{MaxSteps:limit})}
@@ -76,7 +70,6 @@ func makeEnvParser(limit uint64)*parser{
  return p
 }
 func TestEnvironmentWalksAndAtomicBind(t *testing.T){
- if reference{p:=makeEnvParser(1);if (&actx{p:p}).lookup("v0")!=0{t.Fatal("reference lookup")};p.bind("v0",777);if p.control.stepsUsed!=0{t.Fatal("reference charged")};return}
  for _,run:=range []struct{name string;f func(*parser)}{
   {"key",func(p *parser){p.envValues([]string{"v0"})}},
   {"lookup",func(p *parser){(&actx{p:p}).lookup("v0")}},
@@ -98,7 +91,6 @@ func TestNodeMemoLookupWalk(t *testing.T){
  r:=&rule{id:7,seen:-1,memo:true}
  var got *Node
  err:=catchMemoFatal(func(){got,_=p.call(r,0)})
- if reference{if err!=nil||got!=tail.node || p.control.stepsUsed!=0{t.Fatal("reference memo")};return}
  if !errors.Is(err,ErrWorkLimit)||got!=nil{t.Errorf("Node memo chain unbounded: value=%T error=%T",got,err)}
  if p.memo.slots[0]!=head || tail.next!=nil{t.Fatal("lookup changed table")}
  p.control=newWorkControl(nil,WorkLimits{MaxSteps:100000})
@@ -111,7 +103,6 @@ func TestTypedMemoWalksAndAtomicReplacement(t *testing.T){
   p:=&tparser{parser:&parser{control:newWorkControl(nil,WorkLimits{MaxSteps:32})},memoSlots:[]*tmemoEntry{head}}
   replacement:=&tmemoEntry{rule:-1,val:"replacement",ok:true}
   err:=catchMemoFatal(func(){if put{p.memoPut(7,0,0,nil,replacement)}else{p.memoGet(7,0,0,nil)}})
-  if reference{if err!=nil || p.control.stepsUsed!=0{t.Fatal("reference typed memo")};continue}
   if !errors.Is(err,ErrWorkLimit){t.Errorf("typed memo put=%v unbounded: %T",put,err)}
   if p.memoSlots[0]!=head || tail.next!=nil || replacement.rule!=-1{t.Fatal("partial replacement published")}
   p.control=newWorkControl(nil,WorkLimits{MaxSteps:100000})
@@ -131,7 +122,6 @@ func TestMemoKeysAndStorage(t *testing.T){
   key:=make([]any,400);for i:=range key{key[i]=i}
   entry=put(key);p.control=newWorkControl(nil,WorkLimits{MaxSteps:32})
   err:=catchMemoFatal(func(){get(key)})
-  if reference{if err!=nil || p.control.stepsUsed!=0{t.Fatal("reference key charged")};continue}
   if !errors.Is(err,ErrWorkLimit){t.Fatal("long key not bounded",err)}
   p.control=newWorkControl(nil,WorkLimits{MaxSteps:100000});if get(key)!=entry{t.Fatal("long key retry")}
   long:=strings.Repeat("prefix",600);entry=put([]any{long+"x"})
@@ -147,7 +137,6 @@ func TestMemoKeysAndStorage(t *testing.T){
   tp:=&tparser{parser:p,memoSlots:make([]*tmemoEntry,300)};tp.memoSlots[0]=typedOriginal
   put:=func(){if typed{tp.memoPut(7,600,0,nil,typedReplacement)}else{p.memoPut(7,600,0,nil,nodeReplacement)}}
   err:=catchMemoFatal(put)
-  if reference{if err!=nil{t.Fatal("reference growth",err)};continue}
   if !errors.Is(err,ErrWorkLimit){t.Fatal("slot copy unbounded",err)}
   if len(p.memo.slots)!=300 || p.memo.slots[0]!=nodeOriginal || nodeReplacement.rule!=-1 || len(tp.memoSlots)!=300 || tp.memoSlots[0]!=typedOriginal || typedReplacement.rule!=-1{t.Fatal("partial slot growth published")}
   p.control=newWorkControl(nil,WorkLimits{MaxSteps:100000});put()
@@ -162,7 +151,6 @@ func TestFirstCallStoragePublication(t *testing.T){
   oldLen:=len(p.memo.seen);before:=p.memo.calls[0]
   r:=&rule{seen:0}
   err:=catchMemoFatal(func(){p.firstCall(r)})
-  if reference{if err!=nil || p.control.stepsUsed!=0{t.Fatal("reference estimator")};continue}
   if !errors.Is(err,ErrWorkLimit){t.Fatal("seen growth not bounded",err)}
   if len(p.memo.seen)!=oldLen || p.memo.calls[0]!=before{t.Fatal("partial estimator published")}
   p.control=newWorkControl(nil,WorkLimits{MaxSteps:100000})
@@ -172,7 +160,6 @@ func TestFirstCallStoragePublication(t *testing.T){
  }
 }
 func TestMemoCancellation(t *testing.T){
- if reference{return}
  p:=makeEnvParser(100000);ctx,cancel:=context.WithCancel(context.Background());cancel();p.control=newWorkControl(ctx,WorkLimits{})
  before:=p.env
  if err:=catchMemoFatal(func(){p.bind("v0",999)});!errors.Is(err,context.Canceled){t.Fatal("environment cancellation",err)}
@@ -184,8 +171,7 @@ func TestMemoCancellation(t *testing.T){
 }
 
 func TestSparseFirstCallInterruptionAndRetry(t *testing.T){
- if reference{return}
- if !sparseSeen{t.Fatal("sparse interruption fixture unexpectedly emitted a dense runtime")}
+ if pegoGrammar.nseen<=64{t.Fatal("sparse interruption fixture has too few seen rules for sparse tracking")}
  for _,at:=range []int{600,1200}{
   p:=&parser{pos:at*1024,control:newWorkControl(nil,WorkLimits{MaxSteps:129})}
   p.memo.stride=65;p.memo.sparse=true;p.memo.calls=make([]seenCalls,65)
@@ -207,7 +193,6 @@ func TestSparseFirstCallInterruptionAndRetry(t *testing.T){
 func TestPublicEnvironmentParity(t *testing.T){
  for _,unit:=range []PositionUnit{Bytes,CodePoints}{for _,input:=range []string{"a","b","aa","bb","?",""}{
   base,baseErr:=Parse(input,WithUnit(unit));before:="";if base!=nil{before=base.String()}
-  if reference{continue}
   got,err:=Parse(input,WithUnit(unit),WithWorkLimits(WorkLimits{MaxSteps:100000}))
   if fmt.Sprint(err)!=fmt.Sprint(baseErr) || (got!=nil && got.String()!=before){t.Fatal("public memo/env changed",input,err,baseErr)}
   typed,typedErr:=ParseAST(input,WithUnit(unit));controlled,controlledErr:=ParseAST(input,WithUnit(unit),WithWorkLimits(WorkLimits{MaxSteps:100000}))

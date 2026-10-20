@@ -49,7 +49,11 @@ func TestGeneratedMaxDepthValidation(t *testing.T) {
 				}
 				continue
 			}
-			if err != nil || !strings.Contains(string(got), fmt.Sprintf("const defaultMaxDepth = %d", n)) {
+			want := fmt.Sprintf("var pegoGrammar = newGrammar(%d)", n)
+			if ts {
+				want = fmt.Sprintf("const defaultMaxDepth = %d", n)
+			}
+			if err != nil || !strings.Contains(string(got), want) {
 				t.Fatalf("custom default %d: %v", n, err)
 			}
 		}

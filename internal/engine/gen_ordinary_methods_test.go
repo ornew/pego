@@ -111,6 +111,25 @@ rule expr Text = operators {
 	}
 }
 
+// A Document parse records the input it examines, so a parser with Documents runs the ordinary
+// branch only outside a Document.
+func TestGeneratedOrdinaryGuardExcludesDocuments(t *testing.T) {
+	g, err := syntax.Parse(`rule main = "a" "b"`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, document := range []bool{false, true} {
+		src, err := Generate(g, GenOptions{Package: "ordinaryguard", Start: "main", Document: document})
+		if err != nil {
+			t.Fatal(err)
+		}
+		guarded := strings.Contains(string(src), "if p.control == nil && p.document == nil {")
+		if guarded != document || !strings.Contains(string(src), "if p.control == nil") {
+			t.Fatalf("Document %v: unexpected ordinary guard", document)
+		}
+	}
+}
+
 func TestOrdinaryTransformLabelsAndSynchronousLambda(t *testing.T) {
 	method := `func (p *parser) e0() (int,bool) {
  p.stepWork()
@@ -119,7 +138,7 @@ func TestOrdinaryTransformLabelsAndSynchronousLambda(t *testing.T) {
  loop: for {if p.pos>0 {break loop}; p.pos++; goto done}
  done: return p.pos,true
  }`
-	src, err := specializeOrdinaryMethods([]byte("package fixture\n"+method), method)
+	src, err := specializeOrdinaryMethods([]byte("package fixture\n"+method), method, "p.control == nil")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -164,7 +183,7 @@ func TestOrdinaryTransformFailsOnEmitterDrift(t *testing.T) {
 		{"package fixture\nfunc(p *parser)e0()(int,bool){p:=other;_=p;return 0,true}", method},
 		{"package fixture\n" + method, method + "\n" + method},
 	} {
-		if _, err := specializeOrdinaryMethods([]byte(tc.src), tc.methods); err == nil {
+		if _, err := specializeOrdinaryMethods([]byte(tc.src), tc.methods, "p.control == nil"); err == nil {
 			t.Fatal("accepted emitter drift")
 		}
 	}
@@ -184,18 +203,18 @@ func TestOrdinaryTransformPreservesCommentsAndFormatting(t *testing.T) {
 	// Large original offsets must not interpret clone positions in the
 	// original FileSet or scatter a short helper across artificial lines.
 	source := "package fixture\n" + strings.Repeat("// padding\n", 20000) + method + "\n" + helper
-	result, err := specializeOrdinaryMethods([]byte(source), method)
+	result, err := specializeOrdinaryMethods([]byte(source), method, "p.control == nil")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if strings.Count(string(result), "// controlled marker") != 1 {
 		t.Fatal("controlled comment lost or duplicated")
 	}
-	start := strings.Index(string(result), "func (p *parser) newNodeOrdinary")
-	if start < 0 {
-		t.Fatal("missing ordinary helper")
+	// The runtime defines the ordinary helpers; the transform leaves runtime methods as they are.
+	if strings.Contains(string(result), "func (p *parser) newNodeOrdinary") {
+		t.Fatal("derived an ordinary helper")
 	}
-	if got, want := strings.TrimSpace(string(result[start:])), "func (p *parser) newNodeOrdinary(v Node) *Node {\n\n\treturn &v\n}"; got != want {
+	if got, want := strings.TrimSpace(string(result[strings.Index(string(result), "func (p *parser) newNode("):])), "func (p *parser) newNode(v Node) *Node {\n\tp.stepWork()\n\treturn &v\n}"; got != want {
 		t.Fatalf("unexpected helper formatting:\n%s", got)
 	}
 	f := ordinaryFunctions(t, result)[ordinaryMethodKey{"parser", "e0"}]

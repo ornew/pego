@@ -120,8 +120,8 @@ func TestUntypedPoolRetention(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			input := tc.prefix + "b"
-			p := &parser{maxDepth: defaultMaxDepth}
-			p.memo.stride = nseen
+			p := &parser{maxDepth: pegoGrammar.maxDepth}
+			p.setGrammar(pegoGrammar)
 			if tc.unit == Bytes {
 				p.unit, p.bs, p.n = Bytes, input, len(input)
 			} else {
@@ -201,8 +201,8 @@ func checkTrail(t *testing.T, p *tparser) {
 
 func TestTypedPoolRules(t *testing.T) {
 	for _, unit := range []PositionUnit{CodePoints, Bytes} {
-		p := &tparser{parser: &parser{maxDepth: defaultMaxDepth}}
-		v, err := p.run(trules[0], strings.Repeat("a", 2<<20)+"b", parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{})
+		p := &tparser{parser: &parser{maxDepth: pegoGrammar.maxDepth}}
+		v, err := p.run(trules[0], strings.Repeat("a", 2<<20)+"b", parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
 		if err != nil || v.(*A).Text != "b" {
 			t.Fatalf("large parse: %v", err)
 		}
@@ -216,16 +216,16 @@ func TestTypedPoolRules(t *testing.T) {
 		if v.(*A).Text != "b" {
 			t.Fatal("returned value changed")
 		}
-		if _, err := p.run(trules[0], "", parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{}); err == nil {
+		if _, err := p.run(trules[0], "", parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{}); err == nil {
 			t.Fatal("empty parse accepted")
 		}
 		p.recycle()
 		checkTrail(t, p)
-		if v, err := p.run(trules[0], "ab", parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{}); err != nil || v.(*A).Text != "b" {
+		if v, err := p.run(trules[0], "ab", parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{}); err != nil || v.(*A).Text != "b" {
 			t.Fatalf("small followup: %v", err)
 		}
 		p.recycle()
-		if v, err := p.run(trules[3], "bb", parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{}); err != nil || v.(*A).Text != "bb" {
+		if v, err := p.run(trules[3], "bb", parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{}); err != nil || v.(*A).Text != "bb" {
 			t.Fatalf("repeated capture: %v", err)
 		}
 		checkTrail(t, p)
@@ -234,7 +234,7 @@ func TestTypedPoolRules(t *testing.T) {
 }
 
 func TestTypedPoolUndoAndSaved(t *testing.T) {
-	p := &tparser{parser: &parser{maxDepth: defaultMaxDepth}}
+	p := &tparser{parser: &parser{maxDepth: pegoGrammar.maxDepth}}
 	f := &tframe{vals: []any{"before"}}
 	p.frame = f
 	m := p.mark()
@@ -289,8 +289,8 @@ func TestTypedPoolUndoAndSaved(t *testing.T) {
 // The parser is kept explicitly, so GC cannot hide references by emptying
 // sync.Pool. Returned terminals are dropped before measuring scratch retention.
 func retainedTypedParser(unit PositionUnit, n int) *tparser {
-	p := &tparser{parser: &parser{maxDepth: defaultMaxDepth}}
-	v, err := p.run(trules[0], strings.Repeat("a", n)+"b", parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{})
+	p := &tparser{parser: &parser{maxDepth: pegoGrammar.maxDepth}}
+	v, err := p.run(trules[0], strings.Repeat("a", n)+"b", parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
 	if err != nil || v.(*A).Text != "b" {
 		panic(err)
 	}

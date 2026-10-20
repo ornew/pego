@@ -3,6 +3,7 @@ package genrt
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"unsafe"
 )
 
@@ -42,21 +43,49 @@ type Error struct {
 // tmatch and terror are a string node and an Error while the typed runtime handles them: whether
 // the value is fresh (see Node.fresh) is part of the state of the parse, not of the result. The
 // result holds pointers to the embedded TNode[string] and Error (tpub). A string node of a named
-// node type has nt, the type's index in tnodeTypeNames (0 for a plain string node).
+// node type has nt, the type's registered index (tregisterNodeType; 0 for a plain string node).
 type tmatch struct {
 	TNode[string]
 	fresh bool
 	nt    uint16
 }
 
-// tnodeTypeNames are the names of the grammar's named node types by their index (nt) in tmatch
-// and tnode; index 0 is no named node type. The generated code sets them up.
-var tnodeTypeNames = []string{""}
+// tnodeType is a registered named node type: its name, and pub, which returns the public form of
+// a value x of the type with the generated code's chunks a (a *tslabs, or nil).
+type tnodeType struct {
+	name string
+	pub  func(a any, x tval) any
+}
 
-// tnamedPub returns the public form of a value x of a named node type (nt != 0), with the
-// generated code's chunks a (a *tslabs, or nil). The generated code sets it up when the grammar
-// has named node types.
-var tnamedPub func(a any, x tval) any
+// tnodeTypes holds the registered named node types of all grammars by their index (nt) in tmatch
+// and tnode; index 0 is no named node type. Registration copies the table, so readers never
+// lock.
+var (
+	tnodeTypes   atomic.Pointer[[]tnodeType]
+	tnodeTypesMu sync.Mutex
+)
+
+// tregisterNodeType registers a named node type of a grammar and returns its index. Types of
+// different grammars have different indexes even when their names are the same.
+func tregisterNodeType(name string, pub func(a any, x tval) any) uint16 {
+	tnodeTypesMu.Lock()
+	defer tnodeTypesMu.Unlock()
+	old := []tnodeType{{}}
+	if p := tnodeTypes.Load(); p != nil {
+		old = *p
+	}
+	if len(old) > 1<<16-1 {
+		panic("too many named node types")
+	}
+	types := append(old[:len(old):len(old)], tnodeType{name, pub})
+	tnodeTypes.Store(&types)
+	return uint16(len(types) - 1)
+}
+
+// tnodeTypeOf returns the registered named node type nt (not 0).
+func tnodeTypeOf(nt uint16) *tnodeType {
+	return &(*tnodeTypes.Load())[nt]
+}
 
 type terror struct {
 	Error
@@ -69,19 +98,19 @@ type terror struct {
 func tpub(v any) any { return tpubIn(nil, v) }
 
 // tpubIn is tpub with the generated code's chunks a (a *tslabs, or nil), which the public forms of
-// values of named node types (tnamedPub) are made from and remembered in.
+// values of named node types (tnodeType.pub) are made from and remembered in.
 func tpubIn(a any, v any) any {
 	switch x := v.(type) {
 	case *tmatch:
 		if x.nt != 0 {
-			return tnamedPub(a, x)
+			return tnodeTypeOf(x.nt).pub(a, x)
 		}
 		return &x.TNode
 	case *terror:
 		return &x.Error
 	case *tnode:
 		if x.nt != 0 {
-			return tnamedPub(a, x)
+			return tnodeTypeOf(x.nt).pub(a, x)
 		}
 		return tpubElems(a, x)
 	}
@@ -156,7 +185,7 @@ type tval interface {
 
 func (m *tmatch) tname() string {
 	if m.nt != 0 {
-		return tnodeTypeNames[m.nt]
+		return tnodeTypeOf(m.nt).name
 	}
 	return "string"
 }
@@ -198,7 +227,7 @@ type tfield struct {
 
 func (n *tnode) tname() string {
 	if n.nt != 0 {
-		return tnodeTypeNames[n.nt]
+		return tnodeTypeOf(n.nt).name
 	}
 	return n.typ
 }
@@ -294,13 +323,10 @@ type trule struct {
 	// rules that have one. A direct rule (see gen_direct.go) has no body or action and is called
 	// only through it.
 	entry func(p *tparser) (any, bool)
-	// nt is the index in tnodeTypeNames of the named node type the rule's value is converted to
+	// nt is the registered index of the named node type the rule's value is converted to
 	// (rule.nodeType), or 0.
 	nt uint16
 }
-
-// trules is the typed rule table set up by the generated code.
-var trules []*trule
 
 // tAs returns v as a T, or the zero T (nil) if it is not one.
 func tAs[T any](v any) T {
@@ -405,7 +431,7 @@ func tlistOf(kids []any) any {
 // (before the parser's scratch memory, which the result may be in, is cleared). ext holds the
 // generated code's chunks.
 func tparse[T any](r *trule, input string, opts []ParseOption, ext any, conv func(any) T) (T, error) {
-	o, err := resolveOptions(opts)
+	o, err := resolveOptions(r.g, opts)
 	if err != nil {
 		var zero T
 		return zero, err
@@ -423,6 +449,7 @@ func tparseResolved[T any](r *trule, input string, o parseOptions, ext any, conv
 	}
 	defer func() { p.recycle(); tpool.Put(p) }()
 	p.control = o.control
+	p.observation = newObservation(&o.observe)
 	if o.control != nil {
 		if target, ok := ext.(interface{ setWorkControl(*workControl) }); ok {
 			target.setWorkControl(o.control)
@@ -443,14 +470,17 @@ func tparseResolved[T any](r *trule, input string, o parseOptions, ext any, conv
 func (p *tparser) run(r *trule, input string, o parseOptions, ext any) (v any, err error) {
 	p.maxDepth = o.maxDepth
 	p.ext = ext
-	p.memo.stride = nseen
+	p.setGrammar(r.g)
 	if o.unit == Bytes {
 		// p.in stays empty: direct rules read code points from it while p.pos < len(p.in).
 		p.unit, p.bs, p.n, p.in = Bytes, input, len(input), p.in[:0]
 	} else {
 		p.setSource(input)
 	}
-	p.memo.sparse = sparseSeen && p.memo.stride > 64 && p.n > 1024
+	if p.typedDocument != nil {
+		p.document = p.typedDocument.owner
+	}
+	p.memo.sparse = p.memo.stride > 64 && p.n > 1024
 	defer func() {
 		if x := recover(); x != nil {
 			switch x := x.(type) {
@@ -578,7 +608,9 @@ type tparser struct {
 	fields    tarena[tfield]
 	memoSlab  tarena[tmemoEntry]
 	memoSlots []*tmemoEntry // memo entries by position (chains)
-	free      [8][]*tframe  // frames freed by freeFrame, by size
+	// typedDocument is set only by typed Document parses (typedDocumentParse).
+	typedDocument *typedDocumentState
+	free          [8][]*tframe // frames freed by freeFrame, by size
 }
 
 type tframe struct{ vals []any }
@@ -628,6 +660,13 @@ func (p *tparser) setCapture(slot int, v any) {
 	p.frame.vals[slot] = v
 }
 
+// setCaptureOrdinary is setCapture in an ordinary parse (parser.expectOrdinary); so are
+// newNodeOrdinary and newMatchOrdinary.
+func (p *tparser) setCaptureOrdinary(slot int, v any) {
+	p.trail = append(p.trail, tundo{f: p.frame, slot: slot, old: p.frame.vals[slot]})
+	p.frame.vals[slot] = v
+}
+
 // --- Allocation ---
 
 func (p *tparser) newNode(typ string, start, end int, kids []any) *tnode {
@@ -639,6 +678,22 @@ func (p *tparser) newNode(typ string, start, end int, kids []any) *tnode {
 
 func (p *tparser) newMatch(start, end int, text string, fresh bool) *tmatch {
 	p.stepWork()
+	if len(p.matches) == 0 {
+		p.matches = make([]tmatch, nodeChunk)
+	}
+	m := &p.matches[0]
+	p.matches = p.matches[1:]
+	*m = tmatch{TNode: TNode[string]{Span{start, end}, text}, fresh: fresh}
+	return m
+}
+
+func (p *tparser) newNodeOrdinary(typ string, start, end int, kids []any) *tnode {
+	n := p.nodes.one()
+	*n = tnode{Span: Span{start, end}, typ: typ, kids: kids, fresh: true}
+	return n
+}
+
+func (p *tparser) newMatchOrdinary(start, end int, text string, fresh bool) *tmatch {
 	if len(p.matches) == 0 {
 		p.matches = make([]tmatch, nodeChunk)
 	}
@@ -797,14 +852,154 @@ func (p *tparser) memoPutOrdinary(rule, pos, min int, env []any, e *tmemoEntry) 
 	p.memoSlots[pos] = e
 }
 
+// --- Typed Document memo ---
+
+// typedDocumentState owns private typed memo values of a typed Document (typedDocumentParse). The
+// fresh invocation arenas that contain those values must never be reset or returned to the batch
+// pool.
+type typedDocumentState struct {
+	owner *documentState
+	slots []*tmemoEntry
+	meta  map[*tmemoEntry]typedDocumentMeta
+}
+
+type typedDocumentMeta struct {
+	examined    int
+	provisional bool
+}
+
+func (d *typedDocumentState) invalidate(start int) {
+	kept := make([]*tmemoEntry, min(start, len(d.slots)))
+	meta := make(map[*tmemoEntry]typedDocumentMeta, min(len(d.meta), start))
+	var entries tarena[tmemoEntry]
+	for pos, head := range d.slots[:len(kept)] {
+		for e := head; e != nil; e = e.next {
+			m, complete := d.meta[e]
+			if !complete || e.growing || m.provisional || m.examined > start {
+				continue
+			}
+			out := entries.one()
+			*out = *e
+			// Environments, expectations and private diagnostic slices are immutable.
+			// Their arenas are never recycled; only the memo chain link needs copying.
+			out.next = kept[pos]
+			kept[pos] = out
+			meta[out] = m
+		}
+	}
+	d.slots, d.meta = kept, meta
+}
+
+// documentCall memoizes typed rule entries (rule.docMemo), including generated
+// direct wrappers. Examined and provisional metadata stays outside batch memo
+// entries.
+func (p *tparser) documentCall(r *trule, min int, inv func(*tparser) (any, bool)) (any, bool) {
+	p.stepWork()
+	start := p.pos
+	oldHigh, oldProvisional := p.docHigh, p.docProvisional
+	p.docHigh, p.docProvisional = start+1, false
+	defer func() { p.docHigh = max(oldHigh, p.docHigh); p.docProvisional = oldProvisional || p.docProvisional }()
+	if !r.docMemo {
+		rec := len(p.recovered)
+		var v any
+		var ok bool
+		if inv != nil {
+			p.document.stats.Evaluated++
+			v, ok = inv(p)
+		} else {
+			v, ok = p.invoke(r, min)
+		}
+		if !ok {
+			p.pos = start
+			p.recovered = p.recovered[:rec]
+		}
+		return v, ok
+	}
+	env := p.envValues(r.vars)
+	old := p.memoGet(r.id, start, min, env)
+	if old != nil && (old.growing || (!old.silent || p.silent > 0) && (len(old.errs) == 0 || old.silent == (p.silent > 0))) {
+		m := p.typedDocument.meta[old]
+		p.documentTouch(m.examined)
+		p.docProvisional = p.docProvisional || old.growing || m.provisional
+		p.document.stats.Reused++
+		p.observation.memoHit()
+		if !old.growing {
+			p.mergeExpected(old.far, old.expected)
+		}
+		if !old.ok {
+			return nil, false
+		}
+		p.pos = old.end
+		p.recovered = p.copyErrors(p.recovered, old.errs)
+		return old.val, true
+	}
+	// A context-incompatible entry may be replaced. Do not keep it alive through
+	// stale metadata once its memo chain no longer refers to it.
+	if old != nil {
+		delete(p.typedDocument.meta, old)
+	}
+	rec := len(p.recovered)
+	m := p.isolate(start)
+	var v any
+	var ok bool
+	var e *tmemoEntry
+	if r.leader {
+		v, ok = p.grow(r, min, env)
+		e = p.memoGet(r.id, start, min, env)
+	} else {
+		if inv != nil {
+			p.document.stats.Evaluated++
+			v, ok = inv(p)
+		} else {
+			v, ok = p.invoke(r, min)
+		}
+		if !ok {
+			p.recovered = p.recovered[:rec]
+		}
+		e = p.memoSlab.one()
+		*e = tmemoEntry{val: v, ok: ok, end: p.pos, silent: p.silent > 0, errs: p.copyErrors(nil, p.recovered[rec:])}
+		p.memoPut(r.id, start, min, env, e)
+	}
+	far, inner := p.unisolate(m)
+	e.far, e.expected = far, p.keep(inner)
+	p.documentTouch(p.pos + 1)
+	p.typedDocument.meta[e] = typedDocumentMeta{examined: p.docHigh, provisional: p.docProvisional || r.leader}
+	p.mergeExpected(far, inner)
+	if !ok {
+		p.pos = start
+	}
+	return v, ok
+}
+
 // --- Rule calls ---
 
 func (p *tparser) call(r *trule, min int) (any, bool) {
+	if p.observation != nil {
+		return p.callObserved(r, min)
+	}
+	return p.callBody(r, min)
+}
+
+// callObserved is call in an observed parse.
+func (p *tparser) callObserved(r *trule, min int) (any, bool) {
+	p.observation.enter(r.name, p.pos, min)
+	h := p.examinedBegin()
+	v, ok := p.callBody(r, min)
+	x, known := p.examinedEnd(h)
+	p.observation.exit(ok, p.pos, x, known)
+	return v, ok
+}
+
+// callBody is call without observation.
+func (p *tparser) callBody(r *trule, min int) (any, bool) {
+	if p.typedDocument != nil {
+		return p.documentCall(r, min, nil)
+	}
 	p.stepWork()
 	start := p.pos
 	if !r.memo && !r.leader || p.firstCall(r.rule) {
 		if len(r.scope) == 0 {
-			return p.invokePlain(r, min)
+			return p.invokePlainBody(r, min)
 		}
 		rec := len(p.recovered)
 		v, ok := p.invoke(r, min)
@@ -816,6 +1011,7 @@ func (p *tparser) call(r *trule, min int) (any, bool) {
 	}
 	env := p.envValues(r.vars)
 	if e := p.memoGet(r.id, start, min, env); e != nil && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
+		p.observation.memoHit()
 		if !e.growing {
 			p.mergeExpected(e.far, e.expected)
 		}
@@ -856,9 +1052,13 @@ func (p *tparser) call(r *trule, min int) (any, bool) {
 // callMemo is the memoized part of call, for the rule r invoked by inv (the generated i<id>):
 // the rule is called at the position again, or its memoization is no longer deferred.
 func (p *tparser) callMemo(r *trule, inv func(*tparser) (any, bool)) (any, bool) {
+	if p.typedDocument != nil {
+		return p.documentCall(r, 0, inv)
+	}
 	start := p.pos
 	env := p.envValues(r.vars)
 	if e := p.memoGet(r.id, start, 0, env); e != nil && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
+		p.observation.memoHit()
 		if !e.growing {
 			p.mergeExpected(e.far, e.expected)
 		}
@@ -913,6 +1113,9 @@ func (p *tparser) grow(r *trule, min int, env []any) (any, bool) {
 }
 
 func (p *tparser) invoke(r *trule, min int) (any, bool) {
+	if p.typedDocument != nil {
+		p.document.stats.Evaluated++
+	}
 	f := p.newFrame(len(r.scope))
 	prevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)
 	p.frame, p.cut = f, false
@@ -921,6 +1124,7 @@ func (p *tparser) invoke(r *trule, min int) (any, bool) {
 		p.tooDeep()
 	}
 	start := p.pos
+	p.observation.evaluated()
 	v, ok := r.body(p, min)
 	p.depth--
 	p.frame, p.cut = prevFrame, prevCut
@@ -934,6 +1138,24 @@ func (p *tparser) invoke(r *trule, min int) (any, bool) {
 }
 
 func (p *tparser) invokePlain(r *trule, min int) (any, bool) {
+	if p.observation != nil {
+		return p.invokePlainObserved(r, min)
+	}
+	return p.invokePlainBody(r, min)
+}
+
+// invokePlainObserved is invokePlain in an observed parse.
+func (p *tparser) invokePlainObserved(r *trule, min int) (any, bool) {
+	p.observation.enter(r.name, p.pos, min)
+	h := p.examinedBegin()
+	v, ok := p.invokePlainBody(r, min)
+	x, known := p.examinedEnd(h)
+	p.observation.exit(ok, p.pos, x, known)
+	return v, ok
+}
+
+// invokePlainBody is invokePlain without observation.
+func (p *tparser) invokePlainBody(r *trule, min int) (any, bool) {
 	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
@@ -941,6 +1163,7 @@ func (p *tparser) invokePlain(r *trule, min int) (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.observation.evaluated()
 	v, ok := r.body(p, min)
 	p.depth--
 	p.cut = prevCut
@@ -1063,7 +1286,7 @@ func (p *tparser) tconvertResult(r *trule, v any) any {
 func (c *tctx) convert(nt uint16, v any) any {
 	n, ok := c.p.tconvert(nt, v)
 	if !ok {
-		c.p.evalErrorf("cannot convert %s to %s", ttypeName(v), tnodeTypeNames[nt])
+		c.p.evalErrorf("cannot convert %s to %s", ttypeName(v), tnodeTypeOf(nt).name)
 	}
 	return n
 }
@@ -1203,6 +1426,28 @@ func (p *tparser) matchLiteral(rs []rune, text string, desc expID, build bool) (
 		return nil, true
 	}
 	return p.newMatch(start, p.pos, p.literalText(start, text), true), true
+}
+
+// matchLiteralOrdinary is matchLiteral in an ordinary parse (parser.expectOrdinary).
+func (p *tparser) matchLiteralOrdinary(rs []rune, text string, desc expID, build bool) (any, bool) {
+	start := p.pos
+	if _, ok := p.parser.matchLiteralOrdinary(rs, text, desc, false); !ok {
+		return nil, false
+	}
+	if !build {
+		return nil, true
+	}
+	return p.newMatchOrdinary(start, p.pos, p.literalText(start, text), true), true
+}
+
+// matchAnyOrdinary is matchAny in an ordinary parse (parser.expectOrdinary).
+func (p *tparser) matchAnyOrdinary(build bool) (any, bool) {
+	_, size, ok := p.peekOrdinary()
+	if !ok {
+		p.expectOrdinary(p.pos, idAny)
+		return nil, false
+	}
+	return p.single(size, build)
 }
 
 func (p *tparser) matchAny(build bool) (any, bool) {

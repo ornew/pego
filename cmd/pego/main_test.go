@@ -496,7 +496,11 @@ func TestGenMaxDepth(t *testing.T) {
 			}
 		}
 		got, err := runCLI(t, "", append(args, "-max-depth", "12")...)
-		if err != nil || !strings.Contains(got, "const defaultMaxDepth = 12") {
+		want := "var pegoGrammar = newGrammar(12)"
+		if lang == "ts" {
+			want = "const defaultMaxDepth = 12"
+		}
+		if err != nil || !strings.Contains(got, want) {
 			t.Fatalf("%s custom default: %v", lang, err)
 		}
 		output := filepath.Join(t.TempDir(), "parser")

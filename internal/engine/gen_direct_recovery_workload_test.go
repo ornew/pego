@@ -138,7 +138,7 @@ func TestRecoveryWorkload(t *testing.T) {
         for _, n := range []int{1,128,1} {
             for _, mode := range []string{"accepted","recovered","rejected"} {
                 input := recoveryInput(mode,n)
-                value, err := p.run(trules[0],input,parseOptions{unit: unit, maxDepth: defaultMaxDepth},&tslabs{})
+                value, err := p.run(trules[0],input,parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth},&tslabs{})
                 v := tAs[*Doc](value)
                 if !checkRecovery(v,err,mode,n) { t.Fatalf("%s/%d: %v %v",mode,n,v,err) }
                 data, _ := json.Marshal(struct { Value any; Error any }{v,err})

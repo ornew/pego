@@ -250,7 +250,7 @@ func TestGeneratedStreamMatchesEngine(t *testing.T) {
 			cases = append(cases, c)
 		}
 	}
-	for name, opts := range map[string]GenOptions{"default": {}, "reference controls": {referenceWorkControls: true},
+	for name, opts := range map[string]GenOptions{"default": {},
 		"observability": {Observability: true}, "document": {Document: true, Recognize: true}} {
 		t.Run(name, func(t *testing.T) {
 			testGeneratedStreams(t, goBin, cases, opts)
@@ -869,7 +869,7 @@ func TestGenerateStreamKeepsBatchBodies(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, opts := range []GenOptions{{}, {Observability: true}, {referenceWorkControls: true}} {
+		for _, opts := range []GenOptions{{}, {Observability: true}} {
 			opts.Package, opts.Start = "p", "main"
 			plain, err := Generate(g, opts)
 			if err != nil {
@@ -970,8 +970,8 @@ rule stmt S = n:[a-z]+ #atomic ";" => S{N: $n}`)
 	files["recovering/parser_test.go"] = generatedRecoveringStreamConsumer
 	files["typed/parser_test.go"] = generatedTypedStreamConsumer
 	files["memo/parser_test.go"] = generatedStreamMemoConsumer
-	for _, pkg := range []string{"lists", "listsref"} {
-		code, err := Generate(lists, GenOptions{Package: pkg, Start: "main", Stream: true, Observability: true, disableNodeFrameScratch: pkg == "listsref"})
+	for _, pkg := range []string{"lists"} {
+		code, err := Generate(lists, GenOptions{Package: pkg, Start: "main", Stream: true, Observability: true})
 		if err != nil {
 			t.Fatal(err)
 		}

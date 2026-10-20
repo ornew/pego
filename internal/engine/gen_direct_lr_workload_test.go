@@ -129,7 +129,7 @@ func TestLRWorkload(t *testing.T) {
 		before, _ := json.Marshal(saved)
 		p := &tparser{parser: &parser{}}
 		for _, input := range []string{lrInput(1), lrInput(128), "a,b,c,", "a,b,", "a,b,c,;", "a,b,c,d,", "a,b,c,;d,é,f,", ""} {
-			v, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{})
+			v, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
 			data, _ := json.Marshal(struct { Value any; Error string }{v, fmt.Sprint(err)})
 			pooled, pooledErr := ParseAST(input, WithUnit(unit))
 			pooledData, _ := json.Marshal(struct { Value any; Error string }{pooled, fmt.Sprint(pooledErr)})
@@ -191,7 +191,7 @@ func TestLRWorkload(t *testing.T) {
 		before, _ := json.Marshal(saved)
 		p := &tparser{parser: &parser{}}
 		for _, input := range []string{"1", "1+2*3", lrInput(32), "(1+2)*3", "2^-1", "1+", "1+2*", "(1+2", "é+1", ""} {
-			v, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{})
+			v, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
 			data, _ := json.Marshal(struct { Value any; Error string }{v, fmt.Sprint(err)})
 			fmt.Printf("OBS %v %q %s\n", unit, input, data)
 			if _, err := ParseAST(input, WithUnit(unit)); (err == nil) != (input == "1" || input == "1+2*3" || input == lrInput(32) || input == "(1+2)*3" || input == "2^-1") {

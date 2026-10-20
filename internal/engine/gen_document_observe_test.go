@@ -71,11 +71,11 @@ func TestGeneratedDocumentObservation(t *testing.T) {
 				t.Fatal(name, "nondeterministic source", err)
 			}
 			// Keep invocation teardown observable without exporting parser internals.
-			instrumented := strings.ReplaceAll(string(code), "p.observation = newDocumentObservation(o)", "p.observation = newDocumentObservation(o)\n recordDocumentProbe(p.observation)")
+			instrumented := strings.ReplaceAll(string(code), "p.observation = newObservation(&o.observe)\n\tdefer p.releaseObservation()", "p.observation = newObservation(&o.observe)\n recordDocumentProbe(p.observation)\n\tdefer p.releaseObservation()")
 			// Report the frontier each new memo entry keeps for edit reuse.
 			frontier := "\t\te.examined = p.docHigh\n"
 			typedFrontier := "\tp.typedDocument.meta[e] = typedDocumentMeta{examined: p.docHigh,"
-			if n, m := strings.Count(instrumented, frontier), strings.Count(instrumented, typedFrontier); n > 1 || m > 1 || n+m == 0 || (m == 1) != (route == "direct") {
+			if n, m := strings.Count(instrumented, frontier), strings.Count(instrumented, typedFrontier); n > 1 || m > 1 || n+m == 0 || (m == 1) != (route != "node") {
 				t.Fatal(name, "memo frontier anchors changed", n, m)
 			}
 			instrumented = strings.Replace(instrumented, frontier, frontier+"\t\trecordFrontier(r.name, start, min, p.docHigh, false)\n", 1)

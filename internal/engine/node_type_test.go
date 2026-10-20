@@ -657,8 +657,6 @@ func TestGeneratedNamedNodeTypesTypedRuntime(t *testing.T) {
 	typed := len(cases) - len(converted)
 	testGeneratedParsersCorpus(t, goBin, cases, GenOptions{})
 	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true}, typed)
-	// The output sweep marks the values of named node types.
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{enableTypedOutputSweep: true}, typed)
 }
 
 // TestGeneratedNamedNodeTypesDocument checks direct typed Documents of grammars with named node
@@ -719,7 +717,7 @@ rule a A = [a-zé] #atomic`, []string{"()abcd", "(()(()))abcd", "((é))éaéa", 
 			t.Fatalf("%s uses conversion instead of direct matching", pkg)
 		}
 		write(pkg+"/parser.go", string(code))
-		reference, err := Generate(g, GenOptions{Package: "reference", Start: "main", Types: true, Document: true, disableDirectTypedDocument: true, convertTypes: true})
+		reference, err := Generate(g, GenOptions{Package: "reference", Start: "main", Types: true, Document: true, convertTypes: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -804,5 +802,4 @@ func TestGeneratedDeclaredNodeAny(t *testing.T) {
 	}
 	testGeneratedParsersCorpus(t, goBin, cases, GenOptions{})
 	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true}, len(cases))
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{enableTypedOutputSweep: true}, len(cases))
 }

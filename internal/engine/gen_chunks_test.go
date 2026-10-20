@@ -30,7 +30,7 @@ rule token Token = t:("é") #atomic => Token{Text: text($t)}`)
 	for _, conv := range []bool{false, true} {
 		for _, variant := range typedAllocatorControls {
 			t.Run(strconv.FormatBool(conv)+"/"+variant.name, func(t *testing.T) {
-				code, err := Generate(g, GenOptions{Package: "chunks", Start: "main", Types: true, convertTypes: conv, disableTypedObjectSlabs: variant.objects, disableTypedListSlabs: variant.lists, disableTypedOutputBootstrap: variant.legacy, enableTypedOutputSweep: variant.sweep, enableBoundedTypedOutputSweep: variant.bounded})
+				code, err := Generate(g, GenOptions{Package: "chunks", Start: "main", Types: true, convertTypes: conv, disableTypedObjectSlabs: variant.objects, disableTypedListSlabs: variant.lists, disableTypedOutputBootstrap: variant.legacy})
 				if err != nil {
 					t.Fatal(err)
 				}

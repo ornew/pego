@@ -28,6 +28,79 @@ type TraceEvent struct {
 	SkipReason        string
 }
 
+// WithTrace observes actual generated calls synchronously. Callback panics
+// propagate unchanged after cleanup; an aborted parse can omit exit events.
+// Events do not expose input or parser state. ExaminedKnown is true only for
+// Document parses, where Examined is the frontier used for edit reuse.
+func WithTrace(trace func(TraceEvent)) ParseOption {
+	return func(o *parseOptions) { o.observe.trace = trace }
+}
+
+// WithProfile accumulates complete generated rule-call metrics. It is independent
+// of trace delivery filters. A Profile must not be shared by concurrent parses.
+func WithProfile(profile *Profile) ParseOption {
+	return func(o *parseOptions) { o.observe.profile = profile }
+}
+
+// WithTraceFilter selects named rules and their nested calls. Unknown names
+// match nothing. With no names, every entered rule is selected.
+func WithTraceFilter(rules ...string) ParseOption {
+	names := append([]string(nil), rules...)
+	return func(o *parseOptions) { o.observe.rules = names }
+}
+
+// WithTraceMaxDepth limits delivered events, counting the start rule as one.
+// Zero and negative values leave delivery unlimited; parsing is unaffected.
+func WithTraceMaxDepth(n int) ParseOption {
+	return func(o *parseOptions) { o.observe.maxDepth = n }
+}
+
+// observeOptions are the parse options that select an observation.
+type observeOptions struct {
+	trace    func(TraceEvent)
+	profile  *Profile
+	rules    []string
+	maxDepth int
+}
+
+// newObservation returns the observation that o selects for one parse, or nil.
+func newObservation(o *observeOptions) *observation {
+	if o.trace == nil && o.profile == nil {
+		return nil
+	}
+	out := &observation{trace: o.trace, maxDepth: o.maxDepth, profile: newProfileObservation(o.profile)}
+	if len(o.rules) != 0 {
+		out.rules = make(map[string]bool, len(o.rules))
+		for _, name := range o.rules {
+			out.rules[name] = true
+		}
+	}
+	return out
+}
+
+// release drops what the observation refers to once its parse returns.
+func (o *observation) release() {
+	if o != nil {
+		if o.profile != nil {
+			*o.profile = profileObservation{}
+		}
+		*o = observation{}
+	}
+}
+
+// dropDiscarded forgets the profile's evaluation counts before pos, which a
+// stream discarded: no rule is evaluated there again.
+func (o *observation) dropDiscarded(pos int) {
+	if o == nil || o.profile == nil {
+		return
+	}
+	for k := range o.profile.seen {
+		if k.pos < pos {
+			delete(o.profile.seen, k)
+		}
+	}
+}
+
 type observation struct {
 	trace    func(TraceEvent)
 	profile  *profileObservation
@@ -107,33 +180,4 @@ func (o *observation) skipped(rule string, pos, level int) {
 		o.profile.skipped(e)
 		o.deliver(e, o.selected(rule))
 	}
-}
-
-// examinedBegin starts measuring an observed call's examined frontier in a
-// Document parse, returning the enclosing frontier for examinedEnd. The call
-// itself, and any memo entry it reads or records, extends the frontier as in an
-// unobserved parse, so observation does not change reuse.
-func (p *parser) examinedBegin() int {
-	h := p.docHigh
-	if documentEnabled && p.document != nil {
-		p.docHigh = p.pos
-	}
-	return h
-}
-
-// examinedEnd returns the call's frontier and merges it into the enclosing one.
-// Outside a Document parse the frontier is unknown. A call that reuses a
-// growing left-recursive seed sees the frontier recorded with an earlier seed;
-// such results are provisional and never reused after an edit, so in a
-// provisional context the report is raised to the call's end without changing the frontier the Document keeps.
-func (p *parser) examinedEnd(enclosing int) (int, bool) {
-	if !documentEnabled || p.document == nil {
-		return 0, false
-	}
-	x := p.docHigh
-	p.docHigh = max(enclosing, x)
-	if p.docProvisional {
-		x = max(x, p.pos)
-	}
-	return x, true
 }

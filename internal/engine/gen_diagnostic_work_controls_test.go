@@ -28,21 +28,19 @@ rule letter Word = t:("z" / "a" / "é") #atomic => Word{Text: text($t)}`)
 		t.Fatal(err)
 	}
 	for _, convert := range []bool{false, true} {
-		for _, reference := range []bool{false, true} {
-			pkg := fmt.Sprintf("diagnostic_%v_%v", convert, reference)
-			code, err := Generate(g, GenOptions{Package: pkg, Start: "main", Types: true, convertTypes: convert, referenceWorkControls: reference})
-			if err != nil {
+		pkg := fmt.Sprintf("diagnostic_%v", convert)
+		code, err := Generate(g, GenOptions{Package: pkg, Start: "main", Types: true, convertTypes: convert})
+		if err != nil {
+			t.Fatal(err)
+		}
+		path := filepath.Join(dir, pkg)
+		if err := os.Mkdir(path, 0755); err != nil {
+			t.Fatal(err)
+		}
+		fixture := strings.NewReplacer("PACKAGE", pkg).Replace(generatedGoDiagnosticConsumer)
+		for name, data := range map[string][]byte{"parser.go": code, "diagnostic_test.go": []byte(fixture)} {
+			if err := os.WriteFile(filepath.Join(path, name), data, 0644); err != nil {
 				t.Fatal(err)
-			}
-			path := filepath.Join(dir, pkg)
-			if err := os.Mkdir(path, 0755); err != nil {
-				t.Fatal(err)
-			}
-			fixture := strings.NewReplacer("PACKAGE", pkg, "REFERENCE", fmt.Sprint(reference)).Replace(generatedGoDiagnosticConsumer)
-			for name, data := range map[string][]byte{"parser.go": code, "diagnostic_test.go": []byte(fixture)} {
-				if err := os.WriteFile(filepath.Join(path, name), data, 0644); err != nil {
-					t.Fatal(err)
-				}
 			}
 		}
 	}
@@ -55,7 +53,6 @@ rule letter Word = t:("z" / "a" / "é") #atomic => Word{Text: text($t)}`)
 
 const generatedGoDiagnosticConsumer = `package PACKAGE
 import("context";"errors";"fmt";"reflect";"slices";"sort";"strings";"testing")
-const reference = REFERENCE
 func diagnosticParser(limits WorkLimits)*parser{return &parser{control:newWorkControl(nil,limits)}}
 func catchFatal(t *testing.T,f func())(err error){t.Helper();defer func(){if v:=recover();v!=nil{fatal,ok:=v.(fatal);if !ok{panic(v)};err=fatal.err}}();f();return nil}
 type pollingContext struct{context.Context}
@@ -77,7 +74,6 @@ func TestDiagnosticTextParityAndBudget(t *testing.T){
   p:=diagnosticParser(WorkLimits{MaxSteps:steps})
   retained:=p.recoveryErrorText(e)
   if retained!=want{t.Fatal("message parity",retained,want)}
-  if reference{if p.control.stepsUsed!=0{t.Fatal("reference charged")};return}
   if p.control.stepsUsed!=steps || p.control.inputUsed!=0{t.Fatalf("text work %+v",p.control)}
   p.control=newWorkControl(nil,WorkLimits{MaxSteps:steps-1})
   if err:=catchFatal(t,func(){p.recoveryErrorText(e)});!errors.Is(err,ErrWorkLimit){t.Fatal("one-short text",err)}
@@ -85,7 +81,6 @@ func TestDiagnosticTextParityAndBudget(t *testing.T){
   p.recoveryErrorText(&SyntaxError{Line:1,Col:2,Messages:[]string{"other"}})
   if retained!=want || e.Error()!=want{t.Fatal("retained message overwritten")}
  })}
- if reference{return}
  p:=diagnosticParser(WorkLimits{MaxSteps:100000})
  p.control.ctx=&pollingContext{Context:context.Background()}
  var partial string
@@ -99,7 +94,6 @@ func TestDiagnosticSortingAndSnapshots(t *testing.T){
   p:=diagnosticParser(WorkLimits{MaxSteps:1<<50});p.sortExpected(values)
   if !slices.Equal(values,want){t.Fatalf("sort length %d changed",n)}
  }
- if reference{return}
  p:=diagnosticParser(WorkLimits{MaxSteps:128})
  if err:=catchFatal(t,func(){p.sortExpected(make([]string,320))});!errors.Is(err,ErrWorkLimit){t.Fatal("sort moves unbounded",err)}
  ids:=make([]expID,320);for i:=range ids{ids[i]=expID(i)}
@@ -124,7 +118,6 @@ func TestRecoveredPublicDiagnostics(t *testing.T){
   expected:=[]string{"\"a\"","\"z\"","\"é\""}
   if !slices.Equal(recovered[0].Expected,expected){t.Fatalf("recovery sorting changed: %v",recovered[0].Expected)}
   before:=retained.String();message:=err.Error();diagnostic:=*recovered[0]
-  if reference{continue}
   for _,ast:=range []bool{false,true}{
    call:=func(steps uint64)(any,error){o:=[]ParseOption{WithUnit(unit),WithWorkLimits(WorkLimits{MaxSteps:steps})};if ast{v,e:=ParseAST("!",o...);return v,e};v,e:=Parse("!",o...);return v,e}
    lo,hi:=uint64(1),uint64(100000)

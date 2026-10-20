@@ -83,11 +83,11 @@ rule main Text = v1:[aé😀]* #atomic => Text{S: text($v1)}`, []string{"", "aé
 			t.Fatalf("%s uses conversion instead of direct matching", pkg)
 		}
 		write(pkg+"/parser.go", string(code))
-		reference, err := Generate(g, GenOptions{Package: "reference", Start: "main", Types: true, Document: true, disableDirectTypedDocument: true})
+		reference, err := Generate(g, GenOptions{Package: "reference", Start: "main", Types: true, Document: true, convertTypes: true})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if strings.Contains(string(reference), "typedDocumentState") {
+		if strings.Contains(string(reference), "return typedDocumentParse(") {
 			t.Fatal("reference contains direct matching")
 		}
 		write(pkg+"/reference/parser.go", string(reference))

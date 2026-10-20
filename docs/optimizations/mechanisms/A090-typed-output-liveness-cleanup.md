@@ -22,10 +22,9 @@ engine/VM and TypeScript are outside the implementation.
 
 ## Reference Control
 
-Private `enableTypedOutputSweep` and `enableBoundedTypedOutputSweep` generation
-options build the two variants. Neither option is the ordinary reference. Sweep
-variants retain legacy allocation helpers, so they must not be treated as
-bootstrap-only controls.
+None. The two measured variants are reproducible only from the revisions of
+record 094; a new candidate must be selected inside the shared generated
+runtime.
 
 ## Evidence and Implementation
 
@@ -37,9 +36,7 @@ broad speed claim.
 
 Evidence records: [094](../094-generated-typed-output-liveness.md).
 
-Source owners: [`typed publication marker and sweep
-emission`](../../../internal/engine/gen_typed_sweep.go), [`sweep generation
-controls`](../../../internal/engine/gen.go), [`ownership and measurement
+Source owners: [`ownership and measurement
 design`](../../design/034-typed-output-liveness.md).
 
 The [comparison policy](../../design/024-optimization-mechanism-controls.md)

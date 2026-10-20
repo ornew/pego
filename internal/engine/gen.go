@@ -38,6 +38,12 @@ var generatedTraceSource string
 //go:embed genrt/profile.go
 var generatedProfileSource string
 
+//go:embed genrt/trace_off.go
+var generatedTraceOffSource string
+
+//go:embed genrt/typed_document.go
+var typedDocumentSource string
+
 // GenOptions configures code generation.
 type GenOptions struct {
 	// Observability emits opt-in tracing and profiling for generated Go batch
@@ -46,17 +52,10 @@ type GenOptions struct {
 	// Document includes the generated Go Document runner. With Types, eligible
 	// outputs use private typed memoization; other outputs use Node conversion.
 	Document bool
-	// disableDirectTypedDocument retains Node conversion for differential tests.
-	disableDirectTypedDocument bool
 	// Stream generates ParseStream, which reads the input from an io.Reader
 	// and passes the committed elements of the start rule's #stream
 	// repetition to a callback. The start rule must have one.
 	Stream bool
-	// referenceWorkControls emits a generation-time disabled control for tests.
-	referenceWorkControls bool
-	// referenceWorkControlLayout removes added invocation state and the new
-	// control options from a private ordinary-call cost reference.
-	referenceWorkControlLayout bool
 	// disableOrdinaryWorkSpecialization retains charged-method nil checks for
 	// same-generator tests and measurements without a new parser-time selector.
 	disableOrdinaryWorkSpecialization bool
@@ -119,9 +118,6 @@ type GenOptions struct {
 	disableLiteralTextDispatch bool
 	// boxedComparisons evaluates comparisons of fields as other binary operations, for tests.
 	boxedComparisons bool
-	// disableNodeFrameScratch retains per-parse Node capture frames for
-	// same-generator controls without a parser-time option.
-	disableNodeFrameScratch bool
 	// Independent generation-only controls for typed object and list slabs.
 	// Reference parsers allocate each object or list separately.
 	disableTypedObjectSlabs bool
@@ -129,15 +125,9 @@ type GenOptions struct {
 	// disableTypedOutputBootstrap retains the original slab first allocation
 	// for same-generator retention and throughput comparisons.
 	disableTypedOutputBootstrap bool
-	// disableSparseMemo keeps the dense first-call bitset for same-generator
-	// comparisons without a parser-time selector.
+	// disableSparseMemo keeps the dense first-call bitset in TypeScript output
+	// for same-generator comparisons without a parser-time selector.
 	disableSparseMemo bool
-	// enableTypedOutputSweep selects a generation-only liveness prototype.
-	// Default output retains the original allocation and publication paths.
-	enableTypedOutputSweep bool
-	// enableBoundedTypedOutputSweep selects a separate generation-only control.
-	// It takes precedence when both private sweep controls are selected.
-	enableBoundedTypedOutputSweep bool
 }
 
 // Generate generates the source code of a Go parser for a grammar.
@@ -184,7 +174,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
 		}
 	}
-	gen := &generator{observability: opts.Observability, disableDirectTypedDocument: opts.disableDirectTypedDocument, document: opts.Document, goWorkControls: !(opts.referenceWorkControls || opts.referenceWorkControlLayout), prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, enableTypedOutputSweep: opts.enableTypedOutputSweep, enableBoundedTypedOutputSweep: opts.enableBoundedTypedOutputSweep}
+	gen := &generator{observability: opts.Observability, document: opts.Document, goWorkControls: true, prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap}
 	if opts.Stream {
 		gen.streamStart = start
 	}
@@ -204,9 +194,12 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 		gen.rules()
 		gen.prog, gen.table = prog, "rules"
 	}
-	fmt.Fprintf(&gen.init, "\tdescs = %s\n", goStrings(gen.descs))
+	fmt.Fprintf(&gen.init, "\tpegoGrammar.descs = %s\n", goStrings(gen.descs))
 	if prog.sourceInfo {
-		gen.init.WriteString("\tsourceInfo = true\n")
+		gen.init.WriteString("\tpegoGrammar.sourceInfo = true\n")
+	}
+	if rec != nil {
+		gen.init.WriteString("\tpegoRecGrammar.share(pegoGrammar)\n")
 	}
 
 	var out strings.Builder
@@ -221,82 +214,63 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	rt = strings.Replace(rt, "func Walk(", "func WalkTree(", 1)
 	rt = strings.Replace(rt, "// Walk visits", "// WalkTree visits", 1)
 	rt = strings.Replace(rt, "return Walk(c.Root,", "return WalkTree(c.Root,", 1)
-	rt = strings.Replace(rt, "const defaultMaxDepth = 100_000", fmt.Sprintf("const defaultMaxDepth = %d", opts.generatedMaxDepth()), 1)
-	rt = strings.Replace(rt, "const documentEnabled = true", fmt.Sprintf("const documentEnabled = %t", opts.Document), 1)
-	if opts.disableNodeFrameScratch {
-		rt = strings.Replace(rt, "const nodeFrameScratch = true", "const nodeFrameScratch = false", 1)
-	}
-
-	if !opts.useSparseMemo(prog, rec) {
-		rt = strings.Replace(rt, "const sparseSeen = true", "const sparseSeen = false", 1)
-	}
 	// The standalone output merges the work helper's standard-library imports.
 	rt = strings.Replace(rt, "\"context\"", "\"context\"\n\t\"errors\"\n\t\"math\"\n\t\"slices\"", 1)
 	if opts.Stream {
 		rt = strings.Replace(rt, "\"bytes\"", "\"bufio\"\n\t\"bytes\"", 1)
 	}
 	if opts.Types {
-		// The typed runtime publishes string nodes of named node types with unsafe (tmatchAs).
-		rt = strings.Replace(rt, "\"sync\"", "\"sync\"\n\t\"unsafe\"", 1)
+		// The typed runtime publishes string nodes of named node types with unsafe (tmatchAs) and
+		// registers named node types with sync/atomic.
+		rt = strings.Replace(rt, "\"sync\"", "\"sync\"\n\t\"sync/atomic\"\n\t\"unsafe\"", 1)
 	}
 	if opts.Observability {
 		rt = strings.Replace(rt, "\"sync\"", "\"sync\"\n\t\"time\"", 1)
-		rt, err = generatedTraceRuntime(rt)
-		if err != nil {
-			return nil, err
-		}
 	}
 	out.WriteString(rt)
 	if opts.Observability {
 		out.WriteString("\n// --- Opt-in generated rule tracing ---\n")
 		out.WriteString(generatedTraceSource[strings.Index(generatedTraceSource, "package genrt")+len("package genrt"):])
 		out.WriteString(generatedProfileSource[strings.Index(generatedProfileSource, "\n)\n")+len("\n)\n"):])
-		out.WriteString(generatedTraceWrappers)
+	} else {
+		// Without observability no option observes a parse: the observation hooks do nothing.
+		out.WriteString("\n// --- Rule tracing (not generated) ---\n")
+		out.WriteString(generatedTraceOffSource[strings.Index(generatedTraceOffSource, "package genrt")+len("package genrt"):])
 	}
 	work := workSource[strings.Index(workSource, "\n)\n")+len("\n)\n"):]
-	if opts.referenceWorkControls || opts.referenceWorkControlLayout {
-		work = strings.Replace(work, "const workControlsEnabled = true", "const workControlsEnabled = false", 1)
-	}
 	out.WriteString("\n// --- Invocation work controls ---\n")
 	out.WriteString(work)
 	if opts.Document {
 		doc := documentSource[strings.Index(documentSource, "\n)\n")+len("\n)\n"):]
-		if opts.Observability {
-			doc, err = generatedDocumentTraceRuntime(doc)
-			if err != nil {
-				return nil, err
-			}
-		}
 		out.WriteString("\n// --- Incremental Node document ---\n")
 		out.WriteString(doc)
+		if opts.Observability {
+			out.WriteString(`
+// ErrDocumentBusy is returned by a Parse, ParseAST or Edit of a Document that
+// is already parsing, such as one made by a trace callback of that parse.
+// Schedule the work after the parse returns, or use another Document.
+var ErrDocumentBusy = errDocumentBusy
+`)
+		}
 	}
 	if opts.Stream {
 		stream := streamSource[strings.Index(streamSource, "\n)\n")+len("\n)\n"):]
-		if opts.Observability {
-			if stream, err = generatedStreamTraceRuntime(stream); err != nil {
-				return nil, err
-			}
-		}
 		out.WriteString("\n// --- Stream parsing ---\n")
 		out.WriteString(stream)
 	}
 	out.WriteString("\n// --- Generated code ---\n\n")
-	if gen.goWorkControls {
-		fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. Options select position units, depth, cancellation and work limits.\n", start.name)
-	} else {
-		fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. Options select position units and the rule-call limit.\n", start.name)
-	}
+	fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. Options select position units, depth, cancellation and work limits.\n", start.name)
 	out.WriteString("// If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.\n")
-	fmt.Fprintf(&out, "func Parse(input string, opts ...ParseOption) (*Node, error) { return parse(rules[%d], nseen, input, opts) }\n\n", start.id)
+	fmt.Fprintf(&out, "func Parse(input string, opts ...ParseOption) (*Node, error) { return parse(rules[%d], input, opts) }\n\n", start.id)
 	if opts.Stream {
 		fmt.Fprintf(&out, "// ParseStream parses the input read from r with the rule %s, passing each committed element of\n", start.name)
 		out.WriteString("// its #stream repetition to emit (nil if the element has no value) without retaining it. Committed\n// elements are final even if the parse fails later. A non-EOF error from r or an error returned by\n// emit ends the parse and is returned unchanged. A nil emit collects the repetition instead.\n")
-		out.WriteString("func ParseStream(r io.Reader, emit func(*Node) error, opts ...ParseOption) error {\n\treturn parseStream(streamRule, nseen, r, emit, opts)\n}\n\n")
+		out.WriteString("func ParseStream(r io.Reader, emit func(*Node) error, opts ...ParseOption) error {\n\treturn parseStream(streamRule, r, emit, opts)\n}\n\n")
 		out.WriteString(`// Iterate returns an iterator over the elements that ParseStream would pass to emit, parsing only as
 // far as each call to Next needs. Options are validated before it returns; r is first read by Next.
 // The parser's lookahead and buffering may read ahead of the returned elements.
 func Iterate(r io.Reader, opts ...ParseOption) (*StreamIterator, error) {
-	pull, err := iterateStream(opts, func(emit func(*Node) error) error { return parseStream(streamRule, nseen, r, emit, opts) })
+	pull, err := iterateStream(pegoGrammar, opts, func(emit func(*Node) error) error { return parseStream(streamRule, r, emit, opts) })
 	if err != nil {
 		return nil, err
 	}
@@ -312,20 +286,21 @@ func Iterate(r io.Reader, opts ...ParseOption) (*StreamIterator, error) {
 	if rec != nil {
 		fmt.Fprintf(&out, "// Recognize checks that the whole input matches the rule %s without building a tree, and returns the\n", start.name)
 		out.WriteString("// syntax errors Parse would return (SyntaxErrors for errors recovered with #recover). Actions needed by\n// predicates are evaluated and can report runtime errors; other actions are skipped.\n")
-		fmt.Fprintf(&out, "func Recognize(input string, opts ...ParseOption) error {\n\t_, err := parse(recRules[%d], recNseen, input, opts)\n\treturn err\n}\n\n", rec.byName[start.name].id)
-		out.WriteString("// recRules is the rule table of Recognize, and recNseen its number of rules with rule.seen set.\nvar recRules []*rule\nvar recNseen int\n\n")
+		fmt.Fprintf(&out, "func Recognize(input string, opts ...ParseOption) error {\n\t_, err := parse(recRules[%d], input, opts)\n\treturn err\n}\n\n", rec.byName[start.name].id)
+		fmt.Fprintf(&out, "// recRules is the rule table of Recognize, and pegoRecGrammar its grammar.\nvar recRules []*rule\nvar pegoRecGrammar = newGrammar(%d)\n\n", opts.generatedMaxDepth())
 	}
+	fmt.Fprintf(&out, "// rules is the rule table, and pegoGrammar its grammar.\nvar rules []*rule\nvar pegoGrammar = newGrammar(%d)\n\n", opts.generatedMaxDepth())
 	out.WriteString(`// ParseRule parses the whole input with the rule name.
 func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
-	o, err := resolveOptions(opts)
+	o, err := resolveOptions(pegoGrammar, opts)
 	if err != nil {
 		return nil, err
 	}
-	r := ruleByName(name)
+	r := pegoGrammar.ruleByName(name)
 	if r == nil {
 		return nil, fmt.Errorf("rule %s is not defined", name)
 	}
-	return parseResolved(r, nseen, input, o)
+	return parseResolved(r, input, o)
 }
 
 `)
@@ -337,22 +312,7 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		// The typed runtime's imports (fmt and sync) join those of the runtime.
 		rt := typedSource[strings.Index(typedSource, "\n)\n")+len("\n)\n"):]
 		if gen.directTypedDocument {
-			rt, err = typedDocumentRuntime(rt)
-			if err != nil {
-				return nil, err
-			}
-		}
-		if opts.enableTypedOutputSweep || opts.enableBoundedTypedOutputSweep {
-			rt, err = typedOutputSweepRuntime(rt)
-			if err != nil {
-				return nil, err
-			}
-		}
-		if opts.Observability {
-			rt, err = generatedTypedTraceRuntime(rt)
-			if err != nil {
-				return nil, err
-			}
+			rt += typedDocumentSource[strings.Index(typedDocumentSource, "import \"fmt\"\n")+len("import \"fmt\"\n"):]
 		}
 		if span != "Span" {
 			rt = regexp.MustCompile(`\bSpan\b`).ReplaceAllString(rt, span)
@@ -380,11 +340,12 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	if err != nil {
 		return []byte(out.String()), fmt.Errorf("generated code does not compile: %w", err)
 	}
-	if opts.referenceWorkControlLayout {
-		return removeGeneratedWorkState(src)
-	}
-	if gen.goWorkControls && !opts.disableOrdinaryWorkSpecialization {
-		return specializeOrdinaryMethods(src, gen.methods.String())
+	if !opts.disableOrdinaryWorkSpecialization {
+		guard := "p.control == nil"
+		if opts.Document {
+			guard += " && p.document == nil"
+		}
+		return specializeOrdinaryMethods(src, gen.methods.String(), guard)
 	}
 	return src, nil
 }
@@ -506,11 +467,12 @@ func (o GenOptions) validateMaxDepth(ts bool) error {
 }
 
 type generator struct {
-	observability                   bool
-	directTypedDocument             bool
-	disableDirectTypedDocument      bool
-	document                        bool
+	observability bool
+	// goWorkControls emits work-control charging; Go output always has it, TypeScript output has
+	// its own runtime work controls.
 	goWorkControls                  bool
+	directTypedDocument             bool
+	document                        bool
 	workClassNames                  map[string]string
 	workClassKeys                   []string
 	disableTypedCuts                bool
@@ -524,17 +486,15 @@ type generator struct {
 	disableLiteralSharing           bool
 	// Only exact emitted bodies with the same signature share a helper. Rule
 	// wrappers, memo IDs, frame layouts and expectation IDs remain in the code.
-	methodNames                   map[generatedMethod]string
-	literalNames                  map[string]string
-	methodKeys                    []generatedMethod
-	literalKeys                   []string
-	disableLiteralTextDispatch    bool
-	boxedComparisons              bool
-	disableTypedObjectSlabs       bool
-	disableTypedListSlabs         bool
-	disableTypedOutputBootstrap   bool
-	enableTypedOutputSweep        bool
-	enableBoundedTypedOutputSweep bool
+	methodNames                 map[generatedMethod]string
+	literalNames                map[string]string
+	methodKeys                  []generatedMethod
+	literalKeys                 []string
+	disableLiteralTextDispatch  bool
+	boxedComparisons            bool
+	disableTypedObjectSlabs     bool
+	disableTypedListSlabs       bool
+	disableTypedOutputBootstrap bool
 	// nodeScopes records the frame layouts shared by typed rule metadata.
 	nodeScopes map[*rule][]string
 	typedSpan  string // generated helper name, avoiding grammar type and field names
@@ -699,6 +659,7 @@ func (g *generator) rules() {
 			fmt.Fprintf(init, "\t\t{rule: rules[%d]},\n", r.id)
 		}
 		init.WriteString("\t}\n\tdefer tinit()\n")
+		g.methods.WriteString("// trules is the typed rule table.\nvar trules []*trule\n\n")
 	} else {
 		fmt.Fprintf(init, "\t%s = []*rule{\n", g.table)
 		for _, r := range all {
@@ -717,8 +678,7 @@ func (g *generator) rules() {
 				r.id, r.name, goStrings(scopes[r].names), value, r.memo && !r.transient, r.leader, extra, r.seen, r.novalue, goStrings(r.vars))
 		}
 		init.WriteString("\t}\n")
-		fmt.Fprintf(init, "\tfor _, r := range %s {\n\t\tr.kinds = newRuleKinds(r.name)\n\t\tif r.nodeType != \"\" {\n\t\t\tr.nodeKinds = newNodeTypeKinds(r.nodeType)\n\t\t}\n\t}\n", g.table)
-		fmt.Fprintf(init, "\t%s = %d\n", g.seenVar(), g.prog.nseen)
+		fmt.Fprintf(init, "\t%s.setRules(%s, %d)\n", g.grammarVar(), g.table, g.prog.nseen)
 	}
 	for _, r := range all {
 		if pr, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
@@ -786,8 +746,8 @@ func (g *generator) rules() {
 		for _, f := range defFields(g.prog.types[name].(*grammar.TypeDef)) {
 			fields = append(fields, fmt.Sprintf("%q: true", f.Name))
 		}
-		fmt.Fprintf(init, "\tstructFields[%q] = map[string]bool{%s}\n", name, strings.Join(fields, ", "))
-		fmt.Fprintf(init, "\ttypeKinds[%q] = kindOf(%q, \"\")\n", name, name)
+		fmt.Fprintf(init, "\tpegoGrammar.structFields[%q] = map[string]bool{%s}\n", name, strings.Join(fields, ", "))
+		fmt.Fprintf(init, "\tpegoGrammar.typeKinds[%q] = kindOf(%q, \"\")\n", name, name)
 	}
 	// The kinds of the named node types, under their names and those of their aliases.
 	names = names[:0]
@@ -796,12 +756,12 @@ func (g *generator) rules() {
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		fmt.Fprintf(init, "\tnodeTypes[%q] = newNodeTypeKinds(%q)\n", name, g.prog.nodeKinds[name][0].typ)
+		fmt.Fprintf(init, "\tpegoGrammar.nodeTypes[%q] = newNodeTypeKinds(%q)\n", name, g.prog.nodeKinds[name][0].typ)
 	}
 }
 
-// nodeTypeNames returns the names of the grammar's named node types, sorted: the typed runtime's
-// tnodeTypeNames after the empty name at index 0.
+// nodeTypeNames returns the names of the grammar's named node types, sorted, in the order of their
+// generated indexes from 1 (nodeTypeIndex).
 func (g *generator) nodeTypeNames() []string {
 	var names []string
 	for name, spec := range g.prog.types {
@@ -813,14 +773,19 @@ func (g *generator) nodeTypeNames() []string {
 	return names
 }
 
-// nodeTypeIndex returns the index in the typed runtime's tnodeTypeNames of the named node type
-// name (nt in tmatch and tnode).
+// nodeTypeIndex returns the generated index of the named node type name, from 1.
 func (g *generator) nodeTypeIndex(name string) int {
 	n, ok := g.prog.nodeTypeOf(name)
 	if !ok {
 		panic("internal error: " + name + " is not a named node type")
 	}
 	return sort.SearchStrings(g.nodeTypeNames(), n.name) + 1
+}
+
+// nodeTypeID returns the Go expression of the registered index of the named node type name in the
+// typed runtime (nt in tmatch and tnode).
+func (g *generator) nodeTypeID(name string) string {
+	return fmt.Sprintf("tnt[%d]", g.nodeTypeIndex(name))
 }
 
 // typedResultConversion returns the statement that converts the value v of rule r to the rule's
@@ -977,7 +942,6 @@ func (g *generator) pick(untyped, typed string) string {
 func (g *generator) recv() string    { return g.pick("parser", "tparser") }
 func (g *generator) valType() string { return g.pick("*Node", "any") }
 func (g *generator) ctxType() string { return g.pick("actx", "tctx") }
-func (g *generator) rt() string      { return g.pick("rt", "trt") }
 
 // comparison reports whether op compares two values.
 func comparison(op string) bool {
@@ -1009,12 +973,14 @@ func (g *generator) operand(t grammar.Term, s *scope, locals map[string]string) 
 	return "toperand{v: " + g.term(t, s, locals) + "}"
 }
 func (g *generator) frameVar() string { return g.pick("emptyFrame", "emptyTFrame") }
+func (g *generator) rt() string       { return g.pick("rt", "trt") }
 
-func (g *generator) seenVar() string {
+// grammarVar returns the generated grammar of the rule table being generated.
+func (g *generator) grammarVar() string {
 	if g.table == "rules" {
-		return "nseen"
+		return "pegoGrammar"
 	}
-	return "recNseen"
+	return "pegoRecGrammar"
 }
 
 // method emits a method with the given body and returns its name.
@@ -1634,8 +1600,8 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 				x = fmt.Sprintf("c.convertCheck(%s, %s, %q)", x, check, n.name)
 			}
 			if g.table == "trules" {
-				// The typed runtime names the type by its index in tnodeTypeNames.
-				return fmt.Sprintf("c.convert(%d, %s)", g.nodeTypeIndex(n.name), x)
+				// The typed runtime names the type by its registered index.
+				return fmt.Sprintf("c.convert(%s, %s)", g.nodeTypeID(n.name), x)
 			}
 			return fmt.Sprintf("c.convert(%q, %s)", n.name, x)
 		}

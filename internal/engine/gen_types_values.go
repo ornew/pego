@@ -290,7 +290,7 @@ func (t *typedGen) typedHelpers(b *strings.Builder, done *int) bool {
 				// A string node of a named node type is its own public value (tmatchAs).
 				g := t.names[x.name]
 				fmt.Fprintf(b, "\tconst _ = -(unsafe.Sizeof(%s{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)\n", g)
-				fmt.Fprintf(b, "\tx, _ := v.(*tmatch)\n\tif x == nil || x.nt != %d {\n\t\treturn nil\n\t}\n\treturn tmatchAs[%s](x)\n", t.g.nodeTypeIndex(x.name), g)
+				fmt.Fprintf(b, "\tx, _ := v.(*tmatch)\n\tif x == nil || x.nt != %s {\n\t\treturn nil\n\t}\n\treturn tmatchAs[%s](x)\n", t.g.nodeTypeID(x.name), g)
 				break
 			}
 			if x.name != "" {
@@ -378,7 +378,7 @@ func (t *typedGen) backHelpers(b *strings.Builder, done *int) bool {
 		case nodeTy:
 			b.WriteString("\tif v == nil {\n\t\treturn nil\n\t}\n")
 			if x.name != "" {
-				fmt.Fprintf(b, "\treturn tsetNodeType(%s, %d)\n}\n\n", t.back(x.underlying(), "&v.TNode"), t.g.nodeTypeIndex(x.name))
+				fmt.Fprintf(b, "\treturn tsetNodeType(%s, %s)\n}\n\n", t.back(x.underlying(), "&v.TNode"), t.g.nodeTypeID(x.name))
 				continue
 			}
 			switch value := x.value.(type) {

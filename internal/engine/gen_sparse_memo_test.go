@@ -12,15 +12,16 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-// Small tables cannot select sparse storage, so their default output must
-// match the static dense control rather than retain a matching-time branch.
+// Small tables cannot select sparse storage, so their default TypeScript
+// output must match the static dense control rather than retain a
+// matching-time branch.
 func TestGeneratedSparseMemoSmallTable(t *testing.T) {
 	g, err := syntax.Parse(`rule main = "a"*`)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, recognize := range []bool{false, true} {
-		for _, generate := range []func(*grammar.Grammar, GenOptions) ([]byte, error){Generate, GenerateTS} {
+		for _, generate := range []func(*grammar.Grammar, GenOptions) ([]byte, error){GenerateTS} {
 			opts := GenOptions{Package: "smallmemo", Start: "main", Recognize: recognize}
 			code, err := generate(g, opts)
 			if err != nil {
@@ -38,9 +39,9 @@ func TestGeneratedSparseMemoSmallTable(t *testing.T) {
 	}
 }
 
-// PEGO_SPARSE_MEMO_GENERATED_DIR preserves same-generator fixtures for
-// separately built timing and allocation controls.
-func TestGeneratedSparseMemoControls(t *testing.T) {
+// PEGO_SPARSE_MEMO_GENERATED_DIR preserves the generated fixture for
+// separately built timing and allocation measurements.
+func TestGeneratedSparseMemo(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
@@ -56,10 +57,10 @@ func TestGeneratedSparseMemoControls(t *testing.T) {
 	if dir == "" {
 		dir = t.TempDir()
 	}
-	var fingerprints [2]string
-	for i, name := range []string{"optimized", "reference"} {
+	var fingerprint string
+	for _, name := range []string{"optimized"} {
 		code, err := Generate(g, GenOptions{Package: "memofixture", Start: "main", Types: true,
-			Recognize: true, disableSparseMemo: i == 1})
+			Recognize: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -87,12 +88,12 @@ func TestGeneratedSparseMemoControls(t *testing.T) {
 		}
 		for _, line := range strings.Split(string(output), "\n") {
 			if at := strings.Index(line, "MEMO_RESULT "); at >= 0 {
-				fingerprints[i] += line[at:] + "\n"
+				fingerprint += line[at:] + "\n"
 			}
 		}
 	}
-	if fingerprints[0] == "" || fingerprints[0] != fingerprints[1] {
-		t.Fatalf("generated controls differ:\n%s\n%s", fingerprints[0], fingerprints[1])
+	if fingerprint == "" {
+		t.Fatal("generated fixture reported no results")
 	}
 }
 
@@ -240,7 +241,7 @@ import (
 )
 
 func TestSparseGeneratedResults(t *testing.T) {
-    if nseen <= 64 || recNseen <= 64 { t.Fatal("fixture no longer exercises sparse tables") }
+    if pegoGrammar.nseen <= 64 || pegoRecGrammar.nseen <= 64 { t.Fatal("fixture no longer exercises sparse tables") }
     inputs := []string{
         "const 日本語 = \"😀\"; const v = [1, 2].map(x => x + 1);",
         strings.Repeat("const 日本語 = 1 + 2;\n", 1200),
@@ -269,11 +270,11 @@ func TestSparseGeneratedInputSelection(t *testing.T) {
         "/*" + strings.Repeat("a", 1020) + "*/",
     } {
         for _, unit := range []PositionUnit{CodePoints, Bytes} {
-            _, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{})
+            _, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
             if err != nil { t.Fatal(err) }
             want := len([]rune(input)) > 1024
             if unit == Bytes { want = len(input) > 1024 }
-            if p.memo.sparse != (sparseSeen && want) { t.Fatal("typed input cutoff mismatch") }
+            if p.memo.sparse != want { t.Fatal("typed input cutoff mismatch") }
             p.recycle()
         }
     }
@@ -288,7 +289,7 @@ func TestSparseGeneratedRealCorpusReuse(t *testing.T) {
     for _, unit := range []PositionUnit{CodePoints, Bytes} {
         p := &tparser{parser: &parser{}}
         for i, input := range []string{string(data), "const x=1;", string(data)+"\nfunction (", "const x=1;", string(data)} {
-            _, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{})
+            _, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: pegoGrammar.maxDepth}, &tslabs{})
             if (err != nil) != (i == 2) { t.Fatalf("unit=%d step=%d err=%v", unit, i, err) }
             p.recycle()
             if p.memo.bitPages.n != 0 { t.Fatal("used pages survived recycle") }

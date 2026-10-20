@@ -190,8 +190,20 @@ func saturatingAdd(a, b uint64) uint64 {
 }
 
 // Work helpers keep long engine-owned scans between bounded reservations.
+//
+// inputWork has one guarded call so that it inlines into the matchers.
 func (p *parser) inputWork(n uint64) {
-	if documentEnabled && p.document != nil {
+	if p.document != nil || workControlsEnabled && p.control != nil {
+		p.inputWorkTracked(n)
+	}
+}
+
+// inputWorkOrdinary is inputWork in an ordinary parse (expectOrdinary), which tracks no input.
+func (p *parser) inputWorkOrdinary(uint64) {}
+
+// inputWorkTracked is inputWork in a Document or controlled parse.
+func (p *parser) inputWorkTracked(n uint64) {
+	if p.document != nil {
 		// Generated matchers can read directly after charging input work.
 		// Overestimating the dependency only discards a reusable memo entry.
 		if n > uint64(int(^uint(0)>>1)-p.pos) {
@@ -285,10 +297,10 @@ func (p *parser) hasLiteralPrefix(text string) bool {
 }
 
 // parseConverted shares admission and counters with a Node-to-typed converter.
-func parseConverted[T any](r *rule, seen int, input string, o parseOptions, conv func(*Node, *workControl, error) T) (res T, err error) {
+func parseConverted[T any](r *rule, input string, o parseOptions, conv func(*Node, *workControl, error) T) (res T, err error) {
 	defer recoverParse(&res, &err)
 	o = prepareOptions(o)
-	n, err := parseConversionInput(r, seen, input, o)
+	n, err := parseConversionInput(r, input, o)
 	o.control.check()
 	res = conv(n, o.control, err)
 	o.control.check()
@@ -298,7 +310,7 @@ func parseConverted[T any](r *rule, seen int, input string, o parseOptions, conv
 // Ordinary runtime/depth errors retain the configured ParseAST converter's
 // historical nil mapping. Work interruptions bypass conversion without calling
 // methods on a caller-owned error to classify it.
-func parseConversionInput(r *rule, seen int, input string, o parseOptions) (n *Node, err error) {
+func parseConversionInput(r *rule, input string, o parseOptions) (n *Node, err error) {
 	defer func() {
 		if x := recover(); x != nil {
 			if f, ok := x.(fatal); ok && (o.control == nil || !o.control.interrupted) {
@@ -308,7 +320,7 @@ func parseConversionInput(r *rule, seen int, input string, o parseOptions) (n *N
 			}
 		}
 	}()
-	return parseResolvedWork(r, seen, input, o)
+	return parseResolvedWork(r, input, o)
 }
 
 type workRange struct{ lo, hi rune }
@@ -644,9 +656,9 @@ func (p *parser) makeControlledError(pos int, expected []expID) *SyntaxError {
 	for _, x := range expected {
 		p.stepWork()
 		if x&msgBit != 0 {
-			e.Messages = append(e.Messages, descs[x & ^msgBit])
+			e.Messages = append(e.Messages, p.g.descs[x & ^msgBit])
 		} else {
-			e.Expected = append(e.Expected, descs[x])
+			e.Expected = append(e.Expected, p.g.descs[x])
 		}
 	}
 	p.sortExpected(e.Expected)
@@ -884,7 +896,7 @@ func (p *parser) controlledFirstCall(r *rule) bool {
 	if t.calls == nil {
 		t.calls = make([]seenCalls, t.stride)
 	}
-	if !t.calls[r.seen].eager && sparseSeen && t.sparse {
+	if !t.calls[r.seen].eager && t.sparse {
 		if len(t.pages) != t.stride {
 			p.stepWork()
 			t.pages = make([]seenRulePages, t.stride)
