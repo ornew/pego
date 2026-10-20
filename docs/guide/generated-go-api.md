@@ -181,7 +181,7 @@ the runtime's exports by name. A grammar type whose name is one of those gets un
 becomes `ParseOption_`, and if the grammar also has a type `ParseOption_`, that one becomes `ParseOption__`. Types are
 renamed in stable sorted order, and aliases and typed result signatures follow the new names. Which names are taken
 depends only on the generation options, not on the grammar, so a type has the same Go name in every grammar generated
-with the same options. Declarations that you add by hand to the generated package must not use these names either;
+with the same options (apart from the extra underscore of a type whose renamed name the grammar also declares). Declarations that you add by hand to the generated package must not use these names either;
 the generator cannot inspect those files. The [generated parser contract](../../spec/generated-parsers.md) lists the rule.
 
 ## Related Topics

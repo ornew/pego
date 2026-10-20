@@ -143,7 +143,7 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
 - A grammar type whose name is reserved gets a trailing underscore. The reserved
   names are fixed by the generation options alone, never by what the output of a
   particular grammar uses, so a type has the same Go name in every grammar generated
-  with the same options. They are: the names that `api.go` declares for those options
+  with the same options (apart from the extra underscore of a type whose renamed name the grammar also declares). They are: the names that `api.go` declares for those options
   (`Node`, `ParseOption`, ...; `Walk` is declared as `WalkTree`); the names that
   `parser.go` declares (`Parse`, `ParseRule`, ..., and with `-types` `ParseAST`,
   `ParseRuleAST`, `TNode`, `Error`, and `Document`, `ParseStreamAST`, ... for the

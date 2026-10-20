@@ -222,7 +222,7 @@ func TestCheckNoClash(t *testing.T) {
 
 // TestEmittedRuntimeNames checks emittedRuntimeNames against the string literals of the
 // generators: the runtime exports named in them, other than those in designedRuntimeNames and in
-// the code of api.go (gen_runtime.go), are exactly the list.
+// the code of api.go (gen_runtime.go) and the list itself, are exactly the list.
 func TestEmittedRuntimeNames(t *testing.T) {
 	info, err := loadRuntime()
 	if err != nil {
@@ -235,7 +235,7 @@ func TestEmittedRuntimeNames(t *testing.T) {
 	words := regexp.MustCompile(`[A-Za-z_][A-Za-z0-9_]*`)
 	want := map[string]bool{}
 	for _, file := range files {
-		if strings.HasSuffix(file, "_test.go") || file == "gen_runtime.go" {
+		if strings.HasSuffix(file, "_test.go") || file == "gen_runtime.go" || file == "gen_emitted_names.go" {
 			continue
 		}
 		f, err := goparser.ParseFile(token.NewFileSet(), file, nil, 0)
@@ -540,6 +540,65 @@ func TestEmbeddedModeCompilesRichGrammars(t *testing.T) {
 			if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module "+module+"\n\ngo 1.27.1\n"), 0o644); err != nil {
 				t.Fatal(err)
 			}
+			goVetAndTest(t, dir, false)
+		})
+	}
+}
+
+// TestGeneratedRichGrammarsWithTypesNamedLikeRuntimeExports builds the parsers of the large grammars
+// (struct rules, operators, lists, options, recovery) with every option and an extra type for every
+// export of the runtime. A runtime name that the generators write but emittedRuntimeNames lacks lets
+// the type capture the references, and the build fails, independently of the check of the list.
+func TestGeneratedRichGrammarsWithTypesNamedLikeRuntimeExports(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds standalone generated parsers")
+	}
+	info, err := loadRuntime()
+	if err != nil {
+		t.Fatal(err)
+	}
+	declares := regexp.MustCompile(`(?m)^\s*type\s+(\w+)`)
+	for _, name := range []string{"json", "csv", "cel", "yaml"} {
+		t.Run(name, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join("..", "..", "parsers", name, name+".pego"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			own := map[string]bool{}
+			for _, m := range declares.FindAllStringSubmatch(string(data), -1) {
+				own[m[1]] = true
+			}
+			var src strings.Builder
+			src.Write(data)
+			src.WriteString("\n")
+			var names []string
+			for n := range info.decls {
+				names = append(names, n)
+			}
+			sort.Strings(names)
+			for _, n := range names {
+				if own[n] {
+					continue
+				}
+				// The grammar language reserves some names (Error, ...).
+				if g, err := syntax.Parse("type " + n + " = { Value int }\nrule main = \"a\"\n"); err != nil {
+					continue
+				} else if _, err := Compile(g, Options{}); err != nil {
+					continue
+				}
+				fmt.Fprintf(&src, "type %s = { Value int }\n", n)
+			}
+			g, err := syntax.Parse(src.String())
+			if err != nil {
+				t.Fatal(err)
+			}
+			module := "example.com/richnames/" + name
+			files, err := Generate(g, GenOptions{Module: module, Package: name, Start: "main", Runtime: RuntimeImport, Types: true, Recognize: true, Document: true, Observability: true})
+			if err != nil {
+				t.Fatal(err)
+			}
+			dir := t.TempDir()
+			writeGenerated(t, dir, module, files)
 			goVetAndTest(t, dir, false)
 		})
 	}

@@ -9,8 +9,10 @@ import "strings"
 // the names the output of a particular grammar uses. The names the generated package declares on
 // purpose (Error, TNode, Document, ParseStats, Span) are in designedRuntimeNames instead.
 //
-// TestEmittedRuntimeNames checks the list against the string literals of the generators, and
-// generate fails if the code refers to a runtime export that the same code declares.
+// TestEmittedRuntimeNames checks the list against the string literals of the generators, and the
+// build tests generate grammars with types named like the exports. Generation itself cannot
+// catch a missing name: once a grammar type has that name, a reference to the runtime's export and
+// a reference to the type are the same identifier.
 var emittedRuntimeNames = strings.Fields(`
 	ActCtx AsTval BaseString Bytes CaptureFrame CodePoints DocumentBusy
 	DocumentParseConverted DocumentSliceKey EmptyFrame EmptyTFrame Env ExpID ExpMark

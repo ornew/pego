@@ -334,14 +334,9 @@ var tpubHooks = &pegort.TPubHooks{
 	if err != nil {
 		return nil, err
 	}
-	body, used, err := qualifyRuntime(opts.Package, opts.runtimeImport(), body, info)
+	body, _, err = qualifyRuntime(opts.Package, opts.runtimeImport(), body, info)
 	if err != nil {
 		return nil, err
-	}
-	for _, name := range declared {
-		if used[name] && !designedRuntimeNames[name] {
-			return nil, fmt.Errorf("the generated code declares %s and also refers to the runtime's %s; add the name to emittedRuntimeNames", name, name)
-		}
 	}
 	var file strings.Builder
 	file.WriteString(generatedHeader + "\n\n")
