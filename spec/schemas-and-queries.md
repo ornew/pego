@@ -48,6 +48,7 @@ A shape describes a set of values. Each kind allows only the members listed.
 | `nil` | | `nil` |
 | `any` | | Every value (the type `_`) |
 | `error` | | An error value of recovery |
+| `missing` | | A token that recovery inserted, a kind of `error` value |
 | `node` | `value`, `captures` | A node whose value has the shape `value` |
 | `tuple` | `elements` | A tuple with one element per shape, in order |
 | `list` | `element` | A list whose elements have the shape `element` |
@@ -136,8 +137,9 @@ the field, element or node value to which they apply.
   `string` does not.
 - A pattern applied to a value of unknown shape (`any` or the query root) is checked
   only against its own type's fields.
-- An error value appears only where the shape includes `error`, so a pattern of type
-  or category `error` compiles only there.
+- An error value appears only where the shape includes `error` or `missing`, so a
+  pattern of type or category `error` compiles only there. A missing token is an error
+  value: the patterns of errors, with their fields, apply to a `missing` shape.
 - For an optional scalar field such as `Value *string`, the categories `string` and
   `nil` compile and other known categories do not.
 - A pattern with a `Rule` constraint compiles only against a schema whose

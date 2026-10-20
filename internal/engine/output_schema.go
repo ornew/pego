@@ -50,7 +50,8 @@ type SchemaRule struct {
 // SchemaShape describes the values of a type. Kind selects the members:
 //
 //   - "scalar": Scalar is int, string or bool.
-//   - "nil", "any" (every value) and "error" (a value of error recovery) have no members.
+//   - "nil", "any" (every value), "error" (a value of error recovery) and "missing" (a token that
+//     recovery inserted, a kind of error) have no members.
 //   - "node": Value is the shape of the node's value, and Captures locates its captures.
 //   - "tuple": Elements are the shapes of the elements, in order; the unit tuple has none.
 //   - "list" and "optional": Element is the shape of the elements, or of the value when present.
@@ -284,6 +285,9 @@ func schemaValue(t ty) (SchemaShape, error) {
 		}
 		return SchemaShape{}, fmt.Errorf("unsupported schema type %q", t)
 	case namedTy:
+		if t == tyMissing {
+			return SchemaShape{Kind: "missing"}, nil
+		}
 		if t.kind != 's' {
 			v := fromLegacy(t)
 			if n, ok := v.(namedTy); !ok || n.kind == 's' {

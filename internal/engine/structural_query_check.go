@@ -20,6 +20,8 @@ type queryAtom struct {
 	// "struct".
 	kind   string
 	scalar string
+	// missing is set on an error atom whose values are all missing tokens.
+	missing bool
 	// name and fields describe a struct.
 	name   string
 	fields []SchemaField
@@ -48,6 +50,9 @@ func (a queryAtom) describe() string {
 	case "scalar":
 		return a.scalar
 	case "nil", "error":
+		if a.missing {
+			return "missing"
+		}
 		return a.kind
 	}
 	return "a " + a.kind
@@ -133,6 +138,9 @@ func (k *queryShapeChecker) atoms(shape *SchemaShape, out []queryAtom, active ma
 	switch shape.Kind {
 	case "nil", "error":
 		return append(out, queryAtom{kind: shape.Kind})
+	case "missing":
+		// A missing token is an error value, so the patterns of errors apply to it.
+		return append(out, queryAtom{kind: "error", missing: true})
 	case "scalar":
 		return append(out, queryAtom{kind: "scalar", scalar: shape.Scalar})
 	case "node":

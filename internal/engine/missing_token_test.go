@@ -323,7 +323,7 @@ rule main Root = x:(";" #missing) => Root{Token: $x}`
 	if err := json.Unmarshal(data, &roundtrip); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(data), `{"name":"Token","shape":{"kind":"union","alternatives":[{"kind":"error"},`) {
+	if !strings.Contains(string(data), `{"name":"Token","shape":{"kind":"union","alternatives":[{"kind":"missing"},`) {
 		t.Fatalf("schema lost Missing: %s", data)
 	}
 }
