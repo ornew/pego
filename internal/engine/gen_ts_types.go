@@ -475,7 +475,7 @@ function astKid(n: Node, i: number): Value {
 }
 
 function astResult<T>(r: ParseResult, repr: number, control: WorkControl | null = null): TypedParseResult<T> {
-  return { value: astConvert(r.node, repr, control) as T | null, error: r.error };
+  return { value: astConvert(unboxNode(r.node), repr, control) as T | null, error: r.error };
 }
 
 // Cache canonical Node/representation pairs, including null, in this call only.

@@ -52,6 +52,28 @@ rule main R = x:.* #atomic => R{Text: text($x), Token: $x}`, []string{"😀é", 
 rule main = leaf #recover(skip=.+)`, []string{"a", "!", ""}}, genCase{"inferred never recovery", `rule leaf = leaf
 rule main = leaf #recover(skip=.+)`, []string{"!", ""}})
 	cases = append(cases, genCase{"nil-valued expression recovery", `rule main = (-"a") #recover(skip=.+)`, []string{"a", "!", ""}}, genCase{"inferred never start", `rule main = main`, []string{"!", ""}})
+	cases = append(cases, genCase{"indexed values", `type R = { A int; B int; C int; D int; E int; F int }
+rule main R = x:"a"* j:"b"* => R{A: list(1, 2)[len($j)], B: (1, 2)[1], C: list(list(1, 2), list(3, 4))[1][len($j)], D: list(len($x), 5)[0], E: (list(7, 8), 9)[0][1], F: (1, (2, 3))[1][1]}`, []string{"", "b", "ab", "aabb", "bbb"}},
+		genCase{"indexed out of range", `rule main = j:"b"* => list(1, 2)[len($j)]`, []string{"", "b", "bb", "bbb"}},
+		genCase{"indexed in node fields", `type N = { V int; W string }
+rule main N = j:"b"* => N{V: list(10, 20, 30)[len($j)], W: list("p", "q")[len($j)]}`, []string{"", "b", "bb", "bbb"}})
+	cases = append(cases, genCase{"indexed root values", `rule main = j:"b"* => (1, 2)[1]`, []string{"", "b"}},
+		genCase{"indexed root string", `rule main = j:"b"* => list("p", "q")[len($j)]`, []string{"", "b", "bb"}},
+		genCase{"indexed root bool", `rule main = j:"b"* => list(true, false)[len($j)]`, []string{"", "b"}},
+		genCase{"indexed root union", `type W = { T string }
+type U ~ W | int
+rule main U = j:"b"* => list(3, 4)[len($j)]`, []string{"", "b"}},
+		genCase{"indexed root optional", `rule main *int = j:"b"* => list(3, 4)[len($j)]`, []string{"", "b", "bb"}},
+		genCase{"indexed nested lists", `rule main = j:"b"* => list(list(1, 2), list(3))[len($j)][0]`, []string{"", "b"}},
+		genCase{"indexed list result", `rule main = j:"b"* => list(list(1, 2), list(3))[len($j)]`, []string{"", "b"}},
+		genCase{"indexed tuple result", `rule main = j:"b"* => list((1, "x"), (2, "y"))[len($j)]`, []string{"", "b"}},
+		genCase{"indexed capture list", `rule main = j:"b"* k:"c"* => $j[len($k)]`, []string{"b", "bc", "bbc", "c", "bbcc"}},
+		genCase{"indexed any", `type R = { V any }
+rule main R = j:"b"* => R{V: list(1, "s", true)[len($j)]}`, []string{"", "b", "bb", "bbb"}})
+	cases = append(cases, genCase{"named node types in sequences and lists", `type Id = node[string]
+type P = { A Id; B []Id; C (Id, int) }
+rule main P = a:id b:id* => P{A: $a, B: $b.Value, C: ($a, 1)}
+rule id Id = t:([a-z]+) #atomic => Id{$t}`, []string{"a", "abc", ""}})
 	dir := t.TempDir()
 	write := func(path, text string) {
 		t.Helper()
