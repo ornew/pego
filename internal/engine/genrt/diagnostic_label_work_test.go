@@ -27,7 +27,7 @@ func TestDiagnosticRenameAccountsForLargeExpectationSets(t *testing.T) {
 	if !errors.Is(got, ErrWorkLimit) {
 		t.Fatalf("rename work limit = %v, want ErrWorkLimit", got)
 	}
-	if p.control.stepsUsed != 64 {
-		t.Fatalf("rename steps = %d, want 64", p.control.stepsUsed)
+	if p.control.stepsUsed() != 64 {
+		t.Fatalf("rename steps = %d, want 64", p.control.stepsUsed())
 	}
 }

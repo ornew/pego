@@ -141,7 +141,7 @@ func TestStringAndMalformedTextWork(t *testing.T){
   want:=rtBinary(op,text,text)
   if !reflect.DeepEqual(got,want){t.Fatalf("string %s: %v want %v",op,got,want)}
  }
- if p.control.stepsUsed==0 || p.control.inputUsed!=0{t.Fatal("string accounting mixed input and value work")}
+ if p.control.stepsUsed()==0 || p.control.inputUsed()!=0{t.Fatal("string accounting mixed input and value work")}
  for _,invoke:=range []func(*parser){
   func(p *parser){(&actx{p:p}).binary("==",text,text)},
   func(p *parser){(&actx{p:p}).binary("+",text,text)},
@@ -149,13 +149,13 @@ func TestStringAndMalformedTextWork(t *testing.T){
  }{
   p:=&parser{control:newWorkControl(context.Background(),WorkLimits{MaxSteps:127})}
   func(){defer func(){f,ok:=recover().(fatal);if !ok || !errors.Is(f.err,ErrWorkLimit){t.Fatal("string work not bounded",f)}}();invoke(p)}()
-  if p.control.inputUsed!=0{t.Fatal("action value charged input")}
+  if p.control.inputUsed()!=0{t.Fatal("action value charged input")}
  }
  // Malformed-source normalization must account for both sizing and copying.
  runes:=[]rune(strings.Repeat("�",300))
  p=&parser{in:runes,control:newWorkControl(context.Background(),WorkLimits{MaxInputWork:600,MaxSteps:600})}
  if got:=p.text(0,len(runes));got!=string(runes){t.Fatal("normalized text mismatch")}
- if p.control.inputUsed!=600 || p.control.stepsUsed!=600{t.Fatalf("normalized counters: %+v",p.control)}
+ if p.control.inputUsed()!=600 || p.control.stepsUsed()!=600{t.Fatalf("normalized counters: %+v",p.control)}
  p=&parser{in:runes,control:newWorkControl(context.Background(),WorkLimits{MaxInputWork:599})}
  func(){defer func(){f,ok:=recover().(fatal);if !ok || !errors.Is(f.err,ErrWorkLimit){t.Fatal("normalized text unbounded",f)}}();p.text(0,len(runes))}()
 }
@@ -179,7 +179,7 @@ func TestLineDiagnosticReservations(t *testing.T){
   }
   p:=makeParser(100000);e:=p.makeError(p.n-1,nil)
   if e.Line!=300 || e.Col!=map[PositionUnit]int{Bytes:3,CodePoints:2}[unit]{t.Fatal("line coordinate changed",e)}
-  if p.control.inputUsed!=uint64(p.n){t.Errorf("diagnostic input uncharged: %d for %d",p.control.inputUsed,p.n)}
+  if p.control.inputUsed()!=uint64(p.n){t.Errorf("diagnostic input uncharged: %d for %d",p.control.inputUsed(),p.n)}
   p=makeParser(uint64(p.n))
   if e:=p.makeError(p.n-1,nil);e.Line!=300{t.Fatal("exact diagnostic ceiling",e)}
   p=makeParser(uint64(p.n-1))
@@ -247,7 +247,7 @@ func TestConversionVisits(t *testing.T){
  if v==nil || len(v.Leaves)!=100{t.Fatal("conversion failed")}
  // Branch dispatch, field scan, list dispatch, each list edge, and for each leaf its dispatch
  // and the scan of its Text field.
- if c.stepsUsed!=303 || c.inputUsed!=0{t.Fatalf("conversion work: steps=%d input=%d",c.stepsUsed,c.inputUsed)}
+ if c.stepsUsed()!=303 || c.inputUsed()!=0{t.Fatalf("conversion work: steps=%d input=%d",c.stepsUsed(),c.inputUsed())}
  for _,ceiling:=range []uint64{1,2,3,4,302}{
   c:=newWorkControl(context.Background(),WorkLimits{MaxSteps:ceiling})
   func(){defer func(){f,ok:=recover().(fatal);var e *WorkLimitError;if !ok || !errors.As(f.err,&e) || e.Kind!=StepWorkLimit || e.Used!=ceiling || e.Requested!=1{t.Fatalf("conversion ceiling %d interruption: %+v",ceiling,f)}}();(&astConv{control:c}).toBranch(n)}()
@@ -256,7 +256,7 @@ func TestConversionVisits(t *testing.T){
 func TestParseConversionSharesCounter(t *testing.T){
  input:=strings.Repeat("é",100)
  beforeSteps,beforeInput:=uint64(0),uint64(0)
- conv:=func(n *Node,c *workControl,parseErr error)*Branch{beforeSteps,beforeInput=c.stepsUsed,c.inputUsed;v:=(&astConv{control:c}).toBranch(n);if c.stepsUsed!=beforeSteps+303 || c.inputUsed!=beforeInput{t.Fatal("conversion counter changed independently")};return v}
+ conv:=func(n *Node,c *workControl,parseErr error)*Branch{beforeSteps,beforeInput=c.stepsUsed(),c.inputUsed();v:=(&astConv{control:c}).toBranch(n);if c.stepsUsed()!=beforeSteps+303 || c.inputUsed()!=beforeInput{t.Fatal("conversion counter changed independently")};return v}
  o:=parseOptions{maxDepth:pegoGrammar.maxDepth,limits:WorkLimits{MaxSteps:100000}}
  retained,err:=parseConverted(rules[0],input,o,conv)
  if err!=nil || retained==nil{t.Fatal(err)}
@@ -419,7 +419,7 @@ type clonePhaseContext struct{context.Context;control *workControl;marker any;ca
 func(c *clonePhaseContext)Done()<-chan struct{}{return make(chan struct{})}
 func(c *clonePhaseContext)Err()error{
  c.calls++
- if c.control!=nil && c.control.stepsUsed>=256 {if c.marker!=nil{panic(c.marker)};return context.Canceled}
+ if c.control!=nil && c.control.stepsUsed()>=256 {if c.marker!=nil{panic(c.marker)};return context.Canceled}
  return nil
 }
 func TestRecoveredNilClonePublication(t *testing.T){

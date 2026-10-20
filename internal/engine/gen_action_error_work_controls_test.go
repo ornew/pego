@@ -85,14 +85,14 @@ func catchActionText(f func())(text string,err error){defer func(){if x:=recover
 func TestActionTextFragmentsAndFlatPrefix(t *testing.T){
  for _,parts:=range [][]string{{""},{"","",""},{"a","","λ\xff"},{strings.Repeat("n",8192)}}{
   want:=strings.Join(parts,"");steps:=uint64(len(want)+2*len(parts));p:=&parser{control:newWorkControl(nil,WorkLimits{MaxSteps:steps})}
-  retained:=p.actionErrorText(parts...);if retained!=want || p.control.stepsUsed!=steps || p.control.inputUsed!=0{t.Fatal("fragment text/counters")}
+  retained:=p.actionErrorText(parts...);if retained!=want || p.control.stepsUsed()!=steps || p.control.inputUsed()!=0{t.Fatal("fragment text/counters")}
   p.control=newWorkControl(nil,WorkLimits{MaxSteps:steps-1});var partial string
   _,e:=catchActionText(func(){partial=p.actionErrorText(parts...)});if !errors.Is(e,ErrWorkLimit) || partial!=""{t.Fatal("one-short message",e)}
   p.control=newWorkControl(nil,WorkLimits{MaxSteps:100});if p.actionErrorText("retry")!="retry" || retained!=want{t.Fatal("retained message changed")}
  }
  where:=strings.Repeat("rule",512);message:="division by zero";want:="action in "+where+": "+message
  p:=&parser{control:newWorkControl(nil,WorkLimits{MaxSteps:uint64(len(want)+8)})};e:=p.wrapEvalError(where,message)
- if e.Error()!=want || errors.Unwrap(e)!=nil || p.control.stepsUsed!=uint64(len(want)+8){t.Fatal("flat wrapper contract",e)}
+ if e.Error()!=want || errors.Unwrap(e)!=nil || p.control.stepsUsed()!=uint64(len(want)+8){t.Fatal("flat wrapper contract",e)}
  p.control=newWorkControl(nil,WorkLimits{MaxSteps:uint64(len(want)+7)});_,e=catchActionText(func(){p.wrapEvalError(where,message)});if !errors.Is(e,ErrWorkLimit){t.Fatal("one-short wrapper",e)}
 }
 func TestActionHelperErrorsAndShortCircuit(t *testing.T){
@@ -110,7 +110,7 @@ func TestActionHelperErrorsAndShortCircuit(t *testing.T){
   for _,run:=range cases{
    p.control=nil;ordinary,e:=catchActionText(run);if e!=nil || ordinary==""{t.Fatal("ordinary helper error",e)}
    p.control=newWorkControl(nil,WorkLimits{MaxSteps:1<<50});active,e:=catchActionText(run);if e!=nil || active!=ordinary{t.Fatal("active helper error changed",e)}
-   p.control=newWorkControl(nil,WorkLimits{MaxSteps:256});partial,e:=catchActionText(run);if partial!="" || !errors.Is(e,ErrWorkLimit) || p.control.inputUsed!=0{t.Fatal("helper error unbounded",e)}
+   p.control=newWorkControl(nil,WorkLimits{MaxSteps:256});partial,e:=catchActionText(run);if partial!="" || !errors.Is(e,ErrWorkLimit) || p.control.inputUsed()!=0{t.Fatal("helper error unbounded",e)}
   }
   if called!=0{t.Fatal("invalid boolean operand evaluated RHS")}
   p.control=newWorkControl(nil,WorkLimits{MaxSteps:1<<50});called=0

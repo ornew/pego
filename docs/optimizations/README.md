@@ -239,6 +239,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - [100. Relative Snapshot Position Overlays](100-relative-snapshot-position-overlays.md)
 - [101. Skip positional items for action-free rules](101-skip-positional-items-for-action-free-rules.md)
 - [102. Read text struct fields without a struct lookup](102-read-text-struct-fields-without-a-struct-lookup.md)
+- [103. Inline the common work charge](103-inline-the-common-work-charge.md)
 
 ## Experiments That Did Not Pay Off
 

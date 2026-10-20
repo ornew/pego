@@ -74,7 +74,7 @@ func TestDiagnosticTextParityAndBudget(t *testing.T){
   p:=diagnosticParser(WorkLimits{MaxSteps:steps})
   retained:=p.recoveryErrorText(e)
   if retained!=want{t.Fatal("message parity",retained,want)}
-  if p.control.stepsUsed!=steps || p.control.inputUsed!=0{t.Fatalf("text work %+v",p.control)}
+  if p.control.stepsUsed()!=steps || p.control.inputUsed()!=0{t.Fatalf("text work %+v",p.control)}
   p.control=newWorkControl(nil,WorkLimits{MaxSteps:steps-1})
   if err:=catchFatal(t,func(){p.recoveryErrorText(e)});!errors.Is(err,ErrWorkLimit){t.Fatal("one-short text",err)}
   p.control=newWorkControl(nil,WorkLimits{MaxSteps:100000})

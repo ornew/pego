@@ -77,7 +77,7 @@ func graphFatal(f func())(err error){defer func(){if x:=recover();x!=nil{v,ok:=x
 func requireGraphLimit(t *testing.T,p *parser,f func()){
  t.Helper();err:=graphFatal(f)
  if !errors.Is(err,ErrWorkLimit){t.Fatal("operation escaped work budget",err)}
- if p.control.inputUsed!=0{t.Fatal("graph work charged input")}
+ if p.control.inputUsed()!=0{t.Fatal("graph work charged input")}
 }
 func graphKids()([]*Node,[]any){
  nodes:=make([]*Node,300);values:=make([]any,300)
@@ -138,7 +138,7 @@ func TestTypedFieldMaterialization(t *testing.T){
   got:=(&tctx{p:tp}).member(bag,name).(*tnode);ordinary,_:=bag.tfield(name)
   want:=ordinary.(*tnode)
   if !reflect.DeepEqual(got,want) || got.Start!=3 || got.End!=303{t.Fatal("field materialization changed",name)}
-  wantSteps:=uint64(2*len(bag.Items));if name=="Nested"{wantSteps+=uint64(2*len(bag.Nested))};if p.control.stepsUsed!=wantSteps{t.Fatal("list field work omitted",name,p.control.stepsUsed,wantSteps)}
+  wantSteps:=uint64(2*len(bag.Items));if name=="Nested"{wantSteps+=uint64(2*len(bag.Nested))};if p.control.stepsUsed()!=wantSteps{t.Fatal("list field work omitted",name,p.control.stepsUsed(),wantSteps)}
   if name=="Items"{got.kids[0]=nil;if bag.Items[0]==nil{t.Fatal("field result aliases input")}}
  }
  p:=graphParser(32);tp:=&tparser{parser:p};empty:=&Bag{Items:[]*Leaf{},Nested:nil}
@@ -203,7 +203,7 @@ func TestGraphOperatorsRuleSnapshots(t *testing.T){
    if limit<100000{if !errors.Is(err,ErrWorkLimit) || bestNode.op!=nil || bestTyped.op!=nil{t.Fatal("partial OperatorsRule attempt",limit,err)};if typed{tp.recycle()}else{p.release()};continue}
    if err!=nil || p.pos!=0 || p.frame!=nil || tp.frame!=nil{t.Fatal("OperatorsRule selection changed state",err)}
    if typed{if bestTyped.op==nil || bestTyped.end!=1 || !reflect.DeepEqual(bestTyped.frame.vals,values){t.Fatal("typed OperatorsRule snapshot changed")}}else{if bestNode.op==nil || bestNode.end!=1 || !reflect.DeepEqual(bestNode.frame.vals,nodes){t.Fatal("Node OperatorsRule snapshot changed")}}
-   if p.control.stepsUsed!=uint64(1+2*len(names)){t.Fatal("OperatorsRule snapshot copy work omitted",p.control.stepsUsed)}
+   if p.control.stepsUsed()!=uint64(1+2*len(names)){t.Fatal("OperatorsRule snapshot copy work omitted",p.control.stepsUsed())}
   }
  }
 }

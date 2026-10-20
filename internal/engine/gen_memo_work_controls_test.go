@@ -81,7 +81,7 @@ func TestEnvironmentWalksAndAtomicBind(t *testing.T){
   if p.env!=head || head.next!=before{t.Fatal("partial environment published")}
   p.control=newWorkControl(nil,WorkLimits{MaxSteps:100000});run.f(p)
   if run.name=="bind" {if (&actx{p:p}).lookup("v0")!=777 || head.val!=299{t.Fatal("binding changed saved environment")}} else {if (&actx{p:p}).lookup("v0")!=0{t.Fatal("lookup retry")}}
-  if p.control.inputUsed!=0{t.Fatal("environment work charged input")}
+  if p.control.inputUsed()!=0{t.Fatal("environment work charged input")}
  }
 }
 func TestNodeMemoLookupWalk(t *testing.T){
@@ -127,7 +127,7 @@ func TestMemoKeysAndStorage(t *testing.T){
   long:=strings.Repeat("prefix",600);entry=put([]any{long+"x"})
   p.control=newWorkControl(nil,WorkLimits{MaxSteps:32})
   if err:=catchMemoFatal(func(){get([]any{long+"y"})});!errors.Is(err,ErrWorkLimit){t.Fatal("string key comparison unbounded",err)}
-  if p.control.inputUsed!=0{t.Fatal("memo string value charged input")}
+  if p.control.inputUsed()!=0{t.Fatal("memo string value charged input")}
  }
  for _,typed:=range []bool{false,true}{
   p:=&parser{control:newWorkControl(nil,WorkLimits{MaxSteps:129})}
