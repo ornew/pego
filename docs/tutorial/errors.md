@@ -99,7 +99,7 @@ printf 'host = "localhost"\nport == 8080\ndebug = tru\n' | pego parse -g robust.
 ```
 
 ```text
-Config{Entries: [Entry{Key: "host", Value: "\"localhost\""} Entry{Key: nil, Value: nil} Entry{Key: nil, Value: nil}]}
+Config{Entries: [Entry{Key: Key("host"), Value: String("\"localhost\"")} Entry{Key: nil, Value: nil} Entry{Key: nil, Value: nil}]}
 ```
 
 The tree contains the good entry and one placeholder per skipped entry (their fields are `nil`). The errors go to

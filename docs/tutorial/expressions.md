@@ -43,7 +43,7 @@ pego parse -g calc.pego -f sexpr -i '1+2-3'
 ```
 
 ```text
-Binary{Left: Binary{Left: "1", Op: "+", Right: "2"}, Op: "-", Right: "3"}
+Binary{Left: Binary{Left: Number("1"), Op: "+", Right: Number("2")}, Op: "-", Right: Number("3")}
 ```
 
 `1+2-3` is `(1+2)-3`, as left associativity demands. But whitespace is not handled yet:
@@ -87,18 +87,18 @@ pego parse -g calc.pego -f sexpr -i '1+2*3'
 ```
 
 ```text
-Binary{Left: "1", Op: "+", Right: Binary{Left: "2", Op: "*", Right: "3"}}
+Binary{Left: Number("1"), Op: "+", Right: Binary{Left: Number("2"), Op: "*", Right: Number("3")}}
 ```
 
 Multiplication binds tighter than addition. Some more inputs:
 
 | Input | Result |
 |:--|:--|
-| `1 - 2 - 3` | `Binary{Left: Binary{Left: "1", Op: "-", Right: "2"}, Op: "-", Right: "3"}` |
-| `2^3^2` | `Binary{Left: "2", Op: "^", Right: Binary{Left: "3", Op: "^", Right: "2"}}` |
-| `-2^2` | `Unary{Op: "-", X: Binary{Left: "2", Op: "^", Right: "2"}}` |
-| `(1+2)*3` | `Binary{Left: Binary{Left: "1", Op: "+", Right: "2"}, Op: "*", Right: "3"}` |
-| `1.5*2` | `Binary{Left: "1.5", Op: "*", Right: "2"}` |
+| `1 - 2 - 3` | `Binary{Left: Binary{Left: Number("1"), Op: "-", Right: Number("2")}, Op: "-", Right: Number("3")}` |
+| `2^3^2` | `Binary{Left: Number("2"), Op: "^", Right: Binary{Left: Number("3"), Op: "^", Right: Number("2")}}` |
+| `-2^2` | `Unary{Op: "-", X: Binary{Left: Number("2"), Op: "^", Right: Number("2")}}` |
+| `(1+2)*3` | `Binary{Left: Binary{Left: Number("1"), Op: "+", Right: Number("2")}, Op: "*", Right: Number("3")}` |
+| `1.5*2` | `Binary{Left: Number("1.5"), Op: "*", Right: Number("2")}` |
 
 `1 - 2 - 3` groups to the left, `2^3^2` is `2^(3^2)` because `^` is `infix right`, and `-2^2` is `-(2^2)` because `^`
 is declared after (so binds tighter than) the prefix `-`. A parenthesized operand returns `$e`, the inner expression,
@@ -136,7 +136,7 @@ pego parse -g calc-lr.pego -f sexpr -i '1 + 2 * 3 - 4'
 ```
 
 ```text
-Binary{Left: Binary{Left: "1", Op: "+", Right: Binary{Left: "2", Op: "*", Right: "3"}}, Op: "-", Right: "4"}
+Binary{Left: Binary{Left: Number("1"), Op: "+", Right: Binary{Left: Number("2"), Op: "*", Right: Number("3")}}, Op: "-", Right: "4"}
 ```
 
 This produces the same trees as the Operators Rule version, with one rule per level instead of one line per level. Operators Rule

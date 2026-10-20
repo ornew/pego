@@ -55,7 +55,7 @@ pego parse -g config.pego -f sexpr < example.conf
 ```
 
 ```text
-Config{Entries: [Entry{Key: "host", Value: "\"localhost\""} Entry{Key: "port", Value: "8080"} Entry{Key: "debug", Value: "true"}]}
+Config{Entries: [Entry{Key: Key("host"), Value: String("\"localhost\"")} Entry{Key: Key("port"), Value: Number("8080")} Entry{Key: Key("debug"), Value: Bool("true")}]}
 ```
 
 What is new:
@@ -65,6 +65,8 @@ What is new:
 - `type Key = node[string]` declares a **named node type** whose value is a string, for the leaves of the tree. A rule
   of that type matches the text with `(...) #atomic` and has no action: its node holds the text it matched. The text of a
   `String` includes its quotes, since it is the text the rule matched.
+  The S-expression keeps the type name in front of the text: `Key("host")`, where a plain `node[string]` prints just
+  `"host"`.
 - `type Value ~ Number | String | Bool` is an alias of a **union type**: a value of any one of the members, much like a Go
   interface. `~` declares an alias, another name for a type; `=` defines a new struct type. Because `value` is declared as `Value`, the compiler checks that each alternative is one of the members.
 - `type Entry = { ... }` defines a **struct type**; fields are separated by newlines or semicolons. Field types can be

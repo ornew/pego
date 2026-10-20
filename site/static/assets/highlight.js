@@ -58,8 +58,8 @@ const rules = {
     ["number", /-?\d[\d.eE+-]*/y],
     ["keyword", /\b(?:true|false|null)\b/y],
   ],
-  // The S-expressions of pego parse -f sexpr: tuples (...), lists [...], structs Type{...} with
-  // field labels, quoted strings, numbers, rule suffixes @rule and captures &name:.
+  // The S-expressions of pego parse -f sexpr: tuples (...), lists [...], structs Type{...} and
+  // named node types Type(...) with field labels, quoted strings, numbers, rule suffixes @rule and captures &name:.
   sexpr: [
     ["string", /"(?:[^"\\\n]|\\.)*"?/y],
     ["rule", /@[A-Za-z_][A-Za-z0-9_]*/y],
@@ -190,7 +190,7 @@ function classifyIdent(lang, word, code, end, prev) {
   }
   if (lang === "sexpr") {
     if (SEXPR_KEYWORDS.has(word)) return "keyword";
-    if (code[end] === "{") return "type"; // a struct's type name
+    if (code[end] === "{" || code[end] === "(" || code[end] === "[") return "type"; // a struct's or named node type's name
     if (code[end] === ":") return "label"; // a field or capture name
     return null;
   }

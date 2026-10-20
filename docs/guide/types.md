@@ -74,6 +74,9 @@ pego parse -g named-node.pego -s ident -f json -i 'abc'
 }
 ```
 
+`-f sexpr` prints the node with its type name before the quoted text, `Identifier("abc")`, where a plain `node[string]`
+prints just `"abc"`. A named node type over a tuple or a list is written the same way, `Name(...)` or `Name[...]`.
+
 The rule matches the text with `#atomic` and needs no action: a rule whose declared type is exactly `Identifier` converts
 its value to that named type, which keeps the range and the text. The type name is recorded on the node, so `Node.Type()`
 reports `Identifier`. PEGO builds the node directly, so it is as cheap as a plain match. Use the value in other actions

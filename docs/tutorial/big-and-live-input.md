@@ -52,8 +52,8 @@ printf 'host = "localhost"\nport = 8080\ndebug = maybe\n' | pego parse -g stream
 ```
 
 ```text
-Entry{Key: "host", Value: "\"localhost\""}
-Entry{Key: "port", Value: "8080"}
+Entry{Key: Key("host"), Value: String("\"localhost\"")}
+Entry{Key: Key("port"), Value: Number("8080")}
 pego: 3:9: syntax error: expected "#", "\"", "false", "true", [ \t\r\n], [0-9]
 ```
 

@@ -73,7 +73,9 @@ the matched text of any node, slice the input (a plain Go slice when you parse w
 
 `node.String()`, which `fmt.Println` uses, renders the value of a node as an S-expression for tests and debugging, and
 `pego parse -f sexpr` prints it. A tuple is written in parentheses, a list in square brackets, a string in quotes, an
-absent optional as `nil` and a struct as `Type{Field: value}`; positions are not written. A node also encodes with
+absent optional as `nil` and a struct as `Type{Field: value}`; positions are not written. A node of a named node type
+(`type Ident = node[string]`) keeps its type name before its brackets, as `Ident("x")`, while a plain `node[string]` is
+just `"x"`. A node also encodes with
 `encoding/json`:
 
 ```go

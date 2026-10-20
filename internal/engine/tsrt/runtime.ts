@@ -130,7 +130,8 @@ export class Node {
   /**
    * Renders the value as an S-expression of its shape, without positions, as the engine's
    * Node.String does: a string is quoted, a tuple is ( ), a list [ ], null is nil, a struct is
-   * Name{Field: value}, and an error is error("message"). With source information, a node is
+   * Name{Field: value}, and an error is error("message"). A node of a named node type N is written
+   * with N before its brackets: N("text"), N( ) and N[ ]. With source information, a node is
    * followed by @rule, a captured element is preceded by name:, and a capture whose value is not an
    * element is written after the elements as &name:value.
    */
@@ -568,8 +569,13 @@ function sexpr(v: Value): string {
           f.enter = true;
           continue;
         case shapeString:
-          b.push(quoteGo(n.text));
-          f.close = ruleSuffix(n);
+          if (n instanceof TypedNode) {
+            b.push(n.type + "(" + quoteGo(n.text));
+            f.close = ")" + ruleSuffix(n);
+          } else {
+            b.push(quoteGo(n.text));
+            f.close = ruleSuffix(n);
+          }
           f.i = -1;
           break;
         case shapeError: {
@@ -584,7 +590,7 @@ function sexpr(v: Value): string {
         }
         case shapeTuple:
         case shapeTupleValue:
-          b.push("(");
+          b.push(nodeTypePrefix(n) + "(");
           f.close = ")" + ruleSuffix(n);
           if (sh === shapeTuple && n.labeled) {
             const labels = new Map<Node, string[]>();
@@ -609,7 +615,7 @@ function sexpr(v: Value): string {
           break;
         case shapeList:
         case shapeListValue:
-          b.push("[");
+          b.push(nodeTypePrefix(n) + "[");
           f.close = "]" + ruleSuffix(n);
           break;
         default:
@@ -664,6 +670,12 @@ function sexpr(v: Value): string {
     stack.push(sexprFrame(c, c !== null && nodeShape(c) === shapeTuple && c.rule === "" ? labels : null));
   }
   return b.join("");
+}
+
+// nodeTypePrefix returns the name that a node of a named node type puts before its opening
+// bracket, or "".
+function nodeTypePrefix(n: Node): string {
+  return n instanceof TypedNode ? n.type : "";
 }
 
 function ruleSuffix(n: Node): string {

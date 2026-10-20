@@ -1,1 +1,1 @@
-Binary{Left: "a", Op: "&&", Right: Call{Args: [], Func: "c", Target: "b"}}
+Binary{Left: Ident("a"), Op: "&&", Right: Call{Args: [], Func: Ident("c"), Target: Ident("b")}}

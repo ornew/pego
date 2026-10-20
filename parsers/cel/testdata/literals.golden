@@ -1,1 +1,1 @@
-ListLit{Elems: ["1" "2u" "0x1F" "-3" "1.5e3" "\"s\\n\"" "r\"\\d+\"" "b\"\\xff\"" "\"\"\"a\nb\"\"\"" "true" "null"]}
+ListLit{Elems: [IntLit("1") UintLit("2u") IntLit("0x1F") IntLit("-3") DoubleLit("1.5e3") StringLit("\"s\\n\"") StringLit("r\"\\d+\"") BytesLit("b\"\\xff\"") StringLit("\"\"\"a\nb\"\"\"") BoolLit("true") NullLit("null")]}

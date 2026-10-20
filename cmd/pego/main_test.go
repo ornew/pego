@@ -26,6 +26,31 @@ func runCLI(t *testing.T, stdin string, args ...string) (string, error) {
 
 const kv = `rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic`
 
+// TestParseSExprNamedNodeTypes checks that -f sexpr prints the name of a named node type before its
+// brackets, for a node over a string, a tuple and a list, and prints a plain node[string] bare.
+func TestParseSExprNamedNodeTypes(t *testing.T) {
+	g := writeFile(t, "named.pego", `type Ident = node[string]
+type Pair = node[(Ident, node[string])]
+type Items = node[[]Ident]
+type Out = { Id Ident; P Pair; Is Items; Plain node[string] }
+rule main Out = id:ident "," p:pair "," is:items "," plain:digits $$ => Out{Id: $id, P: $p, Is: $is, Plain: $plain}
+rule ident Ident = [a-z]+ #atomic
+rule pair Pair = "<" t:(ident -"=" digits) ">" => Pair{$t}
+rule items Items = "[" xs:ident* "]" => Items{$xs}
+rule digits = [0-9]+ #atomic
+`)
+	out, err := runCLI(t, "", "parse", "-g", g, "-i", "ab,<c=1>,[d],7", "-f", "sexpr")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := `Out{Id: Ident("ab"), Is: Items[Ident("d")], P: Pair(Ident("c") "1"), Plain: "7"}` + "\n"; out != want {
+		t.Errorf("got %q\nwant %q", out, want)
+	}
+	if out, err = runCLI(t, "", "parse", "-g", g, "-i", "ab,<c=1>,[d],7"); err != nil || !strings.Contains(out, `"type": "Ident"`) {
+		t.Errorf("json: %q, %v", out, err)
+	}
+}
+
 func TestParse(t *testing.T) {
 	g := writeFile(t, "kv.pego", kv)
 	out, err := runCLI(t, "", "parse", "-g", g, "-i", "a=1", "-f", "sexpr")

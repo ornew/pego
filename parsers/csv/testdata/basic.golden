@@ -1,1 +1,1 @@
-File{Records: [Record{Fields: ["name" "age" "note"]} Record{Fields: ["alice" "30" "\"likes \"\"quotes\"\"\""]} Record{Fields: [""]} Record{Fields: ["bob" "" "\"multi\nline\""]} Record{Fields: ["\"\"" "x" ""]}]}
+File{Records: [Record{Fields: [Field("name") Field("age") Field("note")]} Record{Fields: [Field("alice") Field("30") Field("\"likes \"\"quotes\"\"\"")]} Record{Fields: [Field("")]} Record{Fields: [Field("bob") Field("") Field("\"multi\nline\"")]} Record{Fields: [Field("\"\"") Field("x") Field("")]}]}

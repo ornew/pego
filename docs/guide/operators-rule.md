@@ -888,7 +888,7 @@ pego parse -g examples/minilang/minilang.pego -f sexpr -i 'let z = -f(x) * 2;'
 ```
 
 ```text
-Program{Body: [Let{Name: "x", Value: Binary{Left: "a", Op: "+", Right: Binary{Left: "b", Op: "*", Right: "c"}}}]}
-Program{Body: [ExprStmt{X: Member{Name: "x", X: Index{Index: "3", X: Call{Args: ["2"], Fn: Call{Args: ["1"], Fn: "f"}}}}}]}
-Program{Body: [Let{Name: "z", Value: Binary{Left: Unary{Op: "-", X: Call{Args: ["x"], Fn: "f"}}, Op: "*", Right: "2"}}]}
+Program{Body: [Let{Name: Ident("x"), Value: Binary{Left: Ident("a"), Op: "+", Right: Binary{Left: Ident("b"), Op: "*", Right: Ident("c")}}}]}
+Program{Body: [ExprStmt{X: Member{Name: Ident("x"), X: Index{Index: Number("3"), X: Call{Args: [Number("2")], Fn: Call{Args: [Number("1")], Fn: Ident("f")}}}}}]}
+Program{Body: [Let{Name: Ident("z"), Value: Binary{Left: Unary{Op: "-", X: Call{Args: [Ident("x")], Fn: Ident("f")}}, Op: "*", Right: Number("2")}}]}
 ```

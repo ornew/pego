@@ -174,10 +174,16 @@ without positions, for tests and debugging.
 | `"a"` | A string value, quoted |
 | `("a" "b")` | A tuple; `()` is the unit |
 | `["a" "a"]` | A list |
+| `N("a")`, `N("a" "b")`, `N["a" "a"]` | A node of the named node type `N`, written like the string, tuple or list node it converts, with `N` before the opening bracket |
 | `nil` | A missing element or an optional that did not match |
 | `X{A: 1, B: "s"}` | A struct, with its fields in name order |
 | `error("msg")` | An error value with its message; an inserted token adds ` expected "text"` after the message |
 | `1`, `true` | An `int` or a `bool` |
+
+A node of a named node type, as in `type Ident = node[string]`, names its type, as the JSON encoding does. A
+string node is written `Ident("x")`, a tuple node `Pair("a" "b")` and a list node `Items["a" "b"]`; a node of the
+reserved type (`node[string]`, `node[(_, _)]`, `node[[]_]`) has no name and is written as `"x"`, `("a" "b")` and `["a" "b"]`. A named
+node type has no rule, so it carries no `@rule` suffix.
 
 With source information, a node is followed by `@rule` when it has a rule, a
 captured element is preceded by `name:` (`x:"a"`; one element can carry several

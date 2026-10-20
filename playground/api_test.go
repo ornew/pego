@@ -74,6 +74,21 @@ func TestCompileDiagnostics(t *testing.T) {
 	}
 }
 
+// TestParseNamedNodeTypes checks that the S-expression names the type of a node of a named node
+// type, as pego parse -f sexpr does, and that a plain node[string] stays bare.
+func TestParseNamedNodeTypes(t *testing.T) {
+	const named = `type Ident = node[string]
+type Out = { Id Ident; Plain node[string] }
+rule main Out = id:ident "," plain:digits $$ => Out{Id: $id, Plain: $plain}
+rule ident Ident = [a-z]+ #atomic
+rule digits = [0-9]+ #atomic
+`
+	r := call[parseResult](t, "parse", parseRequest{Grammar: named, Input: "ab,12"})
+	if want := `Out{Id: Ident("ab"), Plain: "12"}`; !r.Matched || r.SExpr != want {
+		t.Errorf("sexpr = %s, matched %t", r.SExpr, r.Matched)
+	}
+}
+
 func TestParse(t *testing.T) {
 	r := call[parseResult](t, "parse", parseRequest{Grammar: pairs, Input: "abc=12; d=3"})
 	if !r.Matched || len(r.Errors) != 0 || r.Error != "" {

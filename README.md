@@ -41,7 +41,7 @@ pego parse -g calc.pego -f sexpr -i '1 + 2 * 3 ^ 2'
 ```
 
 ```text
-Bin{Left: "1", Op: "+", Right: Bin{Left: "2", Op: "*", Right: Bin{Left: "3", Op: "^", Right: "2"}}}
+Bin{Left: Num("1"), Op: "+", Right: Bin{Left: Num("2"), Op: "*", Right: Bin{Left: Num("3"), Op: "^", Right: Num("2")}}}
 ```
 
 ```bash

@@ -803,3 +803,33 @@ func TestGeneratedDeclaredNodeAny(t *testing.T) {
 	testGeneratedParsersCorpus(t, goBin, cases, GenOptions{})
 	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true}, len(cases))
 }
+
+// TestNamedNodeTypeText checks that the S-expression of a node of a named node type names the type
+// before its brackets, whatever it converts (Ident("x"), Pair(a b), Items[a]), on every backend
+// and with source information, and that a node of a reserved type stays unnamed. The corpus
+// comparisons of generated Go and TypeScript parsers check that they print the same strings.
+func TestNamedNodeTypeText(t *testing.T) {
+	const want = `Out{Any: Any("bc"), Items: [Ident("ab") Num("12")], Len: 4, Nums: Nums[Num("3")], Pair: Pair(Num("1") Ident("x")), Start: 3, Text: "ab12"}`
+	for _, sourceInfo := range []bool{false, true} {
+		prog := compileBare(t, nodeTypeGrammar, Options{SourceInfo: sourceInfo})
+		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+			n, err := prog.ParseWith("main", "ab 12<1,x>[3]!bc", ParseOptions{Backend: backend})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := n.String(); got != want {
+				t.Errorf("sourceInfo=%t %s:\n got %s\nwant %s", sourceInfo, backend, got, want)
+			}
+		}
+	}
+	// The plain node types of the same shapes stay unnamed.
+	prog := compileBare(t, `type Out = { S node[string]; T node[(node[string], node[string])]; L node[[]node[string]] }
+rule main Out = s:"a" #atomic t:("b" "c") l:("d"*) $$ => Out{S: $s, T: $t, L: $l}`)
+	n, err := prog.Parse("main", "abcdd")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := n.String(), `Out{L: ["d" "d"], S: "a", T: ("b" "c")}`; got != want {
+		t.Errorf("got %s\nwant %s", got, want)
+	}
+}

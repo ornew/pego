@@ -71,7 +71,7 @@ pego parse -g tags.pego -f sexpr -i '<a><a>x</a>'
 ```
 
 ```text
-Element{Children: [Element{Children: ["x"], Name: "b"} Element{Children: ["y"], Name: "c"}], Name: "a"}
+Element{Children: [Element{Children: [Chars("x")], Name: Name("b")} Element{Children: [Chars("y")], Name: Name("c")}], Name: Name("a")}
 pego: 1:11: mismatched end tag
 pego: 1:12: syntax error: expected "<", "</", [^<]
 ```

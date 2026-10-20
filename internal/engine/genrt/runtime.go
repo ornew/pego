@@ -649,7 +649,8 @@ func findElement(n, x *Node) ([]int, bool) {
 
 // String renders the value as an S-expression of its shape, without positions: a string is
 // quoted, a tuple is ( ), a list [ ], nil is nil, a struct is Name{Field: value}, and an error is
-// error("message"). With source information, a node is followed by @rule, a captured element is
+// error("message"). A node of a named node type N is written with N before its brackets:
+// N("text"), N( ) and N[ ]. With source information, a node is followed by @rule, a captured element is
 // preceded by name:, and a capture whose value is not an element is written after the elements
 // as &name:value.
 func (n *Node) String() string {
@@ -686,8 +687,13 @@ func writeValue(b *strings.Builder, v any) {
 				f.v, f.enter = n.box, true
 				continue
 			case shapeString:
-				b.WriteString(strconv.Quote(n.RawText))
-				f.close = ruleSuffix(n)
+				if n.RawKind.NodeType() {
+					b.WriteString(n.Type() + "(" + strconv.Quote(n.RawText))
+					f.close = ")" + ruleSuffix(n)
+				} else {
+					b.WriteString(strconv.Quote(n.RawText))
+					f.close = ruleSuffix(n)
+				}
 				f.i = -1
 			case shapeError:
 				msg, _ := n.RawFields.Get("message")
@@ -698,7 +704,7 @@ func writeValue(b *strings.Builder, v any) {
 				b.WriteString(")")
 				f.i = -1
 			case shapeTuple, shapeTupleValue:
-				b.WriteString("(")
+				b.WriteString(nodeTypePrefix(n) + "(")
 				f.close = ")" + ruleSuffix(n)
 				if sh == shapeTuple && n.labeled {
 					f.labels = map[*Node][]string{}
@@ -715,7 +721,7 @@ func writeValue(b *strings.Builder, v any) {
 					}
 				}
 			case shapeList, shapeListValue:
-				b.WriteString("[")
+				b.WriteString(nodeTypePrefix(n) + "[")
 				f.close = "]" + ruleSuffix(n)
 			case shapeStruct:
 				b.WriteString(n.Type() + "{")
@@ -772,6 +778,15 @@ func writeValue(b *strings.Builder, v any) {
 		}
 		stack = append(stack, next)
 	}
+}
+
+// nodeTypePrefix returns the name that a node of a named node type puts before its opening
+// bracket, or "".
+func nodeTypePrefix(n *Node) string {
+	if n.RawKind.NodeType() {
+		return n.Type()
+	}
+	return ""
 }
 
 func ruleSuffix(n *Node) string {

@@ -121,9 +121,9 @@ func main() {
 The results are printed in the order of the jobs, whatever order the goroutines finish in. Run `go run .` and `go test -race`:
 
 ```text
-duration "1h30m"  [Quantity{Unit: "h", Value: "1"} Quantity{Unit: "m", Value: "30"}]
-size     "10MiB"  Quantity{Unit: "MiB", Value: "10"}
-duration "250ms"  [Quantity{Unit: "ms", Value: "250"}]
+duration "1h30m"  [Quantity{Unit: Unit("h"), Value: Number("1")} Quantity{Unit: Unit("m"), Value: Number("30")}]
+size     "10MiB"  Quantity{Unit: Unit("MiB"), Value: Number("10")}
+duration "250ms"  [Quantity{Unit: Unit("ms"), Value: Number("250")}]
 size     "10 MiB" error: 1:3: syntax error: expected "GiB", "KiB", "MiB", "h", "m", "ms", "s", [0-9]
 duration "90"     error: 1:3: syntax error: expected "GiB", "KiB", "MiB", "h", "m", "ms", "s", [0-9]
 ```

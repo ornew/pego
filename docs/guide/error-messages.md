@@ -230,7 +230,7 @@ pego parse -g toy.pego -f sexpr -i 'let x = 1 + 2;'
 ```
 
 ```text
-Program{Body: [Let{Name: "x", Value: Sum{Left: "1", Right: "2"}}]}
+Program{Body: [Let{Name: Name("x"), Value: Sum{Left: Num("1"), Right: Num("2")}}]}
 ```
 
 ```bash
