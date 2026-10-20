@@ -582,8 +582,8 @@ func ungroupTerm(t grammar.Term) grammar.Term {
 	}
 }
 
-// member returns the type of x.Name. A member that only some arguments of a union have is nil for
-// the others; .$y needs every argument to capture y.
+// member returns the type of x.Name. On a union every argument must have the member, and the
+// result is the join of their types (optional if a recovered value may be read); .$y needs every argument to capture y.
 func (v *valueInference) member(x ty, m *grammar.Member) ty {
 	x = v.expand(x)
 	if x == tyAny || x == tyBottom {
@@ -613,8 +613,10 @@ func (v *valueInference) member(x ty, m *grammar.Member) ty {
 		_, node := a.(nodeTy)
 		return !node && a != tyErr && a != tyMissing && a != tyBottom
 	}))
-	var found []ty
+	var found, missing []ty
+	recovered := false
 	for _, a := range alts {
+		n := len(found)
 		switch a := a.(type) {
 		case nodeTy:
 			switch m.Name {
@@ -640,6 +642,13 @@ func (v *valueInference) member(x ty, m *grammar.Member) ty {
 				}
 			}
 		}
+		if len(found) == n && a != tyBottom {
+			if a == tyErr || a == tyMissing {
+				recovered = true // a recovered value reads as nil: the result is optional
+			} else {
+				missing = append(missing, a)
+			}
+		}
 	}
 	if len(found) == 0 {
 		if n, ok := x.(nodeTy); ok && slices.ContainsFunc(n.caps, func(c capIndex) bool { return c.name == m.Name }) {
@@ -649,7 +658,16 @@ func (v *valueInference) member(x ty, m *grammar.Member) ty {
 		}
 		return tyAny
 	}
-	if len(found) < len(alts) {
+	if len(missing) > 0 {
+		names := make([]string, len(missing))
+		for i, a := range missing {
+			names[i] = a.String()
+		}
+		v.errorf(m.Diagnostic(), "%s has no field %s in every member: %s lacks it; cast the value to a member that has it, as in x.(T).%s",
+			x, m.Name, strings.Join(names, ", "), m.Name)
+		return tyAny
+	}
+	if recovered {
 		return vopt(vunion(found...))
 	}
 	return vunion(found...)

@@ -36,7 +36,7 @@ func unionMemberCases() []genCase {
 		{"inline choice", unionMemberRules + "rule main = x:(a / b / c) $$ => $x.F\n", []string{"a", "b", "c"}},
 		{"nested", unionMemberRules + "rule main = x:v $$ => $x.In.F\n", []string{"c", "d", "x"}},
 		{"node members", unionMemberRules + "rule main = x:(n / w) $$ => $x.Start + $x.End\n", []string{"12", "ab", ""}},
-		{"node and struct", unionMemberRules + "rule main = x:(n / a) $$ => $x.Start\n", []string{"12", "a"}},
+		{"node and struct", unionMemberRules + "rule main = x:(n / a) $$ => $x.(N).Start\n", []string{"12", "a"}},
 		{"predicate", unionMemberRules + "rule main = x:u ({$x.F == $x.F} \"!\" / \"?\") $$\n", []string{"a!", "b?", "a?"}},
 		{"constructor", unionMemberRules + "type R = { V string | int }\nrule main = x:u $$ => R{V: $x.F}\n", []string{"a", "b"}},
 		{"lambda", unionMemberRules + "rule main = xs:u+ $$ => map($xs.Value, (i) => i.F)\n", []string{"ab", "ba", "a"}},
@@ -51,11 +51,8 @@ func TestMemberAccessOnUnionTypes(t *testing.T) {
 		{unionMemberRules + "rule main = x:v => $x.In.F", "main", `string | int`},
 		{unionMemberRules + "rule main = x:(n / w) => $x.Start", "main", `int`},
 		{unionMemberRules + "rule main = x:(n / w) => $x.Value", "main", `string`},
-		// A field that only some members declare is optional, node members included.
-		{unionMemberRules + "rule main = x:(n / a) => $x.Start", "main", `*int`},
-		{unionMemberRules + "rule main = x:(n / a) => $x.Value", "main", `*string`},
-		{unionMemberRules + "rule main = x:u => $x.X", "main", `*int`},
-		{unionMemberRules + "rule main = x:(a / n) => $x.F", "main", `*string`},
+		// A cast to a member that has the field is accepted.
+		{unionMemberRules + "rule main = x:u => $x.(A).X", "main", `int`},
 	} {
 		types, errs := valueTypesOf(t, tc.src)
 		if len(errs) > 0 {
@@ -75,6 +72,13 @@ func TestMemberAccessOnUnionTypeErrors(t *testing.T) {
 		{unionMemberRules + "rule main = x:(n / w) => $x.F", "has no field F"},
 		// Nested: no member of the union of the first access declares the field.
 		{unionMemberRules + "rule main = x:v => $x.In.Nope", "has no field Nope"},
+		// A field that only some members declare is rejected, node members included.
+		{unionMemberRules + "rule main = x:(n / a) => $x.Start", "A lacks it"},
+		{unionMemberRules + "rule main = x:(n / a) => $x.Value", "A lacks it"},
+		{unionMemberRules + "rule main = x:u => $x.X", "B lacks it"},
+		{unionMemberRules + "rule main = x:(a / n) => $x.F", "N lacks it"},
+		{unionMemberRules + "rule main = x:u => $x.X", "A | B has no field X in every member"},
+		{unionMemberRules + "rule main = x:u => $x.X", "x.(T).X"},
 		// A member that may be nil is rejected.
 		{unionMemberRules + "rule main = x:u? => $x.F", "may be nil"},
 	} {
@@ -111,10 +115,9 @@ func TestMemberAccessOnUnionValues(t *testing.T) {
 		{unionMemberRules + "rule main = x:u $$ => $x.F\n", "a", `"a"`},
 		{unionMemberRules + "rule main = x:v $$ => $x.In.F\n", "d", `4`},
 		{unionMemberRules + "rule main = x:v $$ => $x.In.F\n", "c", `"ca"`},
-		{unionMemberRules + "rule main = x:u $$ => $x.X\n", "a", `1`},
-		{unionMemberRules + "rule main = x:u $$ => $x.X\n", "b", `no field X`},
-		{unionMemberRules + "rule main = x:(n / a) $$ => $x.Start\n", "12", `"node":0`},
-		{unionMemberRules + "rule main = x:(n / a) $$ => $x.Start\n", "a", `no field Start`},
+		{unionMemberRules + "rule main = x:u $$ => $x.(A).X\n", "a", `1`},
+		{unionMemberRules + "rule main = x:u $$ => $x.(A).X\n", "a", `1`},
+		{unionMemberRules + "rule main = x:u $$ => $x.(A).X\n", "b", `cannot cast`},
 	} {
 		program := compile(t, tc.src)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
