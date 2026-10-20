@@ -169,6 +169,9 @@ func validate(g *Grammar, control *validationControl) error {
 			}
 			return fail(field, fmt.Sprintf("invalid identifier %q: use ASCII letters, digits and underscores", name))
 		}
+		if field, kind, name := literalName(f.node); field != "" {
+			return fail(field, kind+" name "+name+" is reserved; it is a literal")
+		}
 		// Leaf nodes need no cycle tracking. Non-leaf nodes stay active until
 		// their exit frame, distinguishing a pointer cycle from a shared child.
 		switch n := f.node.(type) {
@@ -543,4 +546,40 @@ func invalidIdentifier(node any, control *validationControl) (field, name string
 		return field, name
 	}
 	return "", ""
+}
+
+// literalName reports a declaration whose name is one of the literals true, false and nil. An
+// action could not read such a name, because the literal wins, so the declaration is rejected.
+// It returns the field holding the name and the kind of the declaration.
+func literalName(node any) (field, kind, name string) {
+	isLiteral := func(s string) bool { return s == "true" || s == "false" || s == "nil" }
+	switch n := node.(type) {
+	case *RuleDef:
+		if isLiteral(n.Name) {
+			return "name", "rule", n.Name
+		}
+	case *VarDef:
+		if isLiteral(n.Name) {
+			return "name", "variable", n.Name
+		}
+	case *TypeDef:
+		if isLiteral(n.Name) {
+			return "name", "type", n.Name
+		}
+	case *TypeAlias:
+		if isLiteral(n.Name) {
+			return "name", "type", n.Name
+		}
+	case *Capture:
+		if isLiteral(n.Name) {
+			return "name", "capture", n.Name
+		}
+	case *Lambda:
+		for i, param := range n.Params {
+			if isLiteral(param) {
+				return "params[" + strconv.Itoa(i) + "]", "parameter", param
+			}
+		}
+	}
+	return "", "", ""
 }

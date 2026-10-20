@@ -155,6 +155,8 @@ type rule struct {
 	// vars are the variables that the rule or the rules it calls read, sorted. The rule's result is
 	// memoized per combination of their values at the call (memoKey.env).
 	vars []string
+	// initVals are the initial values of vars, in the same order (nil when vars is empty).
+	initVals []any
 	// transient reports that the rule is not memoized in ordinary parses (it is memoized only by
 	// the incremental Document) (transientRules).
 	transient bool
@@ -453,6 +455,7 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 		}
 		r.transient = transient[r.name]
 		r.vars = vars[r.name]
+		r.initVals = c.prog.vars.valuesOf(r.vars)
 		if flags == nil {
 			_, isOperatorsRule := r.def.Expr.(*grammar.OperatorsRule)
 			twin = r.action == nil && !isOperatorsRule && !c.an.cyclic[r.name] && !hasStreamControlled(r.def.Expr, control)
@@ -599,7 +602,7 @@ func (c *compiler) twinOf(r *rule) *rule {
 	if r.twin == nil {
 		prog := c.prog
 		r.twin = &rule{id: len(prog.rules) + len(prog.twins), name: r.name, def: r.def, scope: newScope(),
-			memo: r.memo, missing: r.missing, transient: r.transient, vars: r.vars, positional: r.positional, novalue: true}
+			memo: r.memo, missing: r.missing, transient: r.transient, vars: r.vars, initVals: r.initVals, positional: r.positional, novalue: true}
 		prog.twins = append(prog.twins, r.twin)
 	}
 	return r.twin

@@ -2533,13 +2533,18 @@ class Parser {
     }
   }
 
-  assign(name: string, t: Action): boolean {
+  // assign binds the value of t to the variable name. A non-empty typ is the declared type of the
+  // variable, which the value is checked against.
+  assign(name: string, typ: string, t: Action): boolean {
     const base = this.created.length;
     const kids = this.kidStack.length;
     try {
       const v = t(this.useCtx(this.frame, this.pos, this.pos, null, null, null));
       if (typeof v === "function") {
         return false;
+      }
+      if (typ !== "" && typeName(v) !== typ) {
+        return false; // cannot use <value type> as <typ> in the binding of variable <name>
       }
       this.bind(name, v);
       return true;

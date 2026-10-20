@@ -888,7 +888,9 @@ type Rule struct {
 	// Vars are the variables the rule or its callees read, sorted. Memo entries are keyed by their
 	// values at the call, since definitions inside the rule are undone when it returns.
 	Vars []string
-	g    *grammar // the grammar whose rule table holds the rule (grammar.SetRules)
+	// initVals are the initial values of Vars (grammar.SetVars), or nil when Vars is empty.
+	initVals []any
+	g        *grammar // the grammar whose rule table holds the rule (grammar.SetRules)
 }
 
 // grammar holds the tables of one generated grammar. The generated code builds
@@ -931,6 +933,27 @@ func (g *grammar) SetVars(names []string, vals []any) {
 		g.initEnv = &Env{name: name, val: vals[i], next: g.initEnv}
 		g.initBound[name] = true
 	}
+	g.indexInitVals()
+}
+
+// indexInitVals computes the initial values of the variables each rule reads, so that the memo
+// key of a call made before any binding shares them instead of allocating.
+func (g *grammar) indexInitVals() {
+	for _, r := range g.rules {
+		r.initVals = nil
+		if len(r.Vars) == 0 {
+			continue
+		}
+		r.initVals = make([]any, len(r.Vars))
+		for i, name := range r.Vars {
+			for e := g.initEnv; e != nil; e = e.next {
+				if e.name == name {
+					r.initVals[i] = e.val
+					break
+				}
+			}
+		}
+	}
 }
 
 // NewGrammar returns an empty grammar with the default rule-call limit MaxDepth.
@@ -944,6 +967,7 @@ func NewGrammar(maxDepth int) *grammar {
 // SetRules makes rules, of which nseen have rule.Seen set, the rule table of g.
 func (g *grammar) SetRules(rules []*Rule, nseen int) {
 	g.rules, g.nseen = rules, nseen
+	defer g.indexInitVals()
 	for _, r := range rules {
 		r.g = g
 		r.kinds = newRuleKinds(r.Name)
@@ -1588,6 +1612,16 @@ func (p *Parser) envValues(names []string) []any {
 	return vals
 }
 
+// memoEnv returns the values of the variables the memoized rule r reads, for its memo key. While
+// nothing has been bound since the parse began they are the initial values, computed once: the
+// key only compares them, so the slice is shared instead of allocated for each call.
+func (p *Parser) memoEnv(r *Rule) []any {
+	if p.Env != nil && p.Env == p.g.initEnv && r.initVals != nil && !(WorkControlsEnabled && p.Control != nil) {
+		return r.initVals
+	}
+	return p.envValues(r.Vars)
+}
+
 func (t *memoTable) alloc() *memoEntry {
 	if len(t.slab) == 0 {
 		if t.used < len(t.chunks) {
@@ -2134,7 +2168,7 @@ func (p *Parser) Call(r *Rule, min int) (*Node, bool) {
 		}
 		return v, ok
 	}
-	env := p.envValues(r.Vars)
+	env := p.memoEnv(r)
 	// See the engine's callBegin: entries with recovered errors are reused only in the same kind of
 	// context (inside or outside a lookahead) they were computed in.
 	if e := p.memoGet(r.Id, start, min, env); e != nil && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
@@ -2275,7 +2309,7 @@ func (p *Parser) callUnmemoized(r *Rule, min int) (*Node, bool) {
 // it. Its logic is that of the memoized path of call.
 func (p *Parser) callMemo(r *Rule, min int) (*Node, bool) {
 	start := p.Pos
-	env := p.envValues(r.Vars)
+	env := p.memoEnv(r)
 	// See the engine's callBegin: entries with recovered errors are reused only in the same kind of
 	// context (inside or outside a lookahead) they were computed in.
 	if e := p.memoGet(r.Id, start, min, env); e != nil && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
@@ -2940,7 +2974,9 @@ func (p *Parser) Predicate(t func(*ActCtx) any) (ok bool) {
 	return true
 }
 
-func (p *Parser) Assign(name string, t func(*ActCtx) any) (ok bool) {
+// Assign evaluates the value of a binding and binds it to the variable name. A non-empty typ is the
+// declared type of the variable, which the value is checked against.
+func (p *Parser) Assign(name, typ string, t func(*ActCtx) any) (ok bool) {
 	base, kids := len(p.created), len(p.KidStack)
 	defer func() {
 		p.dropCreated(base)
@@ -2956,6 +2992,9 @@ func (p *Parser) Assign(name string, t func(*ActCtx) any) (ok bool) {
 	v := t(c)
 	if _, isFn := v.(func(...any) any); isFn {
 		return false
+	}
+	if typ != "" && typeName(v) != typ {
+		return false // cannot use <value type> as <typ> in the binding of variable <name>
 	}
 	p.bind(name, v)
 	return true
@@ -6537,7 +6576,7 @@ func (p *TParser) DocumentCall(r *TRule, min int, inv func(*TParser) (any, bool)
 		}
 		return v, ok
 	}
-	env := p.envValues(r.Vars)
+	env := p.memoEnv(r.Rule)
 	old := p.memoGet(r.Id, start, min, env)
 	if old != nil && (old.growing || (!old.silent || p.Silent > 0) && (len(old.errs) == 0 || old.silent == (p.Silent > 0))) {
 		m := p.TypedDocument.meta[old]
@@ -6631,7 +6670,7 @@ func (p *TParser) callBody(r *TRule, min int) (any, bool) {
 		}
 		return v, ok
 	}
-	env := p.envValues(r.Vars)
+	env := p.memoEnv(r.Rule)
 	if e := p.memoGet(r.Id, start, min, env); e != nil && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
 		p.Observation.memoHit()
 		if !e.growing {
@@ -6678,7 +6717,7 @@ func (p *TParser) CallMemo(r *TRule, inv func(*TParser) (any, bool)) (any, bool)
 		return p.DocumentCall(r, 0, inv)
 	}
 	start := p.Pos
-	env := p.envValues(r.Vars)
+	env := p.memoEnv(r.Rule)
 	if e := p.memoGet(r.Id, start, 0, env); e != nil && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
 		p.Observation.memoHit()
 		if !e.growing {
@@ -7236,7 +7275,8 @@ func (p *TParser) Predicate(t func(*TActCtx) any) (ok bool) {
 	return true
 }
 
-func (p *TParser) Assign(name string, t func(*TActCtx) any) (ok bool) {
+// Assign is Parser.Assign for the typed runtime.
+func (p *TParser) Assign(name, typ string, t func(*TActCtx) any) (ok bool) {
 	base, kids := len(p.Created), len(p.KidStack)
 	defer func() {
 		p.DropCreated(base)
@@ -7252,6 +7292,9 @@ func (p *TParser) Assign(name string, t func(*TActCtx) any) (ok bool) {
 	v := t(c)
 	if _, isFn := v.(func(...any) any); isFn {
 		return false
+	}
+	if typ != "" && ttypeName(v) != typ {
+		return false // cannot use <value type> as <typ> in the binding of variable <name>
 	}
 	p.bind(name, v)
 	return true
@@ -26149,11 +26192,11 @@ func e1(p *Parser) (*Node, bool) {
 		)
 		_, _ = x1, x4
 
-		if !p.Assign("ind", func(c *ActCtx) any { return func() any { return any(0) }() }) {
+		if !p.Assign("ind", "", func(c *ActCtx) any { return func() any { return any(0) }() }) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any { return func() any { return any(0) }() }) {
+		if !p.Assign("lv", "", func(c *ActCtx) any { return func() any { return any(0) }() }) {
 			goto fail_ordinary
 		}
 
@@ -26228,11 +26271,11 @@ func e1(p *Parser) (*Node, bool) {
 	_, _ = x1, x4
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("ind", func(c *ActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
+	if !p.Assign("ind", "", func(c *ActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
+	if !p.Assign("lv", "", func(c *ActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -27875,7 +27918,7 @@ func e26(p *Parser) (*Node, bool) {
 		goto fail_ordinary
 	L15_ordinary:
 		p.StepWork()
-		if !p.Assign("ind", func(c *ActCtx) any {
+		if !p.Assign("ind", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -28130,7 +28173,7 @@ L14:
 	goto fail
 L15:
 	p.StepWork()
-	if !p.Assign("ind", func(c *ActCtx) any {
+	if !p.Assign("ind", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -35846,7 +35889,7 @@ func e103(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -35984,7 +36027,7 @@ func e103(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -38128,7 +38171,7 @@ func e122(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -38288,7 +38331,7 @@ func e122(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -41216,7 +41259,7 @@ func e150(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -41283,7 +41326,7 @@ func e150(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -42398,7 +42441,7 @@ func e168(p *Parser) (*Node, bool) {
 		goto fail_ordinary
 	L15_ordinary:
 		p.StepWork()
-		if !p.Assign("ind", func(c *ActCtx) any {
+		if !p.Assign("ind", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -42701,7 +42744,7 @@ L14:
 	goto fail
 L15:
 	p.StepWork()
-	if !p.Assign("ind", func(c *ActCtx) any {
+	if !p.Assign("ind", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -46399,7 +46442,7 @@ func e210(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -46466,7 +46509,7 @@ func e210(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -46667,7 +46710,7 @@ func e212(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -46720,7 +46763,7 @@ func e212(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -46781,7 +46824,7 @@ func e215(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -46858,7 +46901,7 @@ func e215(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -47153,7 +47196,7 @@ func e218(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -47220,7 +47263,7 @@ func e218(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -47548,7 +47591,7 @@ func e224(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -47723,7 +47766,7 @@ func e224(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -48230,7 +48273,7 @@ func e228(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -48386,7 +48429,7 @@ func e228(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -49021,7 +49064,7 @@ func e235(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -49159,7 +49202,7 @@ func e235(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -59510,7 +59553,7 @@ func e328(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -59822,7 +59865,7 @@ func e328(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -60553,7 +60596,7 @@ func e335(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -60633,7 +60676,7 @@ func e335(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -60716,7 +60759,7 @@ func e336(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -60783,7 +60826,7 @@ func e336(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -63026,7 +63069,7 @@ func e354(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -63093,7 +63136,7 @@ func e354(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -63188,7 +63231,7 @@ func e356(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -63377,7 +63420,7 @@ func e356(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -63611,7 +63654,7 @@ func e360(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -63937,7 +63980,7 @@ func e360(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -64315,7 +64358,7 @@ func e362(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -64368,7 +64411,7 @@ func e362(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -64473,7 +64516,7 @@ func e365(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -64772,7 +64815,7 @@ func e365(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -65192,7 +65235,7 @@ func e367(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -65245,7 +65288,7 @@ func e367(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -65337,7 +65380,7 @@ func e369(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -65605,7 +65648,7 @@ func e369(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -65871,7 +65914,7 @@ func e371(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -66023,7 +66066,7 @@ func e371(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -66263,7 +66306,7 @@ func e376(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -66378,7 +66421,7 @@ func e376(p *Parser) (*Node, bool) {
 		v30 = p.NewNodeOrdinary(Node{RawKind: RawKindList, RawStart: int32(x11), RawEnd: int32(p.Pos), RawChildren: p.Kids(x12), RawFresh: true})
 		p.SetCaptureOrdinary(2, v30)
 
-		if !p.Assign("isdict", func(c *ActCtx) any {
+		if !p.Assign("isdict", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary(">", func() any { return c.Length(func() any { return c.Cap(2) }()) }(), func() any { return any(0) }())
@@ -66845,7 +66888,7 @@ func e376(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -66963,7 +67006,7 @@ L4:
 	v30 = p.NewNode(Node{RawKind: RawKindList, RawStart: int32(x11), RawEnd: int32(p.Pos), RawChildren: p.Kids(x12), RawFresh: true})
 	p.SetCapture(2, v30)
 	p.StepWork()
-	if !p.Assign("isdict", func(c *ActCtx) any {
+	if !p.Assign("isdict", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(2) }()) }(), func() any { c.P.StepWork(); return any(0) }())
@@ -68574,7 +68617,7 @@ func e386(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -68641,7 +68684,7 @@ func e386(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -68736,7 +68779,7 @@ func e388(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -68925,7 +68968,7 @@ func e388(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -69108,7 +69151,7 @@ func e390(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -69246,7 +69289,7 @@ func e390(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -69566,7 +69609,7 @@ func e393(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -69633,7 +69676,7 @@ func e393(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -70084,7 +70127,7 @@ func e396(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -70151,7 +70194,7 @@ func e396(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -70224,7 +70267,7 @@ func e397(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -70301,7 +70344,7 @@ func e397(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -70382,7 +70425,7 @@ func e398(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -70459,7 +70502,7 @@ func e398(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -79959,7 +80002,7 @@ func e439(p *Parser) (*Node, bool) {
 		}
 		p.Pos += size
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -80003,7 +80046,7 @@ func e439(p *Parser) (*Node, bool) {
 		}
 		p.Pos += size
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -80035,7 +80078,7 @@ func e439(p *Parser) (*Node, bool) {
 		}
 		p.Pos += size
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("%", func() any { return c.Lookup("lv") }(), func() any { return any(512) }())
@@ -80068,7 +80111,7 @@ func e439(p *Parser) (*Node, bool) {
 			goto L16_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any {
@@ -80094,7 +80137,7 @@ func e439(p *Parser) (*Node, bool) {
 			goto L18_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any {
@@ -80120,7 +80163,7 @@ func e439(p *Parser) (*Node, bool) {
 			goto L20_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any { return any(512) }())
@@ -80143,7 +80186,7 @@ func e439(p *Parser) (*Node, bool) {
 			goto L22_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any {
@@ -80266,7 +80309,7 @@ func e439(p *Parser) (*Node, bool) {
 	}
 	p.Pos += size
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -80311,7 +80354,7 @@ L5:
 	}
 	p.Pos += size
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -80344,7 +80387,7 @@ L7:
 	}
 	p.Pos += size
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("%", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any { c.P.StepWork(); return any(512) }())
@@ -80378,7 +80421,7 @@ L2:
 		goto L16
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any {
@@ -80405,7 +80448,7 @@ L15:
 		goto L18
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any {
@@ -80432,7 +80475,7 @@ L17:
 		goto L20
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any { c.P.StepWork(); return any(512) }())
@@ -80456,7 +80499,7 @@ L19:
 		goto L22
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any {
@@ -80580,7 +80623,7 @@ func e440(p *Parser) (*Node, bool) {
 		}
 		p.Pos += size
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -80624,7 +80667,7 @@ func e440(p *Parser) (*Node, bool) {
 		}
 		p.Pos += size
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -80656,7 +80699,7 @@ func e440(p *Parser) (*Node, bool) {
 		}
 		p.Pos += size
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("%", func() any { return c.Lookup("lv") }(), func() any { return any(512) }())
@@ -80689,7 +80732,7 @@ func e440(p *Parser) (*Node, bool) {
 			goto L16_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any {
@@ -80715,7 +80758,7 @@ func e440(p *Parser) (*Node, bool) {
 			goto L18_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any {
@@ -80741,7 +80784,7 @@ func e440(p *Parser) (*Node, bool) {
 			goto L20_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any { return any(512) }())
@@ -80764,7 +80807,7 @@ func e440(p *Parser) (*Node, bool) {
 			goto L22_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any {
@@ -80887,7 +80930,7 @@ func e440(p *Parser) (*Node, bool) {
 	}
 	p.Pos += size
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -80932,7 +80975,7 @@ L5:
 	}
 	p.Pos += size
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -80965,7 +81008,7 @@ L7:
 	}
 	p.Pos += size
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("%", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any { c.P.StepWork(); return any(512) }())
@@ -80999,7 +81042,7 @@ L2:
 		goto L16
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any {
@@ -81026,7 +81069,7 @@ L15:
 		goto L18
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any {
@@ -81053,7 +81096,7 @@ L17:
 		goto L20
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any { c.P.StepWork(); return any(512) }())
@@ -81077,7 +81120,7 @@ L19:
 		goto L22
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any {
@@ -84051,7 +84094,7 @@ func e453(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -84219,7 +84262,7 @@ func e453(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -84393,7 +84436,7 @@ func e454(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -84561,7 +84604,7 @@ func e454(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -84910,7 +84953,7 @@ func e458(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any { return any(8192) }())
@@ -84968,7 +85011,7 @@ func e458(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any { c.P.StepWork(); return any(8192) }())
@@ -124728,11 +124771,11 @@ func e802(p *Parser) (*Node, bool) {
 		)
 		_ = x1
 
-		if !p.Assign("ind", func(c *ActCtx) any { return func() any { return any(0) }() }) {
+		if !p.Assign("ind", "", func(c *ActCtx) any { return func() any { return any(0) }() }) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any { return func() any { return any(0) }() }) {
+		if !p.Assign("lv", "", func(c *ActCtx) any { return func() any { return any(0) }() }) {
 			goto fail_ordinary
 		}
 
@@ -124800,11 +124843,11 @@ func e802(p *Parser) (*Node, bool) {
 	_ = x1
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("ind", func(c *ActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
+	if !p.Assign("ind", "", func(c *ActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
+	if !p.Assign("lv", "", func(c *ActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -126248,7 +126291,7 @@ func e825(p *Parser) (*Node, bool) {
 		goto fail_ordinary
 	L15_ordinary:
 		p.StepWork()
-		if !p.Assign("ind", func(c *ActCtx) any {
+		if !p.Assign("ind", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -126503,7 +126546,7 @@ L14:
 	goto fail
 L15:
 	p.StepWork()
-	if !p.Assign("ind", func(c *ActCtx) any {
+	if !p.Assign("ind", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -132904,7 +132947,7 @@ func e873(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -133056,7 +133099,7 @@ func e873(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -135207,7 +135250,7 @@ func e890(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -135381,7 +135424,7 @@ func e890(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -138343,7 +138386,7 @@ func e916(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -138410,7 +138453,7 @@ func e916(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -139531,7 +139574,7 @@ func e934(p *Parser) (*Node, bool) {
 		goto fail_ordinary
 	L15_ordinary:
 		p.StepWork()
-		if !p.Assign("ind", func(c *ActCtx) any {
+		if !p.Assign("ind", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -139848,7 +139891,7 @@ L14:
 	goto fail
 L15:
 	p.StepWork()
-	if !p.Assign("ind", func(c *ActCtx) any {
+	if !p.Assign("ind", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -143266,7 +143309,7 @@ func e966(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -143333,7 +143376,7 @@ func e966(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -143534,7 +143577,7 @@ func e968(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -143587,7 +143630,7 @@ func e968(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -143648,7 +143691,7 @@ func e969(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -143725,7 +143768,7 @@ func e969(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -144020,7 +144063,7 @@ func e972(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -144087,7 +144130,7 @@ func e972(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -144415,7 +144458,7 @@ func e975(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -144590,7 +144633,7 @@ func e975(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -145124,7 +145167,7 @@ func e979(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -145280,7 +145323,7 @@ func e979(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -145948,7 +145991,7 @@ func e986(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -146100,7 +146143,7 @@ func e986(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -155362,7 +155405,7 @@ func e1051(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -155674,7 +155717,7 @@ func e1051(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -156405,7 +156448,7 @@ func e1058(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -156485,7 +156528,7 @@ func e1058(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -156568,7 +156611,7 @@ func e1059(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -156635,7 +156678,7 @@ func e1059(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -158862,7 +158905,7 @@ func e1076(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -158929,7 +158972,7 @@ func e1076(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -159024,7 +159067,7 @@ func e1078(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -159213,7 +159256,7 @@ func e1078(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -159447,7 +159490,7 @@ func e1082(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -159773,7 +159816,7 @@ func e1082(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -160151,7 +160194,7 @@ func e1084(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -160204,7 +160247,7 @@ func e1084(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -160309,7 +160352,7 @@ func e1087(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -160608,7 +160651,7 @@ func e1087(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -161028,7 +161071,7 @@ func e1089(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -161081,7 +161124,7 @@ func e1089(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -161173,7 +161216,7 @@ func e1091(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -161441,7 +161484,7 @@ func e1091(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -161707,7 +161750,7 @@ func e1093(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -161859,7 +161902,7 @@ func e1093(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -162099,7 +162142,7 @@ func e1098(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -162214,7 +162257,7 @@ func e1098(p *Parser) (*Node, bool) {
 		v30 = p.NewNodeOrdinary(Node{RawKind: RawKindList, RawStart: int32(x11), RawEnd: int32(p.Pos), RawChildren: p.Kids(x12), RawFresh: true})
 		p.SetCaptureOrdinary(2, v30)
 
-		if !p.Assign("isdict", func(c *ActCtx) any {
+		if !p.Assign("isdict", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary(">", func() any { return c.Length(func() any { return c.Cap(2) }()) }(), func() any { return any(0) }())
@@ -162681,7 +162724,7 @@ func e1098(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -162799,7 +162842,7 @@ L4:
 	v30 = p.NewNode(Node{RawKind: RawKindList, RawStart: int32(x11), RawEnd: int32(p.Pos), RawChildren: p.Kids(x12), RawFresh: true})
 	p.SetCapture(2, v30)
 	p.StepWork()
-	if !p.Assign("isdict", func(c *ActCtx) any {
+	if !p.Assign("isdict", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(2) }()) }(), func() any { c.P.StepWork(); return any(0) }())
@@ -164410,7 +164453,7 @@ func e1108(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -164477,7 +164520,7 @@ func e1108(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -164572,7 +164615,7 @@ func e1110(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -164761,7 +164804,7 @@ func e1110(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -164950,7 +164993,7 @@ func e1112(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -165102,7 +165145,7 @@ func e1112(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -165429,7 +165472,7 @@ func e1115(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -165496,7 +165539,7 @@ func e1115(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -165754,7 +165797,7 @@ func e1117(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -165821,7 +165864,7 @@ func e1117(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -165894,7 +165937,7 @@ func e1118(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -165971,7 +166014,7 @@ func e1118(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -166052,7 +166095,7 @@ func e1119(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -166129,7 +166172,7 @@ func e1119(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -171852,7 +171895,7 @@ func e1138(p *Parser) (*Node, bool) {
 		}
 		p.Pos += size
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -171896,7 +171939,7 @@ func e1138(p *Parser) (*Node, bool) {
 		}
 		p.Pos += size
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -171928,7 +171971,7 @@ func e1138(p *Parser) (*Node, bool) {
 		}
 		p.Pos += size
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("%", func() any { return c.Lookup("lv") }(), func() any { return any(512) }())
@@ -171961,7 +172004,7 @@ func e1138(p *Parser) (*Node, bool) {
 			goto L16_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any {
@@ -171987,7 +172030,7 @@ func e1138(p *Parser) (*Node, bool) {
 			goto L18_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any {
@@ -172013,7 +172056,7 @@ func e1138(p *Parser) (*Node, bool) {
 			goto L20_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any { return any(512) }())
@@ -172036,7 +172079,7 @@ func e1138(p *Parser) (*Node, bool) {
 			goto L22_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any {
@@ -172159,7 +172202,7 @@ func e1138(p *Parser) (*Node, bool) {
 	}
 	p.Pos += size
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -172204,7 +172247,7 @@ L5:
 	}
 	p.Pos += size
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -172237,7 +172280,7 @@ L7:
 	}
 	p.Pos += size
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("%", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any { c.P.StepWork(); return any(512) }())
@@ -172271,7 +172314,7 @@ L2:
 		goto L16
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any {
@@ -172298,7 +172341,7 @@ L15:
 		goto L18
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any {
@@ -172325,7 +172368,7 @@ L17:
 		goto L20
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any { c.P.StepWork(); return any(512) }())
@@ -172349,7 +172392,7 @@ L19:
 		goto L22
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any {
@@ -172473,7 +172516,7 @@ func e1139(p *Parser) (*Node, bool) {
 		}
 		p.Pos += size
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -172517,7 +172560,7 @@ func e1139(p *Parser) (*Node, bool) {
 		}
 		p.Pos += size
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -172549,7 +172592,7 @@ func e1139(p *Parser) (*Node, bool) {
 		}
 		p.Pos += size
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("%", func() any { return c.Lookup("lv") }(), func() any { return any(512) }())
@@ -172582,7 +172625,7 @@ func e1139(p *Parser) (*Node, bool) {
 			goto L16_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any {
@@ -172608,7 +172651,7 @@ func e1139(p *Parser) (*Node, bool) {
 			goto L18_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any {
@@ -172634,7 +172677,7 @@ func e1139(p *Parser) (*Node, bool) {
 			goto L20_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any { return any(512) }())
@@ -172657,7 +172700,7 @@ func e1139(p *Parser) (*Node, bool) {
 			goto L22_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any {
@@ -172780,7 +172823,7 @@ func e1139(p *Parser) (*Node, bool) {
 	}
 	p.Pos += size
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -172825,7 +172868,7 @@ L5:
 	}
 	p.Pos += size
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -172858,7 +172901,7 @@ L7:
 	}
 	p.Pos += size
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("%", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any { c.P.StepWork(); return any(512) }())
@@ -172892,7 +172935,7 @@ L2:
 		goto L16
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any {
@@ -172919,7 +172962,7 @@ L15:
 		goto L18
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any {
@@ -172946,7 +172989,7 @@ L17:
 		goto L20
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any { c.P.StepWork(); return any(512) }())
@@ -172970,7 +173013,7 @@ L19:
 		goto L22
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any {
@@ -175360,7 +175403,7 @@ func e1146(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -175528,7 +175571,7 @@ func e1146(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -175702,7 +175745,7 @@ func e1147(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -175870,7 +175913,7 @@ func e1147(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -176219,7 +176262,7 @@ func e1150(p *Parser) (*Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *ActCtx) any {
+		if !p.Assign("lv", "", func(c *ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any { return any(8192) }())
@@ -176277,7 +176320,7 @@ func e1150(p *Parser) (*Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *ActCtx) any {
+	if !p.Assign("lv", "", func(c *ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any { c.P.StepWork(); return any(8192) }())
@@ -208175,11 +208218,11 @@ func i0(p *TParser) (any, bool) {
 		}
 		_, _ = x1, x6
 
-		if !p.Assign("ind", func(c *TActCtx) any { return func() any { return any(0) }() }) {
+		if !p.Assign("ind", "", func(c *TActCtx) any { return func() any { return any(0) }() }) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any { return func() any { return any(0) }() }) {
+		if !p.Assign("lv", "", func(c *TActCtx) any { return func() any { return any(0) }() }) {
 			goto fail_ordinary
 		}
 
@@ -208285,11 +208328,11 @@ func i0(p *TParser) (any, bool) {
 	_, _ = x1, x6
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("ind", func(c *TActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
+	if !p.Assign("ind", "", func(c *TActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
+	if !p.Assign("lv", "", func(c *TActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -210301,7 +210344,7 @@ func i6(p *TParser) (any, bool) {
 		goto fail_ordinary
 	L17_ordinary:
 		p.StepWork()
-		if !p.Assign("ind", func(c *TActCtx) any {
+		if !p.Assign("ind", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -210569,7 +210612,7 @@ L16:
 	goto fail
 L17:
 	p.StepWork()
-	if !p.Assign("ind", func(c *TActCtx) any {
+	if !p.Assign("ind", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -222216,7 +222259,7 @@ func i43(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -222383,7 +222426,7 @@ func i43(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -225767,7 +225810,7 @@ func i59(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -225956,7 +225999,7 @@ func i59(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -230262,7 +230305,7 @@ func i77(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -230351,7 +230394,7 @@ func i77(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -232001,7 +232044,7 @@ func i84(p *TParser) (any, bool) {
 		goto fail_ordinary
 	L17_ordinary:
 		p.StepWork()
-		if !p.Assign("ind", func(c *TActCtx) any {
+		if !p.Assign("ind", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -232322,7 +232365,7 @@ L16:
 	goto fail
 L17:
 	p.StepWork()
-	if !p.Assign("ind", func(c *TActCtx) any {
+	if !p.Assign("ind", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -238784,7 +238827,7 @@ func i114(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -238873,7 +238916,7 @@ func i114(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -239136,7 +239179,7 @@ func s116(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -239212,7 +239255,7 @@ func s116(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -239318,7 +239361,7 @@ func i117(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -239424,7 +239467,7 @@ func i117(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -239847,7 +239890,7 @@ func i119(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -239954,7 +239997,7 @@ func i119(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -240626,7 +240669,7 @@ func i122(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -240879,7 +240922,7 @@ func i122(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -241618,7 +241661,7 @@ func i125(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -241854,7 +241897,7 @@ func i125(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -242800,7 +242843,7 @@ func i129(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -242967,7 +243010,7 @@ func i129(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -260386,7 +260429,7 @@ func i188(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -260736,7 +260779,7 @@ func i188(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -262362,7 +262405,7 @@ func i196(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -262471,7 +262514,7 @@ func i196(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -262609,7 +262652,7 @@ func i197(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -262698,7 +262741,7 @@ func i197(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -266439,7 +266482,7 @@ func s211(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -266521,7 +266564,7 @@ func s211(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -266630,7 +266673,7 @@ func i212(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -266719,7 +266762,7 @@ func i212(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -266860,7 +266903,7 @@ func i213(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -267089,7 +267132,7 @@ func i213(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -267388,7 +267431,7 @@ func i214(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -267788,7 +267831,7 @@ func i214(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -268271,7 +268314,7 @@ func s216(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -268353,7 +268396,7 @@ func s216(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -268515,7 +268558,7 @@ func i217(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -268877,7 +268920,7 @@ func i217(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -269395,7 +269438,7 @@ func s219(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -269471,7 +269514,7 @@ func s219(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -269614,7 +269657,7 @@ func i220(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -269954,7 +269997,7 @@ func i220(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -270308,7 +270351,7 @@ func i221(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -270498,7 +270541,7 @@ func i221(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -270810,7 +270853,7 @@ func i222(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -270933,7 +270976,7 @@ func i222(p *TParser) (any, bool) {
 		v36 = p.NewNodeOrdinary("list", x16, p.Pos, p.Kids(x17))
 		k14 = v36
 
-		if !p.Assign("isdict", func(c *TActCtx) any {
+		if !p.Assign("isdict", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary(">", func() any { return c.Length(func() any { return k14 }()) }(), func() any { return any(0) }())
@@ -271523,7 +271566,7 @@ func i222(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -271649,7 +271692,7 @@ L8:
 	v36 = p.NewNode("list", x16, p.Pos, p.Kids(x17))
 	k14 = v36
 	p.StepWork()
-	if !p.Assign("isdict", func(c *TActCtx) any {
+	if !p.Assign("isdict", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k14 }()) }(), func() any { c.P.StepWork(); return any(0) }())
@@ -274193,7 +274236,7 @@ func i230(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -274282,7 +274325,7 @@ func i230(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -274372,7 +274415,7 @@ func s231(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -274454,7 +274497,7 @@ func s231(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -274590,7 +274633,7 @@ func i232(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -274819,7 +274862,7 @@ func i232(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -275026,7 +275069,7 @@ func s233(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -275108,7 +275151,7 @@ func s233(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -275229,7 +275272,7 @@ func i234(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -275402,7 +275445,7 @@ func i234(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -276138,7 +276181,7 @@ func i237(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -276227,7 +276270,7 @@ func i237(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -278246,7 +278289,7 @@ func i245(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -278335,7 +278378,7 @@ func i245(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -278452,7 +278495,7 @@ func i246(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -278559,7 +278602,7 @@ func i246(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -278691,7 +278734,7 @@ func i247(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -278798,7 +278841,7 @@ func i247(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -293239,7 +293282,7 @@ func i267(p *TParser) (any, bool) {
 		}
 		p.Pos += size
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -293285,7 +293328,7 @@ func i267(p *TParser) (any, bool) {
 		}
 		p.Pos += size
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -293319,7 +293362,7 @@ func i267(p *TParser) (any, bool) {
 		}
 		p.Pos += size
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("%", func() any { return c.Lookup("lv") }(), func() any { return any(512) }())
@@ -293355,7 +293398,7 @@ func i267(p *TParser) (any, bool) {
 			goto L20_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any {
@@ -293383,7 +293426,7 @@ func i267(p *TParser) (any, bool) {
 			goto L22_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any {
@@ -293411,7 +293454,7 @@ func i267(p *TParser) (any, bool) {
 			goto L24_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any { return any(512) }())
@@ -293436,7 +293479,7 @@ func i267(p *TParser) (any, bool) {
 			goto L26_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any {
@@ -293590,7 +293633,7 @@ func i267(p *TParser) (any, bool) {
 	}
 	p.Pos += size
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -293637,7 +293680,7 @@ L7:
 	}
 	p.Pos += size
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -293672,7 +293715,7 @@ L9:
 	}
 	p.Pos += size
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("%", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any { c.P.StepWork(); return any(512) }())
@@ -293709,7 +293752,7 @@ L4:
 		goto L20
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any {
@@ -293738,7 +293781,7 @@ L19:
 		goto L22
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any {
@@ -293767,7 +293810,7 @@ L21:
 		goto L24
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any { c.P.StepWork(); return any(512) }())
@@ -293793,7 +293836,7 @@ L23:
 		goto L26
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any {
@@ -293975,7 +294018,7 @@ func i268(p *TParser) (any, bool) {
 		}
 		p.Pos += size
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -294021,7 +294064,7 @@ func i268(p *TParser) (any, bool) {
 		}
 		p.Pos += size
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -294055,7 +294098,7 @@ func i268(p *TParser) (any, bool) {
 		}
 		p.Pos += size
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("%", func() any { return c.Lookup("lv") }(), func() any { return any(512) }())
@@ -294091,7 +294134,7 @@ func i268(p *TParser) (any, bool) {
 			goto L20_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any {
@@ -294119,7 +294162,7 @@ func i268(p *TParser) (any, bool) {
 			goto L22_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any {
@@ -294147,7 +294190,7 @@ func i268(p *TParser) (any, bool) {
 			goto L24_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any { return any(512) }())
@@ -294172,7 +294215,7 @@ func i268(p *TParser) (any, bool) {
 			goto L26_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any {
@@ -294326,7 +294369,7 @@ func i268(p *TParser) (any, bool) {
 	}
 	p.Pos += size
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -294373,7 +294416,7 @@ L7:
 	}
 	p.Pos += size
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -294408,7 +294451,7 @@ L9:
 	}
 	p.Pos += size
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("%", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any { c.P.StepWork(); return any(512) }())
@@ -294445,7 +294488,7 @@ L4:
 		goto L20
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any {
@@ -294474,7 +294517,7 @@ L19:
 		goto L22
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any {
@@ -294503,7 +294546,7 @@ L21:
 		goto L24
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any { c.P.StepWork(); return any(512) }())
@@ -294529,7 +294572,7 @@ L23:
 		goto L26
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any {
@@ -300301,7 +300344,7 @@ func i277(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -300518,7 +300561,7 @@ func i277(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -300762,7 +300805,7 @@ func i278(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -300979,7 +301022,7 @@ func i278(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -301620,7 +301663,7 @@ func i281(p *TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("lv", func(c *TActCtx) any {
+		if !p.Assign("lv", "", func(c *TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("lv") }(), func() any { return any(8192) }())
@@ -301707,7 +301750,7 @@ func i281(p *TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("lv", func(c *TActCtx) any {
+	if !p.Assign("lv", "", func(c *TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("lv") }(), func() any { c.P.StepWork(); return any(8192) }())

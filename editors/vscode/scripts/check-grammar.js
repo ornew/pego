@@ -88,6 +88,9 @@ const sample = [
   '  H { Inner Num; Other []{ Deep Num } }',
   '  I Num',
   '}',
+  'var depth int = 0',
+  'var open = true',
+  'rule scoped = {depth := depth + 1} "x"',
 ].join('\n');
 
 const expectations = [
@@ -185,6 +188,13 @@ const expectations = [
   ['Other', 'variable.other.property.pego', '; Other'],
   ['Deep', 'variable.other.property.pego', '{ Deep'],
   ['I', 'variable.other.property.pego', '  I Num'],
+  ['var', 'storage.type.pego', 'var depth'],
+  ['depth', 'variable.other.pego', 'var depth'],
+  ['int', 'support.type.builtin.pego', 'depth int'],
+  ['=', 'keyword.operator.assignment.pego', 'int ='],
+  ['var', 'storage.type.pego', 'var open'],
+  ['open', 'variable.other.pego', 'var open'],
+  ['depth', '!variable.other.pego', 'scoped = {depth'],
 ];
 
 async function main() {

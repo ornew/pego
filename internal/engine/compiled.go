@@ -34,7 +34,7 @@ const (
 	// isaVersion is the instruction set of the value model, the only one supported. Earlier
 	// versions built the previous syntax trees, so their files are not loaded and need to be
 	// compiled again.
-	isaVersion = 21
+	isaVersion = 22
 	maxDepth   = 10000
 )
 
@@ -304,7 +304,13 @@ func (w *encoder) checks(prog *Program, rd *grammar.RuleDef) {
 			converts = append(converts, i)
 		}
 	}
-	for _, list := range [][]int{fields, results, converts} {
+	var binds []int
+	for i, a := range ruleBinds(rd) {
+		if prog.bindCheck(a) != "" {
+			binds = append(binds, i)
+		}
+	}
+	for _, list := range [][]int{fields, results, converts, binds} {
 		w.uint(len(list))
 		for _, i := range list {
 			w.uint(i)
@@ -781,8 +787,8 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 		if n := len(prog.rules) + len(prog.twins); n != len(m.Rules) {
 			return nil, "", fmt.Errorf("invalid compiled grammar: %d rules in the module for %d rules", len(m.Rules), n)
 		}
-		if n := len(prog.vars.all()); n != len(m.Vars) {
-			return nil, "", fmt.Errorf("invalid compiled grammar: %d variables in the module for %d variables", len(m.Vars), n)
+		if err := sameVars(prog.vars, moduleVarTable(m)); err != nil {
+			return nil, "", fmt.Errorf("invalid compiled grammar: the variables of the module differ from the syntax tree: %w", err)
 		}
 		prog.moduleOnce.Do(func() { prog.module = m })
 	}
@@ -832,7 +838,7 @@ func (r *decoder) statements(pkg string, version int, checked bool) (*grammar.Gr
 	flags := []ruleFlags{}
 	var checks *checkInfo
 	if checked {
-		checks = &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}, converts: map[*grammar.New]ty{}}
+		checks = &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}, converts: map[*grammar.New]ty{}, binds: map[*grammar.Assign]bool{}}
 	}
 	n := r.count()
 	for i := 0; i < n && r.err == nil; i++ {
@@ -886,6 +892,10 @@ func (r *decoder) checks(rd *grammar.RuleDef, ci *checkInfo) {
 	converts := ruleConversions(rd)
 	for _, i := range r.checkIndices(rd, len(converts)) {
 		ci.converts[converts[i]] = nil
+	}
+	binds := ruleBinds(rd)
+	for _, i := range r.checkIndices(rd, len(binds)) {
+		ci.binds[binds[i]] = true
 	}
 }
 

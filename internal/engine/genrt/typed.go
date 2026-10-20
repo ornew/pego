@@ -981,7 +981,7 @@ func (p *TParser) DocumentCall(r *TRule, min int, inv func(*TParser) (any, bool)
 		}
 		return v, ok
 	}
-	env := p.envValues(r.Vars)
+	env := p.memoEnv(r.Rule)
 	old := p.memoGet(r.Id, start, min, env)
 	if old != nil && (old.growing || (!old.silent || p.Silent > 0) && (len(old.errs) == 0 || old.silent == (p.Silent > 0))) {
 		m := p.TypedDocument.meta[old]
@@ -1075,7 +1075,7 @@ func (p *TParser) callBody(r *TRule, min int) (any, bool) {
 		}
 		return v, ok
 	}
-	env := p.envValues(r.Vars)
+	env := p.memoEnv(r.Rule)
 	if e := p.memoGet(r.Id, start, min, env); e != nil && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
 		p.Observation.memoHit()
 		if !e.growing {
@@ -1122,7 +1122,7 @@ func (p *TParser) CallMemo(r *TRule, inv func(*TParser) (any, bool)) (any, bool)
 		return p.DocumentCall(r, 0, inv)
 	}
 	start := p.Pos
-	env := p.envValues(r.Vars)
+	env := p.memoEnv(r.Rule)
 	if e := p.memoGet(r.Id, start, 0, env); e != nil && (e.growing || (!e.silent || p.Silent > 0) && (len(e.errs) == 0 || e.silent == (p.Silent > 0))) {
 		p.Observation.memoHit()
 		if !e.growing {
@@ -1680,7 +1680,8 @@ func (p *TParser) Predicate(t func(*TActCtx) any) (ok bool) {
 	return true
 }
 
-func (p *TParser) Assign(name string, t func(*TActCtx) any) (ok bool) {
+// Assign is Parser.Assign for the typed runtime.
+func (p *TParser) Assign(name, typ string, t func(*TActCtx) any) (ok bool) {
 	base, kids := len(p.Created), len(p.KidStack)
 	defer func() {
 		p.DropCreated(base)
@@ -1696,6 +1697,9 @@ func (p *TParser) Assign(name string, t func(*TActCtx) any) (ok bool) {
 	v := t(c)
 	if _, isFn := v.(func(...any) any); isFn {
 		return false
+	}
+	if typ != "" && ttypeName(v) != typ {
+		return false // cannot use <value type> as <typ> in the binding of variable <name>
 	}
 	p.bind(name, v)
 	return true

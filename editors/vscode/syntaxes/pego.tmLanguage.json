@@ -16,6 +16,9 @@
       "include": "#type-definition"
     },
     {
+      "include": "#var-definition"
+    },
+    {
       "include": "#rule-definition"
     },
     {
@@ -183,6 +186,42 @@
         {
           "match": ",",
           "name": "punctuation.separator.comma.pego"
+        }
+      ]
+    },
+    "var-definition": {
+      "patterns": [
+        {
+          "comment": "var name Type = value; the type and the value are optional",
+          "begin": "(?:^|(?<=;))[ \\t]*(var)[ \\t]+([A-Za-z_][A-Za-z0-9_]*)",
+          "beginCaptures": {
+            "1": {
+              "name": "storage.type.pego"
+            },
+            "2": {
+              "name": "variable.other.pego"
+            }
+          },
+          "end": "(=)|(?=;)|$",
+          "endCaptures": {
+            "1": {
+              "name": "keyword.operator.assignment.pego"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#type-expression"
+            }
+          ]
+        },
+        {
+          "comment": "A variable declaration being written",
+          "match": "(?:^|(?<=;))[ \\t]*(var)\\b",
+          "captures": {
+            "1": {
+              "name": "storage.type.pego"
+            }
+          }
         }
       ]
     },

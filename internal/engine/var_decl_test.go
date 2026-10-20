@@ -30,6 +30,9 @@ func compileMessage(t *testing.T, src string, opts ...Options) string {
 func TestVarDeclarationErrors(t *testing.T) {
 	for _, tc := range []struct{ name, src, want string }{
 		{"duplicate", "var x int\nvar x string\nrule main = \"a\"", "2:1: variable x is already defined"},
+		{"true as a name", "var true bool\nrule main = \"a\"", "variable name true is reserved; it is a literal"},
+		{"false as a name", "var false = false\nrule main = \"a\"", "variable name false is reserved; it is a literal"},
+		{"nil as a name", "var nil int\nrule main = \"a\"", "variable name nil is reserved; it is a literal"},
 		{"unknown type", "var x float\nrule main = \"a\"", "variable x must have type int, string, or bool, got float"},
 		{"node type", "var x node[string]\nrule main = \"a\"", "variable x must have type int, string, or bool, got node[string]"},
 		{"list type", "var x []int\nrule main = \"a\"", "variable x must have type int, string, or bool, got []int"},
@@ -118,6 +121,22 @@ rule other R = {n := n + 1} "b" => R{N: n, S: s, B: b, M: m, Z: z}
 	if n, err := doc.Parse(); err != nil || n.String() != want {
 		t.Errorf("document: got %v, %v", n, err)
 	}
+	// A stream starts from them too, and the bindings of one element do not reach the next.
+	streamed := compile(t, `type E = { N int }
+var n int = 7
+rule main = (item)* #stream $$
+rule item E = {n := n + 1} "a" => E{N: n}
+`)
+	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		var got []string
+		err := streamed.ParseStreamWith("main", strings.NewReader("aaa"), func(n *Node) error {
+			got = append(got, n.String())
+			return nil
+		}, ParseOptions{Backend: backend})
+		if err != nil || strings.Join(got, " ") != "E{N: 8} E{N: 8} E{N: 8}" {
+			t.Errorf("stream %v: got %v, %v", backend, got, err)
+		}
+	}
 	// A saved program keeps them, with and without its syntax tree.
 	for _, o := range []MarshalOptions{{}, {OmitAST: true}} {
 		data, err := prog.MarshalBinaryWith("main", o)
@@ -178,6 +197,85 @@ func TestGrammarWithoutVariables(t *testing.T) {
 		b, errB := prog.ParseWith("main", in, ParseOptions{Backend: Bytecode})
 		if resultJSON(a, errA) != resultJSON(b, errB) {
 			t.Errorf("%q: %s / %s", in, resultJSON(a, errA), resultJSON(b, errB))
+		}
+	}
+}
+
+// TestVarBindingChecks checks that a binding whose value the type checker cannot prove fits the
+// variable is checked at run time, and that a program compiled without type checking checks every
+// binding, on every backend.
+func TestVarBindingChecks(t *testing.T) {
+	const dynamic = `var x int
+rule main = d:dyn {x := $d} "z" => x
+rule dyn any = di / ds
+rule di = "i" => 1
+rule ds = "s" => "str"
+`
+	checked := compile(t, dynamic)
+	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		if n, err := checked.ParseWith("main", "iz", ParseOptions{Backend: backend}); err != nil || n.String() != "1" {
+			t.Errorf("%v: got %v, %v; want 1", backend, n, err)
+		}
+		if n, err := checked.ParseWith("main", "sz", ParseOptions{Backend: backend}); err == nil {
+			t.Errorf("%v: a string bound to an int variable succeeded: %v", backend, n)
+		}
+	}
+	checkBackends(t, checked, "main", "iz")
+	checkBackends(t, checked, "main", "sz")
+
+	// Without the type checker a mismatch that the checker would reject is caught at run time.
+	const mistyped = `var x int
+rule main = {x := "s"} "a" => x
+`
+	unchecked := compile(t, mistyped, Options{NoTypeCheck: true})
+	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		if n, err := unchecked.ParseWith("main", "a", ParseOptions{Backend: backend}); err == nil {
+			t.Errorf("unchecked %v: got %v; want a syntax error", backend, n)
+		}
+	}
+	checkBackends(t, unchecked, "main", "a")
+	// The matching types are accepted without the type checker.
+	good := compile(t, "var x int\nvar s string\nvar b bool\nrule main = {x := 1} {s := \"s\"} {b := true} \"a\" => x\n", Options{NoTypeCheck: true})
+	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		if n, err := good.ParseWith("main", "a", ParseOptions{Backend: backend}); err != nil || n.String() != "1" {
+			t.Errorf("good %v: got %v, %v", backend, n, err)
+		}
+	}
+	// A binding the checker proves is not checked at run time: the module marks only the others.
+	count := func(p *Program) (checks int) {
+		for _, in := range p.Module().Code {
+			if in.Op == OpAssign && in.C != 0 {
+				checks++
+			}
+		}
+		return
+	}
+	if n := count(compile(t, "var x int\nrule main = {x := 1} \"a\"")); n != 0 {
+		t.Errorf("proven binding checked at run time: %d", n)
+	}
+	if n := count(checked); n != 1 {
+		t.Errorf("unproven binding checks: %d; want 1", n)
+	}
+	if n := count(unchecked); n != 1 {
+		t.Errorf("unchecked program binding checks: %d; want 1", n)
+	}
+	// Saved programs keep the checks.
+	for _, o := range []MarshalOptions{{}, {OmitAST: true}} {
+		data, err := checked.MarshalBinaryWith("main", o)
+		if err != nil {
+			t.Fatal(err)
+		}
+		loaded, start, err := LoadProgram(data, Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+			if o.OmitAST && backend == Closure {
+				continue
+			}
+			if _, err := loaded.ParseWith(start, "sz", ParseOptions{Backend: backend}); err == nil {
+				t.Errorf("loaded (omit AST %t) %v: mismatch accepted", o.OmitAST, backend)
+			}
 		}
 	}
 }

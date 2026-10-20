@@ -33,6 +33,36 @@ rule main R = {s := s + "!"} g:grow "," h:grow "," t:test $$ => R{N: n + $g + $h
 rule grow int = {n := n + 1} "a" => n
 rule test bool = "y" {b == false} => b == false
 `, []string{"a,a,y", "a,a,x", "a,a,", "a,", "y", ""}},
+		// item is called three times at the same position under different values of d, so a memo
+		// entry made for d = 2 would serve the call with d = 3 if d were left out of the key.
+		{"memo entries are keyed by the variables the rule reads", `var d int
+rule main = a1 / a2 / a3 $$
+rule a1 = {d := 1} v:item {$v == "none"}
+rule a2 = {d := 2} v:item {$v == "none"}
+rule a3 = {d := 3} v:item {$v == "three"} => $v
+rule item string = i1 / i2 / i3
+rule i1 string = {d == 1} "x" => "one"
+rule i2 string = {d == 2} "x" => "two"
+rule i3 string = {d == 3} "x" => "three"
+`, []string{"x", "y", ""}},
+		// A rule is memoized from its second call at a position, so the middle call stores the entry
+		// that the last one must not reuse. The last call, made after the bindings are undone, reads
+		// the initial values, which must key the memo like the same values bound explicitly.
+		{"initial values key the memo like bound ones", `var d int = 1
+rule main = a1 / a2 / a3
+rule a1 = {d := 1} v:item {$v == "none"}
+rule a2 = {d := 2} v:item {$v == "none"}
+rule a3 string = v:item $$ => $v
+rule item string = i1 / i2
+rule i1 string = {d == 1} "x" => "one"
+rule i2 string = {d == 2} "x" => "two"
+`, []string{"x", "y", ""}},
+		{"bindings are checked against the declared type", `var x int
+rule main = d:dyn {x := $d} "z" => x
+rule dyn any = di / ds
+rule di = "i" => 1
+rule ds = "s" => "str"
+`, []string{"iz", "sz", "i", ""}},
 		{"declared variables are part of the memo key", `var d int
 rule main = {d := 1} item "|" {d := 2} item "|" item $$
 rule item = {d == 1} "x" / {d == 2} "y" / {d == 0} "z"

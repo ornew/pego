@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"maps"
 
 	"github.com/ornew/pego/grammar"
@@ -50,6 +51,20 @@ func (t *varTable) add(d *varDecl) {
 	t.byName[d.name] = d
 	t.env = &env{name: d.name, val: d.init, next: t.env}
 	t.bound[d.name] = true
+}
+
+// valuesOf returns the initial values of the variables names, or nil for no names.
+func (t *varTable) valuesOf(names []string) []any {
+	if len(names) == 0 {
+		return nil
+	}
+	vals := make([]any, len(names))
+	for i, name := range names {
+		if d := t.lookup(name); d != nil {
+			vals[i] = d.init
+		}
+	}
+	return vals
 }
 
 func newVarTable() *varTable {
@@ -171,7 +186,23 @@ func (c *compiler) varDecl(vd *grammar.VarDef) *varDecl {
 // calls it once, before it enters the start rule.
 func (p *parser) seedVars() {
 	if t := p.prog.vars; t != nil {
-		p.env = t.env
+		p.env, p.initEnv = t.env, t.env
 		p.bound = maps.Clone(t.bound)
 	}
+}
+
+// sameVars reports the first difference between the variables of two tables: their number, names,
+// types and initial values.
+func sameVars(a, b *varTable) error {
+	x, y := a.all(), b.all()
+	if len(x) != len(y) {
+		return fmt.Errorf("%d variables in one table and %d in the other", len(x), len(y))
+	}
+	for i := range x {
+		if x[i].name != y[i].name || x[i].typ != y[i].typ || x[i].init != y[i].init {
+			return fmt.Errorf("variable %s (%s = %v) differs from variable %s (%s = %v)",
+				x[i].name, x[i].typ, x[i].init, y[i].name, y[i].typ, y[i].init)
+		}
+	}
+	return nil
 }

@@ -418,10 +418,10 @@ func (v *valueInference) predicates(e grammar.Expr, env *valueEnv) {
 			t := v.term(a.Value, env)
 			if d := v.prog.vars.lookup(a.Name); d != nil {
 				switch {
-				case v.unknown(t):
-					v.errorf(a.Diagnostic(), "cannot use statically unknown %s as %s in the binding of variable %s", v.expand(t), d.typ, a.Name)
 				case !v.assignable(t, d.typ):
 					v.errorf(a.Diagnostic(), "cannot use %s as %s in the binding of variable %s", v.expand(t), d.typ, a.Name)
+				case v.checks != nil && !v.quiet && v.uncertain(t):
+					v.checks.binds[a] = true
 				}
 			}
 		} else {

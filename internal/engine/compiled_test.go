@@ -20,9 +20,9 @@ import (
 func TestCompiledRoundTrip(t *testing.T) {
 	for _, c := range genCorpus(t) {
 		t.Run(c.name, func(t *testing.T) {
-			// A version 1 file predates the run-time checks of constructed fields, so the field
+			// A version 1 file predates the run-time checks of constructed fields and bindings, so the
 			// type errors of these programs do not survive it.
-			v1Unchecked := c.name == "terminal constructor value error" || c.name == "terminal constructor predicate error"
+			v1Unchecked := c.name == "terminal constructor value error" || c.name == "terminal constructor predicate error" || c.name == "bindings are checked against the declared type"
 			checkCompiledRoundTrip(t, compile(t, c.src), c.inputs, v1Unchecked)
 		})
 	}

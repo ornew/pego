@@ -56,6 +56,8 @@ type vmProgram struct {
 	// nodeKinds holds the kinds of the module's named node types by the string index of their
 	// names (nil when the module has none).
 	nodeKinds []*nodeTypeKinds
+	// vars is the module's variable table (nil when it declares none).
+	vars *varTable
 }
 
 // vmRunSite is a repetition that a Document can resume (resume.go): the REPEAT at ip, whose ITER
@@ -145,12 +147,15 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 			vm.nodeKinds[t.Name] = newNodeTypeKinds(m.Strings[t.Name])
 		}
 	}
+	vtable := moduleVarTable(m)
+	vm.vars = vtable
 	for i := range m.Rules {
 		ri := &m.Rules[i]
 		r := &rule{
 			id: i, name: m.Strings[ri.Name], scope: vm.scope(ri.Scope),
 			bodyIsSeq: ri.BodyIsSeq, memo: ri.Memo, leader: ri.Leader, positional: ri.Positional, novalue: ri.NoValue, transient: ri.Transient, vars: vm.names(ri.Vars),
 		}
+		r.initVals = vtable.valuesOf(r.vars)
 		if ri.NodeType >= 0 {
 			if ri.OperatorsRule >= 0 {
 				r.opNodeType, r.opKinds = m.Strings[ri.NodeType], vm.nodeKinds[ri.NodeType]
@@ -791,7 +796,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				goto fail
 			}
 		case OpAssign:
-			if !vm.assign(p, m.Strings[in.A], int(in.B)) {
+			if !vm.assign(p, m.Strings[in.A], int(in.B), in.C != 0) {
 				goto fail
 			}
 		case OpLabel:
@@ -1030,7 +1035,7 @@ func (vm *vmProgram) predicate(p *parser, entry int) bool {
 	return true
 }
 
-func (vm *vmProgram) assign(p *parser, name string, entry int) bool {
+func (vm *vmProgram) assign(p *parser, name string, entry int, check bool) bool {
 	ctx := p.useCtx(evalCtx{p: p, frame: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
 	v, err := vm.eval(ctx, entry, nil)
 	p.dropCreated(ctx.cbase)
@@ -1039,6 +1044,12 @@ func (vm *vmProgram) assign(p *parser, name string, entry int) bool {
 	}
 	if _, isFn := v.(function); isFn {
 		return false
+	}
+	if check {
+		if typ := vm.vars.lookup(name).typ.String(); typeName(v) != typ {
+			p.bindError(v, typ, name)
+			return false
+		}
 	}
 	p.bind(name, v)
 	return true

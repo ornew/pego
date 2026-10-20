@@ -282,10 +282,12 @@ rule var_decl VarDef = (
   cs:comments d:var_def_body &tail:source_item_tail tc:stmt_end
 ) => VarDef{Name: $d.Name, Type: $d.Type, Value: $d.Value, Comments: concat($cs, $tc), SourceSpan: $d, Source: $tail}
 rule var_def_body VarDefBody = (
-  "var" -word_end #cut name:(ident @error(message="expected variable name")) -ws t:type_expr? -ws
-  v:var_init?
+  "var" -word_end #cut name:(ident @error(message="expected variable name")) t:var_type? v:var_value?
 ) => VarDefBody{Name: $name, Type: $t, Value: $v}
-rule var_init ActionExpr = "=" -ws a:(action_expr @error(message="expected the initial value")) => $a
+// The whitespace before the type and the value belongs to them, so a declaration with neither
+// ends at its name and does not take in a trailing comment.
+rule var_type Type = -ws t:type_expr => $t
+rule var_value ActionExpr = -ws "=" -ws a:(action_expr @error(message="expected the initial value")) => $a
 
 // Rule expressions. The empty infix operator represents adjacency, so
 // juxtaposition does not need a separate sequence parser or require a space.
@@ -383,7 +385,7 @@ rule attr_slot AttrSlot = !(ident -ws "=") v:attr_value? => AttrSlot{Value: $v}
 rule attr_named AttrNamed = (
   name:ident -ws "=" -ws v:(attr_value @error(message="expected attribute argument value"))
 ) => AttrNamed{Name: $name, Value: $v}
-rule attr_value AttrValue = true / false / nil / signed_int / string / rule_expr
+rule attr_value AttrValue = true_lit / false_lit / nil_lit / signed_int / string / rule_expr
 rule signed_int Int = (("-" -ws)? digit+ #atomic) #atomic
 
 // Operators Rule items and each level recover independently. An absent level
@@ -458,7 +460,7 @@ rule action_assign_stmt ActionAssign = (
 rule action_expr ActionExpr = lambda / action_ops
 rule action_ops ActionExpr = operators {
   skip (!(ws "[" !"]") ws)
-  operand list_constructor / constructor / call / action_tuple / action_group / int / string / true / false / nil / capture_ref / var_ref
+  operand list_constructor / constructor / call / action_tuple / action_group / int / string / true_lit / false_lit / nil_lit / capture_ref / var_ref
   level disjunction { infix left "||" => BinaryOp{Op: text($op), L: $lhs, R: $rhs} }
   level conjunction { infix left "&&" => BinaryOp{Op: text($op), L: $lhs, R: $rhs} }
   level comparison { infix none "==" / "!=" / "<=" / ">=" / "<" / ">" => BinaryOp{Op: text($op), L: $lhs, R: $rhs} }
@@ -483,7 +485,9 @@ rule cast_type Type = "(" {ml := true} -ws t:type_expr -ws ")" => $t
 rule lambda Lambda = names:lambda_head -ws "=>" -ws x:action_expr => Lambda{Params: $names, Body: $x}
 // A rule of its own keeps ml from reaching the arrow and the body.
 rule lambda_head []Ident = "(" {ml := true} -ws names:lambda_params? -ws ")" => concat($names)
-rule lambda_params []Ident = first:ident rest:(-ws "," -ws name:ident)* => concat(list($first), map($rest, (x) => x.$name))
+rule lambda_params []Ident = first:lambda_param rest:(-ws "," -ws name:lambda_param)* => concat(list($first), map($rest, (x) => x.$name))
+// A parameter cannot take the name of a literal, which the literal would hide.
+rule lambda_param Ident = !((true_lit / false_lit / nil_lit) -ws &("," / ")")) i:ident => $i
 // Parentheses around one expression without a comma group it; any other
 // parentheses form a tuple. The tuple rules fail on a group without an error.
 rule action_tuple ActionTuple = action_unit / action_elems
@@ -523,9 +527,9 @@ rule init_field_body InitFieldBody = (
   x:(action_expr @error(message="expected initializer value"))
 ) => InitFieldBody{Name: $name, Val: $x}
 rule int Int = digit+ #atomic
-rule true True = ("true" !ident_char) #atomic
-rule false False = ("false" !ident_char) #atomic
-rule nil Nil = ("nil" !ident_char) #atomic
+rule true_lit True = ("true" !ident_char) #atomic
+rule false_lit False = ("false" !ident_char) #atomic
+rule nil_lit Nil = ("nil" !ident_char) #atomic
 rule capture_ref CaptureRef = ("$" ident #atomic) #atomic
 rule var_name VarRef = (ident) #atomic
 rule var_ref VarRef = (ident !"(") #atomic

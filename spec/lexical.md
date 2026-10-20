@@ -63,6 +63,13 @@ attribute names, or named arguments. Parsing preserves these names in the
 source AST; semantic validation rejects their use before compilation. The
 standalone primary Rule Expression form `_` is the
 [Top expression](parser-expressions.md#top), not an available name.
+The words `true`, `false` and `nil` are the literals of the action language. A
+rule, type, type alias, variable, capture, or lambda parameter MUST NOT be named
+`true`, `false` or `nil`, because an action reading the name would get the
+literal instead. Validation rejects such a declaration with an error such as
+`rule name true is reserved; it is a literal`, and a lambda parameter with such a
+name is a syntax error. Longer names that merely begin with a literal, such as
+`truely`, are ordinary identifiers.
 Identifiers name rules, types, fields, captures, variables, levels,
 attributes, and lambda parameters. The initial ASCII letter's case matters
 for type and field names; see [Names](types.md#names).

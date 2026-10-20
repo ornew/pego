@@ -25,6 +25,7 @@ type parser struct {
 
 	env   *env            // predicate variables
 	bound map[string]bool // names assigned anywhere in this parse (a lookup hint)
+	initEnv *env         // the initial environment of the variables (parser.seedVars), or nil
 	frame *frame          // current capture frame
 	trail []undo          // capture writes to undo on backtracking
 	cut   bool            // whether a cut has been passed in the current alternative
@@ -485,6 +486,16 @@ func (p *parser) envValues(names []string) []any {
 	return vals
 }
 
+// memoEnv returns the values of the variables the memoized rule r reads, for its memo key. While
+// nothing has been bound since the parse began they are the initial values, computed once: the
+// key only compares them, so the slice is shared instead of allocated for each call.
+func (p *parser) memoEnv(r *rule) []any {
+	if p.env == p.initEnv && r.initVals != nil && (!workControlsEnabled || p.control == nil) {
+		return r.initVals
+	}
+	return p.envValues(r.vars)
+}
+
 // memoizes reports whether the results of rule r are memoized.
 func (p *parser) memoizes(r *rule) bool {
 	return r.leader || r.memo && (!r.transient || p.memoAll) && !(p.missing != nil && r.missing)
@@ -537,7 +548,7 @@ type callState struct {
 func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit bool) {
 	key := memoKey{rule: r.id, pos: p.pos, min: min, missingSilent: p.missing != nil && r.missing && p.silent > 0}
 	if len(r.vars) > 0 {
-		key.env = p.envValues(r.vars)
+		key.env = p.memoEnv(r)
 	}
 	// A result computed inside a lookahead recorded no expectations, so it is not reused outside
 	// one; and errors recovered inside a lookahead carry no expectations either, so a result with

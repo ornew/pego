@@ -134,11 +134,11 @@ rule type_tuple = "(" {ml := true} -ws (type_expr -ws "," -ws)* type_expr? -ws "
 
 // A variable definition gives a name, a type, an initial value, or a type with a value.
 rule var_decl = comments var_def_body &source_item_tail stmt_end
-rule var_def_body = (
-    "var" -word_end #cut ident -ws type_expr? -ws
-    var_init?
-)
-rule var_init = "=" -ws action_expr
+rule var_def_body = "var" -word_end #cut ident var_type? var_value?
+// The whitespace before the type and the value belongs to them, so a declaration with neither
+// ends at its name and does not take in a trailing comment.
+rule var_type = -ws type_expr
+rule var_value = -ws "=" -ws action_expr
 
 // Rule expressions. The empty infix operator represents adjacency, so
 // juxtaposition does not need a separate sequence parser or require a space.
@@ -221,7 +221,7 @@ rule attr_empty_args = _
 rule attr_named_tail = -ws "," -ws attr_named_args
 rule attr_slot = !(ident -ws "=") attr_value?
 rule attr_named = ident -ws "=" -ws attr_value
-rule attr_value = true / false / nil / signed_int / string / rule_expr
+rule attr_value = true_lit / false_lit / nil_lit / signed_int / string / rule_expr
 rule signed_int = (("-" -ws)? digit+ #atomic) #atomic
 
 // Operators Rule items and each level recover independently. An absent level
@@ -274,7 +274,7 @@ rule action_assign_stmt = ident -ws ":=" -ws action_expr
 rule action_expr = lambda / action_ops
 rule action_ops = operators {
     skip !(ws "[" !"]") ws
-    operand list_constructor / constructor / call / action_tuple / action_group / int / string / true / false / nil / capture_ref / var_ref
+    operand list_constructor / constructor / call / action_tuple / action_group / int / string / true_lit / false_lit / nil_lit / capture_ref / var_ref
     level disjunction { infix left "||" }
     level conjunction { infix left "&&" }
     level comparison { infix none "==" / "!=" / "<=" / ">=" / "<" / ">" }
@@ -299,7 +299,9 @@ rule cast_type = "(" {ml := true} -ws type_expr -ws ")"
 rule lambda = lambda_head -ws "=>" -ws action_expr
 // A rule of its own keeps ml from reaching the arrow and the body.
 rule lambda_head = "(" {ml := true} -ws lambda_params? -ws ")"
-rule lambda_params = ident (-ws "," -ws ident)*
+rule lambda_params = lambda_param (-ws "," -ws lambda_param)*
+// A parameter cannot take the name of a literal, which the literal would hide.
+rule lambda_param = !((true_lit / false_lit / nil_lit) -ws &("," / ")")) ident
 // Parentheses around one expression without a comma group it; any other
 // parentheses form a tuple. The tuple rules fail on a group without an error.
 rule action_tuple = action_unit / action_elems
@@ -333,9 +335,9 @@ rule init_field_body = (
     action_expr
 )
 rule int = digit+ #atomic
-rule true = ("true" !ident_char) #atomic
-rule false = ("false" !ident_char) #atomic
-rule nil = ("nil" !ident_char) #atomic
+rule true_lit = ("true" !ident_char) #atomic
+rule false_lit = ("false" !ident_char) #atomic
+rule nil_lit = ("nil" !ident_char) #atomic
 rule capture_ref = ("$" ident #atomic) #atomic
 rule var_name = ident #atomic
 rule var_ref = (ident !"(") #atomic

@@ -86,6 +86,9 @@ func decodeRecognition(data []byte, main *Module) (*Module, []recognitionEntry, 
 	if err := validateModule(m); err != nil {
 		return nil, nil, fmt.Errorf("invalid compiled grammar recognition bundle: %w", err)
 	}
+	if err := sameVars(moduleVarTable(main), moduleVarTable(m)); err != nil {
+		return nil, nil, fmt.Errorf("invalid compiled grammar: the variables of the recognition bundle differ from the main module: %w", err)
+	}
 	want, available := moduleEntries(main), moduleEntries(m)
 	if len(entries) != len(want) || len(entries) != len(available) {
 		return nil, nil, fmt.Errorf("invalid compiled grammar: recognition start names do not match main module")

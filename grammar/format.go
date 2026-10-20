@@ -264,7 +264,7 @@ func (p *printer) varDef(v *VarDef) {
 		p.write(" " + formatType(v.Type, p.control))
 	}
 	if v.Value != nil {
-		p.write(" = " + formatTerm(v.Value, 0, p.control))
+		p.write(joinLayout(" = ", formatTerm(v.Value, 0, p.control)))
 	}
 }
 
@@ -293,11 +293,10 @@ func (p *printer) ruleDef(r *RuleDef) {
 		}
 	}
 	if r.Action != nil || r.DefaultAction {
-		p.write(" => ")
 		if r.DefaultAction {
-			p.write("...")
+			p.write(" => ...")
 		} else {
-			p.write(formatTerm(r.Action, 0, p.control))
+			p.write(joinLayout(" => ", formatTerm(r.Action, 0, p.control)))
 		}
 	}
 	p.comments(r.CloseBreak, indentUnit, true)
@@ -533,11 +532,10 @@ func (p *printer) groupBody(e Expr, indent string) {
 	pollFormat(p.control)
 	if action, ok := e.(*InlineAction); ok {
 		p.body(action.Expr, indent)
-		p.write(" => ")
 		if action.DefaultAction {
-			p.write("...")
+			p.write(" => ...")
 		} else {
-			p.write(formatTerm(action.Action, 0, p.control))
+			p.write(joinLayout(" => ", formatTerm(action.Action, 0, p.control)))
 		}
 		return
 	}
@@ -564,7 +562,7 @@ func (p *printer) operatorsRule(pr *OperatorsRule, indent string) {
 		p.lineBreak(o.Break, inner, false)
 		p.write("operand " + formatExpr(o.Expr, precChoice, p.control))
 		if o.Action != nil {
-			p.write(" => " + formatTerm(o.Action, 0, p.control))
+			p.write(joinLayout(" => ", formatTerm(o.Action, 0, p.control)))
 		} else if o.DefaultAction {
 			p.write(" => ...")
 		}
@@ -620,7 +618,7 @@ func formatOperator(op *OperatorsRuleOperator, control *metadataControl) string 
 	}
 	s += formatExpr(op.Expr, precChoice, control)
 	if op.Action != nil {
-		s += " => " + formatTerm(op.Action, 0, control)
+		s += joinLayout(" => ", formatTerm(op.Action, 0, control))
 	} else if op.DefaultAction {
 		s += " => ..."
 	}
@@ -1010,11 +1008,11 @@ func formatExpr(e Expr, outer int, control *metadataControl) string {
 	pollFormat(control)
 	switch e := e.(type) {
 	case *InlineAction:
-		action := "..."
+		action := " => ..."
 		if !e.DefaultAction {
-			action = formatTerm(e.Action, 0, control)
+			action = joinLayout(" => ", formatTerm(e.Action, 0, control))
 		}
-		return finishFormat("("+formatExpr(e.Expr, precChoice, control)+" => "+action+")", control)
+		return finishFormat("("+formatExpr(e.Expr, precChoice, control)+action+")", control)
 	case *Choice:
 		parts := make([]string, len(e.Alts))
 		for i, a := range e.Alts {
@@ -1407,7 +1405,7 @@ func (p *printer) operator(op *OperatorsRuleOperator) {
 	}
 	p.write(formatExpr(op.Expr, precChoice, p.control))
 	if op.Action != nil {
-		p.write(" => " + formatTerm(op.Action, 0, p.control))
+		p.write(joinLayout(" => ", formatTerm(op.Action, 0, p.control)))
 	} else if op.DefaultAction {
 		p.write(" => ...")
 	}
@@ -1468,4 +1466,13 @@ func formatSourceLayout(layout *SourceLayout, body string, control *metadataCont
 		}
 	}
 	return out.String()
+}
+
+// joinLayout appends body to a separator that ends in a space. A comment before body on the same
+// line brings a space of its own, which would double the separator's.
+func joinLayout(separator, body string) string {
+	if strings.HasSuffix(separator, " ") && strings.HasPrefix(body, " ") {
+		body = body[1:]
+	}
+	return separator + body
 }

@@ -891,7 +891,7 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 		return "p.anchor(p.atLineEnd(), idEndLine)"
 	case *grammar.Predicate:
 		if a, ok := e.Term.(*grammar.Assign); ok {
-			fmt.Fprintf(&b, "  return p.assign(%s, %s) ? null : undefined;\n", tsString(a.Name), g.action(a.Value, s, nil))
+			fmt.Fprintf(&b, "  return p.assign(%s, %s, %s) ? null : undefined;\n", tsString(a.Name), tsString(g.prog.bindCheck(a)), g.action(a.Value, s, nil))
 		} else {
 			fmt.Fprintf(&b, "  return p.predicate((c) => %s) ? null : undefined;\n", g.predicateTerm(e.Term, s))
 		}

@@ -48,6 +48,17 @@ var nodeBases = []string{
 	"rule a = b => N{\n A: 1, // a\n B: 2 // b\n} // n\n",
 	"rule a = b => {\n x // a\n y; // b\n z\n}\n",
 	"rule a T[U] = b\ntype X = {A (B, C)}\n",
+	"var x int\nvar y = 1 // c\nvar z bool // d\nvar w string = \"s\" // e\n",
+	"var x int /* a */ = /* b */ 1\nvar y /* c */ bool\n// f\nvar z = true;\nvar w = -1 // g\n",
+}
+
+// TestCanonicalVarTrailingComment checks that the comment after a variable declaration without a
+// value stays outside the declaration in both frontends.
+func TestCanonicalVarTrailingComment(t *testing.T) {
+	p, _ := sourceGrammar(t)
+	for _, src := range []string{"var z bool // c\n", "var z // c\n", "var z = 1 // c\n", "var z\n", "var z bool /* c */\nvar y = 1\n"} {
+		assertNodeParity(t, p, src, src)
+	}
 }
 
 var insertions = []string{

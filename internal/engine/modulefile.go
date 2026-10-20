@@ -326,6 +326,13 @@ func validateModule(m *Module) error {
 			seenVars[name] = true
 		}
 	}
+	// declared checks that a string index names a declared variable.
+	declared := func(i int) {
+		str(i)
+		if err == nil && !seenVars[m.Strings[i]] {
+			fail("variable %q is not declared", m.Strings[i])
+		}
+	}
 	for _, r := range m.Rules {
 		str(r.Name)
 		in("entry", r.Entry, len(m.Code))
@@ -336,7 +343,9 @@ func validateModule(m *Module) error {
 			fail("type %q is not a named node type", m.Strings[r.NodeType])
 		}
 		opt("operatorsRule", r.OperatorsRule, len(m.OperatorsRules))
-		strs(r.Vars)
+		for _, v := range r.Vars {
+			declared(v)
+		}
 		check(r.Check, "in rule "+fmt.Sprint(r.Name))
 	}
 	for _, p := range m.OperatorsRules {
@@ -440,8 +449,9 @@ func validateModule(m *Module) error {
 		case OpPred:
 			in("expression", int(x.A), len(m.Exprs))
 		case OpAssign:
-			str(int(x.A))
+			declared(int(x.A))
 			in("expression", int(x.B), len(m.Exprs))
+			flag(x.C, 1)
 		case OpLabel:
 			str(int(x.A))
 			flag(x.B, 1)
@@ -471,7 +481,9 @@ func validateModule(m *Module) error {
 			nonneg(x.A)
 		case EBool:
 			flag(x.A, 1)
-		case EStr, EVar, EUnary, EBoolChk, EMember, EBin:
+		case EVar:
+			declared(int(x.A))
+		case EStr, EUnary, EBoolChk, EMember, EBin:
 			str(int(x.A))
 		case ECap, EItem, ELocal:
 			nonneg(x.A)
@@ -569,6 +581,14 @@ func moduleProgram(m *Module) *Program {
 		}
 		prog.types[m.Strings[t.Name]] = &grammar.TypeDef{Name: m.Strings[t.Name], Type: st}
 	}
+	prog.vars = moduleVarTable(m)
+	prog.moduleOnce.Do(func() { prog.module = m })
+	return prog
+}
+
+// moduleVarTable returns the variable table of the module m, or nil when it declares no variable.
+func moduleVarTable(m *Module) *varTable {
+	var t *varTable
 	for _, v := range m.Vars {
 		d := &varDecl{name: m.Strings[v.Name]}
 		switch v.Type {
@@ -579,11 +599,10 @@ func moduleProgram(m *Module) *Program {
 		default:
 			d.typ, d.init = tyBool, v.Int == 1
 		}
-		if prog.vars == nil {
-			prog.vars = newVarTable()
+		if t == nil {
+			t = newVarTable()
 		}
-		prog.vars.add(d)
+		t.add(d)
 	}
-	prog.moduleOnce.Do(func() { prog.module = m })
-	return prog
+	return t
 }

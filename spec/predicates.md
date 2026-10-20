@@ -70,7 +70,10 @@ back under the same rules as adjacent Predicate Actions.
   errors, as is a value of another type than the declared one.
 - **Types.** Reading a variable gives its declared type, so `x + 1` and
   `V{N: x}` are checked when the grammar is compiled. A binding `name := value`
-  must give a value that is assignable to the declared type.
+  must give a value that is assignable to the declared type. A value whose
+  type is not known when the grammar is compiled (`any`) is accepted, and
+  checked when the binding runs: a value of another type fails the binding.
+  See [Type Checking](type-checking.md).
 - **Declaration before use.** Reading or binding a name that is not declared is
   a compile-time error. Declaring a name twice is a compile-time error.
 - **Starting state.** Every parse starts with every declared variable bound to

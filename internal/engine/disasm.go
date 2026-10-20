@@ -175,6 +175,9 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 	case OpPred:
 		return fmt.Sprintf("expr=%d", a)
 	case OpAssign:
+		if c != 0 {
+			return fmt.Sprintf("%s expr=%d check", m.Strings[a], bb)
+		}
 		return fmt.Sprintf("%s expr=%d", m.Strings[a], bb)
 	case OpLabel:
 		if bb == 1 {
