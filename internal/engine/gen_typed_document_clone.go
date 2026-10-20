@@ -136,7 +136,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 			target = &tasks
 		}
 		for _, f := range t.info.fields[name] {
-			fmt.Fprintf(target, " c.Step(1)\n out.%s = %s\n", f.name, clone(f.t, "v."+f.name))
+			fmt.Fprintf(target, " c.Step(1)\n out.%s = %s\n", t.fieldGo(f.name), clone(f.t, "v."+t.fieldGo(f.name)))
 		}
 		if !deferred {
 			methods.WriteString(" return out\n}\n")

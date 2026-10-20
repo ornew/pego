@@ -89,7 +89,7 @@ func TestGeneratedTypedLocalLayouts(t *testing.T) {
 		opts.disableTypedLocalLayouts = true
 		reference, err := Generate(ast, opts)
 		if err != nil || localBodyInlined(reference) || strings.Contains(string(code), "disableTypedLocalLayouts") {
-			t.Fatalf("%s: invalid generation-only Control: %v", c.name, err)
+			t.Fatalf("%s: invalid generation-only control: %v", c.name, err)
 		}
 		opts.Types = false
 		nodeReference, err := Generate(ast, opts)

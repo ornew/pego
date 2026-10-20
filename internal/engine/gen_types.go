@@ -259,10 +259,13 @@ type typedGen struct {
 	unions map[string]string
 	// lists maps the Go type of a list to the name of its converter (from nodes); tlists, to the
 	// name of its converter from values of the typed runtime.
-	lists       map[string]string
-	listOrder   []listConv
-	tlists      map[string]string
-	tlistOrder  []listConv
+	lists      map[string]string
+	listOrder  []listConv
+	tlists     map[string]string
+	tlistOrder []listConv
+	// fieldNames maps grammar field names to Go field names, which differ only for the names of
+	// the methods of typed values (runtimeMethodNames).
+	fieldNames  map[string]string
 	structs     []string // struct type names, sorted
 	nodeTypes   []string // named node type names, sorted
 	aliases     []string // canonical node union names, sorted
@@ -311,6 +314,21 @@ var runtimeHookNames = map[string]bool{
 	"TypedDocumentParse": true, "TypeListValue": true, "TypeTupleValue": true, "UnboxNode": true,
 	"UnboxValue": true, "WalkFields": true, "WalkTask": true, "WorkControl": true, "WorkControlsEnabled": true,
 	"WorkRange": true,
+}
+
+// runtimeMethodNames are the methods the generated structs have for the typed runtime (TVal and
+// the embedded Span); a field of the same name gets a "_" suffix in Go.
+var runtimeMethodNames = map[string]bool{
+	"TName": true, "TText": true, "TKids": true, "TStruct": true, "TFresh": true, "TSetFresh": true,
+	"TField": true, "TFieldWork": true, "TStrField": true, "TSpan": true, "TSetSpan": true,
+}
+
+// fieldGo returns the Go name of the struct field with the grammar name name.
+func (t *typedGen) fieldGo(name string) string {
+	if g, ok := t.fieldNames[name]; ok {
+		return g
+	}
+	return name
 }
 
 // name assigns Go names: grammar type names stay unless they clash with the runtime (then "_" is
@@ -376,6 +394,21 @@ func (t *typedGen) name() {
 			}
 			t.typeAliases = append(t.typeAliases, name)
 		}
+	}
+	t.fieldNames = map[string]string{}
+	for _, name := range all {
+		for _, f := range t.info.fields[name] {
+			if _, ok := t.fieldNames[f.name]; !ok {
+				t.fieldNames[f.name] = f.name
+			}
+		}
+	}
+	for name := range t.fieldNames {
+		goName := name
+		for runtimeMethodNames[goName] || (goName != name && t.fieldNames[goName] != "") {
+			goName += "_"
+		}
+		t.fieldNames[name] = goName
 	}
 	span := "Span"
 	for used[span] {
@@ -549,7 +582,7 @@ func (t *typedGen) decls(b *strings.Builder) {
 		fmt.Fprintf(b, "// %s is the struct type %s.\n", t.names[name], name)
 		fmt.Fprintf(b, "type %s struct {\n\t%s\n", t.names[name], span)
 		for _, f := range t.info.fields[name] {
-			fmt.Fprintf(b, "\t%s %s\n", f.name, t.goType(f.t))
+			fmt.Fprintf(b, "\t%s %s\n", t.fieldGo(f.name), t.goType(f.t))
 		}
 		b.WriteString("}\n\n")
 	}
@@ -695,7 +728,7 @@ func (a *astConv) toError(n *Node) *Error {
 		if len(t.info.fields[name]) > 0 {
 			// Fields are set in the order the action set them; look each one up.
 			for _, f := range t.info.fields[name] {
-				fmt.Fprintf(b, "\tv.%s = %s\n", f.name, t.conv(f.t, fmt.Sprintf("a.field(n, %q)", f.name)))
+				fmt.Fprintf(b, "\tv.%s = %s\n", t.fieldGo(f.name), t.conv(f.t, fmt.Sprintf("a.field(n, %q)", f.name)))
 			}
 		}
 		b.WriteString("\treturn v\n}\n\n")
@@ -955,7 +988,7 @@ func (t *typedGen) valueMethods(b *strings.Builder) {
 		fmt.Fprintf(b, "func (v *%s) TField(name string) (any, bool) {\n\tswitch name {\n", g)
 		for _, f := range t.info.fields[name] {
 			if t.representable(f.t) {
-				fmt.Fprintf(b, "\tcase %q:\n\t\treturn %s, true\n", f.name, t.back(f.t, "v."+f.name))
+				fmt.Fprintf(b, "\tcase %q:\n\t\treturn %s, true\n", f.name, t.back(f.t, "v."+t.fieldGo(f.name)))
 			} else {
 				fmt.Fprintf(b, "\tcase %q:\n\t\treturn nil, true\n", f.name)
 			}
@@ -970,14 +1003,14 @@ func (t *typedGen) valueMethods(b *strings.Builder) {
 		if len(strs) > 0 {
 			fmt.Fprintf(b, "func (v *%s) TStrField(name string) (string, bool) {\n\tswitch name {\n", g)
 			for _, f := range strs {
-				fmt.Fprintf(b, "\tcase %q:\n\t\treturn v.%s, true\n", f, f)
+				fmt.Fprintf(b, "\tcase %q:\n\t\treturn v.%s, true\n", f, t.fieldGo(f))
 			}
 			b.WriteString("\t}\n\treturn \"\", false\n}\n\n")
 		}
 		fmt.Fprintf(b, "func (v *%s) TFieldWork(p *TParser, name string) (any, bool) {\n\tswitch name {\n", g)
 		for _, f := range t.info.fields[name] {
 			if t.representable(f.t) {
-				fmt.Fprintf(b, "\tcase %q:\n\t\treturn %s, true\n", f.name, t.backWork(f.t, "v."+f.name))
+				fmt.Fprintf(b, "\tcase %q:\n\t\treturn %s, true\n", f.name, t.backWork(f.t, "v."+t.fieldGo(f.name)))
 			} else {
 				fmt.Fprintf(b, "\tcase %q:\n\t\treturn nil, true\n", f.name)
 			}
@@ -1167,7 +1200,7 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 		}
 		fmt.Fprintf(&cons, "// tmk_%s makes a %s in an action (newStruct in the typed runtime).\nfunc tmk_%s(%s) any {\n\tc.P.StepWork()\n\ta := c.P.Ext.(*tslabs)\n\tv := astNew(&a.t%s)\n", name, name, name, strings.Join(params, ", "), g)
 		for i, f := range fields {
-			fmt.Fprintf(&cons, "\tc.P.StepWork()\n\tv.%s = %s\n", f.name, t.dconv(f.t, fmt.Sprintf("f%d", i), "a"))
+			fmt.Fprintf(&cons, "\tc.P.StepWork()\n\tv.%s = %s\n", t.fieldGo(f.name), t.dconv(f.t, fmt.Sprintf("f%d", i), "a"))
 		}
 		fmt.Fprintf(&cons, "\tif final {\n\t\tv.%[1]s = %[1]s{c.Start, c.End}\n\t\treturn v\n\t}\n\tfirst, start, end := true, 0, 0\n", span)
 		for i := range fields {

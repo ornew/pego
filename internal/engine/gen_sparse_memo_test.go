@@ -84,7 +84,7 @@ func TestGeneratedSparseMemo(t *testing.T) {
 		cmd.Dir = path
 		output, err := cmd.CombinedOutput()
 		if err != nil {
-			t.Fatalf("%s generated Control: %v\n%s", name, err, output)
+			t.Fatalf("%s generated control: %v\n%s", name, err, output)
 		}
 		for _, line := range strings.Split(string(output), "\n") {
 			if at := strings.Index(line, "MEMO_RESULT "); at >= 0 {
@@ -154,7 +154,7 @@ func TestGeneratedTSSparseMemoControls(t *testing.T) {
 				"--noPropertyAccessFromIndexSignature", "--erasableSyntaxOnly", "--verbatimModuleSyntax", "parser.ts")
 			cmd.Dir = path
 			if output, err := cmd.CombinedOutput(); err != nil {
-				t.Fatalf("%s strict TypeScript Control: %v\n%s", name, err, output)
+				t.Fatalf("%s strict TypeScript control: %v\n%s", name, err, output)
 			}
 		} else {
 			t.Log("tsc not found: not type-checking the generated code")
@@ -163,7 +163,7 @@ func TestGeneratedTSSparseMemoControls(t *testing.T) {
 		cmd.Dir = path
 		output, err := cmd.CombinedOutput()
 		if err != nil {
-			t.Fatalf("%s TypeScript Control: %v\n%s", name, err, output)
+			t.Fatalf("%s TypeScript control: %v\n%s", name, err, output)
 		}
 		results[i] = string(output)
 	}

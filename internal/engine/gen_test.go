@@ -233,7 +233,7 @@ rule leaf = "x"`, []string{strings.Repeat("(", DefaultMaxDepth-3) + "x" + string
 		strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2)}})
 	// Chains of prefix and right-associative operators count against the limit too (a OperatorsRule
 	// expression parses them by recursion).
-	cases = append(cases, genCase{"OperatorsRule nesting limit", `rule main = x
+	cases = append(cases, genCase{"operatorsRule nesting limit", `rule main = x
 rule x = operators {
     operand "x"
     level { infix right "^" }

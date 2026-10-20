@@ -79,7 +79,7 @@ func TestGeneratedTypedFramedCuts(t *testing.T) {
 		opts.disableTypedFramedCuts = true
 		ref, err := Generate(g, opts)
 		if err != nil || strings.Contains(string(ref), marker) || strings.Contains(string(code), "disableTypedFramedCuts") {
-			t.Fatalf("%s: invalid generation-only cut Control: %v", c.name, err)
+			t.Fatalf("%s: invalid generation-only cut control: %v", c.name, err)
 		}
 		opts.Types = false
 		nodeRef, err := Generate(g, opts)

@@ -2227,7 +2227,7 @@ func (p *Parser) callUnmemoized(r *Rule, min int) (*Node, bool) {
 	return v, ok
 }
 
-// CallMemo is a memoized call: it reuses the result at the position or evaluates and records
+// callMemo is a memoized call: it reuses the result at the position or evaluates and records
 // it. Its logic is that of the memoized path of call.
 func (p *Parser) callMemo(r *Rule, min int) (*Node, bool) {
 	start := p.Pos
@@ -2815,7 +2815,7 @@ func rtIndex(p *Parser, i any, n int, typeName func(any) string) int {
 	return k
 }
 
-// ActCtxtx is the context of evaluating an action or a predicate.
+// ActCtx is the context of evaluating an action or a predicate.
 //
 // ActCtx is for generated parsers; not a stable API.
 type ActCtx struct {
@@ -4684,7 +4684,7 @@ func (p *Parser) hasLiteralPrefix(text string) bool {
 	return true
 }
 
-// RunParseConvertedted shares admission and counters with a Node-to-typed converter.
+// RunParseConverted shares admission and counters with a Node-to-typed converter.
 //
 // RunParseConverted is for generated parsers; not a stable API.
 func RunParseConverted[T any](r *Rule, input string, o parseOptions, conv func(*Node, *WorkControl, error) T) (res T, err error) {
@@ -5736,7 +5736,7 @@ func (e *TError) TField(name string) (any, bool) {
 	return nil, true
 }
 
-// TSeqis a tuple node, a list node, a tuple value (TypeTupleValue) or a list value
+// TSeq is a tuple node, a list node, a tuple value (TypeTupleValue) or a list value
 // (TypeListValue) of the typed runtime. A tuple node's fields are its captures. A tuple or list
 // node of a named node type has nt, as TMatch does; typ stays "tuple" or "list".
 //
@@ -6163,7 +6163,7 @@ type TParser struct {
 	free          [8][]*TCaptureFrame // frames freed by FreeFrame, by size
 }
 
-// TCaptureFramereFrame is for generated parsers; not a stable API.
+// TCaptureFrame is for generated parsers; not a stable API.
 type TCaptureFrame struct{ Vals []any }
 
 // FreeFrame makes the frame f, which nothing refers to any more, available to NewFrame. A rule's
@@ -7087,7 +7087,7 @@ func (p *TParser) RecoverAttr(m, skip tmatcher, build bool) (any, bool) {
 
 // --- Actions and predicates ---
 
-// TActCtxCtx is the context of evaluating an action or a predicate (ActCtx in the typed runtime).
+// TActCtx is the context of evaluating an action or a predicate (ActCtx in the typed runtime).
 //
 // TActCtx is for generated parsers; not a stable API.
 type TActCtx struct {

@@ -169,7 +169,7 @@ func main() {
 	cmd := exec.Command("go", "run", ".")
 	cmd.Dir = dir
 	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("generated binding State: %v\n%s", err, out)
+		t.Fatalf("generated binding state: %v\n%s", err, out)
 	}
 }
 
@@ -232,6 +232,6 @@ for (const unit of [CodePoints, Bytes]) {
 	cmd := exec.Command(node, "parser.ts")
 	cmd.Dir = dir
 	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("generated TS binding State: %v\n%s", err, out)
+		t.Fatalf("generated TS binding state: %v\n%s", err, out)
 	}
 }

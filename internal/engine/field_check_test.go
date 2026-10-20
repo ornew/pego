@@ -256,7 +256,7 @@ rule val any = "v" => list()
 	}
 	sort.Strings(checked)
 	if got := strings.Join(checked, ", "); got != "Dynamic Int, Var int" {
-		t.Fatalf("checked RawFields: %s", got)
+		t.Fatalf("checked fields: %s", got)
 	}
 	m := prog.Module()
 	if v := m.instructionSetVersion(); v != isaVersion {

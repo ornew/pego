@@ -102,7 +102,7 @@ func TestGeneratedTypedRecoveryBodies(t *testing.T) {
 		opts.disableTypedRecoveryBodies = true
 		reference, err := Generate(g, opts)
 		if err != nil || strings.Contains(string(reference), marker) || strings.Contains(string(candidate), "disableTypedRecoveryBodies") {
-			t.Fatalf("%s: invalid generation-only Control: %v", c.name, err)
+			t.Fatalf("%s: invalid generation-only control: %v", c.name, err)
 		}
 		opts.Types = false
 		nodeReference, err := Generate(g, opts)

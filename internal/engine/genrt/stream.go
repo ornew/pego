@@ -105,7 +105,7 @@ func (r *streamReader) Read(dst []byte) (int, error) {
 	return n, err
 }
 
-// RunParseStreameam parses the input read from reader with rule r, passing each
+// RunParseStream parses the input read from reader with rule r, passing each
 // committed element of the rule's #stream repetition to emit.
 //
 // RunParseStream is for generated parsers; not a stable API.
@@ -117,7 +117,7 @@ func RunParseStream(r *Rule, reader io.Reader, emit func(*Node) error, opts []Pa
 	return RunParseStreamWork(r, reader, e, opts)
 }
 
-// RunParseStreamWorkork is RunParseStream with emit also given the parse's work
+// RunParseStreamWork is RunParseStream with emit also given the parse's work
 // control, so that converting elements to typed values is charged to it.
 //
 // RunParseStreamWork is for generated parsers; not a stable API.

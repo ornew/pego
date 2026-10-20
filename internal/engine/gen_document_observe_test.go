@@ -99,7 +99,7 @@ func TestGeneratedDocumentObservation(t *testing.T) {
 	cmd := exec.Command("go", "test", "-p", "1", "-race", "-count=1", "./...")
 	cmd.Dir = dir
 	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("generated Document Observation: %v\n%s", err, out)
+		t.Fatalf("generated Document observation: %v\n%s", err, out)
 	}
 }
 

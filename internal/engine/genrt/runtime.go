@@ -2308,7 +2308,7 @@ func (p *Parser) callUnmemoized(r *Rule, min int) (*Node, bool) {
 	return v, ok
 }
 
-// CallMemo is a memoized call: it reuses the result at the position or evaluates and records
+// callMemo is a memoized call: it reuses the result at the position or evaluates and records
 // it. Its logic is that of the memoized path of call.
 func (p *Parser) callMemo(r *Rule, min int) (*Node, bool) {
 	start := p.Pos
@@ -2933,7 +2933,7 @@ func rtIndex(p *Parser, i any, n int, typeName func(any) string) int {
 	return k
 }
 
-// ActCtxtx is the context of evaluating an action or a predicate.
+// ActCtx is the context of evaluating an action or a predicate.
 //
 // ActCtx is for generated parsers; not a stable API.
 type ActCtx struct {

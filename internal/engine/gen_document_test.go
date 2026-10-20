@@ -51,7 +51,7 @@ func TestGeneratedDocumentAgainstBatch(t *testing.T) {
   for _, unit := range []PositionUnit{CodePoints, Bytes} {
    count := 0
    d, err := NewDocument("aa", func(o *parseOptions) { count++; o.unit = unit })
-   if err != nil || count != 1 { t.Fatalf("new Document: %v, option count %d", err, count) }
+   if err != nil || count != 1 { t.Fatalf("new document: %v, option count %d", err, count) }
    for _, change := range []struct{ start, end int; text string }{{2, 2, "a"}, {1, 2, "b"}, {1, 2, "a"}} {
     node, err := d.Parse()
     fresh, freshErr := Parse(d.Text(), WithUnit(unit))

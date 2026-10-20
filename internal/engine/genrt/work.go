@@ -393,7 +393,7 @@ func (p *Parser) hasLiteralPrefix(text string) bool {
 	return true
 }
 
-// RunParseConvertedted shares admission and counters with a Node-to-typed converter.
+// RunParseConverted shares admission and counters with a Node-to-typed converter.
 //
 // RunParseConverted is for generated parsers; not a stable API.
 func RunParseConverted[T any](r *Rule, input string, o parseOptions, conv func(*Node, *WorkControl, error) T) (res T, err error) {

@@ -220,7 +220,7 @@ func TestTypedOutputOwnership(t *testing.T) {
 				switch v := value.(type) {
 				case *Token:
 					if v.Text != "b" || v.Start != unitStart(unit) || v.End != v.Start+1 {
-						t.Fatalf("RawTerminal: %+v", v)
+						t.Fatalf("terminal: %+v", v)
 					}
 				case *TNode[string]:
 					if v.Value != "b" || v.Start != unitStart(unit) || v.End != v.Start+1 {

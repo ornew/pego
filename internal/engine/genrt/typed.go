@@ -247,7 +247,7 @@ func (e *TError) TField(name string) (any, bool) {
 	return nil, true
 }
 
-// TSeqis a tuple node, a list node, a tuple value (TypeTupleValue) or a list value
+// TSeq is a tuple node, a list node, a tuple value (TypeTupleValue) or a list value
 // (TypeListValue) of the typed runtime. A tuple node's fields are its captures. A tuple or list
 // node of a named node type has nt, as TMatch does; typ stays "tuple" or "list".
 //
@@ -674,7 +674,7 @@ type TParser struct {
 	free          [8][]*TCaptureFrame // frames freed by FreeFrame, by size
 }
 
-// TCaptureFramereFrame is for generated parsers; not a stable API.
+// TCaptureFrame is for generated parsers; not a stable API.
 type TCaptureFrame struct{ Vals []any }
 
 // FreeFrame makes the frame f, which nothing refers to any more, available to NewFrame. A rule's
@@ -1598,7 +1598,7 @@ func (p *TParser) RecoverAttr(m, skip tmatcher, build bool) (any, bool) {
 
 // --- Actions and predicates ---
 
-// TActCtxCtx is the context of evaluating an action or a predicate (ActCtx in the typed runtime).
+// TActCtx is the context of evaluating an action or a predicate (ActCtx in the typed runtime).
 //
 // TActCtx is for generated parsers; not a stable API.
 type TActCtx struct {
