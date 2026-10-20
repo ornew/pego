@@ -115,7 +115,7 @@ func TestCanonicalNodeParityPairs(t *testing.T) {
 				}
 				x, y := insertions[rng.Intn(len(insertions))], insertions[rng.Intn(len(insertions))]
 				src := string(rs[:a]) + x + string(rs[a:c]) + y + string(rs[c:])
-				if !compareNodes(t, p, fmt.Sprintf("base %d pair (%q)", bi, src), src, false) {
+				if !compareNodes(t, p, fmt.Sprintf("base %d pair (%q)", bi, src), base, src) {
 					failed++
 					if failed >= 8 {
 						t.Fatal("too many differences")
@@ -127,9 +127,9 @@ func TestCanonicalNodeParityPairs(t *testing.T) {
 }
 
 func TestCanonicalNodeParityInsertions(t *testing.T) {
-	compared, canonicalRejected = 0, 0
+	compared, manualRejected = 0, 0
 	defer func() {
-		t.Logf("compared %d sources; the canonical parser rejects %d more", compared, canonicalRejected)
+		t.Logf("compared %d sources; the hand-written parser rejects %d more for a known reason", compared, manualRejected)
 		if compared < 4000 {
 			t.Errorf("only %d sources were compared", compared)
 		}
@@ -144,7 +144,7 @@ func TestCanonicalNodeParityInsertions(t *testing.T) {
 				if off%2 == 1 {
 					src = crlf(src)
 				}
-				if !compareNodes(t, p, fmt.Sprintf("base %d offset %d insertion %d (%q)", bi, off, ii, src), src, false) {
+				if !compareNodes(t, p, fmt.Sprintf("base %d offset %d insertion %d (%q)", bi, off, ii, src), base, src) {
 					failed++
 					if failed >= 8 {
 						t.Fatal("too many differences")

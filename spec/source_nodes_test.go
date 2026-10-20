@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/ornew/pego"
@@ -605,34 +606,71 @@ func manualNodes(t *testing.T, g *grammar.Grammar) map[string]grammar.SourceInfo
 // assertNodeParity requires identical source information for every node of src.
 func assertNodeParity(t *testing.T, p *pego.Parser, name, src string) {
 	t.Helper()
-	if !compareNodes(t, p, name, src, true) {
+	if !compareNodes(t, p, name, "", src) {
 		t.FailNow()
 	}
 }
 
-// compareNodes reports whether the frontends agree on src. A source that the
-// hand-written parser rejects is skipped, since acceptance parity is checked by
-// TestSyntaxSummary; one that only the canonical parser rejects is skipped when
-// strict is false.
-// compared and canonicalRejected count the sources compareNodes compared and the
-// ones only the canonical parser rejects, which the generated sources of the
-// insertion tests include: the canonical grammar is stricter about where a
-// newline may stand before a separator.
-var compared, canonicalRejected int
+// compareNodes reports whether the frontends agree on src. They must agree on
+// acceptance: a source that only the canonical parser rejects fails, and so does
+// one that only the hand-written parser rejects unless knownManualRejection
+// names its category. A source both reject is skipped.
+// compared and manualRejected count the sources compareNodes compared and the
+// ones only the hand-written parser rejects for a known reason.
+var compared, manualRejected int
 
-func compareNodes(t *testing.T, p *pego.Parser, name, src string, strict bool) bool {
-	t.Helper()
-	manual, err := pego.ParseGrammar(src)
-	if err != nil {
+// knownManualRejection reports whether a source that the canonical parser
+// accepts and the hand-written parser rejects belongs to a known category of
+// disagreement that is not about statement boundaries:
+//
+//   - a source derived from a base that the hand-written parser rejects on
+//     its own: a postfix operator on a list literal, as in []int{1, 2}[0];
+//   - trivia between a name and the "[" of an index, as in x /* c */ [0], which
+//     the hand-written lexer reads as the start of a character class;
+//   - a range in a character class with a comment-like text, as in [a-/* c */z];
+//   - a newline inside an action value expression, outside any delimiter,
+//     which the canonical parser accepts at every token boundary.
+func knownManualRejection(base, src string, err error) bool {
+	msg := err.Error()
+	switch {
+	case baseRejected(base):
+		return true
+	case strings.Contains(base, "x[0][1]"):
+		return true
+	case strings.Contains(msg, "invalid range") && strings.Contains(src, "[a-"):
+		return true
+	case strings.Contains(base, "=> ") && strings.Contains(base, " + ") && (strings.Contains(msg, "multiline expressions require their own open delimiter") ||
+		strings.Contains(msg, "expected 'rule' or 'type', found") ||
+		strings.Contains(msg, "expected identifier on the same statement")):
 		return true
 	}
+	return false
+}
+
+// baseRejected reports whether the hand-written parser rejects the base source
+// that a derived source was built from.
+func baseRejected(base string) bool {
+	_, err := pego.ParseGrammar(base)
+	return err != nil
+}
+
+func compareNodes(t *testing.T, p *pego.Parser, name, base, src string) bool {
+	t.Helper()
+	manual, merr := pego.ParseGrammar(src)
 	n, err := p.Parse(src)
-	if err != nil {
-		if !strict {
-			canonicalRejected++
+	switch {
+	case merr != nil && err != nil:
+		return true
+	case merr != nil:
+		if knownManualRejection(base, src, merr) {
+			manualRejected++
 			return true
 		}
-		t.Fatalf("%s: canonical parser rejects accepted source: %v", name, err)
+		t.Errorf("%s: the hand-written parser rejects a source the canonical parser accepts: %v", name, merr)
+		return false
+	case err != nil:
+		t.Errorf("%s: the canonical parser rejects a source the hand-written parser accepts: %v", name, err)
+		return false
 	}
 	compared++
 	want, got := manualNodes(t, manual), canonicalNodes(t, src, n)

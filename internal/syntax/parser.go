@@ -401,6 +401,17 @@ func (p *parser) declarationEnd() {
 	}
 }
 
+// separator consumes the semicolon that ends a struct field or an action
+// statement. A newline ends the statement too, so a semicolon on a later line
+// starts an empty statement, which these lists reject when they expect the next
+// field or statement.
+func (p *parser) separator() bool {
+	if p.tok().lineBefore {
+		return false
+	}
+	return p.accept(";")
+}
+
 // recover recovers from a bail and skips to the next definition.
 func (p *parser) recover() {
 	x := recover()
@@ -453,6 +464,10 @@ func (p *parser) typeDecl() (sourceResult grammar.TypeDecl) {
 		panic(bail{})
 	case p.is("=") && p.peek(1).kind == tPunct && p.peek(1).text == "{":
 		p.next()
+		if p.boundary() {
+			p.errorf("multiline expressions require their own open delimiter")
+			panic(bail{})
+		}
 		p.header = false
 		p.layout, p.layoutDepth = false, 0
 		st := &grammar.StructType{}
@@ -632,7 +647,7 @@ func (p *parser) structFields() (fields []*grammar.Field, closeBreak *grammar.Li
 		p.source(field, fieldStart)
 		fields = append(fields, field)
 		restore()
-		if !p.accept(";") && !p.is("}") && !p.tok().lineBefore {
+		if !p.separator() && !p.is("}") && !p.tok().lineBefore {
 			p.errorf("expected a semicolon or newline between struct fields")
 			panic(bail{})
 		}
@@ -679,7 +694,7 @@ func (p *parser) ruleDef() (sourceResult *grammar.RuleDef) {
 	}
 	p.expect("=")
 	p.header = false
-	if !p.boundary() && p.is("operators") && p.peek(1).kind == tPunct && p.peek(1).text == "{" {
+	if !p.boundary() && p.is("operators") && p.peek(1).kind == tPunct && p.peek(1).text == "{" && !p.peek(1).lineBefore {
 		p.next()
 		// Items inside an operators block have their own separators.
 		p.layout = false
@@ -1410,6 +1425,10 @@ func (p *parser) actionBlock() (sourceResult *grammar.Block) {
 	open := p.i
 	outerBreak := p.cur
 	defer func() { p.cur = outerBreak }()
+	if p.boundary() {
+		p.errorf("multiline expressions require their own open delimiter")
+		panic(bail{})
+	}
 	outerLayout, outerDepth, outerStart := p.layout, p.layoutDepth, p.layoutStart
 	defer func() { p.layout, p.layoutDepth, p.layoutStart = outerLayout, outerDepth, outerStart }()
 	p.layout = false
@@ -1436,7 +1455,7 @@ func (p *parser) actionBlock() (sourceResult *grammar.Block) {
 		restore()
 		block.Statements = append(block.Statements, term)
 		block.Breaks = append(block.Breaks, br)
-		if !p.accept(";") && !p.is("}") && !p.tok().lineBefore {
+		if !p.separator() && !p.is("}") && !p.tok().lineBefore {
 			p.errorf("expected a semicolon or newline between action statements")
 			panic(bail{})
 		}

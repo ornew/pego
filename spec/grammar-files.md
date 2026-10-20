@@ -30,7 +30,11 @@ expression, such as grouping parentheses or braces around a Predicate Action
 or Value Action block, permits its contents to span lines. An outer
 Operators Rule brace does not by itself make an operand or operator expression
 multiline. Semicolons and statement newlines separate struct fields and
-separate action-block statements.
+separate action-block statements. A newline ends a statement, so a semicolon
+on a later line than the statement it follows starts an empty statement, which a
+struct type and an action block reject. The `{` of a type definition stays on
+the line of its `=`, and an action or action block stays on the line of its
+`=>`, unless a delimiter encloses both.
 
 An empty file is a valid grammar with no rules, but it cannot be used to parse
 anything, because there is no start rule to select.
