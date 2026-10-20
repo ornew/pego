@@ -75,7 +75,7 @@ var tpubHooks = &pegort.TPubHooks{
 	},
 }
 
-// --- Typed values (pego gen -types; Span, TNode and Error are in the typed runtime above) ---
+// --- Typed values (pego gen -types; Span, TNode and Error are aliases of the runtime types) ---
 
 // Alias is the struct type Alias.
 type Alias struct {

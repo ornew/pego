@@ -112,6 +112,9 @@ func (d *Document) ResolveParseOptions(opts []ParseOption) (parseOptions, error)
 	if err := o.validateDiagnostics(); err != nil {
 		return o, err
 	}
+	if err := o.validateObservation(d.State.root.g); err != nil {
+		return o, err
+	}
 	return o, nil
 }
 

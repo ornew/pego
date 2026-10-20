@@ -898,7 +898,7 @@ type Rule struct {
 // one for its rule table and, with Recognize, one for the recognizer's rule
 // table, which shares the other tables. Every rule refers to its grammar.
 //
-// Of its fields and methods, Descs, NodeTypes, RuleByName, SetRules, Share, SourceInfo, StructFields, TypeKinds are for generated parsers; not a stable API.
+// Of its fields and methods, Descs, NodeTypes, Observable, RuleByName, SetRules, Share, SourceInfo, StructFields, TypeKinds are for generated parsers; not a stable API.
 type grammar struct {
 	// rules is the rule table and nseen the number of its rules with rule.Seen set.
 	rules []*Rule
@@ -916,6 +916,9 @@ type grammar struct {
 	// SourceInfo reports that values record source information: the rule that produced each
 	// node and where its captures are.
 	SourceInfo bool
+	// Observable reports that the parser was generated with observability: only then do the
+	// trace and profile options take effect, so only then does ResolveOptions accept them.
+	Observable bool
 	// MaxDepth is the default maximum nesting of rule calls.
 	maxDepth int
 	// initEnv is the environment every parse starts from, with each variable bound to its
@@ -1068,7 +1071,20 @@ func ResolveOptions(g *grammar, opts []ParseOption) (parseOptions, error) {
 	if err := o.validateDiagnostics(); err != nil {
 		return o, err
 	}
+	if err := o.validateObservation(g); err != nil {
+		return o, err
+	}
 	return o, nil
+}
+
+// validateObservation accepts the trace and profile options only for a parser generated with
+// observability, which is the one that calls the observation.
+func (o *parseOptions) validateObservation(g *grammar) error {
+	ob := &o.observe
+	if !g.Observable && (ob.trace != nil || ob.profile != nil || ob.rules != nil || ob.maxDepth != 0) {
+		return fmt.Errorf("trace and profile options are only supported by a parser generated with observability")
+	}
+	return nil
 }
 
 // validateDiagnostics accepts the diagnostic options only for stream entry points.

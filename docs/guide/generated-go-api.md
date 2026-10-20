@@ -92,18 +92,19 @@ Compared with the engine's API:
 - Runtime errors in actions (such as division by zero) and exceeding the nesting limit return plain errors, as in the
   engine.
 
-### What Is Inside the File
+### What Is Inside the Package
 
 | Part | Contents |
 |:--|:--|
-| Runtime | The parser state, memoization, left recursion, Operators Rule loop, attribute handling and the built-in functions of actions. About 1,800 lines, **the same in every generated file**, embedded in each generated file. |
+| Runtime | The parser state, memoization, left recursion, Operators Rule loop, attribute handling and the built-in functions of actions. It is **the same for every grammar**: the package `github.com/ornew/pego/runtime`, which the generated package imports (`-runtime import`) or carries a copy of in `internal/runtime` (`-runtime embed`, the default). |
+| `api.go` | The names of the runtime that the users of the parser need (`Node`, `SyntaxError`, the options and so on), as aliases and wrappers. It is the same for grammars generated with the same options. |
 | Rule table | For each rule, the results of the engine's static analysis (memoized? left-recursion leader? capture names?). |
 | Parser expressions | One method per expression, with literals, character classes and rule indices embedded as constants, and one per rule that is never memoized and has no captures, which calls the rule's body directly. |
 | Value Actions and Predicate Actions | Go expressions; lambdas become Go function literals. |
 
-That is why even a tiny grammar produces a file of a few dozen kilobytes. Measured sizes: `pairs.pego` (7 lines)
-generates 56,970 bytes; the JSON grammar ([parsers/json](../../parsers/json/json.pego), 1,514 bytes of source) generates
-92,537 bytes; the minilang grammar (4,416 bytes) generates 134,245 bytes. The growth is in the per-grammar part.
+The runtime is not part of `parser.go`, so the size of `parser.go` is that of the per-grammar parts: it grows with the
+grammar, and a tiny grammar produces a file of a few kilobytes. Options such as `-types` and `-document` add code to
+`parser.go`.
 
 ## Recognition (`-recognize`)
 

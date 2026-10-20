@@ -286,7 +286,7 @@ pego gen -lang ts -g <grammar> [-s <rule>] [-o <file>] [-recognize] [-default-va
 ```
 
 Generates a standalone Go parser (see [code-generation.md](code-generation.md)) or, with `-lang ts`, a TypeScript
-module (see [typescript.md](typescript.md)). `-g` is required, and `-module` for Go, whose output is the directory `-o`; TypeScript goes to standard output without `-o`. `-source-info` makes the generated Go parser record the rule of each node and the names of captures.
+module (see [typescript.md](typescript.md)). `-g` is required (except with `-runtime only`), and for Go `-o`, the output directory, and `-module`, the import path of the package (with `-runtime import`, `-pkg` is enough). The Go output is `parser.go`, `api.go` and, with `-runtime embed`, a copy of the runtime in `internal/runtime`; `pego gen` refuses to replace a file in the directory that it did not generate. TypeScript goes to standard output without `-o`. `-source-info` makes the generated Go parser record the rule of each node and the names of captures.
 `-default-value` makes the generated parser return default values; it cannot be combined with `-types`, because the
 types come from the dropped actions.
 

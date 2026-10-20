@@ -17,11 +17,12 @@ Complete [Building Typed Trees](typed-trees.md): you need `config.pego` and a Go
 ## Generating a Standalone Go Parser
 
 `pego gen` turns a grammar into Go source, so your program does not need the PEGO library or the grammar at run time.
-The generated file uses only the standard library. Generate it into a `config` package:
+The generated package (`parser.go`, `api.go` and a copy of the runtime in `internal/runtime`) uses only the standard
+library. `-module` is the import path the package will have, so it starts with your module path. Generate it into a
+`config` package:
 
 ```bash
-mkdir config
-pego gen -g config.pego -module example.com/config -o config
+pego gen -g config.pego -module example.com/hello/config -o config
 ```
 
 and call it:

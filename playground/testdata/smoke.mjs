@@ -118,14 +118,17 @@ for (const ex of manifest) {
   check(`${tag} fmt`, fmt.formatted === cli("fmt", ex.grammar).out, diff(fmt.formatted, cli("fmt", ex.grammar).out));
 
   const gen = call("generate", { grammar, package: "parser", types: true });
-  // The playground shows the generated files one after another, each under a banner.
+  // The playground shows the generated files one after another, each under a banner, and offers each on its own.
   const outDir = mkdtempSync(path.join(os.tmpdir(), "pego-smoke-"));
   const wantGen = cli("gen", "-g", ex.grammar, "-module", "example.com/parser", "-runtime", "import", "-types", "-o", outDir);
   const wantCode = ["parser.go", "api.go"]
     .map((f) => `// ===== ${f} =====\n\n` + readFileSync(path.join(outDir, f), "utf8"))
     .join("\n");
+  const wantFiles = ["parser.go", "api.go"].map((f) => ({ path: f, content: readFileSync(path.join(outDir, f), "utf8") }));
   rmSync(outDir, { recursive: true, force: true });
   check(`${tag} gen -types`, wantGen.status === 0 && gen.code === wantCode, wantGen.status !== 0 ? wantGen.err : diff(gen.code, wantCode));
+  // The files are also offered separately: the joined text above is not a compilable file.
+  check(`${tag} gen files`, JSON.stringify(gen.files) === JSON.stringify(wantFiles), diff(JSON.stringify(gen.files), JSON.stringify(wantFiles)));
 }
 
 // Deep nesting ends with an error instead of overflowing the JavaScript stack, which would stop the

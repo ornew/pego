@@ -506,7 +506,8 @@ func WithRuntime(mode RuntimeMode) GenOption {
 }
 
 // WithPackageName sets the package name of generated Go code. It defaults to the last element
-// of the module path.
+// of the module path, without a major version suffix (example.com/m/v2 gives m). It is also the
+// only name a RuntimeImport parser needs, so the module path may then be empty.
 func WithPackageName(name string) GenOption {
 	return func(o *engine.GenOptions) { o.Package = name }
 }

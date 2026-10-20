@@ -97,6 +97,10 @@ and callback-panic behavior as Node batch methods. Generated Go Node and typed
 batch parsers also provide profiling through `WithProfile`; TypeScript batch
 parsers provide profiling through `Profile` in per-call options.
 
+A parser generated without observability does not observe: passing it the trace or
+profile options (`WithTrace`, `WithProfile`, `WithTraceFilter`, `WithTraceMaxDepth`)
+returns an error before the parse instead of delivering partial data.
+
 The generated package defines its own `TraceEvent` and trace options. Events
 observe actual generated execution, not an event-for-event replay of engine
 parser calls. `TraceEnter` begins a rule call before its memo lookup or body

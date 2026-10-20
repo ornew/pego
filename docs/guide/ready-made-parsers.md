@@ -30,9 +30,9 @@ go get github.com/ornew/pego/parsers/json
 import "github.com/ornew/pego/parsers/json"
 ```
 
-The parsers are generated code, and large ones are very large: `parsers/json/parser.go` is 200,876 bytes,
-`parsers/python/parser.go` 3,948,176 bytes and `parsers/duckdb/parser.go` 13,216,774 bytes. They compile once and are
-cached, but the first build of a big parser takes a while: the DuckDB program below took about 80 seconds to build on a
+The parsers are generated code, and large ones are very large: the `parser.go` of the JSON parser is a few hundred
+kilobytes of Go source, and those of the Python and DuckDB parsers are several megabytes, many times the size of their
+grammars. They compile once and are cached, but the first build of a big parser takes a while: the DuckDB program below took about 80 seconds to build on a
 cold build cache (with other builds running), the Go one about 11. They are the output of the
 [code generator](code-generation.md), so what is said there about generated code (its size, its diffs) applies.
 

@@ -140,8 +140,16 @@ type generateRequest struct {
 }
 
 type generateResult struct {
-	Code        string       `json:"code,omitempty"`
-	Diagnostics []diagnostic `json:"diagnostics"`
+	// Code is the generated files one after another, each under a banner when there are several,
+	// for display. Files holds them separately, to be saved under their names.
+	Code        string          `json:"code,omitempty"`
+	Files       []generatedFile `json:"files,omitempty"`
+	Diagnostics []diagnostic    `json:"diagnostics"`
+}
+
+type generatedFile struct {
+	Path    string `json:"path"`
+	Content string `json:"content"`
 }
 
 type versionResult struct {
@@ -576,6 +584,9 @@ func generate(req generateRequest) generateResult {
 		return res
 	}
 	var code strings.Builder
+	for _, f := range files {
+		res.Files = append(res.Files, generatedFile{f.Path, string(f.Content)})
+	}
 	for i, f := range files {
 		if len(files) > 1 {
 			if i > 0 {

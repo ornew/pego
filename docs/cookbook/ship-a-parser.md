@@ -4,7 +4,7 @@
 and without a stale parser after somebody changes the grammar.
 
 Generate Go code from the grammar with `pego gen`, commit it, regenerate it with `go generate`, and let a test fail
-when the committed file does not match the grammar. The generated parser imports only the standard library.
+when the committed file does not match the grammar. The generated package imports only the standard library.
 
 The grammar reads versions such as `1.2.3` and `1.2.3-rc.1`:
 
@@ -35,7 +35,9 @@ example.com/ship
 ├── main.go
 ├── generated_test.go
 └── versionparser/       created by go generate
-    └── parser.go
+    ├── parser.go
+    ├── api.go
+    └── internal/runtime/
 ```
 
 Record `pego` as a tool of the module, so that `go generate` runs the version you pinned and nobody installs anything:
@@ -43,7 +45,6 @@ Record `pego` as a tool of the module, so that `go generate` runs the version yo
 ```bash
 go mod init example.com/ship
 go get -tool github.com/ornew/pego/cmd/pego
-mkdir versionparser
 ```
 
 Then the program, with the `go:generate` line that makes the parser (`-types` adds Go types and `ParseAST`):
@@ -59,7 +60,7 @@ import (
 	"example.com/ship/versionparser"
 )
 
-//go:generate go tool pego gen -g version.pego -module example.com/versionparser -types -o versionparser
+//go:generate go tool pego gen -g version.pego -module example.com/ship/versionparser -types -o versionparser
 
 func main() {
 	v, err := versionparser.ParseAST(os.Args[1])
@@ -88,16 +89,18 @@ major 1, minor 2, patch 3
 1:2: syntax error: expected "."
 ```
 
-A test keeps the generated file honest. It generates the code again in memory, with the options of the `go:generate`
-line, and compares it with the file:
+A test keeps the generated files honest. It generates the package again in memory, with the options of the
+`go:generate` line, and compares every file with the one on disk:
 
 ```go
 // generated_test.go
 package main
 
 import (
+	"bytes"
 	_ "embed"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/ornew/pego"
@@ -106,22 +109,25 @@ import (
 //go:embed version.pego
 var grammar string
 
-// versionparser/parser.go is what pego generates from version.pego. The options must be those of the go:generate line.
+// The files of versionparser are what pego generates from version.pego. The module path and the options must be those
+// of the go:generate line.
 func TestGeneratedIsUpToDate(t *testing.T) {
 	g, err := pego.ParseGrammar(grammar)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want, err := pego.GenerateGo(g, "example.com/versionparser", "main", pego.WithTypes())
+	want, err := pego.GenerateGo(g, "example.com/ship/versionparser", "main", pego.WithTypes())
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := os.ReadFile("versionparser/parser.go")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(got) != string(want) {
-		t.Error("versionparser/parser.go is out of date: run go generate ./...")
+	for _, f := range want { // parser.go, api.go and the runtime, with paths relative to the package
+		got, err := os.ReadFile(filepath.Join("versionparser", filepath.FromSlash(f.Path)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(got, f.Content) {
+			t.Errorf("versionparser/%s is out of date: run go generate ./...", f.Path)
+		}
 	}
 }
 ```
@@ -129,8 +135,8 @@ func TestGeneratedIsUpToDate(t *testing.T) {
 If somebody changes the grammar (here, the characters of `ident`) and does not run `go generate`:
 
 ```text
---- FAIL: TestGeneratedIsUpToDate (0.01s)
-    generated_test.go:29: versionparser/parser.go is out of date: run go generate ./...
+--- FAIL: TestGeneratedIsUpToDate (0.02s)
+    generated_test.go:33: versionparser/parser.go is out of date: run go generate ./...
 FAIL
 FAIL	example.com/ship	0.652s
 FAIL
@@ -142,7 +148,7 @@ FAIL
   `go.mod` still requires PEGO, for the tool and for the test.
 - **The generator is deterministic.** The same grammar and options give the same file, which is what makes the
   comparison in the test, and a review of a diff of `parser.go`, meaningful.
-- **Regenerate after upgrading PEGO.** The runtime in the generated file comes from the version of `pego` that wrote it.
+- **Regenerate after upgrading PEGO.** The copy of the runtime in `versionparser/internal/runtime` comes from the version of `pego` that wrote it.
   Without the test, a new version of the tool leaves the old runtime in place until somebody runs `go generate`; with it,
   the test fails. Pinning the tool with `go get -tool` keeps every developer and CI on the same version.
 - **Without the test**, `go generate ./... && git diff --exit-code` in CI says the same.

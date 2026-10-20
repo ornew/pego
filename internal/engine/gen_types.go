@@ -285,42 +285,11 @@ type listConv struct {
 	elem ty
 }
 
-// runtimeNames are the exported names of the generated runtime, which typed values must avoid.
-var runtimeNames = map[string]bool{
-	"WalkTree": true, "WalkAction": true, "WalkContinue": true, "WalkSkip": true, "WalkStop": true,
-	"WalkVisit": true, "WalkEdge": true, "WalkEdgeKind": true, "WalkRoot": true, "WalkChild": true, "WalkField": true, "WalkListElement": true, "CycleError": true, "Cursor": true,
-	"Node": true, "NodeField": true, "Fields": true, "NodeKind": true, "KindString": true, "KindTuple": true, "KindList": true, "KindError": true, "KindStruct": true, "KindTupleValue": true, "KindListValue": true, "KindValue": true, "SyntaxError": true, "SyntaxErrors": true, "Unit": true, "PositionUnit": true,
-	"WorkLimits": true, "WorkLimitKind": true, "WorkLimitError": true, "ErrWorkLimit": true, "InputWorkLimit": true, "StepWorkLimit": true, "WithContext": true, "WithWorkLimits": true, "ParseOption": true, "WithUnit": true, "WithMaxDepth": true, "CodePoints": true, "Bytes": true, "Parse": true, "ParseRule": true, "ParseAST": true, "ParseRuleAST": true, "Recognize": true, "Error": true, "TNode": true,
-}
-
-// runtimeHookNames are the exported names of the runtime hooks that generated code uses, which are
-// for generated parsers and not a stable API. Typed values must avoid them too.
-var runtimeHookNames = map[string]bool{
-	"ActCtx": true, "AsTval": true, "BaseString": true, "DocumentBusy": true, "DocumentParseConverted": true,
-	"DocumentSliceKey": true, "EmptyFrame": true, "EmptyTFrame": true, "Env": true, "ExpID": true,
-	"ExpMark": true, "FieldType": true, "CaptureFrame": true, "IdAny": true, "IdBeginInput": true, "IdBeginLine": true,
-	"IdEndInput": true, "IdEndLine": true, "IterateStream": true, "KindOf": true, "MakeDocument": true,
-	"Mark": true, "MsgBit": true, "NewGrammar": true, "NewNodeTypeKinds": true, "OperatorsRule": true,
-	"OperatorsRuleLine": true, "OperatorsRuleOp": true, "Parser": true, "RawKindList": true,
-	"RawKindMatch": true, "RawKindSeq": true, "RenamedExpected": true, "ResolveOptions": true, "Rule": true,
-	"RunParse": true, "RunParseConverted": true, "RunParseResolved": true, "RunParseStream": true,
-	"RunParseStreamWork": true, "Shaper": true, "SliceIdentity": true, "FieldSpanOf": true, "StreamPull": true,
-	"TActCtx": true, "TAs": true, "TBack": true, "TError": true, "TCaptureFrame": true, "TFreshNode": true,
-	"TKid": true, "TListOf": true, "TMatch": true, "TMatchAs": true, "TOperatorsRule": true,
-	"TOperatorsRuleLine": true, "TOperatorsRuleOp": true, "TParse": true, "TParser": true,
-	"TParseResolved": true, "TPtr": true, "TPub": true, "TPubError": true, "TPubIn": true, "TPubMatch": true,
-	"TPubNode": true, "TPubNodeIn": true, "TRegisterNodeType": true, "TRule": true, "TSeq": true,
-	"TSetNodeType": true, "TVal": true, "TypedDocumentCloneBase": true, "TypedDocumentCloneTask": true,
-	"TypedDocumentParse": true, "TypeListValue": true, "TypeTupleValue": true, "UnboxNode": true,
-	"UnboxValue": true, "WalkFields": true, "WalkTask": true, "WorkControl": true, "WorkControlsEnabled": true,
-	"WorkRange": true,
-}
-
 // runtimeMethodNames are the methods the generated structs have for the typed runtime (TVal and
-// the embedded Span); a field of the same name gets a "_" suffix in Go.
+// the embedded Span, with its Range); a field of the same name gets a "_" suffix in Go.
 var runtimeMethodNames = map[string]bool{
 	"TName": true, "TText": true, "TKids": true, "TStruct": true, "TFresh": true, "TSetFresh": true,
-	"TField": true, "TFieldWork": true, "TStrField": true, "TSpan": true, "TSetSpan": true,
+	"TField": true, "TFieldWork": true, "TStrField": true, "TSpan": true, "TSetSpan": true, "Range": true,
 }
 
 // fieldGo returns the Go name of the struct field with the grammar name name.
@@ -331,18 +300,12 @@ func (t *typedGen) fieldGo(name string) string {
 	return name
 }
 
-// name assigns Go names: grammar type names stay unless they clash with the runtime (then "_" is
-// appended), and the helper type Span gets a name no type or field uses.
+// name assigns Go names: grammar type names stay unless they clash with a name the generated
+// package declares (then "_" is appended), and the helper type Span gets a name no type or field uses.
 func (t *typedGen) name() {
 	used := map[string]bool{}
-	for n := range runtimeNames {
+	for n := range t.g.reserved {
 		used[n] = true
-	}
-	for n := range runtimeHookNames {
-		used[n] = true
-	}
-	for _, name := range t.g.modeRuntimeNames(true) {
-		used[name] = true
 	}
 	var all []string
 	for name := range t.g.prog.types {
@@ -561,7 +524,7 @@ func (t *typedGen) conv(x ty, v string) string {
 // decls writes the type declarations.
 func (t *typedGen) decls(b *strings.Builder) {
 	span := t.span
-	b.WriteString("// --- Typed values (pego gen -types; Span, TNode and Error are in the typed runtime above) ---\n\n")
+	b.WriteString("// --- Typed values (pego gen -types; Span, TNode and Error are aliases of the runtime types) ---\n\n")
 	for _, name := range t.structs {
 		fmt.Fprintf(b, "// %s is the struct type %s.\n", t.names[name], name)
 		fmt.Fprintf(b, "type %s struct {\n\t%s\n", t.names[name], span)
@@ -708,7 +671,7 @@ func (a *astConv) toError(n *Node) *Error {
 		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tu := %[3]s\n\tif u == nil {\n\t\treturn nil\n\t}\n\tv := &%[1]s{*u}\n\ta.remember(n, v)\n\treturn v\n}\n\n", t.names[name], name, t.conv(n.underlying(), "n.BaseNode()"))
 	}
 	for _, name := range t.structs {
-		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tv := astNew(&a.t%[1]s)\n\ta.remember(n, v)\n\tv.%[3]s = %[3]s{int(n.RawStart), int(n.RawEnd)}\n", t.names[name], name, span)
+		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tv := astNew(&a.t%[1]s)\n\ta.remember(n, v)\n\tv.%[3]s = %[3]s{Start: int(n.RawStart), End: int(n.RawEnd)}\n", t.names[name], name, span)
 		if len(t.info.fields[name]) > 0 {
 			// Fields are set in the order the action set them; look each one up.
 			for _, f := range t.info.fields[name] {
@@ -1394,26 +1357,4 @@ func tupleName(name string) bool {
 		return false
 	}
 	return strings.Trim(digits, "0123456789") == ""
-}
-
-// modeRuntimeNames returns the runtime names that only the generated package of an enabled option
-// (observability, streaming, Documents) uses. Typed values avoid them when the option is on; with
-// it off they are free for the grammar, so enabled selects the names of the options that are on, and
-// otherwise the names of the options that are off.
-func (g *generator) modeRuntimeNames(enabled bool) []string {
-	var out []string
-	if g.observability == enabled {
-		out = append(out, "TraceKind", "TraceEvent", "TraceEnter", "TraceExit", "TraceSkipped", "WithTrace", "WithTraceFilter", "WithTraceMaxDepth", "WithProfile", "Profile", "ProfileSnapshot", "RuleProfile", "ProfileLocation", "SkipReasonCount")
-	}
-	if (g.streamStart != nil) == enabled {
-		out = append(out, "ParseStream", "ParseStreamAST", "StreamValue", "Iterate", "IterateAST", "StreamIterator",
-			"StreamASTIterator", "ErrStreamClosed", "WithDiagnosticCallback", "WithDiagnosticLimit", "TruncatedSyntaxErrors")
-	}
-	if g.document == enabled {
-		out = append(out, "Document", "NewDocument", "ParseStats")
-	}
-	if (g.document && g.observability) == enabled {
-		out = append(out, "ErrDocumentBusy")
-	}
-	return out
 }

@@ -209,12 +209,12 @@ var stdImports = map[string]string{
 // qualifyRuntime finishes the generated source body of package pkg. Every identifier that the body
 // leaves unresolved and that is an exported name of the runtime is the runtime's, and is qualified
 // with the runtime package; the standard-library packages the body uses are imported.
-func qualifyRuntime(pkg, rtImport, body string, info *runtimeInfo) (string, error) {
+func qualifyRuntime(pkg, rtImport, body string, info *runtimeInfo) (string, map[string]bool, error) {
 	const prefix = "package p\n"
 	fset := token.NewFileSet()
 	f, err := goparser.ParseFile(fset, "body.go", prefix+body, goparser.ParseComments)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	var offsets []int
 	std := map[string]bool{}
@@ -228,8 +228,10 @@ func qualifyRuntime(pkg, rtImport, body string, info *runtimeInfo) (string, erro
 		}
 		return true
 	})
+	used := map[string]bool{}
 	for _, id := range f.Unresolved {
 		if _, ok := info.decls[id.Name]; ok {
+			used[id.Name] = true
 			offsets = append(offsets, fset.Position(id.Pos()).Offset-len(prefix))
 			continue
 		}
@@ -239,30 +241,50 @@ func qualifyRuntime(pkg, rtImport, body string, info *runtimeInfo) (string, erro
 			}
 		}
 	}
-	// A composite literal of a map, slice or array may use runtime constants as keys, which the
-	// parser does not report as unresolved (they may name fields).
-	goast.Inspect(f, func(n goast.Node) bool {
-		lit, ok := n.(*goast.CompositeLit)
-		if !ok {
-			return true
+	// A key of a composite literal that is not of a struct is an expression, which may name a
+	// runtime constant; the parser does not report it as unresolved, since a key may name a field.
+	// The kind of the literal comes from its type, resolved through the type declarations of the
+	// body and of the runtime, and for a literal with its type elided, from the enclosing one.
+	types := map[string]goast.Expr{}
+	for _, d := range f.Decls {
+		if d, ok := d.(*goast.GenDecl); ok && d.Tok == token.TYPE {
+			for _, s := range d.Specs {
+				ts := s.(*goast.TypeSpec)
+				types[ts.Name.Name] = ts.Type
+			}
 		}
-		switch lit.Type.(type) {
-		case *goast.MapType, *goast.ArrayType:
-		default:
-			return true
+	}
+	var qualifyKeys func(lit *goast.CompositeLit, typ goast.Expr)
+	qualifyKeys = func(lit *goast.CompositeLit, typ goast.Expr) {
+		if lit.Type != nil {
+			typ = lit.Type
 		}
+		kind, key, elem := literalType(typ, types, info)
 		for _, e := range lit.Elts {
-			kv, ok := e.(*goast.KeyValueExpr)
-			if !ok {
+			kv, isKV := e.(*goast.KeyValueExpr)
+			if !isKV {
+				if sub, ok := e.(*goast.CompositeLit); ok && sub.Type == nil {
+					qualifyKeys(sub, elem)
+				}
 				continue
 			}
-			id, ok := kv.Key.(*goast.Ident)
-			if !ok || id.Obj != nil {
-				continue
+			if id, ok := kv.Key.(*goast.Ident); ok && kind != 's' && id.Obj == nil {
+				if d, ok := info.decls[id.Name]; ok && (d.kind == token.CONST || d.kind == token.VAR) {
+					used[id.Name] = true
+					offsets = append(offsets, fset.Position(id.Pos()).Offset-len(prefix))
+				}
 			}
-			if d, ok := info.decls[id.Name]; ok && (d.kind == token.CONST || d.kind == token.VAR) {
-				offsets = append(offsets, fset.Position(id.Pos()).Offset-len(prefix))
+			if sub, ok := kv.Key.(*goast.CompositeLit); ok && sub.Type == nil {
+				qualifyKeys(sub, key)
 			}
+			if sub, ok := kv.Value.(*goast.CompositeLit); ok && sub.Type == nil {
+				qualifyKeys(sub, elem)
+			}
+		}
+	}
+	goast.Inspect(f, func(n goast.Node) bool {
+		if lit, ok := n.(*goast.CompositeLit); ok && lit.Type != nil {
+			qualifyKeys(lit, nil)
 		}
 		return true
 	})
@@ -287,43 +309,135 @@ func qualifyRuntime(pkg, rtImport, body string, info *runtimeInfo) (string, erro
 		fmt.Fprintf(&imports, "\t%q\n", p)
 	}
 	fmt.Fprintf(&imports, "\n\t%s %q\n)\n\n", runtimeAlias, rtImport)
-	return imports.String() + string(b), nil
+	return imports.String() + string(b), used, nil
 }
 
-// declaredRuntimeNames returns the top-level names the generated body declares that are also
-// exported names of the runtime. Generated code refers to the runtime by qualified names, so such
-// a declaration is only valid where the generator intends it.
-func declaredRuntimeNames(body string, info *runtimeInfo) ([]string, error) {
-	f, err := goparser.ParseFile(token.NewFileSet(), "body.go", "package p\n"+body, goparser.SkipObjectResolution)
+// literalType returns the kind of the composite literal of type typ ('s' for a struct, 'm' for a
+// map, 'a' for an array or slice, 0 if unknown) and the types of its keys and elements (nil if
+// unknown). Named types are resolved through types, the type declarations of the body, and then
+// through the runtime's.
+func literalType(typ goast.Expr, types map[string]goast.Expr, info *runtimeInfo) (kind byte, key, elem goast.Expr) {
+	for depth := 0; typ != nil && depth < 32; depth++ {
+		switch t := typ.(type) {
+		case *goast.ParenExpr:
+			typ = t.X
+		case *goast.StarExpr:
+			typ = t.X
+		case *goast.IndexExpr:
+			typ = t.X
+		case *goast.IndexListExpr:
+			typ = t.X
+		case *goast.StructType:
+			return 's', nil, nil
+		case *goast.MapType:
+			return 'm', t.Key, t.Value
+		case *goast.ArrayType:
+			return 'a', nil, t.Elt
+		case *goast.Ident:
+			if next, ok := types[t.Name]; ok {
+				typ = next
+			} else if d, ok := info.decls[t.Name]; ok && d.kind == token.TYPE {
+				typ = d.spec.(*goast.TypeSpec).Type
+			} else {
+				return 0, nil, nil
+			}
+		default:
+			return 0, nil, nil
+		}
+	}
+	return 0, nil, nil
+}
+
+// declaredNames returns the top-level names (other than methods) that the Go source declares.
+func declaredNames(src string) ([]string, error) {
+	f, err := goparser.ParseFile(token.NewFileSet(), "src.go", src, goparser.SkipObjectResolution)
 	if err != nil {
 		return nil, err
 	}
 	var out []string
-	add := func(id *goast.Ident) {
-		if _, ok := info.decls[id.Name]; ok {
-			out = append(out, id.Name)
-		}
-	}
 	for _, d := range f.Decls {
 		switch d := d.(type) {
 		case *goast.FuncDecl:
-			if d.Recv == nil {
-				add(d.Name)
+			if d.Recv == nil && d.Name.Name != "init" {
+				out = append(out, d.Name.Name)
 			}
 		case *goast.GenDecl:
 			for _, s := range d.Specs {
 				switch s := s.(type) {
 				case *goast.TypeSpec:
-					add(s.Name)
+					out = append(out, s.Name.Name)
 				case *goast.ValueSpec:
 					for _, n := range s.Names {
-						add(n)
+						out = append(out, n.Name)
 					}
 				}
 			}
 		}
 	}
 	return out, nil
+}
+
+// apiPubName returns the name under which api.go declares the runtime name.
+func apiPubName(name string) string {
+	if name == "Walk" {
+		// A typed AST walker of the same package or a hand-written one commonly takes the name Walk.
+		return "WalkTree"
+	}
+	return name
+}
+
+// typedEntryNames returns the exported names the typed part of a generated parser declares
+// besides the grammar's types and the names of the head of parser.go. checkNoClash catches a
+// name missing here.
+func (opts GenOptions) typedEntryNames() []string {
+	names := []string{"ParseAST", "ParseRuleAST", "Error", "TNode"}
+	if opts.Document {
+		names = append(names, "Document")
+	}
+	if opts.Stream {
+		names = append(names, "ParseStreamAST", "StreamValue", "IterateAST", "StreamASTIterator")
+	}
+	return names
+}
+
+// reservedNames returns the names that the types of a typed grammar must not take, because the
+// generated package declares them: those of api.go, those declared by the part of parser.go that
+// is generated before the types (head), and typedEntryNames. The runtime's own names are not
+// reserved, since the generated code refers to them by qualified names.
+func (opts GenOptions) reservedNames(head string) map[string]bool {
+	reserved := map[string]bool{}
+	for _, name := range opts.apiNames() {
+		if name != "Span" { // a grammar type may take the name; api.go then leaves it out
+			reserved[apiPubName(name)] = true
+		}
+	}
+	if names, err := declaredNames("package p\n" + head); err == nil {
+		for _, name := range names {
+			reserved[name] = true
+		}
+	}
+	for _, name := range opts.typedEntryNames() {
+		reserved[name] = true
+	}
+	return reserved
+}
+
+// checkNoClash reports a name that both the body of parser.go (declared) and api.go declare.
+func checkNoClash(declared []string, api string) error {
+	apiDeclared, err := declaredNames(api)
+	if err != nil {
+		return err
+	}
+	inAPI := map[string]bool{}
+	for _, name := range apiDeclared {
+		inAPI[name] = true
+	}
+	for _, name := range declared {
+		if inAPI[name] {
+			return fmt.Errorf("the grammar declares %s, which the generated package also declares for the users of the parser; rename the type", name)
+		}
+	}
+	return nil
 }
 
 // apiNames returns the runtime names that the generated package re-exports for its users, in
@@ -374,11 +488,7 @@ func (opts GenOptions) apiSource(info *runtimeInfo, noSpan bool) (string, error)
 		if d == nil {
 			return "", fmt.Errorf("internal error: the runtime has no %s", name)
 		}
-		pubName := name
-		if name == "Walk" {
-			// A typed AST walker of the same package or a hand-written one commonly takes the name Walk.
-			pubName = "WalkTree"
-		}
+		pubName := apiPubName(name)
 		doc := d.doc
 		if pubName != name {
 			doc = strings.Replace(doc, name+" ", pubName+" ", 1)

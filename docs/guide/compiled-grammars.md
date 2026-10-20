@@ -425,8 +425,8 @@ Rules of thumb:
   ([streaming and incremental parsing](streaming.md), [backends](backends.md)) and still skip the compile.
 - **Use `pego gen`** when the parser is on a hot path or you want no dependency on PEGO at run time: it has no
   start-up and the fastest parsing. The cost is that the grammar is frozen into the binary, and that the generated
-  source is large: `parsers/python/parser.go` is 3,948,176 bytes against 84,841 bytes for `python.pego`, and
-  `parsers/duckdb/parser.go` is 13,216,774 bytes against 222,544 bytes for `duckdb.pego`.
+  source is large: the `parser.go` of `parsers/python` and of `parsers/duckdb` is dozens to hundreds of times the size of
+  the `.pego` file it comes from.
 
 The three give the same trees and the same errors, so you can start with source, move to a file when start-up shows up
 in a profile, and to generated code when parsing speed does.

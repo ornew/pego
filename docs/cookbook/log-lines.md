@@ -47,11 +47,10 @@ rule millis Millis = ([0-9]+) #atomic
 ```
 
 Generate the parser with `-types` (Go types for the grammar's types and `ParseAST`) and `-recognize` (`Recognize`).
-The tool is recorded in the module with `go get -tool github.com/ornew/pego/cmd/pego`, and the output directory must
-exist:
+The tool is recorded in the module with `go get -tool github.com/ornew/pego/cmd/pego`, and `pego gen` creates the output
+directory:
 
 ```bash
-mkdir logparser
 go generate ./...
 ```
 
@@ -68,7 +67,7 @@ import (
 	"example.com/logs/logparser"
 )
 
-//go:generate go tool pego gen -g logs.pego -module example.com/logparser -types -recognize -o logparser
+//go:generate go tool pego gen -g logs.pego -module example.com/logs/logparser -types -recognize -o logparser
 
 func main() {
 	data, err := io.ReadAll(os.Stdin)
@@ -135,7 +134,7 @@ printf '2026-10-09T11:12:41Z INFO api GET /x 200 12ms\n2026-10-09T11:12:41Z INFO
 
 ## How It Works
 
-- **A generated parser is the fast one.** `pego gen` writes a Go file with no dependency on PEGO. With `-types`, every
+- **A generated parser is the fast one.** `pego gen` writes a Go package with no dependency on PEGO. With `-types`, every
   rule here has a Go type of its own, so `ParseAST` builds `*Line` values directly, without the generic nodes `Parse`
   would build first. The values are plain structs: `l.Level.Value`, `l.Millis.Value`.
 - **Strings stay strings.** `Millis` is a string node, so its `Value` is the matched digits, and you convert

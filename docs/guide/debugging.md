@@ -460,6 +460,9 @@ pego gen -g pairs.pego -module example.com/pairsparser -observability -o pairspa
 pego gen -g pairs.pego -module example.com/pairsparser -types -observability -o pairsparser
 ```
 
+A parser generated without `-observability` has no tracing: it returns an error for the trace and profile options
+(`WithTrace`, `WithProfile`, `WithTraceFilter`, `WithTraceMaxDepth`) instead of delivering partial data.
+
 The generated package provides its own `TraceEvent` and options. Its callbacks
 run synchronously and receive events for actual generated calls:
 
