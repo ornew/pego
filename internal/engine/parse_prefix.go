@@ -74,6 +74,7 @@ func (prog *Program) runPrefix(p *parser, b Backend, start string) (result Prefi
 			recoverParse(x, prog.backend(b), &err)
 		}
 	}()
+	p.seedVars()
 	v, ok := p.call(r, 0)
 	if !ok {
 		return PrefixResult{}, p.syntaxError()

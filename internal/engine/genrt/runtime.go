@@ -913,6 +913,22 @@ type grammar struct {
 	SourceInfo bool
 	// MaxDepth is the default maximum nesting of rule calls.
 	maxDepth int
+	// initEnv is the environment every parse starts from, with each variable bound to its
+	// initial value, and initBound holds the names of those variables (Parser.bound).
+	initEnv   *Env
+	initBound map[string]bool
+}
+
+// SetVars makes the variables names, with the initial values vals, the starting environment of
+// every parse.
+//
+// SetVars is for generated parsers; not a stable API.
+func (g *grammar) SetVars(names []string, vals []any) {
+	g.initEnv, g.initBound = nil, map[string]bool{}
+	for i, name := range names {
+		g.initEnv = &Env{name: name, val: vals[i], next: g.initEnv}
+		g.initBound[name] = true
+	}
 }
 
 // NewGrammar returns an empty grammar with the default rule-call limit MaxDepth.
@@ -1266,6 +1282,13 @@ type documentStats struct {
 // setGrammar prepares p to parse with the rules of g.
 func (p *Parser) setGrammar(g *grammar) {
 	p.g, p.sourceInfo, p.memo.stride = g, g.SourceInfo, g.nseen
+	p.Env, p.bound = g.initEnv, nil
+	if g.initEnv != nil {
+		p.bound = make(map[string]bool, len(g.initBound))
+		for name := range g.initBound {
+			p.bound[name] = true
+		}
+	}
 	if len(p.memo.calls) != g.nseen {
 		p.memo.calls = nil // kept from a parse with another rule table
 	}

@@ -55,17 +55,19 @@ capture that did not match has value `nil`.
 
 ## Variable References
 
-An action can read parser variables visible where it is evaluated. Lookup uses
-the nearest definition: a rule can read values defined by its callers, while
-definitions in called rules are not visible to their callers. Reading a
-variable that is undefined at the action's position is a runtime action error.
-Variables are `int`, `string` or `bool`; definitions shadow rather than mutate
-an existing value. Scope and rollback are specified in [Variables](predicates.md#variables).
+An action can read the parser variables that the grammar declares. Lookup uses
+the nearest binding: a rule can read values bound by its callers, while
+bindings in called rules are not visible to their callers. A variable that
+nothing has bound has its initial value. Reading a name that is not declared is
+a compile-time error. A read has the declared type of the variable. Variables
+are `int`, `string` or `bool`; bindings shadow rather than mutate an existing
+value. Declarations, scope and rollback are specified in [Variables](predicates.md#variables).
 Inside a lambda body, the lambda's parameters are variables too and are read
 the same way; see [Operators and Functions](#operators-and-functions).
 
 ```pego
 type Item = { Depth int; Name node[string] }
+var depth int
 rule item Item = {depth := 1} n:name => Item{Depth: depth, Name: $n}
 ```
 
@@ -117,7 +119,7 @@ rule pair = a:"a" b:"b" => ($a, $b)
 ```
 
 
-A struct field value whose Type the checker does not know, such as a variable,
+A struct field value whose Type the checker does not know, such as
 a result of type `any`, or a list with elements of unknown Type, is checked
 against the declared field Type when the constructor runs, after the value is
 evaluated:
@@ -420,7 +422,7 @@ steps. A mismatch causes the parse to fail with an error such as
 `cannot use List as Expr in result of rule term`, including when the rule was
 called for a predicate's value. A runtime error while evaluating a Value Action—such as
 division by zero,
-undefined variable lookup, or access to a concrete node that lacks a field—
+an out-of-range index, or access to a concrete node that lacks a field—
 causes the parse to fail. It is not a PEG syntax mismatch and is not backtracked
 or handled by `#recover`. A runtime error while evaluating a Predicate Action
 instead makes that predicate fail, so normal PEG backtracking applies; it does

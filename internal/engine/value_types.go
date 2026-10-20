@@ -415,8 +415,14 @@ func (v *valueInference) predicates(e grammar.Expr, env *valueEnv) {
 	switch e := e.(type) {
 	case *grammar.Predicate:
 		if a, ok := e.Term.(*grammar.Assign); ok {
-			if t := v.term(a.Value, env); !v.assignable(t, vunion(tyInt, tyString, tyBool)) {
-				v.errorf(a.Diagnostic(), "variable %s must be int, string, or bool, got %s", a.Name, v.expand(t))
+			t := v.term(a.Value, env)
+			if d := v.prog.vars.lookup(a.Name); d != nil {
+				switch {
+				case v.unknown(t):
+					v.errorf(a.Diagnostic(), "cannot use statically unknown %s as %s in the binding of variable %s", v.expand(t), d.typ, a.Name)
+				case !v.assignable(t, d.typ):
+					v.errorf(a.Diagnostic(), "cannot use %s as %s in the binding of variable %s", v.expand(t), d.typ, a.Name)
+				}
 			}
 		} else {
 			v.term(e.Term, env)

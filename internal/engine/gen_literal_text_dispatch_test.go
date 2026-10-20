@@ -55,8 +55,10 @@ func TestLiteralTextPredicateDispatchRejectsUnsafeShapes(t *testing.T) {
 		`rule main = w:[a-z]+ #atomic {text($w) == "a" || len($w) == 1} $$`,
 		`rule main = x:[a-z] #atomic y:[a-z] #atomic {text($x) == "a" || text($y) == "b"} $$`,
 		`rule main = w:[a-z]+ #atomic {text($w) == "a" || !(text($w) == "b")} $$`,
-		`rule main = w:[a-z]+ #atomic {alias := text($w)} {alias == "a" || alias == "b"} $$`,
-		`rule main = w:[a-z]+ #atomic {result := text($w) == "a" || text($w) == "b"} $$`,
+		`var alias string
+rule main = w:[a-z]+ #atomic {alias := text($w)} {alias == "a" || alias == "b"} $$`,
+		`var result bool
+rule main = w:[a-z]+ #atomic {result := text($w) == "a" || text($w) == "b"} $$`,
 	}
 	for i, source := range cases {
 		g, err := syntax.Parse(source)

@@ -18,7 +18,8 @@ func TestGeneratedLeanDepth(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	const src = `rule main = one
+	const src = `var n int
+rule main = one
 rule one = two
 rule two = three
 rule three = four

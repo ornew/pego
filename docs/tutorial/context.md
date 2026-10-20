@@ -54,6 +54,8 @@ type Content ~ Element | Chars
 rule main Element = e:element $$ => $e
 
 // The open tag defines `tag`; every rule called after that can read it.
+var tag string
+
 rule element Element = "<" n:name ">" {tag := text($n)} cs:content* close_tag => Element{Name: $n, Children: $cs.Value}
 rule content Content = element / chars
 rule chars Chars = ([^<]+) #atomic

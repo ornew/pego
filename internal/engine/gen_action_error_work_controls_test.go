@@ -23,6 +23,7 @@ func TestGeneratedGoActionErrorWork(t *testing.T) {
 		{"prefix", rule, `type A = { N int }
  rule ` + rule + ` A = a:"a" #cut => A{N:1 / (len($a)-1)}`, "action in " + rule + ": division by zero", false},
 		{"predicate", "main", `type Word = { Text string }
+ var ` + variable + ` bool
  rule main Word = (({` + variable + `} x:leaf) / x:leaf) #cut => $x
  rule leaf Word = t:("a") #atomic => Word{Text: text($t)}`, "", true},
 		{"captured", "main", `type A = { N int }

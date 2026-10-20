@@ -45,7 +45,8 @@ rule main = x:"a" / "b" => P{X: $x}`, `cannot use *node[string] as node[string] 
 		{`rule main = xs:(k:"a")* => $xs.$k`, `node[[]node[(node[string],), {"k": 0}]] has no capture k`},
 		{`rule main = "a" => len(1 + "a")`, `invalid operands int and string for +`},
 		{`rule main = "a" => len(1)`, `len: invalid argument int`},
-		{`rule main = "a" {x := (y) => 1}`, `functions can only be passed to filter, foldl, foldr, or map`},
+		{`var x int
+rule main = "a" {x := (y) => 1}`, `functions can only be passed to filter, foldl, foldr, or map`},
 		{`type Op = { X node[string] }
 rule main Op = "a"`, `rule main produces node[string], which is not assignable to Op`},
 		{`type E = { X node[string] }
@@ -98,7 +99,8 @@ rule p = x:"a"? #atomic ";"`,
 		`rule list = "a" list / _
 rule main = l:list => $l`,
 		// Predicates and variables
-		`rule main = {n := 0} s:" "* #atomic {len($s) > n && text($s) != "x"} "a"`,
+		`var n int
+rule main = {n := 0} s:" "* #atomic {len($s) > n && text($s) != "x"} "a"`,
 		// concat over a union of list types (foldl widens []never with []node[string]) and over a recovered error
 		`rule main = xs:item* => concat(foldl(list(), $xs, (acc, x) => concat(acc, list(x))))
 rule item = "a" #atomic`,
@@ -118,7 +120,8 @@ rule word = k:"a" v:"b"`,
 // TestInferenceOfGrowingTypes checks that inferring a rule type that grows at every round (lists
 // of lists of the rule's own values) finishes quickly instead of taking exponential time.
 func TestInferenceOfGrowingTypes(t *testing.T) {
-	src := `rule main = (r0 / r1) r2?
+	src := `var v int
+rule main = (r0 / r1) r2?
 rule r0 = ";"
 rule r1 = "a"
 rule r2 = r3 "é" / "a"

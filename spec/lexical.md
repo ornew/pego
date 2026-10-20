@@ -72,7 +72,7 @@ for type and field names; see [Names](types.md#names).
 ### Contextual Words
 
 The words `infix`, `level`, `operand`, `operators`, `package`, `postfix`,
-`prefix`, `rule`, `skip`, `struct`, `terminal`, and `type` are contextual
+`prefix`, `rule`, `skip`, `struct`, `terminal`, `type`, and `var` are contextual
 words, not globally reserved identifiers. They are interpreted as syntax only
 where the grammar expects a Declaration Statement or Operators Rule item. In a name
 position, rule reference, capture, field, variable, or expression, they remain
@@ -149,7 +149,7 @@ _|_  ^^  $$  --  =>  ==  !=  <=  >=  &&  ||  :=
 | `{`, `}` | Predicate delimiters where a primary Rule Expression form is expected; they also delimit source action blocks in their respective contexts |
 | `//`, `/*`, `*/` | Line and nested block comments |
 | `=>` | Whole-rule or Operators Rule action in those Declaration Statement positions; lambda arrow inside an action |
-| `:=` | Predicate variable definition |
+| `:=` | Variable binding in an action block |
 | `==`, `!=`, `<`, `<=`, `>`, `>=`, `&&`, `||`, `!`, `+`, `-`, `*`, `/`, `%` | Action and predicate operators |
 | `=`, `~`, `|`, `[]`, `*` | Type definitions, aliases and type forms (`type A = {...}`, `type A ~ B | C`, `[]T`, `*T`) |
 | `.` | Action field access |

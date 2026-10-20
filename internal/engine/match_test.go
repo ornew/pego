@@ -254,7 +254,8 @@ rule a = a "x" / _`,
 // variables: after the first alternative fails, r is called again at the same position with a
 // different value of n.
 func TestMemoKeyedByVariables(t *testing.T) {
-	src := `rule main = {n := 1} r "x" / {n := 2} r .*
+	src := `var n int
+rule main = {n := 1} r "x" / {n := 2} r .*
 rule r = {n == 1} "a" / {n == 2} "b"`
 	check(t, src,
 		ok("ax", `(("a")@r "x")@main`),

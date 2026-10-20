@@ -274,7 +274,7 @@ rule stmt = s:([a-z]+ ";") #recover(skip=[^;]+ ";") => $s
 		t.Errorf("recognize with recovery: %+v", r)
 	}
 	// A runtime error is not a match.
-	r = call[parseResult](t, "parse", parseRequest{Grammar: "type T = { D int }\nrule main T = \"a\" => T{D: depth}", Input: "a"})
+	r = call[parseResult](t, "parse", parseRequest{Grammar: "type T = { D int }\nrule main T = \"a\" => T{D: 1 / 0}", Input: "a"})
 	if r.Matched || r.Error == "" {
 		t.Errorf("runtime error: %+v", r)
 	}

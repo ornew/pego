@@ -25,7 +25,7 @@ import (
 func manualOwners(t *testing.T, g *grammar.Grammar) map[string]grammar.SourceInfo {
 	t.Helper()
 	kinds := map[string]string{
-		"Pkg": "Pkg", "TypeDef": "TypeDef", "TypeAlias": "TypeAlias", "RuleDef": "RuleDef", "Field": "Field",
+		"Pkg": "Pkg", "TypeDef": "TypeDef", "TypeAlias": "TypeAlias", "VarDef": "VarDef", "RuleDef": "RuleDef", "Field": "Field",
 		"OperatorsRuleOperand": "OperatorsOperand", "OperatorsRuleLevel": "OperatorsLevel",
 		"OperatorsRuleOperator": "OperatorsOperator", "FieldInit": "InitField",
 	}
@@ -94,7 +94,7 @@ func canonicalOwners(t *testing.T, src string, root *pego.Node) map[string]gramm
 	positions := sourceast.NewPositions(src)
 	owners := map[string]grammar.SourceInfo{}
 	kinds := map[string]string{
-		"TypeDef": "TypeDef", "TypeAlias": "TypeAlias", "RuleDef": "RuleDef", "Field": "Field",
+		"TypeDef": "TypeDef", "TypeAlias": "TypeAlias", "VarDef": "VarDef", "RuleDef": "RuleDef", "Field": "Field",
 		"OperatorsOperand": "OperatorsOperand", "OperatorsLevel": "OperatorsLevel",
 		"Prefix": "OperatorsOperator", "Postfix": "OperatorsOperator", "Infix": "OperatorsOperator",
 		"InitField": "InitField", "OperatorsSkip": "OperatorsSkip",

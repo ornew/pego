@@ -186,6 +186,7 @@ func (prog *Program) run(p *parser, b Backend, start string) (n *Node, err error
 		p.memo.stride = prog.vmFor(be).nseen
 	}
 	p.memo.sparse = sparseMemo && p.memo.stride > 64 && p.loaded() > 1024
+	p.seedVars()
 	defer func() {
 		if x := recover(); x != nil {
 			p.aborted = true
@@ -291,6 +292,7 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 		recoverParse(x, prog.backend(o.Backend), &err)
 	}()
 	control.check()
+	p.seedVars()
 	_, ok := p.call(rule, 0)
 	if ok && p.atEOF() {
 		control.check()

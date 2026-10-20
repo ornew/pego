@@ -70,6 +70,7 @@ rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}
 	{"typed/OperatorsRule_environment_rollback", `type Atom = { Text string }
 type Prefix = { X Expr; Tag int; Text node[string] }
 type Expr ~ Atom | Prefix
+var n int
 rule main Expr = {n := 0} e:expr $$ => $e
 rule expr Expr = operators {
     skip " " {n := 8} "!" / " "*

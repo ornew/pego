@@ -157,9 +157,12 @@ The type checker reports the following errors:
 - a field access on a value that may be `nil`;
 - an operand of an operator or an argument of a built-in function with an
   invalid type;
-- a predicate that defines a variable with a value other than `int`, `string`
-  or `bool`.
+- a variable that is read or bound without a declaration, a binding whose value
+  is not assignable to the declared type of the variable, and a variable
+  declaration with an unsupported type or an initial value of another type
+  (see [Variables](predicates.md#variables)).
 
-Variables used in predicates are defined by the calling rules, so references to
-variables are not type-checked. If the value of a variable has an unexpected
-type at run time, the predicate fails.
+A variable has the type its `var` declaration gives it, so a read of a variable
+is checked like any other value of that type: `x + 1` and `V{N: x}` are checked
+when the grammar is compiled. The value of a binding whose static type is
+unknown (`any`) is checked against the declared type at run time.

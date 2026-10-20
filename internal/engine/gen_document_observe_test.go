@@ -30,7 +30,7 @@ func TestGeneratedDocumentObservation(t *testing.T) {
 	for _, f := range []struct{ name, grammar, input string }{
 		{"plain", "type W = { Text string }\nrule main W = t:(part part part) #atomic => W{Text: text($t)}\nrule part W = t:([a-b]) #atomic => W{Text: text($t)}", "aaa"},
 		{"list", "type W = { Text string }\nrule main []W = p:part+ => $p.Value\nrule part W = t:([a-b]) #atomic => W{Text: text($t)}", "aaa"},
-		{"predicate", "type W = { Text string }\nrule main W = {x:=1} &part p:part {x==1} => $p\nrule part W = t:([a-z]) #atomic => W{Text: text($t)}", "a"},
+		{"predicate", "type W = { Text string }\nvar x int\nrule main W = {x:=1} &part p:part {x==1} => $p\nrule part W = t:([a-z]) #atomic => W{Text: text($t)}", "a"},
 		{"framed", "type W = { Text string }\ntype N = { Value W }\nrule main N = p:part => N{Value:$p}\nrule part W = t:([a-z]+) #atomic => W{Text: text($t)}", "abc"},
 		{"memo", "type W = { Text string }\nrule main W = &part &part &part p:part => $p\nrule part W = t:(letter) #atomic => W{Text: text($t)}\nrule letter = \"a\"", "a"},
 		{"leftrec", "type W = { Text string }\nrule main W = t:(expr) #atomic => W{Text: text($t)}\nrule expr W = t:(expr \"a\" / \"a\") #atomic => W{Text: text($t)}", "aaa"},

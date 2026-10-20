@@ -13,7 +13,7 @@ import (
 // rule wrapper and at an eagerly evaluated expression used by a predicate.
 func TestWorkActionErrorPublicParityAndInterruption(t *testing.T) {
 	longRule := strings.Repeat("r", 8192)
-	longVariable := strings.Repeat("u", 8192)
+	longType := strings.Repeat("T", 8192)
 	probes := []struct {
 		name, start, grammar, input, wantError string
 		fallback                               string
@@ -28,16 +28,24 @@ rule ` + longRule + ` = a:"a" => A{N: 1 / (len($a) - 1)}`,
 			wantError: "action in " + longRule + ": division by zero",
 		},
 		{
-			name:      "long undefined variable and concat order",
-			start:     "main",
-			grammar:   `rule main = {v := 1} x:"a" => concat(v, ` + longVariable + `)`,
+			name:  "long cast type",
+			start: "main",
+			grammar: `type ` + longType + ` = { N int }
+rule main = x:"a" d:dyn => $d.(` + longType + `)
+rule dyn any = ds / di
+rule ds = "b" => "s"
+rule di = _ => 1`,
 			input:     "a",
-			wantError: "action in main: variable " + longVariable + " is not defined",
+			wantError: "action in main: cannot cast int to " + longType,
 		},
 		{
 			name:  "discarded predicate error skips to fallback",
 			start: "main",
-			grammar: `rule main = ({` + longVariable + `} "a") / fallback` + "\n" + `
+			grammar: `type ` + longType + ` = { N int }
+rule main = (d:dyn {$d.(` + longType + `) != nil} "a") / fallback
+rule dyn any = ds / di
+rule ds = "b" => "s"
+rule di = _ => 1
 rule fallback = "a"`,
 			input:    "a",
 			fallback: "fallback",

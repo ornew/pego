@@ -423,6 +423,11 @@ func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
 		// Undefined captures were reported when names were resolved; this one has no value.
 		v.errorf(t.Diagnostic(), "$%s has no value in its scope", t.Name)
 		return tyAny
+	case *grammar.VarRef:
+		if d := v.prog.vars.lookup(t.Name); d != nil {
+			return d.typ
+		}
+		return tyAny // an undeclared variable was reported when names were resolved
 	case *grammar.Member:
 		return v.member(v.term(t.X, env), t)
 	case *grammar.New:
@@ -495,9 +500,8 @@ func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
 	case *grammar.Binary:
 		return v.binary(t, env)
 	}
-	// Positional captures are rejected when names are resolved; variables have no static type,
-	// assignments are checked with the predicates that make them, and statement blocks are
-	// rejected when the program is compiled.
+	// Positional captures are rejected when names are resolved, assignments are checked with the
+	// predicates that make them, and statement blocks are rejected when the program is compiled.
 	return tyAny
 }
 

@@ -52,12 +52,14 @@ rule body Doc = (
 ) => Doc{Items: map($items, (e) => Item{Text: e.$x, Missing: e.$unused}), Missing: $ignored}
 `, []string{"é,a,é,", "a,é,a,", "a,", "é,", "é,é,é,é,", "é,z,", "", "é"}},
 	{"typed/local_optional_cut", `type Doc = { Text *node[string]; Missing *node[string]; N int }
+var n int
 rule main Doc = {n := 0} e:body $$ => $e
 rule body Doc = (
     _|_ ignored:"z" #atomic / (x:"é" #atomic #cut {n := n + 1} "!")? "x"
 ) => Doc{Text: $x, Missing: $ignored, N: n}
 `, []string{"x", "é!x", "é?x", "éx", "é!", "é", "", "é!xx"}},
 	{"typed/local_choice_cut", `type Doc = { Text *node[string]; Missing *node[string]; N int }
+var n int
 rule main Doc = {n := 0} e:body $$ => $e
 rule body Doc = (
     _|_ ignored:"z" #atomic / x:"é" #atomic #cut {n := n + 1} "!" / x:"é" #atomic "?"

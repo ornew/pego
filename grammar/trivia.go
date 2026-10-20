@@ -268,6 +268,12 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 		case *TypeAlias:
 			add(s.Break)
 			typ(s.Type)
+		case *VarDef:
+			add(s.Break)
+			if s.Type != nil {
+				typ(s.Type)
+			}
+			term(s.Value)
 		case *RuleDef:
 			typ(s.Type)
 			add(s.Break)

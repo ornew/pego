@@ -6,6 +6,7 @@
 type Name = node[string]
 type A = { X *Name; Y *Name; Z *Name; Q *Name; W *Name; P []Name; Last *Name; Mode int; Sign *node[string] }
 type L = { Items []A }
+var m int
 rule main L = {m := 0} xs:(a:alt -";"?)* $$ => L{Items: map($xs, (e) => e.$a)}
 rule alt A = (
     (x:name "+" y:name "!" / x:name "+" z:name)

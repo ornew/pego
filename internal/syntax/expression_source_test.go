@@ -124,6 +124,7 @@ func TestExpressionSourceHeaderComments(t *testing.T) {
 		}
 	}
 	valid := `type N = { Value int }
+var x int
 /*before body*/
 /*inside*/
 /*predicate*/

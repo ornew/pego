@@ -106,9 +106,11 @@ rule main []T = "x" => []T{T{Text: "0"}}`, []string{"x", "", "xx"}},
 type R = { Values []*(T | node[string]) }
 rule main R = x:"é" => R{Values: []*(T | node[string]){nil, T{Text: "0"}, $x}}`, []string{"é", "", "x"}},
 		{"terminal constructor value error", `type Int = { Text string }
-rule main = {value := 1} "x" => Int{Text: value}`, []string{"x", ""}},
+var value int
+rule main = {value := 1} "x" => Int{Text: list(value, "a")[0].(string)}`, []string{"x", ""}},
 		{"terminal constructor predicate error", `type Int = { Text string }
-rule main = {value := 1} {Int{Text: value} != nil} "x" / "x"`, []string{"x", ""}},
+var value int
+rule main = {value := 1} {Int{Text: list(value, "a")[0].(string)} != nil} "x" / "x"`, []string{"x", ""}},
 	}
 }
 
@@ -150,8 +152,10 @@ func TestTypedNodeConstructorErrors(t *testing.T) {
 		{`[]Int{Other{}}`, "cannot use"},
 		{`[]any{}`, "concrete element type"},
 		{`[][]any{}`, "concrete element type"},
-		{`[]Int{x}`, "statically unknown"},
-		{`[][]Int{list(x)}`, "statically unknown"},
+		{`[]Int{x}`, "cannot use int as Int in list constructor"},
+		{`[][]Int{list(x)}`, "cannot use []int as []Int in list constructor"},
+		{`[]Int{$d}`, "statically unknown"},
+		{`[][]Int{list($d)}`, "statically unknown"},
 		// The retired positional forms are read as the text struct constructors they mean.
 		{`Int{1}`, "cannot use int as string in field Text of Int"},
 		{`Int{nil}`, "cannot use nil as string in field Text of Int"},
@@ -161,7 +165,9 @@ func TestTypedNodeConstructorErrors(t *testing.T) {
 		t.Run(tc.action, func(t *testing.T) {
 			g, err := syntax.ParseLegacy(`type Int terminal
 type Other = {}
-rule main = {x := 1} "x" => ` + tc.action)
+var x int
+rule main = {x := 1} d:dyn "x" => ` + tc.action + `
+rule dyn any = _ => 1`)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -173,7 +179,7 @@ rule main = {x := 1} "x" => ` + tc.action)
 	}
 	// Lists may hold ints, strings and bools.
 	for _, action := range []string{`[]int{}`, `[][]string{}`, `[]int{1, 2}`, `[]*bool{nil, true}`} {
-		g, err := syntax.ParseLegacy("rule main = {x := 1} \"x\" => " + action)
+		g, err := syntax.ParseLegacy("var x int\nrule main = {x := 1} \"x\" => " + action)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -197,15 +203,19 @@ rule main = {x := 1} "x" => ` + tc.action)
 func TestConstructedTerminalEvaluationErrors(t *testing.T) {
 	for _, source := range []string{
 		`type Int terminal
+var value int
 rule main = {value := 1} "x" => Int{value}`,
 		`type Int terminal
+var value int
 rule main = {value := 1} {Int{value} != nil} "x" / "x"`,
 	} {
 		g, err := syntax.ParseLegacy(source)
 		if err != nil {
 			t.Fatal(err)
 		}
-		p, err := Compile(g, Options{})
+		// The static check rejects these constructors; the run-time check is what remains
+		// without it.
+		p, err := Compile(g, Options{NoTypeCheck: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -227,11 +237,15 @@ rule main = {value := 1} {Int{value} != nil} "x" / "x"`,
 func TestConstructedTextStructEvaluationErrors(t *testing.T) {
 	for _, source := range []string{
 		`type Int = { Text string }
+var value int
 rule main = {value := 1} "x" => Int{Text: value}`,
 		`type Int = { Text string }
+var value int
 rule main = {value := 1} {Int{Text: value} != nil} "x" / "x"`,
 	} {
-		p := compile(t, source)
+		// The static check rejects these constructors; the run-time check is what remains
+		// without it.
+		p := compile(t, source, Options{NoTypeCheck: true})
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			n, err := p.ParseWith("main", "x", ParseOptions{Backend: backend})
 			if strings.Contains(source, "=>") {

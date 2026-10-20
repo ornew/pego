@@ -2,6 +2,9 @@
 // Source forms are preserved before semantic validation and compilation.
 package pego
 
+// ml reports whether line breaks are allowed between tokens inside the enclosing delimiters.
+var ml bool
+
 type Ident = node[string]
 type Int = node[string]
 type String = node[string]
@@ -20,7 +23,7 @@ type PkgBody = { Name Ident }
 // boundary after it: its own trailing group, and the leading and detached groups
 // of the next sibling. A container records the boundary after its opening
 // delimiter in Head for the first element.
-type SourceSpan ~ PkgBody | TypeDefBody | TypeAliasBody | RuleDefBody | FieldBody | OperatorsSkipBody | OperatorsOperandBody | OperatorsLevelBody | OperatorsOperatorBody | InitFieldBody
+type SourceSpan ~ PkgBody | TypeDefBody | TypeAliasBody | VarDefBody | RuleDefBody | FieldBody | OperatorsSkipBody | OperatorsOperandBody | OperatorsLevelBody | OperatorsOperatorBody | InitFieldBody
 type SourceMetadata = { Span SourceSpan; Leading string; Trailing string; Detached []SourceComment; Next SourceLead }
 type SourceItem = { Trailing string; Next SourceLead }
 type SourceLead = { Leading string; Detached []SourceComment; HasNext bool }
@@ -32,7 +35,7 @@ type SourceComment = { Text string }
 type CommentGap = { Trailing string; HasTrailing bool; Leading string; Detached []SourceComment; HasNext bool }
 type GapFlag = { }
 type SourceBoundary = { Trailing string; Leading string; Detached []SourceComment; HasNext bool }
-type Decl ~ TypeDef | TypeAlias | RuleDef | error
+type Decl ~ TypeDef | TypeAlias | VarDef | RuleDef | error
 type TypeDecl ~ TypeDef | TypeAlias
 type TypeDef = { Name Ident; Type DefinedType; Comments []Comment; SourceSpan TypeDefBody; Source SourceItem }
 type TypeDefBody = { Name Ident; Type DefinedType }
@@ -40,6 +43,9 @@ type TypeDefBody = { Name Ident; Type DefinedType }
 type DefinedType ~ StructType | TypeApp
 type TypeAlias = { Name Ident; Type Type; Comments []Comment; SourceSpan TypeAliasBody; Source SourceItem }
 type TypeAliasBody = { Name Ident; Type Type }
+// A variable definition declares a parser variable: var Name [Type] [= Value].
+type VarDef = { Name Ident; Type *Type; Value *ActionExpr; Comments []Comment; SourceSpan VarDefBody; Source SourceItem }
+type VarDefBody = { Name Ident; Type *Type; Value *ActionExpr }
 type FieldSpec ~ Field | error
 type Field = { Name Ident; Type Type; Comments []Comment; SourceSpan FieldBody; Source SourceItem }
 type FieldBody = { Name Ident; Type Type }
@@ -173,7 +179,7 @@ rule package_body PkgBody = (
 ) => PkgBody{Name: $name}
 rule decl Decl = (
   !(comments $$)
-  d:((type_decl / rule_decl / _|_ @error(message="expected type or rule declaration")) #recover(skip=stmt_sync))
+  d:((type_decl / var_decl / rule_decl / _|_ @error(message="expected type, var or rule declaration")) #recover(skip=stmt_sync))
 ) => $d
 rule stmt_end []Comment = (
   cs:horizontal tail:(stmt_sep @error(message="expected semicolon, newline, or end of file"))
@@ -270,6 +276,16 @@ rule type_paren TypeGroup = "(" {ml := true} -ws t:type_expr -ws ")" => TypeGrou
 rule type_tuple TupleType = (
   "(" {ml := true} -ws ts:(t:type_expr -ws "," -ws)* last:type_expr? -ws ")"
 ) => TupleType{Types: concat(map($ts, (x) => x.$t), filter(list($last), (x) => x != nil)).([]Type)}
+
+// A variable definition gives a name, a type, an initial value, or a type with a value.
+rule var_decl VarDef = (
+  cs:comments d:var_def_body &tail:source_item_tail tc:stmt_end
+) => VarDef{Name: $d.Name, Type: $d.Type, Value: $d.Value, Comments: concat($cs, $tc), SourceSpan: $d, Source: $tail}
+rule var_def_body VarDefBody = (
+  "var" -word_end #cut name:(ident @error(message="expected variable name")) -ws t:type_expr? -ws
+  v:var_init?
+) => VarDefBody{Name: $name, Type: $t, Value: $v}
+rule var_init ActionExpr = "=" -ws a:(action_expr @error(message="expected the initial value")) => $a
 
 // Rule expressions. The empty infix operator represents adjacency, so
 // juxtaposition does not need a separate sequence parser or require a space.

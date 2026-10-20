@@ -17,6 +17,10 @@
 // 256 KB), and a differential test against the version without them found no difference.
 package yaml
 
+// n is the indentation of the block being read, and c is the context of the production being read.
+var n int
+var c string
+
 type Stream = { Documents []Document }
 type Document = { Directives []Directive; Start *Marker; Root Value; End *Marker }
 type Directive = { Name Word; Params []Word }

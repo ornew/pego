@@ -144,10 +144,10 @@ function classifyPegoTokens(code, tokens) {
       else if (frame.name) {
         t.cls = frame.name;
         frame.name = "";
-      } else if (frame.kind === "file" && frame.start && ["package", "type", "rule"].includes(text)) {
+      } else if (frame.kind === "file" && frame.start && ["package", "type", "rule", "var"].includes(text)) {
         t.cls = "keyword";
         frame.header = text;
-        frame.name = text === "rule" ? "rule" : text === "type" ? "type" : null;
+        frame.name = text === "rule" ? "rule" : text === "type" ? "type" : null; // var: keyword only
       } else if (frame.header === "type" && text === "struct") {
         t.cls = "keyword";
       } else if (frame.kind === "operators" && frame.start && ["skip", "operand", "level", "prefix", "postfix", "infix"].includes(text)) {

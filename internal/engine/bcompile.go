@@ -120,6 +120,20 @@ func (c *bcompiler) compile() {
 			c.m.Types = append(c.m.Types, ti)
 		}
 	}
+	if t := c.prog.vars; t != nil {
+		for _, d := range t.list {
+			vi := VarInfo{Name: int(c.str(d.name)), Str: -1}
+			switch v := d.init.(type) {
+			case int:
+				vi.Type, vi.Int = varInt, v
+			case string:
+				vi.Type, vi.Str = varString, int(c.str(v))
+			case bool:
+				vi.Type, vi.Int = varBool, int(b2i(v))
+			}
+			c.m.Vars = append(c.m.Vars, vi)
+		}
+	}
 	// Rule table (body positions are filled in later)
 	all := append(append([]*rule(nil), c.prog.rules...), c.prog.twins...)
 	for _, r := range all {

@@ -20,28 +20,55 @@ type predicateBlockCase struct {
 func predicateBlockCases() []predicateBlockCase {
 	return []predicateBlockCase{
 		{"whole body", `rule main = {true; true}`, `rule main = {true} {true}`, []string{"", "a"}},
-		{"captured block", `rule main = x:{n := 1; n == 1} "a" $$ => $x`, `rule main = x:({n := 1} {n == 1}) "a" $$ => $x`, []string{"a", "", "aa"}},
+		{"captured block", `var n int
+rule main = x:{n := 1; n == 1} "a" $$ => $x`, `var n int
+rule main = x:({n := 1} {n == 1}) "a" $$ => $x`, []string{"a", "", "aa"}},
 		{"choice blocks", `rule main = ({false; true} / {true; true}) $$`, `rule main = (({false} {true}) / ({true} {true})) $$`, []string{"", "a"}},
-		{"nullable block repetition", `rule main = {n := 0} ({n := n + 1; true})* {n == 1} $$`, `rule main = {n := 0} ({n := n + 1} {true})* {n == 1} $$`, []string{"", "a"}},
-		{"assignments", `rule main = {x := 1; y := x + 1; y == 2} "é" $$`, `rule main = {x := 1} {y := x + 1} {y == 2} "é" $$`, []string{"é", "", "a", "éé"}},
-		{"capture", `rule main = c:"é" {s := text($c); s == "é"} $$ => $c`, `rule main = c:"é" {s := text($c)} {s == "é"} $$ => $c`, []string{"é", "a", "", "éx"}},
-		{"positional values", `rule main = v1:"a" {x := 1; x == 1} v2:"b" $$ => list($v1, $v2)`, `rule main = v1:"a" {x := 1} {x == 1} v2:"b" $$ => list($v1, $v2)`, []string{"ab", "a", "ac", ""}},
-		{"choice rollback", `rule main = {x := 0} ("a" {x := 1; x == 1} "!" / "a" {x == 0; true} "?") $$`, `rule main = {x := 0} ("a" {x := 1} {x == 1} "!" / "a" {x == 0} {true} "?") $$`, []string{"a!", "a?", "a", "b"}},
-		{"optional rollback", `rule main = {x := 0} ("a" {x := 1; false})? {x == 0; true} "a" $$`, `rule main = {x := 0} ("a" {x := 1} {false})? {x == 0} {true} "a" $$`, []string{"a", "", "aa"}},
+		{"nullable block repetition", `var n int
+rule main = {n := 0} ({n := n + 1; true})* {n == 1} $$`, `var n int
+rule main = {n := 0} ({n := n + 1} {true})* {n == 1} $$`, []string{"", "a"}},
+		{"assignments", `var x int
+var y int
+rule main = {x := 1; y := x + 1; y == 2} "é" $$`, `var x int
+var y int
+rule main = {x := 1} {y := x + 1} {y == 2} "é" $$`, []string{"é", "", "a", "éé"}},
+		{"capture", `var s string
+rule main = c:"é" {s := text($c); s == "é"} $$ => $c`, `var s string
+rule main = c:"é" {s := text($c)} {s == "é"} $$ => $c`, []string{"é", "a", "", "éx"}},
+		{"positional values", `var x int
+rule main = v1:"a" {x := 1; x == 1} v2:"b" $$ => list($v1, $v2)`, `var x int
+rule main = v1:"a" {x := 1} {x == 1} v2:"b" $$ => list($v1, $v2)`, []string{"ab", "a", "ac", ""}},
+		{"choice rollback", `var x int
+rule main = {x := 0} ("a" {x := 1; x == 1} "!" / "a" {x == 0; true} "?") $$`, `var x int
+rule main = {x := 0} ("a" {x := 1} {x == 1} "!" / "a" {x == 0} {true} "?") $$`, []string{"a!", "a?", "a", "b"}},
+		{"optional rollback", `var x int
+rule main = {x := 0} ("a" {x := 1; false})? {x == 0; true} "a" $$`, `var x int
+rule main = {x := 0} ("a" {x := 1} {false})? {x == 0} {true} "a" $$`, []string{"a", "", "aa"}},
 		{"predicate failure", `rule main = "a" {1 / 0; true} "b" $$`, `rule main = "a" {1 / 0} {true} "b" $$`, []string{"ab", "a", ""}},
 		{"short circuit", `rule main = "a" {false; 1 / 0} "b" $$`, `rule main = "a" {false} {1 / 0} "b" $$`, []string{"ab", "a", ""}},
-		{"rule environment", `rule main = {x := 1; true} (n "!" / n "?") $$
-rule n = {x == 1; true} "é"`, `rule main = {x := 1} {true} (n "!" / n "?") $$
+		{"rule environment", `var x int
+rule main = {x := 1; true} (n "!" / n "?") $$
+rule n = {x == 1; true} "é"`, `var x int
+rule main = {x := 1} {true} (n "!" / n "?") $$
 rule n = {x == 1} {true} "é"`, []string{"é!", "é?", "é", "a"}},
-		{"repetition", `rule main = {x := 0} ("a" {x := x + 1; true})* {x == 2; true} $$`, `rule main = {x := 0} ("a" {x := x + 1} {true})* {x == 2} {true} $$`, []string{"aa", "a", "aaa", ""}},
-		{"lookahead", `rule main = {x := 0} &("a" {x := 1; true}) {x == 0; true} "a" $$`, `rule main = {x := 0} &("a" {x := 1} {true}) {x == 0} {true} "a" $$`, []string{"a", "", "b"}},
-		{"cut", `rule main = "a" #cut {x := 1; x == 1} "!" $$ / "a" "?" $$`, `rule main = "a" #cut {x := 1} {x == 1} "!" $$ / "a" "?" $$`, []string{"a!", "a?", "a", ""}},
-		{"recovery", `rule main = ("a" {x := 1; false} ";") #recover(skip="?") $$`, `rule main = ("a" {x := 1} {false} ";") #recover(skip="?") $$`, []string{"?", "a?", "a;", ""}},
+		{"repetition", `var x int
+rule main = {x := 0} ("a" {x := x + 1; true})* {x == 2; true} $$`, `var x int
+rule main = {x := 0} ("a" {x := x + 1} {true})* {x == 2} {true} $$`, []string{"aa", "a", "aaa", ""}},
+		{"lookahead", `var x int
+rule main = {x := 0} &("a" {x := 1; true}) {x == 0; true} "a" $$`, `var x int
+rule main = {x := 0} &("a" {x := 1} {true}) {x == 0} {true} "a" $$`, []string{"a", "", "b"}},
+		{"cut", `var x int
+rule main = "a" #cut {x := 1; x == 1} "!" $$ / "a" "?" $$`, `var x int
+rule main = "a" #cut {x := 1} {x == 1} "!" $$ / "a" "?" $$`, []string{"a!", "a?", "a", ""}},
+		{"recovery", `var x int
+rule main = ("a" {x := 1; false} ";") #recover(skip="?") $$`, `var x int
+rule main = ("a" {x := 1} {false} ";") #recover(skip="?") $$`, []string{"?", "a?", "a;", ""}},
 	}
 }
 
 func TestPredicateBlockAssignmentComparison(t *testing.T) {
-	program := compile(t, `rule a = {x:=1; x<10}`)
+	program := compile(t, `var x int
+rule a = {x:=1; x<10}`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			if _, err := program.ParseWith("a", "", ParseOptions{Backend: backend, Unit: unit}); err != nil {
@@ -75,7 +102,7 @@ func TestPredicateBlocksAdjacentParity(t *testing.T) {
 }
 
 func TestPredicateBlocksSourceAndSavedGrammar(t *testing.T) {
-	const source = "rule main = {\n // first\n x := (1 +\n 1)\n // second\n x == 2;\n} \"é\" $$"
+	const source = "var x int\nrule main = {\n // first\n x := (1 +\n 1)\n // second\n x == 2;\n} \"é\" $$"
 	g, err := syntax.Parse(source)
 	if err != nil {
 		t.Fatal(err)
@@ -128,7 +155,8 @@ func TestPredicateBlocksSourceAndSavedGrammar(t *testing.T) {
 
 func TestPredicateBlocksStatementValidation(t *testing.T) {
 	for _, source := range []string{
-		`rule main = {x := 1; len(true)} "a"`,
+		`var x int
+rule main = {x := 1; len(true)} "a"`,
 		`rule main = {true; $1 == nil} "a"`,
 		`rule main = {true; text($missing) == "a"} "a"`,
 	} {

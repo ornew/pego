@@ -29,7 +29,7 @@ func TestDiagnostics(t *testing.T) {
 			"several syntax errors", "rule a = (\nrule b = \"名前\"\n]\nrule c = \"ok\"",
 			[]Diagnostic{
 				{Range: rng(1, 7, 1, 8), Message: "expected ')', found '='"},
-				{Range: rng(2, 0, 2, 1), Message: "expected 'rule' or 'type', found ']'"},
+				{Range: rng(2, 0, 2, 1), Message: "expected 'rule', 'type' or 'var', found ']'"},
 			},
 		},
 		{
@@ -541,7 +541,7 @@ func TestCompletion(t *testing.T) {
 	}
 	// At the start of an empty file.
 	c.open("file:///empty.pego", "")
-	if got := completionLabels(c, "file:///empty.pego", 0, 0); !reflect.DeepEqual(got, []string{"package", "rule", "type"}) {
+	if got := completionLabels(c, "file:///empty.pego", 0, 0); !reflect.DeepEqual(got, []string{"package", "rule", "type", "var"}) {
 		t.Errorf("empty file: %q", got)
 	}
 	// Items carry the rule's type and documentation, and snippets for functions.

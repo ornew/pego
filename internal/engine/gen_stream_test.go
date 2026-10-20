@@ -181,7 +181,9 @@ type streamResult struct {
 
 // streamMemoGrammar's elements backtrack into a memoized rule that reads
 // variables, assign variables and produce nil.
-const streamMemoGrammar = `rule main = {n := 0} item* #stream $$
+const streamMemoGrammar = `var n int
+var last string
+rule main = {n := 0} item* #stream $$
 rule item = (k:key ":" / k:key {n := n + 1} {last := text($k)} "=") val "\n" => nil
 rule key = {n >= 0} word
 rule word = [a-z]+ #atomic
@@ -214,7 +216,8 @@ rule e = operators {
 }`, []string{"1+-2;3;", "-;", "1+2+3;"}},
 	{"cut elements", `rule main = item* #stream $$
 rule item = "a" #cut "b" / "c"`, []string{"abc", "ac", "abab"}},
-	{"variables", `rule main = {n := 0} item* #stream $$
+	{"variables", `var n int
+rule main = {n := 0} item* #stream $$
 rule item = "a" {n := n + 1} / "b" {n > 0}`, []string{"ab", "b", "aab"}},
 	{"recovery", `rule main = stmt* #stream $$
 rule stmt = ([a-z]+ #atomic ";") #recover(skip=[^;]+ ";")`, []string{"ab;1x;cd;9;", "1x;ab", "ab;"}},

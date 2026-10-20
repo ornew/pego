@@ -42,7 +42,11 @@ rule rC ` + rt + ` = operators {
 rule rD ` + rt + ` = operators {
     operand v:val => $v
 }
-rule rE ` + rt + ` = {x := 0} ("i" {x := 1} / "s" {x := "s"} / "b" {x := true}) "=" => x
+rule rE ` + rt + ` = v:sc "=" => $v
+rule sc any = si / ss / sb
+rule si = "i" => 1
+rule ss = "s" => "s"
+rule sb = "b" => true
 rule val any = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz
 rule vm = "m"
 rule vt = "t" => Int{Text: "t"}
@@ -82,7 +86,11 @@ rule rC ` + rt + ` = operators {
 rule rD ` + rt + ` = operators {
     operand v:val => $v
 }
-rule rE ` + rt + ` = {x := 0} ("i" {x := 1} / "s" {x := "s"} / "b" {x := true}) "=" => x
+rule rE ` + rt + ` = v:sc "=" => $v
+rule sc any = si / ss / sb
+rule si = "i" => 1
+rule ss = "s" => "s"
+rule sb = "b" => true
 rule val any = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz
 rule vm = "m"
 rule vt = "t" => Int{"t"}

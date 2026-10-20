@@ -20,6 +20,9 @@
 // rules read would make every rule a function of it (see the README).
 package cue
 
+// sv is the delimiter of the string being read: twice the number of its hashes, plus one for a single quote.
+var sv int
+
 // --- Declarations ---
 type File = { Decls []Decl }
 type Package = { Name Ident }

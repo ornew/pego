@@ -198,6 +198,14 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if prog.sourceInfo {
 		gen.init.WriteString("\tpegoGrammar.SourceInfo = true\n")
 	}
+	if t := prog.vars; t != nil {
+		var names, vals []string
+		for _, d := range t.list {
+			names = append(names, d.name)
+			vals = append(vals, fmt.Sprintf("%#v", d.init))
+		}
+		fmt.Fprintf(&gen.init, "\tpegoGrammar.SetVars(%s, []any{%s})\n", goStrings(names), strings.Join(vals, ", "))
+	}
 	if rec != nil {
 		gen.init.WriteString("\tpegoRecGrammar.Share(pegoGrammar)\n")
 	}

@@ -16,8 +16,7 @@ import (
 )
 
 // fieldCheckValues are the dynamically typed values that fieldCheckGrammar passes to a struct
-// field, by the first input character: nodes and nil from the any-typed rule val, and scalars
-// from variables.
+// field, by the first input character: nodes, nil and scalars from the any-typed rule val.
 var fieldCheckValues = map[string]string{
 	"m": "Match", "t": "Int", "l": "[]Int", "k": "[]Match", "e": "[]nil", "n": "empty List",
 	"q": "Box", "?": "Error", "w": "[][]Int", "p": "[]*Int", "z": "nil", "i": "int", "s": "string", "b": "bool",
@@ -69,13 +68,11 @@ type Alias ~ Int
 type Box = { Value Int }
 type S = { F ` + typ + ` }
 type Result ~ S | Int
-rule main Result = nodeCase / nodePred / scalarCase / scalarPred / no
+rule main Result = nodeCase / nodePred / no
 rule nodeCase = v:val "." => S{F: $v}
 rule nodePred = v:val {S{F: $v} != nil} "!" => Int{Text: "yes"}
-rule scalarCase = {x := 0} ("i" {x := 1} / "s" {x := "s"} / "b" {x := true}) "." => S{F: x}
-rule scalarPred = {x := 0} ("i" {x := 1} / "s" {x := "s"} / "b" {x := true}) {S{F: x} != nil} "!" => Int{Text: "yes"}
 rule no = [a-z!.?;]+ => Int{Text: "no"}
-rule val any = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz
+rule val any = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz / vi / vs / vb
 rule vm = "m"
 rule vt = "t" => Int{Text: "t"}
 rule vl = "l" => []Int{Int{Text: "a"}}
@@ -87,6 +84,9 @@ rule vr = ("r" ";") #recover(skip="?")
 rule vw = "w" => [][]Int{[]Int{Int{Text: "w"}}}
 rule vp = "p" => list(Int{Text: "a"}, nil)
 rule vz = "z" => nil
+rule vi = "i" => 1
+rule vs = "s" => "s"
+rule vb = "b" => true
 `
 }
 
@@ -98,13 +98,11 @@ type Alias ~ Int
 type Box = { Value Int }
 type S = { F ` + typ + ` }
 type Result ~ S | Int
-rule main Result = nodeCase / nodePred / scalarCase / scalarPred / no
+rule main Result = nodeCase / nodePred / no
 rule nodeCase = v:val "." => S{F: $v}
 rule nodePred = v:val {S{F: $v} != nil} "!" => Int{"yes"}
-rule scalarCase = {x := 0} ("i" {x := 1} / "s" {x := "s"} / "b" {x := true}) "." => S{F: x}
-rule scalarPred = {x := 0} ("i" {x := 1} / "s" {x := "s"} / "b" {x := true}) {S{F: x} != nil} "!" => Int{"yes"}
 rule no = [a-z!.?;]+ => Int{"no"}
-rule val any = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz
+rule val any = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz / vi / vs / vb
 rule vm = "m"
 rule vt = "t" => Int{"t"}
 rule vl = "l" => []Int{Int{"a"}}
@@ -116,6 +114,9 @@ rule vr = ("r" ";") #recover(skip="?")
 rule vw = "w" => [][]Int{[]Int{Int{"w"}}}
 rule vp = "p" => list(Int{"a"}, nil)
 rule vz = "z" => nil
+rule vi = "i" => 1
+rule vs = "s" => "s"
+rule vb = "b" => true
 `
 }
 
@@ -245,6 +246,7 @@ func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string)
 func TestConstructedFieldChecksAreSelective(t *testing.T) {
 	src := `type Int = { Text string }
 type S = { Static Int; Var int; Dynamic Int; Elements []Int; Union *Int; Untyped any; Empty []Int; Joined []Int }
+var x int
 rule main = {x := 1} a:item d:val l:item* o:item? => S{Static: $a, Var: x, Dynamic: $d, Elements: $l.Value, Union: $o, Untyped: x, Empty: filter(nil, (e) => true), Joined: concat(nil, $l.Value)}
 rule item Int = "i" => Int{Text: "i"}
 rule val any = "v" => list()
@@ -255,14 +257,14 @@ rule val any = "v" => list()
 		checked = append(checked, fi.Name+" "+typ.String())
 	}
 	sort.Strings(checked)
-	if got := strings.Join(checked, ", "); got != "Dynamic Int, Var int" {
+	if got := strings.Join(checked, ", "); got != "Dynamic Int" {
 		t.Fatalf("checked fields: %s", got)
 	}
 	m := prog.Module()
 	if v := m.instructionSetVersion(); v != isaVersion {
 		t.Fatalf("instruction set %d", v)
 	}
-	if d := m.Disassemble(); strings.Count(d, "ECHECK") != 2 || !strings.Contains(d, `"Int" field=Dynamic of=S`) {
+	if d := m.Disassemble(); strings.Count(d, "ECHECK") != 1 || !strings.Contains(d, `"Int" field=Dynamic of=S`) {
 		t.Fatalf("disassembly:\n%s", d)
 	}
 	plain := compile(t, `type Int = { Text string }
@@ -298,7 +300,7 @@ rule val any = "v"
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n := strings.Count(string(code), "var fieldType"); n != 2 {
+	if n := strings.Count(string(code), "var fieldType"); n != 1 {
 		t.Fatalf("generated %d field type variables", n)
 	}
 }

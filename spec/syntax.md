@@ -32,6 +32,9 @@ constructed values or types that the simplified view omits.
 // Source forms are preserved before semantic validation and compilation.
 package pego
 
+// ml reports whether line breaks are allowed between tokens inside the enclosing delimiters.
+var ml bool
+
 // File and statements. Delimiter-owned expressions enable multiline trivia;
 // declaration and item lists keep physical newlines as statement boundaries.
 rule main = file
@@ -51,7 +54,7 @@ rule package_stmt = (
 rule package_body = "package" -word_end #cut ident
 rule decl = (
     !(comments $$)
-    (type_decl / rule_decl / _|_)
+    (type_decl / var_decl / rule_decl / _|_)
 )
 rule stmt_end = horizontal stmt_sep
 rule item_end = horizontal item_sep
@@ -128,6 +131,14 @@ rule type_args = "[" {ml := true} -ws type_expr (-ws "," -ws type_expr)* -ws ","
 rule type_group = type_paren / type_tuple
 rule type_paren = "(" {ml := true} -ws type_expr -ws ")"
 rule type_tuple = "(" {ml := true} -ws (type_expr -ws "," -ws)* type_expr? -ws ")"
+
+// A variable definition gives a name, a type, an initial value, or a type with a value.
+rule var_decl = comments var_def_body &source_item_tail stmt_end
+rule var_def_body = (
+    "var" -word_end #cut ident -ws type_expr? -ws
+    var_init?
+)
+rule var_init = "=" -ws action_expr
 
 // Rule expressions. The empty infix operator represents adjacency, so
 // juxtaposition does not need a separate sequence parser or require a space.

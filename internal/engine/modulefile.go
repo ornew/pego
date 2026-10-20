@@ -61,6 +61,13 @@ func (w *encoder) module(m *Module) {
 			w.ints(l)
 		}
 	}
+	w.uint(len(m.Vars))
+	for _, v := range m.Vars {
+		w.int(v.Name)
+		w.int(v.Type)
+		w.int(v.Int)
+		w.int(v.Str)
+	}
 	w.uint(len(m.Rules))
 	for _, r := range m.Rules {
 		w.int(r.Name)
@@ -172,6 +179,10 @@ func (r *decoder) module() *Module {
 		for i := 0; i < n && r.err == nil; i++ {
 			*lists = append(*lists, r.ints())
 		}
+	}
+	n = r.count()
+	for i := 0; i < n && r.err == nil; i++ {
+		m.Vars = append(m.Vars, VarInfo{Name: int(r.int32()), Type: int(r.int32()), Int: r.int(), Str: int(r.int32())})
 	}
 	n = r.count()
 	for i := 0; i < n && r.err == nil; i++ {
@@ -296,6 +307,24 @@ func validateModule(m *Module) error {
 		strs(l.Scope)
 		opt("action", l.Action, len(m.Exprs))
 		check(l.Check, "in an Operators Rule line")
+	}
+	seenVars := map[string]bool{}
+	for _, v := range m.Vars {
+		str(v.Name)
+		in("variable type", v.Type, 3)
+		opt("string", v.Str, len(m.Strings))
+		if err == nil {
+			name := m.Strings[v.Name]
+			switch {
+			case seenVars[name]:
+				fail("variable %q is defined twice", name)
+			case (v.Type == varString) != (v.Str >= 0):
+				fail("invalid initial value of variable %q", name)
+			case v.Type == varBool && v.Int != 0 && v.Int != 1:
+				fail("invalid initial value of variable %q", name)
+			}
+			seenVars[name] = true
+		}
 	}
 	for _, r := range m.Rules {
 		str(r.Name)
@@ -539,6 +568,21 @@ func moduleProgram(m *Module) *Program {
 			st.Fields = append(st.Fields, &grammar.Field{Name: m.Strings[f]})
 		}
 		prog.types[m.Strings[t.Name]] = &grammar.TypeDef{Name: m.Strings[t.Name], Type: st}
+	}
+	for _, v := range m.Vars {
+		d := &varDecl{name: m.Strings[v.Name]}
+		switch v.Type {
+		case varInt:
+			d.typ, d.init = tyInt, v.Int
+		case varString:
+			d.typ, d.init = tyString, m.Strings[v.Str]
+		default:
+			d.typ, d.init = tyBool, v.Int == 1
+		}
+		if prog.vars == nil {
+			prog.vars = newVarTable()
+		}
+		prog.vars.add(d)
 	}
 	prog.moduleOnce.Do(func() { prog.module = m })
 	return prog

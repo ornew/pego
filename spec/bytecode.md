@@ -48,6 +48,7 @@ A module consists of the following tables and code sequences.
 | Type table | Type name, and either the field names of a struct type or, for a named node type `type N = node[T]`, the text of its underlying node type `node[T]` |
 | Field-list table | Lists of field names used by `ENEW` |
 | Scope table | The capture names of a repetition element, in slot order |
+| Variable table | The declared variables: name, type (`int`, `string` or `bool`) and initial value. Every parse begins with the environment holding each variable bound to its initial value. |
 | Rule table | See [Rule table](#rule-table) |
 | Operators Rule table | See [Operators Rule table](#operators-rule-table) |
 | Match code | A sequence of instructions |
@@ -108,7 +109,7 @@ Operator kinds are encoded as 0 = prefix, 1 = postfix, 2 = infix. Associativity 
 | Entry stack | Points to return to on failure (see [Failure](#failure)). Each rule body has its own base. |
 | Frame | The capture slots of the current scope |
 | Capture trail | Writes to captures (frame, slot, previous value) |
-| Environment | Variables, as a persistent list |
+| Environment | Variables, as a persistent list. A parse starts from the environment built from the variable table, so every declared variable is bound before the start rule runs. |
 | Recovered errors | Syntax errors recovered by `#recover` |
 | `silent` | While positive, expectations are not recorded |
 | Farthest failure | A position and the set of expectations recorded there |
@@ -198,7 +199,7 @@ When a recovery entry is popped on failure, the VM:
 
 A rule is marked transient when it calls no other rule, or when it is referenced only once in the grammar. Re-evaluating the former only scans the input once more; the latter is re-evaluated at the same position only when its single caller is. In both cases a memo entry would never be reused.
 
-1. If the memo holds a result for (r, pos, min) and, when the rule reads variables, for the current values of those variables (the rule table's variable list; an undefined variable counts as `nil`), and the result was not computed inside a lookahead, or the VM is currently inside a lookahead, or the result is a provisional result of a growing left recursion, use it: record the expectations stored with the result (unless it is growing) and its recovered errors; on success, advance the position and return the value.
+1. If the memo holds a result for (r, pos, min) and, when the rule reads variables, for the current values of those variables (the rule table's variable list), and the result was not computed inside a lookahead, or the VM is currently inside a lookahead, or the result is a provisional result of a growing left recursion, use it: record the expectations stored with the result (unless it is growing) and its recovered errors; on success, advance the position and return the value.
 2. If the call is memoized, save the farthest failure and reset it to (start position, empty).
 3. If the rule is a leader, evaluate it by [growing the seed](#left-recursion); otherwise [evaluate the body](#body-evaluation) once. On failure, remove the errors recovered during this call.
 4. If the call is memoized, store in the memo the result, the end position, the recovered errors, whether the call ran inside a lookahead, and the expectations recorded inside; then merge those expectations into the saved farthest failure and restore it.
@@ -311,7 +312,7 @@ A compiled grammar uses container version 2 or 3. Version 2 stores one module an
 |:--|:--|
 | Magic | `PEGOC\x00` (6 bytes) |
 | Version | 1 byte (2 or 3). Version 2 has no recognition-bundle field. Version 3 adds that field after the main module. |
-| Instruction-set version | Unsigned integer for this module: 20. Every module uses this version, whatever instructions it contains, and the optional recognition bundle declares it too. Earlier versions built the syntax trees that preceded the value model, held terminal types, wrote field types with the earlier node type names, had no named node types, had no default-value flag, had no tuple values, carried text struct node types and the text flag of `EMEMBER` and `EBIN`, or did not give the node type of an Operators Rule its meaning; a runtime rejects them and asks for the grammar to be compiled again. |
+| Instruction-set version | Unsigned integer for this module: 21. Every module uses this version, whatever instructions it contains, and the optional recognition bundle declares it too. Earlier versions built the syntax trees that preceded the value model, held terminal types, wrote field types with the earlier node type names, had no named node types, had no default-value flag, had no tuple values, carried text struct node types and the text flag of `EMEMBER` and `EBIN`, did not give the node type of an Operators Rule its meaning, or had no variable table; a runtime rejects them and asks for the grammar to be compiled again. |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
 | Start rule | String index, unsigned (the empty string means no default start rule) |
 | Package name | String index, unsigned |
@@ -328,15 +329,17 @@ The main module is laid out in the following order. A *list* is a count (unsigne
 4. Character class table: a list of (negated, expectation string, number of ranges (unsigned), followed by the lower and upper bound of each range).
 5. Type table: a list of (name, list of field names, underlying node type). The underlying node type is a string index, or -1 for a struct type.
 6. Field-list table, then scope table: each a list of lists of string indices.
-7. Rule table: a list of (name, body, scope, action, body is a sequence, node type, memoize, leader, position-dependent, Operators Rule, value-free twin, transient, variables, check).
-8. Operators Rule table: a list of (skip, list of operand lines, list of prefix operators, list of infix and postfix operators). A line is (start, scope, action, body is a sequence, check); an operator is (index, kind, associativity, level, line).
-9. Match code, then expression code: each a list of instructions (opcode as 1 byte, then `A`, `B`, `C`).
+7. Variable table: a list of (name, type, integer, string). The type is 0 for `int`, 1 for `string` and 2 for `bool`. The integer is the initial value of an `int` variable, and 0 or 1 for a `bool` variable. The string is the string table index of the initial value of a `string` variable, and -1 for the other types.
+8. Rule table: a list of (name, body, scope, action, body is a sequence, node type, memoize, leader, position-dependent, Operators Rule, value-free twin, transient, variables, check).
+9. Operators Rule table: a list of (skip, list of operand lines, list of prefix operators, list of infix and postfix operators). A line is (start, scope, action, body is a sequence, check); an operator is (index, kind, associativity, level, line).
+10. Match code, then expression code: each a list of instructions (opcode as 1 byte, then `A`, `B`, `C`).
 
 ### Load-Time Validation
 
 On load, a runtime checks the following and rejects the file if any check fails:
 
 - The checksum, the version and the instruction-set version are valid, and no data remains after the end.
+- Each variable is named once, has a valid type, and has an initial value that matches its type.
 - Every reference in the tables and instructions (strings, character classes, scopes, field lists, rules, Operators Rule tables, expression code, built-in functions) is in range. A version 3 recognition bundle must have a valid independent module and start map matching the main module.
 - Every opcode is known, and every flag operand is within its range.
 - The node type of a rule names a named node type, or a declared type with a field `Text`. The node type of a rule with an Operators Rule names a named node type.

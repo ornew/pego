@@ -33,6 +33,9 @@ func formatGrammar(g *Grammar, control *metadataControl) string {
 		case *TypeAlias:
 			p.lineBreak(s.Break, "", true)
 			p.typeAlias(s)
+		case *VarDef:
+			p.lineBreak(s.Break, "", true)
+			p.varDef(s)
 		case *RuleDef:
 			p.lineBreak(s.Break, "", true)
 			p.ruleDef(s)
@@ -251,6 +254,18 @@ func (p *printer) structBody(fields []*Field, closeBreak *LineBreak, oneLine boo
 		p.write(indentTypeLines(formatType(f.Type, p.control), indent+indentUnit, p.control))
 	}
 	p.closeBlock(closeBreak, indent)
+}
+
+func (p *printer) varDef(v *VarDef) {
+	pollFormat(p.control)
+	p.header("var", v.Pos)
+	p.write(" " + v.Name)
+	if v.Type != nil {
+		p.write(" " + formatType(v.Type, p.control))
+	}
+	if v.Value != nil {
+		p.write(" = " + formatTerm(v.Value, 0, p.control))
+	}
 }
 
 func (p *printer) ruleDef(r *RuleDef) {

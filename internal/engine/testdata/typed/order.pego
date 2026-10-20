@@ -1,2 +1,2 @@
 type T = { A int; B int }
-rule main T = d:"x" => T{B: 1 / (len($d) - 1), A: nope}
+rule main T = d:"x" => T{B: 1 / (len($d) - 1), A: list(1)[5]}

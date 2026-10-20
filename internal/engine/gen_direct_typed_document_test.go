@@ -44,6 +44,7 @@ rule token Token = t:("a;" @error(message="expected token")) #atomic => Token{Te
 rule main Token = t:("a" !.) #atomic => Token{Text: text($t)}`, []string{"a", "ab", ""}},
 		{`type Token = { Text string }
 type Count = { N int }
+var x int
 rule main Count = {x := 0} token* => Count{N: x}
 rule token Token = t:({x < 2} "a" {x := x+1}) #atomic => Token{Text: text($t)}`, []string{"", "a", "aa", "aaa"}},
 		{`type Token = { Text string }

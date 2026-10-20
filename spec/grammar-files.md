@@ -8,7 +8,8 @@ the errors that make a grammar invalid.
 
 A grammar file, normally written as a `.pego` file, consists of an optional
 package clause followed by a list of Declaration Statements in any order: Type
-Declaration Statements `type ...` and Rule Declaration Statements `rule ...`.
+Declaration Statements `type ...`, Variable Declaration Statements `var ...` and
+Rule Declaration Statements `rule ...`.
 Type Declaration Statements use Type Expressions; Rule Definitions combine a
 Rule Expression with an optional Value Action containing an Action Expression.
 An Operators Rule is a specialized Rule Definition.
@@ -21,7 +22,7 @@ rule expr Expr = operators { ... }
 ```
 
 A hard newline separates top-level Declaration Statements; a semicolon may also
-separate them. Definition position and indentation do not affect parsing. The 12
+separate them. Definition position and indentation do not affect parsing. The 13
 contextual grammar words are interpreted by position, so the same spellings can
 be identifiers where a name or Rule Expression is expected.
 
@@ -171,12 +172,37 @@ Definition `type T = S`, which defines a new type from a struct type `{...}` or 
 node type `node[U]`, or a Type Alias `type T ~ U`, which gives another name to a type.
 Both are defined in the [Type System](types.md#type-declaration-statements).
 
+### Variable Declaration Statements
+
+A Variable Declaration Statement `var ...` declares a parser variable: `var
+<name> [<type>] [= <value>]`. At least one of the type and the value is
+required.
+
+```pego
+var depth int = 0
+var mode string
+var seen = false
+```
+
+- The type is `int`, `string` or `bool`; any other type is an error.
+- The value is an int, string or bool literal (an int literal may be negated);
+  `nil` is not allowed. `=` defines the initial value and is not an
+  assignment. Without a value the variable starts as the zero value of its
+  type: `0`, `""` or `false`. Without a type, the type is the type of the
+  value. A value of another type than the declared type is an error.
+- Every parse, through every start rule and backend, starts with each declared
+  variable bound to its initial value.
+
+Actions bind and read declared variables; see
+[Variables](predicates.md#variables). A name that is not declared cannot be
+read or bound.
+
 ### Rule Declaration Statements
 
 A Rule Declaration Statement `rule ...` declares a rule. Its form is a Rule
 Definition `rule <name> [<Type Expression>] = <Rule Expression> [=> <Action
 Expression>]`, which defines the name for a Rule Expression.
-When the rule matches, it produces a single value. The 12 grammar words may be
+When the rule matches, it produces a single value. The 13 grammar words may be
 used as names when the surrounding syntax expects a name.
 
 - The optional Type Expression after the rule name declares the type of the
@@ -207,8 +233,9 @@ position (see [Rule Calls](parser-expressions.md#rule-calls)).
 
 ## Names
 
-Rule names and type names live in separate namespaces. Each rule name MUST be
-defined at most once and each type name MUST be defined at most once. A rule
+Rule names, type names and variable names live in separate namespaces. Each
+rule name MUST be defined at most once, each type name MUST be defined at most
+once and each variable MUST be declared at most once. A rule
 MAY refer to rules defined later in the file, and a type MAY refer to types
 defined later: **the order of definitions has no effect on the meaning of the
 grammar**. Every rule named by a Rule Expression MUST be defined.
@@ -219,7 +246,8 @@ The names that a definition can use are constrained as follows:
 |:--|:--|
 | Rule | An [identifier](lexical.md#identifiers). Contextual words are allowed when the grammar expects a name. Rule names commonly begin with a lowercase ASCII letter. |
 | Type, field | An identifier that begins with an uppercase ASCII letter. Built-in and reserved type names MUST NOT be defined. See [Names](types.md#names). |
-| Capture label, variable, level, lambda parameter | An identifier. Captures and variables have their own scopes; see [Capture](parser-expressions.md#capture) and [Variables](predicates.md#variables). Lambda parameters are variables of the lambda body; see [Built-In Functions](actions.md#built-in-functions). A level name MUST be unique within its Operators Rule declaration. |
+| Variable | An identifier, declared by a Variable Declaration Statement. See [Variables](predicates.md#variables). |
+| Capture label, level, lambda parameter | An identifier. Captures have their own scope; see [Capture](parser-expressions.md#capture). Variables are the only names a binding `name := expr` may assign. Lambda parameters are variables of the lambda body; see [Built-In Functions](actions.md#built-in-functions). A level name MUST be unique within its Operators Rule declaration. |
 
 ## Start Rule
 
@@ -236,7 +264,7 @@ the line and column of the construct it concerns in the grammar source (see
 | Class | Examples | Defined In |
 |:--|:--|:--|
 | Lexical and syntax errors | An unterminated string, an unknown escape, a character that starts no token, a missing `)`, a malformed declaration, a repetition whose maximum is less than its minimum | [Lexical Structure](lexical.md), [Grammar Syntax](syntax.md) |
-| Definition and reference errors | A name defined twice, a reserved or non-uppercase-ASCII type name, an undefined rule, a call with an unknown level, a capture of an expression without a value, an unknown attribute or pragma, a header comment, a `#stream` outside its permitted position | The chapter of the construct |
+| Definition and reference errors | A name defined twice, a variable that is read or bound but not declared, a variable declared with an unsupported type or an initial value of another type, a reserved or non-uppercase-ASCII type name, an undefined rule, a call with an unknown level, a capture of an expression without a value, an unknown attribute or pragma, a header comment, a `#stream` outside its permitted position | The chapter of the construct |
 | Type errors | A field that the struct does not declare, a value that is not assignable to the declared type | [Type Checking](type-checking.md#checked-errors) |
 
 The reference implementation reports all lexical and syntax errors of a file

@@ -34,7 +34,7 @@ const (
 	// isaVersion is the instruction set of the value model, the only one supported. Earlier
 	// versions built the previous syntax trees, so their files are not loaded and need to be
 	// compiled again.
-	isaVersion = 20
+	isaVersion = 21
 	maxDepth   = 10000
 )
 
@@ -118,6 +118,7 @@ const (
 	kTypeApp
 	kNode  // a named node type definition, type T = node[U]
 	kTuple // a tuple type (A, B, ...)
+	kVarDef
 )
 
 type encoder struct {
@@ -257,6 +258,11 @@ func (w *encoder) statements(prog *Program, version int, checks bool) {
 			w.byte(kTypeDef)
 			w.str(st.DeclName())
 			w.typeDecl(st)
+		case *grammar.VarDef:
+			w.byte(kVarDef)
+			w.str(st.Name)
+			w.optType(st.Type)
+			w.optTerm(st.Value)
 		case *grammar.RuleDef:
 			r := prog.rules[ri]
 			ri++
@@ -775,6 +781,9 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 		if n := len(prog.rules) + len(prog.twins); n != len(m.Rules) {
 			return nil, "", fmt.Errorf("invalid compiled grammar: %d rules in the module for %d rules", len(m.Rules), n)
 		}
+		if n := len(prog.vars.all()); n != len(m.Vars) {
+			return nil, "", fmt.Errorf("invalid compiled grammar: %d variables in the module for %d variables", len(m.Vars), n)
+		}
 		prog.moduleOnce.Do(func() { prog.module = m })
 	}
 	prog.recognitionModule, prog.recognitionEntries = recognitionModule, entries
@@ -830,6 +839,13 @@ func (r *decoder) statements(pkg string, version int, checked bool) (*grammar.Gr
 		switch k := r.byte(); k {
 		case kTypeDef:
 			g.File.Decls = append(g.File.Decls, r.typeDecl(r.str()))
+		case kVarDef:
+			vd := &grammar.VarDef{Name: r.str()}
+			if r.bool() {
+				vd.Type = r.typeExpr()
+			}
+			vd.Value = r.optTerm()
+			g.File.Decls = append(g.File.Decls, vd)
 		case kRuleDef:
 			rd := &grammar.RuleDef{Name: r.str()}
 			if r.bool() {

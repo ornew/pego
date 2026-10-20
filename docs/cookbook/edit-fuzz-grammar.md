@@ -19,6 +19,8 @@ type Entry = {
     Children []Entry
 }
 
+var indent int
+
 rule main = {indent := 0} es:block blank* $$ => $es
 
 // The entries at the current indentation.
@@ -31,7 +33,7 @@ rule entry Entry = (
 ) => Entry{Key: $k, Value: $v, Children: concat($cs)}
 
 // If the next line is indented deeper, read it and its siblings with that depth as the new indentation.
-// A variable is visible only in the rule that defines it and the rules it calls, so when this rule returns, the
+// A variable binding is visible only in the rule that makes it and the rules it calls, so when this rule returns, the
 // parent's indentation is back.
 rule children = &(blank* s:spaces) {len($s) > indent} {indent := len($s)} b:block => $b
 

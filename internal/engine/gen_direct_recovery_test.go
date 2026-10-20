@@ -12,6 +12,7 @@ import (
 
 var typedRecoveryCases = []genCase{
 	{"typed/recovery_capture_environment", `type Doc = { Text *node[string]; N int }
+var n int
 rule main Doc = {n := 0} e:item $$ => $e
 rule item Doc = (
     v:(x:"é" #atomic {n := 1} "!") #recover(skip="é" {n := n + 2} "?")
@@ -21,6 +22,7 @@ rule item Doc = (
 rule main Atom = t:("ab" #recover(skip="x"?) $$) #atomic => Atom{Text: text($t)}
 `, []string{"ab", "x", "", "a", "y", "xx"}},
 	{"typed/recovery_failed_skip_rollback", `type Doc = { Text node[string]; N int }
+var n int
 rule main Doc = (
     {n := 0} x:("ab" #recover(skip={n := 8} "x" "!") / {n == 0} "x" "?") #atomic $$
 ) => Doc{Text: $x, N: n}
@@ -47,6 +49,7 @@ rule main Doc = !("é" #cut "!") #recover(skip="é" #cut "?") x:"x" #atomic $$ =
 rule main Doc = x:("a" #cut "!") #recover(skip="a?")? #atomic ("b" #cut "!") #recover(skip="b?")* $$ => Doc{Text: $x}
 `, []string{"", "a!", "a?", "b!", "b?b!", "a?b?b!", "a", "b", "a?b", "a!x"}},
 	{"typed/recovery_dead_skip", `type Doc = { N int }
+var n int
 rule main Doc = {n := 0} _ #recover(skip="x" {n := 7}) $$ => Doc{N: n}
 `, []string{"", "x", "é"}},
 	{"typed/recovery_list_errors", `type Atom = { Text string }

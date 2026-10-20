@@ -925,6 +925,10 @@ function mkRule(
 // where its captures are. The generated code sets it.
 let sourceInfo = false;
 
+// initialVars holds the declared parser variables with their initial values, in declaration
+// order; the generated code sets it and every parse starts from them.
+let initialVars: [string, Value][] = [];
+
 // descs maps expectation IDs to their descriptions; the generated code sets the whole table.
 let descs: string[] = [];
 
@@ -1385,6 +1389,11 @@ class Parser {
     this.control = control;
     this.unit = unit;
     this.maxDepth = maxDepth;
+    for (const [name, val] of initialVars) {
+      this.env = { name, val, next: this.env };
+      if (this.bound === null) this.bound = new Set();
+      this.bound.add(name);
+    }
     this.stride = stride;
     this.calls = new Int32Array(stride);
     this.repeats = new Int32Array(stride);

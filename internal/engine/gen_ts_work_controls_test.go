@@ -221,6 +221,7 @@ func TestGeneratedTSWorkControlMemoKeys(t *testing.T) {
 	t.Run("rollback", func(t *testing.T) {
 		src := `type Word = { Text string }
 
+var v string
 rule main Word = t:({v := "a"} &word {v := "b"} word / {v := "b"} word) #atomic => Word{Text: text($t)}
 
 rule word Word = t:(x:letters {text($x) == v}) => Word{Text: text($t)}
@@ -241,6 +242,7 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ["a","b","aa","bb",n
 	t.Run("long-string", func(t *testing.T) {
 		key := strings.Repeat("a", 1600)
 		src := `type Word = { Text string }
+ var v string
  rule main Word = {v := "` + key + `"} &word &word &word x:word => $x
  rule fast Word = {v := "` + key + `"} x:word => $x
  rule word Word = {v != ""} t:letter #atomic => Word{Text: text($t)}

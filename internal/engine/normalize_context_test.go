@@ -87,7 +87,8 @@ func TestNormalizationContextParity(t *testing.T) {
 	for _, source := range []string{
 		`rule main = ("a" #repeat(1, 3) #atomic @error("as")) "b" $$`,
 		`rule main = ("a" #atomic ";") #recover(skip=([^;]+ ";")) $$`,
-		`rule main = {x := (1); (x == 1)} "a"`,
+		`var x int
+rule main = {x := (1); (x == 1)} "a"`,
 		`type T = { Text (string) }
 type Alias ~ (T)
 rule main (Alias) = n:([0-9]+) => (T{Text: (text($n))})`,

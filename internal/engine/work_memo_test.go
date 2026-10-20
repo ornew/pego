@@ -134,6 +134,9 @@ func TestWorkMemoKeyEqualityAndLongChains(t *testing.T) {
 func workMemoVariableGrammar() string {
 	const count = 280
 	var src strings.Builder
+	for i := 0; i < count; i++ {
+		fmt.Fprintf(&src, "var memo_key_with_common_prefix_%d int\n", i)
+	}
 	src.WriteString("rule main = ")
 	for i := 0; i < count; i++ {
 		fmt.Fprintf(&src, "{memo_key_with_common_prefix_%d := %d} ", i, i)

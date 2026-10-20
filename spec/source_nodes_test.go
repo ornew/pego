@@ -181,6 +181,14 @@ func (s *shaper) decl(d *pego.Node) {
 	case "TypeAlias":
 		s.typ(fieldNode(d, "Type"))
 		s.statement("TypeAlias", d, sep)
+	case "VarDef":
+		if t := fieldNode(d, "Type"); t != nil {
+			s.typ(t)
+		}
+		if v := fieldNode(d, "Value"); v != nil {
+			s.action(v)
+		}
+		s.statement("VarDef", d, sep)
 	case "RuleDef":
 		if t := fieldNode(d, "Type"); t != nil {
 			s.typ(t)

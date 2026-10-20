@@ -99,7 +99,8 @@ rule name =  [a-z_]+ #atomic
 rule num =  [0-9]+ #atomic
 rule blank =  "\n" `, lines(-1)},
 
-	{"variable read in each line", `rule main = {x := 1} (line / blank)* $$
+	{"variable read in each line", `var x int
+rule main = {x := 1} (line / blank)* $$
 rule line =  name " = " num {x == 1} "\n"
 rule name =  [a-z_]+ #atomic
 rule num =  [0-9]+ #atomic

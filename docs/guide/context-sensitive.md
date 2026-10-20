@@ -95,11 +95,12 @@ whatever else failed furthest (here, the name rule looking for one more letter).
 predicate, as in the recipes below.
 
 Also remember that a mistake inside a predicate is not reported either: an evaluation error just fails the predicate. A
-misspelled variable name is such an error, and the type checker does not catch it (variables are defined dynamically by
-callers):
+misspelled variable name is not such an error: every variable must be declared with `var`, so the compiler rejects an
+undeclared name when the grammar is compiled:
 
 ```pego
 // typo.pego
+var indent int
 rule main = {indent := 0} "a" {idnent == 0}
 ```
 
@@ -108,10 +109,10 @@ pego parse -g typo.pego -i 'a'
 ```
 
 ```text
-pego: 1:1: syntax error
+pego: typo.pego:3:32: undefined variable idnent; declare it with var idnent at the top level
 ```
 
-If a predicate unexpectedly fails, check the names first.
+If a predicate unexpectedly fails, check the values and conditions it compares.
 
 #### Blocks of Predicate Actions
 
@@ -124,9 +125,20 @@ blocks are compile-time errors, and Value Actions have no block form: they use t
 
 ### Variables
 
-A predicate `{ name := value }` **defines** a variable, and `{ name }` or any expression that mentions `name` **reads** it.
-Values are `int`, `string` or `bool`. Definitions never modify anything: a variable is an immutable binding in an
-environment that flows **down** the call tree.
+A variable is declared once at the top level of the grammar with its type and, optionally, its initial value:
+
+```pego
+var depth int = 0
+var mode string
+var seen = false
+```
+
+The type is `int`, `string` or `bool`. Without an initial value a variable starts as `0`, `""` or `false`, and the type
+can be omitted when the initial value shows it. Every parse, through every start rule, starts with each variable bound to
+its initial value. A predicate `{ name := value }` **binds** the variable to a new value, and `{ name }` or any
+expression that mentions `name` **reads** it. The value must have the declared type, and a name that is not declared
+cannot be read or bound; the compiler reports both. Bindings never modify anything: a variable is an immutable binding in
+an environment that flows **down** the call tree.
 
 | Rule | Meaning |
 |:--|:--|
@@ -134,7 +146,7 @@ environment that flows **down** the call tree.
 | A new definition shadows | Defining `x` where `x` exists creates a new binding; the old one is untouched |
 | A callee's definitions are its own | Shadowing or defining in a called rule does not affect the caller |
 | Backtracking undoes definitions | Returning to an earlier point in the input forgets what was defined after it |
-| Reading an undefined variable fails the predicate | It is an evaluation error |
+| A read sees the nearest binding | Before any rule binds the variable, it reads its initial value |
 
 The following grammar has one start rule for each row. All the rules are pure predicates, so the commands use `-check`,
 which prints `ok` on success:
@@ -142,6 +154,12 @@ which prints `ok` on success:
 ```pego
 // lab.pego
 // A callee reads the caller's variable.
+var x int
+var y int
+var r int
+var o int
+var p int
+
 rule inherit = {x := 1} reads_x
 rule reads_x = {x == 1}
 
@@ -218,8 +236,9 @@ pego parse -g lab.pego -s peeked -check -i ''
 ok
 ```
 
-Think of the environment as a stack of frames that exists only while the rules are running: a rule sees what its callers
-defined, pushes its own definitions on top, and everything it defined disappears when it returns. Two practical
+Think of the environment as a stack of frames that exists only while the rules are running: it starts with the initial
+values, a rule sees what its callers bound, pushes its own bindings on top, and everything it bound disappears when it
+returns. Two practical
 consequences:
 
 - **Context flows downward only.** A variable cannot carry information from a callee back to its caller or from one
@@ -232,8 +251,7 @@ consequences:
 A definition persists for the rest of the rule it is made in, even when it was written inside a repetition, an optional
 expression or a positive lookahead (the last three rows above). Definitions in a branch that is abandoned are undone.
 
-Variables are meant for predicates. (The engine also lets an action read a variable, but there a missing variable aborts
-the whole parse with a run-time error instead of failing a predicate; this guide does not use it.)
+Actions can read variables too, with the declared type: `V{N: depth}` is checked when the grammar is compiled.
 
 ### Lookahead
 
@@ -283,7 +301,7 @@ Three attributes matter here:
   inside the failed expression are gone after the recovery. The `skip` expression is matched in that restored context,
   so it can read variables: a `skip` can skip the rest of a broken line **and the more deeply indented lines
   after it** by comparing indentation ([see the recovery guide](recovery.md#skip-to-the-next-statement-or-line-and-continue)).
-- `#stream` repetitions see the variables defined before them: with `rule main =  { mode := 1 } rs:rec* #stream $$ ` and
+- `#stream` repetitions see the variables bound before them: with `var mode int`, `rule main =  { mode := 1 } rs:rec* #stream $$ ` and
   `rule rec = { mode == 1 } . . .`, every streamed element reads `mode`.
 
 ### Choosing a Tool
@@ -313,6 +331,8 @@ What this means when you write a grammar:
 // memo.pego
 // Each level parses the nested group, fails at "x", and parses it again for "y". Without
 // memoization that is 2^n work for n levels; `group` reads `mode`.
+var mode int
+
 rule main = {mode := 1} group $$
 rule group = "(" group ")" "x" {mode == 1} / "(" group ")" "y" {mode == 1} / "z" {mode == 1}
 ```
@@ -368,6 +388,8 @@ type Content ~ Element | node[string]
 rule main Element = e:element $$ => $e
 
 // The open tag defines `tag`; every rule called after that can read it.
+var tag string
+
 rule element Element = "<" n:name ">" {tag := text($n)} cs:content* close_tag => Element{Name: $n, Children: $cs.Value}
 rule content Content = element / chars
 rule chars = [^<]+ #atomic
@@ -417,6 +439,8 @@ type Item = {
     Text     node[string]
     Children []Item
 }
+
+var indent int
 
 rule main = {indent := 0} items:block blank* $$ => $items
 
@@ -540,6 +564,8 @@ only below the rule that defines it, the flag turns off by itself when the brack
 ```pego
 // nl.pego
 // Statements end at a newline, except inside brackets, where a newline is whitespace.
+var nl bool
+
 rule main = {nl := false} lines:(ws s:stmt ws "\n")* ws $$ => map($lines, (x) => x.$s)
 
 rule stmt = name ws "=" ws expr
@@ -590,6 +616,8 @@ type Command = { Words []node[string]; Doc *Heredoc }
 rule main = cs:(-ws c:command)* ws $$ => map($cs, (x) => x.$c)
 
 rule command Command = ws:(-sp w:word)+ -sp d:heredoc? eol => Command{Words: map($ws, (x) => x.$w), Doc: $d}
+
+var delim string
 
 // "<<TAG", the lines up to a line that is exactly TAG, and that closing line.
 // A capture of the rule body is not visible inside the repetition, so the tag is kept in a variable.
@@ -661,6 +689,8 @@ that reads it:
 ```pego
 // longstr.pego
 rule main = long_string $$
+var level int
+
 rule long_string = "[" eq:"="* #atomic "[" {level := len($eq)} body:(!long_close .)* #atomic long_close @error(message="unterminated long string")
 rule long_close = "]" e:"="* #atomic "]" {len($e) == level}
 ```
@@ -693,6 +723,8 @@ siblings at the same level see the same value:
 ```pego
 // depth.pego
 // Parentheses nested at most three levels deep.
+var depth int
+
 rule main = {depth := 0} group $$
 
 rule group = "(" {depth := depth + 1} {depth <= 3} @error(message="nested too deeply") group* ")"

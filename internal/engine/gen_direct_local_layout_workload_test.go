@@ -28,7 +28,8 @@ func TestGeneratedTypedLocalLayoutWorkloads(t *testing.T) {
 	}
 }
 
-const typedLocalLayoutWorkloadTypes = `rule main Doc = {n := 0} e:body $$ => $e
+const typedLocalLayoutWorkloadTypes = `var n int
+rule main Doc = {n := 0} e:body $$ => $e
 `
 
 var typedLocalLayoutWorkloads = []struct{ name, src string }{

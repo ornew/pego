@@ -177,6 +177,16 @@ export function recognizeWithOptions(input: string | Uint8Array, options?: Parse
 	if prog.sourceInfo {
 		out.WriteString("sourceInfo = true;\n")
 	}
+	for _, v := range prog.vars.all() {
+		switch x := v.init.(type) {
+		case int:
+			fmt.Fprintf(&out, "initialVars.push([%s, %s]);\n", tsString(v.name), tsInt(x))
+		case string:
+			fmt.Fprintf(&out, "initialVars.push([%s, %s]);\n", tsString(v.name), tsString(x))
+		default:
+			fmt.Fprintf(&out, "initialVars.push([%s, %v]);\n", tsString(v.name), x)
+		}
+	}
 	out.WriteString("\n")
 	out.WriteString(gen.init.String())
 	out.WriteString("\n")

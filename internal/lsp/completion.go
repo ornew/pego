@@ -48,9 +48,9 @@ func (a *analysis) isIdent(i int, text string) bool {
 	return i >= 0 && i < len(a.toks) && a.toks[i].Kind == syntax.TokenIdent && a.toks[i].Text == text
 }
 
-// isDefKeyword reports whether token i is rule or type.
+// isDefKeyword reports whether token i is rule, type or var.
 func (a *analysis) isDefKeyword(i int) bool {
-	return a.declarationStart(i) && (a.isIdent(i, "rule") || a.isIdent(i, "type"))
+	return a.declarationStart(i) && (a.isIdent(i, "rule") || a.isIdent(i, "type") || a.isIdent(i, "var"))
 }
 
 func (a *analysis) declarationStart(i int) bool {
@@ -69,7 +69,7 @@ func (a *analysis) indexDeclarationStartsControlled(control *renderControl) {
 			continue
 		}
 		boundary := previous < 0 || a.isPunct(previous, ";") || a.toks[previous].End.Line < t.Pos.Line
-		if boundary && len(a.syntaxErrs) > 0 && (a.isIdent(i, "rule") || a.isIdent(i, "type")) {
+		if boundary && len(a.syntaxErrs) > 0 && (a.isIdent(i, "rule") || a.isIdent(i, "type") || a.isIdent(i, "var")) {
 			next := a.significantTokenControlled(i+1, control)
 			if next < len(a.toks) && a.toks[next].Kind == syntax.TokenIdent {
 				depth = 0

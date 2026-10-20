@@ -893,6 +893,9 @@ func (c *evalCtx) keep() *evalCtx {
 // predicate compiles a Predicate Action { ... }.
 func (c *compiler) predicate(e *grammar.Predicate, s *scope) matcher {
 	if a, ok := e.Term.(*grammar.Assign); ok {
+		if c.prog.vars.lookup(a.Name) == nil {
+			c.errorf(a.Diagnostic(), "undefined variable %s; declare it with var %s at the top level", a.Name, a.Name)
+		}
 		c.checkTerm(a.Value, s, nil)
 		return func(p *parser) (*Node, bool) {
 			ctx := p.useCtx(evalCtx{p: p, scope: s, frame: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
@@ -942,6 +945,10 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 		}
 	case *grammar.IndexRef:
 		c.errorf(t.Diagnostic(), "positional capture $%d is removed; name the element with a capture", t.Index)
+	case *grammar.VarRef:
+		if c.prog.vars.lookup(t.Name) == nil {
+			c.errorf(t.Diagnostic(), "undefined variable %s; declare it with var %s at the top level", t.Name, t.Name)
+		}
 	case *grammar.Member:
 		c.checkTerm(t.X, s, locals)
 	case *grammar.New:

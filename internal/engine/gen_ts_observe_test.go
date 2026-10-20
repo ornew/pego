@@ -40,6 +40,7 @@ type N = { Value W }
 rule main N = p:part => N{Value:$p}
 rule part W = t:("a") #atomic => W{Text: text($t)}`, "a", `check(count("part","enter")===1,"framed calls");`},
 		{"predicate", `type W = { Text string }
+var x int
 rule main W = {x:=1} #cut p:part {x==1} => $p
 rule part W = t:("a") #atomic => W{Text: text($t)}`, "a", `check(count("part","enter")===1,"predicate calls");`},
 		{"leftrec", `type W = { Text string }

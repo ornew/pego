@@ -545,7 +545,8 @@ rule b = a "x" / "z"`, strings.Repeat("zzyx", 6) + "y", []string{"z", "y", "x", 
 		{"cut", `rule main = ("<" #cut [a-z]+ #atomic ">")* [a-z<>]* #atomic $$`, strings.Repeat("<ab><cd>", 6) + "xyz", []string{"<", ">", "a", "", "<a>"}},
 		// An element that calls a rule reading a variable defined before the repetition is not
 		// resumed: the edit changes the variable, not the input the elements examined.
-		{"variables", `rule main = h:hdr {k := len($h)} item* $$
+		{"variables", `var k int
+rule main = h:hdr {k := len($h)} item* $$
 rule hdr = "x"* #atomic
 rule item = {k == 1} [a-z] #atomic / [a-z] #atomic "!"`, "x" + strings.Repeat("a!", 20) + "a", []string{"x", "", "a!"}},
 		{"expectations", `rule main = item* $$
@@ -658,7 +659,8 @@ func TestDocumentResumeSequences(t *testing.T) {
 		{"minimum", `rule main = ("a" [a-z] #atomic)+ [0-9]* #atomic $$`, strings.Repeat("ab", 20) + "123", []docEdit{{41, 42, 0}, {40, 41, 0}}, []string{"9", ""}},
 		// Elements that call a rule reading a variable defined before the repetition: an edit to
 		// the header changes how they parse, though not the input they examined.
-		{"variables", `rule main = h:hdr {k := len($h)} item* $$
+		{"variables", `var k int
+rule main = h:hdr {k := len($h)} item* $$
 rule hdr = "x"* #atomic
 rule item = {k == 1} [a-z!] #atomic / [a-z] #atomic "!"`, "x" + strings.Repeat("a!", 20), []docEdit{{0, 1, 0}, {0, 0, 0}, {0, 0, 0}}, []string{"", "x", "x"}},
 	}

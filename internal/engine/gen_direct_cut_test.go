@@ -37,13 +37,16 @@ rule main Doc = v:(("é" #cut "x") @error(message="expected committed word") / "
 `, []string{"éx", "éy", "é", "x", ""}},
 	{"typed/direct_cut_memo_capture", `type Pair = { Word node[string]; N int }
 type Doc = { Pair Pair }
+var n int
 rule main Doc = p:pair "!" $$ / p:pair "?" $$ => Doc{Pair: $p}
 rule pair Pair = word:[a-z]+ #atomic #cut {n := len($word)} ":" [0-9]+ => Pair{Word: $word, N: n}
 `, []string{"abc:12!", "abc:12?", "abc:x?", "abc:12", ""}},
 	{"typed/direct_cut_outer_rollback", `type Doc = { Text node[string]; N int }
+var n int
 rule main Doc = {n := 0} (v:"a" #atomic {n := 1} ("b" #cut "c")? "x" / v:"ab" #atomic {n := 2}) $$ => Doc{Text: $v, N: n}
 `, []string{"ab", "abcx", "ax", "abd", ""}},
 	{"typed/direct_cut_repeat_rollback", `type Doc = { Text node[string]; N int }
+var n int
 rule main Doc = {n := 0} (v:"a" #atomic {n := 1} ("b" #cut {n := n + 1} "c") #repeat(0, 2) "x" / v:"ab" #atomic {n := 2}) $$ => Doc{Text: $v, N: n}
 `, []string{"ab", "abcx", "abcbcx", "ax", "abd", ""}},
 	{"typed/direct_cut_captured_lookahead", `type Doc = { Text node[string] }

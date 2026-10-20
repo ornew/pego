@@ -915,6 +915,22 @@ type grammar struct {
 	SourceInfo bool
 	// MaxDepth is the default maximum nesting of rule calls.
 	maxDepth int
+	// initEnv is the environment every parse starts from, with each variable bound to its
+	// initial value, and initBound holds the names of those variables (Parser.bound).
+	initEnv   *Env
+	initBound map[string]bool
+}
+
+// SetVars makes the variables names, with the initial values vals, the starting environment of
+// every parse.
+//
+// SetVars is for generated parsers; not a stable API.
+func (g *grammar) SetVars(names []string, vals []any) {
+	g.initEnv, g.initBound = nil, map[string]bool{}
+	for i, name := range names {
+		g.initEnv = &Env{name: name, val: vals[i], next: g.initEnv}
+		g.initBound[name] = true
+	}
 }
 
 // NewGrammar returns an empty grammar with the default rule-call limit MaxDepth.
@@ -1237,6 +1253,13 @@ type documentStats struct {
 // setGrammar prepares p to parse with the rules of g.
 func (p *Parser) setGrammar(g *grammar) {
 	p.g, p.sourceInfo, p.memo.stride = g, g.SourceInfo, g.nseen
+	p.Env, p.bound = g.initEnv, nil
+	if g.initEnv != nil {
+		p.bound = make(map[string]bool, len(g.initBound))
+		for name := range g.initBound {
+			p.bound[name] = true
+		}
+	}
 	if len(p.memo.calls) != g.nseen {
 		p.memo.calls = nil // kept from a parse with another rule table
 	}
@@ -42031,6 +42054,7 @@ func init() {
 	recRules[1051].Body = func(p *Parser, _ int) (*Node, bool) { return e2629(p) }
 	recRules[1052].Body = func(p *Parser, _ int) (*Node, bool) { return e2630(p) }
 	pegoGrammar.Descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "[\\t\\n\\f\\r \\u00a0\\u2000-\\u200b\\u202f\\u205f\\u2060\\u3000\\ufeff]", "\"--\"", "[^\\r\\n]", "\"/*\"", "\"*/\"", "[a-zA-Z0-9_$\\u0080-\\u009f¡-\\u1fff\\u200c-\\u202e‰-⁞\\u2061-⿿、-\\ufefe\\uff00-\\U0010ffff]", "[a-zA-Z_\\u0080-\\u009f¡-\\u1fff\\u200c-\\u202e‰-⁞\\u2061-⿿、-\\ufefe\\uff00-\\U0010ffff]", "[eEbBxXnN]", "\"'\"", "[uU]", "\"&'\"", "[nN]", "[fF]", "[lL]", "\"\\\"\"", "[^\"]", "\"\\\"\\\"\"", "\"&\"", "[eE]", "[sS]", "[cC]", "[aA]", "[pP]", "[^\\']", "[bB]", "[iI]", "[\\t\\f ]", "[\\r\\n]", "[\\t\\n\\f\\r ]", "\"''\"", "[^\\\\\\']", "\"\\\\\"", "[0-9a-fA-F]", "\"$\"", "[^$]", "[a-zA-Z_\\u0080-\\U0010ffff]", "[a-zA-Z_0-9\\u0080-\\U0010ffff]", "[bBxX]", "[0-9]", "\"_\"", "\".\"", "[+\\-]", "[~!@\\^&|`+\\-*/%<>=]", "\"+\"", "\"-\"", "\"*\"", "\"/\"", "\"<\"", "\">\"", "\"=\"", "\"<=\"", "\">=\"", "\"<>\"", "\"!=\"", "\"=>\"", "\"%\"", "\"^\"", "\"**\"", "\"//\"", "\"->\"", "\"->>\"", "[+\\-*/<>=]", "[~!@\\^&|`%]", "[*/<>=]", "\",\"", "\"(\"", "\":\"", "[gG]", "[oO]", "\")\"", "\"[\"", "\"?\"", "[a-zA-Z0-9_\\u0080-\\u009f¡-\\u1fff\\u200c-\\u202e‰-⁞\\u2061-⿿、-\\ufefe\\uff00-\\U0010ffff]", "\"#\"", "[dD]", "[vV]", "\"{\"", "[mM]", "[rR]", "\"]\"", "\"}\"", "[tT]", "[yY]", "[hH]", "[wW]", "[qQ]", "\":=\"", "[kK]", "[jJ]", "\";\"", "[zZ]", "[xX]", "[iInN]", "[<>=!]", "[+\\-*/<>=~!@\\^&|`%oOnNlLgGiI]", "[nNlLiIsS]", "[nNiI]", "[nNbB]", "[+\\-*/<>=~!@\\^&|`%oO]", "[*/%]", "[*\\^]", "\"::\""}
+	pegoGrammar.SetVars([]string{"tag"}, []any{""})
 	pegoRecGrammar.Share(pegoGrammar)
 	trules = []*TRule{
 		{Rule: rules[0]},

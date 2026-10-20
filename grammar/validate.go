@@ -265,6 +265,9 @@ func validate(g *Grammar, control *validationControl) error {
 			push(n.Type, "type", -1, false)
 		case *TypeAlias:
 			push(n.Type, "type", -1, false)
+		case *VarDef:
+			push(n.Value, "value", -1, true)
+			push(n.Type, "type", -1, true)
 		case *RuleDef:
 			push(n.Action, "action", -1, true)
 			push(n.Expr, "expr", -1, false)
@@ -463,6 +466,8 @@ func invalidIdentifier(node any, control *validationControl) (field, name string
 		}
 		field, name = "file.pkg.name", n.File.Pkg.Name
 	case *RuleDef:
+		field, name = "name", n.Name
+	case *VarDef:
 		field, name = "name", n.Name
 	case *TypeDef:
 		field, name = "name", n.Name

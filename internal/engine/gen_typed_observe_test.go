@@ -35,6 +35,7 @@ type N = { Value W }
 rule main N = p:part => N{Value:$p}
 rule part W = t:("a") #atomic => W{Text: text($t)}`, input: "a", checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
 		{name: "general", grammar: `type W = { Text string }
+var x int
 rule main W = {x:=1} #cut p:part {x==1} => $p
 rule part W = t:("a") #atomic => W{Text: text($t)}`, input: "a", general: true, checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
 		{name: "leftrec", grammar: `type W = { Text string }

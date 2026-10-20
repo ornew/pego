@@ -64,4 +64,4 @@ definition and the place where the term is defined.
 | union type | A type whose values are values of any one of its member types. See [Union Types](types.md#union-types). |
 | value | What a Rule Expression, a rule or an action produces: a node, `nil`, an error value, a struct, or an integer, string or boolean inside actions. See [Rule Expressions](parser-expressions.md#values-and-the-concrete-syntax-tree). |
 | Value Action | `=> term`: the action that follows a complete Rule Expression and computes the value of the rule from its captures. See [Actions](actions.md#whole-rule-value-actions). |
-| variable | A named `int`, `string` or `bool` value defined and read by predicates. See [Variables](predicates.md#variables). |
+| variable | A named `int`, `string` or `bool` value declared by a `var` declaration, bound and read by actions. See [Variables](predicates.md#variables). |

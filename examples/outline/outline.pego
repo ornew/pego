@@ -7,6 +7,9 @@
 //   vegetables
 package outline
 
+// indent is the indentation of the item being read.
+var indent int
+
 type Item = {
     Text     node[string]
     Children []Item

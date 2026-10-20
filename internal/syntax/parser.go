@@ -325,7 +325,7 @@ func (p *parser) ident() token {
 }
 
 var keywords = map[string]bool{
-	"package": true, "type": true, "rule": true, "struct": true, "terminal": true,
+	"package": true, "type": true, "rule": true, "var": true, "struct": true, "terminal": true,
 	"operators": true, "skip": true, "operand": true, "level": true, "prefix": true,
 	"postfix": true, "infix": true,
 }
@@ -361,12 +361,16 @@ func (p *parser) file() *grammar.Grammar {
 				t := p.typeDecl()
 				statement = t.(grammar.SourceNode)
 				g.File.Decls = append(g.File.Decls, t)
+			case p.is("var"):
+				v := p.varDef()
+				statement = v
+				g.File.Decls = append(g.File.Decls, v)
 			case p.is("rule"):
 				r := p.ruleDef()
 				statement = r
 				g.File.Decls = append(g.File.Decls, r)
 			default:
-				p.errorf("expected 'rule' or 'type', found %s", p.tok())
+				p.errorf("expected 'rule', 'type' or 'var', found %s", p.tok())
 				panic(bail{})
 			}
 		}()
@@ -426,12 +430,12 @@ func (p *parser) recover() {
 	for j := p.i - 1; j > p.recoveryStart; j-- {
 		p.poll()
 		t := p.toks[j]
-		if t.lineBefore && t.kind == tIdent && (t.text == "rule" || t.text == "type") && j+1 < len(p.toks) && p.toks[j+1].kind == tIdent {
+		if t.lineBefore && t.kind == tIdent && (t.text == "rule" || t.text == "type" || t.text == "var") && j+1 < len(p.toks) && p.toks[j+1].kind == tIdent {
 			p.i = j
 			return
 		}
 	}
-	for p.tok().kind != tEOF && !p.is("rule") && !p.is("type") {
+	for p.tok().kind != tEOF && !p.is("rule") && !p.is("type") && !p.is("var") {
 		p.next()
 	}
 }
@@ -670,6 +674,38 @@ func (p *parser) tupleType(open int, g *grammar.TypeGroup, first grammar.TypeExp
 	t.OneLine = !p.multiline(open, p.i)
 	p.expect(")")
 	return t
+}
+
+// varDef parses a variable definition: var Name [Type] [= Value].
+func (p *parser) varDef() (sourceResult *grammar.VarDef) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
+	defer p.statement()()
+	br := p.lineBreak()
+	pos := p.expect("var").pos
+	p.header = true
+	p.headerPos = pos
+	defer func() { p.header = false }()
+	name := p.ident()
+	p.header = false
+	vd := &grammar.VarDef{SourceInfo: grammar.SourceInfo{Pos: pos}, Name: name.text, Break: br}
+	if !p.boundary() && p.tok().kind != tEOF && !p.is("=") && !p.is(";") {
+		vd.Type = p.typeExpr()
+	}
+	if !p.boundary() && p.is("=") {
+		p.next()
+		if p.boundary() {
+			p.errorf("expected the initial value on the same statement, found %s", p.tok())
+			panic(bail{})
+		}
+		vd.Value = p.term()
+	}
+	return vd
 }
 
 func (p *parser) ruleDef() (sourceResult *grammar.RuleDef) {

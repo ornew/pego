@@ -1,8 +1,8 @@
 // Package grammar defines the abstract syntax tree (AST) of PEGO grammars.
 //
 // A grammar file (File) is a package clause and a list of declarations (Decl):
-// type definitions (TypeDef), type aliases (TypeAlias) and rule definitions
-// (RuleDef). A rule body is a parser expression (Expr),
+// type definitions (TypeDef), type aliases (TypeAlias), variable definitions
+// (VarDef) and rule definitions (RuleDef). A rule body is a parser expression (Expr),
 // and actions and predicates are value expressions (Term).
 package grammar
 
@@ -65,6 +65,17 @@ func (g *Grammar) rules(control *metadataControl) []*RuleDef {
 	return rs
 }
 
+// Vars returns the variable definitions of the grammar in declaration order.
+func (g *Grammar) Vars() []*VarDef {
+	var vs []*VarDef
+	for _, d := range g.File.Decls {
+		if v, ok := d.(*VarDef); ok {
+			vs = append(vs, v)
+		}
+	}
+	return vs
+}
+
 // Types returns the type declarations of the grammar in declaration order.
 func (g *Grammar) Types() []TypeDecl {
 	return g.types(nil)
@@ -81,7 +92,7 @@ func (g *Grammar) types(control *metadataControl) []TypeDecl {
 	return ts
 }
 
-// Decl is a declaration of a file: a type declaration or a rule declaration.
+// Decl is a declaration of a file: a type, variable or rule declaration.
 type Decl interface {
 	// DeclName returns the declared name.
 	DeclName() string
@@ -100,6 +111,12 @@ type TypeDecl interface {
 type RuleDecl interface {
 	Decl
 	ruleDecl()
+}
+
+// VarDecl is a variable declaration: a variable definition.
+type VarDecl interface {
+	Decl
+	varDecl()
 }
 
 // TypeDef is a type definition. It defines a new type: a struct type
@@ -146,9 +163,24 @@ type RuleDef struct {
 	CloseBreak  *LineBreak `json:"-"`
 }
 
+// VarDef is a variable definition (var Name Type = Value). It declares a
+// parser variable with its type and its initial value. Type is nil when it is
+// omitted and inferred from Value; Value is nil when it is omitted and the
+// initial value is the zero value of the type.
+type VarDef struct {
+	SourceInfo `json:"source,omitempty"`
+	Name       string   `json:"name"`
+	Type       TypeExpr `json:"type,omitempty"`
+	Value      Term     `json:"value,omitempty"`
+
+	// Break holds the comments before the declaration, as for TypeDef.
+	Break *LineBreak `json:"-"`
+}
+
 func (d *TypeDef) DeclName() string   { return d.Name }
 func (d *TypeAlias) DeclName() string { return d.Name }
 func (d *RuleDef) DeclName() string   { return d.Name }
+func (d *VarDef) DeclName() string    { return d.Name }
 
 // Struct returns the struct type that t defines, or nil when t defines a named
 // node type.
@@ -178,9 +210,11 @@ func (t *TypeDef) NodeValue() TypeExpr {
 func (*TypeDef) decl()       {}
 func (*TypeAlias) decl()     {}
 func (*RuleDef) decl()       {}
+func (*VarDef) decl()        {}
 func (*TypeDef) typeDecl()   {}
 func (*TypeAlias) typeDecl() {}
 func (*RuleDef) ruleDecl()   {}
+func (*VarDef) varDecl()     {}
 
 // --- Types ---
 

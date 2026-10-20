@@ -210,6 +210,7 @@ for (const unit of [CodePoints, Bytes]) {
  p.bind("z", 2);
  if (saved!.val !== 1) throw new Error("saved environment mutated");
  const q = new Parser("", unit, nseen, defaultMaxDepth);
+ q.env = null; // the parser starts from the declared variables
  q.bind("x",1);
  const first = q.env as Env | null;
  q.env = null;

@@ -6,21 +6,25 @@ import "testing"
 // Document's first-call memoization. No predicate reads x on behalf of r.
 var actionVariableCases = []genCase{
 	{"rule action variables", `type V = { N int }
+var x int
 rule main = {x := 1} r "b" / {x := 2} r "c" / {x := 3} r "d" / {x := 4} r
 rule r = leaf => V{N: x}
 rule leaf = "a"`, []string{"a", "ab", "ac", "ad"}},
 	{"transitive action variables", `type V = { N int }
+var x int
 rule main = {x := 1} r "b" / {x := 2} r "c" / {x := 3} r "d" / {x := 4} r
 rule r = inner
 rule inner = leaf => V{N: x}
 rule leaf = "a"`, []string{"a", "ab", "ac", "ad"}},
 	{"operatorsRule operand action variables", `type V = { N int }
+var x int
 rule main = {x := 1} r "b" / {x := 2} r "c" / {x := 3} r "d" / {x := 4} r
 rule r = operators {
     operand leaf => V{N: x}
 }
 rule leaf = "a"`, []string{"a", "ab", "ac", "ad"}},
 	{"operatorsRule prefix action variables", `type V = { N int }
+var x int
 rule main = {x := 1} r "b" / {x := 2} r "c" / {x := 3} r "d" / {x := 4} r
 rule r = operators {
     operand leaf
@@ -28,6 +32,7 @@ rule r = operators {
 }
 rule leaf = "a"`, []string{"-a", "-ab", "-ac", "-ad"}},
 	{"operatorsRule infix action variables", `type V = { N int }
+var x int
 rule main = {x := 1} r "b" / {x := 2} r "c" / {x := 3} r "d" / {x := 4} r
 rule r = operators {
     operand leaf
@@ -35,6 +40,7 @@ rule r = operators {
 }
 rule leaf = "a"`, []string{"a+a", "a+ab", "a+ac", "a+ad"}},
 	{"operatorsRule postfix action variables", `type V = { N int }
+var x int
 rule main = {x := 1} r "b" / {x := 2} r "c" / {x := 3} r "d" / {x := 4} r
 rule r = operators {
     operand leaf
@@ -78,6 +84,7 @@ func TestMemoActionVariables(t *testing.T) {
 
 func TestDocumentActionVariableEdit(t *testing.T) {
 	prog := compile(t, `type V = { N int }
+var n int
 rule main = text:[a-z]+ #atomic {n := len($text)} r
 rule r = "!" => V{N: n}`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {

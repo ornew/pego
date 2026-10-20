@@ -32,8 +32,8 @@ func TestCompiledRoundTrip(t *testing.T) {
 // constructors they mean, whose field checks the version 1 format does not keep.
 func TestCompiledRoundTripTerminalConstructors(t *testing.T) {
 	for name, src := range map[string]string{
-		"value error":     "type Int terminal\nrule main = {value := 1} \"x\" => Int{value}",
-		"predicate error": "type Int terminal\nrule main = {value := 1} {Int{value} != nil} \"x\" / \"x\"",
+		"value error":     "type Int terminal\nvar value int\nrule main = {value := 1} \"x\" => Int{list(value, \"a\")[0].(string)}",
+		"predicate error": "type Int terminal\nvar value int\nrule main = {value := 1} {Int{list(value, \"a\")[0].(string)} != nil} \"x\" / \"x\"",
 	} {
 		t.Run(name, func(t *testing.T) {
 			checkCompiledRoundTrip(t, compileLegacy(t, src), []string{"x", ""}, true)

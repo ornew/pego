@@ -24,6 +24,19 @@ type genCase struct {
 // genCorpus returns the grammars and inputs used to compare backends and generated parsers with the engine.
 func genCorpus(t *testing.T) []genCase {
 	cases := []genCase{
+		{"declared variable initial values", `type R = { N int; S string; B bool; M int }
+var n int = 7
+var s = "init"
+var b bool
+var m = -3
+rule main R = {s := s + "!"} g:grow "," h:grow "," t:test $$ => R{N: n + $g + $h, S: s, B: b || $t, M: m}
+rule grow int = {n := n + 1} "a" => n
+rule test bool = "y" {b == false} => b == false
+`, []string{"a,a,y", "a,a,x", "a,a,", "a,", "y", ""}},
+		{"declared variables are part of the memo key", `var d int
+rule main = {d := 1} item "|" {d := 2} item "|" item $$
+rule item = {d == 1} "x" / {d == 2} "y" / {d == 0} "z"
+`, []string{"x|y|z", "x|y|x", "z|y|z", "x|x|z", ""}},
 		{"Operators Rule explicit default action", `rule main = e $$
 rule e = operators {
     operand "α"
@@ -31,7 +44,8 @@ rule e = operators {
 } => ...`, []string{"α", "α+α", "α+α+α", "α+", "+α", ""}},
 		{"direct value-free rollback", `rule main = "a" ("é" "!" / "é" "?") $$ / "o" ("é" "!")? "é"? $$ / "r" ("é" "!") #repeat(1, 3) "é"? $$ / "z" (x:_) #repeat(2, ) $$ / "p" &("é" "!") "é" !"?" "!" $$ / "l" "é" @error(message="letter") #atomic "!" $$ / "e" "ab" @error(message="pair") $$
 `, []string{"aé!", "aé?", "aé@", "aé", "o", "oé!", "oé", "oé?", "ré!é!é", "ré!é", "ré", "z", "zé", "zéé", "zééé", "pé!", "pé?", "pé", "lé!", "lé?", "l?", "eab", "ea?", "e", ""}},
-		{"direct value-free fallback calls", `rule main = "m" &(cached "!") cached "!" $$ / "c" #cut plain "!" $$ / "v" {n := 1} plain "?" $$ / "g" {n := 2} plain $$ / "h" recovering $$ / "j" prefixed $$ / "k" left $$
+		{"direct value-free fallback calls", `var n int
+rule main = "m" &(cached "!") cached "!" $$ / "c" #cut plain "!" $$ / "v" {n := 1} plain "?" $$ / "g" {n := 2} plain $$ / "h" recovering $$ / "j" prefixed $$ / "k" left $$
 rule cached = "é" / "ab"
 rule plain = "é" / guarded
 rule guarded = {n == 2} "a"
@@ -79,6 +93,7 @@ rule main = w:[a-z]+ #atomic {text($w) == "a" || !(text($w) == "b")} $$ => R{X: 
 rule main = (w:[a-z] #atomic)? {text($w) == "" || text($w) == "a" || text($w) == "b" || text($w) == "a"} $$ => R{X: $w}`,
 			[]string{"", "a", "b", "c"}},
 		{"literal text variable alias control", `type R = { X node[string] }
+var alias string
 rule main = w:[a-z]+ #atomic {alias := text($w)} {alias == "a" || alias == "b"} $$ => R{X: $w}`,
 			[]string{"a", "b", "c", ""}},
 		{"stream empty capture recognition", `rule main = (x:_) #repeat(1) #stream $$`, []string{"", "a", "é"}},
@@ -93,7 +108,8 @@ rule main = t:("f" [\u{0}-\u{10ffff}] / "e" [\u{d7ff}-\u{e000}] / "n" [^\u{d7ff}
 			`rule main = x:level(e, mul) $$ => $x`, `rule main = &(level(e, mul) "|") x:e $$ => $x`, 1), []string{"~é+y|z", "~é+y", "x|y", "é|z"}},
 		{"incremental", incrementalGrammar, []string{"x = 1+2\nab,cd\n@pos\n\ny = (3)*-4\n", "x = (1\n", "@\n"}},
 		{"records", records, []string{"#records\na=1\nbc=22\n", "#records\nx\n"}},
-		{"indent", `rule main = {indent := 0} block $$
+		{"indent", `var indent int
+rule main = {indent := 0} block $$
 rule block = item+
 rule item = s:spaces {len($s) == indent} name:[a-z]+ #atomic "\n" children?
 rule children = &s:spaces {len($s) > indent} {indent := len($s)} block
@@ -124,7 +140,8 @@ rule main = x:"a"* #atomic => A{N: 10 / len($x)}`, []string{"aa", ""}},
 		{"integer boundaries", integerBoundaryGrammar, []string{"a", "aa", ""}},
 		{"cut and lookahead", `rule main = ("a" #cut "b" / "a" #cut "c") rest
 rule rest = &x:"!" "!"? !"?" .*`, []string{"ab!x", "ac", "ab?"}},
-		{"memo keyed by variables", `rule main = {n := 1} r "x" / {n := 2} r .*
+		{"memo keyed by variables", `var n int
+rule main = {n := 1} r "x" / {n := 2} r .*
 rule r = {n == 1} "a" / {n == 2} "b"`, []string{"ax", "b", "ay", "bx"}},
 		// Value and predicate actions read callers' variables, shadow them,
 		// roll back failed definitions and keep definitions from repetition

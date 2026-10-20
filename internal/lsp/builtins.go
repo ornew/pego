@@ -71,7 +71,7 @@ var pragmas = []builtin{
 }
 
 // Keywords offered by completion where a parsing expression or a definition may start.
-var statementKeywords = []string{"rule", "type"}
+var statementKeywords = []string{"rule", "type", "var"}
 
 var bodyKeywords = []string{"operators"}
 

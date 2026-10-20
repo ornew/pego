@@ -16,6 +16,11 @@ func FormatSyntax(g *Grammar) string {
 	view.File.Decls = nil
 	p := syntaxProjection{seen: make(map[Expr]Expr)}
 	for _, statement := range g.File.Decls {
+		if v, ok := statement.(*VarDef); ok {
+			// Predicates may read and bind variables, so the view keeps them.
+			view.File.Decls = append(view.File.Decls, v)
+			continue
+		}
 		if rule, ok := statement.(*RuleDef); ok {
 			r := *rule
 			r.Type, r.Action, r.DefaultAction, r.ActionBreak = nil, nil, false, nil

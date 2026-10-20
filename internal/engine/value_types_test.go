@@ -216,7 +216,8 @@ func TestValueActionTypes(t *testing.T) {
 		// nil joins as an optional type, and a value not known yet absorbs a union.
 		{`rule a = _ => list(nil)`, "a", `[]nil`},
 		{`rule a = x:"x" => list($x, nil, $x)`, "a", `[]*node[string]`},
-		{`rule a = x:"x" {n := 1} => list($x, n)`, "a", `[]any`},
+		{`var n int
+rule a = x:"x" {n := 1} => list($x, n)`, "a", `[](node[string] | int)`},
 		// An action reads a capture in a positive lookahead.
 		{`rule a = &(y:"y") x:"x" => $y`, "a", `node[string]`},
 		{"rule a = (x:b / &(-c x:d)) => $x\nrule b = \"b\"\nrule c = \"c\"\nrule d = \"d\"", "a", `b | d`},
@@ -362,15 +363,18 @@ func TestValueActionsOnDemand(t *testing.T) {
 // The value checker reports the errors of actions that do not depend on values being nodes.
 func TestValueCheckerDiagnostics(t *testing.T) {
 	for _, tc := range []struct{ src, want string }{
-		{`rule main = "a" {x := (y) => 1}`, "functions can only be passed to filter, foldl, foldr, or map"},
+		{`var x int
+rule main = "a" {x := (y) => 1}`, "functions can only be passed to filter, foldl, foldr, or map"},
 		{`rule main = xs:"a"* => map($xs, (x, y) => x)`, "map: expected a function of 1 parameters"},
 		{`rule main = xs:"a"* => filter($xs, 1)`, "filter: expected a function of 1 parameters"},
 		{`rule main = xs:"a"* => foldl(nil, $xs, (a) => a)`, "foldl: expected a function of 2 parameters"},
-		{`rule main = x:"a" {v := $x} "b"`, "variable v must be int, string, or bool, got node[string]"},
+		{"var v string\nrule main = x:\"a\" {v := $x} \"b\"", "cannot use node[string] as string in the binding of variable v"},
+		{"var v int\nrule main = \"a\" {v := \"s\"} \"b\"", "cannot use string as int in the binding of variable v"},
 		{`rule main = x:"a" => $x.(int)`, "cannot cast node[string] to int"},
 		{`rule main = "a" => (1).(string)`, "cannot cast int to string"},
 		{"rule main = x:n => $x.(P)\n" + castRules, "cannot cast Num to P"},
-		{"type Int = { Text string }\nrule main = {x := 1} \"x\" => []Int{x}", "cannot use statically unknown any as Int in list constructor"},
+		{"type Int = { Text string }\nvar x int\nrule main = {x := 1} \"x\" => []Int{x}", "cannot use int as Int in list constructor"},
+		{"type Int = { Text string }\nrule main = d:dyn => []Int{$d}\nrule dyn any = ds / di\nrule ds = \"b\" => \"s\"\nrule di = _ => 1", "cannot use statically unknown any as Int in list constructor"},
 		{"type E = { X node[string] }\nrule e E = operators {\n    operand v1:\"1\" => E{X: $v1}\n    level { infix left \"+\" }\n}",
 			"operators of e without an action produce a tuple node, which is not assignable to E"},
 		{"type E = { X node[string] }\nrule e E = operators {\n    operand \"1\"\n}", "operatorsRule e produces node[string], which is not assignable to E"},
@@ -392,7 +396,10 @@ func TestValueCheckerDiagnostics(t *testing.T) {
 		"rule main = x:(n / w)? $$ => $x.(*Num)\n" + castRules,
 		"rule main = x:(n / w / pair) $$ => $x.(Num | P)\n" + castRules,
 		"rule main = x:(pair / w) $$ => $x.(P).N\n" + castRules,
-		`rule main = x:"a" {v := text($x)} {n := len($x)} {b := n > 0} "b"`,
+		`var v string
+var n int
+var b bool
+rule main = x:"a" {v := text($x)} {n := len($x)} {b := n > 0} "b"`,
 		`rule main = xs:"a"* => foldl(0, $xs, (a, x) => a + 1)`,
 		// A list whose elements may be nil holds none when the cast succeeds.
 		`rule main = xs:("a"?)* => $xs.Value.([]node[string])`,

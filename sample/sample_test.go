@@ -273,7 +273,8 @@ rule kw = ("if" / "in") ![a-z]`, nil},
 		{"negated classes and multi-byte ranges", `rule main = [^a-z|\n]+ "|" [\u{3040}-ゟ😀-🙏]+ .`, nil},
 		{"anchors", `rule main = ^^ (^ [a-z]+ $ "\n")* $$`, nil},
 		{"captures, atomic and discard", `rule main = k:[a-z]+ #atomic -"=" v:[0-9]+ -[;,]?`, nil},
-		{"variables", `rule main = {n := 2} item item?
+		{"variables", `var n int
+rule main = {n := 2} item item?
 rule item = s:" "* #atomic {len($s) == n} "x"`, func(t *testing.T, in string) {
 			if !strings.HasPrefix(in, "  x") {
 				t.Errorf("got %q", in)
@@ -297,7 +298,8 @@ rule e = operators {
     level { prefix "-" / "!" }
     level { postfix "!" / "[" e "]" }
 }`, nil},
-		{"unknown left side of ||, undefined variable on the right", `rule main = e:num {text($e) != "" || z == 1}
+		{"unknown left side of ||, variable with its initial value on the right", `var z int
+rule main = e:num {text($e) != "" || z == 1}
 rule num = d:[0-9] => $d`, nil},
 		{"an earlier alternative that always matches", `rule main = x x x x x x x x x x x x x x x x x x x x "z" $$
 rule x = "a"? / "b"?`, func(t *testing.T, in string) {
@@ -309,7 +311,8 @@ rule x = "a"? / "b"?`, func(t *testing.T, in string) {
 		{"empty iteration meets the minimum after consumption", `rule main = ("a" / _) #repeat(2) "q"`, nil},
 		{"negative lookahead of an unmet empty minimum", `rule main = !_ #repeat(2) "b" $$`, nil},
 		// A repetition element sees only its own captures: outer ones are read through a variable.
-		{"repetition elements read enclosing captures through variables", `rule main = n:"a" {k := len($n)} ({k == 1} "x")* "y"`, nil},
+		{"repetition elements read enclosing captures through variables", `var k int
+rule main = n:"a" {k := len($n)} ({k == 1} "x")* "y"`, nil},
 		{"top, cut, attributes", `rule main = (stmt #cut ";")* _ $$
 rule stmt = ("x" #atomic / "y" "z") @error(message="expected a statement") #recover(skip=[^;]+)`, nil},
 	}
@@ -334,7 +337,8 @@ rule stmt = ("x" #atomic / "y" "z") @error(message="expected a statement") #reco
 func TestReviewRegressions(t *testing.T) {
 	for _, c := range []struct{ src, want string }{
 		{`rule main = "a"? #repeat(2) "b"`, "ab"},
-		{`rule main = n:"a" {k := len($n)} ({k == 1} "x")* "y"`, "axy"},
+		{`var k int
+rule main = n:"a" {k := len($n)} ({k == 1} "x")* "y"`, "axy"},
 		// The parser ends an Operators Rule expression before an infix operator that no operand follows.
 		{`rule main = e "+" $$
 rule e = operators {
@@ -527,12 +531,14 @@ rule n = "(" n ")" / "[" n* "]" / "x"`)
 // TestHardLimits checks the hard limits (nesting, iterations, budget) and that their options raise them.
 func TestHardLimits(t *testing.T) {
 	// Deeper nesting than WithMaxDepth when a predicate requires it, up to WithMaxDepth + 8.
-	p := compile(t, `rule main = {d := 0} e $$
+	p := compile(t, `var d int
+rule main = {d := 0} e $$
 rule e = {d >= 12} "x" / "(" {d := d + 1} e ")"`)
 	if inputs, err := sample.Generate(p, 1); err != nil || len(inputs[0]) != 25 {
 		t.Errorf("depth 12: got %q, %v", inputs, err)
 	}
-	p = compile(t, `rule main = {d := 0} e $$
+	p = compile(t, `var d int
+rule main = {d := 0} e $$
 rule e = {d >= 15} "x" / "(" {d := d + 1} e ")"`)
 	if _, err := sample.Generate(p, 1); !errors.Is(err, sample.ErrNoInput) {
 		t.Errorf("depth 15, default: got %v", err)
@@ -698,7 +704,8 @@ func TestRuleCuts(t *testing.T) {
 		{"deferred", `rule main = x y $$
 rule x = !"ab" "a"
 rule y = "b"`, []sample.RuleCuts{{Rule: "x", Checks: 2}}},
-		{"split", `rule main = x y $$
+		{"split", `var d int
+rule main = x y $$
 rule x = !"a" [a] / "b"
 rule y = {d := 0} {d > 0} "c"`, // Equal counts are listed in rule name order.
 			[]sample.RuleCuts{{Rule: "x", Checks: 2}, {Rule: "y", Predicates: 2}}},
@@ -744,7 +751,8 @@ func TestFailureStats(t *testing.T) {
 		{"budget", `rule main = "a" #repeat(25000) $$`, []sample.Option{sample.WithAttempts(2)},
 			func(s sample.Stats) bool { return s.Failed == 2 && s.Exhausted == 2 && s.Candidates == 0 },
 			"in 2 attempts: 0 candidates rejected by the parser, 2 searches out of budget, 0 searches without a way to finish"},
-		{"predicate", `rule main = {d := 0} e $$
+		{"predicate", `var d int
+rule main = {d := 0} e $$
 rule e = {d >= 15} "x" / "(" {d := d + 1} e ")"`, []sample.Option{sample.WithAttempts(3)},
 			func(s sample.Stats) bool { return s.Failed == 3 && s.Exhausted < 3 && s.PredicateCuts > 0 },
 			"by predicates)"},

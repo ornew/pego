@@ -49,6 +49,9 @@
 // longer record by "expected an expression" and "expected a type"; they cost nothing measurable.
 package typescript
 
+// ctx holds the context flags of the parse (yield, await, in, and so on) as bits.
+var ctx int
+
 // ===================================================================
 // Types
 // ===================================================================

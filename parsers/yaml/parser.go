@@ -915,6 +915,22 @@ type grammar struct {
 	SourceInfo bool
 	// MaxDepth is the default maximum nesting of rule calls.
 	maxDepth int
+	// initEnv is the environment every parse starts from, with each variable bound to its
+	// initial value, and initBound holds the names of those variables (Parser.bound).
+	initEnv   *Env
+	initBound map[string]bool
+}
+
+// SetVars makes the variables names, with the initial values vals, the starting environment of
+// every parse.
+//
+// SetVars is for generated parsers; not a stable API.
+func (g *grammar) SetVars(names []string, vals []any) {
+	g.initEnv, g.initBound = nil, map[string]bool{}
+	for i, name := range names {
+		g.initEnv = &Env{name: name, val: vals[i], next: g.initEnv}
+		g.initBound[name] = true
+	}
 }
 
 // NewGrammar returns an empty grammar with the default rule-call limit MaxDepth.
@@ -1237,6 +1253,13 @@ type documentStats struct {
 // setGrammar prepares p to parse with the rules of g.
 func (p *Parser) setGrammar(g *grammar) {
 	p.g, p.sourceInfo, p.memo.stride = g, g.SourceInfo, g.nseen
+	p.Env, p.bound = g.initEnv, nil
+	if g.initEnv != nil {
+		p.bound = make(map[string]bool, len(g.initBound))
+		for name := range g.initBound {
+			p.bound[name] = true
+		}
+	}
 	if len(p.memo.calls) != g.nseen {
 		p.memo.calls = nil // kept from a parse with another rule table
 	}
@@ -11429,308 +11452,6 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 	}
 }
 
-// --- Constructed field checks ---
-
-// FieldType is a declared struct field type that a constructor checks a dynamically typed value
-// against. Generated code declares one for each checked field.
-//
-// FieldType is for generated parsers; not a stable API.
-type FieldType struct {
-	Kind byte // i int, s string, b bool, z nil, n node[_], S node[string], v node[elem], E error, N struct or named node type, l list, t tuple (alts), o optional, u union, _ top
-	Name string
-	elem *FieldType
-	Alts []*FieldType
-	Text string
-}
-
-// CheckField returns v if it fits t, the type of field field of struct typ, and raises an
-// evaluation error otherwise.
-func (c *ActCtx) CheckField(v any, t *FieldType, field, typ string) any {
-	if !c.P.fieldConforms(t, v) {
-		c.P.evalErrorf("cannot use %s as %s in field %s of %s", typeName(v), t.Text, field, typ)
-	}
-	return v
-}
-
-// convertCheck returns v if it fits t, the underlying type of the named node type typ that it is
-// converted to, and raises an evaluation error otherwise.
-func (c *ActCtx) convertCheck(v any, t *FieldType, typ string) any {
-	if !c.P.fieldConforms(t, v) {
-		c.P.evalErrorf("cannot convert %s to %s", typeName(UnboxValue(v)), typ)
-	}
-	return v
-}
-
-// Cast returns v if it fits t, the type of a cast, and raises an evaluation error otherwise.
-func (c *ActCtx) Cast(v any, t *FieldType) any {
-	if !c.P.fieldConforms(t, v) {
-		c.P.evalErrorf("cannot cast %s to %s", typeName(v), t.Text)
-	}
-	return v
-}
-
-// checkResult fails the parse if v, a result of rule rule, does not fit t, the rule's declared
-// type.
-func (p *Parser) checkResult(v *Node, t *FieldType, rule string) {
-	if u := UnboxNode(v); !p.fieldConforms(t, u) {
-		panic(fatal{resultError("cannot use " + typeName(u) + " as " + t.Text + " in result of rule " + rule)})
-	}
-}
-
-// resultError is the error of a result that does not fit its declared type.
-type resultError string
-
-func (e resultError) Error() string { return string(e) }
-
-// fieldConforms reports whether v is a value of type t in the value model, charging a step for
-// each list or tuple element it examines. node[T] is a node whose value is of type T (node[_] any
-// node with a value), and error an error value; a list or tuple type takes a list or tuple value,
-// not the node of a repetition or sequence.
-func (p *Parser) fieldConforms(t *FieldType, v any) bool {
-	n, isNode := v.(*Node)
-	if isNode && n == nil {
-		v, isNode = nil, false
-	}
-	if isNode && n.shape() == shapeBox {
-		return p.fieldConforms(t, n.box)
-	}
-	switch t.Kind {
-	case '_':
-		return true
-	case 'i':
-		_, ok := v.(int)
-		return ok
-	case 's':
-		_, ok := v.(string)
-		return ok
-	case 'b':
-		_, ok := v.(bool)
-		return ok
-	case 'z':
-		return v == nil
-	case 'o':
-		return v == nil || p.fieldConforms(t.elem, v)
-	case 'u':
-		for _, a := range t.Alts {
-			if p.fieldConforms(a, v) {
-				return true
-			}
-		}
-		return false
-	}
-	if !isNode {
-		return false
-	}
-	shape := n.shape()
-	valueNode := shape == shapeString || shape == shapeTuple || shape == shapeList
-	switch t.Kind {
-	case 'n':
-		return valueNode
-	case 'S':
-		return shape == shapeString
-	case 'E':
-		return shape == shapeError
-	case 'N':
-		return n.Type() == t.Name
-	case 'l':
-		return shape == shapeListValue && p.elemsConform(t.elem, n.RawChildren)
-	case 't':
-		return shape == shapeTupleValue && p.tupleConforms(t.Alts, n.RawChildren)
-	case 'v':
-		return p.nodeValueConforms(t.elem, n, shape)
-	}
-	return false
-}
-
-// nodeValueConforms reports whether the value of node n, of shape shape, is of type t: a string
-// node's value is a string, and a tuple or list node's value its elements.
-func (p *Parser) nodeValueConforms(t *FieldType, n *Node, shape nodeShape) bool {
-	switch t.Kind {
-	case '_':
-		return shape == shapeString || shape == shapeTuple || shape == shapeList
-	case 's':
-		return shape == shapeString
-	case 'l':
-		return shape == shapeList && p.elemsConform(t.elem, n.RawChildren)
-	case 't':
-		return shape == shapeTuple && p.tupleConforms(t.Alts, n.RawChildren)
-	case 'o':
-		return p.nodeValueConforms(t.elem, n, shape) // a node always has a value
-	case 'u':
-		for _, a := range t.Alts {
-			if p.nodeValueConforms(a, n, shape) {
-				return true
-			}
-		}
-	}
-	// No node has a value of another type yet.
-	return false
-}
-
-// elemsConform reports whether every element of a list is of type t, charging a step for each.
-func (p *Parser) elemsConform(t *FieldType, elems []*Node) bool {
-	if t.Kind == '_' {
-		return true
-	}
-	for _, c := range elems {
-		p.StepWork()
-		if !p.fieldConforms(t, c) {
-			return false
-		}
-	}
-	return true
-}
-
-// tupleConforms reports whether the elements of a tuple are of the types ts, charging a step for
-// each.
-func (p *Parser) tupleConforms(ts []*FieldType, elems []*Node) bool {
-	if len(elems) != len(ts) {
-		return false
-	}
-	for i, c := range elems {
-		p.StepWork()
-		if !p.fieldConforms(ts[i], c) {
-			return false
-		}
-	}
-	return true
-}
-
-// CheckField returns v if it fits t, the type of field field of struct typ, and raises an
-// evaluation error otherwise.
-func (c *TActCtx) CheckField(v any, t *FieldType, field, typ string) any {
-	if !tfieldConforms(c.P.Parser, t, v) {
-		c.P.evalErrorf("cannot use %s as %s in field %s of %s", ttypeName(v), t.Text, field, typ)
-	}
-	return v
-}
-
-// convertCheck returns v if it fits t, the underlying type of the named node type typ that it is
-// converted to, and raises an evaluation error otherwise.
-func (c *TActCtx) convertCheck(v any, t *FieldType, typ string) any {
-	if !tfieldConforms(c.P.Parser, t, v) {
-		c.P.evalErrorf("cannot convert %s to %s", ttypeName(v), typ)
-	}
-	return v
-}
-
-// Cast returns v if it fits t, the type of a cast, and raises an evaluation error otherwise.
-func (c *TActCtx) Cast(v any, t *FieldType) any {
-	if !tfieldConforms(c.P.Parser, t, v) {
-		c.P.evalErrorf("cannot cast %s to %s", ttypeName(v), t.Text)
-	}
-	return v
-}
-
-// tcheckResult is checkResult for the values of the typed runtime.
-func (p *TParser) tcheckResult(v any, t *FieldType, rule string) {
-	if !tfieldConforms(p.Parser, t, v) {
-		panic(fatal{resultError("cannot use " + ttypeName(v) + " as " + t.Text + " in result of rule " + rule)})
-	}
-}
-
-// tfieldConforms is fieldConforms for the values of the typed runtime.
-func tfieldConforms(p *Parser, t *FieldType, v any) bool {
-	switch t.Kind {
-	case '_':
-		return true
-	case 'i':
-		_, ok := v.(int)
-		return ok
-	case 's':
-		_, ok := v.(string)
-		return ok
-	case 'b':
-		_, ok := v.(bool)
-		return ok
-	case 'z':
-		return v == nil
-	case 'o':
-		return v == nil || tfieldConforms(p, t.elem, v)
-	case 'u':
-		for _, a := range t.Alts {
-			if tfieldConforms(p, a, v) {
-				return true
-			}
-		}
-		return false
-	}
-	n := AsTval(v)
-	if n == nil {
-		return false
-	}
-	shape := tshape(n)
-	valueNode := shape == shapeString || shape == shapeTuple || shape == shapeList
-	switch t.Kind {
-	case 'n':
-		return valueNode
-	case 'S':
-		return shape == shapeString
-	case 'E':
-		return shape == shapeError
-	case 'N':
-		return n.TName() == t.Name
-	case 'l':
-		return shape == shapeListValue && telemsConform(p, t.elem, n.TKids())
-	case 't':
-		return shape == shapeTupleValue && ttupleConforms(p, t.Alts, n.TKids())
-	case 'v':
-		return tnodeValueConforms(p, t.elem, n, shape)
-	}
-	return false
-}
-
-// tnodeValueConforms is nodeValueConforms for the values of the typed runtime.
-func tnodeValueConforms(p *Parser, t *FieldType, n TVal, shape nodeShape) bool {
-	switch t.Kind {
-	case '_':
-		return shape == shapeString || shape == shapeTuple || shape == shapeList
-	case 's':
-		return shape == shapeString
-	case 'l':
-		return shape == shapeList && telemsConform(p, t.elem, n.TKids())
-	case 't':
-		return shape == shapeTuple && ttupleConforms(p, t.Alts, n.TKids())
-	case 'o':
-		return tnodeValueConforms(p, t.elem, n, shape)
-	case 'u':
-		for _, a := range t.Alts {
-			if tnodeValueConforms(p, a, n, shape) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// telemsConform is elemsConform for the values of the typed runtime.
-func telemsConform(p *Parser, t *FieldType, elems []any) bool {
-	if t.Kind == '_' {
-		return true
-	}
-	for _, c := range elems {
-		p.StepWork()
-		if !tfieldConforms(p, t, c) {
-			return false
-		}
-	}
-	return true
-}
-
-// ttupleConforms is tupleConforms for the values of the typed runtime.
-func ttupleConforms(p *Parser, ts []*FieldType, elems []any) bool {
-	if len(elems) != len(ts) {
-		return false
-	}
-	for i, c := range elems {
-		p.StepWork()
-		if !tfieldConforms(p, ts[i], c) {
-			return false
-		}
-	}
-	return true
-}
-
 var scope2 = []string{"d"}
 var lit4 = []rune("\ufeff")
 var lit7 = []rune("---")
@@ -11797,7 +11518,6 @@ var lit195 = []rune("\r\n")
 var lit196 = []rune("\r")
 var lit197 = []rune("\n")
 var workClass201 = []WorkRange{{0, 32}, {127, 132}, {134, 159}, {65279, 65279}, {65534, 65534}, {65535, 65535}}
-var fieldType1 = &FieldType{Kind: 'i', Text: "int"}
 var scope292 = []string{}
 var scope298 = []string{}
 var scope310 = []string{"e"}
@@ -12246,7 +11966,7 @@ func init() {
 			return c.NewStruct("Scalar", "Props", func() any { c.P.StepWork(); return c.Cap(0) }(), "Style", func() any {
 				c.P.StepWork()
 				return c.Binary("+", func() any { c.P.StepWork(); return any(3) }(), func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(2) }()) }())
-			}(), "Indent", c.CheckField(func() any { c.P.StepWork(); return c.Lookup("n") }(), fieldType1, "Indent", "Scalar"), "Text", func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return c.Cap(1) }()) }())
+			}(), "Indent", func() any { c.P.StepWork(); return c.Lookup("n") }(), "Text", func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return c.Cap(1) }()) }())
 		}()
 	}
 	rules[63].Body = func(p *Parser, _ int) (*Node, bool) { return e103(p) }
@@ -12796,6 +12516,7 @@ func init() {
 	recRules[138].Body = func(p *Parser, _ int) (*Node, bool) { return e211(p) }
 	recRules[139].Body = func(p *Parser, _ int) (*Node, bool) { return e379(p) }
 	pegoGrammar.Descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"...\"", "\"\\ufeff\"", "\"---\"", "[\\r\\n \\t]", "\"%\"", "\"YAML\"", "\"TAG\"", "[0-9]", "\".\"", "\"!\"", "\"#\"", "\"&\"", "\"!<\"", "\">\"", "[0-9a-zA-Z\\-]", "\"!!\"", "\"*\"", "[^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff,\\[\\]{}]", "[0-9a-zA-Z\\-#;/?:@&=+$,_.!~*\\'()\\[\\]]", "[0-9a-zA-Z\\-#;/?:@&=+$_.~*\\'()]", "[0-9a-fA-F]", "[ \\t]", "[|>!&]", "[#\\r\\n]", "[^#\\r\\n]", "[^!&]", "\" \"", "\"-\"", "\"?\"", "\":\"", "[\\[{\\'\"!&]", "[^|>!&#\\r\\n]", "\"|\"", "[+\\-]", "\"1\"", "\"2\"", "\"3\"", "\"4\"", "\"5\"", "\"6\"", "\"7\"", "\"8\"", "\"9\"", "[!&]", "\"[\"", "\"]\"", "\",\"", "\"{\"", "\"}\"", "[^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff\\-?:,\\[\\]{}#&*!|>\\'\"%@`]", "[\\-?:]", "[^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff:]", "[^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff:#]", "[^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff:,\\[\\]{}]", "[^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff:#,\\[\\]{}]", "\"\\\"\"", "[^\\x00-\\b\\n-\\x1f\"\\\\]", "\"\\\\\"", "[0abt\\tnvfre \"/\\\\N_LP]", "\"x\"", "\"u\"", "\"U\"", "[^\\x00- \"\\\\]", "\"'\"", "[^\\x00-\\b\\n-\\x1f\\']", "\"''\"", "[^\\x00- \\']", "[^\\x00-\\b\\n-\\x1f\\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff]", "\"\\r\\n\"", "\"\\r\"", "\"\\n\"", "[^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff]"}
+	pegoGrammar.SetVars([]string{"n", "c"}, []any{0, ""})
 	pegoRecGrammar.Share(pegoGrammar)
 	trules = []*TRule{
 		{Rule: rules[0]},
@@ -92221,7 +91942,7 @@ func i62(p *TParser) (any, bool) {
 
 					return c.Binary("+", func() any { return any(3) }(), func() any { return c.Length(func() any { return k15 }()) }())
 				}()
-				f_424 := c.CheckField(func() any { return c.Lookup("n") }(), fieldType1, "Indent", "Scalar")
+				f_424 := func() any { return c.Lookup("n") }()
 				f_425 := func() any { return c.Text(func() any { return k9 }()) }()
 				return tmk_Scalar(c, true, f_422, f_423, f_424, f_425)
 			}()
@@ -93339,7 +93060,7 @@ L229:
 				c.P.StepWork()
 				return c.Binary("+", func() any { c.P.StepWork(); return any(3) }(), func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k15 }()) }())
 			}()
-			f_424 := c.CheckField(func() any { c.P.StepWork(); return c.Lookup("n") }(), fieldType1, "Indent", "Scalar")
+			f_424 := func() any { c.P.StepWork(); return c.Lookup("n") }()
 			f_425 := func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return k9 }()) }()
 			return tmk_Scalar(c, true, f_422, f_423, f_424, f_425)
 		}()

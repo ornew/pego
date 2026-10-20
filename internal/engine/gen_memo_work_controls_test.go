@@ -17,6 +17,7 @@ func TestGeneratedGoMemoEnvironmentWork(t *testing.T) {
 	}
 	source := `type Word = { Text string }
 
+var v string
 rule main Word = t:({v := "a"} &word {v := "b"} word / {v := "b"} word) #atomic => Word{Text: text($t)}
 
 rule word Word = t:(x:[a-z]+ #atomic {text($x) == v}) => Word{Text: text($t)}`

@@ -59,6 +59,47 @@ type pval struct {
 
 var unknownVal = pval{kind: pUnknown}
 
+// initialValue returns the initial value of the declared variable v: its literal initializer, or
+// the zero value of its type.
+func initialValue(v *grammar.VarDef) pval {
+	if v.Value != nil {
+		if lit, ok := literal(v.Value); ok {
+			return lit
+		}
+		return unknownVal
+	}
+	if ref, ok := v.Type.(*grammar.TypeRef); ok {
+		switch ref.Name {
+		case "int":
+			return pval{kind: pInt}
+		case "string":
+			return pval{kind: pString}
+		case "bool":
+			return pval{kind: pBool}
+		}
+	}
+	return unknownVal
+}
+
+// literal returns the value of an int, string or bool literal, or of a negated int literal.
+func literal(t grammar.Term) (pval, bool) {
+	switch t := t.(type) {
+	case *grammar.TermGroup:
+		return literal(t.Term)
+	case *grammar.IntLit:
+		return pval{kind: pInt, i: t.Value}, true
+	case *grammar.StringLit:
+		return pval{kind: pString, s: t.Value}, true
+	case *grammar.BoolLit:
+		return pval{kind: pBool, b: t.Value}, true
+	case *grammar.Unary:
+		if lit, ok := t.X.(*grammar.IntLit); ok && t.Op == "-" {
+			return pval{kind: pInt, i: -lit.Value}, true
+		}
+	}
+	return unknownVal, false
+}
+
 // predicate evaluates the predicate e. It returns false only when the parser's predicate would
 // certainly fail; when the generator cannot tell, it returns true and leaves the decision to the
 // parser. A variable definition is returned as def.

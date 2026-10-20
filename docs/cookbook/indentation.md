@@ -14,6 +14,8 @@ type Entry = {
     Children []Entry
 }
 
+var indent int
+
 rule main = {indent := 0} es:block blank* $$ => $es
 
 // The entries at the current indentation.
@@ -26,7 +28,7 @@ rule entry Entry = (
 ) => Entry{Key: $k, Value: $v, Children: concat($cs)}
 
 // If the next line is indented deeper, read it and its siblings with that depth as the new indentation.
-// A variable is visible only in the rule that defines it and the rules it calls, so when this rule returns, the
+// A variable binding is visible only in the rule that makes it and the rules it calls, so when this rule returns, the
 // parent's indentation is back.
 rule children = &(blank* s:spaces) {len($s) > indent} {indent := len($s)} b:block => $b
 
@@ -140,8 +142,8 @@ go run . bad.yml
 
 ## How It Works
 
-- **`{ indent := 0 }`** defines the variable at the start. A predicate `{ name := value }` defines a variable; it never
-  changes one. The definition is visible to the rules called after it, and ends when the rule that made it returns.
+- **`var indent int`** declares the variable with its type and initial value `0`. **`{ indent := 0 }`** binds it at
+  the start. A predicate `{ name := value }` binds a variable; it never changes one. The definition is visible to the rules called after it, and ends when the rule that made it returns.
 - **`entry`** matches the leading spaces, captures them as `s`, and the predicate `{ len($s) == indent }` succeeds only
   at the current depth. This is also how a block ends: at a line with another indentation, `entry` fails and `block`'s
   repetition stops.

@@ -33,7 +33,8 @@ rule item = [a-z]`, []string{"ab", ""}},
 rule item = [a-z]`, []string{"ab!", "ab?", "ba!", "ba?", ""}},
 		{"predicate error rollback", `rule main = xs:item+ ({$xs[5] == nil} "!" / "?") $$
 rule item = [a-z]`, []string{"ab!", "ab?", ""}},
-		{"dynamic index", `rule main = {i := 1} xs:item+ $$ => $xs[i]
+		{"dynamic index", `var i int
+rule main = {i := 1} xs:item+ $$ => $xs[i]
 rule item = [a-z]`, []string{"ab", "a", ""}},
 	}
 }
@@ -75,7 +76,8 @@ rule item = [a-z]`)
 			t.Fatalf("%s: %v", backend, err)
 		}
 	}
-	unchecked := compile(t, `rule main = {i := "0"} xs:item+ $$ => $xs[i]
+	unchecked := compile(t, `var i string
+rule main = {i := "0"} xs:item+ $$ => $xs[i]
 rule item = [a-z]`, Options{NoTypeCheck: true})
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		_, err := unchecked.ParseWith("main", "a", ParseOptions{Backend: backend})

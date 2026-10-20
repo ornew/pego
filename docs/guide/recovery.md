@@ -458,6 +458,8 @@ type Assign = { Name node[string]; Value node[string] }
 type If = { Test node[string]; Body []Stmt }
 type Stmt ~ Assign | If | error
 
+var indent int
+
 rule main []Stmt = {indent := 0} ss:stmts blank* $$ => $ss
 rule stmts = v1:(blank* s:stmt)+ => map($v1, (x) => x.$s)
 

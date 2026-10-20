@@ -308,6 +308,18 @@ func (a *analysis) collectControlled(control *renderControl) {
 			if s.Action != nil {
 				a.walkTermControlled(s.Action, control)
 			}
+		case *grammar.VarDef:
+			a.mark(s.Diagnostic(), semKeyword, 0)
+			a.vars[s.Name] = true
+			if i, ok := a.tokenIndex(s.Diagnostic()); ok {
+				a.markToken(a.significantTokenControlled(i+1, control), semVariable, modDeclaration)
+			}
+			if s.Type != nil {
+				a.walkTypeControlled(s.Type, control)
+			}
+			if s.Value != nil {
+				a.walkTermControlled(s.Value, control)
+			}
 		case grammar.TypeDecl:
 			a.mark(s.Diagnostic(), semKeyword, 0)
 			d := a.defineControlled(kindType, s.DeclName(), s.Diagnostic(), control)

@@ -79,10 +79,16 @@ rule e = _`
 // argument that is not a list call fails late: the arguments are evaluated before concat
 // checks them.
 func TestConcatErrorOrder(t *testing.T) {
-	check(t, `rule main = {v := 1} x:"a" => concat(v, u)`,
-		ok("a", "error: action in main: variable u is not defined"))
+	check(t, `rule main = x:"a" d:dyn => concat($d, list(1 / 0))
+rule dyn any = ds / di
+rule ds = "b" => "s"
+rule di = _ => 1`,
+		ok("a", "error: action in main: division by zero"))
 	check(t, `type A = { N int }
-rule main = {v := 1} x:"a" => concat(v, list(A{N: 1 / 0}))`,
+rule main = x:"a" d:dyn => concat($d, list(A{N: 1 / 0}))
+rule dyn any = ds / di
+rule ds = "b" => "s"
+rule di = _ => 1`,
 		ok("a", "error: action in main: division by zero"))
 }
 
@@ -170,25 +176,29 @@ func TestPredicates(t *testing.T) {
 		)
 	})
 	t.Run("variables are scoped to rules", func(t *testing.T) {
-		check(t, `rule main = {x := 1} a {x == 1}
+		check(t, `var x int
+rule main = {x := 1} a {x == 1}
 rule a = {x == 1} {x := 2} {x == 2} "a"`,
 			ok("a", `(("a")@a)@main`),
 		)
 	})
-	t.Run("undefined variable fails", func(t *testing.T) {
-		check(t, `rule main = {y > 0} "a" / "b"`,
+	t.Run("unassigned variable has its initial value", func(t *testing.T) {
+		check(t, `var y int
+rule main = {y > 0} "a" / "b"`,
 			ok("b", `"b"@main`),
 			fails("a", `expected "b"`),
 		)
 	})
 	t.Run("backtracking rolls back definitions", func(t *testing.T) {
-		check(t, `rule main = ({x := 1} "a" "b" / "a") {x == 1} "c"`,
+		check(t, `var x int
+rule main = ({x := 1} "a" "b" / "a") {x == 1} "c"`,
 			fails("ac", `1:2: syntax error: expected "b"`),
 			ok("abc", `(("a" "b") "c")@main`),
 		)
 	})
 	t.Run("indentation", func(t *testing.T) {
-		src := `rule main = {indent := 0} block $$
+		src := `var indent int
+rule main = {indent := 0} block $$
 rule block = item+
 rule item = s:spaces {len($s) == indent} name:[a-z]+ #atomic "\n" children?
 rule children = &s:spaces {len($s) > indent} {indent := len($s)} block
@@ -305,15 +315,18 @@ func TestIntegerWrapAround(t *testing.T) {
 
 const actionEnvironmentGrammar = `type Item = { Depth int; Tag string; Size int; Name node[string]; Note *node[string] }
 type Out = { Items []Item; Count int; Sum int; Tag string }
+var depth int
+var tag string
+var last string
 rule main Out = {depth := 0} {tag := "top"} peek? xs:item* $$ => Out{Items: $xs.Value, Count: len($xs), Sum: foldl(depth, $xs, (s, i) => s + i.Depth * 10 + i.Size), Tag: tag}
 rule peek = {depth := 5} (item "%" / plain "%")
 rule item Item = nested / tagged / deep / shout / listed / late / plain
 rule nested Item = "(" {depth := depth + 1} i:item ")" => $i
 rule tagged Item = "#" w:word {tag := tag + "/" + text($w)} ":" i:item => $i
-rule deep Item = {depth > 1 && depth < 5 && (tag != "top" || missing == 0)} n:name => Item{Depth: depth, Tag: tag, Size: 100, Name: $n}
+rule deep Item = {depth > 1 && depth < 5 && (tag != "top" || last != "")} n:name => Item{Depth: depth, Tag: tag, Size: 100, Name: $n}
 rule shout Item = n:name {tag := "shadow"} m:"!"? "!" => Item{Depth: depth, Tag: tag, Size: 0 - len(text($n)), Name: $n, Note: $m}
 rule listed Item = "[" (n:name {last := text($n)} ","?)* m:"]" => Item{Depth: depth, Tag: last, Size: len(last), Name: $m}
-rule late Item = "~" n:name => Item{Depth: never, Tag: tag, Size: 0, Name: $n}
+rule late Item = "~" n:name => Item{Depth: len(last), Tag: tag, Size: 0, Name: $n}
 rule plain Item = n:name m:"?"? => Item{Depth: depth, Tag: tag, Size: len(text($n)) * (depth + 1), Name: $n, Note: $m}
 rule name = [a-z]+ #atomic
 rule word = [a-z]+ #atomic`
@@ -338,8 +351,8 @@ func TestActionEnvironments(t *testing.T) {
 			{"(((a)))", `Out{Count: 1, Items: [Item{Depth: 3, Name: "a"@name, Note: nil, Size: 4, Tag: "top"}], Sum: 34, Tag: "top"}`},
 			// A shadowing definition is visible only below its invocation.
 			{"a(#t:b)c?", `Out{Count: 3, Items: [Item{Depth: 0, Name: "a"@name, Note: nil, Size: 1, Tag: "top"} Item{Depth: 1, Name: "b"@name, Note: nil, Size: 2, Tag: "top/t"} Item{Depth: 0, Name: "c"@name, Note: "?", Size: 1, Tag: "top"}], Sum: 14, Tag: "top"}`},
-			// The undefined variable fails deep's predicate unless the
-			// left operand of || short-circuits it.
+			// A variable that nothing has assigned has its initial value, which fails
+			// deep's predicate unless the left operand of || short-circuits it.
 			{"((b))", `Out{Count: 1, Items: [Item{Depth: 2, Name: "b"@name, Note: nil, Size: 3, Tag: "top"}], Sum: 23, Tag: "top"}`},
 			{"#x:((b))", `Out{Count: 1, Items: [Item{Depth: 2, Name: "b"@name, Size: 100, Tag: "top/x"}], Sum: 120, Tag: "top"}`},
 			// shout's definition is rolled back when it fails.
@@ -352,12 +365,13 @@ func TestActionEnvironments(t *testing.T) {
 				t.Errorf("%v %q: got %v, %v\nwant %s", b, tc.input, got, err, tc.want)
 			}
 		}
+		// A variable that nothing has assigned reads as its initial value.
 		for _, tc := range []struct{ input, want string }{
-			{"~a", "action in late: variable never is not defined"},
-			{"[]", "action in listed: variable last is not defined"},
+			{"~a", `Out{Count: 1, Items: [Item{Depth: 0, Name: "a"@name, Size: 0, Tag: "top"}], Sum: 0, Tag: "top"}`},
+			{"[]", `Out{Count: 1, Items: [Item{Depth: 0, Name: "]", Size: 0, Tag: ""}], Sum: 0, Tag: "top"}`},
 		} {
-			if got, err := prog.ParseWith("main", tc.input, ParseOptions{Backend: b}); err == nil || !strings.Contains(err.Error(), tc.want) {
-				t.Errorf("%v %q: got %v, %v, want error %q", b, tc.input, got, err, tc.want)
+			if got, err := prog.ParseWith("main", tc.input, ParseOptions{Backend: b}); err != nil || got.String() != tc.want {
+				t.Errorf("%v %q: got %v, %v\nwant %s", b, tc.input, got, err, tc.want)
 			}
 		}
 	}

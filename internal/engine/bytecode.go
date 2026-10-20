@@ -12,6 +12,7 @@ type Module struct {
 	Types          []TypeInfo // type table (struct fields and named node types)
 	FieldLists     [][]int    // field name lists for new (string table indices)
 	Scopes         [][]int    // scopes of repetition elements (lists of capture names)
+	Vars           []VarInfo  // variable table
 	Rules          []RuleInfo // rule table
 	OperatorsRules []OperatorsRuleInfo
 	Code           []Instr // matching code
@@ -39,6 +40,24 @@ type TypeInfo struct {
 	// Node is, for a named node type, the underlying node type (string table index of its text,
 	// as ECHECK writes types), and -1 for a struct type (instruction set 16).
 	Node int
+}
+
+// Variable types
+const (
+	varInt = iota
+	varString
+	varBool
+)
+
+// VarInfo describes a variable. Every parse starts with the variable bound to its initial value.
+type VarInfo struct {
+	Name int // string table index
+	Type int // varInt, varString or varBool
+	// Int is the initial value of an int variable, and 0 or 1 for a bool variable.
+	Int int
+	// Str is the string table index of the initial value of a string variable, and -1 for
+	// the other types.
+	Str int
 }
 
 // RuleInfo describes a rule.

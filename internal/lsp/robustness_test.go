@@ -70,7 +70,7 @@ func TestCompletionAfterTriggerCharacters(t *testing.T) {
 		`rule i = x:"a" {len($x) > 0} $`,
 	}
 	c.open(uri, strings.Join(lines, "\n"))
-	rules := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "rule", "type"}
+	rules := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "rule", "type", "var"}
 	for i, want := range [][]string{
 		nil, nil, nil, nil, rules,
 		{"x"}, {"End", "Start", "Value"}, {"x"}, nil,

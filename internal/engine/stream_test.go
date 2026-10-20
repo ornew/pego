@@ -146,7 +146,9 @@ rule item Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" => Pair{Key: $k, Val
 rule line = [a-z0-9=]+ #atomic "\n"`,
 		// Each element backtracks into a memoized, variable-reading rule, assigns
 		// variables and produces nil.
-		"memo, variables and nil": `rule main = {n := 0} item* #stream $$
+		"memo, variables and nil": `var n int
+var last string
+rule main = {n := 0} item* #stream $$
 rule item = (k:key ":" / k:key {n := n + 1} {last := text($k)} "=") val "\n" => nil
 rule key = {n >= 0} word
 rule word = [a-z]+ #atomic

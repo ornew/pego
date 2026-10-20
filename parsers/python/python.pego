@@ -44,6 +44,13 @@
 // and MatchStmt (List and Match are reserved in PEGO), and its Expr statement is ExprStmt.
 package python
 
+// lv packs the lexical state of the parse: the nesting level and the flags that depend on it.
+var lv int
+// ind is the indentation of the current block.
+var ind int
+// isdict reports whether the braces being read are a dict.
+var isdict bool
+
 type Module = { Body []Stmt }
 
 // --- Statements ---

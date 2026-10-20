@@ -33,6 +33,8 @@ type Program struct {
 	defaultValue bool
 	byName       map[string]*rule
 	types        map[string]grammar.TypeDecl
+	// vars holds the declared variables (nil if there are none).
+	vars *varTable
 	// fieldTypes caches the closure backend's field checks by constructor (constructorChecks)
 	// and the types of casts (castType).
 	fieldTypes sync.Map
@@ -430,6 +432,7 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 		prog.byName[rd.Name] = r
 	}
 
+	c.declareVars(g)
 	prog.markMissingRules(control)
 	if flags == nil {
 		c.an = analyzeControlled(rules, control)

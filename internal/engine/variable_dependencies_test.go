@@ -58,7 +58,7 @@ func ruleVariablesDFS(rules []*grammar.RuleDef) map[string][]string {
 
 func variableChain(n int, reverse, reads bool) string {
 	var src strings.Builder
-	src.WriteString("type V = { N int }\nrule main = {x := 7} r0\n")
+	src.WriteString("type V = { N int }\nvar x int\nrule main = {x := 7} r0\n")
 	for j := range n {
 		i := j
 		if reverse {
@@ -79,7 +79,7 @@ func variableChain(n int, reverse, reads bool) string {
 
 func variableGraph(n int, cyclic bool) string {
 	var src strings.Builder
-	src.WriteString("type V = { N int }\nrule main = {z := 1} {a := 2} {m := 3} r0\nrule leaf = \"b\" => V{N: z + a + m}\n")
+	src.WriteString("type V = { N int }\nvar z int\nvar a int\nvar m int\nrule main = {z := 1} {a := 2} {m := 3} r0\nrule leaf = \"b\" => V{N: z + a + m}\n")
 	for i := range n {
 		if cyclic {
 			fmt.Fprintf(&src, "rule r%d node[_] = \"a\" r%d / leaf\n", i, (i+1)%n)
@@ -182,7 +182,8 @@ func TestVariableDependencyGraphs(t *testing.T) {
 func TestVariableDependencyTraversal(t *testing.T) {
 	// Include calls in all syntactic contexts, even those which may not run;
 	// recovery arguments and OperatorsRule actions have the same dependency contract.
-	src := `rule main = &look !negative -discarded optional? repeated* / attributed
+	src := `var local int
+rule main = &look !negative -discarded optional? repeated* / attributed
 rule look = {z == 1} "a"
 rule negative = {a == 1} "b"
 rule discarded = {m == 1} "c"

@@ -13,25 +13,34 @@ func TestGeneratedTSWorkControlBindings(t *testing.T) {
 		isolated            bool
 	}{
 		{"head-equal", `type Box = { S string }
+ var v string
  rule main Box = {v := "` + key + `"} {v := "` + key + `"} {v != ""} "z" => Box{S:v}
  rule fast = {v := "` + key + `"} "z"`, "fast", false},
 		{"head-different", `type Box = { S string }
+ var v string
  rule main Box = {v := "` + key + `x"} {v := "` + key + `y"} {v != ""} "z" => Box{S:v}
  rule fast = {v := "` + key + `x"} "z"`, "fast", false},
 		{"nonhead-equal", `type Box = { S string }
+ var v string
+ var other bool
  rule main Box = {v := "` + key + `"} {other := true} {v := "` + key + `"} {v != ""} "z" => Box{S:v}
  rule fast = {v := "` + key + `"} {other := true} "z"`, "fast", false},
 		{"nonhead-different", `type Box = { S string }
+ var v string
+ var other bool
  rule main Box = {v := "` + key + `x"} {other := true} {v := "` + key + `y"} {v != ""} "z" => Box{S:v}
  rule fast = {v := "` + key + `x"} {other := true} "z"`, "fast", false},
-		{"identifier-hashing", `rule main = {` + longName + ` := 1} "z"
+		{"identifier-hashing", `var ` + longName + ` int
+ rule main = {` + longName + ` := 1} "z"
  rule fast = "z"`, "fast", false},
 		{"identifier-lookup", `type Box = { N int }
+ var ` + longName + ` int
  rule main Box = {` + longName + ` := 1} {` + longName + ` == 1} "z" => Box{N:` + longName + `}
  rule fast = {` + longName + ` := 1} "z"`, "fast", false},
 		// The first helper call skips memoization, and silent memo entries cannot
 		// serve the normal call. Both routes therefore perform six lookups.
 		{"environment-snapshot", `type Box = { N int }
+ var ` + longName + ` int
  rule main Box = {` + longName + ` := 1} &helper &helper x:helper => $x
  rule helper Box = {` + longName + ` == 1} letter => Box{N:` + longName + `}
  rule inline Box = {` + longName + ` := 1} ` + strings.Repeat("{"+longName+" == 1} ", 5) + `letter => Box{N:` + longName + `}
@@ -71,6 +80,8 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ["z",new Uint8Array(
     N int
 }
 
+var v int
+var flag bool
 rule main Box = {v := 1} (changing "x" / {v == 1} "z") => Box{N: v}
 
 rule changing = {v := 2} {flag := true} {v := 3} {v == 3} "z"`

@@ -43,6 +43,7 @@ rule wide = ("é" "0" / "é" "1") #atomic`,
     N    int
 }
 
+var n int
 rule main Doc = {n := 0} e:item $$ => $e
 
 rule item Doc = v:(x:"é" #atomic {n := 1} "!") #recover(skip="é" {n := n + 2} "?") => Doc{Text: $x, N: n}`,
@@ -56,6 +57,7 @@ rule item Doc = v:(x:"é" #atomic {n := 1} "!") #recover(skip="é" {n := n + 2} 
     N    int
 }
 
+var n int
 rule main Doc = {n := 0} x:("ab" #recover(skip={n := 8} "x" "!") / {n == 0} "x" "?") #atomic $$ => Doc{Text: $x, N: n}`,
 			inputs:        []string{"x!", "x?", "x", ""},
 			wantRecovered: true,

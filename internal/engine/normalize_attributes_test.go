@@ -17,6 +17,7 @@ func TestNormalizationCopyOnChangeParity(t *testing.T) {
 		`rule main = "a"* #stream $$`,
 		`type Number = { Text (string) }
 type Alias ~ (Number)
+var count int
 rule main (Alias) = {count := (1)} {(count == 1)} n:([0-9]+) => (Number{Text: (text($n))})`,
 		`rule main = operators {
     skip " "*

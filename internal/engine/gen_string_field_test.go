@@ -36,6 +36,7 @@ rule main = l:name "=" r:(name #recover(skip=[^;]*)) ";" $$ => Out{B: $l.Text ==
 rule name = t:[a-z]+ #atomic => Name{Text: text($t)}`, []string{"a=a;", "a=b;", "a=1;", "a=;", ""}}, true},
 		{genCase{"string field in inline action", `type Out = { V string; N int; B bool }
 type Name = { Text string }
+var k string
 rule main = n:name {k := $n.Text} "!" {k != "b"} $$ => Out{V: k}
 rule name = t:[a-z]+ #atomic => Name{Text: text($t)}`, []string{"a!", "ab!", "a", ""}}, true},
 		{genCase{"string field shared by structs", `type Out = { V string; N int; B bool }

@@ -4,6 +4,7 @@ type It ~ Item | error
 type Pair = { L It; R It }
 type Top ~ It | Pair
 type Doc = { Tops []Top; Names []Name; Errs []*error; Depth int }
+var d int
 rule main Doc = {d := 0} ts:(t:top ";"?)* ns:(-"#" n:name)* $$ => Doc{Tops: map($ts, (x) => x.$t), Names: map($ns, (y) => y.$n), Errs: list(), Depth: len($ts)}
 rule top Top = pair / item
 rule pair Pair = l:item "=" #cut r:item => Pair{L: $l, R: $r}

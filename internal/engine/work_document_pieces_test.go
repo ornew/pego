@@ -59,7 +59,7 @@ func TestWorkDocumentPieceTextPublication(t *testing.T) {
 }
 
 func TestWorkDocumentPieceLineTableRetry(t *testing.T) {
-	prog := compile(t, `rule main = {line == 2000} .* $$`)
+	prog := compile(t, "var line int\nrule main = {line == 2000} .* $$")
 	workDocumentVariants(t, func(t *testing.T, o ParseOptions) {
 		d, err := prog.NewDocumentWith("main", strings.Repeat("x\n", 4096), o)
 		if err != nil {
