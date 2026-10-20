@@ -68,6 +68,7 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 		control.poll()
 		if n, ok := t.(SourceNode); ok && n.Source().Layout != nil {
 			cs = appendMetadata(cs, n.Source().Layout.Before, control)
+			cs = appendMetadata(cs, n.Source().Layout.After, control)
 		}
 		switch t := t.(type) {
 		case *TermGroup:
@@ -82,10 +83,14 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 				term(stmt)
 			}
 		case *New:
+			add(t.OpenBreak)
+			add(t.BodyBreak)
+			add(t.CloseBreak)
 			for _, field := range t.Fields {
 				control.poll()
 				if field.Layout != nil {
 					cs = appendMetadata(cs, field.Layout.Before, control)
+					cs = appendMetadata(cs, field.Layout.After, control)
 				}
 				term(field.Value)
 			}
@@ -100,11 +105,17 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 				term(x)
 			}
 		case *ListConstructor:
+			add(t.OpenBreak)
+			add(t.BodyBreak)
+			add(t.CloseBreak)
 			typ(t.Elem)
 			for _, item := range t.Items {
 				term(item)
 			}
 		case *Call:
+			add(t.OpenBreak)
+			add(t.BodyBreak)
+			add(t.CloseBreak)
 			for _, arg := range t.Args {
 				term(arg)
 			}

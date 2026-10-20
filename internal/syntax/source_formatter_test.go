@@ -110,7 +110,7 @@ func sourceCommentOwnerPaths(t *testing.T, g *grammar.Grammar) map[string]any {
 }
 
 func TestInteriorLayoutJSONAndClone(t *testing.T) {
-	before, err := Parse(`rule main = "x" => int(/* argument */ "1")`)
+	before, err := Parse(`rule main = "x" => int("0", /* argument */ "1")`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,14 +126,14 @@ func TestInteriorLayoutJSONAndClone(t *testing.T) {
 		if !reflect.DeepEqual(sourceCommentOwnerPaths(t, before), sourceCommentOwnerPaths(t, decoded)) {
 			t.Fatal("JSON lost normalized owners")
 		}
-		arg := decoded.Rules()[0].Action.(*grammar.Call).Args[0]
+		arg := decoded.Rules()[0].Action.(*grammar.Call).Args[1]
 		if arg.(grammar.SourceNode).Source().Layout != nil {
 			t.Fatal("JSON serialized raw layout")
 		}
 	}
 	clone := before.Clone()
-	original := before.Rules()[0].Action.(*grammar.Call).Args[0].(grammar.SourceNode).Source().Layout
-	copied := clone.Rules()[0].Action.(*grammar.Call).Args[0].(grammar.SourceNode).Source().Layout
+	original := before.Rules()[0].Action.(*grammar.Call).Args[1].(grammar.SourceNode).Source().Layout
+	copied := clone.Rules()[0].Action.(*grammar.Call).Args[1].(grammar.SourceNode).Source().Layout
 	if original == copied || original.Before[0] == copied.Before[0] {
 		t.Fatal("layout alias in clone")
 	}

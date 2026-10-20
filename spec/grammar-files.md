@@ -91,14 +91,17 @@ constructed by the canonical grammar.
 
 `SourceInfo.Layout` is optional raw formatter state. Its `Before` field retains
 comment tokens at a syntax boundary, while `PreviousLine` and `NextLine` retain
-the surrounding line relationship. A nil layout uses canonical formatting.
+the surrounding line relationship. Its `After` field retains the comments
+between a list element and the comma that follows it. A nil layout uses canonical formatting.
 `grammar.Format` uses stored layout tokens when present, so changing normalized
 comment strings alone does not change their formatted spelling or placement.
 `Grammar.Clone()` copies the layout and its comment tokens. JSON omits layout;
 layout alone does not create a `source` object. Current layout preservation
 covers selected Action Expression operand boundaries, including unary operands
-and confirmed lambda expressions, plus constructor field names. Other source
-forms remain outside this increment's coverage.
+and confirmed lambda expressions, plus constructor field names and the
+elements of calls, constructors, list constructors and tuples. The delimiters of
+those forms keep their comments in the node's `OpenBreak`, `BodyBreak` and
+`CloseBreak` fields. Other source forms remain outside this increment's coverage.
 
 #### Comment Grouping and Ownership
 

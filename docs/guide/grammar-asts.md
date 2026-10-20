@@ -237,7 +237,8 @@ placement.
 For in-memory formatting, `SourceInfo.Layout` is a raw-only adjunct. Its
 `Before` field retains the `grammar.Comment` tokens at that syntax boundary;
 `PreviousLine` and `NextLine` preserve their line relationship to surrounding
-syntax. A nil layout uses canonical formatting. `Grammar.Clone()` copies the
+syntax, and `After` retains the comments between a list element and the comma
+that follows it. A nil layout uses canonical formatting. `Grammar.Clone()` copies the
 layout and its comment tokens. JSON omits layout, and layout alone does not
 cause a `source` object to be emitted. When layout is present, `grammar.Format`
 uses the retained comment tokens rather than the normalized comment strings,
@@ -245,7 +246,8 @@ so editing `LeadingComments` or `TrailingComments` alone does not change the
 formatted comment. Edit the raw layout tokens or reparse the source to
 resynchronize them. Current layout preservation covers selected Action
 Expression operand boundaries, including unary operands and confirmed lambda
-expressions, plus constructor field names. Other source forms remain outside
+expressions, plus constructor field names and the elements of calls,
+constructors, list constructors and tuples. Other source forms remain outside
 this increment's coverage, so this is not a lossless formatter guarantee for
 every grammar form.
 
@@ -254,7 +256,7 @@ AST codec does not serialize source positions or comments, so an AST-bearing
 compiled grammar preserves the executable tree but not source-documentation
 ownership. This behavior does not change the `.pegoc` format.
 
-Source-only syntax has dedicated AST nodes. An explicit Rule Expression grouping is `Group{Expr}`; formatting and JSON preserve the group, while compilation normalizes it away before matching. The source-aware AST retains the group body, closing-delimiter comments and layout. Parenthesized type and action expressions likewise use source-only `TypeGroup{Type}` and `TermGroup{Term}` nodes; `TypeGroup` implements `TypeExpr`, while the `TermGroup.Term` field has type `Term` and `TermGroup` implements `Term`. These groups preserve their delimiters and enclosed comments in source formatting. Their `OpenBreak`, `BodyBreak`, `CloseBreak` and `OneLine` fields retain raw line placement; compilation and generators lower the wrappers transparently before execution. JSON retains normalized source positions and ownership but omits formatter layout and exact raw comment tokens. A braced action sequence is `Block{Statements}`. A single-statement Predicate Action remains in `Predicate.Term`; a nonempty multi-statement block is represented by `Block{Statements}` and executes its statements in order, like adjacent Predicate Actions. Empty predicate blocks and braced Value Actions can be parsed, formatted and serialized, but semantic checking rejects them as unsupported.
+Source-only syntax has dedicated AST nodes. An explicit Rule Expression grouping is `Group{Expr}`; formatting and JSON preserve the group, while compilation normalizes it away before matching. The source-aware AST retains the group body, closing-delimiter comments and layout. Parenthesized type and action expressions likewise use source-only `TypeGroup{Type}` and `TermGroup{Term}` nodes; `TypeGroup` implements `TypeExpr`, while the `TermGroup.Term` field has type `Term` and `TermGroup` implements `Term`. These groups preserve their delimiters and enclosed comments in source formatting. Their `OpenBreak`, `BodyBreak`, `CloseBreak` and `OneLine` fields retain raw line placement, as do those of `TupleLit`, `Call`, `New` and `ListConstructor` for their delimiters. A tuple keeps the lines of its parentheses as written; a call, constructor or list constructor keeps the lines of its delimiters only when a comment needs them, and is otherwise written on one line. Compilation and generators lower the wrappers transparently before execution. JSON retains normalized source positions and ownership but omits formatter layout and exact raw comment tokens. A braced action sequence is `Block{Statements}`. A single-statement Predicate Action remains in `Predicate.Term`; a nonempty multi-statement block is represented by `Block{Statements}` and executes its statements in order, like adjacent Predicate Actions. Empty predicate blocks and braced Value Actions can be parsed, formatted and serialized, but semantic checking rejects them as unsupported.
 
 Source `#` pragmas use dedicated expression nodes: `#repeat` is `Repeat`,
 `#atomic` is `Atomic`, `#recover` is `Recovery`, and `#stream` is `Stream`.

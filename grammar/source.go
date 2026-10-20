@@ -45,4 +45,7 @@ type SourceLayout struct {
 	Before       []*Comment
 	PreviousLine int
 	NextLine     int
+	// After holds the comments between the node and the comma that follows it
+	// in a list of elements, fields or arguments.
+	After []*Comment
 }

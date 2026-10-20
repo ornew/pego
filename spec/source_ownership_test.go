@@ -281,6 +281,10 @@ var ownershipCorpus = []string{
 	"type T = { A /* a */ []int /* b */ | /* c */ string; B (/* d */ int /* e */, string /* f */) }\n",
 	"type T /* a */ = /* b */ { /* c */ A int }\ntype U /* a */ ~ /* b */ T /* c */\n",
 	"rule a = {\n // l\n x := 1; // t\n y // u\n} // v\n",
+	"rule a = b => f(\n // l\n 1 /* a */, // b\n 2 // c\n // end\n)\n",
+	"rule a = b => N{\n // l\n A: 1 /* a */, // b\n B: 2 // c\n // end\n}\n",
+	"rule a = b => []N{ // open\n}\nrule c = b => []N{\n // l\n 1 /* a */, 2\n}[0]\n",
+	"rule a = b => (1 /* a */, 2 /* b */,)\n",
 	"rule a = operators {\n operand /* a */ b /* b */ => /* c */ N{} /* d */\n level { infix /* e */ left /* f */ \"+\" /* g */ }\n}\n",
 }
 

@@ -1687,14 +1687,14 @@ func (p *parser) termPrimary() (sourceResult grammar.Term) {
 		}
 		p.next()
 		if !p.boundary() && p.is("(") && !p.tok().spaceBefore {
+			open := p.i
 			p.next()
-			call := &grammar.Call{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Func: t.text, Args: []grammar.Term{}}
-			for !p.accept(")") {
-				call.Args = append(call.Args, p.term())
-				if !p.is(")") {
-					p.expect(",")
-				}
-			}
+			call := &grammar.Call{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Func: t.text}
+			defer p.restoreBreak()()
+			call.OpenBreak, call.BodyBreak = p.openList()
+			call.Args = p.listItems(")")
+			call.CloseBreak, call.OneLine = p.closeList(open)
+			p.expect(")")
 			return call
 		}
 		if slices.Contains(p.params, t.text) {
@@ -1706,8 +1706,13 @@ func (p *parser) termPrimary() (sourceResult grammar.Term) {
 		if t.text == "[]" {
 			p.next()
 			n := &grammar.ListConstructor{Elem: p.typeTerm()}
+			open := p.i
 			p.expect("{")
-			n.Items = p.constructorArgs()
+			defer p.restoreBreak()()
+			n.OpenBreak, n.BodyBreak = p.openList()
+			n.Items = p.listItems("}")
+			n.CloseBreak, n.OneLine = p.closeList(open)
+			p.expect("}")
 			return n
 		}
 		if t.text == "(" {
@@ -1739,8 +1744,11 @@ func (p *parser) termPrimary() (sourceResult grammar.Term) {
 // A trailing comma is optional, and required after a single element.
 func (p *parser) tupleLit(open int, t *grammar.TupleLit) grammar.Term {
 	if len(t.Elems) > 0 {
+		p.takeAfterLayout(t.Elems[0])
 		for p.accept(",") && !p.is(")") {
-			t.Elems = append(t.Elems, p.term())
+			x := p.term()
+			t.Elems = append(t.Elems, x)
+			p.takeAfterLayout(x)
 		}
 	} else {
 		t.Elems = []grammar.Term{}
@@ -1760,10 +1768,19 @@ func (p *parser) newTerm() (sourceResult grammar.Term) {
 	}()
 
 	nameToken := p.ident()
+	open := p.i
 	p.expect("{")
+	defer p.restoreBreak()()
+	openBreak, bodyBreak := p.openList()
+	finish := func(n *grammar.New) {
+		n.OpenBreak, n.BodyBreak = openBreak, bodyBreak
+		n.CloseBreak, n.OneLine = p.closeList(open)
+		p.expect("}")
+	}
 	if !p.is("}") && !(p.tok().kind == tIdent && p.peek(1).text == ":") {
-		args := p.constructorArgs()
+		args := p.listItems("}")
 		n := &grammar.New{SourceInfo: grammar.SourceInfo{Pos: nameToken.pos}, Type: nameToken.text}
+		finish(n)
 		if p.legacy == nil {
 			// A positional constructor converts its value to a named node type.
 			n.Args = args
@@ -1781,7 +1798,7 @@ func (p *parser) newTerm() (sourceResult grammar.Term) {
 		return n
 	}
 	n := &grammar.New{SourceInfo: grammar.SourceInfo{Pos: nameToken.pos}, Type: nameToken.text}
-	for !p.accept("}") {
+	for !p.is("}") {
 		fieldStart := p.i
 		layout := p.takeTermLayout()
 		name := p.ident()
@@ -1790,24 +1807,76 @@ func (p *parser) newTerm() (sourceResult grammar.Term) {
 		p.source(field, fieldStart)
 		field.Layout = layout
 		n.Fields = append(n.Fields, field)
+		p.takeAfterLayout(field)
 		if !p.is("}") {
 			p.expect(",")
 		}
 		p.sourceTrailing(field.Source())
 	}
+	finish(n)
 	return n
 }
 
-// constructorArgs reads positional expressions through the closing brace.
-func (p *parser) constructorArgs() []grammar.Term {
-	args := []grammar.Term{}
-	for !p.accept("}") {
-		args = append(args, p.term())
-		if !p.is("}") {
+// restoreBreak returns a function that restores the current line break, for
+// the delimited list that starts here.
+func (p *parser) restoreBreak() func() {
+	outer := p.cur
+	return func() { p.cur = outer }
+}
+
+// openList starts the layout of a delimited list after its opening delimiter.
+// The comment at the end of the delimiter's line is the trailing comment of the
+// opening break, and the comments before the first element belong to the body
+// break. Both stay with the list instead of the statement around it.
+func (p *parser) openList() (open, body *grammar.LineBreak) {
+	open = &grammar.LineBreak{}
+	p.cur = open
+	return open, p.lineBreak()
+}
+
+// closeList ends the layout of a delimited list before its closing delimiter,
+// whose token follows the list items. open is the index of the opening token.
+func (p *parser) closeList(open int) (close *grammar.LineBreak, oneLine bool) {
+	return p.lineBreak(), !p.multiline(open, p.i)
+}
+
+// listItems reads comma-separated expressions up to, not including, the
+// closing delimiter. A trailing comma is optional.
+func (p *parser) listItems(closer string) []grammar.Term {
+	items := []grammar.Term{}
+	for !p.is(closer) {
+		item := p.term()
+		items = append(items, item)
+		p.takeAfterLayout(item)
+		if !p.is(closer) {
 			p.expect(",")
 		}
 	}
-	return args
+	return items
+}
+
+// takeAfterLayout keeps the comments between an element of a list and the
+// comma that follows it with the element, rather than promoting them to the
+// current line break, which would move them before the first element.
+func (p *parser) takeAfterLayout(node any) {
+	x, ok := node.(grammar.SourceNode)
+	if p.header || !ok || !p.is(",") {
+		return
+	}
+	t := &p.toks[p.i]
+	if t.lineComment == nil && len(t.comments) == 0 {
+		return
+	}
+	cs := t.comments
+	if t.lineComment != nil {
+		cs = p.appendComments([]*grammar.Comment{t.lineComment}, cs)
+	}
+	s := x.Source()
+	if s.Layout == nil {
+		s.Layout = &grammar.SourceLayout{}
+	}
+	s.Layout.After = cs
+	t.lineComment, t.comments = nil, nil
 }
 
 // ParseLegacy parses src like Parse but accepts the removed syntax that pego fix rewrites, with

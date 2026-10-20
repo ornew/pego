@@ -730,6 +730,13 @@ type New struct {
 	Type       string       `json:"type"`
 	Fields     []*FieldInit `json:"fields,omitempty"`
 	Args       []Term       `json:"args,omitempty"`
+
+	// The braces keep their source layout like a TupleLit's parentheses.
+	// Format keeps the lines of the braces only when a comment needs them.
+	OpenBreak  *LineBreak `json:"-"`
+	BodyBreak  *LineBreak `json:"-"`
+	CloseBreak *LineBreak `json:"-"`
+	OneLine    bool       `json:"-"`
 }
 
 // TupleLit is a tuple value: () is the unit, (x,) has one element and (x, y) two. Its
@@ -748,6 +755,13 @@ type ListConstructor struct {
 	SourceInfo `json:"source,omitempty"`
 	Elem       TypeExpr `json:"elem"`
 	Items      []Term   `json:"items"`
+
+	// The braces keep their source layout like a TupleLit's parentheses.
+	// Format keeps the lines of the braces only when a comment needs them.
+	OpenBreak  *LineBreak `json:"-"`
+	BodyBreak  *LineBreak `json:"-"`
+	CloseBreak *LineBreak `json:"-"`
+	OneLine    bool       `json:"-"`
 }
 
 // FieldInit initializes a field of a struct value.
@@ -762,6 +776,13 @@ type Call struct {
 	SourceInfo `json:"source,omitempty"`
 	Func       string `json:"func"`
 	Args       []Term `json:"args"`
+
+	// The parentheses keep their source layout like a TupleLit's.
+	// Format keeps the lines of the parentheses only when a comment needs them.
+	OpenBreak  *LineBreak `json:"-"`
+	BodyBreak  *LineBreak `json:"-"`
+	CloseBreak *LineBreak `json:"-"`
+	OneLine    bool       `json:"-"`
 }
 
 // Lambda is a function (a, b) => body.
