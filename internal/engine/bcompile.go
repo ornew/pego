@@ -127,6 +127,8 @@ func (c *bcompiler) compile() {
 			BodyIsSeq: r.bodyIsSeq, Memo: r.memo, Leader: r.leader, Positional: r.positional, NoValue: r.novalue, Transient: r.transient, Vars: c.strs2(r.vars)}
 		if r.nodeType != "" {
 			ri.NodeType = int(c.str(r.nodeType))
+		} else if r.opNodeType != "" {
+			ri.NodeType = int(c.str(r.opNodeType)) // that of the operator nodes of an Operators Rule
 		}
 		c.m.Rules = append(c.m.Rules, ri)
 	}

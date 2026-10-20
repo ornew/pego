@@ -865,6 +865,10 @@ type Rule struct {
 	// are nodeKinds.
 	NodeType  string
 	nodeKinds *nodeTypeKinds
+	// OpNodeType, if not "", is the named node type every operator node of an Operators Rule is
+	// converted to, whose kinds are opKinds.
+	OpNodeType string
+	opKinds    *nodeTypeKinds
 	// Memo means the rule's results are memoized. It is false for transient rules, whose entries
 	// could never be reused.
 	Memo bool
@@ -927,6 +931,9 @@ func (g *grammar) SetRules(rules []*Rule, nseen int) {
 		r.kinds = newRuleKinds(r.Name)
 		if r.NodeType != "" {
 			r.nodeKinds = NewNodeTypeKinds(r.NodeType)
+		}
+		if r.OpNodeType != "" {
+			r.opKinds = NewNodeTypeKinds(r.OpNodeType)
 		}
 	}
 }
@@ -3698,6 +3705,16 @@ func (p *Parser) lineValue(r *Rule, l *OperatorsRuleLine, f *CaptureFrame, v *No
 	return v
 }
 
+// convertOperator converts v, the value of an operator of rule r, to the named node type of the
+// rule's operators.
+func (p *Parser) convertOperator(r *Rule, v *Node) *Node {
+	n, ok := r.opKinds.convert(UnboxNode(v))
+	if !ok {
+		panic(fatal{fmt.Errorf("cannot convert %s to %s in result of rule %s", typeName(UnboxNode(v)), r.OpNodeType, r.Name)})
+	}
+	return n
+}
+
 func (p *Parser) operatorsRuleBuild(r *Rule, a *operatorsRuleAttempt, lhs, rhs *Node) *Node {
 	if r.Novalue {
 		return nil
@@ -3729,6 +3746,9 @@ func (p *Parser) operatorsRuleBuild(r *Rule, a *operatorsRuleAttempt, lhs, rhs *
 		if l.check != nil {
 			l.check(p, v)
 		}
+		if r.opKinds != nil {
+			v = p.convertOperator(r, v)
+		}
 		return v
 	}
 	// Without an action, the application is the node of the tuple (lhs, op, rhs) of the line's
@@ -3750,7 +3770,9 @@ func (p *Parser) operatorsRuleBuild(r *Rule, a *operatorsRuleAttempt, lhs, rhs *
 		fields = Fields{{"lhs", nodeOrNil(lhs)}, {"op", nodeOrNil(opv)}, {"rhs", nodeOrNil(rhs)}}
 	}
 	kind := RawKindSeq
-	if p.sourceInfo {
+	if r.opKinds != nil {
+		kind = r.opKinds[baseTuple] // made with the named node type of the operators
+	} else if p.sourceInfo {
 		kind = r.kinds.named(RawKindSeq, r.Name)
 	}
 	return p.NewNode(Node{RawKind: kind, RawStart: int32(start), RawEnd: int32(end), RawChildren: kids, RawFields: fields, labeled: p.sourceInfo})

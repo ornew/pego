@@ -152,7 +152,11 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 			bodyIsSeq: ri.BodyIsSeq, memo: ri.Memo, leader: ri.Leader, positional: ri.Positional, novalue: ri.NoValue, transient: ri.Transient, vars: vm.names(ri.Vars),
 		}
 		if ri.NodeType >= 0 {
-			r.nodeType, r.nodeKinds = m.Strings[ri.NodeType], vm.nodeKinds[ri.NodeType]
+			if ri.OperatorsRule >= 0 {
+				r.opNodeType, r.opKinds = m.Strings[ri.NodeType], vm.nodeKinds[ri.NodeType]
+			} else {
+				r.nodeType, r.nodeKinds = m.Strings[ri.NodeType], vm.nodeKinds[ri.NodeType]
+			}
 		}
 		r.kinds = newRuleKinds(r.name)
 		r.value = func(_ *parser, v *Node, _ int) *Node { return v } // the code pushes the value of the body's scope

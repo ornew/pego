@@ -446,14 +446,16 @@ func (prog *Program) resultCheckType(key any, rd *grammar.RuleDef) ty {
 	if ci.empty() {
 		return nil
 	}
-	if key == any(rd) {
-		// A rule converting its value to a named node type checks it against the underlying type.
-		if n, ok := prog.ruleNodeType(rd); ok {
-			if t, ok := ci.results[key]; !ci.all && (!ok || t != nil) {
-				return t
-			}
-			return n.underlying()
+	if n, ok := prog.convertsResult(key, rd); ok {
+		// A rule converting its value to a named node type, or an operator converting its node,
+		// checks it against the underlying type.
+		if t, ok := ci.results[key]; !ci.all && (!ok || t != nil) {
+			return t
 		}
+		if op, isOp := key.(*grammar.OperatorsRuleOperator); isOp && op.Action == nil {
+			return nil // the tuple node of an operator
+		}
+		return n.underlying()
 	}
 	t, ok := ci.results[key]
 	if !ci.all {

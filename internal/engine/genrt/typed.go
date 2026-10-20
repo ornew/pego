@@ -371,6 +371,9 @@ type TRule struct {
 	// Nt is the registered index of the named node type the rule's value is converted to
 	// (rule.NodeType), or 0.
 	Nt uint16
+	// OpNt is the registered index of the named node type every operator node of an Operators
+	// Rule is converted to (rule.OpNodeType), or 0.
+	OpNt uint16
 }
 
 // TAs returns v as a T, or the zero T (nil) if it is not one.
@@ -2374,6 +2377,9 @@ func (p *TParser) operatorsRuleBuild(r *TRule, a *toperatorsRuleAttempt, lhs, rh
 		if l.check != nil {
 			l.check(p, v)
 		}
+		if r.OpNt != 0 {
+			v = p.convertOperator(r, v)
+		}
 		return v
 	}
 	// Without an action, the application is the node of the tuple (lhs, op, rhs) of the line's
@@ -2397,6 +2403,17 @@ func (p *TParser) operatorsRuleBuild(r *TRule, a *toperatorsRuleAttempt, lhs, rh
 	n := p.NewNode("tuple", start, end, kids)
 	n.fresh = false
 	n.fields = fields
+	n.nt = r.OpNt // made with the named node type of the operators, if any
+	return n
+}
+
+// convertOperator converts v, the value of an operator of rule r, to the named node type of the
+// rule's operators.
+func (p *TParser) convertOperator(r *TRule, v any) any {
+	n, ok := p.tconvert(r.OpNt, v)
+	if !ok {
+		panic(fatal{fmt.Errorf("cannot convert %s to %s in result of rule %s", ttypeName(v), r.OpNodeType, r.Name)})
+	}
 	return n
 }
 

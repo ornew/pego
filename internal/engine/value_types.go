@@ -720,6 +720,7 @@ func (v *valueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.Operator
 	self := ruleTy{rd.Name}
 	var ts []ty
 	tuples := map[int]bool{} // the lines whose value is the tuple node of an operator without an action
+	operators := map[int]bool{} // the lines of operators, whose nodes a named node type converts
 	if pr.Skip != nil {
 		v.predicates(pr.Skip, &valueEnv{})
 	}
@@ -749,6 +750,7 @@ func (v *valueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.Operator
 				if o.Kind != grammar.Postfix {
 					locals["rhs"] = self
 				}
+				operators[len(ts)] = true
 				ts = append(ts, v.term(o.Action, &valueEnv{caps: op.caps, locals: locals}))
 				v.checkResult(o, rd, ts[len(ts)-1])
 				continue
@@ -763,24 +765,41 @@ func (v *valueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.Operator
 				elems = []valueElem{{t: self, caps: []capIndex{{name: "lhs", paths: [][]int{{}}, t: self}}}, {t: op.t, caps: []capIndex{{name: "op", paths: [][]int{{}}, t: op.t}}}, {t: self, caps: []capIndex{{name: "rhs", paths: [][]int{{}}, t: self}}}}
 			}
 			tuples[len(ts)] = true
+			operators[len(ts)] = true
 			ts = append(ts, tupleNode(elems))
 		}
 	}
 	if rd.Type != nil {
 		// Each line that does not fit is reported on its own.
 		d, bad := v.resolve(rd.Type), false
+		dn, converts := v.prog.operatorsNodeType(rd)
 		for i, t := range ts {
+			if converts && operators[i] {
+				// The node of an operator is converted to the named node type.
+				if v.convertible(t, dn) {
+					continue
+				}
+				bad = true
+				if tuples[i] {
+					v.errorf(rd.Diagnostic(), "operators of %s without an action produce a tuple node, which cannot be converted to %s", rd.Name, d)
+				} else {
+					v.errorf(rd.Diagnostic(), "operatorsRule %s produces %s, which cannot be converted to %s", rd.Name, v.expand(t), d)
+				}
+				continue
+			}
 			if v.assignable(t, d) {
 				continue
 			}
 			bad = true
 			if tuples[i] {
 				v.errorf(rd.Diagnostic(), "operators of %s without an action produce a tuple node, which is not assignable to %s", rd.Name, d)
+			} else if converts && !operators[i] {
+				v.errorf(rd.Diagnostic(), "operand of %s produces %s, which is not assignable to %s; an operand is not converted: declare the operand rule as %s, or declare %s as a union that includes %s", rd.Name, v.expand(t), d, d, rd.Name, v.expand(t))
 			} else {
 				v.errorf(rd.Diagnostic(), "operatorsRule %s produces %s, which is not assignable to %s", rd.Name, v.expand(t), d)
 			}
 		}
-		if bad {
+		if bad || converts {
 			return d
 		}
 	}

@@ -250,17 +250,22 @@ Assignability to and from a named node type `N`:
 - Nothing else converts implicitly to `N`: a `node[U]`, a `_`, or a value of another named node type
   `M` is not assignable to `N`. Two distinct named node types never meet implicitly.
 - A rule converts its value only when its declared Type is exactly `N`, also through aliases. A declared
-  union, even one of named node types, does not convert: its value is checked by assignability.
+  union, even one of named node types, does not convert: its value is checked by assignability. An
+  [Operators Rule](operators-rule.md#types) declared with exactly `N` converts the value of every
+  operator, as described there.
 
 A value becomes a value of `N` by a conversion, which has two forms:
 
 - a constructor `N{x}` with exactly one positional argument `x`;
 - a rule whose declared Type is exactly `N` (also through aliases) converts the value that the rule
-  produces, as in `rule a Num = "a"`.
+  produces, as in `rule a Num = "a"`;
+- an Operators Rule whose declared Type is exactly `N` converts the value of each prefix, infix and postfix
+  operator it applies.
 
 The conversion applies when every alternative of the static type of `x` (or of the rule's value) is a
 node, named or unnamed, whose underlying type is assignable to the underlying type of `N`. So a value of
-type `M`, whose underlying type fits, converts to `N`. Operators Rules never convert. The following are
+type `M`, whose underlying type fits, converts to `N`. An Operators Rule declared with exactly `N` converts the value of each operator, not the
+values of its operands, by the same rule. The following are
 rejected at compile time with `cannot convert X to N` (for `N{x}`) or
 `rule r produces X, which cannot be converted to N` (for a rule): `_`, `node[_]`, `error`, `nil` and the
 scalar types. Cast first, as in `$x.(node[string])`. When type checking is off (`NoTypeCheck`), an uncertain

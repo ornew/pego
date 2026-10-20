@@ -329,6 +329,16 @@ func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *Node, st
 	return v
 }
 
+// convertOperator converts v, the value of an operator of rule r, to the named node type of the
+// rule's operators.
+func (p *parser) convertOperator(r *rule, v *Node) *Node {
+	n, ok := r.opKinds.convert(unboxNode(v))
+	if !ok {
+		p.fail("cannot convert %s to %s in result of rule %s", typeName(unboxNode(v)), r.opNodeType, r.name)
+	}
+	return n
+}
+
 // operatorsRuleBuild builds the value of an operator application.
 func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *Node) *Node {
 	if r.novalue {
@@ -372,6 +382,9 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 		if l.check != nil {
 			p.checkResult(l.check, v, r.name)
 		}
+		if r.opKinds != nil {
+			v = p.convertOperator(r, v)
+		}
 		return v
 	}
 	// Without an action, the application is the node of the tuple (lhs, op, rhs) of the line's
@@ -393,7 +406,9 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 		fields = Fields{{"lhs", nodeOrNil(lhs)}, {"op", nodeOrNil(opv)}, {"rhs", nodeOrNil(rhs)}}
 	}
 	kind := kindSeq
-	if p.prog.sourceInfo {
+	if r.opKinds != nil {
+		kind = r.opKinds[baseTuple] // made with the named node type of the operators
+	} else if p.prog.sourceInfo {
 		kind = r.kinds.named(kindSeq, r.name)
 	}
 	return p.newNode(Node{kind: kind, start: int32(start), end: int32(end), children: kids, fields: fields, labeled: p.prog.sourceInfo})

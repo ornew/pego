@@ -1186,6 +1186,9 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 		fmt.Fprintf(&reg, "\tfor i, name := range %s {\n\t\ttnt[i+1] = TRegisterNodeType(name, tnamedPub)\n\t}\n", goStrings(t.nodeTypes))
 	}
 	for _, r := range append(append([]*rule(nil), t.g.prog.rules...), t.g.prog.twins...) {
+		if r.opNodeType != "" {
+			fmt.Fprintf(&reg, "\ttrules[%d].OpNt = %s\n", r.id, t.g.nodeTypeID(r.opNodeType))
+		}
 		if r.nodeType != "" {
 			fmt.Fprintf(&reg, "\ttrules[%d].Nt = %s\n", r.id, t.g.nodeTypeID(r.nodeType))
 		}

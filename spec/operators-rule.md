@@ -237,11 +237,59 @@ them includes `node[_]`.
 If the rule has no declared type, its type is the union of the types of all
 `operand` items and operators.
 
+### Named Node Types
+
+If the declared type is exactly a [named node type](types.md#named-node-types)
+`N` (also through aliases), the rule converts the value of every operator it
+applies to `N`, as an ordinary rule converts its value (see
+[Types and Errors](actions.md#types-and-errors)):
+
+- The value of each `prefix`, `infix` and `postfix` operator, at every nesting
+  level of the expression, becomes a node of type `N`. This holds whether the
+  operator has an action or not. For an operator without an action, the tuple
+  node `(lhs, op, rhs)`, `(lhs, op)` or `(op, rhs)` is converted, and it keeps
+  its range, children and captures. For an operator with an action, the node
+  that the action returns is converted, and it keeps its range and content;
+  a node that already has type `N`, such as `$lhs`, is unchanged. The result
+  is a node of type `N` throughout the tree of operators, so `Node.Type()`
+  reports `N` and typed output yields `*N` for every operator node.
+- The value of an `operand` item is not converted: it is the node the
+  operand produces, with the type its own rule or action gives it. It MUST
+  be assignable to `N`; otherwise it is a compile-time error, `operand of r
+  produces X, which is not assignable to N`, because an operand is never
+  converted. Declare the operand rule as `N` so that it converts its own
+  value, or declare the Operators Rule as a union of `N` and the operand types,
+  which converts nothing. A node held by an operator part, such as the value of
+  `$op`, is not an operator node and keeps its type.
+- The value of each operator MUST be convertible to `N`: a node whose
+  underlying type is assignable to the underlying type of `N`. A tuple node
+  of an operator without an action must therefore fit the underlying type, as
+  `node[_]` does. Otherwise it is a compile-time error, `operators of r
+  without an action produce a tuple node, which cannot be converted to N`
+  or `operatorsRule r produces X, which cannot be converted to N`.
+  With type checking off, an operator value that does not fit fails the
+  parse.
+- The converted node has no rule name, as for an ordinary rule.
+
+```pego
+type Expr = node[_]
+rule expr Expr = operators {
+    operand num
+    level { infix left "+" }
+    level { prefix "-" }
+}
+rule num Expr = [0-9]+ #atomic
+```
+
+With this rule, every node of `-1+2` that the operators build has type `Expr`,
+as do the operands `1` and `2`, which `num` converts itself.
+
 ## Concrete Syntax Tree
 
 An operator without an action produces a tuple node (its
 [node type name](types.md#node-type-names) is `tuple`) whose range covers the
-operator expression.
+operator expression. When the rule is declared with a
+[named node type](#named-node-types), that node has the named type instead.
 
 | Operator | Elements |
 |:--|:--|

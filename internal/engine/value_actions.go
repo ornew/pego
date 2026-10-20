@@ -85,10 +85,8 @@ func (v *valueInference) checkResult(key any, rd *grammar.RuleDef, t ty) {
 		return
 	}
 	d := v.resolve(rd.Type)
-	if dn, ok := d.(nodeTy); ok && dn.name != "" && key == any(rd) {
-		if _, converts := v.prog.ruleNodeType(rd); converts {
-			d = dn.underlying() // checked before it is converted
-		}
+	if dn, ok := v.prog.convertsResult(key, rd); ok {
+		d = dn.underlying() // checked before it is converted
 	}
 	if newFieldType(d) != nil {
 		v.checks.results[key] = d
@@ -350,18 +348,49 @@ func (prog *Program) nodeTypeOf(name string) (nodeTy, bool) {
 }
 
 // ruleNodeType returns the named node type that the value of rule rd is converted to: its declared
-// type, through aliases, when that is exactly a named node type. An Operators Rule converts no
-// value.
+// type, through aliases, when that is exactly a named node type. An Operators Rule converts the
+// nodes of its operators instead (operatorsNodeType), never its value as a whole.
 func (prog *Program) ruleNodeType(rd *grammar.RuleDef) (nodeTy, bool) {
-	if rd.Type == nil {
+	if _, ok := rd.Expr.(*grammar.OperatorsRule); ok {
 		return nodeTy{}, false
 	}
-	if _, ok := rd.Expr.(*grammar.OperatorsRule); ok {
+	return prog.declaredNodeType(rd)
+}
+
+// operatorsNodeType returns the named node type that every operator node of the Operators Rule
+// rd is converted to: the rule's declared type, through aliases, when that is exactly a named node
+// type. The values of its operand lines are not converted.
+func (prog *Program) operatorsNodeType(rd *grammar.RuleDef) (nodeTy, bool) {
+	if _, ok := rd.Expr.(*grammar.OperatorsRule); !ok {
+		return nodeTy{}, false
+	}
+	return prog.declaredNodeType(rd)
+}
+
+// declaredNodeType returns the named node type that is the declared type of rule rd, through
+// aliases.
+func (prog *Program) declaredNodeType(rd *grammar.RuleDef) (nodeTy, bool) {
+	if rd.Type == nil {
 		return nodeTy{}, false
 	}
 	k := &typeResolver{prog: prog}
 	n, ok := k.resolve(rd.Type).(nodeTy)
 	return n, ok && n.name != ""
+}
+
+// convertsResult reports whether the value that key produces (see checkInfo.results) is converted
+// to a named node type, which its run-time check then sees converted: a rule's value, or the value
+// of an operator of an Operators Rule.
+func (prog *Program) convertsResult(key any, rd *grammar.RuleDef) (nodeTy, bool) {
+	switch key.(type) {
+	case *grammar.RuleDef:
+		if key == any(rd) {
+			return prog.ruleNodeType(rd)
+		}
+	case *grammar.OperatorsRuleOperator:
+		return prog.operatorsNodeType(rd)
+	}
+	return nodeTy{}, false
 }
 
 func sameCaps(a, b []capIndex) bool {

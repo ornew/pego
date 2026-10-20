@@ -124,6 +124,10 @@ type rule struct {
 	// (Program.ruleNodeType), whose kinds are nodeKinds.
 	nodeType  string
 	nodeKinds *nodeTypeKinds
+	// opNodeType, if not "", is the named node type every operator node of an Operators Rule is
+	// converted to (Program.operatorsNodeType), whose kinds are opKinds.
+	opNodeType string
+	opKinds    *nodeTypeKinds
 	// resultCheck is the declared type the rule's value is checked against at run time (nil if
 	// none; see Program.resultCheckType).
 	resultCheck   *fieldType
@@ -509,6 +513,9 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 			r.plain = !r.leader && (!r.memo || r.transient) && len(r.scope.names) == 0
 			if n, ok := prog.ruleNodeType(r.def); ok && !r.novalue {
 				r.nodeType, r.nodeKinds = n.name, newNodeTypeKinds(n.name)
+			}
+			if n, ok := prog.operatorsNodeType(r.def); ok && !r.novalue {
+				r.opNodeType, r.opKinds = n.name, newNodeTypeKinds(n.name)
 			}
 		}
 	}

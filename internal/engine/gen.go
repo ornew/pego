@@ -674,6 +674,9 @@ func (g *generator) rules() {
 			if r.nodeType != "" {
 				extra += fmt.Sprintf("NodeType: %q, ", r.nodeType)
 			}
+			if r.opNodeType != "" {
+				extra += fmt.Sprintf("OpNodeType: %q, ", r.opNodeType)
+			}
 			fmt.Fprintf(init, "\t\t{Id: %d, Name: %q, Scope: %s, Value: %s, Memo: %v, Leader: %v, %sSeen: %d, Novalue: %v, Vars: %s},\n",
 				r.id, r.name, goStrings(scopes[r].names), value, r.memo && !r.transient, r.leader, extra, r.seen, r.novalue, goStrings(r.vars))
 		}

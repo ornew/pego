@@ -861,6 +861,9 @@ interface Rule {
   check: ((p: Parser, v: Node | null) => void) | null;
   // nodeType, if not "", is the named node type the rule's value is converted to.
   nodeType: string;
+  // opNodeType, if not "", is the named node type every operator node of an Operators Rule is
+  // converted to.
+  opNodeType: string;
 }
 
 // Shaper is the static shape of an expression that the runtime converts its matcher's result with,
@@ -914,6 +917,7 @@ function mkRule(
     vars,
     check: null,
     nodeType: "",
+    opNodeType: "",
   };
 }
 
@@ -2850,9 +2854,12 @@ class Parser {
     }
     if (l.action !== null) {
       const c = this.useCtx(a.frame, start, end, unboxNode(lhs), unboxNode(rhs), unboxNode(opv));
-      const v = c.result(l.action, r.name);
+      let v = c.result(l.action, r.name);
       if (l.check !== null) {
         l.check(this, v);
+      }
+      if (r.opNodeType !== "") {
+        v = this.convertOperator(r, v);
       }
       return v;
     }
@@ -2875,6 +2882,17 @@ class Parser {
     }
     const n = new Node("tuple", sourceInfo ? r.name : "", start, end, "", kids, fields, false, false);
     n.labeled = sourceInfo;
+    return r.opNodeType !== "" ? this.convertOperator(r, n) : n;
+  }
+
+  // convertOperator converts v, the value of an operator of rule r, to the named node type of the
+  // rule's operators.
+  convertOperator(r: Rule, v: Node | null): Node {
+    const u = unboxNode(v);
+    const n = convertNode(r.opNodeType, u);
+    if (n === null) {
+      throw new Fatal(new Error(`cannot convert ${typeName(u)} to ${r.opNodeType} in result of rule ${r.name}`));
+    }
     return n;
   }
 }

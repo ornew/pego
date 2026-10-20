@@ -397,10 +397,14 @@ reports invalid operators and function arguments, unknown or undeclared
 fields, non-assignable constructor fields and rule results, and accesses that may dereference `nil`. See [Type Checking](type-checking.md)
 for the complete assignability rules and diagnostics.
 A rule whose declared Type is exactly a named node type `N` converts its value to `N` when the value is
-convertible, as specified in [Named Node Types](types.md#named-node-types).
+convertible, as specified in [Named Node Types](types.md#named-node-types). An
+[Operators Rule](operators-rule.md#named-node-types) declared with exactly `N` converts the value of each
+prefix, infix and postfix operator it applies instead, at every nesting level, whether the operator has an
+action or builds the tuple node of its operands; it converts no operand value.
 
-A value that cannot be converted to `N` is a compile-time error, `rule r produces X, which cannot be converted to N`,
-when its type is known. Only under `NoTypeCheck` is an uncertain value checked at run time instead.
+A value that cannot be converted to `N` is a compile-time error, `rule r produces X, which cannot be converted to N`
+(for an operator of an Operators Rule, `operatorsRule r produces X, which cannot be converted to N`), when its
+type is known. Only under `NoTypeCheck` is an uncertain value checked at run time instead.
 
 A Value Action result statically known to be a function is a compile-time
 error.

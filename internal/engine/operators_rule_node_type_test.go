@@ -1,0 +1,256 @@
+package engine
+
+import (
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"testing"
+
+	"github.com/ornew/pego/internal/syntax"
+)
+
+// operatorsNamedNodeCases declare an Operators Rule with a named node type: every prefix, infix and
+// postfix node the rule builds, at every nesting level, is converted to that type, whether it is
+// the tuple node of an operator without an action or the node that an action returns. The operands
+// come from other rules that convert their own values.
+func operatorsNamedNodeCases() []genCase {
+	return []genCase{
+		{"operators named tuple", `type Expr = node[_]
+type Other = node[string]
+rule main Expr = e:expr ws $$ => $e
+rule expr Expr = operators {
+    skip ws
+    operand num
+    operand "(" e:expr ws ")" => $e
+    level { infix left "+" / "-" }
+    level { infix left "*" => Other{$op} }
+    level { prefix "-" }
+    level {
+        postfix "!" => $lhs
+        postfix "[" i:expr ws "]"
+    }
+    level { infix right "^" }
+}
+rule num Expr = [0-9]+ #atomic
+rule ws = [ ]*`, []string{"", "1", "1+2", "1+2*3", "-1+2", "1+-2", "2!", "(1+2)[3]*4", "1+2!+3", "1 + (2 - 3) * 4", "2^3^4", "-2^3", "1+", "-", "1[2][3]!", "((1))"}},
+		{"operators without a named type", `type Expr ~ node[_]
+rule main = e:expr ws $$ => $e
+rule expr Expr = operators {
+    skip ws
+    operand num
+    operand "(" e:expr ws ")" => $e
+    level { infix left "+" / "-" }
+    level { prefix "-" }
+    level { postfix "!" }
+}
+rule num = [0-9]+ #atomic
+rule ws = [ ]*`, []string{"", "1", "1+2", "-1+2!", "(1+2)!"}},
+	}
+}
+
+// operatorsNodeTypeNames returns the type names of the nodes of n, pre-order, with their children
+// in parentheses.
+func operatorsNodeTypeNames(n *Node) string {
+	if n == nil {
+		return "nil"
+	}
+	var b strings.Builder
+	b.WriteString(n.Type())
+	if n.Len() > 0 && n.Type() != "string" {
+		b.WriteString("(")
+		for i := 0; i < n.Len(); i++ {
+			if i > 0 {
+				b.WriteString(" ")
+			}
+			b.WriteString(operatorsNodeTypeNames(n.Elem(i)))
+		}
+		b.WriteString(")")
+	}
+	return b.String()
+}
+
+// TestOperatorsRuleNamedNodeTypeShape checks the type of every node an Operators Rule builds: the
+// operator nodes are converted at every nesting level; the nodes that an operator part carries (the
+// value of $op) are not operator nodes and keep their types.
+func TestOperatorsRuleNamedNodeTypeShape(t *testing.T) {
+	cases := operatorsNamedNodeCases()
+	for _, sourceInfo := range []bool{false, true} {
+		for _, noTypeCheck := range []bool{false, true} {
+			prog := compileBare(t, cases[0].src, Options{SourceInfo: sourceInfo, NoTypeCheck: noTypeCheck})
+			for _, tc := range []struct{ input, want string }{
+				{"1", "Expr"},
+				{"1+2", "Expr(Expr string Expr)"},
+				{"1+2*3", "Expr(Expr string Expr)"},
+				{"-1+2", "Expr(Expr(string Expr) string Expr)"},
+				{"2!", "Expr"},
+				{"2^3^4", "Expr(Expr string Expr(Expr string Expr))"},
+				{"1[2][3]!", "Expr(Expr(Expr tuple(string Expr list string)) tuple(string Expr list string))"},
+				{"1 + (2 - 3) + 4", "Expr(Expr(Expr string Expr(Expr string Expr)) string Expr)"},
+			} {
+				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+					n, err := prog.ParseWith("main", tc.input, ParseOptions{Backend: backend})
+					if err != nil {
+						t.Fatalf("%s %q: %v", backend, tc.input, err)
+					}
+					if got := operatorsNodeTypeNames(n); got != tc.want {
+						t.Errorf("sourceInfo=%t noTypeCheck=%t %s %q: got %s, want %s", sourceInfo, noTypeCheck, backend, tc.input, got, tc.want)
+					}
+				}
+			}
+		}
+	}
+}
+
+// TestOperatorsRuleNamedNodeTypeAcrossBackends checks that the closure evaluator and the bytecode
+// backends build the same trees for an Operators Rule with and without a named node type.
+func TestOperatorsRuleNamedNodeTypeAcrossBackends(t *testing.T) {
+	for _, c := range operatorsNamedNodeCases() {
+		for _, sourceInfo := range []bool{false, true} {
+			for _, noTypeCheck := range []bool{false, true} {
+				prog := compileBare(t, c.src, Options{SourceInfo: sourceInfo, NoTypeCheck: noTypeCheck})
+				for _, input := range c.inputs {
+					want := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure}))
+					for _, backend := range []Backend{Bytecode, BytecodeIterative} {
+						if got := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend})); got != want {
+							t.Errorf("%s sourceInfo=%t noTypeCheck=%t %s %q:\n got %s\nwant %s", c.name, sourceInfo, noTypeCheck, backend, input, got, want)
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// A Document reparses an Operators Rule with a named node type to the trees of a fresh parse,
+// whose operator nodes are all converted, across edits.
+func TestOperatorsRuleNamedNodeTypeDocument(t *testing.T) {
+	prog := compile(t, operatorsNamedNodeCases()[0].src)
+	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		opts := ParseOptions{Backend: backend}
+		doc, err := prog.NewDocumentWith("main", "1+2*3+(4-5)!", opts)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i, e := range []struct {
+			from, to int
+			text     string
+		}{{0, 0, ""}, {2, 3, "-9"}, {5, 6, "^7"}, {0, 0, "-"}, {3, 4, ""}, {1, 2, "*"}} {
+			if err := doc.Edit(e.from, e.to, e.text); err != nil {
+				t.Fatal(err)
+			}
+			n, err := doc.Parse()
+			fresh, ferr := prog.ParseWith("main", doc.Text(), opts)
+			if got, want := resultJSON(n, err), resultJSON(fresh, ferr); got != want {
+				t.Fatalf("%s edit %d %q: got %s; fresh %s", backend, i, doc.Text(), got, want)
+			}
+			if err == nil && strings.Contains(operatorsNodeTypeNames(n), "tuple(") && !strings.Contains(doc.Text(), "[") {
+				t.Errorf("%s edit %d %q: an operator node was not converted: %s", backend, i, doc.Text(), operatorsNodeTypeNames(n))
+			}
+		}
+	}
+}
+
+// Generated Go parsers, plain and typed, and generated TypeScript parsers build the same trees as
+// the engine for Operators Rules with and without a named node type.
+func TestOperatorsRuleNamedNodeTypeGenerated(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds generated consumers")
+	}
+	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
+	cases := operatorsNamedNodeCases()
+	t.Run("go", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, GenOptions{}) })
+	t.Run("typed go", func(t *testing.T) { testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true}, len(cases)) })
+	t.Run("typescript", func(t *testing.T) {
+		node, err := exec.LookPath("node")
+		if err != nil {
+			t.Skip("node not found")
+		}
+		testGeneratedTSParsersCorpus(t, node, cases, GenOptions{})
+		testGeneratedTSParsersCorpus(t, node, cases, GenOptions{SourceInfo: true})
+	})
+}
+
+// Typed Go yields *Expr for every operator node of an Operators Rule declared with Expr, at every
+// nesting level.
+func TestGeneratedTypedOperatorsRuleNamedNodeType(t *testing.T) {
+	runGeneratedNamedNodeProgram(t, operatorsNamedNodeCases()[0].src, `func walk(v any) string {
+	x, ok := v.(*p.Expr)
+	if !ok {
+		return fmt.Sprintf("%T", v)
+	}
+	s := "Expr"
+	if kids, ok := x.Value.([]any); ok {
+		s += "("
+		for i, k := range kids {
+			if i > 0 {
+				s += " "
+			}
+			s += walk(k)
+		}
+		s += ")"
+	}
+	return s
+}
+
+func main() {
+	for _, in := range []string{"1", "1+2", "-1+2", "2^3^4", "1 + (2 - 3) + 4", "1[2]!", "1+2*3"} {
+		out, err := p.ParseAST(in)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(in, walk(out))
+	}
+}
+`, `1 Expr
+1+2 Expr(Expr *p.TNode[string] Expr)
+-1+2 Expr(Expr(*p.TNode[string] Expr) *p.TNode[string] Expr)
+2^3^4 Expr(Expr *p.TNode[string] Expr(Expr *p.TNode[string] Expr))
+1 + (2 - 3) + 4 Expr(Expr(Expr *p.TNode[string] Expr(Expr *p.TNode[string] Expr)) *p.TNode[string] Expr)
+1[2]! Expr(Expr *p.TNode[interface {}])
+1+2*3 Expr(Expr *p.TNode[string] Expr)
+`)
+}
+
+// Without type checking, an operator whose value cannot be converted fails the parse.
+func TestOperatorsRuleNamedNodeTypeRuntimeError(t *testing.T) {
+	prog := compileBare(t, "type Expr = node[string]\nrule expr Expr = operators {\n operand num\n level { infix left \"+\" => 1 }\n}\nrule num Expr = [0-9]+ #atomic", Options{NoTypeCheck: true})
+	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		_, err := prog.ParseWith("expr", "1+2", ParseOptions{Backend: backend})
+		if err == nil || !strings.Contains(err.Error(), "cannot use int as node[string] in result of rule expr") {
+			t.Errorf("%s: got %v", backend, err)
+		}
+	}
+}
+
+// An Operators Rule without a named node type keeps the tuple nodes of its operators.
+func TestOperatorsRuleWithoutNamedNodeTypeKeepsTuples(t *testing.T) {
+	prog := compileBare(t, operatorsNamedNodeCases()[1].src)
+	n, err := prog.Parse("main", "-1+2!")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := operatorsNodeTypeNames(n), "tuple(tuple(string string) string tuple(string string))"; got != want {
+		t.Errorf("got %s, want %s", got, want)
+	}
+}
+
+// An operator whose node cannot be converted to the rule's named node type is a compile-time
+// error, as for the value of an ordinary rule.
+func TestOperatorsRuleNamedNodeTypeErrors(t *testing.T) {
+	const defs = "type Expr = node[string]\ntype S = { A int }\nrule num Expr = [0-9]+ #atomic\n"
+	for _, tc := range []struct{ src, want string }{
+		{"rule expr Expr = operators {\n operand num\n level { infix left \"+\" }\n}", "operators of expr without an action produce a tuple node, which cannot be converted to Expr"},
+		{"rule expr Expr = operators {\n operand num\n level { infix left \"+\" => S{A: 1} }\n}", "operatorsRule expr produces S, which cannot be converted to Expr"},
+		{"rule expr Expr = operators {\n operand num\n level { prefix \"-\" => 1 }\n}", "which cannot be converted to Expr"},
+		{"type Num = node[string]\nrule expr Expr = operators {\n operand n2\n level { infix left \"+\" => Expr{$op} }\n}\nrule n2 Num = [0-9]+ #atomic", "operand of expr produces Num, which is not assignable to Expr; an operand is not converted: declare the operand rule as Expr, or declare expr as a union that includes Num"},
+	} {
+		g, err := syntax.Parse(defs + tc.src)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
+			t.Errorf("%q: got %v, want %q", tc.src, err, tc.want)
+		}
+	}
+}

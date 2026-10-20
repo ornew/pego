@@ -615,6 +615,9 @@ func (g *tsGen) rules() {
 		if r.nodeType != "" {
 			fmt.Fprintf(init, "%s.nodeType = %s;\n", g.ruleVar(r), tsString(r.nodeType))
 		}
+		if r.opNodeType != "" {
+			fmt.Fprintf(init, "%s.opNodeType = %s;\n", g.ruleVar(r), tsString(r.opNodeType))
+		}
 	}
 	if g.table == "rules" {
 		// The table, for parseRule (the recognizer has none).
