@@ -287,7 +287,7 @@ String nodes (`StringNode`, a `TNode<string>` whose `type` is `"string"`) have `
 | `node[T]` | `TNode<T'>` with `T'` the TypeScript type of `T`; text is a `StringNode`, a `TNode<string>`, and `node[_]` is `TNode<unknown>` |
 | tuple `(A, B, ...)` | `readonly [A', B', ...]` |
 | canonical declared pure node union | member interfaces plus `RecoveredError` and null; node members are `TNode` values |
-| mixed/open or undeclared union, `any` | conservative `TypedValue`, following Go's any-conversion semantics |
+| mixed/open or undeclared union, `_` | conservative `TypedValue`, following Go's any-conversion semantics |
 
 Inferred nil/never starts also use `TypedValue`: recovery can return a converted
 Error even when the normal rule produces no value.

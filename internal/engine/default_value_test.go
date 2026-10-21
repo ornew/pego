@@ -113,7 +113,7 @@ func TestDefaultValueKeepsActionsPredicatesRead(t *testing.T) {
 func TestDefaultValueOperatorsRule(t *testing.T) {
 	src := lines(
 		"type Num = { Text string }",
-		"type Bin = { L node[any]; R node[any] }",
+		"type Bin = { L node[_]; R node[_] }",
 		"rule main = e $$",
 		"rule e = operators {",
 		"    operand t:([0-9]+) #atomic => Num{Text: text($t)}",

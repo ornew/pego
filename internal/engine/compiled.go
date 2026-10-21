@@ -306,7 +306,7 @@ func (w *encoder) typeExpr(t grammar.TypeExpr) {
 	switch t := t.(type) {
 	case nil:
 		w.byte(kTypeRef)
-		w.str("any")
+		w.str("_")
 	case *grammar.TypeRef:
 		w.byte(kTypeRef)
 		w.str(t.Name)

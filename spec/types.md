@@ -22,7 +22,6 @@ The built-in types are named by these reserved names:
 | `missing` | The tokens that [`#missing`](pragmas.md#missing) inserted. A `missing` is an `error`. |
 | `_` | Every value: the top type (see [Top, Bottom, Join and Meet](#top-bottom-join-and-meet)). |
 | `_\|_` | No value: the bottom type. |
-| `any` | Every value, like `_`, but assignable to every type; deprecated in favor of `_`. |
 
 Other types are formed from types `T`, `U`, ... by these forms, or named by
 [Type Declaration Statements](#type-declaration-statements):
@@ -129,11 +128,9 @@ compile, also when types are otherwise not checked.
 ### Top, Bottom, Join and Meet
 
 `_` is the top type: every value is a `_`, and `_ | T` is `_`. A value of type
-`_` is assignable only to `_` and to `any`, whose values are checked where they
-reach a typed location; a [cast](actions.md#casts) such as `x.(T)` checks it at
-run time. `any` is deprecated: unlike `_`, it is also assignable to every
-other type, so its values are checked where they are used rather than where a
-cast narrows them. `_|_` is the bottom type, which has no values:
+`_` is assignable only to `_`; a [cast](actions.md#casts) such as `x.(T)` checks it at
+run time and narrows it. No type is written `any`: the name is not a type, and the compiler
+asks for `_`. `_|_` is the bottom type, which has no values:
 `_|_ | T` is `T`, and `[]_|_` and `*_|_` are `_|_`. A struct field, a rule, a
 list element or a cast whose type resolves to `_|_` is an error, also when
 types are otherwise not checked.

@@ -191,7 +191,7 @@ func (prog *Program) structType(name string) (string, *grammar.TypeDef) {
 }
 
 // concreteListElement reports whether the element type t of a list constructor, including the
-// elements of nested list types, names no any.
+// elements of nested list types, names no unknown type.
 func concreteListElement(t ty) bool {
 	switch t := t.(type) {
 	case listTy:

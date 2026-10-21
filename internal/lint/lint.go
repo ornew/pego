@@ -100,7 +100,6 @@ const (
 	CheckPositions          = "positions"
 	CheckLongLookahead      = "long-lookahead"
 	CheckDirective          = "lint-directive"
-	CheckDeprecatedAny      = "deprecated-any"
 )
 
 // Checks lists every check, in the order of the documentation.
@@ -114,7 +113,6 @@ var Checks = []Check{
 	{CheckDuplicateCapture, Warning, "the same name captured twice in one match, the second overwriting the first"},
 	{CheckCharClass, Warning, "a character class with overlapping ranges, or a range that spans punctuation between letters and digits"},
 	{CheckUnreachableRule, Warning, "a rule that the start rule never calls"},
-	{CheckDeprecatedAny, Warning, "the type any, which is deprecated in favor of _ and casts"},
 	{CheckRightRecursion, Hint, "a list written as right recursion instead of a repetition"},
 	{CheckPositions, Hint, ".Start or .End in a rule used repeatedly, which blocks reuse in incremental parsing"},
 	{CheckLongLookahead, Hint, "a lookahead that can examine input across lines, which blocks reuse in incremental parsing"},
@@ -161,7 +159,6 @@ func runControlled(g *grammar.Grammar, start string, opts Options, control *lint
 		{CheckRightRecursion, (*linter).rightRecursion},
 		{CheckPositions, func(l *linter) { l.positions(start) }},
 		{CheckLongLookahead, (*linter).longLookaheads},
-		{CheckDeprecatedAny, func(l *linter) { l.deprecatedAny(g) }},
 	} {
 		control.check()
 		if !opts.Disable[c.name] {

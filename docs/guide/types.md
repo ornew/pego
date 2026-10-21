@@ -160,7 +160,7 @@ Table{Entries: [("a" "=" "1") ("b" "=" "2")]}
 ```
 
 Inference follows rule dependencies, so a long helper chain keeps its result type regardless of definition order.
-Recursive types that keep expanding have conservative growth budgets and may become `any`; stable helpers retain
+Recursive types that keep expanding have conservative growth budgets and may lose their precise types; stable helpers retain
 their types. See the [inference limits](../../spec/type-checking.md#type-inference) for the exact fallback rules.
 
 Declare types on the rules whose values flow into struct fields, and on recursive rules; leave helpers inferred. The
@@ -184,10 +184,10 @@ pego: field-type.pego:3:53: cannot use node[string] as int in field Value of Pai
 
 The fix is to declare the field `node[string]`, or to convert the text in the action, as in `Value: text($v)` for a `string` field.
 
-When the checker cannot know a field value's type, for example a rule declared `any`, it rejects the value with a
-hint: `cannot use any as Number in field Value of Pair: the type of the value is not known; convert it with a
+When the checker cannot know a field value's type, for example a rule declared `_`, it rejects the value with a
+hint: `cannot use _ as Number in field Value of Pair: the type of the value is not known; convert it with a
 cast, as in value.(Number)`. A rule's own value is treated the same way: when the checker cannot know that a rule
-produces its declared type, it reports `cannot use any as Expr in result of rule term` with the same hint. Write the
+produces its declared type, it reports `rule term produces _, which is not assignable to Expr` with the same hint. Write the
 cast, `$v.(Number)`: it is the only check that runs, and a value of another type makes the action fail with
 `cannot cast ... to Number at input position 4 (line 1, column 5)`, followed by the grammar position of the cast
 when the parser records source information. Giving the rules that feed constructors precise types avoids the casts.

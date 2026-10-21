@@ -355,11 +355,23 @@ func TestExamples(t *testing.T) {
 	}
 }
 
-func TestDeprecatedAny(t *testing.T) {
+// The type any is not a type: the compiler rejects every reference to it, with a pointer to _.
+func TestAnyIsNotAType(t *testing.T) {
+	for _, tc := range []struct{ src, want string }{
+		{"type Box = { V any }\nrule main Box = x:\"x\" => Box{V: $x}", "1:16: any is not a type; write _"},
+		{"type Box = { L []any }\nrule main Box = x:\"x\" => Box{L: list($x)}", "1:18: any is not a type; write _"},
+		{"rule main any = x:\"x\" => $x", "1:11: any is not a type; write _"},
+		{"rule main = x:\"x\" => $x.(any)", "1:26: any is not a type; write _"},
+	} {
+		g, err := syntax.Parse(tc.src)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := engine.Compile(g, engine.Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
+			t.Errorf("%q: got %v; want it to contain %q", tc.src, err, tc.want)
+		}
+	}
 	runCases(t, []lintCase{
-		{name: "fields and casts", src: "type Box = { V any; L []any }\nrule main Box = x:\"x\" => Box{V: $x.(any), L: list($x)}",
-			want: []string{"1:16 warning deprecated-any", "1:25 warning deprecated-any", "2:37 warning deprecated-any"},
-			msg:  "use _, the top type"},
 		{name: "top type", src: "type Box = { V _ }\nrule main Box = x:\"x\" => Box{V: $x}"},
 	})
 }

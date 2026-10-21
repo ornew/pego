@@ -16,7 +16,7 @@ import (
 )
 
 // fieldCheckValues are the dynamically typed values that fieldCheckGrammar passes to a struct
-// field, by the first input character: nodes, nil and scalars from the any-typed rule val.
+// field, by the first input character: nodes, nil and scalars from the rule val of type _.
 var fieldCheckValues = map[string]string{
 	"m": "Match", "t": "Int", "l": "[]Int", "k": "[]Match", "e": "[]nil", "n": "empty List",
 	"q": "Box", "?": "Error", "w": "[][]Int", "p": "[]*Int", "z": "nil", "i": "int", "s": "string", "b": "bool",
@@ -49,7 +49,7 @@ var fieldCheckFields = map[string]string{
 	"int":                      "i",
 	"string":                   "s",
 	"bool":                     "b",
-	"any":                      "mtlkenq?wpzisb",
+	"_":                        "mtlkenq?wpzisb",
 	"node[_]":                  "m",
 	"[][]Int":                  "wn",
 	"*(Box | bool)":            "qzb",
@@ -73,7 +73,7 @@ rule main Result = nodeCase / nodePred / no
 rule nodeCase = v:val "." => S{F: $v.(` + typ + `)}
 rule nodePred = v:val {S{F: $v.(` + typ + `)} != nil} "!" => Int{Text: "yes"}
 rule no = [a-z!.?;]+ => Int{Text: "no"}
-rule val any = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz / vi / vs / vb
+rule val _ = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz / vi / vs / vb
 rule vm = "m"
 rule vt = "t" => Int{Text: "t"}
 rule vl = "l" => []Int{Int{Text: "a"}}
@@ -103,7 +103,7 @@ rule main Result = nodeCase / nodePred / no
 rule nodeCase = v:val "." => S{F: $v.(` + typ + `)}
 rule nodePred = v:val {S{F: $v.(` + typ + `)} != nil} "!" => Int{"yes"}
 rule no = [a-z!.?;]+ => Int{"no"}
-rule val any = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz / vi / vs / vb
+rule val _ = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz / vi / vs / vb
 rule vm = "m"
 rule vt = "t" => Int{"t"}
 rule vl = "l" => []Int{Int{"a"}}
@@ -247,13 +247,13 @@ func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string)
 // when the grammar is compiled, and a cast is the only check, one ECAST for each cast.
 func TestConstructedFieldChecksAreSelective(t *testing.T) {
 	const decls = `type Int = { Text string }
-type S = { Static Int; Var int; Dynamic Int; Elements []Int; Union *Int; Untyped any; Empty []Int; Joined []Int }
+type S = { Static Int; Var int; Dynamic Int; Elements []Int; Union *Int; Untyped _; Empty []Int; Joined []Int }
 var x int
 rule item Int = "i" => Int{Text: "i"}
-rule val any = "v" => list()
+rule val _ = "v" => list()
 `
 	const body = "rule main = {x := 1} a:item d:val l:item* o:item? => S{Static: $a, Var: x, Dynamic: %s, Elements: $l.Value, Union: $o, Untyped: x, Empty: filter(nil, (e) => true), Joined: concat(nil, $l.Value)}\n"
-	if got := compileMessage(t, decls+fmt.Sprintf(body, "$d")); !strings.Contains(got, "cannot use any as Int in field Dynamic of S: the type of the value is not known; convert it with a cast, as in value.(Int)") {
+	if got := compileMessage(t, decls+fmt.Sprintf(body, "$d")); !strings.Contains(got, "cannot use _ as Int in field Dynamic of S: the type of the value is not known; convert it with a cast, as in value.(Int)") {
 		t.Fatalf("unknown value: %q", got)
 	}
 	src := decls + fmt.Sprintf(body, "$d.(Int)")
@@ -284,7 +284,7 @@ rule item Int = "i" => Int{Text: "i"}
 type S = { Static Int; Dynamic Int }
 rule main = a:item d:val {S{Static: $a, Dynamic: $d.(Int)} != nil}
 rule item Int = "i" => Int{Text: "i"}
-rule val any = "v"
+rule val _ = "v"
 `)
 	rec, err := pred.recognizer()
 	if err != nil {

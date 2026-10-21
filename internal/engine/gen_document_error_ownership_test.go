@@ -15,7 +15,7 @@ func TestGenerateDocumentDiagnosticOwnership(t *testing.T) {
 		t.Skip("builds standalone generated parsers")
 	}
 	g, err := syntax.Parse(`type Token = { Text string }
-type Box = { Token Token | error; Any any }
+type Box = { Token Token | error; Any _ }
 rule main []Box = xs:item* => $xs.Value
 rule item Box = t:(token #recover(skip=[^;]+ ";")) => Box{Token: $t}
 rule token Token = t:("a;" @error(message="want token")) #atomic => Token{Text: text($t)}`)

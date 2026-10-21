@@ -78,18 +78,27 @@ rule e = _`
 // TestConcatErrorOrder checks that concat reports the same error on every backend when an
 // argument that is not a list call fails late: the arguments are evaluated before concat
 // checks them.
+//
+// The checker rejects an argument of type _ for a list, so the grammars compile only without type
+// checking.
 func TestConcatErrorOrder(t *testing.T) {
-	check(t, `rule main = x:"a" d:dyn => concat($d, list(1 / 0))
-rule dyn any = ds / di
+	for _, src := range []string{`rule main = x:"a" d:dyn => concat($d, list(1 / 0))
+rule dyn _ = ds / di
 rule ds = "b" => "s"
-rule di = _ => 1`,
-		ok("a", "error: action in main: division by zero"))
-	check(t, `type A = { N int }
+rule di = _ => 1`, `type A = { N int }
 rule main = x:"a" d:dyn => concat($d, list(A{N: 1 / 0}))
-rule dyn any = ds / di
+rule dyn _ = ds / di
 rule ds = "b" => "s"
-rule di = _ => 1`,
-		ok("a", "error: action in main: division by zero"))
+rule di = _ => 1`} {
+		if got := compileMessage(t, src); !strings.Contains(got, "concat: expected a list, got _") {
+			t.Errorf("checked compilation: %q", got)
+		}
+		prog := compile(t, src, Options{NoTypeCheck: true})
+		if got := result(prog, "a"); !strings.Contains(got, "error: action in main: division by zero") {
+			t.Errorf("got %s", got)
+		}
+		checkBackends(t, prog, "main", "a")
+	}
 }
 
 // TestOptionalResults checks rules and actions whose result is an optional value (*T).

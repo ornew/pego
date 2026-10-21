@@ -103,7 +103,7 @@ stars text 42
 | union `U ~ A \| B` | an interface `U`, implemented by `*A`, `*B` and `*Error` (and by `*TNode` if a member is a node type) |
 | `[]T` | a slice; an empty list is an empty slice, not `nil` |
 | `*T` | `*int`, `*string` or `*bool` for basic types; otherwise the Go type of `T`, `nil` when absent |
-| `any`, unions with basic members | `any`, holding the converted value |
+| `_`, unions with basic members | `any`, holding the converted value |
 | alias `Alias ~ T` | a Go alias to the value type of `T`; for example, `Alias ~ Word` becomes `type Alias = *Word` |
 
 ## Details

@@ -74,9 +74,9 @@ the declared `[]T` Type. Nil is allowed only if `T` permits nil.
 The internal compiler option `NoTypeCheck` deliberately bypasses assignability
 checks. It does not change the rules for checked compilation.
 
-A struct field value whose Type is unknown (`any`, or a list with elements of
-unknown Type) is reported when the field's Type is more specific:
-`cannot use any as Ident in field Name of Decl: the type of the value is not
+A struct field value whose Type is unknown (`_`, or a list with elements of
+such a Type) is reported when the field's Type is more specific:
+`cannot use _ as Ident in field Name of Decl: the type of the value is not
 known; convert it with a cast, as in value.(Ident)`. The same holds for a value
 of Type `_`, which fits only `_`. A cast (see [Casts](actions.md#casts)) is the check
 that runs; see [Values and Constructors](actions.md#values-and-constructors). A value
@@ -85,7 +85,7 @@ it runs. Without type checking, nothing checks a field.
 
 Likewise, a rule value whose Type is unknown, from an action, a called rule or
 an Operators Rule line, is reported when the rule declares a Type it does not fit:
-`cannot use any as Expr in result of rule term: the type of the value is not
+`rule term produces _, which is not assignable to Expr: the type of the value is not
 known; convert it with a cast, as in value.(Expr)` (see [Types and
 Errors](actions.md#types-and-errors)). In an Operators Rule with a declared Type, the captures
 `lhs` and `rhs` have that Type. Without type checking, nothing checks a rule value.
@@ -128,7 +128,7 @@ also depend on their rule's type through the `lhs` and `rhs` values.
 
 The implementation bounds changing recursive types conservatively. After an
 initial inferred result, further growth beyond 2,048 bytes in the written type
-or 50 increases in structural nesting depth widens that rule to `any` for the
+or 50 increases in structural nesting depth widens that rule to a type that is not known for the
 rest of inference. Repeating non-stable type states widen only the rules that
 vary in the cycle. Stable peers, acyclic rules and stable oversized recursive
 types retain their types. These are resource limits, not proofs of infinite

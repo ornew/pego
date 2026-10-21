@@ -12,8 +12,8 @@ type ty interface{ String() string }
 type basicTy string
 
 const (
-	tyAny    basicTy = "any" // type not known statically (compatible with every type)
-	tyNever  basicTy = "_|_" // no value, and the initial value for inference
+	tyAny    basicTy = "unknown" // type not known statically (compatible with every type); no type can be written to mean it
+	tyNever  basicTy = "_|_"     // no value, and the initial value for inference
 	tyInt    basicTy = "int"
 	tyString basicTy = "string"
 	tyBool   basicTy = "bool"

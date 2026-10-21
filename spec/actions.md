@@ -119,9 +119,9 @@ rule pair = a:"a" b:"b" => ($a, $b)
 ```
 
 
-A struct field value whose Type the checker does not know, such as
-a result of type `any`, or a list with elements of unknown Type, is checked
-against the declared field Type when the constructor runs, after the value is
+A struct field value must fit the declared field Type. A value whose Type the checker does not
+know well enough, such as a result of type `_`, or a list with elements of such a Type, must be
+[cast](#casts) to it first. A cast checks the value against the Type when it runs, after the value is
 evaluated:
 
 - `int`, `string` and `bool` admit only values of that kind, and `nil` only `nil`;
@@ -144,11 +144,11 @@ instead.
 
 A mismatch is a compile-time error such as
 `cannot use node[string] as Ident in field Name of Decl`. A value whose Type the checker
-does not know, such as a rule value of Type `any`, is rejected too, with a hint to
-convert it explicitly: `cannot use any as Ident in field Name of Decl: the type of the value is
+does not know, such as a rule value of Type `_`, is rejected too, with a hint to
+convert it explicitly: `cannot use _ as Ident in field Name of Decl: the type of the value is
 not known; convert it with a cast, as in value.(Ident)`. A [cast](#casts) is the check that runs:
 when it fails, that is an evaluation error. A constructor itself checks nothing when it runs, so
-constructors cost nothing extra. Fields declared `_` or `any` accept every value.
+constructors cost nothing extra. Fields declared `_` accept every value.
 
 `NoTypeCheck` deliberately skips these checks, and nothing else checks the fields of a
 constructor or the elements of a typed list when it runs.
@@ -418,8 +418,8 @@ A Value Action result statically known to be a function is a compile-time
 error.
 
 A rule value whose Type the checker does not know, such as an action result or
-a called rule's value of type `any`, is a compile-time error when the rule declares
-a Type it does not fit: `cannot use any as Expr in result of rule term: the type of the
+a called rule's value of type `_`, is a compile-time error when the rule declares
+a Type it does not fit: `rule term produces _, which is not assignable to Expr: the type of the
 value is not known; convert it with a cast, as in value.(Expr)`. This applies to the value
 of a rule with or without an action, of each Operators Rule operand line and of each operator
 line with an action. The cast is the check that runs (see [Casts](#casts)); it

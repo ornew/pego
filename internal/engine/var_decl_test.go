@@ -206,13 +206,13 @@ func TestGrammarWithoutVariables(t *testing.T) {
 // cast makes it acceptable. Nothing is checked when the binding runs.
 func TestVarBindingsAreStatic(t *testing.T) {
 	const prelude = `var x int
-rule dyn any = di / ds
+rule dyn _ = di / ds
 rule di = "i" => 1
 rule ds = "s" => "str"
 `
 	const hint = "the type of the value is not known; convert it with a cast, as in value.(int)"
 	for _, tc := range []struct{ name, src, want string }{
-		{"a rule value of unknown type", prelude + "rule main = d:dyn {x := $d} \"z\" => x\n", "cannot use any as int in the binding of variable x: " + hint},
+		{"a rule value of unknown type", prelude + "rule main = d:dyn {x := $d} \"z\" => x\n", "cannot use _ as int in the binding of variable x: " + hint},
 		{"a list element of []_", prelude + "type L = { Items []_ }\nrule main = d:dyn {x := list($d)[0]} \"z\" => x\n", "in the binding of variable x: " + hint},
 		{"a field of type _", prelude + "type F = { V _ }\nrule main = d:dyn {x := F{V: $d}.V} \"z\" => x\n", "cannot use _ as int in the binding of variable x: " + hint},
 		{"a wrong type", prelude + "rule main = {x := \"s\"} \"a\"\n", "cannot use string as int in the binding of variable x"},

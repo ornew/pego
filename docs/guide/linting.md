@@ -157,7 +157,6 @@ fail.
 | [`duplicate-capture`](#duplicate-capture) | warning | A name captured twice in one match |
 | [`char-class`](#char-class) | warning | Overlapping ranges; `[A-z]` and similar ranges |
 | [`unreachable-rule`](#unreachable-rule) | warning | Rules the start rule never calls |
-| [`deprecated-any`](#deprecated-any) | warning | Uses of the deprecated type `any` |
 | [`right-recursion`](#right-recursion) | hint | Lists written as right recursion |
 | [`positions`](#positions) | hint | `.Start` and `.End` in rules used repeatedly |
 | [`long-lookahead`](#long-lookahead) | hint | Lookaheads that scan any character |
@@ -305,13 +304,6 @@ The fix shows the class without the overlap, or without the punctuation: `[A-Za-
 
 Rules that the start rule never calls, directly or indirectly. A grammar with several entry points
 (`Parser.WithStart`) can suppress the finding for those rules, or disable the check.
-
-### `deprecated-any`
-
-Uses of the type `any`, which is deprecated in favor of the top type `_`. A value of type `_` must be narrowed with
-a cast such as `x.(string)` before it is used as another type, where `any` was accepted anywhere and checked at run
-time. `pego fix` rewrites the uses that need no cast; the others keep `any` until they are rewritten by
-hand.
 
 ### `right-recursion`
 

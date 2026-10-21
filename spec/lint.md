@@ -71,7 +71,6 @@ than the nesting limit, which can make any call fail.
 | `duplicate-capture` | warning | A name captured twice in one match |
 | `char-class` | warning | Overlapping ranges in a class; ranges such as `[A-z]` that include punctuation |
 | `unreachable-rule` | warning | A rule that the start rule never calls, directly or indirectly |
-| `deprecated-any` | warning | A use of the deprecated type `any` |
 | `right-recursion` | hint | A list written as right recursion |
 | `positions` | hint | `.Start` or `.End` read in a rule that is used repeatedly |
 | `long-lookahead` | hint | A lookahead that repeats `.` or a class that admits line breaks |
@@ -152,13 +151,6 @@ The fix shows the class without the overlap or the punctuation.
 
 A rule that the start rule never calls. The finding can be suppressed for a rule
 or disabled as a check, which is the way to declare further entry points.
-
-#### `deprecated-any`
-
-Every reference to the type `any`, which is deprecated in favor of the top type
-`_`. The message is "the type any is deprecated: use _, the top type", and the fix
-reads "write _ and narrow its values with x.(T); pego fix rewrites the uses that
-need no cast".
 
 #### `right-recursion`
 

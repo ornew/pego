@@ -514,10 +514,8 @@ func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
 		elem := v.resolve(t.Elem)
 		for _, item := range t.Items {
 			it := v.term(item, env)
-			if elem != tyAny && v.unknown(it) {
-				v.errorf(termPos(item, t.Diagnostic()), "cannot use statically unknown %s as %s in list constructor", v.expand(it), elem)
-			} else if !v.assignable(it, elem) {
-				v.errorf(termPos(item, t.Diagnostic()), "cannot use %s as %s in list constructor", v.expand(it), elem)
+			if elem != tyAny && v.unknown(it) || !v.assignable(it, elem) {
+				v.errorf(termPos(item, t.Diagnostic()), "cannot use %s as %s in list constructor%s", v.expand(it), elem, v.castHint(it, elem))
 			}
 		}
 		return listTy{elem}

@@ -194,7 +194,7 @@ func lineStarts(src string) []int {
 }
 
 // AnyTypes returns the byte offsets in src of the references to the type any, which is
-// deprecated, in the order of src. It returns nil for source that does not parse.
+// no longer a type, in the order of src. It returns nil for source that does not parse.
 func AnyTypes(src string) []int {
 	g, err := Parse(src)
 	if err != nil {

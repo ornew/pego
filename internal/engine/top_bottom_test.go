@@ -23,8 +23,8 @@ func topBottomCases() []genCase {
 		{"top compare", "type T = { A _ }\nrule main = x:(n / w) {T{A: $x}.A == $x} $$\n" + topBottomRules, []string{"1", "a"}},
 		// A struct is not a node, so the meet is node[string].
 		{"meet field", "type T = { A (Num | node[string] | int) & node[_] }\nrule main = x:([a-z]+ #atomic) $$ => T{A: $x}\n" + topBottomRules, []string{"a", "1"}},
-		{"top list", "type T = { A []_ }\ntype U = { F any }\nrule main = x:(n / w)+ $$ => T{A: U{F: $x}.F.([]_)}\n" + topBottomRules, []string{"1", "1a"}},
-		{"top list mismatch", "type T = { A []_ | int }\ntype U = { F any }\nrule main = x:(n / w) $$ => T{A: U{F: $x}.F.([]_ | int)}\n" + topBottomRules, []string{"1", "a"}},
+		{"top list", "type T = { A []_ }\ntype U = { F _ }\nrule main = x:(n / w)+ $$ => T{A: U{F: $x}.F.([]_)}\n" + topBottomRules, []string{"1", "1a"}},
+		{"top list mismatch", "type T = { A []_ | int }\ntype U = { F _ }\nrule main = x:(n / w) $$ => T{A: U{F: $x}.F.([]_ | int)}\n" + topBottomRules, []string{"1", "a"}},
 		{"meet list", "type T = { A [](Num | node[string]) & []node[_] }\nrule main = xs:[a-z]+ $$ => T{A: $xs.Value}\n" + topBottomRules, []string{"ab", ""}},
 	}
 }
@@ -99,14 +99,14 @@ func TestTopBottomTypes(t *testing.T) {
 	}
 }
 
-// A list of _ or any only has to be a list value, whatever its elements.
+// A list of _ only has to be a list value, whatever its elements.
 func TestTopBottomListCheck(t *testing.T) {
 	for _, tc := range []struct{ field, want string }{
 		{"[]_", "[]_"},
-		{"[]any", "[]any"},
+		{"*[]_", "*[]_"},
 		{"*[]_ | int", "*([]_ | int)"},
 	} {
-		src := "type T = { A " + tc.field + " }\ntype U = { F any }\nrule main = x:\"a\" => T{A: U{F: \"s\"}.F.(" + tc.field + ")}\nrule ok = x:\"a\"* => T{A: U{F: $x.Value}.F.(" + tc.field + ")}\nrule rule []_ = x:\"a\"* => U{F: $x.Value}.F.([]_)\nrule bad []_ = x:\"a\" => U{F: $x}.F.([]_)"
+		src := "type T = { A " + tc.field + " }\ntype U = { F _ }\nrule main = x:\"a\" => T{A: U{F: \"s\"}.F.(" + tc.field + ")}\nrule ok = x:\"a\"* => T{A: U{F: $x.Value}.F.(" + tc.field + ")}\nrule rule []_ = x:\"a\"* => U{F: $x.Value}.F.([]_)\nrule bad []_ = x:\"a\" => U{F: $x}.F.([]_)"
 		for _, opts := range []Options{{}, {NoTypeCheck: true}} {
 			program := compile(t, src, opts)
 			data, err := program.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})

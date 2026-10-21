@@ -25,10 +25,10 @@ rule main = x:"é" $$ => Out{Items: filter(list(nil, $x, nil, $x), (item) => ite
 		{"nested lambda", `rule main = v1:"a" $$ => filter(list($v1), (item) => len(filter(list(item, nil), (inner) => inner != nil)) == 1)`, []string{"a", "", "ab"}},
 		{"predicate error rollback", `rule main = a:"a" ({len(filter(list($a), (item) => 1 / 0 == 0)) == 1} "!" / "?") $$`, []string{"a?", "a!", "a", ""}},
 		{"value error", `rule main = v1:"a" $$ => filter(list($v1), (item) => 1 / 0 == 0)`, []string{"a", "", "ab"}},
-		{"dynamic nonbool", `rule main = v1:"a" d:one $$ => filter(list($v1), (item) => $d)
-rule one any = _ => 1`, []string{"a", "", "ab"}},
-		{"dynamic nonbool predicate", `rule main = a:"a" d:one ({len(filter(list($a), (item) => $d)) == 1} "!" / "?") $$
-rule one any = _ => 1`, []string{"a?", "a!", "a", ""}},
+		{"dynamic nonbool", `rule main = v1:"a" d:one $$ => filter(list($v1), (item) => $d.(bool))
+rule one _ = _ => 1`, []string{"a", "", "ab"}},
+		{"dynamic nonbool predicate", `rule main = a:"a" d:one ({len(filter(list($a), (item) => $d.(bool))) == 1} "!" / "?") $$
+rule one _ = _ => 1`, []string{"a?", "a!", "a", ""}},
 	}
 }
 
@@ -162,4 +162,19 @@ func TestFilterGeneratedTypeScriptParity(t *testing.T) {
 		t.Skip("node not found")
 	}
 	testGeneratedTSParsersCorpus(t, node, filterCases(), GenOptions{})
+}
+
+// The checker rejects a predicate of type _, so a predicate that produces another value than a
+// bool is reached only without type checking, where filter reports it.
+func TestFilterNonBoolPredicateWithoutTypeChecking(t *testing.T) {
+	const src = `rule main = v1:"a" d:one $$ => filter(list($v1), (item) => $d)
+rule one _ = _ => 1`
+	if got := compileMessage(t, src); !strings.Contains(got, "filter: predicate must produce a bool, got one") {
+		t.Errorf("checked compilation: %q", got)
+	}
+	prog := compile(t, src, Options{NoTypeCheck: true})
+	if got := result(prog, "a"); !strings.Contains(got, "filter: predicate must produce a bool, got int") {
+		t.Errorf("got %s", got)
+	}
+	checkBackends(t, prog, "main", "a")
 }

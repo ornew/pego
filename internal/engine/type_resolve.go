@@ -230,8 +230,6 @@ func (k *typeResolver) resolveNamed(name string, pos grammar.Pos) ty {
 	case "node":
 		k.errorf(pos, "node takes a type argument: write node[T] with the type T of the node's value")
 		return nodeTy{value: tyTop}
-	case "any":
-		return tyAny
 	case "_":
 		return tyTop
 	case "_|_":
@@ -286,6 +284,7 @@ func (k *typeResolver) resolveNamed(name string, pos grammar.Pos) ty {
 // retiredTypeNames maps the names of the former terminal and concrete syntax tree types to the
 // types that replace them.
 var retiredTypeNames = map[string]string{
+	"any":      "_",
 	"terminal": "node[string]",
 	"Match":    "node[string]",
 	"Seq":      "node[_]",

@@ -32,7 +32,7 @@ rule ` + longRule + ` = a:"a" => A{N: 1 / (len($a) - 1)}`,
 			start: "main",
 			grammar: `type ` + longType + ` = { N int }
 rule main = x:"a" d:dyn => $d.(` + longType + `)
-rule dyn any = ds / di
+rule dyn _ = ds / di
 rule ds = "b" => "s"
 rule di = _ => 1`,
 			input:     "a",
@@ -43,7 +43,7 @@ rule di = _ => 1`,
 			start: "main",
 			grammar: `type ` + longType + ` = { N int }
 rule main = (d:dyn {$d.(` + longType + `) != nil} "a") / fallback
-rule dyn any = ds / di
+rule dyn _ = ds / di
 rule ds = "b" => "s"
 rule di = _ => 1
 rule fallback = "a"`,

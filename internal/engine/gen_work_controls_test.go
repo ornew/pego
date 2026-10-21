@@ -455,7 +455,7 @@ func TestGeneratedGoLegacyNilControls(t *testing.T) {
 	}
 	g, err := syntax.Parse(`type Word = { Text string }
 
-rule main any = x:leaf? => $x
+rule main _ = x:leaf? => $x
 
 rule leaf Word = t:("é") #atomic => Word{Text: text($t)}`)
 	if err != nil {
@@ -515,8 +515,8 @@ func TestGeneratedGoConfiguredNilOrdinaryErrors(t *testing.T) {
 	}
 	for _, tc := range []struct{ name, source, input, option string }{
 		{"action", `type A = { N int }
-rule main any = "x" => A{N: 1 / 0}`, "x", "WithMaxDepth(100000)"},
-		{"depth", `rule main any = recurse
+rule main _ = "x" => A{N: 1 / 0}`, "x", "WithMaxDepth(100000)"},
+		{"depth", `rule main _ = recurse
 rule recurse = "a" recurse?`, "aa", "WithMaxDepth(1)"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

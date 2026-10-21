@@ -33,7 +33,7 @@ rule items Items = xs:(s:structure)* => map($xs, (x) => x.$s)
 rule union U = structure / term
 rule cst = "x" "y"
 rule open node[_] = "z"
-rule arbitrary any = "a" => S{}
+rule arbitrary _ = "a" => S{}
 rule abstract node[string] = "t"
 rule recursive S = "(" s:recursive ")" / s:structure => $s
 rule abort = x:"a"* #atomic => Values{N: 10 / len($x)}
@@ -301,7 +301,7 @@ type S = { T T }
 type U ~ S | T
 type MaybeU ~ *U
 rule term T = t:("é") #atomic => T{Text: text($t)}
-rule nilAny any = t:term? => $t
+rule nilAny _ = t:term? => $t
 rule seq = "é" "é"?
 rule nilNode *node[_] = t:seq? => $t
 rule nilUnion MaybeU = t:term? => $t

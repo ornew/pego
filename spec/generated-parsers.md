@@ -135,7 +135,7 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
 | `[]T` | A slice; an empty list is an empty slice and not `nil` |
 | `*T` | `*int`, `*string` or `*bool` for basic types; otherwise the Go type of `T`, `nil` when absent |
 | A rule whose type is not declared | The Go type of its value (an action's value maps by the rows above): `*TNode[TupleN[E0, ..., En]]` for a tuple of known elements, `*TNode[[]E]` for a list, `*TNode[Unit]` for the unit `()`; `*TNode[any]` when the elements are not known; a rule with a declared type, `node[_]` included, always has the Go type of that type |
-| `any`, unions with basic members or members of different shapes, a value that closes a cycle of rules | `any`, holding the converted value |
+| `_`, unions with basic members or members of different shapes, a value that closes a cycle of rules | `any`, holding the converted value |
 | Alias `Alias ~ T` | A Go alias to the value type of `T` |
 
 - `TNode[T]` is `struct { Span; Value T }`; `TupleN` is `struct { E0 E0; ...; En En }`
@@ -185,7 +185,7 @@ mapping is:
 | `string`, `bool` | `string`, `boolean`; an absent non-optional scalar field is `""`, `false` or `0` |
 | Declared alias | The complete target type |
 | Declared pure node union | The member interfaces, `RecoveredError` and null; tuple and list node members remain `Node` |
-| Mixed or undeclared union, `any` | `TypedValue`, following the conversion of `any` in Go |
+| Mixed or undeclared union, `_` | `TypedValue`, following the conversion of `any` in Go |
 
 Names collide the same way as in Go, with trailing underscores. Typed parsing by
 rule name is not available in TypeScript.

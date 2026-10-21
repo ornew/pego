@@ -150,12 +150,10 @@ func TestTypedNodeConstructorErrors(t *testing.T) {
 	for _, tc := range []struct{ action, message string }{
 		{`[]Int{nil}`, "cannot use"},
 		{`[]Int{Other{}}`, "cannot use"},
-		{`[]any{}`, "concrete element type"},
-		{`[][]any{}`, "concrete element type"},
 		{`[]Int{x}`, "cannot use int as Int in list constructor"},
 		{`[][]Int{list(x)}`, "cannot use []int as []Int in list constructor"},
-		{`[]Int{$d}`, "statically unknown"},
-		{`[][]Int{list($d)}`, "statically unknown"},
+		{`[]Int{$d}`, "cannot use _ as Int in list constructor: the type of the value is not known; convert it with a cast, as in value.(Int)"},
+		{`[][]Int{list($d)}`, "in list constructor: the type of the value is not known; convert it with a cast, as in value.([]Int)"},
 		// The retired positional forms are read as the text struct constructors they mean.
 		{`Int{1}`, "cannot use int as string in field Text of Int"},
 		{`Int{nil}`, "cannot use nil as string in field Text of Int"},
@@ -167,7 +165,7 @@ func TestTypedNodeConstructorErrors(t *testing.T) {
 type Other = {}
 var x int
 rule main = {x := 1} d:dyn "x" => ` + tc.action + `
-rule dyn any = _ => 1`)
+rule dyn _ = _ => 1`)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -178,7 +176,7 @@ rule dyn any = _ => 1`)
 		})
 	}
 	// Lists may hold ints, strings and bools.
-	for _, action := range []string{`[]int{}`, `[][]string{}`, `[]int{1, 2}`, `[]*bool{nil, true}`} {
+	for _, action := range []string{`[]_{}`, `[][]_{}`, `[]int{}`, `[][]string{}`, `[]int{1, 2}`, `[]*bool{nil, true}`} {
 		g, err := syntax.ParseLegacy("var x int\nrule main = {x := 1} \"x\" => " + action)
 		if err != nil {
 			t.Fatal(err)

@@ -188,7 +188,7 @@ func TestOutputSchemaRejectsUnresolvedShapes(t *testing.T) {
 	if message := compileError(t, "type T = { F UnknownShape }\nrule main = \"a\""); !strings.Contains(message, "UnknownShape") {
 		t.Errorf("undefined field type: %s", message)
 	}
-	for _, inferred := range []ty{basicTy("unknown"), namedTy{name: "Known", kind: '?'}, (*listTy)(nil)} {
+	for _, inferred := range []ty{basicTy("other"), namedTy{name: "Known", kind: '?'}, (*listTy)(nil)} {
 		if shape, err := schemaValue(inferred); err == nil {
 			t.Errorf("accepted unresolved inferred shape %T: %+v", inferred, shape)
 		}
@@ -199,8 +199,8 @@ func TestOutputSchemaRejectsUnresolvedShapes(t *testing.T) {
 }
 
 func TestOutputSchemaAnyAndValueFreeRepeat(t *testing.T) {
-	g, err := syntax.Parse(`type Open ~ any
-type Bag = { Values []any }
+	g, err := syntax.Parse(`type Open ~ _
+type Bag = { Values []_ }
 rule main = (-"a")*`)
 	if err != nil {
 		t.Fatal(err)

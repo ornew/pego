@@ -393,21 +393,24 @@ func narrowNodeTypes(src string, offsets []int) string {
 	return src
 }
 
-// fixAnyTypes rewrites the deprecated type any to _ where the grammar still type checks with _.
-// A value of type _ must be narrowed with a cast before it is used as another type, so the uses
-// that need one keep any, and lint reports them.
+// fixAnyTypes rewrites the retired type any to _, if the grammar compiles with _ everywhere. A
+// value of type _ must be narrowed with a cast before it is used as another type, so a grammar
+// that relied on any being accepted anywhere may need casts first: it is left as it is, and the
+// compiler reports where.
 func fixAnyTypes(src string) string {
 	offsets := syntax.AnyTypes(src)
-	if len(offsets) == 0 || !typeChecks(src) {
+	if len(offsets) == 0 {
 		return src
 	}
 	// From the end, so that the earlier offsets stay valid.
+	next := src
 	for _, o := range slices.Backward(offsets) {
-		if next := src[:o] + "_" + src[o+len("any"):]; typeChecks(next) {
-			src = next
-		}
+		next = next[:o] + "_" + next[o+len("any"):]
 	}
-	return src
+	if !typeChecks(next) {
+		return src
+	}
+	return next
 }
 
 // typeChecks reports whether src parses and compiles.

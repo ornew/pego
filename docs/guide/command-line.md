@@ -209,9 +209,8 @@ result, `-w` rewrites the files in place, and `-l` lists the files that need rew
 - a lambda parameter written `$p` in the lambda body to `p`;
 - a capture read `x.y` to `x.$y`, for every member whose name does not begin with an uppercase letter and is not a
   built-in member;
-- the deprecated type `any` to `_`, where the grammar still compiles with `_`. A value of type `_` needs a cast before
-  it is used as another type, so a use that would need one keeps `any`, as does a rule type or cast that must produce
-  a node; `pego lint` reports them;
+- the retired type `any` to `_`, when the grammar compiles with `_` everywhere. A value of type `_` needs a cast before
+  it is used as another type, so a grammar that needs casts is left as it is, and the compiler reports where;
 - a terminal type `type T terminal` to the named node type `type T = node[string]`. A rule declared with it and
   without an action, `rule r T = e`, which produced the text it matched, becomes `rule r T = (e) #atomic` (without
   `#atomic` when `e` is atomic already), and `$x.Value` becomes `text($x)` where `x` captures a call of such a rule. When a

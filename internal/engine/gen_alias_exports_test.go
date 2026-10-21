@@ -25,7 +25,7 @@ type Words ~ []Alias
 type Count ~ int
 type Maybe ~ *int
 type Mixed ~ Word | int
-type Anything ~ any
+type Anything ~ _
 type CST ~ node[_]
 type Box = { Item Chain; Items Words; Choice V; N Count }
 type BoxAlias ~ Box

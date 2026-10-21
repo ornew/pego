@@ -100,9 +100,9 @@ type MaybeInteger ~ *int
 type Choice ~ Word | node[string]
 type ChoiceAgain ~ node[string] | Word
 type Mixed ~ Word | int
-type Open ~ any
+type Open ~ _
 type Raw ~ node[_]
-type R = { W W; Items Words; Missing Words; Empty Words; Optional Optional; I Integer; Big Integer; S Text; B Flag; OpenItems []any; O MaybeInteger; M Mixed; U Choice; Any Open; Raw Raw }
+type R = { W W; Items Words; Missing Words; Empty Words; Optional Optional; I Integer; Big Integer; S Text; B Flag; OpenItems []_; O MaybeInteger; M Mixed; U Choice; Any Open; Raw Raw }
 rule main R = w:word xs:word* raw:("!"? "?"?) => R{W: $w, Items: $xs.Value, OpenItems: $xs.Value, Empty: list(), I: -7 / 2, Big: 9223372036854775807, S: $w.Text, B: true, M: 9007199254740992, U: $w, Any: $raw, Raw: $raw}
 rule word Word = t:([a-zあ-ん😀]+) #atomic => Word{Text: text($t)}`
 	consumer := `import { parse, parseAST, parseASTWithOptions, CodePoints, Bytes, Node } from "./parser.ts";
@@ -167,7 +167,7 @@ func TestGeneratedTSTypedRecovery(t *testing.T) {
 type U ~ Word | node[string] | error
 type Mixed ~ Word | int | error
 type WE ~ Word | error
-type R = { Specific WE; U U; M Mixed; A any; Items []WE; OpenItems []any }
+type R = { Specific WE; U U; M Mixed; A _; Items []WE; OpenItems []_ }
 rule main R = w:word #recover(skip=[^;]+ ";") xs:word #recover(skip=[^;]+ ";")* => R{Specific: $w, U: $w, M: $w, A: $w, Items: $xs.Value, OpenItems: $xs.Value}
 rule word Word = t:([a-z]+ ";") #atomic => Word{Text: text($t)}`
 	consumer := `import {parse, parseAST, SyntaxErrors, Bytes, CodePoints} from "./parser.ts";
@@ -249,7 +249,7 @@ check(stable(parseAST("xx").value).includes("Branch"), "small DAG value");
 
 func TestGeneratedTSTypedNilAndDepth(t *testing.T) {
 	for name, src := range map[string]string{
-		"any":  `rule main any = "" => nil`,
+		"any":  `rule main _ = "" => nil`,
 		"node": `rule main *node[_] = "" => nil`,
 		"union": `type T = { Text string }
 type U ~ T | node[string]

@@ -42,11 +42,11 @@ rule rD ` + rt + ` = operators {
     operand v:val => $v.(` + typ + `)
 }
 rule rE ` + rt + ` = v:sc "=" => $v.(` + typ + `)
-rule sc any = si / ss / sb
+rule sc _ = si / ss / sb
 rule si = "i" => 1
 rule ss = "s" => "s"
 rule sb = "b" => true
-rule val any = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz
+rule val _ = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz
 rule vm = "m"
 rule vt = "t" => Int{Text: "t"}
 rule vl = "l" => []Int{Int{Text: "a"}}
@@ -86,11 +86,11 @@ rule rD ` + rt + ` = operators {
     operand v:val => $v.(` + typ + `)
 }
 rule rE ` + rt + ` = v:sc "=" => $v.(` + typ + `)
-rule sc any = si / ss / sb
+rule sc _ = si / ss / sb
 rule si = "i" => 1
 rule ss = "s" => "s"
 rule sb = "b" => true
-rule val any = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz
+rule val _ = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz
 rule vm = "m"
 rule vt = "t" => Int{"t"}
 rule vl = "l" => []Int{Int{"a"}}
@@ -135,7 +135,7 @@ func resultCheckTypesOf(fields map[string]string) []string {
 
 // TestRuleResultChecks checks that a cast of a rule result to the rule's declared type accepts the
 // values that fit, on every backend, in every program form, with and without type checking, and
-// that the values it accepts give the same results as when the rules are declared any.
+// that the values it accepts give the same results as when the rules are declared _.
 func TestRuleResultChecks(t *testing.T) {
 	// The terminal model is the same grammar in the retired terminal type syntax, which
 	// syntax.ParseLegacy reads as the text structs it means: it accepts the same values.
@@ -187,7 +187,7 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 			if err != nil {
 				t.Fatal(err)
 			}
-			ug, err := parse(resultGrammar(typ, "any"))
+			ug, err := parse(resultGrammar(typ, "_"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -283,7 +283,7 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 						got = strings.ReplaceAll(want, "@"+rule, "")
 					}
 					if any := resultWith(untyped, in, ParseOptions{}); any != got {
-						t.Errorf("%q (%s): %s\ndeclared any: %s", in, value, want, any)
+						t.Errorf("%q (%s): %s\ndeclared _: %s", in, value, want, any)
 					}
 				case !strings.Contains(want, msg):
 					t.Errorf("%q (%s) accepted or misreported: %s\nwant %s", in, value, want, msg)
@@ -302,17 +302,17 @@ func TestRuleResultChecksAreSelective(t *testing.T) {
 type S = { F Int }
 type O = { X Int }
 rule static Int = "s" => Int{Text: "s"}
-rule val any = "v" => Int{Text: "v"}
+rule val _ = "v" => Int{Text: "v"}
 `
 	for _, tc := range []struct{ name, rules, want string }{
 		{"an action", "rule main = s:static d:dynamic => S{F: $d}\nrule dynamic Int = v:val => $v\n",
-			"cannot use any as Int in result of rule dynamic: the type of the value is not known; convert it with a cast, as in value.(Int)"},
+			"rule dynamic produces _, which is not assignable to Int: the type of the value is not known; convert it with a cast, as in value.(Int)"},
 		{"no action", "rule main = s:static d:dynamic => S{F: $d}\nrule dynamic Int = val\n",
-			"cannot use any as Int in result of rule dynamic"},
+			"rule dynamic produces _, which is not assignable to Int"},
 		{"a node type", "rule main = s:static p:pass => S{F: Int{Text: \"\"}}\nrule pass node[_] = val\n",
-			"cannot use any as node[_] in result of rule pass"},
+			"rule pass produces _, which is not assignable to node[_]"},
 		{"an Operators Rule operand", "rule main = s:static o:ops => S{F: Int{Text: \"\"}}\nrule ops Int | O = operators {\n    operand val\n    operand \"o\" => Int{Text: \"o\"}\n    level { infix left \"+\" => Int{Text: \"+\"} }\n}\n",
-			"cannot use any as Int | O in result of rule ops"},
+			"produces _, which is not assignable to Int | O"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := compileMessage(t, decls+tc.rules); !strings.Contains(got, tc.want) {
@@ -393,7 +393,7 @@ rule e []Int = operators {
     level { prefix "!" v:val => $v.([]Int) }
     level { postfix v:val "^" => $v.([]Int) }
 }
-rule val any = vm / vt / vl / vz
+rule val _ = vm / vt / vl / vz
 rule vm = "m"
 rule vt = "t" => Int{Text: "t"}
 rule vl = "l" => []Int{Int{Text: "l"}}
@@ -465,7 +465,7 @@ rule e Int = operators {
     operand v:val => $v
     level { infix left "+" v:val => $v }
 }
-rule val any = "m"
+rule val _ = "m"
 `
 
 // textStructOperatorsRuleGrammar is the text struct counterpart of terminalOperatorsRuleGrammar:
@@ -547,7 +547,7 @@ type FieldType = { Text string }
 type S = { F Int }
 rule main = v:val f:ft => S{F: $v.(Int)}
 rule ft FieldType = "f" => FieldType{Text: "f"}
-rule val any = "v" => Int{Text: "v"}
+rule val _ = "v" => Int{Text: "v"}
 `
 	consumer := `import * as p from "./parser.ts";
 ` + tsTypedAssert + `const ok = p.parseAST("vf");

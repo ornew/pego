@@ -24,7 +24,7 @@ func castCases() []genCase {
 		{"field", "rule main = x:(pair / w) $$ => $x.(P).N\n" + castRules, []string{"1=", "ab"}},
 		{"predicate", "rule main = x:(n / w) ({$x.(Num) == $x} \"!\" / \"?\") $$\n" + castRules, []string{"1!", "a?", "a!", "1?"}},
 		{"constructor", "rule main = x:(n / w) $$ => P{N: $x.(Num)}\n" + castRules, []string{"1", "a"}},
-		{"any", "rule main = x:(n / w) $$ => $x.(any)\n" + castRules, []string{"1", "a"}},
+		{"top", "rule main = x:(n / w) $$ => $x.(_)\n" + castRules, []string{"1", "a"}},
 		// The error names where the action started, after a newline, in code points and bytes.
 		{"position", "rule main = \"\\u00e9\\n\" r\nrule r = x:(n / w) $$ => $x.(Num)\n" + castRules, []string{"\u00e9\n1", "\u00e9\nab"}},
 		{"int", "rule main = x:w $$ {len(text($x)).(int) > 1} => $x\n" + castRules, []string{"ab", "a"}},
@@ -155,7 +155,7 @@ func TestCastSyntax(t *testing.T) {
 		t.Fatalf("under-declared cast ISA accepted: %v", err)
 	}
 	// A cast to any checks nothing; it uses the same instruction set.
-	data, err = compile(t, "rule main = x:(n / w) $$ => $x.(any)\n"+castRules).MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
+	data, err = compile(t, "rule main = x:(n / w) $$ => $x.(_)\n"+castRules).MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
 	if err != nil || data[len(compiledMagic)+1] != isaVersion {
 		t.Fatalf("cast to any ISA: %v %d", err, data[len(compiledMagic)+1])
 	}

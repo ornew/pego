@@ -262,7 +262,7 @@ func (r *fieldTypeReader) term() (*fieldType, error) {
 			}
 		case "error":
 			t = &fieldType{kind: ftError}
-		case "_", "any":
+		case "_":
 			t = &fieldType{kind: ftTop}
 		default:
 			if !r.types[name] {

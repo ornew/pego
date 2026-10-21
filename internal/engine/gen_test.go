@@ -59,14 +59,14 @@ rule i2 string = {d == 2} "x" => "two"
 `, []string{"x", "y", ""}},
 		{"bindings of a cast value", `var x int
 rule main = d:dyn {x := $d.(int)} "z" => x
-rule dyn any = di / ds
+rule dyn _ = di / ds
 rule di = "i" => 1
 rule ds = "s" => "str"
 `, []string{"iz", "sz", "i", ""}},
 		// A failed cast is an evaluation error, so the binding fails and the choice goes on.
 		{"a failed cast in a binding backtracks", `var x int
 rule main = (d:dyn {x := $d.(int)} "z" / "s" "y") / "s" "w" => x
-rule dyn any = di / ds
+rule dyn _ = di / ds
 rule di = "i" => 1
 rule ds = "s" => "str"
 `, []string{"iz", "sz", "sy", "sw", "i", ""}},
@@ -76,7 +76,7 @@ rule e = operators {
     operand d:dyn {x := $d.(int)}
     level { infix left "+" }
 }
-rule dyn any = di / ds
+rule dyn _ = di / ds
 rule di = "i" => 1
 rule ds = "s" => "str"
 `, []string{"i", "i+i", "s", "i+s", "s+i", ""}},

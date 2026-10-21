@@ -42,7 +42,7 @@ func TestGeneratedTSTypedReplay(t *testing.T) {
 type Mixed ~ Word | int | error
 type U ~ Word | node[string] | error
 type WE ~ Word | error
-type R = { A Mixed; B U; C WE; D any; E []WE; O *int; I int }
+type R = { A Mixed; B U; C WE; D _; E []WE; O *int; I int }
 rule main R = x:word #recover(skip=[^;]+ ";") xs:word #recover(skip=[^;]+ ";")* => R{A: $x, B: $x, C: $x, D: $x, E: $xs.Value, I: 7}
 rule word Word = t:([a-z😀]+ ";") #atomic => Word{Text: text($t)}`, []string{"😀;abc;", "1;abc;2;", "", "x;"}})
 	cases = append(cases, genCase{"shared fold", tsTypedDAGTypes + `rule main Tree = first:leaf rest:leaf* => foldl($first, $rest, (acc, i) => Branch{Left: acc, Right: acc})`, []string{"x", "xxxxxxxx"}}, genCase{"shared LR", tsTypedDAGTypes + `rule main Tree = branch / leaf
@@ -68,7 +68,7 @@ rule main U = j:"b"* => list(3, 4)[len($j)]`, []string{"", "b"}},
 		genCase{"indexed list result", `rule main = j:"b"* => list(list(1, 2), list(3))[len($j)]`, []string{"", "b"}},
 		genCase{"indexed tuple result", `rule main = j:"b"* => list((1, "x"), (2, "y"))[len($j)]`, []string{"", "b"}},
 		genCase{"indexed capture list", `rule main = j:"b"* k:"c"* => $j[len($k)]`, []string{"b", "bc", "bbc", "c", "bbcc"}},
-		genCase{"indexed any", `type R = { V any }
+		genCase{"indexed any", `type R = { V _ }
 rule main R = j:"b"* => R{V: list(1, "s", true)[len($j)]}`, []string{"", "b", "bb", "bbb"}})
 	cases = append(cases, genCase{"named node types in sequences and lists", `type Id = node[string]
 type P = { A Id; B []Id; C (Id, int) }

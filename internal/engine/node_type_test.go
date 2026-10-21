@@ -479,7 +479,7 @@ func TestGeneratedNamedNodeDynamicTypes(t *testing.T) {
 type M = node[string]
 type T = node[(N, M)]
 type U ~ N | M
-type Out = { L []U; A any; B any; C node[_]; D any; Same bool }
+type Out = { L []U; A _; B _; C node[_]; D _; Same bool }
 rule main Out = xs:u* "," t:pair $$ => Out{L: $xs.Value, A: $xs.Value[0], B: $t, C: $t, D: $xs, Same: $xs.Value[0] == $xs.Value[0]}
 rule u U = n / m
 rule pair T = n m
@@ -513,7 +513,7 @@ func namedNodeTypeCases() []genCase {
 		{"named nodes as plain nodes", `type Num = node[string]
 type Nums = node[[]Num]
 type P = node[(Num, Num)]
-type O = { C *node[string]; D []node[string]; E *Nums; F node[(node[string], node[string])]; G []Num; H *P; I node[_]; J any }
+type O = { C *node[string]; D []node[string]; E *Nums; F node[(node[string], node[string])]; G []Num; H *P; I node[_]; J _ }
 rule main O = ns:nums p:pair $$ => O{C: $ns.Value[0], D: $ns.Value, E: $ns, F: $p, G: $ns.Value, H: $p, I: $ns, J: $p}
 rule nums Nums = "[" ns:num* "]" => Nums{$ns}
 rule num Num = [0-9] #atomic
@@ -521,7 +521,7 @@ rule pair P = "<" t:(num num) ">" => P{$t}`, []string{"[12]<34>", "[1]<34>", "[]
 		{"named node casts", `type N = node[string]
 type M = node[string]
 type U ~ N | M
-type Out = { X M; L []U; A any; T string; Y *U }
+type Out = { X M; L []U; A _; T string; Y *U }
 rule main Out = xs:u* $$ => Out{X: $xs.Value[0].(M), L: $xs.Value, A: $xs.Value[0], T: text($xs), Y: $xs.Value[len($xs.Value) - 1]}
 rule u U = n / m
 rule n N = "n"
@@ -555,7 +555,7 @@ rule n N = -" "* t:[a-z]+ #atomic => N{$t}`, []string{"ab cd", "", "abc d"}},
 type M = node[string]
 type P = node[(M, M)]
 type R = node[(M, M)]
-type Out = { A N; B N; C N; Same bool; Copy bool; E any; K M; F any; G P }
+type Out = { A N; B N; C N; Same bool; Copy bool; E _; K M; F _; G P }
 rule main Out = a:a "," b:mk "," z:conv "," e:(b "!" / b "?" / c) "," f:(rr "!" / rr "?" / pp) $$ => Out{A: $a, B: $b, C: $z, Same: N{$z} == $z, Copy: N{$b} == $b, E: $e, K: $e.(M), F: $f, G: $f.(P)}
 rule a N = b
 rule b N = c
@@ -566,13 +566,13 @@ rule conv N = "z"
 rule pp P = c c
 rule rr R = pp`, []string{"q,q,z,q,qq", "q,q,z,q!,qq", "q,q,z,q,qq?", "q,q,z", "z", ""}},
 		{"named recursive tree", `type Tree = node[[]Tree]
-type Out = { A any; L []Tree; C node[_]; T Tree; N int }
+type Out = { A _; L []Tree; C node[_]; T Tree; N int }
 rule main Out = t:tree ts:tree* $$ => Out{A: $t, L: $ts.Value, C: $t, T: $t, N: len($ts.Value)}
 rule tree Tree = "(" ts:tree* ")" => Tree{$ts}`, []string{"()", "(())()", "(()(()))(())()", "(", ""}},
 		{"named rule bodies", `type N = node[string]
 type L = node[[]N]
 type P = node[(N, node[string])]
-type Out = { L L; P P; A any; B any }
+type Out = { L L; P P; A _; B _ }
 rule main Out = l:list "," p:pair $$ => Out{L: $l, P: $p, A: $l, B: $p}
 rule list L = n*
 rule pair P = n "!"
@@ -581,21 +581,21 @@ rule n N = [a-z] #atomic`, []string{"ab,c!", ",a!", "a,b", "a,!", ""}},
 type P = node[(N, N, node[string])]
 type Q = node[(N, node[string])]
 type U ~ P | Q | N
-type Out = { L []U; A any }
+type Out = { L []U; A _ }
 rule main Out = xs:item* $$ => Out{L: $xs.Value, A: $xs}
 rule item U = p / q / n
 rule p P = n n "!"
 rule q Q = n "?"
 rule n N = [a-z] #atomic`, []string{"ab!a?c", "ab?", "a", "", "!"}},
 		{"named node recovery", `type N = node[string]
-type Out = { L []any }
+type Out = { L []_ }
 rule main Out = xs:item* $$ => Out{L: $xs.Value}
-rule item any = x:(n #recover(skip=[^;]+)) ";" => $x
+rule item _ = x:(n #recover(skip=[^;]+)) ";" => $x
 rule n N = [a-z]+ #atomic`, []string{"ab;cd;", "ab;12;cd;", "1;", ""}},
 		{"named children of open nodes", `type N = node[string]
 type M = node[string]
 type A = node[_]
-type Out = { A A; B any; C A }
+type Out = { A A; B _; C A }
 rule main Out = a:open "," c:open2 $$ => Out{A: $a, B: $a, C: $c}
 rule open A = n m n
 rule open2 A = ns:n* => A{$ns}
@@ -605,7 +605,7 @@ rule m M = "m"`, []string{"nmn,nn", "nmn,", "nm,n", ""}},
 type M = node[string]
 type K ~ N
 type U ~ K | M
-type Out = { X K; Y N; L []U; A any }
+type Out = { X K; Y N; L []U; A _ }
 rule main Out = k:k xs:u* $$ => Out{X: $k, Y: $xs.Value[0].(K), L: $xs.Value, A: $k}
 rule k K = x:"k" => K{$x}
 rule u U = n / m
@@ -614,20 +614,20 @@ rule m M = "m"`, []string{"knm", "kmn", "k", "kn", ""}},
 		{"named node Go names", `type Node = node[string]
 type Span = node[(Node, Node)]
 type TNode = node[[]Node]
-type Out = { A Node; B Span; C TNode; D any }
+type Out = { A Node; B Span; C TNode; D _ }
 rule main Out = a:node b:span c:tnode $$ => Out{A: $a, B: $b, C: $c, D: $b}
 rule node Node = [a-z] #atomic
 rule span Span = node node
 rule tnode TNode = "[" xs:node* "]" => TNode{$xs}`, []string{"abc[de]", "abc[]", "ab[", ""}},
 		{"named left recursion", `type N = node[string]
 type S = node[_]
-type Out = { S S; T S; A any }
+type Out = { S S; T S; A _ }
 rule main Out = s:sum "," t:prod $$ => Out{S: $s, T: $t, A: $s}
 rule sum S = sum -"+" n / n
 rule prod S = x:(prod -"*" n / n) => S{$x}
 rule n N = [0-9] #atomic`, []string{"1+2+3,4*5", "1,2", "1+,2", ""}},
 		{"named node in any fields", `type N = node[string]
-type H = { V any }
+type H = { V _ }
 type Out = { H H; X N; T string }
 rule main Out = h:holder $$ => Out{H: $h, X: $h.V.(N), T: text($h.V.(N))}
 rule holder H = x:n => H{V: $x}
@@ -696,7 +696,7 @@ type B = node[string]
 type P = node[(A, B)]
 type L = node[[]A]
 type U ~ A | B
-type Out = { Items []U; Pairs []P; Any any; List *L }
+type Out = { Items []U; Pairs []P; Any _; List *L }
 rule main Out = xs:item* ps:pair* l:list? $$ => Out{Items: $xs.Value, Pairs: $ps.Value, Any: $xs, List: $l}
 rule item U = a / b
 rule a A = [aé] #atomic
@@ -707,7 +707,7 @@ rule list L = ";" xs:a* => L{$xs}`, []string{"", "abé", "ab+ab+éb", "a;aé", "
 type A = node[string]
 type P = node[(A, A)]
 type Q = node[(A, A)]
-type Out = { T Tree; P P; Q Q; Any any; Same bool; Copy bool }
+type Out = { T Tree; P P; Q Q; Any _; Same bool; Copy bool }
 rule main Out = t:tree p:p q:q $$ => Out{T: $t, P: $p, Q: $q, Any: $q, Same: Q{$q} == $q, Copy: P{$q} == $p}
 rule tree Tree = "(" ts:tree* ")" => Tree{$ts}
 rule p P = l:a r:a
