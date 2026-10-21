@@ -16,7 +16,7 @@ var update = flag.Bool("update", false, "update golden files")
 // generation is a pego gen command of generate.go.
 type generation struct {
 	grammar, module, out string
-	opts              []pego.GenOption
+	opts                 []pego.GenOption
 }
 
 // generations reads the go:generate lines of generate.go.

@@ -152,7 +152,7 @@ func TestSyntaxSummaryRejects(t *testing.T) {
 		"reserved name preserved":    `rule _a = "a"`,
 		"level call":                 `rule a = level(b, c)`,
 		"unnamed and named levels":   `rule a = operators { operand "x"; level { infix left "+" }; level named { infix left "*" } }`,
-		"multiline join type":       "type Alias ~ (\n A\n | B\n)",
+		"multiline join type":        "type Alias ~ (\n A\n | B\n)",
 		"action operator precedence": `rule a = "x" => -1 + 2 * 3`,
 		"contextual word reference":  `rule a = type`,
 		"class after a name":         `rule a = b [x]`,
