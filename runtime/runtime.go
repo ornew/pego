@@ -1730,6 +1730,48 @@ func (p *Parser) NewNodeOrdinary(v Node) *Node {
 	return n
 }
 
+// NewTerminal returns the node of text matched from start to the current position, allocated like
+// NewNode(Node{RawKind: RawKindMatch, ...}).
+func (p *Parser) NewTerminal(start int, text string) *Node {
+	p.StepWork()
+	return p.NewTerminalOrdinary(start, text)
+}
+
+// NewTerminalOrdinary is NewTerminal in an ordinary parse (ExpectOrdinary).
+func (p *Parser) NewTerminalOrdinary(start int, text string) *Node {
+	if len(p.nodeSlab) == 0 {
+		p.nodeSlab = make([]Node, nodeChunk)
+		if p.Stream != nil {
+			p.Stream.nodeChunks++
+		}
+	}
+	n := &p.nodeSlab[0]
+	p.nodeSlab = p.nodeSlab[1:]
+	*n = Node{RawKind: RawKindMatch, RawStart: int32(start), RawEnd: int32(p.Pos), RawText: text, RawTerminal: true, RawFresh: true}
+	return n
+}
+
+// NewBranch returns the node of kind (RawKindSeq or RawKindList) with children from start to the
+// current position, allocated like NewNode(Node{RawKind: kind, ...}).
+func (p *Parser) NewBranch(kind *nodeKind, start int, children []*Node) *Node {
+	p.StepWork()
+	return p.NewBranchOrdinary(kind, start, children)
+}
+
+// NewBranchOrdinary is NewBranch in an ordinary parse (ExpectOrdinary).
+func (p *Parser) NewBranchOrdinary(kind *nodeKind, start int, children []*Node) *Node {
+	if len(p.nodeSlab) == 0 {
+		p.nodeSlab = make([]Node, nodeChunk)
+		if p.Stream != nil {
+			p.Stream.nodeChunks++
+		}
+	}
+	n := &p.nodeSlab[0]
+	p.nodeSlab = p.nodeSlab[1:]
+	*n = Node{RawKind: kind, RawStart: int32(start), RawEnd: int32(p.Pos), RawChildren: children, RawFresh: true}
+	return n
+}
+
 // Nodes returns a child list of length and capacity n from the pointer slab.
 func (p *Parser) Nodes(n int) []*Node {
 	if n == 0 {
@@ -2013,6 +2055,16 @@ func (p *Parser) Peek() (rune, int, bool) {
 	}
 	p.documentTouch(p.Pos + 1)
 	return p.In[p.Pos], 1, true
+}
+
+// NextOrdinary is PeekOrdinary with the common case, a code-point input, written so that the
+// compiler inlines it (the named results keep it within the inlining budget).
+func (p *Parser) NextOrdinary() (r rune, size int, ok bool) {
+	if p.Pos < len(p.In) {
+		return p.In[p.Pos], 1, true
+	}
+	r, size, ok = p.PeekOrdinary()
+	return
 }
 
 // PeekOrdinary is peek in an ordinary parse (ExpectOrdinary).

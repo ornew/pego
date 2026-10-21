@@ -136,6 +136,9 @@ func specializeOrdinaryMethods(src []byte, executionSource, guard string, noCont
 				}
 				return true
 			})
+			if ordinary {
+				compactOrdinaryPeeks(plain)
+			}
 			// Rewrite only reads of the parser's control. Generated functions never
 			// change invocation control ownership; reject a future writer explicitly.
 			var writer, shadow bool
@@ -329,7 +332,7 @@ func rewriteOrdinaryControl(root goast.Node) {
 // the nil-control branch calls instead (the runtime writes them by hand).
 func ordinaryHelperName(name string) bool {
 	switch name {
-	case "NewNode", "NewMatch", "SetCapture", "Expect", "Peek", "MatchLiteral", "MatchAny",
+	case "NewNode", "NewTerminal", "NewBranch", "NewMatch", "SetCapture", "Expect", "Peek", "MatchLiteral", "MatchAny",
 		"AtEnd", "AtLineStart", "AtEndBatch", "AtLineStartBatch", "AtLineEnd", "InputWork":
 		return true
 	}

@@ -99,8 +99,7 @@ func foldOrdinaryExpr(e goast.Expr) goast.Expr {
 		if v, ok := boolConstant(x.Y); ok {
 			if v == decides {
 				// Dropping the left operand is safe only when it has no effects.
-				switch x.X.(type) {
-				case *goast.Ident, *goast.SelectorExpr:
+				if pureCondition(x.X) {
 					return boolIdent(decides)
 				}
 				return x
@@ -114,4 +113,20 @@ func foldOrdinaryExpr(e goast.Expr) goast.Expr {
 		}
 	}
 	return e
+}
+
+// pureCondition reports whether e reads only names and constants, so that dropping it cannot
+// change what a program does.
+func pureCondition(e goast.Expr) bool {
+	switch x := e.(type) {
+	case *goast.Ident, *goast.SelectorExpr, *goast.BasicLit:
+		return true
+	case *goast.ParenExpr:
+		return pureCondition(x.X)
+	case *goast.UnaryExpr:
+		return x.Op == token.NOT && pureCondition(x.X)
+	case *goast.BinaryExpr:
+		return pureCondition(x.X) && pureCondition(x.Y)
+	}
+	return false
 }

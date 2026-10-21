@@ -1049,7 +1049,7 @@ func (g *generator) projectRepeat(b *strings.Builder, e *grammar.Repeat, field s
 	fmt.Fprintf(b, "\t\tcount++\n\t\tp.KidStack = append(p.KidStack, f.Vals[%d])\n", slot)
 	b.WriteString("\t\tif p.Pos == m0.Pos {\n\t\t\tbreak\n\t\t}\n\t}\n")
 	fmt.Fprintf(b, "\tif count < %d {\n\t\tp.DropKids(base)\n\t\treturn nil, false\n\t}\n", e.Min)
-	b.WriteString(g.pick("\treturn p.NewNode(Node{RawKind: RawKindList, RawStart: int32(start), RawEnd: int32(p.Pos), RawChildren: p.Kids(base), RawFresh: true}), true\n",
+	b.WriteString(g.pick("\treturn p.NewBranch(RawKindList, start, p.Kids(base)), true\n",
 		"\treturn p.NewNode(\"list\", start, p.Pos, p.Kids(base)), true\n"))
 }
 
@@ -1088,7 +1088,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 			}
 		}
 		if build {
-			b.WriteString(g.pick("\treturn p.NewNode(Node{RawKind: RawKindSeq, RawStart: int32(start), RawEnd: int32(p.Pos), RawChildren: kids, RawFresh: true}), true\n",
+			b.WriteString(g.pick("\treturn p.NewBranch(RawKindSeq, start, kids), true\n",
 				"\treturn p.NewNode(\"tuple\", start, p.Pos, kids), true\n"))
 		} else {
 			b.WriteString("\treturn nil, true\n")
@@ -1133,7 +1133,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 		m := g.expr(e.Expr, s, false)
 		fmt.Fprintf(&b, "\tstart := p.Pos\n\tif _, ok := %s(p); !ok {\n\t\treturn nil, false\n\t}\n", m)
 		if build {
-			b.WriteString(g.pick("\treturn p.NewNode(Node{RawKind: RawKindMatch, RawStart: int32(start), RawEnd: int32(p.Pos), RawText: p.Text(start, p.Pos), RawTerminal: true, RawFresh: true}), true\n",
+			b.WriteString(g.pick("\treturn p.NewTerminal(start, p.Text(start, p.Pos)), true\n",
 				"\treturn p.NewMatch(start, p.Pos, p.Text(start, p.Pos), true), true\n"))
 		} else {
 			b.WriteString("\t_ = start\n\treturn nil, true\n")
@@ -1303,7 +1303,7 @@ func (g *generator) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, buil
 		b.WriteString("\treturn nil, true\n")
 		return
 	}
-	b.WriteString(g.pick("\treturn p.NewNode(Node{RawKind: RawKindList, RawStart: int32(start), RawEnd: int32(p.Pos), RawChildren: p.Kids(base), RawFresh: true}), true\n",
+	b.WriteString(g.pick("\treturn p.NewBranch(RawKindList, start, p.Kids(base)), true\n",
 		"\treturn p.NewNode(\"list\", start, p.Pos, p.Kids(base)), true\n"))
 }
 

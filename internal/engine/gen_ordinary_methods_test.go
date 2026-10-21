@@ -105,6 +105,10 @@ rule expr Text = operators {
 			}
 			// The helpers the branches call are methods of the runtime.
 			for _, name := range []string{"NewNodeOrdinary", "SetCaptureOrdinary", "ExpectOrdinary"} {
+				if name == "NewNodeOrdinary" {
+					// The nodes of matches and sequences are built by NewTerminal and NewBranch.
+					name = "NewTerminalOrdinary"
+				}
 				if !strings.Contains(string(specialized), "."+name+"(") {
 					t.Fatalf("missing helper %s", name)
 				}

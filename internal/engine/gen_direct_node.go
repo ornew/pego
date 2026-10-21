@@ -14,7 +14,7 @@ func (d *dgen) match(start, text string) string {
 	if d.g.table == "trules" {
 		return fmt.Sprintf("p.NewMatch(%s, p.Pos, %s, true)", start, text)
 	}
-	return fmt.Sprintf("p.NewNode(Node{RawKind: RawKindMatch, RawStart: int32(%s), RawEnd: int32(p.Pos), RawText: %s, RawTerminal: true, RawFresh: true})", start, text)
+	return fmt.Sprintf("p.NewTerminal(%s, %s)", start, text)
 }
 
 func (d *dgen) node(typ, start, kids string) string {
@@ -25,7 +25,7 @@ func (d *dgen) node(typ, start, kids string) string {
 	if typ == TypeList {
 		kind = "RawKindList"
 	}
-	return fmt.Sprintf("p.NewNode(Node{RawKind: %s, RawStart: int32(%s), RawEnd: int32(p.Pos), RawChildren: %s, RawFresh: true})", kind, start, kids)
+	return fmt.Sprintf("p.NewBranch(%s, %s, %s)", kind, start, kids)
 }
 
 func (d *dgen) frameScope(s *dscope) *scope {

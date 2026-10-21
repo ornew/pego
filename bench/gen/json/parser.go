@@ -919,11 +919,7 @@ func e2(p *pegort.Parser) (*pegort.Node, bool) {
 			v21 *pegort.Node
 		)
 		x1 = p.Mark()
-		if p.Pos < len(p.In) {
-			x4, _, x5 = p.In[p.Pos], 1, true
-		} else {
-			x4, _, x5 = p.PeekOrdinary()
-		}
+		x4, _, x5 = p.NextOrdinary()
 		if !(x5 && (x4 == 123)) && p.Depth+1 <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 5)
 			goto L6_ordinary
@@ -1102,7 +1098,7 @@ func e5(p *pegort.Parser) (*pegort.Node, bool) {
 			v6 *pegort.Node
 		)
 		_ = x1
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 123) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit3, "{", 5, false); !ok {
 			goto fail_ordinary
@@ -1125,7 +1121,7 @@ func e5(p *pegort.Parser) (*pegort.Node, bool) {
 		if _, ok = r18(p); !ok {
 			goto fail_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 125) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit4, "}", 9, false); !ok {
 			goto fail_ordinary
@@ -1219,7 +1215,7 @@ func e8(p *pegort.Parser) (*pegort.Node, bool) {
 			if _, ok = r18(p); !ok {
 				goto L9_ordinary
 			}
-			if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 44) {
+			if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 				p.Pos++
 			} else if _, ok = p.MatchLiteralOrdinary(lit7, ",", 10, false); !ok {
 				goto L9_ordinary
@@ -1244,7 +1240,7 @@ func e8(p *pegort.Parser) (*pegort.Node, bool) {
 			p.Reset(x8)
 			break
 		}
-		v12 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindList, RawStart: int32(x3), RawEnd: int32(p.Pos), RawChildren: p.Kids(x4), RawFresh: true})
+		v12 = p.NewBranchOrdinary(pegort.RawKindList, x3, p.Kids(x4))
 		p.SetCaptureOrdinary(1, v12)
 		return nil, true
 	fail_ordinary:
@@ -1321,7 +1317,7 @@ func e8(p *pegort.Parser) (*pegort.Node, bool) {
 		p.Reset(x8)
 		break
 	}
-	v12 = p.NewNode(pegort.Node{RawKind: pegort.RawKindList, RawStart: int32(x3), RawEnd: int32(p.Pos), RawChildren: p.Kids(x4), RawFresh: true})
+	v12 = p.NewBranch(pegort.RawKindList, x3, p.Kids(x4))
 	p.SetCapture(1, v12)
 	return nil, true
 fail:
@@ -1347,7 +1343,7 @@ func e10(p *pegort.Parser) (*pegort.Node, bool) {
 		if _, ok = r18(p); !ok {
 			goto fail_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 58) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit9, ":", 11, false); !ok {
 			goto fail_ordinary
@@ -1419,7 +1415,7 @@ func e13(p *pegort.Parser) (*pegort.Node, bool) {
 			v6 *pegort.Node
 		)
 		_ = x1
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 91) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit11, "[", 6, false); !ok {
 			goto fail_ordinary
@@ -1442,7 +1438,7 @@ func e13(p *pegort.Parser) (*pegort.Node, bool) {
 		if _, ok = r18(p); !ok {
 			goto fail_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 93) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit12, "]", 12, false); !ok {
 			goto fail_ordinary
@@ -1536,7 +1532,7 @@ func e15(p *pegort.Parser) (*pegort.Node, bool) {
 			if _, ok = r18(p); !ok {
 				goto L9_ordinary
 			}
-			if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 44) {
+			if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 				p.Pos++
 			} else if _, ok = p.MatchLiteralOrdinary(lit7, ",", 10, false); !ok {
 				goto L9_ordinary
@@ -1561,7 +1557,7 @@ func e15(p *pegort.Parser) (*pegort.Node, bool) {
 			p.Reset(x8)
 			break
 		}
-		v12 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindList, RawStart: int32(x3), RawEnd: int32(p.Pos), RawChildren: p.Kids(x4), RawFresh: true})
+		v12 = p.NewBranchOrdinary(pegort.RawKindList, x3, p.Kids(x4))
 		p.SetCaptureOrdinary(1, v12)
 		return nil, true
 	fail_ordinary:
@@ -1638,7 +1634,7 @@ func e15(p *pegort.Parser) (*pegort.Node, bool) {
 		p.Reset(x8)
 		break
 	}
-	v12 = p.NewNode(pegort.Node{RawKind: pegort.RawKindList, RawStart: int32(x3), RawEnd: int32(p.Pos), RawChildren: p.Kids(x4), RawFresh: true})
+	v12 = p.NewBranch(pegort.RawKindList, x3, p.Kids(x4))
 	p.SetCapture(1, v12)
 	return nil, true
 fail:
@@ -1654,7 +1650,7 @@ func e17(p *pegort.Parser) (*pegort.Node, bool) {
 			v2 *pegort.Node
 		)
 		_ = x1
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 34) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit16, "\"", 7, false); !ok {
 			goto fail_ordinary
@@ -1664,7 +1660,7 @@ func e17(p *pegort.Parser) (*pegort.Node, bool) {
 			goto fail_ordinary
 		}
 		p.SetCaptureOrdinary(0, v2)
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 34) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit16, "\"", 7, false); !ok {
 			goto fail_ordinary
@@ -1730,11 +1726,7 @@ func e18(p *pegort.Parser) (*pegort.Node, bool) {
 			x5 = p.Mark()
 			x8 = 0
 			for {
-				if p.Pos < len(p.In) {
-					ch, size, ok = p.In[p.Pos], 1, true
-				} else {
-					ch, size, ok = p.PeekOrdinary()
-				}
+				ch, size, ok = p.NextOrdinary()
 				if !ok || (ch == 34 || ch == 92 || ch >= 0 && ch <= 31) {
 					p.ExpectOrdinary(p.Pos, 13)
 					break
@@ -1748,11 +1740,7 @@ func e18(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L6_ordinary
 		L7_ordinary:
 			p.Reset(x5)
-			if p.Pos < len(p.In) {
-				x9, _, x10 = p.In[p.Pos], 1, true
-			} else {
-				x9, _, x10 = p.PeekOrdinary()
-			}
+			x9, _, x10 = p.NextOrdinary()
 			if !(x10 && (x9 == 92)) && p.Depth+1 <= p.MaxDepth {
 				p.ExpectOrdinary(p.Pos, 14)
 				goto L11_ordinary
@@ -1775,7 +1763,7 @@ func e18(p *pegort.Parser) (*pegort.Node, bool) {
 			p.Reset(x3)
 			break
 		}
-		v13 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x1), RawEnd: int32(p.Pos), RawText: p.Text(x1, p.Pos), RawTerminal: true, RawFresh: true})
+		v13 = p.NewTerminalOrdinary(x1, p.Text(x1, p.Pos))
 		return v13, true
 	}
 
@@ -1853,7 +1841,7 @@ func e18(p *pegort.Parser) (*pegort.Node, bool) {
 		p.Reset(x3)
 		break
 	}
-	v13 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x1), RawEnd: int32(p.Pos), RawText: p.Text(x1, p.Pos), RawTerminal: true, RawFresh: true})
+	v13 = p.NewTerminal(x1, p.Text(x1, p.Pos))
 	return v13, true
 }
 
@@ -1889,35 +1877,27 @@ func e22(p *pegort.Parser) (*pegort.Node, bool) {
 		x1 = p.Pos
 		x2 = p.Nodes(2)[:0]
 		x3 = p.Pos
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 92) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit19, "\\", 14, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x3), RawEnd: int32(p.Pos), RawText: "\\", RawTerminal: true, RawFresh: true})
+		v4 = p.NewTerminalOrdinary(x3, "\\")
 		x2 = append(x2, v4)
 		x5 = p.Mark()
-		if p.Pos < len(p.In) {
-			x8, _, x9 = p.In[p.Pos], 1, true
-		} else {
-			x8, _, x9 = p.PeekOrdinary()
-		}
-		if !(x9 && (!((!pegort.WorkControlsEnabled || true) && (!(x8 == 34 || x8 == 92 || x8 == 47 || x8 == 98 || x8 == 102 || x8 == 110 || x8 == 114 || x8 == 116))))) && p.Depth <= p.MaxDepth {
+		x8, _, x9 = p.NextOrdinary()
+		if !(x9 && (!(!(x8 == 34 || x8 == 92 || x8 == 47 || x8 == 98 || x8 == 102 || x8 == 110 || x8 == 114 || x8 == 116)))) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L10_ordinary
 		}
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
-		if !ok || ((!pegort.WorkControlsEnabled || true) && (!(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116))) {
+		ch, size, ok = p.NextOrdinary()
+		if !ok || (!(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116)) {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L11_ordinary
 		}
 		x12 = p.Pos
 		p.Pos += size
-		v13 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x12), RawEnd: int32(p.Pos), RawText: p.Text(x12, p.Pos), RawTerminal: true, RawFresh: true})
+		v13 = p.NewTerminalOrdinary(x12, p.Text(x12, p.Pos))
 		v6 = v13
 		goto L7_ordinary
 	L11_ordinary:
@@ -1930,12 +1910,12 @@ func e22(p *pegort.Parser) (*pegort.Node, bool) {
 		x16 = p.Pos
 		x17 = p.Nodes(5)[:0]
 		x18 = p.Pos
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 117) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 117 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit21, "u", 16, false); !ok {
 			goto L15_ordinary
 		}
-		v19 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x18), RawEnd: int32(p.Pos), RawText: "u", RawTerminal: true, RawFresh: true})
+		v19 = p.NewTerminalOrdinary(x18, "u")
 		x17 = append(x17, v19)
 		if v20, ok = r10(p); !ok {
 			goto L15_ordinary
@@ -1953,7 +1933,7 @@ func e22(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L15_ordinary
 		}
 		x17 = append(x17, v23)
-		v24 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindSeq, RawStart: int32(x16), RawEnd: int32(p.Pos), RawChildren: x17, RawFresh: true})
+		v24 = p.NewBranchOrdinary(pegort.RawKindSeq, x16, x17)
 		v25, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}, v24, x5.Pos)
 		v6 = v25
 		goto L7_ordinary
@@ -1963,7 +1943,7 @@ func e22(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail_ordinary
 	L7_ordinary:
 		x2 = append(x2, v6)
-		v26 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindSeq, RawStart: int32(x1), RawEnd: int32(p.Pos), RawChildren: x2, RawFresh: true})
+		v26 = p.NewBranchOrdinary(pegort.RawKindSeq, x1, x2)
 		return v26, true
 	fail_ordinary:
 		return nil, false
@@ -2006,7 +1986,7 @@ func e22(p *pegort.Parser) (*pegort.Node, bool) {
 	} else if _, ok = p.MatchLiteral(lit19, "\\", 14, false); !ok {
 		goto fail
 	}
-	v4 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x3), RawEnd: int32(p.Pos), RawText: "\\", RawTerminal: true, RawFresh: true})
+	v4 = p.NewTerminal(x3, "\\")
 	x2 = append(x2, v4)
 	p.StepWork()
 	x5 = p.Mark()
@@ -2033,7 +2013,7 @@ func e22(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 	x12 = p.Pos
 	p.Pos += size
-	v13 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x12), RawEnd: int32(p.Pos), RawText: p.Text(x12, p.Pos), RawTerminal: true, RawFresh: true})
+	v13 = p.NewTerminal(x12, p.Text(x12, p.Pos))
 	v6 = v13
 	goto L7
 L11:
@@ -2053,7 +2033,7 @@ L10:
 	} else if _, ok = p.MatchLiteral(lit21, "u", 16, false); !ok {
 		goto L15
 	}
-	v19 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x18), RawEnd: int32(p.Pos), RawText: "u", RawTerminal: true, RawFresh: true})
+	v19 = p.NewTerminal(x18, "u")
 	x17 = append(x17, v19)
 	p.StepWork()
 	if v20, ok = r10(p); !ok {
@@ -2075,7 +2055,7 @@ L10:
 		goto L15
 	}
 	x17 = append(x17, v23)
-	v24 = p.NewNode(pegort.Node{RawKind: pegort.RawKindSeq, RawStart: int32(x16), RawEnd: int32(p.Pos), RawChildren: x17, RawFresh: true})
+	v24 = p.NewBranch(pegort.RawKindSeq, x16, x17)
 	v25, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}, v24, x5.Pos)
 	v6 = v25
 	goto L7
@@ -2085,7 +2065,7 @@ L14:
 	goto fail
 L7:
 	x2 = append(x2, v6)
-	v26 = p.NewNode(pegort.Node{RawKind: pegort.RawKindSeq, RawStart: int32(x1), RawEnd: int32(p.Pos), RawChildren: x2, RawFresh: true})
+	v26 = p.NewBranch(pegort.RawKindSeq, x1, x2)
 	return v26, true
 fail:
 	return nil, false
@@ -2101,18 +2081,14 @@ func e23(p *pegort.Parser) (*pegort.Node, bool) {
 			x1   int
 			v2   *pegort.Node
 		)
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
 			p.ExpectOrdinary(p.Pos, 17)
 			goto fail_ordinary
 		}
 		x1 = p.Pos
 		p.Pos += size
-		v2 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x1), RawEnd: int32(p.Pos), RawText: p.Text(x1, p.Pos), RawTerminal: true, RawFresh: true})
+		v2 = p.NewTerminalOrdinary(x1, p.Text(x1, p.Pos))
 		return v2, true
 	fail_ordinary:
 		return nil, false
@@ -2139,7 +2115,7 @@ func e23(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 	x1 = p.Pos
 	p.Pos += size
-	v2 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x1), RawEnd: int32(p.Pos), RawText: p.Text(x1, p.Pos), RawTerminal: true, RawFresh: true})
+	v2 = p.NewTerminal(x1, p.Text(x1, p.Pos))
 	return v2, true
 fail:
 	return nil, false
@@ -2158,7 +2134,7 @@ func e25(p *pegort.Parser) (*pegort.Node, bool) {
 		)
 		x1 = p.Pos
 		x2 = p.Mark()
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit24, "-", 18, false); !ok {
 			goto L3_ordinary
@@ -2188,7 +2164,7 @@ func e25(p *pegort.Parser) (*pegort.Node, bool) {
 	L9_ordinary:
 		p.Reset(x8)
 	L10_ordinary:
-		v11 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x1), RawEnd: int32(p.Pos), RawText: p.Text(x1, p.Pos), RawTerminal: true, RawFresh: true})
+		v11 = p.NewTerminalOrdinary(x1, p.Text(x1, p.Pos))
 		return v11, true
 	fail_ordinary:
 		return nil, false
@@ -2242,7 +2218,7 @@ L7:
 L9:
 	p.Reset(x8)
 L10:
-	v11 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x1), RawEnd: int32(p.Pos), RawText: p.Text(x1, p.Pos), RawTerminal: true, RawFresh: true})
+	v11 = p.NewTerminal(x1, p.Text(x1, p.Pos))
 	return v11, true
 fail:
 	return nil, false
@@ -2278,22 +2254,18 @@ func e27(p *pegort.Parser) (*pegort.Node, bool) {
 		)
 		_ = x18
 		x1 = p.Mark()
-		if p.Pos < len(p.In) {
-			x4, _, x5 = p.In[p.Pos], 1, true
-		} else {
-			x4, _, x5 = p.PeekOrdinary()
-		}
+		x4, _, x5 = p.NextOrdinary()
 		if !(x5 && (x4 == 48)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 19)
 			goto L6_ordinary
 		}
 		x8 = p.Pos
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 48) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit26, "0", 19, false); !ok {
 			goto L7_ordinary
 		}
-		v9 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x8), RawEnd: int32(p.Pos), RawText: "0", RawTerminal: true, RawFresh: true})
+		v9 = p.NewTerminalOrdinary(x8, "0")
 		v2 = v9
 		goto L3_ordinary
 	L7_ordinary:
@@ -2305,35 +2277,27 @@ func e27(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		x12 = p.Pos
 		x13 = p.Nodes(2)[:0]
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 49 && ch <= 57) {
 			p.ExpectOrdinary(p.Pos, 20)
 			goto L11_ordinary
 		}
 		x14 = p.Pos
 		p.Pos += size
-		v15 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x14), RawEnd: int32(p.Pos), RawText: p.Text(x14, p.Pos), RawTerminal: true, RawFresh: true})
+		v15 = p.NewTerminalOrdinary(x14, p.Text(x14, p.Pos))
 		x13 = append(x13, v15)
 		x16, x17 = p.Pos, len(p.KidStack)
 		x18 = 0
 		for {
 			x19 = p.Mark()
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
 				p.ExpectOrdinary(p.Pos, 21)
 				goto L20_ordinary
 			}
 			x21 = p.Pos
 			p.Pos += size
-			v22 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x21), RawEnd: int32(p.Pos), RawText: p.Text(x21, p.Pos), RawTerminal: true, RawFresh: true})
+			v22 = p.NewTerminalOrdinary(x21, p.Text(x21, p.Pos))
 			v23 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v22, x19.Pos)
 			x18++
 			p.KidStack = append(p.KidStack, v23)
@@ -2345,9 +2309,9 @@ func e27(p *pegort.Parser) (*pegort.Node, bool) {
 			p.Reset(x19)
 			break
 		}
-		v24 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindList, RawStart: int32(x16), RawEnd: int32(p.Pos), RawChildren: p.Kids(x17), RawFresh: true})
+		v24 = p.NewBranchOrdinary(pegort.RawKindList, x16, p.Kids(x17))
 		x13 = append(x13, v24)
-		v25 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindSeq, RawStart: int32(x12), RawEnd: int32(p.Pos), RawChildren: x13, RawFresh: true})
+		v25 = p.NewBranchOrdinary(pegort.RawKindSeq, x12, x13)
 		v26, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v25, x1.Pos)
 		v2 = v26
 		goto L3_ordinary
@@ -2407,7 +2371,7 @@ func e27(p *pegort.Parser) (*pegort.Node, bool) {
 	} else if _, ok = p.MatchLiteral(lit26, "0", 19, false); !ok {
 		goto L7
 	}
-	v9 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x8), RawEnd: int32(p.Pos), RawText: "0", RawTerminal: true, RawFresh: true})
+	v9 = p.NewTerminal(x8, "0")
 	v2 = v9
 	goto L3
 L7:
@@ -2433,7 +2397,7 @@ L6:
 	}
 	x14 = p.Pos
 	p.Pos += size
-	v15 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x14), RawEnd: int32(p.Pos), RawText: p.Text(x14, p.Pos), RawTerminal: true, RawFresh: true})
+	v15 = p.NewTerminal(x14, p.Text(x14, p.Pos))
 	x13 = append(x13, v15)
 	p.StepWork()
 	x16, x17 = p.Pos, len(p.KidStack)
@@ -2453,7 +2417,7 @@ L6:
 		}
 		x21 = p.Pos
 		p.Pos += size
-		v22 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x21), RawEnd: int32(p.Pos), RawText: p.Text(x21, p.Pos), RawTerminal: true, RawFresh: true})
+		v22 = p.NewTerminal(x21, p.Text(x21, p.Pos))
 		v23 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v22, x19.Pos)
 		x18++
 		p.KidStack = append(p.KidStack, v23)
@@ -2465,9 +2429,9 @@ L6:
 		p.Reset(x19)
 		break
 	}
-	v24 = p.NewNode(pegort.Node{RawKind: pegort.RawKindList, RawStart: int32(x16), RawEnd: int32(p.Pos), RawChildren: p.Kids(x17), RawFresh: true})
+	v24 = p.NewBranch(pegort.RawKindList, x16, p.Kids(x17))
 	x13 = append(x13, v24)
-	v25 = p.NewNode(pegort.Node{RawKind: pegort.RawKindSeq, RawStart: int32(x12), RawEnd: int32(p.Pos), RawChildren: x13, RawFresh: true})
+	v25 = p.NewBranch(pegort.RawKindSeq, x12, x13)
 	v26, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v25, x1.Pos)
 	v2 = v26
 	goto L3
@@ -2505,29 +2469,25 @@ func e29(p *pegort.Parser) (*pegort.Node, bool) {
 		x1 = p.Pos
 		x2 = p.Nodes(2)[:0]
 		x3 = p.Pos
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit28, ".", 22, false); !ok {
 			goto fail_ordinary
 		}
-		v4 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x3), RawEnd: int32(p.Pos), RawText: ".", RawTerminal: true, RawFresh: true})
+		v4 = p.NewTerminalOrdinary(x3, ".")
 		x2 = append(x2, v4)
 		x5, x6 = p.Pos, len(p.KidStack)
 		x7 = 0
 		for {
 			x8 = p.Mark()
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
 				p.ExpectOrdinary(p.Pos, 21)
 				goto L9_ordinary
 			}
 			x10 = p.Pos
 			p.Pos += size
-			v11 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x10), RawEnd: int32(p.Pos), RawText: p.Text(x10, p.Pos), RawTerminal: true, RawFresh: true})
+			v11 = p.NewTerminalOrdinary(x10, p.Text(x10, p.Pos))
 			v12 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v11, x8.Pos)
 			x7++
 			p.KidStack = append(p.KidStack, v12)
@@ -2543,9 +2503,9 @@ func e29(p *pegort.Parser) (*pegort.Node, bool) {
 			p.DropKids(x6)
 			goto fail_ordinary
 		}
-		v13 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindList, RawStart: int32(x5), RawEnd: int32(p.Pos), RawChildren: p.Kids(x6), RawFresh: true})
+		v13 = p.NewBranchOrdinary(pegort.RawKindList, x5, p.Kids(x6))
 		x2 = append(x2, v13)
-		v14 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindSeq, RawStart: int32(x1), RawEnd: int32(p.Pos), RawChildren: x2, RawFresh: true})
+		v14 = p.NewBranchOrdinary(pegort.RawKindSeq, x1, x2)
 		return v14, true
 	fail_ordinary:
 		return nil, false
@@ -2580,7 +2540,7 @@ func e29(p *pegort.Parser) (*pegort.Node, bool) {
 	} else if _, ok = p.MatchLiteral(lit28, ".", 22, false); !ok {
 		goto fail
 	}
-	v4 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x3), RawEnd: int32(p.Pos), RawText: ".", RawTerminal: true, RawFresh: true})
+	v4 = p.NewTerminal(x3, ".")
 	x2 = append(x2, v4)
 	p.StepWork()
 	x5, x6 = p.Pos, len(p.KidStack)
@@ -2600,7 +2560,7 @@ func e29(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		x10 = p.Pos
 		p.Pos += size
-		v11 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x10), RawEnd: int32(p.Pos), RawText: p.Text(x10, p.Pos), RawTerminal: true, RawFresh: true})
+		v11 = p.NewTerminal(x10, p.Text(x10, p.Pos))
 		v12 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v11, x8.Pos)
 		x7++
 		p.KidStack = append(p.KidStack, v12)
@@ -2616,9 +2576,9 @@ func e29(p *pegort.Parser) (*pegort.Node, bool) {
 		p.DropKids(x6)
 		goto fail
 	}
-	v13 = p.NewNode(pegort.Node{RawKind: pegort.RawKindList, RawStart: int32(x5), RawEnd: int32(p.Pos), RawChildren: p.Kids(x6), RawFresh: true})
+	v13 = p.NewBranch(pegort.RawKindList, x5, p.Kids(x6))
 	x2 = append(x2, v13)
-	v14 = p.NewNode(pegort.Node{RawKind: pegort.RawKindSeq, RawStart: int32(x1), RawEnd: int32(p.Pos), RawChildren: x2, RawFresh: true})
+	v14 = p.NewBranch(pegort.RawKindSeq, x1, x2)
 	return v14, true
 fail:
 	return nil, false
@@ -2651,32 +2611,24 @@ func e30(p *pegort.Parser) (*pegort.Node, bool) {
 		)
 		x1 = p.Pos
 		x2 = p.Nodes(3)[:0]
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch == 101 || ch == 69) {
 			p.ExpectOrdinary(p.Pos, 23)
 			goto fail_ordinary
 		}
 		x3 = p.Pos
 		p.Pos += size
-		v4 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x3), RawEnd: int32(p.Pos), RawText: p.Text(x3, p.Pos), RawTerminal: true, RawFresh: true})
+		v4 = p.NewTerminalOrdinary(x3, p.Text(x3, p.Pos))
 		x2 = append(x2, v4)
 		x5 = p.Mark()
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch == 43 || ch == 45) {
 			p.ExpectOrdinary(p.Pos, 24)
 			goto L7_ordinary
 		}
 		x9 = p.Pos
 		p.Pos += size
-		v10 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x9), RawEnd: int32(p.Pos), RawText: p.Text(x9, p.Pos), RawTerminal: true, RawFresh: true})
+		v10 = p.NewTerminalOrdinary(x9, p.Text(x9, p.Pos))
 		v6 = v10
 		goto L8_ordinary
 	L7_ordinary:
@@ -2688,18 +2640,14 @@ func e30(p *pegort.Parser) (*pegort.Node, bool) {
 		x13 = 0
 		for {
 			x14 = p.Mark()
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
 				p.ExpectOrdinary(p.Pos, 21)
 				goto L15_ordinary
 			}
 			x16 = p.Pos
 			p.Pos += size
-			v17 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x16), RawEnd: int32(p.Pos), RawText: p.Text(x16, p.Pos), RawTerminal: true, RawFresh: true})
+			v17 = p.NewTerminalOrdinary(x16, p.Text(x16, p.Pos))
 			v18 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v17, x14.Pos)
 			x13++
 			p.KidStack = append(p.KidStack, v18)
@@ -2715,9 +2663,9 @@ func e30(p *pegort.Parser) (*pegort.Node, bool) {
 			p.DropKids(x12)
 			goto fail_ordinary
 		}
-		v19 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindList, RawStart: int32(x11), RawEnd: int32(p.Pos), RawChildren: p.Kids(x12), RawFresh: true})
+		v19 = p.NewBranchOrdinary(pegort.RawKindList, x11, p.Kids(x12))
 		x2 = append(x2, v19)
-		v20 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindSeq, RawStart: int32(x1), RawEnd: int32(p.Pos), RawChildren: x2, RawFresh: true})
+		v20 = p.NewBranchOrdinary(pegort.RawKindSeq, x1, x2)
 		return v20, true
 	fail_ordinary:
 		return nil, false
@@ -2762,7 +2710,7 @@ func e30(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 	x3 = p.Pos
 	p.Pos += size
-	v4 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x3), RawEnd: int32(p.Pos), RawText: p.Text(x3, p.Pos), RawTerminal: true, RawFresh: true})
+	v4 = p.NewTerminal(x3, p.Text(x3, p.Pos))
 	x2 = append(x2, v4)
 	p.StepWork()
 	x5 = p.Mark()
@@ -2779,7 +2727,7 @@ func e30(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 	x9 = p.Pos
 	p.Pos += size
-	v10 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x9), RawEnd: int32(p.Pos), RawText: p.Text(x9, p.Pos), RawTerminal: true, RawFresh: true})
+	v10 = p.NewTerminal(x9, p.Text(x9, p.Pos))
 	v6 = v10
 	goto L8
 L7:
@@ -2805,7 +2753,7 @@ L8:
 		}
 		x16 = p.Pos
 		p.Pos += size
-		v17 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x16), RawEnd: int32(p.Pos), RawText: p.Text(x16, p.Pos), RawTerminal: true, RawFresh: true})
+		v17 = p.NewTerminal(x16, p.Text(x16, p.Pos))
 		v18 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v17, x14.Pos)
 		x13++
 		p.KidStack = append(p.KidStack, v18)
@@ -2821,9 +2769,9 @@ L8:
 		p.DropKids(x12)
 		goto fail
 	}
-	v19 = p.NewNode(pegort.Node{RawKind: pegort.RawKindList, RawStart: int32(x11), RawEnd: int32(p.Pos), RawChildren: p.Kids(x12), RawFresh: true})
+	v19 = p.NewBranch(pegort.RawKindList, x11, p.Kids(x12))
 	x2 = append(x2, v19)
-	v20 = p.NewNode(pegort.Node{RawKind: pegort.RawKindSeq, RawStart: int32(x1), RawEnd: int32(p.Pos), RawChildren: x2, RawFresh: true})
+	v20 = p.NewBranch(pegort.RawKindSeq, x1, x2)
 	return v20, true
 fail:
 	return nil, false
@@ -2842,16 +2790,12 @@ func e33(p *pegort.Parser) (*pegort.Node, bool) {
 		)
 		x1 = p.Pos
 		x2 = p.Mark()
-		if p.Pos < len(p.In) {
-			x4, _, x5 = p.In[p.Pos], 1, true
-		} else {
-			x4, _, x5 = p.PeekOrdinary()
-		}
+		x4, _, x5 = p.NextOrdinary()
 		if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 25)
 			goto L6_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101) {
+		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101 {
 			p.Pos += 4
 		} else if _, ok = p.MatchLiteralOrdinary(lit31, "true", 25, false); !ok {
 			goto L7_ordinary
@@ -2873,7 +2817,7 @@ func e33(p *pegort.Parser) (*pegort.Node, bool) {
 	L8_ordinary:
 		goto fail_ordinary
 	L3_ordinary:
-		v10 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x1), RawEnd: int32(p.Pos), RawText: p.Text(x1, p.Pos), RawTerminal: true, RawFresh: true})
+		v10 = p.NewTerminalOrdinary(x1, p.Text(x1, p.Pos))
 		return v10, true
 	fail_ordinary:
 		return nil, false
@@ -2926,7 +2870,7 @@ L9:
 L8:
 	goto fail
 L3:
-	v10 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x1), RawEnd: int32(p.Pos), RawText: p.Text(x1, p.Pos), RawTerminal: true, RawFresh: true})
+	v10 = p.NewTerminal(x1, p.Text(x1, p.Pos))
 	return v10, true
 fail:
 	return nil, false
@@ -2941,12 +2885,12 @@ func e35(p *pegort.Parser) (*pegort.Node, bool) {
 			v2 *pegort.Node
 		)
 		x1 = p.Pos
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 117 && p.In[p.Pos+2] == 108 && p.In[p.Pos+3] == 108) {
+		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 117 && p.In[p.Pos+2] == 108 && p.In[p.Pos+3] == 108 {
 			p.Pos += 4
 		} else if _, ok = p.MatchLiteralOrdinary(lit34, "null", 8, false); !ok {
 			goto fail_ordinary
 		}
-		v2 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x1), RawEnd: int32(p.Pos), RawText: p.Text(x1, p.Pos), RawTerminal: true, RawFresh: true})
+		v2 = p.NewTerminalOrdinary(x1, p.Text(x1, p.Pos))
 		return v2, true
 	fail_ordinary:
 		return nil, false
@@ -2966,7 +2910,7 @@ func e35(p *pegort.Parser) (*pegort.Node, bool) {
 	} else if _, ok = p.MatchLiteral(lit34, "null", 8, false); !ok {
 		goto fail
 	}
-	v2 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x1), RawEnd: int32(p.Pos), RawText: p.Text(x1, p.Pos), RawTerminal: true, RawFresh: true})
+	v2 = p.NewTerminal(x1, p.Text(x1, p.Pos))
 	return v2, true
 fail:
 	return nil, false
@@ -2993,18 +2937,14 @@ func e36(p *pegort.Parser) (*pegort.Node, bool) {
 		x3 = 0
 		for {
 			x4 = p.Mark()
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
 				p.ExpectOrdinary(p.Pos, 27)
 				goto L5_ordinary
 			}
 			x6 = p.Pos
 			p.Pos += size
-			v7 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x6), RawEnd: int32(p.Pos), RawText: p.Text(x6, p.Pos), RawTerminal: true, RawFresh: true})
+			v7 = p.NewTerminalOrdinary(x6, p.Text(x6, p.Pos))
 			v8 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v7, x4.Pos)
 			x3++
 			p.KidStack = append(p.KidStack, v8)
@@ -3016,7 +2956,7 @@ func e36(p *pegort.Parser) (*pegort.Node, bool) {
 			p.Reset(x4)
 			break
 		}
-		v9 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindList, RawStart: int32(x1), RawEnd: int32(p.Pos), RawChildren: p.Kids(x2), RawFresh: true})
+		v9 = p.NewBranchOrdinary(pegort.RawKindList, x1, p.Kids(x2))
 		return v9, true
 	}
 
@@ -3053,7 +2993,7 @@ func e36(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		x6 = p.Pos
 		p.Pos += size
-		v7 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x6), RawEnd: int32(p.Pos), RawText: p.Text(x6, p.Pos), RawTerminal: true, RawFresh: true})
+		v7 = p.NewTerminal(x6, p.Text(x6, p.Pos))
 		v8 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v7, x4.Pos)
 		x3++
 		p.KidStack = append(p.KidStack, v8)
@@ -3065,7 +3005,7 @@ func e36(p *pegort.Parser) (*pegort.Node, bool) {
 		p.Reset(x4)
 		break
 	}
-	v9 = p.NewNode(pegort.Node{RawKind: pegort.RawKindList, RawStart: int32(x1), RawEnd: int32(p.Pos), RawChildren: p.Kids(x2), RawFresh: true})
+	v9 = p.NewBranch(pegort.RawKindList, x1, p.Kids(x2))
 	return v9, true
 }
 
@@ -3079,11 +3019,7 @@ func e37(p *pegort.Parser) (*pegort.Node, bool) {
 			ok   bool
 		)
 		for {
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
 				p.ExpectOrdinary(p.Pos, 27)
 				break
@@ -3132,27 +3068,19 @@ func e38(p *pegort.Parser) (*pegort.Node, bool) {
 			ch   rune
 			size int
 		)
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 92) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit19, "\\", 14, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			x4, _, x5 = p.In[p.Pos], 1, true
-		} else {
-			x4, _, x5 = p.PeekOrdinary()
-		}
-		if !(x5 && (!((!pegort.WorkControlsEnabled || true) && (!(x4 == 34 || x4 == 92 || x4 == 47 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116))))) && p.Depth <= p.MaxDepth {
+		x4, _, x5 = p.NextOrdinary()
+		if !(x5 && (!(!(x4 == 34 || x4 == 92 || x4 == 47 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116)))) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L6_ordinary
 		}
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
-		if !ok || ((!pegort.WorkControlsEnabled || true) && (!(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116))) {
+		ch, size, ok = p.NextOrdinary()
+		if !ok || (!(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116)) {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L7_ordinary
 		}
@@ -3166,7 +3094,7 @@ func e38(p *pegort.Parser) (*pegort.Node, bool) {
 			p.ExpectOrdinary(p.Pos, 16)
 			goto L8_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 117) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 117 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit21, "u", 16, false); !ok {
 			goto L9_ordinary
@@ -3297,16 +3225,12 @@ func e39(p *pegort.Parser) (*pegort.Node, bool) {
 			size int
 		)
 		x1, x2 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			x4, _, x5 = p.In[p.Pos], 1, true
-		} else {
-			x4, _, x5 = p.PeekOrdinary()
-		}
+		x4, _, x5 = p.NextOrdinary()
 		if !(x5 && (x4 == 48)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 19)
 			goto L6_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 48) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit26, "0", 19, false); !ok {
 			goto L7_ordinary
@@ -3320,22 +3244,14 @@ func e39(p *pegort.Parser) (*pegort.Node, bool) {
 			p.ExpectOrdinary(p.Pos, 20)
 			goto L8_ordinary
 		}
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 49 && ch <= 57) {
 			p.ExpectOrdinary(p.Pos, 20)
 			goto L9_ordinary
 		}
 		p.Pos += size
 		for {
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
 				p.ExpectOrdinary(p.Pos, 21)
 				break
@@ -3443,18 +3359,14 @@ func e40(p *pegort.Parser) (*pegort.Node, bool) {
 			size int
 			x1   int
 		)
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit28, ".", 22, false); !ok {
 			goto fail_ordinary
 		}
 		x1 = 0
 		for {
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
 				p.ExpectOrdinary(p.Pos, 21)
 				break
@@ -3523,22 +3435,14 @@ func e41(p *pegort.Parser) (*pegort.Node, bool) {
 			x2   int
 			x5   int
 		)
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch == 101 || ch == 69) {
 			p.ExpectOrdinary(p.Pos, 23)
 			goto fail_ordinary
 		}
 		p.Pos += size
 		x1, x2 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch == 43 || ch == 45) {
 			p.ExpectOrdinary(p.Pos, 24)
 			goto L3_ordinary
@@ -3552,11 +3456,7 @@ func e41(p *pegort.Parser) (*pegort.Node, bool) {
 		p.StepWork()
 		x5 = 0
 		for {
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
 				p.ExpectOrdinary(p.Pos, 21)
 				break
@@ -3649,11 +3549,7 @@ func e42(p *pegort.Parser) (*pegort.Node, bool) {
 			size int
 			ok   bool
 		)
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
 			p.ExpectOrdinary(p.Pos, 17)
 			goto fail_ordinary
@@ -4164,11 +4060,7 @@ func r18(p *pegort.Parser) (*pegort.Node, bool) {
 			p.TooDeep()
 		}
 		for {
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
 				p.ExpectOrdinary(p.Pos, 27)
 				break
@@ -4230,27 +4122,19 @@ func r19(p *pegort.Parser) (*pegort.Node, bool) {
 		if p.Depth > p.MaxDepth {
 			p.TooDeep()
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 92) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit19, "\\", 14, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			x4, _, x5 = p.In[p.Pos], 1, true
-		} else {
-			x4, _, x5 = p.PeekOrdinary()
-		}
-		if !(x5 && (!((!pegort.WorkControlsEnabled || true) && (!(x4 == 34 || x4 == 92 || x4 == 47 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116))))) && p.Depth <= p.MaxDepth {
+		x4, _, x5 = p.NextOrdinary()
+		if !(x5 && (!(!(x4 == 34 || x4 == 92 || x4 == 47 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116)))) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L6_ordinary
 		}
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
-		if !ok || ((!pegort.WorkControlsEnabled || true) && (!(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116))) {
+		ch, size, ok = p.NextOrdinary()
+		if !ok || (!(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116)) {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L7_ordinary
 		}
@@ -4264,7 +4148,7 @@ func r19(p *pegort.Parser) (*pegort.Node, bool) {
 			p.ExpectOrdinary(p.Pos, 16)
 			goto L8_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 117) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 117 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit21, "u", 16, false); !ok {
 			goto L9_ordinary
@@ -4417,16 +4301,12 @@ func r20(p *pegort.Parser) (*pegort.Node, bool) {
 			p.TooDeep()
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			x4, _, x5 = p.In[p.Pos], 1, true
-		} else {
-			x4, _, x5 = p.PeekOrdinary()
-		}
+		x4, _, x5 = p.NextOrdinary()
 		if !(x5 && (x4 == 48)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 19)
 			goto L6_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 48) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit26, "0", 19, false); !ok {
 			goto L7_ordinary
@@ -4440,22 +4320,14 @@ func r20(p *pegort.Parser) (*pegort.Node, bool) {
 			p.ExpectOrdinary(p.Pos, 20)
 			goto L8_ordinary
 		}
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 49 && ch <= 57) {
 			p.ExpectOrdinary(p.Pos, 20)
 			goto L9_ordinary
 		}
 		p.Pos += size
 		for {
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
 				p.ExpectOrdinary(p.Pos, 21)
 				break
@@ -4585,18 +4457,14 @@ func r21(p *pegort.Parser) (*pegort.Node, bool) {
 		if p.Depth > p.MaxDepth {
 			p.TooDeep()
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit28, ".", 22, false); !ok {
 			goto fail_ordinary
 		}
 		x1 = 0
 		for {
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
 				p.ExpectOrdinary(p.Pos, 21)
 				break
@@ -4687,22 +4555,14 @@ func r22(p *pegort.Parser) (*pegort.Node, bool) {
 		if p.Depth > p.MaxDepth {
 			p.TooDeep()
 		}
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch == 101 || ch == 69) {
 			p.ExpectOrdinary(p.Pos, 23)
 			goto fail_ordinary
 		}
 		p.Pos += size
 		x1, x2 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch == 43 || ch == 45) {
 			p.ExpectOrdinary(p.Pos, 24)
 			goto L3_ordinary
@@ -4716,11 +4576,7 @@ func r22(p *pegort.Parser) (*pegort.Node, bool) {
 		p.StepWork()
 		x5 = 0
 		for {
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
 				p.ExpectOrdinary(p.Pos, 21)
 				break
@@ -4835,11 +4691,7 @@ func r23(p *pegort.Parser) (*pegort.Node, bool) {
 		if p.Depth > p.MaxDepth {
 			p.TooDeep()
 		}
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
 			p.ExpectOrdinary(p.Pos, 17)
 			goto fail_ordinary
@@ -4957,11 +4809,7 @@ func e44(p *pegort.Parser) (*pegort.Node, bool) {
 			ok bool
 		)
 		x1 = p.Mark()
-		if p.Pos < len(p.In) {
-			x3, _, x4 = p.In[p.Pos], 1, true
-		} else {
-			x3, _, x4 = p.PeekOrdinary()
-		}
+		x3, _, x4 = p.NextOrdinary()
 		if !(x4 && (x3 == 123)) && p.Depth+1 <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 5)
 			goto L5_ordinary
@@ -5119,7 +4967,7 @@ func e45(p *pegort.Parser) (*pegort.Node, bool) {
 			x1 int
 			x2 int
 		)
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 123) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit3, "{", 5, false); !ok {
 			goto fail_ordinary
@@ -5140,7 +4988,7 @@ func e45(p *pegort.Parser) (*pegort.Node, bool) {
 		if _, ok = q17(p); !ok {
 			goto fail_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 125) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit4, "}", 9, false); !ok {
 			goto fail_ordinary
@@ -5217,7 +5065,7 @@ func e46(p *pegort.Parser) (*pegort.Node, bool) {
 			if _, ok = q17(p); !ok {
 				goto L4_ordinary
 			}
-			if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 44) {
+			if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 				p.Pos++
 			} else if _, ok = p.MatchLiteralOrdinary(lit7, ",", 10, false); !ok {
 				goto L4_ordinary
@@ -5315,7 +5163,7 @@ func e47(p *pegort.Parser) (*pegort.Node, bool) {
 		if _, ok = q17(p); !ok {
 			goto fail_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 58) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit9, ":", 11, false); !ok {
 			goto fail_ordinary
@@ -5374,7 +5222,7 @@ func e48(p *pegort.Parser) (*pegort.Node, bool) {
 			x1 int
 			x2 int
 		)
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 91) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit11, "[", 6, false); !ok {
 			goto fail_ordinary
@@ -5395,7 +5243,7 @@ func e48(p *pegort.Parser) (*pegort.Node, bool) {
 		if _, ok = q17(p); !ok {
 			goto fail_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 93) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit12, "]", 12, false); !ok {
 			goto fail_ordinary
@@ -5472,7 +5320,7 @@ func e49(p *pegort.Parser) (*pegort.Node, bool) {
 			if _, ok = q17(p); !ok {
 				goto L4_ordinary
 			}
-			if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 44) {
+			if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 				p.Pos++
 			} else if _, ok = p.MatchLiteralOrdinary(lit7, ",", 10, false); !ok {
 				goto L4_ordinary
@@ -5564,7 +5412,7 @@ func e50(p *pegort.Parser) (*pegort.Node, bool) {
 		var (
 			ok bool
 		)
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 34) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit16, "\"", 7, false); !ok {
 			goto fail_ordinary
@@ -5572,7 +5420,7 @@ func e50(p *pegort.Parser) (*pegort.Node, bool) {
 		if _, ok = q8(p); !ok {
 			goto fail_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 34) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit16, "\"", 7, false); !ok {
 			goto fail_ordinary
@@ -5633,11 +5481,7 @@ func e51(p *pegort.Parser) (*pegort.Node, bool) {
 			x5, x6 = p.Pos, len(p.Recovered)
 			x9 = 0
 			for {
-				if p.Pos < len(p.In) {
-					ch, size, ok = p.In[p.Pos], 1, true
-				} else {
-					ch, size, ok = p.PeekOrdinary()
-				}
+				ch, size, ok = p.NextOrdinary()
 				if !ok || (ch == 34 || ch == 92 || ch >= 0 && ch <= 31) {
 					p.ExpectOrdinary(p.Pos, 13)
 					break
@@ -5652,11 +5496,7 @@ func e51(p *pegort.Parser) (*pegort.Node, bool) {
 		L8_ordinary:
 			p.Pos = x5
 			p.Recovered = p.Recovered[:x6]
-			if p.Pos < len(p.In) {
-				x10, _, x11 = p.In[p.Pos], 1, true
-			} else {
-				x10, _, x11 = p.PeekOrdinary()
-			}
+			x10, _, x11 = p.NextOrdinary()
 			if !(x11 && (x10 == 92)) && p.Depth+1 <= p.MaxDepth {
 				p.ExpectOrdinary(p.Pos, 14)
 				goto L12_ordinary
@@ -5779,27 +5619,19 @@ func e52(p *pegort.Parser) (*pegort.Node, bool) {
 			ch   rune
 			size int
 		)
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 92) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit19, "\\", 14, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			x4, _, x5 = p.In[p.Pos], 1, true
-		} else {
-			x4, _, x5 = p.PeekOrdinary()
-		}
-		if !(x5 && (!((!pegort.WorkControlsEnabled || true) && (!(x4 == 34 || x4 == 92 || x4 == 47 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116))))) && p.Depth <= p.MaxDepth {
+		x4, _, x5 = p.NextOrdinary()
+		if !(x5 && (!(!(x4 == 34 || x4 == 92 || x4 == 47 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116)))) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L6_ordinary
 		}
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
-		if !ok || ((!pegort.WorkControlsEnabled || true) && (!(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116))) {
+		ch, size, ok = p.NextOrdinary()
+		if !ok || (!(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116)) {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L7_ordinary
 		}
@@ -5813,7 +5645,7 @@ func e52(p *pegort.Parser) (*pegort.Node, bool) {
 			p.ExpectOrdinary(p.Pos, 16)
 			goto L8_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 117) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 117 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit21, "u", 16, false); !ok {
 			goto L9_ordinary
@@ -5944,7 +5776,7 @@ func e53(p *pegort.Parser) (*pegort.Node, bool) {
 			x10 int
 		)
 		x1, x2 = p.Pos, len(p.Recovered)
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit24, "-", 18, false); !ok {
 			goto L3_ordinary
@@ -6053,16 +5885,12 @@ func e54(p *pegort.Parser) (*pegort.Node, bool) {
 			ok bool
 		)
 		x1, x2 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			x4, _, x5 = p.In[p.Pos], 1, true
-		} else {
-			x4, _, x5 = p.PeekOrdinary()
-		}
+		x4, _, x5 = p.NextOrdinary()
 		if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 25)
 			goto L6_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101) {
+		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101 {
 			p.Pos += 4
 		} else if _, ok = p.MatchLiteralOrdinary(lit31, "true", 25, false); !ok {
 			goto L7_ordinary
@@ -6153,7 +5981,7 @@ func e55(p *pegort.Parser) (*pegort.Node, bool) {
 			v  *pegort.Node
 			ok bool
 		)
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 117 && p.In[p.Pos+2] == 108 && p.In[p.Pos+3] == 108) {
+		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 117 && p.In[p.Pos+2] == 108 && p.In[p.Pos+3] == 108 {
 			p.Pos += 4
 		} else if _, ok = p.MatchLiteralOrdinary(lit34, "null", 8, false); !ok {
 			goto fail_ordinary
@@ -6276,7 +6104,7 @@ func q2(p *pegort.Parser) (*pegort.Node, bool) {
 		if p.Depth > p.MaxDepth {
 			p.TooDeep()
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 123) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit3, "{", 5, false); !ok {
 			goto fail_ordinary
@@ -6297,7 +6125,7 @@ func q2(p *pegort.Parser) (*pegort.Node, bool) {
 		if _, ok = q17(p); !ok {
 			goto fail_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 125) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit4, "}", 9, false); !ok {
 			goto fail_ordinary
@@ -6396,7 +6224,7 @@ func q3(p *pegort.Parser) (*pegort.Node, bool) {
 			if _, ok = q17(p); !ok {
 				goto L4_ordinary
 			}
-			if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 44) {
+			if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 				p.Pos++
 			} else if _, ok = p.MatchLiteralOrdinary(lit7, ",", 10, false); !ok {
 				goto L4_ordinary
@@ -6513,7 +6341,7 @@ func q5(p *pegort.Parser) (*pegort.Node, bool) {
 		if p.Depth > p.MaxDepth {
 			p.TooDeep()
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 91) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit11, "[", 6, false); !ok {
 			goto fail_ordinary
@@ -6534,7 +6362,7 @@ func q5(p *pegort.Parser) (*pegort.Node, bool) {
 		if _, ok = q17(p); !ok {
 			goto fail_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 93) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit12, "]", 12, false); !ok {
 			goto fail_ordinary
@@ -6633,7 +6461,7 @@ func q6(p *pegort.Parser) (*pegort.Node, bool) {
 			if _, ok = q17(p); !ok {
 				goto L4_ordinary
 			}
-			if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 44) {
+			if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 				p.Pos++
 			} else if _, ok = p.MatchLiteralOrdinary(lit7, ",", 10, false); !ok {
 				goto L4_ordinary
@@ -6762,11 +6590,7 @@ func q8(p *pegort.Parser) (*pegort.Node, bool) {
 			x5, x6 = p.Pos, len(p.Recovered)
 			x9 = 0
 			for {
-				if p.Pos < len(p.In) {
-					ch, size, ok = p.In[p.Pos], 1, true
-				} else {
-					ch, size, ok = p.PeekOrdinary()
-				}
+				ch, size, ok = p.NextOrdinary()
 				if !ok || (ch == 34 || ch == 92 || ch >= 0 && ch <= 31) {
 					p.ExpectOrdinary(p.Pos, 13)
 					break
@@ -6781,11 +6605,7 @@ func q8(p *pegort.Parser) (*pegort.Node, bool) {
 		L8_ordinary:
 			p.Pos = x5
 			p.Recovered = p.Recovered[:x6]
-			if p.Pos < len(p.In) {
-				x10, _, x11 = p.In[p.Pos], 1, true
-			} else {
-				x10, _, x11 = p.PeekOrdinary()
-			}
+			x10, _, x11 = p.NextOrdinary()
 			if !(x11 && (x10 == 92)) && p.Depth+1 <= p.MaxDepth {
 				p.ExpectOrdinary(p.Pos, 14)
 				goto L12_ordinary
@@ -6921,27 +6741,19 @@ func q9(p *pegort.Parser) (*pegort.Node, bool) {
 		if p.Depth > p.MaxDepth {
 			p.TooDeep()
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 92) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit19, "\\", 14, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			x4, _, x5 = p.In[p.Pos], 1, true
-		} else {
-			x4, _, x5 = p.PeekOrdinary()
-		}
-		if !(x5 && (!((!pegort.WorkControlsEnabled || true) && (!(x4 == 34 || x4 == 92 || x4 == 47 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116))))) && p.Depth <= p.MaxDepth {
+		x4, _, x5 = p.NextOrdinary()
+		if !(x5 && (!(!(x4 == 34 || x4 == 92 || x4 == 47 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116)))) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L6_ordinary
 		}
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
-		if !ok || ((!pegort.WorkControlsEnabled || true) && (!(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116))) {
+		ch, size, ok = p.NextOrdinary()
+		if !ok || (!(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116)) {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L7_ordinary
 		}
@@ -6955,7 +6767,7 @@ func q9(p *pegort.Parser) (*pegort.Node, bool) {
 			p.ExpectOrdinary(p.Pos, 16)
 			goto L8_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 117) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 117 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit21, "u", 16, false); !ok {
 			goto L9_ordinary
@@ -7103,11 +6915,7 @@ func q10(p *pegort.Parser) (*pegort.Node, bool) {
 		if p.Depth > p.MaxDepth {
 			p.TooDeep()
 		}
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
 			p.ExpectOrdinary(p.Pos, 17)
 			goto fail_ordinary
@@ -7180,7 +6988,7 @@ func q11(p *pegort.Parser) (*pegort.Node, bool) {
 			p.TooDeep()
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit24, "-", 18, false); !ok {
 			goto L3_ordinary
@@ -7313,16 +7121,12 @@ func q12(p *pegort.Parser) (*pegort.Node, bool) {
 			p.TooDeep()
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			x4, _, x5 = p.In[p.Pos], 1, true
-		} else {
-			x4, _, x5 = p.PeekOrdinary()
-		}
+		x4, _, x5 = p.NextOrdinary()
 		if !(x5 && (x4 == 48)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 19)
 			goto L6_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 48) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit26, "0", 19, false); !ok {
 			goto L7_ordinary
@@ -7336,22 +7140,14 @@ func q12(p *pegort.Parser) (*pegort.Node, bool) {
 			p.ExpectOrdinary(p.Pos, 20)
 			goto L8_ordinary
 		}
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 49 && ch <= 57) {
 			p.ExpectOrdinary(p.Pos, 20)
 			goto L9_ordinary
 		}
 		p.Pos += size
 		for {
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
 				p.ExpectOrdinary(p.Pos, 21)
 				break
@@ -7481,18 +7277,14 @@ func q13(p *pegort.Parser) (*pegort.Node, bool) {
 		if p.Depth > p.MaxDepth {
 			p.TooDeep()
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit28, ".", 22, false); !ok {
 			goto fail_ordinary
 		}
 		x1 = 0
 		for {
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
 				p.ExpectOrdinary(p.Pos, 21)
 				break
@@ -7583,22 +7375,14 @@ func q14(p *pegort.Parser) (*pegort.Node, bool) {
 		if p.Depth > p.MaxDepth {
 			p.TooDeep()
 		}
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch == 101 || ch == 69) {
 			p.ExpectOrdinary(p.Pos, 23)
 			goto fail_ordinary
 		}
 		p.Pos += size
 		x1, x2 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch == 43 || ch == 45) {
 			p.ExpectOrdinary(p.Pos, 24)
 			goto L3_ordinary
@@ -7612,11 +7396,7 @@ func q14(p *pegort.Parser) (*pegort.Node, bool) {
 		p.StepWork()
 		x5 = 0
 		for {
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
 				p.ExpectOrdinary(p.Pos, 21)
 				break
@@ -7734,16 +7514,12 @@ func q15(p *pegort.Parser) (*pegort.Node, bool) {
 			p.TooDeep()
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			x4, _, x5 = p.In[p.Pos], 1, true
-		} else {
-			x4, _, x5 = p.PeekOrdinary()
-		}
+		x4, _, x5 = p.NextOrdinary()
 		if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 25)
 			goto L6_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101) {
+		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101 {
 			p.Pos += 4
 		} else if _, ok = p.MatchLiteralOrdinary(lit31, "true", 25, false); !ok {
 			goto L7_ordinary
@@ -7856,7 +7632,7 @@ func q16(p *pegort.Parser) (*pegort.Node, bool) {
 		if p.Depth > p.MaxDepth {
 			p.TooDeep()
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 117 && p.In[p.Pos+2] == 108 && p.In[p.Pos+3] == 108) {
+		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 117 && p.In[p.Pos+2] == 108 && p.In[p.Pos+3] == 108 {
 			p.Pos += 4
 		} else if _, ok = p.MatchLiteralOrdinary(lit34, "null", 8, false); !ok {
 			goto fail_ordinary
@@ -7914,11 +7690,7 @@ func q17(p *pegort.Parser) (*pegort.Node, bool) {
 			p.TooDeep()
 		}
 		for {
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
 				p.ExpectOrdinary(p.Pos, 27)
 				break
@@ -8123,11 +7895,7 @@ func v1(p *pegort.TParser) (any, bool) {
 			p.TooDeep()
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			x5, _, x6 = p.In[p.Pos], 1, true
-		} else {
-			x5, _, x6 = p.PeekOrdinary()
-		}
+		x5, _, x6 = p.NextOrdinary()
 		if !(x6 && (x5 == 123)) && p.Depth+1 <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 5)
 			goto L7_ordinary
@@ -8357,11 +8125,7 @@ func i1(p *pegort.TParser) (any, bool) {
 			p.TooDeep()
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			x5, _, x6 = p.In[p.Pos], 1, true
-		} else {
-			x5, _, x6 = p.PeekOrdinary()
-		}
+		x5, _, x6 = p.NextOrdinary()
 		if !(x6 && (x5 == 123)) && p.Depth+1 <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 5)
 			goto L7_ordinary
@@ -8604,7 +8368,7 @@ func i2(p *pegort.TParser) (any, bool) {
 			p.TooDeep()
 		}
 		_ = x2
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 123) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit3, "{", 5, false); !ok {
 			goto fail_ordinary
@@ -8628,7 +8392,7 @@ func i2(p *pegort.TParser) (any, bool) {
 		if _, ok = s18(p); !ok {
 			goto fail_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 125) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit4, "}", 9, false); !ok {
 			goto fail_ordinary
@@ -8787,7 +8551,7 @@ func i3(p *pegort.TParser) (any, bool) {
 			if _, ok = s18(p); !ok {
 				goto L11_ordinary
 			}
-			if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 44) {
+			if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 				p.Pos++
 			} else if _, ok = p.Parser.MatchLiteral(lit7, ",", 10, false); !ok {
 				goto L11_ordinary
@@ -8990,7 +8754,7 @@ func i4(p *pegort.TParser) (any, bool) {
 		if _, ok = s18(p); !ok {
 			goto fail_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 58) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit9, ":", 11, false); !ok {
 			goto fail_ordinary
@@ -9132,7 +8896,7 @@ func i5(p *pegort.TParser) (any, bool) {
 			p.TooDeep()
 		}
 		_ = x2
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 91) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit11, "[", 6, false); !ok {
 			goto fail_ordinary
@@ -9156,7 +8920,7 @@ func i5(p *pegort.TParser) (any, bool) {
 		if _, ok = s18(p); !ok {
 			goto fail_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 93) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit12, "]", 12, false); !ok {
 			goto fail_ordinary
@@ -9315,7 +9079,7 @@ func i6(p *pegort.TParser) (any, bool) {
 			if _, ok = s18(p); !ok {
 				goto L11_ordinary
 			}
-			if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 44) {
+			if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 				p.Pos++
 			} else if _, ok = p.Parser.MatchLiteral(lit7, ",", 10, false); !ok {
 				goto L11_ordinary
@@ -9507,7 +9271,7 @@ func i7(p *pegort.TParser) (any, bool) {
 			p.TooDeep()
 		}
 		_ = x2
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 34) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit16, "\"", 7, false); !ok {
 			goto fail_ordinary
@@ -9517,7 +9281,7 @@ func i7(p *pegort.TParser) (any, bool) {
 			goto fail_ordinary
 		}
 		k1 = v3
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 34) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit16, "\"", 7, false); !ok {
 			goto fail_ordinary
@@ -9619,11 +9383,7 @@ func s8(p *pegort.TParser) (any, bool) {
 			x6, x7 = p.Pos, len(p.Recovered)
 			x10 = 0
 			for {
-				if p.Pos < len(p.In) {
-					ch, size, ok = p.In[p.Pos], 1, true
-				} else {
-					ch, size, ok = p.PeekOrdinary()
-				}
+				ch, size, ok = p.NextOrdinary()
 				if !ok || (ch == 34 || ch == 92 || ch >= 0 && ch <= 31) {
 					p.ExpectOrdinary(p.Pos, 13)
 					break
@@ -9638,11 +9398,7 @@ func s8(p *pegort.TParser) (any, bool) {
 		L9_ordinary:
 			p.Pos = x6
 			p.Recovered = p.Recovered[:x7]
-			if p.Pos < len(p.In) {
-				x11, _, x12 = p.In[p.Pos], 1, true
-			} else {
-				x11, _, x12 = p.PeekOrdinary()
-			}
+			x11, _, x12 = p.NextOrdinary()
 			if !(x12 && (x11 == 92)) && p.Depth+1 <= p.MaxDepth {
 				p.ExpectOrdinary(p.Pos, 14)
 				goto L13_ordinary
@@ -9817,7 +9573,7 @@ func s9(p *pegort.TParser) (any, bool) {
 		x1 = p.Pos
 		x2 = p.NewVals(2)[:0]
 		x3 = p.Pos
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 92) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit19, "\\", 14, false); !ok {
 			goto fail_ordinary
@@ -9825,21 +9581,13 @@ func s9(p *pegort.TParser) (any, bool) {
 		v4 = p.NewMatchOrdinary(x3, p.Pos, "\\", true)
 		x2 = append(x2, v4)
 		x5, x6 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			x9, _, x10 = p.In[p.Pos], 1, true
-		} else {
-			x9, _, x10 = p.PeekOrdinary()
-		}
-		if !(x10 && (!((!pegort.WorkControlsEnabled || true) && (!(x9 == 34 || x9 == 92 || x9 == 47 || x9 == 98 || x9 == 102 || x9 == 110 || x9 == 114 || x9 == 116))))) && p.Depth <= p.MaxDepth {
+		x9, _, x10 = p.NextOrdinary()
+		if !(x10 && (!(!(x9 == 34 || x9 == 92 || x9 == 47 || x9 == 98 || x9 == 102 || x9 == 110 || x9 == 114 || x9 == 116)))) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L11_ordinary
 		}
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
-		if !ok || ((!pegort.WorkControlsEnabled || true) && (!(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116))) {
+		ch, size, ok = p.NextOrdinary()
+		if !ok || (!(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116)) {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L12_ordinary
 		}
@@ -9859,7 +9607,7 @@ func s9(p *pegort.TParser) (any, bool) {
 		x17 = p.Pos
 		x18 = p.NewVals(5)[:0]
 		x19 = p.Pos
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 117) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 117 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit21, "u", 16, false); !ok {
 			goto L16_ordinary
@@ -10066,11 +9814,7 @@ func s10(p *pegort.TParser) (any, bool) {
 		if p.Depth > p.MaxDepth {
 			p.TooDeep()
 		}
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
 			p.ExpectOrdinary(p.Pos, 17)
 			goto fail_ordinary
@@ -10159,7 +9903,7 @@ func s11(p *pegort.TParser) (any, bool) {
 		}
 		x1 = p.Pos
 		x2, x3 = p.Pos, len(p.Recovered)
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 45) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit24, "-", 18, false); !ok {
 			goto L4_ordinary
@@ -10327,17 +10071,13 @@ func s12(p *pegort.TParser) (any, bool) {
 		}
 		_ = x19
 		x1, x2 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			x5, _, x6 = p.In[p.Pos], 1, true
-		} else {
-			x5, _, x6 = p.PeekOrdinary()
-		}
+		x5, _, x6 = p.NextOrdinary()
 		if !(x6 && (x5 == 48)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 19)
 			goto L7_ordinary
 		}
 		x9 = p.Pos
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 48) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit26, "0", 19, false); !ok {
 			goto L8_ordinary
@@ -10355,11 +10095,7 @@ func s12(p *pegort.TParser) (any, bool) {
 		}
 		x13 = p.Pos
 		x14 = p.NewVals(2)[:0]
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 49 && ch <= 57) {
 			p.ExpectOrdinary(p.Pos, 20)
 			goto L12_ordinary
@@ -10372,11 +10108,7 @@ func s12(p *pegort.TParser) (any, bool) {
 		x19 = 0
 		for {
 			x20, x21 = p.Pos, len(p.Recovered)
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
 				p.ExpectOrdinary(p.Pos, 21)
 				goto L22_ordinary
@@ -10596,7 +10328,7 @@ func s13(p *pegort.TParser) (any, bool) {
 		x1 = p.Pos
 		x2 = p.NewVals(2)[:0]
 		x3 = p.Pos
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit28, ".", 22, false); !ok {
 			goto fail_ordinary
@@ -10607,11 +10339,7 @@ func s13(p *pegort.TParser) (any, bool) {
 		x7 = 0
 		for {
 			x8, x9 = p.Pos, len(p.Recovered)
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
 				p.ExpectOrdinary(p.Pos, 21)
 				goto L10_ordinary
@@ -10781,11 +10509,7 @@ func s14(p *pegort.TParser) (any, bool) {
 		_ = x14
 		x1 = p.Pos
 		x2 = p.NewVals(3)[:0]
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch == 101 || ch == 69) {
 			p.ExpectOrdinary(p.Pos, 23)
 			goto fail_ordinary
@@ -10795,11 +10519,7 @@ func s14(p *pegort.TParser) (any, bool) {
 		v4 = p.NewMatchOrdinary(x3, p.Pos, p.Text(x3, p.Pos), true)
 		x2 = append(x2, v4)
 		x5, x6 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch == 43 || ch == 45) {
 			p.ExpectOrdinary(p.Pos, 24)
 			goto L8_ordinary
@@ -10819,11 +10539,7 @@ func s14(p *pegort.TParser) (any, bool) {
 		x14 = 0
 		for {
 			x15, x16 = p.Pos, len(p.Recovered)
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
 				p.ExpectOrdinary(p.Pos, 21)
 				goto L17_ordinary
@@ -11013,16 +10729,12 @@ func s15(p *pegort.TParser) (any, bool) {
 		}
 		x1 = p.Pos
 		x2, x3 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			x5, _, x6 = p.In[p.Pos], 1, true
-		} else {
-			x5, _, x6 = p.PeekOrdinary()
-		}
+		x5, _, x6 = p.NextOrdinary()
 		if !(x6 && (x5 == 116)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 25)
 			goto L7_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101) {
+		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101 {
 			p.Pos += 4
 		} else if _, ok = p.Parser.MatchLiteral(lit31, "true", 25, false); !ok {
 			goto L8_ordinary
@@ -11155,7 +10867,7 @@ func s16(p *pegort.TParser) (any, bool) {
 			p.TooDeep()
 		}
 		x1 = p.Pos
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos+4 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 117 && p.In[p.Pos+2] == 108 && p.In[p.Pos+3] == 108) {
+		if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 117 && p.In[p.Pos+2] == 108 && p.In[p.Pos+3] == 108 {
 			p.Pos += 4
 		} else if _, ok = p.Parser.MatchLiteral(lit34, "null", 8, false); !ok {
 			goto fail_ordinary
@@ -11244,11 +10956,7 @@ func s17(p *pegort.TParser) (any, bool) {
 		x3 = 0
 		for {
 			x4, x5 = p.Pos, len(p.Recovered)
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
 				p.ExpectOrdinary(p.Pos, 27)
 				goto L6_ordinary
@@ -11354,11 +11062,7 @@ func s18(p *pegort.TParser) (any, bool) {
 			p.TooDeep()
 		}
 		for {
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
 				p.ExpectOrdinary(p.Pos, 27)
 				break
@@ -11420,27 +11124,19 @@ func s19(p *pegort.TParser) (any, bool) {
 		if p.Depth > p.MaxDepth {
 			p.TooDeep()
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 92) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit19, "\\", 14, false); !ok {
 			goto fail_ordinary
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			x4, _, x5 = p.In[p.Pos], 1, true
-		} else {
-			x4, _, x5 = p.PeekOrdinary()
-		}
-		if !(x5 && (!((!pegort.WorkControlsEnabled || true) && (!(x4 == 34 || x4 == 92 || x4 == 47 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116))))) && p.Depth <= p.MaxDepth {
+		x4, _, x5 = p.NextOrdinary()
+		if !(x5 && (!(!(x4 == 34 || x4 == 92 || x4 == 47 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116)))) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L6_ordinary
 		}
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
-		if !ok || ((!pegort.WorkControlsEnabled || true) && (!(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116))) {
+		ch, size, ok = p.NextOrdinary()
+		if !ok || (!(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116)) {
 			p.ExpectOrdinary(p.Pos, 15)
 			goto L7_ordinary
 		}
@@ -11454,7 +11150,7 @@ func s19(p *pegort.TParser) (any, bool) {
 			p.ExpectOrdinary(p.Pos, 16)
 			goto L8_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 117) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 117 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit21, "u", 16, false); !ok {
 			goto L9_ordinary
@@ -11607,16 +11303,12 @@ func s20(p *pegort.TParser) (any, bool) {
 			p.TooDeep()
 		}
 		x1, x2 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			x4, _, x5 = p.In[p.Pos], 1, true
-		} else {
-			x4, _, x5 = p.PeekOrdinary()
-		}
+		x4, _, x5 = p.NextOrdinary()
 		if !(x5 && (x4 == 48)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 19)
 			goto L6_ordinary
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 48) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit26, "0", 19, false); !ok {
 			goto L7_ordinary
@@ -11630,22 +11322,14 @@ func s20(p *pegort.TParser) (any, bool) {
 			p.ExpectOrdinary(p.Pos, 20)
 			goto L8_ordinary
 		}
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 49 && ch <= 57) {
 			p.ExpectOrdinary(p.Pos, 20)
 			goto L9_ordinary
 		}
 		p.Pos += size
 		for {
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
 				p.ExpectOrdinary(p.Pos, 21)
 				break
@@ -11775,18 +11459,14 @@ func s21(p *pegort.TParser) (any, bool) {
 		if p.Depth > p.MaxDepth {
 			p.TooDeep()
 		}
-		if (!pegort.WorkControlsEnabled || true) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
+		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit28, ".", 22, false); !ok {
 			goto fail_ordinary
 		}
 		x1 = 0
 		for {
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
 				p.ExpectOrdinary(p.Pos, 21)
 				break
@@ -11877,22 +11557,14 @@ func s22(p *pegort.TParser) (any, bool) {
 		if p.Depth > p.MaxDepth {
 			p.TooDeep()
 		}
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch == 101 || ch == 69) {
 			p.ExpectOrdinary(p.Pos, 23)
 			goto fail_ordinary
 		}
 		p.Pos += size
 		x1, x2 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch == 43 || ch == 45) {
 			p.ExpectOrdinary(p.Pos, 24)
 			goto L3_ordinary
@@ -11906,11 +11578,7 @@ func s22(p *pegort.TParser) (any, bool) {
 		p.StepWork()
 		x5 = 0
 		for {
-			if p.Pos < len(p.In) {
-				ch, size, ok = p.In[p.Pos], 1, true
-			} else {
-				ch, size, ok = p.PeekOrdinary()
-			}
+			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
 				p.ExpectOrdinary(p.Pos, 21)
 				break
@@ -12025,11 +11693,7 @@ func s23(p *pegort.TParser) (any, bool) {
 		if p.Depth > p.MaxDepth {
 			p.TooDeep()
 		}
-		if p.Pos < len(p.In) {
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.PeekOrdinary()
-		}
+		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
 			p.ExpectOrdinary(p.Pos, 17)
 			goto fail_ordinary
