@@ -75,7 +75,7 @@ func TestExpressionSourceBoundaries(t *testing.T) {
 	}
 }
 
-func TestExpressionSourceInlineRejection(t *testing.T) {
+func TestExpressionSourceInlineActionsCompile(t *testing.T) {
 	for _, src := range []string{
 		`rule main = ("a" => ...)`,
 		`rule main = x:("a" => "x")`,
@@ -86,8 +86,8 @@ func TestExpressionSourceInlineRejection(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := engine.Compile(g, engine.Options{}); err == nil || !strings.Contains(err.Error(), "inline actions are not implemented") {
-			t.Fatalf("expected explicit inline rejection for %s, got %v", src, err)
+		if _, err := engine.Compile(g, engine.Options{}); err != nil {
+			t.Fatalf("inline action in %s: %v", src, err)
 		}
 	}
 }

@@ -15,6 +15,9 @@ import (
 type Program struct {
 	hasMissing bool // immutable syntax metadata; bytecode/generation are unsupported
 	Grammar    *grammar.Grammar
+	// source is the grammar as written when Grammar is its lowering (inline actions replaced by
+	// hidden rules, inline_actions.go); nil when Grammar is the grammar itself.
+	source *grammar.Grammar
 	// unsupportedSeen holds the type syntax reported as not supported yet while compiling, so that
 	// an alias resolved from several places, by several checkers, is reported once.
 	unsupportedSeen map[grammar.TypeExpr]bool
@@ -286,20 +289,25 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 
 func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, control *compileControl) (*Program, error) {
 	control.check()
+	var source *grammar.Grammar
+	if hasInlineAction(g, control) {
+		// The inline actions are checked as written, then lowered to hidden rules.
+		if err := validateGrammar(g, control); err != nil {
+			return nil, err
+		}
+		lowered, errs := lowerInlineActions(g, control)
+		if errs != nil {
+			return nil, errs
+		}
+		source, g = g, lowered
+		control.check()
+	}
 	if opts.DefaultValue {
 		g = defaultValueGrammar(g, control)
 		control.check()
 	}
-	var validationError error
-	if control == nil {
-		validationError = grammar.Validate(g)
-	} else {
-		validationError = grammar.ValidateContext(control.ctx, g)
-	}
-	control.check()
-	if validationError != nil {
-		e := validationError.(*grammar.ValidationError)
-		return nil, ErrorList{&Error{Pos: e.Pos, Msg: e.Path + ": " + e.Msg}}
+	if err := validateGrammar(g, control); err != nil {
+		return nil, err
 	}
 	var unsupported ErrorList
 	for _, comment := range g.File.HeaderComments {
@@ -355,9 +363,6 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 					}
 				}
 			}
-			if inline, ok := e.(*grammar.InlineAction); ok {
-				unsupported = append(unsupported, &Error{Pos: inline.Diagnostic(), Msg: "inline actions are not implemented"})
-			}
 		}, control)
 	}
 	control.check()
@@ -370,7 +375,16 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 	if normalizationError != nil {
 		return nil, normalizationError
 	}
-	prog := &Program{Grammar: g, byName: map[string]*rule{}, types: map[string]grammar.TypeDecl{},
+	if opts.DefaultValue {
+		source = nil // the grammar of a program that makes default values is the one it runs
+	}
+	if source != nil {
+		// The grammar as written is kept in the executable form of the other grammars.
+		if source, normalizationError = normalizeAttributesControlled(source, opts.eagerAttributeCopies, control); normalizationError != nil {
+			return nil, normalizationError
+		}
+	}
+	prog := &Program{Grammar: g, source: source, byName: map[string]*rule{}, types: map[string]grammar.TypeDecl{},
 		descTable: append([]string(nil), fixedDescs...)}
 	c := &compiler{control: control, prog: prog, opts: opts, plainDispatch: !opts.controlledDispatch}
 	if control != nil {
@@ -512,6 +526,22 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 
 	control.check()
 	return prog, nil
+}
+
+// validateGrammar returns the validation error of g as a compile error.
+func validateGrammar(g *grammar.Grammar, control *compileControl) error {
+	var validationError error
+	if control == nil {
+		validationError = grammar.Validate(g)
+	} else {
+		validationError = grammar.ValidateContext(control.ctx, g)
+	}
+	control.check()
+	if validationError != nil {
+		e := validationError.(*grammar.ValidationError)
+		return ErrorList{&Error{Pos: e.Pos, Msg: e.Path + ": " + e.Msg}}
+	}
+	return nil
 }
 
 func (c *compiler) compileRule(r *rule) {
@@ -1466,3 +1496,12 @@ func (p *Program) SourceInfo() bool { return p.sourceInfo }
 
 // DefaultValue reports whether the program was compiled to make default values (Options.DefaultValue).
 func (p *Program) DefaultValue() bool { return p.defaultValue }
+
+// SourceGrammar returns the grammar the program was compiled from: the grammar as written, without
+// the hidden rules that inline actions are lowered to.
+func (p *Program) SourceGrammar() *grammar.Grammar {
+	if p.source != nil {
+		return p.source
+	}
+	return p.Grammar
+}

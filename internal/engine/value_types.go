@@ -655,7 +655,7 @@ func (v *valueInference) elems(e grammar.Expr) []valueElem {
 		}
 		return []valueElem{{caps: caps}}
 	case *grammar.InlineAction:
-		// Inline actions are not implemented; their values are not known yet.
+		// Inline actions are lowered to rules (inline_actions.go) before value types are computed.
 		return []valueElem{{t: tyAny}}
 	}
 	// Top, bottom, anchors, negative lookaheads, discards, the cut and predicates have no value.

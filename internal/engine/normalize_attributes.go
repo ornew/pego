@@ -234,6 +234,15 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 	switch e := expr.(type) {
 	case *grammar.Group:
 		return n.expr(e.Expr)
+	case *grammar.InlineAction:
+		child := n.expr(e.Expr)
+		term := grammaranalysis.UngroupTermWithPoll(e.Action, n.poll)
+		if !n.eager && child == e.Expr && term == e.Action {
+			return e
+		}
+		copy := *e
+		copy.Expr, copy.Action = child, term
+		return &copy
 	case *grammar.Predicate:
 		term := e.Term
 		if block, ok := term.(*grammar.Block); ok && len(block.Statements) > 0 {

@@ -76,6 +76,7 @@ const (
 	xPredicate
 	xAttributed
 	xOperatorsRule
+	xInlineAction
 )
 
 // Value expression kinds
@@ -248,9 +249,9 @@ func (w *encoder) finish(out *bytes.Buffer) {
 
 // statements writes the statements (type and rule definitions) and the static analysis results.
 func (w *encoder) statements(prog *Program) {
-	w.uint(len(prog.Grammar.File.Decls))
-	ri := 0
-	for _, st := range prog.Grammar.File.Decls {
+	source := prog.SourceGrammar()
+	w.uint(len(source.File.Decls))
+	for _, st := range source.File.Decls {
 		switch st := st.(type) {
 		case grammar.TypeDecl:
 			w.byte(kTypeDef)
@@ -262,18 +263,21 @@ func (w *encoder) statements(prog *Program) {
 			w.optType(st.Type)
 			w.optTerm(st.Value)
 		case *grammar.RuleDef:
-			r := prog.rules[ri]
-			ri++
 			w.byte(kRuleDef)
 			w.str(st.Name)
 			w.optType(st.Type)
-			w.bool(r.memo)
-			w.bool(r.leader)
-			w.bool(r.positional)
-			w.bool(r.twinOK)
 			w.expr(st.Expr)
 			w.optTerm(st.Action)
 		}
+	}
+	// The flags are those of the rules of the program, which include the hidden rules that inline
+	// actions are lowered to; the reader lowers the statements in the same way.
+	w.uint(len(prog.rules))
+	for _, r := range prog.rules {
+		w.bool(r.memo)
+		w.bool(r.leader)
+		w.bool(r.positional)
+		w.bool(r.twinOK)
 	}
 }
 
@@ -389,6 +393,11 @@ func (w *encoder) expr(e grammar.Expr) {
 	case *grammar.Seq:
 		w.byte(xSeq)
 		w.exprs(e.Items)
+	case *grammar.InlineAction:
+		w.byte(xInlineAction)
+		w.expr(e.Expr)
+		w.bool(e.DefaultAction)
+		w.optTerm(e.Action)
 	case *grammar.Choice:
 		w.byte(xChoice)
 		w.exprs(e.Alts)
@@ -792,15 +801,18 @@ func (r *decoder) statements(pkg string) (*grammar.Grammar, []ruleFlags) {
 			if r.bool() {
 				rd.Type = r.typeExpr()
 			}
-			f := ruleFlags{memo: r.bool(), leader: r.bool(), positional: r.bool()}
-			f.twin = r.bool()
-			flags = append(flags, f)
 			rd.Expr = r.expr()
 			rd.Action = r.optTerm()
 			g.File.Decls = append(g.File.Decls, rd)
 		default:
 			r.fail("invalid statement kind %d", k)
 		}
+	}
+	nf := r.count()
+	for i := 0; i < nf && r.err == nil; i++ {
+		f := ruleFlags{memo: r.bool(), leader: r.bool(), positional: r.bool()}
+		f.twin = r.bool()
+		flags = append(flags, f)
 	}
 	return g, flags
 }
@@ -905,6 +917,10 @@ func (r *decoder) expr() grammar.Expr {
 		return &grammar.Any{}
 	case xSeq:
 		return &grammar.Seq{Items: r.exprs()}
+	case xInlineAction:
+		a := &grammar.InlineAction{Expr: r.expr(), DefaultAction: r.bool()}
+		a.Action = r.optTerm()
+		return a
 	case xChoice:
 		return &grammar.Choice{Alts: r.exprs()}
 	case xRepeat:

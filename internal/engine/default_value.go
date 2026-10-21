@@ -34,7 +34,7 @@ func defaultValueGrammar(g *grammar.Grammar, control *compileControl) *grammar.G
 }
 
 // defaultValueExpr drops the actions of the Operators Rule at the root of a rule body, the only
-// expression that has actions of its own (inline actions are not implemented).
+// expression that has actions of its own (inline actions are lowered to rules before this runs).
 func defaultValueExpr(e grammar.Expr, control *compileControl) grammar.Expr {
 	switch e := e.(type) {
 	case *grammar.Group:

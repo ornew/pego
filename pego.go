@@ -640,7 +640,7 @@ func (p *Parser) Start() string { return p.start }
 
 // Grammar returns the parser's grammar. The grammar of a loaded parser has no source positions, and it is
 // nil for a parser saved without the AST.
-func (p *Parser) Grammar() *grammar.Grammar { return p.prog.Grammar }
+func (p *Parser) Grammar() *grammar.Grammar { return p.prog.SourceGrammar() }
 
 // ParseRuntimeMode returns the runtime mode named s: "embed", "import" or "only".
 func ParseRuntimeMode(s string) (RuntimeMode, error) { return engine.ParseRuntimeMode(s) }
