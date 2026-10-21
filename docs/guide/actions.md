@@ -13,22 +13,29 @@ An action is an expression after `=>` inside a rule body that computes the value
 rule <name> [<type>] = <rule expression> => <action expression>
 ```
 
-The action covers the whole right-hand side, and its result may be a node, an `int`, a `string`, a `bool` or `nil`. Inline actions such as
-`(expression => action)` are recognized by the source parser but are rejected by compilation, so they cannot yet attach
-an action to one alternative or group; give each alternative its own rule:
+The action covers the whole right-hand side, and its result may be a node, an `int`, a `string`, a `bool` or `nil`.
+
+An action in parentheses, `(expression => action)`, covers only that group. It behaves like a rule written at that
+position: the group is one element of the enclosing sequence, its value is the result of the action, and the action sees
+only the captures made inside the parentheses. The captures of the enclosing rule are not visible there, and the ones made
+inside are not visible outside.
 
 ```pego
 // inline-action.pego
-rule bad =  "a" (b:"b" => $b)
+type Pair = { Left node[string]; Right node[string] }
+rule pairs = (l:[a-z] r:[a-z] => Pair{Left: $l, Right: $r})+
 ```
 
 ```bash
-pego parse -g inline-action.pego -s bad -i 'ab'
+pego parse -g inline-action.pego -s pairs -f sexpr -i 'abcd'
 ```
 
 ```text
-pego: inline-action.pego:2:24: inline actions are not implemented
+[Pair{Left: "a", Right: "b"} Pair{Left: "c", Right: "d"}]
 ```
+
+An inline action cannot appear in a lookahead (`&`, `!`) or a discard (`-`), which make no value. The braced
+form `(expression => { ... })` is not supported.
 
 ## Referring to Captures
 
@@ -413,7 +420,7 @@ formatter, say), capture them instead of discarding them.
 |:--|:--|
 | `T has no field F` | A typo, or the struct does not declare the field |
 | `cannot access .F of *T` | The value may be `nil` (for example `n:name?`). Read the field in a rule where the value is always present |
-| `inline actions are not implemented` | The compiler recognized an inline action such as `(p:part => build($p))`, but inline action execution is not implemented |
+| `an inline action is not allowed in a lookahead or a discard` | The value of the group is not used there; move the action to a rule or out of the `&`, `!` or `-` |
 | `whole-rule actions are not supported for Operators Rules` | Omit the action, write `=> ...`, or put the action on an operand or operator entry |
 | `undefined capture $z` | The capture is not made in this rule; captures are not visible across rules |
 

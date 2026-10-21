@@ -5,7 +5,9 @@ where a Rule Expression atom is expected. It evaluates without consuming
 input or producing a value. A **Value Action** follows `=>` and computes a
 rule's value from the values produced by its grammar body. An ordinary rule may
 have a whole-rule Value Action after its complete expression:
-`rule name [Type] = expression => term`. An Operators Rule has specialized
+`rule name [Type] = expression => term`. A Value Action may also stand inside
+parentheses as an inline Value Action, `(expression => term)`, which is
+described [below](#inline-value-actions). An Operators Rule has specialized
 Value Actions on its operand and operator entries. A declaration-level action
 is accepted only when it selects the default value behavior; omitting
 it or writing the explicit `=> ...` default form preserves that behavior. Any
@@ -14,14 +16,13 @@ other declaration-level action on an Operators Rule is a compile-time error.
 A Predicate Action block may contain several statements; its semantics are
 defined in [Predicate Actions](predicates.md#predicate-actions).
 
-Value Action blocks remain unsupported and are rejected during compilation;
-their statements do not execute. Inline Value Action forms are also recognized
-in source and rejected by compilation. Runtime execution of inline actions is
-not implemented. PEGO has no rule-initialization action block.
+Value Action blocks (`=> { ... }`), whole-rule or inline, remain unsupported and
+are rejected during compilation; their statements do not execute. PEGO has no
+rule-initialization action block.
 
 ```pego
-// Source syntax only; compilation rejects this inline Value Action.
-(b => { x := 1; x < 10; B{} })
+type Pair = { Left node[string]; Right node[string] }
+rule pair Pair = (l:. r:. => Pair{Left: $l, Right: $r})
 ```
 
 ```pego
@@ -40,6 +41,48 @@ whether the predicate succeeds; see [Predicate Actions](predicates.md#predicate-
 A single-term Value Action follows `=>` after the complete rule expression.
 When a grammar expression spans multiple lines, parenthesize that expression;
 a line break inside a braced action block is local to the block.
+
+## Inline Value Actions
+
+An inline Value Action has the form `(expression => action)`. It behaves exactly
+as a reference to an anonymous rule whose body is `expression` and whose
+whole-rule Value Action is `action`, written at that position:
+`(e => A)` in a rule `r` means the same as a call to a rule `r_inline_n = e => A`,
+and with `rule a = _ => A` and `rule b = a => B`, the rule `b` is the same as
+`rule b = (_ => A) => B`. Every property below follows from that.
+
+- **Scope.** The captures made inside `expression` are visible to `action`, as in a rule body, and
+  nothing else is: the captures of the enclosing rule are not. The captures made inside
+  the parentheses end at the closing parenthesis. The captures made before
+  the parentheses stay visible to the expressions after them and to the
+  whole-rule action of the enclosing rule.
+- **Value.** The inline action is one element of the enclosing sequence, like a
+  reference to a rule, and its value is the result of `action`. A label may name it
+  (`r:(e => A)`). The value, the typed value, the AST and the schema treat it as the
+  value of a rule whose type is the type of `action`. The result is a node or `nil`
+  and must fit the type the action is checked against; `expression => ...` selects the
+  default value of `expression`.
+- **Matching.** `action` runs after `expression` matches. If `expression` fails,
+  the action does not run and the failure, the expectations and the error
+  position are those of the failing rule. The inline boundary is a rule call: a cut inside the
+  parentheses commits only within them, a recovery inside them is that of the
+  anonymous rule, left recursion through them is left recursion through a rule,
+  and the call counts against the maximum call depth. An action
+  error is fatal to the parse: it does not retry another alternative or enter recovery.
+- **Source positions.** The anonymous rule's node spans the text that `expression` matched.
+- **Unused values.** An inline action in a lookahead (`&`, `!`) or a discard (`-`),
+  which make no value, is a compile-time error.
+- **Name.** The anonymous rule is named `r_inline_n` for the nth inline action of the rule
+  `r` in source order, inner actions first, with a trailing underscore added when the name is
+  taken. The name appears where a rule's name does: in the `rule` of a node, in
+  action errors, in trace events and in the output schema.
+
+```pego
+type Add = { Left Expr; Right node[string] }
+type Num = { Text node[string] }
+type Expr ~ Add | Num
+rule expr Expr = (l:expr "+" r:[0-9]+ #atomic => Add{Left: $l, Right: $r}) / (t:[0-9]+ #atomic => Num{Text: $t})
+```
 
 ## Capture References
 

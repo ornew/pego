@@ -262,8 +262,8 @@ Source `#` pragmas use dedicated expression nodes: `#repeat` is `Repeat`,
 `#atomic` is `Atomic`, `#recover` is `Recovery`, and `#stream` is `Stream`.
 Their payloads follow each pragma's own syntax. Compilation lowers recovery
 and streaming into its executable representation without changing the source
-AST. An `InlineAction` node can be formatted and serialized, but compilation
-rejects it until inline action execution is implemented.
+AST. An `InlineAction` node is formatted and serialized as written; compilation
+lowers it to an anonymous rule at its position.
 
 After loading, use `pego.Compile(g, "main")` to perform semantic checking.
 Compile and the generators also run structural validation themselves, including

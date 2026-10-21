@@ -260,7 +260,7 @@ rule ops_infix_body = (
 )
 
 // Predicate Actions and Value Actions share statement syntax. The source AST
-// retains unsupported blocks and inline actions for later compilation checks.
+// retains unsupported blocks for later compilation checks.
 rule action = default_action / action_block / action_expr
 rule default_action = "..." #atomic
 rule action_block = (
@@ -514,8 +514,9 @@ additional constraints are checked outside this source grammar.
 - **Action blocks.** Multiple-statement Predicate Actions and every braced
   Value Action are retained in the source AST but compilation rejects them.
 - **Inline actions.** `(expression => action)` is recognized in the source
-  grammar and represented in the AST, but compilation rejects it. Runtime
-  execution is not implemented.
+  grammar and represented in the AST. Compilation executes it as an anonymous
+  rule at its position (see [Actions](actions.md#inline-value-actions)); an
+  inline braced Value Action is rejected.
 - **Attribute placement.** Attributes are postfix Rule Expression annotations;
   Declaration Statement prefixes are not supported.
 

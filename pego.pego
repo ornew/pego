@@ -448,7 +448,7 @@ rule ops_infix_body OperatorsOperatorBody = (
 ) => OperatorsOperatorBody{Assoc: text($assoc), Expr: $x, Action: $a}
 
 // Predicate Actions and Value Actions share statement syntax. The source AST
-// retains unsupported blocks and inline actions for later compilation checks.
+// retains unsupported blocks for later compilation checks.
 rule action Action = default_action / action_block / action_expr
 rule default_action DefaultAction = ("...") #atomic
 rule action_block ActionBlock = (
