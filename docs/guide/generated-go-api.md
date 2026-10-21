@@ -131,6 +131,7 @@ node, err := pairsparser.Parse(input,
 ```
 
 `Parse`, `ParseRule`, `Recognize` (when generated) and `ParseAST`/`ParseRuleAST` (with `-types`) accept the same functional options.
+With `-typed-only` (`pego.WithTypedOnly()`, which needs `-types`) the package has only `ParseAST` and `ParseRuleAST`: `Parse`, `ParseRule`, `Recognize` and the code that builds `*Node` values are not generated, and `-recognize`, `-document` and `-stream` are rejected. When a typed entry point converts the Node of its rule (an action reads a field of a struct, or a result type has no Go type of its own), the generated package keeps the unexported Node rule functions that conversion runs, so the saving is smaller for such a grammar.
 No options preserves CodePoints and the generated depth default, normally 100,000. A positive `WithMaxDepth(n)`
 overrides that default for one invocation, including typed direct parsing and node conversion. Zero resets the
 field to the generated default. Options apply in order; only a negative final limit returns a configuration error,

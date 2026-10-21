@@ -474,6 +474,13 @@ func WithWorkControls() GenOption {
 	return func(o *engine.GenOptions) { o.WorkControls = true }
 }
 
+// WithTypedOnly generates only the typed entry points of a parser: ParseAST and its siblings, and
+// no Parse, ParseRule or Recognize. The generated package is smaller and builds faster. It needs
+// WithTypes and cannot be combined with WithRecognize, WithDocument or WithStream.
+func WithTypedOnly() GenOption {
+	return func(o *engine.GenOptions) { o.TypedOnly = true }
+}
+
 // WithRecognize also generates a function Recognize, which checks the input against the start rule
 // without building a tree, like Parse with RecognizeOnly.
 func WithRecognize() GenOption {

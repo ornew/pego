@@ -89,30 +89,6 @@ func BenchmarkPoliciesParseExpr(b *testing.B) {
 	}
 }
 
-func BenchmarkPoliciesRecognize(b *testing.B) {
-	b.SetBytes(policyBytes())
-	b.ReportAllocs()
-	for b.Loop() {
-		for _, p := range policies {
-			if err := cel.Recognize(p); err != nil {
-				b.Fatal(err)
-			}
-		}
-	}
-}
-
-func BenchmarkPoliciesParse(b *testing.B) {
-	b.SetBytes(policyBytes())
-	b.ReportAllocs()
-	for b.Loop() {
-		for _, p := range policies {
-			if _, err := cel.Parse(p); err != nil {
-				b.Fatal(err)
-			}
-		}
-	}
-}
-
 func BenchmarkLargeParseAST(b *testing.B) {
 	b.SetBytes(int64(len(large)))
 	b.ReportAllocs()
@@ -123,22 +99,3 @@ func BenchmarkLargeParseAST(b *testing.B) {
 	}
 }
 
-func BenchmarkLargeRecognize(b *testing.B) {
-	b.SetBytes(int64(len(large)))
-	b.ReportAllocs()
-	for b.Loop() {
-		if err := cel.Recognize(large); err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
-func BenchmarkLargeParse(b *testing.B) {
-	b.SetBytes(int64(len(large)))
-	b.ReportAllocs()
-	for b.Loop() {
-		if _, err := cel.Parse(large); err != nil {
-			b.Fatal(err)
-		}
-	}
-}

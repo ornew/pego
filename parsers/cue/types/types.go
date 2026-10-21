@@ -410,7 +410,7 @@ func (v *CallExpr) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Args))
 			for i, x := range v.Args {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -455,7 +455,7 @@ func (v *Comprehension) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Clauses))
 			for i, x := range v.Clauses {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -586,7 +586,7 @@ func (v *Field) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Attrs))
 			for i, x := range v.Attrs {
-				p.StepWork()
+
 				kids[i] = tb1(x)
 			}
 			return p.ListField(kids)
@@ -627,7 +627,7 @@ func (v *File) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Decls))
 			for i, x := range v.Decls {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -724,7 +724,7 @@ func (v *ImportDecl) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Specs))
 			for i, x := range v.Specs {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -821,7 +821,7 @@ func (v *Interpolation) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Elts))
 			for i, x := range v.Elts {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -888,7 +888,7 @@ func (v *ListLit) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Elts))
 			for i, x := range v.Elts {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -1111,7 +1111,7 @@ func (v *StructLit) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Elts))
 			for i, x := range v.Elts {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)

@@ -125,9 +125,9 @@ func ExampleComments() {
 	// 23-32 // inline
 }
 
-func ExampleRecognize() {
-	fmt.Println(cue.Recognize("a: [1, 2, 3]") == nil)
-	fmt.Println(cue.Recognize("a: [1, 2, 3") == nil)
+func ExampleValid() {
+	fmt.Println(cue.Valid("a: [1, 2, 3]"))
+	fmt.Println(cue.Valid("a: [1, 2, 3"))
 	// Output:
 	// true
 	// false

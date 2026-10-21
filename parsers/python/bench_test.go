@@ -52,16 +52,6 @@ func BenchmarkParseModule(b *testing.B) {
 	benchmark(b, func(src string) error { _, err := python.ParseModule(src); return err })
 }
 
-// BenchmarkParse builds the generic tree of *Node.
-func BenchmarkParse(b *testing.B) {
-	benchmark(b, func(src string) error { _, err := python.Parse(src); return err })
-}
-
-// BenchmarkRecognize only checks the syntax.
-func BenchmarkRecognize(b *testing.B) {
-	benchmark(b, func(src string) error { return python.Recognize(src) })
-}
-
 // BenchmarkDump prints the tree as ast.dump does (ParseAST is not part of the measurement).
 func BenchmarkDump(b *testing.B) {
 	dir := os.Getenv("PEGO_BENCH_DIR")

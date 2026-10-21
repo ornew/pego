@@ -26,9 +26,9 @@ func TestGolden(t *testing.T) {
 			t.Fatal(err)
 		}
 		var got string
-		n, err := duckdb.Parse(string(data))
+		n, err := duckdb.ParseAST(string(data))
 		if n != nil {
-			got = n.String()
+			got = render(n)
 		}
 		if err != nil {
 			if got != "" {
@@ -40,8 +40,8 @@ func TestGolden(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got+"\n" != string(want) {
-			t.Errorf("%s\n got  %s\n want %s", in, got, want)
+		if withoutZeroFields(got)+"\n" != withoutZeroFields(string(want)) {
+			t.Errorf("%s\n got  %s\n want %s", in, withoutZeroFields(got), withoutZeroFields(string(want)))
 		}
 	}
 }
@@ -424,12 +424,15 @@ func TestSyntaxError(t *testing.T) {
 	if se.Line != 2 || se.Col != 5 {
 		t.Errorf("error at %d:%d: %v", se.Line, se.Col, se)
 	}
-	if duckdb.Recognize("SELECT 1\nFROM") == nil || duckdb.Recognize("SELECT 1") != nil {
-		t.Error("Recognize")
+	if _, err := duckdb.ParseAST("SELECT 1\nFROM"); err == nil {
+		t.Error("ParseAST accepted SELECT 1 FROM")
+	}
+	if _, err := duckdb.ParseAST("SELECT 1"); err != nil {
+		t.Errorf("ParseAST: %v", err)
 	}
 }
 
-// FuzzParse checks that ParseAST and Recognize agree, and that Split and Inspect do not panic.
+// FuzzParse checks that ParseAST agrees with the interpreter running the grammar and with itself in both position units, and that Split and Inspect do not panic.
 func FuzzParse(f *testing.F) {
 	for _, s := range []string{
 		"SELECT 1", "SELECT a, b FROM t WHERE c IN (1, 2) ORDER BY 1", "FROM t SELECT [x for x in l]",
@@ -440,9 +443,13 @@ func FuzzParse(f *testing.F) {
 	}
 	f.Fuzz(func(t *testing.T, s string) {
 		script, perr := duckdb.ParseAST(s)
-		rerr := duckdb.Recognize(s)
-		if (perr == nil) != (rerr == nil) {
-			t.Fatalf("%q: ParseAST: %v, Recognize: %v", s, perr, rerr)
+		_, rerr := duckdb.ParseAST(s, duckdb.WithUnit(duckdb.Bytes))
+		// The interpreter running the grammar gives the same result, errors and range.
+		agreeWithInterpreter(t, s)
+		// A byte that is not UTF-8 is one code point (U+FFFD) and one byte, which decide differently where a
+		// character is required to match another (the tag of a dollar-quoted string).
+		if utf8.ValidString(s) && (perr == nil) != (rerr == nil) {
+			t.Fatalf("%q: ParseAST: %v, in bytes: %v", s, perr, rerr)
 		}
 		if perr == nil {
 			duckdb.Inspect(script, func(any) bool { return true })

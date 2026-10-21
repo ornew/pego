@@ -135,31 +135,3 @@ func BenchmarkParseFile(b *testing.B) {
 		})
 	}
 }
-
-func BenchmarkParse(b *testing.B) {
-	for _, in := range []struct{ name, src string }{{"config", configInput}, {"corpus", benchInput}} {
-		b.Run(in.name, func(b *testing.B) {
-			b.SetBytes(int64(len(in.src)))
-			b.ReportAllocs()
-			for b.Loop() {
-				if _, err := Parse(in.src); err != nil {
-					b.Fatal(err)
-				}
-			}
-		})
-	}
-}
-
-func BenchmarkRecognize(b *testing.B) {
-	for _, in := range []struct{ name, src string }{{"config", configInput}, {"corpus", benchInput}} {
-		b.Run(in.name, func(b *testing.B) {
-			b.SetBytes(int64(len(in.src)))
-			b.ReportAllocs()
-			for b.Loop() {
-				if err := Recognize(in.src); err != nil {
-					b.Fatal(err)
-				}
-			}
-		})
-	}
-}

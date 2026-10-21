@@ -116,25 +116,3 @@ func BenchmarkParseAST(b *testing.B) {
 		}
 	})
 }
-
-// BenchmarkRecognize only checks the source.
-func BenchmarkRecognize(b *testing.B) {
-	benchEach(b, func(b *testing.B, s benchSource) {
-		for b.Loop() {
-			if err := typescript.Recognize(s.text); err != nil {
-				b.Fatal(err)
-			}
-		}
-	})
-}
-
-// BenchmarkParse builds the generic tree of Nodes.
-func BenchmarkParse(b *testing.B) {
-	benchEach(b, func(b *testing.B, s benchSource) {
-		for b.Loop() {
-			if _, err := typescript.Parse(s.text); err != nil {
-				b.Fatal(err)
-			}
-		}
-	})
-}

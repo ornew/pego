@@ -39,9 +39,6 @@ var nestings = []struct {
 func TestNesting(t *testing.T) {
 	for _, tc := range nestings {
 		t.Run(tc.name, func(t *testing.T) {
-			if err := duckdb.Recognize(tc.make(200)); err != nil {
-				t.Fatalf("200 levels: %v", err)
-			}
 			if _, err := duckdb.ParseAST(tc.make(200)); err != nil {
 				t.Fatalf("200 levels: %v", err)
 			}
@@ -59,7 +56,7 @@ func TestNesting(t *testing.T) {
 				return
 			}
 			if !tc.recursive {
-				if err := duckdb.Recognize(tc.make(20000)); err != nil {
+				if _, err := duckdb.ParseAST(tc.make(20000)); err != nil {
 					t.Errorf("20,000 terms: %v", err)
 				}
 				return

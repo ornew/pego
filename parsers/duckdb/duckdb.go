@@ -4,9 +4,8 @@
 //
 // ParseAST returns a script as typed values: a Script of statements (Select, InsertStmt, CreateTableStmt and the
 // others of the Statement union), whose expressions, types and table references are the nodes of the syntax
-// tree, each with its Span in the input. Parse returns the same as a tree of Nodes, and Recognize only checks the
-// syntax. Split cuts a script into statements as DuckDB does, with the text DuckDB keeps for each, and Kind gives
-// the type DuckDB gives a statement.
+// tree, each with its Span in the input. Split cuts a script into statements as DuckDB does, with the text DuckDB
+// keeps for each, and Kind gives the type DuckDB gives a statement.
 //
 // The parser reads what DuckDB's parser reads and nothing else: keywords are matched without regard to case
 // and only where DuckDB's grammar puts them (a keyword of the category column_name may name a column but not

@@ -118,12 +118,18 @@ func ExampleSyntaxError() {
 	// Output: 2 11 23 expected an expression
 }
 
-func ExampleRecognize() {
-	fmt.Println(typescript.Recognize("interface A { x: number }"))
-	fmt.Println(typescript.Recognize("interface A { x: number") != nil)
-	fmt.Println(typescript.RecognizeTSX("let a = <T,>(x: T) => x;"))
+func ExampleParseAST_invalid() {
+	_, err := typescript.ParseAST("interface A { x: number }")
+	fmt.Println(err)
+	_, err = typescript.ParseAST("interface A { x: number")
+	fmt.Println(err != nil)
 	// Output:
 	// <nil>
 	// true
+}
+
+func ExampleRecognizeTSX() {
+	fmt.Println(typescript.RecognizeTSX("let a = <T,>(x: T) => x;"))
+	// Output:
 	// <nil>
 }

@@ -39,8 +39,7 @@ ok := golang.Valid(string(src))
 | `ParseFile(fset, filename, src, mode) (*ast.File, error)` | The `go/ast` tree, with the line table, `//line` directives and comment groups of `go/parser`; an error is a `scanner.ErrorList` with one error |
 | `ParseAST(input, opts...) (*types.File, error)` | The tree as the Go types of the grammar (`types.File`, `types.GenDecl`, `types.FuncDecl`, `types.CallExpr`, ...), each with its `Span` |
 | `ToGoAST(fset, filename, src, f, mode) *ast.File` | The conversion `ParseFile` uses; `f` must be parsed with `Bytes` |
-| `Valid(src) bool`, `Recognize(input, opts...) error` | Only check the input |
-| `Parse(input, opts...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
+| `Valid(src) bool` | Only checks the input, as `go/parser` accepts it |
 | `(*types.StringLit).Value()`, `(*types.CharLit).Value()` | The string or rune a literal denotes |
 | `(*types.IntLit).Constant()`, `(*types.FloatLit).Constant()`, `(*types.ImagLit).Constant()` | The `go/constant` value of a number |
 | `*SyntaxError` | The position (`Line`, `Col`, `Pos`) and the expected tokens of a syntax error |
@@ -88,8 +87,7 @@ and the text and number of errors.
 
 ## Deviations
 
-- **Errors.** A syntax error is reported once, as a `*SyntaxError` listing the expected tokens (`ParseAST`, `Parse`,
-  `Recognize`) or as a `scanner.ErrorList` with one error (`ParseFile`), and no tree is returned. `go/parser` reports up
+- **Errors.** A syntax error is reported once, as a `*SyntaxError` listing the expected tokens (`ParseAST`) or as a `scanner.ErrorList` with one error (`ParseFile`), and no tree is returned. `go/parser` reports up
   to ten errors with messages of its own and returns the part of the tree that it could parse. Whether a file is
   accepted is the same (as measured above); the position and text of the error are not compared.
 - **Mode.** `ParseFile` behaves like `go/parser` with `SkipObjectResolution`: `Scope`, `Unresolved` and `Obj` are not
@@ -117,14 +115,11 @@ and the text and number of errors.
 | `go/parser.ParseFile` (`SkipObjectResolution`) | 4.5 ms | 103 MB/s | 3.9 MB | 98,776 |
 | `golang.ParseAST` | 23.4 ms | 19.6 MB/s | 6.6 MB | 4,950 |
 | `golang.ParseFile` (`ParseAST` and `ToGoAST`) | 28.8 ms | 16.0 MB/s | 12.3 MB | 71,800 |
-| `golang.Parse` (`*Node`) | 38.8 ms | 11.8 MB/s | 51.0 MB | 9,786 |
-| `golang.Recognize` | 37.8 ms | 12.1 MB/s | 50.7 MB | 9,758 |
 
 `ParseAST` is about five times slower than the hand-written parser of the standard library, and `ParseFile` about six,
 for a grammar that mirrors its decisions: the generated parser is a packrat parser with memoization, where `go/parser`
 is a predictive parser that never backtracks. `ParseAST` builds the typed values directly (every value of the grammar
-has a Go type of its own), and is faster and lighter here than `Parse` and `Recognize`, which use the generic path (not
-analyzed further).
+has a Go type of its own).
 
 The grammar's optimizations are commented in [golang.pego](golang.pego): not memoizing the whitespace rules, guarding
 operators and operands by their first character so that failed attempts do not merge long lists of expected tokens (the

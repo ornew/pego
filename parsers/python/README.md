@@ -58,7 +58,6 @@ if errors.As(err, &se) {
 | `ParseModule(src, unit...) (*types.Module, error)` | Parses a module, as `ast.parse(src)` does, and makes the checks below |
 | `ParseAST(src, opts...) (*types.Module, error)` | The parser alone, to the typed AST |
 | `Check(m, src, unit...) error` | The checks of `ast.parse` that are not in its grammar: `\N{...}` names, the limit of 4300 digits of integers, `from __future__` features, identifiers that normalize to `None`/`True`/`False`, `<>` and `!=` (with `barry_as_FLUFL`) |
-| `Recognize(src, opts...) error`, `Parse(src, opts...) (*Node, error)` | Only check the syntax; the generic tree of `*Node`, as the engine returns it |
 | `Dump(node) string`, `DumpWithPositions(node, src, unit...) string` | The tree printed as `ast.dump` does, without and with `include_attributes=True` |
 | `Inspect(node, f)` | Walks the tree depth first |
 | `ConstantValue(*types.Constant)`, `ConstantStringValue(*types.Constant)` | The value of a constant: integers (`*big.Int`), floats, imaginary numbers, strings (adjacent literals concatenated, escapes decoded), bytes, `True`, `False`, `None`, `...` |
@@ -165,15 +164,12 @@ Apple M3 Max, Go 1.27, median of 3 runs of 100 iterations):
 | | Time | Allocations | Time | Allocations |
 | `ParseAST` | 24.7 ms (9.3 MB/s) | 8.6 MB, 119,000 | 12.6 ms (10.7 MB/s) | 4.7 MB, 60,000 |
 | `ParseModule` | 25.5 ms (9.0 MB/s) | 8.6 MB, 119,000 | 13.0 ms (10.4 MB/s) | 4.7 MB, 60,000 |
-| `Parse` | 38.7 ms (5.9 MB/s) | 72 MB, 121,000 | 19.5 ms (6.9 MB/s) | 17.6 MB, 61,000 |
-| `Recognize` | 41.2 ms (5.6 MB/s) | 72 MB, 121,000 | 19.7 ms (6.9 MB/s) | 17.6 MB, 61,000 |
 | CPython 3.14.0 `ast.parse` (same files; builds Python objects) | 13.1 ms (17.5 MB/s) | | 8.4 ms (16.0 MB/s) | |
 
 CPython's `ast.parse` was timed outside the Go tests with `python3.14 -I internal/refgen/astparse_time.py
 testdata/bench/*.py` (median of 30 runs after 30 warm-ups). So `ParseAST` takes about 1.9 times and 1.5 times as long
 as CPython's hand-written C parser, which builds its tree with Python objects, from a grammar that has no tokenizer.
-There is no Python parser in the Go standard library to compare with. `Recognize` builds nothing but is slower than
-`ParseAST`, whose rules the generator compiles into direct code.
+There is no Python parser in the Go standard library to compare with.
 
 About a third of the time of `ParseAST` is the tracking of what was expected for error messages: with that tracking
 switched off in a copy of the generated parser, `_pydecimal.py` takes 17.3 ms instead of 25.8 ms. The cost is in the

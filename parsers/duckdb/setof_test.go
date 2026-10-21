@@ -42,12 +42,6 @@ func TestSetofTypeBoundaries(t *testing.T) {
 		for _, template := range []string{"SELECT CAST(NULL AS %s)", "SELECT NULL::%s", "CREATE TABLE t (x %s)"} {
 			sql := fmt.Sprintf(template, tc.typ)
 			for _, unit := range []duckdb.PositionUnit{duckdb.CodePoints, duckdb.Bytes} {
-				if err := duckdb.Recognize(sql, duckdb.WithUnit(unit)); (err == nil) != tc.ok {
-					t.Errorf("Recognize(%q, %v): %v", sql, unit, err)
-				}
-				if _, err := duckdb.Parse(sql, duckdb.WithUnit(unit)); (err == nil) != tc.ok {
-					t.Errorf("Parse(%q, %v): %v", sql, unit, err)
-				}
 				if _, err := duckdb.ParseAST(sql, duckdb.WithUnit(unit)); (err == nil) != tc.ok {
 					t.Errorf("ParseAST(%q, %v): %v", sql, unit, err)
 				}

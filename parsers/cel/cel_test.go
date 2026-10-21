@@ -152,12 +152,10 @@ func TestConformanceSuite(t *testing.T) {
 			if _, err := cel.ParseExpr(src); err != nil {
 				t.Errorf("%s: %q: %v", filepath.Base(f), src, err)
 			}
-			if err := cel.Recognize(src); err != nil {
-				t.Errorf("%s: %q: Recognize: %v", filepath.Base(f), src, err)
+			if _, err := cel.ParseAST(src, cel.WithUnit(cel.Bytes)); err != nil {
+				t.Errorf("%s: %q: ParseAST in bytes: %v", filepath.Base(f), src, err)
 			}
-			if _, err := cel.Parse(src); err != nil {
-				t.Errorf("%s: %q: Parse: %v", filepath.Base(f), src, err)
-			}
+			agreeWithInterpreter(t, src)
 		}
 	}
 	t.Logf("%d tests, %d different expressions", total, len(distinct))
@@ -179,9 +177,9 @@ func TestGolden(t *testing.T) {
 			t.Fatal(err)
 		}
 		var got string
-		n, err := cel.Parse(string(data))
+		n, err := cel.ParseAST(string(data))
 		if n != nil {
-			got = n.String()
+			got = render(n)
 		}
 		if err != nil {
 			if got != "" {
@@ -213,19 +211,16 @@ func refSources(t testing.TB) []string {
 	return out
 }
 
-// TestAgreement checks that ParseAST, Parse and Recognize accept the same inputs, in both position units.
+// TestAgreement checks that ParseAST accepts the same inputs and reports the same errors in both position units,
+// and that it agrees with the interpreter running the grammar (agreeWithInterpreter).
 func TestAgreement(t *testing.T) {
 	for _, src := range refSources(t) {
 		_, aerr := cel.ParseAST(src)
-		_, nerr := cel.Parse(src)
-		rerr := cel.Recognize(src)
 		_, berr := cel.ParseAST(src, cel.WithUnit(cel.Bytes))
-		if (aerr == nil) != (nerr == nil) || (aerr == nil) != (rerr == nil) || (aerr == nil) != (berr == nil) {
-			t.Fatalf("%q: ParseAST: %v, Parse: %v, Recognize: %v, ParseAST in bytes: %v", src, aerr, nerr, rerr, berr)
+		if (aerr == nil) != (berr == nil) {
+			t.Fatalf("%q: ParseAST: %v, ParseAST in bytes: %v", src, aerr, berr)
 		}
-		if aerr != nil && aerr.Error() != rerr.Error() {
-			t.Errorf("%q: errors differ: %v, %v", src, aerr, rerr)
-		}
+		agreeWithInterpreter(t, src)
 	}
 }
 
@@ -456,7 +451,7 @@ func TestAdversarial(t *testing.T) {
 	} {
 		start := time.Now()
 		cel.ParseAST(tc.src)
-		cel.Recognize(tc.src)
+		cel.ParseAST(tc.src, cel.WithUnit(cel.Bytes))
 		if d := time.Since(start); d > time.Second {
 			t.Errorf("%s: %d bytes took %v", tc.name, len(tc.src), d)
 		}

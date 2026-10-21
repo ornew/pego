@@ -43,6 +43,7 @@ pego gen -g <grammar> [-lang go|ts] [-module <import path>] [-pkg <package>]
 | `-document` | `WithDocument()` | Generate the Go `Document` (Go only) |
 | `-stream` | `WithStream()` | Generate `ParseStream` (Go only; the start rule MUST contain a `#stream` repetition) |
 | `-recognize` | `WithRecognize()` | Generate recognition without a tree |
+| `-typed-only` | `WithTypedOnly()` | Go only; needs `-types`. Generate only the typed entry points (`ParseAST`, `ParseRuleAST` and their options); there is no `Parse`, `ParseRule` or `Recognize`. Rejected with `-recognize`, `-document`, `-stream` and `-lang ts`. A typed entry point that converts the Node of its rule keeps the unexported Node rule functions it runs |
 | `-observability` | `WithGeneratedObservability()` | Generate tracing and profiling, specified in [Observability](observability.md) |
 | `-source-info` | `WithGeneratedSourceInfo()` | Make the parser record [source information](nodes.md#source-information): the rule of each node and the names of captures. Without it, `Node.Rule`, `Node.Field` and `Node.Fields` of a parsed node are empty and the outputs omit them |
 | `-default-value` | `WithGeneratedDefaultValue()` | Make the parser return default values, as [Default Values](actions.md#default-values) describes. Cannot be combined with `-types`, because the types come from the dropped actions |

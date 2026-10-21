@@ -5,8 +5,7 @@
 // StringLit, BytesLit, BoolLit and NullLit for names and literals, Select, Index, Call, Unary, Binary and Conditional
 // for operations, Paren, ListLit, MapLit and MessageLit for the rest, and Optional for an optional list element. The
 // tree keeps what is written, parentheses included (a Paren), so that Format can print it back; Inspect and Children
-// walk it, and the Value methods decode literals as cel-go does. Parse returns the tree of *Node values that the
-// engine builds, and Recognize only checks the input.
+// walk it, and the Value methods decode literals as cel-go does.
 //
 // The grammar accepts what the parser of cel-go (v0.32.0) accepts: the specification's syntax with the optional
 // syntax (a.?b, a[?b], [?a], {?k: v}, Msg{?f: v}) and fields escaped with backquotes. Macros (has, all, exists,

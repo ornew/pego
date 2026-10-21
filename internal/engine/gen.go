@@ -15,6 +15,10 @@ import (
 
 // GenOptions configures code generation.
 type GenOptions struct {
+	// TypedOnly generates only the typed entry points (ParseAST, ParseRuleAST and their
+	// siblings): no Parse, ParseRule or Recognize, and no function that builds an untyped Node.
+	// It needs Types and excludes Recognize, Document and Stream.
+	TypedOnly bool
 	// WorkControls emits the work-controlled form of the generated Go functions, which charges
 	// cancellation and the input and step limits (WithContext, WithWorkLimits), and re-exports
 	// those options. Without it only the ordinary form is emitted, and a parse with a control
@@ -67,6 +71,12 @@ type GenOptions struct {
 	// convertTypes makes typed entry points convert Node results even when the
 	// typed runtime could build them (for tests).
 	convertTypes bool
+	// keepNodes keeps the untyped Node rule functions of a typed-only parser. generate sets it
+	// itself, when a typed entry point converts the Node result.
+	keepNodes bool
+	// disableKeepNodes leaves the Node rule functions out of a typed-only parser that needs them
+	// (a negative control for tests).
+	disableKeepNodes bool
 	// disableTypedCuts keeps the general typed cut route for differential tests
 	// and latest-generator performance controls. It adds no parser-time branch.
 	disableTypedCuts bool
@@ -158,6 +168,14 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 		}
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}
+	if opts.TypedOnly {
+		switch {
+		case !opts.Types:
+			return nil, fmt.Errorf("typed-only output needs typed output (-types)")
+		case opts.Recognize || opts.Document || opts.Stream:
+			return nil, fmt.Errorf("typed-only output cannot have Recognize, a Document or a stream, which use the untyped Node")
+		}
+	}
 	if opts.Types && opts.Module == "" {
 		return nil, fmt.Errorf("module path is required for typed output: the parser imports the package module/types")
 	}
@@ -187,7 +205,7 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
 		}
 	}
-	gen := &generator{observability: opts.Observability, document: opts.Document, goWorkControls: true, prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap}
+	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap}
 	if opts.Stream {
 		gen.streamStart = start
 	}
@@ -207,7 +225,9 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 		gen.rules()
 		gen.prog, gen.table = prog, "rules"
 	}
-	fmt.Fprintf(&gen.init, "\tpegoGrammar.Descs = %s\n", goStrings(gen.descs))
+	if !opts.TypedOnly {
+		fmt.Fprintf(&gen.init, "\tpegoGrammar.Descs = %s\n", goStrings(gen.descs))
+	}
 	if opts.Observability {
 		gen.init.WriteString("\tpegoGrammar.Observable = true\n")
 	}
@@ -234,9 +254,11 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 		out.WriteString("// ErrDocumentBusy is returned by a Parse, ParseAST or Edit of a Document that\n// is already parsing, such as one made by a trace callback of that parse.\n// Schedule the work after the parse returns, or use another Document.\nvar ErrDocumentBusy = DocumentBusy\n\n")
 	}
 	out.WriteString("// --- Generated code ---\n\n")
-	fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. Options select position units, depth, cancellation and work limits.\n", start.name)
-	out.WriteString("// If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.\n")
-	fmt.Fprintf(&out, "func Parse(input string, opts ...ParseOption) (*Node, error) { return RunParse(rules[%d], input, opts) }\n\n", start.id)
+	if !opts.TypedOnly {
+		fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. Options select position units, depth, cancellation and work limits.\n", start.name)
+		out.WriteString("// If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.\n")
+		fmt.Fprintf(&out, "func Parse(input string, opts ...ParseOption) (*Node, error) { return RunParse(rules[%d], input, opts) }\n\n", start.id)
+	}
 	if opts.Stream {
 		fmt.Fprintf(&out, "// ParseStream parses the input read from r with the rule %s, passing each committed element of\n", start.name)
 		out.WriteString("// its #stream repetition to emit (nil if the element has no value) without retaining it. Committed\n// elements are final even if the parse fails later. A non-EOF error from r or an error returned by\n// emit ends the parse and is returned unchanged. A nil emit collects the repetition instead.\n")
@@ -269,7 +291,8 @@ func Iterate(r io.Reader, opts ...ParseOption) (*StreamIterator, error) {
 		fmt.Fprintf(&out, "// recRules is the rule table of Recognize, and pegoRecGrammar its grammar.\nvar recRules []*Rule\nvar pegoRecGrammar = NewGrammar(%d)\n\n", opts.generatedMaxDepth())
 	}
 	fmt.Fprintf(&out, "// rules is the rule table, and pegoGrammar its grammar.\nvar rules []*Rule\nvar pegoGrammar = NewGrammar(%d)\n\n", opts.generatedMaxDepth())
-	out.WriteString(`// ParseRule parses the whole input with the rule name.
+	if !opts.TypedOnly {
+		out.WriteString(`// ParseRule parses the whole input with the rule name.
 func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	o, err := ResolveOptions(pegoGrammar, opts)
 	if err != nil {
@@ -283,11 +306,22 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 }
 
 `)
+	}
 	var typesBody string
 	if opts.Types {
 		typed, err := gen.typedGo(start, opts.convertTypes)
 		if err != nil {
 			return nil, err
+		}
+		if opts.TypedOnly && typed.needNodes && !opts.keepNodes && !opts.disableKeepNodes {
+			// A typed entry point converts the Node result of its rule, so the Node rule functions
+			// are needed; generate again with them.
+			opts.keepNodes = true
+			return generate(g, opts)
+		}
+		if opts.TypedOnly {
+			// The expectations of the typed bodies are known only now.
+			fmt.Fprintf(&gen.init, "\tpegoGrammar.Descs = %s\n", goStrings(gen.descs))
 		}
 		out.WriteString("\n// --- Typed values ---\n\n")
 		if opts.Document {
@@ -319,6 +353,11 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		if whole, err = specializeOrdinaryMethods(whole, gen.methods.String(), guard, !opts.WorkControls); err != nil {
 			return nil, err
 		}
+		if !opts.WorkControls {
+			if whole, err = stripNoControlWork(whole); err != nil {
+				return nil, err
+			}
+		}
 	}
 	body := strings.TrimPrefix(string(whole), "package "+opts.Package+"\n")
 	var tp *typesPackage
@@ -326,6 +365,11 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	if opts.Types {
 		if typesFile, tp, err = opts.typesFile(typesBody); err != nil {
 			return nil, err
+		}
+		if !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization {
+			if typesFile, err = stripNoControlWork(typesFile); err != nil {
+				return nil, err
+			}
 		}
 	}
 	body, err = qualifyRuntime(opts.runtimeImport(), body, info, tp)
@@ -459,9 +503,12 @@ type generator struct {
 	disableTypedOutputBootstrap bool
 	// nodeScopes records the frame layouts shared by typed rule metadata.
 	nodeScopes map[*rule][]string
-	prog       *Program
-	table      string // the rule table being generated: rules, or recRules for Recognize
-	cur        *rule  // the rule being generated
+	// typedOnly leaves out the untyped Node family: the rule table keeps only the metadata the
+	// typed table shares.
+	typedOnly bool
+	prog      *Program
+	table     string // the rule table being generated: rules, or recRules for Recognize
+	cur       *rule  // the rule being generated
 	// proj holds the projected repetition captures of the rule being generated (projections).
 	proj map[string]string
 	// final is the struct constructor that makes an action's result in the typed runtime: its
@@ -574,6 +621,7 @@ func goStrings(xs []string) string {
 
 func (g *generator) rules() {
 	init := &g.init
+	methodsBefore := g.methods.String()
 	bodies := map[*rule]string{}
 	scopes := map[*rule]*scope{}
 	directs := map[*rule]*direct{}
@@ -644,7 +692,17 @@ func (g *generator) rules() {
 		init.WriteString("\t}\n")
 		fmt.Fprintf(init, "\t%s.SetRules(%s, %d)\n", g.grammarVar(), g.table, g.prog.nseen)
 	}
+	nodeCode := g.table == "rules" && g.typedOnly
+	if nodeCode {
+		// The Node bodies were generated for the frame layouts they fix; their methods are not
+		// kept, and the typed rules need none of the Node entries.
+		g.methods.Reset()
+		g.methods.WriteString(methodsBefore)
+	}
 	for _, r := range all {
+		if nodeCode {
+			break
+		}
 		if pr, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 			g.cur = r
 			g.operatorsRule(r, pr)

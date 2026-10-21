@@ -349,8 +349,8 @@ func TestSyntaxErrors(t *testing.T) {
 		if Valid(in) {
 			t.Errorf("%q is valid", in)
 		}
-		if err := Recognize(in); err == nil {
-			t.Errorf("%q recognized", in)
+		if _, err := ParseAST(in); err == nil {
+			t.Errorf("%q parsed", in)
 		}
 	}
 }
@@ -367,7 +367,8 @@ func TestDepth(t *testing.T) {
 		{"binary in parens", "(1 + ", "1", ")"},
 	} {
 		valid := func(n int) bool {
-			return Recognize("x: "+strings.Repeat(c.open, n)+c.mid+strings.Repeat(c.close, n)+"\n") == nil
+			_, err := ParseAST("x: " + strings.Repeat(c.open, n) + c.mid + strings.Repeat(c.close, n) + "\n")
+			return err == nil
 		}
 		if !valid(2000) {
 			t.Errorf("%s: 2,000 levels are not valid", c.name)
@@ -423,8 +424,9 @@ func TestUnicodeTables(t *testing.T) {
 		if r < 0x80 || r > unicode.MaxRune || r >= 0xd800 && r < 0xe000 || r == 0xfeff { // U+FEFF is a byte order mark
 			continue
 		}
-		start := Recognize(string(r)) == nil
-		inside := Recognize("a"+string(r)) == nil
+		_, serr := ParseAST(string(r))
+		_, ierr := ParseAST("a" + string(r))
+		start, inside := serr == nil, ierr == nil
 		if start != unicode.IsLetter(r) || inside != (unicode.IsLetter(r) || unicode.IsDigit(r)) {
 			if bad = append(bad, r); len(bad) > 10 {
 				break

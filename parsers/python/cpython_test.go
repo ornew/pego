@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/ornew/pego/parsers/python"
 )
@@ -190,11 +191,18 @@ func TestCPythonSnippets(t *testing.T) {
 	results := runCPython(t, py, nil, "-x", filepath.Join(src, "Lib", "test"))
 	var same, rejected, byCheck int
 	var bad []string
-	for _, r := range results {
+	for i, r := range results {
+		// The interpreter is much slower than the generated parser, so the snippets are sampled: every eighth, a
+		// deterministic choice. The agreement is checked in full on the reference corpus (reference_test.go).
+		if i%8 == 0 {
+			if d := interpreterDiff(r.Source, interpreter()); d != "" {
+				bad = append(bad, d)
+			}
+		}
 		m, err := python.ParseModule(r.Source)
 		_, aerr := python.ParseAST(r.Source)
-		if rerr := python.Recognize(r.Source); (rerr == nil) != (aerr == nil) {
-			bad = append(bad, fmt.Sprintf("%q: ParseAST: %v, Recognize: %v", r.Source, aerr, rerr))
+		if _, rerr := python.ParseAST(r.Source, python.WithUnit(python.Bytes)); utf8.ValidString(r.Source) && (rerr == nil) != (aerr == nil) {
+			bad = append(bad, fmt.Sprintf("%q: ParseAST: %v, in bytes: %v", r.Source, aerr, rerr))
 		}
 		if aerr == nil && err != nil {
 			byCheck++ // rejected only by Check

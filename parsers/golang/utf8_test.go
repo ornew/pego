@@ -21,12 +21,14 @@ func TestInvalidUTF8(t *testing.T) {
 		"package p; var x\xff = 1",
 		"package p; var _ = \"\xed\xa0\x80\"", // a surrogate half
 	} {
-		if err := golang.Recognize(src, golang.WithUnit(golang.Bytes)); err == nil {
-			t.Errorf("%q: Recognize(Bytes) accepted invalid UTF-8", src)
+		if _, err := golang.ParseAST(src, golang.WithUnit(golang.Bytes)); err == nil {
+			t.Errorf("%q: ParseAST(Bytes) accepted invalid UTF-8", src)
 		}
 		if golang.Valid(src) {
 			t.Errorf("%q: Valid", src)
 		}
+		// The interpreter running the grammar gives the same result and the same error position.
+		agreeWithInterpreter(t, src)
 	}
 	// U+FFFD itself is valid.
 	for _, src := range []string{
@@ -35,15 +37,16 @@ func TestInvalidUTF8(t *testing.T) {
 		"package p; var _ = `\xef\xbf\xbd`",
 		"package p; var _ = '\xef\xbf\xbd'",
 	} {
-		if err := golang.Recognize(src, golang.WithUnit(golang.Bytes)); err != nil {
-			t.Errorf("%q: Recognize(Bytes): %v", src, err)
+		if _, err := golang.ParseAST(src, golang.WithUnit(golang.Bytes)); err != nil {
+			t.Errorf("%q: ParseAST(Bytes): %v", src, err)
 		}
-		if err := golang.Recognize(src); err != nil {
-			t.Errorf("%q: Recognize: %v", src, err)
+		if _, err := golang.ParseAST(src); err != nil {
+			t.Errorf("%q: ParseAST: %v", src, err)
 		}
+		agreeWithInterpreter(t, src)
 	}
 	// The deviation: code points cannot see invalid UTF-8 in a comment.
-	if err := golang.Recognize("package p // \xff"); err != nil {
-		t.Logf("Recognize with code points now rejects invalid UTF-8 (update the documentation): %v", err)
+	if _, err := golang.ParseAST("package p // \xff"); err != nil {
+		t.Logf("ParseAST with code points now rejects invalid UTF-8 (update the documentation): %v", err)
 	}
 }

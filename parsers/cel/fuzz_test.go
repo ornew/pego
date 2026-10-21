@@ -10,8 +10,8 @@ import (
 	"github.com/ornew/pego/parsers/cel"
 )
 
-// FuzzParse checks the properties of the parser on arbitrary input (go test -fuzz FuzzParse): ParseAST, Parse and
-// Recognize accept the same inputs and in either position unit, the spans of the values of an accepted input are
+// FuzzParse checks the properties of the parser on arbitrary input (go test -fuzz FuzzParse): ParseAST accepts the same
+// inputs as the interpreter running the grammar, in either position unit, with the same errors, the spans of the values of an accepted input are
 // consistent, and what Format prints for it parses to the same expression.
 //
 // Unlike the differential test, it needs no cel-go; the seeds are the expressions of the conformance tests and of the
@@ -35,12 +35,11 @@ func FuzzParse(f *testing.F) {
 	nolimits := cel.WithLimits(cel.Limits{})
 	f.Fuzz(func(t *testing.T, src string) {
 		e, aerr := cel.ParseAST(src)
-		rerr := cel.Recognize(src)
-		_, nerr := cel.Parse(src)
 		_, berr := cel.ParseAST(src, cel.WithUnit(cel.Bytes))
-		if (aerr == nil) != (rerr == nil) || (aerr == nil) != (nerr == nil) || (aerr == nil) != (berr == nil) {
-			t.Fatalf("ParseAST: %v, Recognize: %v, Parse: %v, in bytes: %v", aerr, rerr, nerr, berr)
+		if (aerr == nil) != (berr == nil) {
+			t.Fatalf("ParseAST: %v, in bytes: %v", aerr, berr)
 		}
+		agreeWithInterpreter(t, src)
 		if aerr != nil {
 			return
 		}

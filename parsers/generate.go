@@ -10,13 +10,13 @@
 // parsers/test.sh for all of them).
 package parsers
 
-//go:generate go run ../cmd/pego gen -g cel/cel.pego -module github.com/ornew/pego/parsers/cel -types -recognize -nodoc -runtime import -o cel
+//go:generate go run ../cmd/pego gen -g cel/cel.pego -module github.com/ornew/pego/parsers/cel -types -typed-only -nodoc -runtime import -o cel
 //go:generate go run ../cmd/pego gen -g csv/csv.pego -module github.com/ornew/pego/parsers/csv -types -recognize -work-controls -nodoc -runtime import -o csv
-//go:generate go run ../cmd/pego gen -g cue/cue.pego -module github.com/ornew/pego/parsers/cue -types -recognize -nodoc -runtime import -o cue
-//go:generate go run ../cmd/pego gen -g duckdb/duckdb.pego -module github.com/ornew/pego/parsers/duckdb -types -recognize -nodoc -runtime import -o duckdb
-//go:generate go run ../cmd/pego gen -g golang/golang.pego -module github.com/ornew/pego/parsers/golang -types -recognize -nodoc -runtime import -o golang
+//go:generate go run ../cmd/pego gen -g cue/cue.pego -module github.com/ornew/pego/parsers/cue -types -typed-only -nodoc -runtime import -o cue
+//go:generate go run ../cmd/pego gen -g duckdb/duckdb.pego -module github.com/ornew/pego/parsers/duckdb -types -typed-only -nodoc -runtime import -o duckdb
+//go:generate go run ../cmd/pego gen -g golang/golang.pego -module github.com/ornew/pego/parsers/golang -types -typed-only -nodoc -runtime import -o golang
 //go:generate go run ../cmd/pego gen -g json/json.pego -module github.com/ornew/pego/parsers/json -types -recognize -work-controls -nodoc -runtime import -o json
-//go:generate go run ../cmd/pego gen -g python/python.pego -module github.com/ornew/pego/parsers/python -types -recognize -nodoc -runtime import -o python
-//go:generate go run ../cmd/pego gen -g typescript/typescript.pego -module github.com/ornew/pego/parsers/typescript -types -recognize -nodoc -runtime import -o typescript
+//go:generate go run ../cmd/pego gen -g python/python.pego -module github.com/ornew/pego/parsers/python -types -typed-only -nodoc -runtime import -o python
+//go:generate go run ../cmd/pego gen -g typescript/typescript.pego -module github.com/ornew/pego/parsers/typescript -types -typed-only -nodoc -runtime import -o typescript
 //go:generate go run ../cmd/pego gen -g xml/xml.pego -module github.com/ornew/pego/parsers/xml -types -recognize -work-controls -nodoc -runtime import -o xml
 //go:generate go run ../cmd/pego gen -g yaml/yaml.pego -module github.com/ornew/pego/parsers/yaml -types -recognize -work-controls -nodoc -runtime import -o yaml

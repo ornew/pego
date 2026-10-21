@@ -51,17 +51,6 @@ func BenchmarkParseAST(b *testing.B) {
 	})
 }
 
-func BenchmarkParse(b *testing.B) {
-	bench(b, func(src string) error {
-		_, err := golang.Parse(src, golang.WithUnit(golang.Bytes))
-		return err
-	})
-}
-
-func BenchmarkRecognize(b *testing.B) {
-	bench(b, func(src string) error { return golang.Recognize(src, golang.WithUnit(golang.Bytes)) })
-}
-
 // BenchmarkParseFile parses into go/ast: ParseAST and ToGoAST.
 func BenchmarkParseFile(b *testing.B) {
 	bench(b, func(src string) error {

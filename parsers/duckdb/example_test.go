@@ -160,9 +160,11 @@ func ExampleSyntaxError() {
 	// Output: line 2 column 9
 }
 
-func ExampleRecognize() {
-	fmt.Println(duckdb.Recognize("SELECT 1 UNION SELECT 2"))
-	fmt.Println(duckdb.Recognize("SELECT 1 UNION") != nil)
+func ExampleParseAST_syntaxError() {
+	_, err := duckdb.ParseAST("SELECT 1 UNION SELECT 2")
+	fmt.Println(err)
+	_, err = duckdb.ParseAST("SELECT 1 UNION")
+	fmt.Println(err != nil)
 	// Output:
 	// <nil>
 	// true

@@ -7,8 +7,8 @@
 // whose fields are in the order of the compiler's forEachChild, each node with its Span (the range of its tokens,
 // without the trivia before it, like the compiler's getStart and getEnd) in the input. ParseTSX parses a .tsx
 // file, and ParseFile chooses by the name of the file and reads the top level of a module as the compiler does.
-// Kind, ForEachChild and Inspect read the tree by kind, and Parse returns the generic tree of Nodes, and Recognize
-// and RecognizeTSX only check the source. The values of literals are decoded by the Value methods.
+// Kind, ForEachChild and Inspect read the tree by kind, and RecognizeTSX only checks the source. The values of
+// literals are decoded by the Value methods.
 //
 // The grammar follows the compiler's parser function by function, so it accepts what the compiler's parser accepts
 // without a syntactic diagnostic and decides the ambiguities the way it does: arrow functions, type arguments in
@@ -61,10 +61,11 @@ func ParseTSX(input string, unit ...PositionUnit) (*types.SourceFile, error) {
 	return parseWith(tsxMarker, input, unit)
 }
 
-// RecognizeTSX checks that input is a valid .tsx file without building anything, and returns the syntax
-// errors ParseTSX would return.
+// RecognizeTSX checks that input is a valid .tsx file and returns the syntax errors ParseTSX would
+// return, without the tree.
 func RecognizeTSX(input string, unit ...PositionUnit) error {
-	return shiftError(Recognize(tsxMarker+input, unitOptions(unit)...), len(tsxMarker))
+	_, err := ParseAST(tsxMarker+input, unitOptions(unit)...)
+	return shiftError(err, len(tsxMarker))
 }
 
 // ParseFile parses the source of the file name as the TypeScript compiler does (ts.createSourceFile): as a

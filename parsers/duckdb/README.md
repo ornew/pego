@@ -41,8 +41,8 @@ duckdb.Inspect(script, func(n any) bool {
 	return true
 })
 
-// Only check.
-err = duckdb.Recognize("SELECT 1 UNION")      // a *duckdb.SyntaxError with Line, Col, Pos
+// A syntax error.
+_, err = duckdb.ParseAST("SELECT 1 UNION")    // a *duckdb.SyntaxError with Line, Col, Pos
 ```
 
 | | |
@@ -59,8 +59,6 @@ err = duckdb.Recognize("SELECT 1 UNION")      // a *duckdb.SyntaxError with Line
 | `(*types.Param).Index()`, `.ParamName()`, `.Positional()` | `$1` and `?1`, `$name`, and `?` |
 | `Keyword(word)`, `Keywords()` | The category of a keyword (`Unreserved`, `ColumnName`, `TypeFunction`, `Reserved`), as `duckdb_keywords()` says |
 | `QuoteIdent(name) string` | The name written so that it reads back as one identifier: between double quotes unless it is a plain word that is not a keyword that forbids it |
-| `Recognize(input, opts...) error` | Only checks the syntax |
-| `Parse(input, opts...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
 | `*SyntaxError` | The position (`Line`, `Col`, `Pos`) and the expected tokens of a syntax error |
 
 Positions are in code points by default; `duckdb.ParseAST(src, duckdb.WithUnit(duckdb.Bytes))` counts bytes (`Split` uses bytes).
@@ -262,8 +260,6 @@ TestWriteBenchScript`), `go test -bench .` on an Apple M3 Max:
 | | Time | Throughput | Allocations |
 |:--|--:|--:|--:|
 | `ParseAST` | 46.6 ms | 5.6 MB/s | 74,000 |
-| `Recognize` | 51.0 ms | 5.1 MB/s | 72,000 |
-| `Parse` | 68.3 ms | 3.8 MB/s | 79,000 |
 | DuckDB 1.5.6: `extract_statements` of the same script (Python, which includes making the statement objects) | 11.9 ms | 22 MB/s | |
 
 DuckDB's time is the best of ten runs of `extract_statements` (the parser of DuckDB, and the step that makes its
@@ -287,8 +283,7 @@ DuckDB's parser is C++ and parses the same script about four times as fast. The 
 that has to decide, at each token, among the alternatives that the Bison automaton chooses by a table: the ordered choice
 of a PEG tries them one after the other. In the CPU profile of `ParseAST`, about a tenth of the time is spent recording
 what each failed alternative expected (for the error message), another tenth in the memo table, and another in the
-allocator and the garbage collector. `Recognize` builds nothing and is not faster than `ParseAST`, whose rules the generator
-compiles into direct code (see the [code generation guide](../../docs/guide/generated-typed-values.md)). Tuning the grammar took `ParseAST` from 4.1 MB/s to
+allocator and the garbage collector. Tuning the grammar took `ParseAST` from 4.1 MB/s to
 5.6 MB/s: the operators of the expressions are tried only when the character that follows could begin them, a function call
 is not parsed twice to find that no string literal follows it, `IN`, `LIKE`, `IS` and the rest are one operator each, and
 the benchmarked version compared a word with unreserved keywords beginning with its letter, rather than all 330
@@ -309,7 +304,7 @@ go test ./parsers                     # parser.go up to date; golden files on ev
 cd parsers/duckdb && go test ./...    # conformance against the vendored data, the examples, the other tests
 go test -short                        # a fraction of the texts
 go test -bench .                      # benchmarks
-go test -fuzz FuzzParse               # fuzz the parser (ParseAST and Recognize agree, nothing panics)
+go test -fuzz FuzzParse               # fuzz the parser (ParseAST agrees between position units, nothing panics)
 NESTING_LIMITS=1 go test -v -run TestNesting   # the depth at which each construct fails
 ```
 

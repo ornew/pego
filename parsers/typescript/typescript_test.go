@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/ornew/pego/parsers/typescript"
 	"github.com/ornew/pego/parsers/typescript/types"
@@ -25,9 +26,9 @@ func TestGolden(t *testing.T) {
 			t.Fatal(err)
 		}
 		var got string
-		n, err := typescript.Parse(string(data))
+		n, err := typescript.ParseAST(string(data))
 		if n != nil {
-			got = n.String()
+			got = render(n)
 		}
 		if err != nil {
 			if got != "" {
@@ -39,13 +40,13 @@ func TestGolden(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got+"\n" != string(want) {
-			t.Errorf("%s\n got  %s\n want %s", in, got, want)
+		if withoutZeroFields(got)+"\n" != withoutZeroFields(string(want)) {
+			t.Errorf("%s\n got  %s\n want %s", in, withoutZeroFields(got), withoutZeroFields(string(want)))
 		}
 	}
 }
 
-// valid and invalid are sources that Parse and Recognize must accept and reject, as the TypeScript compiler's
+// valid and invalid are sources that ParseAST must accept and reject, as the TypeScript compiler's
 // parser does (the differential tests, which need node, check the same on the compiler's own test cases).
 var valid = []string{
 	"",
@@ -119,8 +120,8 @@ func TestValid(t *testing.T) {
 		if _, err := typescript.ParseAST(src); err != nil {
 			t.Errorf("%q: %v", src, err)
 		}
-		if err := typescript.Recognize(src); err != nil {
-			t.Errorf("Recognize %q: %v", src, err)
+		if _, err := typescript.ParseAST(src, typescript.WithUnit(typescript.Bytes)); err != nil && utf8.ValidString(src) {
+			t.Errorf("in bytes %q: %v", src, err)
 		}
 	}
 	for _, src := range validTSX {
@@ -138,8 +139,8 @@ func TestInvalid(t *testing.T) {
 		if _, err := typescript.ParseAST(src); err == nil {
 			t.Errorf("%q: accepted", src)
 		}
-		if err := typescript.Recognize(src); err == nil {
-			t.Errorf("Recognize %q: accepted", src)
+		if _, err := typescript.ParseAST(src, typescript.WithUnit(typescript.Bytes)); err == nil && utf8.ValidString(src) {
+			t.Errorf("in bytes %q: accepted", src)
 		}
 	}
 	// A type assertion is not valid in a .tsx file, and JSX is not valid in a .ts file.
@@ -269,7 +270,7 @@ func TestKind(t *testing.T) {
 	}
 }
 
-// FuzzParse checks that ParseAST and Recognize agree on any input, that a successful parse has valid ranges, and
+// FuzzParse checks that ParseAST agrees with itself in both position units on any input, that a successful parse has valid ranges, and
 // that nothing panics: go test -fuzz FuzzParse
 func FuzzParse(f *testing.F) {
 	for _, s := range valid {
@@ -289,10 +290,13 @@ func FuzzParse(f *testing.F) {
 			rerr = typescript.RecognizeTSX(src[1:])
 		} else {
 			file, err = typescript.ParseAST(src)
-			rerr = typescript.Recognize(src)
+			_, rerr = typescript.ParseAST(src, typescript.WithUnit(typescript.Bytes))
+			if !utf8.ValidString(src) {
+				rerr = err // invalid UTF-8 is one code point and one byte, which can decide differently
+			}
 		}
 		if (err == nil) != (rerr == nil) {
-			t.Fatalf("ParseAST error %v, Recognize error %v", err, rerr)
+			t.Fatalf("ParseAST error %v, second parse error %v", err, rerr)
 		}
 		if err == nil {
 			n := len([]rune(src))
@@ -317,12 +321,19 @@ func TestGeneratorContext(t *testing.T) {
 		"class C { *m() { const a = yield; } }",
 		"const o = { *m() { const a = yield; } };",
 	} {
-		n, err := typescript.Parse(src)
+		f, err := typescript.ParseAST(src)
 		if err != nil {
 			t.Fatalf("%q: %v", src, err)
 		}
-		if !strings.Contains(n.String(), "YieldExpression") {
-			t.Errorf("%q: no yield expression in %s", src, n)
+		found := false
+		typescript.Inspect(f, func(n typescript.ASTNode) bool {
+			if n != nil && typescript.Kind(n) == "YieldExpression" {
+				found = true
+			}
+			return true
+		})
+		if !found {
+			t.Errorf("%q: no yield expression in %s", src, render(f))
 		}
 	}
 }

@@ -27,13 +27,11 @@ func TestKeywordCaseInvariance(t *testing.T) {
 	for word := range duckdb.Keywords() {
 		for _, template := range templates {
 			canonical := fmt.Sprintf(template, word)
-			want := duckdb.Recognize(canonical) == nil
+			_, cerr := duckdb.ParseAST(canonical)
+			want := cerr == nil
 			for _, spelling := range []string{alternatingCase(word, true), alternatingCase(word, false)} {
 				sql := fmt.Sprintf(template, spelling)
 				for _, unit := range []duckdb.PositionUnit{duckdb.CodePoints, duckdb.Bytes} {
-					if err := duckdb.Recognize(sql, duckdb.WithUnit(unit)); (err == nil) != want {
-						t.Errorf("Recognize(%q, %v) case differs from %q: %v", sql, unit, canonical, err)
-					}
 					if _, err := duckdb.ParseAST(sql, duckdb.WithUnit(unit)); (err == nil) != want {
 						t.Errorf("ParseAST(%q, %v) case differs from %q: %v", sql, unit, canonical, err)
 					}
@@ -57,12 +55,6 @@ func TestMixedCaseKeywordNames(t *testing.T) {
 		{"SELECT 1 iNtentionally", true},
 	} {
 		for _, unit := range []duckdb.PositionUnit{duckdb.CodePoints, duckdb.Bytes} {
-			if err := duckdb.Recognize(tc.sql, duckdb.WithUnit(unit)); (err == nil) != tc.ok {
-				t.Errorf("Recognize(%q): %v", tc.sql, err)
-			}
-			if _, err := duckdb.Parse(tc.sql, duckdb.WithUnit(unit)); (err == nil) != tc.ok {
-				t.Errorf("Parse(%q): %v", tc.sql, err)
-			}
 			if _, err := duckdb.ParseAST(tc.sql, duckdb.WithUnit(unit)); (err == nil) != tc.ok {
 				t.Errorf("ParseAST(%q): %v", tc.sql, err)
 			}

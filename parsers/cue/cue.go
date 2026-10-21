@@ -5,8 +5,7 @@
 // implementation, cuelang.org/go/cue/parser of v0.17.1, reads it, which decides where the two differ. ParseFile
 // accepts exactly what cue/parser.ParseFile accepts and returns the syntax tree; ParseAST returns the tree as the
 // grammar reads it, without the checks that come after the syntax (File.Check: experiments, scopes, import paths,
-// the indentation of strings with interpolations, UTF-8); Parse returns it as a tree of Nodes, and Recognize only
-// checks the syntax. The types of the tree follow cuelang.org/go/cue/ast, and every node has its Span in the input
+// the indentation of strings with interpolations, UTF-8). The types of the tree follow cuelang.org/go/cue/ast, and every node has its Span in the input
 // (in code points; Bytes counts bytes). Comments lists the comments of a source. String.Unquote, Int.Value,
 // Float.Rat and the other methods decode literals as cuelang.org/go/cue/literal does, and Inspect walks the tree.
 //

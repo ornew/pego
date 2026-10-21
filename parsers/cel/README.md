@@ -54,8 +54,7 @@ ok := cel.Valid(`1 +`) // false
 |:--|:--|
 | `ParseAST(input, opts...) (types.Expr, error)` | The expression as the typed values below, each with its `Span` |
 | `ParseExpr(input, opts...) (types.Expr, error)` | `ParseAST`, then `Check`; the size of the input is checked first. It returns a `*SyntaxError` or a `*CheckError` |
-| `Valid(input, opts...) bool`, `Recognize(input, opts...) error` | Only check the input: `Valid` as `ParseExpr` does, `Recognize` the syntax and nothing else |
-| `Parse(input, opts...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
+| `Valid(input, opts...) bool` | Only check the input, as `ParseExpr` does |
 | `Check(e, opts...) error` | What the grammar does not check: literals out of range, the limits of depth, and with `WithMacros` the macros |
 | `CheckLimits(e, Limits) error`, `DefaultLimits` | The depth of recursion and the size that cel-go allows (250 and 100,000 code points) |
 | `CheckMacros(e) error`, `IsMacroCall(*types.Call) bool` | The calls of the standard macros that cel-go rejects, and the calls that are macros |
@@ -91,7 +90,7 @@ The types are declared in the package `types` (`types.Expr`, `types.Ident`, ...)
 | `MessageLit` | `Type *Ident`, `Fields` | `a.b.Msg{f: v}`; each `Field` has `Name *Name`, `Value` and `Optional` |
 | `Optional` | `X` | `?a` as an element of a list |
 
-`Expr` is the union of the expression types. A value of `ParseAST` is one of them, or a node of `Parse`; every
+`Expr` is the union of the expression types. A value of `ParseAST` is one of them; every
 struct has an embedded `Span{Start, End}` (the end is exclusive).
 
 ## Checks That Are Not Syntax
@@ -116,7 +115,7 @@ reports the rest as a `*CheckError`:
   `has(has(a.b))` is valid as in cel-go, the inner `has` being a selection after expansion. The macros of extension
   libraries (`optMap`, `cel.bind`, ...) are not checked.
 
-`ParseAST`, `Parse` and `Recognize` do none of this, and the depth they accept is that of the generated parser's limit of
+`ParseAST` does none of this, and the depth they accept is that of the generated parser's limit of
 100,000 rule calls: about 20,000 nested parentheses, 16,600 nested calls, 14,000 nested lists and 12,500 nested maps;
 a run of `!`, a chain of selections, of binary operators or of conditionals is not limited by it. Deeper input fails
 with an error instead of exhausting the stack.
@@ -127,7 +126,7 @@ The tests check the parser against the specification's conformance suite and aga
 implementation (`cel.dev/cel-go`), whose parser is an ANTLR grammar:
 
 - **The conformance tests of cel-spec** (`testdata/cel-spec`, commit 40a3c900 of 2026-09-16, Apache 2.0): the 2,527
-  tests of the `simple` suite, 2,263 different expressions, all parse with `ParseExpr`, `Recognize` and `Parse`
+  tests of the `simple` suite, 2,263 different expressions, all parse with `ParseExpr`
   (0 failures, 0 skipped). The suite has no test that expects a parse error. `go test -run TestConformanceSuite`.
 - **Differential tests against cel-go** (`TestDifferential`, `go test -run TestDifferential -v`): for each expression of
   `testdata/ref/*.tsv`, `ParseExpr` must return the AST that cel-go returns, written in a canonical form that also has
@@ -143,7 +142,7 @@ implementation (`cel.dev/cel-go`), whose parser is an ANTLR grammar:
   'Differential|Limits|Agreement|Spans|Format'`) found no difference, nor did the 56,309 for the macros and a run of 156,308
   more macro calls. Runs of 196,000 to 426,000 expressions on earlier versions of the grammar found one difference besides
   those that the smaller corpora had found while the grammar was written: `has(has(a.b))`, which is fixed.
-- `ParseAST`, `Parse` and `Recognize` agree on every input, also in bytes; the spans of every value lie in those of
+- `ParseAST` agrees with itself on every input in code points and in bytes; the spans of every value lie in those of
   its parent in order (`TestAgreement`, `TestSpans`, over all of the above); `Format` prints each of the 181,336
   accepted expressions of the large run as source that parses to the same expression (`TestFormat`); and
   `go test -fuzz FuzzParse` checks the same on arbitrary input (1.4 million executions without a failure).
@@ -191,23 +190,23 @@ conditional, the `:` of an entry and a field, the first operator of a run of `!`
 ## Grammar
 
 [cel.pego](cel.pego) follows the productions of the specification and the ANTLR grammar of cel-go. Where it differs for
-speed, the comments say what it measurably cost. The table has the time of `Recognize` and `ParseAST` on the 28
+speed, the comments say what it measurably cost. The table has the time of `ParseAST` on the 28
 expressions of [testdata/bench/policies.txt](testdata/bench/policies.txt) (2.9 KB) and on one expression of 34 KB made
 of them, for the grammar as it is and for variants that differ in one thing (each generated with `pego gen -types
--recognize -nodoc` into a copy of the module, and run in turn, the minimum of 8 rounds of 0.3 s on one CPU of an Apple
+-typed-only -nodoc` into a copy of the module, and run in turn, the minimum of 8 rounds of 0.3 s on one CPU of an Apple
 M3 Max):
 
-| Variant | `Recognize` | `ParseAST` | long `Recognize` | long `ParseAST` |
-|:--|--:|--:|--:|--:|
-| The grammar as committed | 196 µs | 686 µs | 2.32 ms | 3.61 ms |
-| First version (an alternative for each literal, a message before a call before an identifier, rules for characters) | +39% | +16% | +38% | +24% |
-| No lookaheads to choose the alternative of an operand | +26% | +8% | +29% | +18% |
-| A left-recursive rule for the members | +51% | +11% | +70% | +18% |
-| A rule for the characters of a name | +10% | +4% | +9% | +5% |
-| `ws` calls a rule (so it is memoized) | +14% | +9% | +14% | +7% |
-| Five postfix lines instead of three | +4% | +4% | +4% | +13% |
-| A call before an identifier | +4% | +1% | +2% | +4% |
-| No lookahead for a message's name | +3% | +2% | +3% | +5% |
+| Variant | `ParseAST` | long `ParseAST` |
+|:--|--:|--:|
+| The grammar as committed | 686 µs | 3.61 ms |
+| First version (an alternative for each literal, a message before a call before an identifier, rules for characters) | +16% | +24% |
+| No lookaheads to choose the alternative of an operand | +8% | +18% |
+| A left-recursive rule for the members | +11% | +18% |
+| A rule for the characters of a name | +4% | +5% |
+| `ws` calls a rule (so it is memoized) | +9% | +7% |
+| Five postfix lines instead of three | +4% | +13% |
+| A call before an identifier | +1% | +4% |
+| No lookahead for a message's name | +2% | +5% |
 
 An Operators Rule for the binary operators took as long as a rule for each precedence level, so the grammar has the
 shorter. The Go reference implementation is not in the table: the standard library has no CEL parser.
@@ -223,18 +222,13 @@ module, with its parser (`cel.dev/cel-go/parser` v0.32.0) on the same expression
 |:--|--:|--:|--:|--:|--:|--:|
 | `ParseAST` | 518 µs | 5.6 MB/s | 3.2 MB in 283 | 19.3 ms | 13.6 MB/s | 5.2 MB in 476 |
 | `ParseExpr` | 570 µs | 5.1 MB/s | 3.2 MB in 482 | | | |
-| `Recognize` | 202 µs | 14.3 MB/s | none | 18.0 ms | 14.6 MB/s | 346 KB in 25 |
-| `Parse` | 374 µs | 7.7 MB/s | 1.4 MB in 135 | 25.9 ms | 10.1 MB/s | 25.8 MB in 2,180 |
 | cel-go's parser, with the standard macros | 1,314 µs | 2.2 MB/s | 975 KB in 13,970 | 114 ms | 2.3 MB/s | 82 MB in 1,021,558 |
 
 `ParseAST` takes 2.5 times less time than cel-go's parser on typical expressions and 6 times less on a long one, with
 15 times less memory on the long one. The 3.2 MB allocated for 28 expressions is the slabs of the typed values: the
 generated parser takes the values of each type (256 of each, 1,024 of each list) from chunks that it allocates when the
 type is first used, about 115 KB for each small expression; with chunks of 8 and 64, `ParseAST` of the 28 expressions
-took 22% less time on one CPU (547 µs instead of 703 µs; the time of a long expression does not change). `Recognize`
-builds nothing, but it takes as long as `ParseAST` on a long expression: the generator compiles the rules of the typed
-parser into direct code, and not those of `Recognize` (see the
-[code generation guide](../../docs/guide/generated-typed-values.md)).
+took 22% less time on one CPU (547 µs instead of 703 µs; the time of a long expression does not change).
 
 ## Development
 

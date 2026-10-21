@@ -4,7 +4,7 @@
 // the tree as typed values modeled on go/ast (File, FuncDecl, CallExpr, ...), each with its Span in
 // the input; ToGoAST and ParseFile convert it to go/ast, with the positions, line table, //line
 // directives and comment groups that go/parser makes, for go/printer, go/format, go/types and other
-// tools. Parse returns the tree as Nodes and Recognize only checks the input; Valid does the
+// tools. Valid does the
 // same as go/parser's acceptance test. The literals of the typed tree are decoded by the Value and
 // Constant methods of StringLit, CharLit, IntLit, FloatLit and ImagLit.
 //
@@ -26,8 +26,7 @@
 //
 // # Deviations from go/parser
 //
-//   - A syntax error is reported once, as a *SyntaxError with the expected tokens (from ParseAST,
-//     Parse and Recognize), or as a scanner.ErrorList with one error (from ParseFile), and no tree is
+//   - A syntax error is reported once, as a *SyntaxError with the expected tokens (from ParseAST), or as a scanner.ErrorList with one error (from ParseFile), and no tree is
 //     returned. go/parser reports up to ten errors, with messages of its own, and returns the part of
 //     the tree it could parse. Whether a file is accepted is the same.
 //   - ParseFile always behaves like go/parser with SkipObjectResolution: Scope, Unresolved and Obj
@@ -41,7 +40,7 @@
 //     allocates about 14 times the size of the source (go/parser about 8 times).
 //   - Positions are in code points by default. With code points, invalid UTF-8 in comments cannot be
 //     told from U+FFFD, which go/scanner accepts: ParseFile and Valid check the encoding first, and
-//     with Recognize and ParseAST, pass Bytes for exact results. ToGoAST requires Bytes.
+//     with ParseAST, pass Bytes for exact results. ToGoAST requires Bytes.
 package golang
 
 import (
@@ -78,7 +77,11 @@ func ParseFile(fset *token.FileSet, filename string, src []byte, mode Mode) (*as
 
 // Valid reports whether src is a Go source file that go/parser accepts.
 func Valid(src string) bool {
-	return utf8.ValidString(src) && Recognize(src, WithUnit(Bytes)) == nil
+	if !utf8.ValidString(src) {
+		return false
+	}
+	_, err := ParseAST(src, WithUnit(Bytes))
+	return err == nil
 }
 
 // errInvalidUTF8 is returned for source that is not valid UTF-8.

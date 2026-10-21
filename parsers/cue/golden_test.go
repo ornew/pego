@@ -20,9 +20,9 @@ func TestGolden(t *testing.T) {
 			t.Fatal(err)
 		}
 		var got string
-		n, err := Parse(string(data))
+		n, err := ParseAST(string(data))
 		if n != nil {
-			got = n.String()
+			got = render(n)
 		}
 		if err != nil {
 			if got != "" {
@@ -34,7 +34,7 @@ func TestGolden(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got+"\n" != string(want) {
+		if withoutZeroFields(got)+"\n" != withoutZeroFields(string(want)) {
 			t.Errorf("%s\n got  %s\n want %s", in, got, want)
 		}
 	}

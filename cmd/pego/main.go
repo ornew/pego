@@ -6,7 +6,7 @@
 //	pego test -f suite.json [-format text|json] [-backend closure,bytecode] [-equivalence] [-update]
 //	pego fmt [-w] [-l] [-check] [-syntax] [grammar.pego ...]
 //	pego convert [-to pego|json] [-o output] grammar.pego|grammar.json|grammar.pegoc
-//	pego gen -g grammar.pego -module path -o dir [-pkg name] [-runtime embed|import|only] [-s main] [-types] [-document] [-stream] [-recognize] [-observability] [-work-controls] [-nodoc] [-max-depth n] [-source-info] [-default-value]
+//	pego gen -g grammar.pego -module path -o dir [-pkg name] [-runtime embed|import|only] [-s main] [-types] [-document] [-stream] [-recognize] [-observability] [-work-controls] [-typed-only] [-nodoc] [-max-depth n] [-source-info] [-default-value]
 //	pego gen -lang ts -g grammar.pego -o dir [-runtime embed|import|only] [-runtime-module specifier] [-s main] [-types] [-recognize] [-observability]
 //	pego compile -g grammar.pego [-s main] [-no-ast] [-source-info] [-default-value] -o grammar.pegoc
 //	pego trace -g grammar.pego [-s main] [-i input] [-max-depth n] [-rule name] [-failures] [-f text|json]
@@ -76,7 +76,7 @@ Commands:
       other format of the input and is required for compiled grammars.
 
   gen -g <grammar> -module <import path> -o <dir> [-pkg <package>] [-runtime embed|import|only] [-s <rule>] [-types]
-        [-document] [-stream] [-recognize] [-observability] [-work-controls] [-max-depth <n>] [-nodoc] [-source-info] [-default-value]
+        [-document] [-stream] [-recognize] [-observability] [-work-controls] [-typed-only] [-max-depth <n>] [-nodoc] [-source-info] [-default-value]
   gen -runtime only -o <dir>
   gen -lang ts -g <grammar> -o <dir> [-runtime embed|import|only] [-runtime-module <specifier>] [-s <rule>] [-types]
         [-recognize] [-observability] [-max-depth <n>] [-source-info] [-default-value]
@@ -113,6 +113,9 @@ Commands:
       supports WithContext and WithWorkLimits; without it those options are not
       exported and a parse that passes them fails. It cannot be combined with
       -lang ts.
+      -typed-only generates only the typed entry points (ParseAST and its
+      siblings), without Parse, ParseRule and Recognize. It needs -types and
+      cannot be combined with -recognize, -document, -stream or -lang ts.
       With -recognize, Recognize (recognize in TypeScript) checks input without
       building a tree.
       -nodoc leaves out the package comment
@@ -774,6 +777,7 @@ func gen(args []string, stdout io.Writer) error {
 	stream := fs.Bool("stream", false, "also generate Go ParseStream and Iterate for the start rule's #stream repetition (and their typed forms with -types; incompatible with -lang ts)")
 	observability := fs.Bool("observability", false, "emit opt-in rule tracing and profiling for Go batch/Documents and TypeScript batch parsing, including typed entry points")
 	workControls := fs.Bool("work-controls", false, "generate the work-controlled form of the Go parser, which supports WithContext and WithWorkLimits (incompatible with -lang ts)")
+	typedOnly := fs.Bool("typed-only", false, "generate only the typed entry points (ParseAST and siblings), without Parse, ParseRule and Recognize (needs -types)")
 	recognize := fs.Bool("recognize", false, "also generate Recognize, which checks input without building a tree")
 	maxDepth := fs.Int("max-depth", 0, "generated default nested rule-call limit (0 selects 100000)")
 	nodoc := fs.Bool("nodoc", false, "leave out the package comment (Go)")
@@ -796,7 +800,7 @@ func gen(args []string, stdout io.Writer) error {
 		}
 		switch mode {
 		case pego.RuntimeOnly:
-			for _, name := range []string{"g", "s", "pkg", "module", "types", "document", "stream", "observability", "work-controls", "recognize", "max-depth", "nodoc", "source-info", "default-value"} {
+			for _, name := range []string{"g", "s", "pkg", "module", "types", "document", "stream", "observability", "work-controls", "typed-only", "recognize", "max-depth", "nodoc", "source-info", "default-value"} {
 				if isFlagSet(fs, name) {
 					return fmt.Errorf("-%s cannot be combined with -runtime only, which writes just the runtime", name)
 				}
@@ -817,8 +821,8 @@ func gen(args []string, stdout io.Writer) error {
 			}
 		}
 	case "ts":
-		if *pkg != "" || *module != "" || *nodoc || *document || *stream || *workControls {
-			return fmt.Errorf("-pkg, -module, -nodoc, -document, -stream and -work-controls are not supported with -lang ts")
+		if *pkg != "" || *module != "" || *nodoc || *document || *stream || *workControls || *typedOnly {
+			return fmt.Errorf("-pkg, -module, -nodoc, -document, -stream, -work-controls and -typed-only are not supported with -lang ts")
 		}
 		if *output == "" {
 			return fmt.Errorf("-o (an output directory) is required")
@@ -880,6 +884,9 @@ func gen(args []string, stdout io.Writer) error {
 	}
 	if *workControls {
 		opts = append(opts, pego.WithWorkControls())
+	}
+	if *typedOnly {
+		opts = append(opts, pego.WithTypedOnly())
 	}
 	if *recognize {
 		opts = append(opts, pego.WithRecognize())

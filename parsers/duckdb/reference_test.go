@@ -160,15 +160,15 @@ func checkAcceptance(t *testing.T, cases []refCase, dev map[string]string, devia
 	t.Helper()
 	var (
 		bothAccept, bothReject, semantic, falseNeg, falsePos, known int
-		recognizeDiffers                                            int
+		unitDiffers                                            int
 		failures                                                    []string
 	)
 	for _, c := range cases {
 		_, err := duckdb.ParseAST(c.SQL)
-		rerr := duckdb.Recognize(c.SQL)
+		_, rerr := duckdb.ParseAST(c.SQL, duckdb.WithUnit(duckdb.Bytes))
 		if (err == nil) != (rerr == nil) {
-			recognizeDiffers++
-			failures = append(failures, fmt.Sprintf("ParseAST and Recognize differ on %q: %v, %v", c.SQL, err, rerr))
+			unitDiffers++
+			failures = append(failures, fmt.Sprintf("ParseAST differs between code points and bytes on %q: %v, %v", c.SQL, err, rerr))
 		}
 		mine := err == nil
 		_, isKnown := dev[c.SQL]

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/ornew/pego/parsers/python"
 )
@@ -22,9 +23,9 @@ func TestGolden(t *testing.T) {
 			t.Fatal(err)
 		}
 		var got string
-		n, err := python.Parse(string(data))
+		n, err := python.ParseAST(string(data))
 		if n != nil {
-			got = n.String()
+			got = render(n)
 		}
 		if err != nil {
 			if got != "" {
@@ -36,8 +37,8 @@ func TestGolden(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got+"\n" != string(want) {
-			t.Errorf("%s\n got  %s\n want %s", in, got, want)
+		if withoutZeroFields(got)+"\n" != withoutZeroFields(string(want)) {
+			t.Errorf("%s\n got  %s\n want %s", in, withoutZeroFields(got), withoutZeroFields(string(want)))
 		}
 	}
 }
@@ -69,7 +70,7 @@ func TestAcceptance(t *testing.T) {
 	}
 }
 
-// FuzzParse checks that the parser does not panic and that ParseAST, Recognize and Dump agree.
+// FuzzParse checks that the parser does not panic and that ParseAST agrees with the interpreter running the grammar.
 func FuzzParse(f *testing.F) {
 	inputs, _ := filepath.Glob("testdata/*.txt")
 	for _, in := range inputs {
@@ -80,9 +81,10 @@ func FuzzParse(f *testing.F) {
 	f.Add("if x:\n\tpass\n  else: 1\n")
 	f.Add("f'{x!r:>{w}}' t'{y=}'")
 	f.Fuzz(func(t *testing.T, src string) {
+		agreeWithInterpreter(t, src)
 		m, err := python.ParseAST(src)
-		if rerr := python.Recognize(src); (rerr == nil) != (err == nil) {
-			t.Fatalf("ParseAST: %v, Recognize: %v", err, rerr)
+		if _, rerr := python.ParseAST(src, python.WithUnit(python.Bytes)); utf8.ValidString(src) && (rerr == nil) != (err == nil) {
+			t.Fatalf("ParseAST: %v, in bytes: %v", err, rerr)
 		}
 		if err != nil {
 			return

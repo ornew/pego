@@ -19,7 +19,8 @@ Three changes shrink the output without changing what a parse does.
    (`pego.WithWorkControls`) emits the work-controlled form. Without it the
    ordinary specialization replaces each body, so a function exists once; with
    `-document` the function keeps a second form for the Document, with no charge
-   and no control read, so the saving is a few percent (a fixture of 3 rules:
+   and no control read (the typed constructors and the closures of actions
+   charge nothing either), so the saving is a few percent (a fixture of 3 rules:
    74,282 bytes with controls, 70,641 without). The
    package then exports none of `WithContext`, `WithWorkLimits` and their types,
    and the runtime grammar records `NoWorkControls`, so a control option passed

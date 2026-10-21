@@ -80,24 +80,6 @@ func BenchmarkParseAST(b *testing.B) {
 	}
 }
 
-func BenchmarkParse(b *testing.B) {
-	b.SetBytes(int64(len(benchScript)))
-	for b.Loop() {
-		if _, err := duckdb.Parse(benchScript); err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
-func BenchmarkRecognize(b *testing.B) {
-	b.SetBytes(int64(len(benchScript)))
-	for b.Loop() {
-		if err := duckdb.Recognize(benchScript); err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
 // TestWriteBenchScript writes the script of the benchmarks to the file named by BENCH_SCRIPT, to time another
 // parser on it (the README gives the command for DuckDB's).
 func TestWriteBenchScript(t *testing.T) {

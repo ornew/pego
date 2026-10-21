@@ -31,6 +31,8 @@ import (
 // them values of the typed runtime.
 type typedOutput struct {
 	parser, types string
+	// needNodes reports that an entry point converts the Node result of a rule.
+	needNodes bool
 }
 
 // typedGo returns the Go source of the typed values for a parser starting at rule start. Unless conv
@@ -262,7 +264,7 @@ func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
 	if err := t.checkTypesNames(); err != nil {
 		return typedOutput{}, err
 	}
-	return typedOutput{parser: b.String(), types: tb.String()}, nil
+	return typedOutput{parser: b.String(), types: tb.String(), needNodes: needNodes}, nil
 }
 
 type typedGen struct {

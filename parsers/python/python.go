@@ -4,8 +4,7 @@
 // ParseModule parses a module (a file of Python source, as ast.parse does with mode "exec") into a
 // typed AST modeled on Python's ast module: *Module holds Stmt values (*FunctionDef, *If, ...) that
 // hold Expr values (*BinOp, *Call, ...), and every node embeds a Span, the positions of its text
-// in code points (or bytes: pass Bytes). ParseAST is the parser alone, Recognize only checks the
-// syntax and Parse returns the generic tree of *Node.
+// in code points (or bytes: pass Bytes). ParseAST is the parser alone.
 //
 // The AST differs from Python's in a few ways, so as to stay a tree of the source: identifiers
 // are strings, with "" for Python's None (NormalizeName gives the NFKC form that Python uses);

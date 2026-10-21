@@ -162,8 +162,6 @@ On 256 KB of CUE (`go test -bench .`; minimum of 6 runs on a shared Apple M3 Max
 | `cue/parser.ParseFile` | 7.6 ms (34 MB/s), 6.0 MB, 107,946 allocs | 6.2 ms (42 MB/s), 5.0 MB, 73,570 allocs |
 | `ParseFile` | 26.9 ms (9.8 MB/s), 14.8 MB, 141,878 allocs | 20.1 ms (13 MB/s), 10.3 MB, 115,313 allocs |
 | `ParseAST` | 24.6 ms | 17.9 ms |
-| `Recognize` | 26.9 ms | 25.4 ms |
-| `Parse` (the tree of `*Node`) | 38.8 ms | 32.1 ms |
 
 *config* is a synthetic configuration of services (definitions, constraints, disjunctions, comprehensions,
 interpolations, comments; 262,824 bytes); *corpus* is the sources of the test corpus that have no package clause,
@@ -189,12 +187,9 @@ How the grammar got there (each step measured on *config*, `ParseAST`):
   are memoized per its value, which costs an allocation for each memoized call: about 7% (when the generated runtime
   shares one empty environment, as a trial, 26.6 ms become 24.6 ms and 145,000 allocations 20,000). Avoiding the
   variable needs a rule for every number of hashes, which limits it, so the variable stays.
-- A predicate that reads a captured value makes the recognizer build the values of everything that the capture calls.
+- A predicate that reads a captured value makes the parser build the values of everything that the capture calls.
   The `__` check of labels and the indentation check of strings with interpolations did that for most of the grammar,
-  and are a lookahead and part of `Check`: `Recognize` went from 40 ms to 27 ms.
-
-`Recognize` is not faster than `ParseAST` here: `ParseAST` runs on the typed runtime with direct rules, `Recognize` on the
-general one.
+  and are a lookahead and part of `Check`.
 
 ## Regenerating
 

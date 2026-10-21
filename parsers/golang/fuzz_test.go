@@ -27,6 +27,8 @@ func FuzzParseFile(f *testing.F) {
 		f.Add(s)
 	}
 	f.Fuzz(func(t *testing.T, src string) {
+		// The generated parser also agrees with the interpreter running the grammar.
+		agreeWithInterpreter(t, src)
 		if d := compare("x.go", []byte(src), 0); d != "" {
 			t.Fatalf("%q: %s", src, d)
 		}

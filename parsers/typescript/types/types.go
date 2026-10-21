@@ -1587,7 +1587,7 @@ func (v *ArrayBindingPattern) TFieldWork(p *pegort.TParser, name string) (any, b
 			}
 			kids := make([]any, len(v.Elements))
 			for i, x := range v.Elements {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -1628,7 +1628,7 @@ func (v *ArrayLiteralExpression) TFieldWork(p *pegort.TParser, name string) (any
 			}
 			kids := make([]any, len(v.Elements))
 			for i, x := range v.Elements {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -1719,7 +1719,7 @@ func (v *ArrowFunction) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -1731,7 +1731,7 @@ func (v *ArrowFunction) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.TypeParameters))
 			for i, x := range v.TypeParameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -1743,7 +1743,7 @@ func (v *ArrowFunction) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Parameters))
 			for i, x := range v.Parameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -1902,7 +1902,7 @@ func (v *Block) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Statements))
 			for i, x := range v.Statements {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -1984,7 +1984,7 @@ func (v *CallExpression) TFieldWork(p *pegort.TParser, name string) (any, bool) 
 			}
 			kids := make([]any, len(v.TypeArguments))
 			for i, x := range v.TypeArguments {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -1996,7 +1996,7 @@ func (v *CallExpression) TFieldWork(p *pegort.TParser, name string) (any, bool) 
 			}
 			kids := make([]any, len(v.Arguments))
 			for i, x := range v.Arguments {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -2050,7 +2050,7 @@ func (v *CallSignature) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.TypeParameters))
 			for i, x := range v.TypeParameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -2062,7 +2062,7 @@ func (v *CallSignature) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Parameters))
 			for i, x := range v.Parameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -2105,7 +2105,7 @@ func (v *CaseBlock) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Clauses))
 			for i, x := range v.Clauses {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -2150,7 +2150,7 @@ func (v *CaseClause) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Statements))
 			for i, x := range v.Statements {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -2252,7 +2252,7 @@ func (v *ClassDeclaration) TFieldWork(p *pegort.TParser, name string) (any, bool
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -2266,7 +2266,7 @@ func (v *ClassDeclaration) TFieldWork(p *pegort.TParser, name string) (any, bool
 			}
 			kids := make([]any, len(v.TypeParameters))
 			for i, x := range v.TypeParameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -2278,7 +2278,7 @@ func (v *ClassDeclaration) TFieldWork(p *pegort.TParser, name string) (any, bool
 			}
 			kids := make([]any, len(v.HeritageClauses))
 			for i, x := range v.HeritageClauses {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -2290,7 +2290,7 @@ func (v *ClassDeclaration) TFieldWork(p *pegort.TParser, name string) (any, bool
 			}
 			kids := make([]any, len(v.Members))
 			for i, x := range v.Members {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -2366,7 +2366,7 @@ func (v *ClassExpression) TFieldWork(p *pegort.TParser, name string) (any, bool)
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -2380,7 +2380,7 @@ func (v *ClassExpression) TFieldWork(p *pegort.TParser, name string) (any, bool)
 			}
 			kids := make([]any, len(v.TypeParameters))
 			for i, x := range v.TypeParameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -2392,7 +2392,7 @@ func (v *ClassExpression) TFieldWork(p *pegort.TParser, name string) (any, bool)
 			}
 			kids := make([]any, len(v.HeritageClauses))
 			for i, x := range v.HeritageClauses {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -2404,7 +2404,7 @@ func (v *ClassExpression) TFieldWork(p *pegort.TParser, name string) (any, bool)
 			}
 			kids := make([]any, len(v.Members))
 			for i, x := range v.Members {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -2447,7 +2447,7 @@ func (v *ClassStaticBlockDeclaration) TFieldWork(p *pegort.TParser, name string)
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -2597,7 +2597,7 @@ func (v *ConstructSignature) TFieldWork(p *pegort.TParser, name string) (any, bo
 			}
 			kids := make([]any, len(v.TypeParameters))
 			for i, x := range v.TypeParameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -2609,7 +2609,7 @@ func (v *ConstructSignature) TFieldWork(p *pegort.TParser, name string) (any, bo
 			}
 			kids := make([]any, len(v.Parameters))
 			for i, x := range v.Parameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -2678,7 +2678,7 @@ func (v *Constructor) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -2690,7 +2690,7 @@ func (v *Constructor) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.TypeParameters))
 			for i, x := range v.TypeParameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -2702,7 +2702,7 @@ func (v *Constructor) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Parameters))
 			for i, x := range v.Parameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -2771,7 +2771,7 @@ func (v *ConstructorType) TFieldWork(p *pegort.TParser, name string) (any, bool)
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -2783,7 +2783,7 @@ func (v *ConstructorType) TFieldWork(p *pegort.TParser, name string) (any, bool)
 			}
 			kids := make([]any, len(v.TypeParameters))
 			for i, x := range v.TypeParameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -2795,7 +2795,7 @@ func (v *ConstructorType) TFieldWork(p *pegort.TParser, name string) (any, bool)
 			}
 			kids := make([]any, len(v.Parameters))
 			for i, x := range v.Parameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -2882,7 +2882,7 @@ func (v *DefaultClause) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Statements))
 			for i, x := range v.Statements {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -3014,7 +3014,7 @@ func (v *EnumDeclaration) TFieldWork(p *pegort.TParser, name string) (any, bool)
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -3028,7 +3028,7 @@ func (v *EnumDeclaration) TFieldWork(p *pegort.TParser, name string) (any, bool)
 			}
 			kids := make([]any, len(v.Members))
 			for i, x := range v.Members {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3099,7 +3099,7 @@ func (v *ExportAssignment) TFieldWork(p *pegort.TParser, name string) (any, bool
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -3152,7 +3152,7 @@ func (v *ExportDeclaration) TFieldWork(p *pegort.TParser, name string) (any, boo
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -3257,7 +3257,7 @@ func (v *ExpressionWithTypeArguments) TFieldWork(p *pegort.TParser, name string)
 			}
 			kids := make([]any, len(v.TypeArguments))
 			for i, x := range v.TypeArguments {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -3448,7 +3448,7 @@ func (v *FunctionDeclaration) TFieldWork(p *pegort.TParser, name string) (any, b
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -3464,7 +3464,7 @@ func (v *FunctionDeclaration) TFieldWork(p *pegort.TParser, name string) (any, b
 			}
 			kids := make([]any, len(v.TypeParameters))
 			for i, x := range v.TypeParameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3476,7 +3476,7 @@ func (v *FunctionDeclaration) TFieldWork(p *pegort.TParser, name string) (any, b
 			}
 			kids := make([]any, len(v.Parameters))
 			for i, x := range v.Parameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3551,7 +3551,7 @@ func (v *FunctionExpression) TFieldWork(p *pegort.TParser, name string) (any, bo
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -3567,7 +3567,7 @@ func (v *FunctionExpression) TFieldWork(p *pegort.TParser, name string) (any, bo
 			}
 			kids := make([]any, len(v.TypeParameters))
 			for i, x := range v.TypeParameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3579,7 +3579,7 @@ func (v *FunctionExpression) TFieldWork(p *pegort.TParser, name string) (any, bo
 			}
 			kids := make([]any, len(v.Parameters))
 			for i, x := range v.Parameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3637,7 +3637,7 @@ func (v *FunctionType) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.TypeParameters))
 			for i, x := range v.TypeParameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3649,7 +3649,7 @@ func (v *FunctionType) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Parameters))
 			for i, x := range v.Parameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3720,7 +3720,7 @@ func (v *GetAccessor) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -3734,7 +3734,7 @@ func (v *GetAccessor) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.TypeParameters))
 			for i, x := range v.TypeParameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3746,7 +3746,7 @@ func (v *GetAccessor) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Parameters))
 			for i, x := range v.Parameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3803,7 +3803,7 @@ func (v *HeritageClause) TFieldWork(p *pegort.TParser, name string) (any, bool) 
 			}
 			kids := make([]any, len(v.Types))
 			for i, x := range v.Types {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3910,7 +3910,7 @@ func (v *ImportAttributes) TFieldWork(p *pegort.TParser, name string) (any, bool
 			}
 			kids := make([]any, len(v.Elements))
 			for i, x := range v.Elements {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3997,7 +3997,7 @@ func (v *ImportDeclaration) TFieldWork(p *pegort.TParser, name string) (any, boo
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -4050,7 +4050,7 @@ func (v *ImportEqualsDeclaration) TFieldWork(p *pegort.TParser, name string) (an
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -4141,7 +4141,7 @@ func (v *ImportType) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.TypeArguments))
 			for i, x := range v.TypeArguments {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -4197,7 +4197,7 @@ func (v *IndexSignature) TFieldWork(p *pegort.TParser, name string) (any, bool) 
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -4209,7 +4209,7 @@ func (v *IndexSignature) TFieldWork(p *pegort.TParser, name string) (any, bool) 
 			}
 			kids := make([]any, len(v.Parameters))
 			for i, x := range v.Parameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -4335,7 +4335,7 @@ func (v *InterfaceDeclaration) TFieldWork(p *pegort.TParser, name string) (any, 
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -4349,7 +4349,7 @@ func (v *InterfaceDeclaration) TFieldWork(p *pegort.TParser, name string) (any, 
 			}
 			kids := make([]any, len(v.TypeParameters))
 			for i, x := range v.TypeParameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -4361,7 +4361,7 @@ func (v *InterfaceDeclaration) TFieldWork(p *pegort.TParser, name string) (any, 
 			}
 			kids := make([]any, len(v.HeritageClauses))
 			for i, x := range v.HeritageClauses {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -4373,7 +4373,7 @@ func (v *InterfaceDeclaration) TFieldWork(p *pegort.TParser, name string) (any, 
 			}
 			kids := make([]any, len(v.Members))
 			for i, x := range v.Members {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -4414,7 +4414,7 @@ func (v *IntersectionType) TFieldWork(p *pegort.TParser, name string) (any, bool
 			}
 			kids := make([]any, len(v.Types))
 			for i, x := range v.Types {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -4457,7 +4457,7 @@ func (v *JSDocFunctionType) TFieldWork(p *pegort.TParser, name string) (any, boo
 			}
 			kids := make([]any, len(v.Parameters))
 			for i, x := range v.Parameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -4578,7 +4578,7 @@ func (v *JsxAttributes) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Properties))
 			for i, x := range v.Properties {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -4647,7 +4647,7 @@ func (v *JsxElement) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Children))
 			for i, x := range v.Children {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -4722,7 +4722,7 @@ func (v *JsxFragment) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Children))
 			for i, x := range v.Children {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -4797,7 +4797,7 @@ func (v *JsxOpeningElement) TFieldWork(p *pegort.TParser, name string) (any, boo
 			}
 			kids := make([]any, len(v.TypeArguments))
 			for i, x := range v.TypeArguments {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -4846,7 +4846,7 @@ func (v *JsxSelfClosingElement) TFieldWork(p *pegort.TParser, name string) (any,
 			}
 			kids := make([]any, len(v.TypeArguments))
 			for i, x := range v.TypeArguments {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -4979,7 +4979,7 @@ func (v *MappedType) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Members))
 			for i, x := range v.Members {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -5088,7 +5088,7 @@ func (v *MethodDeclaration) TFieldWork(p *pegort.TParser, name string) (any, boo
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -5108,7 +5108,7 @@ func (v *MethodDeclaration) TFieldWork(p *pegort.TParser, name string) (any, boo
 			}
 			kids := make([]any, len(v.TypeParameters))
 			for i, x := range v.TypeParameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -5120,7 +5120,7 @@ func (v *MethodDeclaration) TFieldWork(p *pegort.TParser, name string) (any, boo
 			}
 			kids := make([]any, len(v.Parameters))
 			for i, x := range v.Parameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -5193,7 +5193,7 @@ func (v *MethodSignature) TFieldWork(p *pegort.TParser, name string) (any, bool)
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -5209,7 +5209,7 @@ func (v *MethodSignature) TFieldWork(p *pegort.TParser, name string) (any, bool)
 			}
 			kids := make([]any, len(v.TypeParameters))
 			for i, x := range v.TypeParameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -5221,7 +5221,7 @@ func (v *MethodSignature) TFieldWork(p *pegort.TParser, name string) (any, bool)
 			}
 			kids := make([]any, len(v.Parameters))
 			for i, x := range v.Parameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -5264,7 +5264,7 @@ func (v *ModuleBlock) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Statements))
 			for i, x := range v.Statements {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -5309,7 +5309,7 @@ func (v *ModuleDeclaration) TFieldWork(p *pegort.TParser, name string) (any, boo
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -5354,7 +5354,7 @@ func (v *NamedExports) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Elements))
 			for i, x := range v.Elements {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -5395,7 +5395,7 @@ func (v *NamedImports) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Elements))
 			for i, x := range v.Elements {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -5494,7 +5494,7 @@ func (v *NamespaceExportDeclaration) TFieldWork(p *pegort.TParser, name string) 
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -5574,7 +5574,7 @@ func (v *NewExpression) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.TypeArguments))
 			for i, x := range v.TypeArguments {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -5586,7 +5586,7 @@ func (v *NewExpression) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Arguments))
 			for i, x := range v.Arguments {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -5649,7 +5649,7 @@ func (v *ObjectBindingPattern) TFieldWork(p *pegort.TParser, name string) (any, 
 			}
 			kids := make([]any, len(v.Elements))
 			for i, x := range v.Elements {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -5690,7 +5690,7 @@ func (v *ObjectLiteralExpression) TFieldWork(p *pegort.TParser, name string) (an
 			}
 			kids := make([]any, len(v.Properties))
 			for i, x := range v.Properties {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -5763,7 +5763,7 @@ func (v *Parameter) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -5964,7 +5964,7 @@ func (v *PropertyAssignment) TFieldWork(p *pegort.TParser, name string) (any, bo
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -6023,7 +6023,7 @@ func (v *PropertyDeclaration) TFieldWork(p *pegort.TParser, name string) (any, b
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -6082,7 +6082,7 @@ func (v *PropertySignature) TFieldWork(p *pegort.TParser, name string) (any, boo
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -6255,7 +6255,7 @@ func (v *SetAccessor) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -6269,7 +6269,7 @@ func (v *SetAccessor) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.TypeParameters))
 			for i, x := range v.TypeParameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -6281,7 +6281,7 @@ func (v *SetAccessor) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Parameters))
 			for i, x := range v.Parameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -6336,7 +6336,7 @@ func (v *ShorthandPropertyAssignment) TFieldWork(p *pegort.TParser, name string)
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -6389,7 +6389,7 @@ func (v *SourceFile) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Statements))
 			for i, x := range v.Statements {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -6512,7 +6512,7 @@ func (v *TaggedTemplateExpression) TFieldWork(p *pegort.TParser, name string) (a
 			}
 			kids := make([]any, len(v.TypeArguments))
 			for i, x := range v.TypeArguments {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -6559,7 +6559,7 @@ func (v *TemplateExpression) TFieldWork(p *pegort.TParser, name string) (any, bo
 			}
 			kids := make([]any, len(v.TemplateSpans))
 			for i, x := range v.TemplateSpans {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -6604,7 +6604,7 @@ func (v *TemplateLiteralType) TFieldWork(p *pegort.TParser, name string) (any, b
 			}
 			kids := make([]any, len(v.TemplateSpans))
 			for i, x := range v.TemplateSpans {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -6749,7 +6749,7 @@ func (v *TupleType) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Elements))
 			for i, x := range v.Elements {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -6805,7 +6805,7 @@ func (v *TypeAliasDeclaration) TFieldWork(p *pegort.TParser, name string) (any, 
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -6819,7 +6819,7 @@ func (v *TypeAliasDeclaration) TFieldWork(p *pegort.TParser, name string) (any, 
 			}
 			kids := make([]any, len(v.TypeParameters))
 			for i, x := range v.TypeParameters {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -6888,7 +6888,7 @@ func (v *TypeLiteral) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Members))
 			for i, x := range v.Members {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -6993,7 +6993,7 @@ func (v *TypeParameter) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -7076,7 +7076,7 @@ func (v *TypeQuery) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.TypeArguments))
 			for i, x := range v.TypeArguments {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -7121,7 +7121,7 @@ func (v *TypeReference) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.TypeArguments))
 			for i, x := range v.TypeArguments {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -7162,7 +7162,7 @@ func (v *UnionType) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Types))
 			for i, x := range v.Types {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -7249,7 +7249,7 @@ func (v *VariableDeclarationList) TFieldWork(p *pegort.TParser, name string) (an
 			}
 			kids := make([]any, len(v.Declarations))
 			for i, x := range v.Declarations {
-				p.StepWork()
+
 				kids[i] = pegort.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -7292,7 +7292,7 @@ func (v *VariableStatement) TFieldWork(p *pegort.TParser, name string) (any, boo
 			}
 			kids := make([]any, len(v.Modifiers))
 			for i, x := range v.Modifiers {
-				p.StepWork()
+
 				kids[i] = pegort.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
