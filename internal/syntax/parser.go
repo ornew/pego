@@ -280,6 +280,25 @@ func (p *parser) lineBreak() *grammar.LineBreak {
 	return b
 }
 
+// statementBreak is lineBreak for a token that starts a declaration, a field or
+// a line of an operators rule. A block comment over several lines that ends on
+// the line of that token is not a trailing comment of the line before: it is
+// detached from the token, so it takes lines of its own before the token, set
+// off by blank lines.
+func (p *parser) statementBreak() *grammar.LineBreak {
+	t := &p.toks[p.i]
+	c := t.lineComment
+	if c == nil || !strings.HasPrefix(c.Text, "/*") || c.Pos.Line == c.End.Line || c.End.Line != t.pos.Line {
+		return p.lineBreak()
+	}
+	t.lineComment = nil
+	b := p.lineBreak()
+	c.Blank = true
+	b.Comments = append([]*grammar.Comment{c}, b.Comments...)
+	b.Blank = true
+	return b
+}
+
 // multiline reports whether a line break precedes any of the tokens after
 // token i up to token j.
 func (p *parser) multiline(i, j int) bool {
@@ -340,7 +359,7 @@ func (p *parser) file() *grammar.Grammar {
 
 	if p.is("package") {
 		packageStart := p.i
-		g.File.Pkg.Break = p.lineBreak()
+		g.File.Pkg.Break = p.statementBreak()
 		restore := p.statement()
 		g.File.Pkg.SourceInfo.Pos = p.next().pos
 		p.header = true
@@ -454,7 +473,7 @@ func (p *parser) typeDecl() (sourceResult grammar.TypeDecl) {
 	}()
 
 	defer p.statement()()
-	br := p.lineBreak()
+	br := p.statementBreak()
 	pos := p.expect("type").pos
 	p.header = true
 	p.headerPos = pos
@@ -654,7 +673,7 @@ func (p *parser) structFields() (fields []*grammar.Field, closeBreak *grammar.Li
 	p.expect("{")
 	lead := p.openLead()
 	for {
-		fb := p.lineBreak()
+		fb := p.statementBreak()
 		p.leadBreak(fb, lead)
 		lead = nil
 		if p.is("}") {
@@ -726,7 +745,7 @@ func (p *parser) varDef() (sourceResult *grammar.VarDef) {
 	}()
 
 	defer p.statement()()
-	br := p.lineBreak()
+	br := p.statementBreak()
 	pos := p.expect("var").pos
 	p.header = true
 	p.headerPos = pos
@@ -756,7 +775,7 @@ func (p *parser) ruleDef() (sourceResult *grammar.RuleDef) {
 		}
 	}()
 
-	br := p.lineBreak()
+	br := p.statementBreak()
 	pos := p.expect("rule").pos
 	p.header, p.layout, p.layoutDepth, p.layoutStart = true, true, 0, p.i-1
 	p.headerPos = pos
@@ -925,7 +944,7 @@ func (p *parser) operatorsRule() (sourceResult *grammar.OperatorsRule) {
 
 	pr := &grammar.OperatorsRule{SourceInfo: grammar.SourceInfo{Pos: p.expect("{").pos}}
 	for {
-		b := p.lineBreak()
+		b := p.statementBreak()
 		if p.accept("}") {
 			pr.CloseBreak = b
 			break
