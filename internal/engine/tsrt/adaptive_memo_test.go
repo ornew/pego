@@ -4,7 +4,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"testing"
 )
 
@@ -15,11 +14,9 @@ func TestAdaptiveMemoCounters(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	_, sourceFile, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("could not locate TypeScript runtime test")
-	}
-	source, err := os.ReadFile(filepath.Join(filepath.Dir(sourceFile), "runtime.ts"))
+	// go test runs in the package directory, which holds runtime.ts; the path does not depend on
+	// how the test binary was built (-trimpath rewrites source file names).
+	source, err := os.ReadFile("runtime.ts")
 	if err != nil {
 		t.Fatal(err)
 	}
