@@ -38,6 +38,7 @@
 package cue
 
 import (
+	"strings"
 	"unicode/utf8"
 
 	"github.com/ornew/pego/parsers/cue/types"
@@ -46,18 +47,9 @@ import (
 // ParseFile parses a CUE file as cuelang.org/go/cue/parser.ParseFile does, and returns the first error, if
 // any: ParseAST, then Check, and an error for input that is not UTF-8 (which the parser reads as U+FFFD).
 func ParseFile(input string, unit ...PositionUnit) (*types.File, error) {
-	if !utf8.ValidString(input) {
-		pos := 0
-		for j, r := range input {
-			if r == utf8.RuneError {
-				if _, w := utf8.DecodeRuneInString(input[j:]); w == 1 {
-					if len(unit) > 0 && unit[0] == Bytes {
-						pos = j
-					}
-					break
-				}
-			}
-			pos++
+	if pos := invalidUTF8(input); pos < len(input) {
+		if len(unit) == 0 || unit[0] != Bytes {
+			pos = utf8.RuneCountInString(input[:pos])
 		}
 		return nil, locate(input, &SemanticError{Span: Span{Start: pos, End: pos}, Msg: "illegal UTF-8 encoding"}, unit)
 	}
@@ -77,7 +69,39 @@ func Valid(input string) bool {
 	return err == nil
 }
 
-// locate sets the line and column of a SemanticError, whose position is in the unit of the parse.
+// invalidUTF8 returns the byte offset of the first byte of input that does not start a valid encoding, or
+// len(input) if input is valid UTF-8. A literal U+FFFD is valid.
+func invalidUTF8(input string) int {
+	// Skip valid chunks with the fast validator; scan only the chunk that holds the invalid byte. A chunk
+	// ends where a character starts, so each chunk decodes on its own.
+	for i := 0; i < len(input); {
+		end := min(i+invalidUTF8Chunk, len(input))
+		for end < len(input) && !utf8.RuneStart(input[end]) {
+			end++
+		}
+		if utf8.ValidString(input[i:end]) {
+			i = end
+			continue
+		}
+		for j := i; j < end; {
+			if input[j] < utf8.RuneSelf {
+				j++
+				continue
+			}
+			r, w := utf8.DecodeRuneInString(input[j:end])
+			if r == utf8.RuneError && w == 1 {
+				return j
+			}
+			j += w
+		}
+	}
+	return len(input)
+}
+
+const invalidUTF8Chunk = 512
+
+// locate sets the line and column of a SemanticError, whose position is in the unit of the parse. The column
+// counts code points whatever the unit.
 func locate(input string, err error, unit []PositionUnit) error {
 	e, ok := err.(*SemanticError)
 	if !ok {
@@ -85,17 +109,40 @@ func locate(input string, err error, unit []PositionUnit) error {
 	}
 	bytes := len(unit) > 0 && unit[0] == Bytes
 	e.Line, e.Col = 1, 1
-	i := 0
-	for j, r := range input {
-		if bytes && j >= e.Start || !bytes && i >= e.Start {
-			break
+	rest, left := input, e.Start // left: the units of the position that remain in rest
+	for left > 0 {
+		line := rest
+		nl := strings.IndexByte(rest, '\n')
+		if nl >= 0 {
+			line = rest[:nl]
 		}
-		if r == '\n' {
-			e.Line, e.Col = e.Line+1, 1
+		size := len(line) // the line in units
+		if !bytes {
+			size = utf8.RuneCountInString(line)
+		}
+		if nl >= 0 && left > size {
+			// The newline is before the position.
+			e.Line++
+			left -= size + 1
+			rest = rest[nl+1:]
+			continue
+		}
+		if bytes {
+			// A character that starts before the position counts, even if it ends after it. The input may be
+			// invalid UTF-8: the bytes of a truncated sequence count one each, so correct a valid character
+			// that the position cuts.
+			cut := min(left, len(line))
+			e.Col += utf8.RuneCountInString(line[:cut])
+			for k := cut - 1; k >= 0 && k >= cut-3; k-- {
+				if _, w := utf8.DecodeRuneInString(line[k:]); w > 1 && k+w > cut {
+					e.Col -= cut - k - 1
+					break
+				}
+			}
 		} else {
-			e.Col++
+			e.Col += min(left, size)
 		}
-		i++
+		break
 	}
 	return e
 }
