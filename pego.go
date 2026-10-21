@@ -90,6 +90,9 @@ func Compile(g *grammar.Grammar, start string, opts ...CompileOption) (*Parser, 
 	if err != nil {
 		return nil, err
 	}
+	if err := engine.EntryError(start); err != nil {
+		return nil, fmt.Errorf("start %w", err)
+	}
 	if !slices.Contains(prog.Rules(), start) {
 		return nil, fmt.Errorf("start rule %s is not defined", start)
 	}
@@ -629,6 +632,9 @@ func LoadParser(data []byte) (*Parser, error) {
 
 // WithStart returns a parser that starts at the rule name. The compiled grammar is shared.
 func (p *Parser) WithStart(name string) (*Parser, error) {
+	if err := engine.EntryError(name); err != nil {
+		return nil, fmt.Errorf("start %w", err)
+	}
 	if !slices.Contains(p.prog.Rules(), name) {
 		return nil, fmt.Errorf("start rule %s is not defined", name)
 	}

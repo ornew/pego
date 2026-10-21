@@ -308,7 +308,7 @@ func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *Node, st
 	}
 	if l.act != nil {
 		ctx := p.useCtx(evalCtx{p: p, scope: l.scope, frame: f, start: start, end: p.pos, locals: locals, cbase: len(p.created)})
-		v = p.actionResult(ctx, l.act, r.name)
+		v = p.actionResult(ctx, l.act, r.whereName())
 	} else {
 		v = l.value(p, v, start)
 		if len(l.scope.names) > 0 {
@@ -373,7 +373,7 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 			locals = &ls[2]
 		}
 		ctx := p.useCtx(evalCtx{p: p, scope: l.scope, frame: a.frame, start: start, end: end, locals: locals, cbase: len(p.created)})
-		v := p.actionResult(ctx, l.act, r.name)
+		v := p.actionResult(ctx, l.act, r.whereName())
 		if r.opKinds != nil {
 			v = p.convertOperator(r, v)
 		}

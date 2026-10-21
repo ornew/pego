@@ -81,6 +81,13 @@ type RuleInfo struct {
 	// Transient reports that the rule is not memoized in ordinary parses (even if Memo is set). In
 	// incremental parsing, Memo applies.
 	Transient bool
+	// Where is the text that names the rule in the message of a failed action (string table index),
+	// or -1 for the name of the rule. The hidden rule of an inline action names the rule that
+	// holds it.
+	Where int
+	// Splice reports that the rule makes no node of its own: the elements of its value are the
+	// elements of the sequence that calls it (a hidden rule without an action).
+	Splice bool
 	// Vars are the variables the rule or its callees read (string table indices, sorted by name).
 	// The rule's memo entries are keyed by their values at the call.
 	Vars []int

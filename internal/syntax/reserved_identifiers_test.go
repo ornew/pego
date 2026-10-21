@@ -10,8 +10,8 @@ import (
 func TestReservedIdentifierPrefix(t *testing.T) {
 	for _, src := range []string{
 		`package _example; rule main = "x"`,
-		`rule _main = "x"`, `rule _ = "x"`, `type _Node = { Text string }`,
-		`rule main = _helper`, `rule main = _capture:"x"`,
+		`rule _ = "x"`, `type _Node = { Text string }`,
+		`rule main = _capture:"x"`,
 		`rule main = _:"x"`,
 		`rule main = __proto__:"x"`,
 		`rule main = "x" @_attr`, `rule main = "x" @error(_message="x")`,
@@ -20,7 +20,7 @@ func TestReservedIdentifierPrefix(t *testing.T) {
 		`rule main = v1:"x" => Node{_field: $v1}`, `rule main = v1:"x" => $v1.$_field`,
 		`rule main = v1:"x" => map($v1, (_item) => _item)`,
 		`rule main = v1:"x" => map($v1, (_) => $v1)`,
-		`rule main = level(expr, _tight)`, `rule main = level(_expr, tight)`,
+		`rule main = level(expr, _tight)`,
 		`rule expr = operators { operand "x"; level _tight { postfix "!" } }`,
 		`rule expr = operators { operand "x"; level _ { postfix "!" } }`,
 	} {
@@ -39,6 +39,18 @@ func TestReservedIdentifierPrefix(t *testing.T) {
 	}
 	for _, src := range []string{`rule main = _`, `rule main = _ #atomic`, `rule main = _|_`, `rule main = "_private"`, `rule main = [_a]`, `rule user_name = "x"`, `rule main = {user_name := 0} {user_name == 0}`} {
 		if _, err := Parse(src); err != nil {
+			t.Fatalf("%s: %v", src, err)
+		}
+	}
+	// A rule name may begin with an underscore, which hides the rule.
+	for _, src := range []string{`rule _main = "x"`, `rule main = _helper
+rule _helper = "x"`, `rule main = level(_expr, tight)
+rule _expr = operators { operand "x"; level tight { postfix "!" } }`} {
+		g, err := Parse(src)
+		if err != nil {
+			t.Fatalf("%s: %v", src, err)
+		}
+		if err := grammar.Validate(g); err != nil {
 			t.Fatalf("%s: %v", src, err)
 		}
 	}

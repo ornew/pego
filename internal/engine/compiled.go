@@ -33,7 +33,7 @@ const (
 	// isaVersion is the instruction set of the value model, the only one supported. Earlier
 	// versions built the previous syntax trees, so their files are not loaded and need to be
 	// compiled again.
-	isaVersion = 24
+	isaVersion = 25
 	maxDepth   = 10000
 )
 
@@ -170,6 +170,11 @@ func (prog *Program) MarshalBinary(start string) ([]byte, error) {
 func (prog *Program) MarshalBinaryWith(start string, o MarshalOptions) ([]byte, error) {
 	if prog.hasMissing {
 		return nil, missingUnsupported("compiled grammar serialization")
+	}
+	if start != "" {
+		if err := EntryError(start); err != nil {
+			return nil, fmt.Errorf("start rule %s is hidden: a rule whose name begins with an underscore is not an entry point", start)
+		}
 	}
 	if start != "" && !prog.hasRule(start) {
 		return nil, fmt.Errorf("start rule %s is not defined", start)
@@ -763,6 +768,9 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 		prog.moduleOnce.Do(func() { prog.module = m })
 	}
 	prog.recognitionModule, prog.recognitionEntries = recognitionModule, entries
+	if start != "" && hiddenRule(start) {
+		return nil, "", fmt.Errorf("invalid compiled grammar: start rule %s is hidden", start)
+	}
 	if start != "" && !prog.hasRule(start) {
 		return nil, "", fmt.Errorf("invalid compiled grammar: start rule %s is not defined", start)
 	}

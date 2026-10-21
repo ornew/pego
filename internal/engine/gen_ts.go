@@ -73,6 +73,9 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	if prog.hasMissing {
 		return nil, missingUnsupported("generated parsers")
 	}
+	if hiddenRule(opts.Start) {
+		return nil, fmt.Errorf("start rule %s is hidden: a rule whose name begins with an underscore is not an entry point", opts.Start)
+	}
 	start := prog.byName[opts.Start]
 	if start == nil {
 		return nil, fmt.Errorf("start rule %s is not defined", opts.Start)

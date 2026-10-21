@@ -81,6 +81,8 @@ func (w *encoder) module(m *Module) {
 		w.int(r.OperatorsRule)
 		w.bool(r.NoValue)
 		w.bool(r.Transient)
+		w.int(r.Where)
+		w.bool(r.Splice)
 		w.ints(r.Vars)
 	}
 	w.uint(len(m.OperatorsRules))
@@ -187,7 +189,7 @@ func (r *decoder) module() *Module {
 		ri := RuleInfo{
 			Name: int(r.int32()), Entry: int(r.int32()), Scope: r.ints(), Action: int(r.int32()),
 			BodyIsSeq: r.bool(), NodeType: int(r.int32()),
-			Memo: r.bool(), Leader: r.bool(), Positional: r.bool(), OperatorsRule: int(r.int32()), NoValue: r.bool(), Transient: r.bool(), Vars: r.ints(),
+			Memo: r.bool(), Leader: r.bool(), Positional: r.bool(), OperatorsRule: int(r.int32()), NoValue: r.bool(), Transient: r.bool(), Where: int(r.int32()), Splice: r.bool(), Vars: r.ints(),
 		}
 		m.Rules = append(m.Rules, ri)
 	}

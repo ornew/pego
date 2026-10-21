@@ -1,10 +1,18 @@
 package engine
 
 import (
-	"github.com/ornew/pego/internal/syntax"
+	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/syntax"
 )
+
+// An action error names the inline action by the rule that holds it, and the explicit rule by its
+// name: the two spellings of the same hidden rule.
+var inlineWhere = regexp.MustCompile(`(\w+) \(inline action (\d+)\)`)
+
+func hiddenWhere(s string) string { return inlineWhere.ReplaceAllString(s, "_${1}_${2}") }
 
 // An inline action (e => A) is an anonymous rule embedded at its position. Each case gives the
 // grammar written with inline actions and the same grammar with every inline action written as a
@@ -21,28 +29,28 @@ func inlineActionCases() []inlineCase {
 	return []inlineCase{
 		{"sequence", `type A = { X string }
 rule main = (x:"a" "b" => A{X: text($x)}) "c"`, `type A = { X string }
-rule main = main_inline_1 "c"
-rule main_inline_1 = x:"a" "b" => A{X: text($x)}`, []string{"abc", "ab", "ac", "xbc", ""}},
-		{"whole rule", `rule main = (x:"a" => $x)`, `rule main = main_inline_1
-rule main_inline_1 = x:"a" => $x`, []string{"a", "b", "aa", ""}},
-		{"choice", `rule main = (x:("a" / "b") => $x)`, `rule main = main_inline_1
-rule main_inline_1 = x:("a" / "b") => $x`, []string{"a", "b", "c", ""}},
-		{"choice of inline actions", `rule main = (x:"a" => $x) / (y:"b" => $y)`, `rule main = main_inline_1 / main_inline_2
-rule main_inline_1 = x:"a" => $x
-rule main_inline_2 = y:"b" => $y`, []string{"a", "b", "c", ""}},
-		{"nested", `rule main = (x:(y:"a" => $y) "b" => $x)`, `rule main = main_inline_2
-rule main_inline_1 = y:"a" => $y
-rule main_inline_2 = x:main_inline_1 "b" => $x`, []string{"ab", "a", "b", ""}},
+rule main = _main_1 "c"
+rule _main_1 = x:"a" "b" => A{X: text($x)}`, []string{"abc", "ab", "ac", "xbc", ""}},
+		{"whole rule", `rule main = (x:"a" => $x)`, `rule main = _main_1
+rule _main_1 = x:"a" => $x`, []string{"a", "b", "aa", ""}},
+		{"choice", `rule main = (x:("a" / "b") => $x)`, `rule main = _main_1
+rule _main_1 = x:("a" / "b") => $x`, []string{"a", "b", "c", ""}},
+		{"choice of inline actions", `rule main = (x:"a" => $x) / (y:"b" => $y)`, `rule main = _main_1 / _main_2
+rule _main_1 = x:"a" => $x
+rule _main_2 = y:"b" => $y`, []string{"a", "b", "c", ""}},
+		{"nested", `rule main = (x:(y:"a" => $y) "b" => $x)`, `rule main = _main_2
+rule _main_1 = y:"a" => $y
+rule _main_2 = x:_main_1 "b" => $x`, []string{"ab", "a", "b", ""}},
 		{"outer capture stays", `type P = { L string; R string }
 rule main = l:"a" r:(x:"b" => text($x)) => P{L: text($l), R: $r}`, `type P = { L string; R string }
-rule main = l:"a" r:main_inline_1 => P{L: text($l), R: $r}
-rule main_inline_1 = x:"b" => text($x)`, []string{"ab", "a", "b", ""}},
-		{"default action", `rule main = (x:"a" "b" => ...) "c"`, `rule main = main_inline_1 "c"
-rule main_inline_1 = x:"a" "b" => ...`, []string{"abc", "ab", ""}},
-		{"repetition", `rule main = (x:"a" => $x)* "b"`, `rule main = main_inline_1* "b"
-rule main_inline_1 = x:"a" => $x`, []string{"b", "ab", "aaab", "aaa", ""}},
-		{"optional", `rule main = (x:"a" => $x)? "b"`, `rule main = main_inline_1? "b"
-rule main_inline_1 = x:"a" => $x`, []string{"b", "ab", "aab", ""}},
+rule main = l:"a" r:_main_1 => P{L: text($l), R: $r}
+rule _main_1 = x:"b" => text($x)`, []string{"ab", "a", "b", ""}},
+		{"default action", `rule main = (x:"a" "b" => ...) "c"`, `rule main = _main_1 "c"
+rule _main_1 = x:"a" "b" => ...`, []string{"abc", "ab", ""}},
+		{"repetition", `rule main = (x:"a" => $x)* "b"`, `rule main = _main_1* "b"
+rule _main_1 = x:"a" => $x`, []string{"b", "ab", "aaab", "aaa", ""}},
+		{"optional", `rule main = (x:"a" => $x)? "b"`, `rule main = _main_1? "b"
+rule _main_1 = x:"a" => $x`, []string{"b", "ab", "aab", ""}},
 		{"left recursion", `type Add = { L Expr; R string }
 type Num = { T string }
 type Expr ~ Add | Num
@@ -51,18 +59,18 @@ rule e Expr = (l:e "+" r:"a" => Add{L: $l, R: text($r)}) / "a" => Num{T: "a"}`, 
 type Num = { T string }
 type Expr ~ Add | Num
 rule main = e $$
-rule e Expr = e_inline_1 / "a" => Num{T: "a"}
-rule e_inline_1 = l:e "+" r:"a" => Add{L: $l, R: text($r)}`, []string{"a", "a+a", "a+a+a", "a+", ""}},
-		{"cut", `rule main = (x:"a" #cut "b" => $x) / "a" "c"`, `rule main = main_inline_1 / "a" "c"
-rule main_inline_1 = x:"a" #cut "b" => $x`, []string{"ab", "ac", "a", ""}},
-		{"recovery", `rule main = (x:[a-z]+ #atomic ";" => $x)* $$ #recover(skip=[^;]+ ";")`, `rule main = main_inline_1* $$ #recover(skip=[^;]+ ";")
-rule main_inline_1 = x:[a-z]+ #atomic ";" => $x`, []string{"ab;cd;", "ab;1x;cd;", "1x;", "ab"}},
-		{"recovery inside", `rule main = (x:[a-z]+ #atomic ";" #recover(skip=[^;]+ ";") => $x)+ $$`, `rule main = main_inline_1+ $$
-rule main_inline_1 = x:[a-z]+ #atomic ";" #recover(skip=[^;]+ ";") => $x`, []string{"ab;cd;", "ab;1x;cd;", "1x;", "ab"}},
-		{"action error", `rule main = (x:"a" => 1 / 0) "b"`, `rule main = main_inline_1 "b"
-rule main_inline_1 = x:"a" => 1 / 0`, []string{"ab", "a"}},
-		{"captures of the enclosing rule after", `rule main = a:"a" (b:"b" => $b) => $a`, `rule main = a:"a" main_inline_1 => $a
-rule main_inline_1 = b:"b" => $b`, []string{"ab", "a", "b"}},
+rule e Expr = _e_1 / "a" => Num{T: "a"}
+rule _e_1 = l:e "+" r:"a" => Add{L: $l, R: text($r)}`, []string{"a", "a+a", "a+a+a", "a+", ""}},
+		{"cut", `rule main = (x:"a" #cut "b" => $x) / "a" "c"`, `rule main = _main_1 / "a" "c"
+rule _main_1 = x:"a" #cut "b" => $x`, []string{"ab", "ac", "a", ""}},
+		{"recovery", `rule main = (x:[a-z]+ #atomic ";" => $x)* $$ #recover(skip=[^;]+ ";")`, `rule main = _main_1* $$ #recover(skip=[^;]+ ";")
+rule _main_1 = x:[a-z]+ #atomic ";" => $x`, []string{"ab;cd;", "ab;1x;cd;", "1x;", "ab"}},
+		{"recovery inside", `rule main = (x:[a-z]+ #atomic ";" #recover(skip=[^;]+ ";") => $x)+ $$`, `rule main = _main_1+ $$
+rule _main_1 = x:[a-z]+ #atomic ";" #recover(skip=[^;]+ ";") => $x`, []string{"ab;cd;", "ab;1x;cd;", "1x;", "ab"}},
+		{"action error", `rule main = (x:"a" => 1 / 0) "b"`, `rule main = _main_1 "b"
+rule _main_1 = x:"a" => 1 / 0`, []string{"ab", "a"}},
+		{"captures of the enclosing rule after", `rule main = a:"a" (b:"b" => $b) => $a`, `rule main = a:"a" _main_1 => $a
+rule _main_1 = b:"b" => $b`, []string{"ab", "a", "b"}},
 	}
 }
 
@@ -92,7 +100,7 @@ func TestInlineActionsMatchRules(t *testing.T) {
 			for _, input := range tc.inputs {
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 					want := resultJSON(explicit.ParseWith("main", input, ParseOptions{Backend: backend}))
-					got := resultJSON(inline.ParseWith("main", input, ParseOptions{Backend: backend}))
+					got := hiddenWhere(resultJSON(inline.ParseWith("main", input, ParseOptions{Backend: backend})))
 					if got != want {
 						t.Errorf("%q on %s:\ninline:   %s\nexplicit: %s", input, backend, got, want)
 					}
@@ -156,7 +164,7 @@ rule main = (x:"a" => A{X: text($x)}) "b"`)
 	}
 	found := false
 	for _, r := range s.Rules {
-		if r.Name == "main_inline_1" {
+		if r.Name == "_main_1" {
 			found = true
 		}
 	}

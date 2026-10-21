@@ -106,6 +106,11 @@ type Options struct {
 type matcher func(p *parser) (*Node, bool)
 
 type rule struct {
+	// where names the rule in the message of a failed action, if not name (rule.whereName).
+	where string
+	// splice reports that the rule makes no node of its own: a hidden rule without an action, whose
+	// elements are those of the sequence that calls it.
+	splice bool
 	// kinds are the node kinds the rule makes (newRuleKinds).
 	kinds     ruleKinds
 	id        int
@@ -288,24 +293,45 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 }
 
 func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, control *compileControl) (*Program, error) {
-	control.check()
-	if err := validateGrammar(g, control); err != nil {
-		return nil, err
+	names := inlineNames{}
+	prog, err := buildNamed(g, opts, flags, names, control)
+	if err != nil {
+		return nil, names.rewrite(err)
 	}
-	var source *grammar.Grammar
+	return prog, nil
+}
+
+// buildNamed is buildControlled; names receives the hidden rules that the lowering of inline actions
+// generates.
+func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlineNames, control *compileControl) (*Program, error) {
+	control.check()
+	if !opts.DefaultValue {
+		if err := validateGrammar(g, control); err != nil {
+			return nil, err
+		}
+	}
+	// The inline actions are checked as written, then lowered to hidden rules. A program keeps
+	// the grammar as written, whatever its options, for Program.SourceGrammar.
+	source := g
 	if hasInlineAction(g, control) {
-		// The inline actions are checked as written, then lowered to hidden rules.
-		lowered, errs := lowerInlineActions(g, control)
+		if errs := undeclaredRules(g, control); errs != nil {
+			return nil, errs
+		}
+		lowered, errs := lowerInlineActions(g, names, control)
 		if errs != nil {
 			return nil, errs
 		}
-		source, g = g, lowered
+		g = lowered
 		control.check()
 	}
 	if opts.DefaultValue {
 		g = defaultValueGrammar(g, control)
 		control.check()
+		if err := validateGrammar(g, control); err != nil {
+			return nil, err
+		}
 	}
+	keepSource := source != g
 	var unsupported ErrorList
 	for _, comment := range g.File.HeaderComments {
 		control.poll()
@@ -372,11 +398,10 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 	if normalizationError != nil {
 		return nil, normalizationError
 	}
-	if opts.DefaultValue {
-		source = nil // the grammar of a program that makes default values is the one it runs
-	}
-	if source != nil {
-		// The grammar as written is kept in the executable form of the other grammars.
+	if !keepSource {
+		source = nil // the grammar as written is the one the program runs
+	} else {
+		// The grammar as written is kept beside the one the program runs.
 		if source, normalizationError = normalizeAttributesControlled(source, opts.eagerAttributeCopies, control); normalizationError != nil {
 			return nil, normalizationError
 		}
@@ -418,6 +443,9 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 			continue
 		}
 		r := &rule{id: i, name: rd.Name, def: rd, scope: newScope(), action: rd.Action}
+		if w := names.where(rd.Name); w != rd.Name {
+			r.where = w
+		}
 		prog.rules = append(prog.rules, r)
 		prog.byName[rd.Name] = r
 	}
@@ -1501,4 +1529,12 @@ func (p *Program) SourceGrammar() *grammar.Grammar {
 		return p.source
 	}
 	return p.Grammar
+}
+
+// whereName returns the text that names the rule in the message of a failed action.
+func (r *rule) whereName() string {
+	if r.where != "" {
+		return r.where
+	}
+	return r.name
 }

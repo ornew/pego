@@ -62,11 +62,14 @@ func (m *Module) Disassemble() string {
 		if r.OperatorsRule >= 0 {
 			fmt.Fprintf(&b, " operatorsRule=%d", r.OperatorsRule)
 		}
+		if r.Where >= 0 {
+			fmt.Fprintf(&b, " where=%q", m.Strings[r.Where])
+		}
 		var flags []string
 		for _, f := range []struct {
 			on   bool
 			name string
-		}{{r.Memo, "memo"}, {r.Leader, "leader"}, {r.Positional, "positional"}, {r.BodyIsSeq, "seq"}, {r.NoValue, "novalue"}, {r.Transient, "transient"}} {
+		}{{r.Memo, "memo"}, {r.Leader, "leader"}, {r.Positional, "positional"}, {r.BodyIsSeq, "seq"}, {r.NoValue, "novalue"}, {r.Transient, "transient"}, {r.Splice, "splice"}} {
 			if f.on {
 				flags = append(flags, f.name)
 			}

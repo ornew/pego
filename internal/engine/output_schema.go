@@ -123,6 +123,9 @@ func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSch
 	if p == nil || p.Grammar == nil || p.typed == nil {
 		return nil, ErrSchemaUnavailable
 	}
+	if err := EntryError(start); err != nil {
+		return nil, err
+	}
 	if p.byName[start] == nil {
 		return nil, fmt.Errorf("unknown schema start rule %q", start)
 	}

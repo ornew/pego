@@ -51,7 +51,7 @@ type evalCtx struct {
 // runAction evaluates the rule's action.
 func (p *parser) runAction(r *rule, f *frame, items []*Node, start, end int) *Node {
 	ctx := p.useCtx(evalCtx{p: p, scope: r.scope, frame: f, items: items, start: start, end: end, cbase: len(p.created)})
-	return p.actionResult(ctx, r.act, r.name)
+	return p.actionResult(ctx, r.act, r.whereName())
 }
 
 // termEvaluator returns an evaluator for an AST value expression.

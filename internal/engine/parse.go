@@ -97,6 +97,9 @@ func (prog *Program) backend(b Backend) Backend {
 
 // rule returns the rule name for backend b.
 func (prog *Program) rule(b Backend, name string) (*rule, error) {
+	if err := EntryError(name); err != nil {
+		return nil, err
+	}
 	if prog.hasMissing && prog.backend(b) != Closure {
 		return nil, missingUnsupported("bytecode backends")
 	}
@@ -143,6 +146,9 @@ func (prog *Program) descs(b Backend) []string {
 
 // hasRule reports whether the rule name is defined.
 func (prog *Program) hasRule(name string) bool {
+	if hiddenRule(name) {
+		return false
+	}
 	if prog.Grammar == nil {
 		_, err := prog.rule(Bytecode, name)
 		return err == nil
@@ -207,23 +213,26 @@ func (prog *Program) run(p *parser, b Backend, start string) (n *Node, err error
 	return nil, p.syntaxError()
 }
 
-// Rules returns the rule names in declaration order.
+// Rules returns the names of the rules that can be entry points, in declaration order. A hidden
+// rule is not one.
 func (prog *Program) Rules() []string {
 	if prog.Grammar == nil {
 		m := prog.Module()
 		var names []string
 		seen := map[string]bool{}
 		for _, r := range m.Rules {
-			if name := m.Strings[r.Name]; !seen[name] { // value-free twins follow the original rules
+			if name := m.Strings[r.Name]; !seen[name] && !hiddenRule(name) { // value-free twins follow the original rules
 				seen[name] = true
 				names = append(names, name)
 			}
 		}
 		return names
 	}
-	names := make([]string, len(prog.rules))
-	for i, r := range prog.rules {
-		names[i] = r.name
+	names := make([]string, 0, len(prog.rules))
+	for _, r := range prog.rules {
+		if !hiddenRule(r.name) {
+			names = append(names, r.name)
+		}
 	}
 	return names
 }

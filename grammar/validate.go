@@ -446,11 +446,12 @@ func validate(g *Grammar, control *validationControl) error {
 // treating the Top node's underscore spelling as an identifier. Empty optional
 // names (package and Operators Rule level) are valid.
 func invalidIdentifier(node any, control *validationControl) (field, name string) {
-	invalid := func(s string) bool {
-		if s == "" {
+	// A rule name may begin with an underscore, which hides the rule; any other name may not.
+	invalidName := func(s string, hidden bool) bool {
+		if s == "" || s == "_" {
 			return true
 		}
-		if s[0] == '_' {
+		if s[0] == '_' && !hidden {
 			return true
 		}
 		for i := 0; i < len(s); i++ {
@@ -462,6 +463,7 @@ func invalidIdentifier(node any, control *validationControl) (field, name string
 		}
 		return false
 	}
+	invalid := func(s string) bool { return invalidName(s, false) }
 	switch n := node.(type) {
 	case *Grammar:
 		if n.File.Pkg.Name == "" {
@@ -469,7 +471,10 @@ func invalidIdentifier(node any, control *validationControl) (field, name string
 		}
 		field, name = "file.pkg.name", n.File.Pkg.Name
 	case *RuleDef:
-		field, name = "name", n.Name
+		if invalidName(n.Name, true) {
+			return "name", n.Name
+		}
+		return "", ""
 	case *VarDef:
 		field, name = "name", n.Name
 	case *TypeDef:
@@ -489,7 +494,7 @@ func invalidIdentifier(node any, control *validationControl) (field, name string
 	case *Field:
 		field, name = "name", n.Name
 	case *Ref:
-		if invalid(n.Name) {
+		if invalidName(n.Name, true) {
 			return "name", n.Name
 		}
 		if n.Level == "" {

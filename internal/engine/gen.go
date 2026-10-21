@@ -196,6 +196,9 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 	if prog.hasMissing {
 		return nil, missingUnsupported("generated parsers")
 	}
+	if hiddenRule(opts.Start) {
+		return nil, fmt.Errorf("start rule %s is hidden: a rule whose name begins with an underscore is not an entry point", opts.Start)
+	}
 	start := prog.byName[opts.Start]
 	if start == nil {
 		return nil, fmt.Errorf("start rule %s is not defined", opts.Start)
@@ -297,6 +300,9 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	o, err := ResolveOptions(pegoGrammar, opts)
 	if err != nil {
 		return nil, err
+	}
+	if len(name) > 0 && name[0] == '_' {
+		return nil, fmt.Errorf("rule %s is hidden: a rule whose name begins with an underscore is not an entry point", name)
 	}
 	r := pegoGrammar.RuleByName(name)
 	if r == nil {
@@ -859,7 +865,7 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 			m.WriteString("\t\tv = nil\n")
 		case r.action != nil:
 			fmt.Fprintf(m, "\t\tc := p.UseCtx(TActCtx{P: p, F: %s, Start: start, End: p.Pos, Cbase: len(p.Created)})\n", frame)
-			fmt.Fprintf(m, "\t\tv = c.Result(ta%d, %q)\n", r.id, r.name)
+			fmt.Fprintf(m, "\t\tv = c.Result(ta%d, %q)\n", r.id, r.whereName())
 		default:
 			fmt.Fprintf(m, "\t\tv = p.ScopeValue(trules[%d].Value, v, start)\n", r.id)
 			if len(s.names) > 0 {

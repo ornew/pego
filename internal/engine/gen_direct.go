@@ -1262,7 +1262,7 @@ func (d *dgen) finishValue(r *rule, s *dscope, body string) (start, ctx bool) {
 		g.caps, g.final = nil, nil
 		prevWhere := d.shared("w", "string")
 		d.line("%s = p.Where", prevWhere)
-		d.line("p.Where = %q", r.name)
+		d.line("p.Where = %q", r.whereName())
 		d.line("v = %s", action)
 		if _, isNew := r.action.(*grammar.New); isNew {
 			// A struct made with the rule's range (tmk_T with final): what result checks holds.

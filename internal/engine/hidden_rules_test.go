@@ -1,0 +1,177 @@
+package engine
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/syntax"
+)
+
+// The generated name of an inline action's rule never satisfies a reference: a reference resolves
+// against the rules declared in the grammar as written.
+func TestGeneratedNamesDoNotSatisfyReferences(t *testing.T) {
+	msg := compileError(t, `rule main = (x:"a" => $x) _main_1`)
+	if !strings.Contains(msg, "undefined rule _main_1") {
+		t.Fatal(msg)
+	}
+	// A declared rule that has the generated name keeps its name, and the inline action's rule takes
+	// another one.
+	p := compile(t, `rule main = (x:"a" => $x) _main_1
+rule _main_1 = "b"`)
+	if got := result(p, "ab"); strings.Contains(got, "error") {
+		t.Fatal(got)
+	}
+	names := map[string]bool{}
+	for _, r := range p.rules {
+		names[r.name] = true
+	}
+	if !names["_main_1"] || !names["_main_1_"] {
+		t.Fatalf("rules: %v", names)
+	}
+	if p.rules[len(p.rules)-1].name != "_main_1" && p.byName["_main_1_"].def.Action == nil {
+		t.Fatal("the inline action's rule is not the one that has the action")
+	}
+	if p.byName["_main_1"].def.Action != nil {
+		t.Fatal("the declared rule was replaced")
+	}
+}
+
+// A hidden rule is not an entry point: not the start rule, not a rule parsed by name.
+func TestHiddenRulesAreNotEntryPoints(t *testing.T) {
+	p := compile(t, `rule main = _a "c"
+rule _a = "a" "b"`)
+	for _, name := range p.Rules() {
+		if strings.HasPrefix(name, "_") {
+			t.Errorf("Rules lists the hidden rule %s", name)
+		}
+	}
+	if _, err := p.Parse("_a", "ab"); err == nil || !strings.Contains(err.Error(), "hidden") {
+		t.Fatalf("parse by a hidden name: %v", err)
+	}
+	if _, err := p.MarshalBinary("_a"); err == nil || !strings.Contains(err.Error(), "hidden") {
+		t.Fatalf("marshal with a hidden start: %v", err)
+	}
+	if _, err := p.OutputSchemaPrototype("_a", false); err == nil || !strings.Contains(err.Error(), "hidden") {
+		t.Fatalf("schema of a hidden rule: %v", err)
+	}
+	data, err := p.MarshalBinary("main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := LoadProgram(data, Options{}); err != nil {
+		t.Fatal(err)
+	}
+	// The same holds for the rule of an inline action, whose name nobody declared.
+	q := compile(t, `rule main = (x:"a" => $x) "b"`)
+	if _, err := q.Parse("_main_1", "a"); err == nil || !strings.Contains(err.Error(), "hidden") {
+		t.Fatalf("parse by a generated name: %v", err)
+	}
+	for _, g := range []struct{ src, start string }{
+		{`rule main = _a
+rule _a = "a"`, "_a"},
+		{`rule main = (x:"a" => $x)`, "_main_1"},
+	} {
+		parsed, err := syntax.Parse(g.src)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Generate(parsed, GenOptions{Module: "m", Start: g.start}); err == nil || !strings.Contains(err.Error(), "hidden") {
+			t.Errorf("Go generation with the start rule %s: %v", g.start, err)
+		}
+		if _, err := GenerateTS(parsed, GenOptions{Start: g.start}); err == nil || !strings.Contains(err.Error(), "hidden") {
+			t.Errorf("TypeScript generation with the start rule %s: %v", g.start, err)
+		}
+	}
+}
+
+// The grammar of a program is the grammar as written in every mode: the inline actions stay in it
+// and its rules are the declared ones, also when the program makes default values.
+func TestSourceGrammarKeepsInlineActionsInEveryMode(t *testing.T) {
+	src := `type A = { X node[string] }
+rule main = (x:"a" => A{X: $x}) _b
+rule _b = "b"`
+	for _, opts := range []Options{{}, {DefaultValue: true}, {SourceInfo: true}} {
+		p := compileBare(t, src, opts)
+		g := p.SourceGrammar()
+		inline := 0
+		for _, rd := range g.Rules() {
+			if strings.HasPrefix(rd.Name, "_main") {
+				t.Errorf("%+v: the grammar as written has the generated rule %s", opts, rd.Name)
+			}
+			walkExpr(rd.Expr, func(e grammar.Expr) {
+				if _, ok := e.(*grammar.InlineAction); ok {
+					inline++
+				}
+			})
+		}
+		if inline != 1 || len(g.Rules()) != 2 {
+			t.Errorf("%+v: %d inline actions and %d rules in the grammar as written", opts, inline, len(g.Rules()))
+		}
+		if len(p.Grammar.Rules()) != 3 {
+			t.Errorf("%+v: the lowered grammar has %d rules", opts, len(p.Grammar.Rules()))
+		}
+		// The compiled form keeps it and loads to the same behavior.
+		data, err := p.MarshalBinary("main")
+		if err != nil {
+			t.Fatal(err)
+		}
+		loaded, _, err := LoadProgram(data, Options{})
+		if err != nil {
+			t.Fatalf("%+v: %v", opts, err)
+		}
+		if got, want := resultJSON(loaded.Parse("main", "ab")), resultJSON(p.Parse("main", "ab")); got != want {
+			t.Errorf("%+v: loaded %s, compiled %s", opts, got, want)
+		}
+	}
+}
+
+// A grammar that default-value mode accepts because it drops the actions is accepted with inline
+// actions as well: the grammar as written is not validated for a program that does not run its
+// actions.
+func TestDefaultValueAcceptsWhatItDropsWithInlineActions(t *testing.T) {
+	for _, src := range []string{
+		`rule main = "a" => nil`,
+		`rule main = (x:"a" => nil) "b"`,
+	} {
+		g, err := syntax.Parse(src)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// An action that validation rejects, since an AST may hold what the syntax does not allow.
+		bad := &grammar.Lambda{Params: []string{"_arg"}, Body: &grammar.NilLit{}}
+		for _, rd := range g.Rules() {
+			if rd.Action != nil {
+				rd.Action = bad
+			}
+			walkExpr(rd.Expr, func(e grammar.Expr) {
+				if a, ok := e.(*grammar.InlineAction); ok {
+					a.Action = bad
+				}
+			})
+		}
+		if _, err := Compile(g, Options{}); err == nil {
+			t.Errorf("%s: compiled without the option", src)
+		}
+		if _, err := Compile(g, Options{DefaultValue: true}); err != nil {
+			t.Errorf("%s: %v", src, err)
+		}
+	}
+}
+
+// The messages of the compiler describe an inline action by the rule that holds it.
+func TestInlineActionNamesInMessages(t *testing.T) {
+	names := inlineNames{"_main_1": {rule: "main", n: 1}, "_main_10": {rule: "main", n: 10}}
+	for _, c := range []struct{ in, want string }{
+		{"rule _main_1 produces int", "the inline action in rule main produces int"},
+		{"result of rule _main_10: _main_1", "result of the inline action in rule main: the inline action in rule main"},
+		{"_main_1_ is not _main_1", "_main_1_ is not the inline action in rule main"},
+	} {
+		if got := names.text(c.in); got != c.want {
+			t.Errorf("%q: %q, want %q", c.in, got, c.want)
+		}
+	}
+	if got, ok := names.describe("main"); ok {
+		t.Errorf("describes a declared rule: %q", got)
+	}
+}
