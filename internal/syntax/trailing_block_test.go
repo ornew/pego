@@ -1,6 +1,9 @@
 package syntax
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 // A block comment over several lines that starts on the line of a node and is
 // followed by a line break trails that node, as one over a single line does.
@@ -41,5 +44,32 @@ func TestFormatKeepsCommentBeforeNodeOnItsLastLine(t *testing.T) {
 				t.Fatalf("got:\n%s\nwant:\n%s", got, tc.want)
 			}
 		})
+	}
+}
+
+// The F rule applies only to a declaration, and only when the multi-line block
+// comment is the only one before it. A comment before the closing brace of a
+// struct or operators rule, or the first of several comments, still trails the
+// node before it.
+func TestFormatKeepsTrailingBlockBeforeBraceAndGroups(t *testing.T) {
+	for _, tc := range []struct {
+		name, src string
+	}{
+		{"before the brace of a struct", "package p\ntype T = {\n    A int /* c\n */\n}\nrule r = \"a\"\n"},
+		{"before the brace of a struct on one line", "type T = {\n    A int /* c\n */\n}\n"},
+		{"before the brace of an operators rule", "rule ops = operators {\n    operand \"n\" /* c\n */\n}\n"},
+		{"first of two groups", "package p\nrule a = \"x\" /* c\n */ /* d */ rule b = \"y\"\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			checkFormat(t, tc.src)
+		})
+	}
+	for i, src := range []string{
+		"package p\ntype T = {\n    A int /* c\n */ }\nrule r = \"a\"\n",
+		"type T = { A int /* c\n */ }\n",
+		"rule ops = operators {\n    operand \"n\" /* c\n */ }\n",
+		"package p\nrule a = \"x\" /* c\n */ /* d */ rule b = \"y\"\n",
+	} {
+		t.Run(fmt.Sprintf("brace on the comment line %d", i), func(t *testing.T) { checkFormat(t, src) })
 	}
 }

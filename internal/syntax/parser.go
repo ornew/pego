@@ -284,11 +284,13 @@ func (p *parser) lineBreak() *grammar.LineBreak {
 // a line of an operators rule. A block comment over several lines that ends on
 // the line of that token is not a trailing comment of the line before: it is
 // detached from the token, so it takes lines of its own before the token, set
-// off by blank lines.
+// off by blank lines. It does so only when that comment is the only one before
+// the token; with several, the first still trails the line before. A closing
+// brace starts no statement, so the comment before it trails the last one.
 func (p *parser) statementBreak() *grammar.LineBreak {
 	t := &p.toks[p.i]
 	c := t.lineComment
-	if c == nil || !strings.HasPrefix(c.Text, "/*") || c.Pos.Line == c.End.Line || c.End.Line != t.pos.Line {
+	if c == nil || len(t.comments) != 0 || t.text == "}" || !strings.HasPrefix(c.Text, "/*") || c.Pos.Line == c.End.Line || c.End.Line != t.pos.Line {
 		return p.lineBreak()
 	}
 	t.lineComment = nil
