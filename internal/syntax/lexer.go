@@ -47,6 +47,18 @@ type token struct {
 	source *commentBoundary
 }
 
+// opensList reports whether the token opens a list or separates its elements.
+func (t token) opensList() bool {
+	if t.kind != tPunct {
+		return false
+	}
+	switch t.text {
+	case "(", "[", "{", ",":
+		return true
+	}
+	return false
+}
+
 func (t token) String() string {
 	switch t.kind {
 	case tEOF:
@@ -272,7 +284,7 @@ func lexContext(ctx context.Context, src string, errs *errorList) (toks []token,
 					cs[i+1] = c
 				}
 			}
-			t.source = collectCommentsWithCheck(previous, t, cs, l.cancelCheck())
+			t.source = collectCommentsWithCheck(previous, l.prev.opensList(), t, cs, l.cancelCheck())
 		}
 		toks = append(toks, t)
 		l.prev = t

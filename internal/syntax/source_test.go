@@ -41,7 +41,15 @@ func TestLexerCommentBoundaries(t *testing.T) {
 		{"EOF detached unowned", "after", "\n\n// unowned\n", "", "", []string{" unowned\n"}},
 		{"closing standalone trailing", "after", "\n// previous\n}", " previous\n", "", nil},
 		{"closing inline continuation unowned", "after", " // previous\n// unowned\n}", " previous\n", "", []string{" unowned\n"}},
-		{"closing ambiguous inline block", "after", " /* unowned */ }", "", "", []string{" unowned "}},
+		{"closing inline block trails", "after", " /* previous */ }", " previous ", "", nil},
+		{"closing inline block after a comma trails", "after", ", /* previous */ )", " previous ", "", nil},
+		{"inline block after an opener leads", "opener", " /* next */ next", "", " next ", nil},
+		{"inline block after a bracket leads", "bracket", " /* next */ next", "", " next ", nil},
+		{"inline block after a brace leads", "brace", " /* next */ next", "", " next ", nil},
+		{"inline block after a comma leads", "comma", " /* next */ next", "", " next ", nil},
+		{"inline block after a semicolon stays ambiguous", "semicolon", " /* next */ next", "", "", []string{" next "}},
+		{"opener block ending on the next line", "opener", " /* next\n */ next", "", " next\n", nil},
+		{"two inline blocks after an opener", "opener", " /* previous */ /* next */ next", " previous ", " next ", nil},
 		{"closing inline block on prior line", "after", " /* previous */\n}", " previous ", "", nil},
 		{"EOF inline block", "after", " /* previous */", " previous ", "", nil},
 		{"CRLF", "start", "// first\r\n// second\r\nnext", "", " first\r\n second\r\n", nil},
@@ -51,8 +59,19 @@ func TestLexerCommentBoundaries(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			input := tc.input
-			if tc.rule == "after" {
+			switch tc.rule {
+			case "after":
 				input = "prev" + input
+			case "opener":
+				input = "f(" + input
+			case "bracket":
+				input = "node[" + input
+			case "brace":
+				input = "S{" + input
+			case "comma":
+				input = "f(1," + input
+			case "semicolon":
+				input = "S{A int;" + input
 			}
 			errs := &errorList{}
 			toks := lex(input, errs)

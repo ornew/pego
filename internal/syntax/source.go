@@ -19,11 +19,13 @@ type commentBoundary struct {
 	trailingOwner     *grammar.SourceInfo
 }
 
-func collectComments(previous grammar.Pos, next token, comments []*grammar.Comment) *commentBoundary {
-	return collectCommentsWithCheck(previous, next, comments, nil)
+func collectComments(previous grammar.Pos, opens bool, next token, comments []*grammar.Comment) *commentBoundary {
+	return collectCommentsWithCheck(previous, opens, next, comments, nil)
 }
 
-func collectCommentsWithCheck(previous grammar.Pos, next token, comments []*grammar.Comment, check func()) *commentBoundary {
+// collectCommentsWithCheck groups the comments between two tokens. opens
+// reports that the token before them is an opening delimiter or a comma.
+func collectCommentsWithCheck(previous grammar.Pos, opens bool, next token, comments []*grammar.Comment, check func()) *commentBoundary {
 	b := &commentBoundary{}
 	canPrevious := previous.IsValid()
 	inlineEnd := 0
@@ -79,9 +81,17 @@ func collectCommentsWithCheck(previous grammar.Pos, next token, comments []*gram
 	if pending != nil {
 		count++
 	}
-	if next.kind != tEOF && (previous.Line == next.pos.Line || inlineEnd == next.pos.Line) && count == 1 {
+	// A lone block comment between two tokens of one line is neither the trailing
+	// comment of the first nor the leading comment of the second, unless the first
+	// opens a list or separates its elements, and then it leads the second. Before a
+	// closing delimiter it trails the token before it.
+	if !scopeEnd && (previous.Line == next.pos.Line || inlineEnd == next.pos.Line) && count == 1 {
 		if b.hasTrailing {
-			b.detached = append([]string{b.trailing}, b.detached...)
+			if opens {
+				b.leading = b.trailing
+			} else {
+				b.detached = append([]string{b.trailing}, b.detached...)
+			}
 			b.trailing, b.hasTrailing = "", false
 		}
 		canPrevious = false

@@ -209,7 +209,7 @@ func TestCancellableCommentCollection(t *testing.T) {
 	ctx := &cancelOnCheck{cancelAt: 2*(count/256) + 2}
 	next := token{kind: tEOF, pos: grammar.Pos{Line: count + 1, Col: 1}}
 	expectLexCancelled(t, func() {
-		collectCommentsWithCheck(grammar.Pos{}, next, comments, func() {
+		collectCommentsWithCheck(grammar.Pos{}, false, next, comments, func() {
 			if err := ctx.Err(); err != nil {
 				panic(lexCancelled{err})
 			}

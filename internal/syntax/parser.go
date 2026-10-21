@@ -579,8 +579,11 @@ func (p *parser) typeTerm() (sourceResult grammar.TypeExpr) {
 		return &grammar.OptionalType{Elem: p.typeTerm()}
 	case p.accept("("):
 		open := p.i - 1
-		outer := p.cur
-		defer func() { p.cur = outer }()
+		outer, header := p.cur, p.header
+		defer func() { p.cur, p.header = outer, header }()
+		// The comments inside the parentheses belong to the type, not to the
+		// header around it.
+		p.header = false
 		g := &grammar.TypeGroup{OpenBreak: &grammar.LineBreak{}}
 		p.cur = g.OpenBreak
 		g.BodyBreak = p.lineBreak()
@@ -617,17 +620,24 @@ func (p *parser) typeTerm() (sourceResult grammar.TypeExpr) {
 		// The lexer makes "[" a bracket only directly after the name: T[U].
 		p.next()
 		a := &grammar.TypeApp{SourceInfo: grammar.SourceInfo{Pos: name.pos}, Name: name.text}
+		outer, header := p.cur, p.header
+		defer func() { p.cur, p.header = outer, header }()
+		p.header = false
+		a.OpenBreak, a.BodyBreak = p.openList()
 		for {
-			a.Args = append(a.Args, p.typeExpr())
+			x := p.typeElem()
+			a.Args = append(a.Args, x)
+			p.takeAfterLayout(x)
 			if !p.accept(",") {
 				break
 			}
-			p.commaTrailing(a.Args[len(a.Args)-1])
+			p.afterComma(x, "]")
 			if p.is("]") {
 				a.TrailingComma = true
 				break
 			}
 		}
+		a.CloseBreak = p.lineBreak()
 		p.expect("]")
 		return a
 	}
@@ -672,18 +682,31 @@ func (p *parser) tupleType(g *grammar.TypeGroup, first grammar.TypeExpr) grammar
 	t := &grammar.TupleType{OpenBreak: g.OpenBreak, BodyBreak: g.BodyBreak}
 	if first != nil {
 		t.Types = append(t.Types, first)
+		p.takeAfterLayout(first)
 		for p.accept(",") {
-			p.commaTrailing(t.Types[len(t.Types)-1])
+			p.afterComma(t.Types[len(t.Types)-1], ")")
 			if p.is(")") {
 				t.TrailingComma = true
 				break
 			}
-			t.Types = append(t.Types, p.typeExpr())
+			x := p.typeElem()
+			t.Types = append(t.Types, x)
+			p.takeAfterLayout(x)
 		}
 	}
 	t.CloseBreak = p.lineBreak()
 	p.expect(")")
 	return t
+}
+
+// typeElem parses an element of a list of types with the comments before it.
+func (p *parser) typeElem() grammar.TypeExpr {
+	layout := p.takeTermLayout()
+	x := p.typeExpr()
+	if layout != nil {
+		x.(grammar.SourceNode).Source().Layout = layout
+	}
+	return x
 }
 
 // varDef parses a variable definition: var Name [Type] [= Value].
@@ -1222,6 +1245,9 @@ func (p *parser) pragma(e grammar.Expr, start grammar.Pos) (sourceResult grammar
 		return &grammar.Recovery{SourceInfo: grammar.SourceInfo{Pos: pos}, Expr: e, Skip: skip, Break: br}
 	case "repeat":
 		p.expect("(")
+		// The comments inside the parentheses stay there.
+		outer, args := p.cur, &grammar.LineBreak{}
+		p.cur = args
 		first := p.tok().kind == tInt || p.is("-")
 		min := 0
 		if first {
@@ -1239,7 +1265,12 @@ func (p *parser) pragma(e grammar.Expr, start grammar.Pos) (sourceResult grammar
 			p.errorf("#repeat requires a count")
 		}
 		p.expect(")")
-		return &grammar.Repeat{SourceInfo: grammar.SourceInfo{Pos: start}, Expr: e, Min: min, Max: max, PragmaBreak: br}
+		p.cur = outer
+		rep := &grammar.Repeat{SourceInfo: grammar.SourceInfo{Pos: start}, Expr: e, Min: min, Max: max, PragmaBreak: br, MinOmitted: !first && max >= 0}
+		if len(args.Comments) > 0 {
+			rep.ArgsBreak = args
+		}
+		return rep
 	default:
 		p.errorf("unknown pragma #%s", name)
 		panic(bail{})
@@ -1292,10 +1323,24 @@ func (p *parser) attribute() (sourceResult *grammar.Attribute) {
 	}
 	p.next()
 	named := false
-	if p.accept(")") {
+	defer p.restoreBreak()()
+	list := &grammar.ListLayout{}
+	list.OpenBreak, list.BodyBreak = p.openList()
+	a.ArgsLayout = list
+	if p.is(")") {
+		list.CloseBreak = p.lineBreak()
+		p.next()
 		return a
 	}
 	for {
+		var layout *grammar.SourceLayout
+		if len(list.Elems) > 0 {
+			layout = p.takeTermLayout()
+		}
+		if p.is(",") {
+			p.errorf("expected an attribute argument, found ','")
+			panic(bail{})
+		}
 		if p.tok().kind == tIdent && p.peek(1).kind == tPunct && p.peek(1).text == "=" {
 			named = true
 			name := p.ident().text
@@ -1316,15 +1361,22 @@ func (p *parser) attribute() (sourceResult *grammar.Attribute) {
 			}
 			a.Args = append(a.Args, p.attributeValue())
 		}
-		if p.accept(")") {
-			return a
+		list.Elems = append(list.Elems, layout)
+		last := &list.Elems[len(list.Elems)-1]
+		p.takeAfter(last)
+		if p.is(")") {
+			break
 		}
 		p.expect(",")
-		if p.accept(")") {
+		p.afterCommaLayout(last, ")")
+		if p.is(")") {
 			a.TrailingComma = true
-			return a
+			break
 		}
 	}
+	list.CloseBreak = p.lineBreak()
+	p.expect(")")
+	return a
 }
 
 func (p *parser) attributeValue() any {
@@ -1538,6 +1590,7 @@ func (p *parser) tryLambda() (sourceResult grammar.Term) {
 	}
 	k := 1
 	var params []string
+	trailing := false
 	for {
 		t := p.peek(k)
 		if t.kind == tPunct && t.text == ")" && len(params) == 0 {
@@ -1550,6 +1603,10 @@ func (p *parser) tryLambda() (sourceResult grammar.Term) {
 		k++
 		if s := p.peek(k); s.kind == tPunct && s.text == "," {
 			k++
+			if e := p.peek(k); e.kind == tPunct && e.text == ")" {
+				trailing = true
+				break
+			}
 			continue
 		}
 		break
@@ -1561,16 +1618,34 @@ func (p *parser) tryLambda() (sourceResult grammar.Term) {
 		return nil
 	}
 	layout = p.takeTermLayout()
-	for range k + 2 {
+	p.next() // "("
+	cur := p.cur
+	list := &grammar.ListLayout{}
+	list.OpenBreak, list.BodyBreak = p.openList()
+	for i := range params {
+		var elem *grammar.SourceLayout
+		if i > 0 {
+			elem = p.takeTermLayout()
+		}
 		if t := p.tok(); p.legacy == nil && t.kind == tIdent && (t.text == "true" || t.text == "false" || t.text == "nil") {
 			p.errs.addRange(t.pos, t.end, fmt.Sprintf("%s cannot name a lambda parameter", t.text))
 		}
 		p.next()
+		p.takeAfter(&elem)
+		if i+1 < len(params) || trailing {
+			p.expect(",")
+			p.afterCommaLayout(&elem, ")")
+		}
+		list.Elems = append(list.Elems, elem)
 	}
+	list.CloseBreak = p.lineBreak()
+	p.next() // ")"
+	p.cur = cur
+	p.next() // "=>"
 	outer := len(p.params)
 	p.params = append(p.params, params...)
 	defer func() { p.params = p.params[:outer] }()
-	return &grammar.Lambda{Params: params, Body: p.term()}
+	return &grammar.Lambda{Params: params, Body: p.term(), TrailingComma: trailing, ParamsLayout: list}
 }
 
 var binaryLevels = [][]string{
@@ -1907,8 +1982,15 @@ func (p *parser) listItems(closer string) (items []grammar.Term, trailing bool) 
 // before a closing delimiter stay with the delimiter's line break.
 func (p *parser) afterComma(node any, closer string) {
 	p.commaTrailing(node)
-	x, ok := node.(grammar.SourceNode)
-	if p.header || !ok || p.is(closer) {
+	if x, ok := node.(grammar.SourceNode); ok {
+		p.afterCommaLayout(&x.Source().Layout, closer)
+	}
+}
+
+// afterCommaLayout is afterComma for the layout of an element, which may not
+// be a node.
+func (p *parser) afterCommaLayout(layout **grammar.SourceLayout, closer string) {
+	if p.header || p.is(closer) {
 		return
 	}
 	t := &p.toks[p.i]
@@ -1931,11 +2013,10 @@ func (p *parser) afterComma(node any, closer string) {
 	if last := cs[n-1]; !strings.HasPrefix(last.Text, "//") && last.End.Line >= next {
 		return
 	}
-	s := x.Source()
-	if s.Layout == nil {
-		s.Layout = &grammar.SourceLayout{}
+	if *layout == nil {
+		*layout = &grammar.SourceLayout{}
 	}
-	s.Layout.Trail = cs[:n:n]
+	(*layout).Trail = cs[:n:n]
 	t.lineComment, t.comments = nil, cs[n:]
 }
 
@@ -1953,8 +2034,15 @@ func (p *parser) commaTrailing(node any) {
 // comma that follows it with the element, rather than promoting them to the
 // current line break, which would move them before the first element.
 func (p *parser) takeAfterLayout(node any) {
-	x, ok := node.(grammar.SourceNode)
-	if p.header || !ok || !p.is(",") {
+	if x, ok := node.(grammar.SourceNode); ok {
+		p.takeAfter(&x.Source().Layout)
+	}
+}
+
+// takeAfter is takeAfterLayout for the layout of an element, which may not be
+// a node.
+func (p *parser) takeAfter(layout **grammar.SourceLayout) {
+	if p.header || !p.is(",") {
 		return
 	}
 	t := &p.toks[p.i]
@@ -1965,12 +2053,11 @@ func (p *parser) takeAfterLayout(node any) {
 	if t.lineComment != nil {
 		cs = p.appendComments([]*grammar.Comment{t.lineComment}, cs)
 	}
-	s := x.Source()
-	if s.Layout == nil {
-		s.Layout = &grammar.SourceLayout{}
+	if *layout == nil {
+		*layout = &grammar.SourceLayout{}
 	}
-	s.Layout.After = cs
-	s.Layout.ElemLine, s.Layout.AfterLine = p.toks[p.i-1].end.Line, t.pos.Line
+	(*layout).After = cs
+	(*layout).ElemLine, (*layout).AfterLine = p.toks[p.i-1].end.Line, t.pos.Line
 	t.lineComment, t.comments = nil, nil
 }
 

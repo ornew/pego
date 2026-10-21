@@ -12,12 +12,6 @@ import (
 // where it was written, relative to the tokens around it, and a multiline
 // layout keeps its indentation.
 func TestActionExpressionLayout(t *testing.T) {
-	// A comment between two tokens of one line, before an element of a list on
-	// lines, cannot stay between them.
-	inlineBeforeElement := map[string]bool{
-		"block comment with lines in a call":          true,
-		"list constructor with comments around items": true,
-	}
 	const prelude = "type S = { A int; B int }\n"
 	for _, tc := range []struct {
 		name, in, want string
@@ -169,15 +163,11 @@ func TestActionExpressionLayout(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			check := checkFormat
-			if inlineBeforeElement[tc.name] {
-				check = checkFormatLines
-			}
-			got := check(t, tc.in)
+			got := checkFormat(t, tc.in)
 			if got != tc.want {
 				t.Fatalf("got:\n%s\nwant:\n%s", got, tc.want)
 			}
-			if again := check(t, got); again != got {
+			if again := checkFormat(t, got); again != got {
 				t.Fatalf("format is not idempotent:\n%s\n%s", got, again)
 			}
 		})

@@ -67,14 +67,31 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			add(b)
 		}
 	}
+	addLayout := func(l *SourceLayout) {
+		if l != nil {
+			cs = appendMetadata(cs, l.Before, control)
+			cs = appendMetadata(cs, l.After, control)
+			cs = appendMetadata(cs, l.Trail, control)
+		}
+	}
+	addList := func(l *ListLayout) {
+		if l == nil {
+			return
+		}
+		add(l.OpenBreak)
+		add(l.BodyBreak)
+		add(l.CloseBreak)
+		for _, e := range l.Elems {
+			control.poll()
+			addLayout(e)
+		}
+	}
 	var term func(Term)
 	var typ func(TypeExpr)
 	term = func(t Term) {
 		control.poll()
-		if n, ok := t.(SourceNode); ok && n.Source().Layout != nil {
-			cs = appendMetadata(cs, n.Source().Layout.Before, control)
-			cs = appendMetadata(cs, n.Source().Layout.After, control)
-			cs = appendMetadata(cs, n.Source().Layout.Trail, control)
+		if n, ok := t.(SourceNode); ok {
+			addLayout(n.Source().Layout)
 		}
 		switch t := t.(type) {
 		case *TermGroup:
@@ -127,6 +144,7 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 				term(arg)
 			}
 		case *Lambda:
+			addList(t.ParamsLayout)
 			term(t.Body)
 		case *Binary:
 			term(t.L)
@@ -144,6 +162,9 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 	}
 	typ = func(t TypeExpr) {
 		control.poll()
+		if n, ok := t.(SourceNode); ok {
+			addLayout(n.Source().Layout)
+		}
 		switch t := t.(type) {
 		case *TypeGroup:
 			add(t.OpenBreak)
@@ -170,6 +191,9 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 				typ(t)
 			}
 		case *TypeApp:
+			add(t.OpenBreak)
+			add(t.BodyBreak)
+			add(t.CloseBreak)
 			for _, t := range t.Args {
 				typ(t)
 			}
@@ -204,6 +228,7 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			expr(e.Expr)
 			for _, attr := range e.Attrs {
 				control.poll()
+				addList(attr.ArgsLayout)
 				for _, arg := range attr.expressionArgs(control) {
 					expr(arg)
 				}
@@ -219,6 +244,7 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			term(e.Term)
 		case *Repeat:
 			add(e.PragmaBreak)
+			add(e.ArgsBreak)
 			expr(e.Expr)
 		case *Optional:
 			expr(e.Expr)

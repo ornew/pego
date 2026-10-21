@@ -38,6 +38,17 @@ type SourceNode interface {
 	Source() *SourceInfo
 }
 
+// ListLayout keeps the comments of a parenthesized list whose elements are not
+// nodes of their own, such as the arguments of an attribute and the parameters
+// of a lambda. The parentheses keep their comments like those of a TupleType,
+// and Elems[i] holds the comments around the i-th element, which may be nil.
+type ListLayout struct {
+	OpenBreak  *LineBreak
+	BodyBreak  *LineBreak
+	CloseBreak *LineBreak
+	Elems      []*SourceLayout
+}
+
 // SourceLayout retains spelling and placement without assigning comment owners.
 // A nil value uses ordinary canonical formatting. Positions only distinguish
 // adjacent lines and blank lines; they are not offsets in the formatted output.

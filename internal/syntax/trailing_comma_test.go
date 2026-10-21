@@ -12,11 +12,6 @@ import (
 // line and ends with a comma. The comma of a one-element tuple is part of the
 // syntax and does not count as a trailing comma.
 func TestTrailingCommaLists(t *testing.T) {
-	// A comment between two tokens of one line, before an element of a list on
-	// lines, cannot stay between them.
-	inlineBeforeElement := map[string]bool{
-		"call with an inline block comment and a trailing comma": true,
-	}
 	const prelude = "type S = { A int; B int }\n"
 	for _, tc := range []struct {
 		name, in, want string
@@ -115,25 +110,30 @@ func TestTrailingCommaLists(t *testing.T) {
 		{"recover", "rule r = \"a\" #recover(skip=\",\" / \";\")\n", "rule r = \"a\" #recover(skip=\",\" / \";\")\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			check := checkFormat
-			if inlineBeforeElement[tc.name] {
-				check = checkFormatLines
-			}
-			got := check(t, tc.in)
+			got := checkFormat(t, tc.in)
 			if got != tc.want {
 				t.Fatalf("got:\n%s\nwant:\n%s", got, tc.want)
 			}
-			if again := check(t, got); again != got {
+			if again := checkFormat(t, got); again != got {
 				t.Fatalf("format is not idempotent:\n%s\n%s", got, again)
 			}
 		})
 	}
 }
 
-// The syntax of lambda parameters has no trailing comma.
-func TestLambdaParametersTakeNoTrailingComma(t *testing.T) {
-	if _, err := Parse("rule r = \"a\" => map(list(), (a, b,) => a)\n"); err == nil {
-		t.Fatal("a trailing comma after lambda parameters parsed")
+// Lambda parameters are a comma-separated list: a comma after the last one puts
+// every parameter on its own line, and a list without it stays on one line.
+func TestLambdaParametersTakeTrailingComma(t *testing.T) {
+	for _, tc := range []struct{ name, in, want string }{
+		{"one line", "rule r = \"a\" => map(list(), (a, b) => a)\n", "rule r = \"a\" => map(list(), (a, b) => a)\n"},
+		{"trailing comma", "rule r = \"a\" => map(list(), (a, b,) => a)\n", "rule r = \"a\" => map(\n    list(),\n    (\n        a,\n        b,\n    ) => a,\n)\n"},
+		{"single parameter", "rule r = \"a\" => map(list(), (a,) => a)\n", "rule r = \"a\" => map(\n    list(),\n    (\n        a,\n    ) => a,\n)\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := checkFormat(t, tc.in); got != tc.want {
+				t.Fatalf("got:\n%s\nwant:\n%s", got, tc.want)
+			}
+		})
 	}
 }
 
@@ -226,12 +226,14 @@ func TestRepeatPragmaCommaIsNotTrailing(t *testing.T) {
 	for _, tc := range []struct {
 		pragma   string
 		min, max int
+		form     string
 	}{
-		{"#repeat(2)", 2, 2},
-		{"#repeat(2,)", 2, -1},
-		{"#repeat(2, )", 2, -1},
-		{"#repeat(,3)", 0, 3},
-		{"#repeat(2,3)", 2, 3},
+		{"#repeat(2)", 2, 2, "2"},
+		{"#repeat(2,)", 2, -1, "2,"},
+		{"#repeat(2, )", 2, -1, "2,"},
+		{"#repeat(,3)", 0, 3, ",3"},
+		{"#repeat(0,3)", 0, 3, "0, 3"},
+		{"#repeat(2,3)", 2, 3, "2, 3"},
 	} {
 		t.Run(tc.pragma, func(t *testing.T) {
 			g, err := Parse("rule r = \"a\" " + tc.pragma + " \"b\"\n")
@@ -254,8 +256,8 @@ func TestRepeatPragmaCommaIsNotTrailing(t *testing.T) {
 			if rep.Min != tc.min || rep.Max != tc.max {
 				t.Fatalf("formatted bounds %d,%d, want %d,%d\n%s", rep.Min, rep.Max, tc.min, tc.max, out)
 			}
-			if tc.max < 0 && !strings.Contains(out, "#repeat(2, )") {
-				t.Fatalf("the comma was removed:\n%s", out)
+			if !strings.Contains(out, "#repeat("+tc.form+")") {
+				t.Fatalf("the form %s was not kept:\n%s", tc.form, out)
 			}
 		})
 	}

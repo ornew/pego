@@ -270,6 +270,11 @@ type TypeApp struct {
 	SourceInfo `json:"source,omitempty"`
 	Name       string     `json:"name"`
 	Args       []TypeExpr `json:"args"`
+
+	// The brackets keep their comments like a TupleType's.
+	OpenBreak  *LineBreak `json:"-"`
+	BodyBreak  *LineBreak `json:"-"`
+	CloseBreak *LineBreak `json:"-"`
 	// TrailingComma records a comma after the last argument. Format puts the
 	// arguments on separate lines when it is set.
 	TrailingComma bool `json:"-"`
@@ -406,6 +411,14 @@ type Repeat struct {
 	Min         int        `json:"min"`
 	Max         int        `json:"max"`
 	PragmaBreak *LineBreak `json:"-"`
+
+	// MinOmitted records that the source wrote #repeat(,Max) rather than
+	// #repeat(0,Max). Format keeps that form; it has no other effect.
+	MinOmitted bool `json:"-"`
+	// ArgsBreak holds the comments between the parentheses of #repeat(...).
+	// The comma of #repeat is part of its syntax, not a list separator, so
+	// the comments are kept together instead of around the bounds.
+	ArgsBreak *LineBreak `json:"-"`
 }
 
 // Optional is an optional expression a?. Its value is the value of a, or
@@ -520,8 +533,8 @@ type Attributed struct {
 }
 
 // Attribute is a postfix attribute @name(positional, keyword=value, ...).
-// Argument values are int, string, bool, nil, or parser expressions. Nil in
-// Args preserves an omitted positional slot, including a trailing slot.
+// Argument values are int, string, bool, nil, or parser expressions. An empty
+// argument is written nil.
 type Attribute struct {
 	SourceInfo `json:"source,omitempty"`
 	Name       string `json:"name"`
@@ -531,9 +544,12 @@ type Attribute struct {
 	KwArgs map[string]any `json:"kwArgs,omitempty"`
 	// KeywordOrder preserves source order; JSON grammars format keys sorted.
 	KeywordOrder []string `json:"-"`
-	// TrailingComma records a comma after the last keyword argument. Format
-	// puts the arguments on separate lines when it is set.
+	// TrailingComma records a comma after the last argument. Format puts the
+	// arguments on separate lines when it is set.
 	TrailingComma bool `json:"-"`
+	// ArgsLayout keeps the comments around the arguments in source order,
+	// positional ones first.
+	ArgsLayout *ListLayout `json:"-"`
 }
 
 // Arg returns the argument named name.
@@ -839,6 +855,12 @@ type Lambda struct {
 	SourceInfo `json:"source,omitempty"`
 	Params     []string `json:"params"`
 	Body       Term     `json:"body"`
+
+	// TrailingComma records a comma after the last parameter. Format puts the
+	// parameters on separate lines when it is set.
+	TrailingComma bool `json:"-"`
+	// ParamsLayout keeps the comments around the parameters.
+	ParamsLayout *ListLayout `json:"-"`
 }
 
 // Binary is a binary operation l op r. The operator "[]" is indexing, l[r].

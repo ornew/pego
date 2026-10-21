@@ -299,7 +299,7 @@ rule cast_type = "(" {ml := true} -ws type_expr -ws ")"
 rule lambda = lambda_head -ws "=>" -ws action_expr
 // A rule of its own keeps ml from reaching the arrow and the body.
 rule lambda_head = "(" {ml := true} -ws lambda_params? -ws ")"
-rule lambda_params = lambda_param (-ws "," -ws lambda_param)*
+rule lambda_params = lambda_param (-ws "," -ws lambda_param)* (-ws ",")?
 // A parameter cannot take the name of a literal, which the literal would hide.
 rule lambda_param = !((true_lit / false_lit / nil_lit) -ws &("," / ")")) ident
 // Parentheses around one expression without a comma group it; any other
@@ -386,7 +386,7 @@ rule escape_char = "u{" [0-9a-fA-F]+ "}" / "u" [0-9a-fA-F] #repeat(4) / [ntrfvab
 // The lookahead rules never fail, so recording ownership cannot change what a
 // statement accepts: an unrecognizable boundary has no comments and no next owner.
 rule source_head = source_remaining / source_empty_boundary
-rule source_head_open = source_after_boundary / source_empty_boundary
+rule source_head_open = source_after_opener_boundary / source_empty_boundary
 rule source_empty_boundary = _
 
 // The boundary after a statement. A separator, when present, is a token of its own
@@ -402,7 +402,7 @@ rule source_trivia = source_space / source_line_comment / source_block_comment
 // Constructor fields have a comma as their separator.
 rule source_comma_tail = source_comma_after_separator_trailing / source_comma_after_separator / source_tail_plain / source_tail_empty
 rule source_comma_after_separator_trailing = source_after_boundary "," source_after_boundary_trailing
-rule source_comma_after_separator = source_after_boundary "," source_after_boundary
+rule source_comma_after_separator = source_after_boundary "," source_after_opener_boundary
 
 rule source_after_boundary = (
     source_inline_line_boundary / source_inline_block_boundary / source_ambiguous_block_boundary
@@ -410,9 +410,16 @@ rule source_after_boundary = (
 )
 rule source_inline_line_boundary = -source_horizontal source_line_comment source_remaining
 rule source_inline_block_boundary = (
-    -source_horizontal source_block_comment &(source_horizontal (source_nl / source_comment_start / $$))
+    -source_horizontal source_block_comment &(source_horizontal (source_nl / source_comment_start / source_scope_end))
     source_remaining
 )
+// The boundary after an opening delimiter or a comma. One inline block ending on
+// the next token's line leads that token there.
+rule source_after_opener_boundary = (
+    source_inline_line_boundary / source_inline_block_boundary / source_opener_block_boundary
+    / source_newline_boundary / source_remaining
+)
+rule source_opener_block_boundary = -source_horizontal source_block_comment -source_horizontal &source_next_token
 // One inline block ending on the next token's line is ambiguous, not trailing.
 rule source_ambiguous_block_boundary = -source_horizontal source_block_comment -source_horizontal &source_next_token
 rule source_newline_boundary = -source_horizontal -source_nl -source_horizontal (source_first_trailing / source_empty_comment) source_remaining
@@ -453,14 +460,18 @@ rule source_space = source_horizontal_char / source_nl
 // the characters between trivia; strings and classes hide comment markers.
 // A gap at the start of the input has no token before it and so no trailing
 // group. The scan never fails, so recording gaps cannot change what is accepted.
-rule source_gaps = source_gap_head? -source_gap_skip* (source_gap -source_gap_skip*)* $$
+rule source_gaps = source_gap_head? -source_gap_skip* ((-source_open_char source_open_gap / source_gap) -source_gap_skip*)* $$
 // A bracket directly after a name, ")", "]" or "}" is a bracket, not a character class.
-rule source_gap_skip = source_string / source_bracket / source_class / incomplete_comment / source_space+ !(source_line_comment / source_block_comment) / !(source_space / source_comment_start) .
+rule source_gap_skip = !source_gap_opens (source_string / source_bracket / source_class / incomplete_comment / source_space+ !(source_line_comment / source_block_comment) / !(source_space / source_comment_start) .)
+// An opening delimiter or a comma followed by a comment: the gap after it belongs to the opener.
+rule source_gap_opens = source_open_char &source_gap_run
+rule source_open_char = source_bracket / [({,]
 rule source_bracket = (ident_char / ")" / "]" / "}") "["
 // A gap starts with a comment, after any space, and runs to the next token.
 rule source_gap_run = -source_space* (source_line_comment / source_block_comment) (source_space / source_line_comment / source_block_comment)*
 rule source_gap_head = ^^ &source_gap_run &(source_remaining / source_empty_boundary) -source_gap_run
 rule source_gap = &source_gap_run &(source_after_boundary / source_empty_boundary) source_gap_flag? -source_gap_run
+rule source_open_gap = &source_gap_run &(source_after_opener_boundary / source_empty_boundary) source_gap_flag? -source_gap_run
 rule source_gap_flag = &source_after_boundary_trailing
 ```
 

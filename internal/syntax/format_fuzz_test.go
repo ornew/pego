@@ -13,15 +13,6 @@ import (
 
 // listGen writes random comma-separated lists with comments in every place a
 // comment can stand. The seed makes a run repeat.
-//
-// One shape is left out of the lists that may be written on lines, because
-// formatting cannot keep it there: a block comment between two tokens of one
-// line, directly after an opening delimiter or a comma, or directly before a
-// closing delimiter. Such a comment is detached or has no owner; once the
-// elements are on lines of their own it can only lead or trail one. The
-// inline lists, which have no trailing comma and no comment that needs a line,
-// stay on one line and keep these comments; the lists of
-// TestTrailingCommaLists and TestActionExpressionLayout show the moved ones.
 type listGen struct {
 	r *rand.Rand
 	n int
@@ -39,7 +30,7 @@ func (g *listGen) slot() string {
 		}
 		return ""
 	}
-	switch g.r.IntN(9) {
+	switch g.r.IntN(13) {
 	case 0:
 		return fmt.Sprintf(" /* b%d */ ", g.n)
 	case 1:
@@ -54,22 +45,52 @@ func (g *listGen) slot() string {
 		return fmt.Sprintf(" /* x%d\n y */ ", g.n)
 	case 6:
 		return fmt.Sprintf(" /* b%d */\n    ", g.n)
+	case 7:
+		return fmt.Sprintf(" /* p%d */ /* q%d */ ", g.n, g.n)
+	case 8:
+		return fmt.Sprintf(" /* p%d */ // q%d\n    ", g.n, g.n)
+	case 9:
+		return fmt.Sprintf("\n\n    // r%d\n\n    ", g.n)
+	case 10:
+		return fmt.Sprintf(" // s%d\n    // t%d\n    ", g.n, g.n)
 	}
 	return ""
 }
 
-// edge is slot for the places that may lead to a list on lines: after an
-// opening delimiter or a comma, and before a closing delimiter.
-func (g *listGen) edge() string {
-	if g.inline {
-		return g.slot()
+// edge is slot for the places next to a delimiter or a comma: after an opening
+// delimiter or a comma, and before a closing delimiter. A block comment there
+// is next to the element it leads or trails.
+func (g *listGen) edge() string { return g.slot() }
+
+// typ returns a random type whose tuples and node[...] arguments hold comments.
+func (g *listGen) typ(depth int) string {
+	if depth <= 0 || g.r.IntN(3) == 0 {
+		return []string{"int", "string", "T", "*T"}[g.r.IntN(4)]
 	}
-	for {
-		s := g.slot()
-		if !strings.HasPrefix(s, " /*") || strings.HasSuffix(s, "\n    ") {
-			return s
+	switch g.r.IntN(3) {
+	case 0:
+		el := make([]string, 1+g.r.IntN(3))
+		for i := range el {
+			el[i] = g.typ(depth - 1)
 		}
+		return g.list("(", ")", el, true)
+	case 1:
+		return "[]" + g.typ(depth-1)
 	}
+	return "node" + g.list("[", "]", []string{g.typ(depth - 1)}, false)
+}
+
+// attr returns an attribute whose arguments hold comments. An empty argument
+// is written nil.
+func (g *listGen) attr() string {
+	el := make([]string, 1+g.r.IntN(3))
+	for i := range el {
+		el[i] = []string{"1", "\"s\"", "nil"}[g.r.IntN(3)]
+	}
+	if g.r.IntN(2) == 0 {
+		el[len(el)-1] = "k=2"
+	}
+	return "@custom" + g.list("(", ")", el, false)
 }
 
 func (g *listGen) list(open, close string, elems []string, tuple bool) string {
@@ -100,7 +121,7 @@ func (g *listGen) term(depth int) string {
 	if depth <= 0 || g.r.IntN(3) == 0 {
 		return []string{"1", "\"s\"", "x", "2 + 3"}[g.r.IntN(4)]
 	}
-	kind := g.r.IntN(5)
+	kind := g.r.IntN(6)
 	n := g.r.IntN(4)
 	if kind != 1 && n == 0 {
 		n = 1
@@ -124,6 +145,8 @@ func (g *listGen) term(depth int) string {
 			elems[i] = fmt.Sprintf("F%d: %s", i, elems[i])
 		}
 		return "S" + g.list("{", "}", elems, false)
+	case 4:
+		return "map(x, " + g.list("(", ")", []string{"a", "b", "c"}[:len(elems)], false) + " => " + elems[0] + ")"
 	}
 	return "N" + g.list("{", "}", elems[:1], false)
 }
@@ -175,6 +198,45 @@ func TestFormatRandomLists(t *testing.T) {
 	}
 }
 
+// TestFormatRandomTypes formats random types, and attributes, with comments in
+// the same places as the lists of terms: the result types of rules, the types of
+// fields and the arguments of attributes.
+func TestFormatRandomTypes(t *testing.T) {
+	wraps := []struct {
+		name string
+		wrap func(g *listGen) string
+	}{
+		{"rule result", func(g *listGen) string { return "rule r " + g.typ(3) + " = \"a\"\n" }},
+		{"field", func(g *listGen) string { return "type T = { F " + g.typ(3) + " }\nrule r = \"a\"\n" }},
+		{"alias", func(g *listGen) string { return "type T ~ " + g.typ(3) + "\nrule r = \"a\"\n" }},
+		{"attribute", func(g *listGen) string { return "rule r = (\"a\" " + g.attr() + " \"b\" => 1) \"c\"\n" }},
+	}
+	const seeds = 1000
+	for _, w := range wraps {
+		t.Run(w.name, func(t *testing.T) {
+			failures, parsed := 0, 0
+			defer func() {
+				if failures == 0 && parsed < seeds*7/10 {
+					t.Errorf("only %d of %d random sources parse", parsed, seeds)
+				}
+			}()
+			for seed := uint64(0); seed < seeds && failures < 3; seed++ {
+				g := &listGen{r: rand.New(rand.NewPCG(seed, 11)), inline: seed%4 == 0}
+				src := w.wrap(g)
+				ast, err := Parse(src)
+				if err != nil {
+					continue
+				}
+				parsed++
+				if problem := checkRandomFormat(src, ast); problem != "" {
+					failures++
+					t.Errorf("seed %d\nsource:\n%s\n%s", seed, src, problem)
+				}
+			}
+		})
+	}
+}
+
 // checkRandomFormat returns a description of what formatting changes in ast,
 // parsed from src.
 func checkRandomFormat(src string, ast *grammar.Grammar) string {
@@ -192,7 +254,7 @@ func checkRandomFormat(src string, ast *grammar.Grammar) string {
 	if second := grammar.Format(again); second != out {
 		return "formatting is not idempotent\nfirst:\n" + out + "\nsecond:\n" + second
 	}
-	if diffs := ownerDiffs(ast, again, false); len(diffs) > 0 {
+	if diffs := ownerDiffs(ast, again); len(diffs) > 0 {
 		return "the owners changed\n" + strings.Join(diffs, "\n") + "\n" + out
 	}
 	return ""

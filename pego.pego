@@ -489,7 +489,7 @@ rule cast_type Type = "(" {ml := true} -ws t:type_expr -ws ")" => $t
 rule lambda Lambda = names:lambda_head -ws "=>" -ws x:action_expr => Lambda{Params: $names, Body: $x}
 // A rule of its own keeps ml from reaching the arrow and the body.
 rule lambda_head []Ident = "(" {ml := true} -ws names:lambda_params? -ws ")" => concat($names)
-rule lambda_params []Ident = first:lambda_param rest:(-ws "," -ws name:lambda_param)* => concat(list($first), map($rest, (x) => x.$name))
+rule lambda_params []Ident = first:lambda_param rest:(-ws "," -ws name:lambda_param)* (-ws ",")? => concat(list($first), map($rest, (x) => x.$name))
 // A parameter cannot take the name of a literal, which the literal would hide.
 rule lambda_param Ident = !((true_lit / false_lit / nil_lit) -ws &("," / ")")) i:ident => $i
 // Parentheses around one expression without a comma group it; any other
@@ -588,7 +588,7 @@ rule escape_char = "u{" [0-9a-fA-F]+ "}" / "u" [0-9a-fA-F] #repeat(4) / [ntrfvab
 // The lookahead rules never fail, so recording ownership cannot change what a
 // statement accepts: an unrecognizable boundary has no comments and no next owner.
 rule source_head SourceLead = b:(source_remaining / source_empty_boundary) => SourceLead{Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
-rule source_head_open SourceLead = b:(source_after_boundary / source_empty_boundary) => SourceLead{Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+rule source_head_open SourceLead = b:(source_after_opener_boundary / source_empty_boundary) => SourceLead{Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
 rule source_empty_boundary SourceBoundary = _ => SourceBoundary{Trailing: "", Leading: "", Detached: list(), HasNext: false}
 
 // The boundary after a statement. A separator, when present, is a token of its own
@@ -617,7 +617,7 @@ rule source_comma_after_separator_trailing SourceItem = (
     source_after_boundary "," t2:source_after_boundary_trailing
 ) => SourceItem{Trailing: $t2.Trailing, Next: SourceLead{Leading: $t2.Leading, Detached: $t2.Detached, HasNext: $t2.HasNext}}
 rule source_comma_after_separator SourceItem = (
-    t1:source_after_boundary "," t2:source_after_boundary
+    t1:source_after_boundary "," t2:source_after_opener_boundary
 ) => SourceItem{Trailing: $t1.Trailing, Next: SourceLead{Leading: $t2.Leading, Detached: $t2.Detached, HasNext: $t2.HasNext}}
 
 rule source_after_boundary SourceBoundary = (
@@ -628,9 +628,18 @@ rule source_inline_line_boundary SourceBoundary = (
     -source_horizontal c:source_line_comment b:source_remaining
 ) => SourceBoundary{Trailing: $c.Text, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
 rule source_inline_block_boundary SourceBoundary = (
-    -source_horizontal c:source_block_comment &(source_horizontal (source_nl / source_comment_start / $$))
+    -source_horizontal c:source_block_comment &(source_horizontal (source_nl / source_comment_start / source_scope_end))
     b:source_remaining
 ) => SourceBoundary{Trailing: $c.Text, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+// The boundary after an opening delimiter or a comma. One inline block ending on
+// the next token's line leads that token there.
+rule source_after_opener_boundary SourceBoundary = (
+    source_inline_line_boundary / source_inline_block_boundary / source_opener_block_boundary
+    / source_newline_boundary / source_remaining
+)
+rule source_opener_block_boundary SourceBoundary = (
+    -source_horizontal c:source_block_comment -source_horizontal &source_next_token
+) => SourceBoundary{Trailing: "", Leading: $c.Text, Detached: list(), HasNext: true}
 // One inline block ending on the next token's line is ambiguous, not trailing.
 rule source_ambiguous_block_boundary SourceBoundary = (
     -source_horizontal c:source_block_comment -source_horizontal &source_next_token
@@ -692,10 +701,13 @@ rule source_space = source_horizontal_char / source_nl
 // A gap at the start of the input has no token before it and so no trailing
 // group. The scan never fails, so recording gaps cannot change what is accepted.
 rule source_gaps []CommentGap = (
-    head:source_gap_head? -source_gap_skip* xs:(g:source_gap -source_gap_skip*)* $$
+    head:source_gap_head? -source_gap_skip* xs:((-source_open_char g:source_open_gap / g:source_gap) -source_gap_skip*)* $$
 ) => concat(filter(list($head), (x) => x != nil), map($xs, (x) => x.$g)).([]CommentGap)
 // A bracket directly after a name, ")", "]" or "}" is a bracket, not a character class.
-rule source_gap_skip = source_string / source_bracket / source_class / incomplete_comment / (source_space+ !(source_line_comment / source_block_comment)) / !(source_space / source_comment_start) .
+rule source_gap_skip = !source_gap_opens (source_string / source_bracket / source_class / incomplete_comment / (source_space+ !(source_line_comment / source_block_comment)) / !(source_space / source_comment_start) .)
+// An opening delimiter or a comma followed by a comment: the gap after it belongs to the opener.
+rule source_gap_opens = source_open_char &source_gap_run
+rule source_open_char = source_bracket / [({,]
 rule source_bracket = (ident_char / ")" / "]" / "}") "["
 // A gap starts with a comment, after any space, and runs to the next token.
 rule source_gap_run = -source_space* (source_line_comment / source_block_comment) (source_space / source_line_comment / source_block_comment)*
@@ -704,5 +716,8 @@ rule source_gap_head CommentGap = (
 ) => CommentGap{Trailing: "", HasTrailing: false, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
 rule source_gap CommentGap = (
     &source_gap_run &b:(source_after_boundary / source_empty_boundary) t:source_gap_flag? -source_gap_run
+) => CommentGap{Trailing: $b.Trailing, HasTrailing: $t != nil, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+rule source_open_gap CommentGap = (
+    &source_gap_run &b:(source_after_opener_boundary / source_empty_boundary) t:source_gap_flag? -source_gap_run
 ) => CommentGap{Trailing: $b.Trailing, HasTrailing: $t != nil, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
 rule source_gap_flag GapFlag = &source_after_boundary_trailing => GapFlag{}
