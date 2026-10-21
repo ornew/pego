@@ -126,7 +126,7 @@ pego gen -lang ts -g <grammar> -o <directory> [-s <rule>] [-runtime embed|import
 | `-lang` | `go` | `ts` generates TypeScript |
 | `-g` | (required) | The grammar: `.pego`, `.json`, or a `.pegoc` that contains the AST |
 | `-s` | saved in a `.pegoc`, otherwise `main` | The start rule of `parse` |
-| `-o` | (required) | The output directory (it is created). Generated files that the new run does not write again are removed; a file that pego did not generate is never removed or overwritten |
+| `-o` | (required) | The output directory (it is created). Generated files that the new run does not write again are removed, except that `-runtime import` leaves `runtime.ts` alone; a file that pego did not generate is never removed or overwritten |
 | `-runtime` | `embed` | `embed` writes `runtime.ts` next to `parser.ts`; `import` imports the runtime from `-runtime-module` and writes no copy; `only` writes just `runtime.ts` (no `-g`) |
 | `-runtime-module` | (required with `-runtime import`) | The module specifier `parser.ts` and `types.ts` import the runtime from, for example `../shared/runtime.ts`. Several parsers share one runtime this way: generate it once with `-runtime only` |
 | `-types` | off | Write `types.ts` with the grammar's interfaces and aliases (also exported from `parser.ts`), and add the configured-start `parseAST`/`parseASTWithOptions` |
@@ -565,7 +565,7 @@ To test that the TypeScript parser agrees with the engine for your inputs, compa
 
 ```bash
 pego parse -g pairs.pego -i 'abc=12; あい=3' > want.json
-node --import ./hook.mjs --input-type=module -e '
+node --input-type=module -e '
 import { readFileSync } from "node:fs";
 import { isDeepStrictEqual } from "node:util";
 import { parse, marshal } from "./pairs/parser.ts";
