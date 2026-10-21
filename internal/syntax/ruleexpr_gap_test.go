@@ -34,6 +34,14 @@ func TestFormatKeepsCommentsBetweenTokens(t *testing.T) {
 		{"a comment across lines before a repeat pragma", "rule r = ( \"a\" /* x\n y */ #repeat(2) ) \"b\"", "rule r = (\n    \"a\" /* x\n y */ #repeat(2)\n) \"b\""},
 		{"a comment across lines before an atomic pragma", "rule r = ( \"a\" /* x\n y */ #atomic ) \"b\"", "rule r = (\n    \"a\" /* x\n y */ #atomic\n) \"b\""},
 		{"a comment across lines before a recover pragma", "rule r = ( \"a\" /* x\n y */ #recover(skip=\"b\") ) \"c\"", "rule r = (\n    \"a\" /* x\n y */ #recover(skip=\"b\")\n) \"c\""},
+		{"on a line of its own after a label", "rule r = ( x:\n    // m2\n    \"a\" \"b\" )", "rule r = (\n    x:\n    // m2\n    \"a\" \"b\"\n)"},
+		{"on a line of its own after a lookahead", "rule r = ( &\n    // m2\n    \"a\" \"b\" )", "rule r = (\n    &\n    // m2\n    \"a\" \"b\"\n)"},
+		{"on a line of its own before a suffix", "rule r = ( \"a\"\n    // m2\n    * \"b\" )", "rule r = (\n    \"a\"\n    // m2\n    * \"b\"\n)"},
+		{"before the parenthesis of the inner group", `rule r = ( ( "a" ) /* b */ )`, `rule r = (("a") /* b */)`},
+		{"before the arrow of a lambda", `rule r = "a" => (x) /* p */ => x`, `rule r = "a" => (x) /* p */ => x`},
+		{"before the first token of an action group", "rule r = \"a\" => ( /* a */ 1 // c\n)", "rule r = \"a\" => (\n    /* a */\n    1 // c\n)"},
+		{"in a call in an action group", `rule r = ("a") => ( f( /* p2 */ /* q2 */ 1, 2 ) )`, "rule r = (\"a\") => (\n    f(\n        /* p2 */\n        /* q2 */\n        1,\n        2,\n    )\n)"},
+		{"before a pragma that a suffix follows", "rule r = ( ( \"a\" )\n    // m2\n    #atomic + \"b\" )", "rule r = (\n    (\"a\")\n    // m2\n    #atomic+ \"b\"\n)"},
 		{"a comment across lines in a group", "rule r = ( \"a\" /* x\n y */ \"b\" ) \"c\"", "rule r = (\n    \"a\" /* x\n y */ \"b\"\n) \"c\""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

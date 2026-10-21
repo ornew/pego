@@ -125,6 +125,16 @@ func (p *printer) inline(b *LineBreak) {
 	}
 }
 
+// closeInline is inline for the break of a closing delimiter: a block comment
+// followed by a token on its line stays before that token.
+func (p *printer) closeInline(b *LineBreak) {
+	if c := b.inlineBlock(); c != nil {
+		p.write(" " + c.Text)
+		return
+	}
+	p.inline(b)
+}
+
 func (p *printer) newLine(indent string) {
 	p.flush()
 	p.cur = &line{indent: indent}
@@ -581,13 +591,13 @@ func (p *printer) itemNode(e Expr, indent string) {
 		p.group(e, indent)
 	case *Capture:
 		p.write(e.Name + ":")
-		p.item(e.Expr, indent)
+		p.operand(e.Expr, indent)
 	case *And:
 		p.write("&")
-		p.item(e.Expr, indent)
+		p.operand(e.Expr, indent)
 	case *Not:
 		p.write("!")
-		p.item(e.Expr, indent)
+		p.operand(e.Expr, indent)
 	case *Atomic:
 		p.write(formatExpr(e.Expr, precSuffix, p.control))
 		if e.Break != nil {
@@ -618,6 +628,11 @@ func (p *printer) itemNode(e Expr, indent string) {
 		}
 		p.write(gapBefore(operatorLayout(e), p.control) + "#recover(skip=" + inner + ")")
 	case *Repeat:
+		if e.PragmaBreak == nil && hasBreak(e.Expr) {
+			p.item(e.Expr, indent)
+			p.write(indentTermLines(repeatSuffix(e, p.control), indent, p.control))
+			break
+		}
 		if e.PragmaBreak == nil {
 			p.write(indentTermLines(formatExprNode(e, precPrefix, p.control), indent, p.control))
 			break
@@ -625,9 +640,16 @@ func (p *printer) itemNode(e Expr, indent string) {
 		p.write(formatExpr(e.Expr, precSuffix, p.control))
 		p.lineBreak(e.PragmaBreak, indent, false)
 		p.write(indentTermLines(formatRepeatPragma(e, p.control), indent, p.control))
+	case *Optional:
+		if hasBreak(e.Expr) {
+			p.item(e.Expr, indent)
+			p.write(indentTermLines(suffixGap(e, p.control)+"?", indent, p.control))
+			break
+		}
+		p.write(indentTermLines(formatExprNode(e, precPrefix, p.control), indent, p.control))
 	case *Discard:
 		p.write("-")
-		p.item(e.Expr, indent)
+		p.operand(e.Expr, indent)
 	case *Attributed:
 		p.write(formatExpr(e.Expr, precSuffix, p.control))
 		for i, a := range e.Attrs {
@@ -645,6 +667,19 @@ func (p *printer) itemNode(e Expr, indent string) {
 	}
 }
 
+// operand writes the operand of a label or a prefix operator, after the
+// comments between the two.
+func (p *printer) operand(e Expr, indent string) {
+	if g := leadGap(e); g != nil {
+		s := indentTermLines(gapString(g, " ", p.control), indent, p.control)
+		if strings.HasSuffix(s, "\n") {
+			s += indent
+		}
+		p.write(s)
+	}
+	p.item(e, indent)
+}
+
 func (p *printer) group(g *Group, indent string) {
 	pollFormat(p.control)
 	lead, plain := "", false
@@ -655,7 +690,7 @@ func (p *printer) group(g *Group, indent string) {
 		p.write("(" + lead)
 		p.groupBody(g.Expr, indent)
 		p.write(")")
-		p.inline(g.CloseBreak)
+		p.closeInline(g.CloseBreak)
 	}) {
 		return
 	}
@@ -665,7 +700,7 @@ func (p *printer) group(g *Group, indent string) {
 	p.comments(g.CloseBreak, indent+indentUnit, false)
 	p.newLine(indent)
 	p.write(")")
-	p.inline(g.CloseBreak)
+	p.closeInline(g.CloseBreak)
 }
 
 // tryOneLine runs write and reports whether it stayed on one line. A text that
@@ -1145,7 +1180,9 @@ func formatTypeGroup(body string, open, first, close *LineBreak, oneLine bool, c
 
 func formatSourceGroupIndented(body, openDelim, closeDelim string, open, first, close *LineBreak, oneLine bool, indentLines func(s, indent string) string, control *metadataControl) string {
 	pollFormat(control)
-	if oneLine {
+	// A body over several lines is read back as a group over several lines, so
+	// it gets the layout of one.
+	if oneLine && !hasFormatNewline(body, control) {
 		leading, ok1 := groupInlineComments(open, true, control)
 		opening, ok0 := groupInlineComments(open, false, control)
 		before, ok2 := groupInlineComments(first, false, control)
@@ -1161,8 +1198,15 @@ func formatSourceGroupIndented(body, openDelim, closeDelim string, open, first, 
 	}
 	p := &printer{control: control, keepStart: true}
 	p.write(openDelim)
-	p.inline(open)
 	p.start = true
+	if c := open.inlineBlock(); c != nil && body != "" {
+		// A block comment before the first token on the line of the delimiter
+		// leads that token: it goes on a line before it, not at the end of the
+		// line of the delimiter, where it would trail the delimiter.
+		p.commentLine(indentUnit, c)
+	} else {
+		p.inline(open)
+	}
 	p.comments(open, indentUnit, false)
 	if body != "" {
 		p.lineBreak(first, indentUnit, false)
@@ -1400,28 +1444,19 @@ func formatExprNode(e Expr, outer int, control *metadataControl) string {
 		}
 		return finishFormat(paren(joinFormatParts(parts, " ", control), precSeq, outer), control)
 	case *Capture:
-		return finishFormat(paren(e.Name+":"+formatExpr(e.Expr, precPrefix, control), precPrefix, outer), control)
+		return finishFormat(paren(e.Name+":"+leadSep(e.Expr, control)+formatExpr(e.Expr, precPrefix, control), precPrefix, outer), control)
 	case *And:
-		return finishFormat(paren("&"+formatExpr(e.Expr, precPrefix, control), precPrefix, outer), control)
+		return finishFormat(paren("&"+leadSep(e.Expr, control)+formatExpr(e.Expr, precPrefix, control), precPrefix, outer), control)
 	case *Not:
-		return finishFormat(paren("!"+formatExpr(e.Expr, precPrefix, control), precPrefix, outer), control)
+		return finishFormat(paren("!"+leadSep(e.Expr, control)+formatExpr(e.Expr, precPrefix, control), precPrefix, outer), control)
 	case *Atomic:
 		return finishFormat(paren(formatExpr(e.Expr, precSuffix, control)+gapAfter(operatorLayout(e), control)+" #atomic", precSuffix, outer), control)
 	case *Discard:
-		return finishFormat(paren(joinMinusTokens("-", formatExpr(e.Expr, precPrefix, control)), precPrefix, outer), control)
+		return finishFormat(paren(joinMinusTokens("-", leadSep(e.Expr, control)+formatExpr(e.Expr, precPrefix, control)), precPrefix, outer), control)
 	case *Repeat:
-		s := formatExpr(e.Expr, precSuffix, control)
-		switch {
-		case !repeatHasComments(e) && e.Min == 0 && e.Max < 0:
-			s += gapAfter(operatorLayout(e), control) + operatorSpace(e) + "*"
-		case !repeatHasComments(e) && e.Min == 1 && e.Max < 0:
-			s += gapAfter(operatorLayout(e), control) + operatorSpace(e) + "+"
-		default:
-			s += gapAfter(operatorLayout(e), control) + " " + formatRepeatPragma(e, control)
-		}
-		return finishFormat(s, control)
+		return finishFormat(formatExpr(e.Expr, precSuffix, control)+repeatSuffix(e, control), control)
 	case *Optional:
-		return finishFormat(formatExpr(e.Expr, precSuffix, control)+gapAfter(operatorLayout(e), control)+operatorSpace(e)+"?", control)
+		return finishFormat(formatExpr(e.Expr, precSuffix, control)+suffixGap(e, control)+"?", control)
 	case *Stream:
 		return finishFormat(formatExpr(e.Expr, precSuffix, control)+gapAfter(operatorLayout(e), control)+" #stream", control)
 	case *Recovery:
@@ -1477,6 +1512,47 @@ func formatExprNode(e Expr, outer int, control *metadataControl) string {
 	return finishFormat(fmt.Sprintf("<%T>", e), control)
 }
 
+// repeatSuffix returns what follows the operand of e: the comments before the
+// operator, and the operator.
+func repeatSuffix(e *Repeat, control *metadataControl) string {
+	switch {
+	case !repeatHasComments(e) && e.Min == 0 && e.Max < 0:
+		return suffixGap(e, control) + "*"
+	case !repeatHasComments(e) && e.Min == 1 && e.Max < 0:
+		return suffixGap(e, control) + "+"
+	}
+	return gapAfter(operatorLayout(e), control) + " " + formatRepeatPragma(e, control)
+}
+
+// hasBreak reports whether the operand e of a suffix holds a line break that
+// only the printer writes.
+func hasBreak(e Expr) bool {
+	switch e := e.(type) {
+	case *Atomic:
+		return e.Break != nil || hasBreak(e.Expr)
+	case *Stream:
+		return e.Break != nil || hasBreak(e.Expr)
+	case *Recovery:
+		return e.Break != nil || hasBreak(e.Expr)
+	case *Attributed:
+		return e.Breaks != nil || hasBreak(e.Expr)
+	case *Repeat:
+		return e.PragmaBreak != nil || hasBreak(e.Expr)
+	case *Optional:
+		return hasBreak(e.Expr)
+	}
+	return false
+}
+
+// suffixGap returns what stands between the operand of e and its "*", "+" or
+// "?": the comments in its gap, and a space after them.
+func suffixGap(e Expr, control *metadataControl) string {
+	if l := nodeLayout(e); l != nil && l.OpGap != nil {
+		return gapString(l.OpGap, " ", control)
+	}
+	return gapAfter(operatorLayout(e), control) + operatorSpace(e)
+}
+
 // operatorSpace is the space between inline comments and the operator after
 // them.
 func operatorSpace(e Expr) string {
@@ -1499,6 +1575,15 @@ func joinsStatement(s Term, b *LineBreak) bool {
 func endsStatementGap(s Term) bool {
 	l := termLayout(s)
 	return l != nil && len(l.After) > 0
+}
+
+// arrow returns the "=>" of a lambda with the comments before it and the space
+// after it.
+func arrow(t *Lambda, control *metadataControl) string {
+	if l := nodeLayout(t); l != nil && l.OpGap != nil {
+		return gapString(l.OpGap, " ", control) + "=> "
+	}
+	return " => "
 }
 
 // binaryGap returns what stands between the left operand of t and its operator.
@@ -2132,7 +2217,7 @@ func formatTermNode(t Term, outer int, control *metadataControl) string {
 			// own, one level in from the parameters.
 			body = indentTermLines(body, indentUnit, control)
 		}
-		s := formatItemList(t.Params, t.TrailingComma, list, control) + joinLayout(" => ", body)
+		s := formatItemList(t.Params, t.TrailingComma, list, control) + joinLayout(arrow(t, control), body)
 		if outer > 0 {
 			return parenTerm(s, control)
 		}

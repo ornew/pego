@@ -124,7 +124,7 @@ type parser struct {
 	// taken, so that the lines inside its comments do not count as a line break
 	// before the token.
 	inlined int
-	errs *errorList
+	errs    *errorList
 	// legacy, if not nil, accepts the removed syntax that pego fix rewrites (see parseLegacy) and
 	// records where it is.
 	legacy *legacyForms
@@ -1137,18 +1137,27 @@ func (p *parser) prefixed() (sourceResult grammar.Expr) {
 	if t.kind == tIdent && p.peek(1).kind == tPunct && p.peek(1).text == ":" && !p.peek(1).spaceBefore {
 		p.ident()
 		p.next()
-		return &grammar.Capture{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Name: t.text, Expr: p.prefixed()}
+		return &grammar.Capture{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Name: t.text, Expr: p.operand()}
 	}
 	switch {
 	case p.accept("&"):
-		return &grammar.And{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Expr: p.prefixed()}
+		return &grammar.And{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Expr: p.operand()}
 	case p.accept("!"):
-		return &grammar.Not{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Expr: p.prefixed()}
+		return &grammar.Not{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Expr: p.operand()}
 	case p.is("-"):
 		p.next()
-		return &grammar.Discard{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Expr: p.prefixed()}
+		return &grammar.Discard{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Expr: p.operand()}
 	}
 	return p.suffixed()
+}
+
+// operand parses what follows a label or a prefix operator. The comments
+// between the two stay with the operand, whatever lines they stand on.
+func (p *parser) operand() grammar.Expr {
+	lead := p.takeCommentGap()
+	e := p.prefixed()
+	p.leadOf(e, lead)
+	return e
 }
 
 func (p *parser) suffixed() (sourceResult grammar.Expr) {
@@ -1163,7 +1172,10 @@ func (p *parser) suffixed() (sourceResult grammar.Expr) {
 	e := p.primary()
 	for !p.boundary() {
 		var operator []*grammar.Comment
-		if !p.is("@") && (p.is("*") || p.is("+") || p.is("?") || p.is("#") && !p.isCut()) {
+		var gap *grammar.Gap
+		if p.is("*") || p.is("+") || p.is("?") {
+			gap = p.takeCommentGap()
+		} else if !p.is("@") && p.is("#") && !p.isCut() {
 			operator = p.takeInlineGap()
 		}
 		switch {
@@ -1208,6 +1220,9 @@ func (p *parser) suffixed() (sourceResult grammar.Expr) {
 		}
 		if operator != nil {
 			layoutOf(e).Operator = operator
+		}
+		if gap != nil {
+			layoutOf(e).OpGap = gap
 		}
 		p.sourceNode(e, sourceStart)
 	}
@@ -1737,6 +1752,12 @@ func (p *parser) tryLambda() (sourceResult grammar.Term) {
 	list.CloseBreak = p.lineBreak()
 	p.next() // ")"
 	p.cur = cur
+	if gap := p.takeCommentGap(); gap != nil {
+		if layout == nil {
+			layout = &grammar.SourceLayout{}
+		}
+		layout.OpGap = gap
+	}
 	p.next() // "=>"
 	outer := len(p.params)
 	p.params = append(p.params, params...)
