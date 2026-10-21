@@ -37,7 +37,7 @@ func TestWithGeneratedMaxDepth(t *testing.T) {
 		got, err := generate(pego.WithGeneratedMaxDepth(-1), pego.WithGeneratedMaxDepth(7))
 		want := "var pegoGrammar = pegort.NewGrammar(7)"
 		if ts {
-			want = "const defaultMaxDepth = 7"
+			want = "const G = mkGrammar(7, "
 		}
 		if err != nil || !strings.Contains(string(got), want) {
 			t.Fatalf("last generation option: %v", err)

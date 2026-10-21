@@ -557,7 +557,7 @@ func TestGenMaxDepth(t *testing.T) {
 		got, err := run(append(args, "-max-depth", "12")...)
 		want := "var pegoGrammar = pegort.NewGrammar(12)"
 		if lang == "ts" {
-			want = "const defaultMaxDepth = 12"
+			want = "const G = mkGrammar(12, "
 		}
 		if err != nil || !strings.Contains(got, want) {
 			t.Fatalf("%s custom default: %v", lang, err)

@@ -78,16 +78,6 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	out.WriteString("/* eslint-disable */\n\n")
 	i := strings.Index(tsRuntimeSource, tsRuntimeMarker)
 	rt := tsRuntimeSource[i+len(tsRuntimeMarker):]
-	rt = strings.Replace(rt, "const defaultMaxDepth = 100_000;", fmt.Sprintf("const defaultMaxDepth = %d;", opts.generatedMaxDepth()), 1)
-	rt = strings.Replace(rt, "const sparseSeen = true;\n", "", 1)
-	if !opts.useSparseMemo(prog, rec) {
-		rt = strings.Replace(rt, "sparseSeen && stride > 64 && this.n > 1024", "false", 1)
-		rt = strings.Replace(rt, "const first = this.sparse", "const first = false", 1)
-	} else {
-		// Emit only the representation threshold, without a matching-time
-		// read of a module-level control binding.
-		rt = strings.Replace(rt, "sparseSeen && stride > 64 && this.n > 1024", "stride > 64 && this.n > 1024", 1)
-	}
 	work := tsWorkSource
 	if opts.Observability {
 		if rt, err = generatedTSTraceRuntime(rt); err != nil {
@@ -101,18 +91,19 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	out.WriteString("\n// --- Invocation work controls ---\n")
 	out.WriteString(work)
 	out.WriteString("\n// --- Generated code ---\n\n")
+	fmt.Fprintf(&out, "const G = mkGrammar(%d, %v);\n\n", opts.generatedMaxDepth(), opts.useSparseMemo(prog, rec))
 	fmt.Fprintf(&out, "/**\n * Parses the whole input with the rule %s. unit selects the position unit (CodePoints by default).\n", start.name)
 	out.WriteString(" * A string is parsed as its UTF-8 encoding would be (lone surrogates as U+FFFD), and bytes are\n")
 	out.WriteString(" * decoded as UTF-8 (invalid sequences as U+FFFD, one per byte). If the parse recovered from errors\n")
 	out.WriteString(" * with #recover, the result has both the node and SyntaxErrors.\n */\n")
-	fmt.Fprintf(&out, "export function parse(input: string | Uint8Array, unit?: Unit): ParseResult {\n  return run(R%d, nseen, input, unit);\n}\n\n", start.id)
+	fmt.Fprintf(&out, "export function parse(input: string | Uint8Array, unit?: Unit): ParseResult {\n  return run(G, R%d, nseen, input, unit);\n}\n\n", start.id)
 	out.WriteString(`/** Parses the whole input with the rule name. */
 export function parseRule(name: string, input: string | Uint8Array, unit?: Unit): ParseResult {
   const r = ruleIn(rules, name);
   if (r === null) {
     return { node: null, error: new Error(` + "`rule ${name} is not defined`" + `) };
   }
-  return run(r, nseen, input, unit);
+  return run(G, r, nseen, input, unit);
 }
 
 `)
@@ -120,31 +111,31 @@ export function parseRule(name: string, input: string | Uint8Array, unit?: Unit)
 		fmt.Fprintf(&out, "/**\n * Checks that the whole input matches the rule %s without building a tree, and returns the syntax\n", start.name)
 		out.WriteString(" * error parse would return (SyntaxErrors for errors recovered with #recover), or null. Actions needed by\n")
 		out.WriteString(" * predicates are evaluated and can report runtime errors; other actions are skipped.\n */\n")
-		fmt.Fprintf(&out, "export function recognize(input: string | Uint8Array, unit?: Unit): Error | null {\n  return run(Q%d, recNseen, input, unit).error;\n}\n\n", rec.byName[start.name].id)
+		fmt.Fprintf(&out, "export function recognize(input: string | Uint8Array, unit?: Unit): Error | null {\n  return run(G, Q%d, recNseen, input, unit).error;\n}\n\n", rec.byName[start.name].id)
 	}
 	fmt.Fprintf(&out, `/** Parses with invocation-local position and depth options. */
 export function parseWithOptions(input: string | Uint8Array, options?: ParseOptions): ParseResult {
-  const o = resolveOptions(options);
+  const o = resolveOptions(G, options);
   if (o instanceof Error) return { node: null, error: o };
-  return withWorkControl(o, control => run(R%d, nseen, input, o.unit, o.maxDepth, control), error => ({ node: null, error }));
+  return withWorkControl(o, control => run(G, R%d, nseen, input, o.unit, o.maxDepth, control), error => ({ node: null, error }));
 }
 
 /** Parses a named rule with invocation-local options, validated before rule lookup. */
 export function parseRuleWithOptions(name: string, input: string | Uint8Array, options?: ParseOptions): ParseResult {
-  const o = resolveOptions(options);
+  const o = resolveOptions(G, options);
   if (o instanceof Error) return { node: null, error: o };
   const r = ruleIn(rules, name);
   if (r === null) return { node: null, error: new Error("rule " + name + " is not defined") };
-  return withWorkControl(o, control => run(r, nseen, input, o.unit, o.maxDepth, control), error => ({ node: null, error }));
+  return withWorkControl(o, control => run(G, r, nseen, input, o.unit, o.maxDepth, control), error => ({ node: null, error }));
 }
 
 `, start.id)
 	if rec != nil {
 		fmt.Fprintf(&out, `/** Recognizes with invocation-local options; predicate-dependent actions may run. */
 export function recognizeWithOptions(input: string | Uint8Array, options?: ParseOptions): Error | null {
-  const o = resolveOptions(options);
+  const o = resolveOptions(G, options);
   if (o instanceof Error) return o;
-  return withWorkControl<Error | null>(o, control => run(Q%d, recNseen, input, o.unit, o.maxDepth, control).error, error => error);
+  return withWorkControl<Error | null>(o, control => run(G, Q%d, recNseen, input, o.unit, o.maxDepth, control).error, error => error);
 }
 
 `, rec.byName[start.name].id)
@@ -172,19 +163,19 @@ export function recognizeWithOptions(input: string | Uint8Array, options?: Parse
 		out.WriteString(gen.fieldCheckSource())
 	}
 	out.WriteString(gen.vars.String())
-	fmt.Fprintf(&out, "\ndescs = %s;\n", tsStrings(gen.descs))
+	fmt.Fprintf(&out, "\nG.descs = %s;\n", tsStrings(gen.descs))
 	fmt.Fprintf(&out, "printRuns = %q;\n", tsPrintRuns())
 	if prog.sourceInfo {
-		out.WriteString("sourceInfo = true;\n")
+		out.WriteString("G.sourceInfo = true;\n")
 	}
 	for _, v := range prog.vars.all() {
 		switch x := v.init.(type) {
 		case int:
-			fmt.Fprintf(&out, "initialVars.push([%s, %s]);\n", tsString(v.name), tsInt(x))
+			fmt.Fprintf(&out, "G.initialVars.push([%s, %s]);\n", tsString(v.name), tsInt(x))
 		case string:
-			fmt.Fprintf(&out, "initialVars.push([%s, %s]);\n", tsString(v.name), tsString(x))
+			fmt.Fprintf(&out, "G.initialVars.push([%s, %s]);\n", tsString(v.name), tsString(x))
 		default:
-			fmt.Fprintf(&out, "initialVars.push([%s, %v]);\n", tsString(v.name), x)
+			fmt.Fprintf(&out, "G.initialVars.push([%s, %v]);\n", tsString(v.name), x)
 		}
 	}
 	out.WriteString("\n")
@@ -625,7 +616,7 @@ func (g *tsGen) rules() {
 		for _, f := range defFields(g.prog.types[name].(*grammar.TypeDef)) {
 			fields = append(fields, f.Name)
 		}
-		fmt.Fprintf(init, "structFields.set(%s, new Set(%s));\n", tsString(name), tsStrings(fields))
+		fmt.Fprintf(init, "G.structFields.set(%s, new Set(%s));\n", tsString(name), tsStrings(fields))
 	}
 }
 

@@ -50,7 +50,7 @@ const cases = [
   ["rescale above threshold", maxCalls, 0x08000000, true, 0x40000000, 0x04000001, true],
 ];
 for (const [name, calls, repeats, repeat, wantCalls, wantRepeats, eager] of cases) {
-  const p = new Parser("", CodePoints, 1, 100);
+  const p = new Parser(mkGrammar(100_000, true), "", CodePoints, 1, 100);
   p.calls[0] = calls;
   p.repeats[0] = repeats;
   if (repeat) p.seen = Int32Array.of(1);
@@ -65,7 +65,7 @@ for (const [name, calls, repeats, repeat, wantCalls, wantRepeats, eager] of case
     }
   }
 }
-const p = new Parser("", CodePoints, 1, 100);
+const p = new Parser(mkGrammar(100_000, true), "", CodePoints, 1, 100);
 p.calls[0] = maxCalls;
 if (!p.firstCall({ seen: 0 }) || p.firstCall({ seen: 0 }) || p.eager[0] !== 0) {
   throw new Error("fresh then repeated calls became eager after rescaling");

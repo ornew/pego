@@ -94,7 +94,7 @@ func TestGeneratedTSActionTracking(t *testing.T) {
 	// without adding test hooks to its public API.
 	code = append(code, []byte(`
 for (const unit of [CodePoints, Bytes]) {
-  const p = new Parser("aaaa", unit, nseen, defaultMaxDepth);
+  const p = new Parser(G, "aaaa", unit, nseen, G.maxDepth);
   const n = p.call(rules[0]!, 0);
   if (n === undefined || n === null || p.pos !== p.n) throw new Error("parse failed");
   if (p.created.length !== 0) throw new Error("nil actions retain tracking");
@@ -197,7 +197,7 @@ func TestGeneratedTSEnvironmentBindings(t *testing.T) {
 	}
 	code = append(code, []byte(`
 for (const unit of [CodePoints, Bytes]) {
- const p = new Parser("a".repeat(10000), unit, nseen, defaultMaxDepth);
+ const p = new Parser(G, "a".repeat(10000), unit, nseen, G.maxDepth);
  if (rules[0]!.body(p,0) === undefined || p.pos !== p.n) throw new Error("parse failed");
  const names = new Set<string>();
  for (let e = p.env; e !== null; e = e.next) {
@@ -215,7 +215,7 @@ for (const unit of [CodePoints, Bytes]) {
  p.bindValue("w", false);
  p.bindValue("z", 2);
  if (saved!.val !== 1) throw new Error("saved environment mutated");
- const q = new Parser("", unit, nseen, defaultMaxDepth);
+ const q = new Parser(G, "", unit, nseen, G.maxDepth);
  q.env = null; // the parser starts from the declared variables
  q.bindValue("x",1);
  const first = q.env as Env | null;

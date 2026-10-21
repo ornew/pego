@@ -436,15 +436,15 @@ const tsTypedAPI = `/** Parses the configured start rule once and converts its c
  * Positions and integer/text representations are those of parse. Conversion is invocation-local.
  */
 export function parseAST(input: string | Uint8Array, unit?: Unit): TypedParseResult<%[1]s> {
-  return astResult<%[1]s>(run(R%[2]d, nseen, input, unit), %[3]d);
+  return astResult<%[1]s>(run(G, R%[2]d, nseen, input, unit), %[3]d);
 }
 
 /** Typed configured-start parsing with options read and validated once. */
 export function parseASTWithOptions(input: string | Uint8Array, options?: ParseOptions): TypedParseResult<%[1]s> {
-  const o = resolveOptions(options);
+  const o = resolveOptions(G, options);
   if (o instanceof Error) return { value: null, error: o };
   return withWorkControl<TypedParseResult<%[1]s>>(o,
-    control => astResult<%[1]s>(run(R%[2]d, nseen, input, o.unit, o.maxDepth, control), %[3]d, control),
+    control => astResult<%[1]s>(run(G, R%[2]d, nseen, input, o.unit, o.maxDepth, control), %[3]d, control),
     error => ({ value: null, error }));
 }
 

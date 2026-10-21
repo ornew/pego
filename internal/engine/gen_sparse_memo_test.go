@@ -2,6 +2,7 @@ package engine
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -123,25 +124,14 @@ func TestGeneratedTSSparseMemoControls(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if i == 1 && strings.Contains(string(code), "const first = this.sparse") {
-			t.Fatal("reference output retains matching-time representation selector")
+		if want := fmt.Sprintf("const G = mkGrammar(100000, %v);", i == 0); !strings.Contains(string(code), want) {
+			t.Fatalf("%s output lacks %q", name, want)
 		}
 		path := filepath.Join(dir, name)
 		if err := os.MkdirAll(path, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		control := "true"
-		if i == 1 {
-			control = "false"
-		}
-		boundaries := strings.ReplaceAll(sparseMemoTSBoundaries, "sparseSeen", control)
-		if strings.Contains(string(code), "export interface ParseOptions") {
-			boundaries = strings.ReplaceAll(boundaries, "CodePoints, stride)", "CodePoints, stride, defaultMaxDepth)")
-			boundaries = strings.ReplaceAll(boundaries, "unit, stride)", "unit, stride, defaultMaxDepth)")
-			boundaries = strings.ReplaceAll(boundaries, "CodePoints, 175)", "CodePoints, 175, defaultMaxDepth)")
-			boundaries = strings.ReplaceAll(boundaries, "rec ? recNseen : nseen)", "rec ? recNseen : nseen, defaultMaxDepth)")
-		}
-		code = append(code, []byte(boundaries)...)
+		code = append(code, []byte(sparseMemoTSBoundaries)...)
 		for file, data := range map[string][]byte{"parser.ts": code, "test.mjs": []byte(sparseMemoTSFixture), "bench.mjs": []byte(sparseMemoTSBenchmark)} {
 			if err := os.WriteFile(filepath.Join(path, file), data, 0o644); err != nil {
 				t.Fatal(err)
@@ -177,10 +167,10 @@ const sparseMemoTSBoundaries = `
 export function testMemoBoundaries(): void {
   if (nseen <= 64 || recNseen <= 64) throw new Error("small fixture rule table");
   for (const stride of [63, 64, 65, 128, 175]) {
-    const p = new Parser("", CodePoints, stride);
+    const p = new Parser(G, "", CodePoints, stride, G.maxDepth);
     for (const pos of [0, 63, 64, 1023, 1024, 1025, 65535]) {
       for (const r of [0, stride - 1]) {
-        const mark = () => sparseSeen && stride > 64 ? p.markSparseSeen(pos, r) : p.markSeen(pos, r);
+        const mark = () => G.sparse && stride > 64 ? p.markSparseSeen(pos, r) : p.markSeen(pos, r);
         if (!mark() || mark()) throw new Error("first/repeated mismatch");
       }
     }
@@ -190,11 +180,11 @@ export function testMemoBoundaries(): void {
       ["a".repeat(1024), CodePoints, false], ["a".repeat(1025), CodePoints, true],
       ["é".repeat(513), CodePoints, false], ["é".repeat(513), Bytes, true],
     ] as const) {
-      const p = new Parser(input, unit, stride);
-      if (p.sparse !== (sparseSeen && stride > 64 && large)) throw new Error("input cutoff mismatch");
+      const p = new Parser(G, input, unit, stride, G.maxDepth);
+      if (p.sparse !== (G.sparse && stride > 64 && large)) throw new Error("input cutoff mismatch");
     }
   }
-  const p = new Parser("", CodePoints, 175);
+  const p = new Parser(G, "", CodePoints, 175, G.maxDepth);
   for (const pos of [2 ** 31, 2 ** 32, 2 ** 32 + 1024]) {
     if (!p.markSparseSeen(pos, 174) || p.markSparseSeen(pos, 174)) {
       throw new Error("wide sparse position aliased");
@@ -204,7 +194,7 @@ export function testMemoBoundaries(): void {
 
 // Test-only representative bit-buffer measurement, excluding JS metadata.
 export function testMemoStorage(input: string, unit: Unit, rec: boolean): object {
-  const p = new Parser(input, unit, rec ? recNseen : nseen);
+  const p = new Parser(G, input, unit, rec ? recNseen : nseen, G.maxDepth);
   p.call(rec ? Q0 : R0, 0);
   return {
     bitBytes: p.seen.byteLength + (p.seenPageChunks?.reduce((n, x) => n + x.byteLength, 0) ?? 0),

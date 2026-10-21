@@ -33,9 +33,9 @@ func generatedTSTraceRuntime(rt string) (string, error) {
   if (!Number.isSafeInteger(traceMaxDepth)) return new Error("trace max depth must be a safe integer");
   const traceRules = Array.from(options?.traceRules ?? []);
   const unit = options?.unit === Bytes ? Bytes : CodePoints;`, 1},
-		{"return { unit, maxDepth: depth === 0 ? defaultMaxDepth : depth, signal, maxInputWork, maxSteps };", "return { unit, maxDepth: depth === 0 ? defaultMaxDepth : depth, signal, maxInputWork, maxSteps, trace, traceRules, traceMaxDepth, profile, profileClock };", 1},
+		{"return { unit, maxDepth: depth === 0 ? g.maxDepth : depth, signal, maxInputWork, maxSteps };", "return { unit, maxDepth: depth === 0 ? g.maxDepth : depth, signal, maxInputWork, maxSteps, trace, traceRules, traceMaxDepth, profile, profileClock };", 1},
 		{"control: WorkControl | null = null): ParseResult {", "control: WorkControl | null = null, traceOptions: ResolvedParseOptions | null = null): ParseResult {", 1},
-		{"    p = new Parser(input, unit === Bytes ? Bytes : CodePoints, seen, maxDepth, control);", "    p = new Parser(input, unit === Bytes ? Bytes : CodePoints, seen, maxDepth, control);\n    p.observation = traceOptions?.profile != null ? new ProfileObservation(traceOptions) : traceOptions?.trace == null ? null : new Observation(traceOptions);", 1},
+		{"    p = new Parser(g, input, unit === Bytes ? Bytes : CodePoints, seen, maxDepth, control);", "    p = new Parser(g, input, unit === Bytes ? Bytes : CodePoints, seen, maxDepth, control);\n    p.observation = traceOptions?.profile != null ? new ProfileObservation(traceOptions) : traceOptions?.trace == null ? null : new Observation(traceOptions);", 1},
 		{"    throw x;\n  }\n}\n\n// isStackOverflow", "    throw x;\n  } finally {\n    p?.observation?.release();\n    if (p !== null) p.observation = null;\n  }\n}\n\n// isStackOverflow", 1},
 		{"class Parser {", "class Parser {\n  observation: Observation | null = null;", 1},
 		{"  call(r: Rule, min: number): R {", "  callObservedBody(r: Rule, min: number): R {", 1},

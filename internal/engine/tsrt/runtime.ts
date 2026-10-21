@@ -918,19 +918,30 @@ function mkRule(
   };
 }
 
-// sourceInfo reports that values record source information: the rule that produced each node and
-// where its captures are. The generated code sets it.
-let sourceInfo = false;
+/**
+ * The per-grammar state that the generated code fills in once and that every parse reads. A parser
+ * generated from one grammar owns one Grammar, so several grammars can share this runtime.
+ */
+interface Grammar {
+  // maxDepth is the default maximum nesting of rule calls.
+  readonly maxDepth: number;
+  // sparse selects the sparse representation of the visited regions for large inputs.
+  readonly sparse: boolean;
+  // sourceInfo reports that values record source information: the rule that produced each node and
+  // where its captures are.
+  sourceInfo: boolean;
+  // initialVars holds the declared parser variables with their initial values, in declaration
+  // order; every parse starts from them.
+  readonly initialVars: [string, Value][];
+  // descs maps expectation IDs to their descriptions.
+  descs: string[];
+  // structFields holds the field names of each struct type.
+  readonly structFields: Map<string, Set<string>>;
+}
 
-// initialVars holds the declared parser variables with their initial values, in declaration
-// order; the generated code sets it and every parse starts from them.
-let initialVars: [string, Value][] = [];
-
-// descs maps expectation IDs to their descriptions; the generated code sets the whole table.
-let descs: string[] = [];
-
-// structFields holds the field names of each struct type.
-const structFields = new Map<string, Set<string>>();
+function mkGrammar(maxDepth: number, sparse: boolean): Grammar {
+  return { maxDepth, sparse, sourceInfo: false, initialVars: [], descs: [], structFields: new Map() };
+}
 
 function ruleIn(table: Rule[], name: string): Rule | null {
   for (const r of table) {
@@ -941,10 +952,7 @@ function ruleIn(table: Rule[], name: string): Rule | null {
   return null;
 }
 
-// defaultMaxDepth is the generated default maximum nesting of rule calls.
-const defaultMaxDepth = 100_000;
-
-/** Options for one invocation. Zero maxDepth selects the generated default. */
+/** Options for one invocation. Zero maxDepth selects the default of the grammar. */
 export interface ParseOptions {
   unit?: Unit;
   maxDepth?: number;
@@ -953,7 +961,7 @@ export interface ParseOptions {
   maxSteps?: number;
 }
 
-function resolveOptions(options?: ParseOptions): ResolvedParseOptions | Error {
+function resolveOptions(g: Grammar, options?: ParseOptions): ResolvedParseOptions | Error {
   const unit = options?.unit === Bytes ? Bytes : CodePoints;
   const depth = options?.maxDepth ?? 0;
   const signal = options?.signal ?? null;
@@ -968,18 +976,15 @@ function resolveOptions(options?: ParseOptions): ResolvedParseOptions | Error {
   if (!Number.isSafeInteger(maxSteps) || maxSteps < 0) {
     return new Error(`max steps must be a non-negative safe integer: ${maxSteps}`);
   }
-  return { unit, maxDepth: depth === 0 ? defaultMaxDepth : depth, signal, maxInputWork, maxSteps };
+  return { unit, maxDepth: depth === 0 ? g.maxDepth : depth, signal, maxInputWork, maxSteps };
 }
 
-// Selected at generation time; large rule tables allocate visited regions only.
-const sparseSeen = true;
-
-// run parses the whole input with rule r of a rule table with seen rules that have rule.seen set.
-function run(r: Rule, seen: number, input: string | Uint8Array, unit: Unit | undefined, maxDepth = defaultMaxDepth, control: WorkControl | null = null): ParseResult {
+// run parses the whole input of the grammar g with rule r of a rule table with seen rules that have rule.seen set.
+function run(g: Grammar, r: Rule, seen: number, input: string | Uint8Array, unit: Unit | undefined, maxDepth = g.maxDepth, control: WorkControl | null = null): ParseResult {
   let p: Parser | null = null;
   try {
     // Made inside the try, so that decoding the input fails as parsing does.
-    p = new Parser(input, unit === Bytes ? Bytes : CodePoints, seen, maxDepth, control);
+    p = new Parser(g, input, unit === Bytes ? Bytes : CodePoints, seen, maxDepth, control);
     return result(p, p.call(r, 0));
   } catch (x) {
     if (x instanceof Fatal) {
@@ -1311,6 +1316,8 @@ interface Lit {
 }
 
 class Parser {
+  readonly g: Grammar;
+  readonly sourceInfo: boolean; // g.sourceInfo, read on every node
   unit: Unit;
   cps: Int32Array; // code points (CodePoints)
   bs: Uint8Array; // the input (Bytes)
@@ -1382,11 +1389,13 @@ class Parser {
     }
   }
 
-  constructor(input: string | Uint8Array, unit: Unit, stride: number, maxDepth: number, control: WorkControl | null = null) {
+  constructor(g: Grammar, input: string | Uint8Array, unit: Unit, stride: number, maxDepth: number, control: WorkControl | null = null) {
+    this.g = g;
+    this.sourceInfo = g.sourceInfo;
     this.control = control;
     this.unit = unit;
     this.maxDepth = maxDepth;
-    for (const [name, val] of initialVars) {
+    for (const [name, val] of g.initialVars) {
       this.env = { name, val, next: this.env };
       if (this.bound === null) this.bound = new Set();
       this.bound.add(name);
@@ -1422,7 +1431,7 @@ class Parser {
       this.src = this.decodeCodePoints(input);
       this.n = this.cps.length;
     }
-    this.sparse = sparseSeen && stride > 64 && this.n > 1024;
+    this.sparse = g.sparse && stride > 64 && this.n > 1024;
   }
 
   // decodeString sets cps (and offs) from s, with lone surrogates as U+FFFD, and returns s with the
@@ -1902,9 +1911,9 @@ class Parser {
     for (const x of expected) {
       this.stepWork();
       if ((x & msgBit) !== 0) {
-        msgs.push(descs[x & ~msgBit]!);
+        msgs.push(this.g.descs[x & ~msgBit]!);
       } else {
-        exp.push(descs[x]!);
+        exp.push(this.g.descs[x]!);
       }
     }
     if (this.control === null) exp.sort(compareStrings);
@@ -2204,7 +2213,7 @@ class Parser {
       return null;
     }
     if (v.fresh) {
-      if (sourceInfo && v.rule === "") {
+      if (this.sourceInfo && v.rule === "") {
         v.rule = r.name;
       }
       v.fresh = false;
@@ -2233,7 +2242,7 @@ class Parser {
     if (wrap) {
       n = new Node("tuple", "", start, end, "", [v], noFields, true, false);
     }
-    n.labeled = sourceInfo;
+    n.labeled = this.sourceInfo;
     for (let i = 0; i < names.length; i++) {
       this.stepWork();
       const c = f[i]!;
@@ -2817,7 +2826,7 @@ class Parser {
       v = this.attachCaptures(v, l.scope, f, start, this.pos);
     }
     if (v !== null && v.fresh) {
-      if (sourceInfo && v.rule === "") {
+      if (this.sourceInfo && v.rule === "") {
         v.rule = r.name;
       }
       v.fresh = false;
@@ -2877,8 +2886,8 @@ class Parser {
         kids = [lhs, opv, rhs];
         fields = [{ name: "lhs", value: lhs }, { name: "op", value: opv }, { name: "rhs", value: rhs }];
     }
-    const n = new Node("tuple", sourceInfo ? r.name : "", start, end, "", kids, fields, false, false);
-    n.labeled = sourceInfo;
+    const n = new Node("tuple", this.sourceInfo ? r.name : "", start, end, "", kids, fields, false, false);
+    n.labeled = this.sourceInfo;
     return r.opNodeType !== "" ? this.convertOperator(r, n) : n;
   }
 
@@ -3098,7 +3107,7 @@ class Actx {
           return this.p.nodeValue(x);
       }
     }
-    const fields = structFields.get(x.type);
+    const fields = this.p.g.structFields.get(x.type);
     if (name.startsWith("$")) {
       // x.$y reads a capture, which struct values do not have; an unmatched capture is null.
       if (fields !== undefined) {

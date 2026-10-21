@@ -105,8 +105,8 @@ Parser.prototype.call=function(r:Rule,min:number):R {
  if(this.observation instanceof ProfileObservation)profileProbes.push(this.observation);
  return originalProfileCall.call(this,r,min);
 };
-function resolveOptions(options?:ParseOptions):ResolvedParseOptions|Error {
- const resolved=resolveOptionsBody(options);
+function resolveOptions(g:Grammar,options?:ParseOptions):ResolvedParseOptions|Error {
+ const resolved=resolveOptionsBody(g,options);
  if(!(resolved instanceof Error))profileOptions.push(resolved);
  return resolved;
 }
