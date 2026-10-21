@@ -12,6 +12,7 @@ import (
 )
 
 func TestGeneratedGoActionErrorWork(t *testing.T) {
+	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated action-error consumers")
 	}

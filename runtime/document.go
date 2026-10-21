@@ -106,6 +106,9 @@ func (d *Document) ResolveParseOptions(opts []ParseOption) (parseOptions, error)
 	if o.maxDepth == 0 {
 		o.maxDepth = d.State.root.g.maxDepth
 	}
+	if d.State.root.g.NoWorkControls && (o.context != nil || o.limits != (WorkLimits{})) {
+		return o, fmt.Errorf("this parser was generated without work controls (generate with -work-controls to use WithContext and WithWorkLimits)")
+	}
 	if !WorkControlsEnabled && (o.context != nil || o.limits != (WorkLimits{})) {
 		return o, fmt.Errorf("work controls are disabled in this generated reference parser")
 	}

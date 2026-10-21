@@ -80,8 +80,8 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error)
 type ParseOption func(*parseOptions)
 func WithUnit(unit PositionUnit) ParseOption
 func WithMaxDepth(n int) ParseOption
-func WithContext(ctx context.Context) ParseOption
-func WithWorkLimits(limits WorkLimits) ParseOption
+func WithContext(ctx context.Context) ParseOption       // with work controls
+func WithWorkLimits(limits WorkLimits) ParseOption      // with work controls
 
 type PositionUnit int
 const (
@@ -108,6 +108,15 @@ const (
   return plain errors as in the engine. The depth limit counts nested rule calls; a
   larger limit does not guarantee stack capacity. The default error is
   `nesting too deep: more than 100000 rule calls`.
+- A Go parser generated with work controls (`-work-controls`, `WithWorkControls`)
+  exports `WithContext`, `WithWorkLimits`, `WorkLimits`, `WorkLimitKind`,
+  `WorkLimitError`, `ErrWorkLimit`, `InputWorkLimit` and `StepWorkLimit`. A parser
+  generated without them holds no code that charges work or reads a control: one
+  form of each function, or, with `-document`, the ordinary form and the form that
+  serves a Document. A parse that passes either option with a context or a limit,
+  from the runtime package, returns an error that the parser was generated without
+  work controls; no option is ignored. A nil context and a zero `WorkLimits` set no
+  control and are accepted.
 - `WithContext` and `WithWorkLimits` apply the semantics of
   [Cancellation and Work Limits](parsing.md#cancellation-and-work-limits) to each
   invocation, with counters that restart for every call. They apply to named rules,

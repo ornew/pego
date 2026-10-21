@@ -77,33 +77,6 @@ func WithUnit(unit PositionUnit) ParseOption { return pegort.WithUnit(unit) }
 // A larger limit does not guarantee that the host stack can accommodate it.
 func WithMaxDepth(n int) ParseOption { return pegort.WithMaxDepth(n) }
 
-// WithContext selects cooperative cancellation for one invocation.
-// A nil context is equivalent to context.Background.
-func WithContext(ctx context.Context) ParseOption { return pegort.WithContext(ctx) }
-
-// WithWorkLimits bounds cumulative examined input and execution work.
-// Zero leaves a counter unlimited; counters are never rolled back.
-func WithWorkLimits(limits WorkLimits) ParseOption { return pegort.WithWorkLimits(limits) }
-
-// WorkLimits bounds cumulative engine work for one parse invocation. A zero
-// limit leaves that counter unlimited.
-type WorkLimits = pegort.WorkLimits
-
-// WorkLimitKind identifies the counter that exhausted its limit.
-type WorkLimitKind = pegort.WorkLimitKind
-
-// WorkLimitError reports a reservation that would exceed one work limit.
-// Used is the counter value before the rejected reservation; Requested is the
-// complete atomic reservation that could not be made.
-type WorkLimitError = pegort.WorkLimitError
-
-// ErrWorkLimit is matched by errors.Is for any WorkLimitError.
-var ErrWorkLimit = pegort.ErrWorkLimit
-
-const InputWorkLimit = pegort.InputWorkLimit
-
-const StepWorkLimit = pegort.StepWorkLimit
-
 // Cursor filters edge-oriented node visits using spans in Unit. Unit must match
 // the parse that populated Root's positions; it is never inferred or converted.
 // Parent spans do not prune traversal. Scalar and list values have no spans.

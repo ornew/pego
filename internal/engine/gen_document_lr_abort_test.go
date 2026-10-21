@@ -19,6 +19,7 @@ import (
 // leave a Document whose later parses match batch parses, also after edits,
 // for Node and typed Documents.
 func TestGeneratedDocumentLeftRecursionAbortedGrowth(t *testing.T) {
+	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated Documents")
 	}

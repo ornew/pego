@@ -12,6 +12,7 @@ import (
 )
 
 func TestGenerateDirectTypedDocument(t *testing.T) {
+	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
 	}

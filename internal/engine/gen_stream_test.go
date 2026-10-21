@@ -912,6 +912,7 @@ func TestGenerateStreamKeepsBatchBodies(t *testing.T) {
 // differential test does not cover: observation, work controls, callback
 // panics and bounded memory.
 func TestGeneratedStreamAPI(t *testing.T) {
+	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds a generated standalone stream consumer")
 	}

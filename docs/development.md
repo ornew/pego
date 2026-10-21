@@ -105,6 +105,9 @@ Generated Go typed-output cleanup is not implemented; the measured full-sweep an
 go test ./...
 ```
 
+The generated fixtures of `internal/engine` have work controls so that the tests of cancellation and limits can use them.
+`PEGO_TEST_ORDINARY=1 go test ./internal/engine` generates them without, as most parsers are generated, and the tests that pass a control skip.
+
 Engine tests write grammars in PEGO source and compare results using the S-expression form of nodes (`Node.String`).
 The `check` helper also verifies that the result is the same with memoization disabled, with every backend (closure, recursive bytecode, iterative bytecode), with both position units, in recognition-only mode, and with tracing on.
 

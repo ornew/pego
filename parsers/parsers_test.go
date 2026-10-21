@@ -57,6 +57,8 @@ func generations(t *testing.T) []generation {
 				g.opts = append(g.opts, pego.WithTypes())
 			case "-recognize":
 				g.opts = append(g.opts, pego.WithRecognize())
+			case "-work-controls":
+				g.opts = append(g.opts, pego.WithWorkControls())
 			case "-nodoc":
 				g.opts = append(g.opts, pego.WithoutPackageDoc())
 			default:

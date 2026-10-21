@@ -12,6 +12,7 @@ import (
 )
 
 func TestGeneratedGoMemoEnvironmentWork(t *testing.T) {
+	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated memo/environment consumers")
 	}

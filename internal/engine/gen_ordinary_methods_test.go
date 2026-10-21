@@ -54,6 +54,7 @@ func ordinaryFunctions(t *testing.T, src []byte) map[ordinaryMethodKey]*goast.Fu
 }
 
 func TestGeneratedOrdinaryControlledBodiesPreserved(t *testing.T) {
+	needsWorkControls(t)
 	g, err := syntax.Parse(`type Text = { Text string }
 rule main Text = (a:("a"* #atomic) "b") #recover(skip="?") => Text{Text: text($a)}
 rule recursive Text = t:(recursive "+" "a" / "a") #atomic => Text{Text: text($t)}
@@ -115,6 +116,7 @@ rule expr Text = operators {
 // A Document parse records the input it examines, so a parser with Documents runs the ordinary
 // branch only outside a Document.
 func TestGeneratedOrdinaryGuardExcludesDocuments(t *testing.T) {
+	needsWorkControls(t)
 	g, err := syntax.Parse(`rule main = "a" "b"`)
 	if err != nil {
 		t.Fatal(err)
@@ -139,7 +141,7 @@ func TestOrdinaryTransformLabelsAndSynchronousLambda(t *testing.T) {
  loop: for {if p.Pos>0 {break loop}; p.Pos++; goto done}
  done: return p.Pos,true
  }`
-	src, err := specializeOrdinaryMethods([]byte("package fixture\n"+method), method, "p.Control == nil")
+	src, err := specializeOrdinaryMethods([]byte("package fixture\n"+method), method, "p.Control == nil", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,7 +186,7 @@ func TestOrdinaryTransformFailsOnEmitterDrift(t *testing.T) {
 		{"package fixture\nfunc e0(p *Parser)(int,bool){p:=other;_=p;return 0,true}", method},
 		{"package fixture\n" + method, method + "\n" + method},
 	} {
-		if _, err := specializeOrdinaryMethods([]byte(tc.src), tc.methods, "p.Control == nil"); err == nil {
+		if _, err := specializeOrdinaryMethods([]byte(tc.src), tc.methods, "p.Control == nil", false); err == nil {
 			t.Fatal("accepted emitter drift")
 		}
 	}
@@ -204,7 +206,7 @@ func TestOrdinaryTransformPreservesCommentsAndFormatting(t *testing.T) {
 	// Large original offsets must not interpret clone positions in the
 	// original FileSet or scatter a short helper across artificial lines.
 	source := "package fixture\n" + strings.Repeat("// padding\n", 20000) + method + "\n" + helper
-	result, err := specializeOrdinaryMethods([]byte(source), method, "p.Control == nil")
+	result, err := specializeOrdinaryMethods([]byte(source), method, "p.Control == nil", false)
 	if err != nil {
 		t.Fatal(err)
 	}

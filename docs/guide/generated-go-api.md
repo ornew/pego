@@ -140,8 +140,12 @@ brackets or AST nodes, and raising the limit does not guarantee host-stack capac
 
 ## Cancellation and Work Limits
 
-Generated Go entry points also accept invocation-local cancellation and work
-limits. Use the generated package's options and error types:
+A Go parser generated with `-work-controls` also accepts invocation-local
+cancellation and work limits. Use the generated package's options and error
+types; a package generated without the flag exports none of them, and a parse
+that passes `WithContext` with a context or `WithWorkLimits` with a limit from the
+runtime returns an error saying that the parser was generated without work
+controls (a nil context and a zero `WorkLimits` set no control and are accepted):
 
 ```go
 node, err := pairsparser.Parse(input,

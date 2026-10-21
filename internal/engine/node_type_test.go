@@ -661,6 +661,7 @@ func TestGeneratedNamedNodeTypesTypedRuntime(t *testing.T) {
 // TestGeneratedNamedNodeTypesDocument checks direct typed Documents of grammars with named node
 // types against the conversion of the Document's nodes, across edits.
 func TestGeneratedNamedNodeTypesDocument(t *testing.T) {
+	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
 	}

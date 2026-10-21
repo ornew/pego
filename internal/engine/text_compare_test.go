@@ -56,6 +56,7 @@ func TestTextFieldComparisons(t *testing.T) {
 // and that the typed runtime's unboxed comparisons need the steps of comparisons that box the
 // strings: the least step limit that each parse succeeds with is the same.
 func TestGeneratedTextFieldComparisons(t *testing.T) {
+	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}

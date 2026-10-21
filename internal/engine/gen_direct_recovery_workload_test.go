@@ -12,6 +12,7 @@ import (
 // PEGO_TYPED_RECOVERY_DIR retains generated modules for separately built,
 // alternating benchmark binaries; ordinary tests use a temporary directory.
 func TestGeneratedTypedRecoveryWorkloads(t *testing.T) {
+	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}

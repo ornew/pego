@@ -164,7 +164,7 @@ The output is exactly what the engine prints for the same grammar and input.
 ## The `pego gen` Command
 
 ```bash
-pego gen -g <grammar> -module <import path> [-pkg <package>] [-runtime embed|import|only] [-s <rule>] [-o <directory>] [-types] [-document] [-stream] [-recognize] [-observability] [-default-value] [-nodoc] [-max-depth <n>]
+pego gen -g <grammar> -module <import path> [-pkg <package>] [-runtime embed|import|only] [-s <rule>] [-o <directory>] [-types] [-document] [-stream] [-recognize] [-observability] [-work-controls] [-default-value] [-nodoc] [-max-depth <n>]
 ```
 
 | Flag | Default | Meaning |
@@ -181,6 +181,7 @@ pego gen -g <grammar> -module <import path> [-pkg <package>] [-runtime embed|imp
 | `-document` | off | Also generate the Go incremental Node `Document` API; with `-types`, it also exposes `Document.ParseAST` (see [incremental documents](generated-documents.md)); cannot be combined with `-lang ts` |
 | `-stream` | off | Also generate the Go Node `ParseStream` (see [streams](generated-streams.md)); the start rule must have a `#stream` repetition; with `-types` it also generates `ParseStreamAST`, and it cannot be combined with `-lang ts` |
 | `-recognize` | off | Also generate `Recognize`, which checks input without building a tree (see [recognition](generated-go-api.md#recognition--recognize)) |
+| `-work-controls` | off | Go only. Generate the work-controlled form of the parser, which supports `WithContext` and `WithWorkLimits` and exports them from the package. Without it the parser holds the ordinary form of its functions and nothing that charges work, which is about half the source, and a parse that passes a control option returns an error (see [cancellation and work limits](generated-go-api.md#cancellation-and-work-limits)). With `-document` it also keeps the form that serves a Document, so the saving is a few percent |
 | `-observability` | off | Emit opt-in tracing and profiling for Go or TypeScript parsers; combines with `-types`, `-recognize`, and Go `-document` and `-stream` (see [generated parser tracing and profiling](debugging.md#generated-go-node-and-typed-traces)) |
 | `-max-depth` | `0` | Default nested rule-call limit in the generated parser; zero selects 100,000, a positive value overrides it, and negatives fail generation |
 | `-default-value` | off | Make the parser return the default node tree: value actions and declared rule types are dropped, predicates still run (see [Default Values](../../spec/actions.md#default-values)). Cannot be combined with `-types` |
@@ -253,7 +254,7 @@ for _, f := range files { // parser.go, api.go, types/types.go with WithTypes, a
 }
 ```
 
-Options follow the start rule: `pego.GenerateGo(g, "example.com/pairs/pairsparser", "main", pego.WithTypes())` is `pego gen -types`; `pego.WithDocument()` is `-document`; `pego.WithStream()` is `-stream`; `pego.WithRecognize()` is `-recognize`; `pego.WithGeneratedObservability()` is `-observability`; `pego.WithGeneratedDefaultValue()` is `-default-value`; `pego.WithoutPackageDoc()` is `-nodoc`; `pego.WithRuntime(pego.RuntimeImport)` is `-runtime import`; `pego.WithPackageName("p")` is `-pkg p`; and `pego.WithGeneratedMaxDepth(600_000)` is `-max-depth 600000`. Omitted, zero and explicit 100,000 defaults generate identical source. Observability supports standalone Go Node and typed batch parsers, including `ParseAST` and `ParseRuleAST`, Go Documents and streams, and TypeScript batch parsers with or without `-types`. Generated Go Node, typed and Document packages expose `WithProfile`; TypeScript batch packages expose `Profile` through per-call options. Typed direct execution and Node-conversion fallback report their actual rule calls; conversion itself has no separate event. Invalid defaults return an error before generated output is written.
+Options follow the start rule: `pego.GenerateGo(g, "example.com/pairs/pairsparser", "main", pego.WithTypes())` is `pego gen -types`; `pego.WithDocument()` is `-document`; `pego.WithStream()` is `-stream`; `pego.WithRecognize()` is `-recognize`; `pego.WithWorkControls()` is `-work-controls`; `pego.WithGeneratedObservability()` is `-observability`; `pego.WithGeneratedDefaultValue()` is `-default-value`; `pego.WithoutPackageDoc()` is `-nodoc`; `pego.WithRuntime(pego.RuntimeImport)` is `-runtime import`; `pego.WithPackageName("p")` is `-pkg p`; and `pego.WithGeneratedMaxDepth(600_000)` is `-max-depth 600000`. Omitted, zero and explicit 100,000 defaults generate identical source. Observability supports standalone Go Node and typed batch parsers, including `ParseAST` and `ParseRuleAST`, Go Documents and streams, and TypeScript batch parsers with or without `-types`. Generated Go Node, typed and Document packages expose `WithProfile`; TypeScript batch packages expose `Profile` through per-call options. Typed direct execution and Node-conversion fallback report their actual rule calls; conversion itself has no separate event. Invalid defaults return an error before generated output is written.
 
 `pego gen` is a thin wrapper around `pego.GenerateGo` (and `pego.GenerateTypeScript` with `-lang ts`, which returns the files too). Because a grammar built with the `grammar` package (see the
 [Running Parsers](running-parsers.md#from-go-values-programmatic-grammars)) is just an AST, it can be generated from, too.
@@ -289,7 +290,7 @@ machinery, which the generated code only has when you ask for it:
   forms). Without `-stream`, `#stream` is an ordinary repetition. TypeScript has neither streams nor documents.
 - `ParseRule` replaces `WithStart` for another start rule, and `WithUnit` and `WithMaxDepth` work as in the engine;
   `-max-depth` sets the generated default.
-- Cancellation and work limits are `WithContext` and `WithWorkLimits` in the engine and in generated Go, and the
+- Cancellation and work limits are `WithContext` and `WithWorkLimits` in the engine and in generated Go with `-work-controls`, and the
   `signal`, `maxInputWork` and `maxSteps` options in TypeScript; see
   [Cancellation and Work Limits](cancellation-and-limits.md) and the
   [specification](../../spec/generated-parsers.md#compatibility-and-support).

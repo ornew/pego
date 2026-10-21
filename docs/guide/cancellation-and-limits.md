@@ -9,7 +9,8 @@ The examples use a parser `p` compiled as in [Running Parsers](running-parsers.m
 ## Cancelling a Parse
 
 `Parse` accepts per-invocation `WithContext` and `WithWorkLimits` options. A zero
-limit is unlimited; each counter resets for the next call:
+limit is unlimited; each counter resets for the next call. Generated Go parsers offer them only when generated with
+`-work-controls`; see [the generated Go API](generated-go-api.md#cancellation-and-work-limits).
 
 ```go
 ctx, cancel := context.WithTimeout(context.Background(), time.Second)

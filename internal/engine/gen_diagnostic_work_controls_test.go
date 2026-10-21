@@ -12,6 +12,7 @@ import (
 )
 
 func TestGeneratedGoDiagnosticWork(t *testing.T) {
+	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated diagnostic-control consumers")
 	}
@@ -135,6 +136,7 @@ func TestRecoveredPublicDiagnostics(t *testing.T){
 `
 
 func TestGeneratedGoRecoveryMessageWork(t *testing.T) {
+	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated long recovery-message consumers")
 	}

@@ -43,6 +43,7 @@ func TestGeneratedTraceOptions(t *testing.T) {
 }
 
 func TestGeneratedNodeTrace(t *testing.T) {
+	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated standalone tracing consumers")
 	}

@@ -18,6 +18,21 @@ import (
 // The engine tests build the programs they generate in temporary directories. The generated code
 // imports the runtime package of this module, so their go.mod files require and replace it.
 
+// fixtureWorkControls reports whether the generated fixtures have work controls. They do by default, so
+// that the tests of cancellation and limits can use them. With PEGO_TEST_ORDINARY=1 they are generated
+// without, the form that most parsers have, and the tests that use a control (WithContext,
+// WithWorkLimits) skip (see needsWorkControls); the rest of the suite then checks the ordinary-only output.
+func fixtureWorkControls() bool { return os.Getenv("PEGO_TEST_ORDINARY") == "" }
+
+// needsWorkControls skips a test that passes a control option to its fixtures when the fixtures are
+// generated without work controls.
+func needsWorkControls(t testing.TB) {
+	t.Helper()
+	if !fixtureWorkControls() {
+		t.Skip("uses work controls; the fixtures are generated without them")
+	}
+}
+
 func init() {
 	SetRuntimeSource(os.DirFS(filepath.Join("..", "..", "runtime")))
 }
@@ -133,6 +148,7 @@ func generatePackage(t testing.TB, dir, pkg string, g *grammar.Grammar, opts Gen
 func generatePackageIn(t testing.TB, dir, root, pkg string, g *grammar.Grammar, opts GenOptions) string {
 	t.Helper()
 	opts.Runtime = RuntimeImport
+	opts.WorkControls = fixtureWorkControls()
 	opts.Package, opts.Module = pkg, root+"/"+pkg
 	files, err := Generate(g, opts)
 	if err != nil {
@@ -158,6 +174,7 @@ func generatePackageIn(t testing.TB, dir, root, pkg string, g *grammar.Grammar, 
 // parser.go and api.go as one source file, which tests write as parser.go.
 func generateCode(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	opts.Runtime = RuntimeImport
+	opts.WorkControls = fixtureWorkControls()
 	if opts.Module == "" && opts.Types {
 		opts.Module = "example.com/generated"
 	}

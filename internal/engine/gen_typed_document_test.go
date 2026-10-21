@@ -11,6 +11,7 @@ import (
 )
 
 func TestGenerateTypedDocument(t *testing.T) {
+	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds a standalone generated parser")
 	}

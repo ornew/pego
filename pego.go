@@ -466,6 +466,14 @@ func WithGeneratedObservability() GenOption {
 	return func(o *engine.GenOptions) { o.Observability = true }
 }
 
+// WithWorkControls generates the work-controlled form of the parser, which supports cancellation
+// (WithContext) and the input and step limits (WithWorkLimits) and re-exports those options. Without it
+// the generated parser is smaller and faster to build, and a parse that passes a control option
+// returns an error.
+func WithWorkControls() GenOption {
+	return func(o *engine.GenOptions) { o.WorkControls = true }
+}
+
 // WithRecognize also generates a function Recognize, which checks the input against the start rule
 // without building a tree, like Parse with RecognizeOnly.
 func WithRecognize() GenOption {

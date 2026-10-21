@@ -916,6 +916,9 @@ type grammar struct {
 	// Observable reports that the parser was generated with observability: only then do the
 	// trace and profile options take effect, so only then does ResolveOptions accept them.
 	Observable bool
+	// NoWorkControls reports that the parser was generated without work controls, so that a parse
+	// asking for them fails.
+	NoWorkControls bool
 	// MaxDepth is the default maximum nesting of rule calls.
 	maxDepth int
 	// initEnv is the environment every parse starts from, with each variable bound to its
@@ -1065,6 +1068,9 @@ func ResolveOptions(g *grammar, opts []ParseOption) (parseOptions, error) {
 	}
 	if !WorkControlsEnabled && (o.context != nil || o.limits != (WorkLimits{})) {
 		return o, fmt.Errorf("work controls are disabled in this generated reference parser")
+	}
+	if g.NoWorkControls && (o.context != nil || o.limits != (WorkLimits{})) {
+		return o, fmt.Errorf("this parser was generated without work controls (generate with -work-controls to use WithContext and WithWorkLimits)")
 	}
 	if err := o.validateDiagnostics(); err != nil {
 		return o, err

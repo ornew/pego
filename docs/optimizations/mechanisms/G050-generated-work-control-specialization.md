@@ -16,7 +16,10 @@ rejected. Work accounting is a resource contract, not an optimization in itself.
 
 ## Scope and State
 
-Applied by default in generated Go Node/recognition and typed Go output.
+Applied by default in generated Go Node/recognition and typed Go output. A parser
+generated without work controls (no `-work-controls`) keeps only the ordinary form:
+each function body is replaced by its specialization instead of gaining a branch,
+and a parse that passes a control option fails.
 Closure, VMs and TypeScript work-control implementations do not use this Go
 specializer.
 

@@ -12,6 +12,7 @@ import (
 )
 
 func TestGeneratedGoClassDispatchWork(t *testing.T) {
+	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated character-class control consumers")
 	}

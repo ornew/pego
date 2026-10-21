@@ -13,6 +13,7 @@ import (
 )
 
 func TestGeneratedGoWorkControls(t *testing.T) {
+	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated work-control consumers")
 	}
@@ -200,6 +201,7 @@ func TestConcurrentLimits(t *testing.T){
 `
 
 func TestGeneratedGoConversionWork(t *testing.T) {
+	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated conversion consumers")
 	}
@@ -306,7 +308,7 @@ rule main WorkLimits = t:("é") #atomic => WorkLimits{Text: text($t)}`)
 	}
 	for _, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("collision_%v", convert)
-		opts := GenOptions{Package: pkg, Module: "workcollision/" + pkg, Runtime: RuntimeImport, Start: "main", Types: true, convertTypes: convert}
+		opts := GenOptions{Package: pkg, Module: "workcollision/" + pkg, Runtime: RuntimeImport, Start: "main", Types: true, convertTypes: convert, WorkControls: true}
 		files, err := Generate(g, opts)
 		if err != nil {
 			t.Fatal(err)
@@ -358,6 +360,7 @@ func TestPublicNames(t *testing.T){
 `
 
 func TestGeneratedGoNilWorkPublication(t *testing.T) {
+	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds typed nil publication consumer")
 	}
@@ -444,6 +447,7 @@ func TestRecoveredNilClonePublication(t *testing.T){
 `
 
 func TestGeneratedGoLegacyNilControls(t *testing.T) {
+	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds configured legacy nil consumers")
 	}
@@ -504,6 +508,7 @@ func TestLegacyAndInterruptedNil(t *testing.T){
 `
 
 func TestGeneratedGoConfiguredNilOrdinaryErrors(t *testing.T) {
+	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds configured nil error consumers")
 	}

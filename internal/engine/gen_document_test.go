@@ -11,6 +11,7 @@ import (
 )
 
 func TestGenerateDocumentNode(t *testing.T) {
+	needsWorkControls(t)
 	g, err := syntax.Parse("rule main = item+ $$\nrule item = \"a\"")
 	if err != nil {
 		t.Fatal(err)

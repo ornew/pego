@@ -70,7 +70,10 @@ func ordinaryMethodIdentity(fn *goast.FuncDecl) (ordinaryMethodKey, bool) {
 // specializeOrdinaryMethods gives generated execution functions a branch for
 // ordinary parses, which runs under guard (p.control == nil, and outside a
 // Document if the parser has Documents). The general body remains unchanged.
-func specializeOrdinaryMethods(src []byte, executionSource, guard string) ([]byte, error) {
+//
+// An empty guard replaces each body by its ordinary form instead: a parser generated without
+// work controls has no controlled form to keep.
+func specializeOrdinaryMethods(src []byte, executionSource, guard string, noControls bool) ([]byte, error) {
 	methods, err := ordinaryExecutionMethods(executionSource)
 	if err != nil {
 		return nil, err
@@ -82,6 +85,7 @@ func specializeOrdinaryMethods(src []byte, executionSource, guard string) ([]byt
 	}
 	type insertion struct {
 		offset int
+		end    int // offset of the end of the replaced text; equal to offset for an insertion
 		text   []byte
 	}
 	var insertions []insertion
@@ -98,97 +102,130 @@ func specializeOrdinaryMethods(src []byte, executionSource, guard string) ([]byt
 			continue
 		}
 		methods[key] = true
-		var body bytes.Buffer
-		if err := format.Node(&body, fset, fn.Body); err != nil {
-			return nil, err
-		}
-		cloneFset := token.NewFileSet()
-		clone, err := goparser.ParseFile(cloneFset, "ordinary.go", "package ordinary\nfunc _() "+body.String(), goparser.SkipObjectResolution)
-		if err != nil {
-			return nil, err
-		}
-		plain := clone.Decls[0].(*goast.FuncDecl).Body
-		goast.Inspect(plain, func(n goast.Node) bool {
-			switch x := n.(type) {
-			case *goast.CallExpr:
-				if sel, ok := x.Fun.(*goast.SelectorExpr); ok && ordinaryReceiver(sel.X) && ordinaryHelperName(sel.Sel.Name) {
-					sel.Sel.Name += "Ordinary"
-				}
-			case *goast.BlockStmt:
-				x.List = stripOrdinaryWork(x.List)
-			case *goast.CaseClause:
-				x.Body = stripOrdinaryWork(x.Body)
-			case *goast.CommClause:
-				x.Body = stripOrdinaryWork(x.Body)
-			case *goast.LabeledStmt:
-				x.Label.Name += "_ordinary"
-			case *goast.BranchStmt:
-				if x.Label != nil {
-					x.Label.Name += "_ordinary"
-				}
+		build := func(ordinary bool) ([]byte, error) {
+			var body bytes.Buffer
+			if err := format.Node(&body, fset, fn.Body); err != nil {
+				return nil, err
 			}
-			return true
-		})
-		// Rewrite only reads of the parser's control. Generated functions never
-		// change invocation control ownership; reject a future writer explicitly.
-		var writer, shadow bool
-		goast.Inspect(plain, func(n goast.Node) bool {
-			receiverName := func(x goast.Expr) {
-				if id, ok := x.(*goast.Ident); ok && id.Name == "p" {
-					shadow = true
-				}
+			cloneFset := token.NewFileSet()
+			clone, err := goparser.ParseFile(cloneFset, "ordinary.go", "package ordinary\nfunc _() "+body.String(), goparser.SkipObjectResolution)
+			if err != nil {
+				return nil, err
 			}
-			switch x := n.(type) {
-			case *goast.AssignStmt:
-				for _, lhs := range x.Lhs {
-					if ordinaryControl(lhs) {
+			plain := clone.Decls[0].(*goast.FuncDecl).Body
+			goast.Inspect(plain, func(n goast.Node) bool {
+				switch x := n.(type) {
+				case *goast.CallExpr:
+					if sel, ok := x.Fun.(*goast.SelectorExpr); ok && ordinary && ordinaryReceiver(sel.X) && ordinaryHelperName(sel.Sel.Name) {
+						sel.Sel.Name += "Ordinary"
+					}
+				case *goast.BlockStmt:
+					x.List = stripOrdinaryWork(x.List)
+				case *goast.CaseClause:
+					x.Body = stripOrdinaryWork(x.Body)
+				case *goast.CommClause:
+					x.Body = stripOrdinaryWork(x.Body)
+				case *goast.LabeledStmt:
+					if ordinary && guard != "" {
+						x.Label.Name += "_ordinary"
+					}
+				case *goast.BranchStmt:
+					if x.Label != nil && ordinary && guard != "" {
+						x.Label.Name += "_ordinary"
+					}
+				}
+				return true
+			})
+			// Rewrite only reads of the parser's control. Generated functions never
+			// change invocation control ownership; reject a future writer explicitly.
+			var writer, shadow bool
+			goast.Inspect(plain, func(n goast.Node) bool {
+				receiverName := func(x goast.Expr) {
+					if id, ok := x.(*goast.Ident); ok && id.Name == "p" {
+						shadow = true
+					}
+				}
+				switch x := n.(type) {
+				case *goast.AssignStmt:
+					for _, lhs := range x.Lhs {
+						if ordinaryControl(lhs) {
+							writer = true
+						}
+						receiverName(lhs)
+					}
+				case *goast.IncDecStmt:
+					if ordinaryControl(x.X) {
 						writer = true
 					}
-					receiverName(lhs)
-				}
-			case *goast.IncDecStmt:
-				if ordinaryControl(x.X) {
-					writer = true
-				}
-			case *goast.UnaryExpr:
-				if x.Op == token.AND && ordinaryControl(x.X) {
-					writer = true
-				}
-			case *goast.ValueSpec:
-				for _, name := range x.Names {
-					receiverName(name)
-				}
-			case *goast.RangeStmt:
-				if x.Tok == token.DEFINE {
-					receiverName(x.Key)
-					receiverName(x.Value)
-				}
-			case *goast.FuncLit:
-				if x.Type.Params != nil {
-					for _, field := range x.Type.Params.List {
-						for _, name := range field.Names {
-							receiverName(name)
+				case *goast.UnaryExpr:
+					if x.Op == token.AND && ordinaryControl(x.X) {
+						writer = true
+					}
+				case *goast.ValueSpec:
+					for _, name := range x.Names {
+						receiverName(name)
+					}
+				case *goast.RangeStmt:
+					if x.Tok == token.DEFINE {
+						receiverName(x.Key)
+						receiverName(x.Value)
+					}
+				case *goast.FuncLit:
+					if x.Type.Params != nil {
+						for _, field := range x.Type.Params.List {
+							for _, name := range field.Names {
+								receiverName(name)
+							}
 						}
 					}
 				}
+				return true
+			})
+			if writer {
+				return nil, fmt.Errorf("generated function %s writes invocation control", fn.Name.Name)
 			}
-			return true
-		})
-		if writer {
-			return nil, fmt.Errorf("generated function %s writes invocation control", fn.Name.Name)
+			if shadow {
+				return nil, fmt.Errorf("generated function %s shadows or replaces the parser parameter", fn.Name.Name)
+			}
+			rewriteOrdinaryControl(plain)
+			foldOrdinaryControl(plain)
+			var plainText bytes.Buffer
+			if err := format.Node(&plainText, cloneFset, plain); err != nil {
+				return nil, err
+			}
+			text := plainText.Bytes()
+			if !multilineLiteral(plain) {
+				// The removed charges leave blank lines behind.
+				text = bytes.ReplaceAll(text, []byte("\n\n"), []byte("\n"))
+				text = bytes.ReplaceAll(text, []byte("\n\n"), []byte("\n"))
+			}
+			return text, nil
 		}
-		if shadow {
-			return nil, fmt.Errorf("generated function %s shadows or replaces the parser parameter", fn.Name.Name)
-		}
-		rewriteOrdinaryControl(plain)
-		var plainText bytes.Buffer
-		if err := format.Node(&plainText, cloneFset, plain); err != nil {
+		text, err := build(true)
+		if err != nil {
 			return nil, err
 		}
 		brace := fset.Position(fn.Body.Lbrace).Offset
-		branch := append([]byte("\nif "+guard+" "), plainText.Bytes()...)
+		if guard == "" {
+			insertions = append(insertions, insertion{brace, fset.Position(fn.Body.Rbrace).Offset + 1, text})
+			continue
+		}
+		if noControls {
+			// The controls are absent in this parser, so the form that remains for a Document is the
+			// ordinary one with only the Document's own behavior: no charges and no control reads.
+			rest, err := build(false)
+			if err != nil {
+				return nil, err
+			}
+			branch := append([]byte("{\nif "+guard+" "), text...)
+			branch = append(branch, '\n')
+			branch = append(branch, rest[1:]...)
+			insertions = append(insertions, insertion{brace, fset.Position(fn.Body.Rbrace).Offset + 1, branch})
+			continue
+		}
+		branch := append([]byte("\nif "+guard+" "), text...)
 		branch = append(branch, '\n')
-		insertions = append(insertions, insertion{brace + 1, branch})
+		insertions = append(insertions, insertion{brace + 1, brace + 1, branch})
 	}
 	for key, found := range methods {
 		if !found {
@@ -202,14 +239,14 @@ func specializeOrdinaryMethods(src []byte, executionSource, guard string) ([]byt
 	var result []byte
 	extra := 0
 	for _, edit := range insertions {
-		extra += len(edit.text)
+		extra += len(edit.text) - (edit.end - edit.offset)
 	}
 	result = make([]byte, 0, len(src)+extra)
 	offset := 0
 	for _, edit := range insertions {
 		result = append(result, src[offset:edit.offset]...)
 		result = append(result, edit.text...)
-		offset = edit.offset
+		offset = edit.end
 	}
 	result = append(result, src[offset:]...)
 	return format.Source(result)
@@ -311,4 +348,16 @@ func removeControlRead(field reflect.Value) {
 	// The nil expression preserves signatures and ordinary converter mappings.
 	nilControl := &goast.CallExpr{Fun: &goast.ParenExpr{X: &goast.StarExpr{X: goast.NewIdent("WorkControl")}}, Args: []goast.Expr{goast.NewIdent("nil")}}
 	field.Set(reflect.ValueOf(nilControl))
+}
+
+// multilineLiteral reports whether a literal in root spans lines, where a blank line is content.
+func multilineLiteral(root goast.Node) bool {
+	found := false
+	goast.Inspect(root, func(n goast.Node) bool {
+		if lit, ok := n.(*goast.BasicLit); ok && bytes.IndexByte([]byte(lit.Value), '\n') >= 0 {
+			found = true
+		}
+		return !found
+	})
+	return found
 }

@@ -15,6 +15,11 @@ import (
 
 // GenOptions configures code generation.
 type GenOptions struct {
+	// WorkControls emits the work-controlled form of the generated Go functions, which charges
+	// cancellation and the input and step limits (WithContext, WithWorkLimits), and re-exports
+	// those options. Without it only the ordinary form is emitted, and a parse with a control
+	// option fails with an error.
+	WorkControls bool
 	// Observability emits opt-in tracing and profiling for generated Go batch
 	// and Document parsing, and for TypeScript batch parsing.
 	Observability bool
@@ -206,6 +211,9 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 	if opts.Observability {
 		gen.init.WriteString("\tpegoGrammar.Observable = true\n")
 	}
+	if !opts.WorkControls {
+		gen.init.WriteString("\tpegoGrammar.NoWorkControls = true\n")
+	}
 	if prog.sourceInfo {
 		gen.init.WriteString("\tpegoGrammar.SourceInfo = true\n")
 	}
@@ -300,10 +308,15 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	}
 	if !opts.disableOrdinaryWorkSpecialization {
 		guard := "p.Control == nil"
-		if opts.Document {
+		switch {
+		case !opts.WorkControls && !opts.Document:
+			guard = ""
+		case !opts.WorkControls:
+			guard = "p.Document == nil"
+		case opts.Document:
 			guard += " && p.Document == nil"
 		}
-		if whole, err = specializeOrdinaryMethods(whole, gen.methods.String(), guard); err != nil {
+		if whole, err = specializeOrdinaryMethods(whole, gen.methods.String(), guard, !opts.WorkControls); err != nil {
 			return nil, err
 		}
 	}

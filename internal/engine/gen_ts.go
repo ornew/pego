@@ -54,6 +54,9 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	if opts.Stream {
 		return nil, fmt.Errorf("stream generation is only supported for Go")
 	}
+	if opts.WorkControls {
+		return nil, fmt.Errorf("work controls are only supported for Go")
+	}
 	if err := opts.validateMaxDepth(true); err != nil {
 		return nil, err
 	}

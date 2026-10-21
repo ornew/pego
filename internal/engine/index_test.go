@@ -236,6 +236,7 @@ func TestIndexGeneratedTypeScriptParity(t *testing.T) {
 // Generated parsers index the same with and without work limits, which select the
 // work-accounting runtime.
 func TestIndexGeneratedGoWork(t *testing.T) {
+	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
