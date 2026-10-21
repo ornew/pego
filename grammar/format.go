@@ -2082,6 +2082,23 @@ func formatTerm(t Term, outer int, control *metadataControl) string {
 	return formatSourceLayout(termLayout(t), formatTermNode(t, outer, control), control)
 }
 
+// leftmostTerm returns the term that starts t, which holds the comments before
+// t.
+func leftmostTerm(t Term) Term {
+	for {
+		switch x := t.(type) {
+		case *Binary:
+			t = x.L
+		case *Cast:
+			t = x.X
+		case *Member:
+			t = x.X
+		default:
+			return t
+		}
+	}
+}
+
 // termLayout returns the comments around t.
 func termLayout(t Term) *SourceLayout { return nodeLayout(t) }
 
@@ -2244,9 +2261,9 @@ func formatTermNode(t Term, outer int, control *metadataControl) string {
 			list = nil // the parameters changed since the source was read
 		}
 		body := formatTerm(t.Body, 0, control)
-		if layout := termLayout(t.Body); layout != nil && len(layout.Before) > 0 {
-			// Comments between "=>" and the body put the body on a line of its
-			// own, one level in from the parameters.
+		if layout := termLayout(leftmostTerm(t.Body)); layout != nil && len(layout.Before) > 0 && endsLine(layout.Before[len(layout.Before)-1], layout.NextLine) {
+			// Comments between "=>" and the body that end a line put the body on
+			// a line of its own, one level in from the parameters.
 			body = indentTermLines(body, indentUnit, control)
 		}
 		s := formatItemList(t.Params, t.TrailingComma, list, control) + joinLayout(arrow(t, control), body)

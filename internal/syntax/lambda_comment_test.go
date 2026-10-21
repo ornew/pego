@@ -15,6 +15,9 @@ func TestLambdaBodyAfterComment(t *testing.T) {
 		{"block comment before the body", "rule r = \"a\" => ((b) => /* c */ 1)\n", "rule r = \"a\" => ((b) => /* c */ 1)\n"},
 		{"argument of a call", "rule r = \"a\" => map(x, (b) => // c\n 1)\n", "rule r = \"a\" => map(\n    x,\n    (b) => // c\n        1,\n)\n"},
 		{"body over lines", "rule r = \"a\" => ((b) => // c\n f(1,\n 2,))\n", "rule r = \"a\" => (\n    (b) => // c\n        f(\n            1,\n            2,\n        )\n)\n"},
+		{"binary body", "rule r = \"a\" => ((b) => // c\n b + 1)\n", "rule r = \"a\" => (\n    (b) => // c\n        b + 1\n)\n"},
+		{"binary body over lines", "rule r = \"a\" => ((b) => // c\n b +\n 1)\n", "rule r = \"a\" => (\n    (b) => // c\n        b + 1\n)\n"},
+		{"call body after a block comment", "rule r = \"a\" => ((b) => /* c */ f(1,\n 2,))\n", "rule r = \"a\" => (\n    (b) => /* c */ f(\n        1,\n        2,\n    )\n)\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := checkFormat(t, tc.in); got != tc.want {
