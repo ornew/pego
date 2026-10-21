@@ -181,7 +181,7 @@ func TestCommentOnlyGroupFormatting(t *testing.T) {
 		{"action tuple trailing", "rule main = \"x\" => ( // t\n)\n", "rule main = \"x\" => ( // t\n)\n"},
 		{"nested action tuple", "rule main = \"x\" => (\n\t(\n\t\t// lead\n\t)\n)\n", "rule main = \"x\" => (\n    (\n        // lead\n    )\n)\n"},
 		{"tuple type", "type T ~ (\n\t// lead\n)\n", "type T ~ (\n    // lead\n)\n"},
-		{"nested tuple type", "type T ~ (int, (\n\t// lead\n))\n", "type T ~ (\n    int, (\n        // lead\n    )\n)\n"},
+		{"nested tuple type", "type T ~ (int, (\n\t// lead\n))\n", "type T ~ (\n    int,\n    (\n        // lead\n    ),\n)\n"},
 		{"tuple type inline", "type T ~ ( /* c */ )\n", "type T ~ ( /* c */ )\n"},
 		{"tuple type trailing", "type T ~ ( // t\n)\n", "type T ~ ( // t\n)\n"},
 		{"struct type", "type T ~ {\n\t// lead\n}\n", "type T ~ {\n    // lead\n}\n"},

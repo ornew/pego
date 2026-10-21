@@ -584,11 +584,11 @@ func (p *parser) typeTerm() (sourceResult grammar.TypeExpr) {
 		p.cur = g.OpenBreak
 		g.BodyBreak = p.lineBreak()
 		if p.is(")") {
-			return p.tupleType(open, g, nil) // the unit ()
+			return p.tupleType(g, nil) // the unit ()
 		}
 		g.Type = p.typeExpr()
 		if p.is(",") {
-			return p.tupleType(open, g, g.Type)
+			return p.tupleType(g, g.Type)
 		}
 		g.CloseBreak = p.lineBreak()
 		g.OneLine = !p.multiline(open, p.i)
@@ -618,7 +618,11 @@ func (p *parser) typeTerm() (sourceResult grammar.TypeExpr) {
 		a := &grammar.TypeApp{SourceInfo: grammar.SourceInfo{Pos: name.pos}, Name: name.text}
 		for {
 			a.Args = append(a.Args, p.typeExpr())
-			if !p.accept(",") || p.is("]") {
+			if !p.accept(",") {
+				break
+			}
+			if p.is("]") {
+				a.TrailingComma = true
 				break
 			}
 		}
@@ -662,16 +666,19 @@ func (p *parser) structFields() (fields []*grammar.Field, closeBreak *grammar.Li
 
 // tupleType finishes a tuple type whose "(" and first element, if any, were read as a group's.
 // A trailing comma is optional, and required after a single element.
-func (p *parser) tupleType(open int, g *grammar.TypeGroup, first grammar.TypeExpr) grammar.TypeExpr {
+func (p *parser) tupleType(g *grammar.TypeGroup, first grammar.TypeExpr) grammar.TypeExpr {
 	t := &grammar.TupleType{OpenBreak: g.OpenBreak, BodyBreak: g.BodyBreak}
 	if first != nil {
 		t.Types = append(t.Types, first)
-		for p.accept(",") && !p.is(")") {
+		for p.accept(",") {
+			if p.is(")") {
+				t.TrailingComma = true
+				break
+			}
 			t.Types = append(t.Types, p.typeExpr())
 		}
 	}
 	t.CloseBreak = p.lineBreak()
-	t.OneLine = !p.multiline(open, p.i)
 	p.expect(")")
 	return t
 }
@@ -1315,6 +1322,7 @@ func (p *parser) attribute() (sourceResult *grammar.Attribute) {
 		}
 		p.expect(",")
 		if named && p.accept(")") {
+			a.TrailingComma = true
 			return a
 		}
 	}
@@ -1723,13 +1731,12 @@ func (p *parser) termPrimary() (sourceResult grammar.Term) {
 		}
 		p.next()
 		if !p.boundary() && p.is("(") && !p.tok().spaceBefore {
-			open := p.i
 			p.next()
 			call := &grammar.Call{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Func: t.text}
 			defer p.restoreBreak()()
 			call.OpenBreak, call.BodyBreak = p.openList()
-			call.Args = p.listItems(")")
-			call.CloseBreak, call.OneLine = p.closeList(open)
+			call.Args, call.TrailingComma = p.listItems(")")
+			call.CloseBreak = p.lineBreak()
 			p.expect(")")
 			return call
 		}
@@ -1742,12 +1749,11 @@ func (p *parser) termPrimary() (sourceResult grammar.Term) {
 		if t.text == "[]" {
 			p.next()
 			n := &grammar.ListConstructor{Elem: p.typeTerm()}
-			open := p.i
 			p.expect("{")
 			defer p.restoreBreak()()
 			n.OpenBreak, n.BodyBreak = p.openList()
-			n.Items = p.listItems("}")
-			n.CloseBreak, n.OneLine = p.closeList(open)
+			n.Items, n.TrailingComma = p.listItems("}")
+			n.CloseBreak = p.lineBreak()
 			p.expect("}")
 			return n
 		}
@@ -1760,11 +1766,11 @@ func (p *parser) termPrimary() (sourceResult grammar.Term) {
 			p.cur = g.OpenBreak
 			g.BodyBreak = p.lineBreak()
 			if p.is(")") {
-				return p.tupleLit(open, &grammar.TupleLit{OpenBreak: g.OpenBreak, BodyBreak: g.BodyBreak}) // the unit ()
+				return p.tupleLit(&grammar.TupleLit{OpenBreak: g.OpenBreak, BodyBreak: g.BodyBreak}) // the unit ()
 			}
 			g.Term = p.term()
 			if p.is(",") {
-				return p.tupleLit(open, &grammar.TupleLit{OpenBreak: g.OpenBreak, BodyBreak: g.BodyBreak, Elems: []grammar.Term{g.Term}})
+				return p.tupleLit(&grammar.TupleLit{OpenBreak: g.OpenBreak, BodyBreak: g.BodyBreak, Elems: []grammar.Term{g.Term}})
 			}
 			g.CloseBreak = p.lineBreak()
 			g.OneLine = !p.multiline(open, p.i)
@@ -1778,10 +1784,14 @@ func (p *parser) termPrimary() (sourceResult grammar.Term) {
 
 // tupleLit finishes a tuple value whose "(" and first element, if any, were read as a group's.
 // A trailing comma is optional, and required after a single element.
-func (p *parser) tupleLit(open int, t *grammar.TupleLit) grammar.Term {
+func (p *parser) tupleLit(t *grammar.TupleLit) grammar.Term {
 	if len(t.Elems) > 0 {
 		p.takeAfterLayout(t.Elems[0])
-		for p.accept(",") && !p.is(")") {
+		for p.accept(",") {
+			if p.is(")") {
+				t.TrailingComma = true
+				break
+			}
 			x := p.term()
 			t.Elems = append(t.Elems, x)
 			p.takeAfterLayout(x)
@@ -1790,7 +1800,6 @@ func (p *parser) tupleLit(open int, t *grammar.TupleLit) grammar.Term {
 		t.Elems = []grammar.Term{}
 	}
 	t.CloseBreak = p.lineBreak()
-	t.OneLine = !p.multiline(open, p.i)
 	p.expect(")")
 	return t
 }
@@ -1804,19 +1813,18 @@ func (p *parser) newTerm() (sourceResult grammar.Term) {
 	}()
 
 	nameToken := p.ident()
-	open := p.i
 	p.expect("{")
 	defer p.restoreBreak()()
 	openBreak, bodyBreak := p.openList()
-	finish := func(n *grammar.New) {
+	finish := func(n *grammar.New, trailing bool) {
 		n.OpenBreak, n.BodyBreak = openBreak, bodyBreak
-		n.CloseBreak, n.OneLine = p.closeList(open)
+		n.CloseBreak, n.TrailingComma = p.lineBreak(), trailing
 		p.expect("}")
 	}
 	if !p.is("}") && !(p.tok().kind == tIdent && p.peek(1).text == ":") {
-		args := p.listItems("}")
+		args, trailing := p.listItems("}")
 		n := &grammar.New{SourceInfo: grammar.SourceInfo{Pos: nameToken.pos}, Type: nameToken.text}
-		finish(n)
+		finish(n, trailing)
 		if p.legacy == nil {
 			// A positional constructor converts its value to a named node type.
 			n.Args = args
@@ -1834,6 +1842,7 @@ func (p *parser) newTerm() (sourceResult grammar.Term) {
 		return n
 	}
 	n := &grammar.New{SourceInfo: grammar.SourceInfo{Pos: nameToken.pos}, Type: nameToken.text}
+	trailing := false
 	for !p.is("}") {
 		fieldStart := p.i
 		layout := p.takeTermLayout()
@@ -1844,12 +1853,14 @@ func (p *parser) newTerm() (sourceResult grammar.Term) {
 		field.Layout = layout
 		n.Fields = append(n.Fields, field)
 		p.takeAfterLayout(field)
+		trailing = false
 		if !p.is("}") {
 			p.expect(",")
+			trailing = p.is("}")
 		}
 		p.sourceTrailing(field.Source())
 	}
-	finish(n)
+	finish(n, trailing)
 	return n
 }
 
@@ -1870,25 +1881,22 @@ func (p *parser) openList() (open, body *grammar.LineBreak) {
 	return open, p.lineBreak()
 }
 
-// closeList ends the layout of a delimited list before its closing delimiter,
-// whose token follows the list items. open is the index of the opening token.
-func (p *parser) closeList(open int) (close *grammar.LineBreak, oneLine bool) {
-	return p.lineBreak(), !p.multiline(open, p.i)
-}
-
 // listItems reads comma-separated expressions up to, not including, the
-// closing delimiter. A trailing comma is optional.
-func (p *parser) listItems(closer string) []grammar.Term {
-	items := []grammar.Term{}
+// closing delimiter. A trailing comma is optional; trailing reports whether
+// the list has one.
+func (p *parser) listItems(closer string) (items []grammar.Term, trailing bool) {
+	items = []grammar.Term{}
 	for !p.is(closer) {
 		item := p.term()
 		items = append(items, item)
 		p.takeAfterLayout(item)
+		trailing = false
 		if !p.is(closer) {
 			p.expect(",")
+			trailing = p.is(closer)
 		}
 	}
-	return items
+	return items, trailing
 }
 
 // takeAfterLayout keeps the comments between an element of a list and the

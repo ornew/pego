@@ -29,12 +29,12 @@ func TestActionExpressionLayout(t *testing.T) {
 		{
 			name: "tuple in an action block",
 			in:   prelude + "rule r = \"a\" => {\n    x := (\n        1,\n        2\n    )\n    x\n}\n",
-			want: prelude + "rule r = \"a\" => {\n    x := (\n        1, 2\n    )\n    x\n}\n",
+			want: prelude + "rule r = \"a\" => {\n    x := (1, 2)\n    x\n}\n",
 		},
 		{
 			name: "nested multiline terms in an action block",
 			in:   prelude + "rule r = \"a\" => {\n    x := f(\n        // lead\n        g(\n            // inner\n            1\n        )\n    )\n    x\n}\n",
-			want: prelude + "rule r = \"a\" => {\n    x := f(\n        // lead\n        g(\n            // inner\n            1\n        )\n    )\n    x\n}\n",
+			want: prelude + "rule r = \"a\" => {\n    x := f(\n        // lead\n        g(\n            // inner\n            1,\n        ),\n    )\n    x\n}\n",
 		},
 		{
 			name: "comment after a tuple element",
@@ -44,7 +44,7 @@ func TestActionExpressionLayout(t *testing.T) {
 		{
 			name: "comment after the last tuple element",
 			in:   "rule r = \"a\" => (1, 2 /* c */,)\n",
-			want: "rule r = \"a\" => (1, 2 /* c */)\n",
+			want: "rule r = \"a\" => (\n    1,\n    2 /* c */,\n)\n",
 		},
 		{
 			name: "comment after the only tuple element",
@@ -79,47 +79,47 @@ func TestActionExpressionLayout(t *testing.T) {
 		{
 			name: "leading and trailing line comments in a call",
 			in:   "rule r = \"a\" => f(\n    // lead\n    1,\n    2, // tail\n    // end\n)\n",
-			want: "rule r = \"a\" => f(\n    // lead\n    1, 2 // tail\n    // end\n)\n",
+			want: "rule r = \"a\" => f(\n    // lead\n    1,\n    2, // tail\n    // end\n)\n",
 		},
 		{
 			name: "line comment after a call argument",
 			in:   "rule r = \"a\" => f(\n    1, // one\n    2\n)\n",
-			want: "rule r = \"a\" => f(\n    1, // one\n    2\n)\n",
+			want: "rule r = \"a\" => f(\n    1, // one\n    2,\n)\n",
 		},
 		{
 			name: "line comment before a comma",
 			in:   "rule r = \"a\" => f(\n    1 // one\n    , 2\n)\n",
-			want: "rule r = \"a\" => f(\n    1 // one\n    , 2\n)\n",
+			want: "rule r = \"a\" => f(\n    1, // one\n    2,\n)\n",
 		},
 		{
 			name: "line comment before a trailing comma",
 			in:   "rule r = \"a\" => f(\n    1, 2 // two\n    ,\n)\n",
-			want: "rule r = \"a\" => f(\n    1, 2 // two\n)\n",
+			want: "rule r = \"a\" => f(\n    1,\n    2, // two\n)\n",
 		},
 		{
 			name: "block comment with lines in a call",
 			in:   "rule r = \"a\" => f(\n    1, /* a\n  b */ 2\n)\n",
-			want: "rule r = \"a\" => f(\n    1, /* a\n  b */ 2\n)\n",
+			want: "rule r = \"a\" => f(\n    1,\n    /* a\n  b */ 2,\n)\n",
 		},
 		{
 			name: "comment delimiters in a string",
 			in:   "rule r = \"a\" => f(\n    // c\n    \"a//b\", \"/*\",\n    \"x\"\n)\n",
-			want: "rule r = \"a\" => f(\n    // c\n    \"a//b\", \"/*\", \"x\"\n)\n",
+			want: "rule r = \"a\" => f(\n    // c\n    \"a//b\",\n    \"/*\",\n    \"x\",\n)\n",
 		},
 		{
-			name: "call without comments stays on one line",
+			name: "call with a trailing comma has one argument per line",
 			in:   "rule r = \"a\" => f(\n    1,\n    2,\n)\n",
-			want: "rule r = \"a\" => f(1, 2)\n",
+			want: "rule r = \"a\" => f(\n    1,\n    2,\n)\n",
 		},
 		{
 			name: "struct literal with a leading comment",
 			in:   prelude + "rule r = \"a\" => S{\n    // lead\n    A: 1,\n    B: 2,\n}\n",
-			want: prelude + "rule r = \"a\" => S{\n    // lead\n    A: 1, B: 2\n}\n",
+			want: prelude + "rule r = \"a\" => S{\n    // lead\n    A: 1,\n    B: 2,\n}\n",
 		},
 		{
 			name: "struct literal with a comment on the opening line",
 			in:   prelude + "rule r = \"a\" => S{ // open\n    A: 1\n}\n",
-			want: prelude + "rule r = \"a\" => S{ // open\n    A: 1\n}\n",
+			want: prelude + "rule r = \"a\" => S{ // open\n    A: 1,\n}\n",
 		},
 		{
 			name: "comment after a field",
@@ -139,7 +139,7 @@ func TestActionExpressionLayout(t *testing.T) {
 		{
 			name: "positional constructor",
 			in:   "type N = node[string]\nrule r = \"a\" => N{\n    // lead\n    $x\n}\n",
-			want: "type N = node[string]\nrule r = \"a\" => N{\n    // lead\n    $x\n}\n",
+			want: "type N = node[string]\nrule r = \"a\" => N{\n    // lead\n    $x,\n}\n",
 		},
 		{
 			name: "empty list constructor with a comment",
@@ -154,12 +154,12 @@ func TestActionExpressionLayout(t *testing.T) {
 		{
 			name: "list constructor with a leading comment",
 			in:   prelude + "rule r = \"a\" => []S{\n    // lead\n    1,\n}\n",
-			want: prelude + "rule r = \"a\" => []S{\n    // lead\n    1\n}\n",
+			want: prelude + "rule r = \"a\" => []S{\n    // lead\n    1,\n}\n",
 		},
 		{
 			name: "list constructor with comments around items",
 			in:   prelude + "rule r = \"a\" => []S{\n    1 /* a */, /* b */ 2, // c\n    // end\n}\n",
-			want: prelude + "rule r = \"a\" => []S{\n    1 /* a */, /* b */ 2 // c\n    // end\n}\n",
+			want: prelude + "rule r = \"a\" => []S{\n    1 /* a */,\n    /* b */ 2, // c\n    // end\n}\n",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -181,7 +181,7 @@ func TestActionExpressionLayoutCloneAndJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 	call := g.Rules()[0].Action.(*grammar.Call)
-	if call.OpenBreak == nil || call.BodyBreak == nil || call.CloseBreak == nil || call.OneLine {
+	if call.OpenBreak == nil || call.BodyBreak == nil || call.CloseBreak == nil {
 		t.Fatalf("call layout: %+v", call)
 	}
 	if len(call.BodyBreak.Comments) != 1 || call.BodyBreak.Comments[0].Text != "// lead" {
@@ -239,7 +239,7 @@ func TestActionExpressionIndexedListConstructor(t *testing.T) {
 	for _, tc := range []struct{ in, want string }{
 		{"rule r = \"a\" => []int{1, 2}[0]\n", "rule r = \"a\" => ([]int{1, 2})[0]\n"},
 		{"rule r = \"a\" => []int{1 /* a */, 2}[0]\n", "rule r = \"a\" => ([]int{1 /* a */, 2})[0]\n"},
-		{"rule r = \"a\" => []int{\n    // lead\n    1,\n}[0]\n", "rule r = \"a\" => (\n    []int{\n        // lead\n        1\n    }\n)[0]\n"},
+		{"rule r = \"a\" => []int{\n    // lead\n    1,\n}[0]\n", "rule r = \"a\" => (\n    []int{\n        // lead\n        1,\n    }\n)[0]\n"},
 		{"rule r = \"a\" => f(1 /* a */, 2)[0]\n", "rule r = \"a\" => f(1 /* a */, 2)[0]\n"},
 	} {
 		got := format(t, tc.in)

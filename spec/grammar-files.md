@@ -160,6 +160,45 @@ but are excluded from JSON. Consequently, JSON preserves the explicit grouping
 and normalized source metadata, while formatting after JSON decoding may
 normalize layout and is not guaranteed to reproduce exact source text.
 
+#### Comma-Separated Lists
+
+`grammar.Format` writes these comma-separated lists in brackets in one of two
+forms: the arguments of a call, the elements of a struct constructor, node
+constructor, list constructor, tuple value and tuple type, the arguments of a
+type application `T[A, B]`, and the arguments of an attribute `@name(k=v, ...)`
+that ends in a keyword argument.
+
+- On one line, `f(1, 2)`, when the list has no trailing comma and no comment that
+  needs its own line.
+- One element per line, each followed by a comma, the last one included, when
+  the list has a trailing comma after its last element, or a comment that needs
+  its own line: a line comment, a comment on a line of its own, or a block
+  comment over several lines. The elements are indented one level inside the
+  delimiters.
+
+```text
+f(1, 2)
+f(
+    1,
+    2,
+)
+```
+
+The comma that a tuple of one element requires, as in `(x,)`, is not a trailing
+comma: a tuple needs a trailing comma and two or more elements to be written on
+lines. An element that is written over several lines, such as a nested list with
+a trailing comma, puts the list around it on lines too. A block comment on the
+line of the token before it, as in `f(/* a */ 1, 2)` or `f(1 /* a */, 2)`, stays
+there and keeps the list on one line, because moving it would change which
+element owns it; the comments of a list on lines keep their place relative to
+the elements and commas. Lambda parameters, `#repeat` bounds and `#recover` take
+no trailing comma and keep their form.
+
+A trailing comma is not part of the normalized grammar: it is kept in the
+`TrailingComma` field of `TupleType`, `TypeApp`, `TupleLit`, `New`,
+`ListConstructor`, `Call` and `Attribute`, which JSON omits, so a grammar decoded
+from JSON formats every list on one line.
+
 `pego.ParseGrammar` returns this source-preserving AST. Compilation removes
 source-only type and term groups from the executable grammar; consequently,
 `Parser.Grammar()` and the AST embedded in a compiled grammar expose the

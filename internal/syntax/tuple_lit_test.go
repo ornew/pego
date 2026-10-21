@@ -57,7 +57,7 @@ rule multiline = "x" => (
 	formatted := grammar.Format(g)
 	for _, want := range []string{
 		`=> ()`, `=> (1,)`, `=> (1)`, `=> (1, "a")`, `=> (1, (2, nil))`, `=> (1, 2)[0]`, `list((1, 2), ())`,
-		"=> (\n    1, 2\n)",
+		"=> (\n    1,\n    2,\n)",
 	} {
 		if !strings.Contains(formatted, want) {
 			t.Errorf("formatted grammar lacks %q:\n%s", want, formatted)

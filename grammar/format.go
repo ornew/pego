@@ -503,7 +503,8 @@ func (p *printer) item(e Expr, indent string) {
 			} else {
 				p.write(" ")
 			}
-			p.write(formatAttribute(a, p.control))
+			// The lines of an attribute with a trailing comma continue at the indentation of its line.
+			p.write(indentTermLines(formatAttribute(a, p.control), indent, p.control))
 		}
 	default:
 		p.write(formatExpr(e, precPrefix, p.control))
@@ -512,11 +513,12 @@ func (p *printer) item(e Expr, indent string) {
 
 func (p *printer) group(g *Group, indent string) {
 	pollFormat(p.control)
-	if g.OneLine && noComments(g.BodyBreak) && noComments(g.CloseBreak) {
+	if g.OneLine && noComments(g.BodyBreak) && noComments(g.CloseBreak) && p.tryOneLine(func() {
 		p.write("(")
 		p.groupBody(g.Expr, indent)
 		p.write(")")
 		p.inline(g.CloseBreak)
+	}) {
 		return
 	}
 	p.write("(")
@@ -528,6 +530,24 @@ func (p *printer) group(g *Group, indent string) {
 	p.inline(g.CloseBreak)
 }
 
+// tryOneLine runs write and reports whether it stayed on one line. A text that
+// holds a line break, such as a list with a trailing comma, is rolled back, so
+// that the caller writes its lines instead; the next pass would read such a
+// layout anyway.
+func (p *printer) tryOneLine(write func()) bool {
+	if p.cur == nil {
+		p.newLine("")
+	}
+	cur, text, lines, trailing := p.cur, p.cur.text, len(p.lines), len(p.trailing)
+	write()
+	if len(p.lines) == lines && p.cur == cur && !hasFormatNewline(p.cur.text[len(text):], p.control) {
+		return true
+	}
+	p.lines, p.cur, p.trailing = p.lines[:lines], cur, p.trailing[:trailing]
+	cur.text = text
+	return false
+}
+
 func (p *printer) groupBody(e Expr, indent string) {
 	pollFormat(p.control)
 	if action, ok := e.(*InlineAction); ok {
@@ -535,7 +555,7 @@ func (p *printer) groupBody(e Expr, indent string) {
 		if action.DefaultAction {
 			p.write(" => ...")
 		} else {
-			p.write(joinLayout(" => ", formatTerm(action.Action, 0, p.control)))
+			p.write(joinLayout(" => ", indentTermLines(formatTerm(action.Action, 0, p.control), indent, p.control)))
 		}
 		return
 	}
@@ -562,7 +582,7 @@ func (p *printer) operatorsRule(pr *OperatorsRule, indent string) {
 		p.lineBreak(o.Break, inner, false)
 		p.write("operand " + formatExpr(o.Expr, precChoice, p.control))
 		if o.Action != nil {
-			p.write(joinLayout(" => ", formatTerm(o.Action, 0, p.control)))
+			p.write(joinLayout(" => ", indentTermLines(formatTerm(o.Action, 0, p.control), inner, p.control)))
 		} else if o.DefaultAction {
 			p.write(" => ...")
 		}
@@ -581,7 +601,7 @@ func (p *printer) operatorsRule(pr *OperatorsRule, indent string) {
 			empty = empty && noComments(op.Break)
 		}
 		switch {
-		case empty && (len(l.Operators) == 0 || l.OneLine):
+		case empty && (len(l.Operators) == 0 || l.OneLine) && p.tryOneLine(func() {
 			p.write("{")
 			for i, op := range l.Operators {
 				pollFormat(p.control)
@@ -589,7 +609,7 @@ func (p *printer) operatorsRule(pr *OperatorsRule, indent string) {
 					p.write(";")
 				}
 				p.write(" ")
-				p.operator(op)
+				p.operator(op, inner)
 				p.inline(op.Break)
 			}
 			if len(l.Operators) > 0 {
@@ -597,12 +617,13 @@ func (p *printer) operatorsRule(pr *OperatorsRule, indent string) {
 			}
 			p.write("}")
 			p.inline(l.CloseBreak)
+		}):
 		default:
 			p.openBlock()
 			for _, op := range l.Operators {
 				pollFormat(p.control)
 				p.lineBreak(op.Break, inner+indentUnit, false)
-				p.operator(op)
+				p.operator(op, inner+indentUnit)
 			}
 			p.closeBlock(l.CloseBreak, inner)
 		}
@@ -711,17 +732,13 @@ func formatType(t TypeExpr, control *metadataControl) string {
 		}
 		return finishFormat(joinFormatParts(parts, " & ", control), control)
 	case *TupleType:
-		parts := make([]string, len(t.Types))
+		elems := make([]listElem, len(t.Types))
 		for i, x := range t.Types {
 			pollFormat(control)
-			parts[i] = formatType(x, control)
+			elems[i] = listElem{head: formatType(x, control)}
 		}
-		body := joinFormatParts(parts, ", ", control)
-		if len(parts) == 1 {
-			body += "," // (T) would be a group
-		}
-		oneLine := (t.OneLine || t.OpenBreak == nil) && !hasFormatNewline(body, control)
-		return finishFormat(formatTypeGroup(body, t.OpenBreak, t.BodyBreak, t.CloseBreak, oneLine, control), control)
+		// The comma of a one-element tuple is required: (T) would be a group.
+		return finishFormat(formatTypeList(elems, len(elems) == 1, t.TrailingComma && len(elems) > 1, "(", ")", t.OpenBreak, t.BodyBreak, t.CloseBreak, control), control)
 	case *StructType:
 		p := &printer{control: control}
 		// Without source layout, as from JSON, the type stays on one line. A comment after a field
@@ -736,12 +753,12 @@ func formatType(t TypeExpr, control *metadataControl) string {
 		p.flush()
 		return finishFormat(strings.TrimSuffix(p.String(), "\n"), control)
 	case *TypeApp:
-		parts := make([]string, len(t.Args))
+		elems := make([]listElem, len(t.Args))
 		for i, x := range t.Args {
 			pollFormat(control)
-			parts[i] = formatType(x, control)
+			elems[i] = listElem{head: formatType(x, control)}
 		}
-		return finishFormat(t.Name+"["+joinFormatParts(parts, ", ", control)+"]", control)
+		return finishFormat(t.Name+formatTypeList(elems, false, t.TrailingComma, "[", "]", nil, nil, nil, control), control)
 	}
 	return finishFormat("?", control)
 }
@@ -774,39 +791,120 @@ func parenTerm(s string, control *metadataControl) string {
 	return formatSourceGroup(s, nil, nil, nil, !hasFormatNewline(s, control), control)
 }
 
-// formatSourceList formats the elements of a delimited list of terms, such as
-// the arguments of a call. A trailing comma is written when comma is set. A
-// list spells its lines as written when keepLines is set, or when a comment
-// needs them; otherwise it stays on one line. Comments before a comma stay
-// before it, and a line comment there keeps the comma on the next line.
-func formatSourceList(parts []string, comma bool, openDelim, closeDelim string, open, first, close *LineBreak, oneLine, keepLines bool, control *metadataControl) string {
+// listElem is an element of a delimited list: its text with the comments
+// before it, and the comments between it and the comma that follows.
+type listElem struct {
+	head  string
+	after []*Comment
+}
+
+// formatSourceList formats the elements of a comma-separated list in
+// brackets. A list with a trailing comma, or with a comment that needs its own
+// line, puts one element on each line and ends each with a comma; any other
+// list stays on one line. lines reports a trailing comma that counts; comma
+// adds the comma that a one-element tuple needs on one line.
+//
+// A comment that needs its own line is a line comment, a comment on a line of
+// its own, and a block comment over several lines. A block comment written
+// on the line of the token before it stays there: its owner depends on that,
+// so it keeps the list on one line. A comment before a comma stays before it,
+// except that a line comment goes after the comma, which keeps the comma on
+// its element's line.
+func formatSourceList(elems []listElem, comma, lines bool, openDelim, closeDelim string, open, first, close *LineBreak, indentLines func(s, indent string) string, control *metadataControl) string {
 	pollFormat(control)
-	var b strings.Builder
-	for i, part := range parts {
+	multi := lines || !inlineGroupComments(open, first, close, control)
+	for _, e := range elems {
 		pollFormat(control)
-		if i > 0 {
-			if strings.HasPrefix(part, " ") {
-				b.WriteString(",") // the part starts with a comment on the line of the comma
-			} else {
-				b.WriteString(", ")
+		if hasFormatNewline(e.head, control) {
+			multi = true
+		}
+		for _, c := range e.after {
+			if c != nil && (strings.HasPrefix(c.Text, "//") || hasFormatNewline(c.Text, control)) {
+				multi = true
 			}
 		}
-		writeFormatString(&b, part, control)
 	}
-	if comma {
-		b.WriteString(",")
+	var b strings.Builder
+	if !multi {
+		for i, e := range elems {
+			pollFormat(control)
+			if i > 0 {
+				if strings.HasPrefix(e.head, " ") {
+					b.WriteString(",") // the element starts with a comment on the line of the comma
+				} else {
+					b.WriteString(", ")
+				}
+			}
+			writeFormatString(&b, e.head, control)
+			writeLayoutAfter(&b, e.after, "", control)
+		}
+		if comma {
+			b.WriteString(",")
+		}
+		if listHasComments(open, first, close) {
+			return formatSourceGroupIndented(b.String(), openDelim, closeDelim, open, first, close, true, indentLines, control)
+		}
+		return openDelim + b.String() + closeDelim
 	}
-	body := b.String()
-	// A line comment before the closing delimiter ends the body with its line
-	// break, which the closing delimiter writes itself.
-	endsLine := strings.HasSuffix(body, "\n")
-	body = strings.TrimSuffix(body, "\n")
-	flat := !endsLine && !hasFormatNewline(body, control)
-	if !keepLines && flat && !listHasComments(open, first, close) {
-		return openDelim + body + closeDelim
+	if open != nil && open.Trailing != nil && !open.Trailing.Header.IsValid() && strings.HasPrefix(open.Trailing.Text, "/*") && len(elems) > 0 {
+		// A block comment on the line of the opening delimiter belongs to the first
+		// element, not to the delimiter. Written after the delimiter it would have no
+		// owner, so it takes a line of its own before the element.
+		comment := open.Trailing
+		moved := *open
+		moved.Trailing = nil
+		open = &moved
+		lead := LineBreak{}
+		if first != nil {
+			lead = *first
+		}
+		lead.Comments = append([]*Comment{comment}, lead.Comments...)
+		first = &lead
 	}
-	oneLine = (oneLine || open == nil) && flat
-	return formatSourceDelimited(body, openDelim, closeDelim, open, first, close, oneLine, control)
+	endsLine := false // the text so far ends with a line comment
+	for i, e := range elems {
+		pollFormat(control)
+		head := e.head
+		if i > 0 && !endsLine && strings.HasPrefix(head, " //") {
+			// A line comment after the comma of the previous element stays on its line.
+		} else {
+			if i > 0 {
+				b.WriteByte('\n')
+			}
+			head = strings.TrimLeft(head, " \n")
+		}
+		writeFormatString(&b, head, control)
+		endsLine = writeLayoutAfter(&b, e.after, ",", control)
+		if endsLine {
+			// The line break is written before the next element or the closing delimiter.
+			text := strings.TrimSuffix(b.String(), "\n")
+			b.Reset()
+			b.WriteString(text)
+		}
+	}
+	return formatSourceGroupIndented(b.String(), openDelim, closeDelim, open, first, close, false, indentLines, control)
+}
+
+// inlineGroupComments reports whether the comments of the delimiters of a list
+// are block comments on the lines of the neighboring tokens, which can stay
+// there.
+func inlineGroupComments(open, first, close *LineBreak, control *metadataControl) bool {
+	if !listHasComments(open, first, close) {
+		return true
+	}
+	for _, b := range []*LineBreak{open, first, close} {
+		if b != nil && len(b.Comments) != 0 {
+			return false
+		}
+	}
+	for _, trailing := range []bool{true, false} {
+		for _, b := range []*LineBreak{open, first, close} {
+			if _, ok := groupInlineComments(b, trailing, control); !ok {
+				return false
+			}
+		}
+	}
+	return close == nil || close.Trailing == nil
 }
 
 // listHasComments reports whether any of the line breaks holds a comment.
@@ -1150,6 +1248,14 @@ func formatAttribute(a *Attribute, control *metadataControl) string {
 		pollFormat(control)
 		args = append(args, key+"="+formatAttributeValue(a.KwArgs[key], control))
 	}
+	if a.TrailingComma && len(keys) > 0 {
+		// A comma after the last keyword argument puts every argument on its own line.
+		elems := make([]listElem, len(args))
+		for i, arg := range args {
+			elems[i] = listElem{head: arg}
+		}
+		return s + formatTermList(elems, false, true, "(", ")", nil, nil, nil, control)
+	}
 	return s + "(" + joinFormatParts(args, ", ", control) + ")"
 }
 
@@ -1244,43 +1350,65 @@ var termPrec = map[string]int{
 // FormatTerm returns the value expression t in PEGO syntax.
 func FormatTerm(t Term) string { return formatTerm(t, 0, nil) }
 
-func formatTerm(t Term, outer int, control *metadataControl) (formatted string) {
+func formatTerm(t Term, outer int, control *metadataControl) string {
 	pollFormat(control)
-	defer func() {
-		// Do not run layout traversal while unwinding a cancellation or a
-		// caller panic; it must not replace the original panic value.
-		if failure := recover(); failure != nil {
-			panic(failure)
-		}
-		if n, ok := t.(SourceNode); ok {
-			formatted = formatSourceLayout(n.Source().Layout, formatted, control)
-		}
-	}()
+	return formatSourceLayout(termLayout(t), formatTermNode(t, outer, control), control)
+}
+
+// termLayout returns the comments around t.
+func termLayout(t Term) *SourceLayout {
+	if n, ok := t.(SourceNode); ok {
+		return n.Source().Layout
+	}
+	return nil
+}
+
+// formatListElem formats a list element without the comments after it, which
+// the list places itself.
+func formatListElem(t Term, control *metadataControl) listElem {
+	return layoutElem(termLayout(t), formatTermNode(t, 0, control), control)
+}
+
+func layoutElem(layout *SourceLayout, body string, control *metadataControl) listElem {
+	e := listElem{head: formatLayoutHead(layout, body, control)}
+	if layout != nil {
+		e.after = layout.After
+	}
+	return e
+}
+
+// formatTermNode formats t without the comments around it.
+func formatTermNode(t Term, outer int, control *metadataControl) string {
+	pollFormat(control)
 	switch t := t.(type) {
 	case *TermGroup:
 		return formatSourceGroup(formatTerm(t.Term, 0, control), t.OpenBreak, t.BodyBreak, t.CloseBreak, t.OneLine, control)
 	case *Block:
 		p := &printer{control: control}
+		parts := make([]string, len(t.Statements))
+		for i, stmt := range t.Statements {
+			pollFormat(control)
+			parts[i] = formatTerm(stmt, 0, control)
+		}
 		if t.OneLine && noComments(t.CloseBreak) {
 			plain := true
 			for _, b := range t.Breaks {
 				pollFormat(control)
 				plain = plain && noComments(b)
 			}
+			for _, part := range parts {
+				// A statement over several lines breaks the block too.
+				plain = plain && !hasFormatNewline(part, control)
+			}
 			if plain {
-				parts := make([]string, len(t.Statements))
-				for i, stmt := range t.Statements {
-					pollFormat(control)
-					parts[i] = formatTerm(stmt, 0, control)
-				}
 				return "{" + joinFormatParts(parts, "; ", control) + "}"
 			}
 		}
 		p.openBlock()
-		for i, stmt := range t.Statements {
+		for i := range t.Statements {
 			pollFormat(control)
 			p.lineBreak(breakAt(t.Breaks, i), indentUnit, false)
-			p.write(indentTermLines(formatTerm(stmt, 0, control), indentUnit, control))
+			p.write(indentTermLines(parts[i], indentUnit, control))
 		}
 		p.closeBlock(t.CloseBreak, "")
 		p.flush()
@@ -1310,37 +1438,38 @@ func formatTerm(t Term, outer int, control *metadataControl) (formatted string) 
 	case *Member:
 		return formatTerm(t.X, 7, control) + "." + t.Name
 	case *New:
-		parts := make([]string, 0, len(t.Fields)+len(t.Args))
+		elems := make([]listElem, 0, len(t.Fields)+len(t.Args))
 		for _, f := range t.Fields {
 			pollFormat(control)
-			parts = append(parts, formatSourceLayout(f.Layout, f.Name+": "+formatTerm(f.Value, 0, control), control))
+			elems = append(elems, layoutElem(f.Layout, f.Name+": "+formatTerm(f.Value, 0, control), control))
 		}
 		for _, x := range t.Args {
 			pollFormat(control)
-			parts = append(parts, formatTerm(x, 0, control))
+			elems = append(elems, formatListElem(x, control))
 		}
-		return t.Type + formatSourceList(parts, false, "{", "}", t.OpenBreak, t.BodyBreak, t.CloseBreak, t.OneLine, false, control)
+		return t.Type + formatTermList(elems, false, t.TrailingComma, "{", "}", t.OpenBreak, t.BodyBreak, t.CloseBreak, control)
 	case *TupleLit:
-		parts := make([]string, len(t.Elems))
+		elems := make([]listElem, len(t.Elems))
 		for i, x := range t.Elems {
 			pollFormat(control)
-			parts[i] = formatTerm(x, 0, control)
+			elems[i] = formatListElem(x, control)
 		}
-		return formatSourceList(parts, len(parts) == 1, "(", ")", t.OpenBreak, t.BodyBreak, t.CloseBreak, t.OneLine, true, control) // (x) would be a group
+		// The comma of a one-element tuple is required: (x) would be a group.
+		return formatTermList(elems, len(elems) == 1, t.TrailingComma && len(elems) > 1, "(", ")", t.OpenBreak, t.BodyBreak, t.CloseBreak, control)
 	case *ListConstructor:
-		items := make([]string, len(t.Items))
+		items := make([]listElem, len(t.Items))
 		for i, item := range t.Items {
 			pollFormat(control)
-			items[i] = formatTerm(item, 0, control)
+			items[i] = formatListElem(item, control)
 		}
-		return "[]" + formatTypeTerm(t.Elem, control) + formatSourceList(items, false, "{", "}", t.OpenBreak, t.BodyBreak, t.CloseBreak, t.OneLine, false, control)
+		return "[]" + formatTypeTerm(t.Elem, control) + formatTermList(items, false, t.TrailingComma, "{", "}", t.OpenBreak, t.BodyBreak, t.CloseBreak, control)
 	case *Call:
-		args := make([]string, len(t.Args))
+		args := make([]listElem, len(t.Args))
 		for i, a := range t.Args {
 			pollFormat(control)
-			args[i] = formatTerm(a, 0, control)
+			args[i] = formatListElem(a, control)
 		}
-		return t.Func + formatSourceList(args, false, "(", ")", t.OpenBreak, t.BodyBreak, t.CloseBreak, t.OneLine, false, control)
+		return t.Func + formatTermList(args, false, t.TrailingComma, "(", ")", t.OpenBreak, t.BodyBreak, t.CloseBreak, control)
 	case *Lambda:
 		s := "(" + joinFormatParts(t.Params, ", ", control) + ") => " + formatTerm(t.Body, 0, control)
 		if outer > 0 {
@@ -1396,7 +1525,7 @@ func (p *printer) header(word string, pos Pos) {
 		}
 	}
 }
-func (p *printer) operator(op *OperatorsRuleOperator) {
+func (p *printer) operator(op *OperatorsRuleOperator, indent string) {
 	pollFormat(p.control)
 	p.header(op.Kind, op.Pos)
 	p.write(" ")
@@ -1405,10 +1534,24 @@ func (p *printer) operator(op *OperatorsRuleOperator) {
 	}
 	p.write(formatExpr(op.Expr, precChoice, p.control))
 	if op.Action != nil {
-		p.write(joinLayout(" => ", formatTerm(op.Action, 0, p.control)))
+		p.write(joinLayout(" => ", indentTermLines(formatTerm(op.Action, 0, p.control), indent, p.control)))
 	} else if op.DefaultAction {
 		p.write(" => ...")
 	}
+}
+
+// formatTypeList is formatSourceList for the elements of a type, whose block comments keep their lines.
+func formatTypeList(elems []listElem, comma, lines bool, openDelim, closeDelim string, open, first, close *LineBreak, control *metadataControl) string {
+	return formatSourceList(elems, comma, lines, openDelim, closeDelim, open, first, close, func(s, indent string) string {
+		return indentTypeLines(s, indent, control)
+	}, control)
+}
+
+// formatTermList is formatSourceList for the elements of an action expression.
+func formatTermList(elems []listElem, comma, lines bool, openDelim, closeDelim string, open, first, close *LineBreak, control *metadataControl) string {
+	return formatSourceList(elems, comma, lines, openDelim, closeDelim, open, first, close, func(s, indent string) string {
+		return indentTermLines(s, indent, control)
+	}, control)
 }
 
 // formatSourceLayout keeps the token-boundary line relationships that determine
@@ -1420,52 +1563,78 @@ func formatSourceLayout(layout *SourceLayout, body string, control *metadataCont
 		return body
 	}
 	var out strings.Builder
-	if len(layout.Before) > 0 {
-		previous := layout.PreviousLine
-		for _, comment := range layout.Before {
-			pollFormat(control)
-			if comment == nil {
-				continue
-			}
-			if comment.Pos.Line > previous {
-				out.WriteByte('\n')
-				if comment.Pos.Line-previous > 1 {
-					out.WriteByte('\n')
-				}
-			} else {
-				out.WriteByte(' ')
-			}
-			writeFormatString(&out, comment.Text, control)
-			previous = comment.End.Line
+	writeFormatString(&out, formatLayoutHead(layout, body, control), control)
+	writeLayoutAfter(&out, layout.After, "", control)
+	return out.String()
+}
+
+// formatLayoutHead writes body after the comments before it.
+func formatLayoutHead(layout *SourceLayout, body string, control *metadataControl) string {
+	pollFormat(control)
+	if layout == nil || len(layout.Before) == 0 {
+		return body
+	}
+	var out strings.Builder
+	previous := layout.PreviousLine
+	for _, comment := range layout.Before {
+		pollFormat(control)
+		if comment == nil {
+			continue
 		}
-		if layout.NextLine > previous {
+		if comment.Pos.Line > previous {
 			out.WriteByte('\n')
-			if layout.NextLine-previous > 1 {
+			if comment.Pos.Line-previous > 1 {
 				out.WriteByte('\n')
 			}
 		} else {
 			out.WriteByte(' ')
 		}
+		writeFormatString(&out, comment.Text, control)
+		previous = comment.End.Line
+	}
+	if layout.NextLine > previous {
+		out.WriteByte('\n')
+		if layout.NextLine-previous > 1 {
+			out.WriteByte('\n')
+		}
+	} else {
+		out.WriteByte(' ')
 	}
 	writeFormatString(&out, body, control)
-	// A comment after the node stays before the separator that follows it. A
-	// line comment ends its line, so the separator moves to the next one.
+	return out.String()
+}
+
+// writeLayoutAfter writes the comments after a node and before the separator
+// that follows it. A line comment ends its line, so the separator goes before
+// the first of them, or after all the comments when there is none; with no
+// separator it moves to the next line. It reports whether the text ends with a
+// line comment and its line break.
+func writeLayoutAfter(out *strings.Builder, comments []*Comment, separator string, control *metadataControl) (endsLine bool) {
+	separated := separator == ""
 	lineStart := false
-	for _, comment := range layout.After {
+	for _, comment := range comments {
 		pollFormat(control)
 		if comment == nil {
 			continue
 		}
+		line := strings.HasPrefix(comment.Text, "//")
+		if line && !separated {
+			out.WriteString(separator)
+			separated = true
+		}
 		if !lineStart {
 			out.WriteByte(' ')
 		}
-		writeFormatString(&out, comment.Text, control)
-		lineStart = strings.HasPrefix(comment.Text, "//")
-		if lineStart {
+		writeFormatString(out, comment.Text, control)
+		lineStart = line
+		if line {
 			out.WriteByte('\n')
 		}
 	}
-	return out.String()
+	if !separated {
+		out.WriteString(separator)
+	}
+	return lineStart
 }
 
 // joinLayout appends body to a separator that ends in a space. A comment before body on the same

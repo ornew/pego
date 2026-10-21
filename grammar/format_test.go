@@ -63,3 +63,46 @@ func TestFormatMinusFragments(t *testing.T) {
 		}
 	}
 }
+
+// A list with a trailing comma has one element per line; without one it stays on
+// one line. The comma of a one-element tuple does not count.
+func TestFormatTrailingComma(t *testing.T) {
+	one, two := &IntLit{Value: 1}, &IntLit{Value: 2}
+	for _, tc := range []struct {
+		name string
+		term Term
+		want string
+	}{
+		{"call", &Call{Func: "f", Args: []Term{one, two}}, "f(1, 2)"},
+		{"call with a trailing comma", &Call{Func: "f", Args: []Term{one, two}, TrailingComma: true}, "f(\n    1,\n    2,\n)"},
+		{"constructor", &New{Type: "N", Args: []Term{one}}, "N{1}"},
+		{"constructor with a trailing comma", &New{Type: "N", Args: []Term{one}, TrailingComma: true}, "N{\n    1,\n}"},
+		{"list constructor", &ListConstructor{Elem: &TypeRef{Name: "int"}, Items: []Term{one, two}}, "[]int{1, 2}"},
+		{"list constructor with a trailing comma", &ListConstructor{Elem: &TypeRef{Name: "int"}, Items: []Term{one, two}, TrailingComma: true}, "[]int{\n    1,\n    2,\n}"},
+		{"tuple", &TupleLit{Elems: []Term{one, two}}, "(1, 2)"},
+		{"tuple with a trailing comma", &TupleLit{Elems: []Term{one, two}, TrailingComma: true}, "(\n    1,\n    2,\n)"},
+		{"tuple of one element", &TupleLit{Elems: []Term{one}}, "(1,)"},
+		{"tuple of one element with a trailing comma", &TupleLit{Elems: []Term{one}, TrailingComma: true}, "(1,)"},
+		{"nested", &Call{Func: "f", Args: []Term{&TupleLit{Elems: []Term{one, two}, TrailingComma: true}}}, "f(\n    (\n        1,\n        2,\n    ),\n)"},
+	} {
+		if got := FormatTerm(tc.term); got != tc.want {
+			t.Errorf("%s: got %q, want %q", tc.name, got, tc.want)
+		}
+	}
+	a, b := &TypeRef{Name: "A"}, &TypeRef{Name: "B"}
+	for _, tc := range []struct {
+		name string
+		typ  TypeExpr
+		want string
+	}{
+		{"tuple type", &TupleType{Types: []TypeExpr{a, b}}, "(A, B)"},
+		{"tuple type with a trailing comma", &TupleType{Types: []TypeExpr{a, b}, TrailingComma: true}, "(\n    A,\n    B,\n)"},
+		{"tuple type of one element with a trailing comma", &TupleType{Types: []TypeExpr{a}, TrailingComma: true}, "(A,)"},
+		{"type arguments", &TypeApp{Name: "node", Args: []TypeExpr{a}}, "node[A]"},
+		{"type arguments with a trailing comma", &TypeApp{Name: "node", Args: []TypeExpr{a}, TrailingComma: true}, "node[\n    A,\n]"},
+	} {
+		if got := FormatType(tc.typ); got != tc.want {
+			t.Errorf("%s: got %q, want %q", tc.name, got, tc.want)
+		}
+	}
+}

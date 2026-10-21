@@ -252,14 +252,17 @@ type MeetType struct {
 }
 
 // TupleType is a tuple type: () is the unit, (T,) has one element and (T, U) two. Its
-// parentheses keep their source layout like a TypeGroup's.
+// parentheses keep their source comments like a TypeGroup's.
 type TupleType struct {
 	SourceInfo `json:"source,omitempty"`
 	Types      []TypeExpr `json:"types"`
 	OpenBreak  *LineBreak `json:"-"`
 	BodyBreak  *LineBreak `json:"-"`
 	CloseBreak *LineBreak `json:"-"`
-	OneLine    bool       `json:"-"`
+	// TrailingComma records a comma after the last element. Format puts the
+	// elements of a tuple of two or more on separate lines when it is set; the
+	// comma of a one-element tuple is part of the syntax and does not count.
+	TrailingComma bool `json:"-"`
 }
 
 // TypeApp applies a type to type arguments: Name[Args...], as in node[string].
@@ -267,6 +270,9 @@ type TypeApp struct {
 	SourceInfo `json:"source,omitempty"`
 	Name       string     `json:"name"`
 	Args       []TypeExpr `json:"args"`
+	// TrailingComma records a comma after the last argument. Format puts the
+	// arguments on separate lines when it is set.
+	TrailingComma bool `json:"-"`
 }
 
 // Field is a field of a struct type.
@@ -525,6 +531,9 @@ type Attribute struct {
 	KwArgs map[string]any `json:"kwArgs,omitempty"`
 	// KeywordOrder preserves source order; JSON grammars format keys sorted.
 	KeywordOrder []string `json:"-"`
+	// TrailingComma records a comma after the last keyword argument. Format
+	// puts the arguments on separate lines when it is set.
+	TrailingComma bool `json:"-"`
 }
 
 // Arg returns the argument named name.
@@ -765,23 +774,27 @@ type New struct {
 	Fields     []*FieldInit `json:"fields,omitempty"`
 	Args       []Term       `json:"args,omitempty"`
 
-	// The braces keep their source layout like a TupleLit's parentheses.
-	// Format keeps the lines of the braces only when a comment needs them.
+	// The braces keep their comments like a TupleLit's parentheses.
 	OpenBreak  *LineBreak `json:"-"`
 	BodyBreak  *LineBreak `json:"-"`
 	CloseBreak *LineBreak `json:"-"`
-	OneLine    bool       `json:"-"`
+	// TrailingComma records a comma after the last element. Format puts the
+	// elements on separate lines when it is set.
+	TrailingComma bool `json:"-"`
 }
 
 // TupleLit is a tuple value: () is the unit, (x,) has one element and (x, y) two. Its
-// parentheses keep their source layout like a TermGroup's.
+// parentheses keep their source comments like a TermGroup's.
 type TupleLit struct {
 	SourceInfo `json:"source,omitempty"`
 	Elems      []Term     `json:"elems"`
 	OpenBreak  *LineBreak `json:"-"`
 	BodyBreak  *LineBreak `json:"-"`
 	CloseBreak *LineBreak `json:"-"`
-	OneLine    bool       `json:"-"`
+	// TrailingComma records a comma after the last element. Format puts the
+	// elements of a tuple of two or more on separate lines when it is set; the
+	// comma of a one-element tuple is part of the syntax and does not count.
+	TrailingComma bool `json:"-"`
 }
 
 // ListConstructor builds a node list with an explicit element type: []T{...}.
@@ -790,12 +803,13 @@ type ListConstructor struct {
 	Elem       TypeExpr `json:"elem"`
 	Items      []Term   `json:"items"`
 
-	// The braces keep their source layout like a TupleLit's parentheses.
-	// Format keeps the lines of the braces only when a comment needs them.
+	// The braces keep their comments like a TupleLit's parentheses.
 	OpenBreak  *LineBreak `json:"-"`
 	BodyBreak  *LineBreak `json:"-"`
 	CloseBreak *LineBreak `json:"-"`
-	OneLine    bool       `json:"-"`
+	// TrailingComma records a comma after the last item. Format puts the
+	// items on separate lines when it is set.
+	TrailingComma bool `json:"-"`
 }
 
 // FieldInit initializes a field of a struct value.
@@ -811,12 +825,13 @@ type Call struct {
 	Func       string `json:"func"`
 	Args       []Term `json:"args"`
 
-	// The parentheses keep their source layout like a TupleLit's.
-	// Format keeps the lines of the parentheses only when a comment needs them.
+	// The parentheses keep their comments like a TupleLit's.
 	OpenBreak  *LineBreak `json:"-"`
 	BodyBreak  *LineBreak `json:"-"`
 	CloseBreak *LineBreak `json:"-"`
-	OneLine    bool       `json:"-"`
+	// TrailingComma records a comma after the last argument. Format puts the
+	// arguments on separate lines when it is set.
+	TrailingComma bool `json:"-"`
 }
 
 // Lambda is a function (a, b) => body.

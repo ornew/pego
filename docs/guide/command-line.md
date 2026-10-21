@@ -151,6 +151,12 @@ exits with status 0 whatever it lists. Without file arguments it formats standar
 Adjacent minus operators stay separated: `- -"a"` remains two discards, and `- -1` remains two unary negations.
 The whitespace keeps either expression from becoming `--`, a reserved token that is an error.
 
+A comma-separated list in brackets (call arguments, struct and list constructors, tuples, tuple types, type arguments and
+attribute arguments) stays on one line, like `f(a, b)`, unless it ends in a trailing comma or holds a comment that needs
+its own line. Then each element gets a line and a comma, so a trailing comma is the way to ask for the lines:
+`f(a, b,)` becomes `f(` with `a,` and `b,` on separate lines and `)` on the last. The comma of a one-element tuple,
+`(x,)`, is part of the syntax and does not count.
+
 With `-w`, a changed regular file is written completely to a temporary file in the target directory before replacement.
 Permission bits are preserved, read-only files are rejected, and the directory must allow creating and replacing files.
 Symlinks keep pointing to the same path and that target is replaced; formatting one hard-linked name leaves the other

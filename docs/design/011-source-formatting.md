@@ -64,6 +64,12 @@ Attaching trailing comments to the line they end, rather than to the line break 
 Blank lines are kept but collapsed to one, and dropped at the start of a block, before a closing brace and at the end of the file.
 A grammar without layout information (for example, one decoded from JSON) is printed as before: a blank line between definitions and one item per line in blocks.
 
+A comma-separated list in brackets follows one rule, as in other formatters: it is written on one line unless it ends in a trailing comma or holds a comment that needs its own line, and then each element has a line of its own and a comma.
+The parser records the trailing comma in `TrailingComma` instead of the source lines, so the layout depends on what the author wrote on purpose, not on where the line breaks happened to fall.
+The comma that a one-element tuple needs does not count.
+A block comment on the line of the token before it does not break the list: its owner is decided by that line (see [Comment Grouping and Ownership](../../spec/grammar-files.md#comment-grouping-and-ownership)), and a line of its own would give the comment to the next element.
+A construct written on one line, such as a group, a predicate block or a level, that holds a list on lines is written on lines itself, because the next pass would read it that way.
+
 Formatting is idempotent: formatting the output again gives the same text, because each recorded line break reproduces itself.
 Tests check this, and that every grammar in `examples/` reparses to the same AST (compared through JSON) with the same comments.
 
