@@ -266,7 +266,7 @@ rule main = a:item => S{Static: $a}
 rule item Int = "i" => Int{Text: "i"}
 `)
 	if v := plain.Module().instructionSetVersion(); v != isaVersion {
-		t.Fatalf("unchecked module instruction set %d", v)
+		t.Fatalf("module instruction set %d", v)
 	}
 	if d := plain.Module().Disassemble(); strings.Contains(d, "ECAST") {
 		t.Fatalf("a statically typed field is checked:\n%s", d)

@@ -317,7 +317,7 @@ A compiled grammar uses container version 2 or 3. Version 2 stores one module an
 | Package name | String index, unsigned |
 | Module | See below |
 | Recognition bundle (version 3 only) | Boolean, then when true an unsigned length in bytes and a recognition bundle. The bundle has its own instruction-set version, string table and module, followed by an ordered list mapping public start-rule names to rule indices. Its module and string table are independent of the main module. The loader validates that its ordered start names and rule indices match the main module. |
-| AST present | Boolean. If true, the grammar AST and static-analysis results follow (including, per rule, whether it may have a value-free twin). These serve the closure backend and grammar tools; a runtime may skip them. The AST codec does not serialize source positions, normalized comment ownership, or formatter trivia. |
+| AST present | Boolean. If true, the grammar AST and static-analysis results follow (including, per rule, whether it may have a value-free twin). These serve the closure backend and grammar tools; a runtime may skip them. The AST codec does not serialize source positions, except the position of each cast when the module records source information, nor normalized comment ownership or formatter trivia. |
 | Checksum | CRC-32 (IEEE) of everything from the magic up to this point, 4 bytes little-endian |
 
 The main module is laid out in the following order. A *list* is a count (unsigned) followed by its elements. Indices, positions and other integers inside the module are signed unless stated otherwise. A recognition bundle, when present, contains the same module layout plus the ordered start-name/index map described above.

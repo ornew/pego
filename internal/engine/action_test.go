@@ -75,13 +75,9 @@ rule e = _`
 	}
 }
 
-// TestConcatErrorOrder checks that concat reports the same error on every backend when an
-// argument that is not a list call fails late: the arguments are evaluated before concat
-// checks them.
-//
-// The checker rejects an argument of type _ for a list, so the grammars compile only without type
-// checking.
-func TestConcatErrorOrder(t *testing.T) {
+// TestConcatRejectsTopArgument checks that concat rejects an argument of type _ at compile time,
+// even when a later argument would fail when evaluated.
+func TestConcatRejectsTopArgument(t *testing.T) {
 	for _, src := range []string{`rule main = x:"a" d:dyn => concat($d, list(1 / 0))
 rule dyn _ = ds / di
 rule ds = "b" => "s"
@@ -91,7 +87,7 @@ rule dyn _ = ds / di
 rule ds = "b" => "s"
 rule di = _ => 1`} {
 		if got := compileMessage(t, src); !strings.Contains(got, "concat: expected a list, got _") {
-			t.Errorf("checked compilation: %q", got)
+			t.Errorf("compile error = %q", got)
 		}
 	}
 }

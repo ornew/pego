@@ -52,7 +52,7 @@ version 3 with a recognition bundle when a complete recognizer is available.
 | `WithBackend(Closure)` | Supported | Error: `the closure backend needs the grammar, which the compiled grammar omits` |
 | `WithBackend(Bytecode)`, `WithBackend(BytecodeIterative)` | Supported | Supported |
 | `RecognizeOnly()`, `pego parse -check` | Supported | Supported on the bytecode backends when a version 3 recognition bundle is present; a legacy file without a bundle returns an error |
-| `Parser.Grammar()` | The grammar, without source positions | `nil` |
+| `Parser.Grammar()` | The grammar, without source positions other than those of casts in a module that records source information | `nil` |
 | `pego.Lint`, `pego lint` | Supported | Not supported |
 | `pego.GenerateGo`, `pego.GenerateTypeScript`, `pego gen` | Supported; the output equals that from source | Not supported |
 | `pego convert` to `.pego` or `.json` | Supported, without comments or layout | Error: `the compiled grammar omits the AST` |
