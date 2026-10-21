@@ -108,21 +108,21 @@ func TestFrameAST(t *testing.T) {
 				if unit == duckdb.CodePoints {
 					start, end = utf8.RuneCountInString(sql[:start]), utf8.RuneCountInString(sql[:end])
 				}
-				if f.Unit != frameUnit || f.Exclude != "EXCLUDE TIES" || f.Start == nil || f.Start.Kind != "PRECEDING" || f.Span != (duckdb.Span{Start: start, End: end}) {
+				if f.Unit != frameUnit || f.Exclude != "EXCLUDE TIES" || f.Start_ == nil || f.Start_.Kind != "PRECEDING" || f.Span != (duckdb.Span{Start: start, End: end}) {
 					t.Fatalf("%q: unexpected frame %#v", sql, f)
 				}
 				if tc.kind == "two" || tc.kind == "not" {
-					if f.End == nil || f.End.Kind != "FOLLOWING" {
+					if f.End_ == nil || f.End_.Kind != "FOLLOWING" {
 						t.Fatalf("%q: missing second bound", sql)
 					}
 					if tc.kind == "two" {
-						if n, ok := f.Start.Expr.(*types.Number); !ok || n.Text != "1" {
-							t.Fatalf("%q: unexpected first offset %#v", sql, f.Start.Expr)
+						if n, ok := f.Start_.Expr.(*types.Number); !ok || n.Text != "1" {
+							t.Fatalf("%q: unexpected first offset %#v", sql, f.Start_.Expr)
 						}
 					} else {
-						p, ok := f.Start.Expr.(*types.Paren)
+						p, ok := f.Start_.Expr.(*types.Paren)
 						if !ok {
-							t.Fatalf("%q: unexpected first offset %#v", sql, f.Start.Expr)
+							t.Fatalf("%q: unexpected first offset %#v", sql, f.Start_.Expr)
 						}
 						if _, ok := p.X.(*types.Not); !ok {
 							t.Fatalf("%q: unexpected parenthesized offset %#v", sql, p.X)
@@ -130,12 +130,12 @@ func TestFrameAST(t *testing.T) {
 					}
 					continue
 				}
-				if f.End != nil {
-					t.Fatalf("%q: expected a single bound, got %#v", sql, f.End)
+				if f.End_ != nil {
+					t.Fatalf("%q: expected a single bound, got %#v", sql, f.End_)
 				}
-				b, ok := f.Start.Expr.(*types.Binary)
+				b, ok := f.Start_.Expr.(*types.Binary)
 				if !ok || !strings.EqualFold(b.Op.Value, "AND") {
-					t.Fatalf("%q: unexpected offset %#v", sql, f.Start.Expr)
+					t.Fatalf("%q: unexpected offset %#v", sql, f.Start_.Expr)
 				}
 				column := func(e types.Expr, names ...string) {
 					t.Helper()

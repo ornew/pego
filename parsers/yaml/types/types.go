@@ -45,9 +45,9 @@ type Directive struct {
 type Document struct {
 	pegort.Span
 	Directives []*Directive
-	Start      *Marker
+	Start_     *Marker
 	Root       Value
-	End        *Marker
+	End_       *Marker
 }
 
 // Mapping is the struct type Mapping.
@@ -184,11 +184,11 @@ func (v *Document) TField(name string) (any, bool) {
 			return pegort.TListOf(kids)
 		}(), true
 	case "Start":
-		return tb1(v.Start), true
+		return tb1(v.Start_), true
 	case "Root":
 		return pegort.TBack(PegoHooks, v.Root), true
 	case "End":
-		return tb1(v.End), true
+		return tb1(v.End_), true
 	}
 	return nil, false
 }
@@ -208,11 +208,11 @@ func (v *Document) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			return p.ListField(kids)
 		}(), true
 	case "Start":
-		return tb1(v.Start), true
+		return tb1(v.Start_), true
 	case "Root":
 		return pegort.TBack(PegoHooks, v.Root), true
 	case "End":
-		return tb1(v.End), true
+		return tb1(v.End_), true
 	}
 	return nil, false
 }

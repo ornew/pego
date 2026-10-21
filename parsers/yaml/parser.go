@@ -212,11 +212,11 @@ func tmk_Document(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any)
 	c.P.StepWork()
 	v.Directives = tl1(a, f0)
 	c.P.StepWork()
-	v.Start = tv2(a, f1)
+	v.Start_ = tv2(a, f1)
 	c.P.StepWork()
 	v.Root = pegort.TAs[types.Value](pegort.TPubIn(types.PegoHooks, a, f2))
 	c.P.StepWork()
-	v.End = tv2(a, f3)
+	v.End_ = tv2(a, f3)
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v

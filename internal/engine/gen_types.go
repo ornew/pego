@@ -301,13 +301,13 @@ type listConv struct {
 	elem ty
 }
 
-// runtimeMethodNames are the methods the generated structs have for the typed runtime (TVal and
-// the embedded Span, with its Range) and the name of the embedded Span; a field of the same name
-// gets a "_" suffix in Go.
+// runtimeMethodNames are the names the generated structs have for the typed runtime: the methods
+// of TVal and of the embedded Span (Range), the fields Start and End that the struct promotes from
+// it, and the name of the embedded Span; a field of the same name gets a "_" suffix in Go.
 var runtimeMethodNames = map[string]bool{
 	"TName": true, "TText": true, "TKids": true, "TStruct": true, "TFresh": true, "TSetFresh": true,
 	"TField": true, "TFieldWork": true, "TStrField": true, "TSpan": true, "TSetSpan": true, "Range": true,
-	"Span": true,
+	"Span": true, "Start": true, "End": true,
 }
 
 // hooksName is the name of the variable of the types package that makes the values of the types

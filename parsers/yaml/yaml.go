@@ -425,7 +425,7 @@ func StreamEvents(s *types.Stream) (string, error) {
 			return "", err
 		}
 		b.WriteString("+DOC")
-		if d.Start != nil {
+		if d.Start_ != nil {
 			b.WriteString(" ---")
 		}
 		b.WriteByte('\n')
@@ -433,7 +433,7 @@ func StreamEvents(s *types.Stream) (string, error) {
 			return "", err
 		}
 		b.WriteString("-DOC")
-		if d.End != nil {
+		if d.End_ != nil {
 			b.WriteString(" ...")
 		}
 		b.WriteByte('\n')

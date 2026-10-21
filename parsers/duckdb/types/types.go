@@ -542,8 +542,8 @@ type FieldStep struct {
 type Frame struct {
 	pegort.Span
 	Unit    string
-	Start   *FrameBound
-	End     *FrameBound
+	Start_  *FrameBound
+	End_    *FrameBound
 	Exclude string
 }
 
@@ -4589,9 +4589,9 @@ func (v *Frame) TField(name string) (any, bool) {
 	case "Unit":
 		return any(v.Unit), true
 	case "Start":
-		return pegort.TPtr(v.Start), true
+		return pegort.TPtr(v.Start_), true
 	case "End":
-		return pegort.TPtr(v.End), true
+		return pegort.TPtr(v.End_), true
 	case "Exclude":
 		return any(v.Exclude), true
 	}
@@ -4613,9 +4613,9 @@ func (v *Frame) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 	case "Unit":
 		return any(v.Unit), true
 	case "Start":
-		return pegort.TPtr(v.Start), true
+		return pegort.TPtr(v.Start_), true
 	case "End":
-		return pegort.TPtr(v.End), true
+		return pegort.TPtr(v.End_), true
 	case "Exclude":
 		return any(v.Exclude), true
 	}

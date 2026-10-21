@@ -1845,9 +1845,9 @@ func tmk_Frame(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) an
 	c.P.StepWork()
 	v.Unit = astString(f0)
 	c.P.StepWork()
-	v.Start = pegort.TAs[*types.FrameBound](f1)
+	v.Start_ = pegort.TAs[*types.FrameBound](f1)
 	c.P.StepWork()
-	v.End = pegort.TAs[*types.FrameBound](f2)
+	v.End_ = pegort.TAs[*types.FrameBound](f2)
 	c.P.StepWork()
 	v.Exclude = astString(f3)
 	if final {

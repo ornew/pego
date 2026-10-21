@@ -108,8 +108,9 @@ stars text 42
 - **Names.** Go types have the names of the grammar types. They live in the package `types`, apart from the names
   `parser.go` and `api.go` declare, so a grammar type may be called `Node`, `Parse` or `Walk`. The package also declares
   `TNode`, `Error`, `PegoHooks` and, where the grammar uses them, `Unit`, `TupleN` and `PegoNodeTypes`: a grammar type
-  with one of these names is an error. A field named like a method of `Span` or of the typed values (`Range`, `TName`,
-  ...) gets a trailing underscore.
+  with one of these names is an error. A field named like a field or method of `Span` or like a method of the typed
+  values (`Start`, `End`, `Range`, `TName`, ...) gets a trailing underscore, so `Start` and `End` always read the
+  span.
 - **Aliases.** Every declared alias is exported, including chained, scalar, optional, list and node aliases. Node
   joins with the same normalized representation share one generated interface; additional names are Go aliases
   to it. Aliases preserve assignment compatibility and add no new runtime value kind. Regenerate existing parsers

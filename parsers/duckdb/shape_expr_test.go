@@ -262,9 +262,9 @@ func (m *mapper) windowCall(f *types.FuncCall, name string, args []any) shape {
 			s[key] = m.expr(b.Expr)
 			return "EXPR_" + words + "_" + unit
 		}
-		s["start"] = bound(fr.Start, "start_expr")
-		if fr.End != nil {
-			s["end"] = bound(fr.End, "end_expr")
+		s["start"] = bound(fr.Start_, "start_expr")
+		if fr.End_ != nil {
+			s["end"] = bound(fr.End_, "end_expr")
 		} else {
 			s["end"] = "CURRENT_ROW_" + unit
 		}

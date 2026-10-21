@@ -152,9 +152,10 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
   `PegoNodeTypes`; generation fails, naming the type, if a grammar type has one of
   these names. A grammar type named `Unit` is an error only when the generated
   code uses the empty tuple, and one named `TupleN` only when it uses a tuple of
-  that arity. A struct field named like a method of the embedded `Span` (`Range`) or
-  of the typed values (`TName`, ...) gets a trailing underscore in Go; the value
-  still reads back under the grammar name. Every declared alias is exported.
+  that arity. A struct field named like a field or method of the embedded `Span`
+  (`Start`, `End`, `Range`) or like a method of the typed values (`TName`, ...)
+  gets a trailing underscore in Go (`Start_`), so `Start` and `End` always read
+  the span; the value still reads back under the grammar name. Every declared alias is exported.
 - After `#recover`, an error value in a list of a join type stays in the list as
   `*Error`; where a struct type is expected it becomes `nil`.
 - `ParseRuleAST` consumes the whole input, applies options once before it looks up
