@@ -48,7 +48,7 @@ var aliasTypedGoldens = map[string]string{
 func TestAliasNodeIdentity(t *testing.T) {
 	for _, c := range aliasCases {
 		t.Run(c.name, func(t *testing.T) {
-			for _, options := range []Options{{}, {DisableMemo: true}, {NoTypeCheck: true}} {
+			for _, options := range []Options{{}, {DisableMemo: true}} {
 				prog := compile(t, c.src, options)
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					n, err := prog.ParseWith("main", "éé", ParseOptions{Unit: unit})

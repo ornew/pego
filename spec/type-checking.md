@@ -71,9 +71,6 @@ Type `T`. It reports non-assignable elements and elements whose Type is unknown,
 including unknown values nested in a typed list. An empty literal still has
 the declared `[]T` Type. Nil is allowed only if `T` permits nil.
 
-The internal compiler option `NoTypeCheck` deliberately bypasses assignability
-checks. It does not change the rules for checked compilation.
-
 A struct field value whose Type is unknown (`_`, or a list with elements of
 such a Type) is reported when the field's Type is more specific:
 `cannot use _ as Ident in field Name of Decl: the type of the value is not
@@ -81,14 +78,14 @@ known; convert it with a cast, as in value.(Ident)`. The same holds for a value
 of Type `_`, which fits only `_`. A cast (see [Casts](actions.md#casts)) is the check
 that runs; see [Values and Constructors](actions.md#values-and-constructors). A value
 whose Type is known and assignable needs no check, and a constructor checks nothing when
-it runs. Without type checking, nothing checks a field.
+it runs.
 
 Likewise, a rule value whose Type is unknown, from an action, a called rule or
 an Operators Rule line, is reported when the rule declares a Type it does not fit:
 `rule term produces _, which is not assignable to Expr: the type of the value is not
 known; convert it with a cast, as in value.(Expr)` (see [Types and
 Errors](actions.md#types-and-errors)). In an Operators Rule with a declared Type, the captures
-`lhs` and `rhs` have that Type. Without type checking, nothing checks a rule value.
+`lhs` and `rhs` have that Type.
 
 Diagnostics print a type as written in a grammar: `node[string]` for a string
 node, `node[(node[string], node[string])]` for a tuple node of two string nodes,
@@ -141,7 +138,10 @@ rule pair = k:num "=" v:num // node[(num, node[string], num), {"k": 0, "v": 2}]
 ```
 
 The type of the accumulator of `foldl` and `foldr` is widened to the union of
-the type of the initial value and the type of the result of the function.
+the type of the initial value and the type of the result of the function. The checker widens
+three times; if the result of the function still does not fit the accumulator, the call is a
+compile-time error (`the accumulator type does not converge`), and the result of the function
+must be cast.
 
 ## Checked Errors
 
@@ -173,7 +173,5 @@ unless the Type of the value is known to be assignable to the declared type of t
 checker does not know, such as a rule value of unknown Type, is rejected too, with a hint
 to convert it explicitly: `x := $d.(int)`. The cast is an ordinary cast (see
 [Casts](actions.md#casts)); when it fails, that is an evaluation error of the binding, which
-makes the predicate fail. Nothing is checked when a binding runs. Without type checking,
-bindings are not checked at all, and a variable can then hold a value of another type
-than its declared one: a read of the variable returns that value, and an operation that
-rejects the value reports an evaluation error.
+makes the predicate fail. Nothing is checked when a binding runs, so a variable always holds a value of its
+declared type.

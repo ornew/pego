@@ -38,15 +38,13 @@ rule anything Any = "!" x:("a" / "bc") => Any{$x}
 func TestNamedNodeTypesAcrossBackends(t *testing.T) {
 	inputs := []string{"", "ab", "ab 12 c3", "<1,x>", "ab <12,y>[1]!bc", "12 ?", "[]!a"}
 	for _, sourceInfo := range []bool{false, true} {
-		for _, noTypeCheck := range []bool{false, true} {
-			prog := compileBare(t, nodeTypeGrammar, Options{SourceInfo: sourceInfo, NoTypeCheck: noTypeCheck})
-			for _, input := range inputs {
-				want := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure}))
-				for _, backend := range []Backend{Bytecode, BytecodeIterative} {
-					got := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend}))
-					if got != want {
-						t.Errorf("sourceInfo=%t noTypeCheck=%t %s %q:\n got %s\nwant %s", sourceInfo, noTypeCheck, backend, input, got, want)
-					}
+		prog := compileBare(t, nodeTypeGrammar, Options{SourceInfo: sourceInfo})
+		for _, input := range inputs {
+			want := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure}))
+			for _, backend := range []Backend{Bytecode, BytecodeIterative} {
+				got := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend}))
+				if got != want {
+					t.Errorf("sourceInfo=%t %s %q:\n got %s\nwant %s", sourceInfo, backend, input, got, want)
 				}
 			}
 		}
@@ -167,15 +165,6 @@ rule main A = x:("a" / "b" "c") => A{$x}`, "bc", "cannot convert node[string] | 
 	} {
 		if got := compileMessage(t, tc.src); !strings.Contains(got, tc.want) {
 			t.Errorf("checked compilation: got %q, want an error containing %q", got, tc.want)
-		}
-		prog := compileBare(t, tc.src, Options{NoTypeCheck: true})
-		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			if got := resultJSON(prog.ParseWith("main", tc.input, ParseOptions{Backend: backend})); strings.Contains(got, `"err"`) {
-				t.Errorf("%s %q: got %s, want no error", backend, tc.input, got)
-			}
-			if got := resultJSON(prog.ParseWith("main", "a", ParseOptions{Backend: backend})); !strings.Contains(got, `{"type":"N","start":0,"end":1,"value":"a"}`) {
-				t.Errorf("%s: got %s", backend, got)
-			}
 		}
 	}
 	// The generated parsers convert through an alias with the same name.

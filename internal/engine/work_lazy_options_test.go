@@ -13,7 +13,7 @@ rule item = [a-z]+`)
 	}
 	for _, savedFlags := range [][]ruleFlags{nil, flags} {
 		for _, noProjections := range []bool{false, true} {
-			p, err := build(original.Grammar, Options{NoTypeCheck: true, noProjections: noProjections}, savedFlags)
+			p, err := build(original.Grammar, Options{noProjections: noProjections}, savedFlags)
 			if err != nil {
 				t.Fatal(err)
 			}

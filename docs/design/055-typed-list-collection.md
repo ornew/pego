@@ -40,12 +40,10 @@ non-empty inner list supplies its own element Type, as in
 The braces contain zero or more Action Expressions separated by commas, as
 with constructor fields and function arguments. An empty list is non-nil.
 Elements evaluate once from left to right and retain their order and identity.
-Each element must have a statically known Type assignable to `T`; a statically
-unknown `any` element is rejected, including when nested. `nil` is accepted
-only if the target element Type permits it. These are compile-time checks under
-normal type checking. `NoTypeCheck` deliberately bypasses assignability
-checking; it does not add primitive-list support or a filtering/narrowing
-operation.
+Each element must have a statically known Type assignable to `T`; an element
+of unknown Type (`_`) is rejected, including when nested. `nil` is accepted
+only if the target element Type permits it. These are compile-time checks. The
+literal adds no primitive-list support and no filtering or narrowing operation.
 
 The source AST node is `ListConstructor{Elem TypeExpr, Items []Term}`. It
 preserves the explicit element Type and items, including empty and nested
@@ -120,11 +118,9 @@ does not implicitly buffer a `ParseStream`.
 - Parse, format, JSON-round-trip and compile non-empty, empty, nested and
   optional-element lists.
 - Accept assignable node elements and permitted nil; reject incompatible,
-  statically unknown `any`, and invalid nested elements at compile time.
+  elements of unknown Type (`_`), and invalid nested elements at compile time.
 - Verify alias and union resolution, order, identity, non-nil empty results,
   and list ranges in both position units.
-- Verify `NoTypeCheck` bypasses assignability checks without changing runtime
-  representation.
 - Compare all interpreters and generated backends for values, ranges,
   diagnostics and errors; check source-AST immutability and saved-grammar
   compatibility.

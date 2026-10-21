@@ -171,8 +171,16 @@ rule main = ps any $$`)
 	if _, ok := prog.RuleType("nope"); ok {
 		t.Error("RuleType reported an undefined rule")
 	}
-	if _, ok := compile(t, `rule main = "a"`, Options{NoTypeCheck: true}).RuleType("main"); ok {
-		t.Error("RuleType reported a type without type checking")
+	data, err := compile(t, `rule main = "a"`).MarshalBinary("main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	loaded, _, err := LoadProgram(data, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := loaded.RuleType("main"); ok {
+		t.Error("RuleType reported a type for a program loaded from a compiled grammar")
 	}
 }
 

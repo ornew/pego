@@ -18,7 +18,6 @@ func TestInvalidCharacterClassEntryPoints(t *testing.T) {
 			g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: cc}}}}
 			for name, run := range map[string]func() error{
 				"compile":           func() error { _, err := Compile(g, Options{}); return err },
-				"unchecked compile": func() error { _, err := Compile(g, Options{NoTypeCheck: true}); return err },
 				"saved AST rebuild": func() error { _, err := build(g, Options{}, []ruleFlags{{}}); return err },
 				"Go generator":      func() error { _, err := generateCode(g, GenOptions{Start: "main", Package: "p"}); return err },
 				"typed Go generator": func() error {

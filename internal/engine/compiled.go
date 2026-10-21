@@ -124,6 +124,9 @@ type encoder struct {
 	body bytes.Buffer
 	strs map[string]int
 	list []string
+	// positions writes the grammar position of a cast, which only a module with source
+	// information uses; otherwise compiled bytes would depend on the layout of the source.
+	positions bool
 }
 
 func (w *encoder) byte(b byte) { w.body.WriteByte(b) }
@@ -191,7 +194,7 @@ func (prog *Program) MarshalBinaryWith(start string, o MarshalOptions) ([]byte, 
 	if recognition == nil {
 		version = 2
 	}
-	w := &encoder{strs: map[string]int{}}
+	w := &encoder{strs: map[string]int{}, positions: prog.sourceInfo}
 	for i, s := range m.Strings { // put the module's string table first
 		w.strs[s] = i
 		w.list = append(w.list, s)
@@ -559,7 +562,10 @@ func (w *encoder) term(t grammar.Term) {
 		w.byte(tCast)
 		w.term(t.X)
 		w.typeExpr(t.Type)
-		pos := t.Diagnostic()
+		var pos grammar.Pos
+		if w.positions {
+			pos = t.Diagnostic()
+		}
 		w.int(pos.Line)
 		w.int(pos.Col)
 	case *grammar.Assign:

@@ -150,8 +150,8 @@ not known; convert it with a cast, as in value.(Ident)`. A [cast](#casts) is the
 when it fails, that is an evaluation error. A constructor itself checks nothing when it runs, so
 constructors cost nothing extra. Fields declared `_` accept every value.
 
-`NoTypeCheck` deliberately skips these checks, and nothing else checks the fields of a
-constructor or the elements of a typed list when it runs.
+Nothing else checks the fields of a constructor or the elements of a typed list when it
+runs: the compile-time check is complete.
 
 In the public source AST, a tuple literal is `TupleLit{Elems}`, and parentheses around
 one action expression are retained as `TermGroup{Term}`. The group is semantically transparent: it affects
@@ -303,9 +303,8 @@ Strings are ordered lexicographically. Comparisons return `bool`.
 An optional list value contributes no elements when it is `nil`. An error
 value produced by `#recover` also contributes no elements to list-consuming
 functions. The checker accepts a union of list types and combines their
-possible element types. At runtime the functions consume the elements of a
-list node, list value or tuple node, so a value of type `node[_]` can supply
-that node's elements.
+possible element types. A value of type `node[_]` is not a list for the checker:
+cast it first, as in `$n.([]_)`.
 
 #### `len`
 
@@ -327,7 +326,8 @@ node. A list value and a struct have no range and are rejected as arguments.
 two parameters and is called as `f(accumulator, element)`; its result becomes
 the next accumulator. An empty input returns `init`. The accumulator type is widened to the union of the initial value type and the
 callback result type; the checker checks the callback against that widened
-type.
+type. If the callback result still does not fit after three widenings, the accumulator
+type does not converge and the call is a compile-time error; cast the callback result.
 
 ```pego
 foldl(0, $items, (sum, item) => sum + item.$value)
@@ -411,8 +411,7 @@ action or builds the tuple node of its operands; it converts no operand value.
 A value that cannot be converted to `N` is a compile-time error, `rule r produces X, which cannot be converted to N`
 (for an operator of an Operators Rule, `operatorsRule r produces X, which cannot be converted to N`), when its
 type is known. A value whose type is not known well enough is rejected as well, with a hint to
-cast it first, as in `N{value.(node[string])}`. Under `NoTypeCheck` nothing is checked: a value
-that is not a node still fails the conversion with an evaluation error when it runs.
+cast it first, as in `N{value.(node[string])}`.
 
 A Value Action result statically known to be a function is a compile-time
 error.

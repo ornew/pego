@@ -38,10 +38,8 @@ Use `T{arg, ...}` when `T` resolves to a terminal Type. The source AST node is
 `TerminalConstructor{Type string, Args []Term}` and preserves all supplied
 arguments so that invalid arity can receive a positioned compile-time
  diagnostic. Exactly one argument is required. A known non-string argument is
-a compile-time error. A dynamically typed `any` argument is admitted by the
-ordinary checker and checked for string type at runtime; a failed runtime
-check reports the normal Action Expression error. `NoTypeCheck` bypasses
-static assignability checking, but the runtime string guard remains.
+a compile-time error. An argument of unknown Type (`_`) is rejected with a hint to cast it,
+as in `value.(string)`; the cast is the check that runs.
 
 Terminal aliases and union members are resolved through existing canonical
 Type resolution. If the target resolves to a terminal, it uses this
@@ -93,8 +91,8 @@ formats outside the documented AST/ISA additions retain their behavior.
 
 - Accept a string literal and `text(...)`; reject zero, multiple and
   non-string arguments when their static Type is known.
-- Verify dynamic `any` values are checked at runtime and that the runtime
-  string guard remains when `NoTypeCheck` is enabled.
+- Verify arguments of unknown Type (`_`) are rejected unless cast, and that a
+  failed cast reports the normal Action Expression error.
 - Test terminal aliases and union resolution, exact supplied text, current
   Action Expression ranges in CodePoints and Bytes, and preservation of an
   existing node's range and identity.

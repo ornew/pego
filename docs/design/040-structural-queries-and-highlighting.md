@@ -15,7 +15,7 @@ The public Go API provides programmatic structural queries over `pego.Node`; gen
 ## Goals and Non-Goals
 
 - Match node type/rule, named fields, ordered children, and node or scalar captures.
-- Type-check known patterns against an explicit schema; retain dynamic `any` as runtime-checked.
+- Type-check known patterns against an explicit schema; retain dynamic `top` as runtime-checked.
 - Define deterministic match/capture order, parent paths, shared-edge behavior, and cycle errors.
 - Bound traversal, predicates, and result construction with cancellation and work limits.
 - Do not promise Tree-sitter query compatibility, semantic resolution, or punctuation/comment visibility absent from results.
@@ -107,7 +107,7 @@ and `Missing` recovery nodes can replace any node or list; their fields
 schema's reserved shapes do not list them. A failing union reports only its
 first alternative's reason, so error text stays linear in the pattern depth.
 The runtime value is still checked because a `Node` may have changed since it was
-parsed. Dynamic CST/`any` fields remain runtime checked. Pattern copies are independent of caller mutation. Compilation rejects
+parsed. Dynamic CST/`top` fields remain runtime checked. Pattern copies are independent of caller mutation. Compilation rejects
 nesting at 256 levels, including cyclic programmatic pattern containers.
 
 `StructuralQuery.Matches(root, QueryOptions)` returns all results or an error.

@@ -265,8 +265,7 @@ type `M`, whose underlying type fits, converts to `N`. An Operators Rule declare
 values of its operands, by the same rule. The following are
 rejected at compile time with `cannot convert X to N` (for `N{x}`) or
 `rule r produces X, which cannot be converted to N` (for a rule): `_`, `node[_]`, `error`, `nil` and the
-scalar types. Cast first, as in `$x.(node[string])`. When type checking is off (`NoTypeCheck`), nothing is
-checked, and a value that is not a node fails the conversion when it runs.
+scalar types. Cast first, as in `$x.(node[string])`.
 
 A conversion keeps the range and the content of the node, and the converted node has no rule name. Its
 `Node.Type()` and the `type` member of its JSON form report `N`.
@@ -335,4 +334,4 @@ whose values are the values of the node.
 
 A value of type `*T` is not assignable to a location of type `T`, and accessing
 a field of a value that may be `nil` is an error. A value of type `_` is
-assignable only to `_` and `any`.
+assignable only to `_`.

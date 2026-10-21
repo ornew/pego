@@ -76,8 +76,6 @@ type Program struct {
 type Options struct {
 	// DisableMemo disables memoization (except for left-recursion leaders).
 	DisableMemo bool
-	// NoTypeCheck skips type checking.
-	NoTypeCheck bool
 	// SourceInfo records source information in the values: the rule that produced each node and
 	// where its captures are.
 	SourceInfo bool
@@ -504,15 +502,9 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 			}
 		}
 	}
-	switch {
-	case !opts.NoTypeCheck && flags == nil:
+	if flags == nil {
 		checkTypesControlled(prog, &c.errs, control)
 		control.check()
-		if len(c.errs) > 0 {
-			return nil, c.errs
-		}
-	case opts.NoTypeCheck && flags == nil:
-		checkBottomLocations(prog, &c.errs, control)
 		if len(c.errs) > 0 {
 			return nil, c.errs
 		}

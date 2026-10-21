@@ -90,7 +90,7 @@ func TestCompileContextCancelsDuringGrammarValidation(t *testing.T) {
 
 func TestCompileContextPhaseCancellation(t *testing.T) {
 	g := compileTestGrammar(t)
-	p, err := Compile(g, Options{NoTypeCheck: true})
+	p, err := Compile(g, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}

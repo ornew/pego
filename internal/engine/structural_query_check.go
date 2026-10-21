@@ -16,7 +16,7 @@ import (
 // queryAtom is one alternative of a shape that is not a union, optional value or inferred rule
 // reference.
 type queryAtom struct {
-	// kind is "any" (nothing is known), "nil", "scalar", "error", "node", "tuple", "list" or
+	// kind is "top" (nothing is known), "nil", "scalar", "error", "node", "tuple", "list" or
 	// "struct".
 	kind   string
 	scalar string
@@ -31,10 +31,10 @@ type queryAtom struct {
 	elements []SchemaShape
 }
 
-// category returns the query category of the values of a, or "" for any.
+// category returns the query category of the values of a, or "" for top.
 func (a queryAtom) category() string {
 	switch a.kind {
-	case "any":
+	case "top":
 		return ""
 	case "scalar":
 		return a.scalar
@@ -97,10 +97,10 @@ func (k *queryShapeChecker) check(p *QueryPattern, shape *SchemaShape) error {
 	return err
 }
 
-// shapeAtoms returns the alternatives of shape, or any if shape is nil.
+// shapeAtoms returns the alternatives of shape, or top if shape is nil.
 func (k *queryShapeChecker) shapeAtoms(shape *SchemaShape) []queryAtom {
 	if shape == nil {
-		return []queryAtom{{kind: "any"}}
+		return []queryAtom{{kind: "top"}}
 	}
 	return k.atoms(shape, nil, map[string]bool{}, map[*SchemaShape]bool{})
 }
@@ -179,7 +179,7 @@ func (k *queryShapeChecker) atoms(shape *SchemaShape, out []queryAtom, active ma
 		delete(active, t.ID)
 		return out
 	}
-	return append(out, queryAtom{kind: "any"})
+	return append(out, queryAtom{kind: "top"})
 }
 
 // typeAtom returns the atom of the values of the declared type t: a struct type, or a named node
@@ -200,14 +200,14 @@ func (k *queryShapeChecker) patternAtom(name string) queryAtom {
 	if t := k.s.byName[name]; t != nil {
 		return k.typeAtom(t)
 	}
-	return queryAtom{kind: "any"}
+	return queryAtom{kind: "top"}
 }
 
 // match reports whether p can match a value of atom a.
 func (k *queryShapeChecker) match(p *QueryPattern, a queryAtom) error {
-	if a.kind == "any" {
+	if a.kind == "top" {
 		if p.Type != "" {
-			if t := k.patternAtom(p.Type); t.kind != "any" {
+			if t := k.patternAtom(p.Type); t.kind != "top" {
 				return k.match(p, t)
 			}
 		}
@@ -267,7 +267,7 @@ func (k *queryShapeChecker) match(p *QueryPattern, a queryAtom) error {
 // elements reports whether patterns can match the first elements of a value of atom a.
 func (k *queryShapeChecker) elements(patterns []QueryPattern, a queryAtom) error {
 	switch a.kind {
-	case "any":
+	case "top":
 		for i := range patterns {
 			if err := k.check(&patterns[i], nil); err != nil {
 				return fmt.Errorf("element %d: %w", i, err)
@@ -308,5 +308,5 @@ func (k *queryShapeChecker) unknownParts(p *QueryPattern) error {
 			return fmt.Errorf("node value: %w", err)
 		}
 	}
-	return k.elements(p.Elements, queryAtom{kind: "any"})
+	return k.elements(p.Elements, queryAtom{kind: "top"})
 }

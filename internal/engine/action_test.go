@@ -93,11 +93,6 @@ rule di = _ => 1`} {
 		if got := compileMessage(t, src); !strings.Contains(got, "concat: expected a list, got _") {
 			t.Errorf("checked compilation: %q", got)
 		}
-		prog := compile(t, src, Options{NoTypeCheck: true})
-		if got := result(prog, "a"); !strings.Contains(got, "error: action in main: division by zero") {
-			t.Errorf("got %s", got)
-		}
-		checkBackends(t, prog, "main", "a")
 	}
 }
 

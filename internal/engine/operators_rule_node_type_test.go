@@ -89,8 +89,8 @@ func operatorsNodeTypeNames(n *Node) string {
 func TestOperatorsRuleNamedNodeTypeShape(t *testing.T) {
 	cases := operatorsNamedNodeCases()
 	for _, sourceInfo := range []bool{false, true} {
-		for _, noTypeCheck := range []bool{false, true} {
-			prog := compileBare(t, cases[0].src, Options{SourceInfo: sourceInfo, NoTypeCheck: noTypeCheck})
+		{
+			prog := compileBare(t, cases[0].src, Options{SourceInfo: sourceInfo})
 			for _, tc := range []struct{ input, want string }{
 				{"1", "Expr"},
 				{"1+2", "Expr(Expr string Expr)"},
@@ -107,7 +107,7 @@ func TestOperatorsRuleNamedNodeTypeShape(t *testing.T) {
 						t.Fatalf("%s %q: %v", backend, tc.input, err)
 					}
 					if got := operatorsNodeTypeNames(n); got != tc.want {
-						t.Errorf("sourceInfo=%t noTypeCheck=%t %s %q: got %s, want %s", sourceInfo, noTypeCheck, backend, tc.input, got, tc.want)
+						t.Errorf("sourceInfo=%t %s %q: got %s, want %s", sourceInfo, backend, tc.input, got, tc.want)
 					}
 				}
 			}
@@ -120,13 +120,13 @@ func TestOperatorsRuleNamedNodeTypeShape(t *testing.T) {
 func TestOperatorsRuleNamedNodeTypeAcrossBackends(t *testing.T) {
 	for _, c := range operatorsNamedNodeCases() {
 		for _, sourceInfo := range []bool{false, true} {
-			for _, noTypeCheck := range []bool{false, true} {
-				prog := compileBare(t, c.src, Options{SourceInfo: sourceInfo, NoTypeCheck: noTypeCheck})
+			{
+				prog := compileBare(t, c.src, Options{SourceInfo: sourceInfo})
 				for _, input := range c.inputs {
 					want := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: Closure}))
 					for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 						if got := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend})); got != want {
-							t.Errorf("%s sourceInfo=%t noTypeCheck=%t %s %q:\n got %s\nwant %s", c.name, sourceInfo, noTypeCheck, backend, input, got, want)
+							t.Errorf("%s sourceInfo=%t %s %q:\n got %s\nwant %s", c.name, sourceInfo, backend, input, got, want)
 						}
 					}
 				}
@@ -229,33 +229,17 @@ func main() {
 }
 
 // An operator whose value does not fit the named node type is a compile error, the tuple node of
-// an operator without an action included, as the value of an ordinary rule is. Without type
-// checking, nothing checks the tuple node when the operator runs, and a value that cannot be
-// converted at all (an int) still fails the conversion. Generated parsers are always type checked,
-// so they reject these grammars when they are generated.
+// an operator without an action included, as the value of an ordinary rule is. Generated parsers
+// reject these grammars when they are generated.
 func TestOperatorsRuleNamedNodeTypeRuntimeError(t *testing.T) {
 	const defs = "type Expr = node[string]\nrule num Expr = [0-9]+ #atomic\n"
-	for _, tc := range []struct{ src, static, unchecked string }{
-		{"rule expr Expr = operators {\n operand num\n level { infix left \"+\" => 1 }\n}", "operatorsRule expr produces int, which cannot be converted to Expr", "cannot convert int to Expr in result of rule expr"},
-		{"rule expr Expr = operators {\n operand num\n level { infix left \"+\" }\n}", "operators of expr without an action produce a tuple node", ""},
-		{"rule expr Expr = operators {\n operand num\n level { prefix \"-\" }\n}", "operators of expr without an action produce a tuple node", ""},
+	for _, tc := range []struct{ src, static string }{
+		{"rule expr Expr = operators {\n operand num\n level { infix left \"+\" => 1 }\n}", "operatorsRule expr produces int, which cannot be converted to Expr"},
+		{"rule expr Expr = operators {\n operand num\n level { infix left \"+\" }\n}", "operators of expr without an action produce a tuple node"},
+		{"rule expr Expr = operators {\n operand num\n level { prefix \"-\" }\n}", "operators of expr without an action produce a tuple node"},
 	} {
 		if got := compileMessage(t, defs+tc.src); !strings.Contains(got, tc.static) {
 			t.Errorf("%q: checked compilation: got %q, want an error containing %q", tc.src, got, tc.static)
-		}
-		prog := compileBare(t, defs+tc.src, Options{NoTypeCheck: true})
-		input := "1+2"
-		if strings.Contains(tc.src, "prefix") {
-			input = "-1"
-		}
-		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			n, err := prog.ParseWith("expr", input, ParseOptions{Backend: backend})
-			switch {
-			case tc.unchecked == "" && err != nil:
-				t.Errorf("%s %q: got %v, want no error", backend, tc.src, err)
-			case tc.unchecked != "" && (err == nil || !strings.Contains(err.Error(), tc.unchecked)):
-				t.Errorf("%s %q: got %v (%s), want %q", backend, tc.src, err, operatorsNodeTypeNames(n), tc.unchecked)
-			}
 		}
 		g, err := syntax.Parse(defs + tc.src)
 		if err != nil {

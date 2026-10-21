@@ -76,14 +76,10 @@ rule item = [a-z]`)
 			t.Fatalf("%s: %v", backend, err)
 		}
 	}
-	unchecked := compile(t, `var i string
+	if got := compileMessage(t, `var i string
 rule main = {i := "0"} xs:item+ $$ => $xs[i]
-rule item = [a-z]`, Options{NoTypeCheck: true})
-	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		_, err := unchecked.ParseWith("main", "a", ParseOptions{Backend: backend})
-		if err == nil || !strings.Contains(err.Error(), "index must be int, got string") {
-			t.Fatalf("%s: %v", backend, err)
-		}
+rule item = [a-z]`); !strings.Contains(got, "index must be int, got string") {
+		t.Fatalf("string index variable: %q", got)
 	}
 }
 
@@ -129,8 +125,7 @@ func TestIndexTypeErrors(t *testing.T) {
 }
 
 // Elements and captures that hold values other than nodes read as those values, not as the
-// carriers that hold them in the tree. Until the checker admits such action results, they are
-// made without type checks.
+// carriers that hold them in the tree.
 func TestIndexValueElements(t *testing.T) {
 	for _, tc := range []struct {
 		src    string
@@ -140,7 +135,7 @@ func TestIndexValueElements(t *testing.T) {
 		{"rule main = xs:n+ $$ => foldl(0, $xs, (a, x) => a + x)\nrule n = [0-9] => 2", map[string]int{"123": 6}},
 		{"rule main = x:p $$ => $x.$v + 1\nrule p = v:n \"!\"\nrule n = [0-9] => 1", map[string]int{"1!": 2}},
 	} {
-		program := compile(t, tc.src, Options{NoTypeCheck: true})
+		program := compile(t, tc.src)
 		for input, want := range tc.inputs {
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				node, err := program.ParseWith("main", input, ParseOptions{Backend: backend})

@@ -155,6 +155,12 @@ func (c *compiler) varDecl(vd *grammar.VarDef) *varDecl {
 			}
 		}
 		if !ok {
+			if ref, isRef := vd.Type.(*grammar.TypeRef); isRef {
+				if to, retired := retiredTypeNames[ref.Name]; retired {
+					c.errorf(vd.Diagnostic(), "%s is not a type; write %s", ref.Name, to)
+					return nil
+				}
+			}
 			c.errorf(vd.Diagnostic(), "variable %s must have type int, string, or bool, got %s", vd.Name, grammar.FormatType(vd.Type))
 			return nil
 		}

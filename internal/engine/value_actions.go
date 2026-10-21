@@ -54,7 +54,7 @@ func (v *valueInference) resolve(t grammar.TypeExpr) ty {
 // uncertain reports whether a value of type t may be one the value types do not know yet (tyAny),
 // so that a typed location checks it at run time.
 func (v *valueInference) uncertain(t ty) bool {
-	return v.containsBasic(t, 0, false)
+	return v.containsBasic(t, 0, false, true)
 }
 
 // needsCast reports whether a value of type t, which is assignable to target, may still not fit it
@@ -85,36 +85,39 @@ func (v *valueInference) needsCastAt(t, target ty, depth int) bool {
 // narrowable reports whether a value of type t, which does not fit a location, may do so once it
 // is cast: its type is not known (tyAny) or not specific (tyTop) in some part.
 func (v *valueInference) narrowable(t ty) bool {
-	return v.containsBasic(t, 0, true)
+	return v.containsBasic(t, 0, true, true)
 }
 
 // castHint is the hint appended to the message about a value of type t that does not fit a
 // location of type target, if a cast may make it fit, and "" otherwise.
 func (v *valueInference) castHint(t ty, target any) string {
-	if !v.narrowable(t) {
+	// A type that nests without end, as the type of a recursive rule does, is known: only a part
+	// of type _ or unknown makes the hint true.
+	if !v.narrowable(t) || !v.containsBasic(t, 0, true, false) {
 		return ""
 	}
 	return fmt.Sprintf(": the type of the value is not known; convert it with a cast, as in value.(%v)", target)
 }
 
-// containsBasic reports whether t has a part of type tyAny, or also of tyTop if top is set.
-func (v *valueInference) containsBasic(t ty, depth int, top bool) bool {
+// containsBasic reports whether t has a part of type tyAny, or also of tyTop if top is set. A
+// type nested deeper than the limit is taken to have such a part if deep is set.
+func (v *valueInference) containsBasic(t ty, depth int, top, deep bool) bool {
 	if depth > 32 {
-		return true
+		return deep
 	}
 	switch t := v.expand(t).(type) {
 	case basicTy:
 		return t == tyAny || top && t == tyTop
 	case listTy:
-		return v.containsBasic(t.elem, depth+1, top)
+		return v.containsBasic(t.elem, depth+1, top, deep)
 	case optTy:
-		return v.containsBasic(t.elem, depth+1, top)
+		return v.containsBasic(t.elem, depth+1, top, deep)
 	case nodeTy:
-		return v.containsBasic(t.value, depth+1, top)
+		return v.containsBasic(t.value, depth+1, top, deep)
 	case unionTy:
-		return slices.ContainsFunc(t.alts, func(a ty) bool { return v.containsBasic(a, depth+1, top) })
+		return slices.ContainsFunc(t.alts, func(a ty) bool { return v.containsBasic(a, depth+1, top, deep) })
 	case tupleTy:
-		return slices.ContainsFunc(t.elems, func(a ty) bool { return v.containsBasic(a, depth+1, top) })
+		return slices.ContainsFunc(t.elems, func(a ty) bool { return v.containsBasic(a, depth+1, top, deep) })
 	}
 	return false
 }
@@ -961,17 +964,25 @@ func (v *valueInference) call(t *grammar.Call, env *valueEnv) ty {
 			return tyAny
 		}
 		// If the body's type does not fit the initial value's type, take the union and check again.
+		converged := false
 		for range 3 {
 			saved := v.quiet
 			v.quiet = true
 			body := v.term(l.Body, env.with(l.Params, []ty{acc, elem}))
 			v.quiet = saved
-			if v.assignable(body, acc) {
+			widened := vunion(acc, body)
+			// The accumulator is stable when the body fits it, or when widening it adds nothing
+			// (a rule type that assignable compares by name does not always fit its own value).
+			if v.assignable(body, acc) || widened.String() == acc.String() {
+				converged = true
 				break
 			}
-			acc = vunion(acc, body)
+			acc = widened
 		}
-		v.term(l.Body, env.with(l.Params, []ty{acc, elem}))
+		body := v.term(l.Body, env.with(l.Params, []ty{acc, elem}))
+		if !converged && !v.assignable(body, acc) && vunion(acc, body).String() != acc.String() {
+			v.errorf(t.Diagnostic(), "%s: the accumulator type does not converge (the callback produces %s, which is not assignable to %s); cast the result of the callback", t.Func, body, acc)
+		}
 		return acc
 	case "filter":
 		elem := v.elemOf("filter", arg(0), t.Diagnostic())

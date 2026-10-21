@@ -46,7 +46,7 @@ A shape describes a set of values. Each kind allows only the members listed.
 |:--|:--|:--|
 | `scalar` | `scalar`: `int`, `string` or `bool` | The scalar |
 | `nil` | | `nil` |
-| `any` | | Every value (the type `_`) |
+| `top` | | Every value (the type `_`) |
 | `error` | | An error value of recovery |
 | `missing` | | A token that recovery inserted, a kind of `error` value |
 | `node` | `value`, `captures` | A node whose value has the shape `value` |
@@ -135,7 +135,7 @@ the field, element or node value to which they apply.
   alternatives. With `Value *(Pair | Box)`, a `Value` pattern of type `Pair` with
   `Pair` fields, of type `Box` or of category `nil` compiles, while one of category
   `string` does not.
-- A pattern applied to a value of unknown shape (`any` or the query root) is checked
+- A pattern applied to a value of unknown shape (`top` or the query root) is checked
   only against its own type's fields.
 - An error value appears only where the shape includes `error` or `missing`, so a
   pattern of type or category `error` compiles only there. A missing token is an error

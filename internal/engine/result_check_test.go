@@ -134,7 +134,7 @@ func resultCheckTypesOf(fields map[string]string) []string {
 }
 
 // TestRuleResultChecks checks that a cast of a rule result to the rule's declared type accepts the
-// values that fit, on every backend, in every program form, with and without type checking, and
+// values that fit, on every backend, in every program form, and
 // that the values it accepts give the same results as when the rules are declared _.
 func TestRuleResultChecks(t *testing.T) {
 	// The terminal model is the same grammar in the retired terminal type syntax, which
@@ -164,10 +164,6 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 				t.Fatal(err)
 			}
 			checked, err := Compile(g, Options{})
-			if err != nil {
-				t.Fatal(err)
-			}
-			unchecked, err := Compile(g, Options{NoTypeCheck: true})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -216,15 +212,6 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 					{"limited loaded closure", loaded, ParseOptions{Backend: Closure, WorkLimits: limits}},
 					{"bare bytecode", loadedBare, ParseOptions{Backend: Bytecode}},
 				}
-				// Without type checking, the casts give the same outcome.
-				runs = append(runs, []struct {
-					name string
-					prog *Program
-					o    ParseOptions
-				}{
-					{"unchecked closure", unchecked, ParseOptions{Backend: Closure}},
-					{"unchecked bytecode", unchecked, ParseOptions{Backend: Bytecode}},
-				}...)
 				var want string
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, run := range runs {
@@ -414,10 +401,6 @@ func TestOperatorResultChecks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	unchecked, err := Compile(g, Options{NoTypeCheck: true})
-	if err != nil {
-		t.Fatal(err)
-	}
 	data, err := prog.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
@@ -442,8 +425,6 @@ func TestOperatorResultChecks(t *testing.T) {
 			{"bytecode", prog, ParseOptions{Backend: Bytecode}},
 			{"iterative", prog, ParseOptions{Backend: BytecodeIterative}},
 			{"limited closure", prog, ParseOptions{Backend: Closure, WorkLimits: limits}},
-			{"unchecked closure", unchecked, ParseOptions{Backend: Closure}},
-			{"unchecked bytecode", unchecked, ParseOptions{Backend: Bytecode}},
 			{"loaded closure", loaded, ParseOptions{Backend: Closure}},
 			{"loaded bytecode", loaded, ParseOptions{Backend: Bytecode}},
 			{"limited loaded closure", loaded, ParseOptions{Backend: Closure, WorkLimits: limits}},
@@ -494,9 +475,8 @@ rule e Num = operators {
 			t.Errorf("Fix: %v\n%s", err, src)
 		}
 	}
-	// The text struct counterpart builds the struct in its actions, with or without type checking.
+	// The text struct counterpart builds the struct in its actions.
 	prog := compile(t, textStructOperatorsRuleGrammar)
-	unchecked := compile(t, textStructOperatorsRuleGrammar, Options{NoTypeCheck: true})
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		o := ParseOptions{Backend: b}
 		for _, in := range terminalOperatorsRuleInputs {
@@ -506,9 +486,6 @@ rule e Num = operators {
 			}
 			if got := resultWith(prog, in, o); got != want {
 				t.Errorf("%q %s: %s\nwant %s", in, b, got, want)
-			}
-			if got := resultWith(unchecked, in, o); got != want {
-				t.Errorf("%q unchecked %s: %s\nwant %s", in, b, got, want)
 			}
 		}
 	}

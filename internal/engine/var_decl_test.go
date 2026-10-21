@@ -179,9 +179,8 @@ rule main V = {d := d + 2} {tag := tag + "!"} "a" => V{N: d * 3, S: tag, B: on &
 			t.Errorf("%v: got %v, %v", backend, n, err)
 		}
 	}
-	// Without the type checker the names are still resolved.
-	if got := compileMessage(t, "rule main = {x := 1} \"a\"", Options{NoTypeCheck: true}); !strings.Contains(got, "undefined variable x") {
-		t.Errorf("unchecked: %q", got)
+	if got := compileMessage(t, "rule main = {x := 1} \"a\""); !strings.Contains(got, "undefined variable x") {
+		t.Errorf("undeclared variable: %q", got)
 	}
 }
 
@@ -274,17 +273,10 @@ func TestLoadedBindingNeedsNoCheck(t *testing.T) {
 		t.Error("an ASSIGN with a check operand was accepted")
 	}
 
-	// Without type checking a binding of another type is not rejected, and the variable then
-	// holds that value: a read in an arithmetic expression reports the mismatch as an action error.
-	unchecked := compile(t, "var x int\nrule bound = {x := \"s\"} \"a\" => x\nrule sum = {x := \"s\"} \"a\" => x + 1\n", Options{NoTypeCheck: true})
-	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		if n, err := unchecked.ParseWith("bound", "a", ParseOptions{Backend: backend}); err != nil || n.String() != `"s"` {
-			t.Errorf("%v: got %v, %v; want \"s\"", backend, n, err)
-		}
-		if _, err := unchecked.ParseWith("sum", "a", ParseOptions{Backend: backend}); err == nil || !strings.Contains(err.Error(), "invalid operands") {
-			t.Errorf("%v: got %v; want an operand error", backend, err)
+	// A binding of another type is rejected when the grammar is compiled, whatever reads the variable.
+	for _, rule := range []string{"bound = {x := \"s\"} \"a\" => x", "sum = {x := \"s\"} \"a\" => x + 1"} {
+		if got := compileMessage(t, "var x int\nrule "+rule+"\n"); !strings.Contains(got, "cannot use string as int in the binding of variable x") {
+			t.Errorf("%s: %q", rule, got)
 		}
 	}
-	checkBackends(t, unchecked, "bound", "a")
-	checkBackends(t, unchecked, "sum", "a")
 }

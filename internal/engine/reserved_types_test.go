@@ -9,7 +9,7 @@ import (
 )
 
 // Tuple types and type arguments parse, format and round-trip through JSON. Tuple types and node[T]
-// compile; other type arguments are errors, with or without type checking.
+// compile; other type arguments are errors.
 func TestReservedTypeSyntax(t *testing.T) {
 	src := "type A ~ () | (B,) | (B, *C) | node[B] | []node[(B, C), D]\ntype B = { Text string }\ntype C = { Text string }\ntype D = { Text string }\nrule main = \"a\""
 	g, err := syntax.Parse(src)
@@ -52,13 +52,13 @@ func TestReservedTypeSyntax(t *testing.T) {
 		"rule main = \"a\" => [](node[string], node[_]){}",
 		"type A ~ node[node[string]] | node[int]\nrule main = \"a\"",
 	} {
-		for _, opts := range []Options{{}, {NoTypeCheck: true}} {
+		for _, opts := range []Options{{}} {
 			g, err := syntax.Parse(src)
 			if err != nil {
 				t.Fatalf("%q: %v", src, err)
 			}
 			if _, err := Compile(g, opts); err != nil {
-				t.Errorf("%q (NoTypeCheck %v): %v", src, opts.NoTypeCheck, err)
+				t.Errorf("%q: %v", src, err)
 			}
 		}
 	}
@@ -81,21 +81,21 @@ func TestReservedTypeSyntax(t *testing.T) {
 		{"type B = { Text string }\nrule main B[node[string]] = \"a\"", "type B takes no type arguments"},
 		{"rule main int[node[string]] = \"a\"", "type int takes no type arguments"},
 		{"rule main _[node[string]] = \"a\"", "type _ takes no type arguments"},
-		// An undefined name is rejected without type checking too.
+		// An undefined name is rejected.
 		{"type A ~ Nope[int]\nrule main = \"a\"", "undefined type Nope"},
 		{"type T = { F Nope[int] }\nrule main = \"a\"", "undefined type Nope"},
 		{"rule main Nope[int] = \"a\"", "undefined type Nope"},
 	} {
-		for _, opts := range []Options{{}, {NoTypeCheck: true}} {
+		for _, opts := range []Options{{}} {
 			g, err := syntax.Parse(tc.src)
 			if err != nil {
 				t.Fatalf("%q: %v", tc.src, err)
 			}
 			_, err = Compile(g, opts)
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
-				t.Errorf("%q (NoTypeCheck %v): got %v, want %q", tc.src, opts.NoTypeCheck, err, tc.want)
+				t.Errorf("%q: got %v, want %q", tc.src, err, tc.want)
 			} else if strings.Count(err.Error(), "\n") > 0 {
-				t.Errorf("%q (NoTypeCheck %v): reported more than once: %v", tc.src, opts.NoTypeCheck, err)
+				t.Errorf("%q: reported more than once: %v", tc.src, err)
 			}
 		}
 	}
@@ -112,13 +112,13 @@ func TestReservedTypeSyntax(t *testing.T) {
 		"type A ~ node[string, int]\nrule main A = \"a\"\nrule other A = \"b\"",
 		"type A ~ node[string, int]\nrule main = x:\"a\" {$x.(A) == $x} => $x.(A)",
 	} {
-		for _, opts := range []Options{{}, {NoTypeCheck: true}} {
+		for _, opts := range []Options{{}} {
 			g, err := syntax.Parse(src)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if _, err := Compile(g, opts); err == nil || strings.Count(err.Error(), "node takes one type argument") != 1 {
-				t.Fatalf("%q (NoTypeCheck %v): got %v", src, opts.NoTypeCheck, err)
+				t.Fatalf("%q: got %v", src, err)
 			}
 		}
 	}
@@ -132,17 +132,17 @@ func TestNodeStringType(t *testing.T) {
 		"rule main = x:\"a\" => $x.(node[string])",
 		"type W = { V int }\ntype T ~ node[string] | W\nrule main T = \"a\"",
 	} {
-		for _, opts := range []Options{{}, {NoTypeCheck: true}} {
+		for _, opts := range []Options{{}} {
 			g, err := syntax.Parse(src)
 			if err != nil {
 				t.Fatalf("%q: %v", src, err)
 			}
 			p, err := Compile(g, opts)
 			if err != nil {
-				t.Fatalf("%q (NoTypeCheck %v): %v", src, opts.NoTypeCheck, err)
+				t.Fatalf("%q: %v", src, err)
 			}
 			if _, err := p.Parse("main", "a"); err != nil {
-				t.Fatalf("%q (NoTypeCheck %v): parse: %v", src, opts.NoTypeCheck, err)
+				t.Fatalf("%q: parse: %v", src, err)
 			}
 		}
 	}
@@ -215,7 +215,7 @@ func TestReservedUnnamedStructType(t *testing.T) {
 		{"type A ~ { A node[string] }\nrule main = x:\"a\" => []A{$x}\nrule b = x:\"a\" => []A{$x}", "1:10"},
 		{"type A ~ { A node[string] }\nrule main = x:\"a\" {[]A{$x} == nil} => []A{$x}", "1:10"},
 	} {
-		for _, opts := range []Options{{}, {NoTypeCheck: true}} {
+		for _, opts := range []Options{{}} {
 			g, err := syntax.Parse(tc.src)
 			if err != nil {
 				t.Fatalf("%q: %v", tc.src, err)
@@ -223,7 +223,7 @@ func TestReservedUnnamedStructType(t *testing.T) {
 			_, err = Compile(g, opts)
 			want := tc.pos + ": unnamed struct types are not supported yet"
 			if err == nil || !strings.Contains(err.Error(), want) || strings.Count(err.Error(), "\n") > 0 {
-				t.Errorf("%q (NoTypeCheck %v): got %v, want only %q", tc.src, opts.NoTypeCheck, err, want)
+				t.Errorf("%q: got %v, want only %q", tc.src, err, want)
 			}
 		}
 	}

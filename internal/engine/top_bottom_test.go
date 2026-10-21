@@ -107,7 +107,7 @@ func TestTopBottomListCheck(t *testing.T) {
 		{"*[]_ | int", "*([]_ | int)"},
 	} {
 		src := "type T = { A " + tc.field + " }\ntype U = { F _ }\nrule main = x:\"a\" => T{A: U{F: \"s\"}.F.(" + tc.field + ")}\nrule ok = x:\"a\"* => T{A: U{F: $x.Value}.F.(" + tc.field + ")}\nrule rule []_ = x:\"a\"* => U{F: $x.Value}.F.([]_)\nrule bad []_ = x:\"a\" => U{F: $x}.F.([]_)"
-		for _, opts := range []Options{{}, {NoTypeCheck: true}} {
+		for _, opts := range []Options{{}} {
 			program := compile(t, src, opts)
 			data, err := program.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
 			if err != nil {
@@ -166,9 +166,8 @@ func TestTopBottomReportedOnce(t *testing.T) {
 	}
 }
 
-// Without type checking, a location of type _|_ is still an error: the run-time checks cannot
-// describe it and would accept every value.
-func TestTopBottomWithoutTypeCheck(t *testing.T) {
+// A location of type _|_ is an error: no value is assignable to it.
+func TestTopBottomLocationsAreRejected(t *testing.T) {
 	for _, tc := range []struct{ src, want string }{
 		{"rule main = x:\"a\" => $x.(_|_)", "the cast has type _|_"},
 		{"rule main = x:\"a\" => $x.(int & string)", "the cast has type _|_"},
@@ -182,17 +181,17 @@ func TestTopBottomWithoutTypeCheck(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
-		if _, err := Compile(g, Options{NoTypeCheck: true}); err == nil || !strings.Contains(err.Error(), tc.want) {
+		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%q: got %v, want %q", tc.src, err, tc.want)
 		}
 	}
-	// Other type errors stay unreported without type checking.
+	// Other type errors are reported too.
 	g, err := syntax.Parse("type T = { A node[string] }\nrule main = \"a\" => T{A: 1}")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Compile(g, Options{NoTypeCheck: true}); err != nil {
-		t.Fatal(err)
+	if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), "cannot use int") {
+		t.Fatalf("got %v, want a type error", err)
 	}
 }
 
@@ -259,7 +258,7 @@ func TestTopBottomSchema(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`{"name":"A","shape":{"kind":"any"}}`, `{"name":"B","shape":{"kind":"node","value":{"kind":"scalar","scalar":"string"}}}`, `{"name":"C","shape":{"kind":"any"}}`} {
+	for _, want := range []string{`{"name":"A","shape":{"kind":"top"}}`, `{"name":"B","shape":{"kind":"node","value":{"kind":"scalar","scalar":"string"}}}`, `{"name":"C","shape":{"kind":"top"}}`} {
 		if !strings.Contains(string(data), want) {
 			t.Fatalf("schema lacks %s:\n%s", want, data)
 		}

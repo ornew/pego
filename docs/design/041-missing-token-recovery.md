@@ -66,7 +66,7 @@ Recognition still evaluates actions needed to supply predicate values; it skips 
 Add `Missing` to the reserved type list and inference as a union of the literal's ordinary Match and Missing.
 Propose the existing Error-style assignability rule for node destinations. Go exports a typed `Missing` value
 with Span, Text, Expected and Message; TS exports its corresponding `type:"Missing"` interface. Explicit node
-unions and open/any conversions preserve it; a destination concrete struct/terminal that cannot hold Missing
+unions and open/`_` conversions preserve it; a destination concrete struct/terminal that cannot hold Missing
 receives its existing nil/null recovery representation, with the diagnostic retained. A known list converts its
 elements with these same rules, rather than dropping or inventing source tokens. Aliases use their canonical
 representation. Document this distinction so consumers needing missing-token identity declare a union or retain
@@ -145,7 +145,7 @@ Proposed tests cover absent/zero/positive/negative limits, callback options once
 multibyte/invalid UTF-8, partial reader prefixes, chained insertions, nested repetitions and minima, choices/cuts,
 lookahead, labels, consuming recovery, LR cycles and Operators Rule longest-match ties. Check budget exhaustion after
 backtracking and during seed replay; compare diagnostics and values across backends and fresh versus edited
-Document parses. Exercise union/any/CST/list/alias/concrete nil mappings, retained results, concurrent/reentrant
+Document parses. Exercise union/`_`/CST/list/alias/concrete nil mappings, retained results, concurrent/reentrant
 calls, callback stop, cancellation and subsequent pooled retry. Property tests must establish termination and
 that strict mode has exactly the old acceptance set.
 

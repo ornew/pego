@@ -19,7 +19,7 @@ func TestCompileMalformedAST(t *testing.T) {
 		{"reversed repeat", &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "p", Expr: &grammar.Repeat{Expr: &grammar.Literal{Value: "a"}, Min: 2, Max: 1}}}}}, "$.file.decls[0].expr.max"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			for _, opts := range []Options{{}, {NoTypeCheck: true}} {
+			for _, opts := range []Options{{}} {
 				func() {
 					defer func() {
 						if r := recover(); r != nil {

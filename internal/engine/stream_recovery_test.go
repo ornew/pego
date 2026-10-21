@@ -20,7 +20,7 @@ func TestStreamRecoveryRejected(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, opts := range []Options{{}, {NoTypeCheck: true}, {recognize: true}} {
+		for _, opts := range []Options{{}, {recognize: true}} {
 			if _, err := Compile(g, opts); err == nil || !strings.Contains(err.Error(), streamRecoveryError) {
 				t.Errorf("%s: %v", src, err)
 			}

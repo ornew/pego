@@ -28,7 +28,7 @@ fields of each struct type and the resolved alias types), and the generator maps
 | `[]T` | `[]T'` |
 | `*T` | `*int`, `*string` or `*bool` for basic types; otherwise the Go type of `T`, which is already nilable |
 | `Seq`, `List`, `Operator`, records | `*Node`, unchanged |
-| `node`, `terminal`, `any`, other unions | `any`, holding the converted value |
+| `node`, `terminal`, `_`, other unions | `any`, holding the converted value |
 
 Names that clash with the runtime's exported names (`Node`, `Match`, `Error`, `Parse`, ...) get a trailing `_`
 (a grammar type `Node` becomes `Node_`), and the helper `Span` takes a name no type or field uses.
@@ -47,7 +47,7 @@ list. Where a struct or terminal type is expected, an `Error` node becomes `nil`
 ### The Typed Runtime
 
 When every value `ParseAST` can return has a Go type of its own (`runtimeOK`: no `Seq`, `List`, `Operator`, record,
-`node`, `terminal` or `any` in the result type or in any struct field) and no action or predicate reads a field of a
+`node`, `terminal` or `_` in the result type or in any struct field) and no action or predicate reads a field of a
 struct (a typed value keeps its fields converted, so reading one back would differ from the node's field: a list
 would be a new list, an omitted `int` 0 rather than nil, an `Error` nil), the generated parser builds the values
 directly. `runtime/typed.go` is a second runtime that mirrors `runtime/runtime.go` step by step, with values of type
@@ -188,4 +188,4 @@ built lists directly had taken 4.5 ms.
 
 - Grammars whose results include CST values convert the tree after the parse, at a small extra cost.
 - `ParseAST` is generated for the start rule only (`ParseRule` returns `*Node`).
-- Values whose type is not known statically (`node`, `any`, unions with basic members) are `any`.
+- Values whose type is not known statically (`node`, `_`, unions with basic members) are `any`.

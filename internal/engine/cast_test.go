@@ -87,21 +87,13 @@ func TestCastErrors(t *testing.T) {
 			t.Errorf("%q: got %v, want %q", tc.src, err, tc.want)
 		}
 	}
-	// Without type checking the cast still fails at run time.
-	program := compile(t, "rule main = x:n => $x.(P)\n"+castRules, Options{NoTypeCheck: true})
-	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		_, err := program.ParseWith("main", "1", ParseOptions{Backend: backend})
-		if err == nil || !strings.Contains(err.Error(), "cannot cast Num to P") {
-			t.Fatalf("%s: %v", backend, err)
-		}
-	}
-	// An unknown type is rejected without type checking too.
+	// An unknown type is rejected.
 	g, err := syntax.Parse(`rule main = x:"a" => $x.(Nope)`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Compile(g, Options{NoTypeCheck: true}); err == nil || !strings.Contains(err.Error(), "Nope") {
-		t.Fatalf("unknown cast type without type checking: %v", err)
+	if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), "Nope") {
+		t.Fatalf("unknown cast type: %v", err)
 	}
 }
 

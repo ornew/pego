@@ -86,7 +86,7 @@ type typeInfo struct {
 // type of its value (for example "[]Expr | node[[]node[string]]"). In an inferred type, a
 // reference to another rule is that rule's declared type, or the rule's name if it has none. It
 // reports false if the program has no such rule or its types were not checked
-// (Options.NoTypeCheck, or a program loaded from a compiled grammar).
+// (a program loaded from a compiled grammar).
 func (p *Program) RuleType(name string) (string, bool) {
 	if p.typed == nil {
 		return "", false
@@ -126,38 +126,6 @@ func unionMembers(t ty) ty {
 type typedField struct {
 	name string
 	t    ty
-}
-
-// checkBottomLocations reports the fields and rules of type _|_, and type syntax that is not
-// supported yet, when types are not checked otherwise (Options.NoTypeCheck). No value fits a
-// location of type _|_, while the run-time checks treat a type they cannot describe as one every
-// value fits.
-func checkBottomLocations(prog *Program, errs *ErrorList, control *compileControl) {
-	defer dropRepeatedErrors(errs, len(*errs))
-	k := &typeResolver{control: control, prog: prog, errs: errs, reportUnsupported: true}
-	located := func(t grammar.TypeExpr, pos grammar.Pos, what string) {
-		k.report = false // other type errors stay unreported, as without this check
-		r := k.resolve(t)
-		k.report = true
-		if r == tyBottom {
-			k.errorf(pos, "%s has type _|_, which has no values", what)
-		}
-	}
-	for _, td := range control.types(prog.Grammar) {
-		switch spec := td.(type) {
-		case *grammar.TypeDef:
-			for _, f := range defFields(spec) {
-				located(f.Type, f.Diagnostic(), "field "+f.Name+" of "+td.DeclName())
-			}
-		case *grammar.TypeAlias:
-			k.resolve(spec.Type) // an alias is not a location, but may use unsupported syntax
-		}
-	}
-	for _, rd := range control.rules(prog.Grammar) {
-		if rd.Type != nil {
-			located(rd.Type, rd.Diagnostic(), "rule "+rd.Name)
-		}
-	}
 }
 
 // concreteType resolves aliases and normalized singleton unions to their node type.

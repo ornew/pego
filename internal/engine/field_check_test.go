@@ -142,7 +142,7 @@ func fieldCheckInputs() []string {
 }
 
 // TestConstructedFieldChecks checks which dynamically typed values a cast to each declared field
-// type accepts, on every backend, with and without type checking, and from a compiled file.
+// type accepts, on every backend, and from a compiled file.
 func TestConstructedFieldChecks(t *testing.T) {
 	// The terminal model is the same grammar in the retired terminal type syntax, which
 	// syntax.ParseLegacy reads as the text structs it means: it accepts the same values.
@@ -175,10 +175,6 @@ func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string)
 			if err != nil {
 				t.Fatal(err)
 			}
-			unchecked, err := Compile(g, Options{NoTypeCheck: true})
-			if err != nil {
-				t.Fatal(err)
-			}
 			data, err := checked.MarshalBinary("main")
 			if err != nil {
 				t.Fatal(err)
@@ -206,7 +202,6 @@ func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string)
 						b    Backend
 					}{
 						{"closure", checked, Closure}, {"bytecode", checked, Bytecode}, {"iterative", checked, BytecodeIterative},
-						{"unchecked closure", unchecked, Closure}, {"unchecked bytecode", unchecked, Bytecode},
 						{"loaded closure", loaded, Closure}, {"loaded bytecode", loaded, BytecodeIterative},
 						{"bare bytecode", loadedBare, Bytecode},
 					} {
@@ -279,7 +274,7 @@ rule item Int = "i" => Int{Text: "i"}
 	if got := resultWith(prog, "iv", ParseOptions{Backend: Bytecode}); !strings.Contains(got, "cannot cast []_ to Int") {
 		t.Fatalf("dynamic list: %s", got)
 	}
-	// The recognizer, built without type checking, keeps the same casts as its program.
+	// The recognizer keeps the same casts as its program.
 	pred := compile(t, `type Int = { Text string }
 type S = { Static Int; Dynamic Int }
 rule main = a:item d:val {S{Static: $a, Dynamic: $d.(Int)} != nil}

@@ -60,7 +60,7 @@ and type entries and is not a valid complete schema:
 
 Each type entry has an identity and shape. Declared identities use grammar type names; inferred identities use rule names and an explicit inferred origin; reserved CST kinds occupy a separate namespace. Equal shapes do not merge identities. Fields are serialized by UTF-8 name, union alternatives by stable schema identity, and children in parser order. Recursive shapes use named references rather than recursive inline expansion. Declaration order may be included as metadata, but no serialized meaning depends on map iteration.
 
-Field expressions encode `scalar`, `node`, `list`, `optional`, `union`, and `any`. `int`, `string`, and `bool` are scalar kinds, not child nodes. Optionality is grammar-level nil-capability; scalar `0`, empty string and `false` are ordinary values, not evidence that a type is optional. Target-language zero/default mappings are separate metadata; it does not promise a distinct absent-versus-present-nil runtime state or JSON key-presence behavior. Lists remain lists when empty or of length one. Unions retain alternative identities, including a valid empty union from the grammar AST. Inferred `any` remains dynamic and is never narrowed from examples.
+Field expressions encode `scalar`, `node`, `list`, `optional`, `union`, and `top`. `int`, `string`, and `bool` are scalar kinds, not child nodes. Optionality is grammar-level nil-capability; scalar `0`, empty string and `false` are ordinary values, not evidence that a type is optional. Target-language zero/default mappings are separate metadata; it does not promise a distinct absent-versus-present-nil runtime state or JSON key-presence behavior. Lists remain lists when empty or of length one. Unions retain alternative identities, including a valid empty union from the grammar AST. Inferred `any` remains dynamic and is never narrowed from examples.
 
 A reachable `list` shape also brings the reserved `cst/List` identity into the
 export. Parser repetitions and typed list fields are represented by runtime
@@ -117,13 +117,13 @@ described in
 ## Alternatives Considered
 
 - **Export generated declarations:** backend-specific names/layout would omit CST, dynamic output, and source-level identity. Export checked grammar metadata instead.
-- **Infer schema from parsed values:** one sample can hide union alternatives or incorrectly narrow `any`. Do not use observations as type evidence.
+- **Infer schema from parsed values:** one sample can hide union alternatives or incorrectly narrow `top`. Do not use observations as type evidence.
 - **Reuse Node JSON:** it is a runtime value format and cannot express possible optional/list/union shapes or declared-versus-inferred provenance.
 - **Promise Tree-sitter compatibility:** it would impose different node and source-retention semantics. A consumer-specific adapter can be specified separately.
 
 ## Testing and Performance Plan
 
-Cover every grammar type constructor, recursive references, unions, optional/nil-capable and list nesting, scalar fields, inferred `any`, CST-only rules, unreachable definitions, and invalid shapes. Verify deterministic bytes, round trips, unsupported-version handling, backend parity, and typed Go/TypeScript declarations against the schema. Measure export time and allocations on small and large grammars separately from parse and code generation.
+Cover every grammar type constructor, recursive references, unions, optional/nil-capable and list nesting, scalar fields, inferred `top`, CST-only rules, unreachable definitions, and invalid shapes. Verify deterministic bytes, round trips, unsupported-version handling, backend parity, and typed Go/TypeScript declarations against the schema. Measure export time and allocations on small and large grammars separately from parse and code generation.
 
 ## Performance and Results
 
@@ -235,12 +235,12 @@ Types and rules are sorted by identity/name, fields by name, and union
 alternatives by their canonical JSON description. Identities use `declared/`,
 `inferred/`, and `cst/` namespaces; even declared rule results retain a separate
 rule-shape identity and declared provenance. Named recursive references remain
-references. Scalar, optional, list, union, dynamic `any`, terminal, and CST/capture
+references. Scalar, optional, list, union, dynamic `top`, terminal, and CST/capture
 categories are explicit. Ordinary CST children are conservatively described as
 ordered optional node lists; their exact positional alternatives are not inferred.
 A grammar with `#recover` or `#missing` exports `Error` or `Missing`, whose
 nodes can replace any node or list. A generic node child, a terminal or a
-dynamic `any` value retains all reserved CST identities in the reachable export,
+dynamic `top` value retains all reserved CST identities in the reachable export,
 so a schema-checked query can name an uncaptured `Match` below a `Seq`.
 
 The envelope decoder rejects unsupported formats and versions, unknown fields,

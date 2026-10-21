@@ -13,9 +13,6 @@ type typeResolver struct {
 	prog    *Program
 	errs    *ErrorList
 	report  bool
-	// reportUnsupported reports type syntax that is not supported yet even while report is
-	// false: without type checking such types would silently accept every value.
-	reportUnsupported bool
 	// sawUnsupported records that a resolved type used syntax that is not supported yet, whether
 	// or not it was reported here, so that checks of the type are not reported on top.
 	sawUnsupported bool
@@ -74,8 +71,7 @@ func (k *typeResolver) resolve(t grammar.TypeExpr) ty {
 	case *grammar.TypeApp:
 		if t.Name == "node" {
 			if len(t.Args) != 1 {
-				// Reported like unsupported syntax: without type checking, the type would accept
-				// every value.
+				// Reported like unsupported syntax.
 				k.unsupported(t, t.Diagnostic(), "node takes one type argument, got %d", len(t.Args))
 				return tyAny
 			}
@@ -181,10 +177,10 @@ func valueAlternatives(t ty) []ty {
 	return []ty{t}
 }
 
-// unsupported reports type syntax t that is not supported yet (reportUnsupported), once.
+// unsupported reports type syntax t that is not supported yet, once.
 func (k *typeResolver) unsupported(t grammar.TypeExpr, pos grammar.Pos, format string, args ...any) {
 	k.sawUnsupported = true
-	if !k.report && !k.reportUnsupported || k.prog.unsupportedSeen[t] {
+	if !k.report || k.prog.unsupportedSeen[t] {
 		return
 	}
 	if k.prog.unsupportedSeen == nil {

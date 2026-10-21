@@ -136,7 +136,7 @@ func TestValueTypesOptionalCaptures(t *testing.T) {
 	}
 }
 
-// valueTypesOf compiles src without the type check, and returns the value types of its rules and
+// valueTypesOf builds src without running the type check, as a compiled grammar is rebuilt, and returns the value types of its rules and
 // the errors of its actions. It accepts earlier syntax, which still reaches the engine from JSON
 // grammars.
 func valueTypesOf(t *testing.T, src string) (map[string]ty, ErrorList) {
@@ -145,7 +145,7 @@ func valueTypesOf(t *testing.T, src string) (map[string]ty, ErrorList) {
 	if err != nil {
 		t.Fatalf("%q: %v", src, err)
 	}
-	p, err := Compile(g, Options{NoTypeCheck: true})
+	p, err := build(g, Options{}, make([]ruleFlags, len(g.Rules())))
 	if err != nil {
 		t.Fatalf("%q: %v", src, err)
 	}

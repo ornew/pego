@@ -26,7 +26,7 @@ func TestOutputSchemaCanonicalContract(t *testing.T) {
 			s.Types = append(s.Types, SchemaType{ID: "cst/Match", Name: "Match", Origin: "cst", Shape: SchemaShape{Kind: "node", Value: &SchemaShape{Kind: "scalar", Scalar: "string"}}})
 		}, "identity"},
 		{"declared non-struct", func(s *OutputSchema) {
-			s.Types = append(s.Types, SchemaType{ID: "declared/Alias", Name: "Alias", Origin: "declared", Shape: SchemaShape{Kind: "any"}})
+			s.Types = append(s.Types, SchemaType{ID: "declared/Alias", Name: "Alias", Origin: "declared", Shape: SchemaShape{Kind: "top"}})
 		}, "must be a struct"},
 		{"node without value", func(s *OutputSchema) {
 			s.Types = append(s.Types, SchemaType{ID: "inferred/other", Name: "other", Origin: "inferred", Shape: SchemaShape{Kind: "node"}})
@@ -74,7 +74,7 @@ func TestOutputSchemaCanonicalContract(t *testing.T) {
 	}
 
 	s := validInMemoryOutputSchema()
-	for i, kind := range []string{"nil", "any", "error", "tuple", "union", "struct"} {
+	for i, kind := range []string{"nil", "top", "error", "tuple", "union", "struct"} {
 		name := fmt.Sprintf("empty%d", i)
 		shape := SchemaShape{Kind: kind, Fields: []SchemaField{}, Alternatives: []SchemaShape{}, Elements: []SchemaShape{}, Captures: []SchemaCapture{}}
 		if kind == "struct" {

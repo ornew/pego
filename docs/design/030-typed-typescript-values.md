@@ -123,10 +123,10 @@ Mapping details:
 | declared alias | exported alias of the complete target representation, preserving nullability |
 | canonical declared node union | union of converted members plus `RecoveredError`; nullable in zero/optional positions |
 | CST or record | existing `Node`, preserving its Node representation |
-| mixed/open or undeclared unions, `node`, `terminal`, `any` | conservative TypedValue, following Go any-conversion and including null; inferred nil/never use this same recipe because recovery can produce Error values |
+| mixed/open or undeclared unions, `node`, `terminal`, `_` | conservative TypedValue, following Go any-conversion and including null; inferred nil/never use this same recipe because recovery can produce Error values |
 
 Generate these open-value unions from the known grammar declarations plus
-Match, RecoveredError and CST Node. The `any` mapping also includes
+Match, RecoveredError and CST Node. The `_` mapping also includes
 number|bigint, string and boolean. Conversion of a dynamically typed List stays
 Node where Go's anyValue does; statically known list conversion returns an
 array. Use `unknown` only if metadata cannot safely describe a permitted value.
@@ -146,7 +146,7 @@ RecoveredError even though it is not a written member, and preserves CST Nodes.
 Missing values become null. Inferred nil/never use the same conservative
 TypedValue mapping: a nil-producing or nonproductive rule can recover to an
 Error value. Other permitted dynamic values arriving through
-`any` must follow the same conversion, rather than be filtered or rejected.
+`_` must follow the same conversion, rather than be filtered or rejected.
 Export such mixed/open aliases conservatively as the complete TypedValue
 representation, documenting their written members; a narrower TS union would
 promise filtering that the existing Go converter does not perform. Test
@@ -199,7 +199,7 @@ representation. Iteration alone does not prevent exponential duplication of a
 shared DAG: a fold or LR action can store the same capture into two fields at
 each growth step. Cache each `(Node, representation)` once, with representation
 IDs derived from canonical converter recipes. Distinguish struct/terminal,
-union/any and list element conversions: the same Error Node can become null in
+union/`_` and list element conversions: the same Error Node can become null in
 one position and RecoveredError in another. Cache null using an explicit
 presence check, not a null-as-missing sentinel.
 

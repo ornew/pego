@@ -158,8 +158,8 @@ func TestOutputSchemaInferredCaptureAndDynamic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if shape.Kind != "node" || shape.Value.Kind != "tuple" || len(shape.Value.Elements) != 3 || shape.Value.Elements[1].Kind != "any" ||
-		len(shape.Captures) != 3 || shape.Captures[0].Name != "z" || shape.Captures[0].Shape.Kind != "any" ||
+	if shape.Kind != "node" || shape.Value.Kind != "tuple" || len(shape.Value.Elements) != 3 || shape.Value.Elements[1].Kind != "top" ||
+		len(shape.Captures) != 3 || shape.Captures[0].Name != "z" || shape.Captures[0].Shape.Kind != "top" ||
 		!reflect.DeepEqual(shape.Captures[1].Paths, [][]int{{0}, {2}}) || !shape.Captures[2].Side || shape.Captures[2].Paths != nil {
 		t.Fatalf("shape %+v", shape)
 	}
@@ -180,7 +180,7 @@ func TestOutputSchemaRejectsUnresolvedShapes(t *testing.T) {
 		&grammar.TypeGroup{},
 	} {
 		shape, err := p.schemaDeclared(expr)
-		if err != nil || shape.Kind != "any" && (shape.Kind != "list" || shape.Element.Kind != "any") {
+		if err != nil || shape.Kind != "top" && (shape.Kind != "list" || shape.Element.Kind != "top") {
 			data, _ := json.Marshal(shape)
 			t.Errorf("unresolved declared shape %T: %s %v", expr, data, err)
 		}
@@ -220,7 +220,7 @@ rule main = (-"a")*`)
 	if got, ok := byID["declared/Open"]; ok {
 		t.Fatalf("exported the alias Open as a type: %+v", got)
 	}
-	if got := byID["declared/Bag"].Shape.Fields[0].Shape; got.Kind != "list" || got.Element == nil || got.Element.Kind != "any" {
+	if got := byID["declared/Bag"].Shape.Fields[0].Shape; got.Kind != "list" || got.Element == nil || got.Element.Kind != "top" {
 		t.Fatalf("any list field: %+v", got)
 	}
 	if got := byID["inferred/main"].Shape; got.Kind != "node" || got.Value.Kind != "list" || got.Value.Element.Kind != "node" || got.Value.Element.Value.Kind != "tuple" || len(got.Value.Element.Value.Elements) != 0 {

@@ -111,7 +111,7 @@ func validateOutputSchemaGraph(s OutputSchema) error {
 					return fmt.Errorf("missing output schema node value in %s %s", ownerKind, ownerName)
 				}
 				allowed = memberValue | memberCaptures
-			case "any", "nil", "error", "missing":
+			case "top", "nil", "error", "missing":
 			default:
 				return fmt.Errorf("unknown output schema shape kind %q in %s %s", shape.Kind, ownerKind, ownerName)
 			}

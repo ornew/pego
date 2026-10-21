@@ -68,15 +68,6 @@ func TestDefaultValueSkipsTypeErrors(t *testing.T) {
 	if _, err := Compile(mustParse("rule main = missing => 1"), Options{DefaultValue: true}); err == nil {
 		t.Error("an undefined rule compiled with default values")
 	}
-	// Type checking can still be skipped on top of default values.
-	checkDefaultValue(t, src, "rule main = x:\"x\"", "x")
-	noCheck, err := Compile(mustParse(src), Options{DefaultValue: true, NoTypeCheck: true, SourceInfo: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got, want := result(noCheck, "x"), result(compile(t, "rule main = x:\"x\""), "x"); got != want {
-		t.Errorf("with NoTypeCheck: got %s, want %s", got, want)
-	}
 }
 
 func TestDefaultValueKeepsPredicates(t *testing.T) {

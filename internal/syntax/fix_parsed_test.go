@@ -132,7 +132,7 @@ func TestFixLambdaParams(t *testing.T) {
 		inputs   []string
 	}{
 		{"rule main = xs:\"a\"* => map($xs, (x) => $x)", "rule main = xs:\"a\"* => map($xs, (x) => x)", []string{"", "aa"}},
-		{"rule main = xs:\"a\"* => foldl($xs, $xs, (acc, e) => list($acc, $e))", "rule main = xs:\"a\"* => foldl($xs, $xs, (acc, e) => list(acc, e))", []string{"a", "aaa"}},
+		{"rule main = xs:\"a\"* => foldl($xs, $xs, (acc, e) => list($acc, $e).([]_))", "rule main = xs:\"a\"* => foldl($xs, $xs, (acc, e) => list(acc, e).([]_))", []string{"a", "aaa"}},
 		{"rule main = x:\"b\" xs:\"a\"* => list($x, map($xs, (x) => $x))", "rule main = x:\"b\" xs:\"a\"* => list($x, map($xs, (x) => x))", []string{"baa"}},
 		{"rule main = xs:(i:\"a\")* => map($xs, (x) => map($xs, (y) => list($x, $y)))", "rule main = xs:(i:\"a\")* => map($xs, (x) => map($xs, (y) => list(x, y)))", []string{"aa"}},
 		{"rule main = xs:\"a\"* => map($xs, (x) => x)", "rule main = xs:\"a\"* => map($xs, (x) => x)", []string{"aa"}},

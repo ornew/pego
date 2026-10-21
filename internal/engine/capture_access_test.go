@@ -125,13 +125,9 @@ func TestCaptureAccessErrors(t *testing.T) {
 			t.Errorf("%q: got %v, want %q", tc.src, err, tc.want)
 		}
 	}
-	// A struct value has no captures at run time either.
-	program := compile(t, "type T = { A node[string] }\nrule main = x:t => $x.$A\nrule t = a:\"a\" => T{A: $a}", Options{NoTypeCheck: true})
-	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		_, err := program.ParseWith("main", "a", ParseOptions{Backend: backend})
-		if err == nil || !strings.Contains(err.Error(), "T has no capture A") {
-			t.Fatalf("%s: %v", backend, err)
-		}
+	// A struct value has no captures.
+	if got := compileMessage(t, "type T = { A node[string] }\nrule main = x:t => $x.$A\nrule t = a:\"a\" => T{A: $a}"); !strings.Contains(got, "T has no capture A") {
+		t.Fatalf("got %q", got)
 	}
 }
 

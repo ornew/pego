@@ -96,14 +96,8 @@ rule main = v1:"a" => Out{Items: filter(list($v1, nil), (x) => x != nil)}`,
 		`rule main = v1:"a" => filter(list($v1), (x) => 1)`,
 		`rule main = v1:"a" => filter(list($v1), (x) => nil)`,
 	} {
-		program := compile(t, source, Options{NoTypeCheck: true})
-		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			for _, unit := range []PositionUnit{CodePoints, Bytes} {
-				_, err := program.ParseWith("main", "a", ParseOptions{Backend: backend, Unit: unit})
-				if err == nil || !strings.Contains(err.Error(), "filter: predicate must produce a bool") {
-					t.Fatalf("%s/%s: %v", backend, unit, err)
-				}
-			}
+		if got := compileMessage(t, source); !strings.Contains(got, "filter: predicate must produce a bool") {
+			t.Fatalf("%s: %q", source, got)
 		}
 	}
 }
@@ -165,16 +159,11 @@ func TestFilterGeneratedTypeScriptParity(t *testing.T) {
 }
 
 // The checker rejects a predicate of type _, so a predicate that produces another value than a
-// bool is reached only without type checking, where filter reports it.
-func TestFilterNonBoolPredicateWithoutTypeChecking(t *testing.T) {
+// bool is rejected when the grammar is compiled.
+func TestFilterNonBoolPredicateIsRejected(t *testing.T) {
 	const src = `rule main = v1:"a" d:one $$ => filter(list($v1), (item) => $d)
 rule one _ = _ => 1`
 	if got := compileMessage(t, src); !strings.Contains(got, "filter: predicate must produce a bool, got one") {
-		t.Errorf("checked compilation: %q", got)
+		t.Errorf("got %q", got)
 	}
-	prog := compile(t, src, Options{NoTypeCheck: true})
-	if got := result(prog, "a"); !strings.Contains(got, "filter: predicate must produce a bool, got int") {
-		t.Errorf("got %s", got)
-	}
-	checkBackends(t, prog, "main", "a")
 }

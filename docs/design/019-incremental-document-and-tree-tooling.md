@@ -129,7 +129,7 @@ and migration decision.
 **Traversal and schema.** Specify visits by edge or by unique identity, deterministic field/list order, parents when
 nodes have multiple incoming edges, and a cycle policy for hand-built Nodes. Cursor ranges need a position unit and
 an empty-node boundary rule. Output schemas distinguish declared/inferred typed output, normal CST, captures and
-dynamic `any`; they must not claim a complete static schema where actions prevent one. This extends existing type
+dynamic `_`; they must not claim a complete static schema where actions prevent one. This extends existing type
 information and does not adopt Tree-sitter's JSON format as a compatibility promise.
 
 **Notifications and queries.** Edited text, re-evaluated grammar and changed output are different ranges. Replacing

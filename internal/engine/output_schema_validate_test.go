@@ -53,12 +53,12 @@ func TestOutputSchemaDecodeRejectsInvalidGraph(t *testing.T) {
 		},
 		{
 			name: "capture without location",
-			body: `"types":[{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"node","value":{"kind":"tuple"},"captures":[{"name":"value","shape":{"kind":"any"}}]}}]`,
+			body: `"types":[{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"node","value":{"kind":"tuple"},"captures":[{"name":"value","shape":{"kind":"top"}}]}}]`,
 			want: "no location",
 		},
 		{
 			name: "duplicate capture",
-			body: `"types":[{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"node","value":{"kind":"tuple","elements":[{"kind":"any"}]},"captures":[{"name":"value","paths":[[0]],"shape":{"kind":"scalar","scalar":"string"}},{"name":"value","side":true,"shape":{"kind":"any"}}]}}]`,
+			body: `"types":[{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"node","value":{"kind":"tuple","elements":[{"kind":"top"}]},"captures":[{"name":"value","paths":[[0]],"shape":{"kind":"scalar","scalar":"string"}},{"name":"value","side":true,"shape":{"kind":"top"}}]}}]`,
 			want: "duplicate",
 		},
 		{
@@ -139,7 +139,7 @@ func TestOutputSchemaDecodeRejectsUnknownFieldsAndInvalidEnvelope(t *testing.T) 
 }
 
 func TestOutputSchemaDecodeAcceptsNodeCaptureShape(t *testing.T) {
-	data := []byte(`{"format":"pego-output-schema","version":2,"start":"main","positionUnitIndependent":true,"sourceInfo":true,"types":[{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"node","value":{"kind":"tuple","elements":[{"kind":"node","value":{"kind":"scalar","scalar":"string"}},{"kind":"list","element":{"kind":"any"}}]},"captures":[{"name":"value","paths":[[0],[1,2]],"shape":{"kind":"node","value":{"kind":"scalar","scalar":"string"}}},{"name":"look","side":true,"shape":{"kind":"error"}}]}}],"rules":[{"name":"main","origin":"inferred","result":{"kind":"ref","ref":"inferred/main"}}]}`)
+	data := []byte(`{"format":"pego-output-schema","version":2,"start":"main","positionUnitIndependent":true,"sourceInfo":true,"types":[{"id":"inferred/main","name":"main","origin":"inferred","shape":{"kind":"node","value":{"kind":"tuple","elements":[{"kind":"node","value":{"kind":"scalar","scalar":"string"}},{"kind":"list","element":{"kind":"top"}}]},"captures":[{"name":"value","paths":[[0],[1,2]],"shape":{"kind":"node","value":{"kind":"scalar","scalar":"string"}}},{"name":"look","side":true,"shape":{"kind":"error"}}]}}],"rules":[{"name":"main","origin":"inferred","result":{"kind":"ref","ref":"inferred/main"}}]}`)
 	var got OutputSchema
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatal(err)

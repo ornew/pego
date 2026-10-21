@@ -211,25 +211,14 @@ rule main = {value := 1} {Int{value} != nil} "x" / "x"`,
 		if err != nil {
 			t.Fatal(err)
 		}
-		// The static check rejects these constructors. Without it nothing is checked when they run:
-		// the constructor builds the struct with the value it was given, on every backend.
+		// The checker rejects these constructors when the grammar is compiled.
 		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), "cannot use int as string in field Text of Int") {
-			t.Fatalf("checked compilation: %v", err)
-		}
-		p, err := Compile(g, Options{NoTypeCheck: true})
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			if n, err := p.ParseWith("main", "x", ParseOptions{Backend: backend}); n == nil || err != nil {
-				t.Fatalf("%s: %v / %v", backend, n, err)
-			}
+			t.Fatalf("compilation: %v", err)
 		}
 	}
 }
 
-// The text struct counterpart: a field of the wrong type is a compile error; without type checking
-// it is not checked.
+// The text struct counterpart: a field of the wrong type is a compile error.
 func TestConstructedTextStructEvaluationErrors(t *testing.T) {
 	for _, source := range []string{
 		`type Int = { Text string }
@@ -239,16 +228,9 @@ rule main = {value := 1} "x" => Int{Text: value}`,
 var value int
 rule main = {value := 1} {Int{Text: value} != nil} "x" / "x"`,
 	} {
-		// The static check rejects these constructors. Without it nothing is checked when they run:
-		// the constructor builds the struct with the value it was given, on every backend.
+		// The checker rejects these constructors when the grammar is compiled.
 		if got := compileMessage(t, source); !strings.Contains(got, "cannot use int as string in field Text of Int") {
-			t.Fatalf("checked compilation: %q", got)
-		}
-		p := compile(t, source, Options{NoTypeCheck: true})
-		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			if n, err := p.ParseWith("main", "x", ParseOptions{Backend: backend}); n == nil || err != nil {
-				t.Fatalf("%s: %v / %v", backend, n, err)
-			}
+			t.Fatalf("compilation: %q", got)
 		}
 	}
 }
@@ -297,48 +279,37 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 	}
 }
 
-func TestNodeConstructorsWithoutTypeChecking(t *testing.T) {
+func TestNodeConstructorShapes(t *testing.T) {
 	const header = "type Int terminal\ntype Other = {}\nrule main = \"x\" => "
 	for _, action := range []string{`[]any{}`, `Int{"a", "b"}`, `Other{"a"}`} {
 		g, err := syntax.ParseLegacy(header + action)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Compile(g, Options{NoTypeCheck: true}); err == nil {
-			t.Fatalf("NoTypeCheck accepted unsupported constructor shape: %s", action)
+		if _, err := Compile(g, Options{}); err == nil {
+			t.Fatalf("accepted unsupported constructor shape: %s", action)
 		}
 	}
 	for _, action := range []string{`[]int{}`, `[][]string{}`} {
 		if g, err := syntax.ParseLegacy(header + action); err != nil {
 			t.Fatal(err)
-		} else if _, err := Compile(g, Options{NoTypeCheck: true}); err != nil {
-			t.Errorf("NoTypeCheck rejected a list of values %s: %v", action, err)
+		} else if _, err := Compile(g, Options{}); err != nil {
+			t.Errorf("rejected a list of values %s: %v", action, err)
 		}
 	}
 	if g, err := syntax.ParseLegacy(header + `Int{}`); err != nil {
 		t.Fatal(err)
-	} else if _, err := Compile(g, Options{NoTypeCheck: true}); err != nil {
+	} else if _, err := Compile(g, Options{}); err != nil {
 		t.Fatalf("Int{} is a text struct with no field set: %v", err)
 	}
+	// Values of the wrong type are rejected when the grammar is compiled, in actions and predicates.
 	for _, action := range []string{`[]Int{nil}`, `[]Int{Other{}}`, `[]Int{1}`, `Int{1}`} {
 		g, err := syntax.ParseLegacy(header + action)
 		if err != nil {
 			t.Fatal(err)
 		}
-		p, err := Compile(g, Options{NoTypeCheck: true})
-		if err != nil {
-			t.Fatalf("assignability was not bypassed for %s: %v", action, err)
-		}
-		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			n, err := p.ParseWith("main", "x", ParseOptions{Backend: backend})
-			// Without type checking a list may hold the int 1 boxed, and nothing checks the text of Int{1}.
-			invalidValue := action == `Int{1}`
-			if err != nil || n == nil {
-				t.Fatalf("%s/%s: %v / %v", action, backend, n, err)
-			}
-			if !invalidValue && (len(n.children) != 1 || (n.children[0] == nil) != (action == `[]Int{nil}`) || (action == `[]Int{1}`) != (n.children[0] != nil && n.children[0].box == 1)) {
-				t.Fatal(resultJSON(n, err))
-			}
+		if _, err := Compile(g, Options{}); err == nil {
+			t.Errorf("%s was accepted", action)
 		}
 	}
 	for _, action := range []string{`[]Int{1}`, `Int{1}`} {
@@ -346,14 +317,8 @@ func TestNodeConstructorsWithoutTypeChecking(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		p, err := Compile(g, Options{NoTypeCheck: true})
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			if n, err := p.ParseWith("main", "x", ParseOptions{Backend: backend}); n == nil || err != nil {
-				t.Fatalf("%s/%s predicate must backtrack: %v", action, backend, err)
-			}
+		if _, err := Compile(g, Options{}); err == nil {
+			t.Errorf("predicate %s was accepted", action)
 		}
 	}
 }

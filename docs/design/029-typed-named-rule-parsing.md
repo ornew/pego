@@ -169,7 +169,7 @@ changes are required.
 ## Testing
 
 Use a synthetic typed grammar with named rules returning structs, terminals,
-lists, optional values, declared aliases, node unions, CST nodes and `any`,
+lists, optional values, declared aliases, node unions, CST nodes and `_`,
 with scalar fields and aliases. Verify existing scalar rule rejections remain
 unchanged. Compare each result with that rule's existing Node parse followed by
 the generated conversion mapping. Cover rules whose result type differs from
@@ -186,7 +186,7 @@ field; add an unrelated struct with an unrepresentable field to force the full
 `runtimeOK` fallback even when the selected terminal or struct would otherwise
 be representable. Compile consumer fixtures for both execution modes and
 assert the documented zero and typed-nil results on ordinary failure. Also
-cover successful nil-valued `any`, `node` and union rules and verify legacy
+cover successful nil-valued `_`, `node` and union rules and verify legacy
 `ParseAST` nil boxing remains unchanged. Add
 grammar types named `ParseRuleAST` and `ParseRuleAST_` to verify underscore
 cascades, consumer compilation, and any `ParseAST` return-type spelling
