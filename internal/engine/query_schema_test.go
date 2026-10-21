@@ -55,7 +55,7 @@ func TestQuerySchemaCopySharesDAG(t *testing.T) {
 	s := validInMemoryOutputSchema()
 	shared := &SchemaShape{Kind: "scalar", Scalar: "string"}
 	for range 28 {
-		shared = &SchemaShape{Kind: "union", Alternatives: []SchemaShape{
+		shared = &SchemaShape{Kind: "join", Alternatives: []SchemaShape{
 			{Kind: "optional", Element: shared},
 			{Kind: "optional", Element: shared},
 		}}
@@ -64,8 +64,8 @@ func TestQuerySchemaCopySharesDAG(t *testing.T) {
 	// A slice shared by two shapes is shared in the copy as well.
 	alts := []SchemaShape{{Kind: "nil"}, {Kind: "scalar", Scalar: "int"}}
 	s.Types = append(s.Types, SchemaType{ID: "declared/Other", Name: "Other", Origin: "declared", Shape: SchemaShape{Kind: "struct", Fields: []SchemaField{
-		{Name: "A", Shape: SchemaShape{Kind: "list", Element: &SchemaShape{Kind: "union", Alternatives: alts}}},
-		{Name: "B", Shape: SchemaShape{Kind: "union", Alternatives: alts}},
+		{Name: "A", Shape: SchemaShape{Kind: "list", Element: &SchemaShape{Kind: "join", Alternatives: alts}}},
+		{Name: "B", Shape: SchemaShape{Kind: "join", Alternatives: alts}},
 	}}})
 
 	q, err := PrepareQuerySchema(&s)

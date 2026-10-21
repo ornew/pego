@@ -74,7 +74,7 @@ func TestOutputSchemaCanonicalContract(t *testing.T) {
 	}
 
 	s := validInMemoryOutputSchema()
-	for i, kind := range []string{"nil", "top", "error", "tuple", "union", "struct"} {
+	for i, kind := range []string{"nil", "top", "error", "tuple", "join", "struct"} {
 		name := fmt.Sprintf("empty%d", i)
 		shape := SchemaShape{Kind: kind, Fields: []SchemaField{}, Alternatives: []SchemaShape{}, Elements: []SchemaShape{}, Captures: []SchemaCapture{}}
 		if kind == "struct" {
@@ -90,7 +90,7 @@ func TestOutputSchemaCanonicalContract(t *testing.T) {
 
 func TestOutputSchemaJSONExactKeysAndDuplicates(t *testing.T) {
 	s := validInMemoryOutputSchema()
-	s.Types[0].Shape.Fields = []SchemaField{{Name: "Value", Shape: SchemaShape{Kind: "union", Alternatives: []SchemaShape{
+	s.Types[0].Shape.Fields = []SchemaField{{Name: "Value", Shape: SchemaShape{Kind: "join", Alternatives: []SchemaShape{
 		{Kind: "scalar", Scalar: "string"}, {Kind: "optional", Element: &SchemaShape{Kind: "scalar", Scalar: "bool"}},
 	}}}}
 	s.Types = append(s.Types, SchemaType{ID: "inferred/pair", Name: "pair", Origin: "inferred", Shape: SchemaShape{

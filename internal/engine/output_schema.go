@@ -55,7 +55,7 @@ type SchemaRule struct {
 //   - "node": Value is the shape of the node's value, and Captures locates its captures.
 //   - "tuple": Elements are the shapes of the elements, in order; the unit tuple has none.
 //   - "list" and "optional": Element is the shape of the elements, or of the value when present.
-//   - "union": Alternatives are the shapes of the alternatives.
+//   - "join": Alternatives are the shapes of the alternatives.
 //   - "struct": Fields are the fields of a defined struct type.
 //   - "ref": Ref is the ID of a type of the schema; recursive types are never expanded.
 type SchemaShape struct {
@@ -273,7 +273,7 @@ func schemaValue(t ty) (SchemaShape, error) {
 	case basicTy:
 		switch t {
 		case tyBottom:
-			return SchemaShape{Kind: "union"}, nil // no values
+			return SchemaShape{Kind: "join"}, nil // no values
 		case tyInt, tyString, tyBool:
 			return SchemaShape{Kind: "scalar", Scalar: string(t)}, nil
 		case tyNil:
@@ -337,7 +337,7 @@ func schemaValue(t ty) (SchemaShape, error) {
 		e, err := schemaValue(t.elem)
 		return SchemaShape{Kind: "optional", Element: &e}, err
 	case joinTy:
-		s := SchemaShape{Kind: "union"}
+		s := SchemaShape{Kind: "join"}
 		for _, a := range t.alts {
 			v, err := schemaValue(a)
 			if err != nil {

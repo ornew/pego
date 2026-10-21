@@ -32,7 +32,7 @@ node and the labels of its captures. Rule constraints need it.
   inferred value of a rule, with ID `inferred/<rule>`. Aliases are not
   entries: their shapes appear where they are used.
 - `sourceInfo` records whether the parser was compiled with source information.
-- Entries, fields, union alternatives and captures have a stable order, so repeated
+- Entries, fields, join alternatives and captures have a stable order, so repeated
   exports of one checked grammar encode to identical JSON bytes.
 - Export needs checked grammar metadata. A parser restored by `LoadParser` cannot
   export a schema even if its file holds the AST; the error matches
@@ -53,7 +53,7 @@ A shape describes a set of values. Each kind allows only the members listed.
 | `tuple` | `elements` | A tuple with one element per shape, in order |
 | `list` | `element` | A list whose elements have the shape `element` |
 | `optional` | `element` | The values of `element` and `nil` |
-| `union` | `alternatives` | The values of any alternative; no alternatives describe no value |
+| `join` | `alternatives` | The values of any alternative; no alternatives describe no value |
 | `struct` | `fields` | A struct with the named fields |
 | `ref` | `ref` | The values of the referenced type entry |
 
@@ -97,7 +97,7 @@ establish compatibility between grammars.
 `pego.DiffOutputSchemas(before, after)` validates both complete operands and
 compares their contents by type ID and rule name. It returns the added, removed and
 changed entries in sorted order; for equal schemas its `Types` and `Rules` slices are
-empty. The comparison ignores the order of entries, of struct fields, of union
+empty. The comparison ignores the order of entries, of struct fields, of join
 alternatives, of captures and of capture paths, and envelope fields such as `Start`
 and `sourceInfo`; tuple element order and named references are significant. A diff is descriptive: it does not classify compatibility.
 
@@ -131,7 +131,7 @@ match: unknown type and rule names, fields that a type does not have and categor
 or types that a value cannot have. Nested patterns are checked against the shape of
 the field, element or node value to which they apply.
 
-- A union or optional shape accepts a pattern that matches any one of its
+- A join or optional shape accepts a pattern that matches any one of its
   alternatives. With `Value *(Pair | Box)`, a `Value` pattern of type `Pair` with
   `Pair` fields, of type `Box` or of category `nil` compiles, while one of category
   `string` does not.

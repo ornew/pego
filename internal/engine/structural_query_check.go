@@ -8,12 +8,12 @@ import (
 // A query pattern compiled with a schema must be able to match some value the schema admits where
 // it is applied: the pattern of a field must match some value of the field's shape, the pattern
 // of an element some value of the element's shape, and the pattern of a node's value some value
-// of the node's value shape. A union or optional shape needs only one alternative that matches;
+// of the node's value shape. A join or optional shape needs only one alternative that matches;
 // where nothing is known about a value, every pattern can match it. Rule constraints are not
 // checked against shapes, since the schema does not record which rule produces a node. The check
 // never rejects a pattern that can match a value the schema describes.
 
-// queryAtom is one alternative of a shape that is not a union, optional value or inferred rule
+// queryAtom is one alternative of a shape that is not a join, optional value or inferred rule
 // reference.
 type queryAtom struct {
 	// kind is "top" (nothing is known), "nil", "scalar", "error", "node", "tuple", "list" or
@@ -157,7 +157,7 @@ func (k *queryShapeChecker) atoms(shape *SchemaShape, out []queryAtom, active ma
 			out = k.atoms(shape.Element, out, active, seen)
 		}
 		return append(out, queryAtom{kind: "nil"})
-	case "union":
+	case "join":
 		for i := range shape.Alternatives {
 			out = k.atoms(&shape.Alternatives[i], out, active, seen)
 		}

@@ -48,7 +48,7 @@ func TestDiffOutputSchemasIgnoresUnorderedEntries(t *testing.T) {
 	item := pego.SchemaType{ID: "declared/Item", Name: "Item", Origin: "declared", Shape: pego.SchemaShape{
 		Kind: "struct", Fields: []pego.SchemaField{
 			{Name: "Z", Shape: stringShape},
-			{Name: "A", Shape: pego.SchemaShape{Kind: "union", Alternatives: []pego.SchemaShape{stringShape, boolShape}}},
+			{Name: "A", Shape: pego.SchemaShape{Kind: "join", Alternatives: []pego.SchemaShape{stringShape, boolShape}}},
 		},
 	}}
 	item.Shape.Fields = append(item.Shape.Fields, pego.SchemaField{Name: "N", Shape: pego.SchemaShape{
@@ -178,7 +178,7 @@ func TestDiffOutputSchemasRejectsMalformedIdentities(t *testing.T) {
 func TestDiffOutputSchemasRejectsValueSliceCycles(t *testing.T) {
 	valid := diffSchema(nil, nil)
 	alternatives := make([]pego.SchemaShape, 1)
-	alternatives[0] = pego.SchemaShape{Kind: "union", Alternatives: alternatives}
+	alternatives[0] = pego.SchemaShape{Kind: "join", Alternatives: alternatives}
 	fields := make([]pego.SchemaField, 1)
 	fields[0] = pego.SchemaField{Name: "Self", Shape: pego.SchemaShape{Kind: "struct", Fields: fields}}
 	for _, tc := range []struct {
@@ -198,8 +198,8 @@ func TestDiffOutputSchemasRejectsValueSliceCycles(t *testing.T) {
 
 	// Reusing an acyclic slice in separate branches is a DAG, not a cycle.
 	shared := []pego.SchemaShape{{Kind: "scalar", Scalar: "string"}}
-	branch := pego.SchemaShape{Kind: "union", Alternatives: shared}
-	dag := diffSchema([]pego.SchemaType{{ID: "inferred/T", Name: "T", Origin: "inferred", Shape: pego.SchemaShape{Kind: "union", Alternatives: []pego.SchemaShape{branch, branch}}}}, nil)
+	branch := pego.SchemaShape{Kind: "join", Alternatives: shared}
+	dag := diffSchema([]pego.SchemaType{{ID: "inferred/T", Name: "T", Origin: "inferred", Shape: pego.SchemaShape{Kind: "join", Alternatives: []pego.SchemaShape{branch, branch}}}}, nil)
 	if diff, err := pego.DiffOutputSchemas(valid, dag); err != nil || diff == nil || len(diff.Types) != 1 {
 		t.Fatalf("acyclic sharing: diff=%+v, err=%v", diff, err)
 	}
@@ -251,7 +251,7 @@ func sharedDAGSchema(depth int, scalar string, reverse bool) (*pego.OutputSchema
 		if reverse {
 			alternatives[0], alternatives[1] = alternatives[1], alternatives[0]
 		}
-		shape = &pego.SchemaShape{Kind: "union", Alternatives: alternatives}
+		shape = &pego.SchemaShape{Kind: "join", Alternatives: alternatives}
 	}
 	return diffSchema([]pego.SchemaType{{ID: "inferred/DAG", Name: "DAG", Origin: "inferred", Shape: *shape}}, nil), leaf
 }

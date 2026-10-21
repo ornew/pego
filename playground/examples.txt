@@ -4,7 +4,7 @@
 # name              grammar                              input                                      description
 calculator          examples/calculator/calc.pego        examples/calculator/testdata/mixed.txt     Operators Rules and a typed AST
 calculator-lr       examples/calculator/calc_lr.pego     examples/calculator/testdata/mixed.txt     The same calculator with left recursion
-json                parsers/json/json.pego               parsers/json/testdata/object.txt           Union and terminal types, separated lists
+json                parsers/json/json.pego               parsers/json/testdata/object.txt           Join and terminal types, separated lists
 csv                 parsers/csv/csv.pego                 parsers/csv/testdata/basic.txt             Quoted fields and #stream
 xml                 parsers/xml/xml.pego                 parsers/xml/testdata/document.txt          Matching tag names with a predicate
 xml-error           parsers/xml/xml.pego                 parsers/xml/testdata/mismatch.txt          A custom message with @error

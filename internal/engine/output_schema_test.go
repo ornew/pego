@@ -118,7 +118,7 @@ rule unused = "z"`)
 	}
 }
 
-func TestOutputSchemaEmptyUnionRoundTrip(t *testing.T) {
+func TestOutputSchemaEmptyJoinRoundTrip(t *testing.T) {
 	// A field cannot have a type without values, but a rule can: one that never succeeds.
 	if message := compileError(t, `type Holder = { Never _|_ }
 rule main = "a"`); !strings.Contains(message, "no values") {
@@ -131,7 +131,7 @@ rule main = "a"`); !strings.Contains(message, "no values") {
 	schema := validInMemoryOutputSchema()
 	schema.Types[1].Shape = empty
 	if err := schema.Validate(); err != nil {
-		t.Fatalf("valid empty union schema: %v", err)
+		t.Fatalf("valid empty join schema: %v", err)
 	}
 	data, err := json.Marshal(schema)
 	if err != nil {
@@ -139,10 +139,10 @@ rule main = "a"`); !strings.Contains(message, "no values") {
 	}
 	var decoded OutputSchema
 	if err := json.Unmarshal(data, &decoded); err != nil {
-		t.Fatalf("decode valid empty union: %v", err)
+		t.Fatalf("decode valid empty join: %v", err)
 	}
-	if !reflect.DeepEqual(schema, decoded) || decoded.Types[1].Shape.Kind != "union" || len(decoded.Types[1].Shape.Alternatives) != 0 {
-		t.Fatalf("empty union round trip changed schema: before=%+v after=%+v", schema, decoded)
+	if !reflect.DeepEqual(schema, decoded) || decoded.Types[1].Shape.Kind != "join" || len(decoded.Types[1].Shape.Alternatives) != 0 {
+		t.Fatalf("empty join round trip changed schema: before=%+v after=%+v", schema, decoded)
 	}
 }
 
@@ -163,9 +163,9 @@ func TestOutputSchemaInferredCaptureAndDynamic(t *testing.T) {
 		!reflect.DeepEqual(shape.Captures[1].Paths, [][]int{{0}, {2}}) || !shape.Captures[2].Side || shape.Captures[2].Paths != nil {
 		t.Fatalf("shape %+v", shape)
 	}
-	unionShape, err := schemaValue(joinTy{[]ty{tyString, tyInt}})
-	if err != nil || len(unionShape.Alternatives) != 2 {
-		t.Fatalf("union %+v %v", unionShape, err)
+	joinShape, err := schemaValue(joinTy{[]ty{tyString, tyInt}})
+	if err != nil || len(joinShape.Alternatives) != 2 {
+		t.Fatalf("join %+v %v", joinShape, err)
 	}
 }
 
@@ -193,8 +193,8 @@ func TestOutputSchemaRejectsUnresolvedShapes(t *testing.T) {
 			t.Errorf("accepted unresolved inferred shape %T: %+v", inferred, shape)
 		}
 	}
-	if shape, err := schemaValue(tyBottom); err != nil || shape.Kind != "union" || len(shape.Alternatives) != 0 {
-		t.Errorf("_|_ is not the empty union: %+v %v", shape, err)
+	if shape, err := schemaValue(tyBottom); err != nil || shape.Kind != "join" || len(shape.Alternatives) != 0 {
+		t.Errorf("_|_ is not the empty join: %+v %v", shape, err)
 	}
 }
 

@@ -6,7 +6,7 @@
 
 ## Summary
 
-Expose a deterministic, versioned description of grammar-declared types and inferred rule output shapes for tooling and query consumers. The format distinguishes declared typed values, inferred shapes, CST nodes, captures, and dynamic `any`; it does not promise Tree-sitter JSON compatibility. The Go version-1 export and deterministic semantic diff are implemented. The version-1 validation contract includes canonical rule/type relationships, reserved CST identities and strict JSON decoding. Structural queries are checked against the schema, including nested and union shapes.
+Expose a deterministic, versioned description of grammar-declared types and inferred rule output shapes for tooling and query consumers. The format distinguishes declared typed values, inferred shapes, CST nodes, captures, and dynamic `any`; it does not promise Tree-sitter JSON compatibility. The Go version-1 export and deterministic semantic diff are implemented. The version-1 validation contract includes canonical rule/type relationships, reserved CST identities and strict JSON decoding. Structural queries are checked against the schema, including nested and join shapes.
 
 ## Motivation
 
@@ -16,7 +16,7 @@ PEGO parses declared `TypeDef` values in `grammar/ast.go`, checks and infers rul
 
 - Give tools a stable schema-format version, explicit type shapes, and deterministic serialization.
 - Preserve declared names separately from inferred rule shapes and record CST, capture, and dynamic output categories.
-- Represent unions, optional/nil-capable values, lists, scalar fields, ordered children, and rule provenance without guessing.
+- Represent joins, optional/nil-capable values, lists, scalar fields, ordered children, and rule provenance without guessing.
 - Support schema diffing and query type checking without coupling the format to a target language.
 - Do not change grammar checking, parse results, generated Go/TypeScript values, or Node JSON. No Tree-sitter compatibility is implied.
 
@@ -58,9 +58,9 @@ and type entries and is not a valid complete schema:
 
 `version` versions this serialized contract, not grammar semantics. A reader must reject an unsupported version or preserve it opaquely; it must not silently interpret a future format as v1. The configured start rule is the default export root; an explicit method option may request all rules. Version 1 omits a grammar digest because canonical grammar identity is not defined. Consumers must use the supplied schema instance/content for validation and must not assume type names alone establish compatibility across grammars.
 
-Each type entry has an identity and shape. Declared identities use grammar type names; inferred identities use rule names and an explicit inferred origin; reserved CST kinds occupy a separate namespace. Equal shapes do not merge identities. Fields are serialized by UTF-8 name, union alternatives by stable schema identity, and children in parser order. Recursive shapes use named references rather than recursive inline expansion. Declaration order may be included as metadata, but no serialized meaning depends on map iteration.
+Each type entry has an identity and shape. Declared identities use grammar type names; inferred identities use rule names and an explicit inferred origin; reserved CST kinds occupy a separate namespace. Equal shapes do not merge identities. Fields are serialized by UTF-8 name, join alternatives by stable schema identity, and children in parser order. Recursive shapes use named references rather than recursive inline expansion. Declaration order may be included as metadata, but no serialized meaning depends on map iteration.
 
-Field expressions encode `scalar`, `node`, `list`, `optional`, `union`, and `top`. `int`, `string`, and `bool` are scalar kinds, not child nodes. Optionality is grammar-level nil-capability; scalar `0`, empty string and `false` are ordinary values, not evidence that a type is optional. Target-language zero/default mappings are separate metadata; it does not promise a distinct absent-versus-present-nil runtime state or JSON key-presence behavior. Lists remain lists when empty or of length one. Unions retain alternative identities, including a valid empty union from the grammar AST. Inferred `any` remains dynamic and is never narrowed from examples.
+Field expressions encode `scalar`, `node`, `list`, `optional`, `join`, and `top`. `int`, `string`, and `bool` are scalar kinds, not child nodes. Optionality is grammar-level nil-capability; scalar `0`, empty string and `false` are ordinary values, not evidence that a type is optional. Target-language zero/default mappings are separate metadata; it does not promise a distinct absent-versus-present-nil runtime state or JSON key-presence behavior. Lists remain lists when empty or of length one. Joins retain alternative identities, including a valid empty join from the grammar AST. Inferred `top` remains dynamic and is never narrowed from examples.
 
 A reachable `list` shape also brings the reserved `cst/List` identity into the
 export. Parser repetitions and typed list fields are represented by runtime
@@ -79,7 +79,7 @@ nil, and empty optional shape slices are equivalent.
 
 `DiffOutputSchemas(before, after)` validates both complete operands with
 `Validate` before comparing version-1 type and rule contents by identity. It
-ignores type/rule entry order, struct-field order, and union-alternative order.
+ignores type/rule entry order, struct-field order, and join-alternative order.
 It preserves child order and named references. Envelope fields such as `Start`
 are validated but are not included in the diff result. Added, removed, and
 changed results are sorted by type ID or rule name; unchanged inputs return
@@ -109,7 +109,7 @@ checks, and semantic schema diff are implemented. The accepted v1 validation
 contract requires canonical `Start`/rule-result relationships and reserved CST
 shapes, exact-case JSON fields with recursive duplicate-key rejection, and
 complete validation of both diff operands. Structural-query compilation
-validates a supplied schema before using it and checks nested and union
+validates a supplied schema before using it and checks nested and join
 patterns against it. Remaining work includes additional schema consumers as
 described in
 [design 040](040-structural-queries-and-highlighting.md).
@@ -117,13 +117,13 @@ described in
 ## Alternatives Considered
 
 - **Export generated declarations:** backend-specific names/layout would omit CST, dynamic output, and source-level identity. Export checked grammar metadata instead.
-- **Infer schema from parsed values:** one sample can hide union alternatives or incorrectly narrow `top`. Do not use observations as type evidence.
-- **Reuse Node JSON:** it is a runtime value format and cannot express possible optional/list/union shapes or declared-versus-inferred provenance.
+- **Infer schema from parsed values:** one sample can hide join alternatives or incorrectly narrow `top`. Do not use observations as type evidence.
+- **Reuse Node JSON:** it is a runtime value format and cannot express possible optional/list/join shapes or declared-versus-inferred provenance.
 - **Promise Tree-sitter compatibility:** it would impose different node and source-retention semantics. A consumer-specific adapter can be specified separately.
 
 ## Testing and Performance Plan
 
-Cover every grammar type constructor, recursive references, unions, optional/nil-capable and list nesting, scalar fields, inferred `top`, CST-only rules, unreachable definitions, and invalid shapes. Verify deterministic bytes, round trips, unsupported-version handling, backend parity, and typed Go/TypeScript declarations against the schema. Measure export time and allocations on small and large grammars separately from parse and code generation.
+Cover every grammar type constructor, recursive references, joins, optional/nil-capable and list nesting, scalar fields, inferred `top`, CST-only rules, unreachable definitions, and invalid shapes. Verify deterministic bytes, round trips, unsupported-version handling, backend parity, and typed Go/TypeScript declarations against the schema. Measure export time and allocations on small and large grammars separately from parse and code generation.
 
 ## Performance and Results
 
@@ -231,11 +231,11 @@ the Go surface and JSON format remain experimental.
 The default selects the supplied start rule and its syntactic rule-call closure,
 then follows exported shape references to declared and reserved CST types.
 `allRules` includes every rule and type, including unreachable definitions.
-Types and rules are sorted by identity/name, fields by name, and union
+Types and rules are sorted by identity/name, fields by name, and join
 alternatives by their canonical JSON description. Identities use `declared/`,
 `inferred/`, and `cst/` namespaces; even declared rule results retain a separate
 rule-shape identity and declared provenance. Named recursive references remain
-references. Scalar, optional, list, union, dynamic `top`, terminal, and CST/capture
+references. Scalar, optional, list, join, dynamic `top`, terminal, and CST/capture
 categories are explicit. Ordinary CST children are conservatively described as
 ordered optional node lists; their exact positional alternatives are not inferred.
 A grammar with `#recover` or `#missing` exports `Error` or `Missing`, whose

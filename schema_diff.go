@@ -42,7 +42,7 @@ type OutputSchemaDiff struct {
 }
 
 // DiffOutputSchemas compares version-2 type and rule contents. Type and rule
-// array order, field order, capture order, capture path order and union
+// array order, field order, capture order, capture path order and join
 // alternative order are insignificant; tuple element order and named
 // references are preserved. Both inputs must satisfy the complete version-2
 // schema contract checked by OutputSchema.Validate.

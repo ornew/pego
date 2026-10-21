@@ -54,7 +54,7 @@ func BenchmarkCompileStructuralQuerySchema(b *testing.B) {
 			sharedSchema := outputSchemaValidationBenchmarkValue(typeCount)
 			shared := &SchemaShape{Kind: "scalar", Scalar: "string"}
 			for range 16 {
-				shared = &SchemaShape{Kind: "union", Alternatives: []SchemaShape{
+				shared = &SchemaShape{Kind: "join", Alternatives: []SchemaShape{
 					{Kind: "optional", Element: shared},
 					{Kind: "optional", Element: shared},
 				}}

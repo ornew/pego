@@ -267,7 +267,7 @@ The result has `{ value, error }`, with `value` statically inferred from the
 start rule. A successful nil result has null value and null error. Failure
 returns null value with the original error. Recovery keeps the converted value
 and `SyntaxErrors`; a recovered error in a specific struct field
-converts to null, while a declared node union retains a `RecoveredError` value.
+converts to null, while a declared node join retains a `RecoveredError` value.
 Check `error`, rather than interpreting null value alone as failure. Options
 are read and validated once; zero `maxDepth` selects the generated default.
 
@@ -286,18 +286,20 @@ String nodes (`StringNode`, a `TNode<string>` whose `type` is `"string"`) have `
 | declared aliases | complete target type, preserving optional, list and node representations |
 | `node[T]` | `TNode<T'>` with `T'` the TypeScript type of `T`; text is a `StringNode`, a `TNode<string>`, and `node[_]` is `TNode<unknown>` |
 | tuple `(A, B, ...)` | `readonly [A', B', ...]` |
-| canonical declared pure node union | member interfaces plus `RecoveredError` and null; node members are `TNode` values |
-| mixed/open or undeclared union, `_` | conservative `TypedValue`, following Go's any-conversion semantics |
+| canonical declared pure node join | member interfaces plus `RecoveredError` and null; node members are `TNode` values |
+| mixed/open or undeclared join, `_` | conservative `TypedValue`, following Go's any-conversion semantics |
+
+A grammar join type `T | U` becomes a TypeScript union of the converted members.
 
 Inferred nil/never starts also use `TypedValue`: recovery can return a converted
 Error even when the normal rule produces no value.
 
 The broad `TypedValue` union covers converted declarations, `StringNode`,
-`RecoveredError`, Node and action scalars/null. Mixed unions can preserve
+`RecoveredError`, Node and action scalars/null. Mixed joins can preserve
 recovered or dynamically typed values beyond their written members, so they
 are not exported with an unsound narrow type. In dynamically typed conversion,
 a list node remains Node; a statically known list becomes an array. A pure node
-union with node members can retain unmatched Nodes, as the Go converter does.
+join with node members can retain unmatched Nodes, as the Go converter does.
 Use `instanceof Node` first when narrowing a union containing Node, whose
 `type` property is a general string. Top-level scalar-producing rules remain
 rejected by the existing type checker; scalar fields and aliases are supported.

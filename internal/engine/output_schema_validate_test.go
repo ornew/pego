@@ -221,7 +221,7 @@ func TestOutputSchemaValidateLayeredSharedDAG(t *testing.T) {
 	s := validInMemoryOutputSchema()
 	shared := &SchemaShape{Kind: "scalar", Scalar: "string"}
 	for range 28 {
-		shared = &SchemaShape{Kind: "union", Alternatives: []SchemaShape{
+		shared = &SchemaShape{Kind: "join", Alternatives: []SchemaShape{
 			{Kind: "list", Element: shared},
 			{Kind: "optional", Element: shared},
 		}}

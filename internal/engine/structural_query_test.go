@@ -280,7 +280,7 @@ func TestStructuralQuerySharedInlineDAGAbsentField(t *testing.T) {
 	s := validInMemoryOutputSchema()
 	shared := &SchemaShape{Kind: "scalar", Scalar: "string"}
 	for range 28 {
-		shared = &SchemaShape{Kind: "union", Alternatives: []SchemaShape{
+		shared = &SchemaShape{Kind: "join", Alternatives: []SchemaShape{
 			{Kind: "optional", Element: shared},
 			{Kind: "optional", Element: shared},
 		}}
@@ -311,7 +311,7 @@ func TestStructuralQueryNamedReferenceCycleAbsentField(t *testing.T) {
 	if _, err := CompileStructuralQuery(inF(QueryPattern{Fields: []QueryFieldPattern{{Name: "Absent"}}}), &s); err == nil || !strings.Contains(err.Error(), "no values") {
 		t.Fatalf("named cycle error = %v", err)
 	}
-	s.Types[len(s.Types)-2].Shape = SchemaShape{Kind: "union", Alternatives: []SchemaShape{
+	s.Types[len(s.Types)-2].Shape = SchemaShape{Kind: "join", Alternatives: []SchemaShape{
 		{Kind: "ref", Ref: "inferred/a"},
 		{Kind: "ref", Ref: "declared/Other"},
 	}}

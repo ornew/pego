@@ -51,7 +51,7 @@ func BenchmarkDiffOutputSchemas(b *testing.B) {
 				s := schemaDiffBenchmarkInput(1, false)
 				shape := &pego.SchemaShape{Kind: "scalar", Scalar: "string"}
 				for range depth {
-					shape = &pego.SchemaShape{Kind: "union", Alternatives: []pego.SchemaShape{
+					shape = &pego.SchemaShape{Kind: "join", Alternatives: []pego.SchemaShape{
 						{Kind: "optional", Element: shape}, {Kind: "list", Element: shape},
 					}}
 				}

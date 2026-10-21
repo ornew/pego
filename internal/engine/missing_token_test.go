@@ -291,7 +291,7 @@ rule main Root = x:(";" #missing) => Root{Token: $x}`
 	prog := compile(t, source)
 	n, _ := requireInsertions(t, prog, "", ParseOptions{MissingTokens: 1}, 1)
 	if len(missingNodes(t, n)) != 1 {
-		t.Fatal("declared union lost Missing identity")
+		t.Fatal("declared join lost Missing identity")
 	}
 	data, err := grammar.MarshalJSON(prog.Grammar)
 	if err != nil {
@@ -323,7 +323,7 @@ rule main Root = x:(";" #missing) => Root{Token: $x}`
 	if err := json.Unmarshal(data, &roundtrip); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(data), `{"name":"Token","shape":{"kind":"union","alternatives":[{"kind":"missing"},`) {
+	if !strings.Contains(string(data), `{"name":"Token","shape":{"kind":"join","alternatives":[{"kind":"missing"},`) {
 		t.Fatalf("schema lost Missing: %s", data)
 	}
 }

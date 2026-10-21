@@ -102,7 +102,7 @@ func validateOutputSchemaGraph(s OutputSchema) error {
 				allowed = memberElement
 			case "tuple":
 				allowed = memberElements
-			case "union":
+			case "join":
 				allowed = memberAlternatives
 			case "struct":
 				allowed = memberFields

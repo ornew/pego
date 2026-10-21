@@ -46,7 +46,7 @@ An illustrative pattern is:
 
 Patterns constrain a node by type or rule, require child/field structure, and bind captures. Initial syntax should avoid arbitrary host callbacks, unbounded regex, or other operations without a charging rule. The exact grammar and text-predicate operators remain proposed. Text predicates inspect only Node text or a caller-supplied source snapshot; they cannot see discarded punctuation/comments. A TypeScript counterpart could expose `compileQuery(source, schema)` and `query.matches(root, options)`, with position unit, safe-integer work limits, and an optional structural cancellation signal following design 033.
 
-Compilation may receive an `OutputSchema`. The implemented Go subset performs a narrow scalar check when a query names a declared struct field directly and its shape is scalar or optional scalar: for example, `Value *string` permits `string` and `nil` categories and rejects other known categories. It follows declared type-alias chains that resolve to those shapes. Nested patterns are checked against the shapes of the values they apply to; a union needs one alternative that the pattern can match. Unresolved references remain runtime-checked. Dynamic or unknown types remain runtime-checked. Since schema v1 has no cross-grammar digest, the compiled query is tied to the schema content supplied at compilation; it does not claim portable identity across grammars. Without a schema, type and field checks are deferred to evaluation. Captures are always checked against their runtime value categories, even with a schema: mutable Nodes carry no certification that they came from that grammar or still conform to its shape. Mismatches are ordinary nonmatches or explicit query errors according to the operator contract, never unsafe type assertions.
+Compilation may receive an `OutputSchema`. The implemented Go subset performs a narrow scalar check when a query names a declared struct field directly and its shape is scalar or optional scalar: for example, `Value *string` permits `string` and `nil` categories and rejects other known categories. It follows declared type-alias chains that resolve to those shapes. Nested patterns are checked against the shapes of the values they apply to; a join needs one alternative that the pattern can match. Unresolved references remain runtime-checked. Dynamic or unknown types remain runtime-checked. Since schema v1 has no cross-grammar digest, the compiled query is tied to the schema content supplied at compilation; it does not claim portable identity across grammars. Without a schema, type and field checks are deferred to evaluation. Captures are always checked against their runtime value categories, even with a schema: mutable Nodes carry no certification that they came from that grammar or still conform to its shape. Mismatches are ordinary nonmatches or explicit query errors according to the operator contract, never unsafe type assertions.
 
 A capture stores its value category, value, immediate parent node, and incoming edge path. Scalar fields are scalar captures, not synthetic Nodes. Optional/nil-capable schema fields do not imply a separate runtime-presence bit. Lists are traversed in index order; empty lists have no elements. A root has no parent. A shared Node is evaluated once per incoming edge so captures retain parent/path context. Cycles on the active path return an error; valid shared DAG paths are allowed.
 
@@ -72,7 +72,7 @@ The programmatic Go API and Node traversal contract in design 031 are implemente
 
 ## Testing and Performance Plan
 
-Test pattern diagnostics, known/unknown schema fields, scalar/list/union/dynamic captures, nil children, empty lists, shared DAG paths, cycles, ordering, schema mismatch, cancellation, exact budget thresholds, both position units, bounded text predicates, and discarded trivia. Differentially compare Go and TypeScript query results with a simple reference evaluator. Measure compilation and evaluation separately across graph depth, sharing, fields, predicate text, and match count; track time, allocations, and retained results. No performance results are available.
+Test pattern diagnostics, known/unknown schema fields, scalar/list/join/dynamic captures, nil children, empty lists, shared DAG paths, cycles, ordering, schema mismatch, cancellation, exact budget thresholds, both position units, bounded text predicates, and discarded trivia. Differentially compare Go and TypeScript query results with a simple reference evaluator. Measure compilation and evaluation separately across graph depth, sharing, fields, predicate text, and match count; track time, allocations, and retained results. No performance results are available.
 
 ## Limitations and Open Questions
 
@@ -96,7 +96,7 @@ a directly named struct field with an optional scalar shape (for example,
 categories are rejected. Declared aliases are followed when they resolve to a
 scalar or optional scalar shape; unresolved references remain conservative.
 Nested field and child patterns are checked against the shape of the value
-they apply to, existentially: a union or optional shape accepts a pattern that
+they apply to, existentially: a join or optional shape accepts a pattern that
 one alternative can match, and compilation rejects only patterns that no value
 of the shape can match. Requiring every alternative to match was rejected
 because it would refuse queries that match real trees. A differential test
@@ -104,7 +104,7 @@ derives patterns from the values of parsed corpus grammars and requires them to
 compile against those grammars' schemas, including recovered parses. `Error`
 and `Missing` recovery nodes can replace any node or list; their fields
 (`message`, and `expected` for `Missing`) are known to the check although the
-schema's reserved shapes do not list them. A failing union reports only its
+schema's reserved shapes do not list them. A failing join reports only its
 first alternative's reason, so error text stays linear in the pattern depth.
 The runtime value is still checked because a `Node` may have changed since it was
 parsed. Dynamic CST/`top` fields remain runtime checked. Pattern copies are independent of caller mutation. Compilation rejects

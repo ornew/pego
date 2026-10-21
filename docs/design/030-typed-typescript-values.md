@@ -7,7 +7,7 @@
 ## Summary
 
 Allow `pego gen -lang ts -types` and `GenerateTypeScript(..., WithTypes())`
-to generate interfaces, aliases and unions corresponding to grammar types,
+to generate interfaces, aliases and unions corresponding to grammar types (a grammar join type becomes a TypeScript union),
 plus typed parse-result entry points. The first implementation runs
 the existing Node parser once and converts its completed result into typed
 values. Existing `parse`, `parseRule`, recognition and Node serialization stay
@@ -121,9 +121,9 @@ Mapping details:
 | `[]T` | readonly array of mapped elements; null for absent/nil list, distinct from an empty array |
 | optional value | mapped value or `null`, including optional scalars |
 | declared alias | exported alias of the complete target representation, preserving nullability |
-| canonical declared node union | union of converted members plus `RecoveredError`; nullable in zero/optional positions |
+| canonical declared node join | TypeScript union of converted members plus `RecoveredError`; nullable in zero/optional positions |
 | CST or record | existing `Node`, preserving its Node representation |
-| mixed/open or undeclared unions, `node`, `terminal`, `_` | conservative TypedValue, following Go any-conversion and including null; inferred nil/never use this same recipe because recovery can produce Error values |
+| mixed/open or undeclared joins, `node`, `terminal`, `_` | conservative TypedValue, following Go any-conversion and including null; inferred nil/never use this same recipe because recovery can produce Error values |
 
 Generate these open-value unions from the known grammar declarations plus
 Match, RecoveredError and CST Node. The `_` mapping also includes
@@ -131,16 +131,16 @@ number|bigint, string and boolean. Conversion of a dynamically typed List stays
 Node where Go's anyValue does; statically known list conversion returns an
 array. Use `unknown` only if metadata cannot safely describe a permitted value.
 
-A CST member in a union retains the Node class. Consumers first use
+A CST member in a join retains the Node class. Consumers first use
 `instanceof Node`, then discriminate converted members by `type`; Node's broad
 string `type` must not be advertised as providing complete literal narrowing.
 
-Expose all declared aliases, including normalized duplicate unions, chained,
+Expose all declared aliases, including normalized duplicate joins, chained,
 scalar, optional, list and CST aliases. TS structural types do not need Go's
 union marker methods. Use the existing inferred metadata and normalization.
 
-Mixed scalar/node unions require the existing Go any-conversion semantics,
-not a pure-node union selector. For example, `Word | int` preserves canonical
+Mixed scalar/node joins require the existing Go any-conversion semantics,
+not a pure-node join selector. For example, `Word | int` preserves canonical
 number/bigint values, converts a Word Node, converts a recovered Error into
 RecoveredError even though it is not a written member, and preserves CST Nodes.
 Missing values become null. Inferred nil/never use the same conservative
@@ -150,10 +150,10 @@ Error value. Other permitted dynamic values arriving through
 Export such mixed/open aliases conservatively as the complete TypedValue
 representation, documenting their written members; a narrower TS union would
 promise filtering that the existing Go converter does not perform. Test
-recovery and dynamic values explicitly. Canonical declared pure node unions
-retain their member mapping plus RecoveredError. Nonmatching nodes become null unless the union has CST members,
-in which case Go preserves them as Node. Unions without a canonical declared
-node-union recipe use any-conversion, as Go does. No checker or inference rule changes are required.
+recovery and dynamic values explicitly. Canonical declared pure node joins
+retain their member mapping plus RecoveredError. Nonmatching nodes become null unless the join has CST members,
+in which case Go preserves them as Node. Joins without a canonical declared
+node-join recipe use any-conversion, as Go does. No checker or inference rule changes are required.
 
 Use a TS-specific export allocator covering every existing top-level type and
 value declaration, including private helpers, not just exports. Reserve Parser,
@@ -176,7 +176,7 @@ invalid option errors do likewise. Top-level rules cannot produce scalar
 results, so numeric zero is a field concern rather than a failed scalar rule
 result. After recovery, convert the value and preserve the same `SyntaxErrors`
 object and diagnostics. An Error where a struct/terminal is expected becomes
-null; an Error in a union remains `RecoveredError`; list conversion follows
+null; an Error in a join remains `RecoveredError`; list conversion follows
 Go's existing Error/empty-list and element-null rules. Do not infer success
 from `value !== null`: nil-valued rules can succeed.
 
@@ -199,7 +199,7 @@ representation. Iteration alone does not prevent exponential duplication of a
 shared DAG: a fold or LR action can store the same capture into two fields at
 each growth step. Cache each `(Node, representation)` once, with representation
 IDs derived from canonical converter recipes. Distinguish struct/terminal,
-union/`_` and list element conversions: the same Error Node can become null in
+join/`_` and list element conversions: the same Error Node can become null in
 one position and RecoveredError in another. Cache null using an explicit
 presence check, not a null-as-missing sentinel.
 
@@ -296,7 +296,7 @@ validation passed; the results below quantify the opt-in converter costs:
   on common representable values. Normalize backend shape/64-bit integer
   transport explicitly; do not confuse serialization equality with value
   equality. Cover empty/nil lists, optionals, Error in all positions, CST/open
-  values and mixed scalar/node unions with recovered/dynamic values.
+  values and mixed scalar/node joins with recovered/dynamic values.
 - Whole-input failures, action errors, recovery, cuts, LR, Operators Rule, field-reading
   actions, omitted fields, option getters applied once before parsing, generated
   and overridden depth limits. Retain results/diagnostics across repeated and
