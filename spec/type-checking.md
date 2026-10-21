@@ -166,7 +166,9 @@ A variable has the type its `var` declaration gives it, so a read of a variable
 is checked like any other value of that type: `x + 1` and `V{N: x}` are checked
 when the grammar is compiled. A binding whose value has an unknown Type (`any`) is not reported, like a field
 or a rule value of unknown Type: the binding checks the value against the declared
-type of the variable at run time, and a mismatch fails the binding with `cannot use
-<value type> as <type> in the binding of variable <name>`. A binding whose value
+type of the variable at run time, and a mismatch fails the parse with `cannot use
+<value type> as <type> in the binding of variable <name>`, as a rule result of another
+type does. Unlike an evaluation error in a predicate, it is not backtracked and
+`#recover` does not handle it. A binding whose value
 is known to fit needs no run-time check. Without type checking, every binding is
 checked at run time.

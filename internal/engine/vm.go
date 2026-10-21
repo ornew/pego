@@ -1048,7 +1048,6 @@ func (vm *vmProgram) assign(p *parser, name string, entry int, check bool) bool 
 	if check {
 		if typ := vm.vars.lookup(name).typ.String(); typeName(v) != typ {
 			p.bindError(v, typ, name)
-			return false
 		}
 	}
 	p.bind(name, v)

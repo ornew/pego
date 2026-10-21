@@ -63,12 +63,29 @@ rule dyn any = di / ds
 rule di = "i" => 1
 rule ds = "s" => "str"
 `, []string{"iz", "sz", "i", ""}},
+		// A mismatched binding fails the parse instead of backtracking, so the fallback is not tried.
+		{"a mismatched binding is fatal in a choice", `var x int
+rule main = (d:dyn {x := $d} "z" / "s" "y") / "s" "w" => x
+rule dyn any = di / ds
+rule di = "i" => 1
+rule ds = "s" => "str"
+`, []string{"iz", "sz", "sy", "sw", "i", ""}},
+		{"a mismatched binding in an Operators Rule operand is fatal", `var x int
+rule main = e $$
+rule e = operators {
+    operand d:dyn {x := $d}
+    level { infix left "+" }
+}
+rule dyn any = di / ds
+rule di = "i" => 1
+rule ds = "s" => "str"
+`, []string{"i", "i+i", "s", "i+s", "s+i", ""}},
 		{"declared variables are part of the memo key", `var d int
 rule main = {d := 1} item "|" {d := 2} item "|" item $$
 rule item = {d == 1} "x" / {d == 2} "y" / {d == 0} "z"
 `, []string{"x|y|z", "x|y|x", "z|y|z", "x|x|z", ""}},
 		{"Operators Rule explicit default action", `rule main = e $$
-rule e = operators {
+rule e any = operators {
     operand "α"
     level { infix left "+" }
 } => ...`, []string{"α", "α+α", "α+α+α", "α+", "+α", ""}},
@@ -180,7 +197,7 @@ rule r = {n == 1} "a" / {n == 2} "b"`, []string{"ax", "b", "ay", "bx"}},
 		// a predicate but aborts the parse in a value action.
 		{"action environments", actionEnvironmentGrammar, []string{"a", "a%b", "(a)", "((ab?))", "#x:a", "#x:((b))", "#x:(#y:b!)", "((b))", "a!!", "a!", "(((a)))", "~a", "a(#t:b)c?", "[a,bc]", "[]", "(#q:[x])y", "a)", ""}},
 		{"empty prefix and postfix", `rule main = e $$
-rule e = operators {
+rule e any = operators {
     operand "x"
     level { prefix "-"? }
     level { postfix "!"? }
@@ -188,7 +205,7 @@ rule e = operators {
 		// An empty operand and an empty infix operator: an application that consumes nothing ends
 		// the expression.
 		{"empty operand and infix", `rule main = e $$
-rule e = operators {
+rule e any = operators {
     operand "a"?
     level { infix left _ }
 }`, []string{"a", "", "aa"}},

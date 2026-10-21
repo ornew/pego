@@ -429,9 +429,9 @@ func (prog *Program) bindCheck(a *grammar.Assign) string {
 	return ""
 }
 
-// bindError reports a value bound to a variable of another type than the variable's.
-func (p *parser) bindError(v any, typ, name string) error {
-	return p.actionError("cannot use ", typeName(v), " as ", typ, " in the binding of variable ", name)
+// bindError fails the parse: a value bound to a variable of another type than the variable's.
+func (p *parser) bindError(v any, typ, name string) {
+	p.fail("cannot use %s as %s in the binding of variable %s", typeName(v), typ, name)
 }
 
 // ruleConversions returns the node type constructors (constructors with a positional value) in

@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -277,5 +278,65 @@ rule main = {x := "s"} "a" => x
 				t.Errorf("loaded (omit AST %t) %v: mismatch accepted", o.OmitAST, backend)
 			}
 		}
+	}
+}
+
+// TestVarBindingMismatchIsFatal checks that a binding of a value of another type than the
+// variable's ends the parse with an error, as a failed rule-result check does, and does not fail
+// the binding for the grammar to backtrack from, on every backend, with and without type checking,
+// in operator operands, and in a saved program.
+func TestVarBindingMismatchIsFatal(t *testing.T) {
+	const want = "cannot use string as int in the binding of variable x"
+	const dynamic = `var x int
+rule dyn any = di / ds
+rule di = "i" => 1
+rule ds = "s" => "str"
+`
+	for _, tc := range []struct {
+		name, src string
+		opts      Options
+		ok, bad   string // an input that parses and one that binds a string
+	}{
+		{"binding", dynamic + "rule main = d:dyn {x := $d} \"z\" => x\n", Options{}, "iz", "sz"},
+		{"fallback", dynamic + "rule main = (d:dyn {x := $d} \"z\" / \"s\" \"y\") / \"s\" \"w\" => 1\n", Options{}, "iz", "sy"},
+		{"no type check", "var x int\nrule main = {x := \"s\"} \"a\" => x\n", Options{NoTypeCheck: true}, "", "a"},
+		{"operand", dynamic + "rule main = e\nrule e = operators {\n    operand v:dyn {x := $v} => x\n    level { infix left \"+\" }\n}\n", Options{}, "i+i", "i+s"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prog := compile(t, tc.src, tc.opts)
+			forms := map[string]*Program{"compiled": prog}
+			for _, o := range []MarshalOptions{{}, {OmitAST: true}} {
+				data, err := prog.MarshalBinaryWith("main", o)
+				if err != nil {
+					t.Fatal(err)
+				}
+				loaded, _, err := LoadProgram(data, Options{})
+				if err != nil {
+					t.Fatal(err)
+				}
+				forms[fmt.Sprintf("loaded (omit AST %t)", o.OmitAST)] = loaded
+			}
+			for name, p := range forms {
+				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+					if name == "loaded (omit AST true)" && backend == Closure {
+						continue
+					}
+					if tc.ok != "" {
+						if _, err := p.ParseWith("main", tc.ok, ParseOptions{Backend: backend}); err != nil {
+							t.Errorf("%s %v: %q: %v", name, backend, tc.ok, err)
+						}
+					}
+					_, err := p.ParseWith("main", tc.bad, ParseOptions{Backend: backend})
+					if err == nil || err.Error() != want {
+						t.Errorf("%s %v: %q: got %v; want %q", name, backend, tc.bad, err, want)
+					}
+					// A recognition runs the bindings too.
+					_, err = p.ParseWith("main", tc.bad, ParseOptions{Backend: backend, Recognize: true})
+					if err == nil || err.Error() != want {
+						t.Errorf("%s %v recognition: %q: got %v; want %q", name, backend, tc.bad, err, want)
+					}
+				}
+			}
+		})
 	}
 }

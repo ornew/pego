@@ -918,7 +918,6 @@ func (c *compiler) predicate(e *grammar.Predicate, s *scope) matcher {
 			}
 			if *ct != "" && typeName(v) != *ct {
 				p.bindError(v, *ct, a.Name)
-				return nil, false
 			}
 			p.bind(a.Name, v)
 			return nil, true

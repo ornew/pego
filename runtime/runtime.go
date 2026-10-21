@@ -989,6 +989,7 @@ func (g *grammar) Share(base *grammar) {
 	rules, nseen := g.rules, g.nseen
 	*g = *base
 	g.rules, g.nseen = rules, nseen
+	g.indexInitVals() // the rules are the recognizer's own
 }
 
 func (g *grammar) RuleByName(name string) *Rule {
@@ -3123,7 +3124,7 @@ func (p *Parser) Assign(name, typ string, t func(*ActCtx) any) (ok bool) {
 		return false
 	}
 	if typ != "" && typeName(v) != typ {
-		return false // cannot use <value type> as <typ> in the binding of variable <name>
+		panic(fatal{fmt.Errorf("cannot use %s as %s in the binding of variable %s", typeName(v), typ, name)})
 	}
 	p.bind(name, v)
 	return true

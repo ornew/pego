@@ -72,7 +72,9 @@ back under the same rules as adjacent Predicate Actions.
   `V{N: x}` are checked when the grammar is compiled. A binding `name := value`
   must give a value that is assignable to the declared type. A value whose
   type is not known when the grammar is compiled (`any`) is accepted, and
-  checked when the binding runs: a value of another type fails the binding.
+  checked when the binding runs: a value of another type fails the parse with
+  an error, which is not backtracked. This differs from an evaluation error in
+  the binding's expression, which makes the predicate fail like a false test.
   See [Type Checking](type-checking.md).
 - **Declaration before use.** Reading or binding a name that is not declared is
   a compile-time error. Declaring a name twice is a compile-time error.

@@ -93,9 +93,14 @@ func TestLoadedVariablesMatch(t *testing.T) {
 		{"initial int", func(m *Module) { m.Vars[0].Int = 4 }},
 		{"initial string", func(m *Module) { m.Vars[1].Str = m.Vars[1].Name }},
 		{"initial bool", func(m *Module) { m.Vars[2].Int = 1 }},
-		{"type", func(m *Module) { m.Vars[0].Type, m.Vars[0].Str = varBool, -1 }},
-		{"name", func(m *Module) { m.Vars[0].Name = m.Vars[1].Name }},
-		{"count", func(m *Module) { m.Vars = m.Vars[:2] }},
+		// The mutations below leave a module that every other check accepts, so only the
+		// comparison of the variable tables rejects them.
+		{"type", func(m *Module) { m.Vars[0].Type, m.Vars[0].Int, m.Vars[0].Str = varBool, 1, -1 }},
+		{"name", func(m *Module) { m.Vars[0].Name, m.Vars[1].Name = m.Vars[1].Name, m.Vars[0].Name }},
+		{"count", func(m *Module) {
+			m.Strings = append(append([]string(nil), m.Strings...), "extra")
+			m.Vars = append(m.Vars, VarInfo{Name: len(m.Strings) - 1, Type: varInt, Str: -1})
+		}},
 	} {
 		t.Run("syntax tree "+tc.name, func(t *testing.T) {
 			p := compile(t, varModuleSource)

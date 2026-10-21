@@ -2544,7 +2544,7 @@ class Parser {
         return false;
       }
       if (typ !== "" && typeName(v) !== typ) {
-        return false; // cannot use <value type> as <typ> in the binding of variable <name>
+        throw new Fatal(new Error(`cannot use ${typeName(v)} as ${typ} in the binding of variable ${name}`));
       }
       this.bind(name, v);
       return true;

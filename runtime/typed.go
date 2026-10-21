@@ -1730,7 +1730,7 @@ func (p *TParser) Assign(name, typ string, t func(*TActCtx) any) (ok bool) {
 		return false
 	}
 	if typ != "" && ttypeName(v) != typ {
-		return false // cannot use <value type> as <typ> in the binding of variable <name>
+		panic(fatal{fmt.Errorf("cannot use %s as %s in the binding of variable %s", ttypeName(v), typ, name)})
 	}
 	p.bind(name, v)
 	return true
