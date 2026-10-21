@@ -65,6 +65,9 @@ that was not expanded (an external entity, which a non-validating processor does
 document whose DTD was not read entirely). Elements that come from the replacement text of an entity name it in
 `Elem.Entity`, and their `Src` spans are relative to that text.
 
+The children implement `Item`. That set is closed by convention, not by the compiler: `PI`, `Comment` and `EntityRef`
+live in the `types` package, so the marker method `TreeItem` is exported. Other types must not implement `TreeItem`.
+
 Positions are in code points by default; `xml.ParseAST(src, xml.WithUnit(xml.Bytes))` counts bytes. `Decode` reports code points.
 
 ## Conformance

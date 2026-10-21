@@ -28,6 +28,10 @@ type Tree struct {
 // Item is an item of a decoded tree: *Elem, *Text, *PI, *Comment, or *EntityRef for a reference to an
 // entity that was not expanded (an external entity, or an undeclared one where XML allows that; see
 // Decode).
+//
+// The set is closed by convention, not by the compiler: PI, Comment and EntityRef are declared in
+// the types package, so the marker method must be exported. Other types must not implement
+// TreeItem; code that switches over the items may rely on these five.
 type Item interface{ TreeItem() }
 
 // Elem is a decoded element.
