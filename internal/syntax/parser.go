@@ -849,14 +849,20 @@ func (p *parser) bodyChoice() (sourceResult grammar.Expr) {
 	broken := false
 	for !p.boundary() && p.is("/") {
 		var b *grammar.LineBreak
-		if p.atLineStart() || p.peek(1).lineBefore {
+		if p.atLineStart() {
 			b = p.lineBreak()
 			broken = true
 		} else {
 			p.afterGap(c.Alts[len(c.Alts)-1])
+			if p.peek(1).lineBefore {
+				b = p.lineBreak()
+				broken = true
+			}
 		}
 		p.next()
+		lead := p.takeCommentGap()
 		c.Alts = append(c.Alts, p.bodySequence())
+		p.leadOf(c.Alts[len(c.Alts)-1], lead)
 		breaks = append(breaks, b)
 	}
 	if broken {
@@ -1054,7 +1060,9 @@ func (p *parser) choice() (sourceResult grammar.Expr) {
 	for !p.boundary() && p.is("/") {
 		p.afterGap(c.Alts[len(c.Alts)-1])
 		p.next()
+		lead := p.takeCommentGap()
 		c.Alts = append(c.Alts, p.sequence())
+		p.leadOf(c.Alts[len(c.Alts)-1], lead)
 	}
 	return c
 }
@@ -1275,8 +1283,10 @@ func (p *parser) pragma(e grammar.Expr, start grammar.Pos) (sourceResult grammar
 		p.expect("(")
 		p.expect("skip")
 		p.expect("=")
+		lead := p.takeCommentGap()
 		skip := p.choice()
-		closing := p.takeInlineGap()
+		p.leadOf(skip, lead)
+		closing := p.takeCommentGap()
 		p.expect(")")
 		r := &grammar.Recovery{SourceInfo: grammar.SourceInfo{Pos: pos}, Expr: e, Skip: skip, Break: br}
 		if closing != nil {
@@ -1755,13 +1765,13 @@ func (p *parser) binary(level int) (sourceResult grammar.Term) {
 		if p.boundary() || t.kind != tPunct || !contains(binaryLevels[level], t.text) {
 			return l
 		}
-		operator := p.takeInlineGap()
+		operator := p.takeCommentGap()
 		p.next()
 		r := p.binary(level + 1)
 		l = &grammar.Binary{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Op: t.text, L: l, R: r}
 		p.sourceNode(l, sourceStart)
 		if operator != nil {
-			layoutOf(l).Operator = operator
+			layoutOf(l).OpGap = operator
 		}
 		if level == 2 {
 			// Comparison operators do not chain.
@@ -1788,7 +1798,8 @@ func (p *parser) unary() (sourceResult grammar.Term) {
 			if layout != nil {
 				// Keep the comments the result holds inside its own tokens.
 				if old := sourceResult.(grammar.SourceNode).Source().Layout; old != nil {
-					layout.Operator, layout.Close = old.Operator, old.Close
+					old.Before, old.PreviousLine, old.NextLine = layout.Before, layout.PreviousLine, layout.NextLine
+					layout = old
 				}
 				sourceResult.(grammar.SourceNode).Source().Layout = layout
 			}

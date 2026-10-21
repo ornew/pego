@@ -125,7 +125,10 @@ lambdas, which keep theirs in a `ListLayout`. The delimiters of those forms keep
 their comments in the node's `OpenBreak`, `BodyBreak` and `CloseBreak` fields.
 The block comments that stand between the tokens of a rule expression are kept
 in the `Before`, `After`, `Operator` and `Close` fields of the layout of the
-expression they belong to. The comments between the tokens of `#repeat(...)` stay in its `Spelling` field. The comments inside attribute arguments,
+expression they belong to. The comments around a binary operator, after a `/`,
+and inside the parentheses of `#recover` may also stand on lines of their own;
+the `OpGap`, `Lead` and `Close` fields keep them with the lines of the tokens
+around them. The comments between the tokens of `#repeat(...)` stay in its `Spelling` field. The comments inside attribute arguments,
 lambda parameters and `#repeat(...)` are layout only: unlike owned comments they
 are not part of the JSON AST. Other source forms remain outside this increment's
 coverage.
@@ -276,8 +279,8 @@ line breaks: before a sequence item, an attribute, a pragma or `/`, after the
 opening brace of a rule, and inside the delimiters of a group, a predicate
 block, a list, an index and an action group. A comment on a line of its own
 between an operator and an operand of an action expression, between `/` and the
-alternative after it, or inside the parentheses of `#recover` is kept but moves
-to a neighboring token, where its owner can differ.
+alternative after it, or inside the parentheses of `#recover` stays on its line
+too, with the owner it has in the source.
 
 An argument of an attribute that is left out is written `nil`; the comma
 after the last argument is a trailing comma, as in every other list. Two commas

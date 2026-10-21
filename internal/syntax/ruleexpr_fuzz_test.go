@@ -28,6 +28,9 @@ var ruleExprForms = []struct{ name, form string }{
 	{"after a predicate", `rule r = "a" { true } S "b"`},
 	{"around the semicolon of a block", `rule r = "a" { x := 1 S ; S x == 1 } "b"`},
 	{"after the brace of a block", `rule r = "a" {S x := 1; x == 1 } "b"`},
+	{"around a choice in a group", `rule r = ( "a" S / S "b" ) "c"`},
+	{"around a binary operator", `rule r = "a" => (1 S + S 2)`},
+	{"in a recover pragma", `rule r = "a" #recover(skip= S "b" S ) "c"`},
 	{"before the index bracket", `rule r = "a" => x[ 0 S ]`},
 	{"after the index bracket", `rule r = "a" => x[ S 0 ]`},
 	{"around a binary operator", `rule r = "a" => (1 S + S 2)`},
@@ -46,17 +49,11 @@ var ruleExprLineForms = []struct{ name, form string }{
 	{"around the statements of a block", `rule r = "a" { S x := 1 S ; S x == 1 S } "b"`},
 	{"after the brace of a block", `rule r = "a" {S x := 1; x == 1 } "b"`},
 	{"in a call", `rule r = "a" => f( S 1 S , S 2 S )`},
-	{"before the index bracket", `rule r = "a" => x[ 0 S ]`},
-	{"after the index bracket", `rule r = "a" => x[ S 0 ]`},
-}
-
-// ruleExprLineLimits are forms where a comment that needs a line of its own
-// moves to a neighboring token, which can change what it belongs to. Formatting
-// still keeps every comment, the grammar, and its own output.
-var ruleExprLineLimits = []struct{ name, form string }{
 	{"around a choice in a group", `rule r = ( "a" S / S "b" ) "c"`},
 	{"around a binary operator", `rule r = "a" => (1 S + S 2)`},
 	{"in a recover pragma", `rule r = "a" #recover(skip= S "b" S ) "c"`},
+	{"before the index bracket", `rule r = "a" => x[ 0 S ]`},
+	{"after the index bracket", `rule r = "a" => x[ S 0 ]`},
 }
 
 // TestFormatRandomRuleExpr formats rule bodies with comments between the
@@ -91,12 +88,6 @@ func TestFormatRandomRuleExpr(t *testing.T) {
 // lines of their own inside delimiters.
 func TestFormatRandomRuleExprLines(t *testing.T) {
 	testRuleExprLines(t, ruleExprLineForms, true)
-}
-
-// TestFormatRandomRuleExprLineLimits checks the forms of ruleExprLineLimits
-// without their owners.
-func TestFormatRandomRuleExprLineLimits(t *testing.T) {
-	testRuleExprLines(t, ruleExprLineLimits, false)
 }
 
 func testRuleExprLines(t *testing.T, forms []struct{ name, form string }, owners bool) {

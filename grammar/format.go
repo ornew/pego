@@ -493,18 +493,46 @@ func (p *printer) body(e Expr, indent string) {
 			p.sequence(a, indent, precSeq)
 			continue
 		}
-		if b := breakAt(c.Breaks, i); b != nil {
+		if b := breakAt(c.Breaks, i); b != nil && !(emptyBreak(b) && endsWithGap(c.Alts[i-1])) {
 			p.lineBreak(b, indent, false)
 		} else {
+			// A comment before "/" on its line stays before it: on a line of its
+			// own it would belong to the alternative before.
 			p.write(" ")
 		}
-		p.write("/ ")
+		if g := leadGap(a); g != nil {
+			// Comments between "/" and the alternative keep their lines.
+			s := indentTermLines(gapString(g, " ", p.control), indent+"  ", p.control)
+			if strings.HasSuffix(s, "\n") {
+				s += indent + "  "
+			}
+			p.write("/" + s)
+		} else {
+			p.write("/ ")
+		}
 		// Continuation lines of an alternative line up after "/ ".
 		p.sequence(a, indent+"  ", precSeq)
 	}
 	if l := nodeLayout(c); l != nil {
 		p.write(gapAfter(l.After, p.control))
 	}
+}
+
+// emptyBreak reports whether b only starts a line.
+func emptyBreak(b *LineBreak) bool {
+	return !b.Blank && len(b.Comments) == 0 && b.Trailing == nil
+}
+
+// endsWithGap reports whether e is followed by comments written on its line
+// that precede the next token.
+func endsWithGap(e Expr) bool {
+	if l := nodeLayout(e); l != nil && len(l.After) > 0 {
+		return true
+	}
+	if s, ok := e.(*Seq); ok && len(s.Items) > 0 {
+		return endsWithGap(s.Items[len(s.Items)-1])
+	}
+	return false
 }
 
 func (p *printer) sequence(e Expr, indent string, outer int) {
@@ -583,7 +611,12 @@ func (p *printer) itemNode(e Expr, indent string) {
 		} else {
 			p.write(" ")
 		}
-		p.write(gapBefore(operatorLayout(e), p.control) + "#recover(skip=" + formatExpr(e.Skip, precChoice, p.control) + recoveryClose(e, p.control) + ")")
+		// Lines of the parentheses are indented, and the closing one is not.
+		inner := indentTermLines(leadSep(e.Skip, p.control)+formatExpr(e.Skip, precChoice, p.control)+recoveryClose(e, p.control), indent+indentUnit, p.control)
+		if strings.HasSuffix(inner, "\n") {
+			inner += indent
+		}
+		p.write(gapBefore(operatorLayout(e), p.control) + "#recover(skip=" + inner + ")")
 	case *Repeat:
 		if e.PragmaBreak == nil {
 			p.write(indentTermLines(formatExprNode(e, precPrefix, p.control), indent, p.control))
@@ -1350,8 +1383,15 @@ func formatExprNode(e Expr, outer int, control *metadataControl) string {
 		for i, a := range e.Alts {
 			pollFormat(control)
 			parts[i] = formatExpr(a, precSeq, control)
+			if i > 0 {
+				if g := leadGap(a); g != nil {
+					parts[i] = "/" + gapString(g, " ", control) + parts[i]
+				} else {
+					parts[i] = "/ " + parts[i]
+				}
+			}
 		}
-		return finishFormat(paren(joinFormatParts(parts, " / ", control), precChoice, outer), control)
+		return finishFormat(paren(joinFormatParts(parts, " ", control), precChoice, outer), control)
 	case *Seq:
 		parts := make([]string, len(e.Items))
 		for i, it := range e.Items {
@@ -1385,7 +1425,7 @@ func formatExprNode(e Expr, outer int, control *metadataControl) string {
 	case *Stream:
 		return finishFormat(formatExpr(e.Expr, precSuffix, control)+gapAfter(operatorLayout(e), control)+" #stream", control)
 	case *Recovery:
-		return finishFormat(formatExpr(e.Expr, precSuffix, control)+gapAfter(operatorLayout(e), control)+" #recover(skip="+formatExpr(e.Skip, precChoice, control)+recoveryClose(e, control)+")", control)
+		return finishFormat(formatExpr(e.Expr, precSuffix, control)+gapAfter(operatorLayout(e), control)+" #recover(skip="+leadSep(e.Skip, control)+formatExpr(e.Skip, precChoice, control)+recoveryClose(e, control)+")", control)
 	case *Attributed:
 		s := formatExpr(e.Expr, precSuffix, control)
 		for _, a := range e.Attrs {
@@ -1461,17 +1501,80 @@ func endsStatementGap(s Term) bool {
 	return l != nil && len(l.After) > 0
 }
 
-// recoveryClose returns the comments before the closing parenthesis of e.
-func recoveryClose(e *Recovery, control *metadataControl) string {
-	return recoveryCloseOf(e, control)
+// binaryGap returns what stands between the left operand of t and its operator.
+func binaryGap(t *Binary, control *metadataControl) string {
+	if l := nodeLayout(t); l != nil && l.OpGap != nil {
+		return gapString(l.OpGap, " ", control)
+	}
+	return " "
 }
 
-// recoveryCloseOf returns the comments before the closing delimiter of n.
-func recoveryCloseOf(n any, control *metadataControl) string {
-	if l := nodeLayout(n); l != nil {
-		return gapAfter(l.Close, control)
+// recoveryClose returns the comments before the closing parenthesis of e.
+func recoveryClose(e *Recovery, control *metadataControl) string {
+	if l := nodeLayout(e); l != nil && l.Close != nil {
+		return gapString(l.Close, "", control)
 	}
 	return ""
+}
+
+// leadGap returns the comments between the "/" or "=" before e and its first
+// token.
+func leadGap(e Expr) *Gap {
+	if l := nodeLayout(e); l != nil {
+		return l.Lead
+	}
+	return nil
+}
+
+// leadSep returns what stands between the "=" after "skip" and e.
+func leadSep(e Expr, control *metadataControl) string {
+	if g := leadGap(e); g != nil {
+		return gapString(g, " ", control)
+	}
+	return ""
+}
+
+// gapString returns the comments of g with the white space around them: a
+// comment on the line of the token before follows it after a space, a comment
+// on a later line goes on a line of its own, and what follows the last comment
+// is final when the token after is on the same line. A line comment always ends
+// its line.
+func gapString(g *Gap, final string, control *metadataControl) string {
+	var b strings.Builder
+	previous := g.PreviousLine
+	newline := false
+	lines := func(to int) {
+		b.WriteByte('\n')
+		if to-previous > 1 {
+			b.WriteByte('\n')
+		}
+	}
+	for _, c := range g.Comments {
+		pollFormat(control)
+		if c == nil {
+			continue
+		}
+		switch {
+		case newline:
+			b.WriteByte('\n')
+		case c.Pos.Line > previous:
+			lines(c.Pos.Line)
+		default:
+			b.WriteByte(' ')
+		}
+		writeFormatString(&b, c.Text, control)
+		previous = c.End.Line
+		newline = strings.HasPrefix(c.Text, "//")
+	}
+	switch {
+	case newline:
+		lines(g.NextLine)
+	case g.NextLine > previous:
+		lines(g.NextLine)
+	default:
+		b.WriteString(final)
+	}
+	return b.String()
 }
 
 // attributeGap returns the comments before an attribute, each followed by a
@@ -2052,7 +2155,7 @@ func formatTermNode(t Term, outer int, control *metadataControl) string {
 		if p == termPrec["=="] {
 			lp++ // comparison operators do not chain
 		}
-		s := joinLayout(formatTerm(t.L, lp, control)+gapAfter(operatorLayout(t), control)+" "+t.Op+" ", formatTerm(t.R, p+1, control))
+		s := joinLayout(formatTerm(t.L, lp, control)+binaryGap(t, control)+t.Op+" ", formatTerm(t.R, p+1, control))
 		if p < outer {
 			return parenTerm(s, control)
 		}

@@ -316,6 +316,33 @@ func (p *parser) inlineGap() bool {
 	return line == t.pos.Line
 }
 
+// takeCommentGap takes the comments between the previous token and the current one,
+// whatever their kind and place. It is for places inside delimiters or after an
+// operator, where a comment may stand on a line of its own: the Gap keeps the
+// lines of the tokens and the comments for the formatter.
+func (p *parser) takeCommentGap() *grammar.Gap {
+	if p.header || p.i == 0 {
+		return nil
+	}
+	t := &p.toks[p.i]
+	if t.lineComment == nil && len(t.comments) == 0 {
+		return nil
+	}
+	cs := t.comments
+	if t.lineComment != nil {
+		cs = p.appendComments([]*grammar.Comment{t.lineComment}, cs)
+	}
+	t.lineComment, t.comments = nil, nil
+	return &grammar.Gap{Comments: cs, PreviousLine: p.toks[p.i-1].end.Line, NextLine: t.pos.Line}
+}
+
+// leadOf keeps the gap before the first token of e, if there is one.
+func (p *parser) leadOf(e grammar.Expr, gap *grammar.Gap) {
+	if gap != nil {
+		layoutOf(e).Lead = gap
+	}
+}
+
 // atLineStart reports whether the current token starts a line that the layout
 // of a rule body records: a line break before it, other than the lines inside
 // the block comments that stand between it and the token before.

@@ -26,6 +26,11 @@ func TestFormatKeepsCommentsBetweenTokens(t *testing.T) {
 		{"after the brace of a one-statement block", "rule r = \"a\" { // c\n    x := 1\n}", "rule r = \"a\" { // c\n    x := 1\n}"},
 		{"around the semicolons of a block", `rule r = "a" { x := 1 /* c */ ; /* d */ y := 2 /* e */ ; }`, "rule r = \"a\" {\n    x := 1 /* c */; /* d */ y := 2 /* e */;\n}"},
 		{"a blank line before the first comment of a block", "rule r = \"a\" {\n\n    // lead\n\n    x := 1\n}", "rule r = \"a\" {\n\n    // lead\n\n    x := 1\n}"},
+		{"on a line of its own after a binary operator", "rule r = \"a\" => (1 +\n    // c\n    2)", "rule r = \"a\" => (\n    1 +\n    // c\n    2\n)"},
+		{"on a line of its own before a binary operator", "rule r = \"a\" => (1\n    // c\n    + 2)", "rule r = \"a\" => (\n    1\n    // c\n    + 2\n)"},
+		{"on a line of its own after a slash in a group", "rule r = ( \"a\" /\n    // c\n    \"b\" ) \"c\"", "rule r = (\n    \"a\"\n    /\n      // c\n      \"b\"\n) \"c\""},
+		{"before a slash in a group, a block comment", "rule r = ( \"a\" /* c */ /\n    \"b\" ) \"c\"", "rule r = (\n    \"a\" /* c */ / \"b\"\n) \"c\""},
+		{"on lines of their own in a recovery", "rule r = \"a\" #recover(skip=\n    // c\n    \"b\"\n    // d\n) \"c\"", "rule r = \"a\" #recover(skip=\n    // c\n    \"b\"\n    // d\n) \"c\""},
 		{"a comment across lines in a group", "rule r = ( \"a\" /* x\n y */ \"b\" ) \"c\"", "rule r = (\n    \"a\" /* x\n y */ \"b\"\n) \"c\""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

@@ -73,7 +73,11 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			cs = appendMetadata(cs, l.After, control)
 			cs = appendMetadata(cs, l.Trail, control)
 			cs = appendMetadata(cs, l.Operator, control)
-			cs = appendMetadata(cs, l.Close, control)
+			for _, g := range []*Gap{l.Close, l.OpGap, l.Lead} {
+				if g != nil {
+					cs = appendMetadata(cs, g.Comments, control)
+				}
+			}
 		}
 	}
 	addList := func(l *ListLayout) {

@@ -69,9 +69,27 @@ type SourceLayout struct {
 	// expression (a repetition, an optional, an #atomic, #stream or #recover
 	// pragma) and its operator, all on one line with both.
 	Operator []*Comment
-	// Close holds the comments on one line before the closing parenthesis of a
-	// #recover pragma.
-	Close []*Comment
+	// Close holds the comments before the closing parenthesis of a #recover
+	// pragma.
+	Close *Gap
+	// OpGap holds the comments between the left operand of a binary operation
+	// and its operator.
+	OpGap *Gap
+	// Lead holds the comments between the "/" before an alternative, or the
+	// "=" after "skip" in a #recover pragma, and the first token of the node.
+	Lead *Gap
+}
+
+// Gap holds the comments between two tokens of an expression inside
+// delimiters, where a comment may stand on a line of its own. PreviousLine is
+// the line the token before ends on, NextLine the line the token after starts
+// on, and the comments keep their lines, so the formatter writes a comment on
+// the same line as a token, or on a line of its own, as in the source, and a
+// comment never changes what it belongs to.
+type Gap struct {
+	Comments     []*Comment
+	PreviousLine int
+	NextLine     int
 }
 
 // In a rule expression, a node's Layout holds the block comments that stand on
