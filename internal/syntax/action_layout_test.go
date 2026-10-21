@@ -74,7 +74,7 @@ func TestActionExpressionLayout(t *testing.T) {
 		{
 			name: "comment before the first call argument",
 			in:   "rule r = \"a\" => f(/* c */ 1, 2)\n",
-			want: "rule r = \"a\" => f( /* c */ 1, 2)\n",
+			want: "rule r = \"a\" => f(/* c */ 1, 2)\n",
 		},
 		{
 			name: "leading and trailing line comments in a call",

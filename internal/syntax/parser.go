@@ -648,8 +648,11 @@ func (p *parser) typeTerm() (sourceResult grammar.TypeExpr) {
 func (p *parser) structFields() (fields []*grammar.Field, closeBreak *grammar.LineBreak, oneLine bool) {
 	open := p.i
 	p.expect("{")
+	lead := p.openLead()
 	for {
 		fb := p.lineBreak()
+		p.leadBreak(fb, lead)
+		lead = nil
 		if p.is("}") {
 			closeBreak = fb
 			break
@@ -1245,19 +1248,29 @@ func (p *parser) pragma(e grammar.Expr, start grammar.Pos) (sourceResult grammar
 		return &grammar.Recovery{SourceInfo: grammar.SourceInfo{Pos: pos}, Expr: e, Skip: skip, Break: br}
 	case "repeat":
 		p.expect("(")
-		// The comments inside the parentheses stay there.
-		outer, args := p.cur, &grammar.LineBreak{}
-		p.cur = args
+		// The comments between the tokens of the arguments stay there.
+		outer, stray := p.cur, &grammar.LineBreak{}
+		p.cur = stray
+		sp := &grammar.RepeatSpelling{}
+		gap := func() { sp.Gaps = append(sp.Gaps, p.takeGap()) }
+		gap()
 		first := p.tok().kind == tInt || p.is("-")
 		min := 0
 		if first {
 			min = p.repeatCount()
+			sp.HasMin = true
+			gap()
 		}
 		max := min
-		if p.accept(",") {
+		if p.is(",") {
+			p.next()
+			sp.Comma = true
+			gap()
 			max = -1
 			if !p.is(")") {
 				max = p.repeatCount()
+				sp.HasMax = true
+				gap()
 			} else if !first {
 				p.errorf("#repeat requires at least one bound")
 			}
@@ -1266,11 +1279,13 @@ func (p *parser) pragma(e grammar.Expr, start grammar.Pos) (sourceResult grammar
 		}
 		p.expect(")")
 		p.cur = outer
-		rep := &grammar.Repeat{SourceInfo: grammar.SourceInfo{Pos: start}, Expr: e, Min: min, Max: max, PragmaBreak: br, MinOmitted: !first && max >= 0}
-		if len(args.Comments) > 0 {
-			rep.ArgsBreak = args
+		sp.Min, sp.Max = min, max
+		if len(stray.Comments) > 0 {
+			// Comments inside a bound, as in "- /* c */ 1", go with the gap after it.
+			g := &sp.Gaps[len(sp.Gaps)-1]
+			g.Comments = append(g.Comments, stray.Comments...)
 		}
-		return rep
+		return &grammar.Repeat{SourceInfo: grammar.SourceInfo{Pos: start}, Expr: e, Min: min, Max: max, PragmaBreak: br, Spelling: sp}
 	default:
 		p.errorf("unknown pragma #%s", name)
 		panic(bail{})
@@ -1443,7 +1458,9 @@ func (p *parser) primary() (sourceResult grammar.Expr) {
 		case "(":
 			open := p.i
 			p.next()
+			lead := p.openLead()
 			group := &grammar.Group{SourceInfo: grammar.SourceInfo{Pos: t.pos}, BodyBreak: p.lineBreak()}
+			p.leadBreak(group.BodyBreak, lead)
 			group.Expr = p.bodyChoice()
 			if !p.boundary() && p.is("=>") {
 				pos := p.next().pos
@@ -1524,8 +1541,11 @@ func (p *parser) actionBlock() (sourceResult *grammar.Block) {
 	defer func() { p.layout, p.layoutDepth, p.layoutStart = outerLayout, outerDepth, outerStart }()
 	p.layout = false
 	block := &grammar.Block{SourceInfo: grammar.SourceInfo{Pos: p.expect("{").pos}, Statements: []grammar.Term{}}
+	lead := p.openLead()
 	for {
 		br := p.lineBreak()
+		p.leadBreak(br, lead)
+		lead = nil
 		if p.is("}") {
 			block.CloseBreak = br
 			block.OneLine = !p.multiline(open, p.i)
@@ -1944,6 +1964,26 @@ func (p *parser) newTerm() (sourceResult grammar.Term) {
 func (p *parser) restoreBreak() func() {
 	outer := p.cur
 	return func() { p.cur = outer }
+}
+
+// openLead takes the block comment after an opening delimiter that is followed
+// by a token on its line. It leads that token, so it goes with the comments
+// before it instead of trailing the line of the delimiter.
+func (p *parser) openLead() *grammar.Comment {
+	t := &p.toks[p.i]
+	c := t.lineComment
+	if c == nil || !strings.HasPrefix(c.Text, "/*") || c.End.Line != t.pos.Line {
+		return nil
+	}
+	t.lineComment = nil
+	return c
+}
+
+// leadBreak puts the comment taken by openLead before the others in b.
+func (p *parser) leadBreak(b *grammar.LineBreak, c *grammar.Comment) {
+	if c != nil {
+		b.Comments = append([]*grammar.Comment{c}, b.Comments...)
+	}
 }
 
 // openList starts the layout of a delimited list after its opening delimiter.

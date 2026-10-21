@@ -412,13 +412,36 @@ type Repeat struct {
 	Max         int        `json:"max"`
 	PragmaBreak *LineBreak `json:"-"`
 
-	// MinOmitted records that the source wrote #repeat(,Max) rather than
-	// #repeat(0,Max). Format keeps that form; it has no other effect.
-	MinOmitted bool `json:"-"`
-	// ArgsBreak holds the comments between the parentheses of #repeat(...).
-	// The comma of #repeat is part of its syntax, not a list separator, so
-	// the comments are kept together instead of around the bounds.
-	ArgsBreak *LineBreak `json:"-"`
+	// Spelling records how the source wrote the pragma #repeat(...), which
+	// Format keeps, and is nil for a repetition written * or +, or built
+	// by code. It has no other effect.
+	Spelling *RepeatSpelling `json:"-"`
+}
+
+// RepeatSpelling is how a #repeat pragma was written: which of its tokens were
+// there, and the comments between them. The comma of #repeat is part of its
+// syntax, not a list separator: #repeat(n) is exactly n, #repeat(n,) at least
+// n, #repeat(,m) at most m and #repeat(n, m) from n to m.
+//
+// The tokens between the parentheses are, in order, the minimum if HasMin, the
+// comma if Comma, and the maximum if HasMax. Format uses the spelling only
+// while Min and Max are the bounds that were written; for a pragma edited since
+// it prints the bounds in the canonical form.
+type RepeatSpelling struct {
+	HasMin, Comma, HasMax bool
+	// Min and Max are the bounds as written.
+	Min, Max int
+	// Gaps holds the comments between the tokens: Gaps[0] follows the opening
+	// parenthesis and the last gap precedes the closing one, so there is one
+	// more gap than there are tokens.
+	Gaps []RepeatGap
+}
+
+// RepeatGap is the space between two tokens of a #repeat pragma.
+type RepeatGap struct {
+	Comments []*Comment
+	// PrevLine and NextLine are the lines of the tokens around the gap.
+	PrevLine, NextLine int
 }
 
 // Optional is an optional expression a?. Its value is the value of a, or
@@ -548,7 +571,10 @@ type Attribute struct {
 	// arguments on separate lines when it is set.
 	TrailingComma bool `json:"-"`
 	// ArgsLayout keeps the comments around the arguments in source order,
-	// positional ones first.
+	// positional ones first. Its Elems match Args and then KeywordOrder by
+	// index. They go stale if Args or KwArgs are edited without it: Format
+	// ignores the layout when the number of arguments differs, and otherwise
+	// keeps each comment with the argument at its index.
 	ArgsLayout *ListLayout `json:"-"`
 }
 

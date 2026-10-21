@@ -244,7 +244,12 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			term(e.Term)
 		case *Repeat:
 			add(e.PragmaBreak)
-			add(e.ArgsBreak)
+			if e.Spelling != nil {
+				for _, g := range e.Spelling.Gaps {
+					control.poll()
+					cs = appendMetadata(cs, g.Comments, control)
+				}
+			}
 			expr(e.Expr)
 		case *Optional:
 			expr(e.Expr)

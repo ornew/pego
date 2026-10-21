@@ -5,6 +5,7 @@ import (
 	"math/rand/v2"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -83,6 +84,9 @@ func (g *listGen) typ(depth int) string {
 // attr returns an attribute whose arguments hold comments. An empty argument
 // is written nil.
 func (g *listGen) attr() string {
+	if g.r.IntN(6) == 0 {
+		return "@custom" + g.list("(", ")", nil, false)
+	}
 	el := make([]string, 1+g.r.IntN(3))
 	for i := range el {
 		el[i] = []string{"1", "\"s\"", "nil"}[g.r.IntN(3)]
@@ -237,6 +241,123 @@ func TestFormatRandomTypes(t *testing.T) {
 	}
 }
 
+// TestFormatRandomOpeners formats the constructs that are not lists, with
+// comments next to their delimiters: a block comment after an opening delimiter
+// leads what follows it, and one before the closing delimiter trails it.
+func TestFormatRandomOpeners(t *testing.T) {
+	wraps := []struct {
+		name string
+		wrap func(g *listGen) string
+	}{
+		{"group", func(g *listGen) string { return "rule r = (" + g.slot() + "\"a\"" + g.slot() + ") \"b\"\n" }},
+		{"predicate", func(g *listGen) string { return "rule r = \"a\" {" + g.slot() + "true" + g.slot() + "} \"b\"\n" }},
+		{"block", func(g *listGen) string {
+			return "rule r = \"a\" {" + g.slot() + "x := 1; x == 1" + g.slot() + "} \"b\"\n"
+		}},
+		{"struct", func(g *listGen) string {
+			return "type T = {" + g.slot() + "F int; G int" + g.slot() + "}\nrule r = \"a\"\n"
+		}},
+		{"empty struct", func(g *listGen) string { return "type T = {" + g.slot() + "}\nrule r = \"a\"\n" }},
+		{"index", func(g *listGen) string {
+			return "rule r = \"a\" => x[" + g.slot() + "0]\n"
+		}},
+		{"type group", func(g *listGen) string { return "rule r (" + g.slot() + "int" + g.slot() + ") = \"a\"\n" }},
+	}
+	const seeds = 1500
+	for _, w := range wraps {
+		t.Run(w.name, func(t *testing.T) {
+			failures, parsed := 0, 0
+			for seed := uint64(0); seed < seeds && failures < 3; seed++ {
+				// Block comments between the tokens of a line. Comments on lines of their own
+				// in these constructs, and next to a semicolon, are not kept in place.
+				g := &listGen{r: rand.New(rand.NewPCG(seed, 17)), inline: true}
+				src := w.wrap(g)
+				ast, err := Parse(src)
+				if err != nil {
+					continue
+				}
+				parsed++
+				if problem := checkRandomFormat(src, ast); problem != "" {
+					failures++
+					t.Errorf("seed %d\nsource:\n%s\n%s", seed, src, problem)
+				}
+			}
+			if failures == 0 && parsed < seeds/2 {
+				t.Errorf("only %d of %d random sources parse", parsed, seeds)
+			}
+		})
+	}
+}
+
+// repeatForms are the ways to spell the bounds of a #repeat pragma: the minimum
+// and the maximum are each there or left out, and so is the comma.
+var repeatForms = []struct{ min, comma, max string }{
+	{"2", "", ""}, {"2", ",", ""}, {"", ",", "3"}, {"0", ",", "3"}, {"2", ",", "3"},
+	{"1", ",", ""}, {"0", ",", ""}, {"2", ",", "2"}, {"", ",", "0"}, {"0", ",", "0"},
+}
+
+// TestFormatRandomRepeat formats #repeat pragmas with comments in every gap
+// between their tokens, and checks that the spelling of the bounds and the
+// gap of each comment stay as they were: the comments there have no owner.
+func TestFormatRandomRepeat(t *testing.T) {
+	const seeds = 3000
+	failures, parsed := 0, 0
+	for seed := uint64(0); seed < seeds && failures < 3; seed++ {
+		g := &listGen{r: rand.New(rand.NewPCG(seed, 13))}
+		form := repeatForms[g.r.IntN(len(repeatForms))]
+		var b strings.Builder
+		b.WriteString("(" + g.slot())
+		for i, tok := range []string{form.min, form.comma, form.max} {
+			if tok == "" {
+				continue
+			}
+			if i > 0 {
+				b.WriteString(g.slot())
+			}
+			b.WriteString(tok)
+		}
+		b.WriteString(g.slot() + ")")
+		src := "rule r = \"a\" #repeat" + b.String() + " \"b\"\n"
+		ast, err := Parse(src)
+		if err != nil {
+			continue
+		}
+		parsed++
+		problem := checkRandomFormat(src, ast)
+		if problem == "" {
+			again, err := Parse(grammar.Format(ast))
+			if err != nil {
+				problem = err.Error()
+			} else if a, b := repeatSpelling(ast), repeatSpelling(again); a != b {
+				problem = fmt.Sprintf("the spelling changed\n%s\n%s", a, b)
+			}
+		}
+		if problem != "" {
+			failures++
+			t.Errorf("seed %d\nsource:\n%s\n%s", seed, src, problem)
+		}
+	}
+	if failures == 0 && parsed < seeds*9/10 {
+		t.Errorf("only %d of %d random sources parse", parsed, seeds)
+	}
+}
+
+// repeatSpelling describes the tokens of the #repeat pragma of the first rule
+// and the comments in each gap between them.
+func repeatSpelling(g *grammar.Grammar) string {
+	rep := g.Rules()[0].Expr.(*grammar.Seq).Items[0].(*grammar.Repeat)
+	sp := rep.Spelling
+	var b strings.Builder
+	fmt.Fprintf(&b, "%d,%d min=%v comma=%v max=%v", rep.Min, rep.Max, sp.HasMin, sp.Comma, sp.HasMax)
+	for i, gap := range sp.Gaps {
+		fmt.Fprintf(&b, " gap%d=", i)
+		for _, c := range gap.Comments {
+			b.WriteString(c.Text + "|")
+		}
+	}
+	return b.String()
+}
+
 // checkRandomFormat returns a description of what formatting changes in ast,
 // parsed from src.
 func checkRandomFormat(src string, ast *grammar.Grammar) string {
@@ -257,7 +378,98 @@ func checkRandomFormat(src string, ast *grammar.Grammar) string {
 	if diffs := ownerDiffs(ast, again); len(diffs) > 0 {
 		return "the owners changed\n" + strings.Join(diffs, "\n") + "\n" + out
 	}
+	if diffs := argHomeDiffs(ast, again); len(diffs) > 0 {
+		return "comments left their arguments\n" + strings.Join(diffs, "\n") + "\n" + out
+	}
 	return ""
+}
+
+// argHomes maps the text of each comment inside the parentheses of an attribute,
+// a lambda or a #repeat to the path of that node. No owner claims these
+// comments and JSON omits them, so only their place in the tree shows whether
+// formatting kept them where they were.
+func argHomes(g *grammar.Grammar) map[string]string {
+	homes := map[string][]string{}
+	var all func(v reflect.Value, path string)
+	all = func(v reflect.Value, path string) {
+		switch v.Kind() {
+		case reflect.Pointer:
+			if v.IsNil() {
+				return
+			}
+			if c, ok := v.Interface().(*grammar.Comment); ok {
+				homes[c.Text] = append(homes[c.Text], path)
+				return
+			}
+			all(v.Elem(), path)
+		case reflect.Interface:
+			if !v.IsNil() {
+				all(v.Elem(), path)
+			}
+		case reflect.Slice:
+			for i := 0; i < v.Len(); i++ {
+				all(v.Index(i), path)
+			}
+		case reflect.Struct:
+			for i := 0; i < v.NumField(); i++ {
+				if v.Type().Field(i).IsExported() {
+					all(v.Field(i), path)
+				}
+			}
+		}
+	}
+	var walk func(v reflect.Value, path string)
+	walk = func(v reflect.Value, path string) {
+		switch v.Kind() {
+		case reflect.Pointer:
+			if !v.IsNil() {
+				walk(v.Elem(), path)
+			}
+		case reflect.Interface:
+			if !v.IsNil() {
+				walk(v.Elem(), path+"<"+v.Elem().Type().String()+">")
+			}
+		case reflect.Slice:
+			for i := 0; i < v.Len(); i++ {
+				walk(v.Index(i), path+"["+strconv.Itoa(i)+"]")
+			}
+		case reflect.Struct:
+			for i := 0; i < v.NumField(); i++ {
+				f := v.Type().Field(i)
+				if !f.IsExported() {
+					continue
+				}
+				if f.Name == "ArgsLayout" || f.Name == "Spelling" || f.Name == "ParamsLayout" {
+					all(v.Field(i), path+"."+f.Name)
+				}
+				walk(v.Field(i), path+"."+f.Name)
+			}
+		}
+	}
+	walk(reflect.ValueOf(g), "")
+	out := map[string]string{}
+	for text, paths := range homes {
+		slices.Sort(paths)
+		out[text] = strings.Join(paths, " & ")
+	}
+	return out
+}
+
+func argHomeDiffs(a, b *grammar.Grammar) []string {
+	x, y := argHomes(a), argHomes(b)
+	var diffs []string
+	for text, home := range x {
+		if y[text] != home {
+			diffs = append(diffs, fmt.Sprintf("%q: %s -> %s", text, home, y[text]))
+		}
+	}
+	for text, home := range y {
+		if _, ok := x[text]; !ok {
+			diffs = append(diffs, fmt.Sprintf("%q: none -> %s", text, home))
+		}
+	}
+	slices.Sort(diffs)
+	return diffs
 }
 
 func jsonOf(g *grammar.Grammar) string {

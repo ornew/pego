@@ -188,6 +188,49 @@ func (b *LineBreak) inlineBlock() *Comment {
 	return nil
 }
 
+// inlineLead returns the block comments in b, each followed by a space, when b
+// holds nothing else: the comments between an opening delimiter and the token
+// after it on one line. They lead what follows, so they are written before it.
+//
+// next is where the token after them begins, or the zero Pos when none follows
+// on the line: a comment that is not on that line before it is some other
+// comment that Format moved into b.
+func inlineLead(b *LineBreak, next Pos) (string, bool) {
+	if b == nil {
+		return "", true
+	}
+	if b.Blank {
+		return "", false
+	}
+	var s strings.Builder
+	for _, c := range b.Comments {
+		if c.Header.IsValid() || !strings.HasPrefix(c.Text, "/*") || strings.ContainsAny(c.Text, "\r\n") {
+			return "", false
+		}
+		if next.IsValid() && (c.End.Line != next.Line || c.End.Col > next.Col) {
+			return "", false
+		}
+		s.WriteString(c.Text + " ")
+	}
+	return s.String(), true
+}
+
+// exprPos returns where e begins in the source, if known.
+func exprPos(e Expr) Pos {
+	if n, ok := e.(SourceNode); ok {
+		return n.Source().Pos
+	}
+	return Pos{}
+}
+
+// termPos returns where t begins in the source, if known.
+func termPos(t Term) Pos {
+	if n, ok := t.(SourceNode); ok {
+		return n.Source().Pos
+	}
+	return Pos{}
+}
+
 // noComments reports whether b holds no comments before its node and no
 // blank line, so that the node can stay on the current line.
 func noComments(b *LineBreak) bool {
@@ -231,10 +274,26 @@ func (p *printer) typeAlias(t *TypeAlias) {
 
 // structBody writes the braces and fields of a struct type.
 func (p *printer) structBody(fields []*Field, closeBreak *LineBreak, oneLine bool, indent string) {
-	empty := noComments(closeBreak)
-	for _, f := range fields {
-		pollFormat(p.control)
-		empty = empty && noComments(f.Break)
+	// On one line, a block comment after the opening brace leads the first
+	// field, or precedes the closing brace of an empty struct.
+	lead := ""
+	var empty bool
+	switch {
+	case oneLine && len(fields) > 0:
+		lead, empty = inlineLead(fields[0].Break, fields[0].Pos)
+		empty = empty && noComments(closeBreak)
+		for _, f := range fields[1:] {
+			pollFormat(p.control)
+			empty = empty && noComments(f.Break)
+		}
+	case oneLine:
+		lead, empty = inlineLead(closeBreak, Pos{})
+	default:
+		empty = noComments(closeBreak)
+		for _, f := range fields {
+			pollFormat(p.control)
+			empty = empty && noComments(f.Break)
+		}
 	}
 	if empty && (len(fields) == 0 || oneLine) {
 		parts := make([]string, len(fields))
@@ -262,9 +321,9 @@ func (p *printer) structBody(fields []*Field, closeBreak *LineBreak, oneLine boo
 		}
 		p.inline(closeBreak)
 		if len(parts) == 0 {
-			p.write("{}")
+			p.write("{" + strings.TrimSpace(lead) + "}")
 		} else {
-			p.write("{ " + joinFormatParts(parts, " ", p.control) + " }")
+			p.write("{ " + lead + joinFormatParts(parts, " ", p.control) + " }")
 		}
 		return
 	}
@@ -531,8 +590,12 @@ func (p *printer) item(e Expr, indent string) {
 
 func (p *printer) group(g *Group, indent string) {
 	pollFormat(p.control)
-	if g.OneLine && noComments(g.BodyBreak) && noComments(g.CloseBreak) && p.tryOneLine(func() {
-		p.write("(")
+	lead, plain := "", false
+	if g.OneLine && (g.BodyBreak == nil || g.BodyBreak.Trailing == nil) {
+		lead, plain = inlineLead(g.BodyBreak, exprPos(g.Expr))
+	}
+	if plain && noComments(g.CloseBreak) && p.tryOneLine(func() {
+		p.write("(" + lead)
 		p.groupBody(g.Expr, indent)
 		p.write(")")
 		p.inline(g.CloseBreak)
@@ -860,14 +923,17 @@ func formatSourceList(elems []listElem, comma, lines bool, openDelim, closeDelim
 	if !multi {
 		for i, e := range elems {
 			pollFormat(control)
+			head := e.head
 			if i > 0 {
 				if strings.HasPrefix(e.head, " ") {
 					b.WriteString(",") // the element starts with a comment on the line of the comma
 				} else {
 					b.WriteString(", ")
 				}
+			} else {
+				head = strings.TrimPrefix(head, " ") // no space after the opening delimiter
 			}
-			writeFormatString(&b, e.head, control)
+			writeFormatString(&b, head, control)
 			writeLayoutAfter(&b, e.after, "", e.afterLine, control)
 		}
 		if comma {
@@ -1025,7 +1091,11 @@ func formatSourceGroupIndented(body, openDelim, closeDelim string, open, first, 
 		after, ok3 := groupInlineComments(first, true, control)
 		closing, ok4 := groupInlineComments(close, false, control)
 		if ok0 && ok1 && ok2 && ok3 && ok4 && (close == nil || close.Trailing == nil) {
-			return openDelim + leading + opening + before + body + strings.TrimSuffix(after, " ") + strings.TrimSuffix(closing, " ") + closeDelim
+			inner := strings.TrimPrefix(leading+opening+before, " ") + body + strings.TrimSuffix(after, " ") + strings.TrimSuffix(closing, " ")
+			if body == "" {
+				inner = strings.TrimSpace(inner) // f(/* a */)
+			}
+			return openDelim + inner + closeDelim
 		}
 	}
 	p := &printer{control: control, keepStart: true}
@@ -1233,9 +1303,9 @@ func formatExpr(e Expr, outer int, control *metadataControl) string {
 	case *Repeat:
 		s := formatExpr(e.Expr, precSuffix, control)
 		switch {
-		case e.ArgsBreak == nil && e.Min == 0 && e.Max < 0:
+		case e.Spelling == nil && e.Min == 0 && e.Max < 0:
 			s += "*"
-		case e.ArgsBreak == nil && e.Min == 1 && e.Max < 0:
+		case e.Spelling == nil && e.Min == 1 && e.Max < 0:
 			s += "+"
 		default:
 			s += " " + formatRepeatPragma(e, control)
@@ -1298,36 +1368,148 @@ func formatExpr(e Expr, outer int, control *metadataControl) string {
 	return finishFormat(fmt.Sprintf("<%T>", e), control)
 }
 
-// formatRepeatPragma returns the pragma #repeat(...) that repeats e. The comma
-// of the pragma is part of its syntax: #repeat(n) is exactly n, #repeat(n,) at
-// least n and #repeat(,m) at most m, so it is never a trailing comma and the
-// bounds stay on one line. The comments between its parentheses go on lines of
-// their own before the bounds.
+// formatRepeatPragma returns the pragma #repeat(...) that repeats e. It keeps
+// the tokens the source had between the parentheses: #repeat(2,), #repeat(,3)
+// and #repeat(2, 2) stay as written, and so do the comments between them. The
+// comma is part of the syntax, so it is never a list separator and the pragma
+// has no trailing comma. A comment that ends its line puts the tokens on lines.
 func formatRepeatPragma(e *Repeat, control *metadataControl) string {
 	pollFormat(control)
-	var bounds string
+	var tokens []string
+	var gaps []RepeatGap
+	sp := e.Spelling
+	if sp != nil && (sp.Min != e.Min || sp.Max != e.Max) {
+		// Edited since it was read: the canonical form, with the old comments
+		// before the bounds.
+		var all []*Comment
+		for _, g := range sp.Gaps {
+			pollFormat(control)
+			all = append(all, g.Comments...)
+		}
+		sp = nil
+		gaps = []RepeatGap{{Comments: all}}
+	}
 	switch {
+	case sp != nil:
+		if sp.HasMin {
+			tokens = append(tokens, strconv.Itoa(e.Min))
+		}
+		if sp.Comma {
+			tokens = append(tokens, ",")
+		}
+		if sp.HasMax {
+			tokens = append(tokens, strconv.Itoa(e.Max))
+		}
+		gaps = sp.Gaps
 	case e.Min == e.Max:
-		bounds = strconv.Itoa(e.Min)
+		tokens = []string{strconv.Itoa(e.Min)}
 	case e.Max < 0:
-		bounds = strconv.Itoa(e.Min) + ","
-	case e.MinOmitted && e.Min == 0:
-		bounds = "," + strconv.Itoa(e.Max)
+		tokens = []string{strconv.Itoa(e.Min), ","}
 	default:
-		bounds = strconv.Itoa(e.Min) + ", " + strconv.Itoa(e.Max)
+		tokens = []string{strconv.Itoa(e.Min), ",", strconv.Itoa(e.Max)}
 	}
-	if e.ArgsBreak == nil || len(e.ArgsBreak.Comments) == 0 {
-		return "#repeat(" + bounds + ")"
+	if len(gaps) != len(tokens)+1 {
+		var all []*Comment
+		for _, g := range gaps {
+			all = append(all, g.Comments...)
+		}
+		gaps = make([]RepeatGap, len(tokens)+1)
+		gaps[0].Comments = all
 	}
+	lines := false
+	for _, g := range gaps {
+		for k, c := range g.Comments {
+			pollFormat(control)
+			lines = lines || endsLine(c, g.nextLine(k)) || hasFormatNewline(c.Text, control)
+		}
+	}
+	// A maximum after the comma has a space before it, unless the minimum is
+	// left out: #repeat(,3).
+	space := func(i int) bool { return i == 2 }
 	var b strings.Builder
-	b.WriteString("#repeat(")
-	for _, c := range e.ArgsBreak.Comments {
-		pollFormat(control)
-		b.WriteString("\n" + indentUnit)
-		writeFormatString(&b, c.Text, control)
+	if !lines {
+		b.WriteString("#repeat(")
+		for i, tok := range tokens {
+			pollFormat(control)
+			g := gaps[i]
+			for k, c := range g.Comments {
+				if i > 0 || k > 0 {
+					b.WriteByte(' ')
+				}
+				writeFormatString(&b, c.Text, control)
+			}
+			switch {
+			case tok == ",":
+			case len(g.Comments) > 0 || space(i):
+				b.WriteByte(' ')
+			}
+			b.WriteString(tok)
+		}
+		for _, c := range gaps[len(tokens)].Comments {
+			b.WriteByte(' ')
+			writeFormatString(&b, c.Text, control)
+		}
+		b.WriteByte(')')
+		return b.String()
 	}
-	b.WriteString("\n" + indentUnit + bounds + "\n)")
-	return b.String()
+	// On lines: a comment on the line of the token before it stays there; the
+	// others take lines of their own.
+	head := "#repeat("
+	var body []string
+	cur := ""
+	flush := func() {
+		if cur != "" {
+			body = append(body, indentUnit+cur)
+		}
+		cur = ""
+	}
+	gap := func(g RepeatGap, first bool) {
+		for k, c := range g.Comments {
+			pollFormat(control)
+			var text strings.Builder
+			writeFormatString(&text, c.Text, control)
+			switch {
+			case c.Pos.Line <= g.PrevLine && first:
+				head += " " + text.String()
+			case c.Pos.Line <= g.PrevLine && cur != "":
+				cur += " " + text.String()
+			default:
+				flush()
+				cur = text.String()
+			}
+			if endsLine(c, g.nextLine(k)) {
+				if first && c.Pos.Line <= g.PrevLine {
+					continue
+				}
+				flush()
+			}
+		}
+	}
+	for i, tok := range tokens {
+		gap(gaps[i], i == 0)
+		switch {
+		case cur == "":
+			cur = tok
+		case tok == ",":
+			cur += ","
+		case len(gaps[i].Comments) > 0 || space(i):
+			cur += " " + tok
+		default:
+			cur += tok
+		}
+	}
+	gap(gaps[len(tokens)], false)
+	flush()
+	return head + "\n" + strings.Join(body, "\n") + "\n)"
+}
+
+// nextLine returns the line of what follows the k-th comment of g: the next
+// comment, or else the token after the gap.
+func (g RepeatGap) nextLine(k int) int {
+	if k+1 < len(g.Comments) {
+		return g.Comments[k+1].Pos.Line
+	}
+	return g.NextLine
 }
 
 func formatAttribute(a *Attribute, control *metadataControl) string {
@@ -1337,7 +1519,7 @@ func formatAttribute(a *Attribute, control *metadataControl) string {
 		marker = "#"
 	}
 	s := marker + a.Name
-	if len(a.Args) == 0 && len(a.KwArgs) == 0 {
+	if len(a.Args) == 0 && len(a.KwArgs) == 0 && (a.ArgsLayout == nil || !listHasComments(a.ArgsLayout.OpenBreak, a.ArgsLayout.BodyBreak, a.ArgsLayout.CloseBreak)) {
 		return s
 	}
 	var args []string
@@ -1533,18 +1715,30 @@ func formatTermNode(t Term, outer int, control *metadataControl) string {
 			pollFormat(control)
 			parts[i] = formatTerm(stmt, 0, control)
 		}
-		if t.OneLine && noComments(t.CloseBreak) {
+		if t.OneLine && (len(t.Statements) > 0 && noComments(t.CloseBreak) || len(t.Statements) == 0) {
 			plain := true
-			for _, b := range t.Breaks {
+			lead := ""
+			if len(t.Statements) == 0 {
+				lead, plain = inlineLead(t.CloseBreak, Pos{})
+				lead = strings.TrimSpace(lead)
+			}
+			for i, b := range t.Breaks {
 				pollFormat(control)
-				plain = plain && noComments(b)
+				plain = plain && (b == nil || b.Trailing == nil)
+				if i == 0 {
+					var ok bool
+					lead, ok = inlineLead(b, termPos(t.Statements[0]))
+					plain = plain && ok
+				} else {
+					plain = plain && noComments(b)
+				}
 			}
 			for _, part := range parts {
 				// A statement over several lines breaks the block too.
 				plain = plain && !hasFormatNewline(part, control)
 			}
 			if plain {
-				return "{" + joinFormatParts(parts, "; ", control) + "}"
+				return "{" + lead + joinFormatParts(parts, "; ", control) + "}"
 			}
 		}
 		p.openBlock()
@@ -1631,7 +1825,7 @@ func formatTermNode(t Term, outer int, control *metadataControl) string {
 				// "[" is an index only directly after a name, a capture, ")" or "]".
 				l = parenTerm(l, control)
 			}
-			return l + "[" + formatTerm(t.R, 0, control) + "]"
+			return l + "[" + strings.TrimPrefix(formatTerm(t.R, 0, control), " ") + "]"
 		}
 		p := termPrec[t.Op]
 		// Operators are left-associative, so the right operand is

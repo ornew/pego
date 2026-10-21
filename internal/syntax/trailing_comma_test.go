@@ -210,7 +210,7 @@ func TestGroupBlockCommentsKeepOwners(t *testing.T) {
 		{"on a line of its own before the element", "rule r = \"a\" => (\n    /* c */ 1\n)\n", "rule r = \"a\" => (\n    /* c */\n    1\n)\n"},
 		{"ending the line of the element", "rule r = \"a\" => (1 /* c */\n)\n", "rule r = \"a\" => (\n    1 /* c */\n)\n"},
 		{"ending the line of the opening parenthesis", "rule r = \"a\" => (/* c */\n    1)\n", "rule r = \"a\" => ( /* c */\n    1\n)\n"},
-		{"between two tokens of a line", "rule r = \"a\" => (/* c */ 1 /* d */)\n", "rule r = \"a\" => ( /* c */ 1 /* d */)\n"},
+		{"between two tokens of a line", "rule r = \"a\" => (/* c */ 1 /* d */)\n", "rule r = \"a\" => (/* c */ 1 /* d */)\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := checkFormat(t, tc.in); got != tc.want {

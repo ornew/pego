@@ -20,7 +20,7 @@ func TestFormatListComments(t *testing.T) {
 		{"field type tuple on a line", "type T = { F (int /* b */, string) }\n", "type T = { F (int /* b */, string) }\n"},
 		{"attribute line comment", "rule r = \"a\" @custom(1, // c\n 2)\n", "rule r = \"a\" @custom(\n    1, // c\n    2,\n)\n"},
 		{"attribute block comment before the comma", "rule r = \"a\" @custom(1 /* b */, 2,)\n", "rule r = \"a\" @custom(\n    1 /* b */,\n    2,\n)\n"},
-		{"attribute leading block comment", "rule r = \"a\" @custom(/* b */ 1, 2)\n", "rule r = \"a\" @custom( /* b */ 1, 2)\n"},
+		{"attribute leading block comment", "rule r = \"a\" @custom(/* b */ 1, 2)\n", "rule r = \"a\" @custom(/* b */ 1, 2)\n"},
 		{"attribute comment after the last argument", "rule r = \"a\" @custom(1, k=2, // c\n)\n", "rule r = \"a\" @custom(\n    1,\n    k=2, // c\n)\n"},
 		{"lambda comment", "rule r = \"a\" => map(x, (a, // c\n b) => a)\n", "rule r = \"a\" => map(\n    x,\n    (\n        a, // c\n        b,\n    ) => a,\n)\n"},
 		{"lambda trailing comma", "rule r = \"a\" => map(x, (a, b,) => a)\n", "rule r = \"a\" => map(\n    x,\n    (\n        a,\n        b,\n    ) => a,\n)\n"},

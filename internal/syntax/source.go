@@ -269,6 +269,19 @@ func (p *parser) sourceTrailing(s *grammar.SourceInfo) {
 	}
 }
 
+// takeGap takes the comments before the current token, which lie between it
+// and the token before it, for a #repeat pragma.
+func (p *parser) takeGap() grammar.RepeatGap {
+	t := &p.toks[p.i]
+	cs := t.comments
+	if t.lineComment != nil {
+		cs = p.appendComments([]*grammar.Comment{t.lineComment}, cs)
+	}
+	g := grammar.RepeatGap{Comments: cs, PrevLine: p.toks[p.i-1].end.Line, NextLine: t.pos.Line}
+	t.lineComment, t.comments = nil, nil
+	return g
+}
+
 // takeTermLayout keeps trivia at an expression boundary rather than promoting
 // it to the current statement's line break. Normalized ownership is independent.
 func (p *parser) takeTermLayout() *grammar.SourceLayout {
