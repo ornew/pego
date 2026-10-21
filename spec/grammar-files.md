@@ -130,10 +130,12 @@ expression they belong to. The comments around a binary operator, before the
 repetition, after a `/`, a label or
 a prefix operator, after the `=` of `skip=`, and inside the parentheses of
 `#recover` may also stand on lines of their own; the `OpGap`, `Lead` and
-`Close` fields keep them with the lines of the tokens around them. The comments between the tokens of `#repeat(...)` stay in its `Spelling` field. The comments inside attribute arguments,
+`Close` fields keep them with the lines of the tokens around them. `Open`, `Eq` and `Sep` keep those after the `(` and after `skip` of `#recover` and before the `/` of an alternative in its choice, and `Last` of the break before the `)` of a group keeps the comment that trails the group's last token. The comments between the tokens of `#repeat(...)` stay in its `Spelling` field. The comments inside attribute arguments,
 lambda parameters and `#repeat(...)` are layout only: unlike owned comments they
 are not part of the JSON AST. Other source forms remain outside this increment's
-coverage.
+coverage. Comment owners across statements separated by `;` on one line are not
+fully preserved, and a level written on one line with a comment after its closing
+brace is not formatted idempotently.
 
 #### Comment Grouping and Ownership
 

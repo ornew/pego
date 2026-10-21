@@ -84,11 +84,13 @@ A blank line before the first comment of a list is kept, because it decides whet
 Tests format random lists, types and attributes with comments in every position and check that the result parses to the same AST with each comment owned by the same node.
 A construct written on one line, such as a group, a predicate block or a level, that holds a list on lines is written on lines itself, because the next pass would read it that way.
 
-A block comment between two tokens of a rule expression, such as the one in `"a" @custom /* c */ "b"`, is kept in the `SourceLayout` of the expression next to it: `Before` for a comment before its first token, `After` for one before the `/` or `=>` that follows, `Operator` for one before a suffix or a pragma, and `Close` for one before the parenthesis of `#recover`.
+A block comment between two tokens of a rule expression, such as the one in `"a" @custom /* c */ "b"`, is kept in the `SourceLayout` of the expression next to it: `Before` for a comment before its first token, `After` for one before the `/` or `=>` that follows, `Operator` for one before a suffix or a pragma, and `Close` for one before the parenthesis of `#recover`. `Open` and `Eq` hold the ones after its `(` and after `skip`, and `Sep` the ones before the `/` of an alternative in its choice.
 The parser takes such a comment only when no line break stands between the two tokens and the comment but the lines inside a block comment, so the formatter writes it back where it was and the owner does not change.
 Inside delimiters a comment may also stand on a line of its own, between a binary operator and an operand, between `/` and the alternative after it, after a label or a prefix operator, before a `*`, `+` or `?`, before the `=>` of a lambda or of an inline action in a group, or inside the parentheses of `#recover`. Those gaps are kept as a `Gap`: the comments with the lines of the tokens around them (`OpGap` before a binary operator, a suffix or the arrow of a lambda or an inline action, `Lead` before the first token of an alternative, of an operand of a label or a prefix operator, or of the skip expression, and `Close` before the parenthesis), so the formatter writes each comment on the line it was on and the owner does not change.
 Comments in the other gaps still go to the line break nearest before them.
 An action block keeps the comment that ends the line of its `{` in `OpenBreak`, the comments around a `;` in the layout of the statements, and a statement that follows a `;` and a comment on its line stays on that line.
+A comment on the line of the last token before the `)` of a group, which trails that token, is kept in `Last` of the break before the `)`; the `Trailing` of that break is the comment after the `)`. This keeps the comment from moving across the tokens of a nested group.
+A declaration, field or package clause that starts on the closing line of a multi-line block comment keeps that comment as its own detached one: the formatter writes it on lines of its own, set off by blank lines, before the declaration.
 An index keeps the layout of its brackets in `OpenBreak`, `BodyBreak` and `CloseBreak`, as a `TermGroup` does.
 
 Formatting is idempotent: formatting the output again gives the same text, because each recorded line break reproduces itself.
@@ -101,5 +103,6 @@ Tests check this, and that every grammar in `examples/` reparses to the same AST
 
 ## Limitations
 
+- Comment owners across statements separated by `;` on one line are not fully preserved, and a level written on one line with a comment after its closing brace, such as `level { infix left "+" } // c`, is not formatted idempotently.
 - A rule body keeps line breaks at its top-level choice and sequences. Source-only PEG, type and action group nodes preserve layout and comment ownership inside their explicit delimiters. `TypeGroup` and `TermGroup` keep raw line placement in `OpenBreak`, `BodyBreak`, `CloseBreak` and `OneLine`, separate from normalized `SourceInfo` ownership. Other internal line breaks, including those inside Operators Rule operands and operators, are joined, and comments there move to the nearest preceding line.
 - Alignment that `Format` does not produce itself (for example, aligned columns in Operators Rule levels) is not kept.
