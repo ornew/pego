@@ -67,6 +67,16 @@ var ruleExprLineForms = []struct{ name, form string }{
 	{"before an attribute in a group", `rule r = ( "a" S @custom S "b" )`},
 	{"around a nested group", `rule r = ( S ( "a" ) S ( "b" S ) S )`},
 	{"after the index bracket", `rule r = "a" => x[ S 0 ]`},
+	{"before the close of a group that starts with a group", `rule r = ( ( "a" ) "c" S )`},
+	{"before the close of a group that starts with a discarded group", `rule r = ( - ( "a" ) S ? "c" S )`},
+	{"before the close of a group that starts with an optional group", `rule r = ( ( "a" )? "c" S )`},
+	{"before the close of a group that ends with a repeated group", `rule r = ( "x" ( "a" )* S )`},
+	{"group discard choice", `rule r = ( S - S ( S "a" S / S "b" S ) S ? S & S "c" S )`},
+	{"action choice", `rule r = ( S "a" S => S 1 S ) S / S ( S "b" S => S 2 S )`},
+	{"inline action choice", `rule r = ( S ( S x: S "a" S #atomic S => S x S ) S / S ( S "b" S #repeat( S 2 S ) S => S 2 S ) S )`},
+	{"pragma and action in a group", `rule r = ( S "a" S { S true S } S #atomic S + S => S 1 S )`},
+	{"index chain", `rule r = "a" => x[ S 0 S ][ S 1 S ]`},
+	{"lambda in a call", `rule r = "a" => f( S (a, b) S => S a S + S b S , S 1 S )`},
 }
 
 // TestFormatRandomRuleExpr formats rule bodies with comments between the

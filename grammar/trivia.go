@@ -42,6 +42,10 @@ type LineBreak struct {
 	// line. A block comment that ends its line cannot move to the line of the
 	// token after it without changing which node owns it.
 	TrailingEnds bool
+	// Last is the comment on the line of the last token before the closing
+	// parenthesis of a group, which trails that token: Trailing, of the break
+	// before a ")", is the comment after the ")".
+	Last *Comment
 }
 
 // AllComments returns every comment kept in g, in no particular order.
@@ -59,6 +63,9 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 		cs = appendMetadata(cs, b.Comments, control)
 		if b.Trailing != nil {
 			cs = append(cs, b.Trailing)
+		}
+		if b.Last != nil {
+			cs = append(cs, b.Last)
 		}
 	}
 	addAll := func(bs []*LineBreak) {

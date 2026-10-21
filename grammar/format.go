@@ -258,6 +258,14 @@ func termPos(t Term) Pos {
 	return Pos{}
 }
 
+// last returns the comment that trails the last token before b.
+func (b *LineBreak) last() *Comment {
+	if b == nil || b.Last == nil || b.Last.Header.IsValid() {
+		return nil
+	}
+	return b.Last
+}
+
 // noComments reports whether b holds no comments before its node and no
 // blank line, so that the node can stay on the current line.
 func noComments(b *LineBreak) bool {
@@ -718,9 +726,16 @@ func (p *printer) group(g *Group, indent string) {
 	if g.OneLine && (g.BodyBreak == nil || g.BodyBreak.Trailing == nil) {
 		lead, plain = inlineLead(g.BodyBreak, exprPos(g.Expr))
 	}
+	last := g.CloseBreak.last()
+	if last != nil && (!strings.HasPrefix(last.Text, "/*") || strings.ContainsAny(last.Text, "\r\n")) {
+		plain = false // only a block comment over one line stays before the ")"
+	}
 	if plain && noComments(g.CloseBreak) && p.tryOneLine(func() {
 		p.write("(" + lead)
 		p.groupBody(g.Expr, indent)
+		if last != nil {
+			p.write(" " + last.Text)
+		}
 		p.write(")")
 		p.closeInline(g.CloseBreak)
 	}) {
@@ -729,6 +744,9 @@ func (p *printer) group(g *Group, indent string) {
 	p.write("(")
 	p.lineBreak(g.BodyBreak, indent+indentUnit, false)
 	p.groupBody(g.Expr, indent+indentUnit)
+	if c := g.CloseBreak.last(); c != nil {
+		p.trailing = append(p.trailing, c)
+	}
 	p.comments(g.CloseBreak, indent+indentUnit, false)
 	p.newLine(indent)
 	p.write(")")

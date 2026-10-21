@@ -144,5 +144,5 @@ func (p *syntaxProjection) expr(expr Expr) Expr {
 }
 
 func syntaxGroupBoundaryEmpty(b *LineBreak) bool {
-	return noComments(b) && (b == nil || b.Trailing == nil)
+	return noComments(b) && (b == nil || b.Trailing == nil && b.Last == nil)
 }

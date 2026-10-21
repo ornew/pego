@@ -1560,7 +1560,12 @@ func (p *parser) primary() (sourceResult grammar.Expr) {
 				}
 				p.sourceNode(group.Expr, open+1)
 			}
+			// A comment on the line of the last token trails that token, whatever
+			// line breaks the group holds before it.
+			last := p.toks[p.i].lineComment
+			p.toks[p.i].lineComment = nil
 			group.CloseBreak = p.lineBreak()
+			group.CloseBreak.Last = last
 			group.OneLine = !p.multiline(open, p.i)
 			p.expect(")")
 			return group

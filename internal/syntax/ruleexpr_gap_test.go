@@ -43,6 +43,12 @@ func TestFormatKeepsCommentsBetweenTokens(t *testing.T) {
 		{"in a call in an action group", `rule r = ("a") => ( f( /* p2 */ /* q2 */ 1, 2 ) )`, "rule r = (\"a\") => (\n    f(\n        /* p2 */\n        /* q2 */\n        1,\n        2,\n    )\n)"},
 		{"before a pragma that a suffix follows", "rule r = ( ( \"a\" )\n    // m2\n    #atomic + \"b\" )", "rule r = (\n    (\"a\")\n    // m2\n    #atomic+ \"b\"\n)"},
 		{"a comment across lines in a group", "rule r = ( \"a\" /* x\n y */ \"b\" ) \"c\"", "rule r = (\n    \"a\" /* x\n y */ \"b\"\n) \"c\""},
+		{"before the close of a group that starts with a group", `rule r = ( ( "a" ) "c" /* b */ )`, `rule r = (("a") "c" /* b */)`},
+		{"before the close of a group that starts with a discarded group", `rule r = ( - ( "a" ) "c" /* b */ )`, `rule r = (-("a") "c" /* b */)`},
+		{"before the close, after comments around a suffix", `rule r = ( - ( "a" ) /* b7 */ ? "c" /* b10 */ )`, `rule r = (-("a") /* b7 */ ? "c" /* b10 */)`},
+		{"before the close of a group that starts with an optional group", `rule r = ( ( "a" )? "c" /* b */ )`, `rule r = (("a")? "c" /* b */)`},
+		{"before the close of a group that ends with a repeated group", `rule r = ( "x" ( "a" )* /* b */ )`, `rule r = ("x" ("a")* /* b */)`},
+		{"a line comment before the close of a group that starts with a group", "rule r = ( ( \"a\" ) \"c\" // z\n)", "rule r = (\n    (\"a\") \"c\" // z\n)"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := checkFormat(t, tc.in+"\n"); got != tc.want+"\n" {
