@@ -538,7 +538,7 @@ func GenerateGoRuntime(module string) ([]GeneratedFile, error) {
 }
 
 // WithRuntimeModule sets the module specifier from which a TypeScript parser generated with
-// RuntimeImport imports its runtime, such as "@scope/pego-runtime" or "../shared/runtime.js". The
+// RuntimeImport imports its runtime, such as "@scope/pego-runtime" or "../shared/runtime.ts". The
 // runtime module is the runtime.ts of GenerateTypeScriptRuntime (or of any parser generated with
 // RuntimeEmbed). It is an error with another mode.
 func WithRuntimeModule(specifier string) GenOption {
@@ -549,7 +549,7 @@ func WithRuntimeModule(specifier string) GenOption {
 // the rule start and returns the same trees and errors as the engine. The files are
 //
 //   - runtime.ts, the runtime, which does not depend on the grammar (with RuntimeEmbed, the default),
-//   - parser.ts, the code generated from the grammar, which imports ./runtime.js, and
+//   - parser.ts, the code generated from the grammar, which imports ./runtime.ts, and
 //   - types.ts with WithTypes, the declarations of the grammar's types, which parser.ts imports.
 //
 // WithRecognize also generates recognize; WithTypes adds configured-start parseAST and

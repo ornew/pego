@@ -44,7 +44,7 @@ type GenOptions struct {
 	// (the default), imported from this module, or generated alone.
 	Runtime RuntimeMode
 	// RuntimeModule is the specifier from which TypeScript parsers import the runtime with RuntimeImport,
-	// such as "@scope/pego-runtime" or "../shared/runtime.js".
+	// such as "@scope/pego-runtime" or "../shared/runtime.ts".
 	RuntimeModule string
 	// MaxDepth is the generated default rule-call limit. Zero selects 100,000.
 	MaxDepth int

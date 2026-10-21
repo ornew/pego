@@ -97,7 +97,7 @@ Commands:
       default), runtime.ts, a copy of the runtime that does not depend on
       the grammar, all written to -o. -runtime import leaves runtime.ts out and
       imports the runtime from the module -runtime-module (required), such as
-      ../shared/runtime.js; -runtime only writes just runtime.ts, to share it
+      ../shared/runtime.ts; -runtime only writes just runtime.ts, to share it
       or to refresh the copy. With
       -types, types for the grammar's types and ParseAST (parseAST in TypeScript),
       which returns the result as typed values, are generated too.
@@ -762,7 +762,7 @@ func gen(args []string, stdout io.Writer) error {
 	pkg := fs.String("pkg", "", "package name of the generated code (Go; default: the last element of -module without a major version suffix)")
 	module := fs.String("module", "", "import path of the generated Go package")
 	runtimeMode := fs.String("runtime", "embed", "how generated code reaches the runtime: embed (a copy: internal/runtime in Go, runtime.ts in TypeScript), import (github.com/ornew/pego/runtime in Go; the module of -runtime-module in TypeScript) or only (just the embedded copy)")
-	runtimeModule := fs.String("runtime-module", "", "module specifier a TypeScript parser imports its runtime from with -runtime import, such as ../shared/runtime.js")
+	runtimeModule := fs.String("runtime-module", "", "module specifier a TypeScript parser imports its runtime from with -runtime import, such as ../shared/runtime.ts")
 	start := fs.String("s", "", "start rule of the generated Parse function (default: the one saved in a .pegoc, otherwise main)")
 	output := fs.String("o", "", "output directory")
 	types := fs.Bool("types", false, "also generate typed values and ParseAST (parseAST in TypeScript)")

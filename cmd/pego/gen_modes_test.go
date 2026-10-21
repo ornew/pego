@@ -312,11 +312,11 @@ func TestGenTypeScriptModes(t *testing.T) {
 	if got := list(); got != "parser.ts runtime.ts types.ts" {
 		t.Fatalf("embed -types wrote %q", got)
 	}
-	gen("-g", g, "-runtime", "import", "-runtime-module", "../shared/runtime.js")
+	gen("-g", g, "-runtime", "import", "-runtime-module", "../shared/runtime.ts")
 	if got := list(); got != "parser.ts" {
 		t.Fatalf("import wrote %q; the stale runtime.ts and types.ts must be gone", got)
 	}
-	if data := readTS(t, dir, "parser.ts"); !strings.Contains(data, `from "../shared/runtime.js"`) || strings.Contains(data, "./runtime.js") {
+	if data := readTS(t, dir, "parser.ts"); !strings.Contains(data, `from "../shared/runtime.ts"`) || strings.Contains(data, "./runtime.ts") {
 		t.Errorf("parser.ts does not import the runtime module:\n%.400s", data)
 	}
 	gen("-runtime", "only")

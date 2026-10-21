@@ -56,8 +56,7 @@ func TestExportGeneratedTSTraceBenchmarks(t *testing.T) {
 					t.Fatal(err)
 				}
 				path := fixture.name + "/" + route + "/" + variant
-				// The drivers run the files as generated: run them with a loader that maps the .js
-				// specifiers to the .ts sources (loader.mjs of writeTSFiles).
+				// The drivers run the files as generated.
 				writeTSFiles(t, filepath.Join(dir, path), files)
 				size := 0
 				for _, f := range files {

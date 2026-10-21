@@ -32,7 +32,7 @@ catches what is not.
 |:--|:--|
 | `runtime.ts` | `tsrt/runtime.ts` after its `--- Runtime ---` line, with the invocation work controls, tracing and profiling (`work.ts`, `trace.ts`, `profile.ts`). The same for every grammar and every option, so that one copy can be shared (`-runtime import`). It type-checks on its own. Every top-level declaration is exported. |
 | `types.ts` | With `-types`: the declarations of the grammar's types. |
-| `parser.ts` | The parts below, importing `./runtime.js` (or the module of `-runtime-module`) and `./types.js`, and re-exporting the names a user needs (`Node`, `SyntaxError`, `marshal`, ...). |
+| `parser.ts` | The parts below, importing `./runtime.ts` (or the module of `-runtime-module`) and `./types.ts`, and re-exporting the names a user needs (`Node`, `SyntaxError`, `marshal`, ...). |
 | Rule table | A constant per rule (`R0`, `R1`, ...; `Q0`, ... for the recognizer) with the engine's analysis results, and the table `rules` for `parseRule` |
 | Parser expressions | One function per expression; literals, `.`, anchors and rule calls are called inline |
 | Actions and predicates | A function each, of TypeScript expressions; lambdas become arrow functions |
@@ -40,8 +40,9 @@ catches what is not.
 
 ### Files, Modules and Observation
 
-`parser.ts` imports `runtime.ts` with the specifier `./runtime.js`, the way TypeScript names the module, which `tsc`,
-bundlers and the runtimes that map `.js` to `.ts` resolve. A parser generated with `-runtime import` imports the
+`parser.ts` imports `runtime.ts` with the specifier `./runtime.ts`, the file's own name, which Node.js (type stripping),
+Deno, Bun and bundlers resolve as it is. `tsc` needs `allowImportingTsExtensions` to check it and
+`rewriteRelativeImportExtensions` (TypeScript 5.7 and later) to emit `.js` specifiers. A parser generated with `-runtime import` imports the
 module of `-runtime-module` instead, so that several parsers share one runtime (and one `Node` class). ES import
 bindings are read-only, so the data of a grammar (rule descriptors, source information, initial variables, the
 depth default, the sparse-memo choice and whether the parser is observable) lives in a `Grammar` object that

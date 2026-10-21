@@ -88,8 +88,8 @@ const read = (value?.Settings ?? []).filter((s) => s !== null && s.type === "Set
 console.log(`${problems} problems, ${read} settings read`);
 ```
 
-The generated files import each other as `./runtime.js`, which `tsx` and Bun resolve to `runtime.ts`
-(see [running it](../guide/typescript.md#running-it) for Node.js):
+The generated files import each other as `./runtime.ts`, which Node.js, Deno, Bun and `tsx` run as it is
+(see [running it](../guide/typescript.md#running-it) for `tsc` settings):
 
 ```bash
 npx tsx check.ts

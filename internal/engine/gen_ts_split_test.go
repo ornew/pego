@@ -11,12 +11,6 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-// tsLoader lets Node.js run the generated .ts files as they are: the files import each other with
-// the .js specifiers that a TypeScript build resolves to the .ts sources, which Node.js does not.
-const tsLoader = `import {register} from "node:module";
-register("data:text/javascript," + encodeURIComponent(` + "`" + `export async function resolve(s,c,n){try{return await n(s,c)}catch(e){if(s.startsWith(".")&&s.endsWith(".js"))return n(s.slice(0,-3)+".ts",c);throw e}}` + "`" + `));
-`
-
 // tsStrictFlags are the strictest checks there are, so that generated code compiles in any project;
 // ES2020 is the oldest target it supports (bigint).
 var tsStrictFlags = []string{"--target", "es2020", "--lib", "es2020", "--strict",
@@ -24,7 +18,7 @@ var tsStrictFlags = []string{"--target", "es2020", "--lib", "es2020", "--strict"
 	"--noImplicitOverride", "--exactOptionalPropertyTypes", "--noUncheckedIndexedAccess",
 	"--noPropertyAccessFromIndexSignature", "--erasableSyntaxOnly", "--verbatimModuleSyntax"}
 
-// writeTSFiles writes the generated files into dir, with the loader and package.json that run them.
+// writeTSFiles writes the generated files into dir, with the package.json that runs them.
 func writeTSFiles(t *testing.T, dir string, files []GeneratedFile) {
 	t.Helper()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -39,7 +33,7 @@ func writeTSFiles(t *testing.T, dir string, files []GeneratedFile) {
 			t.Fatal(err)
 		}
 	}
-	for name, content := range map[string]string{"loader.mjs": tsLoader, "package.json": `{"type":"module"}`} {
+	for name, content := range map[string]string{"package.json": `{"type":"module"}`} {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -48,7 +42,7 @@ func writeTSFiles(t *testing.T, dir string, files []GeneratedFile) {
 
 // nodeTSArgs are the arguments that run a .ts script of a directory written by writeTSFiles.
 func nodeTSArgs(script string, args ...string) []string {
-	return append([]string{"--import", "./loader.mjs", script}, args...)
+	return append([]string{script}, args...)
 }
 
 // TestGeneratedTSSplitFiles compiles the files as generate writes them (runtime.ts, types.ts and
@@ -98,10 +92,25 @@ process.stdout.write("ok\n");
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("tsc: %v\n%s", err, out)
 		}
+		// Node.js runs the files as generated, by type stripping, with no resolve hook.
 		cmd = exec.Command(node, nodeTSArgs("consumer.ts")...)
 		cmd.Dir = dir
 		if out, err := cmd.CombinedOutput(); err != nil || strings.TrimSpace(string(out)) != "ok" {
 			t.Fatalf("node: %v\n%s", err, out)
+		}
+		// A project that compiles to JavaScript emits .js specifiers with the documented settings.
+		cmd = exec.Command(tsc, append(append([]string{"--rewriteRelativeImportExtensions", "--outDir", "out"}, tsStrictFlags...), append(entries, "consumer.ts")...)...)
+		cmd.Dir = dir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("tsc emit: %v\n%s", err, out)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "out", "package.json"), []byte(`{"type":"module"}`), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		cmd = exec.Command(node, "consumer.js")
+		cmd.Dir = filepath.Join(dir, "out")
+		if out, err := cmd.CombinedOutput(); err != nil || strings.TrimSpace(string(out)) != "ok" {
+			t.Fatalf("node on the emitted JavaScript: %v\n%s", err, out)
 		}
 	}
 	t.Run("embed", func(t *testing.T) {
@@ -122,7 +131,7 @@ process.stdout.write("ok\n");
 	})
 	t.Run("import", func(t *testing.T) {
 		// The runtime lives in a directory of its own, as a project that shares one runtime keeps it.
-		files, err := GenerateTS(g, GenOptions{Start: "main", Types: true, Runtime: RuntimeImport, RuntimeModule: "./shared/rt.js"})
+		files, err := GenerateTS(g, GenOptions{Start: "main", Types: true, Runtime: RuntimeImport, RuntimeModule: "./shared/rt.ts"})
 		if err != nil {
 			t.Fatal(err)
 		}
