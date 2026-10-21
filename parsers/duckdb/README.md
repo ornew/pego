@@ -13,6 +13,8 @@ go get github.com/ornew/pego/parsers/duckdb
 ## Use
 
 ```go
+import "github.com/ornew/pego/parsers/duckdb/types"
+
 // The script as typed values, each node with its Span in the input.
 script, err := duckdb.ParseAST(`SELECT region, sum(amount) AS total FROM sales WHERE year = 2024 GROUP BY region`)
 sel := script.Statements[0].(*types.Select)
@@ -41,16 +43,16 @@ err = duckdb.Recognize("SELECT 1 UNION")      // a *duckdb.SyntaxError with Line
 
 | | |
 |:--|:--|
-| `ParseAST(input, opts...) (*Script, error)` | The script: `Statements`, each a `Select`, `InsertStmt`, `CreateTableStmt`, ... (the `Statement` union), with expressions, types and table references below them, and their `Span` |
+| `ParseAST(input, opts...) (*types.Script, error)` | The script: `Statements`, each a `types.Select`, `types.InsertStmt`, `types.CreateTableStmt`, ... (the `types.Statement` union), with expressions, types and table references below them, and their `Span` |
 | `Split(input) ([]StatementText, error)` | The statements as DuckDB splits the script: `Statement`, `Text`, `Start`, `End` |
-| `Kind(Statement) string` | The type DuckDB gives it: `SELECT`, `INSERT`, `CREATE`, `ALTER`, `COPY`, `SET`, ... |
+| `Kind(types.Statement) string` | The type DuckDB gives it: `SELECT`, `INSERT`, `CREATE`, `ALTER`, `COPY`, `SET`, ... |
 | `Inspect(node, fn)`, `SpanOf(node)` | The nodes in the order of the input (`fn` returns false to skip the children), and the span of any node |
-| `(*Ident).Name()`, `.Quoted()`, `.Fold()`, `.EqualFold(o)` | The name an identifier denotes: a word as written, `"a ""b"""` without its quotes, `U&"d\0061ta"` decoded; `Fold` is the name in lower case, the key by which DuckDB compares names |
-| `(*Name).Names() []string` | The parts of a qualified name |
-| `(*StringLit).Value()`, `.Kind()` | The string: `''` decoded, continued segments joined, the escapes of `E'...'` and `U&'...'`, the text of `$tag$...$tag$` |
-| `(*BitLit).Bits()` | The digits of `B'101'` and `X'FF'`, and whether they are hexadecimal |
-| `(*Number).Type()`, `.Int64()`, `.Float64()`, `.Digits()`, `.DecimalWidthScale()` | The type DuckDB gives the literal (`INTEGER`, `BIGINT`, `HUGEINT`, `DECIMAL`, `DOUBLE`), and its value without the `_` that separate digits |
-| `(*Param).Index()`, `.ParamName()`, `.Positional()` | `$1` and `?1`, `$name`, and `?` |
+| `(*types.Ident).Name()`, `.Quoted()`, `.Fold()`, `.EqualFold(o)` | The name an identifier denotes: a word as written, `"a ""b"""` without its quotes, `U&"d\0061ta"` decoded; `Fold` is the name in lower case, the key by which DuckDB compares names |
+| `(*types.Name).Names() []string` | The parts of a qualified name |
+| `(*types.StringLit).Value()`, `.Kind()` | The string: `''` decoded, continued segments joined, the escapes of `E'...'` and `U&'...'`, the text of `$tag$...$tag$` |
+| `(*types.BitLit).Bits()` | The digits of `B'101'` and `X'FF'`, and whether they are hexadecimal |
+| `(*types.Number).Type()`, `.Int64()`, `.Float64()`, `.Digits()`, `.DecimalWidthScale()` | The type DuckDB gives the literal (`INTEGER`, `BIGINT`, `HUGEINT`, `DECIMAL`, `DOUBLE`), and its value without the `_` that separate digits |
+| `(*types.Param).Index()`, `.ParamName()`, `.Positional()` | `$1` and `?1`, `$name`, and `?` |
 | `Keyword(word)`, `Keywords()` | The category of a keyword (`Unreserved`, `ColumnName`, `TypeFunction`, `Reserved`), as `duckdb_keywords()` says |
 | `QuoteIdent(name) string` | The name written so that it reads back as one identifier: between double quotes unless it is a plain word that is not a keyword that forbids it |
 | `Recognize(input, opts...) error` | Only checks the syntax |
@@ -61,7 +63,7 @@ Positions are in code points by default; `duckdb.ParseAST(src, duckdb.WithUnit(d
 
 ## The Syntax Tree
 
-The types follow the grammar of DuckDB, without the details of how the Bison grammar is organized:
+The types follow the grammar of DuckDB, without the details of how the Bison grammar is organized. They are declared in the package `types` (`types.Select`, ...); the list names them without the qualifier:
 
 - **Statements**: `Select` (the query: `With`, `Body`, `OrderBy`, `Limit`, `Offset`, `Locking`; the body is a `SelectCore`,
   `ValuesClause`, `TableQuery`, `PivotQuery`, `UnpivotQuery`, `SetOp` or `ParenQuery`), `InsertStmt`, `UpdateStmt`,

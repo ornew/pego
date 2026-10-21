@@ -10,6 +10,8 @@ go get github.com/ornew/pego/parsers/cel
 ## Use
 
 ```go
+import "github.com/ornew/pego/parsers/cel/types"
+
 // An expression, checked as cel-go checks it: literals in range, depth and size within its limits.
 e, err := cel.ParseExpr(`request.auth.claims.exists(c, c == "admin") && size(items) <= 10 ? "ok" : "no"`)
 
@@ -46,24 +48,26 @@ ok := cel.Valid(`1 +`) // false
 
 | | |
 |:--|:--|
-| `ParseAST(input, opts...) (Expr, error)` | The expression as the typed values below, each with its `Span` |
-| `ParseExpr(input, opts...) (Expr, error)` | `ParseAST`, then `Check`; the size of the input is checked first. It returns a `*SyntaxError` or a `*CheckError` |
+| `ParseAST(input, opts...) (types.Expr, error)` | The expression as the typed values below, each with its `Span` |
+| `ParseExpr(input, opts...) (types.Expr, error)` | `ParseAST`, then `Check`; the size of the input is checked first. It returns a `*SyntaxError` or a `*CheckError` |
 | `Valid(input, opts...) bool`, `Recognize(input, opts...) error` | Only check the input: `Valid` as `ParseExpr` does, `Recognize` the syntax and nothing else |
 | `Parse(input, opts...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
 | `Check(e, opts...) error` | What the grammar does not check: literals out of range, the limits of depth, and with `WithMacros` the macros |
 | `CheckLimits(e, Limits) error`, `DefaultLimits` | The depth of recursion and the size that cel-go allows (250 and 100,000 code points) |
-| `CheckMacros(e) error`, `IsMacroCall(*Call) bool` | The calls of the standard macros that cel-go rejects, and the calls that are macros |
+| `CheckMacros(e) error`, `IsMacroCall(*types.Call) bool` | The calls of the standard macros that cel-go rejects, and the calls that are macros |
 | `WithLimits(Limits)`, `WithMacros()` | Options of `ParseExpr`, `Valid` and `Check` |
 | `Format(e) string` | The expression as source, with the parentheses its precedence needs |
 | `Inspect(e, f)`, `Children(e, f)`, `SpanOf(e)` | Walk the tree; the range of any node |
 | `Constant(e) (any, bool)` | The Go value of a literal, or a list or map of literals |
-| `(*IntLit).Value()`, `(*UintLit).Value()`, `(*DoubleLit).Value()`, `(*StringLit).Value()`, `(*BytesLit).Value()`, `(*BoolLit).Value()` | The values of the literals, decoded as cel-go does (`Text` is the source) |
-| `(*Ident).Name()`, `(*Ident).Rooted()`, `(*Name).Value()` | Names, without the leading dot and the whitespace in them; field names without backquotes |
+| `(*types.IntLit).Value()`, `(*types.UintLit).Value()`, `(*types.DoubleLit).Value()`, `(*types.StringLit).Value()`, `(*types.BytesLit).Value()`, `(*types.BoolLit).Value()` | The values of the literals, decoded as cel-go does (`Text` is the source) |
+| `(*types.Ident).Name()`, `(*types.Ident).Rooted()`, `(*types.Name).Value()` | Names, without the leading dot and the whitespace in them; field names without backquotes |
 
 Positions are in code points by default; `cel.ParseAST(src, cel.WithUnit(cel.Bytes))` counts bytes (`ParseExpr` and the errors of
 `Check` count code points).
 
 ## The Tree
+
+The types are declared in the package `types` (`types.Expr`, `types.Ident`, ...); the table names them without the qualifier.
 
 | Type | Fields | |
 |:--|:--|:--|

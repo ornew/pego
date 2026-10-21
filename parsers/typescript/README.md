@@ -13,6 +13,8 @@ go get github.com/ornew/pego/parsers/typescript
 ## Use
 
 ```go
+import "github.com/ornew/pego/parsers/typescript/types"
+
 // Typed values with positions: a SourceFile of Statements, each node with its Span in the input.
 f, err := typescript.ParseAST("export const answer: number = 6 * 7;")
 decl := f.Statements[0].(*types.VariableStatement).DeclarationList.Declarations[0]
@@ -44,7 +46,7 @@ err = typescript.Recognize("interface A { x: number }") // nil
 
 | | |
 |:--|:--|
-| `ParseAST(input, opts...) (*SourceFile, error)` | A `.ts` file as typed values: `Statements` and `EndOfFileToken`, every node a pointer to a struct or terminal type of this package, with its `Span` (`Start`, `End`) |
+| `ParseAST(input, opts...) (*types.SourceFile, error)` | A `.ts` file as typed values: `Statements` and `EndOfFileToken`, every node a pointer to a struct or terminal type of this package, with its `Span` (`Start`, `End`) |
 | `ParseTSX(input, unit...)`, `RecognizeTSX(input, unit...)` | The same for a `.tsx` file, where `<T>x` is not a type assertion and `<` starts JSX |
 | `ParseFile(name, input, unit...)` | By the name of the file (`IsTSX`); a module (see `IsExternalModule`) that may contain `await` at its top level is read in the await context, as the compiler reparses it, except `.d.ts` files |
 | `Recognize(input, opts...) error` | Only checks a `.ts` source, without building anything |
@@ -53,9 +55,9 @@ err = typescript.Recognize("interface A { x: number }") // nil
 | `ForEachChild(node, f)`, `Inspect(node, f)` | The children of a node in the order of `ts.forEachChild`, and the depth-first walk (`f(nil)` after the children) |
 | `AsNode(v) ASTNode` | A value of a union field (`Expression`, `Statement`, `TypeNode`, `BindingName`, ...) as a node, with `Range()` |
 | `IsExternalModule(f)`, `IsTSX(name)` | As `ts.isExternalModule`'s probable-module test and the compiler's choice of JSX by file name |
-| `(*StringLiteral).Value()`, `(*NoSubstitutionTemplateLiteral).Value()` | The string with its escapes decoded; template CR/CRLF line endings become LF (an unpaired surrogate gives U+FFFD) |
-| `(*NumericLiteral).Value()`, `(*BigIntLiteral).Value()` | The number as a `float64` (`+Inf` if too large) and the integer as a `*big.Int`, with `0x`, `0b`, `0o` and `_` |
-| `(*Identifier).Value()`, `(*PrivateIdentifier).Value()` | The name with its unicode escapes decoded |
+| `(*types.StringLiteral).Value()`, `(*types.NoSubstitutionTemplateLiteral).Value()` | The string with its escapes decoded; template CR/CRLF line endings become LF (an unpaired surrogate gives U+FFFD) |
+| `(*types.NumericLiteral).Value()`, `(*types.BigIntLiteral).Value()` | The number as a `float64` (`+Inf` if too large) and the integer as a `*big.Int`, with `0x`, `0b`, `0o` and `_` |
+| `(*types.Identifier).Value()`, `(*types.PrivateIdentifier).Value()` | The name with its unicode escapes decoded |
 | `*SyntaxError`, `SyntaxErrors` | `Line`, `Col`, `Pos` and the expected tokens (or `Message()`) of the first syntax error, after which parsing stops |
 
 Positions are in code points by default; `typescript.ParseAST(src, typescript.WithUnit(typescript.Bytes))` counts bytes. A node's `Span` covers its

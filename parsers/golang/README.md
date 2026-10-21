@@ -11,6 +11,8 @@ go get github.com/ornew/pego/parsers/golang
 ## Use
 
 ```go
+import "github.com/ornew/pego/parsers/golang/types"
+
 // A go/ast tree, as go/parser.ParseFile(fset, "x.go", src, parser.SkipObjectResolution) returns it,
 // for go/printer, go/format, go/types and the like.
 fset := token.NewFileSet()
@@ -31,12 +33,12 @@ ok := golang.Valid(string(src))
 | | |
 |:--|:--|
 | `ParseFile(fset, filename, src, mode) (*ast.File, error)` | The `go/ast` tree, with the line table, `//line` directives and comment groups of `go/parser`; an error is a `scanner.ErrorList` with one error |
-| `ParseAST(input, opts...) (*File, error)` | The tree as the Go types of the grammar (`File`, `GenDecl`, `FuncDecl`, `CallExpr`, ...), each with its `Span` |
+| `ParseAST(input, opts...) (*types.File, error)` | The tree as the Go types of the grammar (`types.File`, `types.GenDecl`, `types.FuncDecl`, `types.CallExpr`, ...), each with its `Span` |
 | `ToGoAST(fset, filename, src, f, mode) *ast.File` | The conversion `ParseFile` uses; `f` must be parsed with `Bytes` |
 | `Valid(src) bool`, `Recognize(input, opts...) error` | Only check the input |
 | `Parse(input, opts...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
-| `(*StringLit).Value()`, `(*CharLit).Value()` | The string or rune a literal denotes |
-| `(*IntLit).Constant()`, `(*FloatLit).Constant()`, `(*ImagLit).Constant()` | The `go/constant` value of a number |
+| `(*types.StringLit).Value()`, `(*types.CharLit).Value()` | The string or rune a literal denotes |
+| `(*types.IntLit).Constant()`, `(*types.FloatLit).Constant()`, `(*types.ImagLit).Constant()` | The `go/constant` value of a number |
 | `*SyntaxError` | The position (`Line`, `Col`, `Pos`) and the expected tokens of a syntax error |
 
 Positions are in code points by default; pass `Bytes` for byte offsets (which `ToGoAST` needs, and which makes the

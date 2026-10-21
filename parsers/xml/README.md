@@ -13,6 +13,8 @@ go get github.com/ornew/pego/parsers/xml
 ## Use
 
 ```go
+import "github.com/ornew/pego/parsers/xml/types"
+
 // A decoded tree: entities expanded, text and attribute values normalized, attribute defaults applied, and every
 // well-formedness constraint checked.
 tree, err := xml.Decode(`<!DOCTYPE catalog [<!ENTITY pego "PEGO">]>
@@ -55,12 +57,12 @@ if errors.As(err, &we) {
 | `Tree` | `Version`, `Encoding`, `Standalone`, `DTD`, `Prolog`, `Root`, `Epilog` and the syntax tree `Doc` |
 | `Elem`, `Attr`, `Text` | Decoded elements (name, attributes, children), attributes (normalized value, `Defaulted`) and text (adjacent text merged) |
 | `DTD`, `Entity`, `AttributeDecl` | The declarations of the internal subset that were processed |
-| `ParseAST(input, opts...) (*Document, error)` | The syntax tree: `Document`, `Element`, `Attribute`, `CharData`, `EntityRef`, `CharRef`, `CDSect`, `PI`, `Comment`, `Doctype` and the declarations, each with its `Span` |
+| `ParseAST(input, opts...) (*types.Document, error)` | The syntax tree: `types.Document`, `types.Element`, `types.Attribute`, `types.CharData`, `types.EntityRef`, `types.CharRef`, `types.CDSect`, `types.PI`, `types.Comment`, `types.Doctype` and the declarations, each with its `Span` |
 | `Parse(input, opts...) (*Node, error)`, `Recognize(input, opts...) error` | The tree of `*Node`, as the engine returns it; only checking |
-| `(*CharData).Value()`, `(*CharRef).Rune()`, ... | Values of the syntax tree: line ends normalized, references decoded |
-| `ExpandAttValue(*AttValue) (string, error)` | The value of an attribute, normalized for type CDATA, for a document without entity declarations |
+| `(*types.CharData).Value()`, `(*types.CharRef).Rune()`, ... | Values of the syntax tree: line ends normalized, references decoded |
+| `ExpandAttValue(*types.AttValue) (string, error)` | The value of an attribute, normalized for type CDATA, for a document without entity declarations |
 
-In the decoded tree, children are `*Elem`, `*Text`, `*PI`, `*Comment`, or `*EntityRef` for a reference to an entity
+In the decoded tree, children are `*Elem`, `*Text`, `*types.PI`, `*types.Comment`, or `*types.EntityRef` for a reference to an entity
 that was not expanded (an external entity, which a non-validating processor does not read, or an undeclared entity in a
 document whose DTD was not read entirely). Elements that come from the replacement text of an entity name it in
 `Elem.Entity`, and their `Src` spans are relative to that text.

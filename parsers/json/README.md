@@ -10,6 +10,8 @@ go get github.com/ornew/pego/parsers/json
 ## Use
 
 ```go
+import "github.com/ornew/pego/parsers/json/types"
+
 // Go values, as encoding/json decodes into an any: map[string]any, []any, string, float64, bool, nil.
 v, err := json.Decode(`{"name": "pego", "stars": 42}`)
 
@@ -35,14 +37,14 @@ if errors.As(err, &se) {
 
 | | |
 |:--|:--|
-| `ParseAST(input, opts...) (Value, error)` | The value: `*Object`, `*Array`, `*String`, `*Number`, `*Bool` or `*Null`, each with its `Span` |
+| `ParseAST(input, opts...) (types.Value, error)` | The value: `*types.Object`, `*types.Array`, `*types.String`, `*types.Number`, `*types.Bool` or `*types.Null`, each with its `Span` |
 | `Decode(input) (any, error)` | Go values, as `encoding/json` decodes into an `any` |
-| `ToAny(Value) (any, error)` | The conversion `Decode` uses |
+| `ToAny(types.Value) (any, error)` | The conversion `Decode` uses |
 | `Valid(input) bool`, `Recognize(input, opts...) error` | Only check the input |
 | `Parse(input, opts...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
-| `(*String).Value() string` | The string with its escapes decoded (`Text` is the source between the quotes) |
-| `(*Number).Float64()`, `(*Number).Int64()` | The number (`Text` is the source) |
-| `(*Bool).Value() bool` | The boolean |
+| `(*types.String).Value() string` | The string with its escapes decoded (`Text` is the source between the quotes) |
+| `(*types.Number).Float64()`, `(*types.Number).Int64()` | The number (`Text` is the source) |
+| `(*types.Bool).Value() bool` | The boolean |
 
 Positions are in code points by default; `json.ParseAST(src, json.WithUnit(json.Bytes))` counts bytes.
 

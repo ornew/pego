@@ -10,6 +10,8 @@ go get github.com/ornew/pego/parsers/csv
 ## Use
 
 ```go
+import "github.com/ornew/pego/parsers/csv/types"
+
 // Records as strings, as encoding/csv's ReadAll returns them.
 recs, err := csv.Records("name,note\r\nalice,\"likes \"\"quotes\"\", commas\"\r\n")
 // [["name" "note"] ["alice" "likes \"quotes\", commas"]]
@@ -41,13 +43,13 @@ if errors.As(err, &se) {
 |:--|:--|
 | `Records(input) ([][]string, error)` | The records, each a list of field values; empty lines left out |
 | `Table(input) (header []string, rows [][]string, err error)` | The first record as the header and the others, each with as many fields as the header (`*FieldCountError` otherwise; `ErrNoHeader` for an input without records) |
-| `ParseAST(input, opts...) (*File, error)` | The file: a `*File` of `*Record`s of `*Field`s, each with its `Span` |
+| `ParseAST(input, opts...) (*types.File, error)` | The file: a `*types.File` of `*types.Record`s of `*types.Field`s, each with its `Span` |
 | `Valid(input) bool`, `Recognize(input, opts...) error` | Only check the input |
 | `Parse(input, opts...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
-| `(*Field).Value() string` | The field's value: quotes removed and `""` decoded (`Text` is the source) |
-| `(*Field).Quoted() bool` | Whether the field is quoted |
-| `(*Record).Strings() []string`, `(*File).Strings() [][]string` | The values of a record, of a file (as `Records` returns them) |
-| `(*Record).Blank() bool` | Whether the record is an empty line |
+| `(*types.Field).Value() string` | The field's value: quotes removed and `""` decoded (`Text` is the source) |
+| `(*types.Field).Quoted() bool` | Whether the field is quoted |
+| `(*types.Record).Strings() []string`, `(*types.File).Strings() [][]string` | The values of a record, of a file (as `Records` returns them) |
+| `(*types.Record).Blank() bool` | Whether the record is an empty line |
 
 Positions are in code points by default; `csv.ParseAST(src, csv.WithUnit(csv.Bytes))` counts bytes. A record's span includes its line
 break; its fields end at the `End` of the last one. With code points, the `Text` of a field holds U+FFFD for each byte

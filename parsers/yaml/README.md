@@ -11,6 +11,8 @@ go get github.com/ornew/pego/parsers/yaml
 ## Use
 
 ```go
+import "github.com/ornew/pego/parsers/yaml/types"
+
 // Go values, with the YAML 1.2 core schema: map[string]any, []any, string, int64, float64, bool, nil.
 v, err := yaml.Load("name: pego\ntags: [peg, operators-rule]\nstars: 42\n")
 docs, err := yaml.LoadAll("--- a\n--- [b, c]\n") // one value per document
@@ -34,15 +36,15 @@ ok := yaml.Valid("a: b: c") // false
 
 | | |
 |:--|:--|
-| `ParseAST(input, opts...) (*Stream, error)` | The stream: `Documents`, each with its `Directives`, `Start` (`---`) and `End` (`...`) markers and its `Root` node, a `*Mapping`, `*Sequence`, `*Scalar` or `*Alias`, each with its `Span` |
-| `Load(input) (any, error)`, `LoadAll(input) ([]any, error)` | Go values of the documents, with the core schema (below); `LoadDocument(*Document)` for one parsed document |
-| `Events(input) (string, error)`, `StreamEvents(*Stream)` | The event stream in the format of the yaml-test-suite (`test.event`) |
-| `Valid(input) bool`, `Check(*Stream) error` | The checks that are not syntax (below); `Valid` also parses and requires UTF-8 |
+| `ParseAST(input, opts...) (*types.Stream, error)` | The stream: `Documents`, each with its `Directives`, `Start_` (`---`) and `End_` (`...`) markers and its `Root` node, a `*types.Mapping`, `*types.Sequence`, `*types.Scalar` or `*types.Alias`, each with its `Span` |
+| `Load(input) (any, error)`, `LoadAll(input) ([]any, error)` | Go values of the documents, with the core schema (below); `LoadDocument(*types.Document)` for one parsed document |
+| `Events(input) (string, error)`, `StreamEvents(*types.Stream)` | The event stream in the format of the yaml-test-suite (`test.event`) |
+| `Valid(input) bool`, `Check(*types.Stream) error` | The checks that are not syntax (below); `Valid` also parses and requires UTF-8 |
 | `Recognize(input, opts...) error` | Only checks the syntax |
 | `Parse(input, opts...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
-| `(*Scalar).Value() string` | The content of a scalar, decoded by its `Style`: line folding, escapes, block indentation and chomping (`Text` is the source, from the quotes or the block indicator on) |
-| `ResolveTag(*Document, *Tag) (string, error)` | The full name of a tag: `!!str` is `tag:yaml.org,2002:str`, shorthands use the `%TAG` directives |
-| `PropertiesOf(Value) *Properties` | The tag and anchor of a node, or nil |
+| `(*types.Scalar).Value() string` | The content of a scalar, decoded by its `Style`: line folding, escapes, block indentation and chomping (`Text` is the source, from the quotes or the block indicator on) |
+| `ResolveTag(*types.Document, *types.Tag) (string, error)` | The full name of a tag: `!!str` is `tag:yaml.org,2002:str`, shorthands use the `%TAG` directives |
+| `PropertiesOf(types.Value) *types.Properties` | The tag and anchor of a node, or nil |
 | `*SyntaxError`, `*SemanticError` | Errors of the syntax, and of the checks and of `Load`, with line and column |
 
 A node's `Props` holds its tag and anchor; `Mapping.Flow` and `Sequence.Flow` tell the flow style (`{}`, `[]`) from

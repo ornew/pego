@@ -13,6 +13,8 @@ go get github.com/ornew/pego/parsers/cue
 ## Use
 
 ```go
+import "github.com/ornew/pego/parsers/cue/types"
+
 // A file, parsed and checked as cuelang.org/go/cue/parser.ParseFile does.
 f, err := cue.ParseFile(`package config
 
@@ -54,16 +56,16 @@ var ce *cue.SemanticError // found after the syntax: Msg, Line, Col, Span
 
 | | |
 |:--|:--|
-| `ParseFile(input, unit...) (*File, error)` | The syntax tree, accepted exactly when `cue/parser.ParseFile` accepts the input: `ParseAST`, then `Check`, and an error for invalid UTF-8 |
+| `ParseFile(input, unit...) (*types.File, error)` | The syntax tree, accepted exactly when `cue/parser.ParseFile` accepts the input: `ParseAST`, then `Check`, and an error for invalid UTF-8 |
 | `Valid(input) bool` | Whether `ParseFile` accepts the input |
-| `ParseAST(input, opts...) (*File, error)` | The syntax tree as the grammar reads it: the syntax of every experiment, without the checks of `Check` |
-| `Check(*File) error` | The errors `cue/parser` reports besides those of the syntax (see Conformance), as a `*SemanticError` |
+| `ParseAST(input, opts...) (*types.File, error)` | The syntax tree as the grammar reads it: the syntax of every experiment, without the checks of `Check` |
+| `Check(*types.File) error` | The errors `cue/parser` reports besides those of the syntax (see Conformance), as a `*SemanticError` |
 | `Parse(input, opts...) (*Node, error)`, `Recognize(input, opts...) error` | The tree of `*Node`, as the engine returns it; only checking (the same syntax as `ParseAST`) |
-| `File`, `Package`, `ImportDecl`, `Field`, `Comprehension`, `StructLit`, `ListLit`, `BinaryExpr`, ... | The syntax tree, modeled on `cuelang.org/go/cue/ast`, each node with its `Span` |
+| `types.File`, `types.Package`, `types.ImportDecl`, `types.Field`, `types.Comprehension`, `types.StructLit`, `types.ListLit`, `types.BinaryExpr`, ... | The syntax tree, modeled on `cuelang.org/go/cue/ast`, each node with its `Span` |
 | `Inspect(node, f)`, `SpanOf(node)` | Depth-first traversal as `ast.Inspect`; the span of any node |
 | `Comments(src, unit...) []Comment` | The comments of the source, in order, with their spans |
-| `(*String).Unquote()`, `(*Int).Value()`, `(*Int).Int64()`, `(*Float).Rat()`, `(*Float).Float64()`, `(*Bool).Value()` | The values of literals, decoded as `cuelang.org/go/cue/literal` does (see `literal_test.go`) |
-| `(*Ident).IsDefinition()`, `IsHidden()`, `(*Attribute).Split()` | Identifier kinds; the name and the body of an attribute |
+| `(*types.String).Unquote()`, `(*types.Int).Value()`, `(*types.Int).Int64()`, `(*types.Float).Rat()`, `(*types.Float).Float64()`, `(*types.Bool).Value()` | The values of literals, decoded as `cuelang.org/go/cue/literal` does (see `literal_test.go`) |
+| `(*types.Ident).IsDefinition()`, `IsHidden()`, `(*types.Attribute).Split()` | Identifier kinds; the name and the body of an attribute |
 | `*SyntaxError`, `*SemanticError` | Errors with positions |
 
 Positions are in code points by default (`Span` is `Start`, `End`, with `End` exclusive); `cue.ParseFile(src, cue.Bytes)`

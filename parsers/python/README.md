@@ -10,6 +10,8 @@ go get github.com/ornew/pego/parsers/python
 ## Use
 
 ```go
+import "github.com/ornew/pego/parsers/python/types"
+
 // A typed AST modeled on Python's ast module, with positions.
 src := "import os\n\ndef greet(name: str, *, loud=False) -> str:\n    return f'hello {name}'\n"
 m, err := python.ParseModule(src)
@@ -49,14 +51,14 @@ if errors.As(err, &se) {
 
 | | |
 |:--|:--|
-| `ParseModule(src, unit...) (*Module, error)` | Parses a module, as `ast.parse(src)` does, and makes the checks below |
-| `ParseAST(src, opts...) (*Module, error)` | The parser alone, to the typed AST |
+| `ParseModule(src, unit...) (*types.Module, error)` | Parses a module, as `ast.parse(src)` does, and makes the checks below |
+| `ParseAST(src, opts...) (*types.Module, error)` | The parser alone, to the typed AST |
 | `Check(m, src, unit...) error` | The checks of `ast.parse` that are not in its grammar: `\N{...}` names, the limit of 4300 digits of integers, `from __future__` features, identifiers that normalize to `None`/`True`/`False`, `<>` and `!=` (with `barry_as_FLUFL`) |
 | `Recognize(src, opts...) error`, `Parse(src, opts...) (*Node, error)` | Only check the syntax; the generic tree of `*Node`, as the engine returns it |
 | `Dump(node) string`, `DumpWithPositions(node, src, unit...) string` | The tree printed as `ast.dump` does, without and with `include_attributes=True` |
 | `Inspect(node, f)` | Walks the tree depth first |
-| `ConstantValue(*Constant)`, `ConstantStringValue(*Constant)` | The value of a constant: integers (`*big.Int`), floats, imaginary numbers, strings (adjacent literals concatenated, escapes decoded), bytes, `True`, `False`, `None`, `...` |
-| `FStringMiddleValue(*FStringMiddle)`, `FStringRawMiddleValue(*FStringRawMiddle)`, `FormattedValueConversionCode(*FormattedValue)`, `InterpolationConversionCode(*Interpolation)` | The literal parts and the conversion of replacement fields of f-strings and t-strings |
+| `ConstantValue(*types.Constant)`, `ConstantStringValue(*types.Constant)` | The value of a constant: integers (`*big.Int`), floats, imaginary numbers, strings (adjacent literals concatenated, escapes decoded), bytes, `True`, `False`, `None`, `...` |
+| `FStringMiddleValue(*types.FStringMiddle)`, `FStringRawMiddleValue(*types.FStringRawMiddle)`, `FormattedValueConversionCode(*types.FormattedValue)`, `InterpolationConversionCode(*types.Interpolation)` | The literal parts and the conversion of replacement fields of f-strings and t-strings |
 | `NormalizeName(name)`, `OpName(op)` | An identifier in the NFKC form Python uses; the class of Python's `ast` for an operator (`"+"` is `Add`) |
 | `NewLineIndex(src, unit...)`, `(*LineIndex).Position(pos)` | Positions as lines (from 1) and columns (UTF-8 bytes from 0), as CPython reports them |
 | `*SyntaxError` | The position (`Pos`, `Line`, `Col`), `Expected` and `Messages` |
