@@ -72,6 +72,8 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			cs = appendMetadata(cs, l.Before, control)
 			cs = appendMetadata(cs, l.After, control)
 			cs = appendMetadata(cs, l.Trail, control)
+			cs = appendMetadata(cs, l.Operator, control)
+			cs = appendMetadata(cs, l.Close, control)
 		}
 	}
 	addList := func(l *ListLayout) {
@@ -100,6 +102,7 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			add(t.CloseBreak)
 			term(t.Term)
 		case *Block:
+			add(t.OpenBreak)
 			addAll(t.Breaks)
 			add(t.CloseBreak)
 			for _, stmt := range t.Statements {
@@ -147,6 +150,9 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			addList(t.ParamsLayout)
 			term(t.Body)
 		case *Binary:
+			add(t.OpenBreak)
+			add(t.BodyBreak)
+			add(t.CloseBreak)
 			term(t.L)
 			term(t.R)
 		case *Unary:
@@ -208,6 +214,9 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 	var expr func(e Expr)
 	expr = func(e Expr) {
 		control.poll()
+		if n, ok := e.(SourceNode); ok {
+			addLayout(n.Source().Layout)
+		}
 		switch e := e.(type) {
 		case *Group:
 			add(e.BodyBreak)
@@ -228,6 +237,7 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			expr(e.Expr)
 			for _, attr := range e.Attrs {
 				control.poll()
+				addLayout(attr.Layout)
 				addList(attr.ArgsLayout)
 				for _, arg := range attr.expressionArgs(control) {
 					expr(arg)
@@ -238,6 +248,7 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			term(e.Action)
 		case *Predicate:
 			if _, block := e.Term.(*Block); !block {
+				add(e.OpenBreak)
 				addAll(e.Breaks)
 				add(e.CloseBreak)
 			}

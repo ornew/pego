@@ -538,6 +538,7 @@ type EndLine struct {
 type Predicate struct {
 	SourceInfo `json:"source,omitempty"`
 	Term       Term         `json:"term"`
+	OpenBreak  *LineBreak   `json:"-"`
 	Breaks     []*LineBreak `json:"-"`
 	CloseBreak *LineBreak   `json:"-"`
 	OneLine    bool         `json:"-"`
@@ -889,12 +890,17 @@ type Lambda struct {
 	ParamsLayout *ListLayout `json:"-"`
 }
 
-// Binary is a binary operation l op r. The operator "[]" is indexing, l[r].
+// Binary is a binary operation l op r. The operator "[]" is indexing, l[r],
+// which keeps the layout of its brackets like a TermGroup keeps that of its
+// parentheses.
 type Binary struct {
 	SourceInfo `json:"source,omitempty"`
-	Op         string `json:"op"`
-	L          Term   `json:"l"`
-	R          Term   `json:"r"`
+	Op         string     `json:"op"`
+	L          Term       `json:"l"`
+	R          Term       `json:"r"`
+	OpenBreak  *LineBreak `json:"-"`
+	BodyBreak  *LineBreak `json:"-"`
+	CloseBreak *LineBreak `json:"-"`
 }
 
 // Unary is a unary operation op x.
@@ -925,6 +931,7 @@ type Bind struct {
 type Block struct {
 	SourceInfo `json:"source,omitempty"`
 	Statements []Term       `json:"statements"`
+	OpenBreak  *LineBreak   `json:"-"`
 	Breaks     []*LineBreak `json:"-"`
 	CloseBreak *LineBreak   `json:"-"`
 	OneLine    bool         `json:"-"`

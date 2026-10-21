@@ -105,7 +105,9 @@ elements of calls, constructors, list constructors, tuples, the tuple and type
 application forms of types, and the arguments of attributes and the parameters of
 lambdas, which keep theirs in a `ListLayout`. The delimiters of those forms keep
 their comments in the node's `OpenBreak`, `BodyBreak` and `CloseBreak` fields.
-The comments between the tokens of `#repeat(...)` stay in its `Spelling` field. The comments inside attribute arguments,
+The block comments that stand between the tokens of a rule expression are kept
+in the `Before`, `After`, `Operator` and `Close` fields of the layout of the
+expression they belong to. The comments between the tokens of `#repeat(...)` stay in its `Spelling` field. The comments inside attribute arguments,
 lambda parameters and `#repeat(...)` are layout only: unlike owned comments they
 are not part of the JSON AST. Other source forms remain outside this increment's
 coverage.
@@ -243,6 +245,21 @@ token the canonical spelling has, or else to the closing parenthesis. A
 repetition with such a comment keeps its pragma form instead of `*` or `+`, so
 that the comment keeps its place. A block comment stays on the line, and a
 comment that ends its line puts the tokens on lines.
+
+Block comments between the tokens of a rule expression stay between the same
+tokens: after an attribute or a pragma, before or after a suffix, around `/` and
+`=>`, after a label, a lookahead or a discard, and before the closing parenthesis
+of `#recover`. The comments of an action expression do the same around a binary
+operator, before the `]` of an index, and around the `;` that ends a statement
+of a block, which keeps a statement that follows a `;` and a comment on the
+line. A comment inside a rule expression that needs a line of its own stays on
+its line, with the owner it has in the source, in the places a rule body records
+line breaks: before a sequence item, an attribute, a pragma or `/`, after the
+opening brace of a rule, and inside the delimiters of a group, a predicate
+block, a list, an index and an action group. A comment on a line of its own
+between an operator and an operand of an action expression, between `/` and the
+alternative after it, or inside the parentheses of `#recover` is kept but moves
+to a neighboring token, where its owner can differ.
 
 An argument of an attribute that is left out is written `nil`; the comma
 after the last argument is a trailing comma, as in every other list. Two commas

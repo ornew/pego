@@ -65,4 +65,17 @@ type SourceLayout struct {
 	// Trail holds the comments on the line of that comma after it, when they
 	// end the line.
 	Trail []*Comment
+	// Operator holds the comments between the operand of a postfix rule
+	// expression (a repetition, an optional, an #atomic, #stream or #recover
+	// pragma) and its operator, all on one line with both.
+	Operator []*Comment
+	// Close holds the comments on one line before the closing parenthesis of a
+	// #recover pragma.
+	Close []*Comment
 }
+
+// In a rule expression, a node's Layout holds the block comments that stand on
+// one line with the tokens around them: Before has those between the token
+// before the node and its first token, and After those between its last token
+// and the next, when that is "/" or "=>". Comments that need a line of their
+// own are kept in the LineBreak fields of the enclosing nodes.

@@ -399,6 +399,12 @@ func repeatSlots(g *grammar.Grammar, canonical bool) string {
 // checkRandomFormat returns a description of what formatting changes in ast,
 // parsed from src.
 func checkRandomFormat(src string, ast *grammar.Grammar) string {
+	return checkRandomFormatOwners(src, ast, true)
+}
+
+// checkRandomFormatOwners is checkRandomFormat that checks the owners of the
+// comments only when owners is set.
+func checkRandomFormatOwners(src string, ast *grammar.Grammar, owners bool) string {
 	out := grammar.Format(ast)
 	again, err := Parse(out)
 	if err != nil {
@@ -413,7 +419,7 @@ func checkRandomFormat(src string, ast *grammar.Grammar) string {
 	if second := grammar.Format(again); second != out {
 		return "formatting is not idempotent\nfirst:\n" + out + "\nsecond:\n" + second
 	}
-	if diffs := ownerDiffs(ast, again); len(diffs) > 0 {
+	if diffs := ownerDiffs(ast, again); owners && len(diffs) > 0 {
 		return "the owners changed\n" + strings.Join(diffs, "\n") + "\n" + out
 	}
 	if diffs := argHomeDiffs(ast, again); len(diffs) > 0 {

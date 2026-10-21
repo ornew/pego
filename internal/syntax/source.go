@@ -269,6 +269,77 @@ func (p *parser) sourceTrailing(s *grammar.SourceInfo) {
 	}
 }
 
+// takeInlineGap takes the comments between the previous token and the current
+// one when they are all block comments and no line break separates the two
+// tokens and the comments but the lines inside the comments. The formatter
+// writes them in the same place, so their owners do not change.
+func (p *parser) takeInlineGap() []*grammar.Comment {
+	if !p.inlineGap() {
+		return nil
+	}
+	t := &p.toks[p.i]
+	cs := t.comments
+	if t.lineComment != nil {
+		cs = p.appendComments([]*grammar.Comment{t.lineComment}, cs)
+	}
+	t.lineComment, t.comments = nil, nil
+	return cs
+}
+
+// inlineGap reports whether the comments before the current token form a gap
+// takeInlineGap takes.
+func (p *parser) inlineGap() bool {
+	if p.header || p.i == 0 {
+		return false
+	}
+	t := &p.toks[p.i]
+	if t.lineComment == nil && len(t.comments) == 0 {
+		return false
+	}
+	line := p.toks[p.i-1].end.Line
+	step := func(c *grammar.Comment) bool {
+		p.poll()
+		if !strings.HasPrefix(c.Text, "/*") || c.Pos.Line != line {
+			return false
+		}
+		line = c.End.Line
+		return true
+	}
+	if t.lineComment != nil && !step(t.lineComment) {
+		return false
+	}
+	for _, c := range t.comments {
+		if !step(c) {
+			return false
+		}
+	}
+	return line == t.pos.Line
+}
+
+// atLineStart reports whether the current token starts a line that the layout
+// of a rule body records: a line break before it, other than the lines inside
+// the block comments that stand between it and the token before.
+func (p *parser) atLineStart() bool {
+	return p.tok().lineBefore && !p.inlineGap()
+}
+
+// afterGap keeps the inline comments before the current token, "/" or "=>", as
+// the comments after e.
+func (p *parser) afterGap(e grammar.Expr) {
+	if gap := p.takeInlineGap(); gap != nil {
+		layoutOf(e).After = gap
+	}
+}
+
+// layoutOf returns the layout of the rule expression e, which it creates.
+func layoutOf(e any) *grammar.SourceLayout {
+	s := e.(grammar.SourceNode).Source()
+	if s.Layout == nil {
+		s.Layout = &grammar.SourceLayout{}
+	}
+	return s.Layout
+}
+
 // takeGap takes the comments before the current token, which lie between it
 // and the token before it, for a #repeat pragma.
 func (p *parser) takeGap() grammar.RepeatGap {

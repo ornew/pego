@@ -81,6 +81,12 @@ A blank line before the first comment of a list is kept, because it decides whet
 Tests format random lists, types and attributes with comments in every position and check that the result parses to the same AST with each comment owned by the same node.
 A construct written on one line, such as a group, a predicate block or a level, that holds a list on lines is written on lines itself, because the next pass would read it that way.
 
+A block comment between two tokens of a rule expression, such as the one in `"a" @custom /* c */ "b"`, is kept in the `SourceLayout` of the expression next to it: `Before` for a comment before its first token, `After` for one before the `/` or `=>` that follows, `Operator` for one before a suffix, a pragma or a binary operator, and `Close` for one before the parenthesis of `#recover`.
+The parser takes such a comment only when no line break stands between the two tokens and the comment but the lines inside a block comment, so the formatter writes it back where it was and the owner does not change.
+Comments in the other gaps still go to the line break nearest before them.
+An action block keeps the comment that ends the line of its `{` in `OpenBreak`, the comments around a `;` in the layout of the statements, and a statement that follows a `;` and a comment on its line stays on that line.
+An index keeps the layout of its brackets in `OpenBreak`, `BodyBreak` and `CloseBreak`, as a `TermGroup` does.
+
 Formatting is idempotent: formatting the output again gives the same text, because each recorded line break reproduces itself.
 Tests check this, and that every grammar in `examples/` reparses to the same AST (compared through JSON) with the same comments.
 
@@ -91,5 +97,6 @@ Tests check this, and that every grammar in `examples/` reparses to the same AST
 
 ## Limitations
 
-- A rule body keeps line breaks at its top-level choice and sequences. Source-only PEG, type and action group nodes preserve layout and comment ownership inside their explicit delimiters. `TypeGroup` and `TermGroup` keep raw line placement in `OpenBreak`, `BodyBreak`, `CloseBreak` and `OneLine`, separate from normalized `SourceInfo` ownership. Other internal line breaks, including those inside Predicate Actions and Operators Rule operands and operators, are joined, and comments there move to the nearest preceding line.
+- A rule body keeps line breaks at its top-level choice and sequences. Source-only PEG, type and action group nodes preserve layout and comment ownership inside their explicit delimiters. `TypeGroup` and `TermGroup` keep raw line placement in `OpenBreak`, `BodyBreak`, `CloseBreak` and `OneLine`, separate from normalized `SourceInfo` ownership. Other internal line breaks, including those inside Operators Rule operands and operators, are joined, and comments there move to the nearest preceding line.
+- A comment that needs a line of its own between an operator and an operand of an action expression, between `/` and the alternative after it in a group, or inside the parentheses of `#recover`, is kept but moves to a neighboring token, which can change its owner.
 - Alignment that `Format` does not produce itself (for example, aligned columns in Operators Rule levels) is not kept.
