@@ -1519,7 +1519,7 @@ func formatAttribute(a *Attribute, control *metadataControl) string {
 		marker = "#"
 	}
 	s := marker + a.Name
-	if len(a.Args) == 0 && len(a.KwArgs) == 0 && (a.ArgsLayout == nil || !listHasComments(a.ArgsLayout.OpenBreak, a.ArgsLayout.BodyBreak, a.ArgsLayout.CloseBreak)) {
+	if len(a.Args) == 0 && len(a.KwArgs) == 0 && (a.ArgsLayout == nil || staleListComments(a.ArgsLayout, 0, control) == nil) {
 		return s
 	}
 	var args []string
@@ -1551,12 +1551,44 @@ func formatAttribute(a *Attribute, control *metadataControl) string {
 	}
 	list := a.ArgsLayout
 	if list != nil && len(list.Elems) != len(args) {
-		list = nil // the arguments changed since the source was read
+		list = staleListComments(list, len(args), control) // the arguments changed since the source was read
 	}
 	if len(args) == 0 && (list == nil || !listHasComments(list.OpenBreak, list.BodyBreak, list.CloseBreak)) {
 		return s
 	}
 	return s + formatItemList(args, a.TrailingComma, list, control)
+}
+
+// staleListComments returns a layout that holds every comment of list after the
+// opening parenthesis, in source order, for a list of n items whose items changed since
+// the source was read: the comments no longer belong to any item, but Format
+// does not drop a comment.
+func staleListComments(list *ListLayout, n int, control *metadataControl) *ListLayout {
+	var cs []*Comment
+	add := func(b *LineBreak) {
+		pollFormat(control)
+		if b != nil {
+			cs = appendMetadata(cs, b.Comments, control)
+			if b.Trailing != nil {
+				cs = append(cs, b.Trailing)
+			}
+		}
+	}
+	add(list.OpenBreak)
+	add(list.BodyBreak)
+	for _, e := range list.Elems {
+		pollFormat(control)
+		if e != nil {
+			cs = appendMetadata(cs, e.Before, control)
+			cs = appendMetadata(cs, e.After, control)
+			cs = appendMetadata(cs, e.Trail, control)
+		}
+	}
+	add(list.CloseBreak)
+	if len(cs) == 0 {
+		return nil
+	}
+	return &ListLayout{OpenBreak: &LineBreak{Comments: cs}, Elems: make([]*SourceLayout, n)}
 }
 
 // formatItemList formats a parenthesized list of items that are not nodes, such

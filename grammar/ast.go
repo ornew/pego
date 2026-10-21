@@ -573,8 +573,9 @@ type Attribute struct {
 	// ArgsLayout keeps the comments around the arguments in source order,
 	// positional ones first. Its Elems match Args and then KeywordOrder by
 	// index. They go stale if Args or KwArgs are edited without it: Format
-	// ignores the layout when the number of arguments differs, and otherwise
-	// keeps each comment with the argument at its index.
+	// writes all the comments after the opening parenthesis when the number of
+	// arguments differs, and otherwise keeps each comment with the argument at
+	// its index.
 	ArgsLayout *ListLayout `json:"-"`
 }
 
