@@ -229,6 +229,10 @@ func Build(cfg Config) (Stats, error) {
 		p.Text = plainText(string(p.Body))
 		return string(p.Body), nil
 	}
+	sectionIndex := map[string]string{}
+	for _, sec := range c.Sections {
+		sectionIndex[sec.Title] = sec.Index
+	}
 	ext.View = func(v sitegen.View) (any, error) {
 		var secs []*Section
 		for _, g := range v.Groups {
@@ -236,7 +240,11 @@ func Build(cfg Config) (Stats, error) {
 			for _, q := range g.Pages {
 				p := lookup(q)
 				sec.Pages = append(sec.Pages, p)
-				sec.NavPages = append(sec.NavPages, p)
+				if idx := sectionIndex[g.Title]; idx != "" && q.Source == idx {
+					sec.IndexPages = append(sec.IndexPages, p)
+				} else {
+					sec.NavPages = append(sec.NavPages, p)
+				}
 			}
 			for _, child := range g.Children {
 				group := &Section{Name: child.Title, Collapsible: child.Collapsed}

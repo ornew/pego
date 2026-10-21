@@ -52,13 +52,14 @@
     <div class="nav-section mobile-links"><h2>Site</h2>{{template "mobilelinks" .}}</div>
     {{range .Sections}}{{if .Collapsible}}<details class="nav-section nav-fold"{{if .Contains $.Page}} open{{end}}>
       <summary><h2>{{.Name}}</h2></summary>
-      <ul>{{range .NavPages}}
+      <ul>{{range .IndexPages}}
+        <li><a href="{{$.URL .URL}}"{{if eq .URL $.Page.URL}} aria-current="page"{{end}}>{{.NavLabel}}</a></li>{{end}}{{range .NavPages}}
         <li><a href="{{$.URL .URL}}"{{if eq .URL $.Page.URL}} aria-current="page"{{end}}>{{.NavLabel}}</a></li>{{end}}
       </ul>
     </details>
     {{else}}<div class="nav-section">
       <h2>{{.Name}}</h2>
-      <ul>{{range .Children}}<li><details class="nav-fold nav-subfold"{{if not .Collapsible}} open{{end}}>
+      <ul>{{range .IndexPages}}<li><a href="{{$.URL .URL}}"{{if eq .URL $.Page.URL}} aria-current="page"{{end}}>{{.NavLabel}}</a></li>{{end}}{{range .Children}}<li><details class="nav-fold nav-subfold"{{if not .Collapsible}} open{{end}}>
           <summary><span>{{.Name}}</span></summary>
           <ul>{{range .NavPages}}
             <li><a href="{{$.URL .URL}}"{{if eq .URL $.Page.URL}} aria-current="page"{{end}}>{{.NavLabel}}</a></li>{{end}}

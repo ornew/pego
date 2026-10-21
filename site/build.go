@@ -79,10 +79,12 @@ type Section struct {
 	Name        string
 	Collapsible bool // the navigation folds the pages under the name, open only if the current page is one of them
 	Pages       []*Page
-	// NavPages are shown directly; Children preserves configured nested groups.
-	// Pages includes descendants for current-page checks.
-	NavPages []*Page
-	Children []*Section
+	// IndexPages are the section's configured index page, shown before the nested groups;
+	// NavPages are the other pages shown directly, after them; Children preserves configured
+	// nested groups. Pages includes descendants for current-page checks.
+	IndexPages []*Page
+	NavPages   []*Page
+	Children   []*Section
 }
 
 // Contains reports whether the section lists p.

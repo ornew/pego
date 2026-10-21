@@ -647,6 +647,10 @@ func TestNavigation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	guidesBlock := regexp.MustCompile(`(?s)<div class="nav-section">\s*<h2>Guides</h2>\s*<ul><li><a [^>]*>([^<]*)</a>`).FindSubmatch(record)
+	if guidesBlock == nil || string(guidesBlock[1]) != "Introduction" {
+		t.Errorf("the Guides navigation does not start with its Introduction before the nested groups")
+	}
 	projectBlock := regexp.MustCompile(`(?s)<div class="nav-section">\s*<h2>Project</h2>(.*?)</div>`).FindSubmatch(record)
 	if projectBlock == nil {
 		t.Fatal("Project navigation section is missing")
