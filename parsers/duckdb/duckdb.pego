@@ -12,7 +12,7 @@ type Ident = node[string]
 // A qualified name: a, a.b, a.b.c
 type Name = { Parts []Ident }
 
-type Number = { Text string }    // an integer, decimal or real literal as written
+type Number = { Text string } // an integer, decimal or real literal as written
 type StringLit = node[string] // a string literal as written: '...', E'...', $$...$$, U&'...'
 type BitLit = node[string]    // B'...' or X'...'
 type BoolLit = node[string]   // TRUE or FALSE
@@ -37,7 +37,7 @@ type ArrayDim = { Size *Number }
 
 type Paren = { X Expr }
 type ColumnRef = { Parts []Ident }
-type DefaultExpr = node[string]                  // DEFAULT
+type DefaultExpr = node[string]       // DEFAULT
 type PositionalRef = { Index Number } // #1
 
 // * and t.* with their modifiers, and COLUMNS(...) and UNPACK(...)
@@ -86,7 +86,7 @@ type ArraySubquery = { Query ParenQuery }              // ARRAY(SELECT ...)
 type Grouping = { Name string; Args []Expr }           // GROUPING(a, b), GROUPING_ID(a, b)
 type TypedLit = { Type Type; Value StringLit }         // DATE '2020-01-01', DECIMAL(10, 2) '1.5'
 type IntervalLit = { Value Expr; Unit *IntervalUnit }  // INTERVAL '1' DAY, INTERVAL (x) HOUR, INTERVAL 5 DAY
-type IntervalUnit = node[string]                                  // DAY, YEAR TO MONTH, ...
+type IntervalUnit = node[string]                       // DAY, YEAR TO MONTH, ...
 type NamedArg = { Name Ident; Value Expr; Arrow bool } // name := value, name => value (Arrow)
 // A function call, with the clauses that follow it.
 type FuncCall = {
