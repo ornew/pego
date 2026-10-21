@@ -7,8 +7,12 @@ reference parser, `cuelang.org/go/cue/parser` (v0.17.1, the latest release), wit
 the standard library and the PEGO runtime.
 
 ```bash
-go get github.com/ornew/pego/parsers/cue
+# In your module, with a checkout of the PEGO repository at ~/src/pego:
+go work init .
+go work use ~/src/pego ~/src/pego/parsers/cue
 ```
+
+Until PEGO publishes a release, a parser module depends on the `github.com/ornew/pego` module through a local `replace` directive, so `go get` cannot fetch it from outside a checkout of the repository. The [install notes](../README.md#install) show the `replace` form too.
 
 ## Use
 

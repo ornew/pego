@@ -22,9 +22,28 @@ it differs from the reference implementation; this guide covers what they have i
 Each parser is a Go module of its own. It depends only on the standard library and the PEGO runtime package (`github.com/ornew/pego/runtime`, which itself needs
 nothing else), not on the PEGO engine and not on the language's own implementation (DuckDB's parser does not need DuckDB):
 
+Until PEGO publishes a release, the ready-made parser modules depend on the `github.com/ornew/pego` module through a
+local `replace` directive (`replace github.com/ornew/pego => ../..` in each parser's `go.mod`). That directive only
+applies inside the repository, so `go get github.com/ornew/pego/parsers/json` does not work from another module. Use a
+parser from a checkout of the repository, in one of two ways.
+
+With a `go.work` file next to your module's `go.mod`:
+
 ```bash
-go get github.com/ornew/pego/parsers/json
+go work init .
+go work use ~/src/pego ~/src/pego/parsers/json
 ```
+
+or with `replace` directives in your own `go.mod`, which the `go.mod` of the parser cannot supply for you:
+
+```text
+require github.com/ornew/pego/parsers/json v0.0.0
+
+replace github.com/ornew/pego/parsers/json => /path/to/pego/parsers/json
+replace github.com/ornew/pego => /path/to/pego
+```
+
+(`/path/to/pego` is the full path of your checkout; `go.mod` does not expand `~`.) Run `go mod tidy` afterwards to record the requirement of the `github.com/ornew/pego` module. Then import the parser:
 
 ```go
 import "github.com/ornew/pego/parsers/json"

@@ -16,9 +16,30 @@ that depends only on the standard library and the PEGO runtime (`github.com/orne
 | XML | [`github.com/ornew/pego/parsers/xml`](xml/) | [XML 1.0 (Fifth Edition)](https://www.w3.org/TR/xml/), non-validating, with [Namespaces in XML 1.0](https://www.w3.org/TR/xml-names/) | [W3C XML Conformance Test Suite](https://www.w3.org/XML/Test/) (no failure among the XML 1.0 tests that need no external entity), `encoding/xml` (differential and fuzz tests) |
 | YAML | [`github.com/ornew/pego/parsers/yaml`](yaml/) | [YAML 1.2.2](https://yaml.org/spec/1.2.2/), with the core schema for Go values | [yaml-test-suite](https://github.com/yaml/yaml-test-suite) (all 402 tests: events and JSON values) |
 
+## Install
+
+Until PEGO publishes a release, the ready-made parser modules depend on the `github.com/ornew/pego` module through a
+local `replace` directive (`replace github.com/ornew/pego => ../..` in each parser's `go.mod`). That directive only
+applies inside the repository, so `go get github.com/ornew/pego/parsers/json` does not work from another module. Use a
+parser from a checkout of the repository, in one of two ways.
+
+With a `go.work` file next to your module's `go.mod`:
+
 ```bash
-go get github.com/ornew/pego/parsers/json
+go work init .
+go work use ~/src/pego ~/src/pego/parsers/json
 ```
+
+or with `replace` directives in your own `go.mod`, which the `go.mod` of the parser cannot supply for you:
+
+```text
+require github.com/ornew/pego/parsers/json v0.0.0
+
+replace github.com/ornew/pego/parsers/json => /path/to/pego/parsers/json
+replace github.com/ornew/pego => /path/to/pego
+```
+
+(`/path/to/pego` is the full path of your checkout; `go.mod` does not expand `~`.) Run `go mod tidy` afterwards to record the requirement of the `github.com/ornew/pego` module.
 
 ```go
 import "github.com/ornew/pego/parsers/json"

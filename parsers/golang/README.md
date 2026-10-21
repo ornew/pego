@@ -5,8 +5,12 @@ PEGO from [golang.pego](golang.pego): it accepts exactly the files `go/parser` a
 positions included. It depends only on the standard library and the PEGO runtime.
 
 ```bash
-go get github.com/ornew/pego/parsers/golang
+# In your module, with a checkout of the PEGO repository at ~/src/pego:
+go work init .
+go work use ~/src/pego ~/src/pego/parsers/golang
 ```
+
+Until PEGO publishes a release, a parser module depends on the `github.com/ornew/pego` module through a local `replace` directive, so `go get` cannot fetch it from outside a checkout of the repository. The [install notes](../README.md#install) show the `replace` form too.
 
 ## Use
 

@@ -8,8 +8,12 @@ that depends only on the standard library. Use `yaml.Load` for the syntax and th
 `yaml.ParseAST` for your own checks, which gives every node its position.
 
 ```bash
-go get github.com/ornew/pego/parsers/yaml
+# In your module, with a checkout of the PEGO repository at ~/src/pego:
+go work init .
+go work use ~/src/pego ~/src/pego/parsers/yaml
 ```
+
+Until PEGO publishes a release, a parser module depends on the `github.com/ornew/pego` module through a local `replace` directive, so `go get` cannot fetch it from outside a checkout of the repository. The [install notes](../guide/ready-made-parsers.md#install) show the `replace` form too.
 
 ```go
 // main.go
