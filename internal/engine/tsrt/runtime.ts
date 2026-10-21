@@ -856,6 +856,11 @@ export interface Rule {
   seen: number;
   operatorsRule: OperatorsRule | null;
   novalue: boolean; // value-free twin, called where the value is discarded
+  // splice means the rule makes no node of its own: its value is the result of its body as it is,
+  // and the captures of its body end with it. Its callers take the elements of the value.
+  splice: boolean;
+  // where, if not "", names the rule in the message of a failed action, instead of name.
+  where: string;
   // vars are the variables the rule or its callees read, sorted. Memo entries are keyed by their
   // values at the call, since definitions inside the rule are undone when it returns.
   vars: string[];
@@ -870,11 +875,14 @@ export interface Rule {
 // packed in a number: shaperElems (the matcher returns the tuple node of its elements), shaperTuple
 // (the value of a scope is the node of its tuple, rather than its one element), how the expression
 // takes one element in bits 2 and 3 (singleNone, singlePass or singleTuple), and the number of
-// valued elements from bit 4.
+// valued elements from bit 5. Bit 4 is shaperShared.
 export type Shaper = number;
 
 export const shaperElems = 1;
 export const shaperTuple = 2;
+// shaperShared: the tuple node the matcher returns is the result of a splice rule, shared through its
+// memo entry, so that a node that takes it as its own takes a copy.
+export const shaperShared = 16;
 export const singleNone = 0; // no value
 export const singlePass = 1; // the one element
 export const singleTuple = 2; // the node of the tuple of the elements
@@ -914,6 +922,8 @@ export function mkRule(
     seen,
     operatorsRule: null,
     novalue,
+    splice: false,
+    where: "",
     vars,
     nodeType: "",
     opNodeType: "",
@@ -2242,7 +2252,7 @@ export class Parser {
     const u = unboxNode(v);
     const n = convertNode(r.nodeType, u);
     if (n === null) {
-      throw new Fatal(new Error(`cannot convert ${typeName(u)} to ${r.nodeType} in result of rule ${r.name}`));
+      throw new Fatal(new Error(`cannot convert ${typeName(u)} to ${r.nodeType} in result of rule ${r.where || r.name}`));
     }
     return n;
   }
@@ -2253,7 +2263,13 @@ export class Parser {
     }
     if (r.action !== null) {
       const c = this.useCtx(f, start, this.pos, null, null, null);
-      return c.result(r.action, r.name);
+      return c.result(r.action, r.where || r.name);
+    }
+    if (r.splice) {
+      if (v !== null) {
+        v.fresh = false;
+      }
+      return v;
     }
     v = this.scopeValue(r.value, v, start);
     if (r.scope.length > 0) {
@@ -2312,9 +2328,12 @@ export class Parser {
   // shapeTuple returns the tuple node of the result v of a match of [start, this.pos).
   shapeTuple(s: Shaper, v: Node | null, start: number): Node {
     if ((s & shaperElems) !== 0) {
+      if ((s & shaperShared) !== 0 && v !== null) {
+        return new Node("tuple", "", v.start, v.end, "", v.children, noFields, true, false);
+      }
       return v as Node;
     }
-    return new Node("tuple", "", start, this.pos, "", s >> 4 === 1 ? [v] : [], noFields, true, false);
+    return new Node("tuple", "", start, this.pos, "", s >> 5 === 1 ? [v] : [], noFields, true, false);
   }
 
   // shapeSingle returns the value of the result v where the expression takes one element, or null
@@ -2869,7 +2888,7 @@ export class Parser {
   lineValue(r: Rule, l: OperatorsRuleLine, f: Frame, v: Node | null, start: number): Node | null {
     if (l.action !== null) {
       const c = this.useCtx(f, start, this.pos, null, null, null);
-      return c.result(l.action, r.name);
+      return c.result(l.action, r.where || r.name);
     }
     v = this.scopeValue(l.value, v, start);
     if (l.scope.length > 0) {
@@ -2913,7 +2932,7 @@ export class Parser {
     }
     if (l.action !== null) {
       const c = this.useCtx(a.frame, start, end, unboxNode(lhs), unboxNode(rhs), unboxNode(opv));
-      let v = c.result(l.action, r.name);
+      let v = c.result(l.action, r.where || r.name);
       if (r.opNodeType !== "") {
         v = this.convertOperator(r, v);
       }
@@ -2947,7 +2966,7 @@ export class Parser {
     const u = unboxNode(v);
     const n = convertNode(r.opNodeType, u);
     if (n === null) {
-      throw new Fatal(new Error(`cannot convert ${typeName(u)} to ${r.opNodeType} in result of rule ${r.name}`));
+      throw new Fatal(new Error(`cannot convert ${typeName(u)} to ${r.opNodeType} in result of rule ${r.where || r.name}`));
     }
     return n;
   }

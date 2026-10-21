@@ -80,12 +80,6 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	if start == nil {
 		return nil, fmt.Errorf("start rule %s is not defined", opts.Start)
 	}
-	for _, r := range prog.rules {
-		if r.splice {
-			// The TypeScript runtime does not splice the elements of a rule yet.
-			return nil, fmt.Errorf("TypeScript generation does not support rule %s, a hidden rule without an action, yet", r.whereName())
-		}
-	}
 	gen := &tsGen{generator: &generator{prog: prog, table: "rules", observability: opts.Observability, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing || !opts.enableTSLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch}, plainUsed: map[*rule]bool{}}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
@@ -566,6 +560,12 @@ func (g *tsGen) rules() {
 		fmt.Fprintf(init, "const %s = mkRule(%d, %s, %s, %d, %v, %v, %d, %v, %s);\n", g.ruleVar(r),
 			r.id, tsString(r.name), tsStrings(scopes[r].names), value, r.memo && !r.transient, r.leader, r.seen, r.novalue, tsStrings(r.vars))
 		vars = append(vars, g.ruleVar(r))
+		if r.splice {
+			fmt.Fprintf(init, "%s.splice = true;\n", g.ruleVar(r))
+		}
+		if w := r.whereName(); w != r.name {
+			fmt.Fprintf(init, "%s.where = %s;\n", g.ruleVar(r), tsString(w))
+		}
 		if r.nodeType != "" {
 			fmt.Fprintf(init, "%s.nodeType = %s;\n", g.ruleVar(r), tsString(r.nodeType))
 		}
@@ -847,12 +847,15 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 // tsShaper returns the runtime shaper of the expression e, its static shape (value_shape.go), packed
 // as the runtime's Shaper.
 func tsShaper(prog *Program, e grammar.Expr) int {
-	s := int(singleModeOf(prog, e))<<2 | valuedCount(prog, e)<<4
+	s := int(singleModeOf(prog, e))<<2 | valuedCount(prog, e)<<5
 	if isElems(prog, e) {
 		s |= 1
 	}
 	if scopeTuple(prog, e) {
 		s |= 2
+	}
+	if isElems(prog, e) && sharesTuple(prog, e) {
+		s |= 16
 	}
 	return s
 }
