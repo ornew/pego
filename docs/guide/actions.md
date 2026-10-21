@@ -37,6 +37,19 @@ pego parse -g inline-action.pego -s pairs -f sexpr -i 'abcd'
 An inline action cannot appear in a lookahead (`&`, `!`) or a discard (`-`), which make no value. The braced
 form `(expression => { ... })` is not supported.
 
+The rule behind an inline action is hidden: a rule whose name begins with `_`. You can write such a rule yourself to
+share a part of a grammar without giving it a node. A hidden rule without an action makes no node, and a call of it
+contributes what its expression would if it were written in its place as a group. A hidden rule is not an entry point:
+it cannot be the start rule or be parsed by name.
+
+```pego
+rule pair = "(" _items ")"
+rule _items = [a-z] ("," [a-z])*
+```
+
+Here `pair` has the tuple of `"("`, the first letter, the list of the rest and `")"`, as if `_items` were written in
+`pair`. The captures made in `_items` are not visible in `pair`.
+
 ## Referring to Captures
 
 `$label` refers to the value captured with `label:` in this rule. Only labeled elements can be used in an action:

@@ -163,6 +163,8 @@ func (c *bcompiler) compile() {
 			c.proj = ruleProjections(c.prog, r)
 			if r.lean {
 				c.match(r.bodyExpr(), s, false)
+			} else if r.splice {
+				c.spliceScope(r.bodyExpr(), s)
 			} else {
 				c.scope(r.bodyExpr(), s)
 			}
@@ -182,12 +184,12 @@ func (c *bcompiler) compile() {
 func (c *bcompiler) tuple(e grammar.Expr, s *scope) {
 	c.emit(OpPushPos, 0, 0, 0)
 	c.elems(e, s)
-	c.emit(OpSeq, int32(valuedCount(e)), 0, 0)
+	c.emit(OpSeq, int32(valuedCount(c.prog, e)), 0, 0)
 }
 
 // single emits code that pushes the value of e where it takes one element: nil without a value.
 func (c *bcompiler) single(e grammar.Expr, s *scope) {
-	switch singleModeOf(e) {
+	switch singleModeOf(c.prog, e) {
 	case singleNone:
 		c.elems(e, s)
 		c.emit(OpPushNil, 0, 0, 0)
@@ -201,7 +203,7 @@ func (c *bcompiler) single(e grammar.Expr, s *scope) {
 // captured emits code that pushes the value of e where it is captured or recovered: the unit
 // node of its range without a value.
 func (c *bcompiler) captured(e grammar.Expr, s *scope) {
-	if singleModeOf(e) == singlePass {
+	if singleModeOf(c.prog, e) == singlePass {
 		c.elems(e, s)
 		return
 	}
@@ -210,11 +212,25 @@ func (c *bcompiler) captured(e grammar.Expr, s *scope) {
 
 // scope emits code that pushes the value of a scope with the body e.
 func (c *bcompiler) scope(e grammar.Expr, s *scope) {
-	if scopeTuple(e) {
+	if scopeTuple(c.prog, e) {
 		c.tuple(e, s)
 		return
 	}
 	c.elems(e, s)
+}
+
+// spliceScope emits code that pushes the value of the body e of a splice rule: the tuple node of
+// its elements if e builds one, else its one element or nil, as OpSpread takes it.
+func (c *bcompiler) spliceScope(e grammar.Expr, s *scope) {
+	switch {
+	case isElems(c.prog, e):
+		c.tuple(e, s)
+	case valuedCount(c.prog, e) == 1:
+		c.elems(e, s)
+	default:
+		c.elems(e, s)
+		c.emit(OpPushNil, 0, 0, 0)
+	}
 }
 
 // class adds the character class to the character class table and returns its index.
@@ -255,7 +271,7 @@ func (c *bcompiler) match(e grammar.Expr, s *scope, build bool) {
 	c.void(e, s)
 }
 
-// elems emits code that pushes the valuedCount(e) elements of e, flattened through sequences.
+// elems emits code that pushes the valuedCount(c.prog, e) elements of e, flattened through sequences.
 func (c *bcompiler) elems(e grammar.Expr, s *scope) {
 	switch e := e.(type) {
 	case *grammar.Literal, *grammar.CharClass, *grammar.Any, *grammar.Ref, *grammar.Atomic:
@@ -265,7 +281,7 @@ func (c *bcompiler) elems(e grammar.Expr, s *scope) {
 			c.elems(it, s)
 		}
 	case *grammar.Choice:
-		valued := valuedCount(e) == 1
+		valued := valuedCount(c.prog, e) == 1
 		var ends []int
 		for i, alt := range e.Alts {
 			emit := func() {
@@ -294,7 +310,7 @@ func (c *bcompiler) elems(e grammar.Expr, s *scope) {
 	case *grammar.Repeat:
 		c.repeat(e, s, true, false)
 	case *grammar.Optional:
-		valued := valuedCount(e) == 1
+		valued := valuedCount(c.prog, e) == 1
 		ch := c.emit(OpChoice, 0, 0, 0)
 		if valued {
 			c.single(e.Expr, s)
@@ -336,10 +352,15 @@ func (c *bcompiler) leaf(e grammar.Expr, s *scope, build bool) {
 				}
 			}
 		}
+		splice := r.splice
 		if !build && r.twin != nil {
 			r = r.twin
 		}
 		c.emit(OpCall, int32(r.id), int32(min), b2i(build))
+		if build && splice {
+			// The elements of the rule are elements of the sequence that calls it.
+			c.emit(OpSpread, int32(valuedCount(c.prog, e)), b2i(isElems(c.prog, e)), 0)
+		}
 	case *grammar.Atomic:
 		if build {
 			c.emit(OpPushPos, 0, 0, 0)
@@ -503,7 +524,7 @@ func (c *bcompiler) attrElems(e *grammar.Attributed, i int, s *scope) {
 		skip, _ := a.Arg("skip")
 		rec := c.emit(OpRecover, 0, 0, 0)
 		// The value of the inner expression where it is captured (captured), as in captureMatcher.
-		mode := singleModeOf(e.Expr)
+		mode := singleModeOf(c.prog, e.Expr)
 		if hasRecover(e.Attrs[:i]) {
 			mode = singlePass // an inner recovery is one element already
 		}
@@ -514,7 +535,7 @@ func (c *bcompiler) attrElems(e *grammar.Attributed, i int, s *scope) {
 		if mode != singlePass {
 			n := 0
 			if mode == singleTuple {
-				n = valuedCount(e.Expr)
+				n = valuedCount(c.prog, e.Expr)
 			}
 			c.emit(OpSeq, int32(n), 0, 0)
 		}
@@ -631,7 +652,7 @@ func (c *bcompiler) line(e grammar.Expr, action grammar.Term, locals []string, k
 	case locals == nil: // an operand line: the value of its scope
 		c.scope(e, s)
 	default: // an operator line: the operator's value, the node of its tuple if IsSeq
-		li.IsSeq = singleModeOf(e) == singleTuple
+		li.IsSeq = singleModeOf(c.prog, e) == singleTuple
 		c.captured(e, s)
 	}
 	c.emit(OpEnd, 0, 0, 0)

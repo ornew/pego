@@ -57,10 +57,11 @@ An identifier matches `[a-zA-Z_][a-zA-Z0-9_]*`. Identifiers are
 case-sensitive and have no length limit. Identifier syntax is ASCII-only:
 non-ASCII letters and digits do not continue an identifier. Unicode remains
 available in string literals, character classes, comments, and parsed input.
-Names beginning with `_` are reserved and MUST NOT be used as identifiers,
-including Declaration Statement names, references, captures, variables, level names,
-attribute names, or named arguments. Parsing preserves these names in the
-source AST; semantic validation rejects their use before compilation. The
+A Rule Definition name and a reference to a rule MAY begin with `_`: such a rule is
+hidden (see [Hidden rules](actions.md#hidden-rules)). Every other name beginning with
+`_` is reserved and MUST NOT be used as an identifier, including type and variable
+names, captures, level names, attribute names and named arguments. Parsing preserves
+these names in the source AST; semantic validation rejects their use before compilation. The
 standalone primary Rule Expression form `_` is the
 [Top expression](parser-expressions.md#top), not an available name.
 The words `true`, `false` and `nil` are the literals of the action language. A

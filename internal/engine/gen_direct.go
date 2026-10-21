@@ -448,15 +448,15 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		if build {
 			start, kids = d.decl("x", "int"), d.decl("x", g.pick("[]*Node", "[]any"))
 			d.line("%s = p.Pos", start)
-			d.line("%s = p.%s(%d)[:0]", kids, g.pick("Nodes", "NewVals"), valuedCount(e))
+			d.line("%s = p.%s(%d)[:0]", kids, g.pick("Nodes", "NewVals"), valuedCount(d.g.prog, e))
 		}
 		// The value is the tuple node of the elements, flattened through nested sequences.
 		for _, it := range e.Items {
 			v := d.expr(it, s, build, fail)
 			switch {
-			case build && isElems(it):
+			case build && isElems(d.g.prog, it):
 				d.line("%s = append(%s, %s...)", kids, d.rd(kids), fmt.Sprintf(g.pick("%s.RawChildren", "AsTval(%s).TKids()"), d.rd(v)))
-			case build && valuedCount(it) == 1:
+			case build && valuedCount(d.g.prog, it) == 1:
 				d.line("%s = append(%s, %s)", kids, d.rd(kids), d.rd(v))
 			}
 		}
@@ -811,14 +811,14 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 // takes one element (an alternative or the operand of ?); with capture, where it is captured or
 // recovered (see singleMethod).
 func (d *dgen) shapeOne(e grammar.Expr, x, start string, capture bool) string {
-	if singleModeOf(e) == singlePass && !isElems(e) {
+	if singleModeOf(d.g.prog, e) == singlePass && !isElems(d.g.prog, e) {
 		return x
 	}
 	v := d.decl("v", d.g.valType())
 	if capture {
-		d.line("%s = p.ShapeCapture(%s, %s, %s)", v, shaperLit(e), d.rd(x), d.rd(start))
+		d.line("%s = p.ShapeCapture(%s, %s, %s)", v, shaperLit(d.g.prog, e), d.rd(x), d.rd(start))
 	} else {
-		d.line("%s, _ = p.ShapeSingle(%s, %s, %s)", v, shaperLit(e), d.rd(x), d.rd(start))
+		d.line("%s, _ = p.ShapeSingle(%s, %s, %s)", v, shaperLit(d.g.prog, e), d.rd(x), d.rd(start))
 	}
 	return v
 }
@@ -834,7 +834,7 @@ func (d *dgen) captured(e grammar.Expr, s *dscope, fail string) string {
 // matched from start, to the scope's value.
 func (d *dgen) scopeValue(e grammar.Expr, x, start string) string {
 	v := d.decl("v", d.g.valType())
-	d.line("%s = p.ScopeValue(%s, %s, %s)", v, shaperLit(e), d.rd(x), d.rd(start))
+	d.line("%s = p.ScopeValue(%s, %s, %s)", v, shaperLit(d.g.prog, e), d.rd(x), d.rd(start))
 	return v
 }
 
@@ -1282,8 +1282,12 @@ func (d *dgen) finishValue(r *rule, s *dscope, body string) (start, ctx bool) {
 		// After finish, whose errors (a result that is not a node) also name the rule.
 		d.line("p.Where = %s", d.rd(prevWhere))
 		return true, true
+	case r.splice:
+		// No node of its own, and the captures end with the rule (Rule.Splice).
+		d.line("v = %s", d.rd(body))
+		d.line("if n := AsTval(v); n != nil {\nn.TSetFresh(false)\n}")
 	default:
-		d.line("v = p.ScopeValue(%s, %s, start)", shaperLit(r.bodyExpr()), d.rd(body))
+		d.line("v = p.ScopeValue(%s, %s, start)", shaperLit(d.g.prog, r.bodyExpr()), d.rd(body))
 		start = true
 		if len(s.names) > 0 {
 			d.line("v = p.AttachCaptures(v, %s, %s, start, p.Pos)", d.scopeVar(s), d.vals(s))

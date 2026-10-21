@@ -64,7 +64,7 @@ func (c *compiler) attributed(e *grammar.Attributed, s *scope, build bool) match
 			c.noCaptures(skipExpr)
 			// What recovers is one element: the value of the expression, or the error.
 			if build {
-				m = captureMatcher(e.Expr, m)
+				m = captureMatcher(c.prog, e.Expr, m)
 			}
 			m = recoverAttr(m, c.expr(skipExpr, s, false), build)
 		default:

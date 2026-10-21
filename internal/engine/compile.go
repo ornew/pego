@@ -442,7 +442,10 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 			c.errorf(rd.Diagnostic(), "rule %s is already defined", rd.Name)
 			continue
 		}
-		r := &rule{id: i, name: rd.Name, def: rd, scope: newScope(), action: rd.Action}
+		r := &rule{id: i, name: rd.Name, def: rd, scope: newScope(), action: rd.Action, splice: spliceRule(rd)}
+		if r.splice && rd.Type != nil {
+			c.errorf(rd.Diagnostic(), "rule %s makes no node of its own, so it cannot have a result type", rd.Name)
+		}
 		if w := names.where(rd.Name); w != rd.Name {
 			r.where = w
 		}
@@ -450,6 +453,7 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 		prog.byName[rd.Name] = r
 	}
 
+	c.checkSpliceCycles(rules)
 	c.declareVars(g)
 	prog.markMissingRules(control)
 	if flags == nil {
@@ -586,7 +590,11 @@ func (c *compiler) compileRule(r *rule) {
 	r.lean = r.novalue || leanBody(r)
 	c.proj = ruleProjectionsControlled(c.prog, r, control)
 	m := c.expr(body, r.scope, !r.lean)
-	r.value = scopeValueOf(body)
+	if r.splice {
+		r.value = func(_ *parser, v *Node, _ int) *Node { return v }
+	} else {
+		r.value = scopeValueOf(c.prog, body)
+	}
 	if c.proj != nil {
 		if c.prog.projected == nil {
 			c.prog.projected = map[*grammar.Call]bool{}
@@ -880,10 +888,10 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 		valued := make([]bool, len(e.Items))
 		for i, it := range e.Items {
 			ms[i] = c.expr(it, s, build)
-			flat[i] = isElems(it)
-			valued[i] = !flat[i] && valuedCount(it) == 1
+			flat[i] = isElems(c.prog, it)
+			valued[i] = !flat[i] && valuedCount(c.prog, it) == 1
 		}
-		n := valuedCount(e)
+		n := valuedCount(c.prog, e)
 		return func(p *parser) (*Node, bool) {
 			start := p.pos
 			var kids []*Node
@@ -918,7 +926,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 		for i, alt := range e.Alts {
 			ms[i] = c.expr(alt, s, build)
 			if build {
-				ms[i] = singleMatcher(alt, ms[i])
+				ms[i] = singleMatcher(c.prog, alt, ms[i])
 			}
 			guards[i] = c.first(alt)
 			guarded = guarded || guards[i].accept != nil
@@ -981,7 +989,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 	case *grammar.Optional:
 		m := c.expr(e.Expr, s, build)
 		if build {
-			m = singleMatcher(e.Expr, m)
+			m = singleMatcher(c.prog, e.Expr, m)
 		}
 		return func(p *parser) (*Node, bool) {
 			m0 := p.mark()
@@ -1060,7 +1068,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 		if field := c.proj[e.Name]; field != "" {
 			m = c.projectRepeat(e.Expr.(*grammar.Repeat), field)
 		} else {
-			m = captureMatcher(e.Expr, c.expr(e.Expr, s, true))
+			m = captureMatcher(c.prog, e.Expr, c.expr(e.Expr, s, true))
 		}
 		return func(p *parser) (*Node, bool) {
 			v, ok := m(p)
@@ -1316,7 +1324,7 @@ func (c *compiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) match
 	m := c.expr(e.Expr, elemScope, build)
 	ownScope := elemScope != s
 	min, max := e.Min, e.Max
-	elemValue := scopeValueOf(e.Expr)
+	elemValue := scopeValueOf(c.prog, e.Expr)
 	var rs *runSite
 	if c.resumable(e.Expr) { // a Document parse is not a stream: #stream has no effect there
 		c.runSites++
@@ -1537,4 +1545,71 @@ func (r *rule) whereName() string {
 		return r.where
 	}
 	return r.name
+}
+
+// spliceRule reports whether the rule rd makes no node of its own: it is hidden and has no action
+// (not even => ...), and its body is not an Operators Rule. A call of it contributes the elements
+// of its body, as a group does.
+func spliceRule(rd *grammar.RuleDef) bool {
+	if !hiddenRule(rd.Name) || rd.Action != nil || rd.DefaultAction {
+		return false
+	}
+	_, operators := rd.Expr.(*grammar.OperatorsRule)
+	return !operators
+}
+
+// checkSpliceCycles reports a splice rule whose elements include its own: it calls itself in the
+// sequence of its elements, so that its elements would be infinite in number. A call in a choice,
+// an option, a repetition or a capture is one element of its own, and may recur.
+func (c *compiler) checkSpliceCycles(rules []*grammar.RuleDef) {
+	flat := map[string][]string{}
+	for _, rd := range rules {
+		if r := c.prog.byName[rd.Name]; r != nil && r.splice && r.def == rd {
+			flat[rd.Name] = c.flatRefs(rd.Expr, nil)
+		}
+	}
+	state := map[string]int{} // 1 visiting, 2 done
+	var visit func(name string) bool
+	visit = func(name string) bool {
+		switch state[name] {
+		case 1:
+			return true
+		case 2:
+			return false
+		}
+		state[name] = 1
+		for _, to := range flat[name] {
+			if _, ok := flat[to]; ok && visit(to) {
+				return true
+			}
+		}
+		state[name] = 2
+		return false
+	}
+	for _, rd := range rules {
+		c.control.poll()
+		if _, ok := flat[rd.Name]; ok && state[rd.Name] == 0 && visit(rd.Name) {
+			c.errorf(rd.Diagnostic(), "rule %s contains itself in its sequence of elements, so it has no fixed number of them", rd.Name)
+			return
+		}
+	}
+}
+
+// flatRefs appends to out the rules e calls where their elements are elements of e.
+func (c *compiler) flatRefs(e grammar.Expr, out []string) []string {
+	switch e := e.(type) {
+	case *grammar.Group:
+		return c.flatRefs(e.Expr, out)
+	case *grammar.Seq:
+		for _, it := range e.Items {
+			out = c.flatRefs(it, out)
+		}
+	case *grammar.Attributed:
+		if !recovers(e) {
+			out = c.flatRefs(e.Expr, out)
+		}
+	case *grammar.Ref:
+		out = append(out, e.Name)
+	}
+	return out
 }

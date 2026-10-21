@@ -166,6 +166,7 @@ func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSch
 	}
 	s := &OutputSchema{Format: "pego-output-schema", Version: OutputSchemaVersion, Start: start, PositionUnitIndependent: true, SourceInfo: p.sourceInfo, Types: []SchemaType{}, Rules: []SchemaRule{}}
 	selected := map[string]bool{}
+	noType := map[string]bool{}
 	wanted := map[string]bool{}
 	var todo []string
 	var collect func(SchemaShape)
@@ -218,6 +219,10 @@ func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSch
 			}
 		}
 		t, ok := values[name]
+		if _, splice := p.spliceBody(name); splice && !ok {
+			noType[name] = true // a rule that makes no node has a type only where another type refers to it
+			continue
+		}
 		if !ok || t == nil {
 			return nil, ErrSchemaUnavailable
 		}
@@ -231,7 +236,7 @@ func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSch
 		collect(shape)
 	}
 	for _, rd := range p.Grammar.Rules() {
-		if !selected[rd.Name] {
+		if !selected[rd.Name] || noType[rd.Name] {
 			continue
 		}
 		origin := "inferred"

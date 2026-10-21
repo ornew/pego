@@ -24,8 +24,11 @@ import (
 // index in the string table. The version 2 string table starts with the module's string table,
 // followed by the AST strings and others. Recognition bundles have independent string tables. AST expressions and value expressions are written as
 // one byte for the kind followed by their elements in preorder. Rule definitions store the
-// results of static analysis (memoization, left-recursion leaders, position dependence). Loading
-// skips parsing, static analysis, type checking, and compilation to bytecode.
+// results of static analysis (memoization, left-recursion leaders, position dependence, value-free
+// twins) follow the declarations as a list with one entry per rule of the program. The declarations
+// are those of the grammar as written: an inline action stays in its rule, and the hidden rule it
+// runs as is made again when the file is loaded, in the same position in the list. Loading skips
+// parsing, static analysis, type checking, and compilation to bytecode.
 
 const (
 	compiledMagic   = "PEGOC\x00"
@@ -273,6 +276,7 @@ func (w *encoder) statements(prog *Program) {
 			w.optType(st.Type)
 			w.expr(st.Expr)
 			w.optTerm(st.Action)
+			w.bool(st.DefaultAction)
 		}
 	}
 	// The flags are those of the rules of the program, which include the hidden rules that inline
@@ -811,6 +815,7 @@ func (r *decoder) statements(pkg string) (*grammar.Grammar, []ruleFlags) {
 			}
 			rd.Expr = r.expr()
 			rd.Action = r.optTerm()
+			rd.DefaultAction = r.bool()
 			g.File.Decls = append(g.File.Decls, rd)
 		default:
 			r.fail("invalid statement kind %d", k)

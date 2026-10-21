@@ -45,9 +45,9 @@ a line break inside a braced action block is local to the block.
 ## Inline Value Actions
 
 An inline Value Action has the form `(expression => action)`. It behaves exactly
-as a reference to an anonymous rule whose body is `expression` and whose
+as a call of a hidden rule whose body is `expression` and whose
 whole-rule Value Action is `action`, written at that position:
-`(e => A)` in a rule `r` means the same as a call to a rule `r_inline_n = e => A`,
+`(e => A)` in a rule `r` means the same as a call of the hidden rule `_r_n = e => A`,
 and with `rule a = _ => A` and `rule b = a => B`, the rule `b` is the same as
 `rule b = (_ => A) => B`. Every property below follows from that.
 
@@ -66,16 +66,20 @@ and with `rule a = _ => A` and `rule b = a => B`, the rule `b` is the same as
   the action does not run and the failure, the expectations and the error
   position are those of the failing rule. The inline boundary is a rule call: a cut inside the
   parentheses commits only within them, a recovery inside them is that of the
-  anonymous rule, left recursion through them is left recursion through a rule,
+  hidden rule, left recursion through them is left recursion through a rule,
   and the call counts against the maximum call depth. An action
   error is fatal to the parse: it does not retry another alternative or enter recovery.
-- **Source positions.** The anonymous rule's node spans the text that `expression` matched.
+- **Source positions.** The node of the hidden rule spans the text that `expression` matched.
 - **Unused values.** An inline action in a lookahead (`&`, `!`) or a discard (`-`),
   which make no value, is a compile-time error.
-- **Name.** The anonymous rule is named `r_inline_n` for the nth inline action of the rule
-  `r` in source order, inner actions first, with a trailing underscore added when the name is
-  taken. The name appears where a rule's name does: in the `rule` of a node, in
-  action errors, in trace events and in the output schema.
+- **Name.** The hidden rule is named `_r_n` for the nth inline action of the rule
+  `r` in source order, inner actions first, with a trailing underscore added while
+  a declared rule has that name. A reference to a rule resolves against the rules
+  declared in the grammar as written, so a generated name satisfies no reference. Trace
+  events, profiles and source information show the name of the hidden rule; a compile-time
+  error and the text of a failed action describe the rule as
+  `the inline action in rule r` (a failed action also names its number, as in
+  `r (inline action 2)`).
 
 ```pego
 type Add = { Left Expr; Right node[string] }
@@ -83,6 +87,34 @@ type Num = { Text node[string] }
 type Expr ~ Add | Num
 rule expr Expr = (l:expr "+" r:[0-9]+ #atomic => Add{Left: $l, Right: $r}) / (t:[0-9]+ #atomic => Num{Text: $t})
 ```
+
+## Hidden Rules
+
+A rule whose name begins with `_` is hidden. A hidden rule is a rule at run time:
+it is memoized, may recur (also on the left), counts against the maximum call
+depth, and a cut or a recovery inside it is scoped to the rule. It differs from
+other rules in three ways.
+
+- **Not an entry point.** A hidden rule MUST NOT be the start rule of a grammar, a
+  compiled grammar, a schema or a generated parser, and cannot be parsed by name
+  (`ParseRule`, `Parse(name, ...)`, `WithStart`); each of these is an error that
+  says the rule is hidden. The rules a parser lists do not include hidden rules.
+- **No node of its own.** A hidden rule without an action, not even `=> ...`,
+  makes no node. A call of it contributes what its expression contributes written
+  in its place as a group (see [Nodes](nodes.md#node-model)): the elements of a sequence
+  in its body are elements of the sequence that calls it. The captures made inside it
+  end with the rule and are not visible to the caller. A hidden rule with a Value
+  Action yields the value of the action, as any rule does. A hidden rule without an
+  action MUST NOT declare a result type, and a hidden rule whose expression is an
+  Operators Rule makes its own node.
+- **No type of its own.** A hidden rule without an action adds no type to the output
+  schema, the AST or the typed value, except where a recursive call of it is an
+  element of its own (a call in a choice, an option, a repetition or a capture),
+  which has the type of the group.
+
+A hidden rule without an action that contains a call of itself in its sequence of
+elements, directly or through other such rules (`rule _a = "x" _a`), has no fixed number
+of elements and is a compile-time error.
 
 ## Capture References
 

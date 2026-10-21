@@ -263,7 +263,9 @@ Source `#` pragmas use dedicated expression nodes: `#repeat` is `Repeat`,
 Their payloads follow each pragma's own syntax. Compilation lowers recovery
 and streaming into its executable representation without changing the source
 AST. An `InlineAction` node is formatted and serialized as written; compilation
-lowers it to an anonymous rule at its position.
+lowers it to a hidden rule called at its position. The grammar of a parser
+(`Parser.Grammar`), the formatter and the compiled form keep the inline action
+as written.
 
 After loading, use `pego.Compile(g, "main")` to perform semantic checking.
 Compile and the generators also run structural validation themselves, including

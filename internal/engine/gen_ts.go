@@ -80,6 +80,12 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	if start == nil {
 		return nil, fmt.Errorf("start rule %s is not defined", opts.Start)
 	}
+	for _, r := range prog.rules {
+		if r.splice {
+			// The TypeScript runtime does not splice the elements of a rule yet.
+			return nil, fmt.Errorf("TypeScript generation does not support rule %s, a hidden rule without an action, yet", r.whereName())
+		}
+	}
 	gen := &tsGen{generator: &generator{prog: prog, table: "rules", observability: opts.Observability, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing || !opts.enableTSLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch}, plainUsed: map[*rule]bool{}}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
@@ -553,7 +559,7 @@ func (g *tsGen) rules() {
 	// Each rule is a constant, which the generated code refers to.
 	var vars []string
 	for _, r := range all {
-		value := tsShaper(r.bodyExpr())
+		value := tsShaper(g.prog, r.bodyExpr())
 		if _, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 			value = 0 // the lines build the rule's value
 		}
@@ -726,9 +732,9 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 		}
 		for i, it := range e.Items {
 			switch {
-			case build && isElems(it):
+			case build && isElems(g.prog, it):
 				fmt.Fprintf(&b, "  const v%d = %s;\n  if (v%d === undefined) {\n    return undefined;\n  }\n  for (const k of (v%d as Node).children) {\n    kids.push(k);\n  }\n", i, items[i], i, i)
-			case build && valuedCount(it) == 1:
+			case build && valuedCount(g.prog, it) == 1:
 				fmt.Fprintf(&b, "  const v%d = %s;\n  if (v%d === undefined) {\n    return undefined;\n  }\n  kids.push(v%d);\n", i, items[i], i, i)
 			default:
 				fmt.Fprintf(&b, "  if (%s === undefined) {\n    return undefined;\n  }\n", items[i])
@@ -840,12 +846,12 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 
 // tsShaper returns the runtime shaper of the expression e, its static shape (value_shape.go), packed
 // as the runtime's Shaper.
-func tsShaper(e grammar.Expr) int {
-	s := int(singleModeOf(e))<<2 | valuedCount(e)<<4
-	if isElems(e) {
+func tsShaper(prog *Program, e grammar.Expr) int {
+	s := int(singleModeOf(prog, e))<<2 | valuedCount(prog, e)<<4
+	if isElems(prog, e) {
 		s |= 1
 	}
-	if scopeTuple(e) {
+	if scopeTuple(prog, e) {
 		s |= 2
 	}
 	return s
@@ -855,14 +861,14 @@ func tsShaper(e grammar.Expr) int {
 // the operand of ?), from the building call m of e, as generator.singleMethod does; with capture,
 // that of a capture or a recovered expression.
 func (g *tsGen) singleMethod(e grammar.Expr, m string, capture bool) string {
-	if singleModeOf(e) == singlePass && !isElems(e) {
+	if singleModeOf(g.prog, e) == singlePass && !isElems(g.prog, e) {
 		return m
 	}
 	shape := "shapeSingle"
 	if capture {
 		shape = "shapeCapture"
 	}
-	return g.method(describe(e), fmt.Sprintf("  const start = p.pos;\n  const v = %s;\n  if (v === undefined) {\n    return undefined;\n  }\n  return p.%s(%d, v, start);\n", m, shape, tsShaper(e))) + "(p)"
+	return g.method(describe(e), fmt.Sprintf("  const start = p.pos;\n  const v = %s;\n  if (v === undefined) {\n    return undefined;\n  }\n  return p.%s(%d, v, start);\n", m, shape, tsShaper(g.prog, e))) + "(p)"
 }
 
 func (g *tsGen) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, build bool) {
@@ -902,7 +908,7 @@ func (g *tsGen) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, build bo
 	}
 	b.WriteString("        return undefined;\n      }\n      break;\n    }\n")
 	if build {
-		fmt.Fprintf(b, "    v = p.scopeValue(%d, v, m0pos);\n", tsShaper(e.Expr))
+		fmt.Fprintf(b, "    v = p.scopeValue(%d, v, m0pos);\n", tsShaper(g.prog, e.Expr))
 	}
 	if own && build {
 		fmt.Fprintf(b, "    v = p.attachCaptures(v, %s, f, m0pos, p.pos);\n", scopeVar)
@@ -1019,7 +1025,7 @@ func (g *tsGen) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator 
 		}
 		act = g.action(action, s, locals)
 	}
-	return fmt.Sprintf("{ scope: %s, m: %s, action: %s, value: %d }", tsStrings(s.names), m, act, tsShaper(e))
+	return fmt.Sprintf("{ scope: %s, m: %s, action: %s, value: %d }", tsStrings(s.names), m, act, tsShaper(g.prog, e))
 }
 
 // tsInt returns the TypeScript value of the int v: a number when it is a safe integer, otherwise a

@@ -92,7 +92,8 @@ const (
 ```
 
 - `Parse` parses the whole input with the start rule. `ParseRule` does the same with
-  the named rule; an unknown name is the error `rule <name> is not defined`. Both
+  the named rule; an unknown name is the error `rule <name> is not defined`, and the
+  name of a hidden rule is the error that the rule is hidden. Both
   require the rule to consume the whole input.
 - `Node`, `Fields`, `NodeField`, `SyntaxError` and `SyntaxErrors` are types of the
   generated package (aliases of the types of its runtime) with the members of their

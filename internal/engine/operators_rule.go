@@ -110,7 +110,7 @@ func (c *compiler) operatorsRuleLine(e grammar.Expr, action grammar.Term, locals
 	s := newScope()
 	novalue := c.rule.novalue || leanLine(action, locals)
 	l := &operatorsRuleLine{scope: s, m: c.expr(e, s, !novalue), key: key}
-	l.value, l.single, l.shape = scopeValueOf(e), singleModeOf(e), shaperOf(e)
+	l.value, l.single, l.shape = scopeValueOf(c.prog, e), singleModeOf(c.prog, e), shaperOf(c.prog, e)
 	if action != nil && !c.rule.novalue {
 		l.act = termEvaluator(action)
 		c.checkTerm(action, s, locals)
@@ -329,7 +329,7 @@ func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *Node, st
 func (p *parser) convertOperator(r *rule, v *Node) *Node {
 	n, ok := r.opKinds.convert(unboxNode(v))
 	if !ok {
-		p.fail("cannot convert %s to %s in result of rule %s", typeName(unboxNode(v)), r.opNodeType, r.name)
+		p.fail("cannot convert %s to %s in result of rule %s", typeName(unboxNode(v)), r.opNodeType, r.whereName())
 	}
 	return n
 }

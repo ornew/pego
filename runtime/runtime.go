@@ -883,6 +883,12 @@ type Rule struct {
 	Seen          int
 	OperatorsRule *OperatorsRule
 	Novalue       bool // value-free twin, called where the value is discarded
+	// Splice means the rule makes no node of its own: its value is the result of its body as it is,
+	// and the captures of its body end with it. Its callers take the elements of the value.
+	Splice bool
+	// Where, if not "", names the rule in the message of a failed action, instead of Name: the
+	// hidden rule of an inline action is named by the rule that holds the action.
+	Where string
 	// Vars are the variables the rule or its callees read, sorted. Memo entries are keyed by their
 	// values at the call, since definitions inside the rule are undone when it returns.
 	Vars []string
@@ -2621,7 +2627,7 @@ func (p *Parser) Finish(r *Rule, f *CaptureFrame, v *Node, start int) *Node {
 func (p *Parser) convertResult(r *Rule, v *Node) *Node {
 	n, ok := r.nodeKinds.convert(UnboxNode(v))
 	if !ok {
-		panic(fatal{fmt.Errorf("cannot convert %s to %s in result of rule %s", typeName(UnboxNode(v)), r.NodeType, r.Name)})
+		panic(fatal{fmt.Errorf("cannot convert %s to %s in result of rule %s", typeName(UnboxNode(v)), r.NodeType, r.where())})
 	}
 	return n
 }
@@ -2632,7 +2638,13 @@ func (p *Parser) finishValue(r *Rule, f *CaptureFrame, v *Node, start int) (*Nod
 	}
 	if r.Action != nil {
 		c := p.useCtx(ActCtx{P: p, f: f, start: start, end: p.Pos, cbase: len(p.created)})
-		return c.result(r.Action, r.Name), false
+		return c.result(r.Action, r.where()), false
+	}
+	if r.Splice {
+		if v != nil {
+			v.RawFresh = false
+		}
+		return v, false
 	}
 	v = p.ScopeValue(r.Value, v, start)
 	if len(r.Scope) > 0 {
@@ -2703,6 +2715,14 @@ const (
 	singleTuple                   // the node of the tuple of the elements
 )
 
+// where returns the text that names the rule in the message of a failed action.
+func (r *Rule) where() string {
+	if r.Where != "" {
+		return r.Where
+	}
+	return r.Name
+}
+
 // Shaper converts the result of an expression's method to the value where the expression takes
 // one element or is a scope (a rule body, a repetition element or an Operators Rule line). The
 // generator fills it from the expression's static shape, as the engine does.
@@ -2713,11 +2733,17 @@ type Shaper struct {
 	K     int        // the number of valued elements
 	Mode  singleMode // how the expression takes one element
 	Tuple bool       // the value of a scope is the node of its tuple, rather than its one element
+	// Shared means the tuple node the method returns (Elems) is the result of a splice rule, shared
+	// through its memo entry: a node that takes it as its own takes a copy.
+	Shared bool
 }
 
 // shapeTuple returns the tuple node of the result v of a match of [start, p.Pos).
 func (p *Parser) shapeTuple(s Shaper, v *Node, start int) *Node {
 	if s.Elems {
+		if s.Shared && v != nil {
+			return p.NewNode(Node{RawKind: RawKindSeq, RawStart: v.RawStart, RawEnd: v.RawEnd, RawChildren: v.RawChildren, RawFresh: true})
+		}
 		return v
 	}
 	var kids []*Node
@@ -3808,7 +3834,7 @@ func (p *Parser) lineResult(r *Rule, l *OperatorsRuleLine, f *CaptureFrame, v *N
 func (p *Parser) lineValue(r *Rule, l *OperatorsRuleLine, f *CaptureFrame, v *Node, start int) *Node {
 	if l.Action != nil {
 		c := p.useCtx(ActCtx{P: p, f: f, start: start, end: p.Pos, cbase: len(p.created)})
-		return c.result(l.Action, r.Name)
+		return c.result(l.Action, r.where())
 	}
 	v = p.ScopeValue(l.Value, v, start)
 	if len(l.Scope) > 0 {
@@ -3828,7 +3854,7 @@ func (p *Parser) lineValue(r *Rule, l *OperatorsRuleLine, f *CaptureFrame, v *No
 func (p *Parser) convertOperator(r *Rule, v *Node) *Node {
 	n, ok := r.opKinds.convert(UnboxNode(v))
 	if !ok {
-		panic(fatal{fmt.Errorf("cannot convert %s to %s in result of rule %s", typeName(UnboxNode(v)), r.OpNodeType, r.Name)})
+		panic(fatal{fmt.Errorf("cannot convert %s to %s in result of rule %s", typeName(UnboxNode(v)), r.OpNodeType, r.where())})
 	}
 	return n
 }
@@ -3860,7 +3886,7 @@ func (p *Parser) operatorsRuleBuild(r *Rule, a *operatorsRuleAttempt, lhs, rhs *
 	if l.Action != nil {
 		c := p.useCtx(ActCtx{P: p, f: a.frame, start: start, end: end, cbase: len(p.created),
 			Op: UnboxNode(opv), Lhs: UnboxNode(lhs), Rhs: UnboxNode(rhs)})
-		v := c.result(l.Action, r.Name)
+		v := c.result(l.Action, r.where())
 		if r.opKinds != nil {
 			v = p.convertOperator(r, v)
 		}

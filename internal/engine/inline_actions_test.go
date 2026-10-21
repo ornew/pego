@@ -69,6 +69,23 @@ rule _main_1 = x:[a-z]+ #atomic ";" => $x`, []string{"ab;cd;", "ab;1x;cd;", "1x;
 rule _main_1 = x:[a-z]+ #atomic ";" #recover(skip=[^;]+ ";") => $x`, []string{"ab;cd;", "ab;1x;cd;", "1x;", "ab"}},
 		{"action error", `rule main = (x:"a" => 1 / 0) "b"`, `rule main = _main_1 "b"
 rule _main_1 = x:"a" => 1 / 0`, []string{"ab", "a"}},
+		{"recover argument", `rule main = (x:[a-z]+ #atomic ";")* $$ #recover(skip=(y:[^;]+ => text($y)) ";")`, `rule main = (x:[a-z]+ #atomic ";")* $$ #recover(skip=_main_1 ";")
+rule _main_1 = y:[^;]+ => text($y)`, []string{"ab;cd;", "ab;1x;cd;", "1x;", "ab"}},
+		{"stream", `rule main = (x:[a-z]+ #atomic ";" => text($x))* #stream`, `rule main = _main_1* #stream
+rule _main_1 = x:[a-z]+ #atomic ";" => text($x)`, []string{"", "ab;", "ab;cd;", "ab"}},
+		{"operators rule operand", `type N = { T string }
+rule main = operators {
+    operand (t:[0-9]+ #atomic => N{T: text($t)})
+    level { infix left "+" }
+}`, `type N = { T string }
+rule main = operators {
+    operand _main_1
+    level { infix left "+" }
+}
+rule _main_1 = t:[0-9]+ #atomic => N{T: text($t)}`, []string{"1", "1+2", "1+2+3", "+", ""}},
+		{"nested in a whole rule", `rule main = (x:(y:"a" => text($y)) "b" => $x)`, `rule main = _main_2
+rule _main_1 = y:"a" => text($y)
+rule _main_2 = x:_main_1 "b" => $x`, []string{"ab", "a", ""}},
 		{"captures of the enclosing rule after", `rule main = a:"a" (b:"b" => $b) => $a`, `rule main = a:"a" _main_1 => $a
 rule _main_1 = b:"b" => $b`, []string{"ab", "a", "b"}},
 	}

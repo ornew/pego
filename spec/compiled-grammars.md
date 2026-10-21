@@ -26,6 +26,8 @@ recognizer is available, an independent **recognition bundle**.
 | Load | `pego.LoadParser(data)` | `-g file.pegoc` on every command that takes a grammar |
 | Recognize a compiled grammar | `pego.IsCompiled(data)` | Used to tell source, JSON and a compiled grammar apart |
 
+- The grammar AST is the grammar as written: inline actions stay in their rules and
+  are lowered to hidden rules again when the file is loaded.
 - The start rule is saved with the grammar. `pego parse`, `pego compile` and
   `pego gen` use the saved start rule when `-s` is not given, and `-s` overrides it.
 - The same parser always produces the same bytes. A parser that was loaded and

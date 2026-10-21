@@ -682,9 +682,15 @@ func (g *generator) rules() {
 			if g.document && (r.leader || r.memo) {
 				extra = "DocMemo: true, "
 			}
-			value := shaperLit(r.bodyExpr())
+			value := shaperLit(g.prog, r.bodyExpr())
 			if _, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 				value = "Shaper{}" // the lines build the rule's value
+			}
+			if r.splice {
+				extra += "Splice: true, "
+			}
+			if w := r.whereName(); w != r.name {
+				extra += fmt.Sprintf("Where: %q, ", w)
 			}
 			if r.nodeType != "" {
 				extra += fmt.Sprintf("NodeType: %q, ", r.nodeType)
@@ -1019,20 +1025,20 @@ func (g *generator) method(comment, body string) string {
 }
 
 // shaperLit returns the runtime shaper of the expression e, its static shape (value_shape.go).
-func shaperLit(e grammar.Expr) string {
-	return fmt.Sprintf("Shaper{Elems: %v, K: %d, Mode: %d, Tuple: %v}", isElems(e), valuedCount(e), singleModeOf(e), scopeTuple(e))
+func shaperLit(prog *Program, e grammar.Expr) string {
+	return fmt.Sprintf("Shaper{Elems: %v, K: %d, Mode: %d, Tuple: %v, Shared: %v}", isElems(prog, e), valuedCount(prog, e), singleModeOf(prog, e), scopeTuple(prog, e), isElems(prog, e) && sharesTuple(prog, e))
 }
 
 // singleMethod returns the method of the value of e where it takes one element (an alternative or
 // the operand of ?), from the building method m of e, as singleMatcher does; with capture, that of
 // a capture or a recovered expression, as captureMatcher does.
 func (g *generator) singleMethod(e grammar.Expr, m string, capture bool) string {
-	if singleModeOf(e) == singlePass && !isElems(e) {
+	if singleModeOf(g.prog, e) == singlePass && !isElems(g.prog, e) {
 		return m
 	}
-	shape := fmt.Sprintf("\tv, _ = p.ShapeSingle(%s, v, start)\n", shaperLit(e))
+	shape := fmt.Sprintf("\tv, _ = p.ShapeSingle(%s, v, start)\n", shaperLit(g.prog, e))
 	if capture {
-		shape = fmt.Sprintf("\tv = p.ShapeCapture(%s, v, start)\n", shaperLit(e))
+		shape = fmt.Sprintf("\tv = p.ShapeCapture(%s, v, start)\n", shaperLit(g.prog, e))
 	}
 	return g.method(describe(e), fmt.Sprintf("\tstart := p.Pos\n\tv, ok := %s(p)\n\tif !ok {\n\t\treturn nil, false\n\t}\n%s\treturn v, true\n", m, shape))
 }
@@ -1139,13 +1145,13 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 		}
 		// The value is the tuple node of the elements, flattened through nested sequences.
 		if build {
-			fmt.Fprintf(&b, "\tstart := p.Pos\n\tkids := p.%s(%d)[:0]\n", g.pick("Nodes", "NewVals"), valuedCount(e))
+			fmt.Fprintf(&b, "\tstart := p.Pos\n\tkids := p.%s(%d)[:0]\n", g.pick("Nodes", "NewVals"), valuedCount(g.prog, e))
 		}
 		for i, it := range e.Items {
 			switch {
-			case build && isElems(it):
+			case build && isElems(g.prog, it):
 				fmt.Fprintf(&b, "\tif v, ok := %s(p); !ok {\n\t\treturn nil, false\n\t} else {\n\t\tkids = append(kids, %s...)\n\t}\n", items[i], g.pick("v.RawChildren", "AsTval(v).TKids()"))
-			case build && valuedCount(it) == 1:
+			case build && valuedCount(g.prog, it) == 1:
 				fmt.Fprintf(&b, "\tif v, ok := %s(p); !ok {\n\t\treturn nil, false\n\t} else {\n\t\tkids = append(kids, v)\n\t}\n", items[i])
 			default:
 				fmt.Fprintf(&b, "\tif _, ok := %s(p); !ok {\n\t\treturn nil, false\n\t}\n", items[i])
@@ -1333,7 +1339,7 @@ func (g *generator) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, buil
 	}
 	b.WriteString("\t\t\t\treturn nil, false\n\t\t\t}\n\t\t\tbreak\n\t\t}\n")
 	if build {
-		fmt.Fprintf(b, "\t\tv = p.ScopeValue(%s, v, m0.Pos)\n", shaperLit(e.Expr))
+		fmt.Fprintf(b, "\t\tv = p.ScopeValue(%s, v, m0.Pos)\n", shaperLit(g.prog, e.Expr))
 	}
 	if own && build {
 		fmt.Fprintf(b, "\t\tv = p.AttachCaptures(v, %s, %s, m0.Pos, p.Pos)\n", scopeVar, g.pick("f", "f.Vals"))
@@ -1572,7 +1578,7 @@ func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, opera
 		act = fmt.Sprintf("func(c *%s) any { return %s }", g.ctxType(), g.term(action, s, locals))
 		g.final = nil
 	}
-	return fmt.Sprintf("&%s{Scope: %s, M: %s, Action: %s, Value: %s}", g.pick("OperatorsRuleLine", "TOperatorsRuleLine"), goStrings(s.names), m, act, shaperLit(e))
+	return fmt.Sprintf("&%s{Scope: %s, M: %s, Action: %s, Value: %s}", g.pick("OperatorsRuleLine", "TOperatorsRuleLine"), goStrings(s.names), m, act, shaperLit(g.prog, e))
 }
 
 // term converts a value expression into a Go expression of type any. locals maps names, such as lambda

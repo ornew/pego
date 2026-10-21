@@ -120,6 +120,8 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 		return fmt.Sprintf("-> %d", a)
 	case OpSeq:
 		return fmt.Sprintf("n=%d", a)
+	case OpSpread:
+		return fmt.Sprintf("n=%d tuple=%d", a, bb)
 	case OpCapture:
 		if bb == 1 {
 			return fmt.Sprintf("slot=%d pop", a)

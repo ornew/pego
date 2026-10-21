@@ -610,6 +610,19 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			start := *p.vals[top-n-1].(*int)
 			p.vals = p.vals[:top-n-1]
 			p.push(p.newNode(Node{kind: kindSeq, start: int32(start), end: int32(p.pos), children: kids, fresh: true}))
+		case OpSpread:
+			v := p.pop()
+			switch {
+			case in.B == 1:
+				if n := asNodeValue(v); n != nil {
+					for _, k := range n.children {
+						p.stepWork()
+						p.push(k)
+					}
+				}
+			case in.A == 1:
+				p.push(v)
+			}
 		case OpAtomic:
 			start := *p.pop().(*int)
 			if in.A == 1 {

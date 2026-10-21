@@ -788,6 +788,13 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 		return v
 	}
 	v = r.value(p, v, start)
+	if r.splice {
+		// No node of its own, and its captures end here: the caller takes the elements.
+		if v != nil {
+			v.fresh = false
+		}
+		return v
+	}
 	if len(r.scope.names) > 0 {
 		v = p.attachCaptures(v, r.scope, f, start, p.pos)
 	}
@@ -811,7 +818,7 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 func (p *parser) convertResult(r *rule, v *Node) *Node {
 	n, ok := r.nodeKinds.convert(unboxNode(v))
 	if !ok {
-		p.fail("cannot convert %s to %s in result of rule %s", typeName(unboxNode(v)), r.nodeType, r.name)
+		p.fail("cannot convert %s to %s in result of rule %s", typeName(unboxNode(v)), r.nodeType, r.whereName())
 	}
 	return n
 }

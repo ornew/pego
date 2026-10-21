@@ -207,6 +207,9 @@ type valueInference struct {
 	errs, final ErrorList
 	quiet       bool // while a lambda body is typed again with a wider parameter type
 	rule        *grammar.RuleDef
+	// spliced holds the splice rules whose bodies are being expanded; a call inside them is an
+	// element of its own (rule.splice).
+	spliced map[string]bool
 	// nodeMembers, if not nil, receives the member accesses that read only node members.
 	nodeMembers map[*grammar.Member]bool
 }
@@ -259,7 +262,71 @@ func valueTypesChecked(p *Program, control *compileControl, nodeMembers map[*gra
 		control.poll()
 		v.ruleValue(rd.Name)
 	}
-	return v.out, v.final
+	return pruneSpliceTypes(p, rules, v.out), v.final
+}
+
+// pruneSpliceTypes returns the value types of the rules that have a type of their own: a splice
+// rule makes no node, so it has a type only where a recursive call of it is an element of its own,
+// and then only because another type refers to it.
+func pruneSpliceTypes(p *Program, rules []*grammar.RuleDef, out map[string]ty) map[string]ty {
+	var queue []string
+	kept := map[string]bool{}
+	for _, rd := range rules {
+		if _, splice := p.spliceBody(rd.Name); !splice {
+			kept[rd.Name] = true
+			queue = append(queue, rd.Name)
+		}
+	}
+	if len(kept) == len(rules) {
+		return out
+	}
+	for len(queue) > 0 {
+		name := queue[0]
+		queue = queue[1:]
+		t, ok := out[name]
+		if !ok {
+			continue
+		}
+		text := t.String()
+		for _, rd := range rules {
+			if kept[rd.Name] {
+				continue
+			}
+			if i := strings.Index(text, rd.Name); i >= 0 && namesRule(text, rd.Name) {
+				kept[rd.Name] = true
+				queue = append(queue, rd.Name)
+			}
+		}
+	}
+	pruned := make(map[string]ty, len(kept))
+	for name, t := range out {
+		if kept[name] {
+			pruned[name] = t
+		}
+	}
+	return pruned
+}
+
+// namesRule reports whether text, the text of a type, refers to the rule name as a whole word.
+func namesRule(text, name string) bool {
+	for i := 0; ; {
+		j := strings.Index(text[i:], name)
+		if j < 0 {
+			return false
+		}
+		j += i
+		end := j + len(name)
+		before := j == 0 || !isWordByte(text[j-1])
+		after := end == len(text) || !isWordByte(text[end])
+		if before && after {
+			return true
+		}
+		i = j + 1
+	}
+}
+
+func isWordByte(c byte) bool {
+	return c == '_' || c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'
 }
 
 // ruleCycles returns the strongly connected components of the references between rules that
@@ -390,12 +457,42 @@ func (v *valueInference) ruleValue(name string) ty {
 	return v.out[name]
 }
 
+// spliceElems returns the elements a call of the splice rule name contributes: those of its body,
+// without the captures, which end with the rule.
+func (v *valueInference) spliceElems(name string, body grammar.Expr) []valueElem {
+	if v.spliced == nil {
+		v.spliced = map[string]bool{}
+	}
+	v.spliced[name] = true
+	defer delete(v.spliced, name)
+	var out []valueElem
+	for _, el := range v.elems(body) {
+		if el.t != nil {
+			out = append(out, valueElem{t: el.t})
+		}
+	}
+	return out
+}
+
 func (v *valueInference) ruleDef(rd *grammar.RuleDef) ty {
 	if pr, ok := rd.Expr.(*grammar.OperatorsRule); ok {
 		return v.operatorsRule(rd, pr)
 	}
 	env := &valueEnv{caps: tupleNode(v.elems(rd.Expr)).caps}
 	v.predicates(rd.Expr, env)
+	if _, ok := v.prog.spliceBody(rd.Name); ok {
+		// The value of a rule that makes no node of its own is its one element, as a call takes it.
+		if v.spliced == nil {
+			v.spliced = map[string]bool{}
+		}
+		v.spliced[rd.Name] = true
+		defer delete(v.spliced, rd.Name)
+		el, ok := v.single(rd.Expr)
+		if !ok {
+			return nodeTy{value: tupleTy{elems: []ty{}}}
+		}
+		return el.t
+	}
 	if rd.Action == nil {
 		return v.declared(rd, v.scopeValue(rd.Expr))
 	}
@@ -478,7 +575,7 @@ func (v *valueInference) predicates(e grammar.Expr, env *valueEnv) {
 // tuple; otherwise its one element is its value, and a scope without elements is node[()].
 func (v *valueInference) scopeValue(e grammar.Expr) ty {
 	elems := v.elems(e)
-	_, seq := ungroupExpr(e).(*grammar.Seq)
+	seq := isSeq(v.prog, e)
 	if !seq && len(elems) == 1 && len(elems[0].caps) == 0 {
 		return elems[0].t
 	}
@@ -516,11 +613,10 @@ func tupleNode(elems []valueElem) nodeTy {
 // the result then holds the captures kept beside the tuple in e. The captures of the result may be
 // changed without changing its type.
 func (v *valueInference) single(e grammar.Expr) (valueElem, bool) {
-	return oneElem(v.elems(e), ungroupExpr(e))
+	return oneElem(v.elems(e), isSeq(v.prog, e))
 }
 
-func oneElem(elems []valueElem, e grammar.Expr) (valueElem, bool) {
-	_, seq := e.(*grammar.Seq)
+func oneElem(elems []valueElem, seq bool) (valueElem, bool) {
 	var vals []valueElem
 	var side []capIndex
 	for _, el := range elems {
@@ -557,6 +653,9 @@ func (v *valueInference) elems(e grammar.Expr) []valueElem {
 	case *grammar.Literal, *grammar.CharClass, *grammar.Any, *grammar.Atomic:
 		return []valueElem{{t: tyStringNode}}
 	case *grammar.Ref:
+		if body, ok := v.prog.spliceBody(e.Name); ok && !v.spliced[e.Name] {
+			return v.spliceElems(e.Name, body)
+		}
 		return []valueElem{{t: ruleTy{e.Name}}}
 	case *grammar.Choice:
 		var ts []ty
@@ -628,7 +727,7 @@ func (v *valueInference) elems(e grammar.Expr) []valueElem {
 			}
 			// What recovers is one element: its value or an error, which #missing makes a missing
 			// token.
-			el, ok := oneElem(elems, ungroupExpr(e.Expr))
+			el, ok := oneElem(elems, isSeq(v.prog, e.Expr))
 			switch {
 			case neverMatches(e.Expr):
 				el = valueElem{t: tyBottom} // only the error

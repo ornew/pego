@@ -514,7 +514,7 @@ additional constraints are checked outside this source grammar.
 - **Action blocks.** Multiple-statement Predicate Actions and every braced
   Value Action are retained in the source AST but compilation rejects them.
 - **Inline actions.** `(expression => action)` is recognized in the source
-  grammar and represented in the AST. Compilation executes it as an anonymous
+  grammar and represented in the AST. Compilation executes it as a hidden
   rule at its position (see [Actions](actions.md#inline-value-actions)); an
   inline braced Value Action is rejected.
 - **Attribute placement.** Attributes are postfix Rule Expression annotations;

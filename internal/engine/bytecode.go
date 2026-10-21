@@ -239,6 +239,9 @@ const (
 	OpRepeatWide
 	// SCANW c, min, max: SCAN with bounds stored in EINT instructions of Exprs.
 	OpScanWide
+	// SPREAD n, t: pop the value a splice rule returned and push its n elements: the children of the
+	// tuple node it returned if t is 1, else its one element (n is 1) or none (n is 0).
+	OpSpread
 )
 
 // Expression instructions
@@ -326,7 +329,7 @@ var builtinNames = []string{"len", "text", "foldl", "foldr", "map", "list", "con
 var opNames = map[Op]string{
 	OpStr: "STR", OpClass: "CLASS", OpAny: "ANY", OpTop: "TOP", OpFail: "FAIL", OpAssert: "ASSERT",
 	OpJump: "JUMP", OpChoice: "CHOICE", OpCommit: "COMMIT", OpCut: "CUT", OpPushPos: "PUSHPOS",
-	OpPushNil: "PUSHNIL", OpSeq: "SEQ", OpAtomic: "ATOMIC", OpCapture: "CAPTURE", OpRepeat: "REPEAT",
+	OpPushNil: "PUSHNIL", OpSeq: "SEQ", OpSpread: "SPREAD", OpAtomic: "ATOMIC", OpCapture: "CAPTURE", OpRepeat: "REPEAT",
 	OpIter: "ITER", OpNext: "NEXT", OpEndRepeat: "ENDREPEAT", OpLook: "LOOK", OpEndLook: "ENDLOOK",
 	OpCall: "CALL", OpOperatorsRule: "OPERATORS_RULE", OpPred: "PRED", OpBind: "BIND", OpLabel: "LABEL",
 	OpEndLabel: "ENDLABEL", OpRecover: "RECOVER", OpEndRecover: "ENDRECOVER", OpEndSkip: "ENDSKIP",

@@ -336,6 +336,7 @@ func validateModule(m *Module) error {
 		if err == nil && r.NodeType >= 0 && !nodeType(m.Strings[r.NodeType]) {
 			fail("type %q is not a named node type", m.Strings[r.NodeType])
 		}
+		opt("string", r.Where, len(m.Strings))
 		opt("operatorsRule", r.OperatorsRule, len(m.OperatorsRules))
 		for _, v := range r.Vars {
 			declared(v)
@@ -421,6 +422,9 @@ func validateModule(m *Module) error {
 			nonneg(x.C)
 		case OpSeq:
 			nonneg(x.A)
+		case OpSpread:
+			nonneg(x.A)
+			flag(x.B, 1)
 		case OpCapture:
 			nonneg(x.A)
 			flag(x.B, 1)

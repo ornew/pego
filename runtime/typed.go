@@ -1370,7 +1370,7 @@ func (p *TParser) tconvert(nt uint16, v any) (any, bool) {
 func (p *TParser) TConvertResult(r *TRule, v any) any {
 	n, ok := p.tconvert(r.Nt, v)
 	if !ok {
-		panic(fatal{fmt.Errorf("cannot convert %s to %s in result of rule %s", ttypeName(v), r.NodeType, r.Name)})
+		panic(fatal{fmt.Errorf("cannot convert %s to %s in result of rule %s", ttypeName(v), r.NodeType, r.where())})
 	}
 	return n
 }
@@ -1404,7 +1404,13 @@ func (p *TParser) finishValue(r *TRule, f *TCaptureFrame, v any, start int) any 
 	}
 	if r.Action != nil {
 		c := p.UseCtx(TActCtx{P: p, F: f, Start: start, End: p.Pos, Cbase: len(p.Created)})
-		return c.Result(r.Action, r.Name)
+		return c.Result(r.Action, r.where())
+	}
+	if r.Splice {
+		if n := AsTval(v); n != nil {
+			n.TSetFresh(false)
+		}
+		return v
 	}
 	v = p.ScopeValue(r.Value, v, start)
 	if len(r.Scope) > 0 {
@@ -1459,6 +1465,9 @@ func (p *TParser) AttachCaptures(v any, names []string, vals []any, start, end i
 // shapeTuple returns the tuple node of the result v of a match of [start, p.Pos).
 func (p *TParser) shapeTuple(s Shaper, v any, start int) any {
 	if s.Elems {
+		if n, _ := v.(*TSeq); s.Shared && n != nil {
+			return p.NewNode("tuple", n.Start, n.End, n.Kids)
+		}
 		return v
 	}
 	var kids []any
@@ -2355,7 +2364,7 @@ func (p *TParser) lineResult(r *TRule, l *TOperatorsRuleLine, f *TCaptureFrame, 
 func (p *TParser) lineValue(r *TRule, l *TOperatorsRuleLine, f *TCaptureFrame, v any, start int) any {
 	if l.Action != nil {
 		c := p.UseCtx(TActCtx{P: p, F: f, Start: start, End: p.Pos, Cbase: len(p.Created)})
-		return c.Result(l.Action, r.Name)
+		return c.Result(l.Action, r.where())
 	}
 	v = p.ScopeValue(l.Value, v, start)
 	if len(l.Scope) > 0 {
@@ -2395,7 +2404,7 @@ func (p *TParser) operatorsRuleBuild(r *TRule, a *toperatorsRuleAttempt, lhs, rh
 	if l.Action != nil {
 		c := p.UseCtx(TActCtx{P: p, F: a.frame, Start: start, End: end, Cbase: len(p.Created),
 			Op: opv, Lhs: lhs, Rhs: rhs})
-		v := c.Result(l.Action, r.Name)
+		v := c.Result(l.Action, r.where())
 		if r.OpNt != 0 {
 			v = p.convertOperator(r, v)
 		}
@@ -2431,7 +2440,7 @@ func (p *TParser) operatorsRuleBuild(r *TRule, a *toperatorsRuleAttempt, lhs, rh
 func (p *TParser) convertOperator(r *TRule, v any) any {
 	n, ok := p.tconvert(r.OpNt, v)
 	if !ok {
-		panic(fatal{fmt.Errorf("cannot convert %s to %s in result of rule %s", ttypeName(v), r.OpNodeType, r.Name)})
+		panic(fatal{fmt.Errorf("cannot convert %s to %s in result of rule %s", ttypeName(v), r.OpNodeType, r.where())})
 	}
 	return n
 }
