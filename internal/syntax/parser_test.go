@@ -16,7 +16,7 @@ func TestParseExpr(t *testing.T) {
 		{`a b c`, `a b c`},
 		{`a / b c / d`, `a / b c / d`},
 		{`(a / b) c`, `(a / b) c`},
-		{`a* b+ c? d #repeat(2) e #repeat(2,) f #repeat(2, 3) g #repeat(0, 3)`, `a* b+ c? d #repeat(2) e #repeat(2,) f #repeat(2, 3) g #repeat(0, 3)`},
+		{`a* b+ c? d #repeat(2) e #repeat(2,) f #repeat(2, 3) g #repeat(0, 3)`, `a* b+ c? d #repeat(2) e #repeat(2,) f #repeat(2, 3) g #repeat(,3)`},
 		{`&a !b c #atomic -d`, `&a !b c #atomic -d`},
 		{`x:a y:(b c)* z:d #atomic`, `x:a y:(b c)* z:d #atomic`},
 		{`!"if" [a-z]+`, `!"if" [a-z]+`},

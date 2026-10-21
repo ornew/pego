@@ -991,16 +991,16 @@ rule type_map Type = n:MAP #atomic ws "(" ws ts:type_list ws ")" ds:array_dims_o
 // INTERVAL(3) and INTERVAL DAY TO HOUR
 rule type_interval Type = n:(INTERVAL (ws "(" ws iconst ws ")" / ws interval_unit)?) #atomic ds:array_dims? => Type{Name: text($n), Dims: concat($ds)}
 rule type_datetime Type = (
-    n:(TIMESTAMP / TIME) #atomic ps:(-ws -"(" -ws n:iconst -ws -")") #repeat(0, 1) (ws z:time_zone_spec)? ds:array_dims?
+    n:(TIMESTAMP / TIME) #atomic ps:(-ws -"(" -ws n:iconst -ws -")") #repeat(,1) (ws z:time_zone_spec)? ds:array_dims?
 ) => Type{Name: text($n), Mods: map($ps, (x) => x.$n), Zone: text($z), Dims: concat($ds)}
 rule time_zone_spec node[string] = ((WITH / WITHOUT) ws TIME ws ZONE) #atomic
-rule type_char Type = n:char_name ps:(-ws -"(" -ws n:iconst -ws -")") #repeat(0, 1) ds:array_dims? => Type{Name: text($n), Mods: map($ps, (x) => x.$n), Dims: concat($ds)}
+rule type_char Type = n:char_name ps:(-ws -"(" -ws n:iconst -ws -")") #repeat(,1) ds:array_dims? => Type{Name: text($n), Mods: map($ps, (x) => x.$n), Dims: concat($ds)}
 rule char_name node[string] = (NATIONAL ws (CHARACTER / CHAR) (ws VARYING)? / NCHAR (ws VARYING)? / CHARACTER (ws VARYING)? / CHAR (ws VARYING)? / VARCHAR) #atomic
 rule type_bit Type = n:(BIT (ws VARYING)?) #atomic (ws "(" ws xs:expr_list_opt_comma ws ")")? ds:array_dims? => Type{Name: text($n), Mods: concat($xs), Dims: concat($ds)}
 rule type_numeric Type = type_double / type_numeric_mods / type_numeric_plain
 rule type_double Type = n:(DOUBLE ws PRECISION) #atomic ds:array_dims? => Type{Name: text($n), Dims: concat($ds)}
 rule type_numeric_mods Type = type_float / type_decimal
-rule type_float Type = n:FLOAT #atomic ps:(-ws -"(" -ws p:iconst -ws -")") #repeat(0, 1) ds:array_dims? => Type{Name: text($n), Mods: map($ps, (x) => x.$p), Dims: concat($ds)}
+rule type_float Type = n:FLOAT #atomic ps:(-ws -"(" -ws p:iconst -ws -")") #repeat(,1) ds:array_dims? => Type{Name: text($n), Mods: map($ps, (x) => x.$p), Dims: concat($ds)}
 rule type_decimal Type = n:(DECIMAL / DEC / NUMERIC) #atomic (ws ms:type_mods)? ds:array_dims? => Type{Name: text($n), Mods: concat($ms), Dims: concat($ds)}
 rule type_numeric_plain Type = n:(INTEGER / INT / SMALLINT / BIGINT / REAL / BOOLEAN) #atomic ds:array_dims? => Type{Name: text($n), Dims: concat($ds)}
 rule type_qualified Type = n:(ident_only (ws "." ws ident_only)+) #atomic ds:array_dims? => Type{Name: text($n), Dims: concat($ds)}
@@ -1015,12 +1015,12 @@ rule const_type Type = type_numeric_const / type_char_const / type_bit_const / t
 rule type_numeric_const Type = type_double_const / type_numeric_mods_const / type_numeric_plain_const
 rule type_double_const Type = n:(DOUBLE ws PRECISION) #atomic => Type{Name: text($n)}
 rule type_numeric_mods_const Type = type_float_const / type_decimal_const
-rule type_float_const Type = n:FLOAT #atomic ps:(-ws -"(" -ws p:iconst -ws -")") #repeat(0, 1) => Type{Name: text($n), Mods: map($ps, (x) => x.$p)}
+rule type_float_const Type = n:FLOAT #atomic ps:(-ws -"(" -ws p:iconst -ws -")") #repeat(,1) => Type{Name: text($n), Mods: map($ps, (x) => x.$p)}
 rule type_decimal_const Type = n:(DECIMAL / DEC / NUMERIC) #atomic (ws ms:type_mods)? => Type{Name: text($n), Mods: concat($ms)}
 rule type_numeric_plain_const Type = n:(INTEGER / INT / SMALLINT / BIGINT / REAL / BOOLEAN) #atomic => Type{Name: text($n)}
-rule type_char_const Type = n:char_name ps:(-ws -"(" -ws n:iconst -ws -")") #repeat(0, 1) => Type{Name: text($n), Mods: map($ps, (x) => x.$n)}
+rule type_char_const Type = n:char_name ps:(-ws -"(" -ws n:iconst -ws -")") #repeat(,1) => Type{Name: text($n), Mods: map($ps, (x) => x.$n)}
 rule type_bit_const Type = n:(BIT (ws VARYING)?) #atomic (ws "(" ws xs:expr_list_opt_comma ws ")")? => Type{Name: text($n), Mods: concat($xs)}
-rule type_datetime_const Type = n:(TIMESTAMP / TIME) #atomic ps:(-ws -"(" -ws n:iconst -ws -")") #repeat(0, 1) (ws z:time_zone_spec)? => Type{Name: text($n), Mods: map($ps, (x) => x.$n), Zone: text($z)}
+rule type_datetime_const Type = n:(TIMESTAMP / TIME) #atomic ps:(-ws -"(" -ws n:iconst -ws -")") #repeat(,1) (ws z:time_zone_spec)? => Type{Name: text($n), Mods: map($ps, (x) => x.$n), Zone: text($z)}
 // ===================================================================================================
 // SELECT (select.y)
 // ===================================================================================================
@@ -1675,7 +1675,7 @@ rule copy_database CopyDatabaseStmt = COPY ws FROM ws DATABASE ws f:col_id ws TO
 rule copy_database_flag node[string] = ("(" ws (SCHEMA / DATA) ws ")") #atomic
 // Sconst | IDENT '.' ColId | IDENT | '(' a_expr ')' | param_expr
 rule copy_file Expr = sconst / copy_ident_file / paren_expr / param
-rule copy_ident_file ColumnRef = a:ident_only bs:(-ws -"." -ws c:col_id) #repeat(0, 1) => ColumnRef{Parts: concat(list($a), map($bs, (x) => x.$c))}
+rule copy_ident_file ColumnRef = a:ident_only bs:(-ws -"." -ws c:col_id) #repeat(,1) => ColumnRef{Parts: concat(list($a), map($bs, (x) => x.$c))}
 rule generic_opt_list []GenericOption = "(" ws first:generic_opt_elem rest:(-ws -"," -ws o:generic_opt_elem)* ws ")" => concat(list($first), map($rest, (r) => r.$o))
 rule generic_opt_elem GenericOption = n:col_label (ws v:expr)? => GenericOption{Name: $n, Value: $v}
 rule copy_opt_item CopyOption = co_flag / co_string / co_force_cols / co_force_star / co_partition_cols / co_partition_star
@@ -1804,7 +1804,7 @@ rule update_extensions_stmt UpdateExtensionsStmt = (w:with_clause ws)? UPDATE ws
 rule stmt_end = ws (";" / $$)
 
 rule main Script = (
-    ws (";" ws)* first:statement #repeat(0, 1) rest:(-ws -";" -ws (-";" -ws)* s:statement)* ws (";" ws)* $$
+    ws (";" ws)* first:statement #repeat(,1) rest:(-ws -";" -ws (-";" -ws)* s:statement)* ws (";" ws)* $$
 ) => Script{Statements: concat($first, map($rest, (r) => r.$s))}
 
 rule statement Statement = (

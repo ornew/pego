@@ -412,25 +412,24 @@ type Repeat struct {
 	Max         int        `json:"max"`
 	PragmaBreak *LineBreak `json:"-"`
 
-	// Spelling records how the source wrote the pragma #repeat(...), which
-	// Format keeps, and is nil for a repetition written * or +, or built
-	// by code. It has no other effect.
+	// Spelling holds the comments between the tokens of the pragma
+	// #repeat(...). It is nil for a repetition written * or +, or built by
+	// code. Format writes the bounds in the canonical spelling and the comments
+	// in it; they are layout only.
 	Spelling *RepeatSpelling `json:"-"`
 }
 
-// RepeatSpelling is how a #repeat pragma was written: which of its tokens were
-// there, and the comments between them. The comma of #repeat is part of its
-// syntax, not a list separator: #repeat(n) is exactly n, #repeat(n,) at least
-// n, #repeat(,m) at most m and #repeat(n, m) from n to m.
+// RepeatSpelling is the layout of a #repeat pragma: which of its tokens the
+// source had, and the comments between them. The comma of #repeat is part of
+// its syntax, not a list separator: #repeat(n) is exactly n, #repeat(n,) at
+// least n, #repeat(,m) at most m and #repeat(n, m) from n to m.
 //
 // The tokens between the parentheses are, in order, the minimum if HasMin, the
-// comma if Comma, and the maximum if HasMax. Format uses the spelling only
-// while Min and Max are the bounds that were written; for a pragma edited since
-// it prints the bounds in the canonical form.
+// comma if Comma, and the maximum if HasMax. Format does not keep them: it
+// writes the canonical spelling of Min and Max, and moves each comment to the
+// token it was before, or to the next token that the canonical spelling has.
 type RepeatSpelling struct {
 	HasMin, Comma, HasMax bool
-	// Min and Max are the bounds as written.
-	Min, Max int
 	// Gaps holds the comments between the tokens: Gaps[0] follows the opening
 	// parenthesis and the last gap precedes the closing one, so there is one
 	// more gap than there are tokens.

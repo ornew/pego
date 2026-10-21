@@ -1303,9 +1303,9 @@ func formatExpr(e Expr, outer int, control *metadataControl) string {
 	case *Repeat:
 		s := formatExpr(e.Expr, precSuffix, control)
 		switch {
-		case e.Spelling == nil && e.Min == 0 && e.Max < 0:
+		case !repeatHasComments(e) && e.Min == 0 && e.Max < 0:
 			s += "*"
-		case e.Spelling == nil && e.Min == 1 && e.Max < 0:
+		case !repeatHasComments(e) && e.Min == 1 && e.Max < 0:
 			s += "+"
 		default:
 			s += " " + formatRepeatPragma(e, control)
@@ -1368,54 +1368,94 @@ func formatExpr(e Expr, outer int, control *metadataControl) string {
 	return finishFormat(fmt.Sprintf("<%T>", e), control)
 }
 
-// formatRepeatPragma returns the pragma #repeat(...) that repeats e. It keeps
-// the tokens the source had between the parentheses: #repeat(2,), #repeat(,3)
-// and #repeat(2, 2) stay as written, and so do the comments between them. The
-// comma is part of the syntax, so it is never a list separator and the pragma
-// has no trailing comma. A comment that ends its line puts the tokens on lines.
+// Kinds of the tokens between the parentheses of #repeat(...), in the order in
+// which they can be written.
+const (
+	repeatMin = iota
+	repeatComma
+	repeatMax
+)
+
+// repeatTokens returns the tokens of the canonical spelling of the bounds of e:
+// #repeat(n) for exactly n, #repeat(n,) for at least n, #repeat(,m) for at most
+// m and #repeat(n, m) for the others.
+func repeatTokens(e *Repeat) (tokens []string, kinds []int) {
+	switch {
+	case e.Min == e.Max:
+		return []string{strconv.Itoa(e.Min)}, []int{repeatMin}
+	case e.Max < 0:
+		return []string{strconv.Itoa(e.Min), ","}, []int{repeatMin, repeatComma}
+	case e.Min == 0:
+		return []string{",", strconv.Itoa(e.Max)}, []int{repeatComma, repeatMax}
+	}
+	return []string{strconv.Itoa(e.Min), ",", strconv.Itoa(e.Max)}, []int{repeatMin, repeatComma, repeatMax}
+}
+
+// repeatGaps returns the comments of e.Spelling in the gaps of the canonical
+// spelling: len(kinds)+1 gaps, one before each token and one before the closing
+// parenthesis. A comment stays before the token it was before, or before the
+// next token of the canonical spelling that comes after it, or else at the end.
+func repeatGaps(e *Repeat, kinds []int, control *metadataControl) []RepeatGap {
+	gaps := make([]RepeatGap, len(kinds)+1)
+	sp := e.Spelling
+	if sp == nil {
+		return gaps
+	}
+	var written []int
+	if sp.HasMin {
+		written = append(written, repeatMin)
+	}
+	if sp.Comma {
+		written = append(written, repeatComma)
+	}
+	if sp.HasMax {
+		written = append(written, repeatMax)
+	}
+	for j, g := range sp.Gaps {
+		pollFormat(control)
+		if len(g.Comments) == 0 {
+			continue
+		}
+		to := len(kinds)
+		if j < len(written) {
+			for t, k := range kinds {
+				if k >= written[j] {
+					to = t
+					break
+				}
+			}
+		}
+		if len(gaps[to].Comments) == 0 {
+			gaps[to].PrevLine = g.PrevLine
+		}
+		gaps[to].Comments = append(gaps[to].Comments, g.Comments...)
+		gaps[to].NextLine = g.NextLine
+	}
+	return gaps
+}
+
+// repeatHasComments reports whether e has comments between the tokens of its
+// pragma.
+func repeatHasComments(e *Repeat) bool {
+	if e.Spelling != nil {
+		for _, g := range e.Spelling.Gaps {
+			if len(g.Comments) > 0 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// formatRepeatPragma returns the pragma #repeat(...) that repeats e. Its bounds
+// are written in the canonical spelling, whichever the source used, with the
+// comments between its tokens where the canonical spelling has them. The comma
+// is part of the syntax, so it is never a list separator and the pragma has no
+// trailing comma. A comment that ends its line puts the tokens on lines.
 func formatRepeatPragma(e *Repeat, control *metadataControl) string {
 	pollFormat(control)
-	var tokens []string
-	var gaps []RepeatGap
-	sp := e.Spelling
-	if sp != nil && (sp.Min != e.Min || sp.Max != e.Max) {
-		// Edited since it was read: the canonical form, with the old comments
-		// before the bounds.
-		var all []*Comment
-		for _, g := range sp.Gaps {
-			pollFormat(control)
-			all = append(all, g.Comments...)
-		}
-		sp = nil
-		gaps = []RepeatGap{{Comments: all}}
-	}
-	switch {
-	case sp != nil:
-		if sp.HasMin {
-			tokens = append(tokens, strconv.Itoa(e.Min))
-		}
-		if sp.Comma {
-			tokens = append(tokens, ",")
-		}
-		if sp.HasMax {
-			tokens = append(tokens, strconv.Itoa(e.Max))
-		}
-		gaps = sp.Gaps
-	case e.Min == e.Max:
-		tokens = []string{strconv.Itoa(e.Min)}
-	case e.Max < 0:
-		tokens = []string{strconv.Itoa(e.Min), ","}
-	default:
-		tokens = []string{strconv.Itoa(e.Min), ",", strconv.Itoa(e.Max)}
-	}
-	if len(gaps) != len(tokens)+1 {
-		var all []*Comment
-		for _, g := range gaps {
-			all = append(all, g.Comments...)
-		}
-		gaps = make([]RepeatGap, len(tokens)+1)
-		gaps[0].Comments = all
-	}
+	tokens, kinds := repeatTokens(e)
+	gaps := repeatGaps(e, kinds, control)
 	lines := false
 	for _, g := range gaps {
 		for k, c := range g.Comments {

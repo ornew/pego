@@ -447,7 +447,7 @@ rule match_stmt MatchStmt = kw_match -ws s:subject_expr -ws ":" cs:case_blocks =
 rule subject_expr Expr = subject_tuple / named_expression
 rule subject_tuple Tuple = (
     f:star_named_expression -ws "," r:(-ws x:star_named_expression -ws -",")*
-    l:(-ws y:star_named_expression) #repeat(0, 1)
+    l:(-ws y:star_named_expression) #repeat(,1)
 ) => Tuple{Elts: concat(list($f), map($r, (z) => z.$x), map($l, (z) => z.$y)), Ctx: "Load"}
 rule case_blocks = (
     -ws -eol -blank* i:indentation
@@ -470,11 +470,11 @@ rule open_sequence_pattern MatchSequence = (
     s:open_seq_items
 ) => MatchSequence{Patterns: concat(list($s.$f), map($s.$r, (x) => x.$p), map($s.$l, (x) => x.$q))}
 // A sequence pattern without brackets: at least one comma.
-rule open_seq_items = f:maybe_star_pattern -ws "," r:(-ws p:maybe_star_pattern -ws -",")* l:(-ws q:maybe_star_pattern) #repeat(0, 1)
+rule open_seq_items = f:maybe_star_pattern -ws "," r:(-ws p:maybe_star_pattern -ws -",")* l:(-ws q:maybe_star_pattern) #repeat(,1)
 rule pattern Pattern = as_pattern / or_pattern
 rule as_pattern MatchAs = p:or_pattern -ws kw_as -ws n:capture_name => MatchAs{Pattern: $p, Name: text($n)}
 rule or_pattern Pattern = (
-    f:closed_pattern t:(rs:(-ws -"|" !"=" -ws p:closed_pattern)+) #repeat(0, 1)
+    f:closed_pattern t:(rs:(-ws -"|" !"=" -ws p:closed_pattern)+) #repeat(,1)
 ) => foldl($f, $t, (acc, x) => MatchOr{Patterns: concat(list($f), map(x.$rs, (y) => y.$p))})
 rule closed_pattern Pattern = (
     literal_pattern / capture_pattern / wildcard_pattern / value_pattern
@@ -567,7 +567,7 @@ rule param_spec ParamSpec = (
 // positional ones may follow, then '*' with the keyword-only ones, and '**'. A positional parameter
 // without a default may not follow one with a default. (`$sl` has one element if there is a '/'.)
 rule params Arguments = (
-    g1nd:param_nd* g1wd:param_wd* sl:slash #repeat(0, 1) g2nd:param_nd* g2wd:param_wd* st:star_etc
+    g1nd:param_nd* g1wd:param_wd* sl:slash #repeat(,1) g2nd:param_nd* g2wd:param_wd* st:star_etc
     {len($sl) == 0 || len($g1nd) + len($g1wd) > 0} @error(message="at least one argument must precede /")
     {len($sl) > 0 || len($g2nd) + len($g2wd) == 0} {len($g1wd) == 0 || len($g2nd) == 0}
     @error(message="parameter without a default follows parameter with a default")
@@ -594,10 +594,10 @@ rule pend = -ws ("," -ws / &")")
 
 // Comma-separated expressions make a Tuple; one expression without a comma is returned as is.
 rule expressions Expr = (
-    f:expression t:(rs:(-ws -"," -ws x:expression)+ (-ws -",")? / -ws c:",") #repeat(0, 1)
+    f:expression t:(rs:(-ws -"," -ws x:expression)+ (-ws -",")? / -ws c:",") #repeat(,1)
 ) => foldl($f, $t, (acc, y) => Tuple{Elts: concat(list($f), map(y.$rs, (z) => z.$x)), Ctx: "Load"})
 rule star_expressions Expr = (
-    f:star_expression t:(rs:(-ws -"," -ws x:star_expression)+ (-ws -",")? / -ws c:",") #repeat(0, 1)
+    f:star_expression t:(rs:(-ws -"," -ws x:star_expression)+ (-ws -",")? / -ws c:",") #repeat(,1)
 ) => foldl($f, $t, (acc, y) => Tuple{Elts: concat(list($f), map(y.$rs, (z) => z.$x)), Ctx: "Load"})
 rule star_expression Expr = starred_bitor / expression
 rule star_named_expression Expr = starred_bitor / named_expression
@@ -608,7 +608,7 @@ rule plain_named_expression Expr = e:expression !(ws ":=") => $e
 rule walrus NamedExpr = n:store_name -ws ":=" -ws v:expression => NamedExpr{Target: $n, Value: $v}
 rule expression Expr = conditional / lambdef
 rule conditional Expr = (
-    d:disjunction t:(-ws kw_if -ws c:disjunction -ws kw_else -ws o:expression) #repeat(0, 1)
+    d:disjunction t:(-ws kw_if -ws c:disjunction -ws kw_else -ws o:expression) #repeat(,1)
 ) => foldl($d, $t, (acc, x) => IfExp{Test: x.$c, Body: $d, OrElse: x.$o})
 // A lambda may not be at the top level of a replacement field, where its ':' starts the format spec.
 rule lambdef Lambda = (
@@ -617,7 +617,7 @@ rule lambdef Lambda = (
 ) => Lambda{Args: $a, Body: $b}
 // The parameters of a lambda: as those of a def, without annotations, and ended by ':'.
 rule lambda_params Arguments = (
-    g1nd:lparam_nd* g1wd:lparam_wd* sl:lslash #repeat(0, 1) g2nd:lparam_nd* g2wd:lparam_wd* st:lstar_etc
+    g1nd:lparam_nd* g1wd:lparam_wd* sl:lslash #repeat(,1) g2nd:lparam_nd* g2wd:lparam_wd* st:lstar_etc
     {len($sl) == 0 || len($g1nd) + len($g1wd) > 0} @error(message="at least one argument must precede /")
     {len($sl) > 0 || len($g2nd) + len($g2wd) == 0} {len($g1wd) == 0 || len($g2nd) == 0}
     @error(message="parameter without a default follows parameter with a default")
@@ -640,10 +640,10 @@ rule yield_plain Yield = kw_yield (-ws v:star_expressions)? => Yield{Value: $v}
 // Boolean operations are flat (BoolOp with all the operands), as in Python; Op is the first
 // operator.
 rule disjunction Expr = (
-    f:conjunction t:(-ws o:or_op -ws c:conjunction rs:(-ws -or_op -ws x:conjunction)*) #repeat(0, 1)
+    f:conjunction t:(-ws o:or_op -ws c:conjunction rs:(-ws -or_op -ws x:conjunction)*) #repeat(,1)
 ) => foldl($f, $t, (acc, y) => BoolOp{Op: y.$o, Values: concat(list($f), list(y.$c), map(y.$rs, (z) => z.$x))})
 rule conjunction Expr = (
-    f:inversion t:(-ws o:and_op -ws c:inversion rs:(-ws -and_op -ws x:inversion)*) #repeat(0, 1)
+    f:inversion t:(-ws o:and_op -ws c:inversion rs:(-ws -and_op -ws x:inversion)*) #repeat(,1)
 ) => foldl($f, $t, (acc, y) => BoolOp{Op: y.$o, Values: concat(list($f), list(y.$c), map(y.$rs, (z) => z.$x))})
 rule or_op Op = ("or" !idcont) #atomic
 rule and_op Op = ("and" !idcont) #atomic
@@ -653,7 +653,7 @@ rule not_op Op = ("not" !idcont) #atomic
 
 // Chained comparisons are one Compare, as in Python.
 rule comparison Expr = (
-    f:bitwise_or t:(rs:(-ws o:comp_op -ws x:bitwise_or)+) #repeat(0, 1)
+    f:bitwise_or t:(rs:(-ws o:comp_op -ws x:bitwise_or)+) #repeat(,1)
 ) => foldl($f, $t, (acc, y) => Compare{Left: $f, Ops: map(y.$rs, (z) => z.$o), Comparators: map(y.$rs, (z) => z.$x)})
 rule comp_op Op = (
     "==" / "!=" / "<>" / "<=" / ">=" / "<" ![<=>] / ">" ![>=]
@@ -731,7 +731,7 @@ rule star_first_slices Tuple = (
     f:starred_expression rs:(-ws -"," -ws x:slice_or_star)* (-ws -",")?
 ) => Tuple{Elts: concat(list($f), map($rs, (y) => y.$x)), Ctx: "Load"}
 rule plain_slices Expr = (
-    f:slice t:(rs:(-ws -"," -ws x:slice_or_star)+ (-ws -",")? / -ws c:",") #repeat(0, 1)
+    f:slice t:(rs:(-ws -"," -ws x:slice_or_star)+ (-ws -",")? / -ws c:",") #repeat(,1)
 ) => foldl($f, $t, (acc, y) => Tuple{Elts: concat(list($f), map(y.$rs, (z) => z.$x)), Ctx: "Load"})
 rule slice_or_star Expr = slice / starred_expression
 rule slice Expr = slice_colon / named_expression
@@ -763,8 +763,8 @@ rule star_first_tuple Tuple = (
 // The first element is parsed once; what follows it decides the node.
 rule paren_named Expr = (
     "(" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws e:named_expression
-    t:(rs:(-ws -"," -ws x:star_named_expression)+ (-ws -",")? / -ws c:",") #repeat(0, 1)
-    g:(-ws cs:for_if_clauses) #repeat(0, 1)
+    t:(rs:(-ws -"," -ws x:star_named_expression)+ (-ws -",")? / -ws c:",") #repeat(,1)
+    g:(-ws cs:for_if_clauses) #repeat(,1)
     -ws ")" {len($t) + len($g) <= 1}
 ) => foldl(foldl($e, $t, (acc, y) => Tuple{Elts: concat(list($e), map(y.$rs, (z) => z.$x)), Ctx: "Load"}), $g, (acc, y) => GeneratorExp{Elt: $e, Generators: y.$cs})
 
@@ -774,7 +774,7 @@ rule empty_list ListExpr = "[" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws "]" =
 rule list_items Expr = (
     "[" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws f:(s:starred_bitor / named_expression)
     rs:(-ws -"," -ws x:star_named_expression)* c:(-ws ",")?
-    g:(-ws cs:for_if_clauses) #repeat(0, 1)
+    g:(-ws cs:for_if_clauses) #repeat(,1)
     -ws "]" {len($g) == 0 || $s == nil && len($rs) == 0 && $c == nil}
 ) => foldl(ListExpr{Elts: concat(list($f), map($rs, (y) => y.$x)), Ctx: "Load"}, $g, (acc, y) => ListComp{Elt: $f, Generators: y.$cs})
 
@@ -793,9 +793,9 @@ rule set_star_first Set = (
 // an assignment expression), and comprehension clauses after it (and its value) a comprehension.
 rule brace_items Expr = (
     "{" {lv % 512 < 400} {lv := lv / 2 * 2 + 2} -ws f:(w:walrus / expression)
-    kv:(-ws ":" !"=" -ws v:expression) #repeat(0, 1)
+    kv:(-ws ":" !"=" -ws v:expression) #repeat(,1)
     {isdict := len($kv) > 0} {$w == nil || !isdict}
-    g:(-ws cs:for_if_clauses) #repeat(0, 1)
+    g:(-ws cs:for_if_clauses) #repeat(,1)
     dr:({isdict} -ws -"," -ws (-"**" -ws v:bitwise_or / k:expression -ws -":" !"=" -ws v:expression))*
     sr:({!isdict} -ws -"," -ws x:star_named_expression)*
     c:(-ws ",")?
@@ -807,7 +807,7 @@ rule brace_items Expr = (
 // ============================================================================
 
 rule star_targets Expr = (
-    f:star_target t:(rs:(-ws -"," -ws x:star_target)+ (-ws -",")? / -ws c:",") #repeat(0, 1)
+    f:star_target t:(rs:(-ws -"," -ws x:star_target)+ (-ws -",")? / -ws c:",") #repeat(,1)
 ) => foldl($f, $t, (acc, y) => Tuple{Elts: concat(list($f), map(y.$rs, (z) => z.$x)), Ctx: "Store"})
 rule star_target Expr = starred_target / target_with_star_atom
 rule starred_target Starred = "*" ![*=] -ws !"*" t:star_target => Starred{Value: $t, Ctx: "Store"}
@@ -869,7 +869,7 @@ rule del_targets = f:del_target r:(-ws -"," -ws t:del_target)* (-ws -",")? => co
 // not be mixed), a JoinedStr if one of them is an f-string, a TemplateStr for t-strings (which
 // may not be mixed with others).
 rule strings Expr = &string_start s:(tstrings / plain_strings / bytes_strings / fjoined) => $s
-rule string_start = [rRbBuUfFtT] #repeat(0, 2) ['"]
+rule string_start = [rRbBuUfFtT] #repeat(,2) ['"]
 rule plain_strings Constant = (str_lit (ws str_lit)* !(ws string_start)) #atomic
 rule bytes_strings Constant = (bytes_lit (ws bytes_lit)* !(ws string_start)) #atomic
 rule fjoined JoinedStr = (

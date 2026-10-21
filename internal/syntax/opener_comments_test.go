@@ -44,16 +44,29 @@ func TestEmptyAttributeArgumentComments(t *testing.T) {
 	}
 }
 
-// #repeat keeps the way its bounds were written and the place of each comment.
+// #repeat is written in the canonical spelling of its bounds, whichever the
+// source used, and each comment stays before the token it was before, or moves
+// to the next token that the canonical spelling has.
 func TestRepeatPragmaSpellingAndComments(t *testing.T) {
 	for _, tc := range []struct {
 		name, in, want string
 	}{
-		{"at least one", "rule r = \"a\" #repeat(1,) \"b\"\n", "rule r = \"a\" #repeat(1,) \"b\"\n"},
-		{"at least zero", "rule r = \"a\" #repeat(0,) \"b\"\n", "rule r = \"a\" #repeat(0,) \"b\"\n"},
-		{"equal bounds", "rule r = \"a\" #repeat(2, 2) \"b\"\n", "rule r = \"a\" #repeat(2, 2) \"b\"\n"},
-		{"zero maximum", "rule r = \"a\" #repeat(,0) \"b\"\n", "rule r = \"a\" #repeat(,0) \"b\"\n"},
-		{"zero bounds", "rule r = \"a\" #repeat(0, 0) \"b\"\n", "rule r = \"a\" #repeat(0, 0) \"b\"\n"},
+		{"at least one", "rule r = \"a\" #repeat(1,) \"b\"\n", "rule r = \"a\"+ \"b\"\n"},
+		{"at least zero", "rule r = \"a\" #repeat(0,) \"b\"\n", "rule r = \"a\"* \"b\"\n"},
+		{"at least two", "rule r = \"a\" #repeat(2, ) \"b\"\n", "rule r = \"a\" #repeat(2,) \"b\"\n"},
+		{"equal bounds", "rule r = \"a\" #repeat(2, 2) \"b\"\n", "rule r = \"a\" #repeat(2) \"b\"\n"},
+		{"zero maximum", "rule r = \"a\" #repeat(,0) \"b\"\n", "rule r = \"a\" #repeat(0) \"b\"\n"},
+		{"zero bounds", "rule r = \"a\" #repeat(0, 0) \"b\"\n", "rule r = \"a\" #repeat(0) \"b\"\n"},
+		{"zero minimum", "rule r = \"a\" #repeat(0, 3) \"b\"\n", "rule r = \"a\" #repeat(,3) \"b\"\n"},
+		{"no minimum", "rule r = \"a\" #repeat(,3) \"b\"\n", "rule r = \"a\" #repeat(,3) \"b\"\n"},
+		{"both bounds", "rule r = \"a\" #repeat(2,3) \"b\"\n", "rule r = \"a\" #repeat(2, 3) \"b\"\n"},
+		// With a comment between its tokens a repetition keeps its pragma.
+		{"at least one with a comment", "rule r = \"a\" #repeat(1, /* a */) \"b\"\n", "rule r = \"a\" #repeat(1, /* a */) \"b\"\n"},
+		{"at least zero with a comment", "rule r = \"a\" #repeat(/* a */ 0,) \"b\"\n", "rule r = \"a\" #repeat(/* a */ 0,) \"b\"\n"},
+		// A token that the canonical spelling drops hands its comments to the next one.
+		{"equal bounds with comments", "rule r = \"a\" #repeat(2 /* a */, /* b */ 2 /* c */) \"b\"\n", "rule r = \"a\" #repeat(2 /* a */ /* b */ /* c */) \"b\"\n"},
+		{"zero maximum with a comment", "rule r = \"a\" #repeat(/* a */, /* b */ 0) \"b\"\n", "rule r = \"a\" #repeat(0 /* a */ /* b */) \"b\"\n"},
+		{"zero minimum with a comment", "rule r = \"a\" #repeat(0 /* a */, 3) \"b\"\n", "rule r = \"a\" #repeat(/* a */,3) \"b\"\n"},
 		{"after the parenthesis", "rule r = \"a\" #repeat( /* a */ 2) \"b\"\n", "rule r = \"a\" #repeat(/* a */ 2) \"b\"\n"},
 		{"between the bounds", "rule r = \"a\" #repeat(2, /* a */ 3) \"b\"\n", "rule r = \"a\" #repeat(2, /* a */ 3) \"b\"\n"},
 		{"before the comma", "rule r = \"a\" #repeat(2 /* a */, 3) \"b\"\n", "rule r = \"a\" #repeat(2 /* a */, 3) \"b\"\n"},

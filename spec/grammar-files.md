@@ -105,8 +105,7 @@ elements of calls, constructors, list constructors, tuples, the tuple and type
 application forms of types, and the arguments of attributes and the parameters of
 lambdas, which keep theirs in a `ListLayout`. The delimiters of those forms keep
 their comments in the node's `OpenBreak`, `BodyBreak` and `CloseBreak` fields.
-The comments between the tokens of `#repeat(...)` and how its bounds were
-written stay in its `Spelling` field. The comments inside attribute arguments,
+The comments between the tokens of `#repeat(...)` stay in its `Spelling` field. The comments inside attribute arguments,
 lambda parameters and `#repeat(...)` are layout only: unlike owned comments they
 are not part of the JSON AST. Other source forms remain outside this increment's
 coverage.
@@ -234,10 +233,18 @@ is written `f(/* a */)`. A struct type keeps the spaces inside its braces:
 `{ /* a */ F int }`.
 
 `#repeat` bounds and `#recover` are not lists. The comma of `#repeat(n,)` and
-`#repeat(,m)` is part of its syntax, so `#repeat` keeps the form in which its
-bounds were written (`(1,)` is not rewritten to `+`, nor `(2, 2)` to `(2)`), and
-each comment stays between the same two tokens: a block comment stays on the
-line, and a comment that ends its line puts the tokens on lines. An argument of an attribute that is left out is written `nil`; the comma
+`#repeat(,m)` is part of its syntax. Format writes the bounds in one canonical
+spelling, whichever the source used: `*` for `(0,)`, `+` for `(1,)`, `#repeat(n)`
+for `(n, n)` and for `(,0)` and `(0, 0)` (`#repeat(0)`), `#repeat(,m)` for
+`(0, m)` and `(,m)`, `#repeat(n,)` for `(n,)` with `n` of 2 or more, and
+`#repeat(n, m)` otherwise. They are the same AST. A comment between the tokens
+is never dropped. It stays before the token it was before, or moves to the next
+token the canonical spelling has, or else to the closing parenthesis. A
+repetition with such a comment keeps its pragma form instead of `*` or `+`, so
+that the comment keeps its place. A block comment stays on the line, and a
+comment that ends its line puts the tokens on lines.
+
+An argument of an attribute that is left out is written `nil`; the comma
 after the last argument is a trailing comma, as in every other list. Two commas
 in a row are a syntax error in every list.
 

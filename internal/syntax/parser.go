@@ -1279,7 +1279,6 @@ func (p *parser) pragma(e grammar.Expr, start grammar.Pos) (sourceResult grammar
 		}
 		p.expect(")")
 		p.cur = outer
-		sp.Min, sp.Max = min, max
 		if len(stray.Comments) > 0 {
 			// Comments inside a bound, as in "- /* c */ 1", go with the gap after it.
 			g := &sp.Gaps[len(sp.Gaps)-1]

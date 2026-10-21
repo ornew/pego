@@ -450,7 +450,7 @@ rule commClauseDefault CommClause = kw_default -ws ":" !"=" b:clauseBody => Comm
 // go/parser does not check that a communication receives or sends.
 rule commStmt Stmt = sendStmt / commRecv / exprStmt
 rule commRecv AssignStmt = (
-    first:expr rest:(-sp "," -ws x:expr) #repeat(0, 1) -sp t:(":=" / "=" !"=") #atomic -ws r:expr
+    first:expr rest:(-sp "," -ws x:expr) #repeat(,1) -sp t:(":=" / "=" !"=") #atomic -ws r:expr
 ) => AssignStmt{Lhs: concat(list($first), map($rest, (q) => q.$x)), Tok: text($t), Rhs: list($r)}
 
 rule forStmt Stmt = forInfinite / forRange / forClause / forCond

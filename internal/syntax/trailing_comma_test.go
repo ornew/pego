@@ -221,7 +221,7 @@ func TestGroupBlockCommentsKeepOwners(t *testing.T) {
 }
 
 // The comma of #repeat carries meaning, so it is not a trailing comma: it
-// stays, on one line, and its bounds do not change.
+// stays, on one line, and its bounds do not change. The form is the canonical one.
 func TestRepeatPragmaCommaIsNotTrailing(t *testing.T) {
 	for _, tc := range []struct {
 		pragma   string
@@ -232,7 +232,7 @@ func TestRepeatPragmaCommaIsNotTrailing(t *testing.T) {
 		{"#repeat(2,)", 2, -1, "2,"},
 		{"#repeat(2, )", 2, -1, "2,"},
 		{"#repeat(,3)", 0, 3, ",3"},
-		{"#repeat(0,3)", 0, 3, "0, 3"},
+		{"#repeat(0,3)", 0, 3, ",3"},
 		{"#repeat(2,3)", 2, 3, "2, 3"},
 	} {
 		t.Run(tc.pragma, func(t *testing.T) {
@@ -257,7 +257,7 @@ func TestRepeatPragmaCommaIsNotTrailing(t *testing.T) {
 				t.Fatalf("formatted bounds %d,%d, want %d,%d\n%s", rep.Min, rep.Max, tc.min, tc.max, out)
 			}
 			if !strings.Contains(out, "#repeat("+tc.form+")") {
-				t.Fatalf("the form %s was not kept:\n%s", tc.form, out)
+				t.Fatalf("the form %s is not the canonical one:\n%s", tc.form, out)
 			}
 		})
 	}

@@ -81,7 +81,7 @@ rule main File = main_fast / file
 rule main_fast File = &f:file .* => $f
 rule file File = (
     "\u{feff}"? ws
-    as1:(a:attribute_d sep)* pkg:(p:package_clause sep) #repeat(0, 1) ({len($pkg) > 0} / !("package" !idchar)) as2:(a:attribute_d sep)*
+    as1:(a:attribute_d sep)* pkg:(p:package_clause sep) #repeat(,1) ({len($pkg) > 0} / !("package" !idchar)) as2:(a:attribute_d sep)*
     is:(i:import_decl sep)* !("import" !idchar) ds:decls $$
 ) => File{Decls: concat(map($as1, (x) => x.$a), map($pkg, (x) => x.$p), map($as2, (x) => x.$a), map($is, (x) => x.$i), $ds)}
 
@@ -279,7 +279,7 @@ rule try_plain TryClause = "try" !idchar => TryClause{}
 rule struct_lit StructLit = "{" ws ds:decls "}" => StructLit{Elts: $ds}
 
 rule list_lit ListLit = (
-    "[" ws es:(e:list_elem esep)* d:(x:list_dots esep) #repeat(0, 1) "]"
+    "[" ws es:(e:list_elem esep)* d:(x:list_dots esep) #repeat(,1) "]"
 ) => ListLit{Elts: concat(map($es, (x) => x.$e), map($d, (x) => x.$x))}
 rule esep = comma / sp &"]"
 rule list_elem Expr = comp_decl / alias_elem / elem_expr / bare_for_if

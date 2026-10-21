@@ -297,8 +297,10 @@ var repeatForms = []struct{ min, comma, max string }{
 }
 
 // TestFormatRandomRepeat formats #repeat pragmas with comments in every gap
-// between their tokens, and checks that the spelling of the bounds and the
-// gap of each comment stay as they were: the comments there have no owner.
+// between their tokens. The bounds are written in the canonical spelling, and
+// each comment stays before the token it was before, or moves to the next token
+// that the canonical spelling has, or else to the end: the comments there have
+// no owner.
 func TestFormatRandomRepeat(t *testing.T) {
 	const seeds = 3000
 	failures, parsed := 0, 0
@@ -328,8 +330,8 @@ func TestFormatRandomRepeat(t *testing.T) {
 			again, err := Parse(grammar.Format(ast))
 			if err != nil {
 				problem = err.Error()
-			} else if a, b := repeatSpelling(ast), repeatSpelling(again); a != b {
-				problem = fmt.Sprintf("the spelling changed\n%s\n%s", a, b)
+			} else if want, got := repeatSlots(ast, true), repeatSlots(again, false); want != got {
+				problem = fmt.Sprintf("the comments moved\nwant %s\ngot  %s", want, got)
 			}
 		}
 		if problem != "" {
@@ -342,17 +344,53 @@ func TestFormatRandomRepeat(t *testing.T) {
 	}
 }
 
-// repeatSpelling describes the tokens of the #repeat pragma of the first rule
-// and the comments in each gap between them.
-func repeatSpelling(g *grammar.Grammar) string {
+// repeatSlots describes the bounds of the #repeat pragma of the first rule and
+// the token that follows each of its comments ("end" for the closing
+// parenthesis). With canonical, it maps the slots of the source to the slots of
+// the canonical spelling of the bounds: the first token of it that is not before
+// the written one.
+func repeatSlots(g *grammar.Grammar, canonical bool) string {
 	rep := g.Rules()[0].Expr.(*grammar.Seq).Items[0].(*grammar.Repeat)
-	sp := rep.Spelling
+	names := []string{"min", "comma", "max"}
+	var kinds []int
+	switch {
+	case rep.Min == rep.Max:
+		kinds = []int{0}
+	case rep.Max < 0:
+		kinds = []int{0, 1}
+	case rep.Min == 0:
+		kinds = []int{1, 2}
+	default:
+		kinds = []int{0, 1, 2}
+	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "%d,%d min=%v comma=%v max=%v", rep.Min, rep.Max, sp.HasMin, sp.Comma, sp.HasMax)
-	for i, gap := range sp.Gaps {
-		fmt.Fprintf(&b, " gap%d=", i)
+	fmt.Fprintf(&b, "%d,%d", rep.Min, rep.Max)
+	sp := rep.Spelling
+	if sp == nil {
+		return b.String()
+	}
+	var written []int
+	for k, has := range []bool{sp.HasMin, sp.Comma, sp.HasMax} {
+		if has {
+			written = append(written, k)
+		}
+	}
+	for j, gap := range sp.Gaps {
 		for _, c := range gap.Comments {
-			b.WriteString(c.Text + "|")
+			slot := "end"
+			if j < len(written) {
+				slot = names[written[j]]
+				if canonical {
+					slot = "end"
+					for _, k := range kinds {
+						if k >= written[j] {
+							slot = names[k]
+							break
+						}
+					}
+				}
+			}
+			fmt.Fprintf(&b, " %s>%s", c.Text, slot)
 		}
 	}
 	return b.String()

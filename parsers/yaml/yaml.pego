@@ -46,7 +46,7 @@ rule main Stream = l_yaml_stream
 //   ( ( l-document-suffix+ l-document-prefix* l-any-document? ) | ( l-document-prefix* l-explicit-document? ) )*
 // Rewritten so that every iteration yields a document; what remains is prefixes and suffixes.
 rule l_yaml_stream Stream = (
-    -l_document_prefix* first:l_any_document #repeat(0, 1)
+    -l_document_prefix* first:l_any_document #repeat(,1)
     rest:(-(l_document_suffix+ l_document_prefix*)+ d:l_any_document / -l_document_prefix* d:l_explicit_document)*
     -(l_document_suffix / l_document_prefix)* $$
 ) => Stream{Documents: concat($first, map($rest, (r) => r.$d))}
