@@ -29,11 +29,11 @@ rule main Text = t:([a]* #atomic) => Text{Text: text($t)}`)
 		t.Fatal(err)
 	}
 	opts := GenOptions{Start: "main", Types: true, Recognize: true}
-	code, err := GenerateTS(g, opts)
+	code, err := generateTSBundle(g, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
-	again, err := GenerateTS(g, opts)
+	again, err := generateTSBundle(g, opts)
 	if err != nil || string(code) != string(again) {
 		t.Fatal("generation is not deterministic", err)
 	}

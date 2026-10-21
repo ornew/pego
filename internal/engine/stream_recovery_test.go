@@ -31,7 +31,7 @@ func TestStreamRecoveryRejected(t *testing.T) {
 				_, err := generateCode(g, GenOptions{Start: "main", Package: "test", Types: true})
 				return err
 			},
-			"TS": func() error { _, err := GenerateTS(g, GenOptions{Start: "main"}); return err },
+			"TS": func() error { _, err := generateTSBundle(g, GenOptions{Start: "main"}); return err },
 		} {
 			if err := generate(); err == nil || !strings.Contains(err.Error(), streamRecoveryError) {
 				t.Errorf("%s generation: %v", name, err)

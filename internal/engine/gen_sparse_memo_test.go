@@ -22,7 +22,7 @@ func TestGeneratedSparseMemoSmallTable(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, recognize := range []bool{false, true} {
-		for _, generate := range []func(*grammar.Grammar, GenOptions) ([]byte, error){GenerateTS} {
+		for _, generate := range []func(*grammar.Grammar, GenOptions) ([]byte, error){generateTSBundle} {
 			opts := GenOptions{Package: "smallmemo", Start: "main", Recognize: recognize}
 			code, err := generate(g, opts)
 			if err != nil {
@@ -120,11 +120,11 @@ func TestGeneratedTSSparseMemoControls(t *testing.T) {
 	}
 	var results [2]string
 	for i, name := range []string{"optimized", "reference"} {
-		code, err := GenerateTS(g, GenOptions{Start: "main", Recognize: true, disableSparseMemo: i == 1})
+		code, err := generateTSBundle(g, GenOptions{Start: "main", Recognize: true, disableSparseMemo: i == 1})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if want := fmt.Sprintf("const G = mkGrammar(100000, %v);", i == 0); !strings.Contains(string(code), want) {
+		if want := fmt.Sprintf("const G = mkGrammar(100000, %v, ", i == 0); !strings.Contains(string(code), want) {
 			t.Fatalf("%s output lacks %q", name, want)
 		}
 		path := filepath.Join(dir, name)

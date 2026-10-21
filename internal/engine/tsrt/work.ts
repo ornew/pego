@@ -1,4 +1,4 @@
-// Portable invocation controls are merged into the generated runtime module.
+// Portable invocation controls are part of the generated runtime module.
 
 /** A cooperative signal without a required DOM typing dependency. */
 export interface CancellationSignal {
@@ -28,7 +28,12 @@ export class ParseInterruptionError extends Error {
 // Interface merging exposes cause with ES2020 or later Error declarations.
 export interface ParseInterruptionError { readonly cause: unknown }
 
-interface ResolvedParseOptions {
+export interface ResolvedParseOptions {
+  profile: Profile | null;
+  profileClock: (() => number) | null;
+  trace: ((event: TraceEvent) => void) | null;
+  traceRules: readonly string[];
+  readonly traceMaxDepth: number;
   readonly unit: Unit;
   readonly maxDepth: number;
   signal: CancellationSignal | null;
@@ -38,12 +43,12 @@ interface ResolvedParseOptions {
 
 // Signal getters are caller code. Keep their thrown identity through the
 // parser's Fatal and host-stack-overflow classification boundaries.
-class SignalPanic {
+export class SignalPanic {
   readonly value: unknown;
   constructor(value: unknown) { this.value = value; }
 }
 
-class WorkControl {
+export class WorkControl {
   private signal: CancellationSignal | null;
   private readonly maxInputWork: number;
   private readonly maxSteps: number;
@@ -94,7 +99,7 @@ class WorkControl {
   }
 }
 
-function withWorkControl<T>(o: ResolvedParseOptions, body: (control: WorkControl | null) => T, interrupted: (error: Error) => T): T {
+export function withWorkControl<T>(o: ResolvedParseOptions, body: (control: WorkControl | null) => T, interrupted: (error: Error) => T): T {
   if (o.signal === null && o.maxInputWork === 0 && o.maxSteps === 0) return body(null);
   let control: WorkControl | null = null;
   try {
@@ -115,7 +120,7 @@ function withWorkControl<T>(o: ResolvedParseOptions, body: (control: WorkControl
   }
 }
 
-function utf8EncodingLenWork(s: string, control: WorkControl): number {
+export function utf8EncodingLenWork(s: string, control: WorkControl): number {
   let n = s.length;
   for (let i = 0; i < s.length; i++) {
     const c = stringUnitWork(s, i, control);
@@ -135,7 +140,7 @@ function utf8EncodingLenWork(s: string, control: WorkControl): number {
 }
 
 
-function encodeUTF8Work(s: string, control: WorkControl): Uint8Array {
+export function encodeUTF8Work(s: string, control: WorkControl): Uint8Array {
   const out = new Uint8Array(utf8EncodingLenWork(s, control));
   let j = 0;
   for (let i = 0; i < s.length; i++) {
@@ -172,7 +177,7 @@ function encodeUTF8Work(s: string, control: WorkControl): Uint8Array {
 }
 
 
-function runeCountWork(s: string, control: WorkControl): number {
+export function runeCountWork(s: string, control: WorkControl): number {
   let n = s.length;
   for (let i = 0; i + 1 < s.length; i++) {
     const c = stringUnitWork(s, i, control);
@@ -185,7 +190,7 @@ function runeCountWork(s: string, control: WorkControl): number {
 }
 
 
-function wellFormedWork(s: string, control: WorkControl): string {
+export function wellFormedWork(s: string, control: WorkControl): string {
   const parts: string[] = [];
   let from = 0;
   for (let i = 0; i < s.length; i++) {
@@ -207,15 +212,15 @@ function wellFormedWork(s: string, control: WorkControl): string {
 }
 
 
-function stringUnitWork(s: string, i: number, control: WorkControl): number {
+export function stringUnitWork(s: string, i: number, control: WorkControl): number {
   control.charge(1, 1);
   return s.charCodeAt(i);
 }
-function byteUnitWork(b: Uint8Array, i: number, n: number, control: WorkControl): number {
+export function byteUnitWork(b: Uint8Array, i: number, n: number, control: WorkControl): number {
   control.charge(1, 1);
   return i < n ? b[i]! : 0;
 }
-function joinStringsWork(parts: readonly string[], control: WorkControl): string {
+export function joinStringsWork(parts: readonly string[], control: WorkControl): string {
   for (const part of parts) {
     control.charge(0, 1);
     for (let i = 0; i < part.length; i += 4096) control.charge(Math.min(4096, part.length - i), 1);
@@ -224,7 +229,7 @@ function joinStringsWork(parts: readonly string[], control: WorkControl): string
   control.check();
   return result;
 }
-function codePointsStringWork(cps: Int32Array, control: WorkControl): string {
+export function codePointsStringWork(cps: Int32Array, control: WorkControl): string {
   const parts: string[] = [];
   for (let i = 0; i < cps.length; i += 4096) {
     const end = Math.min(i + 4096, cps.length);
@@ -234,7 +239,7 @@ function codePointsStringWork(cps: Int32Array, control: WorkControl): string {
   return joinStringsWork(parts, control);
 }
 
-function decodeRuneWork(b: Uint8Array, i: number, n: number, control: WorkControl): { rune: number; size: number } {
+export function decodeRuneWork(b: Uint8Array, i: number, n: number, control: WorkControl): { rune: number; size: number } {
   let size = 1;
   const c0 = byteUnitWork(b, i, n, control);
   if (c0 < 0x80) {
@@ -273,7 +278,7 @@ function decodeRuneWork(b: Uint8Array, i: number, n: number, control: WorkContro
 }
 
 
-function equalStringsWork(a: string, b: string, control: WorkControl): boolean {
+export function equalStringsWork(a: string, b: string, control: WorkControl): boolean {
   if (a.length !== b.length) return false;
   for (let from = 0; from < a.length; from += 128) {
     const end = Math.min(from + 128, a.length);
@@ -283,7 +288,7 @@ function equalStringsWork(a: string, b: string, control: WorkControl): boolean {
   return true;
 }
 
-function copyNodesWork(items: readonly (Node | null)[], start: number, end: number, control: WorkControl): (Node | null)[] {
+export function copyNodesWork(items: readonly (Node | null)[], start: number, end: number, control: WorkControl): (Node | null)[] {
   const out: (Node | null)[] = new Array(end - start);
   for (let from = start; from < end; from += 128) {
     const stop = Math.min(from + 128, end);
@@ -294,7 +299,7 @@ function copyNodesWork(items: readonly (Node | null)[], start: number, end: numb
 }
 
 // These scalar helpers preserve surrogateescape bytes, unlike input encoding.
-function utf8LenWork(s: string, control: WorkControl): number {
+export function utf8LenWork(s: string, control: WorkControl): number {
   let n = s.length;
   for (let i = 0; i < s.length; i++) {
     const c = valueUnitWork(s, i, control);
@@ -311,7 +316,7 @@ function utf8LenWork(s: string, control: WorkControl): number {
   return n;
 }
 
-function sliceStringWork(s: string, start: number, end: number, control: WorkControl): string {
+export function sliceStringWork(s: string, start: number, end: number, control: WorkControl): string {
   // Native slicing/joining and allocation cannot be preempted. Reserve the
   // visited extent in bounded chunks before publishing the native result.
   const from = Math.max(0, Math.min(s.length, start < 0 ? s.length + start : start));
@@ -322,13 +327,13 @@ function sliceStringWork(s: string, start: number, end: number, control: WorkCon
   return result;
 }
 
-function isByteWork(s: string, i: number, control: WorkControl): boolean {
+export function isByteWork(s: string, i: number, control: WorkControl): boolean {
   const c = valueUnitWork(s, i, control);
   return c >= 0xdc80 && c <= 0xdcff && !(i > 0 && (valueUnitWork(s, i - 1, control) & 0xfc00) === 0xd800);
 }
 
 // Stream only the suffix bytes actually compared; keep byte escapes raw.
-function* utf8ValueBytesWork(s: string, start: number, control: WorkControl) {
+export function* utf8ValueBytesWork(s: string, start: number, control: WorkControl) {
   for (let i = start; i < s.length; i++) {
     let c = valueUnitWork(s, i, control);
     if (c >= 0xd800 && c < 0xdc00 && i + 1 < s.length) {
@@ -357,7 +362,7 @@ function* utf8ValueBytesWork(s: string, start: number, control: WorkControl) {
   }
 }
 
-function compareStringsWork(a: string, b: string, control: WorkControl): number {
+export function compareStringsWork(a: string, b: string, control: WorkControl): number {
   const n = Math.min(a.length, b.length);
   for (let i = 0; i < n; i++) {
     let x = valueUnitWork(a, i, control);
@@ -384,12 +389,12 @@ function compareStringsWork(a: string, b: string, control: WorkControl): number 
   return a.length < b.length ? -1 : a.length > b.length ? 1 : 0;
 }
 
-function valueUnitWork(s: string, i: number, control: WorkControl): number {
+export function valueUnitWork(s: string, i: number, control: WorkControl): number {
   control.charge(0, 1);
   return s.charCodeAt(i);
 }
 
-function runeCountValueWork(s: string, control: WorkControl): number {
+export function runeCountValueWork(s: string, control: WorkControl): number {
   let n = s.length;
   for (let i = 0; i + 1 < s.length; i++) {
     const c = valueUnitWork(s, i, control);
@@ -401,7 +406,7 @@ function runeCountValueWork(s: string, control: WorkControl): number {
   return n;
 }
 
-function joinValueStringsWork(parts: readonly string[], control: WorkControl): string {
+export function joinValueStringsWork(parts: readonly string[], control: WorkControl): string {
   for (const part of parts) {
     control.charge(0, 1);
     for (let i = 0; i < part.length; i += 128) control.charge(0, Math.min(128, part.length - i));
@@ -413,7 +418,7 @@ function joinValueStringsWork(parts: readonly string[], control: WorkControl): s
 
 // Public Node.field stays a caller operation; parsing/conversion share this
 // internal visit counter and bounded string-name comparison.
-function getFieldWork(n: Node, name: string, control: WorkControl | null): Value {
+export function getFieldWork(n: Node, name: string, control: WorkControl | null): Value {
   if (control === null) return n.field(name);
   for (const field of n.fields) {
     control.charge(0, 1);
@@ -423,17 +428,17 @@ function getFieldWork(n: Node, name: string, control: WorkControl | null): Value
 }
 
 // Reserve bounded logical visits before native hashing, which cannot be polled.
-function stringKeyWork(s: string, control: WorkControl): string {
+export function stringKeyWork(s: string, control: WorkControl): string {
   for (let i = 0; i < s.length; i += 128) control.charge(0, Math.min(128, s.length - i));
   return s;
 }
 
-function equalValuesWork(a: Value, b: Value, control: WorkControl): boolean {
+export function equalValuesWork(a: Value, b: Value, control: WorkControl): boolean {
   if (typeof a === "string" && typeof b === "string") return equalStringsWork(a, b, control);
   return a === b;
 }
 
-function copyErrorsWork(items: readonly SyntaxError[], start: number, end: number, control: WorkControl): SyntaxError[] {
+export function copyErrorsWork(items: readonly SyntaxError[], start: number, end: number, control: WorkControl): SyntaxError[] {
   const out: SyntaxError[] = new Array(end - start);
   for (let from = start; from < end; from += 128) {
     const stop = Math.min(from + 128, end);
@@ -443,7 +448,7 @@ function copyErrorsWork(items: readonly SyntaxError[], start: number, end: numbe
   return out;
 }
 
-function copyIDsWork(items: readonly number[], start: number, end: number, control: WorkControl): number[] {
+export function copyIDsWork(items: readonly number[], start: number, end: number, control: WorkControl): number[] {
   const out: number[] = new Array(end - start);
   for (let from = start; from < end; from += 128) {
     const stop = Math.min(from + 128, end);
@@ -454,7 +459,7 @@ function copyIDsWork(items: readonly number[], start: number, end: number, contr
 }
 
 // Only newly collected, parser-owned expected strings may be sorted here.
-function sortExpectedWork(values: string[], control: WorkControl): void {
+export function sortExpectedWork(values: string[], control: WorkControl): void {
   const n = values.length;
   if (n < 2) return;
   control.charge(0, n);
@@ -479,14 +484,14 @@ function sortExpectedWork(values: string[], control: WorkControl): void {
   if (src !== values) for (let i = 0; i < n; i++) { control.charge(0, 1); values[i] = src[i]!; }
 }
 
-function reserveDiagnosticTextWork(text: string, control: WorkControl): void {
+export function reserveDiagnosticTextWork(text: string, control: WorkControl): void {
   for (let i = 0; i < text.length; i += 128) control.charge(0, Math.min(128, text.length - i));
 }
 
 // Reserve engine-owned text before the native Error constructor joins it.
 // Native joining/allocation remain non-preemptible; public constructors and
 // post-return reason() calls keep their existing caller-owned behavior.
-function reserveSyntaxMessageWork(line: number, col: number, expected: readonly string[], messages: readonly string[], control: WorkControl): void {
+export function reserveSyntaxMessageWork(line: number, col: number, expected: readonly string[], messages: readonly string[], control: WorkControl): void {
   reserveDiagnosticTextWork(`${line}:${col}: `, control);
   const parts = messages.length !== 0 ? messages : expected;
   if (messages.length === 0) reserveDiagnosticTextWork(expected.length !== 0 ? "syntax error: expected " : "syntax error", control);
@@ -497,7 +502,7 @@ function reserveSyntaxMessageWork(line: number, col: number, expected: readonly 
   }
 }
 
-function reserveRecoveredMessageWork(errors: readonly SyntaxError[], control: WorkControl): void {
+export function reserveRecoveredMessageWork(errors: readonly SyntaxError[], control: WorkControl): void {
   for (let i = 0; i < errors.length; i++) {
     control.charge(0, 1);
     if (i !== 0) control.charge(0, 1);

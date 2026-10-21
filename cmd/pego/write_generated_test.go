@@ -31,7 +31,7 @@ func TestWriteGeneratedSymlink(t *testing.T) {
 		if err := os.Symlink(target, link); err != nil {
 			t.Fatal(err)
 		}
-		err := writeGenerated(dir, files, pego.RuntimeEmbed)
+		err := writeGenerated(dir, files, pego.RuntimeEmbed, false)
 		if err == nil || !strings.Contains(err.Error(), link) || !strings.Contains(err.Error(), "symbolic link") {
 			t.Fatalf("error %v, want one naming the symbolic link %s", err, link)
 		}
@@ -48,7 +48,7 @@ func TestWriteGeneratedSymlink(t *testing.T) {
 		if err := os.Symlink(outside, link); err != nil {
 			t.Fatal(err)
 		}
-		err := writeGenerated(dir, files, pego.RuntimeEmbed)
+		err := writeGenerated(dir, files, pego.RuntimeEmbed, false)
 		if err == nil || !strings.Contains(err.Error(), link) {
 			t.Fatalf("error %v, want one naming the symbolic link %s", err, link)
 		}
@@ -81,7 +81,7 @@ func TestWriteGeneratedChecksBeforeWriting(t *testing.T) {
 	if err := os.WriteFile(parser, old, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	err := writeGenerated(dir, []pego.GeneratedFile{generatedFile("parser.go"), generatedFile("types/types.go")}, pego.RuntimeEmbed)
+	err := writeGenerated(dir, []pego.GeneratedFile{generatedFile("parser.go"), generatedFile("types/types.go")}, pego.RuntimeEmbed, false)
 	if err == nil {
 		t.Fatal("no error for an unreadable owned file")
 	}

@@ -129,13 +129,14 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, []string{"", "a1", "a1b2"}})
 			fmt.Fprintf(&valueNames, "%q:%q,\n", fmt.Sprintf("replay/g%d/types.%s", i, name), name)
 		}
 		fmt.Fprintf(&terminalNames, "%q:true,\n", fmt.Sprintf("replay/g%d/types.Error", i))
-		tsCode, err := GenerateTS(g, GenOptions{Start: "main", Types: true, Recognize: true})
+		tsFiles, err := GenerateTS(g, GenOptions{Start: "main", Types: true, Recognize: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		file := fmt.Sprintf("g%d.ts", i)
-		files = append(files, file)
-		write(file, string(tsCode))
+		for _, f := range tsFiles {
+			write(fmt.Sprintf("ts/g%d/%s", i, f.Path), string(f.Content))
+		}
+		files = append(files, fmt.Sprintf("ts/g%d/parser.ts", i))
 		fmt.Fprintf(&imports, "g%d \"replay/g%d\"\n", i, i)
 		fmt.Fprintf(&parsers, "func(s string, bytes bool)(any,error){u:=g%d.CodePoints; if bytes {u=g%d.Bytes};return g%d.ParseAST(s,g%d.WithUnit(u))},\n", i, i, i, i)
 		fmt.Fprintf(&recognizers, "func(s string, bytes bool)error{u:=g%d.CodePoints; if bytes {u=g%d.Bytes};return g%d.Recognize(s,g%d.WithUnit(u))},\n", i, i, i, i)
@@ -151,6 +152,7 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, []string{"", "a1", "a1b2"}})
 	write("named.json", string(nb))
 	write("main.go", "package main\nimport (\"encoding/base64\";\"encoding/json\";\"fmt\";\"os\";\"reflect\";\"strconv\";\"strings\";"+imports.String()+")\nvar parsers=[]func(string,bool)(any,error){"+parsers.String()+"}\nvar recognizers=[]func(string,bool)error{"+recognizers.String()+"}\nvar terminalTypes=map[string]bool{"+terminalNames.String()+"}\nvar valueNames=map[string]string{"+valueNames.String()+"}\n"+tsTypedGoOracle)
 	write("replay.mjs", tsTypedReplayHarness)
+	write("loader.mjs", tsLoader)
 	cmd := exec.Command(tsc, append([]string{"--noEmit", "--target", "es2020", "--lib", "es2020", "--strict", "--noUnusedLocals", "--noUnusedParameters", "--noUncheckedIndexedAccess", "--noPropertyAccessFromIndexSignature", "--erasableSyntaxOnly"}, files...)...)
 	cmd.Dir = dir
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -162,7 +164,7 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, []string{"", "a1", "a1b2"}})
 	if err != nil {
 		t.Fatalf("Go oracle: %v\n%s", err, want)
 	}
-	cmd = exec.Command(node, "replay.mjs")
+	cmd = exec.Command(node, nodeTSArgs("replay.mjs")...)
 	cmd.Dir = dir
 	got, err := cmd.CombinedOutput()
 	if err != nil {
@@ -233,5 +235,5 @@ const tsTypedReplayHarness = `import {readFileSync} from "node:fs";
 const inputs=JSON.parse(readFileSync("inputs.json","utf8"));const named=JSON.parse(readFileSync("named.json","utf8"));
 function text(s){const out=[];for(const ch of s){const c=ch.codePointAt(0);if(c>=0xdc80&&c<=0xdcff)out.push(c&255);else out.push(...Buffer.from(ch,"utf8"));}return Buffer.from(out).toString("base64");}
 function normal(v,m,nt){if(v===null)return null;if(typeof v==="number"||typeof v==="bigint")return "int:"+v;if(typeof v==="string")return text(v);if(typeof v==="boolean")return v;if(Array.isArray(v))return v.map(x=>normal(x,m,nt));if(v instanceof m.Node){const fs={};for(const f of v.fields)fs[f.name]=normal(f.value,m,nt);return {type:v.type,rule:v.rule,start:v.start,end:v.end,text:text(v.text),children:v.children.length===0?null:v.children.map(x=>normal(x,m,nt)),fields:fs};}const out={};const keys=Object.keys(v);const tnode=keys.length===4&&"value" in v&&"type" in v;for(const [k,x] of Object.entries(v)){if(tnode&&k==="type"&&!nt.includes(x))continue;out[k]=k==="type"||k==="start"||k==="end"?x:normal(x,m,nt);}return out;}
-for(let i=0;i<inputs.length;i++){const m=await import("./g"+i+".ts");for(const b64 of inputs[i]){const input=new Uint8Array(Buffer.from(b64,"base64"));for(const unit of [m.CodePoints,m.Bytes]){const r=m.parseAST(input,unit),n=m.parse(input,unit),rec=m.recognize(input,unit);if(r.error?.message!==n.error?.message)throw new Error("typed error changed");console.log(JSON.stringify({grammar:i,bytes:unit===m.Bytes,input:b64,value:normal(r.value,m,named[i]),error:r.error?.message??null,recognize:rec?.message??null}));}}}
+for(let i=0;i<inputs.length;i++){const m=await import("./ts/g"+i+"/parser.ts");for(const b64 of inputs[i]){const input=new Uint8Array(Buffer.from(b64,"base64"));for(const unit of [m.CodePoints,m.Bytes]){const r=m.parseAST(input,unit),n=m.parse(input,unit),rec=m.recognize(input,unit);if(r.error?.message!==n.error?.message)throw new Error("typed error changed");console.log(JSON.stringify({grammar:i,bytes:unit===m.Bytes,input:b64,value:normal(r.value,m,named[i]),error:r.error?.message??null,recognize:rec?.message??null}));}}}
 `

@@ -288,11 +288,11 @@ writes no output. The option preserves bytecode-only form; it cannot restore sou
 
 ```bash
 pego gen -g <grammar> -module <import path> [-pkg <package>] [-runtime embed|import|only] [-s <rule>] [-o <directory>] [-types] [-recognize] [-source-info] [-default-value]
-pego gen -lang ts -g <grammar> [-s <rule>] [-o <file>] [-recognize] [-default-value]
+pego gen -lang ts -g <grammar> -o <directory> [-s <rule>] [-runtime embed|import|only] [-runtime-module <specifier>] [-types] [-recognize] [-observability] [-default-value]
 ```
 
 Generates a standalone Go parser (see [code-generation.md](code-generation.md)) or, with `-lang ts`, a TypeScript
-module (see [typescript.md](typescript.md)). `-g` is required (except with `-runtime only`), and for Go `-o`, the output directory, and `-module`, the import path of the package (with `-runtime import`, `-pkg` is enough). The Go output is `parser.go`, `api.go` and, with `-runtime embed`, a copy of the runtime in `internal/runtime`; `pego gen` refuses to replace a file in the directory that it did not generate. TypeScript goes to standard output without `-o`. `-source-info` makes the generated Go parser record the rule of each node and the names of captures.
+parser (see [typescript.md](typescript.md)). `-g` is required (except with `-runtime only`), and for Go `-o`, the output directory, and `-module`, the import path of the package (with `-runtime import`, `-pkg` is enough). The Go output is `parser.go`, `api.go` and, with `-runtime embed`, a copy of the runtime in `internal/runtime`; `pego gen` refuses to replace a file in the directory that it did not generate. TypeScript needs `-o` as well and writes `parser.ts`, `runtime.ts` and, with `-types`, `types.ts`; `-runtime import` imports the runtime from `-runtime-module` instead of writing `runtime.ts`. `-source-info` makes the generated Go parser record the rule of each node and the names of captures.
 `-default-value` makes the generated parser return default values; it cannot be combined with `-types`, because the
 types come from the dropped actions.
 

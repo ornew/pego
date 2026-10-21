@@ -10,58 +10,52 @@ import (
 	"github.com/ornew/pego/grammar"
 )
 
-// Top-level declarations share TypeScript's type/value namespace with emitted
-// grammar declarations. Derive the registry from the complete emitted runtime
-// and generated declarations, including private helpers and symbol families.
-var tsDeclaration = regexp.MustCompile(`(?m)^(?:export )?(?:const|let|class|interface|type|function) ([\p{L}\p{N}_$]+)`)
+// tsReservedTypes are the names types.ts declares itself, or imports. A grammar type with one of
+// these names would shadow or redeclare it, so the generator rejects it.
+var tsReservedTypes = []string{"Span", "TNode", "StringNode", "RecoveredError", "TypedParseResult", "TypedValue", "RuntimeNode"}
 
-// Globals used by the runtime/converter and TS binding keywords also need to
-// remain accessible after grammar interfaces and aliases have been declared.
-const tsReservedBindings = `Array BigInt Error Infinity Int32Array JSON Map Math NaN Number Object RangeError ReadonlyMap Record RegExp Set String Uint8Array
-await break case catch class const continue debugger default delete do else enum export extends false finally for function if import in instanceof new null return super switch this throw true try typeof var void while with yield
-abstract any as asserts async bigint boolean constructor declare from get global implements infer interface is keyof let module namespace never number of override private protected public readonly require set static string symbol type undefined unique unknown using`
+// tsTypedNameRef matches the identifiers of a TypeScript type expression of typedTS.
+var tsTypedNameRef = regexp.MustCompile(`[\p{L}_$][\p{L}\p{N}_$]*`)
 
-func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
+// qualifyTypes prefixes the names of the declarations of types.ts in a type expression with Types.,
+// the namespace parser.ts imports them as.
+func qualifyTypes(typ string) string {
+	return tsTypedNameRef.ReplaceAllStringFunc(typ, func(id string) string {
+		switch id {
+		case "null", "number", "bigint", "string", "boolean", "unknown", "readonly":
+			return id
+		}
+		return "Types." + id
+	})
+}
+
+// typedTS returns the declarations of types.ts and the code that parser.ts adds for typed values.
+func (g *tsGen) typedTS(start *rule) (types, parser string, err error) {
 	if g.prog.typed == nil {
-		return "", fmt.Errorf("typed values need the grammar's types (type checking did not run)")
+		return "", "", fmt.Errorf("typed values need the grammar's types (type checking did not run)")
 	}
 	t := &tsTypedGen{info: g.prog.typed, names: map[string]string{}, joins: map[string]bool{}, ids: map[string]int{}}
 	t.valueResolver = newValueResolver(g.prog, func(x ty) bool { return t.joins[x.String()] })
-	used := map[string]bool{}
-	for _, n := range strings.Fields(tsReservedBindings) {
-		used[n] = true
-	}
-	for _, source := range []string{emitted, g.vars.String(), g.init.String(), g.methods.String(), tsTypedRuntime, tsTypedDeclarations, tsTypedAPI, tsTypedRecipeTable, tsTypedNodeRecipeTable, tsTypedValueDeclaration} {
-		for _, m := range tsDeclaration.FindAllStringSubmatch(source, -1) {
-			used[m[1]] = true
-		}
-	}
-	if g.observability {
-		used["WeakMap"], used["globalThis"] = true, true
-	}
-	if len(g.fieldTypes) > 0 {
-		for _, m := range tsDeclaration.FindAllStringSubmatch(g.fieldCheckSource(), -1) {
-			used[m[1]] = true
-		}
+	reserved := map[string]bool{}
+	for _, n := range tsReservedTypes {
+		reserved[n] = true
 	}
 	for name := range g.prog.types {
 		t.all = append(t.all, name)
 	}
 	sort.Strings(t.all)
 	for _, name := range t.all {
-		n := name
-		for used[n] {
-			n += "_"
+		if reserved[name] {
+			return "", "", fmt.Errorf("the grammar type %s cannot be generated for TypeScript: types.ts declares a type with that name (reserved: %s)", name, strings.Join(tsReservedTypes, ", "))
 		}
-		used[n], t.names[name] = true, n
+		t.names[name] = name
 		if a, ok := t.info.aliases[name].(joinTy); ok && tsNodeJoin(a) {
 			t.joins[a.String()] = true
 		}
 	}
 	var b strings.Builder
-	b.WriteString("\n// --- Typed values (pego gen -types) ---\n\n")
 	b.WriteString(tsTypedDeclarations)
-	open := []string{"Node", "StringNode", "TNode<unknown>", "TypedValue[]", "RecoveredError", "number", "bigint", "string", "boolean", "null"}
+	open := []string{"RuntimeNode", "StringNode", "TNode<unknown>", "TypedValue[]", "RecoveredError", "number", "bigint", "string", "boolean", "null"}
 	for _, name := range t.all {
 		switch spec := g.prog.types[name].(type) {
 		case *grammar.TypeDef:
@@ -85,18 +79,13 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 		}
 	}
 	fmt.Fprintf(&b, "%s%s;\n\n", tsTypedValueDeclaration, strings.Join(open, " | "))
+	types = b.String()
+	b.Reset()
 	st := t.ruleRef(start.name)
 	repr := t.recipe(st)
-	stType := t.tsType(st)
-	if g.observability {
-		api, err := generatedTSObservedInvocations(fmt.Sprintf(tsTypedAPI, stType, start.id, repr), 1)
-		if err != nil {
-			return "", err
-		}
-		b.WriteString(api)
-	} else {
-		fmt.Fprintf(&b, tsTypedAPI, stType, start.id, repr)
-	}
+	stType := qualifyTypes(t.tsType(st))
+	b.WriteString("\n// --- Typed values (pego gen -types) ---\n\n")
+	fmt.Fprintf(&b, tsTypedAPI, stType, start.id, repr)
 	b.WriteString(tsTypedRuntime)
 	// recipe() reserves an ID before visiting child types, so recursive fields
 	// reference the same representation. Write the table after all registration.
@@ -128,7 +117,7 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 		}
 	}
 	b.WriteString("]);\n\n")
-	return b.String(), nil
+	return types, b.String(), nil
 }
 
 type tsTypedGen struct {
@@ -435,16 +424,16 @@ const tsTypedAPI = `/** Parses the configured start rule once and converts its c
  * Recovery preserves SyntaxErrors; absent values and incompatible recovered fields are null.
  * Positions and integer/text representations are those of parse. Conversion is invocation-local.
  */
-export function parseAST(input: string | Uint8Array, unit?: Unit): TypedParseResult<%[1]s> {
+export function parseAST(input: string | Uint8Array, unit?: Unit): Types.TypedParseResult<%[1]s> {
   return astResult<%[1]s>(run(G, R%[2]d, nseen, input, unit), %[3]d);
 }
 
 /** Typed configured-start parsing with options read and validated once. */
-export function parseASTWithOptions(input: string | Uint8Array, options?: ParseOptions): TypedParseResult<%[1]s> {
+export function parseASTWithOptions(input: string | Uint8Array, options?: ParseOptions): Types.TypedParseResult<%[1]s> {
   const o = resolveOptions(G, options);
   if (o instanceof Error) return { value: null, error: o };
-  return withWorkControl<TypedParseResult<%[1]s>>(o,
-    control => astResult<%[1]s>(run(G, R%[2]d, nseen, input, o.unit, o.maxDepth, control), %[3]d, control),
+  return withObservedOptions<Types.TypedParseResult<%[1]s>>(o,
+    control => astResult<%[1]s>(run(G, R%[2]d, nseen, input, o.unit, o.maxDepth, control, o), %[3]d, control),
     error => ({ value: null, error }));
 }
 
@@ -474,7 +463,7 @@ function astKid(n: Node, i: number): Value {
   return kid === undefined ? null : unboxNode(kid);
 }
 
-function astResult<T>(r: ParseResult, repr: number, control: WorkControl | null = null): TypedParseResult<T> {
+function astResult<T>(r: ParseResult, repr: number, control: WorkControl | null = null): Types.TypedParseResult<T> {
   return { value: astConvert(unboxNode(r.node), repr, control) as T | null, error: r.error };
 }
 

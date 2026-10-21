@@ -20,17 +20,17 @@ func TestGeneratedMaxDepthValidation(t *testing.T) {
 	}
 	safe := uint64(9007199254740991)
 	if uint64(^uint(0)>>1) >= safe+1 {
-		if got, err := GenerateTS(g, GenOptions{Start: "main", MaxDepth: int(safe)}); err != nil || len(got) == 0 {
+		if got, err := generateTSBundle(g, GenOptions{Start: "main", MaxDepth: int(safe)}); err != nil || len(got) == 0 {
 			t.Fatalf("safe JavaScript boundary rejected: %v", err)
 		}
-		if got, err := GenerateTS(g, GenOptions{Start: "main", MaxDepth: int(safe + 1)}); err == nil || len(got) != 0 {
+		if got, err := generateTSBundle(g, GenOptions{Start: "main", MaxDepth: int(safe + 1)}); err == nil || len(got) != 0 {
 			t.Fatal("unsafe JavaScript boundary accepted")
 		}
 	}
 	for _, ts := range []bool{false, true} {
 		generate := generateCode
 		if ts {
-			generate = GenerateTS
+			generate = generateTSBundle
 		}
 		base, err := generate(g, GenOptions{Package: "depth", Start: "main"})
 		if err != nil {

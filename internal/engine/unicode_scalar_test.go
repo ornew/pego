@@ -24,7 +24,7 @@ func TestInvalidCharacterClassEntryPoints(t *testing.T) {
 					_, err := generateCode(g, GenOptions{Start: "main", Package: "p", Types: true})
 					return err
 				},
-				"TS generator": func() error { _, err := GenerateTS(g, GenOptions{Start: "main"}); return err },
+				"TS generator": func() error { _, err := generateTSBundle(g, GenOptions{Start: "main"}); return err },
 			} {
 				t.Run(name, func(t *testing.T) {
 					err := run()

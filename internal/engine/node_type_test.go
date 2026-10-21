@@ -178,7 +178,7 @@ rule main A = x:"a" => A{$x}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	tsCode, err := GenerateTS(g, GenOptions{Start: "main"})
+	tsCode, err := generateTSBundle(g, GenOptions{Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -361,7 +361,7 @@ func TestNamedNodeTypeModuleValidation(t *testing.T) {
 
 func TestGeneratedTSTypedNamedNodeTypes(t *testing.T) {
 	consumer := `import { parseAST } from "./parser.ts";
-import type { Num, Ident, Pair, Nums, Any, Expr } from "./parser.ts";
+import type { Num, Ident, Pair, Nums, Any, Expr } from "./types.ts";
 ` + tsTypedAssert + `
 const r = parseAST("ab 12<1,x>[1]!bc");
 check(r.error === null && r.value !== null, "parse success");

@@ -81,7 +81,7 @@ rule a = ("é" / "ab")+ #atomic`)
 		fn   func(GenOptions) ([]byte, error)
 	}{
 		{"Go", func(opts GenOptions) ([]byte, error) { return generateCode(g, opts) }},
-		{"TypeScript", func(opts GenOptions) ([]byte, error) { return GenerateTS(g, opts) }},
+		{"TypeScript", func(opts GenOptions) ([]byte, error) { return generateTSBundle(g, opts) }},
 	} {
 		t.Run(generate.name, func(t *testing.T) {
 			opts := GenOptions{Package: "shared", Start: "main", Recognize: true}
@@ -167,7 +167,7 @@ func BenchmarkGeneratedSharing(b *testing.B) {
 				if lang == "TypeScript" {
 					tsOpts := opts
 					tsOpts.Types = false
-					generate = func() ([]byte, error) { return GenerateTS(g, tsOpts) }
+					generate = func() ([]byte, error) { return generateTSBundle(g, tsOpts) }
 				}
 				code, err := generate()
 				if err != nil {

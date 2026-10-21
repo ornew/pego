@@ -51,9 +51,16 @@ func TestGeneratedTSFullWorkloadParity(t *testing.T) {
 				t.Fatal(err)
 			}
 			dir := t.TempDir()
+			// The generated files import each other with .js specifiers, which the loader resolves to
+			// the .ts sources for Node.js.
+			for _, f := range generated {
+				if err := os.WriteFile(filepath.Join(dir, f.Path), f.Content, 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
 			for name, data := range map[string][]byte{
 				"package.json": []byte(`{"type":"module"}`),
-				"parser.ts":    generated,
+				"loader.mjs":   []byte("import {register} from \"node:module\";\nregister(\"data:text/javascript,\" + encodeURIComponent(`export async function resolve(s,c,n){try{return await n(s,c)}catch(e){if(s.startsWith(\".\")&&s.endsWith(\".js\"))return n(s.slice(0,-3)+\".ts\",c);throw e}}`));\n"),
 				"input.json":   inputs,
 				"consumer.ts":  []byte(tsFullWorkloadConsumer),
 				"runner.mjs": []byte(`import { readFileSync } from "node:fs";
@@ -71,7 +78,7 @@ await import("./consumer.ts");
 			if out, err := cmd.CombinedOutput(); err != nil {
 				t.Fatalf("strict TypeScript consumer: %v\n%s", err, out)
 			}
-			cmd = exec.Command(node, "runner.mjs")
+			cmd = exec.Command(node, "--import", "./loader.mjs", "runner.mjs")
 			cmd.Dir = dir
 			if out, err := cmd.CombinedOutput(); err != nil {
 				t.Fatalf("full-corpus TypeScript parity: %v\n%s", err, out)

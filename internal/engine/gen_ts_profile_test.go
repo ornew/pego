@@ -43,7 +43,6 @@ func TestGeneratedTSProfile(t *testing.T) {
 		{"recover", "type W = { Text string }\nrule main W = t:((first / second) #recover(skip=\"!\")) #atomic => W{Text: text($t)}\nrule first W = t:(\"a\") #atomic => W{Text: text($t)}\nrule second W = t:(\"b\") #atomic => W{Text: text($t)}", "!", `check(s.skipped===2,"recovery skips");`},
 		{"unicode", "type W = { Text string }\nrule main W = t:(part part) #atomic => W{Text: text($t)}\nrule part W = t:(\"é\") #atomic => W{Text: text($t)}", "éé", `check(s.rules.find(r=>r.rule==="main")!.consumed===(unit===p.Bytes?4:2),"position units");`},
 		{"nilvalue", "type W = { Text string }\nrule main *W = part => nil\nrule part W = t:(\"a\") #atomic => W{Text: text($t)}", "a", ``},
-		{"collision", "type Profile = { Text string }\ntype ProfileSnapshot = { Text string }\ntype RuleProfile = { Text string }\ntype ProfileLocation = { Text string }\ntype SkipReasonCount = { Text string }\ntype ProfileObservation = { Text string }\ntype ProfileFrame = { Text string }\ntype ProfileData = { Text string }\ntype WeakMap = { Text string }\nrule main Profile = t:(part) #atomic => Profile{Text: text($t)}\nrule part Profile = t:(\"a\") #atomic => Profile{Text: text($t)}", "a", ``},
 	} {
 		g, err := syntax.Parse(f.grammar)
 		if err != nil {
@@ -55,16 +54,16 @@ func TestGeneratedTSProfile(t *testing.T) {
 				name += "_typed"
 			}
 			options := GenOptions{Start: "main", Types: typed, Recognize: true}
-			reference, err := GenerateTS(g, options)
+			reference, err := generateTSBundle(g, options)
 			if err != nil {
 				t.Fatal(name, err)
 			}
 			options.Observability = true
-			code, err := GenerateTS(g, options)
+			code, err := generateTSBundle(g, options)
 			if err != nil {
 				t.Fatal(name, err)
 			}
-			again, err := GenerateTS(g, options)
+			again, err := generateTSBundle(g, options)
 			if err != nil || string(again) != string(code) {
 				t.Fatal(name, "unstable source", err)
 			}
@@ -75,7 +74,7 @@ func TestGeneratedTSProfile(t *testing.T) {
 			write(name+"_reference.ts", string(reference))
 			typedRoute := ""
 			if typed {
-				typedRoute = `routes.push((input,o)=>{const a=p.parseASTWithOptions(input,o),b=reference.parseASTWithOptions(input,o);check(stable(a.value)===stable(b.value),"typed value parity");return {value:a.value,error:a.error,referenceError:b.error}});`
+				typedRoute = `routes.push((input,o)=>{const a=p.parseASTWithOptions(input,o),b=reference.parseASTWithOptions(input,plain(o));check(stable(a.value)===stable(b.value),"typed value parity");return {value:a.value,error:a.error,referenceError:b.error}});`
 			}
 			consumer := strings.NewReplacer("PARSER", name, "INPUT", fmt.Sprintf("%q", f.input), "CHECKS", f.checks, "TYPEDROUTE", typedRoute, "PLAIN", fmt.Sprint(f.name == "plain")).Replace(tsProfileConsumer)
 			write(name+"_consumer.ts", consumer)
@@ -120,6 +119,9 @@ const tsProfileConsumer = `import * as p from "./PARSER.ts";
 import * as reference from "./PARSER_reference.ts";
 ` + tsTypedAssert + `
 function errorView(e:Error|null):unknown{return e===null?null:{name:e.name,message:e.message,data:JSON.parse(stable(e))}}
+// The reference parser is generated without observability: it rejects the profile and trace options.
+function plain(o:p.ParseOptions):p.ParseOptions{const {profile,trace,traceRules,traceMaxDepth,...rest}=o;void profile;void trace;void traceRules;void traceMaxDepth;return rest}
+check(String(reference.parseWithOptions("a",{profile:new reference.Profile()}).error?.message).includes("observability"),"a parser without observability rejects the profile option");
 function counts(s:p.ProfileSnapshot):unknown{return {...s,time:0,rules:s.rules.map(r=>({...r,time:0,selfTime:0}))}}
 function checkProfile(s:p.ProfileSnapshot,events:readonly p.TraceEvent[]):void{
  const exits=events.filter(e=>e.kind==="exit"),entries=events.filter(e=>e.kind==="enter"),skips=events.filter(e=>e.kind==="skipped");
@@ -140,9 +142,9 @@ function checkProfile(s:p.ProfileSnapshot,events:readonly p.TraceEvent[]):void{
 type Result={value:unknown;error:Error|null;referenceError:Error|null};
 type Route=(input:string|Uint8Array,o:p.ParseOptions)=>Result;
 const routes:Route[]=[
- (input,o)=>{const a=p.parseWithOptions(input,o),b=reference.parseWithOptions(input,o);check(stable(p.marshal(a.node))===stable(reference.marshal(b.node)),"Node parity");return {value:a.node,error:a.error,referenceError:b.error}},
- (input,o)=>{const a=p.parseRuleWithOptions("main",input,o),b=reference.parseRuleWithOptions("main",input,o);check(stable(p.marshal(a.node))===stable(reference.marshal(b.node)),"named parity");return {value:a.node,error:a.error,referenceError:b.error}},
- (input,o)=>({value:null,error:p.recognizeWithOptions(input,o),referenceError:reference.recognizeWithOptions(input,o)}),
+ (input,o)=>{const a=p.parseWithOptions(input,o),b=reference.parseWithOptions(input,plain(o));check(stable(p.marshal(a.node))===stable(reference.marshal(b.node)),"Node parity");return {value:a.node,error:a.error,referenceError:b.error}},
+ (input,o)=>{const a=p.parseRuleWithOptions("main",input,o),b=reference.parseRuleWithOptions("main",input,plain(o));check(stable(p.marshal(a.node))===stable(reference.marshal(b.node)),"named parity");return {value:a.node,error:a.error,referenceError:b.error}},
+ (input,o)=>({value:null,error:p.recognizeWithOptions(input,o),referenceError:reference.recognizeWithOptions(input,plain(o))}),
 ];
 TYPEDROUTE
 const source=INPUT;

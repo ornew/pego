@@ -537,21 +537,38 @@ func GenerateGoRuntime(module string) ([]GeneratedFile, error) {
 	return engine.Generate(nil, engine.GenOptions{Module: module, Runtime: RuntimeOnly})
 }
 
-// GenerateTypeScript generates the source code of a standalone TypeScript parser for g: a single ES
-// module without dependencies, whose parse(input) parses from the rule start and returns the same
-// trees and errors as the engine. WithRecognize also generates recognize; WithTypes adds typed
-// declarations and configured-start parseAST/parseASTWithOptions. It does not
-// support stream or incremental parsing. The result has one file, parser.ts.
+// WithRuntimeModule sets the module specifier from which a TypeScript parser generated with
+// RuntimeImport imports its runtime, such as "@scope/pego-runtime" or "../shared/runtime.js". The
+// runtime module is the runtime.ts of GenerateTypeScriptRuntime (or of any parser generated with
+// RuntimeEmbed). It is an error with another mode.
+func WithRuntimeModule(specifier string) GenOption {
+	return func(o *engine.GenOptions) { o.RuntimeModule = specifier }
+}
+
+// GenerateTypeScript generates the files of a TypeScript parser for g: its parse(input) parses from
+// the rule start and returns the same trees and errors as the engine. The files are
+//
+//   - runtime.ts, the runtime, which does not depend on the grammar (with RuntimeEmbed, the default),
+//   - parser.ts, the code generated from the grammar, which imports ./runtime.js, and
+//   - types.ts with WithTypes, the declarations of the grammar's types, which parser.ts imports.
+//
+// WithRecognize also generates recognize; WithTypes adds configured-start parseAST and
+// parseASTWithOptions. WithRuntime(RuntimeImport) with WithRuntimeModule leaves runtime.ts out and
+// imports the runtime from that specifier, so that several parsers can share one copy;
+// RuntimeOnly generates only runtime.ts, for which g may be nil. It does not support stream or
+// incremental parsing.
 func GenerateTypeScript(g *grammar.Grammar, start string, opts ...GenOption) ([]GeneratedFile, error) {
 	o := engine.GenOptions{Start: start}
 	for _, opt := range opts {
 		opt(&o)
 	}
-	code, err := engine.GenerateTS(g, o)
-	if err != nil {
-		return nil, err
-	}
-	return []GeneratedFile{{Path: "parser.ts", Content: code}}, nil
+	return engine.GenerateTS(g, o)
+}
+
+// GenerateTypeScriptRuntime generates only the runtime of TypeScript parsers, runtime.ts
+// (RuntimeOnly).
+func GenerateTypeScriptRuntime() ([]GeneratedFile, error) {
+	return engine.GenerateTS(nil, engine.GenOptions{Runtime: RuntimeOnly})
 }
 
 // MarshalBinary encodes the parser (bytecode, grammar AST and start rule) in the .pegoc format.

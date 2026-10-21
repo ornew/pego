@@ -104,7 +104,7 @@ func TestGeneratedTSScalarIteratorNamespace(t *testing.T) {
 
 rule main Generator = t:("z") #atomic => Generator{Text: text($t)}`
 	consumer := `import {parseAST} from "./parser.ts";
- import type {Generator} from "./parser.ts";
+ import type {Generator} from "./types.ts";
 ` + tsTypedAssert + `
  const value: Generator|null=parseAST("z").value;
  check(value?.type==="Generator"&&stable(value).includes("Generator"),"existing Generator export remains usable");`

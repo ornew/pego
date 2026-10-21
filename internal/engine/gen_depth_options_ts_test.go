@@ -48,7 +48,7 @@ rule n = ("(" n ")" / "é") #recover(skip="?")`, []string{"é", "(é)", "((é))"
 		if err != nil {
 			t.Fatal(err)
 		}
-		code, err := GenerateTS(g, GenOptions{Start: "main", Recognize: true, MaxDepth: 4})
+		code, err := generateTSBundle(g, GenOptions{Start: "main", Recognize: true, MaxDepth: 4})
 		if err != nil {
 			t.Fatal(err)
 		}

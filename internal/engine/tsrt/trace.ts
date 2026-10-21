@@ -1,4 +1,4 @@
-// Generation-time opt-in tracing. Ordinary generated modules omit this source.
+// Rule tracing. A parser generated without observability rejects the trace options.
 
 /** An actual rule entry, completed call, or identifiable dispatch skip. */
 export type TraceKind = "enter" | "exit" | "skipped";
@@ -19,7 +19,7 @@ export interface TraceEvent {
   readonly skipReason: string;
 }
 
-interface ObservationCall {
+export interface ObservationCall {
   readonly rule: string;
   readonly pos: number;
   readonly level: number;
@@ -30,13 +30,13 @@ interface ObservationCall {
 }
 
 // Remains wrapped until outside run and work-control error classification.
-class TraceFailure {
+export class TraceFailure {
   readonly value: unknown;
   readonly scope: object;
   constructor(value: unknown, scope: object) { this.value = value; this.scope = scope; }
 }
 
-class Observation {
+export class Observation {
   private callback: ((event: TraceEvent) => void) | null;
   private scope: object | null;
   private rules: Set<string> | null;
@@ -103,7 +103,7 @@ class Observation {
 
 // This outer boundary must not expose callback values to withWorkControl's
 // private Fatal/SignalPanic catches. It also clears option-owned references.
-function withObservedOptions<T>(o: ResolvedParseOptions, body: (control: WorkControl | null) => T, interrupted: (error: Error) => T): T {
+export function withObservedOptions<T>(o: ResolvedParseOptions, body: (control: WorkControl | null) => T, interrupted: (error: Error) => T): T {
   try {
     const value = withWorkControl(o, body, interrupted);
     return value;

@@ -179,7 +179,7 @@ func TestOwnedFiles(t *testing.T) {
 		pego.RuntimeImport: {parser, api, types, rt},
 		pego.RuntimeOnly:   {rt},
 	} {
-		if got := ownedFiles(dir, mode); !slices.Equal(got, want) {
+		if got := ownedFiles(dir, mode, false); !slices.Equal(got, want) {
 			t.Errorf("%v owns %v, want %v", mode, got, want)
 		}
 	}
@@ -228,7 +228,13 @@ func TestGenFlagMisuse(t *testing.T) {
 		{"recognize with only", []string{"-runtime", "only", "-recognize", "-o", out}, "-recognize cannot be combined"},
 		{"pkg with only", []string{"-runtime", "only", "-pkg", "x", "-o", out}, "-pkg cannot be combined"},
 		{"module with only", []string{"-runtime", "only", "-module", "example.com/x", "-o", out}, "-module cannot be combined"},
-		{"runtime with ts", []string{"-lang", "ts", "-g", g, "-runtime", "import"}, "-runtime is not supported with -lang ts"},
+		{"import without runtime module", []string{"-lang", "ts", "-g", g, "-runtime", "import", "-o", out}, "-runtime-module"},
+		{"runtime module with embed", []string{"-lang", "ts", "-g", g, "-runtime-module", "../rt.js", "-o", out}, "-runtime-module can only be combined with -runtime import"},
+		{"runtime module with go", []string{"-g", g, "-module", "example.com/x", "-runtime-module", "../rt.js", "-o", out}, "-runtime-module is only supported with -lang ts"},
+		{"grammar with ts only", []string{"-lang", "ts", "-g", g, "-runtime", "only", "-o", out}, "-g cannot be combined with -runtime only"},
+		{"types with ts only", []string{"-lang", "ts", "-runtime", "only", "-types", "-o", out}, "-types cannot be combined with -runtime only"},
+		{"module with ts only", []string{"-lang", "ts", "-runtime", "only", "-runtime-module", "../rt.js", "-o", out}, "-runtime-module cannot be combined"},
+		{"ts without output", []string{"-lang", "ts", "-g", g}, "-o"},
 		{"embed without module", []string{"-g", g, "-pkg", "kv", "-o", out}, "-module"},
 		{"import without module or pkg", []string{"-g", g, "-runtime", "import", "-o", out}, "-pkg or -module"},
 		{"hyphenated module", []string{"-g", g, "-module", "example.com/my-parser", "-o", out}, "-pkg"},
@@ -262,5 +268,74 @@ func TestGenImportNeedsOnlyPackageName(t *testing.T) {
 	}
 	if data, err := os.ReadFile(filepath.Join(dir, "parser.go")); err != nil || !strings.Contains(string(data), "package kv\n") {
 		t.Errorf("a /v2 module did not name the package after its parent: %v", err)
+	}
+}
+
+// TestOwnedFilesTS checks the files each mode may remove as stale for TypeScript.
+func TestOwnedFilesTS(t *testing.T) {
+	dir := t.TempDir()
+	parser, types, rt := filepath.Join(dir, "parser.ts"), filepath.Join(dir, "types.ts"), filepath.Join(dir, "runtime.ts")
+	for mode, want := range map[pego.RuntimeMode][]string{
+		pego.RuntimeEmbed:  {parser, types, rt},
+		pego.RuntimeImport: {parser, types, rt},
+		pego.RuntimeOnly:   {rt},
+	} {
+		if got := ownedFiles(dir, mode, true); !slices.Equal(got, want) {
+			t.Errorf("%v owns %v, want %v", mode, got, want)
+		}
+	}
+}
+
+// TestGenTypeScriptModes checks the files of each TypeScript runtime mode, and that a later
+// generation removes the generated files that the new mode no longer writes.
+func TestGenTypeScriptModes(t *testing.T) {
+	g := writeFile(t, "kv.pego", kv)
+	dir := t.TempDir()
+	list := func() string {
+		var names []string
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, e := range entries {
+			names = append(names, e.Name())
+		}
+		return strings.Join(names, " ")
+	}
+	gen := func(args ...string) {
+		t.Helper()
+		if _, err := runCLI(t, "", append([]string{"gen", "-lang", "ts", "-o", dir}, args...)...); err != nil {
+			t.Fatal(err)
+		}
+	}
+	gen("-g", g, "-types")
+	if got := list(); got != "parser.ts runtime.ts types.ts" {
+		t.Fatalf("embed -types wrote %q", got)
+	}
+	gen("-g", g, "-runtime", "import", "-runtime-module", "../shared/runtime.js")
+	if got := list(); got != "parser.ts" {
+		t.Fatalf("import wrote %q; the stale runtime.ts and types.ts must be gone", got)
+	}
+	if data := readTS(t, dir, "parser.ts"); !strings.Contains(data, `from "../shared/runtime.js"`) || strings.Contains(data, "./runtime.js") {
+		t.Errorf("parser.ts does not import the runtime module:\n%.400s", data)
+	}
+	gen("-runtime", "only")
+	if got := list(); got != "parser.ts runtime.ts" {
+		t.Fatalf("only wrote %q; it must leave parser.ts alone", got)
+	}
+	gen("-g", g)
+	if got := list(); got != "parser.ts runtime.ts" {
+		t.Fatalf("embed wrote %q", got)
+	}
+	hand := filepath.Join(dir, "types.ts")
+	if err := os.WriteFile(hand, []byte("export type A = 1;\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	gen("-g", g) // types.ts is hand-written: not touched, as it is not generated
+	if data, _ := os.ReadFile(hand); string(data) != "export type A = 1;\n" {
+		t.Errorf("a hand-written types.ts was changed: %q", data)
+	}
+	if _, err := runCLI(t, "", "gen", "-lang", "ts", "-o", dir, "-g", g, "-types"); err == nil || !strings.Contains(err.Error(), "was not generated by pego") {
+		t.Errorf("-types over a hand-written types.ts: %v", err)
 	}
 }

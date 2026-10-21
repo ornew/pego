@@ -27,9 +27,10 @@ type ResolvedParseOptions = { Text string }`
 }
 
 const tsWorkControlFoundationConsumer = `import * as p from "./parser.ts";
-import type { CancellationSignal, CancellationSignal_, ParseInterruptionError_, WorkControl_, ResolvedParseOptions_ } from "./parser.ts";
+import type { CancellationSignal } from "./parser.ts";
+import type { CancellationSignal as GrammarCancellationSignal, ParseInterruptionError as GrammarParseInterruptionError, WorkControl, ResolvedParseOptions } from "./types.ts";
 ` + tsTypedAssert + `
-const collisions: [CancellationSignal_|null, ParseInterruptionError_|null, WorkControl_|null, ResolvedParseOptions_|null] = [null,null,null,null];
+const collisions: [GrammarCancellationSignal|null, GrammarParseInterruptionError|null, WorkControl|null, ResolvedParseOptions|null] = [null,null,null,null];
 check(collisions.length===4,"control declarations remain reserved");
 const reason = { marker: "cancellation reason" };
 const canceled: CancellationSignal = Object.freeze({aborted:true,reason});

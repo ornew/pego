@@ -30,8 +30,8 @@ tradeoffs are recorded below.
 
 ## Goals
 
-- Export every declared grammar type and alias with deterministic legal TS
-  names, including collision cascades and Unicode names.
+- Export every declared grammar type and alias with its own name from
+  `types.ts`, including Unicode names.
 - Give the configured start rule a static result type with accurate nullable
   fields, aliases and recovery values.
 - Preserve the Node parser's whole-input, action, predicate, cut, recovery,
@@ -155,17 +155,16 @@ retain their member mapping plus RecoveredError. Nonmatching nodes become null u
 in which case Go preserves them as Node. Joins without a canonical declared
 node-join recipe use any-conversion, as Go does. No checker or inference rule changes are required.
 
-Use a TS-specific export allocator covering every existing top-level type and
-value declaration, including private helpers, not just exports. Reserve Parser,
-Actx, Rule, OperatorsRuleLine and other runtime declarations, generated symbol families
-such as R0/Q0, and all new typed helpers/APIs before allocating grammar names.
-Maintain one complete declaration registry for the runtime/generator; the
-implementation must not rely on a short manually selected public-name list.
-Process grammar names in sorted order and append underscores for collisions.
-Preserve original grammar names in discriminators. Account for legal TS binding
-names and quote property keys where needed; never normalize Unicode spelling.
-Document regeneration cascades and test private-name collisions as well as
-public ones, rather than silently dropping exports.
+The declarations of the grammar live in `types.ts`, a module of its own, and
+`parser.ts` refers to them as `Types.<name>`. The names of the runtime and of the
+generated parser (Parser, Actx, Rule, OperatorsRuleLine, the R0/Q0 families, Node,
+Value) therefore cannot collide with a grammar type, and a grammar type keeps its
+own name. The few names that `types.ts` declares itself (`Span`, `TNode`,
+`StringNode`, `RecoveredError`, `TypedParseResult`, `TypedValue` and the import
+`RuntimeNode`) are reserved: a grammar type with one of them fails generation with
+an error that lists them, rather than being renamed. Preserve original grammar names
+in discriminators. Account for legal TS binding names and quote property keys where
+needed; never normalize Unicode spelling.
 
 ### Results, Failure and Recovery
 
@@ -288,10 +287,11 @@ The test suite covers the cases below. Focused checks and full integration
 validation passed; the results below quantify the opt-in converter costs:
 
 - Strict consumer compilation and execution: exported interfaces, every alias,
-  union narrowing, nullable results and public/private collision cascades.
-  Include grammar types Parser, Actx, Rule and OperatorsRuleLine, plus generated-symbol
-  collisions such as R0. Assert imports/declaration exports,
-  not just generated-file compilation.
+  union narrowing and nullable results. Include grammar types named like the
+  runtime and generated declarations (Parser, Actx, Rule, OperatorsRuleLine, Node,
+  R0), and assert that the reserved names fail generation. Assert imports and
+  declaration exports of the real `runtime.ts`, `types.ts` and `parser.ts`, not just
+  generated-file compilation.
 - Differential conversion versus existing Node results and Go typed mappings
   on common representable values. Normalize backend shape/64-bit integer
   transport explicitly; do not confuse serialization equality with value
@@ -330,7 +330,7 @@ normalization. Strict consumers verified imports and declaration exports.
 `PEGO_TS_TYPED_DIR` exported matching typed/untyped sources, strict consumers,
 declarations and small/large inputs for field-heavy, capture-free, recovery
 and shared-DAG controls. The checked-in `bench/ts-typed.mjs` harness has SHA-256
-`f3c37af361a2924b291f022d8fade3a00adee5487147aa2ec1bb57918faed2d9`.
+`ed66f403f3de4e2c5ccddb8605dee8e175002bed1f5c8a356b6edf3a854e44da`.
 
 Full root tests, vet, all ten parser-module suites, parser freshness,
 regeneration and focused source-review checks passed. Strict TypeScript
@@ -429,7 +429,7 @@ with the matching module path. Use one warmup and three timed calls for large
 fold/LR, and 1,000 warmups/10,000 calls for small cases. For memory, use
 `--phase memory --warmup 20 --retain 1`, and three alternating pairs. Result
 creation, observation and release finish in helper frames before GC sampling.
-To check inactive typed output, compare Node mode from `untyped.ts` and
+To check inactive typed output, compare Node mode from `untyped/parser.ts` and
 `parser.ts`, using identical inputs, units and call counts.
 
 Source/declaration checks cover all five fixture modules. Build comparisons

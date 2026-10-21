@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -36,12 +37,12 @@ func runTypedTSFixtureWithLib(t *testing.T, src, consumer string, opts GenOption
 	if opts.Start == "" {
 		opts.Start = "main"
 	}
-	code, err := GenerateTS(g, opts)
+	files, err := GenerateTS(g, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
 	again, err := GenerateTS(g, opts)
-	if err != nil || string(again) != string(code) {
+	if err != nil || !slices.EqualFunc(files, again, func(a, b GeneratedFile) bool { return a.Path == b.Path && string(a.Content) == string(b.Content) }) {
 		t.Fatal("typed generation is not deterministic", err)
 	}
 	dir := t.TempDir()
@@ -51,6 +52,7 @@ func runTypedTSFixtureWithLib(t *testing.T, src, consumer string, opts GenOption
 			t.Fatal(err)
 		}
 	}
+	writeTSFiles(t, dir, files)
 	if keep != "" {
 		reference := opts
 		reference.Types = false
@@ -58,14 +60,10 @@ func runTypedTSFixtureWithLib(t *testing.T, src, consumer string, opts GenOption
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(dir, "untyped.ts"), plain, 0o644); err != nil {
-			t.Fatal(err)
-		}
+		writeTSFiles(t, filepath.Join(dir, "untyped"), plain)
 	}
-	for name, content := range map[string]string{"parser.ts": string(code), "consumer.ts": consumer, "package.json": `{"type":"module"}`} {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
-			t.Fatal(err)
-		}
+	if err := os.WriteFile(filepath.Join(dir, "consumer.ts"), []byte(consumer), 0o644); err != nil {
+		t.Fatal(err)
 	}
 	args := []string{"--target", "es2020", "--lib", lib, "--strict", "--noUnusedLocals", "--noUnusedParameters", "--noImplicitReturns", "--noFallthroughCasesInSwitch", "--noImplicitOverride", "--exactOptionalPropertyTypes", "--noUncheckedIndexedAccess", "--noPropertyAccessFromIndexSignature", "--erasableSyntaxOnly", "--verbatimModuleSyntax", "--allowImportingTsExtensions", "--declaration", "--emitDeclarationOnly", "--outDir", "declarations", "parser.ts", "consumer.ts"}
 	cmd := exec.Command(tsc, args...)
@@ -77,7 +75,7 @@ func runTypedTSFixtureWithLib(t *testing.T, src, consumer string, opts GenOption
 	if err != nil || !strings.Contains(string(decl), "export declare function parseAST(") || !strings.Contains(string(decl), "export declare function parseASTWithOptions(") {
 		t.Fatalf("typed declaration exports missing: %v", err)
 	}
-	cmd = exec.Command(node, "consumer.ts")
+	cmd = exec.Command(node, nodeTSArgs("consumer.ts")...)
 	cmd.Dir = dir
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("typed Node consumer: %v\n%s", err, out)
@@ -106,9 +104,9 @@ type R = { W W; Items Words; Missing Words; Empty Words; Optional Optional; I In
 rule main R = w:word xs:word* raw:("!"? "?"?) => R{W: $w, Items: $xs.Value, OpenItems: $xs.Value, Empty: list(), I: -7 / 2, Big: 9223372036854775807, S: $w.Text, B: true, M: 9007199254740992, U: $w, Any: $raw, Raw: $raw}
 rule word Word = t:([a-zあ-ん😀]+) #atomic => Word{Text: text($t)}`
 	consumer := `import { parse, parseAST, parseASTWithOptions, CodePoints, Bytes, Node } from "./parser.ts";
-import type { R_, W, Words, Optional, Integer, Text, Flag, MaybeInteger, Choice, ChoiceAgain, Mixed, Open, Raw, TypedParseResult } from "./parser.ts";
+import type { R, W, Words, Optional, Integer, Text, Flag, MaybeInteger, Choice, ChoiceAgain, Mixed, Open, Raw, TypedParseResult } from "./types.ts";
 ` + tsTypedAssert + `
-const r: TypedParseResult<R_ | null> = parseAST("😀あ!?");
+const r: TypedParseResult<R | null> = parseAST("😀あ!?");
 check(r.error === null && r.value !== null, "parse success");
 const v = r.value;
 const types: [W, Words, Optional, Integer, Text, Flag, MaybeInteger, Choice, ChoiceAgain, Mixed, Open, Raw] = [v.W, v.Items, v.Optional, v.I, v.S, v.B, v.O, v.U, v.U, v.M, v.Any, v.Raw];
@@ -141,7 +139,9 @@ v.I = 1;
 }
 
 func TestGeneratedTSTypedNameCollisions(t *testing.T) {
-	names := []string{"Actx", "ASTRecipe", "Bytes", "Error", "Map", "Match", "Node", "Parser", "OperatorsRuleLine", "RecoveredError", "StringNode", "R0", "R0_", "Rule", "Span", "ReadonlyMap", "R", "TypedValue", "Value"}
+	// Names of the runtime and of the generated parser are free: types.ts is a module of its own.
+	// The names types.ts declares are reserved (TestGeneratedTSReservedTypes).
+	names := []string{"Actx", "ASTRecipe", "Bytes", "Error", "Map", "Match", "Node", "Parser", "OperatorsRuleLine", "R0", "R0_", "Rule", "ReadonlyMap", "R", "Value", "Grammar", "ParseResult", "TraceKind", "Profile"}
 	var src, imports, vals strings.Builder
 	for i, name := range names {
 		// Match and Error are retired node type names, which grammars cannot declare, so aliases
@@ -150,12 +150,8 @@ func TestGeneratedTSTypedNameCollisions(t *testing.T) {
 			continue
 		}
 		fmt.Fprintf(&src, "type %s = { Text string }\nrule n%d %s = t:(\"x\") #atomic => %s{Text: text($t)}\n", name, i, name, name)
-		export := name + "_"
-		if name == "R0_" {
-			export = "R0__"
-		}
-		fmt.Fprintf(&imports, "import type { %s } from \"./parser.ts\";\n", export)
-		fmt.Fprintf(&vals, "const v%d: %s | null = null; check(v%d === null, %q);\n", i, export, i, name)
+		fmt.Fprintf(&imports, "import type { %s } from \"./types.ts\";\n", name)
+		fmt.Fprintf(&vals, "const v%d: %s | null = null; check(v%d === null, %q);\n", i, name, i, name)
 	}
 	src.WriteString("rule main = n0\n")
 	consumer := "import {parseAST} from \"./parser.ts\";\n" + imports.String() + tsTypedAssert + vals.String() + `check(parseAST("x").value?.type === "Actx", "discriminator preserves grammar name"); check(stable(parseAST("x").value).includes("Actx"), "result");`
@@ -270,7 +266,7 @@ rule n = "(" n ")" / "x"`, `import {parseAST, parseASTWithOptions} from "./parse
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := GenerateTS(g, GenOptions{Start: "main", Types: true}); err == nil {
+		if _, err := generateTSBundle(g, GenOptions{Start: "main", Types: true}); err == nil {
 			t.Errorf("top-level scalar %s unexpectedly accepted", scalar)
 		}
 	}
@@ -337,7 +333,7 @@ rule main = leaf #recover(skip=.+)`, "error", true},
 				t.Fatalf("inferred start = %s, want %s", got, c.inferred)
 			}
 			consumer := `import {parseAST, parse, Bytes, CodePoints, Node} from "./parser.ts";
-import type {TypedValue, TypedParseResult} from "./parser.ts";
+import type {TypedValue, TypedParseResult} from "./types.ts";
 ` + tsTypedAssert + `for(const unit of [CodePoints,Bytes]) {
  const r: TypedParseResult<TypedValue> = parseAST("!",unit), n = parse("!",unit);
  check(r.error !== null && r.error.message === n.error?.message, "inferred diagnostics");
@@ -379,7 +375,7 @@ rule wrapped Text = t:("x�y") #atomic => Text{Text: text($t)}`
 }
 
 const tsByteStringSurrogateConsumer = `import * as p from "./parser.ts";
-import type { Text as ParsedText } from "./parser.ts";
+import type { Text as ParsedText } from "./types.ts";
 ` + tsTypedAssert + `
 const startIsWrapped = START_WRAPPED;
 const samples = ["", "x�y", "\uD800", "\uDC00", "\uDC7F", "\uDD00", "\uDFFF", "\uD800\uDC80", "a\uD800\uDC80\uDC80z"];
@@ -428,7 +424,7 @@ func TestGeneratedTSDeclaredNodeAny(t *testing.T) {
 rule a = "a"
 rule b = "b"`
 	consumer := `import { parseAST } from "./parser.ts";
-import type { TNode, TypedParseResult } from "./parser.ts";
+import type { TNode, TypedParseResult } from "./types.ts";
 ` + tsTypedAssert + `
 type Eq<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 const same: Eq<ReturnType<typeof parseAST>, TypedParseResult<TNode<unknown> | null>> = true;

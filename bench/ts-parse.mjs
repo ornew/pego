@@ -11,6 +11,11 @@
 import {readFileSync} from "node:fs";
 import {resolve} from "node:path";
 import {pathToFileURL} from "node:url";
+import {register} from "node:module";
+
+// The generated files import each other as ./runtime.js, which a TypeScript build resolves to runtime.ts;
+// Node.js running the .ts sources needs this hook to do the same.
+register("data:text/javascript," + encodeURIComponent(`export async function resolve(s,c,n){try{return await n(s,c)}catch(e){if(s.startsWith(".")&&s.endsWith(".js"))return n(s.slice(0,-3)+".ts",c);throw e}}`));
 
 const args = Object.create(null);
 for (let i = 2; i < process.argv.length; i += 2) {

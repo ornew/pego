@@ -522,6 +522,7 @@ let genTimer = 0;
 let genSeq = 0;
 let generatedCode = "";
 let generatedFiles = [];
+let generatedNames = { parser: "parser.go", second: "api.go", types: "types/types.go" };
 let generatedLanguage = "go";
 let generatedKey = "";
 let pendingGenerationKey = "";
@@ -545,9 +546,13 @@ async function generate() {
   const pkg = $("gen-package").value.trim() || "parser";
   generatedCode = "";
   setDownloads([]);
-  $("gen-download").textContent = language === "go" ? "Download parser.go" : "Download parser.ts";
-  $("gen-download-api").hidden = language !== "go";
-  $("gen-download-types").hidden = language !== "go" || !$("gen-types").checked;
+  const names = language === "go" ? { parser: "parser.go", second: "api.go", types: "types/types.go" } : { parser: "parser.ts", second: "runtime.ts", types: "types.ts" };
+  generatedNames = names;
+  $("gen-download").textContent = `Download ${names.parser}`;
+  $("gen-download-api").textContent = `Download ${names.second}`;
+  $("gen-download-api").hidden = false;
+  $("gen-download-types").textContent = `Download ${names.types}`;
+  $("gen-download-types").hidden = !$("gen-types").checked;
   const req = {
     grammar: grammarEditor.value,
     package: pkg,
@@ -556,7 +561,7 @@ async function generate() {
     types: $("gen-types").checked,
     recognize: $("gen-recognize").checked,
   };
-  const flags = language === "go" ? [`-module example.com/${pkg}`, "-runtime import"] : ["-lang ts"];
+  const flags = language === "go" ? [`-module example.com/${pkg}`, "-runtime import"] : ["-lang ts", "-o out"];
   if (req.start && req.start !== "main") flags.push(`-s ${req.start}`);
   if (req.types) flags.push("-types");
   if (req.recognize) flags.push("-recognize");
@@ -572,9 +577,10 @@ async function generate() {
       generatedLanguage = language;
       generatedKey = key;
       pagedText("pg-go", generatedCode, language === "go" ? "go" : "");
-      // A Go parser is the files parser.go, api.go and, with types, types/types.go: each is offered on its own, since
-      // the displayed text joins them under banners and is not a compilable file.
-      setDownloads(res.files?.length ? res.files : generatedCode ? [{ path: language === "go" ? "parser.go" : "parser.ts", content: generatedCode }] : []);
+      // A Go parser is the files parser.go, api.go and, with types, types/types.go; a TypeScript parser is parser.ts,
+      // runtime.ts and, with types, types.ts. Each is offered on its own, since the displayed text joins them under
+      // banners and is not a compilable file.
+      setDownloads(res.files?.length ? res.files : generatedCode ? [{ path: generatedNames.parser, content: generatedCode }] : []);
     }
   } catch (err) {
     if (n === genSeq && key === generationKey()) {
@@ -592,9 +598,9 @@ for (const id of ["gen-language", "gen-package", "gen-types", "gen-recognize"]) 
 });
 function setDownloads(files) {
   generatedFiles = files;
-  $("gen-download").disabled = files.length < 1;
-  $("gen-download-api").disabled = files.length < 2;
-  $("gen-download-types").disabled = !files.some((f) => f.path === "types/types.go");
+  $("gen-download").disabled = !files.some((f) => f.path === generatedNames.parser);
+  $("gen-download-api").disabled = !files.some((f) => f.path === generatedNames.second);
+  $("gen-download-types").disabled = !files.some((f) => f.path === generatedNames.types);
 }
 function downloadGenerated(index) {
   const file = generatedFiles[index];
@@ -606,9 +612,9 @@ function downloadGenerated(index) {
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-$("gen-download").addEventListener("click", () => downloadGenerated(0));
-$("gen-download-api").addEventListener("click", () => downloadGenerated(1));
-$("gen-download-types").addEventListener("click", () => downloadGenerated(generatedFiles.findIndex((f) => f.path === "types/types.go")));
+$("gen-download").addEventListener("click", () => downloadGenerated(generatedFiles.findIndex((f) => f.path === generatedNames.parser)));
+$("gen-download-api").addEventListener("click", () => downloadGenerated(generatedFiles.findIndex((f) => f.path === generatedNames.second)));
+$("gen-download-types").addEventListener("click", () => downloadGenerated(generatedFiles.findIndex((f) => f.path === generatedNames.types)));
 
 // ---------------------------------------------------------------- Backend comparison
 

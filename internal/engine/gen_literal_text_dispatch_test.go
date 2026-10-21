@@ -34,14 +34,14 @@ func TestLiteralTextPredicateDispatchGeneration(t *testing.T) {
 	if strings.Contains(string(baseline), `switch c.TextStr(`) || strings.Contains(string(code), "disableLiteralTextDispatch") {
 		t.Fatal("generation-only control did not preserve the general baseline")
 	}
-	ts, err := GenerateTS(g, GenOptions{Start: "main"})
+	ts, err := generateTSBundle(g, GenOptions{Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(ts), `switch (c.textStr(`) || !strings.Contains(string(ts), `case "a": case "b":`) {
 		t.Fatal("TypeScript generator did not emit literal text dispatch")
 	}
-	tsBaseline, err := GenerateTS(g, GenOptions{Start: "main", disableLiteralTextDispatch: true})
+	tsBaseline, err := generateTSBundle(g, GenOptions{Start: "main", disableLiteralTextDispatch: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,11 +98,11 @@ func TestLiteralTextPredicateDispatchTSDisabledParity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	optimized, err := GenerateTS(g, GenOptions{Start: "main"})
+	optimized, err := generateTSBundle(g, GenOptions{Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	reference, err := GenerateTS(g, GenOptions{Start: "main", disableLiteralTextDispatch: true})
+	reference, err := generateTSBundle(g, GenOptions{Start: "main", disableLiteralTextDispatch: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -378,11 +378,11 @@ func writeLiteralDispatchTypeScript(t *testing.T, dir string, workload literalDi
 	if err != nil {
 		return err
 	}
-	candidate, err := GenerateTS(g, GenOptions{Start: "main"})
+	candidate, err := generateTSBundle(g, GenOptions{Start: "main"})
 	if err != nil {
 		return err
 	}
-	reference, err := GenerateTS(g, GenOptions{Start: "main", disableLiteralTextDispatch: true})
+	reference, err := generateTSBundle(g, GenOptions{Start: "main", disableLiteralTextDispatch: true})
 	if err != nil {
 		return err
 	}

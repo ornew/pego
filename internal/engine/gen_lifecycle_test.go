@@ -86,7 +86,7 @@ func TestGeneratedTSActionTracking(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := GenerateTS(g, GenOptions{Start: "main"})
+	code, err := generateTSBundle(g, GenOptions{Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,7 +191,7 @@ func TestGeneratedTSEnvironmentBindings(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := GenerateTS(g, GenOptions{Start: "main"})
+	code, err := generateTSBundle(g, GenOptions{Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}

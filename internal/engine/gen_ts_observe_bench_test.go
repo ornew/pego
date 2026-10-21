@@ -51,16 +51,21 @@ func TestExportGeneratedTSTraceBenchmarks(t *testing.T) {
 				if enabled {
 					variant = "observed"
 				}
-				code, err := GenerateTS(g, GenOptions{Start: "main", Types: typed, Recognize: true, Observability: enabled})
+				files, err := GenerateTS(g, GenOptions{Start: "main", Types: typed, Recognize: true, Observability: enabled})
 				if err != nil {
 					t.Fatal(err)
 				}
 				path := fixture.name + "/" + route + "/" + variant
-				write(path+"/parser.ts", code)
-				write(path+"/package.json", []byte(`{"type":"module"}`))
+				// The drivers run the files as generated: run them with a loader that maps the .js
+				// specifiers to the .ts sources (loader.mjs of writeTSFiles).
+				writeTSFiles(t, filepath.Join(dir, path), files)
+				size := 0
+				for _, f := range files {
+					size += len(f.Content)
+				}
 				profileDriver := strings.NewReplacer("INPUT", fmt.Sprintf("%q", fixture.input), "OBSERVED", fmt.Sprint(enabled), "TYPED", fmt.Sprint(typed)).Replace(generatedTSProfileBenchmark)
 				write(path+"/profile-bench.mjs", []byte(profileDriver))
-				manifest[path] = len(code)
+				manifest[path] = size
 				if typed {
 					driver := strings.NewReplacer("INPUT", fmt.Sprintf("%q", fixture.input), "OBSERVED", fmt.Sprint(enabled)).Replace(generatedTSTraceBenchmark)
 					write(path+"/bench.mjs", []byte(driver))

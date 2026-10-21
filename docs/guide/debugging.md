@@ -626,11 +626,11 @@ is delivered through the per-call options APIs, not the legacy positional-unit
 functions:
 
 ```bash
-pego gen -lang ts -g pairs.pego -observability -types -recognize -o pairs.ts
+pego gen -lang ts -g pairs.pego -observability -types -recognize -o pairs
 ```
 
 ```ts
-import { parseASTWithOptions } from "./pairs.ts";
+import { parseASTWithOptions } from "./pairs/parser.ts";
 
 const result = parseASTWithOptions(input, {
   trace: (event) => console.log(event.kind, event.rule, event.depth, event.pos),
@@ -662,12 +662,12 @@ for the measurement scope and limits.
 
 #### Profiling Generated TypeScript Batch Parsers
 
-Generate with `-observability` to export `Profile` and `ProfileSnapshot`.
-Pass one profile to a per-call options API and read its owned snapshot after
+Generate with `-observability` to accept profiles: `Profile` and `ProfileSnapshot` are exported by every parser, but a
+parser generated without `-observability` returns an `Error` for the `profile` and `trace` options. Pass one profile to a per-call options API and read its owned snapshot after
 the parse:
 
 ```ts
-import { Profile, parseWithOptions } from "./pairs.ts";
+import { Profile, parseWithOptions } from "./pairs/parser.ts";
 
 const profile = new Profile();
 const result = parseWithOptions(input, { profile });

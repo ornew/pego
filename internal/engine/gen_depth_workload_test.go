@@ -150,7 +150,7 @@ if unit==CodePoints{for b.Loop(){switch route{case "Node":depthNode,depthError=P
 		bench += directBench
 		write(pkg+"/depth_bench_test.go", []byte(bench))
 	}
-	code, err := GenerateTS(g, GenOptions{Start: "main", Recognize: true})
+	code, err := generateTSBundle(g, GenOptions{Start: "main", Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -224,7 +224,7 @@ func TestGeneratedTSInvalidUTF8Literals(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			code, err := GenerateTS(g, GenOptions{Start: "main", Recognize: true})
+			code, err := generateTSBundle(g, GenOptions{Start: "main", Recognize: true})
 			if err != nil {
 				t.Fatal(err)
 			}

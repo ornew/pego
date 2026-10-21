@@ -68,13 +68,6 @@ rule part W = t:("a") #atomic => W{Text: text($t)}`, "a", `check(count("part","e
 		{"anchors", `type W = { Text string }
 rule main W = t:(part) #atomic => W{Text: text($t)}
 rule part W = t:("input, o.unit, o.maxDepth, control)") #atomic => W{Text: text($t)}`, "input, o.unit, o.maxDepth, control)", `check(count("part","enter")===1,"runtime-like literal remains unchanged");`},
-		{"collision", `type TraceKind = { Text string }
-type TraceEvent = { Value Observation }
-type Observation = { Text string }
-type ObservationCall = { Text string }
-type TraceFailure = { Text string }
-rule main TraceEvent = p:part => TraceEvent{Value:$p}
-rule part Observation = t:("a") #atomic => Observation{Text: text($t)}`, "a", `check(count("part","enter")===1,"collision calls");`},
 	}
 	dir := t.TempDir()
 	write := func(name, data string) {
@@ -97,16 +90,16 @@ rule part Observation = t:("a") #atomic => Observation{Text: text($t)}`, "a", `c
 				name += "_typed"
 			}
 			opts := GenOptions{Start: "main", Types: typed, Recognize: true}
-			reference, err := GenerateTS(g, opts)
+			reference, err := generateTSBundle(g, opts)
 			if err != nil {
 				t.Fatal(name, err)
 			}
 			opts.Observability = true
-			code, err := GenerateTS(g, opts)
+			code, err := generateTSBundle(g, opts)
 			if err != nil {
 				t.Fatal(name, err)
 			}
-			again, err := GenerateTS(g, opts)
+			again, err := generateTSBundle(g, opts)
 			if err != nil || string(again) != string(code) {
 				t.Fatal(name, "nondeterministic trace source", err)
 			}

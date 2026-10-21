@@ -1,4 +1,5 @@
-// Generation-time opt-in profiling; execution history belongs to each invocation.
+// Rule profiling; execution history belongs to each invocation. A parser generated without
+// observability rejects the profile options.
 
 export interface ProfileLocation { pos: number; level: number }
 export interface SkipReasonCount { reason: string; count: number }
@@ -38,9 +39,9 @@ export interface ProfileSnapshot {
   rules: RuleProfile[];
 }
 
-interface ProfileData { totals: ProfileSnapshot; rows: Map<string, RuleProfile> }
+export interface ProfileData { totals: ProfileSnapshot; rows: Map<string, RuleProfile> }
 // Weak keys let a discarded sink be collected; values contain only scalar rows.
-const profileData = new WeakMap<Profile, ProfileData>();
+export const profileData = new WeakMap<Profile, ProfileData>();
 
 /** Accumulates across parses without retaining input, nodes or call history. */
 export class Profile {
@@ -60,16 +61,16 @@ export class Profile {
 }
 
 // Avoid a DOM or Node type dependency, and never read the clock when disabled.
-function resolveProfileClock(): (() => number) | Error {
+export function resolveProfileClock(): (() => number) | Error {
   const host = (globalThis as { performance?: { now?: unknown } }).performance;
   const now = host?.now;
   if (typeof now !== "function") return new Error("profiling requires host performance.now()");
   return now.bind(host) as () => number;
 }
 
-interface ProfileFrame { row: RuleProfile; start: number; child: number }
+export interface ProfileFrame { row: RuleProfile; start: number; child: number }
 
-class ProfileObservation extends Observation {
+export class ProfileObservation extends Observation {
   private data: ProfileData | null;
   private clock: (() => number) | null;
   private profileScope: object | null;

@@ -156,7 +156,7 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, op
 			t.Fatalf("%s: %v", c.name, err)
 		}
 		opts.Start, opts.Recognize = "main", true
-		code, err := GenerateTS(g, opts)
+		code, err := generateTSBundle(g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -272,14 +272,14 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, op
 
 func TestGenerateTSErrors(t *testing.T) {
 	g, _ := syntax.Parse(`rule main = "a"`)
-	if _, err := GenerateTS(g, GenOptions{Start: "nope"}); err == nil || err.Error() != "start rule nope is not defined" {
+	if _, err := generateTSBundle(g, GenOptions{Start: "nope"}); err == nil || err.Error() != "start rule nope is not defined" {
 		t.Errorf("got %v", err)
 	}
-	if code, err := GenerateTS(g, GenOptions{Start: "main", Types: true}); err != nil || !strings.Contains(string(code), "export function parseAST(") {
+	if code, err := generateTSBundle(g, GenOptions{Start: "main", Types: true}); err != nil || !strings.Contains(string(code), "export function parseAST(") {
 		t.Errorf("Types: %v", err)
 	}
 	bad, _ := syntax.Parse(`rule main = x`)
-	if _, err := GenerateTS(bad, GenOptions{Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
+	if _, err := generateTSBundle(bad, GenOptions{Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
 		t.Errorf("got %v", err)
 	}
 	// Generating is deterministic.
@@ -288,11 +288,11 @@ func TestGenerateTSErrors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, err := GenerateTS(jg, GenOptions{Start: "value", Recognize: true})
+	a, err := generateTSBundle(jg, GenOptions{Start: "value", Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, _ := GenerateTS(jg, GenOptions{Start: "value", Recognize: true})
+	b, _ := generateTSBundle(jg, GenOptions{Start: "value", Recognize: true})
 	if string(a) != string(b) {
 		t.Error("generating twice gives different code")
 	}
@@ -366,7 +366,7 @@ func runTSGrammarScriptWith(t *testing.T, g *grammar.Grammar, script string, opt
 	if err != nil {
 		t.Skip("node not found")
 	}
-	code, err := GenerateTS(g, opts)
+	code, err := generateTSBundle(g, opts)
 	if err != nil {
 		t.Fatal(err)
 	}

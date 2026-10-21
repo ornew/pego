@@ -112,7 +112,7 @@ func TestGeneratedNamedASTUntypedAndTS(t *testing.T) {
 	if strings.Contains(string(plain), "func ParseRuleAST(") {
 		t.Fatal("typed entry point in untyped parser")
 	}
-	ts, err := GenerateTS(g, GenOptions{Package: "plain", Start: "main"})
+	ts, err := generateTSBundle(g, GenOptions{Package: "plain", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -32,15 +32,15 @@ rule ws = (&[ \t\r\n] .)*
 Generate the module next to the tool. The `pego` command comes from `go install github.com/ornew/pego/cmd/pego@latest`:
 
 ```bash
-pego gen -lang ts -types -g settings.pego -o settings.ts
+pego gen -lang ts -types -g settings.pego -o settings
 ```
 
 The tool reads the text, reports the syntax errors, and checks the limits of the settings that were read:
 
 ```ts
 // check.ts
-import { parseAST, SyntaxErrors } from "./settings.ts";
-import type { Setting } from "./settings.ts";
+import { parseAST, SyntaxErrors } from "./settings/parser.ts";
+import type { Setting } from "./settings/types.ts";
 
 const limits: Record<string, number> = { port: 65535, workers: 64 };
 
@@ -88,10 +88,11 @@ const read = (value?.Settings ?? []).filter((s) => s !== null && s.type === "Set
 console.log(`${problems} problems, ${read} settings read`);
 ```
 
-Node.js 22.18 or later, Deno and Bun run TypeScript as it is:
+The generated files import each other as `./runtime.js`, which `tsx` and Bun resolve to `runtime.ts`
+(see [running it](../guide/typescript.md#running-it) for Node.js):
 
 ```bash
-node check.ts
+npx tsx check.ts
 ```
 
 ## Expected Output
@@ -117,13 +118,13 @@ found in a setting that parsed. Four settings were read, and the two that could 
   match is `null`.
 - Positions count code points, like the Go engine, not UTF-16 units. `lineCol` counts code points for that reason; the
   `line` and `col` of a syntax error are already computed the same way.
-- The module does not depend on Node.js: the same `settings.ts` runs in a browser, where the check can run on every
+- The module does not depend on Node.js: the same `settings/parser.ts` runs in a browser, where the check can run on every
   keystroke of a form.
 
 Type-check the tool as strictly as you like; the generated module is written to compile under `--strict`:
 
 ```bash
-tsc --noEmit --strict --noUncheckedIndexedAccess --erasableSyntaxOnly --allowImportingTsExtensions --module nodenext check.ts settings.ts
+tsc --noEmit --strict --noUncheckedIndexedAccess --erasableSyntaxOnly --allowImportingTsExtensions --module nodenext check.ts settings/parser.ts
 ```
 
 ## Variations and Limits

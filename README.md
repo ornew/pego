@@ -140,8 +140,8 @@ pego compile -g grammar.pego -o grammar.pegoc    # precompile
 pego gen -g grammar.pego -module example.com/calc -o calc  # generate a standalone Go parser
 pego gen -g grammar.pego -module example.com/calc -types -o calc # ... with Go types for the grammar's types
 pego gen -g grammar.pego -module example.com/calc -recognize -o calc # ... with Recognize, which validates without a tree
-pego gen -lang ts -g grammar.pego -o parser.ts     # generate a standalone TypeScript module
-pego gen -lang ts -g grammar.pego -types -o parser.ts # also emit declarations and parseAST
+pego gen -lang ts -g grammar.pego -o ts-parser    # generate a TypeScript parser into a directory
+pego gen -lang ts -g grammar.pego -types -o ts-parser # also emit types.ts and parseAST
 pego gen -g grammar.pego -module example.com/calc -max-depth 600000 -o calc # set its nested rule-call default
 pego sample -g grammar.pego -n 20 -coverage      # generate inputs the grammar accepts (tests, fuzz seeds)
 pego edit-fuzz -g grammar.pego -minimize -save-failures out  # check Document edits against fresh parses

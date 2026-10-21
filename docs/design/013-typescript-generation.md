@@ -6,9 +6,10 @@
 
 ## Summary
 
-Generate a TypeScript module for a parser, without dependencies, from a grammar (`pego gen -lang ts`,
-`pego.GenerateTypeScript`). It returns the same trees and errors as the engine and the generated Go parsers
-([008](008-code-generation.md)).
+Generate TypeScript modules for a parser, without dependencies, from a grammar (`pego gen -lang ts`,
+`pego.GenerateTypeScript`). They return the same trees and errors as the engine and the generated Go parsers
+([008](008-code-generation.md)). The runtime is a module of its own, `runtime.ts`, the same for every grammar; the
+parser of the grammar is `parser.ts`, and its types (`-types`) are `types.ts`.
 
 ## Design
 
@@ -29,11 +30,28 @@ catches what is not.
 
 | Part | Contents |
 |:--|:--|
-| Runtime | `tsrt/runtime.ts` after its `--- Runtime ---` line, the same in every file. It type-checks on its own. |
+| `runtime.ts` | `tsrt/runtime.ts` after its `--- Runtime ---` line, with the invocation work controls, tracing and profiling (`work.ts`, `trace.ts`, `profile.ts`). The same for every grammar and every option, so that one copy can be shared (`-runtime import`). It type-checks on its own. Every top-level declaration is exported. |
+| `types.ts` | With `-types`: the declarations of the grammar's types. |
+| `parser.ts` | The parts below, importing `./runtime.js` (or the module of `-runtime-module`) and `./types.js`, and re-exporting the names a user needs (`Node`, `SyntaxError`, `marshal`, ...). |
 | Rule table | A constant per rule (`R0`, `R1`, ...; `Q0`, ... for the recognizer) with the engine's analysis results, and the table `rules` for `parseRule` |
 | Parser expressions | One function per expression; literals, `.`, anchors and rule calls are called inline |
 | Actions and predicates | A function each, of TypeScript expressions; lambdas become arrow functions |
 | Public API | `parse`, `parseRule`, `recognize` (with `-recognize`), `Node`, `SyntaxError`, `SyntaxErrors`, `marshal` |
+
+### Files, Modules and Observation
+
+`parser.ts` imports `runtime.ts` with the specifier `./runtime.js`, the way TypeScript names the module, which `tsc`,
+bundlers and the runtimes that map `.js` to `.ts` resolve. A parser generated with `-runtime import` imports the
+module of `-runtime-module` instead, so that several parsers share one runtime (and one `Node` class). ES import
+bindings are read-only, so the data of a grammar (rule descriptors, source information, initial variables, the
+depth default, the sparse-memo choice and whether the parser is observable) lives in a `Grammar` object that
+`parser.ts` creates with `mkGrammar` and passes to `run`, the runtime's entry point; the runtime itself holds no
+per-grammar state. Tracing and profiling are in the runtime for every parser: a parser keeps the observation of
+an invocation in `Parser.observation`, which is null for a plain call, and the paths that notify it
+check for null. A parser generated without `-observability` rejects the `trace` and `profile` options. The
+call sites that record skipped dispatches are the only observed code that depends on the option and are
+generated per parser. The parser reads the hot runtime values it needs into fields of the `Parser` in its
+constructor, so that a rule call does not read through the `Grammar`.
 
 ### Where JavaScript Differs from Go
 
@@ -62,8 +80,8 @@ The runtime hides each difference, so that results are the engine's, not merely 
   (the guide says so).
 - **Unicode versions differ.** `toString` quotes text as `strconv.Quote` does, which escapes the characters that
   `strconv.IsPrint` rejects. The JavaScript runtime's Unicode properties (`\p{L}` and so on) follow its own version of
-  Unicode (Node.js 24 has Unicode 16, Go 1.27 Unicode 17: thousands of code points differ), so the generator writes
-  Go's table into the module instead: the lengths of the alternating runs of rejected and accepted code points, in
+  Unicode (Node.js 24 has Unicode 16, Go 1.27 Unicode 17: thousands of code points differ), so the runtime holds
+  Go's table instead: the lengths of the alternating runs of rejected and accepted code points, in
   base 36, about 3 KB. The table is that of the Go that generates the parser.
 - **No `panic`.** Fatal errors and evaluation errors are thrown as plain objects (`Fatal`, `EvalError`, not `Error`
   subclasses, so throwing them captures no stack trace), and caught where `runtime` recovers. Results are

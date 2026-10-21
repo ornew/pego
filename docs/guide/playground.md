@@ -57,8 +57,8 @@ The **Generated parser** tab exports Go or TypeScript source. Go accepts a packa
 `api.go`, which the tab shows one after another, each under a banner (`// ===== parser.go =====`). **Copy** copies the
 complete displayed text, which is not one compilable file. **Download parser.go** and **Download api.go** save the two
 files separately, to be put in one directory (a Go package named by the package field); they import
-`github.com/ornew/pego/runtime`, so the module needs `go get github.com/ornew/pego`. TypeScript is one file, saved as
-`parser.ts`. Shared links retain the selected language and generator options.
+`github.com/ornew/pego/runtime`, so the module needs `go get github.com/ornew/pego`. A TypeScript parser is `parser.ts`, `runtime.ts` and, with `-types`, `types.ts`, offered the same way (saved
+separately, into one directory). Shared links retain the selected language and generator options.
 
 The **Compare backends** tab runs the same grammar, input, start rule, recognition mode and position unit with the
 closure, bytecode and bytecode-iterative Go engine backends. It compares match and recovery status, values, errors
