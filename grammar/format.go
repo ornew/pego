@@ -651,11 +651,11 @@ func (p *printer) itemNode(e Expr, indent string) {
 			p.write(" ")
 		}
 		// Lines of the parentheses are indented, and the closing one is not.
-		inner := indentTermLines(leadSep(e.Skip, p.control)+formatExpr(e.Skip, precChoice, p.control)+recoveryClose(e, p.control), indent+indentUnit, p.control)
+		inner := indentTermLines(recoveryHead(e, p.control)+formatExpr(e.Skip, precChoice, p.control)+recoveryClose(e, p.control), indent+indentUnit, p.control)
 		if strings.HasSuffix(inner, "\n") {
 			inner += indent
 		}
-		p.write(gapBefore(operatorLayout(e), p.control) + "#recover(skip=" + inner + ")")
+		p.write(gapBefore(operatorLayout(e), p.control) + "#recover" + inner + ")")
 	case *Repeat:
 		if e.PragmaBreak == nil && hasBreak(e.Expr) {
 			p.item(e.Expr, indent)
@@ -1500,9 +1500,15 @@ func formatExprNode(e Expr, outer int, control *metadataControl) string {
 				} else {
 					parts[i] = "/ " + parts[i]
 				}
+				if l := nodeLayout(a); l != nil && l.Sep != nil {
+					// Comments before the "/" keep their lines.
+					parts[i] = gapString(l.Sep, " ", control) + parts[i]
+				} else {
+					parts[i] = " " + parts[i]
+				}
 			}
 		}
-		return finishFormat(paren(joinFormatParts(parts, " ", control), precChoice, outer), control)
+		return finishFormat(paren(joinFormatParts(parts, "", control), precChoice, outer), control)
 	case *Seq:
 		parts := make([]string, len(e.Items))
 		for i, it := range e.Items {
@@ -1527,7 +1533,7 @@ func formatExprNode(e Expr, outer int, control *metadataControl) string {
 	case *Stream:
 		return finishFormat(formatExpr(e.Expr, precSuffix, control)+gapAfter(operatorLayout(e), control)+" #stream", control)
 	case *Recovery:
-		return finishFormat(formatExpr(e.Expr, precSuffix, control)+gapAfter(operatorLayout(e), control)+" #recover(skip="+leadSep(e.Skip, control)+formatExpr(e.Skip, precChoice, control)+recoveryClose(e, control)+")", control)
+		return finishFormat(formatExpr(e.Expr, precSuffix, control)+gapAfter(operatorLayout(e), control)+" #recover"+recoveryHead(e, control)+formatExpr(e.Skip, precChoice, control)+recoveryClose(e, control)+")", control)
 	case *Attributed:
 		s := formatExpr(e.Expr, precSuffix, control)
 		for _, a := range e.Attrs {
@@ -1687,6 +1693,21 @@ func leadGap(e Expr) *Gap {
 		return l.Lead
 	}
 	return nil
+}
+
+// recoveryHead returns what stands between "#recover" and the skip expression
+// of e: "(skip=" with the comments of its gaps.
+func recoveryHead(e *Recovery, control *metadataControl) string {
+	s := "("
+	l := nodeLayout(e)
+	if l != nil && l.Open != nil {
+		s += gapString(l.Open, " ", control)
+	}
+	s += "skip"
+	if l != nil && l.Eq != nil {
+		s += gapString(l.Eq, " ", control)
+	}
+	return s + "=" + leadSep(e.Skip, control)
 }
 
 // leadSep returns what stands between the "=" after "skip" and e.

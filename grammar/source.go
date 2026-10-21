@@ -75,12 +75,16 @@ type SourceLayout struct {
 	// expression (a repetition, an optional, an #atomic, #stream or #recover
 	// pragma) and its operator, all on one line with both.
 	Operator []*Comment
-	// Close holds the comments before the closing parenthesis of a #recover
-	// pragma.
-	Close *Gap
+	// Open holds the comments between the opening parenthesis of a #recover
+	// pragma and "skip", Eq those between "skip" and "=", and Close those
+	// before the closing parenthesis.
+	Open, Eq, Close *Gap
 	// OpGap holds the comments between the left operand of a binary operation
 	// and its operator.
 	OpGap *Gap
+	// Sep holds the comments between an alternative of a choice that stands
+	// in a #recover pragma and the "/" before it.
+	Sep *Gap
 	// Lead holds the comments between the "/" before an alternative, or the
 	// "=" after "skip" in a #recover pragma, and the first token of the node.
 	Lead *Gap

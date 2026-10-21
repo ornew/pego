@@ -1085,11 +1085,15 @@ func (p *parser) choice() (sourceResult grammar.Expr) {
 	}
 	c := &grammar.Choice{Alts: []grammar.Expr{first}}
 	for !p.boundary() && p.is("/") {
-		p.afterGap(c.Alts[len(c.Alts)-1])
+		sep := p.takeCommentGap()
 		p.next()
 		lead := p.takeCommentGap()
 		c.Alts = append(c.Alts, p.sequence())
-		p.leadOf(c.Alts[len(c.Alts)-1], lead)
+		alt := c.Alts[len(c.Alts)-1]
+		p.leadOf(alt, lead)
+		if sep != nil {
+			layoutOf(alt).Sep = sep
+		}
 	}
 	return c
 }
@@ -1323,7 +1327,9 @@ func (p *parser) pragma(e grammar.Expr, start grammar.Pos) (sourceResult grammar
 		return result
 	case "recover":
 		p.expect("(")
+		open := p.takeCommentGap()
 		p.expect("skip")
+		eq := p.takeCommentGap()
 		p.expect("=")
 		lead := p.takeCommentGap()
 		skip := p.choice()
@@ -1331,8 +1337,9 @@ func (p *parser) pragma(e grammar.Expr, start grammar.Pos) (sourceResult grammar
 		closing := p.takeCommentGap()
 		p.expect(")")
 		r := &grammar.Recovery{SourceInfo: grammar.SourceInfo{Pos: pos}, Expr: e, Skip: skip, Break: br}
-		if closing != nil {
-			layoutOf(r).Close = closing
+		if open != nil || eq != nil || closing != nil {
+			l := layoutOf(r)
+			l.Open, l.Eq, l.Close = open, eq, closing
 		}
 		return r
 	case "repeat":

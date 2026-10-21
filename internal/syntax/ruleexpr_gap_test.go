@@ -49,6 +49,10 @@ func TestFormatKeepsCommentsBetweenTokens(t *testing.T) {
 		{"before the close of a group that starts with an optional group", `rule r = ( ( "a" )? "c" /* b */ )`, `rule r = (("a")? "c" /* b */)`},
 		{"before the close of a group that ends with a repeated group", `rule r = ( "x" ( "a" )* /* b */ )`, `rule r = ("x" ("a")* /* b */)`},
 		{"a line comment before the close of a group that starts with a group", "rule r = ( ( \"a\" ) \"c\" // z\n)", "rule r = (\n    (\"a\") \"c\" // z\n)"},
+		{"before the skip of a recovery", `rule r = ( "a" #recover( /* p */ skip="b") )`, `rule r = ("a" #recover( /* p */ skip="b"))`},
+		{"before the skip of a recovery in a choice", `rule r = "a" #recover( /* p */ skip="b") / "d"`, `rule r = "a" #recover( /* p */ skip="b") / "d"`},
+		{"before the equals sign of a recovery", `rule r = "a" #recover(skip /* p */ = "b") / "d"`, `rule r = "a" #recover(skip /* p */ ="b") / "d"`},
+		{"around the parts of a recovery", "rule r = ( \"a\" #recover( // p\n    skip = /* e */ \"b\" /* q */ / // s\n    \"c\" ) )", "rule r = (\n    \"a\" #recover( // p\n        skip= /* e */ \"b\" /* q */ / // s\n        \"c\")\n)"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := checkFormat(t, tc.in+"\n"); got != tc.want+"\n" {
