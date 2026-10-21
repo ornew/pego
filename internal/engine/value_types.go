@@ -420,8 +420,8 @@ func (v *valueInference) predicates(e grammar.Expr, env *valueEnv) {
 				switch {
 				case !v.assignable(t, d.typ):
 					v.errorf(a.Diagnostic(), "cannot use %s as %s in the binding of variable %s", v.expand(t), d.typ, a.Name)
-				case v.checks != nil && !v.quiet && v.uncertain(t):
-					v.checks.binds[a] = true
+				case v.uncertain(t):
+					v.errorf(a.Diagnostic(), "cannot use %s as %s in the binding of variable %s: the type of the value is not known; convert it with a cast, as in value.(%s)", v.expand(t), d.typ, a.Name, d.typ)
 				}
 			}
 		} else {

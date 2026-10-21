@@ -43427,7 +43427,7 @@ func e38(p *pegort.Parser) (*pegort.Node, bool) {
 		v8 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x7), RawEnd: int32(p.Pos), RawText: "$", RawTerminal: true, RawFresh: true})
 		x2 = append(x2, v8)
 
-		if !p.Assign("tag", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("tag", func(c *pegort.ActCtx) any {
 			return func() any { return c.Text(func() any { return c.Cap(0) }()) }()
 		}) {
 			goto fail_ordinary
@@ -43605,7 +43605,7 @@ func e38(p *pegort.Parser) (*pegort.Node, bool) {
 	v8 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x7), RawEnd: int32(p.Pos), RawText: "$", RawTerminal: true, RawFresh: true})
 	x2 = append(x2, v8)
 	p.StepWork()
-	if !p.Assign("tag", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("tag", func(c *pegort.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
 	}) {
 		goto fail
@@ -363942,7 +363942,7 @@ func e1170(p *pegort.Parser) (*pegort.Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("tag", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("tag", func(c *pegort.ActCtx) any {
 			return func() any { return c.Text(func() any { return c.Cap(0) }()) }()
 		}) {
 			goto fail_ordinary
@@ -364052,7 +364052,7 @@ func e1170(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("tag", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("tag", func(c *pegort.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
 	}) {
 		goto fail
@@ -710973,7 +710973,7 @@ func e1918(p *pegort.Parser) (*pegort.Node, bool) {
 		v8 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x7), RawEnd: int32(p.Pos), RawText: "$", RawTerminal: true, RawFresh: true})
 		x2 = append(x2, v8)
 
-		if !p.Assign("tag", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("tag", func(c *pegort.ActCtx) any {
 			return func() any { return c.Text(func() any { return c.Cap(0) }()) }()
 		}) {
 			goto fail_ordinary
@@ -711151,7 +711151,7 @@ func e1918(p *pegort.Parser) (*pegort.Node, bool) {
 	v8 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x7), RawEnd: int32(p.Pos), RawText: "$", RawTerminal: true, RawFresh: true})
 	x2 = append(x2, v8)
 	p.StepWork()
-	if !p.Assign("tag", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("tag", func(c *pegort.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
 	}) {
 		goto fail
@@ -816047,7 +816047,7 @@ func e2623(p *pegort.Parser) (*pegort.Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("tag", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("tag", func(c *pegort.ActCtx) any {
 			return func() any { return c.Text(func() any { return c.Cap(0) }()) }()
 		}) {
 			goto fail_ordinary
@@ -816157,7 +816157,7 @@ func e2623(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("tag", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("tag", func(c *pegort.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
 	}) {
 		goto fail
@@ -1066915,7 +1066915,7 @@ func i21(p *pegort.TParser) (any, bool) {
 		v9 = p.NewMatchOrdinary(x8, p.Pos, "$", true)
 		x2 = append(x2, v9)
 
-		if !p.Assign("tag", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("tag", func(c *pegort.TActCtx) any {
 			return func() any { return c.Text(func() any { return k5 }()) }()
 		}) {
 			goto fail_ordinary
@@ -1067122,7 +1067122,7 @@ func i21(p *pegort.TParser) (any, bool) {
 	v9 = p.NewMatch(x8, p.Pos, "$", true)
 	x2 = append(x2, v9)
 	p.StepWork()
-	if !p.Assign("tag", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("tag", func(c *pegort.TActCtx) any {
 		return func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return k5 }()) }()
 	}) {
 		goto fail
@@ -1489611,7 +1489611,7 @@ func i1045(p *pegort.TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("tag", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("tag", func(c *pegort.TActCtx) any {
 			return func() any { return c.Text(func() any { return k1 }()) }()
 		}) {
 			goto fail_ordinary
@@ -1489742,7 +1489742,7 @@ func i1045(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("tag", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("tag", func(c *pegort.TActCtx) any {
 		return func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return k1 }()) }()
 	}) {
 		goto fail

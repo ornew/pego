@@ -957,7 +957,7 @@ func (d *dgen) predicate(e *grammar.Predicate, s *dscope, fail string) string {
 			term = d.g.predicateTerm(t, f, nil)
 		}
 		if a, ok := e.Term.(*grammar.Assign); ok {
-			d.failIf(fmt.Sprintf("!p.Assign(%q, %q, func(c *%s) any { return %s })", a.Name, d.g.prog.bindCheck(a), d.g.ctxType(), term), fail)
+			d.failIf(fmt.Sprintf("!p.Assign(%q, func(c *%s) any { return %s })", a.Name, d.g.ctxType(), term), fail)
 		} else {
 			d.failIf(fmt.Sprintf("!p.Predicate(func(c *%s) any { return %s })", d.g.ctxType(), term), fail)
 		}
@@ -998,7 +998,7 @@ func (d *dgen) predicate(e *grammar.Predicate, s *dscope, fail string) string {
 	d.rdTerm(t, caps)
 	g.caps = prev
 	if a, ok := e.Term.(*grammar.Assign); ok {
-		d.failIf(fmt.Sprintf("!p.Assign(%q, %q, func(c *TActCtx) any { return %s })", a.Name, d.g.prog.bindCheck(a), term), fail)
+		d.failIf(fmt.Sprintf("!p.Assign(%q, func(c *TActCtx) any { return %s })", a.Name, term), fail)
 	} else {
 		d.failIf(fmt.Sprintf("!p.Predicate(func(c *TActCtx) any { return %s })", term), fail)
 	}

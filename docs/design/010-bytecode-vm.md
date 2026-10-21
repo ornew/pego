@@ -220,7 +220,7 @@ Raise the `.pegoc` version to 2 and make its content a module. The AST is includ
 
 The runtime reads only the parts other than the AST. If the AST is omitted, the file contains only what the runtime needs.
 
-Version 1 files (AST and analysis results) remain loadable by the closure backend.
+Version 1 files (AST and analysis results) are no longer loaded.
 
 ## Streams and Incremental Parsing
 

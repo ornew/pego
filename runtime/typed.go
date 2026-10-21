@@ -1712,7 +1712,7 @@ func (p *TParser) Predicate(t func(*TActCtx) any) (ok bool) {
 }
 
 // Assign is Parser.Assign for the typed runtime.
-func (p *TParser) Assign(name, typ string, t func(*TActCtx) any) (ok bool) {
+func (p *TParser) Assign(name string, t func(*TActCtx) any) (ok bool) {
 	base, kids := len(p.Created), len(p.KidStack)
 	defer func() {
 		p.DropCreated(base)
@@ -1728,9 +1728,6 @@ func (p *TParser) Assign(name, typ string, t func(*TActCtx) any) (ok bool) {
 	v := t(c)
 	if _, isFn := v.(func(...any) any); isFn {
 		return false
-	}
-	if typ != "" && ttypeName(v) != typ {
-		panic(fatal{fmt.Errorf("cannot use %s as %s in the binding of variable %s", ttypeName(v), typ, name)})
 	}
 	p.bind(name, v)
 	return true

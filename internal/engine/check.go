@@ -44,7 +44,7 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 	}
 
 	// Check the values, which also decides the run-time checks.
-	checks := &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}, nodeMembers: map[*grammar.Member]bool{}, converts: map[*grammar.New]ty{}, binds: map[*grammar.Assign]bool{}}
+	checks := &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}, nodeMembers: map[*grammar.Member]bool{}, converts: map[*grammar.New]ty{}}
 	values, valueErrs := valueTypesChecked(prog, control, checks)
 	*errs = append(*errs, valueErrs...)
 

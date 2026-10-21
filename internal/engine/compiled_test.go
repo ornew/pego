@@ -20,28 +20,25 @@ import (
 func TestCompiledRoundTrip(t *testing.T) {
 	for _, c := range genCorpus(t) {
 		t.Run(c.name, func(t *testing.T) {
-			// A version 1 file predates the run-time checks of constructed fields and bindings, so the
-			// type errors of these programs do not survive it.
-			v1Unchecked := c.name == "terminal constructor value error" || c.name == "terminal constructor predicate error" || c.name == "bindings are checked against the declared type"
-			checkCompiledRoundTrip(t, compile(t, c.src), c.inputs, v1Unchecked)
+			checkCompiledRoundTrip(t, compile(t, c.src), c.inputs)
 		})
 	}
 }
 
 // The retired terminal constructors are read with syntax.ParseLegacy as the text struct
-// constructors they mean, whose field checks the version 1 format does not keep.
+// constructors they mean.
 func TestCompiledRoundTripTerminalConstructors(t *testing.T) {
 	for name, src := range map[string]string{
 		"value error":     "type Int terminal\nvar value int\nrule main = {value := 1} \"x\" => Int{list(value, \"a\")[0].(string)}",
 		"predicate error": "type Int terminal\nvar value int\nrule main = {value := 1} {Int{list(value, \"a\")[0].(string)} != nil} \"x\" / \"x\"",
 	} {
 		t.Run(name, func(t *testing.T) {
-			checkCompiledRoundTrip(t, compileLegacy(t, src), []string{"x", ""}, true)
+			checkCompiledRoundTrip(t, compileLegacy(t, src), []string{"x", ""})
 		})
 	}
 }
 
-func checkCompiledRoundTrip(t *testing.T, prog *Program, inputs []string, v1Unchecked bool) {
+func checkCompiledRoundTrip(t *testing.T, prog *Program, inputs []string) {
 	data, err := prog.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
@@ -87,40 +84,18 @@ func checkCompiledRoundTrip(t *testing.T, prog *Program, inputs []string, v1Unch
 	if again, err := bareProg.MarshalBinary("main"); err != nil || !bytes.Equal(bare, again) {
 		t.Errorf("re-marshaled bare data differs (%v)", err)
 	}
-	// Version 1 files can also be loaded. They predate source information,
-	// so the loader takes it from the options.
-	v1, _, err := LoadProgram(marshalV1(prog, "main"), Options{SourceInfo: prog.sourceInfo})
-	if err != nil {
-		t.Fatal(err)
-	}
 	for _, in := range inputs {
 		want := resultJSON(prog.Parse("main", in))
 		for _, l := range []struct {
 			name string
 			prog *Program
 			b    Backend
-		}{{"bare", bareProg, Default}, {"bytecode", loaded, Bytecode}, {"v1", v1, Default}, {"v1 bytecode", v1, Bytecode}, {"iterative", bareProg, BytecodeIterative}} {
-			if v1Unchecked && strings.HasPrefix(l.name, "v1") {
-				continue
-			}
+		}{{"bare", bareProg, Default}, {"bytecode", loaded, Bytecode}, {"iterative", bareProg, BytecodeIterative}} {
 			if got := resultJSON(l.prog.ParseWith("main", in, ParseOptions{Backend: l.b})); got != want {
 				t.Errorf("%s: input %q\n original %s\n loaded   %s", l.name, in, want, got)
 			}
 		}
 	}
-}
-
-// marshalV1 saves in the version 1 format (the AST and the static analysis results).
-func marshalV1(prog *Program, start string) []byte {
-	w := &encoder{strs: map[string]int{}}
-	w.str(prog.Grammar.File.Pkg.Name)
-	w.str(start)
-	w.statements(prog, 1, false)
-	var out bytes.Buffer
-	out.WriteString(compiledMagic)
-	out.WriteByte(1)
-	w.finish(&out)
-	return out.Bytes()
 }
 
 // TestCompiledStreamAndDocument checks that stream and incremental parsing work with a loaded
@@ -242,7 +217,7 @@ func TestCompiledCorruptionDoesNotPanic(t *testing.T) {
 			t.Fatal(err)
 		}
 		bare, _ := prog.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-		seeds = append(seeds, data, bare, marshalV1(prog, "main"))
+		seeds = append(seeds, data, bare)
 	}
 	rng := rand.New(rand.NewSource(1))
 	for i := 0; i < 3000; i++ {

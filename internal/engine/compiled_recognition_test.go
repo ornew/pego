@@ -55,7 +55,7 @@ func marshalV3WithAST(prog *Program, start string, recognition *Program) []byte 
 	w.uint(len(bundle))
 	w.body.Write(bundle)
 	w.bool(true)
-	w.statements(prog, compiledVersion, true)
+	w.statements(prog)
 	var out bytes.Buffer
 	out.WriteString(compiledMagic)
 	out.WriteByte(compiledVersion)

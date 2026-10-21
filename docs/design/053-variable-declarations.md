@@ -60,8 +60,10 @@ A declaration is `var name [type] [= value]`. At least one of the type and the v
 - A declaration is a top-level statement and may appear anywhere among the other declarations.
 
 Within rules, `name := expr` binds a declared variable and `name` reads it. The expression must be assignable to the
-declared type. A value whose type is unknown (`any`) is accepted and checked against the declared type when the
-binding runs, as rule results and fields are; a mismatch fails the parse with an error, as a rule result of another type does, instead of failing the binding for the grammar to backtrack from; only an error while evaluating the expression is backtracked. A binding that the rule makes is visible to the rest of the rule and to the rules it calls, and it is
+declared type. A value whose type the checker does not know is rejected as well, and the error tells the author to
+convert it explicitly with a cast, `x := $d.(int)`: a binding is checked only at compile time, so no run-time check
+and no run-time type error exists for it. A cast that fails is an ordinary evaluation error, which makes the binding's
+predicate fail. A binding that the rule makes is visible to the rest of the rule and to the rules it calls, and it is
 undone when an alternative fails and when the rule returns, as before. A read sees the nearest binding, or the initial
 value when nothing has bound the variable.
 

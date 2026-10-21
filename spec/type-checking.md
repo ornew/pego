@@ -164,11 +164,13 @@ The type checker reports the following errors:
 
 A variable has the type its `var` declaration gives it, so a read of a variable
 is checked like any other value of that type: `x + 1` and `V{N: x}` are checked
-when the grammar is compiled. A binding whose value has an unknown Type (`any`) is not reported, like a field
-or a rule value of unknown Type: the binding checks the value against the declared
-type of the variable at run time, and a mismatch fails the parse with `cannot use
-<value type> as <type> in the binding of variable <name>`, as a rule result of another
-type does. Unlike an evaluation error in a predicate, it is not backtracked and
-`#recover` does not handle it. A binding whose value
-is known to fit needs no run-time check. Without type checking, every binding is
-checked at run time.
+when the grammar is compiled. A binding is checked only statically: it is a compile-time error
+unless the Type of the value is known to be assignable to the declared type of the variable,
+`cannot use <value type> as <type> in the binding of variable <name>`. A value whose Type the
+checker does not know, such as a rule value of unknown Type, is rejected too, with a hint
+to convert it explicitly: `x := $d.(int)`. The cast is an ordinary cast (see
+[Casts](actions.md#casts)); when it fails, that is an evaluation error of the binding, which
+makes the predicate fail. Nothing is checked when a binding runs. Without type checking,
+bindings are not checked at all, and a variable can then hold a value of another type
+than its declared one; a read in an expression reports the mismatch like any other
+evaluation error.

@@ -18,7 +18,6 @@ import (
 //	version  1 byte (compiledVersion)
 //	payload  version 3: version 2 prefix, optional length-delimited recognition bundle, optional AST
 //	         version 2: instruction set version, string table, start rule, package name, module, AST (optional)
-//	         version 1: string table, package name, start rule, statements (type and rule definitions)
 //	crc32    CRC-32 of magic through payload (IEEE, 4 bytes little-endian)
 //
 // Integers are variable-length (signed ones zigzag-encoded), and strings are referenced by their
@@ -34,7 +33,7 @@ const (
 	// isaVersion is the instruction set of the value model, the only one supported. Earlier
 	// versions built the previous syntax trees, so their files are not loaded and need to be
 	// compiled again.
-	isaVersion = 22
+	isaVersion = 23
 	maxDepth   = 10000
 )
 
@@ -223,7 +222,7 @@ func (prog *Program) MarshalBinaryWith(start string, o MarshalOptions) ([]byte, 
 	}
 	w.bool(withAST)
 	if withAST {
-		w.statements(prog, compiledVersion, true)
+		w.statements(prog)
 	}
 	var out bytes.Buffer
 	out.WriteString(compiledMagic)
@@ -245,11 +244,10 @@ func (w *encoder) finish(out *bytes.Buffer) {
 }
 
 // statements writes the statements (type and rule definitions) and the static analysis results.
-// Version 1 does not record whether a rule has a value-free twin. With checks (instruction set 9),
-// each rule definition ends with the run-time checks of its values (checkInfo): the numbers of its
+// Each rule definition ends with the run-time checks of its values (checkInfo): the numbers of its
 // checked constructed fields (ruleFieldInits), of its checked results (ruleResults) and of its
 // checked node type conversions (ruleConversions).
-func (w *encoder) statements(prog *Program, version int, checks bool) {
+func (w *encoder) statements(prog *Program) {
 	w.uint(len(prog.Grammar.File.Decls))
 	ri := 0
 	for _, st := range prog.Grammar.File.Decls {
@@ -272,14 +270,10 @@ func (w *encoder) statements(prog *Program, version int, checks bool) {
 			w.bool(r.memo)
 			w.bool(r.leader)
 			w.bool(r.positional)
-			if version >= 2 {
-				w.bool(r.twinOK)
-			}
+			w.bool(r.twinOK)
 			w.expr(st.Expr)
 			w.optTerm(st.Action)
-			if checks {
-				w.checks(prog, st)
-			}
+			w.checks(prog, st)
 		}
 	}
 }
@@ -304,13 +298,7 @@ func (w *encoder) checks(prog *Program, rd *grammar.RuleDef) {
 			converts = append(converts, i)
 		}
 	}
-	var binds []int
-	for i, a := range ruleBinds(rd) {
-		if prog.bindCheck(a) != "" {
-			binds = append(binds, i)
-		}
-	}
-	for _, list := range [][]int{fields, results, converts, binds} {
+	for _, list := range [][]int{fields, results, converts} {
 		w.uint(len(list))
 		for _, i := range list {
 			w.uint(i)
@@ -721,7 +709,7 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 		return nil, "", errors.New("invalid compiled grammar: too short")
 	}
 	v := data[len(compiledMagic)]
-	if v != 1 && v != 2 && v != compiledVersion {
+	if v != 2 && v != compiledVersion {
 		return nil, "", fmt.Errorf("unsupported compiled grammar version %d (want %d)", v, compiledVersion)
 	}
 	body, sum := data[:len(data)-4], binary.LittleEndian.Uint32(data[len(data)-4:])
@@ -729,9 +717,6 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 		return nil, "", errors.New("invalid compiled grammar: checksum mismatch")
 	}
 	r := &decoder{data: body, pos: len(compiledMagic) + 1}
-	if v == 1 {
-		return r.loadV1(opts) // the AST only, compiled again
-	}
 	isa := r.uint()
 	if r.err == nil && isa != isaVersion {
 		return nil, "", unsupportedISA(isa)
@@ -759,7 +744,7 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	}
 	var prog *Program
 	if r.bool() {
-		g, flags, checks := r.statements(pkg, 2, true)
+		g, flags, checks := r.statements(pkg)
 		if r.err == nil {
 			o := opts
 			o.checks = checks
@@ -799,28 +784,6 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	return prog, start, nil
 }
 
-// loadV1 loads version 1 (the AST and the static analysis results).
-func (r *decoder) loadV1(opts Options) (*Program, string, error) {
-	r.strings()
-	pkg := r.str()
-	start := r.str()
-	g, flags, _ := r.statements(pkg, 1, false)
-	if r.err == nil && r.pos != len(r.data) {
-		r.fail("%d trailing bytes", len(r.data)-r.pos)
-	}
-	if r.err != nil {
-		return nil, "", r.err
-	}
-	prog, err := build(g, opts, flags)
-	if err != nil {
-		return nil, "", fmt.Errorf("invalid compiled grammar: %w", err)
-	}
-	if start != "" && prog.byName[start] == nil {
-		return nil, "", fmt.Errorf("invalid compiled grammar: start rule %s is not defined", start)
-	}
-	return prog, start, nil
-}
-
 func (r *decoder) strings() {
 	n := r.count()
 	for i := 0; i < n && r.err == nil; i++ {
@@ -833,13 +796,10 @@ func (r *decoder) strings() {
 	}
 }
 
-func (r *decoder) statements(pkg string, version int, checked bool) (*grammar.Grammar, []ruleFlags, *checkInfo) {
+func (r *decoder) statements(pkg string) (*grammar.Grammar, []ruleFlags, *checkInfo) {
 	g := &grammar.Grammar{File: grammar.File{Pkg: grammar.Pkg{Name: pkg}}}
 	flags := []ruleFlags{}
-	var checks *checkInfo
-	if checked {
-		checks = &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}, converts: map[*grammar.New]ty{}, binds: map[*grammar.Assign]bool{}}
-	}
+	checks := &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}, converts: map[*grammar.New]ty{}}
 	n := r.count()
 	for i := 0; i < n && r.err == nil; i++ {
 		switch k := r.byte(); k {
@@ -858,15 +818,11 @@ func (r *decoder) statements(pkg string, version int, checked bool) (*grammar.Gr
 				rd.Type = r.typeExpr()
 			}
 			f := ruleFlags{memo: r.bool(), leader: r.bool(), positional: r.bool()}
-			if version >= 2 {
-				f.twin = r.bool()
-			}
+			f.twin = r.bool()
 			flags = append(flags, f)
 			rd.Expr = r.expr()
 			rd.Action = r.optTerm()
-			if checked {
-				r.checks(rd, checks)
-			}
+			r.checks(rd, checks)
 			g.File.Decls = append(g.File.Decls, rd)
 		default:
 			r.fail("invalid statement kind %d", k)
@@ -892,10 +848,6 @@ func (r *decoder) checks(rd *grammar.RuleDef, ci *checkInfo) {
 	converts := ruleConversions(rd)
 	for _, i := range r.checkIndices(rd, len(converts)) {
 		ci.converts[converts[i]] = nil
-	}
-	binds := ruleBinds(rd)
-	for _, i := range r.checkIndices(rd, len(binds)) {
-		ci.binds[binds[i]] = true
 	}
 }
 

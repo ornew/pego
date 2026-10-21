@@ -131,3 +131,29 @@ func TestLoadedVariablesMatch(t *testing.T) {
 		})
 	}
 }
+
+// TestModuleInitialValueMatchesType checks that a module whose variable holds an initial value of
+// another type than its declared one is rejected: an int or bool variable with a string, a string
+// variable with an int or without a string, a bool that is neither 0 nor 1, and an unknown type.
+func TestModuleInitialValueMatchesType(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		mutate func(m *Module)
+	}{
+		{"string for an int", func(m *Module) { m.Vars[0].Str = m.Vars[1].Str }},
+		{"int for a string", func(m *Module) { m.Vars[1].Int = 5 }},
+		{"no string for a string", func(m *Module) { m.Vars[1].Str = -1 }},
+		{"2 for a bool", func(m *Module) { m.Vars[2].Int = 2 }},
+		{"a string for a bool", func(m *Module) { m.Vars[2].Str = m.Vars[1].Str }},
+		{"unknown type", func(m *Module) { m.Vars[0].Type = 3 }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := *compile(t, varModuleSource).Module()
+			m.Vars = append([]VarInfo(nil), m.Vars...)
+			tc.mutate(&m)
+			if err := validateModule(&m); err == nil {
+				t.Fatal("a module with a mistyped initial value was accepted")
+			}
+		})
+	}
+}

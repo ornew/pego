@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync/atomic"
 
 	"github.com/ornew/pego/grammar"
 )
@@ -898,8 +897,6 @@ func (c *compiler) predicate(e *grammar.Predicate, s *scope) matcher {
 			c.errorf(a.Diagnostic(), "undefined variable %s; declare it with var %s at the top level", a.Name, a.Name)
 		}
 		c.checkTerm(a.Value, s, nil)
-		// The run-time checks are decided after the matchers are built, so look them up on first use.
-		var checkType atomic.Pointer[string]
 		return func(p *parser) (*Node, bool) {
 			ctx := p.useCtx(evalCtx{p: p, scope: s, frame: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
 			v, err := ctx.eval(a.Value)
@@ -909,15 +906,6 @@ func (c *compiler) predicate(e *grammar.Predicate, s *scope) matcher {
 			}
 			if _, isFn := v.(*closure); isFn {
 				return nil, false
-			}
-			ct := checkType.Load()
-			if ct == nil {
-				name := p.prog.bindCheck(a)
-				ct = &name
-				checkType.Store(ct)
-			}
-			if *ct != "" && typeName(v) != *ct {
-				p.bindError(v, *ct, a.Name)
 			}
 			p.bind(a.Name, v)
 			return nil, true

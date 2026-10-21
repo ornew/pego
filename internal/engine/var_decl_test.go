@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -202,141 +201,90 @@ func TestGrammarWithoutVariables(t *testing.T) {
 	}
 }
 
-// TestVarBindingChecks checks that a binding whose value the type checker cannot prove fits the
-// variable is checked at run time, and that a program compiled without type checking checks every
-// binding, on every backend.
-func TestVarBindingChecks(t *testing.T) {
-	const dynamic = `var x int
-rule main = d:dyn {x := $d} "z" => x
+// TestVarBindingsAreStatic checks that a binding is accepted only when the type checker proves its
+// value fits the variable: a value of an unknown type is rejected with a hint to cast it, and a
+// cast makes it acceptable. Nothing is checked when the binding runs.
+func TestVarBindingsAreStatic(t *testing.T) {
+	const prelude = `var x int
 rule dyn any = di / ds
 rule di = "i" => 1
 rule ds = "s" => "str"
 `
-	checked := compile(t, dynamic)
-	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		if n, err := checked.ParseWith("main", "iz", ParseOptions{Backend: backend}); err != nil || n.String() != "1" {
-			t.Errorf("%v: got %v, %v; want 1", backend, n, err)
-		}
-		if n, err := checked.ParseWith("main", "sz", ParseOptions{Backend: backend}); err == nil {
-			t.Errorf("%v: a string bound to an int variable succeeded: %v", backend, n)
-		}
-	}
-	checkBackends(t, checked, "main", "iz")
-	checkBackends(t, checked, "main", "sz")
-
-	// Without the type checker a mismatch that the checker would reject is caught at run time.
-	const mistyped = `var x int
-rule main = {x := "s"} "a" => x
-`
-	unchecked := compile(t, mistyped, Options{NoTypeCheck: true})
-	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		if n, err := unchecked.ParseWith("main", "a", ParseOptions{Backend: backend}); err == nil {
-			t.Errorf("unchecked %v: got %v; want a syntax error", backend, n)
-		}
-	}
-	checkBackends(t, unchecked, "main", "a")
-	// The matching types are accepted without the type checker.
-	good := compile(t, "var x int\nvar s string\nvar b bool\nrule main = {x := 1} {s := \"s\"} {b := true} \"a\" => x\n", Options{NoTypeCheck: true})
-	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		if n, err := good.ParseWith("main", "a", ParseOptions{Backend: backend}); err != nil || n.String() != "1" {
-			t.Errorf("good %v: got %v, %v", backend, n, err)
-		}
-	}
-	// A binding the checker proves is not checked at run time: the module marks only the others.
-	count := func(p *Program) (checks int) {
-		for _, in := range p.Module().Code {
-			if in.Op == OpAssign && in.C != 0 {
-				checks++
-			}
-		}
-		return
-	}
-	if n := count(compile(t, "var x int\nrule main = {x := 1} \"a\"")); n != 0 {
-		t.Errorf("proven binding checked at run time: %d", n)
-	}
-	if n := count(checked); n != 1 {
-		t.Errorf("unproven binding checks: %d; want 1", n)
-	}
-	if n := count(unchecked); n != 1 {
-		t.Errorf("unchecked program binding checks: %d; want 1", n)
-	}
-	// Saved programs keep the checks.
-	for _, o := range []MarshalOptions{{}, {OmitAST: true}} {
-		data, err := checked.MarshalBinaryWith("main", o)
-		if err != nil {
-			t.Fatal(err)
-		}
-		loaded, start, err := LoadProgram(data, Options{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			if o.OmitAST && backend == Closure {
-				continue
-			}
-			if _, err := loaded.ParseWith(start, "sz", ParseOptions{Backend: backend}); err == nil {
-				t.Errorf("loaded (omit AST %t) %v: mismatch accepted", o.OmitAST, backend)
-			}
-		}
-	}
-}
-
-// TestVarBindingMismatchIsFatal checks that a binding of a value of another type than the
-// variable's ends the parse with an error, as a failed rule-result check does, and does not fail
-// the binding for the grammar to backtrack from, on every backend, with and without type checking,
-// in operator operands, and in a saved program.
-func TestVarBindingMismatchIsFatal(t *testing.T) {
-	const want = "cannot use string as int in the binding of variable x"
-	const dynamic = `var x int
-rule dyn any = di / ds
-rule di = "i" => 1
-rule ds = "s" => "str"
-`
-	for _, tc := range []struct {
-		name, src string
-		opts      Options
-		ok, bad   string // an input that parses and one that binds a string
-	}{
-		{"binding", dynamic + "rule main = d:dyn {x := $d} \"z\" => x\n", Options{}, "iz", "sz"},
-		{"fallback", dynamic + "rule main = (d:dyn {x := $d} \"z\" / \"s\" \"y\") / \"s\" \"w\" => 1\n", Options{}, "iz", "sy"},
-		{"no type check", "var x int\nrule main = {x := \"s\"} \"a\" => x\n", Options{NoTypeCheck: true}, "", "a"},
-		{"operand", dynamic + "rule main = e\nrule e = operators {\n    operand v:dyn {x := $v} => x\n    level { infix left \"+\" }\n}\n", Options{}, "i+i", "i+s"},
+	const hint = "the type of the value is not known; convert it with a cast, as in value.(int)"
+	for _, tc := range []struct{ name, src, want string }{
+		{"a rule value of unknown type", prelude + "rule main = d:dyn {x := $d} \"z\" => x\n", "cannot use any as int in the binding of variable x: " + hint},
+		{"a list element of []_", prelude + "type L = { Items []_ }\nrule main = d:dyn {x := list($d)[0]} \"z\" => x\n", "in the binding of variable x: " + hint},
+		{"a field of type _", prelude + "type F = { V _ }\nrule main = d:dyn {x := F{V: $d}.V} \"z\" => x\n", "cannot use _ as int in the binding of variable x"},
+		{"a wrong type", prelude + "rule main = {x := \"s\"} \"a\"\n", "cannot use string as int in the binding of variable x"},
+		{"a literal of the wrong type", "var s string\nrule main = {s := 1} \"a\"\n", "cannot use int as string in the binding of variable s"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			prog := compile(t, tc.src, tc.opts)
-			forms := map[string]*Program{"compiled": prog}
-			for _, o := range []MarshalOptions{{}, {OmitAST: true}} {
-				data, err := prog.MarshalBinaryWith("main", o)
-				if err != nil {
-					t.Fatal(err)
-				}
-				loaded, _, err := LoadProgram(data, Options{})
-				if err != nil {
-					t.Fatal(err)
-				}
-				forms[fmt.Sprintf("loaded (omit AST %t)", o.OmitAST)] = loaded
-			}
-			for name, p := range forms {
-				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-					if name == "loaded (omit AST true)" && backend == Closure {
-						continue
-					}
-					if tc.ok != "" {
-						if _, err := p.ParseWith("main", tc.ok, ParseOptions{Backend: backend}); err != nil {
-							t.Errorf("%s %v: %q: %v", name, backend, tc.ok, err)
-						}
-					}
-					_, err := p.ParseWith("main", tc.bad, ParseOptions{Backend: backend})
-					if err == nil || err.Error() != want {
-						t.Errorf("%s %v: %q: got %v; want %q", name, backend, tc.bad, err, want)
-					}
-					// A recognition runs the bindings too.
-					_, err = p.ParseWith("main", tc.bad, ParseOptions{Backend: backend, Recognize: true})
-					if err == nil || err.Error() != want {
-						t.Errorf("%s %v recognition: %q: got %v; want %q", name, backend, tc.bad, err, want)
-					}
-				}
+			if got := compileMessage(t, tc.src); !strings.Contains(got, tc.want) {
+				t.Fatalf("got %q; want an error containing %q", got, tc.want)
 			}
 		})
 	}
+
+	// A cast is an explicit conversion: it is accepted, and its own failure is an evaluation error,
+	// which makes the binding fail like any other evaluation error in a predicate.
+	cast := compile(t, prelude+"rule main = (d:dyn {x := $d.(int)} \"z\" / \"s\" \"y\") => x\n")
+	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		if n, err := cast.ParseWith("main", "iz", ParseOptions{Backend: backend}); err != nil || n.String() != "1" {
+			t.Errorf("%v: got %v, %v; want 1", backend, n, err)
+		}
+		if _, err := cast.ParseWith("main", "sz", ParseOptions{Backend: backend}); err == nil {
+			t.Errorf("%v: a failed cast in a binding was accepted", backend)
+		}
+	}
+	checkBackends(t, cast, "main", "iz")
+	checkBackends(t, cast, "main", "sz")
+
+	// The generated bindings carry no check either: ASSIGN has no operand to ask for one.
+	for _, in := range cast.Module().Code {
+		if in.Op == OpAssign && in.C != 0 {
+			t.Errorf("ASSIGN with operand C = %d", in.C)
+		}
+	}
+	data, err := cast.MarshalBinaryWith("main", MarshalOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	loaded, start, err := LoadProgram(data, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n, err := loaded.ParseWith(start, "iz", ParseOptions{Backend: Bytecode}); err != nil || n.String() != "1" {
+		t.Errorf("loaded: got %v, %v; want 1", n, err)
+	}
+}
+
+// TestLoadedBindingNeedsNoCheck checks that a crafted module whose ASSIGN asks for a check, as the
+// earlier instruction set let it, is rejected, and that a binding of a value of another type than
+// the variable's is memory-safe: variables hold any value and reads check the types they use.
+func TestLoadedBindingNeedsNoCheck(t *testing.T) {
+	prog := compile(t, "var x int\nrule main = {x := 1} \"a\" => x\n")
+	m := prog.Module()
+	m.Code = append([]Instr(nil), m.Code...)
+	for i := range m.Code {
+		if m.Code[i].Op == OpAssign {
+			m.Code[i].C = 1
+		}
+	}
+	if err := validateModule(m); err == nil {
+		t.Error("an ASSIGN with a check operand was accepted")
+	}
+
+	// Without type checking a binding of another type is not rejected, and the variable then
+	// holds that value: a read in an arithmetic expression reports the mismatch as an action error.
+	unchecked := compile(t, "var x int\nrule bound = {x := \"s\"} \"a\" => x\nrule sum = {x := \"s\"} \"a\" => x + 1\n", Options{NoTypeCheck: true})
+	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		if n, err := unchecked.ParseWith("bound", "a", ParseOptions{Backend: backend}); err != nil || n.String() != `"s"` {
+			t.Errorf("%v: got %v, %v; want \"s\"", backend, n, err)
+		}
+		if _, err := unchecked.ParseWith("sum", "a", ParseOptions{Backend: backend}); err == nil || !strings.Contains(err.Error(), "invalid operands") {
+			t.Errorf("%v: got %v; want an operand error", backend, err)
+		}
+	}
+	checkBackends(t, unchecked, "bound", "a")
+	checkBackends(t, unchecked, "sum", "a")
 }

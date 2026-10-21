@@ -417,11 +417,7 @@ func (c *bcompiler) void(e grammar.Expr, s *scope) {
 		c.emit(OpAssert, 3, 0, 0)
 	case *grammar.Predicate:
 		if a, ok := e.Term.(*grammar.Assign); ok {
-			check := int32(0)
-			if c.prog.bindCheck(a) != "" {
-				check = 1
-			}
-			c.emit(OpAssign, c.str(a.Name), int32(c.expr(a.Value, s, nil, false)), check)
+			c.emit(OpAssign, c.str(a.Name), int32(c.expr(a.Value, s, nil, false)), 0)
 		} else {
 			c.emit(OpPred, int32(c.expr(e.Term, s, nil, false)), 0, 0)
 		}

@@ -90,9 +90,6 @@ func TestCompiledStreamRecoveryRejected(t *testing.T) {
 				t.Errorf("legacy streamFirst=%v omit=%v: %v", streamFirst, omit, err)
 			}
 		}
-		if _, _, err := LoadProgram(marshalV1(p, "main"), Options{}); err == nil || !strings.Contains(err.Error(), streamRecoveryError) {
-			t.Errorf("v1 legacy: %v", err)
-		}
 	}
 }
 

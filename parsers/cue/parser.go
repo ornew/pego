@@ -39099,7 +39099,7 @@ func e261(p *pegort.Parser) (*pegort.Node, bool) {
 		v10 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x9), RawEnd: int32(p.Pos), RawText: "#", RawTerminal: true, RawFresh: true})
 		x8 = append(x8, v10)
 
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("-", func() any { return c.Lookup("sv") }(), func() any { return any(2) }())
@@ -39177,7 +39177,7 @@ L4:
 	v10 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x9), RawEnd: int32(p.Pos), RawText: "#", RawTerminal: true, RawFresh: true})
 	x8 = append(x8, v10)
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("-", func() any { c.P.StepWork(); return c.Lookup("sv") }(), func() any { c.P.StepWork(); return any(2) }())
@@ -40239,7 +40239,7 @@ func e269(p *pegort.Parser) (*pegort.Node, bool) {
 		v20 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x19), RawEnd: int32(p.Pos), RawText: "\"", RawTerminal: true, RawFresh: true})
 		x18 = append(x18, v20)
 
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("*", func() any { return c.Length(func() any { return c.Cap(1) }()) }(), func() any { return any(2) }())
@@ -40271,7 +40271,7 @@ func e269(p *pegort.Parser) (*pegort.Node, bool) {
 		v28 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x27), RawEnd: int32(p.Pos), RawText: "'", RawTerminal: true, RawFresh: true})
 		x26 = append(x26, v28)
 
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -40408,7 +40408,7 @@ func e269(p *pegort.Parser) (*pegort.Node, bool) {
 	v20 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x19), RawEnd: int32(p.Pos), RawText: "\"", RawTerminal: true, RawFresh: true})
 	x18 = append(x18, v20)
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("*", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(1) }()) }(), func() any { c.P.StepWork(); return any(2) }())
@@ -40440,7 +40440,7 @@ L15:
 	v28 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x27), RawEnd: int32(p.Pos), RawText: "'", RawTerminal: true, RawFresh: true})
 	x26 = append(x26, v28)
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -41450,7 +41450,7 @@ func e273(p *pegort.Parser) (*pegort.Node, bool) {
 		v20 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x19), RawEnd: int32(p.Pos), RawText: "\"", RawTerminal: true, RawFresh: true})
 		x18 = append(x18, v20)
 
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("*", func() any { return c.Length(func() any { return c.Cap(1) }()) }(), func() any { return any(2) }())
@@ -41482,7 +41482,7 @@ func e273(p *pegort.Parser) (*pegort.Node, bool) {
 		v28 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x27), RawEnd: int32(p.Pos), RawText: "'", RawTerminal: true, RawFresh: true})
 		x26 = append(x26, v28)
 
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -41634,7 +41634,7 @@ func e273(p *pegort.Parser) (*pegort.Node, bool) {
 	v20 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x19), RawEnd: int32(p.Pos), RawText: "\"", RawTerminal: true, RawFresh: true})
 	x18 = append(x18, v20)
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("*", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(1) }()) }(), func() any { c.P.StepWork(); return any(2) }())
@@ -41666,7 +41666,7 @@ L15:
 	v28 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x27), RawEnd: int32(p.Pos), RawText: "'", RawTerminal: true, RawFresh: true})
 	x26 = append(x26, v28)
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -42102,7 +42102,7 @@ func e277(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail_ordinary
 	L3_ordinary:
 		p.StepWork()
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("*", func() any { return c.Length(func() any { return c.Cap(0) }()) }(), func() any { return any(2) }())
@@ -42189,7 +42189,7 @@ L2:
 	goto fail
 L3:
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("*", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return any(2) }())
@@ -42277,7 +42277,7 @@ func e278(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail_ordinary
 	L3_ordinary:
 		p.StepWork()
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -42367,7 +42367,7 @@ L2:
 	goto fail
 L3:
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -43197,7 +43197,7 @@ func e287(p *pegort.Parser) (*pegort.Node, bool) {
 		v20 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x19), RawEnd: int32(p.Pos), RawText: "\"", RawTerminal: true, RawFresh: true})
 		x18 = append(x18, v20)
 
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("*", func() any { return c.Length(func() any { return c.Cap(1) }()) }(), func() any { return any(2) }())
@@ -43229,7 +43229,7 @@ func e287(p *pegort.Parser) (*pegort.Node, bool) {
 		v28 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x27), RawEnd: int32(p.Pos), RawText: "'", RawTerminal: true, RawFresh: true})
 		x26 = append(x26, v28)
 
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -43464,7 +43464,7 @@ func e287(p *pegort.Parser) (*pegort.Node, bool) {
 	v20 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x19), RawEnd: int32(p.Pos), RawText: "\"", RawTerminal: true, RawFresh: true})
 	x18 = append(x18, v20)
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("*", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(1) }()) }(), func() any { c.P.StepWork(); return any(2) }())
@@ -43496,7 +43496,7 @@ L15:
 	v28 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x27), RawEnd: int32(p.Pos), RawText: "'", RawTerminal: true, RawFresh: true})
 	x26 = append(x26, v28)
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -44455,7 +44455,7 @@ func e292(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail_ordinary
 	L3_ordinary:
 		p.StepWork()
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("*", func() any { return c.Length(func() any { return c.Cap(0) }()) }(), func() any { return any(2) }())
@@ -44542,7 +44542,7 @@ L2:
 	goto fail
 L3:
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("*", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return any(2) }())
@@ -44630,7 +44630,7 @@ func e293(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail_ordinary
 	L3_ordinary:
 		p.StepWork()
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -44720,7 +44720,7 @@ L2:
 	goto fail
 L3:
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -54505,7 +54505,7 @@ func e347(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L4_ordinary
 		}
 
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("-", func() any { return c.Lookup("sv") }(), func() any { return any(2) }())
@@ -54563,7 +54563,7 @@ L3:
 		goto L4
 	}
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("-", func() any { c.P.StepWork(); return c.Lookup("sv") }(), func() any { c.P.StepWork(); return any(2) }())
@@ -100742,7 +100742,7 @@ func e659(p *pegort.Parser) (*pegort.Node, bool) {
 		v10 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x9), RawEnd: int32(p.Pos), RawText: "#", RawTerminal: true, RawFresh: true})
 		x8 = append(x8, v10)
 
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("-", func() any { return c.Lookup("sv") }(), func() any { return any(2) }())
@@ -100820,7 +100820,7 @@ L4:
 	v10 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x9), RawEnd: int32(p.Pos), RawText: "#", RawTerminal: true, RawFresh: true})
 	x8 = append(x8, v10)
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("-", func() any { c.P.StepWork(); return c.Lookup("sv") }(), func() any { c.P.StepWork(); return any(2) }())
@@ -101530,7 +101530,7 @@ func e664(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L12_ordinary
 		}
 
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("*", func() any { return c.Length(func() any { return c.Cap(0) }()) }(), func() any { return any(2) }())
@@ -101553,7 +101553,7 @@ func e664(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L14_ordinary
 		}
 
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -101650,7 +101650,7 @@ func e664(p *pegort.Parser) (*pegort.Node, bool) {
 		goto L12
 	}
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("*", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return any(2) }())
@@ -101674,7 +101674,7 @@ L11:
 		goto L14
 	}
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -101932,7 +101932,7 @@ func e666(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L12_ordinary
 		}
 
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("*", func() any { return c.Length(func() any { return c.Cap(0) }()) }(), func() any { return any(2) }())
@@ -101955,7 +101955,7 @@ func e666(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L14_ordinary
 		}
 
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -102067,7 +102067,7 @@ func e666(p *pegort.Parser) (*pegort.Node, bool) {
 		goto L12
 	}
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("*", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return any(2) }())
@@ -102091,7 +102091,7 @@ L11:
 		goto L14
 	}
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -102469,7 +102469,7 @@ func e670(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail_ordinary
 	L3_ordinary:
 		p.StepWork()
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("*", func() any { return c.Length(func() any { return c.Cap(0) }()) }(), func() any { return any(2) }())
@@ -102546,7 +102546,7 @@ L2:
 	goto fail
 L3:
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("*", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return any(2) }())
@@ -102626,7 +102626,7 @@ func e671(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail_ordinary
 	L3_ordinary:
 		p.StepWork()
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -102706,7 +102706,7 @@ L2:
 	goto fail
 L3:
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -103450,7 +103450,7 @@ func e680(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L12_ordinary
 		}
 
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("*", func() any { return c.Length(func() any { return c.Cap(0) }()) }(), func() any { return any(2) }())
@@ -103473,7 +103473,7 @@ func e680(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L14_ordinary
 		}
 
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -103670,7 +103670,7 @@ func e680(p *pegort.Parser) (*pegort.Node, bool) {
 		goto L12
 	}
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("*", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return any(2) }())
@@ -103694,7 +103694,7 @@ L11:
 		goto L14
 	}
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -104444,7 +104444,7 @@ func e685(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail_ordinary
 	L3_ordinary:
 		p.StepWork()
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("*", func() any { return c.Length(func() any { return c.Cap(0) }()) }(), func() any { return any(2) }())
@@ -104521,7 +104521,7 @@ L2:
 	goto fail
 L3:
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("*", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return any(2) }())
@@ -104601,7 +104601,7 @@ func e686(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail_ordinary
 	L3_ordinary:
 		p.StepWork()
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -104681,7 +104681,7 @@ L2:
 	goto fail
 L3:
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -110281,7 +110281,7 @@ func e712(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L4_ordinary
 		}
 
-		if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("sv", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("-", func() any { return c.Lookup("sv") }(), func() any { return any(2) }())
@@ -110339,7 +110339,7 @@ L3:
 		goto L4
 	}
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("sv", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("-", func() any { c.P.StepWork(); return c.Lookup("sv") }(), func() any { c.P.StepWork(); return any(2) }())
@@ -189568,7 +189568,7 @@ func v182(p *pegort.TParser) (any, bool) {
 		v12 = p.NewMatchOrdinary(x11, p.Pos, "#", true)
 		x10 = append(x10, v12)
 
-		if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("sv", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("-", func() any { return c.Lookup("sv") }(), func() any { return any(2) }())
@@ -189673,7 +189673,7 @@ L6:
 	v12 = p.NewMatch(x11, p.Pos, "#", true)
 	x10 = append(x10, v12)
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("sv", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("-", func() any { c.P.StepWork(); return c.Lookup("sv") }(), func() any { c.P.StepWork(); return any(2) }())
@@ -189780,7 +189780,7 @@ func i182(p *pegort.TParser) (any, bool) {
 		v12 = p.NewMatchOrdinary(x11, p.Pos, "#", true)
 		x10 = append(x10, v12)
 
-		if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("sv", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("-", func() any { return c.Lookup("sv") }(), func() any { return any(2) }())
@@ -189882,7 +189882,7 @@ L6:
 	v12 = p.NewMatch(x11, p.Pos, "#", true)
 	x10 = append(x10, v12)
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("sv", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("-", func() any { c.P.StepWork(); return c.Lookup("sv") }(), func() any { c.P.StepWork(); return any(2) }())
@@ -191414,7 +191414,7 @@ func i189(p *pegort.TParser) (any, bool) {
 		v25 = p.NewMatchOrdinary(x24, p.Pos, "\"", true)
 		x23 = append(x23, v25)
 
-		if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("sv", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("*", func() any { return c.Length(func() any { return k5 }()) }(), func() any { return any(2) }())
@@ -191448,7 +191448,7 @@ func i189(p *pegort.TParser) (any, bool) {
 		v33 = p.NewMatchOrdinary(x32, p.Pos, "'", true)
 		x31 = append(x31, v33)
 
-		if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("sv", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -191620,7 +191620,7 @@ func i189(p *pegort.TParser) (any, bool) {
 	v25 = p.NewMatch(x24, p.Pos, "\"", true)
 	x23 = append(x23, v25)
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("sv", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("*", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k5 }()) }(), func() any { c.P.StepWork(); return any(2) }())
@@ -191654,7 +191654,7 @@ L20:
 	v33 = p.NewMatch(x32, p.Pos, "'", true)
 	x31 = append(x31, v33)
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("sv", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -193178,7 +193178,7 @@ func i192(p *pegort.TParser) (any, bool) {
 		v25 = p.NewMatchOrdinary(x24, p.Pos, "\"", true)
 		x23 = append(x23, v25)
 
-		if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("sv", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("*", func() any { return c.Length(func() any { return k5 }()) }(), func() any { return any(2) }())
@@ -193212,7 +193212,7 @@ func i192(p *pegort.TParser) (any, bool) {
 		v33 = p.NewMatchOrdinary(x32, p.Pos, "'", true)
 		x31 = append(x31, v33)
 
-		if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("sv", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -193402,7 +193402,7 @@ func i192(p *pegort.TParser) (any, bool) {
 	v25 = p.NewMatch(x24, p.Pos, "\"", true)
 	x23 = append(x23, v25)
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("sv", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("*", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k5 }()) }(), func() any { c.P.StepWork(); return any(2) }())
@@ -193436,7 +193436,7 @@ L20:
 	v33 = p.NewMatch(x32, p.Pos, "'", true)
 	x31 = append(x31, v33)
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("sv", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -194145,7 +194145,7 @@ func i196(p *pegort.TParser) (any, bool) {
 		goto fail_ordinary
 	L3_ordinary:
 		p.StepWork()
-		if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("sv", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("*", func() any { return c.Length(func() any { return k4 }()) }(), func() any { return any(2) }())
@@ -194266,7 +194266,7 @@ L2:
 	goto fail
 L3:
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("sv", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("*", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k4 }()) }(), func() any { c.P.StepWork(); return any(2) }())
@@ -194409,7 +194409,7 @@ func i197(p *pegort.TParser) (any, bool) {
 		goto fail_ordinary
 	L3_ordinary:
 		p.StepWork()
-		if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("sv", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -194533,7 +194533,7 @@ L2:
 	goto fail
 L3:
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("sv", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -195875,7 +195875,7 @@ func i204(p *pegort.TParser) (any, bool) {
 		v25 = p.NewMatchOrdinary(x24, p.Pos, "\"", true)
 		x23 = append(x23, v25)
 
-		if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("sv", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("*", func() any { return c.Length(func() any { return k5 }()) }(), func() any { return any(2) }())
@@ -195909,7 +195909,7 @@ func i204(p *pegort.TParser) (any, bool) {
 		v33 = p.NewMatchOrdinary(x32, p.Pos, "'", true)
 		x31 = append(x31, v33)
 
-		if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("sv", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -196171,7 +196171,7 @@ func i204(p *pegort.TParser) (any, bool) {
 	v25 = p.NewMatch(x24, p.Pos, "\"", true)
 	x23 = append(x23, v25)
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("sv", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("*", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k5 }()) }(), func() any { c.P.StepWork(); return any(2) }())
@@ -196205,7 +196205,7 @@ L20:
 	v33 = p.NewMatch(x32, p.Pos, "'", true)
 	x31 = append(x31, v33)
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("sv", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -197924,7 +197924,7 @@ func i209(p *pegort.TParser) (any, bool) {
 		goto fail_ordinary
 	L3_ordinary:
 		p.StepWork()
-		if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("sv", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("*", func() any { return c.Length(func() any { return k4 }()) }(), func() any { return any(2) }())
@@ -198045,7 +198045,7 @@ L2:
 	goto fail
 L3:
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("sv", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("*", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k4 }()) }(), func() any { c.P.StepWork(); return any(2) }())
@@ -198188,7 +198188,7 @@ func i210(p *pegort.TParser) (any, bool) {
 		goto fail_ordinary
 	L3_ordinary:
 		p.StepWork()
-		if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("sv", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -198312,7 +198312,7 @@ L2:
 	goto fail
 L3:
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("sv", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -214765,7 +214765,7 @@ func v264(p *pegort.TParser) (any, bool) {
 			goto L6_ordinary
 		}
 
-		if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("sv", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("-", func() any { return c.Lookup("sv") }(), func() any { return any(2) }())
@@ -214847,7 +214847,7 @@ L5:
 		goto L6
 	}
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("sv", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("-", func() any { c.P.StepWork(); return c.Lookup("sv") }(), func() any { c.P.StepWork(); return any(2) }())
@@ -214928,7 +214928,7 @@ func i264(p *pegort.TParser) (any, bool) {
 			goto L6_ordinary
 		}
 
-		if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("sv", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("-", func() any { return c.Lookup("sv") }(), func() any { return any(2) }())
@@ -215005,7 +215005,7 @@ L5:
 		goto L6
 	}
 	p.StepWork()
-	if !p.Assign("sv", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("sv", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("-", func() any { c.P.StepWork(); return c.Lookup("sv") }(), func() any { c.P.StepWork(); return any(2) }())

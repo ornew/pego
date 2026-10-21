@@ -80,13 +80,12 @@ A file carries two version numbers after its magic number.
 
 | Number | Current values | Meaning |
 |:--|--:|:--|
-| Format version | 2 or 3 | The layout of the file: version 2 for a save with the AST, version 3 for a save without the AST that has a recognition bundle. A runtime loads versions 1, 2 and 3 |
-| Instruction-set version | 20 | The bytecode of the value model. Every module and recognition bundle declares it |
+| Format version | 2 or 3 | The layout of the file: version 2 for a save with the AST, version 3 for a save without the AST that has a recognition bundle. A runtime loads only versions 2 and 3 |
+| Instruction-set version | 23 | The bytecode of the value model. Every module and recognition bundle declares it |
 
 - A runtime refuses a module of an earlier instruction set: its bytecode builds the
   syntax trees that preceded the value model. The error asks for the grammar to be
-  compiled again. A version 1 file holds only the AST, so it is compiled again as it
-  loads.
+  compiled again.
 - A runtime refuses a file that requires a newer format or instruction set, with
   `unsupported compiled grammar version` or `unsupported instruction set version`.
 - A file records whether the program was compiled with source information, and the

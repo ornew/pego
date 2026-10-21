@@ -6538,13 +6538,13 @@ func e17(p *pegort.Parser) (*pegort.Node, bool) {
 		)
 		_ = x1
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any { return c.Unary("-", func() any { return any(1) }()) }()
 		}) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("block-in") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("block-in") }() }) {
 			goto fail_ordinary
 		}
 
@@ -6568,13 +6568,13 @@ func e17(p *pegort.Parser) (*pegort.Node, bool) {
 	_ = x1
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Unary("-", func() any { c.P.StepWork(); return any(1) }()) }()
 	}) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-in") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-in") }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -9669,7 +9669,7 @@ func e54(p *pegort.Parser) (*pegort.Node, bool) {
 		)
 		_ = x10
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -9862,7 +9862,7 @@ func e54(p *pegort.Parser) (*pegort.Node, bool) {
 	_ = x10
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -10049,7 +10049,7 @@ func e55(p *pegort.Parser) (*pegort.Node, bool) {
 		)
 		_ = x1
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("flow-out") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("flow-out") }() }) {
 			goto fail_ordinary
 		}
 
@@ -10073,7 +10073,7 @@ func e55(p *pegort.Parser) (*pegort.Node, bool) {
 	_ = x1
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-out") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-out") }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -10546,7 +10546,7 @@ func e61(p *pegort.Parser) (*pegort.Node, bool) {
 		)
 		_ = x1
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -10579,7 +10579,7 @@ func e61(p *pegort.Parser) (*pegort.Node, bool) {
 	_ = x1
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -10619,7 +10619,7 @@ func e62(p *pegort.Parser) (*pegort.Node, bool) {
 		)
 		_, _ = x4, x10
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -10685,7 +10685,7 @@ func e62(p *pegort.Parser) (*pegort.Node, bool) {
 	_, _ = x4, x10
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -10813,7 +10813,7 @@ func e65(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L11_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("-", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -10927,7 +10927,7 @@ L3:
 		goto L11
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("-", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -11033,7 +11033,7 @@ func e67(p *pegort.Parser) (*pegort.Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any { return c.Length(func() any { return c.Cap(0) }()) }()
 		}) {
 			goto fail_ordinary
@@ -11156,7 +11156,7 @@ func e67(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
 	}) {
 		goto fail
@@ -11244,7 +11244,7 @@ func e68(p *pegort.Parser) (*pegort.Node, bool) {
 		p.Silent--
 		p.Reset(x1)
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("block-in") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("block-in") }() }) {
 			goto fail_ordinary
 		}
 
@@ -11288,7 +11288,7 @@ L2:
 	p.Silent--
 	p.Reset(x1)
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-in") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-in") }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -11436,7 +11436,7 @@ func e70(p *pegort.Parser) (*pegort.Node, bool) {
 		v6 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x2), RawEnd: int32(p.Pos), RawText: p.Text(x2, p.Pos), RawTerminal: true, RawFresh: true})
 		p.SetCaptureOrdinary(0, v6)
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -11530,7 +11530,7 @@ func e70(p *pegort.Parser) (*pegort.Node, bool) {
 	v6 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x2), RawEnd: int32(p.Pos), RawText: p.Text(x2, p.Pos), RawTerminal: true, RawFresh: true})
 	p.SetCapture(0, v6)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -11800,7 +11800,7 @@ func e74(p *pegort.Parser) (*pegort.Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any { return c.Length(func() any { return c.Cap(0) }()) }()
 		}) {
 			goto fail_ordinary
@@ -11909,7 +11909,7 @@ func e74(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
 	}) {
 		goto fail
@@ -12313,7 +12313,7 @@ func e80(p *pegort.Parser) (*pegort.Node, bool) {
 		p.Silent--
 		p.Reset(x1)
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("block-out") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("block-out") }() }) {
 			goto fail_ordinary
 		}
 
@@ -12357,7 +12357,7 @@ L2:
 	p.Silent--
 	p.Reset(x1)
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -12407,7 +12407,7 @@ func e82(p *pegort.Parser) (*pegort.Node, bool) {
 		p.Silent--
 		p.Reset(x1)
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("block-out") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("block-out") }() }) {
 			goto fail_ordinary
 		}
 
@@ -12455,7 +12455,7 @@ L2:
 	p.Silent--
 	p.Reset(x1)
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -12601,7 +12601,7 @@ func e85(p *pegort.Parser) (*pegort.Node, bool) {
 	L3_ordinary:
 		p.Reset(x1)
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("block-key") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("block-key") }() }) {
 			goto L6_ordinary
 		}
 
@@ -12703,7 +12703,7 @@ L3:
 	p.Reset(x1)
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-key") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-key") }() }) {
 		goto L6
 	}
 	p.StepWork()
@@ -12987,7 +12987,7 @@ func e89(p *pegort.Parser) (*pegort.Node, bool) {
 	L3_ordinary:
 		p.Reset(x1)
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("block-out") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("block-out") }() }) {
 			goto L10_ordinary
 		}
 
@@ -13079,7 +13079,7 @@ L3:
 	p.Reset(x1)
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
 		goto L10
 	}
 	p.StepWork()
@@ -13375,7 +13375,7 @@ func e102(p *pegort.Parser) (*pegort.Node, bool) {
 		v41 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x40), RawEnd: int32(p.Pos), RawText: "1", RawTerminal: true, RawFresh: true})
 		x39 = append(x39, v41)
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -13407,7 +13407,7 @@ func e102(p *pegort.Parser) (*pegort.Node, bool) {
 		v49 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x48), RawEnd: int32(p.Pos), RawText: "2", RawTerminal: true, RawFresh: true})
 		x47 = append(x47, v49)
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(2) }())
@@ -13439,7 +13439,7 @@ func e102(p *pegort.Parser) (*pegort.Node, bool) {
 		v57 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x56), RawEnd: int32(p.Pos), RawText: "3", RawTerminal: true, RawFresh: true})
 		x55 = append(x55, v57)
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(3) }())
@@ -13471,7 +13471,7 @@ func e102(p *pegort.Parser) (*pegort.Node, bool) {
 		v65 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x64), RawEnd: int32(p.Pos), RawText: "4", RawTerminal: true, RawFresh: true})
 		x63 = append(x63, v65)
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(4) }())
@@ -13503,7 +13503,7 @@ func e102(p *pegort.Parser) (*pegort.Node, bool) {
 		v73 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x72), RawEnd: int32(p.Pos), RawText: "5", RawTerminal: true, RawFresh: true})
 		x71 = append(x71, v73)
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(5) }())
@@ -13535,7 +13535,7 @@ func e102(p *pegort.Parser) (*pegort.Node, bool) {
 		v81 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x80), RawEnd: int32(p.Pos), RawText: "6", RawTerminal: true, RawFresh: true})
 		x79 = append(x79, v81)
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(6) }())
@@ -13567,7 +13567,7 @@ func e102(p *pegort.Parser) (*pegort.Node, bool) {
 		v89 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x88), RawEnd: int32(p.Pos), RawText: "7", RawTerminal: true, RawFresh: true})
 		x87 = append(x87, v89)
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(7) }())
@@ -13599,7 +13599,7 @@ func e102(p *pegort.Parser) (*pegort.Node, bool) {
 		v97 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x96), RawEnd: int32(p.Pos), RawText: "8", RawTerminal: true, RawFresh: true})
 		x95 = append(x95, v97)
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(8) }())
@@ -13631,7 +13631,7 @@ func e102(p *pegort.Parser) (*pegort.Node, bool) {
 		v105 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x104), RawEnd: int32(p.Pos), RawText: "9", RawTerminal: true, RawFresh: true})
 		x103 = append(x103, v105)
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(9) }())
@@ -13746,7 +13746,7 @@ func e102(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L133_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any { return c.Length(func() any { return c.Cap(4) }()) }()
 		}) {
 			goto L133_ordinary
@@ -13873,7 +13873,7 @@ func e102(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L157_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -13965,7 +13965,7 @@ func e102(p *pegort.Parser) (*pegort.Node, bool) {
 				goto L181_ordinary
 			}
 
-			if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+			if !p.Assign("n", func(c *pegort.ActCtx) any {
 				return func() any { return c.Length(func() any { return c.Cap(0) }()) }()
 			}) {
 				goto L181_ordinary
@@ -14350,7 +14350,7 @@ L28:
 	v41 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x40), RawEnd: int32(p.Pos), RawText: "1", RawTerminal: true, RawFresh: true})
 	x39 = append(x39, v41)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -14382,7 +14382,7 @@ L36:
 	v49 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x48), RawEnd: int32(p.Pos), RawText: "2", RawTerminal: true, RawFresh: true})
 	x47 = append(x47, v49)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(2) }())
@@ -14414,7 +14414,7 @@ L44:
 	v57 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x56), RawEnd: int32(p.Pos), RawText: "3", RawTerminal: true, RawFresh: true})
 	x55 = append(x55, v57)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(3) }())
@@ -14446,7 +14446,7 @@ L52:
 	v65 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x64), RawEnd: int32(p.Pos), RawText: "4", RawTerminal: true, RawFresh: true})
 	x63 = append(x63, v65)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(4) }())
@@ -14478,7 +14478,7 @@ L60:
 	v73 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x72), RawEnd: int32(p.Pos), RawText: "5", RawTerminal: true, RawFresh: true})
 	x71 = append(x71, v73)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(5) }())
@@ -14510,7 +14510,7 @@ L68:
 	v81 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x80), RawEnd: int32(p.Pos), RawText: "6", RawTerminal: true, RawFresh: true})
 	x79 = append(x79, v81)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(6) }())
@@ -14542,7 +14542,7 @@ L76:
 	v89 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x88), RawEnd: int32(p.Pos), RawText: "7", RawTerminal: true, RawFresh: true})
 	x87 = append(x87, v89)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(7) }())
@@ -14574,7 +14574,7 @@ L84:
 	v97 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x96), RawEnd: int32(p.Pos), RawText: "8", RawTerminal: true, RawFresh: true})
 	x95 = append(x95, v97)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(8) }())
@@ -14606,7 +14606,7 @@ L92:
 	v105 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x104), RawEnd: int32(p.Pos), RawText: "9", RawTerminal: true, RawFresh: true})
 	x103 = append(x103, v105)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(9) }())
@@ -14724,7 +14724,7 @@ L113:
 		goto L133
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(4) }()) }()
 	}) {
 		goto L133
@@ -14854,7 +14854,7 @@ L133:
 		goto L157
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -14949,7 +14949,7 @@ L133:
 			goto L181
 		}
 		p.StepWork()
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
 		}) {
 			goto L181
@@ -15075,7 +15075,7 @@ func e103(p *pegort.Parser) (*pegort.Node, bool) {
 		x1 = p.Pos
 		x2 = p.Nodes(1)[:0]
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -15106,7 +15106,7 @@ func e103(p *pegort.Parser) (*pegort.Node, bool) {
 	x1 = p.Pos
 	x2 = p.Nodes(1)[:0]
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -15136,7 +15136,7 @@ func e104(p *pegort.Parser) (*pegort.Node, bool) {
 		)
 		_ = x1
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -15169,7 +15169,7 @@ func e104(p *pegort.Parser) (*pegort.Node, bool) {
 	_ = x1
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -16884,14 +16884,14 @@ func e118(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L15_ordinary
 		}
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("flow-in") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("flow-in") }() }) {
 			goto L15_ordinary
 		}
 		goto L13_ordinary
 	L15_ordinary:
 		p.Reset(x12)
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("flow-key") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("flow-key") }() }) {
 			goto L16_ordinary
 		}
 		goto L13_ordinary
@@ -17029,14 +17029,14 @@ L14:
 		goto L15
 	}
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-in") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-in") }() }) {
 		goto L15
 	}
 	goto L13
 L15:
 	p.Reset(x12)
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
 		goto L16
 	}
 	goto L13
@@ -17523,14 +17523,14 @@ func e125(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L15_ordinary
 		}
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("flow-in") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("flow-in") }() }) {
 			goto L15_ordinary
 		}
 		goto L13_ordinary
 	L15_ordinary:
 		p.Reset(x12)
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("flow-key") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("flow-key") }() }) {
 			goto L16_ordinary
 		}
 		goto L13_ordinary
@@ -17668,14 +17668,14 @@ L14:
 		goto L15
 	}
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-in") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-in") }() }) {
 		goto L15
 	}
 	goto L13
 L15:
 	p.Reset(x12)
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
 		goto L16
 	}
 	goto L13
@@ -19376,7 +19376,7 @@ func e145(p *pegort.Parser) (*pegort.Node, bool) {
 	L3_ordinary:
 		p.Reset(x1)
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("flow-key") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("flow-key") }() }) {
 			goto L4_ordinary
 		}
 		goto L2_ordinary
@@ -19431,7 +19431,7 @@ func e145(p *pegort.Parser) (*pegort.Node, bool) {
 L3:
 	p.Reset(x1)
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
 		goto L4
 	}
 	goto L2
@@ -19574,7 +19574,7 @@ func e147(p *pegort.Parser) (*pegort.Node, bool) {
 	L6_ordinary:
 		p.Reset(x4)
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("flow-key") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("flow-key") }() }) {
 			goto L7_ordinary
 		}
 		goto L5_ordinary
@@ -19655,7 +19655,7 @@ L3:
 L6:
 	p.Reset(x4)
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
 		goto L7
 	}
 	goto L5
@@ -31065,7 +31065,7 @@ func e219(p *pegort.Parser) (*pegort.Node, bool) {
 			ok bool
 		)
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -31088,7 +31088,7 @@ func e219(p *pegort.Parser) (*pegort.Node, bool) {
 	)
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -42207,13 +42207,13 @@ func e263(p *pegort.Parser) (*pegort.Node, bool) {
 			ok bool
 		)
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any { return c.Unary("-", func() any { return any(1) }()) }()
 		}) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("block-in") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("block-in") }() }) {
 			goto fail_ordinary
 		}
 
@@ -42231,13 +42231,13 @@ func e263(p *pegort.Parser) (*pegort.Node, bool) {
 	)
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Unary("-", func() any { c.P.StepWork(); return any(1) }()) }()
 	}) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-in") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-in") }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -44628,7 +44628,7 @@ func e282(p *pegort.Parser) (*pegort.Node, bool) {
 			x17  int
 		)
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -44812,7 +44812,7 @@ func e282(p *pegort.Parser) (*pegort.Node, bool) {
 	)
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -44992,7 +44992,7 @@ func e283(p *pegort.Parser) (*pegort.Node, bool) {
 			ok bool
 		)
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("flow-out") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("flow-out") }() }) {
 			goto fail_ordinary
 		}
 
@@ -45010,7 +45010,7 @@ func e283(p *pegort.Parser) (*pegort.Node, bool) {
 	)
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-out") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-out") }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -45416,7 +45416,7 @@ func e289(p *pegort.Parser) (*pegort.Node, bool) {
 			ok bool
 		)
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -45443,7 +45443,7 @@ func e289(p *pegort.Parser) (*pegort.Node, bool) {
 	)
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -45476,7 +45476,7 @@ func e290(p *pegort.Parser) (*pegort.Node, bool) {
 			x5 bool
 		)
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -45531,7 +45531,7 @@ func e290(p *pegort.Parser) (*pegort.Node, bool) {
 	)
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -45653,7 +45653,7 @@ func e291(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L11_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("-", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -45763,7 +45763,7 @@ L3:
 		goto L11
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("-", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -45856,7 +45856,7 @@ func e293(p *pegort.Parser) (*pegort.Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any { return c.Length(func() any { return c.Cap(0) }()) }()
 		}) {
 			goto fail_ordinary
@@ -45951,7 +45951,7 @@ func e293(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
 	}) {
 		goto fail
@@ -46022,7 +46022,7 @@ func e294(p *pegort.Parser) (*pegort.Node, bool) {
 		p.Silent--
 		p.Reset(x1)
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("block-in") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("block-in") }() }) {
 			goto fail_ordinary
 		}
 
@@ -46060,7 +46060,7 @@ L2:
 	p.Silent--
 	p.Reset(x1)
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-in") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-in") }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -46188,7 +46188,7 @@ func e296(p *pegort.Parser) (*pegort.Node, bool) {
 		v6 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x2), RawEnd: int32(p.Pos), RawText: p.Text(x2, p.Pos), RawTerminal: true, RawFresh: true})
 		p.SetCaptureOrdinary(0, v6)
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -46273,7 +46273,7 @@ func e296(p *pegort.Parser) (*pegort.Node, bool) {
 	v6 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x2), RawEnd: int32(p.Pos), RawText: p.Text(x2, p.Pos), RawTerminal: true, RawFresh: true})
 	p.SetCapture(0, v6)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -46468,7 +46468,7 @@ func e299(p *pegort.Parser) (*pegort.Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any { return c.Length(func() any { return c.Cap(0) }()) }()
 		}) {
 			goto fail_ordinary
@@ -46563,7 +46563,7 @@ func e299(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
 	}) {
 		goto fail
@@ -46890,7 +46890,7 @@ func e303(p *pegort.Parser) (*pegort.Node, bool) {
 		p.Silent--
 		p.Reset(x1)
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("block-out") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("block-out") }() }) {
 			goto fail_ordinary
 		}
 
@@ -46928,7 +46928,7 @@ L2:
 	p.Silent--
 	p.Reset(x1)
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -46973,7 +46973,7 @@ func e304(p *pegort.Parser) (*pegort.Node, bool) {
 		p.Silent--
 		p.Reset(x1)
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("block-out") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("block-out") }() }) {
 			goto fail_ordinary
 		}
 
@@ -47015,7 +47015,7 @@ L2:
 	p.Silent--
 	p.Reset(x1)
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -47132,7 +47132,7 @@ func e306(p *pegort.Parser) (*pegort.Node, bool) {
 	L3_ordinary:
 		p.Reset(x1)
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("block-key") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("block-key") }() }) {
 			goto L4_ordinary
 		}
 
@@ -47220,7 +47220,7 @@ L3:
 	p.Reset(x1)
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-key") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-key") }() }) {
 		goto L4
 	}
 	p.StepWork()
@@ -47470,7 +47470,7 @@ func e309(p *pegort.Parser) (*pegort.Node, bool) {
 	L3_ordinary:
 		p.Reset(x1)
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("block-out") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("block-out") }() }) {
 			goto L8_ordinary
 		}
 
@@ -47552,7 +47552,7 @@ L3:
 	p.Reset(x1)
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
 		goto L8
 	}
 	p.StepWork()
@@ -47732,7 +47732,7 @@ func e312(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L24_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -47755,7 +47755,7 @@ func e312(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L26_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(2) }())
@@ -47778,7 +47778,7 @@ func e312(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L28_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(3) }())
@@ -47801,7 +47801,7 @@ func e312(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L30_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(4) }())
@@ -47824,7 +47824,7 @@ func e312(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L32_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(5) }())
@@ -47847,7 +47847,7 @@ func e312(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L34_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(6) }())
@@ -47870,7 +47870,7 @@ func e312(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L36_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(7) }())
@@ -47893,7 +47893,7 @@ func e312(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L38_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(8) }())
@@ -47916,7 +47916,7 @@ func e312(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L40_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(9) }())
@@ -48017,7 +48017,7 @@ func e312(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L59_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any { return c.Length(func() any { return c.Cap(1) }()) }()
 		}) {
 			goto L59_ordinary
@@ -48138,7 +48138,7 @@ func e312(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L79_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -48230,7 +48230,7 @@ func e312(p *pegort.Parser) (*pegort.Node, bool) {
 				goto L101_ordinary
 			}
 
-			if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+			if !p.Assign("n", func(c *pegort.ActCtx) any {
 				return func() any { return c.Length(func() any { return c.Cap(0) }()) }()
 			}) {
 				goto L101_ordinary
@@ -48492,7 +48492,7 @@ L16:
 		goto L24
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -48516,7 +48516,7 @@ L23:
 		goto L26
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(2) }())
@@ -48540,7 +48540,7 @@ L25:
 		goto L28
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(3) }())
@@ -48564,7 +48564,7 @@ L27:
 		goto L30
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(4) }())
@@ -48588,7 +48588,7 @@ L29:
 		goto L32
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(5) }())
@@ -48612,7 +48612,7 @@ L31:
 		goto L34
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(6) }())
@@ -48636,7 +48636,7 @@ L33:
 		goto L36
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(7) }())
@@ -48660,7 +48660,7 @@ L35:
 		goto L38
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(8) }())
@@ -48684,7 +48684,7 @@ L37:
 		goto L40
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(9) }())
@@ -48790,7 +48790,7 @@ L44:
 		goto L59
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(1) }()) }()
 	}) {
 		goto L59
@@ -48915,7 +48915,7 @@ L59:
 		goto L79
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -49010,7 +49010,7 @@ L59:
 			goto L101
 		}
 		p.StepWork()
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
 		}) {
 			goto L101
@@ -49116,7 +49116,7 @@ func e313(p *pegort.Parser) (*pegort.Node, bool) {
 			ok bool
 		)
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -49139,7 +49139,7 @@ func e313(p *pegort.Parser) (*pegort.Node, bool) {
 	)
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -49164,7 +49164,7 @@ func e314(p *pegort.Parser) (*pegort.Node, bool) {
 			ok bool
 		)
 
-		if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("n", func(c *pegort.ActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -49191,7 +49191,7 @@ func e314(p *pegort.Parser) (*pegort.Node, bool) {
 	)
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("n", func(c *pegort.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -50570,14 +50570,14 @@ func e326(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L13_ordinary
 		}
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("flow-in") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("flow-in") }() }) {
 			goto L13_ordinary
 		}
 		goto L11_ordinary
 	L13_ordinary:
 		p.Reset(x10)
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("flow-key") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("flow-key") }() }) {
 			goto L14_ordinary
 		}
 		goto L11_ordinary
@@ -50703,14 +50703,14 @@ L12:
 		goto L13
 	}
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-in") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-in") }() }) {
 		goto L13
 	}
 	goto L11
 L13:
 	p.Reset(x10)
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
 		goto L14
 	}
 	goto L11
@@ -51131,14 +51131,14 @@ func e329(p *pegort.Parser) (*pegort.Node, bool) {
 			goto L13_ordinary
 		}
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("flow-in") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("flow-in") }() }) {
 			goto L13_ordinary
 		}
 		goto L11_ordinary
 	L13_ordinary:
 		p.Reset(x10)
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("flow-key") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("flow-key") }() }) {
 			goto L14_ordinary
 		}
 		goto L11_ordinary
@@ -51264,14 +51264,14 @@ L12:
 		goto L13
 	}
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-in") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-in") }() }) {
 		goto L13
 	}
 	goto L11
 L13:
 	p.Reset(x10)
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
 		goto L14
 	}
 	goto L11
@@ -52764,7 +52764,7 @@ func e348(p *pegort.Parser) (*pegort.Node, bool) {
 	L3_ordinary:
 		p.Reset(x1)
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("flow-key") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("flow-key") }() }) {
 			goto L4_ordinary
 		}
 		goto L2_ordinary
@@ -52814,7 +52814,7 @@ func e348(p *pegort.Parser) (*pegort.Node, bool) {
 L3:
 	p.Reset(x1)
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
 		goto L4
 	}
 	goto L2
@@ -52936,7 +52936,7 @@ func e350(p *pegort.Parser) (*pegort.Node, bool) {
 	L6_ordinary:
 		p.Reset(x4)
 
-		if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { return any("flow-key") }() }) {
+		if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { return any("flow-key") }() }) {
 			goto L7_ordinary
 		}
 		goto L5_ordinary
@@ -53012,7 +53012,7 @@ L3:
 L6:
 	p.Reset(x4)
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Assign("c", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
 		goto L7
 	}
 	goto L5
@@ -71202,13 +71202,13 @@ func i12(p *pegort.TParser) (any, bool) {
 		}
 		_ = x2
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any { return c.Unary("-", func() any { return any(1) }()) }()
 		}) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { return any("block-in") }() }) {
+		if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { return any("block-in") }() }) {
 			goto fail_ordinary
 		}
 
@@ -71254,13 +71254,13 @@ func i12(p *pegort.TParser) (any, bool) {
 	_ = x2
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any { c.P.StepWork(); return c.Unary("-", func() any { c.P.StepWork(); return any(1) }()) }()
 	}) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("block-in") }() }) {
+	if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("block-in") }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -76641,7 +76641,7 @@ func i35(p *pegort.TParser) (any, bool) {
 		}
 		_ = x14
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -76871,7 +76871,7 @@ func i35(p *pegort.TParser) (any, bool) {
 	_ = x14
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -77111,7 +77111,7 @@ func i36(p *pegort.TParser) (any, bool) {
 		}
 		_ = x2
 
-		if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { return any("flow-out") }() }) {
+		if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { return any("flow-out") }() }) {
 			goto fail_ordinary
 		}
 
@@ -77157,7 +77157,7 @@ func i36(p *pegort.TParser) (any, bool) {
 	_ = x2
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-out") }() }) {
+	if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-out") }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -78431,7 +78431,7 @@ func i43(p *pegort.TParser) (any, bool) {
 		}
 		_ = x2
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -78486,7 +78486,7 @@ func i43(p *pegort.TParser) (any, bool) {
 	_ = x2
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -78579,7 +78579,7 @@ func i44(p *pegort.TParser) (any, bool) {
 		}
 		_, _ = x9, x15
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -78691,7 +78691,7 @@ func i44(p *pegort.TParser) (any, bool) {
 	_, _ = x9, x15
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -78890,7 +78890,7 @@ func i45(p *pegort.TParser) (any, bool) {
 			goto L15_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("-", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -79038,7 +79038,7 @@ L3:
 		goto L15
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("-", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -79194,7 +79194,7 @@ func i46(p *pegort.TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any { return c.Length(func() any { return k4 }()) }()
 		}) {
 			goto fail_ordinary
@@ -79345,7 +79345,7 @@ func i46(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k4 }()) }()
 	}) {
 		goto fail
@@ -79488,7 +79488,7 @@ func i47(p *pegort.TParser) (any, bool) {
 		p.Pos = x1
 		p.Recovered = p.Recovered[:x2]
 
-		if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { return any("block-in") }() }) {
+		if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { return any("block-in") }() }) {
 			goto fail_ordinary
 		}
 
@@ -79557,7 +79557,7 @@ L3:
 	p.Pos = x1
 	p.Recovered = p.Recovered[:x2]
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("block-in") }() }) {
+	if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("block-in") }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -79928,7 +79928,7 @@ func i49(p *pegort.TParser) (any, bool) {
 		v8 = p.NewMatchOrdinary(x3, p.Pos, p.Text(x3, p.Pos), true)
 		k1 = v8
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any {
@@ -80050,7 +80050,7 @@ func i49(p *pegort.TParser) (any, bool) {
 	v8 = p.NewMatch(x3, p.Pos, p.Text(x3, p.Pos), true)
 	k1 = v8
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any {
@@ -80453,7 +80453,7 @@ func i51(p *pegort.TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any { return c.Length(func() any { return k4 }()) }()
 		}) {
 			goto fail_ordinary
@@ -80586,7 +80586,7 @@ func i51(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k4 }()) }()
 	}) {
 		goto fail
@@ -81369,7 +81369,7 @@ func i55(p *pegort.TParser) (any, bool) {
 		p.Pos = x1
 		p.Recovered = p.Recovered[:x2]
 
-		if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { return any("block-out") }() }) {
+		if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { return any("block-out") }() }) {
 			goto fail_ordinary
 		}
 
@@ -81438,7 +81438,7 @@ L3:
 	p.Pos = x1
 	p.Recovered = p.Recovered[:x2]
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
+	if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -81534,7 +81534,7 @@ func i56(p *pegort.TParser) (any, bool) {
 		p.Pos = x1
 		p.Recovered = p.Recovered[:x2]
 
-		if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { return any("block-out") }() }) {
+		if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { return any("block-out") }() }) {
 			goto fail_ordinary
 		}
 
@@ -81607,7 +81607,7 @@ L3:
 	p.Pos = x1
 	p.Recovered = p.Recovered[:x2]
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
+	if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -81886,7 +81886,7 @@ func i58(p *pegort.TParser) (any, bool) {
 
 		k4 = x5
 
-		if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { return any("block-key") }() }) {
+		if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { return any("block-key") }() }) {
 			goto L10_ordinary
 		}
 
@@ -82036,7 +82036,7 @@ L7:
 	k4 = x5
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("block-key") }() }) {
+	if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("block-key") }() }) {
 		goto L10
 	}
 	p.StepWork()
@@ -82518,7 +82518,7 @@ func i61(p *pegort.TParser) (any, bool) {
 
 		k4 = x5
 
-		if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { return any("block-out") }() }) {
+		if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { return any("block-out") }() }) {
 			goto L14_ordinary
 		}
 
@@ -82646,7 +82646,7 @@ L7:
 	k4 = x5
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
+	if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("block-out") }() }) {
 		goto L14
 	}
 	p.StepWork()
@@ -83036,7 +83036,7 @@ func i62(p *pegort.TParser) (any, bool) {
 		v53 = p.NewMatchOrdinary(x52, p.Pos, "1", true)
 		x51 = append(x51, v53)
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -83072,7 +83072,7 @@ func i62(p *pegort.TParser) (any, bool) {
 		v61 = p.NewMatchOrdinary(x60, p.Pos, "2", true)
 		x59 = append(x59, v61)
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(2) }())
@@ -83108,7 +83108,7 @@ func i62(p *pegort.TParser) (any, bool) {
 		v69 = p.NewMatchOrdinary(x68, p.Pos, "3", true)
 		x67 = append(x67, v69)
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(3) }())
@@ -83144,7 +83144,7 @@ func i62(p *pegort.TParser) (any, bool) {
 		v77 = p.NewMatchOrdinary(x76, p.Pos, "4", true)
 		x75 = append(x75, v77)
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(4) }())
@@ -83180,7 +83180,7 @@ func i62(p *pegort.TParser) (any, bool) {
 		v85 = p.NewMatchOrdinary(x84, p.Pos, "5", true)
 		x83 = append(x83, v85)
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(5) }())
@@ -83216,7 +83216,7 @@ func i62(p *pegort.TParser) (any, bool) {
 		v93 = p.NewMatchOrdinary(x92, p.Pos, "6", true)
 		x91 = append(x91, v93)
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(6) }())
@@ -83252,7 +83252,7 @@ func i62(p *pegort.TParser) (any, bool) {
 		v101 = p.NewMatchOrdinary(x100, p.Pos, "7", true)
 		x99 = append(x99, v101)
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(7) }())
@@ -83288,7 +83288,7 @@ func i62(p *pegort.TParser) (any, bool) {
 		v109 = p.NewMatchOrdinary(x108, p.Pos, "8", true)
 		x107 = append(x107, v109)
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(8) }())
@@ -83324,7 +83324,7 @@ func i62(p *pegort.TParser) (any, bool) {
 		v117 = p.NewMatchOrdinary(x116, p.Pos, "9", true)
 		x115 = append(x115, v117)
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(9) }())
@@ -83447,7 +83447,7 @@ func i62(p *pegort.TParser) (any, bool) {
 			goto L150_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any { return c.Length(func() any { return k42 }()) }()
 		}) {
 			goto L150_ordinary
@@ -83578,7 +83578,7 @@ func i62(p *pegort.TParser) (any, bool) {
 			goto L177_ordinary
 		}
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -83676,7 +83676,7 @@ func i62(p *pegort.TParser) (any, bool) {
 				goto L207_ordinary
 			}
 
-			if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+			if !p.Assign("n", func(c *pegort.TActCtx) any {
 				return func() any { return c.Length(func() any { return k187 }()) }()
 			}) {
 				goto L207_ordinary
@@ -84145,7 +84145,7 @@ L36:
 	v53 = p.NewMatch(x52, p.Pos, "1", true)
 	x51 = append(x51, v53)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -84181,7 +84181,7 @@ L48:
 	v61 = p.NewMatch(x60, p.Pos, "2", true)
 	x59 = append(x59, v61)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(2) }())
@@ -84217,7 +84217,7 @@ L56:
 	v69 = p.NewMatch(x68, p.Pos, "3", true)
 	x67 = append(x67, v69)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(3) }())
@@ -84253,7 +84253,7 @@ L64:
 	v77 = p.NewMatch(x76, p.Pos, "4", true)
 	x75 = append(x75, v77)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(4) }())
@@ -84289,7 +84289,7 @@ L72:
 	v85 = p.NewMatch(x84, p.Pos, "5", true)
 	x83 = append(x83, v85)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(5) }())
@@ -84325,7 +84325,7 @@ L80:
 	v93 = p.NewMatch(x92, p.Pos, "6", true)
 	x91 = append(x91, v93)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(6) }())
@@ -84361,7 +84361,7 @@ L88:
 	v101 = p.NewMatch(x100, p.Pos, "7", true)
 	x99 = append(x99, v101)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(7) }())
@@ -84397,7 +84397,7 @@ L96:
 	v109 = p.NewMatch(x108, p.Pos, "8", true)
 	x107 = append(x107, v109)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(8) }())
@@ -84433,7 +84433,7 @@ L104:
 	v117 = p.NewMatch(x116, p.Pos, "9", true)
 	x115 = append(x115, v117)
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(9) }())
@@ -84559,7 +84559,7 @@ L125:
 		goto L150
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k42 }()) }()
 	}) {
 		goto L150
@@ -84693,7 +84693,7 @@ L150:
 		goto L177
 	}
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -84794,7 +84794,7 @@ L150:
 			goto L207
 		}
 		p.StepWork()
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k187 }()) }()
 		}) {
 			goto L207
@@ -84961,7 +84961,7 @@ func s63(p *pegort.TParser) (any, bool) {
 		x1 = p.Pos
 		x2 = p.NewVals(1)[:0]
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -85012,7 +85012,7 @@ func s63(p *pegort.TParser) (any, bool) {
 	x1 = p.Pos
 	x2 = p.NewVals(1)[:0]
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -85085,7 +85085,7 @@ func i64(p *pegort.TParser) (any, bool) {
 		}
 		_ = x2
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -85140,7 +85140,7 @@ func i64(p *pegort.TParser) (any, bool) {
 	_ = x2
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())
@@ -87877,7 +87877,7 @@ func i76(p *pegort.TParser) (any, bool) {
 			goto L21_ordinary
 		}
 
-		if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { return any("flow-in") }() }) {
+		if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { return any("flow-in") }() }) {
 			goto L21_ordinary
 		}
 		goto L19_ordinary
@@ -87886,7 +87886,7 @@ func i76(p *pegort.TParser) (any, bool) {
 		p.Recovered = p.Recovered[:x17]
 		p.Env = x18
 
-		if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { return any("flow-key") }() }) {
+		if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { return any("flow-key") }() }) {
 			goto L22_ordinary
 		}
 		goto L19_ordinary
@@ -88072,7 +88072,7 @@ L20:
 		goto L21
 	}
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-in") }() }) {
+	if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-in") }() }) {
 		goto L21
 	}
 	goto L19
@@ -88081,7 +88081,7 @@ L21:
 	p.Recovered = p.Recovered[:x17]
 	p.Env = x18
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
 		goto L22
 	}
 	goto L19
@@ -88886,7 +88886,7 @@ func i79(p *pegort.TParser) (any, bool) {
 			goto L21_ordinary
 		}
 
-		if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { return any("flow-in") }() }) {
+		if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { return any("flow-in") }() }) {
 			goto L21_ordinary
 		}
 		goto L19_ordinary
@@ -88895,7 +88895,7 @@ func i79(p *pegort.TParser) (any, bool) {
 		p.Recovered = p.Recovered[:x17]
 		p.Env = x18
 
-		if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { return any("flow-key") }() }) {
+		if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { return any("flow-key") }() }) {
 			goto L22_ordinary
 		}
 		goto L19_ordinary
@@ -89081,7 +89081,7 @@ L20:
 		goto L21
 	}
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-in") }() }) {
+	if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-in") }() }) {
 		goto L21
 	}
 	goto L19
@@ -89090,7 +89090,7 @@ L21:
 	p.Recovered = p.Recovered[:x17]
 	p.Env = x18
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
 		goto L22
 	}
 	goto L19
@@ -92266,7 +92266,7 @@ func i98(p *pegort.TParser) (any, bool) {
 		p.Recovered = p.Recovered[:x2]
 		p.Env = x3
 
-		if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { return any("flow-key") }() }) {
+		if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { return any("flow-key") }() }) {
 			goto L6_ordinary
 		}
 		goto L4_ordinary
@@ -92352,7 +92352,7 @@ L5:
 	p.Recovered = p.Recovered[:x2]
 	p.Env = x3
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
 		goto L6
 	}
 	goto L4
@@ -92618,7 +92618,7 @@ func i100(p *pegort.TParser) (any, bool) {
 		p.Recovered = p.Recovered[:x5]
 		p.Env = x6
 
-		if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { return any("flow-key") }() }) {
+		if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { return any("flow-key") }() }) {
 			goto L9_ordinary
 		}
 		goto L7_ordinary
@@ -92730,7 +92730,7 @@ L8:
 	p.Recovered = p.Recovered[:x5]
 	p.Env = x6
 	p.StepWork()
-	if !p.Assign("c", "", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
+	if !p.Assign("c", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any("flow-key") }() }) {
 		goto L9
 	}
 	goto L7
@@ -113938,7 +113938,7 @@ func s155(p *pegort.TParser) (any, bool) {
 			p.TooDeep()
 		}
 
-		if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("n", func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return c.Binary("+", func() any { return c.Lookup("n") }(), func() any { return any(1) }())
@@ -113978,7 +113978,7 @@ func s155(p *pegort.TParser) (any, bool) {
 	}
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("n", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("n", func(c *pegort.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("+", func() any { c.P.StepWork(); return c.Lookup("n") }(), func() any { c.P.StepWork(); return any(1) }())

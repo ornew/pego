@@ -307,9 +307,6 @@ type checkInfo struct {
 	// with the underlying node type of the named node type. A nil type (in a loaded program)
 	// stands for that type.
 	converts map[*grammar.New]ty
-	// binds holds the bindings of variables (x := value) whose value is checked against the
-	// declared type of the variable: those whose static type the type checker could not prove.
-	binds map[*grammar.Assign]bool
 }
 
 // rekey returns the checks keyed by the nodes of the rules to instead of those of the rules from:
@@ -322,13 +319,12 @@ func (ci *checkInfo) rekey(from, to []*grammar.RuleDef) (*checkInfo, error) {
 	if len(from) != len(to) {
 		return nil, fmt.Errorf("normalization changed the number of rules from %d to %d", len(from), len(to))
 	}
-	out := &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}, converts: map[*grammar.New]ty{}, binds: map[*grammar.Assign]bool{}}
+	out := &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}, converts: map[*grammar.New]ty{}}
 	for i, rd := range from {
 		fields, toFields := ruleFieldInits(rd), ruleFieldInits(to[i])
 		results, toResults := ruleResults(rd), ruleResults(to[i])
 		converts, toConverts := ruleConversions(rd), ruleConversions(to[i])
-		binds, toBinds := ruleBinds(rd), ruleBinds(to[i])
-		if len(fields) != len(toFields) || len(results) != len(toResults) || len(converts) != len(toConverts) || len(binds) != len(toBinds) {
+		if len(fields) != len(toFields) || len(results) != len(toResults) || len(converts) != len(toConverts) {
 			return nil, fmt.Errorf("normalization changed the values of rule %s", rd.Name)
 		}
 		for j, f := range fields {
@@ -346,18 +342,13 @@ func (ci *checkInfo) rekey(from, to []*grammar.RuleDef) (*checkInfo, error) {
 				out.converts[toConverts[j]] = t
 			}
 		}
-		for j, a := range binds {
-			if ci.binds[a] {
-				out.binds[toBinds[j]] = true
-			}
-		}
 	}
 	return out, nil
 }
 
 // empty reports whether nothing is checked.
 func (ci *checkInfo) empty() bool {
-	return ci == nil || !ci.all && len(ci.fields) == 0 && len(ci.results) == 0 && len(ci.converts) == 0 && len(ci.binds) == 0
+	return ci == nil || !ci.all && len(ci.fields) == 0 && len(ci.results) == 0 && len(ci.converts) == 0
 }
 
 // convertCheckType returns the type the value of the node type constructor t must be checked
@@ -397,41 +388,6 @@ func (prog *Program) convertTypeCheck(t *grammar.New) *fieldType {
 // convertError reports a value that does not convert to the named node type typ.
 func (p *parser) convertError(v any, typ string) error {
 	return p.actionError("cannot convert ", typeName(v), " to ", typ)
-}
-
-// ruleBinds returns the bindings of variables (x := value) in the predicates of rule rd, in a fixed
-// order: the order compiled grammar files number them in.
-func ruleBinds(rd *grammar.RuleDef) []*grammar.Assign {
-	var assigns []*grammar.Assign
-	walkRuleTerms(rd, func(x grammar.Term) {
-		if a, ok := x.(*grammar.Assign); ok {
-			assigns = append(assigns, a)
-		}
-	})
-	return assigns
-}
-
-// bindCheck returns the name of the declared type of the variable the binding a assigns, when the
-// value must be checked against it at run time: always for a program compiled without type
-// checking, otherwise when the type checker could not prove the value's type. It returns "" if the
-// binding needs no check.
-func (prog *Program) bindCheck(a *grammar.Assign) string {
-	ci := prog.checks
-	if ci.empty() {
-		return ""
-	}
-	if !ci.all && !ci.binds[a] {
-		return ""
-	}
-	if d := prog.vars.lookup(a.Name); d != nil {
-		return d.typ.String()
-	}
-	return ""
-}
-
-// bindError fails the parse: a value bound to a variable of another type than the variable's.
-func (p *parser) bindError(v any, typ, name string) {
-	p.fail("cannot use %s as %s in the binding of variable %s", typeName(v), typ, name)
 }
 
 // ruleConversions returns the node type constructors (constructors with a positional value) in

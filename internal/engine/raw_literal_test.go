@@ -91,11 +91,6 @@ func TestRawInvalidASTLiterals(t *testing.T) {
 					}
 					programs[fmt.Sprintf("saved/omitAST=%t", omit)] = loaded
 				}
-				v1, _, err := LoadProgram(marshalV1(p, "main"), Options{})
-				if err != nil {
-					t.Fatal(err)
-				}
-				programs["v1"] = v1
 				for name, prog := range programs {
 					for _, backend := range []Backend{Default, Closure, Bytecode, BytecodeIterative} {
 						if prog.Grammar == nil && backend == Closure {

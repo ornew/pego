@@ -359,13 +359,13 @@ A file carries two version numbers after its magic number:
 | Number | Now | Meaning |
 |:--|--:|:--|
 | Format version | 2 or 3 | The layout of the file. AST-bearing saves use version 2; AST-less saves with a complete recognition bundle use version 3. A runtime loads versions 1, 2 and 3. |
-| Instruction-set version | 20 | The bytecode of the value model (see the [specification](../../spec/compiled-grammars.md#versions-and-compatibility)). Every module and recognition bundle declares it. |
+| Instruction-set version | 23 | The bytecode of the value model (see the [specification](../../spec/compiled-grammars.md#versions-and-compatibility)). Every module and recognition bundle declares it. |
 
 The consequences:
 
 - **Files from releases before the value model must be compiled again.** Their bytecode builds the earlier syntax
   trees, so PEGO refuses them with `unsupported instruction set version N: the file was compiled for earlier syntax
-  trees; compile the grammar again`. A version 1 file holds only the AST and is compiled again as it loads.
+  trees; compile the grammar again`.
 - **An older PEGO refuses files requiring a newer format or instruction set.**
   It reports `unsupported instruction set version` or `unsupported compiled grammar version`.
   A runtime with a narrower implementation `int` rejects repetition bounds outside its range.

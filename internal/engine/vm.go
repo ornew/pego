@@ -796,7 +796,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				goto fail
 			}
 		case OpAssign:
-			if !vm.assign(p, m.Strings[in.A], int(in.B), in.C != 0) {
+			if !vm.assign(p, m.Strings[in.A], int(in.B)) {
 				goto fail
 			}
 		case OpLabel:
@@ -1035,7 +1035,7 @@ func (vm *vmProgram) predicate(p *parser, entry int) bool {
 	return true
 }
 
-func (vm *vmProgram) assign(p *parser, name string, entry int, check bool) bool {
+func (vm *vmProgram) assign(p *parser, name string, entry int) bool {
 	ctx := p.useCtx(evalCtx{p: p, frame: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
 	v, err := vm.eval(ctx, entry, nil)
 	p.dropCreated(ctx.cbase)
@@ -1044,11 +1044,6 @@ func (vm *vmProgram) assign(p *parser, name string, entry int, check bool) bool 
 	}
 	if _, isFn := v.(function); isFn {
 		return false
-	}
-	if check {
-		if typ := vm.vars.lookup(name).typ.String(); typeName(v) != typ {
-			p.bindError(v, typ, name)
-		}
 	}
 	p.bind(name, v)
 	return true

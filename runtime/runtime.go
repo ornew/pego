@@ -3104,9 +3104,9 @@ func (p *Parser) Predicate(t func(*ActCtx) any) (ok bool) {
 	return true
 }
 
-// Assign evaluates the value of a binding and binds it to the variable name. A non-empty typ is the
-// declared type of the variable, which the value is checked against.
-func (p *Parser) Assign(name, typ string, t func(*ActCtx) any) (ok bool) {
+// Assign evaluates the value of a binding and binds it to the variable name. The compiler has
+// checked that the value fits the variable.
+func (p *Parser) Assign(name string, t func(*ActCtx) any) (ok bool) {
 	base, kids := len(p.created), len(p.KidStack)
 	defer func() {
 		p.dropCreated(base)
@@ -3122,9 +3122,6 @@ func (p *Parser) Assign(name, typ string, t func(*ActCtx) any) (ok bool) {
 	v := t(c)
 	if _, isFn := v.(func(...any) any); isFn {
 		return false
-	}
-	if typ != "" && typeName(v) != typ {
-		panic(fatal{fmt.Errorf("cannot use %s as %s in the binding of variable %s", typeName(v), typ, name)})
 	}
 	p.bind(name, v)
 	return true

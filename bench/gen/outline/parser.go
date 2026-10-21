@@ -564,7 +564,7 @@ func e1(p *pegort.Parser) (*pegort.Node, bool) {
 		)
 		_, _ = x1, x3
 
-		if !p.Assign("indent", "", func(c *pegort.ActCtx) any { return func() any { return any(0) }() }) {
+		if !p.Assign("indent", func(c *pegort.ActCtx) any { return func() any { return any(0) }() }) {
 			goto fail_ordinary
 		}
 
@@ -612,7 +612,7 @@ func e1(p *pegort.Parser) (*pegort.Node, bool) {
 	_, _ = x1, x3
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("indent", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
+	if !p.Assign("indent", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -981,7 +981,7 @@ func e5(p *pegort.Parser) (*pegort.Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("indent", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("indent", func(c *pegort.ActCtx) any {
 			return func() any { return c.Length(func() any { return c.Cap(0) }()) }()
 		}) {
 			goto fail_ordinary
@@ -1057,7 +1057,7 @@ L3:
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("indent", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("indent", func(c *pegort.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
 	}) {
 		goto fail
@@ -2057,7 +2057,7 @@ func e14(p *pegort.Parser) (*pegort.Node, bool) {
 		)
 		_ = x1
 
-		if !p.Assign("indent", "", func(c *pegort.ActCtx) any { return func() any { return any(0) }() }) {
+		if !p.Assign("indent", func(c *pegort.ActCtx) any { return func() any { return any(0) }() }) {
 			goto fail_ordinary
 		}
 
@@ -2100,7 +2100,7 @@ func e14(p *pegort.Parser) (*pegort.Node, bool) {
 	_ = x1
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("indent", "", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
+	if !p.Assign("indent", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -2415,7 +2415,7 @@ func e18(p *pegort.Parser) (*pegort.Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("indent", "", func(c *pegort.ActCtx) any {
+		if !p.Assign("indent", func(c *pegort.ActCtx) any {
 			return func() any { return c.Length(func() any { return c.Cap(0) }()) }()
 		}) {
 			goto fail_ordinary
@@ -2486,7 +2486,7 @@ L3:
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("indent", "", func(c *pegort.ActCtx) any {
+	if !p.Assign("indent", func(c *pegort.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
 	}) {
 		goto fail
@@ -3022,7 +3022,7 @@ func i0(p *pegort.TParser) (any, bool) {
 		}
 		_, _ = x2, x4
 
-		if !p.Assign("indent", "", func(c *pegort.TActCtx) any { return func() any { return any(0) }() }) {
+		if !p.Assign("indent", func(c *pegort.TActCtx) any { return func() any { return any(0) }() }) {
 			goto fail_ordinary
 		}
 
@@ -3094,7 +3094,7 @@ func i0(p *pegort.TParser) (any, bool) {
 	_, _ = x2, x4
 	p.StepWork()
 	p.StepWork()
-	if !p.Assign("indent", "", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
+	if !p.Assign("indent", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -3652,7 +3652,7 @@ func i3(p *pegort.TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("indent", "", func(c *pegort.TActCtx) any {
+		if !p.Assign("indent", func(c *pegort.TActCtx) any {
 			return func() any { return c.Length(func() any { return k8 }()) }()
 		}) {
 			goto fail_ordinary
@@ -3753,7 +3753,7 @@ L3:
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("indent", "", func(c *pegort.TActCtx) any {
+	if !p.Assign("indent", func(c *pegort.TActCtx) any {
 		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k8 }()) }()
 	}) {
 		goto fail

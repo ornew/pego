@@ -322,6 +322,8 @@ func validateModule(m *Module) error {
 				fail("invalid initial value of variable %q", name)
 			case v.Type == varBool && v.Int != 0 && v.Int != 1:
 				fail("invalid initial value of variable %q", name)
+			case v.Type == varString && v.Int != 0:
+				fail("invalid initial value of variable %q", name)
 			}
 			seenVars[name] = true
 		}
@@ -451,7 +453,7 @@ func validateModule(m *Module) error {
 		case OpAssign:
 			declared(int(x.A))
 			in("expression", int(x.B), len(m.Exprs))
-			flag(x.C, 1)
+			flag(x.C, 0)
 		case OpLabel:
 			str(int(x.A))
 			flag(x.B, 1)

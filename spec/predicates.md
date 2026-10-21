@@ -70,12 +70,12 @@ back under the same rules as adjacent Predicate Actions.
   errors, as is a value of another type than the declared one.
 - **Types.** Reading a variable gives its declared type, so `x + 1` and
   `V{N: x}` are checked when the grammar is compiled. A binding `name := value`
-  must give a value that is assignable to the declared type. A value whose
-  type is not known when the grammar is compiled (`any`) is accepted, and
-  checked when the binding runs: a value of another type fails the parse with
-  an error, which is not backtracked. This differs from an evaluation error in
-  the binding's expression, which makes the predicate fail like a false test.
-  See [Type Checking](type-checking.md).
+  must give a value that is assignable to the declared type, or the grammar
+  does not compile. This holds for a value whose type is not known when the
+  grammar is compiled as well; convert it with a cast, as in `x := $d.(int)`.
+  Nothing is checked when the binding runs, and an evaluation error in the
+  binding's expression, including a failed cast, makes the predicate fail like
+  a false test. See [Type Checking](type-checking.md).
 - **Declaration before use.** Reading or binding a name that is not declared is
   a compile-time error. Declaring a name twice is a compile-time error.
 - **Starting state.** Every parse starts with every declared variable bound to
