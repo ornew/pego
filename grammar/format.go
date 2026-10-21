@@ -194,10 +194,19 @@ func (p *printer) lineBreak(b *LineBreak, indent string, defaultBlank bool) {
 // inlineBlock returns the trailing comment of b if it is a block comment that
 // stays between the tokens of a line.
 func (b *LineBreak) inlineBlock() *Comment {
+	if c := b.leadBlock(); c != nil && !strings.ContainsAny(c.Text, "\r\n") {
+		return c
+	}
+	return nil
+}
+
+// leadBlock returns the trailing comment of b if it is a block comment, over
+// one line or several, that a token follows on its last line.
+func (b *LineBreak) leadBlock() *Comment {
 	if b == nil || b.Trailing == nil || b.TrailingEnds || b.Trailing.Header.IsValid() {
 		return nil
 	}
-	if c := b.Trailing; strings.HasPrefix(c.Text, "/*") && !strings.ContainsAny(c.Text, "\r\n") {
+	if c := b.Trailing; strings.HasPrefix(c.Text, "/*") {
 		return c
 	}
 	return nil
@@ -1199,7 +1208,7 @@ func formatSourceGroupIndented(body, openDelim, closeDelim string, open, first, 
 	p := &printer{control: control, keepStart: true}
 	p.write(openDelim)
 	p.start = true
-	if c := open.inlineBlock(); c != nil && body != "" {
+	if c := open.leadBlock(); c != nil && body != "" {
 		// A block comment before the first token on the line of the delimiter
 		// leads that token: it goes on a line before it, not at the end of the
 		// line of the delimiter, where it would trail the delimiter.

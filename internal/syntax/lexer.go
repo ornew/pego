@@ -511,6 +511,7 @@ func (l *lexer) skipSpace() (space, newline bool) {
 		if r == '/' && (l.peekAt(1) == '/' || l.peekAt(1) == '*') {
 			space = true
 			c := &grammar.Comment{Pos: l.pos(), Blank: l.newlines >= 2}
+			sameLine := l.newlines == 0 // the lines inside the comment do not count
 			start := l.i
 			block := l.peekAt(1) == '*'
 			if block {
@@ -571,7 +572,7 @@ func (l *lexer) skipSpace() (space, newline bool) {
 				c.Text = c.Text[:end]
 				c.End.Col -= trimmed
 			}
-			if l.newlines == 0 && l.ntoks > 0 && l.lineComment == nil && len(l.comments) == 0 {
+			if sameLine && l.ntoks > 0 && l.lineComment == nil && len(l.comments) == 0 {
 				l.lineComment = c
 			} else {
 				l.comments = append(l.comments, c)
