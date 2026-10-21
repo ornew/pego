@@ -129,7 +129,7 @@ pego gen -lang ts -g <grammar> -o <directory> [-s <rule>] [-runtime embed|import
 | `-o` | (required) | The output directory (it is created). Generated files that the new run does not write again are removed; a file that pego did not generate is never removed or overwritten |
 | `-runtime` | `embed` | `embed` writes `runtime.ts` next to `parser.ts`; `import` imports the runtime from `-runtime-module` and writes no copy; `only` writes just `runtime.ts` (no `-g`) |
 | `-runtime-module` | (required with `-runtime import`) | The module specifier `parser.ts` and `types.ts` import the runtime from, for example `../shared/runtime.ts`. Several parsers share one runtime this way: generate it once with `-runtime only` |
-| `-types` | off | Export grammar interfaces/aliases and configured-start `parseAST`/`parseASTWithOptions` |
+| `-types` | off | Write `types.ts` with the grammar's interfaces and aliases (also exported from `parser.ts`), and add the configured-start `parseAST`/`parseASTWithOptions` |
 | `-recognize` | off | Also generate `recognize` and `recognizeWithOptions`, which check input without building a tree |
 | `-observability` | off | Accept the trace and profile options (see [debugging](debugging.md#generated-typescript-traces)); without it they are rejected |
 | `-max-depth` | `0` | Generated nested rule-call default; zero selects 100,000, otherwise a positive safe integer |
@@ -216,7 +216,8 @@ Compared with the Go API:
   point each parser at it with `-runtime import -runtime-module` to share it (then a `Node` from one parser is an
   `instanceof Node` of the other).
 - **Names of types.** `types.ts` is a module of its own, so a grammar type may be called `Node`, `Value`, `Parser` or
-  anything else of the runtime. The names `Span`, `TNode`, `StringNode`, `RecoveredError`, `TypedParseResult`,
+  anything else of the runtime; `parser.ts` exports the runtime's own declaration under such a name, and the type
+  stays reachable from `types.ts`. The names `Span`, `TNode`, `StringNode`, `RecoveredError`, `TypedParseResult`,
   `TypedValue` and `RuntimeNode` are declared by `types.ts` itself, and the generator rejects a grammar type with one
   of them.
 - A parser keeps no state between calls; it is safe to call from several workers.
@@ -238,14 +239,18 @@ instead (TypeScript 5.7 and later): the emitted files import `./runtime.js` and 
 
 Bundlers (esbuild, Vite, Bun) resolve the `.ts` specifiers themselves.
 
+The package that contains the files needs `"type": "module"` in its `package.json` (or the files need the `.mts`
+extension): under `verbatimModuleSyntax`, `tsc` reports error TS1295 for ES syntax in a file it takes for CommonJS,
+and Node.js does not run it as a module.
+
 The tests type-check the files of every generated parser together with `tsc --strict` and also `--noUnusedLocals`, `--noUnusedParameters`,
 `--noUncheckedIndexedAccess`, `--exactOptionalPropertyTypes` and `--erasableSyntaxOnly`, so it compiles under strict
 project settings. Exclude it from linters and formatters: it starts with `/* eslint-disable */`.
 
 ## Typed Values
 
-Add `-types` to generation to export a declaration for every grammar struct
-and alias, plus `parseAST` and `parseASTWithOptions`. They parse the
+Add `-types` to generation to write `types.ts` with a declaration for every grammar struct
+and alias (`parser.ts` exports them too, so it stays the one module to import), plus `parseAST` and `parseASTWithOptions`. They parse the
 configured start rule once, then convert its completed Node result. `parse`,
 `parseRule`, recognition and `marshal` retain their existing APIs. Named typed
 parsing is outside this API.
@@ -268,7 +273,7 @@ pego gen -lang ts -types -g pairs.pego -o pairs
 
 ```ts
 import { parseAST, parseASTWithOptions, Bytes } from "./pairs/parser.ts";
-import type { Pair } from "./pairs/types.ts";
+import type { Pair } from "./pairs/parser.ts";
 
 const { value, error } = parseAST("abc=12; あい=3");
 if (error !== null) throw error;

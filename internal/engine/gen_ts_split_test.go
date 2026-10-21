@@ -69,7 +69,7 @@ rule num int = t:([0-9]+ ","?) #atomic => 1`
 		t.Fatal(err)
 	}
 	const consumer = `import {parse, parseAST, parseWithOptions, SyntaxError, CodePoints, Node} from "./parser.ts";
-import type {Pair} from "./types.ts";
+import type {Pair} from "./parser.ts";
 declare const process: {stdout: {write(s: string): void}};
 const n = parse("ab=1,2,3");
 if (n.error !== null || !(n.node instanceof Node)) throw new Error("parse failed");

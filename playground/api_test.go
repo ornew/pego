@@ -210,6 +210,9 @@ func TestFormatAndGenerate(t *testing.T) {
 			t.Errorf("%s is not a source file of the parser: %.200s", f.Path, f.Content)
 		}
 	}
+	if i, j := strings.Index(ts.Code, "// ===== parser.ts ====="), strings.Index(ts.Code, "// ===== runtime.ts ====="); i < 0 || j < i {
+		t.Errorf("the combined view must show parser.ts before runtime.ts (%d, %d)", i, j)
+	}
 	typed := call[generateResult](t, "generate", generateRequest{Grammar: pairs, Language: "typescript", Types: true})
 	if len(typed.Files) != 3 || typed.Files[2].Path != "types.ts" {
 		t.Errorf("typed TypeScript files = %+v", typed.Files)

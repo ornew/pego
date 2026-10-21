@@ -40,6 +40,7 @@ func generateTSBundle(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 			src = regexp.MustCompile(`\bRuntimeNode\b`).ReplaceAllString(src, "Node")
 		case "parser.ts":
 			src = regexp.MustCompile(`\bTypes\.`).ReplaceAllString(src, "")
+			src = regexp.MustCompile(`(?m)^export type \* from [^\n]*\n`).ReplaceAllString(src, "")
 		}
 		b.WriteString("\n// --- " + name + " ---\n\n")
 		b.WriteString(src)

@@ -16,6 +16,7 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -587,8 +588,13 @@ func generate(req generateRequest) generateResult {
 	for _, f := range files {
 		res.Files = append(res.Files, generatedFile{f.Path, string(f.Content)})
 	}
-	for i, f := range files {
-		if len(files) > 1 {
+	// The runtime is long and the same for every grammar: display it after the files of the grammar.
+	shown := slices.Clone(files)
+	slices.SortStableFunc(shown, func(a, b pego.GeneratedFile) int {
+		return cmp.Compare(btoi(a.Path == "runtime.ts"), btoi(b.Path == "runtime.ts"))
+	})
+	for i, f := range shown {
+		if len(shown) > 1 {
 			if i > 0 {
 				code.WriteString("\n")
 			}
@@ -618,4 +624,11 @@ func version() versionResult {
 		}
 	}
 	return v
+}
+
+func btoi(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }

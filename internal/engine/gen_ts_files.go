@@ -111,6 +111,10 @@ func tsFiles(opts GenOptions, body, types string) []GeneratedFile {
 	if len(typs) > 0 {
 		parser.WriteString("export type {" + strings.Join(typs, ", ") + "} from " + tsString(spec) + ";\n")
 	}
+	if types != "" {
+		// parser.ts stays the single entry point: the types of the grammar are exported from it too.
+		parser.WriteString("\n// The types of the grammar.\nexport type * from " + tsString(tsTypesSpecifier) + ";\n")
+	}
 	parser.WriteString("\n")
 	parser.WriteString(body)
 	if opts.Runtime != RuntimeImport {
