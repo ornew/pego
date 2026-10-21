@@ -80,7 +80,7 @@ tree, err := p.Parse("1 + 2 * 3 ^ 2") // a *pego.Node, or a *pego.SyntaxError wi
 - **Every backend, one answer.** Closure engine, recursive VM, iterative VM, generated Go and TypeScript: the test
   suite checks that all of them return identical trees, positions and errors.
 - **No nesting too deep.** The iterative VM runs on its own stack, up to 10 million nested rule calls.
-- **Types all the way down.** Declare struct and union types and build them in actions. Rule types are
+- **Types all the way down.** Declare struct and join types and build them in actions. Rule types are
   inferred and checked when the grammar compiles. `pego gen -types` emits matching Go values directly; TypeScript
   `parseAST` converts its Node tree into typed values (see the [guide](docs/guide/typescript.md#typed-values)).
 - **Precedence without the pain.** Operators are declared by binding level in an Operators Rule, not a ladder of rules. Left recursion, direct or

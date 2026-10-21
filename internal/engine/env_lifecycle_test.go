@@ -9,7 +9,7 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-const assignedStream = `var limit int
+const boundStream = `var limit int
 var i int
 var j int
 rule main = {limit := 1} ({i := 1} {j := 2} {i := 3} -"a")* #stream {limit == 1} $$`
@@ -51,8 +51,8 @@ func TestEnvironmentRollback(t *testing.T) {
 	}
 }
 
-func TestAssignedStreamMemoryIsBounded(t *testing.T) {
-	prog := compile(t, assignedStream)
+func TestBoundStreamMemoryIsBounded(t *testing.T) {
+	prog := compile(t, boundStream)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
@@ -167,13 +167,13 @@ func TestBindingSnapshots(t *testing.T) {
 		p.bind("x", 1)
 	}
 	if p.env != first {
-		t.Fatal("equal head assignment allocates state")
+		t.Fatal("equal head binding allocates state")
 	}
 	p.bind("y", "two")
 	second := p.env
 	p.bind("x", 1)
 	if p.env != second {
-		t.Fatal("equal non-head assignment replaces state")
+		t.Fatal("equal non-head binding replaces state")
 	}
 	p.bind("x", 3)
 	if got, _ := second.lookup("x"); got != 1 {

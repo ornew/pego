@@ -59,7 +59,7 @@
   not imply a larger archive or a slower compiler; no end-to-end cold
   build or runtime retained-heap improvement is claimed.
 - Regression fixtures cover mixed direct/general calls, local predicates
-  and assignments, memo/lookahead, cuts/recovery/Operators Rule/LR, nested labels,
+  and bindings, memo/lookahead, cuts/recovery/Operators Rule/LR, nested labels,
   nullable captured repeats, Unicode/invalid UTF-8, both units and pooled
   reuse. A five-call generated limit compares external entries and nested
   calls with the engine, including exact-limit/exhaustion behavior. The

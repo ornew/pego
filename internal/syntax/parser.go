@@ -522,7 +522,7 @@ func (p *parser) typeExpr() (sourceResult grammar.TypeExpr) {
 	if !p.is("|") {
 		return t
 	}
-	u := &grammar.UnionType{Types: []grammar.TypeExpr{t}}
+	u := &grammar.JoinType{Types: []grammar.TypeExpr{t}}
 	for p.accept("|") {
 		u.Types = append(u.Types, p.typeMeet())
 	}
@@ -542,7 +542,7 @@ func (p *parser) typeMeet() (sourceResult grammar.TypeExpr) {
 	if !p.is("&") {
 		return t
 	}
-	m := &grammar.IntersectionType{Types: []grammar.TypeExpr{t}}
+	m := &grammar.MeetType{Types: []grammar.TypeExpr{t}}
 	for p.accept("&") {
 		m.Types = append(m.Types, p.typeTerm())
 	}
@@ -1479,7 +1479,7 @@ func (p *parser) actionBlock() (sourceResult *grammar.Block) {
 		if p.tok().kind == tIdent && p.peek(1).text == ":=" {
 			name := p.ident()
 			p.expect(":=")
-			term = &grammar.Assign{SourceInfo: grammar.SourceInfo{Pos: name.pos}, Name: name.text, Value: p.term()}
+			term = &grammar.Bind{SourceInfo: grammar.SourceInfo{Pos: name.pos}, Name: name.text, Value: p.term()}
 		} else {
 			term = p.term()
 		}

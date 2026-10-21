@@ -39,7 +39,7 @@ syntax cannot define, such as `node[T, C]`.
 | `int` | `int` | `0`, `-1`, `100` |
 | `string` | `string` | `"..."` |
 | `bool` | `bool` | `true`, `false` |
-| union | `T \| U` | a value of one of its arguments |
+| join | `T \| U` | a value of one of its arguments |
 | list | `[]T` | `[]int{1, 2, 3}` |
 | tuple | `()`, `(T,)`, `(T, U)` | `(1, Foo{}, []int{})` |
 | optional | `*T` | `nil` or a value of `T` |
@@ -49,14 +49,14 @@ syntax cannot define, such as `node[T, C]`.
 | bottom | `_\|_` | no value |
 | node | `node` (extended: `node[T, C]`) | parse results |
 
-`union[...]`, `list[T]`, `tuple[...]` and `optional[T]` are the internal names
+`join[...]`, `list[T]`, `tuple[...]` and `optional[T]` are the internal names
 of the higher-kinded constructors. Standard syntax writes them only with their
 operators, and diagnostics print the operator form.
 
-**Union.** `|` is associative and commutative and is normalized to a flat set:
+**Join.** `|` is associative and commutative and is normalized to a flat set:
 `T | (U | V)` is `T | U | V`, `T | U` is `U | T`, and duplicates collapse.
 `T | U` is the join (least upper bound), so `A | B` is `B` when `A <= B`, and
-`int | int` is `int`. A union with one argument is that argument; one with no
+`int | int` is `int`. A join with one argument is that argument; one with no
 arguments, which only computation can produce, is `_|_`.
 
 **Tuple.** `()` is the unit. A trailing comma is optional except in a
@@ -182,7 +182,7 @@ identical; with `type T ~ U` and `type V ~ U`, `T`, `U` and `V` are identical.
 The cut becomes the `#cut` pragma; `--` is removed. Sequence and choice values
 are flat: `a (b c)` and `(a b) c` both have the value `(A, B, C)`, because a
 group creates no value, while `a (b c => X{})` has `(A, X)`. Choice likewise
-produces one flat union.
+produces one flat join.
 
 A compile option selects **CST mode**: every action is replaced by the default,
 and the parser returns the default `node` tree even for grammars with actions.
@@ -224,7 +224,7 @@ and every guide. Saved bytecode and schema formats need new versions.
   produces `node[(L, Op, R)]`, a prefix line `node[(Op, R)]` and a postfix line
   `node[(L, Op)]`, with `C` mapping `lhs`, `op` and `rhs`. Actions keep using
   `$lhs`, `$op` and `$rhs`. The binding level is opt-in source information.
-- **Recovery is an explicit union.** `a #recover(...)` and a literal with
+- **Recovery is an explicit join.** `a #recover(...)` and a literal with
   `#missing` have type `A | error`. Missing tokens become `error` values that
   record the expected token at run time. `error` is not implicitly assignable
   to other types.
@@ -248,7 +248,7 @@ and every guide. Saved bytecode and schema formats need new versions.
 - **Captures in positive lookaheads are kept beside the tuple.** A capture in
   `&a` has no element, since the lookahead consumes nothing, but its value
   remains in effect after the lookahead, so actions, predicates and
-  assignments read it. `C` records that its value is beside the tuple, and an
+  bindings read it. `C` records that its value is beside the tuple, and an
   alternative may capture a name in a lookahead while another captures it at a
   position, as in `!nl -ws e:expr / &nl &(-ws e:missing)`, which places a
   zero-width node after the whitespace that the statement does not consume.
@@ -259,7 +259,7 @@ and every guide. Saved bytecode and schema formats need new versions.
   `--` to `#cut`, positional to named captures, lambda parameters), and the
   repository grammars and `parsers/` are migrated with it.
 - **Terminal types become one-field structs.** A terminal type names the kind
-  of a token, and unions of them, such as `Number | String | Bool`, tell the
+  of a token, and joins of them, such as `Number | String | Bool`, tell the
   kinds apart, which `node[string]` cannot do. `pego fix` rewrites
   `type T terminal` to `type T = { Text string }`, a rule `rule r T = e`
   without an action to `rule r T = t:(e) #atomic => T{Text: text($t)}`
@@ -271,11 +271,11 @@ and every guide. Saved bytecode and schema formats need new versions.
   `Error` to `error`.
 
 - **Subtyping is minimal.** `_|_ <= T <= _`, `T <= *T`, `nil <= *T`, and
-  each union argument is below its union. `[]T`, `*T` and `node[T, C]` are
+  each join argument is below its join. `[]T`, `*T` and `node[T, C]` are
   covariant in `T`, and tuples are covariant element-wise. Named structs
   compare by identity only, without width subtyping. Nodes whose `C` differ
-  are distinct types, and their join is a union.
-- **`.$y` requires every alternative to have `y`.** On a union of nodes, `.$y`
+  are distinct types, and their join keeps both.
+- **`.$y` requires every alternative to have `y`.** On a join of nodes, `.$y`
   is allowed only when every argument captures `y`; its type is the join of
   their capture types, and differing indexes are selected at run time from the
   matched alternative. An optional receiver is a type error, as for field

@@ -567,7 +567,7 @@ pego parse -g raw.pego -s e -f sexpr -i '7'
 
 The default Operators Rule tree is a good starting point (nothing to write), but note the consequence for typed rules: if the
 rule has a declared struct type, **every operator needs an action**, because the tuple is not assignable to a struct. A
-declared union that includes `node[_]` accepts the tuples, as `type E ~ node[_] | Bin` does:
+declared join that includes `node[_]` accepts the tuples, as `type E ~ node[_] | Bin` does:
 
 ```pego
 // raw-typed.pego
@@ -591,7 +591,7 @@ raw-typed.pego:3:1: operators of t without an action produce a tuple node, which
 A rule declared with exactly a named node type, as `type E = node[_]` and `rule t E = operators { ... }`, converts every
 operator node it builds to `E`, at every nesting level, with or without an action; the tuple above then has type `E`, and
 typed output yields `*E` for each operator. Operands are not converted: each operand rule must produce `E` itself (declare
-it `rule num E = ...`), or the Operators Rule must be declared as a union that includes the operand types.
+it `rule num E = ...`), or the Operators Rule must be declared as a join that includes the operand types.
 
 ### Captures and Operators
 

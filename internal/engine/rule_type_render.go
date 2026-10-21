@@ -29,7 +29,7 @@ func renderRuleType(t ty, poll func()) string {
 	finish := func(s string) string { poll(); return s }
 	term := func(t ty) string {
 		s := renderRuleType(t, poll)
-		if _, ok := t.(unionTy); ok {
+		if _, ok := t.(joinTy); ok {
 			return "(" + s + ")"
 		}
 		return s
@@ -39,7 +39,7 @@ func renderRuleType(t ty, poll func()) string {
 		return finish("[]" + term(t.elem))
 	case optTy:
 		return finish("*" + term(t.elem))
-	case unionTy:
+	case joinTy:
 		parts := make([]string, len(t.alts))
 		for i, alt := range t.alts {
 			poll()

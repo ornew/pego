@@ -14,13 +14,13 @@ func TestFormatContextParityAndCancellation(t *testing.T) {
 	g := &Grammar{File: File{Pkg: Pkg{Name: "example"}}}
 	seq := &Seq{}
 	call := &Call{Func: "list"}
-	union := &UnionType{}
+	join := &JoinType{}
 	attrs := &Attribute{Name: "custom", KwArgs: map[string]any{}}
 	for i := range 1024 {
 		value := fmt.Sprintf("value%d\n😀", i)
 		seq.Items = append(seq.Items, &Literal{Value: value})
 		call.Args = append(call.Args, &StringLit{Value: value})
-		union.Types = append(union.Types, &TypeRef{Name: fmt.Sprintf("T%d", i)})
+		join.Types = append(join.Types, &TypeRef{Name: fmt.Sprintf("T%d", i)})
 		attrs.KwArgs[fmt.Sprintf("k%04d", 1024-i)] = value
 		g.File.Decls = append(g.File.Decls, &RuleDef{Name: fmt.Sprintf("r%d", i), Expr: &Literal{Value: value}})
 	}
@@ -33,7 +33,7 @@ func TestFormatContextParityAndCancellation(t *testing.T) {
 		{"grammar", func() string { return Format(g) }, func(ctx context.Context) (string, error) { return FormatContext(ctx, g) }},
 		{"expression", func() string { return FormatExpr(attrExpr) }, func(ctx context.Context) (string, error) { return FormatExprContext(ctx, attrExpr) }},
 		{"term", func() string { return FormatTerm(call) }, func(ctx context.Context) (string, error) { return FormatTermContext(ctx, call) }},
-		{"type", func() string { return FormatType(union) }, func(ctx context.Context) (string, error) { return FormatTypeContext(ctx, union) }},
+		{"type", func() string { return FormatType(join) }, func(ctx context.Context) (string, error) { return FormatTypeContext(ctx, join) }},
 	}
 	before, _ := json.Marshal(g)
 	for _, tc := range cases {

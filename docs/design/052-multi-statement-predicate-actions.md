@@ -52,7 +52,7 @@ is equivalent to:
 rule item = { a } { b } { c }
 ```
 
-An assignment updates the current rule invocation's variable environment as
+A binding updates the current rule invocation's variable environment as
 it does in a standalone Predicate Action, so a later statement and later
 grammar expression can observe the binding. A term statement uses the existing
 predicate rule: `false` or an evaluation error fails the parse; otherwise it
@@ -85,7 +85,7 @@ block an epsilon predicate.
   new block contract, but forces several adjacent brace groups for sequential
   setup and tests.
 - **Treat the block as one Boolean expression.** This is simpler to compile,
-  but does not support sequential assignments and is not equivalent to the
+  but does not support sequential bindings and is not equivalent to the
   existing adjacent-action form.
 - **Evaluate every statement and combine results afterward.** This loses the
   short-circuit and rollback behavior of ordinary PEG sequencing and can run
@@ -103,7 +103,7 @@ source locations.
 
 Tests compare a multi-statement block with its adjacent-action
 form for successful and failing inputs across closure, recursive and iterative
-VMs, generated Go and TypeScript. Cover assignment visibility, false tests,
+VMs, generated Go and TypeScript. Cover binding visibility, false tests,
 runtime errors, short-circuiting, backtracking rollback, captures, memoized
 variable reads, cuts, recovery, repetition and left recursion. Check empty
 blocks, semicolon/newline separators, comments and multiline expressions,

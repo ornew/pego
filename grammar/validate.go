@@ -287,11 +287,11 @@ func validate(g *Grammar, control *validationControl) error {
 			push(n.Elem, "elem", -1, false)
 		case *TypeGroup:
 			push(n.Type, "type", -1, false)
-		case *UnionType:
+		case *JoinType:
 			for i := len(n.Types) - 1; i >= 0; i-- {
 				push(n.Types[i], "types", i, false)
 			}
-		case *IntersectionType:
+		case *MeetType:
 			for i := len(n.Types) - 1; i >= 0; i-- {
 				push(n.Types[i], "types", i, false)
 			}
@@ -433,7 +433,7 @@ func validate(g *Grammar, control *validationControl) error {
 		case *Cast:
 			push(n.Type, "type", -1, false)
 			push(n.X, "x", -1, false)
-		case *Assign:
+		case *Bind:
 			push(n.Value, "value", -1, false)
 		default:
 			return fail("", fmt.Sprintf("unsupported node %T", n))
@@ -502,7 +502,7 @@ func invalidIdentifier(node any, control *validationControl) (field, name string
 		field, name = "name", n.Name
 	case *VarRef:
 		field, name = "name", n.Name
-	case *Assign:
+	case *Bind:
 		field, name = "name", n.Name
 	case *Member:
 		// x.$y names the capture y.

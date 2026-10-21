@@ -59,19 +59,19 @@ func TestDuplicateCaptureTypes(t *testing.T) {
 	check(t, `rule main = x:"a" x:"b" {text($x) == "b"} => $x`, ok("ab", `"b"`))
 }
 
-// Compare the capture merger with the union, including values whose top-level optional/union
+// Compare the capture merger with the join, including values whose top-level optional/union
 // normalization must not be skipped.
-func TestCaptureUnionEquivalence(t *testing.T) {
+func TestCaptureJoinEquivalence(t *testing.T) {
 	str := tyStringNode
 	tuple := nodeTy{value: tupleTy{[]ty{str, str}}}
 	ts := []ty{tyAny, tyBottom, tyNil, str, tyInt, tyString, namedTy{"A", 's'}, listTy{str},
-		optTy{str}, optTy{optTy{str}}, unionTy{[]ty{str, tuple}}, unionTy{[]ty{tuple, str}},
-		unionTy{[]ty{str, str, tyBottom}}, unionTy{[]ty{tyAny, str}}, listTy{optTy{str}},
-		nodeTy{value: listTy{unionTy{[]ty{str, tuple}}}}}
+		optTy{str}, optTy{optTy{str}}, joinTy{[]ty{str, tuple}}, joinTy{[]ty{tuple, str}},
+		joinTy{[]ty{str, str, tyBottom}}, joinTy{[]ty{tyAny, str}}, listTy{optTy{str}},
+		nodeTy{value: listTy{joinTy{[]ty{str, tuple}}}}}
 	for i, a := range ts {
 		for j, b := range ts {
 			got := mergeCap([]capIndex{{name: "x", paths: [][]int{{0}}, t: a}}, capIndex{name: "x", paths: [][]int{{1}}, t: b})
-			if want := vunion(a, b); len(got) != 1 || got[0].t.String() != want.String() || len(got[0].paths) != 2 {
+			if want := vjoin(a, b); len(got) != 1 || got[0].t.String() != want.String() || len(got[0].paths) != 2 {
 				t.Fatalf("pair %d/%d: got %v, want %s", i, j, got, want)
 			}
 		}

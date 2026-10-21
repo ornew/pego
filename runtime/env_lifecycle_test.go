@@ -13,13 +13,13 @@ func TestBindingSnapshots(t *testing.T) {
 		p.bind("x", 1)
 	}
 	if p.Env != first {
-		t.Fatal("equal head assignment allocates state")
+		t.Fatal("equal head binding allocates state")
 	}
 	p.bind("y", "two")
 	second := p.Env
 	p.bind("x", 1)
 	if p.Env != second {
-		t.Fatal("equal non-head assignment replaces state")
+		t.Fatal("equal non-head binding replaces state")
 	}
 	p.bind("x", 3)
 	if got, _ := lookupBinding(second, "x"); got != 1 {

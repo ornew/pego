@@ -144,7 +144,7 @@ rule main = item* #stream $$
 rule item Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" => Pair{Key: $k, Value: $v}`,
 		"lines": `rule main = line* #stream $$
 rule line = [a-z0-9=]+ #atomic "\n"`,
-		// Each element backtracks into a memoized, variable-reading rule, assigns
+		// Each element backtracks into a memoized, variable-reading rule, binds
 		// variables and produces nil.
 		"memo, variables and nil": `var n int
 var last string

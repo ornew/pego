@@ -18,7 +18,7 @@ import (
 //     and the unit () becomes Unit;
 //   - a reference to another rule becomes the Go type of that rule, and error becomes *Error.
 //
-// A reference that closes a cycle of rules becomes any, as do unions whose arguments have different
+// A reference that closes a cycle of rules becomes any, as do joins whose arguments have different
 // Go types.
 
 // vrule is a reference to a rule whose Go type is that of its value in the value model; the rule's
@@ -63,7 +63,7 @@ type valueResolver struct {
 	ruleDefs  map[string]*grammar.RuleDef
 	vres      map[string]ty
 	resolving map[string]bool
-	// ownType reports that a legacy type has a typed representation of its own (a named union).
+	// ownType reports that a legacy type has a typed representation of its own (a named join).
 	ownType func(ty) bool
 }
 
@@ -139,12 +139,12 @@ func (t *valueResolver) resolveValue(x ty) ty {
 		return listTy{t.resolveValue(x.elem)}
 	case optTy:
 		return optTy{t.resolveValue(x.elem)}
-	case unionTy:
+	case joinTy:
 		alts := make([]ty, len(x.alts))
 		for i, a := range x.alts {
 			alts[i] = t.resolveValue(a)
 		}
-		return unionTy{alts}
+		return joinTy{alts}
 	case basicTy:
 		if x == tyBottom || x == tyNil {
 			return tyTop
@@ -167,9 +167,9 @@ func (t *typedGen) tupleType(x tupleTy) string {
 	return fmt.Sprintf("Tuple%d[%s]", len(x.elems), strings.Join(elems, ", "))
 }
 
-// unionGoType returns the Go type shared by the arguments of a union, if they have one.
-// The tuple types of the arguments are declared only if the union has their Go type.
-func (t *typedGen) unionGoType(x unionTy) (string, bool) {
+// joinGoType returns the Go type shared by the arguments of a join, if they have one.
+// The tuple types of the arguments are declared only if the join has their Go type.
+func (t *typedGen) joinGoType(x joinTy) (string, bool) {
 	sizes, unit := map[int]bool{}, t.unitUsed
 	for n := range t.tupleSizes {
 		sizes[n] = true

@@ -31,7 +31,7 @@ Other types are formed from types `T`, `U`, ... by these forms, or named by
 | `(T, U, ...)` | Tuples of a `T`, a `U`, ...: `()` is the unit, `(T,)` has one element (see [Tuple Types](#tuple-types)). |
 | `[]T` | Lists of `T` values. |
 | `*T` | The values of `T`, and `nil`. |
-| `T \| U` | The values of `T` and those of `U`: the join of `T` and `U` (see [Union Types](#union-types)). |
+| `T \| U` | The values of `T` and those of `U`: the join of `T` and `U` (see [Join Types](#join-types)). |
 | `T & U` | The values that are both a `T` and a `U`: the meet of `T` and `U` (see [Top, Bottom, Join and Meet](#top-bottom-join-and-meet)). |
 | `N` | The values of the type named `N`: a struct type or a named node type defined by a Type Definition, or the type a Type Alias names. |
 
@@ -44,14 +44,14 @@ last resort, and a precise `node[T]` is preferred wherever the value is known.
 
 A Type Expression is written with the following syntax. `[]` and `*` apply to
 the type that follows, `&` forms a meet and binds tighter than `|`, which forms
-a union, parentheses with commas form a tuple, and parentheses without a comma
+a join, parentheses with commas form a tuple, and parentheses without a comma
 group.
 
 ```pego
 type Example = {
     Items  []Item                       // a list
     Maybe  *Item                        // an Item or nil
-    Either Item | Other                 // a union
+    Either Item | Other                 // a join
     Many   [](Item | Other)
     Count  int
     Pair   (node[string], node[string]) // a tuple
@@ -59,7 +59,7 @@ type Example = {
     Digits node[[]node[string]]         // the node of a repetition
 }
 
-type LongUnion ~ (
+type LongJoin ~ (
     Item
     | Other
 )
@@ -136,12 +136,12 @@ list element or a cast whose type resolves to `_|_` is an error, also when
 types are otherwise not checked.
 
 `T | U` is the join of `T` and `U`: its values are the values of either (see
-[Union Types](#union-types)). The type of a
+[Join Types](#join-types)). The type of a
 choice is the join of the types of its alternatives.
 
 `T & U` is the meet of `T` and `U`, the largest type assignable to both: the
 one assignable to the other, `[]V & []W` is `[](V & W)`, `node[V] & node[W]` is
-`node[V & W]`, and for unions and optional types it is the union of the meets
+`node[V & W]`, and for joins and optional types it is the join of the meets
 of their members. A meet of unrelated types is `_|_`. So `(node[string] | int) & node[_]` is
 `node[string]`, and `int & string` is an error where a location has that type.
 
@@ -242,12 +242,12 @@ type Tree = node[[]Tree]
 Assignability to and from a named node type `N`:
 
 - `N` is assignable to `N`, to `node[U]` whenever the underlying `node[W]` of `N` has `W`
-  assignable to `U`, and to `node[_]`. A union whose members are all assignable to a location is
-  assignable to it, as for any union.
+  assignable to `U`, and to `node[_]`. A join whose members are all assignable to a location is
+  assignable to it, as for any join.
 - Nothing else converts implicitly to `N`: a `node[U]`, a `_`, or a value of another named node type
   `M` is not assignable to `N`. Two distinct named node types never meet implicitly.
 - A rule converts its value only when its declared Type is exactly `N`, also through aliases. A declared
-  union, even one of named node types, does not convert: its value is checked by assignability. An
+  join, even one of named node types, does not convert: its value is checked by assignability. An
   [Operators Rule](operators-rule.md#types) declared with exactly `N` converts the value of every
   operator, as described there.
 
@@ -281,7 +281,7 @@ underlying `node[U]`. Its `.Value` has type `U`.
 ## Type Aliases
 
 A Type Alias `type T ~ U` declares `T` as another name for the type `U`. With `|`, the
-right-hand side is a union type, whose values are the values of any of its
+right-hand side is a join type, whose values are the values of any of its
 members, much like an interface type in Go.
 
 ```pego
@@ -290,17 +290,17 @@ type Entry ~ (node[string], Value)
 type Words ~ node[[]node[string]]
 ```
 
-A type alias MUST NOT refer to itself, directly or indirectly. Unions are
-normalized: nested unions are flattened and duplicate members are removed (so
-`T | T` is `T`), and a union with an optional member is optional
+A type alias MUST NOT refer to itself, directly or indirectly. Joins are
+normalized: nested joins are flattened and duplicate members are removed (so
+`T | T` is `T`), and a join with an optional member is optional
 (`A | *B` is `*(A | B)`).
 
-### Union Types
+### Join Types
 
-A union type `A | B` is written on the right-hand side of an alias or wherever
+A join type `A | B` is written on the right-hand side of an alias or wherever
 a Type Expression is expected. An alias that resolves to a single struct type
 preserves that type's identity. A constructor accepts aliases of struct types and produces a node of
-the underlying struct type. This also applies to unions normalized to a single
+the underlying struct type. This also applies to joins normalized to a single
 type, such as `T | T`.
 
 ## Assignability
@@ -310,8 +310,8 @@ declared type of a rule, and so on) if any of the following holds:
 
 - `V` and `T` are the same type.
 - `T` is `_`, or `V` is `_|_`.
-- `V` is a union type and every member of `V` is assignable to `T`.
-- `T` is a union type and `V` is assignable to one of its members.
+- `V` is a join type and every member of `V` is assignable to `T`.
+- `T` is a join type and `V` is assignable to one of its members.
 - `T` is `*U`, and `V` is `nil`, or `V` is `*W` with `W` assignable to `U`, or
   `V` is assignable to `U`.
 - `T` is `node[_]` and `V` is `node[W]` for any `W`: every node is a `node[_]`.

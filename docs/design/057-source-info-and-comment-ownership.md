@@ -191,7 +191,7 @@ or reparse the source to resynchronize it.
 This increment preserves raw layout at selected Action Expression operand
 boundaries, including unary operands and confirmed lambda expressions, and
 before constructor field names. The 15 fixtures cover selected function
-arguments, constructor fields and values, binary and assignment right-hand
+arguments, constructor fields and values, binary and binding right-hand
 sides, unary prefixes and operands, lambda expressions, repeated identical
 comments, multiline groups and calls, idempotence, cloning and JSON omission.
 For example, formatting
@@ -268,7 +268,7 @@ at every offset of grammars with every kind of node, pairs of comments at random
 every grammar in the repository.
 
 The canonical tree has no public-AST adapter yet: the parity test builds the
-nodes of the public AST (flat sequences, choices, unions and intersections, the
+nodes of the public AST (flat sequences, choices, joins and meets, the
 pragma and attribute completions, hidden literals) from the canonical tree and
 passes them to `Claim`, and that construction moves into the adapter with the
 parser selection. Raw formatter state (`SourceInfo.Layout`) is still not
@@ -306,7 +306,7 @@ are an oracle for covered boundaries, not a substitute for that gate.
 - Parse/format/parse in-memory ASTs and compare owner paths while checking raw
   comment placement. Test relocation around grouping nodes.
 - For raw interior layout, verify token ownership at call arguments,
-  constructor fields, binary and assignment right-hand sides, and unary
+  constructor fields, binary and binding right-hand sides, and unary
   boundaries. Include repeated identical comment values, multiline groups and
   calls, formatting idempotence, clone isolation, and JSON omission of layout
   tokens and layout-only source objects.

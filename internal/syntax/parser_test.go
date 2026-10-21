@@ -336,7 +336,7 @@ func TestParseRejectsRetiredTypeNames(t *testing.T) {
 			{"rule type", "rule r NAME = \"x\""},
 			{"list", "type R ~ []NAME"},
 			{"pointer", "type R = { F *NAME }"},
-			{"union", "type R ~ int | NAME"},
+			{"join", "type R ~ int | NAME"},
 			{"nested", "type R = { F []*NAME }"},
 			{"type application", "type R = { F NAME[int] }"},
 			{"cast", "rule r = x:\"x\" => $x.(NAME)"},

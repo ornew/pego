@@ -33,7 +33,7 @@ pego: inline-action.pego:2:24: inline actions are not implemented
 ## Referring to Captures
 
 `$label` refers to the value captured with `label:` in this rule. Only labeled elements can be used in an action:
-label each element the action needs, as `name:name` and `value:value` in the rule of [Structs and Unions](types.md#structs-and-unions).
+label each element the action needs, as `name:name` and `value:value` in the rule of [Structs and Joins](types.md#structs-and-joins).
 
 Captures are visible only in the rule that made them, not in the rules it calls or that call it. A reference to an
 undefined capture is a compile-time error (`undefined capture $z`).
@@ -83,7 +83,7 @@ as `[]int` are not supported.
 rule's value is a node, and a node has the members `.Start` and `.End` (integers) and `.Value`, the value that the node
 holds: the matched string of a string node, or the tuple or list of the others. `x[i]` reads the element `i` of a tuple
 or list, and of the value of a node. Reading a member of a value that may be `nil` is an error, so
-`n:name?` followed by `$n.Start` does not compile. When `x` has a union type the field is allowed if at least one
+`n:name?` followed by `$n.Start` does not compile. When `x` has a join type the field is allowed if at least one
 member declares it.
 
 Struct fields can hold integers, strings and booleans too, which is how you attach derived data to a node:
@@ -255,7 +255,7 @@ Bin{Left: Bin{Left: "1", Op: "-", Right: "2"}, Op: "+", Right: "3"}
 "7"
 ```
 
-Notes: the accumulator starts as a node and becomes a `Bin`, so its type is widened to the union of both, and the
+Notes: the accumulator starts as a node and becomes a `Bin`, so its type is widened to the join of both, and the
 declared `Expr ~ node[string] | Bin` must contain both. With a single operand the repetition is empty and the fold returns the
 initial value unchanged, which is why `7` stays a bare node. For several precedence levels you would write one such
 rule per level; for that case also look at [Operators Rule](operators-rule.md).
@@ -293,9 +293,9 @@ Bin{Left: "2", Op: "^", Right: Bin{Left: "3", Op: "^", Right: "4"}}
 The repetition is greedy and does not backtrack, but it is still correct here: it consumes `2 ^` and `3 ^`, then
 `4` fails to be followed by `^`, so the repetition stops and `last` matches `4`.
 
-### Member Chains With a Union Accumulator
+### Member Chains With a Join Accumulator
 
-The same fold builds `a.b.c`. The accumulator is first a node and then a `Member`, so declare the union and use it
+The same fold builds `a.b.c`. The accumulator is first a node and then a `Member`, so declare the join and use it
 for the rule type and the field:
 
 ```pego

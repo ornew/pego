@@ -34,7 +34,7 @@ func ungroupType(t grammar.TypeExpr, poll func()) grammar.TypeExpr {
 			v.Elem = child
 			return &v
 		}
-	case *grammar.UnionType:
+	case *grammar.JoinType:
 		var children []grammar.TypeExpr
 		for i, x := range t.Types {
 			child := ungroupType(x, poll)
@@ -50,7 +50,7 @@ func ungroupType(t grammar.TypeExpr, poll func()) grammar.TypeExpr {
 			v.Types = children
 			return &v
 		}
-	case *grammar.IntersectionType:
+	case *grammar.MeetType:
 		var children []grammar.TypeExpr
 		for i, x := range t.Types {
 			child := ungroupType(x, poll)
@@ -225,7 +225,7 @@ func ungroupTerm(t grammar.Term, poll func()) grammar.Term {
 			v.X = child
 			return &v
 		}
-	case *grammar.Assign:
+	case *grammar.Bind:
 		child := ungroupTerm(t.Value, poll)
 		if child != t.Value {
 			v := *t

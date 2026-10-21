@@ -26,7 +26,7 @@ rule three = four
 rule four = five
 rule five = "é" / "�" / "😀"
 rule cap = x:"é" {text($x) == "é"}
-rule assign = {n := 1} "é"
+rule bind = {n := 1} "é"
 rule cut = "é" #cut "!"
 rule recovering = "é" #recover(skip="?")
 rule expression = operators {
@@ -48,7 +48,7 @@ rule left = left "+" "é" / "é"
 			t.Fatalf("no direct route for %s", name)
 		}
 	}
-	for _, name := range []string{"cap", "assign", "cut", "recovering", "expression", "left"} {
+	for _, name := range []string{"cap", "bind", "cut", "recovering", "expression", "left"} {
 		if strings.Contains(string(code), "// "+name+", called as by invokePlain (body inlined)") {
 			t.Fatalf("unsupported direct route for %s", name)
 		}
@@ -61,7 +61,7 @@ rule left = left "+" "é" / "é"
 	var rows strings.Builder
 	// Go literals preserve invalid UTF-8 bytes; the JSON-transport corpus would
 	// replace them before generated parsers receive the input.
-	for _, name := range []string{"main", "one", "two", "three", "four", "five", "cap", "assign", "cut", "recovering", "expression", "left"} {
+	for _, name := range []string{"main", "one", "two", "three", "four", "five", "cap", "bind", "cut", "recovering", "expression", "left"} {
 		for _, input := range []string{"é", "?", "é!", "-é", "é+é", "", "\xff", "\xffé", "\xe2\x82", "�é", "😀"} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				_, err := prog.ParseWith(name, input, ParseOptions{Unit: unit, MaxDepth: 5, Recognize: true})

@@ -284,8 +284,8 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 	case *grammar.Binary:
 		return c.binary(t)
 
-	case *grammar.Assign:
-		return nil, c.p.actionError("assignment ", t.Name, " = ... is only allowed as a whole predicate")
+	case *grammar.Bind:
+		return nil, c.p.actionError("binding ", t.Name, " := ... is only allowed as a whole predicate")
 	}
 	return nil, fmt.Errorf("unsupported term %T", t)
 }
@@ -884,7 +884,7 @@ func (c *evalCtx) keep() *evalCtx {
 
 // predicate compiles a Predicate Action { ... }.
 func (c *compiler) predicate(e *grammar.Predicate, s *scope) matcher {
-	if a, ok := e.Term.(*grammar.Assign); ok {
+	if a, ok := e.Term.(*grammar.Bind); ok {
 		if c.prog.vars.lookup(a.Name) == nil {
 			c.errorf(a.Diagnostic(), "undefined variable %s; declare it with var %s at the top level", a.Name, a.Name)
 		}
@@ -1016,8 +1016,8 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 		k := &typeResolver{control: c.control, prog: c.prog, errs: &c.errs, report: true}
 		k.resolveLocation(t.Type, t.Diagnostic(), "the cast")
 		c.checkTerm(t.X, s, locals)
-	case *grammar.Assign:
-		c.errorf(t.Diagnostic(), "assignment %s = ... is only allowed as a whole predicate", t.Name)
+	case *grammar.Bind:
+		c.errorf(t.Diagnostic(), "binding %s := ... is only allowed as a whole predicate", t.Name)
 	}
 }
 

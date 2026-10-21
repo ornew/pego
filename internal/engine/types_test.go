@@ -73,7 +73,7 @@ func TestWellTyped(t *testing.T) {
 		`rule main = "a" => 1`,
 		`rule main = xs:"a"* => map($xs, (x) => len(x))`,
 		`rule main = "a" => list(1, "s", true, nil)`,
-		// Union types and the type of the foldl accumulator
+		// Join types and the type of the foldl accumulator
 		`type Number = { Text string }
 type Op = { Left Node; Op node[string]; Right Node }
 type Node ~ Op | Number

@@ -4,7 +4,7 @@
   of its construction tracker. Streams therefore held every temporary node.
   Successful, nil and rejected action results now release tracking references;
   Go clears the discarded slice tail as well as truncating it. Predicates and
-  assignments use the same cleanup, without changing values held in the
+  bindings use the same cleanup, without changing values held in the
   environment or returned trees. Generated Node/typed Go, direct typed nested
   constructors and TypeScript mirror the cleanup; TS uses a finally block.
 - For `item = "a" -> foldl(nil, list(V{N:1}), (acc,v)=>nil)`, a discarded

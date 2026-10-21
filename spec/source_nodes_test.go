@@ -236,7 +236,7 @@ func (s *shaper) typ(n *pego.Node) {
 	case "OptionalType", "ListType":
 		s.typ(fieldNode(n, "Type"))
 		s.span(n.Type(), n)
-	case "UnionType", "IntersectionType":
+	case "JoinType", "MeetType":
 		for _, o := range flatten(n, n.Type()) {
 			s.typ(o)
 		}
@@ -511,9 +511,9 @@ func (s *shaper) action(n *pego.Node) {
 		s.span("Lambda", n)
 	case "ActionBlock":
 		s.block(n, "Block")
-	case "ActionAssign":
+	case "ActionBind":
 		s.action(fieldNode(n, "Expr"))
-		s.span("Assign", n)
+		s.span("Bind", n)
 	default:
 		s.t.Fatalf("unexpected action node %s", n.Type())
 	}

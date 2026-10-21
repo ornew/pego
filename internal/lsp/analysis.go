@@ -87,7 +87,7 @@ type analysis struct {
 	// sem holds the semantic token class of identifiers other than occurrences, by the byte offset
 	// of the token.
 	sem map[int]semClass
-	// vars are the names of the variables that predicates assign.
+	// vars are the names of the variables that predicates bind.
 	vars map[string]bool
 }
 
@@ -476,12 +476,12 @@ func (a *analysis) walkTypeControlled(t grammar.TypeExpr, control *renderControl
 		a.walkTypeControlled(t.Elem, control)
 	case *grammar.OptionalType:
 		a.walkTypeControlled(t.Elem, control)
-	case *grammar.UnionType:
+	case *grammar.JoinType:
 		for _, u := range t.Types {
 			control.poll()
 			a.walkTypeControlled(u, control)
 		}
-	case *grammar.IntersectionType:
+	case *grammar.MeetType:
 		for _, u := range t.Types {
 			control.poll()
 			a.walkTypeControlled(u, control)
@@ -673,7 +673,7 @@ func (a *analysis) walkTermControlled(t grammar.Term, control *renderControl) {
 		if t.Param {
 			a.mark(t.Diagnostic(), semParameter, 0)
 		}
-	case *grammar.Assign:
+	case *grammar.Bind:
 		a.vars[t.Name] = true
 		a.mark(t.Diagnostic(), semVariable, modDeclaration)
 		a.walkTermControlled(t.Value, control)

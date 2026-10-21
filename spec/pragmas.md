@@ -39,7 +39,7 @@ rule stmt = s:(let / assign / call) #recover(skip=[^;]+ ";") => $s
 
 The skip expression cannot contain captures and must consume input. Recovered
 errors are returned with the resulting node. Backtracking that undoes a
-recovery also removes its error. A recovered expression's type is the union
+recovery also removes its error. A recovered expression's type is the join
 of its original type and `error`, and an error value is assignable only to a type that admits `error`
 (see [Type System](types.md#assignability)).
 `Parser.Parse` returns a recovered value together with a `SyntaxErrors` error
@@ -184,6 +184,6 @@ even when the grammar contains no `#missing` annotation. Zero preserves strict
 prefix matching for grammars without `#missing`. Grammar AST JSON and formatting
 preserve the annotation. `missing` is a built-in type, a kind of `error`: the
 annotated literal infers `node[string] | missing`, and `missing` is assignable to
-`error`. Declare a union or keep the Node tree when
+`error`. Declare a join or keep the Node tree when
 consumers need the missing-token identity. Concrete generated typed mappings and
 additional backends are outside the initial implementation.

@@ -98,7 +98,7 @@ pego: 2:5: expected a name
 
 Four errors are reported from one run, and the tree is complete except at the broken statements, which are `error`
 values in the `Body` list. `error` is a built-in type that only recovery produces: the type of `stmt` is
-`Stmt | error`, so the union `Stmt` of this grammar lists `error`, which is why `Body []Stmt` can hold it. In JSON, the
+`Stmt | error`, so the join `Stmt` of this grammar lists `error`, which is why `Body []Stmt` can hold it. In JSON, the
 default output format, an error value looks like this:
 
 ```bash

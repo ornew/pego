@@ -49,7 +49,7 @@ type VarDefBody = { Name Ident; Type *Type; Value *ActionExpr }
 type FieldSpec ~ Field | error
 type Field = { Name Ident; Type Type; Comments []Comment; SourceSpan FieldBody; Source SourceItem }
 type FieldBody = { Name Ident; Type Type }
-type Type ~ TypeRef | TypeApp | TypeGroup | TupleType | StructType | OptionalType | ListType | UnionType | IntersectionType | Bottom
+type Type ~ TypeRef | TypeApp | TypeGroup | TupleType | StructType | OptionalType | ListType | JoinType | MeetType | Bottom
 type TypeRef = { Name Ident }
 type TypeApp = { Name Ident; Args []Type } // T[U]
 type TypeGroup = { Type Type }
@@ -57,8 +57,8 @@ type TupleType = { Types []Type } // (), (T,), (T, U)
 type StructType = { Fields []FieldSpec; Comments []Comment; Head SourceLead } // { A T; B U }
 type OptionalType = { Type Type }
 type ListType = { Type Type }
-type UnionType = { L Type; R Type }
-type IntersectionType = { L Type; R Type }
+type JoinType = { L Type; R Type }
+type MeetType = { L Type; R Type }
 
 type Comment ~ CommentGroup | InlineComment
 type CommentGroup = { Lines []node[string] }
@@ -124,8 +124,8 @@ type Postfix = { Expr RuleExpr; Action *Action; Comments []Comment; SourceSpan O
 type Infix = { Assoc string; Expr RuleExpr; Action *Action; Comments []Comment; SourceSpan OperatorsOperatorBody; Source SourceItem }
 
 type Action ~ ActionExpr | ActionBlock | DefaultAction
-type ActionStmt ~ ActionAssign | ActionExpr | error
-type ActionAssign = { Name Ident; Expr ActionExpr }
+type ActionStmt ~ ActionBind | ActionExpr | error
+type ActionBind = { Name Ident; Expr ActionExpr }
 type ActionBlock = { Actions []ActionStmt; Comments []Comment }
 type DefaultAction = node[string]
 type ActionExpr ~ (
@@ -207,7 +207,7 @@ rule sync_token = string / char_class / inline_comment / comment_line / sync_par
 rule sync_paren = "(" (sync_token / !("(" / ")" / nl) .)* ")"
 rule sync_brace = "{" (sync_token / !("{" / "}" / nl) .)* "}"
 
-// Types. Union is the weakest operation; list and optional prefixes nest.
+// Types. Join is the weakest operation; list and optional prefixes nest.
 // A type declaration is a type alias (type Name ~ Type) or a type definition
 // (type Name = { ... } or type Name = node[T]).
 rule type_decl TypeDecl = type_alias / type_def
@@ -247,8 +247,8 @@ rule type_expr Type = operators {
   operand !retired_type name:ident => TypeRef{Name: $name}
   operand t:type_group => $t
   operand t:struct_type => $t
-  level union { infix left "|" => UnionType{L: $lhs, R: $rhs} }
-  level meet { infix left "&" => IntersectionType{L: $lhs, R: $rhs} }
+  level join { infix left "|" => JoinType{L: $lhs, R: $rhs} }
+  level meet { infix left "&" => MeetType{L: $lhs, R: $rhs} }
   level prefix {
     prefix "[]" => ListType{Type: $rhs}
     prefix "*" => OptionalType{Type: $rhs}
@@ -453,10 +453,10 @@ rule action_block ActionBlock = (
 ) => ActionBlock{Actions: map($xs, (x) => x.$s), Comments: $cs}
 rule action_block_stmt ActionStmt = !(comments "}") x:(action_block_value #recover(skip=item_sync)) => $x
 rule action_block_value ActionStmt = -comments x:action_stmt -item_end => $x
-rule action_stmt ActionStmt = action_assign_stmt / action_expr
-rule action_assign_stmt ActionAssign = (
-  name:ident -ws ":=" -ws x:(action_expr @error(message="expected assignment value"))
-) => ActionAssign{Name: $name, Expr: $x}
+rule action_stmt ActionStmt = action_bind_stmt / action_expr
+rule action_bind_stmt ActionBind = (
+  name:ident -ws ":=" -ws x:(action_expr @error(message="expected binding value"))
+) => ActionBind{Name: $name, Expr: $x}
 rule action_expr ActionExpr = lambda / action_ops
 rule action_ops ActionExpr = operators {
   skip (!(ws "[" !"]") ws)

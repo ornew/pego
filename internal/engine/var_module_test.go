@@ -46,7 +46,7 @@ func TestModuleVariableValidation(t *testing.T) {
 		}},
 		{"binding", func(m *Module) bool {
 			for i := range m.Code {
-				if m.Code[i].Op == OpAssign {
+				if m.Code[i].Op == OpBind {
 					m.Code[i].A = int32(undeclared(m))
 					return true
 				}

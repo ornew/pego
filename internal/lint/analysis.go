@@ -1078,7 +1078,7 @@ func walkTerm(t grammar.Term, f func(grammar.Term)) {
 		walkTerm(t.X, f)
 	case *grammar.Cast:
 		walkTerm(t.X, f)
-	case *grammar.Assign:
+	case *grammar.Bind:
 		walkTerm(t.Value, f)
 	}
 }

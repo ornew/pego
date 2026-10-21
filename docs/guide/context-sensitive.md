@@ -118,7 +118,7 @@ If a predicate unexpectedly fails, check the values and conditions it compares.
 
 A nonempty block `{ a; b; c }` is shorthand for adjacent Predicate Actions at the same position, so
 `{ count := 1; count == 1 } "a"` behaves like `{ count := 1 } { count == 1 } "a"`. The statements run from left to
-right and stop at the first false result or error. Assignments are visible to later statements and follow the usual
+right and stop at the first false result or error. Bindings are visible to later statements and follow the usual
 backtracking rules. A block creates no variable or capture scope, consumes no input and adds no rule boundary. Empty
 blocks are compile-time errors, and Value Actions have no block form: they use the single term after `=>`. The
 [Predicates and Variables](../../spec/predicates.md#predicate-actions) chapter defines blocks.
@@ -352,8 +352,8 @@ ok
   call its own entry, so a rule that reads it is never reused. If a value is needed only to build the tree, capture it
   and use an action instead of a variable.
 
-Each current environment stores one value per distinct variable name. Repeated assignments do not lengthen lookup
-paths; backtracking and rule returns still restore the earlier values. Assigning the same scalar value reuses the
+Each current environment stores one value per distinct variable name. Repeated bindings do not lengthen lookup
+paths; backtracking and rule returns still restore the earlier values. Binding the same scalar value reuses the
 environment. Changing a value behind other names copies that prefix to preserve saved environments, so frequent
 changes to many distinct names can allocate more than a grammar with one variable. To measure this trade-off in your
 own grammar, see the [performance measurement method](../performance.md#how-to-measure).

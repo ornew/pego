@@ -158,20 +158,20 @@ rule tuples = "x" => ((), (Foo{},), ( 1 , "a" , ), (2), (1, (2,)))
 			t.Fatal("capture access structure lost")
 		}
 		member := sourceField(t, defs[8], "Action")
-		if cast := sourceField(t, member, "X"); member.Type() != "FieldAccess" || cast.Type() != "Cast" || sourceField(t, cast, "Type").Type() != "UnionType" {
+		if cast := sourceField(t, member, "X"); member.Type() != "FieldAccess" || cast.Type() != "Cast" || sourceField(t, cast, "Type").Type() != "JoinType" {
 			t.Fatal("cast structure lost")
 		}
 		// & binds tighter than |; _ is a name and _|_ is one token.
 		meet := sourceField(t, defs[9], "Type")
 		l, r := sourceField(t, meet, "L"), sourceField(t, meet, "R")
-		if meet.Type() != "UnionType" || l.Type() != "IntersectionType" || r.Type() != "IntersectionType" ||
+		if meet.Type() != "JoinType" || l.Type() != "MeetType" || r.Type() != "MeetType" ||
 			sourceField(t, r, "L").Type() != "TypeRef" || sourceField(t, r, "R").Type() != "Bottom" {
 			t.Fatal("meet structure lost")
 		}
 		// One type without a comma is a group, and type arguments follow the name directly.
 		var alts []*pego.Node
 		for u := sourceField(t, defs[10], "Type"); ; u = sourceField(t, u, "L") {
-			if u.Type() != "UnionType" {
+			if u.Type() != "JoinType" {
 				alts = append([]*pego.Node{u}, alts...)
 				break
 			}
@@ -279,7 +279,7 @@ func TestSourceGrammarTree(t *testing.T) {
 				t.Fatalf("definitions: %d", len(defs))
 			}
 			typ := sourceField(t, defs[0], "Type")
-			if typ.Type() != "TypeGroup" || sourceField(t, typ, "Type").Type() != "UnionType" {
+			if typ.Type() != "TypeGroup" || sourceField(t, typ, "Type").Type() != "JoinType" {
 				t.Fatal("type grouping lost")
 			}
 			capture := sourceField(t, defs[1], "Expr")
@@ -332,7 +332,7 @@ func TestSourceGrammarRecovery(t *testing.T) {
 		{"field", "type T = {\n Broken\n Good node\n}\nrule after = \"ok\"", "expected field type", 2},
 		{"operand", "rule expression = operators {\n operand\n operand \"ok\"\n level { infix left \"+\" }\n}\nrule after = \"ok\"", "expected operand expression", 2},
 		{"operator", "rule expression = operators {\n operand \"ok\"\n level {\n infix left\n postfix \"!\"\n }\n}\nrule after = \"ok\"", "expected infix expression", 2},
-		{"action", "rule predicate = {\n x :=\n true\n}\nrule after = \"ok\"", "expected assignment value", 2},
+		{"action", "rule predicate = {\n x :=\n true\n}\nrule after = \"ok\"", "expected binding value", 2},
 		{"literal delimiter", "type T = { Bad = \"}\", Good node }\nrule after = \"ok\"", "expected field type", 2},
 		{"comment delimiter", "type T = { Bad = /* } */ 1; Good node }\nrule after = \"ok\"", "expected field type", 2},
 		{"action delimiter", "rule predicate = { bad = \"}\"; true }\nrule after = \"ok\"", "expected semicolon", 2},

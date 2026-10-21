@@ -203,7 +203,7 @@ rule infixRule = {inVar == 1} "+"
 rule postfixRule = {postVar == 1} "!"
 rule missingCaller = missing
 rule self = {selfVar == 1} self / "h"
-rule assignment = {local := 9} "i"`
+rule binding = {local := 9} "i"`
 	g, err := syntax.Parse(src)
 	if err != nil {
 		t.Fatal(err)
@@ -221,7 +221,7 @@ rule assignment = {local := 9} "i"`
 			t.Errorf("%s: got %v; want %v", name, got[name], want)
 		}
 	}
-	for _, name := range []string{"missing", "missingCaller", "assignment"} {
+	for _, name := range []string{"missing", "missingCaller", "binding"} {
 		if _, ok := got[name]; ok {
 			t.Errorf("unexpected empty-read entry %s", name)
 		}

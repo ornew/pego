@@ -202,8 +202,8 @@ const (
 	OpOperatorsRule
 	// PRED e: evaluate expression code e and fail if it is false or an error.
 	OpPred
-	// ASSIGN name, e: define the variable name with the value of expression code e.
-	OpAssign
+	// BIND name, e: define the variable name with the value of expression code e.
+	OpBind
 	// LABEL m, d: start @error (d=0) or @diagnostic (d=1).
 	OpLabel
 	// ENDLABEL: end @error.
@@ -321,7 +321,7 @@ var opNames = map[Op]string{
 	OpJump: "JUMP", OpChoice: "CHOICE", OpCommit: "COMMIT", OpCut: "CUT", OpPushPos: "PUSHPOS",
 	OpPushNil: "PUSHNIL", OpSeq: "SEQ", OpAtomic: "ATOMIC", OpCapture: "CAPTURE", OpRepeat: "REPEAT",
 	OpIter: "ITER", OpNext: "NEXT", OpEndRepeat: "ENDREPEAT", OpLook: "LOOK", OpEndLook: "ENDLOOK",
-	OpCall: "CALL", OpOperatorsRule: "OPERATORS_RULE", OpPred: "PRED", OpAssign: "ASSIGN", OpLabel: "LABEL",
+	OpCall: "CALL", OpOperatorsRule: "OPERATORS_RULE", OpPred: "PRED", OpBind: "BIND", OpLabel: "LABEL",
 	OpEndLabel: "ENDLABEL", OpRecover: "RECOVER", OpEndRecover: "ENDRECOVER", OpEndSkip: "ENDSKIP",
 	OpReturn: "RETURN", OpEnd: "END", OpScan: "SCAN", OpGuard: "GUARD",
 	OpRepeatWide: "REPEATW", OpScanWide: "SCANW",

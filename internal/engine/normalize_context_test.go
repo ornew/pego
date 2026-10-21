@@ -42,7 +42,7 @@ func TestNormalizationContextCancellation(t *testing.T) {
 	fixtures["type-groups"] = &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Type: groupedType, Expr: &grammar.Literal{Value: "a"}}}}}
 	fixtures["action-groups"] = &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: &grammar.Literal{Value: "a"}, Action: groupedTerm}}}}
 	fixtures["struct-fields"] = &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.TypeDef{Name: "T", Type: &grammar.StructType{Fields: fields}}}}}
-	union := &grammar.UnionType{Types: make([]grammar.TypeExpr, size)}
+	union := &grammar.JoinType{Types: make([]grammar.TypeExpr, size)}
 	action := &grammar.Call{Func: "list", Args: make([]grammar.Term, size)}
 	for i := 0; i < size; i++ {
 		union.Types[i] = &grammar.TypeRef{Name: "Match"}

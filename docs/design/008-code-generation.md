@@ -41,7 +41,7 @@ Source size and compiler cost are measured alongside matching speed in [changes 
 
 ### Alternatives Considered
 
-- **Generating a typed AST (a Go struct per grammar type)**: convenient for users, but it would need a separate design for representing union types, optional types and the `Error` nodes of error recovery as Go types. This time, identical behavior was prioritized, so the generated parser returns the same `Node` as the engine. Typed values were added later as an option on top of `Node` ([012](012-typed-values.md)).
+- **Generating a typed AST (a Go struct per grammar type)**: convenient for users, but it would need a separate design for representing join types, optional types and the `Error` nodes of error recovery as Go types. This time, identical behavior was prioritized, so the generated parser returns the same `Node` as the engine. Typed values were added later as an option on top of `Node` ([012](012-typed-values.md)).
 - **Making the engine a public package and calling it from generated code**: the generated code would be smaller, but the runtime internals would have to become public API. The ability to distribute the generated code on its own was prioritized.
 - **Sharing one value-free expression body between direct and generic calls**: this avoids duplicated
   statements but keeps an extra expression-body call on the hot direct path. Change 76 retains separate bodies

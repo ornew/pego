@@ -1,12 +1,12 @@
 # 72. Reuse Structurally Equal Duplicate Capture Types
 
-- Every duplicate capture label previously called the general type union,
+- Every duplicate capture label previously called the general type join,
   which formats, sorts and deduplicates nested record fields. Repeated
   references to the same recursively inferred record allocate these strings
   again for each occurrence in every inference round. The capture merger now
   compares immutable type structures and reuses the previous equal basic,
-  named, list or record type. Ordered nested unions and named-node kinds are
-  compared conservatively; top-level optionals and unions still use the
+  named, list or record type. Ordered nested joins and named-node kinds are
+  compared conservatively; top-level optionals and joins still use the
   general normalizer. Capture availability remains the logical OR of both
   occurrences. This changes shared type checking before compilation or
   generation, not the parsing runtimes or generated matching code.
@@ -37,20 +37,20 @@
   1,050,020,237 → 34,088,466. These reproduce the original large case and
   are diagnostic observations, not five-sample estimates. The remaining
   inference/AST traversal work is still substantial.
-- Mixed `A`/optional `B` duplicates retain general union normalization:
+- Mixed `A`/optional `B` duplicates retain general join normalization:
   1,024/8,192/32,768 pairs change +0.1%/+0.3%/−0.6% in time, with overlapping
   ranges and essentially unchanged allocation counts/bytes. Distinct-label
   record controls change −0.3%/−0.2%/−0.8%, also with overlapping ranges.
   Unchanged calculator/minilang/JSON grammar AST controls change
   +0.6%/approximately 0%/−4.2%, all with overlapping ranges and identical
   bytes/allocation counts. These controls do not establish runtime speedups
-  or promise savings for growing heterogeneous unions.
+  or promise savings for growing heterogeneous joins.
 - Type regressions retain exact public types, recursive widening, nested
   records/lists, optional and choice availability, repetition-local captures,
   nil actions and capture-reading actions/predicates. Duplicate-label error
   positions remain exact across Unicode sequences at several sizes.
-  A pairwise oracle compares the capture merger with the general union for
-  all availability flags, including reordered unions, nested optionals,
+  A pairwise oracle compares the capture merger with the general join for
+  all availability flags, including reordered joins, nested optionals,
   never/any/nil and equal names with differing node kinds. Independent source
   review checks normalization, ordering and immutable type reuse.
 - Reproduce with

@@ -20,7 +20,7 @@ func TestReservedTypeSyntax(t *testing.T) {
 	if !strings.Contains(formatted, "type A ~ () | (B,) | (B, *C) | node[B] | []node[(B, C), D]") {
 		t.Fatalf("formatted:\n%s", formatted)
 	}
-	u := g.Types()[0].(*grammar.TypeAlias).Type.(*grammar.UnionType)
+	u := g.Types()[0].(*grammar.TypeAlias).Type.(*grammar.JoinType)
 	for i, n := range []int{0, 1, 2} {
 		if tt, ok := u.Types[i].(*grammar.TupleType); !ok || len(tt.Types) != n {
 			t.Fatalf("tuple %d: %#v", i, u.Types[i])
@@ -188,7 +188,7 @@ func TestReservedUnnamedStructType(t *testing.T) {
 	if err != nil || grammar.Format(again) != formatted {
 		t.Fatalf("formatting is not idempotent: %v", err)
 	}
-	u := g.Types()[0].(*grammar.TypeAlias).Type.(*grammar.UnionType)
+	u := g.Types()[0].(*grammar.TypeAlias).Type.(*grammar.JoinType)
 	if s, ok := u.Types[1].(*grammar.StructType); !ok || len(s.Fields) != 2 || s.Fields[1].Name != "Y" {
 		t.Fatalf("struct type %#v", u.Types[1])
 	}

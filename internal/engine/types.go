@@ -59,9 +59,9 @@ type optTy struct{ elem ty }
 
 func (t optTy) String() string { return "*" + typeTerm(t.elem) }
 
-type unionTy struct{ alts []ty }
+type joinTy struct{ alts []ty }
 
-func (t unionTy) String() string {
+func (t joinTy) String() string {
 	parts := make([]string, len(t.alts))
 	for i, a := range t.alts {
 		parts[i] = a.String()
@@ -87,7 +87,7 @@ func (t recordTy) String() string {
 }
 
 func typeTerm(t ty) string {
-	if _, ok := t.(unionTy); ok {
+	if _, ok := t.(joinTy); ok {
 		return "(" + t.String() + ")"
 	}
 	return t.String()
@@ -102,7 +102,7 @@ func isNode(t ty) bool {
 		return t == tyNode || t == tyAny || t == tyNever
 	case nodeTy:
 		return t.name != "" // a named node type has a Go type of its own
-	case unionTy:
+	case joinTy:
 		for _, a := range t.alts {
 			if !isNode(a) {
 				return false

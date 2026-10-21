@@ -19,7 +19,7 @@ func sampleGrammar() *Grammar {
 				{Name: "Left", Type: &TypeRef{Name: "Node"}},
 				{Name: "Args", Type: &ListType{Elem: &OptionalType{Elem: &TypeRef{Name: "Node"}}}},
 			}}},
-			&TypeAlias{Name: "Node", Type: &UnionType{Types: []TypeExpr{
+			&TypeAlias{Name: "Node", Type: &JoinType{Types: []TypeExpr{
 				&TypeRef{Name: "Op"}, &TypeRef{Name: "Number"},
 			}}},
 			&RuleDef{

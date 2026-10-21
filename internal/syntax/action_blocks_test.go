@@ -10,7 +10,7 @@ func TestActionBlocksSource(t *testing.T) {
 	for _, src := range []string{
 		`rule a = {indent:=0} {indent<10; indent>10} => {foo; A{}}`,
 		"rule a = (b => {x:=1; x<10; B{}}) => {\n x := 1; x < 10\n A{}\n}",
-		"rule a = {\n // assignment\n x := 1\n /* condition */ x < 10\n} => {\n // result\n A{}\n}",
+		"rule a = {\n // binding\n x := 1\n /* condition */ x < 10\n} => {\n // result\n A{}\n}",
 		`rule a = {} => {}`,
 	} {
 		t.Run(src, func(t *testing.T) {

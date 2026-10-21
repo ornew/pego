@@ -265,22 +265,22 @@ type Version struct{ TNode[string] }
 // YesNo is the node type YesNo = node[string].
 type YesNo struct{ TNode[string] }
 
-// AttType is the union type AttType ~ Keyword | Enumeration | NotationType. Error (left by #recover) also implements it.
+// AttType is the join type AttType ~ Keyword | Enumeration | NotationType. Error (left by #recover) also implements it.
 type AttType interface{ isAttType() }
 
-// Content is the union type Content ~ Element | CharData | EntityRef | CharRef | CDSect | PI | Comment. Error (left by #recover) also implements it.
+// Content is the join type Content ~ Element | CharData | EntityRef | CharRef | CDSect | PI | Comment. Error (left by #recover) also implements it.
 type Content interface{ isContent() }
 
-// ContentSpec is the union type ContentSpec ~ Keyword | Mixed | Choice | Sequence. Error (left by #recover) also implements it.
+// ContentSpec is the join type ContentSpec ~ Keyword | Mixed | Choice | Sequence. Error (left by #recover) also implements it.
 type ContentSpec interface{ isContentSpec() }
 
-// Decl is the union type Decl ~ ElementDecl | AttlistDecl | EntityDecl | NotationDecl | PI | Comment | PERef. Error (left by #recover) also implements it.
+// Decl is the join type Decl ~ ElementDecl | AttlistDecl | EntityDecl | NotationDecl | PI | Comment | PERef. Error (left by #recover) also implements it.
 type Decl interface{ isDecl() }
 
-// Misc is the union type Misc ~ Comment | PI. Error (left by #recover) also implements it.
+// Misc is the join type Misc ~ Comment | PI. Error (left by #recover) also implements it.
 type Misc interface{ isMisc() }
 
-// Particle is the union type Particle ~ NameParticle | Choice | Sequence. Error (left by #recover) also implements it.
+// Particle is the join type Particle ~ NameParticle | Choice | Sequence. Error (left by #recover) also implements it.
 type Particle interface{ isParticle() }
 
 func (*AttlistDecl) isDecl()      {}

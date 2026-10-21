@@ -180,7 +180,7 @@ type streamResult struct {
 }
 
 // streamMemoGrammar's elements backtrack into a memoized rule that reads
-// variables, assign variables and produce nil.
+// variables, bind variables and produce nil.
 const streamMemoGrammar = `var n int
 var last string
 rule main = {n := 0} item* #stream $$

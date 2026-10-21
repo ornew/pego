@@ -27,7 +27,7 @@ rule main = x:({n := 1} {n == 1}) "a" $$ => $x`, []string{"a", "", "aa"}},
 		{"nullable block repetition", `var n int
 rule main = {n := 0} ({n := n + 1; true})* {n == 1} $$`, `var n int
 rule main = {n := 0} ({n := n + 1} {true})* {n == 1} $$`, []string{"", "a"}},
-		{"assignments", `var x int
+		{"bindings", `var x int
 var y int
 rule main = {x := 1; y := x + 1; y == 2} "é" $$`, `var x int
 var y int
@@ -66,7 +66,7 @@ rule main = ("a" {x := 1} {false} ";") #recover(skip="?") $$`, []string{"?", "a?
 	}
 }
 
-func TestPredicateBlockAssignmentComparison(t *testing.T) {
+func TestPredicateBlockBindingComparison(t *testing.T) {
 	program := compile(t, `var x int
 rule a = {x:=1; x<10}`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {

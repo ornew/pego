@@ -231,10 +231,10 @@ An operator without an action produces a tuple node of its operands and its
 operator part: `node[(T, O, T)]` for an infix operator and `node[(O, T)]` for a
 prefix operator, where `O` is the type of the operator part, with the captures
 `lhs`, `op` and `rhs`. When `T` does not accept these nodes, every operator
-needs an action; a recursive alias cannot name them, so a union that accepts
+needs an action; a recursive alias cannot name them, so a join that accepts
 them includes `node[_]`.
 
-If the rule has no declared type, its type is the union of the types of all
+If the rule has no declared type, its type is the join of the types of all
 `operand` items and operators.
 
 ### Named Node Types
@@ -258,7 +258,7 @@ applies to `N`, as an ordinary rule converts its value (see
   be assignable to `N`; otherwise it is a compile-time error, `operand of r
   produces X, which is not assignable to N`, because an operand is never
   converted. Declare the operand rule as `N` so that it converts its own
-  value, or declare the Operators Rule as a union of `N` and the operand types,
+  value, or declare the Operators Rule as a join of `N` and the operand types,
   which converts nothing. A node held by an operator part, such as the value of
   `$op`, is not an operator node and keeps its type.
 - The value of each operator MUST be convertible to `N`: a node whose

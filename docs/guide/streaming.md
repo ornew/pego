@@ -438,7 +438,7 @@ before `SyntaxError.Pos` that was delivered is final.
 ## Memory
 
 An action may construct temporary nodes and return `nil`; the callback then receives `nil` and the temporary nodes are
-released. Variable assignments do not accumulate over the records already consumed, but large variable values, active
+released. Variable bindings do not accumulate over the records already consumed, but large variable values, active
 rollback points and memo keys keep their own data alive. To measure these costs in your workload, see the
 [performance measurement method](../performance.md#how-to-measure) and the
 [specification](../../spec/streaming.md#memory).

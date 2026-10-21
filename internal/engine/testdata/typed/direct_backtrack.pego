@@ -1,8 +1,8 @@
 // Direct rules of the typed runtime: captures restored when a choice, an optional or a repetition
 // element fails after setting them (also captures inside & in a repetition without a scope of its
-// own), an environment restored when an alternative that assigned a variable fails, and
+// own), an environment restored when an alternative that bound a variable fails, and
 // first-character tests of alternatives after one that read further characters; a plain rule that
-// assigns a variable (bump) restores the environment when it returns.
+// binds a variable (bump) restores the environment when it returns.
 type Name = node[string]
 type A = { X *Name; Y *Name; Z *Name; Q *Name; W *Name; P []Name; Last *Name; Mode int; Sign *node[string] }
 type L = { Items []A }

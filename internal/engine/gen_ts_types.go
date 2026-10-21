@@ -25,8 +25,8 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 	if g.prog.typed == nil {
 		return "", fmt.Errorf("typed values need the grammar's types (type checking did not run)")
 	}
-	t := &tsTypedGen{info: g.prog.typed, names: map[string]string{}, unions: map[string]bool{}, ids: map[string]int{}}
-	t.valueResolver = newValueResolver(g.prog, func(x ty) bool { return t.unions[x.String()] })
+	t := &tsTypedGen{info: g.prog.typed, names: map[string]string{}, joins: map[string]bool{}, ids: map[string]int{}}
+	t.valueResolver = newValueResolver(g.prog, func(x ty) bool { return t.joins[x.String()] })
 	used := map[string]bool{}
 	for _, n := range strings.Fields(tsReservedBindings) {
 		used[n] = true
@@ -54,8 +54,8 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 			n += "_"
 		}
 		used[n], t.names[name] = true, n
-		if a, ok := t.info.aliases[name].(unionTy); ok && tsNodeUnion(a) {
-			t.unions[a.String()] = true
+		if a, ok := t.info.aliases[name].(joinTy); ok && tsNodeJoin(a) {
+			t.joins[a.String()] = true
 		}
 	}
 	var b strings.Builder
@@ -139,12 +139,12 @@ type tsTypedGen struct {
 	valueResolver
 	names   map[string]string
 	all     []string
-	unions  map[string]bool
+	joins   map[string]bool
 	ids     map[string]int
 	recipes []string
 }
 
-func tsNodeUnion(u unionTy) bool {
+func tsNodeJoin(u joinTy) bool {
 	for _, a := range u.alts {
 		if !isNode(a) {
 			return false
@@ -201,8 +201,8 @@ func (t *tsTypedGen) tsType(x ty) string {
 		return "readonly (" + t.tsType(x.elem) + ")[] | null"
 	case recordTy:
 		return "TNode<unknown> | null"
-	case unionTy:
-		if t.unions[x.String()] {
+	case joinTy:
+		if t.joins[x.String()] {
 			parts := []string{"RecoveredError", "null"}
 			for _, a := range x.alts {
 				switch a := a.(type) {
@@ -216,7 +216,7 @@ func (t *tsTypedGen) tsType(x ty) string {
 					}
 				}
 			}
-			if cstUnion(x) {
+			if cstJoin(x) {
 				parts = append(parts, "TNode<unknown>")
 			}
 			return strings.Join(parts, " | ")
@@ -230,7 +230,7 @@ func (t *tsTypedGen) tsType(x ty) string {
 
 // commonRecipe reports whether the arguments of a union share a recipe (and with it a TypeScript
 // type), and returns its key.
-func (t *tsTypedGen) commonRecipe(x unionTy) (string, bool) {
+func (t *tsTypedGen) commonRecipe(x joinTy) (string, bool) {
 	common := ""
 	for _, a := range x.alts {
 		key := t.conversionKey(a)
@@ -244,7 +244,7 @@ func (t *tsTypedGen) commonRecipe(x unionTy) (string, bool) {
 
 // conversionKey identifies a canonical recipe without expanding named fields.
 // Optional node recipes and broad any/node/terminal recipes can share outputs;
-// list element recipes retain distinctions such as optional scalars and unions.
+// list element recipes retain distinctions such as optional scalars and joins.
 func (t *tsTypedGen) conversionKey(x ty) string {
 	switch x := x.(type) {
 	case basicTy:
@@ -284,8 +284,8 @@ func (t *tsTypedGen) conversionKey(x ty) string {
 		return t.conversionKey(x.elem)
 	case listTy:
 		return "list:" + t.conversionKey(x.elem)
-	case unionTy:
-		if t.unions[x.String()] {
+	case joinTy:
+		if t.joins[x.String()] {
 			return "union:" + x.String()
 		}
 		if key, ok := t.commonRecipe(x); ok {
@@ -312,7 +312,7 @@ func tnodeMode(x nodeTy) string {
 }
 
 // recipe follows the existing Go Node-converter recipes, including anyValue
-// for mixed/open or nondeclared unions and CST retention in declared unions.
+// for mixed/open or nondeclared joins and CST retention in declared joins.
 func (t *tsTypedGen) recipe(x ty) int {
 	kind, key := "any", "any"
 	switch a := x.(type) {
@@ -354,8 +354,8 @@ func (t *tsTypedGen) recipe(x ty) int {
 		kind, key = "list", "list:"+t.conversionKey(a.elem)
 	case recordTy:
 		return t.recipe(openNode)
-	case unionTy:
-		if t.unions[a.String()] {
+	case joinTy:
+		if t.joins[a.String()] {
 			kind, key = "union", "union:"+a.String()
 		} else if _, ok := t.commonRecipe(a); ok {
 			return t.recipe(a.alts[0])
@@ -395,7 +395,7 @@ func (t *tsTypedGen) recipe(x ty) int {
 			elems[i] = strconv.Itoa(t.recipe(e))
 		}
 		r += ", elems: [" + strings.Join(elems, ", ") + "]"
-	case unionTy:
+	case joinTy:
 		if kind == "union" {
 			members := []string{fmt.Sprintf("[%s, %d]", tsString(TypeError), t.recipe(tyError))}
 			for _, m := range a.alts {
@@ -407,7 +407,7 @@ func (t *tsTypedGen) recipe(x ty) int {
 				}
 			}
 			r += ", members: new Map([" + strings.Join(members, ", ") + "])"
-			if cstUnion(a) {
+			if cstJoin(a) {
 				r += ", fallback: " + strconv.Itoa(t.recipe(openNode))
 			}
 		}

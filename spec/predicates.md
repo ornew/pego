@@ -29,10 +29,10 @@ rule item = { count := 1; count == 1 } "a"
 rule item = { count := 1 } { count == 1 } "a"
 ```
 
-The statements execute in source order. An assignment updates the current
+The statements execute in source order. A binding updates the current
 invocation's variable environment, and a term fails the predicate if it
 evaluates to `false` or errors. Evaluation stops at the first failure, and an
-assignment is visible to the later statements and rolled back like an adjacent
+binding is visible to the later statements and rolled back like an adjacent
 Predicate Action. The block consumes no input and adds no variable, capture,
 rollback, memoization or recovery scope. In a sequence it expands to adjacent
 actions; in a single-expression position it behaves like the grouped adjacent
@@ -64,7 +64,7 @@ back under the same rules as adjacent Predicate Actions.
   `int`, `string` or `bool` and the initial value `value`. Either the type or
   the value may be omitted. Without a value, the variable starts as `0`, `""`
   or `false`; without a type, its type is the type of the value. `=` defines the
-  initial value; it is not an assignment.
+  initial value; it is not a binding.
 - **Initial value.** The value is an `int`, `string` or `bool` literal, and an
   `int` literal may be negated. `nil` and any other expression are compile-time
   errors, as is a value of another type than the declared one.

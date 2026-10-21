@@ -45,9 +45,9 @@ The AST lives in the `grammar` package (`grammar/ast.go`). The interface types a
 | `Decl` | `TypeDef`, `TypeAlias`, `RuleDef` |
 | `TypeDecl` | `TypeDef`, `TypeAlias` |
 | `RuleDecl` | `RuleDef` |
-| `TypeExpr` | `TypeRef`, `ListType`, `OptionalType`, `UnionType` |
+| `TypeExpr` | `TypeRef`, `ListType`, `OptionalType`, `JoinType` |
 | `Expr` (parser expressions) | `Ref`, `Literal`, `CharClass`, `Any`, `Seq`, `Choice`, `Repeat`, `Optional`, `And`, `Not`, `Atomic`, `Discard`, `Capture`, `Cut`, `Top`, `Bottom`, `BeginInput`, `EndInput`, `BeginLine`, `EndLine`, `Predicate`, `Attributed`, `Recovery`, `Stream`, `InlineAction`, `OperatorsRule` |
-| `Term` (action and predicate expressions) | `IntLit`, `StringLit`, `BoolLit`, `NilLit`, `CaptureRef`, `IndexRef`, `VarRef`, `Member`, `New`, `Call`, `Lambda`, `Binary`, `Unary`, `Assign` |
+| `Term` (action and predicate expressions) | `IntLit`, `StringLit`, `BoolLit`, `NilLit`, `CaptureRef`, `IndexRef`, `VarRef`, `Member`, `New`, `Call`, `Lambda`, `Binary`, `Unary`, `Bind` |
 
 A rule definition carries its type, body, and action directly:
 

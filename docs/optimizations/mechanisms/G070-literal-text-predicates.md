@@ -9,7 +9,7 @@ every branch.
 The complete predicate must contain at least two comparisons of the same direct
 capture with string literals; either operand order is accepted. The emitter
 collapses duplicate literals and emits a switch. Mixed expressions, aliases,
-assignments and different captures remain general, preserving short-circuit
+bindings and different captures remain general, preserving short-circuit
 order and side effects. Helper/literal-table sharing is independent of this
 shape specialization. Generated Go and TypeScript use the switch on ordinary
 nil-control calls; active work-controlled calls keep the general charged

@@ -178,7 +178,7 @@ z * 2            0 undefined variable "z"
 - **Order of operands.** `call` comes before `name`: both start with a name, and an Operators Rule tries the operands
   in order, like a choice.
 - **Typed nodes.** `Bin` has an operator and two `Expr`s, and the checker rejects a rule that builds one wrongly, when the
-  grammar compiles. `Expr` is a union, so `eval` can switch on `n.Type()` and reach each field with `Field`.
+  grammar compiles. `Expr` is a join, so `eval` can switch on `n.Type()` and reach each field with `Field`.
 - **Parse once.** The cost of parsing is paid once for `tree`; each evaluation only walks it. If you compile the
   formula into closures instead, as [Compile a filter language into a Go predicate](filter-language.md) does, each
   evaluation does not even dispatch on the node type.

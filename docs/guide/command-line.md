@@ -227,7 +227,7 @@ result, `-w` rewrites the files in place, and `-l` lists the files that need rew
 
 The parser rejects each old spelling with a message that points here. Text inside strings, character classes and
 comments is left alone. The rewrites other than the cut and type declarations need a grammar that otherwise parses, so
-fix syntax errors first. A capture read on a union of node types was optional when some of them lacked the capture,
+fix syntax errors first. A capture read on a join of node types was optional when some of them lacked the capture,
 and `x.$y` requires every one to have it, so the rewritten grammar can report a type error that the old one did not.
 
 ```bash

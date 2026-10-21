@@ -2,7 +2,7 @@
 
 - Change 54 in both bytecode VMs, which share `exec`: the VM finds the repetitions it can resume when it loads a
   module, from the bytecode alone (a `REPEAT`, its `ITER`, the element code, `NEXT` and `ENDREPEAT`; the element must
-  contain no `PRED` or `ASSIGN` and call no rule that reads variables, and its elements are moved past a
+  contain no `PRED` or `BIND` and call no rule that reads variables, and its elements are moved past a
   length-changing edit only if it calls no positional rule), so the instruction set is unchanged. In a `Document`
   parse, `REPEAT` takes over the old run and reuses the elements before the edit, `ITER` resynchronizes and starts an
   element whose examined range and expectations are kept apart (a new entry kind, `eRunIter`, undoes that on

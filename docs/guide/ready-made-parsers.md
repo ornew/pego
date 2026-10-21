@@ -136,7 +136,7 @@ How these compare with the engine's backends is in [benchmarks.md](../benchmarks
 
 ## Reading the Tree
 
-`ParseAST` returns Go types: a struct for each type of the grammar, and an interface for each union. Walk them with
+`ParseAST` returns Go types: a struct for each type of the grammar, and an interface for each join. Walk them with
 type switches, and ask the node for its `Span`. A small program that reports every `port` member of a JSON document that
 is not a number, at the line and column where it starts:
 

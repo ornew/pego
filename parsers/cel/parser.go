@@ -198,7 +198,7 @@ type StringLit struct{ TNode[string] }
 // UintLit is the node type UintLit = node[string].
 type UintLit struct{ TNode[string] }
 
-// Expr is the union type Expr ~ Ident | IntLit | UintLit | DoubleLit | StringLit | BytesLit | BoolLit | NullLit | Paren | Select | Index | Call | Unary | Binary | Conditional | ListLit | MapLit | MessageLit | Optional. Error (left by #recover) also implements it.
+// Expr is the join type Expr ~ Ident | IntLit | UintLit | DoubleLit | StringLit | BytesLit | BoolLit | NullLit | Paren | Select | Index | Call | Unary | Binary | Conditional | ListLit | MapLit | MessageLit | Optional. Error (left by #recover) also implements it.
 type Expr interface{ isExpr() }
 
 func (*Binary) isExpr()      {}

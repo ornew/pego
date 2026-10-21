@@ -129,7 +129,7 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 		case *Cast:
 			term(t.X)
 			typ(t.Type)
-		case *Assign:
+		case *Bind:
 			term(t.Value)
 		case *Member:
 			term(t.X)
@@ -147,11 +147,11 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			typ(t.Elem)
 		case *OptionalType:
 			typ(t.Elem)
-		case *UnionType:
+		case *JoinType:
 			for _, t := range t.Types {
 				typ(t)
 			}
-		case *IntersectionType:
+		case *MeetType:
 			for _, t := range t.Types {
 				typ(t)
 			}

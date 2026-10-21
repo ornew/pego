@@ -767,7 +767,7 @@ func captureRefsControlled(t grammar.Term, params []string, refs map[string]bool
 		captureRefsControlled(t.X, params, refs, control)
 	case *grammar.Cast:
 		captureRefsControlled(t.X, params, refs, control)
-	case *grammar.Assign:
+	case *grammar.Bind:
 		captureRefsControlled(t.Value, params, refs, control)
 	}
 }

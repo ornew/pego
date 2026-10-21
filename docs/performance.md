@@ -178,7 +178,7 @@ PEGO backends return the same results.
 
 | Workload | Grammar | Input | Main focus |
 |:--|:--|:--|:--|
-| JSON | `parsers/json` | Array of objects, 262 KB | Lexical repetition, AST of union types |
+| JSON | `parsers/json` | Array of objects, 262 KB | Lexical repetition, AST of join types |
 | CSV | `parsers/csv` | 5,000 rows (211 KB); fields with quotes, commas and newlines | Simple repetition, many terminals |
 | XML | `parsers/xml` | Nesting, attributes, character references, comments, CDATA; 262 KB | Nesting, a predicate comparing start-tag and end-tag names |
 | Arith_OperatorsRule | `examples/calculator/calc.pego` | Expression with 20,000 terms (133 KB), parentheses nested up to depth 40 | Operators Rule loop and longest match |

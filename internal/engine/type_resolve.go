@@ -51,12 +51,12 @@ func (k *typeResolver) resolve(t grammar.TypeExpr) ty {
 		return tyBottom
 	case *grammar.OptionalType:
 		return vopt(k.resolve(t.Elem))
-	case *grammar.UnionType:
+	case *grammar.JoinType:
 		ts := make([]ty, len(t.Types))
 		for i, x := range t.Types {
 			ts[i] = k.resolve(x)
 		}
-		return vunion(ts...)
+		return vjoin(ts...)
 	case *grammar.TupleType:
 		elems := make([]ty, len(t.Types))
 		for i, x := range t.Types {
@@ -87,7 +87,7 @@ func (k *typeResolver) resolve(t grammar.TypeExpr) ty {
 			k.unsupported(t, t.Diagnostic(), "undefined type %s", t.Name)
 		}
 		return tyAny
-	case *grammar.IntersectionType:
+	case *grammar.MeetType:
 		m := ty(tyTop) // the meet of no types
 		for _, x := range t.Types {
 			m = vmeet(m, k.resolve(x))
@@ -151,7 +151,7 @@ func vmeet(a, b ty) ty {
 	}
 	xs, ys := valueAlternatives(a), valueAlternatives(b)
 	if len(xs) == 1 && len(ys) == 1 {
-		return tyBottom // unrelated, and neither is a union or optional to split
+		return tyBottom // unrelated, and neither is a join or optional to split
 	}
 	var common []ty
 	for _, x := range xs {
@@ -159,13 +159,13 @@ func vmeet(a, b ty) ty {
 			common = append(common, vmeet(x, y))
 		}
 	}
-	return vunion(common...)
+	return vjoin(common...)
 }
 
 // valueAlternatives returns the types whose values make up the values of t.
 func valueAlternatives(t ty) []ty {
 	switch t := t.(type) {
-	case unionTy:
+	case joinTy:
 		var alts []ty
 		for _, a := range t.alts {
 			alts = append(alts, valueAlternatives(a)...)

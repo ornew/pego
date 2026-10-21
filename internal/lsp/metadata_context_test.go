@@ -112,7 +112,7 @@ func TestMetadataInteriorCancellation(t *testing.T) {
 		assertMetadataPhaseCancels(t, func(c *renderControl) { commentTextControlled("/*"+strings.Repeat(" \t\u2000", n)+"*/", c) })
 	})
 	t.Run("type", func(t *testing.T) {
-		u := &grammar.UnionType{}
+		u := &grammar.JoinType{}
 		for range n {
 			u.Types = append(u.Types, &grammar.TypeRef{Name: "T"})
 		}

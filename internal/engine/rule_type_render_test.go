@@ -7,8 +7,8 @@ import (
 )
 
 func TestRuleTypeWithPollParity(t *testing.T) {
-	record := recordTy{fields: map[string]ty{"z": listTy{unionTy{alts: []ty{tyMatch, tyNil}}}, "a": optTy{tyString}}}
-	cases := []ty{tyAny, tyNever, tyNil, tyInt, tyBool, tyString, tyNode, tyMatch, listTy{tyMatch}, optTy{tyMatch}, unionTy{}, unionTy{alts: []ty{tyMatch, tySeq, tyMissing}}, record, recordTy{fields: map[string]ty{}}, listTy{record},
+	record := recordTy{fields: map[string]ty{"z": listTy{joinTy{alts: []ty{tyMatch, tyNil}}}, "a": optTy{tyString}}}
+	cases := []ty{tyAny, tyNever, tyNil, tyInt, tyBool, tyString, tyNode, tyMatch, listTy{tyMatch}, optTy{tyMatch}, joinTy{}, joinTy{alts: []ty{tyMatch, tySeq, tyMissing}}, record, recordTy{fields: map[string]ty{}}, listTy{record},
 		// Value-model types
 		tyTop, tyBottom, ruleTy{"expr"}, nodeTy{value: tyTop}, nodeTy{value: listTy{tyStringNode}}, tupleTy{[]ty{tyStringNode}},
 		nodeTy{value: tupleTy{[]ty{optTy{tyStringNode}, ruleTy{"x"}}}, caps: []capIndex{{name: "a", paths: [][]int{{0}, {1, 0}}}, {name: "b", side: true}}}}
@@ -42,13 +42,13 @@ func TestRuleTypeWithPollParity(t *testing.T) {
 }
 
 func TestRuleTypeWithPollCancelsWithinCollections(t *testing.T) {
-	var union unionTy
+	var union joinTy
 	record := recordTy{fields: map[string]ty{}}
 	for i := range 1024 {
 		union.alts = append(union.alts, tyMatch)
 		record.fields[fmt.Sprintf("f%d", i)] = tyMatch
 	}
-	for _, typ := range []ty{union, record, unionTy{alts: []ty{namedTy{name: strings.Repeat("x", 1<<20)}, tyMatch}}} {
+	for _, typ := range []ty{union, record, joinTy{alts: []ty{namedTy{name: strings.Repeat("x", 1<<20)}, tyMatch}}} {
 		func() {
 			marker := &struct{}{}
 			calls := 0

@@ -123,7 +123,7 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, []string{"", "a1", "a1b2"}})
 		if err != nil {
 			t.Fatal(err)
 		}
-		meta := &typedGen{g: &generator{prog: prog}, info: prog.typed, names: map[string]string{}, unions: map[string]string{}}
+		meta := &typedGen{g: &generator{prog: prog}, info: prog.typed, names: map[string]string{}, joins: map[string]string{}}
 		meta.name()
 		named = append(named, append([]string{}, meta.nodeTypes...))
 		for name, exported := range meta.names {

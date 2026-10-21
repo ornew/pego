@@ -72,7 +72,7 @@ func TestWorkMemoBindPreservesSnapshotsOnInterruption(t *testing.T) {
 		}
 	}
 
-	// Equal head and non-head assignments keep the persistent snapshot identity.
+	// Equal head and non-head bindings keep the persistent snapshot identity.
 	stable := &parser{env: before, bound: bound, input: input{control: newWorkControl(nil, WorkLimits{MaxSteps: 1_000_000})}}
 	head := before
 	stable.bind(head.name, head.val)
@@ -200,7 +200,7 @@ func TestWorkMemoParseBudgetPoolRetryAndRetainedResult(t *testing.T) {
 
 func TestWorkMemoBindCopyAndCancellation(t *testing.T) {
 	root, bound := memoTestEnv(320, "v")
-	// An equal tail assignment performs the same search but does not copy a prefix.
+	// An equal tail binding performs the same search but does not copy a prefix.
 	probe := &parser{env: root, bound: bound}
 	probe.control = newWorkControl(nil, WorkLimits{MaxSteps: 1 << 30})
 	probe.bind("v0", 0)

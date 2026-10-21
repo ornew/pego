@@ -15,8 +15,8 @@ import (
 //
 //   - a struct type T becomes a struct T with the same fields and an embedded Span (its range);
 //   - a string node becomes a TNode[string] and an error value Error;
-//   - a union type U = A | B becomes an interface U that A, B and Error implement (and TNode, if
-//     the union has other node members);
+//   - a join type U = A | B becomes an interface U that A, B and Error implement (and TNode, if
+//     the join has other node members);
 //   - []T becomes a slice, *T a pointer (or the nil value of an interface), and int, string and
 //     bool stay as they are;
 //   - tuple and list nodes become TNode[any], whose Value is a []any of the
@@ -35,8 +35,8 @@ func (g *generator) typedGo(start *rule, conv bool) (string, string, error) {
 	if info == nil {
 		return "", "", fmt.Errorf("typed values need the grammar's types (type checking did not run)")
 	}
-	t := &typedGen{g: g, info: info, names: map[string]string{}, unions: map[string]string{}, lists: map[string]string{}, tlists: map[string]string{}, tupleSizes: map[int]bool{}}
-	t.valueResolver = newValueResolver(g.prog, func(x ty) bool { _, ok := t.unions[x.String()]; return ok })
+	t := &typedGen{g: g, info: info, names: map[string]string{}, joins: map[string]string{}, lists: map[string]string{}, tlists: map[string]string{}, tupleSizes: map[int]bool{}}
+	t.valueResolver = newValueResolver(g.prog, func(x ty) bool { _, ok := t.joins[x.String()]; return ok })
 	t.name()
 	g.typedSpan = t.span
 	ruleType := t.ruleType
@@ -252,11 +252,11 @@ type typedGen struct {
 	g    *generator
 	info *typeInfo
 	// names maps grammar type names to Go type names, and span is the Go name of the helper type
-	// Span; unions maps the written form of a union type to the Go name of the alias that declares
+	// Span; joins maps the written form of a join type to the Go name of the alias that declares
 	// it.
-	names  map[string]string
-	span   string
-	unions map[string]string
+	names map[string]string
+	span  string
+	joins map[string]string
 	// lists maps the Go type of a list to the name of its converter (from nodes); tlists, to the
 	// name of its converter from values of the typed runtime.
 	lists      map[string]string
@@ -268,7 +268,7 @@ type typedGen struct {
 	fieldNames  map[string]string
 	structs     []string // struct type names, sorted
 	nodeTypes   []string // named node type names, sorted
-	aliases     []string // canonical node union names, sorted
+	aliases     []string // canonical node join names, sorted
 	typeAliases []string // other declared aliases, sorted
 	// valueResolver selects the rules whose Go types come from their value types.
 	valueResolver
@@ -332,9 +332,9 @@ func (t *typedGen) name() {
 				used[f.name] = true
 			}
 		case *grammar.TypeAlias:
-			if u, ok := t.info.aliases[name].(unionTy); ok && t.nodeUnion(u) {
-				if _, dup := t.unions[u.String()]; !dup {
-					t.unions[u.String()] = t.names[name]
+			if u, ok := t.info.aliases[name].(joinTy); ok && t.nodeJoin(u) {
+				if _, dup := t.joins[u.String()]; !dup {
+					t.joins[u.String()] = t.names[name]
 					t.aliases = append(t.aliases, name)
 					continue
 				}
@@ -364,8 +364,8 @@ func (t *typedGen) name() {
 	t.span = span // a field of its own: a grammar type may be named Span
 }
 
-// nodeUnion reports whether every member of the union is a node type (so it can be an interface).
-func (t *typedGen) nodeUnion(u unionTy) bool {
+// nodeJoin reports whether every member of the join is a node type (so it can be an interface).
+func (t *typedGen) nodeJoin(u joinTy) bool {
 	for _, a := range u.alts {
 		if !isNode(a) {
 			return false
@@ -374,8 +374,8 @@ func (t *typedGen) nodeUnion(u unionTy) bool {
 	return true
 }
 
-// cstUnion reports whether the union has members that stay *Node.
-func cstUnion(u unionTy) bool {
+// cstJoin reports whether the join has members that stay *Node.
+func cstJoin(u joinTy) bool {
 	for _, a := range u.alts {
 		switch a := a.(type) {
 		case namedTy:
@@ -432,11 +432,11 @@ func (t *typedGen) goType(x ty) string {
 			return "*" + t.goType(x.elem)
 		}
 		return t.goType(x.elem)
-	case unionTy:
-		if name, ok := t.unions[x.String()]; ok {
+	case joinTy:
+		if name, ok := t.joins[x.String()]; ok {
 			return name
 		}
-		if g, ok := t.unionGoType(x); ok {
+		if g, ok := t.joinGoType(x); ok {
 			return g
 		}
 		return "any"
@@ -507,11 +507,11 @@ func (t *typedGen) conv(x ty, v string) string {
 			return "a." + t.vconvHelper(x) + "(" + v + ")"
 		}
 		return t.conv(x.elem, v)
-	case unionTy:
-		if name, ok := t.unions[x.String()]; ok {
+	case joinTy:
+		if name, ok := t.joins[x.String()]; ok {
 			return "a.to" + name + "(astNode(" + v + "))"
 		}
-		if _, ok := t.unionGoType(x); ok {
+		if _, ok := t.joinGoType(x); ok {
 			return t.conv(x.alts[0], v)
 		}
 		return "a.anyValue(" + v + ")"
@@ -542,12 +542,12 @@ func (t *typedGen) decls(b *strings.Builder) {
 		fmt.Fprintf(b, "// %s is the alias type %s ~ %s.\n", t.names[name], name, t.info.aliases[name])
 		fmt.Fprintf(b, "type %s = %s\n\n", t.names[name], t.goType(t.info.aliases[name]))
 	}
-	// Unions: an interface with a marker method that each member (and Error) implements.
+	// Joins: an interface with a marker method that each member (and Error) implements.
 	impl := map[string][]string{} // Go type (without *) -> markers
 	for _, name := range t.aliases {
-		u := t.info.aliases[name].(unionTy)
+		u := t.info.aliases[name].(joinTy)
 		goName := t.names[name]
-		fmt.Fprintf(b, "// %s is the union type %s ~ %s. Error (left by #recover) also implements it.\n", goName, name, u)
+		fmt.Fprintf(b, "// %s is the join type %s ~ %s. Error (left by #recover) also implements it.\n", goName, name, u)
 		fmt.Fprintf(b, "type %s interface{ is%s() }\n\n", goName, goName)
 		members := map[string]bool{"Error": true}
 		for _, a := range u.alts {
@@ -563,7 +563,7 @@ func (t *typedGen) decls(b *strings.Builder) {
 				}
 			}
 		}
-		if cstUnion(u) {
+		if cstJoin(u) {
 			members["TNode"] = true
 		}
 		for m := range members {
@@ -681,7 +681,7 @@ func (a *astConv) toError(n *Node) *Error {
 		b.WriteString("\treturn v\n}\n\n")
 	}
 	for _, name := range t.aliases {
-		u := t.info.aliases[name].(unionTy)
+		u := t.info.aliases[name].(joinTy)
 		goName := t.names[name]
 		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) %[1]s {\n\ta.stepWork()\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type() {\n\tcase \"error\":\n\t\treturn a.toError(n)\n", goName)
 		for _, m := range u.alts {
@@ -697,7 +697,7 @@ func (a *astConv) toError(n *Node) *Error {
 				}
 			}
 		}
-		if cstUnion(u) {
+		if cstJoin(u) {
 			b.WriteString("\t}\n\treturn a.toNode(n)\n}\n\n")
 		} else {
 			b.WriteString("\t}\n\treturn nil\n}\n\n")
@@ -913,7 +913,7 @@ func (t *typedGen) representable(x ty) bool {
 		return t.representable(x.elem)
 	case optTy:
 		return t.representable(x.elem)
-	case unionTy:
+	case joinTy:
 		for _, a := range x.alts {
 			if !t.representable(a) {
 				return false
@@ -980,7 +980,7 @@ func (t *typedGen) back(x ty, v string) string {
 			return "TPtr(" + v + ")"
 		}
 		return "TBack(tpubHooks, " + v + ")"
-	case recordTy, unionTy:
+	case recordTy, joinTy:
 		return "TBack(tpubHooks, " + v + ")"
 	case nodeTy:
 		if x.name != "" {
@@ -1069,9 +1069,9 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 			return t.tpubNode(v, a)
 		}
 		return "TAs[" + t.goType(x) + "](" + v + ")"
-	case unionTy:
-		if _, ok := t.unions[x.String()]; !ok {
-			if _, ok := t.unionGoType(x); ok {
+	case joinTy:
+		if _, ok := t.joins[x.String()]; !ok {
+			if _, ok := t.joinGoType(x); ok {
 				return t.dconv(x.alts[0], v, a)
 			}
 			return t.tpub(v, a)

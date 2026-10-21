@@ -17,7 +17,7 @@ rule main = "x" => A{X: /* value */ 1}`,
 		`type A = { X int }
 rule main = "x" => A{/* field */ X: 1}`,
 		`rule main = "x" => 1 + /* right */ 2`,
-		`rule main = {x := /* assignment */ 1} "x"`,
+		`rule main = {x := /* binding */ 1} "x"`,
 		`type Int = { Text string }
 rule main = "x" => Int{/* terminal */ Text: "0"}`,
 		`rule main = "x" => list(/* same */ 1, /* same */ 2)`,
@@ -37,7 +37,7 @@ rule main = "x" => Int{/* terminal */ Text: "0"}`,
             /* argument */ "1"
         )`,
 		`rule main = {x := (
-            /* assignment */ 1
+            /* binding */ 1
         )} "x"`,
 	} {
 		t.Run(src, func(t *testing.T) {

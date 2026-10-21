@@ -300,7 +300,7 @@ values and runs no actions.
 
 ## Related Topics
 
-- [Declaring Types](types.md): struct and union types.
+- [Declaring Types](types.md): struct and join types.
 - [Actions](actions.md): building the tree yourself.
 - [Rule Expressions](rule-expressions.md): the expressions that the tree is made of.
 - [Reading Trees](reading-trees.md): reading the result in Go.

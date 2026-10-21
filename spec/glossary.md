@@ -27,8 +27,10 @@ definition and the place where the term is defined.
 | farthest failure | The farthest position at which parsing failed, with the items expected there; the syntax error reports it. See [Syntax errors](parsing.md#syntax-errors). |
 | generated parser | A standalone Go or TypeScript parser written for one grammar by `pego gen`. See [Generated Parsers](generated-parsers.md). |
 | grammar | An optional package clause followed by Type and Rule Declaration Statements, normally written in a `.pego` file. See [Grammar Files](grammar-files.md). |
+| join type | The join `T \| U` of types: a type whose values are the values of any one of its member types. See [Join Types](types.md#join-types). |
 | left recursion | A rule that calls itself at the position where it started. It is evaluated by growing a seed. See [Left recursion](parser-expressions.md#left-recursion). |
 | lookahead | `&a` and `!a`: tests the input that follows without consuming it. See [Lookahead](parser-expressions.md#lookahead). |
+| meet type | The meet `T & U` of types: a type whose values are the values of both. See [Top, Bottom, Join and Meet](types.md#top-bottom-join-and-meet). |
 | memoization | Caching the result of a rule at an input position so that the rule is not evaluated twice at that position (packrat parsing). See [Memoization](parsing.md#memoization). |
 | named node type | A Type Definition `type N = node[U]`: a type distinct from `node[U]` and from every other named node type. Its values are nodes that carry the name `N`. See [Named Node Types](types.md#named-node-types). |
 | node | A value together with the range of input that it covers: a string, a tuple or a list. See [Nodes and Values](nodes.md#node-model). |
@@ -61,7 +63,6 @@ definition and the place where the term is defined.
 | Type Declaration Statement | A statement `type ...` that declares a type name: a Type Definition or a Type Alias. See [Type Declaration Statements](types.md#type-declaration-statements). |
 | Type Definition | `type a = b`: defines a new type `a`, distinct from every other type. See [Type Definitions](types.md#type-definitions). |
 | Type Expression | An expression that specifies a type, including the declared value type of a rule or the right-hand side of a Type Declaration Statement. See [Type System](types.md). |
-| union type | A type whose values are values of any one of its member types. See [Union Types](types.md#union-types). |
 | value | What a Rule Expression, a rule or an action produces: a node, `nil`, an error value, a struct, or an integer, string or boolean inside actions. See [Rule Expressions](parser-expressions.md#values-and-the-concrete-syntax-tree). |
 | Value Action | `=> term`: the action that follows a complete Rule Expression and computes the value of the rule from its captures. See [Actions](actions.md#whole-rule-value-actions). |
 | variable | A named `int`, `string` or `bool` value declared by a `var` declaration, bound and read by actions. See [Variables](predicates.md#variables). |

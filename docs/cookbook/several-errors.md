@@ -121,7 +121,7 @@ The program exits with status 1, because there were errors.
   the first token that did not fit: `name = 5` followed by `host = 1;` gives `3:1: expected ';'` in the file
   `port = 1;`, `name = 5`, `host = 1;`.)
 - **Types.** `error` is a built-in type that only recovery produces, and `a #recover(...)` has the type `A | error`.
-  That is why `setting` is declared `Item`, the union `Setting | error`, and the `Settings` field is a list of `Item`.
+  That is why `setting` is declared `Item`, the join `Setting | error`, and the `Settings` field is a list of `Item`.
   Go sees `s.Kind() == pego.KindError`, with the skipped range in `s.Start()` and `s.End()` and the message, with its
   position (`2:8: expected ...`), in `s.Text()`.
 - **`pego.SyntaxErrors` is the second kind of result.** `Parse` returns the tree and an error that is a

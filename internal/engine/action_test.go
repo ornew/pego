@@ -182,7 +182,7 @@ rule a = {x == 1} {x := 2} {x == 2} "a"`,
 			ok("a", `(("a")@a)@main`),
 		)
 	})
-	t.Run("unassigned variable has its initial value", func(t *testing.T) {
+	t.Run("unbound variable has its initial value", func(t *testing.T) {
 		check(t, `var y int
 rule main = {y > 0} "a" / "b"`,
 			ok("b", `"b"@main`),
@@ -351,7 +351,7 @@ func TestActionEnvironments(t *testing.T) {
 			{"(((a)))", `Out{Count: 1, Items: [Item{Depth: 3, Name: "a"@name, Note: nil, Size: 4, Tag: "top"}], Sum: 34, Tag: "top"}`},
 			// A shadowing definition is visible only below its invocation.
 			{"a(#t:b)c?", `Out{Count: 3, Items: [Item{Depth: 0, Name: "a"@name, Note: nil, Size: 1, Tag: "top"} Item{Depth: 1, Name: "b"@name, Note: nil, Size: 2, Tag: "top/t"} Item{Depth: 0, Name: "c"@name, Note: "?", Size: 1, Tag: "top"}], Sum: 14, Tag: "top"}`},
-			// A variable that nothing has assigned has its initial value, which fails
+			// A variable that nothing has bound has its initial value, which fails
 			// deep's predicate unless the left operand of || short-circuits it.
 			{"((b))", `Out{Count: 1, Items: [Item{Depth: 2, Name: "b"@name, Note: nil, Size: 3, Tag: "top"}], Sum: 23, Tag: "top"}`},
 			{"#x:((b))", `Out{Count: 1, Items: [Item{Depth: 2, Name: "b"@name, Size: 100, Tag: "top/x"}], Sum: 120, Tag: "top"}`},
@@ -365,7 +365,7 @@ func TestActionEnvironments(t *testing.T) {
 				t.Errorf("%v %q: got %v, %v\nwant %s", b, tc.input, got, err, tc.want)
 			}
 		}
-		// A variable that nothing has assigned reads as its initial value.
+		// A variable that nothing has bound reads as its initial value.
 		for _, tc := range []struct{ input, want string }{
 			{"~a", `Out{Count: 1, Items: [Item{Depth: 0, Name: "a"@name, Size: 0, Tag: "top"}], Sum: 0, Tag: "top"}`},
 			{"[]", `Out{Count: 1, Items: [Item{Depth: 0, Name: "]", Size: 0, Tag: ""}], Sum: 0, Tag: "top"}`},

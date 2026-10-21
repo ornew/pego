@@ -24,7 +24,7 @@ a name that is not declared is a compile error.
 
 Context-sensitive grammars keep indentation, modes and counters in variables. Before declarations, a variable
 came into existence at its first binding: its type was unknown to the type checker, its value was undefined
-until a rule assigned it, and the start of a parse depended on which rule happened to bind it first. A grammar
+until a rule bound it, and the start of a parse depended on which rule happened to bind it first. A grammar
 with several entry points had to repeat the setup in each of them, and a misspelled name was an error only at
 run time, if the input reached it.
 
@@ -53,7 +53,7 @@ A declaration is `var name [type] [= value]`. At least one of the type and the v
 - The type is `int`, `string` or `bool`. Any other type, including `nil`-able and node types, is a compile error.
 - The value is an int, string or bool literal; an int literal may be negated. Without a value, the variable
   starts as the zero value of its type: `0`, `""` or `false`. Without a type, the type is the type of the value.
-  `=` defines the initial value; it is not an assignment. `nil` is rejected.
+  `=` defines the initial value; it is not a binding. `nil` is rejected.
 - A value of another type than the declared type is a compile error. An initializer is a literal, so it cannot read
   another variable and the order of declarations does not matter.
 - A name is declared once. A second declaration of the same name is a compile error.
@@ -73,7 +73,7 @@ The compiler collects the declarations into a table of names, types and initial 
 table. Each parse begins by giving the parser the environment built from the table, once, before the start rule is
 entered. The environment is a persistent list, so parses share the initial one and bind on top of it without copying.
 Because every declared variable is bound from the start, a rule that depends on a variable has the same memo key
-whether or not an earlier rule assigned it.
+whether or not an earlier rule bound it.
 
 The saved formats carry the table: the bytecode module lists the declarations, so a program loaded without its syntax
 tree seeds the same environment. Generated Go and TypeScript parsers embed the declarations and seed them in the
@@ -89,8 +89,8 @@ declarations, and the formatter, the JSON form and the language server know them
 
 ## Alternatives Considered
 
-- **An `init` block of assignments.** It sets values but not types, so a read still has an unknown type, and it
-  introduces a second kind of statement that must be validated to hold assignments only.
+- **An `init` block of bindings.** It sets values but not types, so a read still has an unknown type, and it
+  introduces a second kind of statement that must be validated to hold bindings only.
 - **Declaring the variable at its first binding.** The type of a read would depend on control flow, and a read before
   any binding would stay a run-time error.
 - **Initializing in the start rule, or by parser options.** Each entry point would repeat the setup, or grammar

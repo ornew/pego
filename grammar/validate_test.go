@@ -33,7 +33,7 @@ func TestValidateRequiredChildren(t *testing.T) {
 		{"term group", termGrammar(&TermGroup{}), "$.file.decls[0].action.term"},
 		{"list", typeGrammar(&ListType{}), "$.file.decls[0].type.elem"},
 		{"optional type", typeGrammar(&OptionalType{}), "$.file.decls[0].type.elem"},
-		{"union", typeGrammar(&UnionType{Types: []TypeExpr{nil}}), "$.file.decls[0].type.types[0]"},
+		{"join", typeGrammar(&JoinType{Types: []TypeExpr{nil}}), "$.file.decls[0].type.types[0]"},
 		{"sequence", expressionGrammar(&Seq{Items: []Expr{nil}}), "$.file.decls[0].expr.items[0]"},
 		{"choice", expressionGrammar(&Choice{Alts: []Expr{nil}}), "$.file.decls[0].expr.alts[0]"},
 		{"repeat", expressionGrammar(&Repeat{}), "$.file.decls[0].expr.expr"},
@@ -62,7 +62,7 @@ func TestValidateRequiredChildren(t *testing.T) {
 		{"binary left", termGrammar(&Binary{Op: "+", R: &IntLit{Value: 1}}), "$.file.decls[0].action.l"},
 		{"binary right", termGrammar(&Binary{Op: "+", L: &IntLit{Value: 1}}), "$.file.decls[0].action.r"},
 		{"unary", termGrammar(&Unary{Op: "-"}), "$.file.decls[0].action.x"},
-		{"assign", expressionGrammar(&Predicate{Term: &Assign{Name: "x"}}), "$.file.decls[0].expr.term.value"},
+		{"bind", expressionGrammar(&Predicate{Term: &Bind{Name: "x"}}), "$.file.decls[0].expr.term.value"},
 		{"conflicting rule default", &Grammar{File: File{Decls: []Decl{&RuleDef{Name: "main", Expr: &Top{}, DefaultAction: true, Action: &NilLit{}}}}}, "$.file.decls[0].action"},
 		{"conflicting operand default", expressionGrammar(&OperatorsRule{Operands: []*OperatorsRuleOperand{{Expr: &Top{}, DefaultAction: true, Action: &NilLit{}}}}), "$.file.decls[0].expr.operands[0].action"},
 		{"conflicting operator default", expressionGrammar(&OperatorsRule{Levels: []*OperatorsRuleLevel{{Operators: []*OperatorsRuleOperator{{Expr: &Top{}, DefaultAction: true, Action: &NilLit{}}}}}}), "$.file.decls[0].expr.levels[0].operators[0].action"},
@@ -181,7 +181,7 @@ func TestValidatePositionAndOrder(t *testing.T) {
 func TestValidateCompatibility(t *testing.T) {
 	for _, g := range []*Grammar{
 		{}, expressionGrammar(&Seq{}), expressionGrammar(&Choice{}),
-		typeGrammar(&UnionType{}), typeGrammar(&UnionType{Types: []TypeExpr{&TypeRef{Name: "int"}}}),
+		typeGrammar(&JoinType{}), typeGrammar(&JoinType{Types: []TypeExpr{&TypeRef{Name: "int"}}}),
 		expressionGrammar(&Repeat{Expr: &Top{}, Max: -2}),
 		expressionGrammar(&Repeat{Expr: &Top{}, Min: 0, Max: 0}),
 		expressionGrammar(&Repeat{Expr: &Top{}, Min: 2, Max: 2}),

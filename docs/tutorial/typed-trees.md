@@ -67,10 +67,10 @@ What is new:
   `String` includes its quotes, since it is the text the rule matched.
   The S-expression keeps the type name in front of the text: `Key("host")`, where a plain `node[string]` prints just
   `"host"`.
-- `type Value ~ Number | String | Bool` is an alias of a **union type**: a value of any one of the members, much like a Go
+- `type Value ~ Number | String | Bool` is an alias of a **join type**: a value of any one of the members, much like a Go
   interface. `~` declares an alias, another name for a type; `=` defines a new struct type. Because `value` is declared as `Value`, the compiler checks that each alternative is one of the members.
 - `type Entry = { ... }` defines a **struct type**; fields are separated by newlines or semicolons. Field types can be
-  lists (`[]Entry`), optional values (`*T`), or unions.
+  lists (`[]Entry`), optional values (`*T`), or joins.
 - `rule name [Type] = expression` states the optional type of a rule. You can omit it and PEGO infers the type from the body, but
   declaring the types of the rules that build your tree documents them and keeps mistakes close to where they happen.
 - `es:entry*` captures the whole list of entries. `$es` is a node, so `$es.Value` is its value, the list that
@@ -161,11 +161,11 @@ debug  Bool    true
 
 `node.Field(name)` returns the value of a struct field as an `any`: a `*pego.Node` for node values, lists, tuples and
 structs, or an `int`, `string` or `bool`. A list is a node whose elements `Len()`, `Elem(i)` and `Elems()` give.
-A string node keeps the text it matched, which `Text()` returns. `value.Type()` tells you which member of the `Value` union
-you got, so a `switch` on it is how you walk a union.
+A string node keeps the text it matched, which `Text()` returns. `value.Type()` tells you which member of the `Value` join
+you got, so a `switch` on it is how you walk a join.
 
 ## Next Steps
 
 [Parsing Expressions](expressions.md) builds a calculator. The guides [Declaring Types](../guide/types.md) and
-[Actions](../guide/actions.md) cover struct and union types, the built-in functions and positions, and
+[Actions](../guide/actions.md) cover struct and join types, the built-in functions and positions, and
 [Reading Trees](../guide/reading-trees.md) covers reading a tree in Go.

@@ -46,11 +46,11 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 				name = "Node"
 			}
 			return "c.to" + name + "(" + value + ")"
-		case unionTy:
-			if name, ok := t.unions[x.String()]; ok {
+		case joinTy:
+			if name, ok := t.joins[x.String()]; ok {
 				return "c.to" + name + "(" + value + ")"
 			}
-			if _, ok := t.unionGoType(x); ok {
+			if _, ok := t.joinGoType(x); ok {
 				return clone(x.alts[0], value)
 			}
 			return "c.toOpen(" + value + ")"
@@ -104,7 +104,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 			return containsStruct(x.elem)
 		case listTy:
 			return containsStruct(x.elem)
-		case unionTy:
+		case joinTy:
 			for _, a := range x.alts {
 				if containsStruct(a) {
 					return true
@@ -143,7 +143,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 		}
 	}
 	for _, name := range t.aliases {
-		u := t.info.aliases[name].(unionTy)
+		u := t.info.aliases[name].(joinTy)
 		if !t.representable(u) {
 			continue
 		}
@@ -153,7 +153,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 		for _, alternative := range u.alts {
 			goType := t.goType(alternative)
 			if goType == "any" {
-				// An open member, such as node, takes every other value of the union. A case
+				// An open member, such as node, takes every other value of the join. A case
 				// for it would hide the cases after it, and its clone is an any.
 				open = true
 				continue
@@ -169,7 +169,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 		}
 		methods.WriteString(" }\n return nil\n}\n")
 	}
-	// Values of open types (node, any, unions without a Go type of their own) are cloned by
+	// Values of open types (node, any, joins without a Go type of their own) are cloned by
 	// their dynamic types.
 	methods.WriteString(`func (c *typedDocumentClone) toOpen(v any) any {
  c.Step(1)

@@ -202,13 +202,13 @@ func (prog *Program) markMissingRules(control *compileControl) {
 			return usesMissingType(t.Elem)
 		case *grammar.TypeGroup:
 			return usesMissingType(t.Type)
-		case *grammar.UnionType:
+		case *grammar.JoinType:
 			for _, t := range t.Types {
 				if usesMissingType(t) {
 					return true
 				}
 			}
-		case *grammar.IntersectionType:
+		case *grammar.MeetType:
 			for _, t := range t.Types {
 				if usesMissingType(t) {
 					return true

@@ -173,7 +173,7 @@
         },
         {
           "match": "\\|",
-          "name": "keyword.operator.union.pego"
+          "name": "keyword.operator.join.pego"
         },
         {
           "match": "&",

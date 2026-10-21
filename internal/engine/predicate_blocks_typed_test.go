@@ -10,7 +10,7 @@ import (
 // Node parser parity alone does not cover generated typed Predicate Actions.
 func TestPredicateBlocksGeneratedTypedParity(t *testing.T) {
 	cases := []genCase{
-		{"typed assignments", `type Word = { Text string }
+		{"typed bindings", `type Word = { Text string }
 type Row = { Word Word; Code int }
 var n int
 rule main Row = {n := 1; n == 1} w:word $$ => Row{Word: $w, Code: n}

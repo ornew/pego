@@ -201,10 +201,10 @@ type Number struct{ TNode[string] }
 // String is the node type String = node[string].
 type String struct{ TNode[string] }
 
-// Expr is the union type Expr ~ Ident | Number | String | Bool | Binary | Unary | Call | Index | Member | Cond | ArrayLit. Error (left by #recover) also implements it.
+// Expr is the join type Expr ~ Ident | Number | String | Bool | Binary | Unary | Call | Index | Member | Cond | ArrayLit. Error (left by #recover) also implements it.
 type Expr interface{ isExpr() }
 
-// Stmt is the union type Stmt ~ Let | Assign | If | While | Return | Func | ExprStmt | Block | error. Error (left by #recover) also implements it.
+// Stmt is the join type Stmt ~ Let | Assign | If | While | Return | Func | ExprStmt | Block | error. Error (left by #recover) also implements it.
 type Stmt interface{ isStmt() }
 
 func (*ArrayLit) isExpr() {}

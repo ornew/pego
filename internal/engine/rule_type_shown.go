@@ -28,12 +28,12 @@ func shownRuleTypes(prog *Program, rules []*grammar.RuleDef, values map[string]t
 		case optTy:
 			// A declared type may be optional itself; an optional is not nested.
 			return vopt(show(t.elem))
-		case unionTy:
+		case joinTy:
 			alts := make([]ty, len(t.alts))
 			for i, a := range t.alts {
 				alts[i] = show(a)
 			}
-			return vunion(alts...)
+			return vjoin(alts...)
 		case tupleTy:
 			elems := make([]ty, len(t.elems))
 			for i, e := range t.elems {

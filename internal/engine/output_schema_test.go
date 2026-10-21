@@ -163,7 +163,7 @@ func TestOutputSchemaInferredCaptureAndDynamic(t *testing.T) {
 		!reflect.DeepEqual(shape.Captures[1].Paths, [][]int{{0}, {2}}) || !shape.Captures[2].Side || shape.Captures[2].Paths != nil {
 		t.Fatalf("shape %+v", shape)
 	}
-	unionShape, err := schemaValue(unionTy{[]ty{tyString, tyInt}})
+	unionShape, err := schemaValue(joinTy{[]ty{tyString, tyInt}})
 	if err != nil || len(unionShape.Alternatives) != 2 {
 		t.Fatalf("union %+v %v", unionShape, err)
 	}
@@ -176,7 +176,7 @@ func TestOutputSchemaRejectsUnresolvedShapes(t *testing.T) {
 	for _, expr := range []grammar.TypeExpr{
 		&grammar.TypeRef{Name: "UnknownShape"},
 		&grammar.ListType{Elem: &grammar.OptionalType{Elem: &grammar.TypeRef{Name: "UnknownShape"}}},
-		&grammar.UnionType{Types: []grammar.TypeExpr{&grammar.TypeRef{Name: "Known"}, &grammar.TypeRef{Name: "UnknownShape"}}},
+		&grammar.JoinType{Types: []grammar.TypeExpr{&grammar.TypeRef{Name: "Known"}, &grammar.TypeRef{Name: "UnknownShape"}}},
 		&grammar.TypeGroup{},
 	} {
 		shape, err := p.schemaDeclared(expr)

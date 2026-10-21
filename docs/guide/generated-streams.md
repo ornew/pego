@@ -65,7 +65,7 @@ func IterateAST(r io.Reader, opts ...ParseOption) (*StreamASTIterator, error) //
 ```
 
 `ParseStreamAST` behaves like `ParseStream` but passes each element as the value its expression has in the
-[Go type mapping](generated-typed-values.md#mapping-grammar-types-to-go) — a rule's declared type, a union, a list, a `*TNode[T]` or a tuple — and the zero value for an element without a value. `StreamValue` is the type of the repeated element,
+[Go type mapping](generated-typed-values.md#mapping-grammar-types-to-go) — a rule's declared type, a join, a list, a `*TNode[T]` or a tuple — and the zero value for an element without a value. `StreamValue` is the type of the repeated element,
 not of the start rule:
 
 ```go

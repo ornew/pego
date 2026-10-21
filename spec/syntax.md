@@ -76,7 +76,7 @@ rule sync_token = string / char_class / inline_comment / comment_line / sync_par
 rule sync_paren = "(" (sync_token / !("(" / ")" / nl) .)* ")"
 rule sync_brace = "{" (sync_token / !("{" / "}" / nl) .)* "}"
 
-// Types. Union is the weakest operation; list and optional prefixes nest.
+// Types. Join is the weakest operation; list and optional prefixes nest.
 // A type declaration is a type alias (type Name ~ Type) or a type definition
 // (type Name = { ... } or type Name = node[T]).
 rule type_decl = type_alias / type_def
@@ -106,7 +106,7 @@ rule type_expr = operators {
     operand !retired_type ident
     operand type_group
     operand struct_type
-    level union { infix left "|" }
+    level join { infix left "|" }
     level meet { infix left "&" }
     level prefix {
         prefix "[]"
@@ -269,8 +269,8 @@ rule action_block = (
 )
 rule action_block_stmt = !(comments "}") action_block_value
 rule action_block_value = -comments action_stmt -item_end
-rule action_stmt = action_assign_stmt / action_expr
-rule action_assign_stmt = ident -ws ":=" -ws action_expr
+rule action_stmt = action_bind_stmt / action_expr
+rule action_bind_stmt = ident -ws ":=" -ws action_expr
 rule action_expr = lambda / action_ops
 rule action_ops = operators {
     skip !(ws "[" !"]") ws

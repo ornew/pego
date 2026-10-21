@@ -7,7 +7,7 @@ immutable type.
 ## Mechanism and Invariants
 
 Equal basic, named, list and record shapes reuse the prior type. Ordered nested
-unions and named-node kinds compare conservatively; top-level optional/union
+joins and named-node kinds compare conservatively; top-level optional/join
 forms retain the general normalizer. Capture availability remains the logical OR
 of occurrences, so equality of value type cannot erase conditional availability.
 
@@ -18,7 +18,7 @@ performs this analysis in its matching loop.
 
 ## Reference Control
 
-No maintained same-source general-union-only control exists.
+No maintained same-source general-join-only control exists.
 
 ## Evidence and Implementation
 
@@ -27,7 +27,7 @@ duplicate captures from 423.966 to 61.126 ms and 1.188 GB to 32.16 MB. Mixed
 optional/heterogeneous and unique-label controls remain near parity. Large
 single-iteration diagnostics are reported separately. The benefit concerns
 repeated equivalent capture types, not parser runtime or a promise of cheap
-arbitrary unions.
+arbitrary joins.
 
 Evidence records:
 [072](../072-reuse-structurally-equal-duplicate-capture-types.md).

@@ -6,7 +6,7 @@ evaluation boundary.
 
 ## Mechanism and Invariants
 
-Successful, nil and failed action results, predicates and assignments release
+Successful, nil and failed action results, predicates and bindings release
 construction tracking. Go clears discarded backing tails as well as truncating
 length; TypeScript uses finalization cleanup. Returned values and
 environment-held values retain their identity and ownership. Clearing

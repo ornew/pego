@@ -12,7 +12,7 @@ solves single tasks.
 |:--|:--|
 | [Getting Started With PEGO](getting-started.md) | Installing `pego`, writing a first grammar, parsing from the command line and from Go |
 | [Parsing Structured Input](structured-input.md) | Rules, ordered choice, repetition and lookahead, for a configuration file format |
-| [Building Typed Trees](typed-trees.md) | Naming and shaping the tree, struct, union and text types, reading it in Go |
+| [Building Typed Trees](typed-trees.md) | Naming and shaping the tree, struct, join and text types, reading it in Go |
 | [Parsing Expressions](expressions.md) | Operators and precedence with the Operators Rule, building a calculator |
 | [Reporting Errors](errors.md) | Reading syntax errors, writing clear messages, recovering and collecting several errors |
 | [Parsing Context-Sensitive Input](context.md) | Predicates and variables for matching tags and limiting lengths |

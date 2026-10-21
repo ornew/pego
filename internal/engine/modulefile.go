@@ -439,7 +439,7 @@ func validateModule(m *Module) error {
 			in("operatorsRule", int(x.A), len(m.OperatorsRules))
 		case OpPred:
 			in("expression", int(x.A), len(m.Exprs))
-		case OpAssign:
+		case OpBind:
 			declared(int(x.A))
 			in("expression", int(x.B), len(m.Exprs))
 			flag(x.C, 0)

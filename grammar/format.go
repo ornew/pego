@@ -689,23 +689,23 @@ func formatType(t TypeExpr, control *metadataControl) string {
 		return finishFormat("[]"+formatTypeTerm(t.Elem, control), control)
 	case *OptionalType:
 		return finishFormat("*"+formatTypeTerm(t.Elem, control), control)
-	case *UnionType:
+	case *JoinType:
 		parts := make([]string, len(t.Types))
 		for i, x := range t.Types {
 			pollFormat(control)
-			if _, ok := x.(*IntersectionType); ok {
+			if _, ok := x.(*MeetType); ok {
 				parts[i] = formatType(x, control) // & binds tighter than |
 			} else {
 				parts[i] = formatTypeTerm(x, control)
 			}
 		}
 		return finishFormat(joinFormatParts(parts, " | ", control), control)
-	case *IntersectionType:
+	case *MeetType:
 		parts := make([]string, len(t.Types))
 		for i, x := range t.Types {
 			pollFormat(control)
 			parts[i] = formatType(x, control)
-			if _, ok := x.(*UnionType); ok {
+			if _, ok := x.(*JoinType); ok {
 				parts[i] = "(" + parts[i] + ")"
 			}
 		}
@@ -749,7 +749,7 @@ func formatType(t TypeExpr, control *metadataControl) string {
 func formatTypeTerm(t TypeExpr, control *metadataControl) string {
 	pollFormat(control)
 	switch t.(type) {
-	case *UnionType, *IntersectionType:
+	case *JoinType, *MeetType:
 		return "(" + formatType(t, control) + ")"
 	}
 	return formatType(t, control)
@@ -1378,7 +1378,7 @@ func formatTerm(t Term, outer int, control *metadataControl) (formatted string) 
 			x = parenTerm(x, control)
 		}
 		return x + ".(" + formatType(t.Type, control) + ")"
-	case *Assign:
+	case *Bind:
 		return t.Name + " := " + formatTerm(t.Value, 0, control)
 	}
 	return fmt.Sprintf("<%T>", t)

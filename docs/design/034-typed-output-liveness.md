@@ -54,7 +54,7 @@ The measured full-sweep and bounded-sweep variants were private, independent gen
 
 - **Keep all chunks unchanged.** This preserves current throughput and ownership behavior, but retains discarded siblings.
 - **Allocate every value individually.** It releases siblings without graph traversal but may increase allocation and collector work; compare it only as a separate control, not as the proposed default mechanism.
-- **Clear at rollback, action return or capture replacement.** Rejected because another field, list, union, Match, recovery result or caller-visible alias may still reference the value.
+- **Clear at rollback, action return or capture replacement.** Rejected because another field, list, join, Match, recovery result or caller-visible alias may still reference the value.
 - **Clear without a complete graph walk.** Rejected because missing a pointer or list cell corrupts a returned result. Conservative keep-all is safer than partial cleanup.
 - **Move or compact live values.** Rejected because it changes pointer identity and can invalidate aliases and slice views.
 

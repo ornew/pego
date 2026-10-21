@@ -239,14 +239,14 @@ type OptionalType struct {
 	Elem       TypeExpr `json:"elem"`
 }
 
-// UnionType is a union type T | U.
-type UnionType struct {
+// JoinType is the join T | U of types: the type of the values of any of them.
+type JoinType struct {
 	SourceInfo `json:"source,omitempty"`
 	Types      []TypeExpr `json:"types"`
 }
 
-// IntersectionType is the meet T & U of types: the type of the values in all of them.
-type IntersectionType struct {
+// MeetType is the meet T & U of types: the type of the values in all of them.
+type MeetType struct {
 	SourceInfo `json:"source,omitempty"`
 	Types      []TypeExpr `json:"types"`
 }
@@ -299,15 +299,15 @@ type TypeGroup struct {
 	OneLine    bool       `json:"-"`
 }
 
-func (*TypeRef) typeExpr()          {}
-func (*ListType) typeExpr()         {}
-func (*OptionalType) typeExpr()     {}
-func (*UnionType) typeExpr()        {}
-func (*IntersectionType) typeExpr() {}
-func (*TupleType) typeExpr()        {}
-func (*TypeApp) typeExpr()          {}
-func (*StructType) typeExpr()       {}
-func (*TypeGroup) typeExpr()        {}
+func (*TypeRef) typeExpr()      {}
+func (*ListType) typeExpr()     {}
+func (*OptionalType) typeExpr() {}
+func (*JoinType) typeExpr()     {}
+func (*MeetType) typeExpr()     {}
+func (*TupleType) typeExpr()    {}
+func (*TypeApp) typeExpr()      {}
+func (*StructType) typeExpr()   {}
+func (*TypeGroup) typeExpr()    {}
 
 // --- Parser expressions ---
 
@@ -848,8 +848,8 @@ type Cast struct {
 	Type       TypeExpr `json:"type"`
 }
 
-// Assign defines a variable in a predicate action: name := value.
-type Assign struct {
+// Bind binds a variable in a predicate action: name := value.
+type Bind struct {
 	SourceInfo `json:"source,omitempty"`
 	Name       string `json:"name"`
 	Value      Term   `json:"value"`
@@ -885,4 +885,4 @@ func (*Lambda) term()          {}
 func (*Binary) term()          {}
 func (*Unary) term()           {}
 func (*Cast) term()            {}
-func (*Assign) term()          {}
+func (*Bind) term()            {}

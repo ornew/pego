@@ -173,7 +173,7 @@ Many match instructions have a flag that indicates whether to build a value (no 
 | `CALL` | rule, level | Call a rule (the runtime performs memoization and left recursion according to the rule table) |
 | `RETURN` | | End of a rule body (the runtime applies the action, the CST rules and the conversion to a terminal type) |
 | `OPERATORS_RULE` | Operators Rule table | Run the Operators Rule loop (below) |
-| `PRED` / `ASSIGN` | expression code (, variable name) | Predicates |
+| `PRED` / `BIND` | expression code (, variable name) | Predicates |
 | `LABEL` / `END_LABEL` | message | `@error` |
 | `RECOVER` / `END_RECOVER` | skip code | `#recover` |
 | `STREAM` | | Commit an element of `#stream` and pass it on |
@@ -259,7 +259,7 @@ Both code-point and byte position units are measured.
 
 | Name | Grammar | Input | Main focus | Standard-library comparison |
 |:--|:--|:--|:--|:--|
-| JSON | `examples/json` | Typical JSON from a few KB to a few MB | Lexical repetition, AST of union types | `encoding/json` (decoding into `any`) |
+| JSON | `examples/json` | Typical JSON from a few KB to a few MB | Lexical repetition, AST of join types | `encoding/json` (decoding into `any`) |
 | CSV | New example (RFC 4180) | Thousands of rows, with quotes | Simple repetition, many terminals | `encoding/csv` |
 | XML | New example (elements, attributes, text, comments) | Hundreds of KB | Nesting, predicates (matching start-tag and end-tag names) | `encoding/xml` (reading tokens) |
 | Arithmetic | `examples/calculator` (both Operators Rule and left recursion) | Long expressions, deep parentheses | Operators Rule loop, left-recursion growth | `go/parser.ParseExpr` |

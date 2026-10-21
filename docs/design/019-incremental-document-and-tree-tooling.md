@@ -192,7 +192,7 @@ Document abstraction; compare a built-in piece table with caller-owned input bef
 
 GLR/dynamic precedence, automatic extras and embedding Tree-sitter's runtime are not part of this plan. They alter
 PEG ordering, whitespace/indentation semantics or the standalone distribution contract. Existing captures, terminal
-types and struct/union types cover much of the motivation for hidden rules, fields and supertypes. Revisit these only
+types and struct/join types cover much of the motivation for hidden rules, fields and supertypes. Revisit these only
 for a demonstrated gap with a separate design and compatibility decision.
 
 ## Limitations and Open Questions

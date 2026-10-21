@@ -21,7 +21,7 @@
   both position units against that control and Node conversion. The cases cover
   capture/environment rollback, zero-progress and failed skips, nested recovery,
   error ordering, lookahead, optional and repeated scopes, cut scopes, dead
-  skip syntax, lists of union errors, the `Call.Span` name collision, and recovery
+  skip syntax, lists of join errors, the `Call.Span` name collision, and recovery
   inside left-recursion and Operators Rule bodies. `TestGeneratedTypedRecoveryWorkloads`
   also compares ordinary, LR and Operators Rule recovery on accepted, recovered and
   rejected inputs at sizes 1 and 128. It checks both position units, parser and

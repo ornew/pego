@@ -160,7 +160,7 @@ func TestTopBottomReportedOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	g.Types()[0].(*grammar.TypeDef).Struct().Fields[0].Type = &grammar.IntersectionType{}
+	g.Types()[0].(*grammar.TypeDef).Struct().Fields[0].Type = &grammar.MeetType{}
 	if _, err := Compile(g, Options{}); err != nil {
 		t.Fatal(err)
 	}
@@ -207,11 +207,11 @@ func TestTopBottomSyntax(t *testing.T) {
 			t.Fatalf("formatted lacks %q:\n%s", want, formatted)
 		}
 	}
-	alias := g.Types()[0].(*grammar.TypeAlias).Type.(*grammar.UnionType)
+	alias := g.Types()[0].(*grammar.TypeAlias).Type.(*grammar.JoinType)
 	if len(alias.Types) != 3 {
 		t.Fatalf("union %#v", alias)
 	}
-	if m, ok := alias.Types[0].(*grammar.IntersectionType); !ok || len(m.Types) != 2 {
+	if m, ok := alias.Types[0].(*grammar.MeetType); !ok || len(m.Types) != 2 {
 		t.Fatalf("meet %#v", alias.Types[0])
 	}
 	if b, ok := alias.Types[2].(*grammar.TypeRef); !ok || b.Name != "_|_" {
@@ -231,7 +231,7 @@ func TestTopBottomSyntax(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(again) != string(data) || !strings.Contains(string(data), "IntersectionType") {
+	if string(again) != string(data) || !strings.Contains(string(data), "MeetType") {
 		t.Fatalf("JSON round trip:\n%s\nwant\n%s", again, data)
 	}
 	program := compile(t, src)

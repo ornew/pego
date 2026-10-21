@@ -108,7 +108,7 @@ type Number struct{ TNode[string] }
 // String is the node type String = node[string].
 type String struct{ TNode[string] }
 
-// Value is the union type Value ~ Object | Array | String | Number | Bool | Null. Error (left by #recover) also implements it.
+// Value is the join type Value ~ Object | Array | String | Number | Bool | Null. Error (left by #recover) also implements it.
 type Value interface{ isValue() }
 
 func (*Array) isValue()  {}

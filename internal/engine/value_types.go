@@ -111,18 +111,18 @@ type ruleTy struct{ name string }
 
 func (t ruleTy) String() string { return t.name }
 
-// vunion is the join of types in the value model: nested unions are flattened, duplicates and
-// _|_ removed, and a union with _ is _. Since T <= *T and nil <= *T, a union with an optional
-// argument or nil is the optional of the union of the other arguments without their *. A union
+// vjoin is the join of types in the value model: nested joins are flattened, duplicates and
+// _|_ removed, and a join with _ is _. Since T <= *T and nil <= *T, a join with an optional
+// argument or nil is the optional of the join of the other arguments without their *. A join
 // with a value not known yet (tyAny) is not known either.
-func vunion(ts ...ty) ty {
+func vjoin(ts ...ty) ty {
 	var alts []ty
 	seen := map[string]bool{}
 	optional, null := false, false
 	var add func(t ty)
 	add = func(t ty) {
 		switch u := t.(type) {
-		case unionTy:
+		case joinTy:
 			for _, a := range u.alts {
 				add(a)
 			}
@@ -161,7 +161,7 @@ func vunion(ts ...ty) ty {
 		if len(alts) == 0 {
 			return tyBottom
 		}
-		return optTy{vunion(alts...)}
+		return optTy{vjoin(alts...)}
 	}
 	switch len(alts) {
 	case 0:
@@ -169,7 +169,7 @@ func vunion(ts ...ty) ty {
 	case 1:
 		return alts[0]
 	}
-	return unionTy{alts}
+	return joinTy{alts}
 }
 
 // vopt is *t; an optional value of an optional type is not nested, and *_|_ is _|_.
@@ -177,7 +177,7 @@ func vopt(t ty) ty {
 	if t == tyTop || t == tyBottom {
 		return t
 	}
-	return vunion(optTy{t})
+	return vjoin(optTy{t})
 }
 
 var tyStringNode = nodeTy{value: tyString}
@@ -363,7 +363,7 @@ func (v *valueInference) ruleValue(name string) ty {
 		mine = nil
 		for _, m := range cycle {
 			v.rule, v.errs = v.rules[m], nil
-			next[m] = vunion(v.approx[m], v.ruleDef(v.rules[m]))
+			next[m] = vjoin(v.approx[m], v.ruleDef(v.rules[m]))
 			mine = append(mine, v.errs...)
 		}
 		changed := false
@@ -413,7 +413,7 @@ func (v *valueInference) predicates(e grammar.Expr, env *valueEnv) {
 	}
 	switch e := e.(type) {
 	case *grammar.Predicate:
-		if a, ok := e.Term.(*grammar.Assign); ok {
+		if a, ok := e.Term.(*grammar.Bind); ok {
 			t := v.term(a.Value, env)
 			if d := v.prog.vars.lookup(a.Name); d != nil {
 				switch {
@@ -582,7 +582,7 @@ func (v *valueInference) elems(e grammar.Expr) []valueElem {
 		}
 		var t ty // no element when no alternative has a value
 		if len(ts) > 0 {
-			t = vunion(ts...)
+			t = vjoin(ts...)
 			if valueless {
 				t = vopt(t)
 			}
@@ -636,9 +636,9 @@ func (v *valueInference) elems(e grammar.Expr) []valueElem {
 				el.t = nodeTy{value: tupleTy{elems: []ty{}}}
 			}
 			if a.Name == "missing" {
-				el.t = vunion(el.t, tyMissing)
+				el.t = vjoin(el.t, tyMissing)
 			} else {
-				el.t = vunion(el.t, tyErr)
+				el.t = vjoin(el.t, tyErr)
 			}
 			elems = []valueElem{el}
 		}
@@ -693,9 +693,9 @@ func mergeCap(caps []capIndex, c capIndex) []capIndex {
 		if o.name != c.name {
 			continue
 		}
-		caps[i].t = vunion(o.t, c.t)
+		caps[i].t = vjoin(o.t, c.t)
 		if o.maybe || c.maybe {
-			caps[i].maybe, caps[i].set = true, vunion(setType(o), setType(c))
+			caps[i].maybe, caps[i].set = true, vjoin(setType(o), setType(c))
 		}
 		paths := slices.Clone(o.paths)
 		for _, p := range c.paths {
@@ -718,7 +718,7 @@ func setType(c capIndex) ty {
 	return c.t
 }
 
-// operatorsRule is the union of the operand values and of the values of the operator lines: an
+// operatorsRule is the join of the operand values and of the values of the operator lines: an
 // infix line without an action is node[(L, Op, R)], a prefix line node[(Op, R)] and a postfix line
 // node[(L, Op)], with the captures lhs, op and rhs.
 func (v *valueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.OperatorsRule) ty {
@@ -804,7 +804,7 @@ func (v *valueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.Operator
 			if tuples[i] {
 				v.errorf(rd.Diagnostic(), "operators of %s without an action produce a tuple node, which is not assignable to %s", rd.Name, d)
 			} else if converts && !operators[i] {
-				v.errorf(rd.Diagnostic(), "operand of %s produces %s, which is not assignable to %s; an operand is not converted: declare the operand rule as %s, or declare %s as a union that includes %s", rd.Name, v.expand(t), d, d, rd.Name, v.expand(t))
+				v.errorf(rd.Diagnostic(), "operand of %s produces %s, which is not assignable to %s; an operand is not converted: declare the operand rule as %s, or declare %s as a join that includes %s", rd.Name, v.expand(t), d, d, rd.Name, v.expand(t))
 			} else {
 				v.errorf(rd.Diagnostic(), "operatorsRule %s produces %s, which is not assignable to %s", rd.Name, v.expand(t), d)
 			}
@@ -813,7 +813,7 @@ func (v *valueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.Operator
 			return d
 		}
 	}
-	return v.declared(rd, vunion(ts...))
+	return v.declared(rd, vjoin(ts...))
 }
 
 // fromLegacy maps a legacy type (types.go) to the value model: reserved node kinds become nodes
@@ -845,12 +845,12 @@ func fromLegacy(t ty) ty {
 		return listTy{fromLegacy(t.elem)}
 	case optTy:
 		return vopt(fromLegacy(t.elem))
-	case unionTy:
+	case joinTy:
 		ts := make([]ty, len(t.alts))
 		for i, a := range t.alts {
 			ts[i] = fromLegacy(a)
 		}
-		return vunion(ts...)
+		return vjoin(ts...)
 	case recordTy:
 		return nodeTy{value: tyTop}
 	}

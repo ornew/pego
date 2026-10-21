@@ -113,7 +113,7 @@ found in a setting that parsed. Four settings were read, and the two that could 
   `SyntaxErrors` and `value` is still the tree of what was read, so the tool can report both the syntax errors and its
   own findings in one run. Any other `error` is a failure with no tree.
 - `-types` gives every grammar type an interface (`Setting`, `File`), so `setting.Key.value` is checked by the compiler.
-  The items of `Settings` are a union, because a setting that was recovered is an error value, and a field that did not
+  The items of `Settings` are a join, because a setting that was recovered is an error value, and a field that did not
   match is `null`.
 - Positions count code points, like the Go engine, not UTF-16 units. `lineCol` counts code points for that reason; the
   `line` and `col` of a syntax error are already computed the same way.

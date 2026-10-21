@@ -61,7 +61,7 @@
   missing-reference, reordered 64/512/2,048-rule chains, shared/cyclic graphs,
   and shuffled distinct-variable growth graphs. Traversal checks include
   choices, lookaheads/discard, optional/repetition, recovery sync, Operators Rule actions,
-  self calls and assignments with no reads. Existing variable-sensitive memo
+  self calls and bindings with no reads. Existing variable-sensitive memo
   tests cover engine backends/position units, memo on/off and Document edits;
   generated-runtime and saved-module tests retain the same keys. Independent
   source review verifies callee-first order, missing/duplicate definitions and

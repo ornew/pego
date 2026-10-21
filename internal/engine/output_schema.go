@@ -336,7 +336,7 @@ func schemaValue(t ty) (SchemaShape, error) {
 	case optTy:
 		e, err := schemaValue(t.elem)
 		return SchemaShape{Kind: "optional", Element: &e}, err
-	case unionTy:
+	case joinTy:
 		s := SchemaShape{Kind: "union"}
 		for _, a := range t.alts {
 			v, err := schemaValue(a)

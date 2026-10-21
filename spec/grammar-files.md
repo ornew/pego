@@ -186,8 +186,8 @@ var seen = false
 
 - The type is `int`, `string` or `bool`; any other type is an error.
 - The value is an int, string or bool literal (an int literal may be negated);
-  `nil` is not allowed. `=` defines the initial value and is not an
-  assignment. Without a value the variable starts as the zero value of its
+  `nil` is not allowed. `=` defines the initial value and is not a
+  binding. Without a value the variable starts as the zero value of its
   type: `0`, `""` or `false`. Without a type, the type is the type of the
   value. A value of another type than the declared type is an error.
 - Every parse, through every start rule and backend, starts with each declared
@@ -247,7 +247,7 @@ The names that a definition can use are constrained as follows:
 | Rule | An [identifier](lexical.md#identifiers). Contextual words are allowed when the grammar expects a name. Rule names commonly begin with a lowercase ASCII letter. |
 | Type, field | An identifier that begins with an uppercase ASCII letter. Built-in and reserved type names MUST NOT be defined. See [Names](types.md#names). |
 | Variable | An identifier, declared by a Variable Declaration Statement. See [Variables](predicates.md#variables). |
-| Capture label, level, lambda parameter | An identifier. Captures have their own scope; see [Capture](parser-expressions.md#capture). Variables are the only names a binding `name := expr` may assign. Lambda parameters are variables of the lambda body; see [Built-In Functions](actions.md#built-in-functions). A level name MUST be unique within its Operators Rule declaration. |
+| Capture label, level, lambda parameter | An identifier. Captures have their own scope; see [Capture](parser-expressions.md#capture). Variables are the only names a binding `name := expr` may bind. Lambda parameters are variables of the lambda body; see [Built-In Functions](actions.md#built-in-functions). A level name MUST be unique within its Operators Rule declaration. |
 
 ## Start Rule
 

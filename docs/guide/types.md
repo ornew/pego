@@ -1,15 +1,15 @@
 # Declaring Types
 
-A grammar can declare the types of the values that its rules produce: structs with named fields and unions of types.
+A grammar can declare the types of the values that its rules produce: structs with named fields and joins of types.
 Declared types turn mistakes in actions into compile-time errors and give generated parsers real Go types. This
 guide shows how to declare them and how rule result types are inferred. The grammars run like those in [Shaping
 Trees](shaping-trees.md), which also explains how to run them. The exact rules are in the [Type System](../../spec/types.md)
 chapter.
 
-## Structs and Unions
+## Structs and Joins
 
 A **struct type** (`type T = {...}`) is a type with named fields; an action builds its values with struct constructors
-such as `T{Field: value}`. A **union** (`type T ~ A | B`, an alias of a union) is the type of a value that is one of
+such as `T{Field: value}`. A **join** (`type T ~ A | B`, an alias of a join) is the type of a value that is one of
 several types, much like a Go interface. A rule without an action produces a node, whose `Value` holds what the rule
 matched; a field that holds such a value is declared `node[T]` with the type `T` of that value: `node[string]` for the
 text of a literal, a class or `#atomic`, `node[(A, B)]` for a sequence of two valued parts and `node[[]A]` for a
@@ -47,7 +47,7 @@ names start with an uppercase letter; rule names are in a separate namespace, so
 produces. Rule values, list elements, struct fields and action expressions may hold `int`, `string` and `bool` as well as nodes.
 
 An alias is only another name: with `type Binding ~ Assign`, `Binding{...}` produces an `Assign`. Chained aliases and
-unions reduced to one member follow the same rule; an alias does not create a distinct type.
+joins reduced to one member follow the same rule; an alias does not create a distinct type.
 
 ## Named Node Types
 
@@ -128,7 +128,7 @@ or the action, iterating until recursive rules stop changing:
 | `rule num = [0-9]+ #atomic` | `node[string]`: a node whose value is the matched string |
 | `rule key = [a-z]+` | `node[[]node[string]]`: a node whose value is a list with one string node per letter |
 | `rule pair = k:num "=" v:num` | `node[(num, node[string], num)]`: a node whose value is a tuple, flat, with one element per valued part; `num` stands for the type of the rule `num` |
-| `rule v = a / b` | `A \| B`, the union of the types of `a` and `b` |
+| `rule v = a / b` | `A \| B`, the join of the types of `a` and `b` |
 | `rule o = a?` | `*A`, where `A` is the type of `a` |
 | `rule w = a` | The type of `a`: a rule whose body is a single rule call has that rule's type |
 | `rule u = -a "x"` | `node[(node[string],)]`, a tuple node with one element: discards, lookaheads and anchors have no value |
@@ -199,7 +199,7 @@ use it.
 
 | Message | Cause and fix |
 |:--|:--|
-| `cannot use X as Y in field F of T` | The value's type does not fit the field. Inspect the rule's type (declared or inferred) and change the rule, the field or use a union |
+| `cannot use X as Y in field F of T` | The value's type does not fit the field. Inspect the rule's type (declared or inferred) and change the rule, the field or use a join |
 | `cannot use *X as X in field F of T` | The value may be `nil` (an optional or a capture in one alternative). Declare the field `*X`, or make the grammar guarantee a match |
 | `cannot use *[]X as []X in field F of T` | An optional list; pass it through `concat(...)` to get an empty list instead of `nil` |
 | `rule r produces X, which is not assignable to T` | The declared type does not accept the body's value; a sequence without an action is a tuple node, so a struct type needs an action |

@@ -161,7 +161,7 @@ func BenchmarkInferenceDependencies(b *testing.B) {
 	}
 }
 
-func TestInferenceFiniteUnionCycle(t *testing.T) {
+func TestInferenceFiniteJoinCycle(t *testing.T) {
 	const count = 64
 	var src strings.Builder
 	src.WriteString("rule main = r0\n")

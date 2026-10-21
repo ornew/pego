@@ -137,7 +137,7 @@ func TestGeneratedEnvironmentBindings(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(assignedStream)
+	g, err := syntax.Parse(boundStream)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +187,7 @@ func TestGeneratedTSEnvironmentBindings(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	g, err := syntax.Parse(assignedStream)
+	g, err := syntax.Parse(boundStream)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,25 +206,25 @@ for (const unit of [CodePoints, Bytes]) {
  }
  if (names.size !== 3) throw new Error("lost binding");
  p.env = null;
- p.bind("z", 1);
+ p.bindValue("z", 1);
  const saved = p.env as Env | null;
- p.bind("z", 1);
- if (p.env !== saved) throw new Error("equal assignment replaced state");
- p.bind("w", true);
+ p.bindValue("z", 1);
+ if (p.env !== saved) throw new Error("equal binding replaced state");
+ p.bindValue("w", true);
  p.env = saved;
- p.bind("w", false);
- p.bind("z", 2);
+ p.bindValue("w", false);
+ p.bindValue("z", 2);
  if (saved!.val !== 1) throw new Error("saved environment mutated");
  const q = new Parser("", unit, nseen, defaultMaxDepth);
  q.env = null; // the parser starts from the declared variables
- q.bind("x",1);
+ q.bindValue("x",1);
  const first = q.env as Env | null;
  q.env = null;
- q.bind("y",2);
- q.bind("z",3);
+ q.bindValue("y",2);
+ q.bindValue("z",3);
  q.env = first;
- q.bind("w",4);
- q.bind("x",5);
+ q.bindValue("w",4);
+ q.bindValue("x",5);
  let count = 0;
  for (let e = q.env; e !== null; e = e.next) count++;
  if (count !== 2 || first!.val !== 1) throw new Error("early snapshot restore");

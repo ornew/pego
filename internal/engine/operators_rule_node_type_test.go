@@ -271,7 +271,7 @@ func TestOperatorsRuleNamedNodeTypeErrors(t *testing.T) {
 		{"rule expr Expr = operators {\n operand num\n level { infix left \"+\" }\n}", "operators of expr without an action produce a tuple node, which cannot be converted to Expr"},
 		{"rule expr Expr = operators {\n operand num\n level { infix left \"+\" => S{A: 1} }\n}", "operatorsRule expr produces S, which cannot be converted to Expr"},
 		{"rule expr Expr = operators {\n operand num\n level { prefix \"-\" => 1 }\n}", "which cannot be converted to Expr"},
-		{"type Num = node[string]\nrule expr Expr = operators {\n operand n2\n level { infix left \"+\" => Expr{$op} }\n}\nrule n2 Num = [0-9]+ #atomic", "operand of expr produces Num, which is not assignable to Expr; an operand is not converted: declare the operand rule as Expr, or declare expr as a union that includes Num"},
+		{"type Num = node[string]\nrule expr Expr = operators {\n operand n2\n level { infix left \"+\" => Expr{$op} }\n}\nrule n2 Num = [0-9]+ #atomic", "operand of expr produces Num, which is not assignable to Expr; an operand is not converted: declare the operand rule as Expr, or declare expr as a join that includes Num"},
 	} {
 		g, err := syntax.Parse(defs + tc.src)
 		if err != nil {

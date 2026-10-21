@@ -104,7 +104,7 @@ func literal(t grammar.Term) (pval, bool) {
 // certainly fail; when the generator cannot tell, it returns true and leaves the decision to the
 // parser. A variable definition is returned as def.
 func (g *gen) predicate(e *grammar.Predicate) (ok bool, def *variable) {
-	if a, isAssign := e.Term.(*grammar.Assign); isAssign {
+	if a, isBind := e.Term.(*grammar.Bind); isBind {
 		v, err := g.eval(a.Value)
 		if err {
 			return false, nil

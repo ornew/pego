@@ -114,7 +114,7 @@ func TestCastSyntax(t *testing.T) {
 	member := g.Rules()[0].Action.(*grammar.Member)
 	if cast, ok := member.X.(*grammar.Cast); !ok || member.Name != "Start" {
 		t.Fatalf("cast %#v", member)
-	} else if _, ok := cast.Type.(*grammar.UnionType); !ok {
+	} else if _, ok := cast.Type.(*grammar.JoinType); !ok {
 		t.Fatalf("cast type %#v", cast.Type)
 	}
 	if data, err := grammar.MarshalJSON(g); err != nil || !strings.Contains(string(data), "Cast") {

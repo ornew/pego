@@ -14,7 +14,7 @@ TypeScript. It is selected during generation through the private
 `disableLiteralTextDispatch` reference control. Generated parsers contain no
 runtime optimization selector or public option. Other predicate shapes retain
 general expression evaluation. Mixed expressions, different captures,
-assignments, and alias-based comparisons do not qualify, preserving the
+bindings, and alias-based comparisons do not qualify, preserving the
 original evaluation order and side effects.
 
 ## Alternatives
@@ -30,7 +30,7 @@ specializes predicate dispatch.
 `TestLiteralTextPredicateDispatchGeneration` checks the emitted Go and
 TypeScript switches and generation-only reference outputs.
 `TestLiteralTextPredicateDispatchRejectsUnsafeShapes` verifies that mixed,
-aliased, assigned, and different-capture forms remain general.
+aliased, bound, and different-capture forms remain general.
 `TestLiteralTextPredicateDispatchDisabledParity` compares generated Go Node,
 typed AST and recognition results against the engine in both input units.
 `TestLiteralTextPredicateDispatchTSDisabledParity` checks empty and Unicode

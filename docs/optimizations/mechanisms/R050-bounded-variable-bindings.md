@@ -1,15 +1,15 @@
 # R050: Bounded Variable Bindings
 
-Repeated assignments should not retain every shadowed binding or make reads
-traverse assignment history. A persistent environment keeps one current binding
+Repeated bindings should not retain every shadowed binding or make reads
+traverse binding history. A persistent environment keeps one current binding
 per name.
 
 ## Mechanism and Invariants
 
 Replacing a changed non-head value copies the prefix and shares the unchanged
 suffix. Saved environments therefore preserve rule-scope and backtracking state.
-Equal scalar assignment can reuse the old environment; a monotonic name hint
-avoids searches for first assignments. Live snapshots and memo keys still retain
+Equal scalar binding can reuse the old environment; a monotonic name hint
+avoids searches for first bindings. Live snapshots and memo keys still retain
 values required by their contracts. This bounds binding history, not arbitrary
 user values.
 
