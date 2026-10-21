@@ -93,7 +93,7 @@ rule main = {x := (1); (x == 1)} "a"`,
 type Alias ~ (T)
 rule main (Alias) = n:([0-9]+) => (T{Text: (text($n))})`,
 		`rule main = operators { skip " "*; operand [0-9]+; operand "(" main ")"; level { infix left "+" / "-" } }`,
-		`rule main = "a" @error(, "bad")`,
+		`rule main = "a" @error(nil, "bad")`,
 		`rule main = "a" @error("a", message="b")`,
 		`rule main = "a" @atomic`,
 		`rule main = "a" #repeat(3, 1)`,

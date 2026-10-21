@@ -37,6 +37,8 @@ func TestFormatListComments(t *testing.T) {
 		// Blank lines stay, with no whitespace on them.
 		{"blank lines around a comment", "rule r = \"a\" => f(1,\n\n    // r\n\n    2)\n", "rule r = \"a\" => f(\n    1,\n\n    // r\n\n    2,\n)\n"},
 		{"blank line before the first comment", "rule r (\n\n    // r\n\n    int, string) = \"a\"\n", "rule r (\n\n    // r\n\n    int,\n    string,\n) = \"a\"\n"},
+		// An empty argument is written nil.
+		{"attribute nil argument", "rule r = \"a\" @error(nil, \"bad\")\n", "rule r = \"a\" @error(nil, \"bad\")\n"},
 		// A comment before the brace of a struct stays inside it.
 		{"struct closing comment", "type T = { F (int, string) /* b */ }\n", "type T = { F (int, string) /* b */ }\n"},
 	} {
@@ -84,10 +86,17 @@ func TestFormatRepeatPragmaComments(t *testing.T) {
 	}
 }
 
-// A doubled comma is reported as such.
+// A comma where an argument belongs is reported as such, also after a keyword
+// argument.
 func TestAttributeDoubledComma(t *testing.T) {
-	_, err := Parse("rule r = \"a\" @custom(k=1,,)\n")
-	if err == nil || !strings.Contains(err.Error(), "expected an attribute argument, found ','") {
-		t.Fatalf("got %v", err)
+	for _, src := range []string{
+		"rule r = \"a\" @custom(k=1,,)\n",
+		"rule r = \"a\" @custom(1,,2)\n",
+		"rule r = \"a\" @custom(, 1)\n",
+	} {
+		_, err := Parse(src)
+		if err == nil || !strings.Contains(err.Error(), "expected an attribute argument, found ','") {
+			t.Errorf("%q: got %v", src, err)
+		}
 	}
 }

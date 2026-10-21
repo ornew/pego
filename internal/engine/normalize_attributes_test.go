@@ -26,7 +26,7 @@ rule main (Alias) = {count := (1)} {(count == 1)} n:([0-9]+) => (Number{Text: (t
     level { infix left "+" / "-" }
     level product { infix left "*" / "/" }
 }`,
-		`rule main = "a" @error(, "bad")`,
+		`rule main = "a" @error(nil, "bad")`,
 		`rule main = "a" @error("a", message="b")`,
 		`rule main = "a" @atomic`,
 		`rule main = "a" #repeat(3, 1)`,
