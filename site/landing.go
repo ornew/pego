@@ -14,9 +14,9 @@ import (
 
 // The landing page is assembled from README.md, so that the pitch on the site and in the repository
 // cannot drift apart: the tagline and the introduction come from the top of the README, the feature
-// cards from the list under "Why PEGO", and the live example from its first pego code block. The
-// sections after that are rendered as they are, except the documentation table, which the site
-// replaces with its own navigation.
+// cards from the list under "Why PEGO", and the live example from its first pego code block and the
+// -i input of its first bash block. The sections after that are rendered as they are, except the
+// documentation table, which the site replaces with its own navigation.
 
 // landingData is the data of the landing template.
 type landingData struct {
@@ -90,8 +90,8 @@ func (s *Site) renderLanding() error {
 			sections.WriteString(m.render(n))
 		}
 	}
-	if d.Tagline == "" || len(d.Features) == 0 || d.Example == "" {
-		return fmt.Errorf("README.md: could not find the tagline, the features under Why PEGO or a pego code block for the landing page")
+	if d.Tagline == "" || len(d.Features) == 0 || d.Example == "" || d.ExampleIn == "" {
+		return fmt.Errorf("README.md: could not find the tagline, the features under Why PEGO, a pego code block or a bash block with -i '...' for the landing page")
 	}
 	d.Snippets = template.HTML(snippets.String())
 	d.Sections = template.HTML(sections.String())
@@ -153,7 +153,7 @@ func (s *Site) landingIntro(d *landingData, m *markdown, n ast.Node, snippets *s
 		switch {
 		case lang == "pego" && d.Example == "":
 			d.Example = code.String()
-		case lang == "console" && d.ExampleIn == "":
+		case lang == "bash" && d.ExampleIn == "":
 			if mm := inputRe.FindStringSubmatch(code.String()); mm != nil {
 				d.ExampleIn = mm[1]
 			}

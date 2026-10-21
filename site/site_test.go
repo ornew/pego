@@ -103,7 +103,7 @@ func TestBuild(t *testing.T) {
 	// Generated pages.
 	for page, wants := range map[string][]string{
 		"index.html": {
-			"Grammar In. Bulletproof Parser Out.", `class="feature"`, `id="live"`, "pego parse -g calc.pego",
+			"Grammar In. Bulletproof Parser Out.", `class="feature"`, `id="live"`, `data-input="1 &#43; 2 * 3 ^ 2"`, `id="live-input" class="live-input" value="1 &#43; 2 * 3 ^ 2"`, "pego parse -g calc.pego",
 			`href="docs/tutorial/getting-started/"`, `id="install"`,
 		},
 		"reference/pego/index.html": {
