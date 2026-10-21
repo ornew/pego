@@ -528,6 +528,7 @@ func (p *printer) body(e Expr, indent string) {
 			// A comment before "/" on its line stays before it: on a line of its
 			// own it would belong to the alternative before.
 			p.write(" ")
+			p.inline(breakAt(c.Breaks, i))
 		}
 		if g := leadGap(a); g != nil {
 			// Comments between "/" and the alternative keep their lines.
@@ -547,9 +548,10 @@ func (p *printer) body(e Expr, indent string) {
 	}
 }
 
-// emptyBreak reports whether b only starts a line.
+// emptyBreak reports whether b only starts a line, perhaps with a comment that
+// ends it.
 func emptyBreak(b *LineBreak) bool {
-	return !b.Blank && len(b.Comments) == 0 && b.Trailing == nil
+	return !b.Blank && len(b.Comments) == 0
 }
 
 // endsWithGap reports whether e is followed by comments written on its line
@@ -618,7 +620,7 @@ func (p *printer) itemNode(e Expr, indent string) {
 		p.write("!")
 		p.operand(e.Expr, indent)
 	case *Atomic:
-		p.write(formatExpr(e.Expr, precSuffix, p.control))
+		p.suffixOperand(e.Expr, indent)
 		if e.Break != nil {
 			p.lineBreak(e.Break, indent, false)
 		} else {
@@ -626,7 +628,7 @@ func (p *printer) itemNode(e Expr, indent string) {
 		}
 		p.write(gapBefore(operatorLayout(e), p.control) + "#atomic")
 	case *Stream:
-		p.write(formatExpr(e.Expr, precSuffix, p.control))
+		p.suffixOperand(e.Expr, indent)
 		if e.Break != nil {
 			p.lineBreak(e.Break, indent, false)
 		} else {
@@ -634,7 +636,7 @@ func (p *printer) itemNode(e Expr, indent string) {
 		}
 		p.write(gapBefore(operatorLayout(e), p.control) + "#stream")
 	case *Recovery:
-		p.write(formatExpr(e.Expr, precSuffix, p.control))
+		p.suffixOperand(e.Expr, indent)
 		if e.Break != nil {
 			p.lineBreak(e.Break, indent, false)
 		} else {
@@ -656,7 +658,7 @@ func (p *printer) itemNode(e Expr, indent string) {
 			p.write(indentTermLines(formatExprNode(e, precPrefix, p.control), indent, p.control))
 			break
 		}
-		p.write(formatExpr(e.Expr, precSuffix, p.control))
+		p.suffixOperand(e.Expr, indent)
 		p.lineBreak(e.PragmaBreak, indent, false)
 		p.write(indentTermLines(formatRepeatPragma(e, p.control), indent, p.control))
 	case *Optional:
@@ -670,7 +672,7 @@ func (p *printer) itemNode(e Expr, indent string) {
 		p.write("-")
 		p.operand(e.Expr, indent)
 	case *Attributed:
-		p.write(formatExpr(e.Expr, precSuffix, p.control))
+		p.suffixOperand(e.Expr, indent)
 		for i, a := range e.Attrs {
 			pollFormat(p.control)
 			if b := breakAt(e.Breaks, i); b != nil {
@@ -684,6 +686,17 @@ func (p *printer) itemNode(e Expr, indent string) {
 	default:
 		p.write(formatExprNode(e, precPrefix, p.control))
 	}
+}
+
+// suffixOperand writes the operand of a pragma. A group, or an operand that
+// holds line breaks, is written by this printer, so that the comments at the
+// end of a line stay at the end of that line.
+func (p *printer) suffixOperand(e Expr, indent string) {
+	if _, group := e.(*Group); group || hasBreak(e) {
+		p.item(e, indent)
+		return
+	}
+	p.write(formatExpr(e, precSuffix, p.control))
 }
 
 // operand writes the operand of a label or a prefix operator, after the
@@ -744,10 +757,14 @@ func (p *printer) groupBody(e Expr, indent string) {
 	pollFormat(p.control)
 	if action, ok := e.(*InlineAction); ok {
 		p.body(action.Expr, indent)
+		arrow := indentTermLines(actionArrow(action, p.control), indent, p.control)
+		if strings.HasSuffix(arrow, "\n=>") {
+			arrow = arrow[:len(arrow)-2] + indent + "=>"
+		}
 		if action.DefaultAction {
-			p.write(" => ...")
+			p.write(arrow + " ...")
 		} else {
-			p.write(joinLayout(" => ", indentTermLines(formatTerm(action.Action, 0, p.control), indent, p.control)))
+			p.write(joinLayout(arrow+" ", indentTermLines(formatTerm(action.Action, 0, p.control), indent, p.control)))
 		}
 		return
 	}
@@ -1449,9 +1466,9 @@ func formatExprNode(e Expr, outer int, control *metadataControl) string {
 	pollFormat(control)
 	switch e := e.(type) {
 	case *InlineAction:
-		action := " => ..."
+		action := actionArrow(e, control) + " ..."
 		if !e.DefaultAction {
-			action = joinLayout(" => ", formatTerm(e.Action, 0, control))
+			action = joinLayout(actionArrow(e, control)+" ", formatTerm(e.Action, 0, control))
 		}
 		return finishFormat("("+formatExpr(e.Expr, precChoice, control)+action+")", control)
 	case *Choice:
@@ -1556,10 +1573,12 @@ func repeatSuffix(e *Repeat, control *metadataControl) string {
 	return gapAfter(operatorLayout(e), control) + " " + formatRepeatPragma(e, control)
 }
 
-// hasBreak reports whether the operand e of a suffix holds a line break that
-// only the printer writes.
+// hasBreak reports whether the operand e of a suffix holds a line break, or a
+// comment at the end of a line, that only the printer writes.
 func hasBreak(e Expr) bool {
 	switch e := e.(type) {
+	case *Group:
+		return true // its closing delimiter may be followed by a comment ending the line
 	case *Atomic:
 		return e.Break != nil || hasBreak(e.Expr)
 	case *Stream:
@@ -1616,6 +1635,15 @@ func arrow(t *Lambda, control *metadataControl) string {
 		return gapString(l.OpGap, " ", control) + "=> "
 	}
 	return " => "
+}
+
+// actionArrow returns the "=>" of an inline action, with the comments before it
+// and the space before them.
+func actionArrow(a *InlineAction, control *metadataControl) string {
+	if l := nodeLayout(a); l != nil && l.OpGap != nil {
+		return gapString(l.OpGap, " ", control) + "=>"
+	}
+	return " =>"
 }
 
 // binaryGap returns what stands between the left operand of t and its operator.

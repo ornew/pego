@@ -826,10 +826,14 @@ func (p *parser) inlineChoice() (sourceResult grammar.Expr) {
 
 	e := p.choice()
 	if !p.boundary() && p.is("=>") {
-		p.afterGap(e)
+		gap := p.takeCommentGap()
 		pos := p.next().pos
 		term, defaultAction := p.actionTerm()
-		return &grammar.InlineAction{SourceInfo: grammar.SourceInfo{Pos: pos}, Expr: e, Action: term, DefaultAction: defaultAction}
+		a := &grammar.InlineAction{SourceInfo: grammar.SourceInfo{Pos: pos}, Expr: e, Action: term, DefaultAction: defaultAction}
+		if gap != nil {
+			layoutOf(a).OpGap = gap
+		}
+		return a
 	}
 	return e
 }
@@ -1528,10 +1532,13 @@ func (p *parser) primary() (sourceResult grammar.Expr) {
 			p.leadBreak(group.BodyBreak, lead)
 			group.Expr = p.bodyChoice()
 			if !p.boundary() && p.is("=>") {
-				p.afterGap(group.Expr)
+				gap := p.takeCommentGap()
 				pos := p.next().pos
 				action, defaultAction := p.actionTerm()
 				group.Expr = &grammar.InlineAction{SourceInfo: grammar.SourceInfo{Pos: pos}, Expr: group.Expr, Action: action, DefaultAction: defaultAction}
+				if gap != nil {
+					layoutOf(group.Expr).OpGap = gap
+				}
 				p.sourceNode(group.Expr, open+1)
 			}
 			group.CloseBreak = p.lineBreak()
