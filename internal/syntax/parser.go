@@ -1314,17 +1314,13 @@ func (p *parser) attribute() (sourceResult *grammar.Attribute) {
 				p.errorf("positional attribute arguments must precede keyword arguments")
 				panic(bail{})
 			}
-			var value any
-			if !p.is(",") && !p.is(")") {
-				value = p.attributeValue()
-			}
-			a.Args = append(a.Args, value)
+			a.Args = append(a.Args, p.attributeValue())
 		}
 		if p.accept(")") {
 			return a
 		}
 		p.expect(",")
-		if named && p.accept(")") {
+		if p.accept(")") {
 			a.TrailingComma = true
 			return a
 		}

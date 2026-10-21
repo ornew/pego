@@ -1281,10 +1281,6 @@ func formatAttribute(a *Attribute, control *metadataControl) string {
 	var args []string
 	for _, value := range a.Args {
 		pollFormat(control)
-		if value == nil && len(a.Args) > 1 {
-			args = append(args, "")
-			continue
-		}
 		args = append(args, formatAttributeValue(value, control))
 	}
 	var keys []string
@@ -1309,21 +1305,15 @@ func formatAttribute(a *Attribute, control *metadataControl) string {
 		pollFormat(control)
 		args = append(args, key+"="+formatAttributeValue(a.KwArgs[key], control))
 	}
-	if a.TrailingComma && len(keys) > 0 {
-		// A comma after the last keyword argument puts every argument on its own line.
+	if a.TrailingComma {
+		// A comma after the last argument puts every argument on its own line.
 		elems := make([]listElem, len(args))
 		for i, arg := range args {
 			elems[i] = listElem{head: arg}
 		}
 		return s + formatTermList(elems, false, true, "(", ")", nil, nil, nil, control)
 	}
-	list := joinFormatParts(args, ", ", control)
-	if len(keys) == 0 && len(a.Args) > 1 && a.Args[len(a.Args)-1] == nil {
-		// The last argument is empty: the comma stays, without a space before the
-		// parenthesis.
-		list = strings.TrimSuffix(list, " ")
-	}
-	return s + "(" + list + ")"
+	return s + "(" + joinFormatParts(args, ", ", control) + ")"
 }
 
 func formatAttributeValue(value any, control *metadataControl) string {

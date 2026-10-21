@@ -43,7 +43,7 @@ var nodeBases = []string{
 	"rule a = (\n x // t\n / y\n)* z\n",
 	"rule a = b => (i) => N{A: i} + map(list($x), (j) => j) + $x.(*[]int) + x[0][1]\n",
 	"rule e = operators {\n operand \"1\"\n level a {\n prefix \"-\" ;\n infix left \"+\" ; infix right \"^\"\n}\n} => ...\n",
-	"rule a = x:y* @error(message=\"x\") @a() @b(,) @c(1,)\n",
+	"rule a = x:y* @error(message=\"x\") @a() @b(nil) @c(1,)\n",
 	"rule a = \"😀\" 😀? // ß\n",
 	"rule a = b => N{\n A: 1, // a\n B: 2 // b\n} // n\n",
 	"rule a = b => {\n x // a\n y; // b\n z\n}\n",

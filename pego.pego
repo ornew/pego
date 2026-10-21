@@ -379,13 +379,13 @@ rule attr_named_args AttrArgs = (
     first:attr_named rest:(-ws "," -ws n:attr_named)* (-ws "," -ws)?
 ) => AttrArgs{Args: list(), KwArgs: concat(list($first), map($rest, (x) => x.$n))}
 rule attr_mixed_args AttrArgs = (
-    first:attr_slot rest:(-ws "," -ws a:attr_slot)* named:(attr_named_tail / attr_empty_args)
+    first:attr_slot rest:(-ws "," -ws a:attr_slot)* named:(attr_named_tail / attr_trailing_comma)
 ) => AttrArgs{Args: concat(list($first.Value), map($rest, (x) => x.$a.Value)), KwArgs: $named.KwArgs}
 rule attr_no_args AttrArgs = !"(" => AttrArgs{Args: list(), KwArgs: list()}
 rule attr_no_values AttrArgs = &")" => AttrArgs{Args: list(), KwArgs: list()}
-rule attr_empty_args AttrArgs = _ => AttrArgs{Args: list(), KwArgs: list()}
+rule attr_trailing_comma AttrArgs = (-ws "," -ws)? => AttrArgs{Args: list(), KwArgs: list()}
 rule attr_named_tail AttrArgs = -ws "," -ws n:attr_named_args => $n
-rule attr_slot AttrSlot = !(ident -ws "=") v:attr_value? => AttrSlot{Value: $v}
+rule attr_slot AttrSlot = !(ident -ws "=") v:attr_value => AttrSlot{Value: $v}
 rule attr_named AttrNamed = (
     name:ident -ws "=" -ws v:(attr_value @error(message="expected attribute argument value"))
 ) => AttrNamed{Name: $name, Value: $v}

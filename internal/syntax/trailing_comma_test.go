@@ -1,6 +1,7 @@
 package syntax
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/ornew/pego/grammar"
@@ -44,7 +45,7 @@ func TestTrailingCommaLists(t *testing.T) {
 		{"call with a line comment before and after a comma", "rule r = \"a\" => f(1 // a\n, // b\n2)\n", "rule r = \"a\" => f(\n    1 // a\n    , // b\n    2,\n)\n"},
 		{"call with a comment line before a comma", "rule r = \"a\" => f(1\n    // m\n    , 2)\n", "rule r = \"a\" => f(\n    1\n    // m\n    ,\n    2,\n)\n"},
 		{"call with a block comment between an element and its comma", "rule r = \"a\" => f(1 /* c */, 2)\n", "rule r = \"a\" => f(1 /* c */, 2)\n"},
-		{"attribute with a trailing comma after positional arguments", "rule r = \"a\" @x(1, 2,) \"b\"\n", "rule r = \"a\" @x(1, 2,) \"b\"\n"},
+		{"attribute with a trailing comma after positional arguments", "rule r = \"a\" @x(1, 2,) \"b\"\n", "rule r = \"a\" @x(\n    1,\n    2,\n) \"b\"\n"},
 		{"call with a block comment on a line of its own before an element", "rule r = \"a\" => f(\n    /* c */ 1, 2)\n", "rule r = \"a\" => f(\n    /* c */\n    1,\n    2,\n)\n"},
 		{"call with an inline block comment", "rule r = \"a\" => f(1 /* c */, 2)\n", "rule r = \"a\" => f(1 /* c */, 2)\n"},
 		{"call with an inline block comment and a trailing comma", "rule r = \"a\" => f(/* c */ 1, 2,)\n", "rule r = \"a\" => f(\n    /* c */\n    1,\n    2,\n)\n"},
@@ -214,6 +215,47 @@ func TestGroupBlockCommentsKeepOwners(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := checkFormat(t, tc.in); got != tc.want {
 				t.Fatalf("got:\n%s\nwant:\n%s", got, tc.want)
+			}
+		})
+	}
+}
+
+// The comma of #repeat carries meaning, so it is not a trailing comma: it
+// stays, on one line, and its bounds do not change.
+func TestRepeatPragmaCommaIsNotTrailing(t *testing.T) {
+	for _, tc := range []struct {
+		pragma   string
+		min, max int
+	}{
+		{"#repeat(2)", 2, 2},
+		{"#repeat(2,)", 2, -1},
+		{"#repeat(2, )", 2, -1},
+		{"#repeat(,3)", 0, 3},
+		{"#repeat(2,3)", 2, 3},
+	} {
+		t.Run(tc.pragma, func(t *testing.T) {
+			g, err := Parse("rule r = \"a\" " + tc.pragma + " \"b\"\n")
+			if err != nil {
+				t.Fatal(err)
+			}
+			rep := g.Rules()[0].Expr.(*grammar.Seq).Items[0].(*grammar.Repeat)
+			if rep.Min != tc.min || rep.Max != tc.max {
+				t.Fatalf("bounds %d,%d, want %d,%d", rep.Min, rep.Max, tc.min, tc.max)
+			}
+			out := grammar.Format(g)
+			if strings.Contains(out, "\n    ") {
+				t.Fatalf("broken into lines:\n%s", out)
+			}
+			again, err := Parse(out)
+			if err != nil {
+				t.Fatalf("%v\n%s", err, out)
+			}
+			rep = again.Rules()[0].Expr.(*grammar.Seq).Items[0].(*grammar.Repeat)
+			if rep.Min != tc.min || rep.Max != tc.max {
+				t.Fatalf("formatted bounds %d,%d, want %d,%d\n%s", rep.Min, rep.Max, tc.min, tc.max, out)
+			}
+			if tc.max < 0 && !strings.Contains(out, "#repeat(2, )") {
+				t.Fatalf("the comma was removed:\n%s", out)
 			}
 		})
 	}

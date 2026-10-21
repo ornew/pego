@@ -235,7 +235,7 @@ package sample
 type Alias ~ (
  []A | *B
 )
-rule main = x:"a" #atomic @custom(, true, message="expected a") => map(list($x), (item) => Item{Value: item})
+rule main = x:"a" #atomic @custom(nil, true, message="expected a") => map(list($x), (item) => Item{Value: item})
 rule grouped = ("a" => A{}) => ...
 rule expression = operators {
  skip " "*
@@ -291,7 +291,7 @@ func TestSourceGrammarTree(t *testing.T) {
 				t.Fatal("postfix/capture precedence changed")
 			}
 			args := elems(sourceField(t, sourceField(t, attr, "Attr"), "Args"))
-			if len(args) != 2 || args[0] != nil || args[1].Type() != "True" {
+			if len(args) != 2 || args[0].Type() != "Nil" || args[1].Type() != "True" {
 				t.Fatalf("positional slots: %v", args)
 			}
 			action := sourceField(t, defs[1], "Action")

@@ -220,9 +220,7 @@ no placement of it on a line of its own gives it that. After formatting, the
 first leads the element after it, and the second trails the last element.
 Lambda parameters, `#repeat` bounds and `#recover` take no trailing comma and
 keep their form. In an attribute with positional arguments only, a comma after
-the last argument starts an empty argument, so `@x(1,)` is `[1, nil]`; it is
-written as it was, without a space before the parenthesis, and is not a trailing
-comma.
+the last argument is a trailing comma, as in every other list.
 
 A trailing comma is not part of the normalized grammar: it is kept in the
 `TrailingComma` field of `TupleType`, `TypeApp`, `TupleLit`, `New`,
@@ -433,7 +431,9 @@ and does not cause a panic during compilation.
 
 An attribute (`Attributed`, `Attribute`) holds `args`, an ordered list of integers,
 strings, booleans, null slots and expression nodes, and `kwArgs`, which maps names to
-the same forms. `@custom(2,)` yields `[2, null]` and `@custom(2)` yields `[2]`.
+the same forms. `@custom(2,)` and `@custom(2)` both yield `[2]`: a comma after the last
+argument is a trailing comma, as in other lists. An empty argument is written
+`nil`, as in `@custom(nil, 2)`, which yields `[null, 2]`.
 Keyword arguments follow positional arguments in source, and strict decoding rejects
 a repeated keyword. Integer constants use the native `int` range; the minimum
 integer is formatted as `-MaxInt - 1`, with parentheses where required, because its

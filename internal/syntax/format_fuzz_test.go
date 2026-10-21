@@ -142,6 +142,9 @@ func TestFormatRandomLists(t *testing.T) {
 		{"level", func(s string) string {
 			return "rule e = operators {\n    operand \"n\"\n    level { infix left \"+\" => " + s + " }\n}\n"
 		}},
+		{"repeat", func(s string) string {
+			return "rule r = (\"a\" #repeat(2,) \"b\" #repeat(,3) \"c\" #repeat(2) \"d\" #repeat(2, 3) => " + s + ") \"e\"\n"
+		}},
 		{"attribute", func(s string) string {
 			return "rule r = (\"a\" @error(message=\"m\",) \"b\" => " + s + ") \"c\"\n"
 		}},

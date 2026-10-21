@@ -214,12 +214,12 @@ rule attr_args = (
     -")"
 )
 rule attr_named_args = attr_named (-ws "," -ws attr_named)* (-ws "," -ws)?
-rule attr_mixed_args = attr_slot (-ws "," -ws attr_slot)* (attr_named_tail / attr_empty_args)
+rule attr_mixed_args = attr_slot (-ws "," -ws attr_slot)* (attr_named_tail / attr_trailing_comma)
 rule attr_no_args = !"("
 rule attr_no_values = &")"
-rule attr_empty_args = _
+rule attr_trailing_comma = (-ws "," -ws)?
 rule attr_named_tail = -ws "," -ws attr_named_args
-rule attr_slot = !(ident -ws "=") attr_value?
+rule attr_slot = !(ident -ws "=") attr_value
 rule attr_named = ident -ws "=" -ws attr_value
 rule attr_value = true_lit / false_lit / nil_lit / signed_int / string / rule_expr
 rule signed_int = (("-" -ws)? digit+ #atomic) #atomic

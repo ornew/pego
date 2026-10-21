@@ -8,8 +8,9 @@ complete sequence rather than its final item. Behavioral and structural
 `#` pragmas are defined separately in [Pragmas](pragmas.md).
 
 Attribute arguments consist of positional arguments followed by named
-arguments. A positional argument may be `nil`, so an omitted slot remains
-distinct from an absent argument. Duplicate named arguments are errors. This
+arguments. A positional argument may be `nil`, so an empty argument is written
+explicitly and remains distinct from an absent argument. A comma after the last
+argument is a trailing comma and adds no argument. Duplicate named arguments are errors. This
 specification defines `@error` and `@diagnostic`; unknown attribute names and
 invalid arguments or targets are grammar errors. No user-defined attribute
 extension mechanism is specified.

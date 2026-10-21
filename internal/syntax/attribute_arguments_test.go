@@ -137,7 +137,7 @@ func TestAttributeArgumentBinding(t *testing.T) {
 }
 
 func TestAttributeScalarJSON(t *testing.T) {
-	g, err := syntax.Parse(`rule main = "a" @custom(1, "text", , flag=true, missing=nil, expr=(a / b))`)
+	g, err := syntax.Parse(`rule main = "a" @custom(1, "text", nil, flag=true, missing=nil, expr=(a / b))`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,7 +166,8 @@ func TestAttributeOmittedSlots(t *testing.T) {
 	for _, tc := range []struct {
 		source string
 		want   []any
-	}{{"@custom(2)", []any{2}}, {"@custom(2, )", []any{2, nil}}, {"@custom(, 2)", []any{nil, 2}}} {
+	}{{"@custom(2)", []any{2}}, {"@custom(2, )", []any{2}}, {"@custom(nil, 2)", []any{nil, 2}},
+		{"@custom(2, nil)", []any{2, nil}}, {"@custom(2, nil,)", []any{2, nil}}, {"@custom(nil)", []any{nil}}} {
 		g, err := syntax.Parse("rule main = \"a\" " + tc.source)
 		if err != nil {
 			t.Fatal(err)
@@ -189,6 +190,14 @@ func TestAttributeOmittedSlots(t *testing.T) {
 		}
 		if !reflect.DeepEqual(again.Rules()[0].Expr.(*grammar.Attributed).Attrs[0].Args, tc.want) {
 			t.Fatal("lost slots")
+		}
+	}
+}
+
+func TestAttributeEmptySlotsAreErrors(t *testing.T) {
+	for _, source := range []string{"@custom(, 2)", "@custom(,)", "@custom(2,,)", "@custom(2, , 3)", "@custom(k=1, 2)"} {
+		if _, err := syntax.Parse("rule main = \"a\" " + source); err == nil {
+			t.Fatalf("%s parsed", source)
 		}
 	}
 }

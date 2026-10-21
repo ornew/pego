@@ -179,8 +179,8 @@ the legacy `UnmarshalJSON` signature and permissive behavior remain unchanged.
 
 Source `@` attributes use `Attributed` and `Attribute`: `args` is an ordered list
 of integers, strings, booleans, null slots or expression nodes, and `kwArgs`
-maps argument names to the same value forms. For example, `@custom(2,)`
-preserves `[2, null]`, whereas `@custom(2)` preserves `[2]`. Integer argument
+maps argument names to the same value forms. For example, `@custom(nil, 2)`
+preserves `[null, 2]`, whereas `@custom(2,)` and `@custom(2)` both preserve `[2]`. Integer argument
 values, including the native minimum, survive source formatting and parsing. Keyword arguments
 follow positional arguments in source. Strict JSON decoding also rejects
 repeated keyword keys.
