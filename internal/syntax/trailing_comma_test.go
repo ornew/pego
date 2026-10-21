@@ -11,6 +11,11 @@ import (
 // line and ends with a comma. The comma of a one-element tuple is part of the
 // syntax and does not count as a trailing comma.
 func TestTrailingCommaLists(t *testing.T) {
+	// A comment between two tokens of one line, before an element of a list on
+	// lines, cannot stay between them.
+	inlineBeforeElement := map[string]bool{
+		"call with an inline block comment and a trailing comma": true,
+	}
 	const prelude = "type S = { A int; B int }\n"
 	for _, tc := range []struct {
 		name, in, want string
@@ -24,6 +29,23 @@ func TestTrailingCommaLists(t *testing.T) {
 		{"call with a line comment", "rule r = \"a\" => f(1, // c\n    2)\n", "rule r = \"a\" => f(\n    1, // c\n    2,\n)\n"},
 		{"call with a comment line", "rule r = \"a\" => f(1,\n    // c\n    2)\n", "rule r = \"a\" => f(\n    1,\n    // c\n    2,\n)\n"},
 		{"call with a comment before the closing parenthesis", "rule r = \"a\" => f(1, 2\n    // c\n)\n", "rule r = \"a\" => f(\n    1,\n    2,\n    // c\n)\n"},
+		// A comment on the line of a comma, after it, trails the element before the
+		// comma, and one that ends its line stays on that line.
+		{"list with a line comment after the last comma", "rule r = \"a\" => []int{1, 2, // c\n}\n", "rule r = \"a\" => []int{\n    1,\n    2, // c\n}\n"},
+		{"list with a line comment after a comma", "rule r = \"a\" => []int{1, // c\n    2}\n", "rule r = \"a\" => []int{\n    1, // c\n    2,\n}\n"},
+		{"tuple with a line comment after a comma", "rule r = \"a\" => (1, // c\n    2)\n", "rule r = \"a\" => (\n    1, // c\n    2,\n)\n"},
+		{"call with a block comment before a line break after the last element", "rule r = \"a\" => f(1, 2 /* c */\n)\n", "rule r = \"a\" => f(\n    1,\n    2, /* c */\n)\n"},
+		{"call with a block comment before a line break and a comma", "rule r = \"a\" => f(1 /* c */\n, 2)\n", "rule r = \"a\" => f(\n    1, /* c */\n    2,\n)\n"},
+		{"call with a block comment after a comma and before a line break", "rule r = \"a\" => f(1, /* c */\n    2)\n", "rule r = \"a\" => f(\n    1, /* c */\n    2,\n)\n"},
+		{"constructor with a block comment before a line break", "rule r = \"a\" => N{x /* c */\n}\n", "rule r = \"a\" => N{\n    x, /* c */\n}\n"},
+		// Two line comments around a comma cannot share a line, and a comment that
+		// belongs to nothing must not become one that trails the element.
+		{"tuple with a line comment before and after a comma", "rule r = \"a\" => (1 // a\n, // b\n)\n", "rule r = \"a\" => (\n    1 // a\n    , // b\n)\n"},
+		{"call with a line comment before and after a comma", "rule r = \"a\" => f(1 // a\n, // b\n2)\n", "rule r = \"a\" => f(\n    1 // a\n    , // b\n    2,\n)\n"},
+		{"call with a comment line before a comma", "rule r = \"a\" => f(1\n    // m\n    , 2)\n", "rule r = \"a\" => f(\n    1\n    // m\n    ,\n    2,\n)\n"},
+		{"call with a block comment between an element and its comma", "rule r = \"a\" => f(1 /* c */, 2)\n", "rule r = \"a\" => f(1 /* c */, 2)\n"},
+		{"attribute with a trailing comma after positional arguments", "rule r = \"a\" @x(1, 2,) \"b\"\n", "rule r = \"a\" @x(1, 2,) \"b\"\n"},
+		{"call with a block comment on a line of its own before an element", "rule r = \"a\" => f(\n    /* c */ 1, 2)\n", "rule r = \"a\" => f(\n    /* c */\n    1,\n    2,\n)\n"},
 		{"call with an inline block comment", "rule r = \"a\" => f(1 /* c */, 2)\n", "rule r = \"a\" => f(1 /* c */, 2)\n"},
 		{"call with an inline block comment and a trailing comma", "rule r = \"a\" => f(/* c */ 1, 2,)\n", "rule r = \"a\" => f(\n    /* c */\n    1,\n    2,\n)\n"},
 		{"call with a block comment after an element and a trailing comma", "rule r = \"a\" => f(1 /* c */, 2,)\n", "rule r = \"a\" => f(\n    1 /* c */,\n    2,\n)\n"},
@@ -92,11 +114,15 @@ func TestTrailingCommaLists(t *testing.T) {
 		{"recover", "rule r = \"a\" #recover(skip=\",\" / \";\")\n", "rule r = \"a\" #recover(skip=\",\" / \";\")\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got := checkFormat(t, tc.in)
+			check := checkFormat
+			if inlineBeforeElement[tc.name] {
+				check = checkFormatLines
+			}
+			got := check(t, tc.in)
 			if got != tc.want {
 				t.Fatalf("got:\n%s\nwant:\n%s", got, tc.want)
 			}
-			if again := checkFormat(t, got); again != got {
+			if again := check(t, got); again != got {
 				t.Fatalf("format is not idempotent:\n%s\n%s", got, again)
 			}
 		})
@@ -133,5 +159,62 @@ func TestTrailingCommaNotSerialized(t *testing.T) {
 	const flat = "rule r = \"a\" => f(1, (2, 3), []int{4})\n"
 	if got := grammar.Format(bare); got != flat {
 		t.Fatalf("got:\n%s\nwant:\n%s", got, flat)
+	}
+}
+
+// A comment after a list comma, on the comma's line, trails the element before
+// the comma, like the comment after a separator trails the node before it. It
+// replaces a trailing comment before the comma, which then has no owner.
+func TestListCommaCommentTrailsElement(t *testing.T) {
+	for _, tc := range []struct {
+		name, src, want string
+	}{
+		{"call", "f(1, // c\n    2)", " c\n"},
+		{"last comma", "f(1, // c\n)", " c\n"},
+		{"list constructor", "[]int{1, // c\n    2}", " c\n"},
+		{"tuple", "(1, // c\n    2)", " c\n"},
+		{"block comment", "f(1, /* c */\n    2)", " c "},
+		{"before and after the comma", "f(1 // a\n    , // b\n    2)", " b\n"},
+		{"before the comma", "f(1 // a\n    , 2)", " a\n"},
+		{"inline block comment", "f(1, /* c */ 2)", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			g, err := Parse("rule r = \"a\" => " + tc.src + "\n")
+			if err != nil {
+				t.Fatal(err)
+			}
+			var args []grammar.Term
+			switch x := g.File.Decls[0].(*grammar.RuleDef).Action.(type) {
+			case *grammar.Call:
+				args = x.Args
+			case *grammar.ListConstructor:
+				args = x.Items
+			case *grammar.TupleLit:
+				args = x.Elems
+			}
+			if got := args[0].(grammar.SourceNode).Source().TrailingComments; got != tc.want {
+				t.Fatalf("the trailing comment of the first element is %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// A block comment that stands on a line of its own, or that ends its line,
+// is not between two tokens of one line, so a group around it is not written on
+// one line, which would change the comment's owner.
+func TestGroupBlockCommentsKeepOwners(t *testing.T) {
+	for _, tc := range []struct {
+		name, in, want string
+	}{
+		{"on a line of its own before the element", "rule r = \"a\" => (\n    /* c */ 1\n)\n", "rule r = \"a\" => (\n    /* c */\n    1\n)\n"},
+		{"ending the line of the element", "rule r = \"a\" => (1 /* c */\n)\n", "rule r = \"a\" => (\n    1 /* c */\n)\n"},
+		{"ending the line of the opening parenthesis", "rule r = \"a\" => (/* c */\n    1)\n", "rule r = \"a\" => ( /* c */\n    1\n)\n"},
+		{"between two tokens of a line", "rule r = \"a\" => (/* c */ 1 /* d */)\n", "rule r = \"a\" => ( /* c */ 1 /* d */)\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := checkFormat(t, tc.in); got != tc.want {
+				t.Fatalf("got:\n%s\nwant:\n%s", got, tc.want)
+			}
+		})
 	}
 }

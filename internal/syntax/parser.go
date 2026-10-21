@@ -266,6 +266,7 @@ func (p *parser) lineBreak() *grammar.LineBreak {
 	if c := t.lineComment; c != nil {
 		if p.cur != nil && p.cur.Trailing == nil {
 			p.cur.Trailing = c
+			p.cur.TrailingEnds = c.End.Line < t.pos.Line
 		} else {
 			b.Comments = p.appendComments([]*grammar.Comment{c}, b.Comments)
 		}
@@ -621,6 +622,7 @@ func (p *parser) typeTerm() (sourceResult grammar.TypeExpr) {
 			if !p.accept(",") {
 				break
 			}
+			p.commaTrailing(a.Args[len(a.Args)-1])
 			if p.is("]") {
 				a.TrailingComma = true
 				break
@@ -671,6 +673,7 @@ func (p *parser) tupleType(g *grammar.TypeGroup, first grammar.TypeExpr) grammar
 	if first != nil {
 		t.Types = append(t.Types, first)
 		for p.accept(",") {
+			p.commaTrailing(t.Types[len(t.Types)-1])
 			if p.is(")") {
 				t.TrailingComma = true
 				break
@@ -1788,6 +1791,7 @@ func (p *parser) tupleLit(t *grammar.TupleLit) grammar.Term {
 	if len(t.Elems) > 0 {
 		p.takeAfterLayout(t.Elems[0])
 		for p.accept(",") {
+			p.afterComma(t.Elems[len(t.Elems)-1], ")")
 			if p.is(")") {
 				t.TrailingComma = true
 				break
@@ -1856,9 +1860,9 @@ func (p *parser) newTerm() (sourceResult grammar.Term) {
 		trailing = false
 		if !p.is("}") {
 			p.expect(",")
+			p.afterComma(field, "}")
 			trailing = p.is("}")
 		}
-		p.sourceTrailing(field.Source())
 	}
 	finish(n, trailing)
 	return n
@@ -1893,10 +1897,60 @@ func (p *parser) listItems(closer string) (items []grammar.Term, trailing bool) 
 		trailing = false
 		if !p.is(closer) {
 			p.expect(",")
+			p.afterComma(item, closer)
 			trailing = p.is(closer)
 		}
 	}
 	return items, trailing
+}
+
+// afterComma finishes the comma that follows a list element of an action
+// expression. It gives the element the comment on the comma line, as
+// commaTrailing does, and keeps the comments on that line that end it, before
+// an element on a later line, with the element for the formatter. The comments
+// before a closing delimiter stay with the delimiter's line break.
+func (p *parser) afterComma(node any, closer string) {
+	p.commaTrailing(node)
+	x, ok := node.(grammar.SourceNode)
+	if p.header || !ok || p.is(closer) {
+		return
+	}
+	t := &p.toks[p.i]
+	cs := t.comments
+	if t.lineComment != nil {
+		cs = p.appendComments([]*grammar.Comment{t.lineComment}, cs)
+	}
+	line := p.toks[p.i-1].end.Line
+	n := 0
+	for n < len(cs) && cs[n].Pos.Line <= line {
+		n++
+	}
+	if n == 0 {
+		return
+	}
+	next := t.pos.Line
+	if n < len(cs) {
+		next = cs[n].Pos.Line
+	}
+	if last := cs[n-1]; !strings.HasPrefix(last.Text, "//") && last.End.Line >= next {
+		return
+	}
+	s := x.Source()
+	if s.Layout == nil {
+		s.Layout = &grammar.SourceLayout{}
+	}
+	s.Layout.Trail = cs[:n:n]
+	t.lineComment, t.comments = nil, cs[n:]
+}
+
+// commaTrailing gives the trailing comment after the comma that follows a list
+// element, the comment on the comma's line, to that element. It replaces the
+// trailing comment before the comma, which the same element claimed, as the
+// comment after a separator does.
+func (p *parser) commaTrailing(node any) {
+	if x, ok := node.(grammar.SourceNode); ok {
+		p.sourceTrailing(x.Source())
+	}
 }
 
 // takeAfterLayout keeps the comments between an element of a list and the
@@ -1920,6 +1974,7 @@ func (p *parser) takeAfterLayout(node any) {
 		s.Layout = &grammar.SourceLayout{}
 	}
 	s.Layout.After = cs
+	s.Layout.ElemLine, s.Layout.AfterLine = p.toks[p.i-1].end.Line, t.pos.Line
 	t.lineComment, t.comments = nil, nil
 }
 

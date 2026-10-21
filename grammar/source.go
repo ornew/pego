@@ -48,4 +48,10 @@ type SourceLayout struct {
 	// After holds the comments between the node and the comma that follows it
 	// in a list of elements, fields or arguments.
 	After []*Comment
+	// ElemLine is the line the node ends on, and AfterLine the line of that
+	// comma.
+	ElemLine, AfterLine int
+	// Trail holds the comments on the line of that comma after it, when they
+	// end the line.
+	Trail []*Comment
 }

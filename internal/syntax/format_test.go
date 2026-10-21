@@ -1,11 +1,13 @@
 package syntax
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -42,9 +44,24 @@ func lexComments(t *testing.T, src string) []string {
 	return cs
 }
 
-// checkFormat checks that formatting src keeps its grammar and comments and
-// is idempotent, and returns the result.
+// checkFormat checks that formatting src keeps its grammar and comments, each
+// with the node that owns it, and is idempotent, and returns the result.
 func checkFormat(t *testing.T, src string) string {
+	t.Helper()
+	return checkFormatOwners(t, src, false)
+}
+
+// checkFormatLines is checkFormat for a source with a comment between two
+// tokens of one line, directly before an element or the closing delimiter of
+// a list that formatting writes on lines. The comment cannot stay between the
+// tokens, so a detached comment becomes the leading comment of the element it
+// precedes, and a comment with no owner trails the element before it.
+func checkFormatLines(t *testing.T, src string) string {
+	t.Helper()
+	return checkFormatOwners(t, src, true)
+}
+
+func checkFormatOwners(t *testing.T, src string, moved bool) string {
 	t.Helper()
 	g, err := Parse(src)
 	if err != nil {
@@ -74,7 +91,74 @@ func checkFormat(t *testing.T, src string) string {
 	if again := grammar.Format(g2); again != out {
 		t.Errorf("formatting is not idempotent\nfirst:\n%s\nsecond:\n%s", out, again)
 	}
+	if diffs := ownerDiffs(g, g2, moved); len(diffs) > 0 {
+		t.Errorf("comment owners changed\n%s\n%s", strings.Join(diffs, "\n"), out)
+	}
 	return out
+}
+
+// ownerMap maps the path of each node that owns comments to the comments it
+// owns: the leading, trailing and detached comments of its source information.
+// With merged, detached comments count as leading ones.
+func ownerMap(g *grammar.Grammar, merged bool) map[string]string {
+	out := map[string]string{}
+	info := reflect.TypeOf(grammar.SourceInfo{})
+	var walk func(v reflect.Value, path string)
+	walk = func(v reflect.Value, path string) {
+		switch v.Kind() {
+		case reflect.Pointer:
+			if !v.IsNil() {
+				walk(v.Elem(), path)
+			}
+		case reflect.Interface:
+			if !v.IsNil() {
+				walk(v.Elem(), path+"<"+v.Elem().Type().String()+">")
+			}
+		case reflect.Slice:
+			for i := 0; i < v.Len(); i++ {
+				walk(v.Index(i), path+"["+strconv.Itoa(i)+"]")
+			}
+		case reflect.Struct:
+			if v.Type() == info {
+				s := v.Interface().(grammar.SourceInfo)
+				if merged {
+					s.LeadingComments = strings.Join(s.LeadingDetachedComments, "") + s.LeadingComments
+					s.LeadingDetachedComments = nil
+				}
+				if s.LeadingComments != "" || s.TrailingComments != "" || len(s.LeadingDetachedComments) > 0 {
+					out[path] = fmt.Sprintf("leading %q trailing %q detached %q", s.LeadingComments, s.TrailingComments, s.LeadingDetachedComments)
+				}
+				return
+			}
+			for i := 0; i < v.NumField(); i++ {
+				if v.Type().Field(i).IsExported() {
+					walk(v.Field(i), path+"."+v.Type().Field(i).Name)
+				}
+			}
+		}
+	}
+	walk(reflect.ValueOf(g), "")
+	return out
+}
+
+// ownerDiffs describes the nodes whose comments differ between two grammars of
+// the same shape. With merged, detached comments count as leading ones, and
+// a comment that gains an owner is not a difference.
+func ownerDiffs(a, b *grammar.Grammar, merged bool) []string {
+	x, y := ownerMap(a, merged), ownerMap(b, merged)
+	var diffs []string
+	for path, owned := range x {
+		if y[path] != owned {
+			diffs = append(diffs, fmt.Sprintf("%s: %s -> %s", path, owned, y[path]))
+		}
+	}
+	for path, owned := range y {
+		if _, ok := x[path]; !ok && !merged {
+			diffs = append(diffs, fmt.Sprintf("%s: none -> %s", path, owned))
+		}
+	}
+	slices.Sort(diffs)
+	return diffs
 }
 
 func mustJSON(t *testing.T, g *grammar.Grammar) string {

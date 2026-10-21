@@ -37,6 +37,11 @@ type LineBreak struct {
 	// Trailing is the comment at the end of the line that starts with the
 	// node, if any.
 	Trailing *Comment
+	// TrailingEnds reports whether a line break follows Trailing in the source
+	// before the next token, rather than that token following it on the same
+	// line. A block comment that ends its line cannot move to the line of the
+	// token after it without changing which node owns it.
+	TrailingEnds bool
 }
 
 // AllComments returns every comment kept in g, in no particular order.
@@ -69,6 +74,7 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 		if n, ok := t.(SourceNode); ok && n.Source().Layout != nil {
 			cs = appendMetadata(cs, n.Source().Layout.Before, control)
 			cs = appendMetadata(cs, n.Source().Layout.After, control)
+			cs = appendMetadata(cs, n.Source().Layout.Trail, control)
 		}
 		switch t := t.(type) {
 		case *TermGroup:
@@ -91,6 +97,7 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 				if field.Layout != nil {
 					cs = appendMetadata(cs, field.Layout.Before, control)
 					cs = appendMetadata(cs, field.Layout.After, control)
+					cs = appendMetadata(cs, field.Layout.Trail, control)
 				}
 				term(field.Value)
 			}

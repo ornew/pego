@@ -93,7 +93,8 @@ constructed by the canonical grammar.
 `SourceInfo.Layout` is optional raw formatter state. Its `Before` field retains
 comment tokens at a syntax boundary, while `PreviousLine` and `NextLine` retain
 the surrounding line relationship. Its `After` field retains the comments
-between a list element and the comma that follows it. A nil layout uses canonical formatting.
+between a list element and the comma that follows it, and its `Trail` field the
+comments after that comma that end its line. A nil layout uses canonical formatting.
 `grammar.Format` uses stored layout tokens when present, so changing normalized
 comment strings alone does not change their formatted spelling or placement.
 `Grammar.Clone()` copies the layout and its comment tokens. JSON omits layout;
@@ -130,6 +131,13 @@ Ownership then follows the construct:
   declaration.
 - A comment before a list element belongs to the element, not to the separator that
   precedes it.
+- A comma between the elements of a list (the arguments of a call, constructor
+  or type application, the items of a list constructor, the elements of a tuple
+  value or type) is a token of its own, like a statement separator. The group
+  that trails the comma, a comment on the comma's line or one before the
+  closing delimiter, trails the element before the comma, and replaces the
+  group that trailed the element before the comma, which then belongs to
+  nothing. A group that leads or is detached at the comma belongs to nothing.
 - A comment at the boundary of a nested expression belongs to the expression that
   contains the boundary.
 - A parenthesized group owns the comments adjacent to its delimiters.
@@ -187,12 +195,34 @@ f(
 The comma that a tuple of one element requires, as in `(x,)`, is not a trailing
 comma: a tuple needs a trailing comma and two or more elements to be written on
 lines. An element that is written over several lines, such as a nested list with
-a trailing comma, puts the list around it on lines too. A block comment on the
-line of the token before it, as in `f(/* a */ 1, 2)` or `f(1 /* a */, 2)`, stays
-there and keeps the list on one line, because moving it would change which
-element owns it; the comments of a list on lines keep their place relative to
-the elements and commas. Lambda parameters, `#repeat` bounds and `#recover` take
-no trailing comma and keep their form.
+a trailing comma, puts the list around it on lines too. A block comment between
+two tokens of one line, as in `f(/* a */ 1, 2)` or `f(1 /* a */, 2)`, stays there
+and keeps the list on one line, because moving it would change which node owns
+it. A block comment that ends its line, as in `f(1, 2 /* a */` followed by a line
+break, is not between two tokens of one line: it puts the list on lines, where it
+follows the comma of its element and still trails it.
+
+On lines, comments keep the owner they have in the source:
+
+- A comment that ends the line of an element goes after the element's comma on
+  that line, `2, // c`.
+- A comment before the comma and a comment after it cannot share a line, since
+  a line comment ends its line and the second would belong to another node. They
+  are written as they were, the comma on the line after the first:
+  `1 // a` and `, // b`.
+- A comment on a line of its own between an element and its comma has no owner
+  and stays between them.
+
+One thing cannot be kept in a list on lines: a block comment between two tokens
+of one line, after the opening delimiter or a comma and before an element, or
+before the closing delimiter. Such a comment is detached, or has no owner, but
+no placement of it on a line of its own gives it that. After formatting, the
+first leads the element after it, and the second trails the last element.
+Lambda parameters, `#repeat` bounds and `#recover` take no trailing comma and
+keep their form. In an attribute with positional arguments only, a comma after
+the last argument starts an empty argument, so `@x(1,)` is `[1, nil]`; it is
+written as it was, without a space before the parenthesis, and is not a trailing
+comma.
 
 A trailing comma is not part of the normalized grammar: it is kept in the
 `TrailingComma` field of `TupleType`, `TypeApp`, `TupleLit`, `New`,

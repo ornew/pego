@@ -794,8 +794,17 @@ func parenTerm(s string, control *metadataControl) string {
 // listElem is an element of a delimited list: its text with the comments
 // before it, and the comments between it and the comma that follows.
 type listElem struct {
-	head  string
-	after []*Comment
+	head      string
+	after     []*Comment
+	elemLine  int        // the line the element ends on
+	afterLine int        // the line of the comma that follows the element
+	trail     []*Comment // comments on the line of the comma after the element, which end that line
+}
+
+// endsLine reports whether c ends its line in the source: a line comment, or a
+// block comment before a token on a later line.
+func endsLine(c *Comment, nextLine int) bool {
+	return strings.HasPrefix(c.Text, "//") || nextLine > 0 && c.End.Line < nextLine
 }
 
 // formatSourceList formats the elements of a comma-separated list in
@@ -804,12 +813,14 @@ type listElem struct {
 // list stays on one line. lines reports a trailing comma that counts; comma
 // adds the comma that a one-element tuple needs on one line.
 //
-// A comment that needs its own line is a line comment, a comment on a line of
-// its own, and a block comment over several lines. A block comment written
-// on the line of the token before it stays there: its owner depends on that,
-// so it keeps the list on one line. A comment before a comma stays before it,
-// except that a line comment goes after the comma, which keeps the comma on
-// its element's line.
+// A comment that needs its own line is a line comment, a comment that ends its
+// line, a comment on a line of its own, and a block comment over several
+// lines. A block comment between two tokens of one line stays there: its
+// owner depends on that, so it keeps the list on one line.
+//
+// Where a comment is written decides which node owns it, so the comments
+// around a comma keep their line (see writeListComma). A comment that ends the
+// line of an element trails the element, and goes after its comma.
 func formatSourceList(elems []listElem, comma, lines bool, openDelim, closeDelim string, open, first, close *LineBreak, indentLines func(s, indent string) string, control *metadataControl) string {
 	pollFormat(control)
 	multi := lines || !inlineGroupComments(open, first, close, control)
@@ -819,9 +830,12 @@ func formatSourceList(elems []listElem, comma, lines bool, openDelim, closeDelim
 			multi = true
 		}
 		for _, c := range e.after {
-			if c != nil && (strings.HasPrefix(c.Text, "//") || hasFormatNewline(c.Text, control)) {
+			if c != nil && (endsLine(c, e.afterLine) || hasFormatNewline(c.Text, control)) {
 				multi = true
 			}
+		}
+		if len(e.trail) != 0 {
+			multi = true
 		}
 	}
 	var b strings.Builder
@@ -836,7 +850,7 @@ func formatSourceList(elems []listElem, comma, lines bool, openDelim, closeDelim
 				}
 			}
 			writeFormatString(&b, e.head, control)
-			writeLayoutAfter(&b, e.after, "", control)
+			writeLayoutAfter(&b, e.after, "", e.afterLine, control)
 		}
 		if comma {
 			b.WriteString(",")
@@ -846,7 +860,7 @@ func formatSourceList(elems []listElem, comma, lines bool, openDelim, closeDelim
 		}
 		return openDelim + b.String() + closeDelim
 	}
-	if open != nil && open.Trailing != nil && !open.Trailing.Header.IsValid() && strings.HasPrefix(open.Trailing.Text, "/*") && len(elems) > 0 {
+	if open != nil && open.Trailing != nil && !open.Trailing.Header.IsValid() && strings.HasPrefix(open.Trailing.Text, "/*") && !open.TrailingEnds && len(elems) > 0 {
 		// A block comment on the line of the opening delimiter belongs to the first
 		// element, not to the delimiter. Written after the delimiter it would have no
 		// owner, so it takes a line of its own before the element.
@@ -861,28 +875,72 @@ func formatSourceList(elems []listElem, comma, lines bool, openDelim, closeDelim
 		lead.Comments = append([]*Comment{comment}, lead.Comments...)
 		first = &lead
 	}
-	endsLine := false // the text so far ends with a line comment
 	for i, e := range elems {
 		pollFormat(control)
-		head := e.head
-		if i > 0 && !endsLine && strings.HasPrefix(head, " //") {
-			// A line comment after the comma of the previous element stays on its line.
-		} else {
-			if i > 0 {
-				b.WriteByte('\n')
-			}
-			head = strings.TrimLeft(head, " \n")
+		if i > 0 {
+			b.WriteByte('\n')
 		}
-		writeFormatString(&b, head, control)
-		endsLine = writeLayoutAfter(&b, e.after, ",", control)
-		if endsLine {
-			// The line break is written before the next element or the closing delimiter.
-			text := strings.TrimSuffix(b.String(), "\n")
-			b.Reset()
-			b.WriteString(text)
+		writeFormatString(&b, strings.TrimLeft(e.head, " \n"), control)
+		// The comments on the comma line after the comma belong to the element
+		// before it. Comments that already follow the element in the source
+		// could not tell them apart from these, so then the comma stays on the
+		// line after them.
+		followed := len(e.trail) != 0
+		if i+1 == len(elems) {
+			// The comments before the closing delimiter: the one after the comma
+			// trails the element.
+			followed = first != nil && first.Trailing != nil && !first.Trailing.Header.IsValid() ||
+				close != nil && len(close.Comments) != 0
+		}
+		writeListComma(&b, e, followed, control)
+		for _, c := range e.trail {
+			b.WriteByte(' ')
+			writeFormatString(&b, c.Text, control)
 		}
 	}
 	return formatSourceGroupIndented(b.String(), openDelim, closeDelim, open, first, close, false, indentLines, control)
+}
+
+// writeListComma writes the comma after a list element and the comments
+// between the two. Where a comment is written decides what it belongs to, so
+// the comments keep the line they were on: one on the line of the element that
+// ends its line trails the element, and goes after the comma when it is alone;
+// a comment on a later line belongs to nothing, and stays between the element
+// and the comma. followed reports that the comma line has a comment after the
+// comma, which a comment after the comma would be taken for.
+func writeListComma(b *strings.Builder, e listElem, followed bool, control *metadataControl) {
+	ends := false
+	for _, c := range e.after {
+		ends = ends || c != nil && endsLine(c, e.afterLine)
+	}
+	switch {
+	case len(e.after) == 0:
+		b.WriteByte(',')
+	case !ends || len(e.after) == 1 && !followed && e.after[0].Pos.Line == e.elemLine:
+		writeLayoutAfter(b, e.after, ",", e.afterLine, control)
+		text := strings.TrimSuffix(b.String(), "\n")
+		b.Reset()
+		b.WriteString(text)
+	default:
+		previous := e.elemLine
+		for _, c := range e.after {
+			pollFormat(control)
+			if c == nil {
+				continue
+			}
+			if c.Pos.Line > previous {
+				b.WriteByte('\n')
+			} else {
+				b.WriteByte(' ')
+			}
+			writeFormatString(b, c.Text, control)
+			previous = c.End.Line
+		}
+		if e.afterLine > previous {
+			b.WriteByte('\n')
+		}
+		b.WriteByte(',')
+	}
 }
 
 // inlineGroupComments reports whether the comments of the delimiters of a list
@@ -1065,6 +1123,9 @@ func groupInlineComments(b *LineBreak, trailing bool, control *metadataControl) 
 	if trailing {
 		comments = nil
 		if b.Trailing != nil {
+			if b.TrailingEnds && !b.Trailing.Header.IsValid() {
+				return "", false // the comment ends its line; its owner depends on that
+			}
 			comments = []*Comment{b.Trailing}
 		}
 	}
@@ -1256,7 +1317,13 @@ func formatAttribute(a *Attribute, control *metadataControl) string {
 		}
 		return s + formatTermList(elems, false, true, "(", ")", nil, nil, nil, control)
 	}
-	return s + "(" + joinFormatParts(args, ", ", control) + ")"
+	list := joinFormatParts(args, ", ", control)
+	if len(keys) == 0 && len(a.Args) > 1 && a.Args[len(a.Args)-1] == nil {
+		// The last argument is empty: the comma stays, without a space before the
+		// parenthesis.
+		list = strings.TrimSuffix(list, " ")
+	}
+	return s + "(" + list + ")"
 }
 
 func formatAttributeValue(value any, control *metadataControl) string {
@@ -1370,10 +1437,12 @@ func formatListElem(t Term, control *metadataControl) listElem {
 }
 
 func layoutElem(layout *SourceLayout, body string, control *metadataControl) listElem {
-	e := listElem{head: formatLayoutHead(layout, body, control)}
+	var e listElem
 	if layout != nil {
-		e.after = layout.After
+		e.after, e.elemLine, e.afterLine = layout.After, layout.ElemLine, layout.AfterLine
+		e.trail = layout.Trail
 	}
+	e.head = formatLayoutHead(layout, body, control)
 	return e
 }
 
@@ -1564,7 +1633,7 @@ func formatSourceLayout(layout *SourceLayout, body string, control *metadataCont
 	}
 	var out strings.Builder
 	writeFormatString(&out, formatLayoutHead(layout, body, control), control)
-	writeLayoutAfter(&out, layout.After, "", control)
+	writeLayoutAfter(&out, layout.After, "", layout.AfterLine, control)
 	return out.String()
 }
 
@@ -1609,7 +1678,7 @@ func formatLayoutHead(layout *SourceLayout, body string, control *metadataContro
 // the first of them, or after all the comments when there is none; with no
 // separator it moves to the next line. It reports whether the text ends with a
 // line comment and its line break.
-func writeLayoutAfter(out *strings.Builder, comments []*Comment, separator string, control *metadataControl) (endsLine bool) {
+func writeLayoutAfter(out *strings.Builder, comments []*Comment, separator string, nextLine int, control *metadataControl) (lastLine bool) {
 	separated := separator == ""
 	lineStart := false
 	for _, comment := range comments {
@@ -1618,7 +1687,7 @@ func writeLayoutAfter(out *strings.Builder, comments []*Comment, separator strin
 			continue
 		}
 		line := strings.HasPrefix(comment.Text, "//")
-		if line && !separated {
+		if !separated && endsLine(comment, nextLine) {
 			out.WriteString(separator)
 			separated = true
 		}

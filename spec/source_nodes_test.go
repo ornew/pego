@@ -136,6 +136,15 @@ func (s *shaper) later(i int, at []int) { s.nodes[i].Later = append(s.nodes[i].L
 
 func (s *shaper) hide(i int) { s.hidden[i] = true }
 
+// list adds the nodes of the elements of a comma-separated list. The outermost
+// node of an element claims the trailing group after the comma that follows it.
+func (s *shaper) list(n *pego.Node, field string, add func(*pego.Node)) {
+	for _, a := range listNodes(n, field) {
+		add(a)
+		s.later(len(s.nodes)-1, separators(s.src, a.End(), ',', 1))
+	}
+}
+
 // flatten returns the operands of a chain of binary nodes of one type, which
 // the public AST holds in one node.
 func flatten(n *pego.Node, typ string) []*pego.Node {
@@ -219,17 +228,13 @@ func (s *shaper) typ(n *pego.Node) {
 	case "TypeRef", "Bottom":
 		s.span("TypeRef", n)
 	case "TypeApp":
-		for _, a := range listNodes(n, "Args") {
-			s.typ(a)
-		}
+		s.list(n, "Args", s.typ)
 		s.span("TypeApp", n)
 	case "TypeGroup":
 		s.typ(fieldNode(n, "Type"))
 		s.span("TypeGroup", n)
 	case "TupleType":
-		for _, a := range listNodes(n, "Types") {
-			s.typ(a)
-		}
+		s.list(n, "Types", s.typ)
 		s.span("TupleType", n)
 	case "StructType":
 		s.structType(n, n.Start())
@@ -478,9 +483,7 @@ func (s *shaper) action(n *pego.Node) {
 		dot := nextToken(s.src, fieldNode(n, "X").End())
 		s.created(s.span("Cast", n), nextToken(s.src, dot+1))
 	case "Call":
-		for _, a := range listNodes(n, "Args") {
-			s.action(a)
-		}
+		s.list(n, "Args", s.action)
 		s.span("Call", n)
 	case "Constructor":
 		for _, f := range listNodes(n, "Inits") {
@@ -488,20 +491,14 @@ func (s *shaper) action(n *pego.Node) {
 			s.action(fieldNode(f, "Val"))
 			s.statement("FieldInit", f, separators(s.src, span.End(), ',', 1))
 		}
-		for _, a := range listNodes(n, "Args") {
-			s.action(a)
-		}
+		s.list(n, "Args", s.action)
 		s.span("New", n)
 	case "ListConstructor":
 		s.typ(fieldNode(n, "Elem"))
-		for _, a := range listNodes(n, "Items") {
-			s.action(a)
-		}
+		s.list(n, "Items", s.action)
 		s.span("ListConstructor", n)
 	case "ActionTuple":
-		for _, a := range listNodes(n, "Elems") {
-			s.action(a)
-		}
+		s.list(n, "Elems", s.action)
 		s.span("TupleLit", n)
 	case "ActionGroup":
 		s.action(fieldNode(n, "Expr"))
