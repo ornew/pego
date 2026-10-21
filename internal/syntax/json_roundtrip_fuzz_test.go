@@ -86,3 +86,26 @@ func TestFormatRandomJSONRoundTrip(t *testing.T) {
 		})
 	}
 }
+
+// TestFormatJSONKeepsBlockContinuation formats grammars decoded from JSON whose
+// block comments span lines, with white space at the start of the lines after
+// the first: the comments must keep it and stay with their nodes.
+func TestFormatJSONKeepsBlockContinuation(t *testing.T) {
+	for _, tc := range []struct{ name, src string }{
+		{"leading of a declaration", "package p\n/* x\n *  y */\nrule r = \"a\"\n"},
+		{"trailing of a rule", "package p\nrule r = \"a\" /* x\n *  y */\n"},
+		{"detached of a declaration", "package p\n\n/* x\n *  y */\n\nrule r = \"a\"\n"},
+		{"leading of a field", "package p\ntype T = {\n    /* x\n     *   y */\n    A int\n}\n"},
+		{"trailing of a field", "package p\ntype T = {\n    A int /* x\n     *   y */\n}\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ast, err := Parse(tc.src)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if problem := jsonRoundTripProblem(ast); problem != "" {
+				t.Fatalf("%s\n%s", tc.src, problem)
+			}
+		})
+	}
+}

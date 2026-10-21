@@ -20,7 +20,7 @@ func ownedComments(text string) []*Comment {
 		return nil
 	}
 	if !strings.HasSuffix(text, "\n") {
-		body := strings.ReplaceAll(text, "*/", "* /")
+		body := continuationLines(strings.ReplaceAll(text, "*/", "* /"))
 		if !strings.HasSuffix(body, " ") {
 			body += " "
 		}
@@ -32,6 +32,19 @@ func ownedComments(text string) []*Comment {
 		cs[i] = &Comment{Text: "//" + strings.TrimRight(line, " \t\r")}
 	}
 	return cs
+}
+
+// continuationLines starts the lines of text after the first with " *", which a
+// block comment drops from its text again, so that the white space at the start
+// of those lines is kept.
+func continuationLines(text string) string {
+	lines := strings.Split(text, "\n")
+	for i := 1; i < len(lines); i++ {
+		if lines[i] != "" {
+			lines[i] = " *" + lines[i]
+		}
+	}
+	return strings.Join(lines, "\n")
 }
 
 // ownedLead returns b, or when b is nil the line break that writes the leading
@@ -77,15 +90,8 @@ func ownedTrailing(s *SourceInfo, b *LineBreak) *LineBreak {
 	cs := ownedComments(text)
 	c := cs[0]
 	if len(cs) > 1 {
-		// The lines after the first start with "*", which a block comment drops
-		// from its text again, so that their leading white space is kept.
-		lines := strings.Split(strings.ReplaceAll(text, "*/", "* /"), "\n")
-		for i := 1; i < len(lines); i++ {
-			if lines[i] != "" {
-				lines[i] = " *" + lines[i]
-			}
-		}
-		c = &Comment{Text: "/*" + strings.Join(lines, "\n") + "*/"}
+		// A comment over several lines is one block comment.
+		c = &Comment{Text: "/*" + continuationLines(strings.ReplaceAll(text, "*/", "* /")) + "*/"}
 	}
 	return &LineBreak{Trailing: c, TrailingEnds: strings.HasPrefix(c.Text, "//")}
 }
