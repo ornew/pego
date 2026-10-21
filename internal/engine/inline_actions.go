@@ -28,6 +28,9 @@ func inlineActionName(rule string, n int, taken map[string]bool) string {
 
 // hasInlineAction reports whether g holds an inline action.
 func hasInlineAction(g *grammar.Grammar, control *compileControl) bool {
+	if g == nil {
+		return false
+	}
 	found := false
 	for _, rd := range control.rules(g) {
 		walkExprControlled(rd.Expr, func(e grammar.Expr) {

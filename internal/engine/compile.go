@@ -289,12 +289,12 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 
 func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, control *compileControl) (*Program, error) {
 	control.check()
+	if err := validateGrammar(g, control); err != nil {
+		return nil, err
+	}
 	var source *grammar.Grammar
 	if hasInlineAction(g, control) {
 		// The inline actions are checked as written, then lowered to hidden rules.
-		if err := validateGrammar(g, control); err != nil {
-			return nil, err
-		}
 		lowered, errs := lowerInlineActions(g, control)
 		if errs != nil {
 			return nil, errs
@@ -305,9 +305,6 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 	if opts.DefaultValue {
 		g = defaultValueGrammar(g, control)
 		control.check()
-	}
-	if err := validateGrammar(g, control); err != nil {
-		return nil, err
 	}
 	var unsupported ErrorList
 	for _, comment := range g.File.HeaderComments {
