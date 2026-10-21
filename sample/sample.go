@@ -35,6 +35,7 @@ import (
 
 	"github.com/ornew/pego"
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/engine"
 )
 
 // Defaults of the options.
@@ -149,6 +150,11 @@ func New(p *pego.Parser, opts ...Option) (*Generator, error) {
 	g := p.Grammar()
 	if g == nil {
 		return nil, errors.New("sample: the parser has no grammar AST")
+	}
+	// The sampler works on the rules the parser runs, where an inline action is an anonymous rule.
+	g, err := engine.LowerInlineActions(g)
+	if err != nil {
+		return nil, fmt.Errorf("sample: %w", err)
 	}
 	cfg := config{
 		maxDepth:  DefaultMaxDepth,

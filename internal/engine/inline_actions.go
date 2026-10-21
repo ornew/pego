@@ -277,3 +277,17 @@ func rewrap(self, old, child grammar.Expr, make func(grammar.Expr) grammar.Expr)
 	}
 	return make(child)
 }
+
+// LowerInlineActions returns g with every inline action replaced by a reference to the hidden rule
+// that the compiler runs in its place, so that a tool working on the rules of a grammar, such as the
+// input sampler, sees the rules the parser executes. g is not changed.
+func LowerInlineActions(g *grammar.Grammar) (*grammar.Grammar, error) {
+	if g == nil || !hasInlineAction(g, nil) {
+		return g, nil
+	}
+	lowered, errs := lowerInlineActions(g, nil)
+	if errs != nil {
+		return nil, errs
+	}
+	return lowered, nil
+}
