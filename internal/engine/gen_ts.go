@@ -843,8 +843,8 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 	case *grammar.EndLine:
 		return "p.anchor(p.atLineEnd(), idEndLine)"
 	case *grammar.Predicate:
-		if a, ok := e.Term.(*grammar.Assign); ok {
-			fmt.Fprintf(&b, "  return p.assign(%s, %s) ? null : undefined;\n", tsString(a.Name), g.action(a.Value, s, nil))
+		if a, ok := e.Term.(*grammar.Bind); ok {
+			fmt.Fprintf(&b, "  return p.bind(%s, %s) ? null : undefined;\n", tsString(a.Name), g.action(a.Value, s, nil))
 		} else {
 			fmt.Fprintf(&b, "  return p.predicate((c) => %s) ? null : undefined;\n", g.predicateTerm(e.Term, s))
 		}

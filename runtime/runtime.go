@@ -1259,7 +1259,7 @@ type Parser struct {
 	Depth    int     // nesting of rule calls
 	created  []*Node // struct nodes made by the action being evaluated (from ActCtx.Cbase)
 	Env      *Env
-	bound    map[string]bool // names assigned anywhere in this parse (a lookup hint)
+	bound    map[string]bool // names bound anywhere in this parse (a lookup hint)
 	Frame    *CaptureFrame
 	Trail    []undo
 	Cut      bool
@@ -1864,7 +1864,7 @@ type Env struct {
 }
 
 // bind replaces a binding by copying its prefix, preserving saved environments.
-// bound tracks names ever assigned, so first assignments need no linear search.
+// bound tracks names ever bound, so first bindings need no linear search.
 // Names from abandoned branches may be absent now; that only causes a search.
 func (p *Parser) bind(name string, val any) {
 	if WorkControlsEnabled && p.Control != nil {
@@ -1900,7 +1900,7 @@ func (p *Parser) bind(name string, val any) {
 		p.Env = &Env{name: name, val: val, next: e}
 		return
 	}
-	// Variables are checked scalar values; an equal assignment has no effect.
+	// Variables are checked scalar values; an equal binding has no effect.
 	if old.val == val {
 		return
 	}
@@ -3097,9 +3097,9 @@ func (p *Parser) Predicate(t func(*ActCtx) any) (ok bool) {
 	return true
 }
 
-// Assign evaluates the value of a binding and binds it to the variable name. The compiler has
+// Bind evaluates the value of a binding and binds it to the variable name. The compiler has
 // checked that the value fits the variable.
-func (p *Parser) Assign(name string, t func(*ActCtx) any) (ok bool) {
+func (p *Parser) Bind(name string, t func(*ActCtx) any) (ok bool) {
 	base, kids := len(p.created), len(p.KidStack)
 	defer func() {
 		p.dropCreated(base)

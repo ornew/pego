@@ -83,7 +83,7 @@ func (vm *vmProgram) runSite(ip int) *vmRunSite {
 	site := &vmRunSite{end: end, keep: code[end-1].B != 0, shiftable: true}
 	for _, in := range code[ip+2 : end-1] {
 		switch in.Op {
-		case OpPred, OpAssign:
+		case OpPred, OpBind:
 			return nil
 		case OpCapture:
 			if code[ip].C < 0 { // the element writes captures to the enclosing scope (in &)
@@ -261,7 +261,7 @@ func (vm *vmProgram) checkType(i int) *fieldType {
 		// that no value fits.
 		t, err := parseFieldType(vm.m.Strings[i], vm.typeNames)
 		if err != nil {
-			t = &fieldType{kind: ftUnion, text: vm.m.Strings[i]}
+			t = &fieldType{kind: ftJoin, text: vm.m.Strings[i]}
 		}
 		vm.fieldTypes[i] = t
 	}
@@ -768,8 +768,8 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			if !vm.predicate(p, int(in.A)) {
 				goto fail
 			}
-		case OpAssign:
-			if !vm.assign(p, m.Strings[in.A], int(in.B)) {
+		case OpBind:
+			if !vm.bind(p, m.Strings[in.A], int(in.B)) {
 				goto fail
 			}
 		case OpLabel:
@@ -1008,7 +1008,7 @@ func (vm *vmProgram) predicate(p *parser, entry int) bool {
 	return true
 }
 
-func (vm *vmProgram) assign(p *parser, name string, entry int) bool {
+func (vm *vmProgram) bind(p *parser, name string, entry int) bool {
 	ctx := p.useCtx(evalCtx{p: p, frame: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
 	v, err := vm.eval(ctx, entry, nil)
 	p.dropCreated(ctx.cbase)

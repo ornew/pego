@@ -1515,25 +1515,25 @@ type Param struct{ TNode[string] }
 // StringLit is the node type StringLit = node[string].
 type StringLit struct{ TNode[string] }
 
-// Expr is the union type Expr ~ Number | StringLit | BitLit | BoolLit | NullLit | Param | Paren | ColumnRef | DefaultExpr | PositionalRef | Star | ColumnsExpr | UnpackExpr | Binary | Unary | PostfixOp | Not | IsExpr | DistinctFrom | IsOf | Between | In | Like | AnyAll | AtTimeZone | Collate | Cast | Case | Row | ListLit | ArrayLit | StructLit | MapLit | ListComp | Lambda | Subquery | Exists | ArraySubquery | Grouping | TypedLit | IntervalLit | NamedArg | FuncCall | SpecialCall | Indirection | GroupingSet. Error (left by #recover) also implements it.
+// Expr is the join type Expr ~ Number | StringLit | BitLit | BoolLit | NullLit | Param | Paren | ColumnRef | DefaultExpr | PositionalRef | Star | ColumnsExpr | UnpackExpr | Binary | Unary | PostfixOp | Not | IsExpr | DistinctFrom | IsOf | Between | In | Like | AnyAll | AtTimeZone | Collate | Cast | Case | Row | ListLit | ArrayLit | StructLit | MapLit | ListComp | Lambda | Subquery | Exists | ArraySubquery | Grouping | TypedLit | IntervalLit | NamedArg | FuncCall | SpecialCall | Indirection | GroupingSet. Error (left by #recover) also implements it.
 type Expr interface{ isExpr() }
 
-// ParenContent is the union type ParenContent ~ Select | ParenQuery | ShowStmt. Error (left by #recover) also implements it.
+// ParenContent is the join type ParenContent ~ Select | ParenQuery | ShowStmt. Error (left by #recover) also implements it.
 type ParenContent interface{ isParenContent() }
 
-// QueryBody is the union type QueryBody ~ SelectCore | ValuesClause | TableQuery | PivotQuery | UnpivotQuery | SetOp | ParenQuery. Error (left by #recover) also implements it.
+// QueryBody is the join type QueryBody ~ SelectCore | ValuesClause | TableQuery | PivotQuery | UnpivotQuery | SetOp | ParenQuery. Error (left by #recover) also implements it.
 type QueryBody interface{ isQueryBody() }
 
-// Statement is the union type Statement ~ Select | InsertStmt | UpdateStmt | DeleteStmt | MergeStmt | CreateTableStmt | CreateTableAsStmt | CreateViewStmt | CreateIndexStmt | CreateSchemaStmt | CreateSequenceStmt | CreateTypeStmt | CreateMacroStmt | CreateSecretStmt | AlterTableStmt | AlterSequenceStmt | AlterDatabaseStmt | AlterObjectSchemaStmt | RenameStmt | DropStmt | DropSecretStmt | CopyStmt | CopyDatabaseStmt | ExportStmt | ImportStmt | AttachStmt | DetachStmt | UseStmt | LoadStmt | PragmaStmt | SetStmt | ResetStmt | ShowStmt | ExplainStmt | PrepareStmt | ExecuteStmt | DeallocateStmt | TransactionStmt | VacuumStmt | AnalyzeStmt | CheckpointStmt | CallStmt | CommentStmt | UpdateExtensionsStmt. Error (left by #recover) also implements it.
+// Statement is the join type Statement ~ Select | InsertStmt | UpdateStmt | DeleteStmt | MergeStmt | CreateTableStmt | CreateTableAsStmt | CreateViewStmt | CreateIndexStmt | CreateSchemaStmt | CreateSequenceStmt | CreateTypeStmt | CreateMacroStmt | CreateSecretStmt | AlterTableStmt | AlterSequenceStmt | AlterDatabaseStmt | AlterObjectSchemaStmt | RenameStmt | DropStmt | DropSecretStmt | CopyStmt | CopyDatabaseStmt | ExportStmt | ImportStmt | AttachStmt | DetachStmt | UseStmt | LoadStmt | PragmaStmt | SetStmt | ResetStmt | ShowStmt | ExplainStmt | PrepareStmt | ExecuteStmt | DeallocateStmt | TransactionStmt | VacuumStmt | AnalyzeStmt | CheckpointStmt | CallStmt | CommentStmt | UpdateExtensionsStmt. Error (left by #recover) also implements it.
 type Statement interface{ isStatement() }
 
-// Step is the union type Step ~ FieldStep | IndexStep | SliceStep. Error (left by #recover) also implements it.
+// Step is the join type Step ~ FieldStep | IndexStep | SliceStep. Error (left by #recover) also implements it.
 type Step interface{ isStep() }
 
-// TableElement is the union type TableElement ~ ColumnDef | TableConstraint | TableLike. Error (left by #recover) also implements it.
+// TableElement is the join type TableElement ~ ColumnDef | TableConstraint | TableLike. Error (left by #recover) also implements it.
 type TableElement interface{ isTableElement() }
 
-// TableRef is the union type TableRef ~ BaseTable | FuncTable | SubqueryRef | ValuesRef | ParenTable | Join | PivotRef | UnpivotRef. Error (left by #recover) also implements it.
+// TableRef is the join type TableRef ~ BaseTable | FuncTable | SubqueryRef | ValuesRef | ParenTable | Join | PivotRef | UnpivotRef. Error (left by #recover) also implements it.
 type TableRef interface{ isTableRef() }
 
 func (*AlterDatabaseStmt) isStatement()     {}
@@ -43427,7 +43427,7 @@ func e38(p *pegort.Parser) (*pegort.Node, bool) {
 		v8 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x7), RawEnd: int32(p.Pos), RawText: "$", RawTerminal: true, RawFresh: true})
 		x2 = append(x2, v8)
 
-		if !p.Assign("tag", func(c *pegort.ActCtx) any {
+		if !p.Bind("tag", func(c *pegort.ActCtx) any {
 			return func() any { return c.Text(func() any { return c.Cap(0) }()) }()
 		}) {
 			goto fail_ordinary
@@ -43605,7 +43605,7 @@ func e38(p *pegort.Parser) (*pegort.Node, bool) {
 	v8 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x7), RawEnd: int32(p.Pos), RawText: "$", RawTerminal: true, RawFresh: true})
 	x2 = append(x2, v8)
 	p.StepWork()
-	if !p.Assign("tag", func(c *pegort.ActCtx) any {
+	if !p.Bind("tag", func(c *pegort.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
 	}) {
 		goto fail
@@ -363942,7 +363942,7 @@ func e1170(p *pegort.Parser) (*pegort.Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("tag", func(c *pegort.ActCtx) any {
+		if !p.Bind("tag", func(c *pegort.ActCtx) any {
 			return func() any { return c.Text(func() any { return c.Cap(0) }()) }()
 		}) {
 			goto fail_ordinary
@@ -364052,7 +364052,7 @@ func e1170(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("tag", func(c *pegort.ActCtx) any {
+	if !p.Bind("tag", func(c *pegort.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
 	}) {
 		goto fail
@@ -710973,7 +710973,7 @@ func e1918(p *pegort.Parser) (*pegort.Node, bool) {
 		v8 = p.NewNodeOrdinary(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x7), RawEnd: int32(p.Pos), RawText: "$", RawTerminal: true, RawFresh: true})
 		x2 = append(x2, v8)
 
-		if !p.Assign("tag", func(c *pegort.ActCtx) any {
+		if !p.Bind("tag", func(c *pegort.ActCtx) any {
 			return func() any { return c.Text(func() any { return c.Cap(0) }()) }()
 		}) {
 			goto fail_ordinary
@@ -711151,7 +711151,7 @@ func e1918(p *pegort.Parser) (*pegort.Node, bool) {
 	v8 = p.NewNode(pegort.Node{RawKind: pegort.RawKindMatch, RawStart: int32(x7), RawEnd: int32(p.Pos), RawText: "$", RawTerminal: true, RawFresh: true})
 	x2 = append(x2, v8)
 	p.StepWork()
-	if !p.Assign("tag", func(c *pegort.ActCtx) any {
+	if !p.Bind("tag", func(c *pegort.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
 	}) {
 		goto fail
@@ -816047,7 +816047,7 @@ func e2623(p *pegort.Parser) (*pegort.Node, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("tag", func(c *pegort.ActCtx) any {
+		if !p.Bind("tag", func(c *pegort.ActCtx) any {
 			return func() any { return c.Text(func() any { return c.Cap(0) }()) }()
 		}) {
 			goto fail_ordinary
@@ -816157,7 +816157,7 @@ func e2623(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("tag", func(c *pegort.ActCtx) any {
+	if !p.Bind("tag", func(c *pegort.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
 	}) {
 		goto fail
@@ -1066915,7 +1066915,7 @@ func i21(p *pegort.TParser) (any, bool) {
 		v9 = p.NewMatchOrdinary(x8, p.Pos, "$", true)
 		x2 = append(x2, v9)
 
-		if !p.Assign("tag", func(c *pegort.TActCtx) any {
+		if !p.Bind("tag", func(c *pegort.TActCtx) any {
 			return func() any { return c.Text(func() any { return k5 }()) }()
 		}) {
 			goto fail_ordinary
@@ -1067122,7 +1067122,7 @@ func i21(p *pegort.TParser) (any, bool) {
 	v9 = p.NewMatch(x8, p.Pos, "$", true)
 	x2 = append(x2, v9)
 	p.StepWork()
-	if !p.Assign("tag", func(c *pegort.TActCtx) any {
+	if !p.Bind("tag", func(c *pegort.TActCtx) any {
 		return func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return k5 }()) }()
 	}) {
 		goto fail
@@ -1489611,7 +1489611,7 @@ func i1045(p *pegort.TParser) (any, bool) {
 			goto fail_ordinary
 		}
 
-		if !p.Assign("tag", func(c *pegort.TActCtx) any {
+		if !p.Bind("tag", func(c *pegort.TActCtx) any {
 			return func() any { return c.Text(func() any { return k1 }()) }()
 		}) {
 			goto fail_ordinary
@@ -1489742,7 +1489742,7 @@ func i1045(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	if !p.Assign("tag", func(c *pegort.TActCtx) any {
+	if !p.Bind("tag", func(c *pegort.TActCtx) any {
 		return func() any { c.P.StepWork(); return c.Text(func() any { c.P.StepWork(); return k1 }()) }()
 	}) {
 		goto fail

@@ -75,8 +75,8 @@ existing `ParseAST` mapping:
   rule values use their generated slice or pointer/interface representation.
   Grammar rules retain the existing node-producing contract, so this API does
   not enable scalar top-level rule results;
-- declared aliases use the generated alias type; node unions return the
-  generated union interface with the concrete member as the dynamic value;
+- declared aliases use the generated alias type; node joins return the
+  generated join interface with the concrete member as the dynamic value;
 - CST node types return `*Node`, while open-ended `node`, terminal and `any`
   mappings return `any`.
 
@@ -87,14 +87,14 @@ string.
 
 If `#recover` produces syntax errors, preserve the generated `ParseAST`
 contract: return the value together with `SyntaxErrors`. An `Error` where a
-struct or terminal is expected becomes the documented nil value; union and
+struct or terminal is expected becomes the documented nil value; join and
 list positions follow the existing generated conversion rules. For an ordinary
 parse failure without a recovered value, box the selected result type's zero
 value in `any` (including a typed nil for pointer or slice results; a nil interface stays nil
 when assigned to `any`); an
 option or unknown-name error returns a plain nil because no rule type was
 selected. A successful rule whose semantic value is nil also returns the selected type's
-zero value with a nil error. Thus successful `any`, `node` and union-interface
+zero value with a nil error. Thus successful `any`, `node` and join-interface
 nil results return plain nil from `ParseRuleAST`. Legacy `ParseAST` retains its
 existing conversion behavior, which can box a nil `*Node` in an `any` result.
 Action errors, syntax errors and trailing-input errors retain their existing
@@ -169,24 +169,24 @@ changes are required.
 ## Testing
 
 Use a synthetic typed grammar with named rules returning structs, terminals,
-lists, optional values, declared aliases, node unions, CST nodes and `_`,
+lists, optional values, declared aliases, node joins, CST nodes and `_`,
 with scalar fields and aliases. Verify existing scalar rule rejections remain
 unchanged. Compare each result with that rule's existing Node parse followed by
 the generated conversion mapping. Cover rules whose result type differs from
-the configured start rule, and verify aliases and union interfaces with type
+the configured start rule, and verify aliases and join interfaces with type
 assertions.
 
 Test unknown names, invalid options before unknown-name lookup, exactly-once
 option application, both position units, depth defaults and overrides, trailing
 input, action failures, syntax failures, and `#recover`. Assert the value/error
 pair and `SyntaxErrors` behavior, including `Error` results in struct, terminal,
-union and list positions. Run both direct typed execution and forced Node-conversion
+join and list positions. Run both direct typed execution and forced Node-conversion
 fallback. Include a named struct and a named terminal reached through an action that reads a
 field; add an unrelated struct with an unrepresentable field to force the full
 `runtimeOK` fallback even when the selected terminal or struct would otherwise
 be representable. Compile consumer fixtures for both execution modes and
 assert the documented zero and typed-nil results on ordinary failure. Also
-cover successful nil-valued `_`, `node` and union rules and verify legacy
+cover successful nil-valued `_`, `node` and join rules and verify legacy
 `ParseAST` nil boxing remains unchanged. Add
 grammar types named `ParseRuleAST` and `ParseRuleAST_` to verify underscore
 cascades, consumer compilation, and any `ParseAST` return-type spelling

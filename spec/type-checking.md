@@ -53,14 +53,14 @@ have the following types.
 | `$label` | The type of the capture (see above) |
 | `T{Field: value, ...}` | Struct Type `T` |
 | `[]T{a, b, ...}` | `[]T`; every element must have a known Type assignable to `T` |
-| `x.Name` | The type of the field `Name`; optional (`*T`) if `x` has a union type and only some members declare the field |
+| `x.Name` | The type of the field `Name`; optional (`*T`) if `x` has a join type and only some members declare the field |
 | `x.$y` | The join of the types of capture `y` of the node types `x` may have |
 | `x[i]` | The element type of `x`, which MUST be a list, a tuple, or a node whose value is a list or a tuple; `i` MUST be an `int`, and a constant index into a tuple selects that element's type |
 | `x.(T)` | `T`; the type of `x` or one of its alternatives MUST be assignable to `T` or one of its alternatives, or the other way around |
-| `foldl(init, l, f)`, `foldr(init, l, f)` | The type of `init`, widened to the union of it and the type of `f`'s result |
+| `foldl(init, l, f)`, `foldr(init, l, f)` | The type of `init`, widened to the join of it and the type of `f`'s result |
 | `map(l, f)` | `[]T`, where `T` is the type of `f`'s result |
-| `list(a, b, ...)` | `[]T`, where `T` is the union of the types of the arguments |
-| `concat(l1, l2, ...)` | `[]T`, where `T` is the union of the element types of the arguments |
+| `list(a, b, ...)` | `[]T`, where `T` is the join of the types of the arguments |
+| `concat(l1, l2, ...)` | `[]T`, where `T` is the join of the element types of the arguments |
 
 The list functions treat `nil` as an empty list, which contributes no element
 Type: `concat(nil, l)` has the Type of `concat(l)`, and `filter(nil, f)` is
@@ -120,7 +120,7 @@ The type of a rule without a declared type is inferred from its body, or from
 its action if it has one. Dependencies are inferred before their callers, so
 finite acyclic chains do not depend on definition order or an iteration cap.
 Recursive dependency groups are iterated until their types no longer change;
-union-member ordering does not count as a type change. Operators Rule operator actions
+join-member ordering does not count as a type change. Operators Rule operator actions
 also depend on their rule's type through the `lhs` and `rhs` values.
 
 The implementation bounds changing recursive types conservatively. After an
@@ -137,7 +137,7 @@ rule num = [0-9]+ #atomic // node[string]
 rule pair = k:num "=" v:num // node[(num, node[string], num), {"k": 0, "v": 2}]
 ```
 
-The type of the accumulator of `foldl` and `foldr` is widened to the union of
+The type of the accumulator of `foldl` and `foldr` is widened to the join of
 the type of the initial value and the type of the result of the function. The checker widens
 three times; if the result of the function still does not fit the accumulator, the call is a
 compile-time error (`the accumulator type does not converge`), and the result of the function

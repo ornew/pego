@@ -1326,7 +1326,7 @@ class Parser {
   depth = 0; // nesting of rule calls
   created: Node[] = []; // struct nodes made by the action being evaluated (from Actx.cbase)
   env: Env | null = null;
-  bound: Set<string> | null = null; // names assigned anywhere in this parse (a lookup hint)
+  bound: Set<string> | null = null; // names bound anywhere in this parse (a lookup hint)
   frame: Frame = emptyFrame;
   trail: { f: Frame; slot: number; old: Node | null }[] = [];
   cut = false;
@@ -2526,9 +2526,9 @@ class Parser {
     }
   }
 
-  // assign binds the value of t to the variable name. The compiler has checked that the value
+  // bind binds the value of t to the variable name. The compiler has checked that the value
   // fits the variable.
-  assign(name: string, t: Action): boolean {
+  bind(name: string, t: Action): boolean {
     const base = this.created.length;
     const kids = this.kidStack.length;
     try {
@@ -2536,7 +2536,7 @@ class Parser {
       if (typeof v === "function") {
         return false;
       }
-      this.bind(name, v);
+      this.bindValue(name, v);
       return true;
     } catch (x) {
       if (!(x instanceof EvalError)) {
@@ -2549,8 +2549,8 @@ class Parser {
     }
   }
 
-  // Preserve environments saved for rollback; first assignments skip searching.
-  bind(name: string, val: Value): void {
+  // Preserve environments saved for rollback; first bindings skip searching.
+  bindValue(name: string, val: Value): void {
     const e = this.env;
     const control = this.control;
     if (this.bound === null) this.bound = new Set();
@@ -2578,7 +2578,7 @@ class Parser {
       this.env = { name, val, next: e };
       return;
     }
-    // Variables are checked scalar values; an equal assignment has no effect.
+    // Variables are checked scalar values; an equal binding has no effect.
     if (control === null ? old.val === val : equalValuesWork(old.val, val, control)) return;
     const head: Env = { name, val, next: null };
     let tail = head;

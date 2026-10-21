@@ -93,7 +93,7 @@ const (
 	tLambda
 	tBinary
 	tUnary
-	tAssign
+	tBind
 	tListConstructor
 	tRetiredTerminalConstructor // a terminal constructor, before instruction set 14
 	tParam                      // a reference to a lambda parameter, a CaptureRef with Param set
@@ -107,13 +107,13 @@ const (
 	kTypeRef byte = iota + 1
 	kList
 	kOptional
-	kUnion
+	kJoin
 	kStruct
 	kAlias
 	kRetiredTerminal // a terminal type, before instruction set 14
 	kTypeDef
 	kRuleDef
-	kIntersection
+	kMeet
 	kTypeApp
 	kNode  // a named node type definition, type T = node[U]
 	kTuple // a tuple type (A, B, ...)
@@ -319,14 +319,14 @@ func (w *encoder) typeExpr(t grammar.TypeExpr) {
 	case *grammar.OptionalType:
 		w.byte(kOptional)
 		w.typeExpr(t.Elem)
-	case *grammar.UnionType:
-		w.byte(kUnion)
+	case *grammar.JoinType:
+		w.byte(kJoin)
 		w.uint(len(t.Types))
 		for _, x := range t.Types {
 			w.typeExpr(x)
 		}
-	case *grammar.IntersectionType:
-		w.byte(kIntersection)
+	case *grammar.MeetType:
+		w.byte(kMeet)
 		w.uint(len(t.Types))
 		for _, x := range t.Types {
 			w.typeExpr(x)
@@ -568,8 +568,8 @@ func (w *encoder) term(t grammar.Term) {
 		}
 		w.int(pos.Line)
 		w.int(pos.Col)
-	case *grammar.Assign:
-		w.byte(tAssign)
+	case *grammar.Bind:
+		w.byte(tBind)
 		w.str(t.Name)
 		w.term(t.Value)
 	}
@@ -841,15 +841,15 @@ func (r *decoder) typeExpr() grammar.TypeExpr {
 		return &grammar.ListType{Elem: r.typeExpr()}
 	case kOptional:
 		return &grammar.OptionalType{Elem: r.typeExpr()}
-	case kUnion:
-		u := &grammar.UnionType{}
+	case kJoin:
+		u := &grammar.JoinType{}
 		n := r.count()
 		for i := 0; i < n && r.err == nil; i++ {
 			u.Types = append(u.Types, r.typeExpr())
 		}
 		return u
-	case kIntersection:
-		m := &grammar.IntersectionType{}
+	case kMeet:
+		m := &grammar.MeetType{}
 		n := r.count()
 		for i := 0; i < n && r.err == nil; i++ {
 			m.Types = append(m.Types, r.typeExpr())
@@ -1051,9 +1051,9 @@ func (r *decoder) term() grammar.Term {
 	case tUnary:
 		op := r.str()
 		return &grammar.Unary{Op: op, X: r.term()}
-	case tAssign:
+	case tBind:
 		name := r.str()
-		return &grammar.Assign{Name: name, Value: r.term()}
+		return &grammar.Bind{Name: name, Value: r.term()}
 	case tCast:
 		x := r.term()
 		c := &grammar.Cast{X: x, Type: r.typeExpr()}

@@ -62,7 +62,7 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 				info.fields[td.DeclName()] = append(info.fields[td.DeclName()], typedField{f.Name, k.resolve(f.Type)})
 			}
 		case *grammar.TypeAlias:
-			info.aliases[td.DeclName()] = unionMembers(k.resolveNamed(td.DeclName(), td.Diagnostic()))
+			info.aliases[td.DeclName()] = joinMembers(k.resolveNamed(td.DeclName(), td.Diagnostic()))
 		}
 	}
 	prog.typed = info
@@ -98,11 +98,11 @@ func (p *Program) RuleType(name string) (string, bool) {
 	return t.String(), true
 }
 
-// unionMembers returns t with the members of a union written as the node kinds that the typed
+// joinMembers returns t with the members of a join written as the node kinds that the typed
 // generators give a Go type and a converter of their own: node[string] as a string node, node[_]
 // as any node and error as an error node.
-func unionMembers(t ty) ty {
-	u, ok := t.(unionTy)
+func joinMembers(t ty) ty {
+	u, ok := t.(joinTy)
 	if !ok {
 		return t
 	}
@@ -120,7 +120,7 @@ func unionMembers(t ty) ty {
 			alts[i] = a
 		}
 	}
-	return unionTy{alts}
+	return joinTy{alts}
 }
 
 type typedField struct {
@@ -128,7 +128,7 @@ type typedField struct {
 	t    ty
 }
 
-// concreteType resolves aliases and normalized singleton unions to their node type.
+// concreteType resolves aliases and normalized singleton joins to their node type.
 // It does not report errors; validation still uses the type expression as written.
 func (prog *Program) concreteType(t grammar.TypeExpr) (string, grammar.TypeDecl) {
 	if ref, ok := t.(*grammar.TypeRef); ok {
@@ -166,7 +166,7 @@ func concreteListElement(t ty) bool {
 		return concreteListElement(t.elem)
 	case optTy:
 		return concreteListElement(t.elem)
-	case unionTy:
+	case joinTy:
 		for _, alt := range t.alts {
 			if !concreteListElement(alt) {
 				return false
@@ -204,7 +204,7 @@ func termPos(t grammar.Term, def grammar.Pos) grammar.Pos {
 		return t.Diagnostic()
 	case *grammar.Cast:
 		return t.Diagnostic()
-	case *grammar.Assign:
+	case *grammar.Bind:
 		return t.Diagnostic()
 	case *grammar.Block:
 		return t.Diagnostic()

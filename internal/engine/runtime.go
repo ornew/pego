@@ -24,7 +24,7 @@ type parser struct {
 	diagnosticTail streamDiagnosticTail
 
 	env     *env            // predicate variables
-	bound   map[string]bool // names assigned anywhere in this parse (a lookup hint)
+	bound   map[string]bool // names bound anywhere in this parse (a lookup hint)
 	initEnv *env            // the initial environment of the variables (parser.seedVars), or nil
 	frame   *frame          // current capture frame
 	trail   []undo          // capture writes to undo on backtracking
@@ -255,8 +255,8 @@ func (e *env) lookup(name string) (any, bool) {
 
 // bind keeps one current binding per name. Replacing a non-head binding copies
 // only the prefix before it, so environments saved for rollback stay immutable.
-// bound is monotonic: a name never assigned before cannot occur in the current
-// environment. A name assigned only on an abandoned branch may be absent now;
+// bound is monotonic: a name never bound before cannot occur in the current
+// environment. A name bound only on an abandoned branch may be absent now;
 // that false positive only causes a search, not a different binding.
 func (p *parser) bind(name string, val any) {
 	if workControlsEnabled && p.control != nil {
@@ -291,7 +291,7 @@ func (p *parser) bind(name string, val any) {
 		p.env = &env{name: name, val: val, next: e}
 		return
 	}
-	// Variables are checked scalar values; an equal assignment has no effect.
+	// Variables are checked scalar values; an equal binding has no effect.
 	if old.val == val {
 		return
 	}

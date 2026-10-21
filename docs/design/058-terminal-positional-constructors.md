@@ -41,7 +41,7 @@ arguments so that invalid arity can receive a positioned compile-time
 a compile-time error. An argument of unknown Type (`_`) is rejected with a hint to cast it,
 as in `value.(string)`; the cast is the check that runs.
 
-Terminal aliases and union members are resolved through existing canonical
+Terminal aliases and join members are resolved through existing canonical
 Type resolution. If the target resolves to a terminal, it uses this
 constructor contract. An empty `T{}` remains parsed as the existing zero-field
 `New`; if `T` resolves to a terminal, compilation rejects it for having zero
@@ -93,7 +93,7 @@ formats outside the documented AST/ISA additions retain their behavior.
   non-string arguments when their static Type is known.
 - Verify arguments of unknown Type (`_`) are rejected unless cast, and that a
   failed cast reports the normal Action Expression error.
-- Test terminal aliases and union resolution, exact supplied text, current
+- Test terminal aliases and join resolution, exact supplied text, current
   Action Expression ranges in CodePoints and Bytes, and preservation of an
   existing node's range and identity.
 - Compare closure, recursive and iterative VMs, generated Go, typed Go and

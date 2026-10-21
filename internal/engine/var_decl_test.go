@@ -81,7 +81,7 @@ func TestVarDeclarationsCompile(t *testing.T) {
 }
 
 // TestVarInitialValues checks that every parse starts from the declared initial values, through
-// every entry point and every backend, and that a grammar can read them before it assigns.
+// every entry point and every backend, and that a grammar can read them before it binds.
 func TestVarInitialValues(t *testing.T) {
 	const src = `type R = { N int; S string; B bool; M int; Z int }
 var n int = 7
@@ -240,7 +240,7 @@ rule ds = "s" => "str"
 
 	// The generated bindings carry no check either: ASSIGN has no operand to ask for one.
 	for _, in := range cast.Module().Code {
-		if in.Op == OpAssign && in.C != 0 {
+		if in.Op == OpBind && in.C != 0 {
 			t.Errorf("ASSIGN with operand C = %d", in.C)
 		}
 	}
@@ -265,7 +265,7 @@ func TestLoadedBindingNeedsNoCheck(t *testing.T) {
 	m := prog.Module()
 	m.Code = append([]Instr(nil), m.Code...)
 	for i := range m.Code {
-		if m.Code[i].Op == OpAssign {
+		if m.Code[i].Op == OpBind {
 			m.Code[i].C = 1
 		}
 	}

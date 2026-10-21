@@ -163,7 +163,7 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 		return fmt.Sprintf("operatorsRule%d", a)
 	case OpPred:
 		return fmt.Sprintf("expr=%d", a)
-	case OpAssign:
+	case OpBind:
 		return fmt.Sprintf("%s expr=%d", m.Strings[a], bb)
 	case OpLabel:
 		if bb == 1 {

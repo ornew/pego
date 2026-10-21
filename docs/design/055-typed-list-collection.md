@@ -32,7 +32,7 @@ constructor silently filters or drops values.
 ## Typed Node-List Contract
 
 The source form is `[]T{expr, ...}`. `T` is an explicit Type Expression and
-may be a node type, an alias resolving to one, or a union whose members are
+may be a node type, an alias resolving to one, or a join whose members are
 node types. Nested lists are explicit: `[][]Comment{}` is valid, and a
 non-empty inner list supplies its own element Type, as in
 `[][]Comment{[]Comment{$item}}`. No expected-Type inference is performed.
@@ -105,7 +105,7 @@ unchanged.
 ## Compatibility and Validation Scope
 
 The node-list syntax is additive. Preserve existing `list`, `map` and
-`concat` behavior. Validate aliases and unions with the same canonical Type
+`concat` behavior. Validate aliases and joins with the same canonical Type
 resolution and assignability rules as other values. Keep source-AST and JSON
 round trips, formatter stability, caller-AST immutability, and compiled-grammar
 compatibility explicit. The closure, recursive VM, iterative VM, generated Go,
@@ -119,7 +119,7 @@ does not implicitly buffer a `ParseStream`.
   optional-element lists.
 - Accept assignable node elements and permitted nil; reject incompatible,
   elements of unknown Type (`_`), and invalid nested elements at compile time.
-- Verify alias and union resolution, order, identity, non-nil empty results,
+- Verify alias and join resolution, order, identity, non-nil empty results,
   and list ranges in both position units.
 - Compare all interpreters and generated backends for values, ranges,
   diagnostics and errors; check source-AST immutability and saved-grammar

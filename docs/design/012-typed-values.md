@@ -24,23 +24,23 @@ fields of each struct type and the resolved alias types), and the generator maps
 | struct type `T` | `*T`, a struct with the same fields and an embedded `Span` (its range) |
 | terminal type `T` | `*T`, a struct `{Span; Text string}` |
 | `Match`, `Error` | `*Match`, `*Error` (`Error` also has `Message`) |
-| union `U = A \| B` of node types | an interface `U` that `*A`, `*B` and `*Error` implement through a marker method |
+| join `U = A \| B` of node types | an interface `U` that `*A`, `*B` and `*Error` implement through a marker method |
 | `[]T` | `[]T'` |
 | `*T` | `*int`, `*string` or `*bool` for basic types; otherwise the Go type of `T`, which is already nilable |
 | `Seq`, `List`, `Operator`, records | `*Node`, unchanged |
-| `node`, `terminal`, `_`, other unions | `any`, holding the converted value |
+| `node`, `terminal`, `_`, other joins | `any`, holding the converted value |
 
 Names that clash with the runtime's exported names (`Node`, `Match`, `Error`, `Parse`, ...) get a trailing `_`
 (a grammar type `Node` becomes `Node_`), and the helper `Span` takes a name no type or field uses.
 
 Every declared alias is exported as a Go alias to its resolved value representation: `type Alias = Word` in the
 grammar becomes `type Alias = *Word` in Go, and a list alias becomes an alias to the corresponding slice. Chained,
-scalar, optional and CST aliases follow the same mapping. Node unions with the same normalized representation
+scalar, optional and CST aliases follow the same mapping. Node joins with the same normalized representation
 share one canonical interface and marker-method set; the other declared names alias that interface. This preserves
 assignment compatibility without duplicating runtime kinds, converters or marker methods. Name collision handling
 applies to alias names as well as struct and terminal declarations.
 
-`Error` implements every union so that a `#recover` inside a list of a union type (`[]Stmt`) keeps the error in the
+`Error` implements every join so that a `#recover` inside a list of a join type (`[]Stmt`) keeps the error in the
 list. Where a struct or terminal type is expected, an `Error` node becomes `nil`; it is reported in the
 `SyntaxErrors` that `ParseAST` returns anyway.
 
@@ -175,7 +175,7 @@ built lists directly had taken 4.5 ms.
   also use a framed direct path (record 83); unmatched recovery layouts remain
   general. Record 82 adds eligible layouts by reusing the general emitter's
   slot metadata.
-- **Converting through JSON.** No generated code, but slower than the parse itself and lossy for unions (the
+- **Converting through JSON.** No generated code, but slower than the parse itself and lossy for joins (the
   member type would have to be decoded from `type`).
 - **Exposing typed values from the engine (`pego.Parser`).** Go types cannot be created at run time, so the engine
   can only return `*Node`; typed values are a property of generated code.
@@ -188,4 +188,4 @@ built lists directly had taken 4.5 ms.
 
 - Grammars whose results include CST values convert the tree after the parse, at a small extra cost.
 - `ParseAST` is generated for the start rule only (`ParseRule` returns `*Node`).
-- Values whose type is not known statically (`node`, `_`, unions with basic members) are `any`.
+- Values whose type is not known statically (`node`, `_`, joins with basic members) are `any`.

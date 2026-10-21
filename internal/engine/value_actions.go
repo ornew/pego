@@ -114,7 +114,7 @@ func (v *valueInference) containsBasic(t ty, depth int, top, deep bool) bool {
 		return v.containsBasic(t.elem, depth+1, top, deep)
 	case nodeTy:
 		return v.containsBasic(t.value, depth+1, top, deep)
-	case unionTy:
+	case joinTy:
 		return slices.ContainsFunc(t.alts, func(a ty) bool { return v.containsBasic(a, depth+1, top, deep) })
 	case tupleTy:
 		return slices.ContainsFunc(t.elems, func(a ty) bool { return v.containsBasic(a, depth+1, top, deep) })
@@ -175,7 +175,7 @@ func (v *valueInference) declared(rd *grammar.RuleDef, t ty) ty {
 }
 
 // expand returns t with rule types replaced by the rules' value types, at the top level and in
-// the arguments of unions and optional types.
+// the arguments of joins and optional types.
 func (v *valueInference) expand(t ty) ty {
 	return v.expandSeen(t, nil)
 }
@@ -195,12 +195,12 @@ func (v *valueInference) expandSeen(t ty, seen map[string]bool) ty {
 			seen[u.name] = true
 			t = v.ruleValue(u.name)
 			continue
-		case unionTy:
+		case joinTy:
 			alts := make([]ty, len(u.alts))
 			for i, a := range u.alts {
 				alts[i] = v.expandSeen(a, maps.Clone(seen))
 			}
-			return vunion(alts...)
+			return vjoin(alts...)
 		case optTy:
 			return vopt(v.expandSeen(u.elem, seen))
 		}
@@ -208,15 +208,15 @@ func (v *valueInference) expandSeen(t ty, seen map[string]bool) ty {
 	}
 }
 
-// alts returns the arguments of the expanded union t, or t itself.
+// alts returns the arguments of the expanded join t, or t itself.
 func (v *valueInference) alts(t ty) []ty {
-	if u, ok := v.expand(t).(unionTy); ok {
+	if u, ok := v.expand(t).(joinTy); ok {
 		return u.alts
 	}
 	return []ty{v.expand(t)}
 }
 
-// everyAlt reports whether ok holds for every argument of the expanded union t, looking through
+// everyAlt reports whether ok holds for every argument of the expanded join t, looking through
 // optional types. nil, unknown values and _|_ are accepted.
 func (v *valueInference) everyAlt(t ty, ok func(ty) bool) bool {
 	for _, x := range v.alts(t) {
@@ -234,7 +234,7 @@ func (v *valueInference) everyAlt(t ty, ok func(ty) bool) bool {
 }
 
 // assignable reports whether a value of type s fits a location of type d. Subtyping is minimal:
-// _|_ <= T <= _, T <= *T, nil <= *T, a union argument is below its union, lists, optional types
+// _|_ <= T <= _, T <= *T, nil <= *T, a join argument is below its join, lists, optional types
 // and nodes are covariant, tuples are covariant element-wise, and structs compare by identity.
 // node[_] is every node, and nodes whose captures differ are distinct.
 func (v *valueInference) assignable(s, d ty) bool {
@@ -242,7 +242,7 @@ func (v *valueInference) assignable(s, d ty) bool {
 	if s == tyAny || d == tyAny || d == tyTop || s == tyBottom {
 		return true
 	}
-	if u, ok := s.(unionTy); ok {
+	if u, ok := s.(joinTy); ok {
 		for _, a := range u.alts {
 			if !v.assignable(a, d) {
 				return false
@@ -259,7 +259,7 @@ func (v *valueInference) assignable(s, d ty) bool {
 		}
 		return v.assignable(s, o.elem)
 	}
-	if u, ok := d.(unionTy); ok {
+	if u, ok := d.(joinTy); ok {
 		for _, a := range u.alts {
 			if v.assignable(s, a) {
 				return true
@@ -546,7 +546,7 @@ func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
 	case *grammar.Binary:
 		return v.binary(t, env)
 	}
-	// Positional captures are rejected when names are resolved, assignments are checked with the
+	// Positional captures are rejected when names are resolved, bindings are checked with the
 	// predicates that make them, and statement blocks are rejected when the program is compiled.
 	return tyAny
 }
@@ -648,7 +648,7 @@ func (v *valueInference) index(x, i ty, t *grammar.Binary) ty {
 			return tyAny
 		}
 	}
-	return vunion(out...)
+	return vjoin(out...)
 }
 
 func ungroupTerm(t grammar.Term) grammar.Term {
@@ -661,7 +661,7 @@ func ungroupTerm(t grammar.Term) grammar.Term {
 	}
 }
 
-// member returns the type of x.Name. On a union every argument must have the member, and the
+// member returns the type of x.Name. On a join every argument must have the member, and the
 // result is the join of their types (optional if a recovered value may be read); .$y needs every argument to capture y.
 func (v *valueInference) member(x ty, m *grammar.Member) ty {
 	x = v.expand(x)
@@ -747,9 +747,9 @@ func (v *valueInference) member(x ty, m *grammar.Member) ty {
 		return tyAny
 	}
 	if recovered {
-		return vopt(vunion(found...))
+		return vopt(vjoin(found...))
 	}
-	return vunion(found...)
+	return vjoin(found...)
 }
 
 // noteMember records whether the member access m reads only node members (.Start, .End and
@@ -784,7 +784,7 @@ func (v *valueInference) captureAccess(x ty, name string, m *grammar.Member) ty 
 		}
 		found = append(found, ct)
 	}
-	return vunion(found...)
+	return vjoin(found...)
 }
 
 // capType returns the type of the capture name in caps. A name captured several times in one
@@ -804,9 +804,9 @@ func capType(caps []capIndex, name string) (ty, bool) {
 		return nil, false
 	}
 	if always {
-		return vunion(sets...), true
+		return vjoin(sets...), true
 	}
-	return vunion(ts...), true
+	return vjoin(ts...), true
 }
 
 // elemOf returns the type of the elements that list functions read from x: the elements of a
@@ -830,7 +830,7 @@ func (v *valueInference) elemsOf(x ty) (ty, bool) {
 		}
 	case optTy:
 		return v.elemsOf(x.elem)
-	case unionTy:
+	case joinTy:
 		ts := make([]ty, len(x.alts))
 		for i, a := range x.alts {
 			t, ok := v.elemsOf(a)
@@ -839,7 +839,7 @@ func (v *valueInference) elemsOf(x ty) (ty, bool) {
 			}
 			ts[i] = t
 		}
-		return vunion(ts...), true
+		return vjoin(ts...), true
 	case basicTy:
 		switch x {
 		case tyAny:
@@ -862,7 +862,7 @@ func (v *valueInference) lambda(t *grammar.Call, arg, n int) (*grammar.Lambda, b
 }
 
 // unknown reports whether a value of type t may be one the value types do not know (tyAny), as
-// itself or as an element of a list, an optional value or a union. A node is known to be a node.
+// itself or as an element of a list, an optional value or a join. A node is known to be a node.
 func (v *valueInference) unknown(t ty) bool {
 	for range 32 {
 		switch u := v.expand(t).(type) {
@@ -874,7 +874,7 @@ func (v *valueInference) unknown(t ty) bool {
 		case optTy:
 			t = u.elem
 			continue
-		case unionTy:
+		case joinTy:
 			return slices.ContainsFunc(u.alts, v.unknown)
 		}
 		return false
@@ -963,14 +963,14 @@ func (v *valueInference) call(t *grammar.Call, env *valueEnv) ty {
 		if !ok {
 			return tyAny
 		}
-		// If the body's type does not fit the initial value's type, take the union and check again.
+		// If the body's type does not fit the initial value's type, take the join and check again.
 		converged := false
 		for range 3 {
 			saved := v.quiet
 			v.quiet = true
 			body := v.term(l.Body, env.with(l.Params, []ty{acc, elem}))
 			v.quiet = saved
-			widened := vunion(acc, body)
+			widened := vjoin(acc, body)
 			// The accumulator is stable when the body fits it, or when widening it adds nothing
 			// (a rule type that assignable compares by name does not always fit its own value).
 			if v.assignable(body, acc) || widened.String() == acc.String() {
@@ -980,7 +980,7 @@ func (v *valueInference) call(t *grammar.Call, env *valueEnv) ty {
 			acc = widened
 		}
 		body := v.term(l.Body, env.with(l.Params, []ty{acc, elem}))
-		if !converged && !v.assignable(body, acc) && vunion(acc, body).String() != acc.String() {
+		if !converged && !v.assignable(body, acc) && vjoin(acc, body).String() != acc.String() {
 			v.errorf(t.Diagnostic(), "%s: the accumulator type does not converge (the callback produces %s, which is not assignable to %s); cast the result of the callback", t.Func, body, acc)
 		}
 		return acc
@@ -1006,13 +1006,13 @@ func (v *valueInference) call(t *grammar.Call, env *valueEnv) ty {
 		for i := range t.Args {
 			ts[i] = arg(i)
 		}
-		return listTy{vunion(ts...)}
+		return listTy{vjoin(ts...)}
 	case "concat":
 		ts := make([]ty, len(t.Args))
 		for i := range t.Args {
 			ts[i] = v.elemOf("concat", arg(i), t.Diagnostic())
 		}
-		return listTy{vunion(ts...)}
+		return listTy{vjoin(ts...)}
 	}
 	return tyAny
 }

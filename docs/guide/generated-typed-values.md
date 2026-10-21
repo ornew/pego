@@ -61,7 +61,7 @@ type Object struct {
 }
 // ... Array likewise
 
-// Value is the union type Value ~ Object | Array | Text.
+// Value is the join type Value ~ Object | Array | Text.
 type Value interface{ isValue() }
 
 func ParseAST(input string, opts ...ParseOption) (Value, error)
@@ -100,10 +100,10 @@ stars text 42
 | tuple `(A, B, ...)` | `TupleN[A', B', ...]`: the fields `E0`, `E1`, ... |
 | unit `()` | `Unit` |
 | `error` (left by `#recover`) | `*Error`: `Span`, `Text` and `Message` |
-| union `U ~ A \| B` | an interface `U`, implemented by `*A`, `*B` and `*Error` (and by `*TNode` if a member is a node type) |
+| join `U ~ A \| B` | an interface `U`, implemented by `*A`, `*B` and `*Error` (and by `*TNode` if a member is a node type) |
 | `[]T` | a slice; an empty list is an empty slice, not `nil` |
 | `*T` | `*int`, `*string` or `*bool` for basic types; otherwise the Go type of `T`, `nil` when absent |
-| `_`, unions with basic members | `any`, holding the converted value |
+| `_`, joins with basic members | `any`, holding the converted value |
 | alias `Alias ~ T` | a Go alias to the value type of `T`; for example, `Alias ~ Word` becomes `type Alias = *Word` |
 
 ## Details
@@ -112,10 +112,10 @@ stars text 42
   `TNode`, `Error`, `Parse`, `Unit`, ...) gets a trailing underscore: a grammar type `Node` becomes `Node_`. `Span`
   is renamed the same way if a type or field is called `Span`.
 - **Aliases.** Every declared alias is exported, including chained, scalar, optional, list and node aliases. Node
-  unions with the same normalized representation share one generated interface; additional names are Go aliases
+  joins with the same normalized representation share one generated interface; additional names are Go aliases
   to it. Aliases preserve assignment compatibility and add no new runtime value kind. Regenerate existing parsers
   to receive previously omitted alias names.
-- **Errors.** `ParseAST` returns the errors of `Parse`. After `#recover`, an `Error` in a list of a union type stays
+- **Errors.** `ParseAST` returns the errors of `Parse`. After `#recover`, an `Error` in a list of a join type stays
   in the list as `*Error`; where a struct type is expected it becomes `nil` (it is among the returned
   `SyntaxErrors` anyway).
 - **Speed.** When no action reads a field of a struct value, the generated
@@ -136,9 +136,9 @@ stars text 42
   invalid options return plain nil with an error. Ordinary parse failure returns the selected type's
   zero value: nil pointers and slices retain their dynamic type in `any`, while a nil interface stays
   nil. A successful rule whose value is nil also returns the selected type's zero value, with no error.
-  This includes plain nil for `any` and union-interface results; legacy `ParseAST` keeps its
+  This includes plain nil for `any` and join-interface results; legacy `ParseAST` keeps its
   existing conversion mapping, which can box a nil `*Node` in an `any` result.
-  Recovery and conversion follow `ParseAST`, including `Error` values in unions and nil where
+  Recovery and conversion follow `ParseAST`, including `Error` values in joins and nil where
   a struct is expected. Direct typed execution uses the same full grammar guard as
   `ParseAST`; unsupported result or struct-field types and field-reading actions use Node conversion.
   A rule whose value is an int, string or bool returns that Go type.

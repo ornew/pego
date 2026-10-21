@@ -173,7 +173,7 @@ in one reservation, rather than in the engine's chunks, so step counts at an exh
 
 These APIs do not return a start-rule tree. The callback receives each committed element, including nil where
 the repeated expression produces no value. StreamValue follows the existing Go typed mapping of that expression,
-including unions, aliases, lists, CST/`_` and recovery's nil/Error representations; it need not equal StartValue.
+including joins, aliases, lists, CST/`_` and recovery's nil/Error representations; it need not equal StartValue.
 The generator must infer/export the element contract explicitly rather than reuse ParseAST's start signature.
 Conversion occurs after the element is finalized and before callback publication. Convert per element with owned
 storage; Node/CST fields and text survive buffer compaction and later elements. Cross-element aliases, if allowed
@@ -220,7 +220,7 @@ interface StreamResult {
 }
 ```
 
-WithTypes, `createASTStream` has the same protocol with the inferred typed element union. `waiting` means suspended
+WithTypes, `createASTStream` has the same protocol with the inferred typed element join. `waiting` means suspended
 for required bytes; it is not a failed literal or EOF. `final:true` supplies actual EOF and produces done/failed.
 Error is null while waiting; final recovered SyntaxErrors accompany done, and fatal/syntax errors accompany failed.
 Previously delivered elements are never repeated or retracted. A failed feed may still return newly committed
@@ -305,7 +305,7 @@ Proposed correctness gates compare semantic parse results, diagnostics and actio
 reader chunk partitions against all three engine backends; resource-limit outcomes such as near-cap nesting are
 excluded as specified above. Cover both units, invalid UTF-8 repairs, surrogate strings, zero-width repeats, recovery,
 EOF versus temporary starvation, finite maxima, cut/Operators Rule ties, LR abort/retry, variables and start/end positional
-actions. Exercise nil/action-discarded elements, typed concrete/union/list/`_`/CST conversions, retained text and
+actions. Exercise nil/action-discarded elements, typed concrete/join/list/`_`/CST conversions, retained text and
 aliases, callback stops/panics, unknown reader errors, concurrent independent instances and terminal stream calls.
 Run strict TS consumer/declaration tests and standalone Go consumers, including collisions and source determinism.
 

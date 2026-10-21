@@ -1706,8 +1706,8 @@ func (p *TParser) Predicate(t func(*TActCtx) any) (ok bool) {
 	return true
 }
 
-// Assign is Parser.Assign for the typed runtime.
-func (p *TParser) Assign(name string, t func(*TActCtx) any) (ok bool) {
+// Bind is Parser.Bind for the typed runtime.
+func (p *TParser) Bind(name string, t func(*TActCtx) any) (ok bool) {
 	base, kids := len(p.Created), len(p.KidStack)
 	defer func() {
 		p.DropCreated(base)

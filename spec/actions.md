@@ -126,7 +126,7 @@ evaluated:
 
 - `int`, `string` and `bool` admit only values of that kind, and `nil` only `nil`;
 - an optional Type `*T` admits `nil` and the values `T` admits;
-- a union admits the values any of its alternatives admits;
+- a join admits the values any of its alternatives admits;
 - a struct Type admits only values of that Type;
 - `node[T]` admits a node whose value `T` admits: `node[string]` every string
   node, `node[(A, B)]` a tuple node of two elements and `node[[]A]` a list
@@ -163,11 +163,11 @@ for comment and layout preservation.
 
 `x.Name` reads field `Name` from node `x`. An unset field reads as `nil`; a
 field that no member of the static type declares is a compile-time error. For
-a union type, every member must declare the field, and the result type is the union of the field types
+a join type, every member must declare the field, and the result type is the join of the field types
 (a single type if they are equal). A field that only some members declare is a compile-time error naming the
 members that lack it; cast the value to a member that has it instead. Struct fields and the node members below
-count alike, so `x.Start` on `N | node[string]` is `int`, and `x.F` on `A | B` is the union of the types of `F`
-in `A` and `B`, which chains: `x.F.G` accesses `G` on that union. With `type A = { F string; X int }` and
+count alike, so `x.Start` on `N | node[string]` is `int`, and `x.F` on `A | B` is the join of the types of `F`
+in `A` and `B`, which chains: `x.F.G` accesses `G` on that join. With `type A = { F string; X int }` and
 `type B = { F int }`, `x.X` on `A | B` is rejected with
 `A | B has no field X in every member: B lacks it; cast the value to a member that has it, as in x.(T).X`,
 and `x.(A).X` is accepted. A recovered value (`error` or `missing`) among the members does not need the
@@ -200,14 +200,14 @@ Field names begin with an uppercase letter, so `x.y` with any other name, except
 the `expected` and `message` fields of `missing`, is an
 error in PEGO source that asks for `x.$y`. A grammar in JSON or a compiled
 grammar may read a capture with `x.y`, which reads the same capture as `x.$y` at
-run time. Its type check is looser: `x.y` on a union some of whose node types
+run time. Its type check is looser: `x.y` on a join some of whose node types
 lack `y` has an optional type.
 
 ## Casts
 
 `x.(T)` is the value of `x`, asserted to be of Type `T`: its static type is
 `T`, and it chains with field access, as in `$x.(Number).Value`. `T` is any
-Type, written as in a declaration; a union is written in the parentheses
+Type, written as in a declaration; a join is written in the parentheses
 directly, as in `$x.(Number | String)`. A value that is not a `T` raises the
 runtime action error `cannot cast <value type> to <T> at input position <N> (line <L>, column <C>)`,
 checked as a field of Type `T` checks a dynamically typed value (see
@@ -227,7 +227,7 @@ rejected.
 A cast to a named node type `N` tests the run-time type name: `$x.(N)` succeeds for a node named `N` and raises
 `cannot cast <value type> to N` otherwise. A cast to an unnamed `node[U]` admits every node whose underlying
 value fits `U`, whatever its name. Statically, a cast is a compile-time error only when no value can have both the
-static type of `x` and `T`; the check is made per alternative of a union or optional type. So `$x.(N)` on a
+static type of `x` and `T`; the check is made per alternative of a join or optional type. So `$x.(N)` on a
 `node[_]` value is accepted, and `$x.(N)` on a `node[string]` value is accepted only when the underlying type of
 `N` overlaps `node[string]`.
 
@@ -296,13 +296,13 @@ Strings are ordered lexicographically. Comparisons return `bool`.
 | [`text`](#text) | 1 | `string` |
 | [`foldl`](#foldl), [`foldr`](#foldr) | 3 | Initial-accumulator type, widened to include callback results |
 | [`map`](#map) | 2 | `[]T`, with `T` the type of the callback's result |
-| [`list`](#list) | Any, including 0 | `[]T`, with `T` the union of the argument types |
-| [`concat`](#concat) | Any, including 0 | A list of the union of its input element types |
+| [`list`](#list) | Any, including 0 | `[]T`, with `T` the join of the argument types |
+| [`concat`](#concat) | Any, including 0 | A list of the join of its input element types |
 | [`filter`](#filter) | 2 | A list with the input's element Type |
 
 An optional list value contributes no elements when it is `nil`. An error
 value produced by `#recover` also contributes no elements to list-consuming
-functions. The checker accepts a union of list types and combines their
+functions. The checker accepts a join of list types and combines their
 possible element types. A value of type `node[_]` is not a list for the checker:
 cast it first, as in `$n.([]_)`.
 
@@ -324,7 +324,7 @@ node. A list value and a struct have no range and are rejected as arguments.
 
 `foldl(init, xs, f)` visits list elements from first to last. The callback has
 two parameters and is called as `f(accumulator, element)`; its result becomes
-the next accumulator. An empty input returns `init`. The accumulator type is widened to the union of the initial value type and the
+the next accumulator. An empty input returns `init`. The accumulator type is widened to the join of the initial value type and the
 callback result type; the checker checks the callback against that widened
 type. If the callback result still does not fit after three widenings, the accumulator
 type does not converge and the call is a compile-time error; cast the callback result.
@@ -337,7 +337,7 @@ foldl(0, $items, (sum, item) => sum + item.$value)
 
 `foldr(init, xs, f)` visits list elements from last to first but still calls
 the two-parameter callback as `f(accumulator, element)`. An empty input
-returns `init`. The accumulator type is widened to the union of the initial
+returns `init`. The accumulator type is widened to the join of the initial
 value type and the callback result type, as for `foldl`.
 
 #### `map`

@@ -1186,8 +1186,8 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 	case *grammar.EndLine:
 		b.WriteString("\treturn p.Anchor(p.AtLineEnd(), IdEndLine)\n")
 	case *grammar.Predicate:
-		if a, ok := e.Term.(*grammar.Assign); ok {
-			fmt.Fprintf(&b, "\treturn nil, p.Assign(%q, func(c *%s) any { return %s })\n", a.Name, g.ctxType(), g.term(a.Value, s, nil))
+		if a, ok := e.Term.(*grammar.Bind); ok {
+			fmt.Fprintf(&b, "\treturn nil, p.Bind(%q, func(c *%s) any { return %s })\n", a.Name, g.ctxType(), g.term(a.Value, s, nil))
 		} else {
 			fmt.Fprintf(&b, "\treturn nil, p.Predicate(func(c *%s) any { return %s })\n", g.ctxType(), g.predicateTerm(e.Term, s, nil))
 		}

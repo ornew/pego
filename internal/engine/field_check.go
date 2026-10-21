@@ -33,7 +33,7 @@ const (
 	ftMissing    = 'M'
 	ftList       = 'l'
 	ftOptional   = 'o'
-	ftUnion      = 'u'
+	ftJoin       = 'u'
 	// ftNodeOf is node[T] for a T other than string and _: a node whose value is of type elem.
 	ftNodeOf = 'v'
 	// ftTuple is a tuple type, whose element types are alts.
@@ -106,8 +106,8 @@ func newFieldType(t ty) *fieldType {
 			return nil
 		}
 		f = &fieldType{kind: ftOptional, elem: e}
-	case unionTy:
-		f = &fieldType{kind: ftUnion}
+	case joinTy:
+		f = &fieldType{kind: ftJoin}
 		for _, a := range t.alts {
 			e := newFieldType(a)
 			if e == nil {
@@ -135,7 +135,7 @@ func topFieldType(t ty) *fieldType {
 // the kinds of node. Bytecode carries field types this way.
 func parseFieldType(text string, types map[string]bool) (*fieldType, error) {
 	r := fieldTypeReader{text: text, types: types}
-	t, err := r.union()
+	t, err := r.join()
 	if err == nil && r.pos != len(text) {
 		err = fmt.Errorf("unexpected %q", text[r.pos:])
 	}
@@ -152,13 +152,13 @@ type fieldTypeReader struct {
 	depth int
 }
 
-func (r *fieldTypeReader) union() (*fieldType, error) {
+func (r *fieldTypeReader) join() (*fieldType, error) {
 	start := r.pos
 	first, err := r.term()
 	if err != nil || !strings.HasPrefix(r.text[r.pos:], " | ") {
 		return first, err
 	}
-	u := &fieldType{kind: ftUnion, alts: []*fieldType{first}}
+	u := &fieldType{kind: ftJoin, alts: []*fieldType{first}}
 	for strings.HasPrefix(r.text[r.pos:], " | ") {
 		r.pos += 3
 		t, err := r.term()
@@ -194,17 +194,17 @@ func (r *fieldTypeReader) term() (*fieldType, error) {
 		}
 		t = &fieldType{kind: kind, elem: e}
 	case strings.HasPrefix(rest, "("):
-		// A tuple (T, U), (T,) or (), or a parenthesized union.
+		// A tuple (T, U), (T,) or (), or a parenthesized join.
 		r.pos++
 		tuple := &fieldType{kind: ftTuple, alts: []*fieldType{}}
 		for !strings.HasPrefix(r.text[r.pos:], ")") {
-			u, err := r.union()
+			u, err := r.join()
 			if err != nil {
 				return nil, err
 			}
 			if strings.HasPrefix(r.text[r.pos:], ")") && len(tuple.alts) == 0 {
-				if u.kind != ftUnion {
-					return nil, fmt.Errorf("expected a parenthesized union or a tuple at %d", start)
+				if u.kind != ftJoin {
+					return nil, fmt.Errorf("expected a parenthesized join or a tuple at %d", start)
 				}
 				r.pos++
 				u.text = r.text[start:r.pos]
@@ -248,7 +248,7 @@ func (r *fieldTypeReader) term() (*fieldType, error) {
 				t = &fieldType{kind: ftNode}
 			case strings.HasPrefix(r.text[r.pos:], "["):
 				r.pos++
-				e, err := r.union()
+				e, err := r.join()
 				if err != nil {
 					return nil, err
 				}
@@ -319,7 +319,7 @@ func (p *parser) fieldConforms(t *fieldType, v any) bool {
 		return v == nil
 	case ftOptional:
 		return v == nil || p.fieldConforms(t.elem, v)
-	case ftUnion:
+	case ftJoin:
 		for _, a := range t.alts {
 			if p.fieldConforms(a, v) {
 				return true
@@ -367,7 +367,7 @@ func (p *parser) nodeValueConforms(t *fieldType, n *Node, shape nodeShape) bool 
 		return shape == shapeTuple && p.tupleConforms(t.alts, n.children)
 	case ftOptional:
 		return p.nodeValueConforms(t.elem, n, shape) // a node always has a value
-	case ftUnion:
+	case ftJoin:
 		for _, a := range t.alts {
 			if p.nodeValueConforms(a, n, shape) {
 				return true

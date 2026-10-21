@@ -21,7 +21,7 @@ import (
 //   - Captures are variables of the method; those of a repetition element with captures of its
 //     own are cleared at the start of each iteration.
 //   - A backtracking point (choice, optional, repetition element, !) saves the position, the
-//     number of recovered errors, the variable environment if the expression assigns variables,
+//     number of recovered errors, the variable environment if the expression binds variables,
 //     and the captures the expression may set, and restores them when it fails: what reset
 //     undoes through the trail, which only setCapture into the rule's own frame extends.
 //   - The action is a Go expression over the capture variables, evaluated in place.
@@ -86,7 +86,7 @@ func directFrameExprOK(expr grammar.Expr, cuts, recovery bool) bool {
 
 // directLeanOK selects value-free plain rules of the Node runtime. Captures
 // unused by recognition are omitted; predicates keep the general code because
-// they can require values, capture frames and variable assignment.
+// they can require values, capture frames and variable bindings.
 func directLeanOK(r *rule) bool {
 	if !r.plain || !r.lean || !r.novalue || !directOK(r) {
 		return false
@@ -291,12 +291,12 @@ func capSets(e grammar.Expr, f func(string)) {
 	}
 }
 
-// assigns reports whether e assigns a variable ([x = ...]), anywhere within it.
-func assigns(e grammar.Expr) bool {
+// bindsVars reports whether e binds a variable ([x := ...]), anywhere within it.
+func bindsVars(e grammar.Expr) bool {
 	found := false
 	walkExpr(e, func(x grammar.Expr) {
 		if p, ok := x.(*grammar.Predicate); ok {
-			if _, ok := p.Term.(*grammar.Assign); ok {
+			if _, ok := p.Term.(*grammar.Bind); ok {
 				found = true
 			}
 		}
@@ -321,7 +321,7 @@ func (d *dgen) mark(s *dscope, e grammar.Expr, saves bool) dmark {
 	}
 	m := dmark{pos: d.decl("x", "int"), rec: d.decl("x", "int")}
 	d.line("%s, %s = p.Pos, len(p.Recovered)", m.pos, m.rec)
-	if assigns(e) {
+	if bindsVars(e) {
 		m.env = d.decl("x", "*Env")
 		d.line("%s = p.Env", m.env)
 	}
@@ -937,12 +937,12 @@ func (d *dgen) projectRepeat(e *grammar.Repeat, field, fail string) string {
 	return v
 }
 
-// predicate writes a predicate or an assignment; it reads the captures of the
+// predicate writes a predicate or a binding; it reads the captures of the
 // scope s as the general code reads its frame, including nil omitted slots.
 func (d *dgen) predicate(e *grammar.Predicate, s *dscope, fail string) string {
 	if d.nodeBody {
 		t := e.Term
-		if a, ok := t.(*grammar.Assign); ok {
+		if a, ok := t.(*grammar.Bind); ok {
 			t = a.Value
 		}
 		f := d.frameScope(s)
@@ -951,13 +951,13 @@ func (d *dgen) predicate(e *grammar.Predicate, s *dscope, fail string) string {
 			return "nil"
 		}
 		var term string
-		if _, assignment := e.Term.(*grammar.Assign); assignment {
+		if _, binding := e.Term.(*grammar.Bind); binding {
 			term = d.g.term(t, f, nil)
 		} else {
 			term = d.g.predicateTerm(t, f, nil)
 		}
-		if a, ok := e.Term.(*grammar.Assign); ok {
-			d.failIf(fmt.Sprintf("!p.Assign(%q, func(c *%s) any { return %s })", a.Name, d.g.ctxType(), term), fail)
+		if a, ok := e.Term.(*grammar.Bind); ok {
+			d.failIf(fmt.Sprintf("!p.Bind(%q, func(c *%s) any { return %s })", a.Name, d.g.ctxType(), term), fail)
 		} else {
 			d.failIf(fmt.Sprintf("!p.Predicate(func(c *%s) any { return %s })", d.g.ctxType(), term), fail)
 		}
@@ -970,7 +970,7 @@ func (d *dgen) predicate(e *grammar.Predicate, s *dscope, fail string) string {
 		}
 	}
 	t := e.Term
-	if a, ok := t.(*grammar.Assign); ok {
+	if a, ok := t.(*grammar.Bind); ok {
 		t = a.Value
 	}
 	if !refsKnown(t, caps) {
@@ -990,15 +990,15 @@ func (d *dgen) predicate(e *grammar.Predicate, s *dscope, fail string) string {
 	prev := g.caps
 	g.caps = caps
 	var term string
-	if _, assignment := e.Term.(*grammar.Assign); assignment {
+	if _, binding := e.Term.(*grammar.Bind); binding {
 		term = g.term(t, newScope(), nil)
 	} else {
 		term = g.predicateTerm(t, newScope(), nil)
 	}
 	d.rdTerm(t, caps)
 	g.caps = prev
-	if a, ok := e.Term.(*grammar.Assign); ok {
-		d.failIf(fmt.Sprintf("!p.Assign(%q, func(c *TActCtx) any { return %s })", a.Name, term), fail)
+	if a, ok := e.Term.(*grammar.Bind); ok {
+		d.failIf(fmt.Sprintf("!p.Bind(%q, func(c *TActCtx) any { return %s })", a.Name, term), fail)
 	} else {
 		d.failIf(fmt.Sprintf("!p.Predicate(func(c *TActCtx) any { return %s })", term), fail)
 	}
@@ -1073,7 +1073,7 @@ func walkChildren(t grammar.Term, f func(grammar.Term)) {
 		f(t.X)
 	case *grammar.Cast:
 		f(t.X)
-	case *grammar.Assign:
+	case *grammar.Bind:
 		f(t.Value)
 	}
 }
@@ -1177,7 +1177,7 @@ type direct struct {
 	decls, body string
 	fail        bool // the body can fail (fail is jumped to)
 	succeed     bool // the body can succeed
-	assigns     bool // the body assigns variables (the environment is restored)
+	binds       bool // the body binds variables (the environment is restored)
 	start, ctx  bool // the value uses start, the context c
 }
 
@@ -1196,7 +1196,7 @@ func (g *generator) directRule(r *rule) *direct {
 	defer func() { g.proj = nil }()
 	const fail = "fail"
 	body := d.expr(r.bodyExpr(), s, !r.lean, fail)
-	out := &direct{fail: d.used[fail], succeed: !d.dead, assigns: assigns(r.bodyExpr())}
+	out := &direct{fail: d.used[fail], succeed: !d.dead, binds: bindsVars(r.bodyExpr())}
 	if out.succeed && !d.bad {
 		out.start, out.ctx = d.finish(r, s, body)
 	}
@@ -1319,7 +1319,7 @@ func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain
 	if rec {
 		m.WriteString("\t\trec int\n")
 	}
-	if d.assigns {
+	if d.binds {
 		m.WriteString("\t\tprevEnv *Env\n")
 	}
 	m.WriteString(d.decls)
@@ -1330,14 +1330,14 @@ func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain
 	case start:
 		m.WriteString("\tstart = p.Pos\n")
 	}
-	if d.assigns {
+	if d.binds {
 		m.WriteString("\tprevEnv = p.Env\n")
 	}
 	m.WriteString("\tp.Depth++\n\tif p.Depth > p.MaxDepth {\n\t\tp.TooDeep()\n\t}\n")
 	m.WriteString(d.body)
 	if d.succeed {
 		m.WriteString("\tp.Depth--\n")
-		if d.assigns {
+		if d.binds {
 			m.WriteString("\tp.Env = prevEnv\n")
 		}
 		m.WriteString("\treturn v, true\n")
@@ -1347,7 +1347,7 @@ func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain
 		if rec {
 			m.WriteString("\tp.Pos = start\n\tp.Recovered = p.Recovered[:rec]\n")
 		}
-		if d.assigns {
+		if d.binds {
 			m.WriteString("\tp.Env = prevEnv\n")
 		}
 		m.WriteString("\treturn nil, false\n")

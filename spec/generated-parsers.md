@@ -131,11 +131,11 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
 | `node[T]` | `*TNode[T']`, with `Span` and `Value` of the Go type `T'` of `T`: `*TNode[string]` for a string node, whose `Value` is the text, and `*TNode[any]` for `node[_]` |
 | Tuple `(A, B, ...)` | `TupleN[A', B', ...]` with the fields `E0`, `E1`, ...; `Unit` for `()` |
 | `error` (from `#recover`) | `*Error` with `Span`, `Text` and `Message` |
-| Union `U ~ A \| B` of node types | An interface `U` implemented by `*A`, `*B` and `*Error` (and by every `*TNode[T]` if a member is a node type) |
+| Join `U ~ A \| B` of node types | An interface `U` implemented by `*A`, `*B` and `*Error` (and by every `*TNode[T]` if a member is a node type) |
 | `[]T` | A slice; an empty list is an empty slice and not `nil` |
 | `*T` | `*int`, `*string` or `*bool` for basic types; otherwise the Go type of `T`, `nil` when absent |
 | A rule whose type is not declared | The Go type of its value (an action's value maps by the rows above): `*TNode[TupleN[E0, ..., En]]` for a tuple of known elements, `*TNode[[]E]` for a list, `*TNode[Unit]` for the unit `()`; `*TNode[any]` when the elements are not known; a rule with a declared type, `node[_]` included, always has the Go type of that type |
-| `_`, unions with basic members or members of different shapes, a value that closes a cycle of rules | `any`, holding the converted value |
+| `_`, joins with basic members or members of different shapes, a value that closes a cycle of rules | `any`, holding the converted value |
 | Alias `Alias ~ T` | A Go alias to the value type of `T` |
 
 - `TNode[T]` is `struct { Span; Value T }`; `TupleN` is `struct { E0 E0; ...; En En }`
@@ -157,7 +157,7 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
   embedded `Span` (`Range`) or of the typed values (`TName`, ...) gets a trailing
   underscore in Go; the value still reads back under the grammar name. Every declared
   alias is exported.
-- After `#recover`, an error value in a list of a union type stays in the list as
+- After `#recover`, an error value in a list of a join type stays in the list as
   `*Error`; where a struct type is expected it becomes `nil`.
 - `ParseRuleAST` consumes the whole input, applies options once before it looks up
   the name, and returns the selected rule's typed value as `any`. Unknown names and
@@ -184,8 +184,8 @@ mapping is:
 | `int` | `number \| bigint`, with signed 64-bit arithmetic and safe-number canonicalization |
 | `string`, `bool` | `string`, `boolean`; an absent non-optional scalar field is `""`, `false` or `0` |
 | Declared alias | The complete target type |
-| Declared pure node union | The member interfaces, `RecoveredError` and null; tuple and list node members remain `Node` |
-| Mixed or undeclared union, `_` | `TypedValue`, following the conversion of `any` in Go |
+| Declared pure node join | The member interfaces, `RecoveredError` and null; tuple and list node members remain `Node` |
+| Mixed or undeclared join, `_` | `TypedValue`, following the conversion of `any` in Go |
 
 Names collide the same way as in Go, with trailing underscores. Typed parsing by
 rule name is not available in TypeScript.
