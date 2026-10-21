@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/parsers/cue/types"
 )
 
 // TestLiterals compares the values that Unquote, Int.Value and Float.Rat decode with those of the reference
@@ -57,10 +59,10 @@ func TestLiterals(t *testing.T) {
 			bad++
 			continue
 		}
-		v := file.Decls[0].(*Field).Value
+		v := file.Decls[0].(*types.Field).Value
 		switch kind {
 		case "S":
-			s, ok := v.(*String)
+			s, ok := v.(*types.String)
 			if !ok {
 				t.Errorf("%s %q: parsed as %T", kind, lit, v)
 				bad++
@@ -68,7 +70,7 @@ func TestLiterals(t *testing.T) {
 			}
 			got, gotErr = s.Unquote()
 		case "I":
-			n, ok := v.(*Int)
+			n, ok := v.(*types.Int)
 			if !ok {
 				t.Errorf("%s %q: parsed as %T", kind, lit, v)
 				bad++
@@ -79,7 +81,7 @@ func TestLiterals(t *testing.T) {
 				got = b.String()
 			}
 		case "F":
-			n, ok := v.(*Float)
+			n, ok := v.(*types.Float)
 			if !ok {
 				t.Errorf("%s %q: parsed as %T", kind, lit, v)
 				bad++

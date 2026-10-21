@@ -1,63 +1,65 @@
 package duckdb
 
+import "github.com/ornew/pego/parsers/duckdb/types"
+
 // Kind returns the type DuckDB gives the statement (the name of its StatementType: SELECT, INSERT, CREATE, ...).
 //
 // DuckDB rewrites some statements while it parses them, so a statement can have another type in DuckDB than its
 // syntax says: PRAGMA is a SELECT when it calls a function or a SET when it assigns a value, SHOW, DESCRIBE and
 // SUMMARIZE are SELECT statements, CHECKPOINT is a CALL, USE and RESET are SET statements, ANALYZE a VACUUM, and
 // COMMENT ON an ALTER. Kind of a PragmaStmt is "PRAGMA".
-func Kind(s Statement) string {
+func Kind(s types.Statement) string {
 	switch s := s.(type) {
-	case *Select, *ShowStmt:
+	case *types.Select, *types.ShowStmt:
 		return "SELECT"
-	case *InsertStmt:
+	case *types.InsertStmt:
 		return "INSERT"
-	case *UpdateStmt:
+	case *types.UpdateStmt:
 		return "UPDATE"
-	case *DeleteStmt:
+	case *types.DeleteStmt:
 		return "DELETE"
-	case *MergeStmt:
+	case *types.MergeStmt:
 		return "MERGE_INTO"
-	case *CreateTableStmt, *CreateTableAsStmt, *CreateViewStmt, *CreateIndexStmt, *CreateSchemaStmt,
-		*CreateSequenceStmt, *CreateTypeStmt, *CreateMacroStmt, *CreateSecretStmt:
+	case *types.CreateTableStmt, *types.CreateTableAsStmt, *types.CreateViewStmt, *types.CreateIndexStmt, *types.CreateSchemaStmt,
+		*types.CreateSequenceStmt, *types.CreateTypeStmt, *types.CreateMacroStmt, *types.CreateSecretStmt:
 		return "CREATE"
-	case *AlterTableStmt, *AlterSequenceStmt, *AlterDatabaseStmt, *AlterObjectSchemaStmt, *RenameStmt, *CommentStmt:
+	case *types.AlterTableStmt, *types.AlterSequenceStmt, *types.AlterDatabaseStmt, *types.AlterObjectSchemaStmt, *types.RenameStmt, *types.CommentStmt:
 		return "ALTER"
-	case *DropStmt, *DropSecretStmt:
+	case *types.DropStmt, *types.DropSecretStmt:
 		return "DROP"
-	case *CopyStmt:
+	case *types.CopyStmt:
 		return "COPY"
-	case *CopyDatabaseStmt:
+	case *types.CopyDatabaseStmt:
 		return "COPY_DATABASE"
-	case *ExportStmt:
+	case *types.ExportStmt:
 		return "EXPORT"
-	case *ImportStmt:
+	case *types.ImportStmt:
 		return "PRAGMA"
-	case *AttachStmt:
+	case *types.AttachStmt:
 		return "ATTACH"
-	case *DetachStmt:
+	case *types.DetachStmt:
 		return "DETACH"
-	case *UseStmt, *SetStmt, *ResetStmt:
+	case *types.UseStmt, *types.SetStmt, *types.ResetStmt:
 		return "SET"
-	case *LoadStmt:
+	case *types.LoadStmt:
 		return "LOAD"
-	case *PragmaStmt:
+	case *types.PragmaStmt:
 		return "PRAGMA"
-	case *ExplainStmt:
+	case *types.ExplainStmt:
 		return "EXPLAIN"
-	case *PrepareStmt:
+	case *types.PrepareStmt:
 		return "PREPARE"
-	case *ExecuteStmt:
+	case *types.ExecuteStmt:
 		return "EXECUTE"
-	case *DeallocateStmt:
+	case *types.DeallocateStmt:
 		return "DROP"
-	case *TransactionStmt:
+	case *types.TransactionStmt:
 		return "TRANSACTION"
-	case *VacuumStmt, *AnalyzeStmt:
+	case *types.VacuumStmt, *types.AnalyzeStmt:
 		return "VACUUM"
-	case *CheckpointStmt, *CallStmt:
+	case *types.CheckpointStmt, *types.CallStmt:
 		return "CALL"
-	case *UpdateExtensionsStmt:
+	case *types.UpdateExtensionsStmt:
 		return "UPDATE_EXTENSIONS"
 	default:
 		_ = s

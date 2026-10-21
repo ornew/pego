@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/parsers/yaml"
+	"github.com/ornew/pego/parsers/yaml/types"
 )
 
 func TestTagValidity(t *testing.T) {
@@ -51,13 +52,13 @@ func TestTagValidity(t *testing.T) {
 					t.Errorf("error = %v; want valid=%v", err, valid)
 				}
 			}
-			check(s.Check())
-			_, err = s.Events()
+			check(yaml.Check(s))
+			_, err = yaml.StreamEvents(s)
 			check(err)
 			d := s.Documents[0]
-			_, err = d.Load()
+			_, err = yaml.LoadDocument(d)
 			check(err)
-			got, err := d.ResolveTag(yaml.PropertiesOf(d.Root).Tag)
+			got, err := yaml.ResolveTag(d, yaml.PropertiesOf(d.Root).Tag)
 			check(err)
 			if valid && got != tc.want {
 				t.Errorf("ResolveTag = %q; want %q", got, tc.want)
@@ -87,13 +88,13 @@ func TestMalformedTagAST(t *testing.T) {
 				t.Fatal(err)
 			}
 			d := s.Documents[0]
-			tag := &yaml.Tag{TNode: yaml.TNode[string]{Value: text}}
-			d.Root.(*yaml.Scalar).Props = &yaml.Properties{Tag: tag}
+			tag := &types.Tag{TNode: types.TNode[string]{Value: text}}
+			d.Root.(*types.Scalar).Props = &types.Properties{Tag: tag}
 			for _, f := range []func() error{
-				s.Check,
-				func() error { _, err := s.Events(); return err },
-				func() error { _, err := d.Load(); return err },
-				func() error { _, err := d.ResolveTag(tag); return err },
+				func() error { return yaml.Check(s) },
+				func() error { _, err := yaml.StreamEvents(s); return err },
+				func() error { _, err := yaml.LoadDocument(d); return err },
+				func() error { _, err := yaml.ResolveTag(d, tag); return err },
 			} {
 				var se *yaml.SemanticError
 				if err := f(); !errors.As(err, &se) {
@@ -103,7 +104,7 @@ func TestMalformedTagAST(t *testing.T) {
 		})
 	}
 	var se *yaml.SemanticError
-	if _, err := (&yaml.Document{}).ResolveTag(nil); !errors.As(err, &se) {
+	if _, err := yaml.ResolveTag((&types.Document{}), nil); !errors.As(err, &se) {
 		t.Fatalf("nil Tag error = %v; want SemanticError", err)
 	}
 }
@@ -135,7 +136,7 @@ func BenchmarkTagCheck(b *testing.B) {
 			}
 			b.ReportAllocs()
 			for b.Loop() {
-				if err := s.Check(); err != nil {
+				if err := yaml.Check(s); err != nil {
 					b.Fatal(err)
 				}
 			}

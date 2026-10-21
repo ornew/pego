@@ -37,18 +37,18 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 		case recordTy:
 			return "c.toNode(" + value + ")"
 		case namedTy:
-			name := t.names[x.name]
+			name := convName(x.name)
 			if x == tyMatch {
-				name = "Match"
+				name = "toMatch"
 			} else if x == tyError {
-				name = "Error"
+				name = "toError"
 			} else if x.kind == 'c' {
-				name = "Node"
+				name = "toNode"
 			}
-			return "c.to" + name + "(" + value + ")"
+			return "c." + name + "(" + value + ")"
 		case joinTy:
 			if name, ok := t.joins[x.String()]; ok {
-				return "c.to" + name + "(" + value + ")"
+				return "c." + convName(name) + "(" + value + ")"
 			}
 			if _, ok := t.joinGoType(x); ok {
 				return clone(x.alts[0], value)
@@ -116,23 +116,22 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 		return false
 	}
 	for _, name := range t.structs {
-		goName := t.names[name]
 		deferred := false
 		for _, f := range t.info.fields[name] {
 			deferred = deferred || containsStruct(f.t)
 		}
-		fmt.Fprintf(&methods, `func (c *typedDocumentClone) to%[1]s(v *%[1]s) *%[1]s {
+		fmt.Fprintf(&methods, `func (c *typedDocumentClone) %[3]s(v *%[1]s) *%[1]s {
  c.Step(1)
  if v == nil { return nil }
- if old, ok := c.seen%[1]s[v]; ok { return old }
- out := astNew(&c.t%[1]s)
+ if old, ok := c.seen%[4]s[v]; ok { return old }
+ out := astNew(&c.t%[4]s)
  out.%[2]s = v.%[2]s
- if c.seen%[1]s == nil { c.seen%[1]s = make(map[*%[1]s]*%[1]s) }; c.seen%[1]s[v] = out
-`, goName, t.span)
+ if c.seen%[4]s == nil { c.seen%[4]s = make(map[*%[1]s]*%[1]s) }; c.seen%[4]s[v] = out
+`, t.ref(name), "Span", convName(name), name)
 		target := &methods
 		if deferred {
 			methods.WriteString(" c.Tasks = append(c.Tasks, TypedDocumentCloneTask{Source: v, Target: out})\n return out\n}\n")
-			fmt.Fprintf(&tasks, " case *%s:\n out := task.Target.(*%s)\n _ = out; _ = v\n", goName, goName)
+			fmt.Fprintf(&tasks, " case *%s:\n out := task.Target.(*%s)\n _ = out; _ = v\n", t.ref(name), t.ref(name))
 			target = &tasks
 		}
 		for _, f := range t.info.fields[name] {
@@ -147,7 +146,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 		if !t.representable(u) {
 			continue
 		}
-		fmt.Fprintf(&methods, "func (c *typedDocumentClone) to%s(v %s) %s {\n c.Step(1)\n switch v := v.(type) {\n case *Error: return c.toError(v)\n", t.names[name], t.names[name], t.names[name])
+		fmt.Fprintf(&methods, "func (c *typedDocumentClone) %s(v %s) %s {\n c.Step(1)\n switch v := v.(type) {\n case *Error: return c.toError(v)\n", convName(name), t.ref(name), t.ref(name))
 		seen := map[string]bool{"*Error": true}
 		open := false
 		for _, alternative := range u.alts {
@@ -165,7 +164,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 			fmt.Fprintf(&methods, " case %s: return %s\n", goType, clone(alternative, "v"))
 		}
 		if open {
-			fmt.Fprintf(&methods, " case nil:\n default: out, _ := c.toOpen(v).(%s); return out\n", t.names[name])
+			fmt.Fprintf(&methods, " case nil:\n default: out, _ := c.toOpen(v).(%s); return out\n", t.ref(name))
 		}
 		methods.WriteString(" }\n return nil\n}\n")
 	}
@@ -180,11 +179,11 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
  case []any: return c.toElems(v)
 `)
 	for _, name := range t.structs {
-		fmt.Fprintf(&methods, " case *%[1]s: return c.to%[1]s(v)\n", t.names[name])
+		fmt.Fprintf(&methods, " case *%s: return c.%s(v)\n", t.ref(name), convName(name))
 	}
 	for _, name := range t.nodeTypes {
 		n, _ := t.g.prog.nodeTypeOf(name)
-		fmt.Fprintf(&methods, " case *%s: return %s\n", t.names[name], clone(n, "v"))
+		fmt.Fprintf(&methods, " case *%s: return %s\n", t.ref(name), clone(n, "v"))
 	}
 	methods.WriteString(` }
  return v
@@ -260,14 +259,14 @@ type typedDocumentClone struct {
  error astChunk[Error]
 `)
 	for _, name := range t.structs {
-		fmt.Fprintf(b, " t%s astChunk[%s]\n", t.names[name], t.names[name])
+		fmt.Fprintf(b, " t%s astChunk[%s]\n", name, t.ref(name))
 	}
 	for _, name := range append([]string{"Match", "Error"}, t.structs...) {
-		goType := name
-		if g, ok := t.names[name]; ok {
-			name, goType = g, g
-		} else if name == "Match" {
+		goType := t.ref(name)
+		if name == "Match" {
 			goType = "TNode[string]"
+		} else if name == "Error" {
+			goType = "Error"
 		}
 		fmt.Fprintf(b, " seen%s map[*%s]*%s\n", name, goType, goType)
 	}
@@ -294,9 +293,6 @@ func (c *typedDocumentClone) Release() {
  c.ReleaseBase()
 `)
 	for _, name := range append([]string{"Match", "Error"}, t.structs...) {
-		if g, ok := t.names[name]; ok {
-			name = g
-		}
 		fmt.Fprintf(b, " c.seen%s = nil\n", name)
 	}
 	b.WriteString(`

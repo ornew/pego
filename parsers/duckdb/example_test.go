@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/parsers/duckdb"
+	"github.com/ornew/pego/parsers/duckdb/types"
 )
 
 func ExampleParseAST() {
@@ -14,12 +15,12 @@ func ExampleParseAST() {
 	if err != nil {
 		panic(err)
 	}
-	sel := script.Statements[0].(*duckdb.Select)
-	core := sel.Body.(*duckdb.SelectCore)
+	sel := script.Statements[0].(*types.Select)
+	core := sel.Body.(*types.SelectCore)
 	for _, item := range core.Items {
 		fmt.Printf("%-8s %s\n", fmt.Sprintf("%d-%d", item.Span.Start, item.Span.End), src[item.Span.Start:item.Span.End])
 	}
-	tbl := core.From[0].(*duckdb.BaseTable)
+	tbl := core.From[0].(*types.BaseTable)
 	fmt.Println("from", tbl.Name.Names())
 	// Output:
 	// 7-13     region
@@ -27,17 +28,17 @@ func ExampleParseAST() {
 	// from [sales]
 }
 
-func ExampleWalk() {
+func ExampleInspect() {
 	script, err := duckdb.ParseAST(`SELECT t.a, f(b) FROM s.t JOIN u ON t.id = u.id WHERE c > 1`)
 	if err != nil {
 		panic(err)
 	}
 	// the columns and the tables of the statement, in the order of the input
-	duckdb.Walk(script, func(n any) bool {
+	duckdb.Inspect(script, func(n any) bool {
 		switch n := n.(type) {
-		case *duckdb.ColumnRef:
+		case *types.ColumnRef:
 			fmt.Println("column", n.Parts[len(n.Parts)-1].Name())
-		case *duckdb.BaseTable:
+		case *types.BaseTable:
 			fmt.Println("table", strings.Join(n.Name.Names(), "."))
 		}
 		return true
@@ -71,8 +72,8 @@ func ExampleIdent_Name() {
 	if err != nil {
 		panic(err)
 	}
-	duckdb.Walk(script, func(n any) bool {
-		if id, ok := n.(*duckdb.Ident); ok {
+	duckdb.Inspect(script, func(n any) bool {
+		if id, ok := n.(*types.Ident); ok {
 			fmt.Printf("%-24s %-16q quoted=%v\n", id.Value, id.Name(), id.Quoted())
 		}
 		return true
@@ -90,8 +91,8 @@ func ExampleStringLit_Value() {
 	if err != nil {
 		panic(err)
 	}
-	duckdb.Walk(script, func(n any) bool {
-		if s, ok := n.(*duckdb.StringLit); ok {
+	duckdb.Inspect(script, func(n any) bool {
+		if s, ok := n.(*types.StringLit); ok {
 			fmt.Printf("%q\n", s.Value())
 		}
 		return true
@@ -108,8 +109,8 @@ func ExampleNumber_Type() {
 	if err != nil {
 		panic(err)
 	}
-	duckdb.Walk(script, func(n any) bool {
-		if num, ok := n.(*duckdb.Number); ok {
+	duckdb.Inspect(script, func(n any) bool {
+		if num, ok := n.(*types.Number); ok {
 			fmt.Printf("%-22s %s\n", num.Text, num.Type())
 		}
 		return true

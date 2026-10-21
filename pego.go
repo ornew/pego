@@ -424,7 +424,7 @@ type GenOption func(*engine.GenOptions)
 // Go adds ParseAST for the start rule and ParseRuleAST for named rules.
 // TypeScript adds parseAST and parseASTWithOptions, converting the completed
 // Node result into plain objects and arrays. Declared aliases preserve the target value type.
-// Names colliding with runtime declarations gain underscores.
+// For Go, the types are declared in the package module/types, so the module path is required.
 func WithTypes() GenOption {
 	return func(o *engine.GenOptions) { o.Types = true }
 }
@@ -518,9 +518,10 @@ type GeneratedFile = engine.GeneratedFile
 
 // GenerateGo generates the files of a Go parser for g in the package with import path module: its
 // Parse(input) parses from the rule start. The files are parser.go, with the code generated from
-// the grammar, api.go, which re-exports the runtime names the parser's users need, and, with
-// RuntimeEmbed, the files of a copy of the runtime in internal/runtime. WithRuntime selects another
-// mode. WithDocument adds incremental Node parsing; combined with WithTypes it also generates
+// the grammar, api.go, which re-exports the runtime names the parser's users need, with WithTypes
+// types/types.go, the package module/types that declares the Go types of the grammar (module must
+// then be set), and, with RuntimeEmbed, the files of a copy of the runtime in internal/runtime.
+// WithRuntime selects another mode. WithDocument adds incremental Node parsing; combined with WithTypes it also generates
 // typed Document.ParseAST. WithStream adds Node stream parsing.
 func GenerateGo(g *grammar.Grammar, module, start string, opts ...GenOption) ([]GeneratedFile, error) {
 	o := engine.GenOptions{Module: module, Start: start}

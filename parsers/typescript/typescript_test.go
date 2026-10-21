@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/parsers/typescript"
+	"github.com/ornew/pego/parsers/typescript/types"
 )
 
 // TestGolden checks the generated parser against the golden files of testdata, which the tests of
@@ -154,9 +155,9 @@ func TestInvalid(t *testing.T) {
 // order of the input.
 func TestSpans(t *testing.T) {
 	for _, src := range append(append([]string{}, valid...), "x = <div a={1}>{b}</div>") {
-		parse := func(s string) (*typescript.SourceFile, error) { return typescript.ParseAST(s) }
+		parse := func(s string) (*types.SourceFile, error) { return typescript.ParseAST(s) }
 		if strings.HasPrefix(src, "x = <div") {
-			parse = func(s string) (*typescript.SourceFile, error) { return typescript.ParseTSX(s) }
+			parse = func(s string) (*types.SourceFile, error) { return typescript.ParseTSX(s) }
 		}
 		f, err := parse(src)
 		if err != nil {
@@ -193,8 +194,8 @@ func TestUnits(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cs, _ := cp.Statements[1].(*typescript.VariableStatement).Range()
-	bs, _ := by.Statements[1].(*typescript.VariableStatement).Range()
+	cs, _ := cp.Statements[1].(*types.VariableStatement).Range()
+	bs, _ := by.Statements[1].(*types.VariableStatement).Range()
 	if cs != 15 || bs != 22 {
 		t.Errorf("second statement starts at %d code points, %d bytes; want 15, 22", cs, bs)
 	}
@@ -220,8 +221,8 @@ func TestParseFile(t *testing.T) {
 		if got := typescript.IsExternalModule(f); got != c.module {
 			t.Errorf("%s %q: IsExternalModule = %v, want %v", c.name, c.src, got, c.module)
 		}
-		init := f.Statements[len(f.Statements)-1].(*typescript.VariableStatement).DeclarationList.Declarations[0].Initializer
-		if _, ok := init.(*typescript.AwaitExpression); ok != c.await {
+		init := f.Statements[len(f.Statements)-1].(*types.VariableStatement).DeclarationList.Declarations[0].Initializer
+		if _, ok := init.(*types.AwaitExpression); ok != c.await {
 			t.Errorf("%s %q: await expression = %v, want %v", c.name, c.src, ok, c.await)
 		}
 	}
@@ -263,7 +264,7 @@ func TestKind(t *testing.T) {
 	if got := strings.Join(kinds, " "); got != want {
 		t.Errorf("kinds\n got  %s\n want %s", got, want)
 	}
-	if typescript.Kind(nil) != "" || typescript.AsNode((*typescript.Identifier)(nil)) != nil {
+	if typescript.Kind(nil) != "" || typescript.AsNode((*types.Identifier)(nil)) != nil {
 		t.Error("nil node")
 	}
 }
@@ -281,7 +282,7 @@ func FuzzParse(f *testing.F) {
 		f.Add(s)
 	}
 	f.Fuzz(func(t *testing.T, src string) {
-		var file *typescript.SourceFile
+		var file *types.SourceFile
 		var err, rerr error
 		if strings.HasPrefix(src, "\x00") {
 			file, err = typescript.ParseTSX(src[1:])

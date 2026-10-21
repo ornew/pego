@@ -114,14 +114,12 @@ Generated Go parsers embed `runtime/runtime.go`, so the core and generated runti
 
 ### Compatibility and Backend Support
 
-The Go traversal/cursor APIs use `Walk` in the core and public `pego` package.
-Standalone generated Go parsers expose the generic node walker as `WalkTree`,
-so parser packages can retain their existing typed-AST `Walk` helper. Generated
-`Cursor` calls `WalkTree`; all visit records, actions and edge semantics remain
-the same. Generated typed grammar names reserve `WalkTree` and the traversal
-types/constants to avoid declaration collisions.
+The Go traversal/cursor APIs use `Walk` in the core, in the public `pego` package
+and in standalone generated Go parsers; all visit records, actions and edge
+semantics are the same. The grammar's types of a typed parser live in their own
+package, so a grammar type may be named like any traversal type or constant.
 
-The Go traversal/cursor APIs are available in `internal/engine`, the public `pego` package, and generated Go runtimes. Generated parsers expose the generic walker as `WalkTree` to avoid colliding with parser-specific `Walk` helpers. Core and generated Go JSON writers preserve successful acyclic output bytes. TypeScript keeps the existing `marshal` and `toJSON` contracts; general traversal remains deferred. No grammar syntax, parser execution, parse positions, or mutable ownership changes are required.
+The Go traversal/cursor APIs are available in `internal/engine`, the public `pego` package, and generated Go runtimes. Core and generated Go JSON writers preserve successful acyclic output bytes. TypeScript keeps the existing `marshal` and `toJSON` contracts; general traversal remains deferred. No grammar syntax, parser execution, parse positions, or mutable ownership changes are required.
 
 ### Implementation Sequence
 

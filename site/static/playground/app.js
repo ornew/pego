@@ -547,6 +547,7 @@ async function generate() {
   setDownloads([]);
   $("gen-download").textContent = language === "go" ? "Download parser.go" : "Download parser.ts";
   $("gen-download-api").hidden = language !== "go";
+  $("gen-download-types").hidden = language !== "go" || !$("gen-types").checked;
   const req = {
     grammar: grammarEditor.value,
     package: pkg,
@@ -555,7 +556,7 @@ async function generate() {
     types: $("gen-types").checked,
     recognize: $("gen-recognize").checked,
   };
-  const flags = language === "go" ? [`-pkg ${pkg}`] : ["-lang ts"];
+  const flags = language === "go" ? [`-module example.com/${pkg}`, "-runtime import"] : ["-lang ts"];
   if (req.start && req.start !== "main") flags.push(`-s ${req.start}`);
   if (req.types) flags.push("-types");
   if (req.recognize) flags.push("-recognize");
@@ -571,7 +572,7 @@ async function generate() {
       generatedLanguage = language;
       generatedKey = key;
       pagedText("pg-go", generatedCode, language === "go" ? "go" : "");
-      // A Go parser is the files parser.go and api.go of one package: each is offered on its own, since
+      // A Go parser is the files parser.go, api.go and, with types, types/types.go: each is offered on its own, since
       // the displayed text joins them under banners and is not a compilable file.
       setDownloads(res.files?.length ? res.files : generatedCode ? [{ path: language === "go" ? "parser.go" : "parser.ts", content: generatedCode }] : []);
     }
@@ -593,6 +594,7 @@ function setDownloads(files) {
   generatedFiles = files;
   $("gen-download").disabled = files.length < 1;
   $("gen-download-api").disabled = files.length < 2;
+  $("gen-download-types").disabled = !files.some((f) => f.path === "types/types.go");
 }
 function downloadGenerated(index) {
   const file = generatedFiles[index];
@@ -600,12 +602,13 @@ function downloadGenerated(index) {
   const url = URL.createObjectURL(new Blob([file.content], { type: "text/plain;charset=utf-8" }));
   const link = document.createElement("a");
   link.href = url;
-  link.download = file.path;
+  link.download = file.path.split("/").pop();
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 $("gen-download").addEventListener("click", () => downloadGenerated(0));
 $("gen-download-api").addEventListener("click", () => downloadGenerated(1));
+$("gen-download-types").addEventListener("click", () => downloadGenerated(generatedFiles.findIndex((f) => f.path === "types/types.go")));
 
 // ---------------------------------------------------------------- Backend comparison
 

@@ -27,19 +27,19 @@ import "strings"
 web: #Service & {name: strings.ToLower("WEB")} @go(Web)
 `)
 for _, d := range f.Decls {
-	if fd, ok := d.(*cue.Field); ok {
-		name := fd.Label.(*cue.Ident)
+	if fd, ok := d.(*types.Field); ok {
+		name := fd.Label.(*types.Ident)
 		fmt.Println(name.Text, name.IsDefinition(), fd.Start, fd.End) // #Service true 34 124, web false 126 181
 	}
 }
 
 // Only the syntax tree of the grammar, without the checks that come after it (see Conformance).
 f, err = cue.ParseAST(`a: b + 1 * c.d`)
-be := f.Decls[0].(*cue.Field).Value.(*cue.BinaryExpr) // be.Op.Text is "+"; be.Y is the product
+be := f.Decls[0].(*types.Field).Value.(*types.BinaryExpr) // be.Op.Text is "+"; be.Y is the product
 
 // Values of literals.
-s, err := str.Unquote() // a *cue.String: escapes, hashes, multi-line indentation
-n, err := num.Value()   // a *cue.Int: 0xff, 1_000, 1.5Ki; Float has Rat and Float64
+s, err := str.Unquote() // a *types.String: escapes, hashes, multi-line indentation
+n, err := num.Value()   // a *types.Int: 0xff, 1_000, 1.5Ki; Float has Rat and Float64
 
 // Walk the tree, and list the comments.
 cue.Inspect(f, func(n any) bool { /* ... */ return true })
@@ -57,7 +57,7 @@ var ce *cue.SemanticError // found after the syntax: Msg, Line, Col, Span
 | `ParseFile(input, unit...) (*File, error)` | The syntax tree, accepted exactly when `cue/parser.ParseFile` accepts the input: `ParseAST`, then `Check`, and an error for invalid UTF-8 |
 | `Valid(input) bool` | Whether `ParseFile` accepts the input |
 | `ParseAST(input, opts...) (*File, error)` | The syntax tree as the grammar reads it: the syntax of every experiment, without the checks of `Check` |
-| `(*File).Check() error` | The errors `cue/parser` reports besides those of the syntax (see Conformance), as a `*SemanticError` |
+| `Check(*File) error` | The errors `cue/parser` reports besides those of the syntax (see Conformance), as a `*SemanticError` |
 | `Parse(input, opts...) (*Node, error)`, `Recognize(input, opts...) error` | The tree of `*Node`, as the engine returns it; only checking (the same syntax as `ParseAST`) |
 | `File`, `Package`, `ImportDecl`, `Field`, `Comprehension`, `StructLit`, `ListLit`, `BinaryExpr`, ... | The syntax tree, modeled on `cuelang.org/go/cue/ast`, each node with its `Span` |
 | `Inspect(node, f)`, `SpanOf(node)` | Depth-first traversal as `ast.Inspect`; the span of any node |

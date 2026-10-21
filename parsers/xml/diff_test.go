@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/parsers/xml"
+	"github.com/ornew/pego/parsers/xml/types"
 )
 
 // The differential tests compare Decode (with ResolveNamespaces) with encoding/xml's Decoder.Token on
@@ -110,9 +111,9 @@ func ourTokens(t *xml.Tree) []string {
 			toks = append(toks, fmt.Sprintf("</{%s}%s>", it.Space, it.Local))
 		case *xml.Text:
 			toks = append(toks, "T"+it.Data)
-		case *xml.Comment:
+		case *types.Comment:
 			toks = append(toks, "C"+it.Value())
-		case *xml.PI:
+		case *types.PI:
 			data := ""
 			if it.Data != nil {
 				data = it.Data.Value()

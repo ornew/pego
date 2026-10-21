@@ -3,6 +3,8 @@ package xml
 import (
 	"strings"
 	"unicode/utf8"
+
+	"github.com/ornew/pego/parsers/xml/types"
 )
 
 // The namespace names bound to the prefixes xml and xmlns.
@@ -26,7 +28,7 @@ func (t *Tree) ResolveNamespaces() error {
 	}
 	for _, items := range [][]Item{t.Prolog, t.Epilog} {
 		for _, it := range items {
-			if pi, ok := it.(*PI); ok && strings.Contains(pi.Target.Value, ":") {
+			if pi, ok := it.(*types.PI); ok && strings.Contains(pi.Target.Value, ":") {
 				return r.errorf(pi.Start, -1, "the processing instruction target %s contains a colon", pi.Target.Value)
 			}
 		}
@@ -70,19 +72,19 @@ func (r *resolver) dtd() error {
 		return nil
 	}
 	seen := map[*Entity]bool{}
-	var check func(decls []Decl, ref int) error
-	check = func(decls []Decl, ref int) error {
+	var check func(decls []types.Decl, ref int) error
+	check = func(decls []types.Decl, ref int) error {
 		for _, d := range decls {
 			var name string
 			var pos int
 			switch d := d.(type) {
-			case *EntityDecl:
+			case *types.EntityDecl:
 				name, pos = d.Name.Value, d.Start
-			case *NotationDecl:
+			case *types.NotationDecl:
 				name, pos = d.Name.Value, d.Start
-			case *PI:
+			case *types.PI:
 				name, pos = d.Target.Value, d.Start
-			case *PERef:
+			case *types.PERef:
 				if e := r.t.DTD.Params[d.Name()]; e != nil && e.decls != nil && !seen[e] {
 					seen[e] = true
 					at := ref
@@ -193,7 +195,7 @@ func (r *resolver) elem(el *Elem, scope *binding) error {
 			if err := r.elem(c, scope); err != nil {
 				return err
 			}
-		case *PI:
+		case *types.PI:
 			if strings.Contains(c.Target.Value, ":") {
 				return r.errorf(c.Start, el.ref, "the processing instruction target %s contains a colon", c.Target.Value)
 			}

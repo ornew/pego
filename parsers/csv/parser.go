@@ -7,6 +7,7 @@ import (
 	"unsafe"
 
 	pegort "github.com/ornew/pego/parsers/csv/internal/runtime"
+	types "github.com/ornew/pego/parsers/csv/types"
 )
 
 // --- Generated code ---
@@ -47,139 +48,6 @@ func ParseRule(name, input string, opts ...pegort.ParseOption) (*pegort.Node, er
 }
 
 // --- Typed values ---
-
-// TNode is a node whose Value has type T: a string node (TNode[string]) holds the text a
-// literal, a character class, ., a #atomic or _ matched, and a tuple or list node holds its
-// elements. A node of a statically unknown value is a TNode[any] whose Value is a string, or a
-// []any of the elements of a tuple or list.
-type TNode[T any] pegort.TNode[T]
-
-// Error is input skipped by error recovery (#recover).
-type Error pegort.Error
-
-// tpubHooks makes the values of the types above from those the typed runtime builds, and back.
-var tpubHooks = &pegort.TPubHooks{
-	Match: func(m *pegort.TNode[string]) any { return (*TNode[string])(m) },
-	Error: func(e *pegort.Error) any { return (*Error)(e) },
-	Node:  func(n *pegort.TNode[any]) any { return (*TNode[any])(n) },
-	Back: func(v any) any {
-		switch x := v.(type) {
-		case *TNode[string]:
-			return (*pegort.TNode[string])(x)
-		case *Error:
-			return (*pegort.Error)(x)
-		case *TNode[any]:
-			return (*pegort.TNode[any])(x)
-		}
-		return v
-	},
-}
-
-// --- Typed values (pego gen -types; Span, TNode and Error are aliases of the runtime types) ---
-
-// File is the struct type File.
-type File struct {
-	pegort.Span
-	Records []*Record
-}
-
-// Record is the struct type Record.
-type Record struct {
-	pegort.Span
-	Fields []*Field
-}
-
-// Field is the node type Field = node[string].
-type Field struct{ TNode[string] }
-
-func (v *File) TName() string         { return "File" }
-func (v *File) TText() (string, bool) { return "", false }
-func (v *File) TKids() []any          { return nil }
-func (v *File) TStruct() bool         { return true }
-func (v *File) TFresh() bool          { return false }
-func (v *File) TSetFresh(bool)        {}
-func (v *File) TField(name string) (any, bool) {
-	switch name {
-	case "Records":
-		return func() any {
-			if v.Records == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Records))
-			for i, x := range v.Records {
-				kids[i] = pegort.TPtr(x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *File) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Records":
-		return func() any {
-			if v.Records == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Records))
-			for i, x := range v.Records {
-				p.StepWork()
-				kids[i] = pegort.TPtr(x)
-			}
-			return p.ListField(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *Record) TName() string         { return "Record" }
-func (v *Record) TText() (string, bool) { return "", false }
-func (v *Record) TKids() []any          { return nil }
-func (v *Record) TStruct() bool         { return true }
-func (v *Record) TFresh() bool          { return false }
-func (v *Record) TSetFresh(bool)        {}
-func (v *Record) TField(name string) (any, bool) {
-	switch name {
-	case "Fields":
-		return func() any {
-			if v.Fields == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Fields))
-			for i, x := range v.Fields {
-				kids[i] = tb0(x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *Record) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Fields":
-		return func() any {
-			if v.Fields == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Fields))
-			for i, x := range v.Fields {
-				p.StepWork()
-				kids[i] = tb0(x)
-			}
-			return p.ListField(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func tb0(v *Field) any {
-	if v == nil {
-		return nil
-	}
-	return pegort.TSetNodeType(pegort.TBack(tpubHooks, &v.TNode), tnt[1])
-}
 
 func astNode(v any) *pegort.Node { n, _ := v.(*pegort.Node); return n }
 func astIsNil(v any) bool        { n, ok := v.(*pegort.Node); return v == nil || ok && n == nil }
@@ -290,9 +158,9 @@ func tinit() {
 		return nil
 	}
 	for i, name := range []string{"Field"} {
-		tnt[i+1] = pegort.TRegisterNodeType(name, tnamedPub)
+		types.PegoNodeTypes[i+1] = pegort.TRegisterNodeType(name, tnamedPub)
 	}
-	trules[2].Nt = tnt[1]
+	trules[2].Nt = types.PegoNodeTypes[1]
 }
 
 // tmk_File makes a File in an action (newStruct in the typed runtime).
@@ -329,31 +197,31 @@ func tmk_Record(c *pegort.TActCtx, final bool, f0 any) any {
 	return c.Made(v, first, start, end)
 }
 
-func tl0(a *tslabs, v any) []*Record {
+func tl0(a *tslabs, v any) []*types.Record {
 	a.stepWork()
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*Record{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.Record{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[*Record](c)
+		out[i] = pegort.TAs[*types.Record](c)
 	}
 	return out
 }
 
-func tl1(a *tslabs, v any) []*Field {
+func tl1(a *tslabs, v any) []*types.Field {
 	a.stepWork()
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*Field{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.Field{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -363,28 +231,28 @@ func tl1(a *tslabs, v any) []*Field {
 	return out
 }
 
-func tv0(a *tslabs, v any) *Field {
+func tv0(a *tslabs, v any) *types.Field {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(Field{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Field{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[1] {
+	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
 	}
-	return pegort.TMatchAs[Field](x)
+	return pegort.TMatchAs[types.Field](x)
 }
 
 func tv1(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
 	control  *pegort.WorkControl
-	tFile    astChunk[File]
-	tRecord  astChunk[Record]
-	tl0Chunk astChunk[*Record]
-	tl1Chunk astChunk[*Field]
+	tFile    astChunk[types.File]
+	tRecord  astChunk[types.Record]
+	tl0Chunk astChunk[*types.Record]
+	tl1Chunk astChunk[*types.Field]
 }
 
 func (a *tslabs) SetWorkControl(c *pegort.WorkControl) { a.control = c }
@@ -394,26 +262,22 @@ func (a *tslabs) stepWork() {
 	}
 }
 
-// tnt holds the registered indexes of the named node types (tregisterNodeType) by their
-// generated index; index 0 is no named node type.
-var tnt [2]uint16
-
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
 // from errors, the result is returned together with SyntaxErrors; an Error node where a struct
 // type is expected becomes nil.
 // It builds the values directly, without the nodes Parse returns.
-func ParseAST(input string, opts ...pegort.ParseOption) (*File, error) {
+func ParseAST(input string, opts ...pegort.ParseOption) (*types.File, error) {
 	a := &tslabs{}
-	return pegort.TParse(trules[0], input, opts, a, func(v any) *File { return pegort.TAs[*File](v) })
+	return pegort.TParse(trules[0], input, opts, a, func(v any) *types.File { return pegort.TAs[*types.File](v) })
 }
 
 // ParseRuleAST parses the whole input with the named rule and returns its typed value.
 // Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
 // Invalid options and undefined names return nil with an error. Rule result types:
 //
-//	main: *File
-//	record: *Record
-//	field: *Field
+//	main: *types.File
+//	record: *types.Record
+//	field: *types.Field
 //	eol: any
 func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 	o, err := pegort.ResolveOptions(pegoGrammar, opts)
@@ -423,13 +287,13 @@ func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 	switch name {
 	case "main":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[0], input, o, a, func(v any) *File { return pegort.TAs[*File](v) })
+		return pegort.TParseResolved(trules[0], input, o, a, func(v any) *types.File { return pegort.TAs[*types.File](v) })
 	case "record":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[1], input, o, a, func(v any) *Record { return pegort.TAs[*Record](v) })
+		return pegort.TParseResolved(trules[1], input, o, a, func(v any) *types.Record { return pegort.TAs[*types.Record](v) })
 	case "field":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[2], input, o, a, func(v any) *Field { return tv0(a, v) })
+		return pegort.TParseResolved(trules[2], input, o, a, func(v any) *types.Field { return tv0(a, v) })
 	case "eol":
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[3], input, o, a, func(v any) any { return tv1(a, v) })

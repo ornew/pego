@@ -166,7 +166,7 @@ func BenchmarkDirectives(b *testing.B) {
 				}
 				b.ReportAllocs()
 				for b.Loop() {
-					if err := s.Check(); err != nil {
+					if err := yaml.Check(s); err != nil {
 						b.Fatal(err)
 					}
 				}

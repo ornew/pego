@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ornew/pego/parsers/cue"
+	"github.com/ornew/pego/parsers/cue/types"
 )
 
 func ExampleParseFile() {
@@ -25,13 +26,13 @@ web: #Service & {name: strings.ToLower("WEB")} @go(Web)
 	}
 	for _, d := range f.Decls {
 		switch d := d.(type) {
-		case *cue.Package:
+		case *types.Package:
 			fmt.Println("package", d.Name.Value)
-		case *cue.ImportDecl:
+		case *types.ImportDecl:
 			path, _ := d.Specs[0].Path.Unquote()
 			fmt.Println("import", path)
-		case *cue.Field:
-			name := d.Label.(*cue.Ident)
+		case *types.Field:
+			name := d.Label.(*types.Ident)
 			fmt.Printf("field %s (definition %v) at %d-%d\n", name.Value, name.IsDefinition(), d.Start, d.End)
 		}
 	}
@@ -48,8 +49,8 @@ func ExampleParseAST() {
 	if err != nil {
 		panic(err)
 	}
-	e := f.Decls[0].(*cue.Field).Value.(*cue.BinaryExpr)
-	text := func(x cue.Expr) string { // every node has its span; the positions are code points by default
+	e := f.Decls[0].(*types.Field).Value.(*types.BinaryExpr)
+	text := func(x types.Expr) string { // every node has its span; the positions are code points by default
 		sp := cue.SpanOf(x)
 		return src[sp.Start:sp.End]
 	}
@@ -79,7 +80,7 @@ func ExampleParseFile_error() {
 func ExampleString_Unquote() {
 	f, _ := cue.ParseFile("a: #\"\"\"\n\tC:\\dir\\#n\n\t\"\"\"#\nb: \"\\u00e9\\n\"\n")
 	for _, d := range f.Decls {
-		s, err := d.(*cue.Field).Value.(*cue.String).Unquote()
+		s, err := d.(*types.Field).Value.(*types.String).Unquote()
 		fmt.Printf("%q %v\n", s, err)
 	}
 	// Output:
@@ -90,7 +91,7 @@ func ExampleString_Unquote() {
 func ExampleInt_Value() {
 	f, _ := cue.ParseFile("a: 1_000\nb: 0xff\nc: 1.5Ki\nd: 5G\n")
 	for _, d := range f.Decls {
-		v, err := d.(*cue.Field).Value.(*cue.Int).Value()
+		v, err := d.(*types.Field).Value.(*types.Int).Value()
 		fmt.Println(v, err)
 	}
 	// Output:
@@ -104,7 +105,7 @@ func ExampleInspect() {
 	f, _ := cue.ParseFile("a: b: c\nd: [for x in a if x != _|_ {x}]\n")
 	n := 0
 	cue.Inspect(f, func(node any) bool {
-		if id, ok := node.(*cue.Ident); ok && id.Value == "x" {
+		if id, ok := node.(*types.Ident); ok && id.Value == "x" {
 			n++
 		}
 		return true
@@ -134,7 +135,7 @@ func ExampleRecognize() {
 
 func ExampleAttribute_Split() {
 	f, _ := cue.ParseFile(`x: 1 @json(x,omitempty) @go(X)`)
-	for _, a := range f.Decls[0].(*cue.Field).Attrs {
+	for _, a := range f.Decls[0].(*types.Field).Attrs {
 		name, body := a.Split()
 		fmt.Println(name, body)
 	}

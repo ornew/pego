@@ -50,6 +50,8 @@ import (
 	"go/scanner"
 	"go/token"
 	"unicode/utf8"
+
+	"github.com/ornew/pego/parsers/golang/types"
 )
 
 // ParseFile parses the Go source file src like go/parser.ParseFile(fset, filename, src,
@@ -83,7 +85,7 @@ func Valid(src string) bool {
 var errInvalidUTF8 = errors.New("illegal UTF-8 encoding")
 
 // parseBytes parses src with byte positions, rejecting invalid UTF-8 first.
-func parseBytes(src string) (*File, error) {
+func parseBytes(src string) (*types.File, error) {
 	if !utf8.ValidString(src) {
 		for i, r := range src {
 			if r == utf8.RuneError {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ornew/pego/parsers/xml"
+	"github.com/ornew/pego/parsers/xml/types"
 )
 
 func ExampleDecode() {
@@ -53,9 +54,9 @@ func ExampleParseAST() {
 	}
 	for _, c := range doc.Root.Content {
 		switch c := c.(type) {
-		case *xml.Element:
+		case *types.Element:
 			fmt.Printf("element %s at %d-%d\n", c.Name.Value, c.Start, c.End)
-		case *xml.Comment:
+		case *types.Comment:
 			fmt.Printf("comment %q at %d-%d\n", c.TNode.Value, c.Start, c.End)
 		}
 	}

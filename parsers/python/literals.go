@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/ornew/pego/parsers/python/types"
 )
 
 // EllipsisType is the type of Ellipsis.
@@ -16,7 +18,7 @@ type EllipsisType struct{}
 // Ellipsis is the value of the constant `...`.
 var Ellipsis = EllipsisType{}
 
-// Value returns the value of the constant, as Python would compute it:
+// ConstantValue returns the value of the constant, as Python would compute it:
 //
 //   - an integer literal: *big.Int
 //   - a floating-point literal: float64 (+Inf for a literal too large, as in Python)
@@ -29,7 +31,7 @@ var Ellipsis = EllipsisType{}
 //
 // The error reports escape sequences that CPython rejects although the grammar accepts them (an
 // unknown name in \N{...}).
-func (c *Constant) Value() (any, error) {
+func ConstantValue(c *types.Constant) (any, error) {
 	v, err := constValue(c.TNode.Value)
 	if err != nil {
 		return nil, err
@@ -55,10 +57,10 @@ func (c *Constant) Value() (any, error) {
 	return Ellipsis, nil
 }
 
-// StringValue returns the value of string literals as code points, which may include lone
+// ConstantStringValue returns the value of string literals as code points, which may include lone
 // surrogates (\ud800), and whether the first literal has the prefix u in lower case (Python's
 // Constant.kind "u"). It is an error for a constant that is not a string.
-func (c *Constant) StringValue() (value []rune, u bool, err error) {
+func ConstantStringValue(c *types.Constant) (value []rune, u bool, err error) {
 	v, err := constValue(c.TNode.Value)
 	if err != nil {
 		return nil, false, err
@@ -69,34 +71,34 @@ func (c *Constant) StringValue() (value []rune, u bool, err error) {
 	return v.str, v.u, nil
 }
 
-// Value returns the text the part stands for: escape sequences decoded, doubled braces made
+// FStringMiddleValue returns the text the part stands for: escape sequences decoded, doubled braces made
 // single, and newlines read as \n.
-func (m *FStringMiddle) Value() (string, error) {
+func FStringMiddleValue(m *types.FStringMiddle) (string, error) {
 	rs, err := decodeFStringText(m.TNode.Value, false)
 	return runesString(rs), err
 }
 
-// Value returns the text the part stands for: doubled braces made single, and newlines read as
+// FStringRawMiddleValue returns the text the part stands for: doubled braces made single, and newlines read as
 // \n (backslashes are kept).
-func (m *FStringRawMiddle) Value() string {
+func FStringRawMiddleValue(m *types.FStringRawMiddle) string {
 	rs, _ := decodeFStringText(m.TNode.Value, true)
 	return runesString(rs)
 }
 
-// ConversionCode returns the conversion as Python's FormattedValue.conversion: -1 without one,
+// FormattedValueConversionCode returns the conversion as Python's FormattedValue.conversion: -1 without one,
 // otherwise the code of the character ('r' if there is a '=' but neither a conversion nor a
 // format spec).
-func (v *FormattedValue) ConversionCode() int {
+func FormattedValueConversionCode(v *types.FormattedValue) int {
 	return conversionCode(v.Conversion, v.Debug, v.FormatSpec)
 }
 
-// ConversionCode returns the conversion as Python's Interpolation.conversion (see
+// InterpolationConversionCode returns the conversion as Python's Interpolation.conversion (see
 // FormattedValue.ConversionCode).
-func (v *Interpolation) ConversionCode() int {
+func InterpolationConversionCode(v *types.Interpolation) int {
 	return conversionCode(v.Conversion, v.Debug, v.FormatSpec)
 }
 
-func conversionCode(conv, debug string, spec *JoinedStr) int {
+func conversionCode(conv, debug string, spec *types.JoinedStr) int {
 	switch {
 	case conv != "":
 		return int(conv[0])

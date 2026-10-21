@@ -3,6 +3,8 @@ package cel
 import (
 	"fmt"
 	"unicode/utf8"
+
+	"github.com/ornew/pego/parsers/cel/types"
 )
 
 // Limits are limits on an expression, which a CEL implementation is free to choose (the specification only requires
@@ -25,7 +27,7 @@ var DefaultLimits = Limits{MaxDepth: 250, MaxSize: 100_000}
 // and index operations are visited. Nested expressions in parentheses, lists, maps, messages, calls and
 // indexes count against the first; a chain of selections or operators, which ANTLR builds without recursion,
 // against the second; and a run of ! or - against neither. CheckLimits computes both from the AST.
-func CheckLimits(e Expr, l Limits) error {
+func CheckLimits(e types.Expr, l Limits) error {
 	if l.MaxDepth <= 0 {
 		return nil
 	}
@@ -64,7 +66,7 @@ const (
 type depth struct {
 	max    int
 	open   [nRules]int
-	stack  []Expr
+	stack  []types.Expr
 	failed bool
 }
 
@@ -80,14 +82,14 @@ func (d *depth) leave(r int) { d.open[r]-- }
 // terms returns the operands of a left-nested chain of operators of one precedence level, which the operator test
 // recognizes: a single operand if x is not such a Binary. They are on a stack of the depth, which the caller
 // pops with release when it is done with them.
-func (d *depth) terms(x Expr, isOp func(string) bool) []Expr {
+func (d *depth) terms(x types.Expr, isOp func(string) bool) []types.Expr {
 	base := len(d.stack)
 	d.collect(x, isOp)
 	return d.stack[base:len(d.stack):len(d.stack)]
 }
 
-func (d *depth) collect(x Expr, isOp func(string) bool) {
-	if b, ok := x.(*Binary); ok && isOp(b.Op.Value) {
+func (d *depth) collect(x types.Expr, isOp func(string) bool) {
+	if b, ok := x.(*types.Binary); ok && isOp(b.Op.Value) {
 		d.collect(b.Left, isOp)
 		d.stack = append(d.stack, b.Right)
 		return
@@ -95,7 +97,7 @@ func (d *depth) collect(x Expr, isOp func(string) bool) {
 	d.stack = append(d.stack, x)
 }
 
-func (d *depth) release(ts []Expr) { d.stack = d.stack[:len(d.stack)-len(ts)] }
+func (d *depth) release(ts []types.Expr) { d.stack = d.stack[:len(d.stack)-len(ts)] }
 
 func isOr(op string) bool  { return op == "||" }
 func isAnd(op string) bool { return op == "&&" }
@@ -110,12 +112,12 @@ func isAdd(op string) bool { return op == "+" || op == "-" }
 func isMul(op string) bool { return op == "*" || op == "/" || op == "%" }
 
 // ex is the rule expr: conditionalOr ('?' conditionalOr ':' expr)?
-func (d *depth) ex(x Expr) {
+func (d *depth) ex(x types.Expr) {
 	if d.failed {
 		return
 	}
 	d.enter(rExpr)
-	if c, ok := x.(*Conditional); ok {
+	if c, ok := x.(*types.Conditional); ok {
 		d.or(c.Cond)
 		d.or(c.Then)
 		d.ex(c.Else)
@@ -126,7 +128,7 @@ func (d *depth) ex(x Expr) {
 }
 
 // or is conditionalOr: conditionalAnd ('||' conditionalAnd)*
-func (d *depth) or(x Expr) {
+func (d *depth) or(x types.Expr) {
 	d.enter(rOr)
 	ts := d.terms(x, isOr)
 	for _, t := range ts {
@@ -137,7 +139,7 @@ func (d *depth) or(x Expr) {
 }
 
 // and is conditionalAnd: relation ('&&' relation)*
-func (d *depth) and(x Expr) {
+func (d *depth) and(x types.Expr) {
 	d.enter(rAnd)
 	ts := d.terms(x, isAnd)
 	for _, t := range ts {
@@ -149,7 +151,7 @@ func (d *depth) and(x Expr) {
 
 // rel is relation: calc | relation relop relation, which ANTLR turns into relation[0] (calc (relop relation[2])*): the
 // first operand is a calc, and so is each of the others, in a relation of its own.
-func (d *depth) rel(x Expr) {
+func (d *depth) rel(x types.Expr) {
 	d.enter(rRel)
 	ts := d.terms(x, isRel)
 	for i, t := range ts {
@@ -167,7 +169,7 @@ func (d *depth) rel(x Expr) {
 
 // calc is calc: unary | calc ('*'|'/'|'%') calc | calc ('+'|'-') calc, which ANTLR turns into calc[0] where the
 // operand of + and - is calc[2] (which takes * on its own) and that of * is calc[3] (a unary).
-func (d *depth) calc(x Expr) {
+func (d *depth) calc(x types.Expr) {
 	d.enter(rCalc)
 	ts := d.terms(x, isAdd)
 	for i, t := range ts {
@@ -183,7 +185,7 @@ func (d *depth) calc(x Expr) {
 	d.leave(rCalc)
 }
 
-func (d *depth) mul(x Expr) {
+func (d *depth) mul(x types.Expr) {
 	ts := d.terms(x, isMul)
 	for i, t := range ts {
 		if i == 0 {
@@ -198,10 +200,10 @@ func (d *depth) mul(x Expr) {
 }
 
 // unary is the rule unary: member | '!'+ member | '-'+ member
-func (d *depth) unary(x Expr) {
+func (d *depth) unary(x types.Expr) {
 	d.enter(rUnary)
 	for {
-		u, ok := x.(*Unary)
+		u, ok := x.(*types.Unary)
 		if !ok {
 			break
 		}
@@ -213,20 +215,20 @@ func (d *depth) unary(x Expr) {
 
 // member is member: primary | member '.' name | member '.' name '(' exprList? ')' | member '[' expr ']'. It is
 // left-recursive, so a chain of them stays one context deep.
-func (d *depth) member(x Expr) {
+func (d *depth) member(x types.Expr) {
 	d.enter(rMember)
 	d.suffixes(x)
 	d.leave(rMember)
 }
 
-func (d *depth) suffixes(x Expr) {
+func (d *depth) suffixes(x types.Expr) {
 	switch x := x.(type) {
-	case *Select:
+	case *types.Select:
 		d.suffixes(x.X)
-	case *Index:
+	case *types.Index:
 		d.suffixes(x.X)
 		d.ex(x.Index)
-	case *Call:
+	case *types.Call:
 		if x.Target != nil {
 			d.suffixes(x.Target)
 			d.args(x.Args)
@@ -238,7 +240,7 @@ func (d *depth) suffixes(x Expr) {
 	}
 }
 
-func (d *depth) args(args []Expr) {
+func (d *depth) args(args []types.Expr) {
 	if len(args) == 0 {
 		return
 	}
@@ -249,18 +251,18 @@ func (d *depth) args(args []Expr) {
 	d.leave(rExprList)
 }
 
-func (d *depth) primary(x Expr) {
+func (d *depth) primary(x types.Expr) {
 	d.enter(rPrimary)
 	switch x := x.(type) {
-	case *Paren:
+	case *types.Paren:
 		d.ex(x.X)
-	case *Call: // a call of a function
+	case *types.Call: // a call of a function
 		d.args(x.Args)
-	case *ListLit:
+	case *types.ListLit:
 		if len(x.Elems) > 0 {
 			d.enter(rListInit)
 			for _, e := range x.Elems {
-				if o, ok := e.(*Optional); ok {
+				if o, ok := e.(*types.Optional); ok {
 					e = o.X
 				}
 				d.enter(rOptExpr)
@@ -269,7 +271,7 @@ func (d *depth) primary(x Expr) {
 			}
 			d.leave(rListInit)
 		}
-	case *MapLit:
+	case *types.MapLit:
 		if len(x.Entries) > 0 {
 			d.enter(rMapInits)
 			for _, en := range x.Entries {
@@ -280,7 +282,7 @@ func (d *depth) primary(x Expr) {
 			}
 			d.leave(rMapInits)
 		}
-	case *MessageLit:
+	case *types.MessageLit:
 		if len(x.Fields) > 0 {
 			d.enter(rFieldInits)
 			for _, f := range x.Fields {
@@ -294,18 +296,18 @@ func (d *depth) primary(x Expr) {
 
 // visitDepth returns the depth of nested conditionals, binary operators other than && and ||, selections, receiver
 // calls and index operations: the nodes whose visit counts against the limit when cel-go builds the AST.
-func visitDepth(e Expr) int {
+func visitDepth(e types.Expr) int {
 	max := 0
-	var walk func(e Expr, n int)
-	walk = func(e Expr, n int) {
+	var walk func(e types.Expr, n int)
+	walk = func(e types.Expr, n int) {
 		switch e := e.(type) {
-		case *Conditional, *Select, *Index:
+		case *types.Conditional, *types.Select, *types.Index:
 			n++
-		case *Binary:
+		case *types.Binary:
 			if e.Op.Value != "&&" && e.Op.Value != "||" {
 				n++
 			}
-		case *Call:
+		case *types.Call:
 			if e.Target != nil {
 				n++
 			}
@@ -313,7 +315,7 @@ func visitDepth(e Expr) int {
 		if n > max {
 			max = n
 		}
-		Children(e, func(c Expr) { walk(c, n) })
+		Children(e, func(c types.Expr) { walk(c, n) })
 	}
 	walk(e, 0)
 	return max

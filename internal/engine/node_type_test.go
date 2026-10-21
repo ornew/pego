@@ -602,12 +602,12 @@ rule n K = "n"
 rule m M = "m"`, []string{"knm", "kmn", "k", "kn", ""}},
 		{"named node Go names", `type Node = node[string]
 type Span = node[(Node, Node)]
-type TNode = node[[]Node]
-type Out = { A Node; B Span; C TNode; D _ }
-rule main Out = a:node b:span c:tnode $$ => Out{A: $a, B: $b, C: $c, D: $b}
+type TList = node[[]Node]
+type Out = { A Node; B Span; C TList; D _ }
+rule main Out = a:node b:span c:tlist $$ => Out{A: $a, B: $b, C: $c, D: $b}
 rule node Node = [a-z] #atomic
 rule span Span = node node
-rule tnode TNode = "[" xs:node* "]" => TNode{$xs}`, []string{"abc[de]", "abc[]", "ab[", ""}},
+rule tlist TList = "[" xs:node* "]" => TList{$xs}`, []string{"abc[de]", "abc[]", "ab[", ""}},
 		{"named left recursion", `type N = node[string]
 type S = node[_]
 type Out = { S S; T S; A _ }

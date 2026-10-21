@@ -5,13 +5,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ornew/pego/parsers/duckdb"
+	"github.com/ornew/pego/parsers/duckdb/types"
 )
 
 // cteQuery maps the query of a common table expression; that of a recursive one is a RECURSIVE_CTE_NODE.
-func (m *mapper) cteQuery(recursive bool, c *duckdb.CTE, q *duckdb.Select, aliases []any) any {
+func (m *mapper) cteQuery(recursive bool, c *types.CTE, q *types.Select, aliases []any) any {
 	if recursive {
-		if op, ok := q.Body.(*duckdb.SetOp); ok && strings.EqualFold(op.Op, "union") {
+		if op, ok := q.Body.(*types.SetOp); ok && strings.EqualFold(op.Op, "union") {
 			if q.With != nil || q.OrderBy != nil || q.Limit != nil || q.Offset != nil || op.ByName {
 				unsup("recursive cte modifiers")
 			}
@@ -28,9 +28,9 @@ func (m *mapper) cteQuery(recursive bool, c *duckdb.CTE, q *duckdb.Select, alias
 
 // groupBy maps the items of GROUP BY to the expressions of DuckDB, without repetition, and the grouping sets that
 // are made of them: the product of the sets of each item.
-func (m *mapper) groupBy(items []duckdb.Expr) (exprs []any, sets []any) {
+func (m *mapper) groupBy(items []types.Expr) (exprs []any, sets []any) {
 	index := map[string]int{}
-	idx := func(e duckdb.Expr) int {
+	idx := func(e types.Expr) int {
 		x := m.expr(e)
 		b, _ := json.Marshal(reduce(x))
 		if i, ok := index[string(b)]; ok {
@@ -53,8 +53,8 @@ func (m *mapper) groupBy(items []duckdb.Expr) (exprs []any, sets []any) {
 		return out
 	}
 	// the element of ROLLUP, CUBE and GROUPING SETS: an expression or a parenthesized list of them
-	elem := func(e duckdb.Expr) []int {
-		if r, ok := e.(*duckdb.Row); ok && !r.Keyword {
+	elem := func(e types.Expr) []int {
+		if r, ok := e.(*types.Row); ok && !r.Keyword {
 			var out []int
 			for _, it := range r.Items {
 				out = union(out, []int{idx(it)})
@@ -63,12 +63,12 @@ func (m *mapper) groupBy(items []duckdb.Expr) (exprs []any, sets []any) {
 		}
 		return []int{idx(e)}
 	}
-	var setsOf func(item duckdb.Expr) [][]int
-	setsOf = func(item duckdb.Expr) [][]int {
-		gs, ok := item.(*duckdb.GroupingSet)
+	var setsOf func(item types.Expr) [][]int
+	setsOf = func(item types.Expr) [][]int {
+		gs, ok := item.(*types.GroupingSet)
 		if !ok {
 			// GROUP BY (a, b) is two expressions of one set
-			if r, ok := item.(*duckdb.Row); ok && !r.Keyword {
+			if r, ok := item.(*types.Row); ok && !r.Keyword {
 				return [][]int{elem(r)}
 			}
 			return [][]int{{idx(item)}}
@@ -102,7 +102,7 @@ func (m *mapper) groupBy(items []duckdb.Expr) (exprs []any, sets []any) {
 		case "grouping sets":
 			var out [][]int
 			for _, it := range gs.Items {
-				if _, nested := it.(*duckdb.GroupingSet); nested {
+				if _, nested := it.(*types.GroupingSet); nested {
 					out = append(out, setsOf(it)...)
 				} else {
 					out = append(out, elem(it))
@@ -136,7 +136,7 @@ func (m *mapper) groupBy(items []duckdb.Expr) (exprs []any, sets []any) {
 }
 
 // replaceList and renameList map the modifiers of a star.
-func (m *mapper) replaceList(items []*duckdb.ReplaceItem) []any {
+func (m *mapper) replaceList(items []*types.ReplaceItem) []any {
 	var out []any
 	for i := range items {
 		out = append(out, shape{"key": items[i].Name.Name(), "value": m.expr(items[i].Expr)})
@@ -144,7 +144,7 @@ func (m *mapper) replaceList(items []*duckdb.ReplaceItem) []any {
 	return out
 }
 
-func (m *mapper) renameList(items []*duckdb.RenameItem) []any {
+func (m *mapper) renameList(items []*types.RenameItem) []any {
 	var out []any
 	for i := range items {
 		if len(items[i].From.Parts) != 1 {

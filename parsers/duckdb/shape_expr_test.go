@@ -3,11 +3,11 @@ package duckdb_test
 import (
 	"strings"
 
-	"github.com/ornew/pego/parsers/duckdb"
+	"github.com/ornew/pego/parsers/duckdb/types"
 )
 
 // lambda maps LAMBDA x, y: body.
-func (m *mapper) lambda(e *duckdb.Lambda) shape {
+func (m *mapper) lambda(e *types.Lambda) shape {
 	var params []any
 	for i := range e.Params {
 		params = append(params, shape{"class": "COLUMN_REF", "type": "COLUMN_REF", "column_names": []any{e.Params[i].Name()}})
@@ -41,7 +41,7 @@ func castTo(child any, id string) shape {
 }
 
 // interval maps INTERVAL '1' DAY, INTERVAL (x) HOUR and INTERVAL '1 day'.
-func (m *mapper) interval(e *duckdb.IntervalLit) any {
+func (m *mapper) interval(e *types.IntervalLit) any {
 	v := m.expr(e.Value)
 	if e.Unit == nil {
 		return castTo(v, "INTERVAL")
@@ -70,7 +70,7 @@ var negatedComparison = map[string]string{
 }
 
 // anyAll maps x = ANY (...) and x < ALL (...).
-func (m *mapper) anyAll(e *duckdb.AnyAll) any {
+func (m *mapper) anyAll(e *types.AnyAll) any {
 	op := e.Op
 	all := strings.EqualFold(e.Quantifier, "all")
 	if all {
@@ -86,11 +86,11 @@ func (m *mapper) anyAll(e *duckdb.AnyAll) any {
 	}
 	var sub shape
 	switch src := e.Source.(type) {
-	case *duckdb.Subquery:
+	case *types.Subquery:
 		sub = m.subquery("ANY", src.Query)
 	default:
 		x := e.Source
-		if p, ok := x.(*duckdb.Paren); ok {
+		if p, ok := x.(*types.Paren); ok {
 			x = p.X
 		}
 		node := shape{"type": "SELECT_NODE", "aggregate_handling": "STANDARD_HANDLING", "from_table": shape{"type": "EMPTY"},
@@ -106,11 +106,11 @@ func (m *mapper) anyAll(e *duckdb.AnyAll) any {
 }
 
 // columns maps COLUMNS(...) and *COLUMNS(...).
-func (m *mapper) columns(e *duckdb.ColumnsExpr) any {
+func (m *mapper) columns(e *types.ColumnsExpr) any {
 	var s shape
-	if st, ok := e.Arg.(*duckdb.Star); ok {
+	if st, ok := e.Arg.(*types.Star); ok {
 		s = m.expr(st).(shape)
-	} else if _, lam := e.Arg.(*duckdb.Lambda); lam || isArrow(e.Arg) {
+	} else if _, lam := e.Arg.(*types.Lambda); lam || isArrow(e.Arg) {
 		// COLUMNS(lambda) keeps the columns for which the lambda is true
 		s = shape{"class": "STAR", "type": "STAR", "expr": fn("list_filter", "", false, shape{"class": "STAR", "type": "STAR"}, m.expr(e.Arg))}
 	} else {
@@ -123,8 +123,8 @@ func (m *mapper) columns(e *duckdb.ColumnsExpr) any {
 	return s
 }
 
-func isArrow(e duckdb.Expr) bool {
-	b, ok := e.(*duckdb.Binary)
+func isArrow(e types.Expr) bool {
+	b, ok := e.(*types.Binary)
 	return ok && b.Op.Value == "->"
 }
 
@@ -134,8 +134,8 @@ func emptyList() shape {
 		"type": shape{"id": "LIST", "type_info": shape{"type": "LIST_TYPE_INFO", "child_type": shape{"id": "INTEGER"}}}}}
 }
 
-func (m *mapper) slice(x any, s *duckdb.SliceStep) any {
-	bound := func(e duckdb.Expr) any {
+func (m *mapper) slice(x any, s *types.SliceStep) any {
+	bound := func(e types.Expr) any {
 		if e == nil {
 			return emptyList()
 		}
@@ -163,7 +163,7 @@ var windowTypes = map[string]string{
 }
 
 // resolveWindow returns the specification of a window, with what it takes from the window it is based on.
-func (m *mapper) resolveWindow(spec *duckdb.WindowSpec, depth int) duckdb.WindowSpec {
+func (m *mapper) resolveWindow(spec *types.WindowSpec, depth int) types.WindowSpec {
 	out := *spec
 	if spec.Base == nil {
 		return out
@@ -171,7 +171,7 @@ func (m *mapper) resolveWindow(spec *duckdb.WindowSpec, depth int) duckdb.Window
 	if depth > 8 {
 		unsup("window cycle")
 	}
-	var base *duckdb.WindowSpec
+	var base *types.WindowSpec
 	for i := len(m.windows) - 1; i >= 0 && base == nil; i-- {
 		base = m.windows[i][spec.Base.Fold()]
 	}
@@ -199,11 +199,11 @@ func (m *mapper) resolveWindow(spec *duckdb.WindowSpec, depth int) duckdb.Window
 }
 
 // windowCall maps a function call with an OVER clause.
-func (m *mapper) windowCall(f *duckdb.FuncCall, name string, args []any) shape {
-	var spec duckdb.WindowSpec
+func (m *mapper) windowCall(f *types.FuncCall, name string, args []any) shape {
+	var spec types.WindowSpec
 	switch {
 	case f.Over.Name != nil:
-		spec = m.resolveWindow(&duckdb.WindowSpec{Base: f.Over.Name}, 0)
+		spec = m.resolveWindow(&types.WindowSpec{Base: f.Over.Name}, 0)
 	case f.Over.Spec != nil:
 		spec = m.resolveWindow(f.Over.Spec, 0)
 	}
@@ -248,7 +248,7 @@ func (m *mapper) windowCall(f *duckdb.FuncCall, name string, args []any) shape {
 	}
 	if fr := spec.Frame; fr != nil {
 		unit := strings.ToUpper(fr.Unit)
-		bound := func(b *duckdb.FrameBound, key string) string {
+		bound := func(b *types.FrameBound, key string) string {
 			words := strings.Join(strings.Fields(strings.ToUpper(b.Kind)), "_")
 			switch words {
 			case "UNBOUNDED_PRECEDING", "UNBOUNDED_FOLLOWING":
@@ -285,7 +285,7 @@ func (m *mapper) windowCall(f *duckdb.FuncCall, name string, args []any) shape {
 }
 
 // listComp maps [expr FOR x IN source IF cond].
-func (m *mapper) listComp(e *duckdb.ListComp) any {
+func (m *mapper) listComp(e *types.ListComp) any {
 	var params []any
 	for i := range e.Vars {
 		params = append(params, shape{"class": "COLUMN_REF", "type": "COLUMN_REF", "column_names": []any{e.Vars[i].Name()}})
@@ -319,8 +319,8 @@ func (m *mapper) listComp(e *duckdb.ListComp) any {
 }
 
 // arraySubquery maps ARRAY(SELECT ...): the query is aggregated with array_agg.
-func (m *mapper) arraySubquery(e *duckdb.ArraySubquery) any {
-	if q, ok := e.Query.Query.(*duckdb.Select); !ok || q.OrderBy != nil {
+func (m *mapper) arraySubquery(e *types.ArraySubquery) any {
+	if q, ok := e.Query.Query.(*types.Select); !ok || q.OrderBy != nil {
 		// DuckDB moves the ORDER BY into the aggregate, with a column of its own
 		unsup("array subquery with order by")
 	}

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/parsers/typescript"
+	"github.com/ornew/pego/parsers/typescript/types"
 )
 
 func ExampleParseAST() {
@@ -14,7 +15,7 @@ func ExampleParseAST() {
 	if err != nil {
 		panic(err)
 	}
-	stmt := f.Statements[0].(*typescript.VariableStatement)
+	stmt := f.Statements[0].(*types.VariableStatement)
 	decl := stmt.DeclarationList.Declarations[0]
 	text := func(n any) string { // the fields have union types, which AsNode turns into nodes
 		start, end := typescript.AsNode(n).Range()
@@ -83,7 +84,7 @@ func ExampleParseTSX() {
 	}
 	n := 0
 	typescript.Inspect(f, func(node typescript.ASTNode) bool {
-		if _, ok := node.(*typescript.JsxElement); ok {
+		if _, ok := node.(*types.JsxElement); ok {
 			n++
 		}
 		return true
@@ -101,7 +102,7 @@ func ExampleParseFile() {
 		panic(err)
 	}
 	fmt.Println(typescript.IsExternalModule(f))
-	_, isAwait := f.Statements[1].(*typescript.VariableStatement).DeclarationList.Declarations[0].Initializer.(*typescript.AwaitExpression)
+	_, isAwait := f.Statements[1].(*types.VariableStatement).DeclarationList.Declarations[0].Initializer.(*types.AwaitExpression)
 	fmt.Println(isAwait)
 	// Output:
 	// true

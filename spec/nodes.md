@@ -161,7 +161,7 @@ Scalars and lists have no range and are never selected.
 | `At(position, visit)` | Nodes that contain `position`, including zero-width nodes at `position` |
 | `Range(start, end, visit)` | Nodes that overlap `[start, end)`. An empty range selects none. Zero-width nodes match when `start <= node.Start < end`. `start` MUST be nonnegative and `end` MUST NOT be smaller than `start` |
 
-Generated Go parsers expose the same walker as `WalkTree`, with the same visits
+Generated Go parsers expose the same walker as `Walk`, with the same visits
 and ordering.
 
 ### Text Rendering

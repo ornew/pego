@@ -129,14 +129,9 @@ with those resolved options, including the requested `Unit` and depth limit.
 
 The new entry point is additive at the API level for typed generated Go
 parsers, and it does not change `ParseRule`'s `*Node` return or `ParseAST`'s
-configured start-rule behavior. However, generated identifiers are allocated
-from a reserved-name set: adding `ParseRuleAST` can rename a grammar-generated
-type or alias with that name by appending underscores, and a collision cascade
-can rename later generated identifiers. This can break source consumers that
-name those generated types directly or change the spelling of `ParseAST`'s
-static return type even though its behavior is unchanged. Document this
-regeneration/migration effect and test grammars with `ParseRuleAST` and
-`ParseRuleAST_` type names. Untyped parsers continue to expose only
+configured start-rule behavior. The generated Go types of the grammar are
+declared in the package `types`, so a grammar type or alias named `ParseRuleAST`
+does not clash with the entry point in the parser package. Untyped parsers continue to expose only
 `ParseRule`. No grammar, serialized format, TypeScript API or runtime option
 changes are required.
 
@@ -188,9 +183,7 @@ be representable. Compile consumer fixtures for both execution modes and
 assert the documented zero and typed-nil results on ordinary failure. Also
 cover successful nil-valued `_`, `node` and join rules and verify legacy
 `ParseAST` nil boxing remains unchanged. Add
-grammar types named `ParseRuleAST` and `ParseRuleAST_` to verify underscore
-cascades, consumer compilation, and any `ParseAST` return-type spelling
-change. For the XML subrule use case, compare `content` and declaration
+a grammar type named `ParseRuleAST` to verify that it compiles beside the entry point. For the XML subrule use case, compare `content` and declaration
 results with the existing wrapper-based behavior on nested markup, Unicode and
 malformed input; verify spans remain relative to the fragment without
 caller-side shifting.

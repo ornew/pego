@@ -1,6 +1,6 @@
 # The Generated Go API
 
-A Go parser written by [`pego gen`](code-generation.md) has a small API: `parser.go` defines the functions that parse, and `api.go` re-exports the types and options of the runtime package (the copy in `internal/runtime`, or `github.com/ornew/pego/runtime` with `-runtime import`) under their own names. This guide describes
+A Go parser written by [`pego gen`](code-generation.md) has a small API: `parser.go` defines the functions that parse, `api.go` re-exports the types and options of the runtime package (the copy in `internal/runtime`, or `github.com/ornew/pego/runtime` with `-runtime import`) under their own names, and, with `-types`, `types/types.go` defines the Go types of the grammar. This guide describes
 it, the call options that all entry points share, and recognition. Options that add typed values, incremental documents
 and streams have their own guides:
 
@@ -98,6 +98,7 @@ Compared with the engine's API:
 |:--|:--|
 | Runtime | The parser state, memoization, left recursion, Operators Rule loop, attribute handling and the built-in functions of actions. It is **the same for every grammar**: the package `github.com/ornew/pego/runtime`, which the generated package imports (`-runtime import`) or carries a copy of in `internal/runtime` (`-runtime embed`, the default). |
 | `api.go` | The names of the runtime that the users of the parser need (`Node`, `SyntaxError`, the options and so on), as aliases and wrappers. It is the same for grammars generated with the same options. |
+| `types/types.go` | With `-types`, the package `<module>/types`: a Go type for each type of the grammar, `TNode`, `Error` and the tuple types. |
 | Rule table | For each rule, the results of the engine's static analysis (memoized? left-recursion leader? capture names?). |
 | Parser expressions | One method per expression, with literals, character classes and rule indices embedded as constants, and one per rule that is never memoized and has no captures, which calls the rule's body directly. |
 | Value Actions and Predicate Actions | Go expressions; lambdas become Go function literals. |
@@ -176,13 +177,12 @@ preparation and before publishing a result.
 
 ## Type Names
 
-A typed parser declares the grammar's types next to the names this page lists, and the generated code refers to
-the runtime's exports by name. A grammar type whose name is one of those gets underscores appended: `ParseOption`
-becomes `ParseOption_`, and if the grammar also has a type `ParseOption_`, that one becomes `ParseOption__`. Types are
-renamed in stable sorted order, and aliases and typed result signatures follow the new names. Which names are taken
-depends only on the generation options, not on the grammar, so a type has the same Go name in every grammar generated
-with the same options (apart from the extra underscore of a type whose renamed name the grammar also declares). Declarations that you add by hand to the generated package must not use these names either;
-the generator cannot inspect those files. The [generated parser contract](../../spec/generated-parsers.md) lists the rule.
+With `-types`, the types of the grammar are declared in the package `<module>/types`, not in the parser package, so they
+share no namespace with `parser.go` and `api.go`: a grammar type may be called `Node`, `ParseOption`, `Walk` or like any
+other name of the parser package, and is then used as `types.Node`. The types package declares `TNode`, `Error`,
+`PegoHooks` and, where used, `Unit`, `TupleN` and `PegoNodeTypes` itself, and generation fails if a grammar type has one
+of those names. Declarations that you add by hand to the generated packages must not reuse the names they declare. The
+[generated parser contract](../../spec/generated-parsers.md) lists the rule.
 
 ## Related Topics
 

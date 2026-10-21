@@ -46,8 +46,8 @@ Each directory holds:
 | File | Contents |
 |:--|:--|
 | `<language>.pego` | The grammar. It can be used with the engine too (`pego.CompileSource`), for streaming, incremental parsing or the `pego` tools. |
-| `parser.go`, `api.go`, `internal/runtime/` | The parser generated from the grammar, the names it re-exports from its runtime, and the runtime itself, which the parser embeds so that the module needs nothing else. Do not edit them. |
-| other `.go` files | Code written for the language: documentation, conversions to Go values, helpers |
+| `parser.go`, `api.go`, `types/types.go`, `internal/runtime/` | The parser generated from the grammar, the names it re-exports from its runtime, the Go types of the grammar (the package `types`), and the runtime itself, which the parser embeds so that the module needs nothing else. Do not edit them. |
+| other `.go` files | Code written for the language: documentation, conversions to Go values, helpers. Those in `types/` hold the methods of the types of the grammar (a method can only be declared in the package of its type); what needs the parser or the decoder is a function of the module instead. |
 | `*_test.go` | Tests against the language's specification, conformance suites and reference implementations; examples; benchmarks |
 | `testdata/*.txt`, `*.golden` | Inputs and the expected trees and errors, checked on the generated parser here and on every backend of the engine by [parsers_test.go](parsers_test.go) |
 | `go.mod`, `LICENCE` | The module |

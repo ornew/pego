@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ornew/pego/parsers/python"
+	"github.com/ornew/pego/parsers/python/types"
 )
 
 func ExampleParseModule() {
@@ -14,9 +15,9 @@ func ExampleParseModule() {
 	}
 	for _, s := range m.Body {
 		switch s := s.(type) {
-		case *python.Import:
+		case *types.Import:
 			fmt.Printf("import of %d module at %d-%d\n", len(s.Names), s.Start, s.End)
-		case *python.FunctionDef:
+		case *types.FunctionDef:
 			fmt.Printf("def %s with %d parameters and %d keyword-only\n", s.Name, len(s.Args.Args), len(s.Args.KwOnlyArgs))
 		}
 	}
@@ -55,7 +56,7 @@ func ExampleInspect() {
 	}
 	// Every name in the module, in source order.
 	python.Inspect(m, func(n any) bool {
-		if name, ok := n.(*python.Name); ok {
+		if name, ok := n.(*types.Name); ok {
 			fmt.Println(name.Id, name.Ctx)
 		}
 		return true
@@ -72,9 +73,9 @@ func ExampleConstant_Value() {
 	if err != nil {
 		panic(err)
 	}
-	list := m.Body[0].(*python.Assign).Value.(*python.ListExpr)
+	list := m.Body[0].(*types.Assign).Value.(*types.ListExpr)
 	for _, e := range list.Elts {
-		v, err := e.(*python.Constant).Value()
+		v, err := python.ConstantValue(e.(*types.Constant))
 		if err != nil {
 			panic(err)
 		}
@@ -112,7 +113,7 @@ func ExampleLineIndex() {
 		panic(err)
 	}
 	// Spans are in code points; CPython's columns are in UTF-8 bytes.
-	x := m.Body[0].(*python.Assign).Value.(*python.BinOp).Right.(*python.Name)
+	x := m.Body[0].(*types.Assign).Value.(*types.BinOp).Right.(*types.Name)
 	line, col := python.NewLineIndex(src).Position(x.Start)
 	fmt.Println(x.Start, x.End, "is line", line, "column", col)
 	// Output: 10 11 is line 1 column 11

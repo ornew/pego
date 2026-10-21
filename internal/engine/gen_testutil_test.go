@@ -2,6 +2,7 @@ package engine
 
 import (
 	"bytes"
+	goast "go/ast"
 	goparser "go/parser"
 	"go/scanner"
 	"go/token"
@@ -119,10 +120,47 @@ func writeGenerated(t testing.TB, dir, module string, files []GeneratedFile) {
 	}
 }
 
+// generatePackage generates a parser that imports the runtime from this module as the package
+// gentest/<pkg>, writes its files (parser.go, api.go and types/types.go) below dir/<pkg> in the
+// module of dir, and returns its parser.go. Unlike generateCode, it keeps the types package
+// apart, so that grammar types named like the names of the parser package compile.
+func generatePackage(t testing.TB, dir, pkg string, g *grammar.Grammar, opts GenOptions) string {
+	t.Helper()
+	return generatePackageIn(t, dir, "gentest", pkg, g, opts)
+}
+
+// generatePackageIn is generatePackage for a test module whose path is root.
+func generatePackageIn(t testing.TB, dir, root, pkg string, g *grammar.Grammar, opts GenOptions) string {
+	t.Helper()
+	opts.Runtime = RuntimeImport
+	opts.Package, opts.Module = pkg, root+"/"+pkg
+	files, err := Generate(g, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var parser string
+	for _, f := range files {
+		path := filepath.Join(dir, pkg, filepath.FromSlash(f.Path))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, f.Content, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if f.Path == "parser.go" {
+			parser = string(f.Content)
+		}
+	}
+	return parser
+}
+
 // generateCode generates a parser that imports the runtime from this module and returns its
 // parser.go and api.go as one source file, which tests write as parser.go.
 func generateCode(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	opts.Runtime = RuntimeImport
+	if opts.Module == "" && opts.Types {
+		opts.Module = "example.com/generated"
+	}
 	files, err := Generate(g, opts)
 	if err != nil {
 		return nil, err
@@ -130,11 +168,17 @@ func generateCode(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	return mergeGenerated(files), nil
 }
 
-// mergeGenerated joins the Go files of a generated package into one file.
+// mergeGenerated joins the Go files of a generated package into one file. The types package of
+// a typed parser (types/types.go) joins the file too, with the references to it unqualified, so
+// that the fixtures of the tests name the types without importing the package.
 func mergeGenerated(files []GeneratedFile) []byte {
 	var parts []GeneratedFile
 	for _, f := range files {
-		if strings.HasSuffix(f.Path, ".go") && !strings.Contains(f.Path, "/") {
+		switch {
+		case f.Path == "types/types.go":
+			parts = append(parts, f)
+		case strings.HasSuffix(f.Path, ".go") && !strings.Contains(f.Path, "/"):
+			f.Content = unqualifyTypes(f.Content)
 			parts = append(parts, f)
 		}
 	}
@@ -155,6 +199,9 @@ func mergeGenerated(files []GeneratedFile) []byte {
 		type span struct{ lo, hi int }
 		var cut []span
 		for _, imp := range file.Imports {
+			if imp.Name != nil && imp.Name.Name == typesAlias {
+				continue
+			}
 			text := string(src[fset.Position(imp.Pos()).Offset:fset.Position(imp.End()).Offset])
 			if !seen[text] {
 				seen[text] = true
@@ -187,6 +234,29 @@ func mergeGenerated(files []GeneratedFile) []byte {
 		out.WriteString("\n")
 	}
 	return out.Bytes()
+}
+
+// unqualifyTypes removes the qualifier of the references to the types package (types.Name) from
+// the source of a file of the parser package.
+func unqualifyTypes(src []byte) []byte {
+	fset := token.NewFileSet()
+	file, err := goparser.ParseFile(fset, "src.go", src, goparser.ParseComments)
+	if err != nil {
+		panic(err)
+	}
+	var cuts [][2]int
+	goast.Inspect(file, func(n goast.Node) bool {
+		if sel, ok := n.(*goast.SelectorExpr); ok {
+			if id, ok := sel.X.(*goast.Ident); ok && id.Name == typesAlias && id.Obj == nil {
+				cuts = append(cuts, [2]int{fset.Position(id.Pos()).Offset, fset.Position(sel.Sel.Pos()).Offset})
+			}
+		}
+		return true
+	})
+	for i := len(cuts) - 1; i >= 0; i-- {
+		src = append(src[:cuts[i][0]:cuts[i][0]], src[cuts[i][1]:]...)
+	}
+	return src
 }
 
 // runtimeSource is the text of the runtime package, for tests that check its source.

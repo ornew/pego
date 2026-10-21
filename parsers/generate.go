@@ -1,7 +1,7 @@
 // Package parsers generates and checks the parsers in its subdirectories, each a Go module of its own
 // (github.com/ornew/pego/parsers/<language>) that depends only on the standard library.
 //
-// Each subdirectory holds the grammar (<language>.pego), the parser generated from it (parser.go, api.go and a copy of the runtime in internal/runtime), code
+// Each subdirectory holds the grammar (<language>.pego), the parser generated from it (parser.go, api.go, types/types.go and a copy of the runtime in internal/runtime), code
 // written by hand around the generated API, and tests against the language's reference implementation
 // or conformance suite. The tests of this package check that every generated file is up to date and that
 // every backend of the engine gives the results recorded in the subdirectories' golden files, which the

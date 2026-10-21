@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ornew/pego/parsers/json"
+	"github.com/ornew/pego/parsers/json/types"
 )
 
 func ExampleDecode() {
@@ -22,12 +23,12 @@ func ExampleParseAST() {
 	if err != nil {
 		panic(err)
 	}
-	for _, m := range v.(*json.Object).Members {
+	for _, m := range v.(*types.Object).Members {
 		fmt.Printf("%q at %d-%d: %T\n", m.Key.Value(), m.Span.Start, m.Span.End, m.Value)
 	}
 	// Output:
-	// "a" at 1-15: *json.Array
-	// "b" at 17-28: *json.String
+	// "a" at 1-15: *types.Array
+	// "b" at 17-28: *types.String
 }
 
 func ExampleParseAST_syntaxError() {

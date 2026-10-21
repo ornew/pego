@@ -24,8 +24,12 @@ import (
 // RuntimeImportPath is the import path of the runtime package in this module.
 const RuntimeImportPath = "github.com/ornew/pego/runtime"
 
-// runtimeAlias is the name generated code gives to the runtime package.
-const runtimeAlias = "pegort"
+// runtimeAlias is the name generated code gives to the runtime package, and typesAlias the name
+// it gives to the types package of a typed parser.
+const (
+	runtimeAlias = "pegort"
+	typesAlias   = "types"
+)
 
 // RuntimeMode selects how a generated Go parser reaches the runtime.
 type RuntimeMode int
@@ -206,15 +210,29 @@ var stdImports = map[string]string{
 	"utf8": "unicode/utf8",
 }
 
-// qualifyRuntime finishes the generated source body of package pkg. Every identifier that the body
+// typesPackage describes the types package of a typed parser for qualifyRuntime.
+type typesPackage struct {
+	importPath string
+	// declared reports whether the types package declares the name besides the types of the
+	// grammar, which the parser package refers to as types.Name (a type of the grammar is
+	// written so in the source).
+	declared func(name string) bool
+	// types holds the type declarations of the types package, which resolve the literals of
+	// types.Name.
+	types map[string]goast.Expr
+}
+
+// qualifyRuntime finishes the generated source body of a package. Every identifier that the body
 // leaves unresolved and that is an exported name of the runtime is the runtime's, and is qualified
-// with the runtime package; the standard-library packages the body uses are imported.
-func qualifyRuntime(pkg, rtImport, body string, info *runtimeInfo) (string, map[string]bool, error) {
+// with the runtime package; one that the types package tp (if any) declares is qualified with the
+// types package. The standard-library packages the body uses are imported, and the runtime and
+// types packages.
+func qualifyRuntime(rtImport, body string, info *runtimeInfo, tp *typesPackage) (string, error) {
 	const prefix = "package p\n"
 	fset := token.NewFileSet()
 	f, err := goparser.ParseFile(fset, "body.go", prefix+body, goparser.ParseComments)
 	if err != nil {
-		return "", nil, err
+		return "", err
 	}
 	var offsets []int
 	std := map[string]bool{}
@@ -228,16 +246,22 @@ func qualifyRuntime(pkg, rtImport, body string, info *runtimeInfo) (string, map[
 		}
 		return true
 	})
-	used := map[string]bool{}
+	var typeOffsets []int
 	for _, id := range f.Unresolved {
+		if tp != nil && tp.declared(id.Name) {
+			typeOffsets = append(typeOffsets, fset.Position(id.Pos()).Offset-len(prefix))
+			continue
+		}
 		if _, ok := info.decls[id.Name]; ok {
-			used[id.Name] = true
 			offsets = append(offsets, fset.Position(id.Pos()).Offset-len(prefix))
 			continue
 		}
 		if selectorBase[id] {
 			if p, ok := stdImports[id.Name]; ok {
 				std[p] = true
+			}
+			if tp != nil && id.Name == typesAlias {
+				typeOffsets = append(typeOffsets, -1)
 			}
 		}
 	}
@@ -259,7 +283,7 @@ func qualifyRuntime(pkg, rtImport, body string, info *runtimeInfo) (string, map[
 		if lit.Type != nil {
 			typ = lit.Type
 		}
-		kind, key, elem := literalType(typ, types, info)
+		kind, key, elem := literalType(typ, types, info, tp)
 		for _, e := range lit.Elts {
 			kv, isKV := e.(*goast.KeyValueExpr)
 			if !isKV {
@@ -270,7 +294,6 @@ func qualifyRuntime(pkg, rtImport, body string, info *runtimeInfo) (string, map[
 			}
 			if id, ok := kv.Key.(*goast.Ident); ok && kind != 's' && id.Obj == nil {
 				if d, ok := info.decls[id.Name]; ok && (d.kind == token.CONST || d.kind == token.VAR) {
-					used[id.Name] = true
 					offsets = append(offsets, fset.Position(id.Pos()).Offset-len(prefix))
 				}
 			}
@@ -288,15 +311,31 @@ func qualifyRuntime(pkg, rtImport, body string, info *runtimeInfo) (string, map[
 		}
 		return true
 	})
-	sort.Sort(sort.Reverse(sort.IntSlice(offsets)))
+	// The offsets of the names to qualify, with the qualifier of each, from the last to the first.
+	type insertion struct {
+		off       int
+		qualifier string
+	}
+	var inserts []insertion
+	for _, off := range offsets {
+		inserts = append(inserts, insertion{off, runtimeAlias + "."})
+	}
+	typesUsed := false
+	for _, off := range typeOffsets {
+		typesUsed = true
+		if off >= 0 {
+			inserts = append(inserts, insertion{off, typesAlias + "."})
+		}
+	}
+	sort.Slice(inserts, func(i, j int) bool { return inserts[i].off > inserts[j].off })
 	b := []byte(body)
 	last := -1
-	for _, off := range offsets {
-		if off == last {
+	for _, in := range inserts {
+		if in.off == last {
 			continue
 		}
-		last = off
-		b = append(b[:off], append([]byte(runtimeAlias+"."), b[off:]...)...)
+		last = in.off
+		b = append(b[:in.off], append([]byte(in.qualifier), b[in.off:]...)...)
 	}
 	var imports strings.Builder
 	var paths []string
@@ -308,15 +347,19 @@ func qualifyRuntime(pkg, rtImport, body string, info *runtimeInfo) (string, map[
 	for _, p := range paths {
 		fmt.Fprintf(&imports, "\t%q\n", p)
 	}
-	fmt.Fprintf(&imports, "\n\t%s %q\n)\n\n", runtimeAlias, rtImport)
-	return imports.String() + string(b), used, nil
+	fmt.Fprintf(&imports, "\n\t%s %q\n", runtimeAlias, rtImport)
+	if typesUsed {
+		fmt.Fprintf(&imports, "\t%s %q\n", typesAlias, tp.importPath)
+	}
+	imports.WriteString(")\n\n")
+	return imports.String() + string(b), nil
 }
 
 // literalType returns the kind of the composite literal of type typ ('s' for a struct, 'm' for a
 // map, 'a' for an array or slice, 0 if unknown) and the types of its keys and elements (nil if
 // unknown). Named types are resolved through types, the type declarations of the body, and then
 // through the runtime's.
-func literalType(typ goast.Expr, types map[string]goast.Expr, info *runtimeInfo) (kind byte, key, elem goast.Expr) {
+func literalType(typ goast.Expr, types map[string]goast.Expr, info *runtimeInfo, tp *typesPackage) (kind byte, key, elem goast.Expr) {
 	for depth := 0; typ != nil && depth < 32; depth++ {
 		switch t := typ.(type) {
 		case *goast.ParenExpr:
@@ -329,6 +372,15 @@ func literalType(typ goast.Expr, types map[string]goast.Expr, info *runtimeInfo)
 			typ = t.X
 		case *goast.StructType:
 			return 's', nil, nil
+		case *goast.SelectorExpr:
+			// A type of the types package.
+			if id, ok := t.X.(*goast.Ident); ok && id.Name == typesAlias && tp != nil {
+				if next, ok := tp.types[t.Sel.Name]; ok {
+					typ = next
+					continue
+				}
+			}
+			return 0, nil, nil
 		case *goast.MapType:
 			return 'm', t.Key, t.Value
 		case *goast.ArrayType:
@@ -377,89 +429,6 @@ func declaredNames(src string) ([]string, error) {
 	return out, nil
 }
 
-// apiPubName returns the name under which api.go declares the runtime name.
-func apiPubName(name string) string {
-	if name == "Walk" {
-		// A typed AST walker of the same package or a hand-written one commonly takes the name Walk.
-		return "WalkTree"
-	}
-	return name
-}
-
-// typedEntryNames returns the exported names the typed part of a generated parser declares
-// besides the grammar's types and the names of the head of parser.go. checkNoClash catches a
-// name missing here.
-func (opts GenOptions) typedEntryNames() []string {
-	names := []string{"ParseAST", "ParseRuleAST", "Error", "TNode"}
-	if opts.Document {
-		names = append(names, "Document")
-	}
-	if opts.Stream {
-		names = append(names, "ParseStreamAST", "StreamValue", "IterateAST", "StreamASTIterator")
-	}
-	return names
-}
-
-// reservedNames returns the names that the types of a typed grammar must not take: those of
-// api.go, those declared by the part of parser.go that is generated before the types (head),
-// typedEntryNames, Unit (the type of the empty tuple, which the generator declares when a grammar
-// uses it) and emittedRuntimeNames. The set depends only on the options, never on what the output
-// of the grammar happens to use, so a type has the same Go name in every grammar generated with
-// the same options. Other names of the runtime are free.
-func (opts GenOptions) reservedNames(head string) map[string]bool {
-	reserved := map[string]bool{"Unit": true}
-	for _, name := range emittedRuntimeNames {
-		reserved[name] = true
-	}
-	for _, name := range opts.apiNames() {
-		if name != "Span" { // a grammar type may take the name; api.go then leaves it out
-			reserved[apiPubName(name)] = true
-		}
-	}
-	if names, err := declaredNames("package p\n" + head); err == nil {
-		for _, name := range names {
-			reserved[name] = true
-		}
-	}
-	for _, name := range opts.typedEntryNames() {
-		reserved[name] = true
-	}
-	return reserved
-}
-
-// checkNoClash reports a top-level name that parser.go (declared) declares twice, or that both
-// parser.go and api.go declare. reservedNames should keep the types away from such names; the
-// check makes a name missing from it fail the generation instead of the build of the output.
-func checkNoClash(declared []string, api string) error {
-	apiDeclared, err := declaredNames(api)
-	if err != nil {
-		return err
-	}
-	seen := map[string]string{}
-	for _, name := range apiDeclared {
-		if name == "_" {
-			continue
-		}
-		if seen[name] == "api.go" {
-			return fmt.Errorf("the generated package declares %s twice in api.go", name)
-		}
-		seen[name] = "api.go"
-	}
-	for _, name := range declared {
-		if name == "_" {
-			continue
-		}
-		switch seen[name] {
-		case "api.go":
-			return fmt.Errorf("the grammar declares %s, which the generated package also declares for the users of the parser; rename the type", name)
-		case "parser.go":
-			return fmt.Errorf("the generated parser.go declares %s twice; rename the type", name)
-		}
-		seen[name] = "parser.go"
-	}
-	return nil
-}
-
 // apiNames returns the runtime names that the generated package re-exports for its users, in
 // declaration order by group.
 func (opts GenOptions) apiNames() []string {
@@ -493,26 +462,18 @@ func (opts GenOptions) apiNames() []string {
 // apiSource returns the source of the file of the generated package that re-exports the runtime
 // names apiNames lists. Types, constants and variables are aliases; functions are wrappers that
 // the compiler inlines.
-func (opts GenOptions) apiSource(info *runtimeInfo, noSpan bool) (string, error) {
+func (opts GenOptions) apiSource(info *runtimeInfo) (string, error) {
 	var b strings.Builder
 	fmt.Fprintf(&b, "%s\n\npackage %s\n\n", generatedHeader, opts.Package)
 	b.WriteString("import (\n\t\"context\"\n\n")
 	fmt.Fprintf(&b, "\t%s %q\n)\n\n", runtimeAlias, opts.runtimeImport())
 	b.WriteString("var _ context.Context\n\n")
 	for _, name := range opts.apiNames() {
-		if noSpan && name == "Span" {
-			// A grammar type has the name.
-			continue
-		}
 		d := info.decls[name]
 		if d == nil {
 			return "", fmt.Errorf("internal error: the runtime has no %s", name)
 		}
-		pubName := apiPubName(name)
 		doc := d.doc
-		if pubName != name {
-			doc = strings.Replace(doc, name+" ", pubName+" ", 1)
-		}
 		for _, line := range strings.Split(strings.TrimRight(doc, "\n"), "\n") {
 			if line == "" && doc == "" {
 				break
@@ -525,11 +486,11 @@ func (opts GenOptions) apiSource(info *runtimeInfo, noSpan bool) (string, error)
 		}
 		switch d.kind {
 		case token.TYPE:
-			fmt.Fprintf(&b, "type %s = %s.%s\n\n", pubName, runtimeAlias, name)
+			fmt.Fprintf(&b, "type %s = %s.%s\n\n", name, runtimeAlias, name)
 		case token.CONST:
-			fmt.Fprintf(&b, "const %s = %s.%s\n\n", pubName, runtimeAlias, name)
+			fmt.Fprintf(&b, "const %s = %s.%s\n\n", name, runtimeAlias, name)
 		case token.VAR:
-			fmt.Fprintf(&b, "var %s = %s.%s\n\n", pubName, runtimeAlias, name)
+			fmt.Fprintf(&b, "var %s = %s.%s\n\n", name, runtimeAlias, name)
 		case token.FUNC:
 			fn := d.spec.(*goast.FuncDecl)
 			if fn.Type.TypeParams != nil {
@@ -569,7 +530,7 @@ func (opts GenOptions) apiSource(info *runtimeInfo, noSpan bool) (string, error)
 			if fn.Type.Results != nil && len(fn.Type.Results.List) > 0 {
 				ret = "return "
 			}
-			fmt.Fprintf(&b, "func %s%s { %s%s }\n\n", pubName, strings.TrimPrefix(sigb.String(), "func"), ret, call)
+			fmt.Fprintf(&b, "func %s%s { %s%s }\n\n", name, strings.TrimPrefix(sigb.String(), "func"), ret, call)
 		}
 	}
 	src, err := format.Source([]byte(b.String()))

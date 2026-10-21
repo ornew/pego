@@ -115,22 +115,20 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, []string{"", "a1", "a1b2"}})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		goCode, err := generateCode(g, GenOptions{Start: "main", Package: fmt.Sprintf("g%d", i), Types: true, convertTypes: true, Recognize: true})
-		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
-		}
+		generatePackageIn(t, dir, "replay", fmt.Sprintf("g%d", i), g, GenOptions{Start: "main", Types: true, convertTypes: true, Recognize: true})
 		prog, err := Compile(g, Options{})
 		if err != nil {
 			t.Fatal(err)
 		}
-		meta := &typedGen{g: &generator{prog: prog}, info: prog.typed, names: map[string]string{}, joins: map[string]string{}}
-		meta.name()
-		named = append(named, append([]string{}, meta.nodeTypes...))
-		for name, exported := range meta.names {
-			fmt.Fprintf(&valueNames, "%q:%q,\n", fmt.Sprintf("replay/g%d.%s", i, exported), name)
+		meta := &typedGen{g: &generator{prog: prog}, info: prog.typed, joins: map[string]string{}}
+		if err := meta.name(); err != nil {
+			t.Fatal(err)
 		}
-		fmt.Fprintf(&terminalNames, "%q:true,\n%q:true,\n", fmt.Sprintf("replay/g%d.Match", i), fmt.Sprintf("replay/g%d.Error", i))
-		write(fmt.Sprintf("g%d/parser.go", i), string(goCode))
+		named = append(named, append([]string{}, meta.nodeTypes...))
+		for name := range prog.types {
+			fmt.Fprintf(&valueNames, "%q:%q,\n", fmt.Sprintf("replay/g%d/types.%s", i, name), name)
+		}
+		fmt.Fprintf(&terminalNames, "%q:true,\n", fmt.Sprintf("replay/g%d/types.Error", i))
 		tsCode, err := GenerateTS(g, GenOptions{Start: "main", Types: true, Recognize: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
@@ -224,7 +222,7 @@ func normal(v reflect.Value) any {
     if v.NumField()==1&&v.Type().Field(0).Anonymous&&strings.HasPrefix(v.Type().Field(0).Type.Name(),"TNode["){inner:=normal(v.Field(0));if n,ok:=valueNames[v.Type().PkgPath()+"."+v.Type().Name()];ok{if m,ok:=inner.(map[string]any);ok{m["type"]=n}};return inner}
     typeKey:=v.Type().PkgPath()+"."+v.Type().Name();name:=v.Type().Name();if n,ok:=valueNames[typeKey];ok{name=n}else if strings.HasPrefix(name,"TNode["){return map[string]any{"start":v.FieldByName("Start").Int(),"end":v.FieldByName("End").Int(),"value":normal(v.FieldByName("Value"))}}else if name=="Unit"||strings.HasPrefix(name,"Tuple"){out:=make([]any,v.NumField());for i:=range out{out[i]=normal(v.Field(i))};return out};if _,ok:=valueNames[typeKey];!ok&&name=="Error"{name="error"};out:=map[string]any{"type":name}
     for i:=0;i<v.NumField();i++ {if v.Type().Field(i).Anonymous {sp:=v.Field(i);out["start"]=sp.FieldByName("Start").Int();out["end"]=sp.FieldByName("End").Int()}}
-    for i:=0;i<v.NumField();i++ {name:=v.Type().Field(i).Name;if v.Type().Field(i).Anonymous{continue};if name=="Text"&&terminalTypes[typeKey]{name="text"};if name=="Message"&&v.Type().Name()=="Error"{name="message"};out[name]=normal(v.Field(i))};return out
+    for i:=0;i<v.NumField();i++ {name:=v.Type().Field(i).Name;if v.Type().Field(i).Anonymous{continue};name=strings.TrimSuffix(name,"_");if name=="Text"&&terminalTypes[typeKey]{name="text"};if name=="Message"&&v.Type().Name()=="Error"{name="message"};out[name]=normal(v.Field(i))};return out
   }
   panic(v.Kind())
 }

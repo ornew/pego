@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/parsers/typescript"
+	"github.com/ornew/pego/parsers/typescript/types"
 )
 
 type cookedLiteralCase struct{ name, src, want string }
@@ -53,10 +54,10 @@ func cookedValue(t *testing.T, src string, unit typescript.PositionUnit) string 
 	if err != nil {
 		t.Fatalf("ParseAST(%q): %v", src, err)
 	}
-	switch lit := f.Statements[0].(*typescript.ExpressionStatement).Expression.(type) {
-	case *typescript.StringLiteral:
+	switch lit := f.Statements[0].(*types.ExpressionStatement).Expression.(type) {
+	case *types.StringLiteral:
 		return lit.Value()
-	case *typescript.NoSubstitutionTemplateLiteral:
+	case *types.NoSubstitutionTemplateLiteral:
 		return lit.Value()
 	default:
 		t.Fatalf("not a literal: %T", lit)
@@ -114,7 +115,7 @@ func BenchmarkCookedLiteralValue(b *testing.B) {
 		{"surrogate continuation", strings.Repeat(`\uD83D`+"\\\n"+`\uDE00`, 64)},
 	} {
 		b.Run(tc.name, func(b *testing.B) {
-			literal := &typescript.NoSubstitutionTemplateLiteral{TNode: typescript.TNode[string]{Value: "`" + tc.body + "`"}}
+			literal := &types.NoSubstitutionTemplateLiteral{TNode: types.TNode[string]{Value: "`" + tc.body + "`"}}
 			b.SetBytes(int64(len(tc.body)))
 			b.ReportAllocs()
 			for b.Loop() {

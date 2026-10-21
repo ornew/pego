@@ -26,25 +26,39 @@ import (
 // An Error node (left by #recover) where a struct type is expected becomes nil; it is
 // reported among the SyntaxErrors anyway.
 
-// typedGo returns the Go source of the typed values for a parser starting at rule start, and
-// the name of the helper type Span. Unless conv is set, ParseAST runs the typed runtime
-// (runtime/typed.go) when every value it can produce has a Go type of its own; otherwise it converts
-// the result of Parse.
-func (g *generator) typedGo(start *rule, conv bool) (string, string, error) {
+// typedOutput is the Go source of the typed values of a generated parser: the part of the parser
+// package, and the types package (types/types.go) that declares the types and the methods that make
+// them values of the typed runtime.
+type typedOutput struct {
+	parser, types string
+}
+
+// typedGo returns the Go source of the typed values for a parser starting at rule start. Unless conv
+// is set, ParseAST runs the typed runtime (runtime/typed.go) when every value it can produce has a Go
+// type of its own; otherwise it converts the result of Parse.
+//
+// The source of the types package refers to the runtime by its package name and to the types by
+// their names; that of the parser package refers to the types of the grammar as types.Name, and the
+// names that only the types package declares (Error, TNode, Unit, TupleN, PegoHooks) unqualified,
+// which qualifyRuntime resolves.
+func (g *generator) typedGo(start *rule, conv bool) (typedOutput, error) {
 	info := g.prog.typed
 	if info == nil {
-		return "", "", fmt.Errorf("typed values need the grammar's types (type checking did not run)")
+		return typedOutput{}, fmt.Errorf("typed values need the grammar's types (type checking did not run)")
 	}
-	t := &typedGen{g: g, info: info, names: map[string]string{}, joins: map[string]string{}, lists: map[string]string{}, tlists: map[string]string{}, tupleSizes: map[int]bool{}}
+	t := &typedGen{g: g, info: info, joins: map[string]string{}, lists: map[string]string{}, tlists: map[string]string{}, tupleSizes: map[int]bool{}}
 	t.valueResolver = newValueResolver(g.prog, func(x ty) bool { _, ok := t.joins[x.String()]; return ok })
-	t.name()
-	g.typedSpan = t.span
-	ruleType := t.ruleType
-	var b, entries, named strings.Builder
-	t.decls(&b)
-	t.valueMethods(&b)
-	for helpers := 0; t.backHelpers(&b, &helpers); {
+	if err := t.name(); err != nil {
+		return typedOutput{}, err
 	}
+	ruleType := t.ruleType
+	var b, tb, entries, named strings.Builder
+	t.inTypes = true
+	t.decls(&tb)
+	t.valueMethods(&tb)
+	for helpers := 0; t.backHelpers(&tb, &helpers); {
+	}
+	t.inTypes = false
 	doc := `// ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
 // from errors, the result is returned together with SyntaxErrors; an Error node where a struct
 // type is expected becomes nil.
@@ -109,7 +123,7 @@ func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
 		needNodes = true
 		v, ok := streamValue(g.prog, r.def)
 		if !ok {
-			return "", "", fmt.Errorf("internal error: no element type for the #stream repetition of %s", r.name)
+			return typedOutput{}, fmt.Errorf("internal error: no element type for the #stream repetition of %s", r.name)
 		}
 		et := t.resolveValue(v)
 		result := t.conv(et, "n")
@@ -240,22 +254,24 @@ func (d *Document) ParseAST(opts ...ParseOption) (%s, error) {
 	}
 	if len(t.nodeTypes) > 0 {
 		// Registered by tinit when the typed runtime is used; the value helpers compare with it.
-		fmt.Fprintf(&b, "// tnt holds the registered indexes of the named node types (tregisterNodeType) by their\n// generated index; index 0 is no named node type.\nvar tnt [%d]uint16\n\n", len(t.nodeTypes)+1)
+		fmt.Fprintf(&tb, "// %[1]s holds the registered indexes of the named node types by their generated index; index 0\n// is no named node type. It is for generated parsers.\nvar %[1]s [%[2]d]uint16\n\n", nodeTypesName, len(t.nodeTypes)+1)
 	}
-	t.tupleDecls(&b)
+	t.tupleDecls(&tb)
 	b.WriteString(entries.String())
 	b.WriteString(named.String())
-	return b.String(), t.span, nil
+	if err := t.checkTypesNames(); err != nil {
+		return typedOutput{}, err
+	}
+	return typedOutput{parser: b.String(), types: tb.String()}, nil
 }
 
 type typedGen struct {
 	g    *generator
 	info *typeInfo
-	// names maps grammar type names to Go type names, and span is the Go name of the helper type
-	// Span; joins maps the written form of a join type to the Go name of the alias that declares
-	// it.
-	names map[string]string
-	span  string
+	// inTypes is set while the source of the types package is written, where the types of the
+	// grammar are named without a qualifier.
+	inTypes bool
+	// joins maps the written form of a join type to the name of the alias that declares it.
 	joins map[string]string
 	// lists maps the Go type of a list to the name of its converter (from nodes); tlists, to the
 	// name of its converter from values of the typed runtime.
@@ -264,7 +280,7 @@ type typedGen struct {
 	tlists     map[string]string
 	tlistOrder []listConv
 	// fieldNames maps grammar field names to Go field names, which differ only for the names of
-	// the methods of typed values (runtimeMethodNames).
+	// the methods and the embedded field of typed values (runtimeMethodNames).
 	fieldNames  map[string]string
 	structs     []string // struct type names, sorted
 	nodeTypes   []string // named node type names, sorted
@@ -286,11 +302,62 @@ type listConv struct {
 }
 
 // runtimeMethodNames are the methods the generated structs have for the typed runtime (TVal and
-// the embedded Span, with its Range); a field of the same name gets a "_" suffix in Go.
+// the embedded Span, with its Range) and the name of the embedded Span; a field of the same name
+// gets a "_" suffix in Go.
 var runtimeMethodNames = map[string]bool{
 	"TName": true, "TText": true, "TKids": true, "TStruct": true, "TFresh": true, "TSetFresh": true,
 	"TField": true, "TFieldWork": true, "TStrField": true, "TSpan": true, "TSetSpan": true, "Range": true,
+	"Span": true,
 }
+
+// hooksName is the name of the variable of the types package that makes the values of the types
+// package from those the typed runtime builds, and back.
+const hooksName = "PegoHooks"
+
+// nodeTypesName is the name of the variable of the types package that holds the registered indexes
+// of the named node types.
+const nodeTypesName = "PegoNodeTypes"
+
+// checkTypesNames rejects a type of the grammar that has the name of a type the types package
+// declares for the typed values: TNode, the tuple types and Unit that the output uses, and the
+// hooks variable. (Error is a reserved type name of the grammar language.)
+func (t *typedGen) checkTypesNames() error {
+	declared := map[string]string{"TNode": "string nodes and nodes of other values", hooksName: "the typed runtime"}
+	if len(t.nodeTypes) > 0 {
+		declared[nodeTypesName] = "the named node types"
+	}
+	if t.unitUsed {
+		declared["Unit"] = "the empty tuple"
+	}
+	for n := range t.tupleSizes {
+		declared[fmt.Sprintf("Tuple%d", n)] = fmt.Sprintf("tuples of %d elements", n)
+	}
+	var names []string
+	for name := range t.g.prog.types {
+		if _, ok := declared[name]; ok {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	if len(names) > 0 {
+		return fmt.Errorf("the type %s has the name of a type that the generated types package declares for %s; rename the type", names[0], declared[names[0]])
+	}
+	return nil
+}
+
+// ref returns the name of the type of the grammar (or the alias, or the struct of a join) with the
+// Go name name, as the code being written refers to it.
+func (t *typedGen) ref(name string) string {
+	if t.inTypes {
+		return name
+	}
+	return typesAlias + "." + name
+}
+
+// convName returns the name of the converter method for the type name. The prefix keeps the
+// names apart from those of the converters of the nodes and values that the generator names
+// itself (toNode, toMatch, toOpen, ...).
+func convName(name string) string { return "toType" + name }
 
 // fieldGo returns the Go name of the struct field with the grammar name name.
 func (t *typedGen) fieldGo(name string) string {
@@ -300,26 +367,15 @@ func (t *typedGen) fieldGo(name string) string {
 	return name
 }
 
-// name assigns Go names: grammar type names stay unless they clash with a name the generated
-// package declares (then "_" is appended), and the helper type Span gets a name no type or field uses.
-func (t *typedGen) name() {
-	used := map[string]bool{}
-	for n := range t.g.reserved {
-		used[n] = true
-	}
+// name classifies the types of the grammar. They keep their names as Go type names: the types
+// package declares no other names than checkTypesNames rejects. Field names stay, too, unless
+// they are the name of a method or of the embedded field of a typed value.
+func (t *typedGen) name() error {
 	var all []string
 	for name := range t.g.prog.types {
 		all = append(all, name)
 	}
 	sort.Strings(all)
-	for _, name := range all {
-		goName := name
-		for used[goName] || tupleName(goName) {
-			goName += "_"
-		}
-		used[goName] = true
-		t.names[name] = goName
-	}
 	for _, name := range all {
 		switch spec := t.g.prog.types[name].(type) {
 		case *grammar.TypeDef:
@@ -328,13 +384,10 @@ func (t *typedGen) name() {
 				continue
 			}
 			t.structs = append(t.structs, name)
-			for _, f := range t.info.fields[name] {
-				used[f.name] = true
-			}
 		case *grammar.TypeAlias:
 			if u, ok := t.info.aliases[name].(joinTy); ok && t.nodeJoin(u) {
 				if _, dup := t.joins[u.String()]; !dup {
-					t.joins[u.String()] = t.names[name]
+					t.joins[u.String()] = name
 					t.aliases = append(t.aliases, name)
 					continue
 				}
@@ -357,11 +410,7 @@ func (t *typedGen) name() {
 		}
 		t.fieldNames[name] = goName
 	}
-	span := "Span"
-	for used[span] {
-		span += "_"
-	}
-	t.span = span // a field of its own: a grammar type may be named Span
+	return nil
 }
 
 // nodeJoin reports whether every member of the join is a node type (so it can be an interface).
@@ -406,7 +455,7 @@ func (t *typedGen) goType(x ty) string {
 		return t.tupleType(x)
 	case nodeTy:
 		if x.name != "" {
-			return "*" + t.names[x.name]
+			return "*" + t.ref(x.name)
 		}
 		if x.value == tyTop || x.value == tyAny {
 			return "*TNode[any]"
@@ -421,7 +470,7 @@ func (t *typedGen) goType(x ty) string {
 		case x.kind == 'c':
 			return "*TNode[any]"
 		}
-		return "*" + t.names[x.name]
+		return "*" + t.ref(x.name)
 	case listTy:
 		return "[]" + t.goType(x.elem)
 	case optTy:
@@ -434,7 +483,7 @@ func (t *typedGen) goType(x ty) string {
 		return t.goType(x.elem)
 	case joinTy:
 		if name, ok := t.joins[x.String()]; ok {
-			return name
+			return t.ref(name)
 		}
 		if g, ok := t.joinGoType(x); ok {
 			return g
@@ -473,7 +522,7 @@ func (t *typedGen) conv(x ty, v string) string {
 	case nodeTy:
 		switch {
 		case x.name != "":
-			return "a.to" + t.names[x.name] + "(astNode(" + v + "))"
+			return "a." + convName(x.name) + "(astNode(" + v + "))"
 		case x.value == tyTop || x.value == tyAny:
 			return "a.toNode(astNode(" + v + "))"
 		case x.value == tyString && len(x.caps) == 0:
@@ -489,7 +538,7 @@ func (t *typedGen) conv(x ty, v string) string {
 		case x.kind == 'c':
 			return "a.toNode(astNode(" + v + "))"
 		}
-		return "a.to" + t.names[x.name] + "(astNode(" + v + "))"
+		return "a." + convName(x.name) + "(astNode(" + v + "))"
 	case listTy:
 		goType := t.goType(x)
 		name, ok := t.lists[goType]
@@ -509,7 +558,7 @@ func (t *typedGen) conv(x ty, v string) string {
 		return t.conv(x.elem, v)
 	case joinTy:
 		if name, ok := t.joins[x.String()]; ok {
-			return "a.to" + name + "(astNode(" + v + "))"
+			return "a." + convName(name) + "(astNode(" + v + "))"
 		}
 		if _, ok := t.joinGoType(x); ok {
 			return t.conv(x.alts[0], v)
@@ -523,11 +572,9 @@ func (t *typedGen) conv(x ty, v string) string {
 
 // decls writes the type declarations.
 func (t *typedGen) decls(b *strings.Builder) {
-	span := t.span
-	b.WriteString("// --- Typed values (pego gen -types; Span, TNode and Error are aliases of the runtime types) ---\n\n")
 	for _, name := range t.structs {
-		fmt.Fprintf(b, "// %s is the struct type %s.\n", t.names[name], name)
-		fmt.Fprintf(b, "type %s struct {\n\t%s\n", t.names[name], span)
+		fmt.Fprintf(b, "// %s is the struct type %s.\n", name, name)
+		fmt.Fprintf(b, "type %s struct {\n\t%s.Span\n", name, runtimeAlias)
 		for _, f := range t.info.fields[name] {
 			fmt.Fprintf(b, "\t%s %s\n", t.fieldGo(f.name), t.goType(f.t))
 		}
@@ -535,31 +582,31 @@ func (t *typedGen) decls(b *strings.Builder) {
 	}
 	for _, name := range t.nodeTypes {
 		n, _ := t.g.prog.nodeTypeOf(name)
-		fmt.Fprintf(b, "// %s is the node type %s = %s.\n", t.names[name], name, n.underlying())
-		fmt.Fprintf(b, "type %s struct{ %s }\n\n", t.names[name], strings.TrimPrefix(t.goType(n.underlying()), "*"))
+		fmt.Fprintf(b, "// %s is the node type %s = %s.\n", name, name, n.underlying())
+		fmt.Fprintf(b, "type %s struct{ %s }\n\n", name, strings.TrimPrefix(t.goType(n.underlying()), "*"))
 	}
 	for _, name := range t.typeAliases {
-		fmt.Fprintf(b, "// %s is the alias type %s ~ %s.\n", t.names[name], name, t.info.aliases[name])
-		fmt.Fprintf(b, "type %s = %s\n\n", t.names[name], t.goType(t.info.aliases[name]))
+		fmt.Fprintf(b, "// %s is the alias type %s ~ %s.\n", name, name, t.info.aliases[name])
+		fmt.Fprintf(b, "type %s = %s\n\n", name, t.goType(t.info.aliases[name]))
 	}
 	// Joins: an interface with a marker method that each member (and Error) implements.
 	impl := map[string][]string{} // Go type (without *) -> markers
 	for _, name := range t.aliases {
 		u := t.info.aliases[name].(joinTy)
-		goName := t.names[name]
+		goName := name
 		fmt.Fprintf(b, "// %s is the join type %s ~ %s. Error (left by #recover) also implements it.\n", goName, name, u)
 		fmt.Fprintf(b, "type %s interface{ is%s() }\n\n", goName, goName)
 		members := map[string]bool{"Error": true}
 		for _, a := range u.alts {
 			if n, ok := a.(nodeTy); ok && n.name != "" {
-				members[t.names[n.name]] = true
+				members[n.name] = true
 			}
 			if n, ok := a.(namedTy); ok {
 				switch {
 				case n == tyMatch:
 					members["TNode"] = true
 				case n.kind == 's':
-					members[t.names[n.name]] = true
+					members[n.name] = true
 				}
 			}
 		}
@@ -592,7 +639,7 @@ func (t *typedGen) decls(b *strings.Builder) {
 // converters writes the converter type and its methods. The converter allocates typed values of
 // each type, and the elements of lists, in chunks, as the parser does nodes.
 func (t *typedGen) converters(b *strings.Builder) {
-	span := t.span
+	span := "Span"
 	fmt.Fprintf(b, `// toMatch converts a string node, also one of a named node type, which converts as the node it
 // was converted from. The typed value of a named node type's node is remembered by its own
 // converter, so the typed value as a plain node is not remembered.
@@ -662,16 +709,16 @@ func (a *astConv) toError(n *Node) *Error {
 	b.WriteString("// anyValue converts a value of a statically unknown type into the typed value of its type (tuple\n// and list nodes become TNode[any], and tuple and list values []any).\nfunc (a *astConv) anyValue(v any) any {\n\ta.stepWork()\n\tn, ok := v.(*Node)\n\tif !ok {\n\t\treturn v\n\t}\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type() {\n")
 	b.WriteString("\tcase \"string\":\n\t\treturn a.toMatch(n)\n\tcase \"error\":\n\t\treturn a.toError(n)\n\tcase \"tuple\", \"list\":\n\t\treturn a.toNode(n)\n\tcase \"(box)\":\n\t\treturn a.anyValue(UnboxNode(n))\n\tcase \"(tuple)\", \"(list)\":\n\t\treturn a.elems(n)\n")
 	for _, name := range append(append([]string(nil), t.structs...), t.nodeTypes...) {
-		fmt.Fprintf(b, "\tcase %q:\n\t\treturn a.to%s(n)\n", name, t.names[name])
+		fmt.Fprintf(b, "\tcase %q:\n\t\treturn a.%s(n)\n", name, convName(name))
 	}
 	b.WriteString("\t}\n\treturn n\n}\n\n")
 	for _, name := range t.nodeTypes {
 		// A node of a named node type converts as the node it was converted from (baseNode).
 		n, _ := t.g.prog.nodeTypeOf(name)
-		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tu := %[3]s\n\tif u == nil {\n\t\treturn nil\n\t}\n\tv := &%[1]s{*u}\n\ta.remember(n, v)\n\treturn v\n}\n\n", t.names[name], name, t.conv(n.underlying(), "n.BaseNode()"))
+		fmt.Fprintf(b, "func (a *astConv) %[4]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tu := %[3]s\n\tif u == nil {\n\t\treturn nil\n\t}\n\tv := &%[1]s{*u}\n\ta.remember(n, v)\n\treturn v\n}\n\n", t.ref(name), name, t.conv(n.underlying(), "n.BaseNode()"), convName(name))
 	}
 	for _, name := range t.structs {
-		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tv := astNew(&a.t%[1]s)\n\ta.remember(n, v)\n\tv.%[3]s = %[3]s{Start: int(n.RawStart), End: int(n.RawEnd)}\n", t.names[name], name, span)
+		fmt.Fprintf(b, "func (a *astConv) %[4]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tv := astNew(&a.t%[5]s)\n\ta.remember(n, v)\n\tv.%[3]s = %[3]s{Start: int(n.RawStart), End: int(n.RawEnd)}\n", t.ref(name), name, span, convName(name), name)
 		if len(t.info.fields[name]) > 0 {
 			// Fields are set in the order the action set them; look each one up.
 			for _, f := range t.info.fields[name] {
@@ -682,18 +729,17 @@ func (a *astConv) toError(n *Node) *Error {
 	}
 	for _, name := range t.aliases {
 		u := t.info.aliases[name].(joinTy)
-		goName := t.names[name]
-		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) %[1]s {\n\ta.stepWork()\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type() {\n\tcase \"error\":\n\t\treturn a.toError(n)\n", goName)
+		fmt.Fprintf(b, "func (a *astConv) %s(n *Node) %s {\n\ta.stepWork()\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type() {\n\tcase \"error\":\n\t\treturn a.toError(n)\n", convName(name), t.ref(name))
 		for _, m := range u.alts {
 			if m, ok := m.(nodeTy); ok && m.name != "" {
-				fmt.Fprintf(b, "\tcase %q:\n\t\treturn a.to%s(n)\n", m.name, t.names[m.name])
+				fmt.Fprintf(b, "\tcase %q:\n\t\treturn a.%s(n)\n", m.name, convName(m.name))
 			}
 			if m, ok := m.(namedTy); ok {
 				switch {
 				case m == tyMatch:
 					b.WriteString("\tcase \"string\":\n\t\treturn a.toMatch(n)\n")
 				case m.kind == 's':
-					fmt.Fprintf(b, "\tcase %q:\n\t\treturn a.to%s(n)\n", m.name, t.names[m.name])
+					fmt.Fprintf(b, "\tcase %q:\n\t\treturn a.%s(n)\n", m.name, convName(m.name))
 				}
 			}
 		}
@@ -722,7 +768,7 @@ func (a *astConv) toError(n *Node) *Error {
 	// values per type and of elements per list type.
 	b.WriteString("// astConv converts nodes into typed values.\ntype astConv struct {\n\tcontrol *WorkControl\n\tvalues map[*Node]any // preserve aliases when one node appears in multiple fields or lists\n\tmatch astChunk[TNode[string]]\n\terror astChunk[Error]\n")
 	for _, name := range t.structs {
-		fmt.Fprintf(b, "\tt%s astChunk[%s]\n", t.names[name], t.names[name])
+		fmt.Fprintf(b, "\tt%s astChunk[%s]\n", name, t.ref(name))
 	}
 	for _, l := range t.listOrder {
 		fmt.Fprintf(b, "\t%sChunk astChunk[%s]\n", l.name, t.goType(l.elem))
@@ -928,7 +974,7 @@ func (t *typedGen) representable(x ty) bool {
 // runtime (tval).
 func (t *typedGen) valueMethods(b *strings.Builder) {
 	for _, name := range t.structs {
-		g := t.names[name]
+		g := name
 		fmt.Fprintf(b, "func (v *%[1]s) TName() string { return %[2]q }\nfunc (v *%[1]s) TText() (string, bool) { return \"\", false }\n", g, name)
 		fmt.Fprintf(b, "func (v *%[1]s) TKids() []any { return nil }\nfunc (v *%[1]s) TStruct() bool { return true }\n", g)
 		fmt.Fprintf(b, "func (v *%[1]s) TFresh() bool { return false }\nfunc (v *%[1]s) TSetFresh(bool) {}\n", g)
@@ -954,7 +1000,7 @@ func (t *typedGen) valueMethods(b *strings.Builder) {
 			}
 			b.WriteString("\t}\n\treturn \"\", false\n}\n\n")
 		}
-		fmt.Fprintf(b, "func (v *%s) TFieldWork(p *TParser, name string) (any, bool) {\n\tswitch name {\n", g)
+		fmt.Fprintf(b, "func (v *%s) TFieldWork(p *"+runtimeAlias+".TParser, name string) (any, bool) {\n\tswitch name {\n", g)
 		for _, f := range t.info.fields[name] {
 			if t.representable(f.t) {
 				fmt.Fprintf(b, "\tcase %q:\n\t\treturn %s, true\n", f.name, t.backWork(f.t, "v."+t.fieldGo(f.name)))
@@ -967,41 +1013,42 @@ func (t *typedGen) valueMethods(b *strings.Builder) {
 }
 
 // back returns a Go expression converting x, an expression of the Go type of type ty, into a
-// value of the typed runtime.
+// value of the typed runtime. It is written in the types package.
 func (t *typedGen) back(x ty, v string) string {
+	back := func(v string) string { return runtimeAlias + ".TBack(" + hooksName + ", " + v + ")" }
 	switch x := x.(type) {
 	case basicTy:
 		if x == tyInt || x == tyString || x == tyBool {
 			return "any(" + v + ")"
 		}
-		return "TBack(tpubHooks, " + v + ")"
+		return back(v)
 	case namedTy:
 		if x.kind == 's' {
-			return "TPtr(" + v + ")"
+			return runtimeAlias + ".TPtr(" + v + ")"
 		}
-		return "TBack(tpubHooks, " + v + ")"
+		return back(v)
 	case recordTy, joinTy:
-		return "TBack(tpubHooks, " + v + ")"
+		return back(v)
 	case nodeTy:
 		if x.name != "" {
 			return t.backHelper(x) + "(" + v + ")"
 		}
 		if x.value == tyString || x.value == tyTop || x.value == tyAny {
-			return "TBack(tpubHooks, " + v + ")"
+			return back(v)
 		}
 		return t.backHelper(x) + "(" + v + ")"
 	case tupleTy, vrule:
 		return t.backHelper(x) + "(" + v + ")"
 	case optTy:
 		if b, ok := x.elem.(basicTy); ok && (b == tyInt || b == tyString || b == tyBool) {
-			return "TDeref(" + v + ")"
+			return runtimeAlias + ".TDeref(" + v + ")"
 		}
 		if _, ok := x.elem.(tupleTy); ok {
 			return t.backHelper(x) + "(" + v + ")"
 		}
 		return t.back(x.elem, v)
 	case listTy:
-		return fmt.Sprintf("func() any { if %[1]s == nil { return nil }; kids := make([]any, len(%[1]s)); for i, x := range %[1]s { kids[i] = %[2]s }; return TListOf(kids) }()", v, t.back(x.elem, "x"))
+		return fmt.Sprintf("func() any { if %[1]s == nil { return nil }; kids := make([]any, len(%[1]s)); for i, x := range %[1]s { kids[i] = %[2]s }; return %[3]s.TListOf(kids) }()", v, t.back(x.elem, "x"), runtimeAlias)
 	}
 	return "nil"
 }
@@ -1103,34 +1150,34 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 // chunks a and remembered there (tpubIn), so that a node converts to one value everywhere.
 func (t *typedGen) tpub(v, a string) string {
 	if len(t.nodeTypes) == 0 {
-		return "TPubIn(tpubHooks, nil, " + v + ")"
+		return "TPubIn(" + hooksName + ", nil, " + v + ")"
 	}
-	return "TPubIn(tpubHooks, " + a + ", " + v + ")"
+	return "TPubIn(" + hooksName + ", " + a + ", " + v + ")"
 }
 
 // tpubNode is tpub for the runtime's tpubNode.
 func (t *typedGen) tpubNode(v, a string) string {
 	if len(t.nodeTypes) == 0 {
-		return "(*TNode[any])(TPubNodeIn(tpubHooks, nil, " + v + "))"
+		return "(*TNode[any])(TPubNodeIn(" + hooksName + ", nil, " + v + "))"
 	}
-	return "(*TNode[any])(TPubNodeIn(tpubHooks, " + a + ", " + v + "))"
+	return "(*TNode[any])(TPubNodeIn(" + hooksName + ", " + a + ", " + v + "))"
 }
 
 // typedRuntime writes the constructors of the struct types and the list converters
 // of the typed runtime, and the chunks they allocate from.
 func (t *typedGen) typedRuntime(b *strings.Builder) {
-	span := t.span
+	span := "Span"
 	var reg strings.Builder
 	if len(t.nodeTypes) > 0 {
 		// The public forms of the nodes of the named node types, and their registration
-		// (tnt holds the registered indexes, nt, by the generated index).
+		// (nodeTypesName holds the registered indexes, nt, by the generated index).
 		reg.WriteString("\ttnamedPub := func(a any, x TVal) any {\n\ts, _ := a.(*tslabs)\n\tif s == nil {\n\t\ts = &tslabs{}\n\t}\n\tswitch x.TName() {\n")
 		for _, name := range t.nodeTypes {
 			n, _ := t.g.prog.nodeTypeOf(name)
 			fmt.Fprintf(&reg, "\tcase %q:\n\t\treturn %s\n", name, t.dconv(n, "x", "s"))
 		}
 		reg.WriteString("\t}\n\treturn nil\n\t}\n")
-		fmt.Fprintf(&reg, "\tfor i, name := range %s {\n\t\ttnt[i+1] = TRegisterNodeType(name, tnamedPub)\n\t}\n", goStrings(t.nodeTypes))
+		fmt.Fprintf(&reg, "\tfor i, name := range %s {\n\t\t%s[i+1] = TRegisterNodeType(name, tnamedPub)\n\t}\n", goStrings(t.nodeTypes), nodeTypesName)
 	}
 	for _, r := range append(append([]*rule(nil), t.g.prog.rules...), t.g.prog.twins...) {
 		if r.opNodeType != "" {
@@ -1142,13 +1189,12 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 	}
 	var cons strings.Builder
 	for _, name := range t.structs {
-		g := t.names[name]
 		fields := t.info.fields[name]
 		params := []string{"c *TActCtx", "final bool"}
 		for i := range fields {
 			params = append(params, fmt.Sprintf("f%d any", i))
 		}
-		fmt.Fprintf(&cons, "// tmk_%s makes a %s in an action (newStruct in the typed runtime).\nfunc tmk_%s(%s) any {\n\tc.P.StepWork()\n\ta := c.P.Ext.(*tslabs)\n\tv := astNew(&a.t%s)\n", name, name, name, strings.Join(params, ", "), g)
+		fmt.Fprintf(&cons, "// tmk_%s makes a %s in an action (newStruct in the typed runtime).\nfunc tmk_%s(%s) any {\n\tc.P.StepWork()\n\ta := c.P.Ext.(*tslabs)\n\tv := astNew(&a.t%s)\n", name, name, name, strings.Join(params, ", "), name)
 		for i, f := range fields {
 			fmt.Fprintf(&cons, "\tc.P.StepWork()\n\tv.%s = %s\n", t.fieldGo(f.name), t.dconv(f.t, fmt.Sprintf("f%d", i), "a"))
 		}
@@ -1177,7 +1223,7 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 	b.WriteString(convs.String())
 	b.WriteString("// tslabs holds the chunks the typed values of a parse are allocated from.\ntype tslabs struct {\n\tcontrol *WorkControl\n")
 	for _, name := range t.structs {
-		fmt.Fprintf(b, "\tt%s astChunk[%s]\n", t.names[name], t.names[name])
+		fmt.Fprintf(b, "\tt%s astChunk[%s]\n", name, t.ref(name))
 	}
 	// The public forms of tuple and list nodes of named node types are made from chunks and
 	// remembered by their values; string nodes are their own public forms (tmatchAs).
@@ -1190,7 +1236,7 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 	if len(remembered) > 0 {
 		b.WriteString("\t// named holds the public forms of the tuple and list nodes of named node types by their values.\n\tnamed map[any]any\n")
 		for _, name := range remembered {
-			fmt.Fprintf(b, "\tt%s astChunk[%s]\n", t.names[name], t.names[name])
+			fmt.Fprintf(b, "\tt%s astChunk[%s]\n", name, t.ref(name))
 		}
 	}
 	for _, l := range t.tlistOrder {

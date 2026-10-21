@@ -6,6 +6,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/ornew/pego/parsers/cue/types"
 )
 
 // A SemanticError is an error that the syntax does not show, found after parsing: a name declared twice in a
@@ -36,20 +38,20 @@ func (e *SemanticError) Error() string {
 // an alias of the same scope, a field with both a label alias and a postfix alias, an alias that is the
 // blank identifier, and a reference in a pattern constraint to a field of its struct. Of the errors, it
 // returns the first in the order of the source, a *SemanticError.
-func (f *File) Check() error {
+func Check(f *types.File) error {
 	c := &checker{}
 	c.experiments(f)
 	for _, d := range f.Decls {
-		if x, ok := d.(*ImportDecl); ok {
+		if x, ok := d.(*types.ImportDecl); ok {
 			for _, spec := range x.Specs {
-				if !isValidImport(spec.Path.Text) {
+				if !isValidImport(spec.Path) {
 					c.errf(spec.Path, "invalid import path: %s", spec.Path.Text)
 				}
 			}
 		}
 	}
 	inspect(f, func(n any) {
-		if x, ok := n.(*Interpolation); ok {
+		if x, ok := n.(*types.Interpolation); ok {
 			c.multiline(x)
 		}
 	})
@@ -75,8 +77,8 @@ func (f *File) Check() error {
 // is not empty starts with the white space that precedes the closing quotes. (The grammar checks the strings
 // without interpolations; for the others, a test in the grammar would make the recognizer build values.)
 // A line goes on after an interpolation, whose text is not part of it.
-func (c *checker) multiline(x *Interpolation) {
-	first, ok := x.Elts[0].(*String)
+func (c *checker) multiline(x *types.Interpolation) {
+	first, ok := x.Elts[0].(*types.String)
 	if !ok {
 		return
 	}
@@ -93,7 +95,7 @@ func (c *checker) multiline(x *Interpolation) {
 		if i > 0 {
 			b.WriteByte('x') // an interpolation
 		}
-		b.WriteString(x.Elts[i].(*String).Text)
+		b.WriteString(x.Elts[i].(*types.String).Text)
 	}
 	text := b.String()[n+3:]
 	nl := strings.IndexByte(text, '\n')
@@ -123,7 +125,7 @@ type scope struct {
 
 type entry struct {
 	node, link any
-	field      *Field // for a label alias of a pattern constraint
+	field      *types.Field // for a label alias of a pattern constraint
 }
 
 type checker struct {
@@ -134,40 +136,40 @@ func (c *checker) errf(n any, format string, args ...any) {
 	c.errs = append(c.errs, &SemanticError{Span: SpanOf(n), Msg: fmt.Sprintf(format, args...)})
 }
 
-func (c *checker) newScope(outer *scope, node any, decls []Decl) *scope {
+func (c *checker) newScope(outer *scope, node any, decls []types.Decl) *scope {
 	s := &scope{outer: outer, node: node, index: map[string]entry{}}
 	c.fill(s, decls)
 	return s
 }
 
 // fill declares the names of the declarations of a file or struct.
-func (c *checker) fill(s *scope, decls []Decl) {
+func (c *checker) fill(s *scope, decls []types.Decl) {
 	for _, d := range decls {
 		switch x := d.(type) {
-		case *Field:
-			if a, ok := x.Label.(*Alias); ok {
-				if _, isList := a.Expr.(*ListLit); !isList {
+		case *types.Field:
+			if a, ok := x.Label.(*types.Alias); ok {
+				if _, isList := a.Expr.(*types.ListLit); !isList {
 					c.insert(s, a.Ident.Value, x, a, nil)
 				}
 				if x.Alias != nil {
 					c.errf(x, "field has both label alias and postfix alias")
 				}
 			}
-			if _, isPattern := x.Label.(*ListLit); !isPattern && x.Alias != nil {
+			if _, isPattern := x.Label.(*types.ListLit); !isPattern && x.Alias != nil {
 				c.insertPostfixAliases(s, x, x.Alias.Label)
 			}
 			if name, ok := labelName(x.Label); ok {
 				v := x.Value
-				if a, ok := v.(*Alias); ok {
+				if a, ok := v.(*types.Alias); ok {
 					v = a.Expr
 				}
 				c.insert(s, name, v, x, nil)
 			}
-		case *LetClause:
+		case *types.LetClause:
 			if name := x.Ident.Value; isValidIdent(name) {
 				c.insert(s, name, x, x, nil)
 			}
-		case *ImportDecl:
+		case *types.ImportDecl:
 			for _, spec := range x.Specs {
 				if name := importIdent(spec); name != "" {
 					c.insert(s, name, spec, spec, nil)
@@ -178,7 +180,7 @@ func (c *checker) fill(s *scope, decls []Decl) {
 }
 
 // importIdent returns the identifier that an import declares: its name, or the package qualifier of its path.
-func importIdent(spec *ImportSpec) string {
+func importIdent(spec *types.ImportSpec) string {
 	path, err := strconv.Unquote(spec.Path.Text)
 	if err != nil {
 		return ""
@@ -203,19 +205,19 @@ func importIdent(spec *ImportSpec) string {
 }
 
 // labelName returns the name of a label and whether it is an identifier (ast.LabelName).
-func labelName(l Label) (string, bool) {
-	if a, ok := l.(*Alias); ok {
-		l, _ = a.Expr.(Label)
+func labelName(l types.Label) (string, bool) {
+	if a, ok := l.(*types.Alias); ok {
+		l, _ = a.Expr.(types.Label)
 	}
 	switch n := l.(type) {
-	case *Ident:
+	case *types.Ident:
 		if !isValidIdent(n.Value) {
 			return "", false
 		}
 		return n.Value, true
-	case *Bool:
+	case *types.Bool:
 		return n.TNode.Value, true
-	case *Null:
+	case *types.Null:
 		return n.Value, true
 	}
 	return "", false
@@ -258,14 +260,14 @@ func isDigitRune(ch rune) bool {
 
 // isLet reports whether a declaration is an alias or let clause rather than a field (scope.isLet).
 func (s *scope) isLet(n, link any) bool {
-	if _, ok := s.node.(*Field); ok {
+	if _, ok := s.node.(*types.Field); ok {
 		return true
 	}
-	if _, ok := link.(*PostfixAlias); ok {
+	if _, ok := link.(*types.PostfixAlias); ok {
 		return true
 	}
 	switch n.(type) {
-	case *LetClause, *TryClause, *Alias, *Field:
+	case *types.LetClause, *types.TryClause, *types.Alias, *types.Field:
 		return true
 	}
 	return false
@@ -273,14 +275,14 @@ func (s *scope) isLet(n, link any) bool {
 
 // mustBeUnique reports whether the name of a declaration may be declared once in its scope.
 func (s *scope) mustBeUnique(n, link any) bool {
-	if _, ok := s.node.(*Field); ok {
+	if _, ok := s.node.(*types.Field); ok {
 		return true
 	}
-	if _, ok := link.(*PostfixAlias); ok {
+	if _, ok := link.(*types.PostfixAlias); ok {
 		return true
 	}
 	switch n.(type) {
-	case *ImportSpec, *LetClause, *TryClause, *Alias, *Field:
+	case *types.ImportSpec, *types.LetClause, *types.TryClause, *types.Alias, *types.Field:
 		return true
 	}
 	return false
@@ -298,7 +300,7 @@ func (s *scope) lookup(name string) (*scope, entry, bool) {
 	return nil, entry{}, false
 }
 
-func (c *checker) insert(s *scope, name string, n, link any, f *Field) {
+func (c *checker) insert(s *scope, name string, n, link any, f *types.Field) {
 	if name == "" {
 		return
 	}
@@ -308,7 +310,7 @@ func (c *checker) insert(s *scope, name string, n, link any, f *Field) {
 			return
 		} else if s.mustBeUnique(n, link) || outer.mustBeUnique(existing.node, existing.link) {
 			if outer == s {
-				if _, ok := existing.node.(*ImportSpec); ok {
+				if _, ok := existing.node.(*types.ImportSpec); ok {
 					return
 				}
 				c.errf(n, "alias %q redeclared in same scope", name)
@@ -319,7 +321,7 @@ func (c *checker) insert(s *scope, name string, n, link any, f *Field) {
 	s.index[name] = entry{n, link, f}
 }
 
-func (c *checker) insertPostfixAliases(s *scope, x *Field, expr any) {
+func (c *checker) insertPostfixAliases(s *scope, x *types.Field, expr any) {
 	a := x.Alias
 	if a == nil {
 		return
@@ -350,20 +352,20 @@ func (c *checker) insertPostfixAliases(s *scope, x *Field, expr any) {
 func (c *checker) walk(s *scope, n any) {
 	switch x := n.(type) {
 	case nil:
-	case *StructLit:
+	case *types.StructLit:
 		inner := c.newScope(s, x, x.Elts)
 		for _, e := range x.Elts {
 			c.walk(inner, e)
 		}
-	case *Comprehension:
+	case *types.Comprehension:
 		inner := c.scopeClauses(s, x.Clauses)
 		c.walk(inner, x.Value)
 		if x.Fallback != nil {
 			c.walk(s, x.Fallback.Body)
 		}
-	case *Field:
+	case *types.Field:
 		c.walkField(s, x)
-	case *LetClause:
+	case *types.LetClause:
 		name := x.Ident.Value
 		saved := s.index[name]
 		delete(s.index, name)
@@ -371,32 +373,32 @@ func (c *checker) walk(s *scope, n any) {
 		c.walk(s, x.Expr)
 		s.inField = false
 		s.index[name] = saved
-	case *Alias:
+	case *types.Alias:
 		name := x.Ident.Value
 		saved := s.index[name]
 		delete(s.index, name)
 		c.walk(s, x.Expr)
 		s.index[name] = saved
-	case *ImportDecl:
-	case *SelectorExpr:
+	case *types.ImportDecl:
+	case *types.SelectorExpr:
 		c.walk(s, x.X)
 	default:
 		eachChild(n, func(ch any) { c.walk(s, ch) })
 	}
 }
 
-func (c *checker) walkField(s *scope, x *Field) {
+func (c *checker) walkField(s *scope, x *types.Field) {
 	var n any = x.Label
-	alias, hasAlias := x.Label.(*Alias)
+	alias, hasAlias := x.Label.(*types.Alias)
 	if hasAlias {
 		n = alias.Expr
 	}
 	switch label := n.(type) {
-	case *ParenExpr:
+	case *types.ParenExpr:
 		c.walk(s, label)
-	case *Interpolation:
+	case *types.Interpolation:
 		c.walk(s, label)
-	case *ListLit:
+	case *types.ListLit:
 		if len(label.Elts) != 1 {
 			break
 		}
@@ -407,7 +409,7 @@ func (c *checker) walkField(s *scope, x *Field) {
 			}
 		}
 		expr := label.Elts[0]
-		if a, ok := expr.(*Alias); ok {
+		if a, ok := expr.(*types.Alias); ok {
 			if x.Alias != nil {
 				c.errf(x, "pattern constraint has both label alias and postfix alias")
 			}
@@ -417,7 +419,7 @@ func (c *checker) walkField(s *scope, x *Field) {
 			c.insertPostfixAliases(s, x, expr)
 		}
 		inspect(expr, func(n any) {
-			if id, ok := n.(*Ident); ok {
+			if id, ok := n.(*types.Ident); ok {
 				for sc := s; sc != nil && !sc.inField; sc = sc.outer {
 					if _, ok := sc.index[id.Value]; ok {
 						c.errf(id, "reference %q in label expression refers to field against which it would be matched", id.Value)
@@ -429,7 +431,7 @@ func (c *checker) walkField(s *scope, x *Field) {
 	}
 	if x.Value != nil {
 		v := x.Value
-		if a, ok := v.(*Alias); ok {
+		if a, ok := v.(*types.Alias); ok {
 			s = c.newScope(s, x, nil)
 			c.insert(s, a.Ident.Value, a, x, nil)
 			v = a.Expr
@@ -440,27 +442,27 @@ func (c *checker) walkField(s *scope, x *Field) {
 	}
 }
 
-func (c *checker) scopeClauses(s *scope, clauses []Clause) *scope {
+func (c *checker) scopeClauses(s *scope, clauses []types.Clause) *scope {
 	for _, cl := range clauses {
 		switch x := cl.(type) {
-		case *ForClause:
+		case *types.ForClause:
 			c.walk(s, x.Source)
 			s = &scope{outer: s, node: x, index: map[string]entry{}}
 			if x.Key != nil {
 				c.insert(s, x.Key.Value, x.Key, x, nil)
 			}
 			c.insert(s, x.Value.Value, x.Value, x, nil)
-		case *LetClause:
+		case *types.LetClause:
 			c.walk(s, x.Expr)
 			s = &scope{outer: s, node: x, index: map[string]entry{}}
 			c.insert(s, x.Ident.Value, x.Ident, x, nil)
-		case *TryClause:
+		case *types.TryClause:
 			if x.Ident != nil {
 				c.walk(s, x.Expr)
 				s = &scope{outer: s, node: x, index: map[string]entry{}}
 				c.insert(s, x.Ident.Value, x.Ident, x, nil)
 			}
-		case *IfClause:
+		case *types.IfClause:
 			c.walk(s, x.Condition)
 		}
 	}
@@ -484,11 +486,11 @@ func eachChild(n any, f func(any)) {
 		}
 	}
 	switch x := n.(type) {
-	case *File:
+	case *types.File:
 		for _, d := range x.Decls {
 			add(d)
 		}
-	case *Field:
+	case *types.Field:
 		add(x.Label)
 		if x.Alias != nil {
 			add(x.Alias)
@@ -497,67 +499,67 @@ func eachChild(n any, f func(any)) {
 		for _, a := range x.Attrs {
 			add(a)
 		}
-	case *StructLit:
+	case *types.StructLit:
 		for _, e := range x.Elts {
 			add(e)
 		}
-	case *Interpolation:
+	case *types.Interpolation:
 		for _, e := range x.Elts {
 			add(e)
 		}
-	case *ListLit:
+	case *types.ListLit:
 		for _, e := range x.Elts {
 			add(e)
 		}
-	case *Ellipsis:
+	case *types.Ellipsis:
 		add(x.Type)
-	case *ParenExpr:
+	case *types.ParenExpr:
 		add(x.X)
-	case *SelectorExpr:
+	case *types.SelectorExpr:
 		add(x.X, x.Sel)
-	case *IndexExpr:
+	case *types.IndexExpr:
 		add(x.X, x.Index)
-	case *SliceExpr:
+	case *types.SliceExpr:
 		add(x.X, x.Low, x.High)
-	case *CallExpr:
+	case *types.CallExpr:
 		add(x.Fun)
 		for _, a := range x.Args {
 			add(a)
 		}
-	case *UnaryExpr:
+	case *types.UnaryExpr:
 		add(x.X)
-	case *BinaryExpr:
+	case *types.BinaryExpr:
 		add(x.X, x.Y)
-	case *PostfixExpr:
+	case *types.PostfixExpr:
 		add(x.X)
-	case *ImportSpec:
+	case *types.ImportSpec:
 		if x.Name != nil {
 			add(x.Name)
 		}
 		add(x.Path)
-	case *ImportDecl:
+	case *types.ImportDecl:
 		for _, s := range x.Specs {
 			add(s)
 		}
-	case *EmbedDecl:
+	case *types.EmbedDecl:
 		add(x.Expr)
 		if x.Alias != nil {
 			add(x.Alias)
 		}
-	case *LetClause:
+	case *types.LetClause:
 		add(x.Ident, x.Expr)
-	case *TryClause:
+	case *types.TryClause:
 		if x.Ident != nil {
 			add(x.Ident, x.Expr)
 		}
-	case *Alias:
+	case *types.Alias:
 		add(x.Ident, x.Expr)
-	case *PostfixAlias:
+	case *types.PostfixAlias:
 		if x.Label != nil {
 			add(x.Label)
 		}
 		add(x.Field)
-	case *Comprehension:
+	case *types.Comprehension:
 		for _, cl := range x.Clauses {
 			add(cl)
 		}
@@ -565,16 +567,16 @@ func eachChild(n any, f func(any)) {
 		if x.Fallback != nil {
 			add(x.Fallback)
 		}
-	case *Package:
+	case *types.Package:
 		add(x.Name)
-	case *ForClause:
+	case *types.ForClause:
 		if x.Key != nil {
 			add(x.Key)
 		}
 		add(x.Value, x.Source)
-	case *IfClause:
+	case *types.IfClause:
 		add(x.Condition)
-	case *FallbackClause:
+	case *types.FallbackClause:
 		add(x.Body)
 	}
 }
@@ -593,83 +595,83 @@ func inspect(n any, f func(any)) {
 // a value that is not a node.
 func SpanOf(x any) Span {
 	switch x := x.(type) {
-	case *File:
+	case *types.File:
 		return x.Span
-	case *Alias:
+	case *types.Alias:
 		return x.Span
-	case *Attribute:
+	case *types.Attribute:
 		return x.Span
-	case *BinaryExpr:
+	case *types.BinaryExpr:
 		return x.Span
-	case *Bool:
+	case *types.Bool:
 		return x.Span
-	case *Bottom:
+	case *types.Bottom:
 		return x.Span
-	case *CallExpr:
+	case *types.CallExpr:
 		return x.Span
-	case *Comprehension:
+	case *types.Comprehension:
 		return x.Span
-	case *Ellipsis:
+	case *types.Ellipsis:
 		return x.Span
-	case *EmbedDecl:
+	case *types.EmbedDecl:
 		return x.Span
-	case *FallbackClause:
+	case *types.FallbackClause:
 		return x.Span
-	case *Field:
+	case *types.Field:
 		return x.Span
-	case *Float:
+	case *types.Float:
 		return x.Span
-	case *ForClause:
+	case *types.ForClause:
 		return x.Span
-	case *Ident:
+	case *types.Ident:
 		return x.Span
-	case *IfClause:
+	case *types.IfClause:
 		return x.Span
-	case *ImportDecl:
+	case *types.ImportDecl:
 		return x.Span
-	case *ImportSpec:
+	case *types.ImportSpec:
 		return x.Span
-	case *IndexExpr:
+	case *types.IndexExpr:
 		return x.Span
-	case *Int:
+	case *types.Int:
 		return x.Span
-	case *Interpolation:
+	case *types.Interpolation:
 		return x.Span
-	case *LetClause:
+	case *types.LetClause:
 		return x.Span
-	case *ListLit:
+	case *types.ListLit:
 		return x.Span
-	case *Null:
+	case *types.Null:
 		return x.Span
-	case *Package:
+	case *types.Package:
 		return x.Span
-	case *ParenExpr:
+	case *types.ParenExpr:
 		return x.Span
-	case *PostfixAlias:
+	case *types.PostfixAlias:
 		return x.Span
-	case *PostfixExpr:
+	case *types.PostfixExpr:
 		return x.Span
-	case *SelectorExpr:
+	case *types.SelectorExpr:
 		return x.Span
-	case *SliceExpr:
+	case *types.SliceExpr:
 		return x.Span
-	case *String:
+	case *types.String:
 		return x.Span
-	case *StructLit:
+	case *types.StructLit:
 		return x.Span
-	case *TryClause:
+	case *types.TryClause:
 		return x.Span
-	case *UnaryExpr:
+	case *types.UnaryExpr:
 		return x.Span
 	}
 	panic(fmt.Sprintf("cue: SpanOf %T", x))
 }
 
 // experiments checks the @experiment attributes at the start of the file, and the use of the syntax that they enable.
-func (c *checker) experiments(f *File) {
+func (c *checker) experiments(f *types.File) {
 	var try, aliasV2, explicitOpen bool
 	for _, d := range f.Decls {
-		a, ok := d.(*Attribute)
+		a, ok := d.(*types.Attribute)
 		if !ok {
 			break
 		}
@@ -694,26 +696,26 @@ func (c *checker) experiments(f *File) {
 	for _, d := range f.Decls {
 		inspect(d, func(n any) {
 			switch x := n.(type) {
-			case *PostfixExpr:
+			case *types.PostfixExpr:
 				if x.Op.Value == "..." && !explicitOpen {
 					c.errf(x, "postfix ... operator requires @experiment(explicitopen)")
 				}
-			case *Field:
-				if l, ok := x.Label.(*ListLit); ok && len(l.Elts) != 1 {
+			case *types.Field:
+				if l, ok := x.Label.(*types.ListLit); ok && len(l.Elts) != 1 {
 					c.errf(l, "square bracket must have exactly one element")
 				}
 				if x.Alias != nil && !aliasV2 {
 					c.errf(x.Alias, "postfix alias syntax requires @experiment(aliasv2)")
 				}
-			case *EmbedDecl:
+			case *types.EmbedDecl:
 				if x.Alias != nil && !aliasV2 {
 					c.errf(x.Alias, "postfix alias syntax requires @experiment(aliasv2)")
 				}
-			case *Alias:
+			case *types.Alias:
 				if aliasV2 {
 					c.errf(x, "old-style alias syntax (=) is not allowed with @experiment(aliasv2); use postfix syntax (~X or ~(K,V))")
 				}
-			case *FallbackClause:
+			case *types.FallbackClause:
 				if !try {
 					c.errf(x, "else requires @experiment(try)")
 				}

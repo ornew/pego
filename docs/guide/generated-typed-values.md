@@ -1,7 +1,7 @@
 # Typed Values in Generated Go
 
-With `-types` (`pego.WithTypes()`), the generated package also defines a Go type for each type of the grammar and a
-function that returns the result as values of those types. This guide describes those types and functions; the rest of
+With `-types` (`pego.WithTypes()`), the generated package also gets a subpackage, `types`, that defines a Go type for each type of the
+grammar, and a function that returns the result as values of those types. This guide describes those types and functions; the rest of
 the generated package is in [The Generated Go API](generated-go-api.md).
 
 ## The Generated Functions
@@ -39,11 +39,9 @@ rule number Text = n:([0-9]+ #atomic) => Text{Value: text($n)}
 rule ws = [ \t\r\n]*
 ```
 
-the generated types are:
+the types, in the package `jsonparser/types` (the file `types/types.go`), are:
 
 ```go
-type Span struct{ Start, End int }
-
 type Text struct {
 	Span
 	Value string
@@ -64,21 +62,20 @@ type Object struct {
 // Value is the join type Value ~ Object | Array | Text.
 type Value interface{ isValue() }
 
-func ParseAST(input string, opts ...ParseOption) (Value, error)
 ```
 
-and a type switch replaces the field lookups and type assertions of `*Node`:
+and `jsonparser.ParseAST` returns a `types.Value`. A type switch replaces the field lookups and type assertions of `*Node`:
 
 ```go
 v, err := jsonparser.ParseAST(`{"name": "pego", "tags": ["peg", "go"], "stars": 42}`)
 if err != nil {
 	log.Fatal(err)
 }
-for _, m := range v.(*jsonparser.Object).Members {
+for _, m := range v.(*types.Object).Members {
 	switch x := m.Value.(type) {
-	case *jsonparser.Array:
+	case *types.Array:
 		fmt.Println(m.Key.Value, "array of", len(x.Elements))
-	case *jsonparser.Text:
+	case *types.Text:
 		fmt.Println(m.Key.Value, "text", x.Value)
 	}
 }
@@ -108,9 +105,11 @@ stars text 42
 
 ## Details
 
-- **Names.** Go types have the names of the grammar types. A name that the generated runtime already uses (`Node`,
-  `TNode`, `Error`, `Parse`, `Unit`, ...) gets a trailing underscore: a grammar type `Node` becomes `Node_`. `Span`
-  is renamed the same way if a type or field is called `Span`.
+- **Names.** Go types have the names of the grammar types. They live in the package `types`, apart from the names
+  `parser.go` and `api.go` declare, so a grammar type may be called `Node`, `Parse` or `Walk`. The package also declares
+  `TNode`, `Error`, `PegoHooks` and, where the grammar uses them, `Unit`, `TupleN` and `PegoNodeTypes`: a grammar type
+  with one of these names is an error. A field named like a method of `Span` or of the typed values (`Range`, `TName`,
+  ...) gets a trailing underscore.
 - **Aliases.** Every declared alias is exported, including chained, scalar, optional, list and node aliases. Node
   joins with the same normalized representation share one generated interface; additional names are Go aliases
   to it. Aliases preserve assignment compatibility and add no new runtime value kind. Regenerate existing parsers
@@ -143,11 +142,6 @@ stars text 42
   `ParseAST`; unsupported result or struct-field types and field-reading actions use Node conversion.
   A rule whose value is an int, string or bool returns that Go type.
   `ParseRule` continues to return `*Node`, and `ParseAST` continues to use the configured start rule.
-- **Regeneration migration.** `ParseRuleAST` is now reserved in typed generated Go. A grammar type
-  named `ParseRuleAST` becomes `ParseRuleAST_`; a type already named `ParseRuleAST_` becomes
-  `ParseRuleAST__` because names are assigned in sorted order. Update consumers that name those
-  generated types, including function values whose `ParseAST` return type uses a renamed type.
-  Untyped Go and TypeScript entry points are unchanged. See [design 029](../design/029-typed-named-rule-parsing.md).
 
 ## Related Topics
 

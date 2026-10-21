@@ -51,11 +51,13 @@ import (
 	"errors"
 	"path"
 	"strings"
+
+	"github.com/ornew/pego/parsers/typescript/types"
 )
 
 // ParseTSX parses a .tsx file: TypeScript with JSX, where <T>x is not a type assertion. Like ParseAST, it
 // returns the source file as typed values with positions in the unit (code points by default).
-func ParseTSX(input string, unit ...PositionUnit) (*SourceFile, error) {
+func ParseTSX(input string, unit ...PositionUnit) (*types.SourceFile, error) {
 	return parseWith(tsxMarker, input, unit)
 }
 
@@ -70,7 +72,7 @@ func RecognizeTSX(input string, unit ...PositionUnit) error {
 // module, a file with import or export declarations or import.meta, the top level is parsed in the await
 // context (await (x) is an await expression, not a call), as the compiler reparses it; not in a declaration
 // file (.d.ts).
-func ParseFile(name, input string, unit ...PositionUnit) (*SourceFile, error) {
+func ParseFile(name, input string, unit ...PositionUnit) (*types.SourceFile, error) {
 	marker := ""
 	if IsTSX(name) {
 		marker = tsxMarker
@@ -108,13 +110,13 @@ func isDeclarationFile(name string) bool {
 // IsExternalModule reports whether f is a module, as the TypeScript compiler decides
 // (isFileProbablyExternalModule): it has an import or export declaration, an export modifier, an
 // import x = require(...), or uses import.meta.
-func IsExternalModule(f *SourceFile) bool {
+func IsExternalModule(f *types.SourceFile) bool {
 	for _, s := range f.Statements {
 		switch s := s.(type) {
-		case *ImportDeclaration, *ExportAssignment, *ExportDeclaration:
+		case *types.ImportDeclaration, *types.ExportAssignment, *types.ExportDeclaration:
 			return true
-		case *ImportEqualsDeclaration:
-			if _, ok := s.ModuleReference.(*ExternalModuleReference); ok {
+		case *types.ImportEqualsDeclaration:
+			if _, ok := s.ModuleReference.(*types.ExternalModuleReference); ok {
 				return true
 			}
 		}
@@ -124,7 +126,7 @@ func IsExternalModule(f *SourceFile) bool {
 	}
 	found := false
 	Inspect(f, func(n ASTNode) bool {
-		if m, ok := n.(*MetaProperty); ok && m.KeywordToken == "import" && m.Name.TNode.Value == "meta" {
+		if m, ok := n.(*types.MetaProperty); ok && m.KeywordToken == "import" && m.Name.TNode.Value == "meta" {
 			found = true
 		}
 		return !found
@@ -132,28 +134,28 @@ func IsExternalModule(f *SourceFile) bool {
 	return found
 }
 
-func hasExportModifier(s Statement) bool {
-	var mods []ModifierLike
+func hasExportModifier(s types.Statement) bool {
+	var mods []types.ModifierLike
 	switch s := s.(type) {
-	case *VariableStatement:
+	case *types.VariableStatement:
 		mods = s.Modifiers
-	case *FunctionDeclaration:
+	case *types.FunctionDeclaration:
 		mods = s.Modifiers
-	case *ClassDeclaration:
+	case *types.ClassDeclaration:
 		mods = s.Modifiers
-	case *InterfaceDeclaration:
+	case *types.InterfaceDeclaration:
 		mods = s.Modifiers
-	case *TypeAliasDeclaration:
+	case *types.TypeAliasDeclaration:
 		mods = s.Modifiers
-	case *EnumDeclaration:
+	case *types.EnumDeclaration:
 		mods = s.Modifiers
-	case *ModuleDeclaration:
+	case *types.ModuleDeclaration:
 		mods = s.Modifiers
-	case *ImportEqualsDeclaration:
+	case *types.ImportEqualsDeclaration:
 		mods = s.Modifiers
 	}
 	for _, m := range mods {
-		if m, ok := m.(*Modifier); ok && m.Value == "export" {
+		if m, ok := m.(*types.Modifier); ok && m.Value == "export" {
 			return true
 		}
 	}
@@ -169,7 +171,7 @@ const (
 )
 
 // parseWith parses the input after the markers, and moves the positions back past them.
-func parseWith(markers, input string, unit []PositionUnit) (*SourceFile, error) {
+func parseWith(markers, input string, unit []PositionUnit) (*types.SourceFile, error) {
 	if markers == "" {
 		return ParseAST(input, unitOptions(unit)...)
 	}
@@ -183,7 +185,7 @@ func parseWith(markers, input string, unit []PositionUnit) (*SourceFile, error) 
 type spanSetter interface{ TSetSpan(start, end int) }
 
 // shiftSpans moves the range of every node of f d positions back.
-func shiftSpans(f *SourceFile, d int) {
+func shiftSpans(f *types.SourceFile, d int) {
 	Inspect(f, func(n ASTNode) bool {
 		if n != nil {
 			s, e := n.Range()

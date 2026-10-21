@@ -26,38 +26,37 @@ rule token Token = t:("x") #atomic => Token{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Types: true, Document: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	ordinary, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Types: true})
-	if err != nil || strings.Contains(string(ordinary), "type typedDocumentClone") {
-		t.Fatalf("default generation includes Document cloning: %v", err)
-	}
+	// The types are named like the names of the parser package (Document, ParseStats, Span) and live
+	// in their own package, so that they compile next to them.
 	dir := t.TempDir()
+	generatePackage(t, dir, "doc", g, GenOptions{Start: "main", Types: true, Document: true})
+	ordinary := generatePackage(t, dir, "ordinary", g, GenOptions{Start: "main", Types: true})
+	if strings.Contains(ordinary, "type typedDocumentClone") {
+		t.Fatalf("default generation includes Document cloning")
+	}
 	for name, text := range map[string]string{
-		"go.mod":    testGoMod("typeddocumentpublication"),
-		"parser.go": string(code),
-		"parser_test.go": `package fixture
+		"go.mod": testGoMod("gentest"),
+		"doc/parser_test.go": `package doc
 import (
 	pegort "github.com/ornew/pego/runtime"
+ "gentest/doc/types"
  "context"
  "errors"
  "testing"
 )
 func TestPublicationOwnershipAndAliases(t *testing.T) {
- token := &Token{Text:"private"}
+ token := &types.Token{Text:"private"}
  label := "private"
- link := &Link{Label:&label}
+ link := &types.Link{Label:&label}
  link.Next = link
- items := make([]*Token,2,4)
+ items := make([]*types.Token,2,4)
  items[0],items[1]=token,token
- input := &Box{First:token,Again:token,Items:items,AgainItems:items,Optional:[]*Token{nil,token},Nested:[][]*Token{items},Empty:make([]*Token,0,8),Choice:token,Link:link}
+ input := &types.Box{First:token,Again:token,Items:items,AgainItems:items,Optional:[]*types.Token{nil,token},Nested:[][]*types.Token{items},Empty:make([]*types.Token,0,8),Choice:token,Link:link}
  c := &typedDocumentClone{}
- output := c.toBox(input)
+ output := c.toTypeBox(input)
  c.Finish()
  c.Release()
- if output==input || output.First==token || output.First!=output.Again || output.Items[0]!=output.First || output.Optional[0]!=nil || output.Optional[1]!=output.First || output.Choice.(*Token)!=output.First {t.Fatal("typed identity changed")}
+ if output==input || output.First==token || output.First!=output.Again || output.Items[0]!=output.First || output.Optional[0]!=nil || output.Optional[1]!=output.First || output.Choice.(*types.Token)!=output.First {t.Fatal("typed identity changed")}
  if &output.Items[0]!=&output.AgainItems[0] || &output.Items[0]!=&output.Nested[0][0] {t.Fatal("shared slice views changed")}
  if output.Empty==nil || output.NilList!=nil {t.Fatal("nil and empty changed")}
  if output.Link==link || output.Link.Next!=output.Link || output.Link.Label==&label {t.Fatal("recursive graph or scalar pointer changed")}
@@ -67,26 +66,26 @@ func TestPublicationOwnershipAndAliases(t *testing.T) {
  if c.Control!=nil || c.Values!=nil || c.Slices!=nil || c.Tasks!=nil {t.Fatal("publication retained private metadata")}
 }
 func TestPublicationDeepGraph(t *testing.T) {
- var input *Link
- for i:=0;i<100001;i++ {input=&Link{Next:input}}
+ var input *types.Link
+ for i:=0;i<100001;i++ {input=&types.Link{Next:input}}
  c := &typedDocumentClone{}
- output:=c.toLink(input)
+ output:=c.toTypeLink(input)
  c.Finish()
  c.Release()
  count:=0
  for output!=nil {count++;output=output.Next}
  if count!=100001 {t.Fatalf("deep clone length: %d",count)}
 }
-func cloneWithControl(input *Box, c *typedDocumentClone,beforeFinish ...func())(output *Box,err error) {
+func cloneWithControl(input *types.Box, c *typedDocumentClone,beforeFinish ...func())(output *types.Box,err error) {
  defer pegort.X_recoverParse(&output,&err)
  defer c.Release()
- output=c.toBox(input)
+ output=c.toTypeBox(input)
  if len(beforeFinish)>0 {beforeFinish[0]()}
  c.Finish()
  return output,nil
 }
 func TestPublicationControls(t *testing.T) {
- input:=&Box{First:&Token{Text:"private"},Items:make([]*Token,1000)}
+ input:=&types.Box{First:&types.Token{Text:"private"},Items:make([]*types.Token,1000)}
  c:=&typedDocumentClone{TypedDocumentCloneBase: pegort.TypedDocumentCloneBase{Control: pegort.X_newWorkControl(nil,WorkLimits{MaxSteps:1})}}
  if output,err:=cloneWithControl(input,c);output!=nil || !errors.Is(err,ErrWorkLimit) {t.Fatalf("budget: %v %v",output,err)}
  if c.Control!=nil || c.Values!=nil || c.Slices!=nil || c.Tasks!=nil {t.Fatal("interrupted clone retained state")}
@@ -95,12 +94,12 @@ func TestPublicationControls(t *testing.T) {
  if output,err:=cloneWithControl(input,c);output!=nil || !errors.Is(err,context.Canceled) {t.Fatalf("cancel: %v %v",output,err)}
  ctx,cancel=context.WithCancel(context.Background())
  c=&typedDocumentClone{TypedDocumentCloneBase: pegort.TypedDocumentCloneBase{Control: pegort.X_newWorkControl(ctx,WorkLimits{})}}
- if output,err:=cloneWithControl(&Box{First:&Token{}},c,cancel);output!=nil || !errors.Is(err,context.Canceled) {t.Fatalf("final cancellation poll: %v %v",output,err)}
+ if output,err:=cloneWithControl(&types.Box{First:&types.Token{}},c,cancel);output!=nil || !errors.Is(err,context.Canceled) {t.Fatalf("final cancellation poll: %v %v",output,err)}
  if output,err:=cloneWithControl(input,&typedDocumentClone{});output==nil || err!=nil {t.Fatalf("retry: %v",err)}
 }
 func TestPublicationCollidingNames(t *testing.T) {
  c:=&typedDocumentClone{}
- if c.toDocument_(&Document_{Text:"m"}).Text!="m" || c.toParseStats_(&ParseStats_{Text:"e"}).Text!="e" || c.toSpan(&Span{Text:"s"}).Text!="s" {t.Fatal("runtime name collision")}
+ if c.toTypeDocument(&types.Document{Text:"m"}).Text!="m" || c.toTypeParseStats(&types.ParseStats{Text:"e"}).Text!="e" || c.toTypeSpan(&types.Span{Text:"s"}).Text!="s" {t.Fatal("runtime name collision")}
  c.Finish();c.Release()
 }
 `,

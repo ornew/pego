@@ -33,7 +33,7 @@ func TestGeneratedTraceOptionsNeedObservability(t *testing.T) {
 	write("go.mod", []byte(testGoMod("traceopts")))
 	for _, observe := range []bool{false, true} {
 		pkg := map[bool]string{false: "plain", true: "observed"}[observe]
-		files, err := Generate(g, GenOptions{Module: "example.com/traceopts/" + pkg, Package: pkg, Start: "main", Runtime: RuntimeImport, Types: true, Document: true, Recognize: true, Observability: observe})
+		files, err := Generate(g, GenOptions{Module: "traceopts/" + pkg, Package: pkg, Start: "main", Runtime: RuntimeImport, Types: true, Document: true, Recognize: true, Observability: observe})
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/ornew/pego/parsers/golang/types"
 )
 
 // ToGoAST converts a file parsed from src with the Bytes position unit into the go/ast tree that
@@ -19,7 +21,7 @@ import (
 //
 // f must have been parsed from src with the Bytes unit (ParseAST(src, WithUnit(Bytes))); ToGoAST panics if f
 // does not fit src.
-func ToGoAST(fset *token.FileSet, filename, src string, f *File, mode Mode) *ast.File {
+func ToGoAST(fset *token.FileSet, filename, src string, f *types.File, mode Mode) *ast.File {
 	tf := fset.AddFile(filename, -1, len(src))
 	c := &converter{src: src, base: tf.Base()}
 	if f.Start != 0 || f.End != len(src) {
@@ -102,14 +104,14 @@ func end(n any) int {
 	return e
 }
 
-func (c *converter) ident(id *Ident) *ast.Ident {
+func (c *converter) ident(id *types.Ident) *ast.Ident {
 	if id == nil {
 		return nil
 	}
 	return &ast.Ident{NamePos: c.pos(id.Start), Name: id.Value}
 }
 
-func (c *converter) idents(ids []*Ident) []*ast.Ident {
+func (c *converter) idents(ids []*types.Ident) []*ast.Ident {
 	if len(ids) == 0 {
 		return nil
 	}
@@ -129,11 +131,11 @@ func (c *converter) basicLit(s Span, kind token.Token, text string) *ast.BasicLi
 
 // --- Declarations ---
 
-func (c *converter) decl(d Decl) ast.Decl {
+func (c *converter) decl(d types.Decl) ast.Decl {
 	switch d := d.(type) {
-	case *GenDecl:
+	case *types.GenDecl:
 		return c.genDecl(d)
-	case *FuncDecl:
+	case *types.FuncDecl:
 		fd := &ast.FuncDecl{
 			Recv: c.fieldList(d.Recv),
 			Name: c.ident(d.Name),
@@ -147,7 +149,7 @@ func (c *converter) decl(d Decl) ast.Decl {
 	panic(fmt.Sprintf("golang: unexpected declaration %T", d))
 }
 
-func (c *converter) genDecl(d *GenDecl) *ast.GenDecl {
+func (c *converter) genDecl(d *types.GenDecl) *ast.GenDecl {
 	gd := &ast.GenDecl{TokPos: c.pos(d.Start), Tok: keyword(d.Tok)}
 	if p := c.next(d.Start + len(d.Tok)); c.src[p] == '(' {
 		gd.Lparen, gd.Rparen = c.pos(p), c.pos(d.End-1)
@@ -158,15 +160,15 @@ func (c *converter) genDecl(d *GenDecl) *ast.GenDecl {
 	return gd
 }
 
-func (c *converter) spec(s Spec) ast.Spec {
+func (c *converter) spec(s types.Spec) ast.Spec {
 	switch s := s.(type) {
-	case *ImportSpec:
+	case *types.ImportSpec:
 		is := &ast.ImportSpec{Name: c.ident(s.Name), Path: c.basicLit(s.Path.Span, token.STRING, s.Path.TNode.Value)}
 		c.imports = append(c.imports, is)
 		return is
-	case *ValueSpec:
+	case *types.ValueSpec:
 		return &ast.ValueSpec{Names: c.idents(s.Names), Type: c.expr(s.Type), Values: c.exprs(s.Values)}
-	case *TypeSpec:
+	case *types.TypeSpec:
 		ts := &ast.TypeSpec{Name: c.ident(s.Name), TypeParams: c.fieldList(s.TypeParams), Type: c.expr(s.Type)}
 		if s.Assign != nil {
 			ts.Assign = c.pos(s.Assign.Start)
@@ -178,7 +180,7 @@ func (c *converter) spec(s Spec) ast.Spec {
 
 // --- Fields ---
 
-func (c *converter) fieldList(l *FieldList) *ast.FieldList {
+func (c *converter) fieldList(l *types.FieldList) *ast.FieldList {
 	if l == nil {
 		return nil
 	}
@@ -196,7 +198,7 @@ func (c *converter) fieldList(l *FieldList) *ast.FieldList {
 	return fl
 }
 
-func (c *converter) field(f *Field) *ast.Field {
+func (c *converter) field(f *types.Field) *ast.Field {
 	af := &ast.Field{Names: c.idents(f.Names), Type: c.expr(f.Type)}
 	if f.Tag != nil {
 		af.Tag = c.basicLit(f.Tag.Span, token.STRING, f.Tag.TNode.Value)
@@ -206,7 +208,7 @@ func (c *converter) field(f *Field) *ast.Field {
 
 // funcType converts a function type; fn is the position of "func" (NoPos for a method of an
 // interface).
-func (c *converter) funcType(t *FuncType, fn token.Pos) *ast.FuncType {
+func (c *converter) funcType(t *types.FuncType, fn token.Pos) *ast.FuncType {
 	return &ast.FuncType{
 		Func:       fn,
 		TypeParams: c.fieldList(t.TypeParams),
@@ -217,7 +219,7 @@ func (c *converter) funcType(t *FuncType, fn token.Pos) *ast.FuncType {
 
 // --- Expressions ---
 
-func (c *converter) exprs(xs []Expr) []ast.Expr {
+func (c *converter) exprs(xs []types.Expr) []ast.Expr {
 	if len(xs) == 0 {
 		return nil
 	}
@@ -228,67 +230,67 @@ func (c *converter) exprs(xs []Expr) []ast.Expr {
 	return out
 }
 
-func (c *converter) expr(e Expr) ast.Expr {
+func (c *converter) expr(e types.Expr) ast.Expr {
 	switch e := e.(type) {
 	case nil:
 		return nil
-	case *Ident:
+	case *types.Ident:
 		return c.ident(e)
-	case *IntLit:
+	case *types.IntLit:
 		return c.basicLit(e.Span, token.INT, e.Value)
-	case *FloatLit:
+	case *types.FloatLit:
 		return c.basicLit(e.Span, token.FLOAT, e.Value)
-	case *ImagLit:
+	case *types.ImagLit:
 		return c.basicLit(e.Span, token.IMAG, e.Value)
-	case *CharLit:
+	case *types.CharLit:
 		return c.basicLit(e.Span, token.CHAR, e.TNode.Value)
-	case *StringLit:
+	case *types.StringLit:
 		return c.basicLit(e.Span, token.STRING, e.TNode.Value)
-	case *Ellipsis:
+	case *types.Ellipsis:
 		return &ast.Ellipsis{Ellipsis: c.pos(e.Start), Elt: c.expr(e.Elt)}
-	case *CompositeLit:
+	case *types.CompositeLit:
 		lbrace := e.Start
 		if e.Type != nil {
 			lbrace = c.next(end(e.Type))
 		}
 		return &ast.CompositeLit{Type: c.expr(e.Type), Lbrace: c.pos(lbrace), Elts: c.exprs(e.Elts), Rbrace: c.pos(e.End - 1)}
-	case *FuncLit:
+	case *types.FuncLit:
 		return &ast.FuncLit{Type: c.funcType(e.Type, c.pos(e.Start)), Body: c.block(e.Body)}
-	case *ParenExpr:
+	case *types.ParenExpr:
 		return &ast.ParenExpr{Lparen: c.pos(e.Start), X: c.expr(e.X), Rparen: c.pos(e.End - 1)}
-	case *SelectorExpr:
+	case *types.SelectorExpr:
 		return &ast.SelectorExpr{X: c.expr(e.X), Sel: c.ident(e.Sel)}
-	case *IndexExpr:
+	case *types.IndexExpr:
 		return &ast.IndexExpr{X: c.expr(e.X), Lbrack: c.pos(c.next(end(e.X))), Index: c.expr(e.Index), Rbrack: c.pos(e.End - 1)}
-	case *IndexListExpr:
+	case *types.IndexListExpr:
 		return &ast.IndexListExpr{X: c.expr(e.X), Lbrack: c.pos(c.next(end(e.X))), Indices: c.exprs(e.Indices), Rbrack: c.pos(e.End - 1)}
-	case *SliceExpr:
+	case *types.SliceExpr:
 		return &ast.SliceExpr{X: c.expr(e.X), Lbrack: c.pos(c.next(end(e.X))), Low: c.expr(e.Low), High: c.expr(e.High),
 			Max: c.expr(e.Max), Slice3: e.Max != nil, Rbrack: c.pos(e.End - 1)}
-	case *TypeAssertExpr:
+	case *types.TypeAssertExpr:
 		dot := c.next(end(e.X))
 		return &ast.TypeAssertExpr{X: c.expr(e.X), Lparen: c.pos(c.next(dot + 1)), Type: c.expr(e.Type), Rparen: c.pos(e.End - 1)}
-	case *CallExpr:
+	case *types.CallExpr:
 		call := &ast.CallExpr{Fun: c.expr(e.Fun), Lparen: c.pos(c.next(end(e.Fun))), Args: c.exprs(e.Args), Rparen: c.pos(e.End - 1)}
 		if e.Ellipsis != nil {
 			call.Ellipsis = c.pos(e.Ellipsis.Start)
 		}
 		return call
-	case *StarExpr:
+	case *types.StarExpr:
 		return &ast.StarExpr{Star: c.pos(e.Start), X: c.expr(e.X)}
-	case *UnaryExpr:
+	case *types.UnaryExpr:
 		return &ast.UnaryExpr{OpPos: c.pos(e.Start), Op: operator(e.Op), X: c.expr(e.X)}
-	case *BinaryExpr:
+	case *types.BinaryExpr:
 		return &ast.BinaryExpr{X: c.expr(e.X), OpPos: c.pos(c.next(end(e.X))), Op: operator(e.Op), Y: c.expr(e.Y)}
-	case *KeyValueExpr:
+	case *types.KeyValueExpr:
 		return &ast.KeyValueExpr{Key: c.expr(e.Key), Colon: c.pos(c.next(end(e.Key))), Value: c.expr(e.Value)}
-	case *ArrayType:
+	case *types.ArrayType:
 		return &ast.ArrayType{Lbrack: c.pos(e.Start), Len: c.expr(e.Len), Elt: c.expr(e.Elt)}
-	case *StructType:
+	case *types.StructType:
 		return &ast.StructType{Struct: c.pos(e.Start), Fields: c.fieldList(e.Fields)}
-	case *FuncType:
+	case *types.FuncType:
 		return c.funcType(e, c.pos(e.Start))
-	case *InterfaceType:
+	case *types.InterfaceType:
 		it := &ast.InterfaceType{Interface: c.pos(e.Start), Methods: c.fieldList(e.Methods)}
 		for _, m := range it.Methods.List {
 			if ft, ok := m.Type.(*ast.FuncType); ok && len(m.Names) > 0 {
@@ -296,9 +298,9 @@ func (c *converter) expr(e Expr) ast.Expr {
 			}
 		}
 		return it
-	case *MapType:
+	case *types.MapType:
 		return &ast.MapType{Map: c.pos(e.Start), Key: c.expr(e.Key), Value: c.expr(e.Value)}
-	case *ChanType:
+	case *types.ChanType:
 		ct := &ast.ChanType{Begin: c.pos(e.Start), Dir: ast.ChanDir(e.Dir), Value: c.expr(e.Value)}
 		switch e.Dir {
 		case int(ast.SEND):
@@ -313,11 +315,11 @@ func (c *converter) expr(e Expr) ast.Expr {
 
 // --- Statements ---
 
-func (c *converter) block(b *BlockStmt) *ast.BlockStmt {
+func (c *converter) block(b *types.BlockStmt) *ast.BlockStmt {
 	return &ast.BlockStmt{Lbrace: c.pos(b.Start), List: c.stmts(b.List), Rbrace: c.pos(b.End - 1)}
 }
 
-func (c *converter) stmts(ss []Stmt) []ast.Stmt {
+func (c *converter) stmts(ss []types.Stmt) []ast.Stmt {
 	if len(ss) == 0 {
 		return nil
 	}
@@ -328,41 +330,41 @@ func (c *converter) stmts(ss []Stmt) []ast.Stmt {
 	return out
 }
 
-func (c *converter) stmt(s Stmt) ast.Stmt {
+func (c *converter) stmt(s types.Stmt) ast.Stmt {
 	switch s := s.(type) {
 	case nil:
 		return nil
-	case *DeclStmt:
+	case *types.DeclStmt:
 		return &ast.DeclStmt{Decl: c.genDecl(s.Decl)}
-	case *EmptyStmt:
+	case *types.EmptyStmt:
 		return &ast.EmptyStmt{Semicolon: c.pos(s.Start), Implicit: s.Start == s.End}
-	case *LabeledStmt:
+	case *types.LabeledStmt:
 		return &ast.LabeledStmt{Label: c.ident(s.Label), Colon: c.pos(c.next(s.Label.End)), Stmt: c.stmt(s.Stmt)}
-	case *ExprStmt:
+	case *types.ExprStmt:
 		return &ast.ExprStmt{X: c.expr(s.X)}
-	case *SendStmt:
+	case *types.SendStmt:
 		return &ast.SendStmt{Chan: c.expr(s.Chan), Arrow: c.pos(c.next(end(s.Chan))), Value: c.expr(s.Value)}
-	case *IncDecStmt:
+	case *types.IncDecStmt:
 		return &ast.IncDecStmt{X: c.expr(s.X), TokPos: c.pos(c.next(end(s.X))), Tok: operator(s.Tok)}
-	case *AssignStmt:
+	case *types.AssignStmt:
 		return c.assign(s)
-	case *GoStmt:
+	case *types.GoStmt:
 		return &ast.GoStmt{Go: c.pos(s.Start), Call: c.expr(s.Call).(*ast.CallExpr)}
-	case *DeferStmt:
+	case *types.DeferStmt:
 		return &ast.DeferStmt{Defer: c.pos(s.Start), Call: c.expr(s.Call).(*ast.CallExpr)}
-	case *ReturnStmt:
+	case *types.ReturnStmt:
 		return &ast.ReturnStmt{Return: c.pos(s.Start), Results: c.exprs(s.Results)}
-	case *BranchStmt:
+	case *types.BranchStmt:
 		return &ast.BranchStmt{TokPos: c.pos(s.Start), Tok: keyword(s.Tok), Label: c.ident(s.Label)}
-	case *BlockStmt:
+	case *types.BlockStmt:
 		return c.block(s)
-	case *IfStmt:
+	case *types.IfStmt:
 		is := &ast.IfStmt{If: c.pos(s.Start), Init: c.optStmt(s.Init), Cond: c.expr(s.Cond), Body: c.block(s.Body)}
 		if s.Else != nil {
 			is.Else = c.stmt(s.Else)
 		}
 		return is
-	case *CaseClause:
+	case *types.CaseClause:
 		cc := &ast.CaseClause{Case: c.pos(s.Start), List: c.exprs(s.List), Body: c.stmts(s.Body)}
 		if len(s.List) > 0 {
 			cc.Colon = c.pos(c.next(end(s.List[len(s.List)-1])))
@@ -370,11 +372,11 @@ func (c *converter) stmt(s Stmt) ast.Stmt {
 			cc.Colon = c.pos(c.next(s.Start + len("default")))
 		}
 		return cc
-	case *SwitchStmt:
+	case *types.SwitchStmt:
 		return &ast.SwitchStmt{Switch: c.pos(s.Start), Init: c.optStmt(s.Init), Tag: c.optExpr(s.Tag), Body: c.block(s.Body)}
-	case *TypeSwitchStmt:
+	case *types.TypeSwitchStmt:
 		return &ast.TypeSwitchStmt{Switch: c.pos(s.Start), Init: c.optStmt(s.Init), Assign: c.stmt(s.Assign), Body: c.block(s.Body)}
-	case *CommClause:
+	case *types.CommClause:
 		cc := &ast.CommClause{Case: c.pos(s.Start), Body: c.stmts(s.Body)}
 		if s.Comm != nil {
 			cc.Comm = c.stmt(s.Comm)
@@ -383,11 +385,11 @@ func (c *converter) stmt(s Stmt) ast.Stmt {
 			cc.Colon = c.pos(c.next(s.Start + len("default")))
 		}
 		return cc
-	case *SelectStmt:
+	case *types.SelectStmt:
 		return &ast.SelectStmt{Select: c.pos(s.Start), Body: c.block(s.Body)}
-	case *ForStmt:
+	case *types.ForStmt:
 		return &ast.ForStmt{For: c.pos(s.Start), Init: c.optStmt(s.Init), Cond: c.optExpr(s.Cond), Post: c.optStmt(s.Post), Body: c.block(s.Body)}
-	case *RangeStmt:
+	case *types.RangeStmt:
 		rs := &ast.RangeStmt{For: c.pos(s.Start), Key: c.optExpr(s.Key), Value: c.optExpr(s.Value), X: c.expr(s.X), Body: c.block(s.Body)}
 		rangePos := c.next(s.Start + len("for"))
 		if s.Tok != "" {
@@ -405,13 +407,13 @@ func (c *converter) stmt(s Stmt) ast.Stmt {
 	panic(fmt.Sprintf("golang: unexpected statement %T", s))
 }
 
-func (c *converter) assign(s *AssignStmt) *ast.AssignStmt {
+func (c *converter) assign(s *types.AssignStmt) *ast.AssignStmt {
 	return &ast.AssignStmt{Lhs: c.exprs(s.Lhs), TokPos: c.pos(c.next(end(s.Lhs[len(s.Lhs)-1]))), Tok: operator(s.Tok), Rhs: c.exprs(s.Rhs)}
 }
 
-func (c *converter) optStmt(s Stmt) ast.Stmt { return c.stmt(s) }
+func (c *converter) optStmt(s types.Stmt) ast.Stmt { return c.stmt(s) }
 
-func (c *converter) optExpr(e Expr) ast.Expr { return c.expr(e) }
+func (c *converter) optExpr(e types.Expr) ast.Expr { return c.expr(e) }
 
 // --- Tokens ---
 

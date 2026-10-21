@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/parsers/duckdb"
+	"github.com/ornew/pego/parsers/duckdb/types"
 )
 
 func alternatingCase(word string, upperFirst bool) string {
@@ -67,7 +68,7 @@ func TestMixedCaseKeywordNames(t *testing.T) {
 			}
 		}
 	}
-	ids := find[duckdb.Ident](t, "SELECT tExT FROM tExT")
+	ids := find[types.Ident](t, "SELECT tExT FROM tExT")
 	if len(ids) != 2 || ids[0].Value != "tExT" || ids[1].Value != "tExT" {
 		t.Fatalf("identifier text changed: %#v", ids)
 	}

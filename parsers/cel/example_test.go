@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/ornew/pego/parsers/cel"
+	"github.com/ornew/pego/parsers/cel/types"
 )
 
 func ExampleParseExpr() {
@@ -13,9 +14,9 @@ func ExampleParseExpr() {
 	if err != nil {
 		panic(err)
 	}
-	b := e.(*cel.Binary) // the && of the two relations
+	b := e.(*types.Binary) // the && of the two relations
 	fmt.Printf("%T %s %T\n", b.Left, b.Op.Value, b.Right)
-	// Output: *cel.Binary && *cel.Binary
+	// Output: *types.Binary && *types.Binary
 }
 
 // The variables and the functions an expression uses, found by walking the tree.
@@ -25,11 +26,11 @@ func ExampleInspect() {
 		panic(err)
 	}
 	names := map[string]bool{}
-	cel.Inspect(e, func(e cel.Expr) bool {
+	cel.Inspect(e, func(e types.Expr) bool {
 		switch e := e.(type) {
-		case *cel.Ident:
+		case *types.Ident:
 			names["variable "+e.Name()] = true
-		case *cel.Call:
+		case *types.Call:
 			names["function "+e.Func.Name()] = true
 		}
 		return true
@@ -57,8 +58,8 @@ func ExampleParseAST() {
 	if err != nil {
 		panic(err)
 	}
-	sum := e.(*cel.Binary)
-	call := sum.Right.(*cel.Call)
+	sum := e.(*types.Binary)
+	call := sum.Right.(*types.Call)
 	fmt.Printf("%s at %d-%d\n", cel.Format(call), call.Start, call.End)
 	fmt.Printf("%s at %d-%d\n", call.Func.Name(), call.Func.Start, call.Func.End)
 	// Output:
@@ -90,13 +91,13 @@ func ExampleParseExpr_checkError() {
 func ExampleStringLit_Value() {
 	e, _ := cel.ParseExpr(`'''line one
 line two\t(tab) \` + `u00e9 \x41 \101'''`)
-	fmt.Printf("%q\n", e.(*cel.StringLit).Value())
+	fmt.Printf("%q\n", e.(*types.StringLit).Value())
 	// Output: "line one\nline two\t(tab) é A A"
 }
 
 func ExampleBytesLit_Value() {
 	e, _ := cel.ParseExpr(`b"\xff\303\277é"`)
-	fmt.Printf("% x\n", e.(*cel.BytesLit).Value())
+	fmt.Printf("% x\n", e.(*types.BytesLit).Value())
 	// Output: ff c3 bf c3 a9
 }
 
@@ -112,7 +113,7 @@ func ExampleConstant() {
 	// false
 }
 
-func mustParse(src string) cel.Expr {
+func mustParse(src string) types.Expr {
 	e, err := cel.ParseExpr(src)
 	if err != nil {
 		panic(err)

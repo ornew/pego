@@ -107,17 +107,7 @@ func TestGenerateTypedDocumentNilAndRecovery(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, entry := range []struct{ pkg, start string }{{"optional", "optional"}, {"recovery", "recoverTerminal"}} {
-		code, err := generateCode(g, GenOptions{Package: entry.pkg, Start: entry.start, Types: true, Document: true})
-		if err != nil {
-			t.Fatal(err)
-		}
-		path := filepath.Join(dir, entry.pkg)
-		if err := os.Mkdir(path, 0o755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(filepath.Join(path, "parser.go"), code, 0o644); err != nil {
-			t.Fatal(err)
-		}
+		generatePackageIn(t, dir, "typeddocument", entry.pkg, g, GenOptions{Start: entry.start, Types: true, Document: true})
 	}
 	const consumer = `package typeddocument_test
 import (
@@ -125,8 +115,9 @@ import (
  "testing"
  optional "typeddocument/optional"
  recovery "typeddocument/recovery"
+ recoverytypes "typeddocument/recovery/types"
 )
-func isRecoveryError(v any) bool { _, ok := v.(*recovery.Error); return ok }
+func isRecoveryError(v any) bool { _, ok := v.(*recoverytypes.Error); return ok }
 func TestNilAndRecovery(t *testing.T) {
  for _, unit := range []optional.PositionUnit{optional.CodePoints, optional.Bytes} {
   d, err := optional.NewDocument("", optional.WithUnit(unit))
@@ -235,29 +226,30 @@ rule main Document = t:("a") #atomic => Document{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Types: true, Document: true})
+	dir := t.TempDir()
+	generatePackageIn(t, dir, "typedcollision", "fixture", g, GenOptions{Start: "main", Types: true, Document: true})
+	typesSource, err := os.ReadFile(filepath.Join(dir, "fixture", "types", "types.go"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"Document_", "NewDocument_", "ParseStats_"} {
-		if !strings.Contains(string(code), "type "+name+" struct") {
-			t.Fatalf("generated type %s collides with Document API", name)
+	for _, name := range []string{"Document", "NewDocument", "ParseStats"} {
+		if !strings.Contains(string(typesSource), "type "+name+" struct") {
+			t.Fatalf("generated type %s is not declared under its name", name)
 		}
 	}
-	dir := t.TempDir()
 	for name, source := range map[string]string{
-		"go.mod":    testGoMod("typedcollision"),
-		"parser.go": string(code),
-		"parser_test.go": `package fixture
-import "testing"
+		"go.mod": testGoMod("typedcollision"),
+		"fixture/parser_test.go": `package fixture
+import ("testing"; "typedcollision/fixture/types")
 func TestCollision(t *testing.T) {
  d, err := NewDocument("a")
  if err != nil { t.Fatal(err) }
  got, err := d.ParseAST()
- var typed *Document_ = got
+ var typed *types.Document = got
  if err != nil || typed.Text != "a" { t.Fatal(got, err) }
- var _ *NewDocument_
- var _ *ParseStats_
+ var _ *types.NewDocument
+ var _ *types.ParseStats
+ var _ *Document = d
 }
 `,
 	} {
@@ -282,33 +274,29 @@ rule main ErrDocumentBusy = t:("a") #atomic => ErrDocumentBusy{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	plain, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Types: true, Document: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(plain), "type ErrDocumentBusy struct") {
-		t.Fatal("unobserved Document renamed a grammar type it does not clash with")
-	}
-	code, err := generateCode(g, GenOptions{Package: "fixture", Start: "main", Types: true, Document: true, Observability: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(code), "type ErrDocumentBusy_ struct") {
-		t.Fatal("generated type ErrDocumentBusy collides with the observed Document API")
-	}
 	dir := t.TempDir()
+	generatePackageIn(t, dir, "observedcollision", "plain", g, GenOptions{Start: "main", Types: true, Document: true})
+	generatePackageIn(t, dir, "observedcollision", "fixture", g, GenOptions{Start: "main", Types: true, Document: true, Observability: true})
+	for _, pkg := range []string{"plain", "fixture"} {
+		typesSource, err := os.ReadFile(filepath.Join(dir, pkg, "types", "types.go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(typesSource), "type ErrDocumentBusy struct") {
+			t.Fatalf("%s: the grammar type ErrDocumentBusy is not declared under its name", pkg)
+		}
+	}
 	for name, source := range map[string]string{
-		"go.mod":    testGoMod("observedcollision"),
-		"parser.go": string(code),
-		"parser_test.go": `package fixture
+		"go.mod": testGoMod("observedcollision"),
+		"fixture/parser_test.go": `package fixture
 
 import pegort "github.com/ornew/pego/runtime"
-import ("errors"; "testing")
+import ("errors"; "testing"; "observedcollision/fixture/types")
 func TestCollision(t *testing.T) {
  d, err := NewDocument("a")
  if err != nil { t.Fatal(err) }
  got, err := d.ParseAST()
- var typed *ErrDocumentBusy_ = got
+ var typed *types.ErrDocumentBusy = got
  if err != nil || typed.Text != "a" { t.Fatal(got, err) }
  var inner error
  d.ParseAST(pegort.WithTrace(func(pegort.TraceEvent) { if inner == nil { _, inner = d.ParseAST(WithMaxDepth(-1)) } }))

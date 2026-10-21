@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"unsafe"
 
+	types "github.com/ornew/pego/bench/gen/xml/types"
 	pegort "github.com/ornew/pego/runtime"
 )
 
@@ -48,1067 +49,6 @@ func ParseRule(name, input string, opts ...pegort.ParseOption) (*pegort.Node, er
 }
 
 // --- Typed values ---
-
-// TNode is a node whose Value has type T: a string node (TNode[string]) holds the text a
-// literal, a character class, ., a #atomic or _ matched, and a tuple or list node holds its
-// elements. A node of a statically unknown value is a TNode[any] whose Value is a string, or a
-// []any of the elements of a tuple or list.
-type TNode[T any] pegort.TNode[T]
-
-// Error is input skipped by error recovery (#recover).
-type Error pegort.Error
-
-// tpubHooks makes the values of the types above from those the typed runtime builds, and back.
-var tpubHooks = &pegort.TPubHooks{
-	Match: func(m *pegort.TNode[string]) any { return (*TNode[string])(m) },
-	Error: func(e *pegort.Error) any { return (*Error)(e) },
-	Node:  func(n *pegort.TNode[any]) any { return (*TNode[any])(n) },
-	Back: func(v any) any {
-		switch x := v.(type) {
-		case *TNode[string]:
-			return (*pegort.TNode[string])(x)
-		case *Error:
-			return (*pegort.Error)(x)
-		case *TNode[any]:
-			return (*pegort.TNode[any])(x)
-		}
-		return v
-	},
-}
-
-// --- Typed values (pego gen -types; Span, TNode and Error are aliases of the runtime types) ---
-
-// AttDef is the struct type AttDef.
-type AttDef struct {
-	pegort.Span
-	Name    *Name
-	Type    AttType
-	Default *Keyword
-	Value   *AttValue
-}
-
-// AttlistDecl is the struct type AttlistDecl.
-type AttlistDecl struct {
-	pegort.Span
-	Name *Name
-	Defs []*AttDef
-}
-
-// Attribute is the struct type Attribute.
-type Attribute struct {
-	pegort.Span
-	Name  *Name
-	Value *AttValue
-}
-
-// Choice is the struct type Choice.
-type Choice struct {
-	pegort.Span
-	Items []Particle
-	Occur *Occurrence
-}
-
-// Doctype is the struct type Doctype.
-type Doctype struct {
-	pegort.Span
-	Name       *Name
-	ExternalID *ExternalID
-	Subset     []Decl
-}
-
-// Document is the struct type Document.
-type Document struct {
-	pegort.Span
-	Decl    *XMLDecl
-	Prolog  []Misc
-	Doctype *Doctype
-	Root    *Element
-	Epilog  []Misc
-}
-
-// Element is the struct type Element.
-type Element struct {
-	pegort.Span
-	Name    *Name
-	Attrs   []*Attribute
-	Content []Content
-}
-
-// ElementDecl is the struct type ElementDecl.
-type ElementDecl struct {
-	pegort.Span
-	Name    *Name
-	Content ContentSpec
-}
-
-// EntityDecl is the struct type EntityDecl.
-type EntityDecl struct {
-	pegort.Span
-	Parameter  bool
-	Name       *Name
-	Value      *EntityValue
-	ExternalID *ExternalID
-	NData      *Name
-}
-
-// Enumeration is the struct type Enumeration.
-type Enumeration struct {
-	pegort.Span
-	Values []*Nmtoken
-}
-
-// ExternalID is the struct type ExternalID.
-type ExternalID struct {
-	pegort.Span
-	Public *PubidLiteral
-	System *SystemLiteral
-}
-
-// Mixed is the struct type Mixed.
-type Mixed struct {
-	pegort.Span
-	Names []*Name
-}
-
-// NameParticle is the struct type NameParticle.
-type NameParticle struct {
-	pegort.Span
-	Name  *Name
-	Occur *Occurrence
-}
-
-// NotationDecl is the struct type NotationDecl.
-type NotationDecl struct {
-	pegort.Span
-	Name       *Name
-	ExternalID *ExternalID
-}
-
-// NotationType is the struct type NotationType.
-type NotationType struct {
-	pegort.Span
-	Names []*Name
-}
-
-// PI is the struct type PI.
-type PI struct {
-	pegort.Span
-	Target *Name
-	Data   *PIData
-}
-
-// Sequence is the struct type Sequence.
-type Sequence struct {
-	pegort.Span
-	Items []Particle
-	Occur *Occurrence
-}
-
-// XMLDecl is the struct type XMLDecl.
-type XMLDecl struct {
-	pegort.Span
-	Version    *Version
-	Encoding   *EncName
-	Standalone *YesNo
-}
-
-// AttValue is the node type AttValue = node[string].
-type AttValue struct{ TNode[string] }
-
-// CDSect is the node type CDSect = node[string].
-type CDSect struct{ TNode[string] }
-
-// CharData is the node type CharData = node[string].
-type CharData struct{ TNode[string] }
-
-// CharRef is the node type CharRef = node[string].
-type CharRef struct{ TNode[string] }
-
-// Comment is the node type Comment = node[string].
-type Comment struct{ TNode[string] }
-
-// EncName is the node type EncName = node[string].
-type EncName struct{ TNode[string] }
-
-// EntityRef is the node type EntityRef = node[string].
-type EntityRef struct{ TNode[string] }
-
-// EntityValue is the node type EntityValue = node[string].
-type EntityValue struct{ TNode[string] }
-
-// Keyword is the node type Keyword = node[string].
-type Keyword struct{ TNode[string] }
-
-// Name is the node type Name = node[string].
-type Name struct{ TNode[string] }
-
-// Nmtoken is the node type Nmtoken = node[string].
-type Nmtoken struct{ TNode[string] }
-
-// Occurrence is the node type Occurrence = node[string].
-type Occurrence struct{ TNode[string] }
-
-// PERef is the node type PERef = node[string].
-type PERef struct{ TNode[string] }
-
-// PIData is the node type PIData = node[string].
-type PIData struct{ TNode[string] }
-
-// PubidLiteral is the node type PubidLiteral = node[string].
-type PubidLiteral struct{ TNode[string] }
-
-// SystemLiteral is the node type SystemLiteral = node[string].
-type SystemLiteral struct{ TNode[string] }
-
-// Version is the node type Version = node[string].
-type Version struct{ TNode[string] }
-
-// YesNo is the node type YesNo = node[string].
-type YesNo struct{ TNode[string] }
-
-// AttType is the join type AttType ~ Keyword | Enumeration | NotationType. Error (left by #recover) also implements it.
-type AttType interface{ isAttType() }
-
-// Content is the join type Content ~ Element | CharData | EntityRef | CharRef | CDSect | PI | Comment. Error (left by #recover) also implements it.
-type Content interface{ isContent() }
-
-// ContentSpec is the join type ContentSpec ~ Keyword | Mixed | Choice | Sequence. Error (left by #recover) also implements it.
-type ContentSpec interface{ isContentSpec() }
-
-// Decl is the join type Decl ~ ElementDecl | AttlistDecl | EntityDecl | NotationDecl | PI | Comment | PERef. Error (left by #recover) also implements it.
-type Decl interface{ isDecl() }
-
-// Misc is the join type Misc ~ Comment | PI. Error (left by #recover) also implements it.
-type Misc interface{ isMisc() }
-
-// Particle is the join type Particle ~ NameParticle | Choice | Sequence. Error (left by #recover) also implements it.
-type Particle interface{ isParticle() }
-
-func (*AttlistDecl) isDecl()      {}
-func (*CDSect) isContent()        {}
-func (*CharData) isContent()      {}
-func (*CharRef) isContent()       {}
-func (*Choice) isContentSpec()    {}
-func (*Choice) isParticle()       {}
-func (*Comment) isContent()       {}
-func (*Comment) isDecl()          {}
-func (*Comment) isMisc()          {}
-func (*Element) isContent()       {}
-func (*ElementDecl) isDecl()      {}
-func (*EntityDecl) isDecl()       {}
-func (*EntityRef) isContent()     {}
-func (*Enumeration) isAttType()   {}
-func (*Error) isAttType()         {}
-func (*Error) isContent()         {}
-func (*Error) isContentSpec()     {}
-func (*Error) isDecl()            {}
-func (*Error) isMisc()            {}
-func (*Error) isParticle()        {}
-func (*Keyword) isAttType()       {}
-func (*Keyword) isContentSpec()   {}
-func (*Mixed) isContentSpec()     {}
-func (*NameParticle) isParticle() {}
-func (*NotationDecl) isDecl()     {}
-func (*NotationType) isAttType()  {}
-func (*PERef) isDecl()            {}
-func (*PI) isContent()            {}
-func (*PI) isDecl()               {}
-func (*PI) isMisc()               {}
-func (*Sequence) isContentSpec()  {}
-func (*Sequence) isParticle()     {}
-
-func (v *AttDef) TName() string         { return "AttDef" }
-func (v *AttDef) TText() (string, bool) { return "", false }
-func (v *AttDef) TKids() []any          { return nil }
-func (v *AttDef) TStruct() bool         { return true }
-func (v *AttDef) TFresh() bool          { return false }
-func (v *AttDef) TSetFresh(bool)        {}
-func (v *AttDef) TField(name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	case "Type":
-		return pegort.TBack(tpubHooks, v.Type), true
-	case "Default":
-		return tb1(v.Default), true
-	case "Value":
-		return tb2(v.Value), true
-	}
-	return nil, false
-}
-
-func (v *AttDef) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	case "Type":
-		return pegort.TBack(tpubHooks, v.Type), true
-	case "Default":
-		return tb1(v.Default), true
-	case "Value":
-		return tb2(v.Value), true
-	}
-	return nil, false
-}
-
-func (v *AttlistDecl) TName() string         { return "AttlistDecl" }
-func (v *AttlistDecl) TText() (string, bool) { return "", false }
-func (v *AttlistDecl) TKids() []any          { return nil }
-func (v *AttlistDecl) TStruct() bool         { return true }
-func (v *AttlistDecl) TFresh() bool          { return false }
-func (v *AttlistDecl) TSetFresh(bool)        {}
-func (v *AttlistDecl) TField(name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	case "Defs":
-		return func() any {
-			if v.Defs == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Defs))
-			for i, x := range v.Defs {
-				kids[i] = pegort.TPtr(x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *AttlistDecl) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	case "Defs":
-		return func() any {
-			if v.Defs == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Defs))
-			for i, x := range v.Defs {
-				p.StepWork()
-				kids[i] = pegort.TPtr(x)
-			}
-			return p.ListField(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *Attribute) TName() string         { return "Attribute" }
-func (v *Attribute) TText() (string, bool) { return "", false }
-func (v *Attribute) TKids() []any          { return nil }
-func (v *Attribute) TStruct() bool         { return true }
-func (v *Attribute) TFresh() bool          { return false }
-func (v *Attribute) TSetFresh(bool)        {}
-func (v *Attribute) TField(name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	case "Value":
-		return tb2(v.Value), true
-	}
-	return nil, false
-}
-
-func (v *Attribute) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	case "Value":
-		return tb2(v.Value), true
-	}
-	return nil, false
-}
-
-func (v *Choice) TName() string         { return "Choice" }
-func (v *Choice) TText() (string, bool) { return "", false }
-func (v *Choice) TKids() []any          { return nil }
-func (v *Choice) TStruct() bool         { return true }
-func (v *Choice) TFresh() bool          { return false }
-func (v *Choice) TSetFresh(bool)        {}
-func (v *Choice) TField(name string) (any, bool) {
-	switch name {
-	case "Items":
-		return func() any {
-			if v.Items == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Items))
-			for i, x := range v.Items {
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	case "Occur":
-		return tb3(v.Occur), true
-	}
-	return nil, false
-}
-
-func (v *Choice) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Items":
-		return func() any {
-			if v.Items == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Items))
-			for i, x := range v.Items {
-				p.StepWork()
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return p.ListField(kids)
-		}(), true
-	case "Occur":
-		return tb3(v.Occur), true
-	}
-	return nil, false
-}
-
-func (v *Doctype) TName() string         { return "Doctype" }
-func (v *Doctype) TText() (string, bool) { return "", false }
-func (v *Doctype) TKids() []any          { return nil }
-func (v *Doctype) TStruct() bool         { return true }
-func (v *Doctype) TFresh() bool          { return false }
-func (v *Doctype) TSetFresh(bool)        {}
-func (v *Doctype) TField(name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	case "ExternalID":
-		return pegort.TPtr(v.ExternalID), true
-	case "Subset":
-		return func() any {
-			if v.Subset == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Subset))
-			for i, x := range v.Subset {
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *Doctype) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	case "ExternalID":
-		return pegort.TPtr(v.ExternalID), true
-	case "Subset":
-		return func() any {
-			if v.Subset == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Subset))
-			for i, x := range v.Subset {
-				p.StepWork()
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return p.ListField(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *Document) TName() string         { return "Document" }
-func (v *Document) TText() (string, bool) { return "", false }
-func (v *Document) TKids() []any          { return nil }
-func (v *Document) TStruct() bool         { return true }
-func (v *Document) TFresh() bool          { return false }
-func (v *Document) TSetFresh(bool)        {}
-func (v *Document) TField(name string) (any, bool) {
-	switch name {
-	case "Decl":
-		return pegort.TPtr(v.Decl), true
-	case "Prolog":
-		return func() any {
-			if v.Prolog == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Prolog))
-			for i, x := range v.Prolog {
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	case "Doctype":
-		return pegort.TPtr(v.Doctype), true
-	case "Root":
-		return pegort.TPtr(v.Root), true
-	case "Epilog":
-		return func() any {
-			if v.Epilog == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Epilog))
-			for i, x := range v.Epilog {
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *Document) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Decl":
-		return pegort.TPtr(v.Decl), true
-	case "Prolog":
-		return func() any {
-			if v.Prolog == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Prolog))
-			for i, x := range v.Prolog {
-				p.StepWork()
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return p.ListField(kids)
-		}(), true
-	case "Doctype":
-		return pegort.TPtr(v.Doctype), true
-	case "Root":
-		return pegort.TPtr(v.Root), true
-	case "Epilog":
-		return func() any {
-			if v.Epilog == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Epilog))
-			for i, x := range v.Epilog {
-				p.StepWork()
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return p.ListField(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *Element) TName() string         { return "Element" }
-func (v *Element) TText() (string, bool) { return "", false }
-func (v *Element) TKids() []any          { return nil }
-func (v *Element) TStruct() bool         { return true }
-func (v *Element) TFresh() bool          { return false }
-func (v *Element) TSetFresh(bool)        {}
-func (v *Element) TField(name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	case "Attrs":
-		return func() any {
-			if v.Attrs == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Attrs))
-			for i, x := range v.Attrs {
-				kids[i] = pegort.TPtr(x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	case "Content":
-		return func() any {
-			if v.Content == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Content))
-			for i, x := range v.Content {
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *Element) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	case "Attrs":
-		return func() any {
-			if v.Attrs == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Attrs))
-			for i, x := range v.Attrs {
-				p.StepWork()
-				kids[i] = pegort.TPtr(x)
-			}
-			return p.ListField(kids)
-		}(), true
-	case "Content":
-		return func() any {
-			if v.Content == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Content))
-			for i, x := range v.Content {
-				p.StepWork()
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return p.ListField(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *ElementDecl) TName() string         { return "ElementDecl" }
-func (v *ElementDecl) TText() (string, bool) { return "", false }
-func (v *ElementDecl) TKids() []any          { return nil }
-func (v *ElementDecl) TStruct() bool         { return true }
-func (v *ElementDecl) TFresh() bool          { return false }
-func (v *ElementDecl) TSetFresh(bool)        {}
-func (v *ElementDecl) TField(name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	case "Content":
-		return pegort.TBack(tpubHooks, v.Content), true
-	}
-	return nil, false
-}
-
-func (v *ElementDecl) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	case "Content":
-		return pegort.TBack(tpubHooks, v.Content), true
-	}
-	return nil, false
-}
-
-func (v *EntityDecl) TName() string         { return "EntityDecl" }
-func (v *EntityDecl) TText() (string, bool) { return "", false }
-func (v *EntityDecl) TKids() []any          { return nil }
-func (v *EntityDecl) TStruct() bool         { return true }
-func (v *EntityDecl) TFresh() bool          { return false }
-func (v *EntityDecl) TSetFresh(bool)        {}
-func (v *EntityDecl) TField(name string) (any, bool) {
-	switch name {
-	case "Parameter":
-		return any(v.Parameter), true
-	case "Name":
-		return tb0(v.Name), true
-	case "Value":
-		return tb4(v.Value), true
-	case "ExternalID":
-		return pegort.TPtr(v.ExternalID), true
-	case "NData":
-		return tb0(v.NData), true
-	}
-	return nil, false
-}
-
-func (v *EntityDecl) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Parameter":
-		return any(v.Parameter), true
-	case "Name":
-		return tb0(v.Name), true
-	case "Value":
-		return tb4(v.Value), true
-	case "ExternalID":
-		return pegort.TPtr(v.ExternalID), true
-	case "NData":
-		return tb0(v.NData), true
-	}
-	return nil, false
-}
-
-func (v *Enumeration) TName() string         { return "Enumeration" }
-func (v *Enumeration) TText() (string, bool) { return "", false }
-func (v *Enumeration) TKids() []any          { return nil }
-func (v *Enumeration) TStruct() bool         { return true }
-func (v *Enumeration) TFresh() bool          { return false }
-func (v *Enumeration) TSetFresh(bool)        {}
-func (v *Enumeration) TField(name string) (any, bool) {
-	switch name {
-	case "Values":
-		return func() any {
-			if v.Values == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Values))
-			for i, x := range v.Values {
-				kids[i] = tb5(x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *Enumeration) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Values":
-		return func() any {
-			if v.Values == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Values))
-			for i, x := range v.Values {
-				p.StepWork()
-				kids[i] = tb5(x)
-			}
-			return p.ListField(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *ExternalID) TName() string         { return "ExternalID" }
-func (v *ExternalID) TText() (string, bool) { return "", false }
-func (v *ExternalID) TKids() []any          { return nil }
-func (v *ExternalID) TStruct() bool         { return true }
-func (v *ExternalID) TFresh() bool          { return false }
-func (v *ExternalID) TSetFresh(bool)        {}
-func (v *ExternalID) TField(name string) (any, bool) {
-	switch name {
-	case "Public":
-		return tb6(v.Public), true
-	case "System":
-		return tb7(v.System), true
-	}
-	return nil, false
-}
-
-func (v *ExternalID) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Public":
-		return tb6(v.Public), true
-	case "System":
-		return tb7(v.System), true
-	}
-	return nil, false
-}
-
-func (v *Mixed) TName() string         { return "Mixed" }
-func (v *Mixed) TText() (string, bool) { return "", false }
-func (v *Mixed) TKids() []any          { return nil }
-func (v *Mixed) TStruct() bool         { return true }
-func (v *Mixed) TFresh() bool          { return false }
-func (v *Mixed) TSetFresh(bool)        {}
-func (v *Mixed) TField(name string) (any, bool) {
-	switch name {
-	case "Names":
-		return func() any {
-			if v.Names == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Names))
-			for i, x := range v.Names {
-				kids[i] = tb0(x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *Mixed) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Names":
-		return func() any {
-			if v.Names == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Names))
-			for i, x := range v.Names {
-				p.StepWork()
-				kids[i] = tb0(x)
-			}
-			return p.ListField(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *NameParticle) TName() string         { return "NameParticle" }
-func (v *NameParticle) TText() (string, bool) { return "", false }
-func (v *NameParticle) TKids() []any          { return nil }
-func (v *NameParticle) TStruct() bool         { return true }
-func (v *NameParticle) TFresh() bool          { return false }
-func (v *NameParticle) TSetFresh(bool)        {}
-func (v *NameParticle) TField(name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	case "Occur":
-		return tb3(v.Occur), true
-	}
-	return nil, false
-}
-
-func (v *NameParticle) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	case "Occur":
-		return tb3(v.Occur), true
-	}
-	return nil, false
-}
-
-func (v *NotationDecl) TName() string         { return "NotationDecl" }
-func (v *NotationDecl) TText() (string, bool) { return "", false }
-func (v *NotationDecl) TKids() []any          { return nil }
-func (v *NotationDecl) TStruct() bool         { return true }
-func (v *NotationDecl) TFresh() bool          { return false }
-func (v *NotationDecl) TSetFresh(bool)        {}
-func (v *NotationDecl) TField(name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	case "ExternalID":
-		return pegort.TPtr(v.ExternalID), true
-	}
-	return nil, false
-}
-
-func (v *NotationDecl) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	case "ExternalID":
-		return pegort.TPtr(v.ExternalID), true
-	}
-	return nil, false
-}
-
-func (v *NotationType) TName() string         { return "NotationType" }
-func (v *NotationType) TText() (string, bool) { return "", false }
-func (v *NotationType) TKids() []any          { return nil }
-func (v *NotationType) TStruct() bool         { return true }
-func (v *NotationType) TFresh() bool          { return false }
-func (v *NotationType) TSetFresh(bool)        {}
-func (v *NotationType) TField(name string) (any, bool) {
-	switch name {
-	case "Names":
-		return func() any {
-			if v.Names == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Names))
-			for i, x := range v.Names {
-				kids[i] = tb0(x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *NotationType) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Names":
-		return func() any {
-			if v.Names == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Names))
-			for i, x := range v.Names {
-				p.StepWork()
-				kids[i] = tb0(x)
-			}
-			return p.ListField(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *PI) TName() string         { return "PI" }
-func (v *PI) TText() (string, bool) { return "", false }
-func (v *PI) TKids() []any          { return nil }
-func (v *PI) TStruct() bool         { return true }
-func (v *PI) TFresh() bool          { return false }
-func (v *PI) TSetFresh(bool)        {}
-func (v *PI) TField(name string) (any, bool) {
-	switch name {
-	case "Target":
-		return tb0(v.Target), true
-	case "Data":
-		return tb8(v.Data), true
-	}
-	return nil, false
-}
-
-func (v *PI) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Target":
-		return tb0(v.Target), true
-	case "Data":
-		return tb8(v.Data), true
-	}
-	return nil, false
-}
-
-func (v *Sequence) TName() string         { return "Sequence" }
-func (v *Sequence) TText() (string, bool) { return "", false }
-func (v *Sequence) TKids() []any          { return nil }
-func (v *Sequence) TStruct() bool         { return true }
-func (v *Sequence) TFresh() bool          { return false }
-func (v *Sequence) TSetFresh(bool)        {}
-func (v *Sequence) TField(name string) (any, bool) {
-	switch name {
-	case "Items":
-		return func() any {
-			if v.Items == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Items))
-			for i, x := range v.Items {
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	case "Occur":
-		return tb3(v.Occur), true
-	}
-	return nil, false
-}
-
-func (v *Sequence) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Items":
-		return func() any {
-			if v.Items == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Items))
-			for i, x := range v.Items {
-				p.StepWork()
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return p.ListField(kids)
-		}(), true
-	case "Occur":
-		return tb3(v.Occur), true
-	}
-	return nil, false
-}
-
-func (v *XMLDecl) TName() string         { return "XMLDecl" }
-func (v *XMLDecl) TText() (string, bool) { return "", false }
-func (v *XMLDecl) TKids() []any          { return nil }
-func (v *XMLDecl) TStruct() bool         { return true }
-func (v *XMLDecl) TFresh() bool          { return false }
-func (v *XMLDecl) TSetFresh(bool)        {}
-func (v *XMLDecl) TField(name string) (any, bool) {
-	switch name {
-	case "Version":
-		return tb9(v.Version), true
-	case "Encoding":
-		return tb10(v.Encoding), true
-	case "Standalone":
-		return tb11(v.Standalone), true
-	}
-	return nil, false
-}
-
-func (v *XMLDecl) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Version":
-		return tb9(v.Version), true
-	case "Encoding":
-		return tb10(v.Encoding), true
-	case "Standalone":
-		return tb11(v.Standalone), true
-	}
-	return nil, false
-}
-
-func tb0(v *Name) any {
-	if v == nil {
-		return nil
-	}
-	return pegort.TSetNodeType(pegort.TBack(tpubHooks, &v.TNode), tnt[10])
-}
-
-func tb1(v *Keyword) any {
-	if v == nil {
-		return nil
-	}
-	return pegort.TSetNodeType(pegort.TBack(tpubHooks, &v.TNode), tnt[9])
-}
-
-func tb2(v *AttValue) any {
-	if v == nil {
-		return nil
-	}
-	return pegort.TSetNodeType(pegort.TBack(tpubHooks, &v.TNode), tnt[1])
-}
-
-func tb3(v *Occurrence) any {
-	if v == nil {
-		return nil
-	}
-	return pegort.TSetNodeType(pegort.TBack(tpubHooks, &v.TNode), tnt[12])
-}
-
-func tb4(v *EntityValue) any {
-	if v == nil {
-		return nil
-	}
-	return pegort.TSetNodeType(pegort.TBack(tpubHooks, &v.TNode), tnt[8])
-}
-
-func tb5(v *Nmtoken) any {
-	if v == nil {
-		return nil
-	}
-	return pegort.TSetNodeType(pegort.TBack(tpubHooks, &v.TNode), tnt[11])
-}
-
-func tb6(v *PubidLiteral) any {
-	if v == nil {
-		return nil
-	}
-	return pegort.TSetNodeType(pegort.TBack(tpubHooks, &v.TNode), tnt[15])
-}
-
-func tb7(v *SystemLiteral) any {
-	if v == nil {
-		return nil
-	}
-	return pegort.TSetNodeType(pegort.TBack(tpubHooks, &v.TNode), tnt[16])
-}
-
-func tb8(v *PIData) any {
-	if v == nil {
-		return nil
-	}
-	return pegort.TSetNodeType(pegort.TBack(tpubHooks, &v.TNode), tnt[14])
-}
-
-func tb9(v *Version) any {
-	if v == nil {
-		return nil
-	}
-	return pegort.TSetNodeType(pegort.TBack(tpubHooks, &v.TNode), tnt[17])
-}
-
-func tb10(v *EncName) any {
-	if v == nil {
-		return nil
-	}
-	return pegort.TSetNodeType(pegort.TBack(tpubHooks, &v.TNode), tnt[6])
-}
-
-func tb11(v *YesNo) any {
-	if v == nil {
-		return nil
-	}
-	return pegort.TSetNodeType(pegort.TBack(tpubHooks, &v.TNode), tnt[18])
-}
 
 func astNode(v any) *pegort.Node { n, _ := v.(*pegort.Node); return n }
 func astIsNil(v any) bool        { n, ok := v.(*pegort.Node); return v == nil || ok && n == nil }
@@ -1253,34 +193,34 @@ func tinit() {
 		return nil
 	}
 	for i, name := range []string{"AttValue", "CDSect", "CharData", "CharRef", "Comment", "EncName", "EntityRef", "EntityValue", "Keyword", "Name", "Nmtoken", "Occurrence", "PERef", "PIData", "PubidLiteral", "SystemLiteral", "Version", "YesNo"} {
-		tnt[i+1] = pegort.TRegisterNodeType(name, tnamedPub)
+		types.PegoNodeTypes[i+1] = pegort.TRegisterNodeType(name, tnamedPub)
 	}
-	trules[5].Nt = tnt[17]
-	trules[7].Nt = tnt[6]
-	trules[9].Nt = tnt[18]
-	trules[12].Nt = tnt[5]
-	trules[14].Nt = tnt[14]
-	trules[18].Nt = tnt[13]
-	trules[23].Nt = tnt[16]
-	trules[24].Nt = tnt[16]
-	trules[26].Nt = tnt[15]
-	trules[27].Nt = tnt[15]
-	trules[30].Nt = tnt[9]
-	trules[31].Nt = tnt[9]
-	trules[37].Nt = tnt[12]
-	trules[40].Nt = tnt[9]
-	trules[41].Nt = tnt[9]
-	trules[43].Nt = tnt[9]
-	trules[50].Nt = tnt[8]
-	trules[51].Nt = tnt[8]
-	trules[58].Nt = tnt[1]
-	trules[59].Nt = tnt[1]
-	trules[63].Nt = tnt[3]
-	trules[65].Nt = tnt[2]
-	trules[67].Nt = tnt[4]
-	trules[68].Nt = tnt[7]
-	trules[69].Nt = tnt[10]
-	trules[71].Nt = tnt[11]
+	trules[5].Nt = types.PegoNodeTypes[17]
+	trules[7].Nt = types.PegoNodeTypes[6]
+	trules[9].Nt = types.PegoNodeTypes[18]
+	trules[12].Nt = types.PegoNodeTypes[5]
+	trules[14].Nt = types.PegoNodeTypes[14]
+	trules[18].Nt = types.PegoNodeTypes[13]
+	trules[23].Nt = types.PegoNodeTypes[16]
+	trules[24].Nt = types.PegoNodeTypes[16]
+	trules[26].Nt = types.PegoNodeTypes[15]
+	trules[27].Nt = types.PegoNodeTypes[15]
+	trules[30].Nt = types.PegoNodeTypes[9]
+	trules[31].Nt = types.PegoNodeTypes[9]
+	trules[37].Nt = types.PegoNodeTypes[12]
+	trules[40].Nt = types.PegoNodeTypes[9]
+	trules[41].Nt = types.PegoNodeTypes[9]
+	trules[43].Nt = types.PegoNodeTypes[9]
+	trules[50].Nt = types.PegoNodeTypes[8]
+	trules[51].Nt = types.PegoNodeTypes[8]
+	trules[58].Nt = types.PegoNodeTypes[1]
+	trules[59].Nt = types.PegoNodeTypes[1]
+	trules[63].Nt = types.PegoNodeTypes[3]
+	trules[65].Nt = types.PegoNodeTypes[2]
+	trules[67].Nt = types.PegoNodeTypes[4]
+	trules[68].Nt = types.PegoNodeTypes[7]
+	trules[69].Nt = types.PegoNodeTypes[10]
+	trules[71].Nt = types.PegoNodeTypes[11]
 }
 
 // tmk_AttDef makes a AttDef in an action (newStruct in the typed runtime).
@@ -1291,7 +231,7 @@ func tmk_AttDef(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) a
 	c.P.StepWork()
 	v.Name = tv30(a, f0)
 	c.P.StepWork()
-	v.Type = pegort.TAs[AttType](pegort.TPubIn(tpubHooks, a, f1))
+	v.Type = pegort.TAs[types.AttType](pegort.TPubIn(types.PegoHooks, a, f1))
 	c.P.StepWork()
 	v.Default = tv17(a, f2)
 	c.P.StepWork()
@@ -1383,7 +323,7 @@ func tmk_Doctype(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	c.P.StepWork()
 	v.Name = tv30(a, f0)
 	c.P.StepWork()
-	v.ExternalID = pegort.TAs[*ExternalID](f1)
+	v.ExternalID = pegort.TAs[*types.ExternalID](f1)
 	c.P.StepWork()
 	v.Subset = tl2(a, f2)
 	if final {
@@ -1406,13 +346,13 @@ func tmk_Document(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any,
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tDocument)
 	c.P.StepWork()
-	v.Decl = pegort.TAs[*XMLDecl](f0)
+	v.Decl = pegort.TAs[*types.XMLDecl](f0)
 	c.P.StepWork()
 	v.Prolog = tl3(a, f1)
 	c.P.StepWork()
-	v.Doctype = pegort.TAs[*Doctype](f2)
+	v.Doctype = pegort.TAs[*types.Doctype](f2)
 	c.P.StepWork()
-	v.Root = pegort.TAs[*Element](f3)
+	v.Root = pegort.TAs[*types.Element](f3)
 	c.P.StepWork()
 	v.Epilog = tl3(a, f4)
 	if final {
@@ -1466,7 +406,7 @@ func tmk_ElementDecl(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	c.P.StepWork()
 	v.Name = tv30(a, f0)
 	c.P.StepWork()
-	v.Content = pegort.TAs[ContentSpec](pegort.TPubIn(tpubHooks, a, f1))
+	v.Content = pegort.TAs[types.ContentSpec](pegort.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
@@ -1491,7 +431,7 @@ func tmk_EntityDecl(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 an
 	c.P.StepWork()
 	v.Value = tv20(a, f2)
 	c.P.StepWork()
-	v.ExternalID = pegort.TAs[*ExternalID](f3)
+	v.ExternalID = pegort.TAs[*types.ExternalID](f3)
 	c.P.StepWork()
 	v.NData = tv30(a, f4)
 	if final {
@@ -1596,7 +536,7 @@ func tmk_NotationDecl(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	c.P.StepWork()
 	v.Name = tv30(a, f0)
 	c.P.StepWork()
-	v.ExternalID = pegort.TAs[*ExternalID](f1)
+	v.ExternalID = pegort.TAs[*types.ExternalID](f1)
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
@@ -1693,116 +633,116 @@ func tmk_XMLDecl(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	return c.Made(v, first, start, end)
 }
 
-func tl0(a *tslabs, v any) []*AttDef {
+func tl0(a *tslabs, v any) []*types.AttDef {
 	a.stepWork()
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*AttDef{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.AttDef{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[*AttDef](c)
+		out[i] = pegort.TAs[*types.AttDef](c)
 	}
 	return out
 }
 
-func tl1(a *tslabs, v any) []Particle {
+func tl1(a *tslabs, v any) []types.Particle {
 	a.stepWork()
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []Particle{} // another node (an Error), as conversion makes an empty list of it
+		return []types.Particle{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[Particle](pegort.TPubIn(tpubHooks, a, c))
+		out[i] = pegort.TAs[types.Particle](pegort.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
-func tl2(a *tslabs, v any) []Decl {
+func tl2(a *tslabs, v any) []types.Decl {
 	a.stepWork()
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []Decl{} // another node (an Error), as conversion makes an empty list of it
+		return []types.Decl{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl2Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[Decl](pegort.TPubIn(tpubHooks, a, c))
+		out[i] = pegort.TAs[types.Decl](pegort.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
-func tl3(a *tslabs, v any) []Misc {
+func tl3(a *tslabs, v any) []types.Misc {
 	a.stepWork()
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []Misc{} // another node (an Error), as conversion makes an empty list of it
+		return []types.Misc{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl3Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[Misc](pegort.TPubIn(tpubHooks, a, c))
+		out[i] = pegort.TAs[types.Misc](pegort.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
-func tl4(a *tslabs, v any) []*Attribute {
+func tl4(a *tslabs, v any) []*types.Attribute {
 	a.stepWork()
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*Attribute{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.Attribute{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl4Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[*Attribute](c)
+		out[i] = pegort.TAs[*types.Attribute](c)
 	}
 	return out
 }
 
-func tl5(a *tslabs, v any) []Content {
+func tl5(a *tslabs, v any) []types.Content {
 	a.stepWork()
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []Content{} // another node (an Error), as conversion makes an empty list of it
+		return []types.Content{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl5Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[Content](pegort.TPubIn(tpubHooks, a, c))
+		out[i] = pegort.TAs[types.Content](pegort.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
-func tl6(a *tslabs, v any) []*Nmtoken {
+func tl6(a *tslabs, v any) []*types.Nmtoken {
 	a.stepWork()
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*Nmtoken{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.Nmtoken{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl6Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -1812,14 +752,14 @@ func tl6(a *tslabs, v any) []*Nmtoken {
 	return out
 }
 
-func tl7(a *tslabs, v any) []*Name {
+func tl7(a *tslabs, v any) []*types.Name {
 	a.stepWork()
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*Name{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.Name{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl7Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -1829,279 +769,279 @@ func tl7(a *tslabs, v any) []*Name {
 	return out
 }
 
-func tv0(a *tslabs, v any) []Misc {
+func tv0(a *tslabs, v any) []types.Misc {
 	a.stepWork()
 	return tl3(a, v)
 }
 
-func tv1(a *tslabs, v any) *Version {
+func tv1(a *tslabs, v any) *types.Version {
 	a.stepWork()
 	return tv2(a, v)
 }
 
-func tv2(a *tslabs, v any) *Version {
+func tv2(a *tslabs, v any) *types.Version {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(Version{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Version{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[17] {
+	if x == nil || x.Nt != types.PegoNodeTypes[17] {
 		return nil
 	}
-	return pegort.TMatchAs[Version](x)
+	return pegort.TMatchAs[types.Version](x)
 }
 
-func tv3(a *tslabs, v any) *EncName {
+func tv3(a *tslabs, v any) *types.EncName {
 	a.stepWork()
 	return tv4(a, v)
 }
 
-func tv4(a *tslabs, v any) *EncName {
+func tv4(a *tslabs, v any) *types.EncName {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(EncName{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.EncName{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[6] {
+	if x == nil || x.Nt != types.PegoNodeTypes[6] {
 		return nil
 	}
-	return pegort.TMatchAs[EncName](x)
+	return pegort.TMatchAs[types.EncName](x)
 }
 
-func tv5(a *tslabs, v any) *YesNo {
+func tv5(a *tslabs, v any) *types.YesNo {
 	a.stepWork()
 	return tv6(a, v)
 }
 
-func tv6(a *tslabs, v any) *YesNo {
+func tv6(a *tslabs, v any) *types.YesNo {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(YesNo{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.YesNo{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[18] {
+	if x == nil || x.Nt != types.PegoNodeTypes[18] {
 		return nil
 	}
-	return pegort.TMatchAs[YesNo](x)
+	return pegort.TMatchAs[types.YesNo](x)
 }
 
-func tv7(a *tslabs, v any) *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[string]]]] {
+func tv7(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[string], *types.TNode[[]*types.TNode[string]]]] {
 	a.stepWork()
 	return tv35(a, v)
 }
 
-func tv8(a *tslabs, v any) *Comment {
+func tv8(a *tslabs, v any) *types.Comment {
 	a.stepWork()
 	return tv9(a, v)
 }
 
-func tv9(a *tslabs, v any) *Comment {
+func tv9(a *tslabs, v any) *types.Comment {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(Comment{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Comment{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[5] {
+	if x == nil || x.Nt != types.PegoNodeTypes[5] {
 		return nil
 	}
-	return pegort.TMatchAs[Comment](x)
+	return pegort.TMatchAs[types.Comment](x)
 }
 
-func tv10(a *tslabs, v any) *PIData {
+func tv10(a *tslabs, v any) *types.PIData {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(PIData{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.PIData{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[14] {
+	if x == nil || x.Nt != types.PegoNodeTypes[14] {
 		return nil
 	}
-	return pegort.TMatchAs[PIData](x)
+	return pegort.TMatchAs[types.PIData](x)
 }
 
-func tv11(a *tslabs, v any) []Decl {
+func tv11(a *tslabs, v any) []types.Decl {
 	a.stepWork()
 	return tl2(a, v)
 }
 
-func tv12(a *tslabs, v any) *PERef {
+func tv12(a *tslabs, v any) *types.PERef {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(PERef{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.PERef{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[13] {
+	if x == nil || x.Nt != types.PegoNodeTypes[13] {
 		return nil
 	}
-	return pegort.TMatchAs[PERef](x)
+	return pegort.TMatchAs[types.PERef](x)
 }
 
-func tv13(a *tslabs, v any) *SystemLiteral {
+func tv13(a *tslabs, v any) *types.SystemLiteral {
 	a.stepWork()
 	return tv14(a, v)
 }
 
-func tv14(a *tslabs, v any) *SystemLiteral {
+func tv14(a *tslabs, v any) *types.SystemLiteral {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(SystemLiteral{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.SystemLiteral{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[16] {
+	if x == nil || x.Nt != types.PegoNodeTypes[16] {
 		return nil
 	}
-	return pegort.TMatchAs[SystemLiteral](x)
+	return pegort.TMatchAs[types.SystemLiteral](x)
 }
 
-func tv15(a *tslabs, v any) *PubidLiteral {
+func tv15(a *tslabs, v any) *types.PubidLiteral {
 	a.stepWork()
 	return tv16(a, v)
 }
 
-func tv16(a *tslabs, v any) *PubidLiteral {
+func tv16(a *tslabs, v any) *types.PubidLiteral {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(PubidLiteral{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.PubidLiteral{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[15] {
+	if x == nil || x.Nt != types.PegoNodeTypes[15] {
 		return nil
 	}
-	return pegort.TMatchAs[PubidLiteral](x)
+	return pegort.TMatchAs[types.PubidLiteral](x)
 }
 
-func tv17(a *tslabs, v any) *Keyword {
+func tv17(a *tslabs, v any) *types.Keyword {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(Keyword{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Keyword{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[9] {
+	if x == nil || x.Nt != types.PegoNodeTypes[9] {
 		return nil
 	}
-	return pegort.TMatchAs[Keyword](x)
+	return pegort.TMatchAs[types.Keyword](x)
 }
 
-func tv18(a *tslabs, v any) *Occurrence {
+func tv18(a *tslabs, v any) *types.Occurrence {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(Occurrence{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Occurrence{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[12] {
+	if x == nil || x.Nt != types.PegoNodeTypes[12] {
 		return nil
 	}
-	return pegort.TMatchAs[Occurrence](x)
+	return pegort.TMatchAs[types.Occurrence](x)
 }
 
-func tv19(a *tslabs, v any) *EntityValue {
+func tv19(a *tslabs, v any) *types.EntityValue {
 	a.stepWork()
 	return tv20(a, v)
 }
 
-func tv20(a *tslabs, v any) *EntityValue {
+func tv20(a *tslabs, v any) *types.EntityValue {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(EntityValue{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.EntityValue{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[8] {
+	if x == nil || x.Nt != types.PegoNodeTypes[8] {
 		return nil
 	}
-	return pegort.TMatchAs[EntityValue](x)
+	return pegort.TMatchAs[types.EntityValue](x)
 }
 
-func tv21(a *tslabs, v any) *AttValue {
+func tv21(a *tslabs, v any) *types.AttValue {
 	a.stepWork()
 	return tv22(a, v)
 }
 
-func tv22(a *tslabs, v any) *AttValue {
+func tv22(a *tslabs, v any) *types.AttValue {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(AttValue{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.AttValue{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[1] {
+	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
 	}
-	return pegort.TMatchAs[AttValue](x)
+	return pegort.TMatchAs[types.AttValue](x)
 }
 
-func tv23(a *tslabs, v any) *TNode[[]Content] {
+func tv23(a *tslabs, v any) *types.TNode[[]types.Content] {
 	a.stepWork()
 	return tv36(a, v)
 }
 
-func tv24(a *tslabs, v any) *CharData {
+func tv24(a *tslabs, v any) *types.CharData {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(CharData{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.CharData{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[3] {
+	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
 	}
-	return pegort.TMatchAs[CharData](x)
+	return pegort.TMatchAs[types.CharData](x)
 }
 
-func tv25(a *tslabs, v any) *CDSect {
+func tv25(a *tslabs, v any) *types.CDSect {
 	a.stepWork()
 	return tv26(a, v)
 }
 
-func tv26(a *tslabs, v any) *CDSect {
+func tv26(a *tslabs, v any) *types.CDSect {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(CDSect{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.CDSect{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[2] {
+	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
 	}
-	return pegort.TMatchAs[CDSect](x)
+	return pegort.TMatchAs[types.CDSect](x)
 }
 
 func tv27(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
-func tv28(a *tslabs, v any) *CharRef {
+func tv28(a *tslabs, v any) *types.CharRef {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(CharRef{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.CharRef{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[4] {
+	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
 	}
-	return pegort.TMatchAs[CharRef](x)
+	return pegort.TMatchAs[types.CharRef](x)
 }
 
-func tv29(a *tslabs, v any) *EntityRef {
+func tv29(a *tslabs, v any) *types.EntityRef {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(EntityRef{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.EntityRef{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[7] {
+	if x == nil || x.Nt != types.PegoNodeTypes[7] {
 		return nil
 	}
-	return pegort.TMatchAs[EntityRef](x)
+	return pegort.TMatchAs[types.EntityRef](x)
 }
 
-func tv30(a *tslabs, v any) *Name {
+func tv30(a *tslabs, v any) *types.Name {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(Name{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Name{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[10] {
+	if x == nil || x.Nt != types.PegoNodeTypes[10] {
 		return nil
 	}
-	return pegort.TMatchAs[Name](x)
+	return pegort.TMatchAs[types.Name](x)
 }
 
-func tv31(a *tslabs, v any) *TNode[string] {
+func tv31(a *tslabs, v any) *types.TNode[string] {
 	a.stepWork()
-	return (*TNode[string])(pegort.TPubMatch(v))
+	return (*types.TNode[string])(pegort.TPubMatch(v))
 }
 
-func tv32(a *tslabs, v any) *Nmtoken {
+func tv32(a *tslabs, v any) *types.Nmtoken {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(Nmtoken{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Nmtoken{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[11] {
+	if x == nil || x.Nt != types.PegoNodeTypes[11] {
 		return nil
 	}
-	return pegort.TMatchAs[Nmtoken](x)
+	return pegort.TMatchAs[types.Nmtoken](x)
 }
 
-func tv33(a *tslabs, v any) *TNode[[]*TNode[string]] {
+func tv33(a *tslabs, v any) *types.TNode[[]*types.TNode[string]] {
 	a.stepWork()
 	return tv37(a, v)
 }
 
-func tv34(a *tslabs, v any) *TNode[[]*TNode[string]] {
+func tv34(a *tslabs, v any) *types.TNode[[]*types.TNode[string]] {
 	a.stepWork()
 	return tv37(a, v)
 }
 
-func tv35(a *tslabs, v any) *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[string]]]] {
+func tv35(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[string], *types.TNode[[]*types.TNode[string]]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[string]]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[string], *types.TNode[[]*types.TNode[string]]]]{Span: x.Span}
 		out.Value = tv38(a, x)
 		return out
 	case *pegort.TError:
@@ -2113,21 +1053,21 @@ func tv35(a *tslabs, v any) *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[strin
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[string]]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[string], *types.TNode[[]*types.TNode[string]]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv38(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv36(a *tslabs, v any) *TNode[[]Content] {
+func tv36(a *tslabs, v any) *types.TNode[[]types.Content] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[[]Content]{Span: x.Span}
+		out := &types.TNode[[]types.Content]{Span: x.Span}
 		out.Value = tl5(a, x)
 		return out
 	case *pegort.TError:
@@ -2139,21 +1079,21 @@ func tv36(a *tslabs, v any) *TNode[[]Content] {
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[[]Content]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[[]types.Content]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tl5(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv37(a *tslabs, v any) *TNode[[]*TNode[string]] {
+func tv37(a *tslabs, v any) *types.TNode[[]*types.TNode[string]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[[]*TNode[string]]{Span: x.Span}
+		out := &types.TNode[[]*types.TNode[string]]{Span: x.Span}
 		out.Value = tl8(a, x)
 		return out
 	case *pegort.TError:
@@ -2165,39 +1105,39 @@ func tv37(a *tslabs, v any) *TNode[[]*TNode[string]] {
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[[]*TNode[string]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[[]*types.TNode[string]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tl8(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv38(a *tslabs, v any) Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[string]]] {
+func tv38(a *tslabs, v any) types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[string], *types.TNode[[]*types.TNode[string]]] {
 	a.stepWork()
-	var out Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[string]]]
+	var out types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[string], *types.TNode[[]*types.TNode[string]]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
 	out.E0 = tv34(a, pegort.TKid(x.Kids, 0))
-	out.E1 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
+	out.E1 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
 	out.E2 = tv34(a, pegort.TKid(x.Kids, 2))
 	return out
 }
 
-func tl8(a *tslabs, v any) []*TNode[string] {
+func tl8(a *tslabs, v any) []*types.TNode[string] {
 	a.stepWork()
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*TNode[string]{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.TNode[string]{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl8Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = (*TNode[string])(pegort.TPubMatch(c))
+		out[i] = (*types.TNode[string])(pegort.TPubMatch(c))
 	}
 	return out
 }
@@ -2205,33 +1145,33 @@ func tl8(a *tslabs, v any) []*TNode[string] {
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
 	control       *pegort.WorkControl
-	tAttDef       astChunk[AttDef]
-	tAttlistDecl  astChunk[AttlistDecl]
-	tAttribute    astChunk[Attribute]
-	tChoice       astChunk[Choice]
-	tDoctype      astChunk[Doctype]
-	tDocument     astChunk[Document]
-	tElement      astChunk[Element]
-	tElementDecl  astChunk[ElementDecl]
-	tEntityDecl   astChunk[EntityDecl]
-	tEnumeration  astChunk[Enumeration]
-	tExternalID   astChunk[ExternalID]
-	tMixed        astChunk[Mixed]
-	tNameParticle astChunk[NameParticle]
-	tNotationDecl astChunk[NotationDecl]
-	tNotationType astChunk[NotationType]
-	tPI           astChunk[PI]
-	tSequence     astChunk[Sequence]
-	tXMLDecl      astChunk[XMLDecl]
-	tl0Chunk      astChunk[*AttDef]
-	tl1Chunk      astChunk[Particle]
-	tl2Chunk      astChunk[Decl]
-	tl3Chunk      astChunk[Misc]
-	tl4Chunk      astChunk[*Attribute]
-	tl5Chunk      astChunk[Content]
-	tl6Chunk      astChunk[*Nmtoken]
-	tl7Chunk      astChunk[*Name]
-	tl8Chunk      astChunk[*TNode[string]]
+	tAttDef       astChunk[types.AttDef]
+	tAttlistDecl  astChunk[types.AttlistDecl]
+	tAttribute    astChunk[types.Attribute]
+	tChoice       astChunk[types.Choice]
+	tDoctype      astChunk[types.Doctype]
+	tDocument     astChunk[types.Document]
+	tElement      astChunk[types.Element]
+	tElementDecl  astChunk[types.ElementDecl]
+	tEntityDecl   astChunk[types.EntityDecl]
+	tEnumeration  astChunk[types.Enumeration]
+	tExternalID   astChunk[types.ExternalID]
+	tMixed        astChunk[types.Mixed]
+	tNameParticle astChunk[types.NameParticle]
+	tNotationDecl astChunk[types.NotationDecl]
+	tNotationType astChunk[types.NotationType]
+	tPI           astChunk[types.PI]
+	tSequence     astChunk[types.Sequence]
+	tXMLDecl      astChunk[types.XMLDecl]
+	tl0Chunk      astChunk[*types.AttDef]
+	tl1Chunk      astChunk[types.Particle]
+	tl2Chunk      astChunk[types.Decl]
+	tl3Chunk      astChunk[types.Misc]
+	tl4Chunk      astChunk[*types.Attribute]
+	tl5Chunk      astChunk[types.Content]
+	tl6Chunk      astChunk[*types.Nmtoken]
+	tl7Chunk      astChunk[*types.Name]
+	tl8Chunk      astChunk[*types.TNode[string]]
 }
 
 func (a *tslabs) SetWorkControl(c *pegort.WorkControl) { a.control = c }
@@ -2241,102 +1181,91 @@ func (a *tslabs) stepWork() {
 	}
 }
 
-// tnt holds the registered indexes of the named node types (tregisterNodeType) by their
-// generated index; index 0 is no named node type.
-var tnt [19]uint16
-
-// Tuple3 is a tuple of 3 elements.
-type Tuple3[E0, E1, E2 any] struct {
-	E0 E0
-	E1 E1
-	E2 E2
-}
-
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
 // from errors, the result is returned together with SyntaxErrors; an Error node where a struct
 // type is expected becomes nil.
 // It builds the values directly, without the nodes Parse returns.
-func ParseAST(input string, opts ...pegort.ParseOption) (*Document, error) {
+func ParseAST(input string, opts ...pegort.ParseOption) (*types.Document, error) {
 	a := &tslabs{}
-	return pegort.TParse(trules[0], input, opts, a, func(v any) *Document { return pegort.TAs[*Document](v) })
+	return pegort.TParse(trules[0], input, opts, a, func(v any) *types.Document { return pegort.TAs[*types.Document](v) })
 }
 
 // ParseRuleAST parses the whole input with the named rule and returns its typed value.
 // Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
 // Invalid options and undefined names return nil with an error. Rule result types:
 //
-//	main: *Document
-//	misc_list: []Misc
-//	misc: Misc
-//	xml_decl: *XMLDecl
-//	version_info: *Version
-//	version_num: *Version
-//	encoding_decl: *EncName
-//	enc_name: *EncName
-//	sd_decl: *YesNo
-//	yes_no: *YesNo
+//	main: *types.Document
+//	misc_list: []types.Misc
+//	misc: types.Misc
+//	xml_decl: *types.XMLDecl
+//	version_info: *types.Version
+//	version_num: *types.Version
+//	encoding_decl: *types.EncName
+//	enc_name: *types.EncName
+//	sd_decl: *types.YesNo
+//	yes_no: *types.YesNo
 //	eq: *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[string]]]]
-//	comment: *Comment
-//	comment_text: *Comment
-//	pi: *PI
-//	pi_data: *PIData
-//	doctype: *Doctype
-//	int_subset: []Decl
-//	decl: Decl
-//	pe_ref: *PERef
-//	external_id: *ExternalID
-//	system_id: *ExternalID
-//	public_id: *ExternalID
-//	system_literal: *SystemLiteral
-//	system_dq: *SystemLiteral
-//	system_sq: *SystemLiteral
-//	pubid_literal: *PubidLiteral
-//	pubid_dq: *PubidLiteral
-//	pubid_sq: *PubidLiteral
-//	element_decl: *ElementDecl
-//	content_spec: ContentSpec
-//	kw_empty: *Keyword
-//	kw_any: *Keyword
-//	mixed: *Mixed
-//	choice: *Choice
-//	sequence: *Sequence
-//	cp: Particle
-//	name_particle: *NameParticle
-//	occurrence: *Occurrence
-//	attlist_decl: *AttlistDecl
-//	att_def: *AttDef
-//	kw_required: *Keyword
-//	kw_fixed: *Keyword
-//	att_type: AttType
-//	kw_type: *Keyword
-//	notation_type: *NotationType
-//	enumeration: *Enumeration
-//	entity_decl: *EntityDecl
-//	ge_decl: *EntityDecl
-//	pe_decl: *EntityDecl
-//	entity_value: *EntityValue
-//	entity_dq: *EntityValue
-//	entity_sq: *EntityValue
-//	notation_decl: *NotationDecl
-//	notation_id: *ExternalID
-//	public_notation: *ExternalID
-//	element: *Element
-//	attribute: *Attribute
-//	att_value: *AttValue
-//	att_dq: *AttValue
-//	att_sq: *AttValue
-//	content: *TNode[[]Content]
-//	content_item: Content
-//	markup: Content
-//	char_data: *CharData
-//	cdsect: *CDSect
-//	cdata: *CDSect
+//	comment: *types.Comment
+//	comment_text: *types.Comment
+//	pi: *types.PI
+//	pi_data: *types.PIData
+//	doctype: *types.Doctype
+//	int_subset: []types.Decl
+//	decl: types.Decl
+//	pe_ref: *types.PERef
+//	external_id: *types.ExternalID
+//	system_id: *types.ExternalID
+//	public_id: *types.ExternalID
+//	system_literal: *types.SystemLiteral
+//	system_dq: *types.SystemLiteral
+//	system_sq: *types.SystemLiteral
+//	pubid_literal: *types.PubidLiteral
+//	pubid_dq: *types.PubidLiteral
+//	pubid_sq: *types.PubidLiteral
+//	element_decl: *types.ElementDecl
+//	content_spec: types.ContentSpec
+//	kw_empty: *types.Keyword
+//	kw_any: *types.Keyword
+//	mixed: *types.Mixed
+//	choice: *types.Choice
+//	sequence: *types.Sequence
+//	cp: types.Particle
+//	name_particle: *types.NameParticle
+//	occurrence: *types.Occurrence
+//	attlist_decl: *types.AttlistDecl
+//	att_def: *types.AttDef
+//	kw_required: *types.Keyword
+//	kw_fixed: *types.Keyword
+//	att_type: types.AttType
+//	kw_type: *types.Keyword
+//	notation_type: *types.NotationType
+//	enumeration: *types.Enumeration
+//	entity_decl: *types.EntityDecl
+//	ge_decl: *types.EntityDecl
+//	pe_decl: *types.EntityDecl
+//	entity_value: *types.EntityValue
+//	entity_dq: *types.EntityValue
+//	entity_sq: *types.EntityValue
+//	notation_decl: *types.NotationDecl
+//	notation_id: *types.ExternalID
+//	public_notation: *types.ExternalID
+//	element: *types.Element
+//	attribute: *types.Attribute
+//	att_value: *types.AttValue
+//	att_dq: *types.AttValue
+//	att_sq: *types.AttValue
+//	content: *TNode[[]types.Content]
+//	content_item: types.Content
+//	markup: types.Content
+//	char_data: *types.CharData
+//	cdsect: *types.CDSect
+//	cdata: *types.CDSect
 //	reference: any
-//	char_ref: *CharRef
-//	entity_ref: *EntityRef
-//	name: *Name
+//	char_ref: *types.CharRef
+//	entity_ref: *types.EntityRef
+//	name: *types.Name
 //	name_char: *TNode[string]
-//	nmtoken: *Nmtoken
+//	nmtoken: *types.Nmtoken
 //	s: *TNode[[]*TNode[string]]
 //	ws: *TNode[[]*TNode[string]]
 func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
@@ -2347,228 +1276,230 @@ func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 	switch name {
 	case "main":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[0], input, o, a, func(v any) *Document { return pegort.TAs[*Document](v) })
+		return pegort.TParseResolved(trules[0], input, o, a, func(v any) *types.Document { return pegort.TAs[*types.Document](v) })
 	case "misc_list":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[1], input, o, a, func(v any) []Misc { return tv0(a, v) })
+		return pegort.TParseResolved(trules[1], input, o, a, func(v any) []types.Misc { return tv0(a, v) })
 	case "misc":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[2], input, o, a, func(v any) Misc { return pegort.TAs[Misc](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[2], input, o, a, func(v any) types.Misc { return pegort.TAs[types.Misc](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "xml_decl":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[3], input, o, a, func(v any) *XMLDecl { return pegort.TAs[*XMLDecl](v) })
+		return pegort.TParseResolved(trules[3], input, o, a, func(v any) *types.XMLDecl { return pegort.TAs[*types.XMLDecl](v) })
 	case "version_info":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[4], input, o, a, func(v any) *Version { return tv1(a, v) })
+		return pegort.TParseResolved(trules[4], input, o, a, func(v any) *types.Version { return tv1(a, v) })
 	case "version_num":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[5], input, o, a, func(v any) *Version { return tv2(a, v) })
+		return pegort.TParseResolved(trules[5], input, o, a, func(v any) *types.Version { return tv2(a, v) })
 	case "encoding_decl":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[6], input, o, a, func(v any) *EncName { return tv3(a, v) })
+		return pegort.TParseResolved(trules[6], input, o, a, func(v any) *types.EncName { return tv3(a, v) })
 	case "enc_name":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[7], input, o, a, func(v any) *EncName { return tv4(a, v) })
+		return pegort.TParseResolved(trules[7], input, o, a, func(v any) *types.EncName { return tv4(a, v) })
 	case "sd_decl":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[8], input, o, a, func(v any) *YesNo { return tv5(a, v) })
+		return pegort.TParseResolved(trules[8], input, o, a, func(v any) *types.YesNo { return tv5(a, v) })
 	case "yes_no":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[9], input, o, a, func(v any) *YesNo { return tv6(a, v) })
+		return pegort.TParseResolved(trules[9], input, o, a, func(v any) *types.YesNo { return tv6(a, v) })
 	case "eq":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[10], input, o, a, func(v any) *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]*TNode[string]]]] {
+		return pegort.TParseResolved(trules[10], input, o, a, func(v any) *types.TNode[types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[string], *types.TNode[[]*types.TNode[string]]]] {
 			return tv7(a, v)
 		})
 	case "comment":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[11], input, o, a, func(v any) *Comment { return tv8(a, v) })
+		return pegort.TParseResolved(trules[11], input, o, a, func(v any) *types.Comment { return tv8(a, v) })
 	case "comment_text":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[12], input, o, a, func(v any) *Comment { return tv9(a, v) })
+		return pegort.TParseResolved(trules[12], input, o, a, func(v any) *types.Comment { return tv9(a, v) })
 	case "pi":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[13], input, o, a, func(v any) *PI { return pegort.TAs[*PI](v) })
+		return pegort.TParseResolved(trules[13], input, o, a, func(v any) *types.PI { return pegort.TAs[*types.PI](v) })
 	case "pi_data":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[14], input, o, a, func(v any) *PIData { return tv10(a, v) })
+		return pegort.TParseResolved(trules[14], input, o, a, func(v any) *types.PIData { return tv10(a, v) })
 	case "doctype":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[15], input, o, a, func(v any) *Doctype { return pegort.TAs[*Doctype](v) })
+		return pegort.TParseResolved(trules[15], input, o, a, func(v any) *types.Doctype { return pegort.TAs[*types.Doctype](v) })
 	case "int_subset":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[16], input, o, a, func(v any) []Decl { return tv11(a, v) })
+		return pegort.TParseResolved(trules[16], input, o, a, func(v any) []types.Decl { return tv11(a, v) })
 	case "decl":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[17], input, o, a, func(v any) Decl { return pegort.TAs[Decl](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[17], input, o, a, func(v any) types.Decl { return pegort.TAs[types.Decl](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "pe_ref":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[18], input, o, a, func(v any) *PERef { return tv12(a, v) })
+		return pegort.TParseResolved(trules[18], input, o, a, func(v any) *types.PERef { return tv12(a, v) })
 	case "external_id":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[19], input, o, a, func(v any) *ExternalID { return pegort.TAs[*ExternalID](v) })
+		return pegort.TParseResolved(trules[19], input, o, a, func(v any) *types.ExternalID { return pegort.TAs[*types.ExternalID](v) })
 	case "system_id":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[20], input, o, a, func(v any) *ExternalID { return pegort.TAs[*ExternalID](v) })
+		return pegort.TParseResolved(trules[20], input, o, a, func(v any) *types.ExternalID { return pegort.TAs[*types.ExternalID](v) })
 	case "public_id":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[21], input, o, a, func(v any) *ExternalID { return pegort.TAs[*ExternalID](v) })
+		return pegort.TParseResolved(trules[21], input, o, a, func(v any) *types.ExternalID { return pegort.TAs[*types.ExternalID](v) })
 	case "system_literal":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[22], input, o, a, func(v any) *SystemLiteral { return tv13(a, v) })
+		return pegort.TParseResolved(trules[22], input, o, a, func(v any) *types.SystemLiteral { return tv13(a, v) })
 	case "system_dq":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[23], input, o, a, func(v any) *SystemLiteral { return tv14(a, v) })
+		return pegort.TParseResolved(trules[23], input, o, a, func(v any) *types.SystemLiteral { return tv14(a, v) })
 	case "system_sq":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[24], input, o, a, func(v any) *SystemLiteral { return tv14(a, v) })
+		return pegort.TParseResolved(trules[24], input, o, a, func(v any) *types.SystemLiteral { return tv14(a, v) })
 	case "pubid_literal":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[25], input, o, a, func(v any) *PubidLiteral { return tv15(a, v) })
+		return pegort.TParseResolved(trules[25], input, o, a, func(v any) *types.PubidLiteral { return tv15(a, v) })
 	case "pubid_dq":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[26], input, o, a, func(v any) *PubidLiteral { return tv16(a, v) })
+		return pegort.TParseResolved(trules[26], input, o, a, func(v any) *types.PubidLiteral { return tv16(a, v) })
 	case "pubid_sq":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[27], input, o, a, func(v any) *PubidLiteral { return tv16(a, v) })
+		return pegort.TParseResolved(trules[27], input, o, a, func(v any) *types.PubidLiteral { return tv16(a, v) })
 	case "element_decl":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[28], input, o, a, func(v any) *ElementDecl { return pegort.TAs[*ElementDecl](v) })
+		return pegort.TParseResolved(trules[28], input, o, a, func(v any) *types.ElementDecl { return pegort.TAs[*types.ElementDecl](v) })
 	case "content_spec":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[29], input, o, a, func(v any) ContentSpec { return pegort.TAs[ContentSpec](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[29], input, o, a, func(v any) types.ContentSpec {
+			return pegort.TAs[types.ContentSpec](pegort.TPubIn(types.PegoHooks, a, v))
+		})
 	case "kw_empty":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[30], input, o, a, func(v any) *Keyword { return tv17(a, v) })
+		return pegort.TParseResolved(trules[30], input, o, a, func(v any) *types.Keyword { return tv17(a, v) })
 	case "kw_any":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[31], input, o, a, func(v any) *Keyword { return tv17(a, v) })
+		return pegort.TParseResolved(trules[31], input, o, a, func(v any) *types.Keyword { return tv17(a, v) })
 	case "mixed":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[32], input, o, a, func(v any) *Mixed { return pegort.TAs[*Mixed](v) })
+		return pegort.TParseResolved(trules[32], input, o, a, func(v any) *types.Mixed { return pegort.TAs[*types.Mixed](v) })
 	case "choice":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[33], input, o, a, func(v any) *Choice { return pegort.TAs[*Choice](v) })
+		return pegort.TParseResolved(trules[33], input, o, a, func(v any) *types.Choice { return pegort.TAs[*types.Choice](v) })
 	case "sequence":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[34], input, o, a, func(v any) *Sequence { return pegort.TAs[*Sequence](v) })
+		return pegort.TParseResolved(trules[34], input, o, a, func(v any) *types.Sequence { return pegort.TAs[*types.Sequence](v) })
 	case "cp":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[35], input, o, a, func(v any) Particle { return pegort.TAs[Particle](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[35], input, o, a, func(v any) types.Particle { return pegort.TAs[types.Particle](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "name_particle":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[36], input, o, a, func(v any) *NameParticle { return pegort.TAs[*NameParticle](v) })
+		return pegort.TParseResolved(trules[36], input, o, a, func(v any) *types.NameParticle { return pegort.TAs[*types.NameParticle](v) })
 	case "occurrence":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[37], input, o, a, func(v any) *Occurrence { return tv18(a, v) })
+		return pegort.TParseResolved(trules[37], input, o, a, func(v any) *types.Occurrence { return tv18(a, v) })
 	case "attlist_decl":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[38], input, o, a, func(v any) *AttlistDecl { return pegort.TAs[*AttlistDecl](v) })
+		return pegort.TParseResolved(trules[38], input, o, a, func(v any) *types.AttlistDecl { return pegort.TAs[*types.AttlistDecl](v) })
 	case "att_def":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[39], input, o, a, func(v any) *AttDef { return pegort.TAs[*AttDef](v) })
+		return pegort.TParseResolved(trules[39], input, o, a, func(v any) *types.AttDef { return pegort.TAs[*types.AttDef](v) })
 	case "kw_required":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[40], input, o, a, func(v any) *Keyword { return tv17(a, v) })
+		return pegort.TParseResolved(trules[40], input, o, a, func(v any) *types.Keyword { return tv17(a, v) })
 	case "kw_fixed":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[41], input, o, a, func(v any) *Keyword { return tv17(a, v) })
+		return pegort.TParseResolved(trules[41], input, o, a, func(v any) *types.Keyword { return tv17(a, v) })
 	case "att_type":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[42], input, o, a, func(v any) AttType { return pegort.TAs[AttType](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[42], input, o, a, func(v any) types.AttType { return pegort.TAs[types.AttType](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "kw_type":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[43], input, o, a, func(v any) *Keyword { return tv17(a, v) })
+		return pegort.TParseResolved(trules[43], input, o, a, func(v any) *types.Keyword { return tv17(a, v) })
 	case "notation_type":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[44], input, o, a, func(v any) *NotationType { return pegort.TAs[*NotationType](v) })
+		return pegort.TParseResolved(trules[44], input, o, a, func(v any) *types.NotationType { return pegort.TAs[*types.NotationType](v) })
 	case "enumeration":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[45], input, o, a, func(v any) *Enumeration { return pegort.TAs[*Enumeration](v) })
+		return pegort.TParseResolved(trules[45], input, o, a, func(v any) *types.Enumeration { return pegort.TAs[*types.Enumeration](v) })
 	case "entity_decl":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[46], input, o, a, func(v any) *EntityDecl { return pegort.TAs[*EntityDecl](v) })
+		return pegort.TParseResolved(trules[46], input, o, a, func(v any) *types.EntityDecl { return pegort.TAs[*types.EntityDecl](v) })
 	case "ge_decl":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[47], input, o, a, func(v any) *EntityDecl { return pegort.TAs[*EntityDecl](v) })
+		return pegort.TParseResolved(trules[47], input, o, a, func(v any) *types.EntityDecl { return pegort.TAs[*types.EntityDecl](v) })
 	case "pe_decl":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[48], input, o, a, func(v any) *EntityDecl { return pegort.TAs[*EntityDecl](v) })
+		return pegort.TParseResolved(trules[48], input, o, a, func(v any) *types.EntityDecl { return pegort.TAs[*types.EntityDecl](v) })
 	case "entity_value":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[49], input, o, a, func(v any) *EntityValue { return tv19(a, v) })
+		return pegort.TParseResolved(trules[49], input, o, a, func(v any) *types.EntityValue { return tv19(a, v) })
 	case "entity_dq":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[50], input, o, a, func(v any) *EntityValue { return tv20(a, v) })
+		return pegort.TParseResolved(trules[50], input, o, a, func(v any) *types.EntityValue { return tv20(a, v) })
 	case "entity_sq":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[51], input, o, a, func(v any) *EntityValue { return tv20(a, v) })
+		return pegort.TParseResolved(trules[51], input, o, a, func(v any) *types.EntityValue { return tv20(a, v) })
 	case "notation_decl":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[52], input, o, a, func(v any) *NotationDecl { return pegort.TAs[*NotationDecl](v) })
+		return pegort.TParseResolved(trules[52], input, o, a, func(v any) *types.NotationDecl { return pegort.TAs[*types.NotationDecl](v) })
 	case "notation_id":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[53], input, o, a, func(v any) *ExternalID { return pegort.TAs[*ExternalID](v) })
+		return pegort.TParseResolved(trules[53], input, o, a, func(v any) *types.ExternalID { return pegort.TAs[*types.ExternalID](v) })
 	case "public_notation":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[54], input, o, a, func(v any) *ExternalID { return pegort.TAs[*ExternalID](v) })
+		return pegort.TParseResolved(trules[54], input, o, a, func(v any) *types.ExternalID { return pegort.TAs[*types.ExternalID](v) })
 	case "element":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[55], input, o, a, func(v any) *Element { return pegort.TAs[*Element](v) })
+		return pegort.TParseResolved(trules[55], input, o, a, func(v any) *types.Element { return pegort.TAs[*types.Element](v) })
 	case "attribute":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[56], input, o, a, func(v any) *Attribute { return pegort.TAs[*Attribute](v) })
+		return pegort.TParseResolved(trules[56], input, o, a, func(v any) *types.Attribute { return pegort.TAs[*types.Attribute](v) })
 	case "att_value":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[57], input, o, a, func(v any) *AttValue { return tv21(a, v) })
+		return pegort.TParseResolved(trules[57], input, o, a, func(v any) *types.AttValue { return tv21(a, v) })
 	case "att_dq":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[58], input, o, a, func(v any) *AttValue { return tv22(a, v) })
+		return pegort.TParseResolved(trules[58], input, o, a, func(v any) *types.AttValue { return tv22(a, v) })
 	case "att_sq":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[59], input, o, a, func(v any) *AttValue { return tv22(a, v) })
+		return pegort.TParseResolved(trules[59], input, o, a, func(v any) *types.AttValue { return tv22(a, v) })
 	case "content":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[60], input, o, a, func(v any) *TNode[[]Content] { return tv23(a, v) })
+		return pegort.TParseResolved(trules[60], input, o, a, func(v any) *types.TNode[[]types.Content] { return tv23(a, v) })
 	case "content_item":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[61], input, o, a, func(v any) Content { return pegort.TAs[Content](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[61], input, o, a, func(v any) types.Content { return pegort.TAs[types.Content](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "markup":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[62], input, o, a, func(v any) Content { return pegort.TAs[Content](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[62], input, o, a, func(v any) types.Content { return pegort.TAs[types.Content](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "char_data":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[63], input, o, a, func(v any) *CharData { return tv24(a, v) })
+		return pegort.TParseResolved(trules[63], input, o, a, func(v any) *types.CharData { return tv24(a, v) })
 	case "cdsect":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[64], input, o, a, func(v any) *CDSect { return tv25(a, v) })
+		return pegort.TParseResolved(trules[64], input, o, a, func(v any) *types.CDSect { return tv25(a, v) })
 	case "cdata":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[65], input, o, a, func(v any) *CDSect { return tv26(a, v) })
+		return pegort.TParseResolved(trules[65], input, o, a, func(v any) *types.CDSect { return tv26(a, v) })
 	case "reference":
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[66], input, o, a, func(v any) any { return tv27(a, v) })
 	case "char_ref":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[67], input, o, a, func(v any) *CharRef { return tv28(a, v) })
+		return pegort.TParseResolved(trules[67], input, o, a, func(v any) *types.CharRef { return tv28(a, v) })
 	case "entity_ref":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[68], input, o, a, func(v any) *EntityRef { return tv29(a, v) })
+		return pegort.TParseResolved(trules[68], input, o, a, func(v any) *types.EntityRef { return tv29(a, v) })
 	case "name":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[69], input, o, a, func(v any) *Name { return tv30(a, v) })
+		return pegort.TParseResolved(trules[69], input, o, a, func(v any) *types.Name { return tv30(a, v) })
 	case "name_char":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[70], input, o, a, func(v any) *TNode[string] { return tv31(a, v) })
+		return pegort.TParseResolved(trules[70], input, o, a, func(v any) *types.TNode[string] { return tv31(a, v) })
 	case "nmtoken":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[71], input, o, a, func(v any) *Nmtoken { return tv32(a, v) })
+		return pegort.TParseResolved(trules[71], input, o, a, func(v any) *types.Nmtoken { return tv32(a, v) })
 	case "s":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[72], input, o, a, func(v any) *TNode[[]*TNode[string]] { return tv33(a, v) })
+		return pegort.TParseResolved(trules[72], input, o, a, func(v any) *types.TNode[[]*types.TNode[string]] { return tv33(a, v) })
 	case "ws":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[73], input, o, a, func(v any) *TNode[[]*TNode[string]] { return tv34(a, v) })
+		return pegort.TParseResolved(trules[73], input, o, a, func(v any) *types.TNode[[]*types.TNode[string]] { return tv34(a, v) })
 	default:
 		return nil, fmt.Errorf("rule %s is not defined", name)
 	}

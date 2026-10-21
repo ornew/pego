@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/parsers/yaml"
+	"github.com/ornew/pego/parsers/yaml/types"
 )
 
 func TestLoadNestedDuplicateAnchors(t *testing.T) {
@@ -54,11 +55,11 @@ func TestLoadSharedAnchorAST(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	outer := s.Documents[0].Root.(*yaml.Sequence).Items[0].(*yaml.Sequence)
-	inner := outer.Items[0].(*yaml.Scalar)
+	outer := s.Documents[0].Root.(*types.Sequence).Items[0].(*types.Sequence)
+	inner := outer.Items[0].(*types.Scalar)
 	// Public ASTs can share an Anchor pointer; binding identity is per visit.
 	inner.Props.Anchor = outer.Props.Anchor
-	got, err := s.Documents[0].Load()
+	got, err := yaml.LoadDocument(s.Documents[0])
 	if want := []any{[]any{"x"}, "x"}; err != nil || !reflect.DeepEqual(got, want) {
 		t.Fatalf("Load shared AST = %#v, %v; want %#v", got, err, want)
 	}
@@ -96,7 +97,7 @@ func BenchmarkAnchorComposition(b *testing.B) {
 			}
 			b.ReportAllocs()
 			for b.Loop() {
-				if _, err := s.Documents[0].Load(); err != nil {
+				if _, err := yaml.LoadDocument(s.Documents[0]); err != nil {
 					b.Fatal(err)
 				}
 			}

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/parsers/golang"
+	"github.com/ornew/pego/parsers/golang/types"
 )
 
 func TestLiterals(t *testing.T) {
@@ -12,29 +13,29 @@ func TestLiterals(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	elts := file.Decls[0].(*golang.GenDecl).Specs[0].(*golang.ValueSpec).Values[0].(*golang.CompositeLit).Elts
+	elts := file.Decls[0].(*types.GenDecl).Specs[0].(*types.ValueSpec).Values[0].(*types.CompositeLit).Elts
 	strs := []string{"a\tbé", "r\\n"}
 	for i, want := range strs {
-		if got, err := elts[i].(*golang.StringLit).Value(); err != nil || got != want {
+		if got, err := elts[i].(*types.StringLit).Value(); err != nil || got != want {
 			t.Errorf("string %d: %q, %v; want %q", i, got, err, want)
 		}
 	}
 	runes := []rune{'x', '\n', 0xff, 0xe9}
 	for i, want := range runes {
-		if got, err := elts[2+i].(*golang.CharLit).Value(); err != nil || got != want {
+		if got, err := elts[2+i].(*types.CharLit).Value(); err != nil || got != want {
 			t.Errorf("char %d: %q, %v; want %q", i, got, err, want)
 		}
 	}
 	ints := []string{"0", "31", "5", "15", "15", "1000", "123456789012345678901234567890"}
 	for i, want := range ints {
-		v, err := elts[6+i].(*golang.IntLit).Constant()
+		v, err := elts[6+i].(*types.IntLit).Constant()
 		if err != nil || v.ExactString() != want {
 			t.Errorf("int %d: %v, %v; want %s", i, v, err, want)
 		}
 	}
 	floats := []string{"3/2", "1/4", "500", "1e+400"} // the last as String, since ExactString spells out the digits
 	for i, want := range floats {
-		v, err := elts[13+i].(*golang.FloatLit).Constant()
+		v, err := elts[13+i].(*types.FloatLit).Constant()
 		got := v.ExactString()
 		if i == 3 {
 			got = v.String()
@@ -44,16 +45,16 @@ func TestLiterals(t *testing.T) {
 		}
 	}
 	for i, want := range []string{"(0 + 2i)", "(0 + 3/2i)"} {
-		v, err := elts[17+i].(*golang.ImagLit).Constant()
+		v, err := elts[17+i].(*types.ImagLit).Constant()
 		if err != nil || v.ExactString() != want {
 			t.Errorf("imag %d: %v, %v; want %s", i, v, err, want)
 		}
 	}
 	// A literal that is not valid is an error, not a panic.
-	if _, err := (&golang.IntLit{TNode: golang.TNode[string]{Value: "0x"}}).Constant(); err == nil {
+	if _, err := (&types.IntLit{TNode: types.TNode[string]{Value: "0x"}}).Constant(); err == nil {
 		t.Error("IntLit 0x: no error")
 	}
-	if _, err := (&golang.StringLit{TNode: golang.TNode[string]{Value: `"\q"`}}).Value(); err == nil {
+	if _, err := (&types.StringLit{TNode: types.TNode[string]{Value: `"\q"`}}).Value(); err == nil {
 		t.Error(`StringLit "\q": no error`)
 	}
 }

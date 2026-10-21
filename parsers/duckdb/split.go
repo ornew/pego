@@ -3,11 +3,13 @@ package duckdb
 import (
 	"strings"
 	"unicode/utf8"
+
+	"github.com/ornew/pego/parsers/duckdb/types"
 )
 
 // A StatementText is a statement with the text DuckDB gives it when it splits a script.
 type StatementText struct {
-	Statement Statement
+	Statement types.Statement
 	// Text is what DuckDB records as the query of the statement: from the semicolon that precedes the statement (the
 	// start of the script for the first) to the semicolon that ends it, or to the end of the script for the last
 	// statement. Comments and white space around the statement belong to it.
@@ -27,7 +29,7 @@ func Split(input string) ([]StatementText, error) {
 }
 
 // SplitScript is Split for a script that ParseAST parsed with the position unit Bytes.
-func SplitScript(input string, script *Script) []StatementText {
+func SplitScript(input string, script *types.Script) []StatementText {
 	out := make([]StatementText, 0, len(script.Statements))
 	// the last semicolon before the next statement starts the text of the statement
 	semi := -1

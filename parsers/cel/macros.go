@@ -1,5 +1,7 @@
 package cel
 
+import "github.com/ornew/pego/parsers/cel/types"
+
 // The standard macros of CEL (has, all, exists, exists_one, map and filter) are written as calls, and the grammar
 // parses them as calls: an application of CEL chooses which macros it supports, and expands them after parsing. What
 // the parser of cel-go with the standard macros adds is that it rejects a macro call whose arguments are not what the
@@ -8,7 +10,7 @@ package cel
 // IsMacroCall reports whether c is a call that cel-go's parser expands as one of the standard macros: its name, its
 // arguments and whether it has a receiver are those of the macro. It does not check that the arguments are valid;
 // CheckMacros does.
-func IsMacroCall(c *Call) bool {
+func IsMacroCall(c *types.Call) bool {
 	if c.Func.Rooted() {
 		return false
 	}
@@ -26,9 +28,9 @@ func IsMacroCall(c *Call) bool {
 }
 
 // unparen returns the expression inside its parentheses: cel-go does not keep them.
-func unparen(e Expr) Expr {
+func unparen(e types.Expr) types.Expr {
 	for {
-		p, ok := e.(*Paren)
+		p, ok := e.(*types.Paren)
 		if !ok {
 			return e
 		}
@@ -39,13 +41,13 @@ func unparen(e Expr) Expr {
 // checkMacros reports the first macro call in e that cel-go's parser rejects with the standard macros: has(x) of
 // something that is not a selection of a field, and a quantifier or map or filter whose first argument is not a name,
 // or is the name of the accumulator.
-func checkMacros(e Expr) error {
+func checkMacros(e types.Expr) error {
 	var err error
-	Inspect(e, func(e Expr) bool {
+	Inspect(e, func(e types.Expr) bool {
 		if err != nil {
 			return false
 		}
-		c, ok := e.(*Call)
+		c, ok := e.(*types.Call)
 		if !ok || !IsMacroCall(c) {
 			return true
 		}
@@ -53,11 +55,11 @@ func checkMacros(e Expr) error {
 		if c.Target == nil { // has
 			// A selection of a field; or a has() itself, which expands to the selection that tests the field.
 			switch a := arg.(type) {
-			case *Select:
+			case *types.Select:
 				if !a.Optional {
 					return true
 				}
-			case *Call:
+			case *types.Call:
 				if a.Target == nil && IsMacroCall(a) {
 					return true
 				}
@@ -65,7 +67,7 @@ func checkMacros(e Expr) error {
 			err = &CheckError{Span: SpanOf(arg), Message: "invalid argument to has() macro"}
 			return true
 		}
-		id, ok := arg.(*Ident)
+		id, ok := arg.(*types.Ident)
 		switch {
 		case !ok && c.Func.Value == "map" || !ok && c.Func.Value == "filter":
 			err = &CheckError{Span: SpanOf(arg), Message: "argument is not an identifier"}

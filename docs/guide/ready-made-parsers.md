@@ -222,7 +222,7 @@ message.
 
 The `Value()` method of `*json.String` decodes the escapes of the source text, which `Text` keeps as written. The other
 parsers have methods of this kind for their literals (`StringLit.Value()`, `Number.Int64()`, `Constant.Value()`). Most
-also have a function that visits every node in source order: `duckdb.Walk`, `python.Inspect`, `cel.Inspect`,
+also have a function that visits every node in source order: `duckdb.Inspect`, `python.Inspect`, `cel.Inspect`,
 `cue.Inspect` and `typescript.Inspect` take a function that returns `false` to skip a node's children. Use them rather
 than recursing by hand when the tree is large.
 
@@ -323,7 +323,7 @@ func main() {
 	}
 	for _, s := range statements {
 		tables := map[string]bool{}
-		duckdb.Walk(s.Statement, func(n any) bool {
+		duckdb.Inspect(s.Statement, func(n any) bool {
 			if t, ok := n.(*duckdb.BaseTable); ok {
 				tables[strings.Join(t.Name.Names(), ".")] = true
 			}

@@ -440,7 +440,7 @@ func TestSourceGrammarGeneratedGo(t *testing.T) {
 	}
 	write("fixtures.json", data)
 	write("parser_test.go", []byte(`package sourceparser
-import("encoding/json";"os";"testing")
+import("encoding/json";"os";"testing";"sourceparser/types")
 func TestSource(t *testing.T){
  var fixtures []struct{Source string;Tree json.RawMessage;Error string;Decls int}
  data,err:=os.ReadFile("fixtures.json");if err!=nil{t.Fatal(err)}
@@ -458,10 +458,10 @@ func TestSource(t *testing.T){
   for j,d:=range ast.Decls{
    var start,end int
    switch x:=d.(type){
-   case *TypeDef:
+   case *types.TypeDef:
     if x==nil||x.SourceSpan==nil{t.Fatalf("fixture %d: missing type syntax span",i)}
     start,end=x.SourceSpan.Start,x.SourceSpan.End
-   case *TypeAlias:
+   case *types.TypeAlias:
     if x==nil||x.SourceSpan==nil{t.Fatalf("fixture %d: missing type syntax span",i)}
     start,end=x.SourceSpan.Start,x.SourceSpan.End
    default:

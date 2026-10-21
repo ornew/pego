@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/parsers/xml"
+	"github.com/ornew/pego/parsers/xml/types"
 )
 
 // suiteCase is a TEST of the W3C XML Conformance Test Suite.
@@ -31,7 +32,7 @@ func loadSuite(t *testing.T, dir string) []suiteCase {
 	var cases []suiteCase
 	for _, c := range tree.Root.Elements() {
 		for _, it := range c.Children {
-			ref, ok := it.(*xml.EntityRef)
+			ref, ok := it.(*types.EntityRef)
 			if !ok {
 				continue
 			}
@@ -265,7 +266,7 @@ func canonical(t *xml.Tree) string {
 	// The processing instructions before the doctype come first.
 	var prolog []xml.Item
 	for _, it := range t.Prolog {
-		if pi, ok := it.(*xml.PI); ok && t.Doc.Doctype != nil && pi.Start < t.Doc.Doctype.Start {
+		if pi, ok := it.(*types.PI); ok && t.Doc.Doctype != nil && pi.Start < t.Doc.Doctype.Start {
 			canonicalItem(&b, it)
 		} else {
 			prolog = append(prolog, it)
@@ -275,7 +276,7 @@ func canonical(t *xml.Tree) string {
 	// output of ibm-valid-P29-ibm29v01.xml shows).
 	if t.Doc.Doctype != nil {
 		for _, d := range t.Doc.Doctype.Subset {
-			if pi, ok := d.(*xml.PI); ok {
+			if pi, ok := d.(*types.PI); ok {
 				canonicalItem(&b, pi)
 			}
 		}
@@ -307,13 +308,13 @@ func canonicalItem(b *strings.Builder, it xml.Item) {
 		b.WriteString("</" + it.Name + ">")
 	case *xml.Text:
 		b.WriteString(canonicalText(it.Data))
-	case *xml.PI:
+	case *types.PI:
 		b.WriteString("<?" + it.Target.Value + " ")
 		if it.Data != nil {
 			b.WriteString(it.Data.Value())
 		}
 		b.WriteString("?>")
-	case *xml.EntityRef:
+	case *types.EntityRef:
 		b.WriteString(it.Value)
 	}
 }

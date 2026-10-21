@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/parsers/duckdb"
+	"github.com/ornew/pego/parsers/duckdb/types"
 )
 
 // This file checks the syntax tree against the AST of DuckDB. The reference data holds, for each SELECT statement
@@ -73,12 +74,12 @@ func isEmpty(v any) bool {
 
 type mapper struct {
 	// windows are the WINDOW clauses of the SELECTs being mapped, the innermost last
-	windows []map[string]*duckdb.WindowSpec
+	windows []map[string]*types.WindowSpec
 }
 
 // ---- identifiers and names ----
 
-func names(n *duckdb.Name) []string { return n.Names() }
+func names(n *types.Name) []string { return n.Names() }
 
 func lower(s string) string { return strings.ToLower(s) }
 
@@ -103,7 +104,7 @@ func hugeint(b *big.Int) shape {
 	return shape{"upper": json.Number(hi.String()), "lower": json.Number(lo.String())}
 }
 
-func (m *mapper) number(n *duckdb.Number, neg bool) shape {
+func (m *mapper) number(n *types.Number, neg bool) shape {
 	d := n.Digits()
 	sign := ""
 	if neg {
@@ -183,7 +184,7 @@ func opNode(typ string, children ...any) shape {
 	return shape{"class": "OPERATOR", "type": typ, "children": children}
 }
 
-func (m *mapper) exprs(es []duckdb.Expr) []any {
+func (m *mapper) exprs(es []types.Expr) []any {
 	out := make([]any, len(es))
 	for i, e := range es {
 		out[i] = m.expr(e)
@@ -223,26 +224,26 @@ func (m *mapper) conjunction(typ string, l, r any) shape {
 	return shape{"class": "CONJUNCTION", "type": typ, "children": children}
 }
 
-func (m *mapper) expr(e duckdb.Expr) any {
+func (m *mapper) expr(e types.Expr) any {
 	switch e := e.(type) {
-	case *duckdb.Number:
+	case *types.Number:
 		return m.number(e, false)
-	case *duckdb.StringLit:
-		if e.Kind() == duckdb.UnicodeString {
+	case *types.StringLit:
+		if e.Kind() == types.UnicodeString {
 			unsup("unicode string")
 		}
 		return varchar(e.Value())
-	case *duckdb.BoolLit:
+	case *types.BoolLit:
 		v := "f"
 		if strings.EqualFold(e.Value, "true") {
 			v = "t"
 		}
 		return shape{"class": "CAST", "type": "OPERATOR_CAST", "child": varchar(v), "cast_type": shape{"id": "BOOLEAN"}}
-	case *duckdb.NullLit:
+	case *types.NullLit:
 		return constant(shape{"id": "NULL"}, nil)
-	case *duckdb.Paren:
+	case *types.Paren:
 		return m.expr(e.X)
-	case *duckdb.ColumnRef:
+	case *types.ColumnRef:
 		if len(e.Parts) > 4 {
 			unsup("long column reference")
 		}
@@ -251,7 +252,7 @@ func (m *mapper) expr(e duckdb.Expr) any {
 			cols[i] = e.Parts[i].Name()
 		}
 		return shape{"class": "COLUMN_REF", "type": "COLUMN_REF", "column_names": cols}
-	case *duckdb.Star:
+	case *types.Star:
 		s := shape{"class": "STAR", "type": "STAR"}
 		if e.Qualifier != nil {
 			s["relation_name"] = e.Qualifier.Name()
@@ -277,20 +278,20 @@ func (m *mapper) expr(e duckdb.Expr) any {
 		s["exclude_list"] = ex
 		s["qualified_exclude_list"] = qex
 		return s
-	case *duckdb.Binary:
+	case *types.Binary:
 		return m.binary(e)
-	case *duckdb.Unary:
+	case *types.Unary:
 		if e.Op.Value == "-" {
-			if n, ok := e.X.(*duckdb.Number); ok {
+			if n, ok := e.X.(*types.Number); ok {
 				return m.number(n, true)
 			}
 		}
 		return opFn(e.Op.Value, m.expr(e.X))
-	case *duckdb.PostfixOp:
+	case *types.PostfixOp:
 		return opFn(e.Op.Value+"__postfix", m.expr(e.X))
-	case *duckdb.Not:
+	case *types.Not:
 		return negate(m.expr(e.X))
-	case *duckdb.IsExpr:
+	case *types.IsExpr:
 		x := m.expr(e.X)
 		switch lower(e.Test) {
 		case "null", "isnull", "notnull", "unknown":
@@ -313,13 +314,13 @@ func (m *mapper) expr(e duckdb.Expr) any {
 			return shape{"class": "COMPARISON", "type": typ, "left": cast, "right": rhs}
 		}
 		unsup("IS %s", e.Test)
-	case *duckdb.DistinctFrom:
+	case *types.DistinctFrom:
 		typ := "COMPARE_DISTINCT_FROM"
 		if e.Negated {
 			typ = "COMPARE_NOT_DISTINCT_FROM"
 		}
 		return shape{"class": "COMPARISON", "type": typ, "left": m.expr(e.Left), "right": m.expr(e.Right)}
-	case *duckdb.Between:
+	case *types.Between:
 		if e.Symmetric {
 			unsup("symmetric")
 		}
@@ -328,7 +329,7 @@ func (m *mapper) expr(e duckdb.Expr) any {
 			return opNode("OPERATOR_NOT", b)
 		}
 		return b
-	case *duckdb.In:
+	case *types.In:
 		if e.Query != nil {
 			s := m.subquery("ANY", e.Query)
 			s["child"] = m.expr(e.X)
@@ -351,15 +352,15 @@ func (m *mapper) expr(e duckdb.Expr) any {
 			typ = "COMPARE_NOT_IN"
 		}
 		return opNode(typ, append([]any{m.expr(e.X)}, m.exprs(e.Items)...)...)
-	case *duckdb.Like:
+	case *types.Like:
 		return m.like(e)
-	case *duckdb.Cast:
+	case *types.Cast:
 		child := m.expr(e.X)
 		s := shape{"class": "CAST", "type": "OPERATOR_CAST", "child": child, "cast_type": m.typ(e.Type), "try_cast": e.Try}
 		return s
-	case *duckdb.TypedLit:
+	case *types.TypedLit:
 		return shape{"class": "CAST", "type": "OPERATOR_CAST", "child": varchar(e.Value.Value()), "cast_type": m.typ(e.Type)}
-	case *duckdb.Case:
+	case *types.Case:
 		var checks []any
 		for _, w := range e.Whens {
 			cond := m.expr(w.Cond)
@@ -373,13 +374,13 @@ func (m *mapper) expr(e duckdb.Expr) any {
 			els = m.expr(e.Else)
 		}
 		return shape{"class": "CASE", "type": "CASE_EXPR", "case_checks": checks, "else_expr": els}
-	case *duckdb.Row:
+	case *types.Row:
 		return fn("row", "main", false, m.exprs(e.Items)...)
-	case *duckdb.ListLit:
+	case *types.ListLit:
 		return fn("list_value", "main", false, m.exprs(e.Items)...)
-	case *duckdb.ArrayLit:
+	case *types.ArrayLit:
 		return opNode("ARRAY_CONSTRUCTOR", m.exprs(e.Items)...)
-	case *duckdb.StructLit:
+	case *types.StructLit:
 		var ch []any
 		for _, f := range e.Fields {
 			c := m.expr(f.Value).(shape)
@@ -390,22 +391,22 @@ func (m *mapper) expr(e duckdb.Expr) any {
 			ch = append(ch, c)
 		}
 		return fn("struct_pack", "main", false, ch...)
-	case *duckdb.MapLit:
+	case *types.MapLit:
 		var ks, vs []any
 		for _, en := range e.Entries {
 			ks = append(ks, m.expr(en.Key))
 			vs = append(vs, m.expr(en.Value))
 		}
 		return fn("map", "main", false, fn("list_value", "main", false, ks...), fn("list_value", "main", false, vs...))
-	case *duckdb.Subquery:
+	case *types.Subquery:
 		return m.subquery("SCALAR", e.Query)
-	case *duckdb.Exists:
+	case *types.Exists:
 		return m.subquery("EXISTS", e.Query)
-	case *duckdb.FuncCall:
+	case *types.FuncCall:
 		return m.funcCall(e)
-	case *duckdb.SpecialCall:
+	case *types.SpecialCall:
 		return m.special(e)
-	case *duckdb.Param:
+	case *types.Param:
 		if e.Positional() {
 			unsup("positional parameter")
 		}
@@ -415,54 +416,54 @@ func (m *mapper) expr(e duckdb.Expr) any {
 		if n, ok := e.ParamName(); ok {
 			return shape{"class": "PARAMETER", "type": "VALUE_PARAMETER", "identifier": n}
 		}
-	case *duckdb.PositionalRef:
+	case *types.PositionalRef:
 		i, _ := e.Index.Int64()
 		return shape{"class": "POSITIONAL_REFERENCE", "type": "POSITIONAL_REFERENCE", "index": i}
-	case *duckdb.Collate:
+	case *types.Collate:
 		return shape{"class": "COLLATE", "type": "COLLATE", "child": m.expr(e.X), "collation": strings.Join(e.Collation.Names(), ".")}
-	case *duckdb.Indirection:
+	case *types.Indirection:
 		return m.indirection(e)
-	case *duckdb.Lambda:
+	case *types.Lambda:
 		return m.lambda(e)
-	case *duckdb.ListComp:
+	case *types.ListComp:
 		return m.listComp(e)
-	case *duckdb.ArraySubquery:
+	case *types.ArraySubquery:
 		return m.arraySubquery(e)
-	case *duckdb.Grouping:
+	case *types.Grouping:
 		if lower(e.Name) != "grouping" {
 			unsup("GROUPING_ID")
 		}
 		return opNode("GROUPING_FUNCTION", m.exprs(e.Args)...)
-	case *duckdb.IntervalLit:
+	case *types.IntervalLit:
 		return m.interval(e)
-	case *duckdb.AnyAll:
+	case *types.AnyAll:
 		return m.anyAll(e)
-	case *duckdb.ColumnsExpr:
+	case *types.ColumnsExpr:
 		return m.columns(e)
-	case *duckdb.UnpackExpr:
+	case *types.UnpackExpr:
 		return opNode("OPERATOR_UNPACK", m.expr(e.Arg))
-	case *duckdb.AtTimeZone:
+	case *types.AtTimeZone:
 		return fn("timezone", "main", false, m.expr(e.Zone), m.expr(e.X))
 	}
 	unsup("%T", e)
 	return nil
 }
 
-func (m *mapper) indirection(e *duckdb.Indirection) any {
+func (m *mapper) indirection(e *types.Indirection) any {
 	x := m.expr(e.X)
 	switch s := e.Step.(type) {
-	case *duckdb.IndexStep:
+	case *types.IndexStep:
 		return opNode("ARRAY_EXTRACT", x, m.expr(s.Index))
-	case *duckdb.SliceStep:
+	case *types.SliceStep:
 		return m.slice(x, s)
-	case *duckdb.FieldStep:
+	case *types.FieldStep:
 		if s.Call {
 			// x.f(args) is f(x, args)
 			args := append([]any{x}, m.exprs(s.Args)...)
 			return fn(lower(s.Name.Name()), "", false, args...)
 		}
 		// a column reference of the grammar goes on with its field names; a parenthesized one does not
-		if _, plain := e.X.(*duckdb.ColumnRef); plain {
+		if _, plain := e.X.(*types.ColumnRef); plain {
 			if cr, ok := x.(shape); ok && cr["type"] == "COLUMN_REF" {
 				cols := append(append([]any(nil), cr["column_names"].([]any)...), s.Name.Name())
 				return shape{"class": "COLUMN_REF", "type": "COLUMN_REF", "column_names": cols}
@@ -474,11 +475,11 @@ func (m *mapper) indirection(e *duckdb.Indirection) any {
 	return nil
 }
 
-func (m *mapper) subquery(kind string, q *duckdb.ParenQuery) shape {
+func (m *mapper) subquery(kind string, q *types.ParenQuery) shape {
 	return shape{"class": "SUBQUERY", "type": "SUBQUERY", "subquery_type": kind, "subquery": shape{"node": m.parenQuery(q)}, "comparison_type": "INVALID"}
 }
 
-func (m *mapper) binary(e *duckdb.Binary) any {
+func (m *mapper) binary(e *types.Binary) any {
 	op := e.Op.Value
 	switch lower(op) {
 	case "and", "or":
@@ -501,7 +502,7 @@ func (m *mapper) binary(e *duckdb.Binary) any {
 	return opFn(op, l, r)
 }
 
-func (m *mapper) like(e *duckdb.Like) any {
+func (m *mapper) like(e *types.Like) any {
 	op := lower(strings.Join(strings.Fields(e.Op), " "))
 	var name string
 	switch op {
@@ -542,7 +543,7 @@ func (m *mapper) like(e *duckdb.Like) any {
 	return opFn(name, x, p)
 }
 
-func (m *mapper) funcCall(f *duckdb.FuncCall) any {
+func (m *mapper) funcCall(f *types.FuncCall) any {
 	if f.Variadic != nil || f.WithinGroup != nil || f.ExportState {
 		unsup("function clause")
 	}
@@ -561,7 +562,7 @@ func (m *mapper) funcCall(f *duckdb.FuncCall) any {
 	}
 	var args []any
 	for _, a := range f.Args {
-		if na, named := a.(*duckdb.NamedArg); named {
+		if na, named := a.(*types.NamedArg); named {
 			v, ok := m.expr(na.Value).(shape)
 			if !ok {
 				unsup("named argument")
@@ -577,7 +578,7 @@ func (m *mapper) funcCall(f *duckdb.FuncCall) any {
 	}
 	if len(f.Args) == 1 {
 		// f(*) takes no argument, and count(*) is count_star
-		if st, ok := f.Args[0].(*duckdb.Star); ok && st.Qualifier == nil && len(st.Exclude) == 0 && len(st.Replace) == 0 && len(st.Rename) == 0 &&
+		if st, ok := f.Args[0].(*types.Star); ok && st.Qualifier == nil && len(st.Exclude) == 0 && len(st.Replace) == 0 && len(st.Rename) == 0 &&
 			!strings.EqualFold(f.Quantifier, "distinct") {
 			args = nil
 			if name == "count" && f.Quantifier == "" {
@@ -632,7 +633,7 @@ var extractParts = map[string]string{
 	"millennia": "millennium",
 }
 
-func (m *mapper) special(e *duckdb.SpecialCall) any {
+func (m *mapper) special(e *types.SpecialCall) any {
 	switch lower(e.Name) {
 	case "substring":
 		ch := m.exprs(e.Args)
@@ -683,7 +684,7 @@ func (m *mapper) special(e *duckdb.SpecialCall) any {
 
 // ---- queries ----
 
-func (m *mapper) orderModifier(o *duckdb.OrderBy) shape {
+func (m *mapper) orderModifier(o *types.OrderBy) shape {
 	var orders []any
 	if o.All {
 		star := shape{"class": "STAR", "type": "STAR", "columns": true}
@@ -716,11 +717,11 @@ func nullOrder(nulls string) string {
 	return "ORDER_DEFAULT"
 }
 
-func (m *mapper) parenQuery(q *duckdb.ParenQuery) any {
+func (m *mapper) parenQuery(q *types.ParenQuery) any {
 	switch c := q.Query.(type) {
-	case *duckdb.Select:
+	case *types.Select:
 		return m.selectNode(c)
-	case *duckdb.ParenQuery:
+	case *types.ParenQuery:
 		return m.parenQuery(c)
 	}
 	unsup("query in parentheses")
@@ -728,16 +729,16 @@ func (m *mapper) parenQuery(q *duckdb.ParenQuery) any {
 }
 
 // selectNode maps a Select: its body, WITH, ORDER BY and LIMIT.
-func (m *mapper) selectNode(s *duckdb.Select) shape {
+func (m *mapper) selectNode(s *types.Select) shape {
 	if len(s.Locking) > 0 {
 		unsup("locking")
 	}
-	if c, ok := s.Body.(*duckdb.SelectCore); ok {
+	if c, ok := s.Body.(*types.SelectCore); ok {
 		defer m.pushWindows(c)()
 	}
 	var node shape
 	switch b := s.Body.(type) {
-	case *duckdb.ParenQuery:
+	case *types.ParenQuery:
 		inner := m.parenQuery(b).(shape)
 		node = inner
 	default:
@@ -754,7 +755,7 @@ func (m *mapper) selectNode(s *duckdb.Select) shape {
 		mods = append(mods, m.limit(s.Limit, s.Offset))
 	}
 	if len(mods) > 0 {
-		_, paren := s.Body.(*duckdb.ParenQuery)
+		_, paren := s.Body.(*types.ParenQuery)
 		if inner, _ := node["modifiers"].([]any); paren && len(inner) > 0 && (s.OrderBy != nil || s.Limit != nil || s.Offset != nil) {
 			unsup("modifiers of a parenthesized query")
 		}
@@ -766,7 +767,7 @@ func (m *mapper) selectNode(s *duckdb.Select) shape {
 	return node
 }
 
-func (m *mapper) limit(l *duckdb.LimitClause, o *duckdb.OffsetClause) shape {
+func (m *mapper) limit(l *types.LimitClause, o *types.OffsetClause) shape {
 	mod := shape{"type": "LIMIT_MODIFIER"}
 	if l != nil {
 		if l.All || l.Offset != nil || strings.EqualFold(l.Keyword, "fetch") {
@@ -788,10 +789,10 @@ func (m *mapper) limit(l *duckdb.LimitClause, o *duckdb.OffsetClause) shape {
 	return mod
 }
 
-func (m *mapper) cteMap(w *duckdb.With) shape {
+func (m *mapper) cteMap(w *types.With) shape {
 	var entries []any
 	for _, c := range w.CTEs {
-		q, ok := c.Query.(*duckdb.Select)
+		q, ok := c.Query.(*types.Select)
 		if !ok {
 			unsup("cte statement")
 		}
@@ -811,19 +812,19 @@ func (m *mapper) cteMap(w *duckdb.With) shape {
 	return shape{"map": entries}
 }
 
-func (m *mapper) body(b duckdb.QueryBody) shape {
+func (m *mapper) body(b types.QueryBody) shape {
 	switch b := b.(type) {
-	case *duckdb.SelectCore:
+	case *types.SelectCore:
 		return m.core(b)
-	case *duckdb.ValuesClause:
+	case *types.ValuesClause:
 		return shape{"type": "SELECT_NODE", "select_list": []any{shape{"class": "STAR", "type": "STAR"}}, "from_table": m.values(b, "valueslist"), "aggregate_handling": "STANDARD_HANDLING"}
-	case *duckdb.TableQuery:
-		return shape{"type": "SELECT_NODE", "select_list": []any{shape{"class": "STAR", "type": "STAR"}}, "from_table": m.baseTable(&duckdb.BaseTable{Name: b.Table}), "aggregate_handling": "STANDARD_HANDLING"}
-	case *duckdb.SetOp:
+	case *types.TableQuery:
+		return shape{"type": "SELECT_NODE", "select_list": []any{shape{"class": "STAR", "type": "STAR"}}, "from_table": m.baseTable(&types.BaseTable{Name: b.Table}), "aggregate_handling": "STANDARD_HANDLING"}
+	case *types.SetOp:
 		if lower(b.Op) == "union" {
 			// DuckDB gathers the operands of a chain of the same UNION, parenthesized or not, and writes them as a
 			// tree: the first operand, and the others paired from the left.
-			var leaves []duckdb.QueryBody
+			var leaves []types.QueryBody
 			m.unionLeaves(b, b, &leaves)
 			nodes := make([]any, len(leaves))
 			for i, l := range leaves {
@@ -857,7 +858,7 @@ func (m *mapper) body(b duckdb.QueryBody) shape {
 	return nil
 }
 
-func (m *mapper) unionNode(b *duckdb.SetOp, left, right any) shape {
+func (m *mapper) unionNode(b *types.SetOp, left, right any) shape {
 	s := shape{"type": "SET_OPERATION_NODE", "setop_type": "UNION", "left": left, "right": right}
 	if b.ByName {
 		s["setop_type"] = "UNION_BY_NAME"
@@ -869,22 +870,22 @@ func (m *mapper) unionNode(b *duckdb.SetOp, left, right any) shape {
 }
 
 // unionLeaves collects the operands of the UNION chain that starts at op, those that are not UNIONs of the kind of like.
-func (m *mapper) unionLeaves(op, like *duckdb.SetOp, out *[]duckdb.QueryBody) {
-	for _, side := range []duckdb.QueryBody{op.Left, op.Right} {
+func (m *mapper) unionLeaves(op, like *types.SetOp, out *[]types.QueryBody) {
+	for _, side := range []types.QueryBody{op.Left, op.Right} {
 		inner := side
 		for {
-			p, ok := inner.(*duckdb.ParenQuery)
+			p, ok := inner.(*types.ParenQuery)
 			if !ok {
 				break
 			}
 			switch q := p.Query.(type) {
-			case *duckdb.Select:
+			case *types.Select:
 				if q.With != nil || q.OrderBy != nil || q.Limit != nil || q.Offset != nil || len(q.Locking) > 0 {
 					inner = nil
 				} else {
 					inner = q.Body
 				}
-			case *duckdb.ParenQuery:
+			case *types.ParenQuery:
 				inner = q
 			default:
 				inner = nil
@@ -893,7 +894,7 @@ func (m *mapper) unionLeaves(op, like *duckdb.SetOp, out *[]duckdb.QueryBody) {
 				break
 			}
 		}
-		if s, ok := inner.(*duckdb.SetOp); ok && lower(s.Op) == "union" && lower(s.Quantifier) == lower(like.Quantifier) && s.ByName == like.ByName {
+		if s, ok := inner.(*types.SetOp); ok && lower(s.Op) == "union" && lower(s.Quantifier) == lower(like.Quantifier) && s.ByName == like.ByName {
 			m.unionLeaves(s, like, out)
 		} else {
 			*out = append(*out, side)
@@ -901,14 +902,14 @@ func (m *mapper) unionLeaves(op, like *duckdb.SetOp, out *[]duckdb.QueryBody) {
 	}
 }
 
-func (m *mapper) setopSide(b duckdb.QueryBody) any {
-	if p, ok := b.(*duckdb.ParenQuery); ok {
+func (m *mapper) setopSide(b types.QueryBody) any {
+	if p, ok := b.(*types.ParenQuery); ok {
 		return m.parenQuery(p)
 	}
 	return m.body(b)
 }
 
-func (m *mapper) values(v *duckdb.ValuesClause, alias string) shape {
+func (m *mapper) values(v *types.ValuesClause, alias string) shape {
 	var rows []any
 	for _, r := range v.Rows {
 		rows = append(rows, m.exprs(r.Items))
@@ -917,8 +918,8 @@ func (m *mapper) values(v *duckdb.ValuesClause, alias string) shape {
 }
 
 // pushWindows makes the WINDOW clause of a SELECT visible to the OVER clauses, and returns what undoes it.
-func (m *mapper) pushWindows(c *duckdb.SelectCore) func() {
-	w := map[string]*duckdb.WindowSpec{}
+func (m *mapper) pushWindows(c *types.SelectCore) func() {
+	w := map[string]*types.WindowSpec{}
 	for i := range c.Windows {
 		w[c.Windows[i].Name.Fold()] = c.Windows[i].Spec
 	}
@@ -927,7 +928,7 @@ func (m *mapper) pushWindows(c *duckdb.SelectCore) func() {
 	return func() { m.windows = m.windows[:n-1] }
 }
 
-func (m *mapper) core(c *duckdb.SelectCore) shape {
+func (m *mapper) core(c *types.SelectCore) shape {
 	if c.Into != nil || c.Sample != nil {
 		unsup("select clause")
 	}
@@ -960,7 +961,7 @@ func (m *mapper) core(c *duckdb.SelectCore) shape {
 	}
 	node["aggregate_handling"] = "STANDARD_HANDLING"
 	if c.GroupBy != nil {
-		if _, star := firstOf(c.GroupBy.Items).(*duckdb.Star); c.GroupBy.All || star && len(c.GroupBy.Items) == 1 {
+		if _, star := firstOf(c.GroupBy.Items).(*types.Star); c.GroupBy.All || star && len(c.GroupBy.Items) == 1 {
 			node["aggregate_handling"] = "FORCE_AGGREGATES"
 		} else {
 			node["group_expressions"], node["group_sets"] = m.groupBy(c.GroupBy.Items)
@@ -975,14 +976,14 @@ func (m *mapper) core(c *duckdb.SelectCore) shape {
 	return node
 }
 
-func firstOf(es []duckdb.Expr) duckdb.Expr {
+func firstOf(es []types.Expr) types.Expr {
 	if len(es) == 0 {
 		return nil
 	}
 	return es[0]
 }
 
-func (m *mapper) item(it *duckdb.SelectItem) any {
+func (m *mapper) item(it *types.SelectItem) any {
 	e := m.expr(it.Expr)
 	if it.Alias != nil {
 		s, ok := e.(shape)
@@ -994,7 +995,7 @@ func (m *mapper) item(it *duckdb.SelectItem) any {
 	return e
 }
 
-func (m *mapper) from(refs []duckdb.TableRef) shape {
+func (m *mapper) from(refs []types.TableRef) shape {
 	if len(refs) == 0 {
 		return shape{"type": "EMPTY"}
 	}
@@ -1005,7 +1006,7 @@ func (m *mapper) from(refs []duckdb.TableRef) shape {
 	return t
 }
 
-func (m *mapper) alias(s shape, a *duckdb.TableAlias) {
+func (m *mapper) alias(s shape, a *types.TableAlias) {
 	if a == nil {
 		return
 	}
@@ -1020,7 +1021,7 @@ func (m *mapper) alias(s shape, a *duckdb.TableAlias) {
 	s["column_name_alias"] = cols
 }
 
-func (m *mapper) baseTable(t *duckdb.BaseTable) shape {
+func (m *mapper) baseTable(t *types.BaseTable) shape {
 	if t.Only || t.Star || t.At != nil || t.Sample != nil || t.Prefix != nil {
 		unsup("table form")
 	}
@@ -1039,22 +1040,22 @@ func (m *mapper) baseTable(t *duckdb.BaseTable) shape {
 	return s
 }
 
-func (m *mapper) tableRef(r duckdb.TableRef) shape {
+func (m *mapper) tableRef(r types.TableRef) shape {
 	switch r := r.(type) {
-	case *duckdb.BaseTable:
+	case *types.BaseTable:
 		return m.baseTable(r)
-	case *duckdb.SubqueryRef:
+	case *types.SubqueryRef:
 		if r.Lateral || r.Sample != nil || r.Prefix != nil {
 			unsup("subquery form")
 		}
 		s := shape{"type": "SUBQUERY", "subquery": shape{"node": m.parenQuery(r.Query)}}
 		m.alias(s, r.Alias)
 		return s
-	case *duckdb.FuncTable:
+	case *types.FuncTable:
 		if r.Lateral || r.Sample != nil || r.Prefix != nil || len(r.RowsFrom) > 0 {
 			unsup("function table form")
 		}
-		f, ok := r.Func.(*duckdb.FuncCall)
+		f, ok := r.Func.(*types.FuncCall)
 		if !ok {
 			unsup("function table")
 		}
@@ -1068,7 +1069,7 @@ func (m *mapper) tableRef(r duckdb.TableRef) shape {
 		}
 		m.alias(s, r.Alias)
 		return s
-	case *duckdb.ValuesRef:
+	case *types.ValuesRef:
 		if r.Sample != nil || r.Prefix != nil {
 			unsup("values form")
 		}
@@ -1076,19 +1077,19 @@ func (m *mapper) tableRef(r duckdb.TableRef) shape {
 			"select_list": []any{shape{"class": "STAR", "type": "STAR"}}, "from_table": m.values(r.Values, "valueslist")}}}
 		m.alias(s, r.Alias)
 		return s
-	case *duckdb.ParenTable:
+	case *types.ParenTable:
 		if r.Alias != nil || r.Prefix != nil {
 			unsup("parenthesized table alias")
 		}
 		return m.tableRef(r.Table)
-	case *duckdb.Join:
+	case *types.Join:
 		return m.join(r)
 	}
 	unsup("table %T", r)
 	return nil
 }
 
-func (m *mapper) join(j *duckdb.Join) shape {
+func (m *mapper) join(j *types.Join) shape {
 	s := shape{"type": "JOIN", "left": m.tableRef(j.Left), "right": m.tableRef(j.Right), "join_type": "INNER", "ref_type": "REGULAR"}
 	words := strings.Fields(lower(j.Kind))
 	for _, w := range words {
@@ -1127,7 +1128,7 @@ func (m *mapper) join(j *duckdb.Join) shape {
 	return s
 }
 
-func matText(m *duckdb.TNode[string]) string {
+func matText(m *types.TNode[string]) string {
 	if m == nil {
 		return ""
 	}
@@ -1135,7 +1136,7 @@ func matText(m *duckdb.TNode[string]) string {
 }
 
 // mapStatement returns the AST DuckDB gives a SELECT statement, or false with the reason the mapping gives up.
-func mapStatement(st duckdb.Statement) (out any, reason string) {
+func mapStatement(st types.Statement) (out any, reason string) {
 	defer func() {
 		if r := recover(); r != nil {
 			if u, ok := r.(unsupported); ok {
@@ -1145,7 +1146,7 @@ func mapStatement(st duckdb.Statement) (out any, reason string) {
 			panic(r)
 		}
 	}()
-	sel, ok := st.(*duckdb.Select)
+	sel, ok := st.(*types.Select)
 	if !ok {
 		return nil, "not a query"
 	}
@@ -1365,7 +1366,7 @@ func logTop(t *testing.T, title string, m map[string]int, example map[string]str
 
 func extractField(spec string) string {
 	if strings.HasPrefix(spec, "'") {
-		return (&duckdb.StringLit{TNode: duckdb.TNode[string]{Value: spec}}).Value()
+		return (&types.StringLit{TNode: types.TNode[string]{Value: spec}}).Value()
 	}
 	return spec
 }

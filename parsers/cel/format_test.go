@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/parsers/cel"
+	"github.com/ornew/pego/parsers/cel/types"
 )
 
 // stripPos removes the offsets from a canonical form.
@@ -38,23 +39,23 @@ func TestFormat(t *testing.T) {
 
 // TestFormatBuilt checks the parentheses that Format adds to trees built without Paren nodes.
 func TestFormatBuilt(t *testing.T) {
-	id := func(s string) *cel.Ident { return &cel.Ident{TNode: cel.TNode[string]{Value: s}} }
-	op := func(s string) *cel.TNode[string] { return &cel.TNode[string]{Value: s} }
+	id := func(s string) *types.Ident { return &types.Ident{TNode: types.TNode[string]{Value: s}} }
+	op := func(s string) *types.TNode[string] { return &types.TNode[string]{Value: s} }
 	for _, tc := range []struct {
-		e    cel.Expr
+		e    types.Expr
 		want string
 	}{
-		{&cel.Binary{Left: &cel.Binary{Left: id("a"), Op: op("+"), Right: id("b")}, Op: op("*"), Right: id("c")}, "(a + b) * c"},
-		{&cel.Binary{Left: id("a"), Op: op("-"), Right: &cel.Binary{Left: id("b"), Op: op("-"), Right: id("c")}}, "a - (b - c)"},
-		{&cel.Binary{Left: &cel.Binary{Left: id("a"), Op: op("-"), Right: id("b")}, Op: op("-"), Right: id("c")}, "a - b - c"},
-		{&cel.Select{X: &cel.Unary{Op: op("-"), X: id("a")}, Field: &cel.Name{TNode: cel.TNode[string]{Value: "f"}}}, "(-a).f"},
-		{&cel.Unary{Op: op("!"), X: &cel.Binary{Left: id("a"), Op: op("||"), Right: id("b")}}, "!(a || b)"},
-		{&cel.Unary{Op: op("-"), X: &cel.IntLit{TNode: cel.TNode[string]{Value: "-1"}}}, "-(-1)"},
-		{&cel.Unary{Op: op("!"), X: &cel.Unary{Op: op("!"), X: id("a")}}, "!!a"},
-		{&cel.Conditional{Cond: &cel.Conditional{Cond: id("a"), Then: id("b"), Else: id("c")}, Then: id("d"), Else: id("e")}, "(a ? b : c) ? d : e"},
-		{&cel.Conditional{Cond: id("a"), Then: &cel.Conditional{Cond: id("b"), Then: id("c"), Else: id("d")}, Else: id("e")}, "a ? (b ? c : d) : e"},
-		{&cel.Conditional{Cond: id("a"), Then: id("b"), Else: &cel.Conditional{Cond: id("c"), Then: id("d"), Else: id("e")}}, "a ? b : c ? d : e"},
-		{&cel.Binary{Left: id("a"), Op: op("in"), Right: &cel.ListLit{Elems: []cel.Expr{id("b"), &cel.Optional{X: id("c")}}}}, "a in [b, ?c]"},
+		{&types.Binary{Left: &types.Binary{Left: id("a"), Op: op("+"), Right: id("b")}, Op: op("*"), Right: id("c")}, "(a + b) * c"},
+		{&types.Binary{Left: id("a"), Op: op("-"), Right: &types.Binary{Left: id("b"), Op: op("-"), Right: id("c")}}, "a - (b - c)"},
+		{&types.Binary{Left: &types.Binary{Left: id("a"), Op: op("-"), Right: id("b")}, Op: op("-"), Right: id("c")}, "a - b - c"},
+		{&types.Select{X: &types.Unary{Op: op("-"), X: id("a")}, Field: &types.Name{TNode: types.TNode[string]{Value: "f"}}}, "(-a).f"},
+		{&types.Unary{Op: op("!"), X: &types.Binary{Left: id("a"), Op: op("||"), Right: id("b")}}, "!(a || b)"},
+		{&types.Unary{Op: op("-"), X: &types.IntLit{TNode: types.TNode[string]{Value: "-1"}}}, "-(-1)"},
+		{&types.Unary{Op: op("!"), X: &types.Unary{Op: op("!"), X: id("a")}}, "!!a"},
+		{&types.Conditional{Cond: &types.Conditional{Cond: id("a"), Then: id("b"), Else: id("c")}, Then: id("d"), Else: id("e")}, "(a ? b : c) ? d : e"},
+		{&types.Conditional{Cond: id("a"), Then: &types.Conditional{Cond: id("b"), Then: id("c"), Else: id("d")}, Else: id("e")}, "a ? (b ? c : d) : e"},
+		{&types.Conditional{Cond: id("a"), Then: id("b"), Else: &types.Conditional{Cond: id("c"), Then: id("d"), Else: id("e")}}, "a ? b : c ? d : e"},
+		{&types.Binary{Left: id("a"), Op: op("in"), Right: &types.ListLit{Elems: []types.Expr{id("b"), &types.Optional{X: id("c")}}}}, "a in [b, ?c]"},
 	} {
 		if got := cel.Format(tc.e); got != tc.want {
 			t.Errorf("Format = %q, want %q", got, tc.want)

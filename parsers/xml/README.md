@@ -31,7 +31,7 @@ err = tree.ResolveNamespaces()
 // The syntax tree, with positions.
 doc, err := xml.ParseAST(`<a x="1"><b>text</b><!-- note --></a>`)
 for _, c := range doc.Root.Content {
-	if e, ok := c.(*xml.Element); ok {
+	if e, ok := c.(*types.Element); ok {
 		fmt.Println(e.Name.Text, e.Start, e.End) // b 9 20
 	}
 }
@@ -57,7 +57,8 @@ if errors.As(err, &we) {
 | `DTD`, `Entity`, `AttributeDecl` | The declarations of the internal subset that were processed |
 | `ParseAST(input, opts...) (*Document, error)` | The syntax tree: `Document`, `Element`, `Attribute`, `CharData`, `EntityRef`, `CharRef`, `CDSect`, `PI`, `Comment`, `Doctype` and the declarations, each with its `Span` |
 | `Parse(input, opts...) (*Node, error)`, `Recognize(input, opts...) error` | The tree of `*Node`, as the engine returns it; only checking |
-| `(*CharData).Value()`, `(*AttValue).Value()`, `(*CharRef).Rune()`, ... | Values of the syntax tree: line ends normalized, references decoded |
+| `(*CharData).Value()`, `(*CharRef).Rune()`, ... | Values of the syntax tree: line ends normalized, references decoded |
+| `ExpandAttValue(*AttValue) (string, error)` | The value of an attribute, normalized for type CDATA, for a document without entity declarations |
 
 In the decoded tree, children are `*Elem`, `*Text`, `*PI`, `*Comment`, or `*EntityRef` for a reference to an entity
 that was not expanded (an external entity, which a non-validating processor does not read, or an undeclared entity in a

@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -215,23 +216,14 @@ rule leaf Leaf = t:("é") #atomic => Leaf{Text: text($t)}`)
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("conversionfixture")), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("gentest")), 0644); err != nil {
 		t.Fatal(err)
 	}
 	pkg := "conversion"
-	code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, convertTypes: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	path := filepath.Join(dir, pkg)
-	if err := os.Mkdir(path, 0755); err != nil {
-		t.Fatal(err)
-	}
+	generatePackage(t, dir, pkg, g, GenOptions{Start: "main", Types: true, convertTypes: true})
 	fixture := strings.ReplaceAll(generatedGoConversionConsumer, "PACKAGE", pkg)
-	for name, data := range map[string][]byte{"parser.go": code, "conversion_test.go": []byte(fixture)} {
-		if err := os.WriteFile(filepath.Join(path, name), data, 0644); err != nil {
-			t.Fatal(err)
-		}
+	if err := os.WriteFile(filepath.Join(dir, pkg, "conversion_test.go"), []byte(fixture), 0644); err != nil {
+		t.Fatal(err)
 	}
 	cmd := exec.Command("go", "test", "-count=1", "./...")
 	cmd.Dir = dir
@@ -243,24 +235,24 @@ rule leaf Leaf = t:("é") #atomic => Leaf{Text: text($t)}`)
 const generatedGoConversionConsumer = `package PACKAGE
 
 import pegort "github.com/ornew/pego/runtime"
-import("context";"errors";"reflect";"strings";"testing")
+import("context";"errors";"reflect";"strings";"testing";"gentest/PACKAGE/types")
 func TestConversionVisits(t *testing.T){
  n,err:=Parse(strings.Repeat("é",100));if err!=nil{t.Fatal(err)}
  c:=pegort.X_newWorkControl(context.Background(),WorkLimits{MaxSteps:100000})
- a:=astConv{control:c};v:=a.toBranch(n)
+ a:=astConv{control:c};v:=a.toTypeBranch(n)
  if v==nil || len(v.Leaves)!=100{t.Fatal("conversion failed")}
  // Branch dispatch, field scan, list dispatch, each list edge, and for each leaf its dispatch
  // and the scan of its Text field.
  if c.X_stepsUsed()!=303 || c.X_inputUsed()!=0{t.Fatalf("conversion work: steps=%d input=%d",c.X_stepsUsed(),c.X_inputUsed())}
  for _,ceiling:=range []uint64{1,2,3,4,302}{
   c:=pegort.X_newWorkControl(context.Background(),WorkLimits{MaxSteps:ceiling})
-  func(){defer func(){f,ok:=recover().(pegort.X_fatal);var e *WorkLimitError;if !ok || !errors.As(f.X_err,&e) || e.Kind!=StepWorkLimit || e.Used!=ceiling || e.Requested!=1{t.Fatalf("conversion ceiling %d interruption: %+v",ceiling,f)}}();(&astConv{control:c}).toBranch(n)}()
+  func(){defer func(){f,ok:=recover().(pegort.X_fatal);var e *WorkLimitError;if !ok || !errors.As(f.X_err,&e) || e.Kind!=StepWorkLimit || e.Used!=ceiling || e.Requested!=1{t.Fatalf("conversion ceiling %d interruption: %+v",ceiling,f)}}();(&astConv{control:c}).toTypeBranch(n)}()
  }
 }
 func TestParseConversionSharesCounter(t *testing.T){
  input:=strings.Repeat("é",100)
  beforeSteps,beforeInput:=uint64(0),uint64(0)
- conv:=func(n *Node,c *pegort.WorkControl,parseErr error)*Branch{beforeSteps,beforeInput=c.X_stepsUsed(),c.X_inputUsed();v:=(&astConv{control:c}).toBranch(n);if c.X_stepsUsed()!=beforeSteps+303 || c.X_inputUsed()!=beforeInput{t.Fatal("conversion counter changed independently")};return v}
+ conv:=func(n *Node,c *pegort.WorkControl,parseErr error)*types.Branch{beforeSteps,beforeInput=c.X_stepsUsed(),c.X_inputUsed();v:=(&astConv{control:c}).toTypeBranch(n);if c.X_stepsUsed()!=beforeSteps+303 || c.X_inputUsed()!=beforeInput{t.Fatal("conversion counter changed independently")};return v}
  o:=pegort.X_parseOptions{X_maxDepth:pegoGrammar.X_maxDepth,X_limits:WorkLimits{MaxSteps:100000}}
  retained,err:=pegort.RunParseConverted(rules[0],input,o,conv)
  if err!=nil || retained==nil{t.Fatal(err)}
@@ -268,13 +260,13 @@ func TestParseConversionSharesCounter(t *testing.T){
  total:=beforeSteps+303
  for _,limit:=range []uint64{beforeSteps+1,total-1,total}{
   o.X_limits.MaxSteps=limit
-  got,err:=pegort.RunParseConverted(rules[0],input,o,func(n *Node,c *pegort.WorkControl,parseErr error)*Branch{return (&astConv{control:c}).toBranch(n)})
+  got,err:=pegort.RunParseConverted(rules[0],input,o,func(n *Node,c *pegort.WorkControl,parseErr error)*types.Branch{return (&astConv{control:c}).toTypeBranch(n)})
   if limit==total {if err!=nil || len(got.Leaves)!=100{t.Fatal("exact conversion ceiling",err)}}else if got!=nil || !errors.Is(err,ErrWorkLimit){t.Fatalf("partial conversion leaked at %d: %v %v",limit,got,err)}
  }
  if !reflect.DeepEqual(*retained.Leaves[0],snapshot){t.Fatal("earlier result was overwritten")}
  // Cancellation raised inside conversion is surfaced at the same outer boundary.
  ctx,cancel:=context.WithCancel(context.Background());o.SetContext(ctx);o.X_limits=WorkLimits{}
- v,err:=pegort.RunParseConverted(rules[0],input,o,func(n *Node,c *pegort.WorkControl,parseErr error)*Branch{cancel();c.Check();return (&astConv{control:c}).toBranch(n)})
+ v,err:=pegort.RunParseConverted(rules[0],input,o,func(n *Node,c *pegort.WorkControl,parseErr error)*types.Branch{cancel();c.Check();return (&astConv{control:c}).toTypeBranch(n)})
  if v!=nil || !errors.Is(err,context.Canceled){t.Fatalf("conversion cancellation: %v %v",v,err)}
  if _,err:=ParseAST(input);err!=nil{t.Fatal("retry",err)}
 }
@@ -314,21 +306,23 @@ rule main WorkLimits = t:("é") #atomic => WorkLimits{Text: text($t)}`)
 	}
 	for _, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("collision_%v", convert)
-		code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, convertTypes: convert})
+		opts := GenOptions{Package: pkg, Module: "workcollision/" + pkg, Runtime: RuntimeImport, Start: "main", Types: true, convertTypes: convert}
+		files, err := Generate(g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
-		again, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, convertTypes: convert})
-		if err != nil || string(code) != string(again) {
-			t.Fatal("unstable reserved-name mapping")
-		}
-		path := filepath.Join(dir, pkg)
-		if err := os.Mkdir(path, 0755); err != nil {
-			t.Fatal(err)
+		again, err := Generate(g, opts)
+		if err != nil || !slices.EqualFunc(files, again, func(a, b GeneratedFile) bool { return a.Path == b.Path && string(a.Content) == string(b.Content) }) {
+			t.Fatal("unstable generation")
 		}
 		fixture := strings.ReplaceAll(generatedGoWorkCollisionConsumer, "PACKAGE", pkg)
-		for name, data := range map[string][]byte{"parser.go": code, "consumer_test.go": []byte(fixture)} {
-			if err := os.WriteFile(filepath.Join(path, name), data, 0644); err != nil {
+		files = append(files, GeneratedFile{"consumer_test.go", []byte(fixture)})
+		for _, f := range files {
+			path := filepath.Join(dir, pkg, filepath.FromSlash(f.Path))
+			if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(path, f.Content, 0644); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -341,19 +335,19 @@ rule main WorkLimits = t:("é") #atomic => WorkLimits{Text: text($t)}`)
 }
 
 const generatedGoWorkCollisionConsumer = `package PACKAGE_test
-import("context";"errors";"testing";p "workcollision/PACKAGE")
+import("context";"errors";"testing";p "workcollision/PACKAGE";g "workcollision/PACKAGE/types")
 func TestPublicNames(t *testing.T){
- var parse func(string,...p.ParseOption)(*p.WorkLimits_,error)=p.ParseAST
+ var parse func(string,...p.ParseOption)(*g.WorkLimits,error)=p.ParseAST
  v,err:=parse("é",p.WithContext(context.Background()),p.WithWorkLimits(p.WorkLimits{MaxSteps:1000}),p.WithUnit(p.Bytes))
  if err!=nil || v.Text!="é" || v.End!=2{t.Fatal(v,err)}
- var second *p.WorkLimits__=&p.WorkLimits__{}
- var box *p.WorkLimitError_=&p.WorkLimitError_{Value:v}
- var kind p.WorkLimitKind_=v
- var ctx p.WithContext_=v
- var limits p.WithWorkLimits_=v
- var sentinel p.ErrWorkLimit_=v
- var input p.InputWorkLimit_=v
- var steps p.StepWorkLimit_=v
+ var second *g.WorkLimits_=&g.WorkLimits_{}
+ var box *g.WorkLimitError=&g.WorkLimitError{Value:v}
+ var kind g.WorkLimitKind=v
+ var ctx g.WithContext=v
+ var limits g.WithWorkLimits=v
+ var sentinel g.ErrWorkLimit=v
+ var input g.InputWorkLimit=v
+ var steps g.StepWorkLimit=v
  _,_,_,_,_,_,_,_=second,box,kind,ctx,limits,sentinel,input,steps
  _,err=parse("é",p.WithWorkLimits(p.WorkLimits{MaxSteps:1}))
  var exhausted *p.WorkLimitError

@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/parsers/duckdb"
+	"github.com/ornew/pego/parsers/duckdb/types"
 )
 
 // TestGolden checks the generated parser against the golden files of testdata, which the tests of
@@ -53,7 +54,7 @@ func find[T any](t *testing.T, sql string) []*T {
 		t.Fatalf("%q: %v", sql, err)
 	}
 	var out []*T
-	duckdb.Walk(script, func(n any) bool {
+	duckdb.Inspect(script, func(n any) bool {
 		if v, ok := n.(*T); ok {
 			out = append(out, v)
 		}
@@ -78,7 +79,7 @@ func TestIdent(t *testing.T) {
 		{`SELECT U&"d!0061ta" UESCAPE '!'`, "data", "data", true},
 		{`SELECT "x" FROM t AS 'Alias'`, "x", "x", true},
 	} {
-		ids := find[duckdb.Ident](t, tc.sql)
+		ids := find[types.Ident](t, tc.sql)
 		if len(ids) == 0 {
 			t.Fatalf("%q: no identifier", tc.sql)
 		}
@@ -87,11 +88,11 @@ func TestIdent(t *testing.T) {
 			t.Errorf("%q: Name %q, Fold %q, Quoted %v; want %q, %q, %v", tc.sql, id.Name(), id.Fold(), id.Quoted(), tc.name, tc.fold, tc.quoted)
 		}
 	}
-	ids := find[duckdb.Ident](t, `SELECT a.B FROM "A"`)
+	ids := find[types.Ident](t, `SELECT a.B FROM "A"`)
 	if !ids[0].EqualFold(ids[2]) || ids[1].EqualFold(ids[0]) {
 		t.Error("EqualFold")
 	}
-	names := find[duckdb.Name](t, `SELECT 1 FROM c."S".t`)
+	names := find[types.Name](t, `SELECT 1 FROM c."S".t`)
 	if len(names) != 1 || strings.Join(names[0].Names(), "|") != "c|S|t" {
 		t.Errorf("Names: %v", names)
 	}
@@ -101,19 +102,19 @@ func TestStringValue(t *testing.T) {
 	for _, tc := range []struct {
 		lit  string
 		want string
-		kind duckdb.StringKind
+		kind types.StringKind
 	}{
-		{`'it''s'`, "it's", duckdb.StandardString},
-		{`'a\nb'`, `a\nb`, duckdb.StandardString},
-		{"'a'\n'b'", "ab", duckdb.StandardString},
-		{`E'a\nb\x41B\101'`, "a\nbAB" + "A", duckdb.EscapeString},
-		{`e'\''`, "'", duckdb.EscapeString},
-		{`U&'d\0061t\+000061'`, "data", duckdb.UnicodeString},
-		{`$$a'b$$`, "a'b", duckdb.DollarQuoted},
-		{`$tag$a$$b$tag$`, "a$$b", duckdb.DollarQuoted},
-		{`''`, "", duckdb.StandardString},
+		{`'it''s'`, "it's", types.StandardString},
+		{`'a\nb'`, `a\nb`, types.StandardString},
+		{"'a'\n'b'", "ab", types.StandardString},
+		{`E'a\nb\x41B\101'`, "a\nbAB" + "A", types.EscapeString},
+		{`e'\''`, "'", types.EscapeString},
+		{`U&'d\0061t\+000061'`, "data", types.UnicodeString},
+		{`$$a'b$$`, "a'b", types.DollarQuoted},
+		{`$tag$a$$b$tag$`, "a$$b", types.DollarQuoted},
+		{`''`, "", types.StandardString},
 	} {
-		lits := find[duckdb.StringLit](t, "SELECT "+tc.lit)
+		lits := find[types.StringLit](t, "SELECT "+tc.lit)
 		if len(lits) != 1 {
 			t.Fatalf("%s: %d literals", tc.lit, len(lits))
 		}
@@ -132,7 +133,7 @@ func TestBitLit(t *testing.T) {
 		digits string
 		hex    bool
 	}{{`B'0101'`, "0101", false}, {`x'FF'`, "FF", true}, {"b'01'\n'10'", "0110", false}} {
-		lits := find[duckdb.BitLit](t, "SELECT "+tc.lit)
+		lits := find[types.BitLit](t, "SELECT "+tc.lit)
 		if len(lits) != 1 {
 			t.Fatalf("%s: %d literals", tc.lit, len(lits))
 		}
@@ -162,7 +163,7 @@ func TestNumber(t *testing.T) {
 		{"1e3", "DOUBLE", 0, false, 0, 0},
 		{"1.5E-3", "DOUBLE", 0, false, 0, 0},
 	} {
-		ns := find[duckdb.Number](t, "SELECT "+tc.lit)
+		ns := find[types.Number](t, "SELECT "+tc.lit)
 		if len(ns) != 1 {
 			t.Fatalf("%s: %d numbers", tc.lit, len(ns))
 		}
@@ -177,18 +178,18 @@ func TestNumber(t *testing.T) {
 			t.Errorf("%s: DecimalWidthScale %d, %d; want %d, %d", tc.lit, w, s, tc.w, tc.s)
 		}
 	}
-	n := find[duckdb.Number](t, "SELECT 1_5.25")[0]
+	n := find[types.Number](t, "SELECT 1_5.25")[0]
 	if f, err := n.Float64(); err != nil || f != 15.25 {
 		t.Errorf("Float64 %v, %v", f, err)
 	}
-	n = find[duckdb.Number](t, "SELECT 1e999")[0]
+	n = find[types.Number](t, "SELECT 1e999")[0]
 	if f, err := n.Float64(); err == nil || !math.IsInf(f, 1) {
 		t.Errorf("Float64 of an overflow: %v, %v", f, err)
 	}
 }
 
 func TestParam(t *testing.T) {
-	ps := find[duckdb.Param](t, "SELECT ?, ?2, $3, $name")
+	ps := find[types.Param](t, "SELECT ?, ?2, $3, $name")
 	if len(ps) != 4 {
 		t.Fatalf("%d parameters", len(ps))
 	}
@@ -258,7 +259,7 @@ func TestQuoteIdent(t *testing.T) {
 			continue
 		}
 		// what it returns reads back as the name
-		ids := find[duckdb.Ident](t, "SELECT "+got)
+		ids := find[types.Ident](t, "SELECT "+got)
 		if len(ids) != 1 || ids[0].Name() != tc.name {
 			t.Errorf("QuoteIdent(%q) = %s does not read back", tc.name, got)
 		}
@@ -355,7 +356,7 @@ func TestSpans(t *testing.T) {
 		}
 		var check func(parent duckdb.Span, n any)
 		check = func(parent duckdb.Span, n any) {
-			duckdb.Walk(n, func(c any) bool {
+			duckdb.Inspect(n, func(c any) bool {
 				sp, ok := duckdb.SpanOf(c)
 				if !ok {
 					return true
@@ -374,8 +375,8 @@ func TestSpans(t *testing.T) {
 		sp, _ := duckdb.SpanOf(script)
 		check(sp, script)
 		// a terminal covers the text it holds
-		duckdb.Walk(script, func(n any) bool {
-			if id, ok := n.(*duckdb.Ident); ok {
+		duckdb.Inspect(script, func(n any) bool {
+			if id, ok := n.(*types.Ident); ok {
 				if got := src[id.Span.Start:id.Span.End]; got != id.Value {
 					t.Errorf("%s: identifier %q at %d-%d covers %q", in, id.Value, id.Span.Start, id.Span.End, got)
 				}
@@ -385,14 +386,14 @@ func TestSpans(t *testing.T) {
 	}
 }
 
-func TestWalk(t *testing.T) {
+func TestInspect(t *testing.T) {
 	script, err := duckdb.ParseAST("SELECT a + 1 AS x FROM t WHERE b")
 	if err != nil {
 		t.Fatal(err)
 	}
 	var order []string
-	duckdb.Walk(script, func(n any) bool {
-		if id, ok := n.(*duckdb.Ident); ok {
+	duckdb.Inspect(script, func(n any) bool {
+		if id, ok := n.(*types.Ident); ok {
 			order = append(order, id.Value)
 		}
 		return true
@@ -402,8 +403,8 @@ func TestWalk(t *testing.T) {
 	}
 	// returning false skips the children
 	var count int
-	duckdb.Walk(script, func(n any) bool {
-		if _, ok := n.(*duckdb.Select); ok {
+	duckdb.Inspect(script, func(n any) bool {
+		if _, ok := n.(*types.Select); ok {
 			return false
 		}
 		count++
@@ -428,7 +429,7 @@ func TestSyntaxError(t *testing.T) {
 	}
 }
 
-// FuzzParse checks that ParseAST and Recognize agree, and that Split and Walk do not panic.
+// FuzzParse checks that ParseAST and Recognize agree, and that Split and Inspect do not panic.
 func FuzzParse(f *testing.F) {
 	for _, s := range []string{
 		"SELECT 1", "SELECT a, b FROM t WHERE c IN (1, 2) ORDER BY 1", "FROM t SELECT [x for x in l]",
@@ -444,7 +445,7 @@ func FuzzParse(f *testing.F) {
 			t.Fatalf("%q: ParseAST: %v, Recognize: %v", s, perr, rerr)
 		}
 		if perr == nil {
-			duckdb.Walk(script, func(any) bool { return true })
+			duckdb.Inspect(script, func(any) bool { return true })
 			// Split counts bytes; a text that is not UTF-8 is read as U+FFFD by the other functions, where two different
 			// bytes are the same character (the tags of a dollar-quoted string, for example), so it is left out
 			if !utf8.ValidString(s) {

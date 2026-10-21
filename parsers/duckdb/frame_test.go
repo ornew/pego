@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/parsers/duckdb"
+	"github.com/ornew/pego/parsers/duckdb/types"
 )
 
 func TestFrameBoundaries(t *testing.T) {
@@ -92,9 +93,9 @@ func TestFrameAST(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				var frames []*duckdb.Frame
-				duckdb.Walk(script, func(n any) bool {
-					if f, ok := n.(*duckdb.Frame); ok {
+				var frames []*types.Frame
+				duckdb.Inspect(script, func(n any) bool {
+					if f, ok := n.(*types.Frame); ok {
 						frames = append(frames, f)
 					}
 					return true
@@ -115,15 +116,15 @@ func TestFrameAST(t *testing.T) {
 						t.Fatalf("%q: missing second bound", sql)
 					}
 					if tc.kind == "two" {
-						if n, ok := f.Start.Expr.(*duckdb.Number); !ok || n.Text != "1" {
+						if n, ok := f.Start.Expr.(*types.Number); !ok || n.Text != "1" {
 							t.Fatalf("%q: unexpected first offset %#v", sql, f.Start.Expr)
 						}
 					} else {
-						p, ok := f.Start.Expr.(*duckdb.Paren)
+						p, ok := f.Start.Expr.(*types.Paren)
 						if !ok {
 							t.Fatalf("%q: unexpected first offset %#v", sql, f.Start.Expr)
 						}
-						if _, ok := p.X.(*duckdb.Not); !ok {
+						if _, ok := p.X.(*types.Not); !ok {
 							t.Fatalf("%q: unexpected parenthesized offset %#v", sql, p.X)
 						}
 					}
@@ -132,13 +133,13 @@ func TestFrameAST(t *testing.T) {
 				if f.End != nil {
 					t.Fatalf("%q: expected a single bound, got %#v", sql, f.End)
 				}
-				b, ok := f.Start.Expr.(*duckdb.Binary)
+				b, ok := f.Start.Expr.(*types.Binary)
 				if !ok || !strings.EqualFold(b.Op.Value, "AND") {
 					t.Fatalf("%q: unexpected offset %#v", sql, f.Start.Expr)
 				}
-				column := func(e duckdb.Expr, names ...string) {
+				column := func(e types.Expr, names ...string) {
 					t.Helper()
-					c, ok := e.(*duckdb.ColumnRef)
+					c, ok := e.(*types.ColumnRef)
 					if !ok || len(c.Parts) != len(names) {
 						t.Fatalf("%q: unexpected column %#v", sql, e)
 					}
@@ -152,14 +153,14 @@ func TestFrameAST(t *testing.T) {
 				case "dot":
 					column(b.Left, "BETWEEN", "PRECEDING")
 				case "in":
-					i, ok := b.Left.(*duckdb.In)
+					i, ok := b.Left.(*types.In)
 					if !ok || i.Negated || i.Query != nil || len(i.Items) != 0 {
 						t.Fatalf("%q: unexpected IN offset %#v", sql, b.Left)
 					}
 					column(i.X, "BETWEEN")
 					column(i.Source, "PRECEDING")
 				case "and":
-					left, ok := b.Left.(*duckdb.Binary)
+					left, ok := b.Left.(*types.Binary)
 					if !ok || !strings.EqualFold(left.Op.Value, "AND") {
 						t.Fatalf("%q: unexpected AND offset %#v", sql, b.Left)
 					}

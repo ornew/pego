@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/parsers/yaml"
+	"github.com/ornew/pego/parsers/yaml/types"
 )
 
 // TestGolden checks the generated parser against the golden files of testdata, which the tests of
@@ -47,7 +48,7 @@ func TestGolden(t *testing.T) {
 }
 
 // rootScalar parses a document whose root is a scalar.
-func rootScalar(t *testing.T, src string) *yaml.Scalar {
+func rootScalar(t *testing.T, src string) *types.Scalar {
 	t.Helper()
 	s, err := yaml.ParseAST(src)
 	if err != nil {
@@ -56,7 +57,7 @@ func rootScalar(t *testing.T, src string) *yaml.Scalar {
 	if len(s.Documents) != 1 {
 		t.Fatalf("%q: %d documents", src, len(s.Documents))
 	}
-	sc, ok := s.Documents[0].Root.(*yaml.Scalar)
+	sc, ok := s.Documents[0].Root.(*types.Scalar)
 	if !ok {
 		t.Fatalf("%q: root is %T", src, s.Documents[0].Root)
 	}
@@ -70,51 +71,51 @@ func TestScalarValue(t *testing.T) {
 		want  string
 	}{
 		// Plain scalars: line folding (7.3.3, 6.5).
-		{"plain", yaml.Plain, "plain"},
-		{"a b  c", yaml.Plain, "a b  c"},
-		{"a\n b\n\n c\n\n\n d", yaml.Plain, "a b\nc\n\nd"},
-		{"a  \t\n  \t b", yaml.Plain, "a b"},
-		{"a\r\n b\r\n\r\n c", yaml.Plain, "a b\nc"},
-		{"a#b c:d", yaml.Plain, "a#b c:d"},
-		{"-1", yaml.Plain, "-1"},
-		{"!!str", yaml.Plain, ""},
+		{"plain", types.Plain, "plain"},
+		{"a b  c", types.Plain, "a b  c"},
+		{"a\n b\n\n c\n\n\n d", types.Plain, "a b\nc\n\nd"},
+		{"a  \t\n  \t b", types.Plain, "a b"},
+		{"a\r\n b\r\n\r\n c", types.Plain, "a b\nc"},
+		{"a#b c:d", types.Plain, "a#b c:d"},
+		{"-1", types.Plain, "-1"},
+		{"!!str", types.Plain, ""},
 		// Single-quoted scalars (7.3.2).
-		{"'it''s'", yaml.SingleQuoted, "it's"},
-		{"''", yaml.SingleQuoted, ""},
-		{"' a \\n '", yaml.SingleQuoted, " a \\n "},
-		{"' a  \n  b \n\n c '", yaml.SingleQuoted, " a b\nc "},
-		{"'''\n'''", yaml.SingleQuoted, "' '"},
+		{"'it''s'", types.SingleQuoted, "it's"},
+		{"''", types.SingleQuoted, ""},
+		{"' a \\n '", types.SingleQuoted, " a \\n "},
+		{"' a  \n  b \n\n c '", types.SingleQuoted, " a b\nc "},
+		{"'''\n'''", types.SingleQuoted, "' '"},
 		// Double-quoted scalars: escapes (5.7) and folding (7.3.1).
-		{`"a\tb\nc\\d\"e\/f"`, yaml.DoubleQuoted, "a\tb\nc\\d\"e/f"},
-		{`"\0\a\b\v\f\r\e\ \N\_\L\P"`, yaml.DoubleQuoted, "\x00\a\b\v\f\r\x1b \u0085\u00a0\u2028\u2029"},
-		{`"\x41\u263A\U0001F600"`, yaml.DoubleQuoted, "A☺😀"},
-		{`"\ud800"`, yaml.DoubleQuoted, "\uFFFD"},
-		{"\"a\\\tb\"", yaml.DoubleQuoted, "a\tb"},
-		{"\" a \n b \n\n c \"", yaml.DoubleQuoted, " a b\nc "},
-		{"\"a \\\n   b\"", yaml.DoubleQuoted, "a b"},
-		{"\"a\\\n\n  b\"", yaml.DoubleQuoted, "a\nb"},
-		{"\"a\\t\n b\"", yaml.DoubleQuoted, "a\t b"},
-		{"\"a \\\n \\ b\"", yaml.DoubleQuoted, "a  b"},
+		{`"a\tb\nc\\d\"e\/f"`, types.DoubleQuoted, "a\tb\nc\\d\"e/f"},
+		{`"\0\a\b\v\f\r\e\ \N\_\L\P"`, types.DoubleQuoted, "\x00\a\b\v\f\r\x1b \u0085\u00a0\u2028\u2029"},
+		{`"\x41\u263A\U0001F600"`, types.DoubleQuoted, "A☺😀"},
+		{`"\ud800"`, types.DoubleQuoted, "\uFFFD"},
+		{"\"a\\\tb\"", types.DoubleQuoted, "a\tb"},
+		{"\" a \n b \n\n c \"", types.DoubleQuoted, " a b\nc "},
+		{"\"a \\\n   b\"", types.DoubleQuoted, "a b"},
+		{"\"a\\\n\n  b\"", types.DoubleQuoted, "a\nb"},
+		{"\"a\\t\n b\"", types.DoubleQuoted, "a\t b"},
+		{"\"a \\\n \\ b\"", types.DoubleQuoted, "a  b"},
 		// Literal block scalars (8.1.2) with chomping (8.1.1.2).
-		{"|\n a\n  b\n\n c\n\n", yaml.Literal, "a\n b\n\nc\n"},
-		{"|-\n a\n b\n\n", yaml.Literal, "a\nb"},
-		{"|+\n a\n b\n\n", yaml.Literal, "a\nb\n\n"},
-		{"|\n a", yaml.Literal, "a\n"},
-		{"|\n\n\n a\n", yaml.Literal, "\n\na\n"},
-		{"|\n", yaml.Literal, ""},
-		{"|+\n\n\n", yaml.Literal, "\n\n"},
+		{"|\n a\n  b\n\n c\n\n", types.Literal, "a\n b\n\nc\n"},
+		{"|-\n a\n b\n\n", types.Literal, "a\nb"},
+		{"|+\n a\n b\n\n", types.Literal, "a\nb\n\n"},
+		{"|\n a", types.Literal, "a\n"},
+		{"|\n\n\n a\n", types.Literal, "\n\na\n"},
+		{"|\n", types.Literal, ""},
+		{"|+\n\n\n", types.Literal, "\n\n"},
 		// The indentation indicator adds to the indentation of the node, which is -1 at the top level
 		// (l-bare-document), so that the content of |2 there is indented by 1.
-		{"|2\n   a\n  b\n", yaml.Literal, "  a\n b\n"},
-		{"|-1 # comment\n  a\n", yaml.Literal, "  a"},
-		{"|\r\n a\r\n b\r\n", yaml.Literal, "a\nb\n"},
-		{"|\n a\n# trailing comment\n", yaml.Literal, "a\n"},
+		{"|2\n   a\n  b\n", types.Literal, "  a\n b\n"},
+		{"|-1 # comment\n  a\n", types.Literal, "  a"},
+		{"|\r\n a\r\n b\r\n", types.Literal, "a\nb\n"},
+		{"|\n a\n# trailing comment\n", types.Literal, "a\n"},
 		// Folded block scalars (8.1.3).
-		{">\n a\n b\n\n c\n", yaml.Folded, "a b\nc\n"},
-		{">\n a\n   more\n b\n", yaml.Folded, "a\n  more\nb\n"},
-		{">\n a\n\n   more\n\n b\n", yaml.Folded, "a\n\n  more\n\nb\n"},
-		{">-\n a\n b\n\n", yaml.Folded, "a b"},
-		{">\n \ta\n b\n", yaml.Folded, "\ta\nb\n"},
+		{">\n a\n b\n\n c\n", types.Folded, "a b\nc\n"},
+		{">\n a\n   more\n b\n", types.Folded, "a\n  more\nb\n"},
+		{">\n a\n\n   more\n\n b\n", types.Folded, "a\n\n  more\n\nb\n"},
+		{">-\n a\n b\n\n", types.Folded, "a b"},
+		{">\n \ta\n b\n", types.Folded, "\ta\nb\n"},
 	} {
 		s := rootScalar(t, tc.src)
 		if s.Style != tc.style {
@@ -141,14 +142,14 @@ func TestBlockScalarIndent(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
-		var sc *yaml.Scalar
+		var sc *types.Scalar
 		switch r := s.Documents[0].Root.(type) {
-		case *yaml.Scalar:
+		case *types.Scalar:
 			sc = r
-		case *yaml.Mapping:
-			sc = r.Pairs[0].Value.(*yaml.Scalar)
-		case *yaml.Sequence:
-			sc = r.Items[0].(*yaml.Scalar)
+		case *types.Mapping:
+			sc = r.Pairs[0].Value.(*types.Scalar)
+		case *types.Sequence:
+			sc = r.Items[0].(*types.Scalar)
 		}
 		if sc.Indent != tc.indent {
 			t.Errorf("%q: Indent %d, want %d", tc.src, sc.Indent, tc.indent)
@@ -294,7 +295,7 @@ func TestCheck(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
-		err = s.Check()
+		err = yaml.Check(s)
 		if (err == nil) != tc.ok {
 			t.Errorf("%q: Check() = %v", tc.src, err)
 		}
@@ -418,7 +419,7 @@ func FuzzParse(f *testing.F) {
 			t.Fatalf("%q: Valid and Events disagree: %v", src, eerr)
 		}
 		if perr == nil {
-			if err := s.Check(); (utf8.ValidString(src) && err == nil) != yaml.Valid(src) {
+			if err := yaml.Check(s); (utf8.ValidString(src) && err == nil) != yaml.Valid(src) {
 				t.Fatalf("%q: Check and Valid disagree: %v", src, err)
 			}
 		}

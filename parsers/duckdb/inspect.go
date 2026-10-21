@@ -25,10 +25,10 @@ func SpanOf(node any) (Span, bool) {
 
 var spanType = reflect.TypeOf(Span{})
 
-// Walk calls fn for node and for every node below it, in the order of the input: a node before its children,
+// Inspect calls fn for node and for every node below it, in the order of the input: a node before its children,
 // the children in the order of their fields. The nodes are the pointers to the structs and terminals of the
-// syntax tree. If fn returns false, Walk does not visit the children of the node.
-func Walk(node any, fn func(node any) bool) {
+// syntax tree. If fn returns false, Inspect does not visit the children of the node.
+func Inspect(node any, fn func(node any) bool) {
 	walk(reflect.ValueOf(node), fn)
 }
 

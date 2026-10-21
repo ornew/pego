@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/parsers/typescript"
+	"github.com/ornew/pego/parsers/typescript/types"
 )
 
 func TestStringValue(t *testing.T) {
@@ -27,7 +28,7 @@ func TestStringValue(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.src, err)
 		}
-		lit := f.Statements[0].(*typescript.ExpressionStatement).Expression.(*typescript.StringLiteral)
+		lit := f.Statements[0].(*types.ExpressionStatement).Expression.(*types.StringLiteral)
 		if got := lit.Value(); got != c.want {
 			t.Errorf("%s: got %q, want %q", c.src, got, c.want)
 		}
@@ -39,10 +40,10 @@ func TestTemplateValue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := f.Statements[0].(*typescript.ExpressionStatement).Expression.(*typescript.TemplateExpression); !ok {
-		t.Fatalf("%T", f.Statements[0].(*typescript.ExpressionStatement).Expression)
+	if _, ok := f.Statements[0].(*types.ExpressionStatement).Expression.(*types.TemplateExpression); !ok {
+		t.Fatalf("%T", f.Statements[0].(*types.ExpressionStatement).Expression)
 	}
-	lit := f.Statements[1].(*typescript.ExpressionStatement).Expression.(*typescript.NoSubstitutionTemplateLiteral)
+	lit := f.Statements[1].(*types.ExpressionStatement).Expression.(*types.NoSubstitutionTemplateLiteral)
 	if got := lit.Value(); got != "bA\nc" {
 		t.Errorf("got %q", got)
 	}
@@ -61,7 +62,7 @@ func TestNumberValue(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.src, err)
 		}
-		lit := f.Statements[0].(*typescript.ExpressionStatement).Expression.(*typescript.NumericLiteral)
+		lit := f.Statements[0].(*types.ExpressionStatement).Expression.(*types.NumericLiteral)
 		if got := lit.Value(); got != c.want {
 			t.Errorf("%s: got %v, want %v", c.src, got, c.want)
 		}
@@ -77,7 +78,7 @@ func TestBigIntValue(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.src, err)
 		}
-		lit := f.Statements[0].(*typescript.ExpressionStatement).Expression.(*typescript.BigIntLiteral)
+		lit := f.Statements[0].(*types.ExpressionStatement).Expression.(*types.BigIntLiteral)
 		if got := lit.Value().String(); got != c.want {
 			t.Errorf("%s: got %s, want %s", c.src, got, c.want)
 		}
@@ -90,7 +91,7 @@ func TestIdentifierValue(t *testing.T) {
 		t.Fatal(err)
 	}
 	for i, want := range []string{"abc", "bc", "plain", "é"} {
-		id := f.Statements[i].(*typescript.ExpressionStatement).Expression.(*typescript.Identifier)
+		id := f.Statements[i].(*types.ExpressionStatement).Expression.(*types.Identifier)
 		if got := id.Value(); got != want {
 			t.Errorf("%q: got %q, want %q", id.TNode.Value, got, want)
 		}

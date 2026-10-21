@@ -246,7 +246,7 @@ func (t *typedGen) nodeHelpers(b *strings.Builder, done *int) bool {
 			}
 			b.WriteString("\treturn out\n")
 		case nodeTy:
-			fmt.Fprintf(b, "\tn := astNode(v)\n\tif n == nil || n.Type() == \"error\" {\n\t\treturn nil\n\t}\n\tout := &%s{Span: %s{Start: int(n.RawStart), End: int(n.RawEnd)}}\n", g[1:], t.span)
+			fmt.Fprintf(b, "\tn := astNode(v)\n\tif n == nil || n.Type() == \"error\" {\n\t\treturn nil\n\t}\n\tout := &%s{Span: Span{Start: int(n.RawStart), End: int(n.RawEnd)}}\n", g[1:])
 			switch value := x.value.(type) {
 			case basicTy:
 				if value == tyString {
@@ -288,7 +288,7 @@ func (t *typedGen) typedHelpers(b *strings.Builder, done *int) bool {
 		case nodeTy:
 			if x.name != "" && x.value == tyString {
 				// A string node of a named node type is its own public value (tmatchAs).
-				g := t.names[x.name]
+				g := t.ref(x.name)
 				fmt.Fprintf(b, "\tconst _ = -(unsafe.Sizeof(%s{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)\n", g)
 				fmt.Fprintf(b, "\tx, _ := v.(*TMatch)\n\tif x == nil || x.Nt != %s {\n\t\treturn nil\n\t}\n\treturn TMatchAs[%s](x)\n", t.g.nodeTypeID(x.name), g)
 				break
@@ -296,9 +296,9 @@ func (t *typedGen) typedHelpers(b *strings.Builder, done *int) bool {
 			if x.name != "" {
 				// A tuple or list node of a named node type, as the node it was converted from,
 				// remembered so that the node converts to one value everywhere (as astConv does).
-				g := t.names[x.name]
+				g := t.ref(x.name)
 				fmt.Fprintf(b, "\tx := AsTval(v)\n\tif x == nil || x.TName() != %q {\n\t\treturn nil\n\t}\n\tif out, ok := a.named[x]; ok {\n\t\treturn out.(*%s)\n\t}\n", x.name, g)
-				fmt.Fprintf(b, "\tu := %s\n\tif u == nil {\n\t\treturn nil\n\t}\n\tout := astNew(&a.t%s)\n\tout.TNode = *u\n\tif a.named == nil {\n\t\ta.named = map[any]any{}\n\t}\n\ta.named[x] = out\n\treturn out\n", t.dconv(x.underlying(), "v", "a"), g)
+				fmt.Fprintf(b, "\tu := %s\n\tif u == nil {\n\t\treturn nil\n\t}\n\tout := astNew(&a.t%s)\n\tout.TNode = *u\n\tif a.named == nil {\n\t\ta.named = map[any]any{}\n\t}\n\ta.named[x] = out\n\treturn out\n", t.dconv(x.underlying(), "v", "a"), x.name)
 				break
 			}
 			fmt.Fprintf(b, "\tswitch x := v.(type) {\n\tcase *TSeq:\n\t\tif x.Typ == TypeTupleValue || x.Typ == TypeListValue {\n\t\t\treturn nil\n\t\t}\n\t\tout := &%s{Span: x.Span}\n", g[1:])
@@ -310,7 +310,7 @@ func (t *typedGen) typedHelpers(b *strings.Builder, done *int) bool {
 					fmt.Fprintf(b, "\t\tout.Value = %s\n", t.dconv(value, "tnodeValue(x)", "a"))
 				}
 			}
-			fmt.Fprintf(b, "\t\treturn out\n\tcase *TError:\n\t\treturn nil\n\tcase TVal:\n\t\tif x.TStruct() {\n\t\t\treturn nil\n\t\t}\n\t\ts, e := x.TSpan()\n\t\ttext, _ := x.TText()\n\t\t_ = text\n\t\tout := &%s{Span: %s{Start: s, End: e}}\n", g[1:], t.span)
+			fmt.Fprintf(b, "\t\treturn out\n\tcase *TError:\n\t\treturn nil\n\tcase TVal:\n\t\tif x.TStruct() {\n\t\t\treturn nil\n\t\t}\n\t\ts, e := x.TSpan()\n\t\ttext, _ := x.TText()\n\t\t_ = text\n\t\tout := &%s{Span: Span{Start: s, End: e}}\n", g[1:])
 			fmt.Fprintf(b, "\t\tout.Value = %s\n\t\treturn out\n\t}\n\treturn nil\n", t.dconv(x.value, "text", "a"))
 		}
 		b.WriteString("}\n\n")
@@ -371,24 +371,24 @@ func (t *typedGen) backHelpers(b *strings.Builder, done *int) bool {
 			fmt.Fprintf(b, "\tif v == nil {\n\t\treturn nil\n\t}\n\treturn %s\n", t.back(x.elem, "(*v)"))
 		case tupleTy:
 			if len(x.elems) == 0 {
-				b.WriteString("\treturn &TSeq{Typ: TypeTupleValue}\n")
+				b.WriteString("\treturn &pegort.TSeq{Typ: pegort.TypeTupleValue}\n")
 			} else {
-				fmt.Fprintf(b, "\treturn &TSeq{Typ: TypeTupleValue, Kids: %s}\n", elems(x, "v"))
+				fmt.Fprintf(b, "\treturn &pegort.TSeq{Typ: pegort.TypeTupleValue, Kids: %s}\n", elems(x, "v"))
 			}
 		case nodeTy:
 			b.WriteString("\tif v == nil {\n\t\treturn nil\n\t}\n")
 			if x.name != "" {
-				fmt.Fprintf(b, "\treturn TSetNodeType(%s, %s)\n}\n\n", t.back(x.underlying(), "&v.TNode"), t.g.nodeTypeID(x.name))
+				fmt.Fprintf(b, "\treturn pegort.TSetNodeType(%s, %s)\n}\n\n", t.back(x.underlying(), "&v.TNode"), t.g.nodeTypeID(x.name))
 				continue
 			}
 			switch value := x.value.(type) {
 			case listTy:
-				fmt.Fprintf(b, "\tkids := make([]any, len(v.Value))\n\tfor i, x := range v.Value {\n\t\tkids[i] = %s\n\t}\n\treturn &TSeq{Span: v.Span, Typ: \"list\", Kids: kids}\n", t.back(value.elem, "x"))
+				fmt.Fprintf(b, "\tkids := make([]any, len(v.Value))\n\tfor i, x := range v.Value {\n\t\tkids[i] = %s\n\t}\n\treturn &pegort.TSeq{Span: v.Span, Typ: \"list\", Kids: kids}\n", t.back(value.elem, "x"))
 			case tupleTy:
 				if len(value.elems) == 0 {
-					fmt.Fprintf(b, "\treturn &TSeq{Span: v.Span, Typ: \"tuple\"}\n")
+					fmt.Fprintf(b, "\treturn &pegort.TSeq{Span: v.Span, Typ: \"tuple\"}\n")
 				} else {
-					fmt.Fprintf(b, "\treturn &TSeq{Span: v.Span, Typ: \"tuple\", Kids: %s}\n", elems(value, "v.Value"))
+					fmt.Fprintf(b, "\treturn &pegort.TSeq{Span: v.Span, Typ: \"tuple\", Kids: %s}\n", elems(value, "v.Value"))
 				}
 			default:
 				b.WriteString("\treturn nil\n")

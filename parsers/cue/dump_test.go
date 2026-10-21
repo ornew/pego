@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/ornew/pego/parsers/cue/types"
 )
 
 // dump prints a file in the canonical form of the reference results (see internal/refgen/dump.go): a line
 // of s-expressions (kind start end children...) with byte offsets, then the comments.
-func dump(f *File, comments []Comment) string {
+func dump(f *types.File, comments []Comment) string {
 	var b strings.Builder
 	d := &dumper{b: &b}
 	b.WriteString("(file")
@@ -37,43 +39,43 @@ func (d *dumper) open(kind string, x any) { d.w("(%s %d %d", kind, SpanOf(x).Sta
 // start. The end of the other nodes is the end of the span.
 func nodeEnd(x any) int {
 	switch x := x.(type) {
-	case *Bottom:
+	case *types.Bottom:
 		return x.Start + 1
-	case *String:
+	case *types.String:
 		// The reference drops the carriage returns of a multi-line string from its text, and so shortens it.
 		return x.Start + len(refText(x.Text))
-	case *Interpolation:
+	case *types.Interpolation:
 		return nodeEnd(x.Elts[len(x.Elts)-1])
-	case *BinaryExpr:
+	case *types.BinaryExpr:
 		return nodeEnd(x.Y)
-	case *UnaryExpr:
+	case *types.UnaryExpr:
 		return nodeEnd(x.X)
-	case *Alias:
+	case *types.Alias:
 		return nodeEnd(x.Expr)
-	case *EmbedDecl:
+	case *types.EmbedDecl:
 		return nodeEnd(x.Expr)
-	case *LetClause:
+	case *types.LetClause:
 		return nodeEnd(x.Expr)
-	case *IfClause:
+	case *types.IfClause:
 		return nodeEnd(x.Condition)
-	case *ForClause:
+	case *types.ForClause:
 		return nodeEnd(x.Source)
-	case *TryClause:
+	case *types.TryClause:
 		if x.Expr != nil {
 			return nodeEnd(x.Expr)
 		}
-	case *Ellipsis:
+	case *types.Ellipsis:
 		if x.Type != nil {
 			return nodeEnd(x.Type)
 		}
-	case *Field:
+	case *types.Field:
 		if len(x.Attrs) == 0 {
 			return nodeEnd(x.Value)
 		}
-	case *StructLit:
+	case *types.StructLit:
 		// The struct of a field chain (a: b: c) has no braces: it ends with its field.
 		if len(x.Elts) == 1 {
-			if f, ok := x.Elts[0].(*Field); ok && f.Start == x.Start && f.End == x.End {
+			if f, ok := x.Elts[0].(*types.Field); ok && f.Start == x.Start && f.End == x.End {
 				return nodeEnd(f)
 			}
 		}
@@ -81,17 +83,17 @@ func nodeEnd(x any) int {
 	return SpanOf(x).End
 }
 
-func (d *dumper) decl(x Decl) {
+func (d *dumper) decl(x types.Decl) {
 	switch x := x.(type) {
-	case *Package:
+	case *types.Package:
 		d.open("package", x)
 		d.w(" ")
 		d.expr(x.Name)
 		d.w(")")
-	case *Attribute:
+	case *types.Attribute:
 		d.open("attr", x)
 		d.w(" %s)", strconv.Quote(x.Value))
-	case *ImportDecl:
+	case *types.ImportDecl:
 		d.open("import", x)
 		if x.Lparen != nil {
 			d.w(" paren")
@@ -108,7 +110,7 @@ func (d *dumper) decl(x Decl) {
 			d.w(")")
 		}
 		d.w(")")
-	case *Field:
+	case *types.Field:
 		d.open("field", x)
 		switch {
 		case x.Constraint == nil:
@@ -129,28 +131,28 @@ func (d *dumper) decl(x Decl) {
 			d.decl(a)
 		}
 		d.w(")")
-	case *EmbedDecl:
+	case *types.EmbedDecl:
 		d.open("embed", x)
 		d.w(" ")
 		d.expr(x.Expr)
 		d.w(")")
-	case *LetClause:
+	case *types.LetClause:
 		d.clause(x)
-	case *Ellipsis:
+	case *types.Ellipsis:
 		d.open("ellipsis", x)
 		if x.Type != nil {
 			d.w(" ")
 			d.expr(x.Type)
 		}
 		d.w(")")
-	case *Comprehension:
+	case *types.Comprehension:
 		d.expr(x)
 	default:
 		d.w("(?decl %T)", x)
 	}
 }
 
-func (d *dumper) postfixAlias(a *PostfixAlias) {
+func (d *dumper) postfixAlias(a *types.PostfixAlias) {
 	d.open("postfixalias", a)
 	if a.Label != nil {
 		d.w(" ")
@@ -161,9 +163,9 @@ func (d *dumper) postfixAlias(a *PostfixAlias) {
 	d.w(")")
 }
 
-func (d *dumper) clause(x Clause) {
+func (d *dumper) clause(x types.Clause) {
 	switch x := x.(type) {
-	case *ForClause:
+	case *types.ForClause:
 		d.open("for", x)
 		if x.Key != nil {
 			d.w(" ")
@@ -176,19 +178,19 @@ func (d *dumper) clause(x Clause) {
 		d.w(" ")
 		d.expr(x.Source)
 		d.w(")")
-	case *IfClause:
+	case *types.IfClause:
 		d.open("if", x)
 		d.w(" ")
 		d.expr(x.Condition)
 		d.w(")")
-	case *LetClause:
+	case *types.LetClause:
 		d.open("let", x)
 		d.w(" ")
 		d.expr(x.Ident)
 		d.w(" ")
 		d.expr(x.Expr)
 		d.w(")")
-	case *TryClause:
+	case *types.TryClause:
 		d.open("try", x)
 		if x.Ident != nil {
 			d.w(" ")
@@ -202,7 +204,7 @@ func (d *dumper) clause(x Clause) {
 	}
 }
 
-func (d *dumper) opt(x Expr) {
+func (d *dumper) opt(x types.Expr) {
 	if x == nil {
 		d.w(" _")
 		return
@@ -215,72 +217,72 @@ func (d *dumper) opt(x Expr) {
 // declarations or clauses).
 func (d *dumper) expr(x any) {
 	switch x := x.(type) {
-	case *Ident:
+	case *types.Ident:
 		d.open("id", x)
 		d.w(" %s)", strconv.Quote(x.Value))
-	case *Int:
+	case *types.Int:
 		d.w("(lit %d %d INT %s)", x.Start, x.End, strconv.Quote(x.TNode.Value))
-	case *Float:
+	case *types.Float:
 		d.w("(lit %d %d FLOAT %s)", x.Start, x.End, strconv.Quote(x.Value))
-	case *String:
+	case *types.String:
 		d.w("(lit %d %d STRING %s)", x.Start, nodeEnd(x), strconv.Quote(refText(x.Text)))
-	case *Bool:
+	case *types.Bool:
 		d.w("(lit %d %d %s %s)", x.Start, x.End, x.TNode.Value, strconv.Quote(x.TNode.Value))
-	case *Null:
+	case *types.Null:
 		d.w("(lit %d %d null %s)", x.Start, x.End, strconv.Quote(x.Value))
-	case *Bottom:
+	case *types.Bottom:
 		d.open("bottom", x)
 		d.w(")")
-	case *Interpolation:
+	case *types.Interpolation:
 		d.open("interp", x)
 		for _, e := range x.Elts {
 			d.w(" ")
 			d.expr(e)
 		}
 		d.w(")")
-	case *StructLit:
+	case *types.StructLit:
 		d.open("struct", x)
 		for _, e := range x.Elts {
 			d.w(" ")
 			d.decl(e)
 		}
 		d.w(")")
-	case *ListLit:
+	case *types.ListLit:
 		d.open("list", x)
 		for _, e := range x.Elts {
 			d.w(" ")
 			d.expr(e)
 		}
 		d.w(")")
-	case *Ellipsis:
+	case *types.Ellipsis:
 		d.decl(x)
-	case *ParenExpr:
+	case *types.ParenExpr:
 		d.open("paren", x)
 		d.w(" ")
 		d.expr(x.X)
 		d.w(")")
-	case *SelectorExpr:
+	case *types.SelectorExpr:
 		d.open("sel", x)
 		d.w(" ")
 		d.expr(x.X)
 		d.w(" ")
 		d.expr(x.Sel)
 		d.w(")")
-	case *IndexExpr:
+	case *types.IndexExpr:
 		d.open("index", x)
 		d.w(" ")
 		d.expr(x.X)
 		d.w(" ")
 		d.expr(x.Index)
 		d.w(")")
-	case *SliceExpr:
+	case *types.SliceExpr:
 		d.open("slice", x)
 		d.w(" ")
 		d.expr(x.X)
 		d.opt(x.Low)
 		d.opt(x.High)
 		d.w(")")
-	case *CallExpr:
+	case *types.CallExpr:
 		d.open("call", x)
 		d.w(" ")
 		d.expr(x.Fun)
@@ -289,31 +291,31 @@ func (d *dumper) expr(x any) {
 			d.expr(a)
 		}
 		d.w(")")
-	case *UnaryExpr:
+	case *types.UnaryExpr:
 		d.open("unary", x)
 		d.w(" %s ", strconv.Quote(x.Op.Value))
 		d.expr(x.X)
 		d.w(")")
-	case *BinaryExpr:
+	case *types.BinaryExpr:
 		d.open("binary", x)
 		d.w(" %s ", strconv.Quote(x.Op.Value))
 		d.expr(x.X)
 		d.w(" ")
 		d.expr(x.Y)
 		d.w(")")
-	case *PostfixExpr:
+	case *types.PostfixExpr:
 		d.open("postfix", x)
 		d.w(" %s ", strconv.Quote(x.Op.Value))
 		d.expr(x.X)
 		d.w(")")
-	case *Alias:
+	case *types.Alias:
 		d.open("alias", x)
 		d.w(" ")
 		d.expr(x.Ident)
 		d.w(" ")
 		d.expr(x.Expr)
 		d.w(")")
-	case *Comprehension:
+	case *types.Comprehension:
 		d.open("comp", x)
 		d.w(" (clauses")
 		for _, c := range x.Clauses {

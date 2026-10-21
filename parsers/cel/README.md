@@ -16,19 +16,19 @@ e, err := cel.ParseExpr(`request.auth.claims.exists(c, c == "admin") && size(ite
 // Typed values with positions; ParseExpr is this followed by Check.
 e, err = cel.ParseAST(`a.b + f(1,
   2u) // sum`)
-call := e.(*cel.Binary).Right.(*cel.Call)
+call := e.(*types.Binary).Right.(*types.Call)
 fmt.Println(call.Func.Name(), call.Start, call.End) // f 6 16
 
 // Walk the tree.
-cel.Inspect(e, func(e cel.Expr) bool {
-	if id, ok := e.(*cel.Ident); ok {
+cel.Inspect(e, func(e types.Expr) bool {
+	if id, ok := e.(*types.Ident); ok {
 		fmt.Println("variable", id.Name())
 	}
 	return true
 })
 
 // Decode literals.
-s := (&cel.StringLit{TNode: cel.TNode[string]{Value: `'''a\nb'''`}}).Value() // "a\nb"
+s := (&types.StringLit{TNode: types.TNode[string]{Value: `'''a\nb'''`}}).Value() // "a\nb"
 
 // Print the tree back as source.
 cel.Format(e) // `a.b + f(1, 2u)`

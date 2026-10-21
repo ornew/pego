@@ -49,287 +49,37 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
-)
 
-// The styles of a Scalar (Scalar.Style).
-const (
-	Plain        = 0 // a plain scalar, or an empty node
-	SingleQuoted = 1
-	DoubleQuoted = 2
-	Literal      = 3 // a literal block scalar (|)
-	Folded       = 4 // a folded block scalar (>)
+	"github.com/ornew/pego/parsers/yaml/types"
 )
 
 // PropertiesOf returns the properties of a node: its tag and anchor, or nil if it has neither (an alias
 // has none).
-func PropertiesOf(v Value) *Properties {
+func PropertiesOf(v types.Value) *types.Properties {
 	switch v := v.(type) {
-	case *Mapping:
+	case *types.Mapping:
 		return v.Props
-	case *Sequence:
+	case *types.Sequence:
 		return v.Props
-	case *Scalar:
+	case *types.Scalar:
 		return v.Props
 	}
 	return nil
 }
 
-// tag returns the tag of the properties, or nil.
-func (p *Properties) tag() *Tag {
+// propsTag returns the tag of the properties, or nil.
+func propsTag(p *types.Properties) *types.Tag {
 	if p == nil {
 		return nil
 	}
 	return p.Tag
 }
 
-func (p *Properties) anchor() *Anchor {
+func propsAnchor(p *types.Properties) *types.Anchor {
 	if p == nil {
 		return nil
 	}
 	return p.Anchor
-}
-
-// Name returns the name of the anchor, without "&".
-func (a *Anchor) Name() string { return a.Value[1:] }
-
-// Name returns the name of the anchor the alias refers to, without "*".
-func (a *Alias) Name() string { return a.Value[1:] }
-
-// Value returns the content of the scalar: for a plain or quoted scalar, its text with the lines folded
-// and, in a double-quoted scalar, the escape sequences decoded; for a block scalar, its lines without
-// the indentation, folded in a folded scalar and with the final line breaks chomped as the header says.
-// An escape of a surrogate or of a value outside Unicode decodes to U+FFFD.
-func (s *Scalar) Value() string {
-	switch s.Style {
-	case SingleQuoted:
-		return foldFlow(s.Text[1:len(s.Text)-1], '\'')
-	case DoubleQuoted:
-		return foldFlow(s.Text[1:len(s.Text)-1], '"')
-	case Literal, Folded:
-		return blockValue(s.Text, s.Indent, s.Style == Folded)
-	}
-	if !strings.ContainsAny(s.Text, "\r\n") {
-		return s.Text
-	}
-	return foldFlow(s.Text, 0)
-}
-
-func isWhite(c byte) bool { return c == ' ' || c == '\t' }
-
-// foldFlow decodes the text of a flow scalar (7.3): a line break and the white space around it fold to a
-// space, or to a line feed per empty line that follows it. The quote is a single quote to decode the
-// doubled quotes of a single-quoted scalar, a double quote to decode the escapes of a double-quoted one,
-// or 0.
-func foldFlow(t string, quote byte) string {
-	var b strings.Builder
-	b.Grow(len(t))
-	pending := -1 // the start of white space not yet written, which a line break discards; -1 if none
-	flush := func(i int) {
-		if pending >= 0 {
-			b.WriteString(t[pending:i])
-			pending = -1
-		}
-	}
-	i := 0
-	// skipBreak skips the line break at i, the empty lines after it and the indentation of the next line,
-	// and returns the number of empty lines.
-	skipBreak := func() int {
-		empty := 0
-		i = skipNewline(t, i)
-		for {
-			j := i
-			for j < len(t) && isWhite(t[j]) {
-				j++
-			}
-			if j < len(t) && (t[j] == '\n' || t[j] == '\r') {
-				empty++
-				i = skipNewline(t, j)
-				continue
-			}
-			i = j
-			return empty
-		}
-	}
-	for i < len(t) {
-		c := t[i]
-		switch {
-		case isWhite(c):
-			if pending < 0 {
-				pending = i
-			}
-			i++
-		case c == '\n' || c == '\r':
-			pending = -1
-			if empty := skipBreak(); empty == 0 {
-				b.WriteByte(' ')
-			} else {
-				b.WriteString(strings.Repeat("\n", empty))
-			}
-		case c == '\'' && quote == '\'':
-			flush(i)
-			b.WriteByte('\'')
-			i += 2
-		case c == '\\' && quote == '"':
-			flush(i)
-			i++
-			if t[i] == '\n' || t[i] == '\r' {
-				// An escaped line break: the break and the indentation of the next line are discarded,
-				// the empty lines after it are line feeds.
-				b.WriteString(strings.Repeat("\n", skipBreak()))
-				continue
-			}
-			i = decodeEscape(&b, t, i)
-		default:
-			flush(i)
-			j := i + 1
-			for j < len(t) && !isWhite(t[j]) && t[j] != '\n' && t[j] != '\r' && t[j] != '\\' && t[j] != '\'' {
-				j++
-			}
-			b.WriteString(t[i:j])
-			i = j
-		}
-	}
-	flush(len(t))
-	return b.String()
-}
-
-func skipNewline(t string, i int) int {
-	if t[i] == '\r' && i+1 < len(t) && t[i+1] == '\n' {
-		return i + 2
-	}
-	return i + 1
-}
-
-// decodeEscape writes the character of the escape sequence whose letter is at t[i] and returns the
-// index after the sequence.
-func decodeEscape(b *strings.Builder, t string, i int) int {
-	c := t[i]
-	switch c {
-	case '0':
-		b.WriteByte(0)
-	case 'a':
-		b.WriteByte('\a')
-	case 'b':
-		b.WriteByte('\b')
-	case 't', '\t':
-		b.WriteByte('\t')
-	case 'n':
-		b.WriteByte('\n')
-	case 'v':
-		b.WriteByte('\v')
-	case 'f':
-		b.WriteByte('\f')
-	case 'r':
-		b.WriteByte('\r')
-	case 'e':
-		b.WriteByte(0x1b)
-	case 'N':
-		b.WriteRune(0x85)
-	case '_':
-		b.WriteRune(0xa0)
-	case 'L':
-		b.WriteRune(0x2028)
-	case 'P':
-		b.WriteRune(0x2029)
-	case 'x', 'u', 'U':
-		n := map[byte]int{'x': 2, 'u': 4, 'U': 8}[c]
-		v, _ := strconv.ParseUint(t[i+1:i+1+n], 16, 32)
-		r := rune(v)
-		if v > utf8.MaxRune || !utf8.ValidRune(r) {
-			r = utf8.RuneError
-		}
-		b.WriteRune(r)
-		return i + 1 + n
-	default: // ' ', '"', '/', '\\'
-		b.WriteByte(c)
-	}
-	return i + 1
-}
-
-// blockValue decodes a block scalar (8.1) from its text, which starts with the indicator, and the
-// indentation of its content.
-func blockValue(t string, indent int, folded bool) string {
-	// The header: indicators up to white space, a comment or the end of the line.
-	chomp := byte(0)
-	i := 1
-	for ; i < len(t) && !isWhite(t[i]) && t[i] != '#' && t[i] != '\n' && t[i] != '\r'; i++ {
-		if t[i] == '-' || t[i] == '+' {
-			chomp = t[i]
-		}
-	}
-	for i < len(t) && t[i] != '\n' && t[i] != '\r' {
-		i++
-	}
-	if i < len(t) {
-		i = skipNewline(t, i)
-	}
-	// The lines. A last line without a line break counts as one with a line break, as in the reference
-	// parser of the YAML test suite.
-	type line struct {
-		text    string // without the indentation; "" for an empty line
-		content bool   // a content line, rather than an empty one
-		more    bool   // a more-indented line: its text starts with white space
-	}
-	var lines []line
-	for i < len(t) {
-		j := i
-		for j < len(t) && t[j] != '\n' && t[j] != '\r' {
-			j++
-		}
-		var l line
-		if raw := t[i:j]; len(raw) > indent {
-			l.text, l.content = raw[indent:], true
-			l.more = isWhite(l.text[0])
-		}
-		lines = append(lines, l)
-		if j < len(t) {
-			j = skipNewline(t, j)
-		}
-		i = j
-	}
-	last := -1
-	for k, l := range lines {
-		if l.content {
-			last = k
-		}
-	}
-	var b strings.Builder
-	prev := -1 // the last content line written
-	for k := 0; k <= last; k++ {
-		l := lines[k]
-		if !l.content {
-			continue
-		}
-		empty := k - prev - 1
-		switch {
-		case prev < 0:
-			b.WriteString(strings.Repeat("\n", empty))
-		case folded && !l.more && !lines[prev].more:
-			if empty == 0 {
-				b.WriteByte(' ')
-			} else {
-				b.WriteString(strings.Repeat("\n", empty))
-			}
-		default:
-			b.WriteString(strings.Repeat("\n", empty+1))
-		}
-		b.WriteString(l.text)
-		prev = k
-	}
-	switch chomp {
-	case '-':
-	case '+':
-		n := len(lines) - last - 1 // the empty lines after the last content line
-		if last >= 0 {
-			n++ // and the line break of the last content line
-		}
-		b.WriteString(strings.Repeat("\n", n))
-	default:
-		if last >= 0 {
-			b.WriteByte('\n')
-		}
-	}
-	return b.String()
 }
 
 // The tag prefixes of the default handles.
@@ -337,9 +87,9 @@ const (
 	CoreTagPrefix = "tag:yaml.org,2002:"
 )
 
-// tagHandles returns the handles that the directives of the document declare, with the default ones,
+// docTagHandles returns the handles that the directives of the document declare, with the default ones,
 // and checks the directives.
-func (d *Document) tagHandles() (map[string]string, error) {
+func docTagHandles(d *types.Document) (map[string]string, error) {
 	handles := map[string]string{"!": "!", "!!": CoreTagPrefix}
 	declared := map[string]bool{}
 	yaml := false
@@ -468,8 +218,8 @@ func locate(input string, err error) error {
 // "!local" is "!local" unless a TAG directive of the document changes the prefix of "!"); for a verbatim
 // tag, the tag between "!<" and ">"; for the non-specific tag, "!". A handle that the document does not
 // declare, a malformed tag or a tag that is neither local nor a global URI is an error.
-func (d *Document) ResolveTag(t *Tag) (string, error) {
-	handles, err := d.tagHandles()
+func ResolveTag(d *types.Document, t *types.Tag) (string, error) {
+	handles, err := docTagHandles(d)
 	if err != nil {
 		return "", err
 	}
@@ -477,7 +227,7 @@ func (d *Document) ResolveTag(t *Tag) (string, error) {
 }
 
 // resolveTag returns the full name of a tag (see Document.ResolveTag).
-func resolveTag(t *Tag, handles map[string]string) (string, error) {
+func resolveTag(t *types.Tag, handles map[string]string) (string, error) {
 	if t == nil {
 		return "", errorAt(Span{}, "nil tag")
 	}
@@ -559,9 +309,9 @@ func unescapeURI(s string) (string, error) {
 // directive in a document or more than one TAG directive for a handle, a YAML version other than 1.x,
 // an invalid verbatim or expanded tag, and an alias of an anchor that no node before it in the
 // document has.
-func (s *Stream) Check() error {
+func Check(s *types.Stream) error {
 	for _, d := range s.Documents {
-		handles, err := d.tagHandles()
+		handles, err := docTagHandles(d)
 		if err != nil {
 			return err
 		}
@@ -579,30 +329,30 @@ type checker struct {
 }
 
 // node checks a node and its descendants in the order of the document.
-func (c *checker) node(v Value) error {
-	var p *Properties
+func (c *checker) node(v types.Value) error {
+	var p *types.Properties
 	switch v := v.(type) {
-	case *Mapping:
+	case *types.Mapping:
 		p = v.Props
-	case *Sequence:
+	case *types.Sequence:
 		p = v.Props
-	case *Scalar:
+	case *types.Scalar:
 		p = v.Props
-	case *Alias:
+	case *types.Alias:
 		if !c.anchors[v.Name()] {
 			return errorAt(v.Span, "undefined alias "+v.Value)
 		}
 	}
-	if a := p.anchor(); a != nil {
+	if a := propsAnchor(p); a != nil {
 		c.anchors[a.Name()] = true
 	}
-	if t := p.tag(); t != nil {
+	if t := propsTag(p); t != nil {
 		if _, err := resolveTag(t, c.handles); err != nil {
 			return err
 		}
 	}
 	switch v := v.(type) {
-	case *Mapping:
+	case *types.Mapping:
 		for _, pr := range v.Pairs {
 			if err := c.node(pr.Key); err != nil {
 				return err
@@ -611,7 +361,7 @@ func (c *checker) node(v Value) error {
 				return err
 			}
 		}
-	case *Sequence:
+	case *types.Sequence:
 		for _, it := range v.Items {
 			if err := c.node(it); err != nil {
 				return err
@@ -622,7 +372,7 @@ func (c *checker) node(v Value) error {
 }
 
 // parseChecked parses input and checks the stream (Check), which must be UTF-8.
-func parseChecked(input string) (*Stream, error) {
+func parseChecked(input string) (*types.Stream, error) {
 	if !utf8.ValidString(input) {
 		i := 0
 		for i < len(input) {
@@ -638,7 +388,7 @@ func parseChecked(input string) (*Stream, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := s.Check(); err != nil {
+	if err := Check(s); err != nil {
 		return nil, locate(input, err)
 	}
 	return s, nil
@@ -659,18 +409,18 @@ func Events(input string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return s.Events()
+	return StreamEvents(s)
 }
 
-// Events returns the event stream of a parsed stream (see the function Events), or the error of Check.
-func (s *Stream) Events() (string, error) {
-	if err := s.Check(); err != nil {
+// StreamEvents returns the event stream of a parsed stream (see the function Events), or the error of Check.
+func StreamEvents(s *types.Stream) (string, error) {
+	if err := Check(s); err != nil {
 		return "", err
 	}
 	var b strings.Builder
 	b.WriteString("+STR\n")
 	for _, d := range s.Documents {
-		handles, err := d.tagHandles()
+		handles, err := docTagHandles(d)
 		if err != nil {
 			return "", err
 		}
@@ -692,12 +442,12 @@ func (s *Stream) Events() (string, error) {
 	return b.String(), nil
 }
 
-func writeProps(b *strings.Builder, p *Properties, handles map[string]string) error {
-	if a := p.anchor(); a != nil {
+func writeProps(b *strings.Builder, p *types.Properties, handles map[string]string) error {
+	if a := propsAnchor(p); a != nil {
 		b.WriteString(" &")
 		b.WriteString(a.Name())
 	}
-	if t := p.tag(); t != nil {
+	if t := propsTag(p); t != nil {
 		tag, err := resolveTag(t, handles)
 		if err != nil {
 			return err
@@ -709,9 +459,9 @@ func writeProps(b *strings.Builder, p *Properties, handles map[string]string) er
 	return nil
 }
 
-func writeEvents(b *strings.Builder, v Value, handles map[string]string) error {
+func writeEvents(b *strings.Builder, v types.Value, handles map[string]string) error {
 	switch v := v.(type) {
-	case *Mapping:
+	case *types.Mapping:
 		b.WriteString("+MAP")
 		if v.Flow {
 			b.WriteString(" {}")
@@ -729,7 +479,7 @@ func writeEvents(b *strings.Builder, v Value, handles map[string]string) error {
 			}
 		}
 		b.WriteString("-MAP\n")
-	case *Sequence:
+	case *types.Sequence:
 		b.WriteString("+SEQ")
 		if v.Flow {
 			b.WriteString(" []")
@@ -744,7 +494,7 @@ func writeEvents(b *strings.Builder, v Value, handles map[string]string) error {
 			}
 		}
 		b.WriteString("-SEQ\n")
-	case *Scalar:
+	case *types.Scalar:
 		b.WriteString("=VAL")
 		if err := writeProps(b, v.Props, handles); err != nil {
 			return err
@@ -770,7 +520,7 @@ func writeEvents(b *strings.Builder, v Value, handles map[string]string) error {
 			}
 		}
 		b.WriteByte('\n')
-	case *Alias:
+	case *types.Alias:
 		b.WriteString("=ALI *")
 		b.WriteString(v.Name())
 		b.WriteByte('\n')
@@ -817,17 +567,17 @@ func LoadAll(input string) ([]any, error) {
 	}
 	vs := make([]any, len(s.Documents))
 	for i, d := range s.Documents {
-		if vs[i], err = d.Load(); err != nil {
+		if vs[i], err = LoadDocument(d); err != nil {
 			return nil, locate(input, err)
 		}
 	}
 	return vs, nil
 }
 
-// Load returns the value of the document (see LoadAll). It does not run Check, but reports the same
+// LoadDocument returns the value of the document (see LoadAll). It does not run Check, but reports the same
 // errors in the document.
-func (d *Document) Load() (any, error) {
-	handles, err := d.tagHandles()
+func LoadDocument(d *types.Document) (any, error) {
+	handles, err := docTagHandles(d)
 	if err != nil {
 		return nil, err
 	}
@@ -847,16 +597,16 @@ type composer struct {
 	nextAnchor uint64
 }
 
-func (c *composer) value(v Value) (any, error) {
-	var p *Properties
+func (c *composer) value(v types.Value) (any, error) {
+	var p *types.Properties
 	switch v := v.(type) {
-	case *Mapping:
+	case *types.Mapping:
 		p = v.Props
-	case *Sequence:
+	case *types.Sequence:
 		p = v.Props
-	case *Scalar:
+	case *types.Scalar:
 		p = v.Props
-	case *Alias:
+	case *types.Alias:
 		a, ok := c.anchors[v.Name()]
 		if !ok {
 			return nil, errorAt(v.Span, "undefined alias "+v.Value)
@@ -867,13 +617,13 @@ func (c *composer) value(v Value) (any, error) {
 		return a.v, nil
 	}
 	tag := ""
-	if t := p.tag(); t != nil {
+	if t := propsTag(p); t != nil {
 		var err error
 		if tag, err = resolveTag(t, c.handles); err != nil {
 			return nil, err
 		}
 	}
-	anchor := p.anchor()
+	anchor := propsAnchor(p)
 	var id uint64
 	if anchor != nil {
 		c.nextAnchor++
@@ -892,14 +642,14 @@ func (c *composer) value(v Value) (any, error) {
 	return x, nil
 }
 
-func (c *composer) content(v Value, tag string) (any, error) {
+func (c *composer) content(v types.Value, tag string) (any, error) {
 	switch v := v.(type) {
-	case *Mapping:
+	case *types.Mapping:
 		if tag == CoreTagPrefix+"seq" || isCoreScalarTag(tag) {
 			return nil, errorAt(v.Span, "a mapping with the tag "+tag)
 		}
 		return c.mapping(v)
-	case *Sequence:
+	case *types.Sequence:
 		if tag == CoreTagPrefix+"map" || isCoreScalarTag(tag) {
 			return nil, errorAt(v.Span, "a sequence with the tag "+tag)
 		}
@@ -912,7 +662,7 @@ func (c *composer) content(v Value, tag string) (any, error) {
 			a[i] = x
 		}
 		return a, nil
-	case *Scalar:
+	case *types.Scalar:
 		return scalarValue(v, tag)
 	}
 	return nil, fmt.Errorf("yaml: unexpected value %T", v)
@@ -926,7 +676,7 @@ func isCoreScalarTag(tag string) bool {
 	return false
 }
 
-func (c *composer) mapping(m *Mapping) (any, error) {
+func (c *composer) mapping(m *types.Mapping) (any, error) {
 	keys := make([]any, len(m.Pairs))
 	vals := make([]any, len(m.Pairs))
 	allStrings := true
@@ -970,24 +720,24 @@ func (c *composer) mapping(m *Mapping) (any, error) {
 	return r, nil
 }
 
-func valueSpan(v Value) Span {
+func valueSpan(v types.Value) Span {
 	switch v := v.(type) {
-	case *Mapping:
+	case *types.Mapping:
 		return v.Span
-	case *Sequence:
+	case *types.Sequence:
 		return v.Span
-	case *Scalar:
+	case *types.Scalar:
 		return v.Span
-	case *Alias:
+	case *types.Alias:
 		return v.Span
 	}
 	return Span{}
 }
 
 // scalarValue resolves a scalar with the core schema.
-func scalarValue(s *Scalar, tag string) (any, error) {
+func scalarValue(s *types.Scalar, tag string) (any, error) {
 	text := s.Value()
-	if tag == "" && s.Style == Plain {
+	if tag == "" && s.Style == types.Plain {
 		v := resolvePlain(text)
 		if err, ok := v.(error); ok {
 			return nil, errorAt(s.Span, err.Error())

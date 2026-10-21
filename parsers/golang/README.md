@@ -19,7 +19,7 @@ f, err := golang.ParseFile(fset, "x.go", src, 0) // golang.ParseComments collect
 // Typed values modeled on go/ast, each with its Span in the input (Bytes counts bytes).
 file, err := golang.ParseAST(string(src), golang.WithUnit(golang.Bytes))
 for _, d := range file.Decls {
-	if fn, ok := d.(*golang.FuncDecl); ok {
+	if fn, ok := d.(*types.FuncDecl); ok {
 		fmt.Println(fn.Name.Value, fn.Start, fn.End)
 	}
 }

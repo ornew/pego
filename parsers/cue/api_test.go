@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"unicode"
+
+	"github.com/ornew/pego/parsers/cue/types"
 )
 
 // TestCheck: inputs that the grammar accepts and Check (so ParseFile) rejects, as the reference parser does; the
@@ -74,7 +76,7 @@ func TestAttributeStrings(t *testing.T) {
 			t.Errorf("%q: %v", in, err)
 			continue
 		}
-		a := f.Decls[0].(*Field).Attrs
+		a := f.Decls[0].(*types.Field).Attrs
 		if len(a) != 1 || a[0].End != len([]rune(strings.TrimSuffix(in, "\n"))) {
 			t.Errorf("%q: attribute %+v", in, a)
 		}
@@ -107,7 +109,7 @@ func TestInspect(t *testing.T) {
 		}
 		depth++
 		max = max2(max, depth)
-		if id, ok := n.(*Ident); ok {
+		if id, ok := n.(*types.Ident); ok {
 			idents = append(idents, id.Value)
 		}
 		return true
@@ -128,7 +130,7 @@ func TestInspect(t *testing.T) {
 		if x != nil {
 			n++
 		}
-		_, isField := x.(*Field)
+		_, isField := x.(*types.Field)
 		return !isField
 	})
 	if n != 8 { // the file; the package and its name; the import, its spec and its path; the two fields
@@ -149,7 +151,7 @@ func TestSpans(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	b := f.Decls[1].(*Field)
+	b := f.Decls[1].(*types.Field)
 	if got := string([]rune(src)[b.Start:b.End]); got != "b: [1, 2]" {
 		t.Errorf("code point span %q", got)
 	}
@@ -157,11 +159,11 @@ func TestSpans(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	b = g.Decls[1].(*Field)
+	b = g.Decls[1].(*types.Field)
 	if got := src[b.Start:b.End]; got != "b: [1, 2]" {
 		t.Errorf("byte span %q", got)
 	}
-	if SpanOf(b.Value) != b.Value.(*ListLit).Span {
+	if SpanOf(b.Value) != b.Value.(*types.ListLit).Span {
 		t.Errorf("SpanOf")
 	}
 	cs := Comments(src, Bytes)
@@ -199,7 +201,7 @@ func TestIdent(t *testing.T) {
 		{"_#D", true, true},
 		{"$x", false, false},
 	} {
-		id := &Ident{TNode: TNode[string]{Value: c.text}}
+		id := &types.Ident{TNode: types.TNode[string]{Value: c.text}}
 		if id.IsDefinition() != c.def || id.IsHidden() != c.hidden {
 			t.Errorf("%s: definition %v, hidden %v", c.text, id.IsDefinition(), id.IsHidden())
 		}
@@ -213,7 +215,7 @@ func TestAttributeSplit(t *testing.T) {
 		{"@a()", "a", ""},
 		{"@a(b(c), \"d)\")", "a", `b(c), "d)"`},
 	} {
-		name, body := (&Attribute{TNode: TNode[string]{Value: c.in}}).Split()
+		name, body := (&types.Attribute{TNode: types.TNode[string]{Value: c.in}}).Split()
 		if name != c.name || body != c.body {
 			t.Errorf("%s: %q, %q", c.in, name, body)
 		}
@@ -239,7 +241,7 @@ func TestUnquote(t *testing.T) {
 			t.Errorf("%s: %v", c.in, err)
 			continue
 		}
-		got, err := f.Decls[0].(*Field).Value.(*String).Unquote()
+		got, err := f.Decls[0].(*types.Field).Value.(*types.String).Unquote()
 		if err != nil || got != c.want {
 			t.Errorf("%s: %q, %v, want %q", c.in, got, err, c.want)
 		}
@@ -249,7 +251,7 @@ func TestUnquote(t *testing.T) {
 		if err != nil {
 			continue // a syntax error is an error too
 		}
-		if s, ok := f.Decls[0].(*Field).Value.(*String); ok {
+		if s, ok := f.Decls[0].(*types.Field).Value.(*types.String); ok {
 			if got, err := s.Unquote(); err == nil {
 				t.Errorf("%s: %q, want an error", in, got)
 			}
@@ -280,9 +282,9 @@ func TestNumbers(t *testing.T) {
 			t.Errorf("%s: %v", c.in, err)
 			continue
 		}
-		n, ok := f.Decls[0].(*Field).Value.(*Int)
+		n, ok := f.Decls[0].(*types.Field).Value.(*types.Int)
 		if !ok {
-			t.Errorf("%s: %T", c.in, f.Decls[0].(*Field).Value)
+			t.Errorf("%s: %T", c.in, f.Decls[0].(*types.Field).Value)
 			continue
 		}
 		v, err := n.Value()
@@ -291,11 +293,11 @@ func TestNumbers(t *testing.T) {
 		}
 	}
 	f, _ := ParseFile("x: 1.3Ki")
-	if _, err := f.Decls[0].(*Field).Value.(*Int).Value(); err == nil {
+	if _, err := f.Decls[0].(*types.Field).Value.(*types.Int).Value(); err == nil {
 		t.Errorf("1.3Ki: want an error: 1331.2 is not an integer")
 	}
 	f, _ = ParseFile("x: 9223372036854775808")
-	if _, err := f.Decls[0].(*Field).Value.(*Int).Int64(); err == nil {
+	if _, err := f.Decls[0].(*types.Field).Value.(*types.Int).Int64(); err == nil {
 		t.Errorf("2^63: want an error from Int64")
 	}
 	for _, c := range []struct {
@@ -307,9 +309,9 @@ func TestNumbers(t *testing.T) {
 			t.Errorf("%s: %v", c.in, err)
 			continue
 		}
-		fl, ok := f.Decls[0].(*Field).Value.(*Float)
+		fl, ok := f.Decls[0].(*types.Field).Value.(*types.Float)
 		if !ok {
-			t.Errorf("%s: %T", c.in, f.Decls[0].(*Field).Value)
+			t.Errorf("%s: %T", c.in, f.Decls[0].(*types.Field).Value)
 			continue
 		}
 		if v, err := fl.Float64(); err != nil || v != c.want {

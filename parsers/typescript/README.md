@@ -15,7 +15,7 @@ go get github.com/ornew/pego/parsers/typescript
 ```go
 // Typed values with positions: a SourceFile of Statements, each node with its Span in the input.
 f, err := typescript.ParseAST("export const answer: number = 6 * 7;")
-decl := f.Statements[0].(*typescript.VariableStatement).DeclarationList.Declarations[0]
+decl := f.Statements[0].(*types.VariableStatement).DeclarationList.Declarations[0]
 fmt.Println(typescript.AsNode(decl.Initializer).Range()) // 30 35: the BinaryExpression 6 * 7
 
 // .tsx files, or by the name of the file, as ts.createSourceFile chooses.
@@ -25,7 +25,7 @@ f, err = typescript.ParseFile("main.mts", src) // by the name: "x.tsx" is TSX; a
 // Walk the tree by kind, in the order of forEachChild.
 f, err = typescript.ParseAST("fetch(url).then(log)")
 typescript.Inspect(f, func(n typescript.ASTNode) bool {
-	if call, ok := n.(*typescript.CallExpression); ok {
+	if call, ok := n.(*types.CallExpression); ok {
 		fmt.Println(typescript.Kind(call.Expression), call.Start, call.End)
 	}
 	return true

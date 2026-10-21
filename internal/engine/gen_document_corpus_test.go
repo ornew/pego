@@ -42,11 +42,7 @@ func TestGeneratedDocumentsMatchBatchOnCorpus(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := generateCode(g, GenOptions{Package: fmt.Sprintf("g%d", i), Start: "main", Types: true, Document: true})
-		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
-		}
-		write(fmt.Sprintf("g%d/parser.go", i), string(code))
+		generatePackageIn(t, dir, "doctest", fmt.Sprintf("g%d", i), g, GenOptions{Start: "main", Types: true, Document: true})
 		fmt.Fprintf(&imports, "\tg%d \"doctest/g%d\"\n", i, i)
 		fmt.Fprintf(&checks, `	func(texts []string, b bool) (out []string) {
 		u := g%[1]d.CodePoints

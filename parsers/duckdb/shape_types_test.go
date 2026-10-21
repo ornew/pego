@@ -3,11 +3,11 @@ package duckdb_test
 import (
 	"strings"
 
-	"github.com/ornew/pego/parsers/duckdb"
+	"github.com/ornew/pego/parsers/duckdb/types"
 )
 
 // typ maps a type to the JSON of a LogicalType in the AST of DuckDB.
-func (m *mapper) typ(t *duckdb.Type) shape {
+func (m *mapper) typ(t *types.Type) shape {
 	if len(t.Dims) > 0 {
 		inner := *t
 		inner.Dims = nil
@@ -207,8 +207,8 @@ func unbound(catalog, schema, name string) shape {
 	return shape{"id": "UNBOUND", "type_info": shape{"type": "UNBOUND_TYPE_INFO", "catalog": catalog, "schema": schema, "name": name}}
 }
 
-func (m *mapper) intMod(e duckdb.Expr) int {
-	if n, ok := e.(*duckdb.Number); ok {
+func (m *mapper) intMod(e types.Expr) int {
+	if n, ok := e.(*types.Number); ok {
 		v, ok := n.Int64()
 		if ok {
 			return int(v)

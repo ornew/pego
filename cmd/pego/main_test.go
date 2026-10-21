@@ -34,8 +34,11 @@ func runGenGo(t *testing.T, args ...string) (string, error) {
 		return out, err
 	}
 	var text strings.Builder
-	for _, name := range []string{"parser.go", "api.go"} {
+	for _, name := range []string{"parser.go", "api.go", filepath.Join("types", "types.go")} {
 		data, err := os.ReadFile(filepath.Join(dir, name))
+		if errors.Is(err, os.ErrNotExist) && name == filepath.Join("types", "types.go") {
+			continue // written with -types only
+		}
 		if err != nil {
 			return "", err
 		}

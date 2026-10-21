@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/parsers/duckdb"
+	"github.com/ornew/pego/parsers/duckdb/types"
 )
 
 // The reference data in testdata/reference is what DuckDB 1.5.6 says about each text: whether its parser accepts
@@ -211,29 +212,29 @@ func checkAcceptance(t *testing.T, cases []refCase, dev map[string]string, devia
 
 // expanded reports whether DuckDB turns the statement into several (PIVOT, COPY FROM DATABASE and ALTER TABLE ...
 // ADD COLUMN ... DEFAULT make helper statements).
-func expanded(s duckdb.Statement) bool {
+func expanded(s types.Statement) bool {
 	switch s := s.(type) {
-	case *duckdb.CopyDatabaseStmt:
+	case *types.CopyDatabaseStmt:
 		return true
-	case *duckdb.AlterTableStmt:
+	case *types.AlterTableStmt:
 		return true
-	case *duckdb.PrepareStmt:
+	case *types.PrepareStmt:
 		return expanded(s.Stmt)
-	case *duckdb.CreateTableAsStmt, *duckdb.CreateViewStmt:
+	case *types.CreateTableAsStmt, *types.CreateViewStmt:
 		found := false
-		duckdb.Walk(s, func(n any) bool {
+		duckdb.Inspect(s, func(n any) bool {
 			switch n.(type) {
-			case *duckdb.PivotQuery, *duckdb.UnpivotQuery:
+			case *types.PivotQuery, *types.UnpivotQuery:
 				found = true
 			}
 			return !found
 		})
 		return found
-	case *duckdb.Select:
+	case *types.Select:
 		found := false
-		duckdb.Walk(s, func(n any) bool {
+		duckdb.Inspect(s, func(n any) bool {
 			switch n.(type) {
-			case *duckdb.PivotQuery, *duckdb.UnpivotQuery:
+			case *types.PivotQuery, *types.UnpivotQuery:
 				found = true
 			}
 			return !found
@@ -277,7 +278,7 @@ func TestReferenceStatements(t *testing.T) {
 				for i, s := range sts {
 					want := c.Stmts[i]
 					kind := duckdb.Kind(s.Statement)
-					_, isPragma := s.Statement.(*duckdb.PragmaStmt)
+					_, isPragma := s.Statement.(*types.PragmaStmt)
 					if kind != want.Type && !isPragma {
 						failures = append(failures, fmt.Sprintf("statement %d of %q is a %s, DuckDB says %s", i, c.SQL, kind, want.Type))
 						continue

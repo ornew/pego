@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/parsers/cel"
+	"github.com/ornew/pego/parsers/cel/types"
 )
 
 // canon prints an expression in the canonical form that internal/refgen prints for the AST of cel-go, so that the
@@ -28,7 +29,7 @@ type canon struct {
 	b   strings.Builder
 }
 
-func canonical(src string, e cel.Expr) string {
+func canonical(src string, e types.Expr) string {
 	c := &canon{src: []rune(src)}
 	c.expr(e)
 	return c.b.String()
@@ -54,7 +55,7 @@ func (c *canon) tok(pos int) int {
 func (c *canon) w(format string, args ...any) { fmt.Fprintf(&c.b, format, args...) }
 
 // call writes (call@off fn arg...) from a node's operands.
-func (c *canon) call(off int, fn string, args ...cel.Expr) {
+func (c *canon) call(off int, fn string, args ...types.Expr) {
 	c.w("(call@%d %s", off, fn)
 	for _, a := range args {
 		c.b.WriteByte(' ')
@@ -63,7 +64,7 @@ func (c *canon) call(off int, fn string, args ...cel.Expr) {
 	c.b.WriteByte(')')
 }
 
-func (c *canon) identOff(id *cel.Ident) int {
+func (c *canon) identOff(id *types.Ident) int {
 	off := id.Start
 	if id.Rooted() {
 		off = c.tok(off + 1)
@@ -71,46 +72,46 @@ func (c *canon) identOff(id *cel.Ident) int {
 	return off
 }
 
-func (c *canon) expr(e cel.Expr) {
+func (c *canon) expr(e types.Expr) {
 	switch e := e.(type) {
-	case *cel.Paren:
+	case *types.Paren:
 		c.expr(e.X)
-	case *cel.Ident:
+	case *types.Ident:
 		name := e.Name()
 		if e.Rooted() {
 			name = "." + name
 		}
 		c.w("%s@%d", name, c.identOff(e))
-	case *cel.IntLit:
+	case *types.IntLit:
 		v, err := e.Value()
 		if err != nil {
 			c.w("ERR(%v)", err)
 			return
 		}
 		c.w("i:%d@%d", v, e.Start)
-	case *cel.UintLit:
+	case *types.UintLit:
 		v, err := e.Value()
 		if err != nil {
 			c.w("ERR(%v)", err)
 			return
 		}
 		c.w("u:%d@%d", v, e.Start)
-	case *cel.DoubleLit:
+	case *types.DoubleLit:
 		v, err := e.Value()
 		if err != nil {
 			c.w("ERR(%v)", err)
 			return
 		}
 		c.w("d:%s@%d", strconv.FormatFloat(v, 'g', -1, 64), e.Start)
-	case *cel.StringLit:
+	case *types.StringLit:
 		c.w("s:%s@%d", strconv.Quote(e.Value()), e.Start)
-	case *cel.BytesLit:
+	case *types.BytesLit:
 		c.w("b:%s@%d", strconv.Quote(string(e.Value())), e.Start)
-	case *cel.BoolLit:
+	case *types.BoolLit:
 		c.w("%s@%d", e.TNode.Value, e.Start)
-	case *cel.NullLit:
+	case *types.NullLit:
 		c.w("null@%d", e.Start)
-	case *cel.Select:
+	case *types.Select:
 		dot := c.tok(cel.SpanOf(e.X).End)
 		if e.Optional {
 			c.w("(call@%d _?._ ", dot)
@@ -121,13 +122,13 @@ func (c *canon) expr(e cel.Expr) {
 		c.w("(sel@%d ", dot)
 		c.expr(e.X)
 		c.w(" %s)", e.Field.Value())
-	case *cel.Index:
+	case *types.Index:
 		fn := "_[_]"
 		if e.Optional {
 			fn = "_[?_]"
 		}
 		c.call(c.tok(cel.SpanOf(e.X).End), fn, e.X, e.Index)
-	case *cel.Call:
+	case *types.Call:
 		name := e.Func.Name()
 		if e.Func.Rooted() {
 			name = "." + name
@@ -144,12 +145,12 @@ func (c *canon) expr(e cel.Expr) {
 			c.expr(a)
 		}
 		c.b.WriteByte(')')
-	case *cel.Unary:
+	case *types.Unary:
 		// A run of the same operator: the parity decides.
 		n := 1
 		inner := e.X
 		for {
-			u, ok := inner.(*cel.Unary)
+			u, ok := inner.(*types.Unary)
 			if !ok || u.Op.Value != e.Op.Value {
 				break
 			}
@@ -165,17 +166,17 @@ func (c *canon) expr(e cel.Expr) {
 			fn = "-_"
 		}
 		c.call(e.Op.Start, fn, inner)
-	case *cel.Binary:
+	case *types.Binary:
 		fn := "_" + e.Op.Value + "_"
 		if e.Op.Value == "in" {
 			fn = "@in"
 		}
 		if e.Op.Value == "&&" || e.Op.Value == "||" {
 			// The terms of a chain: the left operand while it is a Binary of the same operator.
-			terms := []cel.Expr{e.Right}
+			terms := []types.Expr{e.Right}
 			first := e
 			for {
-				l, ok := first.Left.(*cel.Binary)
+				l, ok := first.Left.(*types.Binary)
 				if !ok || l.Op.Value != e.Op.Value {
 					break
 				}
@@ -190,20 +191,20 @@ func (c *canon) expr(e cel.Expr) {
 			return
 		}
 		c.call(e.Op.Start, fn, e.Left, e.Right)
-	case *cel.Conditional:
+	case *types.Conditional:
 		c.call(c.tok(cel.SpanOf(e.Cond).End), "_?_:_", e.Cond, e.Then, e.Else)
-	case *cel.ListLit:
+	case *types.ListLit:
 		c.w("(list@%d", e.Start)
 		for _, el := range e.Elems {
 			c.b.WriteByte(' ')
-			if o, ok := el.(*cel.Optional); ok {
+			if o, ok := el.(*types.Optional); ok {
 				c.b.WriteByte('?')
 				el = o.X
 			}
 			c.expr(el)
 		}
 		c.b.WriteByte(')')
-	case *cel.MapLit:
+	case *types.MapLit:
 		c.w("(map@%d", e.Start)
 		for _, en := range e.Entries {
 			opt := ""
@@ -217,7 +218,7 @@ func (c *canon) expr(e cel.Expr) {
 			c.b.WriteByte(')')
 		}
 		c.b.WriteByte(')')
-	case *cel.MessageLit:
+	case *types.MessageLit:
 		name := e.Type.Name()
 		if e.Type.Rooted() {
 			name = "." + name
@@ -233,7 +234,7 @@ func (c *canon) expr(e cel.Expr) {
 			c.b.WriteByte(')')
 		}
 		c.b.WriteByte(')')
-	case *cel.Optional:
+	case *types.Optional:
 		c.w("?")
 		c.expr(e.X)
 	default:

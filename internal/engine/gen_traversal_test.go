@@ -101,7 +101,7 @@ func TestGeneratedTreeTraversal(t *testing.T) {
 		t.Skip("runs generated code")
 	}
 	var source strings.Builder
-	names := []string{"WalkTree", "WalkAction", "WalkContinue", "WalkSkip", "WalkStop", "WalkVisit", "WalkEdge", "WalkEdgeKind", "WalkRoot", "WalkChild", "WalkField", "WalkListElement", "CycleError", "Cursor"}
+	names := []string{"Walk", "WalkAction", "WalkContinue", "WalkSkip", "WalkStop", "WalkVisit", "WalkEdge", "WalkEdgeKind", "WalkRoot", "WalkChild", "WalkField", "WalkListElement", "CycleError", "Cursor"}
 	for _, name := range names {
 		fmt.Fprintf(&source, "type %s = { Value int }\n", name)
 	}
@@ -110,30 +110,30 @@ func TestGeneratedTreeTraversal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(grammar, GenOptions{Package: "tree", Start: "main", Types: true})
+	dir := t.TempDir()
+	generatePackage(t, dir, "tree", grammar, GenOptions{Start: "main", Types: true})
+	typesSource, err := os.ReadFile(filepath.Join(dir, "tree", "types", "types.go"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, name := range names {
-		if !strings.Contains(string(code), "type "+name+"_ struct") {
-			t.Fatalf("grammar name %s not escaped", name)
+		if !strings.Contains(string(typesSource), "type "+name+" struct") {
+			t.Fatalf("grammar type %s is not declared under its name", name)
 		}
 	}
-	dir := t.TempDir()
 	write := func(name string, data []byte) {
 		t.Helper()
 		if err := os.WriteFile(filepath.Join(dir, name), data, 0644); err != nil {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte(testGoMod("tree")))
-	write("parser.go", code)
+	write("go.mod", []byte(testGoMod("gentest")))
 	// The traversal itself is the runtime's and is tested there; this checks that the generated
 	// package declares the colliding grammar types beside the runtime's names and walks a tree.
 	var consumer strings.Builder
-	consumer.WriteString("package tree\n\nimport (\n\t\"testing\"\n\n\tpegort \"github.com/ornew/pego/runtime\"\n)\n\nfunc TestWalk(t *testing.T) {\n")
+	consumer.WriteString("package tree\n\nimport (\n\t\"testing\"\n\n\t\"gentest/tree/types\"\n\tpegort \"github.com/ornew/pego/runtime\"\n)\n\nfunc TestWalk(t *testing.T) {\n")
 	for _, name := range names {
-		fmt.Fprintf(&consumer, "\t_ = %s_{Value: 1}\n", name)
+		fmt.Fprintf(&consumer, "\t_ = types.%s{Value: 1}\n", name)
 	}
 	consumer.WriteString(`	root := &pegort.Node{RawChildren: []*pegort.Node{{RawText: "é"}}}
 	visits := 0
@@ -145,7 +145,7 @@ func TestGeneratedTreeTraversal(t *testing.T) {
 	}
 }
 `)
-	write("tree_test.go", []byte(consumer.String()))
+	write("tree/tree_test.go", []byte(consumer.String()))
 	cmd := exec.Command("go", "test", "-count=1", "./...")
 	cmd.Dir = dir
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -153,18 +153,14 @@ func TestGeneratedTreeTraversal(t *testing.T) {
 	}
 }
 
-// DuckDB supplies Walk(any, func(any) bool) for its typed AST. Compile its actual
+// DuckDB supplies Inspect(any, func(any) bool) for its typed AST. Compile its actual
 // helper beside a fresh generated parser and exercise both traversal surfaces.
-func TestGeneratedDuckDBWalkCompatibility(t *testing.T) {
+func TestGeneratedDuckDBInspectCompatibility(t *testing.T) {
 	grammar, err := syntax.Parse("type Leaf = { Text string }\nrule main Leaf = t:(\"é\") #atomic => Leaf{Text: text($t)}\n")
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := generateCode(grammar, GenOptions{Package: "duckdb", Start: "main", Types: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	helper, err := os.ReadFile(filepath.Join("..", "..", "parsers", "duckdb", "walk.go"))
+	helper, err := os.ReadFile(filepath.Join("..", "..", "parsers", "duckdb", "inspect.go"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,10 +171,10 @@ func TestGeneratedDuckDBWalkCompatibility(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", []byte(testGoMod("duckdbwalk")))
-	write("parser.go", code)
-	write("walk.go", helper)
-	write("walk_test.go", []byte(`package duckdb
+	write("go.mod", []byte(testGoMod("gentest")))
+	generatePackage(t, dir, "duckdb", grammar, GenOptions{Start: "main", Types: true})
+	write("duckdb/inspect.go", helper)
+	write("duckdb/walk_test.go", []byte(`package duckdb
 import (
 	"testing"
 )
@@ -187,14 +183,14 @@ func TestBothWalkAPIs(t *testing.T) {
  if err != nil { t.Fatal(err) }
  generic := 0
  // A text struct node and its Text field value.
- if err := WalkTree(node,func(v WalkVisit)(WalkAction,error){generic++;return WalkContinue,nil});err!=nil||generic!=2 {t.Fatal(generic,err)}
+ if err := Walk(node,func(v WalkVisit)(WalkAction,error){generic++;return WalkContinue,nil});err!=nil||generic!=2 {t.Fatal(generic,err)}
  generic=0
  if err := (Cursor{Root:node,Unit:CodePoints}).At(0,func(v WalkVisit)(WalkAction,error){generic++;return WalkContinue,nil});err!=nil||generic!=1 {t.Fatal(generic,err)}
  typed, err := ParseAST("é")
  if err != nil { t.Fatal(err) }
  count:=0
- Walk(typed,func(any)bool{count++;return true})
- if count!=1 {t.Fatalf("typed Walk visits %d, want 1",count)}
+ Inspect(typed,func(any)bool{count++;return true})
+ if count!=1 {t.Fatalf("typed Inspect visits %d, want 1",count)}
  if span,ok:=SpanOf(typed);!ok||span.Start!=0||span.End!=1 {t.Fatal(span,ok)}
 }
 `))

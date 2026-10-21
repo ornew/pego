@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/parsers/duckdb"
+	"github.com/ornew/pego/parsers/duckdb/types"
 )
 
 func TestSetofTypeBoundaries(t *testing.T) {
@@ -69,17 +70,17 @@ func TestSetofTypeAST(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			var types []*duckdb.Type
-			duckdb.Walk(script, func(n any) bool {
-				if typ, ok := n.(*duckdb.Type); ok {
-					types = append(types, typ)
+			var found []*types.Type
+			duckdb.Inspect(script, func(n any) bool {
+				if typ, ok := n.(*types.Type); ok {
+					found = append(found, typ)
 				}
 				return true
 			})
-			if len(types) != 1 {
-				t.Fatalf("%q: got %d types", sql, len(types))
+			if len(found) != 1 {
+				t.Fatalf("%q: got %d types", sql, len(found))
 			}
-			typ := types[0]
+			typ := found[0]
 			start, end := strings.Index(sql, tc.name), len(sql)-1
 			if unit == duckdb.CodePoints {
 				start, end = utf8.RuneCountInString(sql[:start]), utf8.RuneCountInString(sql[:end])
@@ -96,7 +97,7 @@ func TestSetofTypeAST(t *testing.T) {
 				}
 			} else if len(typ.Mods) != 1 {
 				t.Errorf("%q: modifier count = %d", sql, len(typ.Mods))
-			} else if n, ok := typ.Mods[0].(*duckdb.Number); !ok || n.Text != tc.mod {
+			} else if n, ok := typ.Mods[0].(*types.Number); !ok || n.Text != tc.mod {
 				t.Errorf("%q: modifier = %#v", sql, typ.Mods[0])
 			}
 		}

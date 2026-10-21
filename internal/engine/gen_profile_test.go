@@ -44,17 +44,13 @@ func TestGeneratedGoProfile(t *testing.T) {
 		for _, route := range []string{"node", "direct", "convert"} {
 			pkg := f.name + "_" + route
 			opts := GenOptions{Package: pkg, Start: "main", Recognize: true, Observability: true, Types: route != "node", convertTypes: route == "convert"}
-			code, err := generateCode(g, opts)
-			if err != nil {
-				t.Fatal(pkg, err)
-			}
+			generatePackageIn(t, dir, "profilefixture", pkg, g, opts)
 			typed := ""
 			if opts.Types {
 				typed = `operations=append(operations,func(opts ...ParseOption)(any,error){return ParseAST(INPUT,opts...)},func(opts ...ParseOption)(any,error){return ParseRuleAST("main",INPUT,opts...)})`
 			}
 			typed = strings.ReplaceAll(typed, "INPUT", fmt.Sprintf("%q", f.input))
 			consumer := strings.NewReplacer("PACKAGE", pkg, "INPUT", fmt.Sprintf("%q", f.input), "CHECKS", f.checks, "TYPED", typed, "PLAIN", fmt.Sprint(f.name == "plain")).Replace(generatedProfileConsumer)
-			write(pkg+"/parser.go", code)
 			write(pkg+"/profile_test.go", []byte(consumer))
 		}
 	}

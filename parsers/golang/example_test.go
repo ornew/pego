@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/ornew/pego/parsers/golang"
+	"github.com/ornew/pego/parsers/golang/types"
 )
 
 const hello = `package main
@@ -28,9 +29,9 @@ func ExampleParseAST() {
 	fmt.Println("package", file.Name.Value)
 	for _, d := range file.Decls {
 		switch d := d.(type) {
-		case *golang.GenDecl:
+		case *types.GenDecl:
 			fmt.Printf("%s at %d-%d\n", d.Tok, d.Start, d.End)
-		case *golang.FuncDecl:
+		case *types.FuncDecl:
 			fmt.Printf("func %s at %d-%d, %d statement(s)\n", d.Name.Value, d.Start, d.End, len(d.Body.List))
 		}
 	}
@@ -45,11 +46,11 @@ func ExampleParseAST_literals() {
 	if err != nil {
 		panic(err)
 	}
-	lit := file.Decls[0].(*golang.GenDecl).Specs[0].(*golang.ValueSpec).Values[0].(*golang.CompositeLit)
-	s, _ := lit.Elts[0].(*golang.StringLit).Value()
-	r, _ := lit.Elts[1].(*golang.CharLit).Value()
-	n, _ := lit.Elts[2].(*golang.IntLit).Constant()
-	f, _ := lit.Elts[3].(*golang.FloatLit).Constant()
+	lit := file.Decls[0].(*types.GenDecl).Specs[0].(*types.ValueSpec).Values[0].(*types.CompositeLit)
+	s, _ := lit.Elts[0].(*types.StringLit).Value()
+	r, _ := lit.Elts[1].(*types.CharLit).Value()
+	n, _ := lit.Elts[2].(*types.IntLit).Constant()
+	f, _ := lit.Elts[3].(*types.FloatLit).Constant()
 	fmt.Printf("%q %c %v %v\n", s, r, n, f)
 	// Output: "a\tb" x 31 1.5
 }

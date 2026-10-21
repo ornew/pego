@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/parsers/yaml"
+	"github.com/ornew/pego/parsers/yaml/types"
 )
 
 func TestMalformedDirectives(t *testing.T) {
@@ -72,29 +73,29 @@ func TestDirectiveNameBoundaries(t *testing.T) {
 }
 
 func TestMalformedDirectiveAST(t *testing.T) {
-	word := func(s string) *yaml.Word { return &yaml.Word{TNode: yaml.TNode[string]{Value: s}} }
+	word := func(s string) *types.Word { return &types.Word{TNode: types.TNode[string]{Value: s}} }
 	for _, tc := range []struct {
 		name string
-		dir  *yaml.Directive
+		dir  *types.Directive
 	}{
 		{"nil directive", nil},
-		{"nil name", &yaml.Directive{}},
-		{"missing YAML version", &yaml.Directive{Name: word("YAML")}},
-		{"nil YAML version", &yaml.Directive{Name: word("YAML"), Params: []*yaml.Word{nil}}},
-		{"extra YAML version", &yaml.Directive{Name: word("YAML"), Params: []*yaml.Word{word("1.2"), word("1.2")}}},
-		{"invalid YAML version", &yaml.Directive{Name: word("YAML"), Params: []*yaml.Word{word("1.foo")}}},
-		{"unsupported YAML version", &yaml.Directive{Name: word("YAML"), Params: []*yaml.Word{word("2.0")}}},
-		{"missing TAG handle", &yaml.Directive{Name: word("TAG")}},
-		{"missing TAG prefix", &yaml.Directive{Name: word("TAG"), Params: []*yaml.Word{word("!e!")}}},
-		{"nil TAG handle", &yaml.Directive{Name: word("TAG"), Params: []*yaml.Word{nil, word("tag:x")}}},
-		{"nil TAG prefix", &yaml.Directive{Name: word("TAG"), Params: []*yaml.Word{word("!e!"), nil}}},
-		{"empty TAG prefix", &yaml.Directive{Name: word("TAG"), Params: []*yaml.Word{word("!e!"), word("")}}},
-		{"truncated prefix escape", &yaml.Directive{Name: word("TAG"), Params: []*yaml.Word{word("!e!"), word("tag:%")}}},
-		{"bad prefix escape", &yaml.Directive{Name: word("TAG"), Params: []*yaml.Word{word("!e!"), word("tag:%GG")}}},
-		{"prefix whitespace", &yaml.Directive{Name: word("TAG"), Params: []*yaml.Word{word("!e!"), word("tag:x y")}}},
-		{"global prefix initial flow indicator", &yaml.Directive{Name: word("TAG"), Params: []*yaml.Word{word("!e!"), word("[x")}}},
-		{"extra TAG parameter", &yaml.Directive{Name: word("TAG"), Params: []*yaml.Word{word("!e!"), word("tag:x"), word("extra")}}},
-		{"invalid TAG handle", &yaml.Directive{Name: word("TAG"), Params: []*yaml.Word{word("notahandle"), word("tag:x")}}},
+		{"nil name", &types.Directive{}},
+		{"missing YAML version", &types.Directive{Name: word("YAML")}},
+		{"nil YAML version", &types.Directive{Name: word("YAML"), Params: []*types.Word{nil}}},
+		{"extra YAML version", &types.Directive{Name: word("YAML"), Params: []*types.Word{word("1.2"), word("1.2")}}},
+		{"invalid YAML version", &types.Directive{Name: word("YAML"), Params: []*types.Word{word("1.foo")}}},
+		{"unsupported YAML version", &types.Directive{Name: word("YAML"), Params: []*types.Word{word("2.0")}}},
+		{"missing TAG handle", &types.Directive{Name: word("TAG")}},
+		{"missing TAG prefix", &types.Directive{Name: word("TAG"), Params: []*types.Word{word("!e!")}}},
+		{"nil TAG handle", &types.Directive{Name: word("TAG"), Params: []*types.Word{nil, word("tag:x")}}},
+		{"nil TAG prefix", &types.Directive{Name: word("TAG"), Params: []*types.Word{word("!e!"), nil}}},
+		{"empty TAG prefix", &types.Directive{Name: word("TAG"), Params: []*types.Word{word("!e!"), word("")}}},
+		{"truncated prefix escape", &types.Directive{Name: word("TAG"), Params: []*types.Word{word("!e!"), word("tag:%")}}},
+		{"bad prefix escape", &types.Directive{Name: word("TAG"), Params: []*types.Word{word("!e!"), word("tag:%GG")}}},
+		{"prefix whitespace", &types.Directive{Name: word("TAG"), Params: []*types.Word{word("!e!"), word("tag:x y")}}},
+		{"global prefix initial flow indicator", &types.Directive{Name: word("TAG"), Params: []*types.Word{word("!e!"), word("[x")}}},
+		{"extra TAG parameter", &types.Directive{Name: word("TAG"), Params: []*types.Word{word("!e!"), word("tag:x"), word("extra")}}},
+		{"invalid TAG handle", &types.Directive{Name: word("TAG"), Params: []*types.Word{word("notahandle"), word("tag:x")}}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			s, err := yaml.ParseAST("x\n")
@@ -102,7 +103,7 @@ func TestMalformedDirectiveAST(t *testing.T) {
 				t.Fatal(err)
 			}
 			d := s.Documents[0]
-			d.Directives = []*yaml.Directive{tc.dir}
+			d.Directives = []*types.Directive{tc.dir}
 			check := func(err error) {
 				t.Helper()
 				var se *yaml.SemanticError
@@ -110,12 +111,12 @@ func TestMalformedDirectiveAST(t *testing.T) {
 					t.Errorf("got %v, want SemanticError", err)
 				}
 			}
-			check(s.Check())
-			_, err = s.Events()
+			check(yaml.Check(s))
+			_, err = yaml.StreamEvents(s)
 			check(err)
-			_, err = d.Load()
+			_, err = yaml.LoadDocument(d)
 			check(err)
-			_, err = d.ResolveTag(&yaml.Tag{TNode: yaml.TNode[string]{Value: "!!str"}})
+			_, err = yaml.ResolveTag(d, &types.Tag{TNode: types.TNode[string]{Value: "!!str"}})
 			check(err)
 		})
 	}

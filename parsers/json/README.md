@@ -15,11 +15,11 @@ v, err := json.Decode(`{"name": "pego", "stars": 42}`)
 
 // Typed values with positions.
 ast, err := json.ParseAST(`{"a": [1, true], "b": "x\ty"}`)
-for _, m := range ast.(*json.Object).Members {
+for _, m := range ast.(*types.Object).Members {
 	fmt.Printf("%q at %d-%d: %T\n", m.Key.Value(), m.Span.Start, m.Span.End, m.Value)
 }
-// "a" at 1-15: *json.Array
-// "b" at 17-28: *json.String
+// "a" at 1-15: *types.Array
+// "b" at 17-28: *types.String
 
 // Only check.
 ok := json.Valid(`[1, 2, 3,]`) // false

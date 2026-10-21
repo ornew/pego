@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/parsers/xml"
+	"github.com/ornew/pego/parsers/xml/types"
 )
 
 // TestASTHelpers checks the methods of the typed values.
@@ -19,40 +20,40 @@ func TestASTHelpers(t *testing.T) {
 	if got := id.System.Value(); got != "s\n" {
 		t.Errorf("SystemLiteral.Value: %q", got)
 	}
-	if got, err := doc.Root.Attrs[0].Value.Value(); got != " <1\t 2& " || err != nil {
-		t.Errorf("AttValue.Value: %q, %v", got, err)
+	if got, err := xml.ExpandAttValue(doc.Root.Attrs[0].Value); got != " <1\t 2& " || err != nil {
+		t.Errorf("ExpandAttValue: %q, %v", got, err)
 	}
 	c := doc.Root.Content
-	if got := c[0].(*xml.CharData).Value(); got != "t\n" {
+	if got := c[0].(*types.CharData).Value(); got != "t\n" {
 		t.Errorf("CharData.Value: %q", got)
 	}
-	if got := c[1].(*xml.EntityRef).Name(); got != "e" {
+	if got := c[1].(*types.EntityRef).Name(); got != "e" {
 		t.Errorf("EntityRef.Name: %q", got)
 	}
-	if r, ok := c[2].(*xml.CharRef).Rune(); r != '😀' || !ok {
+	if r, ok := c[2].(*types.CharRef).Rune(); r != '😀' || !ok {
 		t.Errorf("CharRef.Rune: %q, %v", r, ok)
 	}
-	if got := c[3].(*xml.CDSect).Value(); got != "c\n" {
+	if got := c[3].(*types.CDSect).Value(); got != "c\n" {
 		t.Errorf("CDSect.Value: %q", got)
 	}
-	if got := c[4].(*xml.Comment).Value(); got != "m\n" {
+	if got := c[4].(*types.Comment).Value(); got != "m\n" {
 		t.Errorf("Comment.Value: %q", got)
 	}
-	if got := c[5].(*xml.PI).Data.Value(); got != "d\n" {
+	if got := c[5].(*types.PI).Data.Value(); got != "d\n" {
 		t.Errorf("PIData.Value: %q", got)
 	}
 	doc, err = xml.ParseAST(`<a x="&e;"/>`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := doc.Root.Attrs[0].Value.Value(); err == nil || err.Error() != "entity &e; is not declared" {
-		t.Errorf("AttValue.Value with an entity: %v", err)
+	if _, err := xml.ExpandAttValue(doc.Root.Attrs[0].Value); err == nil || err.Error() != "entity &e; is not declared" {
+		t.Errorf("ExpandAttValue with an entity: %v", err)
 	}
 	doc, err = xml.ParseAST(`<a>&#0;</a>`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, legal := doc.Root.Content[0].(*xml.CharRef).Rune(); legal {
+	if _, legal := doc.Root.Content[0].(*types.CharRef).Rune(); legal {
 		t.Error("CharRef.Rune: &#0; is legal")
 	}
 }

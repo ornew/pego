@@ -15,8 +15,8 @@ go get github.com/ornew/pego/parsers/duckdb
 ```go
 // The script as typed values, each node with its Span in the input.
 script, err := duckdb.ParseAST(`SELECT region, sum(amount) AS total FROM sales WHERE year = 2024 GROUP BY region`)
-sel := script.Statements[0].(*duckdb.Select)
-core := sel.Body.(*duckdb.SelectCore)
+sel := script.Statements[0].(*types.Select)
+core := sel.Body.(*types.SelectCore)
 for _, item := range core.Items {
 	fmt.Println(item.Span.Start, item.Span.End) // 7 13, then 15 35
 }
@@ -28,8 +28,8 @@ for _, s := range statements {
 }
 
 // Visit the nodes in the order of the input.
-duckdb.Walk(script, func(n any) bool {
-	if t, ok := n.(*duckdb.BaseTable); ok {
+duckdb.Inspect(script, func(n any) bool {
+	if t, ok := n.(*types.BaseTable); ok {
 		fmt.Println(strings.Join(t.Name.Names(), "."))
 	}
 	return true
@@ -44,7 +44,7 @@ err = duckdb.Recognize("SELECT 1 UNION")      // a *duckdb.SyntaxError with Line
 | `ParseAST(input, opts...) (*Script, error)` | The script: `Statements`, each a `Select`, `InsertStmt`, `CreateTableStmt`, ... (the `Statement` union), with expressions, types and table references below them, and their `Span` |
 | `Split(input) ([]StatementText, error)` | The statements as DuckDB splits the script: `Statement`, `Text`, `Start`, `End` |
 | `Kind(Statement) string` | The type DuckDB gives it: `SELECT`, `INSERT`, `CREATE`, `ALTER`, `COPY`, `SET`, ... |
-| `Walk(node, fn)`, `SpanOf(node)` | The nodes in the order of the input (`fn` returns false to skip the children), and the span of any node |
+| `Inspect(node, fn)`, `SpanOf(node)` | The nodes in the order of the input (`fn` returns false to skip the children), and the span of any node |
 | `(*Ident).Name()`, `.Quoted()`, `.Fold()`, `.EqualFold(o)` | The name an identifier denotes: a word as written, `"a ""b"""` without its quotes, `U&"d\0061ta"` decoded; `Fold` is the name in lower case, the key by which DuckDB compares names |
 | `(*Name).Names() []string` | The parts of a qualified name |
 | `(*StringLit).Value()`, `.Kind()` | The string: `''` decoded, continued segments joined, the escapes of `E'...'` and `U&'...'`, the text of `$tag$...$tag$` |

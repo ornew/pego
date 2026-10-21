@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -61,51 +62,54 @@ func TestGeneratedAliasExports(t *testing.T) {
 	var bodies strings.Builder
 	for i, convert := range []bool{false, true} {
 		pkg := fmt.Sprintf("g%d", i)
-		opts := GenOptions{Package: pkg, Start: "main", Types: true, convertTypes: convert}
-		code, err := generateCode(g, opts)
+		opts := GenOptions{Package: pkg, Module: "aliasexports/" + pkg, Runtime: RuntimeImport, Start: "main", Types: true, convertTypes: convert}
+		files, err := Generate(g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
-		again, err := generateCode(g, opts)
-		if err != nil || !bytes.Equal(code, again) {
+		again, err := Generate(g, opts)
+		if err != nil || !slices.EqualFunc(files, again, func(a, b GeneratedFile) bool { return a.Path == b.Path && bytes.Equal(a.Content, b.Content) }) {
 			t.Fatalf("generation is not deterministic: %v", err)
 		}
-		write(pkg+"/parser.go", code)
-		fmt.Fprintf(&tests, "%s \"aliasexports/%s\"\n", pkg, pkg)
+		for _, f := range files {
+			write(pkg+"/"+f.Path, f.Content)
+		}
+		fmt.Fprintf(&tests, "%s \"aliasexports/%s\"\n%s \"aliasexports/%s/types\"\n", pkg, pkg, "t"+pkg, pkg)
 		// Every declared name is used, including pointer-valued ordinary aliases,
 		// normalized unions, scalar/list/CST aliases and colliding runtime names.
 		body := fmt.Sprintf(`
 func Test%s(t *testing.T) {
- var word *P.Word = &P.Word{Text:"a"}
- var other *P.Other = &P.Other{Text:"b"}
- var alias P.Alias = word
- var chain P.Chain = alias
- var single P.Single = chain
- var u P.U = word
- var v P.V = u
- var w P.W = other
- var maybeUnion P.MaybeUnion = w
- var words P.Words = []*P.Word{chain}
- var count P.Count = 3
- var maybe P.Maybe = &count
- var mixed P.Mixed = count
- var anything P.Anything = mixed
- var cst P.CST = &P.TNode[any]{}
- var box *P.Box = &P.Box{Item:chain, Items:words, Choice:v, N:*maybe}
- var boxAlias P.BoxAlias = box
- var node P.Node_ = word
- var node_ P.Node__ = other
- var span P.Span = 1
- _ = []any{single,maybeUnion,anything,cst,boxAlias,node,node_,span}
+ var word *T.Word = &T.Word{Text:"a"}
+ var other *T.Other = &T.Other{Text:"b"}
+ var alias T.Alias = word
+ var chain T.Chain = alias
+ var single T.Single = chain
+ var u T.U = word
+ var v T.V = u
+ var w T.W = other
+ var maybeUnion T.MaybeUnion = w
+ var words T.Words = []*T.Word{chain}
+ var count T.Count = 3
+ var maybe T.Maybe = &count
+ var mixed T.Mixed = count
+ var anything T.Anything = mixed
+ var cst T.CST = &T.TNode[any]{}
+ var box *T.Box = &T.Box{Item:chain, Items:words, Choice:v, N:*maybe}
+ var boxAlias T.BoxAlias = box
+ var node T.Node = word
+ var node_ T.Node_ = other
+ var span T.Span = 1
+ var runtimeNode *P.Node
+ _ = []any{single,maybeUnion,anything,cst,boxAlias,node,node_,span,runtimeNode}
  for _,unit := range []P.PositionUnit{P.CodePoints,P.Bytes} {
-  var result P.Alias
+  var result T.Alias
   var err error
   result,err=P.ParseAST("a",P.WithUnit(unit))
   if err!=nil || result.Text!="a" {t.Fatalf("parse: %%v",err)}
  }
 }
 `, strings.ToUpper(pkg))
-		bodies.WriteString(strings.ReplaceAll(body, "P.", pkg+"."))
+		bodies.WriteString(strings.ReplaceAll(strings.ReplaceAll(body, "P.", pkg+"."), "T.", "t"+pkg+"."))
 	}
 	tests.WriteString(")\n" + bodies.String())
 	write("exports_test.go", []byte(tests.String()))

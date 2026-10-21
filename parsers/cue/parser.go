@@ -7,6 +7,7 @@ import (
 	"unsafe"
 
 	pegort "github.com/ornew/pego/parsers/cue/internal/runtime"
+	types "github.com/ornew/pego/parsers/cue/types"
 )
 
 // --- Generated code ---
@@ -47,1187 +48,6 @@ func ParseRule(name, input string, opts ...pegort.ParseOption) (*pegort.Node, er
 }
 
 // --- Typed values ---
-
-// TNode is a node whose Value has type T: a string node (TNode[string]) holds the text a
-// literal, a character class, ., a #atomic or _ matched, and a tuple or list node holds its
-// elements. A node of a statically unknown value is a TNode[any] whose Value is a string, or a
-// []any of the elements of a tuple or list.
-type TNode[T any] pegort.TNode[T]
-
-// Error is input skipped by error recovery (#recover).
-type Error pegort.Error
-
-// tpubHooks makes the values of the types above from those the typed runtime builds, and back.
-var tpubHooks = &pegort.TPubHooks{
-	Match: func(m *pegort.TNode[string]) any { return (*TNode[string])(m) },
-	Error: func(e *pegort.Error) any { return (*Error)(e) },
-	Node:  func(n *pegort.TNode[any]) any { return (*TNode[any])(n) },
-	Back: func(v any) any {
-		switch x := v.(type) {
-		case *TNode[string]:
-			return (*pegort.TNode[string])(x)
-		case *Error:
-			return (*pegort.Error)(x)
-		case *TNode[any]:
-			return (*pegort.TNode[any])(x)
-		}
-		return v
-	},
-}
-
-// --- Typed values (pego gen -types; Span, TNode and Error are aliases of the runtime types) ---
-
-// Alias is the struct type Alias.
-type Alias struct {
-	pegort.Span
-	Ident *Ident
-	Expr  Expr
-}
-
-// BinaryExpr is the struct type BinaryExpr.
-type BinaryExpr struct {
-	pegort.Span
-	X  Expr
-	Op *TNode[string]
-	Y  Expr
-}
-
-// CallExpr is the struct type CallExpr.
-type CallExpr struct {
-	pegort.Span
-	Fun  Expr
-	Args []Expr
-}
-
-// Comprehension is the struct type Comprehension.
-type Comprehension struct {
-	pegort.Span
-	Clauses  []Clause
-	Value    *StructLit
-	Fallback *FallbackClause
-}
-
-// Ellipsis is the struct type Ellipsis.
-type Ellipsis struct {
-	pegort.Span
-	Type Expr
-}
-
-// EmbedDecl is the struct type EmbedDecl.
-type EmbedDecl struct {
-	pegort.Span
-	Expr  Expr
-	Alias *PostfixAlias
-}
-
-// FallbackClause is the struct type FallbackClause.
-type FallbackClause struct {
-	pegort.Span
-	Body *StructLit
-}
-
-// Field is the struct type Field.
-type Field struct {
-	pegort.Span
-	Label      Label
-	Alias      *PostfixAlias
-	Constraint *TNode[string]
-	Value      Expr
-	Attrs      []*Attribute
-}
-
-// File is the struct type File.
-type File struct {
-	pegort.Span
-	Decls []Decl
-}
-
-// ForClause is the struct type ForClause.
-type ForClause struct {
-	pegort.Span
-	Key    *Ident
-	Value  *Ident
-	Source Expr
-}
-
-// IfClause is the struct type IfClause.
-type IfClause struct {
-	pegort.Span
-	Condition Expr
-}
-
-// ImportDecl is the struct type ImportDecl.
-type ImportDecl struct {
-	pegort.Span
-	Lparen *TNode[string]
-	Specs  []*ImportSpec
-}
-
-// ImportSpec is the struct type ImportSpec.
-type ImportSpec struct {
-	pegort.Span
-	Name *Ident
-	Path *String
-}
-
-// IndexExpr is the struct type IndexExpr.
-type IndexExpr struct {
-	pegort.Span
-	X      Expr
-	Index  Expr
-	Rbrack *TNode[string]
-}
-
-// Interpolation is the struct type Interpolation.
-type Interpolation struct {
-	pegort.Span
-	Elts []Expr
-}
-
-// LetClause is the struct type LetClause.
-type LetClause struct {
-	pegort.Span
-	Ident *Ident
-	Expr  Expr
-}
-
-// ListLit is the struct type ListLit.
-type ListLit struct {
-	pegort.Span
-	Elts []Expr
-}
-
-// Package is the struct type Package.
-type Package struct {
-	pegort.Span
-	Name *Ident
-}
-
-// ParenExpr is the struct type ParenExpr.
-type ParenExpr struct {
-	pegort.Span
-	X Expr
-}
-
-// PostfixAlias is the struct type PostfixAlias.
-type PostfixAlias struct {
-	pegort.Span
-	Label *Ident
-	Field *Ident
-}
-
-// PostfixExpr is the struct type PostfixExpr.
-type PostfixExpr struct {
-	pegort.Span
-	X  Expr
-	Op *TNode[string]
-}
-
-// SelectorExpr is the struct type SelectorExpr.
-type SelectorExpr struct {
-	pegort.Span
-	X   Expr
-	Sel Selector
-}
-
-// SliceExpr is the struct type SliceExpr.
-type SliceExpr struct {
-	pegort.Span
-	X    Expr
-	Low  Expr
-	High Expr
-}
-
-// String is the struct type String.
-type String struct {
-	pegort.Span
-	Text string
-}
-
-// StructLit is the struct type StructLit.
-type StructLit struct {
-	pegort.Span
-	Elts []Decl
-}
-
-// TryClause is the struct type TryClause.
-type TryClause struct {
-	pegort.Span
-	Ident *Ident
-	Expr  Expr
-}
-
-// UnaryExpr is the struct type UnaryExpr.
-type UnaryExpr struct {
-	pegort.Span
-	Op *TNode[string]
-	X  Expr
-}
-
-// Attribute is the node type Attribute = node[string].
-type Attribute struct{ TNode[string] }
-
-// Bool is the node type Bool = node[string].
-type Bool struct{ TNode[string] }
-
-// Bottom is the node type Bottom = node[string].
-type Bottom struct{ TNode[string] }
-
-// Float is the node type Float = node[string].
-type Float struct{ TNode[string] }
-
-// Ident is the node type Ident = node[string].
-type Ident struct{ TNode[string] }
-
-// Int is the node type Int = node[string].
-type Int struct{ TNode[string] }
-
-// Null is the node type Null = node[string].
-type Null struct{ TNode[string] }
-
-// Clause is the join type Clause ~ ForClause | IfClause | LetClause | TryClause. Error (left by #recover) also implements it.
-type Clause interface{ isClause() }
-
-// Decl is the join type Decl ~ Package | Attribute | ImportDecl | Field | EmbedDecl | LetClause | Ellipsis | Comprehension. Error (left by #recover) also implements it.
-type Decl interface{ isDecl() }
-
-// Expr is the join type Expr ~ Ident | Int | Float | String | Bool | Null | Bottom | Interpolation | StructLit | ListLit | ParenExpr | SelectorExpr | IndexExpr | SliceExpr | CallExpr | UnaryExpr | BinaryExpr | PostfixExpr | Alias | Ellipsis | Comprehension. Error (left by #recover) also implements it.
-type Expr interface{ isExpr() }
-
-// Label is the join type Label ~ Ident | String | Interpolation | Bool | Null | ParenExpr | ListLit | Alias. Error (left by #recover) also implements it.
-type Label interface{ isLabel() }
-
-// Number is the join type Number ~ Int | Float. Error (left by #recover) also implements it.
-type Number interface{ isNumber() }
-
-// Selector is the join type Selector ~ Ident | String. Error (left by #recover) also implements it.
-type Selector interface{ isSelector() }
-
-// StrLit is the join type StrLit ~ String | Interpolation. Error (left by #recover) also implements it.
-type StrLit interface{ isStrLit() }
-
-func (*Alias) isExpr()           {}
-func (*Alias) isLabel()          {}
-func (*Attribute) isDecl()       {}
-func (*BinaryExpr) isExpr()      {}
-func (*Bool) isExpr()            {}
-func (*Bool) isLabel()           {}
-func (*Bottom) isExpr()          {}
-func (*CallExpr) isExpr()        {}
-func (*Comprehension) isDecl()   {}
-func (*Comprehension) isExpr()   {}
-func (*Ellipsis) isDecl()        {}
-func (*Ellipsis) isExpr()        {}
-func (*EmbedDecl) isDecl()       {}
-func (*Error) isClause()         {}
-func (*Error) isDecl()           {}
-func (*Error) isExpr()           {}
-func (*Error) isLabel()          {}
-func (*Error) isNumber()         {}
-func (*Error) isSelector()       {}
-func (*Error) isStrLit()         {}
-func (*Field) isDecl()           {}
-func (*Float) isExpr()           {}
-func (*Float) isNumber()         {}
-func (*ForClause) isClause()     {}
-func (*Ident) isExpr()           {}
-func (*Ident) isLabel()          {}
-func (*Ident) isSelector()       {}
-func (*IfClause) isClause()      {}
-func (*ImportDecl) isDecl()      {}
-func (*IndexExpr) isExpr()       {}
-func (*Int) isExpr()             {}
-func (*Int) isNumber()           {}
-func (*Interpolation) isExpr()   {}
-func (*Interpolation) isLabel()  {}
-func (*Interpolation) isStrLit() {}
-func (*LetClause) isClause()     {}
-func (*LetClause) isDecl()       {}
-func (*ListLit) isExpr()         {}
-func (*ListLit) isLabel()        {}
-func (*Null) isExpr()            {}
-func (*Null) isLabel()           {}
-func (*Package) isDecl()         {}
-func (*ParenExpr) isExpr()       {}
-func (*ParenExpr) isLabel()      {}
-func (*PostfixExpr) isExpr()     {}
-func (*SelectorExpr) isExpr()    {}
-func (*SliceExpr) isExpr()       {}
-func (*String) isExpr()          {}
-func (*String) isLabel()         {}
-func (*String) isSelector()      {}
-func (*String) isStrLit()        {}
-func (*StructLit) isExpr()       {}
-func (*TryClause) isClause()     {}
-func (*UnaryExpr) isExpr()       {}
-
-func (v *Alias) TName() string         { return "Alias" }
-func (v *Alias) TText() (string, bool) { return "", false }
-func (v *Alias) TKids() []any          { return nil }
-func (v *Alias) TStruct() bool         { return true }
-func (v *Alias) TFresh() bool          { return false }
-func (v *Alias) TSetFresh(bool)        {}
-func (v *Alias) TField(name string) (any, bool) {
-	switch name {
-	case "Ident":
-		return tb0(v.Ident), true
-	case "Expr":
-		return pegort.TBack(tpubHooks, v.Expr), true
-	}
-	return nil, false
-}
-
-func (v *Alias) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Ident":
-		return tb0(v.Ident), true
-	case "Expr":
-		return pegort.TBack(tpubHooks, v.Expr), true
-	}
-	return nil, false
-}
-
-func (v *BinaryExpr) TName() string         { return "BinaryExpr" }
-func (v *BinaryExpr) TText() (string, bool) { return "", false }
-func (v *BinaryExpr) TKids() []any          { return nil }
-func (v *BinaryExpr) TStruct() bool         { return true }
-func (v *BinaryExpr) TFresh() bool          { return false }
-func (v *BinaryExpr) TSetFresh(bool)        {}
-func (v *BinaryExpr) TField(name string) (any, bool) {
-	switch name {
-	case "X":
-		return pegort.TBack(tpubHooks, v.X), true
-	case "Op":
-		return pegort.TBack(tpubHooks, v.Op), true
-	case "Y":
-		return pegort.TBack(tpubHooks, v.Y), true
-	}
-	return nil, false
-}
-
-func (v *BinaryExpr) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "X":
-		return pegort.TBack(tpubHooks, v.X), true
-	case "Op":
-		return pegort.TBack(tpubHooks, v.Op), true
-	case "Y":
-		return pegort.TBack(tpubHooks, v.Y), true
-	}
-	return nil, false
-}
-
-func (v *CallExpr) TName() string         { return "CallExpr" }
-func (v *CallExpr) TText() (string, bool) { return "", false }
-func (v *CallExpr) TKids() []any          { return nil }
-func (v *CallExpr) TStruct() bool         { return true }
-func (v *CallExpr) TFresh() bool          { return false }
-func (v *CallExpr) TSetFresh(bool)        {}
-func (v *CallExpr) TField(name string) (any, bool) {
-	switch name {
-	case "Fun":
-		return pegort.TBack(tpubHooks, v.Fun), true
-	case "Args":
-		return func() any {
-			if v.Args == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Args))
-			for i, x := range v.Args {
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *CallExpr) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Fun":
-		return pegort.TBack(tpubHooks, v.Fun), true
-	case "Args":
-		return func() any {
-			if v.Args == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Args))
-			for i, x := range v.Args {
-				p.StepWork()
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return p.ListField(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *Comprehension) TName() string         { return "Comprehension" }
-func (v *Comprehension) TText() (string, bool) { return "", false }
-func (v *Comprehension) TKids() []any          { return nil }
-func (v *Comprehension) TStruct() bool         { return true }
-func (v *Comprehension) TFresh() bool          { return false }
-func (v *Comprehension) TSetFresh(bool)        {}
-func (v *Comprehension) TField(name string) (any, bool) {
-	switch name {
-	case "Clauses":
-		return func() any {
-			if v.Clauses == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Clauses))
-			for i, x := range v.Clauses {
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	case "Value":
-		return pegort.TPtr(v.Value), true
-	case "Fallback":
-		return pegort.TPtr(v.Fallback), true
-	}
-	return nil, false
-}
-
-func (v *Comprehension) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Clauses":
-		return func() any {
-			if v.Clauses == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Clauses))
-			for i, x := range v.Clauses {
-				p.StepWork()
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return p.ListField(kids)
-		}(), true
-	case "Value":
-		return pegort.TPtr(v.Value), true
-	case "Fallback":
-		return pegort.TPtr(v.Fallback), true
-	}
-	return nil, false
-}
-
-func (v *Ellipsis) TName() string         { return "Ellipsis" }
-func (v *Ellipsis) TText() (string, bool) { return "", false }
-func (v *Ellipsis) TKids() []any          { return nil }
-func (v *Ellipsis) TStruct() bool         { return true }
-func (v *Ellipsis) TFresh() bool          { return false }
-func (v *Ellipsis) TSetFresh(bool)        {}
-func (v *Ellipsis) TField(name string) (any, bool) {
-	switch name {
-	case "Type":
-		return pegort.TBack(tpubHooks, v.Type), true
-	}
-	return nil, false
-}
-
-func (v *Ellipsis) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Type":
-		return pegort.TBack(tpubHooks, v.Type), true
-	}
-	return nil, false
-}
-
-func (v *EmbedDecl) TName() string         { return "EmbedDecl" }
-func (v *EmbedDecl) TText() (string, bool) { return "", false }
-func (v *EmbedDecl) TKids() []any          { return nil }
-func (v *EmbedDecl) TStruct() bool         { return true }
-func (v *EmbedDecl) TFresh() bool          { return false }
-func (v *EmbedDecl) TSetFresh(bool)        {}
-func (v *EmbedDecl) TField(name string) (any, bool) {
-	switch name {
-	case "Expr":
-		return pegort.TBack(tpubHooks, v.Expr), true
-	case "Alias":
-		return pegort.TPtr(v.Alias), true
-	}
-	return nil, false
-}
-
-func (v *EmbedDecl) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Expr":
-		return pegort.TBack(tpubHooks, v.Expr), true
-	case "Alias":
-		return pegort.TPtr(v.Alias), true
-	}
-	return nil, false
-}
-
-func (v *FallbackClause) TName() string         { return "FallbackClause" }
-func (v *FallbackClause) TText() (string, bool) { return "", false }
-func (v *FallbackClause) TKids() []any          { return nil }
-func (v *FallbackClause) TStruct() bool         { return true }
-func (v *FallbackClause) TFresh() bool          { return false }
-func (v *FallbackClause) TSetFresh(bool)        {}
-func (v *FallbackClause) TField(name string) (any, bool) {
-	switch name {
-	case "Body":
-		return pegort.TPtr(v.Body), true
-	}
-	return nil, false
-}
-
-func (v *FallbackClause) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Body":
-		return pegort.TPtr(v.Body), true
-	}
-	return nil, false
-}
-
-func (v *Field) TName() string         { return "Field" }
-func (v *Field) TText() (string, bool) { return "", false }
-func (v *Field) TKids() []any          { return nil }
-func (v *Field) TStruct() bool         { return true }
-func (v *Field) TFresh() bool          { return false }
-func (v *Field) TSetFresh(bool)        {}
-func (v *Field) TField(name string) (any, bool) {
-	switch name {
-	case "Label":
-		return pegort.TBack(tpubHooks, v.Label), true
-	case "Alias":
-		return pegort.TPtr(v.Alias), true
-	case "Constraint":
-		return pegort.TBack(tpubHooks, v.Constraint), true
-	case "Value":
-		return pegort.TBack(tpubHooks, v.Value), true
-	case "Attrs":
-		return func() any {
-			if v.Attrs == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Attrs))
-			for i, x := range v.Attrs {
-				kids[i] = tb1(x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *Field) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Label":
-		return pegort.TBack(tpubHooks, v.Label), true
-	case "Alias":
-		return pegort.TPtr(v.Alias), true
-	case "Constraint":
-		return pegort.TBack(tpubHooks, v.Constraint), true
-	case "Value":
-		return pegort.TBack(tpubHooks, v.Value), true
-	case "Attrs":
-		return func() any {
-			if v.Attrs == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Attrs))
-			for i, x := range v.Attrs {
-				p.StepWork()
-				kids[i] = tb1(x)
-			}
-			return p.ListField(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *File) TName() string         { return "File" }
-func (v *File) TText() (string, bool) { return "", false }
-func (v *File) TKids() []any          { return nil }
-func (v *File) TStruct() bool         { return true }
-func (v *File) TFresh() bool          { return false }
-func (v *File) TSetFresh(bool)        {}
-func (v *File) TField(name string) (any, bool) {
-	switch name {
-	case "Decls":
-		return func() any {
-			if v.Decls == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Decls))
-			for i, x := range v.Decls {
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *File) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Decls":
-		return func() any {
-			if v.Decls == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Decls))
-			for i, x := range v.Decls {
-				p.StepWork()
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return p.ListField(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *ForClause) TName() string         { return "ForClause" }
-func (v *ForClause) TText() (string, bool) { return "", false }
-func (v *ForClause) TKids() []any          { return nil }
-func (v *ForClause) TStruct() bool         { return true }
-func (v *ForClause) TFresh() bool          { return false }
-func (v *ForClause) TSetFresh(bool)        {}
-func (v *ForClause) TField(name string) (any, bool) {
-	switch name {
-	case "Key":
-		return tb0(v.Key), true
-	case "Value":
-		return tb0(v.Value), true
-	case "Source":
-		return pegort.TBack(tpubHooks, v.Source), true
-	}
-	return nil, false
-}
-
-func (v *ForClause) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Key":
-		return tb0(v.Key), true
-	case "Value":
-		return tb0(v.Value), true
-	case "Source":
-		return pegort.TBack(tpubHooks, v.Source), true
-	}
-	return nil, false
-}
-
-func (v *IfClause) TName() string         { return "IfClause" }
-func (v *IfClause) TText() (string, bool) { return "", false }
-func (v *IfClause) TKids() []any          { return nil }
-func (v *IfClause) TStruct() bool         { return true }
-func (v *IfClause) TFresh() bool          { return false }
-func (v *IfClause) TSetFresh(bool)        {}
-func (v *IfClause) TField(name string) (any, bool) {
-	switch name {
-	case "Condition":
-		return pegort.TBack(tpubHooks, v.Condition), true
-	}
-	return nil, false
-}
-
-func (v *IfClause) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Condition":
-		return pegort.TBack(tpubHooks, v.Condition), true
-	}
-	return nil, false
-}
-
-func (v *ImportDecl) TName() string         { return "ImportDecl" }
-func (v *ImportDecl) TText() (string, bool) { return "", false }
-func (v *ImportDecl) TKids() []any          { return nil }
-func (v *ImportDecl) TStruct() bool         { return true }
-func (v *ImportDecl) TFresh() bool          { return false }
-func (v *ImportDecl) TSetFresh(bool)        {}
-func (v *ImportDecl) TField(name string) (any, bool) {
-	switch name {
-	case "Lparen":
-		return pegort.TBack(tpubHooks, v.Lparen), true
-	case "Specs":
-		return func() any {
-			if v.Specs == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Specs))
-			for i, x := range v.Specs {
-				kids[i] = pegort.TPtr(x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *ImportDecl) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Lparen":
-		return pegort.TBack(tpubHooks, v.Lparen), true
-	case "Specs":
-		return func() any {
-			if v.Specs == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Specs))
-			for i, x := range v.Specs {
-				p.StepWork()
-				kids[i] = pegort.TPtr(x)
-			}
-			return p.ListField(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *ImportSpec) TName() string         { return "ImportSpec" }
-func (v *ImportSpec) TText() (string, bool) { return "", false }
-func (v *ImportSpec) TKids() []any          { return nil }
-func (v *ImportSpec) TStruct() bool         { return true }
-func (v *ImportSpec) TFresh() bool          { return false }
-func (v *ImportSpec) TSetFresh(bool)        {}
-func (v *ImportSpec) TField(name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	case "Path":
-		return pegort.TPtr(v.Path), true
-	}
-	return nil, false
-}
-
-func (v *ImportSpec) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	case "Path":
-		return pegort.TPtr(v.Path), true
-	}
-	return nil, false
-}
-
-func (v *IndexExpr) TName() string         { return "IndexExpr" }
-func (v *IndexExpr) TText() (string, bool) { return "", false }
-func (v *IndexExpr) TKids() []any          { return nil }
-func (v *IndexExpr) TStruct() bool         { return true }
-func (v *IndexExpr) TFresh() bool          { return false }
-func (v *IndexExpr) TSetFresh(bool)        {}
-func (v *IndexExpr) TField(name string) (any, bool) {
-	switch name {
-	case "X":
-		return pegort.TBack(tpubHooks, v.X), true
-	case "Index":
-		return pegort.TBack(tpubHooks, v.Index), true
-	case "Rbrack":
-		return pegort.TBack(tpubHooks, v.Rbrack), true
-	}
-	return nil, false
-}
-
-func (v *IndexExpr) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "X":
-		return pegort.TBack(tpubHooks, v.X), true
-	case "Index":
-		return pegort.TBack(tpubHooks, v.Index), true
-	case "Rbrack":
-		return pegort.TBack(tpubHooks, v.Rbrack), true
-	}
-	return nil, false
-}
-
-func (v *Interpolation) TName() string         { return "Interpolation" }
-func (v *Interpolation) TText() (string, bool) { return "", false }
-func (v *Interpolation) TKids() []any          { return nil }
-func (v *Interpolation) TStruct() bool         { return true }
-func (v *Interpolation) TFresh() bool          { return false }
-func (v *Interpolation) TSetFresh(bool)        {}
-func (v *Interpolation) TField(name string) (any, bool) {
-	switch name {
-	case "Elts":
-		return func() any {
-			if v.Elts == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Elts))
-			for i, x := range v.Elts {
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *Interpolation) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Elts":
-		return func() any {
-			if v.Elts == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Elts))
-			for i, x := range v.Elts {
-				p.StepWork()
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return p.ListField(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *LetClause) TName() string         { return "LetClause" }
-func (v *LetClause) TText() (string, bool) { return "", false }
-func (v *LetClause) TKids() []any          { return nil }
-func (v *LetClause) TStruct() bool         { return true }
-func (v *LetClause) TFresh() bool          { return false }
-func (v *LetClause) TSetFresh(bool)        {}
-func (v *LetClause) TField(name string) (any, bool) {
-	switch name {
-	case "Ident":
-		return tb0(v.Ident), true
-	case "Expr":
-		return pegort.TBack(tpubHooks, v.Expr), true
-	}
-	return nil, false
-}
-
-func (v *LetClause) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Ident":
-		return tb0(v.Ident), true
-	case "Expr":
-		return pegort.TBack(tpubHooks, v.Expr), true
-	}
-	return nil, false
-}
-
-func (v *ListLit) TName() string         { return "ListLit" }
-func (v *ListLit) TText() (string, bool) { return "", false }
-func (v *ListLit) TKids() []any          { return nil }
-func (v *ListLit) TStruct() bool         { return true }
-func (v *ListLit) TFresh() bool          { return false }
-func (v *ListLit) TSetFresh(bool)        {}
-func (v *ListLit) TField(name string) (any, bool) {
-	switch name {
-	case "Elts":
-		return func() any {
-			if v.Elts == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Elts))
-			for i, x := range v.Elts {
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *ListLit) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Elts":
-		return func() any {
-			if v.Elts == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Elts))
-			for i, x := range v.Elts {
-				p.StepWork()
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return p.ListField(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *Package) TName() string         { return "Package" }
-func (v *Package) TText() (string, bool) { return "", false }
-func (v *Package) TKids() []any          { return nil }
-func (v *Package) TStruct() bool         { return true }
-func (v *Package) TFresh() bool          { return false }
-func (v *Package) TSetFresh(bool)        {}
-func (v *Package) TField(name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	}
-	return nil, false
-}
-
-func (v *Package) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Name":
-		return tb0(v.Name), true
-	}
-	return nil, false
-}
-
-func (v *ParenExpr) TName() string         { return "ParenExpr" }
-func (v *ParenExpr) TText() (string, bool) { return "", false }
-func (v *ParenExpr) TKids() []any          { return nil }
-func (v *ParenExpr) TStruct() bool         { return true }
-func (v *ParenExpr) TFresh() bool          { return false }
-func (v *ParenExpr) TSetFresh(bool)        {}
-func (v *ParenExpr) TField(name string) (any, bool) {
-	switch name {
-	case "X":
-		return pegort.TBack(tpubHooks, v.X), true
-	}
-	return nil, false
-}
-
-func (v *ParenExpr) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "X":
-		return pegort.TBack(tpubHooks, v.X), true
-	}
-	return nil, false
-}
-
-func (v *PostfixAlias) TName() string         { return "PostfixAlias" }
-func (v *PostfixAlias) TText() (string, bool) { return "", false }
-func (v *PostfixAlias) TKids() []any          { return nil }
-func (v *PostfixAlias) TStruct() bool         { return true }
-func (v *PostfixAlias) TFresh() bool          { return false }
-func (v *PostfixAlias) TSetFresh(bool)        {}
-func (v *PostfixAlias) TField(name string) (any, bool) {
-	switch name {
-	case "Label":
-		return tb0(v.Label), true
-	case "Field":
-		return tb0(v.Field), true
-	}
-	return nil, false
-}
-
-func (v *PostfixAlias) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Label":
-		return tb0(v.Label), true
-	case "Field":
-		return tb0(v.Field), true
-	}
-	return nil, false
-}
-
-func (v *PostfixExpr) TName() string         { return "PostfixExpr" }
-func (v *PostfixExpr) TText() (string, bool) { return "", false }
-func (v *PostfixExpr) TKids() []any          { return nil }
-func (v *PostfixExpr) TStruct() bool         { return true }
-func (v *PostfixExpr) TFresh() bool          { return false }
-func (v *PostfixExpr) TSetFresh(bool)        {}
-func (v *PostfixExpr) TField(name string) (any, bool) {
-	switch name {
-	case "X":
-		return pegort.TBack(tpubHooks, v.X), true
-	case "Op":
-		return pegort.TBack(tpubHooks, v.Op), true
-	}
-	return nil, false
-}
-
-func (v *PostfixExpr) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "X":
-		return pegort.TBack(tpubHooks, v.X), true
-	case "Op":
-		return pegort.TBack(tpubHooks, v.Op), true
-	}
-	return nil, false
-}
-
-func (v *SelectorExpr) TName() string         { return "SelectorExpr" }
-func (v *SelectorExpr) TText() (string, bool) { return "", false }
-func (v *SelectorExpr) TKids() []any          { return nil }
-func (v *SelectorExpr) TStruct() bool         { return true }
-func (v *SelectorExpr) TFresh() bool          { return false }
-func (v *SelectorExpr) TSetFresh(bool)        {}
-func (v *SelectorExpr) TField(name string) (any, bool) {
-	switch name {
-	case "X":
-		return pegort.TBack(tpubHooks, v.X), true
-	case "Sel":
-		return pegort.TBack(tpubHooks, v.Sel), true
-	}
-	return nil, false
-}
-
-func (v *SelectorExpr) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "X":
-		return pegort.TBack(tpubHooks, v.X), true
-	case "Sel":
-		return pegort.TBack(tpubHooks, v.Sel), true
-	}
-	return nil, false
-}
-
-func (v *SliceExpr) TName() string         { return "SliceExpr" }
-func (v *SliceExpr) TText() (string, bool) { return "", false }
-func (v *SliceExpr) TKids() []any          { return nil }
-func (v *SliceExpr) TStruct() bool         { return true }
-func (v *SliceExpr) TFresh() bool          { return false }
-func (v *SliceExpr) TSetFresh(bool)        {}
-func (v *SliceExpr) TField(name string) (any, bool) {
-	switch name {
-	case "X":
-		return pegort.TBack(tpubHooks, v.X), true
-	case "Low":
-		return pegort.TBack(tpubHooks, v.Low), true
-	case "High":
-		return pegort.TBack(tpubHooks, v.High), true
-	}
-	return nil, false
-}
-
-func (v *SliceExpr) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "X":
-		return pegort.TBack(tpubHooks, v.X), true
-	case "Low":
-		return pegort.TBack(tpubHooks, v.Low), true
-	case "High":
-		return pegort.TBack(tpubHooks, v.High), true
-	}
-	return nil, false
-}
-
-func (v *String) TName() string         { return "String" }
-func (v *String) TText() (string, bool) { return "", false }
-func (v *String) TKids() []any          { return nil }
-func (v *String) TStruct() bool         { return true }
-func (v *String) TFresh() bool          { return false }
-func (v *String) TSetFresh(bool)        {}
-func (v *String) TField(name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *String) TStrField(name string) (string, bool) {
-	switch name {
-	case "Text":
-		return v.Text, true
-	}
-	return "", false
-}
-
-func (v *String) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Text":
-		return any(v.Text), true
-	}
-	return nil, false
-}
-
-func (v *StructLit) TName() string         { return "StructLit" }
-func (v *StructLit) TText() (string, bool) { return "", false }
-func (v *StructLit) TKids() []any          { return nil }
-func (v *StructLit) TStruct() bool         { return true }
-func (v *StructLit) TFresh() bool          { return false }
-func (v *StructLit) TSetFresh(bool)        {}
-func (v *StructLit) TField(name string) (any, bool) {
-	switch name {
-	case "Elts":
-		return func() any {
-			if v.Elts == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Elts))
-			for i, x := range v.Elts {
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return pegort.TListOf(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *StructLit) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Elts":
-		return func() any {
-			if v.Elts == nil {
-				return nil
-			}
-			kids := make([]any, len(v.Elts))
-			for i, x := range v.Elts {
-				p.StepWork()
-				kids[i] = pegort.TBack(tpubHooks, x)
-			}
-			return p.ListField(kids)
-		}(), true
-	}
-	return nil, false
-}
-
-func (v *TryClause) TName() string         { return "TryClause" }
-func (v *TryClause) TText() (string, bool) { return "", false }
-func (v *TryClause) TKids() []any          { return nil }
-func (v *TryClause) TStruct() bool         { return true }
-func (v *TryClause) TFresh() bool          { return false }
-func (v *TryClause) TSetFresh(bool)        {}
-func (v *TryClause) TField(name string) (any, bool) {
-	switch name {
-	case "Ident":
-		return tb0(v.Ident), true
-	case "Expr":
-		return pegort.TBack(tpubHooks, v.Expr), true
-	}
-	return nil, false
-}
-
-func (v *TryClause) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Ident":
-		return tb0(v.Ident), true
-	case "Expr":
-		return pegort.TBack(tpubHooks, v.Expr), true
-	}
-	return nil, false
-}
-
-func (v *UnaryExpr) TName() string         { return "UnaryExpr" }
-func (v *UnaryExpr) TText() (string, bool) { return "", false }
-func (v *UnaryExpr) TKids() []any          { return nil }
-func (v *UnaryExpr) TStruct() bool         { return true }
-func (v *UnaryExpr) TFresh() bool          { return false }
-func (v *UnaryExpr) TSetFresh(bool)        {}
-func (v *UnaryExpr) TField(name string) (any, bool) {
-	switch name {
-	case "Op":
-		return pegort.TBack(tpubHooks, v.Op), true
-	case "X":
-		return pegort.TBack(tpubHooks, v.X), true
-	}
-	return nil, false
-}
-
-func (v *UnaryExpr) TFieldWork(p *pegort.TParser, name string) (any, bool) {
-	switch name {
-	case "Op":
-		return pegort.TBack(tpubHooks, v.Op), true
-	case "X":
-		return pegort.TBack(tpubHooks, v.X), true
-	}
-	return nil, false
-}
-
-func tb0(v *Ident) any {
-	if v == nil {
-		return nil
-	}
-	return pegort.TSetNodeType(pegort.TBack(tpubHooks, &v.TNode), tnt[5])
-}
-
-func tb1(v *Attribute) any {
-	if v == nil {
-		return nil
-	}
-	return pegort.TSetNodeType(pegort.TBack(tpubHooks, &v.TNode), tnt[1])
-}
 
 func astNode(v any) *pegort.Node { n, _ := v.(*pegort.Node); return n }
 func astIsNil(v any) bool        { n, ok := v.(*pegort.Node); return v == nil || ok && n == nil }
@@ -1350,33 +170,33 @@ func tinit() {
 		return nil
 	}
 	for i, name := range []string{"Attribute", "Bool", "Bottom", "Float", "Ident", "Int", "Null"} {
-		tnt[i+1] = pegort.TRegisterNodeType(name, tnamedPub)
+		types.PegoNodeTypes[i+1] = pegort.TRegisterNodeType(name, tnamedPub)
 	}
-	trules[8].Nt = tnt[5]
-	trules[42].Nt = tnt[5]
-	trules[43].Nt = tnt[5]
-	trules[44].Nt = tnt[5]
-	trules[55].Nt = tnt[5]
-	trules[66].Nt = tnt[5]
-	trules[67].Nt = tnt[5]
-	trules[68].Nt = tnt[5]
-	trules[69].Nt = tnt[5]
-	trules[70].Nt = tnt[5]
-	trules[73].Nt = tnt[5]
-	trules[74].Nt = tnt[5]
-	trules[77].Nt = tnt[5]
-	trules[102].Nt = tnt[5]
-	trules[118].Nt = tnt[5]
-	trules[121].Nt = tnt[1]
-	trules[122].Nt = tnt[1]
-	trules[139].Nt = tnt[5]
-	trules[141].Nt = tnt[5]
-	trules[142].Nt = tnt[2]
-	trules[143].Nt = tnt[7]
-	trules[144].Nt = tnt[3]
-	trules[148].Nt = tnt[6]
-	trules[154].Nt = tnt[4]
-	trules[155].Nt = tnt[6]
+	trules[8].Nt = types.PegoNodeTypes[5]
+	trules[42].Nt = types.PegoNodeTypes[5]
+	trules[43].Nt = types.PegoNodeTypes[5]
+	trules[44].Nt = types.PegoNodeTypes[5]
+	trules[55].Nt = types.PegoNodeTypes[5]
+	trules[66].Nt = types.PegoNodeTypes[5]
+	trules[67].Nt = types.PegoNodeTypes[5]
+	trules[68].Nt = types.PegoNodeTypes[5]
+	trules[69].Nt = types.PegoNodeTypes[5]
+	trules[70].Nt = types.PegoNodeTypes[5]
+	trules[73].Nt = types.PegoNodeTypes[5]
+	trules[74].Nt = types.PegoNodeTypes[5]
+	trules[77].Nt = types.PegoNodeTypes[5]
+	trules[102].Nt = types.PegoNodeTypes[5]
+	trules[118].Nt = types.PegoNodeTypes[5]
+	trules[121].Nt = types.PegoNodeTypes[1]
+	trules[122].Nt = types.PegoNodeTypes[1]
+	trules[139].Nt = types.PegoNodeTypes[5]
+	trules[141].Nt = types.PegoNodeTypes[5]
+	trules[142].Nt = types.PegoNodeTypes[2]
+	trules[143].Nt = types.PegoNodeTypes[7]
+	trules[144].Nt = types.PegoNodeTypes[3]
+	trules[148].Nt = types.PegoNodeTypes[6]
+	trules[154].Nt = types.PegoNodeTypes[4]
+	trules[155].Nt = types.PegoNodeTypes[6]
 }
 
 // tmk_Alias makes a Alias in an action (newStruct in the typed runtime).
@@ -1387,7 +207,7 @@ func tmk_Alias(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	c.P.StepWork()
 	v.Ident = tv0(a, f0)
 	c.P.StepWork()
-	v.Expr = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f1))
+	v.Expr = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
@@ -1406,11 +226,11 @@ func tmk_BinaryExpr(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tBinaryExpr)
 	c.P.StepWork()
-	v.X = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f0))
+	v.X = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f0))
 	c.P.StepWork()
-	v.Op = (*TNode[string])(pegort.TPubMatch(f1))
+	v.Op = (*types.TNode[string])(pegort.TPubMatch(f1))
 	c.P.StepWork()
-	v.Y = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f2))
+	v.Y = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f2))
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
@@ -1431,7 +251,7 @@ func tmk_CallExpr(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tCallExpr)
 	c.P.StepWork()
-	v.Fun = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f0))
+	v.Fun = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f0))
 	c.P.StepWork()
 	v.Args = tl2(a, f1)
 	if final {
@@ -1454,9 +274,9 @@ func tmk_Comprehension(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) an
 	c.P.StepWork()
 	v.Clauses = tl3(a, f0)
 	c.P.StepWork()
-	v.Value = pegort.TAs[*StructLit](f1)
+	v.Value = pegort.TAs[*types.StructLit](f1)
 	c.P.StepWork()
-	v.Fallback = pegort.TAs[*FallbackClause](f2)
+	v.Fallback = pegort.TAs[*types.FallbackClause](f2)
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
@@ -1477,7 +297,7 @@ func tmk_Ellipsis(c *pegort.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tEllipsis)
 	c.P.StepWork()
-	v.Type = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f0))
+	v.Type = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
@@ -1494,9 +314,9 @@ func tmk_EmbedDecl(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tEmbedDecl)
 	c.P.StepWork()
-	v.Expr = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f0))
+	v.Expr = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f0))
 	c.P.StepWork()
-	v.Alias = pegort.TAs[*PostfixAlias](f1)
+	v.Alias = pegort.TAs[*types.PostfixAlias](f1)
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
@@ -1515,7 +335,7 @@ func tmk_FallbackClause(c *pegort.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tFallbackClause)
 	c.P.StepWork()
-	v.Body = pegort.TAs[*StructLit](f0)
+	v.Body = pegort.TAs[*types.StructLit](f0)
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
@@ -1532,13 +352,13 @@ func tmk_Field(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tField)
 	c.P.StepWork()
-	v.Label = pegort.TAs[Label](pegort.TPubIn(tpubHooks, a, f0))
+	v.Label = pegort.TAs[types.Label](pegort.TPubIn(types.PegoHooks, a, f0))
 	c.P.StepWork()
-	v.Alias = pegort.TAs[*PostfixAlias](f1)
+	v.Alias = pegort.TAs[*types.PostfixAlias](f1)
 	c.P.StepWork()
-	v.Constraint = (*TNode[string])(pegort.TPubMatch(f2))
+	v.Constraint = (*types.TNode[string])(pegort.TPubMatch(f2))
 	c.P.StepWork()
-	v.Value = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f3))
+	v.Value = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f3))
 	c.P.StepWork()
 	v.Attrs = tl1(a, f4)
 	if final {
@@ -1586,7 +406,7 @@ func tmk_ForClause(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	c.P.StepWork()
 	v.Value = tv0(a, f1)
 	c.P.StepWork()
-	v.Source = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f2))
+	v.Source = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f2))
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
@@ -1607,7 +427,7 @@ func tmk_IfClause(c *pegort.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tIfClause)
 	c.P.StepWork()
-	v.Condition = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f0))
+	v.Condition = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
@@ -1624,7 +444,7 @@ func tmk_ImportDecl(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tImportDecl)
 	c.P.StepWork()
-	v.Lparen = (*TNode[string])(pegort.TPubMatch(f0))
+	v.Lparen = (*types.TNode[string])(pegort.TPubMatch(f0))
 	c.P.StepWork()
 	v.Specs = tl4(a, f1)
 	if final {
@@ -1647,7 +467,7 @@ func tmk_ImportSpec(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	c.P.StepWork()
 	v.Name = tv0(a, f0)
 	c.P.StepWork()
-	v.Path = pegort.TAs[*String](f1)
+	v.Path = pegort.TAs[*types.String](f1)
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
@@ -1666,11 +486,11 @@ func tmk_IndexExpr(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tIndexExpr)
 	c.P.StepWork()
-	v.X = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f0))
+	v.X = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f0))
 	c.P.StepWork()
-	v.Index = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f1))
+	v.Index = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f1))
 	c.P.StepWork()
-	v.Rbrack = (*TNode[string])(pegort.TPubMatch(f2))
+	v.Rbrack = (*types.TNode[string])(pegort.TPubMatch(f2))
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
@@ -1710,7 +530,7 @@ func tmk_LetClause(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	c.P.StepWork()
 	v.Ident = tv0(a, f0)
 	c.P.StepWork()
-	v.Expr = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f1))
+	v.Expr = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
@@ -1763,7 +583,7 @@ func tmk_ParenExpr(c *pegort.TActCtx, final bool, f0 any) any {
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tParenExpr)
 	c.P.StepWork()
-	v.X = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f0))
+	v.X = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
@@ -1801,9 +621,9 @@ func tmk_PostfixExpr(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tPostfixExpr)
 	c.P.StepWork()
-	v.X = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f0))
+	v.X = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f0))
 	c.P.StepWork()
-	v.Op = (*TNode[string])(pegort.TPubMatch(f1))
+	v.Op = (*types.TNode[string])(pegort.TPubMatch(f1))
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
@@ -1822,9 +642,9 @@ func tmk_SelectorExpr(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tSelectorExpr)
 	c.P.StepWork()
-	v.X = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f0))
+	v.X = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f0))
 	c.P.StepWork()
-	v.Sel = pegort.TAs[Selector](pegort.TPubIn(tpubHooks, a, f1))
+	v.Sel = pegort.TAs[types.Selector](pegort.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
@@ -1843,11 +663,11 @@ func tmk_SliceExpr(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tSliceExpr)
 	c.P.StepWork()
-	v.X = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f0))
+	v.X = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f0))
 	c.P.StepWork()
-	v.Low = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f1))
+	v.Low = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f1))
 	c.P.StepWork()
-	v.High = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f2))
+	v.High = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f2))
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
@@ -1904,7 +724,7 @@ func tmk_TryClause(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	c.P.StepWork()
 	v.Ident = tv0(a, f0)
 	c.P.StepWork()
-	v.Expr = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f1))
+	v.Expr = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
@@ -1923,9 +743,9 @@ func tmk_UnaryExpr(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tUnaryExpr)
 	c.P.StepWork()
-	v.Op = (*TNode[string])(pegort.TPubMatch(f0))
+	v.Op = (*types.TNode[string])(pegort.TPubMatch(f0))
 	c.P.StepWork()
-	v.X = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, f1))
+	v.X = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = pegort.Span{Start: c.Start, End: c.End}
 		return v
@@ -1938,31 +758,31 @@ func tmk_UnaryExpr(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-func tl0(a *tslabs, v any) []Decl {
+func tl0(a *tslabs, v any) []types.Decl {
 	a.stepWork()
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []Decl{} // another node (an Error), as conversion makes an empty list of it
+		return []types.Decl{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[Decl](pegort.TPubIn(tpubHooks, a, c))
+		out[i] = pegort.TAs[types.Decl](pegort.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
-func tl1(a *tslabs, v any) []*Attribute {
+func tl1(a *tslabs, v any) []*types.Attribute {
 	a.stepWork()
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*Attribute{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.Attribute{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -1972,480 +792,480 @@ func tl1(a *tslabs, v any) []*Attribute {
 	return out
 }
 
-func tl2(a *tslabs, v any) []Expr {
+func tl2(a *tslabs, v any) []types.Expr {
 	a.stepWork()
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []Expr{} // another node (an Error), as conversion makes an empty list of it
+		return []types.Expr{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl2Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, c))
+		out[i] = pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
-func tl3(a *tslabs, v any) []Clause {
+func tl3(a *tslabs, v any) []types.Clause {
 	a.stepWork()
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []Clause{} // another node (an Error), as conversion makes an empty list of it
+		return []types.Clause{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl3Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[Clause](pegort.TPubIn(tpubHooks, a, c))
+		out[i] = pegort.TAs[types.Clause](pegort.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
 
-func tl4(a *tslabs, v any) []*ImportSpec {
+func tl4(a *tslabs, v any) []*types.ImportSpec {
 	a.stepWork()
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*ImportSpec{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.ImportSpec{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl4Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[*ImportSpec](c)
+		out[i] = pegort.TAs[*types.ImportSpec](c)
 	}
 	return out
 }
 
-func tv0(a *tslabs, v any) *Ident {
+func tv0(a *tslabs, v any) *types.Ident {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(Ident{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Ident{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[5] {
+	if x == nil || x.Nt != types.PegoNodeTypes[5] {
 		return nil
 	}
-	return pegort.TMatchAs[Ident](x)
+	return pegort.TMatchAs[types.Ident](x)
 }
 
 func tv1(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
-func tv2(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
+func tv2(a *tslabs, v any) *types.TNode[types.Tuple1[*types.TNode[string]]] {
 	a.stepWork()
 	return tv76(a, v)
 }
 
-func tv3(a *tslabs, v any) *TNode[[]*TNode[string]] {
+func tv3(a *tslabs, v any) *types.TNode[[]*types.TNode[string]] {
 	a.stepWork()
 	return tv77(a, v)
 }
 
-func tv4(a *tslabs, v any) *TNode[[]*TNode[string]] {
+func tv4(a *tslabs, v any) *types.TNode[[]*types.TNode[string]] {
 	a.stepWork()
 	return tv77(a, v)
 }
 
-func tv5(a *tslabs, v any) *TNode[[]any] {
+func tv5(a *tslabs, v any) *types.TNode[[]any] {
 	a.stepWork()
 	return tv78(a, v)
 }
 
-func tv6(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]] {
+func tv6(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]] {
 	a.stepWork()
 	return tv79(a, v)
 }
 
-func tv7(a *tslabs, v any) *TNode[Tuple2[*TNode[[]*TNode[string]], any]] {
+func tv7(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], any]] {
 	a.stepWork()
 	return tv80(a, v)
 }
 
-func tv8(a *tslabs, v any) *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]any]]] {
+func tv8(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[string], *types.TNode[[]any]]] {
 	a.stepWork()
 	return tv81(a, v)
 }
 
 func tv9(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
-func tv10(a *tslabs, v any) *TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[Tuple3[*TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string], *TNode[[]any]]]]] {
+func tv10(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[types.Tuple3[*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string], *types.TNode[[]any]]]]] {
 	a.stepWork()
 	return tv82(a, v)
 }
 
-func tv11(a *tslabs, v any) *TNode[Tuple3[*TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string], *TNode[[]any]]] {
+func tv11(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string], *types.TNode[[]any]]] {
 	a.stepWork()
 	return tv83(a, v)
 }
 
-func tv12(a *tslabs, v any) *TNode[Tuple3[*TNode[[]any], *TNode[string], *TNode[[]any]]] {
+func tv12(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[[]any], *types.TNode[string], *types.TNode[[]any]]] {
 	a.stepWork()
 	return tv84(a, v)
 }
 
-func tv13(a *tslabs, v any) *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string]]] {
+func tv13(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string]]] {
 	a.stepWork()
 	return tv85(a, v)
 }
 
 func tv14(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
 func tv15(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
-func tv16(a *tslabs, v any) *TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[string]]] {
+func tv16(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[string]]] {
 	a.stepWork()
 	return tv86(a, v)
 }
 
-func tv17(a *tslabs, v any) *TNode[Tuple2[*TNode[[]any], *TNode[string]]] {
+func tv17(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[[]any], *types.TNode[string]]] {
 	a.stepWork()
 	return tv87(a, v)
 }
 
 func tv18(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
-func tv19(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
+func tv19(a *tslabs, v any) *types.TNode[types.Tuple1[*types.TNode[string]]] {
 	a.stepWork()
 	return tv76(a, v)
 }
 
-func tv20(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[[]*TNode[string]], *TNode[string]]] {
+func tv20(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[[]*types.TNode[string]], *types.TNode[string]]] {
 	a.stepWork()
 	return tv88(a, v)
 }
 
 func tv21(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
-func tv22(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
+func tv22(a *tslabs, v any) *types.TNode[types.Tuple1[*types.TNode[string]]] {
 	a.stepWork()
 	return tv76(a, v)
 }
 
 func tv23(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
-func tv24(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
+func tv24(a *tslabs, v any) *types.TNode[types.Tuple1[*types.TNode[string]]] {
 	a.stepWork()
 	return tv76(a, v)
 }
 
 func tv25(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
-func tv26(a *tslabs, v any) *Attribute {
+func tv26(a *tslabs, v any) *types.Attribute {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(Attribute{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Attribute{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[1] {
+	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
 	}
-	return pegort.TMatchAs[Attribute](x)
+	return pegort.TMatchAs[types.Attribute](x)
 }
 
-func tv27(a *tslabs, v any) *TNode[[]any] {
+func tv27(a *tslabs, v any) *types.TNode[[]any] {
 	a.stepWork()
 	return tv78(a, v)
 }
 
-func tv28(a *tslabs, v any) *TNode[Tuple3[*TNode[string], any, *TNode[string]]] {
+func tv28(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[string], any, *types.TNode[string]]] {
 	a.stepWork()
 	return tv89(a, v)
 }
 
 func tv29(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
-func tv30(a *tslabs, v any) *TNode[Tuple1[any]] {
+func tv30(a *tslabs, v any) *types.TNode[types.Tuple1[any]] {
 	a.stepWork()
 	return tv90(a, v)
 }
 
 func tv31(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
 func tv32(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
-func tv33(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[string]]] {
+func tv33(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]] {
 	a.stepWork()
 	return tv91(a, v)
 }
 
-func tv34(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]], any]] {
+func tv34(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]], any]] {
 	a.stepWork()
 	return tv92(a, v)
 }
 
-func tv35(a *tslabs, v any) *String {
+func tv35(a *tslabs, v any) *types.String {
 	a.stepWork()
-	return pegort.TAs[*String](v)
+	return pegort.TAs[*types.String](v)
 }
 
 func tv36(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
-func tv37(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
+func tv37(a *tslabs, v any) *types.TNode[types.Tuple1[*types.TNode[string]]] {
 	a.stepWork()
 	return tv76(a, v)
 }
 
-func tv38(a *tslabs, v any) *TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[[]*TNode[Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]]]]] {
+func tv38(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[[]*types.TNode[string]]]]]]] {
 	a.stepWork()
 	return tv93(a, v)
 }
 
 func tv39(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
 func tv40(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
 func tv41(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
-func tv42(a *tslabs, v any) *TNode[[]any] {
+func tv42(a *tslabs, v any) *types.TNode[[]any] {
 	a.stepWork()
 	return tv78(a, v)
 }
 
-func tv43(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
+func tv43(a *tslabs, v any) *types.TNode[types.Tuple1[*types.TNode[string]]] {
 	a.stepWork()
 	return tv76(a, v)
 }
 
-func tv44(a *tslabs, v any) *Bool {
+func tv44(a *tslabs, v any) *types.Bool {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(Bool{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Bool{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[2] {
+	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
 	}
-	return pegort.TMatchAs[Bool](x)
+	return pegort.TMatchAs[types.Bool](x)
 }
 
-func tv45(a *tslabs, v any) *Null {
+func tv45(a *tslabs, v any) *types.Null {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(Null{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Null{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[7] {
+	if x == nil || x.Nt != types.PegoNodeTypes[7] {
 		return nil
 	}
-	return pegort.TMatchAs[Null](x)
+	return pegort.TMatchAs[types.Null](x)
 }
 
-func tv46(a *tslabs, v any) *Bottom {
+func tv46(a *tslabs, v any) *types.Bottom {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(Bottom{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Bottom{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[3] {
+	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
 	}
-	return pegort.TMatchAs[Bottom](x)
+	return pegort.TMatchAs[types.Bottom](x)
 }
 
-func tv47(a *tslabs, v any) *TNode[string] {
+func tv47(a *tslabs, v any) *types.TNode[string] {
 	a.stepWork()
-	return (*TNode[string])(pegort.TPubMatch(v))
+	return (*types.TNode[string])(pegort.TPubMatch(v))
 }
 
-func tv48(a *tslabs, v any) *Int {
+func tv48(a *tslabs, v any) *types.Int {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(Int{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Int{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[6] {
+	if x == nil || x.Nt != types.PegoNodeTypes[6] {
 		return nil
 	}
-	return pegort.TMatchAs[Int](x)
+	return pegort.TMatchAs[types.Int](x)
 }
 
-func tv49(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]] {
+func tv49(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]] {
 	a.stepWork()
 	return tv94(a, v)
 }
 
-func tv50(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]] {
+func tv50(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]] {
 	a.stepWork()
 	return tv94(a, v)
 }
 
-func tv51(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]]]] {
+func tv51(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]]]] {
 	a.stepWork()
 	return tv95(a, v)
 }
 
-func tv52(a *tslabs, v any) *TNode[Tuple5[*TNode[string], *TNode[string], *TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]] {
+func tv52(a *tslabs, v any) *types.TNode[types.Tuple5[*types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]] {
 	a.stepWork()
 	return tv96(a, v)
 }
 
-func tv53(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[string]]] {
+func tv53(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]] {
 	a.stepWork()
 	return tv91(a, v)
 }
 
-func tv54(a *tslabs, v any) *Float {
+func tv54(a *tslabs, v any) *types.Float {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(Float{}) - unsafe.Sizeof(TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Float{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
 	x, _ := v.(*pegort.TMatch)
-	if x == nil || x.Nt != tnt[4] {
+	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
 	}
-	return pegort.TMatchAs[Float](x)
+	return pegort.TMatchAs[types.Float](x)
 }
 
-func tv55(a *tslabs, v any) *TNode[Tuple4[*TNode[string], *TNode[string], *TNode[string], *TNode[string]]] {
+func tv55(a *tslabs, v any) *types.TNode[types.Tuple4[*types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[string]]] {
 	a.stepWork()
 	return tv97(a, v)
 }
 
 func tv56(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
 func tv57(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
 func tv58(a *tslabs, v any) any {
 	a.stepWork()
-	return pegort.TPubIn(tpubHooks, a, v)
+	return pegort.TPubIn(types.PegoHooks, a, v)
 }
 
-func tv59(a *tslabs, v any) *TNode[[]any] {
+func tv59(a *tslabs, v any) *types.TNode[[]any] {
 	a.stepWork()
 	return tv78(a, v)
 }
 
-func tv60(a *tslabs, v any) *TNode[[]any] {
+func tv60(a *tslabs, v any) *types.TNode[[]any] {
 	a.stepWork()
 	return tv78(a, v)
 }
 
-func tv61(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
+func tv61(a *tslabs, v any) *types.TNode[types.Tuple1[*types.TNode[string]]] {
 	a.stepWork()
 	return tv76(a, v)
 }
 
-func tv62(a *tslabs, v any) *TNode[Tuple2[*TNode[string], any]] {
+func tv62(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[string], any]] {
 	a.stepWork()
 	return tv98(a, v)
 }
 
-func tv63(a *tslabs, v any) *TNode[Tuple1[any]] {
+func tv63(a *tslabs, v any) *types.TNode[types.Tuple1[any]] {
 	a.stepWork()
 	return tv90(a, v)
 }
 
-func tv64(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[Tuple1[*TNode[Tuple1[any]]]]]] {
+func tv64(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[types.Tuple1[*types.TNode[types.Tuple1[any]]]]]] {
 	a.stepWork()
 	return tv99(a, v)
 }
 
-func tv65(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[string]]] {
+func tv65(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[string]]] {
 	a.stepWork()
 	return tv100(a, v)
 }
 
-func tv66(a *tslabs, v any) *TNode[string] {
+func tv66(a *tslabs, v any) *types.TNode[string] {
 	a.stepWork()
-	return (*TNode[string])(pegort.TPubMatch(v))
+	return (*types.TNode[string])(pegort.TPubMatch(v))
 }
 
-func tv67(a *tslabs, v any) *TNode[Tuple4[*TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[string], *TNode[string]]] {
+func tv67(a *tslabs, v any) *types.TNode[types.Tuple4[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[string], *types.TNode[string]]] {
 	a.stepWork()
 	return tv101(a, v)
 }
 
-func tv68(a *tslabs, v any) *TNode[Tuple4[*TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[Tuple2[*TNode[string], any]]]] {
+func tv68(a *tslabs, v any) *types.TNode[types.Tuple4[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple2[*types.TNode[string], any]]]] {
 	a.stepWork()
 	return tv102(a, v)
 }
 
-func tv69(a *tslabs, v any) *TNode[[]any] {
+func tv69(a *tslabs, v any) *types.TNode[[]any] {
 	a.stepWork()
 	return tv78(a, v)
 }
 
-func tv70(a *tslabs, v any) *TNode[Tuple1[*TNode[Tuple1[any]]]] {
+func tv70(a *tslabs, v any) *types.TNode[types.Tuple1[*types.TNode[types.Tuple1[any]]]] {
 	a.stepWork()
 	return tv103(a, v)
 }
 
-func tv71(a *tslabs, v any) *TNode[[]any] {
+func tv71(a *tslabs, v any) *types.TNode[[]any] {
 	a.stepWork()
 	return tv78(a, v)
 }
 
-func tv72(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[string]]] {
+func tv72(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[string]]] {
 	a.stepWork()
 	return tv100(a, v)
 }
 
-func tv73(a *tslabs, v any) *TNode[[]any] {
+func tv73(a *tslabs, v any) *types.TNode[[]any] {
 	a.stepWork()
 	return tv78(a, v)
 }
 
-func tv74(a *tslabs, v any) *TNode[string] {
+func tv74(a *tslabs, v any) *types.TNode[string] {
 	a.stepWork()
-	return (*TNode[string])(pegort.TPubMatch(v))
+	return (*types.TNode[string])(pegort.TPubMatch(v))
 }
 
-func tv75(a *tslabs, v any) *TNode[string] {
+func tv75(a *tslabs, v any) *types.TNode[string] {
 	a.stepWork()
-	return (*TNode[string])(pegort.TPubMatch(v))
+	return (*types.TNode[string])(pegort.TPubMatch(v))
 }
 
-func tv76(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
+func tv76(a *tslabs, v any) *types.TNode[types.Tuple1[*types.TNode[string]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple1[*TNode[string]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple1[*types.TNode[string]]]{Span: x.Span}
 		out.Value = tv104(a, x)
 		return out
 	case *pegort.TError:
@@ -2457,21 +1277,21 @@ func tv76(a *tslabs, v any) *TNode[Tuple1[*TNode[string]]] {
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple1[*TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple1[*types.TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv104(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv77(a *tslabs, v any) *TNode[[]*TNode[string]] {
+func tv77(a *tslabs, v any) *types.TNode[[]*types.TNode[string]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[[]*TNode[string]]{Span: x.Span}
+		out := &types.TNode[[]*types.TNode[string]]{Span: x.Span}
 		out.Value = tl5(a, x)
 		return out
 	case *pegort.TError:
@@ -2483,21 +1303,21 @@ func tv77(a *tslabs, v any) *TNode[[]*TNode[string]] {
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[[]*TNode[string]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[[]*types.TNode[string]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tl5(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv78(a *tslabs, v any) *TNode[[]any] {
+func tv78(a *tslabs, v any) *types.TNode[[]any] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[[]any]{Span: x.Span}
+		out := &types.TNode[[]any]{Span: x.Span}
 		out.Value = tl6(a, x)
 		return out
 	case *pegort.TError:
@@ -2509,21 +1329,21 @@ func tv78(a *tslabs, v any) *TNode[[]any] {
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[[]any]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[[]any]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tl6(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv79(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]] {
+func tv79(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]]{Span: x.Span}
 		out.Value = tv105(a, x)
 		return out
 	case *pegort.TError:
@@ -2535,21 +1355,21 @@ func tv79(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv105(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv80(a *tslabs, v any) *TNode[Tuple2[*TNode[[]*TNode[string]], any]] {
+func tv80(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], any]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple2[*TNode[[]*TNode[string]], any]]{Span: x.Span}
+		out := &types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], any]]{Span: x.Span}
 		out.Value = tv106(a, x)
 		return out
 	case *pegort.TError:
@@ -2561,21 +1381,21 @@ func tv80(a *tslabs, v any) *TNode[Tuple2[*TNode[[]*TNode[string]], any]] {
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple2[*TNode[[]*TNode[string]], any]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], any]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv106(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv81(a *tslabs, v any) *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]any]]] {
+func tv81(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[string], *types.TNode[[]any]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]any]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[string], *types.TNode[[]any]]]{Span: x.Span}
 		out.Value = tv107(a, x)
 		return out
 	case *pegort.TError:
@@ -2587,21 +1407,21 @@ func tv81(a *tslabs, v any) *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[strin
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]any]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[string], *types.TNode[[]any]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv107(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv82(a *tslabs, v any) *TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[Tuple3[*TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string], *TNode[[]any]]]]] {
+func tv82(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[types.Tuple3[*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string], *types.TNode[[]any]]]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[Tuple3[*TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string], *TNode[[]any]]]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[types.Tuple3[*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string], *types.TNode[[]any]]]]]{Span: x.Span}
 		out.Value = tv108(a, x)
 		return out
 	case *pegort.TError:
@@ -2613,21 +1433,21 @@ func tv82(a *tslabs, v any) *TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[Tuple
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[Tuple3[*TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string], *TNode[[]any]]]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[types.Tuple3[*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string], *types.TNode[[]any]]]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv108(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv83(a *tslabs, v any) *TNode[Tuple3[*TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string], *TNode[[]any]]] {
+func tv83(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string], *types.TNode[[]any]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple3[*TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string], *TNode[[]any]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple3[*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string], *types.TNode[[]any]]]{Span: x.Span}
 		out.Value = tv109(a, x)
 		return out
 	case *pegort.TError:
@@ -2639,21 +1459,21 @@ func tv83(a *tslabs, v any) *TNode[Tuple3[*TNode[Tuple2[*TNode[string], *TNode[[
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple3[*TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string], *TNode[[]any]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple3[*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string], *types.TNode[[]any]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv109(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv84(a *tslabs, v any) *TNode[Tuple3[*TNode[[]any], *TNode[string], *TNode[[]any]]] {
+func tv84(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[[]any], *types.TNode[string], *types.TNode[[]any]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple3[*TNode[[]any], *TNode[string], *TNode[[]any]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple3[*types.TNode[[]any], *types.TNode[string], *types.TNode[[]any]]]{Span: x.Span}
 		out.Value = tv110(a, x)
 		return out
 	case *pegort.TError:
@@ -2665,21 +1485,21 @@ func tv84(a *tslabs, v any) *TNode[Tuple3[*TNode[[]any], *TNode[string], *TNode[
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple3[*TNode[[]any], *TNode[string], *TNode[[]any]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple3[*types.TNode[[]any], *types.TNode[string], *types.TNode[[]any]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv110(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv85(a *tslabs, v any) *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string]]] {
+func tv85(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string]]]{Span: x.Span}
 		out.Value = tv111(a, x)
 		return out
 	case *pegort.TError:
@@ -2691,21 +1511,21 @@ func tv85(a *tslabs, v any) *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[Tuple
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv111(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv86(a *tslabs, v any) *TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[string]]] {
+func tv86(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[string]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[string]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[string]]]{Span: x.Span}
 		out.Value = tv112(a, x)
 		return out
 	case *pegort.TError:
@@ -2717,21 +1537,21 @@ func tv86(a *tslabs, v any) *TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[strin
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv112(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv87(a *tslabs, v any) *TNode[Tuple2[*TNode[[]any], *TNode[string]]] {
+func tv87(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[[]any], *types.TNode[string]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple2[*TNode[[]any], *TNode[string]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple2[*types.TNode[[]any], *types.TNode[string]]]{Span: x.Span}
 		out.Value = tv113(a, x)
 		return out
 	case *pegort.TError:
@@ -2743,21 +1563,21 @@ func tv87(a *tslabs, v any) *TNode[Tuple2[*TNode[[]any], *TNode[string]]] {
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple2[*TNode[[]any], *TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple2[*types.TNode[[]any], *types.TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv113(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv88(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[[]*TNode[string]], *TNode[string]]] {
+func tv88(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[[]*types.TNode[string]], *types.TNode[string]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple3[*TNode[string], *TNode[[]*TNode[string]], *TNode[string]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[[]*types.TNode[string]], *types.TNode[string]]]{Span: x.Span}
 		out.Value = tv114(a, x)
 		return out
 	case *pegort.TError:
@@ -2769,21 +1589,21 @@ func tv88(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[[]*TNode[string
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple3[*TNode[string], *TNode[[]*TNode[string]], *TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[[]*types.TNode[string]], *types.TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv114(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv89(a *tslabs, v any) *TNode[Tuple3[*TNode[string], any, *TNode[string]]] {
+func tv89(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[string], any, *types.TNode[string]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple3[*TNode[string], any, *TNode[string]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple3[*types.TNode[string], any, *types.TNode[string]]]{Span: x.Span}
 		out.Value = tv115(a, x)
 		return out
 	case *pegort.TError:
@@ -2795,21 +1615,21 @@ func tv89(a *tslabs, v any) *TNode[Tuple3[*TNode[string], any, *TNode[string]]] 
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple3[*TNode[string], any, *TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple3[*types.TNode[string], any, *types.TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv115(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv90(a *tslabs, v any) *TNode[Tuple1[any]] {
+func tv90(a *tslabs, v any) *types.TNode[types.Tuple1[any]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple1[any]]{Span: x.Span}
+		out := &types.TNode[types.Tuple1[any]]{Span: x.Span}
 		out.Value = tv116(a, x)
 		return out
 	case *pegort.TError:
@@ -2821,21 +1641,21 @@ func tv90(a *tslabs, v any) *TNode[Tuple1[any]] {
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple1[any]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple1[any]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv116(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv91(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[string]]] {
+func tv91(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple2[*TNode[string], *TNode[string]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]{Span: x.Span}
 		out.Value = tv117(a, x)
 		return out
 	case *pegort.TError:
@@ -2847,21 +1667,21 @@ func tv91(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[string]]] {
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple2[*TNode[string], *TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv117(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv92(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]], any]] {
+func tv92(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]], any]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple3[*TNode[string], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]], any]]{Span: x.Span}
+		out := &types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]], any]]{Span: x.Span}
 		out.Value = tv118(a, x)
 		return out
 	case *pegort.TError:
@@ -2873,21 +1693,21 @@ func tv92(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[Tuple2[*TNode[s
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple3[*TNode[string], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]], any]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]], any]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv118(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv93(a *tslabs, v any) *TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[[]*TNode[Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]]]]] {
+func tv93(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[[]*types.TNode[string]]]]]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[[]*TNode[Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]]]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[[]*types.TNode[string]]]]]]]{Span: x.Span}
 		out.Value = tv119(a, x)
 		return out
 	case *pegort.TError:
@@ -2899,21 +1719,21 @@ func tv93(a *tslabs, v any) *TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[[]*TN
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[[]*TNode[Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]]]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[[]*types.TNode[string]]]]]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv119(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv94(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]] {
+func tv94(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]]{Span: x.Span}
 		out.Value = tv120(a, x)
 		return out
 	case *pegort.TError:
@@ -2925,21 +1745,21 @@ func tv94(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv120(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv95(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]]]] {
+func tv95(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple2[*TNode[string], *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]]]]{Span: x.Span}
 		out.Value = tv121(a, x)
 		return out
 	case *pegort.TError:
@@ -2951,21 +1771,21 @@ func tv95(a *tslabs, v any) *TNode[Tuple2[*TNode[string], *TNode[Tuple3[*TNode[s
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple2[*TNode[string], *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv121(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv96(a *tslabs, v any) *TNode[Tuple5[*TNode[string], *TNode[string], *TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]] {
+func tv96(a *tslabs, v any) *types.TNode[types.Tuple5[*types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple5[*TNode[string], *TNode[string], *TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple5[*types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]]{Span: x.Span}
 		out.Value = tv122(a, x)
 		return out
 	case *pegort.TError:
@@ -2977,21 +1797,21 @@ func tv96(a *tslabs, v any) *TNode[Tuple5[*TNode[string], *TNode[string], *TNode
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple5[*TNode[string], *TNode[string], *TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple5[*types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv122(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv97(a *tslabs, v any) *TNode[Tuple4[*TNode[string], *TNode[string], *TNode[string], *TNode[string]]] {
+func tv97(a *tslabs, v any) *types.TNode[types.Tuple4[*types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[string]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple4[*TNode[string], *TNode[string], *TNode[string], *TNode[string]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple4[*types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[string]]]{Span: x.Span}
 		out.Value = tv123(a, x)
 		return out
 	case *pegort.TError:
@@ -3003,21 +1823,21 @@ func tv97(a *tslabs, v any) *TNode[Tuple4[*TNode[string], *TNode[string], *TNode
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple4[*TNode[string], *TNode[string], *TNode[string], *TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple4[*types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv123(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv98(a *tslabs, v any) *TNode[Tuple2[*TNode[string], any]] {
+func tv98(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[string], any]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple2[*TNode[string], any]]{Span: x.Span}
+		out := &types.TNode[types.Tuple2[*types.TNode[string], any]]{Span: x.Span}
 		out.Value = tv124(a, x)
 		return out
 	case *pegort.TError:
@@ -3029,21 +1849,21 @@ func tv98(a *tslabs, v any) *TNode[Tuple2[*TNode[string], any]] {
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple2[*TNode[string], any]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple2[*types.TNode[string], any]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv124(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv99(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[Tuple1[*TNode[Tuple1[any]]]]]] {
+func tv99(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[types.Tuple1[*types.TNode[types.Tuple1[any]]]]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple3[*TNode[string], *TNode[string], *TNode[Tuple1[*TNode[Tuple1[any]]]]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[types.Tuple1[*types.TNode[types.Tuple1[any]]]]]]{Span: x.Span}
 		out.Value = tv125(a, x)
 		return out
 	case *pegort.TError:
@@ -3055,21 +1875,21 @@ func tv99(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNode
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple3[*TNode[string], *TNode[string], *TNode[Tuple1[*TNode[Tuple1[any]]]]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[types.Tuple1[*types.TNode[types.Tuple1[any]]]]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv125(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv100(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[string]]] {
+func tv100(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[string]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple3[*TNode[string], *TNode[string], *TNode[string]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[string]]]{Span: x.Span}
 		out.Value = tv126(a, x)
 		return out
 	case *pegort.TError:
@@ -3081,21 +1901,21 @@ func tv100(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNod
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple3[*TNode[string], *TNode[string], *TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv126(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv101(a *tslabs, v any) *TNode[Tuple4[*TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[string], *TNode[string]]] {
+func tv101(a *tslabs, v any) *types.TNode[types.Tuple4[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[string], *types.TNode[string]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple4[*TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[string], *TNode[string]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple4[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[string], *types.TNode[string]]]{Span: x.Span}
 		out.Value = tv127(a, x)
 		return out
 	case *pegort.TError:
@@ -3107,21 +1927,21 @@ func tv101(a *tslabs, v any) *TNode[Tuple4[*TNode[Tuple1[*TNode[string]]], *TNod
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple4[*TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[string], *TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple4[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[string], *types.TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv127(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv102(a *tslabs, v any) *TNode[Tuple4[*TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[Tuple2[*TNode[string], any]]]] {
+func tv102(a *tslabs, v any) *types.TNode[types.Tuple4[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple2[*types.TNode[string], any]]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple4[*TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[Tuple2[*TNode[string], any]]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple4[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple2[*types.TNode[string], any]]]]{Span: x.Span}
 		out.Value = tv128(a, x)
 		return out
 	case *pegort.TError:
@@ -3133,21 +1953,21 @@ func tv102(a *tslabs, v any) *TNode[Tuple4[*TNode[Tuple1[*TNode[string]]], *TNod
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple4[*TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[Tuple2[*TNode[string], any]]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple4[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple2[*types.TNode[string], any]]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv128(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv103(a *tslabs, v any) *TNode[Tuple1[*TNode[Tuple1[any]]]] {
+func tv103(a *tslabs, v any) *types.TNode[types.Tuple1[*types.TNode[types.Tuple1[any]]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple1[*TNode[Tuple1[any]]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple1[*types.TNode[types.Tuple1[any]]]]{Span: x.Span}
 		out.Value = tv129(a, x)
 		return out
 	case *pegort.TError:
@@ -3159,64 +1979,64 @@ func tv103(a *tslabs, v any) *TNode[Tuple1[*TNode[Tuple1[any]]]] {
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple1[*TNode[Tuple1[any]]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple1[*types.TNode[types.Tuple1[any]]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv129(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv104(a *tslabs, v any) Tuple1[*TNode[string]] {
+func tv104(a *tslabs, v any) types.Tuple1[*types.TNode[string]] {
 	a.stepWork()
-	var out Tuple1[*TNode[string]]
+	var out types.Tuple1[*types.TNode[string]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
-	out.E0 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
+	out.E0 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
 	return out
 }
 
-func tv105(a *tslabs, v any) Tuple2[*TNode[string], *TNode[[]*TNode[string]]] {
+func tv105(a *tslabs, v any) types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]] {
 	a.stepWork()
-	var out Tuple2[*TNode[string], *TNode[[]*TNode[string]]]
+	var out types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
-	out.E0 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
+	out.E0 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
 	out.E1 = tv77(a, pegort.TKid(x.Kids, 1))
 	return out
 }
 
-func tv106(a *tslabs, v any) Tuple2[*TNode[[]*TNode[string]], any] {
+func tv106(a *tslabs, v any) types.Tuple2[*types.TNode[[]*types.TNode[string]], any] {
 	a.stepWork()
-	var out Tuple2[*TNode[[]*TNode[string]], any]
+	var out types.Tuple2[*types.TNode[[]*types.TNode[string]], any]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
 	out.E0 = tv3(a, pegort.TKid(x.Kids, 0))
-	out.E1 = pegort.TPubIn(tpubHooks, a, pegort.TKid(x.Kids, 1))
+	out.E1 = pegort.TPubIn(types.PegoHooks, a, pegort.TKid(x.Kids, 1))
 	return out
 }
 
-func tv107(a *tslabs, v any) Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]any]] {
+func tv107(a *tslabs, v any) types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[string], *types.TNode[[]any]] {
 	a.stepWork()
-	var out Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]any]]
+	var out types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[string], *types.TNode[[]any]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
 	out.E0 = tv3(a, pegort.TKid(x.Kids, 0))
-	out.E1 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
+	out.E1 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
 	out.E2 = tv5(a, pegort.TKid(x.Kids, 2))
 	return out
 }
 
-func tv108(a *tslabs, v any) Tuple2[*TNode[[]*TNode[string]], *TNode[Tuple3[*TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string], *TNode[[]any]]]] {
+func tv108(a *tslabs, v any) types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[types.Tuple3[*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string], *types.TNode[[]any]]]] {
 	a.stepWork()
-	var out Tuple2[*TNode[[]*TNode[string]], *TNode[Tuple3[*TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string], *TNode[[]any]]]]
+	var out types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[types.Tuple3[*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string], *types.TNode[[]any]]]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
@@ -3226,134 +2046,134 @@ func tv108(a *tslabs, v any) Tuple2[*TNode[[]*TNode[string]], *TNode[Tuple3[*TNo
 	return out
 }
 
-func tv109(a *tslabs, v any) Tuple3[*TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string], *TNode[[]any]] {
+func tv109(a *tslabs, v any) types.Tuple3[*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string], *types.TNode[[]any]] {
 	a.stepWork()
-	var out Tuple3[*TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string], *TNode[[]any]]
+	var out types.Tuple3[*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string], *types.TNode[[]any]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
 	out.E0 = tv79(a, pegort.TKid(x.Kids, 0))
-	out.E1 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
+	out.E1 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
 	out.E2 = tv5(a, pegort.TKid(x.Kids, 2))
 	return out
 }
 
-func tv110(a *tslabs, v any) Tuple3[*TNode[[]any], *TNode[string], *TNode[[]any]] {
+func tv110(a *tslabs, v any) types.Tuple3[*types.TNode[[]any], *types.TNode[string], *types.TNode[[]any]] {
 	a.stepWork()
-	var out Tuple3[*TNode[[]any], *TNode[string], *TNode[[]any]]
+	var out types.Tuple3[*types.TNode[[]any], *types.TNode[string], *types.TNode[[]any]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
 	out.E0 = tv5(a, pegort.TKid(x.Kids, 0))
-	out.E1 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
+	out.E1 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
 	out.E2 = tv5(a, pegort.TKid(x.Kids, 2))
 	return out
 }
 
-func tv111(a *tslabs, v any) Tuple3[*TNode[[]*TNode[string]], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string]] {
+func tv111(a *tslabs, v any) types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string]] {
 	a.stepWork()
-	var out Tuple3[*TNode[[]*TNode[string]], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string]]
+	var out types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
 	out.E0 = tv3(a, pegort.TKid(x.Kids, 0))
 	out.E1 = tv79(a, pegort.TKid(x.Kids, 1))
-	out.E2 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 2)))
+	out.E2 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 2)))
 	return out
 }
 
-func tv112(a *tslabs, v any) Tuple2[*TNode[[]*TNode[string]], *TNode[string]] {
+func tv112(a *tslabs, v any) types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[string]] {
 	a.stepWork()
-	var out Tuple2[*TNode[[]*TNode[string]], *TNode[string]]
+	var out types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[string]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
 	out.E0 = tv3(a, pegort.TKid(x.Kids, 0))
-	out.E1 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
+	out.E1 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
 	return out
 }
 
-func tv113(a *tslabs, v any) Tuple2[*TNode[[]any], *TNode[string]] {
+func tv113(a *tslabs, v any) types.Tuple2[*types.TNode[[]any], *types.TNode[string]] {
 	a.stepWork()
-	var out Tuple2[*TNode[[]any], *TNode[string]]
+	var out types.Tuple2[*types.TNode[[]any], *types.TNode[string]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
 	out.E0 = tv5(a, pegort.TKid(x.Kids, 0))
-	out.E1 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
+	out.E1 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
 	return out
 }
 
-func tv114(a *tslabs, v any) Tuple3[*TNode[string], *TNode[[]*TNode[string]], *TNode[string]] {
+func tv114(a *tslabs, v any) types.Tuple3[*types.TNode[string], *types.TNode[[]*types.TNode[string]], *types.TNode[string]] {
 	a.stepWork()
-	var out Tuple3[*TNode[string], *TNode[[]*TNode[string]], *TNode[string]]
+	var out types.Tuple3[*types.TNode[string], *types.TNode[[]*types.TNode[string]], *types.TNode[string]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
-	out.E0 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
+	out.E0 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
 	out.E1 = tv3(a, pegort.TKid(x.Kids, 1))
-	out.E2 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 2)))
+	out.E2 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 2)))
 	return out
 }
 
-func tv115(a *tslabs, v any) Tuple3[*TNode[string], any, *TNode[string]] {
+func tv115(a *tslabs, v any) types.Tuple3[*types.TNode[string], any, *types.TNode[string]] {
 	a.stepWork()
-	var out Tuple3[*TNode[string], any, *TNode[string]]
+	var out types.Tuple3[*types.TNode[string], any, *types.TNode[string]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
-	out.E0 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
-	out.E1 = pegort.TPubIn(tpubHooks, a, pegort.TKid(x.Kids, 1))
-	out.E2 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 2)))
+	out.E0 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
+	out.E1 = pegort.TPubIn(types.PegoHooks, a, pegort.TKid(x.Kids, 1))
+	out.E2 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 2)))
 	return out
 }
 
-func tv116(a *tslabs, v any) Tuple1[any] {
+func tv116(a *tslabs, v any) types.Tuple1[any] {
 	a.stepWork()
-	var out Tuple1[any]
+	var out types.Tuple1[any]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
-	out.E0 = pegort.TPubIn(tpubHooks, a, pegort.TKid(x.Kids, 0))
+	out.E0 = pegort.TPubIn(types.PegoHooks, a, pegort.TKid(x.Kids, 0))
 	return out
 }
 
-func tv117(a *tslabs, v any) Tuple2[*TNode[string], *TNode[string]] {
+func tv117(a *tslabs, v any) types.Tuple2[*types.TNode[string], *types.TNode[string]] {
 	a.stepWork()
-	var out Tuple2[*TNode[string], *TNode[string]]
+	var out types.Tuple2[*types.TNode[string], *types.TNode[string]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
-	out.E0 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
-	out.E1 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
+	out.E0 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
+	out.E1 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
 	return out
 }
 
-func tv118(a *tslabs, v any) Tuple3[*TNode[string], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]], any] {
+func tv118(a *tslabs, v any) types.Tuple3[*types.TNode[string], *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]], any] {
 	a.stepWork()
-	var out Tuple3[*TNode[string], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]], any]
+	var out types.Tuple3[*types.TNode[string], *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]], any]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
-	out.E0 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
+	out.E0 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
 	out.E1 = tv49(a, pegort.TKid(x.Kids, 1))
-	out.E2 = pegort.TPubIn(tpubHooks, a, pegort.TKid(x.Kids, 2))
+	out.E2 = pegort.TPubIn(types.PegoHooks, a, pegort.TKid(x.Kids, 2))
 	return out
 }
 
-func tv119(a *tslabs, v any) Tuple2[*TNode[[]*TNode[string]], *TNode[[]*TNode[Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]]]] {
+func tv119(a *tslabs, v any) types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[[]*types.TNode[string]]]]]] {
 	a.stepWork()
-	var out Tuple2[*TNode[[]*TNode[string]], *TNode[[]*TNode[Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]]]]
+	var out types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[[]*types.TNode[string]]]]]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
@@ -3363,48 +2183,48 @@ func tv119(a *tslabs, v any) Tuple2[*TNode[[]*TNode[string]], *TNode[[]*TNode[Tu
 	return out
 }
 
-func tv120(a *tslabs, v any) Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]] {
+func tv120(a *tslabs, v any) types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]] {
 	a.stepWork()
-	var out Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]
+	var out types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
-	out.E0 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
+	out.E0 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
 	out.E1 = tv131(a, pegort.TKid(x.Kids, 1))
 	return out
 }
 
-func tv121(a *tslabs, v any) Tuple2[*TNode[string], *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]]] {
+func tv121(a *tslabs, v any) types.Tuple2[*types.TNode[string], *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]]] {
 	a.stepWork()
-	var out Tuple2[*TNode[string], *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]]]
+	var out types.Tuple2[*types.TNode[string], *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
-	out.E0 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
+	out.E0 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
 	out.E1 = tv132(a, pegort.TKid(x.Kids, 1))
 	return out
 }
 
-func tv122(a *tslabs, v any) Tuple5[*TNode[string], *TNode[string], *TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]] {
+func tv122(a *tslabs, v any) types.Tuple5[*types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]] {
 	a.stepWork()
-	var out Tuple5[*TNode[string], *TNode[string], *TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]
+	var out types.Tuple5[*types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
-	out.E0 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
-	out.E1 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
-	out.E2 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 2)))
-	out.E3 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 3)))
+	out.E0 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
+	out.E1 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
+	out.E2 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 2)))
+	out.E3 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 3)))
 	out.E4 = tv131(a, pegort.TKid(x.Kids, 4))
 	return out
 }
 
-func tv123(a *tslabs, v any) Tuple4[*TNode[string], *TNode[string], *TNode[string], *TNode[string]] {
+func tv123(a *tslabs, v any) types.Tuple4[*types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[string]] {
 	a.stepWork()
-	var out Tuple4[*TNode[string], *TNode[string], *TNode[string], *TNode[string]]
+	var out types.Tuple4[*types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[string]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
@@ -3416,61 +2236,61 @@ func tv123(a *tslabs, v any) Tuple4[*TNode[string], *TNode[string], *TNode[strin
 	return out
 }
 
-func tv124(a *tslabs, v any) Tuple2[*TNode[string], any] {
+func tv124(a *tslabs, v any) types.Tuple2[*types.TNode[string], any] {
 	a.stepWork()
-	var out Tuple2[*TNode[string], any]
+	var out types.Tuple2[*types.TNode[string], any]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
-	out.E0 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
-	out.E1 = pegort.TPubIn(tpubHooks, a, pegort.TKid(x.Kids, 1))
+	out.E0 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
+	out.E1 = pegort.TPubIn(types.PegoHooks, a, pegort.TKid(x.Kids, 1))
 	return out
 }
 
-func tv125(a *tslabs, v any) Tuple3[*TNode[string], *TNode[string], *TNode[Tuple1[*TNode[Tuple1[any]]]]] {
+func tv125(a *tslabs, v any) types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[types.Tuple1[*types.TNode[types.Tuple1[any]]]]] {
 	a.stepWork()
-	var out Tuple3[*TNode[string], *TNode[string], *TNode[Tuple1[*TNode[Tuple1[any]]]]]
+	var out types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[types.Tuple1[*types.TNode[types.Tuple1[any]]]]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
-	out.E0 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
-	out.E1 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
+	out.E0 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
+	out.E1 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
 	out.E2 = tv103(a, pegort.TKid(x.Kids, 2))
 	return out
 }
 
-func tv126(a *tslabs, v any) Tuple3[*TNode[string], *TNode[string], *TNode[string]] {
+func tv126(a *tslabs, v any) types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[string]] {
 	a.stepWork()
-	var out Tuple3[*TNode[string], *TNode[string], *TNode[string]]
+	var out types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[string]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
-	out.E0 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
-	out.E1 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
-	out.E2 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 2)))
+	out.E0 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
+	out.E1 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
+	out.E2 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 2)))
 	return out
 }
 
-func tv127(a *tslabs, v any) Tuple4[*TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[string], *TNode[string]] {
+func tv127(a *tslabs, v any) types.Tuple4[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[string], *types.TNode[string]] {
 	a.stepWork()
-	var out Tuple4[*TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[string], *TNode[string]]
+	var out types.Tuple4[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[string], *types.TNode[string]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
 	out.E0 = tv61(a, pegort.TKid(x.Kids, 0))
 	out.E1 = tv61(a, pegort.TKid(x.Kids, 1))
-	out.E2 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 2)))
+	out.E2 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 2)))
 	out.E3 = tv66(a, pegort.TKid(x.Kids, 3))
 	return out
 }
 
-func tv128(a *tslabs, v any) Tuple4[*TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[Tuple2[*TNode[string], any]]] {
+func tv128(a *tslabs, v any) types.Tuple4[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple2[*types.TNode[string], any]]] {
 	a.stepWork()
-	var out Tuple4[*TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[Tuple2[*TNode[string], any]]]
+	var out types.Tuple4[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple2[*types.TNode[string], any]]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
@@ -3482,9 +2302,9 @@ func tv128(a *tslabs, v any) Tuple4[*TNode[Tuple1[*TNode[string]]], *TNode[Tuple
 	return out
 }
 
-func tv129(a *tslabs, v any) Tuple1[*TNode[Tuple1[any]]] {
+func tv129(a *tslabs, v any) types.Tuple1[*types.TNode[types.Tuple1[any]]] {
 	a.stepWork()
-	var out Tuple1[*TNode[Tuple1[any]]]
+	var out types.Tuple1[*types.TNode[types.Tuple1[any]]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
@@ -3493,14 +2313,14 @@ func tv129(a *tslabs, v any) Tuple1[*TNode[Tuple1[any]]] {
 	return out
 }
 
-func tv130(a *tslabs, v any) *TNode[[]*TNode[Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]]] {
+func tv130(a *tslabs, v any) *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[[]*types.TNode[string]]]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[[]*TNode[Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]]]{Span: x.Span}
+		out := &types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[[]*types.TNode[string]]]]]{Span: x.Span}
 		out.Value = tl7(a, x)
 		return out
 	case *pegort.TError:
@@ -3512,21 +2332,21 @@ func tv130(a *tslabs, v any) *TNode[[]*TNode[Tuple2[*TNode[Tuple1[*TNode[string]
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[[]*TNode[Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[[]*types.TNode[string]]]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tl7(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv131(a *tslabs, v any) *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]] {
+func tv131(a *tslabs, v any) *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]{Span: x.Span}
+		out := &types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]{Span: x.Span}
 		out.Value = tl8(a, x)
 		return out
 	case *pegort.TError:
@@ -3538,21 +2358,21 @@ func tv131(a *tslabs, v any) *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[strin
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tl8(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv132(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]] {
+func tv132(a *tslabs, v any) *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]]{Span: x.Span}
 		out.Value = tv133(a, x)
 		return out
 	case *pegort.TError:
@@ -3564,39 +2384,39 @@ func tv132(a *tslabs, v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNod
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv133(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv133(a *tslabs, v any) Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]] {
+func tv133(a *tslabs, v any) types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]] {
 	a.stepWork()
-	var out Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]
+	var out types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
 	}
-	out.E0 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
-	out.E1 = (*TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
+	out.E0 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 0)))
+	out.E1 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
 	out.E2 = tv131(a, pegort.TKid(x.Kids, 2))
 	return out
 }
 
-func tl5(a *tslabs, v any) []*TNode[string] {
+func tl5(a *tslabs, v any) []*types.TNode[string] {
 	a.stepWork()
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*TNode[string]{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.TNode[string]{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl5Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = (*TNode[string])(pegort.TPubMatch(c))
+		out[i] = (*types.TNode[string])(pegort.TPubMatch(c))
 	}
 	return out
 }
@@ -3613,19 +2433,19 @@ func tl6(a *tslabs, v any) []any {
 	out := astSlice(&a.tl6Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TPubIn(tpubHooks, a, c)
+		out[i] = pegort.TPubIn(types.PegoHooks, a, c)
 	}
 	return out
 }
 
-func tl7(a *tslabs, v any) []*TNode[Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]] {
+func tl7(a *tslabs, v any) []*types.TNode[types.Tuple2[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[[]*types.TNode[string]]]] {
 	a.stepWork()
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*TNode[Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]]{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.TNode[types.Tuple2[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[[]*types.TNode[string]]]]{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl7Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -3635,14 +2455,14 @@ func tl7(a *tslabs, v any) []*TNode[Tuple2[*TNode[Tuple1[*TNode[string]]], *TNod
 	return out
 }
 
-func tl8(a *tslabs, v any) []*TNode[Tuple2[*TNode[string], *TNode[string]]] {
+func tl8(a *tslabs, v any) []*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]] {
 	a.stepWork()
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*TNode[Tuple2[*TNode[string], *TNode[string]]]{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl8Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -3652,14 +2472,14 @@ func tl8(a *tslabs, v any) []*TNode[Tuple2[*TNode[string], *TNode[string]]] {
 	return out
 }
 
-func tv134(a *tslabs, v any) *TNode[Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]] {
+func tv134(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[[]*types.TNode[string]]]] {
 	a.stepWork()
 	switch x := v.(type) {
 	case *pegort.TSeq:
 		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
 			return nil
 		}
-		out := &TNode[Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]]{Span: x.Span}
+		out := &types.TNode[types.Tuple2[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[[]*types.TNode[string]]]]{Span: x.Span}
 		out.Value = tv135(a, x)
 		return out
 	case *pegort.TError:
@@ -3671,16 +2491,16 @@ func tv134(a *tslabs, v any) *TNode[Tuple2[*TNode[Tuple1[*TNode[string]]], *TNod
 		s, e := x.TSpan()
 		text, _ := x.TText()
 		_ = text
-		out := &TNode[Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]]{Span: pegort.Span{Start: s, End: e}}
+		out := &types.TNode[types.Tuple2[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[[]*types.TNode[string]]]]{Span: pegort.Span{Start: s, End: e}}
 		out.Value = tv135(a, text)
 		return out
 	}
 	return nil
 }
 
-func tv135(a *tslabs, v any) Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]] {
+func tv135(a *tslabs, v any) types.Tuple2[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[[]*types.TNode[string]]] {
 	a.stepWork()
-	var out Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]
+	var out types.Tuple2[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[[]*types.TNode[string]]]
 	x, _ := v.(*pegort.TSeq)
 	if x == nil {
 		return out
@@ -3693,42 +2513,42 @@ func tv135(a *tslabs, v any) Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TN
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
 	control         *pegort.WorkControl
-	tAlias          astChunk[Alias]
-	tBinaryExpr     astChunk[BinaryExpr]
-	tCallExpr       astChunk[CallExpr]
-	tComprehension  astChunk[Comprehension]
-	tEllipsis       astChunk[Ellipsis]
-	tEmbedDecl      astChunk[EmbedDecl]
-	tFallbackClause astChunk[FallbackClause]
-	tField          astChunk[Field]
-	tFile           astChunk[File]
-	tForClause      astChunk[ForClause]
-	tIfClause       astChunk[IfClause]
-	tImportDecl     astChunk[ImportDecl]
-	tImportSpec     astChunk[ImportSpec]
-	tIndexExpr      astChunk[IndexExpr]
-	tInterpolation  astChunk[Interpolation]
-	tLetClause      astChunk[LetClause]
-	tListLit        astChunk[ListLit]
-	tPackage        astChunk[Package]
-	tParenExpr      astChunk[ParenExpr]
-	tPostfixAlias   astChunk[PostfixAlias]
-	tPostfixExpr    astChunk[PostfixExpr]
-	tSelectorExpr   astChunk[SelectorExpr]
-	tSliceExpr      astChunk[SliceExpr]
-	tString         astChunk[String]
-	tStructLit      astChunk[StructLit]
-	tTryClause      astChunk[TryClause]
-	tUnaryExpr      astChunk[UnaryExpr]
-	tl0Chunk        astChunk[Decl]
-	tl1Chunk        astChunk[*Attribute]
-	tl2Chunk        astChunk[Expr]
-	tl3Chunk        astChunk[Clause]
-	tl4Chunk        astChunk[*ImportSpec]
-	tl5Chunk        astChunk[*TNode[string]]
+	tAlias          astChunk[types.Alias]
+	tBinaryExpr     astChunk[types.BinaryExpr]
+	tCallExpr       astChunk[types.CallExpr]
+	tComprehension  astChunk[types.Comprehension]
+	tEllipsis       astChunk[types.Ellipsis]
+	tEmbedDecl      astChunk[types.EmbedDecl]
+	tFallbackClause astChunk[types.FallbackClause]
+	tField          astChunk[types.Field]
+	tFile           astChunk[types.File]
+	tForClause      astChunk[types.ForClause]
+	tIfClause       astChunk[types.IfClause]
+	tImportDecl     astChunk[types.ImportDecl]
+	tImportSpec     astChunk[types.ImportSpec]
+	tIndexExpr      astChunk[types.IndexExpr]
+	tInterpolation  astChunk[types.Interpolation]
+	tLetClause      astChunk[types.LetClause]
+	tListLit        astChunk[types.ListLit]
+	tPackage        astChunk[types.Package]
+	tParenExpr      astChunk[types.ParenExpr]
+	tPostfixAlias   astChunk[types.PostfixAlias]
+	tPostfixExpr    astChunk[types.PostfixExpr]
+	tSelectorExpr   astChunk[types.SelectorExpr]
+	tSliceExpr      astChunk[types.SliceExpr]
+	tString         astChunk[types.String]
+	tStructLit      astChunk[types.StructLit]
+	tTryClause      astChunk[types.TryClause]
+	tUnaryExpr      astChunk[types.UnaryExpr]
+	tl0Chunk        astChunk[types.Decl]
+	tl1Chunk        astChunk[*types.Attribute]
+	tl2Chunk        astChunk[types.Expr]
+	tl3Chunk        astChunk[types.Clause]
+	tl4Chunk        astChunk[*types.ImportSpec]
+	tl5Chunk        astChunk[*types.TNode[string]]
 	tl6Chunk        astChunk[any]
-	tl7Chunk        astChunk[*TNode[Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]]]
-	tl8Chunk        astChunk[*TNode[Tuple2[*TNode[string], *TNode[string]]]]
+	tl7Chunk        astChunk[*types.TNode[types.Tuple2[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[[]*types.TNode[string]]]]]
+	tl8Chunk        astChunk[*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]
 }
 
 func (a *tslabs) SetWorkControl(c *pegort.WorkControl) { a.control = c }
@@ -3738,68 +2558,29 @@ func (a *tslabs) stepWork() {
 	}
 }
 
-// tnt holds the registered indexes of the named node types (tregisterNodeType) by their
-// generated index; index 0 is no named node type.
-var tnt [8]uint16
-
-// Tuple1 is a tuple of 1 elements.
-type Tuple1[E0 any] struct {
-	E0 E0
-}
-
-// Tuple2 is a tuple of 2 elements.
-type Tuple2[E0, E1 any] struct {
-	E0 E0
-	E1 E1
-}
-
-// Tuple3 is a tuple of 3 elements.
-type Tuple3[E0, E1, E2 any] struct {
-	E0 E0
-	E1 E1
-	E2 E2
-}
-
-// Tuple4 is a tuple of 4 elements.
-type Tuple4[E0, E1, E2, E3 any] struct {
-	E0 E0
-	E1 E1
-	E2 E2
-	E3 E3
-}
-
-// Tuple5 is a tuple of 5 elements.
-type Tuple5[E0, E1, E2, E3, E4 any] struct {
-	E0 E0
-	E1 E1
-	E2 E2
-	E3 E3
-	E4 E4
-}
-
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
 // from errors, the result is returned together with SyntaxErrors; an Error node where a struct
 // type is expected becomes nil.
 // It builds the values directly, without the nodes Parse returns.
-func ParseAST(input string, opts ...pegort.ParseOption) (*File, error) {
+func ParseAST(input string, opts ...pegort.ParseOption) (*types.File, error) {
 	a := &tslabs{}
-	return pegort.TParse(trules[0], input, opts, a, func(v any) *File { return pegort.TAs[*File](v) })
+	return pegort.TParse(trules[0], input, opts, a, func(v any) *types.File { return pegort.TAs[*types.File](v) })
 }
 
 // ParseRuleAST parses the whole input with the named rule and returns its typed value.
 // Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
 // Invalid options and undefined names return nil with an error. Rule result types:
 //
-//	main: *File
-//	main_fast: *File
-//	file: *File
-//	package_clause: *Package
-//	import_decl: *ImportDecl
-//	import_paren: *ImportDecl
-//	import_single: *ImportDecl
-//	import_spec: *ImportSpec
-//	import_name: *Ident
-//	import_path: *String
+//	main: *types.File
+//	main_fast: *types.File
+//	file: *types.File
+//	package_clause: *types.Package
+//	import_decl: *types.ImportDecl
+//	import_paren: *types.ImportDecl
+//	import_single: *types.ImportDecl
+//	import_spec: *types.ImportSpec
+//	import_name: *types.Ident
+//	import_path: *types.String
 //	isep: any
 //	bind: *TNode[Tuple1[*TNode[string]]]
 //	sp: *TNode[[]*TNode[string]]
@@ -3813,106 +2594,106 @@ func ParseAST(input string, opts ...pegort.ParseOption) (*File, error) {
 //	colon_ec0: *TNode[Tuple3[*TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string], *TNode[[]any]]]
 //	colon_ne: *TNode[Tuple3[*TNode[[]any], *TNode[string], *TNode[[]any]]]
 //	colon_ahead: *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string]]]
-//	decls: []Decl
-//	decl_item: Decl
-//	item_normal: Decl
-//	item_tail: Decl
-//	embed_tail: *EmbedDecl
+//	decls: []types.Decl
+//	decl_item: types.Decl
+//	item_normal: types.Decl
+//	item_tail: types.Decl
+//	embed_tail: *types.EmbedDecl
 //	tail_end: any
 //	tail_mark_end: any
 //	after_ec: *TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[string]]]
 //	after_ne: *TNode[Tuple2[*TNode[[]any], *TNode[string]]]
 //	tail_mark: any
-//	decl: Decl
-//	comp_decl: *Comprehension
-//	ellipsis_decl: *Ellipsis
-//	let_decl: *LetClause
-//	embed_decl: *EmbedDecl
-//	embed_plain: *EmbedDecl
-//	embed_bare: *EmbedDecl
+//	decl: types.Decl
+//	comp_decl: *types.Comprehension
+//	ellipsis_decl: *types.Ellipsis
+//	let_decl: *types.LetClause
+//	embed_decl: *types.EmbedDecl
+//	embed_plain: *types.EmbedDecl
+//	embed_bare: *types.EmbedDecl
 //	kw4: *TNode[Tuple1[*TNode[string]]]
 //	func_bare: *TNode[Tuple3[*TNode[string], *TNode[[]*TNode[string]], *TNode[string]]]
-//	bare_for: *Ident
-//	bare_if: *Ident
-//	bare_let: *Ident
-//	field: *Field
-//	field_plain: *Field
-//	field_alias: *Field
-//	nfield: *Field
-//	nfield_plain: *Field
-//	nfield_alias: *Field
-//	field_value: Expr
-//	fv_label: Expr
-//	fv_choice: Expr
-//	let_skip: Expr
-//	let_value: *Ident
-//	expr_nolet: Expr
-//	nested: *StructLit
-//	alias_value: *Alias
-//	attrs: []*Attribute
-//	postfix_alias_at: *PostfixAlias
-//	postfix_alias: *PostfixAlias
-//	alias_dual: *PostfixAlias
-//	alias_paren: *PostfixAlias
-//	alias_simple: *PostfixAlias
-//	label_plain: Label
-//	ident_label: *Ident
-//	kw_label: *Ident
-//	for_label: *Ident
-//	if_label: *Ident
-//	let_label: *Ident
-//	alias_label: *Alias
-//	nlabel_plain: Label
-//	nident_label: *Ident
-//	nkw_label: *Ident
-//	alias_nlabel: *Alias
-//	alias_rhs: Expr
-//	ident_any: *Ident
-//	comprehension: *Comprehension
-//	comp_single: *Comprehension
-//	comp_multi: *Comprehension
-//	fb_else: *FallbackClause
-//	fb_other: *FallbackClause
-//	else_clause: *FallbackClause
-//	otherwise_clause: *FallbackClause
+//	bare_for: *types.Ident
+//	bare_if: *types.Ident
+//	bare_let: *types.Ident
+//	field: *types.Field
+//	field_plain: *types.Field
+//	field_alias: *types.Field
+//	nfield: *types.Field
+//	nfield_plain: *types.Field
+//	nfield_alias: *types.Field
+//	field_value: types.Expr
+//	fv_label: types.Expr
+//	fv_choice: types.Expr
+//	let_skip: types.Expr
+//	let_value: *types.Ident
+//	expr_nolet: types.Expr
+//	nested: *types.StructLit
+//	alias_value: *types.Alias
+//	attrs: []*types.Attribute
+//	postfix_alias_at: *types.PostfixAlias
+//	postfix_alias: *types.PostfixAlias
+//	alias_dual: *types.PostfixAlias
+//	alias_paren: *types.PostfixAlias
+//	alias_simple: *types.PostfixAlias
+//	label_plain: types.Label
+//	ident_label: *types.Ident
+//	kw_label: *types.Ident
+//	for_label: *types.Ident
+//	if_label: *types.Ident
+//	let_label: *types.Ident
+//	alias_label: *types.Alias
+//	nlabel_plain: types.Label
+//	nident_label: *types.Ident
+//	nkw_label: *types.Ident
+//	alias_nlabel: *types.Alias
+//	alias_rhs: types.Expr
+//	ident_any: *types.Ident
+//	comprehension: *types.Comprehension
+//	comp_single: *types.Comprehension
+//	comp_multi: *types.Comprehension
+//	fb_else: *types.FallbackClause
+//	fb_other: *types.FallbackClause
+//	else_clause: *types.FallbackClause
+//	otherwise_clause: *types.FallbackClause
 //	clause_gap: any
 //	gate_for_if: *TNode[Tuple1[*TNode[string]]]
-//	start_clause: Clause
-//	clause: Clause
-//	for_clause: *ForClause
-//	for_kv: *ForClause
-//	for_v: *ForClause
-//	if_clause: *IfClause
-//	try_clause: *TryClause
-//	try_assign: *TryClause
-//	try_plain: *TryClause
-//	struct_lit: *StructLit
-//	list_lit: *ListLit
+//	start_clause: types.Clause
+//	clause: types.Clause
+//	for_clause: *types.ForClause
+//	for_kv: *types.ForClause
+//	for_v: *types.ForClause
+//	if_clause: *types.IfClause
+//	try_clause: *types.TryClause
+//	try_assign: *types.TryClause
+//	try_plain: *types.TryClause
+//	struct_lit: *types.StructLit
+//	list_lit: *types.ListLit
 //	esep: any
-//	list_elem: Expr
-//	elem_expr: Expr
+//	list_elem: types.Expr
+//	elem_expr: types.Expr
 //	gate_kw3: *TNode[Tuple1[*TNode[string]]]
-//	bare_for_if: *Ident
-//	alias_elem: *Alias
-//	list_dots: *Ellipsis
-//	dots_type: Expr
-//	paren_expr: *ParenExpr
-//	expr: Expr
-//	atom_expr: Expr
-//	operand_any: Expr
-//	operand_word: Expr
-//	word_any: Expr
-//	operand_digit: Expr
-//	operand_other: Expr
-//	ident_q: Expr
-//	full_expr: Expr
+//	bare_for_if: *types.Ident
+//	alias_elem: *types.Alias
+//	list_dots: *types.Ellipsis
+//	dots_type: types.Expr
+//	paren_expr: *types.ParenExpr
+//	expr: types.Expr
+//	atom_expr: types.Expr
+//	operand_any: types.Expr
+//	operand_word: types.Expr
+//	word_any: types.Expr
+//	operand_digit: types.Expr
+//	operand_other: types.Expr
+//	ident_q: types.Expr
+//	full_expr: types.Expr
 //	asep: any
-//	selector: Selector
-//	bool_ident_sel: *Ident
-//	sel_string: *String
-//	interp_expr: Expr
-//	attribute: *Attribute
-//	attribute_d: *Attribute
+//	selector: types.Selector
+//	bool_ident_sel: *types.Ident
+//	sel_string: *types.String
+//	interp_expr: types.Expr
+//	attribute: *types.Attribute
+//	attribute_d: *types.Attribute
 //	attr_body: *TNode[[]any]
 //	attr_group: *TNode[Tuple3[*TNode[string], any, *TNode[string]]]
 //	attr_tok: any
@@ -3921,7 +2702,7 @@ func ParseAST(input string, opts ...pegort.ParseOption) (*File, error) {
 //	num_mult: any
 //	bad_num: *TNode[Tuple2[*TNode[string], *TNode[string]]]
 //	zero_ok: *TNode[Tuple3[*TNode[string], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]], any]]
-//	attr_str: *String
+//	attr_str: *types.String
 //	idchar: any
 //	uidchar: *TNode[Tuple1[*TNode[string]]]
 //	idchars: *TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[[]*TNode[Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]]]]]
@@ -3929,48 +2710,48 @@ func ParseAST(input string, opts ...pegort.ParseOption) (*File, error) {
 //	digit_any: any
 //	ident_text: any
 //	hashrest: *TNode[[]any]
-//	ident: *Ident
+//	ident: *types.Ident
 //	kw: *TNode[Tuple1[*TNode[string]]]
-//	kwident: *Ident
-//	bool_lit: *Bool
-//	null_lit: *Null
-//	bottom: *Bottom
-//	number: Number
-//	number_any: Number
+//	kwident: *types.Ident
+//	bool_lit: *types.Bool
+//	null_lit: *types.Null
+//	bottom: *types.Bottom
+//	number: types.Number
+//	number_any: types.Number
 //	hexd: *TNode[string]
-//	based: *Int
+//	based: *types.Int
 //	d10: *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]]
 //	dec_ip: *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]]
 //	fracpart: *TNode[Tuple2[*TNode[string], *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]]]]
 //	exppart: *TNode[Tuple5[*TNode[string], *TNode[string], *TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]]
 //	mult: *TNode[Tuple2[*TNode[string], *TNode[string]]]
-//	float_lit: *Float
-//	int_lit: *Int
-//	strlit: StrLit
-//	str_any: StrLit
+//	float_lit: *types.Float
+//	int_lit: *types.Int
+//	strlit: types.StrLit
+//	str_any: types.StrLit
 //	hexd4: *TNode[Tuple4[*TNode[string], *TNode[string], *TNode[string], *TNode[string]]]
 //	bigu: any
 //	esc_dq: any
 //	esc_sq: any
 //	dqbody: *TNode[[]any]
-//	dq_plain: *String
-//	dq_open: *String
-//	dq_mid: *String
-//	dq_end: *String
-//	dq_interp: *Interpolation
-//	dq_rest: []Expr
-//	dq_more: []Expr
-//	dq_last: []Expr
+//	dq_plain: *types.String
+//	dq_open: *types.String
+//	dq_mid: *types.String
+//	dq_end: *types.String
+//	dq_interp: *types.Interpolation
+//	dq_rest: []types.Expr
+//	dq_more: []types.Expr
+//	dq_last: []types.Expr
 //	sqbody: *TNode[[]any]
-//	sq_plain: *String
-//	sq_open: *String
-//	sq_mid: *String
-//	sq_end: *String
-//	sq_interp: *Interpolation
-//	sq_rest: []Expr
-//	sq_more: []Expr
-//	sq_last: []Expr
-//	gstring: StrLit
+//	sq_plain: *types.String
+//	sq_open: *types.String
+//	sq_mid: *types.String
+//	sq_end: *types.String
+//	sq_interp: *types.Interpolation
+//	sq_rest: []types.Expr
+//	sq_more: []types.Expr
+//	sq_last: []types.Expr
+//	gstring: types.StrLit
 //	qc: *TNode[Tuple1[*TNode[string]]]
 //	hq: *TNode[Tuple2[*TNode[string], any]]
 //	g_escbody: *TNode[Tuple1[any]]
@@ -3979,32 +2760,32 @@ func ParseAST(input string, opts ...pegort.ParseOption) (*File, error) {
 //	ml_nl: *TNode[string]
 //	ml_open_tail: *TNode[Tuple4[*TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[string], *TNode[string]]]
 //	ml_close_tail: *TNode[Tuple4[*TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[Tuple2[*TNode[string], any]]]]
-//	gtriple: *String
+//	gtriple: *types.String
 //	gs_body: *TNode[[]any]
 //	gs_quote: *TNode[Tuple1[*TNode[Tuple1[any]]]]
-//	gsl_plain: *String
-//	gsl_open: *String
-//	gsl_mid: *String
-//	gsl_end: *String
-//	gsl_interp: *Interpolation
-//	gsl_interp_s: *Interpolation
-//	gsl_rest: []Expr
-//	gsl_more: []Expr
-//	gsl_last: []Expr
+//	gsl_plain: *types.String
+//	gsl_open: *types.String
+//	gsl_mid: *types.String
+//	gsl_end: *types.String
+//	gsl_interp: *types.Interpolation
+//	gsl_interp_s: *types.Interpolation
+//	gsl_rest: []types.Expr
+//	gsl_more: []types.Expr
+//	gsl_last: []types.Expr
 //	ml_body: *TNode[[]any]
 //	ml_line: *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[string]]]
 //	ml_close: *TNode[string]
-//	gml_plain: *String
+//	gml_plain: *types.String
 //	ml_frag: *TNode[[]any]
-//	gml_open: *String
-//	gml_mid: *String
-//	gml_end: *String
-//	gml_interp: *Interpolation
-//	gml_interp_s: *Interpolation
-//	gml_rest: []Expr
-//	gml_more: []Expr
-//	gml_last: []Expr
-//	gstr_plain: *String
+//	gml_open: *types.String
+//	gml_mid: *types.String
+//	gml_end: *types.String
+//	gml_interp: *types.Interpolation
+//	gml_interp_s: *types.Interpolation
+//	gml_rest: []types.Expr
+//	gml_more: []types.Expr
+//	gml_last: []types.Expr
+//	gstr_plain: *types.String
 //	uletter: *TNode[string]
 //	udigit: *TNode[string]
 func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
@@ -4015,94 +2796,100 @@ func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 	switch name {
 	case "main":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[0], input, o, a, func(v any) *File { return pegort.TAs[*File](v) })
+		return pegort.TParseResolved(trules[0], input, o, a, func(v any) *types.File { return pegort.TAs[*types.File](v) })
 	case "main_fast":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[1], input, o, a, func(v any) *File { return pegort.TAs[*File](v) })
+		return pegort.TParseResolved(trules[1], input, o, a, func(v any) *types.File { return pegort.TAs[*types.File](v) })
 	case "file":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[2], input, o, a, func(v any) *File { return pegort.TAs[*File](v) })
+		return pegort.TParseResolved(trules[2], input, o, a, func(v any) *types.File { return pegort.TAs[*types.File](v) })
 	case "package_clause":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[3], input, o, a, func(v any) *Package { return pegort.TAs[*Package](v) })
+		return pegort.TParseResolved(trules[3], input, o, a, func(v any) *types.Package { return pegort.TAs[*types.Package](v) })
 	case "import_decl":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[4], input, o, a, func(v any) *ImportDecl { return pegort.TAs[*ImportDecl](v) })
+		return pegort.TParseResolved(trules[4], input, o, a, func(v any) *types.ImportDecl { return pegort.TAs[*types.ImportDecl](v) })
 	case "import_paren":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[5], input, o, a, func(v any) *ImportDecl { return pegort.TAs[*ImportDecl](v) })
+		return pegort.TParseResolved(trules[5], input, o, a, func(v any) *types.ImportDecl { return pegort.TAs[*types.ImportDecl](v) })
 	case "import_single":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[6], input, o, a, func(v any) *ImportDecl { return pegort.TAs[*ImportDecl](v) })
+		return pegort.TParseResolved(trules[6], input, o, a, func(v any) *types.ImportDecl { return pegort.TAs[*types.ImportDecl](v) })
 	case "import_spec":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[7], input, o, a, func(v any) *ImportSpec { return pegort.TAs[*ImportSpec](v) })
+		return pegort.TParseResolved(trules[7], input, o, a, func(v any) *types.ImportSpec { return pegort.TAs[*types.ImportSpec](v) })
 	case "import_name":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[8], input, o, a, func(v any) *Ident { return tv0(a, v) })
+		return pegort.TParseResolved(trules[8], input, o, a, func(v any) *types.Ident { return tv0(a, v) })
 	case "import_path":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[9], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[9], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "isep":
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[10], input, o, a, func(v any) any { return tv1(a, v) })
 	case "bind":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[11], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv2(a, v) })
+		return pegort.TParseResolved(trules[11], input, o, a, func(v any) *types.TNode[types.Tuple1[*types.TNode[string]]] { return tv2(a, v) })
 	case "sp":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[12], input, o, a, func(v any) *TNode[[]*TNode[string]] { return tv3(a, v) })
+		return pegort.TParseResolved(trules[12], input, o, a, func(v any) *types.TNode[[]*types.TNode[string]] { return tv3(a, v) })
 	case "nlws":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[13], input, o, a, func(v any) *TNode[[]*TNode[string]] { return tv4(a, v) })
+		return pegort.TParseResolved(trules[13], input, o, a, func(v any) *types.TNode[[]*types.TNode[string]] { return tv4(a, v) })
 	case "ws":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[14], input, o, a, func(v any) *TNode[[]any] { return tv5(a, v) })
+		return pegort.TParseResolved(trules[14], input, o, a, func(v any) *types.TNode[[]any] { return tv5(a, v) })
 	case "comment":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[15], input, o, a, func(v any) *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]] { return tv6(a, v) })
+		return pegort.TParseResolved(trules[15], input, o, a, func(v any) *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]] {
+			return tv6(a, v)
+		})
 	case "comma":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[16], input, o, a, func(v any) *TNode[Tuple2[*TNode[[]*TNode[string]], any]] { return tv7(a, v) })
+		return pegort.TParseResolved(trules[16], input, o, a, func(v any) *types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], any]] { return tv7(a, v) })
 	case "icomma":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[17], input, o, a, func(v any) *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[string], *TNode[[]any]]] { return tv8(a, v) })
+		return pegort.TParseResolved(trules[17], input, o, a, func(v any) *types.TNode[types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[string], *types.TNode[[]any]]] {
+			return tv8(a, v)
+		})
 	case "sep":
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[18], input, o, a, func(v any) any { return tv9(a, v) })
 	case "colon_ec":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[19], input, o, a, func(v any) *TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[Tuple3[*TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string], *TNode[[]any]]]]] {
+		return pegort.TParseResolved(trules[19], input, o, a, func(v any) *types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[types.Tuple3[*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string], *types.TNode[[]any]]]]] {
 			return tv10(a, v)
 		})
 	case "colon_ec0":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[20], input, o, a, func(v any) *TNode[Tuple3[*TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string], *TNode[[]any]]] {
+		return pegort.TParseResolved(trules[20], input, o, a, func(v any) *types.TNode[types.Tuple3[*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string], *types.TNode[[]any]]] {
 			return tv11(a, v)
 		})
 	case "colon_ne":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[21], input, o, a, func(v any) *TNode[Tuple3[*TNode[[]any], *TNode[string], *TNode[[]any]]] { return tv12(a, v) })
+		return pegort.TParseResolved(trules[21], input, o, a, func(v any) *types.TNode[types.Tuple3[*types.TNode[[]any], *types.TNode[string], *types.TNode[[]any]]] {
+			return tv12(a, v)
+		})
 	case "colon_ahead":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[22], input, o, a, func(v any) *TNode[Tuple3[*TNode[[]*TNode[string]], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[string]]]], *TNode[string]]] {
+		return pegort.TParseResolved(trules[22], input, o, a, func(v any) *types.TNode[types.Tuple3[*types.TNode[[]*types.TNode[string]], *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[string]]]], *types.TNode[string]]] {
 			return tv13(a, v)
 		})
 	case "decls":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[23], input, o, a, func(v any) []Decl { return tl0(a, v) })
+		return pegort.TParseResolved(trules[23], input, o, a, func(v any) []types.Decl { return tl0(a, v) })
 	case "decl_item":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[24], input, o, a, func(v any) Decl { return pegort.TAs[Decl](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[24], input, o, a, func(v any) types.Decl { return pegort.TAs[types.Decl](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "item_normal":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[25], input, o, a, func(v any) Decl { return pegort.TAs[Decl](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[25], input, o, a, func(v any) types.Decl { return pegort.TAs[types.Decl](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "item_tail":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[26], input, o, a, func(v any) Decl { return pegort.TAs[Decl](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[26], input, o, a, func(v any) types.Decl { return pegort.TAs[types.Decl](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "embed_tail":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[27], input, o, a, func(v any) *EmbedDecl { return pegort.TAs[*EmbedDecl](v) })
+		return pegort.TParseResolved(trules[27], input, o, a, func(v any) *types.EmbedDecl { return pegort.TAs[*types.EmbedDecl](v) })
 	case "tail_end":
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[28], input, o, a, func(v any) any { return tv14(a, v) })
@@ -4111,297 +2898,301 @@ func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 		return pegort.TParseResolved(trules[29], input, o, a, func(v any) any { return tv15(a, v) })
 	case "after_ec":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[30], input, o, a, func(v any) *TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[string]]] { return tv16(a, v) })
+		return pegort.TParseResolved(trules[30], input, o, a, func(v any) *types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[string]]] {
+			return tv16(a, v)
+		})
 	case "after_ne":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[31], input, o, a, func(v any) *TNode[Tuple2[*TNode[[]any], *TNode[string]]] { return tv17(a, v) })
+		return pegort.TParseResolved(trules[31], input, o, a, func(v any) *types.TNode[types.Tuple2[*types.TNode[[]any], *types.TNode[string]]] { return tv17(a, v) })
 	case "tail_mark":
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[32], input, o, a, func(v any) any { return tv18(a, v) })
 	case "decl":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[33], input, o, a, func(v any) Decl { return pegort.TAs[Decl](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[33], input, o, a, func(v any) types.Decl { return pegort.TAs[types.Decl](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "comp_decl":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[34], input, o, a, func(v any) *Comprehension { return pegort.TAs[*Comprehension](v) })
+		return pegort.TParseResolved(trules[34], input, o, a, func(v any) *types.Comprehension { return pegort.TAs[*types.Comprehension](v) })
 	case "ellipsis_decl":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[35], input, o, a, func(v any) *Ellipsis { return pegort.TAs[*Ellipsis](v) })
+		return pegort.TParseResolved(trules[35], input, o, a, func(v any) *types.Ellipsis { return pegort.TAs[*types.Ellipsis](v) })
 	case "let_decl":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[36], input, o, a, func(v any) *LetClause { return pegort.TAs[*LetClause](v) })
+		return pegort.TParseResolved(trules[36], input, o, a, func(v any) *types.LetClause { return pegort.TAs[*types.LetClause](v) })
 	case "embed_decl":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[37], input, o, a, func(v any) *EmbedDecl { return pegort.TAs[*EmbedDecl](v) })
+		return pegort.TParseResolved(trules[37], input, o, a, func(v any) *types.EmbedDecl { return pegort.TAs[*types.EmbedDecl](v) })
 	case "embed_plain":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[38], input, o, a, func(v any) *EmbedDecl { return pegort.TAs[*EmbedDecl](v) })
+		return pegort.TParseResolved(trules[38], input, o, a, func(v any) *types.EmbedDecl { return pegort.TAs[*types.EmbedDecl](v) })
 	case "embed_bare":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[39], input, o, a, func(v any) *EmbedDecl { return pegort.TAs[*EmbedDecl](v) })
+		return pegort.TParseResolved(trules[39], input, o, a, func(v any) *types.EmbedDecl { return pegort.TAs[*types.EmbedDecl](v) })
 	case "kw4":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[40], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv19(a, v) })
+		return pegort.TParseResolved(trules[40], input, o, a, func(v any) *types.TNode[types.Tuple1[*types.TNode[string]]] { return tv19(a, v) })
 	case "func_bare":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[41], input, o, a, func(v any) *TNode[Tuple3[*TNode[string], *TNode[[]*TNode[string]], *TNode[string]]] {
+		return pegort.TParseResolved(trules[41], input, o, a, func(v any) *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[[]*types.TNode[string]], *types.TNode[string]]] {
 			return tv20(a, v)
 		})
 	case "bare_for":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[42], input, o, a, func(v any) *Ident { return tv0(a, v) })
+		return pegort.TParseResolved(trules[42], input, o, a, func(v any) *types.Ident { return tv0(a, v) })
 	case "bare_if":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[43], input, o, a, func(v any) *Ident { return tv0(a, v) })
+		return pegort.TParseResolved(trules[43], input, o, a, func(v any) *types.Ident { return tv0(a, v) })
 	case "bare_let":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[44], input, o, a, func(v any) *Ident { return tv0(a, v) })
+		return pegort.TParseResolved(trules[44], input, o, a, func(v any) *types.Ident { return tv0(a, v) })
 	case "field":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[45], input, o, a, func(v any) *Field { return pegort.TAs[*Field](v) })
+		return pegort.TParseResolved(trules[45], input, o, a, func(v any) *types.Field { return pegort.TAs[*types.Field](v) })
 	case "field_plain":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[46], input, o, a, func(v any) *Field { return pegort.TAs[*Field](v) })
+		return pegort.TParseResolved(trules[46], input, o, a, func(v any) *types.Field { return pegort.TAs[*types.Field](v) })
 	case "field_alias":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[47], input, o, a, func(v any) *Field { return pegort.TAs[*Field](v) })
+		return pegort.TParseResolved(trules[47], input, o, a, func(v any) *types.Field { return pegort.TAs[*types.Field](v) })
 	case "nfield":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[48], input, o, a, func(v any) *Field { return pegort.TAs[*Field](v) })
+		return pegort.TParseResolved(trules[48], input, o, a, func(v any) *types.Field { return pegort.TAs[*types.Field](v) })
 	case "nfield_plain":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[49], input, o, a, func(v any) *Field { return pegort.TAs[*Field](v) })
+		return pegort.TParseResolved(trules[49], input, o, a, func(v any) *types.Field { return pegort.TAs[*types.Field](v) })
 	case "nfield_alias":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[50], input, o, a, func(v any) *Field { return pegort.TAs[*Field](v) })
+		return pegort.TParseResolved(trules[50], input, o, a, func(v any) *types.Field { return pegort.TAs[*types.Field](v) })
 	case "field_value":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[51], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[51], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "fv_label":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[52], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[52], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "fv_choice":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[53], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[53], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "let_skip":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[54], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[54], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "let_value":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[55], input, o, a, func(v any) *Ident { return tv0(a, v) })
+		return pegort.TParseResolved(trules[55], input, o, a, func(v any) *types.Ident { return tv0(a, v) })
 	case "expr_nolet":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[56], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[56], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "nested":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[57], input, o, a, func(v any) *StructLit { return pegort.TAs[*StructLit](v) })
+		return pegort.TParseResolved(trules[57], input, o, a, func(v any) *types.StructLit { return pegort.TAs[*types.StructLit](v) })
 	case "alias_value":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[58], input, o, a, func(v any) *Alias { return pegort.TAs[*Alias](v) })
+		return pegort.TParseResolved(trules[58], input, o, a, func(v any) *types.Alias { return pegort.TAs[*types.Alias](v) })
 	case "attrs":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[59], input, o, a, func(v any) []*Attribute { return tl1(a, v) })
+		return pegort.TParseResolved(trules[59], input, o, a, func(v any) []*types.Attribute { return tl1(a, v) })
 	case "postfix_alias_at":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[60], input, o, a, func(v any) *PostfixAlias { return pegort.TAs[*PostfixAlias](v) })
+		return pegort.TParseResolved(trules[60], input, o, a, func(v any) *types.PostfixAlias { return pegort.TAs[*types.PostfixAlias](v) })
 	case "postfix_alias":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[61], input, o, a, func(v any) *PostfixAlias { return pegort.TAs[*PostfixAlias](v) })
+		return pegort.TParseResolved(trules[61], input, o, a, func(v any) *types.PostfixAlias { return pegort.TAs[*types.PostfixAlias](v) })
 	case "alias_dual":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[62], input, o, a, func(v any) *PostfixAlias { return pegort.TAs[*PostfixAlias](v) })
+		return pegort.TParseResolved(trules[62], input, o, a, func(v any) *types.PostfixAlias { return pegort.TAs[*types.PostfixAlias](v) })
 	case "alias_paren":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[63], input, o, a, func(v any) *PostfixAlias { return pegort.TAs[*PostfixAlias](v) })
+		return pegort.TParseResolved(trules[63], input, o, a, func(v any) *types.PostfixAlias { return pegort.TAs[*types.PostfixAlias](v) })
 	case "alias_simple":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[64], input, o, a, func(v any) *PostfixAlias { return pegort.TAs[*PostfixAlias](v) })
+		return pegort.TParseResolved(trules[64], input, o, a, func(v any) *types.PostfixAlias { return pegort.TAs[*types.PostfixAlias](v) })
 	case "label_plain":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[65], input, o, a, func(v any) Label { return pegort.TAs[Label](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[65], input, o, a, func(v any) types.Label { return pegort.TAs[types.Label](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "ident_label":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[66], input, o, a, func(v any) *Ident { return tv0(a, v) })
+		return pegort.TParseResolved(trules[66], input, o, a, func(v any) *types.Ident { return tv0(a, v) })
 	case "kw_label":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[67], input, o, a, func(v any) *Ident { return tv0(a, v) })
+		return pegort.TParseResolved(trules[67], input, o, a, func(v any) *types.Ident { return tv0(a, v) })
 	case "for_label":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[68], input, o, a, func(v any) *Ident { return tv0(a, v) })
+		return pegort.TParseResolved(trules[68], input, o, a, func(v any) *types.Ident { return tv0(a, v) })
 	case "if_label":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[69], input, o, a, func(v any) *Ident { return tv0(a, v) })
+		return pegort.TParseResolved(trules[69], input, o, a, func(v any) *types.Ident { return tv0(a, v) })
 	case "let_label":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[70], input, o, a, func(v any) *Ident { return tv0(a, v) })
+		return pegort.TParseResolved(trules[70], input, o, a, func(v any) *types.Ident { return tv0(a, v) })
 	case "alias_label":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[71], input, o, a, func(v any) *Alias { return pegort.TAs[*Alias](v) })
+		return pegort.TParseResolved(trules[71], input, o, a, func(v any) *types.Alias { return pegort.TAs[*types.Alias](v) })
 	case "nlabel_plain":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[72], input, o, a, func(v any) Label { return pegort.TAs[Label](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[72], input, o, a, func(v any) types.Label { return pegort.TAs[types.Label](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "nident_label":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[73], input, o, a, func(v any) *Ident { return tv0(a, v) })
+		return pegort.TParseResolved(trules[73], input, o, a, func(v any) *types.Ident { return tv0(a, v) })
 	case "nkw_label":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[74], input, o, a, func(v any) *Ident { return tv0(a, v) })
+		return pegort.TParseResolved(trules[74], input, o, a, func(v any) *types.Ident { return tv0(a, v) })
 	case "alias_nlabel":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[75], input, o, a, func(v any) *Alias { return pegort.TAs[*Alias](v) })
+		return pegort.TParseResolved(trules[75], input, o, a, func(v any) *types.Alias { return pegort.TAs[*types.Alias](v) })
 	case "alias_rhs":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[76], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[76], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "ident_any":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[77], input, o, a, func(v any) *Ident { return tv0(a, v) })
+		return pegort.TParseResolved(trules[77], input, o, a, func(v any) *types.Ident { return tv0(a, v) })
 	case "comprehension":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[78], input, o, a, func(v any) *Comprehension { return pegort.TAs[*Comprehension](v) })
+		return pegort.TParseResolved(trules[78], input, o, a, func(v any) *types.Comprehension { return pegort.TAs[*types.Comprehension](v) })
 	case "comp_single":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[79], input, o, a, func(v any) *Comprehension { return pegort.TAs[*Comprehension](v) })
+		return pegort.TParseResolved(trules[79], input, o, a, func(v any) *types.Comprehension { return pegort.TAs[*types.Comprehension](v) })
 	case "comp_multi":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[80], input, o, a, func(v any) *Comprehension { return pegort.TAs[*Comprehension](v) })
+		return pegort.TParseResolved(trules[80], input, o, a, func(v any) *types.Comprehension { return pegort.TAs[*types.Comprehension](v) })
 	case "fb_else":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[81], input, o, a, func(v any) *FallbackClause { return pegort.TAs[*FallbackClause](v) })
+		return pegort.TParseResolved(trules[81], input, o, a, func(v any) *types.FallbackClause { return pegort.TAs[*types.FallbackClause](v) })
 	case "fb_other":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[82], input, o, a, func(v any) *FallbackClause { return pegort.TAs[*FallbackClause](v) })
+		return pegort.TParseResolved(trules[82], input, o, a, func(v any) *types.FallbackClause { return pegort.TAs[*types.FallbackClause](v) })
 	case "else_clause":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[83], input, o, a, func(v any) *FallbackClause { return pegort.TAs[*FallbackClause](v) })
+		return pegort.TParseResolved(trules[83], input, o, a, func(v any) *types.FallbackClause { return pegort.TAs[*types.FallbackClause](v) })
 	case "otherwise_clause":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[84], input, o, a, func(v any) *FallbackClause { return pegort.TAs[*FallbackClause](v) })
+		return pegort.TParseResolved(trules[84], input, o, a, func(v any) *types.FallbackClause { return pegort.TAs[*types.FallbackClause](v) })
 	case "clause_gap":
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[85], input, o, a, func(v any) any { return tv21(a, v) })
 	case "gate_for_if":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[86], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv22(a, v) })
+		return pegort.TParseResolved(trules[86], input, o, a, func(v any) *types.TNode[types.Tuple1[*types.TNode[string]]] { return tv22(a, v) })
 	case "start_clause":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[87], input, o, a, func(v any) Clause { return pegort.TAs[Clause](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[87], input, o, a, func(v any) types.Clause { return pegort.TAs[types.Clause](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "clause":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[88], input, o, a, func(v any) Clause { return pegort.TAs[Clause](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[88], input, o, a, func(v any) types.Clause { return pegort.TAs[types.Clause](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "for_clause":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[89], input, o, a, func(v any) *ForClause { return pegort.TAs[*ForClause](v) })
+		return pegort.TParseResolved(trules[89], input, o, a, func(v any) *types.ForClause { return pegort.TAs[*types.ForClause](v) })
 	case "for_kv":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[90], input, o, a, func(v any) *ForClause { return pegort.TAs[*ForClause](v) })
+		return pegort.TParseResolved(trules[90], input, o, a, func(v any) *types.ForClause { return pegort.TAs[*types.ForClause](v) })
 	case "for_v":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[91], input, o, a, func(v any) *ForClause { return pegort.TAs[*ForClause](v) })
+		return pegort.TParseResolved(trules[91], input, o, a, func(v any) *types.ForClause { return pegort.TAs[*types.ForClause](v) })
 	case "if_clause":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[92], input, o, a, func(v any) *IfClause { return pegort.TAs[*IfClause](v) })
+		return pegort.TParseResolved(trules[92], input, o, a, func(v any) *types.IfClause { return pegort.TAs[*types.IfClause](v) })
 	case "try_clause":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[93], input, o, a, func(v any) *TryClause { return pegort.TAs[*TryClause](v) })
+		return pegort.TParseResolved(trules[93], input, o, a, func(v any) *types.TryClause { return pegort.TAs[*types.TryClause](v) })
 	case "try_assign":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[94], input, o, a, func(v any) *TryClause { return pegort.TAs[*TryClause](v) })
+		return pegort.TParseResolved(trules[94], input, o, a, func(v any) *types.TryClause { return pegort.TAs[*types.TryClause](v) })
 	case "try_plain":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[95], input, o, a, func(v any) *TryClause { return pegort.TAs[*TryClause](v) })
+		return pegort.TParseResolved(trules[95], input, o, a, func(v any) *types.TryClause { return pegort.TAs[*types.TryClause](v) })
 	case "struct_lit":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[96], input, o, a, func(v any) *StructLit { return pegort.TAs[*StructLit](v) })
+		return pegort.TParseResolved(trules[96], input, o, a, func(v any) *types.StructLit { return pegort.TAs[*types.StructLit](v) })
 	case "list_lit":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[97], input, o, a, func(v any) *ListLit { return pegort.TAs[*ListLit](v) })
+		return pegort.TParseResolved(trules[97], input, o, a, func(v any) *types.ListLit { return pegort.TAs[*types.ListLit](v) })
 	case "esep":
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[98], input, o, a, func(v any) any { return tv23(a, v) })
 	case "list_elem":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[99], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[99], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "elem_expr":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[100], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[100], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "gate_kw3":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[101], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv24(a, v) })
+		return pegort.TParseResolved(trules[101], input, o, a, func(v any) *types.TNode[types.Tuple1[*types.TNode[string]]] { return tv24(a, v) })
 	case "bare_for_if":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[102], input, o, a, func(v any) *Ident { return tv0(a, v) })
+		return pegort.TParseResolved(trules[102], input, o, a, func(v any) *types.Ident { return tv0(a, v) })
 	case "alias_elem":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[103], input, o, a, func(v any) *Alias { return pegort.TAs[*Alias](v) })
+		return pegort.TParseResolved(trules[103], input, o, a, func(v any) *types.Alias { return pegort.TAs[*types.Alias](v) })
 	case "list_dots":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[104], input, o, a, func(v any) *Ellipsis { return pegort.TAs[*Ellipsis](v) })
+		return pegort.TParseResolved(trules[104], input, o, a, func(v any) *types.Ellipsis { return pegort.TAs[*types.Ellipsis](v) })
 	case "dots_type":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[105], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[105], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "paren_expr":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[106], input, o, a, func(v any) *ParenExpr { return pegort.TAs[*ParenExpr](v) })
+		return pegort.TParseResolved(trules[106], input, o, a, func(v any) *types.ParenExpr { return pegort.TAs[*types.ParenExpr](v) })
 	case "expr":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[107], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[107], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "atom_expr":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[108], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[108], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "operand_any":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[109], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[109], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "operand_word":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[110], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[110], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "word_any":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[111], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[111], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "operand_digit":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[112], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[112], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "operand_other":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[113], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[113], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "ident_q":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[114], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[114], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "full_expr":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[115], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[115], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "asep":
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[116], input, o, a, func(v any) any { return tv25(a, v) })
 	case "selector":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[117], input, o, a, func(v any) Selector { return pegort.TAs[Selector](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[117], input, o, a, func(v any) types.Selector { return pegort.TAs[types.Selector](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "bool_ident_sel":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[118], input, o, a, func(v any) *Ident { return tv0(a, v) })
+		return pegort.TParseResolved(trules[118], input, o, a, func(v any) *types.Ident { return tv0(a, v) })
 	case "sel_string":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[119], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[119], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "interp_expr":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[120], input, o, a, func(v any) Expr { return pegort.TAs[Expr](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[120], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "attribute":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[121], input, o, a, func(v any) *Attribute { return tv26(a, v) })
+		return pegort.TParseResolved(trules[121], input, o, a, func(v any) *types.Attribute { return tv26(a, v) })
 	case "attribute_d":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[122], input, o, a, func(v any) *Attribute { return tv26(a, v) })
+		return pegort.TParseResolved(trules[122], input, o, a, func(v any) *types.Attribute { return tv26(a, v) })
 	case "attr_body":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[123], input, o, a, func(v any) *TNode[[]any] { return tv27(a, v) })
+		return pegort.TParseResolved(trules[123], input, o, a, func(v any) *types.TNode[[]any] { return tv27(a, v) })
 	case "attr_group":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[124], input, o, a, func(v any) *TNode[Tuple3[*TNode[string], any, *TNode[string]]] { return tv28(a, v) })
+		return pegort.TParseResolved(trules[124], input, o, a, func(v any) *types.TNode[types.Tuple3[*types.TNode[string], any, *types.TNode[string]]] {
+			return tv28(a, v)
+		})
 	case "attr_tok":
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[125], input, o, a, func(v any) any { return tv29(a, v) })
 	case "attr_num":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[126], input, o, a, func(v any) *TNode[Tuple1[any]] { return tv30(a, v) })
+		return pegort.TParseResolved(trules[126], input, o, a, func(v any) *types.TNode[types.Tuple1[any]] { return tv30(a, v) })
 	case "num_exp":
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[127], input, o, a, func(v any) any { return tv31(a, v) })
@@ -4410,24 +3201,24 @@ func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 		return pegort.TParseResolved(trules[128], input, o, a, func(v any) any { return tv32(a, v) })
 	case "bad_num":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[129], input, o, a, func(v any) *TNode[Tuple2[*TNode[string], *TNode[string]]] { return tv33(a, v) })
+		return pegort.TParseResolved(trules[129], input, o, a, func(v any) *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]] { return tv33(a, v) })
 	case "zero_ok":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[130], input, o, a, func(v any) *TNode[Tuple3[*TNode[string], *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]], any]] {
+		return pegort.TParseResolved(trules[130], input, o, a, func(v any) *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]], any]] {
 			return tv34(a, v)
 		})
 	case "attr_str":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[131], input, o, a, func(v any) *String { return tv35(a, v) })
+		return pegort.TParseResolved(trules[131], input, o, a, func(v any) *types.String { return tv35(a, v) })
 	case "idchar":
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[132], input, o, a, func(v any) any { return tv36(a, v) })
 	case "uidchar":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[133], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv37(a, v) })
+		return pegort.TParseResolved(trules[133], input, o, a, func(v any) *types.TNode[types.Tuple1[*types.TNode[string]]] { return tv37(a, v) })
 	case "idchars":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[134], input, o, a, func(v any) *TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[[]*TNode[Tuple2[*TNode[Tuple1[*TNode[string]]], *TNode[[]*TNode[string]]]]]]] {
+		return pegort.TParseResolved(trules[134], input, o, a, func(v any) *types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[[]*types.TNode[string]]]]]]] {
 			return tv38(a, v)
 		})
 	case "idstart":
@@ -4441,75 +3232,75 @@ func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 		return pegort.TParseResolved(trules[137], input, o, a, func(v any) any { return tv41(a, v) })
 	case "hashrest":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[138], input, o, a, func(v any) *TNode[[]any] { return tv42(a, v) })
+		return pegort.TParseResolved(trules[138], input, o, a, func(v any) *types.TNode[[]any] { return tv42(a, v) })
 	case "ident":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[139], input, o, a, func(v any) *Ident { return tv0(a, v) })
+		return pegort.TParseResolved(trules[139], input, o, a, func(v any) *types.Ident { return tv0(a, v) })
 	case "kw":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[140], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv43(a, v) })
+		return pegort.TParseResolved(trules[140], input, o, a, func(v any) *types.TNode[types.Tuple1[*types.TNode[string]]] { return tv43(a, v) })
 	case "kwident":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[141], input, o, a, func(v any) *Ident { return tv0(a, v) })
+		return pegort.TParseResolved(trules[141], input, o, a, func(v any) *types.Ident { return tv0(a, v) })
 	case "bool_lit":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[142], input, o, a, func(v any) *Bool { return tv44(a, v) })
+		return pegort.TParseResolved(trules[142], input, o, a, func(v any) *types.Bool { return tv44(a, v) })
 	case "null_lit":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[143], input, o, a, func(v any) *Null { return tv45(a, v) })
+		return pegort.TParseResolved(trules[143], input, o, a, func(v any) *types.Null { return tv45(a, v) })
 	case "bottom":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[144], input, o, a, func(v any) *Bottom { return tv46(a, v) })
+		return pegort.TParseResolved(trules[144], input, o, a, func(v any) *types.Bottom { return tv46(a, v) })
 	case "number":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[145], input, o, a, func(v any) Number { return pegort.TAs[Number](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[145], input, o, a, func(v any) types.Number { return pegort.TAs[types.Number](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "number_any":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[146], input, o, a, func(v any) Number { return pegort.TAs[Number](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[146], input, o, a, func(v any) types.Number { return pegort.TAs[types.Number](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "hexd":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[147], input, o, a, func(v any) *TNode[string] { return tv47(a, v) })
+		return pegort.TParseResolved(trules[147], input, o, a, func(v any) *types.TNode[string] { return tv47(a, v) })
 	case "based":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[148], input, o, a, func(v any) *Int { return tv48(a, v) })
+		return pegort.TParseResolved(trules[148], input, o, a, func(v any) *types.Int { return tv48(a, v) })
 	case "d10":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[149], input, o, a, func(v any) *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]] {
+		return pegort.TParseResolved(trules[149], input, o, a, func(v any) *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]] {
 			return tv49(a, v)
 		})
 	case "dec_ip":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[150], input, o, a, func(v any) *TNode[Tuple2[*TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]] {
+		return pegort.TParseResolved(trules[150], input, o, a, func(v any) *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]] {
 			return tv50(a, v)
 		})
 	case "fracpart":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[151], input, o, a, func(v any) *TNode[Tuple2[*TNode[string], *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]]]] {
+		return pegort.TParseResolved(trules[151], input, o, a, func(v any) *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]]]] {
 			return tv51(a, v)
 		})
 	case "exppart":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[152], input, o, a, func(v any) *TNode[Tuple5[*TNode[string], *TNode[string], *TNode[string], *TNode[string], *TNode[[]*TNode[Tuple2[*TNode[string], *TNode[string]]]]]] {
+		return pegort.TParseResolved(trules[152], input, o, a, func(v any) *types.TNode[types.Tuple5[*types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[[]*types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]]]]] {
 			return tv52(a, v)
 		})
 	case "mult":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[153], input, o, a, func(v any) *TNode[Tuple2[*TNode[string], *TNode[string]]] { return tv53(a, v) })
+		return pegort.TParseResolved(trules[153], input, o, a, func(v any) *types.TNode[types.Tuple2[*types.TNode[string], *types.TNode[string]]] { return tv53(a, v) })
 	case "float_lit":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[154], input, o, a, func(v any) *Float { return tv54(a, v) })
+		return pegort.TParseResolved(trules[154], input, o, a, func(v any) *types.Float { return tv54(a, v) })
 	case "int_lit":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[155], input, o, a, func(v any) *Int { return tv48(a, v) })
+		return pegort.TParseResolved(trules[155], input, o, a, func(v any) *types.Int { return tv48(a, v) })
 	case "strlit":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[156], input, o, a, func(v any) StrLit { return pegort.TAs[StrLit](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[156], input, o, a, func(v any) types.StrLit { return pegort.TAs[types.StrLit](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "str_any":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[157], input, o, a, func(v any) StrLit { return pegort.TAs[StrLit](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[157], input, o, a, func(v any) types.StrLit { return pegort.TAs[types.StrLit](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "hexd4":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[158], input, o, a, func(v any) *TNode[Tuple4[*TNode[string], *TNode[string], *TNode[string], *TNode[string]]] {
+		return pegort.TParseResolved(trules[158], input, o, a, func(v any) *types.TNode[types.Tuple4[*types.TNode[string], *types.TNode[string], *types.TNode[string], *types.TNode[string]]] {
 			return tv55(a, v)
 		})
 	case "bigu":
@@ -4523,175 +3314,179 @@ func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 		return pegort.TParseResolved(trules[161], input, o, a, func(v any) any { return tv58(a, v) })
 	case "dqbody":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[162], input, o, a, func(v any) *TNode[[]any] { return tv59(a, v) })
+		return pegort.TParseResolved(trules[162], input, o, a, func(v any) *types.TNode[[]any] { return tv59(a, v) })
 	case "dq_plain":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[163], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[163], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "dq_open":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[164], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[164], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "dq_mid":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[165], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[165], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "dq_end":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[166], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[166], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "dq_interp":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[167], input, o, a, func(v any) *Interpolation { return pegort.TAs[*Interpolation](v) })
+		return pegort.TParseResolved(trules[167], input, o, a, func(v any) *types.Interpolation { return pegort.TAs[*types.Interpolation](v) })
 	case "dq_rest":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[168], input, o, a, func(v any) []Expr { return tl2(a, v) })
+		return pegort.TParseResolved(trules[168], input, o, a, func(v any) []types.Expr { return tl2(a, v) })
 	case "dq_more":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[169], input, o, a, func(v any) []Expr { return tl2(a, v) })
+		return pegort.TParseResolved(trules[169], input, o, a, func(v any) []types.Expr { return tl2(a, v) })
 	case "dq_last":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[170], input, o, a, func(v any) []Expr { return tl2(a, v) })
+		return pegort.TParseResolved(trules[170], input, o, a, func(v any) []types.Expr { return tl2(a, v) })
 	case "sqbody":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[171], input, o, a, func(v any) *TNode[[]any] { return tv60(a, v) })
+		return pegort.TParseResolved(trules[171], input, o, a, func(v any) *types.TNode[[]any] { return tv60(a, v) })
 	case "sq_plain":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[172], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[172], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "sq_open":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[173], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[173], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "sq_mid":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[174], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[174], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "sq_end":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[175], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[175], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "sq_interp":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[176], input, o, a, func(v any) *Interpolation { return pegort.TAs[*Interpolation](v) })
+		return pegort.TParseResolved(trules[176], input, o, a, func(v any) *types.Interpolation { return pegort.TAs[*types.Interpolation](v) })
 	case "sq_rest":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[177], input, o, a, func(v any) []Expr { return tl2(a, v) })
+		return pegort.TParseResolved(trules[177], input, o, a, func(v any) []types.Expr { return tl2(a, v) })
 	case "sq_more":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[178], input, o, a, func(v any) []Expr { return tl2(a, v) })
+		return pegort.TParseResolved(trules[178], input, o, a, func(v any) []types.Expr { return tl2(a, v) })
 	case "sq_last":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[179], input, o, a, func(v any) []Expr { return tl2(a, v) })
+		return pegort.TParseResolved(trules[179], input, o, a, func(v any) []types.Expr { return tl2(a, v) })
 	case "gstring":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[180], input, o, a, func(v any) StrLit { return pegort.TAs[StrLit](pegort.TPubIn(tpubHooks, a, v)) })
+		return pegort.TParseResolved(trules[180], input, o, a, func(v any) types.StrLit { return pegort.TAs[types.StrLit](pegort.TPubIn(types.PegoHooks, a, v)) })
 	case "qc":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[181], input, o, a, func(v any) *TNode[Tuple1[*TNode[string]]] { return tv61(a, v) })
+		return pegort.TParseResolved(trules[181], input, o, a, func(v any) *types.TNode[types.Tuple1[*types.TNode[string]]] { return tv61(a, v) })
 	case "hq":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[182], input, o, a, func(v any) *TNode[Tuple2[*TNode[string], any]] { return tv62(a, v) })
+		return pegort.TParseResolved(trules[182], input, o, a, func(v any) *types.TNode[types.Tuple2[*types.TNode[string], any]] { return tv62(a, v) })
 	case "g_escbody":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[183], input, o, a, func(v any) *TNode[Tuple1[any]] { return tv63(a, v) })
+		return pegort.TParseResolved(trules[183], input, o, a, func(v any) *types.TNode[types.Tuple1[any]] { return tv63(a, v) })
 	case "gs_esc":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[184], input, o, a, func(v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[Tuple1[*TNode[Tuple1[any]]]]]] {
+		return pegort.TParseResolved(trules[184], input, o, a, func(v any) *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[types.Tuple1[*types.TNode[types.Tuple1[any]]]]]] {
 			return tv64(a, v)
 		})
 	case "g_interp_open":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[185], input, o, a, func(v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[string]]] { return tv65(a, v) })
+		return pegort.TParseResolved(trules[185], input, o, a, func(v any) *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[string]]] {
+			return tv65(a, v)
+		})
 	case "ml_nl":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[186], input, o, a, func(v any) *TNode[string] { return tv66(a, v) })
+		return pegort.TParseResolved(trules[186], input, o, a, func(v any) *types.TNode[string] { return tv66(a, v) })
 	case "ml_open_tail":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[187], input, o, a, func(v any) *TNode[Tuple4[*TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[string], *TNode[string]]] {
+		return pegort.TParseResolved(trules[187], input, o, a, func(v any) *types.TNode[types.Tuple4[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[string], *types.TNode[string]]] {
 			return tv67(a, v)
 		})
 	case "ml_close_tail":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[188], input, o, a, func(v any) *TNode[Tuple4[*TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[Tuple1[*TNode[string]]], *TNode[Tuple2[*TNode[string], any]]]] {
+		return pegort.TParseResolved(trules[188], input, o, a, func(v any) *types.TNode[types.Tuple4[*types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple1[*types.TNode[string]]], *types.TNode[types.Tuple2[*types.TNode[string], any]]]] {
 			return tv68(a, v)
 		})
 	case "gtriple":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[189], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[189], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "gs_body":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[190], input, o, a, func(v any) *TNode[[]any] { return tv69(a, v) })
+		return pegort.TParseResolved(trules[190], input, o, a, func(v any) *types.TNode[[]any] { return tv69(a, v) })
 	case "gs_quote":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[191], input, o, a, func(v any) *TNode[Tuple1[*TNode[Tuple1[any]]]] { return tv70(a, v) })
+		return pegort.TParseResolved(trules[191], input, o, a, func(v any) *types.TNode[types.Tuple1[*types.TNode[types.Tuple1[any]]]] { return tv70(a, v) })
 	case "gsl_plain":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[192], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[192], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "gsl_open":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[193], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[193], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "gsl_mid":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[194], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[194], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "gsl_end":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[195], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[195], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "gsl_interp":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[196], input, o, a, func(v any) *Interpolation { return pegort.TAs[*Interpolation](v) })
+		return pegort.TParseResolved(trules[196], input, o, a, func(v any) *types.Interpolation { return pegort.TAs[*types.Interpolation](v) })
 	case "gsl_interp_s":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[197], input, o, a, func(v any) *Interpolation { return pegort.TAs[*Interpolation](v) })
+		return pegort.TParseResolved(trules[197], input, o, a, func(v any) *types.Interpolation { return pegort.TAs[*types.Interpolation](v) })
 	case "gsl_rest":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[198], input, o, a, func(v any) []Expr { return tl2(a, v) })
+		return pegort.TParseResolved(trules[198], input, o, a, func(v any) []types.Expr { return tl2(a, v) })
 	case "gsl_more":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[199], input, o, a, func(v any) []Expr { return tl2(a, v) })
+		return pegort.TParseResolved(trules[199], input, o, a, func(v any) []types.Expr { return tl2(a, v) })
 	case "gsl_last":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[200], input, o, a, func(v any) []Expr { return tl2(a, v) })
+		return pegort.TParseResolved(trules[200], input, o, a, func(v any) []types.Expr { return tl2(a, v) })
 	case "ml_body":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[201], input, o, a, func(v any) *TNode[[]any] { return tv71(a, v) })
+		return pegort.TParseResolved(trules[201], input, o, a, func(v any) *types.TNode[[]any] { return tv71(a, v) })
 	case "ml_line":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[202], input, o, a, func(v any) *TNode[Tuple3[*TNode[string], *TNode[string], *TNode[string]]] { return tv72(a, v) })
+		return pegort.TParseResolved(trules[202], input, o, a, func(v any) *types.TNode[types.Tuple3[*types.TNode[string], *types.TNode[string], *types.TNode[string]]] {
+			return tv72(a, v)
+		})
 	case "ml_close":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[203], input, o, a, func(v any) *TNode[string] { return (*TNode[string])(pegort.TPubMatch(v)) })
+		return pegort.TParseResolved(trules[203], input, o, a, func(v any) *types.TNode[string] { return (*types.TNode[string])(pegort.TPubMatch(v)) })
 	case "gml_plain":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[204], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[204], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "ml_frag":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[205], input, o, a, func(v any) *TNode[[]any] { return tv73(a, v) })
+		return pegort.TParseResolved(trules[205], input, o, a, func(v any) *types.TNode[[]any] { return tv73(a, v) })
 	case "gml_open":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[206], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[206], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "gml_mid":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[207], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[207], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "gml_end":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[208], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[208], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "gml_interp":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[209], input, o, a, func(v any) *Interpolation { return pegort.TAs[*Interpolation](v) })
+		return pegort.TParseResolved(trules[209], input, o, a, func(v any) *types.Interpolation { return pegort.TAs[*types.Interpolation](v) })
 	case "gml_interp_s":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[210], input, o, a, func(v any) *Interpolation { return pegort.TAs[*Interpolation](v) })
+		return pegort.TParseResolved(trules[210], input, o, a, func(v any) *types.Interpolation { return pegort.TAs[*types.Interpolation](v) })
 	case "gml_rest":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[211], input, o, a, func(v any) []Expr { return tl2(a, v) })
+		return pegort.TParseResolved(trules[211], input, o, a, func(v any) []types.Expr { return tl2(a, v) })
 	case "gml_more":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[212], input, o, a, func(v any) []Expr { return tl2(a, v) })
+		return pegort.TParseResolved(trules[212], input, o, a, func(v any) []types.Expr { return tl2(a, v) })
 	case "gml_last":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[213], input, o, a, func(v any) []Expr { return tl2(a, v) })
+		return pegort.TParseResolved(trules[213], input, o, a, func(v any) []types.Expr { return tl2(a, v) })
 	case "gstr_plain":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[214], input, o, a, func(v any) *String { return pegort.TAs[*String](v) })
+		return pegort.TParseResolved(trules[214], input, o, a, func(v any) *types.String { return pegort.TAs[*types.String](v) })
 	case "uletter":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[215], input, o, a, func(v any) *TNode[string] { return tv74(a, v) })
+		return pegort.TParseResolved(trules[215], input, o, a, func(v any) *types.TNode[string] { return tv74(a, v) })
 	case "udigit":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[216], input, o, a, func(v any) *TNode[string] { return tv75(a, v) })
+		return pegort.TParseResolved(trules[216], input, o, a, func(v any) *types.TNode[string] { return tv75(a, v) })
 	default:
 		return nil, fmt.Errorf("rule %s is not defined", name)
 	}

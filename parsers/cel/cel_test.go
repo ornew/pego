@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/parsers/cel"
+	"github.com/ornew/pego/parsers/cel/types"
 )
 
 // textprotoExprs returns the value of each expr field in a file of the protobuf text format. A string value may be
@@ -230,7 +231,7 @@ func TestAgreement(t *testing.T) {
 
 // checkSpans checks the invariants of the spans of an expression: they lie in the input, a terminal's span is its
 // text, and the spans of the sub-expressions of a node lie in the node's, in order and without overlapping.
-func checkSpans(t testing.TB, src string, e cel.Expr, bytes bool) {
+func checkSpans(t testing.TB, src string, e types.Expr, bytes bool) {
 	t.Helper()
 	text := []rune(src)
 	slice := func(sp cel.Span) string {
@@ -243,28 +244,28 @@ func checkSpans(t testing.TB, src string, e cel.Expr, bytes bool) {
 	if bytes {
 		size = len(src)
 	}
-	var walk func(e cel.Expr, parent cel.Span, after int) int
-	walk = func(e cel.Expr, parent cel.Span, after int) int {
+	var walk func(e types.Expr, parent cel.Span, after int) int
+	walk = func(e types.Expr, parent cel.Span, after int) int {
 		sp := cel.SpanOf(e)
 		if sp.Start < parent.Start || sp.End > parent.End || sp.Start < after || sp.End < sp.Start || sp.End > size {
 			t.Fatalf("%q: %T has span %v, outside %v or before %d", src, e, sp, parent, after)
 		}
 		switch e := e.(type) {
-		case *cel.Ident:
+		case *types.Ident:
 			if slice(sp) != e.Value {
 				t.Fatalf("%q: %T span %v is %q, text %q", src, e, sp, slice(sp), e.Value)
 			}
-		case *cel.IntLit:
+		case *types.IntLit:
 			if slice(sp) != e.TNode.Value {
 				t.Fatalf("%q: %T span %v is %q, text %q", src, e, sp, slice(sp), e.TNode.Value)
 			}
-		case *cel.StringLit:
+		case *types.StringLit:
 			if slice(sp) != e.TNode.Value {
 				t.Fatalf("%q: %T span %v is %q, text %q", src, e, sp, slice(sp), e.TNode.Value)
 			}
 		}
 		end := sp.Start
-		cel.Children(e, func(c cel.Expr) { end = walk(c, sp, end) })
+		cel.Children(e, func(c types.Expr) { end = walk(c, sp, end) })
 		return sp.End
 	}
 	walk(e, cel.Span{Start: 0, End: size}, 0)
@@ -290,7 +291,7 @@ func TestValues(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", src, err)
 		}
-		return e.(*cel.StringLit).Value()
+		return e.(*types.StringLit).Value()
 	}
 	for _, tc := range []struct{ src, want string }{
 		{`""`, ""},
@@ -318,7 +319,7 @@ func TestValues(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", src, err)
 		}
-		return string(e.(*cel.BytesLit).Value())
+		return string(e.(*types.BytesLit).Value())
 	}
 	for _, tc := range []struct{ src, want string }{
 		{`b"abc"`, "abc"},
@@ -350,7 +351,7 @@ func TestValues(t *testing.T) {
 		if err != nil {
 			return 0, err
 		}
-		return e.(*cel.IntLit).Value()
+		return e.(*types.IntLit).Value()
 	}
 	for _, tc := range []struct {
 		src  string
@@ -371,7 +372,7 @@ func TestValues(t *testing.T) {
 		if err != nil {
 			return 0, err
 		}
-		return e.(*cel.UintLit).Value()
+		return e.(*types.UintLit).Value()
 	}
 	if got, err := uints("18446744073709551615u"); err != nil || got != 1<<64-1 {
 		t.Errorf("max uint = %d, %v", got, err)
@@ -386,7 +387,7 @@ func TestValues(t *testing.T) {
 		if err != nil {
 			return 0, err
 		}
-		return e.(*cel.DoubleLit).Value()
+		return e.(*types.DoubleLit).Value()
 	}
 	for _, tc := range []struct {
 		src  string
@@ -409,8 +410,8 @@ func TestNames(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	d := e.(*cel.Select)
-	bc := d.X.(*cel.Select)
+	d := e.(*types.Select)
+	bc := d.X.(*types.Select)
 	if d.Field.Value() != "d" || bc.Field.Value() != "b c" {
 		t.Errorf("fields %q, %q", bc.Field.Value(), d.Field.Value())
 	}
@@ -418,14 +419,14 @@ func TestNames(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if id := e.(*cel.Ident); id.Name() != "a" || !id.Rooted() {
+	if id := e.(*types.Ident); id.Name() != "a" || !id.Rooted() {
 		t.Errorf("ident %q rooted %v", id.Name(), id.Rooted())
 	}
 	e, err = cel.ParseExpr(".a . b.C {f: 1}")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if id := e.(*cel.MessageLit).Type; id.Name() != "a.b.C" || !id.Rooted() {
+	if id := e.(*types.MessageLit).Type; id.Name() != "a.b.C" || !id.Rooted() {
 		t.Errorf("type %q rooted %v", id.Name(), id.Rooted())
 	}
 }

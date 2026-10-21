@@ -3,6 +3,8 @@ package typescript
 import (
 	"reflect"
 	"sync"
+
+	"github.com/ornew/pego/parsers/typescript/types"
 )
 
 // ASTNode is a node of the AST: a pointer to one of the struct or terminal types of this package, each of which
@@ -33,23 +35,23 @@ func AsNode(v any) ASTNode {
 func Kind(v any) string {
 	node := AsNode(v)
 	switch n := node.(type) {
-	case *Token:
+	case *types.Token:
 		return tokenKinds[n.Value]
-	case *Modifier:
+	case *types.Modifier:
 		return tokenKinds[n.Value]
-	case *KeywordTypeNode:
+	case *types.KeywordTypeNode:
 		return tokenKinds[n.Value]
-	case *BooleanLiteral:
+	case *types.BooleanLiteral:
 		return tokenKinds[n.Value]
-	case *ThisExpression:
+	case *types.ThisExpression:
 		return "ThisKeyword"
-	case *SuperExpression:
+	case *types.SuperExpression:
 		return "SuperKeyword"
-	case *NullLiteral:
+	case *types.NullLiteral:
 		return "NullKeyword"
-	case *ImportExpression:
+	case *types.ImportExpression:
 		return "ImportKeyword"
-	case *ThisTypeNode:
+	case *types.ThisTypeNode:
 		return "ThisType"
 	case nil:
 		return ""

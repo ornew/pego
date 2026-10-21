@@ -30,8 +30,9 @@ fields of each struct type and the resolved alias types), and the generator maps
 | `Seq`, `List`, `Operator`, records | `*Node`, unchanged |
 | `node`, `terminal`, `_`, other joins | `any`, holding the converted value |
 
-Names that clash with the runtime's exported names (`Node`, `Match`, `Error`, `Parse`, ...) get a trailing `_`
-(a grammar type `Node` becomes `Node_`), and the helper `Span` takes a name no type or field uses.
+The types are declared in the package `types`, apart from the names that `parser.go` and `api.go` declare, so a
+grammar type keeps its name whatever it is (`Node`, `Parse`, `Walk`, ...). The names `types` declares itself (`TNode`,
+`Error`, `PegoHooks`, and `Unit`, `TupleN` and `PegoNodeTypes` where used) are an error for a grammar type.
 
 Every declared alias is exported as a Go alias to its resolved value representation: `type Alias = Word` in the
 grammar becomes `type Alias = *Word` in Go, and a list alias becomes an alias to the corresponding slice. Chained,

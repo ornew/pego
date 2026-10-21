@@ -63,11 +63,16 @@ func TestGeneratedNamedAST(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			code, err := generateCode(g, GenOptions{Package: "named", Start: variant.start, Types: true, convertTypes: variant.force, MaxDepth: 32})
+			dir := t.TempDir()
+			if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("namedfixture")), 0644); err != nil {
+				t.Fatal(err)
+			}
+			code := generatePackageIn(t, dir, "namedfixture", "named", g, GenOptions{Start: variant.start, Types: true, convertTypes: variant.force, MaxDepth: 32})
+			typesSource, err := os.ReadFile(filepath.Join(dir, "named", "types", "types.go"))
 			if err != nil {
 				t.Fatal(err)
 			}
-			named := string(code)[strings.Index(string(code), "func ParseRuleAST("):]
+			named := code[strings.Index(code, "func ParseRuleAST("):]
 			scalar := named[strings.Index(named, `case "structure":`):]
 			scalar = scalar[:strings.Index(scalar, "\n\tcase")]
 			direct := strings.Contains(scalar, "TParseResolved")
@@ -76,15 +81,11 @@ func TestGeneratedNamedAST(t *testing.T) {
 			if direct != (variant.name != "conversion" && variant.name != "field-read") {
 				t.Fatalf("wrong full runtime guard for structure: %s", scalar)
 			}
-			// The new reserved identifier uses the existing sorted underscore cascade.
-			if !strings.Contains(string(code), "type ParseRuleAST_ struct") || !strings.Contains(string(code), "type ParseRuleAST__ = *ParseRuleAST_") {
-				t.Fatal("missing deterministic identifier migration")
+			// A type named like the function ParseRuleAST is declared under its name, in its own package.
+			if !strings.Contains(string(typesSource), "type ParseRuleAST struct") || !strings.Contains(string(typesSource), "type ParseRuleAST_ = *ParseRuleAST") {
+				t.Fatal("missing the types named like the function")
 			}
-			dir := t.TempDir()
-			if err := os.Mkdir(filepath.Join(dir, "named"), 0755); err != nil {
-				t.Fatal(err)
-			}
-			for name, data := range map[string]string{"go.mod": testGoMod("namedfixture"), "named/parser.go": string(code), "named_test.go": strings.NewReplacer("START_CST", fmt.Sprint(variant.start == "cst"), "FIELD_READ", fmt.Sprint(variant.name == "field-read"), "START_TYPE", map[bool]string{true: "*p.TNode[p.Tuple2[*p.TNode[string], *p.TNode[string]]]", false: "*p.ParseRuleAST_"}[variant.start == "cst"]).Replace(namedASTConsumer)} {
+			for name, data := range map[string]string{"named_test.go": strings.NewReplacer("START_CST", fmt.Sprint(variant.start == "cst"), "FIELD_READ", fmt.Sprint(variant.name == "field-read"), "START_TYPE", map[bool]string{true: "*g.TNode[g.Tuple2[*g.TNode[string], *g.TNode[string]]]", false: "*g.ParseRuleAST"}[variant.start == "cst"]).Replace(namedASTConsumer)} {
 				if err := os.WriteFile(filepath.Join(dir, name), []byte(data), 0644); err != nil {
 					t.Fatal(err)
 				}
@@ -150,12 +151,12 @@ func TestGeneratedNamedASTScalarResults(t *testing.T) {
 }
 
 const namedASTConsumer = `package named_test
-import("encoding/json";"fmt";"reflect";"strings";"sync";"testing";p "namedfixture/named")
+import("encoding/json";"fmt";"reflect";"strings";"sync";"testing";p "namedfixture/named";g "namedfixture/named/types")
 func jsonValue(v any)string {b,err:=json.Marshal(v);if err!=nil {panic(err)};return string(b)}
 func TestNamedMappings(t *testing.T) {
  for _,unit:=range []p.PositionUnit{p.CodePoints,p.Bytes} {
   end:=1;if unit==p.Bytes {end=2}
-  if FIELD_READ {v,err:=p.ParseRuleAST("fieldRead","é",p.WithUnit(unit));if err!=nil||v.(*p.T).End!=end {t.Fatal(v,err)}}
+  if FIELD_READ {v,err:=p.ParseRuleAST("fieldRead","é",p.WithUnit(unit));if err!=nil||v.(*g.T).End!=end {t.Fatal(v,err)}}
   for _,c:=range []struct{name,input string;kind reflect.Kind}{
    {"main","é",reflect.Pointer},{"term","é",reflect.Pointer},{"aliased","é",reflect.Pointer},{"mixed","xy",reflect.Pointer},{"structure","é",reflect.Pointer},
    {"values","v",reflect.Pointer},
@@ -166,25 +167,25 @@ func TestNamedMappings(t *testing.T) {
    v,err:=p.ParseRuleAST(c.name,c.input,p.WithUnit(unit));if err!=nil {t.Fatalf("%s: %v",c.name,err)}
    if reflect.TypeOf(v)==nil||reflect.TypeOf(v).Kind()!=c.kind {t.Fatalf("%s wrong mapped type %T",c.name,v)}
    switch c.name {
-   case "main":x:=v.(*p.ParseRuleAST_);var alias p.ParseRuleAST__=x;if alias.T.Text!="é" {t.Fatal(alias)}
-   case "term":x:=v.(*p.T);if x.End!=end||x.Text!="é" {t.Fatal(x)}
-   case "aliased":var a p.Alias=v.(*p.T);if a.End!=end {t.Fatal(a)}
-   case "mixed":var m p.Mixed=v.(*p.TNode[any]);if m==nil {t.Fatal(m)}
-   case "structure":if v.(*p.S).T.End!=end {t.Fatal(v)}
-   case "values":x:=v.(*p.Values);var n p.Number=x.N;if n!=42||x.Text!="yes"||!x.Flag {t.Fatal(x)}
-   case "items":var xs p.Items=v.([]*p.S);if len(xs)!=2||xs[1].T.Start!=end {t.Fatal(xs)}
-   case "union":var u p.U=v.(*p.S);if u==nil {t.Fatal(u)}
-   case "cst":x,ok:=v.(*p.TNode[p.Tuple2[*p.TNode[string],*p.TNode[string]]]);if !ok||x.Value.E0.Value!="x"||x.Value.E1.Value!="y"||x.Value.E1.Start!=1 {t.Fatalf("cst: %T %v",v,v)}
-   case "open":x,ok:=v.(*p.TNode[any]);if !ok||x.Value!="z" {t.Fatalf("%s: %T",c.name,v)}
-   case "abstract":if _,ok:=v.(*p.TNode[string]);!ok {t.Fatalf("%s: %T",c.name,v)}
+   case "main":x:=v.(*g.ParseRuleAST);var alias g.ParseRuleAST_=x;if alias.T.Text!="é" {t.Fatal(alias)}
+   case "term":x:=v.(*g.T);if x.End!=end||x.Text!="é" {t.Fatal(x)}
+   case "aliased":var a g.Alias=v.(*g.T);if a.End!=end {t.Fatal(a)}
+   case "mixed":var m g.Mixed=v.(*g.TNode[any]);if m==nil {t.Fatal(m)}
+   case "structure":if v.(*g.S).T.End!=end {t.Fatal(v)}
+   case "values":x:=v.(*g.Values);var n g.Number=x.N;if n!=42||x.Text!="yes"||!x.Flag {t.Fatal(x)}
+   case "items":var xs g.Items=v.([]*g.S);if len(xs)!=2||xs[1].T.Start!=end {t.Fatal(xs)}
+   case "union":var u g.U=v.(*g.S);if u==nil {t.Fatal(u)}
+   case "cst":x,ok:=v.(*g.TNode[g.Tuple2[*g.TNode[string],*g.TNode[string]]]);if !ok||x.Value.E0.Value!="x"||x.Value.E1.Value!="y"||x.Value.E1.Start!=1 {t.Fatalf("cst: %T %v",v,v)}
+   case "open":x,ok:=v.(*g.TNode[any]);if !ok||x.Value!="z" {t.Fatalf("%s: %T",c.name,v)}
+   case "abstract":if _,ok:=v.(*g.TNode[string]);!ok {t.Fatalf("%s: %T",c.name,v)}
    }
    if _,err=p.ParseRule(c.name,c.input,p.WithUnit(unit));err!=nil {t.Fatal(err)}
    if _,err=p.ParseRuleAST(c.name,c.input+"!",p.WithUnit(unit));err==nil {t.Fatal("trailing input accepted")}
   }
   for _,c:=range []struct{name string;zero any}{
-   {"main",(*p.ParseRuleAST_)(nil)},{"term",(*p.T)(nil)},{"structure",(*p.S)(nil)},
-   {"values",(*p.Values)(nil)},{"items",[]*p.S(nil)},
-   {"union",nil},{"mixed",nil},{"aliased",(*p.T)(nil)},{"cst",(*p.TNode[p.Tuple2[*p.TNode[string],*p.TNode[string]]])(nil)},{"arbitrary",nil},{"open",(*p.TNode[any])(nil)},{"abstract",(*p.TNode[string])(nil)},
+   {"main",(*g.ParseRuleAST)(nil)},{"term",(*g.T)(nil)},{"structure",(*g.S)(nil)},
+   {"values",(*g.Values)(nil)},{"items",[]*g.S(nil)},
+   {"union",nil},{"mixed",nil},{"aliased",(*g.T)(nil)},{"cst",(*g.TNode[g.Tuple2[*g.TNode[string],*g.TNode[string]]])(nil)},{"arbitrary",nil},{"open",(*g.TNode[any])(nil)},{"abstract",(*g.TNode[string])(nil)},
   } {v,err:=p.ParseRuleAST(c.name,"!",p.WithUnit(unit));if err==nil||!reflect.DeepEqual(v,c.zero) {t.Fatalf("%s failure: %T %v %v",c.name,v,v,err)}}
  }
 }
@@ -195,16 +196,16 @@ func TestNamedOptionsAndErrors(t *testing.T) {
  calls:=0
  v,err:=p.ParseRuleAST("missing","",counted(&calls,p.WithMaxDepth(-1)))
  if v!=nil||err==nil||!strings.Contains(err.Error(),"max depth")||calls!=1 {t.Fatalf("precedence or option replay: %v %v %d",v,err,calls)}
- calls=0;v,err=p.ParseRuleAST("structure","é",counted(&calls,p.WithUnit(p.Bytes)));if err!=nil||v.(*p.S).T.End!=2||calls!=1 {t.Fatal(v,err,calls)}
+ calls=0;v,err=p.ParseRuleAST("structure","é",counted(&calls,p.WithUnit(p.Bytes)));if err!=nil||v.(*g.S).T.End!=2||calls!=1 {t.Fatal(v,err,calls)}
  v,err=p.ParseRuleAST("missing","");if v!=nil||fmt.Sprint(err)!="rule missing is not defined" {t.Fatal(v,err)}
  for _,opts:=range [][]p.ParseOption{nil,{p.WithMaxDepth(0)},{p.WithMaxDepth(32)},{p.WithMaxDepth(64)}} {
   if _,err:=p.ParseRuleAST("recursive",strings.Repeat("(",5)+"é"+strings.Repeat(")",5),opts...);err!=nil {t.Fatal(err)}
  }
  if _,err:=p.ParseRuleAST("recursive","((é))",p.WithMaxDepth(1));err==nil||!strings.Contains(err.Error(),"nesting too deep") {t.Fatal(err)}
- if v,err:=p.ParseRuleAST("abort","");!reflect.DeepEqual(v,(*p.Values)(nil))||err==nil||!strings.Contains(err.Error(),"action in") {t.Fatal(v,err)}
+ if v,err:=p.ParseRuleAST("abort","");!reflect.DeepEqual(v,(*g.Values)(nil))||err==nil||!strings.Contains(err.Error(),"action in") {t.Fatal(v,err)}
  for _,name:=range []string{"recoverStruct","recoverTerminal","recoverUnion","recoverList","recoveryElements"} {
   v,err:=p.ParseRuleAST(name,"?");if _,ok:=err.(p.SyntaxErrors);!ok {t.Fatalf("%s: %v",name,err)}
-  switch name {case "recoverStruct":if _,ok:=v.(*p.Error);!ok {t.Fatalf("%s: %T %v",name,v,v)};case "recoverTerminal":if _,ok:=v.(*p.Recovery).T.(*p.Error);!ok {t.Fatalf("%s: %T %v",name,v,v)};case "recoverUnion":if _,ok:=v.(*p.Error);!ok {t.Fatal(v)};case "recoverList":if _,ok:=v.(*p.Error);!ok {t.Fatal(v)};case "recoveryElements":xs:=v.([]any);if len(xs)!=1 {t.Fatal(v)};if _,ok:=xs[0].(*p.Error);!ok {t.Fatal(v)}}
+  switch name {case "recoverStruct":if _,ok:=v.(*g.Error);!ok {t.Fatalf("%s: %T %v",name,v,v)};case "recoverTerminal":if _,ok:=v.(*g.Recovery).T.(*g.Error);!ok {t.Fatalf("%s: %T %v",name,v,v)};case "recoverUnion":if _,ok:=v.(*g.Error);!ok {t.Fatal(v)};case "recoverList":if _,ok:=v.(*g.Error);!ok {t.Fatal(v)};case "recoveryElements":xs:=v.([]any);if len(xs)!=1 {t.Fatal(v)};if _,ok:=xs[0].(*g.Error);!ok {t.Fatal(v)}}
  }
 }
 func TestStartUnchanged(t *testing.T) {

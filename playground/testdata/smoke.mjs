@@ -121,10 +121,11 @@ for (const ex of manifest) {
   // The playground shows the generated files one after another, each under a banner, and offers each on its own.
   const outDir = mkdtempSync(path.join(os.tmpdir(), "pego-smoke-"));
   const wantGen = cli("gen", "-g", ex.grammar, "-module", "example.com/parser", "-runtime", "import", "-types", "-o", outDir);
-  const wantCode = ["parser.go", "api.go"]
+  const goFiles = ["parser.go", "api.go", "types/types.go"];
+  const wantCode = goFiles
     .map((f) => `// ===== ${f} =====\n\n` + readFileSync(path.join(outDir, f), "utf8"))
     .join("\n");
-  const wantFiles = ["parser.go", "api.go"].map((f) => ({ path: f, content: readFileSync(path.join(outDir, f), "utf8") }));
+  const wantFiles = goFiles.map((f) => ({ path: f, content: readFileSync(path.join(outDir, f), "utf8") }));
   rmSync(outDir, { recursive: true, force: true });
   check(`${tag} gen -types`, wantGen.status === 0 && gen.code === wantCode, wantGen.status !== 0 ? wantGen.err : diff(gen.code, wantCode));
   // The files are also offered separately: the joined text above is not a compilable file.

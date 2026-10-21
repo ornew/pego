@@ -3,8 +3,9 @@ package xml
 import (
 	"errors"
 	"fmt"
+	"github.com/ornew/pego/parsers/xml/internal/text"
+	"github.com/ornew/pego/parsers/xml/types"
 	"reflect"
-	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -19,7 +20,7 @@ type Tree struct {
 	Prolog     []Item // the processing instructions and comments before the root element
 	Root       *Elem
 	Epilog     []Item // the processing instructions and comments after the root element
-	Doc        *Document
+	Doc        *types.Document
 
 	input string
 }
@@ -27,7 +28,7 @@ type Tree struct {
 // Item is an item of a decoded tree: *Elem, *Text, *PI, *Comment, or *EntityRef for a reference to an
 // entity that was not expanded (an external entity, or an undeclared one where XML allows that; see
 // Decode).
-type Item interface{ treeItem() }
+type Item interface{ TreeItem() }
 
 // Elem is a decoded element.
 type Elem struct {
@@ -36,7 +37,7 @@ type Elem struct {
 	Local    string // the local part of the name, set by ResolveNamespaces
 	Attrs    []Attr // the specified attributes in document order, then the defaulted ones in declaration order
 	Children []Item // the content, adjacent text merged into one *Text
-	Src      *Element
+	Src      *types.Element
 	Entity   string // the entity whose replacement text contains the element ("" for the document); Src's Span is relative to that text
 
 	ref int // the position of the outermost entity reference in the document, or -1
@@ -54,11 +55,8 @@ type Attr struct {
 // Text is character data, with references expanded, CDATA sections included and line ends normalized.
 type Text struct{ Data string }
 
-func (*Elem) treeItem()      {}
-func (*Text) treeItem()      {}
-func (*PI) treeItem()        {}
-func (*Comment) treeItem()   {}
-func (*EntityRef) treeItem() {}
+func (*Elem) TreeItem() {}
+func (*Text) TreeItem() {}
 
 // DTD holds the document type declaration and the declarations of its internal subset that were
 // processed. A non-validating processor does not read the external subset or external parameter
@@ -67,12 +65,12 @@ func (*EntityRef) treeItem() {}
 // have declared them first. Complete reports whether nothing was left unread.
 type DTD struct {
 	Name       string
-	ExternalID *ExternalID // the external subset, which is not read
-	Elements   map[string]*ElementDecl
+	ExternalID *types.ExternalID // the external subset, which is not read
+	Elements   map[string]*types.ElementDecl
 	Attributes map[string][]*AttributeDecl // by element name, in declaration order
 	Entities   map[string]*Entity          // general entities
 	Params     map[string]*Entity          // parameter entities
-	Notations  map[string]*NotationDecl
+	Notations  map[string]*types.NotationDecl
 	Complete   bool
 }
 
@@ -80,14 +78,14 @@ type DTD struct {
 type Entity struct {
 	Name      string
 	Parameter bool
-	Value     string      // the replacement text of an internal entity
-	External  *ExternalID // the identifier of an external entity, which is not read
-	NData     string      // the notation of an unparsed entity
-	Decl      *EntityDecl
+	Value     string            // the replacement text of an internal entity
+	External  *types.ExternalID // the identifier of an external entity, which is not read
+	NData     string            // the notation of an unparsed entity
+	Decl      *types.EntityDecl
 
 	parsed  bool
-	content []Content // the replacement text parsed as content
-	decls   []Decl    // the replacement text parsed as declarations
+	content []types.Content // the replacement text parsed as content
+	decls   []types.Decl    // the replacement text parsed as declarations
 	err     error
 }
 
@@ -98,7 +96,7 @@ type AttributeDecl struct {
 	Values        []string // the names of an enumeration or a NOTATION type
 	Default       string   // #REQUIRED, #IMPLIED, #FIXED, or "" for a default value without #FIXED
 	Value         string   // the normalized default value when Default is "" or #FIXED
-	Decl          *AttDef
+	Decl          *types.AttDef
 }
 
 // WFError is a violation of a well-formedness constraint found after the parse, or invalid input
@@ -185,7 +183,7 @@ type processor struct {
 	items []Item
 }
 
-func process(doc *Document, input string) (*Tree, error) {
+func process(doc *types.Document, input string) (*Tree, error) {
 	t := &Tree{Doc: doc, input: input}
 	p := &processor{input: input, tree: t, strict: true, budget: ExpansionLimit, ref: -1}
 	if d := doc.Decl; d != nil {
@@ -199,17 +197,17 @@ func process(doc *Document, input string) (*Tree, error) {
 		p.dtd = &DTD{
 			Name:       dt.Name.Value,
 			ExternalID: dt.ExternalID,
-			Elements:   map[string]*ElementDecl{},
+			Elements:   map[string]*types.ElementDecl{},
 			Attributes: map[string][]*AttributeDecl{},
 			Entities:   map[string]*Entity{},
 			Params:     map[string]*Entity{},
-			Notations:  map[string]*NotationDecl{},
+			Notations:  map[string]*types.NotationDecl{},
 			Complete:   dt.ExternalID == nil,
 		}
 		t.DTD = p.dtd
 		hasPE := false
 		for _, d := range dt.Subset {
-			if _, ok := d.(*PERef); ok {
+			if _, ok := d.(*types.PERef); ok {
 				hasPE = true
 				break
 			}
@@ -229,7 +227,7 @@ func process(doc *Document, input string) (*Tree, error) {
 	return t, nil
 }
 
-func miscItems(ms []Misc) []Item {
+func miscItems(ms []types.Misc) []Item {
 	if len(ms) == 0 {
 		return nil
 	}
@@ -286,23 +284,23 @@ func (p *processor) unread() {
 
 // subset processes declarations; doc reports whether they are in the document entity (whose line ends
 // are normalized) rather than in the replacement text of a parameter entity.
-func (p *processor) subset(decls []Decl, doc bool) error {
+func (p *processor) subset(decls []types.Decl, doc bool) error {
 	for _, d := range decls {
 		var err error
 		switch d := d.(type) {
-		case *ElementDecl:
+		case *types.ElementDecl:
 			if _, ok := p.dtd.Elements[d.Name.Value]; !ok {
 				p.dtd.Elements[d.Name.Value] = d
 			}
-		case *EntityDecl:
+		case *types.EntityDecl:
 			err = p.entityDecl(d, doc)
-		case *AttlistDecl:
+		case *types.AttlistDecl:
 			err = p.attlistDecl(d, doc)
-		case *NotationDecl:
+		case *types.NotationDecl:
 			if _, ok := p.dtd.Notations[d.Name.Value]; !ok {
 				p.dtd.Notations[d.Name.Value] = d
 			}
-		case *PERef:
+		case *types.PERef:
 			err = p.peRef(d)
 		}
 		if err != nil {
@@ -312,7 +310,7 @@ func (p *processor) subset(decls []Decl, doc bool) error {
 	return nil
 }
 
-func (p *processor) entityDecl(d *EntityDecl, doc bool) error {
+func (p *processor) entityDecl(d *types.EntityDecl, doc bool) error {
 	e := &Entity{Name: d.Name.Value, Parameter: d.Parameter, External: d.ExternalID, Decl: d}
 	if d.NData != nil {
 		e.NData = d.NData.Value
@@ -321,7 +319,7 @@ func (p *processor) entityDecl(d *EntityDecl, doc bool) error {
 		// The replacement text: character references expanded, entity references bypassed.
 		raw := d.Value.Value
 		if doc {
-			raw = newlines(raw)
+			raw = text.Newlines(raw)
 		}
 		var b strings.Builder
 		for i := 0; i < len(raw); {
@@ -332,7 +330,7 @@ func (p *processor) entityDecl(d *EntityDecl, doc bool) error {
 				continue
 			}
 			j := i + strings.IndexByte(raw[i:], ';')
-			r, ok := charRef(raw[i+2 : j])
+			r, ok := text.CharRef(raw[i+2 : j])
 			if !ok {
 				return p.errorf(d.Value.Start, "character reference %s is not a legal character", raw[i:j+1])
 			}
@@ -354,19 +352,19 @@ func (p *processor) entityDecl(d *EntityDecl, doc bool) error {
 	return nil
 }
 
-func (p *processor) attlistDecl(d *AttlistDecl, doc bool) error {
+func (p *processor) attlistDecl(d *types.AttlistDecl, doc bool) error {
 	el := d.Name.Value
 	for _, def := range d.Defs {
 		a := &AttributeDecl{Element: el, Name: def.Name.Value, Decl: def}
 		switch t := def.Type.(type) {
-		case *Keyword:
+		case *types.Keyword:
 			a.Type = t.Value
-		case *Enumeration:
+		case *types.Enumeration:
 			a.Type = "ENUMERATION"
 			for _, v := range t.Values {
 				a.Values = append(a.Values, v.Value)
 			}
-		case *NotationType:
+		case *types.NotationType:
 			a.Type = "NOTATION"
 			for _, n := range t.Names {
 				a.Values = append(a.Values, n.Value)
@@ -402,7 +400,7 @@ func (p *processor) attlistDecl(d *AttlistDecl, doc bool) error {
 	return nil
 }
 
-func (p *processor) peRef(r *PERef) error {
+func (p *processor) peRef(r *types.PERef) error {
 	name := r.Name()
 	e := p.dtd.Params[name]
 	switch {
@@ -433,7 +431,7 @@ func (p *processor) peRef(r *PERef) error {
 
 // element decodes an element; doc reports whether it is in the document entity (whose line ends are
 // normalized), ent names the entity otherwise.
-func (p *processor) element(x *Element, doc bool, ent string) (*Elem, error) {
+func (p *processor) element(x *types.Element, doc bool, ent string) (*Elem, error) {
 	el := p.newElem()
 	*el = Elem{Name: x.Name.Value, Src: x, Entity: ent, ref: p.ref}
 	var decls []*AttributeDecl
@@ -603,48 +601,48 @@ func (p *processor) newAttrs(n int) []Attr {
 	return a
 }
 
-func (p *processor) content(b *builder, items []Content, doc bool, ent string) error {
+func (p *processor) content(b *builder, items []types.Content, doc bool, ent string) error {
 	for _, it := range items {
 		switch x := it.(type) {
-		case *CharData:
+		case *types.CharData:
 			if doc {
-				b.addText(newlines(x.TNode.Value))
+				b.addText(text.Newlines(x.TNode.Value))
 			} else {
 				b.addText(x.TNode.Value)
 			}
-		case *CDSect:
+		case *types.CDSect:
 			if doc {
-				b.addText(newlines(x.TNode.Value))
+				b.addText(text.Newlines(x.TNode.Value))
 			} else {
 				b.addText(x.TNode.Value)
 			}
-		case *CharRef:
-			r, ok := charRef(x.Value[2 : len(x.Value)-1])
+		case *types.CharRef:
+			r, ok := text.CharRef(x.Value[2 : len(x.Value)-1])
 			if !ok {
 				return p.errorf(x.Start, "character reference %s is not a legal character", x.Value)
 			}
 			b.addRune(r)
-		case *EntityRef:
+		case *types.EntityRef:
 			if err := p.entityRef(b, x); err != nil {
 				return err
 			}
-		case *Element:
+		case *types.Element:
 			b.flush() // before the element's content uses p.buf and p.stack
 			el, err := p.element(x, doc, ent)
 			if err != nil {
 				return err
 			}
 			b.add(el)
-		case *PI:
+		case *types.PI:
 			b.add(x)
-		case *Comment:
+		case *types.Comment:
 			b.add(x)
 		}
 	}
 	return nil
 }
 
-func (p *processor) entityRef(b *builder, x *EntityRef) error {
+func (p *processor) entityRef(b *builder, x *types.EntityRef) error {
 	name := x.Name()
 	if c, ok := predefined[name]; ok {
 		b.addRune(rune(c))
@@ -694,7 +692,7 @@ func (p *processor) attValue(b *strings.Builder, s string, doc bool, pos int) er
 				return p.errorf(pos, "malformed reference %q", s[i:min(len(s), i+16)])
 			}
 			if ref[0] == '#' {
-				r, ok := charRef(ref[1:])
+				r, ok := text.CharRef(ref[1:])
 				if !ok {
 					return p.errorf(pos, "character reference &%s; is not a legal character", ref)
 				}
@@ -781,19 +779,6 @@ func scanRef(s string) (ref string, n int, ok bool) {
 	return ref, j + 1, isName(ref)
 }
 
-// charRef decodes the digits of a character reference (after "&#", without ";").
-func charRef(digits string) (rune, bool) {
-	base := 10
-	if strings.HasPrefix(digits, "x") {
-		digits, base = digits[1:], 16
-	}
-	n, err := strconv.ParseUint(digits, base, 32)
-	if err != nil || n > 0x10FFFF || !isChar(rune(n)) {
-		return 0, false
-	}
-	return rune(n), true
-}
-
 // collapse normalizes the value of an attribute whose type is not CDATA: it removes leading and trailing
 // spaces and replaces runs of spaces with one.
 func collapse(s string) string {
@@ -801,26 +786,6 @@ func collapse(s string) string {
 		return s
 	}
 	return strings.Join(strings.FieldsFunc(s, func(r rune) bool { return r == ' ' }), " ")
-}
-
-// newlines normalizes line ends (XML 1.0, 2.11): CR LF and CR become LF.
-func newlines(s string) string {
-	i := strings.IndexByte(s, '\r')
-	if i < 0 {
-		return s
-	}
-	var b strings.Builder
-	b.Grow(len(s))
-	for ; i >= 0; i = strings.IndexByte(s, '\r') {
-		b.WriteString(s[:i])
-		b.WriteByte('\n')
-		if i+1 < len(s) && s[i+1] == '\n' {
-			i++
-		}
-		s = s[i+1:]
-	}
-	b.WriteString(s)
-	return b.String()
 }
 
 // lineCol returns the line and column (1-based, in code points) of the code point position pos.
@@ -851,7 +816,7 @@ const (
 
 // parseContent parses the replacement text of an internal general entity, which must match the
 // production content. Spans in the result are relative to s.
-func parseContent(s string) ([]Content, error) {
+func parseContent(s string) ([]types.Content, error) {
 	doc, err := ParseAST(contentOpen + s + contentClose)
 	n := utf8.RuneCountInString(s)
 	if err != nil {
@@ -868,7 +833,7 @@ func parseContent(s string) ([]Content, error) {
 // declarations, which must match the production extSubsetDecl; as in the internal subset, a
 // parameter-entity reference must not occur inside a declaration, and conditional sections are not
 // allowed. Spans in the result are relative to s.
-func parseDecls(s string) ([]Decl, error) {
+func parseDecls(s string) ([]types.Decl, error) {
 	doc, err := ParseAST(declsOpen + s + declsClose)
 	n := utf8.RuneCountInString(s)
 	if err != nil {
@@ -928,12 +893,6 @@ func shiftOnce(v reflect.Value, d int, seen map[uintptr]bool) {
 			shiftOnce(v.Field(i), d, seen)
 		}
 	}
-}
-
-// isChar reports whether r matches the production Char.
-func isChar(r rune) bool {
-	return r == 0x9 || r == 0xA || r == 0xD || 0x20 <= r && r <= 0xD7FF || 0xE000 <= r && r <= 0xFFFD ||
-		0x10000 <= r && r <= 0x10FFFF
 }
 
 func isNameStart(r rune) bool {

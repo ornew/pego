@@ -5,7 +5,6 @@ import (
 	"go/format"
 	"go/token"
 	"path"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -122,8 +121,9 @@ func DefaultPackageName(module string) string {
 
 // Generate generates the files of a Go parser for a grammar: parser.go with the code generated
 // from the grammar, api.go, which re-exports the names the runtime defines for the users of the
-// parser, and, with opts.Runtime RuntimeEmbed, a copy of the runtime in internal/runtime. Paths are
-// relative to the directory of the generated package.
+// parser, with opts.Types types/types.go, the package of the Go types of the typed values, and, with
+// opts.Runtime RuntimeEmbed, a copy of the runtime in internal/runtime. Paths are relative to the
+// directory of the generated package.
 //
 // Eligible rule bodies inline their expressions; other expressions become Go functions. Actions
 // and predicates become Go expressions, and the runtime (package runtime of this module) behaves
@@ -134,10 +134,6 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	}
 	return generate(g, opts)
 }
-
-// designedRuntimeNames are the names of the runtime that the generated code declares on purpose
-// (aliases or types in the typed part, and Span, which a grammar type may take).
-var designedRuntimeNames = map[string]bool{"Error": true, "TNode": true, "Document": true, "ParseStats": true, "Span": true}
 
 // generate generates the files of Generate (other than for RuntimeOnly).
 func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err error) {
@@ -153,6 +149,9 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 			return nil, fmt.Errorf("the module path %q gives the package name %q, which is not a valid Go identifier; choose the package name with -pkg (WithPackageName)", opts.Module, opts.Package)
 		}
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
+	}
+	if opts.Types && opts.Module == "" {
+		return nil, fmt.Errorf("module path is required for typed output: the parser imports the package module/types")
 	}
 	if err := opts.validateMaxDepth(false); err != nil {
 		return nil, err
@@ -273,43 +272,19 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 }
 
 `)
+	var typesBody string
 	if opts.Types {
-		gen.reserved = opts.reservedNames(out.String())
-		typed, span, err := gen.typedGo(start, opts.convertTypes)
+		typed, err := gen.typedGo(start, opts.convertTypes)
 		if err != nil {
 			return nil, err
 		}
 		out.WriteString("\n// --- Typed values ---\n\n")
-		if span != "Span" {
-			// A grammar type or field is named Span: the range of a typed value is embedded under a name of its own.
-			fmt.Fprintf(&out, "// %[1]s is the range of input a typed value covers.\ntype %[1]s = "+runtimeAlias+".Span\n\n", span)
-		}
-		out.WriteString("// TNode is a node whose Value has type T: a string node (TNode[string]) holds the text a\n// literal, a character class, ., a #atomic or _ matched, and a tuple or list node holds its\n// elements. A node of a statically unknown value is a TNode[any] whose Value is a string, or a\n// []any of the elements of a tuple or list.\ntype TNode[T any] " + runtimeAlias + ".TNode[T]\n\n")
-		out.WriteString("// Error is input skipped by error recovery (#recover).\ntype Error " + runtimeAlias + ".Error\n\n")
 		if opts.Document {
 			out.WriteString("// Document is an incremental document: it parses its text again after edits, reusing the\n// results of the parse before that it can.\ntype Document struct{ *" + runtimeAlias + ".Document }\n\n")
 		}
-		out.WriteString(`// tpubHooks makes the values of the types above from those the typed runtime builds, and back.
-var tpubHooks = &pegort.TPubHooks{
-	Match: func(m *pegort.TNode[string]) any { return (*TNode[string])(m) },
-	Error: func(e *pegort.Error) any { return (*Error)(e) },
-	Node:  func(n *pegort.TNode[any]) any { return (*TNode[any])(n) },
-	Back: func(v any) any {
-		switch x := v.(type) {
-		case *TNode[string]:
-			return (*pegort.TNode[string])(x)
-		case *Error:
-			return (*pegort.Error)(x)
-		case *TNode[any]:
-			return (*pegort.TNode[any])(x)
-		}
-		return v
-	},
-}
-
-`)
-		out.WriteString(typed)
+		out.WriteString(typed.parser)
 		out.WriteString("\n")
+		typesBody = typesPreamble + typed.types
 	}
 	out.WriteString(gen.vars.String())
 	out.WriteString("\nfunc init() {\n")
@@ -330,11 +305,14 @@ var tpubHooks = &pegort.TPubHooks{
 		}
 	}
 	body := strings.TrimPrefix(string(whole), "package "+opts.Package+"\n")
-	declared, err := declaredNames("package p\n" + body)
-	if err != nil {
-		return nil, err
+	var tp *typesPackage
+	var typesFile []byte
+	if opts.Types {
+		if typesFile, tp, err = opts.typesFile(typesBody); err != nil {
+			return nil, err
+		}
 	}
-	body, _, err = qualifyRuntime(opts.Package, opts.runtimeImport(), body, info)
+	body, err = qualifyRuntime(opts.runtimeImport(), body, info, tp)
 	if err != nil {
 		return nil, err
 	}
@@ -348,14 +326,14 @@ var tpubHooks = &pegort.TPubHooks{
 	if err != nil {
 		return nil, fmt.Errorf("generated code does not compile: %w", err)
 	}
-	api, err := opts.apiSource(info, slices.Contains(declared, "Span"))
+	api, err := opts.apiSource(info)
 	if err != nil {
 		return nil, err
 	}
-	if err := checkNoClash(declared, api); err != nil {
-		return nil, err
-	}
 	files = []GeneratedFile{{"parser.go", src}, {"api.go", []byte(api)}}
+	if opts.Types {
+		files = append(files, GeneratedFile{"types/types.go", typesFile})
+	}
 	if opts.Runtime == RuntimeEmbed {
 		rt, err := runtimeFiles()
 		if err != nil {
@@ -465,8 +443,6 @@ type generator struct {
 	disableTypedOutputBootstrap bool
 	// nodeScopes records the frame layouts shared by typed rule metadata.
 	nodeScopes map[*rule][]string
-	reserved   map[string]bool // names typed values must avoid (GenOptions.reservedNames)
-	typedSpan  string          // generated helper name, avoiding grammar type and field names
 	prog       *Program
 	table      string // the rule table being generated: rules, or recRules for Recognize
 	cur        *rule  // the rule being generated
@@ -754,7 +730,7 @@ func (g *generator) nodeTypeIndex(name string) int {
 // nodeTypeID returns the Go expression of the registered index of the named node type name in the
 // typed runtime (nt in tmatch and tnode).
 func (g *generator) nodeTypeID(name string) string {
-	return fmt.Sprintf("tnt[%d]", g.nodeTypeIndex(name))
+	return fmt.Sprintf("%s[%d]", nodeTypesName, g.nodeTypeIndex(name))
 }
 
 // typedResultConversion returns the statement that converts the value v of rule r to the rule's

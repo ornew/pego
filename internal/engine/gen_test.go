@@ -375,7 +375,7 @@ const nodeViewsSource = `func() string {
 	}
 	seen := map[*PKG.Node]bool{}
 	var b strings.Builder
-	err := PKG.WalkTree(n, func(v PKG.WalkVisit) (PKG.WalkAction, error) {
+	err := PKG.Walk(n, func(v PKG.WalkVisit) (PKG.WalkAction, error) {
 		fmt.Fprintf(&b, "%d %d %d %s %d ", v.Depth, v.Edge.Kind, v.Edge.ChildIndex, v.Edge.FieldName, v.Edge.ListIndex)
 		if v.Node == nil {
 			fmt.Fprintf(&b, "%s;", scalar(v.Value))
@@ -634,31 +634,23 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, refer
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := generateCode(g, GenOptions{Package: fmt.Sprintf("g%d", i), Start: "main", Types: true, SourceInfo: true})
-		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
-		}
-		if strings.Contains(string(code), "TParse(trules") {
+		code := generatePackage(t, dir, fmt.Sprintf("g%d", i), g, GenOptions{Start: "main", Types: true, SourceInfo: true})
+		if strings.Contains(code, "TParse(trules") {
 			typedRuntime++
 		}
-		if c.name == "OperatorsRule prefix-part cuts" && !strings.Contains(string(code), "TParse(trules") {
+		if c.name == "OperatorsRule prefix-part cuts" && !strings.Contains(code, "TParse(trules") {
 			t.Error("OperatorsRule prefix-part cuts: typed runtime is not exercised")
 		}
 		// The grammars written for direct rules (gen_direct.go) must compile rules that way.
-		if strings.Contains(c.name, "typed/direct_") && !strings.Contains(string(code), "(body inlined)") {
+		if strings.Contains(c.name, "typed/direct_") && !strings.Contains(code, "(body inlined)") {
 			t.Errorf("%s: no direct rules", c.name)
 		}
-		write(fmt.Sprintf("g%d/parser.go", i), string(code))
 		// The same through the reference route: Node conversion for the full
 		// corpus, or a disabled optimization for focused differential tests.
 		refOpts := reference
-		refOpts.Package, refOpts.Start, refOpts.Types = fmt.Sprintf("c%d", i), "main", true
+		refOpts.Start, refOpts.Types = "main", true
 		refOpts.SourceInfo = true
-		code, err = generateCode(g, refOpts)
-		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
-		}
-		write(fmt.Sprintf("c%d/parser.go", i), string(code))
+		generatePackage(t, dir, fmt.Sprintf("c%d", i), g, refOpts)
 		fmt.Fprintf(&imports, "\tg%d \"gentest/g%d\"\n\tc%d \"gentest/c%d\"\n", i, i, i, i)
 		fmt.Fprintf(&parsers, "\tfunc(s string, b bool) (any, error) { u := g%d.CodePoints; if b { u = g%d.Bytes }; return g%d.ParseAST(s, g%[3]d.WithUnit(u)) },\n", i, i, i)
 		fmt.Fprintf(&converters, "\tfunc(s string, b bool) (any, error) { u := c%d.CodePoints; if b { u = c%d.Bytes }; return c%d.ParseAST(s, c%[3]d.WithUnit(u)) },\n", i, i, i)
@@ -805,15 +797,15 @@ func main() {
 	typed := got[len(got)-3:]
 	for i, want := range []string{
 		`{"Value":[` +
-			`{"Start":0,"End":9,"Fn":{"Start":0,"End":1,"Text":"f"},"Args":[{"Start":2,"End":3,"Text":"1"},{"Start":4,"End":5,"Text":"x"}],"Span":{"Start":6,"End":7,"Value":"!"},"N":2,"Opt":{"Start":7,"End":8,"Value":"?"},"Rows":[[]],"Ok":true},` +
+			`{"Start":0,"End":9,"Fn":{"Start":0,"End":1,"Text":"f"},"Args":[{"Start":2,"End":3,"Text":"1"},{"Start":4,"End":5,"Text":"x"}],"Span_":{"Start":6,"End":7,"Value":"!"},"N":2,"Opt":{"Start":7,"End":8,"Value":"?"},"Rows":[[]],"Ok":true},` +
 			`{"Start":9,"End":13,"Value":[{"Start":9,"End":10,"Value":"["},{"Start":10,"End":11,"Text":"3"},{"Start":11,"End":12,"Value":"]"},{"Start":12,"End":13,"Value":";"}]},` +
-			`{"Start":13,"End":15,"Text":"zz"}],"Type":"[]g37.Node_","Err":"<nil>"}`,
+			`{"Start":13,"End":15,"Text":"zz"}],"Type":"[]types.Node","Err":"<nil>"}`,
 		`{"Value":[` +
 			`{"Start":0,"End":1,"Text":"f"},` +
 			`{"Start":1,"End":6,"Text":"(1,(;","Message":"1:2: syntax error: expected \"[\", [0-9], [a-z]"},` +
 			`{"Start":6,"End":7,"Text":"g"},` +
-			`{"Start":7,"End":10,"Text":"();","Message":"1:8: syntax error: expected \"[\", [0-9], [a-z]"}],"Type":"[]g37.Node_","Err":"1:2: syntax error: expected \"[\", [0-9], [a-z]\n1:8: syntax error: expected \"[\", [0-9], [a-z]"}`,
-		`{"Value":[{"Start":0,"End":5,"Fn":{"Start":0,"End":1,"Text":"f"},"Args":[{"Start":2,"End":3,"Text":"a"}],"Span":{"Start":4,"End":4,"Value":""},"N":1,"Opt":null,"Rows":[[]],"Ok":true}],"Type":"[]g37.Node_","Err":"<nil>"}`,
+			`{"Start":7,"End":10,"Text":"();","Message":"1:8: syntax error: expected \"[\", [0-9], [a-z]"}],"Type":"[]types.Node","Err":"1:2: syntax error: expected \"[\", [0-9], [a-z]\n1:8: syntax error: expected \"[\", [0-9], [a-z]"}`,
+		`{"Value":[{"Start":0,"End":5,"Fn":{"Start":0,"End":1,"Text":"f"},"Args":[{"Start":2,"End":3,"Text":"a"}],"Span_":{"Start":4,"End":4,"Value":""},"N":1,"Opt":null,"Rows":[[]],"Ok":true}],"Type":"[]types.Node","Err":"<nil>"}`,
 	} {
 		var b strings.Builder
 		enc := json.NewEncoder(&b)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ornew/pego/parsers/yaml"
+	"github.com/ornew/pego/parsers/yaml/types"
 )
 
 func ExampleLoad() {
@@ -36,13 +37,13 @@ func ExampleParseAST() {
 	if err != nil {
 		panic(err)
 	}
-	for _, p := range s.Documents[0].Root.(*yaml.Mapping).Pairs {
-		k := p.Key.(*yaml.Scalar)
+	for _, p := range s.Documents[0].Root.(*types.Mapping).Pairs {
+		k := p.Key.(*types.Scalar)
 		fmt.Printf("%s at %d-%d: %T\n", k.Value(), k.Start, k.End, p.Value)
 	}
 	// Output:
-	// key at 0-3: *yaml.Scalar
-	// list at 24-28: *yaml.Sequence
+	// key at 0-3: *types.Scalar
+	// list at 24-28: *types.Sequence
 }
 
 func ExampleScalar_Value() {
@@ -60,9 +61,9 @@ folded: >-
 	if err != nil {
 		panic(err)
 	}
-	for _, p := range s.Documents[0].Root.(*yaml.Mapping).Pairs {
-		v := p.Value.(*yaml.Scalar)
-		fmt.Printf("%s: %q from %q\n", p.Key.(*yaml.Scalar).Text, v.Value(), v.Text)
+	for _, p := range s.Documents[0].Root.(*types.Mapping).Pairs {
+		v := p.Value.(*types.Scalar)
+		fmt.Printf("%s: %q from %q\n", p.Key.(*types.Scalar).Text, v.Value(), v.Text)
 	}
 	// Output:
 	// plain: "a b" from "a\n  b"
@@ -100,17 +101,17 @@ func ExampleParseAST_syntaxError() {
 	// Output: 1 11 ["," ":" "\n"]
 }
 
-func ExampleDocument_ResolveTag() {
+func ExampleResolveTag() {
 	s, err := yaml.ParseAST("%TAG !e! tag:example.com,2000:\n--- !e!point%21 &p {x: 1, y: !!int 2}\n")
 	if err != nil {
 		panic(err)
 	}
 	d := s.Documents[0]
 	props := yaml.PropertiesOf(d.Root)
-	tag, err := d.ResolveTag(props.Tag)
+	tag, err := yaml.ResolveTag(d, props.Tag)
 	fmt.Println(tag, props.Anchor.Name(), err)
-	y := d.Root.(*yaml.Mapping).Pairs[1].Value
-	fmt.Println(d.ResolveTag(yaml.PropertiesOf(y).Tag))
+	y := d.Root.(*types.Mapping).Pairs[1].Value
+	fmt.Println(yaml.ResolveTag(d, yaml.PropertiesOf(y).Tag))
 	// Output:
 	// tag:example.com,2000:point! p <nil>
 	// tag:yaml.org,2002:int <nil>

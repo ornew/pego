@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"slices"
 	"sort"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -35,23 +34,37 @@ func goVetAndTest(t *testing.T, dir string, test bool) {
 	}
 }
 
-// runtimeNameTypes are exports of the runtime that no generator writes into parser.go, and so
-// grammar types may take. emittedNameTypes are those that the generators do write: such types
-// are renamed in every grammar, whether or not its output uses the name.
-var (
-	runtimeNameTypes = []string{"Walk", "SetNodeText", "SetNodeElems", "SetNodeField", "SetNodeStart"}
-	emittedNameTypes = []string{"TOperand", "TPubHooks", "TDeref", "NewTError", "NewStreamIterator", "NewNode", "Mark", "TSeq", "Unit"}
-)
+// runtimeNameTypes are names that the runtime and the generated parser package declare. A type of a
+// typed grammar may take each of them: the types are declared in the package types, apart from
+// both.
+var runtimeNameTypes = []string{
+	"Walk", "SetNodeText", "SetNodeElems", "SetNodeField", "SetNodeStart", "TOperand", "TPubHooks", "TDeref",
+	"NewTError", "NewStreamIterator", "NewNode", "Mark", "TSeq", "Node", "Parser", "Span", "Rule", "Parse", "ParseAST",
+	"Document", "ParseStats", "StreamValue", "ParseOption",
+}
 
-// TestGeneratedTypesNamedLikeRuntimeExports checks that a type of a typed grammar named like an
-// export of the runtime is renamed if the generators write the name into parser.go, and keeps its
-// name otherwise, in embedded and imported mode, whatever the rest of the grammar.
+// typesFileOf returns the source of types/types.go of the generated files.
+func typesFileOf(t *testing.T, files []GeneratedFile) string {
+	t.Helper()
+	for _, f := range files {
+		if f.Path == "types/types.go" {
+			return string(f.Content)
+		}
+	}
+	t.Fatal("no types/types.go")
+	return ""
+}
+
+// TestGeneratedTypesNamedLikeRuntimeExports checks that a type of a typed grammar named like a
+// name of the runtime or of the parser package keeps its name, in embedded and imported mode, and
+// that the parser builds and works: the type is the one of the package types, and the name in
+// the parser package is still the runtime's.
 func TestGeneratedTypesNamedLikeRuntimeExports(t *testing.T) {
 	var src strings.Builder
-	for _, name := range append(slices.Clone(runtimeNameTypes), emittedNameTypes...) {
+	for _, name := range runtimeNameTypes {
 		fmt.Fprintf(&src, "type %s = { Value int }\n", name)
 	}
-	src.WriteString("rule main = \"a\"\n")
+	src.WriteString("rule main Node = \"a\" => Node{Value: 7}\n")
 	g, err := syntax.Parse(src.String())
 	if err != nil {
 		t.Fatal(err)
@@ -71,20 +84,10 @@ func TestGeneratedTypesNamedLikeRuntimeExports(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				var parser string
-				for _, f := range files {
-					if f.Path == "parser.go" {
-						parser = string(f.Content)
-					}
-				}
+				typesSrc := typesFileOf(t, files)
 				for _, name := range runtimeNameTypes {
-					if !strings.Contains(parser, "type "+name+" struct") {
-						t.Errorf("the type %s was renamed", name)
-					}
-				}
-				for _, name := range emittedNameTypes {
-					if !strings.Contains(parser, "type "+name+"_ struct") {
-						t.Errorf("the type %s was not renamed", name)
+					if !strings.Contains(typesSrc, "type "+name+" struct") {
+						t.Errorf("the type %s is not declared under its name", name)
 					}
 				}
 				if testing.Short() {
@@ -92,37 +95,66 @@ func TestGeneratedTypesNamedLikeRuntimeExports(t *testing.T) {
 				}
 				dir := t.TempDir()
 				writeGenerated(t, dir, "example.com/names", files)
-				goVetAndTest(t, dir, false)
+				if err := os.WriteFile(filepath.Join(dir, "names_test.go"), []byte(`package names
+
+import (
+	"testing"
+
+	"example.com/names/types"
+)
+
+func TestNames(t *testing.T) {
+	v, err := ParseAST("a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var typed *types.Node = v // the user type
+	if typed.Value != 7 {
+		t.Errorf("Value = %d", typed.Value)
+	}
+	var span types.Span
+	_ = span.Value // the user type Span has a field Value; the range is the embedded runtime Span
+	n, err := Parse("a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var node *Node = n // the runtime's Node
+	if node == nil {
+		t.Error("no node")
+	}
+	var _ Span // the runtime's Span
+	if got, ok := typed.TField("Value"); !ok || got != 7 {
+		t.Errorf("TField(Value) = %v, %v", got, ok)
+	}
+}
+`), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				goVetAndTest(t, dir, true)
 			})
 		}
 	}
 }
 
-// typeGoNames returns the Go names of the generated struct types by their name with the underscore
-// removed.
-func typeGoNames(t *testing.T, files []GeneratedFile) map[string]string {
+// typeNamesOf returns the names of the struct types that types/types.go declares.
+func typeNamesOf(t *testing.T, files []GeneratedFile) map[string]bool {
 	t.Helper()
-	out := map[string]string{}
-	for _, f := range files {
-		if f.Path != "parser.go" {
-			continue
-		}
-		for _, line := range strings.Split(string(f.Content), "\n") {
-			if rest, ok := strings.CutPrefix(line, "type "); ok {
-				if name, ok := strings.CutSuffix(rest, " struct {"); ok {
-					out[strings.TrimSuffix(name, "_")] = name
-				}
+	out := map[string]bool{}
+	for _, line := range strings.Split(typesFileOf(t, files), "\n") {
+		if rest, ok := strings.CutPrefix(line, "type "); ok {
+			if name, ok := strings.CutSuffix(rest, " struct {"); ok {
+				out[name] = true
 			}
 		}
 	}
 	return out
 }
 
-// TestGeneratedTypeNamesIgnoreTheOutput checks that the Go name of a grammar type does not depend
-// on what the output of the grammar uses: grammars that differ only in using a struct rule, or a
+// TestGeneratedTypeNamesIgnoreTheOutput checks that the Go name of a grammar type is its name
+// whatever the output of the grammar uses: grammars that differ only in using a struct rule, or a
 // stream, name the types alike under the same options.
 func TestGeneratedTypeNamesIgnoreTheOutput(t *testing.T) {
-	const types = "type Mark = { Value int }\ntype TSeq = { Value int }\ntype Unit = { Value int }\ntype Walk = { Value int }\ntype NewStreamIterator = { Value int }\ntype Plain = { Value int }\n"
+	const types = "type Mark = { Value int }\ntype TSeq = { Value int }\ntype Walk = { Value int }\ntype NewStreamIterator = { Value int }\ntype Plain = { Value int }\n"
 	grammars := map[string]string{
 		"trivial":       types + "rule main = \"a\"\n",
 		"struct":        types + "type Pair = { A int; B int }\nrule main = \"a\" => Pair{A: 1, B: 2}\n",
@@ -139,7 +171,6 @@ func TestGeneratedTypeNamesIgnoreTheOutput(t *testing.T) {
 		{GenOptions{Types: true, Stream: true}, []string{"stream", "stream struct"}},
 	} {
 		opts := c.opts
-		var first map[string]string
 		for _, name := range c.grammars {
 			g, err := syntax.Parse(grammars[name])
 			if err != nil {
@@ -151,126 +182,100 @@ func TestGeneratedTypeNamesIgnoreTheOutput(t *testing.T) {
 			if err != nil {
 				t.Fatalf("%s %+v: %v", name, opts, err)
 			}
-			got := typeGoNames(t, files)
-			for _, want := range []string{"Mark_", "TSeq_", "Unit_", "Walk", "NewStreamIterator_", "Plain"} {
-				if got[strings.TrimSuffix(want, "_")] != want {
-					t.Errorf("%s %+v: the type %s is named %q", name, opts, strings.TrimSuffix(want, "_"), got[strings.TrimSuffix(want, "_")])
+			got := typeNamesOf(t, files)
+			for _, want := range []string{"Mark", "TSeq", "Walk", "NewStreamIterator", "Plain"} {
+				if !got[want] {
+					t.Errorf("%s %+v: the type %s is not declared under its name", name, opts, want)
 				}
 			}
-			if first == nil {
-				first = got
-			}
-			for k, v := range first {
-				if got[k] != v {
-					t.Errorf("%s %+v: the type %s is %s, in the first grammar %s", name, opts, k, got[k], v)
+			for name := range got {
+				if strings.HasSuffix(name, "_") {
+					t.Errorf("%s %+v: the type %s was renamed", name, opts, name)
 				}
 			}
 		}
 	}
 }
 
-// TestGeneratedUnitTypeAndGrammarUnit checks that a grammar type named Unit and the type of the
-// empty tuple do not both become type Unit, and that the output builds.
-func TestGeneratedUnitTypeAndGrammarUnit(t *testing.T) {
-	g, err := syntax.Parse("type Unit = { Value int }\nrule main = \"a\" => ()\n")
-	if err != nil {
-		t.Fatal(err)
-	}
-	files, err := Generate(g, GenOptions{Module: "example.com/unit", Package: "unit", Start: "main", Runtime: RuntimeImport, Types: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	var parser string
-	for _, f := range files {
-		if f.Path == "parser.go" {
-			parser = string(f.Content)
-		}
-	}
-	if !strings.Contains(parser, "type Unit_ struct") || !strings.Contains(parser, "type Unit struct{}") {
-		t.Errorf("unexpected types:\n%s", parser)
-	}
-	if testing.Short() {
-		return
-	}
-	dir := t.TempDir()
-	writeGenerated(t, dir, "example.com/unit", files)
-	goVetAndTest(t, dir, false)
-}
-
-// TestCheckNoClash checks that the names parser.go and api.go declare are checked for duplicates.
-func TestCheckNoClash(t *testing.T) {
+// TestGeneratedTypeNamedLikeTypesPackageName checks that a grammar type that has the name of a type
+// the types package declares for the typed values is rejected, and that the name is free when the
+// output does not declare the type.
+func TestGeneratedTypeNamedLikeTypesPackageName(t *testing.T) {
 	for _, c := range []struct {
-		name     string
-		declared []string
-		api      string
-		want     string
+		name, grammar string
+		rejected      bool
 	}{
-		{"fine", []string{"A", "B", "_"}, "package p\ntype C int\nvar _ = 1\nvar _ = 2\n", ""},
-		{"parser twice", []string{"A", "B", "A"}, "package p\n", "declares A twice"},
-		{"api twice", []string{"A"}, "package p\ntype C int\ntype C int\n", "twice in api.go"},
-		{"across", []string{"A", "C"}, "package p\ntype C int\n", "rename the type"},
+		{"TNode", "type TNode = { Value int }\nrule main = \"a\"\n", true},
+		{"hooks", "type PegoHooks = { Value int }\nrule main = \"a\"\n", true},
+		{"unit used", "type Unit = { Value int }\nrule main = \"a\" => ()\n", true},
+		{"unit unused", "type Unit = { Value int }\nrule main = \"a\"\n", false},
+		{"tuple used", "type Tuple2 = { Value int }\nrule main = \"a\" \"b\" => (1, 2)\n", true},
+		{"tuple unused", "type Tuple2 = { Value int }\nrule main = \"a\"\n", false},
+		{"tuple of another size", "type Tuple3 = { Value int }\nrule main = \"a\" \"b\" => (1, 2)\n", false},
 	} {
-		err := checkNoClash(c.declared, c.api)
-		switch {
-		case c.want == "" && err != nil:
-			t.Errorf("%s: %v", c.name, err)
-		case c.want != "" && (err == nil || !strings.Contains(err.Error(), c.want)):
-			t.Errorf("%s: got %v, want %q", c.name, err, c.want)
-		}
+		t.Run(c.name, func(t *testing.T) {
+			g, err := syntax.Parse(c.grammar)
+			if err != nil {
+				t.Fatal(err)
+			}
+			files, err := Generate(g, GenOptions{Module: "example.com/clash", Package: "clash", Start: "main", Runtime: RuntimeImport, Types: true})
+			if c.rejected {
+				if err == nil || !strings.Contains(err.Error(), "rename the type") {
+					t.Fatalf("got %v, want an error that asks to rename the type", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if testing.Short() {
+				return
+			}
+			dir := t.TempDir()
+			writeGenerated(t, dir, "example.com/clash", files)
+			goVetAndTest(t, dir, false)
+		})
 	}
 }
 
-// TestEmittedRuntimeNames checks emittedRuntimeNames against the string literals of the
-// generators: the runtime exports named in them, other than those in designedRuntimeNames and in
-// the code of api.go (gen_runtime.go) and the list itself, are exactly the list.
-func TestEmittedRuntimeNames(t *testing.T) {
+// TestGeneratedTypesPackageNamesTheRuntimeExplicitly checks that types/types.go leaves no name
+// unresolved that is an export of the runtime: it refers to the runtime by its package name, so a
+// type of the grammar named like an export cannot capture the reference.
+func TestGeneratedTypesPackageNamesTheRuntimeExplicitly(t *testing.T) {
 	info, err := loadRuntime()
 	if err != nil {
 		t.Fatal(err)
 	}
-	files, err := filepath.Glob("gen*.go")
-	if err != nil {
-		t.Fatal(err)
-	}
-	words := regexp.MustCompile(`[A-Za-z_][A-Za-z0-9_]*`)
-	want := map[string]bool{}
-	for _, file := range files {
-		if strings.HasSuffix(file, "_test.go") || file == "gen_runtime.go" || file == "gen_emitted_names.go" {
-			continue
-		}
-		f, err := goparser.ParseFile(token.NewFileSet(), file, nil, 0)
-		if err != nil {
-			t.Fatal(err)
-		}
-		goast.Inspect(f, func(n goast.Node) bool {
-			if lit, ok := n.(*goast.BasicLit); ok && lit.Kind == token.STRING {
-				s, _ := strconv.Unquote(lit.Value)
-				for _, w := range words.FindAllString(s, -1) {
-					if _, ok := info.decls[w]; ok && !designedRuntimeNames[w] {
-						want[w] = true
-					}
+	for _, name := range []string{"json", "csv", "cel", "yaml"} {
+		t.Run(name, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join("..", "..", "parsers", name, name+".pego"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			g, err := syntax.Parse(string(data))
+			if err != nil {
+				t.Fatal(err)
+			}
+			files, err := Generate(g, GenOptions{Module: "example.com/explicit/" + name, Package: name, Start: "main", Runtime: RuntimeImport, Types: true, Recognize: true, Document: true, Observability: true})
+			if err != nil {
+				t.Fatal(err)
+			}
+			f, err := goparser.ParseFile(token.NewFileSet(), "types.go", typesFileOf(t, files), 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, id := range f.Unresolved {
+				if _, ok := info.decls[id.Name]; ok {
+					t.Errorf("types/types.go leaves %s to the runtime unqualified", id.Name)
 				}
 			}
-			return true
 		})
-	}
-	have := map[string]bool{}
-	for _, name := range emittedRuntimeNames {
-		have[name] = true
-		if !want[name] {
-			t.Errorf("emittedRuntimeNames has %s, which no generator writes", name)
-		}
-	}
-	for name := range want {
-		if !have[name] {
-			t.Errorf("the generators write %s, which emittedRuntimeNames lacks", name)
-		}
 	}
 }
 
 // TestGeneratedTypesNamedLikeEveryRuntimeExport generates a typed grammar with a type for every
-// export of the runtime, with every option that adds names to the package, and builds it. A name
-// that the generated package declares must be renamed; any other type keeps its name. No grammar
+// export of the runtime, with every option that adds names to the package, and builds it. Every
+// type keeps its name, except the one that the types package declares itself (TNode). No grammar
 // may make the generator fail.
 func TestGeneratedTypesNamedLikeEveryRuntimeExport(t *testing.T) {
 	info, err := loadRuntime()
@@ -279,6 +284,9 @@ func TestGeneratedTypesNamedLikeEveryRuntimeExport(t *testing.T) {
 	}
 	var names []string
 	for name := range info.decls {
+		if name == "TNode" {
+			continue
+		}
 		// The grammar language reserves some names (Error, ...).
 		if g, err := syntax.Parse("type " + name + " = { Value int }\nrule main = \"a\"\n"); err == nil {
 			if _, err := Compile(g, Options{}); err == nil {
@@ -314,16 +322,10 @@ func TestGeneratedTypesNamedLikeEveryRuntimeExport(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			reserved := opts.reservedNames("")
-			var parser string
-			for _, f := range files {
-				if f.Path == "parser.go" {
-					parser = string(f.Content)
-				}
-			}
+			declared := typeNamesOf(t, files)
 			for _, name := range names {
-				if reserved[name] && !slices.Contains(opts.typedEntryNames(), name) && strings.Contains(parser, "type "+name+" struct") {
-					t.Errorf("the type %s clashes with the generated package", name)
+				if !declared[name] {
+					t.Errorf("the type %s is not declared under its name", name)
 				}
 			}
 			if testing.Short() {
@@ -336,46 +338,46 @@ func TestGeneratedTypesNamedLikeEveryRuntimeExport(t *testing.T) {
 	}
 }
 
-// TestReservedNamesFollowTheAPI checks that the names typed values avoid include every name that
-// api.go declares, whatever options are on, and none that the runtime keeps to itself.
-func TestReservedNamesFollowTheAPI(t *testing.T) {
-	info, err := loadRuntime()
+// TestParserAndAPIDeclareDistinctNames checks that parser.go and api.go declare no name twice or
+// in common, whatever options are on: no type of the grammar is among them, so the names are
+// the generator's own.
+func TestParserAndAPIDeclareDistinctNames(t *testing.T) {
+	g, err := syntax.Parse("type Pair = { A int; B int }\nrule main = item* #stream $$\nrule item = \"a\" => Pair{A: 1, B: 2}\n")
 	if err != nil {
 		t.Fatal(err)
 	}
-	opts := GenOptions{Types: true, Document: true, Observability: true, Stream: true, Package: "p"}
-	api, err := opts.apiSource(info, false)
+	files, err := Generate(g, GenOptions{Module: "example.com/distinct", Start: "main", Runtime: RuntimeImport, Types: true, Document: true, Observability: true, Stream: true, Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	declared, err := declaredNames(api)
-	if err != nil {
-		t.Fatal(err)
-	}
-	reserved := opts.reservedNames("")
-	for _, name := range declared {
-		if !reserved[name] && name != "Span" && name != "_" {
-			t.Errorf("api.go declares %s, which typed values may take", name)
+	seen := map[string]string{}
+	var apiNames []string
+	for _, f := range files {
+		if f.Path != "parser.go" && f.Path != "api.go" {
+			continue
+		}
+		declared, err := declaredNames(string(f.Content))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, name := range declared {
+			if name == "_" {
+				continue
+			}
+			if other, ok := seen[name]; ok {
+				t.Errorf("%s declares %s, which %s declares too", f.Path, name, other)
+			}
+			seen[name] = f.Path
+			if f.Path == "api.go" {
+				apiNames = append(apiNames, name)
+			}
 		}
 	}
-	for _, name := range runtimeNameTypes {
-		if reserved[name] {
-			t.Errorf("%s is reserved, but the generated package does not declare it", name)
-		}
+	if !slices.Contains(apiNames, "Walk") {
+		t.Errorf("api.go declares %v, want Walk", apiNames)
 	}
-	for _, name := range append(slices.Clone(emittedNameTypes), "Unit") {
-		if !reserved[name] {
-			t.Errorf("%s is not reserved", name)
-		}
-	}
-	if !reserved["WalkTree"] {
-		t.Error("WalkTree is not reserved")
-	}
-	if !opts.reservedNames("func Parse() {}\nvar rules []int\n")["rules"] {
-		t.Error("the declarations of the generated head are not reserved")
-	}
-	if !slices.Contains(declared, "WalkTree") {
-		t.Error("api.go does not declare WalkTree")
+	if !slices.Contains(apiNames, "Span") {
+		t.Error("api.go does not declare Span")
 	}
 }
 
@@ -489,7 +491,7 @@ var m = map[NodeKind][]pair{KindList: {{KindString: 1}}}
 var n = Fields{{Name: "x"}}
 var o = [2]NodeKind{1: KindTuple}
 `
-	out, _, err := qualifyRuntime("p", RuntimeImportPath, body, info)
+	out, err := qualifyRuntime(RuntimeImportPath, body, info, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -499,6 +501,34 @@ var o = [2]NodeKind{1: KindTuple}
 		"pair{KindString: 1, KindTuple: 2}", "&pair{KindString: 1}", "[]*pair{{KindString: 1}}",
 	} {
 		if !strings.Contains(strings.ReplaceAll(out, "\n", ""), want) {
+			t.Errorf("missing %q in\n%s", want, out)
+		}
+	}
+	// A literal of a type of the types package (types.Name) is resolved through its declaration
+	// there: the keys of a map are runtime constants, the field names of a struct are not.
+	decls := map[string]goast.Expr{}
+	f, err := goparser.ParseFile(token.NewFileSet(), "types.go", `package p
+type Table map[pegort.NodeKind]string
+type Pair struct{ KindString, KindTuple int }`, goparser.SkipObjectResolution)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, d := range f.Decls {
+		for _, s := range d.(*goast.GenDecl).Specs {
+			decls[s.(*goast.TypeSpec).Name.Name] = s.(*goast.TypeSpec).Type
+		}
+	}
+	tp := &typesPackage{importPath: "example.com/m/types", declared: func(string) bool { return false }, types: decls}
+	out, err = qualifyRuntime(RuntimeImportPath, `
+var a = types.Table{KindString: "s"}
+var b = &types.Pair{KindString: 1}
+var c = []types.Table{{KindList: "l"}}
+`, info, tp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`types.Table{pegort.KindString: "s"}`, "&types.Pair{KindString: 1}", `[]types.Table{{pegort.KindList: "l"}}`} {
+		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in\n%s", want, out)
 		}
 	}
@@ -577,7 +607,7 @@ func TestGeneratedRichGrammarsWithTypesNamedLikeRuntimeExports(t *testing.T) {
 			}
 			sort.Strings(names)
 			for _, n := range names {
-				if own[n] {
+				if own[n] || n == "TNode" {
 					continue
 				}
 				// The grammar language reserves some names (Error, ...).

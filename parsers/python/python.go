@@ -61,11 +61,13 @@ import (
 	"reflect"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/ornew/pego/parsers/python/types"
 )
 
 // ParseModule parses a module (a file of Python source) like ParseAST and then makes the checks
 // that CPython's ast.parse makes outside its grammar (see Check).
-func ParseModule(src string, unit ...PositionUnit) (*Module, error) {
+func ParseModule(src string, unit ...PositionUnit) (*types.Module, error) {
 	m, err := ParseAST(src, unitOptions(unit)...)
 	if err != nil {
 		return nil, err
@@ -86,7 +88,7 @@ func ParseModule(src string, unit ...PositionUnit) (*Module, error) {
 //     must name features that exist ("braces" is "not a chance");
 //   - the inequality operator is '!=', or '<>' after `from __future__ import barry_as_FLUFL` (the
 //     grammar accepts both).
-func Check(m *Module, src string, unit ...PositionUnit) error {
+func Check(m *types.Module, src string, unit ...PositionUnit) error {
 	pos := func(off int) *SyntaxError {
 		line, col := 1, 1
 		i := 0
@@ -136,7 +138,7 @@ func Check(m *Module, src string, unit ...PositionUnit) error {
 			}
 		}
 		switch n := n.(type) {
-		case *Constant:
+		case *types.Constant:
 			v, e := constValue(n.TNode.Value)
 			switch {
 			case e != nil:
@@ -146,7 +148,7 @@ func Check(m *Module, src string, unit ...PositionUnit) error {
 					err = fail(n.Start, "Exceeds the limit (4300 digits) for integer string conversion: value has %d digits", d)
 				}
 			}
-		case *FStringMiddle:
+		case *types.FStringMiddle:
 			if _, e := decodeFStringText(n.TNode.Value, false); e != nil {
 				err = fail(n.Start, "%s", strings.TrimPrefix(e.Error(), "python: "))
 			}
@@ -178,39 +180,39 @@ func nodeSpan(n any) Span {
 // identifiersOf returns the identifiers that a node holds in fields of its own.
 func identifiersOf(n any) []string {
 	switch n := n.(type) {
-	case *Name:
+	case *types.Name:
 		return []string{n.Id}
-	case *Attribute:
+	case *types.Attribute:
 		return []string{n.Attr}
-	case *FunctionDef:
+	case *types.FunctionDef:
 		return []string{n.Name}
-	case *AsyncFunctionDef:
+	case *types.AsyncFunctionDef:
 		return []string{n.Name}
-	case *ClassDef:
+	case *types.ClassDef:
 		return []string{n.Name}
-	case *Arg:
+	case *types.Arg:
 		return []string{n.Arg}
-	case *Keyword:
+	case *types.Keyword:
 		return []string{n.Arg}
-	case *Alias:
+	case *types.Alias:
 		return append(strings.Split(n.Name, "."), n.AsName)
-	case *ImportFrom:
+	case *types.ImportFrom:
 		return strings.Split(n.Module, ".")
-	case *ExceptHandler:
+	case *types.ExceptHandler:
 		return []string{n.Name}
-	case *MatchAs:
+	case *types.MatchAs:
 		return []string{n.Name}
-	case *MatchStar:
+	case *types.MatchStar:
 		return []string{n.Name}
-	case *MatchMapping:
+	case *types.MatchMapping:
 		return []string{n.Rest}
-	case *Identifier:
+	case *types.Identifier:
 		return []string{n.Value}
-	case *TypeVar:
+	case *types.TypeVar:
 		return []string{n.Name}
-	case *ParamSpec:
+	case *types.ParamSpec:
 		return []string{n.Name}
-	case *TypeVarTuple:
+	case *types.TypeVarTuple:
 		return []string{n.Name}
 	}
 	return nil
@@ -242,11 +244,11 @@ var futureFeatures = map[string]bool{"nested_scopes": true, "generators": true, 
 
 // checkFuture checks the future statements at the start of the module, after its docstring, as
 // CPython's future.c does.
-func checkFuture(m *Module, fail func(int, string, ...any) error) error {
+func checkFuture(m *types.Module, fail func(int, string, ...any) error) error {
 	body := m.Body
 	if len(body) > 0 {
-		if e, ok := body[0].(*ExprStmt); ok {
-			if c, ok := e.Value.(*Constant); ok && c.TNode.Value != "" && strings.ContainsAny(c.TNode.Value[:1], "'\"rRuU") {
+		if e, ok := body[0].(*types.ExprStmt); ok {
+			if c, ok := e.Value.(*types.Constant); ok && c.TNode.Value != "" && strings.ContainsAny(c.TNode.Value[:1], "'\"rRuU") {
 				if v, err := constValue(c.TNode.Value); err == nil && v.kind == kStr {
 					body = body[1:]
 				}
@@ -254,7 +256,7 @@ func checkFuture(m *Module, fail func(int, string, ...any) error) error {
 		}
 	}
 	for _, s := range body {
-		imp, ok := s.(*ImportFrom)
+		imp, ok := s.(*types.ImportFrom)
 		if !ok || imp.Level != 0 || imp.Module != "__future__" {
 			return nil
 		}
@@ -272,12 +274,12 @@ func checkFuture(m *Module, fail func(int, string, ...any) error) error {
 
 // checkBarry checks the inequality operators: '<>' is an error, unless it comes after `from
 // __future__ import barry_as_FLUFL`, and then '!=' is the error.
-func checkBarry(m *Module, fail func(int, string, ...any) error) error {
+func checkBarry(m *types.Module, fail func(int, string, ...any) error) error {
 	barry := -1 // the end of the first import of barry_as_FLUFL
-	var ops []*Op
+	var ops []*types.Op
 	Inspect(m, func(n any) bool {
 		switch n := n.(type) {
-		case *ImportFrom:
+		case *types.ImportFrom:
 			if n.Level == 0 && n.Module == "__future__" {
 				for _, a := range n.Names {
 					if a.Name == "barry_as_FLUFL" && (barry < 0 || n.End < barry) {
@@ -285,7 +287,7 @@ func checkBarry(m *Module, fail func(int, string, ...any) error) error {
 					}
 				}
 			}
-		case *Compare:
+		case *types.Compare:
 			for _, o := range n.Ops {
 				if o.Value == "<>" || o.Value == "!=" {
 					ops = append(ops, o)

@@ -139,12 +139,12 @@ const WalkField = pegort.WalkField
 
 const WalkListElement = pegort.WalkListElement
 
-// WalkTree visits the root, then children in slice order, then fields in sorted name order.
+// Walk visits the root, then children in slice order, then fields in sorted name order.
 // Nested []any values are visited in index order. Other containers are leaves. Shared
 // nodes and lists are visited per edge; only cycles on the active path are rejected.
 // Callback errors return unchanged; Stop succeeds; Skip omits the value's descendants.
 // The graph must not be mutated concurrently. Walk does not mutate or retain it.
-func WalkTree(root *Node, visit func(WalkVisit) (WalkAction, error)) error {
+func Walk(root *Node, visit func(WalkVisit) (WalkAction, error)) error {
 	return pegort.Walk(root, visit)
 }
 

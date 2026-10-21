@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -225,35 +226,44 @@ rule main WithUnit = t:("é") #atomic => ParseOption{Text: text($t)}`
 		if conv {
 			name = "convert"
 		}
-		opts := GenOptions{Package: name, Start: "main", Types: true, convertTypes: conv}
-		code, err := generateCode(g, opts)
+		opts := GenOptions{Package: name, Module: "collisions/" + name, Runtime: RuntimeImport, Start: "main", Types: true, convertTypes: conv}
+		files, err := Generate(g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
-		again, err := generateCode(g, opts)
-		if err != nil || !bytes.Equal(code, again) {
-			t.Fatal("unstable collision mapping")
+		again, err := Generate(g, opts)
+		if err != nil || !slices.EqualFunc(files, again, func(a, b GeneratedFile) bool { return a.Path == b.Path && bytes.Equal(a.Content, b.Content) }) {
+			t.Fatal("unstable generation")
 		}
-		for _, want := range []string{"type ParseOption_ struct", "type ParseOption__ struct", "type WithUnit_ = *ParseOption_", "type WithMaxDepth_ struct", "opts ...pegort.ParseOption) (*ParseOption_, error)"} {
-			if !strings.Contains(string(code), want) {
+		var typesSource string
+		for _, f := range files {
+			if f.Path == "types/types.go" {
+				typesSource = string(f.Content)
+			}
+		}
+		for _, want := range []string{"type ParseOption struct", "type ParseOption_ struct", "type WithUnit = *ParseOption", "type WithMaxDepth struct"} {
+			if !strings.Contains(typesSource, want) {
 				t.Errorf("missing %s", want)
 			}
 		}
-		os.MkdirAll(filepath.Join(dir, name), 0755)
-		os.WriteFile(filepath.Join(dir, name, "parser.go"), code, 0644)
 		consumer := `package ` + name + `_test
-import("testing";p "collisions/` + name + `")
+import("testing";p "collisions/` + name + `";g "collisions/` + name + `/types")
 func TestExports(t *testing.T){
- var fn func(string,...p.ParseOption)(p.WithUnit_,error)=p.ParseAST
+ var fn func(string,...p.ParseOption)(g.WithUnit,error)=p.ParseAST
  opts:=[]p.ParseOption{p.WithUnit(p.Bytes),p.WithMaxDepth(20)}
  value,err:=fn("é",opts...);if err!=nil || value.Text!="é" || value.End!=2{t.Fatal(value,err)}
- var word *p.ParseOption_=value
- var other *p.ParseOption__=&p.ParseOption__{}
- var box *p.WithMaxDepth_=&p.WithMaxDepth_{Item:word}
+ var word *g.ParseOption=value
+ var other *g.ParseOption_=&g.ParseOption_{}
+ var box *g.WithMaxDepth=&g.WithMaxDepth{Item:word}
  _,_=other,box
 }
 `
-		os.WriteFile(filepath.Join(dir, name, "consumer_test.go"), []byte(consumer), 0644)
+		files = append(files, GeneratedFile{"consumer_test.go", []byte(consumer)})
+		for _, f := range files {
+			path := filepath.Join(dir, name, filepath.FromSlash(f.Path))
+			os.MkdirAll(filepath.Dir(path), 0755)
+			os.WriteFile(path, f.Content, 0644)
+		}
 	}
 	cmd := exec.Command("go", "test", "./...")
 	cmd.Dir = dir

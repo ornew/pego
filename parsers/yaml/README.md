@@ -17,12 +17,12 @@ docs, err := yaml.LoadAll("--- a\n--- [b, c]\n") // one value per document
 
 // Typed values with positions, tags, anchors and styles.
 s, err := yaml.ParseAST("key: &x value # comment\nlist:\n- 'single'\n- *x\n")
-for _, p := range s.Documents[0].Root.(*yaml.Mapping).Pairs {
-	k := p.Key.(*yaml.Scalar)
+for _, p := range s.Documents[0].Root.(*types.Mapping).Pairs {
+	k := p.Key.(*types.Scalar)
 	fmt.Printf("%s at %d-%d: %T\n", k.Value(), k.Start, k.End, p.Value)
 }
-// key at 0-3: *yaml.Scalar
-// list at 24-28: *yaml.Sequence
+// key at 0-3: *types.Scalar
+// list at 24-28: *types.Sequence
 
 // The event stream of the yaml-test-suite.
 events, err := yaml.Events("--- !!map\nkey: [a, 'b']\n")
@@ -35,13 +35,13 @@ ok := yaml.Valid("a: b: c") // false
 | | |
 |:--|:--|
 | `ParseAST(input, opts...) (*Stream, error)` | The stream: `Documents`, each with its `Directives`, `Start` (`---`) and `End` (`...`) markers and its `Root` node, a `*Mapping`, `*Sequence`, `*Scalar` or `*Alias`, each with its `Span` |
-| `Load(input) (any, error)`, `LoadAll(input) ([]any, error)` | Go values of the documents, with the core schema (below); `(*Document).Load` for one parsed document |
-| `Events(input) (string, error)`, `(*Stream).Events()` | The event stream in the format of the yaml-test-suite (`test.event`) |
-| `Valid(input) bool`, `(*Stream).Check() error` | The checks that are not syntax (below); `Valid` also parses and requires UTF-8 |
+| `Load(input) (any, error)`, `LoadAll(input) ([]any, error)` | Go values of the documents, with the core schema (below); `LoadDocument(*Document)` for one parsed document |
+| `Events(input) (string, error)`, `StreamEvents(*Stream)` | The event stream in the format of the yaml-test-suite (`test.event`) |
+| `Valid(input) bool`, `Check(*Stream) error` | The checks that are not syntax (below); `Valid` also parses and requires UTF-8 |
 | `Recognize(input, opts...) error` | Only checks the syntax |
 | `Parse(input, opts...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
 | `(*Scalar).Value() string` | The content of a scalar, decoded by its `Style`: line folding, escapes, block indentation and chomping (`Text` is the source, from the quotes or the block indicator on) |
-| `(*Document).ResolveTag(*Tag) (string, error)` | The full name of a tag: `!!str` is `tag:yaml.org,2002:str`, shorthands use the `%TAG` directives |
+| `ResolveTag(*Document, *Tag) (string, error)` | The full name of a tag: `!!str` is `tag:yaml.org,2002:str`, shorthands use the `%TAG` directives |
 | `PropertiesOf(Value) *Properties` | The tag and anchor of a node, or nil |
 | `*SyntaxError`, `*SemanticError` | Errors of the syntax, and of the checks and of `Load`, with line and column |
 
@@ -74,7 +74,7 @@ URI characters and percent escapes are checked in encoded form. Verbatim text is
 shorthand suffix escapes keep their decoded UTF-8 application values, including escaped Unicode,
 spaces and percent signs. Tags identify types; checking a URI does not fetch it or require a known scheme.
 
-For manually constructed ASTs, `Check`, stream `Events`, document `Load` and `ResolveTag` return a
+For manually constructed ASTs, `Check`, `StreamEvents`, `LoadDocument` and `ResolveTag` return a
 `SemanticError` for missing directives/names, wrong known-directive parameter counts, nil parameters,
 malformed versions/handles/tags, invalid prefix characters/escapes or empty tag prefixes. This checks tag and
 directive shape; it is not validation of an arbitrary AST graph.

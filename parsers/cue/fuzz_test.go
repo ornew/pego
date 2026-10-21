@@ -39,7 +39,7 @@ func FuzzParse(f *testing.F) {
 		if aerr != nil {
 			return
 		}
-		_ = file.Check()
+		_ = Check(file)
 		n := utf8.RuneCountInString(in)
 		var walk func(x any, lo, hi int)
 		walk = func(x any, lo, hi int) {

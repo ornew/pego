@@ -106,23 +106,15 @@ rule part WithTrace = t:("a") #atomic => WithTrace{Text: text($t)}`, input: "a",
 				pkg += "_converted"
 			}
 			opts := GenOptions{Package: "reference_" + pkg, Start: "main", Types: true, Recognize: true, convertTypes: convert, disableTypedCuts: f.general, disableTypedFrameLayouts: f.general}
-			reference, err := generateCode(g, opts)
-			if err != nil {
-				t.Fatal(pkg, err)
-			}
-			write(opts.Package, "parser.go", reference)
+			generatePackageIn(t, dir, "typedtracefixture", opts.Package, g, opts)
 			opts.Package, opts.Observability = pkg, true
-			code, err := generateCode(g, opts)
-			if err != nil {
-				t.Fatal(pkg, err)
-			}
-			if !convert && !f.fallback && !strings.Contains(string(code), "return pegort.TParse(trules[") {
+			code := generatePackageIn(t, dir, "typedtracefixture", pkg, g, opts)
+			if !convert && !f.fallback && !strings.Contains(code, "return pegort.TParse(trules[") {
 				t.Fatal(pkg, "direct start unexpectedly unavailable")
 			}
-			if (convert || f.fallback) && !strings.Contains(string(code), "return pegort.RunParseConverted(rules[") {
+			if (convert || f.fallback) && !strings.Contains(code, "return pegort.RunParseConverted(rules[") {
 				t.Fatal(pkg, "missing Node conversion")
 			}
-			write(pkg, "parser.go", code)
 			nodeChecks := strings.NewReplacer("PACKAGE", pkg, "INPUT", fmt.Sprintf("%q", f.input), "CHECKS", f.checks).Replace(strings.ReplaceAll(generatedNodeTraceConsumer, "tracefixture/", "typedtracefixture/"))
 			typedChecks := strings.NewReplacer("INPUT", fmt.Sprintf("%q", f.input), "CHECKS", f.checks).Replace(generatedTypedTraceConsumer)
 			write(pkg, "trace_test.go", []byte(nodeChecks+typedChecks))

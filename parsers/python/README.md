@@ -15,9 +15,9 @@ src := "import os\n\ndef greet(name: str, *, loud=False) -> str:\n    return f'h
 m, err := python.ParseModule(src)
 for _, s := range m.Body {
 	switch s := s.(type) {
-	case *python.Import:
+	case *types.Import:
 		fmt.Printf("import of %d module at %d-%d\n", len(s.Names), s.Start, s.End)
-	case *python.FunctionDef:
+	case *types.FunctionDef:
 		fmt.Printf("def %s with %d parameters and %d keyword-only\n", s.Name, len(s.Args.Args), len(s.Args.KwOnlyArgs))
 	}
 }
@@ -30,14 +30,14 @@ fmt.Println(python.DumpWithPositions(m, src))
 
 // Every node, in source order.
 python.Inspect(m, func(n any) bool {
-	if name, ok := n.(*python.Name); ok {
+	if name, ok := n.(*types.Name); ok {
 		fmt.Println(name.Id, name.Ctx)
 	}
 	return true
 })
 
 // The value of a constant, as Python computes it.
-v, err := e.(*python.Constant).Value() // *big.Int, float64, complex128, string, []byte, bool, nil or python.Ellipsis
+v, err := python.ConstantValue(e.(*types.Constant)) // *big.Int, float64, complex128, string, []byte, bool, nil or python.Ellipsis
 
 // Syntax errors.
 _, err = python.ParseModule("class A:\npass\n")
@@ -55,8 +55,8 @@ if errors.As(err, &se) {
 | `Recognize(src, opts...) error`, `Parse(src, opts...) (*Node, error)` | Only check the syntax; the generic tree of `*Node`, as the engine returns it |
 | `Dump(node) string`, `DumpWithPositions(node, src, unit...) string` | The tree printed as `ast.dump` does, without and with `include_attributes=True` |
 | `Inspect(node, f)` | Walks the tree depth first |
-| `(*Constant).Value()`, `(*Constant).StringValue()` | The value of a constant: integers (`*big.Int`), floats, imaginary numbers, strings (adjacent literals concatenated, escapes decoded), bytes, `True`, `False`, `None`, `...` |
-| `(*FStringMiddle).Value()`, `(*FStringRawMiddle).Value()`, `(*FormattedValue).ConversionCode()` | The literal parts and the conversion of replacement fields of f-strings and t-strings |
+| `ConstantValue(*Constant)`, `ConstantStringValue(*Constant)` | The value of a constant: integers (`*big.Int`), floats, imaginary numbers, strings (adjacent literals concatenated, escapes decoded), bytes, `True`, `False`, `None`, `...` |
+| `FStringMiddleValue(*FStringMiddle)`, `FStringRawMiddleValue(*FStringRawMiddle)`, `FormattedValueConversionCode(*FormattedValue)`, `InterpolationConversionCode(*Interpolation)` | The literal parts and the conversion of replacement fields of f-strings and t-strings |
 | `NormalizeName(name)`, `OpName(op)` | An identifier in the NFKC form Python uses; the class of Python's `ast` for an operator (`"+"` is `Add`) |
 | `NewLineIndex(src, unit...)`, `(*LineIndex).Position(pos)` | Positions as lines (from 1) and columns (UTF-8 bytes from 0), as CPython reports them |
 | `*SyntaxError` | The position (`Pos`, `Line`, `Col`), `Expected` and `Messages` |
@@ -143,7 +143,7 @@ Choices that measurably help, each commented in the grammar:
 - Rules that must be tried in order are written so that the common case, an expression statement, is parsed once and
   an assignment is recognized by what follows; `primary` returns an atom without running the Operators Rule of
   attributes, calls and subscripts when none follows it.
-- Constants and string parts are kept as source text and decoded on demand (`Constant.Value`), and the large integers
+- Constants and string parts are kept as source text and decoded on demand (`ConstantValue`), and the large integers
   of the grammar are computed with multiplications (the bytecode backends truncate integer literals of 2^31 and more).
 
 `ParseAST` builds its values directly, since every value has a Go type of its own, which the generator compiles into
