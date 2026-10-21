@@ -101,9 +101,12 @@ comment strings alone does not change their formatted spelling or placement.
 layout alone does not create a `source` object. Current layout preservation
 covers selected Action Expression operand boundaries, including unary operands
 and confirmed lambda expressions, plus constructor field names and the
-elements of calls, constructors, list constructors and tuples. The delimiters of
-those forms keep their comments in the node's `OpenBreak`, `BodyBreak` and
-`CloseBreak` fields. Other source forms remain outside this increment's coverage.
+elements of calls, constructors, list constructors, tuples, the tuple and type
+application forms of types, and the arguments of attributes and the parameters of
+lambdas, which keep theirs in a `ListLayout`. The delimiters of those forms keep
+their comments in the node's `OpenBreak`, `BodyBreak` and `CloseBreak` fields.
+The comments between the parentheses of `#repeat(...)` stay in its `ArgsBreak`
+field. Other source forms remain outside this increment's coverage.
 
 #### Comment Grouping and Ownership
 
@@ -121,8 +124,8 @@ decide it.
 | A blank line | Ends the pending group, and no later group can trail the previous token |
 | A group ends while trailing is possible | The first such group trails the previous token and later groups are detached |
 | A group ends while trailing is not possible | It is detached; the last group that no blank line ended leads the next token |
-| The next token is on the line of the previous token, or a block comment that could trail ends on the line of the next token | If exactly one group exists, it is detached and not guessed to trail or lead. With several groups, the first trails the previous token, the groups in between are detached and the last leads the next token |
-| A closing delimiter or the end of the file | The same rules apply. Groups are detached even when no next token exists; they have no owner, and the formatter keeps their original tokens |
+| The next token is on the line of the previous token, or a block comment that could trail ends on the line of the next token | If exactly one group exists, it is detached and not guessed to trail or lead, unless the previous token is an opening delimiter (`(`, `[`, `{`) or a comma, when that group leads the next token. With several groups, the first trails the previous token, the groups in between are detached and the last leads the next token |
+| A closing delimiter or the end of the file | The same rules apply, except that a block comment on the line of the previous token trails the previous token. Other groups are detached even when no next token exists; they have no owner, and the formatter keeps their original tokens |
 
 Ownership then follows the construct:
 
@@ -173,8 +176,8 @@ normalize layout and is not guaranteed to reproduce exact source text.
 `grammar.Format` writes these comma-separated lists in brackets in one of two
 forms: the arguments of a call, the elements of a struct constructor, node
 constructor, list constructor, tuple value and tuple type, the arguments of a
-type application `T[A, B]`, and the arguments of an attribute `@name(k=v, ...)`
-that ends in a keyword argument.
+type application `T[A, B]`, the arguments of an attribute `@name(1, k=v)`, and
+the parameters of a lambda `(a, b) => ...`.
 
 - On one line, `f(1, 2)`, when the list has no trailing comma and no comment that
   needs its own line.
@@ -213,14 +216,21 @@ On lines, comments keep the owner they have in the source:
 - A comment on a line of its own between an element and its comma has no owner
   and stays between them.
 
-One thing cannot be kept in a list on lines: a block comment between two tokens
-of one line, after the opening delimiter or a comma and before an element, or
-before the closing delimiter. Such a comment is detached, or has no owner, but
-no placement of it on a line of its own gives it that. After formatting, the
-first leads the element after it, and the second trails the last element.
-Lambda parameters, `#repeat` bounds and `#recover` take no trailing comma and
-keep their form. In an attribute with positional arguments only, a comma after
-the last argument is a trailing comma, as in every other list.
+A block comment between two tokens of one line leads the element after an
+opening delimiter or a comma and trails the last element before the closing
+delimiter, as in `f(/* a */ 1, 2, /* b */)`, so writing the list on lines keeps
+its owner: `/* a */` goes before `1` and `/* b */` after the comma of `2`. A
+comment that is not on the line of the comma, such as one on a line of its own
+between two elements, does not trail the element before the comma. A blank line
+before a comment or an element is kept, and a line holds no trailing white
+space.
+
+`#repeat` bounds and `#recover` are not lists. The comma of `#repeat(n,)` and
+`#repeat(,m)` is part of its syntax, so `#repeat` keeps the form in which its
+bounds were written, on one line, and the comments between its parentheses stay
+there. An argument of an attribute that is left out is written `nil`; the comma
+after the last argument is a trailing comma, as in every other list. Two commas
+in a row are a syntax error in every list.
 
 A trailing comma is not part of the normalized grammar: it is kept in the
 `TrailingComma` field of `TupleType`, `TypeApp`, `TupleLit`, `New`,
@@ -293,7 +303,9 @@ The parser
 records comment trivia and may accept it syntactically. Semantic analysis
 rejects comments in Declaration Statement and Operators Rule statement headers with a
 positioned diagnostic; affected headers include package, type, rule, level,
-infix-kind and associativity headers.
+infix-kind and associativity headers. The comments between the delimiters of a
+tuple type, a type application or a parenthesized type in such a header are
+ordinary comments of the type, not comments of the header.
 
 A rule is called by writing its name in a Rule Expression at the current
 position (see [Rule Calls](parser-expressions.md#rule-calls)).

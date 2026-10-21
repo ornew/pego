@@ -151,7 +151,7 @@ exits with status 0 whatever it lists. Without file arguments it formats standar
 Adjacent minus operators stay separated: `- -"a"` remains two discards, and `- -1` remains two unary negations.
 The whitespace keeps either expression from becoming `--`, a reserved token that is an error.
 
-A comma-separated list in brackets (call arguments, struct and list constructors, tuples, tuple types, type arguments and
+A comma-separated list in brackets (call arguments, struct and list constructors, tuples, tuple types, type arguments, lambda parameters and
 attribute arguments) stays on one line, like `f(a, b)`, unless it ends in a trailing comma or holds a comment that needs
 its own line. Then each element gets a line and a comma, so a trailing comma is the way to ask for the lines:
 `f(a, b,)` becomes `f(` with `a,` and `b,` on separate lines and `)` on the last. The comma of a one-element tuple,

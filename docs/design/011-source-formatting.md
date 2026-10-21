@@ -67,12 +67,16 @@ A grammar without layout information (for example, one decoded from JSON) is pri
 A comma-separated list in brackets follows one rule, as in other formatters: it is written on one line unless it ends in a trailing comma or holds a comment that needs its own line, and then each element has a line of its own and a comma.
 The parser records the trailing comma in `TrailingComma` instead of the source lines, so the layout depends on what the author wrote on purpose, not on where the line breaks happened to fall.
 The comma that a one-element tuple needs does not count.
-A block comment between two tokens of one line does not break the list: its owner is decided by that line (see [Comment Grouping and Ownership](../../spec/grammar-files.md#comment-grouping-and-ownership)), and a line of its own would give the comment to the next element.
+A block comment between two tokens of one line does not break the list: its owner is decided by that line (see [Comment Grouping and Ownership](../../spec/grammar-files.md#comment-grouping-and-ownership)).
+After an opening delimiter or a comma it leads the next element, and before the closing delimiter it trails the last one, so writing the list on lines keeps the owner: the comment takes a line before the element, or goes after the comma of the last element.
 A block comment that ends its line does break it, and goes after the comma of its element, where it still trails the element.
+Type lists, attribute arguments and lambda parameters follow the same rules as the lists of terms.
+`#repeat` is not a list: its comma is part of its syntax, so it keeps the written form of its bounds and the comments between its parentheses.
 The comma of a list is a token of its own, like a statement separator: a comment on its line trails the element before it, as `gofmt` places it, so `2, // c` keeps `// c` with `2`.
 Two line comments around one comma cannot share a line, so the comma stays on the line after the first.
-The one thing a list on lines cannot keep is a block comment between two tokens of one line after an opening delimiter or a comma, or before the closing delimiter, where it has no owner or is detached; on its own line it leads or trails an element instead.
-Tests format random lists with comments in every position and check that the result parses to the same AST with each comment owned by the same node, apart from that shape.
+A comment that is not on the line of the comma never trails the element before it.
+A blank line before the first comment of a list is kept, because it decides whether the comment is detached.
+Tests format random lists, types and attributes with comments in every position and check that the result parses to the same AST with each comment owned by the same node.
 A construct written on one line, such as a group, a predicate block or a level, that holds a list on lines is written on lines itself, because the next pass would read it that way.
 
 Formatting is idempotent: formatting the output again gives the same text, because each recorded line break reproduces itself.
