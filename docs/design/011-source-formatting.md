@@ -71,7 +71,8 @@ A block comment between two tokens of one line does not break the list: its owne
 After an opening delimiter or a comma it leads the next element, and before the closing delimiter it trails the last one, so writing the list on lines keeps the owner: the comment takes a line before the element, or goes after the comma of the last element.
 A block comment that ends its line does break it, and goes after the comma of its element, where it still trails the element.
 Type lists, attribute arguments and lambda parameters follow the same rules as the lists of terms.
-`#repeat` is not a list: its comma is part of its syntax, so it keeps the written form of its bounds and the comments between its parentheses.
+A block comment after an opening delimiter touches it: `f(/* a */ 1)`.
+`#repeat` is not a list: its comma is part of its syntax, so it keeps the written form of its bounds and each comment between the same two tokens.
 The comma of a list is a token of its own, like a statement separator: a comment on its line trails the element before it, as `gofmt` places it, so `2, // c` keeps `// c` with `2`.
 Two line comments around one comma cannot share a line, so the comma stays on the line after the first.
 A comment that is not on the line of the comma never trails the element before it.
