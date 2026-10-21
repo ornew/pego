@@ -12,13 +12,19 @@ import "strings"
 
 // ownedComments returns the comment tokens of text, a normalized comment: the
 // lines of a text that ends in a line break are line comments, and any other
-// text is one block comment.
+// text is one block comment. A block comment cannot hold "*/", so the text is
+// written with "* /" for it, and a space ends text that does not end with white
+// space, as the line comment at the end of a file has none.
 func ownedComments(text string) []*Comment {
 	if text == "" {
 		return nil
 	}
 	if !strings.HasSuffix(text, "\n") {
-		return []*Comment{{Text: "/*" + strings.ReplaceAll(text, "*/", "* /") + "*/"}}
+		body := strings.ReplaceAll(text, "*/", "* /")
+		if !strings.HasSuffix(body, " ") {
+			body += " "
+		}
+		return []*Comment{{Text: "/*" + body + "*/"}}
 	}
 	lines := strings.Split(strings.TrimSuffix(text, "\n"), "\n")
 	cs := make([]*Comment, len(lines))

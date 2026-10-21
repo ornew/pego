@@ -6,6 +6,12 @@ package grammar
 //
 // Comment strings omit their markers and preserve content and line endings.
 // LeadingDetachedComments contains separate paragraphs before the node.
+//
+// Format writes a comment string that ends in a line break as line comments,
+// and any other string as one block comment, with a space before its closing
+// delimiter when the string does not end with white space. A block comment
+// cannot hold "*/", so Format writes "* /" for it in a string that is set by
+// hand, and the comment of parsed source never holds it.
 // Formatter comment tokens and layout are stored separately.
 type SourceInfo struct {
 	// Layout preserves raw token-boundary trivia for in-memory formatting.
