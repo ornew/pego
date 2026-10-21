@@ -55,7 +55,7 @@ func TestRunClassifiesNilNodeRecoveryAndRejection(t *testing.T) {
 		name, grammar, input string
 		want                 Outcome
 	}{
-		{"nil node success", `rule main any = "a" => nil`, "a", Accepted},
+		{"nil node success", `rule main _ = "a" => nil`, "a", Accepted},
 		{"recovered completion", `rule main = "a" #recover(skip="?") $$`, "?", Recovered},
 		{"syntax rejection", `rule main = "a" $$`, "b", Rejected},
 	}
