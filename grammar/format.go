@@ -1884,7 +1884,13 @@ func formatTermNode(t Term, outer int, control *metadataControl) string {
 		if list != nil && len(list.Elems) != len(t.Params) {
 			list = nil // the parameters changed since the source was read
 		}
-		s := formatItemList(t.Params, t.TrailingComma, list, control) + " => " + formatTerm(t.Body, 0, control)
+		body := formatTerm(t.Body, 0, control)
+		if layout := termLayout(t.Body); layout != nil && len(layout.Before) > 0 {
+			// Comments between "=>" and the body put the body on a line of its
+			// own, one level in from the parameters.
+			body = indentTermLines(body, indentUnit, control)
+		}
+		s := formatItemList(t.Params, t.TrailingComma, list, control) + joinLayout(" => ", body)
 		if outer > 0 {
 			return parenTerm(s, control)
 		}
@@ -2055,6 +2061,9 @@ func writeLayoutAfter(out *strings.Builder, comments []*Comment, separator strin
 func joinLayout(separator, body string) string {
 	if strings.HasSuffix(separator, " ") && strings.HasPrefix(body, " ") {
 		body = body[1:]
+	}
+	if strings.HasSuffix(separator, " ") && strings.HasPrefix(body, "\n") {
+		separator = separator[:len(separator)-1] // no space at the end of a line
 	}
 	return separator + body
 }
