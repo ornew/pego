@@ -77,6 +77,24 @@ line endings; each detached entry is one paragraph. Older JSON may omit these
 metadata objects. Comment grouping and node ownership follow
 [Comment Grouping and Ownership](#comment-grouping-and-ownership).
 
+JSON carries the comments that a node owns, as the normalized strings of its
+`source` object, and nothing else. `grammar.Format` writes them again for the
+nodes that stand on lines of their own when the grammar has no layout, as after
+`grammar.UnmarshalJSON` or when built by hand: the package clause, type, variable and
+rule declarations, the fields of a struct type, and the `skip`, `operand`,
+`level` and operator lines of an operators rule. Detached paragraphs come first,
+each after a blank line, then the leading comments directly before the node; a
+trailing comment goes at the end of the node's last line. A string that ends in
+a line break is written as `//` lines, and any other string as a block comment,
+which is also how a trailing comment over several lines is written. A text that
+was a block comment ending in a line break therefore comes back as line
+comments, and the spacing inside a block comment is the normalized one. The
+owned comments of other nodes, such as the expressions of a rule body, are in
+the JSON but have no place in the formatted output without layout. Comments
+that no node owns are not in the JSON: those at the end of the file, between the
+tokens of a rule expression and inside the lists whose layout is kept apart,
+such as attribute arguments.
+
 The canonical `pego.pego` grammar and its source adapter assign the same spans
 and owners as the hand-written frontend to every source-bearing node: the
 package clause, type and rule declarations, struct fields, operators lines and

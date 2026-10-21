@@ -63,6 +63,9 @@ Attaching trailing comments to the line they end, rather than to the line break 
 
 Blank lines are kept but collapsed to one, and dropped at the start of a block, before a closing brace and at the end of the file.
 A grammar without layout information (for example, one decoded from JSON) is printed as before: a blank line between definitions and one item per line in blocks.
+The comments such a grammar owns (`SourceInfo.LeadingComments`, `LeadingDetachedComments` and `TrailingComments`, which JSON carries) are written for the package clause, the declarations, the fields of a struct and the lines of an operators rule, as the same comment lines and trailing comments that layout would hold.
+A node with a `LineBreak` keeps its layout comments, so a parsed grammar never writes a comment twice.
+A string that ends in a line break becomes `//` lines and any other string a block comment.
 
 A comma-separated list in brackets follows one rule, as in other formatters: it is written on one line unless it ends in a trailing comma or holds a comment that needs its own line, and then each element has a line of its own and a comma.
 The parser records the trailing comma in `TrailingComma` instead of the source lines, so the layout depends on what the author wrote on purpose, not on where the line breaks happened to fall.
@@ -93,7 +96,7 @@ Tests check this, and that every grammar in `examples/` reparses to the same AST
 ### Considered Alternatives
 
 - **A comment list ordered by position, merged while printing** (as in `go/printer`): it needs the source position of every place the printer writes, including the end of nodes, which the AST does not have. Attaching comments in the parser needs no positions.
-- **Keeping comments in the JSON form**: JSON is the interchange format for tools that build grammars; layout belongs to the source. Leaving it out keeps the JSON stable.
+- **Keeping comment tokens in the JSON form**: JSON is the interchange format for tools that build grammars; layout belongs to the source. Leaving it out keeps the JSON stable. The owned comments it does carry are enough to write the comments of the nodes on their own lines again.
 
 ## Limitations
 

@@ -200,8 +200,27 @@ func TestReservedUnnamedStructType(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := grammar.Format(back); !strings.HasPrefix(got, "type A ~ {} | { X int; Y *A } | []{ Name string; Inner { V int } }\n") {
+	// JSON carries the comment of the field, which takes the struct to lines.
+	// Without layout, the declarations are separated by blank lines.
+	wantJSON := strings.Replace(strings.Replace(want, "}\ntype T", "}\n\ntype T", 1), "}\nrule main", "}\n\nrule main", 1)
+	if got := grammar.Format(back); got != wantJSON {
 		t.Fatalf("JSON round trip:\n%s", got)
+	}
+	// Without comments the struct type stays on one line.
+	plain, err := syntax.Parse("type A ~ []{ Name string; Inner { V int } }\nrule main = \"a\"")
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err = grammar.MarshalJSON(plain)
+	if err != nil {
+		t.Fatal(err)
+	}
+	back, err = grammar.UnmarshalJSON(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := grammar.Format(back); !strings.HasPrefix(got, "type A ~ []{ Name string; Inner { V int } }\n") {
+		t.Fatalf("JSON round trip without comments:\n%s", got)
 	}
 
 	for _, tc := range []struct{ src, pos string }{

@@ -20,25 +20,30 @@ func formatGrammar(g *Grammar, control *metadataControl) string {
 		}
 	}
 	if g.File.Pkg.Name != "" {
-		p.lineBreak(g.File.Pkg.Break, "", false)
+		p.lineBreak(ownedLead(&g.File.Pkg.SourceInfo, g.File.Pkg.Break, false), "", false)
 		p.header("package", g.File.Pkg.Pos)
 		p.write(" " + g.File.Pkg.Name)
+		p.inline(ownedTrailing(&g.File.Pkg.SourceInfo, g.File.Pkg.Break))
 	}
 	for _, s := range g.File.Decls {
 		pollFormat(control)
 		switch s := s.(type) {
 		case *TypeDef:
-			p.lineBreak(s.Break, "", true)
+			p.lineBreak(ownedLead(&s.SourceInfo, s.Break, true), "", true)
 			p.typeDef(s)
+			p.inline(ownedTrailing(&s.SourceInfo, s.Break))
 		case *TypeAlias:
-			p.lineBreak(s.Break, "", true)
+			p.lineBreak(ownedLead(&s.SourceInfo, s.Break, true), "", true)
 			p.typeAlias(s)
+			p.inline(ownedTrailing(&s.SourceInfo, s.Break))
 		case *VarDef:
-			p.lineBreak(s.Break, "", true)
+			p.lineBreak(ownedLead(&s.SourceInfo, s.Break, true), "", true)
 			p.varDef(s)
+			p.inline(ownedTrailing(&s.SourceInfo, s.Break))
 		case *RuleDef:
-			p.lineBreak(s.Break, "", true)
+			p.lineBreak(ownedLead(&s.SourceInfo, s.Break, true), "", true)
 			p.ruleDef(s)
+			p.inline(ownedTrailing(&s.SourceInfo, s.Break))
 		}
 	}
 	p.comments(g.File.EndBreak, "", true)
@@ -281,10 +286,10 @@ func (p *printer) structBody(fields []*Field, closeBreak *LineBreak, oneLine boo
 	switch {
 	case oneLine && len(fields) > 0:
 		lead, empty = inlineLead(fields[0].Break, fields[0].Pos)
-		empty = empty && noComments(closeBreak)
+		empty = empty && noComments(closeBreak) && !ownsComments(&fields[0].SourceInfo, fields[0].Break)
 		for _, f := range fields[1:] {
 			pollFormat(p.control)
-			empty = empty && noComments(f.Break)
+			empty = empty && noComments(f.Break) && !ownsComments(&f.SourceInfo, f.Break)
 		}
 	case oneLine:
 		lead, empty = inlineLead(closeBreak, Pos{})
@@ -292,7 +297,7 @@ func (p *printer) structBody(fields []*Field, closeBreak *LineBreak, oneLine boo
 		empty = noComments(closeBreak)
 		for _, f := range fields {
 			pollFormat(p.control)
-			empty = empty && noComments(f.Break)
+			empty = empty && noComments(f.Break) && !ownsComments(&f.SourceInfo, f.Break)
 		}
 	}
 	if empty && (len(fields) == 0 || oneLine) {
@@ -330,11 +335,12 @@ func (p *printer) structBody(fields []*Field, closeBreak *LineBreak, oneLine boo
 	p.openBlock()
 	for _, f := range fields {
 		pollFormat(p.control)
-		p.lineBreak(f.Break, indent+indentUnit, false)
+		p.lineBreak(ownedLead(&f.SourceInfo, f.Break, false), indent+indentUnit, false)
 		p.cur.field = true
 		p.cur.name = f.Name
 		// A type over several lines continues at the field's indentation.
 		p.write(indentTypeLines(formatType(f.Type, p.control), indent+indentUnit, p.control))
+		p.inline(ownedTrailing(&f.SourceInfo, f.Break))
 	}
 	p.closeBlock(closeBreak, indent)
 }
@@ -673,22 +679,24 @@ func (p *printer) operatorsRule(pr *OperatorsRule, indent string) {
 	inner := indent + indentUnit
 	p.openBlock()
 	if pr.Skip != nil {
-		p.lineBreak(pr.SkipBreak, inner, false)
+		p.lineBreak(ownedLead(&pr.SkipSource, pr.SkipBreak, false), inner, false)
 		p.write("skip " + formatExpr(pr.Skip, precChoice, p.control))
+		p.inline(ownedTrailing(&pr.SkipSource, pr.SkipBreak))
 	}
 	for _, o := range pr.Operands {
 		pollFormat(p.control)
-		p.lineBreak(o.Break, inner, false)
+		p.lineBreak(ownedLead(&o.SourceInfo, o.Break, false), inner, false)
 		p.write("operand " + formatExpr(o.Expr, precChoice, p.control))
 		if o.Action != nil {
 			p.write(joinLayout(" => ", indentTermLines(formatTerm(o.Action, 0, p.control), inner, p.control)))
 		} else if o.DefaultAction {
 			p.write(" => ...")
 		}
+		p.inline(ownedTrailing(&o.SourceInfo, o.Break))
 	}
 	for _, l := range pr.Levels {
 		pollFormat(p.control)
-		p.lineBreak(l.Break, inner, false)
+		p.lineBreak(ownedLead(&l.SourceInfo, l.Break, false), inner, false)
 		p.header("level", l.Pos)
 		p.write(" ")
 		if l.Name != "" {
@@ -697,7 +705,7 @@ func (p *printer) operatorsRule(pr *OperatorsRule, indent string) {
 		empty := noComments(l.CloseBreak)
 		for _, op := range l.Operators {
 			pollFormat(p.control)
-			empty = empty && noComments(op.Break)
+			empty = empty && noComments(op.Break) && !ownsComments(&op.SourceInfo, op.Break)
 		}
 		switch {
 		case empty && (len(l.Operators) == 0 || l.OneLine) && p.tryOneLine(func() {
@@ -721,11 +729,13 @@ func (p *printer) operatorsRule(pr *OperatorsRule, indent string) {
 			p.openBlock()
 			for _, op := range l.Operators {
 				pollFormat(p.control)
-				p.lineBreak(op.Break, inner+indentUnit, false)
+				p.lineBreak(ownedLead(&op.SourceInfo, op.Break, false), inner+indentUnit, false)
 				p.operator(op, inner+indentUnit)
+				p.inline(ownedTrailing(&op.SourceInfo, op.Break))
 			}
 			p.closeBlock(l.CloseBreak, inner)
 		}
+		p.inline(ownedTrailing(&l.SourceInfo, l.Break))
 	}
 	p.closeBlock(pr.CloseBreak, indent)
 }
@@ -845,7 +855,7 @@ func formatType(t TypeExpr, control *metadataControl) string {
 		oneLine := t.OneLine || t.CloseBreak == nil
 		for _, f := range t.Fields {
 			pollFormat(control)
-			oneLine = oneLine && (f.Break == nil || f.Break.Trailing == nil)
+			oneLine = oneLine && (f.Break == nil || f.Break.Trailing == nil) && !ownsComments(&f.SourceInfo, f.Break)
 		}
 		oneLine = oneLine && (t.CloseBreak == nil || t.CloseBreak.Trailing == nil)
 		p.structBody(t.Fields, t.CloseBreak, oneLine, "")

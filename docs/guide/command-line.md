@@ -260,8 +260,9 @@ pego convert [-to pego|json] [-o <file>] <grammar>
 
 Converts between PEGO source and the JSON form of the grammar AST. `-to` defaults to the other format (`.pego` becomes
 JSON, `.json` becomes PEGO source), and is required for a `.pegoc` input. Without `-o`, the result goes to standard
-output. JSON and compiled grammars carry no comments or layout, so converting back to source gives canonical formatting
-without comments; keep the `.pego` as the source of truth.
+output. JSON carries the comments that declarations, struct fields and operators rule lines own, and converting it
+back to source writes them again, but it carries no layout and no other comments; compiled grammars carry none. Keep the
+`.pego` as the source of truth.
 
 ```bash
 pego convert -to json pairs.pego -o pairs.json

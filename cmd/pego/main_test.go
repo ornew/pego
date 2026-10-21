@@ -244,7 +244,7 @@ func TestConvert(t *testing.T) {
 	}
 	jg := writeFile(t, "kv.json", js)
 	// JSON converts to PEGO source by default, and to JSON with -to json.
-	if out, err := runCLI(t, "", "convert", jg); err != nil || out != "package kv\n\nrule main = k:[a-z]+ #atomic \"=\" v:[0-9]+ #atomic\n" {
+	if out, err := runCLI(t, "", "convert", jg); err != nil || out != "// key-value pairs\npackage kv\n\nrule main = k:[a-z]+ #atomic \"=\" v:[0-9]+ #atomic // pair\n" {
 		t.Errorf("got %q, %v", out, err)
 	}
 	if out, err := runCLI(t, "", "convert", "-to", "json", jg); err != nil || out != js {

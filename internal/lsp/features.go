@@ -372,10 +372,12 @@ func typeHoverControlled(d *definition, control *renderControl) string {
 	case *grammar.TypeDef:
 		v := *t
 		v.Break = nil
+		v.LeadingComments, v.TrailingComments, v.LeadingDetachedComments = "", "", nil
 		td = &v
 	case *grammar.TypeAlias:
 		v := *t
 		v.Break = nil
+		v.LeadingComments, v.TrailingComments, v.LeadingDetachedComments = "", "", nil
 		td = &v
 	}
 	src := control.trimSpace(control.formatGrammar(&grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{td}}}))
