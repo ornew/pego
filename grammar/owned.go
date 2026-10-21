@@ -42,12 +42,12 @@ func ownedLead(s *SourceInfo, b *LineBreak, blank bool) *LineBreak {
 // after a blank line, then the leading comments directly before the node.
 func ownedLeadFrom(s *SourceInfo, blank bool) *LineBreak {
 	b := &LineBreak{}
-	for i, paragraph := range s.LeadingDetachedComments {
+	for _, paragraph := range s.LeadingDetachedComments {
 		cs := ownedComments(paragraph)
 		if len(cs) == 0 {
 			continue
 		}
-		cs[0].Blank = i > 0 || blank
+		cs[0].Blank = true // a blank line makes the paragraph detached
 		b.Comments = append(b.Comments, cs...)
 	}
 	leading := ownedComments(s.LeadingComments)
@@ -71,7 +71,15 @@ func ownedTrailing(s *SourceInfo, b *LineBreak) *LineBreak {
 	cs := ownedComments(text)
 	c := cs[0]
 	if len(cs) > 1 {
-		c = &Comment{Text: "/*" + strings.ReplaceAll(text, "*/", "* /") + "*/"}
+		// The lines after the first start with "*", which a block comment drops
+		// from its text again, so that their leading white space is kept.
+		lines := strings.Split(strings.ReplaceAll(text, "*/", "* /"), "\n")
+		for i := 1; i < len(lines); i++ {
+			if lines[i] != "" {
+				lines[i] = " *" + lines[i]
+			}
+		}
+		c = &Comment{Text: "/*" + strings.Join(lines, "\n") + "*/"}
 	}
 	return &LineBreak{Trailing: c, TrailingEnds: strings.HasPrefix(c.Text, "//")}
 }

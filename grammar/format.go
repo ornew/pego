@@ -76,6 +76,9 @@ type printer struct {
 	// keepStart keeps a blank line at the start of the block. The blank line
 	// before the first comment of a list decides what the comment belongs to.
 	keepStart bool
+	// keepFirst keeps a blank line before the first comment after the brace
+	// that opens the block: the blank line makes the comment a detached one.
+	keepFirst bool
 	// trailing are the trailing comments of the current line.
 	trailing []*Comment
 	headers  map[Pos][]*Comment
@@ -143,7 +146,7 @@ func (p *printer) newLine(indent string) {
 }
 
 func (p *printer) blankLine() {
-	if p.start && !p.keepStart || len(p.lines) == 0 || p.lines[len(p.lines)-1].blank {
+	if p.start && !p.keepStart && !p.keepFirst || len(p.lines) == 0 || p.lines[len(p.lines)-1].blank {
 		return
 	}
 	p.lines = append(p.lines, &line{blank: true})
@@ -261,9 +264,12 @@ func noComments(b *LineBreak) bool {
 	return b == nil || len(b.Comments) == 0 && !b.Blank
 }
 
-func (p *printer) openBlock() {
+// openBlock writes the brace that opens a block whose first line starts with
+// the break first.
+func (p *printer) openBlock(first *LineBreak) {
 	p.write("{")
 	p.start = true
+	p.keepFirst = first != nil && len(first.Comments) > 0 && first.Comments[0].Blank
 }
 
 // closeBlock writes the comments before a closing brace and the brace.
@@ -351,7 +357,11 @@ func (p *printer) structBody(fields []*Field, closeBreak *LineBreak, oneLine boo
 		}
 		return
 	}
-	p.openBlock()
+	var first *LineBreak
+	if len(fields) > 0 {
+		first = ownedLead(&fields[0].SourceInfo, fields[0].Break, false)
+	}
+	p.openBlock(first)
 	for _, f := range fields {
 		pollFormat(p.control)
 		p.lineBreak(ownedLead(&f.SourceInfo, f.Break, false), indent+indentUnit, false)
@@ -754,7 +764,16 @@ func breakAt(bs []*LineBreak, i int) *LineBreak {
 func (p *printer) operatorsRule(pr *OperatorsRule, indent string) {
 	pollFormat(p.control)
 	inner := indent + indentUnit
-	p.openBlock()
+	var first *LineBreak
+	switch {
+	case pr.Skip != nil:
+		first = ownedLead(&pr.SkipSource, pr.SkipBreak, false)
+	case len(pr.Operands) > 0:
+		first = ownedLead(&pr.Operands[0].SourceInfo, pr.Operands[0].Break, false)
+	case len(pr.Levels) > 0:
+		first = ownedLead(&pr.Levels[0].SourceInfo, pr.Levels[0].Break, false)
+	}
+	p.openBlock(first)
 	if pr.Skip != nil {
 		p.lineBreak(ownedLead(&pr.SkipSource, pr.SkipBreak, false), inner, false)
 		p.write("skip " + formatExpr(pr.Skip, precChoice, p.control))
@@ -803,7 +822,11 @@ func (p *printer) operatorsRule(pr *OperatorsRule, indent string) {
 			p.inline(l.CloseBreak)
 		}):
 		default:
-			p.openBlock()
+			var first *LineBreak
+			if len(l.Operators) > 0 {
+				first = ownedLead(&l.Operators[0].SourceInfo, l.Operators[0].Break, false)
+			}
+			p.openBlock(first)
 			for _, op := range l.Operators {
 				pollFormat(p.control)
 				p.lineBreak(ownedLead(&op.SourceInfo, op.Break, false), inner+indentUnit, false)
@@ -2135,7 +2158,7 @@ func formatTermNode(t Term, outer int, control *metadataControl) string {
 		if b := breakAt(t.Breaks, 0); b != nil && len(b.Comments) > 0 && b.Comments[0].Blank {
 			p.keepStart = true
 		}
-		p.openBlock()
+		p.openBlock(breakAt(t.Breaks, 0))
 		p.inline(t.OpenBreak)
 		for i := range t.Statements {
 			pollFormat(control)

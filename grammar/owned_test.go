@@ -19,7 +19,7 @@ func TestFormatWritesOwnedComments(t *testing.T) {
 		{"line comments", rule(" one\n two\n", " end\n"), "// one\n// two\nrule r = \"a\" // end\n"},
 		{"block comment", rule(" doc ", " end "), "/* doc */\nrule r = \"a\" /* end */\n"},
 		{"detached paragraphs", rule(" lead\n", "", " first\n", " second\n"), "// first\n\n// second\n\n// lead\nrule r = \"a\"\n"},
-		{"trailing over lines", rule("", " a\n b\n"), "rule r = \"a\" /* a\n b\n*/\n"},
+		{"trailing over lines", rule("", " a\n b\n"), "rule r = \"a\" /* a\n * b\n*/\n"},
 		{"none", rule("", ""), "rule r = \"a\"\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
