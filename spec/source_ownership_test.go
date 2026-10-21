@@ -124,6 +124,18 @@ func canonicalOwners(t *testing.T, src string, root *pego.Node) map[string]gramm
 		if err != nil {
 			t.Fatal(err)
 		}
+		for i, s := range elems(statements) {
+			// A rule with attributes has the position of "rule" for diagnostics.
+			if attrs := s.Field("Attrs"); kind[i] == "RuleDef" && attrs != nil && len(elems(attrs.(*pego.Node))) > 0 {
+				attrs := elems(attrs.(*pego.Node))
+				off := nextToken([]rune(src), int(attrs[len(attrs)-1].End()))
+				keyword, err := positions.Source(sourceast.Metadata{Start: off, End: off})
+				if err != nil {
+					t.Fatal(err)
+				}
+				infos[i].DiagnosticPos = keyword.Pos
+			}
+		}
 		for i, info := range infos {
 			if items[i] != nil {
 				owners[fmt.Sprintf("%s@%d:%d", kind[i], info.Pos.Line, info.Pos.Col)] = info
@@ -268,6 +280,10 @@ var ownershipCorpus = []string{
 	"rule a = \"x\" #atomic // pragma\nrule b = \"y\"",
 	"rule a = \"x\" @name(1) // attr\nrule b = \"y\"",
 	"rule a T = \"x\" // typed\nrule b []T = \"y\"",
+	// Declaration attributes.
+	"// lead\n@start @foo // t\n// between\n@bar /* b */ @baz(1, k=2)\n// kw\nrule a = \"x\" // trail\n// next\nrule b = \"y\"",
+	"rule a = \"x\" // t\n\n// detached\n\n// lead\n@start(default)\nrule b = \"y\"\n",
+	"@start(\n // in\n default, // d\n)\nrule a = \"x\"",
 	// Expression and type operands.
 	"rule a = /* l */ b /* t */ c // x\n",
 	"rule a = b // t\n  / c // u\n  / d\n",

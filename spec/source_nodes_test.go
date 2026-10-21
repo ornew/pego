@@ -199,6 +199,10 @@ func (s *shaper) decl(d *pego.Node) {
 		}
 		s.statement("VarDef", d, sep)
 	case "RuleDef":
+		attrs := listNodes(d, "Attrs")
+		for _, attr := range attrs {
+			s.attr(attr)
+		}
 		if t := fieldNode(d, "Type"); t != nil {
 			s.typ(t)
 		}
@@ -207,6 +211,11 @@ func (s *shaper) decl(d *pego.Node) {
 			s.action(a)
 		}
 		s.statement("RuleDef", d, sep)
+		if len(attrs) > 0 {
+			// The hand-written parser gives a rule with attributes the
+			// position of "rule" for diagnostics.
+			s.created(len(s.nodes)-1, nextToken(s.src, attrs[len(attrs)-1].End()))
+		}
 	default:
 		s.t.Fatalf("unexpected declaration %s", d.Type())
 	}
@@ -371,7 +380,10 @@ func (s *shaper) attributed(n *pego.Node) {
 }
 
 func (s *shaper) attribute(layer *pego.Node) {
-	attr := fieldNode(layer, "Attr")
+	s.attr(fieldNode(layer, "Attr"))
+}
+
+func (s *shaper) attr(attr *pego.Node) {
 	for _, v := range listNodes(attr, "Args") {
 		s.attrValue(v)
 	}

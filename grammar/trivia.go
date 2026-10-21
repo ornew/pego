@@ -335,6 +335,16 @@ func (g *Grammar) allComments(control *metadataControl) []*Comment {
 			}
 			term(s.Value)
 		case *RuleDef:
+			for _, attr := range s.Attrs {
+				control.poll()
+				addLayout(attr.Layout)
+				addList(attr.ArgsLayout)
+				for _, arg := range attr.expressionArgs(control) {
+					expr(arg)
+				}
+			}
+			addAll(s.AttrBreaks)
+			add(s.KeywordBreak)
 			typ(s.Type)
 			add(s.Break)
 			add(s.BodyBreak)

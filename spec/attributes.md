@@ -1,9 +1,9 @@
 # Attributes
 
 An `@` attribute carries diagnostic or metadata information. It does not
-change which input an expression matches. Attributes are postfix annotations
-on the immediately preceding expression and apply from left to right in
-written order. Parenthesize a sequence when an attribute should apply to the
+change which input an expression matches. Attributes in Rule Expressions are
+postfix annotations on the immediately preceding expression and apply from
+left to right in written order. Parenthesize a sequence when an attribute should apply to the
 complete sequence rather than its final item. Behavioral and structural
 `#` pragmas are defined separately in [Pragmas](pragmas.md).
 
@@ -23,6 +23,10 @@ rule stmt = (let / expr) @error("expected a statement")
 |:--|:--|
 | `@error("...")` | Reports an explicit message when the expression fails |
 | `@diagnostic(name="...")` | Replaces ordinary expected-item descriptions from a failed expression with a concise name |
+
+Declaration attributes, written on the lines before `rule`, annotate a rule
+declaration instead of an expression; see
+[Declaration Attributes](grammar-files.md#declaration-attributes).
 
 ## `@error`
 

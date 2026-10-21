@@ -144,9 +144,14 @@ rule var_value = -ws "=" -ws action_expr
 // juxtaposition does not need a separate sequence parser or require a space.
 rule rule_decl = comments rule_def_body &source_item_tail stmt_end
 rule rule_def_body = (
+    (attr decl_attr_gap)*
     "rule" -word_end #cut ident -ws type_expr? -ws
     -"=" -ws (ops_rule_expr / rule_expr) trailing_action?
 )
+// Declaration attributes may share a line; the last one ends its line before "rule".
+rule decl_attr_gap = decl_attr_same_line / decl_attr_line_end
+rule decl_attr_same_line = horizontal &"@"
+rule decl_attr_line_end = horizontal -nl comments
 rule whole_action = "=>" -ws action
 // The spacing before an action belongs to the action, so a rule without one ends at its expression.
 rule trailing_action = -ws whole_action
@@ -517,8 +522,10 @@ additional constraints are checked outside this source grammar.
   grammar and represented in the AST. Compilation executes it as a hidden
   rule at its position (see [Actions](actions.md#inline-value-actions)); an
   inline braced Value Action is rejected.
-- **Attribute placement.** Attributes are postfix Rule Expression annotations;
-  Declaration Statement prefixes are not supported.
+- **Attribute placement.** Attributes are postfix Rule Expression annotations,
+  or [declaration attributes](grammar-files.md#declaration-attributes) on the
+  lines before `rule`, where a newline separates the last attribute from `rule`.
+  Other Declaration Statements take no attributes.
 
 ## Operators
 

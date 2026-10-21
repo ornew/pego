@@ -369,6 +369,25 @@ ordinary comments of the type, not comments of the header.
 A rule is called by writing its name in a Rule Expression at the current
 position (see [Rule Calls](parser-expressions.md#rule-calls)).
 
+### Declaration Attributes
+
+A Rule Declaration Statement may begin with declaration attributes, written
+`@name` or `@name(arguments)` on the lines before `rule`. Several attributes may
+share a line, and further lines of attributes may follow; a newline MUST
+separate the last attribute from `rule`. Comments may occur between the
+attributes and before `rule`. The arguments follow the attribute argument
+syntax of [Attributes](attributes.md).
+
+```pego
+@start(default) @foo
+@bar
+rule main = item*
+```
+
+Only Rule Declaration Statements take declaration attributes: attributes
+before `type` or `var` are a syntax error. A declaration attribute that this
+specification does not define is a grammar error.
+
 ## Names
 
 Rule names, type names and variable names live in separate namespaces. Each

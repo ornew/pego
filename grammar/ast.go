@@ -143,19 +143,35 @@ type TypeAlias struct {
 	Break *LineBreak `json:"-"`
 }
 
-// RuleDef is a rule definition (rule Name Type = Expr => Action).
+// RuleDef is a rule definition (rule Name Type = Expr => Action), with the
+// declaration attributes written on the lines before it (@start).
 type RuleDef struct {
 	SourceInfo `json:"source,omitempty"`
-	Name       string   `json:"name"`
-	Type       TypeExpr `json:"type,omitempty"`
-	Expr       Expr     `json:"expr"`
-	Action     Term     `json:"action,omitempty"`
+	// Attrs are the declaration attributes, in source order. Pos is the
+	// position of the first attribute when there are any; Diagnostic is
+	// then the position of "rule".
+	Attrs  []*Attribute `json:"attrs,omitempty"`
+	Name   string       `json:"name"`
+	Type   TypeExpr     `json:"type,omitempty"`
+	Expr   Expr         `json:"expr"`
+	Action Term         `json:"action,omitempty"`
 	// DefaultAction preserves an explicit => ...; it has the same value
 	// semantics as an omitted action.
 	DefaultAction bool `json:"defaultAction,omitempty"`
 
-	// Break holds the comments before the declaration, as for TypeDef.
+	// Break holds the comments before the declaration, as for TypeDef: before
+	// its first attribute, if it has any.
 	Break *LineBreak `json:"-"`
+	// AttrBreaks[i], when not nil, puts Attrs[i] on a new line; otherwise
+	// Attrs[i] follows the attribute before it on its line. AttrBreaks[0] is
+	// always nil, because the first attribute starts the declaration and the
+	// comments and line break before it belong to Break; keeping the slot
+	// lets AttrBreaks share the indices of Attrs. AttrBreaks may be shorter
+	// than Attrs; missing entries are nil.
+	AttrBreaks []*LineBreak `json:"-"`
+	// KeywordBreak holds the comments between the last attribute and "rule",
+	// which always starts a new line after attributes.
+	KeywordBreak *LineBreak `json:"-"`
 	// BodyBreak, when not nil, puts the body on a new line after "=", and
 	// ActionBreak puts "=>" on a new line.
 	BodyBreak   *LineBreak `json:"-"`

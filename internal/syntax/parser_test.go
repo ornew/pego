@@ -160,7 +160,7 @@ func TestParseErrors(t *testing.T) {
 		{`rule a = [a-`, `1:10: unterminated character class`},
 		{`rule a = []`, `1:10: expected an expression, found '[]'`},
 		{`rule a = [z-a]`, `1:10: invalid range 'z'-'a'`},
-		{`foo`, `1:1: expected 'rule', 'type' or 'var', found 'foo'`},
+		{`foo`, `1:1: expected '@', 'rule', 'type' or 'var', found 'foo'`},
 		{"rule a = (b\nrule c = d", `2:8: expected ')', found '='`},
 		{`type A = { X }`, `1:14: expected identifier, found '}'`},
 		{`type A struct { X }`, `1:8: a struct type is defined as type A = {...}; run pego fix to rewrite type A struct`},

@@ -63,8 +63,8 @@ type MeetType = { L Type; R Type }
 type Comment ~ CommentGroup | InlineComment
 type CommentGroup = { Lines []node[string] }
 type InlineComment = { Start node[string]; Body node[string]; End node[string] }
-type RuleDef = { Name Ident; Type *Type; Expr RuleExpr; Action *Action; Comments []Comment; SourceSpan RuleDefBody; Source SourceItem }
-type RuleDefBody = { Name Ident; Type *Type; Expr RuleExpr; Action *Action }
+type RuleDef = { Attrs []Attr; Name Ident; Type *Type; Expr RuleExpr; Action *Action; Comments []Comment; SourceSpan RuleDefBody; Source SourceItem }
+type RuleDefBody = { Attrs []Attr; AttrComments []Comment; Name Ident; Type *Type; Expr RuleExpr; Action *Action }
 type RuleExpr ~ (
     RuleRef | LevelCall | RuleGroup | InlineAction | Sequence | Choice | Discard | Lookahead | Top | Bottom | BeginLine | BeginInput | EndLine | EndInput | Any | Cut | String | CharClass | Optional | ZeroOrMore | OneOrMore | Repeat | Capture | Predicate | Atomic | Stream | MissingPragma | Recover | Attributed | OperatorsRule
 )
@@ -297,12 +297,33 @@ rule var_value ActionExpr = -ws "=" -ws a:(action_expr @error(message="expected 
 // juxtaposition does not need a separate sequence parser or require a space.
 rule rule_decl RuleDef = (
     cs:comments d:rule_def_body &tail:source_item_tail tc:stmt_end
-) => RuleDef{Name: $d.Name, Type: $d.Type, Expr: $d.Expr, Action: $d.Action, Comments: concat($cs, $tc), SourceSpan: $d, Source: $tail}
+) => RuleDef{
+    Attrs: $d.Attrs,
+    Name: $d.Name,
+    Type: $d.Type,
+    Expr: $d.Expr,
+    Action: $d.Action,
+    Comments: concat($cs, $d.AttrComments, $tc),
+    SourceSpan: $d,
+    Source: $tail,
+}
 rule rule_def_body RuleDefBody = (
+    attrs:(a:attr gap:decl_attr_gap)*
     "rule" -word_end #cut name:(ident @error(message="expected rule name")) -ws t:type_expr? -ws
     -("=" @error(message="expected '=' after rule header")) -ws x:(ops_rule_expr / rule_expr)
     @error(message="expected rule expression") a:trailing_action?
-) => RuleDefBody{Name: $name, Type: $t, Expr: $x, Action: $a}
+) => RuleDefBody{
+    Attrs: map($attrs, (x) => x.$a),
+    AttrComments: foldl(list(), $attrs, (all, x) => concat(all, x.$gap)),
+    Name: $name,
+    Type: $t,
+    Expr: $x,
+    Action: $a,
+}
+// Declaration attributes may share a line; the last one ends its line before "rule".
+rule decl_attr_gap []Comment = decl_attr_same_line / decl_attr_line_end
+rule decl_attr_same_line []Comment = cs:horizontal &"@" => $cs
+rule decl_attr_line_end []Comment = cs:horizontal -nl rest:comments => concat($cs, $rest)
 rule whole_action Action = "=>" -ws a:(action @error(message="expected value action after '=>'")) => $a
 // The spacing before an action belongs to the action, so a rule without one ends at its expression.
 rule trailing_action Action = -ws a:whole_action => $a

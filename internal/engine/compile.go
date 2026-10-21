@@ -353,6 +353,10 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 	}
 	for _, rd := range control.rules(g) {
 		control.poll()
+		for _, a := range rd.Attrs {
+			control.poll()
+			unsupported = append(unsupported, &Error{Pos: a.Diagnostic(), Msg: fmt.Sprintf("unknown declaration attribute %s%s", annotationMarker(a), a.Name)})
+		}
 		checkBlocks(rd.Action)
 		root := rd.Expr
 		for {

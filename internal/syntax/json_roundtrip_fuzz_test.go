@@ -14,6 +14,7 @@ import (
 var jsonRoundTripForms = []struct{ name, form string }{
 	{"declarations", "S\npackage p S\nS\ntype T = { S\n    A int S\n    S B string S\n} S\nS\nrule main = a:\"a\" => T{A: 1, B: \"x\"} S\nS\nrule other = \"x\" S\n"},
 	{"operators rule", "S\npackage p S\nS\nrule ops = operators { S\n    S skip \" \" S\n    S operand \"n\" S\n    S operand \"m\" => 1 S\n    S level { S\n        S infix left \"+\" S\n        S prefix \"-\" S\n    } S\n    S level L { S\n        infix right \"*\" S\n    } S\n} S\n"},
+	{"declaration attributes", "S\npackage p S\nS\n@start S @foo S\nS @bar S\nS\nrule main = \"a\" S\nS\n@start(default) S\nrule other = \"x\" S\n"},
 	{"types and variables", "S\npackage p S\nS\ntype A ~ int S\nS\ntype B = { S x int S ; S y string S } S\nS\nvar v = 1 S\nS\nrule r = \"a\" S\n"},
 }
 

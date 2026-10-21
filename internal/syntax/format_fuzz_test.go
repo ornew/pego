@@ -214,6 +214,7 @@ func TestFormatRandomTypes(t *testing.T) {
 		{"field", func(g *listGen) string { return "type T = { F " + g.typ(3) + " }\nrule r = \"a\"\n" }},
 		{"alias", func(g *listGen) string { return "type T ~ " + g.typ(3) + "\nrule r = \"a\"\n" }},
 		{"attribute", func(g *listGen) string { return "rule r = (\"a\" " + g.attr() + " \"b\" => 1) \"c\"\n" }},
+		{"declaration attribute", func(g *listGen) string { return "rule a = \"x\"\n" + g.attr() + " " + g.attr() + "\nrule r = \"a\"\n" }},
 	}
 	const seeds = 1000
 	for _, w := range wraps {
@@ -262,6 +263,9 @@ func TestFormatRandomOpeners(t *testing.T) {
 			return "rule r = \"a\" => x[" + g.slot() + "0]\n"
 		}},
 		{"type group", func(g *listGen) string { return "rule r (" + g.slot() + "int" + g.slot() + ") = \"a\"\n" }},
+		{"declaration attributes", func(g *listGen) string {
+			return "rule a = \"x\"\n" + g.slot() + "@start(" + g.slot() + "default" + g.slot() + ")" + g.slot() + "@foo\n" + g.slot() + "rule r = \"a\"\n"
+		}},
 	}
 	const seeds = 1500
 	for _, w := range wraps {

@@ -275,6 +275,9 @@ func validate(g *Grammar, control *validationControl) error {
 			push(n.Action, "action", -1, true)
 			push(n.Expr, "expr", -1, false)
 			push(n.Type, "type", -1, true)
+			for i := len(n.Attrs) - 1; i >= 0; i-- {
+				push(n.Attrs[i], "attrs", i, false)
+			}
 		case *StructType:
 			for i := len(n.Fields) - 1; i >= 0; i-- {
 				push(n.Fields[i], "fields", i, false)

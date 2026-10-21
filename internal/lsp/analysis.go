@@ -284,6 +284,17 @@ func (a *analysis) previousSignificantTokenControlled(i int, control *renderCont
 	return i
 }
 
+// markAttributeName marks the name of the attribute at as a decorator.
+func (a *analysis) markAttributeName(at *grammar.Attribute) {
+	if i, ok := a.tokenIndex(at.Diagnostic()); ok {
+		// Attribute names and markers must be adjacent; comments are
+		// not permitted between them by the lexical contract.
+		if i+1 < len(a.toks) && a.toks[i].end == a.toks[i+1].start {
+			a.markToken(i+1, semDecorator, 0)
+		}
+	}
+}
+
 // collect records the definitions and the occurrences of names in the grammar.
 func (a *analysis) collectControlled(control *renderControl) {
 	control.poll()
@@ -292,6 +303,12 @@ func (a *analysis) collectControlled(control *renderControl) {
 		control.poll()
 		switch s := s.(type) {
 		case *grammar.RuleDef:
+			for _, at := range s.Attrs {
+				control.poll()
+				// The arguments of a declaration attribute name its options,
+				// not rules.
+				a.markAttributeName(at)
+			}
 			a.mark(s.Diagnostic(), semKeyword, 0)
 			d := a.defineControlled(kindRule, s.Name, s.Diagnostic(), control)
 			if d == nil {
@@ -561,13 +578,7 @@ func (a *analysis) walkExprControlled(e grammar.Expr, control *renderControl) {
 		a.walkExprControlled(e.Expr, control)
 		for _, at := range e.Attrs {
 			control.poll()
-			if i, ok := a.tokenIndex(at.Diagnostic()); ok {
-				// Attribute names and markers must be adjacent; comments are
-				// not permitted between them by the lexical contract.
-				if i+1 < len(a.toks) && a.toks[i].end == a.toks[i+1].start {
-					a.markToken(i+1, semDecorator, 0)
-				}
-			}
+			a.markAttributeName(at)
 			for _, arg := range control.expressionArgs(at) {
 				control.poll()
 				a.walkExprControlled(arg, control)

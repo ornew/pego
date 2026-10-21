@@ -396,7 +396,36 @@ func (p *printer) varDef(v *VarDef) {
 
 func (p *printer) ruleDef(r *RuleDef) {
 	pollFormat(p.control)
-	p.header("rule", r.Pos)
+	// Parsed source always has a KeywordBreak; without one, the attributes
+	// write the comments they own, as a grammar decoded from JSON has them.
+	owned := r.KeywordBreak == nil
+	trailed := false
+	for i, a := range r.Attrs {
+		pollFormat(p.control)
+		if i > 0 {
+			b := breakAt(r.AttrBreaks, i)
+			if b == nil && owned && (trailed || a.LeadingComments != "" || len(a.LeadingDetachedComments) > 0) {
+				// An attribute that owns leading comments, or follows a
+				// trailing comment, starts a line.
+				b = ownedLeadFrom(&a.SourceInfo, false)
+			}
+			if b != nil {
+				p.lineBreak(b, "", false)
+			} else {
+				p.write(" ")
+			}
+		}
+		p.write(attributeGap(a, p.control) + indentTermLines(formatAttribute(a, p.control), "", p.control))
+		if owned {
+			t := ownedTrailing(&a.SourceInfo, nil)
+			p.inline(t)
+			trailed = t != nil
+		}
+	}
+	if len(r.Attrs) > 0 {
+		p.lineBreak(r.KeywordBreak, "", false)
+	}
+	p.header("rule", r.Diagnostic())
 	p.write(" " + r.Name)
 	if r.Type != nil {
 		p.write(" " + formatType(r.Type, p.control))

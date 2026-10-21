@@ -391,12 +391,12 @@ func (p *parser) file() *grammar.Grammar {
 				v := p.varDef()
 				statement = v
 				g.File.Decls = append(g.File.Decls, v)
-			case p.is("rule"):
+			case p.is("rule") || p.is("@"):
 				r := p.ruleDef()
 				statement = r
 				g.File.Decls = append(g.File.Decls, r)
 			default:
-				p.errorf("expected 'rule', 'type' or 'var', found %s", p.tok())
+				p.errorf("expected '@', 'rule', 'type' or 'var', found %s", p.tok())
 				panic(bail{})
 			}
 		}()
@@ -461,9 +461,41 @@ func (p *parser) recover() {
 			return
 		}
 	}
-	for p.tok().kind != tEOF && !p.is("rule") && !p.is("type") && !p.is("var") {
+	for p.tok().kind != tEOF && !p.is("rule") && !p.is("type") && !p.is("var") && !p.attributesStart(p.i) {
 		p.next()
 	}
+}
+
+// attributesStart reports whether token i starts the attributes of a rule
+// declaration: an "@" that starts a line and reaches a line that starts with
+// "rule" through attributes alone, without an "=" outside their parentheses.
+func (p *parser) attributesStart(i int) bool {
+	if t := p.toks[i]; t.kind != tPunct || t.text != "@" || !t.lineBefore {
+		return false
+	}
+	depth := 0
+	for j := i + 1; j < len(p.toks); j++ {
+		p.poll()
+		t := p.toks[j]
+		switch {
+		case t.kind == tEOF:
+			return false
+		case depth == 0 && t.lineBefore:
+			if t.kind == tIdent && t.text == "rule" {
+				return true
+			}
+			if t.kind != tPunct || t.text != "@" {
+				return false
+			}
+		case t.kind == tPunct && t.text == "(":
+			depth++
+		case t.kind == tPunct && t.text == ")":
+			depth--
+		case depth == 0 && t.kind == tPunct && t.text != "@":
+			return false
+		}
+	}
+	return false
 }
 
 func (p *parser) typeDecl() (sourceResult grammar.TypeDecl) {
@@ -778,12 +810,13 @@ func (p *parser) ruleDef() (sourceResult *grammar.RuleDef) {
 	}()
 
 	br := p.statementBreak()
+	attrs, attrBreaks, keywordBreak := p.declarationAttributes()
 	pos := p.expect("rule").pos
 	p.header, p.layout, p.layoutDepth, p.layoutStart = true, true, 0, p.i-1
 	p.headerPos = pos
 	defer func() { p.header, p.layout, p.layoutDepth = false, false, 0 }()
 	name := p.ident()
-	rd := &grammar.RuleDef{SourceInfo: grammar.SourceInfo{Pos: pos}, Name: name.text, Break: br}
+	rd := &grammar.RuleDef{SourceInfo: grammar.SourceInfo{Pos: pos}, Attrs: attrs, Name: name.text, Break: br, AttrBreaks: attrBreaks, KeywordBreak: keywordBreak}
 	if !p.is("=") {
 		rd.Type = p.typeExpr()
 	}
@@ -818,6 +851,51 @@ func (p *parser) ruleDef() (sourceResult *grammar.RuleDef) {
 		rd.Action, rd.DefaultAction = p.actionTerm()
 	}
 	return rd
+}
+
+// declarationAttributes parses the attributes before "rule". Several may share
+// a line, and the last one ends its line. Each attribute that starts a line
+// after the first has a line break, and so does "rule" after them.
+func (p *parser) declarationAttributes() (attrs []*grammar.Attribute, breaks []*grammar.LineBreak, keyword *grammar.LineBreak) {
+	for p.is("@") {
+		var b *grammar.LineBreak
+		var gap []*grammar.Comment
+		if len(attrs) > 0 {
+			if p.atLineStart() {
+				b = p.lineBreak()
+			} else {
+				gap = p.takeInlineGap()
+			}
+		}
+		if b != nil || breaks != nil {
+			for len(breaks) < len(attrs) {
+				p.charge(1)
+				breaks = append(breaks, nil)
+			}
+			breaks = append(breaks, b)
+		}
+		attr := p.attribute()
+		if gap != nil {
+			attr.Layout = &grammar.SourceLayout{Before: gap}
+		}
+		attrs = append(attrs, attr)
+	}
+	if len(attrs) == 0 {
+		return nil, nil, nil
+	}
+	if !p.is("rule") {
+		if p.is("type") || p.is("var") {
+			p.errorf("only rule declarations take attributes, found %s", p.tok())
+		} else {
+			p.errorf("expected 'rule' after the declaration attributes, found %s", p.tok())
+		}
+		panic(bail{})
+	}
+	if !p.tok().lineBefore {
+		p.errorf("expected a newline between the declaration attributes and 'rule'")
+		panic(bail{})
+	}
+	return attrs, breaks, p.lineBreak()
 }
 
 func (p *parser) actionTerm() (grammar.Term, bool) {

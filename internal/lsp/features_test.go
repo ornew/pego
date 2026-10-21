@@ -29,7 +29,7 @@ func TestDiagnostics(t *testing.T) {
 			"several syntax errors", "rule a = (\nrule b = \"名前\"\n]\nrule c = \"ok\"",
 			[]Diagnostic{
 				{Range: rng(1, 7, 1, 8), Message: "expected ')', found '='"},
-				{Range: rng(2, 0, 2, 1), Message: "expected 'rule', 'type' or 'var', found ']'"},
+				{Range: rng(2, 0, 2, 1), Message: "expected '@', 'rule', 'type' or 'var', found ']'"},
 			},
 		},
 		{
@@ -624,7 +624,7 @@ func TestFilterBuiltinHoverAndCompletion(t *testing.T) {
 func TestSemanticTokens(t *testing.T) {
 	c := newInitialized(t)
 	uri := "file:///sem.pego"
-	src := "type N = { Text string } // c\nrule ab = x:n \"s😀\" [a] #stream => P{F: len($x).Start}\nrule n N = operators {\n    operand a\n    level { infix left \"+\" }\n}\nrule bind = {v := 1}\nrule lam = xs:n* => map($xs, (e) => e)"
+	src := "type N = { Text string } // c\n@start(default)\nrule ab = x:n \"s😀\" [a] #stream => P{F: len($x).Start}\nrule n N = operators {\n    operand a\n    level { infix left \"+\" }\n}\nrule bind = {v := 1}\nrule lam = xs:n* => map($xs, (e) => e)"
 	c.open(uri, src)
 	var res struct {
 		Data []int `json:"data"`
@@ -654,7 +654,7 @@ func TestSemanticTokens(t *testing.T) {
 	}
 	want := []string{
 		"type keyword", "N type.declaration", "Text property.declaration", "string type.defaultLibrary", "// c comment",
-		"rule keyword", "ab function.declaration", "x variable.declaration", "n function", `"s😀" string`, "[a] regexp",
+		"start decorator", "rule keyword", "ab function.declaration", "x variable.declaration", "n function", `"s😀" string`, "[a] regexp",
 		"stream decorator", "P type", "F property", "len function.defaultLibrary", "$x parameter",
 		"Start property.defaultLibrary",
 		"rule keyword", "n function.declaration", "N type", "operators keyword", "operand keyword", "a function", "level keyword",
