@@ -53,6 +53,11 @@ var ruleExprLineForms = []struct{ name, form string }{
 	{"around a binary operator", `rule r = "a" => (1 S + S 2)`},
 	{"in a recover pragma", `rule r = "a" #recover(skip= S "b" S ) "c"`},
 	{"before the index bracket", `rule r = "a" => x[ 0 S ]`},
+	{"before a pragma in a group", `rule r = ( "a" S #atomic S "b" )`},
+	{"before a repeat pragma in a group", `rule r = ( "a" S #repeat(2) S "b" )`},
+	{"before a recover pragma in a group", `rule r = ( "a" S #recover(skip="b") S "c" )`},
+	{"before an attribute in a group", `rule r = ( "a" S @custom S "b" )`},
+	{"around a nested group", `rule r = ( S ( "a" ) S ( "b" S ) S )`},
 	{"after the index bracket", `rule r = "a" => x[ S 0 ]`},
 }
 

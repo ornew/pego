@@ -31,6 +31,9 @@ func TestFormatKeepsCommentsBetweenTokens(t *testing.T) {
 		{"on a line of its own after a slash in a group", "rule r = ( \"a\" /\n    // c\n    \"b\" ) \"c\"", "rule r = (\n    \"a\"\n    /\n      // c\n      \"b\"\n) \"c\""},
 		{"before a slash in a group, a block comment", "rule r = ( \"a\" /* c */ /\n    \"b\" ) \"c\"", "rule r = (\n    \"a\" /* c */ / \"b\"\n) \"c\""},
 		{"on lines of their own in a recovery", "rule r = \"a\" #recover(skip=\n    // c\n    \"b\"\n    // d\n) \"c\"", "rule r = \"a\" #recover(skip=\n    // c\n    \"b\"\n    // d\n) \"c\""},
+		{"a comment across lines before a repeat pragma", "rule r = ( \"a\" /* x\n y */ #repeat(2) ) \"b\"", "rule r = (\n    \"a\" /* x\n y */ #repeat(2)\n) \"b\""},
+		{"a comment across lines before an atomic pragma", "rule r = ( \"a\" /* x\n y */ #atomic ) \"b\"", "rule r = (\n    \"a\" /* x\n y */ #atomic\n) \"b\""},
+		{"a comment across lines before a recover pragma", "rule r = ( \"a\" /* x\n y */ #recover(skip=\"b\") ) \"c\"", "rule r = (\n    \"a\" /* x\n y */ #recover(skip=\"b\")\n) \"c\""},
 		{"a comment across lines in a group", "rule r = ( \"a\" /* x\n y */ \"b\" ) \"c\"", "rule r = (\n    \"a\" /* x\n y */ \"b\"\n) \"c\""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

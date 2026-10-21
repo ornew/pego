@@ -120,6 +120,10 @@ func ParseExpr(src string) (expr grammar.Expr, err error) {
 type parser struct {
 	toks []token
 	i    int
+	// inlined is one more than the index of the token whose inline gap was
+	// taken, so that the lines inside its comments do not count as a line break
+	// before the token.
+	inlined int
 	errs *errorList
 	// legacy, if not nil, accepts the removed syntax that pego fix rewrites (see parseLegacy) and
 	// records where it is.

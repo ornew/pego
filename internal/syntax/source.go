@@ -283,6 +283,7 @@ func (p *parser) takeInlineGap() []*grammar.Comment {
 		cs = p.appendComments([]*grammar.Comment{t.lineComment}, cs)
 	}
 	t.lineComment, t.comments = nil, nil
+	p.inlined = p.i + 1
 	return cs
 }
 
@@ -347,7 +348,7 @@ func (p *parser) leadOf(e grammar.Expr, gap *grammar.Gap) {
 // of a rule body records: a line break before it, other than the lines inside
 // the block comments that stand between it and the token before.
 func (p *parser) atLineStart() bool {
-	return p.tok().lineBefore && !p.inlineGap()
+	return p.tok().lineBefore && !p.inlineGap() && p.inlined != p.i+1
 }
 
 // afterGap keeps the inline comments before the current token, "/" or "=>", as
