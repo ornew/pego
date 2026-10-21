@@ -210,12 +210,14 @@
           "match": [
             "reference/README.md",
             "reference/pego/README.md",
-            "reference/grammar/README.md"
+            "reference/grammar/README.md",
+            "reference/runtime/README.md"
           ],
           "first": [
             "reference/README.md",
             "reference/pego/README.md",
-            "reference/grammar/README.md"
+            "reference/grammar/README.md",
+            "reference/runtime/README.md"
           ],
           "collapsed": true
         }

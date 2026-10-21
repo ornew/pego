@@ -28,6 +28,7 @@ type refPackage struct {
 var refPackages = []refPackage{
 	{dir: ".", importPath: modulePath, url: "reference/pego/", title: "Package pego", label: "pego"},
 	{dir: "grammar", importPath: modulePath + "/grammar", url: "reference/grammar/", title: "Package pego/grammar", label: "pego/grammar"},
+	{dir: "runtime", importPath: modulePath + "/runtime", url: "reference/runtime/", title: "Package pego/runtime", label: "pego/runtime"},
 }
 
 const cliURL = "reference/cli/"

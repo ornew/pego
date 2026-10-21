@@ -604,13 +604,13 @@ func TestNavigation(t *testing.T) {
 	if apiGroup == nil {
 		t.Fatal("Go API Reference should be closed by default, including on package pages")
 	}
-	for _, label := range []string{"Overview", "Package <code>pego</code>", "Package <code>pego/grammar</code>"} {
+	for _, label := range []string{"Overview", "Package <code>pego</code>", "Package <code>pego/grammar</code>", "Package <code>pego/runtime</code>"} {
 		if !strings.Contains(apiGroup[1], ">"+label+"</a>") {
 			t.Errorf("Go API group omits label %q", label)
 		}
 	}
-	if strings.Count(apiGroup[1], "<a ") != 3 || strings.Contains(apiGroup[1], "CLI Reference") {
-		t.Error("Go API group should contain only its overview and two package pages")
+	if strings.Count(apiGroup[1], "<a ") != 4 || strings.Contains(apiGroup[1], "CLI Reference") {
+		t.Error("Go API group should contain only its overview and three package pages")
 	}
 	ordinaryReference := strings.Replace(referenceHTML, apiGroup[0], "", 1)
 	if !strings.Contains(ordinaryReference, ">CLI Reference</a>") || strings.Contains(ordinaryReference, "Package ") {
