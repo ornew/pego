@@ -2110,10 +2110,14 @@ func formatTerm(t Term, outer int, control *metadataControl) string {
 	return formatSourceLayout(termLayout(t), formatTermNode(t, outer, control), control)
 }
 
-// leftmostTerm returns the term that starts t, which holds the comments before
-// t.
-func leftmostTerm(t Term) Term {
+// leadingComments returns the layout of the first term along the left spine of
+// t that holds comments before it. An index, a call or a binary expression
+// starts where its left operand does, but the comments may sit on any of them.
+func leadingComments(t Term) *SourceLayout {
 	for {
+		if layout := termLayout(t); layout != nil && len(layout.Before) > 0 {
+			return layout
+		}
 		switch x := t.(type) {
 		case *Binary:
 			t = x.L
@@ -2122,7 +2126,7 @@ func leftmostTerm(t Term) Term {
 		case *Member:
 			t = x.X
 		default:
-			return t
+			return nil
 		}
 	}
 }
@@ -2289,7 +2293,7 @@ func formatTermNode(t Term, outer int, control *metadataControl) string {
 			list = nil // the parameters changed since the source was read
 		}
 		body := formatTerm(t.Body, 0, control)
-		if layout := termLayout(leftmostTerm(t.Body)); layout != nil && len(layout.Before) > 0 && endsLine(layout.Before[len(layout.Before)-1], layout.NextLine) {
+		if layout := leadingComments(t.Body); layout != nil && endsLine(layout.Before[len(layout.Before)-1], layout.NextLine) {
 			// Comments between "=>" and the body that end a line put the body on
 			// a line of its own, one level in from the parameters.
 			body = indentTermLines(body, indentUnit, control)
