@@ -38,10 +38,6 @@ type Program struct {
 	// fieldTypes caches the closure backend's field checks by constructor (constructorChecks)
 	// and the types of casts (castType).
 	fieldTypes sync.Map
-	// checks holds the values checked at run time against their declared types (nil if none).
-	// Programs built from this one (the recognizer, the metered program) and loaded programs
-	// share the decisions of the type checker, which they do not run.
-	checks *checkInfo
 
 	workOnce      sync.Once
 	workProgram   *Program
@@ -102,10 +98,6 @@ type Options struct {
 	// eagerAttributeCopies disables copy-on-change normalization for measurements.
 	// It affects compilation only; parser execution has no corresponding branch.
 	eagerAttributeCopies bool
-	// checks gives the run-time checks of a program built with flags, or of the second build of
-	// a type-checked program whose checks synthesize actions. Type checking is skipped when checks
-	// is set.
-	checks *checkInfo
 }
 
 // matcher tries to match at the current position and returns the value and whether it
@@ -128,11 +120,8 @@ type rule struct {
 	nodeKinds *nodeTypeKinds
 	// opNodeType, if not "", is the named node type every operator node of an Operators Rule is
 	// converted to (Program.operatorsNodeType), whose kinds are opKinds.
-	opNodeType string
-	opKinds    *nodeTypeKinds
-	// resultCheck is the declared type the rule's value is checked against at run time (nil if
-	// none; see Program.resultCheckType).
-	resultCheck   *fieldType
+	opNodeType    string
+	opKinds       *nodeTypeKinds
 	memo          bool
 	missing       bool // this rule or a callee contains #missing
 	leader        bool
@@ -378,19 +367,10 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 		return nil, unsupported
 	}
 	var normalizationError error
-	source := g
 	g, normalizationError = normalizeAttributesControlled(g, opts.eagerAttributeCopies, control)
 	control.check()
 	if normalizationError != nil {
 		return nil, normalizationError
-	}
-	if opts.checks != nil && g != source {
-		// The checks are keyed by the nodes of the grammar given, which normalization may copy.
-		checks, err := opts.checks.rekey(control.rules(source), control.rules(g))
-		if err != nil {
-			return nil, err
-		}
-		opts.checks = checks
 	}
 	prog := &Program{Grammar: g, byName: map[string]*rule{}, types: map[string]grammar.TypeDecl{},
 		descTable: append([]string(nil), fixedDescs...)}
@@ -404,7 +384,6 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 		}()
 	}
 	prog.workRecognize = opts.recognize
-	prog.checks = opts.checks
 	prog.noProjections = opts.noProjections
 	prog.sourceInfo = opts.SourceInfo
 	prog.defaultValue = opts.DefaultValue
@@ -526,25 +505,18 @@ func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, contro
 		}
 	}
 	switch {
-	case opts.checks != nil:
-		// Shared with the program this one derives from, or read from a compiled file.
 	case !opts.NoTypeCheck && flags == nil:
 		checkTypesControlled(prog, &c.errs, control)
 		control.check()
 		if len(c.errs) > 0 {
 			return nil, c.errs
 		}
-		if ci := prog.typed.checks; !ci.empty() {
-			prog.checks = ci
-		}
 	case opts.NoTypeCheck && flags == nil:
 		checkBottomLocations(prog, &c.errs, control)
 		if len(c.errs) > 0 {
 			return nil, c.errs
 		}
-		prog.checks = &checkInfo{all: true}
 	}
-	prog.assignResultChecks()
 
 	control.check()
 	return prog, nil

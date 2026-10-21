@@ -25,10 +25,8 @@ type operatorsRuleLine struct {
 	single singleMode
 	shape  shaper
 	entry  int // start of the bytecode (bytecode backend only)
-	// key is the line's *grammar.OperatorsRuleOperand or *grammar.OperatorsRuleOperator, and check
-	// the declared type its value is checked against at run time (nil if none).
-	key   any
-	check *fieldType
+	// key is the line's *grammar.OperatorsRuleOperand or *grammar.OperatorsRuleOperator.
+	key any
 }
 
 type operatorsRuleOp struct {
@@ -323,9 +321,6 @@ func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *Node, st
 			v.fresh = false
 		}
 	}
-	if l.check != nil {
-		p.checkResult(l.check, v, r.name)
-	}
 	return v
 }
 
@@ -379,9 +374,6 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 		}
 		ctx := p.useCtx(evalCtx{p: p, scope: l.scope, frame: a.frame, start: start, end: end, locals: locals, cbase: len(p.created)})
 		v := p.actionResult(ctx, l.act, r.name)
-		if l.check != nil {
-			p.checkResult(l.check, v, r.name)
-		}
 		if r.opKinds != nil {
 			v = p.convertOperator(r, v)
 		}
@@ -406,18 +398,11 @@ func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *
 		fields = Fields{{"lhs", nodeOrNil(lhs)}, {"op", nodeOrNil(opv)}, {"rhs", nodeOrNil(rhs)}}
 	}
 	kind := kindSeq
-	if r.opKinds != nil && l.check == nil {
+	if r.opKinds != nil {
 		kind = r.opKinds[baseTuple] // made with the named node type of the operators
 	} else if p.prog.sourceInfo {
 		kind = r.kinds.named(kindSeq, r.name)
 	}
 	n := p.newNode(Node{kind: kind, start: int32(start), end: int32(end), children: kids, fields: fields, labeled: p.prog.sourceInfo})
-	if l.check != nil {
-		// Without type checking, the tuple node is checked like an action's result.
-		p.checkResult(l.check, n, r.name)
-		if r.opKinds != nil {
-			n = p.convertOperator(r, n)
-		}
-	}
 	return n
 }

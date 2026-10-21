@@ -119,7 +119,7 @@ is up to the program.
 |:--|:--|
 | `not a compiled PEGO grammar` | The data does not start with the magic number |
 | `unsupported compiled grammar version N (want 3)` | The format version is not supported |
-| `unsupported instruction set version N: the file was compiled for earlier syntax trees; compile the grammar again` | The file was compiled for an earlier instruction set |
+| `unsupported instruction set version N: the file was compiled by an older pego; compile the grammar again` | The file was compiled for an earlier instruction set |
 | `unsupported instruction set version N` | The file requires a newer instruction set |
 | `invalid compiled grammar: checksum mismatch` | The file is truncated or changed |
 | `invalid compiled grammar: ...` | The structure is wrong although the checksum matches |

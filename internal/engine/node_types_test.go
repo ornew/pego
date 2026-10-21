@@ -66,9 +66,9 @@ func TestNodeTypeCasts(t *testing.T) {
 	}
 }
 
-// Without type checking, the declared node[T] and tuple types of fields and rules are still
-// checked at run time.
-func TestNodeTypesCheckedAtRunTime(t *testing.T) {
+// The declared node[T] and tuple types of fields and rules are checked when the grammar is
+// compiled. Without type checking nothing checks them when the parser runs.
+func TestNodeTypesCheckedAtCompileTime(t *testing.T) {
 	for _, tc := range []struct{ src, static, input string }{
 		{"type P = { V node[[]node[string]] }\nrule main P = v:(\"a\" \"b\") => P{V: $v}", "cannot use", "ab"},
 		{"type P = { V node[(node[string], node[string], node[string])] }\nrule main P = v:(\"a\" \"b\") => P{V: $v}", "cannot use", "ab"},
@@ -84,8 +84,8 @@ func TestNodeTypesCheckedAtRunTime(t *testing.T) {
 		}
 		program := compile(t, tc.src, Options{NoTypeCheck: true})
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			if _, err := program.ParseWith("main", tc.input, ParseOptions{Backend: backend}); err == nil {
-				t.Errorf("%q %s: a value that does not fit was accepted", tc.src, backend)
+			if _, err := program.ParseWith("main", tc.input, ParseOptions{Backend: backend}); err != nil {
+				t.Errorf("%q %s: %v", tc.src, backend, err)
 			}
 		}
 	}

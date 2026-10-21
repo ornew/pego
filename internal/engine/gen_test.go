@@ -634,7 +634,7 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, refer
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := generateCode(g, GenOptions{Package: fmt.Sprintf("g%d", i), Start: "main", Types: true})
+		code, err := generateCode(g, GenOptions{Package: fmt.Sprintf("g%d", i), Start: "main", Types: true, SourceInfo: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -653,6 +653,7 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, refer
 		// corpus, or a disabled optimization for focused differential tests.
 		refOpts := reference
 		refOpts.Package, refOpts.Start, refOpts.Types = fmt.Sprintf("c%d", i), "main", true
+		refOpts.SourceInfo = true
 		code, err = generateCode(g, refOpts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)

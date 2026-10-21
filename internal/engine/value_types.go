@@ -207,8 +207,8 @@ type valueInference struct {
 	errs, final ErrorList
 	quiet       bool // while a lambda body is typed again with a wider parameter type
 	rule        *grammar.RuleDef
-	// checks, if not nil, receives the values that must be checked at run time.
-	checks *checkInfo
+	// nodeMembers, if not nil, receives the member accesses that read only node members.
+	nodeMembers map[*grammar.Member]bool
 }
 
 // valueTypes returns the value type of each rule of a type-checked program. It is computed on
@@ -247,10 +247,9 @@ func valueTypes(p *Program, control *compileControl) (map[string]ty, ErrorList) 
 	return valueTypesChecked(p, control, nil)
 }
 
-// valueTypesChecked is valueTypes recording the values to check at run time in checks, if not
-// nil.
-func valueTypesChecked(p *Program, control *compileControl, checks *checkInfo) (map[string]ty, ErrorList) {
-	v := &valueInference{prog: p, control: control, rules: map[string]*grammar.RuleDef{}, out: map[string]ty{}, approx: map[string]ty{}, computing: map[string]bool{}, checks: checks}
+// valueTypesChecked is valueTypes recording the node member accesses in nodeMembers, if not nil.
+func valueTypesChecked(p *Program, control *compileControl, nodeMembers map[*grammar.Member]bool) (map[string]ty, ErrorList) {
+	v := &valueInference{prog: p, control: control, rules: map[string]*grammar.RuleDef{}, out: map[string]ty{}, approx: map[string]ty{}, computing: map[string]bool{}, nodeMembers: nodeMembers}
 	rules := p.Grammar.Rules()
 	for _, rd := range rules {
 		v.rules[rd.Name] = rd
@@ -419,8 +418,8 @@ func (v *valueInference) predicates(e grammar.Expr, env *valueEnv) {
 			if d := v.prog.vars.lookup(a.Name); d != nil {
 				switch {
 				case !v.assignable(t, d.typ):
-					v.errorf(a.Diagnostic(), "cannot use %s as %s in the binding of variable %s", v.expand(t), d.typ, a.Name)
-				case v.uncertain(t):
+					v.errorf(a.Diagnostic(), "cannot use %s as %s in the binding of variable %s%s", v.expand(t), d.typ, a.Name, v.castHint(t, d.typ))
+				case v.needsCast(t, d.typ):
 					v.errorf(a.Diagnostic(), "cannot use %s as %s in the binding of variable %s: the type of the value is not known; convert it with a cast, as in value.(%s)", v.expand(t), d.typ, a.Name, d.typ)
 				}
 			}
@@ -723,9 +722,14 @@ func setType(c capIndex) ty {
 // infix line without an action is node[(L, Op, R)], a prefix line node[(Op, R)] and a postfix line
 // node[(L, Op)], with the captures lhs, op and rhs.
 func (v *valueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.OperatorsRule) ty {
-	self := ruleTy{rd.Name}
+	var self ty = ruleTy{rd.Name}
+	if rd.Type != nil {
+		// The lhs and rhs captures are values of the rule, each of which is checked against the
+		// rule's declared type.
+		self = v.resolve(rd.Type)
+	}
 	var ts []ty
-	tuples := map[int]bool{} // the lines whose value is the tuple node of an operator without an action
+	tuples := map[int]bool{}    // the lines whose value is the tuple node of an operator without an action
 	operators := map[int]bool{} // the lines of operators, whose nodes a named node type converts
 	if pr.Skip != nil {
 		v.predicates(pr.Skip, &valueEnv{})

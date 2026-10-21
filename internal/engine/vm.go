@@ -49,7 +49,7 @@ type vmProgram struct {
 	descs    []string   // expectation table: fixedDescs followed by the string table (string i has index numFixedDescs+i)
 	// runSites holds, at the index of each REPEAT that a Document can resume, how to resume it.
 	runSites []*vmRunSite
-	// fieldTypes holds the type of each ECHECK and result check, by the string index of its text
+	// fieldTypes holds the type of each ECAST, by the string index of its text
 	// (nil when the module has none); typeNames are the module's type names it resolves.
 	fieldTypes []*fieldType
 	typeNames  map[string]bool
@@ -133,10 +133,8 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 	}
 	for _, in := range m.Exprs {
 		switch {
-		case in.Op == ECheck || in.Op == ECast:
+		case in.Op == ECast:
 			vm.checkType(int(in.A))
-		case in.Op == ENode && in.B >= 0:
-			vm.checkType(int(in.B))
 		}
 	}
 	for _, t := range m.Types {
@@ -167,9 +165,6 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 		r.value = func(_ *parser, v *Node, _ int) *Node { return v } // the code pushes the value of the body's scope
 		if ri.Action >= 0 {
 			r.act = vm.evaluator(ri.Action, false)
-		}
-		if ri.Check >= 0 && !r.novalue {
-			r.resultCheck = vm.checkType(ri.Check)
 		}
 		vm.rules = append(vm.rules, r)
 		if _, twin := vm.byName[r.name]; !twin { // value-free twins follow the original rules
@@ -253,9 +248,6 @@ func (vm *vmProgram) line(l *LineInfo, operator bool) *operatorsRuleLine {
 	if l.Action >= 0 {
 		pl.act = vm.evaluator(l.Action, operator)
 	}
-	if l.Check >= 0 {
-		pl.check = vm.checkType(l.Check)
-	}
 	return pl
 }
 
@@ -279,13 +271,13 @@ func (vm *vmProgram) checkType(i int) *fieldType {
 // cast runs ECAST at ip on the value v, and returns v if it fits.
 //
 //go:noinline
-func (vm *vmProgram) cast(p *parser, v any, ip int) (any, error) {
+func (vm *vmProgram) cast(p *parser, v any, pos, ip int) (any, error) {
 	in := &vm.m.Exprs[ip]
 	if t := vm.fieldTypes[in.A]; t == nil || !p.fieldConforms(t, v) {
 		if t == nil {
 			t = &fieldType{text: vm.m.Strings[in.A]}
 		}
-		return nil, p.castError(v, t)
+		return nil, p.castError(v, t, pos, int(in.B), int(in.C))
 	}
 	return v, nil
 }
@@ -296,11 +288,6 @@ func (vm *vmProgram) cast(p *parser, v any, ip int) (any, error) {
 func (vm *vmProgram) convert(p *parser, v any, ip int) (any, error) {
 	in := &vm.m.Exprs[ip]
 	name := vm.m.Strings[in.A]
-	if in.B >= 0 {
-		if t := vm.fieldTypes[in.B]; t == nil || !p.fieldConforms(t, v) {
-			return nil, p.convertError(v, name)
-		}
-	}
 	var ks *nodeTypeKinds
 	if vm.nodeKinds != nil {
 		ks = vm.nodeKinds[in.A]
@@ -313,20 +300,6 @@ func (vm *vmProgram) convert(p *parser, v any, ip int) (any, error) {
 		return nil, p.convertError(v, name)
 	}
 	return n, nil
-}
-
-// checkField runs ECHECK at ip on the value v, and returns v if it fits.
-//
-//go:noinline
-func (vm *vmProgram) checkField(p *parser, v any, ip int) (any, error) {
-	in := &vm.m.Exprs[ip]
-	if t := vm.fieldTypes[in.A]; t == nil || !p.fieldConforms(t, v) {
-		if t == nil {
-			t = &fieldType{text: vm.m.Strings[in.A]}
-		}
-		return nil, p.fieldTypeError(v, t, vm.m.Strings[in.B], vm.m.Strings[in.C])
-	}
-	return v, nil
 }
 
 func (vm *vmProgram) operatorsRule(pi *OperatorsRuleInfo) *operatorsRule {
@@ -1116,15 +1089,13 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 				return nil, err
 			}
 			stack = append(stack[:top], v)
-		case ECheck, ECast, ENode:
-			// ECHECK, ECAST and ENODE share the case: a case of its own slows down the whole loop.
+		case ECast, ENode:
+			// ECAST and ENODE share the case: a case of its own slows down the whole loop.
 			var v any
 			var err error
 			switch in.Op {
-			case ECheck:
-				v, err = vm.checkField(p, pop(), ip)
 			case ECast:
-				v, err = vm.cast(p, pop(), ip)
+				v, err = vm.cast(p, pop(), ctx.start, ip)
 			default:
 				v, err = vm.convert(p, pop(), ip)
 			}

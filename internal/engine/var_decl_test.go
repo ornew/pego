@@ -214,7 +214,7 @@ rule ds = "s" => "str"
 	for _, tc := range []struct{ name, src, want string }{
 		{"a rule value of unknown type", prelude + "rule main = d:dyn {x := $d} \"z\" => x\n", "cannot use any as int in the binding of variable x: " + hint},
 		{"a list element of []_", prelude + "type L = { Items []_ }\nrule main = d:dyn {x := list($d)[0]} \"z\" => x\n", "in the binding of variable x: " + hint},
-		{"a field of type _", prelude + "type F = { V _ }\nrule main = d:dyn {x := F{V: $d}.V} \"z\" => x\n", "cannot use _ as int in the binding of variable x"},
+		{"a field of type _", prelude + "type F = { V _ }\nrule main = d:dyn {x := F{V: $d}.V} \"z\" => x\n", "cannot use _ as int in the binding of variable x: " + hint},
 		{"a wrong type", prelude + "rule main = {x := \"s\"} \"a\"\n", "cannot use string as int in the binding of variable x"},
 		{"a literal of the wrong type", "var s string\nrule main = {s := 1} \"a\"\n", "cannot use int as string in the binding of variable s"},
 	} {

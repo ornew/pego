@@ -43,13 +43,13 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 		}
 	}
 
-	// Check the values, which also decides the run-time checks.
-	checks := &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}, nodeMembers: map[*grammar.Member]bool{}, converts: map[*grammar.New]ty{}}
-	values, valueErrs := valueTypesChecked(prog, control, checks)
+	// Check the values.
+	nodeMembers := map[*grammar.Member]bool{}
+	values, valueErrs := valueTypesChecked(prog, control, nodeMembers)
 	*errs = append(*errs, valueErrs...)
 
 	// Keep the types for code generation (typedGo).
-	info := &typeInfo{fields: map[string][]typedField{}, aliases: map[string]ty{}, checks: checks, values: values, valueErrs: valueErrs}
+	info := &typeInfo{fields: map[string][]typedField{}, aliases: map[string]ty{}, nodeMembers: nodeMembers, values: values, valueErrs: valueErrs}
 	info.valuesOnce.Do(func() {})
 	info.shown = shownRuleTypes(prog, rules, values, control)
 	k.report = false
@@ -77,9 +77,9 @@ type typeInfo struct {
 	valuesOnce sync.Once
 	fields     map[string][]typedField // the fields of each struct type, in declaration order
 	aliases    map[string]ty           // the type each alias stands for
-	// checks holds the declared types that values must be checked against at run time: those
-	// not statically known to fit (Program.fieldCheckType, Program.resultCheckType).
-	checks *checkInfo
+	// nodeMembers reports, for each member access of an action, whether it reads only node
+	// members (.Start, .End, .Value) and never a struct field.
+	nodeMembers map[*grammar.Member]bool
 }
 
 // RuleType returns the type of the value of the rule name: its declared type, or the inferred

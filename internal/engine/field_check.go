@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/ornew/pego/grammar"
@@ -285,283 +286,9 @@ func moduleTypeNames(m *Module) map[string]bool {
 	return names
 }
 
-// checkInfo holds the values a program checks at run time against their declared types:
-// constructed struct field values, and the results of rules and Operators Rule lines with a
-// declared type.
-type checkInfo struct {
-	// all reports a program compiled without type checking. It checks every constructed field and
-	// every result whose declared type is not any, except the values of Operators Rule operators
-	// without an action.
-	all bool
-	// fields holds the checked constructed fields. A nil type (in a loaded program) stands for
-	// the declared type of the field.
-	fields map[*grammar.FieldInit]ty
-	// results holds the checked results, keyed by *grammar.RuleDef for a rule and by
-	// *grammar.OperatorsRuleOperand or *grammar.OperatorsRuleOperator for a line of an
-	// Operators Rule. A nil type (in a loaded program) stands for the rule's declared type.
-	results map[any]ty
-	// nodeMembers reports, for each member access of an action, whether it reads only node
-	// members (.Start, .End, .Value) and never a struct field.
-	nodeMembers map[*grammar.Member]bool
-	// converts holds the node type constructors whose value is checked before it is converted,
-	// with the underlying node type of the named node type. A nil type (in a loaded program)
-	// stands for that type.
-	converts map[*grammar.New]ty
-}
-
-// rekey returns the checks keyed by the nodes of the rules to instead of those of the rules from:
-// the same grammar before and after attribute normalization, which copies nodes but keeps their
-// order.
-func (ci *checkInfo) rekey(from, to []*grammar.RuleDef) (*checkInfo, error) {
-	if ci.all {
-		return ci, nil
-	}
-	if len(from) != len(to) {
-		return nil, fmt.Errorf("normalization changed the number of rules from %d to %d", len(from), len(to))
-	}
-	out := &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}, converts: map[*grammar.New]ty{}}
-	for i, rd := range from {
-		fields, toFields := ruleFieldInits(rd), ruleFieldInits(to[i])
-		results, toResults := ruleResults(rd), ruleResults(to[i])
-		converts, toConverts := ruleConversions(rd), ruleConversions(to[i])
-		if len(fields) != len(toFields) || len(results) != len(toResults) || len(converts) != len(toConverts) {
-			return nil, fmt.Errorf("normalization changed the values of rule %s", rd.Name)
-		}
-		for j, f := range fields {
-			if t, ok := ci.fields[f.FieldInit]; ok {
-				out.fields[toFields[j].FieldInit] = t
-			}
-		}
-		for j, key := range results {
-			if t, ok := ci.results[key]; ok {
-				out.results[toResults[j]] = t
-			}
-		}
-		for j, n := range converts {
-			if t, ok := ci.converts[n]; ok {
-				out.converts[toConverts[j]] = t
-			}
-		}
-	}
-	return out, nil
-}
-
-// empty reports whether nothing is checked.
-func (ci *checkInfo) empty() bool {
-	return ci == nil || !ci.all && len(ci.fields) == 0 && len(ci.results) == 0 && len(ci.converts) == 0
-}
-
-// convertCheckType returns the type the value of the node type constructor t must be checked
-// against at run time before it is converted, the underlying node type of the named node type, or
-// nil if it needs no check.
-func (prog *Program) convertCheckType(t *grammar.New) ty {
-	ci := prog.checks
-	if ci.empty() {
-		return nil
-	}
-	ct, ok := ci.converts[t]
-	if !ci.all && !ok || ct != nil {
-		return ct
-	}
-	if n, ok := prog.nodeTypeOf(t.Type); ok {
-		return n.underlying()
-	}
-	return nil
-}
-
-// convertTypeCheck is convertCheckType for the closure backend, as a check type.
-func (prog *Program) convertTypeCheck(t *grammar.New) *fieldType {
-	if prog.checks.empty() {
-		return nil
-	}
-	if v, ok := prog.fieldTypes.Load(t); ok {
-		return v.(*fieldType)
-	}
-	var ft *fieldType
-	if ct := prog.convertCheckType(t); ct != nil {
-		ft = newFieldType(ct)
-	}
-	v, _ := prog.fieldTypes.LoadOrStore(t, ft)
-	return v.(*fieldType)
-}
-
 // convertError reports a value that does not convert to the named node type typ.
 func (p *parser) convertError(v any, typ string) error {
 	return p.actionError("cannot convert ", typeName(v), " to ", typ)
-}
-
-// ruleConversions returns the node type constructors (constructors with a positional value) in
-// the predicates and actions of rule rd, in a fixed order: the order compiled grammar files number
-// them in.
-func ruleConversions(rd *grammar.RuleDef) []*grammar.New {
-	var news []*grammar.New
-	walkRuleTerms(rd, func(x grammar.Term) {
-		if n, ok := x.(*grammar.New); ok && len(n.Args) != 0 {
-			news = append(news, n)
-		}
-	})
-	return news
-}
-
-// resolveCheck resolves a declared type for a check, as a value type. It returns nil for any,
-// which every value fits.
-func (prog *Program) resolveCheck(t grammar.TypeExpr) ty {
-	if t == nil {
-		return nil
-	}
-	k := &typeResolver{prog: prog}
-	if r := k.resolve(t); newFieldType(r) != nil {
-		return r
-	}
-	return nil
-}
-
-// fieldCheckType returns the declared type a constructor must check the value of field fi of
-// struct spec against at run time, or nil if it needs no check: the type checker proved every
-// value of the field's expression assignable, or the type is any.
-func (prog *Program) fieldCheckType(spec *grammar.TypeDef, fi *grammar.FieldInit) ty {
-	ci := prog.checks
-	if ci.empty() {
-		return nil
-	}
-	t, ok := ci.fields[fi]
-	if !ci.all && !ok || t != nil {
-		return t
-	}
-	if spec == nil {
-		return nil
-	}
-	if f := fieldOf(spec, fi.Name); f != nil {
-		return prog.resolveCheck(f.Type)
-	}
-	return nil
-}
-
-// resultCheckType returns the declared type the result of a rule or Operators Rule line must be
-// checked against at run time, or nil if it needs no check. key identifies the rule or line (see
-// checkInfo.results), and rd is the rule.
-func (prog *Program) resultCheckType(key any, rd *grammar.RuleDef) ty {
-	declared := rd.Type
-	ci := prog.checks
-	if ci.empty() {
-		return nil
-	}
-	if n, ok := prog.convertsResult(key, rd); ok {
-		// A rule converting its value to a named node type, or an operator converting its node,
-		// checks it against the underlying type.
-		if t, ok := ci.results[key]; !ci.all && (!ok || t != nil) {
-			return t
-		}
-		return n.underlying()
-	}
-	t, ok := ci.results[key]
-	if !ci.all {
-		if !ok || t != nil {
-			return t
-		}
-		return prog.resolveCheck(declared)
-	}
-	switch key := key.(type) {
-	case *grammar.RuleDef:
-		if _, ok := key.Expr.(*grammar.OperatorsRule); ok {
-			return nil // its lines are checked
-		}
-	case *grammar.OperatorsRuleOperator:
-		if key.Action == nil {
-			return nil // the tuple node of an operator
-		}
-	}
-	return prog.resolveCheck(declared)
-}
-
-// assignResultChecks gives the rules and Operators Rule lines that produce values their run-time
-// result checks.
-func (prog *Program) assignResultChecks() {
-	for _, r := range prog.rules {
-		if r.novalue {
-			continue
-		}
-		if t := prog.resultCheckType(r.def, r.def); t != nil {
-			r.resultCheck = newFieldType(t)
-		}
-		if pr := r.operatorsRule; pr != nil {
-			var lines []*operatorsRuleLine
-			lines = append(lines, pr.operands...)
-			for _, op := range pr.prefix {
-				lines = append(lines, op.line)
-			}
-			for _, op := range pr.led {
-				lines = append(lines, op.line)
-			}
-			for _, l := range lines {
-				if t := prog.resultCheckType(l.key, r.def); t != nil {
-					l.check = newFieldType(t)
-				}
-			}
-		}
-	}
-}
-
-// constructorChecks returns the closure backend's checks of the fields of constructor t, by field
-// index, or nil if no field needs one.
-func (prog *Program) constructorChecks(t *grammar.New) []*fieldType {
-	if ci := prog.checks; ci.empty() || !ci.all && len(ci.fields) == 0 {
-		return nil
-	}
-	if v, ok := prog.fieldTypes.Load(t); ok {
-		return v.([]*fieldType)
-	}
-	_, spec := prog.structType(t.Type)
-	var checks []*fieldType
-	for i, fi := range t.Fields {
-		if ft := prog.fieldCheckType(spec, fi); ft != nil {
-			if checks == nil {
-				checks = make([]*fieldType, len(t.Fields))
-			}
-			checks[i] = newFieldType(ft)
-		}
-	}
-	v, _ := prog.fieldTypes.LoadOrStore(t, checks)
-	return v.([]*fieldType)
-}
-
-// constructedField is a field of a struct constructor.
-type constructedField struct {
-	*grammar.FieldInit
-	new *grammar.New
-}
-
-// ruleFieldInits returns the constructed fields in the predicates and actions of rule rd, in a fixed order: the
-// order compiled grammar files number them in.
-func ruleFieldInits(rd *grammar.RuleDef) []constructedField {
-	var fields []constructedField
-	walkRuleTerms(rd, func(x grammar.Term) {
-		if n, ok := x.(*grammar.New); ok {
-			for _, fi := range n.Fields {
-				fields = append(fields, constructedField{fi, n})
-			}
-		}
-	})
-	return fields
-}
-
-// ruleResults returns the keys of the results of rule rd (see checkInfo.results), in the order
-// compiled grammar files number them in.
-func ruleResults(rd *grammar.RuleDef) []any {
-	pr, ok := rd.Expr.(*grammar.OperatorsRule)
-	if !ok {
-		return []any{rd}
-	}
-	var keys []any
-	for _, o := range pr.Operands {
-		keys = append(keys, o)
-	}
-	for _, l := range pr.Levels {
-		for _, op := range l.Operators {
-			keys = append(keys, op)
-		}
-	}
-	return keys
 }
 
 // fieldConforms reports whether v is a value of type t in the value model. It charges a step for
@@ -680,6 +407,18 @@ func (p *parser) tupleConforms(ts []*fieldType, elems []*Node) bool {
 	return true
 }
 
+// resolveCheck resolves a type for a cast, as a value type. It returns nil for _, which every
+// value fits.
+func (prog *Program) resolveCheck(t grammar.TypeExpr) ty {
+	if t == nil {
+		return nil
+	}
+	if r := (&typeResolver{prog: prog}).resolve(t); newFieldType(r) != nil {
+		return r
+	}
+	return nil
+}
+
 // castType returns the type cast t checks its value against, or nil if every value fits it.
 func (prog *Program) castType(t *grammar.Cast) *fieldType {
 	if v, ok := prog.fieldTypes.Load(t); ok {
@@ -693,20 +432,26 @@ func (prog *Program) castType(t *grammar.Cast) *fieldType {
 	return v.(*fieldType)
 }
 
-// castError reports a cast value that is not of the type it is cast to.
-func (p *parser) castError(v any, t *fieldType) error {
-	return p.actionError("cannot cast ", typeName(v), " to ", t.text)
-}
-
-// fieldTypeError reports a constructed field value that does not fit its declared type.
-func (p *parser) fieldTypeError(v any, t *fieldType, field, typ string) error {
-	return p.actionError("cannot use ", typeName(v), " as ", t.text, " in field ", field, " of ", typ)
-}
-
-// checkResult fails the parse if v, a result of rule rule, does not fit t, the rule's declared
-// type.
-func (p *parser) checkResult(t *fieldType, v *Node, rule string) {
-	if u := unboxNode(v); !p.fieldConforms(t, u) {
-		p.fail("cannot use %s as %s in result of rule %s", typeName(u), t.text, rule)
+// castError reports a cast value that is not of the type it is cast to. pos is the input position
+// where the evaluation started, and gline:gcol the grammar position of the cast (0 if unknown).
+func (p *parser) castError(v any, t *fieldType, pos, gline, gcol int) error {
+	line, col := p.input.lineCol(pos)
+	parts := []string{"cannot cast ", typeName(v), " to ", t.text, " at input position ", strconv.Itoa(pos),
+		" (line ", strconv.Itoa(line), ", column ", strconv.Itoa(col), ")"}
+	if gline > 0 {
+		parts = append(parts, "; cast at grammar position ", strconv.Itoa(gline), ":", strconv.Itoa(gcol))
 	}
+	return p.actionError(parts...)
+}
+
+// castPos returns the grammar position of the cast t as line and column, or 0, 0 when the program
+// records no source information or the position is unknown.
+func (prog *Program) castPos(t *grammar.Cast) (int, int) {
+	if !prog.sourceInfo {
+		return 0, 0
+	}
+	if pos := t.Diagnostic(); pos.IsValid() {
+		return pos.Line, pos.Col
+	}
+	return 0, 0
 }

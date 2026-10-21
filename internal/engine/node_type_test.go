@@ -122,12 +122,18 @@ rule u U = n / m
 rule n N = "n"
 rule m M = "m"`, map[string]string{
 			"m": `{"node":{"type":"M","start":0,"end":1,"value":"m"}}`,
-			"n": `{"err":"action in main: cannot cast N to M","node":null}`,
+			"n": `{"err":"action in main: cannot cast N to M at input position 0 (line 1, column 1)%s","node":null}`,
 		}},
 	} {
 		for _, sourceInfo := range []bool{false, true} {
 			prog := compileBare(t, tc.src, Options{SourceInfo: sourceInfo})
 			for input, want := range tc.inputs {
+				// With source information the error names the grammar position of the cast.
+				suffix := ""
+				if sourceInfo {
+					suffix = "; cast at grammar position 4:26"
+				}
+				want = strings.Replace(want, "%s", suffix, 1)
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 					if got := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend})); got != want {
 						t.Errorf("%s %q:\n got %s\nwant %s", backend, input, got, want)
@@ -147,21 +153,25 @@ rule tree Tree = "(" ts:tree* ")" => Tree{$ts}`)
 			t.Errorf("%s: got %s, want %s", backend, got, want)
 		}
 	}
-	// Without the type check, a conversion checks the underlying type at run time.
+	// A conversion whose value does not fit the underlying type is a compile error. Without type
+	// checking nothing checks it when the conversion runs.
 	for _, tc := range []struct{ src, input, want string }{
 		{`type N = node[string]
-rule main N = x:("a" / "b" "c") => N{$x}`, "bc", "cannot convert node[(_, _)] to N"},
+rule main N = x:("a" / "b" "c") => N{$x}`, "bc", "cannot convert node[string] | node[(node[string], node[string])] to N"},
 		{`type N = node[string]
-rule main N = "a" / "b" "c"`, "bc", "cannot use node[(_, _)] as node[string] in result of rule main"},
+rule main N = "a" / "b" "c"`, "bc", "rule main produces node[string] | node[(node[string], node[string])], which cannot be converted to N"},
 		// A conversion through an alias names the type itself, as Type() does.
 		{`type N = node[string]
 type A ~ N
-rule main A = x:("a" / "b" "c") => A{$x}`, "bc", "cannot convert node[(_, _)] to N"},
+rule main A = x:("a" / "b" "c") => A{$x}`, "bc", "cannot convert node[string] | node[(node[string], node[string])] to N"},
 	} {
+		if got := compileMessage(t, tc.src); !strings.Contains(got, tc.want) {
+			t.Errorf("checked compilation: got %q, want an error containing %q", got, tc.want)
+		}
 		prog := compileBare(t, tc.src, Options{NoTypeCheck: true})
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			if got := resultJSON(prog.ParseWith("main", tc.input, ParseOptions{Backend: backend})); !strings.Contains(got, tc.want) {
-				t.Errorf("%s %q: got %s, want %s", backend, tc.input, got, tc.want)
+			if got := resultJSON(prog.ParseWith("main", tc.input, ParseOptions{Backend: backend})); strings.Contains(got, `"err"`) {
+				t.Errorf("%s %q: got %s, want no error", backend, tc.input, got)
 			}
 			if got := resultJSON(prog.ParseWith("main", "a", ParseOptions{Backend: backend})); !strings.Contains(got, `{"type":"N","start":0,"end":1,"value":"a"}`) {
 				t.Errorf("%s: got %s", backend, got)

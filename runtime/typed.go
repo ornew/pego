@@ -392,8 +392,6 @@ type TRule struct {
 	Body          func(p *TParser, min int) (any, bool)
 	Action        func(c *TActCtx) any
 	OperatorsRule *TOperatorsRule
-	// TCheck checks the rule's value against its declared type (nil if it needs no check).
-	TCheck func(p *TParser, v any)
 	// Entry is the generated method that calls the rule as call(r, 0) does (u<id> or s<id>), for
 	// rules that have one. A direct rule (see gen_direct.go) has no body or action and is called
 	// only through it.
@@ -1283,9 +1281,6 @@ func (p *TParser) Finish(r *TRule, f *TCaptureFrame, v any, start int) any {
 		body = TFreshNode(v)
 	}
 	v = p.finishValue(r, f, v, start)
-	if r.TCheck != nil {
-		r.TCheck(p, v)
-	}
 	if r.Nt != 0 {
 		v = p.TConvertResultOwned(r, v, body)
 	}
@@ -1381,7 +1376,7 @@ func (p *TParser) TConvertResult(r *TRule, v any) any {
 }
 
 // Convert evaluates a node type constructor T{v} (ActCtx.Convert): it converts v to the named node
-// type with the index nt (after convertCheck, where the value needs a check).
+// type with the index nt.
 func (c *TActCtx) Convert(nt uint16, v any) any {
 	n, ok := c.P.tconvert(nt, v)
 	if !ok {
@@ -2178,7 +2173,6 @@ type TOperatorsRuleLine struct {
 	// Value makes the value of an operand line without an action, and of an operator line's
 	// operator, from the value of the line's expression.
 	Value Shaper
-	Check func(p *TParser, v any) // checks the line's value against the rule's declared type
 }
 
 // TOperatorsRuleOp is for generated parsers; not a stable API.
@@ -2355,11 +2349,7 @@ func (p *TParser) lineResult(r *TRule, l *TOperatorsRuleLine, f *TCaptureFrame, 
 	if r.Novalue {
 		return nil
 	}
-	v = p.lineValue(r, l, f, v, start)
-	if l.Check != nil {
-		l.Check(p, v)
-	}
-	return v
+	return p.lineValue(r, l, f, v, start)
 }
 
 func (p *TParser) lineValue(r *TRule, l *TOperatorsRuleLine, f *TCaptureFrame, v any, start int) any {
@@ -2406,9 +2396,6 @@ func (p *TParser) operatorsRuleBuild(r *TRule, a *toperatorsRuleAttempt, lhs, rh
 		c := p.UseCtx(TActCtx{P: p, F: a.frame, Start: start, End: end, Cbase: len(p.Created),
 			Op: opv, Lhs: lhs, Rhs: rhs})
 		v := c.Result(l.Action, r.Name)
-		if l.Check != nil {
-			l.Check(p, v)
-		}
 		if r.OpNt != 0 {
 			v = p.convertOperator(r, v)
 		}
@@ -2435,15 +2422,7 @@ func (p *TParser) operatorsRuleBuild(r *TRule, a *toperatorsRuleAttempt, lhs, rh
 	n := p.NewNode("tuple", start, end, kids)
 	n.fresh = false
 	n.fields = fields
-	if l.Check != nil {
-		// Without type checking, the tuple node is checked like an action's result.
-		l.Check(p, n)
-		if r.OpNt != 0 {
-			return p.convertOperator(r, n)
-		}
-	} else {
-		n.nt = r.OpNt // made with the named node type of the operators, if any
-	}
+	n.nt = r.OpNt // made with the named node type of the operators, if any
 	return n
 }
 

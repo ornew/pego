@@ -39,14 +39,14 @@ func TestFix(t *testing.T) {
 }
 
 func TestFixAnyTypes(t *testing.T) {
-	// V is read as a string, so it needs a cast with _ and keeps any. The rule type and the cast of c
-	// need none, since a rule may produce a value of type _.
+	// A value of type _ is narrowed with a cast before it is used as another type, as one of type
+	// any is, so every reference to any can become _.
 	const old = "type Box = { V any; L []any; O *any }\ntype Out = { S string; A any }\n" +
-		"rule main Out = b:box => Out{S: $b.V, A: $b.V}\n" +
+		"rule main Out = b:box => Out{S: $b.V.(string), A: $b.V}\n" +
 		"rule box Box = x:\"x\" => Box{V: $x, L: list($x), O: nil}\n" +
 		"rule c any = x:\"y\" => $x.(any)\n"
-	const fixed = "type Box = { V any; L []_; O *_ }\ntype Out = { S string; A _ }\n" +
-		"rule main Out = b:box => Out{S: $b.V, A: $b.V}\n" +
+	const fixed = "type Box = { V _; L []_; O *_ }\ntype Out = { S string; A _ }\n" +
+		"rule main Out = b:box => Out{S: $b.V.(string), A: $b.V}\n" +
 		"rule box Box = x:\"x\" => Box{V: $x, L: list($x), O: nil}\n" +
 		"rule c _ = x:\"y\" => $x.(_)\n"
 	if out, err := runCLI(t, old, "fix"); err != nil || out != fixed {

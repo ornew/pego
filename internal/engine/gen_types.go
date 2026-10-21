@@ -767,7 +767,7 @@ func (t *typedGen) runtimeOK(st ty) bool {
 
 // nodeMember reports whether the member access m reads only .Start, .End or .Value of nodes.
 func (t *typedGen) nodeMember(m *grammar.Member) bool {
-	return t.info.checks != nil && t.info.checks.nodeMembers[m]
+	return t.info.nodeMembers[m]
 }
 
 // readsFields reports whether an action or predicate may read a field of a struct: a member

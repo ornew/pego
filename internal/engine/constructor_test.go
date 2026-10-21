@@ -213,27 +213,25 @@ rule main = {value := 1} {Int{value} != nil} "x" / "x"`,
 		if err != nil {
 			t.Fatal(err)
 		}
-		// The static check rejects these constructors; the run-time check is what remains
-		// without it.
+		// The static check rejects these constructors. Without it nothing is checked when they run:
+		// the constructor builds the struct with the value it was given, on every backend.
+		if _, err := Compile(g, Options{}); err == nil || !strings.Contains(err.Error(), "cannot use int as string in field Text of Int") {
+			t.Fatalf("checked compilation: %v", err)
+		}
 		p, err := Compile(g, Options{NoTypeCheck: true})
 		if err != nil {
 			t.Fatal(err)
 		}
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			n, err := p.ParseWith("main", "x", ParseOptions{Backend: backend})
-			if strings.Contains(source, "=>") {
-				if n != nil || err == nil || !strings.Contains(err.Error(), "cannot use int as string in field Text of Int") {
-					t.Fatalf("%s: %v / %v", backend, n, err)
-				}
-			} else if n == nil || err != nil {
-				t.Fatalf("predicate must backtrack: %s: %v", backend, err)
+			if n, err := p.ParseWith("main", "x", ParseOptions{Backend: backend}); n == nil || err != nil {
+				t.Fatalf("%s: %v / %v", backend, n, err)
 			}
 		}
 	}
 }
 
-// The text struct counterpart: a field of the wrong type is an error in the action and a failed
-// predicate backtracks.
+// The text struct counterpart: a field of the wrong type is a compile error; without type checking
+// it is not checked.
 func TestConstructedTextStructEvaluationErrors(t *testing.T) {
 	for _, source := range []string{
 		`type Int = { Text string }
@@ -243,17 +241,15 @@ rule main = {value := 1} "x" => Int{Text: value}`,
 var value int
 rule main = {value := 1} {Int{Text: value} != nil} "x" / "x"`,
 	} {
-		// The static check rejects these constructors; the run-time check is what remains
-		// without it.
+		// The static check rejects these constructors. Without it nothing is checked when they run:
+		// the constructor builds the struct with the value it was given, on every backend.
+		if got := compileMessage(t, source); !strings.Contains(got, "cannot use int as string in field Text of Int") {
+			t.Fatalf("checked compilation: %q", got)
+		}
 		p := compile(t, source, Options{NoTypeCheck: true})
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			n, err := p.ParseWith("main", "x", ParseOptions{Backend: backend})
-			if strings.Contains(source, "=>") {
-				if n != nil || err == nil || !strings.Contains(err.Error(), "cannot use int as string in field Text of Int") {
-					t.Fatalf("%s: %v / %v", backend, n, err)
-				}
-			} else if n == nil || err != nil {
-				t.Fatalf("predicate must backtrack: %s: %v", backend, err)
+			if n, err := p.ParseWith("main", "x", ParseOptions{Backend: backend}); n == nil || err != nil {
+				t.Fatalf("%s: %v / %v", backend, n, err)
 			}
 		}
 	}
@@ -337,9 +333,9 @@ func TestNodeConstructorsWithoutTypeChecking(t *testing.T) {
 		}
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			n, err := p.ParseWith("main", "x", ParseOptions{Backend: backend})
-			// Without type checking a list may hold the int 1 boxed; Int{1} still has no text.
+			// Without type checking a list may hold the int 1 boxed, and nothing checks the text of Int{1}.
 			invalidValue := action == `Int{1}`
-			if invalidValue != (err != nil) || invalidValue == (n != nil) {
+			if err != nil || n == nil {
 				t.Fatalf("%s/%s: %v / %v", action, backend, n, err)
 			}
 			if !invalidValue && (len(n.children) != 1 || (n.children[0] == nil) != (action == `[]Int{nil}`) || (action == `[]Int{1}`) != (n.children[0] != nil && n.children[0].box == 1)) {

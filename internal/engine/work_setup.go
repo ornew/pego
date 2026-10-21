@@ -135,7 +135,6 @@ func (prog *Program) prepareControlledProgram(b Backend, c *workControl) (*Progr
 			recognize:          prog.workRecognize,
 			noProjections:      prog.noProjections,
 			controlledDispatch: true,
-			checks:             prog.checks,
 			SourceInfo:         prog.sourceInfo,
 		}, flags)
 	})

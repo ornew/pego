@@ -62,9 +62,6 @@ func (m *Module) Disassemble() string {
 		if r.OperatorsRule >= 0 {
 			fmt.Fprintf(&b, " operatorsRule=%d", r.OperatorsRule)
 		}
-		if r.Check >= 0 {
-			fmt.Fprintf(&b, " check=%s", strconv.Quote(m.Strings[r.Check]))
-		}
 		var flags []string
 		for _, f := range []struct {
 			on   bool
@@ -81,18 +78,10 @@ func (m *Module) Disassemble() string {
 	}
 	for i, p := range m.OperatorsRules {
 		fmt.Fprintf(&b, "operatorsRule %d: skip=%d operands=%d\n", i, p.Skip, len(p.Operands))
-		for k, o := range p.Operands {
-			if o.Check >= 0 {
-				fmt.Fprintf(&b, "  operand%d check=%s\n", k, strconv.Quote(m.Strings[o.Check]))
-			}
-		}
 		for _, o := range append(append([]OpInfo{}, p.Prefix...), p.Led...) {
 			kind := []string{"prefix", "postfix", "infix"}[o.Kind]
 			assoc := []string{"left", "right", "none"}[o.Assoc]
 			fmt.Fprintf(&b, "  op%d %s %s level=%d entry=%d action=%d scope=%s", o.ID, kind, assoc, o.Level, o.Line.Entry, o.Line.Action, names(o.Line.Scope))
-			if o.Line.Check >= 0 {
-				fmt.Fprintf(&b, " check=%s", strconv.Quote(m.Strings[o.Line.Check]))
-			}
 			b.WriteString("\n")
 		}
 	}
@@ -197,14 +186,12 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 	case ENew:
 		return fmt.Sprintf("%s fields=%s", m.Strings[a], names(m.FieldLists[bb]))
 	case ECast:
+		if bb > 0 {
+			return fmt.Sprintf("%s at=%d:%d", strconv.Quote(m.Strings[a]), bb, c)
+		}
 		return strconv.Quote(m.Strings[a])
 	case ENode:
-		if bb < 0 {
-			return m.Strings[a]
-		}
-		return fmt.Sprintf("%s check=%s", m.Strings[a], strconv.Quote(m.Strings[bb]))
-	case ECheck:
-		return fmt.Sprintf("%s field=%s of=%s", strconv.Quote(m.Strings[a]), m.Strings[bb], m.Strings[c])
+		return m.Strings[a]
 	case EFunc:
 		return fmt.Sprintf("entry=%d params=%d", a, bb)
 	case ECall:

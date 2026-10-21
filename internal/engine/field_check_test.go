@@ -59,9 +59,10 @@ var fieldCheckFields = map[string]string{
 	"[](node[string] | error)": "kn",
 }
 
-// fieldCheckGrammar gives S a field F of type typ. Constructing S succeeds with an accepted value
-// (input "<value>.") and is an action error otherwise; in a predicate (input "<value>!") the
-// rejected value makes the predicate fail, so the rule no matches instead.
+// fieldCheckGrammar gives S a field F of type typ, set from the dynamically typed value of val, which
+// the grammar must cast to typ. Constructing S succeeds with an accepted value (input
+// "<value>.") and is an action error of the cast otherwise; in a predicate (input "<value>!")
+// the rejected value makes the predicate fail, so the rule no matches instead.
 func fieldCheckGrammar(typ string) string {
 	return `type Int = { Text string }
 type Alias ~ Int
@@ -69,8 +70,8 @@ type Box = { Value Int }
 type S = { F ` + typ + ` }
 type Result ~ S | Int
 rule main Result = nodeCase / nodePred / no
-rule nodeCase = v:val "." => S{F: $v}
-rule nodePred = v:val {S{F: $v} != nil} "!" => Int{Text: "yes"}
+rule nodeCase = v:val "." => S{F: $v.(` + typ + `)}
+rule nodePred = v:val {S{F: $v.(` + typ + `)} != nil} "!" => Int{Text: "yes"}
 rule no = [a-z!.?;]+ => Int{Text: "no"}
 rule val any = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz / vi / vs / vb
 rule vm = "m"
@@ -99,8 +100,8 @@ type Box = { Value Int }
 type S = { F ` + typ + ` }
 type Result ~ S | Int
 rule main Result = nodeCase / nodePred / no
-rule nodeCase = v:val "." => S{F: $v}
-rule nodePred = v:val {S{F: $v} != nil} "!" => Int{"yes"}
+rule nodeCase = v:val "." => S{F: $v.(` + typ + `)}
+rule nodePred = v:val {S{F: $v.(` + typ + `)} != nil} "!" => Int{"yes"}
 rule no = [a-z!.?;]+ => Int{"no"}
 rule val any = vm / vt / vl / vk / ve / vn / vq / vr / vw / vp / vz / vi / vs / vb
 rule vm = "m"
@@ -140,8 +141,8 @@ func fieldCheckInputs() []string {
 	return append(in, "l!", "k!", "z!", "i!", "s!", "?!")
 }
 
-// TestConstructedFieldChecks checks which dynamically typed values each declared field type
-// accepts, on every backend, with and without type checking, and from a compiled file.
+// TestConstructedFieldChecks checks which dynamically typed values a cast to each declared field
+// type accepts, on every backend, with and without type checking, and from a compiled file.
 func TestConstructedFieldChecks(t *testing.T) {
 	// The terminal model is the same grammar in the retired terminal type syntax, which
 	// syntax.ParseLegacy reads as the text structs it means: it accepts the same values.
@@ -219,7 +220,7 @@ func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string)
 					}
 				}
 				name := fieldCheckValueName(value)
-				msg := fmt.Sprintf("cannot use %s as %s in field F of S", name, checked.typed.fields["S"][0].t)
+				msg := fmt.Sprintf("cannot cast %s to %s", name, checked.typed.fields["S"][0].t)
 				switch {
 				case in[1] == '!' && accepted:
 					if !strings.Contains(want, yes) {
@@ -241,30 +242,27 @@ func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string)
 	}
 }
 
-// TestConstructedFieldChecksAreSelective checks that only values not statically known to fit get
-// a run-time check, which needs instruction set 9.
+// TestConstructedFieldChecksAreSelective checks that a constructed field is never checked when it
+// runs: a value statically known to fit needs nothing, a value of an unknown type is rejected
+// when the grammar is compiled, and a cast is the only check, one ECAST for each cast.
 func TestConstructedFieldChecksAreSelective(t *testing.T) {
-	src := `type Int = { Text string }
+	const decls = `type Int = { Text string }
 type S = { Static Int; Var int; Dynamic Int; Elements []Int; Union *Int; Untyped any; Empty []Int; Joined []Int }
 var x int
-rule main = {x := 1} a:item d:val l:item* o:item? => S{Static: $a, Var: x, Dynamic: $d, Elements: $l.Value, Union: $o, Untyped: x, Empty: filter(nil, (e) => true), Joined: concat(nil, $l.Value)}
 rule item Int = "i" => Int{Text: "i"}
 rule val any = "v" => list()
 `
+	const body = "rule main = {x := 1} a:item d:val l:item* o:item? => S{Static: $a, Var: x, Dynamic: %s, Elements: $l.Value, Union: $o, Untyped: x, Empty: filter(nil, (e) => true), Joined: concat(nil, $l.Value)}\n"
+	if got := compileMessage(t, decls+fmt.Sprintf(body, "$d")); !strings.Contains(got, "cannot use any as Int in field Dynamic of S: the type of the value is not known; convert it with a cast, as in value.(Int)") {
+		t.Fatalf("unknown value: %q", got)
+	}
+	src := decls + fmt.Sprintf(body, "$d.(Int)")
 	prog := compile(t, src)
-	var checked []string
-	for fi, typ := range prog.checks.fields {
-		checked = append(checked, fi.Name+" "+typ.String())
-	}
-	sort.Strings(checked)
-	if got := strings.Join(checked, ", "); got != "Dynamic Int" {
-		t.Fatalf("checked fields: %s", got)
-	}
 	m := prog.Module()
 	if v := m.instructionSetVersion(); v != isaVersion {
 		t.Fatalf("instruction set %d", v)
 	}
-	if d := m.Disassemble(); strings.Count(d, "ECHECK") != 1 || !strings.Contains(d, `"Int" field=Dynamic of=S`) {
+	if d := m.Disassemble(); strings.Count(d, "ECAST") != 1 || !strings.Contains(d, `ECAST      "Int"`) {
 		t.Fatalf("disassembly:\n%s", d)
 	}
 	plain := compile(t, `type Int = { Text string }
@@ -275,13 +273,16 @@ rule item Int = "i" => Int{Text: "i"}
 	if v := plain.Module().instructionSetVersion(); v != isaVersion {
 		t.Fatalf("unchecked module instruction set %d", v)
 	}
-	if got := resultWith(prog, "iv", ParseOptions{Backend: Bytecode}); !strings.Contains(got, "cannot use []_ as Int in field Dynamic of S") {
+	if d := plain.Module().Disassemble(); strings.Contains(d, "ECAST") {
+		t.Fatalf("a statically typed field is checked:\n%s", d)
+	}
+	if got := resultWith(prog, "iv", ParseOptions{Backend: Bytecode}); !strings.Contains(got, "cannot cast []_ to Int") {
 		t.Fatalf("dynamic list: %s", got)
 	}
-	// The recognizer, built without type checking, checks the same fields as its program.
+	// The recognizer, built without type checking, keeps the same casts as its program.
 	pred := compile(t, `type Int = { Text string }
 type S = { Static Int; Dynamic Int }
-rule main = a:item d:val {S{Static: $a, Dynamic: $d} != nil}
+rule main = a:item d:val {S{Static: $a, Dynamic: $d.(Int)} != nil}
 rule item Int = "i" => Int{Text: "i"}
 rule val any = "v"
 `)
@@ -289,7 +290,7 @@ rule val any = "v"
 	if err != nil {
 		t.Fatal(err)
 	}
-	if d := rec.Module().Disassemble(); strings.Count(d, "ECHECK") != 1 {
+	if d := rec.Module().Disassemble(); strings.Count(d, "ECAST") != 1 {
 		t.Fatalf("recognizer disassembly:\n%s", d)
 	}
 	g, err := syntax.Parse(src)
@@ -306,7 +307,7 @@ rule val any = "v"
 }
 
 // TestCompiledFieldChecksValidation checks that loading rejects files of an earlier
-// instruction set and field-check type texts that do not name a known type.
+// instruction set and cast type texts that do not name a known type.
 func TestCompiledFieldChecksValidation(t *testing.T) {
 	prog := compile(t, fieldCheckGrammar("[]*(Int | node[string])"))
 	data, err := prog.MarshalBinary("main")
@@ -331,7 +332,7 @@ func TestCompiledFieldChecksValidation(t *testing.T) {
 		m.Strings = append(append([]string(nil), prog.Module().Strings...), text)
 		m.Exprs = append([]Instr(nil), prog.Module().Exprs...)
 		for i := range m.Exprs {
-			if m.Exprs[i].Op == ECheck {
+			if m.Exprs[i].Op == ECast {
 				m.Exprs[i].A = int32(len(m.Strings) - 1)
 			}
 		}

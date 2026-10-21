@@ -127,7 +127,7 @@ func typeName(v any) string {
 }
 
 // convert evaluates the node type constructor t, T{x}: it converts the value of x to the named
-// node type T, after checking it against the underlying node type where needed.
+// node type T.
 func (c *evalCtx) convert(t *grammar.New) (any, error) {
 	x, err := c.eval(t.Args[0])
 	if err != nil {
@@ -139,9 +139,6 @@ func (c *evalCtx) convert(t *grammar.New) (any, error) {
 		return nil, p.convertError(x, t.Type)
 	}
 	name := ks[0].typ // the type's own name, also for an alias of it
-	if check := p.prog.convertTypeCheck(t); check != nil && !p.fieldConforms(check, x) {
-		return nil, p.convertError(x, name)
-	}
 	n, ok := ks.convert(x)
 	if !ok {
 		return nil, p.convertError(x, name)
@@ -198,18 +195,12 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		// the names in a buffer filled once no evaluation is pending; newStruct retains neither.
 		p := c.p
 		base := len(p.estack)
-		checks := p.prog.constructorChecks(t)
-		for i, fi := range t.Fields {
+		for _, fi := range t.Fields {
 			p.stepWork()
 			v, err := c.eval(fi.Value)
 			if err != nil {
 				p.estack = p.estack[:base]
 				return nil, err
-			}
-			if checks != nil && checks[i] != nil && !p.fieldConforms(checks[i], v) {
-				p.estack = p.estack[:base]
-				name, _ := p.prog.structType(t.Type)
-				return nil, p.fieldTypeError(v, checks[i], fi.Name, name)
 			}
 			p.estack = append(p.estack, v)
 		}
@@ -285,7 +276,8 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 			return nil, err
 		}
 		if ft := c.p.prog.castType(t); ft != nil && !c.p.fieldConforms(ft, x) {
-			return nil, c.p.castError(x, ft)
+			line, col := c.p.prog.castPos(t)
+			return nil, c.p.castError(x, ft, c.start, line, col)
 		}
 		return x, nil
 

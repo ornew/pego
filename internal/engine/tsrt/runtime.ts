@@ -857,8 +857,6 @@ interface Rule {
   // vars are the variables the rule or its callees read, sorted. Memo entries are keyed by their
   // values at the call, since definitions inside the rule are undone when it returns.
   vars: string[];
-  // check checks the rule's value against its declared type (null if it needs no check).
-  check: ((p: Parser, v: Node | null) => void) | null;
   // nodeType, if not "", is the named node type the rule's value is converted to.
   nodeType: string;
   // opNodeType, if not "", is the named node type every operator node of an Operators Rule is
@@ -915,7 +913,6 @@ function mkRule(
     operatorsRule: null,
     novalue,
     vars,
-    check: null,
     nodeType: "",
     opNodeType: "",
   };
@@ -2172,13 +2169,9 @@ class Parser {
     throw new Fatal(new Error(`nesting too deep: more than ${this.maxDepth} rule calls`));
   }
 
-  // finish makes the rule's value from the value of its body, and checks it against the rule's
-  // declared type if needed.
+  // finish makes the rule's value from the value of its body.
   finish(r: Rule, f: Frame, v: Node | null, start: number): Node | null {
     v = this.finishValue(r, f, v, start);
-    if (r.check !== null) {
-      r.check(this, v);
-    }
     if (r.nodeType !== "") {
       v = this.convertResult(r, v);
     }
@@ -2811,11 +2804,7 @@ class Parser {
     if (r.novalue) {
       return null;
     }
-    v = this.lineValue(r, l, f, v, start);
-    if (l.check !== null) {
-      l.check(this, v);
-    }
-    return v;
+    return this.lineValue(r, l, f, v, start);
   }
 
   lineValue(r: Rule, l: OperatorsRuleLine, f: Frame, v: Node | null, start: number): Node | null {
@@ -2866,9 +2855,6 @@ class Parser {
     if (l.action !== null) {
       const c = this.useCtx(a.frame, start, end, unboxNode(lhs), unboxNode(rhs), unboxNode(opv));
       let v = c.result(l.action, r.name);
-      if (l.check !== null) {
-        l.check(this, v);
-      }
       if (r.opNodeType !== "") {
         v = this.convertOperator(r, v);
       }
@@ -2893,10 +2879,6 @@ class Parser {
     }
     const n = new Node("tuple", sourceInfo ? r.name : "", start, end, "", kids, fields, false, false);
     n.labeled = sourceInfo;
-    if (l.check !== null) {
-      // Without type checking, the tuple node is checked like an action's result.
-      l.check(this, n);
-    }
     return r.opNodeType !== "" ? this.convertOperator(r, n) : n;
   }
 
@@ -3029,8 +3011,7 @@ class Actx {
     return evalError(`variable ${name} is not defined`);
   }
 
-  // convert evaluates a node type constructor T{v}: it converts v to the named node type typ
-  // (after convertCheck, where the value needs a check).
+  // convert evaluates a node type constructor T{v}: it converts v to the named node type typ.
   convert(typ: string, v: Value): Value {
     const u = unboxValue(v);
     const n = convertNode(typ, u);
@@ -3492,8 +3473,6 @@ interface OperatorsRuleLine {
   // value makes the value of an operand line without an action, and of an operator line's
   // operator, from the value of the line's expression.
   value: Shaper;
-  // check checks the line's value against the rule's declared type (null if it needs no check).
-  check: ((p: Parser, v: Node | null) => void) | null;
 }
 
 interface OperatorsRuleOp {

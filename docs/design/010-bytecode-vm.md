@@ -211,7 +211,7 @@ Raise the `.pegoc` version to 2 and make its content a module. The AST is includ
 | Header | Magic, version, instruction-set version |
 | String table | All strings |
 | Character class table | Lists of ranges, negation |
-| Type table | Struct field names (for run-time checks), terminal types |
+| Type table | Struct field names, named node types |
 | Rule table | Name, start of body code, capture scope, action code, terminal type, memoization, left-recursion leader, position dependency, and the shape of the body for `$n` |
 | Operators Rule table | As above |
 | Instruction sequences | Match code and expression code |

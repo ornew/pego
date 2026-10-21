@@ -25,6 +25,8 @@ func castCases() []genCase {
 		{"predicate", "rule main = x:(n / w) ({$x.(Num) == $x} \"!\" / \"?\") $$\n" + castRules, []string{"1!", "a?", "a!", "1?"}},
 		{"constructor", "rule main = x:(n / w) $$ => P{N: $x.(Num)}\n" + castRules, []string{"1", "a"}},
 		{"any", "rule main = x:(n / w) $$ => $x.(any)\n" + castRules, []string{"1", "a"}},
+		// The error names where the action started, after a newline, in code points and bytes.
+		{"position", "rule main = \"\\u00e9\\n\" r\nrule r = x:(n / w) $$ => $x.(Num)\n" + castRules, []string{"\u00e9\n1", "\u00e9\nab"}},
 		{"int", "rule main = x:w $$ {len(text($x)).(int) > 1} => $x\n" + castRules, []string{"ab", "a"}},
 	}
 }
@@ -57,6 +59,7 @@ func TestCastValues(t *testing.T) {
 		{"rule main = x:(n+ / w) $$ => $x.([]Num)\n" + castRules, "ab", "cannot cast node[[]_] to []Num"},
 		{"rule main = x:(n / w)? $$ => $x.(*Num)\n" + castRules, "", "null"},
 		{"rule main = x:(pair / w) $$ => $x.(P).N\n" + castRules, "1=", `"type":"Num","fields":{"Text":"1"}`},
+		{"rule main = \"\\n\" r\nrule r = x:(n / w) $$ => $x.(Num)\n" + castRules, "\nab", "cannot cast node[[]_] to Num at input position 1 (line 2, column 1); cast at grammar position 2:29"},
 		{"rule main = x:(n / w) ({$x.(Num) == $x} \"!\" / \"?\") $$\n" + castRules, "a?", `"value":"?"`},
 	} {
 		program := compile(t, tc.src)
@@ -161,6 +164,7 @@ func TestCastSyntax(t *testing.T) {
 func TestCastGeneratedGoParity(t *testing.T) {
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	testGeneratedParsersCorpus(t, goBin, castCases(), GenOptions{})
+	testGeneratedParsersCorpus(t, goBin, castCases(), GenOptions{SourceInfo: true})
 	testGeneratedTypesCorpus(t, goBin, castCases(), GenOptions{convertTypes: true})
 }
 
@@ -170,4 +174,5 @@ func TestCastGeneratedTypeScriptParity(t *testing.T) {
 		t.Skip("node not found")
 	}
 	testGeneratedTSParsersCorpus(t, node, castCases(), GenOptions{})
+	testGeneratedTSParsersCorpus(t, node, castCases(), GenOptions{SourceInfo: true})
 }

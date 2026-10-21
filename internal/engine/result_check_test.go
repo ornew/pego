@@ -5,7 +5,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strings"
 	"testing"
 
@@ -14,12 +13,12 @@ import (
 )
 
 // resultCheckGrammar declares the rules rA to rE with the type rt and passes them the dynamically
-// typed values of fieldCheckValues: input "<value><route>" reaches rA (route "."), whose action
-// forwards the value; rB (","), which has no action; the Operators Rule operand lines rC (":",
-// no action) and rD ("+", an action); rE, which forwards a scalar variable (input "<i|s|b>="); and,
-// through a predicate that reads the value, rA and rB ("!" and "~"). S gives the type typ a
-// field, for the expected messages; W wraps the result in a field of type rt, so that generated
-// parsers use the typed runtime when rt is representable.
+// typed values of fieldCheckValues, which each rule casts to typ: input "<value><route>" reaches
+// rA (route "."), whose action forwards the value; rB (","), which does so with a second capture;
+// the Operators Rule operand lines rC (":") and rD ("+"); rE, which forwards a scalar value (input
+// "<i|s|b>="); and, through a predicate that reads the value, rA and rB ("!" and "~"). S gives the
+// type typ a field, for the expected messages; W wraps the result in a field of type rt, so that
+// generated parsers use the typed runtime when rt is representable.
 func resultCheckGrammar(typ, rt string) string {
 	return `type Int = { Text string }
 type Alias ~ Int
@@ -34,15 +33,15 @@ rule md W = &(. "+") v:rD "+" => W{V: $v}
 rule me W = &(. "=") v:rE => W{V: $v}
 rule mp W = &(. "!") v:rA {$v == nil || $v != nil} "!" => W{V: $v}
 rule mq W = &(. "~") v:rB {$v == nil || $v != nil} "~" => W{V: $v}
-rule rA ` + rt + ` = v:val => $v
-rule rB ` + rt + ` = val
+rule rA ` + rt + ` = v:val => $v.(` + typ + `)
+rule rB ` + rt + ` = v:val => $v.(` + typ + `)
 rule rC ` + rt + ` = operators {
-    operand val
+    operand v:val => $v.(` + typ + `)
 }
 rule rD ` + rt + ` = operators {
-    operand v:val => $v
+    operand v:val => $v.(` + typ + `)
 }
-rule rE ` + rt + ` = v:sc "=" => $v
+rule rE ` + rt + ` = v:sc "=" => $v.(` + typ + `)
 rule sc any = si / ss / sb
 rule si = "i" => 1
 rule ss = "s" => "s"
@@ -78,15 +77,15 @@ rule md W = &(. "+") v:rD "+" => W{V: $v}
 rule me W = &(. "=") v:rE => W{V: $v}
 rule mp W = &(. "!") v:rA {$v == nil || $v != nil} "!" => W{V: $v}
 rule mq W = &(. "~") v:rB {$v == nil || $v != nil} "~" => W{V: $v}
-rule rA ` + rt + ` = v:val => $v
-rule rB ` + rt + ` = val
+rule rA ` + rt + ` = v:val => $v.(` + typ + `)
+rule rB ` + rt + ` = v:val => $v.(` + typ + `)
 rule rC ` + rt + ` = operators {
-    operand val
+    operand v:val => $v.(` + typ + `)
 }
 rule rD ` + rt + ` = operators {
-    operand v:val => $v
+    operand v:val => $v.(` + typ + `)
 }
-rule rE ` + rt + ` = v:sc "=" => $v
+rule rE ` + rt + ` = v:sc "=" => $v.(` + typ + `)
 rule sc any = si / ss / sb
 rule si = "i" => 1
 rule ss = "s" => "s"
@@ -134,24 +133,9 @@ func resultCheckTypesOf(fields map[string]string) []string {
 	return types
 }
 
-// resultChecked reports whether the result of the rule an input's route reaches is checked: an
-// actionless rule with a terminal type converts its value instead.
-func resultChecked(prog *Program, route byte) bool {
-	if prog.checks == nil {
-		return false
-	}
-	var key any = prog.byName[resultCheckRoutes[route]].def
-	if route == ':' || route == '+' {
-		key = key.(*grammar.RuleDef).Expr.(*grammar.OperatorsRule).Operands[0]
-	}
-	_, ok := prog.checks.results[key]
-	return ok
-}
-
-// TestRuleResultChecks checks that a rule result not statically known to fit the rule's declared
-// type is checked when the rule finishes it, on every backend, in every program form, with and
-// without type checking, and that the values it accepts give the same results as when the rules
-// are declared any.
+// TestRuleResultChecks checks that a cast of a rule result to the rule's declared type accepts the
+// values that fit, on every backend, in every program form, with and without type checking, and
+// that the values it accepts give the same results as when the rules are declared any.
 func TestRuleResultChecks(t *testing.T) {
 	// The terminal model is the same grammar in the retired terminal type syntax, which
 	// syntax.ParseLegacy reads as the text structs it means: it accepts the same values.
@@ -232,7 +216,7 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 					{"limited loaded closure", loaded, ParseOptions{Backend: Closure, WorkLimits: limits}},
 					{"bare bytecode", loadedBare, ParseOptions{Backend: Bytecode}},
 				}
-				// Without type checking, every result is checked, with the same outcome.
+				// Without type checking, the casts give the same outcome.
 				runs = append(runs, []struct {
 					name string
 					prog *Program
@@ -270,7 +254,7 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 				// predicate routes it checks their results as parsing does. Elsewhere it may skip the
 				// values, and with them the checks; the other rules never check.
 				rec := resultWith(checked, in, ParseOptions{Recognize: true})
-				valueErr := strings.Contains(want, "in result of rule") || strings.Contains(want, "error: action in")
+				valueErr := strings.Contains(want, "cannot cast") || strings.Contains(want, "error: action in")
 				switch {
 				case in[0] == '?' && valueErr && strings.Contains(rec, "syntax error"):
 					// The recognizer skips the recovered value, and with it the check; the error
@@ -287,14 +271,10 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 					t.Errorf("%q recognized: %s", in, rec)
 				}
 				name := fieldCheckValueName(value)
-				msg := fmt.Sprintf("cannot use %s as %s in result of rule %s", name, declared, rule)
+				msg := fmt.Sprintf("action in %s: cannot cast %s to %s", rule, name, declared)
 				switch {
-				case !resultChecked(checked, in[1]):
-					if strings.Contains(want, "in result of rule") {
-						t.Errorf("%q (%s) checked: %s", in, value, want)
-					}
 				case accepted:
-					if strings.Contains(want, "in result of rule") {
+					if strings.Contains(want, "cannot cast") {
 						t.Errorf("%q (%s) rejected: %s", in, value, want)
 					}
 					got := want
@@ -313,47 +293,49 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 	}
 }
 
-// TestRuleResultChecksAreSelective checks that only results not statically known to fit are
-// checked, that an actionless rule's value is checked like an action's, and that compiled files
-// and generated parsers keep the decisions.
+// TestRuleResultChecksAreSelective checks that a result is never checked when it runs: a result
+// not statically known to fit the rule's declared type is rejected when the grammar is compiled,
+// whether or not the rule has an action, and a cast is the only check, which compiled files and
+// generated parsers keep.
 func TestRuleResultChecksAreSelective(t *testing.T) {
-	src := `type Int = { Text string }
+	const decls = `type Int = { Text string }
 type S = { F Int }
 type O = { X Int }
-rule main = s:static d:dynamic p:pass o:ops => S{F: $d}
 rule static Int = "s" => Int{Text: "s"}
-rule dynamic Int = v:val => $v
-rule pass node[_] = val
+rule val any = "v" => Int{Text: "v"}
+`
+	for _, tc := range []struct{ name, rules, want string }{
+		{"an action", "rule main = s:static d:dynamic => S{F: $d}\nrule dynamic Int = v:val => $v\n",
+			"cannot use any as Int in result of rule dynamic: the type of the value is not known; convert it with a cast, as in value.(Int)"},
+		{"no action", "rule main = s:static d:dynamic => S{F: $d}\nrule dynamic Int = val\n",
+			"cannot use any as Int in result of rule dynamic"},
+		{"a node type", "rule main = s:static p:pass => S{F: Int{Text: \"\"}}\nrule pass node[_] = val\n",
+			"cannot use any as node[_] in result of rule pass"},
+		{"an Operators Rule operand", "rule main = s:static o:ops => S{F: Int{Text: \"\"}}\nrule ops Int | O = operators {\n    operand val\n    operand \"o\" => Int{Text: \"o\"}\n    level { infix left \"+\" => Int{Text: \"+\"} }\n}\n",
+			"cannot use any as Int | O in result of rule ops"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := compileMessage(t, decls+tc.rules); !strings.Contains(got, tc.want) {
+				t.Fatalf("got %q; want an error containing %q", got, tc.want)
+			}
+		})
+	}
+	src := decls + `rule main = s:static d:dynamic p:pass o:ops => S{F: $d}
+rule dynamic Int = v:val => $v.(Int)
+rule pass node[_] = v:val => $v.(node[_])
 rule ops Int | O = operators {
-    operand val
+    operand v:val => $v.(Int | O)
     operand "o" => Int{Text: "o"}
     level { infix left "+" => Int{Text: "+"} }
 }
-rule val any = "v" => Int{Text: "v"}
 `
 	prog := compile(t, src)
-	var checked []string
-	for key, typ := range prog.checks.results {
-		var name string
-		switch key := key.(type) {
-		case *grammar.RuleDef:
-			name = key.Name
-		case *grammar.OperatorsRuleOperand:
-			name = "operand"
-			if key.Action == nil {
-				name += " without action"
-			}
-		default:
-			name = fmt.Sprintf("%T", key)
-		}
-		checked = append(checked, name+" "+typ.String())
+	d := prog.Module().Disassemble()
+	if n := strings.Count(d, "check="); n != 0 {
+		t.Fatalf("a result is checked when it runs:\n%s", d)
 	}
-	sort.Strings(checked)
-	if got := strings.Join(checked, ", "); got != `dynamic Int, operand without action Int | O, pass node[_]` {
-		t.Fatalf("checked results: %s", got)
-	}
-	if d := prog.Module().Disassemble(); strings.Count(d, "check=") != 3 {
-		t.Fatalf("disassembly:\n%s", d)
+	if n := strings.Count(d, "ECAST"); n != 3 {
+		t.Fatalf("disassembly has %d casts, want 3:\n%s", n, d)
 	}
 	data, err := prog.MarshalBinary("main")
 	if err != nil {
@@ -362,9 +344,6 @@ rule val any = "v" => Int{Text: "v"}
 	loaded, _, err := LoadProgram(data, Options{})
 	if err != nil {
 		t.Fatal(err)
-	}
-	if n := len(loaded.checks.results); n != 3 {
-		t.Fatalf("loaded %d checked results", n)
 	}
 	for _, in := range []string{"svvv", "svvo+o", "svvv+o"} {
 		want := resultWith(prog, in, ParseOptions{})
@@ -385,8 +364,11 @@ rule val any = "v" => Int{Text: "v"}
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n := strings.Count(string(code), "p.CheckResult("); n != 3 {
+	if n := strings.Count(string(code), "CheckResult("); n != 0 {
 		t.Fatalf("generated %d result checks", n)
+	}
+	if n := strings.Count(string(code), "c.Cast("); n != 3 {
+		t.Fatalf("generated %d casts, want 3", n)
 	}
 }
 
@@ -399,17 +381,17 @@ rule val any = "v" => Int{Text: "v"}
 const operatorResultCheckGrammar = `type Int = { Text string }
 type W = { V []Int }
 rule main W = ml / mr / mf / me
-rule mf W = "%" v:val ("%" #recover(skip="%")) => W{V: $v}
+rule mf W = "%" v:val ("%" #recover(skip="%")) => W{V: $v.([]Int)}
 rule mr W = "@" v:rr => W{V: $v}
-rule rr []Int = v:val ("@" #recover(skip="@")) => $v
+rule rr []Int = v:val ("@" #recover(skip="@")) => $v.([]Int)
 rule ml W = "<" v:lr => W{V: $v}
 rule me W = v:e => W{V: $v}
-rule lr []Int = (v:lr "^" / v:val "#") => $v
+rule lr []Int = (v:lr "^" / v:val "#") => $v.([]Int)
 rule e []Int = operators {
     operand "o" => []Int{Int{Text: "o"}}
-    level { infix left "+" v:val => $v }
-    level { prefix "!" v:val => $v }
-    level { postfix v:val "^" => $v }
+    level { infix left "+" v:val => $v.([]Int) }
+    level { prefix "!" v:val => $v.([]Int) }
+    level { postfix v:val "^" => $v.([]Int) }
 }
 rule val any = vm / vt / vl / vz
 rule vm = "m"
@@ -447,7 +429,7 @@ func TestOperatorResultChecks(t *testing.T) {
 	for _, in := range operatorResultCheckInputs {
 		want := resultWith(prog, in, ParseOptions{})
 		rejected := !strings.Contains(in, "l")
-		if got := strings.Contains(want, "cannot use "); got != rejected {
+		if got := strings.Contains(want, "cannot cast "); got != rejected {
 			t.Errorf("%q: %s", in, want)
 		}
 		limits := WorkLimits{MaxSteps: 1 << 30}
@@ -563,7 +545,7 @@ func TestGeneratedCheckTypeName(t *testing.T) {
 	src := `type Int = { Text string }
 type FieldType = { Text string }
 type S = { F Int }
-rule main = v:val f:ft => S{F: $v}
+rule main = v:val f:ft => S{F: $v.(Int)}
 rule ft FieldType = "f" => FieldType{Text: "f"}
 rule val any = "v" => Int{Text: "v"}
 `

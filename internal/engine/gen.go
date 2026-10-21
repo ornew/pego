@@ -375,47 +375,6 @@ func (opts GenOptions) validateDefaultValue() error {
 	return nil
 }
 
-// checkedField wraps the code of a constructed field's value in its run-time check when the
-// value is not statically known to fit the field's declared type (Program.fieldCheckType).
-func (g *generator) checkedField(spec *grammar.TypeDef, typ string, fi *grammar.FieldInit, code string) string {
-	ft := g.prog.fieldCheckType(spec, fi)
-	if ft == nil {
-		return code
-	}
-	v := g.fieldTypeVar(fi, ft, func(v string, t *fieldType) string { return fmt.Sprintf("var %s = %s\n", v, goFieldType(t)) })
-	return fmt.Sprintf("c.CheckField(%s, %s, %q, %q)", code, v, fi.Name, typ)
-}
-
-// resultCheck returns the call that checks the value v of rule r, or of its Operators Rule line key,
-// against the rule's declared type, or "" if the value needs no check (Program.resultCheckType).
-func (g *generator) resultCheck(r *rule, key any, v string) string {
-	if r.novalue {
-		return ""
-	}
-	ft := g.prog.resultCheckType(key, r.def)
-	if ft == nil {
-		return ""
-	}
-	t := g.fieldTypeVar(key, ft, func(v string, t *fieldType) string { return fmt.Sprintf("var %s = %s\n", v, goFieldType(t)) })
-	if g.table == "trules" {
-		return fmt.Sprintf("p.TCheckResult(%s, %s, %q)", v, t, r.name)
-	}
-	return fmt.Sprintf("p.CheckResult(%s, %s, %q)", v, t, r.name)
-}
-
-// resultCheckFunc returns the function that checks the values of rule r, or of its Operators Rule
-// line key (resultCheck), or "" if they need no check.
-func (g *generator) resultCheckFunc(r *rule, key any) string {
-	check := g.resultCheck(r, key, "v")
-	if check == "" {
-		return ""
-	}
-	if g.table == "trules" {
-		return "func(p *TParser, v any) { " + check + " }"
-	}
-	return "func(p *Parser, v *Node) { " + check + " }"
-}
-
 // fieldTypeVar returns the variable holding check type ft of key, declaring it with decl the
 // first time.
 func (g *generator) fieldTypeVar(key any, ft ty, decl func(v string, t *fieldType) string) string {
@@ -715,9 +674,6 @@ func (g *generator) rules() {
 			fmt.Fprintf(init, "\t%s[%d].Action = func(c *%s) any { return %s }\n", g.table, r.id, g.ctxType(), g.term(r.action, scopes[r], nil))
 			g.proj = nil
 		}
-		if check := g.resultCheckFunc(r, r.def); check != "" {
-			fmt.Fprintf(init, "\t%s[%d].%s = %s\n", g.table, r.id, g.pick("Check", "TCheck"), check)
-		}
 		if g.table == "trules" {
 			g.typedCall(r, bodies[r], scopes[r], nil)
 		} else if r.plain {
@@ -860,9 +816,6 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 				fmt.Fprintf(m, "\t\tv = p.AttachCaptures(v, trules[%d].Scope, %s.Vals, start, p.Pos)\n", r.id, frame)
 			}
 			m.WriteString("\t\tif n := AsTval(v); n != nil {\n\t\t\tn.TSetFresh(false)\n\t\t}\n")
-		}
-		if check := g.resultCheck(r, r.def, "v"); check != "" {
-			fmt.Fprintf(m, "\t\t%s\n", check)
 		}
 		if conv := g.typedResultConversion(r, "v", body); conv != "" {
 			fmt.Fprintf(m, "\t\t%s\n", conv)
@@ -1563,11 +1516,7 @@ func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, opera
 		act = fmt.Sprintf("func(c *%s) any { return %s }", g.ctxType(), g.term(action, s, locals))
 		g.final = nil
 	}
-	check := ""
-	if f := g.resultCheckFunc(g.cur, key); f != "" {
-		check = ", Check: " + f
-	}
-	return fmt.Sprintf("&%s{Scope: %s, M: %s, Action: %s, Value: %s%s}", g.pick("OperatorsRuleLine", "TOperatorsRuleLine"), goStrings(s.names), m, act, shaperLit(e), check)
+	return fmt.Sprintf("&%s{Scope: %s, M: %s, Action: %s, Value: %s}", g.pick("OperatorsRuleLine", "TOperatorsRuleLine"), goStrings(s.names), m, act, shaperLit(e))
 }
 
 // term converts a value expression into a Go expression of type any. locals maps names, such as lambda
@@ -1608,10 +1557,6 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 			// A node type constructor converts its value (see evalCtx.convert).
 			x := g.term(t.Args[0], s, locals)
 			n, _ := g.prog.nodeTypeOf(t.Type) // the type's own name, also for an alias of it
-			if ft := g.prog.convertCheckType(t); ft != nil {
-				check := g.fieldTypeVar(t, ft, func(v string, t *fieldType) string { return fmt.Sprintf("var %s = %s\n", v, goFieldType(t)) })
-				x = fmt.Sprintf("c.convertCheck(%s, %s, %q)", x, check, n.name)
-			}
 			if g.table == "trules" {
 				// The typed runtime names the type by its registered index.
 				return fmt.Sprintf("c.Convert(%s, %s)", g.nodeTypeID(n.name), x)
@@ -1630,7 +1575,7 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 			for _, given := range t.Fields {
 				v := g.name("f_")
 				vars[given.Name] = v
-				fmt.Fprintf(&b, "%s := %s; ", v, g.checkedField(spec, name, given, g.term(given.Value, s, locals)))
+				fmt.Fprintf(&b, "%s := %s; ", v, g.term(given.Value, s, locals))
 			}
 			args := []string{"c", strconv.FormatBool(grammar.Term(t) == g.final)}
 			for _, f := range defFields(spec) {
@@ -1645,7 +1590,7 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 		}
 		args := []string{strconv.Quote(name)}
 		for _, f := range t.Fields {
-			args = append(args, strconv.Quote(f.Name), g.checkedField(spec, name, f, g.term(f.Value, s, locals)))
+			args = append(args, strconv.Quote(f.Name), g.term(f.Value, s, locals))
 		}
 		return "c.NewStruct(" + strings.Join(args, ", ") + ")"
 	case *grammar.ListConstructor:
@@ -1735,7 +1680,8 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 			return x
 		}
 		v := g.fieldTypeVar(t, ft, func(v string, t *fieldType) string { return fmt.Sprintf("var %s = %s\n", v, goFieldType(t)) })
-		return fmt.Sprintf("c.Cast(%s, %s)", x, v)
+		line, col := g.prog.castPos(t)
+		return fmt.Sprintf("c.Cast(%s, %s, %d, %d)", x, v, line, col)
 	case *grammar.Unary:
 		if g.goWorkControls {
 			return fmt.Sprintf("c.Unary(%q, %s)", t.Op, g.term(t.X, s, locals))

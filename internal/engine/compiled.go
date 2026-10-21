@@ -33,14 +33,14 @@ const (
 	// isaVersion is the instruction set of the value model, the only one supported. Earlier
 	// versions built the previous syntax trees, so their files are not loaded and need to be
 	// compiled again.
-	isaVersion = 23
+	isaVersion = 24
 	maxDepth   = 10000
 )
 
 // unsupportedISA is the error for a module of instruction set isa.
 func unsupportedISA(isa int) error {
 	if isa < isaVersion {
-		return fmt.Errorf("unsupported instruction set version %d: the file was compiled for earlier syntax trees; compile the grammar again", isa)
+		return fmt.Errorf("unsupported instruction set version %d: the file was compiled by an older pego; compile the grammar again", isa)
 	}
 	return fmt.Errorf("unsupported instruction set version %d", isa)
 }
@@ -244,9 +244,6 @@ func (w *encoder) finish(out *bytes.Buffer) {
 }
 
 // statements writes the statements (type and rule definitions) and the static analysis results.
-// Each rule definition ends with the run-time checks of its values (checkInfo): the numbers of its
-// checked constructed fields (ruleFieldInits), of its checked results (ruleResults) and of its
-// checked node type conversions (ruleConversions).
 func (w *encoder) statements(prog *Program) {
 	w.uint(len(prog.Grammar.File.Decls))
 	ri := 0
@@ -273,35 +270,6 @@ func (w *encoder) statements(prog *Program) {
 			w.bool(r.twinOK)
 			w.expr(st.Expr)
 			w.optTerm(st.Action)
-			w.checks(prog, st)
-		}
-	}
-}
-
-// checks writes the run-time checks of the values of rule rd.
-func (w *encoder) checks(prog *Program, rd *grammar.RuleDef) {
-	var fields, results []int
-	for i, f := range ruleFieldInits(rd) {
-		_, spec := prog.structType(f.new.Type)
-		if prog.fieldCheckType(spec, f.FieldInit) != nil {
-			fields = append(fields, i)
-		}
-	}
-	for i, key := range ruleResults(rd) {
-		if prog.resultCheckType(key, rd) != nil {
-			results = append(results, i)
-		}
-	}
-	var converts []int
-	for i, n := range ruleConversions(rd) {
-		if prog.convertCheckType(n) != nil {
-			converts = append(converts, i)
-		}
-	}
-	for _, list := range [][]int{fields, results, converts} {
-		w.uint(len(list))
-		for _, i := range list {
-			w.uint(i)
 		}
 	}
 }
@@ -591,6 +559,9 @@ func (w *encoder) term(t grammar.Term) {
 		w.byte(tCast)
 		w.term(t.X)
 		w.typeExpr(t.Type)
+		pos := t.Diagnostic()
+		w.int(pos.Line)
+		w.int(pos.Col)
 	case *grammar.Assign:
 		w.byte(tAssign)
 		w.str(t.Name)
@@ -744,10 +715,9 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	}
 	var prog *Program
 	if r.bool() {
-		g, flags, checks := r.statements(pkg)
+		g, flags := r.statements(pkg)
 		if r.err == nil {
 			o := opts
-			o.checks = checks
 			o.SourceInfo = o.SourceInfo || m.SourceInfo
 			o.DefaultValue = o.DefaultValue || m.DefaultValue
 			p, err := build(g, o, flags)
@@ -796,10 +766,9 @@ func (r *decoder) strings() {
 	}
 }
 
-func (r *decoder) statements(pkg string) (*grammar.Grammar, []ruleFlags, *checkInfo) {
+func (r *decoder) statements(pkg string) (*grammar.Grammar, []ruleFlags) {
 	g := &grammar.Grammar{File: grammar.File{Pkg: grammar.Pkg{Name: pkg}}}
 	flags := []ruleFlags{}
-	checks := &checkInfo{fields: map[*grammar.FieldInit]ty{}, results: map[any]ty{}, converts: map[*grammar.New]ty{}}
 	n := r.count()
 	for i := 0; i < n && r.err == nil; i++ {
 		switch k := r.byte(); k {
@@ -822,48 +791,12 @@ func (r *decoder) statements(pkg string) (*grammar.Grammar, []ruleFlags, *checkI
 			flags = append(flags, f)
 			rd.Expr = r.expr()
 			rd.Action = r.optTerm()
-			r.checks(rd, checks)
 			g.File.Decls = append(g.File.Decls, rd)
 		default:
 			r.fail("invalid statement kind %d", k)
 		}
 	}
-	if checks.empty() {
-		checks = nil
-	}
-	return g, flags, checks
-}
-
-// checks reads the run-time checks of the values of rule rd (see encoder.checks) into ci. Their
-// types are the declared ones, resolved when the program is built.
-func (r *decoder) checks(rd *grammar.RuleDef, ci *checkInfo) {
-	fields := ruleFieldInits(rd)
-	for _, i := range r.checkIndices(rd, len(fields)) {
-		ci.fields[fields[i].FieldInit] = nil
-	}
-	results := ruleResults(rd)
-	for _, i := range r.checkIndices(rd, len(results)) {
-		ci.results[results[i]] = nil
-	}
-	converts := ruleConversions(rd)
-	for _, i := range r.checkIndices(rd, len(converts)) {
-		ci.converts[converts[i]] = nil
-	}
-}
-
-// checkIndices reads a count and that many increasing indices below n.
-func (r *decoder) checkIndices(rd *grammar.RuleDef, n int) []int {
-	count := r.count()
-	var list []int
-	for j := 0; j < count && r.err == nil; j++ {
-		i := r.uint()
-		if i >= n || len(list) > 0 && i <= list[len(list)-1] {
-			r.fail("invalid check %d of rule %s", i, rd.Name)
-			return nil
-		}
-		list = append(list, i)
-	}
-	return list
+	return g, flags
 }
 
 // typeDecl reads the type declaration of the given name.
@@ -1117,7 +1050,13 @@ func (r *decoder) term() grammar.Term {
 		return &grammar.Assign{Name: name, Value: r.term()}
 	case tCast:
 		x := r.term()
-		return &grammar.Cast{X: x, Type: r.typeExpr()}
+		c := &grammar.Cast{X: x, Type: r.typeExpr()}
+		line, col := r.int32(), r.int32()
+		if r.err == nil && (line < 0 || col < 0) {
+			r.fail("invalid cast position %d:%d", line, col)
+		}
+		c.Pos = grammar.Pos{Line: int(line), Col: int(col)}
+		return c
 	default:
 		r.fail("invalid term kind %d", k)
 		return &grammar.NilLit{}

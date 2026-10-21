@@ -137,7 +137,7 @@ func (c *bcompiler) compile() {
 	// Rule table (body positions are filled in later)
 	all := append(append([]*rule(nil), c.prog.rules...), c.prog.twins...)
 	for _, r := range all {
-		ri := RuleInfo{Name: int(c.str(r.name)), Entry: -1, Action: -1, NodeType: -1, OperatorsRule: -1, Check: -1,
+		ri := RuleInfo{Name: int(c.str(r.name)), Entry: -1, Action: -1, NodeType: -1, OperatorsRule: -1,
 			BodyIsSeq: r.bodyIsSeq, Memo: r.memo, Leader: r.leader, Positional: r.positional, NoValue: r.novalue, Transient: r.transient, Vars: c.strs2(r.vars)}
 		if r.nodeType != "" {
 			ri.NodeType = int(c.str(r.nodeType))
@@ -169,9 +169,6 @@ func (c *bcompiler) compile() {
 		ri.Scope = c.strs2(s.names)
 		if r.action != nil {
 			ri.Action = c.expr(r.action, s, nil, true)
-		}
-		if t := c.prog.resultCheckType(r.def, r.def); t != nil && !r.novalue {
-			ri.Check = int(c.str(newFieldType(t).text))
 		}
 	}
 }
@@ -624,7 +621,7 @@ func (c *bcompiler) operatorsRule(e *grammar.OperatorsRule) int {
 
 func (c *bcompiler) line(e grammar.Expr, action grammar.Term, locals []string, key any) LineInfo {
 	s := newScope()
-	li := LineInfo{Entry: int(c.here()), Action: -1, Check: -1}
+	li := LineInfo{Entry: int(c.here()), Action: -1}
 	switch build := !c.cur.novalue && !leanLine(action, locals); {
 	case !build:
 		c.void(e, s)
@@ -638,9 +635,6 @@ func (c *bcompiler) line(e grammar.Expr, action grammar.Term, locals []string, k
 	li.Scope = c.strs2(s.names)
 	if action != nil && !c.cur.novalue {
 		li.Action = c.expr(action, s, locals, locals == nil)
-	}
-	if t := c.prog.resultCheckType(key, c.cur.def); t != nil && !c.cur.novalue {
-		li.Check = int(c.str(newFieldType(t).text))
 	}
 	return li
 }
@@ -749,20 +743,13 @@ func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 		if len(t.Args) != 0 {
 			n, _ := c.prog.nodeTypeOf(t.Type)
 			c.term(t.Args[0], s, locals)
-			check := int32(-1)
-			if ct := c.prog.convertCheckType(t); ct != nil {
-				check = c.str(newFieldType(ct).text)
-			}
-			c.eemit(ENode, c.str(n.name), check)
+			c.eemit(ENode, c.str(n.name), 0)
 			return
 		}
-		name, spec := c.prog.structType(t.Type)
+		name, _ := c.prog.structType(t.Type)
 		names := make([]string, len(t.Fields))
 		for i, f := range t.Fields {
 			c.term(f.Value, s, locals)
-			if ft := c.prog.fieldCheckType(spec, f); ft != nil {
-				c.eemit3(ECheck, c.str(newFieldType(ft).text), c.str(f.Name), c.str(name))
-			}
 			names[i] = f.Name
 		}
 		c.m.FieldLists = append(c.m.FieldLists, c.strs2(names))
@@ -839,7 +826,8 @@ func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 	case *grammar.Cast:
 		c.term(t.X, s, locals)
 		if ft := c.prog.castType(t); ft != nil {
-			c.eemit(ECast, c.str(ft.text), 0)
+			line, col := c.prog.castPos(t)
+			c.eemit3(ECast, c.str(ft.text), int32(line), int32(col))
 		}
 	}
 }

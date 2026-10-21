@@ -142,17 +142,16 @@ Conversion happens only in the two forms above. A field declared with a named no
 `[]N{...}`, accept only values assignable to `N`, so a `node[string]` value there is an error; write `N{value}`
 instead.
 
-A mismatch aborts a Value Action with an error such as
-`cannot use node[string] as Ident in field Name of Decl`; inside a Predicate Action it
-makes the predicate fail. Each examined list element counts as one execution step for
-[work limits](parsing.md#cancellation-and-work-limits). Fields declared `_` or `any` and values whose
-Type the checker proved assignable are not checked, so constructors in fully
-typed grammars cost nothing extra.
+A mismatch is a compile-time error such as
+`cannot use node[string] as Ident in field Name of Decl`. A value whose Type the checker
+does not know, such as a rule value of Type `any`, is rejected too, with a hint to
+convert it explicitly: `cannot use any as Ident in field Name of Decl: the type of the value is
+not known; convert it with a cast, as in value.(Ident)`. A [cast](#casts) is the check that runs:
+when it fails, that is an evaluation error. A constructor itself checks nothing when it runs, so
+constructors cost nothing extra. Fields declared `_` or `any` accept every value.
 
-`NoTypeCheck` deliberately skips assignability checks for typed-list elements,
-and instead checks every struct field whose declared
-Type is not `_` or `any` at run time as described above, and every rule value as
-described in [Types and Errors](#types-and-errors).
+`NoTypeCheck` deliberately skips these checks, and nothing else checks the fields of a
+constructor or the elements of a typed list when it runs.
 
 In the public source AST, a tuple literal is `TupleLit{Elems}`, and parentheses around
 one action expression are retained as `TermGroup{Term}`. The group is semantically transparent: it affects
@@ -210,10 +209,15 @@ lack `y` has an optional type.
 `T`, and it chains with field access, as in `$x.(Number).Value`. `T` is any
 Type, written as in a declaration; a union is written in the parentheses
 directly, as in `$x.(Number | String)`. A value that is not a `T` raises the
-runtime action error `cannot cast <value type> to <T>`, checked as a field of
-Type `T` checks a dynamically typed value (see
+runtime action error `cannot cast <value type> to <T> at input position <N> (line <L>, column <C>)`,
+checked as a field of Type `T` checks a dynamically typed value (see
 [Values and Constructors](#values-and-constructors)), with the same execution
-steps. A cast is a compile-time error unless the static type of `x` or one of
+steps. The position is where the rule that runs the action or predicate started matching (the
+position unit is the one used for positions); with source information
+([source information](nodes.md#source-information)) the message ends with `; cast at grammar position <line>:<column>`, the
+position of the cast in the grammar, as in `cannot cast int to string at input position 2 (line 2,
+column 1); cast at grammar position 3:29`. In a Predicate Action a failed cast makes the predicate
+fail instead. Every backend reports the same text. A cast is a compile-time error unless the static type of `x` or one of
 its alternatives is assignable to `T` or one of its alternatives, or the other
 way around, so `$x.(int)` on a capture of type `node[string]` is rejected while
 `$x.(node[string])` on a `node[_]` value and `$x.(Number)` on a `_` value are
@@ -406,21 +410,21 @@ action or builds the tuple node of its operands; it converts no operand value.
 
 A value that cannot be converted to `N` is a compile-time error, `rule r produces X, which cannot be converted to N`
 (for an operator of an Operators Rule, `operatorsRule r produces X, which cannot be converted to N`), when its
-type is known. Only under `NoTypeCheck` is an uncertain value checked at run time instead.
+type is known. A value whose type is not known well enough is rejected as well, with a hint to
+cast it first, as in `N{value.(node[string])}`. Under `NoTypeCheck` nothing is checked: a value
+that is not a node still fails the conversion with an evaluation error when it runs.
 
 A Value Action result statically known to be a function is a compile-time
 error.
 
 A rule value whose Type the checker does not know, such as an action result or
-a called rule's value of type `any`, is checked against the rule's declared Type
-when the rule produces it: after its action, or for a rule without an action,
-after its value is labeled. The value of each Operators Rule operand line, and
-of each operator line with an action, is checked when the line produces it.
-The check admits the values a field of that Type admits (see
-[Values and Constructors](#values-and-constructors)), with the same execution
-steps. A mismatch causes the parse to fail with an error such as
-`cannot use List as Expr in result of rule term`, including when the rule was
-called for a predicate's value. A runtime error while evaluating a Value Action—such as
+a called rule's value of type `any`, is a compile-time error when the rule declares
+a Type it does not fit: `cannot use any as Expr in result of rule term: the type of the
+value is not known; convert it with a cast, as in value.(Expr)`. This applies to the value
+of a rule with or without an action, of each Operators Rule operand line and of each operator
+line with an action. The cast is the check that runs (see [Casts](#casts)); it
+admits the values a field of that Type admits (see
+[Values and Constructors](#values-and-constructors)). A runtime error while evaluating a Value Action—such as
 division by zero,
 an out-of-range index, or access to a concrete node that lacks a field—
 causes the parse to fail. It is not a PEG syntax mismatch and is not backtracked

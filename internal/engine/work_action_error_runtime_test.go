@@ -36,7 +36,7 @@ rule dyn any = ds / di
 rule ds = "b" => "s"
 rule di = _ => 1`,
 			input:     "a",
-			wantError: "action in main: cannot cast int to " + longType,
+			wantError: "action in main: cannot cast int to " + longType + " at input position 0 (line 1, column 1); cast at grammar position 2:31",
 		},
 		{
 			name:  "discarded predicate error skips to fallback",

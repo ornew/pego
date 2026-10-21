@@ -1,7 +1,7 @@
 package runtime
 
-// FieldType is a declared struct field type that a constructor checks a dynamically typed value
-// against. Generated code declares one for each checked field.
+// FieldType is a type that a cast checks a dynamically typed value
+// against. Generated code declares one for each cast.
 //
 // FieldType is for generated parsers; not a stable API.
 type FieldType struct {
@@ -12,44 +12,25 @@ type FieldType struct {
 	Text string
 }
 
-// CheckField returns v if it fits t, the type of field field of struct typ, and raises an
-// evaluation error otherwise.
-func (c *ActCtx) CheckField(v any, t *FieldType, field, typ string) any {
+// Cast returns v if it fits t, the type of a cast, and raises an evaluation error otherwise. The
+// error names the input position where the action started and, when line is positive, the grammar
+// position of the cast.
+func (c *ActCtx) Cast(v any, t *FieldType, line, col int) any {
 	if !c.P.fieldConforms(t, v) {
-		c.P.evalErrorf("cannot use %s as %s in field %s of %s", typeName(v), t.Text, field, typ)
+		c.P.castFailed(typeName(v), t.Text, c.start, line, col)
 	}
 	return v
 }
 
-// convertCheck returns v if it fits t, the underlying type of the named node type typ that it is
-// converted to, and raises an evaluation error otherwise.
-func (c *ActCtx) convertCheck(v any, t *FieldType, typ string) any {
-	if !c.P.fieldConforms(t, v) {
-		c.P.evalErrorf("cannot convert %s to %s", typeName(UnboxValue(v)), typ)
+// castFailed raises the evaluation error of a failed cast of a value of type from to type to, at
+// input position pos and, when gline is positive, at grammar position gline:gcol.
+func (p *Parser) castFailed(from, to string, pos, gline, gcol int) {
+	e := p.MakeError(pos, nil)
+	if gline > 0 {
+		p.evalErrorf("cannot cast %s to %s at input position %d (line %d, column %d); cast at grammar position %d:%d", from, to, pos, e.Line, e.Col, gline, gcol)
 	}
-	return v
+	p.evalErrorf("cannot cast %s to %s at input position %d (line %d, column %d)", from, to, pos, e.Line, e.Col)
 }
-
-// Cast returns v if it fits t, the type of a cast, and raises an evaluation error otherwise.
-func (c *ActCtx) Cast(v any, t *FieldType) any {
-	if !c.P.fieldConforms(t, v) {
-		c.P.evalErrorf("cannot cast %s to %s", typeName(v), t.Text)
-	}
-	return v
-}
-
-// CheckResult fails the parse if v, a result of rule rule, does not fit t, the rule's declared
-// type.
-func (p *Parser) CheckResult(v *Node, t *FieldType, rule string) {
-	if u := UnboxNode(v); !p.fieldConforms(t, u) {
-		panic(fatal{resultError("cannot use " + typeName(u) + " as " + t.Text + " in result of rule " + rule)})
-	}
-}
-
-// resultError is the error of a result that does not fit its declared type.
-type resultError string
-
-func (e resultError) Error() string { return string(e) }
 
 // fieldConforms reports whether v is a value of type t in the value model, charging a step for
 // each list or tuple element it examines. node[T] is a node whose value is of type T (node[_] any
@@ -165,37 +146,12 @@ func (p *Parser) tupleConforms(ts []*FieldType, elems []*Node) bool {
 	return true
 }
 
-// CheckField returns v if it fits t, the type of field field of struct typ, and raises an
-// evaluation error otherwise.
-func (c *TActCtx) CheckField(v any, t *FieldType, field, typ string) any {
+// Cast is ActCtx.Cast for the values of the typed runtime.
+func (c *TActCtx) Cast(v any, t *FieldType, line, col int) any {
 	if !tfieldConforms(c.P.Parser, t, v) {
-		c.P.evalErrorf("cannot use %s as %s in field %s of %s", ttypeName(v), t.Text, field, typ)
+		c.P.Parser.castFailed(ttypeName(v), t.Text, c.Start, line, col)
 	}
 	return v
-}
-
-// convertCheck returns v if it fits t, the underlying type of the named node type typ that it is
-// converted to, and raises an evaluation error otherwise.
-func (c *TActCtx) convertCheck(v any, t *FieldType, typ string) any {
-	if !tfieldConforms(c.P.Parser, t, v) {
-		c.P.evalErrorf("cannot convert %s to %s", ttypeName(v), typ)
-	}
-	return v
-}
-
-// Cast returns v if it fits t, the type of a cast, and raises an evaluation error otherwise.
-func (c *TActCtx) Cast(v any, t *FieldType) any {
-	if !tfieldConforms(c.P.Parser, t, v) {
-		c.P.evalErrorf("cannot cast %s to %s", ttypeName(v), t.Text)
-	}
-	return v
-}
-
-// TCheckResult is CheckResult for the values of the typed runtime.
-func (p *TParser) TCheckResult(v any, t *FieldType, rule string) {
-	if !tfieldConforms(p.Parser, t, v) {
-		panic(fatal{resultError("cannot use " + ttypeName(v) + " as " + t.Text + " in result of rule " + rule)})
-	}
 }
 
 // tfieldConforms is fieldConforms for the values of the typed runtime.

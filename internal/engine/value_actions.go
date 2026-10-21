@@ -54,43 +54,90 @@ func (v *valueInference) resolve(t grammar.TypeExpr) ty {
 // uncertain reports whether a value of type t may be one the value types do not know yet (tyAny),
 // so that a typed location checks it at run time.
 func (v *valueInference) uncertain(t ty) bool {
-	return v.uncertainAt(t, 0)
+	return v.containsBasic(t, 0, false)
 }
 
-func (v *valueInference) uncertainAt(t ty, depth int) bool {
+// needsCast reports whether a value of type t, which is assignable to target, may still not fit it
+// because t is not known well enough where target is more specific: the value must be cast.
+func (v *valueInference) needsCast(t, target ty) bool {
+	return v.uncertain(t) && v.needsCastAt(t, target, 0)
+}
+
+func (v *valueInference) needsCastAt(t, target ty, depth int) bool {
+	if depth > 32 || !v.uncertain(t) {
+		return depth > 32
+	}
+	switch target := target.(type) {
+	case basicTy:
+		return target != tyAny && target != tyTop
+	case listTy:
+		if l, ok := v.expand(t).(listTy); ok {
+			return v.needsCastAt(l.elem, target.elem, depth+1)
+		}
+	case optTy:
+		if o, ok := v.expand(t).(optTy); ok {
+			return v.needsCastAt(o.elem, target.elem, depth+1)
+		}
+	}
+	return true
+}
+
+// narrowable reports whether a value of type t, which does not fit a location, may do so once it
+// is cast: its type is not known (tyAny) or not specific (tyTop) in some part.
+func (v *valueInference) narrowable(t ty) bool {
+	return v.containsBasic(t, 0, true)
+}
+
+// castHint is the hint appended to the message about a value of type t that does not fit a
+// location of type target, if a cast may make it fit, and "" otherwise.
+func (v *valueInference) castHint(t ty, target any) string {
+	if !v.narrowable(t) {
+		return ""
+	}
+	return fmt.Sprintf(": the type of the value is not known; convert it with a cast, as in value.(%v)", target)
+}
+
+// containsBasic reports whether t has a part of type tyAny, or also of tyTop if top is set.
+func (v *valueInference) containsBasic(t ty, depth int, top bool) bool {
 	if depth > 32 {
 		return true
 	}
 	switch t := v.expand(t).(type) {
 	case basicTy:
-		return t == tyAny
+		return t == tyAny || top && t == tyTop
 	case listTy:
-		return v.uncertainAt(t.elem, depth+1)
+		return v.containsBasic(t.elem, depth+1, top)
 	case optTy:
-		return v.uncertainAt(t.elem, depth+1)
+		return v.containsBasic(t.elem, depth+1, top)
 	case nodeTy:
-		return v.uncertainAt(t.value, depth+1)
+		return v.containsBasic(t.value, depth+1, top)
 	case unionTy:
-		return slices.ContainsFunc(t.alts, func(a ty) bool { return v.uncertainAt(a, depth+1) })
+		return slices.ContainsFunc(t.alts, func(a ty) bool { return v.containsBasic(a, depth+1, top) })
 	case tupleTy:
-		return slices.ContainsFunc(t.elems, func(a ty) bool { return v.uncertainAt(a, depth+1) })
+		return slices.ContainsFunc(t.elems, func(a ty) bool { return v.containsBasic(a, depth+1, top) })
 	}
 	return false
 }
 
-// checkResult records that the value of type t that a rule or Operators Rule line (key) of rule
-// rd produces needs a run-time check against the rule's declared type.
+// checkResult rejects a value of type t that a rule or Operators Rule line (key) of rule rd
+// produces when t is not known well enough to prove it fits the rule's declared type: the value
+// must be converted explicitly.
 func (v *valueInference) checkResult(key any, rd *grammar.RuleDef, t ty) {
-	if v.checks == nil || v.quiet || rd.Type == nil || !v.uncertain(t) {
+	if rd.Type == nil || !v.uncertain(t) {
 		return
 	}
 	d := v.resolve(rd.Type)
 	if dn, ok := v.prog.convertsResult(key, rd); ok {
 		d = dn.underlying() // checked before it is converted
 	}
-	if newFieldType(d) != nil {
-		v.checks.results[key] = d
+	if newFieldType(d) == nil || !v.needsCast(t, d) {
+		return // every value fits
 	}
+	var pos grammar.Pos
+	if k, ok := key.(interface{ Diagnostic() grammar.Pos }); ok {
+		pos = k.Diagnostic()
+	}
+	v.errorf(pos, "cannot use %s as %s in result of rule %s: the type of the value is not known; convert it with a cast, as in value.(%s)", v.expand(t), d, rd.Name, d)
 }
 
 // declared checks the value t of the rule rd against its declared type, which is then the rule's
@@ -110,7 +157,7 @@ func (v *valueInference) declared(rd *grammar.RuleDef, t ty) ty {
 		return dn
 	}
 	if !v.assignable(t, d) {
-		v.errorf(rd.Diagnostic(), "rule %s produces %s, which is not assignable to %s", rd.Name, v.expand(t), d)
+		v.errorf(rd.Diagnostic(), "rule %s produces %s, which is not assignable to %s%s", rd.Name, v.expand(t), d, v.castHint(t, d))
 		return d
 	}
 	if _, ok := rd.Expr.(*grammar.OperatorsRule); !ok {
@@ -274,9 +321,9 @@ func (v *valueInference) convertTerm(t *grammar.New, n nodeTy, env *valueEnv) ty
 	}
 	x := args[0]
 	if !v.convertible(x, n) {
-		v.errorf(t.Diagnostic(), "cannot convert %s to %s", v.expand(x), n)
-	} else if v.checks != nil && !v.quiet && v.uncertain(x) {
-		v.checks.converts[t] = n.underlying()
+		v.errorf(t.Diagnostic(), "cannot convert %s to %s%s", v.expand(x), n, v.castHint(x, n.underlying()))
+	} else if v.needsCast(x, n.underlying()) {
+		v.errorf(t.Diagnostic(), "cannot convert %s to %s: the type of the value is not known; convert it with a cast first, as in %s{value.(%s)}", v.expand(x), n, t.Type, n.underlying())
 	}
 	return n
 }
@@ -447,11 +494,9 @@ func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
 				if ft := v.resolve(f.Type); ft == tyBottom {
 					// A field without values is reported where it is declared.
 				} else if !v.assignable(vt, ft) {
-					v.errorf(fi.Diagnostic(), "cannot use %s as %s in field %s of %s", v.expand(vt), ft, fi.Name, t.Type)
-				} else if v.checks != nil && !v.quiet && v.uncertain(vt) {
-					if newFieldType(ft) != nil {
-						v.checks.fields[fi] = ft
-					}
+					v.errorf(fi.Diagnostic(), "cannot use %s as %s in field %s of %s%s", v.expand(vt), ft, fi.Name, t.Type, v.castHint(vt, ft))
+				} else if newFieldType(ft) != nil && v.needsCast(vt, ft) {
+					v.errorf(fi.Diagnostic(), "cannot use %s as %s in field %s of %s: the type of the value is not known; convert it with a cast, as in value.(%s)", v.expand(vt), ft, fi.Name, t.Type, ft)
 				}
 			}
 		}
@@ -710,13 +755,13 @@ func (v *valueInference) member(x ty, m *grammar.Member) ty {
 // .Value), never a struct field: an access typed several times (in a lambda body) must read node
 // members every time.
 func (v *valueInference) noteMember(m *grammar.Member, nodeOnly bool) {
-	if v.checks == nil || v.quiet {
+	if v.nodeMembers == nil || v.quiet {
 		return
 	}
-	if prev, ok := v.checks.nodeMembers[m]; ok && !prev {
+	if prev, ok := v.nodeMembers[m]; ok && !prev {
 		return
 	}
-	v.checks.nodeMembers[m] = nodeOnly
+	v.nodeMembers[m] = nodeOnly
 }
 
 // captureAccess returns the type of x.$name: every argument of x must be a node that captures

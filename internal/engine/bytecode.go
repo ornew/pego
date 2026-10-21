@@ -38,7 +38,7 @@ type TypeInfo struct {
 	Name   int   // string table index
 	Fields []int // struct field names (string table indices)
 	// Node is, for a named node type, the underlying node type (string table index of its text,
-	// as ECHECK writes types), and -1 for a struct type (instruction set 16).
+	// as ECAST writes types), and -1 for a struct type (instruction set 16).
 	Node int
 }
 
@@ -84,9 +84,6 @@ type RuleInfo struct {
 	// Vars are the variables the rule or its callees read (string table indices, sorted by name).
 	// The rule's memo entries are keyed by their values at the call.
 	Vars []int
-	// Check is the declared type (string table index of its text) the rule's value is checked
-	// against at run time, or -1 (instruction set 9).
-	Check int
 }
 
 // OperatorsRuleInfo is an Operators Rule expression table.
@@ -103,9 +100,6 @@ type LineInfo struct {
 	Scope  []int
 	Action int // start of the expression code (-1 if none)
 	IsSeq  bool
-	// Check is the declared type (string table index of its text) the line's value is checked
-	// against at run time, or -1 (instruction set 9).
-	Check int
 }
 
 // OpInfo is an Operators Rule operator.
@@ -296,14 +290,13 @@ const (
 	EListEnd
 	// eRetired124 was ETERMINAL, which built a terminal of a declared type (ISA 5 to 13).
 	eRetired124
-	// ECHECK t, f, s: fail unless the top value fits type t, the declared type of field f of
-	// struct s; the value stays (ISA 9).
-	ECheck
+	// eRetired125 was ECHECK, which checked a constructed field value against its declared type
+	// (ISA 9 to 23).
+	eRetired125
 	// ECAST t: fail unless the top value fits type t, the type of a cast x.(T); the value stays
 	// (ISA 12).
 	ECast
-	// ENODE t, c: pop a node and push it converted to the named node type t. If c is not -1, fail
-	// unless the value fits type c, the underlying node type of t, first (ISA 16).
+	// ENODE t: pop a node and push it converted to the named node type t (B is 0).
 	ENode
 	// ETUPLE n: pop n values and push a tuple value of them, in order.
 	ETuple
@@ -337,7 +330,7 @@ var opNames = map[Op]string{
 	EAnd: "EAND", EOr: "EOR", EBoolChk: "EBOOLCHK", EFunc: "EFUNC", ECall: "ECALL", ERet: "ERET",
 	ETextChk: "ETEXTCHK", ETextEq: "ETEXTEQ", EListBegin: "ELISTBEGIN", EListPush: "ELISTPUSH",
 	EMapPush: "EMAPPUSH", EListEnd: "ELISTEND",
-	ECheck: "ECHECK", ECast: "ECAST", ENode: "ENODE", ETuple: "ETUPLE",
+	ECast: "ECAST", ENode: "ENODE", ETuple: "ETUPLE",
 }
 
 func (o Op) String() string {

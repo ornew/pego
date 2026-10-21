@@ -174,7 +174,9 @@ func TestOperatorsRuleNamedNodeTypeGenerated(t *testing.T) {
 	cases := operatorsNamedNodeCases()
 	t.Run("go", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, GenOptions{}) })
 	t.Run("go source info", func(t *testing.T) { testGeneratedParsersCorpus(t, goBin, cases, GenOptions{SourceInfo: true}) })
-	t.Run("typed go", func(t *testing.T) { testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true}, len(cases)) })
+	t.Run("typed go", func(t *testing.T) {
+		testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true}, len(cases))
+	})
 	t.Run("typescript", func(t *testing.T) {
 		node, err := exec.LookPath("node")
 		if err != nil {
@@ -226,16 +228,21 @@ func main() {
 `)
 }
 
-// Without type checking, an operator whose value does not fit the named node type fails the parse,
-// the tuple node of an operator without an action included, as the value of an ordinary rule does.
-// Generated parsers are always type checked, so they reject these grammars when they are generated.
+// An operator whose value does not fit the named node type is a compile error, the tuple node of
+// an operator without an action included, as the value of an ordinary rule is. Without type
+// checking, nothing checks the tuple node when the operator runs, and a value that cannot be
+// converted at all (an int) still fails the conversion. Generated parsers are always type checked,
+// so they reject these grammars when they are generated.
 func TestOperatorsRuleNamedNodeTypeRuntimeError(t *testing.T) {
 	const defs = "type Expr = node[string]\nrule num Expr = [0-9]+ #atomic\n"
-	for _, tc := range []struct{ src, want string }{
-		{"rule expr Expr = operators {\n operand num\n level { infix left \"+\" => 1 }\n}", "cannot use int as node[string] in result of rule expr"},
-		{"rule expr Expr = operators {\n operand num\n level { infix left \"+\" }\n}", "cannot use node[(_, _, _)] as node[string] in result of rule expr"},
-		{"rule expr Expr = operators {\n operand num\n level { prefix \"-\" }\n}", "cannot use node[(_, _)] as node[string] in result of rule expr"},
+	for _, tc := range []struct{ src, static, unchecked string }{
+		{"rule expr Expr = operators {\n operand num\n level { infix left \"+\" => 1 }\n}", "operatorsRule expr produces int, which cannot be converted to Expr", "cannot convert int to Expr in result of rule expr"},
+		{"rule expr Expr = operators {\n operand num\n level { infix left \"+\" }\n}", "operators of expr without an action produce a tuple node", ""},
+		{"rule expr Expr = operators {\n operand num\n level { prefix \"-\" }\n}", "operators of expr without an action produce a tuple node", ""},
 	} {
+		if got := compileMessage(t, defs+tc.src); !strings.Contains(got, tc.static) {
+			t.Errorf("%q: checked compilation: got %q, want an error containing %q", tc.src, got, tc.static)
+		}
 		prog := compileBare(t, defs+tc.src, Options{NoTypeCheck: true})
 		input := "1+2"
 		if strings.Contains(tc.src, "prefix") {
@@ -243,8 +250,11 @@ func TestOperatorsRuleNamedNodeTypeRuntimeError(t *testing.T) {
 		}
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			n, err := prog.ParseWith("expr", input, ParseOptions{Backend: backend})
-			if err == nil || !strings.Contains(err.Error(), tc.want) {
-				t.Errorf("%s %q: got %v (%s), want %q", backend, tc.src, err, operatorsNodeTypeNames(n), tc.want)
+			switch {
+			case tc.unchecked == "" && err != nil:
+				t.Errorf("%s %q: got %v, want no error", backend, tc.src, err)
+			case tc.unchecked != "" && (err == nil || !strings.Contains(err.Error(), tc.unchecked)):
+				t.Errorf("%s %q: got %v (%s), want %q", backend, tc.src, err, operatorsNodeTypeNames(n), tc.unchecked)
 			}
 		}
 		g, err := syntax.Parse(defs + tc.src)

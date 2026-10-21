@@ -74,18 +74,21 @@ the declared `[]T` Type. Nil is allowed only if `T` permits nil.
 The internal compiler option `NoTypeCheck` deliberately bypasses assignability
 checks. It does not change the rules for checked compilation.
 
-A struct field value whose Type is unknown (`any`, a variable, or a list with
-elements of unknown Type) is not reported. The checker records the field, and
-the constructor checks the value against the declared field Type at run time;
-see [Values and Constructors](actions.md#values-and-constructors). A value whose
-Type is known and assignable needs no run-time check. Without type checking,
-every field not declared `any` is checked at run time.
+A struct field value whose Type is unknown (`any`, or a list with elements of
+unknown Type) is reported when the field's Type is more specific:
+`cannot use any as Ident in field Name of Decl: the type of the value is not
+known; convert it with a cast, as in value.(Ident)`. The same holds for a value
+of Type `_`, which fits only `_`. A cast (see [Casts](actions.md#casts)) is the check
+that runs; see [Values and Constructors](actions.md#values-and-constructors). A value
+whose Type is known and assignable needs no check, and a constructor checks nothing when
+it runs. Without type checking, nothing checks a field.
 
 Likewise, a rule value whose Type is unknown, from an action, a called rule or
-an Operators Rule line, is not reported; the rule checks the value against its
-declared Type at run time (see [Types and Errors](actions.md#types-and-errors)).
-Without type checking, every rule value is checked against a declared Type other
-than `any`, including the tuple node of an operator without an action.
+an Operators Rule line, is reported when the rule declares a Type it does not fit:
+`cannot use any as Expr in result of rule term: the type of the value is not
+known; convert it with a cast, as in value.(Expr)` (see [Types and
+Errors](actions.md#types-and-errors)). In an Operators Rule with a declared Type, the captures
+`lhs` and `rhs` have that Type. Without type checking, nothing checks a rule value.
 
 Diagnostics print a type as written in a grammar: `node[string]` for a string
 node, `node[(node[string], node[string])]` for a tuple node of two string nodes,
@@ -98,15 +101,15 @@ and `error` for an error value.
 
 A named node type is printed by its name, as `Num`, and `cannot convert X to N` names both types.
 
-A run-time check tests a value as the value types describe it. `node[T]` takes
+A cast tests a value as the value types describe it. `node[T]` takes
 a node whose value `T` takes, so `node[string]` takes a string node,
 `node[(A, B)]` a tuple node of two elements of types `A` and `B`, and
 `node[[]A]` a list node of elements of type `A`; `node[_]` takes every node; a
 tuple Type takes a tuple value of as many elements; a list Type takes a list
 value, such as one an action builds, and not the node of a repetition, whose
 list is its `Value`; `[]_` and `[]any` take every list value; and an error
-value from recovery fits only a Type that admits `error`. Predicates are checked like actions, and a
-value that fails its check makes the predicate fail.
+value from recovery fits only a Type that admits `error`. A cast in a predicate that fails
+makes the predicate fail.
 
 The argument of `len` and `text` MUST be a string or a node (possibly `nil`);
 the list arguments of `foldl`, `foldr`, `map` and `concat` MUST be lists, and
@@ -172,5 +175,5 @@ to convert it explicitly: `x := $d.(int)`. The cast is an ordinary cast (see
 [Casts](actions.md#casts)); when it fails, that is an evaluation error of the binding, which
 makes the predicate fail. Nothing is checked when a binding runs. Without type checking,
 bindings are not checked at all, and a variable can then hold a value of another type
-than its declared one; a read in an expression reports the mismatch like any other
-evaluation error.
+than its declared one: a read of the variable returns that value, and an operation that
+rejects the value reports an evaluation error.

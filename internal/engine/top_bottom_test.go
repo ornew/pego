@@ -23,8 +23,8 @@ func topBottomCases() []genCase {
 		{"top compare", "type T = { A _ }\nrule main = x:(n / w) {T{A: $x}.A == $x} $$\n" + topBottomRules, []string{"1", "a"}},
 		// A struct is not a node, so the meet is node[string].
 		{"meet field", "type T = { A (Num | node[string] | int) & node[_] }\nrule main = x:([a-z]+ #atomic) $$ => T{A: $x}\n" + topBottomRules, []string{"a", "1"}},
-		{"top list", "type T = { A []_ }\ntype U = { F any }\nrule main = x:(n / w)+ $$ => T{A: U{F: $x}.F}\n" + topBottomRules, []string{"1", "1a"}},
-		{"top list mismatch", "type T = { A []_ | int }\ntype U = { F any }\nrule main = x:(n / w) $$ => T{A: U{F: $x}.F}\n" + topBottomRules, []string{"1", "a"}},
+		{"top list", "type T = { A []_ }\ntype U = { F any }\nrule main = x:(n / w)+ $$ => T{A: U{F: $x}.F.([]_)}\n" + topBottomRules, []string{"1", "1a"}},
+		{"top list mismatch", "type T = { A []_ | int }\ntype U = { F any }\nrule main = x:(n / w) $$ => T{A: U{F: $x}.F.([]_ | int)}\n" + topBottomRules, []string{"1", "a"}},
 		{"meet list", "type T = { A [](Num | node[string]) & []node[_] }\nrule main = xs:[a-z]+ $$ => T{A: $xs.Value}\n" + topBottomRules, []string{"ab", ""}},
 	}
 }
@@ -106,7 +106,7 @@ func TestTopBottomListCheck(t *testing.T) {
 		{"[]any", "[]any"},
 		{"*[]_ | int", "*([]_ | int)"},
 	} {
-		src := "type T = { A " + tc.field + " }\ntype U = { F any }\nrule main = x:\"a\" => T{A: U{F: \"s\"}.F}\nrule ok = x:\"a\"* => T{A: U{F: $x.Value}.F}\nrule rule []_ = x:\"a\"* => U{F: $x.Value}.F\nrule bad []_ = x:\"a\" => U{F: $x}.F"
+		src := "type T = { A " + tc.field + " }\ntype U = { F any }\nrule main = x:\"a\" => T{A: U{F: \"s\"}.F.(" + tc.field + ")}\nrule ok = x:\"a\"* => T{A: U{F: $x.Value}.F.(" + tc.field + ")}\nrule rule []_ = x:\"a\"* => U{F: $x.Value}.F.([]_)\nrule bad []_ = x:\"a\" => U{F: $x}.F.([]_)"
 		for _, opts := range []Options{{}, {NoTypeCheck: true}} {
 			program := compile(t, src, opts)
 			data, err := program.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
@@ -122,7 +122,7 @@ func TestTopBottomListCheck(t *testing.T) {
 					if p == loaded && backend == Closure {
 						continue // a module without the AST runs on the VM
 					}
-					if _, err := p.ParseWith("main", "a", ParseOptions{Backend: backend}); err == nil || !strings.Contains(err.Error(), "cannot use string as "+tc.want+" in field A of T") {
+					if _, err := p.ParseWith("main", "a", ParseOptions{Backend: backend}); err == nil || !strings.Contains(err.Error(), "cannot cast string to "+tc.want) {
 						t.Fatalf("%s %s: %v", tc.field, backend, err)
 					}
 					for _, start := range []string{"ok", "rule"} {
@@ -130,7 +130,7 @@ func TestTopBottomListCheck(t *testing.T) {
 							t.Fatalf("%s %s %s: %v", tc.field, start, backend, err)
 						}
 					}
-					if _, err := p.ParseWith("bad", "a", ParseOptions{Backend: backend}); err == nil || !strings.Contains(err.Error(), "cannot use node[string] as []_ in result of rule bad") {
+					if _, err := p.ParseWith("bad", "a", ParseOptions{Backend: backend}); err == nil || !strings.Contains(err.Error(), "cannot cast node[string] to []_") {
 						t.Fatalf("%s bad %s: %v", tc.field, backend, err)
 					}
 				}

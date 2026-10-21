@@ -23,13 +23,13 @@ type parser struct {
 	diagnostic     func(*SyntaxError) error
 	diagnosticTail streamDiagnosticTail
 
-	env   *env            // predicate variables
-	bound map[string]bool // names assigned anywhere in this parse (a lookup hint)
-	initEnv *env         // the initial environment of the variables (parser.seedVars), or nil
-	frame *frame          // current capture frame
-	trail []undo          // capture writes to undo on backtracking
-	cut   bool            // whether a cut has been passed in the current alternative
-	memo  *memoTable
+	env     *env            // predicate variables
+	bound   map[string]bool // names assigned anywhere in this parse (a lookup hint)
+	initEnv *env            // the initial environment of the variables (parser.seedVars), or nil
+	frame   *frame          // current capture frame
+	trail   []undo          // capture writes to undo on backtracking
+	cut     bool            // whether a cut has been passed in the current alternative
+	memo    *memoTable
 
 	// While silent is positive (inside a lookahead), expectations are not recorded.
 	silent   int
@@ -774,8 +774,7 @@ func (p *parser) invokeEnd(r *rule, st *invokeState, v *Node, ok bool) (*Node, b
 	return v, ok
 }
 
-// finish builds the rule's value from the value of the rule body, checks it against the rule's
-// declared type if needed, and converts it to the rule's named node type, if any. A value-free
+// finish builds the rule's value from the value of the rule body, and converts it to the rule's named node type, if any. A value-free
 // rule is never checked.
 func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 	if r.novalue {
@@ -783,9 +782,6 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 	}
 	if r.act != nil {
 		v = p.runAction(r, f, nil, start, p.pos)
-		if r.resultCheck != nil {
-			p.checkResult(r.resultCheck, v, r.name)
-		}
 		if r.nodeKinds != nil {
 			v = p.convertResult(r, v)
 		}
@@ -801,9 +797,6 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 			v.kind = r.kinds.named(v.kind, r.name)
 		}
 		v.fresh = false
-	}
-	if r.resultCheck != nil {
-		p.checkResult(r.resultCheck, v, r.name)
 	}
 	if r.nodeKinds != nil {
 		if owned && r.nodeKinds.convertOwned(v) {

@@ -1230,9 +1230,6 @@ func (d *dgen) finish(r *rule, s *dscope, body string) (start, ctx bool) {
 		d.line("%s = TFreshNode(%s)", owned, d.rd(body))
 	}
 	start, ctx = d.finishValue(r, s, body)
-	if check := d.g.resultCheck(r, r.def, "v"); check != "" && !d.bad {
-		d.line("%s", check)
-	}
 	if owned != "" {
 		owned = d.rd(owned)
 	}

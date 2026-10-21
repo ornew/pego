@@ -254,8 +254,7 @@ func (n *Node) BaseNode() *Node {
 	return &c
 }
 
-// Convert evaluates a node type constructor T{v}: it converts v to the named node type typ (after
-// convertCheck, where the value needs a check).
+// Convert evaluates a node type constructor T{v}: it converts v to the named node type typ.
 func (c *ActCtx) Convert(typ string, v any) any {
 	v = UnboxValue(v)
 	n, ok := c.P.g.NodeTypes[typ].convert(v)
@@ -862,8 +861,6 @@ type Rule struct {
 	Body   func(p *Parser, min int) (*Node, bool)
 	Action func(c *ActCtx) any
 	Value  Shaper // makes the rule's value from the value of its body, without an action
-	// Check checks the rule's value against its declared type (nil if it needs no check).
-	Check func(p *Parser, v *Node)
 	// NodeType, if not "", is the named node type the rule's value is converted to, whose kinds
 	// are nodeKinds.
 	NodeType  string
@@ -2550,13 +2547,9 @@ func (p *Parser) TooDeep() {
 	panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", p.MaxDepth)})
 }
 
-// Finish makes the rule's value from the value of its body, and checks it against the rule's
-// declared type if needed.
+// Finish makes the rule's value from the value of its body.
 func (p *Parser) Finish(r *Rule, f *CaptureFrame, v *Node, start int) *Node {
 	v, owned := p.finishValue(r, f, v, start)
-	if r.Check != nil {
-		r.Check(p, v)
-	}
 	if r.nodeKinds != nil {
 		if owned && r.nodeKinds.convertOwned(v) {
 			return v
@@ -3566,7 +3559,6 @@ type OperatorsRuleLine struct {
 	// Value makes the value of an operand line without an action, and of an operator line's
 	// operator, from the value of the line's expression.
 	Value Shaper
-	Check func(p *Parser, v *Node) // checks the line's value against the rule's declared type
 }
 
 // OperatorsRuleOp is for generated parsers; not a stable API.
@@ -3752,11 +3744,7 @@ func (p *Parser) lineResult(r *Rule, l *OperatorsRuleLine, f *CaptureFrame, v *N
 	if r.Novalue {
 		return nil
 	}
-	v = p.lineValue(r, l, f, v, start)
-	if l.Check != nil {
-		l.Check(p, v)
-	}
-	return v
+	return p.lineValue(r, l, f, v, start)
 }
 
 func (p *Parser) lineValue(r *Rule, l *OperatorsRuleLine, f *CaptureFrame, v *Node, start int) *Node {
@@ -3815,9 +3803,6 @@ func (p *Parser) operatorsRuleBuild(r *Rule, a *operatorsRuleAttempt, lhs, rhs *
 		c := p.useCtx(ActCtx{P: p, f: a.frame, start: start, end: end, cbase: len(p.created),
 			Op: UnboxNode(opv), Lhs: UnboxNode(lhs), Rhs: UnboxNode(rhs)})
 		v := c.result(l.Action, r.Name)
-		if l.Check != nil {
-			l.Check(p, v)
-		}
 		if r.opKinds != nil {
 			v = p.convertOperator(r, v)
 		}
@@ -3842,19 +3827,12 @@ func (p *Parser) operatorsRuleBuild(r *Rule, a *operatorsRuleAttempt, lhs, rhs *
 		fields = Fields{{"lhs", nodeOrNil(lhs)}, {"op", nodeOrNil(opv)}, {"rhs", nodeOrNil(rhs)}}
 	}
 	kind := RawKindSeq
-	if r.opKinds != nil && l.Check == nil {
+	if r.opKinds != nil {
 		kind = r.opKinds[baseTuple] // made with the named node type of the operators
 	} else if p.sourceInfo {
 		kind = r.kinds.named(RawKindSeq, r.Name)
 	}
 	n := p.NewNode(Node{RawKind: kind, RawStart: int32(start), RawEnd: int32(end), RawChildren: kids, RawFields: fields, labeled: p.sourceInfo})
-	if l.Check != nil {
-		// Without type checking, the tuple node is checked like an action's result.
-		l.Check(p, n)
-		if r.opKinds != nil {
-			n = p.convertOperator(r, n)
-		}
-	}
 	return n
 }
 

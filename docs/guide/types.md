@@ -184,12 +184,13 @@ pego: field-type.pego:3:53: cannot use node[string] as int in field Value of Pai
 
 The fix is to declare the field `node[string]`, or to convert the text in the action, as in `Value: text($v)` for a `string` field.
 
-When the checker cannot know a field value's type, for example a rule declared `any` or a variable, the constructor
-checks the value when it runs instead: a mismatch makes the action fail with the same message, prefixed by
-`action in <rule>:`, and makes a predicate fail. A rule's own value is treated the same way: when the checker cannot
-know that a rule produces its declared type, the rule checks its value when it produces it, and a mismatch such as
-`cannot use ... as Expr in result of rule term` fails the parse. Values whose types the checker knows are never
-checked again, so giving the rules that feed constructors precise types avoids both kinds of check.
+When the checker cannot know a field value's type, for example a rule declared `any`, it rejects the value with a
+hint: `cannot use any as Number in field Value of Pair: the type of the value is not known; convert it with a
+cast, as in value.(Number)`. A rule's own value is treated the same way: when the checker cannot know that a rule
+produces its declared type, it reports `cannot use any as Expr in result of rule term` with the same hint. Write the
+cast, `$v.(Number)`: it is the only check that runs, and a value of another type makes the action fail with
+`cannot cast ... to Number at input position 4 (line 1, column 5)`, followed by the grammar position of the cast
+when the parser records source information. Giving the rules that feed constructors precise types avoids the casts.
 
 Keep whitespace and other trivia out of token rules: write `rule num = [0-9]+ #atomic` and put `-ws` in the rules that
 use it.
