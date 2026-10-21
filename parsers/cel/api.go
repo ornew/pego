@@ -5,7 +5,7 @@ package cel
 import (
 	"context"
 
-	pegort "github.com/ornew/pego/parsers/cel/internal/runtime"
+	pegort "github.com/ornew/pego/runtime"
 )
 
 var _ context.Context

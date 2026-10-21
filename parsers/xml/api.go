@@ -5,7 +5,7 @@ package xml
 import (
 	"context"
 
-	pegort "github.com/ornew/pego/parsers/xml/internal/runtime"
+	pegort "github.com/ornew/pego/runtime"
 )
 
 var _ context.Context

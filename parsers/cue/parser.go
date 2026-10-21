@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"unsafe"
 
-	pegort "github.com/ornew/pego/parsers/cue/internal/runtime"
 	types "github.com/ornew/pego/parsers/cue/types"
+	pegort "github.com/ornew/pego/runtime"
 )
 
 // --- Generated code ---

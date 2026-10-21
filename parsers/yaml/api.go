@@ -5,7 +5,7 @@ package yaml
 import (
 	"context"
 
-	pegort "github.com/ornew/pego/parsers/yaml/internal/runtime"
+	pegort "github.com/ornew/pego/runtime"
 )
 
 var _ context.Context

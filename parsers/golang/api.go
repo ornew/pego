@@ -5,7 +5,7 @@ package golang
 import (
 	"context"
 
-	pegort "github.com/ornew/pego/parsers/golang/internal/runtime"
+	pegort "github.com/ornew/pego/runtime"
 )
 
 var _ context.Context

@@ -5,7 +5,7 @@ package typescript
 import (
 	"context"
 
-	pegort "github.com/ornew/pego/parsers/typescript/internal/runtime"
+	pegort "github.com/ornew/pego/runtime"
 )
 
 var _ context.Context

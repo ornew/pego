@@ -1,7 +1,7 @@
 # Ready-Made Parsers
 
 Parsers for common languages, written in PEGO and generated into Go with `pego gen`. Each is a Go module of its own
-that depends only on the standard library: import it and parse, with nothing to generate or compile at run time.
+that depends only on the standard library and the PEGO runtime (`github.com/ornew/pego/runtime`): import it and parse, with nothing to generate or compile at run time.
 
 | Language | Module | Specification | Checked against |
 |:--|:--|:--|:--|
@@ -46,11 +46,11 @@ Each directory holds:
 | File | Contents |
 |:--|:--|
 | `<language>.pego` | The grammar. It can be used with the engine too (`pego.CompileSource`), for streaming, incremental parsing or the `pego` tools. |
-| `parser.go`, `api.go`, `types/types.go`, `internal/runtime/` | The parser generated from the grammar, the names it re-exports from its runtime, the Go types of the grammar (the package `types`), and the runtime itself, which the parser embeds so that the module needs nothing else. Do not edit them. |
+| `parser.go`, `api.go`, `types/types.go` | The parser generated from the grammar, the names it re-exports from the runtime, and the Go types of the grammar (the package `types`). The parser imports the runtime package `github.com/ornew/pego/runtime` (generated with `-runtime import`). Do not edit them. |
 | other `.go` files | Code written for the language: documentation, conversions to Go values, helpers. Those in `types/` hold the methods of the types of the grammar (a method can only be declared in the package of its type); what needs the parser or the decoder is a function of the module instead. |
 | `*_test.go` | Tests against the language's specification, conformance suites and reference implementations; examples; benchmarks |
 | `testdata/*.txt`, `*.golden` | Inputs and the expected trees and errors, checked on the generated parser here and on every backend of the engine by [parsers_test.go](parsers_test.go) |
-| `go.mod`, `LICENCE` | The module |
+| `go.mod`, `LICENCE` | The module, which requires `github.com/ornew/pego` for the runtime |
 
 ## Development
 

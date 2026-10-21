@@ -5,7 +5,7 @@ package python
 import (
 	"context"
 
-	pegort "github.com/ornew/pego/parsers/python/internal/runtime"
+	pegort "github.com/ornew/pego/runtime"
 )
 
 var _ context.Context

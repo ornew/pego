@@ -3,7 +3,7 @@
 package types
 
 import (
-	pegort "github.com/ornew/pego/parsers/golang/internal/runtime"
+	pegort "github.com/ornew/pego/runtime"
 )
 
 // TNode is a node whose Value has type T: a string node (TNode[string]) holds the text a

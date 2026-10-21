@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"unsafe"
 
-	pegort "github.com/ornew/pego/parsers/duckdb/internal/runtime"
 	types "github.com/ornew/pego/parsers/duckdb/types"
+	pegort "github.com/ornew/pego/runtime"
 )
 
 // --- Generated code ---

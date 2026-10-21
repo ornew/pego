@@ -5,7 +5,7 @@ package csv
 import (
 	"context"
 
-	pegort "github.com/ornew/pego/parsers/csv/internal/runtime"
+	pegort "github.com/ornew/pego/runtime"
 )
 
 var _ context.Context

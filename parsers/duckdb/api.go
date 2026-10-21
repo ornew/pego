@@ -5,7 +5,7 @@ package duckdb
 import (
 	"context"
 
-	pegort "github.com/ornew/pego/parsers/duckdb/internal/runtime"
+	pegort "github.com/ornew/pego/runtime"
 )
 
 var _ context.Context

@@ -47,6 +47,12 @@ func generations(t *testing.T) []generation {
 			case "-o":
 				i++
 				g.out = fs[i]
+			case "-runtime":
+				i++
+				if fs[i] != "import" {
+					t.Fatalf("generate.go: unknown runtime mode %s", fs[i])
+				}
+				g.opts = append(g.opts, pego.WithRuntime(pego.RuntimeImport))
 			case "-types":
 				g.opts = append(g.opts, pego.WithTypes())
 			case "-recognize":

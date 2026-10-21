@@ -19,8 +19,8 @@ it differs from the reference implementation; this guide covers what they have i
 
 ## Install
 
-Each parser is a Go module of its own. It depends only on the standard library, not on PEGO and not on the language's
-own implementation (DuckDB's parser does not need DuckDB):
+Each parser is a Go module of its own. It depends only on the standard library and the PEGO runtime package (`github.com/ornew/pego/runtime`, which itself needs
+nothing else), not on the PEGO engine and not on the language's own implementation (DuckDB's parser does not need DuckDB):
 
 ```bash
 go get github.com/ornew/pego/parsers/json
