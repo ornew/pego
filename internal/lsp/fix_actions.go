@@ -99,11 +99,12 @@ func findingIndex(key string) (int, bool) {
 var positionText = regexp.MustCompile(`\d+:\d+`)
 
 // findingKeys counts the findings by check, rule and message, without the positions in the message
-// (and, for an unused rule, without the message).
-func findingKeys(findings []lint.Finding, skip int) map[string]int {
+// (and, for an unused rule, without the message). The finding at index skip and the findings of the
+// rule gone, which is deleted, are left out.
+func findingKeys(findings []lint.Finding, skip int, gone string) map[string]int {
 	keys := map[string]int{}
 	for i, f := range findings {
-		if i == skip {
+		if i == skip || gone != "" && f.Rule == gone {
 			continue
 		}
 		message := positionText.ReplaceAllString(f.Message, "")
@@ -142,7 +143,7 @@ func (d *document) verifiedFixControlled(ctx context.Context, findings []lint.Fi
 		return lintFix{}, false
 	}
 	after, err := candidate.lintFindingsContext(ctx)
-	if err != nil || !maps.Equal(findingKeys(findings, i), findingKeys(after, -1)) {
+	if err != nil || !maps.Equal(findingKeys(findings, i, removed), findingKeys(after, -1, "")) {
 		return lintFix{}, false
 	}
 	before := a.prog
@@ -201,6 +202,10 @@ func ruleSpan(text string, start, end int) (int, int) {
 	lineStart := strings.LastIndexByte(text[:start], '\n') + 1
 	before := text[lineStart:start]
 	if c := blockCommentBefore(before); c >= 0 {
+		if strings.TrimSpace(before[:c]) != "" {
+			// A comment that stays comes first: drop what follows it on the line, and the blank.
+			return lineStart + len(strings.TrimRight(before[:c], " \t")), end
+		}
 		start, before = lineStart+c, ""
 	}
 	if strings.TrimSpace(before) != "" {
@@ -208,6 +213,9 @@ func ruleSpan(text string, start, end int) (int, int) {
 		kept := strings.TrimRight(before, " \t")
 		if strings.HasSuffix(kept, ";") {
 			start = lineStart + len(strings.TrimRight(kept[:len(kept)-1], " \t"))
+		} else if lineRest := text[end:]; strings.TrimSpace(lineRest[:strings.IndexByte(lineRest+"\n", '\n')]) == "" {
+			// Nothing follows the rule, and what precedes it stays: leave no blank after it.
+			start = lineStart + len(kept)
 		}
 		return start, end
 	}
@@ -247,15 +255,47 @@ func ruleSpan(text string, start, end int) (int, int) {
 	return start, end
 }
 
-// blockCommentBefore returns the index in line at which a single block comment starts, when line
-// holds only that comment and blanks and the comment holds no file-wide directive, or -1.
-func blockCommentBefore(line string) int {
-	t := strings.TrimSpace(line)
-	if !strings.HasPrefix(t, "/*") || !strings.HasSuffix(t, "*/") || strings.Count(t, "*/") != 1 ||
-		strings.Contains(t, "lint:file-ignore") {
-		return -1
+// blockComments splits line into the block comments it consists of, as their start indexes, or
+// returns nil if it holds anything else (or nothing).
+func blockComments(line string) []int {
+	var starts []int
+	for i := 0; ; {
+		for i < len(line) && (line[i] == ' ' || line[i] == '\t' || line[i] == '\r') {
+			i++
+		}
+		if i == len(line) {
+			return starts
+		}
+		if !strings.HasPrefix(line[i:], "/*") {
+			return nil
+		}
+		end := strings.Index(line[i+2:], "*/")
+		if end < 0 {
+			return nil
+		}
+		starts = append(starts, i)
+		i += 2 + end + 2
 	}
-	return strings.Index(line, "/*")
+}
+
+// blockCommentBefore returns the index in line at which the block comments that document a rule
+// start, when line holds only block comments and blanks: all of them, or those after the last one
+// that holds a file-wide directive, which stays. It returns -1 if there are none.
+func blockCommentBefore(line string) int {
+	starts := blockComments(line)
+	first := -1
+	for k, at := range starts {
+		end := len(line)
+		if k+1 < len(starts) {
+			end = starts[k+1]
+		}
+		if strings.Contains(line[at:end], "lint:file-ignore") {
+			first = -1
+		} else if first < 0 {
+			first = at
+		}
+	}
+	return first
 }
 
 // commentLinesAbove returns the start of the comment that fills the lines of text up to end
@@ -266,6 +306,13 @@ func commentLinesAbove(text string, lastStart, end int) int {
 	line := strings.TrimSpace(text[lastStart:end])
 	switch {
 	case strings.HasPrefix(line, "//"):
+		if strings.Contains(line, "lint:file-ignore") {
+			return -1
+		}
+		return lastStart
+	case blockComments(line) != nil:
+		// Block comments only, on one line. One that holds a file-wide directive stays, with
+		// those before it.
 		if strings.Contains(line, "lint:file-ignore") {
 			return -1
 		}

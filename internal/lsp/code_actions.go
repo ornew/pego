@@ -244,7 +244,7 @@ func (s *Server) codeActionsControlled(params json.RawMessage, control *renderCo
 			data := func(action string) *actionData {
 				return &actionData{findingData: *diagnostic.Data, Action: action}
 			}
-			if diagnostic.Code != lint.CheckDirective {
+			if diagnostic.Code != lint.CheckDirective && d.suppressionPlausible(diagnostic, control) {
 				out = append(out, codeAction{Title: suppressTitle(diagnostic.Code), Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Data: data(actionSuppress)})
 			}
 			if i, ok := findingIndex(diagnostic.Data.Key); ok && i < len(findings) {
@@ -274,6 +274,31 @@ func (s *Server) codeActionsControlled(params json.RawMessage, control *renderCo
 		return []codeAction{}, nil
 	}
 	return out, nil
+}
+
+// suppressionPlausible reports, without analyzing an edited copy, whether a suppression of the
+// finding can be offered: its line holds no directive yet and starts no declaration, where a
+// directive would suppress the whole rule. suppressionEditControlled still verifies the edit.
+func (d *document) suppressionPlausible(diagnostic Diagnostic, control *renderControl) bool {
+	a := d.analysis()
+	line := diagnostic.Range.Start.Line
+	if line < 0 || line >= len(a.idx.lines) {
+		return false
+	}
+	start, end := a.idx.lines[line], len(d.text)
+	if line+1 < len(a.idx.lines) {
+		end = a.idx.lines[line+1]
+	}
+	if strings.Contains(d.text[start:end], "lint:ignore") {
+		return false
+	}
+	for _, def := range a.defs {
+		control.poll()
+		if def.kwStart >= start && def.kwStart < end {
+			return false
+		}
+	}
+	return true
 }
 
 func versionedEdit(uri string, version int, edit TextEdit) *actionEdit {

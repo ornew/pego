@@ -105,8 +105,24 @@ func TestLintFixActions(t *testing.T) {
 			[]string{"Remove the unused rule x => @start\nrule main = \"a\"\n"}},
 		{"an unused rule keeps a file-wide directive in a block comment", "@start\nrule main = \"a\"\n/* lint:file-ignore char-class */\nrule x = \"b\"\n", "unreachable-rule",
 			[]string{"Remove the unused rule x => @start\nrule main = \"a\"\n/* lint:file-ignore char-class */\n"}},
+		{"an unused rule after a file-wide directive on its line", "@start\nrule main = \"a\"\n/* lint:file-ignore char-class */ rule x = \"b\"\n", "unreachable-rule",
+			[]string{"Remove the unused rule x => @start\nrule main = \"a\"\n/* lint:file-ignore char-class */\n"}},
+		{"an unused rule after several block comments on its line", "@start\nrule main = \"a\"\n/* one */ /* two */ rule x = \"b\"\n", "unreachable-rule",
+			[]string{"Remove the unused rule x => @start\nrule main = \"a\"\n"}},
+		{"an unused rule after block comments of which the first stays", "@start\nrule main = \"a\"\n/* lint:file-ignore char-class */ /* about x */ rule x = \"b\"\n", "unreachable-rule",
+			[]string{"Remove the unused rule x => @start\nrule main = \"a\"\n/* lint:file-ignore char-class */\n"}},
+		{"an unused rule after a file-wide directive that follows another comment", "@start\nrule main = \"a\"\n/* about x */ /* lint:file-ignore char-class */ rule x = \"b\"\n", "unreachable-rule",
+			[]string{"Remove the unused rule x => @start\nrule main = \"a\"\n/* about x */ /* lint:file-ignore char-class */\n"}},
+		{"an unused rule below several block comments on one line", "@start\nrule main = \"a\"\n/* one */ /* two */\nrule x = \"b\"\n", "unreachable-rule",
+			[]string{"Remove the unused rule x => @start\nrule main = \"a\"\n"}},
+		{"an unused rule below block comments with a file-wide directive among them", "@start\nrule main = \"a\"\n/* lint:file-ignore char-class */ /* about x */\nrule x = \"b\"\n", "unreachable-rule",
+			[]string{"Remove the unused rule x => @start\nrule main = \"a\"\n/* lint:file-ignore char-class */ /* about x */\n"}},
 		{"an unused rule keeps the block comment of the rule before it", "@start\nrule main = \"a\" /* about main */\nrule x = \"b\"\n", "unreachable-rule",
 			[]string{"Remove the unused rule x => @start\nrule main = \"a\" /* about main */\n"}},
+		{"an unused rule that holds findings of its own", "@start\nrule main = \"a\"\nrule x = [a-cb-z] \"x\"\n", "unreachable-rule",
+			[]string{"Remove the unused rule x => @start\nrule main = \"a\"\n"}},
+		{"an unused rule that another rule's finding does not depend on", "@start\nrule main = [a-cb-z]\nrule x = [a-cb-z] \"x\"\n", "unreachable-rule",
+			[]string{"Remove the unused rule x => @start\nrule main = [a-cb-z]\n"}},
 		{"a file-wide directive stays", "// lint:file-ignore char-class\n@start\nrule main = \"a\"\nrule x = \"b\"\n", "unreachable-rule",
 			[]string{"Remove the unused rule x => // lint:file-ignore char-class\n@start\nrule main = \"a\"\n"}},
 	} {
@@ -288,6 +304,21 @@ func TestCodeActionResolve(t *testing.T) {
 			}
 			if got := edited(resolve(*suppress)); got != "@start\nrule main = (\n// lint:ignore char-class\n  [a-cb-z] \"x\"\n)\n" {
 				t.Errorf("suppress = %q", got)
+			}
+			// A suppression that the server would refuse is not listed: the line starts a declaration.
+			const oneLine = "file:///resolve-line.pego"
+			var onLine Diagnostic
+			for _, d := range c.open(oneLine, "@start\nrule main = [a-cb-z] \"x\"\n") {
+				if d.Code == "char-class" {
+					onLine = d
+				}
+			}
+			var titles []string
+			for _, a := range listed(t, c, oneLine, onLine) {
+				titles = append(titles, a.Title)
+			}
+			if strings.Join(titles, "|") != "Explain char-class|Merge the overlapping ranges of this character class" {
+				t.Errorf("titles on a declaration line = %q", titles)
 			}
 			// Nothing the server did not list is resolved.
 			wrongTitle := *merge
