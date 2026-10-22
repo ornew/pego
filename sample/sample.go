@@ -115,6 +115,9 @@ type Generator struct {
 	in    *info
 	g     *gen
 	stats Stats
+	// names tell the rules of the inline actions, which the generator works on as hidden rules, from
+	// the declared ones: reports show them as written.
+	names *engine.InlineActionNames
 }
 
 // Stats counts the work of a Generator.
@@ -152,7 +155,7 @@ func New(p *pego.Parser, opts ...Option) (*Generator, error) {
 		return nil, errors.New("sample: the parser has no grammar AST")
 	}
 	// The sampler works on the rules the parser runs, where an inline action is an anonymous rule.
-	g, err := engine.LowerInlineActions(g)
+	g, names, err := engine.LowerInlineActions(g)
 	if err != nil {
 		return nil, fmt.Errorf("sample: %w", err)
 	}
@@ -174,7 +177,7 @@ func New(p *pego.Parser, opts ...Option) (*Generator, error) {
 	if in.start.height >= inf {
 		return nil, fmt.Errorf("sample: start rule %s can never match", p.Start())
 	}
-	gen := &Generator{p: p, cfg: cfg, in: in}
+	gen := &Generator{p: p, cfg: cfg, in: in, names: names}
 	gen.g = newGen(in, &gen.cfg)
 	return gen, nil
 }
@@ -234,7 +237,7 @@ func (g *Generator) ruleCuts(counts []ruleCuts) []RuleCuts {
 	var out []RuleCuts
 	for i, c := range counts {
 		if c.checks+c.predicates > 0 {
-			out = append(out, RuleCuts{Rule: g.in.order[i].def.Name, Checks: c.checks, Predicates: c.predicates})
+			out = append(out, RuleCuts{Rule: g.names.Rule(g.in.order[i].def.Name), Checks: c.checks, Predicates: c.predicates})
 		}
 	}
 	slices.SortFunc(out, func(a, b RuleCuts) int {
@@ -348,9 +351,9 @@ func (g *Generator) Coverage() Coverage {
 	for _, ri := range in.order {
 		switch {
 		case ri.height >= inf && in.called[ri.index]:
-			c.Impossible = append(c.Impossible, ri.def.Name)
+			c.Impossible = append(c.Impossible, g.names.Rule(ri.def.Name))
 		case !in.reachable[ri.index]:
-			c.Unreachable = append(c.Unreachable, ri.def.Name)
+			c.Unreachable = append(c.Unreachable, g.names.Rule(ri.def.Name))
 		}
 	}
 	kinds := map[int]string{targetAlt: "choice", targetOperand: "operand", targetOperator: "operator"}
@@ -365,7 +368,7 @@ func (g *Generator) Coverage() Coverage {
 			if hit {
 				c.RulesCovered++
 			} else {
-				c.MissedRules = append(c.MissedRules, t.rule)
+				c.MissedRules = append(c.MissedRules, g.names.Rule(t.rule))
 			}
 			continue
 		}
@@ -374,7 +377,7 @@ func (g *Generator) Coverage() Coverage {
 			c.AlternativesCovered++
 		} else {
 			c.MissedAlternatives = append(c.MissedAlternatives,
-				Alternative{Rule: t.rule, Kind: kinds[t.kind], Index: t.index, Expr: grammar.FormatExpr(t.expr)})
+				Alternative{Rule: g.names.Rule(t.rule), Kind: kinds[t.kind], Index: t.index, Expr: g.names.Expr(grammar.FormatExpr(t.expr))})
 		}
 	}
 	return c

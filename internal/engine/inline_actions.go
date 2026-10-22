@@ -93,8 +93,17 @@ func (names inlineNames) rewrite(err error) error {
 
 // text replaces the generated names in s, and the word "rule" before one.
 func (names inlineNames) text(s string) string {
-	for name := range names {
+	return names.substitute(s, true, func(name string) string {
 		desc, _ := names.describe(name)
+		return desc
+	})
+}
+
+// substitute replaces each generated name in s, as a whole name, by what repl returns for it, and
+// with trimRule drops the word "rule" before it.
+func (names inlineNames) substitute(s string, trimRule bool, repl func(name string) string) string {
+	for name := range names {
+		desc := repl(name)
 		var b strings.Builder
 		for {
 			i := strings.Index(s, name)
@@ -107,7 +116,11 @@ func (names inlineNames) text(s string) string {
 				s = s[end:]
 				continue
 			}
-			b.WriteString(strings.TrimSuffix(s[:i], "rule "))
+			if trimRule {
+				b.WriteString(strings.TrimSuffix(s[:i], "rule "))
+			} else {
+				b.WriteString(s[:i])
+			}
 			b.WriteString(desc)
 			s = s[end:]
 		}
@@ -404,14 +417,55 @@ func rewrap(self, old, child grammar.Expr, make func(grammar.Expr) grammar.Expr)
 
 // LowerInlineActions returns g with every inline action replaced by a reference to the hidden rule
 // that the compiler runs in its place, so that a tool working on the rules of a grammar, such as the
-// input sampler, sees the rules the parser executes. g is not changed.
-func LowerInlineActions(g *grammar.Grammar) (*grammar.Grammar, error) {
+// input sampler, sees the rules the parser executes. g is not changed. The names tell the generated
+// rules from the declared ones, so that a tool reports an inline action as written.
+func LowerInlineActions(g *grammar.Grammar) (*grammar.Grammar, *InlineActionNames, error) {
 	if g == nil || !hasInlineAction(g, nil) {
-		return g, nil
+		return g, nil, nil
 	}
-	lowered, errs := lowerInlineActions(g, nil, nil)
+	names := inlineNames{}
+	lowered, errs := lowerInlineActions(g, names, nil)
 	if errs != nil {
-		return nil, errs
+		return nil, nil, errs
 	}
-	return lowered, nil
+	counts := map[string]int{}
+	for _, site := range names {
+		counts[site.rule]++
+	}
+	return lowered, &InlineActionNames{names: names, counts: counts}, nil
+}
+
+// InlineActionNames maps the hidden rules that LowerInlineActions generated to the inline actions of
+// the grammar as written. A nil value describes a grammar without inline actions.
+type InlineActionNames struct {
+	names  inlineNames
+	counts map[string]int // the number of inline actions of each rule
+}
+
+// Rule returns the name to report for the rule name of the lowered grammar: the name itself for a
+// declared rule, and for the rule of an inline action "the inline action in rule R", with its number
+// among the inline actions of R when R holds several.
+func (n *InlineActionNames) Rule(name string) string {
+	if n == nil {
+		return name
+	}
+	site, ok := n.names[name]
+	if !ok {
+		return name
+	}
+	if n.counts[site.rule] > 1 {
+		return fmt.Sprintf("inline action %d in rule %s", site.n, site.rule)
+	}
+	return "the inline action in rule " + site.rule
+}
+
+// Expr returns the text of an expression of the lowered grammar with each reference to the rule of an
+// inline action replaced by the inline action as written.
+func (n *InlineActionNames) Expr(text string) string {
+	if n == nil {
+		return text
+	}
+	return n.names.substitute(text, false, func(name string) string {
+		return grammar.FormatExpr(n.names[name].node)
+	})
 }
