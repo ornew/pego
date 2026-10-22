@@ -386,6 +386,16 @@ exit restores and falls to the next, a `Repeat` is a loop whose element failure 
 loop, and a `Nest` is a block that saves and restores the caller's environment, cut flag and recovered
 count, and has its own slots.
 
+A body whose captures live in frames that the runtime owns lowers to a framed function instead: the body
+of a left-recursion leader, whose growth the runtime drives, the body of a rule that recovers, and each
+line of an Operators Rule. A capture sets its slot of the current frame; a repetition element with
+captures of its own runs under a new frame, and a projected repetition reuses one frame that it clears for
+each element; a backtracking point marks the whole parser state and resets to the mark when its body
+fails. The function returns its value to the runtime, which keeps the frame, the action and the rule's
+finish; its outermost scope reads the caller's cut flag on entry and publishes it on return. `#recover`
+lowers only inside framed functions: it isolates the expectations of its body and, when the body fails,
+resets to its mark, skips at least one character, records the error and makes it the value.
+
 Flow IR passes:
 
 - **Save/restore elision**: a backtracking point saves only what its body may change according to the Core
