@@ -129,6 +129,39 @@ func init() {
 	}
 }
 
+// TestPruneTypedEntriesIgnoresLocalNames checks that a local variable or parameter that shares
+// the name of a package-level function or variable does not keep it.
+func TestPruneTypedEntriesIgnoresLocalNames(t *testing.T) {
+	got := prune(t, `package p
+
+func shadowed() {}
+func param()    {}
+func outer()    {}
+
+var global = 1
+
+func Parse() {
+	_ = trules[1]
+	var shadowed int
+	shadowed++
+	global := shadowed
+	_ = global
+	_ = func(param int) int { return param }
+	outer()
+}
+
+func init() { trules[2].Entry = shadowed }
+`)
+	if !strings.Contains(got, "func outer()") {
+		t.Errorf("pruned source lost a called function:\n%s", got)
+	}
+	for _, gone := range []string{"func shadowed()", "func param()", "var global"} {
+		if strings.Contains(got, gone) {
+			t.Errorf("a local name kept %q:\n%s", gone, got)
+		}
+	}
+}
+
 func TestPruneTypedEntriesRemovesDocComments(t *testing.T) {
 	got := prune(t, `package p
 

@@ -16,8 +16,9 @@ import (
 // TParseResolved); every other rule is called through the functions that name it. So the
 // statements trules[N].Entry = f of the rules that no function outside init names by index (the
 // start rules, which ParseAST and ParseRuleAST name) are dropped, and then the unexported
-// functions and package variables that nothing reachable names are dropped too. A function whose
-// local variable shares its name counts as naming it, which keeps more than needed, never less.
+// functions and package variables that nothing reachable names are dropped too. A name that the
+// parser resolves to a local declaration (a variable or parameter that shares the name of a
+// package-level declaration) does not name the package-level one.
 //
 // The generator emits one statement per line and decimal indexes, which is all the matching of
 // the entry statements and of the indexes relies on.
@@ -128,6 +129,9 @@ func pruneTypedEntries(src []byte) ([]byte, error) {
 			id, ok := x.(*goast.Ident)
 			if !ok {
 				return true
+			}
+			if id.Obj != nil && id.Obj != file.Scope.Lookup(id.Name) {
+				return true // a local declaration or a use of one
 			}
 			if d := decls[id.Name]; d != nil && !d.reached {
 				d.reached = true
