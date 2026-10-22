@@ -223,6 +223,7 @@ rule e = operators {
 	cases = append(cases, nodeDirectCases...)
 	cases = append(cases, typedLRBodyCases...)
 	cases = append(cases, typedOperatorsRuleBodyCases...)
+	cases = append(cases, operatorsRuleOperandActionCases...)
 	cases = append(cases, typedFramedCutCases(t)...)
 	cases = append(cases, typedFrameLayoutCases...)
 	cases = append(cases, typedRecoveryCases...)

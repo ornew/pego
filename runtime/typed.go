@@ -1490,6 +1490,9 @@ func (p *TParser) finishValue(r *TRule, f *TCaptureFrame, v any, start int) any 
 	}
 	n := AsTval(v)
 	if n == nil {
+		if r.OperatorsRule != nil {
+			return v // the lines made the value, such as the result of an action
+		}
 		return nil
 	}
 	n.TSetFresh(false)
@@ -2337,7 +2340,7 @@ func (p *TParser) OperatorsRuleParse(r *TRule, min int) (any, bool) {
 
 func (p *TParser) operatorsRuleExpr(r *TRule, min int) (any, bool) {
 	pr := r.OperatorsRule
-	lhs, ok := p.operatorsRuleNud(r)
+	lhs, lstart, ok := p.operatorsRuleNud(r)
 	if !ok {
 		return nil, false
 	}
@@ -2359,7 +2362,7 @@ func (p *TParser) operatorsRuleExpr(r *TRule, min int) (any, bool) {
 		}
 		p.apply(&a)
 		if a.op.Kind == "postfix" {
-			lhs = p.operatorsRuleBuild(r, &a, lhs, nil)
+			lhs, lstart = p.operatorsRuleBuild(r, &a, lhs, lstart, nil)
 			lastNone = -1
 			if p.Pos == m0.Pos {
 				break
@@ -2378,7 +2381,7 @@ func (p *TParser) operatorsRuleExpr(r *TRule, min int) (any, bool) {
 			p.Reset(m0)
 			break
 		}
-		lhs = p.operatorsRuleBuild(r, &a, lhs, rhs)
+		lhs, lstart = p.operatorsRuleBuild(r, &a, lhs, lstart, rhs)
 		lastNone = -1
 		if a.op.Assoc == "none" {
 			lastNone = a.op.Level
@@ -2390,7 +2393,10 @@ func (p *TParser) operatorsRuleExpr(r *TRule, min int) (any, bool) {
 	return lhs, true
 }
 
-func (p *TParser) operatorsRuleNud(r *TRule) (any, bool) {
+// operatorsRuleNud parses an operand or a prefix application. Besides its value it returns where
+// the value starts: a value that is not a node has no span of its own, so the start travels
+// beside it, as the range of the box a value other than a node travels in (see Parser.operatorsRuleNud).
+func (p *TParser) operatorsRuleNud(r *TRule) (any, int, bool) {
 	pr := r.OperatorsRule
 	p.skipTrivia(pr)
 	m0 := p.Mark()
@@ -2398,14 +2404,15 @@ func (p *TParser) operatorsRuleNud(r *TRule) (any, bool) {
 		p.apply(&a)
 		rhs, ok := p.OperatorsRuleParse(r, a.op.Level)
 		if ok {
-			return p.operatorsRuleBuild(r, &a, nil, rhs), true
+			v, start := p.operatorsRuleBuild(r, &a, nil, 0, rhs)
+			return v, start, true
 		}
 		if a.cut {
-			return nil, false
+			return nil, 0, false
 		}
 		p.Reset(m0)
 	} else if cutFailed {
-		return nil, false
+		return nil, 0, false
 	}
 	for _, o := range pr.Operands {
 		p.StepWork()
@@ -2416,14 +2423,14 @@ func (p *TParser) operatorsRuleNud(r *TRule) (any, bool) {
 		cut := p.Cut
 		p.Frame, p.Cut = prevFrame, prevCut
 		if ok {
-			return p.lineResult(r, o, f, v, m0.Pos), true
+			return p.lineResult(r, o, f, v, m0.Pos), m0.Pos, true
 		}
 		p.Reset(m0)
 		if cut {
-			return nil, false
+			return nil, 0, false
 		}
 	}
-	return nil, false
+	return nil, 0, false
 }
 
 func (p *TParser) lineResult(r *TRule, l *TOperatorsRuleLine, f *TCaptureFrame, v any, start int) any {
@@ -2446,16 +2453,21 @@ func (p *TParser) lineValue(r *TRule, l *TOperatorsRuleLine, f *TCaptureFrame, v
 		n.TSetFresh(false)
 		return n
 	}
-	return nil
+	// A value other than a node, such as the result of a rule's action, stays as it is.
+	return v
 }
 
-func (p *TParser) operatorsRuleBuild(r *TRule, a *toperatorsRuleAttempt, lhs, rhs any) any {
+// operatorsRuleBuild applies the operator of a to lhs, which starts at lstart if it is not a node,
+// and rhs. Besides the value it returns where the value starts, as operatorsRuleNud does.
+func (p *TParser) operatorsRuleBuild(r *TRule, a *toperatorsRuleAttempt, lhs any, lstart int, rhs any) (any, int) {
 	if r.Novalue {
-		return nil
+		return nil, a.start
 	}
 	start, end := a.start, p.Pos
 	if l := AsTval(lhs); l != nil {
 		start, _ = l.TSpan()
+	} else if lhs != nil {
+		start = lstart
 	}
 	if a.op.Kind == "postfix" {
 		end = a.end
@@ -2480,7 +2492,7 @@ func (p *TParser) operatorsRuleBuild(r *TRule, a *toperatorsRuleAttempt, lhs, rh
 		if r.OpNt != 0 {
 			v = p.convertOperator(r, v)
 		}
-		return v
+		return v, start
 	}
 	// Without an action, the application is the node of the tuple (lhs, op, rhs) of the line's
 	// kind, with those captures.
@@ -2504,7 +2516,7 @@ func (p *TParser) operatorsRuleBuild(r *TRule, a *toperatorsRuleAttempt, lhs, rh
 	n.fresh = false
 	n.fields = fields
 	n.nt = r.OpNt // made with the named node type of the operators, if any
-	return n
+	return n, start
 }
 
 // convertOperator converts v, the value of an operator of rule r, to the named node type of the
