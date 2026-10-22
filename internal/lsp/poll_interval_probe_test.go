@@ -159,6 +159,9 @@ func TestPollIntervalProbe(t *testing.T) {
 		return analysisSnapshot{URI: uri, Text: text, Version: 1, Generation: 1}
 	}
 	for _, name := range names {
+		if only := os.Getenv("PEGO_LSP_POLL_ONLY"); only != "" && name != only {
+			continue
+		}
 		text := sources[name]
 		a, err := analyzeContext(context.Background(), text)
 		if err != nil {
