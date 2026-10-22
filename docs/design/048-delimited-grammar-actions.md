@@ -95,7 +95,11 @@ own and may recur.
   compiler made never satisfies one. The name is shown where the program runs the
   rule: trace events, profiles and source information. A compile-time error and the
   text of a failed action name the inline action by the rule that holds it
-  (`the inline action in rule r`, at the position of the action).
+  (`the inline action in rule r`, at the position of the action). Inside a type
+  in a message the inline action stands for the type of its result
+  (`node[(int, int)]`), and `pego sample -coverage` reports its rule as `the
+  inline action in rule r` (`inline action n in rule r` when `r` holds several)
+  and its alternatives as written.
 
 ## Implementation
 

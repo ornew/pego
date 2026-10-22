@@ -97,7 +97,8 @@ other rules in three ways.
 
 - **Not an entry point.** A hidden rule MUST NOT be the start rule of a grammar, a
   compiled grammar, a schema or a generated parser, and cannot be parsed by name
-  (`ParseRule`, `Parse(name, ...)`, `WithStart`); each of these is an error that
+  (`ParseRule`, `Parse(name, ...)`, `WithStart`, `parseRule` and `parseRuleWithOptions` of a
+  TypeScript parser); each of these is an error that
   says the rule is hidden. The rules a parser lists do not include hidden rules.
 - **No node of its own.** A hidden rule without an action, not even `=> ...`,
   makes no node. A call of it contributes what its expression contributes written
@@ -461,6 +462,12 @@ operands and operators of an [Operators Rule](operators-rule.md)) and the declar
 are dropped, so each rule produces the default value of its expression, as described in
 [Nodes and Values](nodes.md). Nothing is checked against the types that only actions would have made.
 Type declarations stay in the grammar.
+
+A [hidden rule](#hidden-rules) or an inline action that had an action still makes a node of its
+own: its default value is the default action, not the splice of a hidden rule without an action. The
+grammar is validated as written, with the actions the mode drops removed, so a defect is reported
+where the grammar has it, with the numbering of its declarations and never in a rule that the
+compiler generated.
 
 Predicates still run, because they decide the match. The rules called inside a capture that a predicate
 reads, and the rules that those call, keep their actions and declared types, so the values that

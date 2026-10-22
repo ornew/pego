@@ -200,6 +200,10 @@ operator parts declared in Operators Rules. It lists separately, and does not co
   an error. Alternatives that can
   never match are not counted either.
 
+An [inline action](actions.md) counts as a rule, because the parser runs it as one, and the report names it by
+the rule that holds it: `the inline action in rule main`, or `inline action 2 in rule main` when the rule holds
+several. The alternatives are printed as written, with the inline action in place.
+
 For the XML grammar of [parsers/xml](../../parsers/xml/xml.pego), 50 inputs cover all of it:
 
 ```bash
