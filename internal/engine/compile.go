@@ -325,9 +325,15 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 		control.check()
 	}
 	if opts.DefaultValue {
+		lowered := g
 		g = defaultValueGrammar(g, control)
 		control.check()
-		if err := validateGrammar(g, control); err != nil {
+		// A defect is reported where the grammar as written has it.
+		valid := g
+		if lowered != source {
+			valid = sourceDefaultValueGrammar(source, lowered, g, names, control)
+		}
+		if err := validateGrammar(valid, control); err != nil {
 			return nil, err
 		}
 	}

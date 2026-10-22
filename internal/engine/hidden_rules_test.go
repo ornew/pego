@@ -159,6 +159,54 @@ func TestDefaultValueAcceptsWhatItDropsWithInlineActions(t *testing.T) {
 	}
 }
 
+// A defect of the grammar that default-value mode still validates is reported where the grammar as
+// written has it: with the numbering of its declarations, not of the lowered grammar that has the
+// rules of the inline actions after the rule that holds them, and with the path inside an inline
+// action, not inside a rule it never declared. The report is the one of the same grammar compiled
+// with the actions.
+func TestDefaultValueValidationReportsTheGrammarAsWritten(t *testing.T) {
+	for _, tc := range []struct {
+		name, src string
+		want      string // a part of the path
+	}{
+		{"after an inline action", "rule a = (x:\"a\" => nil)\nrule main = \"b\"+", "decls[1]"},
+		{"after two inline actions", "rule a = (x:\"a\" => nil) (y:\"c\" => nil)\nrule b = (z:\"a\" => nil)\nrule main = \"b\"+", "decls[2]"},
+		{"in an inline action", "rule a = \"c\"\nrule main = \"b\" (x:\"a\"+ => nil) \"d\"", "decls[1]"},
+		{"in a nested inline action", "rule main = (x:(y:\"a\"+ => nil) \"b\" => nil)", "decls[0]"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			g, err := syntax.Parse(tc.src)
+			if err != nil {
+				t.Fatal(err)
+			}
+			rules := g.Rules()
+			repeats := 0
+			for _, rd := range rules {
+				walkExpr(rd.Expr, func(e grammar.Expr) {
+					if r, ok := e.(*grammar.Repeat); ok {
+						r.Min = -1
+						repeats++
+					}
+				})
+			}
+			if repeats != 1 {
+				t.Fatalf("%d repetitions to corrupt", repeats)
+			}
+			_, withActions := Compile(g, Options{})
+			_, withDefault := Compile(g, Options{DefaultValue: true})
+			if withActions == nil || withDefault == nil {
+				t.Fatalf("no error: %v / %v", withActions, withDefault)
+			}
+			if withDefault.Error() != withActions.Error() {
+				t.Errorf("default value: %v\nwith actions:  %v", withDefault, withActions)
+			}
+			if !strings.Contains(withDefault.Error(), tc.want) || strings.Contains(withDefault.Error(), "_main") || strings.Contains(withDefault.Error(), "_a_") {
+				t.Errorf("want the path to hold %s and no generated name: %v", tc.want, withDefault)
+			}
+		})
+	}
+}
+
 // The messages of the compiler describe an inline action by the rule that holds it.
 func TestInlineActionNamesInMessages(t *testing.T) {
 	names := inlineNames{"_main_1": {rule: "main", n: 1}, "_main_10": {rule: "main", n: 10}}

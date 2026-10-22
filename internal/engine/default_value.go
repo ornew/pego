@@ -23,12 +23,80 @@ func defaultValueGrammar(g *grammar.Grammar, control *compileControl) *grammar.G
 		}
 		rule := *rd
 		rule.Expr, rule.Type, rule.Action, rule.DefaultAction = expr, nil, nil, false
+		if hiddenRule(rd.Name) && (rd.Action != nil || rd.DefaultAction) {
+			// A hidden rule without an action splices into its caller; one with an action makes
+			// its value. Its default value keeps that node, as its action did.
+			rule.DefaultAction = true
+		}
 		return &rule
 	}, control)
 	if !changed {
 		return g
 	}
 	copy := *g
+	copy.File.Decls = decls
+	return &copy
+}
+
+// sourceDefaultValueGrammar returns the grammar as written, source, with what defaultValueGrammar
+// dropped from its lowered form: dv is defaultValueGrammar(lowered), and names the inline actions
+// that lowered was made with. Validating it reports a defect where the grammar as written has it,
+// with the paths and positions of that grammar, not of the lowered one, whose declarations are
+// numbered differently and whose generated rules the author never wrote.
+func sourceDefaultValueGrammar(source, lowered, dv *grammar.Grammar, names inlineNames, control *compileControl) *grammar.Grammar {
+	dvRules := map[string]*grammar.RuleDef{}
+	for _, rd := range control.rules(dv) {
+		dvRules[rd.Name] = rd
+	}
+	// An inline action keeps its action when the rule it was lowered to does.
+	keep := map[*grammar.InlineAction]bool{}
+	for name, site := range names {
+		if rd := dvRules[name]; rd != nil && rd.Action != nil {
+			keep[site.node] = true
+		}
+	}
+	walk := &inlineLowerer{control: control, keepInline: func(e *grammar.InlineAction, inner grammar.Expr) grammar.Expr {
+		if keep[e] && inner == e.Expr {
+			return e
+		}
+		copy := *e
+		copy.Expr = inner
+		if !keep[e] {
+			copy.Action, copy.DefaultAction = nil, true
+		}
+		return &copy
+	}}
+	// Each declaration of the source is followed in the lowered grammar by the rules generated
+	// from its inline actions.
+	decls := make([]grammar.Decl, len(source.File.Decls))
+	j := 0
+	for i, d := range source.File.Decls {
+		control.poll()
+		decls[i] = d
+		lowRule, _ := lowered.File.Decls[j].(*grammar.RuleDef)
+		dvRule, _ := dv.File.Decls[j].(*grammar.RuleDef)
+		for j++; j < len(lowered.File.Decls); j++ {
+			generated, ok := lowered.File.Decls[j].(*grammar.RuleDef)
+			if !ok || names[generated.Name].node == nil {
+				break
+			}
+		}
+		rd, isRule := d.(*grammar.RuleDef)
+		if !isRule || lowRule == nil || dvRule == nil {
+			continue
+		}
+		expr := walk.expr(rd.Expr)
+		if dvRule != lowRule {
+			expr = defaultValueExpr(expr, control)
+		}
+		if expr == rd.Expr && dvRule.Action == rd.Action && dvRule.Type == rd.Type && dvRule.DefaultAction == rd.DefaultAction {
+			continue
+		}
+		rule := *rd
+		rule.Expr, rule.Type, rule.Action, rule.DefaultAction = expr, dvRule.Type, dvRule.Action, dvRule.DefaultAction
+		decls[i] = &rule
+	}
+	copy := *source
 	copy.File.Decls = decls
 	return &copy
 }

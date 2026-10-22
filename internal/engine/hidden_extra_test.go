@@ -50,3 +50,36 @@ func TestHiddenRulesNegativeControl(t *testing.T) {
 		t.Fatal("a rule that makes its own node never differs from the grammar with its expression in place")
 	}
 }
+
+// With default values every rule makes the default value of its expression. A hidden rule that had
+// an action, or an inline action, still makes its own node then, as its action did: it does not
+// become a rule that splices into its caller.
+func TestDefaultValueKeepsTheNodeOfHiddenRulesWithActions(t *testing.T) {
+	for _, tc := range []struct{ name, actions, plain, spliced string }{
+		{"inline default action", `rule main = "a" (x:"b" "c" => ...) "d"`, `rule main = "a" (x:"b" "c" => ...) "d"`, `rule main = "a" ("b" "c") "d"`},
+		{"inline action", `rule main = "a" (x:"b" "c" => text($x)) "d"`, `rule main = "a" (x:"b" "c" => ...) "d"`, `rule main = "a" ("b" "c") "d"`},
+		{"hidden rule with an action", "rule main = \"a\" _m \"d\"\nrule _m = x:\"b\" \"c\" => text($x)", "rule main = \"a\" _m \"d\"\nrule _m = x:\"b\" \"c\" => ...", `rule main = "a" ("b" "c") "d"`},
+		{"hidden default action", "rule main = \"a\" _m \"d\"\nrule _m = x:\"b\" \"c\" => ...", "rule main = \"a\" _m \"d\"\nrule _m = x:\"b\" \"c\" => ...", `rule main = "a" ("b" "c") "d"`},
+		{"nested", `rule main = "a" (x:"b" (y:"c" => text($y)) => text($x)) "d"`, `rule main = "a" (x:"b" (y:"c" => ...) => ...) "d"`, `rule main = "a" ("b" "c") "d"`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			def, plain, spliced := compileBare(t, tc.actions, Options{DefaultValue: true}), compileBare(t, tc.plain), compileBare(t, tc.spliced)
+			differs := false
+			for _, input := range []string{"abcd", "abd", "a", ""} {
+				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+					o := ParseOptions{Backend: backend}
+					want, got := resultJSON(plain.ParseWith("main", input, o)), resultJSON(def.ParseWith("main", input, o))
+					if got != want {
+						t.Errorf("%q on %s:\ndefault value: %s\nas written:    %s", input, backend, got, want)
+					}
+					if resultJSON(spliced.ParseWith("main", input, o)) != want {
+						differs = true
+					}
+				}
+			}
+			if !differs {
+				t.Error("the node of the rule is never visible, so the case proves nothing")
+			}
+		})
+	}
+}

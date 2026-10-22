@@ -37,6 +37,7 @@ func EntryError(name string) error {
 type inlineSite struct {
 	rule string // the rule that holds the inline action
 	n    int    // its number among the inline actions of the rule, from 1
+	node *grammar.InlineAction
 }
 
 // inlineNames maps the name of each hidden rule that the lowering generated to the inline action
@@ -167,6 +168,9 @@ type inlineLowerer struct {
 	unused  int // depth of the expressions whose value is not used: lookaheads and discards
 	errs    ErrorList
 	control *compileControl
+	// keepInline, when set, makes the walk keep the inline actions: it returns the inline action e
+	// whose expression is now inner, as it should stay in the result.
+	keepInline func(e *grammar.InlineAction, inner grammar.Expr) grammar.Expr
 }
 
 // lowerInlineActions returns g with every inline action replaced by a reference to a hidden rule.
@@ -233,6 +237,9 @@ func (l *inlineLowerer) expr(e grammar.Expr) grammar.Expr {
 	l.control.poll()
 	switch e := e.(type) {
 	case *grammar.InlineAction:
+		if l.keepInline != nil {
+			return l.keepInline(e, l.expr(e.Expr))
+		}
 		if l.unused > 0 {
 			l.errs = append(l.errs, &Error{Pos: e.Diagnostic(), Msg: "an inline action is not allowed in a lookahead or a discard, whose value is not used"})
 		}
@@ -240,7 +247,7 @@ func (l *inlineLowerer) expr(e grammar.Expr) grammar.Expr {
 		l.count++
 		name := inlineActionName(l.rule, l.count, l.taken)
 		if l.names != nil {
-			l.names[name] = inlineSite{rule: l.rule, n: l.count}
+			l.names[name] = inlineSite{rule: l.rule, n: l.count, node: e}
 		}
 		l.hidden = append(l.hidden, &grammar.RuleDef{SourceInfo: e.SourceInfo, Name: name, Expr: inner, Action: e.Action, DefaultAction: e.DefaultAction})
 		return &grammar.Ref{SourceInfo: e.SourceInfo, Name: name}
