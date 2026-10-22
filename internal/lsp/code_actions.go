@@ -177,6 +177,8 @@ func (s *Server) codeActionsControlled(params json.RawMessage, control *renderCo
 	if lintErr != nil {
 		return nil, &rpcError{Code: codeRequestCancelled, Message: "request cancelled"}
 	}
+	var fixer *lintFixer
+	fixerDone := false
 	for _, diagnostic := range current {
 		control.poll()
 		if ctx.Err() != nil {
@@ -214,6 +216,15 @@ func (s *Server) codeActionsControlled(params json.RawMessage, control *renderCo
 			if ok {
 				control.poll()
 				out = append(out, codeAction{Title: "Suppress " + diagnostic.Code + " on this finding line", Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Edit: &actionEdit{DocumentChanges: []textDocumentEdit{{TextDocument: versionedTextDocumentIdentifier{URI: d.uri, Version: version}, Edits: []TextEdit{edit}}}}})
+			}
+			// A change that cannot alter what the grammar matches or builds, proved for its kind
+			// and checked on the edited grammar.
+			if !fixerDone {
+				fixer, fixerDone = d.fixer(ctx), true
+			}
+			if fix, ok := fixer.fix(diagnostic, control); ok {
+				control.poll()
+				out = append(out, codeAction{Title: fix.title, Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Edit: &actionEdit{DocumentChanges: []textDocumentEdit{{TextDocument: versionedTextDocumentIdentifier{URI: d.uri, Version: version}, Edits: []TextEdit{fix.edit}}}}})
 			}
 		}
 	}
