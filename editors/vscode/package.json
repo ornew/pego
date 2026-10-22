@@ -75,7 +75,7 @@
         "pego.server.experimentalLint": {
           "type": "boolean",
           "default": false,
-          "description": "Enable experimental lint diagnostics, guarded explanations and responsive analysis. Restart the language server when this setting changes."
+          "description": "Enable experimental lint diagnostics, guarded explanations, version-checked suppression quick fixes and responsive analysis. Restart the language server when this setting changes."
         }
       }
     },

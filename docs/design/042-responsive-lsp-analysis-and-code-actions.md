@@ -1139,7 +1139,7 @@ the stamp comparison, and one it has seen fails the extension's own check, so th
 edit applies only to the analyzed text. The extension reports no result beyond
 the boolean.
 
-This depends on behaviour VS Code does not document: the stamp is
+The action ships only behind `pego.server.experimentalLint`: with it off, the middleware drops every lint action, including a version-less edit, and the command applies nothing. This depends on behaviour VS Code does not document: the stamp is
 omitted when the extension host does not know the document, in which case the
 main thread checks nothing, and a different host could behave differently. The
 extension only offers the action for a document it holds in `textDocuments`

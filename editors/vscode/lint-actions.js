@@ -72,7 +72,12 @@ function createLintActions(vscode, enabled, isCurrentClient) {
       return next(uri, diagnostics);
     },
     async provideCodeActions(document, range, context, token, next) {
-      if (!enabled) return next(document, range, context, token);
+      if (!enabled) {
+        // Lint actions exist only behind the experimental setting; never let
+        // one through unguarded, in particular a version-less edit.
+        const passed = await next(document, range, context, token);
+        return Array.isArray(passed) ? passed.filter((a) => !(a.diagnostics || []).some((d) => d.source === 'pego-lint')) : passed;
+      }
       const version = document.version, uri = uriText(document.uri);
       const actions = await next(document, range, context, token);
       if (!active() || token.isCancellationRequested || document.isClosed ||

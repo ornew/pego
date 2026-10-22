@@ -39,7 +39,10 @@ async function main() {
     assert.equal(h.clients[0].capabilities.experimental, undefined);
     const d = document(); h.workspace.textDocuments = [d];
     const returned = [explanation()];
-    assert.equal(await actions(h, d, () => returned), returned, 'disabled middleware passes ordinary actions through');
+    const ordinary = { title: 'ordinary', diagnostics: [{ source: 'other' }] };
+    assert.deepEqual(await actions(h, d, () => [ordinary]), [ordinary], 'disabled middleware passes ordinary actions through');
+    assert.deepEqual(await actions(h, d, () => returned), [], 'disabled middleware drops lint actions');
+    assert.deepEqual(await actions(h, d, () => [suppression()]), [], 'disabled middleware drops lint edits');
     assert.equal(await h.commands['pego.showExplanation']('unused-capture', 'message', 'explanation'), false);
     assert.equal(h.information.length, 0);
   });
