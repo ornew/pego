@@ -46,6 +46,35 @@ function createLintActions(vscode, enabled, isCurrentClient) {
         end.line !== start.line || end.character !== 0) return undefined;
     return { line: start.line, text: newText };
   };
+  // A fix replaces a span of one document for the single finding it belongs to.
+  // The server proves each kind and verifies the edited grammar; the client
+  // accepts only the shapes below, judged on the text the edit replaces.
+  const fixShapes = {
+    // Overlapping ranges become a merged class.
+    'char-class': (old, text) => /^\[[^\r\n]*\]$/.test(old) && /^\[[^\r\n]*\]$/.test(text),
+    // A lookahead that always succeeds is deleted.
+    'useless-lookahead': (old, text) => text === '' && /^[&!][^\r\n]*$/.test(old),
+    // An unreachable rule is deleted, with its leading attributes and comment lines.
+    'unreachable-rule': (old, text) => text === '' && /(^|\n)[ \t]*rule[ \t]+[A-Za-z_]/.test(old) &&
+      !old.includes('lint:file-ignore'),
+  };
+  const fixCheck = (check) => typeof check === 'string' && Object.hasOwn(fixShapes, check) ? check : undefined;
+  const validRange = (r) => r && r.start && r.end &&
+    [r.start.line, r.start.character, r.end.line, r.end.character].every((n) => Number.isSafeInteger(n) && n >= 0) &&
+    (r.end.line > r.start.line || r.end.line === r.start.line && r.end.character > r.start.character);
+  const fixTarget = (edit, uri, findings, document) => {
+    if (findings.length !== 1 || typeof edit.entries !== 'function' || typeof document.getText !== 'function') return undefined;
+    const entries = edit.entries();
+    if (!Array.isArray(entries) || entries.length !== 1) return undefined;
+    const [target, edits] = entries[0];
+    if (!target || uriText(target) !== uri || !Array.isArray(edits) || edits.length !== 1) return undefined;
+    const { range, newText } = edits[0], code = findings[0].code;
+    const check = fixCheck(code && typeof code === 'object' ? code.value : code);
+    if (!check || !validRange(range) || typeof newText !== 'string') return undefined;
+    const old = document.getText(range);
+    if (typeof old !== 'string' || !fixShapes[check](old, newText)) return undefined;
+    return { check, range: [range.start.line, range.start.character, range.end.line, range.end.character], text: newText };
+  };
   const feature = {
     fillClientCapabilities(capabilities) {
       if (!enabled) return;
@@ -100,11 +129,15 @@ function createLintActions(vscode, enabled, isCurrentClient) {
           // command applies a freshly built edit under a synchronous version
           // check (see applySuppression).
           const target = suppressionTarget(action.edit, uri, findings);
-          if (!target) return [];
+          const fix = target ? undefined : fixTarget(action.edit, uri, findings, document);
+          if (!target && !fix) return [];
           action.edit = undefined;
-          action.command = {
+          action.command = target ? {
             title: action.title, command: 'pego.applyLintSuppression',
             arguments: [target.line, target.text, guard],
+          } : {
+            title: action.title, command: 'pego.applyLintFix',
+            arguments: [fix.check, fix.range, fix.text, guard],
           };
         } else {
           return [];
@@ -138,6 +171,22 @@ function createLintActions(vscode, enabled, isCurrentClient) {
       if (Number.isInteger(document.lineCount) && line >= document.lineCount) return Promise.resolve(false);
       const edit = new vscode.WorkspaceEdit();
       edit.insert(document.uri, new vscode.Position(line, 0), text);
+      return Promise.resolve(vscode.workspace.applyEdit(edit)).then((applied) => applied === true);
+    },
+    // Applies a fix under the same synchronous version check as a suppression
+    // (see applySuppression), after judging the text it replaces once more.
+    applyFix(check, range, text, guard) {
+      if (!guardCurrent(guard) || !fixCheck(check) || typeof text !== 'string' || !Array.isArray(range) ||
+          range.length !== 4) return Promise.resolve(false);
+      const [startLine, startCharacter, endLine, endCharacter] = range;
+      const r = { start: { line: startLine, character: startCharacter }, end: { line: endLine, character: endCharacter } };
+      const document = documentFor(guard.uri);
+      if (!validRange(r) || !document || document.version !== guard.version || typeof document.getText !== 'function' ||
+          Number.isInteger(document.lineCount) && endLine > document.lineCount) return Promise.resolve(false);
+      const old = document.getText(new vscode.Range(startLine, startCharacter, endLine, endCharacter));
+      if (typeof old !== 'string' || !fixShapes[check](old, text)) return Promise.resolve(false);
+      const edit = new vscode.WorkspaceEdit();
+      edit.replace(document.uri, new vscode.Range(startLine, startCharacter, endLine, endCharacter), text);
       return Promise.resolve(vscode.workspace.applyEdit(edit)).then((applied) => applied === true);
     },
   };

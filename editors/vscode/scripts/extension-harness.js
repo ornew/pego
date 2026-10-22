@@ -66,9 +66,11 @@ function loadExtension(plans = [], options = {}) {
     constructor() { this.text = new Map(); }
     set(uri, edits) { this.text.set(uri, edits); }
     insert(uri, position, newText) { this.set(uri, [{ range: { start: position, end: position }, newText }]); }
+    replace(uri, range, newText) { this.set(uri, [{ range, newText }]); }
     entries() { return [...this.text.entries()]; }
   };
   vscode.Uri = { parse: (value) => ({ toString: () => value }) };
+  vscode.Range = class { constructor(sl, sc, el, ec) { this.start = { line: sl, character: sc }; this.end = { line: el, character: ec }; } };
   vscode.Position = class { constructor(line, character) { this.line = line; this.character = character; } };
   class LanguageClient {
     constructor(id, name, server, clientOptions) {

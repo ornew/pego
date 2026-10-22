@@ -157,6 +157,7 @@ async function activate(context) {
     vscode.commands.registerCommand('pego.restartServer', restart),
     vscode.commands.registerCommand('pego.showExplanation', (...args) => clientLintActions?.showExplanation(...args) || false),
     vscode.commands.registerCommand('pego.applyLintSuppression', (...args) => clientLintActions?.applySuppression(...args) || false),
+    vscode.commands.registerCommand('pego.applyLintFix', (...args) => clientLintActions?.applyFix(...args) || false),
     vscode.workspace.onDidCloseTextDocument((document) => clientLintActions?.closeDocument(document)),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (active && e.affectsConfiguration('pego.server')) {

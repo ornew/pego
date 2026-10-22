@@ -7,7 +7,14 @@ const { loadExtension, deferred, within } = require('./extension-harness');
 const manifest = require('../package.json');
 
 const uri = { toString: () => 'file:///lint.pego' };
-const document = () => ({ uri, version: 1, isClosed: false, lineCount: 4 });
+const source = ['@start', 'rule main = [a-cb-z] &"b"* "x"', '// Not used.', 'rule x = "b"', ''].join('\n');
+// getText answers from a source with LF line breaks; a range is {start, end} of line and character.
+const textOf = (range) => {
+  const lines = source.split('\n'), { start, end } = range;
+  if (start.line === end.line) return lines[start.line].slice(start.character, end.character);
+  return [lines[start.line].slice(start.character), ...lines.slice(start.line + 1, end.line), lines[end.line].slice(0, end.character)].join('\n');
+};
+const document = () => ({ uri, version: 1, isClosed: false, lineCount: 4, getText: textOf });
 const token = () => ({ isCancellationRequested: false });
 const diagnostic = (version = 1, generation = 1, code = 'unused-capture') => ({
   source: 'pego-lint', code, message: 'capture b is unused',
@@ -20,6 +27,14 @@ const explanation = (d = diagnostic()) => ({
 const suppression = (d = diagnostic(), target = uri, text = '// lint:ignore unused-capture\n', line = 1, character = 0) => ({
   title: 'Suppress unused-capture on this finding line', diagnostics: [d],
   edit: { entries: () => [[target, [{ range: { start: { line, character }, end: { line, character } }, newText: text }]]] },
+});
+const fixDiagnostic = (code, version = 1, generation = 1) => ({
+  source: 'pego-lint', code, message: code,
+  data: { uri: uri.toString(), version, generation, key: '0:' + code },
+});
+const range = (sl, sc, el, ec) => ({ start: { line: sl, character: sc }, end: { line: el, character: ec } });
+const fix = (code, r, text, d = fixDiagnostic(code), target = uri) => ({
+  title: 'Fix ' + code, diagnostics: [d], edit: { entries: () => [[target, [{ range: r, newText: text }]]] },
 });
 const publish = (h, d) => h.clients.at(-1).clientOptions.middleware.handleDiagnostics(uri, d, () => {});
 const actions = (h, doc, next, cancellation = token()) =>
@@ -169,6 +184,83 @@ async function main() {
     h.closedDocument(d);
     assert.equal(await execute(h, closing), false, 'close invalidates the command');
     assert.equal(h.applied.length, 2);
+  });
+  await using(true, async (h) => {
+    const d = document(); h.workspace.textDocuments = [d]; publish(h, [fixDiagnostic('char-class')]);
+    h.mainVersion = () => d.version;
+    const classRange = range(1, 12, 1, 20), lookaheadRange = range(1, 21, 1, 26), ruleRange = range(2, 0, 4, 0);
+    assert.equal(textOf(classRange), '[a-cb-z]');
+    assert.equal(textOf(lookaheadRange), '&"b"*');
+    const good = [
+      ['char-class', classRange, '[a-z]'],
+      ['useless-lookahead', lookaheadRange, ''],
+      ['unreachable-rule', ruleRange, ''],
+    ];
+    for (const [code, r, text] of good) {
+      const [action] = await actions(h, d, () => [fix(code, r, text)]);
+      assert.equal(action.edit, undefined, code + ': the unversioned WorkspaceEdit is replaced by a guarded command');
+      assert.equal(action.command.command, 'pego.applyLintFix');
+      const before = h.applied.length;
+      const pending = execute(h, action);
+      assert.equal(h.applied.length, before + 1, code + ': applyEdit is called synchronously');
+      assert.deepEqual(h.appliedVersions.at(-1), [1]);
+      const [[target, edits]] = h.applied.at(-1).entries();
+      assert.equal(target, uri);
+      assert.deepEqual(edits.map((e) => [JSON.parse(JSON.stringify(e.range)), e.newText]), [[r, text]]);
+      assert.equal(await pending, true);
+    }
+    const bad = [
+      ['class replaced by a rule', fix('char-class', classRange, 'rule y = "z"')],
+      ['class replaced by a line break', fix('char-class', classRange, '[a-z]\nrule y = "z"')],
+      ['class edit over text that is not a class', fix('char-class', range(1, 0, 1, 10), '[a-z]')],
+      ['lookahead replaced by text', fix('useless-lookahead', lookaheadRange, 'x')],
+      ['lookahead edit over a rule', fix('useless-lookahead', ruleRange, '')],
+      ['rule edit over a directive line', fix('unreachable-rule', range(0, 0, 1, 0), '')],
+      ['rule replaced by text', fix('unreachable-rule', ruleRange, 'rule y = "z"\n')],
+      ['empty range', fix('char-class', range(1, 12, 1, 12), '[a-z]')],
+      ['backwards range', fix('char-class', range(1, 20, 1, 12), '[a-z]')],
+      ['negative position', fix('char-class', range(1, -1, 1, 20), '[a-z]')],
+      ['malformed range', { ...fix('char-class', classRange, '[a-z]'), edit: { entries: () => [[uri, [{ newText: '[a-z]' }]]] } }],
+      ['other document', fix('char-class', classRange, '[a-z]', undefined, { toString: () => 'file:///other.pego' })],
+      ['a check without a fix', fix('unused-capture', classRange, '[a-z]')],
+      ['two findings', { ...fix('char-class', classRange, '[a-z]'), diagnostics: [fixDiagnostic('char-class'), fixDiagnostic('char-class')] }],
+      ['two edits', { ...fix('char-class', classRange, '[a-z]'), edit: { entries: () => [[uri, [
+        { range: classRange, newText: '[a-z]' }, { range: classRange, newText: '[a-z]' }]]] } }],
+    ];
+    for (const [name, candidate] of bad) {
+      assert.deepEqual(await actions(h, d, () => [candidate]), [], name + ': unsafe fix is not surfaced');
+    }
+    const keep = d.getText;
+    d.getText = () => 'rule x = "b"\n// lint:file-ignore char-class\n';
+    assert.deepEqual(await actions(h, d, () => [fix('unreachable-rule', ruleRange, '')]), [], 'a rule span that holds a file-wide directive is not surfaced');
+    d.getText = keep;
+    const applied = h.applied.length;
+    const [action] = await actions(h, d, () => [fix('char-class', classRange, '[a-z]')]);
+    const [check, r, text, guard] = action.command.arguments;
+    for (const forged of [
+      [check, r, 'rule y = "z"', guard], ['useless-lookahead', r, '', guard], ['nope', r, text, guard],
+      [check, [1, 12, 1], text, guard], [check, [1, 12, 1, 12], text, guard], [check, [9, 0, 9, 4], text, guard],
+      [check, r, text, { ...guard, session: 'x' }], [check, r, text, { ...guard, version: 2 }], [check, r, text, undefined],
+    ]) {
+      assert.equal(await h.commands['pego.applyLintFix'](...forged), false, JSON.stringify(forged));
+    }
+    assert.equal(h.applied.length, applied, 'forged fixes never reach the editor');
+    d.version = 2;
+    assert.equal(await execute(h, action), false, 'stale version is not applied');
+    d.version = 1;
+    h.mainVersion = () => 2;
+    assert.equal(await execute(h, action), false, 'main thread refuses an edit stamped with an older version');
+    assert.equal(h.applied.length, applied + 1);
+    publish(h, [fixDiagnostic('char-class', 1, 2)]);
+    assert.equal(await execute(h, action), false, 'same-version publication advances generation');
+    assert.equal(h.applied.length, applied + 1);
+  });
+  await using(false, async (h) => {
+    const d = document(); h.workspace.textDocuments = [d];
+    const disabled = [fix('char-class', range(1, 12, 1, 20), '[a-z]')];
+    assert.deepEqual(await actions(h, d, () => disabled), [], 'disabled middleware drops lint fixes');
+    assert.equal(await h.commands['pego.applyLintFix']('char-class', [1, 12, 1, 20], '[a-z]', {}), false, 'disabled lint applies no fix');
+    assert.equal(h.applied.length, 0);
   });
   await using(false, async (h) => {
     const d = document(); h.workspace.textDocuments = [d];
