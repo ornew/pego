@@ -43,6 +43,39 @@ func TestDeclarationAttributesParse(t *testing.T) {
 	}
 }
 
+// An expression attribute that ends a rule does not take the attributes of
+// the next declaration on the following line.
+func TestDeclarationAttributesAfterExpressionAttribute(t *testing.T) {
+	const src = "@start\nrule a = \"x\" @error(message=\"m\")\n@start\nrule b = \"y\" @error(message=\"n\") @foo\n@bar\nrule c = (\"z\"\n    @baz)\n"
+	g, err := Parse(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, rd := range g.Rules() {
+		var names []string
+		for _, a := range rd.Attrs {
+			names = append(names, a.Name)
+		}
+		var expr []string
+		e := rd.Expr
+		if grp, ok := e.(*grammar.Group); ok {
+			// Inside parentheses, attributes still continue on the next line.
+			e = grp.Expr
+		}
+		if a, ok := e.(*grammar.Attributed); ok {
+			for _, x := range a.Attrs {
+				expr = append(expr, x.Name)
+			}
+		}
+		got = append(got, rd.Name+": "+strings.Join(names, " ")+" / "+strings.Join(expr, " "))
+	}
+	want := "a: start / error|b: start / error foo|c: bar / baz"
+	if s := strings.Join(got, "|"); s != want {
+		t.Errorf("got  %s\nwant %s", s, want)
+	}
+}
+
 func TestDeclarationAttributesErrors(t *testing.T) {
 	for _, tc := range []struct{ src, want string }{
 		{"@start rule a = \"x\"\n", "1:8: expected a newline between the declaration attributes and 'rule'"},

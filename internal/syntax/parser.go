@@ -1304,7 +1304,7 @@ func (p *parser) suffixed() (sourceResult grammar.Expr) {
 				a = &grammar.Attributed{Expr: e, Attrs: []*grammar.Attribute{}}
 				e = a
 			}
-			for p.is("@") {
+			for p.is("@") && !p.boundary() {
 				var b *grammar.LineBreak
 				if p.nest == 0 && p.atLineStart() {
 					b = p.lineBreak()
