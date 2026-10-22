@@ -573,6 +573,10 @@ func TestCaptureMemberCompletion(t *testing.T) {
 		`rule pair = k:item "," xs:item* "," g:(v:name) => $k.`,                // 2: a rule a capture labels
 		`rule list = k:item "," xs:item* "," g:(v:name) => map($xs, (i) => i.`, // 3: a lambda element
 		`rule plain = k:name => $k.`,                                           // 4: a rule without captures
+		`rule _h = a:"a" "b"`,
+		`rule viaHidden = x:_h => $x.`, // 6: a hidden rule makes no node
+		`rule acted = a:"a" => $a`,
+		`rule viaAction = x:acted => $x.`, // 8: a rule with an action yields its value
 	}
 	c.open(uri, strings.Join(lines, "\n"))
 	builtins := []string{"End", "Start", "Value"}
@@ -583,6 +587,8 @@ func TestCaptureMemberCompletion(t *testing.T) {
 		{2, append([]string{"$key", "$value"}, builtins...)},
 		{3, append([]string{"$key", "$v", "$value"}, builtins...)},
 		{4, builtins},
+		{6, builtins},
+		{8, builtins},
 	} {
 		if got := completionLabels(c, uri, tc.line, len([]rune(lines[tc.line]))); !reflect.DeepEqual(got, tc.want) {
 			t.Errorf("line %d (%q):\ngot  %q\nwant %q", tc.line, lines[tc.line], got, tc.want)

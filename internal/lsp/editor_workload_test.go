@@ -17,21 +17,21 @@ import (
 // finally a burst of requests once typing stops. It reads replies as they arrive and timestamps
 // them, so the result describes the latencies the editor sees rather than server-side phases.
 type editorSession struct {
-	t         *testing.T
-	peer      *resourcePeer
-	uri       string
-	text      string
-	nextID    int
-	sent      map[int]editorRequest
-	replies   map[int]editorReply
-	versions  map[int]time.Time // publication time by diagnostics version
-	pubs      int
-	lastPub   int // highest version published so far
+	t          *testing.T
+	peer       *resourcePeer
+	uri        string
+	text       string
+	nextID     int
+	sent       map[int]editorRequest
+	replies    map[int]editorReply
+	versions   map[int]time.Time // publication time by diagnostics version
+	pubs       int
+	lastPub    int // highest version published so far
 	duplicates int // replies to an id that already had one, or to an id never sent
-	reordered int // publications of a version below an earlier one
-	peakOut   int
-	out       chan []byte
-	written   chan struct{}
+	reordered  int // publications of a version below an earlier one
+	peakOut    int
+	out        chan []byte
+	written    chan struct{}
 }
 
 type editorRequest struct {

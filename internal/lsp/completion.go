@@ -541,6 +541,11 @@ func (a *analysis) captureMemberItemsControlled(dot int, control *renderControl)
 			return // a call of a parameterized rule, whose arguments may hold captures
 		}
 		if d := a.rules[a.toks[i].Text]; d != nil {
+			// A hidden rule makes no node, and a rule with an action yields the action's value:
+			// neither has the captures of its body as members.
+			if strings.HasPrefix(d.name, "_") || d.rule != nil && d.rule.Action != nil {
+				return
+			}
 			if kw, ok := a.tokAt[d.kwStart]; ok {
 				add(a.captureItemsControlled(kw, control))
 			}
