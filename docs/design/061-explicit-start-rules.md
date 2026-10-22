@@ -27,14 +27,13 @@ Here `file` is the default start rule, `stmt` can be entered by name, and
 
 ## Motivation
 
-Any rule could be entered, and the default start rule was a convention of each
-tool: `main` on the command line and in fixtures, the first rule in the
-playground. A helper rule could be entered from outside and its value relied
-on, the same grammar started at different rules in different tools, and
-generated parsers carried a named entry, with its dispatch case and typed
-converters, for every rule, although most rules are only ever called from
-other rules. The tools had no way to tell which rules a grammar meant as
-entries.
+When a grammar does not declare its entries, any rule can be entered, and the
+default start rule is a convention of each tool, such as a rule named `main`
+or the first rule. A helper rule can then be entered from outside and its
+value relied on, the same grammar starts at different rules in different
+tools, and a generated parser carries a named entry, with its dispatch case and
+typed converters, for every rule, although most rules are only called from
+other rules. The tools cannot tell which rules a grammar means as entries.
 
 ## Goals
 
@@ -49,7 +48,7 @@ entries.
 
 - Removing rules that no start rule reaches, or code kept only for external
   entry; see Limitations.
-- Start rules for Operators Rule levels or for hidden rules.
+- Start rules for Operators Rule levels.
 
 ## Design
 
@@ -65,6 +64,8 @@ invalid when:
 - more than one rule is `@start(default)`;
 - a rule is marked `@start` twice;
 - `@start` has any other argument;
+- a [hidden rule](../../spec/actions.md#hidden-rules), whose name begins with
+  `_`, is marked `@start`;
 - a rule has a declaration attribute other than `@start`.
 
 These errors are reported once the grammar is otherwise valid, so that a
@@ -72,9 +73,12 @@ grammar under construction shows its other errors first.
 
 Parsing without a rule name uses the default start rule. Naming a rule that
 is not a start rule is an error saying that the rule is not a start rule;
-naming one that does not exist says that it is not defined. The compile and
-generate functions keep their start argument: an empty name selects the
-default start rule, and any other name must be a start rule.
+naming a hidden rule says that it is hidden, and naming one that does not
+exist says that it is not defined. The hidden rules behind inline actions
+are never start rules. The compile and
+generate functions take a start argument, and every interface that takes the
+name of a start rule accepts an empty name: it selects the default start rule
+of the grammar, and any other name must be a start rule.
 
 ### Implementation and Invariants
 
@@ -98,25 +102,26 @@ for start rules.
 
 ### Compatibility and Backend Support
 
-Every existing grammar must mark its start rules; a grammar without `@start`
-no longer compiles. The ISA version of the bytecode module changes, so older
-compiled grammars must be compiled again. Generated parsers that were entered
-at a helper rule by name must mark that rule `@start`.
+Every grammar marks its start rules, and a grammar without `@start` does not
+compile. The start rules are part of the bytecode module under its ISA
+version, so a compiled grammar of an earlier ISA version is rejected and is
+compiled again. A rule that a generated parser enters by name is marked
+`@start`.
 
 ## Alternatives Considered
 
-- **Every rule is an entry, and the default is a convention.** This was the
-  previous behavior. It needs no annotation, but each tool chose its own
-  default, and generated parsers pay for every rule as an entry.
+- **Every rule is an entry, and the default is a convention.** It needs no
+  annotation, but each tool chooses its own default, and generated parsers pay
+  for every rule as an entry.
 - **The first rule is the default.** It needs no annotation either, but
   declaration order would carry meaning, and moving a rule would change what
   parsing does.
 - **A grammar-level start declaration, such as `start main`.** It would name
   the start rules in one place, away from the rules themselves. A declaration
   attribute keeps the information on the rule, and moves and renames with it.
-- **Treating unmarked grammars as having all rules as start rules.** It keeps
-  old grammars working, but leaves the implicit behavior in place and makes the
-  set of entries depend on whether any rule is marked.
+- **Treating unmarked grammars as having all rules as start rules.** It needs
+  no marks in grammars that do not care, but keeps the implicit entries and
+  makes the set of entries depend on whether any rule is marked.
 
 ## Testing
 
@@ -131,28 +136,28 @@ with the interpreter's messages.
 
 ## Performance and Results
 
-Emitting typed entry code only for start rules shrinks generated Go parsers.
-Sizes of `parser.go` in bytes, before and after:
+A per-rule entry of a generated Go parser, its `ParseRuleAST` case and typed
+converters, costs bytes in `parser.go`, and only start rules have one. For the
+bundled grammars, generated with `pego gen -types -recognize -runtime import`
+(DuckDB SQL, TypeScript and JSON also with `-nodoc`), the entries of the rules
+that are not start rules would cost:
 
-| Grammar | Before | After | Change |
+| Grammar | `parser.go` bytes | Entries of other rules, bytes | Share with them |
 |---|---:|---:|---:|
-| DuckDB SQL | 35,398,859 | 34,913,571 | -1.37% |
-| TypeScript | 12,364,275 | 12,217,505 | -1.19% |
-| XML | 1,033,566 | 1,015,370 | -1.76% |
-| minilang | 514,912 | 506,274 | -1.68% |
-| JSON | 263,354 | 254,732 | -3.27% |
-| calc_lr | 132,195 | 128,726 | -2.62% |
-| CSV | 92,260 | 91,742 | -0.56% |
-| outline | 88,878 | 84,898 | -4.48% |
-| calc | 71,852 | 70,208 | -2.29% |
+| DuckDB SQL | 13,381,886 | 485,337 | 3.50% |
+| TypeScript | 5,416,888 | 146,819 | 2.64% |
+| XML | 468,457 | 18,245 | 3.75% |
+| minilang | 253,370 | 8,687 | 3.31% |
+| JSON | 117,837 | 8,671 | 6.85% |
+| calc_lr | 64,417 | 3,518 | 5.18% |
+| outline | 44,587 | 4,028 | 8.29% |
+| CSV | 43,617 | 567 | 1.28% |
+| calc | 41,045 | 1,693 | 3.96% |
 
-Generated TypeScript parsers keep their size, one byte apart: they had no
-per-rule typed entries, and only the table of start rules is new.
+Generated TypeScript parsers have no per-rule typed entries; their table of
+start rules costs a few bytes.
 
 ## Limitations and Open Questions
 
-- Generated parsers still contain rules that no start rule reaches, and a
-  standalone entry body is still emitted for some rules that only external
-  entry used before.
-- Hidden rules cannot be named yet, so they cannot be start rules; when they
-  can, marking one `@start` is to be an error.
+- Generated parsers contain rules that no start rule reaches, and standalone
+  entry bodies of some rules that no start rule enters directly.
