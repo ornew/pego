@@ -17,7 +17,7 @@ entry point is required.
 ## Current Behavior
 
 [parse.go](../../internal/engine/parse.go) lazily builds a recognizer from `Program.Grammar`; without it the error is
-`recognition needs the grammar, which the compiled grammar omits`. [compile.go](../../internal/engine/compile.go)
+`recognition needs the grammar or a recognition bundle; recompile this compiled grammar from source`. [compile.go](../../internal/engine/compile.go)
 already has a recognition compilation mode and `valueNeededRules`: rules supplying predicate captures and their
 transitive callees retain value construction/actions. Other rules suppress values and actions. Recognition can
 therefore report predicate-dependent evaluation behavior even though unrelated action errors disappear.
@@ -28,8 +28,8 @@ start rules may have no such twin. Matching a full module with CALL.keep=0 or di
 executes actions and builds intermediate values. A recognizer must preserve predicate capture dependencies,
 variable reads and diagnostics, not simply jump to an arbitrary duplicate name in the rule table.
 
-A container stores an ISA version, the main module and optional AST. The current spec uses ISA 3 for
-ordinary modules, 4 for wide bounds, and higher versions for later instruction additions. Loading validates
+A container stores the instruction-set version 26, the main module and optional AST, as
+[spec/bytecode.md](../../spec/bytecode.md) defines. Loading validates
 checksum, tables, operands and recovery regions; it does not establish general termination or recheck all
 type/stack behavior. Recognition bundles keep the trusted-module restriction.
 
@@ -79,10 +79,9 @@ ordering and local string interning make repeated serialization and load/save by
 writer-emitted form. A file with the AST has no recognition bundle, and the loader rejects one that has both.
 
 Store the full semantic recognition program, including predicate-required expression code/type tables. There is
-no need for new match opcodes just to execute the second program. Each module declares the ISA actually required,
-including wide repetition bounds; validation and runtime ISA support apply independently to both. A NoValue flag
+no need for new match opcodes just to execute the second program. Every module declares instruction-set version 26;
+validation and runtime ISA support apply independently to the main module and to the bundle. A NoValue flag
 in the recognizer denotes execution semantics, while the explicit entry map denotes public start eligibility.
-Specify that distinction without rewriting the meaning of twins in legacy normal modules.
 
 The loader accepts only format version 4 and refuses any other version. It requires bundle absence to be explicit
 and never treats it as "use normal twins"; the writer emits a bundle only when a recognizer is present.
@@ -133,8 +132,8 @@ available. The user guide and bytecode format tables describe the same writer be
 
 ## Alternatives Considered
 
-- Keep ASTs and rebuild recognition: the current baseline and a compatibility fallback for old AST-bearing files,
-  but it defeats AST-less distribution and incurs compilation on first recognition.
+- Keep ASTs and rebuild recognition for AST-less distribution: rejected. It needs the AST that an AST-less file
+  omits, and it compiles the recognizer on first recognition.
 - Return nil after running the normal module: easy, but evaluates unrelated actions and retains tree allocation;
   it violates the recognition contract.
 - Derive a complete recognizer from normal bytecode on load: might reduce saved bytes, but requires a validated
@@ -158,9 +157,8 @@ concurrent WithStart views, depth/cancellation abort/retry and pool cleanup. Tes
 start rules, -check output/status, both backend flags, units and -check/-stream rejection.
 
 No broad performance result is claimed. Measure save/load, first recognition preparation and warm recognition separately
-from source compilation and full parsing. Compare exact parent AST-bearing recognition, candidate AST-bearing and
-AST-less bundles, and ordinary parsing as a regression control; do not time the parent's expected capability error
-as equivalent useful work. Include action-free and predicate-heavy corpora, LR/Operators Rule, recovery and both units.
+from source compilation and full parsing. Compare AST-bearing recognition with AST-less bundle recognition, and ordinary parsing as a regression control;
+do not time a capability error as equivalent useful work. Include action-free and predicate-heavy corpora, LR/Operators Rule, recovery and both units.
 Record container/AST/module bytes, executable size where affected, time/allocations, retained prepared-module
 memory and transient/live memory during loading. Pair serialized runs with pinned revisions/toolchains/inputs.
 
