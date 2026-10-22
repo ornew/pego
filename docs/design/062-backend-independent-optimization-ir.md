@@ -18,8 +18,10 @@ representations between the checked grammar and the backends:
 
 Each target declares the Core nodes it can execute, and the Core pass pipeline runs per target. Generated
 Go and TypeScript are printed from Flow IR. Bytecode and the closure backend are built from Core IR: the
-bytecode instruction set is a choice-point machine that matches Core IR, not Flow IR. Each existing
-lowering is removed in the stage that replaces it.
+bytecode instruction set is a choice-point machine that matches Core IR, not Flow IR. Closures and
+bytecode compile each program in two families, each built on first use: an inlined family for parses
+without per-call events or Document memoization, and a call-preserving family for traced, profiled and
+Document parses. Each existing lowering is removed in the stage that replaces it.
 
 ```text
                                                    ┌─ closure pipeline ──▶ closures (Closure backend)
@@ -142,14 +144,16 @@ s and 412 MB of resident memory for a 6.9 MB `parser.go`.
   around an action that does not need one, and no local declared `any` where the checker gives a concrete
   type.
 - No stage increases generated size, generation time, parse time, allocations or `Compile` cost beyond
-  measurement noise; the measurement plan is in [Performance and Results](#performance-and-results).
+  measurement noise; the first-use build of the call-preserving family and the size of saved programs
+  are measured and reported separately. The measurement plan is in
+  [Performance and Results](#performance-and-results).
 
 ## Non-Goals
 
 - Runtime algorithms and data structures: memo tables, deferred memoization, left-recursion growth, the
   Operators Rule loop, Document splicing, stream buffers and slabs stay runtime services that the IR calls.
-- Changes to the grammar language, the public API or the bytecode instruction set. New instructions would
-  need a design of their own (see [Decisions](#decisions)).
+- Changes to the grammar language or the public API. The bytecode instruction set gains only the scope
+  instructions of `Nest`; other new instructions need a design of their own (see [Decisions](#decisions)).
 - A serialized or public IR. Core IR and Flow IR are internal to `internal/engine`.
 - `#missing` support in backends other than Closure; Core IR represents it, and the other backends keep
   rejecting it.
@@ -170,7 +174,7 @@ such as node identity and the number of times an action runs, is free
 | Whether an action or conversion error, a nesting-limit error or a missing-token-limit error occurs, and which first | The raise effect, ordered by evaluation order |
 | Positions in both units | Positions are opaque; primitives advance by characters, never by a unit count fixed at build time |
 | Stream elements already delivered | The commit effect: a delivered element stays delivered. Which prefix is delivered before an interruption depends on work counts, which are implementation-specific |
-| Engine trace and profile events: an enter and an exit event for every rule call, with `Failure`, `Recovered`, `Text` and `Examined`, and the `Profile` counts ([Engine Tracing](../../spec/observability.md#engine-tracing)) | `Call` nodes; closures and the VMs never inline (see [Rule Calls in Each Target](#rule-calls-in-each-target)) |
+| Engine trace and profile events: an enter and an exit event for every rule call, with `Failure`, `Recovered`, `Text` and `Examined`, and the `Profile` counts ([Engine Tracing](../../spec/observability.md#engine-tracing)) | `Call` nodes; in closures and the VMs these parses run the call-preserving family, which keeps every call (see [Rule Calls in Each Target](#rule-calls-in-each-target)) |
 | Generated trace and profile events: the rule calls of the generated route and `TraceSkipped` ([Generated Go Batch Tracing](../../spec/observability.md#generated-go-batch-tracing)); in Documents, the known examined frontier ([Generated Go Document Tracing and Profiling](../../spec/observability.md#generated-go-document-tracing-and-profiling)) | `Call` nodes and the trace points of `Nest` in observable builds; guard peeks and `Nest` bodies in Document variants read input through recording primitives |
 | Document results equal those of a parse from scratch; statistics are implementation-specific ([Reuse](../../spec/documents.md#reuse)) | Input reads happen only in primitives, which record what they examined |
 | Work interruption | Fatal, never absorbed; counts are implementation-specific ([Cancellation and Work Limits](../../spec/parsing.md#cancellation-and-work-limits)) |
@@ -181,9 +185,9 @@ mode: recognition drops actions whose values predicates do not need, and with th
 reuses results nor reports examined input, such as a generated batch parse (which reports `ExaminedKnown`
 false), needs no examined-range recording. Core IR keeps the two apart: **rewrites** preserve every
 observable above in every mode, and **mode specializations** produce a rule variant for one mode and may
-change only what that mode's contract leaves open. A variant exists only where the mode is fixed when the
-target is built; engine tracing and Documents are chosen per parse on the same compiled program, so the
-closure and bytecode targets have no variant for them.
+change only what that mode's contract leaves open. Generated parsers fix every mode when they are
+generated; closures and bytecode select a variant when a parse starts, and engine tracing and Documents
+select the call-preserving family (see [Rule Calls in Each Target](#rule-calls-in-each-target)).
 
 ### Core IR
 
@@ -192,7 +196,8 @@ types, the declared variables, and the rules. A rule holds its name, its value t
 (slots with checked types), its finish (Value Action, capture attachment and named-node conversion, as in
 [Rule Completion](../../spec/bytecode.md#rule-completion)), its Operators Rule table if it has one, and its call
 policy: memoized, transient, plain, left-recursion leader, splice, the variables it reads, and its variant
-key (value or value-free, recognition, work-control and Document modes, observability). These are the
+key (value or value-free, recognition, work-control and Document modes, observability, and for closures
+and bytecode the family). These are the
 attributes that `rule` in `compile.go` holds today; Core IR makes them the input of every backend instead of
 flags that each backend interprets.
 
@@ -221,7 +226,8 @@ Expression nodes:
 - it opens a variable scope, so bindings made in the body are not visible after it, on success or failure
   ([Variables](../../spec/predicates.md#variables));
 - the body has its own capture slots, separate from the caller's;
-- on failure it removes the errors recovered inside it and resets the position;
+- on failure it removes the errors recovered inside it, resets the position and, while `#missing` insertion
+  is active, resets the missing-token state;
 - it counts one nesting level, checked against the nesting limit on entry, and in observable builds it
   reports enter and exit events.
 
@@ -272,7 +278,7 @@ Core IR invariants, checked by a verifier after every pass in tests:
 | Rewrite | Precondition and obligation |
 |:--|:--|
 | First-character guards | As the invariant above. The guard records the alternative's expectation at the current position and skips only if the depth after the calls on the way stays within the nesting limit, which is checked at run time; it is off while `#missing` insertion is active. Adjacent guards share one peek and may become a dispatch table. |
-| Rule inlining (`Call` to `Nest`) | Only for targets that declare `Nest`. The callee is not a leader, has no Operators Rule, is never memoized in the variant's mode (plain, or transient outside Documents), and is not in a call-graph cycle with the caller; a size budget per function bounds the growth. `Nest` keeps the scope of a call (above), so cuts, variables, captures, recovered errors, nesting-limit errors and the events of observable builds are those of the call. In a Document variant, rules that Documents memoize are not inlined: inlining them is allowed by the contract but gives up reuse. |
+| Rule inlining (`Call` to `Nest`) | Only in pipelines that declare `Nest`: generated parsers and the inlined family of closures and bytecode. The callee is not a leader, has no Operators Rule, is never memoized in the variant's mode (plain, or transient outside Documents), and is not in a call-graph cycle with the caller; a size budget per function bounds the growth. `Nest` keeps the scope of a call (above), so cuts, variables, captures, recovered errors, nesting-limit errors and the events of observable builds are those of the call. In a Document variant, rules that Documents memoize are not inlined: inlining them is allowed by the contract but gives up reuse. |
 | Value elision (want none) | Allowed only where building the value cannot raise: a conversion that the checker proves, such as a rule result converted to a named node type, has no raise effect, while an action may raise and keeps its evaluation. This covers value-free bodies, twins, Operators Rule lines and projections. The value-needed analysis decides want for the recognition specialization, which may also drop raising actions. |
 | Terminal lowering | Value-free regions of literals, classes, sequences, choices, options and negative lookaheads become `Scan`, `ClassRun` or `Terminal`, which consume the same input and record the same expectations at the same positions ([record 111](../optimizations/111-terminal-programs.md)). The emitter chooses a table or straight-line code by size. |
 | Case-pair class folding | A run of classes each holding one letter in both cases, such as `[kK] [eE] [yY]`, becomes a `ClassRun` with a case-folding fast path; on failure it records the class of the failing position, not a literal. |
@@ -283,21 +289,66 @@ pipeline without it (see [Testing](#testing)).
 
 ### Rule Calls in Each Target
 
-Engine tracing, profiling and Documents are options of a parse, not of the compiled program: the closure
-backend and the VMs run the same program with or without them and switch to full rule calls at run time
-(`noPlain`, set by `setTrace` in `trace.go` and for every Document parse in `document.go`). A `Nest`
-compiled into a closure or bytecode program would therefore lose the events that every rule call must
-report and the memoization that Documents give transient rules. Three ways were considered:
+A traced or profiled parse (`WithTrace`, `WithProfile`) reports an enter and an exit event for every rule
+call, and a Document parse memoizes transient rules ([Engine Tracing](../../spec/observability.md#engine-tracing),
+[Rule Calls](../../spec/bytecode.md#rule-calls)). Both are options of a parse. The closure backend and the
+VMs share one program between these parses and all others and decide at every call whether to take the
+plain path (`r.plain && !p.noPlain` in `compile.go`, `vm.go` and `ivm.go`; `setTrace` in `trace.go` and
+every Document parse in `document.go` set `noPlain`). Recognition and, in the closure backend, work
+controls already select separate programs, built on first use under a `sync.Once` of the shared
+`Program` (`Program.recognizer` in `parse.go`, `prepareControlledProgram` in `work_setup.go`) and stored
+for recognition in programs saved without the AST.
 
-| Choice | Cost |
-|:--|:--|
-| Closures and VMs do not inline; `Call` keeps today's run-time choice between the plain path and a full call | No inlining gains for these targets |
-| Compile a variant per mode (traced, Document, ordinary), lazily as the recognizer is built today | `Compile` time and memory per mode used, and a variant to keep in step |
-| A `Nest` that checks at run time and falls back to a full call | Two copies of every inlined body in closures, and a new instruction for the VMs |
+Closures and bytecode therefore compile each program in two **families**:
 
-This design takes the first: the closure and bytecode pipelines do not declare `Nest`. Generated parsers
-fix observability and Documents when they are generated (`-observability`, `-document`), so their
-pipeline knows the variant: in an observable build `Nest` emits the enter and exit events of the call.
+| Family | Serves | Rule calls |
+|:--|:--|:--|
+| Inlined | Parses without tracing, profiling or a Document: batch parses, streams, recognition and work-controlled parses | Inlining produces `Nest`; a plain rule that is not inlined is called on the plain path, without the memo and trace checks of a call |
+| Call-preserving | Traced and profiled parses, and Document parses | Every rule reference stays a full `Call` |
+
+A parse selects its family from its options when it starts, so no rule call checks the mode, and
+`noPlain` disappears. `plain` is derived for each family when its program is built or loaded and is not
+stored in modules: false for every rule in the call-preserving family, and computed from the rule table
+as today in the inlined family. `Compile` checks the grammar and builds Core IR; each family's program is
+built on first use under its own `sync.Once`, as the recognizer is, because a `Program` is shared across
+goroutines. A user that only parses Documents, such as the language server, never builds the inlined
+family. Every compile error, such as `undefined rule`, which the closure lowering reports today
+(`compiler.errorf` in `compile.go`), is reported by the checker or the Core IR builder inside `Compile`, so
+building a family cannot fail on a grammar that compiled; an inconsistency found while building one is an
+internal error, not a user error. A first-use build runs inside the parse that needs it, which checks its
+context and work control before and after the build, outside the `sync.Once`, as
+`prepareControlledProgram` does today. The build itself is not interrupted, so a cancelled parse never
+leaves an interrupted build cached in the shared `Program`; its duration is part of the first-use cost
+that [Performance and Results](#performance-and-results) measures. In the work-controlled program, entering a `Nest` charges at least one step, as a call does, so the
+progress invariants of [Flow IR](#flow-ir) hold.
+
+The family is independent of the other variants, which gives this matrix:
+
+| Target | Variants | Count |
+|:--|:--|--:|
+| Closures | family × work control × recognition | up to 8 closure graphs, each built on first use |
+| VMs | family × recognition (work controls do not select a separate program) | up to 4 modules |
+| Programs saved without the AST | family × recognition | up to 4 modules |
+
+[Performance and Results](#performance-and-results) measures the first-use cost of each family and the
+size of saved programs.
+
+Engine Documents memoize every rule that has a memo mark, transient or not (`memoAll` in `document.go`),
+and the compiler marks every rule outside a call-graph cycle unless memoization is disabled
+(`compile.go`). The only rules a Document parse does not memoize are non-leader rules on a cycle (and, while
+`#missing` insertion is active, rules that can insert), and only a call from outside the cycle could
+inline them. A third family, inlined for Documents, would add
+`Compile` work, a module per saved program and a variant to keep in step for that single case, so
+Documents use the call-preserving family. Generated Document variants differ because their pipeline
+knows the variant when it is generated; they inline only rules that their Documents never memoize.
+
+Two other ways keep one program for all parses: keep the run-time choice and never inline in closures and
+the VMs, which gives up inlining there; or compile a `Nest` that checks the mode and falls back to a full
+call, which keeps two copies of every inlined body and a check per call.
+
+Generated parsers fix observability and Documents when they are generated (`-observability`,
+`-document`), so their pipeline knows the variant: in an observable build `Nest` emits the enter and exit
+events of the call.
 
 ### Target Pipelines
 
@@ -306,8 +357,8 @@ that produce them.
 
 | Target | Declares | Passes |
 |:--|:--|:--|
-| Closures | Every node except `Nest`, `ClassRun` and `Terminal` | Guards, scans, twins and value elision, projections, recognition |
-| Bytecode | Nodes with an instruction: every node except `Nest`, `ClassRun`, `Terminal` and `Missing` | The same passes, configured to reproduce today's modules |
+| Closures | Every node except `ClassRun` and `Terminal`; the call-preserving family also excludes `Nest` | Guards, scans, twins and value elision, projections, recognition; inlining in the inlined family |
+| Bytecode | Nodes with an instruction: every node except `ClassRun`, `Terminal` and `Missing`; the call-preserving family also excludes `Nest` | The same passes; the call-preserving pipeline reproduces today's modules |
 | Generated Go | Every node except `Missing` | All passes |
 | Generated TypeScript | Every node except `Missing`, `ClassRun` and `Terminal`, which have no TypeScript runtime support | All passes that produce what it declares |
 
@@ -376,15 +427,44 @@ stack ([VM State](../../spec/bytecode.md#vm-state), [Failure](../../spec/bytecod
 selective saves, registers and slots have no instructions to lower to, while every node that the bytecode
 pipeline declares has one: `Choice` to `CHOICE`/`COMMIT`, `Guard` to `GUARD`, `Repeat` to
 `REPEAT`/`ITER`/`NEXT`/`ENDREPEAT`, projections to `NEXT` mode 3, `Scan` to `SCAN`, `Look` to
-`LOOK`/`ENDLOOK`, `Label` to `LABEL`, `Recover` to `RECOVER`/`ENDRECOVER`/`ENDSKIP`, `Call` to `CALL`. The
-recursive and iterative VMs are unaffected: they already share `step` and the call stages
-([Execution Models](../../spec/bytecode.md#execution-models)), and recognition bundles
-([design 045](045-compiled-grammar-recognition.md)) are the bytecode of the recognition specialization.
+`LOOK`/`ENDLOOK`, `Label` to `LABEL`, `Recover` to `RECOVER`/`ENDRECOVER`/`ENDSKIP`, `Call` to `CALL`,
+and `Nest` to two scope instructions:
 
-**Closures.** The closure backend compiles Core IR optimized by the closure pipeline. It stays the default
-backend for grammars with an AST and the only `#missing` backend. Once it is built from Core IR, the same
-compiler run on Core IR without optimizing passes is the reference for rewrites, so no separate
-interpreter is maintained.
+| Instruction | Operands | Semantics |
+|:--|:--|:--|
+| `NEST` | A rule | Begin an inlined call of rule A. Charge one work step; increment the call depth and end the parse with the nesting-limit error if it exceeds the limit; save the state and the start position; push a nest entry; create a new frame sized for rule A's scope. |
+| `ENDNEST` | A rule, B keep | The body succeeded. If rule A's body is valued (not a value-free twin or value-free body; see [Rule Table](../../spec/bytecode.md#rule-table)), pop the body value; otherwise the body value is nil. Remove the nest entry, keep the nest's frame for completion, and restore the caller's frame and the capture trail as [Body Evaluation](../../spec/bytecode.md#body-evaluation) does; perform [Rule Completion](../../spec/bytecode.md#rule-completion) of rule A with the body value and the nest's frame from the saved start position; restore the environment, decrement the depth, and push the value if B is 1. |
+
+On failure, a nest entry restores the state, which resets the position and removes the errors recovered
+inside it, decrements the depth and continues failing. `CUT` stops at a nest entry as it stops at the base
+of a rule body.
+
+Load-time validation checks nest regions structurally, as it checks recovery regions; as for all code,
+the loader does not verify stack use ([Load-Time Validation](../../spec/bytecode.md#load-time-validation)):
+
+- every `NEST` begins a contiguous region that ends at a unique `ENDNEST` naming the same rule;
+- every jump target and every target recorded by an instruction inside a region (`CHOICE`, `COMMIT`,
+  `GUARD`, `LOOK`, `RECOVER`, `ENDRECOVER`, `ITER`, `NEXT`, `JUMP`) lies inside that region, and no
+  instruction outside it targets an instruction strictly inside it, so a failure inside never leaves a
+  nest entry behind;
+- regions nest properly with each other and with recovery regions, and every repetition (`REPEAT` to
+  `ENDREPEAT`), lookahead (`LOOK` to `ENDLOOK`) and label (`LABEL` to `ENDLABEL`) opened inside a region
+  closes inside it;
+- a region contains no `RETURN`, no `END` and no stream-mode `NEXT` (mode 2): a `#stream` repetition
+  streams only in the start rule's body at call depth 1 ([Match Instructions](../../spec/bytecode.md#match-instructions)),
+  and an inlined body never runs there, so the compiler emits mode 1;
+- slot operands inside a region are in rule A's scope; rule A is not a leader, has no Operators Rule and
+  is not memoized in the module's family; a call-preserving module contains no `NEST`.
+
+The recursive and iterative VMs share `step` and the call stages
+([Execution Models](../../spec/bytecode.md#execution-models)), so both get the instructions from one
+implementation, and recognition bundles ([design 045](045-compiled-grammar-recognition.md)) are the
+bytecode of the recognition specialization in each family.
+
+**Closures.** The closure backend compiles Core IR optimized by the closure pipeline, in both families. It
+stays the default backend for grammars with an AST and the only `#missing` backend. Once it is built from
+Core IR, the same compiler run on Core IR without optimizing passes is the reference for rewrites, so no
+separate interpreter is maintained.
 
 ### Mapping of Existing Analyses
 
@@ -393,22 +473,30 @@ interpreter is maintained.
 | Type checking, type resolution (`value_types.go`, `type_resolve.go`) | Runs on the grammar before Core IR; annotates nodes, slots and terms |
 | Output schema (`output_schema.go`) | Unchanged; reads checker results |
 | Call graph, nullability, left calls, leaders, SCCs (`analysis.go`) | Computed once by the builder; rule policy and node attributes |
-| Transient, plain, memoized rules, variables read | Rule call policy |
+| Transient, plain, memoized rules, variables read; the run-time `noPlain` choice | Rule call policy; the family of the program |
 | First terminals (three implementations) | One Core attribute; `Guard` |
 | Character classes, class tables, VM ASCII masks | Interned Core classes; each emitter chooses its representation |
 | Value-needed rules, twins, lean bodies, projections (`project.go`) | Want and value elision; twin and recognition variants |
 | Terminal programs (`gen_terminal.go`) | `Terminal` nodes; the emitter keeps the runtime table format |
-| Recognizer program and recognition bundles | Recognition specialization of Core IR; bytecode emitted from it |
+| Recognizer program and recognition bundles | Recognition specialization of Core IR in each family; bytecode emitted from it |
 | Helper sharing by printed body ([record 090](../optimizations/090-share-identical-generated-helpers.md)) | Structural sharing of identical Flow IR functions before printing |
 | `pruneTypedEntries` | Reachability from start rules on Core IR |
 | Compile-cancellation copies (`…Controlled`) | The pass driver polls the compile control between and within passes |
 
 ### Compatibility and Backend Support
 
-The public API, the grammar language, the specification, the bytecode instruction set and `.pegoc` do not
-change. Bytecode modules stay byte-identical when the bytecode stage lands; a later pass reaches bytecode
-only where an existing instruction expresses it. Generated Go and TypeScript change in internal names and
-shape, not in API. Work counts may change per generated artifact, which the specification allows.
+The public API and the grammar language do not change. The bytecode instruction set gains `NEST` and
+`ENDNEST`, and the instruction-set version of every module, including recognition bundles, goes from 26
+to 27. The compiled-file container gets a new version. The main module, whose string table is a prefix of
+the container's, is the call-preserving family's. A program saved without the AST also stores an inlined
+bundle: like the recognition bundle, it has its own instruction-set version, string table and module and
+a start map that must match the main module's, and it carries its own recognition bundle. A program saved
+with the AST stores only the main module and builds the inlined family from the AST on first use. Loaders
+reject earlier versions, which are compiled again; the format keeps no compatibility before the first
+release. `spec/bytecode.md` specifies the two instructions, their failure handling and cut base, the
+families and which parses use each, the derivation of `plain`, the file layout and the load-time checks.
+Generated Go and TypeScript change in internal names and shape, not in API. Work counts may change, which
+the specification allows.
 
 ### Implementation Sequence
 
@@ -435,10 +523,19 @@ stage of its first consumer, so its differential tests and negative controls run
 3. **TypeScript.** Gate: the TypeScript parity tests in `bench` and `internal/engine`, TypeScript event
    streams, and the TypeScript benchmarks (`bench/ts-*.mjs`). Then remove `tsGen.expr`, the TypeScript term
    lowering and the condition rewriting.
-4. **Bytecode.** Gate: byte-identical modules for all repository grammars and the specification test data.
-   Then remove the match and expression-code lowering of `bcompile.go`.
-5. **Closures.** Gate: unchanged results and engine event streams; `Compile` time and allocations within
-   noise. Then remove `exprMatcher`, its helpers and the term compilation of `eval.go`. If `Compile` time
+4. **Bytecode**, in both families, with `NEST`, `ENDNEST`, the new instruction-set and container versions
+   and their specification. Gate: the call-preserving modules, main and recognition, have the module
+   layout bytes of today's modules, excluding the instruction-set version field, for all repository
+   grammars and the specification test data; the inlined family is verified by the
+   differential tests and by event-free equality with the call-preserving family (equal results, errors,
+   expected sets, recovered errors and positions on every parse without events) in both VMs; saved
+   programs with both families load and run in both families; the VM benchmarks, `Compile` cost and
+   saved-file size. Then remove the match and expression-code lowering of `bcompile.go` and the VMs'
+   `noPlain` checks.
+5. **Closures**, in both families. Gate: unchanged results and engine event streams; event-free equality
+   of the two families; `Compile` plus the first-use build of the inlined family within noise of today's
+   `Compile` in time and allocations, and the first-use build of the call-preserving family measured. Then remove `exprMatcher`, its helpers, the term compilation of
+   `eval.go` and `noPlain`. If `Compile` time
    regresses, the stage does not flip; the remedies to measure are building Core IR per rule on first use
    and skipping optimizing passes and closure construction for compilations that only report diagnostics,
    such as the language server's `CompileContext`.
@@ -460,8 +557,8 @@ explicit; a PEG parser has neither. The work between Core IR and host code is st
 Flow IR covers. A third level would add a translation and a verifier without a pass of its own.
 
 **One optimized Core IR for every target.** Simpler, but targets differ in what they can execute (the
-VMs have no instruction for `Nest` or `Terminal`) and in when modes are fixed, and it would break the
-byte-identical gate of the bytecode stage.
+VMs have no instruction for `ClassRun` or `Terminal`) and in when modes are fixed, and it would break the
+layout-identical gate of the bytecode stage.
 
 **Bytecode as the IR.** The bytecode is specified and validated, but it has no types and no structure:
 host-language emission would have to recover blocks and value types from a flat instruction stream.
@@ -494,6 +591,9 @@ the hoisted `any` variables or the missing analyses behind them.
 - **Event streams.** For each stage, engine and generated trace event streams and profiles before and
   after the stage are compared on the corpora; a difference is accepted only where the specification
   allows it, such as calls skipped by first-character dispatch.
+- **Families.** The corpora run in both families of closures and bytecode: the inlined family must equal
+  the call-preserving family on every parse without events, and the call-preserving family keeps the event
+  streams, profiles and Document statistics of the stage before.
 - **Independent expectations.** One Core IR builder feeds every backend, so a builder error would no longer
   show as a disagreement between backends. Golden files and fixture expectations, which are not derived
   from any backend, guard against it, and the AST closure backend remains the reference until its stage.
@@ -501,7 +601,9 @@ the hoisted `any` variables or the missing analyses behind them.
   tests must detect: a guard with a wrong expectation; a `Nest` without its cut barrier, which the grammar
   `rule a = b / "yq"` with `rule b = "y" #cut "z"` exposes on the input `yq`; a `Nest` that keeps the
   callee's bindings; a save that omits the environment; a merged depth check with a failing node between
-  the two checks, run at the nesting limit; an elided value with a raising conversion.
+  the two checks, run at the nesting limit; an elided value with a raising conversion; a `NEST` without
+  its cut base; and a Document family that inlines a transient rule that Documents memoize, which the
+  Document reuse statistics and the rule events of a traced Document parse must expose.
 - **Work controls.** The charge invariants are tested directly: limits stop every looping and recursive
   grammar in the work tests, and interruptions stay fatal in every mode.
 
@@ -519,7 +621,10 @@ machine:
   in both position units, with and without work controls; for stage 3, the TypeScript benchmarks; time and
   allocations with at least six samples compared by `benchstat`.
 - **Closure and bytecode:** `Compile` time and allocations, which the closure backend pays at run time and
-  the language server pays on edits, and the full-suite benchmarks of each backend.
+  the language server pays on edits; the time and allocations of building each family on its first use,
+  which the first parse of each kind pays, and of the variants in the matrix of
+  [Rule Calls in Each Target](#rule-calls-in-each-target); the size of programs saved without the AST,
+  which store both families; and the full-suite benchmarks of each backend in each family.
 
 Each enabled pass records its measured effect in the [optimization catalog](../optimizations/README.md).
 
@@ -528,29 +633,38 @@ Each enabled pass records its measured effect in the [optimization catalog](../o
 1. **Types at rule boundaries in typed Go.** Values cross rule calls as `any`, and bodies use concrete
    types. Typed entries and memo slots per rule, through generics or generated tables, change the runtime
    and are adopted only if measurements show that they cost less than the type assertions they save.
-2. **Bytecode source.** Bytecode is emitted from Core IR with the current instruction set. Flow IR with a
+2. **Bytecode source.** Bytecode is emitted from Core IR with the current instruction set and the scope
+   instructions of `Nest`. Flow IR with a
    register instruction set would redesign the instruction set, both VMs and load-time validation, and
    keeping the AST lowering would keep a parallel path (see [Emission](#emission)).
-3. **No new instructions.** The migration completes without instructions for `Nest`, `ClassRun` or
-   `Terminal`. The VMs, like closures, do not inline, because tracing and Documents are chosen per parse
-   ([Rule Calls in Each Target](#rule-calls-in-each-target)). Terminal and class runs in the VMs are a
-   measured follow-up with a design of their own if VM profiles show that they dominate.
-4. **Closure backend.** Closures are compiled from Core IR. An IR interpreter is unmeasured and would give
+3. **Inlining in closures and the VMs.** Closures and the VMs inline at compile time in the inlined
+   family and keep every call in the call-preserving family; each family is built on first use, a parse
+   selects its family when it starts, and no rule call checks the mode. Documents use the
+   call-preserving family, because they memoize nearly every rule
+   ([Rule Calls in Each Target](#rule-calls-in-each-target)). The VMs execute `Nest` with `NEST` and
+   `ENDNEST` ([Emission](#emission)). Instructions for `ClassRun` and `Terminal` are a measured follow-up
+   with a design of their own if VM profiles show that terminal and class runs dominate.
+4. **Saved programs.** A program saved without the AST stores the call-preserving family as the main
+   module and the inlined family as a bundle with its own string table, each with its recognition bundle,
+   so it runs every kind of parse without the AST. The container and instruction-set
+   versions change, and the format keeps no compatibility before the first release.
+5. **Closure backend.** Closures are compiled from Core IR. An IR interpreter is unmeasured and would give
    up the dispatch that closures resolve when they compile; the closure compiler over unoptimized Core IR
-   serves as the rewrite reference without new code.
-5. **Closures last.** The closure backend migrates in the last stage, so the AST closure backend remains a
-   reference independent of the Core IR builder through the other stages, and the default backend gains
-   least, since it does not inline. The AST lowerings that remain receive fixes only.
-6. **Stages before the first release.** All five stages precede the first release, so that no AST
+   serves as the rewrite reference without new code. Closures compile the same two families as bytecode.
+6. **Closures last.** The closure backend migrates in the last stage, so the AST closure backend remains a
+   reference independent of the Core IR builder through the other stages, and the families and `NEST` are
+   proven on bytecode, whose call-preserving modules have a layout-identical gate, before the default backend
+   adopts them. The AST lowerings that remain receive fixes only.
+7. **Stages before the first release.** All five stages precede the first release, so that no AST
    lowering ships and every backend has the Core passes. The stages are ordered so that a release can be
    cut after any completed stage.
-7. **Work counts.** Charge placement may change the work counts of generated artifacts under the progress
+8. **Work counts.** Charge placement may change the work counts of generated artifacts under the progress
    invariants of [Flow IR](#flow-ir), as the specification makes counts implementation-specific; tests that
    pin counts are updated.
-8. **Overlap within a stage.** The old and the new path run side by side behind a private switch only
+9. **Overlap within a stage.** The old and the new path run side by side behind a private switch only
    within one stage, because comparison on the same source is the main correctness evidence; the switch is
    removed when the default flips.
-9. **Terms in Core IR.** Actions and predicates are lowered in Core IR from the first stage, because the
+10. **Terms in Core IR.** Actions and predicates are lowered in Core IR from the first stage, because the
    function literals and `any` locals in generated Go come from term lowering.
 
 ## Limitations
@@ -559,6 +673,9 @@ The following are predictions to be measured by the gates in
 [Performance and Results](#performance-and-results), not results:
 
 - the cost of building Core IR and running the passes, in generation and in `Compile`;
-- the closure backend's `Compile` time and allocations when compiled from Core IR;
+- the closure backend's `Compile` time and allocations when compiled from Core IR, and the first-use cost
+  of each family;
+- the parse-time gain of inlining in closures and the VMs, and the size of saved programs with both
+  families;
 - the speed and size of generated Go and TypeScript printed from Flow IR, and the cost of `any` at rule
   boundaries.
