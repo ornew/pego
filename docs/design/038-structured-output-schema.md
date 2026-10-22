@@ -1,12 +1,12 @@
 # 038. Versioned Structured Output Schemas
 
-- **Status**: Partially Implemented
+- **Status**: Implemented
 - **Author**: @ornew
 - **Date**: 2026-10-11
 
 ## Summary
 
-Expose a deterministic, versioned description of grammar-declared types and inferred rule output shapes for tooling and query consumers. The format distinguishes declared typed values, inferred shapes, CST nodes, captures, and dynamic `any`; it does not promise Tree-sitter JSON compatibility. The Go version-1 export and deterministic semantic diff are implemented. The version-1 validation contract includes canonical rule/type relationships, reserved CST identities and strict JSON decoding. Structural queries are checked against the schema, including nested and join shapes.
+Expose a deterministic, versioned description of grammar-declared types and inferred rule output shapes for tooling and query consumers. The format distinguishes declared typed values, inferred shapes, CST nodes, captures, and dynamic `any`; it does not promise Tree-sitter JSON compatibility. The Go export of schema version 2, the deterministic semantic diff, and the persistence of the schema in compiled grammars without the AST are implemented. The version-2 validation contract includes canonical rule/type relationships, reserved CST identities and strict JSON decoding. Structural queries are checked against the schema, including nested and join shapes.
 
 ## Motivation
 
@@ -22,7 +22,7 @@ PEGO parses declared `TypeDef` values in `grammar/ast.go`, checks and infers rul
 
 ## Public Go Contract
 
-The implemented Go API exposes the engine schema through public aliases:
+The Go API exposes the engine schema through public aliases:
 
 ```go
 type OutputSchema struct {
@@ -30,6 +30,7 @@ type OutputSchema struct {
     Version int
     Start string
     PositionUnitIndependent bool
+    SourceInfo bool
     Types []SchemaType
     Rules []SchemaRule
 }
@@ -41,22 +42,22 @@ func (s *OutputSchema) UnmarshalJSON(data []byte) error
 func DiffOutputSchemas(before, after *OutputSchema) (*OutputSchemaDiff, error)
 ```
 
-`encoding/json` marshals the exported fields. `Validate` checks the v1 envelope
+`encoding/json` marshals the exported fields. `Validate` checks the version 2 envelope
 and shape graph for both decoded and directly constructed schemas. The
 `UnmarshalJSON` contract rejects unknown fields, field names with incorrect
 case, and duplicate object keys at every nesting level. Validation rejects
 cyclic inline shapes but allows named-reference recursion. Evolution beyond
-version 1 remains a proposal. `DiffOutputSchemas` returns sorted added, removed,
+version 2 is a proposal. `DiffOutputSchemas` returns sorted added, removed,
 or changed entries for types keyed by namespace-qualified type ID and rules
-keyed by rule name. It does not classify compatibility. The version-1 JSON
+keyed by rule name. It does not classify compatibility. The version-2 JSON
 envelope has this shape. This envelope-only illustration omits required rule
 and type entries and is not a valid complete schema:
 
 ```json
-{"format":"pego-output-schema","version":1,"start":"file","positionUnitIndependent":true,"types":[],"rules":[]}
+{"format":"pego-output-schema","version":2,"start":"file","positionUnitIndependent":true,"types":[],"rules":[]}
 ```
 
-`version` versions this serialized contract, not grammar semantics. A reader must reject an unsupported version or preserve it opaquely; it must not silently interpret a future format as v1. The configured start rule is the default export root; an explicit method option may request all rules. Version 1 omits a grammar digest because canonical grammar identity is not defined. Consumers must use the supplied schema instance/content for validation and must not assume type names alone establish compatibility across grammars.
+`version` versions this serialized contract, not grammar semantics. A reader must reject an unsupported version or preserve it opaquely; it must not silently interpret a future format as version 2. The configured start rule is the default export root; an explicit method option may request all rules. Version 2 omits a grammar digest because canonical grammar identity is not defined. Consumers must use the supplied schema instance/content for validation and must not assume type names alone establish compatibility across grammars.
 
 Each type entry has an identity and shape. Declared identities use grammar type names; inferred identities use rule names and an explicit inferred origin; reserved CST kinds occupy a separate namespace. Equal shapes do not merge identities. Fields are serialized by UTF-8 name, join alternatives by stable schema identity, and children in parser order. Recursive shapes use named references rather than recursive inline expansion. Declaration order may be included as metadata, but no serialized meaning depends on map iteration.
 
@@ -78,14 +79,14 @@ nil, and empty optional shape slices are equivalent.
 ## Semantic Schema Diff
 
 `DiffOutputSchemas(before, after)` validates both complete operands with
-`Validate` before comparing version-1 type and rule contents by identity. It
+`Validate` before comparing version 2 type and rule contents by identity. It
 ignores type/rule entry order, struct-field order, and join-alternative order.
 It preserves child order and named references. Envelope fields such as `Start`
 are validated but are not included in the diff result. Added, removed, and
 changed results are sorted by type ID or rule name; unchanged inputs return
 non-nil empty change slices.
 
-Both operands must pass the full v1 validation contract, including reference
+Both operands must pass the full version 2 validation contract, including reference
 resolution and canonical rule/type and reserved-CST relationships. The diff
 does not classify source or binary compatibility. After validation, comparison
 canonicalizes each graph while memoizing visited shape identities, then compares
@@ -95,24 +96,23 @@ valid graph with extensive sharing.
 
 ## Implementation and Determinism
 
-Build the export from the checked grammar/type information behind `pego.Parser`, not generated source, reflection over an arbitrary result, or observed samples. Keep ordering explicit and encode recursive references by identity. Resolve schema options once in order; absent the all-rules option, use the configured start rule. Reject unresolved or unchecked internal shapes rather than emitting partial output. A loaded parser lacks the checked metadata and returns an error matching ErrSchemaUnavailable, even when its compiled file includes an AST; bytecode behavior and names alone cannot reconstruct that information. Persisting schemas with compiled artifacts requires a separate versioned-format design. Add stable repeated-export and round-trip checks, with semantic comparisons separate from exact-byte determinism. A future cross-grammar identity field requires a separately specified canonicalization and digest before it is added to the versioned format.
+Build the export from the checked grammar/type information behind `pego.Parser`, not generated source, reflection over an arbitrary result, or observed samples. Keep ordering explicit and encode recursive references by identity. Resolve schema options once in order; absent the all-rules option, use the configured start rule. Reject unresolved or unchecked internal shapes rather than emitting partial output. The tests check repeated exports and round trips, with semantic comparisons separate from exact-byte determinism. A future cross-grammar identity field requires a separately specified canonicalization and digest before it is added to the versioned format.
+
+## Persistence
+
+A parser loaded from a file with the AST derives its schema from the AST on the first `OutputSchema` call. Loading does not perform this check, so a load that only parses pays nothing for the schema. The derivation checks the grammar the way compilation does, with the options the file records.
+
+A file without the AST holds a schema section only when it was saved with the schema (`pego.WithSchema` with `pego.WithoutAST`, or `pego compile -no-ast -schema`). The section is compact JSON: the complete schema of the grammar, and for each start rule the names of the rules and the type IDs of its export. The export of a start rule is the complete schema restricted to those names, so it equals the export from the checked grammar. The section is specified in [Compiled Grammars](../../spec/compiled-grammars.md#schema-section). A loaded section is kept as it was loaded, so saving the file again reproduces its bytes.
+
+A file with the AST cannot hold a schema section, because the AST provides the schema. A file without the AST and without a section returns an error matching `ErrSchemaUnavailable`, which names the options that save the schema.
 
 ## Compatibility and Backend Support
 
-Schema export is metadata on a compiled grammar and is independent of runtime backend: Closure, recursive bytecode, and iterative bytecode should return the same schema. Generated Go and TypeScript typed values are already supported; the schema describes their grammar-level shapes without claiming target-language layout or serializer identity. `GenerateGo`/`GenerateTypeScript` remain separate APIs. Grammar JSON and Node JSON are separate formats.
+Schema export is metadata on a compiled grammar and is independent of runtime backend: Closure, recursive bytecode, and iterative bytecode return the same schema, and the tests check this agreement for both the source and the compiled grammar. Generated Go and TypeScript typed values are already supported; the schema describes their grammar-level shapes without claiming target-language layout or serializer identity. `GenerateGo`/`GenerateTypeScript` are separate APIs. Grammar JSON and Node JSON are separate formats.
 
-## Remaining Implementation Sequence
+## Schema Consumers
 
-The Go v1 export, start-reachable/all-rules selection, declared and checked
-inferred types, CST/capture categories, deterministic encoding, basic graph
-checks, and semantic schema diff are implemented. The accepted v1 validation
-contract requires canonical `Start`/rule-result relationships and reserved CST
-shapes, exact-case JSON fields with recursive duplicate-key rejection, and
-complete validation of both diff operands. Structural-query compilation
-validates a supplied schema before using it and checks nested and join
-patterns against it. Remaining work includes additional schema consumers as
-described in
-[design 040](040-structural-queries-and-highlighting.md).
+Structural queries are checked against the schema. The query compiler validates a supplied schema before using it and checks nested and join patterns against it. Further schema consumers are described in [design 040](040-structural-queries-and-highlighting.md).
 
 ## Alternatives Considered
 
@@ -121,17 +121,17 @@ described in
 - **Reuse Node JSON:** it is a runtime value format and cannot express possible optional/list/join shapes or declared-versus-inferred provenance.
 - **Promise Tree-sitter compatibility:** it would impose different node and source-retention semantics. A consumer-specific adapter can be specified separately.
 
-## Testing and Performance Plan
+## Testing and Performance
 
-Cover every grammar type constructor, recursive references, joins, optional/nil-capable and list nesting, scalar fields, inferred `top`, CST-only rules, unreachable definitions, and invalid shapes. Verify deterministic bytes, round trips, unsupported-version handling, backend parity, and typed Go/TypeScript declarations against the schema. Measure export time and allocations on small and large grammars separately from parse and code generation.
+The tests cover the export, decoding and validation of the JSON contract, the semantic diff, the schema section of compiled grammars and the backend agreement. They are in `internal/engine/output_schema_*_test.go`, `internal/engine/compiled_schema_test.go` and `schema_diff_test.go`. Export time and allocations are measured separately from parse and code generation, with `internal/engine/output_schema_export_bench_test.go`, `internal/engine/output_schema_validate_bench_test.go` and `schema_diff_bench_test.go`.
 
 ## Performance and Results
 
-The final focused comparison used Go 1.27.1 on an Apple M3 Max
+The focused comparison used Go 1.27.1 on an Apple M3 Max
 (darwin/arm64), with `GOMAXPROCS=4`, `GOGC=100`, no memory limit, and three
-alternating pairs at 200 ms per sample. The baseline was `51fef0d`; the
-candidate included the strict v1 contract and memoized canonical diff. Both
-used identical benchmark sources and fixture files with 16 or 128 declared
+alternating pairs at 200 ms per sample. The baseline is the diff and decoder without the strict
+version 2 contract and the memoized canonical diff. Both
+variants used identical benchmark sources and fixture files with 16 or 128 declared
 types plus the same number of inferred types and rules. Ratios below are
 medians of paired candidate/baseline ratios, with the per-pair range shown
 where useful.
@@ -154,15 +154,15 @@ counts. Ordinary diff cases used less time and fewer allocations, with about
 allocated less. These are synthetic preparation/validation workloads, not
 parser input-path measurements.
 
-The list-identity fix was measured separately against baseline `ddee4ea` using
-`internal/engine/output_schema_export_bench_test.go`, with Go 1.27.1 on an
+Retaining the `cst/List` identity is measured with `internal/engine/output_schema_export_bench_test.go`,
+with Go 1.27.1 on an
 Apple M3 Max (darwin/arm64), `GOMAXPROCS=4`, `GOGC=100`, no memory limit, and
-three alternating serial pairs at 200 ms per sample. When a reachable list
-shape adds the reserved `cst/List` type and its generic-node CST closure, small
-repetition export rose from 1,368 to 2,681 ns/op and export-plus-JSON from
+three alternating serial pairs at 200 ms per sample. A reachable list
+shape adds the reserved `cst/List` type and its generic-node CST closure. Against an export that omits the identity, small
+repetition export rises from 1,368 to 2,681 ns/op and export-plus-JSON from
 2,602 to 6,280 ns/op (serialized JSON size 392 to 1,015 bytes). For one list field, export
-rose from 1,964 to 3,975 ns/op and export-plus-JSON from 3,741 to 8,509 ns/op
-(serialized JSON size 588 to 1,288 bytes). With 128 list fields, export rose
+rises from 1,964 to 3,975 ns/op and export-plus-JSON from 3,741 to 8,509 ns/op
+(serialized JSON size 588 to 1,288 bytes). With 128 list fields, export rises
 from 18,012 to 21,643 ns/op and export-plus-JSON from 64,022 to 70,515 ns/op
 (serialized JSON size 14,304 to 15,004 bytes; export allocation bytes 64,488
 to 69,264 B/op, with 23 additional
@@ -170,63 +170,22 @@ allocations). The scalar control kept size and allocation counts unchanged,
 while timing ranges crossed parity. This is a focused schema-export tradeoff
 for retaining the runtime `List` identity, not a parser-path measurement.
 
-### Earlier Validation Slice
-
-The following earlier comparison measured validated JSON decoding against
-plain DTO decoding and structural-query compilation, before full-validation
-diff and memoized canonical DAG comparison were implemented. Its conclusions
-apply only to that earlier slice. On Go 1.27.1, Apple M3 Max (darwin/arm64),
-with `GOMAXPROCS=4`, `GOGC=100`, no memory limit and three alternating
-baseline/candidate pairs at 200 ms per sample, the medians were:
-
-The baseline was main revision `87a4088`; both binaries used identical
-benchmark sources. Plain DTO decoding is a control for measurement noise; it
-does not validate the schema. Ratios are medians of the three paired
-candidate/baseline ratios, so they need not equal the quotient of the
-displayed medians.
-
-| Operation | Types | Baseline ns/op | Candidate ns/op | Time ratio | Bytes/op ratio |
-|---|---:|---:|---:|---:|---:|
-| Validated JSON decode | 16 | 61,492 | 69,599 | 1.13x | 1.11x |
-| Validated JSON decode | 128 | 465,192 | 510,089 | 1.10x | 1.12x |
-| Plain DTO decode | 16 | 35,704 | 35,449 | 0.99x | 1.00x |
-| Plain DTO decode | 128 | 276,774 | 278,115 | 1.01x | 1.00x |
-| Compile query, known field | 16 | 245 | 8,357 | 34.14x | 25.39x |
-| Compile query, known field | 128 | 731 | 64,752 | 87.66x | 192.55x |
-| Compile query, absent field in shared DAG | 16 | 1,156,038 | 17,910 | 0.02x | 202.55x |
-| Compile query, absent field in shared DAG | 128 | 1,183,114 | 75,181 | 0.06x | 683.62x |
-
-In that earlier slice, normal query compilation cost increased because each
-call validated the complete mutable schema, while shared-DAG absent-field
-lookup improved because each inline shape was visited once. That comparison's
-JSON decoder copied input into its buffer; this is not a claim about the final
-decoder. Query compilation is an explicit preparation step, not part of input
-parsing. For applications that compile many queries against one schema, a
-separate immutable, validated schema handle could amortize validation without
-allowing mutation to bypass checks; this has not been implemented. The earlier
-benchmarks are in
-`internal/engine/output_schema_validate_bench_test.go` and
-`internal/engine/structural_query_bench_test.go`. Input parse performance was
-not measured by these benchmarks. The final comparison also uses
-`schema_diff_bench_test.go`; raw reports remain outside the
-repository.
-
 ## Limitations and Open Questions
 
-The Go v1 API uses a start-reachable default with an explicit all-rules option.
-Cross-grammar schema identity remains absent until canonicalization is defined;
-compatibility classification for diffs remains open. Traversal details used by queries follow [design 031](031-iterative-tree-traversal.md);
+The Go API uses a start-reachable default with an explicit all-rules option.
+Cross-grammar schema identity is not defined until canonicalization is specified;
+compatibility classification for diffs is open. Traversal details used by queries follow [design 031](031-iterative-tree-traversal.md);
 schema types are supplied explicitly to the programmatic query compiler described
 in [design 040](040-structural-queries-and-highlighting.md).
 
 ## Implemented Go API
 
-`engine.Program.OutputSchemaPrototype(start, allRules)` provides the version-1
-metadata implementation, exposed through `Parser.OutputSchema` and
-`WithAllSchemaRules` in Go. It requires a checked grammar; loaded parsers and
-compilation with type checking disabled return `ErrSchemaUnavailable`. It does
-not change parse results. The public types mirror the versioned engine schema;
-the Go surface and JSON format remain experimental.
+`engine.Program.OutputSchemaPrototype(start, allRules)` provides the schema version 2
+implementation, exposed through `Parser.OutputSchema` and
+`WithAllSchemaRules` in Go. It requires a checked grammar or a stored schema section: a parser
+loaded from a file with the AST derives the schema from the AST, and a parser loaded from a file
+without the AST and without a section returns `ErrSchemaUnavailable`. It does not change parse results. The public types mirror the
+versioned engine schema; the Go surface and JSON format are experimental.
 
 The default selects the supplied start rule and its syntactic rule-call closure,
 then follows exported shape references to declared and reserved CST types.
@@ -245,7 +204,7 @@ so a schema-checked query can name an uncaptured `Match` below a `Seq`.
 
 The envelope decoder rejects unsupported formats and versions, unknown fields,
 incorrect field-name case, and duplicate keys at every JSON object level. Its
-v1 graph check requires unique nonempty type IDs and rule names, nonempty unique
+version 2 graph check requires unique nonempty type IDs and rule names, nonempty unique
 field names, consistent type identities and origins, supported shape kinds and
 scalar names, valid shape members for each kind, list/optional elements,
 references that resolve to an ID in the schema's type table, and acyclic inline
@@ -254,7 +213,5 @@ to its matching `inferred/<rule-name>` type, and reserved `cst/` entries to
 match built-in identities and shapes. Omitted, nil, and empty optional shape
 slices are equivalent for reserved-shape validation. Shared acyclic inline
 shapes are visited once; named-reference cycles are allowed. The same full
-validation applies to in-memory schemas and both operands of semantic diff;
-envelope metadata is not itself reported as a diff. Persisting schemas in
-compiled files remains unimplemented. Compatibility classification and broader backend/typed-output validation
-remain open.
+validation applies to in-memory schemas, to both operands of semantic diff, and
+to the schema section of a compiled grammar; envelope metadata is not itself reported as a diff.

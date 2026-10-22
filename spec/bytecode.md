@@ -308,18 +308,19 @@ Expectation strings are those the compiler placed in the string table: literals 
 
 ## File Format
 
-A compiled grammar uses container version 2 or 3. Version 2 stores one module and an optional grammar AST. Version 3 keeps that prefix and can add a length-delimited recognition bundle before the AST-present flag. The container version and each module's instruction-set version are separate version axes. Integers are variable-length: unsigned integers use LEB128 and signed integers use zigzag-encoded LEB128. A boolean is one byte (0 or 1).
+A compiled grammar uses container version 4. It stores one module, an optional recognition bundle, an optional schema section and an optional grammar AST. The container version and each module's instruction-set version are separate version axes. A loader accepts only container version 4. Integers are variable-length: unsigned integers use LEB128 and signed integers use zigzag-encoded LEB128. A boolean is one byte (0 or 1).
 
 | Part | Contents |
 |:--|:--|
 | Magic | `PEGOC\x00` (6 bytes) |
-| Version | 1 byte (2 or 3). Version 2 has no recognition-bundle field. Version 3 adds that field after the main module. |
+| Version | 1 byte: 4. A loader refuses any other value. |
 | Instruction-set version | Unsigned integer for this module: 26. Every module uses this version, whatever instructions it contains, and the optional recognition bundle declares it too. Earlier versions built the syntax trees that preceded the value model, held terminal types, wrote field types with the earlier node type names, had no named node types, had no default-value flag, had no tuple values, carried text struct node types and the text flag of `EMEMBER` and `EBIN`, did not give the node type of an Operators Rule its meaning, had no variable table, had no start rules, or checked field values, rule results and bindings when they ran (the `ECHECK` instruction, the check operands of `BIND` and `ENODE`, and the checks of rules and lines); a runtime rejects them and asks for the grammar to be compiled again. |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
 | Start rule | String index, unsigned: the start rule the saved parser uses. It is a start rule of the module, or the empty string for the module's default start rule. |
 | Package name | String index, unsigned |
 | Module | See below |
-| Recognition bundle (version 3 only) | Boolean, then when true an unsigned length in bytes and a recognition bundle. The bundle has its own instruction-set version, string table and module, followed by an ordered list mapping public start-rule names to rule indices. Its module and string table are independent of the main module. The loader validates that its ordered start names and rule indices, and its start rules, match the main module. |
+| Recognition bundle | Boolean, then when true an unsigned length in bytes and a recognition bundle. The bundle has its own instruction-set version, string table and module, followed by an ordered list mapping public start-rule names to rule indices. Its module and string table are independent of the main module. The loader validates that its ordered start names and rule indices, and its start rules, match the main module. A file with the AST writes the boolean as false. |
+| Schema section | Boolean, then when true an unsigned length in bytes and the schema section: a compact JSON document of the complete output schema and, per start rule, the rule names and type IDs of its export (see [Compiled Grammars](compiled-grammars.md#schema-section)). A file with the AST writes the boolean as false, and a loader rejects a true value in a file with the AST. |
 | AST present | Boolean. If true, the grammar AST and static-analysis results follow (including, per rule, whether it may have a value-free twin). The AST does not record declaration attributes: a loader marks the rules that the module lists as start rules with `@start`, and the default one with `@start(default)` when there are several. Every start rule of the module MUST be a rule of the AST. These serve the closure backend and grammar tools; a runtime may skip them. The AST codec does not serialize source positions, except the position of each cast when the module records source information, nor normalized comment ownership or formatter trivia. |
 | Checksum | CRC-32 (IEEE) of everything from the magic up to this point, 4 bytes little-endian |
 
@@ -343,7 +344,7 @@ On load, a runtime checks the following and rejects the file if any check fails:
 
 - The checksum, the version and the instruction-set version are valid, and no data remains after the end.
 - Each variable is named once, has a valid type, and has an initial value that matches its type.
-- Every reference in the tables and instructions (strings, character classes, scopes, field lists, rules, Operators Rule tables, expression code, built-in functions) is in range. A version 3 recognition bundle must have a valid independent module and start map matching the main module.
+- Every reference in the tables and instructions (strings, character classes, scopes, field lists, rules, Operators Rule tables, expression code, built-in functions) is in range. A recognition bundle must have a valid independent module and start map matching the main module.
 - There is at least one start rule. The start rules are in increasing order and have distinct names, and the default start rule is one of them.
 - Every opcode is known, and every flag operand is within its range.
 - The node type of a rule names a named node type, or a declared type with a field `Text`. The node type of a rule with an Operators Rule names a named node type.

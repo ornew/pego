@@ -93,8 +93,9 @@ See [the `pego` command](command-line.md#schema) for the flags.
 
 Keep in mind:
 
-- A parser restored by `LoadParser` cannot export a schema, even if its file holds the grammar AST. Store the schema
-  separately if a consumer needs it later.
+- A parser restored by `LoadParser` exports a schema from a file with the grammar AST, derived from the AST. A file
+  without the AST exports one only when it was saved with the schema (`pego compile -no-ast -schema`, or
+  `pego.WithSchema` with `pego.WithoutAST`); any other such file returns `pego.ErrSchemaUnavailable`.
 - A query sees only what the tree retains. Actions and discard operators remove punctuation and comments, and a query
   does not recover them or interpret source positions.
 - `Elements` sees through nodes: on a node it matches the elements of the node's value, as `x[i]` does in an action.

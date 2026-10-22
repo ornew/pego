@@ -278,13 +278,13 @@ pego convert -to pego pairs.pegoc                  # recover the source of a com
 ## `compile`
 
 ```bash
-pego compile -g <grammar> [-s <rule>] [-no-ast] [-source-info] [-default-value] -o <file.pegoc>
+pego compile -g <grammar> [-s <rule>] [-no-ast [-schema]] [-source-info] [-default-value] -o <file.pegoc>
 ```
 
 Saves a compiled grammar; see [compiled grammars](compiled-grammars.md). `-s` sets the default start rule stored in
-the file, `-no-ast` omits the AST, `-source-info` makes the parser record the rule of each node and the names of captures, and `-default-value` makes it return default values (the flag is stored in the file). When the input is an AST-less `.pegoc`, pass `-no-ast`; the command rejects
-AST-less input without it rather than implying that the missing AST was restored. A version 3 recognition bundle is
-preserved when re-saving with `-no-ast`. Both `-g` and `-o` are required.
+the file, `-no-ast` omits the AST, `-schema` (which needs `-no-ast`) also stores the output schema so that the file can export it, `-source-info` makes the parser record the rule of each node and the names of captures, and `-default-value` makes it return default values (the flag is stored in the file). When the input is an AST-less `.pegoc`, pass `-no-ast`; the command rejects
+AST-less input without it rather than implying that the missing AST was restored. Re-saving an AST-less file with
+`-no-ast` keeps its recognition bundle and its schema section. Both `-g` and `-o` are required.
 
 When `<grammar>` is an AST-less `.pegoc`, `-no-ast` is required. Without it, compilation reports the missing AST and
 writes no output. The option preserves bytecode-only form; it cannot restore source grammar data.
