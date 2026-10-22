@@ -236,10 +236,11 @@ slots, items, lambda parameters and variables; built-ins are resolved; each term
 and whether it can raise. Projected repetitions, `concat` fusion, literal-text dispatch and unboxed text
 comparisons become term rewrites.
 
-Every node carries attributes computed once and cached: its value type and **want** (whether its value is
-used), its value shape (none, one value, or elements spliced into the enclosing tuple, which is what
-`isElems` and `valuedCount` compute today), whether it is nullable, its first terminal, and an **effect
-summary**:
+Every node carries attributes computed once and cached: **want** (whether its value is used), its value
+shape (none, one value, or elements spliced into the enclosing tuple, which is what `isElems` and
+`valuedCount` compute today), whether it is nullable, its first terminal, and an **effect summary**. Terms,
+capture slots and rule values carry their checked types; the value types of nodes are not attributes, and
+are added to them before Flow IR declares typed value slots.
 
 | Effect | Meaning |
 |:--|:--|
@@ -260,8 +261,9 @@ isolation of `Call`) carry the rules for how recorded expectations combine.
 
 Core IR invariants, checked by a verifier after every pass in tests:
 
-- The body of `Look`, `Text` and `Drop` has want none; captures inside a positive `Look` still build their
-  values, and the bodies of `Look(neg)`, `Text` and `Drop` write no capture.
+- The bodies of `Look(neg)`, `Text` and `Drop` have want none and write no capture. The body of a positive
+  `Look` has want value exactly where it captures: the captures inside build their values, as in every
+  backend.
 - `OperatorsRule` is the whole body of its rule; `Stream` occurs only at the top of a start rule.
 - A `Guard` on alternative i holds only if the alternative's first terminal is the guard's class, reached
   through `Seq` heads, `Capture`, `Text`, `Drop`, `Nest` and calls of rules that are neither leaders nor
@@ -269,7 +271,8 @@ Core IR invariants, checked by a verifier after every pass in tests:
   level.
 - Every slot read by a term is in the scope of its rule, `Nest`, Operators Rule line or repetition
   element, and no `Cut` reaches outside the `Nest` or rule that contains it.
-- A `Nest` of rule r never occurs inside the body of r or of a rule in the same call-graph cycle as r.
+- A `Nest` of rule r never occurs inside the body of r or of a rule in the same call-graph cycle as r, nor
+  inside a `Nest` of r or of such a rule.
 - A node with want none builds no value; a node with want value has a value type.
 - A target's pipeline produces only the node kinds that the target declares.
 
@@ -505,16 +508,19 @@ Core IR or Flow IR passes; the AST lowerings that remain receive fixes only. Eac
 stage of its first consumer, so its differential tests and negative controls run from the start.
 
 1. **Core IR and typed Go.** The builder, verifier, printer and term sublanguage; Flow IR and the Go
-   emitter for `-types -typed-only` output, covering every construct the typed path supports, including
-   those that fall back today (Operators Rule lines, left-recursion bodies, recovery, cuts); the Core and
-   Flow IR passes that typed Go uses. Gate: identical results on the generated-parser tests,
+   emitter for the typed rules of every `-types` output (typed-only, work-controlled, Document and
+   observable), covering every construct the typed path supports, including those that fall back today
+   (Operators Rule lines, left-recursion bodies, recovery, cuts); the Core and Flow IR passes that typed
+   Go uses. The Node rules that such outputs keep and the recognizer's rules stay on their current
+   lowering until stage 2. Gate: identical results on the generated-parser tests,
    `parsers/test.sh`, the typed conformance tests and the engine differential tests; identical generated
    trace and profile event streams, apart from differences the specification allows; the comparisons in
    [Performance and Results](#performance-and-results). Then remove `dgen`, the typed parts of
    `generator.expr` and of the Go term lowering, `gen_prune.go` and the typed uses of the ordinary-method
    passes.
-2. **Go Node, recognizer, Document and stream output**, with the recognition specialization. Gate as stage
-   1 plus the Document and stream differential tests and the Node, recognition, Document and stream
+2. **Go Node, recognizer, Document and stream output**, with the recognition specialization. The terms of
+   the recognizer's rules are compared with the generator's from this stage, once the generator's
+   projections for those rules match Core IR. Gate as stage 1 plus the Document and stream differential tests and the Node, recognition, Document and stream
    benchmarks. Then remove `generator.expr`, the rest of the Go term lowering and the remaining `go/ast`
    passes.
 3. **TypeScript.** Gate: the TypeScript parity tests in `bench` and `internal/engine`, TypeScript event
