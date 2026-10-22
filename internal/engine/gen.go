@@ -969,13 +969,13 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 			name = g.tracePlainWrapper(r, name)
 		}
 		fmt.Fprintf(m, "// %s, called as by invokePlain\nfunc %s(p *TParser) (any, bool) {\n", r.name, name)
-		m.WriteString("\tstart, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)\n\tprevEnv, prevCut := p.Env, p.Cut\n\tp.Cut = false\n\tp.Depth++\n\tif p.Depth > p.MaxDepth {\n\t\tp.TooDeep()\n\t}\n")
+		m.WriteString("\tstart, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)\n\tprevEnv, prevCut := p.Env, p.Cut\n\tp.Cut = false\n\tp.Enter()\n")
 		if g.observability && (!r.plain || g.directTypedDocument) {
 			m.WriteString("p.Observation.Evaluated()\n")
 		}
 		fmt.Fprintf(m, "\tv, ok := %s(p)\n\tp.Depth--\n\tp.Cut = prevCut\n\tp.DropTrail(trail)\n\tif ok {\n", body)
 		finish("EmptyTFrame")
-		m.WriteString("\t} else {\n\t\tp.Pos = start\n\t\tp.Recovered = p.Recovered[:rec]\n\t}\n\tp.Env = prevEnv\n\treturn v, ok\n}\n\n")
+		m.WriteString("\t} else {\n\t\tp.Restore(start, rec)\n\t}\n\tp.Env = prevEnv\n\treturn v, ok\n}\n\n")
 	}
 	if r.plain {
 		if g.directTypedDocument {
@@ -1007,7 +1007,7 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 		fmt.Fprintf(m, "\treturn v%d(p)\n}\n\n", r.id)
 		plain(fmt.Sprintf("v%d", r.id))
 	} else {
-		fmt.Fprintf(m, "\tstart, rec := p.Pos, len(p.Recovered)\n\tv, ok := i%d(p)\n\tif !ok {\n\t\tp.Pos = start\n\t\tp.Recovered = p.Recovered[:rec]\n\t}\n\treturn v, ok\n}\n\n", r.id)
+		fmt.Fprintf(m, "\tstart, rec := p.Pos, len(p.Recovered)\n\tv, ok := i%d(p)\n\tif !ok {\n\t\tp.Restore(start, rec)\n\t}\n\treturn v, ok\n}\n\n", r.id)
 	}
 	// i<id>: the invocation (also used by the memo).
 	if d != nil {
@@ -1015,7 +1015,7 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 		return
 	}
 	fmt.Fprintf(m, "// %s, invoked as by invoke\nfunc i%d(p *TParser) (any, bool) {\n", r.name, r.id)
-	fmt.Fprintf(m, "\tf := p.NewFrame(%d)\n\tprevFrame, prevEnv, prevCut, trail := p.Frame, p.Env, p.Cut, len(p.Trail)\n\tp.Frame, p.Cut = f, false\n\tp.Depth++\n\tif p.Depth > p.MaxDepth {\n\t\tp.TooDeep()\n\t}\n\tstart := p.Pos\n\t_ = start\n", len(s.names))
+	fmt.Fprintf(m, "\tf := p.NewFrame(%d)\n\tprevFrame, prevEnv, prevCut, trail := p.Frame, p.Env, p.Cut, len(p.Trail)\n\tp.Frame, p.Cut = f, false\n\tp.Enter()\n\tstart := p.Pos\n\t_ = start\n", len(s.names))
 	if g.observability {
 		m.WriteString("p.Observation.Evaluated()\n")
 	}
@@ -1156,10 +1156,7 @@ func (g *generator) plainCall(r *rule, body string) {
 	g.methods.WriteString(`	start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 `)
 	fmt.Fprintf(&g.methods, "\tv, ok := %s(p)\n", body)
 	g.methods.WriteString("\tp.Depth--\n\tp.Cut = prevCut\n" + g.pick("\tp.Trail = p.Trail[:trail]\n", "\tp.DropTrail(trail)\n") + "\tif ok {\n")
@@ -1169,8 +1166,7 @@ func (g *generator) plainCall(r *rule, body string) {
 		fmt.Fprintf(&g.methods, "\t\tv = p.Finish(%s[%d], %s, v, start)\n", g.table, r.id, g.frameVar())
 	}
 	g.methods.WriteString(`	} else {
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 	}
 	p.Env = prevEnv
 	return v, ok

@@ -1711,10 +1711,7 @@ func r7(p *pegort.Parser) (*pegort.Node, bool) {
 		start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
 		prevEnv, prevCut := p.Env, p.Cut
 		p.Cut = false
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		v, ok := e17(p)
 		p.Depth--
 		p.Cut = prevCut
@@ -1722,8 +1719,7 @@ func r7(p *pegort.Parser) (*pegort.Node, bool) {
 		if ok {
 			v = p.Finish(rules[7], pegort.EmptyFrame, v, start)
 		} else {
-			p.Pos = start
-			p.Recovered = p.Recovered[:rec]
+			p.Restore(start, rec)
 		}
 		p.Env = prevEnv
 		return v, ok
@@ -1733,10 +1729,7 @@ func r7(p *pegort.Parser) (*pegort.Node, bool) {
 	start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	v, ok := e17(p)
 	p.Depth--
 	p.Cut = prevCut
@@ -1744,8 +1737,7 @@ func r7(p *pegort.Parser) (*pegort.Node, bool) {
 	if ok {
 		v = p.Finish(rules[7], pegort.EmptyFrame, v, start)
 	} else {
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 	}
 	p.Env = prevEnv
 	return v, ok
@@ -1757,10 +1749,7 @@ func r11(p *pegort.Parser) (*pegort.Node, bool) {
 		start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
 		prevEnv, prevCut := p.Env, p.Cut
 		p.Cut = false
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		v, ok := e25(p)
 		p.Depth--
 		p.Cut = prevCut
@@ -1768,8 +1757,7 @@ func r11(p *pegort.Parser) (*pegort.Node, bool) {
 		if ok {
 			v = p.Finish(rules[11], pegort.EmptyFrame, v, start)
 		} else {
-			p.Pos = start
-			p.Recovered = p.Recovered[:rec]
+			p.Restore(start, rec)
 		}
 		p.Env = prevEnv
 		return v, ok
@@ -1779,10 +1767,7 @@ func r11(p *pegort.Parser) (*pegort.Node, bool) {
 	start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	v, ok := e25(p)
 	p.Depth--
 	p.Cut = prevCut
@@ -1790,8 +1775,7 @@ func r11(p *pegort.Parser) (*pegort.Node, bool) {
 	if ok {
 		v = p.Finish(rules[11], pegort.EmptyFrame, v, start)
 	} else {
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 	}
 	p.Env = prevEnv
 	return v, ok
@@ -1806,10 +1790,7 @@ func r13(p *pegort.Parser) (*pegort.Node, bool) {
 			size int
 			ok   bool
 		)
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		for {
 			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
@@ -1830,10 +1811,7 @@ func r13(p *pegort.Parser) (*pegort.Node, bool) {
 		size int
 		ok   bool
 	)
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	p.StepWork()
 	for {
 		if p.Pos < len(p.In) {
@@ -2020,8 +1998,7 @@ func e36(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		goto L3_ordinary
 	L7_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 	L6_ordinary:
 		if !(x5 && (x4 == 45)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 6)
@@ -2034,8 +2011,7 @@ func e36(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		goto L3_ordinary
 	L9_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 	L8_ordinary:
 		goto fail_ordinary
 	L3_ordinary:
@@ -2090,8 +2066,7 @@ func e36(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 	goto L3
 L7:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 L6:
 	if !(x5 && (x4 == 45)) && p.Depth <= p.MaxDepth {
 		p.Expect(p.Pos, 6)
@@ -2105,8 +2080,7 @@ L6:
 	}
 	goto L3
 L9:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 L8:
 	goto fail
 L3:
@@ -2239,8 +2213,7 @@ func e40(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		goto L3_ordinary
 	L7_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 	L6_ordinary:
 		if !(x5 && (x4 == 47)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 8)
@@ -2253,8 +2226,7 @@ func e40(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		goto L3_ordinary
 	L9_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 	L8_ordinary:
 		if !(x5 && (x4 == 37)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 9)
@@ -2267,8 +2239,7 @@ func e40(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		goto L3_ordinary
 	L11_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 	L10_ordinary:
 		goto fail_ordinary
 	L3_ordinary:
@@ -2323,8 +2294,7 @@ func e40(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 	goto L3
 L7:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 L6:
 	if !(x5 && (x4 == 47)) && p.Depth <= p.MaxDepth {
 		p.Expect(p.Pos, 8)
@@ -2338,8 +2308,7 @@ L6:
 	}
 	goto L3
 L9:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 L8:
 	if !(x5 && (x4 == 37)) && p.Depth <= p.MaxDepth {
 		p.Expect(p.Pos, 9)
@@ -2353,8 +2322,7 @@ L8:
 	}
 	goto L3
 L11:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 L10:
 	goto fail
 L3:
@@ -2451,8 +2419,7 @@ func e42(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		goto L3_ordinary
 	L7_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 	L6_ordinary:
 		if !(x5 && (x4 == 43)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 5)
@@ -2465,8 +2432,7 @@ func e42(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		goto L3_ordinary
 	L9_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 	L8_ordinary:
 		goto fail_ordinary
 	L3_ordinary:
@@ -2516,8 +2482,7 @@ func e42(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 	goto L3
 L7:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 L6:
 	if !(x5 && (x4 == 43)) && p.Depth <= p.MaxDepth {
 		p.Expect(p.Pos, 5)
@@ -2531,8 +2496,7 @@ L6:
 	}
 	goto L3
 L9:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 L8:
 	goto fail
 L3:
@@ -2562,15 +2526,13 @@ func e43(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		goto L3_ordinary
 	L4_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 		if _, ok = p.Call(recRules[9], 0); !ok {
 			goto L5_ordinary
 		}
 		goto L3_ordinary
 	L5_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 		goto fail_ordinary
 	L3_ordinary:
 		v = nil
@@ -2594,16 +2556,14 @@ func e43(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 	goto L3
 L4:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 	p.StepWork()
 	if _, ok = p.Call(recRules[9], 0); !ok {
 		goto L5
 	}
 	goto L3
 L5:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 	goto fail
 L3:
 	v = nil
@@ -2866,8 +2826,7 @@ func e47(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		goto L5_ordinary
 	L4_ordinary:
-		p.Pos = x2
-		p.Recovered = p.Recovered[:x3]
+		p.Restore(x2, x3)
 	L5_ordinary:
 		v = nil
 		return v, true
@@ -2937,8 +2896,7 @@ func e47(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 	goto L5
 L4:
-	p.Pos = x2
-	p.Recovered = p.Recovered[:x3]
+	p.Restore(x2, x3)
 L5:
 	v = nil
 	return v, true
@@ -2960,10 +2918,7 @@ func q2(p *pegort.Parser) (*pegort.Node, bool) {
 			x5    bool
 		)
 		start, rec = p.Pos, len(p.Recovered)
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		if _, ok = p.Call(recRules[1], 0); !ok {
 			goto fail_ordinary
 		}
@@ -2983,8 +2938,7 @@ func q2(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		goto L3_ordinary
 	L7_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 	L6_ordinary:
 		if !(x5 && (x4 == 45)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 6)
@@ -2997,8 +2951,7 @@ func q2(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		goto L3_ordinary
 	L9_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 	L8_ordinary:
 		goto fail_ordinary
 	L3_ordinary:
@@ -3011,8 +2964,7 @@ func q2(p *pegort.Parser) (*pegort.Node, bool) {
 		return v, true
 	fail_ordinary:
 		p.Depth--
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 		return nil, false
 	}
 
@@ -3028,10 +2980,7 @@ func q2(p *pegort.Parser) (*pegort.Node, bool) {
 		x5    bool
 	)
 	start, rec = p.Pos, len(p.Recovered)
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	p.StepWork()
 	p.StepWork()
 	p.StepWork()
@@ -3064,8 +3013,7 @@ func q2(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 	goto L3
 L7:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 L6:
 	if !(x5 && (x4 == 45)) && p.Depth <= p.MaxDepth {
 		p.Expect(p.Pos, 6)
@@ -3079,8 +3027,7 @@ L6:
 	}
 	goto L3
 L9:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 L8:
 	goto fail
 L3:
@@ -3094,8 +3041,7 @@ L3:
 	return v, true
 fail:
 	p.Depth--
-	p.Pos = start
-	p.Recovered = p.Recovered[:rec]
+	p.Restore(start, rec)
 	return nil, false
 }
 
@@ -3113,10 +3059,7 @@ func q4(p *pegort.Parser) (*pegort.Node, bool) {
 			x5    bool
 		)
 		start, rec = p.Pos, len(p.Recovered)
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		if _, ok = p.Call(recRules[3], 0); !ok {
 			goto fail_ordinary
 		}
@@ -3136,8 +3079,7 @@ func q4(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		goto L3_ordinary
 	L7_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 	L6_ordinary:
 		if !(x5 && (x4 == 47)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 8)
@@ -3150,8 +3092,7 @@ func q4(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		goto L3_ordinary
 	L9_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 	L8_ordinary:
 		if !(x5 && (x4 == 37)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 9)
@@ -3164,8 +3105,7 @@ func q4(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		goto L3_ordinary
 	L11_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 	L10_ordinary:
 		goto fail_ordinary
 	L3_ordinary:
@@ -3178,8 +3118,7 @@ func q4(p *pegort.Parser) (*pegort.Node, bool) {
 		return v, true
 	fail_ordinary:
 		p.Depth--
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 		return nil, false
 	}
 
@@ -3195,10 +3134,7 @@ func q4(p *pegort.Parser) (*pegort.Node, bool) {
 		x5    bool
 	)
 	start, rec = p.Pos, len(p.Recovered)
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	p.StepWork()
 	p.StepWork()
 	p.StepWork()
@@ -3231,8 +3167,7 @@ func q4(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 	goto L3
 L7:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 L6:
 	if !(x5 && (x4 == 47)) && p.Depth <= p.MaxDepth {
 		p.Expect(p.Pos, 8)
@@ -3246,8 +3181,7 @@ L6:
 	}
 	goto L3
 L9:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 L8:
 	if !(x5 && (x4 == 37)) && p.Depth <= p.MaxDepth {
 		p.Expect(p.Pos, 9)
@@ -3261,8 +3195,7 @@ L8:
 	}
 	goto L3
 L11:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 L10:
 	goto fail
 L3:
@@ -3276,8 +3209,7 @@ L3:
 	return v, true
 fail:
 	p.Depth--
-	p.Pos = start
-	p.Recovered = p.Recovered[:rec]
+	p.Restore(start, rec)
 	return nil, false
 }
 
@@ -3295,10 +3227,7 @@ func q6(p *pegort.Parser) (*pegort.Node, bool) {
 			x5    bool
 		)
 		start, rec = p.Pos, len(p.Recovered)
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		if _, ok = q12(p); !ok {
 			goto fail_ordinary
 		}
@@ -3315,8 +3244,7 @@ func q6(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		goto L3_ordinary
 	L7_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 	L6_ordinary:
 		if !(x5 && (x4 == 43)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 5)
@@ -3329,8 +3257,7 @@ func q6(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		goto L3_ordinary
 	L9_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 	L8_ordinary:
 		goto fail_ordinary
 	L3_ordinary:
@@ -3343,8 +3270,7 @@ func q6(p *pegort.Parser) (*pegort.Node, bool) {
 		return v, true
 	fail_ordinary:
 		p.Depth--
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 		return nil, false
 	}
 
@@ -3360,10 +3286,7 @@ func q6(p *pegort.Parser) (*pegort.Node, bool) {
 		x5    bool
 	)
 	start, rec = p.Pos, len(p.Recovered)
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	p.StepWork()
 	p.StepWork()
 	if _, ok = q12(p); !ok {
@@ -3391,8 +3314,7 @@ func q6(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 	goto L3
 L7:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 L6:
 	if !(x5 && (x4 == 43)) && p.Depth <= p.MaxDepth {
 		p.Expect(p.Pos, 5)
@@ -3406,8 +3328,7 @@ L6:
 	}
 	goto L3
 L9:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 L8:
 	goto fail
 L3:
@@ -3421,8 +3342,7 @@ L3:
 	return v, true
 fail:
 	p.Depth--
-	p.Pos = start
-	p.Recovered = p.Recovered[:rec]
+	p.Restore(start, rec)
 	return nil, false
 }
 
@@ -3438,25 +3358,20 @@ func q7(p *pegort.Parser) (*pegort.Node, bool) {
 			ok    bool
 		)
 		start, rec = p.Pos, len(p.Recovered)
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		x1, x2 = p.Pos, len(p.Recovered)
 		if _, ok = q8(p); !ok {
 			goto L4_ordinary
 		}
 		goto L3_ordinary
 	L4_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 		if _, ok = p.Call(recRules[9], 0); !ok {
 			goto L5_ordinary
 		}
 		goto L3_ordinary
 	L5_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 		goto fail_ordinary
 	L3_ordinary:
 		v = nil
@@ -3464,8 +3379,7 @@ func q7(p *pegort.Parser) (*pegort.Node, bool) {
 		return v, true
 	fail_ordinary:
 		p.Depth--
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 		return nil, false
 	}
 
@@ -3479,10 +3393,7 @@ func q7(p *pegort.Parser) (*pegort.Node, bool) {
 		ok    bool
 	)
 	start, rec = p.Pos, len(p.Recovered)
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	p.StepWork()
 	x1, x2 = p.Pos, len(p.Recovered)
 	p.StepWork()
@@ -3491,16 +3402,14 @@ func q7(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 	goto L3
 L4:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 	p.StepWork()
 	if _, ok = p.Call(recRules[9], 0); !ok {
 		goto L5
 	}
 	goto L3
 L5:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 	goto fail
 L3:
 	v = nil
@@ -3508,8 +3417,7 @@ L3:
 	return v, true
 fail:
 	p.Depth--
-	p.Pos = start
-	p.Recovered = p.Recovered[:rec]
+	p.Restore(start, rec)
 	return nil, false
 }
 
@@ -3523,10 +3431,7 @@ func q8(p *pegort.Parser) (*pegort.Node, bool) {
 			ok    bool
 		)
 		start, rec = p.Pos, len(p.Recovered)
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		if _, ok = p.Call(recRules[9], 0); !ok {
 			goto fail_ordinary
 		}
@@ -3546,8 +3451,7 @@ func q8(p *pegort.Parser) (*pegort.Node, bool) {
 		return v, true
 	fail_ordinary:
 		p.Depth--
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 		return nil, false
 	}
 
@@ -3559,10 +3463,7 @@ func q8(p *pegort.Parser) (*pegort.Node, bool) {
 		ok    bool
 	)
 	start, rec = p.Pos, len(p.Recovered)
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	p.StepWork()
 	p.StepWork()
 	p.StepWork()
@@ -3590,8 +3491,7 @@ func q8(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, true
 fail:
 	p.Depth--
-	p.Pos = start
-	p.Recovered = p.Recovered[:rec]
+	p.Restore(start, rec)
 	return nil, false
 }
 
@@ -3605,10 +3505,7 @@ func q10(p *pegort.Parser) (*pegort.Node, bool) {
 			ok    bool
 		)
 		start, rec = p.Pos, len(p.Recovered)
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit21, "(", 11, false); !ok {
@@ -3630,8 +3527,7 @@ func q10(p *pegort.Parser) (*pegort.Node, bool) {
 		return v, true
 	fail_ordinary:
 		p.Depth--
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 		return nil, false
 	}
 
@@ -3643,10 +3539,7 @@ func q10(p *pegort.Parser) (*pegort.Node, bool) {
 		ok    bool
 	)
 	start, rec = p.Pos, len(p.Recovered)
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	p.StepWork()
 	p.StepWork()
 	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
@@ -3674,8 +3567,7 @@ func q10(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, true
 fail:
 	p.Depth--
-	p.Pos = start
-	p.Recovered = p.Recovered[:rec]
+	p.Restore(start, rec)
 	return nil, false
 }
 
@@ -3695,10 +3587,7 @@ func q11(p *pegort.Parser) (*pegort.Node, bool) {
 			x6    int
 		)
 		start, rec = p.Pos, len(p.Recovered)
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		x1 = 0
 		for {
 			ch, size, ok = p.NextOrdinary()
@@ -3733,16 +3622,14 @@ func q11(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		goto L5_ordinary
 	L4_ordinary:
-		p.Pos = x2
-		p.Recovered = p.Recovered[:x3]
+		p.Restore(x2, x3)
 	L5_ordinary:
 		v = nil
 		p.Depth--
 		return v, true
 	fail_ordinary:
 		p.Depth--
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 		return nil, false
 	}
 
@@ -3760,10 +3647,7 @@ func q11(p *pegort.Parser) (*pegort.Node, bool) {
 		x6    int
 	)
 	start, rec = p.Pos, len(p.Recovered)
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	p.StepWork()
 	p.StepWork()
 	p.StepWork()
@@ -3815,16 +3699,14 @@ func q11(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 	goto L5
 L4:
-	p.Pos = x2
-	p.Recovered = p.Recovered[:x3]
+	p.Restore(x2, x3)
 L5:
 	v = nil
 	p.Depth--
 	return v, true
 fail:
 	p.Depth--
-	p.Pos = start
-	p.Recovered = p.Recovered[:rec]
+	p.Restore(start, rec)
 	return nil, false
 }
 
@@ -3837,10 +3719,7 @@ func q12(p *pegort.Parser) (*pegort.Node, bool) {
 			size int
 			ok   bool
 		)
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		for {
 			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
@@ -3861,10 +3740,7 @@ func q12(p *pegort.Parser) (*pegort.Node, bool) {
 		size int
 		ok   bool
 	)
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	p.StepWork()
 	for {
 		if p.Pos < len(p.In) {
@@ -4023,8 +3899,7 @@ func u0(p *pegort.TParser) (any, bool) {
 		start, rec := p.Pos, len(p.Recovered)
 		v, ok := i0(p)
 		if !ok {
-			p.Pos = start
-			p.Recovered = p.Recovered[:rec]
+			p.Restore(start, rec)
 		}
 		return v, ok
 	}
@@ -4032,8 +3907,7 @@ func u0(p *pegort.TParser) (any, bool) {
 	start, rec := p.Pos, len(p.Recovered)
 	v, ok := i0(p)
 	if !ok {
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 	}
 	return v, ok
 }
@@ -4052,10 +3926,7 @@ func i0(p *pegort.TParser) (any, bool) {
 			w     string
 		)
 		start = p.Pos
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		_ = x2
 		x2 = p.Pos
 		if v3, ok = p.Call(trules[1], 0); !ok {
@@ -4094,10 +3965,7 @@ func i0(p *pegort.TParser) (any, bool) {
 		w     string
 	)
 	start = p.Pos
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	_ = x2
 	p.StepWork()
 	p.StepWork()
@@ -4135,8 +4003,7 @@ func u2(p *pegort.TParser) (any, bool) {
 		start, rec := p.Pos, len(p.Recovered)
 		v, ok := i2(p)
 		if !ok {
-			p.Pos = start
-			p.Recovered = p.Recovered[:rec]
+			p.Restore(start, rec)
 		}
 		return v, ok
 	}
@@ -4144,8 +4011,7 @@ func u2(p *pegort.TParser) (any, bool) {
 	start, rec := p.Pos, len(p.Recovered)
 	v, ok := i2(p)
 	if !ok {
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 	}
 	return v, ok
 }
@@ -4175,10 +4041,7 @@ func i2(p *pegort.TParser) (any, bool) {
 			w     string
 		)
 		start = p.Pos
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		_, _, _ = x2, x5, x18
 		x2 = p.Pos
 		if v3, ok = p.Call(trules[1], 0); !ok {
@@ -4203,8 +4066,7 @@ func i2(p *pegort.TParser) (any, bool) {
 		}
 		goto L9_ordinary
 	L13_ordinary:
-		p.Pos = x7
-		p.Recovered = p.Recovered[:x8]
+		p.Restore(x7, x8)
 	L12_ordinary:
 		if !(x11 && (x10 == 45)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 6)
@@ -4217,8 +4079,7 @@ func i2(p *pegort.TParser) (any, bool) {
 		}
 		goto L9_ordinary
 	L15_ordinary:
-		p.Pos = x7
-		p.Recovered = p.Recovered[:x8]
+		p.Restore(x7, x8)
 	L14_ordinary:
 		goto fail_ordinary
 	L9_ordinary:
@@ -4271,10 +4132,7 @@ func i2(p *pegort.TParser) (any, bool) {
 		w     string
 	)
 	start = p.Pos
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	_, _, _ = x2, x5, x18
 	p.StepWork()
 	p.StepWork()
@@ -4312,8 +4170,7 @@ func i2(p *pegort.TParser) (any, bool) {
 	}
 	goto L9
 L13:
-	p.Pos = x7
-	p.Recovered = p.Recovered[:x8]
+	p.Restore(x7, x8)
 L12:
 	if !(x11 && (x10 == 45)) && p.Depth <= p.MaxDepth {
 		p.Expect(p.Pos, 6)
@@ -4327,8 +4184,7 @@ L12:
 	}
 	goto L9
 L15:
-	p.Pos = x7
-	p.Recovered = p.Recovered[:x8]
+	p.Restore(x7, x8)
 L14:
 	goto fail
 L9:
@@ -4367,8 +4223,7 @@ func u4(p *pegort.TParser) (any, bool) {
 		start, rec := p.Pos, len(p.Recovered)
 		v, ok := i4(p)
 		if !ok {
-			p.Pos = start
-			p.Recovered = p.Recovered[:rec]
+			p.Restore(start, rec)
 		}
 		return v, ok
 	}
@@ -4376,8 +4231,7 @@ func u4(p *pegort.TParser) (any, bool) {
 	start, rec := p.Pos, len(p.Recovered)
 	v, ok := i4(p)
 	if !ok {
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 	}
 	return v, ok
 }
@@ -4407,10 +4261,7 @@ func i4(p *pegort.TParser) (any, bool) {
 			w     string
 		)
 		start = p.Pos
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		_, _, _ = x2, x5, x20
 		x2 = p.Pos
 		if v3, ok = p.Call(trules[3], 0); !ok {
@@ -4435,8 +4286,7 @@ func i4(p *pegort.TParser) (any, bool) {
 		}
 		goto L9_ordinary
 	L13_ordinary:
-		p.Pos = x7
-		p.Recovered = p.Recovered[:x8]
+		p.Restore(x7, x8)
 	L12_ordinary:
 		if !(x11 && (x10 == 47)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 8)
@@ -4449,8 +4299,7 @@ func i4(p *pegort.TParser) (any, bool) {
 		}
 		goto L9_ordinary
 	L15_ordinary:
-		p.Pos = x7
-		p.Recovered = p.Recovered[:x8]
+		p.Restore(x7, x8)
 	L14_ordinary:
 		if !(x11 && (x10 == 37)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 9)
@@ -4463,8 +4312,7 @@ func i4(p *pegort.TParser) (any, bool) {
 		}
 		goto L9_ordinary
 	L17_ordinary:
-		p.Pos = x7
-		p.Recovered = p.Recovered[:x8]
+		p.Restore(x7, x8)
 	L16_ordinary:
 		goto fail_ordinary
 	L9_ordinary:
@@ -4517,10 +4365,7 @@ func i4(p *pegort.TParser) (any, bool) {
 		w     string
 	)
 	start = p.Pos
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	_, _, _ = x2, x5, x20
 	p.StepWork()
 	p.StepWork()
@@ -4558,8 +4403,7 @@ func i4(p *pegort.TParser) (any, bool) {
 	}
 	goto L9
 L13:
-	p.Pos = x7
-	p.Recovered = p.Recovered[:x8]
+	p.Restore(x7, x8)
 L12:
 	if !(x11 && (x10 == 47)) && p.Depth <= p.MaxDepth {
 		p.Expect(p.Pos, 8)
@@ -4573,8 +4417,7 @@ L12:
 	}
 	goto L9
 L15:
-	p.Pos = x7
-	p.Recovered = p.Recovered[:x8]
+	p.Restore(x7, x8)
 L14:
 	if !(x11 && (x10 == 37)) && p.Depth <= p.MaxDepth {
 		p.Expect(p.Pos, 9)
@@ -4588,8 +4431,7 @@ L14:
 	}
 	goto L9
 L17:
-	p.Pos = x7
-	p.Recovered = p.Recovered[:x8]
+	p.Restore(x7, x8)
 L16:
 	goto fail
 L9:
@@ -4652,10 +4494,7 @@ func v5(p *pegort.TParser) (any, bool) {
 			v8    any
 		)
 		start, rec = p.Pos, len(p.Recovered)
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		x1, x2 = p.Pos, len(p.Recovered)
 		if v6, ok = u6(p); !ok {
 			goto L5_ordinary
@@ -4663,16 +4502,14 @@ func v5(p *pegort.TParser) (any, bool) {
 		v3 = v6
 		goto L4_ordinary
 	L5_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 		if v8, ok = s7(p); !ok {
 			goto L7_ordinary
 		}
 		v3 = v8
 		goto L4_ordinary
 	L7_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 		goto fail_ordinary
 	L4_ordinary:
 		v = p.ScopeValue(sh26, v3, start)
@@ -4683,8 +4520,7 @@ func v5(p *pegort.TParser) (any, bool) {
 		return v, true
 	fail_ordinary:
 		p.Depth--
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 		return nil, false
 	}
 
@@ -4701,10 +4537,7 @@ func v5(p *pegort.TParser) (any, bool) {
 		v8    any
 	)
 	start, rec = p.Pos, len(p.Recovered)
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	p.StepWork()
 	x1, x2 = p.Pos, len(p.Recovered)
 	p.StepWork()
@@ -4714,8 +4547,7 @@ func v5(p *pegort.TParser) (any, bool) {
 	v3 = v6
 	goto L4
 L5:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 	p.StepWork()
 	if v8, ok = s7(p); !ok {
 		goto L7
@@ -4723,8 +4555,7 @@ L5:
 	v3 = v8
 	goto L4
 L7:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 	goto fail
 L4:
 	v = p.ScopeValue(sh26, v3, start)
@@ -4735,8 +4566,7 @@ L4:
 	return v, true
 fail:
 	p.Depth--
-	p.Pos = start
-	p.Recovered = p.Recovered[:rec]
+	p.Restore(start, rec)
 	return nil, false
 }
 
@@ -4754,10 +4584,7 @@ func i5(p *pegort.TParser) (any, bool) {
 			v8    any
 		)
 		start = p.Pos
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		x1, x2 = p.Pos, len(p.Recovered)
 		if v6, ok = u6(p); !ok {
 			goto L5_ordinary
@@ -4765,16 +4592,14 @@ func i5(p *pegort.TParser) (any, bool) {
 		v3 = v6
 		goto L4_ordinary
 	L5_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 		if v8, ok = s7(p); !ok {
 			goto L7_ordinary
 		}
 		v3 = v8
 		goto L4_ordinary
 	L7_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 		goto fail_ordinary
 	L4_ordinary:
 		v = p.ScopeValue(sh26, v3, start)
@@ -4800,10 +4625,7 @@ func i5(p *pegort.TParser) (any, bool) {
 		v8    any
 	)
 	start = p.Pos
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	p.StepWork()
 	x1, x2 = p.Pos, len(p.Recovered)
 	p.StepWork()
@@ -4813,8 +4635,7 @@ func i5(p *pegort.TParser) (any, bool) {
 	v3 = v6
 	goto L4
 L5:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 	p.StepWork()
 	if v8, ok = s7(p); !ok {
 		goto L7
@@ -4822,8 +4643,7 @@ L5:
 	v3 = v8
 	goto L4
 L7:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 	goto fail
 L4:
 	v = p.ScopeValue(sh26, v3, start)
@@ -4843,8 +4663,7 @@ func u6(p *pegort.TParser) (any, bool) {
 		start, rec := p.Pos, len(p.Recovered)
 		v, ok := i6(p)
 		if !ok {
-			p.Pos = start
-			p.Recovered = p.Recovered[:rec]
+			p.Restore(start, rec)
 		}
 		return v, ok
 	}
@@ -4852,8 +4671,7 @@ func u6(p *pegort.TParser) (any, bool) {
 	start, rec := p.Pos, len(p.Recovered)
 	v, ok := i6(p)
 	if !ok {
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 	}
 	return v, ok
 }
@@ -4880,10 +4698,7 @@ func i6(p *pegort.TParser) (any, bool) {
 			w     string
 		)
 		start = p.Pos
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		_, _ = x2, x15
 		if _, ok = s13(p); !ok {
 			goto fail_ordinary
@@ -4903,8 +4718,7 @@ func i6(p *pegort.TParser) (any, bool) {
 		}
 		goto L6_ordinary
 	L10_ordinary:
-		p.Pos = x4
-		p.Recovered = p.Recovered[:x5]
+		p.Restore(x4, x5)
 	L9_ordinary:
 		if !(x8 && (x7 == 43)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 5)
@@ -4917,8 +4731,7 @@ func i6(p *pegort.TParser) (any, bool) {
 		}
 		goto L6_ordinary
 	L12_ordinary:
-		p.Pos = x4
-		p.Recovered = p.Recovered[:x5]
+		p.Restore(x4, x5)
 	L11_ordinary:
 		goto fail_ordinary
 	L6_ordinary:
@@ -4967,10 +4780,7 @@ func i6(p *pegort.TParser) (any, bool) {
 		w     string
 	)
 	start = p.Pos
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	_, _ = x2, x15
 	p.StepWork()
 	p.StepWork()
@@ -5001,8 +4811,7 @@ func i6(p *pegort.TParser) (any, bool) {
 	}
 	goto L6
 L10:
-	p.Pos = x4
-	p.Recovered = p.Recovered[:x5]
+	p.Restore(x4, x5)
 L9:
 	if !(x8 && (x7 == 43)) && p.Depth <= p.MaxDepth {
 		p.Expect(p.Pos, 5)
@@ -5016,8 +4825,7 @@ L9:
 	}
 	goto L6
 L12:
-	p.Pos = x4
-	p.Recovered = p.Recovered[:x5]
+	p.Restore(x4, x5)
 L11:
 	goto fail
 L6:
@@ -5064,10 +4872,7 @@ func s7(p *pegort.TParser) (any, bool) {
 			v8    any
 		)
 		start, rec = p.Pos, len(p.Recovered)
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		x1, x2 = p.Pos, len(p.Recovered)
 		if v6, ok = u8(p); !ok {
 			goto L5_ordinary
@@ -5075,16 +4880,14 @@ func s7(p *pegort.TParser) (any, bool) {
 		v3 = v6
 		goto L4_ordinary
 	L5_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 		if v8, ok = u9(p); !ok {
 			goto L7_ordinary
 		}
 		v3 = v8
 		goto L4_ordinary
 	L7_ordinary:
-		p.Pos = x1
-		p.Recovered = p.Recovered[:x2]
+		p.Restore(x1, x2)
 		goto fail_ordinary
 	L4_ordinary:
 		v = p.ScopeValue(sh26, v3, start)
@@ -5095,8 +4898,7 @@ func s7(p *pegort.TParser) (any, bool) {
 		return v, true
 	fail_ordinary:
 		p.Depth--
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 		return nil, false
 	}
 
@@ -5113,10 +4915,7 @@ func s7(p *pegort.TParser) (any, bool) {
 		v8    any
 	)
 	start, rec = p.Pos, len(p.Recovered)
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	p.StepWork()
 	x1, x2 = p.Pos, len(p.Recovered)
 	p.StepWork()
@@ -5126,8 +4925,7 @@ func s7(p *pegort.TParser) (any, bool) {
 	v3 = v6
 	goto L4
 L5:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 	p.StepWork()
 	if v8, ok = u9(p); !ok {
 		goto L7
@@ -5135,8 +4933,7 @@ L5:
 	v3 = v8
 	goto L4
 L7:
-	p.Pos = x1
-	p.Recovered = p.Recovered[:x2]
+	p.Restore(x1, x2)
 	goto fail
 L4:
 	v = p.ScopeValue(sh26, v3, start)
@@ -5147,8 +4944,7 @@ L4:
 	return v, true
 fail:
 	p.Depth--
-	p.Pos = start
-	p.Recovered = p.Recovered[:rec]
+	p.Restore(start, rec)
 	return nil, false
 }
 
@@ -5158,8 +4954,7 @@ func u8(p *pegort.TParser) (any, bool) {
 		start, rec := p.Pos, len(p.Recovered)
 		v, ok := i8(p)
 		if !ok {
-			p.Pos = start
-			p.Recovered = p.Recovered[:rec]
+			p.Restore(start, rec)
 		}
 		return v, ok
 	}
@@ -5167,8 +4962,7 @@ func u8(p *pegort.TParser) (any, bool) {
 	start, rec := p.Pos, len(p.Recovered)
 	v, ok := i8(p)
 	if !ok {
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 	}
 	return v, ok
 }
@@ -5194,10 +4988,7 @@ func i8(p *pegort.TParser) (any, bool) {
 			w     string
 		)
 		start = p.Pos
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		_, _, _ = x2, x5, x9
 		x2 = p.Pos
 		if v3, ok = u9(p); !ok {
@@ -5259,10 +5050,7 @@ func i8(p *pegort.TParser) (any, bool) {
 		w     string
 	)
 	start = p.Pos
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	_, _, _ = x2, x5, x9
 	p.StepWork()
 	p.StepWork()
@@ -5323,8 +5111,7 @@ func u9(p *pegort.TParser) (any, bool) {
 		start, rec := p.Pos, len(p.Recovered)
 		v, ok := i9(p)
 		if !ok {
-			p.Pos = start
-			p.Recovered = p.Recovered[:rec]
+			p.Restore(start, rec)
 		}
 		return v, ok
 	}
@@ -5335,8 +5122,7 @@ func u9(p *pegort.TParser) (any, bool) {
 	start, rec := p.Pos, len(p.Recovered)
 	v, ok := i9(p)
 	if !ok {
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 	}
 	return v, ok
 }
@@ -5361,10 +5147,7 @@ func i9(p *pegort.TParser) (any, bool) {
 			w     string
 		)
 		start = p.Pos
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		_ = x2
 		if _, ok = s13(p); !ok {
 			goto fail_ordinary
@@ -5377,8 +5160,7 @@ func i9(p *pegort.TParser) (any, bool) {
 		v5 = v8
 		goto L6_ordinary
 	L7_ordinary:
-		p.Pos = x3
-		p.Recovered = p.Recovered[:x4]
+		p.Restore(x3, x4)
 		x9, _, x10 = p.NextOrdinary()
 		if !(x10 && (x9 == 40)) && p.Depth+1 <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 11)
@@ -5390,8 +5172,7 @@ func i9(p *pegort.TParser) (any, bool) {
 		v5 = v13
 		goto L6_ordinary
 	L12_ordinary:
-		p.Pos = x3
-		p.Recovered = p.Recovered[:x4]
+		p.Restore(x3, x4)
 	L11_ordinary:
 		goto fail_ordinary
 	L6_ordinary:
@@ -5427,10 +5208,7 @@ func i9(p *pegort.TParser) (any, bool) {
 		w     string
 	)
 	start = p.Pos
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	_ = x2
 	p.StepWork()
 	p.StepWork()
@@ -5448,8 +5226,7 @@ func i9(p *pegort.TParser) (any, bool) {
 	v5 = v8
 	goto L6
 L7:
-	p.Pos = x3
-	p.Recovered = p.Recovered[:x4]
+	p.Restore(x3, x4)
 	if p.Pos < len(p.In) {
 		p.InputWork(1)
 		x9, _, x10 = p.In[p.Pos], 1, true
@@ -5467,8 +5244,7 @@ L7:
 	v5 = v13
 	goto L6
 L12:
-	p.Pos = x3
-	p.Recovered = p.Recovered[:x4]
+	p.Restore(x3, x4)
 L11:
 	goto fail
 L6:
@@ -5492,8 +5268,7 @@ func u10(p *pegort.TParser) (any, bool) {
 		start, rec := p.Pos, len(p.Recovered)
 		v, ok := i10(p)
 		if !ok {
-			p.Pos = start
-			p.Recovered = p.Recovered[:rec]
+			p.Restore(start, rec)
 		}
 		return v, ok
 	}
@@ -5501,8 +5276,7 @@ func u10(p *pegort.TParser) (any, bool) {
 	start, rec := p.Pos, len(p.Recovered)
 	v, ok := i10(p)
 	if !ok {
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 	}
 	return v, ok
 }
@@ -5521,10 +5295,7 @@ func i10(p *pegort.TParser) (any, bool) {
 			w     string
 		)
 		start = p.Pos
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		_ = x2
 		if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 			p.Pos++
@@ -5569,10 +5340,7 @@ func i10(p *pegort.TParser) (any, bool) {
 		w     string
 	)
 	start = p.Pos
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	_ = x2
 	p.StepWork()
 	p.StepWork()
@@ -5630,10 +5398,7 @@ func s11(p *pegort.TParser) (any, bool) {
 			bv    any
 		)
 		start, rec = p.Pos, len(p.Recovered)
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		x1 = p.Pos
 		x2 = 0
 		for {
@@ -5669,8 +5434,7 @@ func s11(p *pegort.TParser) (any, bool) {
 		}
 		goto L6_ordinary
 	L5_ordinary:
-		p.Pos = x3
-		p.Recovered = p.Recovered[:x4]
+		p.Restore(x3, x4)
 	L6_ordinary:
 		v8 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 		bv = pegort.TFreshNode(v8)
@@ -5683,8 +5447,7 @@ func s11(p *pegort.TParser) (any, bool) {
 		return v, true
 	fail_ordinary:
 		p.Depth--
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
+		p.Restore(start, rec)
 		return nil, false
 	}
 
@@ -5705,10 +5468,7 @@ func s11(p *pegort.TParser) (any, bool) {
 		bv    any
 	)
 	start, rec = p.Pos, len(p.Recovered)
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	p.StepWork()
 	x1 = p.Pos
 	p.StepWork()
@@ -5761,8 +5521,7 @@ func s11(p *pegort.TParser) (any, bool) {
 	}
 	goto L6
 L5:
-	p.Pos = x3
-	p.Recovered = p.Recovered[:x4]
+	p.Restore(x3, x4)
 L6:
 	v8 = p.NewMatch(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v8)
@@ -5775,8 +5534,7 @@ L6:
 	return v, true
 fail:
 	p.Depth--
-	p.Pos = start
-	p.Recovered = p.Recovered[:rec]
+	p.Restore(start, rec)
 	return nil, false
 }
 
@@ -5789,10 +5547,7 @@ func s13(p *pegort.TParser) (any, bool) {
 			size int
 			ok   bool
 		)
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
+		p.Enter()
 		for {
 			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
@@ -5813,10 +5568,7 @@ func s13(p *pegort.TParser) (any, bool) {
 		size int
 		ok   bool
 	)
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
+	p.Enter()
 	p.StepWork()
 	for {
 		if p.Pos < len(p.In) {

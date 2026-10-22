@@ -350,8 +350,7 @@ func (d *dgen) reset(m dmark) {
 		d.line("p.Reset(%s)", d.rd(m.frameMark))
 		return
 	}
-	d.line("p.Pos = %s", d.rd(m.pos))
-	d.line("p.Recovered = p.Recovered[:%s]", d.rd(m.rec))
+	d.line("p.Restore(%s, %s)", d.rd(m.pos), d.rd(m.rec))
 	if m.env != "" {
 		d.line("p.Env = %s", d.rd(m.env))
 	}
@@ -1362,7 +1361,7 @@ func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain
 	if d.binds {
 		m.WriteString("\tprevEnv = p.Env\n")
 	}
-	m.WriteString("\tp.Depth++\n\tif p.Depth > p.MaxDepth {\n\t\tp.TooDeep()\n\t}\n")
+	m.WriteString("\tp.Enter()\n")
 	m.WriteString(d.body)
 	if d.succeed {
 		m.WriteString("\tp.Depth--\n")
@@ -1374,7 +1373,7 @@ func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain
 	if d.fail {
 		m.WriteString("fail:\n\tp.Depth--\n")
 		if rec {
-			m.WriteString("\tp.Pos = start\n\tp.Recovered = p.Recovered[:rec]\n")
+			m.WriteString("\tp.Restore(start, rec)\n")
 		}
 		if d.binds {
 			m.WriteString("\tp.Env = prevEnv\n")

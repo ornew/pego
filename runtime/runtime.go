@@ -2643,6 +2643,21 @@ func (p *Parser) TooDeep() {
 	panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", p.MaxDepth)})
 }
 
+// Enter counts one more rule call and fails the parse beyond the nesting limit.
+func (p *Parser) Enter() {
+	p.Depth++
+	if p.Depth > p.MaxDepth {
+		p.TooDeep()
+	}
+}
+
+// Restore goes back to the position pos and to the recovered errors of the first rec, as a failed
+// alternative does.
+func (p *Parser) Restore(pos, rec int) {
+	p.Pos = pos
+	p.Recovered = p.Recovered[:rec]
+}
+
 // Finish makes the rule's value from the value of its body.
 func (p *Parser) Finish(r *Rule, f *CaptureFrame, v *Node, start int) *Node {
 	v, owned := p.finishValue(r, f, v, start)
