@@ -320,6 +320,22 @@ func TestCodeActionResolve(t *testing.T) {
 			if strings.Join(titles, "|") != "Explain char-class|Merge the overlapping ranges of this character class" {
 				t.Errorf("titles on a declaration line = %q", titles)
 			}
+			// A fix without a rewrite is not listed: [A-z] has no proven merge.
+			const noRewrite = "file:///resolve-norewrite.pego"
+			var punctuation Diagnostic
+			for _, d := range c.open(noRewrite, "@start\nrule main = [A-z] \"x\"\n") {
+				if d.Code == "char-class" {
+					punctuation = d
+				}
+			}
+			if punctuation.Code == "" {
+				t.Fatal("no char-class finding for [A-z]")
+			}
+			for _, a := range listed(t, c, noRewrite, punctuation) {
+				if strings.HasPrefix(a.Title, "Merge") {
+					t.Errorf("a fix without a rewrite is listed: %q", a.Title)
+				}
+			}
 			// Nothing the server did not list is resolved.
 			wrongTitle := *merge
 			wrongTitle.Title = "Remove the unused rule main"

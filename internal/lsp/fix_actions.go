@@ -63,6 +63,13 @@ func (d *document) fixerFor(ctx context.Context, i int) *lintFixer {
 	return &lintFixer{d: d, ctx: ctx, findings: findings, rewrites: rewrites}
 }
 
+// hasRewrite reports whether lint.Rewrites proves a rewrite for the finding at index i. It does
+// not verify the edited document.
+func (d *document) hasRewrite(ctx context.Context, i int) bool {
+	x := d.fixerFor(ctx, i)
+	return x != nil && x.rewrites[i].IsValid()
+}
+
 // fixTitle returns the title of the fix that a finding can have, without computing the fix. A
 // title does not depend on the rewrite, so it is the same before and after the fix is resolved.
 func (d *document) fixTitle(f lint.Finding) (string, bool) {

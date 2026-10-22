@@ -248,7 +248,8 @@ func (s *Server) codeActionsControlled(params json.RawMessage, control *renderCo
 				out = append(out, codeAction{Title: suppressTitle(diagnostic.Code), Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Data: data(actionSuppress)})
 			}
 			if i, ok := findingIndex(diagnostic.Data.Key); ok && i < len(findings) {
-				if title, ok := d.fixTitle(findings[i]); ok {
+				// Only a finding with a rewrite gets a fix; the verification waits for the resolve.
+				if title, ok := d.fixTitle(findings[i]); ok && d.hasRewrite(ctx, i) {
 					out = append(out, codeAction{Title: title, Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Data: data(actionFix)})
 				}
 			}

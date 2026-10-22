@@ -211,7 +211,7 @@ Use `WorkspaceEdit.documentChanges` with `TextDocumentEdit` and a `VersionedText
 A fix is offered for exactly these findings, because for each the proof below shows that the tree and the values cannot change:
 
 - **`char-class`, overlapping or repeated ranges.** The class is replaced by one with merged ranges. The proof is equality of the two code-point sets, checked at the ends of every range, with the negation unchanged. A class that also matches the punctuation between letters, such as `[A-z]`, gets no fix, because only the writer knows which characters were meant.
-- **`useless-lookahead`, a lookahead that always succeeds.** The lookahead is removed. The proof is that it holds only literals, character classes, any-character, groups, sequences, choices, options and repetitions, so it has no capture, cut, call, predicate, recovery or attribute; a lookahead consumes nothing and has no value. Only a lookahead that is itself an item of a sequence of at least three items qualifies. With fewer, what remains is no longer a tuple: an inline action `g:(&"b"* "cc") => len($g.Value)` would see one value instead of two. Under a discard `-`, deleting it would move the `-` onto the next item (`"a" - &"b"* "c"` would become `"a" - "c"`), and a label, an operator or a repetition would lose its operand, so those get no fix.
+- **`useless-lookahead`, a lookahead that always succeeds.** The lookahead is removed. The proof is that it holds only literals, character classes, any-character, groups, sequences, choices, options and repetitions, so it has no capture, cut, call, predicate, recovery or attribute; a lookahead consumes nothing and has no value. Only a lookahead that is itself an item of a sequence of at least three items qualifies. With fewer, what remains is no longer a tuple: in a rule `main = (g:(&"b"* "cc") => len($g.Value)) "d"` the label would capture the string node instead of a one-element tuple, and `len($g.Value)` would go from 1 to 2. Under a discard `-`, deleting it would move the `-` onto the next item (`"a" - &"b"* "c"` would become `"a" - "c"`), and a label, an operator or a repetition would lose its operand, so those get no fix.
 - **`unreachable-rule`, a rule no start rule reaches.** The rule definition, with its attributes and the comment lines that document it, is deleted. The proof is that no start rule reaches it, directly or through an inline action, so nothing calls it and no parse starts at it. A start rule is never deleted, a file-wide `lint:file-ignore` directive stays, and nothing is deleted from `pego.pego`.
 
 These are not offered, because the tree or the values could change: removing a shadowed alternative (including a left-recursive one), changing a redundant optional or a nullable repetition, dropping an unused or duplicate capture (it changes the captured value or the node type), and any rewrite of a rule that is called or a lookahead that contains a call, a capture or a predicate.
@@ -228,7 +228,7 @@ It does not parse inputs. That the edit leaves the language and the values uncha
 
 ### Resolved Edits
 
-Verifying a suppression or a fix compiles and lints an edited copy, which costs a large part of a second on a large grammar, and VS Code requests code actions whenever the cursor moves. A client that advertises `textDocument.codeAction.dataSupport` and `resolveSupport` for `edit` therefore gets the actions listed without edits: a title, the diagnostic, and `data` naming the document version, the generation, the finding and which edit to compute. The title of a fix names no source text, so it is the same before and after resolving. A suppression is listed only if its line holds no directive and starts no declaration. A fix is listed for every finding of the three checks, so a finding such as `[A-z]` is listed and resolves to no edit.
+Verifying a suppression or a fix compiles and lints an edited copy, which costs a large part of a second on a large grammar, and VS Code requests code actions whenever the cursor moves. A client that advertises `textDocument.codeAction.dataSupport` and `resolveSupport` for `edit` therefore gets the actions listed without edits: a title, the diagnostic, and `data` naming the document version, the generation, the finding and which edit to compute. The title of a fix names no source text, so it is the same before and after resolving. A suppression is listed only if its line holds no directive and starts no declaration. A fix is listed only for a finding for which `lint.Rewrites` proves a rewrite, which is cheap next to the verification, so a finding such as `[A-z]` gets none. A listed fix can still resolve to no edit if the verification of the edited copy refuses it.
 
 `codeAction/resolve` runs the same verification for one action and returns the action with its versioned edit. It returns the action without an edit if the edit cannot be proven, if the title is not the one the server lists for the finding, if the finding no longer has that index and check, or if the document is not at the version of the data. Clients without resolve support get the edits in the list. The server advertises `resolveProvider` only to a client that supports resolving; the responsive actor handles the request like a text-document request, on the snapshot of the document in the data.
 
@@ -238,11 +238,11 @@ Focused timings used Go 1.27.1 on an Apple M3 Max (darwin/arm64), under the benc
 
 | Request covering one `unreachable-rule` or `char-class` finding | Median |
 | --- | --- |
-| List with edits (client without resolve support) | 335–342 ms |
-| List for a client that resolves | 39–48 µs |
-| Resolve the fix | 186–190 ms |
+| List with edits (client without resolve support) | 292–320 ms |
+| List for a client that resolves (the rewrite is proven, the edit is not verified) | 2.8–3.1 ms |
+| Resolve the fix | 159–178 ms |
 
-The list request is cheap because it reads the cached lint findings and verifies nothing; the verification runs once, when the user picks an action. The resolve time of a suppression was not measured. The timings do not include the editor.
+The list request is cheap because it reads the cached lint findings and proves the rewrite of the one finding but verifies nothing; the verification runs once, when the user picks an action. The resolve time of a suppression was not measured. The timings do not include the editor.
 
 ### Responsive Snapshots, Cancellation and Publication
 
