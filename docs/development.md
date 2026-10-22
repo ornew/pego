@@ -151,9 +151,9 @@ per-parser timeout within a 90-minute job budget, allowing generated-consumer bu
 The TypeScript differential harness uses the upstream
 [`microsoft/TypeScript` v5.9.3 `tests/cases`](https://github.com/microsoft/TypeScript/tree/v5.9.3/tests/cases) corpus.
 Required-tool checks fail before tests if a required runtime or the TypeScript corpus is absent. Go tests run with
-`-v` so optional skips are visible in the retained 14-day logs. Python uses its installed standard library and vendored
-reference data; the additional CPython `Lib/test` corpus (`PEGO_CPYTHON_SRC`) and DuckDB `REFERENCE_FILE` corpus are
-not supplied. DuckDB checks use vendored reference results, not a live DuckDB oracle. These jobs do not claim
+`-v` so optional skips are visible in the retained 14-day logs. Python uses its installed standard library and recorded
+reference data; the live comparisons on a CPython checkout (`PEGO_CPYTHON_SRC`) and the DuckDB `REFERENCE_FILE` corpus
+are not supplied. DuckDB checks use recorded reference results, not a live DuckDB oracle. These jobs do not claim
 browser-engine or deployed-site validation.
 
 ## Repository Grammar Test Coverage
@@ -169,6 +169,23 @@ The guides show how to test a grammar in an application. The repository uses the
 | Compiled grammars, Documents and backend equivalence | `internal/engine/` tests such as `compiled_test.go` and `document_test.go` |
 
 Root `go test ./...` covers the main module. Run [`parsers/test.sh`](../parsers/test.sh) to vet and test all standalone parser modules; `cd site && go test ./...` covers the site module.
+
+### Third-Party Test Corpora
+
+The conformance suites and reference data of the ready-made parsers use text from other projects (cel-spec, JSONTestSuite,
+yaml-test-suite, CPython, DuckDB and others). It is not in the repository: [`internal/corpora/manifest.json`](../internal/corpora/manifest.json)
+pins each source (archive URL at a fixed revision, license, the files kept, and the SHA-256 digest of those files), and
+`go run ./hack/corpora fetch` downloads what is missing into `$PEGO_CORPORA` (default: `pego/corpora` in the user cache
+directory) and checks the digests. Other subcommands: `list`, `verify`, `dir NAME`, and `pin NAME`, which prints the digest
+for a new manifest entry. The digest is over the extracted files (the lines of `sha256sum`, sorted by path), because
+GitHub does not promise identical archive bytes for a commit. `fetch` also checks the files that are already in the
+cache against the digest and fetches an entry again if they differ, so `parsers/test.sh` runs against verified data.
+All sources are archives at a full commit SHA except cel-go, which is the module zip of its release at
+`proxy.golang.org`: a module version is immutable and recorded in the Go checksum database.
+
+`go test` never uses the network: a test that needs a corpus that is not fetched is skipped with the command to run.
+[`parsers/test.sh`](../parsers/test.sh) fetches first and stops if that fails, so a full run skips nothing for a missing corpus.
+Reference data kept in a parser's `testdata` refers to the upstream text by file, position and hash instead of containing it.
 
 ## Language Feature Status
 

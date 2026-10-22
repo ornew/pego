@@ -79,10 +79,11 @@ Each directory holds:
 go generate ./parsers                 # regenerate every parser (after changing a grammar, the runtime or the generator)
 go test ./parsers                     # generated files up to date; golden files on every backend of the engine
 go test ./parsers -update             # rewrite the golden files from the engine
-parsers/test.sh                       # both, and the tests of every module
+parsers/test.sh                       # both, and the tests of every module (fetches the test corpora first)
 cd parsers/json && go test ./...      # the tests of one module
 ```
 
 The generation commands are the `go:generate` lines of [generate.go](generate.go); the up-to-date test reads them, so a
-new parser needs only a new line there. The modules are not part of the main module's `go test ./...`: run
+new parser needs only a new line there. The third-party corpora of the tests are fetched, not stored here (see
+[development](../docs/development.md#third-party-test-corpora)); a test whose corpus is not fetched is skipped with the command to run. The modules are not part of the main module's `go test ./...`: run
 `parsers/test.sh` after changing the engine or the generator.
