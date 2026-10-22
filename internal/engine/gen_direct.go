@@ -130,6 +130,24 @@ type dgen struct {
 
 type dvar struct{ name, typ string }
 
+// varLines declares the variables vs, those of one type together (var x1, x2 int) in the order of
+// the first of each type. Separate statements need no alignment, unlike the lines of a var block.
+func varLines(vs []dvar) string {
+	var types []string
+	names := map[string][]string{}
+	for _, v := range vs {
+		if _, ok := names[v.typ]; !ok {
+			types = append(types, v.typ)
+		}
+		names[v.typ] = append(names[v.typ], v.name)
+	}
+	var b strings.Builder
+	for _, typ := range types {
+		fmt.Fprintf(&b, "var %s %s\n", strings.Join(names[typ], ", "), typ)
+	}
+	return b.String()
+}
+
 // dscope maps the capture names of a scope to variables; names are in the order of the frame's
 // slots (the order in which the general code assigns them).
 type dscope struct {
@@ -1232,7 +1250,8 @@ func (g *generator) rollback(s genSnapshot) {
 // direct is a direct rule's compiled body: the declarations and statements of the method that
 // calls it, up to the rule's value in v (success falls through; failure jumps to fail).
 type direct struct {
-	decls, body string
+	vars        []dvar
+	body        string
 	fail        bool // the body can fail (fail is jumped to)
 	succeed     bool // the body can succeed
 	binds       bool // the body binds variables (the environment is restored)
@@ -1263,15 +1282,13 @@ func (g *generator) directRule(r *rule) *direct {
 		return nil
 	}
 	out.body = d.b.String()
-	var decls strings.Builder
 	var unread []string
 	for _, v := range d.decls {
-		fmt.Fprintf(&decls, "\t\t%s %s\n", v.name, v.typ)
 		if !d.reads[v.name] {
 			unread = append(unread, v.name)
 		}
 	}
-	out.decls = decls.String()
+	out.vars = d.decls
 	if len(unread) > 0 {
 		// Assigned but never read (such as a capture nothing reads).
 		out.body = "\t" + strings.Repeat("_, ", len(unread)-1) + "_ = " + strings.Join(unread, ", ") + "\n" + out.body
@@ -1366,24 +1383,23 @@ func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain
 	}
 	restore := plain && d.fail
 	start, rec := d.start || restore, restore && g.recovers()
-	m.WriteString("\tvar (\n")
+	var vs []dvar
 	if start {
-		m.WriteString("\t\tstart int\n")
+		vs = append(vs, dvar{"start", "int"})
 	}
 	if d.succeed {
-		fmt.Fprintf(m, "\t\tv %s\n", g.valType())
+		vs = append(vs, dvar{"v", g.valType()})
 	}
 	if d.ctx {
-		m.WriteString("\t\tc *TActCtx\n")
+		vs = append(vs, dvar{"c", "*TActCtx"})
 	}
 	if rec {
-		m.WriteString("\t\trec int\n")
+		vs = append(vs, dvar{"rec", "int"})
 	}
 	if d.binds {
-		m.WriteString("\t\tprevEnv *Env\n")
+		vs = append(vs, dvar{"prevEnv", "*Env"})
 	}
-	m.WriteString(d.decls)
-	m.WriteString("\t)\n")
+	m.WriteString(varLines(append(vs, d.vars...)))
 	switch {
 	case rec:
 		m.WriteString("\tstart, rec = p.Pos, len(p.Recovered)\n")
@@ -1421,12 +1437,11 @@ func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain
 // fallback calls. Its caller owns depth and failure rollback, so it adds neither.
 func (g *generator) directLeanBody(r *rule, d *direct) string {
 	var b strings.Builder
-	b.WriteString("var (\n")
+	var vs []dvar
 	if d.succeed {
-		b.WriteString("v *Node\n")
+		vs = append(vs, dvar{"v", "*Node"})
 	}
-	b.WriteString(d.decls)
-	b.WriteString(")\n")
+	b.WriteString(varLines(append(vs, d.vars...)))
 	b.WriteString(d.body)
 	if d.succeed {
 		b.WriteString("return v, true\n")

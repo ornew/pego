@@ -2562,46 +2562,11 @@ func u0(p *pegort.TParser) (any, bool) {
 }
 
 func i0(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		ok    bool
-		k4    any
-		x5    int
-		v6    any
-		k7    any
-		x8    int
-		x9    int
-		x10   int
-		x11   int
-		x12   int
-		k13   any
-		x15   int
-		x16   []any
-		x17   int
-		v18   any
-		v19   any
-		v20   any
-		v21   any
-		v22   any
-		k23   any
-		x24   int
-		x25   int
-		x26   int
-		x27   int
-		x28   int
-		k29   any
-		x31   int
-		x32   []any
-		x33   int
-		v34   any
-		v35   any
-		v36   any
-		v37   any
-		v38   any
-	)
+	var start, x1, x5, x8, x9, x10, x11, x12, x15, x17, x24, x25, x26, x27, x28, x31, x33 int
+	var v, k4, v6, k7, k13, v18, v19, v20, v21, v22, k23, k29, v34, v35, v36, v37, v38 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x16, x32 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _, _, _ = x5, x8, x11, x17, x24, x27, x33
@@ -2747,19 +2712,10 @@ fail:
 }
 
 func s1(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		x4    rune
-		x5    bool
-		ok    bool
-		v8    any
-		v11   any
-		v14   any
-		v17   any
-	)
+	var start, x1 int
+	var v, v2, v8, v11, v14, v17 any
+	var x4 rune
+	var x5, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -2837,20 +2793,11 @@ func u2(p *pegort.TParser) (any, bool) {
 }
 
 func i2(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		x6    rune
-		x7    bool
-		v10   any
-		v12   any
-	)
+	var start, x2, x3 int
+	var v, k1, v4, v10, v12 any
+	var c *pegort.TActCtx
+	var ok, x7 bool
+	var x6 rune
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -2913,15 +2860,10 @@ func u3(p *pegort.TParser) (any, bool) {
 }
 
 func i3(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -2952,21 +2894,10 @@ func u4(p *pegort.TParser) (any, bool) {
 }
 
 func i4(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		x4    int
-		x5    int
-		k6    any
-		x8    int
-		v9    any
-		v10   any
-	)
+	var start, x2, x3, x4, x5, x8 int
+	var v, k1, k6, v9, v10 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x4, x8
@@ -3040,20 +2971,10 @@ func u5(p *pegort.TParser) (any, bool) {
 }
 
 func i5(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		ok    bool
-		v7    any
-		k8    any
-		x9    int
-		v10   any
-	)
+	var start, x2, x3, x9 int
+	var v, k1, v4, v7, k8, v10 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x9
@@ -3101,21 +3022,11 @@ func u6(p *pegort.TParser) (any, bool) {
 }
 
 func i6(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		k2    any
-		x3    any
-		x6    int
-		ok    bool
-		v7    any
-		x8    rune
-		x9    bool
-		x12   int
-		v13   any
-	)
+	var start, x1, x6, x12 int
+	var v, k2, x3, v7, v13 any
+	var c *pegort.TActCtx
+	var ok, x9 bool
+	var x8 rune
 	start = p.Pos
 	p.Enter()
 	_, _ = x6, x12
@@ -3166,15 +3077,9 @@ fail:
 }
 
 func s7(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		ok    bool
-		x2    int
-		v4    any
-		bv    any
-	)
+	var start, x1, x2 int
+	var v, v4, bv any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -3225,20 +3130,11 @@ func u8(p *pegort.TParser) (any, bool) {
 }
 
 func i8(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		x6    rune
-		x7    bool
-		v10   any
-		v12   any
-	)
+	var start, x2, x3 int
+	var v, k1, v4, v10, v12 any
+	var c *pegort.TActCtx
+	var ok, x7 bool
+	var x6 rune
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -3301,15 +3197,10 @@ func u9(p *pegort.TParser) (any, bool) {
 }
 
 func i9(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -3340,21 +3231,10 @@ func u10(p *pegort.TParser) (any, bool) {
 }
 
 func i10(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		x4    int
-		x5    int
-		k6    any
-		x8    int
-		v9    any
-		v10   any
-	)
+	var start, x2, x3, x4, x5, x8 int
+	var v, k1, k6, v9, v10 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x4, x8
@@ -3428,25 +3308,10 @@ func u11(p *pegort.TParser) (any, bool) {
 }
 
 func i11(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		v7    any
-		v10   any
-		k11   any
-		x12   int
-		x13   int
-		v14   any
-		v17   any
-	)
+	var start, x2, x5, x6, x12, x13 int
+	var v, k1, v3, k4, v7, v10, k11, v14, v17 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x2, x5, x12
@@ -3507,15 +3372,10 @@ func u12(p *pegort.TParser) (any, bool) {
 }
 
 func i12(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -3552,24 +3412,10 @@ func u13(p *pegort.TParser) (any, bool) {
 }
 
 func i13(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		k9    any
-		x11   int
-		v12   any
-		v13   any
-	)
+	var start, x2, x5, x6, x7, x8, x11 int
+	var v, k1, v3, k4, k9, v12, v13 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x2, x7, x11
@@ -3642,16 +3488,10 @@ func u14(p *pegort.TParser) (any, bool) {
 }
 
 func i14(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		x1    int
-		k3    any
-		x4    int
-		v5    any
-	)
+	var start, x1, x4 int
+	var v, k3, v5 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x4
@@ -3709,20 +3549,11 @@ func u15(p *pegort.TParser) (any, bool) {
 }
 
 func i15(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		x6    rune
-		x7    bool
-		v10   any
-		v12   any
-	)
+	var start, x2, x3 int
+	var v, k1, v4, v10, v12 any
+	var c *pegort.TActCtx
+	var ok, x7 bool
+	var x6 rune
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -3785,15 +3616,10 @@ func u16(p *pegort.TParser) (any, bool) {
 }
 
 func i16(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -3824,21 +3650,10 @@ func u17(p *pegort.TParser) (any, bool) {
 }
 
 func i17(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		x4    int
-		x5    int
-		k6    any
-		x8    int
-		v9    any
-		v10   any
-	)
+	var start, x2, x3, x4, x5, x8 int
+	var v, k1, k6, v9, v10 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x4, x8
@@ -3907,15 +3722,9 @@ func u18(p *pegort.TParser) (any, bool) {
 }
 
 func v18(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		ok    bool
-		v5    any
-		v7    any
-	)
+	var start, x1 int
+	var v, v2, v5, v7 any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -3958,23 +3767,10 @@ func u19(p *pegort.TParser) (any, bool) {
 }
 
 func i19(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-		k7    any
-		x8    int
-		x9    int
-		v10   any
-		v13   any
-	)
+	var start, x2, x5, x8, x9 int
+	var v, k1, v3, k4, v6, k7, v10, v13 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x2, x5, x8
@@ -4031,19 +3827,10 @@ func u20(p *pegort.TParser) (any, bool) {
 }
 
 func i20(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		x4    int
-		k6    any
-		x7    int
-		v8    any
-	)
+	var start, x2, x4, x7 int
+	var v, k1, v3, k6, v8 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x7
@@ -4111,20 +3898,11 @@ func u21(p *pegort.TParser) (any, bool) {
 }
 
 func i21(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		x6    rune
-		x7    bool
-		v10   any
-		v12   any
-	)
+	var start, x2, x3 int
+	var v, k1, v4, v10, v12 any
+	var c *pegort.TActCtx
+	var ok, x7 bool
+	var x6 rune
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -4187,15 +3965,10 @@ func u22(p *pegort.TParser) (any, bool) {
 }
 
 func i22(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -4226,21 +3999,10 @@ func u23(p *pegort.TParser) (any, bool) {
 }
 
 func i23(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		x4    int
-		x5    int
-		k6    any
-		x8    int
-		v9    any
-		v10   any
-	)
+	var start, x2, x3, x4, x5, x8 int
+	var v, k1, k6, v9, v10 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x4, x8
@@ -4309,16 +4071,9 @@ func u24(p *pegort.TParser) (any, bool) {
 }
 
 func v24(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		ok    bool
-		v5    any
-		v7    any
-		v9    any
-	)
+	var start, x1 int
+	var v, v2, v5, v7, v9 any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -4368,26 +4123,10 @@ func u25(p *pegort.TParser) (any, bool) {
 }
 
 func i25(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-		k7    any
-		x8    int
-		x9    int
-		v10   any
-		v13   any
-		k14   any
-		x15   int
-		v16   any
-	)
+	var start, x2, x5, x8, x9, x15 int
+	var v, k1, v3, k4, v6, k7, v10, v13, k14, v16 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _, _ = x2, x5, x8, x15
@@ -4453,19 +4192,10 @@ func u26(p *pegort.TParser) (any, bool) {
 }
 
 func i26(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		x4    int
-		k6    any
-		x7    int
-		v8    any
-	)
+	var start, x2, x4, x7 int
+	var v, k1, v3, k6, v8 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x7
@@ -4520,24 +4250,10 @@ func u27(p *pegort.TParser) (any, bool) {
 }
 
 func i27(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		x4    int
-		k6    any
-		x7    int
-		x8    int
-		v9    any
-		v12   any
-		k13   any
-		x14   int
-		v15   any
-	)
+	var start, x2, x4, x7, x8, x14 int
+	var v, k1, v3, k6, v9, v12, k13, v15 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x2, x7, x14
@@ -4610,17 +4326,10 @@ func u28(p *pegort.TParser) (any, bool) {
 }
 
 func i28(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		x3    int
-		ok    bool
-		x4    int
-		v6    any
-	)
+	var start, x2, x3, x4 int
+	var v, k1, v6 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -4671,23 +4380,10 @@ func u31(p *pegort.TParser) (any, bool) {
 }
 
 func i31(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		k2    any
-		x3    any
-		x6    int
-		ok    bool
-		x9    int
-		v10   any
-		x12   int
-		x15   int
-		v16   any
-		x18   int
-		v19   any
-	)
+	var start, x1, x6, x9, x12, x15, x18 int
+	var v, k2, x3, v10, v16, v19 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x9, x15, x18
@@ -4788,29 +4484,10 @@ func u32(p *pegort.TParser) (any, bool) {
 }
 
 func i32(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		ok    bool
-		k4    any
-		x5    int
-		v6    any
-		k7    any
-		x8    int
-		v9    any
-		k10   any
-		x11   int
-		x12   int
-		x13   int
-		x14   int
-		k15   any
-		x17   int
-		v18   any
-		v19   any
-		x20   int
-	)
+	var start, x1, x5, x8, x11, x12, x13, x14, x17, x20 int
+	var v, k4, v6, k7, v9, k10, k15, v18, v19 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _, _ = x5, x8, x13, x17
@@ -4951,35 +4628,12 @@ func u33(p *pegort.TParser) (any, bool) {
 }
 
 func i33(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		x9    int
-		k10   any
-		x12   int
-		x13   []any
-		x14   int
-		v15   any
-		x16   int
-		ch    rune
-		size  int
-		x18   int
-		v19   any
-		v20   any
-		v21   any
-		v22   any
-		v23   any
-	)
+	var start, x2, x5, x6, x7, x8, x9, x12, x14, x16, size, x18 int
+	var v, k1, v3, k4, k10, v15, v19, v20, v21, v22, v23 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x13 []any
+	var ch rune
 	start = p.Pos
 	p.Enter()
 	_, _, _, _ = x2, x5, x8, x18
@@ -5068,17 +4722,10 @@ fail:
 }
 
 func s34(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		x4    rune
-		x5    bool
-		ok    bool
-		v8    any
-		v11   any
-	)
+	var start, x1 int
+	var v, v2, v8, v11 any
+	var x4 rune
+	var x5, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -5132,16 +4779,10 @@ func u35(p *pegort.TParser) (any, bool) {
 }
 
 func i35(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		x1    int
-		k3    any
-		x4    int
-		v5    any
-	)
+	var start, x1, x4 int
+	var v, k3, v5 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x4
@@ -5194,19 +4835,11 @@ func u36(p *pegort.TParser) (any, bool) {
 }
 
 func i36(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-		x4    int
-		x7    int
-		ch    rune
-		size  int
-	)
+	var start, x2, x4, x7, size int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
+	var ch rune
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -5285,40 +4918,10 @@ func u43(p *pegort.TParser) (any, bool) {
 }
 
 func i43(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		v7    any
-		k8    any
-		x9    int
-		v10   any
-		k11   any
-		x12   int
-		x13   int
-		v14   any
-		v17   any
-		k18   any
-		x19   int
-		v20   any
-		k21   any
-		x22   int
-		x23   int
-		v24   any
-		v27   any
-		x28   int
-		x32   int
-		k34   any
-		x35   int
-		x36   int
-		v37   any
-		v40   any
-	)
+	var start, x2, x3, x9, x12, x13, x19, x22, x23, x28, x32, x35, x36 int
+	var v, k1, v4, v7, k8, v10, k11, v14, v17, k18, v20, k21, v24, v27, k34, v37, v40 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _, _ = x2, x9, x12, x19, x22, x35
@@ -5457,15 +5060,10 @@ func u44(p *pegort.TParser) (any, bool) {
 }
 
 func i44(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -5499,15 +5097,10 @@ func u45(p *pegort.TParser) (any, bool) {
 }
 
 func i45(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -5541,15 +5134,10 @@ func u46(p *pegort.TParser) (any, bool) {
 }
 
 func i46(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -5586,17 +5174,10 @@ func u47(p *pegort.TParser) (any, bool) {
 }
 
 func i47(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		v7    any
-	)
+	var start, x2, x3 int
+	var v, k1, v4, v7 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -5641,15 +5222,9 @@ fail:
 }
 
 func s48(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		ok    bool
-		v5    any
-		v7    any
-	)
+	var start, x1 int
+	var v, v2, v5, v7 any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -5692,33 +5267,11 @@ func u49(p *pegort.TParser) (any, bool) {
 }
 
 func i49(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		x9    int
-		k10   any
-		x12   int
-		x13   []any
-		x14   int
-		v15   any
-		x16   int
-		v17   any
-		v18   any
-		v19   any
-		v20   any
-		v21   any
-		x22   int
-	)
+	var start, x2, x5, x6, x7, x8, x9, x12, x14, x16, x22 int
+	var v, k1, v3, k4, k10, v15, v17, v18, v19, v20, v21 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x13 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _, _ = x2, x5, x8, x16
@@ -5820,21 +5373,10 @@ func u50(p *pegort.TParser) (any, bool) {
 }
 
 func i50(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		k2    any
-		x3    any
-		x6    int
-		ok    bool
-		v7    any
-		x8    int
-		x11   int
-		x15   int
-		v16   any
-	)
+	var start, x1, x6, x8, x11, x15 int
+	var v, k2, x3, v7, v16 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x6, x15
@@ -5914,18 +5456,10 @@ func u51(p *pegort.TParser) (any, bool) {
 }
 
 func i51(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-	)
+	var start, x2, x5 int
+	var v, k1, v3, k4, v6 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -5972,18 +5506,10 @@ func u52(p *pegort.TParser) (any, bool) {
 }
 
 func i52(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-	)
+	var start, x2, x5 int
+	var v, k1, v3, k4, v6 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -6027,23 +5553,11 @@ func u53(p *pegort.TParser) (any, bool) {
 }
 
 func i53(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		k2    any
-		x3    any
-		x5    rune
-		x6    bool
-		x9    int
-		ok    bool
-		v10   any
-		x12   int
-		x14   int
-		x16   int
-		v17   any
-	)
+	var start, x1, x9, x12, x14, x16 int
+	var v, k2, x3, v10, v17 any
+	var c *pegort.TActCtx
+	var x5 rune
+	var x6, ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x9, x16
@@ -6127,15 +5641,10 @@ func u54(p *pegort.TParser) (any, bool) {
 }
 
 func i54(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -6175,25 +5684,10 @@ func u55(p *pegort.TParser) (any, bool) {
 }
 
 func i55(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		k9    any
-		x11   int
-		v12   any
-		v13   any
-		x14   int
-	)
+	var start, x2, x5, x6, x7, x8, x11, x14 int
+	var v, k1, v3, k4, k9, v12, v13 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x2, x7, x11
@@ -6282,23 +5776,11 @@ func u56(p *pegort.TParser) (any, bool) {
 }
 
 func i56(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		k2    any
-		x3    any
-		x5    rune
-		x6    bool
-		x9    int
-		ok    bool
-		v10   any
-		x11   int
-		x14   int
-		x18   int
-		v19   any
-	)
+	var start, x1, x9, x11, x14, x18 int
+	var v, k2, x3, v10, v19 any
+	var c *pegort.TActCtx
+	var x5 rune
+	var x6, ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x9, x18
@@ -6392,30 +5874,11 @@ func u57(p *pegort.TParser) (any, bool) {
 }
 
 func i57(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		k2    any
-		x3    any
-		x6    int
-		ok    bool
-		v7    any
-		x9    int
-		v10   any
-		x12   int
-		v13   any
-		x14   int
-		x16   int
-		x18   rune
-		x19   bool
-		x25   int
-		v26   any
-		x28   int
-		x30   int
-		v31   any
-	)
+	var start, x1, x6, x9, x12, x14, x16, x25, x28, x30 int
+	var v, k2, x3, v7, v10, v13, v26, v31 any
+	var c *pegort.TActCtx
+	var ok, x19 bool
+	var x18 rune
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _ = x6, x9, x12, x25, x30
@@ -6543,15 +6006,10 @@ func u58(p *pegort.TParser) (any, bool) {
 }
 
 func i58(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -6575,17 +6033,10 @@ fail:
 }
 
 func s59(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		x4    rune
-		x5    bool
-		ok    bool
-		v8    any
-		v10   any
-	)
+	var start, x1 int
+	var v, v2, v8, v10 any
+	var x4 rune
+	var x5, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -6635,15 +6086,10 @@ func u60(p *pegort.TParser) (any, bool) {
 }
 
 func i60(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -6686,17 +6132,10 @@ func u61(p *pegort.TParser) (any, bool) {
 }
 
 func i61(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		v7    any
-	)
+	var start, x2, x3 int
+	var v, k1, v4, v7 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -6741,15 +6180,9 @@ fail:
 }
 
 func s62(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		ok    bool
-		v5    any
-		v7    any
-	)
+	var start, x1 int
+	var v, v2, v5, v7 any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -6792,25 +6225,10 @@ func u63(p *pegort.TParser) (any, bool) {
 }
 
 func i63(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		k9    any
-		x11   int
-		v12   any
-		v13   any
-		x14   int
-	)
+	var start, x2, x5, x6, x7, x8, x11, x14 int
+	var v, k1, v3, k4, k9, v12, v13 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x2, x7, x11
@@ -6896,25 +6314,10 @@ func u64(p *pegort.TParser) (any, bool) {
 }
 
 func i64(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		k9    any
-		x11   int
-		v12   any
-		v13   any
-		x14   int
-	)
+	var start, x2, x5, x6, x7, x8, x11, x14 int
+	var v, k1, v3, k4, k9, v12, v13 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x2, x7, x11
@@ -7003,15 +6406,10 @@ func u65(p *pegort.TParser) (any, bool) {
 }
 
 func i65(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -7049,25 +6447,10 @@ func u66(p *pegort.TParser) (any, bool) {
 }
 
 func i66(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		k9    any
-		x11   int
-		v12   any
-		v13   any
-		x14   int
-	)
+	var start, x2, x5, x6, x7, x8, x11, x14 int
+	var v, k1, v3, k4, k9, v12, v13 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x2, x7, x11
@@ -7174,18 +6557,10 @@ func u67(p *pegort.TParser) (any, bool) {
 }
 
 func i67(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-	)
+	var start, x2, x5 int
+	var v, k1, v3, k4, v6 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -7229,35 +6604,12 @@ func u68(p *pegort.TParser) (any, bool) {
 }
 
 func i68(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		x9    int
-		k10   any
-		x12   int
-		x13   []any
-		x14   int
-		v15   any
-		x16   int
-		ch    rune
-		size  int
-		x18   int
-		v19   any
-		v20   any
-		v21   any
-		v22   any
-		v23   any
-	)
+	var start, x2, x5, x6, x7, x8, x9, x12, x14, x16, size, x18 int
+	var v, k1, v3, k4, k10, v15, v19, v20, v21, v22, v23 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x13 []any
+	var ch rune
 	start = p.Pos
 	p.Enter()
 	_, _, _, _ = x2, x5, x8, x18
@@ -7356,25 +6708,11 @@ func u69(p *pegort.TParser) (any, bool) {
 }
 
 func i69(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		k2    any
-		x3    any
-		x5    rune
-		x6    bool
-		x9    int
-		ok    bool
-		v10   any
-		x13   int
-		v14   any
-		x16   int
-		x18   int
-		x20   int
-		v21   any
-	)
+	var start, x1, x9, x13, x16, x18, x20 int
+	var v, k2, x3, v10, v14, v21 any
+	var c *pegort.TActCtx
+	var x5 rune
+	var x6, ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x9, x13, x20
@@ -7467,17 +6805,10 @@ func u70(p *pegort.TParser) (any, bool) {
 }
 
 func v70(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		x4    rune
-		x5    bool
-		ok    bool
-		v8    any
-		v10   any
-	)
+	var start, x1 int
+	var v, v2, v8, v10 any
+	var x4 rune
+	var x5, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -7530,15 +6861,10 @@ func u71(p *pegort.TParser) (any, bool) {
 }
 
 func i71(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -7585,20 +6911,10 @@ func u72(p *pegort.TParser) (any, bool) {
 }
 
 func i72(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		v7    any
-		k8    any
-		x9    int
-		v10   any
-	)
+	var start, x2, x3, x9 int
+	var v, k1, v4, v7, k8, v10 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x9
@@ -7665,15 +6981,10 @@ func u73(p *pegort.TParser) (any, bool) {
 }
 
 func i73(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -7710,19 +7021,10 @@ func u74(p *pegort.TParser) (any, bool) {
 }
 
 func i74(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-		x7    int
-	)
+	var start, x2, x5, x7 int
+	var v, k1, v3, k4, v6 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -7799,36 +7101,11 @@ func u75(p *pegort.TParser) (any, bool) {
 }
 
 func i75(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-		k7    any
-		x8    int
-		x9    int
-		x10   int
-		x11   int
-		x12   int
-		k13   any
-		x15   int
-		x16   []any
-		x17   int
-		v18   any
-		x19   int
-		v20   any
-		v21   any
-		v22   any
-		v23   any
-		v24   any
-		x25   int
-	)
+	var start, x2, x5, x8, x9, x10, x11, x12, x15, x17, x19, x25 int
+	var v, k1, v3, k4, v6, k7, k13, v18, v20, v21, v22, v23, v24 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x16 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _ = x2, x5, x8, x11, x19
@@ -7961,35 +7238,11 @@ func u76(p *pegort.TParser) (any, bool) {
 }
 
 func i76(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		x1    int
-		k2    any
-		x3    any
-		x6    int
-		v7    any
-		x8    rune
-		x9    bool
-		x12   int
-		v13   any
-		x16   int
-		v17   any
-		x20   int
-		v21   any
-		x24   int
-		v25   any
-		x28   int
-		v29   any
-		x32   int
-		v33   any
-		x35   int
-		v36   any
-		x39   int
-		v40   any
-	)
+	var start, x1, x6, x12, x16, x20, x24, x28, x32, x35, x39 int
+	var v, k2, x3, v7, v13, v17, v21, v25, v29, v33, v36, v40 any
+	var c *pegort.TActCtx
+	var ok, x9 bool
+	var x8 rune
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _, _, _, _, _ = x6, x12, x16, x20, x24, x28, x32, x35, x39
@@ -8140,15 +7393,10 @@ func u79(p *pegort.TParser) (any, bool) {
 }
 
 func i79(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -8196,16 +7444,10 @@ func u80(p *pegort.TParser) (any, bool) {
 }
 
 func i80(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		x1    int
-		k3    any
-		x4    int
-		v5    any
-	)
+	var start, x1, x4 int
+	var v, k3, v5 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x4
@@ -8261,20 +7503,10 @@ func u81(p *pegort.TParser) (any, bool) {
 }
 
 func i81(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		k2    any
-		x3    any
-		x6    int
-		ok    bool
-		v7    any
-		x9    int
-		v10   any
-		x11   int
-	)
+	var start, x1, x6, x9, x11 int
+	var v, k2, x3, v7, v10 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x6, x9
@@ -8336,15 +7568,9 @@ func u82(p *pegort.TParser) (any, bool) {
 }
 
 func v82(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		ok    bool
-		v5    any
-		v7    any
-	)
+	var start, x1 int
+	var v, v2, v5, v7 any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -8387,19 +7613,10 @@ func u83(p *pegort.TParser) (any, bool) {
 }
 
 func i83(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-		x7    int
-	)
+	var start, x2, x5, x7 int
+	var v, k1, v3, k4, v6 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -8473,36 +7690,11 @@ func u84(p *pegort.TParser) (any, bool) {
 }
 
 func i84(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-		k7    any
-		x8    int
-		x9    int
-		x10   int
-		x11   int
-		x12   int
-		k13   any
-		x15   int
-		x16   []any
-		x17   int
-		v18   any
-		x19   int
-		v20   any
-		v21   any
-		v22   any
-		v23   any
-		v24   any
-		x25   int
-	)
+	var start, x2, x5, x8, x9, x10, x11, x12, x15, x17, x19, x25 int
+	var v, k1, v3, k4, v6, k7, k13, v18, v20, v21, v22, v23, v24 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x16 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _ = x2, x5, x8, x11, x19
@@ -8635,21 +7827,10 @@ func u85(p *pegort.TParser) (any, bool) {
 }
 
 func i85(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		k2    any
-		x3    any
-		x6    int
-		ok    bool
-		v7    any
-		x9    int
-		v10   any
-		x11   int
-		x13   int
-	)
+	var start, x1, x6, x9, x11, x13 int
+	var v, k2, x3, v7, v10 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x6, x9
@@ -8726,19 +7907,10 @@ func u86(p *pegort.TParser) (any, bool) {
 }
 
 func i86(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		x4    int
-		k6    any
-		x7    int
-		v8    any
-	)
+	var start, x2, x4, x7 int
+	var v, k1, v3, k6, v8 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x7
@@ -8806,20 +7978,10 @@ func u87(p *pegort.TParser) (any, bool) {
 }
 
 func i87(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		v7    any
-		k8    any
-		x9    int
-		v10   any
-	)
+	var start, x2, x3, x9 int
+	var v, k1, v4, v7, k8, v10 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x9
@@ -8883,21 +8045,11 @@ func u88(p *pegort.TParser) (any, bool) {
 }
 
 func i88(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		k2    any
-		x3    any
-		x5    rune
-		x6    bool
-		x9    int
-		ok    bool
-		v10   any
-		x12   int
-		v13   any
-	)
+	var start, x1, x9, x12 int
+	var v, k2, x3, v10, v13 any
+	var c *pegort.TActCtx
+	var x5 rune
+	var x6, ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x9, x12
@@ -8948,12 +8100,10 @@ fail:
 }
 
 func s89(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-	)
+	var start int
+	var v any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 46 && p.In[p.Pos+1] == 46 && p.In[p.Pos+2] == 46 {
@@ -8986,18 +8136,10 @@ func u90(p *pegort.TParser) (any, bool) {
 }
 
 func i90(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-	)
+	var start, x2, x5 int
+	var v, k1, v3, k4, v6 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -9061,18 +8203,10 @@ func u91(p *pegort.TParser) (any, bool) {
 }
 
 func v91(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		x4    rune
-		x5    bool
-		ok    bool
-		v8    any
-		v11   any
-		v14   any
-	)
+	var start, x1 int
+	var v, v2, v8, v11, v14 any
+	var x4 rune
+	var x5, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -9138,15 +8272,10 @@ func u92(p *pegort.TParser) (any, bool) {
 }
 
 func i92(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -9196,16 +8325,10 @@ func u93(p *pegort.TParser) (any, bool) {
 }
 
 func i93(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		x1    int
-		k3    any
-		x4    int
-		v5    any
-	)
+	var start, x1, x4 int
+	var v, k3, v5 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x4
@@ -9263,15 +8386,10 @@ func u94(p *pegort.TParser) (any, bool) {
 }
 
 func i94(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -9324,22 +8442,10 @@ func u95(p *pegort.TParser) (any, bool) {
 }
 
 func i95(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		v7    any
-		v10   any
-		x11   int
-		x15   int
-	)
+	var start, x2, x5, x6, x11, x15 int
+	var v, k1, v3, k4, v7, v10 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -9426,15 +8532,10 @@ func u96(p *pegort.TParser) (any, bool) {
 }
 
 func i96(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -9472,21 +8573,10 @@ func u97(p *pegort.TParser) (any, bool) {
 }
 
 func i97(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		x4    int
-		x5    int
-		k6    any
-		x8    int
-		v9    any
-		v10   any
-	)
+	var start, x2, x3, x4, x5, x8 int
+	var v, k1, k6, v9, v10 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x4, x8
@@ -9551,21 +8641,10 @@ fail:
 }
 
 func s98(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		ok    bool
-		v5    any
-		x6    rune
-		x7    bool
-		v10   any
-		v12   any
-		v14   any
-		v16   any
-		v18   any
-	)
+	var start, x1 int
+	var v, v2, v5, v10, v12, v14, v16, v18 any
+	var ok, x7 bool
+	var x6 rune
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -9643,24 +8722,11 @@ func u99(p *pegort.TParser) (any, bool) {
 }
 
 func i99(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		ok    bool
-		x4    int
-		x6    rune
-		x7    bool
-		k17   any
-		x18   int
-		v19   any
-		k20   any
-		x21   int
-		x22   int
-		v23   any
-		v26   any
-	)
+	var start, x1, x4, x18, x21, x22 int
+	var v, k17, v19, k20, v23, v26 any
+	var c *pegort.TActCtx
+	var ok, x7 bool
+	var x6 rune
 	start = p.Pos
 	p.Enter()
 	_, _ = x18, x21
@@ -9786,20 +8852,10 @@ func u100(p *pegort.TParser) (any, bool) {
 }
 
 func i100(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		v7    any
-		v10   any
-	)
+	var start, x2, x5, x6 int
+	var v, k1, v3, k4, v7, v10 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -9847,16 +8903,10 @@ func u101(p *pegort.TParser) (any, bool) {
 }
 
 func i101(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		x1    int
-		k3    any
-		x4    int
-		v5    any
-	)
+	var start, x1, x4 int
+	var v, k3, v5 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x4
@@ -9909,32 +8959,10 @@ func u102(p *pegort.TParser) (any, bool) {
 }
 
 func i102(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		k9    any
-		x11   int
-		v12   any
-		v13   any
-		k14   any
-		x15   int
-		v16   any
-		k17   any
-		x18   int
-		x19   int
-		v20   any
-		v23   any
-	)
+	var start, x2, x5, x6, x7, x8, x11, x15, x18, x19 int
+	var v, k1, v3, k4, k9, v12, v13, k14, v16, k17, v20, v23 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _ = x2, x7, x11, x15, x18
@@ -10034,23 +9062,10 @@ func u103(p *pegort.TParser) (any, bool) {
 }
 
 func i103(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-		k7    any
-		x8    int
-		x9    int
-		v10   any
-		v13   any
-	)
+	var start, x2, x5, x8, x9 int
+	var v, k1, v3, k4, v6, k7, v10, v13 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x2, x5, x8
@@ -10107,24 +9122,10 @@ func u104(p *pegort.TParser) (any, bool) {
 }
 
 func i104(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		x4    int
-		k6    any
-		x7    int
-		v8    any
-		k9    any
-		x10   int
-		x11   int
-		v12   any
-		v15   any
-	)
+	var start, x2, x4, x7, x10, x11 int
+	var v, k1, v3, k6, v8, k9, v12, v15 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x2, x7, x10
@@ -10194,23 +9195,10 @@ func u105(p *pegort.TParser) (any, bool) {
 }
 
 func i105(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		ok    bool
-		v7    any
-		v9    any
-		k10   any
-		x11   int
-		x12   int
-		v13   any
-		v16   any
-	)
+	var start, x2, x3, x11, x12 int
+	var v, k1, v4, v7, v9, k10, v13, v16 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x11
@@ -10275,15 +9263,10 @@ func u106(p *pegort.TParser) (any, bool) {
 }
 
 func i106(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -10321,15 +9304,10 @@ func u107(p *pegort.TParser) (any, bool) {
 }
 
 func i107(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -10370,21 +9348,10 @@ func u108(p *pegort.TParser) (any, bool) {
 }
 
 func i108(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		x4    int
-		x5    int
-		k6    any
-		x8    int
-		v9    any
-		v10   any
-	)
+	var start, x2, x3, x4, x5, x8 int
+	var v, k1, k6, v9, v10 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x4, x8
@@ -10449,15 +9416,9 @@ fail:
 }
 
 func s109(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		ok    bool
-		v5    any
-		v7    any
-	)
+	var start, x1 int
+	var v, v2, v5, v7 any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -10500,18 +9461,10 @@ func u110(p *pegort.TParser) (any, bool) {
 }
 
 func i110(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-	)
+	var start, x2, x5 int
+	var v, k1, v3, k4, v6 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -10555,22 +9508,10 @@ func u111(p *pegort.TParser) (any, bool) {
 }
 
 func i111(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		v7    any
-		v10   any
-		x11   int
-		x15   int
-	)
+	var start, x2, x5, x6, x11, x15 int
+	var v, k1, v3, k4, v7, v10 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -10648,35 +9589,12 @@ func u112(p *pegort.TParser) (any, bool) {
 }
 
 func i112(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		x9    int
-		k10   any
-		x12   int
-		x13   []any
-		x14   int
-		v15   any
-		x16   int
-		ch    rune
-		size  int
-		x18   int
-		v19   any
-		v20   any
-		v21   any
-		v22   any
-		v23   any
-	)
+	var start, x2, x5, x6, x7, x8, x9, x12, x14, x16, size, x18 int
+	var v, k1, v3, k4, k10, v15, v19, v20, v21, v22, v23 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x13 []any
+	var ch rune
 	start = p.Pos
 	p.Enter()
 	_, _, _, _ = x2, x5, x8, x18
@@ -10770,16 +9688,9 @@ fail:
 }
 
 func s113(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		ok    bool
-		v5    any
-		v7    any
-		v9    any
-	)
+	var start, x1 int
+	var v, v2, v5, v7, v9 any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -10829,19 +9740,10 @@ func u114(p *pegort.TParser) (any, bool) {
 }
 
 func i114(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-		x7    int
-	)
+	var start, x2, x5, x7 int
+	var v, k1, v3, k4, v6 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -10915,36 +9817,11 @@ func u115(p *pegort.TParser) (any, bool) {
 }
 
 func i115(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-		k7    any
-		x8    int
-		x9    int
-		x10   int
-		x11   int
-		x12   int
-		k13   any
-		x15   int
-		x16   []any
-		x17   int
-		v18   any
-		x19   int
-		v20   any
-		v21   any
-		v22   any
-		v23   any
-		v24   any
-		x25   int
-	)
+	var start, x2, x5, x8, x9, x10, x11, x12, x15, x17, x19, x25 int
+	var v, k1, v3, k4, v6, k7, k13, v18, v20, v21, v22, v23, v24 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x16 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _ = x2, x5, x8, x11, x19
@@ -11077,27 +9954,11 @@ func u116(p *pegort.TParser) (any, bool) {
 }
 
 func i116(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		x4    int
-		x5    int
-		x6    int
-		k7    any
-		x9    int
-		x10   []any
-		x11   int
-		v12   any
-		v13   any
-		v14   any
-		v15   any
-		v16   any
-	)
+	var start, x2, x3, x4, x5, x6, x9, x11 int
+	var v, k1, k7, v12, v13, v14, v15, v16 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x10 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x2, x5, x11
@@ -11166,18 +10027,10 @@ fail:
 }
 
 func s117(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		x4    rune
-		x5    bool
-		ok    bool
-		v8    any
-		v10   any
-		v12   any
-	)
+	var start, x1 int
+	var v, v2, v8, v10, v12 any
+	var x4 rune
+	var x5, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -11234,18 +10087,10 @@ func u118(p *pegort.TParser) (any, bool) {
 }
 
 func i118(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		ok    bool
-		v7    any
-		v9    any
-	)
+	var start, x2, x3 int
+	var v, k1, v4, v7, v9 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -11286,12 +10131,10 @@ fail:
 }
 
 func s119(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-	)
+	var start int
+	var v any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 59 {
@@ -11311,13 +10154,10 @@ fail:
 }
 
 func s120(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		ok    bool
-	)
+	var start, x1 int
+	var v any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -11360,25 +10200,11 @@ func u121(p *pegort.TParser) (any, bool) {
 }
 
 func i121(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		x4    int
-		k6    any
-		x7    int
-		x8    int
-		v9    any
-		v12   any
-		x13   rune
-		x14   bool
-		v17   any
-		v19   any
-	)
+	var start, x2, x4, x7, x8 int
+	var v, k1, v3, k6, v9, v12, v17, v19 any
+	var c *pegort.TActCtx
+	var ok, x14 bool
+	var x13 rune
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x7
@@ -11474,22 +10300,10 @@ func u122(p *pegort.TParser) (any, bool) {
 }
 
 func i122(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		x4    int
-		k6    any
-		x7    int
-		x8    int
-		v9    any
-		v12   any
-		v14   any
-	)
+	var start, x2, x4, x7, x8 int
+	var v, k1, v3, k6, v9, v12, v14 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x7
@@ -11571,32 +10385,11 @@ func u123(p *pegort.TParser) (any, bool) {
 }
 
 func i123(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		x3    int
-		x4    int
-		x5    int
-		x6    int
-		k7    any
-		x9    int
-		x10   []any
-		ok    bool
-		x11   int
-		v12   any
-		v13   any
-		v14   any
-		v15   any
-		v16   any
-		k17   any
-		x18   int
-		x19   int
-		v20   any
-		v23   any
-	)
+	var start, x2, x3, x4, x5, x6, x9, x11, x18, x19 int
+	var v, k1, k7, v12, v13, v14, v15, v16, k17, v20, v23 any
+	var c *pegort.TActCtx
+	var x10 []any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _, _ = x2, x5, x11, x18
@@ -11669,23 +10462,11 @@ func u124(p *pegort.TParser) (any, bool) {
 }
 
 func i124(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		x6    rune
-		x7    bool
-		ok    bool
-		v10   any
-		v12   any
-		v14   any
-		x15   int
-		x18   int
-	)
+	var start, x2, x3, x15, x18 int
+	var v, k1, v4, v10, v12, v14 any
+	var c *pegort.TActCtx
+	var x6 rune
+	var x7, ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -11768,18 +10549,10 @@ func u125(p *pegort.TParser) (any, bool) {
 }
 
 func i125(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		ok    bool
-		v7    any
-		v9    any
-	)
+	var start, x2, x3 int
+	var v, k1, v4, v7, v9 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -11830,21 +10603,11 @@ func u126(p *pegort.TParser) (any, bool) {
 }
 
 func i126(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		x6    rune
-		x7    bool
-		v10   any
-		v12   any
-		v14   any
-	)
+	var start, x2, x3 int
+	var v, k1, v4, v10, v12, v14 any
+	var c *pegort.TActCtx
+	var ok, x7 bool
+	var x6 rune
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -11906,19 +10669,10 @@ func u127(p *pegort.TParser) (any, bool) {
 }
 
 func i127(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		ok    bool
-		v7    any
-		v9    any
-		x10   int
-	)
+	var start, x2, x3, x10 int
+	var v, k1, v4, v7, v9 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -11982,37 +10736,11 @@ func u129(p *pegort.TParser) (any, bool) {
 }
 
 func i129(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		k2    any
-		x3    any
-		x6    int
-		ok    bool
-		x9    int
-		x10   int
-		v11   any
-		v14   any
-		x15   rune
-		x16   bool
-		v19   any
-		v22   any
-		v25   any
-		v27   any
-		v30   any
-		v32   any
-		v35   any
-		v37   any
-		x38   rune
-		x39   bool
-		x42   int
-		v43   any
-		x45   int
-		x47   int
-		v48   any
-	)
+	var start, x1, x6, x9, x10, x42, x45, x47 int
+	var v, k2, x3, v11, v14, v19, v22, v25, v27, v30, v32, v35, v37, v43, v48 any
+	var c *pegort.TActCtx
+	var ok, x16, x39 bool
+	var x15, x38 rune
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x9, x42, x47
@@ -12195,21 +10923,11 @@ func u130(p *pegort.TParser) (any, bool) {
 }
 
 func i130(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		x6    rune
-		x7    bool
-		ok    bool
-		v10   any
-		v13   any
-		v16   any
-	)
+	var start, x2, x3 int
+	var v, k1, v4, v10, v13, v16 any
+	var c *pegort.TActCtx
+	var x6 rune
+	var x7, ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -12268,17 +10986,9 @@ fail:
 }
 
 func s131(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		ok    bool
-		v5    any
-		v7    any
-		v9    any
-		v11   any
-	)
+	var start, x1 int
+	var v, v2, v5, v7, v9, v11 any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -12335,21 +11045,10 @@ func u132(p *pegort.TParser) (any, bool) {
 }
 
 func i132(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-		k7    any
-		x8    int
-		v9    any
-	)
+	var start, x2, x5, x8 int
+	var v, k1, v3, k4, v6, k7, v9 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x2, x5, x8
@@ -12405,18 +11104,10 @@ func u133(p *pegort.TParser) (any, bool) {
 }
 
 func i133(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-	)
+	var start, x2, x5 int
+	var v, k1, v3, k4, v6 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -12468,18 +11159,10 @@ func u134(p *pegort.TParser) (any, bool) {
 }
 
 func i134(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-	)
+	var start, x2, x5 int
+	var v, k1, v3, k4, v6 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -12526,15 +11209,10 @@ func u135(p *pegort.TParser) (any, bool) {
 }
 
 func i135(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -12564,17 +11242,9 @@ func u136(p *pegort.TParser) (any, bool) {
 }
 
 func v136(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		ok    bool
-		v5    any
-		v7    any
-		v9    any
-		v11   any
-	)
+	var start, x1 int
+	var v, v2, v5, v7, v9, v11 any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -12631,21 +11301,10 @@ func u137(p *pegort.TParser) (any, bool) {
 }
 
 func i137(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-		k7    any
-		x8    int
-		v9    any
-	)
+	var start, x2, x5, x8 int
+	var v, k1, v3, k4, v6, k7, v9 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x2, x5, x8
@@ -12698,18 +11357,10 @@ func u138(p *pegort.TParser) (any, bool) {
 }
 
 func i138(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-	)
+	var start, x2, x5 int
+	var v, k1, v3, k4, v6 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -12761,18 +11412,10 @@ func u139(p *pegort.TParser) (any, bool) {
 }
 
 func i139(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-	)
+	var start, x2, x5 int
+	var v, k1, v3, k4, v6 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -12816,15 +11459,10 @@ func u140(p *pegort.TParser) (any, bool) {
 }
 
 func i140(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -12856,15 +11494,10 @@ func u141(p *pegort.TParser) (any, bool) {
 }
 
 func i141(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -12902,15 +11535,10 @@ func u142(p *pegort.TParser) (any, bool) {
 }
 
 func i142(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -12946,15 +11574,9 @@ func u143(p *pegort.TParser) (any, bool) {
 }
 
 func v143(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		ok    bool
-		v5    any
-		v7    any
-	)
+	var start, x1 int
+	var v, v2, v5, v7 any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -12997,15 +11619,10 @@ func u144(p *pegort.TParser) (any, bool) {
 }
 
 func i144(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -13056,24 +11673,10 @@ func u145(p *pegort.TParser) (any, bool) {
 }
 
 func i145(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-		k7    any
-		x8    int
-		x9    int
-		v10   any
-		v13   any
-		x14   int
-	)
+	var start, x2, x5, x8, x9, x14 int
+	var v, k1, v3, k4, v6, k7, v10, v13 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x2, x5, x8
@@ -13163,16 +11766,10 @@ func u146(p *pegort.TParser) (any, bool) {
 }
 
 func i146(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		x3    int
-		ok    bool
-		v4    any
-	)
+	var start, x2, x3 int
+	var v, k1, v4 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -13210,17 +11807,10 @@ func u147(p *pegort.TParser) (any, bool) {
 }
 
 func i147(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		v7    any
-	)
+	var start, x2, x3 int
+	var v, k1, v4, v7 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -13265,15 +11855,10 @@ func u148(p *pegort.TParser) (any, bool) {
 }
 
 func i148(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -13297,19 +11882,10 @@ fail:
 }
 
 func s149(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		x4    rune
-		x5    bool
-		ok    bool
-		v8    any
-		v11   any
-		v14   any
-		v17   any
-	)
+	var start, x1 int
+	var v, v2, v8, v11, v14, v17 any
+	var x4 rune
+	var x5, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -13387,17 +11963,10 @@ func u150(p *pegort.TParser) (any, bool) {
 }
 
 func i150(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		v7    any
-	)
+	var start, x2, x3 int
+	var v, k1, v4, v7 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -13443,17 +12012,10 @@ func u151(p *pegort.TParser) (any, bool) {
 }
 
 func i151(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		v7    any
-	)
+	var start, x2, x3 int
+	var v, k1, v4, v7 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -13499,15 +12061,10 @@ func u152(p *pegort.TParser) (any, bool) {
 }
 
 func i152(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -13539,12 +12096,10 @@ fail:
 }
 
 func s153(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-	)
+	var start int
+	var v any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if _, ok = s340(p); !ok {
@@ -13580,15 +12135,10 @@ func u154(p *pegort.TParser) (any, bool) {
 }
 
 func i154(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -13626,32 +12176,11 @@ func u155(p *pegort.TParser) (any, bool) {
 }
 
 func i155(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		x1    int
-		k2    any
-		x3    any
-		x6    int
-		x7    any
-		x10   int
-		v11   any
-		x12   rune
-		x13   bool
-		k16   any
-		x17   int
-		v18   any
-		k19   any
-		x20   int
-		v21   any
-		k22   any
-		x23   int
-		x24   int
-		v25   any
-		v28   any
-	)
+	var start, x1, x6, x10, x17, x20, x23, x24 int
+	var v, k2, x3, x7, v11, k16, v18, k19, v21, k22, v25, v28 any
+	var c *pegort.TActCtx
+	var ok, x13 bool
+	var x12 rune
 	start = p.Pos
 	p.Enter()
 	_, _, _, _ = x10, x17, x20, x23
@@ -13754,15 +12283,10 @@ func u156(p *pegort.TParser) (any, bool) {
 }
 
 func i156(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -13802,20 +12326,11 @@ func u157(p *pegort.TParser) (any, bool) {
 }
 
 func i157(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		x6    rune
-		x7    bool
-		v10   any
-		v13   any
-	)
+	var start, x2, x3 int
+	var v, k1, v4, v10, v13 any
+	var c *pegort.TActCtx
+	var ok, x7 bool
+	var x6 rune
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -13870,17 +12385,10 @@ fail:
 }
 
 func s158(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		x4    rune
-		x5    bool
-		ok    bool
-		v8    any
-		v11   any
-	)
+	var start, x1 int
+	var v, v2, v8, v11 any
+	var x4 rune
+	var x5, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -13937,17 +12445,10 @@ func u159(p *pegort.TParser) (any, bool) {
 }
 
 func i159(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		ok    bool
-		v7    any
-	)
+	var start, x2, x3 int
+	var v, k1, v4, v7 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -13994,25 +12495,10 @@ func u160(p *pegort.TParser) (any, bool) {
 }
 
 func i160(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		v7    any
-		k8    any
-		x9    int
-		x10   int
-		v11   any
-		v14   any
-		k15   any
-		x16   int
-		v17   any
-	)
+	var start, x2, x3, x9, x10, x16 int
+	var v, k1, v4, v7, k8, v11, v14, k15, v17 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x2, x9, x16
@@ -14082,23 +12568,10 @@ func u161(p *pegort.TParser) (any, bool) {
 }
 
 func i161(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		v7    any
-		k8    any
-		x9    int
-		v10   any
-		k11   any
-		x12   int
-		v13   any
-	)
+	var start, x2, x3, x9, x12 int
+	var v, k1, v4, v7, k8, v10, k11, v13 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x2, x9, x12
@@ -14151,15 +12624,9 @@ fail:
 }
 
 func s162(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		ok    bool
-		v5    any
-		v7    any
-	)
+	var start, x1 int
+	var v, v2, v5, v7 any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -14202,18 +12669,10 @@ func u163(p *pegort.TParser) (any, bool) {
 }
 
 func i163(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-	)
+	var start, x2, x5 int
+	var v, k1, v3, k4, v6 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -14266,15 +12725,10 @@ func u164(p *pegort.TParser) (any, bool) {
 }
 
 func i164(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -14309,15 +12763,10 @@ func u165(p *pegort.TParser) (any, bool) {
 }
 
 func i165(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -14383,22 +12832,10 @@ func u166(p *pegort.TParser) (any, bool) {
 }
 
 func i166(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		x4    int
-		x5    int
-		k6    any
-		x8    int
-		v9    any
-		x10   int
-		v13   any
-	)
+	var start, x2, x3, x4, x5, x8, x10 int
+	var v, k1, k6, v9, v13 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x4, x8
@@ -14469,17 +12906,10 @@ fail:
 }
 
 func s167(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		x4    rune
-		x5    bool
-		ok    bool
-		v8    any
-		v11   any
-	)
+	var start, x1 int
+	var v, v2, v8, v11 any
+	var x4 rune
+	var x5, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -14533,19 +12963,10 @@ func u168(p *pegort.TParser) (any, bool) {
 }
 
 func i168(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-		x4    int
-		k6    any
-		x7    int
-		v8    any
-	)
+	var start, x2, x4, x7 int
+	var v, k1, v3, k6, v8 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x7
@@ -14613,16 +13034,10 @@ func u169(p *pegort.TParser) (any, bool) {
 }
 
 func i169(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		x1    int
-		k3    any
-		x4    int
-		v5    any
-	)
+	var start, x1, x4 int
+	var v, k3, v5 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x4
@@ -14681,15 +13096,10 @@ func u170(p *pegort.TParser) (any, bool) {
 }
 
 func i170(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -14727,22 +13137,10 @@ func u171(p *pegort.TParser) (any, bool) {
 }
 
 func i171(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		x4    int
-		x5    int
-		k6    any
-		x8    int
-		v9    any
-		x10   int
-		v13   any
-	)
+	var start, x2, x3, x4, x5, x8, x10 int
+	var v, k1, k6, v9, v13 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x4, x8
@@ -14813,17 +13211,10 @@ fail:
 }
 
 func s172(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		x4    rune
-		x5    bool
-		ok    bool
-		v8    any
-		v11   any
-	)
+	var start, x1 int
+	var v, v2, v8, v11 any
+	var x4 rune
+	var x5, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -14877,19 +13268,10 @@ func u173(p *pegort.TParser) (any, bool) {
 }
 
 func i173(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-		x4    int
-		k6    any
-		x7    int
-		v8    any
-	)
+	var start, x2, x4, x7 int
+	var v, k1, v3, k6, v8 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x7
@@ -14957,16 +13339,10 @@ func u174(p *pegort.TParser) (any, bool) {
 }
 
 func i174(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		x1    int
-		k3    any
-		x4    int
-		v5    any
-	)
+	var start, x1, x4 int
+	var v, k3, v5 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x4
@@ -15015,16 +13391,9 @@ fail:
 }
 
 func s175(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		ok    bool
-		v5    any
-		v7    any
-		v9    any
-	)
+	var start, x1 int
+	var v, v2, v5, v7, v9 any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -15074,44 +13443,12 @@ func u176(p *pegort.TParser) (any, bool) {
 }
 
 func i176(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		x9    int
-		x10   int
-		k11   any
-		x13   int
-		x14   []any
-		x15   int
-		v16   any
-		x17   int
-		v18   any
-		v19   any
-		v20   any
-		v21   any
-		v22   any
-		k23   any
-		x24   int
-		x25   int
-		x26   int
-		x28   rune
-		x29   bool
-		x34   int
-		v36   any
-		k37   any
-		x38   int
-		v39   any
-	)
+	var start, x2, x5, x6, x7, x8, x9, x10, x13, x15, x17, x24, x25, x26, x34, x38 int
+	var v, k1, v3, k4, k11, v16, v18, v19, v20, v21, v22, k23, v36, k37, v39 any
+	var c *pegort.TActCtx
+	var ok, x29 bool
+	var x14 []any
+	var x28 rune
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _, _ = x2, x5, x8, x17, x24, x38
@@ -15248,19 +13585,10 @@ fail:
 }
 
 func s177(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		x4    rune
-		x5    bool
-		ok    bool
-		v8    any
-		v11   any
-		v14   any
-		v17   any
-	)
+	var start, x1 int
+	var v, v2, v8, v11, v14, v17 any
+	var x4 rune
+	var x5, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -15338,15 +13666,10 @@ func u178(p *pegort.TParser) (any, bool) {
 }
 
 func i178(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -15387,18 +13710,10 @@ func u179(p *pegort.TParser) (any, bool) {
 }
 
 func i179(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-	)
+	var start, x2, x5 int
+	var v, k1, v3, k4, v6 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -15448,30 +13763,10 @@ func u180(p *pegort.TParser) (any, bool) {
 }
 
 func i180(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		v7    any
-		k8    any
-		x9    int
-		x10   int
-		v11   any
-		v14   any
-		k15   any
-		x16   int
-		x17   int
-		v18   any
-		v21   any
-		k22   any
-		x23   int
-		v24   any
-	)
+	var start, x2, x3, x9, x10, x16, x17, x23 int
+	var v, k1, v4, v7, k8, v11, v14, k15, v18, v21, k22, v24 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _, _, _ = x2, x9, x16, x23
@@ -15572,38 +13867,11 @@ func u181(p *pegort.TParser) (any, bool) {
 }
 
 func i181(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		x1    int
-		k2    any
-		x3    any
-		k4    any
-		x5    any
-		k6    any
-		x7    any
-		x10   int
-		v11   any
-		x12   int
-		x13   int
-		v14   any
-		v17   any
-		x18   int
-		x19   int
-		x20   int
-		x22   rune
-		x23   bool
-		x28   int
-		v30   any
-		k31   any
-		x32   int
-		v33   any
-		k34   any
-		x35   int
-		v36   any
-	)
+	var start, x1, x10, x12, x13, x18, x19, x20, x28, x32, x35 int
+	var v, k2, x3, k4, x5, k6, x7, v11, v14, v17, v30, k31, v33, k34, v36 any
+	var c *pegort.TActCtx
+	var ok, x23 bool
+	var x22 rune
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _ = x10, x12, x18, x32, x35
@@ -15744,15 +14012,10 @@ func u182(p *pegort.TParser) (any, bool) {
 }
 
 func i182(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -15797,20 +14060,10 @@ func u183(p *pegort.TParser) (any, bool) {
 }
 
 func i183(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		k2    any
-		x3    any
-		x6    int
-		ok    bool
-		v7    any
-		x8    int
-		x11   int
-		v12   any
-	)
+	var start, x1, x6, x8, x11 int
+	var v, k2, x3, v7, v12 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x6, x11
@@ -15875,32 +14128,11 @@ func u184(p *pegort.TParser) (any, bool) {
 }
 
 func i184(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		x9    int
-		k10   any
-		x12   int
-		x13   []any
-		x14   int
-		v15   any
-		x16   int
-		v17   any
-		v18   any
-		v19   any
-		v20   any
-		v21   any
-	)
+	var start, x2, x5, x6, x7, x8, x9, x12, x14, x16 int
+	var v, k1, v3, k4, k10, v15, v17, v18, v19, v20, v21 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x13 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _, _ = x2, x5, x8, x16
@@ -15983,33 +14215,11 @@ func u185(p *pegort.TParser) (any, bool) {
 }
 
 func i185(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		x9    int
-		k10   any
-		k11   any
-		x13   int
-		x14   []any
-		x15   int
-		v16   any
-		x17   int
-		v18   any
-		v19   any
-		v20   any
-		v21   any
-		v22   any
-	)
+	var start, x2, x5, x6, x7, x8, x9, x13, x15, x17 int
+	var v, k1, v3, k4, k10, k11, v16, v18, v19, v20, v21, v22 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x14 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _ = x2, x5, x8, x15, x17
@@ -16098,33 +14308,11 @@ func u186(p *pegort.TParser) (any, bool) {
 }
 
 func i186(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		x9    int
-		k10   any
-		k11   any
-		x13   int
-		x14   []any
-		x15   int
-		v16   any
-		x17   int
-		v18   any
-		v19   any
-		v20   any
-		v21   any
-		v22   any
-	)
+	var start, x2, x5, x6, x7, x8, x9, x13, x15, x17 int
+	var v, k1, v3, k4, k10, k11, v16, v18, v19, v20, v21, v22 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x14 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _ = x2, x5, x8, x15, x17
@@ -16213,33 +14401,11 @@ func u187(p *pegort.TParser) (any, bool) {
 }
 
 func i187(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		x9    int
-		k10   any
-		k11   any
-		x13   int
-		x14   []any
-		x15   int
-		v16   any
-		x17   int
-		v18   any
-		v19   any
-		v20   any
-		v21   any
-		v22   any
-	)
+	var start, x2, x5, x6, x7, x8, x9, x13, x15, x17 int
+	var v, k1, v3, k4, k10, k11, v16, v18, v19, v20, v21, v22 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x14 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _ = x2, x5, x8, x15, x17
@@ -16328,33 +14494,11 @@ func u188(p *pegort.TParser) (any, bool) {
 }
 
 func i188(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		x9    int
-		k10   any
-		k11   any
-		x13   int
-		x14   []any
-		x15   int
-		v16   any
-		x17   int
-		v18   any
-		v19   any
-		v20   any
-		v21   any
-		v22   any
-	)
+	var start, x2, x5, x6, x7, x8, x9, x13, x15, x17 int
+	var v, k1, v3, k4, k10, k11, v16, v18, v19, v20, v21, v22 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x14 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _ = x2, x5, x8, x15, x17
@@ -16443,33 +14587,11 @@ func u189(p *pegort.TParser) (any, bool) {
 }
 
 func i189(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		x9    int
-		k10   any
-		k11   any
-		x13   int
-		x14   []any
-		x15   int
-		v16   any
-		x17   int
-		v18   any
-		v19   any
-		v20   any
-		v21   any
-		v22   any
-	)
+	var start, x2, x5, x6, x7, x8, x9, x13, x15, x17 int
+	var v, k1, v3, k4, k10, k11, v16, v18, v19, v20, v21, v22 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x14 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _ = x2, x5, x8, x15, x17
@@ -16558,27 +14680,11 @@ func u190(p *pegort.TParser) (any, bool) {
 }
 
 func i190(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		k2    any
-		x3    any
-		x6    int
-		x9    int
-		x10   int
-		v11   any
-		x13   rune
-		x14   bool
-		ok    bool
-		v17   any
-		v20   any
-		v22   any
-		v25   any
-		x27   int
-		v28   any
-	)
+	var start, x1, x6, x9, x10, x27 int
+	var v, k2, x3, v11, v17, v20, v22, v25, v28 any
+	var c *pegort.TActCtx
+	var x13 rune
+	var x14, ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x9, x27
@@ -16688,18 +14794,11 @@ func u191(p *pegort.TParser) (any, bool) {
 }
 
 func i191(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		x4    int
-		ch    rune
-		size  int
-	)
+	var start, x2, x4, size int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
+	var ch rune
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -16747,19 +14846,11 @@ func u192(p *pegort.TParser) (any, bool) {
 }
 
 func i192(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		x1    int
-		x3    int
-		ch    rune
-		size  int
-		k5    any
-		x6    int
-		v7    any
-	)
+	var start, x1, x3, size, x6 int
+	var v, k5, v7 any
+	var c *pegort.TActCtx
+	var ok bool
+	var ch rune
 	start = p.Pos
 	p.Enter()
 	_ = x6
@@ -16831,18 +14922,10 @@ func u193(p *pegort.TParser) (any, bool) {
 }
 
 func i193(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-	)
+	var start, x2, x5 int
+	var v, k1, v3, k4, v6 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -16886,16 +14969,10 @@ func u194(p *pegort.TParser) (any, bool) {
 }
 
 func i194(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		x1    int
-		k3    any
-		x4    int
-		v5    any
-	)
+	var start, x1, x4 int
+	var v, k3, v5 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x4
@@ -16948,22 +15025,11 @@ func u195(p *pegort.TParser) (any, bool) {
 }
 
 func i195(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		k2    any
-		x3    any
-		x6    int
-		ok    bool
-		v7    any
-		x8    int
-		ch    rune
-		size  int
-		x11   int
-		v12   any
-	)
+	var start, x1, x6, x8, size, x11 int
+	var v, k2, x3, v7, v12 any
+	var c *pegort.TActCtx
+	var ok bool
+	var ch rune
 	start = p.Pos
 	p.Enter()
 	_, _ = x6, x11
@@ -17018,9 +15084,7 @@ fail:
 }
 
 func e941(p *pegort.TParser) (any, bool) {
-	var (
-		ok bool
-	)
+	var ok bool
 	if _, ok = s307(p); !ok {
 		goto fail
 	}
@@ -17030,10 +15094,8 @@ fail:
 }
 
 func e942(p *pegort.TParser) (any, bool) {
-	var (
-		ok bool
-		v1 any
-	)
+	var ok bool
+	var v1 any
 	if v1, ok = u197(p); !ok {
 		goto fail
 	}
@@ -17043,15 +15105,10 @@ fail:
 }
 
 func e943(p *pegort.TParser) (any, bool) {
-	var (
-		x1 int
-		x2 []any
-		ok bool
-		v3 any
-		x4 int
-		v5 any
-		v6 any
-	)
+	var x1, x4 int
+	var x2 []any
+	var ok bool
+	var v3, v5, v6 any
 	_ = x4
 	x1 = p.Pos
 	x2 = p.NewVals(2)[:0]
@@ -17075,19 +15132,11 @@ fail:
 }
 
 func e946(p *pegort.TParser) (any, bool) {
-	var (
-		x1  int
-		x2  []any
-		ok  bool
-		v3  any
-		x4  int
-		v5  any
-		v6  any
-		x7  int
-		v8  any
-		x9  pegort.Mark
-		v11 any
-	)
+	var x1, x4, x7 int
+	var x2 []any
+	var ok bool
+	var v3, v5, v6, v8, v11 any
+	var x9 pegort.Mark
 	x1 = p.Pos
 	x2 = p.NewVals(4)[:0]
 	if v3, ok = s228(p); !ok {
@@ -17146,20 +15195,11 @@ fail:
 }
 
 func e948(p *pegort.TParser) (any, bool) {
-	var (
-		x1  int
-		x2  []any
-		ok  bool
-		v3  any
-		x4  int
-		v5  any
-		x6  int
-		v7  any
-		x8  int
-		v9  any
-		x10 pegort.Mark
-		v12 any
-	)
+	var x1, x4, x6, x8 int
+	var x2 []any
+	var ok bool
+	var v3, v5, v7, v9, v12 any
+	var x10 pegort.Mark
 	_ = x6
 	x1 = p.Pos
 	x2 = p.NewVals(4)[:0]
@@ -17221,26 +15261,11 @@ fail:
 }
 
 func e951(p *pegort.TParser) (any, bool) {
-	var (
-		x1  int
-		x2  []any
-		x3  int
-		ok  bool
-		v4  any
-		x5  int
-		v6  any
-		x7  pegort.Mark
-		v8  any
-		x11 int
-		x12 []any
-		x13 int
-		v14 any
-		v15 any
-		v16 any
-		x17 int
-		v18 any
-		v19 any
-	)
+	var x1, x3, x5, x11, x13, x17 int
+	var x2, x12 []any
+	var ok bool
+	var v4, v6, v8, v14, v15, v16, v18, v19 any
+	var x7 pegort.Mark
 	_ = x5
 	x1 = p.Pos
 	x2 = p.NewVals(4)[:0]
@@ -17302,18 +15327,10 @@ fail:
 }
 
 func e954(p *pegort.TParser) (any, bool) {
-	var (
-		x1 int
-		x2 []any
-		x3 int
-		ok bool
-		v4 any
-		x5 int
-		v6 any
-		x7 int
-		v8 any
-		v9 any
-	)
+	var x1, x3, x5, x7 int
+	var x2 []any
+	var ok bool
+	var v4, v6, v8, v9 any
 	_ = x5
 	x1 = p.Pos
 	x2 = p.NewVals(3)[:0]
@@ -17349,28 +15366,11 @@ fail:
 }
 
 func e957(p *pegort.TParser) (any, bool) {
-	var (
-		x1  int
-		x2  []any
-		x3  int
-		ok  bool
-		v4  any
-		x5  int
-		x6  pegort.Mark
-		v7  any
-		v10 any
-		x11 int
-		v12 any
-		x13 pegort.Mark
-		x15 int
-		x16 pegort.Mark
-		v17 any
-		v20 any
-		x21 int
-		v22 any
-		x23 pegort.Mark
-		v25 any
-	)
+	var x1, x3, x5, x11, x15, x21 int
+	var x2 []any
+	var ok bool
+	var v4, v7, v10, v12, v17, v20, v22, v25 any
+	var x6, x13, x16, x23 pegort.Mark
 	_, _ = x5, x15
 	x1 = p.Pos
 	x2 = p.NewVals(5)[:0]
@@ -17466,31 +15466,11 @@ fail:
 }
 
 func e961(p *pegort.TParser) (any, bool) {
-	var (
-		x1  int
-		x2  []any
-		x3  int
-		ok  bool
-		v4  any
-		x5  int
-		x6  pegort.Mark
-		v7  any
-		v10 any
-		x11 int
-		v12 any
-		x13 pegort.Mark
-		x15 int
-		v16 any
-		x17 int
-		v18 any
-		x19 pegort.Mark
-		x21 int
-		v22 any
-		x23 int
-		v24 any
-		x25 pegort.Mark
-		v27 any
-	)
+	var x1, x3, x5, x11, x15, x17, x21, x23 int
+	var x2 []any
+	var ok bool
+	var v4, v7, v10, v12, v16, v18, v22, v24, v27 any
+	var x6, x13, x19, x25 pegort.Mark
 	_, _, _ = x5, x15, x21
 	x1 = p.Pos
 	x2 = p.NewVals(7)[:0]
@@ -17609,17 +15589,11 @@ fail:
 }
 
 func e966(p *pegort.TParser) (any, bool) {
-	var (
-		x1 int
-		x2 []any
-		x3 int
-		ok bool
-		v4 any
-		x5 int
-		v6 any
-		x7 pegort.Mark
-		v9 any
-	)
+	var x1, x3, x5 int
+	var x2 []any
+	var ok bool
+	var v4, v6, v9 any
+	var x7 pegort.Mark
 	x1 = p.Pos
 	x2 = p.NewVals(2)[:0]
 	x3 = p.Pos
@@ -17664,31 +15638,11 @@ fail:
 }
 
 func e968(p *pegort.TParser) (any, bool) {
-	var (
-		x1  int
-		x2  []any
-		x3  int
-		ok  bool
-		v4  any
-		x5  int
-		v6  any
-		x7  int
-		x8  pegort.Mark
-		v9  any
-		v12 any
-		x13 pegort.Mark
-		v14 any
-		x17 int
-		x18 []any
-		x19 int
-		v20 any
-		v21 any
-		v22 any
-		x23 int
-		v24 any
-		x25 pegort.Mark
-		v27 any
-	)
+	var x1, x3, x5, x7, x17, x19, x23 int
+	var x2, x18 []any
+	var ok bool
+	var v4, v6, v9, v12, v14, v20, v21, v22, v24, v27 any
+	var x8, x13, x25 pegort.Mark
 	_, _ = x5, x7
 	x1 = p.Pos
 	x2 = p.NewVals(5)[:0]
@@ -17779,15 +15733,11 @@ fail:
 }
 
 func e972(p *pegort.TParser) (any, bool) {
-	var (
-		x1 int
-		x2 []any
-		x3 int
-		ok bool
-		v4 any
-		x5 pegort.Mark
-		v7 any
-	)
+	var x1, x3 int
+	var x2 []any
+	var ok bool
+	var v4, v7 any
+	var x5 pegort.Mark
 	_ = x3
 	x1 = p.Pos
 	x2 = p.NewVals(1)[:0]
@@ -17833,28 +15783,11 @@ func u197(p *pegort.TParser) (any, bool) {
 }
 
 func i197(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		x1    int
-		k2    any
-		x3    any
-		x6    int
-		v7    any
-		x9    int
-		v10   any
-		x11   int
-		x13   rune
-		x14   bool
-		x17   int
-		v18   any
-		x21   int
-		v22   any
-		x25   int
-		v26   any
-	)
+	var start, x1, x6, x9, x11, x17, x21, x25 int
+	var v, k2, x3, v7, v10, v18, v22, v26 any
+	var c *pegort.TActCtx
+	var ok, x14 bool
+	var x13 rune
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _ = x6, x9, x17, x21, x25
@@ -17954,21 +15887,10 @@ fail:
 }
 
 func s199(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		ok    bool
-		v5    any
-		x6    rune
-		x7    bool
-		v10   any
-		v13   any
-		v16   any
-		v18   any
-		v21   any
-	)
+	var start, x1 int
+	var v, v2, v5, v10, v13, v16, v18, v21 any
+	var ok, x7 bool
+	var x6 rune
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -18064,33 +15986,11 @@ func u200(p *pegort.TParser) (any, bool) {
 }
 
 func i200(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		x9    int
-		k10   any
-		x12   int
-		x13   []any
-		x14   int
-		v15   any
-		x16   int
-		v17   any
-		v18   any
-		v19   any
-		v20   any
-		v21   any
-		x22   int
-	)
+	var start, x2, x5, x6, x7, x8, x9, x12, x14, x16, x22 int
+	var v, k1, v3, k4, k10, v15, v17, v18, v19, v20, v21 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x13 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _, _ = x2, x5, x8, x16
@@ -18196,15 +16096,10 @@ func u201(p *pegort.TParser) (any, bool) {
 }
 
 func i201(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -18255,18 +16150,10 @@ func u202(p *pegort.TParser) (any, bool) {
 }
 
 func i202(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-	)
+	var start, x2, x5 int
+	var v, k1, v3, k4, v6 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -18313,17 +16200,10 @@ func u203(p *pegort.TParser) (any, bool) {
 }
 
 func i203(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		v7    any
-	)
+	var start, x2, x3 int
+	var v, k1, v4, v7 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -18374,33 +16254,11 @@ func u204(p *pegort.TParser) (any, bool) {
 }
 
 func i204(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		x9    int
-		k10   any
-		x12   int
-		x13   []any
-		x14   int
-		v15   any
-		x16   int
-		v17   any
-		v18   any
-		v19   any
-		v20   any
-		v21   any
-		x22   int
-	)
+	var start, x2, x5, x6, x7, x8, x9, x12, x14, x16, x22 int
+	var v, k1, v3, k4, k10, v15, v17, v18, v19, v20, v21 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x13 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _, _ = x2, x5, x8, x16
@@ -18497,15 +16355,9 @@ func u205(p *pegort.TParser) (any, bool) {
 }
 
 func v205(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		ok    bool
-		v5    any
-		v7    any
-	)
+	var start, x1 int
+	var v, v2, v5, v7 any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -18548,19 +16400,10 @@ func u206(p *pegort.TParser) (any, bool) {
 }
 
 func i206(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		x4    int
-		k6    any
-		x7    int
-		v8    any
-	)
+	var start, x2, x4, x7 int
+	var v, k1, v3, k6, v8 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x7
@@ -18623,17 +16466,10 @@ func u207(p *pegort.TParser) (any, bool) {
 }
 
 func v207(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		x4    rune
-		x5    bool
-		ok    bool
-		v8    any
-		v10   any
-	)
+	var start, x1 int
+	var v, v2, v8, v10 any
+	var x4 rune
+	var x5, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -18683,15 +16519,10 @@ func u208(p *pegort.TParser) (any, bool) {
 }
 
 func i208(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-	)
+	var start, x2 int
+	var v, k1, v3 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x2
@@ -18716,20 +16547,12 @@ fail:
 }
 
 func e991(p *pegort.TParser) (any, bool) {
-	var (
-		x1  int
-		x2  []any
-		x3  int
-		ok  bool
-		v4  any
-		x5  int
-		v6  any
-		x7  pegort.Mark
-		x9  pegort.Mark
-		x11 rune
-		x12 bool
-		v16 any
-	)
+	var x1, x3, x5 int
+	var x2 []any
+	var ok, x12 bool
+	var v4, v6, v16 any
+	var x7, x9 pegort.Mark
+	var x11 rune
 	x1 = p.Pos
 	x2 = p.NewVals(2)[:0]
 	x3 = p.Pos
@@ -18793,34 +16616,12 @@ fail:
 }
 
 func e993(p *pegort.TParser) (any, bool) {
-	var (
-		x1  int
-		x2  []any
-		x3  int
-		ok  bool
-		v4  any
-		x5  int
-		v6  any
-		x7  int
-		x8  pegort.Mark
-		v9  any
-		v12 any
-		x13 pegort.Mark
-		v14 any
-		x17 int
-		x18 []any
-		x19 int
-		v20 any
-		v21 any
-		v22 any
-		x23 int
-		v24 any
-		x25 pegort.Mark
-		x27 pegort.Mark
-		x29 rune
-		x30 bool
-		v34 any
-	)
+	var x1, x3, x5, x7, x17, x19, x23 int
+	var x2, x18 []any
+	var ok, x30 bool
+	var v4, v6, v9, v12, v14, v20, v21, v22, v24, v34 any
+	var x8, x13, x25, x27 pegort.Mark
+	var x29 rune
 	_, _ = x5, x7
 	x1 = p.Pos
 	x2 = p.NewVals(5)[:0]
@@ -18943,20 +16744,10 @@ func u211(p *pegort.TParser) (any, bool) {
 }
 
 func i211(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		k2    any
-		x3    any
-		x6    int
-		ok    bool
-		v7    any
-		x8    int
-		x11   int
-		v12   any
-	)
+	var start, x1, x6, x8, x11 int
+	var v, k2, x3, v7, v12 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x6, x11
@@ -19021,32 +16812,11 @@ func u212(p *pegort.TParser) (any, bool) {
 }
 
 func i212(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		x9    int
-		k10   any
-		x12   int
-		x13   []any
-		x14   int
-		v15   any
-		x16   int
-		v17   any
-		v18   any
-		v19   any
-		v20   any
-		v21   any
-	)
+	var start, x2, x5, x6, x7, x8, x9, x12, x14, x16 int
+	var v, k1, v3, k4, k10, v15, v17, v18, v19, v20, v21 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x13 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _, _ = x2, x5, x8, x16
@@ -19129,33 +16899,11 @@ func u213(p *pegort.TParser) (any, bool) {
 }
 
 func i213(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		x9    int
-		k10   any
-		k11   any
-		x13   int
-		x14   []any
-		x15   int
-		v16   any
-		x17   int
-		v18   any
-		v19   any
-		v20   any
-		v21   any
-		v22   any
-	)
+	var start, x2, x5, x6, x7, x8, x9, x13, x15, x17 int
+	var v, k1, v3, k4, k10, k11, v16, v18, v19, v20, v21, v22 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x14 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _ = x2, x5, x8, x15, x17
@@ -19244,33 +16992,11 @@ func u214(p *pegort.TParser) (any, bool) {
 }
 
 func i214(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		x9    int
-		k10   any
-		k11   any
-		x13   int
-		x14   []any
-		x15   int
-		v16   any
-		x17   int
-		v18   any
-		v19   any
-		v20   any
-		v21   any
-		v22   any
-	)
+	var start, x2, x5, x6, x7, x8, x9, x13, x15, x17 int
+	var v, k1, v3, k4, k10, k11, v16, v18, v19, v20, v21, v22 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x14 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _ = x2, x5, x8, x15, x17
@@ -19359,33 +17085,11 @@ func u215(p *pegort.TParser) (any, bool) {
 }
 
 func i215(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		x9    int
-		k10   any
-		k11   any
-		x13   int
-		x14   []any
-		x15   int
-		v16   any
-		x17   int
-		v18   any
-		v19   any
-		v20   any
-		v21   any
-		v22   any
-	)
+	var start, x2, x5, x6, x7, x8, x9, x13, x15, x17 int
+	var v, k1, v3, k4, k10, k11, v16, v18, v19, v20, v21, v22 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x14 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _ = x2, x5, x8, x15, x17
@@ -19474,33 +17178,11 @@ func u216(p *pegort.TParser) (any, bool) {
 }
 
 func i216(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		x9    int
-		k10   any
-		k11   any
-		x13   int
-		x14   []any
-		x15   int
-		v16   any
-		x17   int
-		v18   any
-		v19   any
-		v20   any
-		v21   any
-		v22   any
-	)
+	var start, x2, x5, x6, x7, x8, x9, x13, x15, x17 int
+	var v, k1, v3, k4, k10, k11, v16, v18, v19, v20, v21, v22 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x14 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _ = x2, x5, x8, x15, x17
@@ -19589,33 +17271,11 @@ func u217(p *pegort.TParser) (any, bool) {
 }
 
 func i217(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		x6    int
-		x7    int
-		x8    int
-		x9    int
-		k10   any
-		k11   any
-		x13   int
-		x14   []any
-		x15   int
-		v16   any
-		x17   int
-		v18   any
-		v19   any
-		v20   any
-		v21   any
-		v22   any
-	)
+	var start, x2, x5, x6, x7, x8, x9, x13, x15, x17 int
+	var v, k1, v3, k4, k10, k11, v16, v18, v19, v20, v21, v22 any
+	var c *pegort.TActCtx
+	var ok bool
+	var x14 []any
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _ = x2, x5, x8, x15, x17
@@ -19704,27 +17364,11 @@ func u218(p *pegort.TParser) (any, bool) {
 }
 
 func i218(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		k2    any
-		x3    any
-		x6    int
-		x9    int
-		x10   int
-		v11   any
-		x13   rune
-		x14   bool
-		ok    bool
-		v17   any
-		v20   any
-		v22   any
-		v25   any
-		x27   int
-		v28   any
-	)
+	var start, x1, x6, x9, x10, x27 int
+	var v, k2, x3, v11, v17, v20, v22, v25, v28 any
+	var c *pegort.TActCtx
+	var x13 rune
+	var x14, ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x9, x27
@@ -19831,19 +17475,11 @@ func u219(p *pegort.TParser) (any, bool) {
 }
 
 func i219(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		x1    int
-		x3    int
-		ch    rune
-		size  int
-		k5    any
-		x6    int
-		v7    any
-	)
+	var start, x1, x3, size, x6 int
+	var v, k5, v7 any
+	var c *pegort.TActCtx
+	var ok bool
+	var ch rune
 	start = p.Pos
 	p.Enter()
 	_ = x6
@@ -19915,18 +17551,10 @@ func u220(p *pegort.TParser) (any, bool) {
 }
 
 func i220(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		ok    bool
-		v3    any
-		k4    any
-		x5    int
-		v6    any
-	)
+	var start, x2, x5 int
+	var v, k1, v3, k4, v6 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x5
@@ -19970,16 +17598,10 @@ func u221(p *pegort.TParser) (any, bool) {
 }
 
 func i221(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		x1    int
-		k3    any
-		x4    int
-		v5    any
-	)
+	var start, x1, x4 int
+	var v, k3, v5 any
+	var c *pegort.TActCtx
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x4
@@ -20032,22 +17654,11 @@ func u222(p *pegort.TParser) (any, bool) {
 }
 
 func i222(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		x1    int
-		k2    any
-		x3    any
-		x6    int
-		ok    bool
-		v7    any
-		x8    int
-		ch    rune
-		size  int
-		x11   int
-		v12   any
-	)
+	var start, x1, x6, x8, size, x11 int
+	var v, k2, x3, v7, v12 any
+	var c *pegort.TActCtx
+	var ok bool
+	var ch rune
 	start = p.Pos
 	p.Enter()
 	_, _ = x6, x11
@@ -20102,10 +17713,8 @@ fail:
 }
 
 func e999(p *pegort.TParser) (any, bool) {
-	var (
-		ok bool
-		v1 any
-	)
+	var ok bool
+	var v1 any
 	if v1, ok = u224(p); !ok {
 		goto fail
 	}
@@ -20115,18 +17724,10 @@ fail:
 }
 
 func e1002(p *pegort.TParser) (any, bool) {
-	var (
-		x1 int
-		x2 []any
-		ok bool
-		v3 any
-		x4 int
-		v5 any
-		v6 any
-		x7 int
-		v8 any
-		v9 any
-	)
+	var x1, x4, x7 int
+	var x2 []any
+	var ok bool
+	var v3, v5, v6, v8, v9 any
 	x1 = p.Pos
 	x2 = p.NewVals(4)[:0]
 	if v3, ok = s228(p); !ok {
@@ -20169,19 +17770,10 @@ fail:
 }
 
 func e1004(p *pegort.TParser) (any, bool) {
-	var (
-		x1  int
-		x2  []any
-		ok  bool
-		v3  any
-		x4  int
-		v5  any
-		x6  int
-		v7  any
-		x8  int
-		v9  any
-		v10 any
-	)
+	var x1, x4, x6, x8 int
+	var x2 []any
+	var ok bool
+	var v3, v5, v7, v9, v10 any
 	_ = x6
 	x1 = p.Pos
 	x2 = p.NewVals(4)[:0]
@@ -20227,27 +17819,11 @@ fail:
 }
 
 func e1011(p *pegort.TParser) (any, bool) {
-	var (
-		x1  int
-		x2  []any
-		x3  int
-		ok  bool
-		v4  any
-		x5  int
-		x6  pegort.Mark
-		v7  any
-		v10 any
-		x11 int
-		v12 any
-		x13 pegort.Mark
-		x15 int
-		x16 pegort.Mark
-		v17 any
-		v20 any
-		x21 int
-		v22 any
-		v23 any
-	)
+	var x1, x3, x5, x11, x15, x21 int
+	var x2 []any
+	var ok bool
+	var v4, v7, v10, v12, v17, v20, v22, v23 any
+	var x6, x13, x16 pegort.Mark
 	_, _ = x5, x15
 	x1 = p.Pos
 	x2 = p.NewVals(5)[:0]
@@ -20327,30 +17903,11 @@ fail:
 }
 
 func e1015(p *pegort.TParser) (any, bool) {
-	var (
-		x1  int
-		x2  []any
-		x3  int
-		ok  bool
-		v4  any
-		x5  int
-		x6  pegort.Mark
-		v7  any
-		v10 any
-		x11 int
-		v12 any
-		x13 pegort.Mark
-		x15 int
-		v16 any
-		x17 int
-		v18 any
-		x19 pegort.Mark
-		x21 int
-		v22 any
-		x23 int
-		v24 any
-		v25 any
-	)
+	var x1, x3, x5, x11, x15, x17, x21, x23 int
+	var x2 []any
+	var ok bool
+	var v4, v7, v10, v12, v16, v18, v22, v24, v25 any
+	var x6, x13, x19 pegort.Mark
 	_, _, _ = x5, x15, x21
 	x1 = p.Pos
 	x2 = p.NewVals(7)[:0]
@@ -20453,16 +18010,10 @@ fail:
 }
 
 func e1020(p *pegort.TParser) (any, bool) {
-	var (
-		x1 int
-		x2 []any
-		x3 int
-		ok bool
-		v4 any
-		x5 int
-		v6 any
-		v7 any
-	)
+	var x1, x3, x5 int
+	var x2 []any
+	var ok bool
+	var v4, v6, v7 any
 	x1 = p.Pos
 	x2 = p.NewVals(2)[:0]
 	x3 = p.Pos
@@ -20491,30 +18042,11 @@ fail:
 }
 
 func e1022(p *pegort.TParser) (any, bool) {
-	var (
-		x1  int
-		x2  []any
-		x3  int
-		ok  bool
-		v4  any
-		x5  int
-		v6  any
-		x7  int
-		x8  pegort.Mark
-		v9  any
-		v12 any
-		x13 pegort.Mark
-		v14 any
-		x17 int
-		x18 []any
-		x19 int
-		v20 any
-		v21 any
-		v22 any
-		x23 int
-		v24 any
-		v25 any
-	)
+	var x1, x3, x5, x7, x17, x19, x23 int
+	var x2, x18 []any
+	var ok bool
+	var v4, v6, v9, v12, v14, v20, v21, v22, v24, v25 any
+	var x8, x13 pegort.Mark
 	_, _ = x5, x7
 	x1 = p.Pos
 	x2 = p.NewVals(5)[:0]
@@ -20602,43 +18134,11 @@ func u224(p *pegort.TParser) (any, bool) {
 }
 
 func i224(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		ok    bool
-		x1    int
-		k2    any
-		x3    any
-		x6    int
-		v7    any
-		x9    int
-		v10   any
-		x12   int
-		x14   int
-		v15   any
-		x16   rune
-		x17   bool
-		x20   int
-		v21   any
-		x24   int
-		v25   any
-		x27   int
-		v28   any
-		x31   int
-		v32   any
-		x33   int
-		x37   int
-		v38   any
-		x39   int
-		x43   int
-		v44   any
-		x45   int
-		x48   int
-		v49   any
-		x52   int
-		v53   any
-	)
+	var start, x1, x6, x9, x12, x14, x20, x24, x27, x31, x33, x37, x39, x43, x45, x48, x52 int
+	var v, k2, x3, v7, v10, v15, v21, v25, v28, v32, v38, v44, v49, v53 any
+	var c *pegort.TActCtx
+	var ok, x17 bool
+	var x16 rune
 	start = p.Pos
 	p.Enter()
 	_, _, _, _, _, _, _, _, _, _, _ = x6, x9, x14, x20, x24, x27, x31, x37, x43, x48, x52
@@ -20870,24 +18370,11 @@ func u225(p *pegort.TParser) (any, bool) {
 }
 
 func i225(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		c     *pegort.TActCtx
-		k1    any
-		x2    int
-		x3    int
-		v4    any
-		x6    rune
-		x7    bool
-		ok    bool
-		v10   any
-		v13   any
-		v16   any
-		k17   any
-		x18   int
-		v19   any
-	)
+	var start, x2, x3, x18 int
+	var v, k1, v4, v10, v13, v16, k17, v19 any
+	var c *pegort.TActCtx
+	var x6 rune
+	var x7, ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x2, x18
@@ -20958,17 +18445,10 @@ fail:
 }
 
 func s228(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    []any
-		x3    int
-		ok    bool
-		v4    any
-		x5    int
-		v7    any
-	)
+	var start, x1, x3, x5 int
+	var v, v4, v7 any
+	var x2 []any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -21008,17 +18488,10 @@ fail:
 }
 
 func s230(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    []any
-		x3    int
-		ok    bool
-		x6    int
-		v7    any
-		v8    any
-	)
+	var start, x1, x3, x6 int
+	var v, v7, v8 any
+	var x2 []any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -21061,17 +18534,10 @@ fail:
 }
 
 func s231(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    []any
-		x3    int
-		ok    bool
-		x6    int
-		v7    any
-		v8    any
-	)
+	var start, x1, x3, x6 int
+	var v, v7, v8 any
+	var x2 []any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -21114,24 +18580,11 @@ fail:
 }
 
 func s232(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    []any
-		x3    int
-		ch    rune
-		size  int
-		ok    bool
-		x6    int
-		x7    int
-		x9    rune
-		x10   bool
-		x21   int
-		x25   int
-		v27   any
-		v28   any
-	)
+	var start, x1, x3, size, x6, x7, x21, x25 int
+	var v, v27, v28 any
+	var x2 []any
+	var ch, x9 rune
+	var ok, x10 bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -21279,26 +18732,11 @@ fail:
 }
 
 func s233(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    []any
-		x3    int
-		ch    rune
-		size  int
-		ok    bool
-		x6    int
-		x7    int
-		x9    rune
-		x10   bool
-		x13   int
-		x17   int
-		x21   int
-		x25   int
-		v27   any
-		v28   any
-	)
+	var start, x1, x3, size, x6, x7, x13, x17, x21, x25 int
+	var v, v27, v28 any
+	var x2 []any
+	var ch, x9 rune
+	var ok, x10 bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -21448,29 +18886,11 @@ fail:
 }
 
 func s234(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    []any
-		x3    int
-		x6    int
-		x7    int
-		x9    rune
-		x10   bool
-		ok    bool
-		x13   int
-		x17   int
-		ch    rune
-		size  int
-		x21   int
-		x25   int
-		x29   int
-		x33   int
-		x37   int
-		v39   any
-		v40   any
-	)
+	var start, x1, x3, x6, x7, x13, x17, size, x21, x25, x29, x33, x37 int
+	var v, v39, v40 any
+	var x2 []any
+	var x9, ch rune
+	var x10, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -21694,27 +19114,11 @@ fail:
 }
 
 func s235(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    []any
-		x3    int
-		x6    int
-		x7    int
-		x9    rune
-		x10   bool
-		ok    bool
-		x13   int
-		ch    rune
-		size  int
-		x17   int
-		x21   int
-		x25   int
-		x29   int
-		v33   any
-		v34   any
-	)
+	var start, x1, x3, x6, x7, x13, size, x17, x21, x25, x29 int
+	var v, v33, v34 any
+	var x2 []any
+	var x9, ch rune
+	var x10, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -21900,21 +19304,11 @@ fail:
 }
 
 func s236(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    []any
-		x3    int
-		x6    int
-		x7    int
-		x9    rune
-		x10   bool
-		ok    bool
-		x13   int
-		v39   any
-		v40   any
-	)
+	var start, x1, x3, x6, x7, x13 int
+	var v, v39, v40 any
+	var x2 []any
+	var x9 rune
+	var x10, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -22136,22 +19530,11 @@ fail:
 }
 
 func s237(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    []any
-		x3    int
-		ch    rune
-		size  int
-		ok    bool
-		x6    int
-		x7    int
-		x9    rune
-		x10   bool
-		v15   any
-		v16   any
-	)
+	var start, x1, x3, size, x6, x7 int
+	var v, v15, v16 any
+	var x2 []any
+	var ch, x9 rune
+	var ok, x10 bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -22228,15 +19611,9 @@ func u254(p *pegort.TParser) (any, bool) {
 }
 
 func v254(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		ok    bool
-		v4    any
-		bv    any
-	)
+	var start, x1, x2 int
+	var v, v4, bv any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -22281,17 +19658,10 @@ func u282(p *pegort.TParser) (any, bool) {
 }
 
 func v282(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    []any
-		x3    int
-		ok    bool
-		v4    any
-		x5    int
-		v7    any
-	)
+	var start, x1, x3, x5 int
+	var v, v4, v7 any
+	var x2 []any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -22337,20 +19707,10 @@ func u284(p *pegort.TParser) (any, bool) {
 }
 
 func v284(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		v2    any
-		ok    bool
-		v5    any
-		v7    any
-		v9    any
-		x10   rune
-		x11   bool
-		v14   any
-		v16   any
-	)
+	var start, x1 int
+	var v, v2, v5, v7, v9, v14, v16 any
+	var ok, x11 bool
+	var x10 rune
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -22411,30 +19771,10 @@ fail:
 }
 
 func s285(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		x4    int
-		x5    rune
-		x6    bool
-		ok    bool
-		ch    rune
-		size  int
-		x9    int
-		x14   int
-		x19   int
-		x24   int
-		x25   int
-		x27   int
-		x32   int
-		x33   int
-		x35   int
-		x38   int
-		v40   any
-		bv    any
-	)
+	var start, x1, x2, x4, size, x9, x14, x19, x24, x25, x27, x32, x33, x35, x38 int
+	var v, v40, bv any
+	var x5, ch rune
+	var x6, ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x24, x32
@@ -22648,20 +19988,10 @@ fail:
 }
 
 func s286(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		ok    bool
-		x5    rune
-		x6    bool
-		x9    int
-		ch    rune
-		size  int
-		v11   any
-		bv    any
-	)
+	var start, x1, x2, x9, size int
+	var v, v11, bv any
+	var ok, x6 bool
+	var x5, ch rune
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -22717,20 +20047,10 @@ fail:
 }
 
 func s287(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		ok    bool
-		x5    rune
-		x6    bool
-		x10   int
-		ch    rune
-		size  int
-		v12   any
-		bv    any
-	)
+	var start, x1, x2, x10, size int
+	var v, v12, bv any
+	var ok, x6 bool
+	var x5, ch rune
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -22808,20 +20128,10 @@ fail:
 }
 
 func s296(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		ok    bool
-		x2    int
-		x4    rune
-		x5    bool
-		x9    int
-		ch    rune
-		size  int
-		v11   any
-		bv    any
-	)
+	var start, x1, x2, x9, size int
+	var v, v11, bv any
+	var ok, x5 bool
+	var x4, ch rune
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -22896,28 +20206,10 @@ func u297(p *pegort.TParser) (any, bool) {
 }
 
 func v297(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		x4    rune
-		x5    bool
-		ok    bool
-		x8    int
-		x9    int
-		x11   int
-		x15   int
-		x16   int
-		x18   int
-		ch    rune
-		size  int
-		x21   int
-		x22   rune
-		x23   bool
-		v28   any
-		bv    any
-	)
+	var start, x1, x2, x8, x9, x11, x15, x16, x18, size, x21 int
+	var v, v28, bv any
+	var x4, ch, x22 rune
+	var x5, ok, x23 bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x8, x15
@@ -23060,297 +20352,10 @@ fail:
 }
 
 func s305(p *pegort.TParser) (any, bool) {
-	var (
-		v    any
-		x1   int
-		x2   int
-		k3   any
-		k4   any
-		k5   any
-		k6   any
-		k7   any
-		k8   any
-		k9   any
-		k10  any
-		x12  int
-		x15  int
-		x16  any
-		x17  any
-		x18  any
-		x19  any
-		x20  any
-		x21  any
-		x22  any
-		x23  any
-		x25  int
-		x26  rune
-		x27  bool
-		x30  int
-		x31  int
-		x33  int
-		ch   rune
-		size int
-		ok   bool
-		x37  int
-		x38  any
-		x39  any
-		x40  any
-		x41  any
-		x44  int
-		x45  int
-		k46  any
-		x48  int
-		x49  any
-		x52  int
-		x53  rune
-		x54  bool
-		x57  int
-		x59  int
-		x61  rune
-		x62  bool
-		x68  int
-		x69  int
-		v70  any
-		x71  int
-		x74  int
-		x77  int
-		x79  rune
-		x80  bool
-		x85  int
-		x86  int
-		k87  any
-		x89  int
-		x91  int
-		x92  int
-		x94  int
-		x97  int
-		x98  rune
-		x99  bool
-		x102 int
-		x104 int
-		x106 rune
-		x107 bool
-		x111 int
-		x112 int
-		x114 int
-		x117 int
-		x118 rune
-		x119 bool
-		x122 int
-		x124 int
-		x126 rune
-		x127 bool
-		x131 int
-		x134 int
-		x137 int
-		x139 rune
-		x140 bool
-		x144 int
-		x145 any
-		x147 int
-		x148 rune
-		x149 bool
-		x154 int
-		x155 int
-		v156 any
-		x157 int
-		x158 any
-		x159 any
-		x162 int
-		x163 int
-		x165 int
-		x166 int
-		v167 any
-		x168 int
-		x172 int
-		x173 int
-		x175 int
-		x176 int
-		v177 any
-		x178 int
-		x182 int
-		x184 int
-		x185 int
-		x186 int
-		k187 any
-		x189 int
-		x190 any
-		x193 int
-		x194 rune
-		x195 bool
-		x198 int
-		x200 int
-		x202 rune
-		x203 bool
-		x209 int
-		x210 int
-		v211 any
-		x212 int
-		x213 int
-		x215 int
-		x216 int
-		v217 any
-		x218 int
-		x221 int
-		x224 int
-		x226 rune
-		x227 bool
-		x232 int
-		x233 int
-		k234 any
-		x236 int
-		x237 any
-		x240 int
-		x241 rune
-		x242 bool
-		x245 int
-		x247 int
-		x249 rune
-		x250 bool
-		x256 int
-		x257 int
-		v258 any
-		x259 int
-		x260 int
-		x262 int
-		x263 int
-		v264 any
-		x265 int
-		x268 int
-		x271 int
-		x273 rune
-		x274 bool
-		x279 int
-		x281 int
-		x282 int
-		k283 any
-		x285 int
-		x286 any
-		x289 int
-		x290 rune
-		x291 bool
-		x294 int
-		x295 int
-		v296 any
-		x299 int
-		x300 any
-		x301 any
-		x302 any
-		x303 any
-		x305 rune
-		x306 bool
-		x309 int
-		x310 any
-		x311 any
-		x312 any
-		x313 any
-		x316 int
-		x317 int
-		k318 any
-		x320 int
-		x321 any
-		x324 int
-		x325 rune
-		x326 bool
-		x329 int
-		x333 int
-		x334 int
-		v335 any
-		x336 int
-		x340 int
-		x341 int
-		k342 any
-		x344 int
-		x346 int
-		x347 int
-		x349 int
-		x352 int
-		x353 rune
-		x354 bool
-		x357 int
-		x359 int
-		x360 int
-		x362 int
-		x365 int
-		x366 rune
-		x367 bool
-		x370 int
-		x372 int
-		x373 any
-		x375 int
-		x376 rune
-		x377 bool
-		x382 int
-		x386 int
-		x387 int
-		v388 any
-		x389 int
-		x390 any
-		x391 any
-		x394 int
-		x395 int
-		x397 int
-		x398 int
-		v399 any
-		x400 int
-		x404 int
-		x405 int
-		x407 int
-		x408 int
-		v409 any
-		x410 int
-		x414 int
-		x416 int
-		x417 int
-		x418 int
-		k419 any
-		x421 int
-		x422 any
-		x425 int
-		x426 rune
-		x427 bool
-		x430 int
-		x434 int
-		x435 int
-		v436 any
-		x437 int
-		x438 int
-		x440 int
-		x441 int
-		v442 any
-		x443 int
-		x447 int
-		x448 int
-		k449 any
-		x451 int
-		x452 any
-		x455 int
-		x456 rune
-		x457 bool
-		x460 int
-		x464 int
-		x465 int
-		v466 any
-		x467 int
-		x468 int
-		x470 int
-		x471 int
-		v472 any
-		x473 int
-		x477 int
-		x479 int
-		x480 int
-		k481 any
-		x483 int
-		x484 any
-		x487 int
-		x488 rune
-		x489 bool
-		x492 int
-		x496 int
-		x497 int
-		v498 any
-	)
+	var v, k3, k4, k5, k6, k7, k8, k9, k10, x16, x17, x18, x19, x20, x21, x22, x23, x38, x39, x40, x41, k46, x49, v70, k87, x145, v156, x158, x159, v167, v177, k187, x190, v211, v217, k234, x237, v258, v264, k283, x286, v296, x300, x301, x302, x303, x310, x311, x312, x313, k318, x321, v335, k342, x373, v388, x390, x391, v399, v409, k419, x422, v436, v442, k449, x452, v466, v472, k481, x484, v498 any
+	var x1, x2, x12, x15, x25, x30, x31, x33, size, x37, x44, x45, x48, x52, x57, x59, x68, x69, x71, x74, x77, x85, x86, x89, x91, x92, x94, x97, x102, x104, x111, x112, x114, x117, x122, x124, x131, x134, x137, x144, x147, x154, x155, x157, x162, x163, x165, x166, x168, x172, x173, x175, x176, x178, x182, x184, x185, x186, x189, x193, x198, x200, x209, x210, x212, x213, x215, x216, x218, x221, x224, x232, x233, x236, x240, x245, x247, x256, x257, x259, x260, x262, x263, x265, x268, x271, x279, x281, x282, x285, x289, x294, x295, x299, x309, x316, x317, x320, x324, x329, x333, x334, x336, x340, x341, x344, x346, x347, x349, x352, x357, x359, x360, x362, x365, x370, x372, x375, x382, x386, x387, x389, x394, x395, x397, x398, x400, x404, x405, x407, x408, x410, x414, x416, x417, x418, x421, x425, x430, x434, x435, x437, x438, x440, x441, x443, x447, x448, x451, x455, x460, x464, x465, x467, x468, x470, x471, x473, x477, x479, x480, x483, x487, x492, x496, x497 int
+	var x26, ch, x53, x61, x79, x98, x106, x118, x126, x139, x148, x194, x202, x226, x241, x249, x273, x290, x305, x325, x353, x366, x376, x426, x456, x488 rune
+	var x27, ok, x54, x62, x80, x99, x107, x119, x127, x140, x149, x195, x203, x227, x242, x250, x274, x291, x306, x326, x354, x367, x377, x427, x457, x489 bool
 	p.Enter()
 	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = x1, x30, x44, x68, x85, x91, x111, x154, x162, x165, x172, x175, x185, x209, x212, x215, x232, x256, x259, x262, x281, x294, x316, x333, x340, x346, x359, x386, x394, x397, x404, x407, x417, x434, x437, x440, x447, x464, x467, x470, x479, x496
 	x1 = 0
@@ -25788,12 +22793,9 @@ func s305(p *pegort.TParser) (any, bool) {
 }
 
 func s306(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit408, "package", 126, false); !ok {
@@ -25820,163 +22822,10 @@ fail:
 }
 
 func s307(p *pegort.TParser) (any, bool) {
-	var (
-		v    any
-		x1   int
-		x2   int
-		k3   any
-		k4   any
-		k5   any
-		k6   any
-		x8   int
-		ch   rune
-		size int
-		ok   bool
-		x11  int
-		x12  any
-		x13  any
-		x14  any
-		x15  any
-		x17  int
-		x18  rune
-		x19  bool
-		x22  int
-		x23  int
-		x25  int
-		x30  int
-		x31  int
-		k32  any
-		x34  int
-		x35  any
-		x38  int
-		x39  rune
-		x40  bool
-		x43  int
-		x44  int
-		v45  any
-		x47  int
-		x49  int
-		x50  int
-		x52  int
-		x54  int
-		x55  any
-		x56  any
-		x57  any
-		x58  any
-		x60  rune
-		x61  bool
-		x64  int
-		x65  any
-		x66  any
-		x67  any
-		x68  any
-		x71  int
-		x72  int
-		k73  any
-		x75  int
-		x76  any
-		x79  int
-		x80  rune
-		x81  bool
-		x84  int
-		x88  int
-		x89  int
-		v90  any
-		x91  int
-		x95  int
-		x96  int
-		k97  any
-		x99  int
-		x101 int
-		x102 int
-		x104 int
-		x107 int
-		x108 rune
-		x109 bool
-		x112 int
-		x114 int
-		x115 int
-		x117 int
-		x120 int
-		x121 rune
-		x122 bool
-		x125 int
-		x127 int
-		x128 any
-		x130 int
-		x131 rune
-		x132 bool
-		x137 int
-		x141 int
-		x142 int
-		v143 any
-		x144 int
-		x145 any
-		x146 any
-		x149 int
-		x150 int
-		x152 int
-		x153 int
-		v154 any
-		x155 int
-		x159 int
-		x160 int
-		x162 int
-		x163 int
-		v164 any
-		x165 int
-		x169 int
-		x171 int
-		x172 int
-		x173 int
-		k174 any
-		x176 int
-		x177 any
-		x180 int
-		x181 rune
-		x182 bool
-		x185 int
-		x189 int
-		x190 int
-		v191 any
-		x192 int
-		x193 int
-		x195 int
-		x196 int
-		v197 any
-		x198 int
-		x202 int
-		x203 int
-		k204 any
-		x206 int
-		x207 any
-		x210 int
-		x211 rune
-		x212 bool
-		x215 int
-		x219 int
-		x220 int
-		v221 any
-		x222 int
-		x223 int
-		x225 int
-		x226 int
-		v227 any
-		x228 int
-		x232 int
-		x234 int
-		x235 int
-		k236 any
-		x238 int
-		x239 any
-		x242 int
-		x243 rune
-		x244 bool
-		x247 int
-		x251 int
-		x252 int
-		v253 any
-	)
+	var v, k3, k4, k5, k6, x12, x13, x14, x15, k32, x35, v45, x55, x56, x57, x58, x65, x66, x67, x68, k73, x76, v90, k97, x128, v143, x145, x146, v154, v164, k174, x177, v191, v197, k204, x207, v221, v227, k236, x239, v253 any
+	var x1, x2, x8, size, x11, x17, x22, x23, x25, x30, x31, x34, x38, x43, x44, x47, x49, x50, x52, x54, x64, x71, x72, x75, x79, x84, x88, x89, x91, x95, x96, x99, x101, x102, x104, x107, x112, x114, x115, x117, x120, x125, x127, x130, x137, x141, x142, x144, x149, x150, x152, x153, x155, x159, x160, x162, x163, x165, x169, x171, x172, x173, x176, x180, x185, x189, x190, x192, x193, x195, x196, x198, x202, x203, x206, x210, x215, x219, x220, x222, x223, x225, x226, x228, x232, x234, x235, x238, x242, x247, x251, x252 int
+	var ch, x18, x39, x60, x80, x108, x121, x131, x181, x211, x243 rune
+	var ok, x19, x40, x61, x81, x109, x122, x132, x182, x212, x244 bool
 	p.Enter()
 	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = x1, x22, x30, x43, x49, x71, x88, x95, x101, x114, x141, x149, x152, x159, x162, x172, x189, x192, x195, x202, x219, x222, x225, x234, x251
 	x1 = 0
@@ -27284,14 +24133,10 @@ func u308(p *pegort.TParser) (any, bool) {
 }
 
 func v308(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x3    rune
-		x4    bool
-		ok    bool
-	)
+	var start, x1 int
+	var v any
+	var x3 rune
+	var x4, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -27353,12 +24198,9 @@ fail:
 }
 
 func s309(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit405, "import", 125, false); !ok {
@@ -27393,13 +24235,9 @@ func u310(p *pegort.TParser) (any, bool) {
 }
 
 func v310(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		ok    bool
-		x5    int
-	)
+	var start, x1, x5 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -27439,12 +24277,9 @@ fail:
 }
 
 func s311(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit394, "const", 7, false); !ok {
@@ -27471,12 +24306,9 @@ fail:
 }
 
 func s312(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 118 && p.In[p.Pos+1] == 97 && p.In[p.Pos+2] == 114 {
@@ -27513,12 +24345,9 @@ func u313(p *pegort.TParser) (any, bool) {
 }
 
 func v313(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 121 && p.In[p.Pos+2] == 112 && p.In[p.Pos+3] == 101 {
@@ -27547,14 +24376,10 @@ fail:
 }
 
 func s314(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x3    rune
-		x4    bool
-		ok    bool
-	)
+	var start, x1 int
+	var v any
+	var x3 rune
+	var x4, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -27636,13 +24461,9 @@ func u315(p *pegort.TParser) (any, bool) {
 }
 
 func v315(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x4    int
-		ok    bool
-	)
+	var start, x1, x4 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -27702,12 +24523,9 @@ fail:
 }
 
 func s316(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
@@ -27746,12 +24564,9 @@ func u317(p *pegort.TParser) (any, bool) {
 }
 
 func v317(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		ok    bool
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -27789,15 +24604,10 @@ func u318(p *pegort.TParser) (any, bool) {
 }
 
 func v318(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-		x3    int
-		x5    rune
-		x6    bool
-	)
+	var start, x1, x3 int
+	var v any
+	var ok, x6 bool
+	var x5 rune
 	start = p.Pos
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
@@ -27914,28 +24724,10 @@ func u319(p *pegort.TParser) (any, bool) {
 }
 
 func v319(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		ok    bool
-		x4    int
-		x5    int
-		x7    int
-		ch    rune
-		size  int
-		x10   int
-		x11   int
-		x13   int
-		x16   int
-		x17   int
-		x19   int
-		x21   int
-		x23   int
-		x25   int
-		x26   int
-		x28   int
-	)
+	var start, x1, x4, x5, x7, size, x10, x11, x13, x16, x17, x19, x21, x23, x25, x26, x28 int
+	var v any
+	var ok bool
+	var ch rune
 	start = p.Pos
 	p.Enter()
 	_, _, _, _ = x4, x10, x16, x25
@@ -28219,16 +25011,9 @@ func u320(p *pegort.TParser) (any, bool) {
 }
 
 func v320(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		x4    int
-		ok    bool
-		x6    int
-		x7    int
-	)
+	var start, x1, x2, x4, x6, x7 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x1, x6
@@ -28312,25 +25097,10 @@ func u321(p *pegort.TParser) (any, bool) {
 }
 
 func v321(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x3    rune
-		x4    bool
-		ok    bool
-		x10   int
-		x12   rune
-		x13   bool
-		x22   int
-		ch    rune
-		size  int
-		x25   int
-		x27   rune
-		x28   bool
-		x32   int
-		x36   int
-	)
+	var start, x1, x10, x22, size, x25, x32, x36 int
+	var v any
+	var x3, x12, ch, x27 rune
+	var x4, ok, x13, x28 bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -28542,16 +25312,9 @@ func u322(p *pegort.TParser) (any, bool) {
 }
 
 func v322(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		x4    int
-		ok    bool
-		x6    int
-		x7    int
-	)
+	var start, x1, x2, x4, x6, x7 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_, _ = x1, x6
@@ -28635,12 +25398,9 @@ func u323(p *pegort.TParser) (any, bool) {
 }
 
 func v323(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 117 && p.In[p.Pos+2] == 110 && p.In[p.Pos+3] == 99 {
@@ -28677,15 +25437,10 @@ func u324(p *pegort.TParser) (any, bool) {
 }
 
 func v324(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		ok    bool
-		x4    rune
-		x5    bool
-		x12   int
-	)
+	var start, x1, x12 int
+	var v any
+	var ok, x5 bool
+	var x4 rune
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -28828,15 +25583,10 @@ fail:
 }
 
 func s325(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x4    int
-		x8    pegort.ExpMark
-		x9    int
-		x10   []pegort.ExpID
-	)
+	var start, x1, x4, x9 int
+	var v any
+	var x8 pegort.ExpMark
+	var x10 []pegort.ExpID
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x8, x9, x10
@@ -28885,12 +25635,9 @@ func u326(p *pegort.TParser) (any, bool) {
 }
 
 func v326(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 109 && p.In[p.Pos+1] == 97 && p.In[p.Pos+2] == 112 {
@@ -28927,12 +25674,9 @@ func u327(p *pegort.TParser) (any, bool) {
 }
 
 func v327(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 99 && p.In[p.Pos+1] == 104 && p.In[p.Pos+2] == 97 && p.In[p.Pos+3] == 110 {
@@ -28969,12 +25713,9 @@ func u328(p *pegort.TParser) (any, bool) {
 }
 
 func v328(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit412, "struct", 25, false); !ok {
@@ -29009,13 +25750,9 @@ func u329(p *pegort.TParser) (any, bool) {
 }
 
 func v329(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		ok    bool
-		x5    int
-	)
+	var start, x1, x5 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -29063,12 +25800,9 @@ func u330(p *pegort.TParser) (any, bool) {
 }
 
 func v330(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit406, "interface", 28, false); !ok {
@@ -29103,13 +25837,9 @@ func u331(p *pegort.TParser) (any, bool) {
 }
 
 func v331(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		ok    bool
-		x5    int
-	)
+	var start, x1, x5 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -29149,14 +25879,10 @@ fail:
 }
 
 func s332(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x3    rune
-		x4    bool
-		ok    bool
-	)
+	var start, x1 int
+	var v any
+	var x3 rune
+	var x4, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -29216,12 +25942,9 @@ func u333(p *pegort.TParser) (any, bool) {
 }
 
 func v333(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		ok    bool
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if !p.SkipTerminal(term938) {
@@ -29248,12 +25971,9 @@ fail:
 }
 
 func s334(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 103 && p.In[p.Pos+1] == 111 {
@@ -29282,12 +26002,9 @@ fail:
 }
 
 func s335(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit397, "defer", 41, false); !ok {
@@ -29314,12 +26031,9 @@ fail:
 }
 
 func s336(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit410, "return", 42, false); !ok {
@@ -29346,12 +26060,9 @@ fail:
 }
 
 func s337(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit391, "break", 45, false); !ok {
@@ -29378,12 +26089,9 @@ fail:
 }
 
 func s338(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit395, "continue", 46, false); !ok {
@@ -29410,12 +26118,9 @@ fail:
 }
 
 func s339(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 103 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 116 && p.In[p.Pos+3] == 111 {
@@ -29444,12 +26149,9 @@ fail:
 }
 
 func s340(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit399, "fallthrough", 48, false); !ok {
@@ -29476,12 +26178,9 @@ fail:
 }
 
 func s341(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
@@ -29518,14 +26217,10 @@ func u342(p *pegort.TParser) (any, bool) {
 }
 
 func v342(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x3    rune
-		x4    bool
-		ok    bool
-	)
+	var start, x1 int
+	var v any
+	var x3 rune
+	var x4, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -29579,12 +26274,9 @@ fail:
 }
 
 func s343(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
@@ -29621,12 +26313,9 @@ func u344(p *pegort.TParser) (any, bool) {
 }
 
 func v344(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit413, "switch", 49, false); !ok {
@@ -29661,12 +26350,9 @@ func u345(p *pegort.TParser) (any, bool) {
 }
 
 func v345(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 99 && p.In[p.Pos+1] == 97 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
@@ -29703,12 +26389,9 @@ func u346(p *pegort.TParser) (any, bool) {
 }
 
 func v346(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit396, "default", 39, false); !ok {
@@ -29735,12 +26418,9 @@ fail:
 }
 
 func s347(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit411, "select", 44, false); !ok {
@@ -29775,12 +26455,9 @@ func u348(p *pegort.TParser) (any, bool) {
 }
 
 func v348(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 114 {
@@ -29809,12 +26486,9 @@ fail:
 }
 
 func s349(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	if _, ok = p.Parser.MatchLiteral(lit409, "range", 127, false); !ok {
@@ -29849,14 +26523,10 @@ func u350(p *pegort.TParser) (any, bool) {
 }
 
 func v350(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x3    rune
-		x4    bool
-		ok    bool
-	)
+	var start, x1 int
+	var v any
+	var x3 rune
+	var x4, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -29906,15 +26576,10 @@ fail:
 }
 
 func s351(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x4    int
-		x8    pegort.ExpMark
-		x9    int
-		x10   []pegort.ExpID
-	)
+	var start, x1, x4, x9 int
+	var v any
+	var x8 pegort.ExpMark
+	var x10 []pegort.ExpID
 	start = p.Pos
 	p.Enter()
 	_, _, _ = x8, x9, x10
@@ -29963,14 +26628,10 @@ func u352(p *pegort.TParser) (any, bool) {
 }
 
 func v352(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		ok    bool
-		x4    rune
-		x5    bool
-	)
+	var start, x1 int
+	var v any
+	var ok, x5 bool
+	var x4 rune
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -30027,14 +26688,10 @@ func u353(p *pegort.TParser) (any, bool) {
 }
 
 func v353(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-		x3    rune
-		x4    bool
-	)
+	var start, x1 int
+	var v any
+	var ok, x4 bool
+	var x3 rune
 	start = p.Pos
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
@@ -30120,19 +26777,10 @@ func u354(p *pegort.TParser) (any, bool) {
 }
 
 func v354(p *pegort.TParser) (any, bool) {
-	var (
-		v    any
-		x1   int
-		x2   int
-		x4   int
-		ch   rune
-		size int
-		ok   bool
-		x7   int
-		x8   rune
-		x9   bool
-		x12  int
-	)
+	var v any
+	var x1, x2, x4, size, x7, x12 int
+	var ch, x8 rune
+	var ok, x9 bool
 	p.Enter()
 	_ = x1
 	x1 = 0
@@ -30220,20 +26868,10 @@ func u355(p *pegort.TParser) (any, bool) {
 }
 
 func i355(p *pegort.TParser) (any, bool) {
-	var (
-		v    any
-		x1   int
-		ch   rune
-		size int
-		ok   bool
-		x4   int
-		x5   int
-		k7   any
-		x8   int
-		x9   int
-		x10  int
-		v13  any
-	)
+	var v, k7, v13 any
+	var x1, size, x4, x5, x8, x9, x10 int
+	var ch rune
+	var ok bool
 	p.Enter()
 	_, _ = x4, x8
 	x1 = p.Pos
@@ -30321,18 +26959,10 @@ fail:
 }
 
 func s356(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x3    int
-		x4    rune
-		x5    bool
-		x9    int
-		ch    rune
-		size  int
-		ok    bool
-	)
+	var start, x1, x3, x9, size int
+	var v any
+	var x4, ch rune
+	var x5, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -30380,22 +27010,10 @@ fail:
 }
 
 func s357(p *pegort.TParser) (any, bool) {
-	var (
-		v    any
-		x1   int
-		x2   int
-		x4   int
-		x7   int
-		x9   int
-		x10  rune
-		x11  bool
-		x14  int
-		x15  int
-		x17  int
-		ch   rune
-		size int
-		ok   bool
-	)
+	var v any
+	var x1, x2, x4, x7, x9, x14, x15, x17, size int
+	var x10, ch rune
+	var x11, ok bool
 	p.Enter()
 	_, _ = x1, x14
 	x1 = 0
@@ -30489,10 +27107,8 @@ func s357(p *pegort.TParser) (any, bool) {
 }
 
 func s358(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-	)
+	var start int
+	var v any
 	start = p.Pos
 	p.Enter()
 	if !p.ClassFast(&cls918) && !p.ClassSkip(&cls918, 122) {
@@ -30508,16 +27124,10 @@ fail:
 }
 
 func s359(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ch    rune
-		size  int
-		ok    bool
-		x1    int
-		x2    int
-		x4    int
-	)
+	var start, size, x1, x2, x4 int
+	var v any
+	var ch rune
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x1
@@ -30566,16 +27176,10 @@ fail:
 }
 
 func s360(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ch    rune
-		size  int
-		ok    bool
-		x1    int
-		x2    int
-		x4    int
-	)
+	var start, size, x1, x2, x4 int
+	var v any
+	var ch rune
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x1
@@ -30624,16 +27228,10 @@ fail:
 }
 
 func s361(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ch    rune
-		size  int
-		ok    bool
-		x1    int
-		x2    int
-		x4    int
-	)
+	var start, size, x1, x2, x4 int
+	var v any
+	var ch rune
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x1
@@ -30690,17 +27288,10 @@ func u362(p *pegort.TParser) (any, bool) {
 }
 
 func v362(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x3    rune
-		x4    bool
-		ok    bool
-		x7    int
-		x10   int
-		x17   int
-	)
+	var start, x1, x7, x10, x17 int
+	var v any
+	var x3 rune
+	var x4, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -30796,20 +27387,10 @@ func u363(p *pegort.TParser) (any, bool) {
 }
 
 func v363(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		ch    rune
-		size  int
-		x1    int
-		x4    int
-		x7    int
-		x10   int
-		x13   rune
-		x14   bool
-		x17   int
-	)
+	var start, size, x1, x4, x7, x10, x17 int
+	var v any
+	var ok, x14 bool
+	var ch, x13 rune
 	start = p.Pos
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
@@ -30910,18 +27491,10 @@ fail:
 }
 
 func s364(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x3    rune
-		x4    bool
-		ok    bool
-		ch    rune
-		size  int
-		x7    int
-		x12   int
-	)
+	var start, x1, size, x7, x12 int
+	var v any
+	var x3, ch rune
+	var x4, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -31015,15 +27588,10 @@ fail:
 }
 
 func s365(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-		x3    int
-		x4    rune
-		x5    bool
-	)
+	var start, x1, x3 int
+	var v any
+	var ok, x5 bool
+	var x4 rune
 	start = p.Pos
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
@@ -31067,15 +27635,10 @@ func u366(p *pegort.TParser) (any, bool) {
 }
 
 func v366(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x3    int
-		x4    rune
-		x5    bool
-		ok    bool
-	)
+	var start, x1, x3 int
+	var v any
+	var x4 rune
+	var x5, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -31110,15 +27673,10 @@ fail:
 }
 
 func s367(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-		x3    int
-		x4    rune
-		x5    bool
-	)
+	var start, x1, x3 int
+	var v any
+	var ok, x5 bool
+	var x4 rune
 	start = p.Pos
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
@@ -31164,14 +27722,9 @@ func u368(p *pegort.TParser) (any, bool) {
 }
 
 func i368(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		k1 any
-		x2 int
-		x3 int
-		ok bool
-		v4 any
-	)
+	var v, k1, v4 any
+	var x2, x3 int
+	var ok bool
 	p.Enter()
 	_ = x2
 	x2 = p.Pos
@@ -31207,15 +27760,10 @@ func u369(p *pegort.TParser) (any, bool) {
 }
 
 func v369(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ok    bool
-		x1    int
-		x3    rune
-		x4    bool
-		x8    int
-	)
+	var start, x1, x8 int
+	var v any
+	var ok, x4 bool
+	var x3 rune
 	start = p.Pos
 	p.Enter()
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 42 {
@@ -31275,12 +27823,9 @@ fail:
 }
 
 func s370(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		ok    bool
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -31314,12 +27859,9 @@ fail:
 }
 
 func s371(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		ok    bool
-	)
+	var start, x1 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -31353,19 +27895,10 @@ fail:
 }
 
 func s372(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		ch    rune
-		size  int
-		ok    bool
-		x4    int
-		x6    rune
-		x7    bool
-		x18   int
-		x22   int
-	)
+	var start, x1, size, x4, x18, x22 int
+	var v any
+	var ch, x6 rune
+	var ok, x7 bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -31504,21 +28037,10 @@ fail:
 }
 
 func s373(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		ch    rune
-		size  int
-		ok    bool
-		x4    int
-		x6    rune
-		x7    bool
-		x10   int
-		x14   int
-		x18   int
-		x22   int
-	)
+	var start, x1, size, x4, x10, x14, x18, x22 int
+	var v any
+	var ch, x6 rune
+	var ok, x7 bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -31659,24 +28181,10 @@ fail:
 }
 
 func s374(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x4    int
-		x6    rune
-		x7    bool
-		ok    bool
-		x10   int
-		x14   int
-		ch    rune
-		size  int
-		x18   int
-		x22   int
-		x26   int
-		x30   int
-		x34   int
-	)
+	var start, x1, x4, x10, x14, size, x18, x22, x26, x30, x34 int
+	var v any
+	var x6, ch rune
+	var x7, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -31899,19 +28407,10 @@ func u375(p *pegort.TParser) (any, bool) {
 }
 
 func v375(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x3    rune
-		x4    bool
-		ok    bool
-		x7    int
-		x11   int
-		x14   int
-		ch    rune
-		size  int
-	)
+	var start, x1, x7, x11, x14, size int
+	var v any
+	var x3, ch rune
+	var x4, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -32018,21 +28517,10 @@ fail:
 }
 
 func s376(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x3    rune
-		x4    bool
-		ok    bool
-		x7    int
-		x9    int
-		x14   int
-		x17   int
-		x20   int
-		ch    rune
-		size  int
-	)
+	var start, x1, x7, x9, x14, x17, x20, size int
+	var v any
+	var x3, ch rune
+	var x4, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -32167,13 +28655,9 @@ fail:
 }
 
 func s377(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		size  int
-		ok    bool
-	)
+	var start, x1, size int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -32206,13 +28690,9 @@ fail:
 }
 
 func s378(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		size  int
-		ok    bool
-	)
+	var start, x1, size int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -32245,16 +28725,10 @@ fail:
 }
 
 func s379(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ch    rune
-		size  int
-		ok    bool
-		x1    int
-		x2    int
-		x4    int
-	)
+	var start, size, x1, x2, x4 int
+	var v any
+	var ch rune
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x1
@@ -32311,14 +28785,10 @@ func u380(p *pegort.TParser) (any, bool) {
 }
 
 func v380(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ch    rune
-		size  int
-		ok    bool
-		x1    int
-	)
+	var start, size, x1 int
+	var v any
+	var ch rune
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	ch, size, ok = p.NextOrdinary()
@@ -32360,20 +28830,10 @@ func u381(p *pegort.TParser) (any, bool) {
 }
 
 func v381(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x3    int
-		x4    rune
-		x5    bool
-		ok    bool
-		x12   int
-		x16   int
-		x18   rune
-		x19   bool
-		x22   int
-	)
+	var start, x1, x3, x12, x16, x22 int
+	var v any
+	var x4, x18 rune
+	var x5, ok, x19 bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -32548,18 +29008,9 @@ fail:
 }
 
 func s382(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		ok    bool
-		x4    int
-		x8    int
-		x9    int
-		x11   int
-		x13   int
-		x17   int
-	)
+	var start, x1, x4, x8, x9, x11, x13, x17 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x8
@@ -32704,19 +29155,10 @@ fail:
 }
 
 func s383(p *pegort.TParser) (any, bool) {
-	var (
-		v    any
-		x1   int
-		x2   int
-		x4   int
-		ch   rune
-		size int
-		ok   bool
-		x7   int
-		x8   rune
-		x9   bool
-		x12  int
-	)
+	var v any
+	var x1, x2, x4, size, x7, x12 int
+	var ch, x8 rune
+	var ok, x9 bool
 	p.Enter()
 	_ = x1
 	x1 = 0
@@ -32794,13 +29236,10 @@ func s383(p *pegort.TParser) (any, bool) {
 }
 
 func s384(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		ch    rune
-		size  int
-		ok    bool
-	)
+	var start, size int
+	var v any
+	var ch rune
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	ch, size, ok = p.NextOrdinary()
@@ -32819,16 +29258,10 @@ fail:
 }
 
 func s385(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x3    int
-		x4    rune
-		x5    bool
-		ok    bool
-		x10   int
-	)
+	var start, x1, x3, x10 int
+	var v any
+	var x4 rune
+	var x5, ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -32889,15 +29322,9 @@ fail:
 }
 
 func s386(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		ok    bool
-		x4    int
-		x8    int
-		x10   int
-	)
+	var start, x1, x4, x8, x10 int
+	var v any
+	var ok bool
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
@@ -32976,18 +29403,10 @@ func u387(p *pegort.TParser) (any, bool) {
 }
 
 func i387(p *pegort.TParser) (any, bool) {
-	var (
-		v    any
-		x1   int
-		x2   int
-		ok   bool
-		k4   any
-		x5   int
-		x6   int
-		ch   rune
-		size int
-		v7   any
-	)
+	var v, k4, v7 any
+	var x1, x2, x5, x6, size int
+	var ok bool
+	var ch rune
 	p.Enter()
 	_, _ = x1, x5
 	x1 = 0

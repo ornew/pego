@@ -251,6 +251,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - [112. Guarded first classes in generated Go parsers](112-guarded-first-classes.md)
 - [113. The action's rule name is set, not restored](113-action-rule-name-set-once.md)
 - [114. No comments on unexported generated code](114-no-comments-on-unexported-generated-code.md)
+- [115. Grouped variable declarations](115-grouped-variable-declarations.md)
 
 ## Experiments That Did Not Pay Off
 

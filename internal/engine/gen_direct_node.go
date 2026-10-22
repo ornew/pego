@@ -244,15 +244,13 @@ func (g *generator) finishFrameBody(d *dgen, s *dscope, scope *scope, v, comment
 		d.line("return nil, false")
 	}
 	var b strings.Builder
-	b.WriteString("var (\n")
 	var unread []string
 	for _, v := range d.decls {
-		fmt.Fprintf(&b, "%s %s\n", v.name, v.typ)
 		if !d.reads[v.name] {
 			unread = append(unread, v.name)
 		}
 	}
-	b.WriteString(")\n")
+	b.WriteString(varLines(d.decls))
 	if len(unread) > 0 {
 		fmt.Fprintf(&b, "%s = %s\n", strings.TrimSuffix(strings.Repeat("_, ", len(unread)), ", "), strings.Join(unread, ", "))
 	}
