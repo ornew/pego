@@ -499,7 +499,8 @@ type generator struct {
 	workClassKeys       []string
 	shaperNames         map[string]string
 	shaperKeys          []string
-	tableErr            error // the rule table does not fit the form of runtime.RuleSpec
+	recoveryProg        map[*Program]bool // whether a program can recover from errors
+	tableErr            error             // the rule table does not fit the form of runtime.RuleSpec
 	// lean is set when the output has no work controls and no Documents, so each typed rule body
 	// is its ordinary form and may call the runtime's ordinary-parse helpers directly.
 	lean                            bool
@@ -651,6 +652,63 @@ func ruleTableLimits(nstrs, nseen int) error {
 		return fmt.Errorf("the rule table needs %d deferred memoization indexes, more than %d", nseen, math.MaxInt32)
 	}
 	return nil
+}
+
+// saveRec returns the variables that a backtracking point saves, start and, if the program can
+// recover, rec, followed by more; saveRecValues their values. restoreRec returns the statement that
+// goes back to them.
+func (g *generator) saveRec(more string) string {
+	if g.recovers() {
+		return "start, rec" + more
+	}
+	return "start" + more
+}
+
+func (g *generator) saveRecValues(more string) string {
+	if g.recovers() {
+		return "p.Pos, len(p.Recovered)" + more
+	}
+	return "p.Pos" + more
+}
+
+func (g *generator) restoreRec(pos, rec string) string {
+	if g.recovers() {
+		return fmt.Sprintf("p.Restore(%s, %s)", pos, rec)
+	}
+	return fmt.Sprintf("p.Pos = %s", pos)
+}
+
+// recovers reports whether a parse of the program being generated can append to p.Recovered: only
+// recovery (#recover) does. Without it p.Recovered stays empty, so
+// the positions that backtracking restores need no saved length of it.
+func (g *generator) recovers() bool {
+	if v, ok := g.recoveryProg[g.prog]; ok {
+		return v
+	}
+	found := false
+	check := func(e grammar.Expr) {
+		switch e := e.(type) {
+		case *grammar.Recovery:
+			found = true
+		case *grammar.Attributed:
+			for _, a := range e.Attrs {
+				if a.Name == "recover" {
+					found = true
+				}
+			}
+		}
+	}
+	for _, rs := range [][]*rule{g.prog.rules, g.prog.twins} {
+		for _, r := range rs {
+			walkExpr(r.def.Expr, check)
+			walkExpr(r.bodyExpr(), check)
+		}
+	}
+	if g.recoveryProg == nil {
+		g.recoveryProg = map[*Program]bool{}
+	}
+	g.recoveryProg[g.prog] = found
+	return found
 }
 
 func (g *generator) rules() {
@@ -969,13 +1027,13 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 			name = g.tracePlainWrapper(r, name)
 		}
 		fmt.Fprintf(m, "// %s, called as by invokePlain\nfunc %s(p *TParser) (any, bool) {\n", r.name, name)
-		m.WriteString("\tstart, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)\n\tprevEnv, prevCut := p.Env, p.Cut\n\tp.Cut = false\n\tp.Enter()\n")
+		m.WriteString("\t" + g.saveRec(", trail") + " := " + g.saveRecValues(", len(p.Trail)") + "\n\tprevEnv, prevCut := p.Env, p.Cut\n\tp.Cut = false\n\tp.Enter()\n")
 		if g.observability && (!r.plain || g.directTypedDocument) {
 			m.WriteString("p.Observation.Evaluated()\n")
 		}
 		fmt.Fprintf(m, "\tv, ok := %s(p)\n\tp.Depth--\n\tp.Cut = prevCut\n\tp.DropTrail(trail)\n\tif ok {\n", body)
 		finish("EmptyTFrame")
-		m.WriteString("\t} else {\n\t\tp.Restore(start, rec)\n\t}\n\tp.Env = prevEnv\n\treturn v, ok\n}\n\n")
+		m.WriteString("\t} else {\n\t\t" + g.restoreRec("start", "rec") + "\n\t}\n\tp.Env = prevEnv\n\treturn v, ok\n}\n\n")
 	}
 	if r.plain {
 		if g.directTypedDocument {
@@ -1016,7 +1074,7 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 		fmt.Fprintf(m, "\treturn v%d(p)\n}\n\n", r.id)
 		plain(fmt.Sprintf("v%d", r.id))
 	} else {
-		fmt.Fprintf(m, "\tstart, rec := p.Pos, len(p.Recovered)\n\tv, ok := i%d(p)\n\tif !ok {\n\t\tp.Restore(start, rec)\n\t}\n\treturn v, ok\n}\n\n", r.id)
+		fmt.Fprintf(m, "\t%s := %s\n\tv, ok := i%d(p)\n\tif !ok {\n\t\t%s\n\t}\n\treturn v, ok\n}\n\n", g.saveRec(""), g.saveRecValues(""), r.id, g.restoreRec("start", "rec"))
 	}
 	// i<id>: the invocation (also used by the memo).
 	if merged {
@@ -1165,8 +1223,8 @@ func (g *generator) plainCall(r *rule, body string) {
 		name = g.tracePlainWrapper(r, name)
 	}
 	fmt.Fprintf(&g.methods, "// %s, called as by invokePlain\nfunc %s(p *%s) (%s, bool) {\n\tp.StepWork()\n", r.name, name, g.recv(), g.valType())
-	g.methods.WriteString(`	start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
-	prevEnv, prevCut := p.Env, p.Cut
+	g.methods.WriteString("\t" + g.saveRec(", trail") + " := " + g.saveRecValues(", len(p.Trail)") + "\n")
+	g.methods.WriteString(`	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
 	p.Enter()
 `)
@@ -1177,10 +1235,8 @@ func (g *generator) plainCall(r *rule, body string) {
 	} else {
 		fmt.Fprintf(&g.methods, "\t\tv = p.Finish(%s[%d], %s, v, start)\n", g.table, r.id, g.frameVar())
 	}
-	g.methods.WriteString(`	} else {
-		p.Restore(start, rec)
-	}
-	p.Env = prevEnv
+	g.methods.WriteString("\t} else {\n\t\t" + g.restoreRec("start", "rec") + "\n\t}\n")
+	g.methods.WriteString(`	p.Env = prevEnv
 	return v, ok
 }
 

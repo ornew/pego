@@ -319,8 +319,13 @@ func (d *dgen) mark(s *dscope, e grammar.Expr, saves bool) dmark {
 		d.line("%s = p.Mark()", v)
 		return dmark{pos: v + ".Pos", frameMark: v}
 	}
-	m := dmark{pos: d.decl("x", "int"), rec: d.decl("x", "int")}
-	d.line("%s, %s = p.Pos, len(p.Recovered)", m.pos, m.rec)
+	m := dmark{pos: d.decl("x", "int")}
+	if d.g.recovers() {
+		m.rec = d.decl("x", "int")
+		d.line("%s, %s = p.Pos, len(p.Recovered)", m.pos, m.rec)
+	} else {
+		d.line("%s = p.Pos", m.pos)
+	}
 	if bindsVars(e) {
 		m.env = d.decl("x", "*Env")
 		d.line("%s = p.Env", m.env)
@@ -350,7 +355,11 @@ func (d *dgen) reset(m dmark) {
 		d.line("p.Reset(%s)", d.rd(m.frameMark))
 		return
 	}
-	d.line("p.Restore(%s, %s)", d.rd(m.pos), d.rd(m.rec))
+	if m.rec == "" {
+		d.line("p.Pos = %s", d.rd(m.pos))
+	} else {
+		d.line("p.Restore(%s, %s)", d.rd(m.pos), d.rd(m.rec))
+	}
 	if m.env != "" {
 		d.line("p.Env = %s", d.rd(m.env))
 	}
@@ -1333,7 +1342,8 @@ func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain
 	if observeBody {
 		m.WriteString("p.Observation.Evaluated()\n")
 	}
-	start, rec := d.start || plain && d.fail, plain && d.fail
+	restore := plain && d.fail
+	start, rec := d.start || restore, restore && g.recovers()
 	m.WriteString("\tvar (\n")
 	if start {
 		m.WriteString("\t\tstart int\n")
@@ -1374,6 +1384,8 @@ func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain
 		m.WriteString("fail:\n\tp.Depth--\n")
 		if rec {
 			m.WriteString("\tp.Restore(start, rec)\n")
+		} else if restore {
+			m.WriteString("\tp.Pos = start\n")
 		}
 		if d.binds {
 			m.WriteString("\tp.Env = prevEnv\n")

@@ -1136,7 +1136,7 @@ func e32(p *pegort.Parser) (*pegort.Node, bool) {
 // number, called as by invokePlain
 func r2(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
-		start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
+		start, trail := p.Pos, len(p.Trail)
 		prevEnv, prevCut := p.Env, p.Cut
 		p.Cut = false
 		p.Enter()
@@ -1147,14 +1147,14 @@ func r2(p *pegort.Parser) (*pegort.Node, bool) {
 		if ok {
 			v = p.Finish(rules[2], pegort.EmptyFrame, v, start)
 		} else {
-			p.Restore(start, rec)
+			p.Pos = start
 		}
 		p.Env = prevEnv
 		return v, ok
 	}
 
 	p.StepWork()
-	start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
+	start, trail := p.Pos, len(p.Trail)
 	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
 	p.Enter()
@@ -1165,7 +1165,7 @@ func r2(p *pegort.Parser) (*pegort.Node, bool) {
 	if ok {
 		v = p.Finish(rules[2], pegort.EmptyFrame, v, start)
 	} else {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	p.Env = prevEnv
 	return v, ok
@@ -1280,8 +1280,7 @@ func e34(p *pegort.Parser) (*pegort.Node, bool) {
 			ok   bool
 			x1   int
 			x2   int
-			x3   int
-			x6   int
+			x5   int
 		)
 		x1 = 0
 		for {
@@ -1296,13 +1295,13 @@ func e34(p *pegort.Parser) (*pegort.Node, bool) {
 		if x1 < 1 {
 			goto fail_ordinary
 		}
-		x2, x3 = p.Pos, len(p.Recovered)
+		x2 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit2, ".", 6, false); !ok {
-			goto L4_ordinary
+			goto L3_ordinary
 		}
-		x6 = 0
+		x5 = 0
 		for {
 			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
@@ -1310,15 +1309,15 @@ func e34(p *pegort.Parser) (*pegort.Node, bool) {
 				break
 			}
 			p.Pos += size
-			x6++
+			x5++
 		}
-		if x6 < 1 {
-			goto L4_ordinary
+		if x5 < 1 {
+			goto L3_ordinary
 		}
-		goto L5_ordinary
+		goto L4_ordinary
+	L3_ordinary:
+		p.Pos = x2
 	L4_ordinary:
-		p.Restore(x2, x3)
-	L5_ordinary:
 		v = nil
 		return v, true
 	fail_ordinary:
@@ -1333,8 +1332,7 @@ func e34(p *pegort.Parser) (*pegort.Node, bool) {
 		ok   bool
 		x1   int
 		x2   int
-		x3   int
-		x6   int
+		x5   int
 	)
 	p.StepWork()
 	p.StepWork()
@@ -1358,16 +1356,16 @@ func e34(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	x2, x3 = p.Pos, len(p.Recovered)
+	x2 = p.Pos
 	p.StepWork()
 	p.StepWork()
 	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit2, ".", 6, false); !ok {
-		goto L4
+		goto L3
 	}
 	p.StepWork()
-	x6 = 0
+	x5 = 0
 	for {
 		if p.Pos < len(p.In) {
 			p.InputWork(1)
@@ -1380,15 +1378,15 @@ func e34(p *pegort.Parser) (*pegort.Node, bool) {
 			break
 		}
 		p.Pos += size
-		x6++
+		x5++
 	}
-	if x6 < 1 {
-		goto L4
+	if x5 < 1 {
+		goto L3
 	}
-	goto L5
+	goto L4
+L3:
+	p.Pos = x2
 L4:
-	p.Restore(x2, x3)
-L5:
 	v = nil
 	return v, true
 fail:
@@ -1798,16 +1796,14 @@ func q2(p *pegort.Parser) (*pegort.Node, bool) {
 		var (
 			start int
 			v     *pegort.Node
-			rec   int
 			ch    rune
 			size  int
 			ok    bool
 			x1    int
 			x2    int
-			x3    int
-			x6    int
+			x5    int
 		)
-		start, rec = p.Pos, len(p.Recovered)
+		start = p.Pos
 		p.Enter()
 		x1 = 0
 		for {
@@ -1822,13 +1818,13 @@ func q2(p *pegort.Parser) (*pegort.Node, bool) {
 		if x1 < 1 {
 			goto fail_ordinary
 		}
-		x2, x3 = p.Pos, len(p.Recovered)
+		x2 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
 		} else if _, ok = p.MatchLiteralOrdinary(lit2, ".", 6, false); !ok {
-			goto L4_ordinary
+			goto L3_ordinary
 		}
-		x6 = 0
+		x5 = 0
 		for {
 			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
@@ -1836,21 +1832,21 @@ func q2(p *pegort.Parser) (*pegort.Node, bool) {
 				break
 			}
 			p.Pos += size
-			x6++
+			x5++
 		}
-		if x6 < 1 {
-			goto L4_ordinary
+		if x5 < 1 {
+			goto L3_ordinary
 		}
-		goto L5_ordinary
+		goto L4_ordinary
+	L3_ordinary:
+		p.Pos = x2
 	L4_ordinary:
-		p.Restore(x2, x3)
-	L5_ordinary:
 		v = nil
 		p.Depth--
 		return v, true
 	fail_ordinary:
 		p.Depth--
-		p.Restore(start, rec)
+		p.Pos = start
 		return nil, false
 	}
 
@@ -1858,16 +1854,14 @@ func q2(p *pegort.Parser) (*pegort.Node, bool) {
 	var (
 		start int
 		v     *pegort.Node
-		rec   int
 		ch    rune
 		size  int
 		ok    bool
 		x1    int
 		x2    int
-		x3    int
-		x6    int
+		x5    int
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	p.StepWork()
 	p.StepWork()
@@ -1891,16 +1885,16 @@ func q2(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail
 	}
 	p.StepWork()
-	x2, x3 = p.Pos, len(p.Recovered)
+	x2 = p.Pos
 	p.StepWork()
 	p.StepWork()
 	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit2, ".", 6, false); !ok {
-		goto L4
+		goto L3
 	}
 	p.StepWork()
-	x6 = 0
+	x5 = 0
 	for {
 		if p.Pos < len(p.In) {
 			p.InputWork(1)
@@ -1913,21 +1907,21 @@ func q2(p *pegort.Parser) (*pegort.Node, bool) {
 			break
 		}
 		p.Pos += size
-		x6++
+		x5++
 	}
-	if x6 < 1 {
-		goto L4
+	if x5 < 1 {
+		goto L3
 	}
-	goto L5
+	goto L4
+L3:
+	p.Pos = x2
 L4:
-	p.Restore(x2, x3)
-L5:
 	v = nil
 	p.Depth--
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -1987,18 +1981,18 @@ var trules []*pegort.TRule
 // main, called as by call
 func u0(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
-		start, rec := p.Pos, len(p.Recovered)
+		start := p.Pos
 		v, ok := i0(p)
 		if !ok {
-			p.Restore(start, rec)
+			p.Pos = start
 		}
 		return v, ok
 	}
 
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i0(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -2642,19 +2636,17 @@ func s2(p *pegort.TParser) (any, bool) {
 		var (
 			start int
 			v     any
-			rec   int
 			x1    int
 			ch    rune
 			size  int
 			ok    bool
 			x2    int
 			x3    int
-			x4    int
-			x7    int
-			v8    any
+			x6    int
+			v7    any
 			bv    any
 		)
-		start, rec = p.Pos, len(p.Recovered)
+		start = p.Pos
 		p.Enter()
 		x1 = p.Pos
 		x2 = 0
@@ -2670,13 +2662,13 @@ func s2(p *pegort.TParser) (any, bool) {
 		if x2 < 1 {
 			goto fail_ordinary
 		}
-		x3, x4 = p.Pos, len(p.Recovered)
+		x3 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit2, ".", 6, false); !ok {
-			goto L5_ordinary
+			goto L4_ordinary
 		}
-		x7 = 0
+		x6 = 0
 		for {
 			ch, size, ok = p.NextOrdinary()
 			if !ok || !(ch >= 48 && ch <= 57) {
@@ -2684,18 +2676,18 @@ func s2(p *pegort.TParser) (any, bool) {
 				break
 			}
 			p.Pos += size
-			x7++
+			x6++
 		}
-		if x7 < 1 {
-			goto L5_ordinary
+		if x6 < 1 {
+			goto L4_ordinary
 		}
-		goto L6_ordinary
+		goto L5_ordinary
+	L4_ordinary:
+		p.Pos = x3
 	L5_ordinary:
-		p.Restore(x3, x4)
-	L6_ordinary:
-		v8 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-		bv = pegort.TFreshNode(v8)
-		v = p.ScopeValue(sh4, v8, start)
+		v7 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
+		bv = pegort.TFreshNode(v7)
+		v = p.ScopeValue(sh4, v7, start)
 		if n := pegort.AsTval(v); n != nil {
 			n.TSetFresh(false)
 		}
@@ -2704,7 +2696,7 @@ func s2(p *pegort.TParser) (any, bool) {
 		return v, true
 	fail_ordinary:
 		p.Depth--
-		p.Restore(start, rec)
+		p.Pos = start
 		return nil, false
 	}
 
@@ -2712,19 +2704,17 @@ func s2(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
 		ch    rune
 		size  int
 		ok    bool
 		x2    int
 		x3    int
-		x4    int
-		x7    int
-		v8    any
+		x6    int
+		v7    any
 		bv    any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	p.StepWork()
 	x1 = p.Pos
@@ -2749,16 +2739,16 @@ func s2(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	p.StepWork()
-	x3, x4 = p.Pos, len(p.Recovered)
+	x3 = p.Pos
 	p.StepWork()
 	p.StepWork()
 	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 46) {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit2, ".", 6, false); !ok {
-		goto L5
+		goto L4
 	}
 	p.StepWork()
-	x7 = 0
+	x6 = 0
 	for {
 		if p.Pos < len(p.In) {
 			p.InputWork(1)
@@ -2771,18 +2761,18 @@ func s2(p *pegort.TParser) (any, bool) {
 			break
 		}
 		p.Pos += size
-		x7++
+		x6++
 	}
-	if x7 < 1 {
-		goto L5
+	if x6 < 1 {
+		goto L4
 	}
-	goto L6
+	goto L5
+L4:
+	p.Pos = x3
 L5:
-	p.Restore(x3, x4)
-L6:
-	v8 = p.NewMatch(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v8)
-	v = p.ScopeValue(sh4, v8, start)
+	v7 = p.NewMatch(x1, p.Pos, p.Text(x1, p.Pos), true)
+	bv = pegort.TFreshNode(v7)
+	v = p.ScopeValue(sh4, v7, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -2791,7 +2781,7 @@ L6:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 

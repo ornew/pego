@@ -976,10 +976,10 @@ var trules []*pegort.TRule
 
 // main, called as by call
 func u0(p *pegort.TParser) (any, bool) {
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i0(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -1439,42 +1439,40 @@ func s2(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
-		x2    int
-		v3    any
+		v2    any
 		ok    bool
-		v6    any
-		v8    any
-		v10   any
+		v5    any
+		v7    any
+		v9    any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if v6, ok = p.Call(trules[5], 0); !ok {
-		goto L5
+	x1 = p.Pos
+	if v5, ok = p.Call(trules[5], 0); !ok {
+		goto L4
 	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	if v8, ok = u3(p); !ok {
-		goto L7
-	}
-	v3 = v8
-	goto L4
-L7:
-	p.Restore(x1, x2)
-	if v10, ok = u4(p); !ok {
-		goto L9
-	}
-	v3 = v10
-	goto L4
-L9:
-	p.Restore(x1, x2)
-	goto fail
+	v2 = v5
+	goto L3
 L4:
-	v = p.ScopeValue(sh57, v3, start)
+	p.Pos = x1
+	if v7, ok = u3(p); !ok {
+		goto L6
+	}
+	v2 = v7
+	goto L3
+L6:
+	p.Pos = x1
+	if v9, ok = u4(p); !ok {
+		goto L8
+	}
+	v2 = v9
+	goto L3
+L8:
+	p.Pos = x1
+	goto fail
+L3:
+	v = p.ScopeValue(sh57, v2, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -1482,16 +1480,16 @@ L4:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
 // not_unary, called as by call
 func u3(p *pegort.TParser) (any, bool) {
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i3(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -1508,76 +1506,75 @@ func i3(p *pegort.TParser) (any, bool) {
 		x4    int
 		x5    int
 		x6    int
-		x7    int
-		k8    any
-		x10   int
-		x11   []any
+		k7    any
+		x9    int
+		x10   []any
+		x11   int
 		x12   int
-		x13   int
 		ok    bool
+		v13   any
 		v14   any
 		v15   any
 		v16   any
 		v17   any
-		v18   any
-		k19   any
-		x20   int
-		v21   any
+		k18   any
+		x19   int
+		v20   any
 		w     string
 	)
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x2, x5, x12, x20
+	_, _, _, _ = x2, x5, x11, x19
 	x2 = p.Pos
 	x3, x4 = p.Pos, len(p.KidStack)
 	x5 = 0
 	for {
-		x6, x7 = p.Pos, len(p.Recovered)
-		k8 = nil
-		x10 = p.Pos
-		x11 = p.NewVals(1)[:0]
+		x6 = p.Pos
+		k7 = nil
+		x9 = p.Pos
+		x10 = p.NewVals(1)[:0]
+		x11 = p.Pos
 		x12 = p.Pos
-		x13 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 33 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit4, "!", 5, false); !ok {
-			goto L9
+			goto L8
 		}
-		v14 = p.NewMatchOrdinary(x13, p.Pos, "!", true)
-		k8 = v14
-		x11 = append(x11, v14)
+		v13 = p.NewMatchOrdinary(x12, p.Pos, "!", true)
+		k7 = v13
+		x10 = append(x10, v13)
 		if _, ok = s49(p); !ok {
-			goto L9
+			goto L8
 		}
-		v15 = p.NewNodeOrdinary("tuple", x10, p.Pos, x11)
-		v16 = p.ScopeValue(sh5, v15, x6)
-		v17 = p.AttachCaptures(v16, scope127, []any{k8}, x6, p.Pos)
+		v14 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
+		v15 = p.ScopeValue(sh5, v14, x6)
+		v16 = p.AttachCaptures(v15, scope127, []any{k7}, x6, p.Pos)
 		x5++
-		p.PushKid(v17)
+		p.PushKid(v16)
 		if p.Pos == x6 {
 			break
 		}
 		continue
-	L9:
-		p.Restore(x6, x7)
+	L8:
+		p.Pos = x6
 		break
 	}
 	if x5 < 1 {
 		p.DropKids(x4)
 		goto fail
 	}
-	v18 = p.NewNodeOrdinary("list", x3, p.Pos, p.Kids(x4))
-	k1 = v18
-	x20 = p.Pos
-	if v21, ok = p.Call(trules[5], 0); !ok {
+	v17 = p.NewNodeOrdinary("list", x3, p.Pos, p.Kids(x4))
+	k1 = v17
+	x19 = p.Pos
+	if v20, ok = p.Call(trules[5], 0); !ok {
 		goto fail
 	}
-	k19 = v21
+	k18 = v20
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	w = p.Where
 	p.Where = "not_unary"
 	v = func() any {
-		return c.Fold("foldr", true, func() any { return k19 }(), func() any { return k1 }(), func(l_128, l_129 any) any {
+		return c.Fold("foldr", true, func() any { return k18 }(), func() any { return k1 }(), func(l_128, l_129 any) any {
 			return func() any {
 				return func() any {
 					f_130 := func() any { return c.Member(func() any { return l_129 }(), "$o") }()
@@ -1598,10 +1595,10 @@ fail:
 
 // neg_unary, called as by call
 func u4(p *pegort.TParser) (any, bool) {
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i4(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -1618,76 +1615,75 @@ func i4(p *pegort.TParser) (any, bool) {
 		x4    int
 		x5    int
 		x6    int
-		x7    int
-		k8    any
-		x10   int
-		x11   []any
+		k7    any
+		x9    int
+		x10   []any
+		x11   int
 		x12   int
-		x13   int
 		ok    bool
+		v13   any
 		v14   any
 		v15   any
 		v16   any
 		v17   any
-		v18   any
-		k19   any
-		x20   int
-		v21   any
+		k18   any
+		x19   int
+		v20   any
 		w     string
 	)
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x2, x5, x12, x20
+	_, _, _, _ = x2, x5, x11, x19
 	x2 = p.Pos
 	x3, x4 = p.Pos, len(p.KidStack)
 	x5 = 0
 	for {
-		x6, x7 = p.Pos, len(p.Recovered)
-		k8 = nil
-		x10 = p.Pos
-		x11 = p.NewVals(1)[:0]
+		x6 = p.Pos
+		k7 = nil
+		x9 = p.Pos
+		x10 = p.NewVals(1)[:0]
+		x11 = p.Pos
 		x12 = p.Pos
-		x13 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit8, "-", 6, false); !ok {
-			goto L9
+			goto L8
 		}
-		v14 = p.NewMatchOrdinary(x13, p.Pos, "-", true)
-		k8 = v14
-		x11 = append(x11, v14)
+		v13 = p.NewMatchOrdinary(x12, p.Pos, "-", true)
+		k7 = v13
+		x10 = append(x10, v13)
 		if _, ok = s49(p); !ok {
-			goto L9
+			goto L8
 		}
-		v15 = p.NewNodeOrdinary("tuple", x10, p.Pos, x11)
-		v16 = p.ScopeValue(sh5, v15, x6)
-		v17 = p.AttachCaptures(v16, scope132, []any{k8}, x6, p.Pos)
+		v14 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
+		v15 = p.ScopeValue(sh5, v14, x6)
+		v16 = p.AttachCaptures(v15, scope132, []any{k7}, x6, p.Pos)
 		x5++
-		p.PushKid(v17)
+		p.PushKid(v16)
 		if p.Pos == x6 {
 			break
 		}
 		continue
-	L9:
-		p.Restore(x6, x7)
+	L8:
+		p.Pos = x6
 		break
 	}
 	if x5 < 1 {
 		p.DropKids(x4)
 		goto fail
 	}
-	v18 = p.NewNodeOrdinary("list", x3, p.Pos, p.Kids(x4))
-	k1 = v18
-	x20 = p.Pos
-	if v21, ok = p.Call(trules[5], 0); !ok {
+	v17 = p.NewNodeOrdinary("list", x3, p.Pos, p.Kids(x4))
+	k1 = v17
+	x19 = p.Pos
+	if v20, ok = p.Call(trules[5], 0); !ok {
 		goto fail
 	}
-	k19 = v21
+	k18 = v20
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	w = p.Where
 	p.Where = "neg_unary"
 	v = func() any {
-		return c.Fold("foldr", true, func() any { return k19 }(), func() any { return k1 }(), func(l_133, l_134 any) any {
+		return c.Fold("foldr", true, func() any { return k18 }(), func() any { return k1 }(), func(l_133, l_134 any) any {
 			return func() any {
 				return func() any {
 					f_135 := func() any { return c.Member(func() any { return l_134 }(), "$o") }()
@@ -1963,10 +1959,10 @@ fail:
 
 // primary, called as by call
 func u6(p *pegort.TParser) (any, bool) {
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i6(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -1978,352 +1974,346 @@ func i6(p *pegort.TParser) (any, bool) {
 		v     any
 		c     *pegort.TActCtx
 		x1    int
-		x2    int
-		k3    any
-		x4    any
-		x7    int
+		k2    any
+		x3    any
+		x6    int
 		ch    rune
 		size  int
 		ok    bool
+		x9    int
 		x10   int
-		x11   int
-		x12   int
-		v13   any
+		v11   any
+		v14   any
 		v16   any
 		v18   any
 		v20   any
-		v22   any
-		x24   int
-		x27   int
-		x28   int
-		x29   int
+		x22   int
+		x25   int
+		x26   int
+		v27   any
 		v30   any
-		v33   any
-		v35   any
-		v37   any
-		v39   any
+		v32   any
+		v34   any
+		v36   any
+		x38   int
 		x41   int
+		v42   any
 		x44   int
-		v45   any
 		x47   int
-		x50   int
-		x51   int
-		x52   int
-		v53   any
+		x48   int
+		v49   any
+		v52   any
+		v54   any
 		v56   any
 		v58   any
-		v60   any
-		v62   any
+		x60   int
+		x63   int
 		x64   int
-		x67   int
-		x68   int
-		x69   int
+		v65   any
+		v68   any
 		v70   any
-		v73   any
-		v75   any
-		x77   int
-		x78   int
-		x79   int
+		x72   int
+		x73   int
+		v74   any
+		x76   rune
+		x77   bool
 		v80   any
-		x82   rune
-		x83   bool
+		v83   any
 		v86   any
-		v89   any
-		v92   any
-		v94   any
+		v88   any
 		w     string
 	)
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _, _ = x10, x27, x44, x50, x67, x77
-	x1, x2 = p.Pos, len(p.Recovered)
-	x4 = k3
-	x7 = p.Pos
+	_, _, _, _, _, _ = x9, x25, x41, x47, x63, x72
+	x1 = p.Pos
+	x3 = k2
+	x6 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch == 95) {
 		p.ExpectOrdinary(p.Pos, 7)
-		goto L8
+		goto L7
 	}
 	p.Pos += size
 	p.Silent--
-	p.Pos = x7
-	goto L9
-L8:
+	p.Pos = x6
+	goto L8
+L7:
 	p.Silent--
-	p.Pos = x7
-	goto L6
-L9:
+	p.Pos = x6
+	goto L5
+L8:
 
+	x9 = p.Pos
 	x10 = p.Pos
-	x11, x12 = p.Pos, len(p.Recovered)
-	if v16, ok = u8(p); !ok {
+	if v14, ok = u8(p); !ok {
+		goto L13
+	}
+	v11 = v14
+	goto L12
+L13:
+	p.Pos = x10
+	if v16, ok = u23(p); !ok {
 		goto L15
 	}
-	v13 = v16
-	goto L14
+	v11 = v16
+	goto L12
 L15:
-	p.Restore(x11, x12)
-	if v18, ok = u23(p); !ok {
+	p.Pos = x10
+	if v18, ok = u10(p); !ok {
 		goto L17
 	}
-	v13 = v18
-	goto L14
+	v11 = v18
+	goto L12
 L17:
-	p.Restore(x11, x12)
-	if v20, ok = u10(p); !ok {
+	p.Pos = x10
+	if v20, ok = u12(p); !ok {
 		goto L19
 	}
-	v13 = v20
-	goto L14
+	v11 = v20
+	goto L12
 L19:
-	p.Restore(x11, x12)
-	if v22, ok = u12(p); !ok {
-		goto L21
-	}
-	v13 = v22
-	goto L14
-L21:
-	p.Restore(x11, x12)
-	goto L6
-L14:
-	k3 = v13
+	p.Pos = x10
 	goto L5
-L6:
-	p.Restore(x1, x2)
-	k3 = x4
-	x24 = p.Pos
+L12:
+	k2 = v11
+	goto L4
+L5:
+	p.Pos = x1
+	k2 = x3
+	x22 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 48 && ch <= 57) {
 		p.ExpectOrdinary(p.Pos, 8)
-		goto L25
+		goto L23
 	}
 	p.Pos += size
 	p.Silent--
-	p.Pos = x24
-	goto L26
-L25:
-	p.Silent--
-	p.Pos = x24
-	goto L23
-L26:
-
-	x27 = p.Pos
-	x28, x29 = p.Pos, len(p.Recovered)
-	if v33, ok = s31(p); !ok {
-		goto L32
-	}
-	v30 = v33
-	goto L31
-L32:
-	p.Restore(x28, x29)
-	if v35, ok = u33(p); !ok {
-		goto L34
-	}
-	v30 = v35
-	goto L31
-L34:
-	p.Restore(x28, x29)
-	if v37, ok = s35(p); !ok {
-		goto L36
-	}
-	v30 = v37
-	goto L31
-L36:
-	p.Restore(x28, x29)
-	if v39, ok = u36(p); !ok {
-		goto L38
-	}
-	v30 = v39
-	goto L31
-L38:
-	p.Restore(x28, x29)
-	goto L23
-L31:
-	k3 = v30
-	goto L5
+	p.Pos = x22
+	goto L24
 L23:
-	p.Restore(x1, x2)
-	k3 = x4
-	x41 = p.Pos
+	p.Silent--
+	p.Pos = x22
+	goto L21
+L24:
+
+	x25 = p.Pos
+	x26 = p.Pos
+	if v30, ok = s31(p); !ok {
+		goto L29
+	}
+	v27 = v30
+	goto L28
+L29:
+	p.Pos = x26
+	if v32, ok = u33(p); !ok {
+		goto L31
+	}
+	v27 = v32
+	goto L28
+L31:
+	p.Pos = x26
+	if v34, ok = s35(p); !ok {
+		goto L33
+	}
+	v27 = v34
+	goto L28
+L33:
+	p.Pos = x26
+	if v36, ok = u36(p); !ok {
+		goto L35
+	}
+	v27 = v36
+	goto L28
+L35:
+	p.Pos = x26
+	goto L21
+L28:
+	k2 = v27
+	goto L4
+L21:
+	p.Pos = x1
+	k2 = x3
+	x38 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 34 || ch == 39) {
 		p.ExpectOrdinary(p.Pos, 9)
-		goto L42
+		goto L39
 	}
 	p.Pos += size
 	p.Silent--
-	p.Pos = x41
-	goto L43
-L42:
-	p.Silent--
-	p.Pos = x41
+	p.Pos = x38
 	goto L40
-L43:
-
-	x44 = p.Pos
-	if v45, ok = u37(p); !ok {
-		goto L40
-	}
-	k3 = v45
-	goto L5
+L39:
+	p.Silent--
+	p.Pos = x38
+	goto L37
 L40:
-	p.Restore(x1, x2)
-	k3 = x4
-	x47 = p.Pos
+
+	x41 = p.Pos
+	if v42, ok = u37(p); !ok {
+		goto L37
+	}
+	k2 = v42
+	goto L4
+L37:
+	p.Pos = x1
+	k2 = x3
+	x44 = p.Pos
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit10, ".", 10, false); !ok {
-		goto L48
+		goto L45
 	}
 	p.Silent--
-	p.Pos = x47
-	goto L49
-L48:
-	p.Silent--
-	p.Pos = x47
+	p.Pos = x44
 	goto L46
-L49:
+L45:
+	p.Silent--
+	p.Pos = x44
+	goto L43
+L46:
 
-	x50 = p.Pos
-	x51, x52 = p.Pos, len(p.Recovered)
-	if v56, ok = u33(p); !ok {
+	x47 = p.Pos
+	x48 = p.Pos
+	if v52, ok = u33(p); !ok {
+		goto L51
+	}
+	v49 = v52
+	goto L50
+L51:
+	p.Pos = x48
+	if v54, ok = u23(p); !ok {
+		goto L53
+	}
+	v49 = v54
+	goto L50
+L53:
+	p.Pos = x48
+	if v56, ok = u12(p); !ok {
 		goto L55
 	}
-	v53 = v56
-	goto L54
+	v49 = v56
+	goto L50
 L55:
-	p.Restore(x51, x52)
-	if v58, ok = u23(p); !ok {
+	p.Pos = x48
+	if v58, ok = u11(p); !ok {
 		goto L57
 	}
-	v53 = v58
-	goto L54
+	v49 = v58
+	goto L50
 L57:
-	p.Restore(x51, x52)
-	if v60, ok = u12(p); !ok {
-		goto L59
-	}
-	v53 = v60
-	goto L54
-L59:
-	p.Restore(x51, x52)
-	if v62, ok = u11(p); !ok {
-		goto L61
-	}
-	v53 = v62
-	goto L54
-L61:
-	p.Restore(x51, x52)
-	goto L46
-L54:
-	k3 = v53
-	goto L5
-L46:
-	p.Restore(x1, x2)
-	k3 = x4
-	x64 = p.Pos
+	p.Pos = x48
+	goto L43
+L50:
+	k2 = v49
+	goto L4
+L43:
+	p.Pos = x1
+	k2 = x3
+	x60 = p.Pos
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit8, "-", 6, false); !ok {
-		goto L65
+		goto L61
 	}
 	p.Silent--
-	p.Pos = x64
-	goto L66
-L65:
+	p.Pos = x60
+	goto L62
+L61:
 	p.Silent--
-	p.Pos = x64
-	goto L63
-L66:
+	p.Pos = x60
+	goto L59
+L62:
 
-	x67 = p.Pos
-	x68, x69 = p.Pos, len(p.Recovered)
-	if v73, ok = u33(p); !ok {
-		goto L72
+	x63 = p.Pos
+	x64 = p.Pos
+	if v68, ok = u33(p); !ok {
+		goto L67
 	}
-	v70 = v73
-	goto L71
-L72:
-	p.Restore(x68, x69)
-	if v75, ok = u36(p); !ok {
-		goto L74
+	v65 = v68
+	goto L66
+L67:
+	p.Pos = x64
+	if v70, ok = u36(p); !ok {
+		goto L69
 	}
-	v70 = v75
-	goto L71
-L74:
-	p.Restore(x68, x69)
-	goto L63
-L71:
-	k3 = v70
-	goto L5
-L63:
-	p.Restore(x1, x2)
-	k3 = x4
-	x77 = p.Pos
-	x78, x79 = p.Pos, len(p.Recovered)
-	x82, _, x83 = p.NextOrdinary()
-	if !(x83 && (x82 == 40)) && p.Depth+1 <= p.MaxDepth {
+	v65 = v70
+	goto L66
+L69:
+	p.Pos = x64
+	goto L59
+L66:
+	k2 = v65
+	goto L4
+L59:
+	p.Pos = x1
+	k2 = x3
+	x72 = p.Pos
+	x73 = p.Pos
+	x76, _, x77 = p.NextOrdinary()
+	if !(x77 && (x76 == 40)) && p.Depth+1 <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 11)
+		goto L78
+	}
+	if v80, ok = u9(p); !ok {
+		goto L79
+	}
+	v74 = v80
+	goto L75
+L79:
+	p.Pos = x73
+L78:
+	if !(x77 && (x76 == 91)) && p.Depth+1 <= p.MaxDepth {
+		p.ExpectOrdinary(p.Pos, 12)
+		goto L81
+	}
+	if v83, ok = u14(p); !ok {
+		goto L82
+	}
+	v74 = v83
+	goto L75
+L82:
+	p.Pos = x73
+L81:
+	if !(x77 && (x76 == 123)) && p.Depth+1 <= p.MaxDepth {
+		p.ExpectOrdinary(p.Pos, 13)
 		goto L84
 	}
-	if v86, ok = u9(p); !ok {
+	if v86, ok = u18(p); !ok {
 		goto L85
 	}
-	v80 = v86
-	goto L81
+	v74 = v86
+	goto L75
 L85:
-	p.Restore(x78, x79)
+	p.Pos = x73
 L84:
-	if !(x83 && (x82 == 91)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 12)
+
+	if v88, ok = s7(p); !ok {
 		goto L87
 	}
-	if v89, ok = u14(p); !ok {
-		goto L88
-	}
-	v80 = v89
-	goto L81
-L88:
-	p.Restore(x78, x79)
+	v74 = v88
+	goto L75
 L87:
-	if !(x83 && (x82 == 123)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 13)
-		goto L90
-	}
-	if v92, ok = u18(p); !ok {
-		goto L91
-	}
-	v80 = v92
-	goto L81
-L91:
-	p.Restore(x78, x79)
-L90:
-
-	if v94, ok = s7(p); !ok {
-		goto L93
-	}
-	v80 = v94
-	goto L81
-L93:
-	p.Restore(x78, x79)
-	goto L76
-L81:
-	k3 = v80
-	goto L5
-L76:
-	p.Restore(x1, x2)
-	k3 = x4
+	p.Pos = x73
+	goto L71
+L75:
+	k2 = v74
+	goto L4
+L71:
+	p.Pos = x1
+	k2 = x3
 	goto fail
-L5:
+L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	w = p.Where
 	p.Where = "primary"
-	v = func() any { return k3 }()
+	v = func() any { return k2 }()
 	v = c.Finish(v)
 	p.Where = w
 	p.Depth--
@@ -2338,146 +2328,139 @@ func s7(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
 		x2    int
-		x3    int
-		x6    int
-		x7    int
+		x5    int
 		ch    rune
 		size  int
 		ok    bool
-		x10   int
+		x8    int
 		x11   int
 		x14   int
-		x15   int
-		x18   int
-		x19   int
-		x22   int
-		x23   int
-		v25   any
+		x17   int
+		v19   any
 		bv    any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
-	x2, x3 = p.Pos, len(p.Recovered)
-	x6, x7 = p.Pos, len(p.Recovered)
+	x2 = p.Pos
+	x5 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch == 95) {
 		p.ExpectOrdinary(p.Pos, 7)
-		goto L8
+		goto L6
 	}
 	p.Pos += size
 	p.Silent--
-	p.Restore(x6, x7)
-	goto L5
-L8:
-	p.Silent--
-	p.Restore(x6, x7)
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch == 95) {
-		p.ExpectOrdinary(p.Pos, 7)
-		goto L5
-	}
-	p.Pos += size
+	p.Pos = x5
 	goto L4
-L5:
-	p.Restore(x2, x3)
-	x10, x11 = p.Pos, len(p.Recovered)
-	p.Silent++
+L6:
+	p.Silent--
+	p.Pos = x5
 	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch >= 48 && ch <= 57) {
-		p.ExpectOrdinary(p.Pos, 8)
-		goto L12
+	if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch == 95) {
+		p.ExpectOrdinary(p.Pos, 7)
+		goto L4
 	}
 	p.Pos += size
-	p.Silent--
-	p.Restore(x10, x11)
-	goto L9
-L12:
-	p.Silent--
-	p.Restore(x10, x11)
+	goto L3
+L4:
+	p.Pos = x2
+	x8 = p.Pos
+	p.Silent++
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 48 && ch <= 57) {
 		p.ExpectOrdinary(p.Pos, 8)
 		goto L9
 	}
 	p.Pos += size
-	goto L4
+	p.Silent--
+	p.Pos = x8
+	goto L7
 L9:
-	p.Restore(x2, x3)
-	x14, x15 = p.Pos, len(p.Recovered)
+	p.Silent--
+	p.Pos = x8
+	ch, size, ok = p.NextOrdinary()
+	if !ok || !(ch >= 48 && ch <= 57) {
+		p.ExpectOrdinary(p.Pos, 8)
+		goto L7
+	}
+	p.Pos += size
+	goto L3
+L7:
+	p.Pos = x2
+	x11 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 34 || ch == 39) {
 		p.ExpectOrdinary(p.Pos, 9)
-		goto L16
+		goto L12
 	}
 	p.Pos += size
 	p.Silent--
-	p.Restore(x14, x15)
-	goto L13
-L16:
+	p.Pos = x11
+	goto L10
+L12:
 	p.Silent--
-	p.Restore(x14, x15)
+	p.Pos = x11
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 34 || ch == 39) {
 		p.ExpectOrdinary(p.Pos, 9)
+		goto L10
+	}
+	p.Pos += size
+	goto L3
+L10:
+	p.Pos = x2
+	x14 = p.Pos
+	p.Silent++
+	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
+		p.Pos++
+	} else if _, ok = p.Parser.MatchLiteral(lit10, ".", 10, false); !ok {
+		goto L15
+	}
+	p.Silent--
+	p.Pos = x14
+	goto L13
+L15:
+	p.Silent--
+	p.Pos = x14
+	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
+		p.Pos++
+	} else if _, ok = p.Parser.MatchLiteral(lit10, ".", 10, false); !ok {
 		goto L13
 	}
-	p.Pos += size
-	goto L4
+	goto L3
 L13:
-	p.Restore(x2, x3)
-	x18, x19 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit10, ".", 10, false); !ok {
-		goto L20
-	}
-	p.Silent--
-	p.Restore(x18, x19)
-	goto L17
-L20:
-	p.Silent--
-	p.Restore(x18, x19)
-	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit10, ".", 10, false); !ok {
-		goto L17
-	}
-	goto L4
-L17:
-	p.Restore(x2, x3)
-	x22, x23 = p.Pos, len(p.Recovered)
+	p.Pos = x2
+	x17 = p.Pos
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit8, "-", 6, false); !ok {
-		goto L24
+		goto L18
 	}
 	p.Silent--
-	p.Restore(x22, x23)
-	goto L21
-L24:
+	p.Pos = x17
+	goto L16
+L18:
 	p.Silent--
-	p.Restore(x22, x23)
+	p.Pos = x17
 	if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit8, "-", 6, false); !ok {
-		goto L21
+		goto L16
 	}
-	goto L4
-L21:
-	p.Restore(x2, x3)
+	goto L3
+L16:
+	p.Pos = x2
 	goto fail
-L4:
-	v25 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v25)
-	v = p.ScopeValue(sh57, v25, start)
+L3:
+	v19 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
+	bv = pegort.TFreshNode(v19)
+	v = p.ScopeValue(sh57, v19, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -2486,16 +2469,16 @@ L4:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
 // word_lit, called as by call
 func u8(p *pegort.TParser) (any, bool) {
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i8(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -2507,140 +2490,139 @@ func i8(p *pegort.TParser) (any, bool) {
 		v     any
 		c     *pegort.TActCtx
 		x1    int
-		x2    int
-		k3    any
-		x4    any
-		x7    int
+		k2    any
+		x3    any
+		x6    int
 		ch    rune
 		size  int
 		ok    bool
-		x10   int
-		v11   any
-		x13   int
-		x16   int
-		v17   any
-		x19   int
-		x22   int
-		v23   any
-		x25   int
-		x28   int
-		v29   any
+		x9    int
+		v10   any
+		x12   int
+		x15   int
+		v16   any
+		x18   int
+		x21   int
+		v22   any
+		x24   int
+		x27   int
+		v28   any
 		w     string
 	)
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x10, x16, x22, x28
-	x1, x2 = p.Pos, len(p.Recovered)
-	x4 = k3
-	x7 = p.Pos
+	_, _, _, _ = x9, x15, x21, x27
+	x1 = p.Pos
+	x3 = k2
+	x6 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 116 || ch == 102) {
 		p.ExpectOrdinary(p.Pos, 14)
-		goto L8
+		goto L7
 	}
 	p.Pos += size
 	p.Silent--
-	p.Pos = x7
-	goto L9
-L8:
+	p.Pos = x6
+	goto L8
+L7:
 	p.Silent--
-	p.Pos = x7
-	goto L6
-L9:
-
-	x10 = p.Pos
-	if v11, ok = s29(p); !ok {
-		goto L6
-	}
-	k3 = v11
+	p.Pos = x6
 	goto L5
-L6:
-	p.Restore(x1, x2)
-	k3 = x4
-	x13 = p.Pos
+L8:
+
+	x9 = p.Pos
+	if v10, ok = s29(p); !ok {
+		goto L5
+	}
+	k2 = v10
+	goto L4
+L5:
+	p.Pos = x1
+	k2 = x3
+	x12 = p.Pos
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 110 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit13, "n", 15, false); !ok {
-		goto L14
+		goto L13
 	}
 	p.Silent--
-	p.Pos = x13
-	goto L15
+	p.Pos = x12
+	goto L14
+L13:
+	p.Silent--
+	p.Pos = x12
+	goto L11
 L14:
-	p.Silent--
-	p.Pos = x13
-	goto L12
-L15:
 
-	x16 = p.Pos
-	if v17, ok = s30(p); !ok {
-		goto L12
+	x15 = p.Pos
+	if v16, ok = s30(p); !ok {
+		goto L11
 	}
-	k3 = v17
-	goto L5
-L12:
-	p.Restore(x1, x2)
-	k3 = x4
-	x19 = p.Pos
+	k2 = v16
+	goto L4
+L11:
+	p.Pos = x1
+	k2 = x3
+	x18 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 114 || ch == 82) {
 		p.ExpectOrdinary(p.Pos, 16)
-		goto L20
+		goto L19
 	}
 	p.Pos += size
 	p.Silent--
-	p.Pos = x19
-	goto L21
-L20:
+	p.Pos = x18
+	goto L20
+L19:
 	p.Silent--
-	p.Pos = x19
-	goto L18
-L21:
+	p.Pos = x18
+	goto L17
+L20:
 
-	x22 = p.Pos
-	if v23, ok = u37(p); !ok {
-		goto L18
+	x21 = p.Pos
+	if v22, ok = u37(p); !ok {
+		goto L17
 	}
-	k3 = v23
-	goto L5
-L18:
-	p.Restore(x1, x2)
-	k3 = x4
-	x25 = p.Pos
+	k2 = v22
+	goto L4
+L17:
+	p.Pos = x1
+	k2 = x3
+	x24 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 98 || ch == 66) {
 		p.ExpectOrdinary(p.Pos, 17)
-		goto L26
+		goto L25
 	}
 	p.Pos += size
 	p.Silent--
-	p.Pos = x25
-	goto L27
-L26:
+	p.Pos = x24
+	goto L26
+L25:
 	p.Silent--
-	p.Pos = x25
-	goto L24
-L27:
+	p.Pos = x24
+	goto L23
+L26:
 
-	x28 = p.Pos
-	if v29, ok = s38(p); !ok {
-		goto L24
+	x27 = p.Pos
+	if v28, ok = s38(p); !ok {
+		goto L23
 	}
-	k3 = v29
-	goto L5
-L24:
-	p.Restore(x1, x2)
-	k3 = x4
+	k2 = v28
+	goto L4
+L23:
+	p.Pos = x1
+	k2 = x3
 	goto fail
-L5:
+L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	w = p.Where
 	p.Where = "word_lit"
-	v = func() any { return k3 }()
+	v = func() any { return k2 }()
 	v = c.Finish(v)
 	p.Where = w
 	p.Depth--
@@ -2652,10 +2634,10 @@ fail:
 
 // paren, called as by call
 func u9(p *pegort.TParser) (any, bool) {
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i9(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -2712,10 +2694,10 @@ fail:
 
 // ident_only, called as by call
 func u10(p *pegort.TParser) (any, bool) {
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i10(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -2731,7 +2713,6 @@ func i10(p *pegort.TParser) (any, bool) {
 		ok    bool
 		v3    any
 		x4    int
-		x5    int
 		w     string
 	)
 	start = p.Pos
@@ -2742,22 +2723,22 @@ func i10(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	x4, x5 = p.Pos, len(p.Recovered)
+	x4 = p.Pos
 	p.Silent++
 	if _, ok = s49(p); !ok {
-		goto L6
+		goto L5
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit15, "(", 11, false); !ok {
-		goto L6
+		goto L5
 	}
 	p.Silent--
-	p.Restore(x4, x5)
+	p.Pos = x4
 	goto fail
-L6:
+L5:
 	p.Silent--
-	p.Restore(x4, x5)
+	p.Pos = x4
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	w = p.Where
 	p.Where = "ident_only"
@@ -2785,37 +2766,35 @@ func v11(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
 		x2    int
-		x3    int
 		ok    bool
-		v6    any
+		v5    any
 		bv    any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
-	x2, x3 = p.Pos, len(p.Recovered)
+	x2 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit10, ".", 10, false); !ok {
-		goto L4
+		goto L3
 	}
 	if _, ok = s49(p); !ok {
-		goto L4
+		goto L3
 	}
-	goto L5
+	goto L4
+L3:
+	p.Pos = x2
 L4:
-	p.Restore(x2, x3)
-L5:
 
 	if _, ok = s50(p); !ok {
 		goto fail
 	}
-	v6 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v6)
-	v = p.ScopeValue(sh57, v6, start)
+	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
+	bv = pegort.TFreshNode(v5)
+	v = p.ScopeValue(sh57, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -2824,7 +2803,7 @@ L5:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -2833,10 +2812,10 @@ func u12(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[12]) {
 		return p.CallMemo(trules[12], i12)
 	}
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i12(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -2854,9 +2833,8 @@ func i12(p *pegort.TParser) (any, bool) {
 		k4    any
 		x5    int
 		x6    int
-		x7    int
-		v8    any
-		v11   any
+		v7    any
+		v10   any
 		w     string
 	)
 	start = p.Pos
@@ -2879,17 +2857,17 @@ func i12(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	x5 = p.Pos
-	x6, x7 = p.Pos, len(p.Recovered)
-	if v11, ok = u13(p); !ok {
-		goto L9
+	x6 = p.Pos
+	if v10, ok = u13(p); !ok {
+		goto L8
 	}
-	v8 = v11
-	goto L10
+	v7 = v10
+	goto L9
+L8:
+	p.Pos = x6
+	v7 = nil
 L9:
-	p.Restore(x6, x7)
-	v8 = nil
-L10:
-	k4 = v8
+	k4 = v7
 	if _, ok = s49(p); !ok {
 		goto fail
 	}
@@ -2922,10 +2900,10 @@ func u13(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[13]) {
 		return p.CallMemo(trules[13], i13)
 	}
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i13(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -2946,21 +2924,20 @@ func i13(p *pegort.TParser) (any, bool) {
 		x7    int
 		x8    int
 		x9    int
-		x10   int
-		k11   any
-		x13   int
-		x14   []any
-		x15   int
+		k10   any
+		x12   int
+		x13   []any
+		x14   int
+		v15   any
 		v16   any
 		v17   any
 		v18   any
 		v19   any
-		v20   any
 		w     string
 	)
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x2, x5, x8, x15
+	_, _, _, _ = x2, x5, x8, x14
 	x2 = p.Pos
 	if v3, ok = p.Call(trules[1], 0); !ok {
 		goto fail
@@ -2970,42 +2947,42 @@ func i13(p *pegort.TParser) (any, bool) {
 	x6, x7 = p.Pos, len(p.KidStack)
 	x8 = 0
 	for {
-		x9, x10 = p.Pos, len(p.Recovered)
-		k11 = nil
-		x13 = p.Pos
-		x14 = p.NewVals(1)[:0]
+		x9 = p.Pos
+		k10 = nil
+		x12 = p.Pos
+		x13 = p.NewVals(1)[:0]
 		if _, ok = s49(p); !ok {
-			goto L12
+			goto L11
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit22, ",", 19, false); !ok {
-			goto L12
+			goto L11
 		}
 		if _, ok = s49(p); !ok {
-			goto L12
+			goto L11
 		}
-		x15 = p.Pos
-		if v16, ok = p.Call(trules[1], 0); !ok {
-			goto L12
+		x14 = p.Pos
+		if v15, ok = p.Call(trules[1], 0); !ok {
+			goto L11
 		}
-		k11 = v16
-		x14 = append(x14, v16)
-		v17 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-		v18 = p.ScopeValue(sh5, v17, x9)
-		v19 = p.AttachCaptures(v18, scope141, []any{k11}, x9, p.Pos)
+		k10 = v15
+		x13 = append(x13, v15)
+		v16 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
+		v17 = p.ScopeValue(sh5, v16, x9)
+		v18 = p.AttachCaptures(v17, scope141, []any{k10}, x9, p.Pos)
 		x8++
-		p.PushKid(v19)
+		p.PushKid(v18)
 		if p.Pos == x9 {
 			break
 		}
 		continue
-	L12:
-		p.Restore(x9, x10)
+	L11:
+		p.Pos = x9
 		break
 	}
-	v20 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
-	k4 = v20
+	v19 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
+	k4 = v19
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	w = p.Where
 	p.Where = "args"
@@ -3030,10 +3007,10 @@ fail:
 
 // list, called as by call
 func u14(p *pegort.TParser) (any, bool) {
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i14(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -3048,11 +3025,9 @@ func i14(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		x3    int
-		x4    int
-		v5    any
-		v8    any
-		x9    int
-		x10   int
+		v4    any
+		v7    any
+		x8    int
 		w     string
 	)
 	start = p.Pos
@@ -3067,30 +3042,30 @@ func i14(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	x2 = p.Pos
-	x3, x4 = p.Pos, len(p.Recovered)
-	if v8, ok = u15(p); !ok {
-		goto L6
+	x3 = p.Pos
+	if v7, ok = u15(p); !ok {
+		goto L5
 	}
-	v5 = v8
-	goto L7
+	v4 = v7
+	goto L6
+L5:
+	p.Pos = x3
+	v4 = nil
 L6:
-	p.Restore(x3, x4)
-	v5 = nil
-L7:
-	k1 = v5
+	k1 = v4
 	if _, ok = s49(p); !ok {
 		goto fail
 	}
-	x9, x10 = p.Pos, len(p.Recovered)
+	x8 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit22, ",", 19, false); !ok {
-		goto L11
+		goto L9
 	}
-	goto L12
-L11:
-	p.Restore(x9, x10)
-L12:
+	goto L10
+L9:
+	p.Pos = x8
+L10:
 
 	if _, ok = s49(p); !ok {
 		goto fail
@@ -3119,10 +3094,10 @@ fail:
 
 // elems, called as by call
 func u15(p *pegort.TParser) (any, bool) {
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i15(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -3143,21 +3118,20 @@ func i15(p *pegort.TParser) (any, bool) {
 		x7    int
 		x8    int
 		x9    int
-		x10   int
-		k11   any
-		x13   int
-		x14   []any
-		x15   int
+		k10   any
+		x12   int
+		x13   []any
+		x14   int
+		v15   any
 		v16   any
 		v17   any
 		v18   any
 		v19   any
-		v20   any
 		w     string
 	)
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x2, x5, x8, x15
+	_, _, _, _ = x2, x5, x8, x14
 	x2 = p.Pos
 	if v3, ok = u16(p); !ok {
 		goto fail
@@ -3167,42 +3141,42 @@ func i15(p *pegort.TParser) (any, bool) {
 	x6, x7 = p.Pos, len(p.KidStack)
 	x8 = 0
 	for {
-		x9, x10 = p.Pos, len(p.Recovered)
-		k11 = nil
-		x13 = p.Pos
-		x14 = p.NewVals(1)[:0]
+		x9 = p.Pos
+		k10 = nil
+		x12 = p.Pos
+		x13 = p.NewVals(1)[:0]
 		if _, ok = s49(p); !ok {
-			goto L12
+			goto L11
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit22, ",", 19, false); !ok {
-			goto L12
+			goto L11
 		}
 		if _, ok = s49(p); !ok {
-			goto L12
+			goto L11
 		}
-		x15 = p.Pos
-		if v16, ok = u16(p); !ok {
-			goto L12
+		x14 = p.Pos
+		if v15, ok = u16(p); !ok {
+			goto L11
 		}
-		k11 = v16
-		x14 = append(x14, v16)
-		v17 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-		v18 = p.ScopeValue(sh5, v17, x9)
-		v19 = p.AttachCaptures(v18, scope144, []any{k11}, x9, p.Pos)
+		k10 = v15
+		x13 = append(x13, v15)
+		v16 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
+		v17 = p.ScopeValue(sh5, v16, x9)
+		v18 = p.AttachCaptures(v17, scope144, []any{k10}, x9, p.Pos)
 		x8++
-		p.PushKid(v19)
+		p.PushKid(v18)
 		if p.Pos == x9 {
 			break
 		}
 		continue
-	L12:
-		p.Restore(x9, x10)
+	L11:
+		p.Pos = x9
 		break
 	}
-	v20 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
-	k4 = v20
+	v19 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
+	k4 = v19
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	w = p.Where
 	p.Where = "elems"
@@ -3238,43 +3212,41 @@ func v16(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
-		x2    int
-		v3    any
-		x5    rune
-		x6    bool
+		v2    any
+		x4    rune
+		x5    bool
 		ok    bool
-		v9    any
-		v11   any
+		v8    any
+		v10   any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 63)) && p.Depth+1 <= p.MaxDepth {
+	x1 = p.Pos
+	x4, _, x5 = p.NextOrdinary()
+	if !(x5 && (x4 == 63)) && p.Depth+1 <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 21)
+		goto L6
+	}
+	if v8, ok = u17(p); !ok {
 		goto L7
 	}
-	if v9, ok = u17(p); !ok {
-		goto L8
-	}
-	v3 = v9
-	goto L4
-L8:
-	p.Restore(x1, x2)
+	v2 = v8
+	goto L3
 L7:
+	p.Pos = x1
+L6:
 
-	if v11, ok = p.Call(trules[1], 0); !ok {
-		goto L10
+	if v10, ok = p.Call(trules[1], 0); !ok {
+		goto L9
 	}
-	v3 = v11
-	goto L4
-L10:
-	p.Restore(x1, x2)
+	v2 = v10
+	goto L3
+L9:
+	p.Pos = x1
 	goto fail
-L4:
-	v = p.ScopeValue(sh57, v3, start)
+L3:
+	v = p.ScopeValue(sh57, v2, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -3282,16 +3254,16 @@ L4:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
 // optional, called as by call
 func u17(p *pegort.TParser) (any, bool) {
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i17(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -3340,10 +3312,10 @@ fail:
 
 // map, called as by call
 func u18(p *pegort.TParser) (any, bool) {
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i18(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -3358,11 +3330,9 @@ func i18(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		x3    int
-		x4    int
-		v5    any
-		v8    any
-		x9    int
-		x10   int
+		v4    any
+		v7    any
+		x8    int
 		w     string
 	)
 	start = p.Pos
@@ -3377,30 +3347,30 @@ func i18(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	x2 = p.Pos
-	x3, x4 = p.Pos, len(p.Recovered)
-	if v8, ok = u19(p); !ok {
-		goto L6
+	x3 = p.Pos
+	if v7, ok = u19(p); !ok {
+		goto L5
 	}
-	v5 = v8
-	goto L7
+	v4 = v7
+	goto L6
+L5:
+	p.Pos = x3
+	v4 = nil
 L6:
-	p.Restore(x3, x4)
-	v5 = nil
-L7:
-	k1 = v5
+	k1 = v4
 	if _, ok = s49(p); !ok {
 		goto fail
 	}
-	x9, x10 = p.Pos, len(p.Recovered)
+	x8 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit22, ",", 19, false); !ok {
-		goto L11
+		goto L9
 	}
-	goto L12
-L11:
-	p.Restore(x9, x10)
-L12:
+	goto L10
+L9:
+	p.Pos = x8
+L10:
 
 	if _, ok = s49(p); !ok {
 		goto fail
@@ -3429,10 +3399,10 @@ fail:
 
 // entries, called as by call
 func u19(p *pegort.TParser) (any, bool) {
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i19(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -3452,16 +3422,15 @@ func i19(p *pegort.TParser) (any, bool) {
 		x6    int
 		x7    int
 		x8    int
-		x9    int
-		k10   any
-		x12   int
+		k9    any
+		x11   int
+		v12   any
 		v13   any
-		v14   any
 		w     string
 	)
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x7, x12
+	_, _, _ = x2, x7, x11
 	x2 = p.Pos
 	if v3, ok = u20(p); !ok {
 		goto fail
@@ -3469,36 +3438,36 @@ func i19(p *pegort.TParser) (any, bool) {
 	k1 = v3
 	x5, x6, x7 = p.Pos, len(p.KidStack), 0
 	for {
-		x8, x9 = p.Pos, len(p.Recovered)
-		k10 = nil
+		x8 = p.Pos
+		k9 = nil
 		if _, ok = s49(p); !ok {
-			goto L11
+			goto L10
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit22, ",", 19, false); !ok {
-			goto L11
+			goto L10
 		}
 		if _, ok = s49(p); !ok {
-			goto L11
+			goto L10
 		}
-		x12 = p.Pos
-		if v13, ok = u20(p); !ok {
-			goto L11
+		x11 = p.Pos
+		if v12, ok = u20(p); !ok {
+			goto L10
 		}
-		k10 = v13
+		k9 = v12
 		x7++
-		p.PushKid(k10)
+		p.PushKid(k9)
 		if p.Pos == x8 {
 			break
 		}
 		continue
-	L11:
-		p.Restore(x8, x9)
+	L10:
+		p.Pos = x8
 		break
 	}
-	v14 = p.NewNodeOrdinary("list", x5, p.Pos, p.Kids(x6))
-	k4 = v14
+	v13 = p.NewNodeOrdinary("list", x5, p.Pos, p.Kids(x6))
+	k4 = v13
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	w = p.Where
 	p.Where = "entries"
@@ -3532,43 +3501,41 @@ func v20(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
-		x2    int
-		v3    any
-		x5    rune
-		x6    bool
+		v2    any
+		x4    rune
+		x5    bool
 		ok    bool
-		v9    any
-		v11   any
+		v8    any
+		v10   any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 63)) && p.Depth+1 <= p.MaxDepth {
+	x1 = p.Pos
+	x4, _, x5 = p.NextOrdinary()
+	if !(x5 && (x4 == 63)) && p.Depth+1 <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 21)
+		goto L6
+	}
+	if v8, ok = u21(p); !ok {
 		goto L7
 	}
-	if v9, ok = u21(p); !ok {
-		goto L8
-	}
-	v3 = v9
-	goto L4
-L8:
-	p.Restore(x1, x2)
+	v2 = v8
+	goto L3
 L7:
+	p.Pos = x1
+L6:
 
-	if v11, ok = u22(p); !ok {
-		goto L10
+	if v10, ok = u22(p); !ok {
+		goto L9
 	}
-	v3 = v11
-	goto L4
-L10:
-	p.Restore(x1, x2)
+	v2 = v10
+	goto L3
+L9:
+	p.Pos = x1
 	goto fail
-L4:
-	v = p.ScopeValue(sh57, v3, start)
+L3:
+	v = p.ScopeValue(sh57, v2, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -3576,16 +3543,16 @@ L4:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
 // opt_entry, called as by call
 func u21(p *pegort.TParser) (any, bool) {
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i21(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -3658,10 +3625,10 @@ fail:
 
 // plain_entry, called as by call
 func u22(p *pegort.TParser) (any, bool) {
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i22(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -3729,10 +3696,10 @@ func u23(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[23]) {
 		return p.CallMemo(trules[23], i23)
 	}
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i23(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -3745,44 +3712,40 @@ func i23(p *pegort.TParser) (any, bool) {
 		c     *pegort.TActCtx
 		x1    int
 		x4    int
-		x5    int
 		ok    bool
 		ch    rune
 		size  int
+		x7    int
 		x8    int
-		x9    int
-		x10   int
-		k12   any
-		x13   int
-		v14   any
-		k15   any
-		x16   int
-		x17   int
-		x18   int
+		k10   any
+		x11   int
+		v12   any
+		k13   any
+		x14   int
+		x15   int
+		v16   any
 		v19   any
-		v22   any
-		x23   int
-		x24   int
+		x20   int
 		w     string
 	)
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x8, x13, x16
+	_, _, _ = x7, x11, x14
 	x1 = p.Pos
 	p.Silent++
-	x4, x5 = p.Pos, len(p.Recovered)
+	x4 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit10, ".", 10, false); !ok {
-		goto L6
+		goto L5
 	}
 	if _, ok = s49(p); !ok {
-		goto L6
+		goto L5
 	}
-	goto L7
+	goto L6
+L5:
+	p.Pos = x4
 L6:
-	p.Restore(x4, x5)
-L7:
 
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch == 95) {
@@ -3798,24 +3761,24 @@ L7:
 		}
 		p.Pos += size
 	}
-	x8 = 0
+	x7 = 0
 	for {
-		x9, x10 = p.Pos, len(p.Recovered)
+		x8 = p.Pos
 		if _, ok = s49(p); !ok {
-			goto L11
+			goto L9
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit10, ".", 10, false); !ok {
-			goto L11
+			goto L9
 		}
 		if _, ok = s49(p); !ok {
-			goto L11
+			goto L9
 		}
 		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch == 95) {
 			p.ExpectOrdinary(p.Pos, 7)
-			goto L11
+			goto L9
 		}
 		p.Pos += size
 		for {
@@ -3826,13 +3789,13 @@ L7:
 			}
 			p.Pos += size
 		}
-		x8++
-		if p.Pos == x9 {
+		x7++
+		if p.Pos == x8 {
 			break
 		}
 		continue
-	L11:
-		p.Restore(x9, x10)
+	L9:
+		p.Pos = x8
 		break
 	}
 	if _, ok = s49(p); !ok {
@@ -3852,11 +3815,11 @@ L2:
 	goto fail
 L3:
 
-	x13 = p.Pos
-	if v14, ok = s24(p); !ok {
+	x11 = p.Pos
+	if v12, ok = s24(p); !ok {
 		goto fail
 	}
-	k12 = v14
+	k10 = v12
 	if _, ok = s49(p); !ok {
 		goto fail
 	}
@@ -3868,31 +3831,31 @@ L3:
 	if _, ok = s49(p); !ok {
 		goto fail
 	}
-	x16 = p.Pos
-	x17, x18 = p.Pos, len(p.Recovered)
-	if v22, ok = u25(p); !ok {
-		goto L20
+	x14 = p.Pos
+	x15 = p.Pos
+	if v19, ok = u25(p); !ok {
+		goto L17
 	}
-	v19 = v22
-	goto L21
-L20:
-	p.Restore(x17, x18)
-	v19 = nil
-L21:
-	k15 = v19
+	v16 = v19
+	goto L18
+L17:
+	p.Pos = x15
+	v16 = nil
+L18:
+	k13 = v16
 	if _, ok = s49(p); !ok {
 		goto fail
 	}
-	x23, x24 = p.Pos, len(p.Recovered)
+	x20 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit22, ",", 19, false); !ok {
-		goto L25
+		goto L21
 	}
-	goto L26
-L25:
-	p.Restore(x23, x24)
-L26:
+	goto L22
+L21:
+	p.Pos = x20
+L22:
 
 	if _, ok = s49(p); !ok {
 		goto fail
@@ -3907,8 +3870,8 @@ L26:
 	p.Where = "message"
 	v = func() any {
 		return func() any {
-			f_154 := func() any { return k12 }()
-			f_155 := func() any { return c.Concat(func() any { return k15 }()) }()
+			f_154 := func() any { return k10 }()
+			f_155 := func() any { return c.Concat(func() any { return k13 }()) }()
 			return tmk_MessageLit(c, true, f_154, f_155)
 		}()
 	}()
@@ -3925,67 +3888,64 @@ func s24(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
 		x2    int
-		x3    int
 		ok    bool
+		x5    int
 		x6    int
-		x7    int
-		x8    int
-		v10   any
+		v8    any
 		bv    any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
-	_ = x6
+	_ = x5
 	x1 = p.Pos
-	x2, x3 = p.Pos, len(p.Recovered)
+	x2 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit10, ".", 10, false); !ok {
-		goto L4
+		goto L3
 	}
 	if _, ok = s49(p); !ok {
-		goto L4
+		goto L3
 	}
-	goto L5
+	goto L4
+L3:
+	p.Pos = x2
 L4:
-	p.Restore(x2, x3)
-L5:
 
 	if _, ok = s51(p); !ok {
 		goto fail
 	}
-	x6 = 0
+	x5 = 0
 	for {
-		x7, x8 = p.Pos, len(p.Recovered)
+		x6 = p.Pos
 		if _, ok = s49(p); !ok {
-			goto L9
+			goto L7
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit10, ".", 10, false); !ok {
-			goto L9
+			goto L7
 		}
 		if _, ok = s49(p); !ok {
-			goto L9
+			goto L7
 		}
 		if _, ok = s51(p); !ok {
-			goto L9
+			goto L7
 		}
-		x6++
-		if p.Pos == x7 {
+		x5++
+		if p.Pos == x6 {
 			break
 		}
 		continue
-	L9:
-		p.Restore(x7, x8)
+	L7:
+		p.Pos = x6
 		break
 	}
-	v10 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v10)
-	v = p.ScopeValue(sh57, v10, start)
+	v8 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
+	bv = pegort.TFreshNode(v8)
+	v = p.ScopeValue(sh57, v8, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -3994,16 +3954,16 @@ L5:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
 // fields, called as by call
 func u25(p *pegort.TParser) (any, bool) {
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i25(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -4023,16 +3983,15 @@ func i25(p *pegort.TParser) (any, bool) {
 		x6    int
 		x7    int
 		x8    int
-		x9    int
-		k10   any
-		x12   int
+		k9    any
+		x11   int
+		v12   any
 		v13   any
-		v14   any
 		w     string
 	)
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x7, x12
+	_, _, _ = x2, x7, x11
 	x2 = p.Pos
 	if v3, ok = u26(p); !ok {
 		goto fail
@@ -4040,36 +3999,36 @@ func i25(p *pegort.TParser) (any, bool) {
 	k1 = v3
 	x5, x6, x7 = p.Pos, len(p.KidStack), 0
 	for {
-		x8, x9 = p.Pos, len(p.Recovered)
-		k10 = nil
+		x8 = p.Pos
+		k9 = nil
 		if _, ok = s49(p); !ok {
-			goto L11
+			goto L10
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit22, ",", 19, false); !ok {
-			goto L11
+			goto L10
 		}
 		if _, ok = s49(p); !ok {
-			goto L11
+			goto L10
 		}
-		x12 = p.Pos
-		if v13, ok = u26(p); !ok {
-			goto L11
+		x11 = p.Pos
+		if v12, ok = u26(p); !ok {
+			goto L10
 		}
-		k10 = v13
+		k9 = v12
 		x7++
-		p.PushKid(k10)
+		p.PushKid(k9)
 		if p.Pos == x8 {
 			break
 		}
 		continue
-	L11:
-		p.Restore(x8, x9)
+	L10:
+		p.Pos = x8
 		break
 	}
-	v14 = p.NewNodeOrdinary("list", x5, p.Pos, p.Kids(x6))
-	k4 = v14
+	v13 = p.NewNodeOrdinary("list", x5, p.Pos, p.Kids(x6))
+	k4 = v13
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	w = p.Where
 	p.Where = "fields"
@@ -4103,43 +4062,41 @@ func v26(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
-		x2    int
-		v3    any
-		x5    rune
-		x6    bool
+		v2    any
+		x4    rune
+		x5    bool
 		ok    bool
-		v9    any
-		v11   any
+		v8    any
+		v10   any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 63)) && p.Depth+1 <= p.MaxDepth {
+	x1 = p.Pos
+	x4, _, x5 = p.NextOrdinary()
+	if !(x5 && (x4 == 63)) && p.Depth+1 <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 21)
+		goto L6
+	}
+	if v8, ok = u27(p); !ok {
 		goto L7
 	}
-	if v9, ok = u27(p); !ok {
-		goto L8
-	}
-	v3 = v9
-	goto L4
-L8:
-	p.Restore(x1, x2)
+	v2 = v8
+	goto L3
 L7:
+	p.Pos = x1
+L6:
 
-	if v11, ok = u28(p); !ok {
-		goto L10
+	if v10, ok = u28(p); !ok {
+		goto L9
 	}
-	v3 = v11
-	goto L4
-L10:
-	p.Restore(x1, x2)
+	v2 = v10
+	goto L3
+L9:
+	p.Pos = x1
 	goto fail
-L4:
-	v = p.ScopeValue(sh57, v3, start)
+L3:
+	v = p.ScopeValue(sh57, v2, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -4147,16 +4104,16 @@ L4:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
 // opt_field, called as by call
 func u27(p *pegort.TParser) (any, bool) {
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i27(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -4229,10 +4186,10 @@ fail:
 
 // plain_field, called as by call
 func u28(p *pegort.TParser) (any, bool) {
-	start, rec := p.Pos, len(p.Recovered)
+	start := p.Pos
 	v, ok := i28(p)
 	if !ok {
-		p.Restore(start, rec)
+		p.Pos = start
 	}
 	return v, ok
 }
@@ -4300,69 +4257,66 @@ func s29(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
 		x2    int
-		x3    int
-		x5    rune
-		x6    bool
+		x4    rune
+		x5    bool
 		ok    bool
-		x11   int
-		x12   int
+		x10   int
 		ch    rune
 		size  int
-		v14   any
+		v12   any
 		bv    any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
-	x2, x3 = p.Pos, len(p.Recovered)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 116)) && p.Depth <= p.MaxDepth {
+	x2 = p.Pos
+	x4, _, x5 = p.NextOrdinary()
+	if !(x5 && (x4 == 116)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 25)
-		goto L7
+		goto L6
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit48, "true", 25, false); !ok {
+		goto L7
+	}
+	goto L3
+L7:
+	p.Pos = x2
+L6:
+	if !(x5 && (x4 == 102)) && p.Depth <= p.MaxDepth {
+		p.ExpectOrdinary(p.Pos, 26)
 		goto L8
 	}
-	goto L4
-L8:
-	p.Restore(x2, x3)
-L7:
-	if !(x6 && (x5 == 102)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 26)
+	if _, ok = p.Parser.MatchLiteral(lit49, "false", 26, false); !ok {
 		goto L9
 	}
-	if _, ok = p.Parser.MatchLiteral(lit49, "false", 26, false); !ok {
-		goto L10
-	}
-	goto L4
-L10:
-	p.Restore(x2, x3)
+	goto L3
 L9:
+	p.Pos = x2
+L8:
 	goto fail
-L4:
+L3:
 
-	x11, x12 = p.Pos, len(p.Recovered)
+	x10 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 95) {
 		p.ExpectOrdinary(p.Pos, 24)
-		goto L13
+		goto L11
 	}
 	p.Pos += size
 	p.Silent--
-	p.Restore(x11, x12)
+	p.Pos = x10
 	goto fail
-L13:
+L11:
 	p.Silent--
-	p.Restore(x11, x12)
-	v14 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v14)
-	v = p.ScopeValue(sh57, v14, start)
+	p.Pos = x10
+	v12 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
+	bv = pegort.TFreshNode(v12)
+	v = p.ScopeValue(sh57, v12, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -4371,7 +4325,7 @@ L13:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -4380,17 +4334,15 @@ func s30(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
 		ok    bool
 		x2    int
-		x3    int
 		ch    rune
 		size  int
-		v5    any
+		v4    any
 		bv    any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 117 && p.In[p.Pos+2] == 108 && p.In[p.Pos+3] == 108 {
@@ -4398,23 +4350,23 @@ func s30(p *pegort.TParser) (any, bool) {
 	} else if _, ok = p.Parser.MatchLiteral(lit51, "null", 27, false); !ok {
 		goto fail
 	}
-	x2, x3 = p.Pos, len(p.Recovered)
+	x2 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 95) {
 		p.ExpectOrdinary(p.Pos, 24)
-		goto L4
+		goto L3
 	}
 	p.Pos += size
 	p.Silent--
-	p.Restore(x2, x3)
+	p.Pos = x2
 	goto fail
-L4:
+L3:
 	p.Silent--
-	p.Restore(x2, x3)
-	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(sh57, v5, start)
+	p.Pos = x2
+	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
+	bv = pegort.TFreshNode(v4)
+	v = p.ScopeValue(sh57, v4, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -4423,7 +4375,7 @@ L4:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -4432,18 +4384,16 @@ func s31(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
 		ch    rune
 		size  int
 		ok    bool
 		x2    int
 		x3    int
-		x4    int
-		v6    any
+		v5    any
 		bv    any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
 	x2 = 0
@@ -4459,20 +4409,20 @@ func s31(p *pegort.TParser) (any, bool) {
 	if x2 < 1 {
 		goto fail
 	}
-	x3, x4 = p.Pos, len(p.Recovered)
+	x3 = p.Pos
 	p.Silent++
 	if !p.ClassFast(&cls162) && !p.ClassSkip(&cls162, 28) {
-		goto L5
+		goto L4
 	}
 	p.Silent--
-	p.Restore(x3, x4)
+	p.Pos = x3
 	goto fail
-L5:
+L4:
 	p.Silent--
-	p.Restore(x3, x4)
-	v6 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v6)
-	v = p.ScopeValue(sh57, v6, start)
+	p.Pos = x3
+	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
+	bv = pegort.TFreshNode(v5)
+	v = p.ScopeValue(sh57, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -4481,7 +4431,7 @@ L5:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -4490,7 +4440,6 @@ func v32(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
 		x2    []any
 		x3    int
@@ -4499,7 +4448,7 @@ func v32(p *pegort.TParser) (any, bool) {
 		v5    any
 		v6    any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
 	x2 = p.NewVals(2)[:0]
@@ -4524,7 +4473,7 @@ func v32(p *pegort.TParser) (any, bool) {
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -4541,41 +4490,198 @@ func v33(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
 		x2    int
-		x3    int
 		ok    bool
-		x6    int
-		x7    int
+		x5    int
 		ch    rune
 		size  int
+		x8    int
+		x9    int
 		x10   int
-		x11   int
-		x12   int
-		x13   int
-		x17   int
-		x18   rune
-		x19   bool
-		x22   int
-		x23   int
-		x24   int
-		v27   any
+		x14   int
+		x15   rune
+		x16   bool
+		x19   int
+		x20   int
+		v23   any
 		bv    any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
-	x2, x3 = p.Pos, len(p.Recovered)
+	x2 = p.Pos
 	if _, ok = u52(p); !ok {
-		goto L4
+		goto L3
 	}
-	goto L5
+	goto L4
+L3:
+	p.Pos = x2
 L4:
-	p.Restore(x2, x3)
-L5:
 
-	x6, x7 = p.Pos, len(p.Recovered)
+	x5 = p.Pos
+	x8 = 0
+	for {
+		ch, size, ok = p.NextOrdinary()
+		if !ok || !(ch >= 48 && ch <= 57) {
+			p.ExpectOrdinary(p.Pos, 8)
+			break
+		}
+		p.Pos += size
+		x8++
+	}
+	if x8 < 1 {
+		goto L7
+	}
+	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
+		p.Pos++
+	} else if _, ok = p.Parser.MatchLiteral(lit10, ".", 10, false); !ok {
+		goto L7
+	}
+	x9 = 0
+	for {
+		ch, size, ok = p.NextOrdinary()
+		if !ok || !(ch >= 48 && ch <= 57) {
+			p.ExpectOrdinary(p.Pos, 8)
+			break
+		}
+		p.Pos += size
+		x9++
+	}
+	if x9 < 1 {
+		goto L7
+	}
+	x10 = p.Pos
+	if _, ok = s53(p); !ok {
+		goto L11
+	}
+	goto L12
+L11:
+	p.Pos = x10
+L12:
+	goto L6
+L7:
+	p.Pos = x5
+	x14 = 0
+	for {
+		ch, size, ok = p.NextOrdinary()
+		if !ok || !(ch >= 48 && ch <= 57) {
+			p.ExpectOrdinary(p.Pos, 8)
+			break
+		}
+		p.Pos += size
+		x14++
+	}
+	if x14 < 1 {
+		goto L13
+	}
+	if _, ok = s53(p); !ok {
+		goto L13
+	}
+	goto L6
+L13:
+	p.Pos = x5
+	x15, _, x16 = p.NextOrdinary()
+	if !(x16 && (x15 == 46)) && p.Depth <= p.MaxDepth {
+		p.ExpectOrdinary(p.Pos, 10)
+		goto L17
+	}
+	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
+		p.Pos++
+	} else if _, ok = p.Parser.MatchLiteral(lit10, ".", 10, false); !ok {
+		goto L18
+	}
+	x19 = 0
+	for {
+		ch, size, ok = p.NextOrdinary()
+		if !ok || !(ch >= 48 && ch <= 57) {
+			p.ExpectOrdinary(p.Pos, 8)
+			break
+		}
+		p.Pos += size
+		x19++
+	}
+	if x19 < 1 {
+		goto L18
+	}
+	x20 = p.Pos
+	if _, ok = s53(p); !ok {
+		goto L21
+	}
+	goto L22
+L21:
+	p.Pos = x20
+L22:
+	goto L6
+L18:
+	p.Pos = x5
+L17:
+	goto fail
+L6:
+	v23 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
+	bv = pegort.TFreshNode(v23)
+	v = p.ScopeValue(sh57, v23, start)
+	if n := pegort.AsTval(v); n != nil {
+		n.TSetFresh(false)
+	}
+	v = p.TConvertResultOwned(trules[33], v, bv)
+	p.Depth--
+	return v, true
+fail:
+	p.Depth--
+	p.Pos = start
+	return nil, false
+}
+
+// uint, called as by invokePlain (body inlined)
+func s35(p *pegort.TParser) (any, bool) {
+	var (
+		start int
+		v     any
+		x1    int
+		x2    int
+		x4    rune
+		x5    bool
+		ok    bool
+		ch    rune
+		size  int
+		x8    int
+		x10   int
+		v11   any
+		bv    any
+	)
+	start = p.Pos
+	p.Enter()
+	x1 = p.Pos
+	x2 = p.Pos
+	x4, _, x5 = p.NextOrdinary()
+	if !(x5 && (x4 == 48)) && p.Depth <= p.MaxDepth {
+		p.ExpectOrdinary(p.Pos, 31)
+		goto L6
+	}
+	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 120 {
+		p.Pos += 2
+	} else if _, ok = p.Parser.MatchLiteral(lit59, "0x", 31, false); !ok {
+		goto L7
+	}
+	x8 = 0
+	for {
+		ch, size, ok = p.NextOrdinary()
+		if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
+			p.ExpectOrdinary(p.Pos, 32)
+			break
+		}
+		p.Pos += size
+		x8++
+	}
+	if x8 < 1 {
+		goto L7
+	}
+	goto L3
+L7:
+	p.Pos = x2
+L6:
+
 	x10 = 0
 	for {
 		ch, size, ok = p.NextOrdinary()
@@ -4589,175 +4695,11 @@ L5:
 	if x10 < 1 {
 		goto L9
 	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit10, ".", 10, false); !ok {
-		goto L9
-	}
-	x11 = 0
-	for {
-		ch, size, ok = p.NextOrdinary()
-		if !ok || !(ch >= 48 && ch <= 57) {
-			p.ExpectOrdinary(p.Pos, 8)
-			break
-		}
-		p.Pos += size
-		x11++
-	}
-	if x11 < 1 {
-		goto L9
-	}
-	x12, x13 = p.Pos, len(p.Recovered)
-	if _, ok = s53(p); !ok {
-		goto L14
-	}
-	goto L15
-L14:
-	p.Restore(x12, x13)
-L15:
-	goto L8
+	goto L3
 L9:
-	p.Restore(x6, x7)
-	x17 = 0
-	for {
-		ch, size, ok = p.NextOrdinary()
-		if !ok || !(ch >= 48 && ch <= 57) {
-			p.ExpectOrdinary(p.Pos, 8)
-			break
-		}
-		p.Pos += size
-		x17++
-	}
-	if x17 < 1 {
-		goto L16
-	}
-	if _, ok = s53(p); !ok {
-		goto L16
-	}
-	goto L8
-L16:
-	p.Restore(x6, x7)
-	x18, _, x19 = p.NextOrdinary()
-	if !(x19 && (x18 == 46)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 10)
-		goto L20
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit10, ".", 10, false); !ok {
-		goto L21
-	}
-	x22 = 0
-	for {
-		ch, size, ok = p.NextOrdinary()
-		if !ok || !(ch >= 48 && ch <= 57) {
-			p.ExpectOrdinary(p.Pos, 8)
-			break
-		}
-		p.Pos += size
-		x22++
-	}
-	if x22 < 1 {
-		goto L21
-	}
-	x23, x24 = p.Pos, len(p.Recovered)
-	if _, ok = s53(p); !ok {
-		goto L25
-	}
-	goto L26
-L25:
-	p.Restore(x23, x24)
-L26:
-	goto L8
-L21:
-	p.Restore(x6, x7)
-L20:
+	p.Pos = x2
 	goto fail
-L8:
-	v27 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v27)
-	v = p.ScopeValue(sh57, v27, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	v = p.TConvertResultOwned(trules[33], v, bv)
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	p.Restore(start, rec)
-	return nil, false
-}
-
-// uint, called as by invokePlain (body inlined)
-func s35(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		rec   int
-		x1    int
-		x2    int
-		x3    int
-		x5    rune
-		x6    bool
-		ok    bool
-		ch    rune
-		size  int
-		x9    int
-		x11   int
-		v12   any
-		bv    any
-	)
-	start, rec = p.Pos, len(p.Recovered)
-	p.Enter()
-	x1 = p.Pos
-	x2, x3 = p.Pos, len(p.Recovered)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 48)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 31)
-		goto L7
-	}
-	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 120 {
-		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit59, "0x", 31, false); !ok {
-		goto L8
-	}
-	x9 = 0
-	for {
-		ch, size, ok = p.NextOrdinary()
-		if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
-			p.ExpectOrdinary(p.Pos, 32)
-			break
-		}
-		p.Pos += size
-		x9++
-	}
-	if x9 < 1 {
-		goto L8
-	}
-	goto L4
-L8:
-	p.Restore(x2, x3)
-L7:
-
-	x11 = 0
-	for {
-		ch, size, ok = p.NextOrdinary()
-		if !ok || !(ch >= 48 && ch <= 57) {
-			p.ExpectOrdinary(p.Pos, 8)
-			break
-		}
-		p.Pos += size
-		x11++
-	}
-	if x11 < 1 {
-		goto L10
-	}
-	goto L4
-L10:
-	p.Restore(x2, x3)
-	goto fail
-L4:
+L3:
 
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 117 || ch == 85) {
@@ -4765,9 +4707,9 @@ L4:
 		goto fail
 	}
 	p.Pos += size
-	v12 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v12)
-	v = p.ScopeValue(sh57, v12, start)
+	v11 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
+	bv = pegort.TFreshNode(v11)
+	v = p.ScopeValue(sh57, v11, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -4776,7 +4718,7 @@ L4:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -4793,52 +4735,66 @@ func v36(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
 		x2    int
-		x3    int
 		ok    bool
-		x6    int
-		x7    int
-		x9    rune
-		x10   bool
+		x5    int
+		x7    rune
+		x8    bool
 		ch    rune
 		size  int
+		x11   int
 		x13   int
-		x15   int
-		x16   int
-		x17   int
-		v19   any
+		x14   int
+		v16   any
 		bv    any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
-	x2, x3 = p.Pos, len(p.Recovered)
+	x2 = p.Pos
 	if _, ok = u52(p); !ok {
-		goto L4
+		goto L3
 	}
-	goto L5
+	goto L4
+L3:
+	p.Pos = x2
 L4:
-	p.Restore(x2, x3)
-L5:
 
-	x6, x7 = p.Pos, len(p.Recovered)
-	x9, _, x10 = p.NextOrdinary()
-	if !(x10 && (x9 == 48)) && p.Depth <= p.MaxDepth {
+	x5 = p.Pos
+	x7, _, x8 = p.NextOrdinary()
+	if !(x8 && (x7 == 48)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 31)
-		goto L11
+		goto L9
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 120 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit59, "0x", 31, false); !ok {
-		goto L12
+		goto L10
 	}
-	x13 = 0
+	x11 = 0
 	for {
 		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
 			p.ExpectOrdinary(p.Pos, 32)
+			break
+		}
+		p.Pos += size
+		x11++
+	}
+	if x11 < 1 {
+		goto L10
+	}
+	goto L6
+L10:
+	p.Pos = x5
+L9:
+
+	x13 = 0
+	for {
+		ch, size, ok = p.NextOrdinary()
+		if !ok || !(ch >= 48 && ch <= 57) {
+			p.ExpectOrdinary(p.Pos, 8)
 			break
 		}
 		p.Pos += size
@@ -4847,47 +4803,29 @@ L5:
 	if x13 < 1 {
 		goto L12
 	}
-	goto L8
+	goto L6
 L12:
-	p.Restore(x6, x7)
-L11:
-
-	x15 = 0
-	for {
-		ch, size, ok = p.NextOrdinary()
-		if !ok || !(ch >= 48 && ch <= 57) {
-			p.ExpectOrdinary(p.Pos, 8)
-			break
-		}
-		p.Pos += size
-		x15++
-	}
-	if x15 < 1 {
-		goto L14
-	}
-	goto L8
-L14:
-	p.Restore(x6, x7)
+	p.Pos = x5
 	goto fail
-L8:
+L6:
 
-	x16, x17 = p.Pos, len(p.Recovered)
+	x14 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 117 || ch == 85) {
 		p.ExpectOrdinary(p.Pos, 33)
-		goto L18
+		goto L15
 	}
 	p.Pos += size
 	p.Silent--
-	p.Restore(x16, x17)
+	p.Pos = x14
 	goto fail
-L18:
+L15:
 	p.Silent--
-	p.Restore(x16, x17)
-	v19 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v19)
-	v = p.ScopeValue(sh57, v19, start)
+	p.Pos = x14
+	v16 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
+	bv = pegort.TFreshNode(v16)
+	v = p.ScopeValue(sh57, v16, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -4896,7 +4834,7 @@ L18:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -4913,70 +4851,68 @@ func v37(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
 		x2    int
-		x3    int
-		x5    rune
-		x6    bool
+		x4    rune
+		x5    bool
 		ch    rune
 		size  int
 		ok    bool
-		x9    int
-		v13   any
+		x8    int
+		v12   any
 		bv    any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
-	x2, x3 = p.Pos, len(p.Recovered)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 114 || x5 == 82)) && p.Depth <= p.MaxDepth {
+	x2 = p.Pos
+	x4, _, x5 = p.NextOrdinary()
+	if !(x5 && (x4 == 114 || x4 == 82)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 16)
-		goto L7
+		goto L6
 	}
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 114 || ch == 82) {
 		p.ExpectOrdinary(p.Pos, 16)
-		goto L8
+		goto L7
 	}
 	p.Pos += size
-	x9 = p.Pos
+	x8 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 34 || ch == 39) {
 		p.ExpectOrdinary(p.Pos, 9)
-		goto L10
+		goto L9
 	}
 	p.Pos += size
 	p.Silent--
-	p.Pos = x9
-	goto L11
-L10:
+	p.Pos = x8
+	goto L10
+L9:
 	p.Silent--
-	p.Pos = x9
-	goto L8
-L11:
+	p.Pos = x8
+	goto L7
+L10:
 
 	if _, ok = s54(p); !ok {
-		goto L8
+		goto L7
 	}
-	goto L4
-L8:
-	p.Restore(x2, x3)
+	goto L3
 L7:
+	p.Pos = x2
+L6:
 
 	if _, ok = s55(p); !ok {
-		goto L12
+		goto L11
 	}
-	goto L4
-L12:
-	p.Restore(x2, x3)
+	goto L3
+L11:
+	p.Pos = x2
 	goto fail
-L4:
-	v13 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v13)
-	v = p.ScopeValue(sh57, v13, start)
+L3:
+	v12 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
+	bv = pegort.TFreshNode(v12)
+	v = p.ScopeValue(sh57, v12, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -4985,7 +4921,7 @@ L4:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -4994,20 +4930,18 @@ func s38(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
 		ch    rune
 		size  int
 		ok    bool
 		x2    int
-		x3    int
-		x5    rune
-		x6    bool
-		x9    int
-		v13   any
+		x4    rune
+		x5    bool
+		x8    int
+		v12   any
 		bv    any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
 	ch, size, ok = p.NextOrdinary()
@@ -5016,54 +4950,54 @@ func s38(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	p.Pos += size
-	x2, x3 = p.Pos, len(p.Recovered)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 114 || x5 == 82)) && p.Depth <= p.MaxDepth {
+	x2 = p.Pos
+	x4, _, x5 = p.NextOrdinary()
+	if !(x5 && (x4 == 114 || x4 == 82)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 16)
-		goto L7
+		goto L6
 	}
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 114 || ch == 82) {
 		p.ExpectOrdinary(p.Pos, 16)
-		goto L8
+		goto L7
 	}
 	p.Pos += size
-	x9 = p.Pos
+	x8 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 34 || ch == 39) {
 		p.ExpectOrdinary(p.Pos, 9)
-		goto L10
+		goto L9
 	}
 	p.Pos += size
 	p.Silent--
-	p.Pos = x9
-	goto L11
-L10:
+	p.Pos = x8
+	goto L10
+L9:
 	p.Silent--
-	p.Pos = x9
-	goto L8
-L11:
+	p.Pos = x8
+	goto L7
+L10:
 
 	if _, ok = s54(p); !ok {
-		goto L8
+		goto L7
 	}
-	goto L4
-L8:
-	p.Restore(x2, x3)
+	goto L3
 L7:
+	p.Pos = x2
+L6:
 
 	if _, ok = s56(p); !ok {
-		goto L12
+		goto L11
 	}
-	goto L4
-L12:
-	p.Restore(x2, x3)
+	goto L3
+L11:
+	p.Pos = x2
 	goto fail
-L4:
-	v13 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v13)
-	v = p.ScopeValue(sh57, v13, start)
+L3:
+	v12 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
+	bv = pegort.TFreshNode(v12)
+	v = p.ScopeValue(sh57, v12, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -5072,16 +5006,8 @@ L4:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
-}
-
-// bytes_esc, called as by call
-func u42(p *pegort.TParser) (any, bool) {
-	if !p.FirstCall(rules[42]) {
-		return p.CallMemo(trules[42], v42)
-	}
-	return v42(p)
 }
 
 // bytes_esc, called as by invokePlain (body inlined)
@@ -5089,42 +5015,40 @@ func v42(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
 		x2    []any
 		x3    int
 		ok    bool
 		v4    any
 		x5    int
-		x6    int
-		v7    any
-		x9    rune
-		x10   bool
-		x13   int
-		v14   any
-		x17   int
-		x18   []any
+		v6    any
+		x8    rune
+		x9    bool
+		x12   int
+		v13   any
+		x16   int
+		x17   []any
 		ch    rune
 		size  int
-		x19   int
-		v20   any
-		x21   int
-		v22   any
-		x23   int
+		x18   int
+		v19   any
+		x20   int
+		v21   any
+		x22   int
+		v23   any
 		v24   any
 		v25   any
-		v26   any
-		x29   int
-		x30   []any
-		x31   int
+		x28   int
+		x29   []any
+		x30   int
+		v31   any
 		v32   any
 		v33   any
 		v34   any
 		v35   any
 		v36   any
-		v37   any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
 	x2 = p.NewVals(2)[:0]
@@ -5136,387 +5060,97 @@ func v42(p *pegort.TParser) (any, bool) {
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, "\\", true)
 	x2 = append(x2, v4)
-	x5, x6 = p.Pos, len(p.Recovered)
-	x9, _, x10 = p.NextOrdinary()
-	if !(x10 && (!(!(x9 == 97 || x9 == 98 || x9 == 102 || x9 == 110 || x9 == 114 || x9 == 116 || x9 == 118 || x9 == 34 || x9 == 39 || x9 == 92 || x9 == 63 || x9 == 96)))) && p.Depth <= p.MaxDepth {
+	x5 = p.Pos
+	x8, _, x9 = p.NextOrdinary()
+	if !(x9 && (!(!(x8 == 97 || x8 == 98 || x8 == 102 || x8 == 110 || x8 == 114 || x8 == 116 || x8 == 118 || x8 == 34 || x8 == 39 || x8 == 92 || x8 == 63 || x8 == 96)))) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 47)
-		goto L11
-	}
-	x13 = p.Pos
-	if !p.ClassFast(&cls163) && !p.ClassSkip(&cls163, 47) {
-		goto L12
-	}
-	v14 = p.NewMatchOrdinary(x13, p.Pos, p.Text(x13, p.Pos), true)
-	v7 = v14
-	goto L8
-L12:
-	p.Restore(x5, x6)
-L11:
-	if !(x10 && (x9 >= 48 && x9 <= 51)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 48)
-		goto L15
-	}
-	x17 = p.Pos
-	x18 = p.NewVals(3)[:0]
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch >= 48 && ch <= 51) {
-		p.ExpectOrdinary(p.Pos, 48)
-		goto L16
-	}
-	x19 = p.Pos
-	p.Pos += size
-	v20 = p.NewMatchOrdinary(x19, p.Pos, p.Text(x19, p.Pos), true)
-	x18 = append(x18, v20)
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch >= 48 && ch <= 55) {
-		p.ExpectOrdinary(p.Pos, 49)
-		goto L16
-	}
-	x21 = p.Pos
-	p.Pos += size
-	v22 = p.NewMatchOrdinary(x21, p.Pos, p.Text(x21, p.Pos), true)
-	x18 = append(x18, v22)
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch >= 48 && ch <= 55) {
-		p.ExpectOrdinary(p.Pos, 49)
-		goto L16
-	}
-	x23 = p.Pos
-	p.Pos += size
-	v24 = p.NewMatchOrdinary(x23, p.Pos, p.Text(x23, p.Pos), true)
-	x18 = append(x18, v24)
-	v25 = p.NewNodeOrdinary("tuple", x17, p.Pos, x18)
-	v26, _ = p.ShapeSingle(sh65, v25, x5)
-	v7 = v26
-	goto L8
-L16:
-	p.Restore(x5, x6)
-L15:
-	if !(x10 && (x9 == 120 || x9 == 88)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 50)
-		goto L27
-	}
-	x29 = p.Pos
-	x30 = p.NewVals(3)[:0]
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 120 || ch == 88) {
-		p.ExpectOrdinary(p.Pos, 50)
-		goto L28
-	}
-	x31 = p.Pos
-	p.Pos += size
-	v32 = p.NewMatchOrdinary(x31, p.Pos, p.Text(x31, p.Pos), true)
-	x30 = append(x30, v32)
-	if v33, ok = s44(p); !ok {
-		goto L28
-	}
-	x30 = append(x30, v33)
-	if v34, ok = s44(p); !ok {
-		goto L28
-	}
-	x30 = append(x30, v34)
-	v35 = p.NewNodeOrdinary("tuple", x29, p.Pos, x30)
-	v36, _ = p.ShapeSingle(sh65, v35, x5)
-	v7 = v36
-	goto L8
-L28:
-	p.Restore(x5, x6)
-L27:
-	goto fail
-L8:
-	x2 = append(x2, v7)
-	v37 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh71, v37, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	p.Restore(start, rec)
-	return nil, false
-}
-
-// str_esc, called as by invokePlain (body inlined)
-func v43(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		rec   int
-		x1    int
-		x2    int
-		v3    any
-		x5    rune
-		x6    bool
-		ok    bool
-		v9    any
-		x12   int
-		x13   []any
-		x14   int
-		v15   any
-		x16   int
-		x17   int
-		v19   any
-		v20   any
-		v21   any
-		v22   any
-		v23   any
-		v24   any
-		x27   int
-		x28   []any
-		x29   int
-		v30   any
-		x31   int
-		x32   int
-		x34   int
-		v35   any
-		x36   int
-		x37   int
-		v38   any
-		x40   rune
-		x41   bool
-		x44   int
-		x45   []any
-		x46   int
-		v47   any
-		x48   int
-		x49   int
-		x50   int
-		x51   int
-		x52   int
-		x53   int
-		v55   any
-		v56   any
-		v57   any
-		v58   any
-		v59   any
-		x62   int
-		x63   []any
-		x64   int
-		v65   any
-		x66   int
-		x67   int
-		x68   int
-		x69   int
-		x70   int
-		x71   int
-		v73   any
-		v74   any
-		v75   any
-		v76   any
-		v77   any
-		v78   any
-		v79   any
-	)
-	start, rec = p.Pos, len(p.Recovered)
-	p.Enter()
-	_, _ = x50, x68
-	x1, x2 = p.Pos, len(p.Recovered)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 92)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 46)
-		goto L7
-	}
-	if v9, ok = u42(p); !ok {
-		goto L8
-	}
-	v3 = v9
-	goto L4
-L8:
-	p.Restore(x1, x2)
-L7:
-	if !(x6 && (x5 == 92)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 51)
 		goto L10
 	}
 	x12 = p.Pos
-	x13 = p.NewVals(5)[:0]
-	x14 = p.Pos
-	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 92 && p.In[p.Pos+1] == 117 {
-		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit78, "\\u", 51, false); !ok {
+	if !p.ClassFast(&cls163) && !p.ClassSkip(&cls163, 47) {
 		goto L11
 	}
-	v15 = p.NewMatchOrdinary(x14, p.Pos, "\\u", true)
-	x13 = append(x13, v15)
-	x16, x17 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if !p.ClassesSkip(steps166) {
-		goto L18
-	}
-	p.Silent--
-	p.Restore(x16, x17)
-	goto L11
-L18:
-	p.Silent--
-	p.Restore(x16, x17)
-	if v19, ok = s44(p); !ok {
-		goto L11
-	}
-	x13 = append(x13, v19)
-	if v20, ok = s44(p); !ok {
-		goto L11
-	}
-	x13 = append(x13, v20)
-	if v21, ok = s44(p); !ok {
-		goto L11
-	}
-	x13 = append(x13, v21)
-	if v22, ok = s44(p); !ok {
-		goto L11
-	}
-	x13 = append(x13, v22)
-	v23 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
-	v24, _ = p.ShapeSingle(sh79, v23, x1)
-	v3 = v24
-	goto L4
+	v13 = p.NewMatchOrdinary(x12, p.Pos, p.Text(x12, p.Pos), true)
+	v6 = v13
+	goto L7
 L11:
-	p.Restore(x1, x2)
+	p.Pos = x5
 L10:
-	if !(x6 && (x5 == 92)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 54)
-		goto L25
+	if !(x9 && (x8 >= 48 && x8 <= 51)) && p.Depth <= p.MaxDepth {
+		p.ExpectOrdinary(p.Pos, 48)
+		goto L14
 	}
-	x27 = p.Pos
-	x28 = p.NewVals(3)[:0]
-	x29 = p.Pos
-	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 92 && p.In[p.Pos+1] == 85 {
-		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit80, "\\U", 54, false); !ok {
+	x16 = p.Pos
+	x17 = p.NewVals(3)[:0]
+	ch, size, ok = p.NextOrdinary()
+	if !ok || !(ch >= 48 && ch <= 51) {
+		p.ExpectOrdinary(p.Pos, 48)
+		goto L15
+	}
+	x18 = p.Pos
+	p.Pos += size
+	v19 = p.NewMatchOrdinary(x18, p.Pos, p.Text(x18, p.Pos), true)
+	x17 = append(x17, v19)
+	ch, size, ok = p.NextOrdinary()
+	if !ok || !(ch >= 48 && ch <= 55) {
+		p.ExpectOrdinary(p.Pos, 49)
+		goto L15
+	}
+	x20 = p.Pos
+	p.Pos += size
+	v21 = p.NewMatchOrdinary(x20, p.Pos, p.Text(x20, p.Pos), true)
+	x17 = append(x17, v21)
+	ch, size, ok = p.NextOrdinary()
+	if !ok || !(ch >= 48 && ch <= 55) {
+		p.ExpectOrdinary(p.Pos, 49)
+		goto L15
+	}
+	x22 = p.Pos
+	p.Pos += size
+	v23 = p.NewMatchOrdinary(x22, p.Pos, p.Text(x22, p.Pos), true)
+	x17 = append(x17, v23)
+	v24 = p.NewNodeOrdinary("tuple", x16, p.Pos, x17)
+	v25, _ = p.ShapeSingle(sh65, v24, x5)
+	v6 = v25
+	goto L7
+L15:
+	p.Pos = x5
+L14:
+	if !(x9 && (x8 == 120 || x8 == 88)) && p.Depth <= p.MaxDepth {
+		p.ExpectOrdinary(p.Pos, 50)
 		goto L26
 	}
-	v30 = p.NewMatchOrdinary(x29, p.Pos, "\\U", true)
-	x28 = append(x28, v30)
-	x31, x32 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 48 && p.In[p.Pos+2] == 48 && p.In[p.Pos+3] == 48 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit81, "0000", 55, false); !ok {
-		goto L33
+	x28 = p.Pos
+	x29 = p.NewVals(3)[:0]
+	ch, size, ok = p.NextOrdinary()
+	if !ok || !(ch == 120 || ch == 88) {
+		p.ExpectOrdinary(p.Pos, 50)
+		goto L27
 	}
-	if !p.ClassesSkip(steps166) {
-		goto L33
+	x30 = p.Pos
+	p.Pos += size
+	v31 = p.NewMatchOrdinary(x30, p.Pos, p.Text(x30, p.Pos), true)
+	x29 = append(x29, v31)
+	if v32, ok = s44(p); !ok {
+		goto L27
 	}
-	p.Silent--
-	p.Restore(x31, x32)
-	goto L26
-L33:
-	p.Silent--
-	p.Restore(x31, x32)
-	x34 = p.Pos
-	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 48 {
-		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit82, "00", 56, false); !ok {
-		goto L26
+	x29 = append(x29, v32)
+	if v33, ok = s44(p); !ok {
+		goto L27
 	}
-	v35 = p.NewMatchOrdinary(x34, p.Pos, "00", true)
-	x28 = append(x28, v35)
-	x36, x37 = p.Pos, len(p.Recovered)
-	x40, _, x41 = p.NextOrdinary()
-	if !(x41 && (x40 == 48)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 57)
-		goto L42
-	}
-	x44 = p.Pos
-	x45 = p.NewVals(2)[:0]
-	x46 = p.Pos
-	if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit83, "0", 57, false); !ok {
-		goto L43
-	}
-	v47 = p.NewMatchOrdinary(x46, p.Pos, "0", true)
-	x45 = append(x45, v47)
-	x48, x49 = p.Pos, len(p.KidStack)
-	x50 = 0
-	for x51 = 0; x51 < 5; x51++ {
-		x52, x53 = p.Pos, len(p.Recovered)
-		if v55, ok = s44(p); !ok {
-			goto L54
-		}
-		v56 = p.ScopeValue(sh57, v55, x52)
-		x50++
-		p.PushKid(v56)
-		if p.Pos == x52 {
-			break
-		}
-		continue
-	L54:
-		p.Restore(x52, x53)
-		break
-	}
-	if x50 < 5 {
-		p.DropKids(x49)
-		goto L43
-	}
-	v57 = p.NewNodeOrdinary("list", x48, p.Pos, p.Kids(x49))
-	x45 = append(x45, v57)
-	v58 = p.NewNodeOrdinary("tuple", x44, p.Pos, x45)
-	v59, _ = p.ShapeSingle(sh71, v58, x36)
-	v38 = v59
-	goto L39
-L43:
-	p.Restore(x36, x37)
-L42:
-	if !(x41 && (x40 == 49)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 58)
-		goto L60
-	}
-	x62 = p.Pos
-	x63 = p.NewVals(2)[:0]
-	x64 = p.Pos
-	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 49 && p.In[p.Pos+1] == 48 {
-		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit84, "10", 58, false); !ok {
-		goto L61
-	}
-	v65 = p.NewMatchOrdinary(x64, p.Pos, "10", true)
-	x63 = append(x63, v65)
-	x66, x67 = p.Pos, len(p.KidStack)
-	x68 = 0
-	for x69 = 0; x69 < 4; x69++ {
-		x70, x71 = p.Pos, len(p.Recovered)
-		if v73, ok = s44(p); !ok {
-			goto L72
-		}
-		v74 = p.ScopeValue(sh57, v73, x70)
-		x68++
-		p.PushKid(v74)
-		if p.Pos == x70 {
-			break
-		}
-		continue
-	L72:
-		p.Restore(x70, x71)
-		break
-	}
-	if x68 < 4 {
-		p.DropKids(x67)
-		goto L61
-	}
-	v75 = p.NewNodeOrdinary("list", x66, p.Pos, p.Kids(x67))
-	x63 = append(x63, v75)
-	v76 = p.NewNodeOrdinary("tuple", x62, p.Pos, x63)
-	v77, _ = p.ShapeSingle(sh71, v76, x36)
-	v38 = v77
-	goto L39
-L61:
-	p.Restore(x36, x37)
-L60:
-	goto L26
-L39:
-	x28 = append(x28, v38)
-	v78 = p.NewNodeOrdinary("tuple", x27, p.Pos, x28)
-	v79, _ = p.ShapeSingle(sh65, v78, x1)
-	v3 = v79
-	goto L4
+	x29 = append(x29, v33)
+	v34 = p.NewNodeOrdinary("tuple", x28, p.Pos, x29)
+	v35, _ = p.ShapeSingle(sh65, v34, x5)
+	v6 = v35
+	goto L7
+L27:
+	p.Pos = x5
 L26:
-	p.Restore(x1, x2)
-L25:
 	goto fail
-L4:
-	v = p.ScopeValue(sh57, v3, start)
+L7:
+	x2 = append(x2, v6)
+	v36 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
+	v = p.ScopeValue(sh71, v36, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -5524,7 +5158,7 @@ L4:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -5533,14 +5167,13 @@ func s44(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		ch    rune
 		size  int
 		ok    bool
 		x1    int
 		v2    any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
@@ -5558,7 +5191,7 @@ func s44(p *pegort.TParser) (any, bool) {
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -5567,102 +5200,98 @@ func s45(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
 		x2    int
-		x3    int
-		x5    int
-		x6    int
-		x8    rune
-		x9    bool
+		x4    int
+		x6    rune
+		x7    bool
 		ok    bool
-		x18   int
-		x19   int
+		x16   int
 		ch    rune
 		size  int
-		v21   any
+		v18   any
 		bv    any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
-	x2, x3 = p.Pos, len(p.Recovered)
+	x2 = p.Pos
 	p.Silent++
-	x5, x6 = p.Pos, len(p.Recovered)
-	x8, _, x9 = p.NextOrdinary()
-	if !(x9 && (x8 == 116)) && p.Depth <= p.MaxDepth {
+	x4 = p.Pos
+	x6, _, x7 = p.NextOrdinary()
+	if !(x7 && (x6 == 116)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 25)
-		goto L10
+		goto L8
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit48, "true", 25, false); !ok {
-		goto L11
+		goto L9
 	}
-	goto L7
-L11:
-	p.Restore(x5, x6)
-L10:
-	if !(x9 && (x8 == 102)) && p.Depth <= p.MaxDepth {
+	goto L5
+L9:
+	p.Pos = x4
+L8:
+	if !(x7 && (x6 == 102)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 26)
-		goto L12
+		goto L10
 	}
 	if _, ok = p.Parser.MatchLiteral(lit49, "false", 26, false); !ok {
-		goto L13
+		goto L11
 	}
-	goto L7
-L13:
-	p.Restore(x5, x6)
-L12:
-	if !(x9 && (x8 == 110)) && p.Depth <= p.MaxDepth {
+	goto L5
+L11:
+	p.Pos = x4
+L10:
+	if !(x7 && (x6 == 110)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 27)
-		goto L14
+		goto L12
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 117 && p.In[p.Pos+2] == 108 && p.In[p.Pos+3] == 108 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit51, "null", 27, false); !ok {
-		goto L15
+		goto L13
 	}
-	goto L7
-L15:
-	p.Restore(x5, x6)
-L14:
-	if !(x9 && (x8 == 105)) && p.Depth <= p.MaxDepth {
+	goto L5
+L13:
+	p.Pos = x4
+L12:
+	if !(x7 && (x6 == 105)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 59)
-		goto L16
+		goto L14
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 110 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit87, "in", 59, false); !ok {
-		goto L17
+		goto L15
 	}
-	goto L7
-L17:
-	p.Restore(x5, x6)
-L16:
-	goto L4
-L7:
+	goto L5
+L15:
+	p.Pos = x4
+L14:
+	goto L3
+L5:
 
-	x18, x19 = p.Pos, len(p.Recovered)
+	x16 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 95) {
 		p.ExpectOrdinary(p.Pos, 24)
-		goto L20
+		goto L17
 	}
 	p.Pos += size
 	p.Silent--
-	p.Restore(x18, x19)
-	goto L4
-L20:
+	p.Pos = x16
+	goto L3
+L17:
 	p.Silent--
-	p.Restore(x18, x19)
+	p.Pos = x16
 	p.Silent--
-	p.Restore(x2, x3)
+	p.Pos = x2
 	goto fail
-L4:
+L3:
 	p.Silent--
-	p.Restore(x2, x3)
+	p.Pos = x2
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch == 95) {
 		p.ExpectOrdinary(p.Pos, 7)
@@ -5677,9 +5306,9 @@ L4:
 		}
 		p.Pos += size
 	}
-	v21 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v21)
-	v = p.ScopeValue(sh57, v21, start)
+	v18 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
+	bv = pegort.TFreshNode(v18)
+	v = p.ScopeValue(sh57, v18, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -5688,7 +5317,7 @@ L4:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -5705,40 +5334,38 @@ func v47(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
 		x2    int
-		x3    int
 		ok    bool
-		x6    rune
-		x7    bool
+		x5    rune
+		x6    bool
 		ch    rune
 		size  int
-		x10   int
-		v11   any
+		x9    int
+		v10   any
 		bv    any
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
-	x2, x3 = p.Pos, len(p.Recovered)
+	x2 = p.Pos
 	if _, ok = s51(p); !ok {
-		goto L5
+		goto L4
 	}
-	goto L4
-L5:
-	p.Restore(x2, x3)
-	x6, _, x7 = p.NextOrdinary()
-	if !(x7 && (x6 == 96)) && p.Depth <= p.MaxDepth {
+	goto L3
+L4:
+	p.Pos = x2
+	x5, _, x6 = p.NextOrdinary()
+	if !(x6 && (x5 == 96)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 77)
-		goto L8
+		goto L7
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 96 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit107, "`", 77, false); !ok {
-		goto L9
+		goto L8
 	}
-	x10 = 0
+	x9 = 0
 	for {
 		ch, size, ok = p.NextOrdinary()
 		if !ok || (!(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 95 || ch == 46 || ch == 45 || ch == 47 || ch == 32)) {
@@ -5746,25 +5373,25 @@ L5:
 			break
 		}
 		p.Pos += size
-		x10++
+		x9++
 	}
-	if x10 < 1 {
-		goto L9
+	if x9 < 1 {
+		goto L8
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 96 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit107, "`", 77, false); !ok {
-		goto L9
+		goto L8
 	}
-	goto L4
-L9:
-	p.Restore(x2, x3)
+	goto L3
 L8:
+	p.Pos = x2
+L7:
 	goto fail
-L4:
-	v11 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v11)
-	v = p.ScopeValue(sh57, v11, start)
+L3:
+	v10 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
+	bv = pegort.TFreshNode(v10)
+	v = p.ScopeValue(sh57, v10, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -5773,7 +5400,7 @@ L4:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -5788,150 +5415,146 @@ func s48(p *pegort.TParser) (any, bool) {
 		x4    int
 		x5    int
 		x6    int
-		x7    int
-		x9    int
+		x8    int
+		v9    any
 		v10   any
 		v11   any
-		v12   any
+		x12   int
 		x13   int
 		x14   int
 		x15   int
-		x16   int
 		x17   int
+		x18   []any
 		x19   int
-		x20   []any
-		x21   int
 		ok    bool
-		v22   any
+		v20   any
+		x21   int
+		x22   int
 		x23   int
 		x24   int
-		x25   int
-		x26   int
-		x27   int
 		ch    rune
 		size  int
-		x29   int
-		v30   any
-		v31   any
-		v32   any
+		x26   int
+		v27   any
+		v28   any
+		v29   any
+		x30   int
+		x31   int
+		x32   int
 		x33   int
-		x34   int
 		x35   int
-		x36   int
-		x37   int
-		x39   int
+		v36   any
+		v37   any
+		v38   any
+		v39   any
 		v40   any
 		v41   any
 		v42   any
-		v43   any
-		v44   any
-		v45   any
-		v46   any
 	)
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x5, x15, x25, x35
+	_, _, _, _ = x5, x14, x23, x32
 	x1 = p.Pos
 	x2 = p.NewVals(2)[:0]
 	x3, x4 = p.Pos, len(p.KidStack)
 	x5 = 0
 	for {
-		x6, x7 = p.Pos, len(p.Recovered)
-		x9 = p.Pos
+		x6 = p.Pos
+		x8 = p.Pos
 		if !p.ClassFast(&cls167) && !p.ClassSkip(&cls167, 79) {
-			goto L8
+			goto L7
 		}
-		v10 = p.NewMatchOrdinary(x9, p.Pos, p.Text(x9, p.Pos), true)
-		v11 = p.ScopeValue(sh57, v10, x6)
+		v9 = p.NewMatchOrdinary(x8, p.Pos, p.Text(x8, p.Pos), true)
+		v10 = p.ScopeValue(sh57, v9, x6)
 		x5++
-		p.PushKid(v11)
+		p.PushKid(v10)
 		if p.Pos == x6 {
 			break
 		}
 		continue
-	L8:
-		p.Restore(x6, x7)
+	L7:
+		p.Pos = x6
 		break
 	}
-	v12 = p.NewNodeOrdinary("list", x3, p.Pos, p.Kids(x4))
-	x2 = append(x2, v12)
-	x13, x14 = p.Pos, len(p.KidStack)
-	x15 = 0
+	v11 = p.NewNodeOrdinary("list", x3, p.Pos, p.Kids(x4))
+	x2 = append(x2, v11)
+	x12, x13 = p.Pos, len(p.KidStack)
+	x14 = 0
 	for {
-		x16, x17 = p.Pos, len(p.Recovered)
+		x15 = p.Pos
+		x17 = p.Pos
+		x18 = p.NewVals(3)[:0]
 		x19 = p.Pos
-		x20 = p.NewVals(3)[:0]
-		x21 = p.Pos
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47 {
 			p.Pos += 2
 		} else if _, ok = p.Parser.MatchLiteral(lit111, "//", 80, false); !ok {
-			goto L18
+			goto L16
 		}
-		v22 = p.NewMatchOrdinary(x21, p.Pos, "//", true)
-		x20 = append(x20, v22)
-		x23, x24 = p.Pos, len(p.KidStack)
-		x25 = 0
+		v20 = p.NewMatchOrdinary(x19, p.Pos, "//", true)
+		x18 = append(x18, v20)
+		x21, x22 = p.Pos, len(p.KidStack)
+		x23 = 0
 		for {
-			x26, x27 = p.Pos, len(p.Recovered)
+			x24 = p.Pos
 			ch, size, ok = p.NextOrdinary()
 			if !ok || (ch == 10) {
 				p.ExpectOrdinary(p.Pos, 81)
-				goto L28
+				goto L25
 			}
-			x29 = p.Pos
+			x26 = p.Pos
 			p.Pos += size
-			v30 = p.NewMatchOrdinary(x29, p.Pos, p.Text(x29, p.Pos), true)
-			v31 = p.ScopeValue(sh57, v30, x26)
-			x25++
-			p.PushKid(v31)
-			if p.Pos == x26 {
+			v27 = p.NewMatchOrdinary(x26, p.Pos, p.Text(x26, p.Pos), true)
+			v28 = p.ScopeValue(sh57, v27, x24)
+			x23++
+			p.PushKid(v28)
+			if p.Pos == x24 {
 				break
 			}
 			continue
-		L28:
-			p.Restore(x26, x27)
+		L25:
+			p.Pos = x24
 			break
 		}
-		v32 = p.NewNodeOrdinary("list", x23, p.Pos, p.Kids(x24))
-		x20 = append(x20, v32)
-		x33, x34 = p.Pos, len(p.KidStack)
-		x35 = 0
+		v29 = p.NewNodeOrdinary("list", x21, p.Pos, p.Kids(x22))
+		x18 = append(x18, v29)
+		x30, x31 = p.Pos, len(p.KidStack)
+		x32 = 0
 		for {
-			x36, x37 = p.Pos, len(p.Recovered)
-			x39 = p.Pos
+			x33 = p.Pos
+			x35 = p.Pos
 			if !p.ClassFast(&cls167) && !p.ClassSkip(&cls167, 79) {
-				goto L38
+				goto L34
 			}
-			v40 = p.NewMatchOrdinary(x39, p.Pos, p.Text(x39, p.Pos), true)
-			v41 = p.ScopeValue(sh57, v40, x36)
-			x35++
-			p.PushKid(v41)
-			if p.Pos == x36 {
+			v36 = p.NewMatchOrdinary(x35, p.Pos, p.Text(x35, p.Pos), true)
+			v37 = p.ScopeValue(sh57, v36, x33)
+			x32++
+			p.PushKid(v37)
+			if p.Pos == x33 {
 				break
 			}
 			continue
-		L38:
-			p.Restore(x36, x37)
+		L34:
+			p.Pos = x33
 			break
 		}
-		v42 = p.NewNodeOrdinary("list", x33, p.Pos, p.Kids(x34))
-		x20 = append(x20, v42)
-		v43 = p.NewNodeOrdinary("tuple", x19, p.Pos, x20)
-		v44 = p.ScopeValue(sh65, v43, x16)
-		x15++
-		p.PushKid(v44)
-		if p.Pos == x16 {
+		v38 = p.NewNodeOrdinary("list", x30, p.Pos, p.Kids(x31))
+		x18 = append(x18, v38)
+		v39 = p.NewNodeOrdinary("tuple", x17, p.Pos, x18)
+		v40 = p.ScopeValue(sh65, v39, x15)
+		x14++
+		p.PushKid(v40)
+		if p.Pos == x15 {
 			break
 		}
 		continue
-	L18:
-		p.Restore(x16, x17)
+	L16:
+		p.Pos = x15
 		break
 	}
-	v45 = p.NewNodeOrdinary("list", x13, p.Pos, p.Kids(x14))
-	x2 = append(x2, v45)
-	v46 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh71, v46, start)
+	v41 = p.NewNodeOrdinary("list", x12, p.Pos, p.Kids(x13))
+	x2 = append(x2, v41)
+	v42 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
+	v = p.ScopeValue(sh71, v42, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -5948,7 +5571,6 @@ func s49(p *pegort.TParser) (any, bool) {
 		ok   bool
 		x1   int
 		x2   int
-		x3   int
 	)
 	p.Enter()
 	_ = x1
@@ -5962,11 +5584,11 @@ func s49(p *pegort.TParser) (any, bool) {
 	}
 	x1 = 0
 	for {
-		x2, x3 = p.Pos, len(p.Recovered)
+		x2 = p.Pos
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47 {
 			p.Pos += 2
 		} else if _, ok = p.Parser.MatchLiteral(lit111, "//", 80, false); !ok {
-			goto L4
+			goto L3
 		}
 		for {
 			ch, size, ok = p.NextOrdinary()
@@ -5989,8 +5611,8 @@ func s49(p *pegort.TParser) (any, bool) {
 			break
 		}
 		continue
-	L4:
-		p.Restore(x2, x3)
+	L3:
+		p.Pos = x2
 		break
 	}
 	v = nil
@@ -6003,301 +5625,297 @@ func s50(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
-		x2    int
-		x4    int
-		x5    int
-		x7    rune
-		x8    bool
+		x3    int
+		x5    rune
+		x6    bool
 		ok    bool
-		x51   int
-		x52   int
+		x49   int
 		ch    rune
 		size  int
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
+	x1 = p.Pos
 	p.Silent++
-	x4, x5 = p.Pos, len(p.Recovered)
-	x7, _, x8 = p.NextOrdinary()
-	if !(x8 && (x7 == 116)) && p.Depth <= p.MaxDepth {
+	x3 = p.Pos
+	x5, _, x6 = p.NextOrdinary()
+	if !(x6 && (x5 == 116)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 25)
-		goto L9
+		goto L7
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit48, "true", 25, false); !ok {
-		goto L10
+		goto L8
 	}
-	goto L6
-L10:
-	p.Restore(x4, x5)
-L9:
-	if !(x8 && (x7 == 102)) && p.Depth <= p.MaxDepth {
+	goto L4
+L8:
+	p.Pos = x3
+L7:
+	if !(x6 && (x5 == 102)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 26)
-		goto L11
+		goto L9
 	}
 	if _, ok = p.Parser.MatchLiteral(lit49, "false", 26, false); !ok {
-		goto L12
+		goto L10
 	}
-	goto L6
-L12:
-	p.Restore(x4, x5)
-L11:
-	if !(x8 && (x7 == 110)) && p.Depth <= p.MaxDepth {
+	goto L4
+L10:
+	p.Pos = x3
+L9:
+	if !(x6 && (x5 == 110)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 27)
-		goto L13
+		goto L11
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 117 && p.In[p.Pos+2] == 108 && p.In[p.Pos+3] == 108 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit51, "null", 27, false); !ok {
-		goto L14
+		goto L12
 	}
-	goto L6
-L14:
-	p.Restore(x4, x5)
-L13:
-	if !(x8 && (x7 == 105)) && p.Depth <= p.MaxDepth {
+	goto L4
+L12:
+	p.Pos = x3
+L11:
+	if !(x6 && (x5 == 105)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 59)
-		goto L15
+		goto L13
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 110 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit87, "in", 59, false); !ok {
-		goto L16
+		goto L14
 	}
-	goto L6
-L16:
-	p.Restore(x4, x5)
-L15:
-	if !(x8 && (x7 == 97)) && p.Depth <= p.MaxDepth {
+	goto L4
+L14:
+	p.Pos = x3
+L13:
+	if !(x6 && (x5 == 97)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 60)
-		goto L17
+		goto L15
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 97 && p.In[p.Pos+1] == 115 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit89, "as", 60, false); !ok {
-		goto L18
+		goto L16
 	}
-	goto L6
-L18:
-	p.Restore(x4, x5)
-L17:
-	if !(x8 && (x7 == 98)) && p.Depth <= p.MaxDepth {
+	goto L4
+L16:
+	p.Pos = x3
+L15:
+	if !(x6 && (x5 == 98)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 61)
-		goto L19
+		goto L17
 	}
 	if _, ok = p.Parser.MatchLiteral(lit90, "break", 61, false); !ok {
-		goto L20
+		goto L18
 	}
-	goto L6
-L20:
-	p.Restore(x4, x5)
-L19:
-	if !(x8 && (x7 == 99)) && p.Depth <= p.MaxDepth {
+	goto L4
+L18:
+	p.Pos = x3
+L17:
+	if !(x6 && (x5 == 99)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 62)
-		goto L21
+		goto L19
 	}
 	if _, ok = p.Parser.MatchLiteral(lit91, "const", 62, false); !ok {
-		goto L22
+		goto L20
 	}
-	goto L6
-L22:
-	p.Restore(x4, x5)
-L21:
-	if !(x8 && (x7 == 99)) && p.Depth <= p.MaxDepth {
+	goto L4
+L20:
+	p.Pos = x3
+L19:
+	if !(x6 && (x5 == 99)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 63)
-		goto L23
+		goto L21
 	}
 	if _, ok = p.Parser.MatchLiteral(lit92, "continue", 63, false); !ok {
-		goto L24
+		goto L22
 	}
-	goto L6
-L24:
-	p.Restore(x4, x5)
-L23:
-	if !(x8 && (x7 == 101)) && p.Depth <= p.MaxDepth {
+	goto L4
+L22:
+	p.Pos = x3
+L21:
+	if !(x6 && (x5 == 101)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 64)
-		goto L25
+		goto L23
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit93, "else", 64, false); !ok {
-		goto L26
+		goto L24
 	}
-	goto L6
-L26:
-	p.Restore(x4, x5)
-L25:
-	if !(x8 && (x7 == 102)) && p.Depth <= p.MaxDepth {
+	goto L4
+L24:
+	p.Pos = x3
+L23:
+	if !(x6 && (x5 == 102)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 65)
-		goto L27
+		goto L25
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 114 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit94, "for", 65, false); !ok {
-		goto L28
+		goto L26
 	}
-	goto L6
-L28:
-	p.Restore(x4, x5)
-L27:
-	if !(x8 && (x7 == 102)) && p.Depth <= p.MaxDepth {
+	goto L4
+L26:
+	p.Pos = x3
+L25:
+	if !(x6 && (x5 == 102)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 66)
-		goto L29
+		goto L27
 	}
 	if _, ok = p.Parser.MatchLiteral(lit95, "function", 66, false); !ok {
-		goto L30
+		goto L28
 	}
-	goto L6
-L30:
-	p.Restore(x4, x5)
-L29:
-	if !(x8 && (x7 == 105)) && p.Depth <= p.MaxDepth {
+	goto L4
+L28:
+	p.Pos = x3
+L27:
+	if !(x6 && (x5 == 105)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 67)
-		goto L31
+		goto L29
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit96, "if", 67, false); !ok {
-		goto L32
+		goto L30
 	}
-	goto L6
-L32:
-	p.Restore(x4, x5)
-L31:
-	if !(x8 && (x7 == 105)) && p.Depth <= p.MaxDepth {
+	goto L4
+L30:
+	p.Pos = x3
+L29:
+	if !(x6 && (x5 == 105)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 68)
-		goto L33
+		goto L31
 	}
 	if _, ok = p.Parser.MatchLiteral(lit97, "import", 68, false); !ok {
-		goto L34
+		goto L32
 	}
-	goto L6
-L34:
-	p.Restore(x4, x5)
-L33:
-	if !(x8 && (x7 == 108)) && p.Depth <= p.MaxDepth {
+	goto L4
+L32:
+	p.Pos = x3
+L31:
+	if !(x6 && (x5 == 108)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 69)
-		goto L35
+		goto L33
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit98, "let", 69, false); !ok {
-		goto L36
+		goto L34
 	}
-	goto L6
-L36:
-	p.Restore(x4, x5)
-L35:
-	if !(x8 && (x7 == 108)) && p.Depth <= p.MaxDepth {
+	goto L4
+L34:
+	p.Pos = x3
+L33:
+	if !(x6 && (x5 == 108)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 70)
-		goto L37
+		goto L35
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 111 && p.In[p.Pos+3] == 112 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit99, "loop", 70, false); !ok {
-		goto L38
+		goto L36
 	}
-	goto L6
-L38:
-	p.Restore(x4, x5)
-L37:
-	if !(x8 && (x7 == 112)) && p.Depth <= p.MaxDepth {
+	goto L4
+L36:
+	p.Pos = x3
+L35:
+	if !(x6 && (x5 == 112)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 71)
-		goto L39
+		goto L37
 	}
 	if _, ok = p.Parser.MatchLiteral(lit100, "package", 71, false); !ok {
-		goto L40
+		goto L38
 	}
-	goto L6
-L40:
-	p.Restore(x4, x5)
-L39:
-	if !(x8 && (x7 == 110)) && p.Depth <= p.MaxDepth {
+	goto L4
+L38:
+	p.Pos = x3
+L37:
+	if !(x6 && (x5 == 110)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 72)
-		goto L41
+		goto L39
 	}
 	if _, ok = p.Parser.MatchLiteral(lit101, "namespace", 72, false); !ok {
-		goto L42
+		goto L40
 	}
-	goto L6
-L42:
-	p.Restore(x4, x5)
-L41:
-	if !(x8 && (x7 == 114)) && p.Depth <= p.MaxDepth {
+	goto L4
+L40:
+	p.Pos = x3
+L39:
+	if !(x6 && (x5 == 114)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 73)
-		goto L43
+		goto L41
 	}
 	if _, ok = p.Parser.MatchLiteral(lit102, "return", 73, false); !ok {
-		goto L44
+		goto L42
 	}
-	goto L6
-L44:
-	p.Restore(x4, x5)
-L43:
-	if !(x8 && (x7 == 118)) && p.Depth <= p.MaxDepth {
+	goto L4
+L42:
+	p.Pos = x3
+L41:
+	if !(x6 && (x5 == 118)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 74)
-		goto L45
+		goto L43
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 118 && p.In[p.Pos+1] == 97 && p.In[p.Pos+2] == 114 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit103, "var", 74, false); !ok {
-		goto L46
+		goto L44
 	}
-	goto L6
-L46:
-	p.Restore(x4, x5)
-L45:
-	if !(x8 && (x7 == 118)) && p.Depth <= p.MaxDepth {
+	goto L4
+L44:
+	p.Pos = x3
+L43:
+	if !(x6 && (x5 == 118)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 75)
-		goto L47
+		goto L45
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 118 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 105 && p.In[p.Pos+3] == 100 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit104, "void", 75, false); !ok {
-		goto L48
+		goto L46
 	}
-	goto L6
-L48:
-	p.Restore(x4, x5)
-L47:
-	if !(x8 && (x7 == 119)) && p.Depth <= p.MaxDepth {
+	goto L4
+L46:
+	p.Pos = x3
+L45:
+	if !(x6 && (x5 == 119)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 76)
-		goto L49
+		goto L47
 	}
 	if _, ok = p.Parser.MatchLiteral(lit105, "while", 76, false); !ok {
-		goto L50
+		goto L48
 	}
-	goto L6
-L50:
-	p.Restore(x4, x5)
-L49:
-	goto L3
-L6:
+	goto L4
+L48:
+	p.Pos = x3
+L47:
+	goto L2
+L4:
 
-	x51, x52 = p.Pos, len(p.Recovered)
+	x49 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 95) {
 		p.ExpectOrdinary(p.Pos, 24)
-		goto L53
+		goto L50
 	}
 	p.Pos += size
 	p.Silent--
-	p.Restore(x51, x52)
-	goto L3
-L53:
+	p.Pos = x49
+	goto L2
+L50:
 	p.Silent--
-	p.Restore(x51, x52)
+	p.Pos = x49
 	p.Silent--
-	p.Restore(x1, x2)
+	p.Pos = x1
 	goto fail
-L3:
+L2:
 	p.Silent--
-	p.Restore(x1, x2)
+	p.Pos = x1
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch == 95) {
 		p.ExpectOrdinary(p.Pos, 7)
@@ -6317,7 +5935,7 @@ L3:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -6326,98 +5944,94 @@ func s51(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
-		x2    int
-		x4    int
-		x5    int
-		x7    rune
-		x8    bool
+		x3    int
+		x5    rune
+		x6    bool
 		ok    bool
-		x17   int
-		x18   int
+		x15   int
 		ch    rune
 		size  int
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
+	x1 = p.Pos
 	p.Silent++
-	x4, x5 = p.Pos, len(p.Recovered)
-	x7, _, x8 = p.NextOrdinary()
-	if !(x8 && (x7 == 116)) && p.Depth <= p.MaxDepth {
+	x3 = p.Pos
+	x5, _, x6 = p.NextOrdinary()
+	if !(x6 && (x5 == 116)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 25)
-		goto L9
+		goto L7
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit48, "true", 25, false); !ok {
-		goto L10
+		goto L8
 	}
-	goto L6
-L10:
-	p.Restore(x4, x5)
-L9:
-	if !(x8 && (x7 == 102)) && p.Depth <= p.MaxDepth {
+	goto L4
+L8:
+	p.Pos = x3
+L7:
+	if !(x6 && (x5 == 102)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 26)
-		goto L11
+		goto L9
 	}
 	if _, ok = p.Parser.MatchLiteral(lit49, "false", 26, false); !ok {
-		goto L12
+		goto L10
 	}
-	goto L6
-L12:
-	p.Restore(x4, x5)
-L11:
-	if !(x8 && (x7 == 110)) && p.Depth <= p.MaxDepth {
+	goto L4
+L10:
+	p.Pos = x3
+L9:
+	if !(x6 && (x5 == 110)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 27)
-		goto L13
+		goto L11
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 117 && p.In[p.Pos+2] == 108 && p.In[p.Pos+3] == 108 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit51, "null", 27, false); !ok {
-		goto L14
+		goto L12
 	}
-	goto L6
-L14:
-	p.Restore(x4, x5)
-L13:
-	if !(x8 && (x7 == 105)) && p.Depth <= p.MaxDepth {
+	goto L4
+L12:
+	p.Pos = x3
+L11:
+	if !(x6 && (x5 == 105)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 59)
-		goto L15
+		goto L13
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 110 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit87, "in", 59, false); !ok {
-		goto L16
+		goto L14
 	}
-	goto L6
-L16:
-	p.Restore(x4, x5)
-L15:
-	goto L3
-L6:
+	goto L4
+L14:
+	p.Pos = x3
+L13:
+	goto L2
+L4:
 
-	x17, x18 = p.Pos, len(p.Recovered)
+	x15 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 95) {
 		p.ExpectOrdinary(p.Pos, 24)
-		goto L19
+		goto L16
 	}
 	p.Pos += size
 	p.Silent--
-	p.Restore(x17, x18)
-	goto L3
-L19:
+	p.Pos = x15
+	goto L2
+L16:
 	p.Silent--
-	p.Restore(x17, x18)
+	p.Pos = x15
 	p.Silent--
-	p.Restore(x1, x2)
+	p.Pos = x1
 	goto fail
-L3:
+L2:
 	p.Silent--
-	p.Restore(x1, x2)
+	p.Pos = x1
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch == 95) {
 		p.ExpectOrdinary(p.Pos, 7)
@@ -6437,7 +6051,7 @@ L3:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -6454,10 +6068,9 @@ func v52(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		ok    bool
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 		p.Pos++
@@ -6472,7 +6085,7 @@ func v52(p *pegort.TParser) (any, bool) {
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -6481,15 +6094,13 @@ func s53(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		ch    rune
 		size  int
 		ok    bool
 		x1    int
-		x2    int
-		x5    int
+		x4    int
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 101 || ch == 69) {
@@ -6497,19 +6108,19 @@ func s53(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	p.Pos += size
-	x1, x2 = p.Pos, len(p.Recovered)
+	x1 = p.Pos
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 43 || ch == 45) {
 		p.ExpectOrdinary(p.Pos, 30)
-		goto L3
+		goto L2
 	}
 	p.Pos += size
-	goto L4
+	goto L3
+L2:
+	p.Pos = x1
 L3:
-	p.Restore(x1, x2)
-L4:
 
-	x5 = 0
+	x4 = 0
 	for {
 		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 57) {
@@ -6517,9 +6128,9 @@ L4:
 			break
 		}
 		p.Pos += size
-		x5++
+		x4++
 	}
-	if x5 < 1 {
+	if x4 < 1 {
 		goto fail
 	}
 	v = nil
@@ -6527,7 +6138,7 @@ L4:
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -6536,136 +6147,130 @@ func s54(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
-		x2    int
-		x4    rune
-		x5    bool
+		x3    rune
+		x4    bool
 		ok    bool
+		x7    int
 		x8    int
-		x9    int
 		x10   int
-		x12   int
-		x13   int
 		size  int
+		x14   int
+		x15   int
 		x17   int
-		x18   int
-		x19   int
-		x21   int
-		x22   int
 		ch    rune
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
-	_, _ = x8, x17
-	x1, x2 = p.Pos, len(p.Recovered)
-	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 34)) && p.Depth <= p.MaxDepth {
+	_, _ = x7, x14
+	x1 = p.Pos
+	x3, _, x4 = p.NextOrdinary()
+	if !(x4 && (x3 == 34)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 34)
-		goto L6
+		goto L5
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit64, "\"\"\"", 34, false); !ok {
-		goto L7
+		goto L6
 	}
-	x8 = 0
+	x7 = 0
 	for {
-		x9, x10 = p.Pos, len(p.Recovered)
-		x12, x13 = p.Pos, len(p.Recovered)
+		x8 = p.Pos
+		x10 = p.Pos
 		p.Silent++
 		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 			p.Pos += 3
 		} else if _, ok = p.Parser.MatchLiteral(lit64, "\"\"\"", 34, false); !ok {
-			goto L14
+			goto L11
 		}
 		p.Silent--
-		p.Restore(x12, x13)
-		goto L11
-	L14:
+		p.Pos = x10
+		goto L9
+	L11:
 		p.Silent--
-		p.Restore(x12, x13)
+		p.Pos = x10
 		_, size, ok = p.NextOrdinary()
 		if !ok {
 			p.ExpectOrdinary(p.Pos, pegort.IdAny)
-			goto L11
+			goto L9
 		}
 		p.Pos += size
-		x8++
-		if p.Pos == x9 {
+		x7++
+		if p.Pos == x8 {
 			break
 		}
 		continue
-	L11:
-		p.Restore(x9, x10)
+	L9:
+		p.Pos = x8
 		break
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit64, "\"\"\"", 34, false); !ok {
-		goto L7
+		goto L6
 	}
-	goto L3
-L7:
-	p.Restore(x1, x2)
+	goto L2
 L6:
-	if !(x5 && (x4 == 39)) && p.Depth <= p.MaxDepth {
+	p.Pos = x1
+L5:
+	if !(x4 && (x3 == 39)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 35)
-		goto L15
+		goto L12
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "'''", 35, false); !ok {
-		goto L16
+		goto L13
 	}
-	x17 = 0
+	x14 = 0
 	for {
-		x18, x19 = p.Pos, len(p.Recovered)
-		x21, x22 = p.Pos, len(p.Recovered)
+		x15 = p.Pos
+		x17 = p.Pos
 		p.Silent++
 		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 			p.Pos += 3
 		} else if _, ok = p.Parser.MatchLiteral(lit66, "'''", 35, false); !ok {
-			goto L23
+			goto L18
 		}
 		p.Silent--
-		p.Restore(x21, x22)
-		goto L20
-	L23:
+		p.Pos = x17
+		goto L16
+	L18:
 		p.Silent--
-		p.Restore(x21, x22)
+		p.Pos = x17
 		_, size, ok = p.NextOrdinary()
 		if !ok {
 			p.ExpectOrdinary(p.Pos, pegort.IdAny)
-			goto L20
+			goto L16
 		}
 		p.Pos += size
-		x17++
-		if p.Pos == x18 {
+		x14++
+		if p.Pos == x15 {
 			break
 		}
 		continue
-	L20:
-		p.Restore(x18, x19)
+	L16:
+		p.Pos = x15
 		break
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "'''", 35, false); !ok {
-		goto L16
+		goto L13
 	}
-	goto L3
-L16:
-	p.Restore(x1, x2)
-L15:
-	if !(x5 && (x4 == 34)) && p.Depth <= p.MaxDepth {
+	goto L2
+L13:
+	p.Pos = x1
+L12:
+	if !(x4 && (x3 == 34)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 36)
-		goto L24
+		goto L19
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit67, "\"", 36, false); !ok {
-		goto L25
+		goto L20
 	}
 	for {
 		ch, size, ok = p.NextOrdinary()
@@ -6678,20 +6283,20 @@ L15:
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit67, "\"", 36, false); !ok {
-		goto L25
+		goto L20
 	}
-	goto L3
-L25:
-	p.Restore(x1, x2)
-L24:
-	if !(x5 && (x4 == 39)) && p.Depth <= p.MaxDepth {
+	goto L2
+L20:
+	p.Pos = x1
+L19:
+	if !(x4 && (x3 == 39)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 38)
-		goto L26
+		goto L21
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "'", 38, false); !ok {
-		goto L27
+		goto L22
 	}
 	for {
 		ch, size, ok = p.NextOrdinary()
@@ -6704,20 +6309,20 @@ L24:
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "'", 38, false); !ok {
-		goto L27
+		goto L22
 	}
-	goto L3
-L27:
-	p.Restore(x1, x2)
-L26:
+	goto L2
+L22:
+	p.Pos = x1
+L21:
 	goto fail
-L3:
+L2:
 	v = nil
 	p.Depth--
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -6726,91 +6331,77 @@ func s55(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
-		x2    int
-		x4    rune
-		x5    bool
+		x3    rune
+		x4    bool
 		ok    bool
-		x8    int
-		x9    int
-		x11   rune
-		x12   bool
-		x15   int
+		x7    int
+		x9    rune
+		x10   bool
+		x13   int
+		x14   int
 		x16   int
-		x17   int
-		x19   int
-		x20   int
 		ch    rune
 		size  int
-		x24   int
-		x25   rune
-		x26   bool
+		x20   int
+		x21   rune
+		x22   bool
+		x25   int
+		x28   int
 		x29   int
-		x30   int
-		x33   int
-		x34   int
+		x31   int
 		x35   int
-		x37   int
 		x38   int
-		x42   int
+		x40   rune
+		x41   bool
+		x44   int
 		x45   int
-		x46   int
-		x48   rune
-		x49   bool
-		x52   int
-		x53   int
-		x54   int
+		x47   int
+		x51   int
+		x52   rune
+		x53   bool
 		x56   int
-		x57   int
-		x61   int
-		x62   rune
-		x63   bool
+		x59   int
+		x60   int
+		x62   int
 		x66   int
-		x67   int
-		x70   int
-		x71   int
-		x72   int
-		x74   int
-		x75   int
-		x79   int
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x15, x33, x52, x70
-	x1, x2 = p.Pos, len(p.Recovered)
-	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 34)) && p.Depth <= p.MaxDepth {
+	_, _, _, _ = x13, x28, x44, x59
+	x1 = p.Pos
+	x3, _, x4 = p.NextOrdinary()
+	if !(x4 && (x3 == 34)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 36)
-		goto L6
+		goto L5
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit67, "\"", 36, false); !ok {
-		goto L7
+		goto L6
 	}
-	x8, x9 = p.Pos, len(p.Recovered)
-	x11, _, x12 = p.NextOrdinary()
-	if !(x12 && (x11 == 34)) && p.Depth <= p.MaxDepth {
+	x7 = p.Pos
+	x9, _, x10 = p.NextOrdinary()
+	if !(x10 && (x9 == 34)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 40)
-		goto L13
+		goto L11
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit70, "\"\"", 40, false); !ok {
-		goto L14
+		goto L12
 	}
-	x15 = 0
+	x13 = 0
 	for {
-		x16, x17 = p.Pos, len(p.Recovered)
-		x19, x20 = p.Pos, len(p.Recovered)
+		x14 = p.Pos
+		x16 = p.Pos
 		if _, ok = u57(p); !ok {
-			goto L22
+			goto L18
 		}
-		goto L21
-	L22:
-		p.Restore(x19, x20)
-		x24 = 0
+		goto L17
+	L18:
+		p.Pos = x16
+		x20 = 0
 		for {
 			ch, size, ok = p.NextOrdinary()
 			if !ok || (ch == 34 || ch == 92) {
@@ -6818,73 +6409,73 @@ func s55(p *pegort.TParser) (any, bool) {
 				break
 			}
 			p.Pos += size
-			x24++
+			x20++
 		}
-		if x24 < 1 {
-			goto L23
+		if x20 < 1 {
+			goto L19
 		}
-		goto L21
-	L23:
-		p.Restore(x19, x20)
-		x25, _, x26 = p.NextOrdinary()
-		if !(x26 && (x25 == 34)) && p.Depth <= p.MaxDepth {
+		goto L17
+	L19:
+		p.Pos = x16
+		x21, _, x22 = p.NextOrdinary()
+		if !(x22 && (x21 == 34)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 36)
-			goto L27
+			goto L23
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit67, "\"", 36, false); !ok {
-			goto L28
+			goto L24
 		}
-		x29, x30 = p.Pos, len(p.Recovered)
+		x25 = p.Pos
 		p.Silent++
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 {
 			p.Pos += 2
 		} else if _, ok = p.Parser.MatchLiteral(lit70, "\"\"", 40, false); !ok {
-			goto L31
+			goto L26
 		}
 		p.Silent--
-		p.Restore(x29, x30)
-		goto L28
-	L31:
+		p.Pos = x25
+		goto L24
+	L26:
 		p.Silent--
-		p.Restore(x29, x30)
-		goto L21
-	L28:
-		p.Restore(x19, x20)
-	L27:
-		goto L18
-	L21:
-		x15++
-		if p.Pos == x16 {
+		p.Pos = x25
+		goto L17
+	L24:
+		p.Pos = x16
+	L23:
+		goto L15
+	L17:
+		x13++
+		if p.Pos == x14 {
 			break
 		}
 		continue
-	L18:
-		p.Restore(x16, x17)
+	L15:
+		p.Pos = x14
 		break
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit64, "\"\"\"", 34, false); !ok {
-		goto L14
+		goto L12
 	}
-	goto L10
-L14:
-	p.Restore(x8, x9)
-L13:
+	goto L8
+L12:
+	p.Pos = x7
+L11:
 
-	x33 = 0
+	x28 = 0
 	for {
-		x34, x35 = p.Pos, len(p.Recovered)
-		x37, x38 = p.Pos, len(p.Recovered)
+		x29 = p.Pos
+		x31 = p.Pos
 		if _, ok = u57(p); !ok {
-			goto L40
+			goto L33
 		}
-		goto L39
-	L40:
-		p.Restore(x37, x38)
-		x42 = 0
+		goto L32
+	L33:
+		p.Pos = x31
+		x35 = 0
 		for {
 			ch, size, ok = p.NextOrdinary()
 			if !ok || (ch == 34 || ch == 92 || ch == 10 || ch == 13) {
@@ -6892,70 +6483,70 @@ L13:
 				break
 			}
 			p.Pos += size
-			x42++
+			x35++
 		}
-		if x42 < 1 {
-			goto L41
+		if x35 < 1 {
+			goto L34
 		}
-		goto L39
-	L41:
-		p.Restore(x37, x38)
-		goto L36
-	L39:
-		x33++
-		if p.Pos == x34 {
+		goto L32
+	L34:
+		p.Pos = x31
+		goto L30
+	L32:
+		x28++
+		if p.Pos == x29 {
 			break
 		}
 		continue
-	L36:
-		p.Restore(x34, x35)
+	L30:
+		p.Pos = x29
 		break
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit67, "\"", 36, false); !ok {
-		goto L32
+		goto L27
 	}
-	goto L10
-L32:
-	p.Restore(x8, x9)
-	goto L7
-L10:
-	goto L3
-L7:
-	p.Restore(x1, x2)
+	goto L8
+L27:
+	p.Pos = x7
+	goto L6
+L8:
+	goto L2
 L6:
-	if !(x5 && (x4 == 39)) && p.Depth <= p.MaxDepth {
+	p.Pos = x1
+L5:
+	if !(x4 && (x3 == 39)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 38)
-		goto L43
+		goto L36
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "'", 38, false); !ok {
-		goto L44
+		goto L37
 	}
-	x45, x46 = p.Pos, len(p.Recovered)
-	x48, _, x49 = p.NextOrdinary()
-	if !(x49 && (x48 == 39)) && p.Depth <= p.MaxDepth {
+	x38 = p.Pos
+	x40, _, x41 = p.NextOrdinary()
+	if !(x41 && (x40 == 39)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 43)
-		goto L50
+		goto L42
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit72, "''", 43, false); !ok {
-		goto L51
+		goto L43
 	}
-	x52 = 0
+	x44 = 0
 	for {
-		x53, x54 = p.Pos, len(p.Recovered)
-		x56, x57 = p.Pos, len(p.Recovered)
+		x45 = p.Pos
+		x47 = p.Pos
 		if _, ok = u57(p); !ok {
-			goto L59
+			goto L49
 		}
-		goto L58
-	L59:
-		p.Restore(x56, x57)
-		x61 = 0
+		goto L48
+	L49:
+		p.Pos = x47
+		x51 = 0
 		for {
 			ch, size, ok = p.NextOrdinary()
 			if !ok || (ch == 39 || ch == 92) {
@@ -6963,73 +6554,73 @@ L6:
 				break
 			}
 			p.Pos += size
-			x61++
+			x51++
 		}
-		if x61 < 1 {
-			goto L60
+		if x51 < 1 {
+			goto L50
 		}
-		goto L58
-	L60:
-		p.Restore(x56, x57)
-		x62, _, x63 = p.NextOrdinary()
-		if !(x63 && (x62 == 39)) && p.Depth <= p.MaxDepth {
+		goto L48
+	L50:
+		p.Pos = x47
+		x52, _, x53 = p.NextOrdinary()
+		if !(x53 && (x52 == 39)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 38)
-			goto L64
+			goto L54
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit68, "'", 38, false); !ok {
-			goto L65
+			goto L55
 		}
-		x66, x67 = p.Pos, len(p.Recovered)
+		x56 = p.Pos
 		p.Silent++
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 {
 			p.Pos += 2
 		} else if _, ok = p.Parser.MatchLiteral(lit72, "''", 43, false); !ok {
-			goto L68
+			goto L57
 		}
 		p.Silent--
-		p.Restore(x66, x67)
-		goto L65
-	L68:
-		p.Silent--
-		p.Restore(x66, x67)
-		goto L58
-	L65:
-		p.Restore(x56, x57)
-	L64:
+		p.Pos = x56
 		goto L55
-	L58:
-		x52++
-		if p.Pos == x53 {
+	L57:
+		p.Silent--
+		p.Pos = x56
+		goto L48
+	L55:
+		p.Pos = x47
+	L54:
+		goto L46
+	L48:
+		x44++
+		if p.Pos == x45 {
 			break
 		}
 		continue
-	L55:
-		p.Restore(x53, x54)
+	L46:
+		p.Pos = x45
 		break
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "'''", 35, false); !ok {
-		goto L51
+		goto L43
 	}
-	goto L47
-L51:
-	p.Restore(x45, x46)
-L50:
+	goto L39
+L43:
+	p.Pos = x38
+L42:
 
-	x70 = 0
+	x59 = 0
 	for {
-		x71, x72 = p.Pos, len(p.Recovered)
-		x74, x75 = p.Pos, len(p.Recovered)
+		x60 = p.Pos
+		x62 = p.Pos
 		if _, ok = u57(p); !ok {
-			goto L77
+			goto L64
 		}
-		goto L76
-	L77:
-		p.Restore(x74, x75)
-		x79 = 0
+		goto L63
+	L64:
+		p.Pos = x62
+		x66 = 0
 		for {
 			ch, size, ok = p.NextOrdinary()
 			if !ok || (ch == 39 || ch == 92 || ch == 10 || ch == 13) {
@@ -7037,47 +6628,47 @@ L50:
 				break
 			}
 			p.Pos += size
-			x79++
+			x66++
 		}
-		if x79 < 1 {
-			goto L78
+		if x66 < 1 {
+			goto L65
 		}
-		goto L76
-	L78:
-		p.Restore(x74, x75)
-		goto L73
-	L76:
-		x70++
-		if p.Pos == x71 {
+		goto L63
+	L65:
+		p.Pos = x62
+		goto L61
+	L63:
+		x59++
+		if p.Pos == x60 {
 			break
 		}
 		continue
-	L73:
-		p.Restore(x71, x72)
+	L61:
+		p.Pos = x60
 		break
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "'", 38, false); !ok {
-		goto L69
+		goto L58
 	}
-	goto L47
-L69:
-	p.Restore(x45, x46)
-	goto L44
-L47:
-	goto L3
-L44:
-	p.Restore(x1, x2)
-L43:
+	goto L39
+L58:
+	p.Pos = x38
+	goto L37
+L39:
+	goto L2
+L37:
+	p.Pos = x1
+L36:
 	goto fail
-L3:
+L2:
 	v = nil
 	p.Depth--
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -7086,102 +6677,88 @@ func s56(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
-		x2    int
-		x4    rune
-		x5    bool
+		x3    rune
+		x4    bool
 		ok    bool
-		x8    int
-		x9    int
-		x11   rune
-		x12   bool
-		x15   int
+		x7    int
+		x9    rune
+		x10   bool
+		x13   int
+		x14   int
 		x16   int
-		x17   int
-		x19   int
-		x20   int
-		x22   rune
-		x23   bool
+		x18   rune
+		x19   bool
 		ch    rune
 		size  int
-		x27   int
+		x23   int
+		x26   int
+		x29   int
 		x30   int
-		x31   int
-		x34   int
-		x35   int
-		x36   int
-		x38   int
+		x32   int
+		x34   rune
+		x35   bool
 		x39   int
-		x41   rune
-		x42   bool
-		x46   int
+		x42   int
+		x44   rune
+		x45   bool
+		x48   int
 		x49   int
-		x50   int
-		x52   rune
-		x53   bool
-		x56   int
-		x57   int
+		x51   int
+		x53   rune
+		x54   bool
 		x58   int
-		x60   int
 		x61   int
-		x63   rune
-		x64   bool
-		x68   int
-		x71   int
-		x72   int
-		x75   int
-		x76   int
-		x77   int
-		x79   int
-		x80   int
-		x82   rune
-		x83   bool
-		x87   int
+		x64   int
+		x65   int
+		x67   int
+		x69   rune
+		x70   bool
+		x74   int
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x15, x34, x56, x75
-	x1, x2 = p.Pos, len(p.Recovered)
-	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 34)) && p.Depth <= p.MaxDepth {
+	_, _, _, _ = x13, x29, x48, x64
+	x1 = p.Pos
+	x3, _, x4 = p.NextOrdinary()
+	if !(x4 && (x3 == 34)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 36)
-		goto L6
+		goto L5
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit67, "\"", 36, false); !ok {
-		goto L7
+		goto L6
 	}
-	x8, x9 = p.Pos, len(p.Recovered)
-	x11, _, x12 = p.NextOrdinary()
-	if !(x12 && (x11 == 34)) && p.Depth <= p.MaxDepth {
+	x7 = p.Pos
+	x9, _, x10 = p.NextOrdinary()
+	if !(x10 && (x9 == 34)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 40)
-		goto L13
+		goto L11
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit70, "\"\"", 40, false); !ok {
-		goto L14
+		goto L12
 	}
-	x15 = 0
+	x13 = 0
 	for {
-		x16, x17 = p.Pos, len(p.Recovered)
-		x19, x20 = p.Pos, len(p.Recovered)
-		x22, _, x23 = p.NextOrdinary()
-		if !(x23 && (x22 == 92)) && p.Depth+1 <= p.MaxDepth {
+		x14 = p.Pos
+		x16 = p.Pos
+		x18, _, x19 = p.NextOrdinary()
+		if !(x19 && (x18 == 92)) && p.Depth+1 <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 46)
-			goto L24
+			goto L20
 		}
 		if _, ok = u58(p); !ok {
-			goto L25
+			goto L21
 		}
-		goto L21
-	L25:
-		p.Restore(x19, x20)
-	L24:
+		goto L17
+	L21:
+		p.Pos = x16
+	L20:
 
-		x27 = 0
+		x23 = 0
 		for {
 			ch, size, ok = p.NextOrdinary()
 			if !ok || (ch == 34 || ch == 92) {
@@ -7189,79 +6766,79 @@ func s56(p *pegort.TParser) (any, bool) {
 				break
 			}
 			p.Pos += size
-			x27++
+			x23++
 		}
-		if x27 < 1 {
-			goto L26
+		if x23 < 1 {
+			goto L22
 		}
-		goto L21
-	L26:
-		p.Restore(x19, x20)
-		if !(x23 && (x22 == 34)) && p.Depth <= p.MaxDepth {
+		goto L17
+	L22:
+		p.Pos = x16
+		if !(x19 && (x18 == 34)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 36)
-			goto L28
+			goto L24
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit67, "\"", 36, false); !ok {
-			goto L29
+			goto L25
 		}
-		x30, x31 = p.Pos, len(p.Recovered)
+		x26 = p.Pos
 		p.Silent++
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 {
 			p.Pos += 2
 		} else if _, ok = p.Parser.MatchLiteral(lit70, "\"\"", 40, false); !ok {
-			goto L32
+			goto L27
 		}
 		p.Silent--
-		p.Restore(x30, x31)
-		goto L29
-	L32:
+		p.Pos = x26
+		goto L25
+	L27:
 		p.Silent--
-		p.Restore(x30, x31)
-		goto L21
-	L29:
-		p.Restore(x19, x20)
-	L28:
-		goto L18
-	L21:
-		x15++
-		if p.Pos == x16 {
+		p.Pos = x26
+		goto L17
+	L25:
+		p.Pos = x16
+	L24:
+		goto L15
+	L17:
+		x13++
+		if p.Pos == x14 {
 			break
 		}
 		continue
-	L18:
-		p.Restore(x16, x17)
+	L15:
+		p.Pos = x14
 		break
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit64, "\"\"\"", 34, false); !ok {
-		goto L14
+		goto L12
 	}
-	goto L10
-L14:
-	p.Restore(x8, x9)
-L13:
+	goto L8
+L12:
+	p.Pos = x7
+L11:
 
-	x34 = 0
+	x29 = 0
 	for {
-		x35, x36 = p.Pos, len(p.Recovered)
-		x38, x39 = p.Pos, len(p.Recovered)
-		x41, _, x42 = p.NextOrdinary()
-		if !(x42 && (x41 == 92)) && p.Depth+1 <= p.MaxDepth {
+		x30 = p.Pos
+		x32 = p.Pos
+		x34, _, x35 = p.NextOrdinary()
+		if !(x35 && (x34 == 92)) && p.Depth+1 <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 46)
-			goto L43
+			goto L36
 		}
 		if _, ok = u58(p); !ok {
-			goto L44
+			goto L37
 		}
-		goto L40
-	L44:
-		p.Restore(x38, x39)
-	L43:
+		goto L33
+	L37:
+		p.Pos = x32
+	L36:
 
-		x46 = 0
+		x39 = 0
 		for {
 			ch, size, ok = p.NextOrdinary()
 			if !ok || (ch == 34 || ch == 92 || ch == 10 || ch == 13) {
@@ -7269,77 +6846,77 @@ L13:
 				break
 			}
 			p.Pos += size
-			x46++
+			x39++
 		}
-		if x46 < 1 {
-			goto L45
+		if x39 < 1 {
+			goto L38
 		}
-		goto L40
-	L45:
-		p.Restore(x38, x39)
-		goto L37
-	L40:
-		x34++
-		if p.Pos == x35 {
+		goto L33
+	L38:
+		p.Pos = x32
+		goto L31
+	L33:
+		x29++
+		if p.Pos == x30 {
 			break
 		}
 		continue
-	L37:
-		p.Restore(x35, x36)
+	L31:
+		p.Pos = x30
 		break
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit67, "\"", 36, false); !ok {
-		goto L33
+		goto L28
 	}
-	goto L10
-L33:
-	p.Restore(x8, x9)
-	goto L7
-L10:
-	goto L3
-L7:
-	p.Restore(x1, x2)
+	goto L8
+L28:
+	p.Pos = x7
+	goto L6
+L8:
+	goto L2
 L6:
-	if !(x5 && (x4 == 39)) && p.Depth <= p.MaxDepth {
+	p.Pos = x1
+L5:
+	if !(x4 && (x3 == 39)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 38)
-		goto L47
+		goto L40
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "'", 38, false); !ok {
-		goto L48
+		goto L41
 	}
-	x49, x50 = p.Pos, len(p.Recovered)
-	x52, _, x53 = p.NextOrdinary()
-	if !(x53 && (x52 == 39)) && p.Depth <= p.MaxDepth {
+	x42 = p.Pos
+	x44, _, x45 = p.NextOrdinary()
+	if !(x45 && (x44 == 39)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 43)
-		goto L54
+		goto L46
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit72, "''", 43, false); !ok {
-		goto L55
+		goto L47
 	}
-	x56 = 0
+	x48 = 0
 	for {
-		x57, x58 = p.Pos, len(p.Recovered)
-		x60, x61 = p.Pos, len(p.Recovered)
-		x63, _, x64 = p.NextOrdinary()
-		if !(x64 && (x63 == 92)) && p.Depth+1 <= p.MaxDepth {
+		x49 = p.Pos
+		x51 = p.Pos
+		x53, _, x54 = p.NextOrdinary()
+		if !(x54 && (x53 == 92)) && p.Depth+1 <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 46)
-			goto L65
+			goto L55
 		}
 		if _, ok = u58(p); !ok {
-			goto L66
+			goto L56
 		}
-		goto L62
-	L66:
-		p.Restore(x60, x61)
-	L65:
+		goto L52
+	L56:
+		p.Pos = x51
+	L55:
 
-		x68 = 0
+		x58 = 0
 		for {
 			ch, size, ok = p.NextOrdinary()
 			if !ok || (ch == 39 || ch == 92) {
@@ -7347,79 +6924,79 @@ L6:
 				break
 			}
 			p.Pos += size
-			x68++
+			x58++
 		}
-		if x68 < 1 {
-			goto L67
+		if x58 < 1 {
+			goto L57
 		}
-		goto L62
-	L67:
-		p.Restore(x60, x61)
-		if !(x64 && (x63 == 39)) && p.Depth <= p.MaxDepth {
+		goto L52
+	L57:
+		p.Pos = x51
+		if !(x54 && (x53 == 39)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 38)
-			goto L69
+			goto L59
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit68, "'", 38, false); !ok {
-			goto L70
+			goto L60
 		}
-		x71, x72 = p.Pos, len(p.Recovered)
+		x61 = p.Pos
 		p.Silent++
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 {
 			p.Pos += 2
 		} else if _, ok = p.Parser.MatchLiteral(lit72, "''", 43, false); !ok {
-			goto L73
+			goto L62
 		}
 		p.Silent--
-		p.Restore(x71, x72)
-		goto L70
-	L73:
-		p.Silent--
-		p.Restore(x71, x72)
-		goto L62
-	L70:
-		p.Restore(x60, x61)
-	L69:
-		goto L59
+		p.Pos = x61
+		goto L60
 	L62:
-		x56++
-		if p.Pos == x57 {
+		p.Silent--
+		p.Pos = x61
+		goto L52
+	L60:
+		p.Pos = x51
+	L59:
+		goto L50
+	L52:
+		x48++
+		if p.Pos == x49 {
 			break
 		}
 		continue
-	L59:
-		p.Restore(x57, x58)
+	L50:
+		p.Pos = x49
 		break
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "'''", 35, false); !ok {
-		goto L55
+		goto L47
 	}
-	goto L51
-L55:
-	p.Restore(x49, x50)
-L54:
+	goto L43
+L47:
+	p.Pos = x42
+L46:
 
-	x75 = 0
+	x64 = 0
 	for {
-		x76, x77 = p.Pos, len(p.Recovered)
-		x79, x80 = p.Pos, len(p.Recovered)
-		x82, _, x83 = p.NextOrdinary()
-		if !(x83 && (x82 == 92)) && p.Depth+1 <= p.MaxDepth {
+		x65 = p.Pos
+		x67 = p.Pos
+		x69, _, x70 = p.NextOrdinary()
+		if !(x70 && (x69 == 92)) && p.Depth+1 <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 46)
-			goto L84
+			goto L71
 		}
 		if _, ok = u58(p); !ok {
-			goto L85
+			goto L72
 		}
-		goto L81
-	L85:
-		p.Restore(x79, x80)
-	L84:
+		goto L68
+	L72:
+		p.Pos = x67
+	L71:
 
-		x87 = 0
+		x74 = 0
 		for {
 			ch, size, ok = p.NextOrdinary()
 			if !ok || (ch == 39 || ch == 92 || ch == 10 || ch == 13) {
@@ -7427,47 +7004,47 @@ L54:
 				break
 			}
 			p.Pos += size
-			x87++
+			x74++
 		}
-		if x87 < 1 {
-			goto L86
+		if x74 < 1 {
+			goto L73
 		}
-		goto L81
-	L86:
-		p.Restore(x79, x80)
-		goto L78
-	L81:
-		x75++
-		if p.Pos == x76 {
+		goto L68
+	L73:
+		p.Pos = x67
+		goto L66
+	L68:
+		x64++
+		if p.Pos == x65 {
 			break
 		}
 		continue
-	L78:
-		p.Restore(x76, x77)
+	L66:
+		p.Pos = x65
 		break
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "'", 38, false); !ok {
-		goto L74
+		goto L63
 	}
-	goto L51
-L74:
-	p.Restore(x49, x50)
-	goto L48
-L51:
-	goto L3
-L48:
-	p.Restore(x1, x2)
-L47:
+	goto L43
+L63:
+	p.Pos = x42
+	goto L41
+L43:
+	goto L2
+L41:
+	p.Pos = x1
+L40:
 	goto fail
-L3:
+L2:
 	v = nil
 	p.Depth--
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -7484,189 +7061,182 @@ func v57(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		x1    int
-		x2    int
-		x4    rune
-		x5    bool
+		x3    rune
+		x4    bool
 		ok    bool
-		x10   int
-		x11   int
+		x9    int
+		x13   int
 		x15   int
-		x16   int
-		x18   int
-		x19   int
-		x21   rune
-		x22   bool
-		x25   int
-		x26   int
+		x17   rune
+		x18   bool
+		x21   int
+		x22   int
+		x23   int
 		x27   int
 		x28   int
-		x32   int
-		x33   int
-		x34   int
-		x35   int
+		x29   int
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
-	_, _ = x25, x32
-	x1, x2 = p.Pos, len(p.Recovered)
-	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 92)) && p.Depth+1 <= p.MaxDepth {
+	_, _ = x21, x27
+	x1 = p.Pos
+	x3, _, x4 = p.NextOrdinary()
+	if !(x4 && (x3 == 92)) && p.Depth+1 <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 46)
-		goto L6
+		goto L5
 	}
 	if _, ok = u58(p); !ok {
-		goto L7
+		goto L6
 	}
-	goto L3
-L7:
-	p.Restore(x1, x2)
+	goto L2
 L6:
-	if !(x5 && (x4 == 92)) && p.Depth <= p.MaxDepth {
+	p.Pos = x1
+L5:
+	if !(x4 && (x3 == 92)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 51)
-		goto L8
+		goto L7
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 92 && p.In[p.Pos+1] == 117 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit78, "\\u", 51, false); !ok {
-		goto L9
+		goto L8
 	}
-	x10, x11 = p.Pos, len(p.Recovered)
+	x9 = p.Pos
 	p.Silent++
 	if !p.ClassesSkip(steps166) {
-		goto L12
+		goto L10
 	}
 	p.Silent--
-	p.Restore(x10, x11)
-	goto L9
-L12:
+	p.Pos = x9
+	goto L8
+L10:
 	p.Silent--
-	p.Restore(x10, x11)
+	p.Pos = x9
 	if _, ok = s59(p); !ok {
-		goto L9
+		goto L8
 	}
 	if _, ok = s59(p); !ok {
-		goto L9
+		goto L8
 	}
 	if _, ok = s59(p); !ok {
-		goto L9
+		goto L8
 	}
 	if _, ok = s59(p); !ok {
-		goto L9
+		goto L8
 	}
-	goto L3
-L9:
-	p.Restore(x1, x2)
+	goto L2
 L8:
-	if !(x5 && (x4 == 92)) && p.Depth <= p.MaxDepth {
+	p.Pos = x1
+L7:
+	if !(x4 && (x3 == 92)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 54)
-		goto L13
+		goto L11
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 92 && p.In[p.Pos+1] == 85 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit80, "\\U", 54, false); !ok {
-		goto L14
+		goto L12
 	}
-	x15, x16 = p.Pos, len(p.Recovered)
+	x13 = p.Pos
 	p.Silent++
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 48 && p.In[p.Pos+2] == 48 && p.In[p.Pos+3] == 48 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit81, "0000", 55, false); !ok {
-		goto L17
+		goto L14
 	}
 	if !p.ClassesSkip(steps166) {
-		goto L17
+		goto L14
 	}
 	p.Silent--
-	p.Restore(x15, x16)
-	goto L14
-L17:
+	p.Pos = x13
+	goto L12
+L14:
 	p.Silent--
-	p.Restore(x15, x16)
+	p.Pos = x13
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 48 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit82, "00", 56, false); !ok {
-		goto L14
+		goto L12
 	}
-	x18, x19 = p.Pos, len(p.Recovered)
-	x21, _, x22 = p.NextOrdinary()
-	if !(x22 && (x21 == 48)) && p.Depth <= p.MaxDepth {
+	x15 = p.Pos
+	x17, _, x18 = p.NextOrdinary()
+	if !(x18 && (x17 == 48)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 57)
-		goto L23
+		goto L19
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit83, "0", 57, false); !ok {
-		goto L24
+		goto L20
 	}
-	x25 = 0
-	for x26 = 0; x26 < 5; x26++ {
-		x27, x28 = p.Pos, len(p.Recovered)
+	x21 = 0
+	for x22 = 0; x22 < 5; x22++ {
+		x23 = p.Pos
 		if _, ok = s59(p); !ok {
-			goto L29
+			goto L24
 		}
-		x25++
-		if p.Pos == x27 {
+		x21++
+		if p.Pos == x23 {
 			break
 		}
 		continue
-	L29:
-		p.Restore(x27, x28)
+	L24:
+		p.Pos = x23
 		break
 	}
-	if x25 < 5 {
-		goto L24
+	if x21 < 5 {
+		goto L20
 	}
-	goto L20
-L24:
-	p.Restore(x18, x19)
-L23:
-	if !(x22 && (x21 == 49)) && p.Depth <= p.MaxDepth {
+	goto L16
+L20:
+	p.Pos = x15
+L19:
+	if !(x18 && (x17 == 49)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 58)
-		goto L30
+		goto L25
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 49 && p.In[p.Pos+1] == 48 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit84, "10", 58, false); !ok {
-		goto L31
+		goto L26
 	}
-	x32 = 0
-	for x33 = 0; x33 < 4; x33++ {
-		x34, x35 = p.Pos, len(p.Recovered)
+	x27 = 0
+	for x28 = 0; x28 < 4; x28++ {
+		x29 = p.Pos
 		if _, ok = s59(p); !ok {
-			goto L36
+			goto L30
 		}
-		x32++
-		if p.Pos == x34 {
+		x27++
+		if p.Pos == x29 {
 			break
 		}
 		continue
-	L36:
-		p.Restore(x34, x35)
+	L30:
+		p.Pos = x29
 		break
 	}
-	if x32 < 4 {
-		goto L31
+	if x27 < 4 {
+		goto L26
 	}
-	goto L20
-L31:
-	p.Restore(x18, x19)
-L30:
-	goto L14
-L20:
-	goto L3
-L14:
-	p.Restore(x1, x2)
-L13:
+	goto L16
+L26:
+	p.Pos = x15
+L25:
+	goto L12
+L16:
+	goto L2
+L12:
+	p.Pos = x1
+L11:
 	goto fail
-L3:
+L2:
 	v = nil
 	p.Depth--
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -7683,74 +7253,72 @@ func v58(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		ok    bool
 		x1    int
-		x2    int
-		x4    rune
-		x5    bool
+		x3    rune
+		x4    bool
 		ch    rune
 		size  int
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit75, "\\", 46, false); !ok {
 		goto fail
 	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (!(!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 34 || x4 == 39 || x4 == 92 || x4 == 63 || x4 == 96)))) && p.Depth <= p.MaxDepth {
+	x1 = p.Pos
+	x3, _, x4 = p.NextOrdinary()
+	if !(x4 && (!(!(x3 == 97 || x3 == 98 || x3 == 102 || x3 == 110 || x3 == 114 || x3 == 116 || x3 == 118 || x3 == 34 || x3 == 39 || x3 == 92 || x3 == 63 || x3 == 96)))) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 47)
-		goto L6
+		goto L5
 	}
 	if !p.ClassFast(&cls163) && !p.ClassSkip(&cls163, 47) {
+		goto L6
+	}
+	goto L2
+L6:
+	p.Pos = x1
+L5:
+	if !(x4 && (x3 >= 48 && x3 <= 51)) && p.Depth <= p.MaxDepth {
+		p.ExpectOrdinary(p.Pos, 48)
 		goto L7
 	}
-	goto L3
-L7:
-	p.Restore(x1, x2)
-L6:
-	if !(x5 && (x4 >= 48 && x4 <= 51)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 48)
+	if !p.ClassesSkip(steps170) {
 		goto L8
 	}
-	if !p.ClassesSkip(steps170) {
-		goto L9
-	}
-	goto L3
-L9:
-	p.Restore(x1, x2)
+	goto L2
 L8:
-	if !(x5 && (x4 == 120 || x4 == 88)) && p.Depth <= p.MaxDepth {
+	p.Pos = x1
+L7:
+	if !(x4 && (x3 == 120 || x3 == 88)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 50)
-		goto L10
+		goto L9
 	}
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 120 || ch == 88) {
 		p.ExpectOrdinary(p.Pos, 50)
-		goto L11
+		goto L10
 	}
 	p.Pos += size
 	if _, ok = s59(p); !ok {
-		goto L11
+		goto L10
 	}
 	if _, ok = s59(p); !ok {
-		goto L11
+		goto L10
 	}
-	goto L3
-L11:
-	p.Restore(x1, x2)
+	goto L2
 L10:
+	p.Pos = x1
+L9:
 	goto fail
-L3:
+L2:
 	v = nil
 	p.Depth--
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
 
@@ -7759,12 +7327,11 @@ func s59(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		rec   int
 		ch    rune
 		size  int
 		ok    bool
 	)
-	start, rec = p.Pos, len(p.Recovered)
+	start = p.Pos
 	p.Enter()
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
@@ -7777,6 +7344,6 @@ func s59(p *pegort.TParser) (any, bool) {
 	return v, true
 fail:
 	p.Depth--
-	p.Restore(start, rec)
+	p.Pos = start
 	return nil, false
 }
