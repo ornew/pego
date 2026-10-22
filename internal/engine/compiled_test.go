@@ -67,7 +67,7 @@ func checkCompiledRoundTrip(t *testing.T, prog *Program, inputs []string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if data[len(compiledMagic)] != 2 || bare[len(compiledMagic)] != 3 {
+	if data[len(compiledMagic)] != compiledVersion || bare[len(compiledMagic)] != compiledVersion {
 		t.Fatalf("compiled versions: with AST %d, without AST %d", data[len(compiledMagic)], bare[len(compiledMagic)])
 	}
 	bareProg, _, err := LoadProgram(bare, Options{})

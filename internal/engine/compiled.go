@@ -17,23 +17,26 @@ import (
 //
 //	magic    "PEGOC\x00"
 //	version  1 byte (compiledVersion)
-//	payload  version 3: version 2 prefix, optional length-delimited recognition bundle, optional AST
-//	         version 2: instruction set version, string table, start rule, package name, module, AST (optional)
+//	payload  instruction set version, string table, start rule, package name, module,
+//	         optional length-delimited recognition bundle, optional length-delimited schema section,
+//	         optional AST
 //	crc32    CRC-32 of magic through payload (IEEE, 4 bytes little-endian)
 //
 // Integers are variable-length (signed ones zigzag-encoded), and strings are referenced by their
-// index in the string table. The version 2 string table starts with the module's string table,
-// followed by the AST strings and others. Recognition bundles have independent string tables. AST expressions and value expressions are written as
-// one byte for the kind followed by their elements in preorder. Rule definitions store the
-// results of static analysis (memoization, left-recursion leaders, position dependence, value-free
-// twins) follow the declarations as a list with one entry per rule of the program. The declarations
-// are those of the grammar as written: an inline action stays in its rule, and the hidden rule it
-// runs as is made again when the file is loaded, in the same position in the list. Loading skips
-// parsing, static analysis, type checking, and compilation to bytecode.
+// index in the string table. The module's string table comes first, followed by the AST strings and
+// others. Recognition bundles have independent string tables, and the schema section is JSON (see
+// compiled_schema.go). AST expressions and value expressions are written as one byte for the kind
+// followed by their elements in preorder. Rule definitions store the results of static analysis
+// (memoization, left-recursion leaders, position dependence, value-free twins) follow the
+// declarations as a list with one entry per rule of the program. The declarations are those of the
+// grammar as written: an inline action stays in its rule, and the hidden rule it runs as is made
+// again when the file is loaded, in the same position in the list. Loading skips parsing, static
+// analysis, type checking, and compilation to bytecode. A file has a schema section only without
+// the AST: a file with the AST derives its schema from the AST.
 
 const (
 	compiledMagic   = "PEGOC\x00"
-	compiledVersion = 3
+	compiledVersion = 4
 	// isaVersion is the instruction set of the value model, the only one supported. Earlier
 	// versions built the previous syntax trees, so their files are not loaded and need to be
 	// compiled again.
@@ -162,6 +165,9 @@ func (w *encoder) str(s string) {
 type MarshalOptions struct {
 	// OmitAST omits the grammar's AST. A file without it can only be run by the bytecode backend.
 	OmitAST bool
+	// Schema stores the output schema in a file without the AST, so that the loaded parser can
+	// export it. It is an error with the AST, which provides the schema.
+	Schema bool
 }
 
 // MarshalBinary encodes the compiled grammar as bytes. start is the start rule a loaded parser
@@ -182,12 +188,15 @@ func (prog *Program) MarshalBinaryWith(start string, o MarshalOptions) ([]byte, 
 	}
 	m := prog.Module()
 	withAST := prog.Grammar != nil && !o.OmitAST
+	if o.Schema && withAST {
+		return nil, errors.New("the output schema is stored only in a file without the AST; a file with the AST derives it from the AST")
+	}
 	var recognition *Program
 	if !withAST && (prog.Grammar != nil || prog.recognitionModule != nil) {
 		var err error
 		recognition, err = prog.recognizer()
 		if err != nil {
-			// Preserve the legacy writer's ability to serialize an already-compiled
+			// Preserve the writer's ability to serialize an already-compiled
 			// module whose AST has since been mutated into a forbidden stream-recovery
 			// shape. Such bytes remain invalid when loaded; don't let constructing an
 			// optional recognition bundle change that behavior.
@@ -196,10 +205,17 @@ func (prog *Program) MarshalBinaryWith(start string, o MarshalOptions) ([]byte, 
 			}
 		}
 	}
-	// Legacy AST-less files cannot acquire recognition without recompilation.
-	version := compiledVersion
-	if recognition == nil {
-		version = 2
+	var schema []byte
+	if !withAST {
+		// A loaded schema section is kept as it was loaded, so saving the file again keeps it.
+		if prog.storedSchema != nil {
+			schema = prog.storedSchema.raw
+		} else if o.Schema {
+			var err error
+			if schema, err = prog.encodeSchemaSection(); err != nil {
+				return nil, err
+			}
+		}
 	}
 	w := &encoder{strs: map[string]int{}, positions: prog.sourceInfo}
 	for i, s := range m.Strings { // put the module's string table first
@@ -213,22 +229,25 @@ func (prog *Program) MarshalBinaryWith(start string, o MarshalOptions) ([]byte, 
 	}
 	w.str(pkg)
 	w.module(m)
-	if version >= 3 {
-		w.bool(recognition != nil)
-		if recognition != nil {
-			var bundle []byte
-			if prog.recognitionModule == nil {
-				prog.recognitionBytesOnce.Do(func() {
-					prog.recognitionBytes = encodeRecognition(recognition)
-				})
-				bundle = prog.recognitionBytes
-			} else {
-				// A loaded module can be changed by its owner between saves.
-				bundle = encodeRecognition(recognition)
-			}
-			w.uint(len(bundle))
-			w.body.Write(bundle)
+	w.bool(recognition != nil)
+	if recognition != nil {
+		var bundle []byte
+		if prog.recognitionModule == nil {
+			prog.recognitionBytesOnce.Do(func() {
+				prog.recognitionBytes = encodeRecognition(recognition)
+			})
+			bundle = prog.recognitionBytes
+		} else {
+			// A loaded module can be changed by its owner between saves.
+			bundle = encodeRecognition(recognition)
 		}
+		w.uint(len(bundle))
+		w.body.Write(bundle)
+	}
+	w.bool(schema != nil)
+	if schema != nil {
+		w.uint(len(schema))
+		w.body.Write(schema)
 	}
 	w.bool(withAST)
 	if withAST {
@@ -236,7 +255,7 @@ func (prog *Program) MarshalBinaryWith(start string, o MarshalOptions) ([]byte, 
 	}
 	var out bytes.Buffer
 	out.WriteString(compiledMagic)
-	out.WriteByte(byte(version))
+	out.WriteByte(compiledVersion)
 	out.Write(binary.AppendUvarint(nil, uint64(m.instructionSetVersion())))
 	w.finish(&out)
 	return out.Bytes(), nil
@@ -701,8 +720,7 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	if len(data) < len(compiledMagic)+1+4 {
 		return nil, "", errors.New("invalid compiled grammar: too short")
 	}
-	v := data[len(compiledMagic)]
-	if v != 2 && v != compiledVersion {
+	if v := data[len(compiledMagic)]; v != compiledVersion {
 		return nil, "", fmt.Errorf("unsupported compiled grammar version %d (want %d)", v, compiledVersion)
 	}
 	body, sum := data[:len(data)-4], binary.LittleEndian.Uint32(data[len(data)-4:])
@@ -728,10 +746,18 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	}
 	var recognitionModule *Module
 	var entries []recognitionEntry
-	if v >= 3 && r.bool() {
+	if r.bool() {
 		n := r.count()
 		if r.err == nil {
 			recognitionModule, entries, r.err = decodeRecognition(r.data[r.pos:r.pos+n], m)
+			r.pos += n
+		}
+	}
+	var schema *storedSchema
+	if r.bool() {
+		n := r.count()
+		if r.err == nil {
+			schema, r.err = decodeSchemaSection(r.data[r.pos:r.pos+n], moduleStarts(m), moduleDefaultStart(m))
 			r.pos += n
 		}
 	}
@@ -774,6 +800,12 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 		prog.moduleOnce.Do(func() { prog.module = m })
 	}
 	prog.recognitionModule, prog.recognitionEntries = recognitionModule, entries
+	if schema != nil {
+		if prog.Grammar != nil {
+			return nil, "", errors.New("invalid compiled grammar: a schema section with the AST")
+		}
+		prog.storedSchema = schema
+	}
 	if start != "" {
 		if err := prog.CheckStart(start); err != nil {
 			return nil, "", fmt.Errorf("invalid compiled grammar: %w", err)

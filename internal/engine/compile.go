@@ -29,6 +29,13 @@ type Program struct {
 	twins           []*rule   // value-free twins (rule.twin); ids start at len(rules)
 	nseen           int       // number of rules with rule.seen set
 	typed           *typeInfo // types found by the type checker (nil if it did not run)
+	// storedSchema is the schema section of a compiled grammar without the AST (compiled_schema.go).
+	storedSchema *storedSchema
+	// schemaOnce guards schemaChecked and schemaErr: the checked program that a loaded grammar with
+	// the AST exports its schema from (schemaProgram).
+	schemaOnce    sync.Once
+	schemaChecked *Program
+	schemaErr     error
 	// projected holds the map calls of actions that read a projected repetition (project.go).
 	projected     map[*grammar.Call]bool
 	noProjections bool

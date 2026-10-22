@@ -13,9 +13,9 @@ import (
 	"github.com/ornew/pego/grammar"
 )
 
-// marshalV2NoRecognition creates the version 2 equivalent of an AST-less save.
-// It is a benchmark/test control for the v3 writer's optional recognition bundle.
-func marshalV2NoRecognition(prog *Program, start string) []byte {
+// marshalWithoutRecognition writes an AST-less file with neither a recognition bundle nor a schema
+// section, which is what a save without the bundle looks like.
+func marshalWithoutRecognition(prog *Program, start string) []byte {
 	m := prog.Module()
 	w := &encoder{strs: map[string]int{}}
 	for i, s := range m.Strings {
@@ -29,18 +29,20 @@ func marshalV2NoRecognition(prog *Program, start string) []byte {
 	}
 	w.str(pkg)
 	w.module(m)
+	w.bool(false) // no recognition bundle
+	w.bool(false) // no schema section
 	w.bool(false) // AST omitted
 	var out bytes.Buffer
 	out.WriteString(compiledMagic)
-	out.WriteByte(2)
+	out.WriteByte(compiledVersion)
 	out.Write(binary.AppendUvarint(nil, uint64(m.instructionSetVersion())))
 	w.finish(&out)
 	return out.Bytes()
 }
 
-// marshalV3WithAST reproduces files written before AST-bearing saves returned
-// to version 2. The loader must continue to accept their optional bundle.
-func marshalV3WithAST(prog *Program, start string, recognition *Program) []byte {
+// marshalASTWithBundle writes the AST together with a recognition bundle, a layout that
+// MarshalBinary never writes. The loader must drop the bundle when the file is saved again.
+func marshalASTWithBundle(prog *Program, start string, recognition *Program) []byte {
 	m := prog.Module()
 	w := &encoder{strs: map[string]int{}}
 	for i, s := range m.Strings {
@@ -54,6 +56,7 @@ func marshalV3WithAST(prog *Program, start string, recognition *Program) []byte 
 	bundle := encodeRecognition(recognition)
 	w.uint(len(bundle))
 	w.body.Write(bundle)
+	w.bool(false) // no schema section with the AST
 	w.bool(true)
 	w.statements(prog)
 	var out bytes.Buffer
@@ -64,19 +67,19 @@ func marshalV3WithAST(prog *Program, start string, recognition *Program) []byte 
 	return out.Bytes()
 }
 
-func TestCompiledRecognitionV3WithASTResavesAsV2(t *testing.T) {
+func TestCompiledRecognitionASTFileDropsBundle(t *testing.T) {
 	p := compile(t, `rule main = "a" $$`)
 	rec, err := p.recognizer()
 	if err != nil {
 		t.Fatal(err)
 	}
-	legacy := marshalV3WithAST(p, "main", rec)
-	loaded, start, err := LoadProgram(legacy, Options{})
+	stored := marshalASTWithBundle(p, "main", rec)
+	loaded, start, err := LoadProgram(stored, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if start != "main" || loaded.Grammar == nil || loaded.recognitionModule == nil {
-		t.Fatal("version 3 AST and recognition bundle were not loaded")
+		t.Fatal("AST and recognition bundle were not loaded")
 	}
 	got, err := loaded.MarshalBinary("main")
 	if err != nil {
@@ -86,12 +89,16 @@ func TestCompiledRecognitionV3WithASTResavesAsV2(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got[len(compiledMagic)] != 2 || !bytes.Equal(got, want) {
-		t.Fatal("AST-bearing version 3 file did not normalize to version 2")
+	if got[len(compiledMagic)] != compiledVersion || !bytes.Equal(got, want) {
+		t.Fatal("AST-bearing file with a bundle did not save without the bundle")
 	}
 	withoutAST, err := loaded.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-	if err != nil || withoutAST[len(compiledMagic)] != 3 {
+	if err != nil {
 		t.Fatalf("AST-less resave lost the recognition bundle: %v", err)
+	}
+	reloaded, _, err := LoadProgram(withoutAST, Options{})
+	if err != nil || reloaded.recognitionModule == nil {
+		t.Fatalf("AST-less resave has no recognition bundle: %v", err)
 	}
 }
 
@@ -104,7 +111,7 @@ func TestCompiledRecognitionRoundTrip(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if version := int(data[len(compiledMagic)]); version != map[bool]int{false: 2, true: 3}[omit] {
+				if version := int(data[len(compiledMagic)]); version != compiledVersion {
 					t.Fatalf("omitAST=%t compiled version=%d", omit, version)
 				}
 				loaded, _, err := LoadProgram(data, Options{})
@@ -133,18 +140,18 @@ func TestCompiledRecognitionRoundTrip(t *testing.T) {
 	}
 }
 
-func TestCompiledRecognitionLegacyCapability(t *testing.T) {
+func TestCompiledRecognitionWithoutBundle(t *testing.T) {
 	p := moduleProgram(compile(t, `rule main = "a"`).Module())
 	data, err := p.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if data[len(compiledMagic)] != 2 {
-		t.Fatal("legacy AST-less save gained a capability")
-	}
 	loaded, _, err := LoadProgram(data, Options{})
 	if err != nil {
 		t.Fatal(err)
+	}
+	if loaded.recognitionModule != nil {
+		t.Fatal("a save without a bundle gained a recognition bundle")
 	}
 	for _, backend := range []Backend{Default, Bytecode, BytecodeIterative} {
 		n, err := loaded.ParseWith("main", "a", ParseOptions{Backend: backend, Recognize: true})
@@ -158,7 +165,7 @@ func TestCompiledRecognitionLegacyCapability(t *testing.T) {
 	}
 }
 
-func TestCompiledRecognitionV2NoBundleBaseline(t *testing.T) {
+func TestCompiledRecognitionBundleBaseline(t *testing.T) {
 	p := compile(t, `rule main = first / second $$
 rule first = "a"
 rule second = "é"`)
@@ -166,31 +173,29 @@ rule second = "é"`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if withAST[len(compiledMagic)] != 2 || !bytes.Equal(withAST, marshalRecognitionV2(p, "main", false)) {
-		t.Fatal("AST-bearing save differs from version 2")
+	if withAST[len(compiledMagic)] != compiledVersion {
+		t.Fatalf("AST-bearing save has version %d", withAST[len(compiledMagic)])
 	}
 	if p.rec != nil {
 		t.Fatal("AST-bearing save built an unused recognizer")
 	}
-	v2Data := marshalV2NoRecognition(p, "main")
-	if v2Data[len(compiledMagic)] != 2 {
-		t.Fatal("baseline is not compiled format version 2")
-	}
-	v3Data, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
+	noBundleData := marshalWithoutRecognition(p, "main")
+	bundledData, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if v3Data[len(compiledMagic)] != 3 {
-		t.Fatal("recognition save is not compiled format version 3")
+	if bundledData[len(compiledMagic)] != compiledVersion {
+		t.Fatal("recognition save is not the current format")
 	}
-	v2, _, err := LoadProgram(v2Data, Options{})
+	noBundle, _, err := LoadProgram(noBundleData, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	v3, _, err := LoadProgram(v3Data, Options{})
+	bundled, _, err := LoadProgram(bundledData, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
+	v2, v3 := noBundle, bundled
 	for _, tc := range []struct {
 		input string
 		match bool
@@ -201,9 +206,9 @@ rule second = "é"`)
 				if got != nil || (gotErr == nil) != tc.match {
 					t.Fatalf("v3 recognition %v/%v %q: node=%v err=%v", backend, unit, tc.input, got, gotErr)
 				}
-				legacy, legacyErr := v2.ParseWith("main", tc.input, ParseOptions{Backend: backend, Unit: unit, Recognize: true})
-				if legacy != nil || legacyErr == nil || !strings.Contains(legacyErr.Error(), "recognition needs") {
-					t.Fatalf("v2 recognition %v/%v %q: node=%v err=%v", backend, unit, tc.input, legacy, legacyErr)
+				noRecognition, noRecognitionErr := v2.ParseWith("main", tc.input, ParseOptions{Backend: backend, Unit: unit, Recognize: true})
+				if noRecognition != nil || noRecognitionErr == nil || !strings.Contains(noRecognitionErr.Error(), "recognition needs") {
+					t.Fatalf("recognition without a bundle %v/%v %q: node=%v err=%v", backend, unit, tc.input, noRecognition, noRecognitionErr)
 				}
 				want, wantErr := p.ParseWith("main", tc.input, ParseOptions{Backend: backend, Unit: unit})
 				for _, loaded := range []*Program{v2, v3} {
@@ -226,7 +231,7 @@ func TestCompiledRecognitionASTSaveAfterClassMutation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if data[len(compiledMagic)] != 2 || p.rec != nil {
+	if p.rec != nil || data[len(compiledMagic)] != compiledVersion {
 		t.Fatal("AST-bearing save gained an unused recognition bundle")
 	}
 }

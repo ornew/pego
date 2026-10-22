@@ -111,8 +111,8 @@ rule unused = "z"`)
 			t.Fatalf("%s changed schema after parse", backend)
 		}
 	}
-	p.typed = nil
-	if _, err := p.OutputSchemaPrototype("main", false); !errors.Is(err, ErrSchemaUnavailable) {
+	// A program without the AST and without a stored schema has no metadata to export from.
+	if _, err := (&Program{}).OutputSchemaPrototype("main", false); !errors.Is(err, ErrSchemaUnavailable) {
 		t.Fatal(err)
 	}
 }

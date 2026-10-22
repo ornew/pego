@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"slices"
 	"sort"
 
@@ -118,13 +119,51 @@ func (s *OutputSchema) UnmarshalJSON(data []byte) error {
 
 // OutputSchemaPrototype exports the start rule, the rules it calls or whose values its values
 // contain, and the struct types they refer to; or every rule and type with allRules. It has no
-// effect on parsing or generation.
+// effect on parsing or generation. A program loaded without the AST exports the schema section it
+// was saved with; a program loaded with the AST exports the schema checked from its grammar.
 func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSchema, error) {
-	if p == nil || p.Grammar == nil || p.typed == nil {
+	if p == nil {
 		return nil, ErrSchemaUnavailable
 	}
 	if err := EntryError(start); err != nil {
 		return nil, err
+	}
+	if p.storedSchema != nil {
+		return p.storedSchema.export(start, allRules)
+	}
+	checked, err := p.schemaProgram()
+	if err != nil {
+		return nil, err
+	}
+	return checked.exportSchema(start, allRules)
+}
+
+// schemaProgram returns the checked program that a schema is exported from: p itself when it was
+// checked, or, for a program loaded with the AST (which is not type checked on load), the program
+// built from its grammar on first use. The grammar is checked the way Compile checks it, with the
+// options that the file records.
+func (p *Program) schemaProgram() (*Program, error) {
+	if p.typed != nil {
+		return p, nil
+	}
+	if p.Grammar == nil {
+		return nil, errSchemaOmitted
+	}
+	p.schemaOnce.Do(func() {
+		checked, err := build(p.SourceGrammar(), Options{SourceInfo: p.sourceInfo, DefaultValue: p.defaultValue}, nil)
+		if err != nil {
+			p.schemaErr = fmt.Errorf("schema of the compiled grammar: %w", err)
+			return
+		}
+		p.schemaChecked = checked
+	})
+	return p.schemaChecked, p.schemaErr
+}
+
+// exportSchema exports the schema of a checked program; see OutputSchemaPrototype.
+func (p *Program) exportSchema(start string, allRules bool) (*OutputSchema, error) {
+	if p.Grammar == nil || p.typed == nil {
+		return nil, ErrSchemaUnavailable
 	}
 	if p.byName[start] == nil {
 		return nil, fmt.Errorf("unknown schema start rule %q", start)
@@ -315,6 +354,9 @@ func schemaValue(t ty) (SchemaShape, error) {
 			return SchemaShape{}, err
 		}
 		s := SchemaShape{Kind: "node", Value: &v}
+		// A name captured in several places (an alternative, or a lookahead beside the tuple)
+		// has one entry: its locations are the union of the places, and its shapes are joined.
+		index := map[string]int{}
 		for _, c := range t.caps {
 			cs, err := schemaValue(c.t)
 			if err != nil {
@@ -324,7 +366,15 @@ func schemaValue(t ty) (SchemaShape, error) {
 			for _, path := range c.paths {
 				paths = append(paths, append([]int{}, path...))
 			}
+			if i, ok := index[c.name]; ok {
+				capture := &s.Captures[i]
+				capture.Paths = mergeCapturePaths(capture.Paths, paths)
+				capture.Side = capture.Side || c.side
+				capture.Shape = joinSchemaShapes(capture.Shape, cs)
+				continue
+			}
 			sort.Slice(paths, func(i, j int) bool { return slices.Compare(paths[i], paths[j]) < 0 })
+			index[c.name] = len(s.Captures)
 			s.Captures = append(s.Captures, SchemaCapture{Name: c.name, Paths: paths, Side: c.side, Shape: cs})
 		}
 		return s, nil
@@ -367,4 +417,21 @@ func sortSchemaAlternatives(alts []SchemaShape) {
 		b, _ := json.Marshal(alts[j])
 		return string(a) < string(b)
 	})
+}
+
+// mergeCapturePaths returns the sorted union of two sets of capture paths, without duplicates.
+func mergeCapturePaths(a, b [][]int) [][]int {
+	out := append(append([][]int{}, a...), b...)
+	sort.Slice(out, func(i, j int) bool { return slices.Compare(out[i], out[j]) < 0 })
+	return slices.CompactFunc(out, func(x, y []int) bool { return slices.Equal(x, y) })
+}
+
+// joinSchemaShapes returns the shape of values that are either a or b. Equal shapes stay as they are.
+func joinSchemaShapes(a, b SchemaShape) SchemaShape {
+	if reflect.DeepEqual(a, b) {
+		return a
+	}
+	alts := []SchemaShape{a, b}
+	sortSchemaAlternatives(alts)
+	return SchemaShape{Kind: "join", Alternatives: alts}
 }

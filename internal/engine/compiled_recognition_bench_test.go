@@ -15,33 +15,12 @@ var compiledRecognitionSaveSink []byte
 var compiledRecognitionParseNodeSink *Node
 var compiledRecognitionParseErrorSink error
 
-// marshalRecognitionV2 is the AST-bearing or AST-less v2 control writer used
-// to compare v3's recognition bundle without changing production semantics.
-func marshalRecognitionV2(prog *Program, start string, omitAST bool) []byte {
-	m := prog.Module()
-	w := &encoder{strs: map[string]int{}}
-	for i, s := range m.Strings {
-		w.strs[s] = i
-		w.list = append(w.list, s)
+// mustMarshal returns the bytes of a save that cannot fail in a benchmark.
+func mustMarshal(data []byte, err error) []byte {
+	if err != nil {
+		panic(err)
 	}
-	w.str(start)
-	pkg := prog.pkg
-	if prog.Grammar != nil {
-		pkg = prog.Grammar.File.Pkg.Name
-	}
-	w.str(pkg)
-	w.module(m)
-	withAST := prog.Grammar != nil && !omitAST
-	w.bool(withAST)
-	if withAST {
-		w.statements(prog)
-	}
-	var out bytes.Buffer
-	out.WriteString(compiledMagic)
-	out.WriteByte(2)
-	out.Write(binary.AppendUvarint(nil, uint64(m.instructionSetVersion())))
-	w.finish(&out)
-	return out.Bytes()
+	return data
 }
 
 // marshalRecognitionV3AST writes the rejected AST-bearing version 3 layout:
@@ -68,11 +47,12 @@ func marshalRecognitionV3AST(prog *Program, start string) ([]byte, error) {
 	w.bool(true)
 	w.uint(len(prog.recognitionBytes))
 	w.body.Write(prog.recognitionBytes)
+	w.bool(false) // no schema section with the AST
 	w.bool(true)
 	w.statements(prog)
 	var out bytes.Buffer
 	out.WriteString(compiledMagic)
-	out.WriteByte(3)
+	out.WriteByte(compiledVersion)
 	out.Write(binary.AppendUvarint(nil, uint64(m.instructionSetVersion())))
 	w.finish(&out)
 	return out.Bytes(), nil
@@ -107,7 +87,7 @@ func BenchmarkCompiledRecognitionSerialization(b *testing.B) {
 	for _, ruleCount := range []int{16, 128} {
 		b.Run(fmt.Sprintf("Rules%d", ruleCount), func(b *testing.B) {
 			g, p := compiledRecognitionBenchmarkGrammar(b, ruleCount)
-			v2 := marshalRecognitionV2(p, "main", true)
+			v2 := marshalWithoutRecognition(p, "main")
 			v3, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
 			if err != nil {
 				b.Fatal(err)
@@ -122,7 +102,7 @@ func BenchmarkCompiledRecognitionSerialization(b *testing.B) {
 				name string
 				data []byte
 				v3   bool
-			}{{"v2-no-bundle", v2, false}, {"v3-bundle", v3, true}} {
+			}{{"no-bundle", v2, false}, {"bundle", v3, true}} {
 				b.Run("SerializeCached/"+tc.name, func(b *testing.B) {
 					b.ReportAllocs()
 					for b.Loop() {
@@ -131,7 +111,7 @@ func BenchmarkCompiledRecognitionSerialization(b *testing.B) {
 						if tc.v3 {
 							data, err = p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
 						} else {
-							data = marshalRecognitionV2(p, "main", true)
+							data = marshalWithoutRecognition(p, "main")
 						}
 						if err != nil {
 							b.Fatal(err)
@@ -151,7 +131,7 @@ func BenchmarkCompiledRecognitionSerialization(b *testing.B) {
 						if tc.v3 {
 							data, err = fresh.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
 						} else {
-							data = marshalRecognitionV2(fresh, "main", true)
+							data = marshalWithoutRecognition(fresh, "main")
 						}
 						if err != nil {
 							b.Fatal(err)
@@ -162,7 +142,7 @@ func BenchmarkCompiledRecognitionSerialization(b *testing.B) {
 				})
 			}
 
-			b.Run("Load/v2-no-bundle", func(b *testing.B) {
+			b.Run("Load/no-bundle", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
 					loaded, _, err := LoadProgram(v2, Options{})
@@ -173,7 +153,7 @@ func BenchmarkCompiledRecognitionSerialization(b *testing.B) {
 				}
 				b.ReportMetric(float64(len(v2)), "B/file")
 			})
-			b.Run("Load/v3-bundle", func(b *testing.B) {
+			b.Run("Load/bundle", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
 					loaded, _, err := LoadProgram(v3, Options{})
@@ -202,13 +182,13 @@ func BenchmarkCompiledRecognitionASTBearing(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			v2Data := marshalRecognitionV2(v2Program, "main", false)
+			v2Data := mustMarshal(v2Program.MarshalBinary("main"))
 			v3Data, err := marshalRecognitionV3AST(v3Program, "main")
 			if err != nil {
 				b.Fatal(err)
 			}
-			if v2Data[len(compiledMagic)] != 2 || v3Data[len(compiledMagic)] != 3 {
-				b.Fatalf("unexpected format versions: v2=%d v3=%d", v2Data[len(compiledMagic)], v3Data[len(compiledMagic)])
+			if v2Data[len(compiledMagic)] != compiledVersion || v3Data[len(compiledMagic)] != compiledVersion {
+				b.Fatalf("unexpected format versions: %d and %d", v2Data[len(compiledMagic)], v3Data[len(compiledMagic)])
 			}
 			v2Loaded, _, err := LoadProgram(v2Data, Options{})
 			if err != nil {
@@ -225,7 +205,7 @@ func BenchmarkCompiledRecognitionASTBearing(b *testing.B) {
 			for _, backend := range []Backend{Default, Bytecode} {
 				for _, tc := range inputs {
 					want, wantErr := source.ParseWith("main", tc.input, ParseOptions{Backend: backend})
-					for name, loaded := range map[string]*Program{"v2": v2Loaded, "v3": v3Loaded} {
+					for name, loaded := range map[string]*Program{"no-bundle": v2Loaded, "bundle": v3Loaded} {
 						got, gotErr := loaded.ParseWith("main", tc.input, ParseOptions{Backend: backend})
 						if resultJSON(got, gotErr) != resultJSON(want, wantErr) {
 							b.Fatalf("%s fixture differs for %v/%s: got %s want %s", name, backend, tc.name, resultJSON(got, gotErr), resultJSON(want, wantErr))
@@ -238,7 +218,7 @@ func BenchmarkCompiledRecognitionASTBearing(b *testing.B) {
 				name string
 				data []byte
 				v3   bool
-			}{{"v2-ast", v2Data, false}, {"v3-ast", v3Data, true}} {
+			}{{"ast-no-bundle", v2Data, false}, {"ast-bundle", v3Data, true}} {
 				b.Run("SerializeCached/"+tc.name, func(b *testing.B) {
 					b.ReportAllocs()
 					for b.Loop() {
@@ -247,7 +227,7 @@ func BenchmarkCompiledRecognitionASTBearing(b *testing.B) {
 						if tc.v3 {
 							data, err = marshalRecognitionV3AST(v3Program, "main")
 						} else {
-							data = marshalRecognitionV2(v2Program, "main", false)
+							data = mustMarshal(v2Program.MarshalBinary("main"))
 						}
 						if err != nil {
 							b.Fatal(err)
@@ -272,7 +252,7 @@ func BenchmarkCompiledRecognitionASTBearing(b *testing.B) {
 						if tc.v3 {
 							data, err = marshalRecognitionV3AST(fresh, "main")
 						} else {
-							data = marshalRecognitionV2(fresh, "main", false)
+							data = mustMarshal(fresh.MarshalBinary("main"))
 						}
 						if err != nil {
 							b.Fatal(err)
@@ -283,7 +263,7 @@ func BenchmarkCompiledRecognitionASTBearing(b *testing.B) {
 				})
 			}
 
-			b.Run("Load/v2-ast", func(b *testing.B) {
+			b.Run("Load/ast-no-bundle", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
 					loaded, _, err := LoadProgram(v2Data, Options{})
@@ -294,7 +274,7 @@ func BenchmarkCompiledRecognitionASTBearing(b *testing.B) {
 				}
 				b.ReportMetric(float64(len(v2Data)), "B/file")
 			})
-			b.Run("Load/v3-ast", func(b *testing.B) {
+			b.Run("Load/ast-bundle", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
 					loaded, _, err := LoadProgram(v3Data, Options{})
@@ -314,7 +294,7 @@ func BenchmarkCompiledRecognitionASTBearing(b *testing.B) {
 					for _, fixture := range []struct {
 						name string
 						prog *Program
-					}{{"v2-ast", v2Loaded}, {"v3-ast", v3Loaded}} {
+					}{{"ast-no-bundle", v2Loaded}, {"ast-bundle", v3Loaded}} {
 						// Run one identical parse before timing to warm each loaded program's
 						// backend and scratch pools outside the measured loop.
 						if _, err := fixture.prog.ParseWith("main", input.input, ParseOptions{Backend: backend.kind}); err != nil && input.name == "last-rule-match" {
