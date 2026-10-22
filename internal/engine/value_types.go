@@ -575,7 +575,7 @@ func (v *valueInference) predicates(e grammar.Expr, env *valueEnv) {
 // tuple; otherwise its one element is its value, and a scope without elements is node[()].
 func (v *valueInference) scopeValue(e grammar.Expr) ty {
 	elems := v.elems(e)
-	seq := isSeq(v.prog, e)
+	seq := v.isSeq(e)
 	if !seq && len(elems) == 1 && len(elems[0].caps) == 0 {
 		return elems[0].t
 	}
@@ -613,7 +613,7 @@ func tupleNode(elems []valueElem) nodeTy {
 // the result then holds the captures kept beside the tuple in e. The captures of the result may be
 // changed without changing its type.
 func (v *valueInference) single(e grammar.Expr) (valueElem, bool) {
-	return oneElem(v.elems(e), isSeq(v.prog, e))
+	return oneElem(v.elems(e), v.isSeq(e))
 }
 
 func oneElem(elems []valueElem, seq bool) (valueElem, bool) {
@@ -636,6 +636,30 @@ func oneElem(elems []valueElem, seq bool) (valueElem, bool) {
 	}
 	n := tupleNode(elems)
 	return valueElem{t: n, caps: slices.Clone(n.caps)}, true
+}
+
+// isSeq is isSeq (value_shape.go) for the elements elems returns: a call of a splice rule whose
+// body is being expanded is one element, the rule's own node, not the sequence of its body.
+func (v *valueInference) isSeq(e grammar.Expr) bool {
+	var seen map[string]bool
+	for {
+		switch x := ungroupExpr(e).(type) {
+		case *grammar.Seq:
+			return true
+		case *grammar.Ref:
+			body, ok := v.prog.spliceBody(x.Name)
+			if !ok || v.spliced[x.Name] || seen[x.Name] {
+				return false
+			}
+			if seen == nil {
+				seen = map[string]bool{}
+			}
+			seen[x.Name] = true
+			e = body
+		default:
+			return false
+		}
+	}
 }
 
 // elems returns the elements e contributes to the tuple of its scope.
@@ -727,7 +751,7 @@ func (v *valueInference) elems(e grammar.Expr) []valueElem {
 			}
 			// What recovers is one element: its value or an error, which #missing makes a missing
 			// token.
-			el, ok := oneElem(elems, isSeq(v.prog, e.Expr))
+			el, ok := oneElem(elems, v.isSeq(e.Expr))
 			switch {
 			case neverMatches(e.Expr):
 				el = valueElem{t: tyBottom} // only the error

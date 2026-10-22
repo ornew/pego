@@ -1,0 +1,3 @@
+type R = { T string }
+rule main = x:_t "!" => R{T: text($x)}
+rule _t = "(" _t? ")"

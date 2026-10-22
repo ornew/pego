@@ -1,0 +1,2 @@
+rule main = _t
+rule _t = "x" / "(" _t ")"
