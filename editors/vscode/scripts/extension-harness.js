@@ -33,7 +33,7 @@ function loadExtension(plans = [], options = {}) {
   const h = {
     settings: { 'server.enabled': true, 'server.path': '/pego' },
     commands: {}, events: [], clients: [], running: new Set(), resources: new Set(),
-    created: 0, maxRunning: 0, information: [], applied: [], appliedVersions: [],
+    created: 0, maxRunning: 0, information: [], applied: [], appliedVersions: [], requests: [],
   };
   const record = (event) => { if (options.record !== false) h.events.push(event); };
   const vscode = {
@@ -90,6 +90,11 @@ function loadExtension(plans = [], options = {}) {
       record(`new ${id} ${server.command} ${server.args.join(' ')}`);
     }
     registerFeature(feature) { this.features.push(feature); }
+    // Answers codeAction/resolve like the server: h.resolveReply(params) returns the reply or a promise of it.
+    sendRequest(method, params) {
+      h.requests.push([method, params]);
+      return Promise.resolve(h.resolveReply ? h.resolveReply(params) : undefined);
+    }
     async start() {
       for (const feature of this.features) feature.fillClientCapabilities?.(this.capabilities);
       this.calls.start++;

@@ -4,7 +4,7 @@
 
 const { randomUUID } = require('node:crypto');
 
-function createLintActions(vscode, enabled, isCurrentClient) {
+function createLintActions(vscode, enabled, isCurrentClient, resolveRequest) {
   const latest = new Map();
   const session = randomUUID();
   const uriText = (uri) => uri.toString();
@@ -59,8 +59,9 @@ function createLintActions(vscode, enabled, isCurrentClient) {
       !old.includes('lint:file-ignore'),
   };
   const fixCheck = (check) => typeof check === 'string' && Object.hasOwn(fixShapes, check) ? check : undefined;
-  const validRange = (r) => r && r.start && r.end &&
-    [r.start.line, r.start.character, r.end.line, r.end.character].every((n) => Number.isSafeInteger(n) && n >= 0) &&
+  const validPositions = (r) => r && r.start && r.end &&
+    [r.start.line, r.start.character, r.end.line, r.end.character].every((n) => Number.isSafeInteger(n) && n >= 0);
+  const validRange = (r) => validPositions(r) &&
     (r.end.line > r.start.line || r.end.line === r.start.line && r.end.character > r.start.character);
   const fixTarget = (edit, uri, findings, document) => {
     if (findings.length !== 1 || typeof edit.entries !== 'function' || typeof document.getText !== 'function') return undefined;
@@ -74,6 +75,32 @@ function createLintActions(vscode, enabled, isCurrentClient) {
     const old = document.getText(range);
     if (typeof old !== 'string' || !fixShapes[check](old, newText)) return undefined;
     return { check, range: [range.start.line, range.start.character, range.end.line, range.end.character], text: newText };
+  };
+  // The data of an action that the server lists without its edit: the finding it is for, as the
+  // server numbered it for this document version, and which edit to compute.
+  const lazyAction = (data, finding, uri, findings, title) => {
+    if (typeof title !== 'string' || title === '' || title.length > 300 || !data || typeof data !== 'object' || findings.length !== 1 || data.uri !== uri ||
+        data.version !== finding.version || data.generation !== finding.generation ||
+        data.key !== finding.key || (data.action !== 'suppress' && data.action !== 'fix')) return undefined;
+    const check = checkOfKey(data.key), code = findings[0].code;
+    if (!check || check !== (code && typeof code === 'object' ? code.value : code)) return undefined;
+    if (data.action === 'fix' && !fixCheck(check)) return undefined;
+    return { action: data.action, key: data.key, title };
+  };
+  const checkOfKey = (key) => {
+    const match = typeof key === 'string' ? /^[0-9]+:([a-z][a-z0-9-]{0,99})$/.exec(key) : null;
+    return match ? match[1] : undefined;
+  };
+  // The one edit of a resolved action, as the server sent it: versioned for the analyzed document
+  // version, in the analyzed document, and a single text edit.
+  const resolvedEdit = (reply, guard) => {
+    const changes = reply && reply.edit && reply.edit.documentChanges;
+    if (!Array.isArray(changes) || changes.length !== 1) return undefined;
+    const [change] = changes, id = change && change.textDocument;
+    if (!id || id.uri !== guard.uri || id.version !== guard.version ||
+        !Array.isArray(change.edits) || change.edits.length !== 1) return undefined;
+    const [edit] = change.edits;
+    return edit && typeof edit.newText === 'string' && validPositions(edit.range) ? edit : undefined;
   };
   const feature = {
     fillClientCapabilities(capabilities) {
@@ -89,6 +116,12 @@ function createLintActions(vscode, enabled, isCurrentClient) {
     clear() { latest.clear(); },
   };
   const middleware = {
+    // Resolving happens in applyResolved, where the edit is checked; the editor's own resolve
+    // of an action of this extension would only compute the edit twice.
+    resolveCodeAction(item, token, next) {
+      const lazy = item && item.command && item.command.command === 'pego.applyLintAction';
+      return lazy ? item : next(item, token);
+    },
     handleDiagnostics(uri, diagnostics, next) {
       if (enabled) {
         const key = uriText(uri);
@@ -119,7 +152,14 @@ function createLintActions(vscode, enabled, isCurrentClient) {
         if (data.some((d) => !d || d.uri !== uri || d.version !== version || !findingCurrent(d))) return [];
         const guard = { uri, version, generation: data[0].generation, session };
         if (data.some((d) => d.generation !== guard.generation)) return [];
-        if (action.command) {
+        if (!action.command && !action.edit && action.data !== undefined) {
+          // The server lists the action without its edit and computes it when asked. Run it
+          // through a command, so that the edit is asked for, checked against the document
+          // and applied in one guarded step (see applyResolved).
+          const spec = lazyAction(action.data, data[0], uri, findings, action.title);
+          if (!spec) return [];
+          action.command = { title: action.title, command: 'pego.applyLintAction', arguments: [spec, guard] };
+        } else if (action.command) {
           if (action.command.command !== 'pego.showExplanation' || action.edit ||
               !Array.isArray(action.command.arguments) || action.command.arguments.length !== 3) return [];
           action.command = { ...action.command, arguments: [...(action.command.arguments || []), guard] };
@@ -172,6 +212,33 @@ function createLintActions(vscode, enabled, isCurrentClient) {
       const edit = new vscode.WorkspaceEdit();
       edit.insert(document.uri, new vscode.Position(line, 0), text);
       return Promise.resolve(vscode.workspace.applyEdit(edit)).then((applied) => applied === true);
+    },
+    // Asks the server for the edit of a listed action, then applies it only if the document is
+    // still at the analyzed version once the answer is in. The check and the call of
+    // workspace.applyEdit (through applySuppression or applyFix) are one synchronous step.
+    async applyResolved(spec, guard) {
+      if (!active() || !guardCurrent(guard) || !spec || typeof resolveRequest !== 'function') return false;
+      const check = checkOfKey(spec.key);
+      if (!check || (spec.action !== 'suppress' && spec.action !== 'fix') || (spec.action === 'fix' && !fixCheck(check))) return false;
+      if (typeof spec.title !== 'string' || spec.title === '' || spec.title.length > 300) return false;
+      let reply;
+      try {
+        reply = await resolveRequest({
+          title: spec.title, kind: 'quickfix',
+          data: { uri: guard.uri, version: guard.version, generation: guard.generation, key: spec.key, action: spec.action },
+        });
+      } catch (error) {
+        return false;
+      }
+      if (!guardCurrent(guard)) return false;
+      const edit = resolvedEdit(reply, guard);
+      if (!edit) return false;
+      const { start, end } = edit.range;
+      if (spec.action === 'suppress') {
+        if (start.character !== 0 || end.line !== start.line || end.character !== 0 || !suppressionText(check, edit.newText)) return false;
+        return this.applySuppression(start.line, edit.newText, guard);
+      }
+      return this.applyFix(check, [start.line, start.character, end.line, end.character], edit.newText, guard);
     },
     // Applies a fix under the same synchronous version check as a suppression
     // (see applySuppression), after judging the text it replaces once more.

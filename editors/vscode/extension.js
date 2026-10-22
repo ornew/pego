@@ -85,7 +85,8 @@ async function start() {
   const output = vscode.window.createOutputChannel('PEGO Language Server', { log: true });
   let c;
   const lintActions = createLintActions(vscode, config.get('server.experimentalLint', false),
-    () => active && !!c && client === c && c.state === State.Running);
+    () => active && !!c && client === c && c.state === State.Running,
+    (params) => c.sendRequest('codeAction/resolve', params));
   try {
     c = new PegoLanguageClient(
       'pego', // the prefix of the pego.trace.server setting
@@ -157,6 +158,7 @@ async function activate(context) {
     vscode.commands.registerCommand('pego.restartServer', restart),
     vscode.commands.registerCommand('pego.showExplanation', (...args) => clientLintActions?.showExplanation(...args) || false),
     vscode.commands.registerCommand('pego.applyLintSuppression', (...args) => clientLintActions?.applySuppression(...args) || false),
+    vscode.commands.registerCommand('pego.applyLintAction', (...args) => clientLintActions?.applyResolved(...args) || false),
     vscode.commands.registerCommand('pego.applyLintFix', (...args) => clientLintActions?.applyFix(...args) || false),
     vscode.workspace.onDidCloseTextDocument((document) => clientLintActions?.closeDocument(document)),
     vscode.workspace.onDidChangeConfiguration((e) => {

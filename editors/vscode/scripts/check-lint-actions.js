@@ -255,6 +255,114 @@ async function main() {
     assert.equal(await execute(h, action), false, 'same-version publication advances generation');
     assert.equal(h.applied.length, applied + 1);
   });
+  await using(true, async (h) => {
+    // Actions that the server lists without an edit are resolved when they run.
+    const d = document(); h.workspace.textDocuments = [d]; publish(h, [fixDiagnostic('char-class')]);
+    h.mainVersion = () => d.version;
+    const lazy = (code, action, over = {}) => ({
+      title: action === 'fix' ? 'Fix ' + code : 'Suppress ' + code + ' on this finding line',
+      diagnostics: [fixDiagnostic(code)],
+      data: { uri: uri.toString(), version: 1, generation: 1, key: '0:' + code, action, ...over },
+    });
+    const classRange = range(1, 12, 1, 20);
+    const reply = (version, edits, docUri = uri.toString()) => ({ edit: { documentChanges: [{ textDocument: { uri: docUri, version }, edits }] } });
+    const fixReply = (text = '[a-z]', r = classRange, version = 1) => reply(version, [{ range: r, newText: text }]);
+    const suppressReply = (text = '// lint:ignore char-class\n', line = 1) =>
+      reply(1, [{ range: range(line, 0, line, 0), newText: text }]);
+    const [fixAction] = await actions(h, d, () => [lazy('char-class', 'fix')]);
+    const [suppressAction] = await actions(h, d, () => [lazy('char-class', 'suppress')]);
+    for (const a of [fixAction, suppressAction]) {
+      assert.equal(a.edit, undefined);
+      assert.equal(a.command.command, 'pego.applyLintAction');
+      assert.equal(a.command.arguments[1].version, 1);
+    }
+    assert.equal(h.requests.length, 0, 'listing asks the server for nothing');
+    const middleware = h.clients.at(-1).clientOptions.middleware;
+    assert.equal(middleware.resolveCodeAction(fixAction, token(), () => assert.fail('the editor resolve is not forwarded')), fixAction);
+    assert.equal(middleware.resolveCodeAction({ title: 'other' }, token(), () => 'forwarded'), 'forwarded');
+    // A fix: asked for, checked and applied in one step after the answer.
+    h.resolveReply = () => fixReply();
+    assert.equal(await execute(h, fixAction), true);
+    assert.equal(h.requests.length, 1);
+    assert.deepEqual(h.requests[0][1], { title: fixAction.title, kind: 'quickfix',
+      data: { uri: uri.toString(), version: 1, generation: 1, key: '0:char-class', action: 'fix' } });
+    assert.equal(h.applied.length, 1);
+    assert.deepEqual(h.appliedVersions.at(-1), [1]);
+    h.resolveReply = () => suppressReply();
+    assert.equal(await execute(h, suppressAction), true);
+    assert.equal(h.applied.length, 2);
+    // A document that changed while the server computed the edit gets nothing.
+    const gate = deferred();
+    h.resolveReply = () => gate.promise;
+    const pending = execute(h, fixAction);
+    d.version = 2; gate.resolve(fixReply());
+    assert.equal(await pending, false, 'the document changed during the request');
+    d.version = 1;
+    // An answer that is not exactly the one edit asked for is refused.
+    const refused = [
+      ['no edit', {}],
+      ['stamped for another version', fixReply('[a-z]', classRange, 2)],
+      ['for another document', reply(1, [{ range: classRange, newText: '[a-z]' }], 'file:///other.pego')],
+      ['two edits', reply(1, [{ range: classRange, newText: '[a-z]' }, { range: classRange, newText: '[a-z]' }])],
+      ['two documents', { edit: { documentChanges: [...fixReply().edit.documentChanges, ...fixReply().edit.documentChanges] } }],
+      ['changes without versions', { edit: { changes: { [uri.toString()]: [{ range: classRange, newText: '[a-z]' }] } } }],
+      ['not a class', fixReply('rule y = "z"')],
+      ['over text that is not a class', fixReply('[a-z]', range(1, 0, 1, 10))],
+      ['empty range', fixReply('[a-z]', range(1, 12, 1, 12))],
+      ['malformed range', reply(1, [{ newText: '[a-z]' }])],
+    ];
+    for (const [name, answer] of refused) {
+      h.resolveReply = () => answer;
+      assert.equal(await execute(h, fixAction), false, name);
+    }
+    const unsafeSuppression = [
+      ['another directive', suppressReply('// lint:ignore shadowed-alternative\n')],
+      ['mid-line', reply(1, [{ range: range(1, 3, 1, 3), newText: '// lint:ignore char-class\n' }])],
+      ['spanning', reply(1, [{ range: range(1, 0, 2, 0), newText: '// lint:ignore char-class\n' }])],
+    ];
+    for (const [name, answer] of unsafeSuppression) {
+      h.resolveReply = () => answer;
+      assert.equal(await execute(h, suppressAction), false, name);
+    }
+    h.resolveReply = () => { throw new Error('server failed'); };
+    assert.equal(await execute(h, fixAction), false, 'a failed request applies nothing');
+    h.resolveReply = () => Promise.reject(new Error('server failed'));
+    assert.equal(await execute(h, fixAction), false, 'a rejected request applies nothing');
+    assert.equal(h.applied.length, 2, 'refused answers never reach the editor');
+    // The main thread refuses an edit stamped with an older version.
+    h.resolveReply = () => fixReply();
+    h.mainVersion = () => 2;
+    assert.equal(await execute(h, fixAction), false);
+    assert.equal(h.applied.length, 3);
+    h.mainVersion = () => d.version;
+    // Forged commands: not asked for, nothing applied.
+    const before = h.requests.length;
+    const [spec, guard] = fixAction.command.arguments;
+    for (const forged of [
+      [{ ...spec, action: 'delete' }, guard], [{ ...spec, key: 'x' }, guard], [{ ...spec, key: '0:unused-capture' }, guard],
+      [{ ...spec, title: '' }, guard], [spec, { ...guard, session: 'x' }], [spec, { ...guard, version: 2 }], [undefined, guard], [spec, undefined],
+    ]) {
+      assert.equal(await h.commands['pego.applyLintAction'](...forged), false, JSON.stringify(forged));
+    }
+    assert.equal(h.requests.length, before, 'forged commands ask nothing');
+    // Data that does not match the finding is not listed.
+    for (const over of [{ uri: 'file:///other.pego' }, { version: 2 }, { generation: 2 }, { key: '1:char-class' }, { action: 'delete' }, { key: '0:unused-capture' }]) {
+      assert.deepEqual(await actions(h, d, () => [lazy('char-class', 'fix', over)]), [], JSON.stringify(over));
+    }
+    assert.deepEqual(await actions(h, d, () => [lazy('unused-capture', 'fix')]), [], 'a check without a fix');
+    // A new publication invalidates a listed action.
+    publish(h, [fixDiagnostic('char-class', 1, 2)]);
+    h.resolveReply = () => fixReply();
+    assert.equal(await execute(h, fixAction), false, 'same-version publication advances generation');
+    assert.equal(h.requests.length, before, 'a stale action asks nothing');
+  });
+  await using(false, async (h) => {
+    const d = document(); h.workspace.textDocuments = [d];
+    const lazy = { title: 'Fix', diagnostics: [fixDiagnostic('char-class')], data: { uri: uri.toString(), version: 1, generation: 1, key: '0:char-class', action: 'fix' } };
+    assert.deepEqual(await actions(h, d, () => [lazy]), [], 'disabled middleware drops lazy lint actions');
+    assert.equal(await h.commands['pego.applyLintAction']({ action: 'fix', key: '0:char-class', title: 'Fix' }, {}), false);
+    assert.equal(h.requests.length, 0);
+  });
   await using(false, async (h) => {
     const d = document(); h.workspace.textDocuments = [d];
     const disabled = [fix('char-class', range(1, 12, 1, 20), '[a-z]')];
