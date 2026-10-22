@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"testing"
 
@@ -65,7 +66,30 @@ func jsonLeaves(v any, out *[]string) {
 		if e, ok := v["Value"]; ok {
 			jsonLeaves(e, out)
 		}
+		// The fields of a struct have names; they follow.
+		var fields []string
+		for k := range v {
+			if k != "Value" && k != "Start" && k != "End" && !tupleKey.MatchString(k) {
+				fields = append(fields, k)
+			}
+		}
+		sort.Strings(fields)
+		for _, k := range fields {
+			jsonLeaves(v[k], out)
+		}
 	}
+}
+
+var tupleKey = regexp.MustCompile(`^E\d+$`)
+
+// spliceWantLeaves returns the strings the typed value of a grammar must hold given the tokens of
+// the node tree. Most keep every token, in order; the grammar with an action holds the text of the
+// part it captured, which is the input without the "!" that follows it.
+func spliceWantLeaves(name, input string, tokens []string) []string {
+	if name == "splice_recursive_capture_action" {
+		return []string{strings.TrimSuffix(input, "!")}
+	}
+	return tokens
 }
 
 // A hidden rule that calls itself where it takes one element has the node of the call as the
@@ -134,13 +158,14 @@ func TestGeneratedRecursiveSpliceTypesKeepTheTree(t *testing.T) {
 			if row[2] != row[3] {
 				t.Errorf("%s %q: Parse failed %s, ParseAST failed %s", c.name, s, row[2], row[3])
 			}
-			if row[2] == "true" || strings.Contains(c.src, "=>") {
-				continue // no tree, or an action that makes other values
+			if row[2] == "true" {
+				continue // no tree
 			}
-			var want []string
+			var tokens []string
 			for _, m := range quoted.FindAllStringSubmatch(row[0], -1) {
-				want = append(want, m[1])
+				tokens = append(tokens, m[1])
 			}
+			want := spliceWantLeaves(c.name, s, tokens)
 			var v any
 			if err := json.Unmarshal([]byte(row[1]), &v); err != nil {
 				t.Fatalf("%s %q: %v", c.name, s, err)
