@@ -133,6 +133,13 @@ func (d *document) verifiedFixControlled(ctx context.Context, findings []lint.Fi
 		if wasOK != nowOK || was != now {
 			return lintFix{}, false
 		}
+		// The type of a rule can hide a change inside it, such as a discard that moved to
+		// another element, so the shape of every subexpression must agree too.
+		wasShape, wasOK := before.ShapeSignature(rd.Name, control.poll)
+		nowShape, nowOK := candidate.prog.ShapeSignature(rd.Name, control.poll)
+		if wasOK != nowOK || wasShape != nowShape {
+			return lintFix{}, false
+		}
 	}
 	if err := ctx.Err(); err != nil {
 		return lintFix{}, false
@@ -152,34 +159,105 @@ func lookaheadSpan(text string, start, end int) (int, int) {
 	return start, end
 }
 
-// ruleSpan widens the span of a removed rule to whole lines when only blanks or a comment share
-// them, and over the comment lines directly above it, which document it. A comment line that holds
-// a file-wide directive stays.
+// ruleSpan widens the span of a removed rule so that nothing of its definition is left behind:
+//   - a block comment that shares the line before the rule documents it and goes with it;
+//   - a ";" that separates it from the next definition on the line, or from the previous one, goes
+//     with it;
+//   - when only blanks or a comment share its lines, the whole lines go, and so do the comment
+//     lines directly above it (line comments and block comments), which document it.
+//
+// A comment that holds a file-wide directive stays.
 func ruleSpan(text string, start, end int) (int, int) {
 	lineStart := strings.LastIndexByte(text[:start], '\n') + 1
-	if strings.TrimSpace(text[lineStart:start]) != "" {
+	before := text[lineStart:start]
+	if c := blockCommentBefore(before); c >= 0 {
+		start, before = lineStart+c, ""
+	}
+	if strings.TrimSpace(before) != "" {
+		// Another definition comes first on the line: take the separator between them.
+		kept := strings.TrimRight(before, " \t")
+		if strings.HasSuffix(kept, ";") {
+			start = lineStart + len(strings.TrimRight(kept[:len(kept)-1], " \t"))
+		}
 		return start, end
 	}
-	rest := end
-	lineEnd := len(text)
+	lineEnd, rest := len(text), len(text)
 	if i := strings.IndexByte(text[end:], '\n'); i >= 0 {
-		lineEnd = end + i + 1
-		rest = end + i
-	} else {
-		rest = len(text)
+		lineEnd, rest = end+i+1, end+i
 	}
 	tail := strings.TrimSpace(text[end:rest])
+	separated := strings.HasPrefix(tail, ";")
+	if separated {
+		tail = strings.TrimSpace(tail[1:])
+	}
 	if tail != "" && !strings.HasPrefix(tail, "//") {
+		if separated {
+			// Another definition follows on the line: take the separator before it.
+			after := end
+			for after < len(text) && strings.IndexByte(" \t", text[after]) >= 0 {
+				after++
+			}
+			after++ // the ";"
+			for after < len(text) && strings.IndexByte(" \t", text[after]) >= 0 {
+				after++
+			}
+			return start, after
+		}
 		return start, end
 	}
 	start, end = lineStart, lineEnd
 	for start > 0 {
 		prevStart := strings.LastIndexByte(text[:start-1], '\n') + 1
-		line := strings.TrimSpace(text[prevStart : start-1])
-		if !strings.HasPrefix(line, "//") || strings.Contains(line, "lint:file-ignore") {
+		first := commentLinesAbove(text, prevStart, start-1)
+		if first < 0 {
 			break
 		}
-		start = prevStart
+		start = first
 	}
 	return start, end
+}
+
+// blockCommentBefore returns the index in line at which a single block comment starts, when line
+// holds only that comment and blanks and the comment holds no file-wide directive, or -1.
+func blockCommentBefore(line string) int {
+	t := strings.TrimSpace(line)
+	if !strings.HasPrefix(t, "/*") || !strings.HasSuffix(t, "*/") || strings.Count(t, "*/") != 1 ||
+		strings.Contains(t, "lint:file-ignore") {
+		return -1
+	}
+	return strings.Index(line, "/*")
+}
+
+// commentLinesAbove returns the start of the comment that fills the lines of text up to end
+// (exclusive of the line break), where the last line starts at lastStart: a line comment, a block
+// comment on one line, or a block comment over several lines. It returns -1 if those lines are
+// not such a comment or hold a file-wide directive.
+func commentLinesAbove(text string, lastStart, end int) int {
+	line := strings.TrimSpace(text[lastStart:end])
+	switch {
+	case strings.HasPrefix(line, "//"):
+		if strings.Contains(line, "lint:file-ignore") {
+			return -1
+		}
+		return lastStart
+	case strings.HasSuffix(line, "*/") && strings.Count(line, "*/") == 1:
+		first := lastStart
+		for {
+			t := strings.TrimSpace(text[first:end])
+			if strings.HasPrefix(t, "/*") {
+				if strings.Contains(t, "lint:file-ignore") || strings.Count(t, "*/") != 1 {
+					return -1
+				}
+				return first
+			}
+			if first == 0 {
+				return -1
+			}
+			first = strings.LastIndexByte(text[:first-1], '\n') + 1
+			if strings.Contains(text[first:lastStart], "*/") {
+				return -1
+			}
+		}
+	}
+	return -1
 }

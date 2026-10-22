@@ -2,6 +2,7 @@ package lsp
 
 import (
 	"context"
+	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/lint"
 	"strings"
 	"testing"
@@ -52,6 +53,14 @@ func TestLintFixActions(t *testing.T) {
 		{"a lookahead that always succeeds", "@start\nrule main = \"a\" &\"b\"* \"c\"\n", "useless-lookahead",
 			[]string{"Remove the lookahead that always succeeds => @start\nrule main = \"a\" \"c\"\n"}},
 		{"a lookahead with a call", "@start\nrule main = &w* \"c\"\nrule w = \"a\"\n", "useless-lookahead", nil},
+		{"a lookahead under a discard in a labelled group", "@start\nrule main = g:(\"a\" - &\"b\"* \"c\") => len($g.Value)\n", "useless-lookahead", nil},
+		{"a lookahead under a discard before a literal", "@start\nrule main = \"a\" - &\"b\"* \"c\" => \"k\"\n", "useless-lookahead", nil},
+		{"a lookahead under a discard before a group", "@start\nrule main = \"a\" - &\"b\"* (\"c\" \"d\") => \"k\"\n", "useless-lookahead", nil},
+		{"a lookahead under a discard before a call", "@start\nrule main = x:(\"a\" - &\"b\"* w) => len($x.Value)\nrule w = \"c\"\n", "useless-lookahead", nil},
+		{"a lookahead under a discard in a repeated group", "@start\nrule main = xs:(\"a\" - &\"b\"* \"c\")+ => len($xs)\n", "useless-lookahead", nil},
+		{"a lookahead that another construct holds", "@start\nrule main = \"a\" (&\"b\"*) \"c\"\n", "useless-lookahead", nil},
+		{"a lookahead in a group of a sequence", "@start\nrule main = (\"a\" &\"b\"* \"c\")\n", "useless-lookahead",
+			[]string{"Remove the lookahead that always succeeds => @start\nrule main = (\"a\" \"c\")\n"}},
 		{"a lookahead that never succeeds", "@start\nrule main = !\"a\"? \"c\"\n", "useless-lookahead", nil},
 		{"an unused rule", "@start\nrule main = \"a\"\nrule x = \"b\"\n", "unreachable-rule",
 			[]string{"Remove the unused rule x => @start\nrule main = \"a\"\n"}},
@@ -59,6 +68,20 @@ func TestLintFixActions(t *testing.T) {
 			[]string{"Remove the unused rule x => @start\nrule main = \"a\"\nrule y = \"c\"\n", "Remove the unused rule y => @start\nrule main = \"a\"\n// Not used.\nrule x = \"b\" // trailing\n"}},
 		{"an unused rule called by another unused rule", "@start\nrule main = \"a\"\nrule x = y\nrule y = \"c\"\n", "unreachable-rule",
 			[]string{"Remove the unused rule x => @start\nrule main = \"a\"\nrule y = \"c\"\n"}},
+		{"an unused rule after another on the line", "@start\nrule main = \"a\"\nrule x = \"b\"; rule y = \"c\"\n", "unreachable-rule",
+			[]string{"Remove the unused rule x => @start\nrule main = \"a\"\nrule y = \"c\"\n", "Remove the unused rule y => @start\nrule main = \"a\"\nrule x = \"b\"\n"}},
+		{"an unused rule after another on the line, spaced", "@start\nrule main = \"a\"\nrule x = \"b\" ;  rule y = \"c\" // note\n", "unreachable-rule",
+			[]string{"Remove the unused rule x => @start\nrule main = \"a\"\nrule y = \"c\" // note\n", "Remove the unused rule y => @start\nrule main = \"a\"\nrule x = \"b\" // note\n"}},
+		{"an unused rule with a block comment on its line", "@start\nrule main = \"a\"\n/* block */ rule x = \"b\"\n", "unreachable-rule",
+			[]string{"Remove the unused rule x => @start\nrule main = \"a\"\n"}},
+		{"an unused rule with a block comment above", "@start\nrule main = \"a\"\n/* block */\nrule x = \"b\"\n", "unreachable-rule",
+			[]string{"Remove the unused rule x => @start\nrule main = \"a\"\n"}},
+		{"an unused rule with a block comment over several lines above", "@start\nrule main = \"a\"\n/* one\n   two */\n// three\nrule x = \"b\"\n", "unreachable-rule",
+			[]string{"Remove the unused rule x => @start\nrule main = \"a\"\n"}},
+		{"an unused rule keeps a file-wide directive in a block comment", "@start\nrule main = \"a\"\n/* lint:file-ignore char-class */\nrule x = \"b\"\n", "unreachable-rule",
+			[]string{"Remove the unused rule x => @start\nrule main = \"a\"\n/* lint:file-ignore char-class */\n"}},
+		{"an unused rule keeps the block comment of the rule before it", "@start\nrule main = \"a\" /* about main */\nrule x = \"b\"\n", "unreachable-rule",
+			[]string{"Remove the unused rule x => @start\nrule main = \"a\" /* about main */\n"}},
 		{"a file-wide directive stays", "// lint:file-ignore char-class\n@start\nrule main = \"a\"\nrule x = \"b\"\n", "unreachable-rule",
 			[]string{"Remove the unused rule x => // lint:file-ignore char-class\n@start\nrule main = \"a\"\n"}},
 	} {
@@ -90,7 +113,7 @@ func forgedFix(t *testing.T, ctx context.Context, src, check string, edit func(*
 		t.Fatal(err)
 	}
 	for i, f := range findings {
-		if f.Check != check || !rewrites[i].IsValid() {
+		if f.Check != check {
 			continue
 		}
 		edit(&rewrites[i], a)
@@ -117,6 +140,9 @@ func TestLintFixVerificationRejects(t *testing.T) {
 		{"class that is not a class", class, "char-class", func(r *lint.Rewrite, _ *analysis) { r.NewText = "[a-" }, false},
 		{"lookahead as proven", lookahead, "useless-lookahead", keep, true},
 		{"lookahead replaced by a new finding", lookahead, "useless-lookahead", func(r *lint.Rewrite, _ *analysis) { r.NewText = "(\"b\"*)*" }, false},
+		{"lookahead under a discard in a labelled group", "@start\nrule main = g:(\"a\" - &\"b\"* \"c\") => len($g.Value)\n", "useless-lookahead", lookaheadSpanFor(`&"b"*`), false},
+		{"lookahead under a discard before a literal", "@start\nrule main = \"a\" - &\"b\"* \"c\" => \"k\"\n", "useless-lookahead", lookaheadSpanFor(`&"b"*`), false},
+		{"lookahead under a discard in a repeated group", "@start\nrule main = xs:(\"a\" - &\"b\"* \"c\")+ => len($xs)\n", "useless-lookahead", lookaheadSpanFor(`&"b"*`), false},
 		{"unused rule as proven", unused, "unreachable-rule", keep, true},
 		{"unused rule that is replaced by a start rule", "@start(default)\nrule main = \"a\"\nrule x = \"b\"\n", "unreachable-rule", func(r *lint.Rewrite, _ *analysis) { r.NewText = "@start\nrule x = \"b\"" }, false},
 		{"class that is replaced by a capture", class, "char-class", func(r *lint.Rewrite, _ *analysis) { r.NewText = "c:[a-z] {len($c) > 0}" }, false},
@@ -137,4 +163,16 @@ func TestLintFixVerificationRejects(t *testing.T) {
 			t.Error("a fix was verified under a cancelled context")
 		}
 	})
+}
+
+// lookaheadSpanFor makes the edit replace the lookahead text, as a rewrite that the lint package
+// would not propose, to show that the verification alone rejects it.
+func lookaheadSpanFor(text string) func(*lint.Rewrite, *analysis) {
+	return func(r *lint.Rewrite, a *analysis) {
+		line := strings.Split(a.text, "\n")[1]
+		col := strings.Index(line, text)
+		r.Start = grammar.Pos{Line: 2, Col: col + 1}
+		r.End = grammar.Pos{Line: 2, Col: col + 1 + len(text)}
+		r.NewText = ""
+	}
 }

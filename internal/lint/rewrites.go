@@ -16,7 +16,9 @@ import (
 //     ranges. The proof is that both classes contain the same code points, checked at the ends of
 //     every range, and that negation is unchanged. A class that also matches punctuation between
 //     letters, such as [A-z], has no Rewrite, because the writer must say which characters were meant.
-//   - useless-lookahead, for a lookahead that always succeeds: it is removed. The proof is that the
+//   - useless-lookahead, for a lookahead that always succeeds: it is removed, but only where it is
+//     itself an item of a sequence. Under a discard "-", a label or any operator it is not removed,
+//     because the "-" would move onto the next item and change the values. The proof is that the
 //     lookahead matches only a combination of literals, character classes, any-character, groups,
 //     sequences, choices, options and repetitions, so it holds no capture, cut, call, predicate,
 //     recovery or attribute, and a lookahead consumes nothing and has no value.
@@ -156,7 +158,7 @@ func (l *linter) lookaheadRewrite(f Finding) Rewrite {
 		}
 		return false
 	})
-	if e == nil {
+	if e == nil || !l.seqItem(e) {
 		return Rewrite{}
 	}
 	var body grammar.Expr
@@ -179,6 +181,24 @@ func (l *linter) lookaheadRewrite(f Finding) Rewrite {
 		return Rewrite{}
 	}
 	return Rewrite{Start: src.Pos, End: src.End}
+}
+
+// seqItem reports whether e is itself an item of a sequence of at least two items. A lookahead that
+// another construct holds is not: under a discard "-", deleting it would move the "-" onto the next
+// item, and a label, an operator or a repetition would be left without its operand.
+func (l *linter) seqItem(e grammar.Expr) bool {
+	control := l.control
+	found := false
+	for _, r := range l.an.order {
+		control.poll()
+		walkExprControlled(r.Expr, func(x grammar.Expr) {
+			control.poll()
+			if seq, ok := x.(*grammar.Seq); ok && len(seq.Items) >= 2 {
+				found = found || slices.ContainsFunc(seq.Items, func(it grammar.Expr) bool { control.poll(); return it == e })
+			}
+		}, control)
+	}
+	return found
 }
 
 // pureMatcher reports whether e is made only of literals, character classes, any-character, groups,
