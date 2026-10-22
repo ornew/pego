@@ -40,7 +40,7 @@ A `.pego` file is a whole grammar, so the server analyzes each open file on its 
 | Find references, highlights | Every place a rule or type is used. Rules and types are different names, so `num` and `Num` are kept apart |
 | Document symbols | The outline of the file: rules with their types, types, and the fields of struct types |
 | Hover | For a rule, `rule <name> [<Type Expression>] = <Rule Expression>` with its declared or inferred type, and its documentation comment. For a type, its definition. For built-in types (including `error`, the type of recovered errors), functions (`len`, `foldl`, ...), node members (`Start`, `End` and `Value`) and attributes (`@error`, ...), a description |
-| Rename | Renames a rule or type everywhere in the file. A new name that is invalid, a keyword or already taken is refused |
+| Rename | Renames a rule or type everywhere in the file. A new name that is invalid, a keyword or already taken is refused. A [hidden rule](../../spec/actions.md#hidden-rules) keeps its leading `_` and a visible rule cannot gain one, because that changes the nodes a parse makes |
 | Completion | Rule names in rule bodies, types where a type is expected, type names and a `FieldName Type` snippet at field-name positions in struct declarations, attributes after `@` and pragmas after `#`; in actions and predicates, captures after `$`, node members (`Start`, `End` and `Value`), struct fields and the captures read as `x.$y` after `.`, built-in functions, and struct types in constructors; and keywords |
 | Semantic highlighting | Rule names, type names, captures, fields and built-in names in their own colors, if the editor supports semantic tokens |
 
@@ -79,7 +79,8 @@ rule pair = a:num "," b:digits => list($a, $b) // hover: rule pair [](Num | digi
 ```
 
 The types come from the type checker, so they are shown only while the whole grammar compiles. While it has errors,
-hover shows the declared type, or says that the type is not known yet.
+hover shows the declared type, or says that the type is not known yet. A hidden rule without an action has no type
+of its own, and hover says so.
 
 ### Experimental Lint Diagnostics and Actions
 
@@ -183,7 +184,9 @@ everything it supports in its reply to `initialize`, and uses UTF-16 positions, 
   After an error, the parser skips to the next `rule`, `operators`, or `type`
 keyword, so one broken definition does not hide later Declaration Statements.
 - Captures (`$name`), Operators Rule level names and lambda parameters cannot be navigated to or renamed. Completion after `$`
-  lists the labels of the whole definition, whether or not they are in scope; lambda parameters, which are written
+  lists the labels of the whole definition, but not those that the action cannot read: an [inline
+  action](../../spec/actions.md#inline-value-actions) reads the captures made inside its parentheses, and the action
+  of the rule those made outside every inline action. Lambda parameters, which are written
   without `$`, are offered with the other names inside the lambda's body.
 - After `.`, completion offers `$y` for the captures of the rule a capture `$x` labels; after another receiver, such
   as a lambda parameter, it offers the captures inside the labelled groups of the definition and those of the rules

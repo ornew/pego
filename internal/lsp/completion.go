@@ -422,13 +422,90 @@ func (a *analysis) captureItemsControlled(i int, control *renderControl) []Compl
 			items = append(items, CompletionItem{Label: name, Kind: completionKindVariable, Detail: detail})
 		}
 	}
+	scope := a.inlineScopesControlled(first, control)
 	for j := first + 2; j < len(a.toks) && !a.isDefKeyword(j); j++ {
 		control.poll()
-		if a.isLabelControlled(j, control) {
+		// A label is visible where it was made: in the rule, or in the same inline action.
+		if a.isLabelControlled(j, control) && scope[j] == scope[min(i, len(scope)-1)] {
 			add(a.toks[j].Text, "capture")
 		}
 	}
 	return items
+}
+
+// inlineScopes numbers the inline actions, (expression => action), of the rule whose keyword is
+// token first: the result holds, for every token index up to the end of the definition, the
+// number of the innermost inline action around it, or 0 outside any. An inline action keeps the
+// captures made inside its parentheses to itself, and the rule's action does not see them.
+// A parenthesis in a parsing-expression context is an inline action when a "=>" follows at its own
+// level, even past the cursor; the parentheses of lambdas and of arguments are in value contexts.
+func (a *analysis) inlineScopesControlled(first int, control *renderControl) []int {
+	control.poll()
+	end := first + 1
+	for end < len(a.toks) && !a.isDefKeyword(end) {
+		control.poll()
+		end++
+	}
+	scope := make([]int, end)
+	eq := a.ruleBodyStartControlled(first, end-1, control)
+	if eq < 0 {
+		return scope
+	}
+	type frame struct {
+		close string
+		value bool
+		open  int // the token that opens the frame
+	}
+	// The first pass finds the parentheses that hold a "=>" in a parsing-expression context, and
+	// where each of them closes (the end of the definition if it never does).
+	closeOf := map[int]int{}
+	stack := []frame{{}}
+	for j := eq + 1; j < end; j++ {
+		control.poll()
+		t := a.toks[j]
+		if t.Kind != syntax.TokenPunct {
+			continue
+		}
+		top := &stack[len(stack)-1]
+		switch t.Text {
+		case "=>":
+			if top.close == ")" && !top.value {
+				closeOf[top.open] = end
+			}
+			top.value = true
+		case "(":
+			stack = append(stack, frame{close: ")", value: top.value, open: j})
+		case "[":
+			stack = append(stack, frame{close: "]", value: top.value, open: j})
+		case "{":
+			stack = append(stack, frame{close: "}", value: true, open: j})
+		case ")", "]", "}":
+			if len(stack) > 1 && top.close == t.Text {
+				if _, ok := closeOf[top.open]; ok && t.Text == ")" {
+					closeOf[top.open] = j
+				}
+				stack = stack[:len(stack)-1]
+			}
+		}
+	}
+	// The second pass numbers the tokens inside them, innermost first.
+	type group struct{ id, close int }
+	var groups []group
+	count := 0
+	for j := eq + 1; j < end; j++ {
+		control.poll()
+		for len(groups) > 0 && groups[len(groups)-1].close < j {
+			groups = groups[:len(groups)-1]
+		}
+		if c, ok := closeOf[j]; ok {
+			count++
+			groups = append(groups, group{count, c})
+		}
+		if len(groups) > 0 {
+			scope[j] = groups[len(groups)-1].id
+		}
+	}
+	return scope
 }
 
 // captureMemberItems returns the captures that the receiver before the "." at token dot may
@@ -587,7 +664,7 @@ func (a *analysis) declarationsControlled(kind symKind, control *renderControl) 
 			continue
 		}
 		n := a.toks[next]
-		if !a.isIdent(i, kw) || !a.declarationStart(i) || n.Kind != syntax.TokenIdent || !control.isIdentifier(n.Text) || n.Pos.Line != a.toks[i].End.Line || seen[n.Text] {
+		if !a.isIdent(i, kw) || !a.declarationStart(i) || n.Kind != syntax.TokenIdent || !(kind == kindRule && control.isRuleName(n.Text) || kind != kindRule && control.isIdentifier(n.Text)) || n.Pos.Line != a.toks[i].End.Line || seen[n.Text] {
 			continue
 		}
 		d := declared{name: n.Text}

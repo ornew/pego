@@ -343,6 +343,9 @@ func (a *analysis) ruleHoverControlled(d *definition, control *renderControl) st
 	head := "rule " + d.name
 	var note string
 	switch t, inferred, known := a.ruleTypeControlled(d, control); {
+	case !known && d.rule.Type == nil && strings.HasPrefix(d.name, "_") && a.prog != nil:
+		// A hidden rule without an action has no type of its own.
+		note = "Hidden rule: it makes no node of its own."
 	case !known:
 		note = "The type is inferred when the grammar has no errors."
 	case inferred:
@@ -461,10 +464,18 @@ func (a *analysis) checkNewNameControlled(kind symKind, old, name string, contro
 	if name == old {
 		return nil
 	}
-	if !control.isIdentifier(name) || name == "_" {
+	if kind == kindRule && !control.isRuleName(name) || kind != kindRule && !control.isIdentifier(name) || name == "_" {
 		return fail("%q is not a valid %s name", name, kind)
 	}
 	if kind == kindRule {
+		// A leading underscore hides a rule: it makes no node of its own and is no entry point.
+		// A rename must not change that.
+		if hidden := strings.HasPrefix(old, "_"); hidden != strings.HasPrefix(name, "_") {
+			if hidden {
+				return fail("rule %s is hidden; the name %s would make it a visible rule", old, name)
+			}
+			return fail("rule %s is visible; the name %s would hide it", old, name)
+		}
 		if a.rules[name] != nil {
 			return fail("rule %s is already defined", name)
 		}

@@ -157,13 +157,27 @@ func parsePartialContext(ctx context.Context, src string) (g *grammar.Grammar, d
 	return g, errs.list, nil
 }
 
+// IsRuleName reports whether s can name a rule: an identifier, or "_" followed by ASCII letters,
+// digits and "_", which makes a hidden rule. The name "_" alone is not a rule name.
+func IsRuleName(s string) bool {
+	if len(s) < 2 || s[0] != '_' {
+		return IsIdentifier(s)
+	}
+	for _, r := range s {
+		if r == utf8.RuneError || !isIdentPart(r) {
+			return false
+		}
+	}
+	return true
+}
+
 // IsKeyword reports whether name can act as a contextual keyword. These words
 // remain valid identifiers outside their keyword positions.
 func IsKeyword(name string) bool { return keywords[name] }
 
 // IsIdentifier reports whether s is an available ASCII identifier: an A-Z or
 // a-z letter followed by ASCII letters, digits and "_". Names beginning with
-// "_" are reserved.
+// "_" are not identifiers; only a rule name may begin with one (see IsRuleName).
 func IsIdentifier(s string) bool {
 	if s == "" || s[0] == '_' {
 		return false

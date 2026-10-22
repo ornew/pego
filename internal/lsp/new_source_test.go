@@ -135,16 +135,18 @@ func TestRecoverPragmaCompletion(t *testing.T) {
 }
 
 func TestReservedNamesExcludedFromCompletion(t *testing.T) {
-	for _, src := range []string{
-		`rule _private = "x"; rule main = `,
-		`type _Hidden = {}; rule main = "x" => `,
-		`rule main = _private:"x" => $`,
-		`rule main = xs:"x"* => map($xs, (_private) => $`,
+	for _, tc := range []struct{ src, hiddenRule string }{
+		// A hidden rule is a rule name, so it is offered; no other
+		// underscore name is.
+		{`rule _private = "x"; rule main = `, "_private"},
+		{`type _Hidden = {}; rule main = "x" => `, ""},
+		{`rule main = _private:"x" => $`, ""},
+		{`rule main = xs:"x"* => map($xs, (_private) => $`, ""},
 	} {
-		a := analyze(src)
-		for _, item := range a.complete(len(src)) {
-			if strings.HasPrefix(item.Label, "_") {
-				t.Fatalf("reserved completion %q in %s", item.Label, src)
+		a := analyze(tc.src)
+		for _, item := range a.complete(len(tc.src)) {
+			if strings.HasPrefix(item.Label, "_") && item.Label != tc.hiddenRule {
+				t.Fatalf("reserved completion %q in %s", item.Label, tc.src)
 			}
 		}
 	}

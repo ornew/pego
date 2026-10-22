@@ -411,7 +411,7 @@ func TestRename(t *testing.T) {
 		{12, 26, "pair", "rule pair is already defined"},
 		{12, 26, "a-b", `"a-b" is not a valid rule name`},
 		{12, 26, "_", `"_" is not a valid rule name`},
-		{12, 26, "_internal", `"_internal" is not a valid rule name`},
+		{12, 26, "_internal", "rule num is visible; the name _internal would hide it"},
 		{12, 26, "数字", `"数字" is not a valid rule name`},
 		{2, 6, "Num", "type Num is already defined"},
 		{2, 6, "pair", "type pair must start with an uppercase letter"},

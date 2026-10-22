@@ -304,8 +304,11 @@ The fix shows the class without the overlap, or without the punctuation: `[A-Za-
 
 ### `unreachable-rule`
 
-Rules that no start rule calls, directly or indirectly. Every rule marked `@start` is where parsing may begin, so
-the rules it reaches are used even when the start rule given to the linter does not reach them.
+Rules that no start rule calls, directly or indirectly, also from inside an inline action. Every rule marked `@start` is where parsing may begin, so
+the rules it reaches are used even when the start rule given to the linter does not reach them. A hidden rule
+(a name that begins with `_`) is a rule like any other: a hidden rule that nothing calls is reported.
+
+The other checks do not yet look inside inline actions.
 
 ### `right-recursion`
 

@@ -110,6 +110,25 @@ func (c *renderControl) isIdentifier(s string) bool {
 	}
 	return true
 }
+
+// isRuleName is isIdentifier for the name of a rule, which may begin with an underscore that
+// hides the rule (see syntax.IsRuleName).
+func (c *renderControl) isRuleName(s string) bool {
+	if c == nil {
+		return syntax.IsRuleName(s)
+	}
+	if len(s) < 2 || s[0] != '_' {
+		return c.isIdentifier(s)
+	}
+	for i := 1; i < len(s); i++ {
+		c.poll()
+		b := s[i]
+		if b != '_' && (b < 'a' || b > 'z') && (b < 'A' || b > 'Z') && (b < '0' || b > '9') {
+			return false
+		}
+	}
+	return true
+}
 func (c *renderControl) sortKeys(keys []string) {
 	if c == nil {
 		sort.Strings(keys)

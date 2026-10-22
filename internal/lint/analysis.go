@@ -1094,8 +1094,13 @@ func callsControlled(e grammar.Expr, control *lintControl) []string {
 	var out []string
 	walkExprControlled(e, func(x grammar.Expr) {
 		control.poll()
-		if r, ok := x.(*grammar.Ref); ok {
-			out = append(out, r.Name)
+		switch x := x.(type) {
+		case *grammar.Ref:
+			out = append(out, x.Name)
+		case *grammar.InlineAction:
+			// An inline action calls a hidden rule whose body is its expression, so the rules
+			// that expression calls are called from here. The walkers do not enter it.
+			out = append(out, callsControlled(x.Expr, control)...)
 		}
 	}, control)
 	return out

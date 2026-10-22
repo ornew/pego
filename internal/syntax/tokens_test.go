@@ -237,3 +237,20 @@ func TestIncompletePackageClause(t *testing.T) {
 		}
 	}
 }
+
+func TestIsRuleName(t *testing.T) {
+	for s, want := range map[string]bool{
+		"a": true, "Abc": true, "a_b2": true, "_x": true, "_x1": true, "__x": true, "_1": true,
+		"_": false, "": false, "1a": false, "名前": false, "_名": false, "a-b": false, "_a b": false, "\xff": false, "_\xff": false,
+	} {
+		if got := IsRuleName(s); got != want {
+			t.Errorf("IsRuleName(%q) = %v", s, got)
+		}
+	}
+	// Every name it accepts can be written as a rule.
+	for _, s := range []string{"a", "_x", "__x", "_1"} {
+		if _, err := Parse("rule " + s + ` = "x"`); err != nil {
+			t.Errorf("rule %s: %v", s, err)
+		}
+	}
+}

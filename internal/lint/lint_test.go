@@ -385,3 +385,23 @@ func TestAnyIsNotAType(t *testing.T) {
 		{name: "top type", src: "type Box = { V _ }\nrule main Box = x:\"x\" => Box{V: $x}"},
 	})
 }
+
+// A rule whose name begins with "_" is hidden, and an inline action is a hidden rule that the
+// grammar does not name. Both take part in reachability like any other rule, and the rule the
+// compiler generates for an inline action is never reported. The other checks do not yet look
+// inside inline actions.
+func TestHiddenRules(t *testing.T) {
+	runCases(t, []lintCase{
+		{name: "called", src: "rule main = _sp \"a\" _sp\nrule _sp = \" \"*"},
+		{name: "unused", src: "rule main = \"a\"\nrule _dead = \"b\"", want: []string{"2:1 warning unreachable-rule"}, msg: "rule _dead is never used"},
+		{name: "used only by an unused hidden rule", src: "rule main = \"a\"\nrule _a = _b\nrule _b = \"b\"", want: []string{
+			"2:1 warning unreachable-rule", "3:1 warning unreachable-rule"}},
+		{name: "used through a hidden rule", src: "rule main = _a\nrule _a = _b \"a\"\nrule _b = \"b\""},
+		{name: "recursive hidden rule", src: "rule main = _a\nrule _a = \"x\" _a / \"y\""},
+		{name: "called only in an inline action", src: "rule main = (x:w #atomic => $x)\nrule w = [a-z]+"},
+		{name: "called only in a hidden rule's inline action", src: "rule main = _a\nrule _a = (w #atomic => \"x\")\nrule w = [a-z]+"},
+		{name: "inline action in an unused rule", src: "rule main = \"a\"\nrule x = (w #atomic => \"x\")\nrule w = [a-z]+", want: []string{
+			"2:1 warning unreachable-rule", "3:1 warning unreachable-rule"}},
+		{name: "capture used by the inline action", src: "rule main = (a:\"a\" => $a) \"b\""},
+	})
+}

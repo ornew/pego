@@ -488,7 +488,9 @@ The grammar includes the ASCII identifier form. Names beginning with `_` are
 parsed and preserved, then rejected by semantic validation. The following
 additional constraints are checked outside this source grammar.
 
-- **Reserved identifiers.** Names beginning with `_` are reserved. The
+- **Reserved identifiers.** Names beginning with `_` are reserved, except the name of a
+  Rule Definition and a reference to a rule, which hide the rule (see
+  [Lexical](lexical.md#identifiers)). The
   standalone Rule Expression `_` is Top, which is distinct from a name.
 - **Integer literals.** An [integer literal](lexical.md#integer-literals)
   MUST be representable as an `int`.
