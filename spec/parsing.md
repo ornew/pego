@@ -10,13 +10,16 @@ memoization can and cannot change, and the limits and modes of a parse.
 A parse starts at a rule, the **start rule** of the parse. It MUST be one of the
 start rules of the grammar, the rules marked `@start` (see
 [Start Rules](grammar-files.md#start-rules)). When no rule is named, the parse
-uses the default start rule of the grammar.
+uses the default start rule of the grammar. On every interface that takes the
+name of a start rule, an empty name selects the default start rule of the
+grammar; it does not select the start rule a parser was compiled or generated
+for.
 
 | Interface | How the start rule is selected |
 |:--|:--|
-| Go API | The `start` argument of `pego.Compile` and `pego.CompileSource`, where an empty name selects the default start rule; `Parser.WithStart` makes a parser with another start rule for whole-input parsing; `Parser.ParsePrefix` selects a start rule for one prefix parse without changing the configured start rule |
+| Go API | The `start` argument of `pego.Compile` and `pego.CompileSource`, where an empty name selects the default start rule; `Parser.WithStart` makes a parser with another start rule for whole-input parsing; `Parser.ParsePrefix` selects a start rule for one prefix parse without changing the configured start rule. Both take an empty name for the default start rule |
 | Command line | `pego parse -s <rule>`. It defaults to the start rule saved in a compiled grammar (`.pegoc`), and otherwise to the default start rule |
-| Generated parsers | `Parse` uses the start rule selected when the parser was generated, the default start rule unless another was named; `ParseRule` and `ParseRuleAST` take the name of a start rule |
+| Generated parsers | `Parse` uses the start rule selected when the parser was generated, the default start rule unless another was named; `ParseRule` and `ParseRuleAST` (`parseRule` and `parseRuleWithOptions` in TypeScript) take the name of a start rule, or an empty name for the default start rule |
 
 Naming a rule that is not a start rule is an error that names the rule and says
 it is not a start rule; naming an undefined rule is an error that says it is not

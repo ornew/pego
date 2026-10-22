@@ -227,6 +227,7 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 		gen.prog, gen.table = prog, "rules"
 	}
 	fmt.Fprintf(&gen.init, "\tpegoGrammar.Starts = %s\n", goStrings(prog.starts))
+	fmt.Fprintf(&gen.init, "\tpegoGrammar.DefaultStart = %q\n", prog.defaultStart)
 	if !opts.TypedOnly {
 		fmt.Fprintf(&gen.init, "\tpegoGrammar.Descs = %s\n", goStrings(gen.descs))
 	}
@@ -294,7 +295,8 @@ func Iterate(r io.Reader, opts ...ParseOption) (*StreamIterator, error) {
 	}
 	fmt.Fprintf(&out, "// rules is the rule table, and pegoGrammar its grammar.\nvar rules []*Rule\nvar pegoGrammar = NewGrammar(%d)\n\n", opts.generatedMaxDepth())
 	if !opts.TypedOnly {
-		out.WriteString(`// ParseRule parses the whole input with the start rule name, a rule marked @start.
+		out.WriteString(`// ParseRule parses the whole input with the start rule name, a rule marked @start; an empty
+// name selects the grammar's default start rule.
 func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	o, err := ResolveOptions(pegoGrammar, opts)
 	if err != nil {

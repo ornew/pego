@@ -97,9 +97,9 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	out.WriteString(" * decoded as UTF-8 (invalid sequences as U+FFFD, one per byte). If the parse recovered from errors\n")
 	out.WriteString(" * with #recover, the result has both the node and SyntaxErrors.\n */\n")
 	fmt.Fprintf(&out, "export function parse(input: string | Uint8Array, unit?: Unit): ParseResult {\n  return run(G, R%d, nseen, input, unit);\n}\n\n", start.id)
-	out.WriteString(`/** Parses the whole input with the start rule name, a rule marked @start. */
+	out.WriteString(`/** Parses the whole input with the start rule name, a rule marked @start; "" selects the default start rule. */
 export function parseRule(name: string, input: string | Uint8Array, unit?: Unit): ParseResult {
-  const r = startIn(rules, starts, name);
+  const r = startIn(rules, starts, defaultStart, name);
   if (r instanceof Error) return { node: null, error: r };
   return run(G, r, nseen, input, unit);
 }
@@ -118,11 +118,11 @@ export function parseWithOptions(input: string | Uint8Array, options?: ParseOpti
   return withObservedOptions(o, control => run(G, R%d, nseen, input, o.unit, o.maxDepth, control, o), error => ({ node: null, error }));
 }
 
-/** Parses a named start rule with invocation-local options, validated before rule lookup. */
+/** Parses a named start rule ("" for the default) with invocation-local options, validated before rule lookup. */
 export function parseRuleWithOptions(name: string, input: string | Uint8Array, options?: ParseOptions): ParseResult {
   const o = resolveOptions(G, options);
   if (o instanceof Error) return { node: null, error: o };
-  const r = startIn(rules, starts, name);
+  const r = startIn(rules, starts, defaultStart, name);
   if (r instanceof Error) return { node: null, error: r };
   return withObservedOptions(o, control => run(G, r, nseen, input, o.unit, o.maxDepth, control, o), error => ({ node: null, error }));
 }
@@ -572,6 +572,7 @@ func (g *tsGen) rules() {
 		// The table and the start rules, for parseRule (the recognizer has none).
 		fmt.Fprintf(init, "const rules: Rule[] = [%s];\n", strings.Join(vars, ", "))
 		fmt.Fprintf(init, "const starts = %s;\n", tsStrings(g.prog.starts))
+		fmt.Fprintf(init, "const defaultStart = %s;\n", tsString(g.prog.defaultStart))
 	}
 	fmt.Fprintf(init, "const %s = %d;\n", g.seenVar(), g.prog.nseen)
 	for _, r := range all {

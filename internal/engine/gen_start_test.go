@@ -73,6 +73,8 @@ func TestGeneratedGoStartRules(t *testing.T) {
 	_, one := p.Parse("a")
 	_, two := p.Parse("aa")
 	fmt.Println("default:", one == nil, two == nil)
+	_, empty := p.ParseRule("", "aa")
+	fmt.Println("empty:", empty == nil)
 }
 `},
 		{"typed", GenOptions{Package: "p", Types: true}, `func main() {
@@ -87,6 +89,9 @@ func TestGeneratedGoStartRules(t *testing.T) {
 	_, one := p.Parse("a")
 	_, two := p.Parse("aa")
 	fmt.Println("default:", one == nil, two == nil)
+	_, empty := p.ParseRule("", "aa")
+	_, emptyAST := p.ParseRuleAST("", "aa")
+	fmt.Println("empty:", empty == nil, emptyAST == nil)
 }
 `},
 		{"typed only", GenOptions{Package: "p", Types: true, TypedOnly: true}, `func main() {
@@ -97,6 +102,8 @@ func TestGeneratedGoStartRules(t *testing.T) {
 	_, one := p.ParseAST("a")
 	_, two := p.ParseAST("aa")
 	fmt.Println("default:", one == nil, two == nil)
+	_, emptyAST := p.ParseRuleAST("", "aa")
+	fmt.Println("empty:", emptyAST == nil)
 }
 `},
 		{"named start", GenOptions{Package: "p", Start: "item"}, `func main() {
@@ -107,6 +114,8 @@ func TestGeneratedGoStartRules(t *testing.T) {
 	_, one := p.Parse("a")
 	_, two := p.Parse("aa")
 	fmt.Println("default:", one == nil, two == nil)
+	_, empty := p.ParseRule("", "aa")
+	fmt.Println("empty:", empty == nil)
 }
 `},
 	} {
@@ -152,6 +161,13 @@ func TestGeneratedGoStartRules(t *testing.T) {
 			} else {
 				expected += "default: true true\n"
 			}
+			// An empty name selects the declared default start rule main, which matches "aa",
+			// even in a parser generated for item.
+			if tc.name == "typed" {
+				expected += "empty: true true\n"
+			} else {
+				expected += "empty: true\n"
+			}
 			if string(out) != expected {
 				t.Errorf("got\n%s\nwant\n%s", out, expected)
 			}
@@ -175,9 +191,18 @@ for (const f of [(n: string) => parseRule(n, "a"), (n: string) => parseRuleWithO
   }
 }
 console.log("default: " + (parse("a").error === null) + " " + (parse("aa").error === null));
+console.log("empty: " + (parseRule("", "aa").error === null) + " " + (parseRuleWithOptions("", "aa", {}).error === null));
 `
-	out := runTSGrammarScriptWith(t, g, script, GenOptions{})
-	if expected := want + want + "default: true true\n"; out != expected {
-		t.Errorf("got\n%s\nwant\n%s", out, expected)
+	for _, start := range []string{"", "item"} {
+		// An empty name selects the declared default start rule main, which matches "aa",
+		// even in a parser generated for item.
+		out := runTSGrammarScriptWith(t, g, script, GenOptions{Start: start})
+		parse := "default: true true\n"
+		if start == "item" {
+			parse = "default: true false\n"
+		}
+		if expected := want + want + parse + "empty: true true\n"; out != expected {
+			t.Errorf("start %q: got\n%s\nwant\n%s", start, out, expected)
+		}
 	}
 }

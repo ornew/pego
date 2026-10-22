@@ -34,7 +34,8 @@ var pegoRecGrammar = pegort.NewGrammar(100000)
 var rules []*pegort.Rule
 var pegoGrammar = pegort.NewGrammar(100000)
 
-// ParseRule parses the whole input with the start rule name, a rule marked @start.
+// ParseRule parses the whole input with the start rule name, a rule marked @start; an empty
+// name selects the grammar's default start rule.
 func ParseRule(name, input string, opts ...pegort.ParseOption) (*pegort.Node, error) {
 	o, err := pegort.ResolveOptions(pegoGrammar, opts)
 	if err != nil {
@@ -995,7 +996,8 @@ func ParseAST(input string, opts ...pegort.ParseOption) (*types.Document, error)
 	return pegort.TParse(trules[0], input, opts, a, func(v any) *types.Document { return pegort.TAs[*types.Document](v) })
 }
 
-// ParseRuleAST parses the whole input with the named start rule and returns its typed value.
+// ParseRuleAST parses the whole input with the named start rule and returns its typed value; an empty
+// name selects the grammar's default start rule.
 // Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
 // Invalid options and names of rules that are not start rules return nil with an error. Start rule result types:
 //
@@ -1006,7 +1008,7 @@ func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 		return nil, err
 	}
 	switch name {
-	case "main":
+	case "main", "":
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[0], input, o, a, func(v any) *types.Document { return pegort.TAs[*types.Document](v) })
 	default:
@@ -1679,6 +1681,7 @@ func init() {
 	recRules[74].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e158(p) }
 	recRules[75].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e161(p) }
 	pegoGrammar.Starts = []string{"main"}
+	pegoGrammar.DefaultStart = "main"
 	pegoGrammar.Descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"\\ufeff\"", "\"<!--\"", "\"<?\"", "\"<?xml\"", "\"?>\"", "\"version\"", "\"\\\"\"", "\"'\"", "\"1.\"", "[0-9]", "\"encoding\"", "[A-Za-z]", "[A-Za-z0-9._\\-]", "\"standalone\"", "\"yes\"", "\"no\"", "\"=\"", "\"-->\"", "[.-\\ud7ff -,\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"-\"", "the processing instruction target xml is reserved (an XML declaration must come first)", "[@-\\ud7ff ->\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"?\"", "\">\"", "\"<!DOCTYPE\"", "\"[\"", "\"]\"", "\"<!ELEMENT\"", "\"<!ATTLIST\"", "\"<!NOTATION\"", "\"%\"", "\";\"", "\"SYSTEM\"", "\"PUBLIC\"", "[#-\\ud7ff -!\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "[(-\\ud7ff -&\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "[a-zA-Z0-9 \\r\\n\\-\\'()+,./:=?;!*#@$_%]", "[a-zA-Z0-9 \\r\\n\\-()+,./:=?;!*#@$_%]", "\"EMPTY\"", "\"ANY\"", "\"(\"", "\"#PCDATA\"", "\"|\"", "\")*\"", "\")\"", "\",\"", "[a-zA-Z_:À-ÖØ-öø-˿Ͱ-ͽͿ-\\u1fff\\u200c-\\u200d⁰-\\u218fⰀ-\\u2fef、-\\ud7ff豈-﷏ﷰ-�𐀀-\\U000effff]", "[*+?]", "\"#REQUIRED\"", "\"#IMPLIED\"", "\"#FIXED\"", "\"NOTATION\"", "\"CDATA\"", "\"IDREFS\"", "\"IDREF\"", "\"ID\"", "\"ENTITY\"", "\"ENTITIES\"", "\"NMTOKENS\"", "\"NMTOKEN\"", "\"<!ENTITY\"", "\"NDATA\"", "[\\'-\\ud7ff -!#-$\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "[(-\\ud7ff -$\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"<\"", "\"/>\"", "\"</\"", "mismatched end tag", "[=-\\ud7ff\\'-; -!#-%\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "[=-\\ud7ff(-; -%\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"<![CDATA[\"", "[\\^-\\ud7ff=-\\\\\\'-; -%\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"]>\"", "\"]]>\"", "[\\^-\\ud7ff -\\\\\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"&\"", "\"&#x\"", "[0-9a-fA-F]", "\"&#\"", "[a-zA-Z0-9_:.\\-·À-ÖØ-öø-ͽͿ-\\u1fff\\u200c-\\u200d‿-⁀⁰-\\u218fⰀ-\\u2fef、-\\ud7ff豈-﷏ﷰ-�𐀀-\\U000effff]", "[ \\t\\r\\n]"}
 	pegoRecGrammar.Share(pegoGrammar)
 	trules = []*pegort.TRule{

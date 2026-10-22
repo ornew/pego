@@ -9,7 +9,7 @@ type PrefixResult struct {
 }
 
 // ParsePrefix parses the named start rule at the beginning of input without requiring
-// whole-input consumption. EOF assertions still refer to the complete input.
+// whole-input consumption; an empty name selects the grammar's default start rule. EOF assertions still refer to the complete input.
 // Positions remain local to input. For a source slice, add its starting byte
 // offset to ConsumedBytes to find the consumed endpoint in the original source.
 // Recovered success returns the result and SyntaxErrors. Unrecovered syntax

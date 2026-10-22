@@ -909,6 +909,8 @@ type grammar struct {
 	// Starts holds the names of the start rules, the rules marked @start where parsing may
 	// begin.
 	Starts []string
+	// DefaultStart is the default start rule, which an empty start rule name selects.
+	DefaultStart string
 	// Descs maps expectation IDs to their descriptions. It starts with the fixed expectations
 	// below.
 	Descs []string
@@ -1012,6 +1014,9 @@ func (g *grammar) ruleByName(name string) *Rule {
 
 // StartRule returns the start rule name, or the error of StartError if name is not a start rule.
 func (g *grammar) StartRule(name string) (*Rule, error) {
+	if name == "" {
+		name = g.DefaultStart
+	}
 	for _, s := range g.Starts {
 		if s == name {
 			return g.ruleByName(name), nil

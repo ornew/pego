@@ -33,7 +33,8 @@ var pegoRecGrammar = pegort.NewGrammar(100000)
 var rules []*pegort.Rule
 var pegoGrammar = pegort.NewGrammar(100000)
 
-// ParseRule parses the whole input with the start rule name, a rule marked @start.
+// ParseRule parses the whole input with the start rule name, a rule marked @start; an empty
+// name selects the grammar's default start rule.
 func ParseRule(name, input string, opts ...pegort.ParseOption) (*pegort.Node, error) {
 	o, err := pegort.ResolveOptions(pegoGrammar, opts)
 	if err != nil {
@@ -539,7 +540,8 @@ func ParseAST(input string, opts ...pegort.ParseOption) (*types.Stream, error) {
 	return pegort.TParse(trules[0], input, opts, a, func(v any) *types.Stream { return pegort.TAs[*types.Stream](v) })
 }
 
-// ParseRuleAST parses the whole input with the named start rule and returns its typed value.
+// ParseRuleAST parses the whole input with the named start rule and returns its typed value; an empty
+// name selects the grammar's default start rule.
 // Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
 // Invalid options and names of rules that are not start rules return nil with an error. Start rule result types:
 //
@@ -550,7 +552,7 @@ func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 		return nil, err
 	}
 	switch name {
-	case "main":
+	case "main", "":
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[0], input, o, a, func(v any) *types.Stream { return pegort.TAs[*types.Stream](v) })
 	default:
@@ -1622,6 +1624,7 @@ func init() {
 	recRules[138].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e211(p) }
 	recRules[139].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e379(p) }
 	pegoGrammar.Starts = []string{"main"}
+	pegoGrammar.DefaultStart = "main"
 	pegoGrammar.Descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"...\"", "\"\\ufeff\"", "\"---\"", "[\\r\\n \\t]", "\"%\"", "\"YAML\"", "\"TAG\"", "[0-9]", "\".\"", "\"!\"", "\"#\"", "\"&\"", "\"!<\"", "\">\"", "[0-9a-zA-Z\\-]", "\"!!\"", "\"*\"", "[^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff,\\[\\]{}]", "[0-9a-zA-Z\\-#;/?:@&=+$,_.!~*\\'()\\[\\]]", "[0-9a-zA-Z\\-#;/?:@&=+$_.~*\\'()]", "[0-9a-fA-F]", "[ \\t]", "[|>!&]", "[#\\r\\n]", "[^#\\r\\n]", "[^!&]", "\" \"", "\"-\"", "\"?\"", "\":\"", "[\\[{\\'\"!&]", "[^|>!&#\\r\\n]", "\"|\"", "[+\\-]", "\"1\"", "\"2\"", "\"3\"", "\"4\"", "\"5\"", "\"6\"", "\"7\"", "\"8\"", "\"9\"", "[!&]", "\"[\"", "\"]\"", "\",\"", "\"{\"", "\"}\"", "[^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff\\-?:,\\[\\]{}#&*!|>\\'\"%@`]", "[\\-?:]", "[^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff:]", "[^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff:#]", "[^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff:,\\[\\]{}]", "[^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff:#,\\[\\]{}]", "\"\\\"\"", "[^\\x00-\\b\\n-\\x1f\"\\\\]", "\"\\\\\"", "[0abt\\tnvfre \"/\\\\N_LP]", "\"x\"", "\"u\"", "\"U\"", "[^\\x00- \"\\\\]", "\"'\"", "[^\\x00-\\b\\n-\\x1f\\']", "\"''\"", "[^\\x00- \\']", "[^\\x00-\\b\\n-\\x1f\\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff]", "\"\\r\\n\"", "\"\\r\"", "\"\\n\"", "[^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff]"}
 	pegoGrammar.SetVars([]string{"n", "c"}, []any{0, ""})
 	pegoRecGrammar.Share(pegoGrammar)

@@ -183,7 +183,7 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 	for i, name := range g.prog.starts {
 		starts[i] = g.prog.byName[name]
 	}
-	named.WriteString("// ParseRuleAST parses the whole input with the named start rule and returns its typed value.\n")
+	named.WriteString("// ParseRuleAST parses the whole input with the named start rule and returns its typed value; an empty\n// name selects the grammar's default start rule.\n")
 	named.WriteString("// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.\n// Invalid options and names of rules that are not start rules return nil with an error. Start rule result types:\n")
 	for _, r := range starts {
 		fmt.Fprintf(&named, "//\t%s: %s\n", r.name, t.goType(ruleType(r)))
@@ -197,7 +197,12 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 `)
 	for _, r := range starts {
 		x := ruleType(r)
-		fmt.Fprintf(&named, "\tcase %q:\n", r.name)
+		if r.name == g.prog.defaultStart {
+			// An empty name selects the default start rule.
+			fmt.Fprintf(&named, "\tcase %q, \"\":\n", r.name)
+		} else {
+			fmt.Fprintf(&named, "\tcase %q:\n", r.name)
+		}
 		if !conv && t.runtimeOK(x) {
 			needTyped = true
 			result := t.dconv(x, "v", "a")

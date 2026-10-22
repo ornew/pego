@@ -21,7 +21,8 @@ Every generated package has the same small API, spread over `parser.go` and `api
 // Parse parses the whole input with the start rule. Options select position units and the nested rule-call limit.
 func Parse(input string, opts ...ParseOption) (*Node, error)
 
-// ParseRule parses the whole input with the start rule name, a rule marked @start.
+// ParseRule parses the whole input with the start rule name, a rule marked @start; an empty
+// name selects the grammar's default start rule.
 func ParseRule(name, input string, opts ...ParseOption) (*Node, error)
 
 type ParseOption = runtime.ParseOption // an alias; the options are internal to the runtime
@@ -53,8 +54,8 @@ Compared with the engine's API:
   functional options (`Parse(input, pairsparser.WithUnit(pairsparser.Bytes))`), like the engine. `ParseRule(name, input)` plays the role of
   `Parser.WithStart(name).Parse(input)`, and like it accepts only rules marked `@start`: another rule is an error,
   `rule pair is not a start rule; parsing can begin only at a rule marked @start`, and so is an unknown name,
-  `rule nope is not defined`. Like the engine, both
-  require the rule to consume the whole input.
+  `rule nope is not defined`. An empty name selects the grammar's default start rule, as for
+  `Parser.WithStart`. Like the engine, both require the rule to consume the whole input.
 - **The types belong to the generated package.** `pairsparser.Node` has the same fields, methods and JSON encoding as
   `pego.Node`, but it is a different Go type: you cannot pass one where the other is expected, and error checks use
   `errors.As` with the generated `*pairsparser.SyntaxError` (and `pairsparser.SyntaxErrors` for errors recovered with

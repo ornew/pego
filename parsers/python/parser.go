@@ -2282,7 +2282,8 @@ func ParseAST(input string, opts ...pegort.ParseOption) (*types.Module, error) {
 	return pegort.TParse(trules[0], input, opts, a, func(v any) *types.Module { return pegort.TAs[*types.Module](v) })
 }
 
-// ParseRuleAST parses the whole input with the named start rule and returns its typed value.
+// ParseRuleAST parses the whole input with the named start rule and returns its typed value; an empty
+// name selects the grammar's default start rule.
 // Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
 // Invalid options and names of rules that are not start rules return nil with an error. Start rule result types:
 //
@@ -2293,7 +2294,7 @@ func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 		return nil, err
 	}
 	switch name {
-	case "main":
+	case "main", "":
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[0], input, o, a, func(v any) *types.Module { return pegort.TAs[*types.Module](v) })
 	default:
@@ -3143,6 +3144,7 @@ func init() {
 	pegoGrammar.NodeTypes["Identifier"] = pegort.NewNodeTypeKinds("Identifier")
 	pegoGrammar.NodeTypes["Op"] = pegort.NewNodeTypeKinds("Op")
 	pegoGrammar.Starts = []string{"main"}
+	pegoGrammar.DefaultStart = "main"
 	pegoGrammar.NoWorkControls = true
 	pegoGrammar.SetVars([]string{"lv", "ind", "isdict"}, []any{0, 0, false})
 	trules = []*pegort.TRule{

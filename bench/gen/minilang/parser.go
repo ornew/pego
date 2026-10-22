@@ -34,7 +34,8 @@ var pegoRecGrammar = pegort.NewGrammar(100000)
 var rules []*pegort.Rule
 var pegoGrammar = pegort.NewGrammar(100000)
 
-// ParseRule parses the whole input with the start rule name, a rule marked @start.
+// ParseRule parses the whole input with the start rule name, a rule marked @start; an empty
+// name selects the grammar's default start rule.
 func ParseRule(name, input string, opts ...pegort.ParseOption) (*pegort.Node, error) {
 	o, err := pegort.ResolveOptions(pegoGrammar, opts)
 	if err != nil {
@@ -636,7 +637,8 @@ func ParseAST(input string, opts ...pegort.ParseOption) (*types.Program, error) 
 	return pegort.TParse(trules[0], input, opts, a, func(v any) *types.Program { return pegort.TAs[*types.Program](v) })
 }
 
-// ParseRuleAST parses the whole input with the named start rule and returns its typed value.
+// ParseRuleAST parses the whole input with the named start rule and returns its typed value; an empty
+// name selects the grammar's default start rule.
 // Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
 // Invalid options and names of rules that are not start rules return nil with an error. Start rule result types:
 //
@@ -647,7 +649,7 @@ func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 		return nil, err
 	}
 	switch name {
-	case "main":
+	case "main", "":
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[0], input, o, a, func(v any) *types.Program { return pegort.TAs[*types.Program](v) })
 	default:
@@ -1068,6 +1070,7 @@ func init() {
 	recRules[29].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e182(p) }
 	recRules[30].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e67(p) }
 	pegoGrammar.Starts = []string{"main"}
+	pegoGrammar.DefaultStart = "main"
 	pegoGrammar.Descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"{\"", "\"}\"", "\"let\"", "\"fn\"", "\"if\"", "\"while\"", "\"return\"", "[^;{}\\n]", "\";\"", "\"=\"", "\"(\"", "\")\"", "\",\"", "expected an expression", "[a-zA-Z_]", "expected a name", "\"else\"", "\"true\"", "\"false\"", "[a-zA-Z0-9_]", "[0-9]", "\".\"", "\"\\\"\"", "[^\"\\\\\\n]", "\"\\\\\"", "[ \\t\\r\\n]", "\"//\"", "[^\\n]", "\"[\"", "\"]\"", "\"?\"", "\":\"", "\"||\"", "\"&&\"", "\"==\"", "\"!=\"", "\"<=\"", "\">=\"", "\"<\"", "\">\"", "\"+\"", "\"-\"", "\"*\"", "\"/\"", "\"%\"", "\"!\""}
 	pegoRecGrammar.Share(pegoGrammar)
 	trules = []*pegort.TRule{

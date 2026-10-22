@@ -95,8 +95,8 @@ const (
   the named start rule, a rule marked `@start`; another rule is the error
   `rule <name> is not a start rule; parsing can begin only at a rule marked @start`,
   an unknown name the error `rule <name> is not defined`, the name of a hidden
-  rule the error that the rule is hidden, and an empty name the error
-  `no start rule is given`. Both require the rule to consume the whole input.
+  rule the error that the rule is hidden, and an empty name selects the
+  default start rule of the grammar. Both require the rule to consume the whole input.
   Generated parsers contain entry code only for start rules.
 - `Node`, `Fields`, `NodeField`, `SyntaxError` and `SyntaxErrors` are types of the
   generated package (aliases of the types of its runtime) with the members of their

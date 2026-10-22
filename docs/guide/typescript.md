@@ -153,7 +153,7 @@ runtime := pego.GenerateTypeScriptRuntime() // runtime.ts alone
 ## The Generated API
 
 ```ts
-// Parses the whole input with the start rule (or the rule name).
+// Parses the whole input with the start rule (or the start rule name; "" selects the default).
 export function parse(input: string | Uint8Array, unit?: Unit): ParseResult;
 export function parseRule(name: string, input: string | Uint8Array, unit?: Unit): ParseResult;
 // With -recognize: checks the input without building a tree; null if it matches.

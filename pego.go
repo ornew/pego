@@ -630,11 +630,14 @@ func LoadParser(data []byte) (*Parser, error) {
 	return &Parser{prog: prog, start: start}, nil
 }
 
-// WithStart returns a parser that starts at the rule name, which must be a start rule. The
-// compiled grammar is shared.
+// WithStart returns a parser that starts at the rule name, which must be a start rule; an empty
+// name selects the grammar's default start rule. The compiled grammar is shared.
 func (p *Parser) WithStart(name string) (*Parser, error) {
 	if err := p.prog.CheckStart(name); err != nil {
 		return nil, err
+	}
+	if name == "" {
+		name = p.prog.DefaultStart()
 	}
 	return &Parser{prog: p.prog, start: name}, nil
 }

@@ -2,7 +2,8 @@ package engine
 
 import "fmt"
 
-// admitParse validates fixed metadata before caller Context methods. Lazy setup
+// admitParse validates fixed metadata before caller Context methods. Callers
+// resolve an empty start to the default start rule first. Lazy setup
 // is not charged, but active calls check immediately around each component.
 func (prog *Program) admitParse(start string, o ParseOptions, stream bool) (*Program, *rule, *workControl, error) {
 	if err := prog.CheckStart(start); err != nil {

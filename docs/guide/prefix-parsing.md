@@ -1,7 +1,8 @@
 # Parsing a Prefix
 
 `Parser.Parse` requires its start rule to consume the complete supplied input.
-`Parser.ParsePrefix` selects a rule for one call and returns its successful
+`Parser.ParsePrefix` selects a start rule for one call (an empty name selects
+the grammar's default start rule) and returns its successful
 endpoint without imposing an additional end-of-input check. This is useful
 when a larger document contains a contiguous fragment described by another
 rule.

@@ -33,6 +33,7 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *Node, er
 			}
 		}
 	}()
+	start = prog.resolveStart(start) // an empty name selects the default start rule
 	active, _, control, err := prog.admitParse(start, o, false)
 	if err != nil {
 		return nil, err
@@ -267,6 +268,7 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 	if o.Recognize {
 		return fmt.Errorf("recognition is not supported for stream parsing")
 	}
+	start = prog.resolveStart(start) // an empty name selects the default start rule
 	_, rule, control, err := prog.admitParse(start, o, true)
 	if err != nil {
 		return err

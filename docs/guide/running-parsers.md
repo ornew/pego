@@ -183,7 +183,7 @@ _, err = pego.CompileSource(src, "pair")
 fmt.Println(err) // rule pair is not a start rule; parsing can begin only at a rule marked @start
 ```
 
-`Parser.WithStart(name)` returns a parser for another start rule. It shares the compiled grammar, so it costs almost
+`Parser.WithStart(name)` returns a parser for another start rule, and `WithStart("")` one for the default start rule. It shares the compiled grammar, so it costs almost
 nothing, and it is how you expose several entry points of one grammar (for instance `expr` for an expression
 evaluator and `main` for a whole file):
 

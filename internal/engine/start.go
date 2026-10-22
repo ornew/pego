@@ -92,9 +92,10 @@ func (prog *Program) Starts() []string { return slices.Clone(prog.starts) }
 // @start(default), or the only start rule.
 func (prog *Program) DefaultStart() string { return prog.defaultStart }
 
-// CheckStart reports an error unless name is a start rule.
+// CheckStart reports an error unless name selects a start rule: it is the name
+// of a start rule, or empty for the default start rule.
 func (prog *Program) CheckStart(name string) error {
-	if slices.Contains(prog.starts, name) {
+	if slices.Contains(prog.starts, prog.resolveStart(name)) {
 		return nil
 	}
 	if name == "" {
@@ -109,14 +110,21 @@ func (prog *Program) CheckStart(name string) error {
 	return fmt.Errorf("rule %s is not defined", name)
 }
 
-// startRule returns the start rule name, or the default start rule when name is empty.
-func (prog *Program) startRule(name string) (*rule, error) {
+// resolveStart returns the rule name selects: name, or the default start rule
+// when name is empty.
+func (prog *Program) resolveStart(name string) string {
 	if name == "" {
-		name = prog.defaultStart
-	} else if err := prog.CheckStart(name); err != nil {
+		return prog.defaultStart
+	}
+	return name
+}
+
+// startRule returns the start rule name selects.
+func (prog *Program) startRule(name string) (*rule, error) {
+	if err := prog.CheckStart(name); err != nil {
 		return nil, err
 	}
-	return prog.byName[name], nil
+	return prog.byName[prog.resolveStart(name)], nil
 }
 
 // definesRule reports whether the grammar defines the rule name, without preparing a backend.
