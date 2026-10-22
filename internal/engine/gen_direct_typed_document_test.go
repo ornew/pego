@@ -10,6 +10,12 @@ import (
 )
 
 func TestGenerateDirectTypedDocument(t *testing.T) {
+	testDirectTypedDocument(t, GenOptions{})
+}
+
+// testDirectTypedDocument builds typed Document parsers generated with the options extra, which
+// may set private generator options, and checks them against parsers that convert Node values.
+func testDirectTypedDocument(t *testing.T, extra GenOptions) {
 	needsWorkControls(t)
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
@@ -75,7 +81,9 @@ rule main Text = v1:[aé😀]* #atomic => Text{S: text($v1)}`, []string{"", "aé
 		if err != nil {
 			t.Fatalf("%s: %v", pkg, err)
 		}
-		code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Document: true})
+		opts := extra
+		opts.Package, opts.Start, opts.Types, opts.Document = pkg, "main", true, true
+		code, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", pkg, err)
 		}

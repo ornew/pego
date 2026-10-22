@@ -35,11 +35,10 @@ type flowState struct {
 	rules []*rule
 }
 
-// flowSupported reports whether flowTyped covers the generator's options: output with or without
-// work controls, without Documents and observability, with the typed cuts and local capture
-// layouts that dgen uses.
+// flowSupported reports whether flowTyped covers the generator's options: output without
+// observability, with the typed cuts and local capture layouts that dgen uses.
 func (g *generator) flowSupported() bool {
-	return !g.observability && !g.document && !g.directTypedDocument &&
+	return !g.observability &&
 		!g.disableTypedCuts && !g.disableTypedLocalLayouts
 }
 

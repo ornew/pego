@@ -39,6 +39,8 @@ var flowModes = []struct {
 	{"controlled recognizer", GenOptions{Types: true, Recognize: true, WorkControls: true}, true},
 	{"controlled unguarded", GenOptions{Types: true, TypedOnly: true, WorkControls: true, disableGuardedClasses: true}, true},
 	{"controlled boxed", GenOptions{Types: true, TypedOnly: true, WorkControls: true, disableLiteralTextDispatch: true, boxedComparisons: true}, true},
+	{"Document", GenOptions{Types: true, Document: true}, true},
+	{"Document with work controls", GenOptions{Types: true, Document: true, WorkControls: true}, true},
 }
 
 // flowUnreadLine matches the first line of a direct rule's body or matcher, also of the copy
@@ -166,12 +168,17 @@ func TestFlowTypedCorpus(t *testing.T) {
 	}
 }
 
+// TestFlowTypedDocument builds typed Document parsers with flowTyped printing rules from Flow IR
+// and checks them as TestGenerateDirectTypedDocument does.
+func TestFlowTypedDocument(t *testing.T) {
+	testDirectTypedDocument(t, GenOptions{flowTyped: true})
+}
+
 // TestFlowTypedModes pins the options under which flowTyped leaves every rule on dgen and the
 // general code: the parser is the one written without it.
 func TestFlowTypedModes(t *testing.T) {
 	cases := append(schemaCorpus(t), coreExtraGrammars...)
 	for _, mode := range []coreGenMode{
-		{"Document", GenOptions{Types: true, Document: true}},
 		{"observable", GenOptions{Types: true, TypedOnly: true, Observability: true}},
 		{"general cuts", GenOptions{Types: true, TypedOnly: true, disableTypedCuts: true}},
 		{"frame layouts", GenOptions{Types: true, TypedOnly: true, disableTypedLocalLayouts: true}},
