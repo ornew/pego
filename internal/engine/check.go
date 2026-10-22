@@ -45,7 +45,7 @@ func checkTypesControlled(prog *Program, errs *ErrorList, control *compileContro
 
 	// Check the values.
 	nodeMembers := map[*grammar.Member]bool{}
-	values, valueErrs := valueTypesChecked(prog, control, nodeMembers)
+	values, valueErrs := valueTypesChecked(prog, control, nodeMembers, nil)
 	*errs = append(*errs, valueErrs...)
 
 	// Keep the types for code generation (typedGo).
@@ -80,6 +80,25 @@ type typeInfo struct {
 	// nodeMembers reports, for each member access of an action, whether it reads only node
 	// members (.Start, .End, .Value) and never a struct field.
 	nodeMembers map[*grammar.Member]bool
+	// rec holds the types of the terms, scopes and rules of the checked program, made on first
+	// use by Program.valueRecord.
+	rec     *valueRecord
+	recOnce sync.Once
+}
+
+// valueRecord returns the types the value inference gives the parts of the type-checked program
+// (valueRecord), or nil if its types were not checked. Only code generation reads them, so they
+// are recorded by a second run of the inference on first use rather than on every Compile.
+func (p *Program) valueRecord() *valueRecord {
+	if p.typed == nil {
+		return nil
+	}
+	p.typed.recOnce.Do(func() {
+		rec := newValueRecord()
+		valueTypesChecked(p, nil, nil, rec)
+		p.typed.rec = rec
+	})
+	return p.typed.rec
 }
 
 // RuleType returns the type of the value of the rule name: its declared type, or the inferred

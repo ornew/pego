@@ -355,6 +355,9 @@ func (v *valueInference) convertTerm(t *grammar.New, n nodeTy, env *valueEnv) ty
 		return n // reported where the constructor is checked (compiler.checkTerm)
 	}
 	x := args[0]
+	if v.rec != nil && !v.quiet {
+		v.rec.proven[t] = v.convertible(x, n) && !v.needsCast(x, n.underlying())
+	}
 	if !v.convertible(x, n) {
 		v.errorf(t.Diagnostic(), "cannot convert %s to %s%s", v.expand(x), n, v.castHint(x, n.underlying()))
 	} else if v.needsCast(x, n.underlying()) {
@@ -483,6 +486,14 @@ func sameCaps(a, b []capIndex) bool {
 
 // term returns the type of the value expression t.
 func (v *valueInference) term(t grammar.Term, env *valueEnv) ty {
+	r := v.termType(t, env)
+	if v.rec != nil && !v.quiet {
+		v.rec.terms[t] = r
+	}
+	return r
+}
+
+func (v *valueInference) termType(t grammar.Term, env *valueEnv) ty {
 	v.control.poll()
 	switch t := t.(type) {
 	case *grammar.TermGroup:

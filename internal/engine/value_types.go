@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"slices"
 	"sort"
@@ -212,6 +213,43 @@ type valueInference struct {
 	spliced map[string]bool
 	// nodeMembers, if not nil, receives the member accesses that read only node members.
 	nodeMembers map[*grammar.Member]bool
+	// rec, if not nil, receives the types of terms, scopes and rules.
+	rec *valueRecord
+}
+
+// valueRecord holds the types the value inference gives the parts of a program, for the backends
+// (Core IR terms and capture slots). Each part has the type of its last typing: terms typed again
+// quietly, with a wider lambda parameter, and the rules of a cycle, typed again in each round,
+// keep the final one.
+type valueRecord struct {
+	// terms holds the type of each action, predicate and binding term and of their subterms.
+	terms map[grammar.Term]ty
+	// proven reports, for each node type constructor that converts a value, that the conversion
+	// is proven: every value of the operand converts, without a check at run time.
+	proven map[*grammar.New]bool
+	// scopes holds, for the body of each capture scope (a rule body, a repetition element with
+	// captures of its own, an Operators Rule line), the type of each capture a term reads.
+	scopes map[grammar.Expr]map[string]ty
+	// rules holds the value type of every rule, splice rules included.
+	rules map[string]ty
+}
+
+func newValueRecord() *valueRecord {
+	return &valueRecord{terms: map[grammar.Term]ty{}, proven: map[*grammar.New]bool{}, scopes: map[grammar.Expr]map[string]ty{}}
+}
+
+// scope records the capture types of the scope with the body e and the captures caps.
+func (v *valueInference) scope(e grammar.Expr, caps []capIndex) {
+	if v.rec == nil || v.quiet {
+		return
+	}
+	types := map[string]ty{}
+	for _, c := range caps {
+		if _, ok := types[c.name]; !ok {
+			types[c.name], _ = capType(caps, c.name)
+		}
+	}
+	v.rec.scopes[e] = types
 }
 
 // valueTypes returns the value type of each rule of a type-checked program. It is computed on
@@ -247,12 +285,13 @@ func (p *Program) valueErrors() ErrorList {
 
 // valueTypes returns the value type of each rule, and the errors of the actions.
 func valueTypes(p *Program, control *compileControl) (map[string]ty, ErrorList) {
-	return valueTypesChecked(p, control, nil)
+	return valueTypesChecked(p, control, nil, nil)
 }
 
-// valueTypesChecked is valueTypes recording the node member accesses in nodeMembers, if not nil.
-func valueTypesChecked(p *Program, control *compileControl, nodeMembers map[*grammar.Member]bool) (map[string]ty, ErrorList) {
-	v := &valueInference{prog: p, control: control, rules: map[string]*grammar.RuleDef{}, out: map[string]ty{}, approx: map[string]ty{}, computing: map[string]bool{}, nodeMembers: nodeMembers}
+// valueTypesChecked is valueTypes recording the node member accesses in nodeMembers and the
+// types of the program's parts in rec, each if not nil.
+func valueTypesChecked(p *Program, control *compileControl, nodeMembers map[*grammar.Member]bool, rec *valueRecord) (map[string]ty, ErrorList) {
+	v := &valueInference{prog: p, control: control, rules: map[string]*grammar.RuleDef{}, out: map[string]ty{}, approx: map[string]ty{}, computing: map[string]bool{}, nodeMembers: nodeMembers, rec: rec}
 	rules := p.Grammar.Rules()
 	for _, rd := range rules {
 		v.rules[rd.Name] = rd
@@ -261,6 +300,9 @@ func valueTypesChecked(p *Program, control *compileControl, nodeMembers map[*gra
 	for _, rd := range rules {
 		control.poll()
 		v.ruleValue(rd.Name)
+	}
+	if rec != nil {
+		rec.rules = maps.Clone(v.out)
 	}
 	return pruneSpliceTypes(p, rules, v.out), v.final
 }
@@ -526,6 +568,7 @@ func (v *valueInference) ruleDef(rd *grammar.RuleDef) ty {
 		return v.operatorsRule(rd, pr)
 	}
 	env := &valueEnv{caps: tupleNode(v.elems(rd.Expr)).caps}
+	v.scope(rd.Expr, env.caps)
 	v.predicates(rd.Expr, env)
 	if _, ok := v.prog.spliceBody(rd.Name); ok {
 		// The value of a rule that makes no node of its own is its one element, as a call takes it.
@@ -553,6 +596,7 @@ func (v *valueInference) predicates(e grammar.Expr, env *valueEnv) {
 	v.control.poll()
 	inner := func(body grammar.Expr) *valueEnv {
 		caps := tupleNode(v.elems(body)).caps
+		v.scope(body, caps)
 		return &valueEnv{caps: append(slices.Clone(caps), env.caps...), locals: env.locals}
 	}
 	switch e := e.(type) {
@@ -902,10 +946,12 @@ func (v *valueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.Operator
 	tuples := map[int]bool{}    // the lines whose value is the tuple node of an operator without an action
 	operators := map[int]bool{} // the lines of operators, whose nodes a named node type converts
 	if pr.Skip != nil {
+		v.scope(pr.Skip, nil)
 		v.predicates(pr.Skip, &valueEnv{})
 	}
 	for _, o := range pr.Operands {
 		env := &valueEnv{caps: tupleNode(v.elems(o.Expr)).caps}
+		v.scope(o.Expr, env.caps)
 		v.predicates(o.Expr, env)
 		if o.Action != nil {
 			ts = append(ts, v.term(o.Action, env))
@@ -921,6 +967,7 @@ func (v *valueInference) operatorsRule(rd *grammar.RuleDef, pr *grammar.Operator
 			if !ok {
 				op = valueElem{t: nodeTy{value: tupleTy{elems: []ty{}}}}
 			}
+			v.scope(o.Expr, op.caps)
 			v.predicates(o.Expr, &valueEnv{caps: op.caps})
 			if o.Action != nil {
 				locals := map[string]ty{"op": op.t}
