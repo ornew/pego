@@ -76,6 +76,8 @@ type GenOptions struct {
 	// keepNodes keeps the untyped Node rule functions of a typed-only parser. generate sets it
 	// itself, when a typed entry point converts the Node result.
 	keepNodes bool
+	// keepComments keeps the comments of unexported generated code, which tests read as route markers.
+	keepComments bool
 	// disableKeepNodes leaves the Node rule functions out of a typed-only parser that needs them
 	// (a negative control for tests).
 	disableKeepNodes bool
@@ -407,6 +409,11 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	src, err := format.Source([]byte(file.String()))
 	if err != nil {
 		return nil, fmt.Errorf("generated code does not compile: %w", err)
+	}
+	if !opts.keepComments {
+		if src, err = trimComments(src); err != nil {
+			return nil, fmt.Errorf("generated code does not compile: %w", err)
+		}
 	}
 	api, err := opts.apiSource(info)
 	if err != nil {
@@ -1061,7 +1068,7 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 	if g.observability {
 		name = g.traceCallWrapper(r, name, false)
 	}
-	fmt.Fprintf(m, "// %s, called as by call\nfunc %s(p *TParser) (any, bool) {\n", r.name, name)
+	fmt.Fprintf(m, "// rule %s\nfunc %s(p *TParser) (any, bool) {\n", r.name, name)
 	// Without Documents the invocation of a direct rule without captures is its plain method: the
 	// two bodies differ only in the rollback to the start on failure, which the callers of the
 	// invocation repeat harmlessly, so one body serves both. A Document reads the position the

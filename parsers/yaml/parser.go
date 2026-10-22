@@ -9,8 +9,6 @@ import (
 	pegort "github.com/ornew/pego/runtime"
 )
 
-// --- Generated code ---
-
 // Parse parses the whole input with the rule main. Options select position units, depth, cancellation and work limits.
 // If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.
 func Parse(input string, opts ...pegort.ParseOption) (*pegort.Node, error) {
@@ -25,11 +23,9 @@ func Recognize(input string, opts ...pegort.ParseOption) error {
 	return err
 }
 
-// recRules is the rule table of Recognize, and pegoRecGrammar its grammar.
 var recRules []*pegort.Rule
 var pegoRecGrammar = pegort.NewGrammar(100000)
 
-// rules is the rule table, and pegoGrammar its grammar.
 var rules []*pegort.Rule
 var pegoGrammar = pegort.NewGrammar(100000)
 
@@ -47,22 +43,16 @@ func ParseRule(name, input string, opts ...pegort.ParseOption) (*pegort.Node, er
 	return pegort.RunParseResolved(r, input, o)
 }
 
-// --- Typed values ---
-
-// The value of a rule, and a list element, holds an int, string or bool in a box.
 func astInt(v any) int       { i, _ := pegort.UnboxValue(v).(int); return i }
 func astString(v any) string { s, _ := pegort.UnboxValue(v).(string); return s }
 func astBool(v any) bool     { x, _ := pegort.UnboxValue(v).(bool); return x }
 
-// astChunk owns unused values and the next allocation size for one type.
-// Handed-out values are never reused, even when a parse discards them.
 type astChunk[T any] struct {
 	free      []T
 	next      int
 	bootstrap uint8
 }
 
-// grow starts small and doubles up to limit. The request is always satisfied.
 func (s *astChunk[T]) grow(n, initial, limit int) {
 	size := s.next
 	if size == 0 {
@@ -78,9 +68,6 @@ func (s *astChunk[T]) grow(n, initial, limit int) {
 	}
 }
 
-// astNew allocates the first three values independently so a later
-// published value cannot retain discarded early siblings through a chunk.
-// Later values use the original 8-to-256 chunk growth.
 func astNew[T any](s *astChunk[T]) *T {
 	if len(s.free) == 0 {
 		if s.bootstrap < 3 {
@@ -94,11 +81,9 @@ func astNew[T any](s *astChunk[T]) *T {
 	return v
 }
 
-// astSlice allocates the first nonempty small list independently to keep
-// its backing values separate from later published lists of the same type.
 func astSlice[T any](s *astChunk[T], n int) []T {
 	if n == 0 {
-		return []T{} // an empty list, not nil
+		return []T{}
 	}
 	if n > 256 {
 		return make([]T, n)
@@ -115,7 +100,6 @@ func astSlice[T any](s *astChunk[T], n int) []T {
 	return v
 }
 
-// tinit sets up the typed rules (called at the end of init, after the rule tables).
 func tinit() {
 	tnamedPub := func(a any, x pegort.TVal) any {
 		s, _ := a.(*tslabs)
@@ -154,7 +138,6 @@ func tinit() {
 	trules[29].Nt = types.PegoNodeTypes[1]
 }
 
-// tmk_Directive makes a Directive in an action (newStruct in the typed runtime).
 func tmk_Directive(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
@@ -175,7 +158,6 @@ func tmk_Directive(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Document makes a Document in an action (newStruct in the typed runtime).
 func tmk_Document(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
@@ -204,7 +186,6 @@ func tmk_Document(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any)
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Mapping makes a Mapping in an action (newStruct in the typed runtime).
 func tmk_Mapping(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
@@ -229,7 +210,6 @@ func tmk_Mapping(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Pair makes a Pair in an action (newStruct in the typed runtime).
 func tmk_Pair(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
@@ -250,7 +230,6 @@ func tmk_Pair(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Properties makes a Properties in an action (newStruct in the typed runtime).
 func tmk_Properties(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
@@ -271,7 +250,6 @@ func tmk_Properties(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Scalar makes a Scalar in an action (newStruct in the typed runtime).
 func tmk_Scalar(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
@@ -300,7 +278,6 @@ func tmk_Scalar(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) a
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Sequence makes a Sequence in an action (newStruct in the typed runtime).
 func tmk_Sequence(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
@@ -325,7 +302,6 @@ func tmk_Sequence(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Stream makes a Stream in an action (newStruct in the typed runtime).
 func tmk_Stream(c *pegort.TActCtx, final bool, f0 any) any {
 	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
@@ -349,7 +325,7 @@ func tl0(a *tslabs, v any) []*types.Word {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*types.Word{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.Word{}
 	}
 	out := astSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -366,7 +342,7 @@ func tl1(a *tslabs, v any) []*types.Directive {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*types.Directive{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.Directive{}
 	}
 	out := astSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -383,7 +359,7 @@ func tl2(a *tslabs, v any) []*types.Pair {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*types.Pair{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.Pair{}
 	}
 	out := astSlice(&a.tl2Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -400,7 +376,7 @@ func tl3(a *tslabs, v any) []types.Value {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []types.Value{} // another node (an Error), as conversion makes an empty list of it
+		return []types.Value{}
 	}
 	out := astSlice(&a.tl3Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -417,7 +393,7 @@ func tl4(a *tslabs, v any) []*types.Document {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*types.Document{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.Document{}
 	}
 	out := astSlice(&a.tl4Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -429,7 +405,7 @@ func tl4(a *tslabs, v any) []*types.Document {
 
 func tv0(a *tslabs, v any) *types.Alias {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Alias{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Alias{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*pegort.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -439,7 +415,7 @@ func tv0(a *tslabs, v any) *types.Alias {
 
 func tv1(a *tslabs, v any) *types.Anchor {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Anchor{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Anchor{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*pegort.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
@@ -449,7 +425,7 @@ func tv1(a *tslabs, v any) *types.Anchor {
 
 func tv2(a *tslabs, v any) *types.Marker {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Marker{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Marker{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*pegort.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
@@ -459,7 +435,7 @@ func tv2(a *tslabs, v any) *types.Marker {
 
 func tv3(a *tslabs, v any) *types.Tag {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Tag{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Tag{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*pegort.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
@@ -469,7 +445,7 @@ func tv3(a *tslabs, v any) *types.Tag {
 
 func tv4(a *tslabs, v any) *types.Word {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Word{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Word{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*pegort.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[5] {
 		return nil
@@ -477,7 +453,6 @@ func tv4(a *tslabs, v any) *types.Word {
 	return pegort.TMatchAs[types.Word](x)
 }
 
-// tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
 	control     *pegort.WorkControl
 	tDirective  astChunk[types.Directive]
@@ -608,7 +583,6 @@ var lit206 = []rune("\n")
 var workClass210 = []pegort.WorkRange{{Lo: 0, Hi: 32}, {Lo: 127, Hi: 132}, {Lo: 134, Hi: 159}, {Lo: 65279, Hi: 65279}, {Lo: 65534, Hi: 65534}, {Lo: 65535, Hi: 65535}}
 var sh258 = pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}
 
-// rulesSpec is the compact form of the rule table, built by NewRules.
 var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "main", Value: &sh2, Seen: -1, Vars: 1},
 	{Name: "l_yaml_stream", Value: &sh8, Seen: -1, Scope: 2, Vars: 1},
@@ -852,7 +826,6 @@ var scope308 = []string{}
 var scope320 = []string{"e"}
 var scope321 = []string{"e"}
 
-// recRulesSpec is the compact form of the rule table, built by NewRules.
 var recRulesSpec = [...]pegort.RuleSpec{
 	{Name: "main", Value: &sh2, Flags: pegort.RuleNovalue, Seen: -1, Vars: 1},
 	{Name: "l_yaml_stream", Value: &sh8, Flags: pegort.RuleNovalue, Seen: -1, Vars: 1},
@@ -1681,7 +1654,6 @@ func init() {
 
 }
 
-// main (Node body inlined)
 func e1(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -1710,7 +1682,6 @@ fail:
 	return nil, false
 }
 
-// l_yaml_stream (Node body inlined)
 func e6(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -2248,7 +2219,6 @@ fail:
 	return nil, false
 }
 
-// l_document_prefix (Node body inlined)
 func e9(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -2475,7 +2445,6 @@ fail:
 	return nil, false
 }
 
-// l_document_suffix (Node body inlined)
 func e10(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -2530,7 +2499,6 @@ fail:
 	return nil, false
 }
 
-// c_directives_end (Node body inlined)
 func e12(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -2570,7 +2538,6 @@ fail:
 	return nil, false
 }
 
-// c_document_end (Node body inlined)
 func e14(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -2610,7 +2577,6 @@ fail:
 	return nil, false
 }
 
-// c_forbidden (Node body inlined)
 func e16(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -2844,7 +2810,6 @@ fail:
 	return nil, false
 }
 
-// l_any_document (Node body inlined)
 func e17(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -2948,7 +2913,6 @@ fail:
 	return nil, false
 }
 
-// l_directive_document (Node body inlined)
 func e18(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3107,7 +3071,6 @@ fail:
 	return nil, false
 }
 
-// l_explicit_document (Node body inlined)
 func e19(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3197,7 +3160,6 @@ fail:
 	return nil, false
 }
 
-// explicit_root (Node body inlined)
 func e20(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3262,7 +3224,6 @@ fail:
 	return nil, false
 }
 
-// l_bare_document (Node body inlined)
 func e21(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3336,7 +3297,6 @@ fail:
 	return nil, false
 }
 
-// bare_root (Node body inlined)
 func e22(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3393,7 +3353,6 @@ fail:
 	return nil, false
 }
 
-// document_end (Node body inlined)
 func e23(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3454,7 +3413,6 @@ fail:
 	return nil, false
 }
 
-// l_directive (Node body inlined)
 func e25(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3596,7 +3554,6 @@ fail:
 	return nil, false
 }
 
-// ns_yaml_directive (Node body inlined)
 func e26(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3658,7 +3615,6 @@ fail:
 	return nil, false
 }
 
-// yaml_name (Node body inlined)
 func e28(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3698,7 +3654,6 @@ fail:
 	return nil, false
 }
 
-// ns_yaml_version (Node body inlined)
 func e30(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3811,7 +3766,6 @@ fail:
 	return nil, false
 }
 
-// ns_tag_directive (Node body inlined)
 func e31(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3896,7 +3850,6 @@ fail:
 	return nil, false
 }
 
-// tag_name (Node body inlined)
 func e33(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3936,7 +3889,6 @@ fail:
 	return nil, false
 }
 
-// tag_handle (Node body inlined)
 func e34(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3972,7 +3924,6 @@ fail:
 	return nil, false
 }
 
-// ns_tag_prefix (Node body inlined)
 func e36(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -4138,7 +4089,6 @@ fail:
 	return nil, false
 }
 
-// ns_reserved_directive (Node body inlined)
 func e39(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -4438,7 +4388,6 @@ fail:
 	return nil, false
 }
 
-// ns_directive_name (Node body inlined)
 func e40(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -4509,7 +4458,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_properties (Node body inlined)
 func e41(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -4683,7 +4631,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_tag_property (Node body inlined)
 func e44(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -4897,7 +4844,6 @@ fail:
 	return nil, false
 }
 
-// c_tag_handle (Node body inlined)
 func e47(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -5175,7 +5121,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_anchor_property (Node body inlined)
 func e49(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -5258,7 +5203,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_alias_node (Node body inlined)
 func e51(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -5341,7 +5285,6 @@ fail:
 	return nil, false
 }
 
-// ns_anchor_char (Node body inlined)
 func e53(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -5391,7 +5334,6 @@ fail:
 	return nil, false
 }
 
-// ns_uri_char (Node body inlined)
 func e55(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -5559,7 +5501,6 @@ fail:
 	return nil, false
 }
 
-// ns_tag_char (Node body inlined)
 func e57(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -5727,7 +5668,6 @@ fail:
 	return nil, false
 }
 
-// ns_hex_digit (Node body inlined)
 func e58(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -5777,7 +5717,6 @@ fail:
 	return nil, false
 }
 
-// s_l_block_node (Node body inlined)
 func e59(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -6198,7 +6137,6 @@ fail:
 	return nil, false
 }
 
-// s_l_flow_in_block (Node body inlined)
 func e60(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -6544,7 +6482,6 @@ fail:
 	return nil, false
 }
 
-// flow_out_node (Node body inlined)
 func e61(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -6590,7 +6527,6 @@ fail:
 	return nil, false
 }
 
-// plain_out_node (Node body inlined)
 func e62(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -6635,7 +6571,6 @@ fail:
 	return nil, false
 }
 
-// s_l_block_collection (Node body inlined)
 func e63(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -6700,7 +6635,6 @@ fail:
 	return nil, false
 }
 
-// block_sequence_node (Node body inlined)
 func e64(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -6755,7 +6689,6 @@ fail:
 	return nil, false
 }
 
-// block_mapping_node (Node body inlined)
 func e65(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -6810,7 +6743,6 @@ fail:
 	return nil, false
 }
 
-// block_collection_start (Node body inlined)
 func e66(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -6996,7 +6928,6 @@ fail:
 	return nil, false
 }
 
-// block_collection_properties (Node body inlined)
 func e67(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -7058,7 +6989,6 @@ fail:
 	return nil, false
 }
 
-// block_collection_property (Node body inlined)
 func e68(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -7178,7 +7108,6 @@ fail:
 	return nil, false
 }
 
-// seq_space (Node body inlined)
 func e71(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -7391,7 +7320,6 @@ fail:
 	return nil, false
 }
 
-// l_block_sequence (Node body inlined)
 func e73(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -7625,7 +7553,6 @@ fail:
 	return nil, false
 }
 
-// c_l_block_seq_entry (Node body inlined)
 func e74(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -7708,7 +7635,6 @@ fail:
 	return nil, false
 }
 
-// s_l_block_indented (Node body inlined)
 func e75(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -7790,7 +7716,6 @@ fail:
 	return nil, false
 }
 
-// compact_collection (Node body inlined)
 func e76(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -7964,7 +7889,6 @@ fail:
 	return nil, false
 }
 
-// ns_l_compact_sequence (Node body inlined)
 func e78(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -8112,7 +8036,6 @@ fail:
 	return nil, false
 }
 
-// l_block_mapping (Node body inlined)
 func e80(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -8321,7 +8244,6 @@ fail:
 	return nil, false
 }
 
-// ns_l_compact_mapping (Node body inlined)
 func e82(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -8444,7 +8366,6 @@ fail:
 	return nil, false
 }
 
-// ns_l_block_map_entry (Node body inlined)
 func e83(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -8531,7 +8452,6 @@ fail:
 	return nil, false
 }
 
-// c_l_block_map_explicit_entry (Node body inlined)
 func e84(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -8622,7 +8542,6 @@ fail:
 	return nil, false
 }
 
-// c_l_block_map_explicit_key (Node body inlined)
 func e86(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -8705,7 +8624,6 @@ fail:
 	return nil, false
 }
 
-// l_block_map_explicit_value (Node body inlined)
 func e88(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -8795,7 +8713,6 @@ fail:
 	return nil, false
 }
 
-// ns_l_block_map_implicit_entry (Node body inlined)
 func e89(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -8886,7 +8803,6 @@ fail:
 	return nil, false
 }
 
-// ns_s_block_map_implicit_key (Node body inlined)
 func e91(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -9075,7 +8991,6 @@ fail:
 	return nil, false
 }
 
-// plain_key_node (Node body inlined)
 func e92(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -9120,7 +9035,6 @@ fail:
 	return nil, false
 }
 
-// c_l_block_map_implicit_value (Node body inlined)
 func e93(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -9206,7 +9120,6 @@ fail:
 	return nil, false
 }
 
-// block_out_node (Node body inlined)
 func e95(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -9371,7 +9284,6 @@ fail:
 	return nil, false
 }
 
-// s_l_block_scalar (Node body inlined)
 func e110(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -11202,7 +11114,6 @@ fail:
 	return nil, false
 }
 
-// s_separate_n1 (Node body inlined)
 func e111(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -11262,7 +11173,6 @@ fail:
 	return nil, false
 }
 
-// block_scalar_properties (Node body inlined)
 func e112(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -11324,7 +11234,6 @@ fail:
 	return nil, false
 }
 
-// l_block_content (Node body inlined)
 func e113(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -11593,7 +11502,6 @@ L6:
 	return v39, true
 }
 
-// l_nb_literal_text (Node body inlined)
 func e114(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -11917,7 +11825,6 @@ fail:
 	return nil, false
 }
 
-// l_empty_block (Node body inlined)
 func e115(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -12105,7 +12012,6 @@ fail:
 	return nil, false
 }
 
-// l_trail_comments (Node body inlined)
 func e116(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -12292,7 +12198,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_node (Node body inlined)
 func e117(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -12414,7 +12319,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_yaml_node (Node body inlined)
 func e118(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -12518,7 +12422,6 @@ fail:
 	return nil, false
 }
 
-// c_flow_json_node (Node body inlined)
 func e119(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -12617,7 +12520,6 @@ fail:
 	return nil, false
 }
 
-// properties_node (Node body inlined)
 func e120(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -12702,7 +12604,6 @@ fail:
 	return nil, false
 }
 
-// properties_separate (Node body inlined)
 func e121(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -12748,7 +12649,6 @@ fail:
 	return nil, false
 }
 
-// e_node (Node body inlined)
 func e122(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var ()
@@ -12761,7 +12661,6 @@ func e122(p *pegort.Parser) (*pegort.Node, bool) {
 	return nil, true
 }
 
-// e_node_comments (Node body inlined)
 func e123(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -12807,7 +12706,6 @@ fail:
 	return nil, false
 }
 
-// c_flow_sequence (Node body inlined)
 func e126(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -13074,7 +12972,6 @@ fail:
 	return nil, false
 }
 
-// ns_s_flow_seq_entries (Node body inlined)
 func e129(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -13337,7 +13234,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_seq_entry (Node body inlined)
 func e130(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -13402,7 +13298,6 @@ fail:
 	return nil, false
 }
 
-// c_flow_mapping (Node body inlined)
 func e133(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -13669,7 +13564,6 @@ fail:
 	return nil, false
 }
 
-// ns_s_flow_map_entries (Node body inlined)
 func e135(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -13907,7 +13801,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_map_entry (Node body inlined)
 func e136(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -13994,7 +13887,6 @@ fail:
 	return nil, false
 }
 
-// flow_map_explicit (Node body inlined)
 func e137(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -14051,7 +13943,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_map_explicit_entry (Node body inlined)
 func e138(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -14116,7 +14007,6 @@ fail:
 	return nil, false
 }
 
-// empty_pair (Node body inlined)
 func e139(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -14171,7 +14061,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_map_implicit_entry (Node body inlined)
 func e140(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -14253,7 +14142,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_map_yaml_key_entry (Node body inlined)
 func e141(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -14344,7 +14232,6 @@ fail:
 	return nil, false
 }
 
-// separate_value (Node body inlined)
 func e142(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -14404,7 +14291,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_flow_map_empty_key_entry (Node body inlined)
 func e143(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -14459,7 +14345,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_flow_map_separate_value (Node body inlined)
 func e144(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -14571,7 +14456,6 @@ fail:
 	return nil, false
 }
 
-// separated_flow_node (Node body inlined)
 func e145(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -14617,7 +14501,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_flow_map_json_key_entry (Node body inlined)
 func e146(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -14754,7 +14637,6 @@ fail:
 	return nil, false
 }
 
-// adjacent_value (Node body inlined)
 func e147(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -14814,7 +14696,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_flow_map_adjacent_value (Node body inlined)
 func e148(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -14900,7 +14781,6 @@ fail:
 	return nil, false
 }
 
-// optionally_separated_flow_node (Node body inlined)
 func e149(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -14960,7 +14840,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_pair (Node body inlined)
 func e150(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -15056,7 +14935,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_pair_entry (Node body inlined)
 func e151(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -15138,7 +15016,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_pair_yaml_key_entry (Node body inlined)
 func e152(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -15193,7 +15070,6 @@ fail:
 	return nil, false
 }
 
-// flow_pair_yaml_key (Node body inlined)
 func e153(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -15297,7 +15173,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_flow_pair_json_key_entry (Node body inlined)
 func e154(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -15352,7 +15227,6 @@ fail:
 	return nil, false
 }
 
-// flow_pair_json_key (Node body inlined)
 func e155(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -15502,7 +15376,6 @@ fail:
 	return nil, false
 }
 
-// plain_node (Node body inlined)
 func e156(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -15625,7 +15498,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain (Node body inlined)
 func e157(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -15864,7 +15736,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain_safe (Node body inlined)
 func e158(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -16027,7 +15898,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain_one_out (Node body inlined)
 func e160(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -16262,7 +16132,6 @@ fail:
 	return nil, false
 }
 
-// nb_ns_plain_in_line_out (Node body inlined)
 func e163(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -16785,7 +16654,6 @@ func e163(p *pegort.Parser) (*pegort.Node, bool) {
 	return v67, true
 }
 
-// ns_plain_multi_out (Node body inlined)
 func e164(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -17097,7 +16965,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain_one_in (Node body inlined)
 func e165(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -17332,7 +17199,6 @@ fail:
 	return nil, false
 }
 
-// nb_ns_plain_in_line_in (Node body inlined)
 func e168(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -17855,7 +17721,6 @@ func e168(p *pegort.Parser) (*pegort.Node, bool) {
 	return v67, true
 }
 
-// ns_plain_multi_in (Node body inlined)
 func e169(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -18167,7 +18032,6 @@ fail:
 	return nil, false
 }
 
-// c_double_quoted (Node body inlined)
 func e170(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -18290,7 +18154,6 @@ fail:
 	return nil, false
 }
 
-// double_quoted (Node body inlined)
 func e172(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -18510,7 +18373,6 @@ fail:
 	return nil, false
 }
 
-// nb_double_one_line (Node body inlined)
 func e173(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -18713,7 +18575,6 @@ func e173(p *pegort.Parser) (*pegort.Node, bool) {
 	return v25, true
 }
 
-// c_ns_esc_char (Node body inlined)
 func e179(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -19205,7 +19066,6 @@ fail:
 	return nil, false
 }
 
-// nb_double_multi_line (Node body inlined)
 func e180(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -19531,7 +19391,6 @@ fail:
 	return nil, false
 }
 
-// nb_ns_double_in_line (Node body inlined)
 func e181(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -19871,7 +19730,6 @@ func e181(p *pegort.Parser) (*pegort.Node, bool) {
 	return v42, true
 }
 
-// ns_double_char (Node body inlined)
 func e182(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -19988,7 +19846,6 @@ fail:
 	return nil, false
 }
 
-// s_double_break (Node body inlined)
 func e184(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -20239,7 +20096,6 @@ fail:
 	return nil, false
 }
 
-// c_single_quoted (Node body inlined)
 func e185(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -20362,7 +20218,6 @@ fail:
 	return nil, false
 }
 
-// single_quoted (Node body inlined)
 func e187(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -20582,7 +20437,6 @@ fail:
 	return nil, false
 }
 
-// nb_single_one_line (Node body inlined)
 func e189(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -20795,7 +20649,6 @@ func e189(p *pegort.Parser) (*pegort.Node, bool) {
 	return v26, true
 }
 
-// nb_single_multi_line (Node body inlined)
 func e190(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -21121,7 +20974,6 @@ fail:
 	return nil, false
 }
 
-// nb_ns_single_in_line (Node body inlined)
 func e191(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -21471,7 +21323,6 @@ func e191(p *pegort.Parser) (*pegort.Node, bool) {
 	return v43, true
 }
 
-// ns_single_char (Node body inlined)
 func e192(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -21598,7 +21449,6 @@ fail:
 	return nil, false
 }
 
-// s_flow_folded (Node body inlined)
 func e193(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -21788,7 +21638,6 @@ fail:
 	return nil, false
 }
 
-// l_empty_flow (Node body inlined)
 func e194(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -22051,7 +21900,6 @@ fail:
 	return nil, false
 }
 
-// s_flow_line_prefix (Node body inlined)
 func e195(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -22237,7 +22085,6 @@ fail:
 	return nil, false
 }
 
-// s_separate (Node body inlined)
 func e196(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -22400,7 +22247,6 @@ fail:
 	return nil, false
 }
 
-// s_separate_lines (Node body inlined)
 func e197(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -22670,7 +22516,6 @@ fail:
 	return nil, false
 }
 
-// s_separate_in_line (Node body inlined)
 func e198(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -22813,7 +22658,6 @@ fail:
 	return nil, false
 }
 
-// s_l_comments (Node body inlined)
 func e199(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -23155,7 +22999,6 @@ fail:
 	return nil, false
 }
 
-// s_b_comment (Node body inlined)
 func e200(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -23278,7 +23121,6 @@ fail:
 	return nil, false
 }
 
-// l_comment (Node body inlined)
 func e201(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -23391,7 +23233,6 @@ fail:
 	return nil, false
 }
 
-// c_nb_comment_text (Node body inlined)
 func e203(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -23524,7 +23365,6 @@ fail:
 	return nil, false
 }
 
-// b_comment (Node body inlined)
 func e207(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -23699,7 +23539,6 @@ fail:
 	return nil, false
 }
 
-// s_indent (Node body inlined)
 func e208(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -23808,7 +23647,6 @@ fail:
 	return nil, false
 }
 
-// b_break (Node body inlined)
 func e209(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -23961,7 +23799,6 @@ fail:
 	return nil, false
 }
 
-// ns_char (Node body inlined)
 func e211(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -24011,7 +23848,6 @@ fail:
 	return nil, false
 }
 
-// nb_char (Node body inlined)
 func e212(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -24061,7 +23897,6 @@ fail:
 	return nil, false
 }
 
-// l_document_prefix (Node body inlined)
 func e213(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -24216,7 +24051,6 @@ fail:
 	return nil, false
 }
 
-// l_document_suffix (Node body inlined)
 func e214(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -24251,7 +24085,6 @@ fail:
 	return nil, false
 }
 
-// s_l_comments (Node body inlined)
 func e215(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -24467,7 +24300,6 @@ fail:
 	return nil, false
 }
 
-// s_separate_in_line (value-free body inlined)
 func e216(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -24559,7 +24391,6 @@ fail:
 	return nil, false
 }
 
-// c_tag_handle (value-free body inlined)
 func e217(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -24734,7 +24565,6 @@ fail:
 	return nil, false
 }
 
-// ns_uri_char (Node body inlined)
 func e218(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -24854,7 +24684,6 @@ fail:
 	return nil, false
 }
 
-// ns_tag_char (Node body inlined)
 func e219(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -24974,7 +24803,6 @@ fail:
 	return nil, false
 }
 
-// ns_char (value-free body inlined)
 func e220(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -25020,7 +24848,6 @@ fail:
 	return nil, false
 }
 
-// s_separate (Node body inlined)
 func e221(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -25137,7 +24964,6 @@ fail:
 	return nil, false
 }
 
-// ns_anchor_char (value-free body inlined)
 func e222(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -25183,7 +25009,6 @@ fail:
 	return nil, false
 }
 
-// s_separate_lines (Node body inlined)
 func e223(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -25356,7 +25181,6 @@ fail:
 	return nil, false
 }
 
-// b_break (value-free body inlined)
 func e224(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -25481,7 +25305,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain_multi_out (Node body inlined)
 func e225(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -25698,7 +25521,6 @@ fail:
 	return nil, false
 }
 
-// s_indent (Node body inlined)
 func e226(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -25793,7 +25615,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain_one_out (Node body inlined)
 func e227(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -25971,7 +25792,6 @@ fail:
 	return nil, false
 }
 
-// s_separate_n1 (Node body inlined)
 func e228(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -26015,7 +25835,6 @@ fail:
 	return nil, false
 }
 
-// s_b_comment (Node body inlined)
 func e229(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -26085,7 +25904,6 @@ fail:
 	return nil, false
 }
 
-// l_trail_comments (Node body inlined)
 func e230(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -26230,7 +26048,6 @@ fail:
 	return nil, false
 }
 
-// c_forbidden (value-free body inlined)
 func e231(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -26413,7 +26230,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain_safe (Node body inlined)
 func e232(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -26530,7 +26346,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain (Node body inlined)
 func e233(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -26679,7 +26494,6 @@ fail:
 	return nil, false
 }
 
-// double_quoted (Node body inlined)
 func e234(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -26820,7 +26634,6 @@ fail:
 	return nil, false
 }
 
-// ns_double_char (Node body inlined)
 func e235(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -26921,7 +26734,6 @@ fail:
 	return nil, false
 }
 
-// single_quoted (Node body inlined)
 func e236(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -27062,7 +26874,6 @@ fail:
 	return nil, false
 }
 
-// ns_single_char (value-free body inlined)
 func e237(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -27171,7 +26982,6 @@ fail:
 	return nil, false
 }
 
-// l_comment (Node body inlined)
 func e238(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -27255,7 +27065,6 @@ fail:
 	return nil, false
 }
 
-// c_document_end (value-free body inlined)
 func e239(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -27291,7 +27100,6 @@ fail:
 	return nil, false
 }
 
-// ns_hex_digit (value-free body inlined)
 func e240(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -27337,7 +27145,6 @@ fail:
 	return nil, false
 }
 
-// s_flow_line_prefix (Node body inlined)
 func e241(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -27458,7 +27265,6 @@ fail:
 	return nil, false
 }
 
-// s_flow_folded (Node body inlined)
 func e242(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -27557,7 +27363,6 @@ fail:
 	return nil, false
 }
 
-// nb_ns_plain_in_line_out (Node body inlined)
 func e243(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -27880,7 +27685,6 @@ func e243(p *pegort.Parser) (*pegort.Node, bool) {
 	return nil, true
 }
 
-// c_nb_comment_text (value-free body inlined)
 func e244(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -27942,7 +27746,6 @@ fail:
 	return nil, false
 }
 
-// b_comment (value-free body inlined)
 func e245(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -28083,7 +27886,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain_multi_in (value-free body inlined)
 func e246(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -28304,7 +28106,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain_one_in (Node body inlined)
 func e247(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -28482,7 +28283,6 @@ fail:
 	return nil, false
 }
 
-// nb_double_multi_line (value-free body inlined)
 func e248(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -28675,7 +28475,6 @@ fail:
 	return nil, false
 }
 
-// nb_double_one_line (value-free body inlined)
 func e249(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -28813,7 +28612,6 @@ func e249(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, true
 }
 
-// c_ns_esc_char (Node body inlined)
 func e250(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -29119,7 +28917,6 @@ fail:
 	return nil, false
 }
 
-// nb_single_multi_line (value-free body inlined)
 func e251(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -29312,7 +29109,6 @@ fail:
 	return nil, false
 }
 
-// nb_single_one_line (value-free body inlined)
 func e252(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -29454,7 +29250,6 @@ func e252(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, true
 }
 
-// l_empty_flow (Node body inlined)
 func e253(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -29621,7 +29416,6 @@ fail:
 	return nil, false
 }
 
-// nb_ns_plain_in_line_in (Node body inlined)
 func e254(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -29944,7 +29738,6 @@ func e254(p *pegort.Parser) (*pegort.Node, bool) {
 	return nil, true
 }
 
-// nb_ns_double_in_line (Node body inlined)
 func e255(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -30150,7 +29943,6 @@ func e255(p *pegort.Parser) (*pegort.Node, bool) {
 	return nil, true
 }
 
-// s_double_break (value-free body inlined)
 func e256(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -30292,7 +30084,6 @@ fail:
 	return nil, false
 }
 
-// nb_ns_single_in_line (Node body inlined)
 func e257(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -30502,7 +30293,6 @@ func e257(p *pegort.Parser) (*pegort.Node, bool) {
 	return nil, true
 }
 
-// c_directives_end, called as by invokePlain
 func r4(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -30540,7 +30330,6 @@ func r4(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// c_document_end, called as by invokePlain
 func r5(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -30578,7 +30367,6 @@ func r5(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// yaml_name, called as by invokePlain
 func r16(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -30616,7 +30404,6 @@ func r16(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_yaml_version, called as by invokePlain
 func r17(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -30654,7 +30441,6 @@ func r17(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// tag_name, called as by invokePlain
 func r19(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -30692,7 +30478,6 @@ func r19(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// tag_handle, called as by invokePlain
 func r20(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -30730,7 +30515,6 @@ func r20(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_tag_prefix, called as by invokePlain
 func r21(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -30768,7 +30552,6 @@ func r21(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_directive_name, called as by invokePlain
 func r23(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -30806,7 +30589,6 @@ func r23(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_directive_parameter, called as by invokePlain
 func r24(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -30844,7 +30626,6 @@ func r24(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// c_ns_alias_node, called as by invokePlain
 func r29(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -30882,7 +30663,6 @@ func r29(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_hex_digit, called as by invokePlain
 func r33(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -30920,7 +30700,6 @@ func r33(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// l_block_content, called as by invokePlain
 func r65(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -30958,7 +30737,6 @@ func r65(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// e_node, called as by invokePlain
 func r74(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -30996,7 +30774,6 @@ func r74(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_flow_map_explicit_entry, called as by invokePlain
 func r83(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -31034,7 +30811,6 @@ func r83(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_flow_pair_entry, called as by invokePlain
 func r96(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -31072,7 +30848,6 @@ func r96(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_plain_safe_in, called as by invokePlain
 func r104(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -31110,7 +30885,6 @@ func r104(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_plain_multi_in, called as by invokePlain
 func r110(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -31148,7 +30922,6 @@ func r110(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// nb_double_one_line, called as by invokePlain
 func r113(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -31186,7 +30959,6 @@ func r113(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// nb_double_multi_line, called as by invokePlain
 func r115(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -31224,7 +30996,6 @@ func r115(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// s_double_break, called as by invokePlain
 func r118(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -31262,7 +31033,6 @@ func r118(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// nb_single_one_line, called as by invokePlain
 func r121(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -31300,7 +31070,6 @@ func r121(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// nb_single_multi_line, called as by invokePlain
 func r122(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -31338,7 +31107,6 @@ func r122(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_single_char, called as by invokePlain
 func r124(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -31376,7 +31144,6 @@ func r124(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// s_separate_in_line, called as by invokePlain
 func r130(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -31414,7 +31181,6 @@ func r130(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// c_nb_comment_text, called as by invokePlain
 func r134(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -31452,7 +31218,6 @@ func r134(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// b_comment, called as by invokePlain
 func r135(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -31490,7 +31255,6 @@ func r135(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// b_break, called as by invokePlain
 func r137(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -31528,7 +31292,6 @@ func r137(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_char, called as by invokePlain
 func r138(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -31566,7 +31329,6 @@ func r138(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// nb_char, called as by invokePlain
 func r139(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -31604,7 +31366,6 @@ func r139(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// s_separate_in_line, called as by invokePlain (body inlined)
 func r143(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -31708,7 +31469,6 @@ fail:
 	return nil, false
 }
 
-// c_tag_handle, called as by invokePlain (body inlined)
 func r144(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -31895,7 +31655,6 @@ fail:
 	return nil, false
 }
 
-// ns_char, called as by invokePlain (body inlined)
 func r147(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -31953,7 +31712,6 @@ fail:
 	return nil, false
 }
 
-// ns_anchor_char, called as by invokePlain (body inlined)
 func r149(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -32011,7 +31769,6 @@ fail:
 	return nil, false
 }
 
-// b_break, called as by invokePlain (body inlined)
 func r151(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -32148,7 +31905,6 @@ fail:
 	return nil, false
 }
 
-// s_separate_n1, called as by invokePlain
 func r155(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -32186,7 +31942,6 @@ func r155(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// c_forbidden, called as by invokePlain (body inlined)
 func r158(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -32381,7 +32136,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain_safe, called as by invokePlain
 func r159(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -32419,7 +32173,6 @@ func r159(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_plain, called as by invokePlain
 func r160(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -32457,7 +32210,6 @@ func r160(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_plain_safe_in, called as by invokePlain (body inlined)
 func r161(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -32515,7 +32267,6 @@ fail:
 	return nil, false
 }
 
-// double_quoted, called as by invokePlain
 func r162(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -32553,7 +32304,6 @@ func r162(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// single_quoted, called as by invokePlain
 func r164(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -32591,7 +32341,6 @@ func r164(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_single_char, called as by invokePlain (body inlined)
 func r165(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -32712,7 +32461,6 @@ fail:
 	return nil, false
 }
 
-// c_document_end, called as by invokePlain (body inlined)
 func r167(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -32760,7 +32508,6 @@ fail:
 	return nil, false
 }
 
-// ns_hex_digit, called as by invokePlain (body inlined)
 func r168(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -32818,7 +32565,6 @@ fail:
 	return nil, false
 }
 
-// c_nb_comment_text, called as by invokePlain (body inlined)
 func r172(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -32892,7 +32638,6 @@ fail:
 	return nil, false
 }
 
-// b_comment, called as by invokePlain (body inlined)
 func r173(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -33045,7 +32790,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain_multi_in, called as by invokePlain (body inlined)
 func r174(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -33278,7 +33022,6 @@ fail:
 	return nil, false
 }
 
-// nb_double_multi_line, called as by invokePlain (body inlined)
 func r176(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -33483,7 +33226,6 @@ fail:
 	return nil, false
 }
 
-// nb_double_one_line, called as by invokePlain (body inlined)
 func r177(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -33625,7 +33367,6 @@ func r177(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, true
 }
 
-// nb_single_multi_line, called as by invokePlain (body inlined)
 func r179(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -33830,7 +33571,6 @@ fail:
 	return nil, false
 }
 
-// nb_single_one_line, called as by invokePlain (body inlined)
 func r180(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -33976,7 +33716,6 @@ func r180(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, true
 }
 
-// s_double_break, called as by invokePlain (body inlined)
 func r184(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -34130,7 +33869,6 @@ fail:
 	return nil, false
 }
 
-// main (value-free body inlined)
 func e263(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -34161,7 +33899,6 @@ fail:
 	return nil, false
 }
 
-// l_yaml_stream (value-free body inlined)
 func e264(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -34581,7 +34318,6 @@ fail:
 	return nil, false
 }
 
-// l_document_prefix (Node body inlined)
 func e265(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -34736,7 +34472,6 @@ fail:
 	return nil, false
 }
 
-// l_document_suffix (Node body inlined)
 func e266(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -34771,7 +34506,6 @@ fail:
 	return nil, false
 }
 
-// c_directives_end (value-free body inlined)
 func e267(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -34807,7 +34541,6 @@ fail:
 	return nil, false
 }
 
-// l_any_document (Node body inlined)
 func e268(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -34897,7 +34630,6 @@ fail:
 	return nil, false
 }
 
-// l_directive_document (value-free body inlined)
 func e269(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -35004,7 +34736,6 @@ fail:
 	return nil, false
 }
 
-// l_explicit_document (Node body inlined)
 func e270(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -35062,7 +34793,6 @@ fail:
 	return nil, false
 }
 
-// explicit_root (Node body inlined)
 func e271(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -35117,7 +34847,6 @@ fail:
 	return nil, false
 }
 
-// l_bare_document (value-free body inlined)
 func e272(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -35171,7 +34900,6 @@ fail:
 	return nil, false
 }
 
-// bare_root (Node body inlined)
 func e273(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -35218,7 +34946,6 @@ fail:
 	return nil, false
 }
 
-// document_end (Node body inlined)
 func e274(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -35269,7 +34996,6 @@ fail:
 	return nil, false
 }
 
-// l_directive (value-free body inlined)
 func e275(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -35394,7 +35120,6 @@ fail:
 	return nil, false
 }
 
-// ns_yaml_directive (value-free body inlined)
 func e276(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -35442,7 +35167,6 @@ fail:
 	return nil, false
 }
 
-// yaml_name (value-free body inlined)
 func e277(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -35478,7 +35202,6 @@ fail:
 	return nil, false
 }
 
-// ns_yaml_version (value-free body inlined)
 func e278(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -35587,7 +35310,6 @@ fail:
 	return nil, false
 }
 
-// ns_tag_directive (value-free body inlined)
 func e279(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -35650,7 +35372,6 @@ fail:
 	return nil, false
 }
 
-// tag_name (value-free body inlined)
 func e280(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -35686,7 +35407,6 @@ fail:
 	return nil, false
 }
 
-// tag_handle (value-free body inlined)
 func e281(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -35718,7 +35438,6 @@ fail:
 	return nil, false
 }
 
-// ns_tag_prefix (value-free body inlined)
 func e282(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -35880,7 +35599,6 @@ fail:
 	return nil, false
 }
 
-// ns_reserved_directive (value-free body inlined)
 func e283(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -36139,7 +35857,6 @@ fail:
 	return nil, false
 }
 
-// ns_directive_name (value-free body inlined)
 func e284(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -36208,7 +35925,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_properties (Node body inlined)
 func e285(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -36348,7 +36064,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_tag_property (Node body inlined)
 func e286(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -36554,7 +36269,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_anchor_property (Node body inlined)
 func e287(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -36629,7 +36343,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_alias_node (value-free body inlined)
 func e288(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -36710,7 +36423,6 @@ fail:
 	return nil, false
 }
 
-// ns_uri_char (Node body inlined)
 func e289(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -36830,7 +36542,6 @@ fail:
 	return nil, false
 }
 
-// ns_tag_char (Node body inlined)
 func e290(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -36950,7 +36661,6 @@ fail:
 	return nil, false
 }
 
-// s_l_block_node (Node body inlined)
 func e291(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -37321,7 +37031,6 @@ fail:
 	return nil, false
 }
 
-// s_l_flow_in_block (Node body inlined)
 func e292(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -37650,7 +37359,6 @@ fail:
 	return nil, false
 }
 
-// flow_out_node (Node body inlined)
 func e293(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -37686,7 +37394,6 @@ fail:
 	return nil, false
 }
 
-// plain_out_node (value-free body inlined)
 func e294(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -37719,7 +37426,6 @@ fail:
 	return nil, false
 }
 
-// s_l_block_collection (Node body inlined)
 func e295(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -37774,7 +37480,6 @@ fail:
 	return nil, false
 }
 
-// block_sequence_node (value-free body inlined)
 func e296(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -37815,7 +37520,6 @@ fail:
 	return nil, false
 }
 
-// block_mapping_node (value-free body inlined)
 func e297(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -37856,7 +37560,6 @@ fail:
 	return nil, false
 }
 
-// block_collection_start (value-free body inlined)
 func e298(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -38028,7 +37731,6 @@ fail:
 	return nil, false
 }
 
-// block_collection_properties (Node body inlined)
 func e299(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -38080,7 +37782,6 @@ fail:
 	return nil, false
 }
 
-// block_collection_property (Node body inlined)
 func e300(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -38182,7 +37883,6 @@ fail:
 	return nil, false
 }
 
-// seq_space (Node body inlined)
 func e301(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -38387,7 +38087,6 @@ fail:
 	return nil, false
 }
 
-// l_block_sequence (Node body inlined)
 func e303(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -38571,7 +38270,6 @@ fail:
 	return nil, false
 }
 
-// c_l_block_seq_entry (Node body inlined)
 func e304(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -38644,7 +38342,6 @@ fail:
 	return nil, false
 }
 
-// s_l_block_indented (Node body inlined)
 func e305(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -38712,7 +38409,6 @@ fail:
 	return nil, false
 }
 
-// compact_collection (Node body inlined)
 func e306(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -38870,7 +38566,6 @@ fail:
 	return nil, false
 }
 
-// ns_l_compact_sequence (value-free body inlined)
 func e307(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -38952,7 +38647,6 @@ fail:
 	return nil, false
 }
 
-// l_block_mapping (Node body inlined)
 func e309(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -39136,7 +38830,6 @@ fail:
 	return nil, false
 }
 
-// ns_l_compact_mapping (value-free body inlined)
 func e310(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -39218,7 +38911,6 @@ fail:
 	return nil, false
 }
 
-// ns_l_block_map_entry (Node body inlined)
 func e311(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -39295,7 +38987,6 @@ fail:
 	return nil, false
 }
 
-// c_l_block_map_explicit_entry (value-free body inlined)
 func e312(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -39364,7 +39055,6 @@ fail:
 	return nil, false
 }
 
-// c_l_block_map_explicit_key (Node body inlined)
 func e313(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -39437,7 +39127,6 @@ fail:
 	return nil, false
 }
 
-// l_block_map_explicit_value (Node body inlined)
 func e314(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -39517,7 +39206,6 @@ fail:
 	return nil, false
 }
 
-// ns_l_block_map_implicit_entry (value-free body inlined)
 func e315(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -39587,7 +39275,6 @@ fail:
 	return nil, false
 }
 
-// ns_s_block_map_implicit_key (Node body inlined)
 func e316(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -39750,7 +39437,6 @@ fail:
 	return nil, false
 }
 
-// plain_key_node (value-free body inlined)
 func e317(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -39783,7 +39469,6 @@ fail:
 	return nil, false
 }
 
-// c_l_block_map_implicit_value (value-free body inlined)
 func e318(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -39855,7 +39540,6 @@ fail:
 	return nil, false
 }
 
-// block_out_node (Node body inlined)
 func e319(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -40002,7 +39686,6 @@ fail:
 	return nil, false
 }
 
-// s_l_block_scalar (Node body inlined)
 func e322(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -41428,7 +41111,6 @@ fail:
 	return nil, false
 }
 
-// s_separate_n1 (Node body inlined)
 func e323(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -41472,7 +41154,6 @@ fail:
 	return nil, false
 }
 
-// block_scalar_properties (Node body inlined)
 func e324(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -41524,7 +41205,6 @@ fail:
 	return nil, false
 }
 
-// l_block_content (value-free body inlined)
 func e325(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -41686,7 +41366,6 @@ L3:
 	return v, true
 }
 
-// l_nb_literal_text (Node body inlined)
 func e326(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -41925,7 +41604,6 @@ fail:
 	return nil, false
 }
 
-// l_empty_block (Node body inlined)
 func e327(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -42085,7 +41763,6 @@ fail:
 	return nil, false
 }
 
-// l_trail_comments (Node body inlined)
 func e328(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -42230,7 +41907,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_node (Node body inlined)
 func e329(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -42334,7 +42010,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_yaml_node (Node body inlined)
 func e330(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -42424,7 +42099,6 @@ fail:
 	return nil, false
 }
 
-// c_flow_json_node (Node body inlined)
 func e331(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -42505,7 +42179,6 @@ fail:
 	return nil, false
 }
 
-// properties_node (value-free body inlined)
 func e332(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -42584,7 +42257,6 @@ fail:
 	return nil, false
 }
 
-// properties_separate (Node body inlined)
 func e333(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -42620,7 +42292,6 @@ fail:
 	return nil, false
 }
 
-// e_node (value-free body inlined)
 func e334(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -42639,7 +42310,6 @@ func e334(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, true
 }
 
-// e_node_comments (Node body inlined)
 func e335(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -42675,7 +42345,6 @@ fail:
 	return nil, false
 }
 
-// c_flow_sequence (Node body inlined)
 func e336(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -42919,7 +42588,6 @@ fail:
 	return nil, false
 }
 
-// ns_s_flow_seq_entries (value-free body inlined)
 func e337(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -43116,7 +42784,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_seq_entry (Node body inlined)
 func e338(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -43171,7 +42838,6 @@ fail:
 	return nil, false
 }
 
-// c_flow_mapping (Node body inlined)
 func e339(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -43415,7 +43081,6 @@ fail:
 	return nil, false
 }
 
-// ns_s_flow_map_entries (value-free body inlined)
 func e340(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -43612,7 +43277,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_map_entry (Node body inlined)
 func e341(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -43689,7 +43353,6 @@ fail:
 	return nil, false
 }
 
-// flow_map_explicit (Node body inlined)
 func e342(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -43736,7 +43399,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_map_explicit_entry (value-free body inlined)
 func e343(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -43795,7 +43457,6 @@ fail:
 	return nil, false
 }
 
-// empty_pair (value-free body inlined)
 func e344(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -43836,7 +43497,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_map_implicit_entry (Node body inlined)
 func e345(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -43904,7 +43564,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_map_yaml_key_entry (value-free body inlined)
 func e346(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -43973,7 +43632,6 @@ fail:
 	return nil, false
 }
 
-// separate_value (value-free body inlined)
 func e347(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -44027,7 +43685,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_flow_map_empty_key_entry (Node body inlined)
 func e348(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -44064,7 +43721,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_flow_map_separate_value (Node body inlined)
 func e349(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -44158,7 +43814,6 @@ fail:
 	return nil, false
 }
 
-// separated_flow_node (value-free body inlined)
 func e350(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -44198,7 +43853,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_flow_map_json_key_entry (value-free body inlined)
 func e351(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -44313,7 +43967,6 @@ fail:
 	return nil, false
 }
 
-// adjacent_value (value-free body inlined)
 func e352(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -44367,7 +44020,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_flow_map_adjacent_value (Node body inlined)
 func e353(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -44435,7 +44087,6 @@ fail:
 	return nil, false
 }
 
-// optionally_separated_flow_node (value-free body inlined)
 func e354(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -44489,7 +44140,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_pair (value-free body inlined)
 func e355(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -44571,7 +44221,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_pair_entry (value-free body inlined)
 func e356(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -44643,7 +44292,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_pair_yaml_key_entry (value-free body inlined)
 func e357(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -44684,7 +44332,6 @@ fail:
 	return nil, false
 }
 
-// flow_pair_yaml_key (Node body inlined)
 func e358(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -44778,7 +44425,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_flow_pair_json_key_entry (value-free body inlined)
 func e359(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -44819,7 +44465,6 @@ fail:
 	return nil, false
 }
 
-// flow_pair_json_key (Node body inlined)
 func e360(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -44959,7 +44604,6 @@ fail:
 	return nil, false
 }
 
-// plain_node (value-free body inlined)
 func e361(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -45062,7 +44706,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain (Node body inlined)
 func e362(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -45211,7 +44854,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain_safe (Node body inlined)
 func e363(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -45328,7 +44970,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain_one_out (Node body inlined)
 func e364(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -45506,7 +45147,6 @@ fail:
 	return nil, false
 }
 
-// nb_ns_plain_in_line_out (Node body inlined)
 func e365(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -45829,7 +45469,6 @@ func e365(p *pegort.Parser) (*pegort.Node, bool) {
 	return nil, true
 }
 
-// ns_plain_multi_out (Node body inlined)
 func e366(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -46046,7 +45685,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain_one_in (Node body inlined)
 func e367(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -46224,7 +45862,6 @@ fail:
 	return nil, false
 }
 
-// nb_ns_plain_in_line_in (Node body inlined)
 func e368(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -46547,7 +46184,6 @@ func e368(p *pegort.Parser) (*pegort.Node, bool) {
 	return nil, true
 }
 
-// ns_plain_multi_in (value-free body inlined)
 func e369(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -46768,7 +46404,6 @@ fail:
 	return nil, false
 }
 
-// c_double_quoted (value-free body inlined)
 func e370(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -46871,7 +46506,6 @@ fail:
 	return nil, false
 }
 
-// double_quoted (Node body inlined)
 func e371(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -47012,7 +46646,6 @@ fail:
 	return nil, false
 }
 
-// nb_double_one_line (value-free body inlined)
 func e372(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -47150,7 +46783,6 @@ func e372(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, true
 }
 
-// c_ns_esc_char (Node body inlined)
 func e373(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -47456,7 +47088,6 @@ fail:
 	return nil, false
 }
 
-// nb_double_multi_line (value-free body inlined)
 func e374(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -47649,7 +47280,6 @@ fail:
 	return nil, false
 }
 
-// nb_ns_double_in_line (Node body inlined)
 func e375(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -47855,7 +47485,6 @@ func e375(p *pegort.Parser) (*pegort.Node, bool) {
 	return nil, true
 }
 
-// ns_double_char (Node body inlined)
 func e376(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -47956,7 +47585,6 @@ fail:
 	return nil, false
 }
 
-// s_double_break (value-free body inlined)
 func e377(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -48098,7 +47726,6 @@ fail:
 	return nil, false
 }
 
-// c_single_quoted (value-free body inlined)
 func e378(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -48201,7 +47828,6 @@ fail:
 	return nil, false
 }
 
-// single_quoted (Node body inlined)
 func e379(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -48342,7 +47968,6 @@ fail:
 	return nil, false
 }
 
-// nb_single_multi_line (value-free body inlined)
 func e380(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -48535,7 +48160,6 @@ fail:
 	return nil, false
 }
 
-// nb_ns_single_in_line (Node body inlined)
 func e381(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -48745,7 +48369,6 @@ func e381(p *pegort.Parser) (*pegort.Node, bool) {
 	return nil, true
 }
 
-// s_flow_folded (Node body inlined)
 func e382(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -48844,7 +48467,6 @@ fail:
 	return nil, false
 }
 
-// l_empty_flow (Node body inlined)
 func e383(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -49011,7 +48633,6 @@ fail:
 	return nil, false
 }
 
-// s_separate (Node body inlined)
 func e384(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -49128,7 +48749,6 @@ fail:
 	return nil, false
 }
 
-// s_separate_lines (Node body inlined)
 func e385(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -49301,7 +48921,6 @@ fail:
 	return nil, false
 }
 
-// s_l_comments (Node body inlined)
 func e386(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -49517,7 +49136,6 @@ fail:
 	return nil, false
 }
 
-// s_b_comment (Node body inlined)
 func e387(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -49587,7 +49205,6 @@ fail:
 	return nil, false
 }
 
-// l_comment (Node body inlined)
 func e388(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -49671,7 +49288,6 @@ fail:
 	return nil, false
 }
 
-// nb_char (value-free body inlined)
 func e389(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -49717,7 +49333,6 @@ fail:
 	return nil, false
 }
 
-// l_yaml_stream, called as by invokePlain (body inlined)
 func q1(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -50149,7 +49764,6 @@ fail:
 	return nil, false
 }
 
-// c_directives_end, called as by invokePlain (body inlined)
 func q4(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -50197,7 +49811,6 @@ fail:
 	return nil, false
 }
 
-// c_document_end, called as by invokePlain (body inlined)
 func q5(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -50245,7 +49858,6 @@ fail:
 	return nil, false
 }
 
-// c_forbidden, called as by invokePlain (body inlined)
 func q6(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -50440,7 +50052,6 @@ fail:
 	return nil, false
 }
 
-// l_directive_document, called as by invokePlain (body inlined)
 func q8(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -50559,7 +50170,6 @@ fail:
 	return nil, false
 }
 
-// l_bare_document, called as by invokePlain (body inlined)
 func q11(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -50625,7 +50235,6 @@ fail:
 	return nil, false
 }
 
-// l_directive, called as by invokePlain (body inlined)
 func q14(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -50762,7 +50371,6 @@ fail:
 	return nil, false
 }
 
-// ns_yaml_directive, called as by invokePlain (body inlined)
 func q15(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -50822,7 +50430,6 @@ fail:
 	return nil, false
 }
 
-// yaml_name, called as by invokePlain (body inlined)
 func q16(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -50870,7 +50477,6 @@ fail:
 	return nil, false
 }
 
-// ns_yaml_version, called as by invokePlain (body inlined)
 func q17(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -50991,7 +50597,6 @@ fail:
 	return nil, false
 }
 
-// ns_tag_directive, called as by invokePlain (body inlined)
 func q18(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -51066,7 +50671,6 @@ fail:
 	return nil, false
 }
 
-// tag_name, called as by invokePlain (body inlined)
 func q19(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -51114,7 +50718,6 @@ fail:
 	return nil, false
 }
 
-// tag_handle, called as by invokePlain (body inlined)
 func q20(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -51158,7 +50761,6 @@ fail:
 	return nil, false
 }
 
-// ns_tag_prefix, called as by invokePlain (body inlined)
 func q21(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -51332,7 +50934,6 @@ fail:
 	return nil, false
 }
 
-// ns_reserved_directive, called as by invokePlain (body inlined)
 func q22(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -51603,7 +51204,6 @@ fail:
 	return nil, false
 }
 
-// ns_directive_name, called as by invokePlain (body inlined)
 func q23(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -51684,7 +51284,6 @@ fail:
 	return nil, false
 }
 
-// ns_directive_parameter, called as by invokePlain (body inlined)
 func q24(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -51765,7 +51364,6 @@ fail:
 	return nil, false
 }
 
-// c_tag_handle, called as by invokePlain (body inlined)
 func q27(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -51952,7 +51550,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_alias_node, called as by invokePlain (body inlined)
 func q29(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -52045,7 +51642,6 @@ fail:
 	return nil, false
 }
 
-// ns_anchor_char, called as by invokePlain (body inlined)
 func q30(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -52103,7 +51699,6 @@ fail:
 	return nil, false
 }
 
-// ns_hex_digit, called as by invokePlain (body inlined)
 func q33(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -52161,7 +51756,6 @@ fail:
 	return nil, false
 }
 
-// flow_out_node, called as by invokePlain
 func q36(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -52199,7 +51793,6 @@ func q36(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// plain_out_node, called as by invokePlain (body inlined)
 func q37(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -52244,7 +51837,6 @@ fail:
 	return nil, false
 }
 
-// block_sequence_node, called as by invokePlain (body inlined)
 func q39(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -52297,7 +51889,6 @@ fail:
 	return nil, false
 }
 
-// block_mapping_node, called as by invokePlain (body inlined)
 func q40(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -52350,7 +51941,6 @@ fail:
 	return nil, false
 }
 
-// block_collection_start, called as by invokePlain (body inlined)
 func q41(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -52534,7 +52124,6 @@ fail:
 	return nil, false
 }
 
-// block_sequence_start, called as by invokePlain (body inlined)
 func q42(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -52718,7 +52307,6 @@ fail:
 	return nil, false
 }
 
-// seq_space, called as by invokePlain
 func q45(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -52756,7 +52344,6 @@ func q45(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_l_compact_sequence, called as by invokePlain (body inlined)
 func q50(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -52850,7 +52437,6 @@ fail:
 	return nil, false
 }
 
-// ns_l_compact_mapping, called as by invokePlain (body inlined)
 func q52(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -52944,7 +52530,6 @@ fail:
 	return nil, false
 }
 
-// c_l_block_map_explicit_entry, called as by invokePlain (body inlined)
 func q54(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -53025,7 +52610,6 @@ fail:
 	return nil, false
 }
 
-// c_l_block_map_explicit_key, called as by invokePlain
 func q55(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -53063,7 +52647,6 @@ func q55(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// l_block_map_explicit_value, called as by invokePlain
 func q56(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -53101,7 +52684,6 @@ func q56(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_l_block_map_implicit_entry, called as by invokePlain (body inlined)
 func q57(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -53183,7 +52765,6 @@ fail:
 	return nil, false
 }
 
-// ns_s_block_map_implicit_key, called as by invokePlain
 func q58(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -53221,7 +52802,6 @@ func q58(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// plain_key_node, called as by invokePlain (body inlined)
 func q59(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -53266,7 +52846,6 @@ fail:
 	return nil, false
 }
 
-// c_l_block_map_implicit_value, called as by invokePlain (body inlined)
 func q60(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -53350,7 +52929,6 @@ fail:
 	return nil, false
 }
 
-// block_out_node, called as by invokePlain
 func q61(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -53388,7 +52966,6 @@ func q61(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// s_separate_n1, called as by invokePlain
 func q63(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -53426,7 +53003,6 @@ func q63(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// block_scalar_properties, called as by invokePlain
 func q64(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -53464,7 +53040,6 @@ func q64(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// l_block_content, called as by invokePlain (body inlined)
 func q65(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -53630,7 +53205,6 @@ L3:
 	return v, true
 }
 
-// properties_node, called as by invokePlain (body inlined)
 func q72(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -53721,7 +53295,6 @@ fail:
 	return nil, false
 }
 
-// e_node, called as by invokePlain (body inlined)
 func q74(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -53744,7 +53317,6 @@ func q74(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, true
 }
 
-// c_flow_sequence, called as by invokePlain
 func q76(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -53782,7 +53354,6 @@ func q76(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_s_flow_seq_entries, called as by invokePlain (body inlined)
 func q77(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -53991,7 +53562,6 @@ fail:
 	return nil, false
 }
 
-// c_flow_mapping, called as by invokePlain
 func q79(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -54029,7 +53599,6 @@ func q79(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_s_flow_map_entries, called as by invokePlain (body inlined)
 func q80(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -54238,7 +53807,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_map_explicit_entry, called as by invokePlain (body inlined)
 func q83(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -54309,7 +53877,6 @@ fail:
 	return nil, false
 }
 
-// empty_pair, called as by invokePlain (body inlined)
 func q84(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -54362,7 +53929,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_map_yaml_key_entry, called as by invokePlain (body inlined)
 func q86(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -54443,7 +54009,6 @@ fail:
 	return nil, false
 }
 
-// separate_value, called as by invokePlain (body inlined)
 func q87(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -54509,7 +54074,6 @@ fail:
 	return nil, false
 }
 
-// separated_flow_node, called as by invokePlain (body inlined)
 func q90(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -54561,7 +54125,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_flow_map_json_key_entry, called as by invokePlain (body inlined)
 func q91(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -54688,7 +54251,6 @@ fail:
 	return nil, false
 }
 
-// adjacent_value, called as by invokePlain (body inlined)
 func q92(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -54754,7 +54316,6 @@ fail:
 	return nil, false
 }
 
-// optionally_separated_flow_node, called as by invokePlain (body inlined)
 func q94(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -54820,7 +54381,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_pair, called as by invokePlain (body inlined)
 func q95(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -54914,7 +54474,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_pair_entry, called as by invokePlain (body inlined)
 func q96(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -54998,7 +54557,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_pair_yaml_key_entry, called as by invokePlain (body inlined)
 func q97(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -55051,7 +54609,6 @@ fail:
 	return nil, false
 }
 
-// flow_pair_yaml_key, called as by invokePlain
 func q98(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -55089,7 +54646,6 @@ func q98(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// c_ns_flow_pair_json_key_entry, called as by invokePlain (body inlined)
 func q99(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -55142,7 +54698,6 @@ fail:
 	return nil, false
 }
 
-// flow_pair_json_key, called as by invokePlain
 func q100(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -55180,7 +54735,6 @@ func q100(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// plain_node, called as by invokePlain (body inlined)
 func q101(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -55295,7 +54849,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain, called as by invokePlain
 func q102(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -55333,7 +54886,6 @@ func q102(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_plain_safe, called as by invokePlain
 func q103(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -55371,7 +54923,6 @@ func q103(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ns_plain_safe_in, called as by invokePlain (body inlined)
 func q104(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -55429,7 +54980,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain_multi_in, called as by invokePlain (body inlined)
 func q110(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -55662,7 +55212,6 @@ fail:
 	return nil, false
 }
 
-// c_double_quoted, called as by invokePlain (body inlined)
 func q111(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -55777,7 +55326,6 @@ fail:
 	return nil, false
 }
 
-// double_quoted, called as by invokePlain
 func q112(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -55815,7 +55363,6 @@ func q112(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// nb_double_one_line, called as by invokePlain (body inlined)
 func q113(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -55957,7 +55504,6 @@ func q113(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, true
 }
 
-// nb_double_multi_line, called as by invokePlain (body inlined)
 func q115(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -56162,7 +55708,6 @@ fail:
 	return nil, false
 }
 
-// s_double_break, called as by invokePlain (body inlined)
 func q118(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -56316,7 +55861,6 @@ fail:
 	return nil, false
 }
 
-// c_single_quoted, called as by invokePlain (body inlined)
 func q119(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -56431,7 +55975,6 @@ fail:
 	return nil, false
 }
 
-// single_quoted, called as by invokePlain
 func q120(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -56469,7 +56012,6 @@ func q120(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// nb_single_one_line, called as by invokePlain (body inlined)
 func q121(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -56615,7 +56157,6 @@ func q121(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, true
 }
 
-// nb_single_multi_line, called as by invokePlain (body inlined)
 func q122(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -56820,7 +56361,6 @@ fail:
 	return nil, false
 }
 
-// ns_single_char, called as by invokePlain (body inlined)
 func q124(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -56941,7 +56481,6 @@ fail:
 	return nil, false
 }
 
-// s_separate_in_line, called as by invokePlain (body inlined)
 func q130(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -57045,7 +56584,6 @@ fail:
 	return nil, false
 }
 
-// c_nb_comment_text, called as by invokePlain (body inlined)
 func q134(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -57119,7 +56657,6 @@ fail:
 	return nil, false
 }
 
-// b_comment, called as by invokePlain (body inlined)
 func q135(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -57272,7 +56809,6 @@ fail:
 	return nil, false
 }
 
-// b_break, called as by invokePlain (body inlined)
 func q137(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -57409,7 +56945,6 @@ fail:
 	return nil, false
 }
 
-// ns_char, called as by invokePlain (body inlined)
 func q138(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -57467,7 +57002,6 @@ fail:
 	return nil, false
 }
 
-// nb_char, called as by invokePlain (body inlined)
 func q139(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -57525,10 +57059,8 @@ fail:
 	return nil, false
 }
 
-// trules is the typed rule table.
 var trules []*pegort.TRule
 
-// main, called as by invokePlain (body inlined)
 func s0(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -57579,7 +57111,7 @@ fail:
 	return nil, false
 }
 
-// l_yaml_stream, called as by call
+// rule l_yaml_stream
 func u1(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -57598,7 +57130,6 @@ func u1(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// l_yaml_stream, invoked as by invoke (body inlined)
 func i1(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -58187,7 +57718,6 @@ fail:
 	return nil, false
 }
 
-// c_directives_end, called as by invokePlain (body inlined)
 func s4(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -58255,7 +57785,6 @@ fail:
 	return nil, false
 }
 
-// c_document_end, called as by invokePlain (body inlined)
 func s5(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -58323,7 +57852,7 @@ fail:
 	return nil, false
 }
 
-// l_any_document, called as by call
+// rule l_any_document
 func u7(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[7]) {
@@ -58338,7 +57867,6 @@ func u7(p *pegort.TParser) (any, bool) {
 	return v7(p)
 }
 
-// l_any_document, called as by invokePlain (body inlined)
 func v7(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -58464,7 +57992,7 @@ fail:
 	return nil, false
 }
 
-// l_directive_document, called as by call
+// rule l_directive_document
 func u8(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -58483,7 +58011,6 @@ func u8(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// l_directive_document, invoked as by invoke (body inlined)
 func i8(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -58687,7 +58214,7 @@ fail:
 	return nil, false
 }
 
-// l_explicit_document, called as by call
+// rule l_explicit_document
 func u9(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[9]) {
@@ -58712,7 +58239,6 @@ func u9(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// l_explicit_document, invoked as by invoke (body inlined)
 func i9(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -58845,7 +58371,7 @@ fail:
 	return nil, false
 }
 
-// explicit_root, called as by call
+// rule explicit_root
 func u10(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[10]) {
@@ -58860,7 +58386,6 @@ func u10(p *pegort.TParser) (any, bool) {
 	return v10(p)
 }
 
-// explicit_root, called as by invokePlain (body inlined)
 func v10(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -58947,7 +58472,7 @@ fail:
 	return nil, false
 }
 
-// l_bare_document, called as by call
+// rule l_bare_document
 func u11(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -58966,7 +58491,6 @@ func u11(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// l_bare_document, invoked as by invoke (body inlined)
 func i11(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -59079,7 +58603,7 @@ fail:
 	return nil, false
 }
 
-// bare_root, called as by call
+// rule bare_root
 func u12(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[12]) {
@@ -59104,7 +58628,6 @@ func u12(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// bare_root, invoked as by invoke (body inlined)
 func i12(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -59193,7 +58716,7 @@ fail:
 	return nil, false
 }
 
-// document_end, called as by call
+// rule document_end
 func u13(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[13]) {
@@ -59218,7 +58741,6 @@ func u13(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// document_end, invoked as by invoke (body inlined)
 func i13(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -59305,7 +58827,7 @@ fail:
 	return nil, false
 }
 
-// l_directive, called as by call
+// rule l_directive
 func u14(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -59324,7 +58846,6 @@ func u14(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// l_directive, invoked as by invoke (body inlined)
 func i14(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -59490,7 +59011,7 @@ fail:
 	return nil, false
 }
 
-// ns_yaml_directive, called as by call
+// rule ns_yaml_directive
 func u15(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -59509,7 +59030,6 @@ func u15(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// ns_yaml_directive, invoked as by invoke (body inlined)
 func i15(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -59608,7 +59128,6 @@ fail:
 	return nil, false
 }
 
-// yaml_name, called as by invokePlain (body inlined)
 func s16(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -59676,7 +59195,6 @@ fail:
 	return nil, false
 }
 
-// ns_yaml_version, called as by invokePlain (body inlined)
 func s17(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -59817,7 +59335,7 @@ fail:
 	return nil, false
 }
 
-// ns_tag_directive, called as by call
+// rule ns_tag_directive
 func u18(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -59836,7 +59354,6 @@ func u18(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// ns_tag_directive, invoked as by invoke (body inlined)
 func i18(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -59965,7 +59482,6 @@ fail:
 	return nil, false
 }
 
-// tag_name, called as by invokePlain (body inlined)
 func s19(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -60033,7 +59549,6 @@ fail:
 	return nil, false
 }
 
-// tag_handle, called as by invokePlain (body inlined)
 func s20(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -60097,7 +59612,6 @@ fail:
 	return nil, false
 }
 
-// ns_tag_prefix, called as by invokePlain (body inlined)
 func s21(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -60291,7 +59805,7 @@ fail:
 	return nil, false
 }
 
-// ns_reserved_directive, called as by call
+// rule ns_reserved_directive
 func u22(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -60310,7 +59824,6 @@ func u22(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// ns_reserved_directive, invoked as by invoke (body inlined)
 func i22(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -60639,7 +60152,6 @@ fail:
 	return nil, false
 }
 
-// ns_directive_name, called as by invokePlain (body inlined)
 func s23(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -60740,7 +60252,6 @@ fail:
 	return nil, false
 }
 
-// ns_directive_parameter, called as by invokePlain (body inlined)
 func s24(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -60841,7 +60352,7 @@ fail:
 	return nil, false
 }
 
-// c_ns_properties, called as by call
+// rule c_ns_properties
 func u25(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[25]) {
@@ -60866,7 +60377,6 @@ func u25(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// c_ns_properties, invoked as by invoke (body inlined)
 func i25(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -61115,7 +60625,7 @@ fail:
 	return nil, false
 }
 
-// c_ns_tag_property, called as by call
+// rule c_ns_tag_property
 func u26(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[26]) {
@@ -61130,7 +60640,6 @@ func u26(p *pegort.TParser) (any, bool) {
 	return v26(p)
 }
 
-// c_ns_tag_property, called as by invokePlain (body inlined)
 func v26(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -61374,7 +60883,7 @@ fail:
 	return nil, false
 }
 
-// c_ns_anchor_property, called as by call
+// rule c_ns_anchor_property
 func u28(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[28]) {
@@ -61389,7 +60898,6 @@ func u28(p *pegort.TParser) (any, bool) {
 	return v28(p)
 }
 
-// c_ns_anchor_property, called as by invokePlain (body inlined)
 func v28(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -61502,7 +61010,6 @@ fail:
 	return nil, false
 }
 
-// c_ns_alias_node, called as by invokePlain (body inlined)
 func s29(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -61615,7 +61122,7 @@ fail:
 	return nil, false
 }
 
-// s_l_block_node, called as by call
+// rule s_l_block_node
 func u34(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[34]) {
@@ -61640,7 +61147,6 @@ func u34(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// s_l_block_node, invoked as by invoke (body inlined)
 func i34(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -62099,7 +61605,7 @@ fail:
 	return nil, false
 }
 
-// s_l_flow_in_block, called as by call
+// rule s_l_flow_in_block
 func u35(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[35]) {
@@ -62124,7 +61630,6 @@ func u35(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// s_l_flow_in_block, invoked as by invoke (body inlined)
 func i35(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -62502,7 +62007,7 @@ fail:
 	return nil, false
 }
 
-// flow_out_node, called as by call
+// rule flow_out_node
 func u36(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -62521,7 +62026,6 @@ func u36(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// flow_out_node, invoked as by invoke (body inlined)
 func i36(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -62599,7 +62103,7 @@ fail:
 	return nil, false
 }
 
-// plain_out_node, called as by call
+// rule plain_out_node
 func u37(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -62618,7 +62122,6 @@ func u37(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// plain_out_node, invoked as by invoke (body inlined)
 func i37(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -62698,7 +62201,7 @@ fail:
 	return nil, false
 }
 
-// s_l_block_collection, called as by call
+// rule s_l_block_collection
 func u38(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[38]) {
@@ -62713,7 +62216,6 @@ func u38(p *pegort.TParser) (any, bool) {
 	return v38(p)
 }
 
-// s_l_block_collection, called as by invokePlain (body inlined)
 func v38(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -62800,7 +62302,7 @@ fail:
 	return nil, false
 }
 
-// block_sequence_node, called as by call
+// rule block_sequence_node
 func u39(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -62819,7 +62321,6 @@ func u39(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// block_sequence_node, invoked as by invoke (body inlined)
 func i39(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -62911,7 +62412,7 @@ fail:
 	return nil, false
 }
 
-// block_mapping_node, called as by call
+// rule block_mapping_node
 func u40(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -62930,7 +62431,6 @@ func u40(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// block_mapping_node, invoked as by invoke (body inlined)
 func i40(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -63022,7 +62522,7 @@ fail:
 	return nil, false
 }
 
-// block_collection_start, called as by call
+// rule block_collection_start
 func u41(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -63041,7 +62541,6 @@ func u41(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// block_collection_start, invoked as by invoke (body inlined)
 func i41(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -63268,7 +62767,7 @@ fail:
 	return nil, false
 }
 
-// block_sequence_start, called as by call
+// rule block_sequence_start
 func u42(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -63287,7 +62786,6 @@ func u42(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// block_sequence_start, invoked as by invoke (body inlined)
 func i42(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -63514,7 +63012,7 @@ fail:
 	return nil, false
 }
 
-// block_collection_properties, called as by call
+// rule block_collection_properties
 func u43(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[43]) {
@@ -63539,7 +63037,6 @@ func u43(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// block_collection_properties, invoked as by invoke (body inlined)
 func i43(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -63633,7 +63130,7 @@ fail:
 	return nil, false
 }
 
-// block_collection_property, called as by call
+// rule block_collection_property
 func u44(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[44]) {
@@ -63658,7 +63155,6 @@ func u44(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// block_collection_property, invoked as by invoke (body inlined)
 func i44(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -63845,7 +63341,7 @@ fail:
 	return nil, false
 }
 
-// seq_space, called as by call
+// rule seq_space
 func u45(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -63864,7 +63360,6 @@ func u45(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// seq_space, invoked as by invoke (body inlined)
 func i45(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -64117,7 +63612,7 @@ fail:
 	return nil, false
 }
 
-// l_block_sequence, called as by call
+// rule l_block_sequence
 func u46(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -64136,7 +63631,6 @@ func u46(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// l_block_sequence, invoked as by invoke (body inlined)
 func i46(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -64404,7 +63898,7 @@ fail:
 	return nil, false
 }
 
-// c_l_block_seq_entry, called as by call
+// rule c_l_block_seq_entry
 func u47(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[47]) {
@@ -64429,7 +63923,6 @@ func u47(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// c_l_block_seq_entry, invoked as by invoke (body inlined)
 func i47(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -64544,7 +64037,7 @@ fail:
 	return nil, false
 }
 
-// s_l_block_indented, called as by call
+// rule s_l_block_indented
 func u48(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[48]) {
@@ -64559,7 +64052,6 @@ func u48(p *pegort.TParser) (any, bool) {
 	return v48(p)
 }
 
-// s_l_block_indented, called as by invokePlain (body inlined)
 func v48(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -64663,7 +64155,7 @@ fail:
 	return nil, false
 }
 
-// compact_collection, called as by call
+// rule compact_collection
 func u49(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -64682,7 +64174,6 @@ func u49(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// compact_collection, invoked as by invoke (body inlined)
 func i49(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -64890,7 +64381,7 @@ fail:
 	return nil, false
 }
 
-// ns_l_compact_sequence, called as by call
+// rule ns_l_compact_sequence
 func u50(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -64909,7 +64400,6 @@ func u50(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// ns_l_compact_sequence, invoked as by invoke (body inlined)
 func i50(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -65102,7 +64592,7 @@ fail:
 	return nil, false
 }
 
-// l_block_mapping, called as by call
+// rule l_block_mapping
 func u51(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -65121,7 +64611,6 @@ func u51(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// l_block_mapping, invoked as by invoke (body inlined)
 func i51(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -65356,7 +64845,7 @@ fail:
 	return nil, false
 }
 
-// ns_l_compact_mapping, called as by call
+// rule ns_l_compact_mapping
 func u52(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -65375,7 +64864,6 @@ func u52(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// ns_l_compact_mapping, invoked as by invoke (body inlined)
 func i52(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -65535,7 +65023,7 @@ fail:
 	return nil, false
 }
 
-// ns_l_block_map_entry, called as by call
+// rule ns_l_block_map_entry
 func u53(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[53]) {
@@ -65550,7 +65038,6 @@ func u53(p *pegort.TParser) (any, bool) {
 	return v53(p)
 }
 
-// ns_l_block_map_entry, called as by invokePlain (body inlined)
 func v53(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -65659,7 +65146,7 @@ fail:
 	return nil, false
 }
 
-// c_l_block_map_explicit_entry, called as by call
+// rule c_l_block_map_explicit_entry
 func u54(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -65678,7 +65165,6 @@ func u54(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// c_l_block_map_explicit_entry, invoked as by invoke (body inlined)
 func i54(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -65806,7 +65292,7 @@ fail:
 	return nil, false
 }
 
-// c_l_block_map_explicit_key, called as by call
+// rule c_l_block_map_explicit_key
 func u55(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -65825,7 +65311,6 @@ func u55(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// c_l_block_map_explicit_key, invoked as by invoke (body inlined)
 func i55(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -65940,7 +65425,7 @@ fail:
 	return nil, false
 }
 
-// l_block_map_explicit_value, called as by call
+// rule l_block_map_explicit_value
 func u56(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -65959,7 +65444,6 @@ func u56(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// l_block_map_explicit_value, invoked as by invoke (body inlined)
 func i56(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -66081,7 +65565,7 @@ fail:
 	return nil, false
 }
 
-// ns_l_block_map_implicit_entry, called as by call
+// rule ns_l_block_map_implicit_entry
 func u57(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -66100,7 +65584,6 @@ func u57(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// ns_l_block_map_implicit_entry, invoked as by invoke (body inlined)
 func i57(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -66228,7 +65711,7 @@ fail:
 	return nil, false
 }
 
-// ns_s_block_map_implicit_key, called as by call
+// rule ns_s_block_map_implicit_key
 func u58(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -66247,7 +65730,6 @@ func u58(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// ns_s_block_map_implicit_key, invoked as by invoke (body inlined)
 func i58(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -66498,7 +65980,7 @@ fail:
 	return nil, false
 }
 
-// plain_key_node, called as by call
+// rule plain_key_node
 func u59(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -66517,7 +65999,6 @@ func u59(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// plain_key_node, invoked as by invoke (body inlined)
 func i59(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -66597,7 +66078,7 @@ fail:
 	return nil, false
 }
 
-// c_l_block_map_implicit_value, called as by call
+// rule c_l_block_map_implicit_value
 func u60(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -66616,7 +66097,6 @@ func u60(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// c_l_block_map_implicit_value, invoked as by invoke (body inlined)
 func i60(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -66726,7 +66206,7 @@ fail:
 	return nil, false
 }
 
-// block_out_node, called as by call
+// rule block_out_node
 func u61(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -66745,7 +66225,6 @@ func u61(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// block_out_node, invoked as by invoke (body inlined)
 func i61(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -66961,7 +66440,7 @@ fail:
 	return nil, false
 }
 
-// s_l_block_scalar, called as by call
+// rule s_l_block_scalar
 func u62(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[62]) {
@@ -66986,7 +66465,6 @@ func u62(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// s_l_block_scalar, invoked as by invoke (body inlined)
 func i62(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -68951,7 +68429,7 @@ fail:
 	return nil, false
 }
 
-// block_scalar_properties, called as by call
+// rule block_scalar_properties
 func u64(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -68970,7 +68448,6 @@ func u64(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// block_scalar_properties, invoked as by invoke (body inlined)
 func i64(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -69064,7 +68541,6 @@ fail:
 	return nil, false
 }
 
-// l_block_content, called as by invokePlain (body inlined)
 func s65(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -69351,7 +68827,7 @@ L6:
 	return v, true
 }
 
-// l_nb_literal_text, called as by call
+// rule l_nb_literal_text
 func u66(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[66]) {
@@ -69376,7 +68852,6 @@ func u66(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// l_nb_literal_text, invoked as by invoke (body inlined)
 func i66(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -69724,7 +69199,7 @@ fail:
 	return nil, false
 }
 
-// l_empty_block, called as by call
+// rule l_empty_block
 func u67(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[67]) {
@@ -69749,7 +69224,6 @@ func u67(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// l_empty_block, invoked as by invoke (body inlined)
 func i67(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -69961,7 +69435,7 @@ fail:
 	return nil, false
 }
 
-// ns_flow_node, called as by call
+// rule ns_flow_node
 func u69(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[69]) {
@@ -69986,7 +69460,6 @@ func u69(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// ns_flow_node, invoked as by invoke (body inlined)
 func i69(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -70143,7 +69616,7 @@ fail:
 	return nil, false
 }
 
-// ns_flow_yaml_node, called as by call
+// rule ns_flow_yaml_node
 func u70(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[70]) {
@@ -70158,7 +69631,6 @@ func u70(p *pegort.TParser) (any, bool) {
 	return v70(p)
 }
 
-// ns_flow_yaml_node, called as by invokePlain (body inlined)
 func v70(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -70284,7 +69756,7 @@ fail:
 	return nil, false
 }
 
-// c_flow_json_node, called as by call
+// rule c_flow_json_node
 func u71(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[71]) {
@@ -70299,7 +69771,6 @@ func u71(p *pegort.TParser) (any, bool) {
 	return v71(p)
 }
 
-// c_flow_json_node, called as by invokePlain (body inlined)
 func v71(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -70420,7 +69891,7 @@ fail:
 	return nil, false
 }
 
-// properties_node, called as by call
+// rule properties_node
 func u72(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -70439,7 +69910,6 @@ func u72(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// properties_node, invoked as by invoke (body inlined)
 func i72(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -70557,7 +70027,7 @@ fail:
 	return nil, false
 }
 
-// properties_separate, called as by call
+// rule properties_separate
 func u73(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[73]) {
@@ -70582,7 +70052,6 @@ func u73(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// properties_separate, invoked as by invoke (body inlined)
 func i73(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -70652,7 +70121,6 @@ fail:
 	return nil, false
 }
 
-// e_node, called as by invokePlain (body inlined)
 func s74(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -70685,7 +70153,7 @@ func s74(p *pegort.TParser) (any, bool) {
 	return v, true
 }
 
-// e_node_comments, called as by call
+// rule e_node_comments
 func u75(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[75]) {
@@ -70710,7 +70178,6 @@ func u75(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// e_node_comments, invoked as by invoke (body inlined)
 func i75(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -70780,7 +70247,7 @@ fail:
 	return nil, false
 }
 
-// c_flow_sequence, called as by call
+// rule c_flow_sequence
 func u76(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -70799,7 +70266,6 @@ func u76(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// c_flow_sequence, invoked as by invoke (body inlined)
 func i76(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -71131,7 +70597,7 @@ fail:
 	return nil, false
 }
 
-// ns_s_flow_seq_entries, called as by call
+// rule ns_s_flow_seq_entries
 func u77(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -71150,7 +70616,6 @@ func u77(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// ns_s_flow_seq_entries, invoked as by invoke (body inlined)
 func i77(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -71449,7 +70914,7 @@ fail:
 	return nil, false
 }
 
-// ns_flow_seq_entry, called as by call
+// rule ns_flow_seq_entry
 func u78(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[78]) {
@@ -71464,7 +70929,6 @@ func u78(p *pegort.TParser) (any, bool) {
 	return v78(p)
 }
 
-// ns_flow_seq_entry, called as by invokePlain (body inlined)
 func v78(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -71551,7 +71015,7 @@ fail:
 	return nil, false
 }
 
-// c_flow_mapping, called as by call
+// rule c_flow_mapping
 func u79(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -71570,7 +71034,6 @@ func u79(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// c_flow_mapping, invoked as by invoke (body inlined)
 func i79(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -71902,7 +71365,7 @@ fail:
 	return nil, false
 }
 
-// ns_s_flow_map_entries, called as by call
+// rule ns_s_flow_map_entries
 func u80(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -71921,7 +71384,6 @@ func u80(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// ns_s_flow_map_entries, invoked as by invoke (body inlined)
 func i80(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -72187,7 +71649,7 @@ fail:
 	return nil, false
 }
 
-// ns_flow_map_entry, called as by call
+// rule ns_flow_map_entry
 func u81(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[81]) {
@@ -72202,7 +71664,6 @@ func u81(p *pegort.TParser) (any, bool) {
 	return v81(p)
 }
 
-// ns_flow_map_entry, called as by invokePlain (body inlined)
 func v81(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -72311,7 +71772,7 @@ fail:
 	return nil, false
 }
 
-// flow_map_explicit, called as by call
+// rule flow_map_explicit
 func u82(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[82]) {
@@ -72336,7 +71797,6 @@ func u82(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// flow_map_explicit, invoked as by invoke (body inlined)
 func i82(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -72417,7 +71877,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_map_explicit_entry, called as by invokePlain (body inlined)
 func s83(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -72504,7 +71963,7 @@ fail:
 	return nil, false
 }
 
-// empty_pair, called as by call
+// rule empty_pair
 func u84(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -72523,7 +71982,6 @@ func u84(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// empty_pair, invoked as by invoke (body inlined)
 func i84(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -72615,7 +72073,7 @@ fail:
 	return nil, false
 }
 
-// ns_flow_map_implicit_entry, called as by call
+// rule ns_flow_map_implicit_entry
 func u85(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[85]) {
@@ -72630,7 +72088,6 @@ func u85(p *pegort.TParser) (any, bool) {
 	return v85(p)
 }
 
-// ns_flow_map_implicit_entry, called as by invokePlain (body inlined)
 func v85(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -72734,7 +72191,7 @@ fail:
 	return nil, false
 }
 
-// ns_flow_map_yaml_key_entry, called as by call
+// rule ns_flow_map_yaml_key_entry
 func u86(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -72753,7 +72210,6 @@ func u86(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// ns_flow_map_yaml_key_entry, invoked as by invoke (body inlined)
 func i86(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -72881,7 +72337,7 @@ fail:
 	return nil, false
 }
 
-// separate_value, called as by call
+// rule separate_value
 func u87(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -72900,7 +72356,6 @@ func u87(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// separate_value, invoked as by invoke (body inlined)
 func i87(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -72984,7 +72439,7 @@ fail:
 	return nil, false
 }
 
-// c_ns_flow_map_empty_key_entry, called as by call
+// rule c_ns_flow_map_empty_key_entry
 func u88(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[88]) {
@@ -73009,7 +72464,6 @@ func u88(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// c_ns_flow_map_empty_key_entry, invoked as by invoke (body inlined)
 func i88(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -73101,7 +72555,7 @@ fail:
 	return nil, false
 }
 
-// c_ns_flow_map_separate_value, called as by call
+// rule c_ns_flow_map_separate_value
 func u89(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[89]) {
@@ -73126,7 +72580,6 @@ func u89(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// c_ns_flow_map_separate_value, invoked as by invoke (body inlined)
 func i89(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -73262,7 +72715,7 @@ fail:
 	return nil, false
 }
 
-// separated_flow_node, called as by call
+// rule separated_flow_node
 func u90(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -73281,7 +72734,6 @@ func u90(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// separated_flow_node, invoked as by invoke (body inlined)
 func i90(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -73351,7 +72803,7 @@ fail:
 	return nil, false
 }
 
-// c_ns_flow_map_json_key_entry, called as by call
+// rule c_ns_flow_map_json_key_entry
 func u91(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -73370,7 +72822,6 @@ func u91(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// c_ns_flow_map_json_key_entry, invoked as by invoke (body inlined)
 func i91(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -73544,7 +72995,7 @@ fail:
 	return nil, false
 }
 
-// adjacent_value, called as by call
+// rule adjacent_value
 func u92(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -73563,7 +73014,6 @@ func u92(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// adjacent_value, invoked as by invoke (body inlined)
 func i92(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -73647,7 +73097,7 @@ fail:
 	return nil, false
 }
 
-// c_ns_flow_map_adjacent_value, called as by call
+// rule c_ns_flow_map_adjacent_value
 func u93(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[93]) {
@@ -73672,7 +73122,6 @@ func u93(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// c_ns_flow_map_adjacent_value, invoked as by invoke (body inlined)
 func i93(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -73782,7 +73231,7 @@ fail:
 	return nil, false
 }
 
-// optionally_separated_flow_node, called as by call
+// rule optionally_separated_flow_node
 func u94(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -73801,7 +73250,6 @@ func u94(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// optionally_separated_flow_node, invoked as by invoke (body inlined)
 func i94(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -73885,7 +73333,7 @@ fail:
 	return nil, false
 }
 
-// ns_flow_pair, called as by call
+// rule ns_flow_pair
 func u95(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -73904,7 +73352,6 @@ func u95(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// ns_flow_pair, invoked as by invoke (body inlined)
 func i95(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -74035,7 +73482,6 @@ fail:
 	return nil, false
 }
 
-// ns_flow_pair_entry, called as by invokePlain (body inlined)
 func s96(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -74139,7 +73585,7 @@ fail:
 	return nil, false
 }
 
-// ns_flow_pair_yaml_key_entry, called as by call
+// rule ns_flow_pair_yaml_key_entry
 func u97(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -74158,7 +73604,6 @@ func u97(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// ns_flow_pair_yaml_key_entry, invoked as by invoke (body inlined)
 func i97(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -74250,7 +73695,7 @@ fail:
 	return nil, false
 }
 
-// flow_pair_yaml_key, called as by call
+// rule flow_pair_yaml_key
 func u98(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -74269,7 +73714,6 @@ func u98(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// flow_pair_yaml_key, invoked as by invoke (body inlined)
 func i98(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -74413,7 +73857,7 @@ fail:
 	return nil, false
 }
 
-// c_ns_flow_pair_json_key_entry, called as by call
+// rule c_ns_flow_pair_json_key_entry
 func u99(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -74432,7 +73876,6 @@ func u99(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// c_ns_flow_pair_json_key_entry, invoked as by invoke (body inlined)
 func i99(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -74524,7 +73967,7 @@ fail:
 	return nil, false
 }
 
-// flow_pair_json_key, called as by call
+// rule flow_pair_json_key
 func u100(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -74543,7 +73986,6 @@ func u100(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// flow_pair_json_key, invoked as by invoke (body inlined)
 func i100(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -74733,7 +74175,7 @@ fail:
 	return nil, false
 }
 
-// plain_node, called as by call
+// rule plain_node
 func u101(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -74752,7 +74194,6 @@ func u101(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// plain_node, invoked as by invoke (body inlined)
 func i101(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -74920,7 +74361,7 @@ fail:
 	return nil, false
 }
 
-// c_double_quoted, called as by call
+// rule c_double_quoted
 func u111(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -74939,7 +74380,6 @@ func u111(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// c_double_quoted, invoked as by invoke (body inlined)
 func i111(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -75109,7 +74549,7 @@ fail:
 	return nil, false
 }
 
-// c_single_quoted, called as by call
+// rule c_single_quoted
 func u119(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -75128,7 +74568,6 @@ func u119(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// c_single_quoted, invoked as by invoke (body inlined)
 func i119(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -75298,7 +74737,6 @@ fail:
 	return nil, false
 }
 
-// s_separate_in_line, called as by invokePlain (body inlined)
 func s130(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -75465,7 +74903,7 @@ fail:
 	return nil, false
 }
 
-// s_b_comment, called as by call
+// rule s_b_comment
 func u132(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[132]) {
@@ -75480,7 +74918,6 @@ func u132(p *pegort.TParser) (any, bool) {
 	return v132(p)
 }
 
-// s_b_comment, called as by invokePlain (body inlined)
 func v132(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -75625,7 +75062,6 @@ fail:
 	return nil, false
 }
 
-// c_nb_comment_text, called as by invokePlain (body inlined)
 func s134(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -75780,7 +75216,6 @@ fail:
 	return nil, false
 }
 
-// b_comment, called as by invokePlain (body inlined)
 func s135(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -75977,7 +75412,6 @@ fail:
 	return nil, false
 }
 
-// b_break, called as by invokePlain (body inlined)
 func s137(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -76152,7 +75586,6 @@ fail:
 	return nil, false
 }
 
-// nb_char, called as by invokePlain (body inlined)
 func s139(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -76224,7 +75657,7 @@ fail:
 	return nil, false
 }
 
-// l_document_prefix, called as by call
+// rule l_document_prefix
 func u140(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[140]) {
@@ -76239,7 +75672,6 @@ func u140(p *pegort.TParser) (any, bool) {
 	return v140(p)
 }
 
-// l_document_prefix, called as by invokePlain (body inlined)
 func v140(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -76410,7 +75842,7 @@ fail:
 	return nil, false
 }
 
-// l_document_suffix, called as by call
+// rule l_document_suffix
 func u141(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[141]) {
@@ -76425,7 +75857,6 @@ func u141(p *pegort.TParser) (any, bool) {
 	return v141(p)
 }
 
-// l_document_suffix, called as by invokePlain (body inlined)
 func v141(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -76476,7 +75907,7 @@ fail:
 	return nil, false
 }
 
-// s_l_comments, called as by call
+// rule s_l_comments
 func u142(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[142]) {
@@ -76491,7 +75922,6 @@ func u142(p *pegort.TParser) (any, bool) {
 	return v142(p)
 }
 
-// s_l_comments, called as by invokePlain (body inlined)
 func v142(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -76723,7 +76153,6 @@ fail:
 	return nil, false
 }
 
-// s_separate_in_line, called as by invokePlain (body inlined)
 func s143(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -76827,7 +76256,6 @@ fail:
 	return nil, false
 }
 
-// c_tag_handle, called as by invokePlain (body inlined)
 func s144(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -77014,7 +76442,7 @@ fail:
 	return nil, false
 }
 
-// ns_uri_char, called as by call
+// rule ns_uri_char
 func u145(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[145]) {
@@ -77029,7 +76457,6 @@ func u145(p *pegort.TParser) (any, bool) {
 	return v145(p)
 }
 
-// ns_uri_char, called as by invokePlain (body inlined)
 func v145(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -77165,7 +76592,7 @@ fail:
 	return nil, false
 }
 
-// ns_tag_char, called as by call
+// rule ns_tag_char
 func u146(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[146]) {
@@ -77180,7 +76607,6 @@ func u146(p *pegort.TParser) (any, bool) {
 	return v146(p)
 }
 
-// ns_tag_char, called as by invokePlain (body inlined)
 func v146(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -77316,7 +76742,6 @@ fail:
 	return nil, false
 }
 
-// ns_char, called as by invokePlain (body inlined)
 func s147(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -77374,7 +76799,7 @@ fail:
 	return nil, false
 }
 
-// s_separate, called as by call
+// rule s_separate
 func u148(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[148]) {
@@ -77389,7 +76814,6 @@ func u148(p *pegort.TParser) (any, bool) {
 	return v148(p)
 }
 
-// s_separate, called as by invokePlain (body inlined)
 func v148(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -77522,7 +76946,6 @@ fail:
 	return nil, false
 }
 
-// ns_anchor_char, called as by invokePlain (body inlined)
 func s149(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -77580,7 +77003,7 @@ fail:
 	return nil, false
 }
 
-// s_separate_lines, called as by call
+// rule s_separate_lines
 func u150(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[150]) {
@@ -77595,7 +77018,6 @@ func u150(p *pegort.TParser) (any, bool) {
 	return v150(p)
 }
 
-// s_separate_lines, called as by invokePlain (body inlined)
 func v150(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -77784,7 +77206,6 @@ fail:
 	return nil, false
 }
 
-// b_break, called as by invokePlain (body inlined)
 func s151(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -77921,7 +77342,7 @@ fail:
 	return nil, false
 }
 
-// ns_plain_multi_out, called as by call
+// rule ns_plain_multi_out
 func u152(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[152]) {
@@ -77936,7 +77357,6 @@ func u152(p *pegort.TParser) (any, bool) {
 	return v152(p)
 }
 
-// ns_plain_multi_out, called as by invokePlain (body inlined)
 func v152(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -78169,7 +77589,7 @@ fail:
 	return nil, false
 }
 
-// s_indent, called as by call
+// rule s_indent
 func u153(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -78188,7 +77608,6 @@ func u153(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// s_indent, invoked as by invoke (body inlined)
 func i153(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -78295,7 +77714,7 @@ fail:
 	return nil, false
 }
 
-// ns_plain_one_out, called as by call
+// rule ns_plain_one_out
 func u154(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[154]) {
@@ -78310,7 +77729,6 @@ func u154(p *pegort.TParser) (any, bool) {
 	return v154(p)
 }
 
-// ns_plain_one_out, called as by invokePlain (body inlined)
 func v154(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -78504,7 +77922,6 @@ fail:
 	return nil, false
 }
 
-// s_separate_n1, called as by invokePlain (body inlined)
 func s155(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -78572,7 +77989,7 @@ fail:
 	return nil, false
 }
 
-// s_b_comment, called as by call
+// rule s_b_comment
 func u156(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[156]) {
@@ -78587,7 +78004,6 @@ func u156(p *pegort.TParser) (any, bool) {
 	return v156(p)
 }
 
-// s_b_comment, called as by invokePlain (body inlined)
 func v156(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -78673,7 +78089,7 @@ fail:
 	return nil, false
 }
 
-// l_trail_comments, called as by call
+// rule l_trail_comments
 func u157(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -78692,7 +78108,6 @@ func u157(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// l_trail_comments, invoked as by invoke (body inlined)
 func i157(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -78849,7 +78264,6 @@ fail:
 	return nil, false
 }
 
-// c_forbidden, called as by invokePlain (body inlined)
 func s158(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -79044,7 +78458,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain_safe, called as by invokePlain (body inlined)
 func s159(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -79177,7 +78590,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain, called as by invokePlain (body inlined)
 func s160(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -79342,7 +78754,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain_safe_in, called as by invokePlain (body inlined)
 func s161(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -79400,7 +78811,6 @@ fail:
 	return nil, false
 }
 
-// double_quoted, called as by invokePlain (body inlined)
 func s162(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -79557,7 +78967,7 @@ fail:
 	return nil, false
 }
 
-// ns_double_char, called as by call
+// rule ns_double_char
 func u163(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[163]) {
@@ -79572,7 +78982,6 @@ func u163(p *pegort.TParser) (any, bool) {
 	return v163(p)
 }
 
-// ns_double_char, called as by invokePlain (body inlined)
 func v163(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -79689,7 +79098,6 @@ fail:
 	return nil, false
 }
 
-// single_quoted, called as by invokePlain (body inlined)
 func s164(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -79846,7 +79254,6 @@ fail:
 	return nil, false
 }
 
-// ns_single_char, called as by invokePlain (body inlined)
 func s165(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -79967,7 +79374,7 @@ fail:
 	return nil, false
 }
 
-// l_comment, called as by call
+// rule l_comment
 func u166(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[166]) {
@@ -79982,7 +79389,6 @@ func u166(p *pegort.TParser) (any, bool) {
 	return v166(p)
 }
 
-// l_comment, called as by invokePlain (body inlined)
 func v166(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -80082,7 +79488,6 @@ fail:
 	return nil, false
 }
 
-// c_document_end, called as by invokePlain (body inlined)
 func s167(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -80130,7 +79535,6 @@ fail:
 	return nil, false
 }
 
-// ns_hex_digit, called as by invokePlain (body inlined)
 func s168(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -80188,7 +79592,7 @@ fail:
 	return nil, false
 }
 
-// s_flow_line_prefix, called as by call
+// rule s_flow_line_prefix
 func u169(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -80207,7 +79611,6 @@ func u169(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// s_flow_line_prefix, invoked as by invoke (body inlined)
 func i169(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -80340,7 +79743,7 @@ fail:
 	return nil, false
 }
 
-// s_flow_folded, called as by call
+// rule s_flow_folded
 func u170(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[170]) {
@@ -80355,7 +79758,6 @@ func u170(p *pegort.TParser) (any, bool) {
 	return v170(p)
 }
 
-// s_flow_folded, called as by invokePlain (body inlined)
 func v170(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -80470,7 +79872,7 @@ fail:
 	return nil, false
 }
 
-// nb_ns_plain_in_line_out, called as by call
+// rule nb_ns_plain_in_line_out
 func u171(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[171]) {
@@ -80485,7 +79887,6 @@ func u171(p *pegort.TParser) (any, bool) {
 	return v171(p)
 }
 
-// nb_ns_plain_in_line_out, called as by invokePlain (body inlined)
 func v171(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -80816,7 +80217,6 @@ func v171(p *pegort.TParser) (any, bool) {
 	return v, true
 }
 
-// c_nb_comment_text, called as by invokePlain (body inlined)
 func s172(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -80890,7 +80290,6 @@ fail:
 	return nil, false
 }
 
-// b_comment, called as by invokePlain (body inlined)
 func s173(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -81043,7 +80442,6 @@ fail:
 	return nil, false
 }
 
-// ns_plain_multi_in, called as by invokePlain (body inlined)
 func s174(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -81276,7 +80674,7 @@ fail:
 	return nil, false
 }
 
-// ns_plain_one_in, called as by call
+// rule ns_plain_one_in
 func u175(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[175]) {
@@ -81291,7 +80689,6 @@ func u175(p *pegort.TParser) (any, bool) {
 	return v175(p)
 }
 
-// ns_plain_one_in, called as by invokePlain (body inlined)
 func v175(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -81485,7 +80882,6 @@ fail:
 	return nil, false
 }
 
-// nb_double_multi_line, called as by invokePlain (body inlined)
 func s176(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -81690,7 +81086,6 @@ fail:
 	return nil, false
 }
 
-// nb_double_one_line, called as by invokePlain (body inlined)
 func s177(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -81832,7 +81227,7 @@ func s177(p *pegort.TParser) (any, bool) {
 	return v, true
 }
 
-// c_ns_esc_char, called as by call
+// rule c_ns_esc_char
 func u178(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[178]) {
@@ -81847,7 +81242,6 @@ func u178(p *pegort.TParser) (any, bool) {
 	return v178(p)
 }
 
-// c_ns_esc_char, called as by invokePlain (body inlined)
 func v178(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -82171,7 +81565,6 @@ fail:
 	return nil, false
 }
 
-// nb_single_multi_line, called as by invokePlain (body inlined)
 func s179(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -82376,7 +81769,6 @@ fail:
 	return nil, false
 }
 
-// nb_single_one_line, called as by invokePlain (body inlined)
 func s180(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -82522,7 +81914,7 @@ func s180(p *pegort.TParser) (any, bool) {
 	return v, true
 }
 
-// l_empty_flow, called as by call
+// rule l_empty_flow
 func u181(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[181]) {
@@ -82547,7 +81939,6 @@ func u181(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// l_empty_flow, invoked as by invoke (body inlined)
 func i181(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -82726,7 +82117,7 @@ fail:
 	return nil, false
 }
 
-// nb_ns_plain_in_line_in, called as by call
+// rule nb_ns_plain_in_line_in
 func u182(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[182]) {
@@ -82741,7 +82132,6 @@ func u182(p *pegort.TParser) (any, bool) {
 	return v182(p)
 }
 
-// nb_ns_plain_in_line_in, called as by invokePlain (body inlined)
 func v182(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -83072,7 +82462,7 @@ func v182(p *pegort.TParser) (any, bool) {
 	return v, true
 }
 
-// nb_ns_double_in_line, called as by call
+// rule nb_ns_double_in_line
 func u183(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[183]) {
@@ -83087,7 +82477,6 @@ func u183(p *pegort.TParser) (any, bool) {
 	return v183(p)
 }
 
-// nb_ns_double_in_line, called as by invokePlain (body inlined)
 func v183(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -83301,7 +82690,6 @@ func v183(p *pegort.TParser) (any, bool) {
 	return v, true
 }
 
-// s_double_break, called as by invokePlain (body inlined)
 func s184(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -83455,7 +82843,7 @@ fail:
 	return nil, false
 }
 
-// nb_ns_single_in_line, called as by call
+// rule nb_ns_single_in_line
 func u185(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[185]) {
@@ -83470,7 +82858,6 @@ func u185(p *pegort.TParser) (any, bool) {
 	return v185(p)
 }
 
-// nb_ns_single_in_line, called as by invokePlain (body inlined)
 func v185(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (

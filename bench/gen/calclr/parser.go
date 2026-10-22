@@ -10,8 +10,6 @@ import (
 	pegort "github.com/ornew/pego/runtime"
 )
 
-// --- Generated code ---
-
 // Parse parses the whole input with the rule main. Options select position units, depth, cancellation and work limits.
 // If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.
 func Parse(input string, opts ...pegort.ParseOption) (*pegort.Node, error) {
@@ -26,11 +24,9 @@ func Recognize(input string, opts ...pegort.ParseOption) error {
 	return err
 }
 
-// recRules is the rule table of Recognize, and pegoRecGrammar its grammar.
 var recRules []*pegort.Rule
 var pegoRecGrammar = pegort.NewGrammar(100000)
 
-// rules is the rule table, and pegoGrammar its grammar.
 var rules []*pegort.Rule
 var pegoGrammar = pegort.NewGrammar(100000)
 
@@ -48,17 +44,12 @@ func ParseRule(name, input string, opts ...pegort.ParseOption) (*pegort.Node, er
 	return pegort.RunParseResolved(r, input, o)
 }
 
-// --- Typed values ---
-
-// astChunk owns unused values and the next allocation size for one type.
-// Handed-out values are never reused, even when a parse discards them.
 type astChunk[T any] struct {
 	free      []T
 	next      int
 	bootstrap uint8
 }
 
-// grow starts small and doubles up to limit. The request is always satisfied.
 func (s *astChunk[T]) grow(n, initial, limit int) {
 	size := s.next
 	if size == 0 {
@@ -74,9 +65,6 @@ func (s *astChunk[T]) grow(n, initial, limit int) {
 	}
 }
 
-// astNew allocates the first three values independently so a later
-// published value cannot retain discarded early siblings through a chunk.
-// Later values use the original 8-to-256 chunk growth.
 func astNew[T any](s *astChunk[T]) *T {
 	if len(s.free) == 0 {
 		if s.bootstrap < 3 {
@@ -90,7 +78,6 @@ func astNew[T any](s *astChunk[T]) *T {
 	return v
 }
 
-// tinit sets up the typed rules (called at the end of init, after the rule tables).
 func tinit() {
 	tnamedPub := func(a any, x pegort.TVal) any {
 		s, _ := a.(*tslabs)
@@ -109,7 +96,6 @@ func tinit() {
 	trules[11].Nt = types.PegoNodeTypes[1]
 }
 
-// tmk_Binary makes a Binary in an action (newStruct in the typed runtime).
 func tmk_Binary(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
@@ -134,7 +120,6 @@ func tmk_Binary(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Unary makes a Unary in an action (newStruct in the typed runtime).
 func tmk_Unary(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
@@ -157,7 +142,7 @@ func tmk_Unary(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 func tv0(a *tslabs, v any) *types.Number {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Number{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Number{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*pegort.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -165,7 +150,6 @@ func tv0(a *tslabs, v any) *types.Number {
 	return pegort.TMatchAs[types.Number](x)
 }
 
-// tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
 	control *pegort.WorkControl
 	tBinary astChunk[types.Binary]
@@ -222,7 +206,6 @@ var sh29 = pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}
 var sh30 = pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}
 var sh31 = pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}
 
-// rulesSpec is the compact form of the rule table, built by NewRules.
 var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "main", Value: &sh29, Seen: -1, Scope: 1},
 	{Name: "expr", Value: &sh26, Flags: pegort.RuleLeader, Seen: -1},
@@ -252,7 +235,6 @@ var rulesExtras = [...]pegort.RuleExtra{
 	{Id: 11, Where: "", NodeType: "Number", OpNodeType: ""},
 }
 
-// recRulesSpec is the compact form of the rule table, built by NewRules.
 var recRulesSpec = [...]pegort.RuleSpec{
 	{Name: "main", Value: &sh29, Flags: pegort.RuleNovalue, Seen: -1},
 	{Name: "expr", Value: &sh26, Flags: pegort.RuleLeader | pegort.RuleNovalue, Seen: -1},
@@ -352,7 +334,6 @@ func init() {
 
 }
 
-// main (Node body inlined)
 func e1(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -407,7 +388,6 @@ fail:
 	return nil, false
 }
 
-// add
 func e2(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		return p.Call(rules[2], 0)
@@ -417,7 +397,6 @@ func e2(p *pegort.Parser) (*pegort.Node, bool) {
 	return p.Call(rules[2], 0)
 }
 
-// term
 func e3(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		return p.Call(rules[3], 0)
@@ -427,7 +406,6 @@ func e3(p *pegort.Parser) (*pegort.Node, bool) {
 	return p.Call(rules[3], 0)
 }
 
-// add / term
 func e4(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		m0 := p.Mark()
@@ -495,7 +473,6 @@ func e4(p *pegort.Parser) (*pegort.Node, bool) {
 	return nil, false
 }
 
-// add (Node body inlined)
 func e7(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -647,7 +624,6 @@ fail:
 	return nil, false
 }
 
-// mul
 func e8(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		return p.Call(rules[4], 0)
@@ -657,7 +633,6 @@ func e8(p *pegort.Parser) (*pegort.Node, bool) {
 	return p.Call(rules[4], 0)
 }
 
-// unary
 func e9(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		return p.Call(rules[5], 0)
@@ -667,7 +642,6 @@ func e9(p *pegort.Parser) (*pegort.Node, bool) {
 	return p.Call(rules[5], 0)
 }
 
-// mul / unary
 func e10(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		m0 := p.Mark()
@@ -735,7 +709,6 @@ func e10(p *pegort.Parser) (*pegort.Node, bool) {
 	return nil, false
 }
 
-// mul (Node body inlined)
 func e14(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -914,7 +887,6 @@ fail:
 	return nil, false
 }
 
-// unary (Node body inlined)
 func e15(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -979,7 +951,6 @@ fail:
 	return nil, false
 }
 
-// neg (Node body inlined)
 func e16(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -1115,7 +1086,6 @@ fail:
 	return nil, false
 }
 
-// power (Node body inlined)
 func e17(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -1180,7 +1150,6 @@ fail:
 	return nil, false
 }
 
-// pow (Node body inlined)
 func e19(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -1268,7 +1237,6 @@ fail:
 	return nil, false
 }
 
-// primary (Node body inlined)
 func e20(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -1371,7 +1339,6 @@ fail:
 	return nil, false
 }
 
-// group (Node body inlined)
 func e23(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -1439,7 +1406,6 @@ fail:
 	return nil, false
 }
 
-// number (Node body inlined)
 func e25(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -1566,7 +1532,6 @@ fail:
 	return nil, false
 }
 
-// ws (Node body inlined)
 func e27(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -1659,7 +1624,6 @@ func e27(p *pegort.Parser) (*pegort.Node, bool) {
 	return v9, true
 }
 
-// ws (value-free body inlined)
 func e28(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -1705,7 +1669,6 @@ func e28(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, true
 }
 
-// power, called as by invokePlain
 func r7(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -1743,7 +1706,6 @@ func r7(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// number, called as by invokePlain
 func r11(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -1781,7 +1743,6 @@ func r11(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ws, called as by invokePlain (body inlined)
 func r13(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -1831,7 +1792,6 @@ func r13(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, true
 }
 
-// main (value-free body inlined)
 func e32(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -1880,7 +1840,6 @@ fail:
 	return nil, false
 }
 
-// add
 func e33(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		return q2(p)
@@ -1890,7 +1849,6 @@ func e33(p *pegort.Parser) (*pegort.Node, bool) {
 	return q2(p)
 }
 
-// term
 func e34(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		return p.Call(recRules[3], 0)
@@ -1900,7 +1858,6 @@ func e34(p *pegort.Parser) (*pegort.Node, bool) {
 	return p.Call(recRules[3], 0)
 }
 
-// add / term
 func e35(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		m0 := p.Mark()
@@ -1968,7 +1925,6 @@ func e35(p *pegort.Parser) (*pegort.Node, bool) {
 	return nil, false
 }
 
-// add (value-free body inlined)
 func e36(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -2093,7 +2049,6 @@ fail:
 	return nil, false
 }
 
-// mul
 func e37(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		return q4(p)
@@ -2103,7 +2058,6 @@ func e37(p *pegort.Parser) (*pegort.Node, bool) {
 	return q4(p)
 }
 
-// unary
 func e38(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		return p.Call(recRules[5], 0)
@@ -2113,7 +2067,6 @@ func e38(p *pegort.Parser) (*pegort.Node, bool) {
 	return p.Call(recRules[5], 0)
 }
 
-// mul / unary
 func e39(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		m0 := p.Mark()
@@ -2181,7 +2134,6 @@ func e39(p *pegort.Parser) (*pegort.Node, bool) {
 	return nil, false
 }
 
-// mul (value-free body inlined)
 func e40(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -2333,7 +2285,6 @@ fail:
 	return nil, false
 }
 
-// unary (Node body inlined)
 func e41(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -2388,7 +2339,6 @@ fail:
 	return nil, false
 }
 
-// neg (value-free body inlined)
 func e42(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -2505,7 +2455,6 @@ fail:
 	return nil, false
 }
 
-// power (value-free body inlined)
 func e43(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -2564,7 +2513,6 @@ fail:
 	return nil, false
 }
 
-// pow (value-free body inlined)
 func e44(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -2624,7 +2572,6 @@ fail:
 	return nil, false
 }
 
-// primary (Node body inlined)
 func e45(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -2709,7 +2656,6 @@ fail:
 	return nil, false
 }
 
-// group (value-free body inlined)
 func e46(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -2771,7 +2717,6 @@ fail:
 	return nil, false
 }
 
-// number (value-free body inlined)
 func e47(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -2894,7 +2839,6 @@ fail:
 	return nil, false
 }
 
-// add, called as by invokePlain (body inlined)
 func q2(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3031,7 +2975,6 @@ fail:
 	return nil, false
 }
 
-// mul, called as by invokePlain (body inlined)
 func q4(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3195,7 +3138,6 @@ fail:
 	return nil, false
 }
 
-// neg, called as by invokePlain (body inlined)
 func q6(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3324,7 +3266,6 @@ fail:
 	return nil, false
 }
 
-// power, called as by invokePlain (body inlined)
 func q7(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3395,7 +3336,6 @@ fail:
 	return nil, false
 }
 
-// pow, called as by invokePlain (body inlined)
 func q8(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3467,7 +3407,6 @@ fail:
 	return nil, false
 }
 
-// group, called as by invokePlain (body inlined)
 func q10(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3541,7 +3480,6 @@ fail:
 	return nil, false
 }
 
-// number, called as by invokePlain (body inlined)
 func q11(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3676,7 +3614,6 @@ fail:
 	return nil, false
 }
 
-// ws, called as by invokePlain (body inlined)
 func q12(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -3726,7 +3663,6 @@ func q12(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, true
 }
 
-// expr (typed LR body inlined)
 func e48(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -3791,7 +3727,6 @@ fail:
 	return nil, false
 }
 
-// term (typed LR body inlined)
 func e52(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -3856,10 +3791,9 @@ fail:
 	return nil, false
 }
 
-// trules is the typed rule table.
 var trules []*pegort.TRule
 
-// main, called as by call
+// rule main
 func u0(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -3878,7 +3812,6 @@ func u0(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// main, invoked as by invoke (body inlined)
 func i0(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -3957,7 +3890,7 @@ fail:
 	return nil, false
 }
 
-// add, called as by call
+// rule add
 func u2(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -3976,7 +3909,6 @@ func u2(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// add, invoked as by invoke (body inlined)
 func i2(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -4169,7 +4101,7 @@ fail:
 	return nil, false
 }
 
-// mul, called as by call
+// rule mul
 func u4(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -4188,7 +4120,6 @@ func u4(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// mul, invoked as by invoke (body inlined)
 func i4(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -4408,7 +4339,7 @@ fail:
 	return nil, false
 }
 
-// unary, called as by call
+// rule unary
 func u5(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[5]) {
@@ -4423,7 +4354,6 @@ func u5(p *pegort.TParser) (any, bool) {
 	return v5(p)
 }
 
-// unary, called as by invokePlain (body inlined)
 func v5(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -4510,7 +4440,7 @@ fail:
 	return nil, false
 }
 
-// neg, called as by call
+// rule neg
 func u6(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -4529,7 +4459,6 @@ func u6(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// neg, invoked as by invoke (body inlined)
 func i6(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -4702,7 +4631,6 @@ fail:
 	return nil, false
 }
 
-// power, called as by invokePlain (body inlined)
 func s7(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -4789,7 +4717,7 @@ fail:
 	return nil, false
 }
 
-// pow, called as by call
+// rule pow
 func u8(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -4808,7 +4736,6 @@ func u8(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// pow, invoked as by invoke (body inlined)
 func i8(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -4937,7 +4864,7 @@ fail:
 	return nil, false
 }
 
-// primary, called as by call
+// rule primary
 func u9(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[9]) {
@@ -4962,7 +4889,6 @@ func u9(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// primary, invoked as by invoke (body inlined)
 func i9(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -5089,7 +5015,7 @@ fail:
 	return nil, false
 }
 
-// group, called as by call
+// rule group
 func u10(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -5108,7 +5034,6 @@ func u10(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// group, invoked as by invoke (body inlined)
 func i10(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -5200,7 +5125,6 @@ fail:
 	return nil, false
 }
 
-// number, called as by invokePlain (body inlined)
 func s11(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -5355,7 +5279,6 @@ fail:
 	return nil, false
 }
 
-// ws, called as by invokePlain (body inlined)
 func s13(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (

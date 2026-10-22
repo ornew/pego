@@ -9,28 +9,19 @@ import (
 	pegort "github.com/ornew/pego/runtime"
 )
 
-// --- Generated code ---
-
-// rules is the rule table, and pegoGrammar its grammar.
 var rules []*pegort.Rule
 var pegoGrammar = pegort.NewGrammar(100000)
 
-// --- Typed values ---
-
-// The value of a rule, and a list element, holds an int, string or bool in a box.
 func astInt(v any) int       { i, _ := pegort.UnboxValue(v).(int); return i }
 func astString(v any) string { s, _ := pegort.UnboxValue(v).(string); return s }
 func astBool(v any) bool     { x, _ := pegort.UnboxValue(v).(bool); return x }
 
-// astChunk owns unused values and the next allocation size for one type.
-// Handed-out values are never reused, even when a parse discards them.
 type astChunk[T any] struct {
 	free      []T
 	next      int
 	bootstrap uint8
 }
 
-// grow starts small and doubles up to limit. The request is always satisfied.
 func (s *astChunk[T]) grow(n, initial, limit int) {
 	size := s.next
 	if size == 0 {
@@ -46,9 +37,6 @@ func (s *astChunk[T]) grow(n, initial, limit int) {
 	}
 }
 
-// astNew allocates the first three values independently so a later
-// published value cannot retain discarded early siblings through a chunk.
-// Later values use the original 8-to-256 chunk growth.
 func astNew[T any](s *astChunk[T]) *T {
 	if len(s.free) == 0 {
 		if s.bootstrap < 3 {
@@ -62,11 +50,9 @@ func astNew[T any](s *astChunk[T]) *T {
 	return v
 }
 
-// astSlice allocates the first nonempty small list independently to keep
-// its backing values separate from later published lists of the same type.
 func astSlice[T any](s *astChunk[T], n int) []T {
 	if n == 0 {
-		return []T{} // an empty list, not nil
+		return []T{}
 	}
 	if n > 256 {
 		return make([]T, n)
@@ -83,7 +69,6 @@ func astSlice[T any](s *astChunk[T], n int) []T {
 	return v
 }
 
-// tinit sets up the typed rules (called at the end of init, after the rule tables).
 func tinit() {
 	tnamedPub := func(a any, x pegort.TVal) any {
 		s, _ := a.(*tslabs)
@@ -138,7 +123,6 @@ func tinit() {
 	trules[300].Nt = types.PegoNodeTypes[4]
 }
 
-// tmk_Alias makes a Alias in an action (newStruct in the typed runtime).
 func tmk_Alias(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -159,7 +143,6 @@ func tmk_Alias(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_AnnAssign makes a AnnAssign in an action (newStruct in the typed runtime).
 func tmk_AnnAssign(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -188,7 +171,6 @@ func tmk_AnnAssign(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Arg makes a Arg in an action (newStruct in the typed runtime).
 func tmk_Arg(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -209,7 +191,6 @@ func tmk_Arg(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Arguments makes a Arguments in an action (newStruct in the typed runtime).
 func tmk_Arguments(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -250,7 +231,6 @@ func tmk_Arguments(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Assert makes a Assert in an action (newStruct in the typed runtime).
 func tmk_Assert(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -271,7 +251,6 @@ func tmk_Assert(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Assign makes a Assign in an action (newStruct in the typed runtime).
 func tmk_Assign(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -292,7 +271,6 @@ func tmk_Assign(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_AsyncFor makes a AsyncFor in an action (newStruct in the typed runtime).
 func tmk_AsyncFor(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -321,7 +299,6 @@ func tmk_AsyncFor(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any)
 	return c.Made(v, first, start, end)
 }
 
-// tmk_AsyncFunctionDef makes a AsyncFunctionDef in an action (newStruct in the typed runtime).
 func tmk_AsyncFunctionDef(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -358,7 +335,6 @@ func tmk_AsyncFunctionDef(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any,
 	return c.Made(v, first, start, end)
 }
 
-// tmk_AsyncWith makes a AsyncWith in an action (newStruct in the typed runtime).
 func tmk_AsyncWith(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -379,7 +355,6 @@ func tmk_AsyncWith(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Attribute makes a Attribute in an action (newStruct in the typed runtime).
 func tmk_Attribute(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -404,7 +379,6 @@ func tmk_Attribute(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_AugAssign makes a AugAssign in an action (newStruct in the typed runtime).
 func tmk_AugAssign(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -429,7 +403,6 @@ func tmk_AugAssign(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Await makes a Await in an action (newStruct in the typed runtime).
 func tmk_Await(c *pegort.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -446,7 +419,6 @@ func tmk_Await(c *pegort.TActCtx, final bool, f0 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_BinOp makes a BinOp in an action (newStruct in the typed runtime).
 func tmk_BinOp(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -471,7 +443,6 @@ func tmk_BinOp(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_BoolOp makes a BoolOp in an action (newStruct in the typed runtime).
 func tmk_BoolOp(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -492,7 +463,6 @@ func tmk_BoolOp(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Break makes a Break in an action (newStruct in the typed runtime).
 func tmk_Break(c *pegort.TActCtx, final bool) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -505,7 +475,6 @@ func tmk_Break(c *pegort.TActCtx, final bool) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Call makes a Call in an action (newStruct in the typed runtime).
 func tmk_Call(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -530,7 +499,6 @@ func tmk_Call(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_ClassDef makes a ClassDef in an action (newStruct in the typed runtime).
 func tmk_ClassDef(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -567,7 +535,6 @@ func tmk_ClassDef(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any,
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Compare makes a Compare in an action (newStruct in the typed runtime).
 func tmk_Compare(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -592,7 +559,6 @@ func tmk_Compare(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Comprehension makes a Comprehension in an action (newStruct in the typed runtime).
 func tmk_Comprehension(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -621,7 +587,6 @@ func tmk_Comprehension(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Continue makes a Continue in an action (newStruct in the typed runtime).
 func tmk_Continue(c *pegort.TActCtx, final bool) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -634,7 +599,6 @@ func tmk_Continue(c *pegort.TActCtx, final bool) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Delete makes a Delete in an action (newStruct in the typed runtime).
 func tmk_Delete(c *pegort.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -651,7 +615,6 @@ func tmk_Delete(c *pegort.TActCtx, final bool, f0 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Dict makes a Dict in an action (newStruct in the typed runtime).
 func tmk_Dict(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -672,7 +635,6 @@ func tmk_Dict(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_DictComp makes a DictComp in an action (newStruct in the typed runtime).
 func tmk_DictComp(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -697,7 +659,6 @@ func tmk_DictComp(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_ExceptHandler makes a ExceptHandler in an action (newStruct in the typed runtime).
 func tmk_ExceptHandler(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -722,7 +683,6 @@ func tmk_ExceptHandler(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) an
 	return c.Made(v, first, start, end)
 }
 
-// tmk_ExprStmt makes a ExprStmt in an action (newStruct in the typed runtime).
 func tmk_ExprStmt(c *pegort.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -739,7 +699,6 @@ func tmk_ExprStmt(c *pegort.TActCtx, final bool, f0 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_For makes a For in an action (newStruct in the typed runtime).
 func tmk_For(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -768,7 +727,6 @@ func tmk_For(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any 
 	return c.Made(v, first, start, end)
 }
 
-// tmk_FormattedValue makes a FormattedValue in an action (newStruct in the typed runtime).
 func tmk_FormattedValue(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -801,7 +759,6 @@ func tmk_FormattedValue(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f
 	return c.Made(v, first, start, end)
 }
 
-// tmk_FunctionDef makes a FunctionDef in an action (newStruct in the typed runtime).
 func tmk_FunctionDef(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -838,7 +795,6 @@ func tmk_FunctionDef(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 a
 	return c.Made(v, first, start, end)
 }
 
-// tmk_GeneratorExp makes a GeneratorExp in an action (newStruct in the typed runtime).
 func tmk_GeneratorExp(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -859,7 +815,6 @@ func tmk_GeneratorExp(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Global makes a Global in an action (newStruct in the typed runtime).
 func tmk_Global(c *pegort.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -876,7 +831,6 @@ func tmk_Global(c *pegort.TActCtx, final bool, f0 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_If makes a If in an action (newStruct in the typed runtime).
 func tmk_If(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -901,7 +855,6 @@ func tmk_If(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_IfExp makes a IfExp in an action (newStruct in the typed runtime).
 func tmk_IfExp(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -926,7 +879,6 @@ func tmk_IfExp(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Import makes a Import in an action (newStruct in the typed runtime).
 func tmk_Import(c *pegort.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -943,7 +895,6 @@ func tmk_Import(c *pegort.TActCtx, final bool, f0 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_ImportFrom makes a ImportFrom in an action (newStruct in the typed runtime).
 func tmk_ImportFrom(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -968,7 +919,6 @@ func tmk_ImportFrom(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Interpolation makes a Interpolation in an action (newStruct in the typed runtime).
 func tmk_Interpolation(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1001,7 +951,6 @@ func tmk_Interpolation(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3
 	return c.Made(v, first, start, end)
 }
 
-// tmk_JoinedStr makes a JoinedStr in an action (newStruct in the typed runtime).
 func tmk_JoinedStr(c *pegort.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1018,7 +967,6 @@ func tmk_JoinedStr(c *pegort.TActCtx, final bool, f0 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Keyword makes a Keyword in an action (newStruct in the typed runtime).
 func tmk_Keyword(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1039,7 +987,6 @@ func tmk_Keyword(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Lambda makes a Lambda in an action (newStruct in the typed runtime).
 func tmk_Lambda(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1060,7 +1007,6 @@ func tmk_Lambda(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_ListComp makes a ListComp in an action (newStruct in the typed runtime).
 func tmk_ListComp(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1081,7 +1027,6 @@ func tmk_ListComp(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_ListExpr makes a ListExpr in an action (newStruct in the typed runtime).
 func tmk_ListExpr(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1102,7 +1047,6 @@ func tmk_ListExpr(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_MatchAs makes a MatchAs in an action (newStruct in the typed runtime).
 func tmk_MatchAs(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1123,7 +1067,6 @@ func tmk_MatchAs(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_MatchCase makes a MatchCase in an action (newStruct in the typed runtime).
 func tmk_MatchCase(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1148,7 +1091,6 @@ func tmk_MatchCase(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_MatchClass makes a MatchClass in an action (newStruct in the typed runtime).
 func tmk_MatchClass(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1177,7 +1119,6 @@ func tmk_MatchClass(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 an
 	return c.Made(v, first, start, end)
 }
 
-// tmk_MatchMapping makes a MatchMapping in an action (newStruct in the typed runtime).
 func tmk_MatchMapping(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1202,7 +1143,6 @@ func tmk_MatchMapping(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any
 	return c.Made(v, first, start, end)
 }
 
-// tmk_MatchOr makes a MatchOr in an action (newStruct in the typed runtime).
 func tmk_MatchOr(c *pegort.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1219,7 +1159,6 @@ func tmk_MatchOr(c *pegort.TActCtx, final bool, f0 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_MatchSequence makes a MatchSequence in an action (newStruct in the typed runtime).
 func tmk_MatchSequence(c *pegort.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1236,7 +1175,6 @@ func tmk_MatchSequence(c *pegort.TActCtx, final bool, f0 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_MatchSingleton makes a MatchSingleton in an action (newStruct in the typed runtime).
 func tmk_MatchSingleton(c *pegort.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1253,7 +1191,6 @@ func tmk_MatchSingleton(c *pegort.TActCtx, final bool, f0 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_MatchStar makes a MatchStar in an action (newStruct in the typed runtime).
 func tmk_MatchStar(c *pegort.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1270,7 +1207,6 @@ func tmk_MatchStar(c *pegort.TActCtx, final bool, f0 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_MatchStmt makes a MatchStmt in an action (newStruct in the typed runtime).
 func tmk_MatchStmt(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1291,7 +1227,6 @@ func tmk_MatchStmt(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_MatchValue makes a MatchValue in an action (newStruct in the typed runtime).
 func tmk_MatchValue(c *pegort.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1308,7 +1243,6 @@ func tmk_MatchValue(c *pegort.TActCtx, final bool, f0 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Module makes a Module in an action (newStruct in the typed runtime).
 func tmk_Module(c *pegort.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1325,7 +1259,6 @@ func tmk_Module(c *pegort.TActCtx, final bool, f0 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Name makes a Name in an action (newStruct in the typed runtime).
 func tmk_Name(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1346,7 +1279,6 @@ func tmk_Name(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_NamedExpr makes a NamedExpr in an action (newStruct in the typed runtime).
 func tmk_NamedExpr(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1367,7 +1299,6 @@ func tmk_NamedExpr(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Nonlocal makes a Nonlocal in an action (newStruct in the typed runtime).
 func tmk_Nonlocal(c *pegort.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1384,7 +1315,6 @@ func tmk_Nonlocal(c *pegort.TActCtx, final bool, f0 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_ParamSpec makes a ParamSpec in an action (newStruct in the typed runtime).
 func tmk_ParamSpec(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1405,7 +1335,6 @@ func tmk_ParamSpec(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Pass makes a Pass in an action (newStruct in the typed runtime).
 func tmk_Pass(c *pegort.TActCtx, final bool) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1418,7 +1347,6 @@ func tmk_Pass(c *pegort.TActCtx, final bool) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Raise makes a Raise in an action (newStruct in the typed runtime).
 func tmk_Raise(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1439,7 +1367,6 @@ func tmk_Raise(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Return makes a Return in an action (newStruct in the typed runtime).
 func tmk_Return(c *pegort.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1456,7 +1383,6 @@ func tmk_Return(c *pegort.TActCtx, final bool, f0 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Set makes a Set in an action (newStruct in the typed runtime).
 func tmk_Set(c *pegort.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1473,7 +1399,6 @@ func tmk_Set(c *pegort.TActCtx, final bool, f0 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_SetComp makes a SetComp in an action (newStruct in the typed runtime).
 func tmk_SetComp(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1494,7 +1419,6 @@ func tmk_SetComp(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Slice makes a Slice in an action (newStruct in the typed runtime).
 func tmk_Slice(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1519,7 +1443,6 @@ func tmk_Slice(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Starred makes a Starred in an action (newStruct in the typed runtime).
 func tmk_Starred(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1540,7 +1463,6 @@ func tmk_Starred(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Subscript makes a Subscript in an action (newStruct in the typed runtime).
 func tmk_Subscript(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1565,7 +1487,6 @@ func tmk_Subscript(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_TemplateStr makes a TemplateStr in an action (newStruct in the typed runtime).
 func tmk_TemplateStr(c *pegort.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1582,7 +1503,6 @@ func tmk_TemplateStr(c *pegort.TActCtx, final bool, f0 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Try makes a Try in an action (newStruct in the typed runtime).
 func tmk_Try(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1611,7 +1531,6 @@ func tmk_Try(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any 
 	return c.Made(v, first, start, end)
 }
 
-// tmk_TryStar makes a TryStar in an action (newStruct in the typed runtime).
 func tmk_TryStar(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1640,7 +1559,6 @@ func tmk_TryStar(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) 
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Tuple makes a Tuple in an action (newStruct in the typed runtime).
 func tmk_Tuple(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1661,7 +1579,6 @@ func tmk_Tuple(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_TypeAlias makes a TypeAlias in an action (newStruct in the typed runtime).
 func tmk_TypeAlias(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1686,7 +1603,6 @@ func tmk_TypeAlias(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_TypeVar makes a TypeVar in an action (newStruct in the typed runtime).
 func tmk_TypeVar(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1711,7 +1627,6 @@ func tmk_TypeVar(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_TypeVarTuple makes a TypeVarTuple in an action (newStruct in the typed runtime).
 func tmk_TypeVarTuple(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1732,7 +1647,6 @@ func tmk_TypeVarTuple(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_UnaryOp makes a UnaryOp in an action (newStruct in the typed runtime).
 func tmk_UnaryOp(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1753,7 +1667,6 @@ func tmk_UnaryOp(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_While makes a While in an action (newStruct in the typed runtime).
 func tmk_While(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1778,7 +1691,6 @@ func tmk_While(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_With makes a With in an action (newStruct in the typed runtime).
 func tmk_With(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1799,7 +1711,6 @@ func tmk_With(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_WithItem makes a WithItem in an action (newStruct in the typed runtime).
 func tmk_WithItem(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1820,7 +1731,6 @@ func tmk_WithItem(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Yield makes a Yield in an action (newStruct in the typed runtime).
 func tmk_Yield(c *pegort.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1837,7 +1747,6 @@ func tmk_Yield(c *pegort.TActCtx, final bool, f0 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_YieldFrom makes a YieldFrom in an action (newStruct in the typed runtime).
 func tmk_YieldFrom(c *pegort.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
@@ -1861,7 +1770,7 @@ func tl0(a *tslabs, v any) []*types.Arg {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*types.Arg{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.Arg{}
 	}
 	out := astSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -1878,7 +1787,7 @@ func tl1(a *tslabs, v any) []types.Expr {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []types.Expr{} // another node (an Error), as conversion makes an empty list of it
+		return []types.Expr{}
 	}
 	out := astSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -1895,7 +1804,7 @@ func tl2(a *tslabs, v any) []types.Stmt {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []types.Stmt{} // another node (an Error), as conversion makes an empty list of it
+		return []types.Stmt{}
 	}
 	out := astSlice(&a.tl2Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -1912,7 +1821,7 @@ func tl3(a *tslabs, v any) []types.TypeParam {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []types.TypeParam{} // another node (an Error), as conversion makes an empty list of it
+		return []types.TypeParam{}
 	}
 	out := astSlice(&a.tl3Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -1929,7 +1838,7 @@ func tl4(a *tslabs, v any) []*types.WithItem {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*types.WithItem{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.WithItem{}
 	}
 	out := astSlice(&a.tl4Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -1946,7 +1855,7 @@ func tl5(a *tslabs, v any) []*types.Keyword {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*types.Keyword{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.Keyword{}
 	}
 	out := astSlice(&a.tl5Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -1963,7 +1872,7 @@ func tl6(a *tslabs, v any) []*types.Op {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*types.Op{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.Op{}
 	}
 	out := astSlice(&a.tl6Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -1980,7 +1889,7 @@ func tl7(a *tslabs, v any) []*types.Comprehension {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*types.Comprehension{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.Comprehension{}
 	}
 	out := astSlice(&a.tl7Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -1997,7 +1906,7 @@ func tl8(a *tslabs, v any) []*types.Identifier {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*types.Identifier{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.Identifier{}
 	}
 	out := astSlice(&a.tl8Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -2014,7 +1923,7 @@ func tl9(a *tslabs, v any) []*types.Alias {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*types.Alias{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.Alias{}
 	}
 	out := astSlice(&a.tl9Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -2031,7 +1940,7 @@ func tl10(a *tslabs, v any) []types.StrPart {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []types.StrPart{} // another node (an Error), as conversion makes an empty list of it
+		return []types.StrPart{}
 	}
 	out := astSlice(&a.tl10Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -2048,7 +1957,7 @@ func tl11(a *tslabs, v any) []types.Pattern {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []types.Pattern{} // another node (an Error), as conversion makes an empty list of it
+		return []types.Pattern{}
 	}
 	out := astSlice(&a.tl11Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -2065,7 +1974,7 @@ func tl12(a *tslabs, v any) []*types.MatchCase {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*types.MatchCase{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.MatchCase{}
 	}
 	out := astSlice(&a.tl12Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -2082,7 +1991,7 @@ func tl13(a *tslabs, v any) []*types.ExceptHandler {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*types.ExceptHandler{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.ExceptHandler{}
 	}
 	out := astSlice(&a.tl13Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -2094,7 +2003,7 @@ func tl13(a *tslabs, v any) []*types.ExceptHandler {
 
 func tv0(a *tslabs, v any) *types.Constant {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Constant{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Constant{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*pegort.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -2104,7 +2013,7 @@ func tv0(a *tslabs, v any) *types.Constant {
 
 func tv1(a *tslabs, v any) *types.FStringMiddle {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.FStringMiddle{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.FStringMiddle{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*pegort.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
@@ -2114,7 +2023,7 @@ func tv1(a *tslabs, v any) *types.FStringMiddle {
 
 func tv2(a *tslabs, v any) *types.FStringRawMiddle {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.FStringRawMiddle{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.FStringRawMiddle{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*pegort.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
@@ -2124,7 +2033,7 @@ func tv2(a *tslabs, v any) *types.FStringRawMiddle {
 
 func tv3(a *tslabs, v any) *types.Identifier {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Identifier{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Identifier{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*pegort.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
@@ -2134,7 +2043,7 @@ func tv3(a *tslabs, v any) *types.Identifier {
 
 func tv4(a *tslabs, v any) *types.Op {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Op{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Op{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*pegort.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[5] {
 		return nil
@@ -2142,7 +2051,6 @@ func tv4(a *tslabs, v any) *types.Op {
 	return pegort.TMatchAs[types.Op](x)
 }
 
-// tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
 	control           *pegort.WorkControl
 	tAlias            astChunk[types.Alias]
@@ -2421,7 +2329,6 @@ var sh648 = pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false
 var sh649 = pegort.Shaper{Elems: true, K: 8, Mode: 2, Tuple: true, Shared: false}
 var sh650 = pegort.Shaper{Elems: true, K: 9, Mode: 2, Tuple: true, Shared: false}
 
-// rulesSpec is the compact form of the rule table, built by NewRules.
 var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "main", Value: &sh14, Seen: -1, Scope: 1, Vars: 2},
 	{Name: "first_stmts", Value: &sh9, Seen: -1, Scope: 3, Vars: 2},
@@ -3482,10 +3389,9 @@ func init() {
 	pegoGrammar.Descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "invalid syntax", "unexpected indent", "\";\"", "[ \\t\\f]", "\"\\\\\"", "expected an indented block", "too many levels of indentation", "[ \\t]", "\"\\f\"", "\" \"", "\"\\t\"", "\"\\r\\n\"", "[\\n\\r]", "\"#\"", "[^\\n\\r\\x00]", "[#\\n\\r]", "\"pass\"", "\"break\"", "\"continue\"", "\"return\"", "\"raise\"", "\"global\"", "\"nonlocal\"", "\"del\"", "\"assert\"", "\"import\"", "\"from\"", "\"type\"", "\"=\"", "\":\"", "\"(\"", "\"+=\"", "\"-=\"", "\"*=\"", "\"@=\"", "\"/=\"", "\"%=\"", "\"&=\"", "\"|=\"", "\"^=\"", "\"<<=\"", "\">>=\"", "\"**=\"", "\"//=\"", "\",\"", "\".\"", "\"...\"", "\"*\"", "\")\"", "\"if\"", "\"while\"", "\"for\"", "\"try\"", "\"with\"", "\"async\"", "\"match\"", "[,):]", "expected 'except' or 'finally' block", "\"except\"", "\"@\"", "\"->\"", "\"|\"", "\"_\"", "\"{\"", "[+\\-]", "\"None\"", "\"True\"", "\"False\"", "\"-\"", "[=>]", "\"+\"", "\"..\"", "\"[\"", "\"]\"", "\"**\"", "\"}\"", "at least one argument must precede /", "parameter without a default follows parameter with a default", "\"/\"", "[*=]", "named arguments must follow bare *", "\":=\"", "\"lambda\"", "f-string: lambda expressions are not allowed without parentheses", "\"yield\"", "\"or\"", "\"and\"", "\"not\"", "\"==\"", "\"!=\"", "\"<>\"", "\"<=\"", "\">=\"", "\"<\"", "[<=>]", "\">\"", "[>=]", "\"in\"", "\"is\"", "\"^\"", "\"&\"", "\"<<\"", "\">>\"", "\"//\"", "[/=]", "\"%\"", "\"~\"", "[(\\[]", "[rRbBuUfFtT]", "[\\'\"]", "[uU]", "[rR]", "[bB]", "\"'''\"", "[^\\'\\\\\\x00]", "\"'\"", "\"\\\"\\\"\\\"\"", "[^\"\\\\\\x00]", "\"\\\"\"", "[^\\'\\\\\\n\\r\\x00]", "[^\"\\\\\\n\\r\\x00]", "\"x\"", "\"u\"", "\"U\"", "\"0010\"", "\"000\"", "\"N{\"", "[A-Za-z0-9 \\-]", "[^xuUN\\n\\r\\x00]", "[^\\x00]", "[^\\'\\\\\\x00\\u0080-\\U0010ffff]", "[^\"\\\\\\x00\\u0080-\\U0010ffff]", "[^\\'\\\\\\n\\r\\x00\\u0080-\\U0010ffff]", "[^\"\\\\\\n\\r\\x00\\u0080-\\U0010ffff]", "[^x\\n\\r\\x00\\u0080-\\U0010ffff]", "[^\\x00\\u0080-\\U0010ffff]", "[0-9a-fA-F]", "[fF]", "unterminated f-string literal", "[tT]", "unterminated t-string literal", "[^\\'\"\\\\{}\\n\\r\\x00]", "\"{{\"", "\"}}\"", "[^xuUN{}\\n\\r\\x00]", "[{}]", "[^{}\\x00]", "f-string: expressions nested too deeply", "t-string: expressions nested too deeply", "\"!\"", "[sra]", "\"0\"", "[jJ]", "[0-9]", "[xX]", "[oO]", "[0-7]", "[01]", "[1-9]", "[eE]", "[xXoObB]", "\"else\"", "\"i\"", "[fns]", "[a-zA-Z0-9_]", "[a-zA-Z_]", "[\\u0080-\\U0010ffff]", "invalid character", "\"as\"", "\"await\"", "\"class\"", "\"def\"", "\"elif\"", "\"finally\"", "\"case\"", "[ªµºÀ-ÖØ-öø-ˁˆ-ˑˠ-ˤˬˮͰ-ʹͶ-ͷͻ-ͽͿΆΈ-ΊΌΎ-ΡΣ-ϵϷ-ҁҊ-ԯԱ-Ֆՙՠ-ֈא-תׯ-ײؠ-يٮ-ٯٱ-ۓەۥ-ۦۮ-ۯۺ-ۼۿܐܒ-ܯݍ-ޥޱߊ-ߪߴ-ߵߺࠀ-ࠕࠚࠤࠨࡀ-ࡘࡠ-ࡪࡰ-ࢇࢉ-ࢎࢠ-ࣉऄ-हऽॐक़-ॡॱ-ঀঅ-ঌএ-ঐও-নপ-রলশ-হঽৎড়-ঢ়য়-ৡৰ-ৱৼਅ-ਊਏ-ਐਓ-ਨਪ-ਰਲ-ਲ਼ਵ-ਸ਼ਸ-ਹਖ਼-ੜਫ਼ੲ-ੴઅ-ઍએ-ઑઓ-નપ-રલ-ળવ-હઽૐૠ-ૡૹଅ-ଌଏ-ଐଓ-ନପ-ରଲ-ଳଵ-ହଽଡ଼-ଢ଼ୟ-ୡୱஃஅ-ஊஎ-ஐஒ-கங-சஜஞ-டண-தந-பம-ஹௐఅ-ఌఎ-ఐఒ-నప-హఽౘ-ౚౝౠ-ౡಀಅ-ಌಎ-ಐಒ-ನಪ-ಳವ-ಹಽೝ-ೞೠ-ೡೱ-ೲഄ-ഌഎ-ഐഒ-ഺഽൎൔ-ൖൟ-ൡൺ-ൿඅ-ඖක-නඳ-රලව-ෆก-ะาเ-ๆກ-ຂຄຆ-ຊຌ-ຣລວ-ະາຽເ-ໄໆໜ-ໟༀཀ-ཇཉ-ཬྈ-ྌက-ဪဿၐ-ၕၚ-ၝၡၥ-ၦၮ-ၰၵ-ႁႎႠ-ჅჇჍა-ჺჼ-ቈቊ-ቍቐ-ቖቘቚ-ቝበ-ኈኊ-ኍነ-ኰኲ-ኵኸ-ኾዀዂ-ዅወ-ዖዘ-ጐጒ-ጕጘ-ፚᎀ-ᎏᎠ-Ᏽᏸ-ᏽᐁ-ᙬᙯ-ᙿᚁ-ᚚᚠ-ᛪᛮ-ᛸᜀ-ᜑᜟ-ᜱᝀ-ᝑᝠ-ᝬᝮ-ᝰក-ឳៗៜᠠ-ᡸᢀ-ᢨᢪᢰ-ᣵᤀ-ᤞᥐ-ᥭᥰ-ᥴᦀ-ᦫᦰ-ᧉᨀ-ᨖᨠ-ᩔᪧᬅ-ᬳᭅ-ᭌᮃ-ᮠᮮ-ᮯᮺ-ᯥᰀ-ᰣᱍ-ᱏᱚ-ᱽᲀ-ᲊᲐ-ᲺᲽ-Ჿᳩ-ᳬᳮ-ᳳᳵ-ᳶᳺᴀ-ᶿḀ-ἕἘ-Ἕἠ-ὅὈ-Ὅὐ-ὗὙὛὝὟ-ώᾀ-ᾴᾶ-ᾼιῂ-ῄῆ-ῌῐ-ΐῖ-Ίῠ-Ῥῲ-ῴῶ-ῼⁱⁿₐ-ₜℂℇℊ-ℓℕ℘-ℝℤΩℨK-ℹℼ-ℿⅅ-ⅉⅎⅠ-ↈⰀ-ⳤⳫ-ⳮⳲ-ⳳⴀ-ⴥⴧⴭⴰ-ⵧⵯⶀ-ⶖⶠ-ⶦⶨ-ⶮⶰ-ⶶⶸ-ⶾⷀ-ⷆⷈ-ⷎⷐ-ⷖⷘ-ⷞ々-〇〡-〩〱-〵〸-〼ぁ-ゖゝ-ゟァ-ヺー-ヿㄅ-ㄯㄱ-ㆎㆠ-ㆿㇰ-ㇿ㐀-䶿一-ꒌꓐ-ꓽꔀ-ꘌꘐ-ꘟꘪ-ꘫꙀ-ꙮꙿ-ꚝꚠ-ꛯꜗ-ꜟꜢ-ꞈꞋ-ꟍꟐ-ꟑꟓꟕ-Ƛꟲ-ꠁꠃ-ꠅꠇ-ꠊꠌ-ꠢꡀ-ꡳꢂ-ꢳꣲ-ꣷꣻꣽ-ꣾꤊ-ꤥꤰ-ꥆꥠ-ꥼꦄ-ꦲꧏꧠ-ꧤꧦ-ꧯꧺ-ꧾꨀ-ꨨꩀ-ꩂꩄ-ꩋꩠ-ꩶꩺꩾ-ꪯꪱꪵ-ꪶꪹ-ꪽꫀꫂꫛ-ꫝꫠ-ꫪꫲ-ꫴꬁ-ꬆꬉ-ꬎꬑ-ꬖꬠ-ꬦꬨ-ꬮꬰ-ꭚꭜ-ꭩꭰ-ꯢ가-힣ힰ-ퟆퟋ-ퟻ豈-舘並-龎ﬀ-ﬆﬓ-ﬗיִײַ-ﬨשׁ-זּטּ-לּמּנּ-סּףּ-פּצּ-ﮱﯓ-ﱝﱤ-ﴽﵐ-ﶏﶒ-ﷇﷰ-ﷹﹱﹳﹷﹹﹻﹽﹿ-ﻼＡ-Ｚａ-ｚｦ-ﾝﾠ-ﾾￂ-ￇￊ-ￏￒ-ￗￚ-ￜ𐀀-𐀋𐀍-𐀦𐀨-𐀺𐀼-𐀽𐀿-𐁍𐁐-𐁝𐂀-𐃺𐅀-𐅴𐊀-𐊜𐊠-𐋐𐌀-𐌟𐌭-𐍊𐍐-𐍵𐎀-𐎝𐎠-𐏃𐏈-𐏏𐏑-𐏕𐐀-𐒝𐒰-𐓓𐓘-𐓻𐔀-𐔧𐔰-𐕣𐕰-𐕺𐕼-𐖊𐖌-𐖒𐖔-𐖕𐖗-𐖡𐖣-𐖱𐖳-𐖹𐖻-𐖼𐗀-𐗳𐘀-𐜶𐝀-𐝕𐝠-𐝧𐞀-𐞅𐞇-𐞰𐞲-𐞺𐠀-𐠅𐠈𐠊-𐠵𐠷-𐠸𐠼𐠿-𐡕𐡠-𐡶𐢀-𐢞𐣠-𐣲𐣴-𐣵𐤀-𐤕𐤠-𐤹𐦀-𐦷𐦾-𐦿𐨀𐨐-𐨓𐨕-𐨗𐨙-𐨵𐩠-𐩼𐪀-𐪜𐫀-𐫇𐫉-𐫤𐬀-𐬵𐭀-𐭕𐭠-𐭲𐮀-𐮑𐰀-𐱈𐲀-𐲲𐳀-𐳲𐴀-𐴣𐵊-𐵥𐵯-𐶅𐺀-𐺩𐺰-𐺱𐻂-𐻄𐼀-𐼜𐼧𐼰-𐽅𐽰-𐾁𐾰-𐿄𐿠-𐿶𑀃-𑀷𑁱-𑁲𑁵𑂃-𑂯𑃐-𑃨𑄃-𑄦𑅄𑅇𑅐-𑅲𑅶𑆃-𑆲𑇁-𑇄𑇚𑇜𑈀-𑈑𑈓-𑈫𑈿-𑉀𑊀-𑊆𑊈𑊊-𑊍𑊏-𑊝𑊟-𑊨𑊰-𑋞𑌅-𑌌𑌏-𑌐𑌓-𑌨𑌪-𑌰𑌲-𑌳𑌵-𑌹𑌽𑍐𑍝-𑍡𑎀-𑎉𑎋𑎎𑎐-𑎵𑎷𑏑𑏓𑐀-𑐴𑑇-𑑊𑑟-𑑡𑒀-𑒯𑓄-𑓅𑓇𑖀-𑖮𑗘-𑗛𑘀-𑘯𑙄𑚀-𑚪𑚸𑜀-𑜚𑝀-𑝆𑠀-𑠫𑢠-𑣟𑣿-𑤆𑤉𑤌-𑤓𑤕-𑤖𑤘-𑤯𑤿𑥁𑦠-𑦧𑦪-𑧐𑧡𑧣𑨀𑨋-𑨲𑨺𑩐𑩜-𑪉𑪝𑪰-𑫸𑯀-𑯠𑰀-𑰈𑰊-𑰮𑱀𑱲-𑲏𑴀-𑴆𑴈-𑴉𑴋-𑴰𑵆𑵠-𑵥𑵧-𑵨𑵪-𑶉𑶘𑻠-𑻲𑼂𑼄-𑼐𑼒-𑼳𑾰𒀀-𒎙𒐀-𒑮𒒀-𒕃𒾐-𒿰𓀀-𓐯𓑁-𓑆𓑠-𔏺𔐀-𔙆𖄀-𖄝𖠀-𖨸𖩀-𖩞𖩰-𖪾𖫐-𖫭𖬀-𖬯𖭀-𖭃𖭣-𖭷𖭽-𖮏𖵀-𖵬𖹀-𖹿𖼀-𖽊𖽐𖾓-𖾟𖿠-𖿡𖿣𗀀-𘟷𘠀-𘳕𘳿-𘴈𚿰-𚿳𚿵-𚿻𚿽-𚿾𛀀-𛄢𛄲𛅐-𛅒𛅕𛅤-𛅧𛅰-𛋻𛰀-𛱪𛱰-𛱼𛲀-𛲈𛲐-𛲙𝐀-𝑔𝑖-𝒜𝒞-𝒟𝒢𝒥-𝒦𝒩-𝒬𝒮-𝒹𝒻𝒽-𝓃𝓅-𝔅𝔇-𝔊𝔍-𝔔𝔖-𝔜𝔞-𝔹𝔻-𝔾𝕀-𝕄𝕆𝕊-𝕐𝕒-𝚥𝚨-𝛀𝛂-𝛚𝛜-𝛺𝛼-𝜔𝜖-𝜴𝜶-𝝎𝝐-𝝮𝝰-𝞈𝞊-𝞨𝞪-𝟂𝟄-𝟋𝼀-𝼞𝼥-𝼪𞀰-𞁭𞄀-𞄬𞄷-𞄽𞅎𞊐-𞊭𞋀-𞋫𞓐-𞓫𞗐-𞗭𞗰𞟠-𞟦𞟨-𞟫𞟭-𞟮𞟰-𞟾𞠀-𞣄𞤀-𞥃𞥋𞸀-𞸃𞸅-𞸟𞸡-𞸢𞸤𞸧𞸩-𞸲𞸴-𞸷𞸹𞸻𞹂𞹇𞹉𞹋𞹍-𞹏𞹑-𞹒𞹔𞹗𞹙𞹛𞹝𞹟𞹡-𞹢𞹤𞹧-𞹪𞹬-𞹲𞹴-𞹷𞹹-𞹼𞹾𞺀-𞺉𞺋-𞺛𞺡-𞺣𞺥-𞺩𞺫-𞺻𠀀-𪛟𪜀-𫜹𫝀-𫠝𫠠-𬺡𬺰-𮯠𮯰-𮹝丽-𪘀𰀀-𱍊𱍐-𲎯]", "[ªµ·ºÀ-ÖØ-öø-ˁˆ-ˑˠ-ˤˬˮ̀-ʹͶ-ͷͻ-ͽͿΆ-ΊΌΎ-ΡΣ-ϵϷ-ҁ҃-҇Ҋ-ԯԱ-Ֆՙՠ-ֈ֑-ֽֿׁ-ׂׄ-ׇׅא-תׯ-ײؐ-ؚؠ-٩ٮ-ۓە-ۜ۟-۪ۨ-ۼۿܐ-݊ݍ-ޱ߀-ߵߺ߽ࠀ-࠭ࡀ-࡛ࡠ-ࡪࡰ-ࢇࢉ-ࢎࢗ-ࣣ࣡-ॣ०-९ॱ-ঃঅ-ঌএ-ঐও-নপ-রলশ-হ়-ৄে-ৈো-ৎৗড়-ঢ়য়-ৣ০-ৱৼ৾ਁ-ਃਅ-ਊਏ-ਐਓ-ਨਪ-ਰਲ-ਲ਼ਵ-ਸ਼ਸ-ਹ਼ਾ-ੂੇ-ੈੋ-੍ੑਖ਼-ੜਫ਼੦-ੵઁ-ઃઅ-ઍએ-ઑઓ-નપ-રલ-ળવ-હ઼-ૅે-ૉો-્ૐૠ-ૣ૦-૯ૹ-૿ଁ-ଃଅ-ଌଏ-ଐଓ-ନପ-ରଲ-ଳଵ-ହ଼-ୄେ-ୈୋ-୍୕-ୗଡ଼-ଢ଼ୟ-ୣ୦-୯ୱஂ-ஃஅ-ஊஎ-ஐஒ-கங-சஜஞ-டண-தந-பம-ஹா-ூெ-ைொ-்ௐௗ௦-௯ఀ-ఌఎ-ఐఒ-నప-హ఼-ౄె-ైొ-్ౕ-ౖౘ-ౚౝౠ-ౣ౦-౯ಀ-ಃಅ-ಌಎ-ಐಒ-ನಪ-ಳವ-ಹ಼-ೄೆ-ೈೊ-್ೕ-ೖೝ-ೞೠ-ೣ೦-೯ೱ-ೳഀ-ഌഎ-ഐഒ-ൄെ-ൈൊ-ൎൔ-ൗൟ-ൣ൦-൯ൺ-ൿඁ-ඃඅ-ඖක-නඳ-රලව-ෆ්ා-ුූෘ-ෟ෦-෯ෲ-ෳก-ฺเ-๎๐-๙ກ-ຂຄຆ-ຊຌ-ຣລວ-ຽເ-ໄໆ່-໎໐-໙ໜ-ໟༀ༘-༙༠-༩༹༵༷༾-ཇཉ-ཬཱ-྄྆-ྗྙ-ྼ࿆က-၉ၐ-ႝႠ-ჅჇჍა-ჺჼ-ቈቊ-ቍቐ-ቖቘቚ-ቝበ-ኈኊ-ኍነ-ኰኲ-ኵኸ-ኾዀዂ-ዅወ-ዖዘ-ጐጒ-ጕጘ-ፚ፝-፟፩-፱ᎀ-ᎏᎠ-Ᏽᏸ-ᏽᐁ-ᙬᙯ-ᙿᚁ-ᚚᚠ-ᛪᛮ-ᛸᜀ-᜕ᜟ-᜴ᝀ-ᝓᝠ-ᝬᝮ-ᝰᝲ-ᝳក-៓ៗៜ-៝០-៩᠋-᠍᠏-᠙ᠠ-ᡸᢀ-ᢪᢰ-ᣵᤀ-ᤞᤠ-ᤫᤰ-᤻᥆-ᥭᥰ-ᥴᦀ-ᦫᦰ-ᧉ᧐-᧚ᨀ-ᨛᨠ-ᩞ᩠-᩿᩼-᪉᪐-᪙ᪧ᪰-᪽ᪿ-ᫎᬀ-ᭌ᭐-᭙᭫-᭳ᮀ-᯳ᰀ-᰷᱀-᱉ᱍ-ᱽᲀ-ᲊᲐ-ᲺᲽ-Ჿ᳐-᳔᳒-ᳺᴀ-ἕἘ-Ἕἠ-ὅὈ-Ὅὐ-ὗὙὛὝὟ-ώᾀ-ᾴᾶ-ᾼιῂ-ῄῆ-ῌῐ-ΐῖ-Ίῠ-Ῥῲ-ῴῶ-ῼ\\u200c-\\u200d‿-⁀⁔ⁱⁿₐ-ₜ⃐-⃥⃜⃡-⃰ℂℇℊ-ℓℕ℘-ℝℤΩℨK-ℹℼ-ℿⅅ-ⅉⅎⅠ-ↈⰀ-ⳤⳫ-ⳳⴀ-ⴥⴧⴭⴰ-ⵧⵯ⵿-ⶖⶠ-ⶦⶨ-ⶮⶰ-ⶶⶸ-ⶾⷀ-ⷆⷈ-ⷎⷐ-ⷖⷘ-ⷞⷠ-ⷿ々-〇〡-〯〱-〵〸-〼ぁ-ゖ゙-゚ゝ-ゟァ-ヿㄅ-ㄯㄱ-ㆎㆠ-ㆿㇰ-ㇿ㐀-䶿一-ꒌꓐ-ꓽꔀ-ꘌꘐ-ꘫꙀ-꙯ꙴ-꙽ꙿ-꛱ꜗ-ꜟꜢ-ꞈꞋ-ꟍꟐ-ꟑꟓꟕ-Ƛꟲ-ꠧ꠬ꡀ-ꡳꢀ-ꣅ꣐-꣙꣠-ꣷꣻꣽ-꤭ꤰ-꥓ꥠ-ꥼꦀ-꧀ꧏ-꧙ꧠ-ꧾꨀ-ꨶꩀ-ꩍ꩐-꩙ꩠ-ꩶꩺ-ꫂꫛ-ꫝꫠ-ꫯꫲ-꫶ꬁ-ꬆꬉ-ꬎꬑ-ꬖꬠ-ꬦꬨ-ꬮꬰ-ꭚꭜ-ꭩꭰ-ꯪ꯬-꯭꯰-꯹가-힣ힰ-ퟆퟋ-ퟻ豈-舘並-龎ﬀ-ﬆﬓ-ﬗיִ-ﬨשׁ-זּטּ-לּמּנּ-סּףּ-פּצּ-ﮱﯓ-ﱝﱤ-ﴽﵐ-ﶏﶒ-ﷇﷰ-ﷹ︀-️︠-︯︳-︴﹍-﹏ﹱﹳﹷﹹﹻﹽﹿ-ﻼ０-９Ａ-Ｚ＿ａ-ｚ･-ﾾￂ-ￇￊ-ￏￒ-ￗￚ-ￜ𐀀-𐀋𐀍-𐀦𐀨-𐀺𐀼-𐀽𐀿-𐁍𐁐-𐁝𐂀-𐃺𐅀-𐅴𐇽𐊀-𐊜𐊠-𐋐𐋠𐌀-𐌟𐌭-𐍊𐍐-𐍺𐎀-𐎝𐎠-𐏃𐏈-𐏏𐏑-𐏕𐐀-𐒝𐒠-𐒩𐒰-𐓓𐓘-𐓻𐔀-𐔧𐔰-𐕣𐕰-𐕺𐕼-𐖊𐖌-𐖒𐖔-𐖕𐖗-𐖡𐖣-𐖱𐖳-𐖹𐖻-𐖼𐗀-𐗳𐘀-𐜶𐝀-𐝕𐝠-𐝧𐞀-𐞅𐞇-𐞰𐞲-𐞺𐠀-𐠅𐠈𐠊-𐠵𐠷-𐠸𐠼𐠿-𐡕𐡠-𐡶𐢀-𐢞𐣠-𐣲𐣴-𐣵𐤀-𐤕𐤠-𐤹𐦀-𐦷𐦾-𐦿𐨀-𐨃𐨅-𐨆𐨌-𐨓𐨕-𐨗𐨙-𐨵𐨸-𐨿𐨺𐩠-𐩼𐪀-𐪜𐫀-𐫇𐫉-𐫦𐬀-𐬵𐭀-𐭕𐭠-𐭲𐮀-𐮑𐰀-𐱈𐲀-𐲲𐳀-𐳲𐴀-𐴧𐴰-𐴹𐵀-𐵥𐵩-𐵭𐵯-𐶅𐺀-𐺩𐺫-𐺬𐺰-𐺱𐻂-𐻄𐻼-𐼜𐼧𐼰-𐽐𐽰-𐾅𐾰-𐿄𐿠-𐿶𑀀-𑁆𑁦-𑁵𑁿-𑂺𑃂𑃐-𑃨𑃰-𑃹𑄀-𑄴𑄶-𑄿𑅄-𑅇𑅐-𑅳𑅶𑆀-𑇄𑇉-𑇌𑇎-𑇚𑇜𑈀-𑈑𑈓-𑈷𑈾-𑉁𑊀-𑊆𑊈𑊊-𑊍𑊏-𑊝𑊟-𑊨𑊰-𑋪𑋰-𑋹𑌀-𑌃𑌅-𑌌𑌏-𑌐𑌓-𑌨𑌪-𑌰𑌲-𑌳𑌵-𑌹𑌻-𑍄𑍇-𑍈𑍋-𑍍𑍐𑍗𑍝-𑍣𑍦-𑍬𑍰-𑍴𑎀-𑎉𑎋𑎎𑎐-𑎵𑎷-𑏀𑏅𑏅𑎸-𑏊𑏌-𑏓𑏡-𑏢𑐀-𑑊𑑐-𑑙𑑞-𑑡𑒀-𑓅𑓇𑓐-𑓙𑖀-𑖵𑖸-𑗀𑗘-𑗝𑘀-𑙀𑙄𑙐-𑙙𑚀-𑚸𑛀-𑛉𑛐-𑛣𑜀-𑜚𑜝-𑜫𑜰-𑜹𑝀-𑝆𑠀-𑠺𑢠-𑣩𑣿-𑤆𑤉𑤌-𑤓𑤕-𑤖𑤘-𑤵𑤷-𑤸𑤻-𑥃𑥐-𑥙𑦠-𑦧𑦪-𑧗𑧚-𑧡𑧣-𑧤𑨀-𑨾𑩇𑩐-𑪙𑪝𑪰-𑫸𑯀-𑯠𑯰-𑯹𑰀-𑰈𑰊-𑰶𑰸-𑱀𑱐-𑱙𑱲-𑲏𑲒-𑲧𑲩-𑲶𑴀-𑴆𑴈-𑴉𑴋-𑴶𑴺𑴼-𑴽𑴿-𑵇𑵐-𑵙𑵠-𑵥𑵧-𑵨𑵪-𑶎𑶐-𑶑𑶓-𑶘𑶠-𑶩𑻠-𑻶𑼀-𑼐𑼒-𑼺𑼾-𑽂𑽐-𑽚𑾰𒀀-𒎙𒐀-𒑮𒒀-𒕃𒾐-𒿰𓀀-𓐯𓑀-𓑕𓑠-𔏺𔐀-𔙆𖄀-𖄹𖠀-𖨸𖩀-𖩞𖩠-𖩩𖩰-𖪾𖫀-𖫉𖫐-𖫭𖫰-𖫴𖬀-𖬶𖭀-𖭃𖭐-𖭙𖭣-𖭷𖭽-𖮏𖵀-𖵬𖵰-𖵹𖹀-𖹿𖼀-𖽊𖽏-𖾇𖾏-𖾟𖿠-𖿡𖿣-𖿤𖿰-𖿱𗀀-𘟷𘠀-𘳕𘳿-𘴈𚿰-𚿳𚿵-𚿻𚿽-𚿾𛀀-𛄢𛄲𛅐-𛅒𛅕𛅤-𛅧𛅰-𛋻𛰀-𛱪𛱰-𛱼𛲀-𛲈𛲐-𛲙𛲝-𛲞𜳰-𜳹𜼀-𜼭𜼰-𜽆𝅥-𝅩𝅭-𝅲𝅻-𝆂𝆅-𝆋𝆪-𝆭𝉂-𝉄𝐀-𝑔𝑖-𝒜𝒞-𝒟𝒢𝒥-𝒦𝒩-𝒬𝒮-𝒹𝒻𝒽-𝓃𝓅-𝔅𝔇-𝔊𝔍-𝔔𝔖-𝔜𝔞-𝔹𝔻-𝔾𝕀-𝕄𝕆𝕊-𝕐𝕒-𝚥𝚨-𝛀𝛂-𝛚𝛜-𝛺𝛼-𝜔𝜖-𝜴𝜶-𝝎𝝐-𝝮𝝰-𝞈𝞊-𝞨𝞪-𝟂𝟄-𝟋𝟎-𝟿𝨀-𝨶𝨻-𝩬𝩵𝪄𝪛-𝪟𝪡-𝪯𝼀-𝼞𝼥-𝼪𞀀-𞀆𞀈-𞀘𞀛-𞀡𞀣-𞀤𞀦-𞀪𞀰-𞁭𞂏𞄀-𞄬𞄰-𞄽𞅀-𞅉𞅎𞊐-𞊮𞋀-𞋹𞓐-𞓹𞗐-𞗺𞟠-𞟦𞟨-𞟫𞟭-𞟮𞟰-𞟾𞠀-𞣄𞣐-𞣖𞤀-𞥋𞥐-𞥙𞸀-𞸃𞸅-𞸟𞸡-𞸢𞸤𞸧𞸩-𞸲𞸴-𞸷𞸹𞸻𞹂𞹇𞹉𞹋𞹍-𞹏𞹑-𞹒𞹔𞹗𞹙𞹛𞹝𞹟𞹡-𞹢𞹤𞹧-𞹪𞹬-𞹲𞹴-𞹷𞹹-𞹼𞹾𞺀-𞺉𞺋-𞺛𞺡-𞺣𞺥-𞺩𞺫-𞺻🯰-🯹𠀀-𪛟𪜀-𫜹𫝀-𫠝𫠠-𬺡𬺰-𮯠𮯰-𮹝丽-𪘀𰀀-𱍊𱍐-𲎯󠄀-󠇯]"}
 }
 
-// trules is the typed rule table.
 var trules []*pegort.TRule
 
-// main, called as by call
+// rule main
 func u0(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i0(p)
@@ -3495,7 +3401,6 @@ func u0(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// main, invoked as by invoke (body inlined)
 func i0(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -3584,7 +3489,7 @@ fail:
 	return nil, false
 }
 
-// first_stmts, called as by call
+// rule first_stmts
 func u1(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i1(p)
@@ -3594,7 +3499,6 @@ func u1(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// first_stmts, invoked as by invoke (body inlined)
 func i1(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -3704,7 +3608,7 @@ fail:
 	return nil, false
 }
 
-// stmts, called as by call
+// rule stmts
 func u3(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[3]) {
 		return p.CallMemo(trules[3], i3)
@@ -3717,7 +3621,6 @@ func u3(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// stmts, invoked as by invoke (body inlined)
 func i3(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -3849,7 +3752,7 @@ fail:
 	return nil, false
 }
 
-// block, called as by call
+// rule block
 func u5(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[5]) {
 		return p.CallMemo(trules[5], i5)
@@ -3862,7 +3765,6 @@ func u5(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// block, invoked as by invoke (body inlined)
 func i5(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -3912,7 +3814,7 @@ fail:
 	return nil, false
 }
 
-// indented_block, called as by call
+// rule indented_block
 func u6(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i6(p)
@@ -3922,7 +3824,6 @@ func u6(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// indented_block, invoked as by invoke (body inlined)
 func i6(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -4125,7 +4026,7 @@ fail:
 	return nil, false
 }
 
-// simple_stmts, called as by call
+// rule simple_stmts
 func u7(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i7(p)
@@ -4135,7 +4036,6 @@ func u7(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// simple_stmts, invoked as by invoke (body inlined)
 func i7(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -4213,7 +4113,7 @@ fail:
 	return nil, false
 }
 
-// indentation, called as by call
+// rule indentation
 func u9(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[9]) {
 		return p.CallMemo(trules[9], i9)
@@ -4226,7 +4126,6 @@ func u9(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// indentation, invoked as by invoke (body inlined)
 func i9(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -4487,7 +4386,6 @@ func i9(p *pegort.TParser) (any, bool) {
 	return v, true
 }
 
-// ws, called as by invokePlain (body inlined)
 func s14(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -4797,7 +4695,7 @@ func s14(p *pegort.TParser) (any, bool) {
 	return v, true
 }
 
-// stmt, called as by call
+// rule stmt
 func u15(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[15]) {
 		return p.CallMemo(trules[15], v15)
@@ -4805,7 +4703,6 @@ func u15(p *pegort.TParser) (any, bool) {
 	return v15(p)
 }
 
-// stmt, called as by invokePlain (body inlined)
 func v15(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -4847,7 +4744,7 @@ fail:
 	return nil, false
 }
 
-// simple_stmt, called as by call
+// rule simple_stmt
 func u16(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[16]) {
 		return p.CallMemo(trules[16], v16)
@@ -4855,7 +4752,6 @@ func u16(p *pegort.TParser) (any, bool) {
 	return v16(p)
 }
 
-// simple_stmt, called as by invokePlain (body inlined)
 func v16(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -5066,7 +4962,7 @@ fail:
 	return nil, false
 }
 
-// expr_stmt, called as by call
+// rule expr_stmt
 func u17(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i17(p)
@@ -5076,7 +4972,6 @@ func u17(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// expr_stmt, invoked as by invoke (body inlined)
 func i17(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -5187,7 +5082,6 @@ fail:
 	return nil, false
 }
 
-// assignment, called as by invokePlain (body inlined)
 func s18(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -5253,7 +5147,7 @@ fail:
 	return nil, false
 }
 
-// ann_simple, called as by call
+// rule ann_simple
 func u19(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i19(p)
@@ -5263,7 +5157,6 @@ func u19(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// ann_simple, invoked as by invoke (body inlined)
 func i19(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -5375,7 +5268,7 @@ fail:
 	return nil, false
 }
 
-// ann_complex, called as by call
+// rule ann_complex
 func u20(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i20(p)
@@ -5385,7 +5278,6 @@ func u20(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// ann_complex, invoked as by invoke (body inlined)
 func i20(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -5523,7 +5415,7 @@ fail:
 	return nil, false
 }
 
-// assign_one, called as by call
+// rule assign_one
 func u21(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i21(p)
@@ -5533,7 +5425,6 @@ func u21(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// assign_one, invoked as by invoke (body inlined)
 func i21(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -5632,7 +5523,7 @@ fail:
 	return nil, false
 }
 
-// assign_chain, called as by call
+// rule assign_chain
 func u22(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i22(p)
@@ -5642,7 +5533,6 @@ func u22(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// assign_chain, invoked as by invoke (body inlined)
 func i22(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -5790,7 +5680,7 @@ fail:
 	return nil, false
 }
 
-// aug_assign, called as by call
+// rule aug_assign
 func u23(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i23(p)
@@ -5800,7 +5690,6 @@ func u23(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// aug_assign, invoked as by invoke (body inlined)
 func i23(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -5858,7 +5747,6 @@ fail:
 	return nil, false
 }
 
-// augassign_op, called as by invokePlain (body inlined)
 func s24(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -6062,7 +5950,7 @@ fail:
 	return nil, false
 }
 
-// annotated_rhs, called as by call
+// rule annotated_rhs
 func u25(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[25]) {
 		return p.CallMemo(trules[25], v25)
@@ -6070,7 +5958,6 @@ func u25(p *pegort.TParser) (any, bool) {
 	return v25(p)
 }
 
-// annotated_rhs, called as by invokePlain (body inlined)
 func v25(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -6112,7 +5999,6 @@ fail:
 	return nil, false
 }
 
-// pass_stmt, called as by invokePlain (body inlined)
 func s26(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -6136,7 +6022,6 @@ fail:
 	return nil, false
 }
 
-// break_stmt, called as by invokePlain (body inlined)
 func s27(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -6160,7 +6045,6 @@ fail:
 	return nil, false
 }
 
-// continue_stmt, called as by invokePlain (body inlined)
 func s28(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -6184,7 +6068,7 @@ fail:
 	return nil, false
 }
 
-// return_stmt, called as by call
+// rule return_stmt
 func u29(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i29(p)
@@ -6194,7 +6078,6 @@ func u29(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// return_stmt, invoked as by invoke (body inlined)
 func i29(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -6240,7 +6123,7 @@ fail:
 	return nil, false
 }
 
-// raise_stmt, called as by call
+// rule raise_stmt
 func u30(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i30(p)
@@ -6250,7 +6133,6 @@ func u30(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// raise_stmt, invoked as by invoke (body inlined)
 func i30(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -6329,7 +6211,7 @@ fail:
 	return nil, false
 }
 
-// global_stmt, called as by call
+// rule global_stmt
 func u31(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i31(p)
@@ -6339,7 +6221,6 @@ func u31(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// global_stmt, invoked as by invoke (body inlined)
 func i31(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -6427,7 +6308,7 @@ fail:
 	return nil, false
 }
 
-// nonlocal_stmt, called as by call
+// rule nonlocal_stmt
 func u32(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i32(p)
@@ -6437,7 +6318,6 @@ func u32(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// nonlocal_stmt, invoked as by invoke (body inlined)
 func i32(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -6525,7 +6405,7 @@ fail:
 	return nil, false
 }
 
-// del_stmt, called as by call
+// rule del_stmt
 func u33(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i33(p)
@@ -6535,7 +6415,6 @@ func u33(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// del_stmt, invoked as by invoke (body inlined)
 func i33(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -6699,7 +6578,7 @@ fail:
 	return nil, false
 }
 
-// assert_stmt, called as by call
+// rule assert_stmt
 func u34(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i34(p)
@@ -6709,7 +6588,6 @@ func u34(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// assert_stmt, invoked as by invoke (body inlined)
 func i34(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -6778,7 +6656,7 @@ fail:
 	return nil, false
 }
 
-// yield_stmt, called as by call
+// rule yield_stmt
 func u35(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i35(p)
@@ -6788,7 +6666,6 @@ func u35(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// yield_stmt, invoked as by invoke (body inlined)
 func i35(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -6819,7 +6696,7 @@ fail:
 	return nil, false
 }
 
-// type_alias, called as by call
+// rule type_alias
 func u36(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i36(p)
@@ -6829,7 +6706,6 @@ func u36(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// type_alias, invoked as by invoke (body inlined)
 func i36(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -6925,7 +6801,7 @@ fail:
 	return nil, false
 }
 
-// import_stmt, called as by call
+// rule import_stmt
 func u37(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i37(p)
@@ -6935,7 +6811,6 @@ func u37(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// import_stmt, invoked as by invoke (body inlined)
 func i37(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -7023,7 +6898,7 @@ fail:
 	return nil, false
 }
 
-// dotted_as_name, called as by call
+// rule dotted_as_name
 func u38(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[38]) {
 		return p.CallMemo(trules[38], i38)
@@ -7036,7 +6911,6 @@ func u38(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// dotted_as_name, invoked as by invoke (body inlined)
 func i38(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -7109,7 +6983,7 @@ fail:
 	return nil, false
 }
 
-// dotted_name, called as by call
+// rule dotted_name
 func u39(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i39(p)
@@ -7119,7 +6993,6 @@ func u39(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// dotted_name, invoked as by invoke (body inlined)
 func i39(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -7212,7 +7085,7 @@ fail:
 	return nil, false
 }
 
-// from_stmt, called as by call
+// rule from_stmt
 func u40(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i40(p)
@@ -7222,7 +7095,6 @@ func u40(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// from_stmt, invoked as by invoke (body inlined)
 func i40(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -7398,7 +7270,7 @@ fail:
 	return nil, false
 }
 
-// from_module, called as by call
+// rule from_module
 func u41(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i41(p)
@@ -7408,7 +7280,6 @@ func u41(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// from_module, invoked as by invoke (body inlined)
 func i41(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -7525,7 +7396,6 @@ L10:
 	return v, true
 }
 
-// import_from_targets, called as by invokePlain (body inlined)
 func s42(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -7589,7 +7459,7 @@ fail:
 	return nil, false
 }
 
-// paren_import_names, called as by call
+// rule paren_import_names
 func u43(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i43(p)
@@ -7599,7 +7469,6 @@ func u43(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// paren_import_names, invoked as by invoke (body inlined)
 func i43(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -7732,7 +7601,7 @@ fail:
 	return nil, false
 }
 
-// plain_import_names, called as by call
+// rule plain_import_names
 func u44(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i44(p)
@@ -7742,7 +7611,6 @@ func u44(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// plain_import_names, invoked as by invoke (body inlined)
 func i44(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -7837,7 +7705,7 @@ fail:
 	return nil, false
 }
 
-// star_import, called as by call
+// rule star_import
 func u45(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i45(p)
@@ -7847,7 +7715,6 @@ func u45(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// star_import, invoked as by invoke (body inlined)
 func i45(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -7877,7 +7744,6 @@ fail:
 	return nil, false
 }
 
-// star_alias, called as by invokePlain (body inlined)
 func s46(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -7908,7 +7774,7 @@ fail:
 	return nil, false
 }
 
-// import_from_as_name, called as by call
+// rule import_from_as_name
 func u47(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[47]) {
 		return p.CallMemo(trules[47], i47)
@@ -7921,7 +7787,6 @@ func u47(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// import_from_as_name, invoked as by invoke (body inlined)
 func i47(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -7982,7 +7847,6 @@ fail:
 	return nil, false
 }
 
-// compound_stmt, called as by invokePlain (body inlined)
 func s48(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -8140,7 +8004,7 @@ fail:
 	return nil, false
 }
 
-// if_stmt, called as by call
+// rule if_stmt
 func u49(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i49(p)
@@ -8150,7 +8014,6 @@ func u49(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// if_stmt, invoked as by invoke (body inlined)
 func i49(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -8242,7 +8105,7 @@ fail:
 	return nil, false
 }
 
-// elif_part, called as by call
+// rule elif_part
 func u50(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[50]) {
 		return p.CallMemo(trules[50], i50)
@@ -8255,7 +8118,6 @@ func u50(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// elif_part, invoked as by invoke (body inlined)
 func i50(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -8288,7 +8150,7 @@ fail:
 	return nil, false
 }
 
-// elif_stmt, called as by call
+// rule elif_stmt
 func u51(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i51(p)
@@ -8298,7 +8160,6 @@ func u51(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// elif_stmt, invoked as by invoke (body inlined)
 func i51(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -8390,7 +8251,7 @@ fail:
 	return nil, false
 }
 
-// else_part, called as by call
+// rule else_part
 func u52(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[52]) {
 		return p.CallMemo(trules[52], i52)
@@ -8403,7 +8264,6 @@ func u52(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// else_part, invoked as by invoke (body inlined)
 func i52(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -8447,7 +8307,7 @@ fail:
 	return nil, false
 }
 
-// while_stmt, called as by call
+// rule while_stmt
 func u53(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i53(p)
@@ -8457,7 +8317,6 @@ func u53(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// while_stmt, invoked as by invoke (body inlined)
 func i53(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -8532,7 +8391,7 @@ fail:
 	return nil, false
 }
 
-// for_stmt, called as by call
+// rule for_stmt
 func u54(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i54(p)
@@ -8542,7 +8401,6 @@ func u54(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// for_stmt, invoked as by invoke (body inlined)
 func i54(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -8635,7 +8493,7 @@ fail:
 	return nil, false
 }
 
-// async_for, called as by call
+// rule async_for
 func u55(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i55(p)
@@ -8645,7 +8503,6 @@ func u55(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// async_for, invoked as by invoke (body inlined)
 func i55(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -8744,7 +8601,7 @@ fail:
 	return nil, false
 }
 
-// with_stmt, called as by call
+// rule with_stmt
 func u56(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i56(p)
@@ -8754,7 +8611,6 @@ func u56(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// with_stmt, invoked as by invoke (body inlined)
 func i56(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -8811,7 +8667,7 @@ fail:
 	return nil, false
 }
 
-// async_with, called as by call
+// rule async_with
 func u57(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i57(p)
@@ -8821,7 +8677,6 @@ func u57(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// async_with, invoked as by invoke (body inlined)
 func i57(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -8884,7 +8739,7 @@ fail:
 	return nil, false
 }
 
-// with_items, called as by call
+// rule with_items
 func u58(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[58]) {
 		return p.CallMemo(trules[58], v58)
@@ -8892,7 +8747,6 @@ func u58(p *pegort.TParser) (any, bool) {
 	return v58(p)
 }
 
-// with_items, called as by invokePlain (body inlined)
 func v58(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -8943,7 +8797,7 @@ fail:
 	return nil, false
 }
 
-// paren_with_items, called as by call
+// rule paren_with_items
 func u59(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i59(p)
@@ -8953,7 +8807,6 @@ func u59(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// paren_with_items, invoked as by invoke (body inlined)
 func i59(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -9105,7 +8958,7 @@ fail:
 	return nil, false
 }
 
-// plain_with_items, called as by call
+// rule plain_with_items
 func u60(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i60(p)
@@ -9115,7 +8968,6 @@ func u60(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// plain_with_items, invoked as by invoke (body inlined)
 func i60(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -9193,7 +9045,7 @@ fail:
 	return nil, false
 }
 
-// with_item, called as by call
+// rule with_item
 func u61(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[61]) {
 		return p.CallMemo(trules[61], v61)
@@ -9201,7 +9053,6 @@ func u61(p *pegort.TParser) (any, bool) {
 	return v61(p)
 }
 
-// with_item, called as by invokePlain (body inlined)
 func v61(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -9243,7 +9094,7 @@ fail:
 	return nil, false
 }
 
-// with_item_as, called as by call
+// rule with_item_as
 func u62(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i62(p)
@@ -9253,7 +9104,6 @@ func u62(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// with_item_as, invoked as by invoke (body inlined)
 func i62(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -9327,7 +9177,7 @@ fail:
 	return nil, false
 }
 
-// with_item_plain, called as by call
+// rule with_item_plain
 func u63(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i63(p)
@@ -9337,7 +9187,6 @@ func u63(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// with_item_plain, invoked as by invoke (body inlined)
 func i63(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -9371,7 +9220,7 @@ fail:
 	return nil, false
 }
 
-// try_stmt, called as by call
+// rule try_stmt
 func u64(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i64(p)
@@ -9381,7 +9230,6 @@ func u64(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// try_stmt, invoked as by invoke (body inlined)
 func i64(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -9624,7 +9472,7 @@ fail:
 	return nil, false
 }
 
-// finally_part, called as by call
+// rule finally_part
 func u65(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i65(p)
@@ -9634,7 +9482,6 @@ func u65(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// finally_part, invoked as by invoke (body inlined)
 func i65(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -9678,7 +9525,6 @@ fail:
 	return nil, false
 }
 
-// except_handler, called as by invokePlain (body inlined)
 func s66(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -9746,7 +9592,7 @@ fail:
 	return nil, false
 }
 
-// except_as, called as by call
+// rule except_as
 func u67(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i67(p)
@@ -9756,7 +9602,6 @@ func u67(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// except_as, invoked as by invoke (body inlined)
 func i67(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -9831,7 +9676,7 @@ fail:
 	return nil, false
 }
 
-// except_plain, called as by call
+// rule except_plain
 func u68(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i68(p)
@@ -9841,7 +9686,6 @@ func u68(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// except_plain, invoked as by invoke (body inlined)
 func i68(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -9898,7 +9742,7 @@ fail:
 	return nil, false
 }
 
-// except_bare, called as by call
+// rule except_bare
 func u69(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i69(p)
@@ -9908,7 +9752,6 @@ func u69(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// except_bare, invoked as by invoke (body inlined)
 func i69(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -9953,7 +9796,6 @@ fail:
 	return nil, false
 }
 
-// except_star_handler, called as by invokePlain (body inlined)
 func s70(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -10008,7 +9850,7 @@ fail:
 	return nil, false
 }
 
-// except_star_as, called as by call
+// rule except_star_as
 func u71(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i71(p)
@@ -10018,7 +9860,6 @@ func u71(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// except_star_as, invoked as by invoke (body inlined)
 func i71(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -10101,7 +9942,7 @@ fail:
 	return nil, false
 }
 
-// except_star_plain, called as by call
+// rule except_star_plain
 func u72(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i72(p)
@@ -10111,7 +9952,6 @@ func u72(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// except_star_plain, invoked as by invoke (body inlined)
 func i72(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -10176,7 +10016,7 @@ fail:
 	return nil, false
 }
 
-// decorators, called as by call
+// rule decorators
 func u73(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[73]) {
 		return p.CallMemo(trules[73], i73)
@@ -10189,7 +10029,6 @@ func u73(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// decorators, invoked as by invoke (body inlined)
 func i73(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -10272,7 +10111,7 @@ func i73(p *pegort.TParser) (any, bool) {
 	return v, true
 }
 
-// funcdef, called as by call
+// rule funcdef
 func u75(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i75(p)
@@ -10282,7 +10121,6 @@ func u75(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// funcdef, invoked as by invoke (body inlined)
 func i75(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -10412,7 +10250,7 @@ fail:
 	return nil, false
 }
 
-// async_funcdef, called as by call
+// rule async_funcdef
 func u76(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i76(p)
@@ -10422,7 +10260,6 @@ func u76(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// async_funcdef, invoked as by invoke (body inlined)
 func i76(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -10558,7 +10395,7 @@ fail:
 	return nil, false
 }
 
-// def_params, called as by call
+// rule def_params
 func u77(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[77]) {
 		return p.CallMemo(trules[77], i77)
@@ -10571,7 +10408,6 @@ func u77(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// def_params, invoked as by invoke (body inlined)
 func i77(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -10641,7 +10477,6 @@ fail:
 	return nil, false
 }
 
-// classdef, called as by invokePlain (body inlined)
 func s78(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -10683,7 +10518,7 @@ fail:
 	return nil, false
 }
 
-// classdef_args, called as by call
+// rule classdef_args
 func u79(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i79(p)
@@ -10693,7 +10528,6 @@ func u79(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// classdef_args, invoked as by invoke (body inlined)
 func i79(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -10818,7 +10652,7 @@ fail:
 	return nil, false
 }
 
-// classdef_plain, called as by call
+// rule classdef_plain
 func u80(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i80(p)
@@ -10828,7 +10662,6 @@ func u80(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// classdef_plain, invoked as by invoke (body inlined)
 func i80(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -10916,7 +10749,7 @@ fail:
 	return nil, false
 }
 
-// match_stmt, called as by call
+// rule match_stmt
 func u81(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i81(p)
@@ -10926,7 +10759,6 @@ func u81(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// match_stmt, invoked as by invoke (body inlined)
 func i81(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -10983,7 +10815,6 @@ fail:
 	return nil, false
 }
 
-// subject_expr, called as by invokePlain (body inlined)
 func s82(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -11025,7 +10856,7 @@ fail:
 	return nil, false
 }
 
-// subject_tuple, called as by call
+// rule subject_tuple
 func u83(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i83(p)
@@ -11035,7 +10866,6 @@ func u83(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// subject_tuple, invoked as by invoke (body inlined)
 func i83(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -11193,7 +11023,7 @@ fail:
 	return nil, false
 }
 
-// case_blocks, called as by call
+// rule case_blocks
 func u84(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i84(p)
@@ -11203,7 +11033,6 @@ func u84(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// case_blocks, invoked as by invoke (body inlined)
 func i84(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -11449,7 +11278,7 @@ fail:
 	return nil, false
 }
 
-// case_block, called as by call
+// rule case_block
 func u85(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[85]) {
 		return p.CallMemo(trules[85], i85)
@@ -11462,7 +11291,6 @@ func u85(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// case_block, invoked as by invoke (body inlined)
 func i85(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -11547,7 +11375,6 @@ fail:
 	return nil, false
 }
 
-// patterns, called as by invokePlain (body inlined)
 func s86(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -11589,7 +11416,7 @@ fail:
 	return nil, false
 }
 
-// open_sequence_pattern, called as by call
+// rule open_sequence_pattern
 func u87(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i87(p)
@@ -11599,7 +11426,6 @@ func u87(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// open_sequence_pattern, invoked as by invoke (body inlined)
 func i87(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -11645,7 +11471,7 @@ fail:
 	return nil, false
 }
 
-// open_seq_items, called as by call
+// rule open_seq_items
 func u88(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[88]) {
 		return p.CallMemo(trules[88], i88)
@@ -11658,7 +11484,6 @@ func u88(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// open_seq_items, invoked as by invoke (body inlined)
 func i88(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -11813,7 +11638,7 @@ fail:
 	return nil, false
 }
 
-// pattern, called as by call
+// rule pattern
 func u89(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[89]) {
 		return p.CallMemo(trules[89], v89)
@@ -11821,7 +11646,6 @@ func u89(p *pegort.TParser) (any, bool) {
 	return v89(p)
 }
 
-// pattern, called as by invokePlain (body inlined)
 func v89(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -11863,7 +11687,7 @@ fail:
 	return nil, false
 }
 
-// as_pattern, called as by call
+// rule as_pattern
 func u90(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i90(p)
@@ -11873,7 +11697,6 @@ func u90(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// as_pattern, invoked as by invoke (body inlined)
 func i90(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -11925,7 +11748,7 @@ fail:
 	return nil, false
 }
 
-// or_pattern, called as by call
+// rule or_pattern
 func u91(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[91]) {
 		return p.CallMemo(trules[91], i91)
@@ -11938,7 +11761,6 @@ func u91(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// or_pattern, invoked as by invoke (body inlined)
 func i91(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -12089,7 +11911,7 @@ fail:
 	return nil, false
 }
 
-// closed_pattern, called as by call
+// rule closed_pattern
 func u92(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[92]) {
 		return p.CallMemo(trules[92], v92)
@@ -12097,7 +11919,6 @@ func u92(p *pegort.TParser) (any, bool) {
 	return v92(p)
 }
 
-// closed_pattern, called as by invokePlain (body inlined)
 func v92(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -12208,7 +12029,6 @@ fail:
 	return nil, false
 }
 
-// literal_pattern, called as by invokePlain (body inlined)
 func s93(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -12266,7 +12086,7 @@ fail:
 	return nil, false
 }
 
-// signed_number_pattern, called as by call
+// rule signed_number_pattern
 func u94(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i94(p)
@@ -12276,7 +12096,6 @@ func u94(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// signed_number_pattern, invoked as by invoke (body inlined)
 func i94(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -12327,7 +12146,7 @@ fail:
 	return nil, false
 }
 
-// complex_pattern, called as by call
+// rule complex_pattern
 func u95(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i95(p)
@@ -12337,7 +12156,6 @@ func u95(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// complex_pattern, invoked as by invoke (body inlined)
 func i95(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -12368,7 +12186,7 @@ fail:
 	return nil, false
 }
 
-// string_pattern, called as by call
+// rule string_pattern
 func u96(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i96(p)
@@ -12378,7 +12196,6 @@ func u96(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// string_pattern, invoked as by invoke (body inlined)
 func i96(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -12409,7 +12226,7 @@ fail:
 	return nil, false
 }
 
-// singleton_pattern, called as by call
+// rule singleton_pattern
 func u97(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i97(p)
@@ -12419,7 +12236,6 @@ func u97(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// singleton_pattern, invoked as by invoke (body inlined)
 func i97(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -12453,7 +12269,7 @@ fail:
 	return nil, false
 }
 
-// singleton, called as by call
+// rule singleton
 func u98(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[98]) {
 		return p.CallMemo(trules[98], v98)
@@ -12461,7 +12277,6 @@ func u98(p *pegort.TParser) (any, bool) {
 	return v98(p)
 }
 
-// singleton, called as by invokePlain (body inlined)
 func v98(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -12546,7 +12361,6 @@ fail:
 	return nil, false
 }
 
-// literal_expr, called as by invokePlain (body inlined)
 func s99(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -12604,7 +12418,7 @@ fail:
 	return nil, false
 }
 
-// signed_number_lit, called as by call
+// rule signed_number_lit
 func u100(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i100(p)
@@ -12614,7 +12428,6 @@ func u100(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// signed_number_lit, invoked as by invoke (body inlined)
 func i100(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -12664,7 +12477,7 @@ fail:
 	return nil, false
 }
 
-// signed_number, called as by call
+// rule signed_number
 func u101(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[101]) {
 		return p.CallMemo(trules[101], v101)
@@ -12672,7 +12485,6 @@ func u101(p *pegort.TParser) (any, bool) {
 	return v101(p)
 }
 
-// signed_number, called as by invokePlain (body inlined)
 func v101(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -12722,7 +12534,7 @@ fail:
 	return nil, false
 }
 
-// neg_number, called as by call
+// rule neg_number
 func u102(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i102(p)
@@ -12732,7 +12544,6 @@ func u102(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// neg_number, invoked as by invoke (body inlined)
 func i102(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -12778,7 +12589,7 @@ fail:
 	return nil, false
 }
 
-// complex_number, called as by call
+// rule complex_number
 func u103(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[103]) {
 		return p.CallMemo(trules[103], i103)
@@ -12791,7 +12602,6 @@ func u103(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// complex_number, invoked as by invoke (body inlined)
 func i103(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -12849,7 +12659,6 @@ fail:
 	return nil, false
 }
 
-// signed_real_number, called as by invokePlain (body inlined)
 func s104(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -12899,7 +12708,7 @@ fail:
 	return nil, false
 }
 
-// neg_real_number, called as by call
+// rule neg_real_number
 func u105(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i105(p)
@@ -12909,7 +12718,6 @@ func u105(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// neg_real_number, invoked as by invoke (body inlined)
 func i105(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -12955,7 +12763,6 @@ fail:
 	return nil, false
 }
 
-// minus_op, called as by invokePlain (body inlined)
 func s106(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -13005,7 +12812,6 @@ fail:
 	return nil, false
 }
 
-// plus_minus_op, called as by invokePlain (body inlined)
 func s107(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -13097,7 +12903,7 @@ fail:
 	return nil, false
 }
 
-// capture_pattern, called as by call
+// rule capture_pattern
 func u108(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i108(p)
@@ -13107,7 +12913,6 @@ func u108(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// capture_pattern, invoked as by invoke (body inlined)
 func i108(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -13141,7 +12946,7 @@ fail:
 	return nil, false
 }
 
-// capture_name, called as by call
+// rule capture_name
 func u109(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[109]) {
 		return p.CallMemo(trules[109], i109)
@@ -13154,7 +12959,6 @@ func u109(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// capture_name, invoked as by invoke (body inlined)
 func i109(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -13296,7 +13100,6 @@ fail:
 	return nil, false
 }
 
-// wildcard_pattern, called as by invokePlain (body inlined)
 func s110(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -13334,7 +13137,7 @@ fail:
 	return nil, false
 }
 
-// value_pattern, called as by call
+// rule value_pattern
 func u111(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i111(p)
@@ -13344,7 +13147,6 @@ func u111(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// value_pattern, invoked as by invoke (body inlined)
 func i111(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -13461,7 +13263,7 @@ fail:
 	return nil, false
 }
 
-// attr, called as by call
+// rule attr
 func u112(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[112]) {
 		return p.CallMemo(trules[112], i112)
@@ -13474,7 +13276,6 @@ func u112(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// attr, invoked as by invoke (body inlined)
 func i112(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -13590,7 +13391,6 @@ fail:
 	return nil, false
 }
 
-// name_or_attr, called as by invokePlain (body inlined)
 func s113(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -13632,7 +13432,7 @@ fail:
 	return nil, false
 }
 
-// group_pattern, called as by call
+// rule group_pattern
 func u114(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i114(p)
@@ -13642,7 +13442,6 @@ func u114(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// group_pattern, invoked as by invoke (body inlined)
 func i114(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -13712,7 +13511,6 @@ fail:
 	return nil, false
 }
 
-// sequence_pattern, called as by invokePlain (body inlined)
 func s115(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -13780,7 +13578,6 @@ fail:
 	return nil, false
 }
 
-// empty_tuple_pattern, called as by invokePlain (body inlined)
 func s116(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -13838,7 +13635,7 @@ fail:
 	return nil, false
 }
 
-// list_pattern, called as by call
+// rule list_pattern
 func u117(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i117(p)
@@ -13848,7 +13645,6 @@ func u117(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// list_pattern, invoked as by invoke (body inlined)
 func i117(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -13931,7 +13727,7 @@ fail:
 	return nil, false
 }
 
-// star_patterns, called as by call
+// rule star_patterns
 func u118(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i118(p)
@@ -13941,7 +13737,6 @@ func u118(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// star_patterns, invoked as by invoke (body inlined)
 func i118(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -14049,7 +13844,7 @@ fail:
 	return nil, false
 }
 
-// tuple_pattern, called as by call
+// rule tuple_pattern
 func u119(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i119(p)
@@ -14059,7 +13854,6 @@ func u119(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// tuple_pattern, invoked as by invoke (body inlined)
 func i119(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -14145,7 +13939,7 @@ fail:
 	return nil, false
 }
 
-// maybe_star_pattern, called as by call
+// rule maybe_star_pattern
 func u120(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[120]) {
 		return p.CallMemo(trules[120], v120)
@@ -14153,7 +13947,6 @@ func u120(p *pegort.TParser) (any, bool) {
 	return v120(p)
 }
 
-// maybe_star_pattern, called as by invokePlain (body inlined)
 func v120(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -14204,7 +13997,7 @@ fail:
 	return nil, false
 }
 
-// star_pattern, called as by call
+// rule star_pattern
 func u121(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i121(p)
@@ -14214,7 +14007,6 @@ func u121(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// star_pattern, invoked as by invoke (body inlined)
 func i121(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -14295,7 +14087,7 @@ fail:
 	return nil, false
 }
 
-// mapping_pattern, called as by call
+// rule mapping_pattern
 func u122(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i122(p)
@@ -14305,7 +14097,6 @@ func u122(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// mapping_pattern, invoked as by invoke (body inlined)
 func i122(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -14494,7 +14285,7 @@ fail:
 	return nil, false
 }
 
-// kv_patterns, called as by call
+// rule kv_patterns
 func u123(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i123(p)
@@ -14504,7 +14295,6 @@ func u123(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// kv_patterns, invoked as by invoke (body inlined)
 func i123(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -14582,7 +14372,7 @@ fail:
 	return nil, false
 }
 
-// key_value_pattern, called as by call
+// rule key_value_pattern
 func u124(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[124]) {
 		return p.CallMemo(trules[124], i124)
@@ -14595,7 +14385,6 @@ func u124(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// key_value_pattern, invoked as by invoke (body inlined)
 func i124(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -14674,7 +14463,7 @@ fail:
 	return nil, false
 }
 
-// class_pattern, called as by call
+// rule class_pattern
 func u125(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i125(p)
@@ -14684,7 +14473,6 @@ func u125(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// class_pattern, invoked as by invoke (body inlined)
 func i125(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -14861,7 +14649,7 @@ fail:
 	return nil, false
 }
 
-// positional_patterns, called as by call
+// rule positional_patterns
 func u126(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i126(p)
@@ -14871,7 +14659,6 @@ func u126(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// positional_patterns, invoked as by invoke (body inlined)
 func i126(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -14965,7 +14752,7 @@ fail:
 	return nil, false
 }
 
-// keyword_patterns, called as by call
+// rule keyword_patterns
 func u127(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[127]) {
 		return p.CallMemo(trules[127], i127)
@@ -14978,7 +14765,6 @@ func u127(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// keyword_patterns, invoked as by invoke (body inlined)
 func i127(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -15056,7 +14842,7 @@ fail:
 	return nil, false
 }
 
-// keyword_pattern, called as by call
+// rule keyword_pattern
 func u128(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[128]) {
 		return p.CallMemo(trules[128], i128)
@@ -15069,7 +14855,6 @@ func u128(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// keyword_pattern, invoked as by invoke (body inlined)
 func i128(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -15145,7 +14930,7 @@ fail:
 	return nil, false
 }
 
-// type_params, called as by call
+// rule type_params
 func u129(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[129]) {
 		return p.CallMemo(trules[129], i129)
@@ -15158,7 +14943,6 @@ func u129(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// type_params, invoked as by invoke (body inlined)
 func i129(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -15291,7 +15075,7 @@ fail:
 	return nil, false
 }
 
-// type_param, called as by call
+// rule type_param
 func u130(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[130]) {
 		return p.CallMemo(trules[130], v130)
@@ -15299,7 +15083,6 @@ func u130(p *pegort.TParser) (any, bool) {
 	return v130(p)
 }
 
-// type_param, called as by invokePlain (body inlined)
 func v130(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -15362,7 +15145,7 @@ fail:
 	return nil, false
 }
 
-// type_var, called as by call
+// rule type_var
 func u131(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i131(p)
@@ -15372,7 +15155,6 @@ func u131(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// type_var, invoked as by invoke (body inlined)
 func i131(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -15479,7 +15261,7 @@ fail:
 	return nil, false
 }
 
-// type_var_tuple, called as by call
+// rule type_var_tuple
 func u132(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i132(p)
@@ -15489,7 +15271,6 @@ func u132(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// type_var_tuple, invoked as by invoke (body inlined)
 func i132(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -15588,7 +15369,7 @@ fail:
 	return nil, false
 }
 
-// param_spec, called as by call
+// rule param_spec
 func u133(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i133(p)
@@ -15598,7 +15379,6 @@ func u133(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// param_spec, invoked as by invoke (body inlined)
 func i133(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -15683,7 +15463,7 @@ fail:
 	return nil, false
 }
 
-// params, called as by call
+// rule params
 func u134(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i134(p)
@@ -15693,7 +15473,6 @@ func u134(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// params, invoked as by invoke (body inlined)
 func i134(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -15995,7 +15774,7 @@ fail:
 	return nil, false
 }
 
-// param_nd, called as by call
+// rule param_nd
 func u135(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[135]) {
 		return p.CallMemo(trules[135], i135)
@@ -16008,7 +15787,6 @@ func u135(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// param_nd, invoked as by invoke (body inlined)
 func i135(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -16041,7 +15819,7 @@ fail:
 	return nil, false
 }
 
-// param_wd, called as by call
+// rule param_wd
 func u136(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[136]) {
 		return p.CallMemo(trules[136], i136)
@@ -16054,7 +15832,6 @@ func u136(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// param_wd, invoked as by invoke (body inlined)
 func i136(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -16133,7 +15910,7 @@ fail:
 	return nil, false
 }
 
-// slash, called as by call
+// rule slash
 func u137(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i137(p)
@@ -16143,7 +15920,6 @@ func u137(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// slash, invoked as by invoke (body inlined)
 func i137(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -16188,7 +15964,7 @@ fail:
 	return nil, false
 }
 
-// star_etc, called as by call
+// rule star_etc
 func u138(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i138(p)
@@ -16198,7 +15974,6 @@ func u138(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// star_etc, invoked as by invoke (body inlined)
 func i138(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -16499,7 +16274,7 @@ L81:
 	return v, true
 }
 
-// kwds, called as by call
+// rule kwds
 func u139(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i139(p)
@@ -16509,7 +16284,6 @@ func u139(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// kwds, invoked as by invoke (body inlined)
 func i139(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -16550,7 +16324,7 @@ fail:
 	return nil, false
 }
 
-// param, called as by call
+// rule param
 func u140(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[140]) {
 		return p.CallMemo(trules[140], i140)
@@ -16563,7 +16337,6 @@ func u140(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// param, invoked as by invoke (body inlined)
 func i140(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -16640,7 +16413,7 @@ fail:
 	return nil, false
 }
 
-// vararg_param, called as by call
+// rule vararg_param
 func u141(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i141(p)
@@ -16650,7 +16423,6 @@ func u141(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// vararg_param, invoked as by invoke (body inlined)
 func i141(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -16727,7 +16499,7 @@ fail:
 	return nil, false
 }
 
-// expressions, called as by call
+// rule expressions
 func u143(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[143]) {
 		return p.CallMemo(trules[143], i143)
@@ -16740,7 +16512,6 @@ func u143(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// expressions, invoked as by invoke (body inlined)
 func i143(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -16959,7 +16730,7 @@ fail:
 	return nil, false
 }
 
-// star_expressions, called as by call
+// rule star_expressions
 func u144(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[144]) {
 		return p.CallMemo(trules[144], i144)
@@ -16972,7 +16743,6 @@ func u144(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// star_expressions, invoked as by invoke (body inlined)
 func i144(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -17191,7 +16961,7 @@ fail:
 	return nil, false
 }
 
-// star_expression, called as by call
+// rule star_expression
 func u145(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[145]) {
 		return p.CallMemo(trules[145], v145)
@@ -17199,7 +16969,6 @@ func u145(p *pegort.TParser) (any, bool) {
 	return v145(p)
 }
 
-// star_expression, called as by invokePlain (body inlined)
 func v145(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -17250,7 +17019,7 @@ fail:
 	return nil, false
 }
 
-// star_named_expression, called as by call
+// rule star_named_expression
 func u146(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[146]) {
 		return p.CallMemo(trules[146], v146)
@@ -17258,7 +17027,6 @@ func u146(p *pegort.TParser) (any, bool) {
 	return v146(p)
 }
 
-// star_named_expression, called as by invokePlain (body inlined)
 func v146(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -17309,7 +17077,7 @@ fail:
 	return nil, false
 }
 
-// starred_bitor, called as by call
+// rule starred_bitor
 func u147(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[147]) {
 		return p.CallMemo(trules[147], i147)
@@ -17322,7 +17090,6 @@ func u147(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// starred_bitor, invoked as by invoke (body inlined)
 func i147(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -17382,7 +17149,7 @@ fail:
 	return nil, false
 }
 
-// starred_expression, called as by call
+// rule starred_expression
 func u148(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[148]) {
 		return p.CallMemo(trules[148], i148)
@@ -17395,7 +17162,6 @@ func u148(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// starred_expression, invoked as by invoke (body inlined)
 func i148(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -17455,7 +17221,7 @@ fail:
 	return nil, false
 }
 
-// named_expression, called as by call
+// rule named_expression
 func u149(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[149]) {
 		return p.CallMemo(trules[149], v149)
@@ -17463,7 +17229,6 @@ func u149(p *pegort.TParser) (any, bool) {
 	return v149(p)
 }
 
-// named_expression, called as by invokePlain (body inlined)
 func v149(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -17505,7 +17270,7 @@ fail:
 	return nil, false
 }
 
-// plain_named_expression, called as by call
+// rule plain_named_expression
 func u150(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i150(p)
@@ -17515,7 +17280,6 @@ func u150(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// plain_named_expression, invoked as by invoke (body inlined)
 func i150(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -17562,7 +17326,7 @@ fail:
 	return nil, false
 }
 
-// walrus, called as by call
+// rule walrus
 func u151(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[151]) {
 		return p.CallMemo(trules[151], i151)
@@ -17575,7 +17339,6 @@ func u151(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// walrus, invoked as by invoke (body inlined)
 func i151(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -17629,7 +17392,7 @@ fail:
 	return nil, false
 }
 
-// expression, called as by call
+// rule expression
 func u152(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[152]) {
 		return p.CallMemo(trules[152], v152)
@@ -17637,7 +17400,6 @@ func u152(p *pegort.TParser) (any, bool) {
 	return v152(p)
 }
 
-// expression, called as by invokePlain (body inlined)
 func v152(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -17687,7 +17449,7 @@ fail:
 	return nil, false
 }
 
-// conditional, called as by call
+// rule conditional
 func u153(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i153(p)
@@ -17697,7 +17459,6 @@ func u153(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// conditional, invoked as by invoke (body inlined)
 func i153(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -17815,7 +17576,7 @@ fail:
 	return nil, false
 }
 
-// lambdef, called as by call
+// rule lambdef
 func u154(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i154(p)
@@ -17825,7 +17586,6 @@ func u154(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// lambdef, invoked as by invoke (body inlined)
 func i154(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -17921,7 +17681,7 @@ fail:
 	return nil, false
 }
 
-// lambda_params, called as by call
+// rule lambda_params
 func u155(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i155(p)
@@ -17931,7 +17691,6 @@ func u155(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// lambda_params, invoked as by invoke (body inlined)
 func i155(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -18233,7 +17992,7 @@ fail:
 	return nil, false
 }
 
-// lparam_nd, called as by call
+// rule lparam_nd
 func u156(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[156]) {
 		return p.CallMemo(trules[156], i156)
@@ -18246,7 +18005,6 @@ func u156(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// lparam_nd, invoked as by invoke (body inlined)
 func i156(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -18279,7 +18037,7 @@ fail:
 	return nil, false
 }
 
-// lparam_wd, called as by call
+// rule lparam_wd
 func u157(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[157]) {
 		return p.CallMemo(trules[157], i157)
@@ -18292,7 +18050,6 @@ func u157(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// lparam_wd, invoked as by invoke (body inlined)
 func i157(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -18371,7 +18128,7 @@ fail:
 	return nil, false
 }
 
-// lslash, called as by call
+// rule lslash
 func u158(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i158(p)
@@ -18381,7 +18138,6 @@ func u158(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// lslash, invoked as by invoke (body inlined)
 func i158(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -18426,7 +18182,7 @@ fail:
 	return nil, false
 }
 
-// lstar_etc, called as by call
+// rule lstar_etc
 func u159(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i159(p)
@@ -18436,7 +18192,6 @@ func u159(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// lstar_etc, invoked as by invoke (body inlined)
 func i159(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -18737,7 +18492,7 @@ L81:
 	return v, true
 }
 
-// lkwds, called as by call
+// rule lkwds
 func u160(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i160(p)
@@ -18747,7 +18502,6 @@ func u160(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// lkwds, invoked as by invoke (body inlined)
 func i160(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -18788,7 +18542,7 @@ fail:
 	return nil, false
 }
 
-// lparam, called as by call
+// rule lparam
 func u161(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[161]) {
 		return p.CallMemo(trules[161], i161)
@@ -18801,7 +18555,6 @@ func u161(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// lparam, invoked as by invoke (body inlined)
 func i161(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -18835,7 +18588,7 @@ fail:
 	return nil, false
 }
 
-// yield_expr, called as by call
+// rule yield_expr
 func u163(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[163]) {
 		return p.CallMemo(trules[163], v163)
@@ -18843,7 +18596,6 @@ func u163(p *pegort.TParser) (any, bool) {
 	return v163(p)
 }
 
-// yield_expr, called as by invokePlain (body inlined)
 func v163(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -18898,7 +18650,7 @@ fail:
 	return nil, false
 }
 
-// yield_from, called as by call
+// rule yield_from
 func u164(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i164(p)
@@ -18908,7 +18660,6 @@ func u164(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// yield_from, invoked as by invoke (body inlined)
 func i164(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -18951,7 +18702,7 @@ fail:
 	return nil, false
 }
 
-// yield_plain, called as by call
+// rule yield_plain
 func u165(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i165(p)
@@ -18961,7 +18712,6 @@ func u165(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// yield_plain, invoked as by invoke (body inlined)
 func i165(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -19007,7 +18757,7 @@ fail:
 	return nil, false
 }
 
-// disjunction, called as by call
+// rule disjunction
 func u166(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[166]) {
 		return p.CallMemo(trules[166], i166)
@@ -19020,7 +18770,6 @@ func u166(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// disjunction, invoked as by invoke (body inlined)
 func i166(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -19186,7 +18935,7 @@ fail:
 	return nil, false
 }
 
-// conjunction, called as by call
+// rule conjunction
 func u167(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[167]) {
 		return p.CallMemo(trules[167], i167)
@@ -19199,7 +18948,6 @@ func u167(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// conjunction, invoked as by invoke (body inlined)
 func i167(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -19365,7 +19113,7 @@ fail:
 	return nil, false
 }
 
-// or_op, called as by call
+// rule or_op
 func u168(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[168]) {
 		return p.CallMemo(trules[168], v168)
@@ -19373,7 +19121,6 @@ func u168(p *pegort.TParser) (any, bool) {
 	return v168(p)
 }
 
-// or_op, called as by invokePlain (body inlined)
 func v168(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -19418,7 +19165,7 @@ fail:
 	return nil, false
 }
 
-// and_op, called as by call
+// rule and_op
 func u169(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[169]) {
 		return p.CallMemo(trules[169], v169)
@@ -19426,7 +19173,6 @@ func u169(p *pegort.TParser) (any, bool) {
 	return v169(p)
 }
 
-// and_op, called as by invokePlain (body inlined)
 func v169(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -19471,7 +19217,7 @@ fail:
 	return nil, false
 }
 
-// inversion, called as by call
+// rule inversion
 func u170(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[170]) {
 		return p.CallMemo(trules[170], v170)
@@ -19479,7 +19225,6 @@ func u170(p *pegort.TParser) (any, bool) {
 	return v170(p)
 }
 
-// inversion, called as by invokePlain (body inlined)
 func v170(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -19530,7 +19275,7 @@ fail:
 	return nil, false
 }
 
-// not_expr, called as by call
+// rule not_expr
 func u171(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i171(p)
@@ -19540,7 +19285,6 @@ func u171(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// not_expr, invoked as by invoke (body inlined)
 func i171(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -19586,7 +19330,6 @@ fail:
 	return nil, false
 }
 
-// not_op, called as by invokePlain (body inlined)
 func s172(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -19631,7 +19374,7 @@ fail:
 	return nil, false
 }
 
-// comparison, called as by call
+// rule comparison
 func u173(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i173(p)
@@ -19641,7 +19384,6 @@ func u173(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// comparison, invoked as by invoke (body inlined)
 func i173(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -19784,7 +19526,6 @@ fail:
 	return nil, false
 }
 
-// comp_op, called as by invokePlain (body inlined)
 func s174(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -20082,7 +19823,6 @@ fail:
 	return nil, false
 }
 
-// bitwise_or (typed OperatorsRule body inlined)
 func e1182(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
@@ -20095,7 +19835,6 @@ fail:
 	return nil, false
 }
 
-// bitwise_or (typed OperatorsRule body inlined)
 func e1183(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
@@ -20109,7 +19848,6 @@ fail:
 	return nil, false
 }
 
-// bitwise_or (typed OperatorsRule body inlined)
 func e1184(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
@@ -20123,7 +19861,6 @@ fail:
 	return nil, false
 }
 
-// bitwise_or (typed OperatorsRule body inlined)
 func e1185(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
@@ -20141,7 +19878,6 @@ fail:
 	return nil, false
 }
 
-// bitwise_or (typed OperatorsRule body inlined)
 func e1189(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
@@ -20159,7 +19895,6 @@ fail:
 	return nil, false
 }
 
-// bitwise_or (typed OperatorsRule body inlined)
 func e1193(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
@@ -20177,7 +19912,6 @@ fail:
 	return nil, false
 }
 
-// bitwise_or (typed OperatorsRule body inlined)
 func e1197(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
@@ -20195,7 +19929,6 @@ fail:
 	return nil, false
 }
 
-// bitwise_or (typed OperatorsRule body inlined)
 func e1201(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
@@ -20213,7 +19946,6 @@ fail:
 	return nil, false
 }
 
-// bitwise_or (typed OperatorsRule body inlined)
 func e1205(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
@@ -20231,7 +19963,6 @@ fail:
 	return nil, false
 }
 
-// bitwise_or (typed OperatorsRule body inlined)
 func e1209(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
@@ -20249,7 +19980,6 @@ fail:
 	return nil, false
 }
 
-// bitwise_or (typed OperatorsRule body inlined)
 func e1212(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
@@ -20267,7 +19997,6 @@ fail:
 	return nil, false
 }
 
-// bor_op, called as by invokePlain (body inlined)
 func s176(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -20314,7 +20043,6 @@ fail:
 	return nil, false
 }
 
-// bxor_op, called as by invokePlain (body inlined)
 func s177(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -20361,7 +20089,6 @@ fail:
 	return nil, false
 }
 
-// band_op, called as by invokePlain (body inlined)
 func s178(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -20408,7 +20135,6 @@ fail:
 	return nil, false
 }
 
-// shift_op, called as by invokePlain (body inlined)
 func s179(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -20497,7 +20223,6 @@ fail:
 	return nil, false
 }
 
-// sum_op, called as by invokePlain (body inlined)
 func s180(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -20589,7 +20314,6 @@ fail:
 	return nil, false
 }
 
-// term_op, called as by invokePlain (body inlined)
 func s181(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -20763,7 +20487,6 @@ fail:
 	return nil, false
 }
 
-// unary_op, called as by invokePlain (body inlined)
 func s182(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -20868,7 +20591,6 @@ fail:
 	return nil, false
 }
 
-// pow_op, called as by invokePlain (body inlined)
 func s183(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -20915,7 +20637,7 @@ fail:
 	return nil, false
 }
 
-// await_expr, called as by call
+// rule await_expr
 func u184(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i184(p)
@@ -20925,7 +20647,6 @@ func u184(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// await_expr, invoked as by invoke (body inlined)
 func i184(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -20962,7 +20683,7 @@ fail:
 	return nil, false
 }
 
-// primary, called as by call
+// rule primary
 func u185(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[185]) {
 		return p.CallMemo(trules[185], v185)
@@ -20970,7 +20691,6 @@ func u185(p *pegort.TParser) (any, bool) {
 	return v185(p)
 }
 
-// primary, called as by invokePlain (body inlined)
 func v185(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -21012,7 +20732,7 @@ fail:
 	return nil, false
 }
 
-// atom_only, called as by call
+// rule atom_only
 func u186(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i186(p)
@@ -21022,7 +20742,6 @@ func u186(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// atom_only, invoked as by invoke (body inlined)
 func i186(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -21106,7 +20825,6 @@ fail:
 	return nil, false
 }
 
-// primary_chain (typed OperatorsRule body inlined)
 func e1216(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
@@ -21120,7 +20838,6 @@ fail:
 	return nil, false
 }
 
-// primary_chain (typed OperatorsRule body inlined)
 func e1217(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
@@ -21172,7 +20889,6 @@ fail:
 	return nil, false
 }
 
-// primary_chain (typed OperatorsRule body inlined)
 func e1221(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
@@ -21190,7 +20906,6 @@ fail:
 	return nil, false
 }
 
-// primary_chain (typed OperatorsRule body inlined)
 func e1224(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
@@ -21208,7 +20923,6 @@ fail:
 	return nil, false
 }
 
-// primary_chain (typed OperatorsRule body inlined)
 func e1234(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
@@ -21226,7 +20940,7 @@ fail:
 	return nil, false
 }
 
-// call_args, called as by call
+// rule call_args
 func u188(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[188]) {
 		return p.CallMemo(trules[188], i188)
@@ -21239,7 +20953,6 @@ func u188(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// call_args, invoked as by invoke (body inlined)
 func i188(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -21521,7 +21234,6 @@ fail:
 	return nil, false
 }
 
-// pos_arg, called as by invokePlain (body inlined)
 func s190(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -21572,7 +21284,7 @@ fail:
 	return nil, false
 }
 
-// positional_named, called as by call
+// rule positional_named
 func u191(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i191(p)
@@ -21582,7 +21294,6 @@ func u191(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// positional_named, invoked as by invoke (body inlined)
 func i191(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -21643,7 +21354,7 @@ fail:
 	return nil, false
 }
 
-// kwarg_list, called as by call
+// rule kwarg_list
 func u192(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i192(p)
@@ -21653,7 +21364,6 @@ func u192(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// kwarg_list, invoked as by invoke (body inlined)
 func i192(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -21683,7 +21393,7 @@ fail:
 	return nil, false
 }
 
-// starred_list, called as by call
+// rule starred_list
 func u193(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i193(p)
@@ -21693,7 +21403,6 @@ func u193(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// starred_list, invoked as by invoke (body inlined)
 func i193(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -21723,7 +21432,7 @@ fail:
 	return nil, false
 }
 
-// kwarg, called as by call
+// rule kwarg
 func u194(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[194]) {
 		return p.CallMemo(trules[194], i194)
@@ -21736,7 +21445,6 @@ func u194(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// kwarg, invoked as by invoke (body inlined)
 func i194(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -21804,7 +21512,7 @@ fail:
 	return nil, false
 }
 
-// dstar_arg, called as by call
+// rule dstar_arg
 func u195(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i195(p)
@@ -21814,7 +21522,6 @@ func u195(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// dstar_arg, invoked as by invoke (body inlined)
 func i195(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -21856,7 +21563,7 @@ fail:
 	return nil, false
 }
 
-// genexp, called as by call
+// rule genexp
 func u196(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[196]) {
 		return p.CallMemo(trules[196], i196)
@@ -21869,7 +21576,6 @@ func u196(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// genexp, invoked as by invoke (body inlined)
 func i196(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -21955,7 +21661,7 @@ fail:
 	return nil, false
 }
 
-// subscript, called as by call
+// rule subscript
 func u197(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[197]) {
 		return p.CallMemo(trules[197], i197)
@@ -21968,7 +21674,6 @@ func u197(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// subscript, invoked as by invoke (body inlined)
 func i197(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -22038,7 +21743,6 @@ fail:
 	return nil, false
 }
 
-// slices, called as by invokePlain (body inlined)
 func s198(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -22089,7 +21793,7 @@ fail:
 	return nil, false
 }
 
-// star_first_slices, called as by call
+// rule star_first_slices
 func u199(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i199(p)
@@ -22099,7 +21803,6 @@ func u199(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// star_first_slices, invoked as by invoke (body inlined)
 func i199(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -22212,7 +21915,7 @@ fail:
 	return nil, false
 }
 
-// plain_slices, called as by call
+// rule plain_slices
 func u200(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i200(p)
@@ -22222,7 +21925,6 @@ func u200(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// plain_slices, invoked as by invoke (body inlined)
 func i200(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -22441,7 +22143,7 @@ fail:
 	return nil, false
 }
 
-// slice_or_star, called as by call
+// rule slice_or_star
 func u201(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[201]) {
 		return p.CallMemo(trules[201], v201)
@@ -22449,7 +22151,6 @@ func u201(p *pegort.TParser) (any, bool) {
 	return v201(p)
 }
 
-// slice_or_star, called as by invokePlain (body inlined)
 func v201(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -22499,7 +22200,7 @@ fail:
 	return nil, false
 }
 
-// slice, called as by call
+// rule slice
 func u202(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[202]) {
 		return p.CallMemo(trules[202], v202)
@@ -22507,7 +22208,6 @@ func u202(p *pegort.TParser) (any, bool) {
 	return v202(p)
 }
 
-// slice, called as by invokePlain (body inlined)
 func v202(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -22549,7 +22249,7 @@ fail:
 	return nil, false
 }
 
-// slice_colon, called as by call
+// rule slice_colon
 func u203(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i203(p)
@@ -22559,7 +22259,6 @@ func u203(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// slice_colon, invoked as by invoke (body inlined)
 func i203(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -22699,7 +22398,7 @@ fail:
 	return nil, false
 }
 
-// for_if_clauses, called as by call
+// rule for_if_clauses
 func u204(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[204]) {
 		return p.CallMemo(trules[204], i204)
@@ -22712,7 +22411,6 @@ func u204(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// for_if_clauses, invoked as by invoke (body inlined)
 func i204(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -22782,7 +22480,7 @@ fail:
 	return nil, false
 }
 
-// for_if_clause, called as by call
+// rule for_if_clause
 func u205(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[205]) {
 		return p.CallMemo(trules[205], i205)
@@ -22795,7 +22493,6 @@ func u205(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// for_if_clause, invoked as by invoke (body inlined)
 func i205(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -22945,7 +22642,7 @@ fail:
 	return nil, false
 }
 
-// atom, called as by call
+// rule atom
 func u206(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[206]) {
 		return p.CallMemo(trules[206], v206)
@@ -22953,7 +22650,6 @@ func u206(p *pegort.TParser) (any, bool) {
 	return v206(p)
 }
 
-// atom, called as by invokePlain (body inlined)
 func v206(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -23051,7 +22747,7 @@ fail:
 	return nil, false
 }
 
-// name, called as by call
+// rule name
 func u207(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[207]) {
 		return p.CallMemo(trules[207], i207)
@@ -23064,7 +22760,6 @@ func u207(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// name, invoked as by invoke (body inlined)
 func i207(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -23099,7 +22794,6 @@ fail:
 	return nil, false
 }
 
-// constant_kw, called as by invokePlain (body inlined)
 func s208(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -23184,7 +22878,6 @@ fail:
 	return nil, false
 }
 
-// ellipsis, called as by invokePlain (body inlined)
 func s209(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -23217,7 +22910,6 @@ fail:
 	return nil, false
 }
 
-// paren, called as by invokePlain (body inlined)
 func s210(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -23298,7 +22990,6 @@ fail:
 	return nil, false
 }
 
-// empty_tuple, called as by invokePlain (body inlined)
 func s211(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -23361,7 +23052,7 @@ fail:
 	return nil, false
 }
 
-// yield_group, called as by call
+// rule yield_group
 func u212(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i212(p)
@@ -23371,7 +23062,6 @@ func u212(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// yield_group, invoked as by invoke (body inlined)
 func i212(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -23441,7 +23131,7 @@ fail:
 	return nil, false
 }
 
-// star_first_tuple, called as by call
+// rule star_first_tuple
 func u213(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i213(p)
@@ -23451,7 +23141,6 @@ func u213(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// star_first_tuple, invoked as by invoke (body inlined)
 func i213(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -23637,7 +23326,7 @@ fail:
 	return nil, false
 }
 
-// paren_named, called as by call
+// rule paren_named
 func u214(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i214(p)
@@ -23647,7 +23336,6 @@ func u214(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// paren_named, invoked as by invoke (body inlined)
 func i214(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -23973,7 +23661,6 @@ fail:
 	return nil, false
 }
 
-// list_display, called as by invokePlain (body inlined)
 func s215(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -24028,7 +23715,6 @@ fail:
 	return nil, false
 }
 
-// empty_list, called as by invokePlain (body inlined)
 func s216(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -24091,7 +23777,7 @@ fail:
 	return nil, false
 }
 
-// list_items, called as by call
+// rule list_items
 func u217(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i217(p)
@@ -24101,7 +23787,6 @@ func u217(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// list_items, invoked as by invoke (body inlined)
 func i217(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -24392,7 +24077,6 @@ fail:
 	return nil, false
 }
 
-// braces, called as by invokePlain (body inlined)
 func s218(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -24473,7 +24157,6 @@ fail:
 	return nil, false
 }
 
-// empty_dict, called as by invokePlain (body inlined)
 func s219(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -24531,7 +24214,7 @@ fail:
 	return nil, false
 }
 
-// dict_unpack_first, called as by call
+// rule dict_unpack_first
 func u220(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i220(p)
@@ -24541,7 +24224,6 @@ func u220(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// dict_unpack_first, invoked as by invoke (body inlined)
 func i220(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -24810,7 +24492,7 @@ fail:
 	return nil, false
 }
 
-// set_star_first, called as by call
+// rule set_star_first
 func u221(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i221(p)
@@ -24820,7 +24502,6 @@ func u221(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// set_star_first, invoked as by invoke (body inlined)
 func i221(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -24973,7 +24654,7 @@ fail:
 	return nil, false
 }
 
-// brace_items, called as by call
+// rule brace_items
 func u222(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i222(p)
@@ -24983,7 +24664,6 @@ func u222(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// brace_items, invoked as by invoke (body inlined)
 func i222(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -25557,7 +25237,7 @@ fail:
 	return nil, false
 }
 
-// star_targets, called as by call
+// rule star_targets
 func u223(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[223]) {
 		return p.CallMemo(trules[223], i223)
@@ -25570,7 +25250,6 @@ func u223(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// star_targets, invoked as by invoke (body inlined)
 func i223(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -25789,7 +25468,7 @@ fail:
 	return nil, false
 }
 
-// star_target, called as by call
+// rule star_target
 func u224(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[224]) {
 		return p.CallMemo(trules[224], v224)
@@ -25797,7 +25476,6 @@ func u224(p *pegort.TParser) (any, bool) {
 	return v224(p)
 }
 
-// star_target, called as by invokePlain (body inlined)
 func v224(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -25848,7 +25526,7 @@ fail:
 	return nil, false
 }
 
-// starred_target, called as by call
+// rule starred_target
 func u225(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i225(p)
@@ -25858,7 +25536,6 @@ func u225(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// starred_target, invoked as by invoke (body inlined)
 func i225(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -25932,7 +25609,7 @@ fail:
 	return nil, false
 }
 
-// target_with_star_atom, called as by call
+// rule target_with_star_atom
 func u226(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[226]) {
 		return p.CallMemo(trules[226], v226)
@@ -25940,7 +25617,6 @@ func u226(p *pegort.TParser) (any, bool) {
 	return v226(p)
 }
 
-// target_with_star_atom, called as by invokePlain (body inlined)
 func v226(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -25990,7 +25666,7 @@ fail:
 	return nil, false
 }
 
-// attr_target, called as by call
+// rule attr_target
 func u227(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[227]) {
 		return p.CallMemo(trules[227], i227)
@@ -26003,7 +25679,6 @@ func u227(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// attr_target, invoked as by invoke (body inlined)
 func i227(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -26087,7 +25762,7 @@ fail:
 	return nil, false
 }
 
-// subscript_target, called as by call
+// rule subscript_target
 func u228(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[228]) {
 		return p.CallMemo(trules[228], i228)
@@ -26100,7 +25775,6 @@ func u228(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// subscript_target, invoked as by invoke (body inlined)
 func i228(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -26162,7 +25836,6 @@ fail:
 	return nil, false
 }
 
-// star_atom, called as by invokePlain (body inlined)
 func s229(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -26264,7 +25937,7 @@ fail:
 	return nil, false
 }
 
-// paren_target, called as by call
+// rule paren_target
 func u230(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i230(p)
@@ -26274,7 +25947,6 @@ func u230(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// paren_target, invoked as by invoke (body inlined)
 func i230(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -26344,7 +26016,6 @@ fail:
 	return nil, false
 }
 
-// empty_tuple_target, called as by invokePlain (body inlined)
 func s231(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -26407,7 +26078,7 @@ fail:
 	return nil, false
 }
 
-// star_tuple_target, called as by call
+// rule star_tuple_target
 func u232(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i232(p)
@@ -26417,7 +26088,6 @@ func u232(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// star_tuple_target, invoked as by invoke (body inlined)
 func i232(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -26603,7 +26273,6 @@ fail:
 	return nil, false
 }
 
-// empty_list_target, called as by invokePlain (body inlined)
 func s233(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -26666,7 +26335,7 @@ fail:
 	return nil, false
 }
 
-// star_list_target, called as by call
+// rule star_list_target
 func u234(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i234(p)
@@ -26676,7 +26345,6 @@ func u234(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// star_list_target, invoked as by invoke (body inlined)
 func i234(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -26814,7 +26482,7 @@ fail:
 	return nil, false
 }
 
-// single_target, called as by call
+// rule single_target
 func u235(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[235]) {
 		return p.CallMemo(trules[235], v235)
@@ -26822,7 +26490,6 @@ func u235(p *pegort.TParser) (any, bool) {
 	return v235(p)
 }
 
-// single_target, called as by invokePlain (body inlined)
 func v235(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -26880,7 +26547,7 @@ fail:
 	return nil, false
 }
 
-// single_subscript_attribute_target, called as by call
+// rule single_subscript_attribute_target
 func u236(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[236]) {
 		return p.CallMemo(trules[236], v236)
@@ -26888,7 +26555,6 @@ func u236(p *pegort.TParser) (any, bool) {
 	return v236(p)
 }
 
-// single_subscript_attribute_target, called as by invokePlain (body inlined)
 func v236(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -26930,7 +26596,7 @@ fail:
 	return nil, false
 }
 
-// paren_single_target, called as by call
+// rule paren_single_target
 func u237(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[237]) {
 		return p.CallMemo(trules[237], i237)
@@ -26943,7 +26609,6 @@ func u237(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// paren_single_target, invoked as by invoke (body inlined)
 func i237(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -27013,7 +26678,7 @@ fail:
 	return nil, false
 }
 
-// store_name, called as by call
+// rule store_name
 func u238(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[238]) {
 		return p.CallMemo(trules[238], i238)
@@ -27026,7 +26691,6 @@ func u238(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// store_name, invoked as by invoke (body inlined)
 func i238(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -27061,7 +26725,6 @@ fail:
 	return nil, false
 }
 
-// t_primary (typed OperatorsRule body inlined)
 func e1238(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
@@ -27096,7 +26759,6 @@ fail:
 	return nil, false
 }
 
-// t_primary (typed OperatorsRule body inlined)
 func e1239(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
@@ -27165,7 +26827,6 @@ fail:
 	return nil, false
 }
 
-// t_primary (typed OperatorsRule body inlined)
 func e1243(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
@@ -27207,7 +26868,6 @@ fail:
 	return nil, false
 }
 
-// t_primary (typed OperatorsRule body inlined)
 func e1246(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
@@ -27249,7 +26909,6 @@ fail:
 	return nil, false
 }
 
-// t_primary (typed OperatorsRule body inlined)
 func e1256(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
@@ -27291,7 +26950,7 @@ fail:
 	return nil, false
 }
 
-// del_target, called as by call
+// rule del_target
 func u241(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[241]) {
 		return p.CallMemo(trules[241], v241)
@@ -27299,7 +26958,6 @@ func u241(p *pegort.TParser) (any, bool) {
 	return v241(p)
 }
 
-// del_target, called as by invokePlain (body inlined)
 func v241(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -27391,7 +27049,7 @@ fail:
 	return nil, false
 }
 
-// del_attr, called as by call
+// rule del_attr
 func u242(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i242(p)
@@ -27401,7 +27059,6 @@ func u242(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// del_attr, invoked as by invoke (body inlined)
 func i242(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -27485,7 +27142,7 @@ fail:
 	return nil, false
 }
 
-// del_subscript, called as by call
+// rule del_subscript
 func u243(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i243(p)
@@ -27495,7 +27152,6 @@ func u243(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// del_subscript, invoked as by invoke (body inlined)
 func i243(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -27557,7 +27213,7 @@ fail:
 	return nil, false
 }
 
-// del_name, called as by call
+// rule del_name
 func u244(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i244(p)
@@ -27567,7 +27223,6 @@ func u244(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// del_name, invoked as by invoke (body inlined)
 func i244(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -27602,7 +27257,7 @@ fail:
 	return nil, false
 }
 
-// paren_del_target, called as by call
+// rule paren_del_target
 func u245(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i245(p)
@@ -27612,7 +27267,6 @@ func u245(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// paren_del_target, invoked as by invoke (body inlined)
 func i245(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -27682,7 +27336,7 @@ fail:
 	return nil, false
 }
 
-// del_tuple, called as by call
+// rule del_tuple
 func u246(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i246(p)
@@ -27692,7 +27346,6 @@ func u246(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// del_tuple, invoked as by invoke (body inlined)
 func i246(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -27776,7 +27429,7 @@ fail:
 	return nil, false
 }
 
-// del_list, called as by call
+// rule del_list
 func u247(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i247(p)
@@ -27786,7 +27439,6 @@ func u247(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// del_list, invoked as by invoke (body inlined)
 func i247(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -27870,7 +27522,7 @@ fail:
 	return nil, false
 }
 
-// del_targets, called as by call
+// rule del_targets
 func u248(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[248]) {
 		return p.CallMemo(trules[248], i248)
@@ -27883,7 +27535,6 @@ func u248(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// del_targets, invoked as by invoke (body inlined)
 func i248(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -27975,7 +27626,7 @@ fail:
 	return nil, false
 }
 
-// strings, called as by call
+// rule strings
 func u249(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[249]) {
 		return p.CallMemo(trules[249], i249)
@@ -27988,7 +27639,6 @@ func u249(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// strings, invoked as by invoke (body inlined)
 func i249(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -28066,7 +27716,6 @@ fail:
 	return nil, false
 }
 
-// plain_strings, called as by invokePlain (body inlined)
 func s251(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -28133,7 +27782,6 @@ fail:
 	return nil, false
 }
 
-// bytes_strings, called as by invokePlain (body inlined)
 func s252(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -28200,7 +27848,7 @@ fail:
 	return nil, false
 }
 
-// fjoined, called as by call
+// rule fjoined
 func u253(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i253(p)
@@ -28210,7 +27858,6 @@ func u253(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// fjoined, invoked as by invoke (body inlined)
 func i253(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -28312,7 +27959,7 @@ fail:
 	return nil, false
 }
 
-// fjoin_item, called as by call
+// rule fjoin_item
 func u254(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[254]) {
 		return p.CallMemo(trules[254], v254)
@@ -28320,7 +27967,6 @@ func u254(p *pegort.TParser) (any, bool) {
 	return v254(p)
 }
 
-// fjoin_item, called as by invokePlain (body inlined)
 func v254(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -28362,7 +28008,7 @@ fail:
 	return nil, false
 }
 
-// str_part, called as by call
+// rule str_part
 func u255(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i255(p)
@@ -28372,7 +28018,6 @@ func u255(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// str_part, invoked as by invoke (body inlined)
 func i255(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -28402,7 +28047,6 @@ fail:
 	return nil, false
 }
 
-// str_constant, called as by invokePlain (body inlined)
 func s256(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -28433,7 +28077,7 @@ fail:
 	return nil, false
 }
 
-// tstrings, called as by call
+// rule tstrings
 func u257(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i257(p)
@@ -28443,7 +28087,6 @@ func u257(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// tstrings, invoked as by invoke (body inlined)
 func i257(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -28545,7 +28188,7 @@ fail:
 	return nil, false
 }
 
-// fstring, called as by call
+// rule fstring
 func u267(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i267(p)
@@ -28555,7 +28198,6 @@ func u267(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// fstring, invoked as by invoke (body inlined)
 func i267(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -28806,7 +28448,7 @@ fail:
 	return nil, false
 }
 
-// tstring, called as by call
+// rule tstring
 func u268(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[268]) {
 		return p.CallMemo(trules[268], i268)
@@ -28819,7 +28461,6 @@ func u268(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// tstring, invoked as by invoke (body inlined)
 func i268(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -29070,7 +28711,6 @@ fail:
 	return nil, false
 }
 
-// fpart, called as by invokePlain (body inlined)
 func s270(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -29128,7 +28768,6 @@ fail:
 	return nil, false
 }
 
-// tpart, called as by invokePlain (body inlined)
 func s271(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -29186,7 +28825,7 @@ fail:
 	return nil, false
 }
 
-// ftext, called as by call
+// rule ftext
 func u272(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[272]) {
 		return p.CallMemo(trules[272], v272)
@@ -29194,7 +28833,6 @@ func u272(p *pegort.TParser) (any, bool) {
 	return v272(p)
 }
 
-// ftext, called as by invokePlain (body inlined)
 func v272(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -29320,7 +28958,7 @@ fail:
 	return nil, false
 }
 
-// fraw_text, called as by call
+// rule fraw_text
 func u273(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[273]) {
 		return p.CallMemo(trules[273], v273)
@@ -29328,7 +28966,6 @@ func u273(p *pegort.TParser) (any, bool) {
 	return v273(p)
 }
 
-// fraw_text, called as by invokePlain (body inlined)
 func v273(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -29454,7 +29091,7 @@ fail:
 	return nil, false
 }
 
-// ffield, called as by call
+// rule ffield
 func u277(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[277]) {
 		return p.CallMemo(trules[277], i277)
@@ -29467,7 +29104,6 @@ func u277(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// ffield, invoked as by invoke (body inlined)
 func i277(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -29640,7 +29276,7 @@ fail:
 	return nil, false
 }
 
-// tfield, called as by call
+// rule tfield
 func u278(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i278(p)
@@ -29650,7 +29286,6 @@ func u278(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// tfield, invoked as by invoke (body inlined)
 func i278(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -29823,7 +29458,7 @@ fail:
 	return nil, false
 }
 
-// fdebug, called as by call
+// rule fdebug
 func u279(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[279]) {
 		return p.CallMemo(trules[279], v279)
@@ -29831,7 +29466,6 @@ func u279(p *pegort.TParser) (any, bool) {
 	return v279(p)
 }
 
-// fdebug, called as by invokePlain (body inlined)
 func v279(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -29878,7 +29512,7 @@ fail:
 	return nil, false
 }
 
-// fconv, called as by call
+// rule fconv
 func u280(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[280]) {
 		return p.CallMemo(trules[280], i280)
@@ -29891,7 +29525,6 @@ func u280(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// fconv, invoked as by invoke (body inlined)
 func i280(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -29949,7 +29582,7 @@ fail:
 	return nil, false
 }
 
-// fspec, called as by call
+// rule fspec
 func u281(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[281]) {
 		return p.CallMemo(trules[281], i281)
@@ -29962,7 +29595,6 @@ func u281(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// fspec, invoked as by invoke (body inlined)
 func i281(p *pegort.TParser) (any, bool) {
 	var (
 		start   int
@@ -30034,7 +29666,6 @@ fail:
 	return nil, false
 }
 
-// fspec_part, called as by invokePlain (body inlined)
 func s282(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -30092,7 +29723,6 @@ fail:
 	return nil, false
 }
 
-// fspec_text, called as by invokePlain (body inlined)
 func s283(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -30192,7 +29822,6 @@ fail:
 	return nil, false
 }
 
-// fspec_raw_text, called as by invokePlain (body inlined)
 func s284(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -30292,7 +29921,7 @@ fail:
 	return nil, false
 }
 
-// number, called as by call
+// rule number
 func u285(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[285]) {
 		return p.CallMemo(trules[285], v285)
@@ -30300,7 +29929,6 @@ func u285(p *pegort.TParser) (any, bool) {
 	return v285(p)
 }
 
-// number, called as by invokePlain (body inlined)
 func v285(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -30379,7 +30007,7 @@ fail:
 	return nil, false
 }
 
-// real_number, called as by call
+// rule real_number
 func u286(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[286]) {
 		return p.CallMemo(trules[286], v286)
@@ -30387,7 +30015,6 @@ func u286(p *pegort.TParser) (any, bool) {
 	return v286(p)
 }
 
-// real_number, called as by invokePlain (body inlined)
 func v286(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -30483,7 +30110,6 @@ fail:
 	return nil, false
 }
 
-// imag_number, called as by invokePlain (body inlined)
 func s287(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -30565,7 +30191,7 @@ fail:
 	return nil, false
 }
 
-// ident, called as by call
+// rule ident
 func u299(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[299]) {
 		return p.CallMemo(trules[299], v299)
@@ -30573,7 +30199,6 @@ func u299(p *pegort.TParser) (any, bool) {
 	return v299(p)
 }
 
-// ident, called as by invokePlain (body inlined)
 func v299(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -30631,7 +30256,7 @@ fail:
 	return nil, false
 }
 
-// identifier, called as by call
+// rule identifier
 func u300(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[300]) {
 		return p.CallMemo(trules[300], v300)
@@ -30639,7 +30264,6 @@ func u300(p *pegort.TParser) (any, bool) {
 	return v300(p)
 }
 
-// identifier, called as by invokePlain (body inlined)
 func v300(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -30670,7 +30294,7 @@ fail:
 	return nil, false
 }
 
-// kw_async, called as by call
+// rule kw_async
 func u306(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[306]) {
 		return p.CallMemo(trules[306], v306)
@@ -30678,7 +30302,6 @@ func u306(p *pegort.TParser) (any, bool) {
 	return v306(p)
 }
 
-// kw_async, called as by invokePlain (body inlined)
 func v306(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -30725,7 +30348,7 @@ fail:
 	return nil, false
 }
 
-// kw_else, called as by call
+// rule kw_else
 func u315(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[315]) {
 		return p.CallMemo(trules[315], v315)
@@ -30733,7 +30356,6 @@ func u315(p *pegort.TParser) (any, bool) {
 	return v315(p)
 }
 
-// kw_else, called as by invokePlain (body inlined)
 func v315(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -30782,7 +30404,7 @@ fail:
 	return nil, false
 }
 
-// kw_if, called as by call
+// rule kw_if
 func u321(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[321]) {
 		return p.CallMemo(trules[321], v321)
@@ -30790,7 +30412,6 @@ func u321(p *pegort.TParser) (any, bool) {
 	return v321(p)
 }
 
-// kw_if, called as by invokePlain (body inlined)
 func v321(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -30839,7 +30460,7 @@ fail:
 	return nil, false
 }
 
-// blank, called as by call
+// rule blank
 func u337(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[337]) {
 		return p.CallMemo(trules[337], v337)
@@ -30847,7 +30468,6 @@ func u337(p *pegort.TParser) (any, bool) {
 	return v337(p)
 }
 
-// blank, called as by invokePlain (body inlined)
 func v337(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -30932,7 +30552,6 @@ fail:
 	return nil, false
 }
 
-// module_end, called as by invokePlain (body inlined)
 func s338(p *pegort.TParser) (any, bool) {
 	var (
 		v    any
@@ -31034,7 +30653,6 @@ L14:
 	return v, true
 }
 
-// ws, called as by invokePlain (body inlined)
 func s339(p *pegort.TParser) (any, bool) {
 	var (
 		v    any
@@ -31222,7 +30840,7 @@ func s339(p *pegort.TParser) (any, bool) {
 	return v, true
 }
 
-// stmt_sep, called as by call
+// rule stmt_sep
 func u340(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i340(p)
@@ -31232,7 +30850,6 @@ func u340(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// stmt_sep, invoked as by invoke (body inlined)
 func i340(p *pegort.TParser) (any, bool) {
 	var (
 		v  any
@@ -31338,7 +30955,7 @@ fail:
 	return nil, false
 }
 
-// eol, called as by call
+// rule eol
 func u341(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[341]) {
 		return p.CallMemo(trules[341], v341)
@@ -31346,7 +30963,6 @@ func u341(p *pegort.TParser) (any, bool) {
 	return v341(p)
 }
 
-// eol, called as by invokePlain (body inlined)
 func v341(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -31394,7 +31010,6 @@ fail:
 	return nil, false
 }
 
-// newline, called as by invokePlain (body inlined)
 func s342(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -31440,7 +31055,6 @@ fail:
 	return nil, false
 }
 
-// augassign_op, called as by invokePlain (body inlined)
 func s343(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -31634,7 +31248,6 @@ fail:
 	return nil, false
 }
 
-// kw_pass, called as by invokePlain (body inlined)
 func s344(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -31669,7 +31282,6 @@ fail:
 	return nil, false
 }
 
-// kw_break, called as by invokePlain (body inlined)
 func s345(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -31702,7 +31314,6 @@ fail:
 	return nil, false
 }
 
-// kw_continue, called as by invokePlain (body inlined)
 func s346(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -31735,7 +31346,6 @@ fail:
 	return nil, false
 }
 
-// kw_return, called as by invokePlain (body inlined)
 func s347(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -31768,7 +31378,6 @@ fail:
 	return nil, false
 }
 
-// kw_raise, called as by invokePlain (body inlined)
 func s348(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -31801,7 +31410,7 @@ fail:
 	return nil, false
 }
 
-// kw_from, called as by call
+// rule kw_from
 func u349(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[349]) {
 		return p.CallMemo(trules[349], v349)
@@ -31809,7 +31418,6 @@ func u349(p *pegort.TParser) (any, bool) {
 	return v349(p)
 }
 
-// kw_from, called as by invokePlain (body inlined)
 func v349(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -31844,7 +31452,6 @@ fail:
 	return nil, false
 }
 
-// kw_global, called as by invokePlain (body inlined)
 func s350(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -31877,7 +31484,6 @@ fail:
 	return nil, false
 }
 
-// kw_nonlocal, called as by invokePlain (body inlined)
 func s351(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -31910,7 +31516,6 @@ fail:
 	return nil, false
 }
 
-// kw_del, called as by invokePlain (body inlined)
 func s352(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -31945,7 +31550,6 @@ fail:
 	return nil, false
 }
 
-// kw_assert, called as by invokePlain (body inlined)
 func s353(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -31978,7 +31582,6 @@ fail:
 	return nil, false
 }
 
-// kw_type, called as by invokePlain (body inlined)
 func s354(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -32013,7 +31616,7 @@ fail:
 	return nil, false
 }
 
-// kw_import, called as by call
+// rule kw_import
 func u355(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[355]) {
 		return p.CallMemo(trules[355], v355)
@@ -32021,7 +31624,6 @@ func u355(p *pegort.TParser) (any, bool) {
 	return v355(p)
 }
 
-// kw_import, called as by invokePlain (body inlined)
 func v355(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -32054,7 +31656,7 @@ fail:
 	return nil, false
 }
 
-// kw_as, called as by call
+// rule kw_as
 func u356(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[356]) {
 		return p.CallMemo(trules[356], v356)
@@ -32062,7 +31664,6 @@ func u356(p *pegort.TParser) (any, bool) {
 	return v356(p)
 }
 
-// kw_as, called as by invokePlain (body inlined)
 func v356(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -32097,7 +31698,7 @@ fail:
 	return nil, false
 }
 
-// kw_if, called as by call
+// rule kw_if
 func u357(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[357]) {
 		return p.CallMemo(trules[357], v357)
@@ -32105,7 +31706,6 @@ func u357(p *pegort.TParser) (any, bool) {
 	return v357(p)
 }
 
-// kw_if, called as by invokePlain (body inlined)
 func v357(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -32140,7 +31740,7 @@ fail:
 	return nil, false
 }
 
-// clause_sep, called as by call
+// rule clause_sep
 func u358(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[358]) {
 		return p.CallMemo(trules[358], i358)
@@ -32153,7 +31753,6 @@ func u358(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// clause_sep, invoked as by invoke (body inlined)
 func i358(p *pegort.TParser) (any, bool) {
 	var (
 		v  any
@@ -32259,7 +31858,6 @@ fail:
 	return nil, false
 }
 
-// kw_elif, called as by invokePlain (body inlined)
 func s359(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -32294,7 +31892,7 @@ fail:
 	return nil, false
 }
 
-// kw_else, called as by call
+// rule kw_else
 func u360(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[360]) {
 		return p.CallMemo(trules[360], v360)
@@ -32302,7 +31900,6 @@ func u360(p *pegort.TParser) (any, bool) {
 	return v360(p)
 }
 
-// kw_else, called as by invokePlain (body inlined)
 func v360(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -32337,7 +31934,6 @@ fail:
 	return nil, false
 }
 
-// kw_while, called as by invokePlain (body inlined)
 func s361(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -32370,7 +31966,7 @@ fail:
 	return nil, false
 }
 
-// kw_for, called as by call
+// rule kw_for
 func u362(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[362]) {
 		return p.CallMemo(trules[362], v362)
@@ -32378,7 +31974,6 @@ func u362(p *pegort.TParser) (any, bool) {
 	return v362(p)
 }
 
-// kw_for, called as by invokePlain (body inlined)
 func v362(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -32413,7 +32008,7 @@ fail:
 	return nil, false
 }
 
-// kw_in, called as by call
+// rule kw_in
 func u363(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[363]) {
 		return p.CallMemo(trules[363], v363)
@@ -32421,7 +32016,6 @@ func u363(p *pegort.TParser) (any, bool) {
 	return v363(p)
 }
 
-// kw_in, called as by invokePlain (body inlined)
 func v363(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -32456,7 +32050,7 @@ fail:
 	return nil, false
 }
 
-// kw_async, called as by call
+// rule kw_async
 func u364(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[364]) {
 		return p.CallMemo(trules[364], v364)
@@ -32464,7 +32058,6 @@ func u364(p *pegort.TParser) (any, bool) {
 	return v364(p)
 }
 
-// kw_async, called as by invokePlain (body inlined)
 func v364(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -32497,7 +32090,7 @@ fail:
 	return nil, false
 }
 
-// kw_with, called as by call
+// rule kw_with
 func u365(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[365]) {
 		return p.CallMemo(trules[365], v365)
@@ -32505,7 +32098,6 @@ func u365(p *pegort.TParser) (any, bool) {
 	return v365(p)
 }
 
-// kw_with, called as by invokePlain (body inlined)
 func v365(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -32540,7 +32132,6 @@ fail:
 	return nil, false
 }
 
-// kw_try, called as by invokePlain (body inlined)
 func s366(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -32575,7 +32166,6 @@ fail:
 	return nil, false
 }
 
-// kw_finally, called as by invokePlain (body inlined)
 func s367(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -32608,7 +32198,7 @@ fail:
 	return nil, false
 }
 
-// kw_except, called as by call
+// rule kw_except
 func u368(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[368]) {
 		return p.CallMemo(trules[368], v368)
@@ -32616,7 +32206,6 @@ func u368(p *pegort.TParser) (any, bool) {
 	return v368(p)
 }
 
-// kw_except, called as by invokePlain (body inlined)
 func v368(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -32649,7 +32238,7 @@ fail:
 	return nil, false
 }
 
-// dec_sep, called as by call
+// rule dec_sep
 func u369(p *pegort.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i369(p)
@@ -32659,7 +32248,6 @@ func u369(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// dec_sep, invoked as by invoke (body inlined)
 func i369(p *pegort.TParser) (any, bool) {
 	var (
 		v  any
@@ -32750,7 +32338,7 @@ fail:
 	return nil, false
 }
 
-// kw_def, called as by call
+// rule kw_def
 func u370(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[370]) {
 		return p.CallMemo(trules[370], v370)
@@ -32758,7 +32346,6 @@ func u370(p *pegort.TParser) (any, bool) {
 	return v370(p)
 }
 
-// kw_def, called as by invokePlain (body inlined)
 func v370(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -32793,7 +32380,7 @@ fail:
 	return nil, false
 }
 
-// kw_class, called as by call
+// rule kw_class
 func u371(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[371]) {
 		return p.CallMemo(trules[371], v371)
@@ -32801,7 +32388,6 @@ func u371(p *pegort.TParser) (any, bool) {
 	return v371(p)
 }
 
-// kw_class, called as by invokePlain (body inlined)
 func v371(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -32834,7 +32420,6 @@ fail:
 	return nil, false
 }
 
-// kw_match, called as by invokePlain (body inlined)
 func s372(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -32867,7 +32452,6 @@ fail:
 	return nil, false
 }
 
-// kw_case, called as by invokePlain (body inlined)
 func s373(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -32902,7 +32486,7 @@ fail:
 	return nil, false
 }
 
-// idcont, called as by call
+// rule idcont
 func u374(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[374]) {
 		return p.CallMemo(trules[374], v374)
@@ -32910,7 +32494,6 @@ func u374(p *pegort.TParser) (any, bool) {
 	return v374(p)
 }
 
-// idcont, called as by invokePlain (body inlined)
 func v374(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -32982,7 +32565,7 @@ fail:
 	return nil, false
 }
 
-// pend, called as by call
+// rule pend
 func u375(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[375]) {
 		return p.CallMemo(trules[375], v375)
@@ -32990,7 +32573,6 @@ func u375(p *pegort.TParser) (any, bool) {
 	return v375(p)
 }
 
-// pend, called as by invokePlain (body inlined)
 func v375(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -33054,7 +32636,6 @@ fail:
 	return nil, false
 }
 
-// kw_lambda, called as by invokePlain (body inlined)
 func s376(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -33087,7 +32668,7 @@ fail:
 	return nil, false
 }
 
-// lpend, called as by call
+// rule lpend
 func u377(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[377]) {
 		return p.CallMemo(trules[377], v377)
@@ -33095,7 +32676,6 @@ func u377(p *pegort.TParser) (any, bool) {
 	return v377(p)
 }
 
-// lpend, called as by invokePlain (body inlined)
 func v377(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -33173,7 +32753,7 @@ fail:
 	return nil, false
 }
 
-// kw_yield, called as by call
+// rule kw_yield
 func u378(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[378]) {
 		return p.CallMemo(trules[378], v378)
@@ -33181,7 +32761,6 @@ func u378(p *pegort.TParser) (any, bool) {
 	return v378(p)
 }
 
-// kw_yield, called as by invokePlain (body inlined)
 func v378(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -33214,7 +32793,7 @@ fail:
 	return nil, false
 }
 
-// or_op, called as by call
+// rule or_op
 func u379(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[379]) {
 		return p.CallMemo(trules[379], v379)
@@ -33222,7 +32801,6 @@ func u379(p *pegort.TParser) (any, bool) {
 	return v379(p)
 }
 
-// or_op, called as by invokePlain (body inlined)
 func v379(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -33257,7 +32835,7 @@ fail:
 	return nil, false
 }
 
-// and_op, called as by call
+// rule and_op
 func u380(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[380]) {
 		return p.CallMemo(trules[380], v380)
@@ -33265,7 +32843,6 @@ func u380(p *pegort.TParser) (any, bool) {
 	return v380(p)
 }
 
-// and_op, called as by invokePlain (body inlined)
 func v380(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -33300,7 +32877,6 @@ fail:
 	return nil, false
 }
 
-// kw_await, called as by invokePlain (body inlined)
 func s381(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -33333,7 +32909,7 @@ fail:
 	return nil, false
 }
 
-// arg_sep, called as by call
+// rule arg_sep
 func u382(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[382]) {
 		return p.CallMemo(trules[382], v382)
@@ -33341,7 +32917,6 @@ func u382(p *pegort.TParser) (any, bool) {
 	return v382(p)
 }
 
-// arg_sep, called as by invokePlain (body inlined)
 func v382(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -33405,7 +32980,6 @@ fail:
 	return nil, false
 }
 
-// t_lookahead, called as by invokePlain (body inlined)
 func s383(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -33465,7 +33039,6 @@ fail:
 	return nil, false
 }
 
-// string_start, called as by invokePlain (body inlined)
 func s384(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -33502,7 +33075,7 @@ fail:
 	return nil, false
 }
 
-// str_lit, called as by call
+// rule str_lit
 func u385(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[385]) {
 		return p.CallMemo(trules[385], v385)
@@ -33510,7 +33083,6 @@ func u385(p *pegort.TParser) (any, bool) {
 	return v385(p)
 }
 
-// str_lit, called as by invokePlain (body inlined)
 func v385(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -33567,7 +33139,7 @@ fail:
 	return nil, false
 }
 
-// bytes_lit, called as by call
+// rule bytes_lit
 func u386(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[386]) {
 		return p.CallMemo(trules[386], v386)
@@ -33575,7 +33147,6 @@ func u386(p *pegort.TParser) (any, bool) {
 	return v386(p)
 }
 
-// bytes_lit, called as by invokePlain (body inlined)
 func v386(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -33660,7 +33231,6 @@ fail:
 	return nil, false
 }
 
-// fclose, called as by invokePlain (body inlined)
 func s387(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -33758,7 +33328,7 @@ fail:
 	return nil, false
 }
 
-// fquote, called as by call
+// rule fquote
 func u388(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[388]) {
 		return p.CallMemo(trules[388], v388)
@@ -33766,7 +33336,6 @@ func u388(p *pegort.TParser) (any, bool) {
 	return v388(p)
 }
 
-// fquote, called as by invokePlain (body inlined)
 func v388(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -33952,7 +33521,7 @@ fail:
 	return nil, false
 }
 
-// fesc, called as by call
+// rule fesc
 func u389(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[389]) {
 		return p.CallMemo(trules[389], v389)
@@ -33960,7 +33529,6 @@ func u389(p *pegort.TParser) (any, bool) {
 	return v389(p)
 }
 
-// fesc, called as by invokePlain (body inlined)
 func v389(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -34176,7 +33744,6 @@ fail:
 	return nil, false
 }
 
-// frawesc, called as by invokePlain (body inlined)
 func s390(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -34250,7 +33817,6 @@ fail:
 	return nil, false
 }
 
-// hex_lit, called as by invokePlain (body inlined)
 func s391(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -34317,7 +33883,6 @@ fail:
 	return nil, false
 }
 
-// oct_lit, called as by invokePlain (body inlined)
 func s392(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -34384,7 +33949,6 @@ fail:
 	return nil, false
 }
 
-// bin_lit, called as by invokePlain (body inlined)
 func s393(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -34451,7 +34015,6 @@ fail:
 	return nil, false
 }
 
-// dec_number, called as by invokePlain (body inlined)
 func s394(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -34571,7 +34134,6 @@ fail:
 	return nil, false
 }
 
-// num_end, called as by invokePlain (body inlined)
 func s395(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -34718,7 +34280,6 @@ fail:
 	return nil, false
 }
 
-// dec_real, called as by invokePlain (body inlined)
 func s396(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -34794,7 +34355,7 @@ fail:
 	return nil, false
 }
 
-// pointfloat, called as by call
+// rule pointfloat
 func u397(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[397]) {
 		return p.CallMemo(trules[397], v397)
@@ -34802,7 +34363,6 @@ func u397(p *pegort.TParser) (any, bool) {
 	return v397(p)
 }
 
-// pointfloat, called as by invokePlain (body inlined)
 func v397(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -34868,7 +34428,7 @@ fail:
 	return nil, false
 }
 
-// exponent, called as by call
+// rule exponent
 func u398(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[398]) {
 		return p.CallMemo(trules[398], v398)
@@ -34876,7 +34436,6 @@ func u398(p *pegort.TParser) (any, bool) {
 	return v398(p)
 }
 
-// exponent, called as by invokePlain (body inlined)
 func v398(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -34918,7 +34477,6 @@ fail:
 	return nil, false
 }
 
-// digitpart, called as by invokePlain (body inlined)
 func s399(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -34977,7 +34535,6 @@ fail:
 	return nil, false
 }
 
-// keyword, called as by invokePlain (body inlined)
 func s400(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -35010,7 +34567,6 @@ fail:
 	return nil, false
 }
 
-// idstart, called as by invokePlain (body inlined)
 func s401(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -35082,7 +34638,7 @@ fail:
 	return nil, false
 }
 
-// ident, called as by call
+// rule ident
 func u402(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[402]) {
 		return p.CallMemo(trules[402], v402)
@@ -35090,7 +34646,6 @@ func u402(p *pegort.TParser) (any, bool) {
 	return v402(p)
 }
 
-// ident, called as by invokePlain (body inlined)
 func v402(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -35141,7 +34696,6 @@ fail:
 	return nil, false
 }
 
-// comment, called as by invokePlain (body inlined)
 func s403(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -35174,7 +34728,6 @@ fail:
 	return nil, false
 }
 
-// idcont_other, called as by invokePlain (body inlined)
 func s404(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -35194,7 +34747,7 @@ fail:
 	return nil, false
 }
 
-// str_body, called as by call
+// rule str_body
 func u405(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[405]) {
 		return p.CallMemo(trules[405], v405)
@@ -35202,7 +34755,6 @@ func u405(p *pegort.TParser) (any, bool) {
 	return v405(p)
 }
 
-// str_body, called as by invokePlain (body inlined)
 func v405(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -35561,7 +35113,6 @@ fail:
 	return nil, false
 }
 
-// raw_str_body, called as by invokePlain (body inlined)
 func s406(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -35996,7 +35547,6 @@ fail:
 	return nil, false
 }
 
-// raw_bytes_body, called as by invokePlain (body inlined)
 func s407(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -36431,7 +35981,6 @@ fail:
 	return nil, false
 }
 
-// bytes_body, called as by invokePlain (body inlined)
 func s408(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -36790,7 +36339,6 @@ fail:
 	return nil, false
 }
 
-// hex, called as by invokePlain (body inlined)
 func s409(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -36816,7 +36364,6 @@ fail:
 	return nil, false
 }
 
-// nonzero_int, called as by invokePlain (body inlined)
 func s410(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -36875,7 +36422,6 @@ fail:
 	return nil, false
 }
 
-// zero_int, called as by invokePlain (body inlined)
 func s411(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -36942,7 +36488,6 @@ fail:
 	return nil, false
 }
 
-// idstart_other, called as by invokePlain (body inlined)
 func s412(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -36962,7 +36507,7 @@ fail:
 	return nil, false
 }
 
-// str_esc, called as by call
+// rule str_esc
 func u413(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[413]) {
 		return p.CallMemo(trules[413], v413)
@@ -36970,7 +36515,6 @@ func u413(p *pegort.TParser) (any, bool) {
 	return v413(p)
 }
 
-// str_esc, called as by invokePlain (body inlined)
 func v413(p *pegort.TParser) (any, bool) {
 	var (
 		start int
@@ -37165,7 +36709,7 @@ fail:
 	return nil, false
 }
 
-// bytes_esc, called as by call
+// rule bytes_esc
 func u414(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[414]) {
 		return p.CallMemo(trules[414], v414)
@@ -37173,7 +36717,6 @@ func u414(p *pegort.TParser) (any, bool) {
 	return v414(p)
 }
 
-// bytes_esc, called as by invokePlain (body inlined)
 func v414(p *pegort.TParser) (any, bool) {
 	var (
 		start int

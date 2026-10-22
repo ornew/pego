@@ -150,6 +150,7 @@ func generatePackageIn(t testing.TB, dir, root, pkg string, g *grammar.Grammar, 
 	opts.Runtime = RuntimeImport
 	opts.WorkControls = fixtureWorkControls()
 	opts.Package, opts.Module = pkg, root+"/"+pkg
+	opts.keepComments = true
 	files, err := Generate(g, opts)
 	if err != nil {
 		t.Fatal(err)
@@ -174,6 +175,7 @@ func generatePackageIn(t testing.TB, dir, root, pkg string, g *grammar.Grammar, 
 // parser.go and api.go as one source file, which tests write as parser.go.
 func generateCode(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	opts.Runtime = RuntimeImport
+	opts.keepComments = true
 	opts.WorkControls = fixtureWorkControls()
 	if opts.Module == "" && opts.Types {
 		opts.Module = "example.com/generated"

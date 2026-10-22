@@ -10,8 +10,6 @@ import (
 	pegort "github.com/ornew/pego/runtime"
 )
 
-// --- Generated code ---
-
 // Parse parses the whole input with the rule main. Options select position units, depth, cancellation and work limits.
 // If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.
 func Parse(input string, opts ...pegort.ParseOption) (*pegort.Node, error) {
@@ -26,11 +24,9 @@ func Recognize(input string, opts ...pegort.ParseOption) error {
 	return err
 }
 
-// recRules is the rule table of Recognize, and pegoRecGrammar its grammar.
 var recRules []*pegort.Rule
 var pegoRecGrammar = pegort.NewGrammar(100000)
 
-// rules is the rule table, and pegoGrammar its grammar.
 var rules []*pegort.Rule
 var pegoGrammar = pegort.NewGrammar(100000)
 
@@ -48,17 +44,12 @@ func ParseRule(name, input string, opts ...pegort.ParseOption) (*pegort.Node, er
 	return pegort.RunParseResolved(r, input, o)
 }
 
-// --- Typed values ---
-
-// astChunk owns unused values and the next allocation size for one type.
-// Handed-out values are never reused, even when a parse discards them.
 type astChunk[T any] struct {
 	free      []T
 	next      int
 	bootstrap uint8
 }
 
-// grow starts small and doubles up to limit. The request is always satisfied.
 func (s *astChunk[T]) grow(n, initial, limit int) {
 	size := s.next
 	if size == 0 {
@@ -74,9 +65,6 @@ func (s *astChunk[T]) grow(n, initial, limit int) {
 	}
 }
 
-// astNew allocates the first three values independently so a later
-// published value cannot retain discarded early siblings through a chunk.
-// Later values use the original 8-to-256 chunk growth.
 func astNew[T any](s *astChunk[T]) *T {
 	if len(s.free) == 0 {
 		if s.bootstrap < 3 {
@@ -90,11 +78,9 @@ func astNew[T any](s *astChunk[T]) *T {
 	return v
 }
 
-// astSlice allocates the first nonempty small list independently to keep
-// its backing values separate from later published lists of the same type.
 func astSlice[T any](s *astChunk[T], n int) []T {
 	if n == 0 {
-		return []T{} // an empty list, not nil
+		return []T{}
 	}
 	if n > 256 {
 		return make([]T, n)
@@ -111,7 +97,6 @@ func astSlice[T any](s *astChunk[T], n int) []T {
 	return v
 }
 
-// tinit sets up the typed rules (called at the end of init, after the rule tables).
 func tinit() {
 	tnamedPub := func(a any, x pegort.TVal) any {
 		s, _ := a.(*tslabs)
@@ -130,7 +115,6 @@ func tinit() {
 	trules[2].Nt = types.PegoNodeTypes[1]
 }
 
-// tmk_File makes a File in an action (newStruct in the typed runtime).
 func tmk_File(c *pegort.TActCtx, final bool, f0 any) any {
 	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
@@ -147,7 +131,6 @@ func tmk_File(c *pegort.TActCtx, final bool, f0 any) any {
 	return c.Made(v, first, start, end)
 }
 
-// tmk_Record makes a Record in an action (newStruct in the typed runtime).
 func tmk_Record(c *pegort.TActCtx, final bool, f0 any) any {
 	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
@@ -171,7 +154,7 @@ func tl0(a *tslabs, v any) []*types.Record {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*types.Record{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.Record{}
 	}
 	out := astSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -188,7 +171,7 @@ func tl1(a *tslabs, v any) []*types.Field {
 	}
 	n, _ := v.(*pegort.TSeq)
 	if n == nil {
-		return []*types.Field{} // another node (an Error), as conversion makes an empty list of it
+		return []*types.Field{}
 	}
 	out := astSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
@@ -200,7 +183,7 @@ func tl1(a *tslabs, v any) []*types.Field {
 
 func tv0(a *tslabs, v any) *types.Field {
 	a.stepWork()
-	const _ = -(unsafe.Sizeof(types.Field{}) - unsafe.Sizeof(types.TNode[string]{})) // the sizes are equal (tmatchAs)
+	const _ = -(unsafe.Sizeof(types.Field{}) - unsafe.Sizeof(types.TNode[string]{}))
 	x, _ := v.(*pegort.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
@@ -208,7 +191,6 @@ func tv0(a *tslabs, v any) *types.Field {
 	return pegort.TMatchAs[types.Field](x)
 }
 
-// tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
 	control  *pegort.WorkControl
 	tFile    astChunk[types.File]
@@ -265,7 +247,6 @@ var lit12 = []rune("\n")
 var sh13 = pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}
 var sh16 = pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}
 
-// rulesSpec is the compact form of the rule table, built by NewRules.
 var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "main", Value: &sh13, Seen: -1, Scope: 1},
 	{Name: "record", Value: &sh16, Seen: -1, Scope: 2},
@@ -284,7 +265,6 @@ var rulesExtras = [...]pegort.RuleExtra{
 	{Id: 2, Where: "", NodeType: "Field", OpNodeType: ""},
 }
 
-// recRulesSpec is the compact form of the rule table, built by NewRules.
 var recRulesSpec = [...]pegort.RuleSpec{
 	{Name: "main", Value: &sh13, Flags: pegort.RuleNovalue, Seen: -1},
 	{Name: "record", Value: &sh16, Flags: pegort.RuleNovalue, Seen: -1},
@@ -347,7 +327,6 @@ func init() {
 
 }
 
-// main (Node body inlined)
 func e3(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -481,7 +460,6 @@ fail:
 	return nil, false
 }
 
-// record (Node body inlined)
 func e6(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -643,7 +621,6 @@ fail:
 	return nil, false
 }
 
-// field (Node body inlined)
 func e10(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -947,7 +924,6 @@ L3:
 	return v18, true
 }
 
-// eol (Node body inlined)
 func e14(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -1138,7 +1114,6 @@ fail:
 	return nil, false
 }
 
-// eol (value-free body inlined)
 func e15(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -1278,7 +1253,6 @@ fail:
 	return nil, false
 }
 
-// field, called as by invokePlain
 func r2(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
@@ -1316,7 +1290,6 @@ func r2(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// eol, called as by invokePlain (body inlined)
 func r4(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -1468,7 +1441,6 @@ fail:
 	return nil, false
 }
 
-// main (value-free body inlined)
 func e17(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -1568,7 +1540,6 @@ fail:
 	return nil, false
 }
 
-// record (value-free body inlined)
 func e18(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -1689,7 +1660,6 @@ fail:
 	return nil, false
 }
 
-// field (value-free body inlined)
 func e19(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -1989,7 +1959,6 @@ L2:
 	return v, true
 }
 
-// record, called as by invokePlain (body inlined)
 func q1(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -2122,7 +2091,6 @@ fail:
 	return nil, false
 }
 
-// field, called as by invokePlain (body inlined)
 func q2(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -2426,7 +2394,6 @@ L2:
 	return v, true
 }
 
-// eol, called as by invokePlain (body inlined)
 func q3(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
@@ -2578,10 +2545,9 @@ fail:
 	return nil, false
 }
 
-// trules is the typed rule table.
 var trules []*pegort.TRule
 
-// main, called as by call
+// rule main
 func u0(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -2600,7 +2566,6 @@ func u0(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// main, invoked as by invoke (body inlined)
 func i0(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -2767,7 +2732,7 @@ fail:
 	return nil, false
 }
 
-// record, called as by call
+// rule record
 func u1(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
@@ -2786,7 +2751,6 @@ func u1(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-// record, invoked as by invoke (body inlined)
 func i1(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -2985,7 +2949,6 @@ fail:
 	return nil, false
 }
 
-// field, called as by invokePlain (body inlined)
 func s2(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
@@ -3313,7 +3276,6 @@ L3:
 	return v, true
 }
 
-// eol, called as by invokePlain (body inlined)
 func s4(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
