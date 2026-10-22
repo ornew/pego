@@ -1,6 +1,6 @@
 # 042. Responsive LSP Analysis and Code Actions
 
-- **Status**: Proposed
+- **Status**: Accepted
 - **Author**: @ornew
 - **Date**: 2026-10-11
 
@@ -43,9 +43,10 @@ the document's newline convention. The VS Code client replaces the converted
 `pego.applyLintSuppression` with the line, the directive text and the analysis
 guard. The command re-checks the guard and the document version and calls
 `workspace.applyEdit` in the same synchronous step (see "VS Code Suppression").
-The server-side candidate is limited to safe comment
-positions; rule-wide suppression needs an explicitly scoped action. There are
-no suggested grammar transformations and no alternative-deletion action.
+The suppression candidate is limited to safe comment positions; rule-wide
+suppression needs an explicitly scoped action. Three findings also get a
+proven quick fix (see "Suggested Fixes"). No other grammar transformation is
+offered.
 
 `analysisQueue` connects immutable version/generation snapshots to one running
 analysis worker globally and one replaceable pending snapshot per document.
@@ -201,9 +202,21 @@ Provide these actions:
 
 - **Explain finding** invokes the `pego.showExplanation` client command with the check name, original diagnostic message, and a concise explanation derived from the check documentation. The VS Code extension displays it in an editor notification or equivalent. The extension advertises `experimental.pego.showExplanation` in client capabilities; the server returns this action only to clients that advertise the handler. Other clients retain the complete diagnostic message without receiving an unusable action.
 - **Suppress finding** returns a versioned `WorkspaceEdit` adding `// lint:ignore <check>` on the finding line, using the document's line ending. The server offers this candidate only when the edited grammar remains valid and lint confirms its documented suppression scope. If a directive already covers the check, it does not offer a duplicate. A directive may suppress other findings in the same scope, which the action must make explicit; file-wide suppression is not the default. Clients that cannot enforce the document version atomically must not expose or apply the edit. The VS Code client applies it only through the guarded command described under "VS Code Suppression".
-- **Apply suggested fix** is offered only when the server has a check-specific, structured edit implementation and tests proving the edit preserves the accepted language and surrounding source. The string in `Finding.Fix` remains display-only. Do not offer removal of a shadowed alternative, including left-recursive alternatives, while its semantic interaction is unresolved.
+- **Apply suggested fix** is offered only for the three findings under "Suggested Fixes", each with a proof that the edit changes neither what the grammar matches nor the values it builds. The string in `Finding.Fix` remains display-only.
 
 Use `WorkspaceEdit.documentChanges` with `TextDocumentEdit` and a `VersionedTextDocumentIdentifier` for every changing action. Do not return an unversioned `changes` fallback. A client that cannot apply a versioned edit atomically may still use the explanation action, but must not be offered suppression. Return no stale action if the document version changes while the request is being handled. Revalidate the finding key and version immediately before producing the response; after a capable editor applies an edit, normal `didChange` analysis establishes the resulting state.
+
+### Suggested Fixes
+
+A fix is offered for exactly these findings, because for each the proof below shows that the tree and the values cannot change:
+
+- **`char-class`, overlapping or repeated ranges.** The class is replaced by one with merged ranges. The proof is equality of the two code-point sets, checked at the ends of every range, with the negation unchanged. A class that also matches the punctuation between letters, such as `[A-z]`, gets no fix, because only the writer knows which characters were meant.
+- **`useless-lookahead`, a lookahead that always succeeds.** The lookahead is removed. The proof is that it holds only literals, character classes, any-character, groups, sequences, choices, options and repetitions, so it has no capture, cut, call, predicate, recovery or attribute; a lookahead consumes nothing and has no value. Only a lookahead written directly as `&` or `!` qualifies.
+- **`unreachable-rule`, a rule no start rule reaches.** The rule definition, with its attributes and the comment lines that document it, is deleted. The proof is that no start rule reaches it, directly or through an inline action, so nothing calls it and no parse starts at it. A start rule is never deleted, a file-wide `lint:file-ignore` directive stays, and nothing is deleted from `pego.pego`.
+
+These are not offered, because the tree or the values could change: removing a shadowed alternative (including a left-recursive one), changing a redundant optional or a nullable repetition, dropping an unused or duplicate capture (it changes the captured value or the node type), and any rewrite of a rule that is called or a lookahead that contains a call, a capture or a predicate.
+
+The server computes each fix from `lint.Rewrites` and then verifies it on a copy of the document: the copy must compile, the target finding must be gone, no other finding may appear or disappear (the positions in messages are not compared, and neither is the message of another unreachable-rule finding, which names the callers), the start rules and the default start must be unchanged, and no remaining rule may change its type. The work polls the request context, so a newer edit cancels it, and the edit is a versioned `documentChanges` edit for the analyzed version. The VS Code client turns it into the command `pego.applyLintFix`, which judges the text the edit replaces against the shape of the check and applies it under the same synchronous version check as a suppression (see "VS Code Suppression").
 
 ### Responsive Snapshots, Cancellation and Publication
 
@@ -233,14 +246,14 @@ Existing diagnostic fields and codes remain valid; the new `code` and `data` fie
 - **Run lint in the synchronous handler.** This is the smallest change, but increases the time during which the server cannot read cancellation or newer edits. It is suitable as the first diagnostic-only stage, not as the responsive design.
 - **Debounce with a timer but keep a single blocking loop.** It can reduce repeated work after typing stops, but cannot read a cancellation or change notification while analysis is running and therefore cannot guarantee freshness.
 - **Publish lint findings for a partial grammar.** The partial AST omits failed definitions; compiling or linting it would invent undefined-reference and reachability results. Keep lint restricted to a fully parsed, successfully compiled snapshot.
-- **Turn `Finding.Fix` into a text edit.** It is a human-readable suggestion with no range or replacement contract. Use explicit per-check transformations only after their syntax and semantic preservation are tested.
+- **Turn `Finding.Fix` into a text edit.** It is a human-readable suggestion with no range or replacement contract. Only the three transformations under "Suggested Fixes" are offered, each with a proof and a verification step.
 - **Return unversioned edits for clients without versioned workspace edits.** This removes the stale-document guard exactly where the client cannot enforce it. Omit changing actions for those clients.
 
 ## Testing
 
 Add JSON-RPC tests for lint error/warning/hint severity, stable check codes, exact UTF-16 ranges, directive suppression, malformed/unused directives, syntax/compile failures, and CLI/LSP finding parity. Cover an analysis panic and ensure old findings are not published for a new version.
 
-For actions, test matching and mismatching version/check/range/data, suppression insertion with LF/CRLF/CR, existing applicable directives, no duplicate action, versioned `documentChanges`, advertised and unadvertised client command support, and the absence of automatic shadowed-alternative deletion. Apply each returned edit to the captured source and verify it targets the intended finding.
+For actions, test matching and mismatching version/check/range/data, suppression insertion with LF/CRLF/CR, existing applicable directives, no duplicate action, versioned `documentChanges`, advertised and unadvertised client command support, and the absence of automatic shadowed-alternative deletion. For each suggested fix, test the offered edit and the cases that get none, force a wrong rewrite to show each verification step (compile, finding set, start rules, rule types, cancellation) rejects it, and apply the edit to confirm the grammar recompiles without the finding and without a new one. Apply each returned edit to the captured source and verify it targets the intended finding.
 
 For responsiveness, use controlled barriers in analysis phases to send a newer change, close, request cancellation, shutdown and exit while work is pending. Verify coalescing, bounded workers, cancellation latency at each polling boundary, exactly one response per request, no stale diagnostics or edits, and no writes from workers. Race-test actor/worker ownership. Exercise multi-file concurrency and a large generated grammar without timing assertions.
 
@@ -1174,4 +1187,4 @@ as read from the sources; no real VS Code was run.
 - The worker count (4), admission cap (64) and compiler poll stride (16) follow from the measurements above on one machine; the longest stretch that recurs in every run on the largest grammar is about 0.4 ms. Clients that keep many requests outstanding were not measured.
 - **Proposed lint scope:** enable all existing checks for every compilable open grammar, with source directives as the suppression mechanism. An owner may instead choose a configurable lint set if editor noise is observed; no such setting is part of this proposal.
 - **Proposed explanation command:** use the small `pego.showExplanation` command handled by the VS Code extension. A portable protocol-only explanation request is another option, but would add a custom request method and editor UI contract.
-- No grammar-changing action is approved by this design until each transformation has a check-specific proof and review.
+- No grammar-changing action beyond the three under "Suggested Fixes" is approved; each further one needs its own proof and review. The client shapes of the VS Code fix command and the proofs were exercised by tests and mutants, not in a running editor.
