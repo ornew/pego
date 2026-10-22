@@ -35,7 +35,22 @@ type codeAction struct {
 	Diagnostics []Diagnostic   `json:"diagnostics"`
 	Edit        *actionEdit    `json:"edit,omitempty"`
 	Command     *actionCommand `json:"command,omitempty"`
+	Data        any            `json:"data,omitempty"`
 }
+
+// actionData is the data of a code action whose edit the client resolves: the finding it is for,
+// and which edit to compute.
+type actionData struct {
+	findingData
+	Action string `json:"action"`
+}
+
+const (
+	actionSuppress = "suppress"
+	actionFix      = "fix"
+)
+
+func suppressTitle(check string) string { return "Suppress " + check + " on this finding line" }
 
 // lintFindings shares the already successful compilation with the linter.
 // Reachability is checked from the grammar's default start rule.
@@ -120,19 +135,24 @@ func (d *document) lintDiagnosticsContext(ctx context.Context) ([]Diagnostic, er
 		if !f.Pos.IsValid() {
 			continue
 		}
-		severity := 4
-		if f.Severity == lint.Error {
-			severity = 1
-		} else if f.Severity == lint.Warning {
-			severity = 2
-		}
-		out = append(out, Diagnostic{Range: a.errorRange(f.Pos, false), Severity: severity, Source: "pego-lint", Message: f.Message, Code: f.Check,
-			Data: &findingData{URI: d.uri, Version: d.version, Generation: d.generation, Key: fmt.Sprintf("%d:%s", i, f.Check)}})
+		out = append(out, d.lintDiagnostic(i, f))
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 	return out, nil
+}
+
+// lintDiagnostic is the diagnostic of the finding f at index i of the findings of the document.
+func (d *document) lintDiagnostic(i int, f lint.Finding) Diagnostic {
+	severity := 4
+	if f.Severity == lint.Error {
+		severity = 1
+	} else if f.Severity == lint.Warning {
+		severity = 2
+	}
+	return Diagnostic{Range: d.analysis().errorRange(f.Pos, false), Severity: severity, Source: "pego-lint", Message: f.Message, Code: f.Check,
+		Data: &findingData{URI: d.uri, Version: d.version, Generation: d.generation, Key: fmt.Sprintf("%d:%s", i, f.Check)}}
 }
 
 func (s *Server) codeActionsControlled(params json.RawMessage, control *renderControl) (any, *rpcError) {
@@ -179,6 +199,11 @@ func (s *Server) codeActionsControlled(params json.RawMessage, control *renderCo
 	}
 	var fixer *lintFixer
 	fixerDone := false
+	lazy := s.client.resolvesEdits()
+	var findings []lint.Finding
+	if lazy {
+		findings, _ = d.analysis().lintFindingsContext(ctx)
+	}
 	for _, diagnostic := range current {
 		control.poll()
 		if ctx.Err() != nil {
@@ -210,28 +235,108 @@ func (s *Server) codeActionsControlled(params json.RawMessage, control *renderCo
 			control.poll()
 			out = append(out, codeAction{Title: "Explain " + diagnostic.Code, Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Command: &actionCommand{Title: "Explain lint finding", Command: "pego.showExplanation", Arguments: []any{diagnostic.Code, diagnostic.Message, explanation}}})
 		}
-		if s.client.Workspace.WorkspaceEdit.DocumentChanges {
-			edit, ok := d.suppressionEditControlled(ctx, diagnostic, control)
-			control.check()
-			if ok {
-				control.poll()
-				out = append(out, codeAction{Title: "Suppress " + diagnostic.Code + " on this finding line", Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Edit: &actionEdit{DocumentChanges: []textDocumentEdit{{TextDocument: versionedTextDocumentIdentifier{URI: d.uri, Version: version}, Edits: []TextEdit{edit}}}}})
+		if !s.client.Workspace.WorkspaceEdit.DocumentChanges {
+			continue
+		}
+		if lazy {
+			// The edits are computed when the client resolves the action: the verification
+			// of each costs a compilation and a lint run of an edited copy.
+			data := func(action string) *actionData {
+				return &actionData{findingData: *diagnostic.Data, Action: action}
 			}
-			// A change that cannot alter what the grammar matches or builds, proved for its kind
-			// and checked on the edited grammar.
-			if !fixerDone {
-				fixer, fixerDone = d.fixer(ctx), true
+			if diagnostic.Code != lint.CheckDirective {
+				out = append(out, codeAction{Title: suppressTitle(diagnostic.Code), Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Data: data(actionSuppress)})
 			}
-			if fix, ok := fixer.fix(diagnostic, control); ok {
-				control.poll()
-				out = append(out, codeAction{Title: fix.title, Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Edit: &actionEdit{DocumentChanges: []textDocumentEdit{{TextDocument: versionedTextDocumentIdentifier{URI: d.uri, Version: version}, Edits: []TextEdit{fix.edit}}}}})
+			if i, ok := findingIndex(diagnostic.Data.Key); ok && i < len(findings) {
+				if title, ok := d.fixTitle(findings[i]); ok {
+					out = append(out, codeAction{Title: title, Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Data: data(actionFix)})
+				}
 			}
+			continue
+		}
+		edit, ok := d.suppressionEditControlled(ctx, diagnostic, control)
+		control.check()
+		if ok {
+			control.poll()
+			out = append(out, codeAction{Title: suppressTitle(diagnostic.Code), Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Edit: versionedEdit(d.uri, version, edit)})
+		}
+		// A change that cannot alter what the grammar matches or builds, proved for its kind
+		// and checked on the edited grammar.
+		if !fixerDone {
+			fixer, fixerDone = d.fixer(ctx), true
+		}
+		if fix, ok := fixer.fix(diagnostic, control); ok {
+			control.poll()
+			out = append(out, codeAction{Title: fix.title, Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Edit: versionedEdit(d.uri, version, fix.edit)})
 		}
 	}
 	if d.version != version {
 		return []codeAction{}, nil
 	}
 	return out, nil
+}
+
+func versionedEdit(uri string, version int, edit TextEdit) *actionEdit {
+	return &actionEdit{DocumentChanges: []textDocumentEdit{{TextDocument: versionedTextDocumentIdentifier{URI: uri, Version: version}, Edits: []TextEdit{edit}}}}
+}
+
+// codeActionResolve computes the edit of a code action that listed none: the suppression or the
+// fix of one finding, with the same verification as when the actions are listed with their edits.
+// An action whose edit cannot be proven is returned without one, so applying it changes nothing.
+func (s *Server) codeActionResolve(params json.RawMessage) (any, *rpcError) {
+	return renderRequest(s.requestContext, func(control *renderControl) (any, *rpcError) {
+		return s.codeActionResolveControlled(params, control)
+	})
+}
+
+func (s *Server) codeActionResolveControlled(params json.RawMessage, control *renderControl) (any, *rpcError) {
+	control.poll()
+	data := &actionData{}
+	item := codeAction{Data: data}
+	if err := decode(params, &item); err != nil {
+		return nil, err
+	}
+	d, err := s.doc(data.URI)
+	if err != nil {
+		return nil, err
+	}
+	ctx := s.requestContext
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	cancelled := &rpcError{Code: codeRequestCancelled, Message: "request cancelled"}
+	if !s.client.Experimental.Pego.LintDiagnostics || !s.client.Workspace.WorkspaceEdit.DocumentChanges {
+		return item, nil
+	}
+	findings, lintErr := d.analysis().lintFindingsContext(ctx)
+	if lintErr != nil {
+		return nil, cancelled
+	}
+	i, ok := findingIndex(data.Key)
+	// An action for another version of the document, or for a finding the document no longer has,
+	// gets no edit.
+	if !ok || i >= len(findings) || d.version != data.Version || d.generation != data.Generation || data.Key != fmt.Sprintf("%d:%s", i, findings[i].Check) {
+		return item, nil
+	}
+	diagnostic := d.lintDiagnostic(i, findings[i])
+	switch data.Action {
+	case actionSuppress:
+		if title := suppressTitle(findings[i].Check); title == item.Title {
+			if edit, ok := d.suppressionEditControlled(ctx, diagnostic, control); ok {
+				item.Edit = versionedEdit(d.uri, d.version, edit)
+			}
+		}
+	case actionFix:
+		if title, ok := d.fixTitle(findings[i]); ok && title == item.Title {
+			if fix, ok := d.fixerFor(ctx, i).fix(diagnostic, control); ok {
+				item.Edit = versionedEdit(d.uri, d.version, fix.edit)
+			}
+		}
+	}
+	if ctx.Err() != nil {
+		return nil, cancelled
+	}
+	return item, nil
 }
 
 func rangesOverlap(a, b Range) bool {

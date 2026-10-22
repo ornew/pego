@@ -61,6 +61,8 @@ func TestRewrites(t *testing.T) {
 		{"a lookahead that always succeeds", "rule main = \"a\" &\"b\"* \"c\"", CheckUselessLookahead, []string{"rule main = \"a\"  \"c\""}, 1},
 		{"a lookahead under a discard", "rule main = g:(\"a\" - &\"b\"* \"c\") => len($g.Value)", CheckUselessLookahead, nil, 1},
 		{"a lookahead under a discard before a literal", "rule main = \"a\" - &\"b\"* \"c\" => \"k\"", CheckUselessLookahead, nil, 1},
+		{"a lookahead in a sequence of two", "rule main = &\"b\"* \"c\"", CheckUselessLookahead, nil, 1},
+		{"a lookahead in a sequence of two in an inline action", "rule main = (g:(&\"b\"* \"cc\") => len($g.Value)) \"d\"", CheckUselessLookahead, nil, 1},
 		{"a lookahead in a group", "rule main = (\"a\" (&\"b\"*) \"c\")", CheckUselessLookahead, nil, 1},
 		{"a lookahead with a call", "rule main = &w* \"c\"\nrule w = \"a\"", CheckUselessLookahead, nil, 1},
 		{"a lookahead that never succeeds", "rule main = !\"a\"? \"c\"", CheckUselessLookahead, nil, 1},

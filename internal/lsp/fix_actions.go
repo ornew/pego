@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ornew/pego/internal/engine"
 	"github.com/ornew/pego/internal/lint"
 )
 
@@ -44,6 +45,36 @@ func (d *document) fixer(ctx context.Context) *lintFixer {
 		return nil
 	}
 	return &lintFixer{d: d, ctx: ctx, findings: findings, rewrites: rewrites}
+}
+
+// fixerFor returns the fixer of the finding at index i alone, computing only its rewrite.
+func (d *document) fixerFor(ctx context.Context, i int) *lintFixer {
+	a := d.analysis()
+	findings, err := a.lintFindingsContext(ctx)
+	if err != nil || i < 0 || i >= len(findings) || a.prog == nil {
+		return nil
+	}
+	one, err := lint.Rewrites(ctx, a.g, a.prog.DefaultStart(), findings[i:i+1])
+	if err != nil {
+		return nil
+	}
+	rewrites := make([]lint.Rewrite, len(findings))
+	rewrites[i] = one[0]
+	return &lintFixer{d: d, ctx: ctx, findings: findings, rewrites: rewrites}
+}
+
+// fixTitle returns the title of the fix that a finding can have, without computing the fix. A
+// title does not depend on the rewrite, so it is the same before and after the fix is resolved.
+func (d *document) fixTitle(f lint.Finding) (string, bool) {
+	switch f.Check {
+	case lint.CheckCharClass:
+		return "Merge the overlapping ranges of this character class", true
+	case lint.CheckUselessLookahead:
+		return "Remove the lookahead that always succeeds", true
+	case lint.CheckUnreachableRule:
+		return "Remove the unused rule " + f.Rule, path.Base(d.uri) != "pego.pego"
+	}
+	return "", false
 }
 
 // fix returns the proven fix of the diagnostic, if it has one.
@@ -92,23 +123,18 @@ func (d *document) verifiedFixControlled(ctx context.Context, findings []lint.Fi
 	if start < 0 || start >= end || end > len(d.text) {
 		return lintFix{}, false
 	}
-	var title string
+	// Nothing in the grammar of the language server itself is removed on a suggestion.
+	title, ok := d.fixTitle(f)
+	if !ok {
+		return lintFix{}, false
+	}
 	removed := ""
 	switch f.Check {
-	case lint.CheckCharClass:
-		title = "Merge the overlapping ranges of " + d.text[start:end]
 	case lint.CheckUselessLookahead:
-		title = "Remove the lookahead that always succeeds"
 		start, end = lookaheadSpan(d.text, start, end)
 	case lint.CheckUnreachableRule:
-		// Nothing in the grammar of the language server itself is removed on a suggestion.
-		if path.Base(d.uri) == "pego.pego" {
-			return lintFix{}, false
-		}
-		title, removed = "Remove the unused rule "+f.Rule, f.Rule
+		removed = f.Rule
 		start, end = ruleSpan(d.text, start, end)
-	default:
-		return lintFix{}, false
 	}
 	candidateText := d.text[:start] + rw.NewText + d.text[end:]
 	candidate, err := analyzeContextSafely(ctx, candidateText)
@@ -140,6 +166,10 @@ func (d *document) verifiedFixControlled(ctx context.Context, findings []lint.Fi
 		if wasOK != nowOK || wasShape != nowShape {
 			return lintFix{}, false
 		}
+	}
+	// The rules of the inline actions are not declared rules: compare them in the lowered grammars.
+	if !d.inlineActionsAgree(ctx, candidate, removed, control) {
+		return lintFix{}, false
 	}
 	if err := ctx.Err(); err != nil {
 		return lintFix{}, false
@@ -260,4 +290,46 @@ func commentLinesAbove(text string, lastStart, end int) int {
 		}
 	}
 	return -1
+}
+
+// inlineActionsAgree reports whether each inline action keeps the type and the shapes of its value
+// in the edited document. An inline action is a rule of its own that the compiler generates, so it
+// is not among the declared rules compared above; lowering both grammars gives it a hidden rule of a
+// name that does not depend on the edit (the holder and its number), and the lowered grammars are
+// compared like the declared ones. The inline actions of removed are gone and are not compared.
+func (d *document) inlineActionsAgree(ctx context.Context, candidate *analysis, removed string, control *renderControl) bool {
+	before, names, err := engine.LowerInlineActions(d.analysis().g)
+	if err != nil {
+		return false
+	}
+	after, afterNames, err := engine.LowerInlineActions(candidate.g)
+	if err != nil {
+		return false
+	}
+	if names == nil || afterNames == nil {
+		return names == nil && afterNames == nil
+	}
+	wasProg, err := compileContextSafely(ctx, before)
+	if err != nil {
+		return false
+	}
+	nowProg, err := compileContextSafely(ctx, after)
+	if err != nil {
+		return false
+	}
+	for _, rd := range before.Rules() {
+		control.poll()
+		holder, generated := names.Holder(rd.Name)
+		if !generated || holder == removed {
+			continue
+		}
+		was, wasOK := wasProg.RuleType(rd.Name)
+		now, nowOK := nowProg.RuleType(rd.Name)
+		wasShape, wasShapeOK := wasProg.ShapeSignature(rd.Name, control.poll)
+		nowShape, nowShapeOK := nowProg.ShapeSignature(rd.Name, control.poll)
+		if wasOK != nowOK || was != now || wasShapeOK != nowShapeOK || wasShape != nowShape {
+			return false
+		}
+	}
+	return true
 }

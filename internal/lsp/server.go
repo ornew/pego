@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 )
 
 // Server is a language server for one client connection.
@@ -59,6 +60,14 @@ type clientCapabilities struct {
 				DocumentationFormat []string `json:"documentationFormat"`
 			} `json:"completionItem"`
 		} `json:"completion"`
+		CodeAction struct {
+			// DataSupport and ResolveSupport allow code actions without an edit that the client
+			// resolves one at a time.
+			DataSupport    bool `json:"dataSupport"`
+			ResolveSupport struct {
+				Properties []string `json:"properties"`
+			} `json:"resolveSupport"`
+		} `json:"codeAction"`
 		Rename struct {
 			// PrepareSupport allows the server to announce prepareRename.
 			PrepareSupport bool `json:"prepareSupport"`
@@ -69,6 +78,11 @@ type clientCapabilities struct {
 			HierarchicalDocumentSymbolSupport bool `json:"hierarchicalDocumentSymbolSupport"`
 		} `json:"documentSymbol"`
 	} `json:"textDocument"`
+}
+
+// resolvesEdits reports whether the client resolves the edit of a code action on request.
+func (c *clientCapabilities) resolvesEdits() bool {
+	return c.TextDocument.CodeAction.DataSupport && slices.Contains(c.TextDocument.CodeAction.ResolveSupport.Properties, "edit")
 }
 
 type state int
@@ -289,6 +303,7 @@ func init() {
 		"textDocument/rename":              (*Server).rename,
 		"textDocument/completion":          (*Server).completion,
 		"textDocument/codeAction":          (*Server).codeActions,
+		"codeAction/resolve":               (*Server).codeActionResolve,
 		"textDocument/semanticTokens/full": (*Server).semanticTokens,
 	}
 }
@@ -307,6 +322,10 @@ func (s *Server) initialize(params json.RawMessage) (any, *rpcError) {
 	if s.client.TextDocument.Rename.PrepareSupport {
 		rename = map[string]any{"prepareProvider": true}
 	}
+	var codeActions any = s.client.Experimental.Pego.LintDiagnostics
+	if s.client.Experimental.Pego.LintDiagnostics && s.client.resolvesEdits() {
+		codeActions = map[string]any{"resolveProvider": true}
+	}
 	return map[string]any{
 		"capabilities": map[string]any{
 			"positionEncoding": "utf-16",
@@ -321,7 +340,7 @@ func (s *Server) initialize(params json.RawMessage) (any, *rpcError) {
 			"documentHighlightProvider":  true,
 			"documentSymbolProvider":     true,
 			"hoverProvider":              true,
-			"codeActionProvider":         s.client.Experimental.Pego.LintDiagnostics,
+			"codeActionProvider":         codeActions,
 			"renameProvider":             rename,
 			"completionProvider":         map[string]any{"triggerCharacters": []string{"@", "#", "$", "."}},
 			"semanticTokensProvider": map[string]any{

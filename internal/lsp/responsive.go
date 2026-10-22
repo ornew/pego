@@ -189,19 +189,28 @@ func (a *responsiveActor) handle(message *incoming) error {
 		s.queue.cancel()
 		return s.handle(message)
 	}
-	if !message.hasID() || !strings.HasPrefix(message.Method, "textDocument/") {
+	if !message.hasID() || !strings.HasPrefix(message.Method, "textDocument/") && message.Method != "codeAction/resolve" {
 		return s.handle(message)
 	}
 	if _, ok := requestHandlers[message.Method]; !ok {
 		return s.handle(message)
 	}
+	// A code action to resolve names its document in the data the server gave it.
 	var params struct {
 		TextDocument textDocumentIdentifier `json:"textDocument"`
+		Data         *findingData           `json:"data"`
 	}
 	if err := decode(message.Params, &params); err != nil {
 		return s.out.reply(message.ID, nil, err)
 	}
-	d, err := s.doc(params.TextDocument.URI)
+	uri := params.TextDocument.URI
+	if message.Method == "codeAction/resolve" {
+		if params.Data == nil {
+			return s.out.reply(message.ID, nil, &rpcError{Code: codeInvalidParams, Message: "code action without data"})
+		}
+		uri = params.Data.URI
+	}
+	d, err := s.doc(uri)
 	if err != nil {
 		return s.out.reply(message.ID, nil, err)
 	}

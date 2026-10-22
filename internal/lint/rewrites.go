@@ -17,8 +17,9 @@ import (
 //     every range, and that negation is unchanged. A class that also matches punctuation between
 //     letters, such as [A-z], has no Rewrite, because the writer must say which characters were meant.
 //   - useless-lookahead, for a lookahead that always succeeds: it is removed, but only where it is
-//     itself an item of a sequence. Under a discard "-", a label or any operator it is not removed,
-//     because the "-" would move onto the next item and change the values. The proof is that the
+//     itself an item of a sequence of at least three items, so that the sequence keeps at least two
+//     and stays a tuple. Under a discard "-", a label or any operator it is not removed, because the
+//     "-" would move onto the next item and change the values. The proof is that the
 //     lookahead matches only a combination of literals, character classes, any-character, groups,
 //     sequences, choices, options and repetitions, so it holds no capture, cut, call, predicate,
 //     recovery or attribute, and a lookahead consumes nothing and has no value.
@@ -183,7 +184,8 @@ func (l *linter) lookaheadRewrite(f Finding) Rewrite {
 	return Rewrite{Start: src.Pos, End: src.End}
 }
 
-// seqItem reports whether e is itself an item of a sequence of at least two items. A lookahead that
+// seqItem reports whether e is itself an item of a sequence of at least three items, so that at
+// least two remain and the sequence stays a tuple. A lookahead that
 // another construct holds is not: under a discard "-", deleting it would move the "-" onto the next
 // item, and a label, an operator or a repetition would be left without its operand.
 func (l *linter) seqItem(e grammar.Expr) bool {
@@ -193,7 +195,7 @@ func (l *linter) seqItem(e grammar.Expr) bool {
 		control.poll()
 		walkExprControlled(r.Expr, func(x grammar.Expr) {
 			control.poll()
-			if seq, ok := x.(*grammar.Seq); ok && len(seq.Items) >= 2 {
+			if seq, ok := x.(*grammar.Seq); ok && len(seq.Items) >= 3 {
 				found = found || slices.ContainsFunc(seq.Items, func(it grammar.Expr) bool { control.poll(); return it == e })
 			}
 		}, control)
