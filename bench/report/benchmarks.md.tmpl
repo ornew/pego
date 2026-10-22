@@ -119,21 +119,22 @@ Memory per recognition (bytes allocated / number of allocations):
 
 ### Preparation (Time Until a Grammar Is Ready to Use)
 
-Loading a `.pegoc` file includes the execution setup performed on the first parse after loading (assembling closures or
-preparing the VM).
+Loading a `.pegoc` file includes the execution setup performed on the first parse after loading (preparing the VM). A
+compiled grammar holds the module of one mode and runs on the bytecode backend; each column loads the file of its mode
+and sets it up with a parse that the mode serves.
 
-| Grammar | Compile from source | `.pegoc` → closure | `.pegoc` → bytecode | `.pegoc` (no AST) → bytecode |
+| Grammar | Compile from source | `.pegoc` parse mode | `.pegoc` recognize mode | `.pegoc` document mode |
 |:--|--:|--:|--:|--:|
 {{- range list "json" "minilang"}}
-| {{.}} | {{t (printf "Prepare/%s/source" .)}} | {{t (printf "Prepare/%s/pegoc/closure" .)}} | {{t (printf "Prepare/%s/pegoc/bytecode" .)}} | {{t (printf "Prepare/%s/pegoc-noast/bytecode" .)}} |
+| {{.}} | {{t (printf "Prepare/%s/source" .)}} | {{t (printf "Prepare/%s/pegoc/parse/bytecode" .)}} | {{t (printf "Prepare/%s/pegoc/recognize/bytecode" .)}} | {{t (printf "Prepare/%s/pegoc/document/bytecode" .)}} |
 {{- end}}
 
 Memory (bytes allocated / number of allocations) and file sizes:
 
-| Grammar | Source | Compile from source | `.pegoc` (with the AST) | `.pegoc` → closure | `.pegoc` → bytecode | `.pegoc` (no AST) | `.pegoc` (no AST) → bytecode |
-|:--|--:|--:|--:|--:|--:|--:|--:|
-| json | {{fileSize "parsers/json/json.pego"}} | {{mem "Prepare/json/source"}} | {{fmtBytes (metric "Prepare/json/pegoc/closure" "file-bytes")}} | {{mem "Prepare/json/pegoc/closure"}} | {{mem "Prepare/json/pegoc/bytecode"}} | {{fmtBytes (metric "Prepare/json/pegoc-noast/bytecode" "file-bytes")}} | {{mem "Prepare/json/pegoc-noast/bytecode"}} |
-| minilang | {{fileSize "examples/minilang/minilang.pego"}} | {{mem "Prepare/minilang/source"}} | {{fmtBytes (metric "Prepare/minilang/pegoc/closure" "file-bytes")}} | {{mem "Prepare/minilang/pegoc/closure"}} | {{mem "Prepare/minilang/pegoc/bytecode"}} | {{fmtBytes (metric "Prepare/minilang/pegoc-noast/bytecode" "file-bytes")}} | {{mem "Prepare/minilang/pegoc-noast/bytecode"}} |
+| Grammar | Source | Compile from source | `.pegoc` parse mode | Load | `.pegoc` recognize mode | Load | `.pegoc` document mode | Load |
+|:--|--:|--:|--:|--:|--:|--:|--:|--:|
+| json | {{fileSize "parsers/json/json.pego"}} | {{mem "Prepare/json/source"}} | {{fmtBytes (metric "Prepare/json/pegoc/parse/bytecode" "file-bytes")}} | {{mem "Prepare/json/pegoc/parse/bytecode"}} | {{fmtBytes (metric "Prepare/json/pegoc/recognize/bytecode" "file-bytes")}} | {{mem "Prepare/json/pegoc/recognize/bytecode"}} | {{fmtBytes (metric "Prepare/json/pegoc/document/bytecode" "file-bytes")}} | {{mem "Prepare/json/pegoc/document/bytecode"}} |
+| minilang | {{fileSize "examples/minilang/minilang.pego"}} | {{mem "Prepare/minilang/source"}} | {{fmtBytes (metric "Prepare/minilang/pegoc/parse/bytecode" "file-bytes")}} | {{mem "Prepare/minilang/pegoc/parse/bytecode"}} | {{fmtBytes (metric "Prepare/minilang/pegoc/recognize/bytecode" "file-bytes")}} | {{mem "Prepare/minilang/pegoc/recognize/bytecode"}} | {{fmtBytes (metric "Prepare/minilang/pegoc/document/bytecode" "file-bytes")}} | {{mem "Prepare/minilang/pegoc/document/bytecode"}} |
 
 ## All Results
 
