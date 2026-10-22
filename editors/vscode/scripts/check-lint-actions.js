@@ -7,19 +7,19 @@ const { loadExtension, deferred, within } = require('./extension-harness');
 const manifest = require('../package.json');
 
 const uri = { toString: () => 'file:///lint.pego' };
-const document = () => ({ uri, version: 1, isClosed: false });
+const document = () => ({ uri, version: 1, isClosed: false, lineCount: 4 });
 const token = () => ({ isCancellationRequested: false });
-const diagnostic = (version = 1, generation = 1) => ({
-  source: 'pego-lint', code: 'unused-capture', message: 'capture b is unused',
+const diagnostic = (version = 1, generation = 1, code = 'unused-capture') => ({
+  source: 'pego-lint', code, message: 'capture b is unused',
   data: { uri: uri.toString(), version, generation, key: '0:unused-capture' },
 });
 const explanation = (d = diagnostic()) => ({
   title: 'Explain unused-capture', diagnostics: [d],
   command: { command: 'pego.showExplanation', arguments: ['unused-capture', d.message, 'A discarded capture.'] },
 });
-const suppression = (d = diagnostic(), target = uri, text = '// lint:ignore unused-capture\n') => ({
+const suppression = (d = diagnostic(), target = uri, text = '// lint:ignore unused-capture\n', line = 1, character = 0) => ({
   title: 'Suppress unused-capture on this finding line', diagnostics: [d],
-  edit: { entries: () => [[target, [{ range: { start: { line: 1, character: 0 }, end: { line: 1, character: 0 } }, newText: text }]]] },
+  edit: { entries: () => [[target, [{ range: { start: { line, character }, end: { line, character } }, newText: text }]]] },
 });
 const publish = (h, d) => h.clients.at(-1).clientOptions.middleware.handleDiagnostics(uri, d, () => {});
 const actions = (h, doc, next, cancellation = token()) =>
@@ -54,7 +54,10 @@ async function main() {
     const [explain] = await actions(h, d, () => [explanation(), suppression()]);
     assert.equal(await execute(h, explain), true);
     assert.equal(h.information.length, 1);
-    assert.deepEqual(await actions(h, d, () => [suppression()]), [], 'unversioned WorkspaceEdit is not offered');
+    const [suppress] = await actions(h, d, () => [suppression()]);
+    assert.equal(suppress.edit, undefined, 'the unversioned WorkspaceEdit is replaced by a guarded command');
+    assert.equal(suppress.command.command, 'pego.applyLintSuppression');
+    assert.deepEqual(suppress.command.arguments.slice(0, 2), [1, '// lint:ignore unused-capture\n']);
     assert.equal(await h.commands['pego.applyLintSuppression']({}, {}), false, 'legacy suppression commands are refused');
     assert.equal(h.applied.length, 0);
     d.version = 2;
@@ -95,28 +98,79 @@ async function main() {
   });
   await using(true, async (h) => {
     const d = document(); h.workspace.textDocuments = [d]; publish(h, [diagnostic()]);
-    const pendingApply = deferred();
-    let applyCalls = 0;
-    h.workspace.applyEdit = () => { applyCalls++; return pendingApply.promise; };
-    const candidates = [
-      ['another valid line', suppression()],
-      ['another valid check', suppression(diagnostic(), uri, '// lint:ignore shadowed-alternative\n')],
-      ['another valid newline', suppression(diagnostic(), uri, '// lint:ignore unused-capture\r\n')],
+    const unsafe = [
+      ['wrong check text', suppression(diagnostic(), uri, '// lint:ignore shadowed-alternative\n')],
+      ['text for another check', suppression(diagnostic(1, 1, 'shadowed-alternative'))],
+      ['not a directive', suppression(diagnostic(), uri, 'delete grammar source')],
+      ['directive without line break', suppression(diagnostic(), uri, '// lint:ignore unused-capture')],
+      ['directive with trailing text', suppression(diagnostic(), uri, '// lint:ignore unused-capture\nrule x = "y"\n')],
+      ['mid-line position', suppression(diagnostic(), uri, undefined, 1, 3)],
+      ['negative line', suppression(diagnostic(), uri, undefined, -1)],
       ['malformed range', { ...suppression(), edit: { entries: () => [[uri, [{ newText: '// lint:ignore unused-capture\n' }]]] } }],
-      ['extra payload operation', { ...suppression(), edit: { entries: () => [[uri, [{ range: {}, newText: '// lint:ignore unused-capture\n' }]]] } }],
-      ['unknown token', suppression()],
+      ['empty range object', { ...suppression(), edit: { entries: () => [[uri, [{ range: {}, newText: '// lint:ignore unused-capture\n' }]]] } }],
+      ['spanning range', { ...suppression(), edit: { entries: () => [[uri, [{ range: { start: { line: 1, character: 0 }, end: { line: 2, character: 0 } }, newText: '// lint:ignore unused-capture\n' }]]] } }],
+      ['two edits', { ...suppression(), edit: { entries: () => [[uri, [
+        { range: { start: { line: 1, character: 0 }, end: { line: 1, character: 0 } }, newText: '// lint:ignore unused-capture\n' },
+        { range: { start: { line: 2, character: 0 }, end: { line: 2, character: 0 } }, newText: '// lint:ignore unused-capture\n' }]]] } }],
+      ['two documents', { ...suppression(), edit: { entries: () => [...suppression().edit.entries(), ...suppression(diagnostic(), { toString: () => 'file:///other.pego' }).edit.entries()] } }],
+      ['two findings', { ...suppression(), diagnostics: [diagnostic(), diagnostic()] }],
+      ['edit and command', { ...suppression(), command: { command: 'pego.showExplanation', arguments: [] } }],
     ];
-    for (const [name, candidate] of candidates) {
+    for (const [name, candidate] of unsafe) {
       assert.deepEqual(await actions(h, d, () => [candidate]), [], name + ': unsafe edit is not surfaced');
     }
     assert.equal(h.applied.length, 0, 'tampered actions never reach the editor');
-    assert.equal(applyCalls, 0, 'no edit enters VS Code asynchronous application');
-    const legacyInvocation = h.commands['pego.applyLintSuppression']({}, {});
+    for (const text of ['// lint:ignore unused-capture\r\n', '// lint:ignore unused-capture\r']) {
+      const [ok] = await actions(h, d, () => [suppression(diagnostic(), uri, text)]);
+      assert.equal(ok.command.arguments[1], text, 'the document newline convention is kept');
+    }
+  });
+  await using(true, async (h) => {
+    const d = document(); h.workspace.textDocuments = [d]; publish(h, [diagnostic()]);
+    h.mainVersion = () => d.version;
+    const [action] = await actions(h, d, () => [suppression()]);
+    const guard = action.command.arguments[2];
+    // The edit enters applyEdit during the command call itself, stamped with the
+    // analyzed version, before any await can interleave a document change.
+    const pending = execute(h, action);
+    assert.equal(h.applied.length, 1, 'applyEdit is called synchronously');
+    assert.deepEqual(h.appliedVersions[0], [guard.version]);
+    const [[target, edits]] = h.applied[0].entries();
+    assert.equal(target, uri);
+    assert.deepEqual(edits.map((e) => [e.range.start.line, e.range.start.character, e.newText]), [[1, 0, '// lint:ignore unused-capture\n']]);
+    assert.equal(await pending, true);
+    // Replaying a command after an edit is refused before reaching the editor.
     d.version = 2;
-    pendingApply.resolve(true);
-    assert.equal(await legacyInvocation, false, 'a document change during async command completion cannot apply a stale suppression');
-    assert.equal(h.applied.length, 0, 'document changes during a pending apply cannot receive a stale suppression');
-    assert.equal(applyCalls, 0);
+    assert.equal(await execute(h, action), false, 'stale version is not applied');
+    assert.equal(await h.commands['pego.applyLintSuppression'](1, '// lint:ignore unused-capture\n', { ...guard, version: 2 }), false, 'a forged guard is refused');
+    assert.equal(await h.commands['pego.applyLintSuppression'](1, '// lint:ignore unused-capture\n', { ...guard, session: 'x' }), false, 'a guard from another session is refused');
+    assert.equal(h.applied.length, 1);
+    // A change the extension host has not seen yet is refused by the main thread.
+    d.version = 1; publish(h, [diagnostic()]);
+    const [again] = await actions(h, d, () => [suppression()]);
+    h.mainVersion = () => 2;
+    assert.equal(await execute(h, again), false, 'main thread refuses an edit stamped with an older version');
+    assert.equal(h.applied.length, 2);
+    // Arguments are validated again at execution time.
+    h.mainVersion = () => d.version;
+    const args = again.command.arguments;
+    for (const bad of [[-1, args[1]], [4, args[1]], [1.5, args[1]], [1, 'delete everything\n'], [1, '// lint:ignore a\nrule x = "y"\n'], [1, undefined]]) {
+      assert.equal(await h.commands['pego.applyLintSuppression'](...bad, args[2]), false, JSON.stringify(bad));
+    }
+    assert.equal(h.applied.length, 2);
+    // A new publication or a close invalidates a command already in a menu.
+    publish(h, [diagnostic(1, 2)]);
+    assert.equal(await execute(h, again), false, 'same-version publication advances generation');
+    publish(h, [diagnostic()]);
+    const [closing] = await actions(h, d, () => [suppression()]);
+    h.closedDocument(d);
+    assert.equal(await execute(h, closing), false, 'close invalidates the command');
+    assert.equal(h.applied.length, 2);
+  });
+  await using(false, async (h) => {
+    const d = document(); h.workspace.textDocuments = [d];
+    assert.equal(await h.commands['pego.applyLintSuppression'](1, '// lint:ignore unused-capture\n', {}), false, 'disabled lint applies nothing');
+    assert.equal(h.applied.length, 0);
   });
   await using(false, async (h) => {
     h.settings['server.experimentalLint'] = true;

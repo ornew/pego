@@ -26,6 +26,26 @@ function createLintActions(vscode, enabled, isCurrentClient) {
   const forgetDocument = (uri) => {
     latest.delete(uri);
   };
+  // A suppression is exactly one zero-width insertion of `// lint:ignore
+  // <check>` plus a line break at the start of a line of this document, for the
+  // check the single diagnostic reports. Anything else is not surfaced.
+  const suppressionText = (check, text) =>
+    typeof check === 'string' && /^[a-z][a-z0-9-]{0,99}$/.test(check) &&
+    (text === `// lint:ignore ${check}\n` || text === `// lint:ignore ${check}\r\n` || text === `// lint:ignore ${check}\r`);
+  const suppressionTarget = (edit, uri, findings) => {
+    if (findings.length !== 1 || typeof edit.entries !== 'function') return undefined;
+    const entries = edit.entries();
+    if (!Array.isArray(entries) || entries.length !== 1) return undefined;
+    const [target, edits] = entries[0];
+    if (!target || uriText(target) !== uri || !Array.isArray(edits) || edits.length !== 1) return undefined;
+    const { range, newText } = edits[0], code = findings[0].code;
+    const check = code && typeof code === 'object' ? code.value : code;
+    if (!range || !range.start || !range.end || !suppressionText(check, newText)) return undefined;
+    const { start, end } = range;
+    if (!Number.isSafeInteger(start.line) || start.line < 0 || start.character !== 0 ||
+        end.line !== start.line || end.character !== 0) return undefined;
+    return { line: start.line, text: newText };
+  };
   const feature = {
     fillClientCapabilities(capabilities) {
       if (!enabled) return;
@@ -70,10 +90,17 @@ function createLintActions(vscode, enabled, isCurrentClient) {
               !Array.isArray(action.command.arguments) || action.command.arguments.length !== 3) return [];
           action.command = { ...action.command, arguments: [...(action.command.arguments || []), guard] };
         } else if (action.edit) {
-          // The VS Code WorkspaceEdit conversion drops the LSP document
-          // version. workspace.applyEdit has no conditional version parameter,
-          // so a version check here cannot prevent edits racing with apply.
-          return [];
+          // The LanguageClient converts the LSP edit to a WorkspaceEdit that
+          // carries no document version. Surface it as a command instead; the
+          // command applies a freshly built edit under a synchronous version
+          // check (see applySuppression).
+          const target = suppressionTarget(action.edit, uri, findings);
+          if (!target) return [];
+          action.edit = undefined;
+          action.command = {
+            title: action.title, command: 'pego.applyLintSuppression',
+            arguments: [target.line, target.text, guard],
+          };
         } else {
           return [];
         }
@@ -90,10 +117,24 @@ function createLintActions(vscode, enabled, isCurrentClient) {
       await vscode.window.showInformationMessage(`PEGO ${check}: ${message}\n${explanation}`);
       return true;
     },
-    // Kept as a rejecting handler for stale commands from an already-open menu.
-    // VS Code's WorkspaceEdit API cannot atomically enforce the LSP document
-    // version, so lint suppression edits are not applied automatically.
-    async applySuppression() { return false; },
+    // Applies a suppression only to the analyzed document version. VS Code's
+    // extension host stamps each text edit of workspace.applyEdit with the
+    // version of the document it holds at the moment of the call, and the
+    // main thread refuses the edit when its model has a different version. The
+    // check below and the call therefore run in one synchronous step: nothing
+    // may be awaited between them, or an edit event could slip in and the
+    // version stamp would describe a document that was never analyzed.
+    applySuppression(line, text, guard) {
+      if (!guardCurrent(guard) || !Number.isSafeInteger(line) || line < 0) return Promise.resolve(false);
+      const document = documentFor(guard.uri);
+      if (!document || document.version !== guard.version) return Promise.resolve(false);
+      const check = typeof text === 'string' ? /^\/\/ lint:ignore ([a-z][a-z0-9-]{0,99})(\r\n|\n|\r)$/.exec(text) : null;
+      if (!check || !suppressionText(check[1], text)) return Promise.resolve(false);
+      if (Number.isInteger(document.lineCount) && line >= document.lineCount) return Promise.resolve(false);
+      const edit = new vscode.WorkspaceEdit();
+      edit.insert(document.uri, new vscode.Position(line, 0), text);
+      return Promise.resolve(vscode.workspace.applyEdit(edit)).then((applied) => applied === true);
+    },
   };
 }
 

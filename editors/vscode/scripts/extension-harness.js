@@ -33,13 +33,22 @@ function loadExtension(plans = [], options = {}) {
   const h = {
     settings: { 'server.enabled': true, 'server.path': '/pego' },
     commands: {}, events: [], clients: [], running: new Set(), resources: new Set(),
-    created: 0, maxRunning: 0, information: [], applied: [],
+    created: 0, maxRunning: 0, information: [], applied: [], appliedVersions: [],
   };
   const record = (event) => { if (options.record !== false) h.events.push(event); };
   const vscode = {
     workspace: {
       textDocuments: [],
-      applyEdit: (edit) => { h.applied.push(edit); return Promise.resolve(true); },
+      // Like the extension host, stamp the edit with the version of the document
+      // held at the moment of the call. The main thread (h.mainVersion, when
+      // set) refuses an edit whose stamp differs from its own model version.
+      applyEdit: (edit) => {
+        const stamps = edit.entries().map(([uri]) =>
+          vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString())?.version);
+        h.applied.push(edit); h.appliedVersions.push(stamps);
+        const main = h.mainVersion;
+        return Promise.resolve(!main || stamps.every((v) => v === undefined || v === main()));
+      },
       onDidCloseTextDocument: (f) => { h.closedDocument = f; return { dispose() {} }; },
       getConfiguration: () => ({ get: (key, fallback) => key in h.settings ? h.settings[key] : fallback }),
       onDidChangeConfiguration: (f) => { h.configuration = f; return { dispose() {} }; },
