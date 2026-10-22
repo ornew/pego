@@ -122,6 +122,9 @@ type GenOptions struct {
 	disableGuardedClasses bool
 	// boxedComparisons evaluates comparisons of fields as other binary operations, for tests.
 	boxedComparisons bool
+	// flowTyped prints the typed rules that the Go-local lowering covers from Flow IR
+	// (gen_flow.go), in parsers whose options it supports (generator.flowSupported).
+	flowTyped bool
 	// decisions, if set, receives the lowering decisions of the generator (gen_decisions.go), for
 	// tests.
 	decisions *genDecisions
@@ -218,7 +221,7 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
 		}
 	}
-	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap}
+	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, flowTyped: opts.flowTyped}
 	if opts.Stream {
 		gen.streamStart = start
 	}
@@ -551,6 +554,11 @@ type generator struct {
 	disableTypedObjectSlabs     bool
 	disableTypedListSlabs       bool
 	disableTypedOutputBootstrap bool
+	flowTyped                   bool
+	// flow holds the Core IR of the typed rules while they are printed from Flow IR, or nil;
+	// flowRules counts the rules printed from Flow IR.
+	flow      *flowState
+	flowRules int
 	// nodeScopes records the frame layouts shared by typed rule metadata.
 	nodeScopes map[*rule][]string
 	// decisions, if set, receives the lowering decisions (gen_decisions.go).
@@ -753,7 +761,11 @@ func (g *generator) rules() {
 		if g.table == "trules" || directLeanOK(r) {
 			// Typed direct rules need no separate body. Value-free Node rules retain
 			// one for generic calls and external entry, whose caller owns depth.
-			if d := g.directRule(r); d != nil {
+			d := g.flowDirectRule(r)
+			if d == nil {
+				d = g.directRule(r)
+			}
+			if d != nil {
 				directs[r] = d
 				if g.table != "trules" {
 					bodies[r] = g.directLeanBody(r, d)
@@ -1216,7 +1228,12 @@ func (g *generator) method(comment, body string) string {
 // shaper returns the name of the package variable that holds the runtime shaper of the expression
 // e, its static shape (value_shape.go). Few distinct shapes occur, so the variables are shared.
 func (g *generator) shaper(e grammar.Expr) string {
-	lit := shaperLit(g.prog, e)
+	return g.shaperOf(shaperLit(g.prog, e))
+}
+
+// shaperOf returns the name of the package variable that holds the shaper of the literal lit,
+// declaring it on first use.
+func (g *generator) shaperOf(lit string) string {
 	if g.shaperNames == nil {
 		g.shaperNames = map[string]string{}
 	}
@@ -1481,6 +1498,11 @@ func (g *generator) refCall(e *grammar.Ref, build bool) string {
 	if !build && r.twin != nil {
 		r = r.twin
 	}
+	return g.ruleCall(r, min)
+}
+
+// ruleCall returns the call of the rule r from Operators Rule level min.
+func (g *generator) ruleCall(r *rule, min int) string {
 	_, operatorsRule := r.def.Expr.(*grammar.OperatorsRule)
 	switch {
 	case g.document && g.table == "rules":

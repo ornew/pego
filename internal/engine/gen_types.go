@@ -241,7 +241,13 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 	if needTyped {
 		// Emit the typed table if any public entry point can use it.
 		g.table = "trules"
+		if g.flowTyped && g.flowSupported() {
+			if err := g.startFlow(); err != nil {
+				return typedOutput{}, err
+			}
+		}
 		g.rules()
+		g.flow = nil
 		g.table = "rules"
 		t.typedRuntime(&b)
 	}

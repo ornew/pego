@@ -602,6 +602,12 @@ func TestGeneratedTypes(t *testing.T) {
 	if _, err := os.Stat(goBin); err != nil {
 		t.Skip("go command not found")
 	}
+	testGeneratedTypesCorpus(t, goBin, generatedTypesCases(t), GenOptions{convertTypes: true})
+}
+
+// generatedTypesCases returns the grammars of TestGeneratedTypes: the corpus, a nesting limit and
+// the typed grammar, with mutated inputs for the grammars written for direct rules.
+func generatedTypesCases(t *testing.T) []genCase {
 	// Exactly at and just beyond the nesting limit, through direct rules (as in
 	// TestGeneratedParsersMatchEngine).
 	cases := append(genCorpus(t), genCase{"nesting limit", `type R = { T node[string] }
@@ -616,7 +622,7 @@ rule n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x"
 			cases[i].inputs = append(cases[i].inputs, mutants(cases[i].inputs, 8, uint64(i))...)
 		}
 	}
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true})
+	return cases
 }
 
 func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, reference GenOptions, requiredTyped ...int) {
