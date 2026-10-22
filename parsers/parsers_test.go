@@ -16,13 +16,21 @@ var update = flag.Bool("update", false, "update golden files")
 // generation is a pego gen command of generate.go.
 type generation struct {
 	grammar, module, out string
+	hasTypes             bool
 	opts                 []pego.GenOption
 }
 
 // generations reads the go:generate lines of generate.go.
 func generations(t *testing.T) []generation {
 	t.Helper()
-	f, err := os.Open("generate.go")
+	return generationsIn(t, ".")
+}
+
+// generationsIn reads the go:generate lines of the generate.go in dir. The grammar and output paths
+// are relative to dir.
+func generationsIn(t *testing.T, dir string) []generation {
+	t.Helper()
+	f, err := os.Open(filepath.Join(dir, "generate.go"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,6 +62,7 @@ func generations(t *testing.T) []generation {
 				}
 				g.opts = append(g.opts, pego.WithRuntime(pego.RuntimeImport))
 			case "-types":
+				g.hasTypes = true
 				g.opts = append(g.opts, pego.WithTypes())
 			case "-recognize":
 				g.opts = append(g.opts, pego.WithRecognize())
@@ -67,6 +76,8 @@ func generations(t *testing.T) []generation {
 				t.Fatalf("generate.go: unknown argument %s", fs[i])
 			}
 		}
+		g.grammar = filepath.Join(dir, g.grammar)
+		g.out = filepath.Join(dir, g.out)
 		gens = append(gens, g)
 	}
 	if len(gens) == 0 {
