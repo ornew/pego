@@ -38,6 +38,12 @@ func CompileContext(ctx context.Context, g *grammar.Grammar, opts Options) (prog
 // existing behavior. The control is local to this compilation.
 type compileCancellation struct{ err error }
 
+// compilePollStride is the number of compiler steps between context checks. A step is a visit
+// of one expression, type or rule element; the heaviest, type-value inference, takes a few
+// microseconds, so the stride bounds the work done after a cancellation to well under a
+// millisecond (see design 042, "Compiler poll stride").
+const compilePollStride = 16
+
 type compileControl struct {
 	ctx   context.Context
 	steps uint32
@@ -56,7 +62,7 @@ func (c *compileControl) poll() {
 		return
 	}
 	c.steps++
-	if c.steps%256 == 0 {
+	if c.steps%compilePollStride == 0 {
 		c.check()
 	}
 }

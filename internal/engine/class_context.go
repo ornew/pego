@@ -126,9 +126,9 @@ func classASCIIControlled(ranges []grammar.CharRange, neg bool, control *compile
 		for at := 0; at < len(ranges); {
 			// Batch to the invocation's next checkpoint. Keep the inner
 			// range scan free of a function call per comparison, without
-			// allowing more than 256 visits between context checks.
+			// allowing more than compilePollStride visits between context checks.
 			start := at
-			end := min(len(ranges), at+256-int(control.steps%256))
+			end := min(len(ranges), at+compilePollStride-int(control.steps%compilePollStride))
 			for at < end {
 				rg := ranges[at]
 				at++
@@ -138,7 +138,7 @@ func classASCIIControlled(ranges []grammar.CharRange, neg bool, control *compile
 				}
 			}
 			control.steps += uint32(at - start)
-			if control.steps%256 == 0 {
+			if control.steps%compilePollStride == 0 {
 				control.check()
 			}
 			if matched {

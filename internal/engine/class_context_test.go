@@ -50,7 +50,7 @@ func TestClassConstructionContextCancellation(t *testing.T) {
 				if !ok || !errors.Is(stop.err, context.Canceled) {
 					t.Fatalf("class phase did not cancel internally: %v", failure)
 				}
-				if c.steps != 256 {
+				if c.steps != compilePollStride {
 					t.Fatalf("poll outside class traversal: %d", c.steps)
 				}
 				if !reflect.DeepEqual(before, cl.Ranges) {
@@ -240,7 +240,7 @@ func TestClassBitmapPollingBoundaries(t *testing.T) {
 		contextClassRanges(),
 		{{Lo: 0, Hi: 31}, {Lo: 'a', Hi: 'z'}, {Lo: 127, Hi: 127}},
 	} {
-		for _, start := range []uint32{0, 255, ^uint32(0) - 1} {
+		for _, start := range []uint32{0, compilePollStride - 1, ^uint32(0) - 1} {
 			for _, neg := range []bool{false, true} {
 				// Count a reference scan one visit at a time, including early matches.
 				var visits uint64
@@ -258,12 +258,12 @@ func TestClassBitmapPollingBoundaries(t *testing.T) {
 						want[r>>6] |= 1 << (r & 63)
 					}
 				}
-				ctx := compileTestContext(t, 10000)
+				ctx := compileTestContext(t, 1<<20)
 				c := &compileControl{ctx: ctx, steps: start}
 				got := classASCIIControlled(rs, neg, c)
-				checks := (uint64(start%256) + visits) / 256
-				if got != want || c.steps != start+uint32(visits) || 10000-ctx.left != int(checks) {
-					t.Fatalf("start=%d neg=%t steps=%d checks=%d wantchecks=%d", start, neg, c.steps, 10000-ctx.left, checks)
+				checks := (uint64(start%compilePollStride) + visits) / compilePollStride
+				if got != want || c.steps != start+uint32(visits) || (1<<20)-ctx.left != int(checks) {
+					t.Fatalf("start=%d neg=%t steps=%d checks=%d wantchecks=%d", start, neg, c.steps, (1<<20)-ctx.left, checks)
 				}
 			}
 		}

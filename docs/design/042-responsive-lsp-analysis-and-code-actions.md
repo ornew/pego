@@ -1028,12 +1028,99 @@ of the three probe runs; the others measured 22 and 55 μs. These are measuremen
 bounds: the work between checks is proportional to the largest single token,
 and JSON decoding and wire encoding are outside the measured intervals.
 
+### Compiler Poll Stride
+
+The compiler polled its context every 256 steps. `TestCancelLatencyProbe`
+(`PEGO_LSP_CANCEL_PROBE=1`) cancels responsive analysis, and each analysed
+request, at a uniformly random moment within the uncancelled duration of the
+same work and records the time from cancellation to return. It ran 1000 trials
+per grammar on an Apple M3 Max (Go 1.27.1, `GOMAXPROCS=16`) under the benchmark
+lock, with strides interleaved. `TestPollIntervalProbe` with
+`PEGO_LSP_POLL_SITES=1` lists the gaps of at least 300 μs that recur in every
+one of 15 analysis runs, with the smallest per-run maximum, which separates
+structural gaps from scheduler and collector noise. Single maxima of 12 to 52 ms
+occurred even with the collector off and are treated as machine noise; the
+tables use quantiles only.
+
+Analysis cancel-to-return, p50 / p90 / p99, as ranges over the interleaved runs:
+
+| Grammar | Full analysis | Stride 256 | Stride 16 |
+|---|---:|---|---|
+| `duckdb.pego` | 136–155 ms | 39–51 μs / 449–571 μs / 1.9–2.9 ms | 18–20 μs / 243–344 μs / 1.8–1.95 ms |
+| `typescript.pego` | 92–99 ms | 66–72 μs / 432–482 μs / about 1.1 ms | 25–28 μs / 170–187 μs / 576–623 μs |
+| `python.pego` | | p50 56 μs, p90 551–627 μs | p50 30 μs, p90 209 μs |
+| `golang.pego` | | p50 81–128 μs, p90 639–735 μs | p50 32 μs, p90 211 μs |
+
+Recurring gaps of at least 300 μs per grammar fell from 26 or 27 at stride 256
+to 6 (`typescript`) and 10 (`duckdb`) at 64, 7 and 8 at 32, and 3 and 7 at 16.
+Analysis and publication preparation took 131–133 ms on `duckdb` and 89–95 ms
+on `typescript` at strides 256, 64 and 16, with no difference beyond noise, so
+the stride is now 16 (`compilePollStride`). The remaining `duckdb` gaps are the
+shape-analysis tail after the last compiler check (about 1.6 ms), the start of
+type checking before value inference (about 1.0 ms), and several 0.3 to 0.55 ms
+stretches. They are structural and were not split: the p99 is dominated by them,
+and polling inside them would be a separate change. A 1.6 ms tail bounds the
+unpolled delay in the worst measured case on the largest grammar.
+
+Request cancel-to-return does not depend on the stride. For hover, highlights,
+completion, semantic tokens, symbols, formatting, references and rename on the
+four grammars the maximum was at most 1.3 ms and the p99 at most about 264 μs.
+
+### Editor Workload Probe
+
+`TestEditorWorkloadProbe` (`PEGO_LSP_EDITOR_PROBE=1`) drives a framed responsive
+server like an editor that types one character per keystroke: `didChange`,
+cancel of the previous semantic-token request, then semantic tokens, document
+highlight and completion. After typing it waits for the final diagnostics and
+sends a burst of 44 requests. `TestEditorSession` runs a short version of the
+same session with several worker and admission capacities and asserts no
+reordered publication, no rejection below the cap and exactly one response per
+request. Each cell below ran twice (the final-publication column is the range).
+
+Typing 60 characters with 3 requests each, one analysis worker per document:
+
+| Grammar | Interval | Publications | Requests answered / `ContentModified` | Final publish after last keystroke |
+|---|---:|---:|---:|---:|
+| `duckdb.pego` | 0–60 ms | 1 | 3 / 177 | 129–181 ms |
+| `duckdb.pego` | 300 ms | 60 | 180 / 0 | 148–150 ms |
+| `typescript.pego` | 0–60 ms | 1 | 3 / 177 | 87–115 ms |
+| `typescript.pego` | 300 ms | 60 | 180 / 0 | 100–114 ms |
+
+Typing faster than one analysis (about 140 and 95 ms) coalesces to a single
+publication of the final version, and stale requests are answered with
+`ContentModified`. The final version is published about one analysis after the
+last keystroke, which is the bound a single replaceable pending snapshot gives.
+At 5 to 60 ms the client had at most 5 requests outstanding. At interval 0 the
+test client had 179 because it had no backpressure; none were rejected and the
+publication order never regressed.
+
+Burst of 44 mixed requests after typing, total time by request workers:
+
+| Workers | `duckdb.pego` | `typescript.pego` |
+|---:|---:|---:|
+| 1 | 73–82 ms | 36–39 ms |
+| 2 | 44–45 ms | 22 ms |
+| 4 | 31–36 ms | 15–17 ms |
+| 8 | 29–30 ms | 17 ms |
+| 16 | 28–48 ms | 16 ms |
+
+Going from one to four workers halves the burst or better; beyond four there is
+no measurable gain, because the burst is also limited by the single analysis it
+waits on and by output ordering. Four workers therefore stay the default. The
+admission cap of 64 was never reached by a realistic session (at most 5
+outstanding requests with the editor invalidating requests on each change), and
+the earlier resource probe shows that retained memory is dominated by request
+payloads, so the cap stays at 64. Both are variables so the probes can vary
+them; they are not user settings. These figures describe this machine and these
+workloads. Other clients that do not cancel on change may keep more requests
+outstanding, which the cap then bounds with `ServerCancelled`.
+
 ## Limitations and Open Questions
 
 - The responsive actor remains opt-in; ordinary clients retain the synchronous path. Neovim edits keep the server text in sync in both modes, and Neovim's cancellation is acknowledged by the responsive server; VS Code, Helix and Emacs remain unvalidated.
 - Syntax parsing, grammar AST validation, selected compiler rule/dependency/matcher/type traversals, and attribute/pragma normalization poll context within phases. Normalization polls argument, keyword-argument, attribute and field traversal plus copy-on-write chunks; ordinary `Compile` keeps its existing bulk-copy path. Shared success/failure/cut proofs poll recursive expression and attribute visits and fixed-point rule passes. Context-aware metadata collectors cover rule/type enumeration and attribute expression arguments in controlled compilation, plus comments and metadata in lint. Controlled compiler and lint paths propagate their invocation poll helper through nested metadata collection; the public `Attribute.ExpressionArgsContext` API supports standalone collection. Lint also polls selected metadata traversals, including group/wrapper unwrapping, attribute/type-group visits, structural comparisons, and capture, predicate, position and repetition analysis. Compiler class analysis polls descriptor construction, range copies, ASCII bitmap visits and first-terminal selection in chunks of up to 256 visits; lint polls range membership and normalization/sort/merge/equality scans. The context is invocation-scoped, and ordinary helper/runtime paths retain their previous behavior. The grammar package provides `FormatContext`, `FormatExprContext`, `FormatTermContext` and `FormatTypeContext`; they preserve ordinary formatting output and return an empty string with `ctx.Err()` when cancelled, including cancellation detected before publishing completed output. The LSP formatting request uses this path, preserves the document newline convention, polls newline conversion and minimal-edit scans, and returns `RequestCancelled` without edits when cancelled. Document-symbol, hover, completion, references, document-highlight, prepare-rename and rename requests poll through selected render or occurrence walks and controlled formatting; cancellation returns `RequestCancelled` with no partial result and preserves unrelated panics. Semantic-token classification and encoding also poll through token/occurrence traversal and multiline output construction while preserving exact token data. Occurrence-index lookup and 64-byte checkpoint conversions remain unchanged. JSON decoding, individual string comparisons, `fmt` calls, allocations, wire encoding and other large operations remain indivisible, so cancellation has no wall-clock bound. On the repository grammars the longest measured interval between checks stayed below 1 ms; work on a single token, such as compiling a 256 KiB literal, runs about 1.1 ms between checks and grows with the token.
 - Suppression application requires a client API that atomically checks the edit version. The current VS Code `WorkspaceEdit` path drops that version, so the extension withholds suppression while retaining guarded explanations.
-- The exact work bound and worker-count default should be selected from measurements on large grammars and editor workloads; the multi-document probe measures retention and analysis order, not request concurrency.
+- The worker count (4), admission cap (64) and compiler poll stride (16) follow from the measurements above on one machine; the longest remaining unpolled stretch on the largest grammar is about 1.6 ms. Clients that keep many requests outstanding were not measured.
 - **Proposed lint scope:** enable all existing checks for every compilable open grammar, with source directives as the suppression mechanism. An owner may instead choose a configurable lint set if editor noise is observed; no such setting is part of this proposal.
 - **Proposed explanation command:** use the small `pego.showExplanation` command handled by the VS Code extension. A portable protocol-only explanation request is another option, but would add a custom request method and editor UI contract.
 - No grammar-changing action is approved by this design until each transformation has a check-specific proof and review.

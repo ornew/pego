@@ -39,12 +39,20 @@ type readResult struct {
 	err  error
 }
 
+// The responsive actor admits at most responsiveMaxRequests logical requests, of which at most
+// responsiveRequestWorkers execute at once; see design 042, "Editor Workload Probe" for the
+// measurements behind these values. Tests and probes may change them before a session starts.
+var (
+	responsiveRequestWorkers = 4
+	responsiveMaxRequests    = 64
+)
+
 // requestHook is an optional controlled barrier for protocol tests.
 var requestHook func(context.Context, string)
 
 func (s *Server) runResponsive() error {
 	ctx, cancel := context.WithCancel(context.Background())
-	actor := &responsiveActor{server: s, ctx: ctx, cancel: cancel, requests: map[string]*snapshotRequest{}, results: make(chan snapshotResponse, 64), slots: make(chan struct{}, 4)}
+	actor := &responsiveActor{server: s, ctx: ctx, cancel: cancel, requests: map[string]*snapshotRequest{}, results: make(chan snapshotResponse, responsiveMaxRequests), slots: make(chan struct{}, responsiveRequestWorkers)}
 	s.actor = actor
 	lintEnabled := s.client.Experimental.Pego.LintDiagnostics
 	s.queue = newAnalysisQueue(func(ctx context.Context, snapshot analysisSnapshot) (*analysis, error) {
@@ -201,7 +209,7 @@ func (a *responsiveActor) handle(message *incoming) error {
 	if a.requests[key] != nil {
 		return s.out.reply(message.ID, nil, &rpcError{Code: codeInvalidRequest, Message: "request ID already in flight"})
 	}
-	if len(a.requests) >= 64 {
+	if len(a.requests) >= responsiveMaxRequests {
 		return s.out.reply(message.ID, nil, &rpcError{Code: codeServerCancelled, Message: "server request capacity reached"})
 	}
 	ctx, cancel := context.WithCancel(a.ctx)

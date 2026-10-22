@@ -24,12 +24,24 @@ type pollRecorder struct {
 	lastSite string
 	longest  pollInterval
 	polls    int
+	// big lists every interval of at least bigThreshold, by from/to site, with its count and sum.
+	big map[string]*bigInterval
+}
+
+const bigThreshold = 300 * time.Microsecond
+
+type bigInterval struct {
+	n        int
+	sum, max time.Duration
 }
 
 type pollInterval struct {
 	d        time.Duration
 	from, to string
 }
+
+// pollDepth is the number of callers named in a site.
+var pollDepth = 2
 
 var pollRecorderDone = make(chan struct{})
 
@@ -43,8 +55,21 @@ func (c *pollRecorder) Done() <-chan struct{} { c.record(); return pollRecorderD
 func (c *pollRecorder) record() {
 	now := time.Now()
 	site := pollSite()
-	if d := now.Sub(c.last); d > c.longest.d {
+	d := now.Sub(c.last)
+	if d > c.longest.d {
 		c.longest = pollInterval{d, c.lastSite, site}
+	}
+	if d >= bigThreshold {
+		if c.big == nil {
+			c.big = map[string]*bigInterval{}
+		}
+		key := pollFuncs(c.lastSite) + " -> " + pollFuncs(site)
+		if c.big[key] == nil {
+			c.big[key] = &bigInterval{}
+		}
+		c.big[key].n++
+		c.big[key].sum += d
+		c.big[key].max = max(c.big[key].max, d)
 	}
 	c.last, c.lastSite = now, site
 	c.polls++
@@ -56,19 +81,28 @@ func (c *pollRecorder) finish() pollInterval {
 	return c.longest
 }
 
-// pollSite names the two innermost callers of the check.
+// pollSite names the two innermost callers of the check, skipping the check and poll helpers
+// themselves so that a gap is attributed to the code that polls.
 func pollSite() string {
-	pc := make([]uintptr, 2)
+	pc := make([]uintptr, 8)
 	frames := runtime.CallersFrames(pc[:runtime.Callers(4, pc)])
 	var site []string
-	for {
+	for len(site) < pollDepth {
 		f, more := frames.Next()
-		site = append(site, f.Function[strings.LastIndex(f.Function, "/")+1:]+":"+strconv.Itoa(f.Line))
+		name := f.Function[strings.LastIndex(f.Function, "/")+1:]
+		if !strings.HasSuffix(name, ".check") && !strings.HasSuffix(name, ".poll") && !strings.HasSuffix(name, ".step") {
+			site = append(site, name+":"+strconv.Itoa(f.Line))
+		}
 		if !more {
 			break
 		}
 	}
 	return strings.Join(site, " < ")
+}
+
+// pollFuncs drops line numbers from a site, so that gaps between the same functions add up.
+func pollFuncs(site string) string {
+	return regexp.MustCompile(`:\d+`).ReplaceAllString(site, "")
 }
 
 // shortestLongest runs work three times and returns the run with the shortest longest interval,
@@ -140,6 +174,40 @@ func TestPollIntervalProbe(t *testing.T) {
 			}
 		})
 		t.Logf("%s bytes=%d analysis polls=%d longest=%v %s -> %s", name, len(text), polls, longest.d, longest.from, longest.to)
+		if os.Getenv("PEGO_LSP_POLL_SITES") == "1" {
+			// A gap that recurs in every run is structural; scheduling and garbage collection
+			// stretch different gaps in different runs. List the gaps between functions whose
+			// largest gap in each of the runs stays above the threshold, with the smallest of
+			// those largest gaps.
+			if d, err := strconv.Atoi(os.Getenv("PEGO_LSP_POLL_DEPTH")); err == nil {
+				pollDepth = d
+			}
+			const runs = 15
+			floor := map[string]time.Duration{}
+			seen := map[string]int{}
+			for range runs {
+				c := newPollRecorder()
+				a, err := analyzeContext(c, text)
+				if err == nil {
+					err = a.preparePublicationContext(c, snapshot(text), true)
+				}
+				if err != nil {
+					t.Fatal(name, err)
+				}
+				c.finish()
+				for key, b := range c.big {
+					if seen[key] == 0 || b.max < floor[key] {
+						floor[key] = b.max
+					}
+					seen[key]++
+				}
+			}
+			for key, n := range seen {
+				if n == runs {
+					t.Logf("%s recurring gap >= %v: %v %s", name, bigThreshold, floor[key], key)
+				}
+			}
+		}
 		for method, params := range pollProbeRequests(text) {
 			raw, err := json.Marshal(params)
 			if err != nil {
