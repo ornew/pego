@@ -170,17 +170,23 @@ func main() {
 entry: host
 ```
 
-Mistakes in the *grammar* are reported before any input is parsed, also with a position. For example, a `bad.pego`
-containing `rule main = item` has an undefined rule:
+Mistakes in the *grammar* are reported before any input is parsed, also with a position. For example, this
+`bad.pego` has an undefined rule:
+
+```pego
+// bad.pego
+@start
+rule main = item
+```
 
 ```text
-pego: bad.pego:1:13: undefined rule item
+pego: bad.pego:3:13: undefined rule item
 ```
 
 Asking for a start rule that does not exist with `pego parse -g config.pego -s nosuch -i a` fails the same way:
 
 ```text
-pego: config.pego: start rule nosuch is not defined
+pego: config.pego: rule nosuch is not defined
 ```
 
 ## Next Steps

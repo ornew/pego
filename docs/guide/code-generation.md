@@ -195,14 +195,29 @@ Details:
 - Both languages need `-o`, because the output is several files. TypeScript writes `parser.ts`, `runtime.ts` and, with `-types`, `types.ts`.
 - The output is formatted with `gofmt`, passes `go vet`, and is **deterministic**: generating twice gives identical
   files. That is what makes the [up-to-date check](#keeping-generated-code-up-to-date) possible.
-- Grammar errors are reported with positions, before any file is written:
+- Grammar errors are reported with positions, before any file is written. A rule with no expression is a syntax
+  error:
+
+  ```pego
+  // broken.pego
+  @start
+  rule main =
+  ```
 
   ```bash
   pego gen -g broken.pego -module example.com/pairs -o /dev/null
   ```
 
   ```text
-  pego: broken.pego:2:1: expected an expression, found end of file
+  pego: broken.pego:4:1: expected an expression, found end of file
+  ```
+
+  An action that reads a capture the rule does not have is a compile error:
+
+  ```pego
+  // typeerr.pego
+  @start
+  rule main = x:[a-z]+ => $y
   ```
 
   ```bash
@@ -210,7 +225,7 @@ Details:
   ```
 
   ```text
-  pego: typeerr.pego:2:34: undefined capture $y
+  pego: typeerr.pego:3:25: undefined capture $y
   ```
 
   ```bash
@@ -218,7 +233,7 @@ Details:
   ```
 
   ```text
-  pego: pairs.pego: start rule nope is not defined
+  pego: pairs.pego: rule nope is not defined
   ```
 
   ```bash
@@ -437,9 +452,10 @@ and features matter more than speed; generate the production parser from the sam
 
 ### Choosing the Start Rule
 
-Pass the usual entry rule as `-s` (for example `pego gen -g lang.pego -module example.com/lang -s program`) so that `Parse` is the common
-case, and use `ParseRule("expr", input)` for the others, for example for an expression evaluator embedded in a larger
-tool.
+Mark every rule where parsing may begin with `@start`, and the usual entry rule with `@start(default)`, so that
+`Parse` is the common case; `-s` (for example `pego gen -g lang.pego -module example.com/lang -s program`) selects
+another start rule for `Parse`. Use `ParseRule("expr", input)` for the other start rules, for example for an
+expression evaluator embedded in a larger tool.
 
 ### Wrapping the Result in Your Own Types
 

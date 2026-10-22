@@ -11,9 +11,10 @@ All examples use one small grammar, `pairs.pego`, that reads `key=value` pairs s
 ```pego
 type Pair = { Key node[string]; Value node[string] }
 
-@start
+@start(default)
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
+@start
 rule key = [a-zあ-ん]+ #atomic
 rule value = [0-9]+ #atomic
 rule ws = [ \t\n]*
@@ -172,11 +173,14 @@ An AST can be exchanged as JSON with `grammar.MarshalJSON` and `grammar.Unmarsha
 
 ## Choosing a Start Rule
 
-Every rule can be a start rule. The second argument of `Compile` and `CompileSource` names it, and it must be defined:
+Only the rules marked `@start` are start rules, and an empty name selects the grammar's default start rule. The
+second argument of `Compile` and `CompileSource` names one:
 
 ```go
 _, err = pego.CompileSource(src, "nope")
-fmt.Println(err) // start rule nope is not defined
+fmt.Println(err) // rule nope is not defined
+_, err = pego.CompileSource(src, "pair")
+fmt.Println(err) // rule pair is not a start rule; parsing can begin only at a rule marked @start
 ```
 
 `Parser.WithStart(name)` returns a parser for another start rule. It shares the compiled grammar, so it costs almost
