@@ -2059,9 +2059,24 @@ var cls923 = pegort.Class{ASCII: [2]uint64{0x300000000000000, 0x7e0000007e}}
 var steps924 = []pegort.ClassStep{{C: &cls922, ID: 151}, {C: &cls923, ID: 152}}
 var cls925 = pegort.Class{ASCII: [2]uint64{0x0, 0x0}, Wide: []rune{170, 170, 181, 181, 186, 186, 192, 214, 216, 246, 248, 705, 710, 721, 736, 740, 748, 748, 750, 750, 880, 884, 886, 887, 890, 893, 895, 895, 902, 902, 904, 906, 908, 908, 910, 929, 931, 1013, 1015, 1153, 1162, 1327, 1329, 1366, 1369, 1369, 1376, 1416, 1488, 1514, 1519, 1522, 1568, 1610, 1646, 1647, 1649, 1747, 1749, 1749, 1765, 1766, 1774, 1775, 1786, 1788, 1791, 1791, 1808, 1808, 1810, 1839, 1869, 1957, 1969, 1969, 1994, 2026, 2036, 2037, 2042, 2042, 2048, 2069, 2074, 2074, 2084, 2084, 2088, 2088, 2112, 2136, 2144, 2154, 2160, 2183, 2185, 2191, 2208, 2249, 2308, 2361, 2365, 2365, 2384, 2384, 2392, 2401, 2417, 2432, 2437, 2444, 2447, 2448, 2451, 2472, 2474, 2480, 2482, 2482, 2486, 2489, 2493, 2493, 2510, 2510, 2524, 2525, 2527, 2529, 2544, 2545, 2556, 2556, 2565, 2570, 2575, 2576, 2579, 2600, 2602, 2608, 2610, 2611, 2613, 2614, 2616, 2617, 2649, 2652, 2654, 2654, 2674, 2676, 2693, 2701, 2703, 2705, 2707, 2728, 2730, 2736, 2738, 2739, 2741, 2745, 2749, 2749, 2768, 2768, 2784, 2785, 2809, 2809, 2821, 2828, 2831, 2832, 2835, 2856, 2858, 2864, 2866, 2867, 2869, 2873, 2877, 2877, 2908, 2909, 2911, 2913, 2929, 2929, 2947, 2947, 2949, 2954, 2958, 2960, 2962, 2965, 2969, 2970, 2972, 2972, 2974, 2975, 2979, 2980, 2984, 2986, 2990, 3001, 3024, 3024, 3077, 3084, 3086, 3088, 3090, 3112, 3114, 3129, 3133, 3133, 3160, 3162, 3164, 3165, 3168, 3169, 3200, 3200, 3205, 3212, 3214, 3216, 3218, 3240, 3242, 3251, 3253, 3257, 3261, 3261, 3292, 3294, 3296, 3297, 3313, 3314, 3332, 3340, 3342, 3344, 3346, 3386, 3389, 3389, 3406, 3406, 3412, 3414, 3423, 3425, 3450, 3455, 3461, 3478, 3482, 3505, 3507, 3515, 3517, 3517, 3520, 3526, 3585, 3632, 3634, 3635, 3648, 3654, 3713, 3714, 3716, 3716, 3718, 3722, 3724, 3747, 3749, 3749, 3751, 3760, 3762, 3763, 3773, 3773, 3776, 3780, 3782, 3782, 3804, 3807, 3840, 3840, 3904, 3911, 3913, 3948, 3976, 3980, 4096, 4138, 4159, 4159, 4176, 4181, 4186, 4189, 4193, 4193, 4197, 4198, 4206, 4208, 4213, 4225, 4238, 4238, 4256, 4293, 4295, 4295, 4301, 4301, 4304, 4346, 4348, 4680, 4682, 4685, 4688, 4694, 4696, 4696, 4698, 4701, 4704, 4744, 4746, 4749, 4752, 4784, 4786, 4789, 4792, 4798, 4800, 4800, 4802, 4805, 4808, 4822, 4824, 4880, 4882, 4885, 4888, 4954, 4992, 5007, 5024, 5109, 5112, 5117, 5121, 5740, 5743, 5759, 5761, 5786, 5792, 5866, 5873, 5880, 5888, 5905, 5919, 5937, 5952, 5969, 5984, 5996, 5998, 6000, 6016, 6067, 6103, 6103, 6108, 6108, 6176, 6264, 6272, 6276, 6279, 6312, 6314, 6314, 6320, 6389, 6400, 6430, 6480, 6509, 6512, 6516, 6528, 6571, 6576, 6601, 6656, 6678, 6688, 6740, 6823, 6823, 6917, 6963, 6981, 6988, 7043, 7072, 7086, 7087, 7098, 7141, 7168, 7203, 7245, 7247, 7258, 7293, 7296, 7306, 7312, 7354, 7357, 7359, 7401, 7404, 7406, 7411, 7413, 7414, 7418, 7418, 7424, 7615, 7680, 7957, 7960, 7965, 7968, 8005, 8008, 8013, 8016, 8023, 8025, 8025, 8027, 8027, 8029, 8029, 8031, 8061, 8064, 8116, 8118, 8124, 8126, 8126, 8130, 8132, 8134, 8140, 8144, 8147, 8150, 8155, 8160, 8172, 8178, 8180, 8182, 8188, 8305, 8305, 8319, 8319, 8336, 8348, 8450, 8450, 8455, 8455, 8458, 8467, 8469, 8469, 8473, 8477, 8484, 8484, 8486, 8486, 8488, 8488, 8490, 8493, 8495, 8505, 8508, 8511, 8517, 8521, 8526, 8526, 8579, 8580, 11264, 11492, 11499, 11502, 11506, 11507, 11520, 11557, 11559, 11559, 11565, 11565, 11568, 11623, 11631, 11631, 11648, 11670, 11680, 11686, 11688, 11694, 11696, 11702, 11704, 11710, 11712, 11718, 11720, 11726, 11728, 11734, 11736, 11742, 11823, 11823, 12293, 12294, 12337, 12341, 12347, 12348, 12353, 12438, 12445, 12447, 12449, 12538, 12540, 12543, 12549, 12591, 12593, 12686, 12704, 12735, 12784, 12799, 13312, 19903, 19968, 42124, 42192, 42237, 42240, 42508, 42512, 42527, 42538, 42539, 42560, 42606, 42623, 42653, 42656, 42725, 42775, 42783, 42786, 42888, 42891, 42972, 42993, 43009, 43011, 43013, 43015, 43018, 43020, 43042, 43072, 43123, 43138, 43187, 43250, 43255, 43259, 43259, 43261, 43262, 43274, 43301, 43312, 43334, 43360, 43388, 43396, 43442, 43471, 43471, 43488, 43492, 43494, 43503, 43514, 43518, 43520, 43560, 43584, 43586, 43588, 43595, 43616, 43638, 43642, 43642, 43646, 43695, 43697, 43697, 43701, 43702, 43705, 43709, 43712, 43712, 43714, 43714, 43739, 43741, 43744, 43754, 43762, 43764, 43777, 43782, 43785, 43790, 43793, 43798, 43808, 43814, 43816, 43822, 43824, 43866, 43868, 43881, 43888, 44002, 44032, 55203, 55216, 55238, 55243, 55291, 63744, 64109, 64112, 64217, 64256, 64262, 64275, 64279, 64285, 64285, 64287, 64296, 64298, 64310, 64312, 64316, 64318, 64318, 64320, 64321, 64323, 64324, 64326, 64433, 64467, 64829, 64848, 64911, 64914, 64967, 65008, 65019, 65136, 65140, 65142, 65276, 65313, 65338, 65345, 65370, 65382, 65470, 65474, 65479, 65482, 65487, 65490, 65495, 65498, 65500, 65536, 65547, 65549, 65574, 65576, 65594, 65596, 65597, 65599, 65613, 65616, 65629, 65664, 65786, 66176, 66204, 66208, 66256, 66304, 66335, 66349, 66368, 66370, 66377, 66384, 66421, 66432, 66461, 66464, 66499, 66504, 66511, 66560, 66717, 66736, 66771, 66776, 66811, 66816, 66855, 66864, 66915, 66928, 66938, 66940, 66954, 66956, 66962, 66964, 66965, 66967, 66977, 66979, 66993, 66995, 67001, 67003, 67004, 67008, 67059, 67072, 67382, 67392, 67413, 67424, 67431, 67456, 67461, 67463, 67504, 67506, 67514, 67584, 67589, 67592, 67592, 67594, 67637, 67639, 67640, 67644, 67644, 67647, 67669, 67680, 67702, 67712, 67742, 67808, 67826, 67828, 67829, 67840, 67861, 67872, 67897, 67904, 67929, 67968, 68023, 68030, 68031, 68096, 68096, 68112, 68115, 68117, 68119, 68121, 68149, 68192, 68220, 68224, 68252, 68288, 68295, 68297, 68324, 68352, 68405, 68416, 68437, 68448, 68466, 68480, 68497, 68608, 68680, 68736, 68786, 68800, 68850, 68864, 68899, 68938, 68965, 68975, 68997, 69248, 69289, 69296, 69297, 69314, 69319, 69376, 69404, 69415, 69415, 69424, 69445, 69488, 69505, 69552, 69572, 69600, 69622, 69635, 69687, 69745, 69746, 69749, 69749, 69763, 69807, 69840, 69864, 69891, 69926, 69956, 69956, 69959, 69959, 69968, 70002, 70006, 70006, 70019, 70066, 70081, 70084, 70106, 70106, 70108, 70108, 70144, 70161, 70163, 70187, 70207, 70208, 70272, 70278, 70280, 70280, 70282, 70285, 70287, 70301, 70303, 70312, 70320, 70366, 70405, 70412, 70415, 70416, 70419, 70440, 70442, 70448, 70450, 70451, 70453, 70457, 70461, 70461, 70480, 70480, 70493, 70497, 70528, 70537, 70539, 70539, 70542, 70542, 70544, 70581, 70583, 70583, 70609, 70609, 70611, 70611, 70656, 70708, 70727, 70730, 70751, 70753, 70784, 70831, 70852, 70853, 70855, 70855, 71040, 71086, 71128, 71131, 71168, 71215, 71236, 71236, 71296, 71338, 71352, 71352, 71424, 71450, 71488, 71494, 71680, 71723, 71840, 71903, 71935, 71942, 71945, 71945, 71948, 71955, 71957, 71958, 71960, 71983, 71999, 71999, 72001, 72001, 72096, 72103, 72106, 72144, 72161, 72161, 72163, 72163, 72192, 72192, 72203, 72242, 72250, 72250, 72272, 72272, 72284, 72329, 72349, 72349, 72368, 72440, 72640, 72672, 72704, 72712, 72714, 72750, 72768, 72768, 72818, 72847, 72960, 72966, 72968, 72969, 72971, 73008, 73030, 73030, 73056, 73061, 73063, 73064, 73066, 73097, 73112, 73112, 73136, 73179, 73440, 73458, 73474, 73474, 73476, 73488, 73490, 73523, 73648, 73648, 73728, 74649, 74880, 75075, 77712, 77808, 77824, 78895, 78913, 78918, 78944, 82938, 82944, 83526, 90368, 90397, 92160, 92728, 92736, 92766, 92784, 92862, 92880, 92909, 92928, 92975, 92992, 92995, 93027, 93047, 93053, 93071, 93504, 93548, 93760, 93823, 93856, 93880, 93883, 93907, 93952, 94026, 94032, 94032, 94099, 94111, 94176, 94177, 94179, 94179, 94194, 94195, 94208, 101589, 101631, 101662, 101760, 101874, 110576, 110579, 110581, 110587, 110589, 110590, 110592, 110882, 110898, 110898, 110928, 110930, 110933, 110933, 110948, 110951, 110960, 111355, 113664, 113770, 113776, 113788, 113792, 113800, 113808, 113817, 119808, 119892, 119894, 119964, 119966, 119967, 119970, 119970, 119973, 119974, 119977, 119980, 119982, 119993, 119995, 119995, 119997, 120003, 120005, 120069, 120071, 120074, 120077, 120084, 120086, 120092, 120094, 120121, 120123, 120126, 120128, 120132, 120134, 120134, 120138, 120144, 120146, 120485, 120488, 120512, 120514, 120538, 120540, 120570, 120572, 120596, 120598, 120628, 120630, 120654, 120656, 120686, 120688, 120712, 120714, 120744, 120746, 120770, 120772, 120779, 122624, 122654, 122661, 122666, 122928, 122989, 123136, 123180, 123191, 123197, 123214, 123214, 123536, 123565, 123584, 123627, 124112, 124139, 124368, 124397, 124400, 124400, 124608, 124638, 124640, 124642, 124644, 124645, 124647, 124653, 124656, 124660, 124670, 124671, 124896, 124902, 124904, 124907, 124909, 124910, 124912, 124926, 124928, 125124, 125184, 125251, 125259, 125259, 126464, 126467, 126469, 126495, 126497, 126498, 126500, 126500, 126503, 126503, 126505, 126514, 126516, 126519, 126521, 126521, 126523, 126523, 126530, 126530, 126535, 126535, 126537, 126537, 126539, 126539, 126541, 126543, 126545, 126546, 126548, 126548, 126551, 126551, 126553, 126553, 126555, 126555, 126557, 126557, 126559, 126559, 126561, 126562, 126564, 126564, 126567, 126570, 126572, 126578, 126580, 126583, 126585, 126588, 126590, 126590, 126592, 126601, 126603, 126619, 126625, 126627, 126629, 126633, 126635, 126651, 131072, 173791, 173824, 178205, 178208, 183981, 183984, 191456, 191472, 192093, 194560, 195101, 196608, 201546, 201552, 210041}}
 var cls926 = pegort.Class{ASCII: [2]uint64{0x0, 0x0}, Wide: []rune{1632, 1641, 1776, 1785, 1984, 1993, 2406, 2415, 2534, 2543, 2662, 2671, 2790, 2799, 2918, 2927, 3046, 3055, 3174, 3183, 3302, 3311, 3430, 3439, 3558, 3567, 3664, 3673, 3792, 3801, 3872, 3881, 4160, 4169, 4240, 4249, 6112, 6121, 6160, 6169, 6470, 6479, 6608, 6617, 6784, 6793, 6800, 6809, 6992, 7001, 7088, 7097, 7232, 7241, 7248, 7257, 42528, 42537, 43216, 43225, 43264, 43273, 43472, 43481, 43504, 43513, 43600, 43609, 44016, 44025, 65296, 65305, 66720, 66729, 68912, 68921, 68928, 68937, 69734, 69743, 69872, 69881, 69942, 69951, 70096, 70105, 70384, 70393, 70736, 70745, 70864, 70873, 71248, 71257, 71360, 71369, 71376, 71395, 71472, 71481, 71904, 71913, 72016, 72025, 72688, 72697, 72784, 72793, 73040, 73049, 73120, 73129, 73184, 73193, 73552, 73561, 90416, 90425, 92768, 92777, 92864, 92873, 93008, 93017, 93552, 93561, 118000, 118009, 120782, 120831, 123200, 123209, 123632, 123641, 124144, 124153, 124401, 124410, 125264, 125273, 130032, 130041}}
-var cls927 = pegort.Class{ASCII: [2]uint64{0xf000000000000, 0x0}}
-var cls928 = pegort.Class{ASCII: [2]uint64{0xff000000000000, 0x0}}
-var steps929 = []pegort.ClassStep{{C: &cls927, ID: 148}, {C: &cls928, ID: 133}, {C: &cls928, ID: 133}}
+var cls927 = pegort.Class{ASCII: [2]uint64{0x0, 0x400000000}}
+var cls928 = pegort.Class{ASCII: [2]uint64{0x0, 0x800000000}}
+var cls929 = pegort.Class{ASCII: [2]uint64{0x0, 0x1000000000}}
+var cls930 = pegort.Class{ASCII: [2]uint64{0x0, 0x2000000000}}
+var cls931 = pegort.Class{ASCII: [2]uint64{0x0, 0x4000000000}}
+var cls932 = pegort.Class{ASCII: [2]uint64{0x0, 0x8000000000}}
+var cls933 = pegort.Class{ASCII: [2]uint64{0x0, 0x20000000000}}
+var cls934 = pegort.Class{ASCII: [2]uint64{0x0, 0x200000000000}}
+var cls935 = pegort.Class{ASCII: [2]uint64{0x0, 0x1000000000000}}
+var cls936 = pegort.Class{ASCII: [2]uint64{0x0, 0x4000000000000}}
+var cls937 = pegort.Class{ASCII: [2]uint64{0x0, 0x8000000000000}}
+var cls938 = pegort.Class{ASCII: [2]uint64{0x0, 0x10000000000000}}
+var cls939 = pegort.Class{ASCII: [2]uint64{0x0, 0x40000000000000}}
+var term940Data = pegort.TerminalProgram{Code: []uint16{3, 203, 0, 6, 8, 0, 45, 1, 4, 0, 45, 6, 8, 1, 38, 1, 4, 1, 38, 6, 8, 1, 32, 1, 4, 2, 32, 6, 8, 1, 7, 1, 4, 3, 7, 6, 8, 1, 46, 1, 4, 4, 46, 6, 8, 2, 39, 1, 4, 5, 39, 6, 8, 2, 41, 1, 4, 6, 41, 6, 8, 3, 124, 1, 4, 7, 124, 6, 8, 4, 48, 1, 4, 8, 48, 6, 8, 4, 51, 1, 4, 9, 51, 6, 8, 4, 6, 1, 4, 10, 6, 6, 8, 5, 47, 1, 4, 11, 47, 6, 8, 5, 40, 1, 4, 12, 40, 6, 8, 6, 43, 1, 4, 13, 43, 6, 8, 6, 125, 1, 4, 14, 125, 6, 8, 6, 28, 1, 4, 15, 28, 6, 8, 7, 26, 1, 4, 16, 26, 6, 8, 8, 126, 1, 4, 17, 126, 6, 8, 9, 127, 1, 4, 18, 127, 6, 8, 9, 42, 1, 4, 19, 42, 6, 8, 10, 44, 1, 4, 20, 44, 6, 8, 10, 25, 1, 4, 21, 25, 6, 8, 10, 49, 1, 4, 22, 49, 6, 8, 11, 9, 1, 4, 23, 9, 6, 8, 12, 8, 1, 4, 24, 8}, Classes: []*pegort.Class{&cls927, &cls928, &cls929, &cls930, &cls931, &cls932, &cls933, &cls934, &cls935, &cls936, &cls937, &cls938, &cls939}, Literals: []pegort.TerminalText{{Runes: lit391, Text: "break"}, {Runes: lit392, Text: "case"}, {Runes: lit393, Text: "chan"}, {Runes: lit394, Text: "const"}, {Runes: lit395, Text: "continue"}, {Runes: lit396, Text: "default"}, {Runes: lit397, Text: "defer"}, {Runes: lit398, Text: "else"}, {Runes: lit399, Text: "fallthrough"}, {Runes: lit400, Text: "for"}, {Runes: lit401, Text: "func"}, {Runes: lit402, Text: "goto"}, {Runes: lit403, Text: "go"}, {Runes: lit404, Text: "if"}, {Runes: lit405, Text: "import"}, {Runes: lit406, Text: "interface"}, {Runes: lit407, Text: "map"}, {Runes: lit408, Text: "package"}, {Runes: lit409, Text: "range"}, {Runes: lit410, Text: "return"}, {Runes: lit411, Text: "select"}, {Runes: lit412, Text: "struct"}, {Runes: lit413, Text: "switch"}, {Runes: lit414, Text: "type"}, {Runes: lit415, Text: "var"}}}
+var term940 = term940Data.Prepare()
+var cls941 = pegort.Class{ASCII: [2]uint64{0xf000000000000, 0x0}}
+var cls942 = pegort.Class{ASCII: [2]uint64{0xff000000000000, 0x0}}
+var steps943 = []pegort.ClassStep{{C: &cls941, ID: 148}, {C: &cls942, ID: 133}, {C: &cls942, ID: 133}}
 
 func init() {
 	rules = pegort.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])
@@ -2176,110 +2191,110 @@ func init() {
 	trules[0].Entry = u0
 
 	trules[196].OperatorsRule = &pegort.TOperatorsRule{
-		Skip: e930,
+		Skip: e944,
 		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e931, Action: nil, Value: sh345},
+			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e945, Action: nil, Value: sh345},
 		},
 		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e932, Action: func(c *pegort.TActCtx) any {
+		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e946, Action: func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return func() any {
-					f_933 := func() any { ; return (c.Lhs) }()
-					f_934 := func() any { ; return c.Cap(0) }()
-					return tmk_SelectorExpr(c, true, f_933, f_934)
+					f_947 := func() any { ; return (c.Lhs) }()
+					f_948 := func() any { ; return c.Cap(0) }()
+					return tmk_SelectorExpr(c, true, f_947, f_948)
 				}()
 			}()
 		}, Value: sh47}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e935, Action: func(c *pegort.TActCtx) any {
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e949, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_936 := func() any { ; return (c.Lhs) }()
-						return tmk_TypeAssertExpr(c, true, f_936, nil)
+						f_950 := func() any { ; return (c.Lhs) }()
+						return tmk_TypeAssertExpr(c, true, f_950, nil)
 					}()
 				}()
 			}, Value: sh62}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t"}, M: e937, Action: func(c *pegort.TActCtx) any {
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t"}, M: e951, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_938 := func() any { ; return (c.Lhs) }()
-						f_939 := func() any { ; return c.Cap(0) }()
-						return tmk_TypeAssertExpr(c, true, f_938, f_939)
+						f_952 := func() any { ; return (c.Lhs) }()
+						f_953 := func() any { ; return c.Cap(0) }()
+						return tmk_TypeAssertExpr(c, true, f_952, f_953)
 					}()
 				}()
 			}, Value: sh62}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e940, Action: func(c *pegort.TActCtx) any {
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e954, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_941 := func() any { ; return (c.Lhs) }()
-						f_942 := func() any { ; return c.Cap(0) }()
-						return tmk_IndexExpr(c, true, f_941, f_942)
+						f_955 := func() any { ; return (c.Lhs) }()
+						f_956 := func() any { ; return c.Cap(0) }()
+						return tmk_IndexExpr(c, true, f_955, f_956)
 					}()
 				}()
 			}, Value: sh62}},
-			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e943, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_944 := func() any { ; return (c.Lhs) }()
-						f_945 := func() any { ; return c.Cap(0) }()
-						return tmk_IndexListExpr(c, true, f_944, f_945)
-					}()
-				}()
-			}, Value: sh46}},
-			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h"}, M: e946, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_947 := func() any { ; return (c.Lhs) }()
-						f_948 := func() any { ; return c.Cap(0) }()
-						f_949 := func() any { ; return c.Cap(1) }()
-						return tmk_SliceExpr(c, true, f_947, f_948, f_949, nil)
-					}()
-				}()
-			}, Value: sh369}},
-			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h", "m"}, M: e950, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_951 := func() any { ; return (c.Lhs) }()
-						f_952 := func() any { ; return c.Cap(0) }()
-						f_953 := func() any { ; return c.Cap(1) }()
-						f_954 := func() any { ; return c.Cap(2) }()
-						return tmk_SliceExpr(c, true, f_951, f_952, f_953, f_954)
-					}()
-				}()
-			}, Value: sh63}},
-			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e955, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_956 := func() any { ; return (c.Lhs) }()
-						return tmk_CallExpr(c, true, f_956, nil, nil)
-					}()
-				}()
-			}, Value: sh47}},
-			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"as", "e"}, M: e957, Action: func(c *pegort.TActCtx) any {
+			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e957, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
 						f_958 := func() any { ; return (c.Lhs) }()
 						f_959 := func() any { ; return c.Cap(0) }()
-						f_960 := func() any { ; return c.Cap(1) }()
-						return tmk_CallExpr(c, true, f_958, f_959, f_960)
+						return tmk_IndexListExpr(c, true, f_958, f_959)
 					}()
 				}()
-			}, Value: sh369}},
-			{Id: 9, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"v"}, M: e961, Action: func(c *pegort.TActCtx) any {
+			}, Value: sh46}},
+			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h"}, M: e960, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_962 := func() any { ; return (c.Lhs) }()
-						f_963 := func() any { ; return c.Cap(0) }()
-						return tmk_CompositeLit(c, true, f_962, f_963)
+						f_961 := func() any { ; return (c.Lhs) }()
+						f_962 := func() any { ; return c.Cap(0) }()
+						f_963 := func() any { ; return c.Cap(1) }()
+						return tmk_SliceExpr(c, true, f_961, f_962, f_963, nil)
+					}()
+				}()
+			}, Value: sh369}},
+			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h", "m"}, M: e964, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_965 := func() any { ; return (c.Lhs) }()
+						f_966 := func() any { ; return c.Cap(0) }()
+						f_967 := func() any { ; return c.Cap(1) }()
+						f_968 := func() any { ; return c.Cap(2) }()
+						return tmk_SliceExpr(c, true, f_965, f_966, f_967, f_968)
+					}()
+				}()
+			}, Value: sh63}},
+			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e969, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_970 := func() any { ; return (c.Lhs) }()
+						return tmk_CallExpr(c, true, f_970, nil, nil)
+					}()
+				}()
+			}, Value: sh47}},
+			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"as", "e"}, M: e971, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_972 := func() any { ; return (c.Lhs) }()
+						f_973 := func() any { ; return c.Cap(0) }()
+						f_974 := func() any { ; return c.Cap(1) }()
+						return tmk_CallExpr(c, true, f_972, f_973, f_974)
+					}()
+				}()
+			}, Value: sh369}},
+			{Id: 9, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"v"}, M: e975, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_976 := func() any { ; return (c.Lhs) }()
+						f_977 := func() any { ; return c.Cap(0) }()
+						return tmk_CompositeLit(c, true, f_976, f_977)
 					}()
 				}()
 			}, Value: sh3}}},
@@ -2287,110 +2302,110 @@ func init() {
 	trules[196].Body = func(p *pegort.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[196], min) }
 
 	trules[209].OperatorsRule = &pegort.TOperatorsRule{
-		Skip: e930,
+		Skip: e944,
 		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e931, Action: nil, Value: sh345},
+			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e945, Action: nil, Value: sh345},
 		},
 		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e932, Action: func(c *pegort.TActCtx) any {
+		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e946, Action: func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return func() any {
-					f_964 := func() any { ; return (c.Lhs) }()
-					f_965 := func() any { ; return c.Cap(0) }()
-					return tmk_SelectorExpr(c, true, f_964, f_965)
+					f_978 := func() any { ; return (c.Lhs) }()
+					f_979 := func() any { ; return c.Cap(0) }()
+					return tmk_SelectorExpr(c, true, f_978, f_979)
 				}()
 			}()
 		}, Value: sh47}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e935, Action: func(c *pegort.TActCtx) any {
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e949, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_966 := func() any { ; return (c.Lhs) }()
-						return tmk_TypeAssertExpr(c, true, f_966, nil)
+						f_980 := func() any { ; return (c.Lhs) }()
+						return tmk_TypeAssertExpr(c, true, f_980, nil)
 					}()
 				}()
 			}, Value: sh62}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t"}, M: e937, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_967 := func() any { ; return (c.Lhs) }()
-						f_968 := func() any { ; return c.Cap(0) }()
-						return tmk_TypeAssertExpr(c, true, f_967, f_968)
-					}()
-				}()
-			}, Value: sh62}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e940, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_969 := func() any { ; return (c.Lhs) }()
-						f_970 := func() any { ; return c.Cap(0) }()
-						return tmk_IndexExpr(c, true, f_969, f_970)
-					}()
-				}()
-			}, Value: sh62}},
-			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e943, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_971 := func() any { ; return (c.Lhs) }()
-						f_972 := func() any { ; return c.Cap(0) }()
-						return tmk_IndexListExpr(c, true, f_971, f_972)
-					}()
-				}()
-			}, Value: sh46}},
-			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h"}, M: e946, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_973 := func() any { ; return (c.Lhs) }()
-						f_974 := func() any { ; return c.Cap(0) }()
-						f_975 := func() any { ; return c.Cap(1) }()
-						return tmk_SliceExpr(c, true, f_973, f_974, f_975, nil)
-					}()
-				}()
-			}, Value: sh369}},
-			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h", "m"}, M: e950, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_976 := func() any { ; return (c.Lhs) }()
-						f_977 := func() any { ; return c.Cap(0) }()
-						f_978 := func() any { ; return c.Cap(1) }()
-						f_979 := func() any { ; return c.Cap(2) }()
-						return tmk_SliceExpr(c, true, f_976, f_977, f_978, f_979)
-					}()
-				}()
-			}, Value: sh63}},
-			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e980, Action: func(c *pegort.TActCtx) any {
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t"}, M: e951, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
 						f_981 := func() any { ; return (c.Lhs) }()
-						return tmk_CallExpr(c, true, f_981, nil, nil)
+						f_982 := func() any { ; return c.Cap(0) }()
+						return tmk_TypeAssertExpr(c, true, f_981, f_982)
 					}()
 				}()
-			}, Value: sh47}},
-			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"as", "e"}, M: e982, Action: func(c *pegort.TActCtx) any {
+			}, Value: sh62}},
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e954, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
 						f_983 := func() any { ; return (c.Lhs) }()
 						f_984 := func() any { ; return c.Cap(0) }()
-						f_985 := func() any { ; return c.Cap(1) }()
-						return tmk_CallExpr(c, true, f_983, f_984, f_985)
+						return tmk_IndexExpr(c, true, f_983, f_984)
 					}()
 				}()
-			}, Value: sh369}},
-			{Id: 9, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"v"}, M: e961, Action: func(c *pegort.TActCtx) any {
+			}, Value: sh62}},
+			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e957, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_986 := func() any { ; return (c.Lhs) }()
-						f_987 := func() any { ; return c.Cap(0) }()
-						return tmk_CompositeLit(c, true, f_986, f_987)
+						f_985 := func() any { ; return (c.Lhs) }()
+						f_986 := func() any { ; return c.Cap(0) }()
+						return tmk_IndexListExpr(c, true, f_985, f_986)
+					}()
+				}()
+			}, Value: sh46}},
+			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h"}, M: e960, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_987 := func() any { ; return (c.Lhs) }()
+						f_988 := func() any { ; return c.Cap(0) }()
+						f_989 := func() any { ; return c.Cap(1) }()
+						return tmk_SliceExpr(c, true, f_987, f_988, f_989, nil)
+					}()
+				}()
+			}, Value: sh369}},
+			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h", "m"}, M: e964, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_990 := func() any { ; return (c.Lhs) }()
+						f_991 := func() any { ; return c.Cap(0) }()
+						f_992 := func() any { ; return c.Cap(1) }()
+						f_993 := func() any { ; return c.Cap(2) }()
+						return tmk_SliceExpr(c, true, f_990, f_991, f_992, f_993)
+					}()
+				}()
+			}, Value: sh63}},
+			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e994, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_995 := func() any { ; return (c.Lhs) }()
+						return tmk_CallExpr(c, true, f_995, nil, nil)
+					}()
+				}()
+			}, Value: sh47}},
+			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"as", "e"}, M: e996, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_997 := func() any { ; return (c.Lhs) }()
+						f_998 := func() any { ; return c.Cap(0) }()
+						f_999 := func() any { ; return c.Cap(1) }()
+						return tmk_CallExpr(c, true, f_997, f_998, f_999)
+					}()
+				}()
+			}, Value: sh369}},
+			{Id: 9, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"v"}, M: e975, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1000 := func() any { ; return (c.Lhs) }()
+						f_1001 := func() any { ; return c.Cap(0) }()
+						return tmk_CompositeLit(c, true, f_1000, f_1001)
 					}()
 				}()
 			}, Value: sh3}}},
@@ -2398,100 +2413,100 @@ func init() {
 	trules[209].Body = func(p *pegort.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[209], min) }
 
 	trules[223].OperatorsRule = &pegort.TOperatorsRule{
-		Skip: e930,
+		Skip: e944,
 		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e988, Action: nil, Value: sh345},
+			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1002, Action: nil, Value: sh345},
 		},
 		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e932, Action: func(c *pegort.TActCtx) any {
+		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e946, Action: func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return func() any {
-					f_989 := func() any { ; return (c.Lhs) }()
-					f_990 := func() any { ; return c.Cap(0) }()
-					return tmk_SelectorExpr(c, true, f_989, f_990)
+					f_1003 := func() any { ; return (c.Lhs) }()
+					f_1004 := func() any { ; return c.Cap(0) }()
+					return tmk_SelectorExpr(c, true, f_1003, f_1004)
 				}()
 			}()
 		}, Value: sh47}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e991, Action: func(c *pegort.TActCtx) any {
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e1005, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_992 := func() any { ; return (c.Lhs) }()
-						return tmk_TypeAssertExpr(c, true, f_992, nil)
+						f_1006 := func() any { ; return (c.Lhs) }()
+						return tmk_TypeAssertExpr(c, true, f_1006, nil)
 					}()
 				}()
 			}, Value: sh62}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t"}, M: e993, Action: func(c *pegort.TActCtx) any {
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t"}, M: e1007, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_994 := func() any { ; return (c.Lhs) }()
-						f_995 := func() any { ; return c.Cap(0) }()
-						return tmk_TypeAssertExpr(c, true, f_994, f_995)
+						f_1008 := func() any { ; return (c.Lhs) }()
+						f_1009 := func() any { ; return c.Cap(0) }()
+						return tmk_TypeAssertExpr(c, true, f_1008, f_1009)
 					}()
 				}()
 			}, Value: sh62}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e940, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_996 := func() any { ; return (c.Lhs) }()
-						f_997 := func() any { ; return c.Cap(0) }()
-						return tmk_IndexExpr(c, true, f_996, f_997)
-					}()
-				}()
-			}, Value: sh62}},
-			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e943, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_998 := func() any { ; return (c.Lhs) }()
-						f_999 := func() any { ; return c.Cap(0) }()
-						return tmk_IndexListExpr(c, true, f_998, f_999)
-					}()
-				}()
-			}, Value: sh46}},
-			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h"}, M: e1000, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1001 := func() any { ; return (c.Lhs) }()
-						f_1002 := func() any { ; return c.Cap(0) }()
-						f_1003 := func() any { ; return c.Cap(1) }()
-						return tmk_SliceExpr(c, true, f_1001, f_1002, f_1003, nil)
-					}()
-				}()
-			}, Value: sh369}},
-			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h", "m"}, M: e1004, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1005 := func() any { ; return (c.Lhs) }()
-						f_1006 := func() any { ; return c.Cap(0) }()
-						f_1007 := func() any { ; return c.Cap(1) }()
-						f_1008 := func() any { ; return c.Cap(2) }()
-						return tmk_SliceExpr(c, true, f_1005, f_1006, f_1007, f_1008)
-					}()
-				}()
-			}, Value: sh63}},
-			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e1009, Action: func(c *pegort.TActCtx) any {
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e954, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
 						f_1010 := func() any { ; return (c.Lhs) }()
-						return tmk_CallExpr(c, true, f_1010, nil, nil)
+						f_1011 := func() any { ; return c.Cap(0) }()
+						return tmk_IndexExpr(c, true, f_1010, f_1011)
 					}()
 				}()
-			}, Value: sh47}},
-			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"as", "e"}, M: e1011, Action: func(c *pegort.TActCtx) any {
+			}, Value: sh62}},
+			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e957, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
 						f_1012 := func() any { ; return (c.Lhs) }()
 						f_1013 := func() any { ; return c.Cap(0) }()
-						f_1014 := func() any { ; return c.Cap(1) }()
-						return tmk_CallExpr(c, true, f_1012, f_1013, f_1014)
+						return tmk_IndexListExpr(c, true, f_1012, f_1013)
+					}()
+				}()
+			}, Value: sh46}},
+			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h"}, M: e1014, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1015 := func() any { ; return (c.Lhs) }()
+						f_1016 := func() any { ; return c.Cap(0) }()
+						f_1017 := func() any { ; return c.Cap(1) }()
+						return tmk_SliceExpr(c, true, f_1015, f_1016, f_1017, nil)
+					}()
+				}()
+			}, Value: sh369}},
+			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h", "m"}, M: e1018, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1019 := func() any { ; return (c.Lhs) }()
+						f_1020 := func() any { ; return c.Cap(0) }()
+						f_1021 := func() any { ; return c.Cap(1) }()
+						f_1022 := func() any { ; return c.Cap(2) }()
+						return tmk_SliceExpr(c, true, f_1019, f_1020, f_1021, f_1022)
+					}()
+				}()
+			}, Value: sh63}},
+			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e1023, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1024 := func() any { ; return (c.Lhs) }()
+						return tmk_CallExpr(c, true, f_1024, nil, nil)
+					}()
+				}()
+			}, Value: sh47}},
+			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"as", "e"}, M: e1025, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1026 := func() any { ; return (c.Lhs) }()
+						f_1027 := func() any { ; return c.Cap(0) }()
+						f_1028 := func() any { ; return c.Cap(1) }()
+						return tmk_CallExpr(c, true, f_1026, f_1027, f_1028)
 					}()
 				}()
 			}, Value: sh369}}},
@@ -2499,100 +2514,100 @@ func init() {
 	trules[223].Body = func(p *pegort.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[223], min) }
 
 	trules[227].OperatorsRule = &pegort.TOperatorsRule{
-		Skip: e930,
+		Skip: e944,
 		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e988, Action: nil, Value: sh345},
+			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1002, Action: nil, Value: sh345},
 		},
 		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e932, Action: func(c *pegort.TActCtx) any {
+		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e946, Action: func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return func() any {
-					f_1015 := func() any { ; return (c.Lhs) }()
-					f_1016 := func() any { ; return c.Cap(0) }()
-					return tmk_SelectorExpr(c, true, f_1015, f_1016)
+					f_1029 := func() any { ; return (c.Lhs) }()
+					f_1030 := func() any { ; return c.Cap(0) }()
+					return tmk_SelectorExpr(c, true, f_1029, f_1030)
 				}()
 			}()
 		}, Value: sh47}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e935, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1017 := func() any { ; return (c.Lhs) }()
-						return tmk_TypeAssertExpr(c, true, f_1017, nil)
-					}()
-				}()
-			}, Value: sh62}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t"}, M: e993, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1018 := func() any { ; return (c.Lhs) }()
-						f_1019 := func() any { ; return c.Cap(0) }()
-						return tmk_TypeAssertExpr(c, true, f_1018, f_1019)
-					}()
-				}()
-			}, Value: sh62}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e940, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1020 := func() any { ; return (c.Lhs) }()
-						f_1021 := func() any { ; return c.Cap(0) }()
-						return tmk_IndexExpr(c, true, f_1020, f_1021)
-					}()
-				}()
-			}, Value: sh62}},
-			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e943, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1022 := func() any { ; return (c.Lhs) }()
-						f_1023 := func() any { ; return c.Cap(0) }()
-						return tmk_IndexListExpr(c, true, f_1022, f_1023)
-					}()
-				}()
-			}, Value: sh46}},
-			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h"}, M: e1000, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1024 := func() any { ; return (c.Lhs) }()
-						f_1025 := func() any { ; return c.Cap(0) }()
-						f_1026 := func() any { ; return c.Cap(1) }()
-						return tmk_SliceExpr(c, true, f_1024, f_1025, f_1026, nil)
-					}()
-				}()
-			}, Value: sh369}},
-			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h", "m"}, M: e1004, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1027 := func() any { ; return (c.Lhs) }()
-						f_1028 := func() any { ; return c.Cap(0) }()
-						f_1029 := func() any { ; return c.Cap(1) }()
-						f_1030 := func() any { ; return c.Cap(2) }()
-						return tmk_SliceExpr(c, true, f_1027, f_1028, f_1029, f_1030)
-					}()
-				}()
-			}, Value: sh63}},
-			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e1009, Action: func(c *pegort.TActCtx) any {
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e949, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
 						f_1031 := func() any { ; return (c.Lhs) }()
-						return tmk_CallExpr(c, true, f_1031, nil, nil)
+						return tmk_TypeAssertExpr(c, true, f_1031, nil)
 					}()
 				}()
-			}, Value: sh47}},
-			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"as", "e"}, M: e1011, Action: func(c *pegort.TActCtx) any {
+			}, Value: sh62}},
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t"}, M: e1007, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
 						f_1032 := func() any { ; return (c.Lhs) }()
 						f_1033 := func() any { ; return c.Cap(0) }()
-						f_1034 := func() any { ; return c.Cap(1) }()
-						return tmk_CallExpr(c, true, f_1032, f_1033, f_1034)
+						return tmk_TypeAssertExpr(c, true, f_1032, f_1033)
+					}()
+				}()
+			}, Value: sh62}},
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e954, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1034 := func() any { ; return (c.Lhs) }()
+						f_1035 := func() any { ; return c.Cap(0) }()
+						return tmk_IndexExpr(c, true, f_1034, f_1035)
+					}()
+				}()
+			}, Value: sh62}},
+			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e957, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1036 := func() any { ; return (c.Lhs) }()
+						f_1037 := func() any { ; return c.Cap(0) }()
+						return tmk_IndexListExpr(c, true, f_1036, f_1037)
+					}()
+				}()
+			}, Value: sh46}},
+			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h"}, M: e1014, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1038 := func() any { ; return (c.Lhs) }()
+						f_1039 := func() any { ; return c.Cap(0) }()
+						f_1040 := func() any { ; return c.Cap(1) }()
+						return tmk_SliceExpr(c, true, f_1038, f_1039, f_1040, nil)
+					}()
+				}()
+			}, Value: sh369}},
+			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h", "m"}, M: e1018, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1041 := func() any { ; return (c.Lhs) }()
+						f_1042 := func() any { ; return c.Cap(0) }()
+						f_1043 := func() any { ; return c.Cap(1) }()
+						f_1044 := func() any { ; return c.Cap(2) }()
+						return tmk_SliceExpr(c, true, f_1041, f_1042, f_1043, f_1044)
+					}()
+				}()
+			}, Value: sh63}},
+			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e1023, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1045 := func() any { ; return (c.Lhs) }()
+						return tmk_CallExpr(c, true, f_1045, nil, nil)
+					}()
+				}()
+			}, Value: sh47}},
+			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"as", "e"}, M: e1025, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1046 := func() any { ; return (c.Lhs) }()
+						f_1047 := func() any { ; return c.Cap(0) }()
+						f_1048 := func() any { ; return c.Cap(1) }()
+						return tmk_CallExpr(c, true, f_1046, f_1047, f_1048)
 					}()
 				}()
 			}, Value: sh369}}},
@@ -19023,7 +19038,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e930(p *pegort.TParser) (any, bool) {
+func e944(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
 	)
@@ -19036,7 +19051,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e931(p *pegort.TParser) (any, bool) {
+func e945(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
 		v1 any
@@ -19050,7 +19065,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e932(p *pegort.TParser) (any, bool) {
+func e946(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -19083,7 +19098,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e935(p *pegort.TParser) (any, bool) {
+func e949(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -19155,7 +19170,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e937(p *pegort.TParser) (any, bool) {
+func e951(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -19231,7 +19246,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e940(p *pegort.TParser) (any, bool) {
+func e954(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -19313,7 +19328,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e943(p *pegort.TParser) (any, bool) {
+func e957(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -19361,7 +19376,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e946(p *pegort.TParser) (any, bool) {
+func e960(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -19479,7 +19494,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e950(p *pegort.TParser) (any, bool) {
+func e964(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -19623,7 +19638,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e955(p *pegort.TParser) (any, bool) {
+func e969(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -19679,7 +19694,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e957(p *pegort.TParser) (any, bool) {
+func e971(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -19795,7 +19810,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e961(p *pegort.TParser) (any, bool) {
+func e975(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -20744,7 +20759,7 @@ fail:
 }
 
 // goPrimary (typed OperatorsRule body inlined)
-func e980(p *pegort.TParser) (any, bool) {
+func e994(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -20822,7 +20837,7 @@ fail:
 }
 
 // goPrimary (typed OperatorsRule body inlined)
-func e982(p *pegort.TParser) (any, bool) {
+func e996(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -22144,7 +22159,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func e988(p *pegort.TParser) (any, bool) {
+func e1002(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
 		v1 any
@@ -22158,7 +22173,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func e991(p *pegort.TParser) (any, bool) {
+func e1005(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -22213,7 +22228,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func e993(p *pegort.TParser) (any, bool) {
+func e1007(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -22272,7 +22287,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func e1000(p *pegort.TParser) (any, bool) {
+func e1014(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -22373,7 +22388,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func e1004(p *pegort.TParser) (any, bool) {
+func e1018(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -22500,7 +22515,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func e1009(p *pegort.TParser) (any, bool) {
+func e1023(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -22539,7 +22554,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func e1011(p *pegort.TParser) (any, bool) {
+func e1025(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -31745,326 +31760,24 @@ func v333(p *pegort.TParser) (any, bool) {
 		start int
 		v     any
 		x1    int
-		x3    rune
-		x4    bool
 		ok    bool
-		x55   int
 	)
 	start = p.Pos
 	p.Enter()
+	if !p.SkipTerminal(term940) {
+		goto fail
+	}
 	x1 = p.Pos
-	x3, _, x4 = p.NextOrdinary()
-	if !(x4 && (x3 == 98)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 45)
-		goto L5
-	}
-	if _, ok = p.Parser.MatchLiteral(lit391, "break", 45, false); !ok {
-		goto L6
-	}
-	goto L2
-L6:
-	p.Pos = x1
-L5:
-	if !(x4 && (x3 == 99)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 38)
-		goto L7
-	}
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 99 && p.In[p.Pos+1] == 97 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit392, "case", 38, false); !ok {
-		goto L8
-	}
-	goto L2
-L8:
-	p.Pos = x1
-L7:
-	if !(x4 && (x3 == 99)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 32)
-		goto L9
-	}
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 99 && p.In[p.Pos+1] == 104 && p.In[p.Pos+2] == 97 && p.In[p.Pos+3] == 110 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit393, "chan", 32, false); !ok {
-		goto L10
-	}
-	goto L2
-L10:
-	p.Pos = x1
-L9:
-	if !(x4 && (x3 == 99)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 7)
-		goto L11
-	}
-	if _, ok = p.Parser.MatchLiteral(lit394, "const", 7, false); !ok {
-		goto L12
-	}
-	goto L2
-L12:
-	p.Pos = x1
-L11:
-	if !(x4 && (x3 == 99)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 46)
-		goto L13
-	}
-	if _, ok = p.Parser.MatchLiteral(lit395, "continue", 46, false); !ok {
-		goto L14
-	}
-	goto L2
-L14:
-	p.Pos = x1
-L13:
-	if !(x4 && (x3 == 100)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 39)
-		goto L15
-	}
-	if _, ok = p.Parser.MatchLiteral(lit396, "default", 39, false); !ok {
-		goto L16
-	}
-	goto L2
-L16:
-	p.Pos = x1
-L15:
-	if !(x4 && (x3 == 100)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 41)
-		goto L17
-	}
-	if _, ok = p.Parser.MatchLiteral(lit397, "defer", 41, false); !ok {
-		goto L18
-	}
-	goto L2
-L18:
-	p.Pos = x1
-L17:
-	if !(x4 && (x3 == 101)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 124)
-		goto L19
-	}
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit398, "else", 124, false); !ok {
-		goto L20
-	}
-	goto L2
-L20:
-	p.Pos = x1
-L19:
-	if !(x4 && (x3 == 102)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 48)
-		goto L21
-	}
-	if _, ok = p.Parser.MatchLiteral(lit399, "fallthrough", 48, false); !ok {
-		goto L22
-	}
-	goto L2
-L22:
-	p.Pos = x1
-L21:
-	if !(x4 && (x3 == 102)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 51)
-		goto L23
-	}
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 114 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit400, "for", 51, false); !ok {
-		goto L24
-	}
-	goto L2
-L24:
-	p.Pos = x1
-L23:
-	if !(x4 && (x3 == 102)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 6)
-		goto L25
-	}
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 117 && p.In[p.Pos+2] == 110 && p.In[p.Pos+3] == 99 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit401, "func", 6, false); !ok {
-		goto L26
-	}
-	goto L2
-L26:
-	p.Pos = x1
-L25:
-	if !(x4 && (x3 == 103)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 47)
-		goto L27
-	}
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 103 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 116 && p.In[p.Pos+3] == 111 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit402, "goto", 47, false); !ok {
-		goto L28
-	}
-	goto L2
-L28:
-	p.Pos = x1
-L27:
-	if !(x4 && (x3 == 103)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 40)
-		goto L29
-	}
-	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 103 && p.In[p.Pos+1] == 111 {
-		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit403, "go", 40, false); !ok {
-		goto L30
-	}
-	goto L2
-L30:
-	p.Pos = x1
-L29:
-	if !(x4 && (x3 == 105)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 43)
-		goto L31
-	}
-	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
-		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit404, "if", 43, false); !ok {
-		goto L32
-	}
-	goto L2
-L32:
-	p.Pos = x1
-L31:
-	if !(x4 && (x3 == 105)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 125)
-		goto L33
-	}
-	if _, ok = p.Parser.MatchLiteral(lit405, "import", 125, false); !ok {
-		goto L34
-	}
-	goto L2
-L34:
-	p.Pos = x1
-L33:
-	if !(x4 && (x3 == 105)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 28)
-		goto L35
-	}
-	if _, ok = p.Parser.MatchLiteral(lit406, "interface", 28, false); !ok {
-		goto L36
-	}
-	goto L2
-L36:
-	p.Pos = x1
-L35:
-	if !(x4 && (x3 == 109)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 26)
-		goto L37
-	}
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 109 && p.In[p.Pos+1] == 97 && p.In[p.Pos+2] == 112 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit407, "map", 26, false); !ok {
-		goto L38
-	}
-	goto L2
-L38:
-	p.Pos = x1
-L37:
-	if !(x4 && (x3 == 112)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 126)
-		goto L39
-	}
-	if _, ok = p.Parser.MatchLiteral(lit408, "package", 126, false); !ok {
-		goto L40
-	}
-	goto L2
-L40:
-	p.Pos = x1
-L39:
-	if !(x4 && (x3 == 114)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 127)
-		goto L41
-	}
-	if _, ok = p.Parser.MatchLiteral(lit409, "range", 127, false); !ok {
-		goto L42
-	}
-	goto L2
-L42:
-	p.Pos = x1
-L41:
-	if !(x4 && (x3 == 114)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 42)
-		goto L43
-	}
-	if _, ok = p.Parser.MatchLiteral(lit410, "return", 42, false); !ok {
-		goto L44
-	}
-	goto L2
-L44:
-	p.Pos = x1
-L43:
-	if !(x4 && (x3 == 115)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 44)
-		goto L45
-	}
-	if _, ok = p.Parser.MatchLiteral(lit411, "select", 44, false); !ok {
-		goto L46
-	}
-	goto L2
-L46:
-	p.Pos = x1
-L45:
-	if !(x4 && (x3 == 115)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 25)
-		goto L47
-	}
-	if _, ok = p.Parser.MatchLiteral(lit412, "struct", 25, false); !ok {
-		goto L48
-	}
-	goto L2
-L48:
-	p.Pos = x1
-L47:
-	if !(x4 && (x3 == 115)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 49)
-		goto L49
-	}
-	if _, ok = p.Parser.MatchLiteral(lit413, "switch", 49, false); !ok {
-		goto L50
-	}
-	goto L2
-L50:
-	p.Pos = x1
-L49:
-	if !(x4 && (x3 == 116)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 9)
-		goto L51
-	}
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 121 && p.In[p.Pos+2] == 112 && p.In[p.Pos+3] == 101 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit414, "type", 9, false); !ok {
-		goto L52
-	}
-	goto L2
-L52:
-	p.Pos = x1
-L51:
-	if !(x4 && (x3 == 118)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 8)
-		goto L53
-	}
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 118 && p.In[p.Pos+1] == 97 && p.In[p.Pos+2] == 114 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "var", 8, false); !ok {
-		goto L54
-	}
-	goto L2
-L54:
-	p.Pos = x1
-L53:
-	goto fail
-L2:
-
-	x55 = p.Pos
 	p.Silent++
 	if _, ok = s358(p); !ok {
-		goto L56
+		goto L2
 	}
 	p.Silent--
-	p.Pos = x55
+	p.Pos = x1
 	goto fail
-L56:
+L2:
 	p.Silent--
-	p.Pos = x55
+	p.Pos = x1
 	v = nil
 	p.Depth--
 	return v, true
@@ -35282,7 +34995,7 @@ func v381(p *pegort.TParser) (any, bool) {
 		p.ExpectOrdinary(p.Pos, 148)
 		goto L5
 	}
-	if !p.ClassesSkip(steps929) {
+	if !p.ClassesSkip(steps943) {
 		goto L6
 	}
 	goto L2

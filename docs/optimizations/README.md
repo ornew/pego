@@ -247,6 +247,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - [108. Prologue and rollback helpers](108-prologue-and-rollback-helpers.md)
 - [109. One body for the invocation and the plain call](109-one-body-for-invoke-and-plain-call.md)
 - [110. No recovered-error rollback without recovery](110-no-recovered-rollback-without-recovery.md)
+- [111. Terminal programs in generated Go parsers](111-terminal-programs.md)
 - [113. The action's rule name is set, not restored](113-action-rule-name-set-once.md)
 
 ## Experiments That Did Not Pay Off

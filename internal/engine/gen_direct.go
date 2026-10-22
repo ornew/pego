@@ -382,6 +382,12 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 	}
 	g := d.g
 	d.line("p.StepWork()")
+	if !build && !d.nodeBody {
+		if table, ok := g.terminalTable(e); ok {
+			d.failIf(fmt.Sprintf("!p.SkipTerminal(%s)", table), fail)
+			return "nil"
+		}
+	}
 	switch e := e.(type) {
 	case *grammar.Literal:
 		value := literalValue(e.Value)

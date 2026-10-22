@@ -784,22 +784,39 @@ var cls163 = pegort.Class{ASCII: [2]uint64{0x8000008400000000, 0x54404710000000}
 var cls164 = pegort.Class{ASCII: [2]uint64{0x0, 0x1000000010}}
 var cls165 = pegort.Class{ASCII: [2]uint64{0x300000000000000, 0x7e0000007e}}
 var steps166 = []pegort.ClassStep{{C: &cls164, ID: 52}, {C: &cls165, ID: 53}}
-var cls167 = pegort.Class{ASCII: [2]uint64{0x100003600, 0x0}}
-var cls168 = pegort.Class{ASCII: [2]uint64{0xf000000000000, 0x0}}
-var cls169 = pegort.Class{ASCII: [2]uint64{0xff000000000000, 0x0}}
-var steps170 = []pegort.ClassStep{{C: &cls168, ID: 48}, {C: &cls169, ID: 49}, {C: &cls169, ID: 49}}
-var lit177 = []rune("||")
-var lit182 = []rune("&&")
-var lit187 = []rune("<=")
-var lit188 = []rune("<")
-var lit189 = []rune(">=")
-var lit190 = []rune(">")
-var lit191 = []rune("==")
-var lit192 = []rune("!=")
-var lit197 = []rune("+")
-var lit202 = []rune("*")
-var lit203 = []rune("/")
-var lit204 = []rune("%")
+var cls167 = pegort.Class{ASCII: [2]uint64{0x0, 0x10000000000000}}
+var cls168 = pegort.Class{ASCII: [2]uint64{0x0, 0x4000000000}}
+var cls169 = pegort.Class{ASCII: [2]uint64{0x0, 0x400000000000}}
+var cls170 = pegort.Class{ASCII: [2]uint64{0x0, 0x20000000000}}
+var cls171 = pegort.Class{ASCII: [2]uint64{0x0, 0x200000000}}
+var cls172 = pegort.Class{ASCII: [2]uint64{0x0, 0x400000000}}
+var cls173 = pegort.Class{ASCII: [2]uint64{0x0, 0x800000000}}
+var cls174 = pegort.Class{ASCII: [2]uint64{0x0, 0x2000000000}}
+var cls175 = pegort.Class{ASCII: [2]uint64{0x0, 0x100000000000}}
+var cls176 = pegort.Class{ASCII: [2]uint64{0x0, 0x1000000000000}}
+var cls177 = pegort.Class{ASCII: [2]uint64{0x0, 0x4000000000000}}
+var cls178 = pegort.Class{ASCII: [2]uint64{0x0, 0x40000000000000}}
+var cls179 = pegort.Class{ASCII: [2]uint64{0x0, 0x80000000000000}}
+var cls180 = pegort.Class{ASCII: [2]uint64{0x3ff000000000000, 0x7fffffe87fffffe}}
+
+var cls182 = pegort.Class{ASCII: [2]uint64{0x100003600, 0x0}}
+var term183Data = pegort.TerminalProgram{Code: []uint16{5, 181, 2, 179, 3, 171, 0, 6, 8, 0, 25, 1, 4, 0, 25, 6, 8, 1, 26, 1, 4, 1, 26, 6, 8, 2, 27, 1, 4, 2, 27, 6, 8, 3, 59, 1, 4, 3, 59, 6, 8, 4, 60, 1, 4, 4, 60, 6, 8, 5, 61, 1, 4, 5, 61, 6, 8, 6, 62, 1, 4, 6, 62, 6, 8, 6, 63, 1, 4, 7, 63, 6, 8, 7, 64, 1, 4, 8, 64, 6, 8, 1, 65, 1, 4, 9, 65, 6, 8, 1, 66, 1, 4, 10, 66, 6, 8, 3, 67, 1, 4, 11, 67, 6, 8, 3, 68, 1, 4, 12, 68, 6, 8, 8, 69, 1, 4, 13, 69, 6, 8, 8, 70, 1, 4, 14, 70, 6, 8, 9, 71, 1, 4, 15, 71, 6, 8, 2, 72, 1, 4, 16, 72, 6, 8, 10, 73, 1, 4, 17, 73, 6, 8, 11, 74, 1, 4, 18, 74, 6, 8, 11, 75, 1, 4, 19, 75, 6, 8, 12, 76, 1, 4, 20, 76, 5, 6, 0, 4, 13, 24}, Classes: []*pegort.Class{&cls167, &cls168, &cls169, &cls170, &cls171, &cls172, &cls173, &cls174, &cls175, &cls176, &cls177, &cls178, &cls179, &cls180}, Literals: []pegort.TerminalText{{Runes: lit48, Text: "true"}, {Runes: lit49, Text: "false"}, {Runes: lit51, Text: "null"}, {Runes: lit87, Text: "in"}, {Runes: lit89, Text: "as"}, {Runes: lit90, Text: "break"}, {Runes: lit91, Text: "const"}, {Runes: lit92, Text: "continue"}, {Runes: lit93, Text: "else"}, {Runes: lit94, Text: "for"}, {Runes: lit95, Text: "function"}, {Runes: lit96, Text: "if"}, {Runes: lit97, Text: "import"}, {Runes: lit98, Text: "let"}, {Runes: lit99, Text: "loop"}, {Runes: lit100, Text: "package"}, {Runes: lit101, Text: "namespace"}, {Runes: lit102, Text: "return"}, {Runes: lit103, Text: "var"}, {Runes: lit104, Text: "void"}, {Runes: lit105, Text: "while"}}}
+var term183 = term183Data.Prepare()
+var cls184 = pegort.Class{ASCII: [2]uint64{0xf000000000000, 0x0}}
+var cls185 = pegort.Class{ASCII: [2]uint64{0xff000000000000, 0x0}}
+var steps186 = []pegort.ClassStep{{C: &cls184, ID: 48}, {C: &cls185, ID: 49}, {C: &cls185, ID: 49}}
+var lit193 = []rune("||")
+var lit198 = []rune("&&")
+var lit203 = []rune("<=")
+var lit204 = []rune("<")
+var lit205 = []rune(">=")
+var lit206 = []rune(">")
+var lit207 = []rune("==")
+var lit208 = []rune("!=")
+var lit213 = []rune("+")
+var lit218 = []rune("*")
+var lit219 = []rune("/")
+var lit220 = []rune("%")
 
 func init() {
 	rules = pegort.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])
@@ -846,74 +863,74 @@ func init() {
 	defer tinit()
 	trules[0].Entry = u0
 	trules[1].OperatorsRule = &pegort.TOperatorsRule{
-		Skip: e171,
+		Skip: e187,
 		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e172, Action: nil, Value: sh57},
+			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e188, Action: nil, Value: sh57},
 		},
 		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "right", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"then"}, M: e173, Action: func(c *pegort.TActCtx) any {
+		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "right", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"then"}, M: e189, Action: func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return func() any {
-					f_174 := func() any { ; return (c.Lhs) }()
-					f_175 := func() any { ; return c.Cap(0) }()
-					f_176 := func() any { ; return (c.Rhs) }()
-					return tmk_Conditional(c, true, f_174, f_175, f_176)
+					f_190 := func() any { ; return (c.Lhs) }()
+					f_191 := func() any { ; return c.Cap(0) }()
+					f_192 := func() any { ; return (c.Rhs) }()
+					return tmk_Conditional(c, true, f_190, f_191, f_192)
 				}()
 			}()
 		}, Value: sh79}},
-			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e178, Action: func(c *pegort.TActCtx) any {
+			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e194, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_179 := func() any { ; return (c.Lhs) }()
-						f_180 := func() any { ; return (c.Op) }()
-						f_181 := func() any { ; return (c.Rhs) }()
-						return tmk_Binary(c, true, f_179, f_180, f_181)
+						f_195 := func() any { ; return (c.Lhs) }()
+						f_196 := func() any { ; return (c.Op) }()
+						f_197 := func() any { ; return (c.Rhs) }()
+						return tmk_Binary(c, true, f_195, f_196, f_197)
 					}()
 				}()
 			}, Value: sh57}},
-			{Id: 2, Kind: "infix", Assoc: "left", Level: 3, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e183, Action: func(c *pegort.TActCtx) any {
+			{Id: 2, Kind: "infix", Assoc: "left", Level: 3, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e199, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_184 := func() any { ; return (c.Lhs) }()
-						f_185 := func() any { ; return (c.Op) }()
-						f_186 := func() any { ; return (c.Rhs) }()
-						return tmk_Binary(c, true, f_184, f_185, f_186)
+						f_200 := func() any { ; return (c.Lhs) }()
+						f_201 := func() any { ; return (c.Op) }()
+						f_202 := func() any { ; return (c.Rhs) }()
+						return tmk_Binary(c, true, f_200, f_201, f_202)
 					}()
 				}()
 			}, Value: sh57}},
-			{Id: 3, Kind: "infix", Assoc: "left", Level: 4, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e193, Action: func(c *pegort.TActCtx) any {
+			{Id: 3, Kind: "infix", Assoc: "left", Level: 4, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e209, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_194 := func() any { ; return (c.Lhs) }()
-						f_195 := func() any { ; return (c.Op) }()
-						f_196 := func() any { ; return (c.Rhs) }()
-						return tmk_Binary(c, true, f_194, f_195, f_196)
+						f_210 := func() any { ; return (c.Lhs) }()
+						f_211 := func() any { ; return (c.Op) }()
+						f_212 := func() any { ; return (c.Rhs) }()
+						return tmk_Binary(c, true, f_210, f_211, f_212)
 					}()
 				}()
 			}, Value: sh57}},
-			{Id: 4, Kind: "infix", Assoc: "left", Level: 5, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e198, Action: func(c *pegort.TActCtx) any {
+			{Id: 4, Kind: "infix", Assoc: "left", Level: 5, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e214, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_199 := func() any { ; return (c.Lhs) }()
-						f_200 := func() any { ; return (c.Op) }()
-						f_201 := func() any { ; return (c.Rhs) }()
-						return tmk_Binary(c, true, f_199, f_200, f_201)
+						f_215 := func() any { ; return (c.Lhs) }()
+						f_216 := func() any { ; return (c.Op) }()
+						f_217 := func() any { ; return (c.Rhs) }()
+						return tmk_Binary(c, true, f_215, f_216, f_217)
 					}()
 				}()
 			}, Value: sh57}},
-			{Id: 5, Kind: "infix", Assoc: "left", Level: 6, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e205, Action: func(c *pegort.TActCtx) any {
+			{Id: 5, Kind: "infix", Assoc: "left", Level: 6, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e221, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_206 := func() any { ; return (c.Lhs) }()
-						f_207 := func() any { ; return (c.Op) }()
-						f_208 := func() any { ; return (c.Rhs) }()
-						return tmk_Binary(c, true, f_206, f_207, f_208)
+						f_222 := func() any { ; return (c.Lhs) }()
+						f_223 := func() any { ; return (c.Op) }()
+						f_224 := func() any { ; return (c.Rhs) }()
+						return tmk_Binary(c, true, f_222, f_223, f_224)
 					}()
 				}()
 			}, Value: sh57}}},
@@ -921,47 +938,47 @@ func init() {
 	trules[1].Body = func(p *pegort.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[1], min) }
 
 	trules[5].OperatorsRule = &pegort.TOperatorsRule{
-		Skip: e171,
+		Skip: e187,
 		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e209, Action: nil, Value: sh57},
+			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e225, Action: nil, Value: sh57},
 		},
 		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"q", "f"}, M: e210, Action: func(c *pegort.TActCtx) any {
+		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"q", "f"}, M: e226, Action: func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return func() any {
-					f_211 := func() any { ; return (c.Lhs) }()
-					f_212 := func() any { ; return c.Cap(1) }()
-					f_213 := func() any {
+					f_227 := func() any { ; return (c.Lhs) }()
+					f_228 := func() any { ; return c.Cap(1) }()
+					f_229 := func() any {
 
 						return c.Binary(">", func() any { ; return c.Length(func() any { ; return c.Cap(0) }()) }(), func() any { ; return any(0) }())
 					}()
-					return tmk_Select(c, true, f_211, f_212, f_213)
+					return tmk_Select(c, true, f_227, f_228, f_229)
 				}()
 			}()
 		}, Value: sh79}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"f", "as"}, M: e214, Action: func(c *pegort.TActCtx) any {
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"f", "as"}, M: e230, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_215 := func() any { ; return (c.Lhs) }()
-						f_216 := func() any { ; return c.Cap(0) }()
-						f_217 := func() any { ; return c.Concat(func() any { ; return c.Cap(1) }()) }()
-						return tmk_Call(c, true, f_215, f_216, f_217)
+						f_231 := func() any { ; return (c.Lhs) }()
+						f_232 := func() any { ; return c.Cap(0) }()
+						f_233 := func() any { ; return c.Concat(func() any { ; return c.Cap(1) }()) }()
+						return tmk_Call(c, true, f_231, f_232, f_233)
 					}()
 				}()
 			}, Value: sh126}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"q", "i"}, M: e218, Action: func(c *pegort.TActCtx) any {
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"q", "i"}, M: e234, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_219 := func() any { ; return (c.Lhs) }()
-						f_220 := func() any { ; return c.Cap(1) }()
-						f_221 := func() any {
+						f_235 := func() any { ; return (c.Lhs) }()
+						f_236 := func() any { ; return c.Cap(1) }()
+						f_237 := func() any {
 
 							return c.Binary(">", func() any { ; return c.Length(func() any { ; return c.Cap(0) }()) }(), func() any { ; return any(0) }())
 						}()
-						return tmk_Index(c, true, f_219, f_220, f_221)
+						return tmk_Index(c, true, f_235, f_236, f_237)
 					}()
 				}()
 			}, Value: sh125}}},
@@ -1025,7 +1042,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func e171(p *pegort.TParser) (any, bool) {
+func e187(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
 	)
@@ -1038,7 +1055,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func e172(p *pegort.TParser) (any, bool) {
+func e188(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
 		v1 any
@@ -1052,7 +1069,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func e173(p *pegort.TParser) (any, bool) {
+func e189(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -1107,7 +1124,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func e178(p *pegort.TParser) (any, bool) {
+func e194(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -1116,7 +1133,7 @@ func e178(p *pegort.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 124 && p.In[p.Pos+1] == 124 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit177, "||", 82, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit193, "||", 82, false); !ok {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, "||", true)
@@ -1126,7 +1143,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func e183(p *pegort.TParser) (any, bool) {
+func e199(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -1135,7 +1152,7 @@ func e183(p *pegort.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 38 && p.In[p.Pos+1] == 38 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit182, "&&", 83, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit198, "&&", 83, false); !ok {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, "&&", true)
@@ -1145,7 +1162,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func e193(p *pegort.TParser) (any, bool) {
+func e209(p *pegort.TParser) (any, bool) {
 	var (
 		x1   pegort.Mark
 		v2   any
@@ -1179,7 +1196,7 @@ func e193(p *pegort.TParser) (any, bool) {
 	x8 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 60 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit187, "<=", 84, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit203, "<=", 84, false); !ok {
 		goto L7
 	}
 	v9 = p.NewMatchOrdinary(x8, p.Pos, "<=", true)
@@ -1195,7 +1212,7 @@ L6:
 	x12 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 60 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit188, "<", 85, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit204, "<", 85, false); !ok {
 		goto L11
 	}
 	v13 = p.NewMatchOrdinary(x12, p.Pos, "<", true)
@@ -1211,7 +1228,7 @@ L10:
 	x16 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 62 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit189, ">=", 86, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit205, ">=", 86, false); !ok {
 		goto L15
 	}
 	v17 = p.NewMatchOrdinary(x16, p.Pos, ">=", true)
@@ -1227,7 +1244,7 @@ L14:
 	x20 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 62 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit190, ">", 87, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit206, ">", 87, false); !ok {
 		goto L19
 	}
 	v21 = p.NewMatchOrdinary(x20, p.Pos, ">", true)
@@ -1243,7 +1260,7 @@ L18:
 	x24 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 61 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit191, "==", 88, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit207, "==", 88, false); !ok {
 		goto L23
 	}
 	v25 = p.NewMatchOrdinary(x24, p.Pos, "==", true)
@@ -1259,7 +1276,7 @@ L22:
 	x28 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 33 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit192, "!=", 89, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit208, "!=", 89, false); !ok {
 		goto L27
 	}
 	v29 = p.NewMatchOrdinary(x28, p.Pos, "!=", true)
@@ -1306,7 +1323,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func e198(p *pegort.TParser) (any, bool) {
+func e214(p *pegort.TParser) (any, bool) {
 	var (
 		x1  pegort.Mark
 		v2  any
@@ -1327,7 +1344,7 @@ func e198(p *pegort.TParser) (any, bool) {
 	x8 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 43 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit197, "+", 90, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit213, "+", 90, false); !ok {
 		goto L7
 	}
 	v9 = p.NewMatchOrdinary(x8, p.Pos, "+", true)
@@ -1360,7 +1377,7 @@ fail:
 }
 
 // expr (typed OperatorsRule body inlined)
-func e205(p *pegort.TParser) (any, bool) {
+func e221(p *pegort.TParser) (any, bool) {
 	var (
 		x1  pegort.Mark
 		v2  any
@@ -1383,7 +1400,7 @@ func e205(p *pegort.TParser) (any, bool) {
 	x8 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit202, "*", 91, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit218, "*", 91, false); !ok {
 		goto L7
 	}
 	v9 = p.NewMatchOrdinary(x8, p.Pos, "*", true)
@@ -1399,7 +1416,7 @@ L6:
 	x12 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 47 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit203, "/", 92, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit219, "/", 92, false); !ok {
 		goto L11
 	}
 	v13 = p.NewMatchOrdinary(x12, p.Pos, "/", true)
@@ -1415,7 +1432,7 @@ L10:
 	x16 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 37 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit204, "%", 93, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit220, "%", 93, false); !ok {
 		goto L15
 	}
 	v17 = p.NewMatchOrdinary(x16, p.Pos, "%", true)
@@ -1694,7 +1711,7 @@ fail:
 }
 
 // member (typed OperatorsRule body inlined)
-func e209(p *pegort.TParser) (any, bool) {
+func e225(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
 		v1 any
@@ -1708,7 +1725,7 @@ fail:
 }
 
 // member (typed OperatorsRule body inlined)
-func e210(p *pegort.TParser) (any, bool) {
+func e226(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -1775,7 +1792,7 @@ fail:
 }
 
 // member (typed OperatorsRule body inlined)
-func e214(p *pegort.TParser) (any, bool) {
+func e230(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -1867,7 +1884,7 @@ fail:
 }
 
 // member (typed OperatorsRule body inlined)
-func e218(p *pegort.TParser) (any, bool) {
+func e234(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -5401,7 +5418,7 @@ func s48(p *pegort.TParser) (any, bool) {
 	for {
 		x6 = p.Pos
 		x8 = p.Pos
-		if !p.ClassFast(&cls167) && !p.ClassSkip(&cls167, 79) {
+		if !p.ClassFast(&cls182) && !p.ClassSkip(&cls182, 79) {
 			goto L7
 		}
 		v9 = p.NewMatchOrdinary(x8, p.Pos, p.Text(x8, p.Pos), true)
@@ -5462,7 +5479,7 @@ func s48(p *pegort.TParser) (any, bool) {
 		for {
 			x33 = p.Pos
 			x35 = p.Pos
-			if !p.ClassFast(&cls167) && !p.ClassSkip(&cls167, 79) {
+			if !p.ClassFast(&cls182) && !p.ClassSkip(&cls182, 79) {
 				goto L34
 			}
 			v36 = p.NewMatchOrdinary(x35, p.Pos, p.Text(x35, p.Pos), true)
@@ -5565,297 +5582,15 @@ func s50(p *pegort.TParser) (any, bool) {
 	var (
 		start int
 		v     any
-		x1    int
-		x3    int
-		x5    rune
-		x6    bool
-		ok    bool
-		x49   int
 		ch    rune
 		size  int
+		ok    bool
 	)
 	start = p.Pos
 	p.Enter()
-	x1 = p.Pos
-	p.Silent++
-	x3 = p.Pos
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 116)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 25)
-		goto L7
+	if !p.SkipTerminal(term183) {
+		goto fail
 	}
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "true", 25, false); !ok {
-		goto L8
-	}
-	goto L4
-L8:
-	p.Pos = x3
-L7:
-	if !(x6 && (x5 == 102)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 26)
-		goto L9
-	}
-	if _, ok = p.Parser.MatchLiteral(lit49, "false", 26, false); !ok {
-		goto L10
-	}
-	goto L4
-L10:
-	p.Pos = x3
-L9:
-	if !(x6 && (x5 == 110)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 27)
-		goto L11
-	}
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 117 && p.In[p.Pos+2] == 108 && p.In[p.Pos+3] == 108 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit51, "null", 27, false); !ok {
-		goto L12
-	}
-	goto L4
-L12:
-	p.Pos = x3
-L11:
-	if !(x6 && (x5 == 105)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 59)
-		goto L13
-	}
-	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 110 {
-		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit87, "in", 59, false); !ok {
-		goto L14
-	}
-	goto L4
-L14:
-	p.Pos = x3
-L13:
-	if !(x6 && (x5 == 97)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 60)
-		goto L15
-	}
-	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 97 && p.In[p.Pos+1] == 115 {
-		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit89, "as", 60, false); !ok {
-		goto L16
-	}
-	goto L4
-L16:
-	p.Pos = x3
-L15:
-	if !(x6 && (x5 == 98)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 61)
-		goto L17
-	}
-	if _, ok = p.Parser.MatchLiteral(lit90, "break", 61, false); !ok {
-		goto L18
-	}
-	goto L4
-L18:
-	p.Pos = x3
-L17:
-	if !(x6 && (x5 == 99)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 62)
-		goto L19
-	}
-	if _, ok = p.Parser.MatchLiteral(lit91, "const", 62, false); !ok {
-		goto L20
-	}
-	goto L4
-L20:
-	p.Pos = x3
-L19:
-	if !(x6 && (x5 == 99)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 63)
-		goto L21
-	}
-	if _, ok = p.Parser.MatchLiteral(lit92, "continue", 63, false); !ok {
-		goto L22
-	}
-	goto L4
-L22:
-	p.Pos = x3
-L21:
-	if !(x6 && (x5 == 101)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 64)
-		goto L23
-	}
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit93, "else", 64, false); !ok {
-		goto L24
-	}
-	goto L4
-L24:
-	p.Pos = x3
-L23:
-	if !(x6 && (x5 == 102)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 65)
-		goto L25
-	}
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 114 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit94, "for", 65, false); !ok {
-		goto L26
-	}
-	goto L4
-L26:
-	p.Pos = x3
-L25:
-	if !(x6 && (x5 == 102)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 66)
-		goto L27
-	}
-	if _, ok = p.Parser.MatchLiteral(lit95, "function", 66, false); !ok {
-		goto L28
-	}
-	goto L4
-L28:
-	p.Pos = x3
-L27:
-	if !(x6 && (x5 == 105)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 67)
-		goto L29
-	}
-	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
-		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit96, "if", 67, false); !ok {
-		goto L30
-	}
-	goto L4
-L30:
-	p.Pos = x3
-L29:
-	if !(x6 && (x5 == 105)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 68)
-		goto L31
-	}
-	if _, ok = p.Parser.MatchLiteral(lit97, "import", 68, false); !ok {
-		goto L32
-	}
-	goto L4
-L32:
-	p.Pos = x3
-L31:
-	if !(x6 && (x5 == 108)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 69)
-		goto L33
-	}
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 116 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit98, "let", 69, false); !ok {
-		goto L34
-	}
-	goto L4
-L34:
-	p.Pos = x3
-L33:
-	if !(x6 && (x5 == 108)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 70)
-		goto L35
-	}
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 108 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 111 && p.In[p.Pos+3] == 112 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit99, "loop", 70, false); !ok {
-		goto L36
-	}
-	goto L4
-L36:
-	p.Pos = x3
-L35:
-	if !(x6 && (x5 == 112)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 71)
-		goto L37
-	}
-	if _, ok = p.Parser.MatchLiteral(lit100, "package", 71, false); !ok {
-		goto L38
-	}
-	goto L4
-L38:
-	p.Pos = x3
-L37:
-	if !(x6 && (x5 == 110)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 72)
-		goto L39
-	}
-	if _, ok = p.Parser.MatchLiteral(lit101, "namespace", 72, false); !ok {
-		goto L40
-	}
-	goto L4
-L40:
-	p.Pos = x3
-L39:
-	if !(x6 && (x5 == 114)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 73)
-		goto L41
-	}
-	if _, ok = p.Parser.MatchLiteral(lit102, "return", 73, false); !ok {
-		goto L42
-	}
-	goto L4
-L42:
-	p.Pos = x3
-L41:
-	if !(x6 && (x5 == 118)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 74)
-		goto L43
-	}
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 118 && p.In[p.Pos+1] == 97 && p.In[p.Pos+2] == 114 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit103, "var", 74, false); !ok {
-		goto L44
-	}
-	goto L4
-L44:
-	p.Pos = x3
-L43:
-	if !(x6 && (x5 == 118)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 75)
-		goto L45
-	}
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 118 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 105 && p.In[p.Pos+3] == 100 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit104, "void", 75, false); !ok {
-		goto L46
-	}
-	goto L4
-L46:
-	p.Pos = x3
-L45:
-	if !(x6 && (x5 == 119)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 76)
-		goto L47
-	}
-	if _, ok = p.Parser.MatchLiteral(lit105, "while", 76, false); !ok {
-		goto L48
-	}
-	goto L4
-L48:
-	p.Pos = x3
-L47:
-	goto L2
-L4:
-
-	x49 = p.Pos
-	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 95) {
-		p.ExpectOrdinary(p.Pos, 24)
-		goto L50
-	}
-	p.Pos += size
-	p.Silent--
-	p.Pos = x49
-	goto L2
-L50:
-	p.Silent--
-	p.Pos = x49
-	p.Silent--
-	p.Pos = x1
-	goto fail
-L2:
-	p.Silent--
-	p.Pos = x1
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch == 95) {
 		p.ExpectOrdinary(p.Pos, 7)
@@ -7224,7 +6959,7 @@ L5:
 		p.ExpectOrdinary(p.Pos, 48)
 		goto L7
 	}
-	if !p.ClassesSkip(steps170) {
+	if !p.ClassesSkip(steps186) {
 		goto L8
 	}
 	goto L2
