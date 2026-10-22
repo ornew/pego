@@ -591,6 +591,28 @@ func TestNavigation(t *testing.T) {
 	if want := map[string]bool{"docs/tutorial/": true, "docs/guide/": true, "docs/cookbook/": true, "spec/": true, "parsers/": true}; !maps.Equal(intro, want) {
 		t.Errorf("pages titled Introduction = %v, want %v", intro, want)
 	}
+	// The tutorial and the specification are numbered series: the navigation numbers their
+	// pages, and each page names its place above its title. The glossary stays unnumbered.
+	for _, tc := range []struct{ page, label, nav string }{
+		{"docs/tutorial/structured-input", "Lesson 2 of 10", "2. Parsing Structured Input"},
+		{"spec/parser-expressions", "Chapter 5", "5. Rule Expressions"},
+	} {
+		content, err := os.ReadFile(filepath.Join(out, filepath.FromSlash(tc.page), "index.html"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(content), `<p class="series-label">`+tc.label+`</p>`) {
+			t.Errorf("%s does not name its place %q", tc.page, tc.label)
+		}
+		if !strings.Contains(sidebarRe.FindString(string(content)), `aria-current="page">`+tc.nav+`</a>`) {
+			t.Errorf("%s is not %q in the navigation", tc.page, tc.nav)
+		}
+	}
+	if glossary, err := os.ReadFile(filepath.Join(out, "spec", "glossary", "index.html")); err != nil {
+		t.Fatal(err)
+	} else if strings.Contains(string(glossary), "series-label") || !strings.Contains(string(glossary), `aria-current="page">Glossary</a>`) {
+		t.Error("the glossary is numbered as a chapter")
+	}
 	apiPage, err := os.ReadFile(filepath.Join(out, "reference", "grammar", "index.html"))
 	if err != nil {
 		t.Fatal(err)

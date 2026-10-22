@@ -256,6 +256,7 @@ func Build(cfg Config) (Stats, error) {
 				}
 				sec.Children = append(sec.Children, group)
 			}
+			numberSeries(sec)
 			secs = append(secs, sec)
 		}
 		s.sections = secs

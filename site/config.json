@@ -51,7 +51,19 @@
       "match": [
         "docs/tutorial/*.md"
       ],
-      "index": "docs/tutorial/README.md"
+      "index": "docs/tutorial/README.md",
+      "first": [
+        "docs/tutorial/getting-started.md",
+        "docs/tutorial/structured-input.md",
+        "docs/tutorial/typed-trees.md",
+        "docs/tutorial/expressions.md",
+        "docs/tutorial/errors.md",
+        "docs/tutorial/context.md",
+        "docs/tutorial/testing-and-linting.md",
+        "docs/tutorial/shipping.md",
+        "docs/tutorial/big-and-live-input.md",
+        "docs/tutorial/tooling.md"
+      ]
     },
     {
       "title": "Guides",
@@ -187,14 +199,192 @@
       "match": [
         "docs/cookbook/*.md"
       ],
-      "index": "docs/cookbook/README.md"
+      "index": "docs/cookbook/README.md",
+      "children": [
+        {
+          "title": "Read Data",
+          "match": [
+            "docs/cookbook/config-to-structs.md",
+            "docs/cookbook/log-lines.md",
+            "docs/cookbook/big-files.md",
+            "docs/cookbook/sum-a-csv-column.md",
+            "docs/cookbook/header-and-records.md",
+            "docs/cookbook/cancel-a-stream.md",
+            "docs/cookbook/indentation.md",
+            "docs/cookbook/prefix-fragment.md"
+          ],
+          "first": [
+            "docs/cookbook/config-to-structs.md",
+            "docs/cookbook/log-lines.md",
+            "docs/cookbook/big-files.md",
+            "docs/cookbook/sum-a-csv-column.md",
+            "docs/cookbook/header-and-records.md",
+            "docs/cookbook/cancel-a-stream.md",
+            "docs/cookbook/indentation.md",
+            "docs/cookbook/prefix-fragment.md"
+          ]
+        },
+        {
+          "title": "Evaluate and Query",
+          "match": [
+            "docs/cookbook/calculator.md",
+            "docs/cookbook/filter-language.md",
+            "docs/cookbook/find-nodes.md"
+          ],
+          "first": [
+            "docs/cookbook/calculator.md",
+            "docs/cookbook/filter-language.md",
+            "docs/cookbook/find-nodes.md"
+          ]
+        },
+        {
+          "title": "Report Problems",
+          "match": [
+            "docs/cookbook/error-carets.md",
+            "docs/cookbook/several-errors.md",
+            "docs/cookbook/recover-statements.md",
+            "docs/cookbook/slow-grammar.md"
+          ],
+          "first": [
+            "docs/cookbook/error-carets.md",
+            "docs/cookbook/several-errors.md",
+            "docs/cookbook/recover-statements.md",
+            "docs/cookbook/slow-grammar.md"
+          ]
+        },
+        {
+          "title": "Build Tools",
+          "match": [
+            "docs/cookbook/highlighting.md",
+            "docs/cookbook/as-you-type.md",
+            "docs/cookbook/keep-last-good-tree.md"
+          ],
+          "first": [
+            "docs/cookbook/highlighting.md",
+            "docs/cookbook/as-you-type.md",
+            "docs/cookbook/keep-last-good-tree.md"
+          ]
+        },
+        {
+          "title": "Ship, Reuse and Test",
+          "match": [
+            "docs/cookbook/embed-grammar.md",
+            "docs/cookbook/ship-a-parser.md",
+            "docs/cookbook/ready-made-parsers.md",
+            "docs/cookbook/test-with-samples.md",
+            "docs/cookbook/edit-fuzz-grammar.md",
+            "docs/cookbook/typescript-parser.md",
+            "docs/cookbook/lint-in-ci.md"
+          ],
+          "first": [
+            "docs/cookbook/embed-grammar.md",
+            "docs/cookbook/ship-a-parser.md",
+            "docs/cookbook/ready-made-parsers.md",
+            "docs/cookbook/test-with-samples.md",
+            "docs/cookbook/edit-fuzz-grammar.md",
+            "docs/cookbook/typescript-parser.md",
+            "docs/cookbook/lint-in-ci.md"
+          ]
+        }
+      ]
     },
     {
       "title": "Specification",
       "match": [
         "spec/*.md"
       ],
-      "index": "spec/README.md"
+      "index": "spec/README.md",
+      "children": [
+        {
+          "title": "Language Basics",
+          "match": [
+            "spec/overview.md",
+            "spec/lexical.md",
+            "spec/grammar-files.md"
+          ],
+          "first": [
+            "spec/overview.md",
+            "spec/lexical.md",
+            "spec/grammar-files.md"
+          ]
+        },
+        {
+          "title": "Types and Expressions",
+          "match": [
+            "spec/types.md",
+            "spec/parser-expressions.md",
+            "spec/operators-rule.md",
+            "spec/predicates.md",
+            "spec/actions.md",
+            "spec/type-checking.md"
+          ],
+          "first": [
+            "spec/types.md",
+            "spec/parser-expressions.md",
+            "spec/operators-rule.md",
+            "spec/predicates.md",
+            "spec/actions.md",
+            "spec/type-checking.md"
+          ]
+        },
+        {
+          "title": "Annotations and Syntax",
+          "match": [
+            "spec/attributes.md",
+            "spec/pragmas.md",
+            "spec/syntax.md"
+          ],
+          "first": [
+            "spec/attributes.md",
+            "spec/pragmas.md",
+            "spec/syntax.md"
+          ]
+        },
+        {
+          "title": "Parsing and Results",
+          "match": [
+            "spec/parsing.md",
+            "spec/nodes.md",
+            "spec/documents.md",
+            "spec/streaming.md"
+          ],
+          "first": [
+            "spec/parsing.md",
+            "spec/nodes.md",
+            "spec/documents.md",
+            "spec/streaming.md"
+          ]
+        },
+        {
+          "title": "Tools and Formats",
+          "match": [
+            "spec/observability.md",
+            "spec/compiled-grammars.md",
+            "spec/generated-parsers.md",
+            "spec/schemas-and-queries.md",
+            "spec/lint.md"
+          ],
+          "first": [
+            "spec/observability.md",
+            "spec/compiled-grammars.md",
+            "spec/generated-parsers.md",
+            "spec/schemas-and-queries.md",
+            "spec/lint.md"
+          ]
+        },
+        {
+          "title": "Portable Virtual Machine",
+          "match": [
+            "spec/bytecode.md"
+          ],
+          "first": [
+            "spec/bytecode.md"
+          ]
+        }
+      ],
+      "first": [
+        "spec/glossary.md"
+      ]
     },
     {
       "title": "Reference",

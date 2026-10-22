@@ -72,7 +72,8 @@
   </nav>
   <main id="main" class="doc-main">
     <article class="prose">
-{{.Page.Body}}
+{{with .Page.SeriesLabel}}<p class="series-label">{{.}}</p>
+{{end}}{{.Page.Body}}
     </article>
     <footer class="doc-footer">
       {{with .Page.SourceURL}}<p class="source-link"><a href="{{.}}">View the source of this page on GitHub</a></p>{{end}}

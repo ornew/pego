@@ -53,6 +53,9 @@ type Page struct {
 	Title       string
 	Nav         string        // short title for the navigation
 	NavHTML     template.HTML // formatted labels supplied by generated pages only
+	Number      int           // position in a numbered series such as the tutorial, or 0
+	Series      string        // the word for a part of the series: "Lesson" or "Chapter"
+	SeriesTotal int           // the number of parts, when the label states it
 	Section     string
 	Index       bool   // the index of its section, which the navigation calls "Introduction"
 	Kind        string // landing, doc or playground
@@ -71,7 +74,59 @@ func (p *Page) NavLabel() template.HTML {
 	if p.NavHTML != "" {
 		return p.NavHTML
 	}
-	return template.HTML(template.HTMLEscapeString(p.Nav))
+	label := template.HTMLEscapeString(p.Nav)
+	if p.Number > 0 {
+		label = strconv.Itoa(p.Number) + ". " + label
+	}
+	return template.HTML(label)
+}
+
+// SeriesLabel names the page's place in its series, such as "Lesson 3 of 10", or is empty.
+func (p *Page) SeriesLabel() string {
+	if p.Number == 0 {
+		return ""
+	}
+	if p.SeriesTotal > 0 {
+		return fmt.Sprintf("%s %d of %d", p.Series, p.Number, p.SeriesTotal)
+	}
+	return fmt.Sprintf("%s %d", p.Series, p.Number)
+}
+
+// numberedSections are the sections read as a series: their pages are numbered in navigation
+// order, which matches the numbering of the section's index.
+var numberedSections = map[string]struct {
+	Word       string
+	StateTotal bool
+	Skip       map[string]bool // pages outside the series
+}{
+	"Tutorial":      {Word: "Lesson", StateTotal: true},
+	"Specification": {Word: "Chapter", Skip: map[string]bool{"spec/glossary.md": true}},
+}
+
+// numberSeries numbers the pages of a numbered section in the order the navigation shows them:
+// the nested groups first, then the section's own pages.
+func numberSeries(sec *Section) {
+	series, ok := numberedSections[sec.Name]
+	if !ok {
+		return
+	}
+	var pages []*Page
+	for _, group := range sec.Children {
+		pages = append(pages, group.NavPages...)
+	}
+	pages = append(pages, sec.NavPages...)
+	var parts []*Page
+	for _, p := range pages {
+		if !series.Skip[p.Src] {
+			parts = append(parts, p)
+		}
+	}
+	for i, p := range parts {
+		p.Number, p.Series = i+1, series.Word
+		if series.StateTotal {
+			p.SeriesTotal = len(parts)
+		}
+	}
 }
 
 // Section is a group of pages in the navigation.
