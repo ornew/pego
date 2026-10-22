@@ -3457,6 +3457,9 @@ func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[216], input, o, a, func(v any) *types.TNode[string] { return tv75(a, v) })
 	default:
+		if len(name) > 0 && name[0] == '_' {
+			return nil, fmt.Errorf("rule %s is hidden: a rule whose name begins with an underscore is not an entry point", name)
+		}
 		return nil, fmt.Errorf("rule %s is not defined", name)
 	}
 }
@@ -3571,299 +3574,299 @@ var scope555 = []string{"a"}
 
 func init() {
 	rules = []*pegort.Rule{
-		{Id: 0, Name: "main", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 1, Name: "main_fast", Scope: []string{"f"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 2, Name: "file", Scope: []string{"as1", "pkg", "as2", "is", "ds"}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 0, Novalue: false, Vars: []string{"sv"}},
-		{Id: 3, Name: "package_clause", Scope: []string{"n"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 4, Name: "import_decl", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 5, Name: "import_paren", Scope: []string{"lp", "ss"}, Value: pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 6, Name: "import_single", Scope: []string{"s"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 7, Name: "import_spec", Scope: []string{"n", "p"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 8, Name: "import_name", Scope: []string{"i"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 9, Name: "import_path", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 10, Name: "isep", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 11, Name: "bind", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 12, Name: "sp", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 13, Name: "nlws", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 14, Name: "ws", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 2, Novalue: false, Vars: []string{}},
-		{Id: 15, Name: "comment", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 16, Name: "comma", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 3, Novalue: false, Vars: []string{}},
-		{Id: 17, Name: "icomma", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 18, Name: "sep", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 4, Novalue: false, Vars: []string{}},
-		{Id: 19, Name: "colon_ec", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 5, Novalue: false, Vars: []string{}},
-		{Id: 20, Name: "colon_ec0", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 6, Novalue: false, Vars: []string{}},
-		{Id: 21, Name: "colon_ne", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 7, Novalue: false, Vars: []string{}},
-		{Id: 22, Name: "colon_ahead", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 23, Name: "decls", Scope: []string{"ds"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: true, Leader: false, Seen: 8, Novalue: false, Vars: []string{"sv"}},
-		{Id: 24, Name: "decl_item", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 25, Name: "item_normal", Scope: []string{"d"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 26, Name: "item_tail", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 27, Name: "embed_tail", Scope: []string{"l", "a"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 28, Name: "tail_end", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 29, Name: "tail_mark_end", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 30, Name: "after_ec", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 9, Novalue: false, Vars: []string{}},
-		{Id: 31, Name: "after_ne", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 10, Novalue: false, Vars: []string{}},
-		{Id: 32, Name: "tail_mark", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 33, Name: "decl", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 34, Name: "comp_decl", Scope: []string{"c"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 11, Novalue: false, Vars: []string{"sv"}},
-		{Id: 35, Name: "ellipsis_decl", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 36, Name: "let_decl", Scope: []string{"i", "e"}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 12, Novalue: false, Vars: []string{"sv"}},
-		{Id: 37, Name: "embed_decl", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 38, Name: "embed_plain", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 39, Name: "embed_bare", Scope: []string{"k"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 40, Name: "kw4", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 41, Name: "func_bare", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 42, Name: "bare_for", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 43, Name: "bare_if", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 44, Name: "bare_let", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 45, Name: "field", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 46, Name: "field_plain", Scope: []string{"l", "al", "c", "v", "as"}, Value: pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 47, Name: "field_alias", Scope: []string{"l", "al", "c", "v", "as"}, Value: pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 48, Name: "nfield", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 49, Name: "nfield_plain", Scope: []string{"l", "al", "c", "v", "as"}, Value: pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 50, Name: "nfield_alias", Scope: []string{"l", "al", "c", "v", "as"}, Value: pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 51, Name: "field_value", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 13, Novalue: false, Vars: []string{"sv"}},
-		{Id: 52, Name: "fv_label", Scope: []string{"v"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 53, Name: "fv_choice", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 54, Name: "let_skip", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 55, Name: "let_value", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 56, Name: "expr_nolet", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 57, Name: "nested", Scope: []string{"f"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 58, Name: "alias_value", Scope: []string{"i", "e"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 59, Name: "attrs", Scope: []string{"as"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: true, Leader: false, Seen: 14, Novalue: false, Vars: []string{"sv"}},
-		{Id: 60, Name: "postfix_alias_at", Scope: []string{"p"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 15, Novalue: false, Vars: []string{}},
-		{Id: 61, Name: "postfix_alias", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 62, Name: "alias_dual", Scope: []string{"k", "v"}, Value: pegort.Shaper{Elems: true, K: 9, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 63, Name: "alias_paren", Scope: []string{"f"}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 64, Name: "alias_simple", Scope: []string{"f"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 65, Name: "label_plain", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 16, Novalue: false, Vars: []string{"sv"}},
-		{Id: 66, Name: "ident_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, NodeType: "Ident", Seen: 17, Novalue: false, Vars: []string{}},
-		{Id: 67, Name: "kw_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 68, Name: "for_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 69, Name: "if_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 70, Name: "let_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, NodeType: "Ident", Seen: 18, Novalue: false, Vars: []string{}},
-		{Id: 71, Name: "alias_label", Scope: []string{"i", "r"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 72, Name: "nlabel_plain", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 73, Name: "nident_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, NodeType: "Ident", Seen: 19, Novalue: false, Vars: []string{}},
-		{Id: 74, Name: "nkw_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 75, Name: "alias_nlabel", Scope: []string{"i", "r"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 76, Name: "alias_rhs", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 20, Novalue: false, Vars: []string{"sv"}},
-		{Id: 77, Name: "ident_any", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, NodeType: "Ident", Seen: 21, Novalue: false, Vars: []string{}},
-		{Id: 78, Name: "comprehension", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 79, Name: "comp_single", Scope: []string{"c", "v", "f"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 80, Name: "comp_multi", Scope: []string{"first", "rest", "v", "f"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 81, Name: "fb_else", Scope: []string{"f"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 82, Name: "fb_other", Scope: []string{"f"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 83, Name: "else_clause", Scope: []string{"b"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 84, Name: "otherwise_clause", Scope: []string{"b"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 85, Name: "clause_gap", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 22, Novalue: false, Vars: []string{}},
-		{Id: 86, Name: "gate_for_if", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 23, Novalue: false, Vars: []string{}},
-		{Id: 87, Name: "start_clause", Scope: []string{"c"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 88, Name: "clause", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 89, Name: "for_clause", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 24, Novalue: false, Vars: []string{"sv"}},
-		{Id: 90, Name: "for_kv", Scope: []string{"k", "v", "s"}, Value: pegort.Shaper{Elems: true, K: 9, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 91, Name: "for_v", Scope: []string{"v", "s"}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 92, Name: "if_clause", Scope: []string{"c"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 25, Novalue: false, Vars: []string{"sv"}},
-		{Id: 93, Name: "try_clause", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 26, Novalue: false, Vars: []string{"sv"}},
-		{Id: 94, Name: "try_assign", Scope: []string{"i", "e"}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 95, Name: "try_plain", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 96, Name: "struct_lit", Scope: []string{"ds"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 27, Novalue: false, Vars: []string{"sv"}},
-		{Id: 97, Name: "list_lit", Scope: []string{"es", "d"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 28, Novalue: false, Vars: []string{"sv"}},
-		{Id: 98, Name: "esep", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 29, Novalue: false, Vars: []string{}},
-		{Id: 99, Name: "list_elem", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 100, Name: "elem_expr", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 101, Name: "gate_kw3", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 102, Name: "bare_for_if", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, NodeType: "Ident", Seen: 30, Novalue: false, Vars: []string{}},
-		{Id: 103, Name: "alias_elem", Scope: []string{"i", "e"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 104, Name: "list_dots", Scope: []string{"t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 105, Name: "dots_type", Scope: []string{"x"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 106, Name: "paren_expr", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 31, Novalue: false, Vars: []string{"sv"}},
-		{Id: 107, Name: "expr", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 32, Novalue: false, Vars: []string{"sv"}},
-		{Id: 108, Name: "atom_expr", Scope: []string{"a"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 109, Name: "operand_any", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 33, Novalue: false, Vars: []string{"sv"}},
-		{Id: 110, Name: "operand_word", Scope: []string{"o"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 111, Name: "word_any", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 112, Name: "operand_digit", Scope: []string{"n"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 113, Name: "operand_other", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 114, Name: "ident_q", Scope: []string{"i", "q"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 0, Name: "main", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 1, Name: "main_fast", Scope: []string{"f"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 2, Name: "file", Scope: []string{"as1", "pkg", "as2", "is", "ds"}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 0, Novalue: false, Vars: []string{"sv"}},
+		{Id: 3, Name: "package_clause", Scope: []string{"n"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 4, Name: "import_decl", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 5, Name: "import_paren", Scope: []string{"lp", "ss"}, Value: pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 6, Name: "import_single", Scope: []string{"s"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 7, Name: "import_spec", Scope: []string{"n", "p"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 8, Name: "import_name", Scope: []string{"i"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 9, Name: "import_path", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 10, Name: "isep", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 11, Name: "bind", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 12, Name: "sp", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 13, Name: "nlws", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 14, Name: "ws", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 2, Novalue: false, Vars: []string{}},
+		{Id: 15, Name: "comment", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 16, Name: "comma", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 3, Novalue: false, Vars: []string{}},
+		{Id: 17, Name: "icomma", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 18, Name: "sep", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 4, Novalue: false, Vars: []string{}},
+		{Id: 19, Name: "colon_ec", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 5, Novalue: false, Vars: []string{}},
+		{Id: 20, Name: "colon_ec0", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 6, Novalue: false, Vars: []string{}},
+		{Id: 21, Name: "colon_ne", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 7, Novalue: false, Vars: []string{}},
+		{Id: 22, Name: "colon_ahead", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 23, Name: "decls", Scope: []string{"ds"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 8, Novalue: false, Vars: []string{"sv"}},
+		{Id: 24, Name: "decl_item", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 25, Name: "item_normal", Scope: []string{"d"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 26, Name: "item_tail", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 27, Name: "embed_tail", Scope: []string{"l", "a"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 28, Name: "tail_end", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 29, Name: "tail_mark_end", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 30, Name: "after_ec", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 9, Novalue: false, Vars: []string{}},
+		{Id: 31, Name: "after_ne", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 10, Novalue: false, Vars: []string{}},
+		{Id: 32, Name: "tail_mark", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 33, Name: "decl", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 34, Name: "comp_decl", Scope: []string{"c"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 11, Novalue: false, Vars: []string{"sv"}},
+		{Id: 35, Name: "ellipsis_decl", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 36, Name: "let_decl", Scope: []string{"i", "e"}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 12, Novalue: false, Vars: []string{"sv"}},
+		{Id: 37, Name: "embed_decl", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 38, Name: "embed_plain", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 39, Name: "embed_bare", Scope: []string{"k"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 40, Name: "kw4", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 41, Name: "func_bare", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 42, Name: "bare_for", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 43, Name: "bare_if", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 44, Name: "bare_let", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 45, Name: "field", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 46, Name: "field_plain", Scope: []string{"l", "al", "c", "v", "as"}, Value: pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 47, Name: "field_alias", Scope: []string{"l", "al", "c", "v", "as"}, Value: pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 48, Name: "nfield", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 49, Name: "nfield_plain", Scope: []string{"l", "al", "c", "v", "as"}, Value: pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 50, Name: "nfield_alias", Scope: []string{"l", "al", "c", "v", "as"}, Value: pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 51, Name: "field_value", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 13, Novalue: false, Vars: []string{"sv"}},
+		{Id: 52, Name: "fv_label", Scope: []string{"v"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 53, Name: "fv_choice", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 54, Name: "let_skip", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 55, Name: "let_value", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 56, Name: "expr_nolet", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 57, Name: "nested", Scope: []string{"f"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 58, Name: "alias_value", Scope: []string{"i", "e"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 59, Name: "attrs", Scope: []string{"as"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 14, Novalue: false, Vars: []string{"sv"}},
+		{Id: 60, Name: "postfix_alias_at", Scope: []string{"p"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 15, Novalue: false, Vars: []string{}},
+		{Id: 61, Name: "postfix_alias", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 62, Name: "alias_dual", Scope: []string{"k", "v"}, Value: pegort.Shaper{Elems: true, K: 9, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 63, Name: "alias_paren", Scope: []string{"f"}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 64, Name: "alias_simple", Scope: []string{"f"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 65, Name: "label_plain", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 16, Novalue: false, Vars: []string{"sv"}},
+		{Id: 66, Name: "ident_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "Ident", Seen: 17, Novalue: false, Vars: []string{}},
+		{Id: 67, Name: "kw_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 68, Name: "for_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 69, Name: "if_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 70, Name: "let_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "Ident", Seen: 18, Novalue: false, Vars: []string{}},
+		{Id: 71, Name: "alias_label", Scope: []string{"i", "r"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 72, Name: "nlabel_plain", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 73, Name: "nident_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "Ident", Seen: 19, Novalue: false, Vars: []string{}},
+		{Id: 74, Name: "nkw_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 75, Name: "alias_nlabel", Scope: []string{"i", "r"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 76, Name: "alias_rhs", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 20, Novalue: false, Vars: []string{"sv"}},
+		{Id: 77, Name: "ident_any", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "Ident", Seen: 21, Novalue: false, Vars: []string{}},
+		{Id: 78, Name: "comprehension", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 79, Name: "comp_single", Scope: []string{"c", "v", "f"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 80, Name: "comp_multi", Scope: []string{"first", "rest", "v", "f"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 81, Name: "fb_else", Scope: []string{"f"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 82, Name: "fb_other", Scope: []string{"f"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 83, Name: "else_clause", Scope: []string{"b"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 84, Name: "otherwise_clause", Scope: []string{"b"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 85, Name: "clause_gap", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 22, Novalue: false, Vars: []string{}},
+		{Id: 86, Name: "gate_for_if", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 23, Novalue: false, Vars: []string{}},
+		{Id: 87, Name: "start_clause", Scope: []string{"c"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 88, Name: "clause", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 89, Name: "for_clause", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 24, Novalue: false, Vars: []string{"sv"}},
+		{Id: 90, Name: "for_kv", Scope: []string{"k", "v", "s"}, Value: pegort.Shaper{Elems: true, K: 9, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 91, Name: "for_v", Scope: []string{"v", "s"}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 92, Name: "if_clause", Scope: []string{"c"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 25, Novalue: false, Vars: []string{"sv"}},
+		{Id: 93, Name: "try_clause", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 26, Novalue: false, Vars: []string{"sv"}},
+		{Id: 94, Name: "try_assign", Scope: []string{"i", "e"}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 95, Name: "try_plain", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 96, Name: "struct_lit", Scope: []string{"ds"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 27, Novalue: false, Vars: []string{"sv"}},
+		{Id: 97, Name: "list_lit", Scope: []string{"es", "d"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 28, Novalue: false, Vars: []string{"sv"}},
+		{Id: 98, Name: "esep", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 29, Novalue: false, Vars: []string{}},
+		{Id: 99, Name: "list_elem", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 100, Name: "elem_expr", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 101, Name: "gate_kw3", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 102, Name: "bare_for_if", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "Ident", Seen: 30, Novalue: false, Vars: []string{}},
+		{Id: 103, Name: "alias_elem", Scope: []string{"i", "e"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 104, Name: "list_dots", Scope: []string{"t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 105, Name: "dots_type", Scope: []string{"x"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 106, Name: "paren_expr", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 31, Novalue: false, Vars: []string{"sv"}},
+		{Id: 107, Name: "expr", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 32, Novalue: false, Vars: []string{"sv"}},
+		{Id: 108, Name: "atom_expr", Scope: []string{"a"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 109, Name: "operand_any", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 33, Novalue: false, Vars: []string{"sv"}},
+		{Id: 110, Name: "operand_word", Scope: []string{"o"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 111, Name: "word_any", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 112, Name: "operand_digit", Scope: []string{"n"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 113, Name: "operand_other", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 114, Name: "ident_q", Scope: []string{"i", "q"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
 		{Id: 115, Name: "full_expr", Scope: []string{}, Value: pegort.Shaper{}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 116, Name: "asep", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 117, Name: "selector", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 34, Novalue: false, Vars: []string{}},
-		{Id: 118, Name: "bool_ident_sel", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 119, Name: "sel_string", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 120, Name: "interp_expr", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 35, Novalue: false, Vars: []string{"sv"}},
-		{Id: 121, Name: "attribute", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, NodeType: "Attribute", Seen: 36, Novalue: false, Vars: []string{"sv"}},
-		{Id: 122, Name: "attribute_d", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, NodeType: "Attribute", Seen: 37, Novalue: false, Vars: []string{"sv"}},
-		{Id: 123, Name: "attr_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 38, Novalue: false, Vars: []string{"sv"}},
-		{Id: 124, Name: "attr_group", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 125, Name: "attr_tok", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 126, Name: "attr_num", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 127, Name: "num_exp", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 128, Name: "num_mult", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 129, Name: "bad_num", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 130, Name: "zero_ok", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 131, Name: "attr_str", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 132, Name: "idchar", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 39, Novalue: false, Vars: []string{}},
-		{Id: 133, Name: "uidchar", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 40, Novalue: false, Vars: []string{}},
-		{Id: 134, Name: "idchars", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 41, Novalue: false, Vars: []string{}},
-		{Id: 135, Name: "idstart", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 136, Name: "digit_any", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 137, Name: "ident_text", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 42, Novalue: false, Vars: []string{}},
-		{Id: 138, Name: "hashrest", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 43, Novalue: false, Vars: []string{}},
-		{Id: 139, Name: "ident", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, NodeType: "Ident", Seen: 44, Novalue: false, Vars: []string{}},
-		{Id: 140, Name: "kw", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 141, Name: "kwident", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, NodeType: "Ident", Seen: 45, Novalue: false, Vars: []string{}},
-		{Id: 142, Name: "bool_lit", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, NodeType: "Bool", Seen: 46, Novalue: false, Vars: []string{}},
-		{Id: 143, Name: "null_lit", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, NodeType: "Null", Seen: 47, Novalue: false, Vars: []string{}},
-		{Id: 144, Name: "bottom", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, NodeType: "Bottom", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 145, Name: "number", Scope: []string{"n"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 48, Novalue: false, Vars: []string{}},
-		{Id: 146, Name: "number_any", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 147, Name: "hexd", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 148, Name: "based", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, NodeType: "Int", Seen: 49, Novalue: false, Vars: []string{}},
-		{Id: 149, Name: "d10", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 150, Name: "dec_ip", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 151, Name: "fracpart", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 152, Name: "exppart", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 153, Name: "mult", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 154, Name: "float_lit", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, NodeType: "Float", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 155, Name: "int_lit", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, NodeType: "Int", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 156, Name: "strlit", Scope: []string{"s"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 50, Novalue: false, Vars: []string{"sv"}},
-		{Id: 157, Name: "str_any", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 158, Name: "hexd4", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 51, Novalue: false, Vars: []string{}},
-		{Id: 159, Name: "bigu", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 52, Novalue: false, Vars: []string{}},
-		{Id: 160, Name: "esc_dq", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 53, Novalue: false, Vars: []string{}},
-		{Id: 161, Name: "esc_sq", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 54, Novalue: false, Vars: []string{}},
-		{Id: 162, Name: "dqbody", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 55, Novalue: false, Vars: []string{}},
-		{Id: 163, Name: "dq_plain", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: true, Leader: false, Seen: 56, Novalue: false, Vars: []string{}},
-		{Id: 164, Name: "dq_open", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 165, Name: "dq_mid", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 166, Name: "dq_end", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 167, Name: "dq_interp", Scope: []string{"f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 168, Name: "dq_rest", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 57, Novalue: false, Vars: []string{"sv"}},
-		{Id: 169, Name: "dq_more", Scope: []string{"e", "m", "t"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 170, Name: "dq_last", Scope: []string{"e", "z"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 171, Name: "sqbody", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 58, Novalue: false, Vars: []string{}},
-		{Id: 172, Name: "sq_plain", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: true, Leader: false, Seen: 59, Novalue: false, Vars: []string{}},
-		{Id: 173, Name: "sq_open", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 174, Name: "sq_mid", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 175, Name: "sq_end", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 176, Name: "sq_interp", Scope: []string{"f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 177, Name: "sq_rest", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 60, Novalue: false, Vars: []string{"sv"}},
-		{Id: 178, Name: "sq_more", Scope: []string{"e", "m", "t"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 179, Name: "sq_last", Scope: []string{"e", "z"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 180, Name: "gstring", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 181, Name: "qc", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 182, Name: "hq", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 61, Novalue: false, Vars: []string{"sv"}},
-		{Id: 183, Name: "g_escbody", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 184, Name: "gs_esc", Scope: []string{"h"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 62, Novalue: false, Vars: []string{"sv"}},
-		{Id: 185, Name: "g_interp_open", Scope: []string{"h"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 186, Name: "ml_nl", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 187, Name: "ml_open_tail", Scope: []string{"xh"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 63, Novalue: false, Vars: []string{"sv"}},
-		{Id: 188, Name: "ml_close_tail", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 64, Novalue: false, Vars: []string{"sv"}},
-		{Id: 189, Name: "gtriple", Scope: []string{"t", "hs"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: true, Leader: false, Seen: 65, Novalue: false, Vars: []string{"sv"}},
-		{Id: 190, Name: "gs_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 66, Novalue: false, Vars: []string{"sv"}},
-		{Id: 191, Name: "gs_quote", Scope: []string{"h"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 192, Name: "gsl_plain", Scope: []string{"t", "hs"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: true, Leader: false, Seen: 67, Novalue: false, Vars: []string{"sv"}},
-		{Id: 193, Name: "gsl_open", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: true, Leader: false, Seen: 68, Novalue: false, Vars: []string{"sv"}},
-		{Id: 194, Name: "gsl_mid", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 195, Name: "gsl_end", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 196, Name: "gsl_interp", Scope: []string{"hs", "f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 197, Name: "gsl_interp_s", Scope: []string{"hs", "f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 198, Name: "gsl_rest", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 69, Novalue: false, Vars: []string{"sv"}},
-		{Id: 199, Name: "gsl_more", Scope: []string{"e", "m", "t"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 200, Name: "gsl_last", Scope: []string{"e", "z"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 201, Name: "ml_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 202, Name: "ml_line", Scope: []string{"lead", "body"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 203, Name: "ml_close", Scope: []string{"c"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 204, Name: "gml_plain", Scope: []string{"t", "hs", "ls", "cw"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: true, Leader: false, Seen: 70, Novalue: false, Vars: []string{"sv"}},
-		{Id: 205, Name: "ml_frag", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 71, Novalue: false, Vars: []string{"sv"}},
-		{Id: 206, Name: "gml_open", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: true, Leader: false, Seen: 72, Novalue: false, Vars: []string{"sv"}},
-		{Id: 207, Name: "gml_mid", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 208, Name: "gml_end", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 209, Name: "gml_interp", Scope: []string{"hs", "f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 210, Name: "gml_interp_s", Scope: []string{"hs", "f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 211, Name: "gml_rest", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 73, Novalue: false, Vars: []string{"sv"}},
-		{Id: 212, Name: "gml_more", Scope: []string{"e", "m", "t"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 213, Name: "gml_last", Scope: []string{"e", "z"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
-		{Id: 214, Name: "gstr_plain", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: true, Leader: false, Seen: 74, Novalue: false, Vars: []string{"sv"}},
-		{Id: 215, Name: "uletter", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 216, Name: "udigit", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 217, Name: "ws", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 75, Novalue: true, Vars: []string{}},
-		{Id: 218, Name: "idchar", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 76, Novalue: true, Vars: []string{}},
-		{Id: 219, Name: "sep", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 77, Novalue: true, Vars: []string{}},
-		{Id: 220, Name: "sp", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 221, Name: "isep", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 222, Name: "tail_mark", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 223, Name: "tail_end", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 224, Name: "tail_mark_end", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 225, Name: "bind", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 226, Name: "kw4", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 227, Name: "func_bare", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 228, Name: "ident", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 78, Novalue: true, Vars: []string{}},
-		{Id: 229, Name: "colon_ec", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 79, Novalue: true, Vars: []string{}},
-		{Id: 230, Name: "colon_ne", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 80, Novalue: true, Vars: []string{}},
-		{Id: 231, Name: "colon_ec0", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 81, Novalue: true, Vars: []string{}},
-		{Id: 232, Name: "comma", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 82, Novalue: true, Vars: []string{}},
-		{Id: 233, Name: "kw_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 234, Name: "for_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 235, Name: "if_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 236, Name: "let_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 83, Novalue: true, Vars: []string{}},
-		{Id: 237, Name: "nkw_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 238, Name: "kwident", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 84, Novalue: true, Vars: []string{}},
-		{Id: 239, Name: "gate_for_if", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 85, Novalue: true, Vars: []string{}},
-		{Id: 240, Name: "clause_gap", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 86, Novalue: true, Vars: []string{}},
-		{Id: 241, Name: "esep", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 87, Novalue: true, Vars: []string{}},
-		{Id: 242, Name: "gate_kw3", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 243, Name: "colon_ahead", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 244, Name: "dqbody", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 88, Novalue: true, Vars: []string{}},
-		{Id: 245, Name: "icomma", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 246, Name: "idchars", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 89, Novalue: true, Vars: []string{}},
-		{Id: 247, Name: "attr_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 90, Novalue: true, Vars: []string{"sv"}},
-		{Id: 248, Name: "bad_num", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 249, Name: "based", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 91, Novalue: true, Vars: []string{}},
-		{Id: 250, Name: "zero_ok", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 251, Name: "digit_any", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 252, Name: "kw", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 253, Name: "ident_text", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 92, Novalue: true, Vars: []string{}},
-		{Id: 254, Name: "hexd", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 255, Name: "dec_ip", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 256, Name: "d10", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 257, Name: "fracpart", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 258, Name: "exppart", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 259, Name: "mult", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 260, Name: "sqbody", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 93, Novalue: true, Vars: []string{}},
-		{Id: 261, Name: "qc", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"sv"}},
-		{Id: 262, Name: "gs_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 94, Novalue: true, Vars: []string{"sv"}},
-		{Id: 263, Name: "g_interp_open", Scope: []string{"h"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"sv"}},
-		{Id: 264, Name: "hq", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 95, Novalue: true, Vars: []string{"sv"}},
-		{Id: 265, Name: "ml_close_tail", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 96, Novalue: true, Vars: []string{"sv"}},
-		{Id: 266, Name: "ml_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"sv"}},
-		{Id: 267, Name: "ml_open_tail", Scope: []string{"xh"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 97, Novalue: true, Vars: []string{"sv"}},
-		{Id: 268, Name: "ml_frag", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 98, Novalue: true, Vars: []string{"sv"}},
-		{Id: 269, Name: "comment", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 270, Name: "uidchar", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 99, Novalue: true, Vars: []string{}},
-		{Id: 271, Name: "after_ec", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 100, Novalue: true, Vars: []string{}},
-		{Id: 272, Name: "after_ne", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 101, Novalue: true, Vars: []string{}},
-		{Id: 273, Name: "nlws", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 274, Name: "esc_dq", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 102, Novalue: true, Vars: []string{}},
-		{Id: 275, Name: "attr_group", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"sv"}},
-		{Id: 276, Name: "attr_tok", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"sv"}},
-		{Id: 277, Name: "udigit", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 278, Name: "hashrest", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 103, Novalue: true, Vars: []string{}},
-		{Id: 279, Name: "idstart", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 280, Name: "esc_sq", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 104, Novalue: true, Vars: []string{}},
-		{Id: 281, Name: "gs_quote", Scope: []string{"h"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"sv"}},
-		{Id: 282, Name: "gs_esc", Scope: []string{"h"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 105, Novalue: true, Vars: []string{"sv"}},
-		{Id: 283, Name: "ml_nl", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 284, Name: "uletter", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 285, Name: "hexd4", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, Memo: true, Leader: false, Seen: 106, Novalue: true, Vars: []string{}},
-		{Id: 286, Name: "bigu", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 107, Novalue: true, Vars: []string{}},
-		{Id: 287, Name: "attr_str", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"sv"}},
-		{Id: 288, Name: "attr_num", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 289, Name: "attribute", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: true, Leader: false, Seen: 108, Novalue: true, Vars: []string{"sv"}},
-		{Id: 290, Name: "g_escbody", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"sv"}},
-		{Id: 291, Name: "num_exp", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 292, Name: "num_mult", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 116, Name: "asep", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 117, Name: "selector", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 34, Novalue: false, Vars: []string{}},
+		{Id: 118, Name: "bool_ident_sel", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Ident", Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 119, Name: "sel_string", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 120, Name: "interp_expr", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 35, Novalue: false, Vars: []string{"sv"}},
+		{Id: 121, Name: "attribute", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "Attribute", Seen: 36, Novalue: false, Vars: []string{"sv"}},
+		{Id: 122, Name: "attribute_d", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "Attribute", Seen: 37, Novalue: false, Vars: []string{"sv"}},
+		{Id: 123, Name: "attr_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 38, Novalue: false, Vars: []string{"sv"}},
+		{Id: 124, Name: "attr_group", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 125, Name: "attr_tok", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 126, Name: "attr_num", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 127, Name: "num_exp", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 128, Name: "num_mult", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 129, Name: "bad_num", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 130, Name: "zero_ok", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 131, Name: "attr_str", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 132, Name: "idchar", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 39, Novalue: false, Vars: []string{}},
+		{Id: 133, Name: "uidchar", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 40, Novalue: false, Vars: []string{}},
+		{Id: 134, Name: "idchars", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 41, Novalue: false, Vars: []string{}},
+		{Id: 135, Name: "idstart", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 136, Name: "digit_any", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 137, Name: "ident_text", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 42, Novalue: false, Vars: []string{}},
+		{Id: 138, Name: "hashrest", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 43, Novalue: false, Vars: []string{}},
+		{Id: 139, Name: "ident", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "Ident", Seen: 44, Novalue: false, Vars: []string{}},
+		{Id: 140, Name: "kw", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 141, Name: "kwident", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "Ident", Seen: 45, Novalue: false, Vars: []string{}},
+		{Id: 142, Name: "bool_lit", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "Bool", Seen: 46, Novalue: false, Vars: []string{}},
+		{Id: 143, Name: "null_lit", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "Null", Seen: 47, Novalue: false, Vars: []string{}},
+		{Id: 144, Name: "bottom", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Bottom", Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 145, Name: "number", Scope: []string{"n"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 48, Novalue: false, Vars: []string{}},
+		{Id: 146, Name: "number_any", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 147, Name: "hexd", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 148, Name: "based", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "Int", Seen: 49, Novalue: false, Vars: []string{}},
+		{Id: 149, Name: "d10", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 150, Name: "dec_ip", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 151, Name: "fracpart", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 152, Name: "exppart", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 153, Name: "mult", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 154, Name: "float_lit", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Float", Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 155, Name: "int_lit", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Int", Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 156, Name: "strlit", Scope: []string{"s"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 50, Novalue: false, Vars: []string{"sv"}},
+		{Id: 157, Name: "str_any", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 158, Name: "hexd4", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 51, Novalue: false, Vars: []string{}},
+		{Id: 159, Name: "bigu", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 52, Novalue: false, Vars: []string{}},
+		{Id: 160, Name: "esc_dq", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 53, Novalue: false, Vars: []string{}},
+		{Id: 161, Name: "esc_sq", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 54, Novalue: false, Vars: []string{}},
+		{Id: 162, Name: "dqbody", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 55, Novalue: false, Vars: []string{}},
+		{Id: 163, Name: "dq_plain", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 56, Novalue: false, Vars: []string{}},
+		{Id: 164, Name: "dq_open", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 165, Name: "dq_mid", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 166, Name: "dq_end", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 167, Name: "dq_interp", Scope: []string{"f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 168, Name: "dq_rest", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 57, Novalue: false, Vars: []string{"sv"}},
+		{Id: 169, Name: "dq_more", Scope: []string{"e", "m", "t"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 170, Name: "dq_last", Scope: []string{"e", "z"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 171, Name: "sqbody", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 58, Novalue: false, Vars: []string{}},
+		{Id: 172, Name: "sq_plain", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 59, Novalue: false, Vars: []string{}},
+		{Id: 173, Name: "sq_open", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 174, Name: "sq_mid", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 175, Name: "sq_end", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 176, Name: "sq_interp", Scope: []string{"f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 177, Name: "sq_rest", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 60, Novalue: false, Vars: []string{"sv"}},
+		{Id: 178, Name: "sq_more", Scope: []string{"e", "m", "t"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 179, Name: "sq_last", Scope: []string{"e", "z"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 180, Name: "gstring", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 181, Name: "qc", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 182, Name: "hq", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 61, Novalue: false, Vars: []string{"sv"}},
+		{Id: 183, Name: "g_escbody", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 184, Name: "gs_esc", Scope: []string{"h"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 62, Novalue: false, Vars: []string{"sv"}},
+		{Id: 185, Name: "g_interp_open", Scope: []string{"h"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 186, Name: "ml_nl", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 187, Name: "ml_open_tail", Scope: []string{"xh"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 63, Novalue: false, Vars: []string{"sv"}},
+		{Id: 188, Name: "ml_close_tail", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 64, Novalue: false, Vars: []string{"sv"}},
+		{Id: 189, Name: "gtriple", Scope: []string{"t", "hs"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 65, Novalue: false, Vars: []string{"sv"}},
+		{Id: 190, Name: "gs_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 66, Novalue: false, Vars: []string{"sv"}},
+		{Id: 191, Name: "gs_quote", Scope: []string{"h"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 192, Name: "gsl_plain", Scope: []string{"t", "hs"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 67, Novalue: false, Vars: []string{"sv"}},
+		{Id: 193, Name: "gsl_open", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 68, Novalue: false, Vars: []string{"sv"}},
+		{Id: 194, Name: "gsl_mid", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 195, Name: "gsl_end", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 196, Name: "gsl_interp", Scope: []string{"hs", "f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 197, Name: "gsl_interp_s", Scope: []string{"hs", "f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 198, Name: "gsl_rest", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 69, Novalue: false, Vars: []string{"sv"}},
+		{Id: 199, Name: "gsl_more", Scope: []string{"e", "m", "t"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 200, Name: "gsl_last", Scope: []string{"e", "z"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 201, Name: "ml_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 202, Name: "ml_line", Scope: []string{"lead", "body"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 203, Name: "ml_close", Scope: []string{"c"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 204, Name: "gml_plain", Scope: []string{"t", "hs", "ls", "cw"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 70, Novalue: false, Vars: []string{"sv"}},
+		{Id: 205, Name: "ml_frag", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 71, Novalue: false, Vars: []string{"sv"}},
+		{Id: 206, Name: "gml_open", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 72, Novalue: false, Vars: []string{"sv"}},
+		{Id: 207, Name: "gml_mid", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 208, Name: "gml_end", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 209, Name: "gml_interp", Scope: []string{"hs", "f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 210, Name: "gml_interp_s", Scope: []string{"hs", "f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 211, Name: "gml_rest", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 73, Novalue: false, Vars: []string{"sv"}},
+		{Id: 212, Name: "gml_more", Scope: []string{"e", "m", "t"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 213, Name: "gml_last", Scope: []string{"e", "z"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"sv"}},
+		{Id: 214, Name: "gstr_plain", Scope: []string{"t"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 74, Novalue: false, Vars: []string{"sv"}},
+		{Id: 215, Name: "uletter", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 216, Name: "udigit", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
+		{Id: 217, Name: "ws", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 75, Novalue: true, Vars: []string{}},
+		{Id: 218, Name: "idchar", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 76, Novalue: true, Vars: []string{}},
+		{Id: 219, Name: "sep", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 77, Novalue: true, Vars: []string{}},
+		{Id: 220, Name: "sp", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 221, Name: "isep", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 222, Name: "tail_mark", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 223, Name: "tail_end", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 224, Name: "tail_mark_end", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 225, Name: "bind", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 226, Name: "kw4", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 227, Name: "func_bare", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 228, Name: "ident", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 78, Novalue: true, Vars: []string{}},
+		{Id: 229, Name: "colon_ec", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 79, Novalue: true, Vars: []string{}},
+		{Id: 230, Name: "colon_ne", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 80, Novalue: true, Vars: []string{}},
+		{Id: 231, Name: "colon_ec0", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 81, Novalue: true, Vars: []string{}},
+		{Id: 232, Name: "comma", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 82, Novalue: true, Vars: []string{}},
+		{Id: 233, Name: "kw_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 234, Name: "for_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 235, Name: "if_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 236, Name: "let_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 83, Novalue: true, Vars: []string{}},
+		{Id: 237, Name: "nkw_label", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 238, Name: "kwident", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 84, Novalue: true, Vars: []string{}},
+		{Id: 239, Name: "gate_for_if", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 85, Novalue: true, Vars: []string{}},
+		{Id: 240, Name: "clause_gap", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 86, Novalue: true, Vars: []string{}},
+		{Id: 241, Name: "esep", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 87, Novalue: true, Vars: []string{}},
+		{Id: 242, Name: "gate_kw3", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 243, Name: "colon_ahead", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 244, Name: "dqbody", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 88, Novalue: true, Vars: []string{}},
+		{Id: 245, Name: "icomma", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 246, Name: "idchars", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 89, Novalue: true, Vars: []string{}},
+		{Id: 247, Name: "attr_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 90, Novalue: true, Vars: []string{"sv"}},
+		{Id: 248, Name: "bad_num", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 249, Name: "based", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 91, Novalue: true, Vars: []string{}},
+		{Id: 250, Name: "zero_ok", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 251, Name: "digit_any", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 252, Name: "kw", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 253, Name: "ident_text", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 92, Novalue: true, Vars: []string{}},
+		{Id: 254, Name: "hexd", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 255, Name: "dec_ip", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 256, Name: "d10", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 257, Name: "fracpart", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 258, Name: "exppart", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 259, Name: "mult", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 260, Name: "sqbody", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 93, Novalue: true, Vars: []string{}},
+		{Id: 261, Name: "qc", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"sv"}},
+		{Id: 262, Name: "gs_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 94, Novalue: true, Vars: []string{"sv"}},
+		{Id: 263, Name: "g_interp_open", Scope: []string{"h"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"sv"}},
+		{Id: 264, Name: "hq", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 95, Novalue: true, Vars: []string{"sv"}},
+		{Id: 265, Name: "ml_close_tail", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 96, Novalue: true, Vars: []string{"sv"}},
+		{Id: 266, Name: "ml_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"sv"}},
+		{Id: 267, Name: "ml_open_tail", Scope: []string{"xh"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 97, Novalue: true, Vars: []string{"sv"}},
+		{Id: 268, Name: "ml_frag", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 98, Novalue: true, Vars: []string{"sv"}},
+		{Id: 269, Name: "comment", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 270, Name: "uidchar", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 99, Novalue: true, Vars: []string{}},
+		{Id: 271, Name: "after_ec", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 100, Novalue: true, Vars: []string{}},
+		{Id: 272, Name: "after_ne", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 101, Novalue: true, Vars: []string{}},
+		{Id: 273, Name: "nlws", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 274, Name: "esc_dq", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 102, Novalue: true, Vars: []string{}},
+		{Id: 275, Name: "attr_group", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"sv"}},
+		{Id: 276, Name: "attr_tok", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"sv"}},
+		{Id: 277, Name: "udigit", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 278, Name: "hashrest", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 103, Novalue: true, Vars: []string{}},
+		{Id: 279, Name: "idstart", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 280, Name: "esc_sq", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 104, Novalue: true, Vars: []string{}},
+		{Id: 281, Name: "gs_quote", Scope: []string{"h"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"sv"}},
+		{Id: 282, Name: "gs_esc", Scope: []string{"h"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 105, Novalue: true, Vars: []string{"sv"}},
+		{Id: 283, Name: "ml_nl", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 284, Name: "uletter", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 285, Name: "hexd4", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 106, Novalue: true, Vars: []string{}},
+		{Id: 286, Name: "bigu", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 107, Novalue: true, Vars: []string{}},
+		{Id: 287, Name: "attr_str", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"sv"}},
+		{Id: 288, Name: "attr_num", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 289, Name: "attribute", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 108, Novalue: true, Vars: []string{"sv"}},
+		{Id: 290, Name: "g_escbody", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"sv"}},
+		{Id: 291, Name: "num_exp", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
+		{Id: 292, Name: "num_mult", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
 	}
 	pegoGrammar.SetRules(rules, 109)
 	pegoGrammar.StructFields["Alias"] = map[string]bool{"Ident": true, "Expr": true}
@@ -4343,7 +4346,7 @@ func init() {
 	trules[115].OperatorsRule = &pegort.TOperatorsRule{
 		Skip: e483,
 		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e484, Action: nil, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}},
+			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e484, Action: nil, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}},
 		},
 		Prefix: []*pegort.TOperatorsRuleOp{{Id: 7, Kind: "prefix", Assoc: "", Level: 8, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e530, Action: func(c *pegort.TActCtx) any {
 			return func() any {
@@ -4354,7 +4357,7 @@ func init() {
 					return tmk_UnaryExpr(c, true, f_531, f_532)
 				}()
 			}()
-		}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}}}},
+		}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}}},
 		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "left", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e486, Action: func(c *pegort.TActCtx) any {
 			return func() any {
 
@@ -4365,7 +4368,7 @@ func init() {
 					return tmk_BinaryExpr(c, true, f_487, f_488, f_489)
 				}()
 			}()
-		}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}}},
+		}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
 			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e491, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
@@ -4376,7 +4379,7 @@ func init() {
 						return tmk_BinaryExpr(c, true, f_492, f_493, f_494)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}}},
+			}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
 			{Id: 2, Kind: "infix", Assoc: "left", Level: 3, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e496, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
@@ -4387,7 +4390,7 @@ func init() {
 						return tmk_BinaryExpr(c, true, f_497, f_498, f_499)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}}},
+			}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
 			{Id: 3, Kind: "infix", Assoc: "left", Level: 4, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e501, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
@@ -4398,7 +4401,7 @@ func init() {
 						return tmk_BinaryExpr(c, true, f_502, f_503, f_504)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}}},
+			}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
 			{Id: 4, Kind: "infix", Assoc: "left", Level: 5, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e514, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
@@ -4409,7 +4412,7 @@ func init() {
 						return tmk_BinaryExpr(c, true, f_515, f_516, f_517)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}}},
+			}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
 			{Id: 5, Kind: "infix", Assoc: "left", Level: 6, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e519, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
@@ -4420,7 +4423,7 @@ func init() {
 						return tmk_BinaryExpr(c, true, f_520, f_521, f_522)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}}},
+			}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
 			{Id: 6, Kind: "infix", Assoc: "left", Level: 7, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e525, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
@@ -4431,7 +4434,7 @@ func init() {
 						return tmk_BinaryExpr(c, true, f_526, f_527, f_528)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}}},
+			}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
 			{Id: 8, Kind: "postfix", Assoc: "", Level: 9, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s", "q"}, M: e533, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
@@ -4448,7 +4451,7 @@ func init() {
 						return tmk_PostfixExpr(c, true, f_534, f_537)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}}},
+			}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}}},
 			{Id: 9, Kind: "postfix", Assoc: "", Level: 9, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e538, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
@@ -4458,7 +4461,7 @@ func init() {
 						return tmk_SelectorExpr(c, true, f_539, f_540)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}}},
+			}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}}},
 			{Id: 10, Kind: "postfix", Assoc: "", Level: 9, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i", "r", "q"}, M: e541, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
@@ -4476,7 +4479,7 @@ func init() {
 						return tmk_PostfixExpr(c, true, f_542, f_546)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true}}},
+			}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}}},
 			{Id: 11, Kind: "postfix", Assoc: "", Level: 9, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i", "r"}, M: e547, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
@@ -4487,7 +4490,7 @@ func init() {
 						return tmk_IndexExpr(c, true, f_548, f_549, f_550)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}}},
+			}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}}},
 			{Id: 12, Kind: "postfix", Assoc: "", Level: 9, Line: &pegort.TOperatorsRuleLine{Scope: []string{"lo", "hi"}, M: e551, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
@@ -4498,7 +4501,7 @@ func init() {
 						return tmk_SliceExpr(c, true, f_552, f_553, f_554)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true}}},
+			}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}}},
 			{Id: 13, Kind: "postfix", Assoc: "", Level: 9, Line: &pegort.TOperatorsRuleLine{Scope: []string{"as"}, M: e556, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
@@ -4513,7 +4516,7 @@ func init() {
 						return tmk_CallExpr(c, true, f_557, f_558)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}}},
+			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}}},
 			{Id: 14, Kind: "postfix", Assoc: "", Level: 9, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e560, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
@@ -4523,7 +4526,7 @@ func init() {
 						return tmk_PostfixExpr(c, true, f_561, f_562)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}}}},
+			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}}},
 	}
 	trules[115].Body = func(p *pegort.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[115], min) }
 	trules[116].Entry = s116
@@ -4746,7 +4749,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -4967,7 +4970,7 @@ L4:
 		}
 		x15 = append(x15, v18)
 		v19 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
-		v20 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v19, x10)
+		v20 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v19, x10)
 		v21 = p.AttachCaptures(v20, scope376, []any{k12}, x10, p.Pos)
 		x9++
 		p.PushKid(v21)
@@ -5001,7 +5004,7 @@ L4:
 		}
 		x34 = append(x34, v37)
 		v38 = p.NewNodeOrdinary("tuple", x33, p.Pos, x34)
-		v39 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v38, x29)
+		v39 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v38, x29)
 		v40 = p.AttachCaptures(v39, scope377, []any{k31}, x29, p.Pos)
 		x27++
 		p.PushKid(v40)
@@ -5080,7 +5083,7 @@ L44:
 		}
 		x63 = append(x63, v66)
 		v67 = p.NewNodeOrdinary("tuple", x62, p.Pos, x63)
-		v68 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v67, x58)
+		v68 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v67, x58)
 		v69 = p.AttachCaptures(v68, scope378, []any{k60}, x58, p.Pos)
 		x57++
 		p.PushKid(v69)
@@ -5336,7 +5339,7 @@ L11:
 L10:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -5874,7 +5877,7 @@ L12:
 	goto L7
 L13:
 	v23 = p.NewNodeOrdinary("tuple", x8, p.Pos, x9)
-	v24, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v23, x1)
+	v24, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v23, x1)
 	v3 = v24
 	goto L4
 L7:
@@ -5882,7 +5885,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -5944,7 +5947,7 @@ L7:
 	p.Pos = x5
 	p.Recovered = p.Recovered[:x6]
 	v8 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v8, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v8, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -5993,7 +5996,7 @@ func s12(p *pegort.TParser) (any, bool) {
 		x7 = p.Pos
 		p.Pos += size
 		v8 = p.NewMatchOrdinary(x7, p.Pos, p.Text(x7, p.Pos), true)
-		v9 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v8, x4)
+		v9 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v8, x4)
 		x3++
 		p.PushKid(v9)
 		if p.Pos == x4 {
@@ -6006,7 +6009,7 @@ func s12(p *pegort.TParser) (any, bool) {
 		break
 	}
 	v10 = p.NewNodeOrdinary("list", x1, p.Pos, p.Kids(x2))
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v10, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v10, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -6050,7 +6053,7 @@ func s13(p *pegort.TParser) (any, bool) {
 		x7 = p.Pos
 		p.Pos += size
 		v8 = p.NewMatchOrdinary(x7, p.Pos, p.Text(x7, p.Pos), true)
-		v9 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v8, x4)
+		v9 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v8, x4)
 		x3++
 		p.PushKid(v9)
 		if p.Pos == x4 {
@@ -6063,7 +6066,7 @@ func s13(p *pegort.TParser) (any, bool) {
 		break
 	}
 	v10 = p.NewNodeOrdinary("list", x1, p.Pos, p.Kids(x2))
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v10, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v10, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -6133,7 +6136,7 @@ func v14(p *pegort.TParser) (any, bool) {
 			x18 = p.Pos
 			p.Pos += size
 			v19 = p.NewMatchOrdinary(x18, p.Pos, p.Text(x18, p.Pos), true)
-			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v19, x15)
+			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v19, x15)
 			x14++
 			p.PushKid(v20)
 			if p.Pos == x15 {
@@ -6171,7 +6174,7 @@ func v14(p *pegort.TParser) (any, bool) {
 	L24:
 		goto L6
 	L10:
-		v27 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v9, x4)
+		v27 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, x4)
 		x3++
 		p.PushKid(v27)
 		if p.Pos == x4 {
@@ -6184,7 +6187,7 @@ func v14(p *pegort.TParser) (any, bool) {
 		break
 	}
 	v28 = p.NewNodeOrdinary("list", x1, p.Pos, p.Kids(x2))
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v28, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v28, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -6246,7 +6249,7 @@ func i14(p *pegort.TParser) (any, bool) {
 			x18 = p.Pos
 			p.Pos += size
 			v19 = p.NewMatchOrdinary(x18, p.Pos, p.Text(x18, p.Pos), true)
-			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v19, x15)
+			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v19, x15)
 			x14++
 			p.PushKid(v20)
 			if p.Pos == x15 {
@@ -6284,7 +6287,7 @@ func i14(p *pegort.TParser) (any, bool) {
 	L24:
 		goto L6
 	L10:
-		v27 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v9, x4)
+		v27 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, x4)
 		x3++
 		p.PushKid(v27)
 		if p.Pos == x4 {
@@ -6297,7 +6300,7 @@ func i14(p *pegort.TParser) (any, bool) {
 		break
 	}
 	v28 = p.NewNodeOrdinary("list", x1, p.Pos, p.Kids(x2))
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v28, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v28, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -6357,7 +6360,7 @@ func s15(p *pegort.TParser) (any, bool) {
 		x11 = p.Pos
 		p.Pos += size
 		v12 = p.NewMatchOrdinary(x11, p.Pos, p.Text(x11, p.Pos), true)
-		v13 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v12, x8)
+		v13 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v12, x8)
 		x7++
 		p.PushKid(v13)
 		if p.Pos == x8 {
@@ -6372,7 +6375,7 @@ func s15(p *pegort.TParser) (any, bool) {
 	v14 = p.NewNodeOrdinary("list", x5, p.Pos, p.Kids(x6))
 	x2 = append(x2, v14)
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v15, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v15, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -6474,7 +6477,7 @@ func v16(p *pegort.TParser) (any, bool) {
 	}
 	x13 = append(x13, v16)
 	v17 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
-	v18, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v17, x4)
+	v18, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v17, x4)
 	v6 = v18
 	goto L7
 L11:
@@ -6512,7 +6515,7 @@ L10:
 	}
 	x22 = append(x22, v28)
 	v29 = p.NewNodeOrdinary("tuple", x21, p.Pos, x22)
-	v30, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, v29, x4)
+	v30, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, v29, x4)
 	v6 = v30
 	goto L7
 L20:
@@ -6557,7 +6560,7 @@ L46:
 	p.Pos = x45
 	goto L44
 L47:
-	v48, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true}, nil, x34)
+	v48, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, nil, x34)
 	v36 = v48
 	goto L37
 L44:
@@ -6567,7 +6570,7 @@ L44:
 		p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
 		goto L49
 	}
-	v50, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true}, nil, x34)
+	v50, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, nil, x34)
 	v36 = v50
 	goto L37
 L49:
@@ -6581,7 +6584,7 @@ L37:
 	}
 	x33 = append(x33, v51)
 	v52 = p.NewNodeOrdinary("tuple", x32, p.Pos, x33)
-	v53, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v52, x4)
+	v53, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v52, x4)
 	v6 = v53
 	goto L7
 L31:
@@ -6591,7 +6594,7 @@ L31:
 L7:
 	x2 = append(x2, v6)
 	v54 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v54, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v54, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -6684,7 +6687,7 @@ func i16(p *pegort.TParser) (any, bool) {
 	}
 	x13 = append(x13, v16)
 	v17 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
-	v18, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v17, x4)
+	v18, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v17, x4)
 	v6 = v18
 	goto L7
 L11:
@@ -6722,7 +6725,7 @@ L10:
 	}
 	x22 = append(x22, v28)
 	v29 = p.NewNodeOrdinary("tuple", x21, p.Pos, x22)
-	v30, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, v29, x4)
+	v30, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, v29, x4)
 	v6 = v30
 	goto L7
 L20:
@@ -6767,7 +6770,7 @@ L46:
 	p.Pos = x45
 	goto L44
 L47:
-	v48, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true}, nil, x34)
+	v48, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, nil, x34)
 	v36 = v48
 	goto L37
 L44:
@@ -6777,7 +6780,7 @@ L44:
 		p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
 		goto L49
 	}
-	v50, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true}, nil, x34)
+	v50, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, nil, x34)
 	v36 = v50
 	goto L37
 L49:
@@ -6791,7 +6794,7 @@ L37:
 	}
 	x33 = append(x33, v51)
 	v52 = p.NewNodeOrdinary("tuple", x32, p.Pos, x33)
-	v53, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v52, x4)
+	v53, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v52, x4)
 	v6 = v53
 	goto L7
 L31:
@@ -6801,7 +6804,7 @@ L31:
 L7:
 	x2 = append(x2, v6)
 	v54 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v54, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v54, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -6881,7 +6884,7 @@ L16:
 	p.Pos = x15
 	goto L14
 L17:
-	v18, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true}, nil, x4)
+	v18, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, nil, x4)
 	v6 = v18
 	goto L7
 L14:
@@ -6891,7 +6894,7 @@ L14:
 		p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
 		goto L19
 	}
-	v20, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true}, nil, x4)
+	v20, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, nil, x4)
 	v6 = v20
 	goto L7
 L19:
@@ -6905,7 +6908,7 @@ L7:
 	}
 	x2 = append(x2, v21)
 	v22 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v22, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v22, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -6980,7 +6983,7 @@ L12:
 	goto L7
 L13:
 	v14 = p.NewNodeOrdinary("tuple", x8, p.Pos, x9)
-	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v14, x1)
+	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v14, x1)
 	v3 = v15
 	goto L4
 L7:
@@ -6988,7 +6991,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7054,7 +7057,7 @@ L12:
 	goto L7
 L13:
 	v14 = p.NewNodeOrdinary("tuple", x8, p.Pos, x9)
-	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v14, x1)
+	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v14, x1)
 	v3 = v15
 	goto L4
 L7:
@@ -7062,7 +7065,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7110,7 +7113,7 @@ func v19(p *pegort.TParser) (any, bool) {
 	}
 	x2 = append(x2, v4)
 	v5 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v5, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7151,7 +7154,7 @@ func i19(p *pegort.TParser) (any, bool) {
 	}
 	x2 = append(x2, v4)
 	v5 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v5, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7217,7 +7220,7 @@ func v20(p *pegort.TParser) (any, bool) {
 	}
 	x9 = append(x9, v12)
 	v13 = p.NewNodeOrdinary("tuple", x8, p.Pos, x9)
-	v14, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v13, x3)
+	v14, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v13, x3)
 	v5 = v14
 	goto L7
 L6:
@@ -7239,7 +7242,7 @@ L7:
 	}
 	x2 = append(x2, v17)
 	v18 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v18, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v18, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7298,7 +7301,7 @@ func i20(p *pegort.TParser) (any, bool) {
 	}
 	x9 = append(x9, v12)
 	v13 = p.NewNodeOrdinary("tuple", x8, p.Pos, x9)
-	v14, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v13, x3)
+	v14, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v13, x3)
 	v5 = v14
 	goto L7
 L6:
@@ -7320,7 +7323,7 @@ L7:
 	}
 	x2 = append(x2, v17)
 	v18 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v18, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v18, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7378,7 +7381,7 @@ func v21(p *pegort.TParser) (any, bool) {
 	}
 	x2 = append(x2, v6)
 	v7 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v7, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v7, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7429,7 +7432,7 @@ func i21(p *pegort.TParser) (any, bool) {
 	}
 	x2 = append(x2, v6)
 	v7 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v7, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v7, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7491,7 +7494,7 @@ func s22(p *pegort.TParser) (any, bool) {
 	}
 	x10 = append(x10, v13)
 	v14 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
-	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v14, x4)
+	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v14, x4)
 	v6 = v15
 	goto L8
 L7:
@@ -7509,7 +7512,7 @@ L8:
 	v17 = p.NewMatchOrdinary(x16, p.Pos, ":", true)
 	x2 = append(x2, v17)
 	v18 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v18, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v18, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7632,7 +7635,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7947,7 +7950,7 @@ func s28(p *pegort.TParser) (any, bool) {
 	}
 	x7 = append(x7, v11)
 	v12 = p.NewNodeOrdinary("tuple", x6, p.Pos, x7)
-	v13, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v12, x1)
+	v13, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v12, x1)
 	v3 = v13
 	goto L4
 L5:
@@ -7972,7 +7975,7 @@ L5:
 	}
 	x16 = append(x16, v20)
 	v21 = p.NewNodeOrdinary("tuple", x15, p.Pos, x16)
-	v22, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v21, x1)
+	v22, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v21, x1)
 	v3 = v22
 	goto L4
 L14:
@@ -7988,7 +7991,7 @@ L23:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8053,7 +8056,7 @@ func s29(p *pegort.TParser) (any, bool) {
 	}
 	x7 = append(x7, v11)
 	v12 = p.NewNodeOrdinary("tuple", x6, p.Pos, x7)
-	v13, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v12, x1)
+	v13, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v12, x1)
 	v3 = v13
 	goto L4
 L5:
@@ -8078,7 +8081,7 @@ L5:
 	}
 	x16 = append(x16, v20)
 	v21 = p.NewNodeOrdinary("tuple", x15, p.Pos, x16)
-	v22, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v21, x1)
+	v22, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v21, x1)
 	v3 = v22
 	goto L4
 L14:
@@ -8086,7 +8089,7 @@ L14:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8219,7 +8222,7 @@ L22:
 		p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
 		goto L26
 	}
-	v27, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true}, nil, x4)
+	v27, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, nil, x4)
 	v6 = v27
 	goto L7
 L26:
@@ -8229,7 +8232,7 @@ L26:
 L7:
 	x2 = append(x2, v6)
 	v28 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v28, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v28, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8353,7 +8356,7 @@ L22:
 		p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
 		goto L26
 	}
-	v27, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true}, nil, x4)
+	v27, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, nil, x4)
 	v6 = v27
 	goto L7
 L26:
@@ -8363,7 +8366,7 @@ L26:
 L7:
 	x2 = append(x2, v6)
 	v28 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v28, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v28, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8456,7 +8459,7 @@ L14:
 		p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
 		goto L18
 	}
-	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true}, nil, x4)
+	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, nil, x4)
 	v6 = v19
 	goto L7
 L18:
@@ -8466,7 +8469,7 @@ L18:
 L7:
 	x2 = append(x2, v6)
 	v20 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v20, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v20, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8552,7 +8555,7 @@ L14:
 		p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
 		goto L18
 	}
-	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true}, nil, x4)
+	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, nil, x4)
 	v6 = v19
 	goto L7
 L18:
@@ -8562,7 +8565,7 @@ L18:
 L7:
 	x2 = append(x2, v6)
 	v20 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v20, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v20, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8620,7 +8623,7 @@ func s32(p *pegort.TParser) (any, bool) {
 	v10 = p.NewMatchOrdinary(x9, p.Pos, "?", true)
 	x7 = append(x7, v10)
 	v11 = p.NewNodeOrdinary("tuple", x6, p.Pos, x7)
-	v12, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v11, x1)
+	v12, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v11, x1)
 	v3 = v12
 	goto L4
 L5:
@@ -8645,7 +8648,7 @@ L5:
 	}
 	x15 = append(x15, v19)
 	v20 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
-	v21, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v20, x1)
+	v21, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v20, x1)
 	v3 = v21
 	goto L4
 L13:
@@ -8653,7 +8656,7 @@ L13:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8739,7 +8742,7 @@ L15:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -9037,7 +9040,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -9349,7 +9352,7 @@ L27:
 	p.Pos = x25
 	p.Recovered = p.Recovered[:x26]
 	v28 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v28, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v28, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -9482,7 +9485,7 @@ L23:
 		p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
 		goto L27
 	}
-	v28, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true}, nil, x9)
+	v28, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, nil, x9)
 	v11 = v28
 	goto L12
 L27:
@@ -9509,7 +9512,7 @@ L29:
 L12:
 	x2 = append(x2, v11)
 	v33 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v33, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v33, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -9634,7 +9637,7 @@ L6:
 L7:
 	v20 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v20)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v20, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v20, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -9760,7 +9763,7 @@ L6:
 L7:
 	v20 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v20)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v20, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v20, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -9918,7 +9921,7 @@ L9:
 L10:
 	v25 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v25)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v25, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v25, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -9969,7 +9972,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -10364,7 +10367,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -10750,7 +10753,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -10799,7 +10802,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -10941,7 +10944,7 @@ L13:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -11098,7 +11101,7 @@ L10:
 	p.Recovered = p.Recovered[:x9]
 	v11 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v11)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v11, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v11, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -11539,7 +11542,7 @@ L14:
 L13:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -11872,7 +11875,7 @@ L20:
 L19:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -11975,7 +11978,7 @@ L20:
 L19:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -12032,7 +12035,7 @@ L6:
 L4:
 	v7 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v7)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v7, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v7, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -12083,7 +12086,7 @@ L6:
 L4:
 	v7 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v7)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v7, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v7, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -12252,7 +12255,7 @@ L30:
 L4:
 	v32 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v32)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v32, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v32, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -12472,7 +12475,7 @@ L6:
 L7:
 	v34 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v34)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v34, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v34, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -12682,7 +12685,7 @@ L6:
 L7:
 	v31 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v31)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v31, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v31, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -12761,7 +12764,7 @@ L7:
 	p.Recovered = p.Recovered[:x6]
 	v8 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v8)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v8, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v8, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -12831,7 +12834,7 @@ L7:
 	p.Recovered = p.Recovered[:x6]
 	v8 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v8)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v8, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v8, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -13018,7 +13021,7 @@ L20:
 L19:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -13077,7 +13080,7 @@ L6:
 L4:
 	v7 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v7)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v7, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v7, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -13128,7 +13131,7 @@ L6:
 L4:
 	v7 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v7)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v7, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v7, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -13315,7 +13318,7 @@ L32:
 L4:
 	v34 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v34)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v34, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v34, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -13521,7 +13524,7 @@ L22:
 L21:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -13633,7 +13636,7 @@ L22:
 L21:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -13690,7 +13693,7 @@ L6:
 L4:
 	v7 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v7)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v7, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v7, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -13741,7 +13744,7 @@ L6:
 L4:
 	v7 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v7)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v7, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v7, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -13790,7 +13793,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -14376,7 +14379,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -14425,7 +14428,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -14682,7 +14685,7 @@ L17:
 	goto L8
 L18:
 	v45 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
-	v46, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v45, x1)
+	v46, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v45, x1)
 	v3 = v46
 	goto L4
 L8:
@@ -14865,7 +14868,7 @@ L57:
 	goto L48
 L58:
 	v82 = p.NewNodeOrdinary("tuple", x49, p.Pos, x50)
-	v83, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v82, x1)
+	v83, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v82, x1)
 	v3 = v83
 	goto L4
 L48:
@@ -14874,7 +14877,7 @@ L48:
 L47:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -15124,7 +15127,7 @@ L17:
 	goto L8
 L18:
 	v45 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
-	v46, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v45, x1)
+	v46, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v45, x1)
 	v3 = v46
 	goto L4
 L8:
@@ -15307,7 +15310,7 @@ L57:
 	goto L48
 L58:
 	v82 = p.NewNodeOrdinary("tuple", x49, p.Pos, x50)
-	v83, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v82, x1)
+	v83, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v82, x1)
 	v3 = v83
 	goto L4
 L48:
@@ -15316,7 +15319,7 @@ L48:
 L47:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -15491,7 +15494,7 @@ L14:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -15562,7 +15565,7 @@ L11:
 L10:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -15624,7 +15627,7 @@ L11:
 L10:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -16042,7 +16045,7 @@ L11:
 L10:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -16104,7 +16107,7 @@ L11:
 L10:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -16519,7 +16522,7 @@ L12:
 	goto L7
 L13:
 	v14 = p.NewNodeOrdinary("tuple", x8, p.Pos, x9)
-	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v14, x1)
+	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v14, x1)
 	v3 = v15
 	goto L4
 L7:
@@ -16527,7 +16530,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -16593,7 +16596,7 @@ L12:
 	goto L7
 L13:
 	v14 = p.NewNodeOrdinary("tuple", x8, p.Pos, x9)
-	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v14, x1)
+	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v14, x1)
 	v3 = v15
 	goto L4
 L7:
@@ -16601,7 +16604,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -16667,7 +16670,7 @@ L11:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -16843,7 +16846,7 @@ L23:
 	p.Pos = x21
 	p.Recovered = p.Recovered[:x22]
 	v24 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v24, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v24, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -17271,7 +17274,7 @@ L41:
 L4:
 	v72 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v72)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v72, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v72, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -17691,7 +17694,7 @@ L41:
 L4:
 	v72 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v72)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v72, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v72, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -18042,7 +18045,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -18091,7 +18094,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -18226,7 +18229,7 @@ L9:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -18284,7 +18287,7 @@ L9:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -18453,7 +18456,7 @@ L20:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -18607,7 +18610,7 @@ L16:
 L15:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -19816,7 +19819,7 @@ func e556(p *pegort.TParser) (any, bool) {
 		}
 		x15 = append(x15, v18)
 		v19 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
-		v20 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v19, x12.Pos)
+		v20 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v19, x12.Pos)
 		p.Frame = x10
 		v21 = p.AttachCaptures(v20, scope555, x9.Vals, x12.Pos, p.Pos)
 		p.DropTrail(x12.Trail)
@@ -19926,7 +19929,7 @@ L12:
 	goto L7
 L13:
 	v14 = p.NewNodeOrdinary("tuple", x8, p.Pos, x9)
-	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v14, x1)
+	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v14, x1)
 	v3 = v15
 	goto L4
 L7:
@@ -19934,7 +19937,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20010,7 +20013,7 @@ L11:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20077,7 +20080,7 @@ L11:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20171,7 +20174,7 @@ L15:
 	p.Recovered = p.Recovered[:x14]
 	v16 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v16)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v16, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v16, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20423,7 +20426,7 @@ L4:
 	}
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v5, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20496,7 +20499,7 @@ L4:
 	}
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v5, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20576,7 +20579,7 @@ L4:
 	}
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v5, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20649,7 +20652,7 @@ L4:
 	}
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v5, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20725,7 +20728,7 @@ func v123(p *pegort.TParser) (any, bool) {
 			x18 = p.Pos
 			p.Pos += size
 			v19 = p.NewMatchOrdinary(x18, p.Pos, p.Text(x18, p.Pos), true)
-			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v19, x15)
+			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v19, x15)
 			x14++
 			p.PushKid(v20)
 			if p.Pos == x15 {
@@ -20780,7 +20783,7 @@ func v123(p *pegort.TParser) (any, bool) {
 		p.Recovered = p.Recovered[:x8]
 		goto L6
 	L10:
-		v31 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v9, x4)
+		v31 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, x4)
 		x3++
 		p.PushKid(v31)
 		if p.Pos == x4 {
@@ -20793,7 +20796,7 @@ func v123(p *pegort.TParser) (any, bool) {
 		break
 	}
 	v32 = p.NewNodeOrdinary("list", x1, p.Pos, p.Kids(x2))
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v32, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v32, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20857,7 +20860,7 @@ func i123(p *pegort.TParser) (any, bool) {
 			x18 = p.Pos
 			p.Pos += size
 			v19 = p.NewMatchOrdinary(x18, p.Pos, p.Text(x18, p.Pos), true)
-			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v19, x15)
+			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v19, x15)
 			x14++
 			p.PushKid(v20)
 			if p.Pos == x15 {
@@ -20912,7 +20915,7 @@ func i123(p *pegort.TParser) (any, bool) {
 		p.Recovered = p.Recovered[:x8]
 		goto L6
 	L10:
-		v31 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v9, x4)
+		v31 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, x4)
 		x3++
 		p.PushKid(v31)
 		if p.Pos == x4 {
@@ -20925,7 +20928,7 @@ func i123(p *pegort.TParser) (any, bool) {
 		break
 	}
 	v32 = p.NewNodeOrdinary("list", x1, p.Pos, p.Kids(x2))
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v32, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v32, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -21007,7 +21010,7 @@ func s124(p *pegort.TParser) (any, bool) {
 	v15 = p.NewMatchOrdinary(x14, p.Pos, ")", true)
 	x10 = append(x10, v15)
 	v16 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
-	v17, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v16, x1)
+	v17, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v16, x1)
 	v3 = v17
 	goto L4
 L8:
@@ -21041,7 +21044,7 @@ L7:
 	v26 = p.NewMatchOrdinary(x25, p.Pos, "]", true)
 	x21 = append(x21, v26)
 	v27 = p.NewNodeOrdinary("tuple", x20, p.Pos, x21)
-	v28, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v27, x1)
+	v28, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v27, x1)
 	v3 = v28
 	goto L4
 L19:
@@ -21075,7 +21078,7 @@ L18:
 	v37 = p.NewMatchOrdinary(x36, p.Pos, "}", true)
 	x32 = append(x32, v37)
 	v38 = p.NewNodeOrdinary("tuple", x31, p.Pos, x32)
-	v39, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v38, x1)
+	v39, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v38, x1)
 	v3 = v39
 	goto L4
 L30:
@@ -21084,7 +21087,7 @@ L30:
 L29:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -21250,7 +21253,7 @@ L31:
 	p.Pos = x29
 	p.Recovered = p.Recovered[:x30]
 	v32 = p.NewNodeOrdinary("tuple", x25, p.Pos, x26)
-	v33, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v32, x1)
+	v33, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v32, x1)
 	v3 = v33
 	goto L4
 L24:
@@ -21289,7 +21292,7 @@ L34:
 			goto L46
 		}
 		v48 = p.NewMatchOrdinary(x47, p.Pos, "#", true)
-		v49 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v48, x44)
+		v49 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v48, x44)
 		x43++
 		p.PushKid(v49)
 		if p.Pos == x44 {
@@ -21324,7 +21327,7 @@ L53:
 	p.Pos = x51
 	p.Recovered = p.Recovered[:x52]
 	v54 = p.NewNodeOrdinary("tuple", x39, p.Pos, x40)
-	v55, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v54, x1)
+	v55, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v54, x1)
 	v3 = v55
 	goto L4
 L38:
@@ -21332,7 +21335,7 @@ L38:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -21444,7 +21447,7 @@ L19:
 	p.Pos = x17
 	p.Recovered = p.Recovered[:x18]
 	v20 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
-	v21, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v20, x6)
+	v21, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v20, x6)
 	v8 = v21
 	goto L9
 L13:
@@ -21475,7 +21478,7 @@ L28:
 	p.Pos = x26
 	p.Recovered = p.Recovered[:x27]
 	v29 = p.NewNodeOrdinary("tuple", x23, p.Pos, x24)
-	v30, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v29, x6)
+	v30, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v29, x6)
 	v8 = v30
 	goto L9
 L22:
@@ -21520,7 +21523,7 @@ L41:
 	p.Pos = x39
 	p.Recovered = p.Recovered[:x40]
 	v42 = p.NewNodeOrdinary("tuple", x35, p.Pos, x36)
-	v43, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v42, x6)
+	v43, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v42, x6)
 	v8 = v43
 	goto L9
 L34:
@@ -21551,7 +21554,7 @@ L50:
 	p.Pos = x48
 	p.Recovered = p.Recovered[:x49]
 	v51 = p.NewNodeOrdinary("tuple", x45, p.Pos, x46)
-	v52, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v51, x6)
+	v52, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v51, x6)
 	v8 = v52
 	goto L9
 L44:
@@ -21561,7 +21564,7 @@ L44:
 L9:
 	x2 = append(x2, v8)
 	v53 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v53, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v53, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -21670,7 +21673,7 @@ L26:
 L27:
 	x20 = append(x20, v25)
 	v29 = p.NewNodeOrdinary("tuple", x19, p.Pos, x20)
-	v30, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v29, x8)
+	v30, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v29, x8)
 	v10 = v30
 	goto L11
 L18:
@@ -21697,7 +21700,7 @@ L35:
 	}
 	x7 = append(x7, v37)
 	v38 = p.NewNodeOrdinary("tuple", x6, p.Pos, x7)
-	v39, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v38, x1)
+	v39, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v38, x1)
 	v3 = v39
 	goto L4
 L5:
@@ -21727,7 +21730,7 @@ L5:
 	}
 	x45 = append(x45, v49)
 	v50 = p.NewNodeOrdinary("tuple", x44, p.Pos, x45)
-	v51, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v50, x1)
+	v51, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v50, x1)
 	v3 = v51
 	goto L4
 L43:
@@ -21736,7 +21739,7 @@ L43:
 L42:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -21855,7 +21858,7 @@ L26:
 L27:
 	x20 = append(x20, v25)
 	v29 = p.NewNodeOrdinary("tuple", x19, p.Pos, x20)
-	v30, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v29, x8)
+	v30, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v29, x8)
 	v10 = v30
 	goto L11
 L18:
@@ -21874,7 +21877,7 @@ L11:
 	}
 	x7 = append(x7, v32)
 	v33 = p.NewNodeOrdinary("tuple", x6, p.Pos, x7)
-	v34, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v33, x1)
+	v34, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v33, x1)
 	v3 = v34
 	goto L4
 L5:
@@ -21922,7 +21925,7 @@ L41:
 	}
 	x37 = append(x37, v51)
 	v52 = p.NewNodeOrdinary("tuple", x36, p.Pos, x37)
-	v53, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v52, x1)
+	v53, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v52, x1)
 	v3 = v53
 	goto L4
 L35:
@@ -21952,7 +21955,7 @@ L35:
 	}
 	x59 = append(x59, v63)
 	v64 = p.NewNodeOrdinary("tuple", x58, p.Pos, x59)
-	v65, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v64, x1)
+	v65, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v64, x1)
 	v3 = v65
 	goto L4
 L57:
@@ -21961,7 +21964,7 @@ L57:
 L56:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -22046,7 +22049,7 @@ L10:
 	v14 = p.NewMatchOrdinary(x13, p.Pos, p.Text(x13, p.Pos), true)
 	x7 = append(x7, v14)
 	v15 = p.NewNodeOrdinary("tuple", x6, p.Pos, x7)
-	v16, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v15, x1)
+	v16, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v15, x1)
 	v3 = v16
 	goto L4
 L5:
@@ -22085,7 +22088,7 @@ L22:
 	v26 = p.NewMatchOrdinary(x25, p.Pos, p.Text(x25, p.Pos), true)
 	x19 = append(x19, v26)
 	v27 = p.NewNodeOrdinary("tuple", x18, p.Pos, x19)
-	v28, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v27, x1)
+	v28, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v27, x1)
 	v3 = v28
 	goto L4
 L17:
@@ -22093,7 +22096,7 @@ L17:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -22212,7 +22215,7 @@ L20:
 L21:
 	x15 = append(x15, v19)
 	v34 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
-	v35, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v34, x6)
+	v35, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v34, x6)
 	v8 = v35
 	goto L9
 L13:
@@ -22236,7 +22239,7 @@ L36:
 L9:
 	x2 = append(x2, v8)
 	v39 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v39, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v39, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -22295,7 +22298,7 @@ L9:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -22370,7 +22373,7 @@ L11:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -22436,7 +22439,7 @@ L11:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -22532,7 +22535,7 @@ L15:
 L9:
 	x2 = append(x2, v8)
 	v18 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v18, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v18, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -22621,7 +22624,7 @@ L15:
 L9:
 	x2 = append(x2, v8)
 	v18 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v18, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v18, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -22701,7 +22704,7 @@ func v134(p *pegort.TParser) (any, bool) {
 		x9 = p.Pos
 		p.Pos += size
 		v10 = p.NewMatchOrdinary(x9, p.Pos, p.Text(x9, p.Pos), true)
-		v11 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v10, x6)
+		v11 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v10, x6)
 		x5++
 		p.PushKid(v11)
 		if p.Pos == x6 {
@@ -22737,7 +22740,7 @@ func v134(p *pegort.TParser) (any, bool) {
 			x28 = p.Pos
 			p.Pos += size
 			v29 = p.NewMatchOrdinary(x28, p.Pos, p.Text(x28, p.Pos), true)
-			v30 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v29, x25)
+			v30 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v29, x25)
 			x24++
 			p.PushKid(v30)
 			if p.Pos == x25 {
@@ -22752,7 +22755,7 @@ func v134(p *pegort.TParser) (any, bool) {
 		v31 = p.NewNodeOrdinary("list", x22, p.Pos, p.Kids(x23))
 		x20 = append(x20, v31)
 		v32 = p.NewNodeOrdinary("tuple", x19, p.Pos, x20)
-		v33 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v32, x16)
+		v33 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v32, x16)
 		x15++
 		p.PushKid(v33)
 		if p.Pos == x16 {
@@ -22767,7 +22770,7 @@ func v134(p *pegort.TParser) (any, bool) {
 	v34 = p.NewNodeOrdinary("list", x13, p.Pos, p.Kids(x14))
 	x2 = append(x2, v34)
 	v35 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v35, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v35, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -22836,7 +22839,7 @@ func i134(p *pegort.TParser) (any, bool) {
 		x9 = p.Pos
 		p.Pos += size
 		v10 = p.NewMatchOrdinary(x9, p.Pos, p.Text(x9, p.Pos), true)
-		v11 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v10, x6)
+		v11 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v10, x6)
 		x5++
 		p.PushKid(v11)
 		if p.Pos == x6 {
@@ -22872,7 +22875,7 @@ func i134(p *pegort.TParser) (any, bool) {
 			x28 = p.Pos
 			p.Pos += size
 			v29 = p.NewMatchOrdinary(x28, p.Pos, p.Text(x28, p.Pos), true)
-			v30 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v29, x25)
+			v30 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v29, x25)
 			x24++
 			p.PushKid(v30)
 			if p.Pos == x25 {
@@ -22887,7 +22890,7 @@ func i134(p *pegort.TParser) (any, bool) {
 		v31 = p.NewNodeOrdinary("list", x22, p.Pos, p.Kids(x23))
 		x20 = append(x20, v31)
 		v32 = p.NewNodeOrdinary("tuple", x19, p.Pos, x20)
-		v33 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v32, x16)
+		v33 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v32, x16)
 		x15++
 		p.PushKid(v33)
 		if p.Pos == x16 {
@@ -22902,7 +22905,7 @@ func i134(p *pegort.TParser) (any, bool) {
 	v34 = p.NewNodeOrdinary("list", x13, p.Pos, p.Kids(x14))
 	x2 = append(x2, v34)
 	v35 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v35, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v35, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -22983,7 +22986,7 @@ L16:
 	}
 	x13 = append(x13, v17)
 	v18 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
-	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v18, x1)
+	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v18, x1)
 	v3 = v19
 	goto L4
 L11:
@@ -22991,7 +22994,7 @@ L11:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -23077,7 +23080,7 @@ L16:
 	}
 	x13 = append(x13, v17)
 	v18 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
-	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v18, x1)
+	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v18, x1)
 	v3 = v19
 	goto L4
 L11:
@@ -23085,7 +23088,7 @@ L11:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -23185,7 +23188,7 @@ func v137(p *pegort.TParser) (any, bool) {
 	}
 	x10 = append(x10, v13)
 	v14 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
-	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v14, x1)
+	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v14, x1)
 	v3 = v15
 	goto L4
 L8:
@@ -23242,7 +23245,7 @@ L24:
 	}
 	x34 = append(x34, v37)
 	v38 = p.NewNodeOrdinary("tuple", x33, p.Pos, x34)
-	v39, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v38, x25)
+	v39, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v38, x25)
 	v27 = v39
 	goto L28
 L32:
@@ -23272,7 +23275,7 @@ L45:
 	}
 	x42 = append(x42, v46)
 	v47 = p.NewNodeOrdinary("tuple", x41, p.Pos, x42)
-	v48, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v47, x25)
+	v48, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v47, x25)
 	v27 = v48
 	goto L28
 L40:
@@ -23282,7 +23285,7 @@ L40:
 L28:
 	x19 = append(x19, v27)
 	v49 = p.NewNodeOrdinary("tuple", x18, p.Pos, x19)
-	v50, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v49, x1)
+	v50, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v49, x1)
 	v3 = v50
 	goto L4
 L17:
@@ -23301,7 +23304,7 @@ L16:
 	}
 	x53 = append(x53, v55)
 	v56 = p.NewNodeOrdinary("tuple", x52, p.Pos, x53)
-	v57, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v56, x1)
+	v57, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v56, x1)
 	v3 = v57
 	goto L4
 L51:
@@ -23309,7 +23312,7 @@ L51:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -23400,7 +23403,7 @@ func i137(p *pegort.TParser) (any, bool) {
 	}
 	x10 = append(x10, v13)
 	v14 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
-	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v14, x1)
+	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v14, x1)
 	v3 = v15
 	goto L4
 L8:
@@ -23457,7 +23460,7 @@ L24:
 	}
 	x34 = append(x34, v37)
 	v38 = p.NewNodeOrdinary("tuple", x33, p.Pos, x34)
-	v39, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v38, x25)
+	v39, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v38, x25)
 	v27 = v39
 	goto L28
 L32:
@@ -23487,7 +23490,7 @@ L45:
 	}
 	x42 = append(x42, v46)
 	v47 = p.NewNodeOrdinary("tuple", x41, p.Pos, x42)
-	v48, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v47, x25)
+	v48, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v47, x25)
 	v27 = v48
 	goto L28
 L40:
@@ -23497,7 +23500,7 @@ L40:
 L28:
 	x19 = append(x19, v27)
 	v49 = p.NewNodeOrdinary("tuple", x18, p.Pos, x19)
-	v50, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v49, x1)
+	v50, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v49, x1)
 	v3 = v50
 	goto L4
 L17:
@@ -23516,7 +23519,7 @@ L16:
 	}
 	x53 = append(x53, v55)
 	v56 = p.NewNodeOrdinary("tuple", x52, p.Pos, x53)
-	v57, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v56, x1)
+	v57, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v56, x1)
 	v3 = v57
 	goto L4
 L51:
@@ -23524,7 +23527,7 @@ L51:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -23589,7 +23592,7 @@ L7:
 	p.Pos = x6
 	goto L5
 L8:
-	v9, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true}, nil, x1)
+	v9, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, nil, x1)
 	v3 = v9
 	goto L4
 L5:
@@ -23602,7 +23605,7 @@ L5:
 		if v17, ok = u132(p); !ok {
 			goto L16
 		}
-		v18 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v17, x14)
+		v18 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v17, x14)
 		x13++
 		p.PushKid(v18)
 		if p.Pos == x14 {
@@ -23640,7 +23643,7 @@ L23:
 	p.Silent--
 	p.Pos = x21
 	p.Recovered = p.Recovered[:x22]
-	v24, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true}, nil, x1)
+	v24, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, nil, x1)
 	v3 = v24
 	goto L4
 L20:
@@ -23648,7 +23651,7 @@ L20:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -23706,7 +23709,7 @@ L7:
 	p.Pos = x6
 	goto L5
 L8:
-	v9, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true}, nil, x1)
+	v9, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, nil, x1)
 	v3 = v9
 	goto L4
 L5:
@@ -23719,7 +23722,7 @@ L5:
 		if v17, ok = u132(p); !ok {
 			goto L16
 		}
-		v18 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v17, x14)
+		v18 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v17, x14)
 		x13++
 		p.PushKid(v18)
 		if p.Pos == x14 {
@@ -23757,7 +23760,7 @@ L23:
 	p.Silent--
 	p.Pos = x21
 	p.Recovered = p.Recovered[:x22]
-	v24, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true}, nil, x1)
+	v24, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, nil, x1)
 	v3 = v24
 	goto L4
 L20:
@@ -23765,7 +23768,7 @@ L20:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -23841,7 +23844,7 @@ L4:
 	}
 	v8 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v8)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v8, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v8, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -23911,7 +23914,7 @@ L4:
 	}
 	v8 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v8)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v8, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v8, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -24189,7 +24192,7 @@ L59:
 	p.Pos = x57
 	p.Recovered = p.Recovered[:x58]
 	v60 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v60, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v60, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -24375,7 +24378,7 @@ L27:
 	p.Recovered = p.Recovered[:x26]
 	v28 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v28)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v28, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v28, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -24553,7 +24556,7 @@ L27:
 	p.Recovered = p.Recovered[:x26]
 	v28 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v28)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v28, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v28, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -24642,7 +24645,7 @@ L13:
 	p.Recovered = p.Recovered[:x12]
 	v14 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v14)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v14, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v14, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -24724,7 +24727,7 @@ L13:
 	p.Recovered = p.Recovered[:x12]
 	v14 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v14)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v14, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v14, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -24783,7 +24786,7 @@ L4:
 	p.Recovered = p.Recovered[:x3]
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v5, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -24835,7 +24838,7 @@ L4:
 	p.Recovered = p.Recovered[:x3]
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v5, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -24888,7 +24891,7 @@ L4:
 	}
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v5, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -25027,7 +25030,7 @@ L12:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -25065,7 +25068,7 @@ func s147(p *pegort.TParser) (any, bool) {
 	x1 = p.Pos
 	p.Pos += size
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v2, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v2, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -25326,7 +25329,7 @@ L35:
 L4:
 	v49 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v49)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v49, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v49, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -25579,7 +25582,7 @@ L35:
 L4:
 	v49 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v49)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v49, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v49, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -25672,7 +25675,7 @@ func s149(p *pegort.TParser) (any, bool) {
 		v21 = p.NewMatchOrdinary(x20, p.Pos, p.Text(x20, p.Pos), true)
 		x12 = append(x12, v21)
 		v22 = p.NewNodeOrdinary("tuple", x11, p.Pos, x12)
-		v23 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v22, x8)
+		v23 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v22, x8)
 		x7++
 		p.PushKid(v23)
 		if p.Pos == x8 {
@@ -25687,7 +25690,7 @@ func s149(p *pegort.TParser) (any, bool) {
 	v24 = p.NewNodeOrdinary("list", x5, p.Pos, p.Kids(x6))
 	x2 = append(x2, v24)
 	v25 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v25, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v25, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -25781,7 +25784,7 @@ func s150(p *pegort.TParser) (any, bool) {
 		v21 = p.NewMatchOrdinary(x20, p.Pos, p.Text(x20, p.Pos), true)
 		x12 = append(x12, v21)
 		v22 = p.NewNodeOrdinary("tuple", x11, p.Pos, x12)
-		v23 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v22, x8)
+		v23 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v22, x8)
 		x7++
 		p.PushKid(v23)
 		if p.Pos == x8 {
@@ -25796,7 +25799,7 @@ func s150(p *pegort.TParser) (any, bool) {
 	v24 = p.NewNodeOrdinary("list", x5, p.Pos, p.Kids(x6))
 	x2 = append(x2, v24)
 	v25 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v25, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v25, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -25948,7 +25951,7 @@ L19:
 		v40 = p.NewMatchOrdinary(x39, p.Pos, p.Text(x39, p.Pos), true)
 		x31 = append(x31, v40)
 		v41 = p.NewNodeOrdinary("tuple", x30, p.Pos, x31)
-		v42 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v41, x27)
+		v42 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v41, x27)
 		x26++
 		p.PushKid(v42)
 		if p.Pos == x27 {
@@ -25963,7 +25966,7 @@ L19:
 	v43 = p.NewNodeOrdinary("list", x24, p.Pos, p.Kids(x25))
 	x14 = append(x14, v43)
 	v44 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-	v45, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v44, x8)
+	v45, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v44, x8)
 	v10 = v45
 	goto L12
 L11:
@@ -25973,7 +25976,7 @@ L11:
 L12:
 	x2 = append(x2, v10)
 	v46 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v46, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v46, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -26121,7 +26124,7 @@ L16:
 		v37 = p.NewMatchOrdinary(x36, p.Pos, p.Text(x36, p.Pos), true)
 		x28 = append(x28, v37)
 		v38 = p.NewNodeOrdinary("tuple", x27, p.Pos, x28)
-		v39 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v38, x24)
+		v39 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v38, x24)
 		x23++
 		p.PushKid(v39)
 		if p.Pos == x24 {
@@ -26136,7 +26139,7 @@ L16:
 	v40 = p.NewNodeOrdinary("list", x21, p.Pos, p.Kids(x22))
 	x2 = append(x2, v40)
 	v41 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}, v41, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, v41, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -26202,7 +26205,7 @@ L8:
 L9:
 	x2 = append(x2, v7)
 	v12 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v12, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v12, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -26421,7 +26424,7 @@ L41:
 L4:
 	v54 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v54)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v54, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v54, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -26588,7 +26591,7 @@ L35:
 L4:
 	v37 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v37)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v37, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v37, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -26736,7 +26739,7 @@ L13:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -26796,7 +26799,7 @@ func v158(p *pegort.TParser) (any, bool) {
 	}
 	x2 = append(x2, v6)
 	v7 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, v7, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, v7, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -26847,7 +26850,7 @@ func i158(p *pegort.TParser) (any, bool) {
 	}
 	x2 = append(x2, v6)
 	v7 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, v7, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, v7, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -26942,7 +26945,7 @@ func v159(p *pegort.TParser) (any, bool) {
 	}
 	x10 = append(x10, v17)
 	v18 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
-	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true}, v18, x1)
+	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}, v18, x1)
 	v3 = v19
 	goto L4
 L8:
@@ -26980,7 +26983,7 @@ L7:
 	}
 	x23 = append(x23, v29)
 	v30 = p.NewNodeOrdinary("tuple", x22, p.Pos, x23)
-	v31, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}, v30, x1)
+	v31, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, v30, x1)
 	v3 = v31
 	goto L4
 L21:
@@ -26989,7 +26992,7 @@ L21:
 L20:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -27077,7 +27080,7 @@ func i159(p *pegort.TParser) (any, bool) {
 	}
 	x10 = append(x10, v17)
 	v18 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
-	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true}, v18, x1)
+	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}, v18, x1)
 	v3 = v19
 	goto L4
 L8:
@@ -27115,7 +27118,7 @@ L7:
 	}
 	x23 = append(x23, v29)
 	v30 = p.NewNodeOrdinary("tuple", x22, p.Pos, x23)
-	v31, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}, v30, x1)
+	v31, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, v30, x1)
 	v3 = v31
 	goto L4
 L21:
@@ -27124,7 +27127,7 @@ L21:
 L20:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -27218,7 +27221,7 @@ L7:
 	}
 	x14 = append(x14, v17)
 	v18 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v18, x1)
+	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v18, x1)
 	v3 = v19
 	goto L4
 L12:
@@ -27244,7 +27247,7 @@ L11:
 	}
 	x23 = append(x23, v26)
 	v27 = p.NewNodeOrdinary("tuple", x22, p.Pos, x23)
-	v28, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v27, x1)
+	v28, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v27, x1)
 	v3 = v28
 	goto L4
 L21:
@@ -27253,7 +27256,7 @@ L21:
 L20:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -27340,7 +27343,7 @@ L7:
 	}
 	x14 = append(x14, v17)
 	v18 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v18, x1)
+	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v18, x1)
 	v3 = v19
 	goto L4
 L12:
@@ -27366,7 +27369,7 @@ L11:
 	}
 	x23 = append(x23, v26)
 	v27 = p.NewNodeOrdinary("tuple", x22, p.Pos, x23)
-	v28, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v27, x1)
+	v28, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v27, x1)
 	v3 = v28
 	goto L4
 L21:
@@ -27375,7 +27378,7 @@ L21:
 L20:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -27487,7 +27490,7 @@ L7:
 	}
 	x14 = append(x14, v17)
 	v18 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v18, x1)
+	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v18, x1)
 	v3 = v19
 	goto L4
 L12:
@@ -27513,7 +27516,7 @@ L11:
 	}
 	x23 = append(x23, v26)
 	v27 = p.NewNodeOrdinary("tuple", x22, p.Pos, x23)
-	v28, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v27, x1)
+	v28, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v27, x1)
 	v3 = v28
 	goto L4
 L21:
@@ -27543,7 +27546,7 @@ L20:
 	}
 	x32 = append(x32, v36)
 	v37 = p.NewNodeOrdinary("tuple", x31, p.Pos, x32)
-	v38, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v37, x1)
+	v38, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v37, x1)
 	v3 = v38
 	goto L4
 L30:
@@ -27584,7 +27587,7 @@ L29:
 	v48 = p.NewMatchOrdinary(x47, p.Pos, p.Text(x47, p.Pos), true)
 	x42 = append(x42, v48)
 	v49 = p.NewNodeOrdinary("tuple", x41, p.Pos, x42)
-	v50, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v49, x1)
+	v50, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v49, x1)
 	v3 = v50
 	goto L4
 L40:
@@ -27593,7 +27596,7 @@ L40:
 L39:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -27698,7 +27701,7 @@ L7:
 	}
 	x14 = append(x14, v17)
 	v18 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v18, x1)
+	v19, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v18, x1)
 	v3 = v19
 	goto L4
 L12:
@@ -27724,7 +27727,7 @@ L11:
 	}
 	x23 = append(x23, v26)
 	v27 = p.NewNodeOrdinary("tuple", x22, p.Pos, x23)
-	v28, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v27, x1)
+	v28, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v27, x1)
 	v3 = v28
 	goto L4
 L21:
@@ -27754,7 +27757,7 @@ L20:
 	}
 	x32 = append(x32, v36)
 	v37 = p.NewNodeOrdinary("tuple", x31, p.Pos, x32)
-	v38, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v37, x1)
+	v38, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v37, x1)
 	v3 = v38
 	goto L4
 L30:
@@ -27795,7 +27798,7 @@ L29:
 	v48 = p.NewMatchOrdinary(x47, p.Pos, p.Text(x47, p.Pos), true)
 	x42 = append(x42, v48)
 	v49 = p.NewNodeOrdinary("tuple", x41, p.Pos, x42)
-	v50, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v49, x1)
+	v50, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v49, x1)
 	v3 = v50
 	goto L4
 L40:
@@ -27804,7 +27807,7 @@ L40:
 L39:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -27883,7 +27886,7 @@ func v162(p *pegort.TParser) (any, bool) {
 			x18 = p.Pos
 			p.Pos += size
 			v19 = p.NewMatchOrdinary(x18, p.Pos, p.Text(x18, p.Pos), true)
-			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v19, x15)
+			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v19, x15)
 			x14++
 			p.PushKid(v20)
 			if p.Pos == x15 {
@@ -27925,7 +27928,7 @@ func v162(p *pegort.TParser) (any, bool) {
 		}
 		x27 = append(x27, v30)
 		v31 = p.NewNodeOrdinary("tuple", x26, p.Pos, x27)
-		v32, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v31, x7)
+		v32, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v31, x7)
 		v9 = v32
 		goto L10
 	L25:
@@ -27934,7 +27937,7 @@ func v162(p *pegort.TParser) (any, bool) {
 	L24:
 		goto L6
 	L10:
-		v33 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v9, x4)
+		v33 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, x4)
 		x3++
 		p.PushKid(v33)
 		if p.Pos == x4 {
@@ -27947,7 +27950,7 @@ func v162(p *pegort.TParser) (any, bool) {
 		break
 	}
 	v34 = p.NewNodeOrdinary("list", x1, p.Pos, p.Kids(x2))
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v34, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v34, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -28015,7 +28018,7 @@ func i162(p *pegort.TParser) (any, bool) {
 			x18 = p.Pos
 			p.Pos += size
 			v19 = p.NewMatchOrdinary(x18, p.Pos, p.Text(x18, p.Pos), true)
-			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v19, x15)
+			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v19, x15)
 			x14++
 			p.PushKid(v20)
 			if p.Pos == x15 {
@@ -28057,7 +28060,7 @@ func i162(p *pegort.TParser) (any, bool) {
 		}
 		x27 = append(x27, v30)
 		v31 = p.NewNodeOrdinary("tuple", x26, p.Pos, x27)
-		v32, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v31, x7)
+		v32, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v31, x7)
 		v9 = v32
 		goto L10
 	L25:
@@ -28066,7 +28069,7 @@ func i162(p *pegort.TParser) (any, bool) {
 	L24:
 		goto L6
 	L10:
-		v33 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v9, x4)
+		v33 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, x4)
 		x3++
 		p.PushKid(v33)
 		if p.Pos == x4 {
@@ -28079,7 +28082,7 @@ func i162(p *pegort.TParser) (any, bool) {
 		break
 	}
 	v34 = p.NewNodeOrdinary("list", x1, p.Pos, p.Kids(x2))
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v34, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v34, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -28486,7 +28489,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -28535,7 +28538,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -28738,7 +28741,7 @@ func v171(p *pegort.TParser) (any, bool) {
 			x18 = p.Pos
 			p.Pos += size
 			v19 = p.NewMatchOrdinary(x18, p.Pos, p.Text(x18, p.Pos), true)
-			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v19, x15)
+			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v19, x15)
 			x14++
 			p.PushKid(v20)
 			if p.Pos == x15 {
@@ -28780,7 +28783,7 @@ func v171(p *pegort.TParser) (any, bool) {
 		}
 		x27 = append(x27, v30)
 		v31 = p.NewNodeOrdinary("tuple", x26, p.Pos, x27)
-		v32, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v31, x7)
+		v32, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v31, x7)
 		v9 = v32
 		goto L10
 	L25:
@@ -28789,7 +28792,7 @@ func v171(p *pegort.TParser) (any, bool) {
 	L24:
 		goto L6
 	L10:
-		v33 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v9, x4)
+		v33 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, x4)
 		x3++
 		p.PushKid(v33)
 		if p.Pos == x4 {
@@ -28802,7 +28805,7 @@ func v171(p *pegort.TParser) (any, bool) {
 		break
 	}
 	v34 = p.NewNodeOrdinary("list", x1, p.Pos, p.Kids(x2))
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v34, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v34, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -28870,7 +28873,7 @@ func i171(p *pegort.TParser) (any, bool) {
 			x18 = p.Pos
 			p.Pos += size
 			v19 = p.NewMatchOrdinary(x18, p.Pos, p.Text(x18, p.Pos), true)
-			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v19, x15)
+			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v19, x15)
 			x14++
 			p.PushKid(v20)
 			if p.Pos == x15 {
@@ -28912,7 +28915,7 @@ func i171(p *pegort.TParser) (any, bool) {
 		}
 		x27 = append(x27, v30)
 		v31 = p.NewNodeOrdinary("tuple", x26, p.Pos, x27)
-		v32, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v31, x7)
+		v32, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v31, x7)
 		v9 = v32
 		goto L10
 	L25:
@@ -28921,7 +28924,7 @@ func i171(p *pegort.TParser) (any, bool) {
 	L24:
 		goto L6
 	L10:
-		v33 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v9, x4)
+		v33 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, x4)
 		x3++
 		p.PushKid(v33)
 		if p.Pos == x4 {
@@ -28934,7 +28937,7 @@ func i171(p *pegort.TParser) (any, bool) {
 		break
 	}
 	v34 = p.NewNodeOrdinary("list", x1, p.Pos, p.Kids(x2))
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v34, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v34, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -29341,7 +29344,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -29390,7 +29393,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -29607,7 +29610,7 @@ L17:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -29669,7 +29672,7 @@ func s181(p *pegort.TParser) (any, bool) {
 	v9 = p.NewMatchOrdinary(x8, p.Pos, "\"", true)
 	x7 = append(x7, v9)
 	v10 = p.NewNodeOrdinary("tuple", x6, p.Pos, x7)
-	v11, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v10, x1)
+	v11, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v10, x1)
 	v3 = v11
 	goto L4
 L5:
@@ -29695,7 +29698,7 @@ L5:
 	v16 = p.NewMatchOrdinary(x15, p.Pos, "'", true)
 	x14 = append(x14, v16)
 	v17 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-	v18, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v17, x1)
+	v18, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v17, x1)
 	v3 = v18
 	goto L4
 L12:
@@ -29703,7 +29706,7 @@ L12:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -29760,7 +29763,7 @@ func v182(p *pegort.TParser) (any, bool) {
 	}) {
 		goto L6
 	}
-	v7, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true}, nil, x1)
+	v7, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, nil, x1)
 	v4 = v7
 	goto L5
 L6:
@@ -29796,7 +29799,7 @@ L6:
 	}
 	x10 = append(x10, v13)
 	v14 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
-	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v14, x1)
+	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v14, x1)
 	v4 = v15
 	goto L5
 L8:
@@ -29805,7 +29808,7 @@ L8:
 	p.Env = x3
 	goto fail
 L5:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v4, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v4, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -29855,7 +29858,7 @@ func i182(p *pegort.TParser) (any, bool) {
 	}) {
 		goto L6
 	}
-	v7, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true}, nil, x1)
+	v7, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, nil, x1)
 	v4 = v7
 	goto L5
 L6:
@@ -29891,7 +29894,7 @@ L6:
 	}
 	x10 = append(x10, v13)
 	v14 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
-	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v14, x1)
+	v15, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v14, x1)
 	v4 = v15
 	goto L5
 L8:
@@ -29900,7 +29903,7 @@ L8:
 	p.Env = x3
 	goto fail
 L5:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v4, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v4, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -29956,7 +29959,7 @@ func s183(p *pegort.TParser) (any, bool) {
 	}
 	x7 = append(x7, v8)
 	v9 = p.NewNodeOrdinary("tuple", x6, p.Pos, x7)
-	v10, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v9, x1)
+	v10, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v9, x1)
 	v3 = v10
 	goto L4
 L5:
@@ -29978,7 +29981,7 @@ L5:
 	}
 	x13 = append(x13, v14)
 	v15 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
-	v16, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v15, x1)
+	v16, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v15, x1)
 	v3 = v16
 	goto L4
 L11:
@@ -29986,7 +29989,7 @@ L11:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -30090,7 +30093,7 @@ func i184(p *pegort.TParser) (any, bool) {
 	}) {
 		goto L17
 	}
-	v18, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true}, nil, x13)
+	v18, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, nil, x13)
 	v15 = v18
 	goto L16
 L17:
@@ -30112,7 +30115,7 @@ L17:
 	}
 	x21 = append(x21, v22)
 	v23 = p.NewNodeOrdinary("tuple", x20, p.Pos, x21)
-	v24, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v23, x13)
+	v24, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v23, x13)
 	v15 = v24
 	goto L16
 L19:
@@ -30122,7 +30125,7 @@ L19:
 L16:
 	x2 = append(x2, v15)
 	v25 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v25, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v25, start)
 	v = p.AttachCaptures(v, scope462, []any{k5}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
@@ -30223,7 +30226,7 @@ func i185(p *pegort.TParser) (any, bool) {
 	v14 = p.NewMatchOrdinary(x13, p.Pos, "(", true)
 	x2 = append(x2, v14)
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v15, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v15, start)
 	v = p.AttachCaptures(v, scope463, []any{k5}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
@@ -30295,7 +30298,7 @@ L12:
 L11:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -30401,7 +30404,7 @@ func i187(p *pegort.TParser) (any, bool) {
 	}
 	x2 = append(x2, v13)
 	v14 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, v14, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, v14, start)
 	v = p.AttachCaptures(v, scope464, []any{k5}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
@@ -30460,7 +30463,7 @@ func v188(p *pegort.TParser) (any, bool) {
 	}
 	x2 = append(x2, v6)
 	v7 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, v7, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, v7, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -30511,7 +30514,7 @@ func i188(p *pegort.TParser) (any, bool) {
 	}
 	x2 = append(x2, v6)
 	v7 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true}, v7, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, v7, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -30641,7 +30644,7 @@ func i189(p *pegort.TParser) (any, bool) {
 		goto L21
 	}
 	v26 = p.NewNodeOrdinary("tuple", x22, p.Pos, x23)
-	v27, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v26, x13)
+	v27, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v26, x13)
 	v16 = v27
 	goto L17
 L21:
@@ -30673,7 +30676,7 @@ L20:
 		goto L29
 	}
 	v34 = p.NewNodeOrdinary("tuple", x30, p.Pos, x31)
-	v35, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v34, x13)
+	v35, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v34, x13)
 	v16 = v35
 	goto L17
 L29:
@@ -30697,7 +30700,7 @@ L17:
 	}
 	x4 = append(x4, v38)
 	v39 = p.NewNodeOrdinary("tuple", x3, p.Pos, x4)
-	v40 = p.ShapeCapture(pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}, v39, x2)
+	v40 = p.ShapeCapture(pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, v39, x2)
 	k1 = v40
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	w = p.Where
@@ -30781,7 +30784,7 @@ func v190(p *pegort.TParser) (any, bool) {
 			x18 = p.Pos
 			p.Pos += size
 			v19 = p.NewMatchOrdinary(x18, p.Pos, p.Text(x18, p.Pos), true)
-			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v19, x15)
+			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v19, x15)
 			x14++
 			p.PushKid(v20)
 			if p.Pos == x15 {
@@ -30827,7 +30830,7 @@ func v190(p *pegort.TParser) (any, bool) {
 	L26:
 		goto L6
 	L10:
-		v29 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v9, x4)
+		v29 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, x4)
 		x3++
 		p.PushKid(v29)
 		if p.Pos == x4 {
@@ -30840,7 +30843,7 @@ func v190(p *pegort.TParser) (any, bool) {
 		break
 	}
 	v30 = p.NewNodeOrdinary("list", x1, p.Pos, p.Kids(x2))
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v30, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v30, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -30903,7 +30906,7 @@ func i190(p *pegort.TParser) (any, bool) {
 			x18 = p.Pos
 			p.Pos += size
 			v19 = p.NewMatchOrdinary(x18, p.Pos, p.Text(x18, p.Pos), true)
-			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v19, x15)
+			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v19, x15)
 			x14++
 			p.PushKid(v20)
 			if p.Pos == x15 {
@@ -30949,7 +30952,7 @@ func i190(p *pegort.TParser) (any, bool) {
 	L26:
 		goto L6
 	L10:
-		v29 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v9, x4)
+		v29 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, x4)
 		x3++
 		p.PushKid(v29)
 		if p.Pos == x4 {
@@ -30962,7 +30965,7 @@ func i190(p *pegort.TParser) (any, bool) {
 		break
 	}
 	v30 = p.NewNodeOrdinary("list", x1, p.Pos, p.Kids(x2))
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v30, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v30, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -31131,7 +31134,7 @@ L24:
 	goto L18
 L25:
 	v36 = p.NewNodeOrdinary("tuple", x19, p.Pos, x20)
-	v37, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v36, x10)
+	v37, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v36, x10)
 	v13 = v37
 	goto L14
 L18:
@@ -31161,7 +31164,7 @@ L38:
 L14:
 	x9 = append(x9, v13)
 	v42 = p.NewNodeOrdinary("tuple", x8, p.Pos, x9)
-	v43, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v42, x1)
+	v43, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v42, x1)
 	v5 = v43
 	goto L6
 L7:
@@ -31242,7 +31245,7 @@ L61:
 	goto L55
 L62:
 	v73 = p.NewNodeOrdinary("tuple", x56, p.Pos, x57)
-	v74, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v73, x47)
+	v74, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v73, x47)
 	v50 = v74
 	goto L51
 L55:
@@ -31272,7 +31275,7 @@ L75:
 L51:
 	x46 = append(x46, v50)
 	v79 = p.NewNodeOrdinary("tuple", x45, p.Pos, x46)
-	v80, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v79, x1)
+	v80, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v79, x1)
 	v5 = v80
 	goto L6
 L44:
@@ -31281,7 +31284,7 @@ L44:
 	k3 = x4
 	goto fail
 L6:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true}, v5, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v5, start)
 	v = p.AttachCaptures(v, scope466, []any{k3}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
@@ -31411,7 +31414,7 @@ func i192(p *pegort.TParser) (any, bool) {
 		goto L21
 	}
 	v26 = p.NewNodeOrdinary("tuple", x22, p.Pos, x23)
-	v27, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v26, x13)
+	v27, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v26, x13)
 	v16 = v27
 	goto L17
 L21:
@@ -31443,7 +31446,7 @@ L20:
 		goto L29
 	}
 	v34 = p.NewNodeOrdinary("tuple", x30, p.Pos, x31)
-	v35, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v34, x13)
+	v35, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v34, x13)
 	v16 = v35
 	goto L17
 L29:
@@ -31483,7 +31486,7 @@ L38:
 	}
 	x4 = append(x4, v41)
 	v42 = p.NewNodeOrdinary("tuple", x3, p.Pos, x4)
-	v43 = p.ShapeCapture(pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}, v42, x2)
+	v43 = p.ShapeCapture(pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, v42, x2)
 	k1 = v43
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	w = p.Where
@@ -32021,7 +32024,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -32070,7 +32073,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -32259,7 +32262,7 @@ func s201(p *pegort.TParser) (any, bool) {
 			x18 = p.Pos
 			p.Pos += size
 			v19 = p.NewMatchOrdinary(x18, p.Pos, p.Text(x18, p.Pos), true)
-			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v19, x15)
+			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v19, x15)
 			x14++
 			p.PushKid(v20)
 			if p.Pos == x15 {
@@ -32297,7 +32300,7 @@ func s201(p *pegort.TParser) (any, bool) {
 	L24:
 		goto L6
 	L10:
-		v27 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v9, x4)
+		v27 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, x4)
 		x3++
 		p.PushKid(v27)
 		if p.Pos == x4 {
@@ -32310,7 +32313,7 @@ func s201(p *pegort.TParser) (any, bool) {
 		break
 	}
 	v28 = p.NewNodeOrdinary("list", x1, p.Pos, p.Kids(x2))
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v28, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v28, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -32404,7 +32407,7 @@ L9:
 	v15 = p.NewMatchOrdinary(x14, p.Pos, "\n", true)
 	x2 = append(x2, v15)
 	v16 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true}, v16, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v16, start)
 	v = p.AttachCaptures(v, scope473, []any{k3, k10}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
@@ -32612,7 +32615,7 @@ func i204(p *pegort.TParser) (any, bool) {
 		goto L21
 	}
 	v26 = p.NewNodeOrdinary("tuple", x22, p.Pos, x23)
-	v27, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v26, x13)
+	v27, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v26, x13)
 	v16 = v27
 	goto L17
 L21:
@@ -32644,7 +32647,7 @@ L20:
 		goto L29
 	}
 	v34 = p.NewNodeOrdinary("tuple", x30, p.Pos, x31)
-	v35, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true}, v34, x13)
+	v35, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v34, x13)
 	v16 = v35
 	goto L17
 L29:
@@ -32667,7 +32670,7 @@ L17:
 		if v45, ok = u202(p); !ok {
 			goto L44
 		}
-		v46 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v45, x42)
+		v46 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v45, x42)
 		x41++
 		p.PushKid(v46)
 		if p.Pos == x42 {
@@ -32732,7 +32735,7 @@ L17:
 		goto fail
 	}
 	v51 = p.NewNodeOrdinary("tuple", x3, p.Pos, x4)
-	v52 = p.ShapeCapture(pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true}, v51, x2)
+	v52 = p.ShapeCapture(pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, v51, x2)
 	k1 = v52
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	w = p.Where
@@ -32832,7 +32835,7 @@ func v205(p *pegort.TParser) (any, bool) {
 			x18 = p.Pos
 			p.Pos += size
 			v19 = p.NewMatchOrdinary(x18, p.Pos, p.Text(x18, p.Pos), true)
-			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v19, x15)
+			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v19, x15)
 			x14++
 			p.PushKid(v20)
 			if p.Pos == x15 {
@@ -32894,7 +32897,7 @@ func v205(p *pegort.TParser) (any, bool) {
 			x39 = p.Pos
 			p.Pos += size
 			v40 = p.NewMatchOrdinary(x39, p.Pos, p.Text(x39, p.Pos), true)
-			v41 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v40, x36)
+			v41 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v40, x36)
 			x35++
 			p.PushKid(v41)
 			if p.Pos == x36 {
@@ -32922,7 +32925,7 @@ func v205(p *pegort.TParser) (any, bool) {
 		p.Pos = x43
 		p.Recovered = p.Recovered[:x44]
 		v46 = p.NewNodeOrdinary("tuple", x29, p.Pos, x30)
-		v47, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v46, x7)
+		v47, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v46, x7)
 		v9 = v47
 		goto L10
 	L28:
@@ -32931,7 +32934,7 @@ func v205(p *pegort.TParser) (any, bool) {
 	L27:
 		goto L6
 	L10:
-		v48 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v9, x4)
+		v48 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, x4)
 		x3++
 		p.PushKid(v48)
 		if p.Pos == x4 {
@@ -32944,7 +32947,7 @@ func v205(p *pegort.TParser) (any, bool) {
 		break
 	}
 	v49 = p.NewNodeOrdinary("list", x1, p.Pos, p.Kids(x2))
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v49, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v49, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -33023,7 +33026,7 @@ func i205(p *pegort.TParser) (any, bool) {
 			x18 = p.Pos
 			p.Pos += size
 			v19 = p.NewMatchOrdinary(x18, p.Pos, p.Text(x18, p.Pos), true)
-			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v19, x15)
+			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v19, x15)
 			x14++
 			p.PushKid(v20)
 			if p.Pos == x15 {
@@ -33085,7 +33088,7 @@ func i205(p *pegort.TParser) (any, bool) {
 			x39 = p.Pos
 			p.Pos += size
 			v40 = p.NewMatchOrdinary(x39, p.Pos, p.Text(x39, p.Pos), true)
-			v41 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v40, x36)
+			v41 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v40, x36)
 			x35++
 			p.PushKid(v41)
 			if p.Pos == x36 {
@@ -33113,7 +33116,7 @@ func i205(p *pegort.TParser) (any, bool) {
 		p.Pos = x43
 		p.Recovered = p.Recovered[:x44]
 		v46 = p.NewNodeOrdinary("tuple", x29, p.Pos, x30)
-		v47, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true}, v46, x7)
+		v47, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v46, x7)
 		v9 = v47
 		goto L10
 	L28:
@@ -33122,7 +33125,7 @@ func i205(p *pegort.TParser) (any, bool) {
 	L27:
 		goto L6
 	L10:
-		v48 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v9, x4)
+		v48 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, x4)
 		x3++
 		p.PushKid(v48)
 		if p.Pos == x4 {
@@ -33135,7 +33138,7 @@ func i205(p *pegort.TParser) (any, bool) {
 		break
 	}
 	v49 = p.NewNodeOrdinary("list", x1, p.Pos, p.Kids(x2))
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v49, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v49, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -33680,7 +33683,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -33729,7 +33732,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v3, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -33969,7 +33972,7 @@ func s215(p *pegort.TParser) (any, bool) {
 	x1 = p.Pos
 	p.Pos += size
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v2, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v2, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -34007,7 +34010,7 @@ func s216(p *pegort.TParser) (any, bool) {
 	x1 = p.Pos
 	p.Pos += size
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false}, v2, start)
+	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v2, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
