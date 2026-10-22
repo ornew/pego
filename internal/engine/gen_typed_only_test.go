@@ -203,3 +203,37 @@ func TestGeneratedTypedOnlyConvertedEntries(t *testing.T) {
 		t.Errorf("a typed-only parser without the Node rule functions: error %v, want missing generated execution functions", err)
 	}
 }
+
+// A hidden rule that splices into its caller, one that calls itself where it takes one element, and one
+// with an action behave the same in a typed-only parser as in a parser with every entry point, and the
+// typed-only parser refuses to start at a hidden rule.
+const ordinaryOnlyHidden = `rule main = _t _w "!"
+rule _t = "(" _t? ")"
+rule _w = x:[a-z]+ #atomic => text($x)`
+
+var ordinaryOnlyHiddenInputs = []string{"()ab!", "(())a!", "((()))abc!", "()!", "(()ab!", "ab!", "", "(\xff)a!", "()ab!x"}
+
+func TestGeneratedTypedOnlyHiddenRules(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds generated code")
+	}
+	// The entries start at main and at the hidden rule _t.
+	program := strings.NewReplacer(`"sum"`, `"main"`, `"a"`, `"_t"`).Replace(ordinaryOnlyTypedEntries)
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("ordtest")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ordinaryOnlyPackage(t, dir, "full", ordinaryOnlyHidden, GenOptions{Types: true, Recognize: true}, program, ordinaryOnlyHiddenInputs)
+	ordinaryOnlyPackage(t, dir, "only", ordinaryOnlyHidden, GenOptions{Types: true, TypedOnly: true}, program, ordinaryOnlyHiddenInputs)
+	ordinaryOnlyPackage(t, dir, "mutated", strings.Replace(ordinaryOnlyHidden, `"!"`, `"?"`, 1), GenOptions{Types: true, TypedOnly: true}, program, ordinaryOnlyHiddenInputs)
+	out := runTranscripts(t, dir, "full", "only", "mutated")
+	if out["full"] != out["only"] {
+		t.Errorf("the typed-only parser differs from the full one:\n%s", firstTranscriptDifference(out["full"], out["only"]))
+	}
+	if !strings.Contains(out["only"], "rule _t is hidden") || !strings.Contains(out["only"], `"E3":"ab"`) || !strings.Contains(out["only"], "syntax error") {
+		t.Errorf("the transcript lacks the refusal of a hidden rule, a value or a syntax error:\n%s", out["only"])
+	}
+	if out["mutated"] == out["only"] {
+		t.Error("the transcripts of a mutated grammar are the same: the comparison cannot fail")
+	}
+}
