@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/engine"
 )
 
 // Severity tells how likely a finding is to be a mistake.
@@ -142,7 +143,14 @@ func Run(g *grammar.Grammar, start string, opts Options) []Finding {
 
 func runControlled(g *grammar.Grammar, start string, opts Options, control *lintControl) []Finding {
 	control.check()
-	l := &linter{control: control, opts: opts, an: newAnalysisControlled(g, control)}
+	// Each inline action is a rule of its own with its captures and cuts: lint the grammar with
+	// them lowered to hidden rules, and report their findings as the inline actions written.
+	lowered, names, err := engine.LowerInlineActions(g)
+	if err != nil {
+		lowered, names = g, nil // a grammar that does not compile is not linted properly
+	}
+	control.check()
+	l := &linter{control: control, opts: opts, an: newAnalysisControlled(lowered, control)}
 	for _, c := range []struct {
 		name string
 		run  func(*linter)
@@ -166,6 +174,7 @@ func runControlled(g *grammar.Grammar, start string, opts Options, control *lint
 		}
 	}
 	control.check()
+	l.findings = l.written(names)
 	findings := l.suppress(g)
 	slices.SortStableFunc(findings, func(a, b Finding) int {
 		control.poll()
@@ -197,6 +206,29 @@ func (l *linter) report(check string, sev Severity, pos grammar.Pos, fix, format
 		}
 	}
 	l.findings = append(l.findings, f)
+}
+
+// written turns the findings about the lowered grammar into findings about the grammar as written:
+// a finding in the hidden rule of an inline action is in the rule that holds it, a generated name
+// in a message or a suggestion becomes the inline action, and the rule of an inline action is not
+// reported as unreachable apart from the rule that holds it.
+func (l *linter) written(names *engine.InlineActionNames) []Finding {
+	if names == nil {
+		return l.findings
+	}
+	out := make([]Finding, 0, len(l.findings))
+	for _, f := range l.findings {
+		l.control.poll()
+		if holder, generated := names.Holder(f.Rule); generated {
+			if f.Check == CheckUnreachableRule {
+				continue
+			}
+			f.Rule = holder
+		}
+		f.Message, f.Fix = names.Message(f.Message), names.Message(f.Fix)
+		out = append(out, f)
+	}
+	return out
 }
 
 // eachRule calls f for every rule, with l.rule set to it.

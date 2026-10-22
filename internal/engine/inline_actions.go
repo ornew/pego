@@ -469,3 +469,22 @@ func (n *InlineActionNames) Expr(text string) string {
 		return grammar.FormatExpr(n.names[name].node)
 	})
 }
+
+// Holder returns the rule that holds the inline action whose generated rule is name. ok is false
+// for a declared rule.
+func (n *InlineActionNames) Holder(name string) (rule string, ok bool) {
+	if n == nil {
+		return "", false
+	}
+	site, ok := n.names[name]
+	return site.rule, ok
+}
+
+// Message returns the message s, written for the lowered grammar, with each generated rule named as
+// the inline action it stands for, and the word "rule" before it dropped.
+func (n *InlineActionNames) Message(s string) string {
+	if n == nil {
+		return s
+	}
+	return n.names.text(s)
+}

@@ -232,3 +232,30 @@ func contains(xs []string, x string) bool {
 	}
 	return false
 }
+
+// TestInlineActionDiagnostics checks that lint findings inside an inline action reach the editor at
+// the position in the source, and name no rule that the compiler generates for the inline action.
+func TestInlineActionDiagnostics(t *testing.T) {
+	c := newServer(t)
+	capabilities := map[string]any{"experimental": map[string]any{"pego": map[string]any{"lintDiagnostics": true}}}
+	for k, v := range fullCapabilities {
+		capabilities[k] = v
+	}
+	c.request("initialize", map[string]any{"capabilities": capabilities})
+	src := "@start\nrule main = (\"a\" / \"ab\" => \"x\") (a:\"c\" \"d\" => \"y\")"
+	got := map[string]Range{}
+	for _, d := range c.open("file:///inline-lint.pego", src) {
+		if strings.Contains(d.Message, "_main_") {
+			t.Errorf("a generated name in %+v", d)
+		}
+		got[d.Code] = d.Range
+	}
+	want := map[string]Range{
+		"shadowed-alternative": rng(1, 19, 1, 23),
+		"unused-capture":       rng(1, 33, 1, 34),
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("diagnostics = %+v, want %+v", got, want)
+	}
+	c.exit()
+}

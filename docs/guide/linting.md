@@ -163,6 +163,8 @@ fail.
 | [`long-lookahead`](#long-lookahead) | hint | Lookaheads that scan any character |
 | [`lint-directive`](#suppressing-findings) | warning | `lint:ignore` comments that name an unknown check or suppress nothing |
 
+An inline action `(expr => action)` is checked as the rule it stands for, with its own captures and cuts, so every check looks inside it. Its findings are reported at their place in the source, in the rule that holds the inline action, and a `lint:ignore` before that rule covers them.
+
 ### `shadowed-alternative`
 
 An alternative of an ordered choice can never match if an earlier alternative matches wherever it could: the choice
@@ -308,7 +310,6 @@ Rules that no start rule calls, directly or indirectly, also from inside an inli
 the rules it reaches are used even when the start rule given to the linter does not reach them. A hidden rule
 (a name that begins with `_`) is a rule like any other: a hidden rule that nothing calls is reported.
 
-The other checks do not yet look inside inline actions.
 
 ### `right-recursion`
 

@@ -388,8 +388,7 @@ func TestAnyIsNotAType(t *testing.T) {
 
 // A rule whose name begins with "_" is hidden, and an inline action is a hidden rule that the
 // grammar does not name. Both take part in reachability like any other rule, and the rule the
-// compiler generates for an inline action is never reported. The other checks do not yet look
-// inside inline actions.
+// compiler generates for an inline action is never reported.
 func TestHiddenRules(t *testing.T) {
 	runCases(t, []lintCase{
 		{name: "called", src: "rule main = _sp \"a\" _sp\nrule _sp = \" \"*"},
@@ -404,4 +403,50 @@ func TestHiddenRules(t *testing.T) {
 			"2:1 warning unreachable-rule", "3:1 warning unreachable-rule"}},
 		{name: "capture used by the inline action", src: "rule main = (a:\"a\" => $a) \"b\""},
 	})
+}
+
+// An inline action is a rule of its own with its captures, so every check looks inside it. Its
+// findings are in the rule that holds it, and no name that the compiler generates for it appears.
+func TestInlineActionChecks(t *testing.T) {
+	runCases(t, []lintCase{
+		{name: "shadowed alternative", src: `rule main = ("a" / "ab" => "x")`,
+			want: []string{"1:20 error shadowed-alternative"}, msg: "alternative 2 (`\"ab\"`) can never match: alternative 1"},
+		{name: "alternatives in order", src: `rule main = ("ab" / "a" => "x")`},
+		{name: "nullable repetition", src: `rule main = (("a"?)* => "x")`, want: []string{"1:14 warning nullable-repetition"}},
+		{name: "useless lookahead", src: `rule main = (!"a"? "b" => "x")`, want: []string{"1:14 error useless-lookahead"}},
+		{name: "unused capture", src: `rule main = (a:"a" "b" => "x")`, want: []string{"1:14 warning unused-capture"}},
+		{name: "used capture", src: `rule main = (a:"a" "b" => $a)`},
+		{name: "duplicate capture", src: `rule main = (a:"a" a:"b" => $a)`, want: []string{"1:20 warning duplicate-capture"}},
+		{name: "same label in two inline actions", src: `rule main = (a:"a" => $a) (a:"b" => $a)`},
+		{name: "same label outside and inside", src: `rule main = a:"a" (a:"b" => $a) => $a`},
+		{name: "nested inline action", src: `rule main = ("a" ("b" / "bc" => "y") => "x")`,
+			want: []string{"1:25 error shadowed-alternative"}},
+		{name: "a rule called from the inline action", src: "rule main = (w => \"x\")\nrule w = \"a\" / \"ab\"",
+			want: []string{"2:16 error shadowed-alternative"}},
+		{name: "rule-wide directive before the holder", src: "// lint:ignore unused-capture\nrule main = (a:\"a\" \"b\" => \"x\")"},
+		{name: "directive on the line", src: "rule main = (a:\"a\" \"b\" => \"x\") // lint:ignore unused-capture"},
+		{name: "directive that suppresses nothing", src: "// lint:ignore unused-capture\nrule main = (\"b\" => \"x\")",
+			want: []string{"1:1 warning lint-directive"}},
+	})
+	// Every finding names the rule that holds the inline action, never a generated one.
+	for _, src := range []string{
+		`rule main = (a:"a" "b" => "x")`,
+		`rule main = (("a"?)* => "x")`,
+		"rule main = (w => \"x\")\nrule w = \"a\" / \"ab\"",
+		`rule main = ("a" ("b" / "bc" => "y") => "x")`,
+		"rule main = \"a\"\nrule x = (a:\"a\" \"b\" => \"x\")",
+	} {
+		_, fs := lintSource(t, src, Options{})
+		if len(fs) == 0 {
+			t.Errorf("no findings for %s", src)
+		}
+		for _, f := range fs {
+			if strings.Contains(f.Rule+f.Message+f.Fix, "_main_") || strings.Contains(f.Rule+f.Message+f.Fix, "_x_") {
+				t.Errorf("a generated name in %+v for %s", f, src)
+			}
+			if f.Check != CheckUnreachableRule && f.Rule != "main" && f.Rule != "x" && f.Rule != "w" {
+				t.Errorf("finding in rule %q for %s", f.Rule, src)
+			}
+		}
+	}
 }
