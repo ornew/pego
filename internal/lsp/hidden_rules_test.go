@@ -11,6 +11,7 @@ import (
 // hiddenSrc has hidden rules (names that begin with "_") that are called, one with an action,
 // and an unused one, plus an inline action.
 const hiddenSrc = `rule _sp = " "*
+@start
 rule main = _sp word _sp (n:_num => $n) _tail
 rule word = a:[a-z]+ #atomic => $a
 rule _tail = "!"?
@@ -57,12 +58,12 @@ func TestHiddenRuleNavigation(t *testing.T) {
 		wantDef      Location
 		wantRefCount int
 	}{
-		{"_sp", 1, 1, spDecl, 3},
-		{"_sp", 1, 2, spDecl, 3},
+		{"_sp", 2, 1, spDecl, 3},
+		{"_sp", 2, 2, spDecl, 3},
 		{"_sp", 0, 1, spDecl, 3},
-		{"_tail", 1, 1, Location{URI: uri, Range: rng(3, 5, 3, 10)}, 2},
+		{"_tail", 2, 1, Location{URI: uri, Range: rng(4, 5, 4, 10)}, 2},
 		// Called inside the inline action's parentheses.
-		{"_num", 1, 1, Location{URI: uri, Range: rng(4, 5, 4, 9)}, 2},
+		{"_num", 2, 1, Location{URI: uri, Range: rng(5, 5, 5, 9)}, 2},
 	} {
 		line, char := hiddenAt(tc.line, tc.name, tc.nth)
 		var def []Location
@@ -92,9 +93,9 @@ func TestHiddenRuleNavigation(t *testing.T) {
 		want       string
 		wantNoType bool
 	}{
-		{"_sp", 1, 1, "```pego\nrule _sp\n```\n\n*Hidden rule: it makes no node of its own.*", true},
-		{"_tail", 1, 1, "```pego\nrule _tail\n```\n\n*Hidden rule: it makes no node of its own.*", true},
-		{"_num", 4, 1, "", false},
+		{"_sp", 2, 1, "```pego\nrule _sp\n```\n\n*Hidden rule: it makes no node of its own.*", true},
+		{"_tail", 2, 1, "```pego\nrule _tail\n```\n\n*Hidden rule: it makes no node of its own.*", true},
+		{"_num", 5, 1, "", false},
 	} {
 		line, char := hiddenAt(tc.line, tc.name, tc.nth)
 		got, r := hoverText(c, uri, line, char)
@@ -122,7 +123,7 @@ func TestHiddenRuleNavigation(t *testing.T) {
 	}
 
 	// A highlight marks the declaration as a write and each call as a read.
-	line, char := hiddenAt(1, "_sp", 2)
+	line, char := hiddenAt(2, "_sp", 2)
 	var highlights []documentHighlight
 	c.requestInto("textDocument/documentHighlight", at(uri, line, char), &highlights)
 	if len(highlights) != 3 || highlights[0].Kind != highlightWrite || highlights[1].Kind != highlightRead {
@@ -135,7 +136,7 @@ func TestHiddenRuleCompletionAndRename(t *testing.T) {
 	c := newInitialized(t)
 	uri := "file:///hidden-rename.pego"
 	c.open(uri, hiddenSrc+"rule use = main")
-	labels := completionLabels(c, uri, 7, len("rule use = "))
+	labels := completionLabels(c, uri, 8, len("rule use = "))
 	for _, name := range []string{"_sp", "_tail", "_num", "_dead", "main"} {
 		if !contains(labels, name) {
 			t.Errorf("completion lacks %s: %q", name, labels)
@@ -166,7 +167,7 @@ func TestHiddenRuleCompletionAndRename(t *testing.T) {
 	}
 	// A hidden rule keeps its leading underscore, so that it remains hidden, and a visible rule
 	// cannot gain one: hiding changes the nodes a parse makes and removes the rule as an entry.
-	got, err := rename(1, "_sp", 1, "_ws")
+	got, err := rename(2, "_sp", 1, "_ws")
 	if err != nil {
 		t.Fatalf("rename _sp to _ws: %+v", err)
 	}
@@ -178,11 +179,11 @@ func TestHiddenRuleCompletionAndRename(t *testing.T) {
 		name, to   string
 		wantSubstr string
 	}{
-		{1, "_sp", "sp", "would make it a visible rule"},
-		{1, "word", "_word", "would hide it"},
-		{1, "_sp", "_", "not a valid rule name"},
-		{1, "_sp", "_tail", "already defined"},
-		{1, "_sp", "_a-b", "not a valid rule name"},
+		{2, "_sp", "sp", "would make it a visible rule"},
+		{2, "word", "_word", "would hide it"},
+		{2, "_sp", "_", "not a valid rule name"},
+		{2, "_sp", "_tail", "already defined"},
+		{2, "_sp", "_a-b", "not a valid rule name"},
 	} {
 		if _, err := rename(tc.line, tc.name, 1, tc.to); err == nil || !strings.Contains(err.Message, tc.wantSubstr) {
 			t.Errorf("rename %s to %s: %+v, want an error containing %q", tc.name, tc.to, err, tc.wantSubstr)
