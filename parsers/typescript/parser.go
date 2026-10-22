@@ -228,3037 +228,2194 @@ func tinit() {
 }
 
 func tmk_ArrayBindingPattern(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tArrayBindingPattern)
-
 	v.Elements = tl0(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ArrayLiteralExpression(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tArrayLiteralExpression)
-
 	v.Elements = tl1(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ArrayType(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tArrayType)
-
 	v.ElementType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ArrowFunction(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tArrowFunction)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.TypeParameters = tl3(a, f1)
-
 	v.Parameters = tl4(a, f2)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f3))
-
 	v.EqualsGreaterThanToken = tv28(a, f4)
-
 	v.Body = rt.TAs[types.ConciseBody](rt.TPubIn(types.PegoHooks, a, f5))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
-
 	rt.FieldSpanOf(f5, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_AsExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tAsExpression)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_AwaitExpression(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tAwaitExpression)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_BinaryExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tBinaryExpression)
-
 	v.Left = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.OperatorToken = tv28(a, f1)
-
 	v.Right = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_BindingElement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tBindingElement)
-
 	v.DotDotDotToken = tv28(a, f0)
-
 	v.PropertyName = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
-
 	v.Name = rt.TAs[types.BindingName](rt.TPubIn(types.PegoHooks, a, f2))
-
 	v.Initializer = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f3))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_Block(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tBlock)
-
 	v.Statements = tl5(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_BreakStatement(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tBreakStatement)
-
 	v.Label = tv5(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_CallExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tCallExpression)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.QuestionDotToken = tv28(a, f1)
-
 	v.TypeArguments = tl6(a, f2)
-
 	v.Arguments = tl1(a, f3)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_CallSignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tCallSignature)
-
 	v.TypeParameters = tl3(a, f0)
-
 	v.Parameters = tl4(a, f1)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_CaseBlock(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tCaseBlock)
-
 	v.Clauses = tl7(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_CaseClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tCaseClause)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Statements = tl5(a, f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_CatchClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tCatchClause)
-
 	v.VariableDeclaration = rt.TAs[*types.VariableDeclaration](f0)
-
 	v.Block = rt.TAs[*types.Block](f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ClassDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tClassDeclaration)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.Name = tv5(a, f1)
-
 	v.TypeParameters = tl3(a, f2)
-
 	v.HeritageClauses = tl8(a, f3)
-
 	v.Members = tl9(a, f4)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ClassExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tClassExpression)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.Name = tv5(a, f1)
-
 	v.TypeParameters = tl3(a, f2)
-
 	v.HeritageClauses = tl8(a, f3)
-
 	v.Members = tl9(a, f4)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ClassStaticBlockDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tClassStaticBlockDeclaration)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.Body = rt.TAs[*types.Block](f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ComputedPropertyName(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tComputedPropertyName)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ConditionalExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tConditionalExpression)
-
 	v.Condition = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.QuestionToken = tv28(a, f1)
-
 	v.WhenTrue = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
-
 	v.ColonToken = tv28(a, f3)
-
 	v.WhenFalse = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f4))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ConditionalType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tConditionalType)
-
 	v.CheckType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.ExtendsType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f1))
-
 	v.TrueType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
-
 	v.FalseType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f3))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ConstructSignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tConstructSignature)
-
 	v.TypeParameters = tl3(a, f0)
-
 	v.Parameters = tl4(a, f1)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_Constructor(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tConstructor)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.TypeParameters = tl3(a, f1)
-
 	v.Parameters = tl4(a, f2)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f3))
-
 	v.Body = rt.TAs[*types.Block](f4)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ConstructorType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tConstructorType)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.TypeParameters = tl3(a, f1)
-
 	v.Parameters = tl4(a, f2)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f3))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ContinueStatement(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tContinueStatement)
-
 	v.Label = tv5(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_Decorator(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tDecorator)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_DefaultClause(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tDefaultClause)
-
 	v.Statements = tl5(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_DeleteExpression(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tDeleteExpression)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_DoStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tDoStatement)
-
 	v.Statement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ElementAccessExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tElementAccessExpression)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.QuestionDotToken = tv28(a, f1)
-
 	v.ArgumentExpression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_EnumDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tEnumDeclaration)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.Name = tv5(a, f1)
-
 	v.Members = tl10(a, f2)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_EnumMember(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tEnumMember)
-
 	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Initializer = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ExportAssignment(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tExportAssignment)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
-
 	v.IsExportEquals = astBool(f2)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ExportDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tExportDeclaration)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.ExportClause = rt.TAs[types.NamedExportBindings](rt.TPubIn(types.PegoHooks, a, f1))
-
 	v.ModuleSpecifier = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
-
 	v.Attributes = rt.TAs[*types.ImportAttributes](f3)
-
 	v.IsTypeOnly = astBool(f4)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ExportSpecifier(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tExportSpecifier)
-
 	v.PropertyName = rt.TAs[types.ImportAttributeName](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Name = rt.TAs[types.ImportAttributeName](rt.TPubIn(types.PegoHooks, a, f1))
-
 	v.IsTypeOnly = astBool(f2)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ExpressionStatement(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tExpressionStatement)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ExpressionWithTypeArguments(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tExpressionWithTypeArguments)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.TypeArguments = tl6(a, f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ExternalModuleReference(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tExternalModuleReference)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ForInStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tForInStatement)
-
 	v.Initializer = rt.TAs[types.ForInitializer](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
-
 	v.Statement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ForOfStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tForOfStatement)
-
 	v.AwaitModifier = tv28(a, f0)
-
 	v.Initializer = rt.TAs[types.ForInitializer](rt.TPubIn(types.PegoHooks, a, f1))
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
-
 	v.Statement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f3))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ForStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tForStatement)
-
 	v.Initializer = rt.TAs[types.ForInitializer](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Condition = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
-
 	v.Incrementor = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
-
 	v.Statement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f3))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_FunctionDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tFunctionDeclaration)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.AsteriskToken = tv28(a, f1)
-
 	v.Name = tv5(a, f2)
-
 	v.TypeParameters = tl3(a, f3)
-
 	v.Parameters = tl4(a, f4)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f5))
-
 	v.Body = rt.TAs[*types.Block](f6)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
-
 	rt.FieldSpanOf(f5, &first, &start, &end)
-
 	rt.FieldSpanOf(f6, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_FunctionExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tFunctionExpression)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.AsteriskToken = tv28(a, f1)
-
 	v.Name = tv5(a, f2)
-
 	v.TypeParameters = tl3(a, f3)
-
 	v.Parameters = tl4(a, f4)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f5))
-
 	v.Body = rt.TAs[*types.Block](f6)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
-
 	rt.FieldSpanOf(f5, &first, &start, &end)
-
 	rt.FieldSpanOf(f6, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_FunctionType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tFunctionType)
-
 	v.TypeParameters = tl3(a, f0)
-
 	v.Parameters = tl4(a, f1)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_GetAccessor(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tGetAccessor)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
-
 	v.TypeParameters = tl3(a, f2)
-
 	v.Parameters = tl4(a, f3)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f4))
-
 	v.Body = rt.TAs[*types.Block](f5)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
-
 	rt.FieldSpanOf(f5, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_HeritageClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tHeritageClause)
-
 	v.Token = astString(f0)
-
 	v.Types = tl11(a, f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_IfStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tIfStatement)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.ThenStatement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f1))
-
 	v.ElseStatement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ImportAttribute(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tImportAttribute)
-
 	v.Name = rt.TAs[types.ImportAttributeName](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Value = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ImportAttributes(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tImportAttributes)
-
 	v.Elements = tl12(a, f0)
-
 	v.Token = astString(f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ImportClause(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tImportClause)
-
 	v.Name = tv5(a, f0)
-
 	v.NamedBindings = rt.TAs[types.NamedImportBindings](rt.TPubIn(types.PegoHooks, a, f1))
-
 	v.PhaseModifier = astString(f2)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ImportDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tImportDeclaration)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.ImportClause = rt.TAs[*types.ImportClause](f1)
-
 	v.ModuleSpecifier = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
-
 	v.Attributes = rt.TAs[*types.ImportAttributes](f3)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ImportEqualsDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tImportEqualsDeclaration)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.Name = tv5(a, f1)
-
 	v.ModuleReference = rt.TAs[types.ModuleReference](rt.TPubIn(types.PegoHooks, a, f2))
-
 	v.IsTypeOnly = astBool(f3)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ImportSpecifier(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tImportSpecifier)
-
 	v.PropertyName = rt.TAs[types.ImportAttributeName](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Name = tv5(a, f1)
-
 	v.IsTypeOnly = astBool(f2)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ImportType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tImportType)
-
 	v.Argument = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Attributes = rt.TAs[*types.ImportAttributes](f1)
-
 	v.Qualifier = rt.TAs[types.EntityName](rt.TPubIn(types.PegoHooks, a, f2))
-
 	v.TypeArguments = tl6(a, f3)
-
 	v.IsTypeOf = astBool(f4)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_IndexSignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tIndexSignature)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.Parameters = tl4(a, f1)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_IndexedAccessType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tIndexedAccessType)
-
 	v.ObjectType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.IndexType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_InferType(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tInferType)
-
 	v.TypeParameter = rt.TAs[*types.TypeParameter](f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_InterfaceDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tInterfaceDeclaration)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.Name = tv5(a, f1)
-
 	v.TypeParameters = tl3(a, f2)
-
 	v.HeritageClauses = tl8(a, f3)
-
 	v.Members = tl13(a, f4)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_IntersectionType(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tIntersectionType)
-
 	v.Types = tl6(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_JSDocFunctionType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJSDocFunctionType)
-
 	v.Parameters = tl4(a, f0)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_JSDocNonNullableType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJSDocNonNullableType)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Postfix = astBool(f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_JSDocNullableType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJSDocNullableType)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Postfix = astBool(f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_JsxAttribute(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxAttribute)
-
 	v.Name = rt.TAs[types.JsxAttributeName](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Initializer = rt.TAs[types.JsxAttributeValue](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_JsxAttributes(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxAttributes)
-
 	v.Properties = tl14(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_JsxClosingElement(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxClosingElement)
-
 	v.TagName = rt.TAs[types.JsxTagName](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_JsxElement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxElement)
-
 	v.OpeningElement = rt.TAs[*types.JsxOpeningElement](f0)
-
 	v.Children = tl15(a, f1)
-
 	v.ClosingElement = rt.TAs[*types.JsxClosingElement](f2)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_JsxExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxExpression)
-
 	v.DotDotDotToken = tv28(a, f0)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_JsxFragment(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxFragment)
-
 	v.OpeningFragment = tv10(a, f0)
-
 	v.Children = tl15(a, f1)
-
 	v.ClosingFragment = tv9(a, f2)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_JsxNamespacedName(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxNamespacedName)
-
 	v.Namespace = tv5(a, f0)
-
 	v.Name = tv5(a, f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_JsxOpeningElement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxOpeningElement)
-
 	v.TagName = rt.TAs[types.JsxTagName](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.TypeArguments = tl6(a, f1)
-
 	v.Attributes = rt.TAs[*types.JsxAttributes](f2)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_JsxSelfClosingElement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxSelfClosingElement)
-
 	v.TagName = rt.TAs[types.JsxTagName](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.TypeArguments = tl6(a, f1)
-
 	v.Attributes = rt.TAs[*types.JsxAttributes](f2)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_JsxSpreadAttribute(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxSpreadAttribute)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_LabeledStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tLabeledStatement)
-
 	v.Label = tv5(a, f0)
-
 	v.Statement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_LiteralType(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tLiteralType)
-
 	v.Literal = rt.TAs[types.LiteralTypeLiteral](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_MappedType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tMappedType)
-
 	v.ReadonlyToken = tv28(a, f0)
-
 	v.TypeParameter = rt.TAs[*types.TypeParameter](f1)
-
 	v.NameType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
-
 	v.QuestionToken = tv28(a, f3)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f4))
-
 	v.Members = tl13(a, f5)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
-
 	rt.FieldSpanOf(f5, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_MetaProperty(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tMetaProperty)
-
 	v.KeywordToken = astString(f0)
-
 	v.Name = tv5(a, f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_MethodDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any, f7 any, f8 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tMethodDeclaration)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.AsteriskToken = tv28(a, f1)
-
 	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f2))
-
 	v.QuestionToken = tv28(a, f3)
-
 	v.ExclamationToken = tv28(a, f4)
-
 	v.TypeParameters = tl3(a, f5)
-
 	v.Parameters = tl4(a, f6)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f7))
-
 	v.Body = rt.TAs[*types.Block](f8)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
-
 	rt.FieldSpanOf(f5, &first, &start, &end)
-
 	rt.FieldSpanOf(f6, &first, &start, &end)
-
 	rt.FieldSpanOf(f7, &first, &start, &end)
-
 	rt.FieldSpanOf(f8, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_MethodSignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tMethodSignature)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
-
 	v.QuestionToken = tv28(a, f2)
-
 	v.TypeParameters = tl3(a, f3)
-
 	v.Parameters = tl4(a, f4)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f5))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
-
 	rt.FieldSpanOf(f5, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ModuleBlock(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tModuleBlock)
-
 	v.Statements = tl5(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ModuleDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tModuleDeclaration)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.Name = rt.TAs[types.ImportAttributeName](rt.TPubIn(types.PegoHooks, a, f1))
-
 	v.Body = rt.TAs[types.ModuleBody](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_NamedExports(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tNamedExports)
-
 	v.Elements = tl16(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_NamedImports(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tNamedImports)
-
 	v.Elements = tl17(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_NamedTupleMember(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tNamedTupleMember)
-
 	v.DotDotDotToken = tv28(a, f0)
-
 	v.Name = tv5(a, f1)
-
 	v.QuestionToken = tv28(a, f2)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f3))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_NamespaceExport(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tNamespaceExport)
-
 	v.Name = rt.TAs[types.ImportAttributeName](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_NamespaceExportDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tNamespaceExportDeclaration)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.Name = tv5(a, f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_NamespaceImport(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tNamespaceImport)
-
 	v.Name = tv5(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_NewExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tNewExpression)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.TypeArguments = tl6(a, f1)
-
 	v.Arguments = tl1(a, f2)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_NonNullExpression(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tNonNullExpression)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ObjectBindingPattern(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tObjectBindingPattern)
-
 	v.Elements = tl18(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ObjectLiteralExpression(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tObjectLiteralExpression)
-
 	v.Properties = tl19(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_OptionalType(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tOptionalType)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_Parameter(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tParameter)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.DotDotDotToken = tv28(a, f1)
-
 	v.Name = rt.TAs[types.BindingName](rt.TPubIn(types.PegoHooks, a, f2))
-
 	v.QuestionToken = tv28(a, f3)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f4))
-
 	v.Initializer = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f5))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
-
 	rt.FieldSpanOf(f5, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ParenthesizedExpression(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tParenthesizedExpression)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ParenthesizedType(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tParenthesizedType)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_PostfixUnaryExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tPostfixUnaryExpression)
-
 	v.Operand = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Operator = astString(f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_PrefixUnaryExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tPrefixUnaryExpression)
-
 	v.Operator = astString(f0)
-
 	v.Operand = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_PropertyAccessExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tPropertyAccessExpression)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.QuestionDotToken = tv28(a, f1)
-
 	v.Name = rt.TAs[types.MemberName](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_PropertyAssignment(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tPropertyAssignment)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
-
 	v.QuestionToken = tv28(a, f2)
-
 	v.ExclamationToken = tv28(a, f3)
-
 	v.Initializer = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f4))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_PropertyDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tPropertyDeclaration)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
-
 	v.QuestionToken = tv28(a, f2)
-
 	v.ExclamationToken = tv28(a, f3)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f4))
-
 	v.Initializer = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f5))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
-
 	rt.FieldSpanOf(f5, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_PropertySignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tPropertySignature)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
-
 	v.QuestionToken = tv28(a, f2)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f3))
-
 	v.Initializer = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f4))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_QualifiedName(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tQualifiedName)
-
 	v.Left = rt.TAs[types.EntityName](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Right = tv5(a, f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_RestType(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tRestType)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ReturnStatement(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tReturnStatement)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_SatisfiesExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tSatisfiesExpression)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_SetAccessor(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tSetAccessor)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
-
 	v.TypeParameters = tl3(a, f2)
-
 	v.Parameters = tl4(a, f3)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f4))
-
 	v.Body = rt.TAs[*types.Block](f5)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
-
 	rt.FieldSpanOf(f5, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ShorthandPropertyAssignment(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tShorthandPropertyAssignment)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.Name = tv5(a, f1)
-
 	v.QuestionToken = tv28(a, f2)
-
 	v.ExclamationToken = tv28(a, f3)
-
 	v.EqualsToken = tv28(a, f4)
-
 	v.ObjectAssignmentInitializer = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f5))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
-
 	rt.FieldSpanOf(f5, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_SourceFile(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tSourceFile)
-
 	v.Statements = tl5(a, f0)
-
 	v.EndOfFileToken = tv4(a, f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_SpreadAssignment(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tSpreadAssignment)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_SpreadElement(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tSpreadElement)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_SwitchStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tSwitchStatement)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.CaseBlock = rt.TAs[*types.CaseBlock](f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_TaggedTemplateExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTaggedTemplateExpression)
-
 	v.Tag = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.QuestionDotToken = tv28(a, f1)
-
 	v.TypeArguments = tl6(a, f2)
-
 	v.Template = rt.TAs[types.TemplateLiteral](rt.TPubIn(types.PegoHooks, a, f3))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_TemplateExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTemplateExpression)
-
 	v.Head = tv23(a, f0)
-
 	v.TemplateSpans = tl20(a, f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_TemplateLiteralType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTemplateLiteralType)
-
 	v.Head = tv23(a, f0)
-
 	v.TemplateSpans = tl21(a, f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_TemplateLiteralTypeSpan(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTemplateLiteralTypeSpan)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Literal = rt.TAs[types.TemplateMiddleOrTail](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_TemplateSpan(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTemplateSpan)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Literal = rt.TAs[types.TemplateMiddleOrTail](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_ThrowStatement(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tThrowStatement)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_TryStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTryStatement)
-
 	v.TryBlock = rt.TAs[*types.Block](f0)
-
 	v.CatchClause = rt.TAs[*types.CatchClause](f1)
-
 	v.FinallyBlock = rt.TAs[*types.Block](f2)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_TupleType(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTupleType)
-
 	v.Elements = tl6(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_TypeAliasDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTypeAliasDeclaration)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.Name = tv5(a, f1)
-
 	v.TypeParameters = tl3(a, f2)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f3))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_TypeAssertionExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTypeAssertionExpression)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_TypeLiteral(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTypeLiteral)
-
 	v.Members = tl13(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_TypeOfExpression(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTypeOfExpression)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_TypeOperator(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTypeOperator)
-
 	v.Operator = astString(f0)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_TypeParameter(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTypeParameter)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.Name = tv5(a, f1)
-
 	v.Constraint = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
-
 	v.Default = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f3))
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f4))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
-
 	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_TypePredicate(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTypePredicate)
-
 	v.AssertsModifier = tv28(a, f0)
-
 	v.ParameterName = rt.TAs[types.TypePredicateParameterName](rt.TPubIn(types.PegoHooks, a, f1))
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_TypeQuery(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTypeQuery)
-
 	v.ExprName = rt.TAs[types.EntityName](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.TypeArguments = tl6(a, f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_TypeReference(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTypeReference)
-
 	v.TypeName = rt.TAs[types.EntityName](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.TypeArguments = tl6(a, f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_UnionType(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tUnionType)
-
 	v.Types = tl6(a, f0)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_VariableDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tVariableDeclaration)
-
 	v.Name = rt.TAs[types.BindingName](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.ExclamationToken = tv28(a, f1)
-
 	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
-
 	v.Initializer = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f3))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
-
 	rt.FieldSpanOf(f2, &first, &start, &end)
-
 	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_VariableDeclarationList(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tVariableDeclarationList)
-
 	v.Keyword = astString(f0)
-
 	v.Declarations = tl22(a, f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_VariableStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tVariableStatement)
-
 	v.Modifiers = tl2(a, f0)
-
 	v.DeclarationList = rt.TAs[*types.VariableDeclarationList](f1)
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_VoidExpression(c *rt.TActCtx, final bool, f0 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tVoidExpression)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_WhileStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tWhileStatement)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Statement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_WithStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tWithStatement)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
-
 	v.Statement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
 func tmk_YieldExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
-
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tYieldExpression)
-
 	v.AsteriskToken = tv28(a, f0)
-
 	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
-
 	rt.FieldSpanOf(f0, &first, &start, &end)
-
 	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
@@ -5155,120 +4312,120 @@ var rulesExtras = [...]rt.RuleExtra{
 }
 
 var scope836 = []string{"s"}
-var cls840 = rt.Class{ASCII: [2]uint64{0x0, 0xfdf2fe00000000}}
+var cls838 = rt.Class{ASCII: [2]uint64{0x0, 0xfdf2fe00000000}}
+var scope839 = []string{"s"}
 var scope841 = []string{"s"}
-var scope872 = []string{"s"}
-var scope876 = []string{"s"}
-var cls884 = rt.Class{ASCII: [2]uint64{0x1000000000, 0x7fffffe97fffffe}, Wide: []rune{128, 1114111}}
-var cls935 = rt.Class{ASCII: [2]uint64{0xb400010200000000, 0x0}}
-var scope997 = []string{"s"}
-var cls1059 = rt.Class{ASCII: [2]uint64{0x0, 0x5823a00000000}}
-var scope1060 = []string{"m"}
-var scope1061 = []string{"m"}
-var scope1064 = []string{"m"}
-var scope1065 = []string{"m"}
-var scope1068 = []string{"m"}
-var scope1069 = []string{"m"}
-var scope1073 = []string{"o", "e"}
-var cls1081 = rt.Class{ASCII: [2]uint64{0xf000ac6000000000, 0x1000000040000000}}
-var cls1085 = rt.Class{ASCII: [2]uint64{0x4000000000000000, 0x0}}
-var cls1086 = rt.Class{ASCII: [2]uint64{0x40000000000, 0x0}}
-var cls1087 = rt.Class{ASCII: [2]uint64{0x1000000000000000, 0x0}}
-var cls1088 = rt.Class{ASCII: [2]uint64{0x4000000000, 0x0}}
-var cls1089 = rt.Class{ASCII: [2]uint64{0x0, 0x1000000000000000}}
-var cls1090 = rt.Class{ASCII: [2]uint64{0x8000000000000000, 0x0}}
-var cls1091 = rt.Class{ASCII: [2]uint64{0x80000000000, 0x0}}
-var cls1092 = rt.Class{ASCII: [2]uint64{0x200000000000, 0x0}}
-var cls1093 = rt.Class{ASCII: [2]uint64{0x800000000000, 0x0}}
-var cls1094 = rt.Class{ASCII: [2]uint64{0x2000000000, 0x0}}
-var cls1095 = rt.Class{ASCII: [2]uint64{0x0, 0x40000000}}
-var cls1096 = rt.Class{ASCII: [2]uint64{0x2000000000000000, 0x0}}
-var cls1097 = rt.Class{ASCII: [2]uint64{0x6000000000000000, 0x0}}
-var term1098Data = rt.TerminalProgram{Code: []uint16{3, 139, 0, 6, 8, 0, 124, 1, 4, 0, 124, 6, 8, 1, 125, 1, 4, 1, 125, 6, 8, 2, 126, 1, 4, 2, 126, 6, 8, 0, 127, 1, 4, 3, 127, 6, 8, 3, 128, 1, 4, 4, 128, 6, 8, 4, 129, 1, 4, 5, 129, 6, 8, 5, 130, 1, 4, 6, 130, 6, 8, 6, 131, 1, 4, 7, 131, 6, 8, 7, 132, 1, 4, 8, 132, 6, 8, 1, 133, 1, 4, 9, 133, 6, 8, 8, 134, 1, 4, 10, 134, 6, 8, 9, 135, 1, 4, 11, 135, 6, 8, 3, 136, 1, 4, 12, 136, 6, 8, 4, 137, 1, 4, 13, 137, 6, 8, 10, 138, 1, 4, 14, 138, 6, 16, 11, 55, 2, 12, 1, 4, 15, 55, 5, 6, 0, 4, 12, 56}, Classes: []*rt.Class{&cls1085, &cls1086, &cls1087, &cls1088, &cls1089, &cls1090, &cls1091, &cls1092, &cls1093, &cls1094, &cls1095, &cls1096, &cls1097}, Literals: []rt.TerminalText{{Runes: lit310, Text: ">>>="}, {Runes: lit311, Text: "**="}, {Runes: lit312, Text: "<<="}, {Runes: lit313, Text: ">>="}, {Runes: lit314, Text: "&&="}, {Runes: lit315, Text: "||="}, {Runes: lit316, Text: "??="}, {Runes: lit317, Text: "+="}, {Runes: lit318, Text: "-="}, {Runes: lit319, Text: "*="}, {Runes: lit320, Text: "/="}, {Runes: lit321, Text: "%="}, {Runes: lit322, Text: "&="}, {Runes: lit323, Text: "|="}, {Runes: lit324, Text: "^="}, {Runes: lit69, Text: "="}}}
-var term1098 = term1098Data.Prepare()
-var scope1099 = []string{"q", "t", "k", "f"}
-var cls1113 = rt.Class{ASCII: [2]uint64{0xa400120000000000, 0x0}}
-var cls1122 = rt.Class{ASCII: [2]uint64{0x1000280200000000, 0x4050001200000000}}
-var scope1131 = []string{"o"}
-var scope1138 = []string{"a"}
-var scope1216 = []string{"n"}
-var scope1230 = []string{"e", "t", "f"}
-var scope1246 = []string{"t"}
-var scope1249 = []string{"t"}
-var scope1250 = []string{"ts"}
-var scope1255 = []string{"t"}
-var scope1258 = []string{"t"}
-var scope1259 = []string{"ts"}
-var cls1269 = rt.Class{ASCII: [2]uint64{0x0, 0x200000000}}
-var cls1270 = rt.Class{ASCII: [2]uint64{0x0, 0x20000000000000}}
-var cls1271 = rt.Class{ASCII: [2]uint64{0x0, 0x8000000000000}}
-var cls1272 = rt.Class{ASCII: [2]uint64{0x0, 0x400000000000}}
-var cls1273 = rt.Class{ASCII: [2]uint64{0x0, 0x400000000}}
-var cls1274 = rt.Class{ASCII: [2]uint64{0x0, 0x800000000000}}
-var cls1275 = rt.Class{ASCII: [2]uint64{0x0, 0x40000000000000}}
-var cls1276 = rt.Class{ASCII: [2]uint64{0x0, 0x10000000000000}}
-var cls1277 = rt.Class{ASCII: [2]uint64{0x0, 0x4000000000}}
-var cls1278 = rt.Class{ASCII: [2]uint64{0x0, 0x20000000000}}
-var term1279Data = rt.TerminalProgram{Code: []uint16{3, 155, 0, 6, 8, 0, 202, 1, 4, 0, 202, 6, 8, 1, 203, 1, 4, 1, 203, 6, 8, 2, 204, 1, 4, 2, 204, 6, 8, 3, 205, 1, 4, 3, 205, 6, 8, 4, 206, 1, 4, 4, 206, 6, 8, 2, 207, 1, 4, 5, 207, 6, 8, 4, 208, 1, 4, 6, 208, 6, 8, 1, 209, 1, 4, 7, 209, 6, 8, 3, 210, 1, 4, 8, 210, 6, 8, 5, 211, 1, 4, 9, 211, 6, 8, 6, 177, 1, 4, 10, 177, 6, 8, 7, 91, 1, 4, 11, 91, 6, 8, 8, 92, 1, 4, 12, 92, 6, 8, 3, 90, 1, 4, 13, 90, 6, 8, 7, 82, 1, 4, 14, 82, 6, 8, 7, 176, 1, 4, 15, 176, 6, 8, 9, 7, 1, 4, 16, 7, 6, 8, 0, 212, 1, 4, 17, 212, 6, 8, 8, 39, 1, 4, 18, 39}, Classes: []*rt.Class{&cls1269, &cls1270, &cls1271, &cls1272, &cls1273, &cls1274, &cls1275, &cls1276, &cls1277, &cls1278}, Literals: []rt.TerminalText{{Runes: lit522, Text: "any"}, {Runes: lit523, Text: "unknown"}, {Runes: lit524, Text: "string"}, {Runes: lit525, Text: "number"}, {Runes: lit526, Text: "bigint"}, {Runes: lit527, Text: "symbol"}, {Runes: lit528, Text: "boolean"}, {Runes: lit529, Text: "undefined"}, {Runes: lit530, Text: "never"}, {Runes: lit531, Text: "object"}, {Runes: lit384, Text: "void"}, {Runes: lit177, Text: "true"}, {Runes: lit178, Text: "false"}, {Runes: lit176, Text: "null"}, {Runes: lit161, Text: "this"}, {Runes: lit383, Text: "typeof"}, {Runes: lit10, Text: "import"}, {Runes: lit532, Text: "asserts"}, {Runes: lit33, Text: "function"}}}
-var term1279 = term1279Data.Prepare()
-var cls1307 = rt.Class{ASCII: [2]uint64{0x6000120000000000, 0x3000000000000000}}
-var scope1314 = []string{"n"}
-var scope1319 = []string{"n"}
-var scope1324 = []string{"t"}
-var cls1380 = rt.Class{ASCII: [2]uint64{0x0, 0xdc427c00000000}}
+var scope843 = []string{"s"}
+var cls845 = rt.Class{ASCII: [2]uint64{0x1000000000, 0x7fffffe97fffffe}, Wide: []rune{128, 1114111}}
+var cls846 = rt.Class{ASCII: [2]uint64{0xb400010200000000, 0x0}}
+var scope847 = []string{"s"}
+var cls849 = rt.Class{ASCII: [2]uint64{0x0, 0x5823a00000000}}
+var scope850 = []string{"m"}
+var scope851 = []string{"m"}
+var scope854 = []string{"m"}
+var scope855 = []string{"m"}
+var scope858 = []string{"m"}
+var scope859 = []string{"m"}
+var scope862 = []string{"o", "e"}
+var cls865 = rt.Class{ASCII: [2]uint64{0xf000ac6000000000, 0x1000000040000000}}
+var cls866 = rt.Class{ASCII: [2]uint64{0x4000000000000000, 0x0}}
+var cls867 = rt.Class{ASCII: [2]uint64{0x40000000000, 0x0}}
+var cls868 = rt.Class{ASCII: [2]uint64{0x1000000000000000, 0x0}}
+var cls869 = rt.Class{ASCII: [2]uint64{0x4000000000, 0x0}}
+var cls870 = rt.Class{ASCII: [2]uint64{0x0, 0x1000000000000000}}
+var cls871 = rt.Class{ASCII: [2]uint64{0x8000000000000000, 0x0}}
+var cls872 = rt.Class{ASCII: [2]uint64{0x80000000000, 0x0}}
+var cls873 = rt.Class{ASCII: [2]uint64{0x200000000000, 0x0}}
+var cls874 = rt.Class{ASCII: [2]uint64{0x800000000000, 0x0}}
+var cls875 = rt.Class{ASCII: [2]uint64{0x2000000000, 0x0}}
+var cls876 = rt.Class{ASCII: [2]uint64{0x0, 0x40000000}}
+var cls877 = rt.Class{ASCII: [2]uint64{0x2000000000000000, 0x0}}
+var cls878 = rt.Class{ASCII: [2]uint64{0x6000000000000000, 0x0}}
+var term879Data = rt.TerminalProgram{Code: []uint16{3, 139, 0, 6, 8, 0, 124, 1, 4, 0, 124, 6, 8, 1, 125, 1, 4, 1, 125, 6, 8, 2, 126, 1, 4, 2, 126, 6, 8, 0, 127, 1, 4, 3, 127, 6, 8, 3, 128, 1, 4, 4, 128, 6, 8, 4, 129, 1, 4, 5, 129, 6, 8, 5, 130, 1, 4, 6, 130, 6, 8, 6, 131, 1, 4, 7, 131, 6, 8, 7, 132, 1, 4, 8, 132, 6, 8, 1, 133, 1, 4, 9, 133, 6, 8, 8, 134, 1, 4, 10, 134, 6, 8, 9, 135, 1, 4, 11, 135, 6, 8, 3, 136, 1, 4, 12, 136, 6, 8, 4, 137, 1, 4, 13, 137, 6, 8, 10, 138, 1, 4, 14, 138, 6, 16, 11, 55, 2, 12, 1, 4, 15, 55, 5, 6, 0, 4, 12, 56}, Classes: []*rt.Class{&cls866, &cls867, &cls868, &cls869, &cls870, &cls871, &cls872, &cls873, &cls874, &cls875, &cls876, &cls877, &cls878}, Literals: []rt.TerminalText{{Runes: lit310, Text: ">>>="}, {Runes: lit311, Text: "**="}, {Runes: lit312, Text: "<<="}, {Runes: lit313, Text: ">>="}, {Runes: lit314, Text: "&&="}, {Runes: lit315, Text: "||="}, {Runes: lit316, Text: "??="}, {Runes: lit317, Text: "+="}, {Runes: lit318, Text: "-="}, {Runes: lit319, Text: "*="}, {Runes: lit320, Text: "/="}, {Runes: lit321, Text: "%="}, {Runes: lit322, Text: "&="}, {Runes: lit323, Text: "|="}, {Runes: lit324, Text: "^="}, {Runes: lit69, Text: "="}}}
+var term879 = term879Data.Prepare()
+var scope880 = []string{"q", "t", "k", "f"}
+var cls883 = rt.Class{ASCII: [2]uint64{0xa400120000000000, 0x0}}
+var cls884 = rt.Class{ASCII: [2]uint64{0x1000280200000000, 0x4050001200000000}}
+var scope885 = []string{"o"}
+var scope888 = []string{"a"}
+var scope890 = []string{"n"}
+var scope893 = []string{"e", "t", "f"}
+var scope896 = []string{"t"}
+var scope898 = []string{"t"}
+var scope899 = []string{"ts"}
+var scope903 = []string{"t"}
+var scope905 = []string{"t"}
+var scope906 = []string{"ts"}
+var cls910 = rt.Class{ASCII: [2]uint64{0x0, 0x200000000}}
+var cls911 = rt.Class{ASCII: [2]uint64{0x0, 0x20000000000000}}
+var cls912 = rt.Class{ASCII: [2]uint64{0x0, 0x8000000000000}}
+var cls913 = rt.Class{ASCII: [2]uint64{0x0, 0x400000000000}}
+var cls914 = rt.Class{ASCII: [2]uint64{0x0, 0x400000000}}
+var cls915 = rt.Class{ASCII: [2]uint64{0x0, 0x800000000000}}
+var cls916 = rt.Class{ASCII: [2]uint64{0x0, 0x40000000000000}}
+var cls917 = rt.Class{ASCII: [2]uint64{0x0, 0x10000000000000}}
+var cls918 = rt.Class{ASCII: [2]uint64{0x0, 0x4000000000}}
+var cls919 = rt.Class{ASCII: [2]uint64{0x0, 0x20000000000}}
+var term920Data = rt.TerminalProgram{Code: []uint16{3, 155, 0, 6, 8, 0, 202, 1, 4, 0, 202, 6, 8, 1, 203, 1, 4, 1, 203, 6, 8, 2, 204, 1, 4, 2, 204, 6, 8, 3, 205, 1, 4, 3, 205, 6, 8, 4, 206, 1, 4, 4, 206, 6, 8, 2, 207, 1, 4, 5, 207, 6, 8, 4, 208, 1, 4, 6, 208, 6, 8, 1, 209, 1, 4, 7, 209, 6, 8, 3, 210, 1, 4, 8, 210, 6, 8, 5, 211, 1, 4, 9, 211, 6, 8, 6, 177, 1, 4, 10, 177, 6, 8, 7, 91, 1, 4, 11, 91, 6, 8, 8, 92, 1, 4, 12, 92, 6, 8, 3, 90, 1, 4, 13, 90, 6, 8, 7, 82, 1, 4, 14, 82, 6, 8, 7, 176, 1, 4, 15, 176, 6, 8, 9, 7, 1, 4, 16, 7, 6, 8, 0, 212, 1, 4, 17, 212, 6, 8, 8, 39, 1, 4, 18, 39}, Classes: []*rt.Class{&cls910, &cls911, &cls912, &cls913, &cls914, &cls915, &cls916, &cls917, &cls918, &cls919}, Literals: []rt.TerminalText{{Runes: lit522, Text: "any"}, {Runes: lit523, Text: "unknown"}, {Runes: lit524, Text: "string"}, {Runes: lit525, Text: "number"}, {Runes: lit526, Text: "bigint"}, {Runes: lit527, Text: "symbol"}, {Runes: lit528, Text: "boolean"}, {Runes: lit529, Text: "undefined"}, {Runes: lit530, Text: "never"}, {Runes: lit531, Text: "object"}, {Runes: lit384, Text: "void"}, {Runes: lit177, Text: "true"}, {Runes: lit178, Text: "false"}, {Runes: lit176, Text: "null"}, {Runes: lit161, Text: "this"}, {Runes: lit383, Text: "typeof"}, {Runes: lit10, Text: "import"}, {Runes: lit532, Text: "asserts"}, {Runes: lit33, Text: "function"}}}
+var term920 = term920Data.Prepare()
+var cls921 = rt.Class{ASCII: [2]uint64{0x6000120000000000, 0x3000000000000000}}
+var scope922 = []string{"n"}
+var scope925 = []string{"n"}
+var scope928 = []string{"t"}
+var cls930 = rt.Class{ASCII: [2]uint64{0x0, 0xdc427c00000000}}
 
-var cls1382 = rt.Class{ASCII: [2]uint64{0x800100003e00, 0x0}, Wide: []rune{160, 160, 133, 133, 5760, 5760, 8192, 8203, 8232, 8232, 8233, 8233, 8239, 8239, 8287, 8287, 12288, 12288, 65279, 65279}}
+var cls932 = rt.Class{ASCII: [2]uint64{0x800100003e00, 0x0}, Wide: []rune{160, 160, 133, 133, 5760, 5760, 8192, 8203, 8232, 8232, 8233, 8233, 8239, 8239, 8287, 8287, 12288, 12288, 65279, 65279}}
 
-var cls1384 = rt.Class{ASCII: [2]uint64{0x800100001a00, 0x0}, Wide: []rune{160, 160, 133, 133, 5760, 5760, 8192, 8203, 8239, 8239, 8287, 8287, 12288, 12288, 65279, 65279}}
+var cls934 = rt.Class{ASCII: [2]uint64{0x800100001a00, 0x0}, Wide: []rune{160, 160, 133, 133, 5760, 5760, 8192, 8203, 8239, 8239, 8287, 8287, 12288, 12288, 65279, 65279}}
 
-var scope1386 = []string{"e"}
-var scope1388 = []string{"e"}
-var cls1390 = rt.Class{ASCII: [2]uint64{0x0, 0x0}, Wide: []rune{170, 170, 181, 181, 186, 186, 192, 214, 216, 246, 248, 705, 710, 721, 736, 740, 748, 748, 750, 750, 880, 884, 886, 887, 890, 893, 895, 895, 902, 902, 904, 906, 908, 908, 910, 929, 931, 1013, 1015, 1153, 1162, 1327, 1329, 1366, 1369, 1369, 1376, 1416, 1488, 1514, 1519, 1522, 1568, 1610, 1646, 1647, 1649, 1747, 1749, 1749, 1765, 1766, 1774, 1775, 1786, 1788, 1791, 1791, 1808, 1808, 1810, 1839, 1869, 1957, 1969, 1969, 1994, 2026, 2036, 2037, 2042, 2042, 2048, 2069, 2074, 2074, 2084, 2084, 2088, 2088, 2112, 2136, 2144, 2154, 2160, 2183, 2185, 2190, 2208, 2249, 2308, 2361, 2365, 2365, 2384, 2384, 2392, 2401, 2417, 2432, 2437, 2444, 2447, 2448, 2451, 2472, 2474, 2480, 2482, 2482, 2486, 2489, 2493, 2493, 2510, 2510, 2524, 2525, 2527, 2529, 2544, 2545, 2556, 2556, 2565, 2570, 2575, 2576, 2579, 2600, 2602, 2608, 2610, 2611, 2613, 2614, 2616, 2617, 2649, 2652, 2654, 2654, 2674, 2676, 2693, 2701, 2703, 2705, 2707, 2728, 2730, 2736, 2738, 2739, 2741, 2745, 2749, 2749, 2768, 2768, 2784, 2785, 2809, 2809, 2821, 2828, 2831, 2832, 2835, 2856, 2858, 2864, 2866, 2867, 2869, 2873, 2877, 2877, 2908, 2909, 2911, 2913, 2929, 2929, 2947, 2947, 2949, 2954, 2958, 2960, 2962, 2965, 2969, 2970, 2972, 2972, 2974, 2975, 2979, 2980, 2984, 2986, 2990, 3001, 3024, 3024, 3077, 3084, 3086, 3088, 3090, 3112, 3114, 3129, 3133, 3133, 3160, 3162, 3165, 3165, 3168, 3169, 3200, 3200, 3205, 3212, 3214, 3216, 3218, 3240, 3242, 3251, 3253, 3257, 3261, 3261, 3293, 3294, 3296, 3297, 3313, 3314, 3332, 3340, 3342, 3344, 3346, 3386, 3389, 3389, 3406, 3406, 3412, 3414, 3423, 3425, 3450, 3455, 3461, 3478, 3482, 3505, 3507, 3515, 3517, 3517, 3520, 3526, 3585, 3632, 3634, 3635, 3648, 3654, 3713, 3714, 3716, 3716, 3718, 3722, 3724, 3747, 3749, 3749, 3751, 3760, 3762, 3763, 3773, 3773, 3776, 3780, 3782, 3782, 3804, 3807, 3840, 3840, 3904, 3911, 3913, 3948, 3976, 3980, 4096, 4138, 4159, 4159, 4176, 4181, 4186, 4189, 4193, 4193, 4197, 4198, 4206, 4208, 4213, 4225, 4238, 4238, 4256, 4293, 4295, 4295, 4301, 4301, 4304, 4346, 4348, 4680, 4682, 4685, 4688, 4694, 4696, 4696, 4698, 4701, 4704, 4744, 4746, 4749, 4752, 4784, 4786, 4789, 4792, 4798, 4800, 4800, 4802, 4805, 4808, 4822, 4824, 4880, 4882, 4885, 4888, 4954, 4992, 5007, 5024, 5109, 5112, 5117, 5121, 5740, 5743, 5759, 5761, 5786, 5792, 5866, 5870, 5880, 5888, 5905, 5919, 5937, 5952, 5969, 5984, 5996, 5998, 6000, 6016, 6067, 6103, 6103, 6108, 6108, 6176, 6264, 6272, 6312, 6314, 6314, 6320, 6389, 6400, 6430, 6480, 6509, 6512, 6516, 6528, 6571, 6576, 6601, 6656, 6678, 6688, 6740, 6823, 6823, 6917, 6963, 6981, 6988, 7043, 7072, 7086, 7087, 7098, 7141, 7168, 7203, 7245, 7247, 7258, 7293, 7296, 7304, 7312, 7354, 7357, 7359, 7401, 7404, 7406, 7411, 7413, 7414, 7418, 7418, 7424, 7615, 7680, 7957, 7960, 7965, 7968, 8005, 8008, 8013, 8016, 8023, 8025, 8025, 8027, 8027, 8029, 8029, 8031, 8061, 8064, 8116, 8118, 8124, 8126, 8126, 8130, 8132, 8134, 8140, 8144, 8147, 8150, 8155, 8160, 8172, 8178, 8180, 8182, 8188, 8305, 8305, 8319, 8319, 8336, 8348, 8450, 8450, 8455, 8455, 8458, 8467, 8469, 8469, 8472, 8477, 8484, 8484, 8486, 8486, 8488, 8488, 8490, 8505, 8508, 8511, 8517, 8521, 8526, 8526, 8544, 8584, 11264, 11492, 11499, 11502, 11506, 11507, 11520, 11557, 11559, 11559, 11565, 11565, 11568, 11623, 11631, 11631, 11648, 11670, 11680, 11686, 11688, 11694, 11696, 11702, 11704, 11710, 11712, 11718, 11720, 11726, 11728, 11734, 11736, 11742, 12293, 12295, 12321, 12329, 12337, 12341, 12344, 12348, 12353, 12438, 12443, 12447, 12449, 12538, 12540, 12543, 12549, 12591, 12593, 12686, 12704, 12735, 12784, 12799, 13312, 19903, 19968, 42124, 42192, 42237, 42240, 42508, 42512, 42527, 42538, 42539, 42560, 42606, 42623, 42653, 42656, 42735, 42775, 42783, 42786, 42888, 42891, 42954, 42960, 42961, 42963, 42963, 42965, 42969, 42994, 43009, 43011, 43013, 43015, 43018, 43020, 43042, 43072, 43123, 43138, 43187, 43250, 43255, 43259, 43259, 43261, 43262, 43274, 43301, 43312, 43334, 43360, 43388, 43396, 43442, 43471, 43471, 43488, 43492, 43494, 43503, 43514, 43518, 43520, 43560, 43584, 43586, 43588, 43595, 43616, 43638, 43642, 43642, 43646, 43695, 43697, 43697, 43701, 43702, 43705, 43709, 43712, 43712, 43714, 43714, 43739, 43741, 43744, 43754, 43762, 43764, 43777, 43782, 43785, 43790, 43793, 43798, 43808, 43814, 43816, 43822, 43824, 43866, 43868, 43881, 43888, 44002, 44032, 55203, 55216, 55238, 55243, 55291, 63744, 64109, 64112, 64217, 64256, 64262, 64275, 64279, 64285, 64285, 64287, 64296, 64298, 64310, 64312, 64316, 64318, 64318, 64320, 64321, 64323, 64324, 64326, 64433, 64467, 64829, 64848, 64911, 64914, 64967, 65008, 65019, 65136, 65140, 65142, 65276, 65313, 65338, 65345, 65370, 65382, 65470, 65474, 65479, 65482, 65487, 65490, 65495, 65498, 65500, 65536, 65547, 65549, 65574, 65576, 65594, 65596, 65597, 65599, 65613, 65616, 65629, 65664, 65786, 65856, 65908, 66176, 66204, 66208, 66256, 66304, 66335, 66349, 66378, 66384, 66421, 66432, 66461, 66464, 66499, 66504, 66511, 66513, 66517, 66560, 66717, 66736, 66771, 66776, 66811, 66816, 66855, 66864, 66915, 66928, 66938, 66940, 66954, 66956, 66962, 66964, 66965, 66967, 66977, 66979, 66993, 66995, 67001, 67003, 67004, 67072, 67382, 67392, 67413, 67424, 67431, 67456, 67461, 67463, 67504, 67506, 67514, 67584, 67589, 67592, 67592, 67594, 67637, 67639, 67640, 67644, 67644, 67647, 67669, 67680, 67702, 67712, 67742, 67808, 67826, 67828, 67829, 67840, 67861, 67872, 67897, 67968, 68023, 68030, 68031, 68096, 68096, 68112, 68115, 68117, 68119, 68121, 68149, 68192, 68220, 68224, 68252, 68288, 68295, 68297, 68324, 68352, 68405, 68416, 68437, 68448, 68466, 68480, 68497, 68608, 68680, 68736, 68786, 68800, 68850, 68864, 68899, 69248, 69289, 69296, 69297, 69376, 69404, 69415, 69415, 69424, 69445, 69488, 69505, 69552, 69572, 69600, 69622, 69635, 69687, 69745, 69746, 69749, 69749, 69763, 69807, 69840, 69864, 69891, 69926, 69956, 69956, 69959, 69959, 69968, 70002, 70006, 70006, 70019, 70066, 70081, 70084, 70106, 70106, 70108, 70108, 70144, 70161, 70163, 70187, 70207, 70208, 70272, 70278, 70280, 70280, 70282, 70285, 70287, 70301, 70303, 70312, 70320, 70366, 70405, 70412, 70415, 70416, 70419, 70440, 70442, 70448, 70450, 70451, 70453, 70457, 70461, 70461, 70480, 70480, 70493, 70497, 70656, 70708, 70727, 70730, 70751, 70753, 70784, 70831, 70852, 70853, 70855, 70855, 71040, 71086, 71128, 71131, 71168, 71215, 71236, 71236, 71296, 71338, 71352, 71352, 71424, 71450, 71488, 71494, 71680, 71723, 71840, 71903, 71935, 71942, 71945, 71945, 71948, 71955, 71957, 71958, 71960, 71983, 71999, 71999, 72001, 72001, 72096, 72103, 72106, 72144, 72161, 72161, 72163, 72163, 72192, 72192, 72203, 72242, 72250, 72250, 72272, 72272, 72284, 72329, 72349, 72349, 72368, 72440, 72704, 72712, 72714, 72750, 72768, 72768, 72818, 72847, 72960, 72966, 72968, 72969, 72971, 73008, 73030, 73030, 73056, 73061, 73063, 73064, 73066, 73097, 73112, 73112, 73440, 73458, 73474, 73474, 73476, 73488, 73490, 73523, 73648, 73648, 73728, 74649, 74752, 74862, 74880, 75075, 77712, 77808, 77824, 78895, 78913, 78918, 82944, 83526, 92160, 92728, 92736, 92766, 92784, 92862, 92880, 92909, 92928, 92975, 92992, 92995, 93027, 93047, 93053, 93071, 93760, 93823, 93952, 94026, 94032, 94032, 94099, 94111, 94176, 94177, 94179, 94179, 94208, 100343, 100352, 101589, 101632, 101640, 110576, 110579, 110581, 110587, 110589, 110590, 110592, 110882, 110898, 110898, 110928, 110930, 110933, 110933, 110948, 110951, 110960, 111355, 113664, 113770, 113776, 113788, 113792, 113800, 113808, 113817, 119808, 119892, 119894, 119964, 119966, 119967, 119970, 119970, 119973, 119974, 119977, 119980, 119982, 119993, 119995, 119995, 119997, 120003, 120005, 120069, 120071, 120074, 120077, 120084, 120086, 120092, 120094, 120121, 120123, 120126, 120128, 120132, 120134, 120134, 120138, 120144, 120146, 120485, 120488, 120512, 120514, 120538, 120540, 120570, 120572, 120596, 120598, 120628, 120630, 120654, 120656, 120686, 120688, 120712, 120714, 120744, 120746, 120770, 120772, 120779, 122624, 122654, 122661, 122666, 122928, 122989, 123136, 123180, 123191, 123197, 123214, 123214, 123536, 123565, 123584, 123627, 124112, 124139, 124896, 124902, 124904, 124907, 124909, 124910, 124912, 124926, 124928, 125124, 125184, 125251, 125259, 125259, 126464, 126467, 126469, 126495, 126497, 126498, 126500, 126500, 126503, 126503, 126505, 126514, 126516, 126519, 126521, 126521, 126523, 126523, 126530, 126530, 126535, 126535, 126537, 126537, 126539, 126539, 126541, 126543, 126545, 126546, 126548, 126548, 126551, 126551, 126553, 126553, 126555, 126555, 126557, 126557, 126559, 126559, 126561, 126562, 126564, 126564, 126567, 126570, 126572, 126578, 126580, 126583, 126585, 126588, 126590, 126590, 126592, 126601, 126603, 126619, 126625, 126627, 126629, 126633, 126635, 126651, 131072, 173791, 173824, 177977, 177984, 178205, 178208, 183969, 183984, 191456, 191472, 192093, 194560, 195101, 196608, 201546, 201552, 205743}}
-var cls1391 = rt.Class{ASCII: [2]uint64{0x0, 0x0}, Wide: []rune{170, 170, 181, 181, 183, 183, 186, 186, 192, 214, 216, 246, 248, 705, 710, 721, 736, 740, 748, 748, 750, 750, 768, 884, 886, 887, 890, 893, 895, 895, 902, 906, 908, 908, 910, 929, 931, 1013, 1015, 1153, 1155, 1159, 1162, 1327, 1329, 1366, 1369, 1369, 1376, 1416, 1425, 1469, 1471, 1471, 1473, 1474, 1476, 1477, 1479, 1479, 1488, 1514, 1519, 1522, 1552, 1562, 1568, 1641, 1646, 1747, 1749, 1756, 1759, 1768, 1770, 1788, 1791, 1791, 1808, 1866, 1869, 1969, 1984, 2037, 2042, 2042, 2045, 2045, 2048, 2093, 2112, 2139, 2144, 2154, 2160, 2183, 2185, 2190, 2200, 2273, 2275, 2403, 2406, 2415, 2417, 2435, 2437, 2444, 2447, 2448, 2451, 2472, 2474, 2480, 2482, 2482, 2486, 2489, 2492, 2500, 2503, 2504, 2507, 2510, 2519, 2519, 2524, 2525, 2527, 2531, 2534, 2545, 2556, 2556, 2558, 2558, 2561, 2563, 2565, 2570, 2575, 2576, 2579, 2600, 2602, 2608, 2610, 2611, 2613, 2614, 2616, 2617, 2620, 2620, 2622, 2626, 2631, 2632, 2635, 2637, 2641, 2641, 2649, 2652, 2654, 2654, 2662, 2677, 2689, 2691, 2693, 2701, 2703, 2705, 2707, 2728, 2730, 2736, 2738, 2739, 2741, 2745, 2748, 2757, 2759, 2761, 2763, 2765, 2768, 2768, 2784, 2787, 2790, 2799, 2809, 2815, 2817, 2819, 2821, 2828, 2831, 2832, 2835, 2856, 2858, 2864, 2866, 2867, 2869, 2873, 2876, 2884, 2887, 2888, 2891, 2893, 2901, 2903, 2908, 2909, 2911, 2915, 2918, 2927, 2929, 2929, 2946, 2947, 2949, 2954, 2958, 2960, 2962, 2965, 2969, 2970, 2972, 2972, 2974, 2975, 2979, 2980, 2984, 2986, 2990, 3001, 3006, 3010, 3014, 3016, 3018, 3021, 3024, 3024, 3031, 3031, 3046, 3055, 3072, 3084, 3086, 3088, 3090, 3112, 3114, 3129, 3132, 3140, 3142, 3144, 3146, 3149, 3157, 3158, 3160, 3162, 3165, 3165, 3168, 3171, 3174, 3183, 3200, 3203, 3205, 3212, 3214, 3216, 3218, 3240, 3242, 3251, 3253, 3257, 3260, 3268, 3270, 3272, 3274, 3277, 3285, 3286, 3293, 3294, 3296, 3299, 3302, 3311, 3313, 3315, 3328, 3340, 3342, 3344, 3346, 3396, 3398, 3400, 3402, 3406, 3412, 3415, 3423, 3427, 3430, 3439, 3450, 3455, 3457, 3459, 3461, 3478, 3482, 3505, 3507, 3515, 3517, 3517, 3520, 3526, 3530, 3530, 3535, 3540, 3542, 3542, 3544, 3551, 3558, 3567, 3570, 3571, 3585, 3642, 3648, 3662, 3664, 3673, 3713, 3714, 3716, 3716, 3718, 3722, 3724, 3747, 3749, 3749, 3751, 3773, 3776, 3780, 3782, 3782, 3784, 3790, 3792, 3801, 3804, 3807, 3840, 3840, 3864, 3865, 3872, 3881, 3893, 3893, 3895, 3895, 3897, 3897, 3902, 3911, 3913, 3948, 3953, 3972, 3974, 3991, 3993, 4028, 4038, 4038, 4096, 4169, 4176, 4253, 4256, 4293, 4295, 4295, 4301, 4301, 4304, 4346, 4348, 4680, 4682, 4685, 4688, 4694, 4696, 4696, 4698, 4701, 4704, 4744, 4746, 4749, 4752, 4784, 4786, 4789, 4792, 4798, 4800, 4800, 4802, 4805, 4808, 4822, 4824, 4880, 4882, 4885, 4888, 4954, 4957, 4959, 4969, 4977, 4992, 5007, 5024, 5109, 5112, 5117, 5121, 5740, 5743, 5759, 5761, 5786, 5792, 5866, 5870, 5880, 5888, 5909, 5919, 5940, 5952, 5971, 5984, 5996, 5998, 6000, 6002, 6003, 6016, 6099, 6103, 6103, 6108, 6109, 6112, 6121, 6155, 6157, 6159, 6169, 6176, 6264, 6272, 6314, 6320, 6389, 6400, 6430, 6432, 6443, 6448, 6459, 6470, 6509, 6512, 6516, 6528, 6571, 6576, 6601, 6608, 6618, 6656, 6683, 6688, 6750, 6752, 6780, 6783, 6793, 6800, 6809, 6823, 6823, 6832, 6845, 6847, 6862, 6912, 6988, 6992, 7001, 7019, 7027, 7040, 7155, 7168, 7223, 7232, 7241, 7245, 7293, 7296, 7304, 7312, 7354, 7357, 7359, 7376, 7378, 7380, 7418, 7424, 7957, 7960, 7965, 7968, 8005, 8008, 8013, 8016, 8023, 8025, 8025, 8027, 8027, 8029, 8029, 8031, 8061, 8064, 8116, 8118, 8124, 8126, 8126, 8130, 8132, 8134, 8140, 8144, 8147, 8150, 8155, 8160, 8172, 8178, 8180, 8182, 8188, 8204, 8205, 8255, 8256, 8276, 8276, 8305, 8305, 8319, 8319, 8336, 8348, 8400, 8412, 8417, 8417, 8421, 8432, 8450, 8450, 8455, 8455, 8458, 8467, 8469, 8469, 8472, 8477, 8484, 8484, 8486, 8486, 8488, 8488, 8490, 8505, 8508, 8511, 8517, 8521, 8526, 8526, 8544, 8584, 11264, 11492, 11499, 11507, 11520, 11557, 11559, 11559, 11565, 11565, 11568, 11623, 11631, 11631, 11647, 11670, 11680, 11686, 11688, 11694, 11696, 11702, 11704, 11710, 11712, 11718, 11720, 11726, 11728, 11734, 11736, 11742, 11744, 11775, 12293, 12295, 12321, 12335, 12337, 12341, 12344, 12348, 12353, 12438, 12441, 12447, 12449, 12543, 12549, 12591, 12593, 12686, 12704, 12735, 12784, 12799, 13312, 19903, 19968, 42124, 42192, 42237, 42240, 42508, 42512, 42539, 42560, 42607, 42612, 42621, 42623, 42737, 42775, 42783, 42786, 42888, 42891, 42954, 42960, 42961, 42963, 42963, 42965, 42969, 42994, 43047, 43052, 43052, 43072, 43123, 43136, 43205, 43216, 43225, 43232, 43255, 43259, 43259, 43261, 43309, 43312, 43347, 43360, 43388, 43392, 43456, 43471, 43481, 43488, 43518, 43520, 43574, 43584, 43597, 43600, 43609, 43616, 43638, 43642, 43714, 43739, 43741, 43744, 43759, 43762, 43766, 43777, 43782, 43785, 43790, 43793, 43798, 43808, 43814, 43816, 43822, 43824, 43866, 43868, 43881, 43888, 44010, 44012, 44013, 44016, 44025, 44032, 55203, 55216, 55238, 55243, 55291, 63744, 64109, 64112, 64217, 64256, 64262, 64275, 64279, 64285, 64296, 64298, 64310, 64312, 64316, 64318, 64318, 64320, 64321, 64323, 64324, 64326, 64433, 64467, 64829, 64848, 64911, 64914, 64967, 65008, 65019, 65024, 65039, 65056, 65071, 65075, 65076, 65101, 65103, 65136, 65140, 65142, 65276, 65296, 65305, 65313, 65338, 65343, 65343, 65345, 65370, 65381, 65470, 65474, 65479, 65482, 65487, 65490, 65495, 65498, 65500, 65536, 65547, 65549, 65574, 65576, 65594, 65596, 65597, 65599, 65613, 65616, 65629, 65664, 65786, 65856, 65908, 66045, 66045, 66176, 66204, 66208, 66256, 66272, 66272, 66304, 66335, 66349, 66378, 66384, 66426, 66432, 66461, 66464, 66499, 66504, 66511, 66513, 66517, 66560, 66717, 66720, 66729, 66736, 66771, 66776, 66811, 66816, 66855, 66864, 66915, 66928, 66938, 66940, 66954, 66956, 66962, 66964, 66965, 66967, 66977, 66979, 66993, 66995, 67001, 67003, 67004, 67072, 67382, 67392, 67413, 67424, 67431, 67456, 67461, 67463, 67504, 67506, 67514, 67584, 67589, 67592, 67592, 67594, 67637, 67639, 67640, 67644, 67644, 67647, 67669, 67680, 67702, 67712, 67742, 67808, 67826, 67828, 67829, 67840, 67861, 67872, 67897, 67968, 68023, 68030, 68031, 68096, 68099, 68101, 68102, 68108, 68115, 68117, 68119, 68121, 68149, 68152, 68154, 68159, 68159, 68192, 68220, 68224, 68252, 68288, 68295, 68297, 68326, 68352, 68405, 68416, 68437, 68448, 68466, 68480, 68497, 68608, 68680, 68736, 68786, 68800, 68850, 68864, 68903, 68912, 68921, 69248, 69289, 69291, 69292, 69296, 69297, 69373, 69404, 69415, 69415, 69424, 69456, 69488, 69509, 69552, 69572, 69600, 69622, 69632, 69702, 69734, 69749, 69759, 69818, 69826, 69826, 69840, 69864, 69872, 69881, 69888, 69940, 69942, 69951, 69956, 69959, 69968, 70003, 70006, 70006, 70016, 70084, 70089, 70092, 70094, 70106, 70108, 70108, 70144, 70161, 70163, 70199, 70206, 70209, 70272, 70278, 70280, 70280, 70282, 70285, 70287, 70301, 70303, 70312, 70320, 70378, 70384, 70393, 70400, 70403, 70405, 70412, 70415, 70416, 70419, 70440, 70442, 70448, 70450, 70451, 70453, 70457, 70459, 70468, 70471, 70472, 70475, 70477, 70480, 70480, 70487, 70487, 70493, 70499, 70502, 70508, 70512, 70516, 70656, 70730, 70736, 70745, 70750, 70753, 70784, 70853, 70855, 70855, 70864, 70873, 71040, 71093, 71096, 71104, 71128, 71133, 71168, 71232, 71236, 71236, 71248, 71257, 71296, 71352, 71360, 71369, 71424, 71450, 71453, 71467, 71472, 71481, 71488, 71494, 71680, 71738, 71840, 71913, 71935, 71942, 71945, 71945, 71948, 71955, 71957, 71958, 71960, 71989, 71991, 71992, 71995, 72003, 72016, 72025, 72096, 72103, 72106, 72151, 72154, 72161, 72163, 72164, 72192, 72254, 72263, 72263, 72272, 72345, 72349, 72349, 72368, 72440, 72704, 72712, 72714, 72758, 72760, 72768, 72784, 72793, 72818, 72847, 72850, 72871, 72873, 72886, 72960, 72966, 72968, 72969, 72971, 73014, 73018, 73018, 73020, 73021, 73023, 73031, 73040, 73049, 73056, 73061, 73063, 73064, 73066, 73102, 73104, 73105, 73107, 73112, 73120, 73129, 73440, 73462, 73472, 73488, 73490, 73530, 73534, 73538, 73552, 73561, 73648, 73648, 73728, 74649, 74752, 74862, 74880, 75075, 77712, 77808, 77824, 78895, 78912, 78933, 82944, 83526, 92160, 92728, 92736, 92766, 92768, 92777, 92784, 92862, 92864, 92873, 92880, 92909, 92912, 92916, 92928, 92982, 92992, 92995, 93008, 93017, 93027, 93047, 93053, 93071, 93760, 93823, 93952, 94026, 94031, 94087, 94095, 94111, 94176, 94177, 94179, 94180, 94192, 94193, 94208, 100343, 100352, 101589, 101632, 101640, 110576, 110579, 110581, 110587, 110589, 110590, 110592, 110882, 110898, 110898, 110928, 110930, 110933, 110933, 110948, 110951, 110960, 111355, 113664, 113770, 113776, 113788, 113792, 113800, 113808, 113817, 113821, 113822, 118528, 118573, 118576, 118598, 119141, 119145, 119149, 119154, 119163, 119170, 119173, 119179, 119210, 119213, 119362, 119364, 119808, 119892, 119894, 119964, 119966, 119967, 119970, 119970, 119973, 119974, 119977, 119980, 119982, 119993, 119995, 119995, 119997, 120003, 120005, 120069, 120071, 120074, 120077, 120084, 120086, 120092, 120094, 120121, 120123, 120126, 120128, 120132, 120134, 120134, 120138, 120144, 120146, 120485, 120488, 120512, 120514, 120538, 120540, 120570, 120572, 120596, 120598, 120628, 120630, 120654, 120656, 120686, 120688, 120712, 120714, 120744, 120746, 120770, 120772, 120779, 120782, 120831, 121344, 121398, 121403, 121452, 121461, 121461, 121476, 121476, 121499, 121503, 121505, 121519, 122624, 122654, 122661, 122666, 122880, 122886, 122888, 122904, 122907, 122913, 122915, 122916, 122918, 122922, 122928, 122989, 123023, 123023, 123136, 123180, 123184, 123197, 123200, 123209, 123214, 123214, 123536, 123566, 123584, 123641, 124112, 124153, 124896, 124902, 124904, 124907, 124909, 124910, 124912, 124926, 124928, 125124, 125136, 125142, 125184, 125259, 125264, 125273, 126464, 126467, 126469, 126495, 126497, 126498, 126500, 126500, 126503, 126503, 126505, 126514, 126516, 126519, 126521, 126521, 126523, 126523, 126530, 126530, 126535, 126535, 126537, 126537, 126539, 126539, 126541, 126543, 126545, 126546, 126548, 126548, 126551, 126551, 126553, 126553, 126555, 126555, 126557, 126557, 126559, 126559, 126561, 126562, 126564, 126564, 126567, 126570, 126572, 126578, 126580, 126583, 126585, 126588, 126590, 126590, 126592, 126601, 126603, 126619, 126625, 126627, 126629, 126633, 126635, 126651, 130032, 130041, 131072, 173791, 173824, 177977, 177984, 178205, 178208, 183969, 183984, 191456, 191472, 192093, 194560, 195101, 196608, 201546, 201552, 205743, 917760, 917999}}
-var cls1392 = rt.Class{ASCII: [2]uint64{0x0, 0x200000000000}}
-var cls1393 = rt.Class{ASCII: [2]uint64{0x0, 0x1000000000}}
-var cls1394 = rt.Class{ASCII: [2]uint64{0x0, 0x800000000}}
-var cls1395 = rt.Class{ASCII: [2]uint64{0x0, 0x2000000000}}
-var cls1396 = rt.Class{ASCII: [2]uint64{0x0, 0x1000000000000}}
-var cls1397 = rt.Class{ASCII: [2]uint64{0x0, 0x4000000000000}}
-var cls1398 = rt.Class{ASCII: [2]uint64{0x0, 0x8000000000}}
-var term1399Data = rt.TerminalProgram{Code: []uint16{3, 147, 0, 6, 8, 0, 43, 1, 4, 0, 43, 6, 8, 1, 44, 1, 4, 1, 44, 6, 8, 2, 10, 1, 4, 2, 10, 6, 8, 3, 16, 1, 4, 3, 16, 6, 8, 4, 15, 1, 4, 4, 15, 6, 8, 5, 45, 1, 4, 5, 45, 6, 8, 6, 46, 1, 4, 6, 46, 6, 8, 7, 14, 1, 4, 7, 14, 6, 8, 7, 9, 1, 4, 8, 9, 6, 8, 1, 7, 1, 4, 9, 7, 6, 8, 8, 47, 1, 4, 10, 47, 6, 8, 8, 48, 1, 4, 11, 48, 6, 8, 8, 49, 1, 4, 12, 49, 6, 8, 0, 50, 1, 4, 13, 50, 6, 8, 0, 51, 1, 4, 14, 51, 6, 8, 9, 52, 1, 4, 15, 52, 6, 8, 10, 53, 1, 4, 16, 53, 6, 8, 11, 17, 1, 4, 17, 17}, Classes: []*rt.Class{&cls1269, &cls1278, &cls1276, &cls1392, &cls1272, &cls1393, &cls1394, &cls1395, &cls1396, &cls1271, &cls1397, &cls1398}, Literals: []rt.TerminalText{{Runes: lit54, Text: "async"}, {Runes: lit55, Text: "interface"}, {Runes: lit12, Text: "type"}, {Runes: lit18, Text: "module"}, {Runes: lit17, Text: "namespace"}, {Runes: lit56, Text: "declare"}, {Runes: lit57, Text: "const"}, {Runes: lit16, Text: "enum"}, {Runes: lit11, Text: "export"}, {Runes: lit10, Text: "import"}, {Runes: lit58, Text: "private"}, {Runes: lit59, Text: "protected"}, {Runes: lit60, Text: "public"}, {Runes: lit61, Text: "abstract"}, {Runes: lit62, Text: "accessor"}, {Runes: lit63, Text: "static"}, {Runes: lit64, Text: "readonly"}, {Runes: lit19, Text: "global"}}}
-var term1399 = term1399Data.Prepare()
-var cls1400 = rt.Class{ASCII: [2]uint64{0x0, 0x80000000000}}
-var cls1401 = rt.Class{ASCII: [2]uint64{0x0, 0x100000000000}}
-var cls1402 = rt.Class{ASCII: [2]uint64{0x0, 0x80000000000000}}
-var cls1403 = rt.Class{ASCII: [2]uint64{0x0, 0x200000000000000}}
-var term1404Data = rt.TerminalProgram{Code: []uint16{3, 675, 0, 6, 8, 0, 50, 1, 4, 0, 50, 6, 8, 0, 51, 1, 4, 1, 51, 6, 8, 0, 202, 1, 4, 2, 202, 6, 8, 0, 212, 1, 4, 3, 212, 6, 8, 0, 114, 1, 4, 4, 114, 6, 8, 0, 43, 1, 4, 5, 43, 6, 8, 0, 13, 1, 4, 6, 13, 6, 8, 0, 38, 1, 4, 7, 38, 6, 8, 1, 206, 1, 4, 8, 206, 6, 8, 1, 208, 1, 4, 9, 208, 6, 8, 1, 26, 1, 4, 10, 26, 6, 8, 2, 64, 1, 4, 11, 64, 6, 8, 2, 67, 1, 4, 12, 67, 6, 8, 2, 40, 1, 4, 13, 40, 6, 8, 2, 101, 1, 4, 14, 101, 6, 8, 2, 46, 1, 4, 15, 46, 6, 8, 2, 25, 1, 4, 16, 25, 6, 8, 3, 32, 1, 4, 17, 32, 6, 8, 3, 45, 1, 4, 18, 45, 6, 8, 3, 12, 1, 4, 19, 12, 6, 8, 3, 73, 1, 4, 20, 73, 6, 8, 3, 175, 1, 4, 21, 175, 6, 8, 3, 23, 1, 4, 22, 23, 6, 8, 4, 60, 1, 4, 23, 60, 6, 8, 4, 14, 1, 4, 24, 14, 6, 8, 4, 9, 1, 4, 25, 9, 6, 8, 4, 84, 1, 4, 26, 84, 6, 8, 5, 92, 1, 4, 27, 92, 6, 8, 5, 66, 1, 4, 28, 66, 6, 8, 5, 41, 1, 4, 29, 41, 6, 8, 5, 108, 1, 4, 30, 108, 6, 8, 5, 39, 1, 4, 31, 39, 6, 8, 6, 96, 1, 4, 32, 96, 6, 8, 6, 17, 1, 4, 33, 17, 6, 8, 7, 22, 1, 4, 34, 22, 6, 8, 7, 83, 1, 4, 35, 83, 6, 8, 7, 7, 1, 4, 36, 7, 6, 8, 7, 200, 1, 4, 37, 200, 6, 8, 7, 161, 1, 4, 38, 161, 6, 8, 7, 44, 1, 4, 39, 44, 6, 8, 7, 106, 1, 4, 40, 106, 6, 8, 7, 62, 1, 4, 41, 62, 6, 8, 7, 197, 1, 4, 42, 197, 6, 8, 8, 198, 1, 4, 43, 198, 6, 8, 9, 36, 1, 4, 44, 36, 6, 8, 10, 16, 1, 4, 45, 16, 6, 8, 11, 15, 1, 4, 46, 15, 6, 8, 11, 210, 1, 4, 47, 210, 6, 8, 11, 93, 1, 4, 48, 93, 6, 8, 11, 90, 1, 4, 49, 90, 6, 8, 11, 205, 1, 4, 50, 205, 6, 8, 12, 211, 1, 4, 51, 211, 6, 8, 12, 61, 1, 4, 52, 61, 6, 8, 12, 98, 1, 4, 53, 98, 6, 8, 12, 99, 1, 4, 54, 99, 6, 8, 13, 222, 1, 4, 55, 222, 6, 8, 13, 47, 1, 4, 56, 47, 6, 8, 13, 48, 1, 4, 57, 48, 6, 8, 13, 49, 1, 4, 58, 49, 6, 8, 14, 53, 1, 4, 59, 53, 6, 8, 14, 107, 1, 4, 60, 107, 6, 8, 14, 27, 1, 4, 61, 27, 6, 8, 15, 172, 1, 4, 62, 172, 6, 8, 15, 97, 1, 4, 63, 97, 6, 8, 15, 52, 1, 4, 64, 52, 6, 8, 15, 204, 1, 4, 65, 204, 6, 8, 15, 89, 1, 4, 66, 89, 6, 8, 15, 29, 1, 4, 67, 29, 6, 8, 15, 207, 1, 4, 68, 207, 6, 8, 16, 82, 1, 4, 69, 82, 6, 8, 16, 30, 1, 4, 70, 30, 6, 8, 16, 91, 1, 4, 71, 91, 6, 8, 16, 31, 1, 4, 72, 31, 6, 8, 16, 176, 1, 4, 73, 176, 6, 8, 16, 10, 1, 4, 74, 10, 6, 8, 17, 209, 1, 4, 75, 209, 6, 8, 17, 199, 1, 4, 76, 199, 6, 8, 17, 203, 1, 4, 77, 203, 6, 8, 17, 37, 1, 4, 78, 37, 6, 8, 18, 35, 1, 4, 79, 35, 6, 8, 18, 177, 1, 4, 80, 177, 6, 8, 19, 24, 1, 4, 81, 24, 6, 8, 19, 28, 1, 4, 82, 28, 6, 8, 20, 120, 1, 4, 83, 120}, Classes: []*rt.Class{&cls1269, &cls1273, &cls1394, &cls1393, &cls1395, &cls1277, &cls1398, &cls1278, &cls1400, &cls1401, &cls1392, &cls1272, &cls1274, &cls1396, &cls1397, &cls1271, &cls1276, &cls1270, &cls1275, &cls1402, &cls1403}, Literals: []rt.TerminalText{{Runes: lit61, Text: "abstract"}, {Runes: lit62, Text: "accessor"}, {Runes: lit522, Text: "any"}, {Runes: lit532, Text: "asserts"}, {Runes: lit251, Text: "assert"}, {Runes: lit54, Text: "async"}, {Runes: lit15, Text: "as"}, {Runes: lit32, Text: "await"}, {Runes: lit526, Text: "bigint"}, {Runes: lit528, Text: "boolean"}, {Runes: lit40, Text: "break"}, {Runes: lit105, Text: "case"}, {Runes: lit114, Text: "catch"}, {Runes: lit34, Text: "class"}, {Runes: lit204, Text: "constructor"}, {Runes: lit57, Text: "const"}, {Runes: lit39, Text: "continue"}, {Runes: lit46, Text: "debugger"}, {Runes: lit56, Text: "declare"}, {Runes: lit14, Text: "default"}, {Runes: lit128, Text: "defer"}, {Runes: lit382, Text: "delete"}, {Runes: lit36, Text: "do"}, {Runes: lit80, Text: "else"}, {Runes: lit16, Text: "enum"}, {Runes: lit11, Text: "export"}, {Runes: lit170, Text: "extends"}, {Runes: lit178, Text: "false"}, {Runes: lit112, Text: "finally"}, {Runes: lit38, Text: "for"}, {Runes: lit230, Text: "from"}, {Runes: lit33, Text: "function"}, {Runes: lit186, Text: "get"}, {Runes: lit19, Text: "global"}, {Runes: lit35, Text: "if"}, {Runes: lit166, Text: "implements"}, {Runes: lit10, Text: "import"}, {Runes: lit515, Text: "infer"}, {Runes: lit365, Text: "instanceof"}, {Runes: lit55, Text: "interface"}, {Runes: lit213, Text: "intrinsic"}, {Runes: lit88, Text: "in"}, {Runes: lit493, Text: "is"}, {Runes: lit513, Text: "keyof"}, {Runes: lit30, Text: "let"}, {Runes: lit18, Text: "module"}, {Runes: lit17, Text: "namespace"}, {Runes: lit530, Text: "never"}, {Runes: lit179, Text: "new"}, {Runes: lit176, Text: "null"}, {Runes: lit525, Text: "number"}, {Runes: lit531, Text: "object"}, {Runes: lit86, Text: "of"}, {Runes: lit189, Text: "out"}, {Runes: lit191, Text: "override"}, {Runes: lit627, Text: "package"}, {Runes: lit58, Text: "private"}, {Runes: lit59, Text: "protected"}, {Runes: lit60, Text: "public"}, {Runes: lit64, Text: "readonly"}, {Runes: lit228, Text: "require"}, {Runes: lit41, Text: "return"}, {Runes: lit378, Text: "satisfies"}, {Runes: lit187, Text: "set"}, {Runes: lit63, Text: "static"}, {Runes: lit524, Text: "string"}, {Runes: lit175, Text: "super"}, {Runes: lit43, Text: "switch"}, {Runes: lit527, Text: "symbol"}, {Runes: lit161, Text: "this"}, {Runes: lit44, Text: "throw"}, {Runes: lit177, Text: "true"}, {Runes: lit45, Text: "try"}, {Runes: lit383, Text: "typeof"}, {Runes: lit12, Text: "type"}, {Runes: lit529, Text: "undefined"}, {Runes: lit514, Text: "unique"}, {Runes: lit523, Text: "unknown"}, {Runes: lit31, Text: "using"}, {Runes: lit29, Text: "var"}, {Runes: lit384, Text: "void"}, {Runes: lit37, Text: "while"}, {Runes: lit42, Text: "with"}, {Runes: lit302, Text: "yield"}}}
-var term1404 = term1404Data.Prepare()
-var term1405Data = rt.TerminalProgram{Code: []uint16{3, 187, 0, 6, 8, 0, 202, 1, 4, 0, 202, 6, 8, 1, 203, 1, 4, 1, 203, 6, 8, 2, 204, 1, 4, 2, 204, 6, 8, 3, 205, 1, 4, 3, 205, 6, 8, 4, 206, 1, 4, 4, 206, 6, 8, 4, 208, 1, 4, 5, 208, 6, 8, 5, 53, 1, 4, 6, 53, 6, 8, 2, 207, 1, 4, 7, 207, 6, 8, 1, 199, 1, 4, 8, 199, 6, 8, 6, 177, 1, 4, 9, 177, 6, 8, 1, 209, 1, 4, 10, 209, 6, 8, 3, 90, 1, 4, 11, 90, 6, 8, 7, 82, 1, 4, 12, 82, 6, 8, 7, 176, 1, 4, 13, 176, 6, 8, 3, 210, 1, 4, 14, 210, 6, 8, 7, 91, 1, 4, 15, 91, 6, 8, 8, 92, 1, 4, 16, 92, 6, 8, 9, 211, 1, 4, 17, 211, 6, 8, 3, 93, 1, 4, 18, 93, 6, 8, 10, 200, 1, 4, 19, 200, 6, 8, 10, 7, 1, 4, 20, 7, 6, 8, 0, 212, 1, 4, 21, 212, 6, 8, 8, 39, 1, 4, 22, 39}, Classes: []*rt.Class{&cls1269, &cls1270, &cls1271, &cls1272, &cls1273, &cls1397, &cls1275, &cls1276, &cls1277, &cls1274, &cls1278}, Literals: []rt.TerminalText{{Runes: lit522, Text: "any"}, {Runes: lit523, Text: "unknown"}, {Runes: lit524, Text: "string"}, {Runes: lit525, Text: "number"}, {Runes: lit526, Text: "bigint"}, {Runes: lit528, Text: "boolean"}, {Runes: lit64, Text: "readonly"}, {Runes: lit527, Text: "symbol"}, {Runes: lit514, Text: "unique"}, {Runes: lit384, Text: "void"}, {Runes: lit529, Text: "undefined"}, {Runes: lit176, Text: "null"}, {Runes: lit161, Text: "this"}, {Runes: lit383, Text: "typeof"}, {Runes: lit530, Text: "never"}, {Runes: lit177, Text: "true"}, {Runes: lit178, Text: "false"}, {Runes: lit531, Text: "object"}, {Runes: lit179, Text: "new"}, {Runes: lit515, Text: "infer"}, {Runes: lit10, Text: "import"}, {Runes: lit532, Text: "asserts"}, {Runes: lit33, Text: "function"}}}
-var term1405 = term1405Data.Prepare()
-var cls1406 = rt.Class{ASCII: [2]uint64{0x0, 0x1000000010}}
-var cls1407 = rt.Class{ASCII: [2]uint64{0x300000000000000, 0x7e0000007e}}
-var steps1408 = []rt.ClassStep{{C: &cls1406, ID: 241}, {C: &cls1407, ID: 238}}
-var cls1409 = rt.Class{ASCII: [2]uint64{0x0, 0x400000004}}
-var cls1410 = rt.Class{ASCII: [2]uint64{0x3000000000000, 0x0}}
-var steps1411 = []rt.ClassStep{{C: &cls1409, ID: 257}, {C: &cls1410, ID: 258}}
-var cls1412 = rt.Class{ASCII: [2]uint64{0x0, 0x800000008000}}
-var cls1413 = rt.Class{ASCII: [2]uint64{0xff000000000000, 0x0}}
-var steps1414 = []rt.ClassStep{{C: &cls1412, ID: 259}, {C: &cls1413, ID: 260}}
-var term1415Data = rt.TerminalProgram{Code: []uint16{3, 147, 0, 6, 8, 0, 35, 1, 4, 0, 35, 6, 8, 1, 36, 1, 4, 1, 36, 6, 8, 2, 37, 1, 4, 2, 37, 6, 8, 3, 38, 1, 4, 3, 38, 6, 8, 4, 39, 1, 4, 4, 39, 6, 8, 5, 40, 1, 4, 5, 40, 6, 8, 6, 22, 1, 4, 6, 22, 6, 8, 7, 23, 1, 4, 7, 23, 6, 8, 8, 24, 1, 4, 8, 24, 6, 8, 4, 41, 1, 4, 9, 41, 6, 8, 5, 25, 1, 4, 10, 25, 6, 8, 9, 26, 1, 4, 11, 26, 6, 8, 10, 27, 1, 4, 12, 27, 6, 8, 8, 28, 1, 4, 13, 28, 6, 8, 11, 29, 1, 4, 14, 29, 6, 8, 12, 30, 1, 4, 15, 30, 6, 8, 12, 31, 1, 4, 16, 31, 6, 8, 7, 32, 1, 4, 17, 32}, Classes: []*rt.Class{&cls1275, &cls1401, &cls1270, &cls1269, &cls1277, &cls1394, &cls1278, &cls1393, &cls1402, &cls1273, &cls1397, &cls1271, &cls1276}, Literals: []rt.TerminalText{{Runes: lit29, Text: "var"}, {Runes: lit30, Text: "let"}, {Runes: lit31, Text: "using"}, {Runes: lit32, Text: "await"}, {Runes: lit33, Text: "function"}, {Runes: lit34, Text: "class"}, {Runes: lit35, Text: "if"}, {Runes: lit36, Text: "do"}, {Runes: lit37, Text: "while"}, {Runes: lit38, Text: "for"}, {Runes: lit39, Text: "continue"}, {Runes: lit40, Text: "break"}, {Runes: lit41, Text: "return"}, {Runes: lit42, Text: "with"}, {Runes: lit43, Text: "switch"}, {Runes: lit44, Text: "throw"}, {Runes: lit45, Text: "try"}, {Runes: lit46, Text: "debugger"}}}
-var term1415 = term1415Data.Prepare()
-var cls1418 = rt.Class{ASCII: [2]uint64{0x8000800000002400, 0x1000000000000000}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1423 = rt.Class{ASCII: [2]uint64{0x804000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1428 = rt.Class{ASCII: [2]uint64{0x800000002400, 0x1000000000000000}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1433 = rt.Class{ASCII: [2]uint64{0x800000002400, 0x40000000}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1442 = rt.Class{ASCII: [2]uint64{0x2000800200002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1447 = rt.Class{ASCII: [2]uint64{0x5000800000002400, 0x20000000000}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1458 = rt.Class{ASCII: [2]uint64{0x5000800000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1463 = rt.Class{ASCII: [2]uint64{0xa80000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1468 = rt.Class{ASCII: [2]uint64{0x842000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1473 = rt.Class{ASCII: [2]uint64{0x840000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1482 = rt.Class{ASCII: [2]uint64{0xc00000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1486 = rt.Class{ASCII: [2]uint64{0x8000800000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1491 = rt.Class{ASCII: [2]uint64{0x800000002400, 0x8000000}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1499 = rt.Class{ASCII: [2]uint64{0x1000800000002400, 0x100000000}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1511 = rt.Class{ASCII: [2]uint64{0x1000800000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1515 = rt.Class{ASCII: [2]uint64{0x1000810000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var scope936 = []string{"e"}
+var scope938 = []string{"e"}
+var cls940 = rt.Class{ASCII: [2]uint64{0x0, 0x0}, Wide: []rune{170, 170, 181, 181, 186, 186, 192, 214, 216, 246, 248, 705, 710, 721, 736, 740, 748, 748, 750, 750, 880, 884, 886, 887, 890, 893, 895, 895, 902, 902, 904, 906, 908, 908, 910, 929, 931, 1013, 1015, 1153, 1162, 1327, 1329, 1366, 1369, 1369, 1376, 1416, 1488, 1514, 1519, 1522, 1568, 1610, 1646, 1647, 1649, 1747, 1749, 1749, 1765, 1766, 1774, 1775, 1786, 1788, 1791, 1791, 1808, 1808, 1810, 1839, 1869, 1957, 1969, 1969, 1994, 2026, 2036, 2037, 2042, 2042, 2048, 2069, 2074, 2074, 2084, 2084, 2088, 2088, 2112, 2136, 2144, 2154, 2160, 2183, 2185, 2190, 2208, 2249, 2308, 2361, 2365, 2365, 2384, 2384, 2392, 2401, 2417, 2432, 2437, 2444, 2447, 2448, 2451, 2472, 2474, 2480, 2482, 2482, 2486, 2489, 2493, 2493, 2510, 2510, 2524, 2525, 2527, 2529, 2544, 2545, 2556, 2556, 2565, 2570, 2575, 2576, 2579, 2600, 2602, 2608, 2610, 2611, 2613, 2614, 2616, 2617, 2649, 2652, 2654, 2654, 2674, 2676, 2693, 2701, 2703, 2705, 2707, 2728, 2730, 2736, 2738, 2739, 2741, 2745, 2749, 2749, 2768, 2768, 2784, 2785, 2809, 2809, 2821, 2828, 2831, 2832, 2835, 2856, 2858, 2864, 2866, 2867, 2869, 2873, 2877, 2877, 2908, 2909, 2911, 2913, 2929, 2929, 2947, 2947, 2949, 2954, 2958, 2960, 2962, 2965, 2969, 2970, 2972, 2972, 2974, 2975, 2979, 2980, 2984, 2986, 2990, 3001, 3024, 3024, 3077, 3084, 3086, 3088, 3090, 3112, 3114, 3129, 3133, 3133, 3160, 3162, 3165, 3165, 3168, 3169, 3200, 3200, 3205, 3212, 3214, 3216, 3218, 3240, 3242, 3251, 3253, 3257, 3261, 3261, 3293, 3294, 3296, 3297, 3313, 3314, 3332, 3340, 3342, 3344, 3346, 3386, 3389, 3389, 3406, 3406, 3412, 3414, 3423, 3425, 3450, 3455, 3461, 3478, 3482, 3505, 3507, 3515, 3517, 3517, 3520, 3526, 3585, 3632, 3634, 3635, 3648, 3654, 3713, 3714, 3716, 3716, 3718, 3722, 3724, 3747, 3749, 3749, 3751, 3760, 3762, 3763, 3773, 3773, 3776, 3780, 3782, 3782, 3804, 3807, 3840, 3840, 3904, 3911, 3913, 3948, 3976, 3980, 4096, 4138, 4159, 4159, 4176, 4181, 4186, 4189, 4193, 4193, 4197, 4198, 4206, 4208, 4213, 4225, 4238, 4238, 4256, 4293, 4295, 4295, 4301, 4301, 4304, 4346, 4348, 4680, 4682, 4685, 4688, 4694, 4696, 4696, 4698, 4701, 4704, 4744, 4746, 4749, 4752, 4784, 4786, 4789, 4792, 4798, 4800, 4800, 4802, 4805, 4808, 4822, 4824, 4880, 4882, 4885, 4888, 4954, 4992, 5007, 5024, 5109, 5112, 5117, 5121, 5740, 5743, 5759, 5761, 5786, 5792, 5866, 5870, 5880, 5888, 5905, 5919, 5937, 5952, 5969, 5984, 5996, 5998, 6000, 6016, 6067, 6103, 6103, 6108, 6108, 6176, 6264, 6272, 6312, 6314, 6314, 6320, 6389, 6400, 6430, 6480, 6509, 6512, 6516, 6528, 6571, 6576, 6601, 6656, 6678, 6688, 6740, 6823, 6823, 6917, 6963, 6981, 6988, 7043, 7072, 7086, 7087, 7098, 7141, 7168, 7203, 7245, 7247, 7258, 7293, 7296, 7304, 7312, 7354, 7357, 7359, 7401, 7404, 7406, 7411, 7413, 7414, 7418, 7418, 7424, 7615, 7680, 7957, 7960, 7965, 7968, 8005, 8008, 8013, 8016, 8023, 8025, 8025, 8027, 8027, 8029, 8029, 8031, 8061, 8064, 8116, 8118, 8124, 8126, 8126, 8130, 8132, 8134, 8140, 8144, 8147, 8150, 8155, 8160, 8172, 8178, 8180, 8182, 8188, 8305, 8305, 8319, 8319, 8336, 8348, 8450, 8450, 8455, 8455, 8458, 8467, 8469, 8469, 8472, 8477, 8484, 8484, 8486, 8486, 8488, 8488, 8490, 8505, 8508, 8511, 8517, 8521, 8526, 8526, 8544, 8584, 11264, 11492, 11499, 11502, 11506, 11507, 11520, 11557, 11559, 11559, 11565, 11565, 11568, 11623, 11631, 11631, 11648, 11670, 11680, 11686, 11688, 11694, 11696, 11702, 11704, 11710, 11712, 11718, 11720, 11726, 11728, 11734, 11736, 11742, 12293, 12295, 12321, 12329, 12337, 12341, 12344, 12348, 12353, 12438, 12443, 12447, 12449, 12538, 12540, 12543, 12549, 12591, 12593, 12686, 12704, 12735, 12784, 12799, 13312, 19903, 19968, 42124, 42192, 42237, 42240, 42508, 42512, 42527, 42538, 42539, 42560, 42606, 42623, 42653, 42656, 42735, 42775, 42783, 42786, 42888, 42891, 42954, 42960, 42961, 42963, 42963, 42965, 42969, 42994, 43009, 43011, 43013, 43015, 43018, 43020, 43042, 43072, 43123, 43138, 43187, 43250, 43255, 43259, 43259, 43261, 43262, 43274, 43301, 43312, 43334, 43360, 43388, 43396, 43442, 43471, 43471, 43488, 43492, 43494, 43503, 43514, 43518, 43520, 43560, 43584, 43586, 43588, 43595, 43616, 43638, 43642, 43642, 43646, 43695, 43697, 43697, 43701, 43702, 43705, 43709, 43712, 43712, 43714, 43714, 43739, 43741, 43744, 43754, 43762, 43764, 43777, 43782, 43785, 43790, 43793, 43798, 43808, 43814, 43816, 43822, 43824, 43866, 43868, 43881, 43888, 44002, 44032, 55203, 55216, 55238, 55243, 55291, 63744, 64109, 64112, 64217, 64256, 64262, 64275, 64279, 64285, 64285, 64287, 64296, 64298, 64310, 64312, 64316, 64318, 64318, 64320, 64321, 64323, 64324, 64326, 64433, 64467, 64829, 64848, 64911, 64914, 64967, 65008, 65019, 65136, 65140, 65142, 65276, 65313, 65338, 65345, 65370, 65382, 65470, 65474, 65479, 65482, 65487, 65490, 65495, 65498, 65500, 65536, 65547, 65549, 65574, 65576, 65594, 65596, 65597, 65599, 65613, 65616, 65629, 65664, 65786, 65856, 65908, 66176, 66204, 66208, 66256, 66304, 66335, 66349, 66378, 66384, 66421, 66432, 66461, 66464, 66499, 66504, 66511, 66513, 66517, 66560, 66717, 66736, 66771, 66776, 66811, 66816, 66855, 66864, 66915, 66928, 66938, 66940, 66954, 66956, 66962, 66964, 66965, 66967, 66977, 66979, 66993, 66995, 67001, 67003, 67004, 67072, 67382, 67392, 67413, 67424, 67431, 67456, 67461, 67463, 67504, 67506, 67514, 67584, 67589, 67592, 67592, 67594, 67637, 67639, 67640, 67644, 67644, 67647, 67669, 67680, 67702, 67712, 67742, 67808, 67826, 67828, 67829, 67840, 67861, 67872, 67897, 67968, 68023, 68030, 68031, 68096, 68096, 68112, 68115, 68117, 68119, 68121, 68149, 68192, 68220, 68224, 68252, 68288, 68295, 68297, 68324, 68352, 68405, 68416, 68437, 68448, 68466, 68480, 68497, 68608, 68680, 68736, 68786, 68800, 68850, 68864, 68899, 69248, 69289, 69296, 69297, 69376, 69404, 69415, 69415, 69424, 69445, 69488, 69505, 69552, 69572, 69600, 69622, 69635, 69687, 69745, 69746, 69749, 69749, 69763, 69807, 69840, 69864, 69891, 69926, 69956, 69956, 69959, 69959, 69968, 70002, 70006, 70006, 70019, 70066, 70081, 70084, 70106, 70106, 70108, 70108, 70144, 70161, 70163, 70187, 70207, 70208, 70272, 70278, 70280, 70280, 70282, 70285, 70287, 70301, 70303, 70312, 70320, 70366, 70405, 70412, 70415, 70416, 70419, 70440, 70442, 70448, 70450, 70451, 70453, 70457, 70461, 70461, 70480, 70480, 70493, 70497, 70656, 70708, 70727, 70730, 70751, 70753, 70784, 70831, 70852, 70853, 70855, 70855, 71040, 71086, 71128, 71131, 71168, 71215, 71236, 71236, 71296, 71338, 71352, 71352, 71424, 71450, 71488, 71494, 71680, 71723, 71840, 71903, 71935, 71942, 71945, 71945, 71948, 71955, 71957, 71958, 71960, 71983, 71999, 71999, 72001, 72001, 72096, 72103, 72106, 72144, 72161, 72161, 72163, 72163, 72192, 72192, 72203, 72242, 72250, 72250, 72272, 72272, 72284, 72329, 72349, 72349, 72368, 72440, 72704, 72712, 72714, 72750, 72768, 72768, 72818, 72847, 72960, 72966, 72968, 72969, 72971, 73008, 73030, 73030, 73056, 73061, 73063, 73064, 73066, 73097, 73112, 73112, 73440, 73458, 73474, 73474, 73476, 73488, 73490, 73523, 73648, 73648, 73728, 74649, 74752, 74862, 74880, 75075, 77712, 77808, 77824, 78895, 78913, 78918, 82944, 83526, 92160, 92728, 92736, 92766, 92784, 92862, 92880, 92909, 92928, 92975, 92992, 92995, 93027, 93047, 93053, 93071, 93760, 93823, 93952, 94026, 94032, 94032, 94099, 94111, 94176, 94177, 94179, 94179, 94208, 100343, 100352, 101589, 101632, 101640, 110576, 110579, 110581, 110587, 110589, 110590, 110592, 110882, 110898, 110898, 110928, 110930, 110933, 110933, 110948, 110951, 110960, 111355, 113664, 113770, 113776, 113788, 113792, 113800, 113808, 113817, 119808, 119892, 119894, 119964, 119966, 119967, 119970, 119970, 119973, 119974, 119977, 119980, 119982, 119993, 119995, 119995, 119997, 120003, 120005, 120069, 120071, 120074, 120077, 120084, 120086, 120092, 120094, 120121, 120123, 120126, 120128, 120132, 120134, 120134, 120138, 120144, 120146, 120485, 120488, 120512, 120514, 120538, 120540, 120570, 120572, 120596, 120598, 120628, 120630, 120654, 120656, 120686, 120688, 120712, 120714, 120744, 120746, 120770, 120772, 120779, 122624, 122654, 122661, 122666, 122928, 122989, 123136, 123180, 123191, 123197, 123214, 123214, 123536, 123565, 123584, 123627, 124112, 124139, 124896, 124902, 124904, 124907, 124909, 124910, 124912, 124926, 124928, 125124, 125184, 125251, 125259, 125259, 126464, 126467, 126469, 126495, 126497, 126498, 126500, 126500, 126503, 126503, 126505, 126514, 126516, 126519, 126521, 126521, 126523, 126523, 126530, 126530, 126535, 126535, 126537, 126537, 126539, 126539, 126541, 126543, 126545, 126546, 126548, 126548, 126551, 126551, 126553, 126553, 126555, 126555, 126557, 126557, 126559, 126559, 126561, 126562, 126564, 126564, 126567, 126570, 126572, 126578, 126580, 126583, 126585, 126588, 126590, 126590, 126592, 126601, 126603, 126619, 126625, 126627, 126629, 126633, 126635, 126651, 131072, 173791, 173824, 177977, 177984, 178205, 178208, 183969, 183984, 191456, 191472, 192093, 194560, 195101, 196608, 201546, 201552, 205743}}
+var cls941 = rt.Class{ASCII: [2]uint64{0x0, 0x0}, Wide: []rune{170, 170, 181, 181, 183, 183, 186, 186, 192, 214, 216, 246, 248, 705, 710, 721, 736, 740, 748, 748, 750, 750, 768, 884, 886, 887, 890, 893, 895, 895, 902, 906, 908, 908, 910, 929, 931, 1013, 1015, 1153, 1155, 1159, 1162, 1327, 1329, 1366, 1369, 1369, 1376, 1416, 1425, 1469, 1471, 1471, 1473, 1474, 1476, 1477, 1479, 1479, 1488, 1514, 1519, 1522, 1552, 1562, 1568, 1641, 1646, 1747, 1749, 1756, 1759, 1768, 1770, 1788, 1791, 1791, 1808, 1866, 1869, 1969, 1984, 2037, 2042, 2042, 2045, 2045, 2048, 2093, 2112, 2139, 2144, 2154, 2160, 2183, 2185, 2190, 2200, 2273, 2275, 2403, 2406, 2415, 2417, 2435, 2437, 2444, 2447, 2448, 2451, 2472, 2474, 2480, 2482, 2482, 2486, 2489, 2492, 2500, 2503, 2504, 2507, 2510, 2519, 2519, 2524, 2525, 2527, 2531, 2534, 2545, 2556, 2556, 2558, 2558, 2561, 2563, 2565, 2570, 2575, 2576, 2579, 2600, 2602, 2608, 2610, 2611, 2613, 2614, 2616, 2617, 2620, 2620, 2622, 2626, 2631, 2632, 2635, 2637, 2641, 2641, 2649, 2652, 2654, 2654, 2662, 2677, 2689, 2691, 2693, 2701, 2703, 2705, 2707, 2728, 2730, 2736, 2738, 2739, 2741, 2745, 2748, 2757, 2759, 2761, 2763, 2765, 2768, 2768, 2784, 2787, 2790, 2799, 2809, 2815, 2817, 2819, 2821, 2828, 2831, 2832, 2835, 2856, 2858, 2864, 2866, 2867, 2869, 2873, 2876, 2884, 2887, 2888, 2891, 2893, 2901, 2903, 2908, 2909, 2911, 2915, 2918, 2927, 2929, 2929, 2946, 2947, 2949, 2954, 2958, 2960, 2962, 2965, 2969, 2970, 2972, 2972, 2974, 2975, 2979, 2980, 2984, 2986, 2990, 3001, 3006, 3010, 3014, 3016, 3018, 3021, 3024, 3024, 3031, 3031, 3046, 3055, 3072, 3084, 3086, 3088, 3090, 3112, 3114, 3129, 3132, 3140, 3142, 3144, 3146, 3149, 3157, 3158, 3160, 3162, 3165, 3165, 3168, 3171, 3174, 3183, 3200, 3203, 3205, 3212, 3214, 3216, 3218, 3240, 3242, 3251, 3253, 3257, 3260, 3268, 3270, 3272, 3274, 3277, 3285, 3286, 3293, 3294, 3296, 3299, 3302, 3311, 3313, 3315, 3328, 3340, 3342, 3344, 3346, 3396, 3398, 3400, 3402, 3406, 3412, 3415, 3423, 3427, 3430, 3439, 3450, 3455, 3457, 3459, 3461, 3478, 3482, 3505, 3507, 3515, 3517, 3517, 3520, 3526, 3530, 3530, 3535, 3540, 3542, 3542, 3544, 3551, 3558, 3567, 3570, 3571, 3585, 3642, 3648, 3662, 3664, 3673, 3713, 3714, 3716, 3716, 3718, 3722, 3724, 3747, 3749, 3749, 3751, 3773, 3776, 3780, 3782, 3782, 3784, 3790, 3792, 3801, 3804, 3807, 3840, 3840, 3864, 3865, 3872, 3881, 3893, 3893, 3895, 3895, 3897, 3897, 3902, 3911, 3913, 3948, 3953, 3972, 3974, 3991, 3993, 4028, 4038, 4038, 4096, 4169, 4176, 4253, 4256, 4293, 4295, 4295, 4301, 4301, 4304, 4346, 4348, 4680, 4682, 4685, 4688, 4694, 4696, 4696, 4698, 4701, 4704, 4744, 4746, 4749, 4752, 4784, 4786, 4789, 4792, 4798, 4800, 4800, 4802, 4805, 4808, 4822, 4824, 4880, 4882, 4885, 4888, 4954, 4957, 4959, 4969, 4977, 4992, 5007, 5024, 5109, 5112, 5117, 5121, 5740, 5743, 5759, 5761, 5786, 5792, 5866, 5870, 5880, 5888, 5909, 5919, 5940, 5952, 5971, 5984, 5996, 5998, 6000, 6002, 6003, 6016, 6099, 6103, 6103, 6108, 6109, 6112, 6121, 6155, 6157, 6159, 6169, 6176, 6264, 6272, 6314, 6320, 6389, 6400, 6430, 6432, 6443, 6448, 6459, 6470, 6509, 6512, 6516, 6528, 6571, 6576, 6601, 6608, 6618, 6656, 6683, 6688, 6750, 6752, 6780, 6783, 6793, 6800, 6809, 6823, 6823, 6832, 6845, 6847, 6862, 6912, 6988, 6992, 7001, 7019, 7027, 7040, 7155, 7168, 7223, 7232, 7241, 7245, 7293, 7296, 7304, 7312, 7354, 7357, 7359, 7376, 7378, 7380, 7418, 7424, 7957, 7960, 7965, 7968, 8005, 8008, 8013, 8016, 8023, 8025, 8025, 8027, 8027, 8029, 8029, 8031, 8061, 8064, 8116, 8118, 8124, 8126, 8126, 8130, 8132, 8134, 8140, 8144, 8147, 8150, 8155, 8160, 8172, 8178, 8180, 8182, 8188, 8204, 8205, 8255, 8256, 8276, 8276, 8305, 8305, 8319, 8319, 8336, 8348, 8400, 8412, 8417, 8417, 8421, 8432, 8450, 8450, 8455, 8455, 8458, 8467, 8469, 8469, 8472, 8477, 8484, 8484, 8486, 8486, 8488, 8488, 8490, 8505, 8508, 8511, 8517, 8521, 8526, 8526, 8544, 8584, 11264, 11492, 11499, 11507, 11520, 11557, 11559, 11559, 11565, 11565, 11568, 11623, 11631, 11631, 11647, 11670, 11680, 11686, 11688, 11694, 11696, 11702, 11704, 11710, 11712, 11718, 11720, 11726, 11728, 11734, 11736, 11742, 11744, 11775, 12293, 12295, 12321, 12335, 12337, 12341, 12344, 12348, 12353, 12438, 12441, 12447, 12449, 12543, 12549, 12591, 12593, 12686, 12704, 12735, 12784, 12799, 13312, 19903, 19968, 42124, 42192, 42237, 42240, 42508, 42512, 42539, 42560, 42607, 42612, 42621, 42623, 42737, 42775, 42783, 42786, 42888, 42891, 42954, 42960, 42961, 42963, 42963, 42965, 42969, 42994, 43047, 43052, 43052, 43072, 43123, 43136, 43205, 43216, 43225, 43232, 43255, 43259, 43259, 43261, 43309, 43312, 43347, 43360, 43388, 43392, 43456, 43471, 43481, 43488, 43518, 43520, 43574, 43584, 43597, 43600, 43609, 43616, 43638, 43642, 43714, 43739, 43741, 43744, 43759, 43762, 43766, 43777, 43782, 43785, 43790, 43793, 43798, 43808, 43814, 43816, 43822, 43824, 43866, 43868, 43881, 43888, 44010, 44012, 44013, 44016, 44025, 44032, 55203, 55216, 55238, 55243, 55291, 63744, 64109, 64112, 64217, 64256, 64262, 64275, 64279, 64285, 64296, 64298, 64310, 64312, 64316, 64318, 64318, 64320, 64321, 64323, 64324, 64326, 64433, 64467, 64829, 64848, 64911, 64914, 64967, 65008, 65019, 65024, 65039, 65056, 65071, 65075, 65076, 65101, 65103, 65136, 65140, 65142, 65276, 65296, 65305, 65313, 65338, 65343, 65343, 65345, 65370, 65381, 65470, 65474, 65479, 65482, 65487, 65490, 65495, 65498, 65500, 65536, 65547, 65549, 65574, 65576, 65594, 65596, 65597, 65599, 65613, 65616, 65629, 65664, 65786, 65856, 65908, 66045, 66045, 66176, 66204, 66208, 66256, 66272, 66272, 66304, 66335, 66349, 66378, 66384, 66426, 66432, 66461, 66464, 66499, 66504, 66511, 66513, 66517, 66560, 66717, 66720, 66729, 66736, 66771, 66776, 66811, 66816, 66855, 66864, 66915, 66928, 66938, 66940, 66954, 66956, 66962, 66964, 66965, 66967, 66977, 66979, 66993, 66995, 67001, 67003, 67004, 67072, 67382, 67392, 67413, 67424, 67431, 67456, 67461, 67463, 67504, 67506, 67514, 67584, 67589, 67592, 67592, 67594, 67637, 67639, 67640, 67644, 67644, 67647, 67669, 67680, 67702, 67712, 67742, 67808, 67826, 67828, 67829, 67840, 67861, 67872, 67897, 67968, 68023, 68030, 68031, 68096, 68099, 68101, 68102, 68108, 68115, 68117, 68119, 68121, 68149, 68152, 68154, 68159, 68159, 68192, 68220, 68224, 68252, 68288, 68295, 68297, 68326, 68352, 68405, 68416, 68437, 68448, 68466, 68480, 68497, 68608, 68680, 68736, 68786, 68800, 68850, 68864, 68903, 68912, 68921, 69248, 69289, 69291, 69292, 69296, 69297, 69373, 69404, 69415, 69415, 69424, 69456, 69488, 69509, 69552, 69572, 69600, 69622, 69632, 69702, 69734, 69749, 69759, 69818, 69826, 69826, 69840, 69864, 69872, 69881, 69888, 69940, 69942, 69951, 69956, 69959, 69968, 70003, 70006, 70006, 70016, 70084, 70089, 70092, 70094, 70106, 70108, 70108, 70144, 70161, 70163, 70199, 70206, 70209, 70272, 70278, 70280, 70280, 70282, 70285, 70287, 70301, 70303, 70312, 70320, 70378, 70384, 70393, 70400, 70403, 70405, 70412, 70415, 70416, 70419, 70440, 70442, 70448, 70450, 70451, 70453, 70457, 70459, 70468, 70471, 70472, 70475, 70477, 70480, 70480, 70487, 70487, 70493, 70499, 70502, 70508, 70512, 70516, 70656, 70730, 70736, 70745, 70750, 70753, 70784, 70853, 70855, 70855, 70864, 70873, 71040, 71093, 71096, 71104, 71128, 71133, 71168, 71232, 71236, 71236, 71248, 71257, 71296, 71352, 71360, 71369, 71424, 71450, 71453, 71467, 71472, 71481, 71488, 71494, 71680, 71738, 71840, 71913, 71935, 71942, 71945, 71945, 71948, 71955, 71957, 71958, 71960, 71989, 71991, 71992, 71995, 72003, 72016, 72025, 72096, 72103, 72106, 72151, 72154, 72161, 72163, 72164, 72192, 72254, 72263, 72263, 72272, 72345, 72349, 72349, 72368, 72440, 72704, 72712, 72714, 72758, 72760, 72768, 72784, 72793, 72818, 72847, 72850, 72871, 72873, 72886, 72960, 72966, 72968, 72969, 72971, 73014, 73018, 73018, 73020, 73021, 73023, 73031, 73040, 73049, 73056, 73061, 73063, 73064, 73066, 73102, 73104, 73105, 73107, 73112, 73120, 73129, 73440, 73462, 73472, 73488, 73490, 73530, 73534, 73538, 73552, 73561, 73648, 73648, 73728, 74649, 74752, 74862, 74880, 75075, 77712, 77808, 77824, 78895, 78912, 78933, 82944, 83526, 92160, 92728, 92736, 92766, 92768, 92777, 92784, 92862, 92864, 92873, 92880, 92909, 92912, 92916, 92928, 92982, 92992, 92995, 93008, 93017, 93027, 93047, 93053, 93071, 93760, 93823, 93952, 94026, 94031, 94087, 94095, 94111, 94176, 94177, 94179, 94180, 94192, 94193, 94208, 100343, 100352, 101589, 101632, 101640, 110576, 110579, 110581, 110587, 110589, 110590, 110592, 110882, 110898, 110898, 110928, 110930, 110933, 110933, 110948, 110951, 110960, 111355, 113664, 113770, 113776, 113788, 113792, 113800, 113808, 113817, 113821, 113822, 118528, 118573, 118576, 118598, 119141, 119145, 119149, 119154, 119163, 119170, 119173, 119179, 119210, 119213, 119362, 119364, 119808, 119892, 119894, 119964, 119966, 119967, 119970, 119970, 119973, 119974, 119977, 119980, 119982, 119993, 119995, 119995, 119997, 120003, 120005, 120069, 120071, 120074, 120077, 120084, 120086, 120092, 120094, 120121, 120123, 120126, 120128, 120132, 120134, 120134, 120138, 120144, 120146, 120485, 120488, 120512, 120514, 120538, 120540, 120570, 120572, 120596, 120598, 120628, 120630, 120654, 120656, 120686, 120688, 120712, 120714, 120744, 120746, 120770, 120772, 120779, 120782, 120831, 121344, 121398, 121403, 121452, 121461, 121461, 121476, 121476, 121499, 121503, 121505, 121519, 122624, 122654, 122661, 122666, 122880, 122886, 122888, 122904, 122907, 122913, 122915, 122916, 122918, 122922, 122928, 122989, 123023, 123023, 123136, 123180, 123184, 123197, 123200, 123209, 123214, 123214, 123536, 123566, 123584, 123641, 124112, 124153, 124896, 124902, 124904, 124907, 124909, 124910, 124912, 124926, 124928, 125124, 125136, 125142, 125184, 125259, 125264, 125273, 126464, 126467, 126469, 126495, 126497, 126498, 126500, 126500, 126503, 126503, 126505, 126514, 126516, 126519, 126521, 126521, 126523, 126523, 126530, 126530, 126535, 126535, 126537, 126537, 126539, 126539, 126541, 126543, 126545, 126546, 126548, 126548, 126551, 126551, 126553, 126553, 126555, 126555, 126557, 126557, 126559, 126559, 126561, 126562, 126564, 126564, 126567, 126570, 126572, 126578, 126580, 126583, 126585, 126588, 126590, 126590, 126592, 126601, 126603, 126619, 126625, 126627, 126629, 126633, 126635, 126651, 130032, 130041, 131072, 173791, 173824, 177977, 177984, 178205, 178208, 183969, 183984, 191456, 191472, 192093, 194560, 195101, 196608, 201546, 201552, 205743, 917760, 917999}}
+var cls942 = rt.Class{ASCII: [2]uint64{0x0, 0x200000000000}}
+var cls943 = rt.Class{ASCII: [2]uint64{0x0, 0x1000000000}}
+var cls944 = rt.Class{ASCII: [2]uint64{0x0, 0x800000000}}
+var cls945 = rt.Class{ASCII: [2]uint64{0x0, 0x2000000000}}
+var cls946 = rt.Class{ASCII: [2]uint64{0x0, 0x1000000000000}}
+var cls947 = rt.Class{ASCII: [2]uint64{0x0, 0x4000000000000}}
+var cls948 = rt.Class{ASCII: [2]uint64{0x0, 0x8000000000}}
+var term949Data = rt.TerminalProgram{Code: []uint16{3, 147, 0, 6, 8, 0, 43, 1, 4, 0, 43, 6, 8, 1, 44, 1, 4, 1, 44, 6, 8, 2, 10, 1, 4, 2, 10, 6, 8, 3, 16, 1, 4, 3, 16, 6, 8, 4, 15, 1, 4, 4, 15, 6, 8, 5, 45, 1, 4, 5, 45, 6, 8, 6, 46, 1, 4, 6, 46, 6, 8, 7, 14, 1, 4, 7, 14, 6, 8, 7, 9, 1, 4, 8, 9, 6, 8, 1, 7, 1, 4, 9, 7, 6, 8, 8, 47, 1, 4, 10, 47, 6, 8, 8, 48, 1, 4, 11, 48, 6, 8, 8, 49, 1, 4, 12, 49, 6, 8, 0, 50, 1, 4, 13, 50, 6, 8, 0, 51, 1, 4, 14, 51, 6, 8, 9, 52, 1, 4, 15, 52, 6, 8, 10, 53, 1, 4, 16, 53, 6, 8, 11, 17, 1, 4, 17, 17}, Classes: []*rt.Class{&cls910, &cls919, &cls917, &cls942, &cls913, &cls943, &cls944, &cls945, &cls946, &cls912, &cls947, &cls948}, Literals: []rt.TerminalText{{Runes: lit54, Text: "async"}, {Runes: lit55, Text: "interface"}, {Runes: lit12, Text: "type"}, {Runes: lit18, Text: "module"}, {Runes: lit17, Text: "namespace"}, {Runes: lit56, Text: "declare"}, {Runes: lit57, Text: "const"}, {Runes: lit16, Text: "enum"}, {Runes: lit11, Text: "export"}, {Runes: lit10, Text: "import"}, {Runes: lit58, Text: "private"}, {Runes: lit59, Text: "protected"}, {Runes: lit60, Text: "public"}, {Runes: lit61, Text: "abstract"}, {Runes: lit62, Text: "accessor"}, {Runes: lit63, Text: "static"}, {Runes: lit64, Text: "readonly"}, {Runes: lit19, Text: "global"}}}
+var term949 = term949Data.Prepare()
+var cls950 = rt.Class{ASCII: [2]uint64{0x0, 0x80000000000}}
+var cls951 = rt.Class{ASCII: [2]uint64{0x0, 0x100000000000}}
+var cls952 = rt.Class{ASCII: [2]uint64{0x0, 0x80000000000000}}
+var cls953 = rt.Class{ASCII: [2]uint64{0x0, 0x200000000000000}}
+var term954Data = rt.TerminalProgram{Code: []uint16{3, 675, 0, 6, 8, 0, 50, 1, 4, 0, 50, 6, 8, 0, 51, 1, 4, 1, 51, 6, 8, 0, 202, 1, 4, 2, 202, 6, 8, 0, 212, 1, 4, 3, 212, 6, 8, 0, 114, 1, 4, 4, 114, 6, 8, 0, 43, 1, 4, 5, 43, 6, 8, 0, 13, 1, 4, 6, 13, 6, 8, 0, 38, 1, 4, 7, 38, 6, 8, 1, 206, 1, 4, 8, 206, 6, 8, 1, 208, 1, 4, 9, 208, 6, 8, 1, 26, 1, 4, 10, 26, 6, 8, 2, 64, 1, 4, 11, 64, 6, 8, 2, 67, 1, 4, 12, 67, 6, 8, 2, 40, 1, 4, 13, 40, 6, 8, 2, 101, 1, 4, 14, 101, 6, 8, 2, 46, 1, 4, 15, 46, 6, 8, 2, 25, 1, 4, 16, 25, 6, 8, 3, 32, 1, 4, 17, 32, 6, 8, 3, 45, 1, 4, 18, 45, 6, 8, 3, 12, 1, 4, 19, 12, 6, 8, 3, 73, 1, 4, 20, 73, 6, 8, 3, 175, 1, 4, 21, 175, 6, 8, 3, 23, 1, 4, 22, 23, 6, 8, 4, 60, 1, 4, 23, 60, 6, 8, 4, 14, 1, 4, 24, 14, 6, 8, 4, 9, 1, 4, 25, 9, 6, 8, 4, 84, 1, 4, 26, 84, 6, 8, 5, 92, 1, 4, 27, 92, 6, 8, 5, 66, 1, 4, 28, 66, 6, 8, 5, 41, 1, 4, 29, 41, 6, 8, 5, 108, 1, 4, 30, 108, 6, 8, 5, 39, 1, 4, 31, 39, 6, 8, 6, 96, 1, 4, 32, 96, 6, 8, 6, 17, 1, 4, 33, 17, 6, 8, 7, 22, 1, 4, 34, 22, 6, 8, 7, 83, 1, 4, 35, 83, 6, 8, 7, 7, 1, 4, 36, 7, 6, 8, 7, 200, 1, 4, 37, 200, 6, 8, 7, 161, 1, 4, 38, 161, 6, 8, 7, 44, 1, 4, 39, 44, 6, 8, 7, 106, 1, 4, 40, 106, 6, 8, 7, 62, 1, 4, 41, 62, 6, 8, 7, 197, 1, 4, 42, 197, 6, 8, 8, 198, 1, 4, 43, 198, 6, 8, 9, 36, 1, 4, 44, 36, 6, 8, 10, 16, 1, 4, 45, 16, 6, 8, 11, 15, 1, 4, 46, 15, 6, 8, 11, 210, 1, 4, 47, 210, 6, 8, 11, 93, 1, 4, 48, 93, 6, 8, 11, 90, 1, 4, 49, 90, 6, 8, 11, 205, 1, 4, 50, 205, 6, 8, 12, 211, 1, 4, 51, 211, 6, 8, 12, 61, 1, 4, 52, 61, 6, 8, 12, 98, 1, 4, 53, 98, 6, 8, 12, 99, 1, 4, 54, 99, 6, 8, 13, 222, 1, 4, 55, 222, 6, 8, 13, 47, 1, 4, 56, 47, 6, 8, 13, 48, 1, 4, 57, 48, 6, 8, 13, 49, 1, 4, 58, 49, 6, 8, 14, 53, 1, 4, 59, 53, 6, 8, 14, 107, 1, 4, 60, 107, 6, 8, 14, 27, 1, 4, 61, 27, 6, 8, 15, 172, 1, 4, 62, 172, 6, 8, 15, 97, 1, 4, 63, 97, 6, 8, 15, 52, 1, 4, 64, 52, 6, 8, 15, 204, 1, 4, 65, 204, 6, 8, 15, 89, 1, 4, 66, 89, 6, 8, 15, 29, 1, 4, 67, 29, 6, 8, 15, 207, 1, 4, 68, 207, 6, 8, 16, 82, 1, 4, 69, 82, 6, 8, 16, 30, 1, 4, 70, 30, 6, 8, 16, 91, 1, 4, 71, 91, 6, 8, 16, 31, 1, 4, 72, 31, 6, 8, 16, 176, 1, 4, 73, 176, 6, 8, 16, 10, 1, 4, 74, 10, 6, 8, 17, 209, 1, 4, 75, 209, 6, 8, 17, 199, 1, 4, 76, 199, 6, 8, 17, 203, 1, 4, 77, 203, 6, 8, 17, 37, 1, 4, 78, 37, 6, 8, 18, 35, 1, 4, 79, 35, 6, 8, 18, 177, 1, 4, 80, 177, 6, 8, 19, 24, 1, 4, 81, 24, 6, 8, 19, 28, 1, 4, 82, 28, 6, 8, 20, 120, 1, 4, 83, 120}, Classes: []*rt.Class{&cls910, &cls914, &cls944, &cls943, &cls945, &cls918, &cls948, &cls919, &cls950, &cls951, &cls942, &cls913, &cls915, &cls946, &cls947, &cls912, &cls917, &cls911, &cls916, &cls952, &cls953}, Literals: []rt.TerminalText{{Runes: lit61, Text: "abstract"}, {Runes: lit62, Text: "accessor"}, {Runes: lit522, Text: "any"}, {Runes: lit532, Text: "asserts"}, {Runes: lit251, Text: "assert"}, {Runes: lit54, Text: "async"}, {Runes: lit15, Text: "as"}, {Runes: lit32, Text: "await"}, {Runes: lit526, Text: "bigint"}, {Runes: lit528, Text: "boolean"}, {Runes: lit40, Text: "break"}, {Runes: lit105, Text: "case"}, {Runes: lit114, Text: "catch"}, {Runes: lit34, Text: "class"}, {Runes: lit204, Text: "constructor"}, {Runes: lit57, Text: "const"}, {Runes: lit39, Text: "continue"}, {Runes: lit46, Text: "debugger"}, {Runes: lit56, Text: "declare"}, {Runes: lit14, Text: "default"}, {Runes: lit128, Text: "defer"}, {Runes: lit382, Text: "delete"}, {Runes: lit36, Text: "do"}, {Runes: lit80, Text: "else"}, {Runes: lit16, Text: "enum"}, {Runes: lit11, Text: "export"}, {Runes: lit170, Text: "extends"}, {Runes: lit178, Text: "false"}, {Runes: lit112, Text: "finally"}, {Runes: lit38, Text: "for"}, {Runes: lit230, Text: "from"}, {Runes: lit33, Text: "function"}, {Runes: lit186, Text: "get"}, {Runes: lit19, Text: "global"}, {Runes: lit35, Text: "if"}, {Runes: lit166, Text: "implements"}, {Runes: lit10, Text: "import"}, {Runes: lit515, Text: "infer"}, {Runes: lit365, Text: "instanceof"}, {Runes: lit55, Text: "interface"}, {Runes: lit213, Text: "intrinsic"}, {Runes: lit88, Text: "in"}, {Runes: lit493, Text: "is"}, {Runes: lit513, Text: "keyof"}, {Runes: lit30, Text: "let"}, {Runes: lit18, Text: "module"}, {Runes: lit17, Text: "namespace"}, {Runes: lit530, Text: "never"}, {Runes: lit179, Text: "new"}, {Runes: lit176, Text: "null"}, {Runes: lit525, Text: "number"}, {Runes: lit531, Text: "object"}, {Runes: lit86, Text: "of"}, {Runes: lit189, Text: "out"}, {Runes: lit191, Text: "override"}, {Runes: lit627, Text: "package"}, {Runes: lit58, Text: "private"}, {Runes: lit59, Text: "protected"}, {Runes: lit60, Text: "public"}, {Runes: lit64, Text: "readonly"}, {Runes: lit228, Text: "require"}, {Runes: lit41, Text: "return"}, {Runes: lit378, Text: "satisfies"}, {Runes: lit187, Text: "set"}, {Runes: lit63, Text: "static"}, {Runes: lit524, Text: "string"}, {Runes: lit175, Text: "super"}, {Runes: lit43, Text: "switch"}, {Runes: lit527, Text: "symbol"}, {Runes: lit161, Text: "this"}, {Runes: lit44, Text: "throw"}, {Runes: lit177, Text: "true"}, {Runes: lit45, Text: "try"}, {Runes: lit383, Text: "typeof"}, {Runes: lit12, Text: "type"}, {Runes: lit529, Text: "undefined"}, {Runes: lit514, Text: "unique"}, {Runes: lit523, Text: "unknown"}, {Runes: lit31, Text: "using"}, {Runes: lit29, Text: "var"}, {Runes: lit384, Text: "void"}, {Runes: lit37, Text: "while"}, {Runes: lit42, Text: "with"}, {Runes: lit302, Text: "yield"}}}
+var term954 = term954Data.Prepare()
+var term955Data = rt.TerminalProgram{Code: []uint16{3, 187, 0, 6, 8, 0, 202, 1, 4, 0, 202, 6, 8, 1, 203, 1, 4, 1, 203, 6, 8, 2, 204, 1, 4, 2, 204, 6, 8, 3, 205, 1, 4, 3, 205, 6, 8, 4, 206, 1, 4, 4, 206, 6, 8, 4, 208, 1, 4, 5, 208, 6, 8, 5, 53, 1, 4, 6, 53, 6, 8, 2, 207, 1, 4, 7, 207, 6, 8, 1, 199, 1, 4, 8, 199, 6, 8, 6, 177, 1, 4, 9, 177, 6, 8, 1, 209, 1, 4, 10, 209, 6, 8, 3, 90, 1, 4, 11, 90, 6, 8, 7, 82, 1, 4, 12, 82, 6, 8, 7, 176, 1, 4, 13, 176, 6, 8, 3, 210, 1, 4, 14, 210, 6, 8, 7, 91, 1, 4, 15, 91, 6, 8, 8, 92, 1, 4, 16, 92, 6, 8, 9, 211, 1, 4, 17, 211, 6, 8, 3, 93, 1, 4, 18, 93, 6, 8, 10, 200, 1, 4, 19, 200, 6, 8, 10, 7, 1, 4, 20, 7, 6, 8, 0, 212, 1, 4, 21, 212, 6, 8, 8, 39, 1, 4, 22, 39}, Classes: []*rt.Class{&cls910, &cls911, &cls912, &cls913, &cls914, &cls947, &cls916, &cls917, &cls918, &cls915, &cls919}, Literals: []rt.TerminalText{{Runes: lit522, Text: "any"}, {Runes: lit523, Text: "unknown"}, {Runes: lit524, Text: "string"}, {Runes: lit525, Text: "number"}, {Runes: lit526, Text: "bigint"}, {Runes: lit528, Text: "boolean"}, {Runes: lit64, Text: "readonly"}, {Runes: lit527, Text: "symbol"}, {Runes: lit514, Text: "unique"}, {Runes: lit384, Text: "void"}, {Runes: lit529, Text: "undefined"}, {Runes: lit176, Text: "null"}, {Runes: lit161, Text: "this"}, {Runes: lit383, Text: "typeof"}, {Runes: lit530, Text: "never"}, {Runes: lit177, Text: "true"}, {Runes: lit178, Text: "false"}, {Runes: lit531, Text: "object"}, {Runes: lit179, Text: "new"}, {Runes: lit515, Text: "infer"}, {Runes: lit10, Text: "import"}, {Runes: lit532, Text: "asserts"}, {Runes: lit33, Text: "function"}}}
+var term955 = term955Data.Prepare()
+var cls956 = rt.Class{ASCII: [2]uint64{0x0, 0x1000000010}}
+var cls957 = rt.Class{ASCII: [2]uint64{0x300000000000000, 0x7e0000007e}}
+var steps958 = []rt.ClassStep{{C: &cls956, ID: 241}, {C: &cls957, ID: 238}}
+var cls959 = rt.Class{ASCII: [2]uint64{0x0, 0x400000004}}
+var cls960 = rt.Class{ASCII: [2]uint64{0x3000000000000, 0x0}}
+var steps961 = []rt.ClassStep{{C: &cls959, ID: 257}, {C: &cls960, ID: 258}}
+var cls962 = rt.Class{ASCII: [2]uint64{0x0, 0x800000008000}}
+var cls963 = rt.Class{ASCII: [2]uint64{0xff000000000000, 0x0}}
+var steps964 = []rt.ClassStep{{C: &cls962, ID: 259}, {C: &cls963, ID: 260}}
+var term965Data = rt.TerminalProgram{Code: []uint16{3, 147, 0, 6, 8, 0, 35, 1, 4, 0, 35, 6, 8, 1, 36, 1, 4, 1, 36, 6, 8, 2, 37, 1, 4, 2, 37, 6, 8, 3, 38, 1, 4, 3, 38, 6, 8, 4, 39, 1, 4, 4, 39, 6, 8, 5, 40, 1, 4, 5, 40, 6, 8, 6, 22, 1, 4, 6, 22, 6, 8, 7, 23, 1, 4, 7, 23, 6, 8, 8, 24, 1, 4, 8, 24, 6, 8, 4, 41, 1, 4, 9, 41, 6, 8, 5, 25, 1, 4, 10, 25, 6, 8, 9, 26, 1, 4, 11, 26, 6, 8, 10, 27, 1, 4, 12, 27, 6, 8, 8, 28, 1, 4, 13, 28, 6, 8, 11, 29, 1, 4, 14, 29, 6, 8, 12, 30, 1, 4, 15, 30, 6, 8, 12, 31, 1, 4, 16, 31, 6, 8, 7, 32, 1, 4, 17, 32}, Classes: []*rt.Class{&cls916, &cls951, &cls911, &cls910, &cls918, &cls944, &cls919, &cls943, &cls952, &cls914, &cls947, &cls912, &cls917}, Literals: []rt.TerminalText{{Runes: lit29, Text: "var"}, {Runes: lit30, Text: "let"}, {Runes: lit31, Text: "using"}, {Runes: lit32, Text: "await"}, {Runes: lit33, Text: "function"}, {Runes: lit34, Text: "class"}, {Runes: lit35, Text: "if"}, {Runes: lit36, Text: "do"}, {Runes: lit37, Text: "while"}, {Runes: lit38, Text: "for"}, {Runes: lit39, Text: "continue"}, {Runes: lit40, Text: "break"}, {Runes: lit41, Text: "return"}, {Runes: lit42, Text: "with"}, {Runes: lit43, Text: "switch"}, {Runes: lit44, Text: "throw"}, {Runes: lit45, Text: "try"}, {Runes: lit46, Text: "debugger"}}}
+var term965 = term965Data.Prepare()
+var cls968 = rt.Class{ASCII: [2]uint64{0x8000800000002400, 0x1000000000000000}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls970 = rt.Class{ASCII: [2]uint64{0x804000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls972 = rt.Class{ASCII: [2]uint64{0x800000002400, 0x1000000000000000}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls974 = rt.Class{ASCII: [2]uint64{0x800000002400, 0x40000000}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls977 = rt.Class{ASCII: [2]uint64{0x2000800200002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls979 = rt.Class{ASCII: [2]uint64{0x5000800000002400, 0x20000000000}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls983 = rt.Class{ASCII: [2]uint64{0x5000800000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls985 = rt.Class{ASCII: [2]uint64{0xa80000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls987 = rt.Class{ASCII: [2]uint64{0x842000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls989 = rt.Class{ASCII: [2]uint64{0x840000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls995 = rt.Class{ASCII: [2]uint64{0xc00000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls997 = rt.Class{ASCII: [2]uint64{0x8000800000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls999 = rt.Class{ASCII: [2]uint64{0x800000002400, 0x8000000}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls1002 = rt.Class{ASCII: [2]uint64{0x1000800000002400, 0x100000000}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls1006 = rt.Class{ASCII: [2]uint64{0x1000800000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls1008 = rt.Class{ASCII: [2]uint64{0x1000810000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
 
 func init() {
 	rules = rt.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])
@@ -5581,513 +4738,121 @@ func init() {
 	trules[0].Entry = u0
 
 	trules[209].OperatorsRule = &rt.TOperatorsRule{
-		Skip: e1416,
+		Skip: e966,
 		Operands: []*rt.TOperatorsRuleLine{
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1417, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e967, Action: nil, Value: sh23},
 		},
 		Prefix: []*rt.TOperatorsRuleOp{},
-		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "left", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1419, Action: func(c *rt.TActCtx) any {
-			return func() any {
-
-				return func() any {
-					f_1420 := func() any { ; return (c.Lhs) }()
-					f_1421 := func() any { ; return c.Cap(0) }()
-					f_1422 := func() any { ; return (c.Rhs) }()
-					return tmk_BinaryExpression(c, true, f_1420, f_1421, f_1422)
-				}()
-			}()
-		}, Value: sh5}},
-			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1424, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1425 := func() any { ; return (c.Lhs) }()
-						f_1426 := func() any { ; return c.Cap(0) }()
-						f_1427 := func() any { ; return (c.Rhs) }()
-						return tmk_BinaryExpression(c, true, f_1425, f_1426, f_1427)
-					}()
-				}()
-			}, Value: sh5}},
-			{Id: 2, Kind: "infix", Assoc: "left", Level: 3, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1429, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1430 := func() any { ; return (c.Lhs) }()
-						f_1431 := func() any { ; return c.Cap(0) }()
-						f_1432 := func() any { ; return (c.Rhs) }()
-						return tmk_BinaryExpression(c, true, f_1430, f_1431, f_1432)
-					}()
-				}()
-			}, Value: sh5}},
-			{Id: 3, Kind: "infix", Assoc: "left", Level: 4, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1434, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1435 := func() any { ; return (c.Lhs) }()
-						f_1436 := func() any { ; return c.Cap(0) }()
-						f_1437 := func() any { ; return (c.Rhs) }()
-						return tmk_BinaryExpression(c, true, f_1435, f_1436, f_1437)
-					}()
-				}()
-			}, Value: sh5}},
-			{Id: 4, Kind: "infix", Assoc: "left", Level: 5, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1438, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1439 := func() any { ; return (c.Lhs) }()
-						f_1440 := func() any { ; return c.Cap(0) }()
-						f_1441 := func() any { ; return (c.Rhs) }()
-						return tmk_BinaryExpression(c, true, f_1439, f_1440, f_1441)
-					}()
-				}()
-			}, Value: sh5}},
-			{Id: 5, Kind: "infix", Assoc: "left", Level: 6, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1443, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1444 := func() any { ; return (c.Lhs) }()
-						f_1445 := func() any { ; return c.Cap(0) }()
-						f_1446 := func() any { ; return (c.Rhs) }()
-						return tmk_BinaryExpression(c, true, f_1444, f_1445, f_1446)
-					}()
-				}()
-			}, Value: sh5}},
-			{Id: 6, Kind: "infix", Assoc: "left", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1448, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1449 := func() any { ; return (c.Lhs) }()
-						f_1450 := func() any { ; return c.Cap(0) }()
-						f_1451 := func() any { ; return (c.Rhs) }()
-						return tmk_BinaryExpression(c, true, f_1449, f_1450, f_1451)
-					}()
-				}()
-			}, Value: sh5}},
-			{Id: 7, Kind: "postfix", Assoc: "", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{"t"}, M: e1452, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1453 := func() any { ; return (c.Lhs) }()
-						f_1454 := func() any { ; return c.Cap(0) }()
-						return tmk_AsExpression(c, true, f_1453, f_1454)
-					}()
-				}()
-			}, Value: sh13}},
-			{Id: 8, Kind: "postfix", Assoc: "", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{"t"}, M: e1455, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1456 := func() any { ; return (c.Lhs) }()
-						f_1457 := func() any { ; return c.Cap(0) }()
-						return tmk_SatisfiesExpression(c, true, f_1456, f_1457)
-					}()
-				}()
-			}, Value: sh13}},
-			{Id: 9, Kind: "infix", Assoc: "left", Level: 8, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1459, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1460 := func() any { ; return (c.Lhs) }()
-						f_1461 := func() any { ; return c.Cap(0) }()
-						f_1462 := func() any { ; return (c.Rhs) }()
-						return tmk_BinaryExpression(c, true, f_1460, f_1461, f_1462)
-					}()
-				}()
-			}, Value: sh5}},
-			{Id: 10, Kind: "infix", Assoc: "left", Level: 9, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1464, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1465 := func() any { ; return (c.Lhs) }()
-						f_1466 := func() any { ; return c.Cap(0) }()
-						f_1467 := func() any { ; return (c.Rhs) }()
-						return tmk_BinaryExpression(c, true, f_1465, f_1466, f_1467)
-					}()
-				}()
-			}, Value: sh5}},
-			{Id: 11, Kind: "infix", Assoc: "left", Level: 10, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1469, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1470 := func() any { ; return (c.Lhs) }()
-						f_1471 := func() any { ; return c.Cap(0) }()
-						f_1472 := func() any { ; return (c.Rhs) }()
-						return tmk_BinaryExpression(c, true, f_1470, f_1471, f_1472)
-					}()
-				}()
-			}, Value: sh5}},
-			{Id: 12, Kind: "infix", Assoc: "right", Level: 11, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1474, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1475 := func() any { ; return (c.Lhs) }()
-						f_1476 := func() any { ; return c.Cap(0) }()
-						f_1477 := func() any { ; return (c.Rhs) }()
-						return tmk_BinaryExpression(c, true, f_1475, f_1476, f_1477)
-					}()
-				}()
-			}, Value: sh5}}},
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "left", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e969, Action: func(c *rt.TActCtx) any { return tmk_BinaryExpression(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh5}},
+			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e971, Action: func(c *rt.TActCtx) any { return tmk_BinaryExpression(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh5}},
+			{Id: 2, Kind: "infix", Assoc: "left", Level: 3, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e973, Action: func(c *rt.TActCtx) any { return tmk_BinaryExpression(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh5}},
+			{Id: 3, Kind: "infix", Assoc: "left", Level: 4, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e975, Action: func(c *rt.TActCtx) any { return tmk_BinaryExpression(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh5}},
+			{Id: 4, Kind: "infix", Assoc: "left", Level: 5, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e976, Action: func(c *rt.TActCtx) any { return tmk_BinaryExpression(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh5}},
+			{Id: 5, Kind: "infix", Assoc: "left", Level: 6, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e978, Action: func(c *rt.TActCtx) any { return tmk_BinaryExpression(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh5}},
+			{Id: 6, Kind: "infix", Assoc: "left", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e980, Action: func(c *rt.TActCtx) any { return tmk_BinaryExpression(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh5}},
+			{Id: 7, Kind: "postfix", Assoc: "", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{"t"}, M: e981, Action: func(c *rt.TActCtx) any { return tmk_AsExpression(c, true, (c.Lhs), c.Cap(0)) }, Value: sh13}},
+			{Id: 8, Kind: "postfix", Assoc: "", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{"t"}, M: e982, Action: func(c *rt.TActCtx) any { return tmk_SatisfiesExpression(c, true, (c.Lhs), c.Cap(0)) }, Value: sh13}},
+			{Id: 9, Kind: "infix", Assoc: "left", Level: 8, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e984, Action: func(c *rt.TActCtx) any { return tmk_BinaryExpression(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh5}},
+			{Id: 10, Kind: "infix", Assoc: "left", Level: 9, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e986, Action: func(c *rt.TActCtx) any { return tmk_BinaryExpression(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh5}},
+			{Id: 11, Kind: "infix", Assoc: "left", Level: 10, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e988, Action: func(c *rt.TActCtx) any { return tmk_BinaryExpression(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh5}},
+			{Id: 12, Kind: "infix", Assoc: "right", Level: 11, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e990, Action: func(c *rt.TActCtx) any { return tmk_BinaryExpression(c, true, (c.Lhs), c.Cap(0), (c.Rhs)) }, Value: sh5}}},
 	}
 	trules[209].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[209], min) }
 
 	trules[236].OperatorsRule = &rt.TOperatorsRule{
-		Skip: e1416,
+		Skip: e966,
 		Operands: []*rt.TOperatorsRuleLine{
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1478, Action: nil, Value: sh23},
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1479, Action: nil, Value: sh23},
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1480, Action: nil, Value: sh23},
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1481, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e991, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e992, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e993, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e994, Action: nil, Value: sh23},
 		},
 		Prefix: []*rt.TOperatorsRuleOp{},
-		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n"}, M: e1483, Action: func(c *rt.TActCtx) any {
-			return func() any {
-
-				return func() any {
-					f_1484 := func() any { ; return (c.Lhs) }()
-					f_1485 := func() any { ; return c.Cap(0) }()
-					return tmk_PropertyAccessExpression(c, true, f_1484, nil, f_1485)
-				}()
-			}()
-		}, Value: sh13}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "n"}, M: e1487, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1488 := func() any { ; return (c.Lhs) }()
-						f_1489 := func() any { ; return c.Cap(0) }()
-						f_1490 := func() any { ; return c.Cap(1) }()
-						return tmk_PropertyAccessExpression(c, true, f_1488, f_1489, f_1490)
-					}()
-				}()
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n"}, M: e996, Action: func(c *rt.TActCtx) any { return tmk_PropertyAccessExpression(c, true, (c.Lhs), nil, c.Cap(0)) }, Value: sh13}},
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "n"}, M: e998, Action: func(c *rt.TActCtx) any { return tmk_PropertyAccessExpression(c, true, (c.Lhs), c.Cap(0), c.Cap(1)) }, Value: sh13}},
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"e"}, M: e1000, Action: func(c *rt.TActCtx) any { return tmk_ElementAccessExpression(c, true, (c.Lhs), nil, c.Cap(0)) }, Value: sh74}},
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "e"}, M: e1001, Action: func(c *rt.TActCtx) any { return tmk_ElementAccessExpression(c, true, (c.Lhs), c.Cap(0), c.Cap(1)) }, Value: sh327}},
+			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t", "l"}, M: e1003, Action: func(c *rt.TActCtx) any {
+				return tmk_TaggedTemplateExpression(c, true, (c.Lhs), nil, c.Concat(c.Cap(0)), c.Cap(1))
 			}, Value: sh13}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"e"}, M: e1492, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1493 := func() any { ; return (c.Lhs) }()
-						f_1494 := func() any { ; return c.Cap(0) }()
-						return tmk_ElementAccessExpression(c, true, f_1493, nil, f_1494)
-					}()
-				}()
+			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "t", "l"}, M: e1004, Action: func(c *rt.TActCtx) any {
+				return tmk_TaggedTemplateExpression(c, true, (c.Lhs), c.Cap(0), c.Concat(c.Cap(1)), c.Cap(2))
 			}, Value: sh74}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "e"}, M: e1495, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1496 := func() any { ; return (c.Lhs) }()
-						f_1497 := func() any { ; return c.Cap(0) }()
-						f_1498 := func() any { ; return c.Cap(1) }()
-						return tmk_ElementAccessExpression(c, true, f_1496, f_1497, f_1498)
-					}()
-				}()
-			}, Value: sh327}},
-			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t", "l"}, M: e1500, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1501 := func() any { ; return (c.Lhs) }()
-						f_1502 := func() any { ; return c.Concat(func() any { ; return c.Cap(0) }()) }()
-						f_1503 := func() any { ; return c.Cap(1) }()
-						return tmk_TaggedTemplateExpression(c, true, f_1501, nil, f_1502, f_1503)
-					}()
-				}()
+			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1005, Action: func(c *rt.TActCtx) any { return tmk_NonNullExpression(c, true, (c.Lhs)) }, Value: sh5}},
+			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t"}, M: e1007, Action: func(c *rt.TActCtx) any { return tmk_ExpressionWithTypeArguments(c, true, (c.Lhs), c.Cap(0)) }, Value: sh5}},
+			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t", "a"}, M: e1009, Action: func(c *rt.TActCtx) any {
+				return tmk_CallExpression(c, true, (c.Lhs), nil, c.Concat(c.Cap(0)), c.Cap(1))
 			}, Value: sh13}},
-			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "t", "l"}, M: e1504, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1505 := func() any { ; return (c.Lhs) }()
-						f_1506 := func() any { ; return c.Cap(0) }()
-						f_1507 := func() any { ; return c.Concat(func() any { ; return c.Cap(1) }()) }()
-						f_1508 := func() any { ; return c.Cap(2) }()
-						return tmk_TaggedTemplateExpression(c, true, f_1505, f_1506, f_1507, f_1508)
-					}()
-				}()
-			}, Value: sh74}},
-			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1509, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1510 := func() any { ; return (c.Lhs) }()
-						return tmk_NonNullExpression(c, true, f_1510)
-					}()
-				}()
-			}, Value: sh5}},
-			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t"}, M: e1512, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1513 := func() any { ; return (c.Lhs) }()
-						f_1514 := func() any { ; return c.Cap(0) }()
-						return tmk_ExpressionWithTypeArguments(c, true, f_1513, f_1514)
-					}()
-				}()
-			}, Value: sh5}},
-			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t", "a"}, M: e1516, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1517 := func() any { ; return (c.Lhs) }()
-						f_1518 := func() any { ; return c.Concat(func() any { ; return c.Cap(0) }()) }()
-						f_1519 := func() any { ; return c.Cap(1) }()
-						return tmk_CallExpression(c, true, f_1517, nil, f_1518, f_1519)
-					}()
-				}()
-			}, Value: sh13}},
-			{Id: 9, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "t", "a"}, M: e1520, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1521 := func() any { ; return (c.Lhs) }()
-						f_1522 := func() any { ; return c.Cap(0) }()
-						f_1523 := func() any { ; return c.Concat(func() any { ; return c.Cap(1) }()) }()
-						f_1524 := func() any { ; return c.Cap(2) }()
-						return tmk_CallExpression(c, true, f_1521, f_1522, f_1523, f_1524)
-					}()
-				}()
+			{Id: 9, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "t", "a"}, M: e1010, Action: func(c *rt.TActCtx) any {
+				return tmk_CallExpression(c, true, (c.Lhs), c.Cap(0), c.Concat(c.Cap(1)), c.Cap(2))
 			}, Value: sh74}}},
 	}
 	trules[236].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[236], min) }
 	trules[237].OperatorsRule = &rt.TOperatorsRule{
-		Skip: e1416,
+		Skip: e966,
 		Operands: []*rt.TOperatorsRuleLine{
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1478, Action: nil, Value: sh23},
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1479, Action: nil, Value: sh23},
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1480, Action: nil, Value: sh23},
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1481, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e991, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e992, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e993, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e994, Action: nil, Value: sh23},
 		},
 		Prefix: []*rt.TOperatorsRuleOp{},
-		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n"}, M: e1483, Action: func(c *rt.TActCtx) any {
-			return func() any {
-
-				return func() any {
-					f_1525 := func() any { ; return (c.Lhs) }()
-					f_1526 := func() any { ; return c.Cap(0) }()
-					return tmk_PropertyAccessExpression(c, true, f_1525, nil, f_1526)
-				}()
-			}()
-		}, Value: sh13}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "n"}, M: e1487, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1527 := func() any { ; return (c.Lhs) }()
-						f_1528 := func() any { ; return c.Cap(0) }()
-						f_1529 := func() any { ; return c.Cap(1) }()
-						return tmk_PropertyAccessExpression(c, true, f_1527, f_1528, f_1529)
-					}()
-				}()
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n"}, M: e996, Action: func(c *rt.TActCtx) any { return tmk_PropertyAccessExpression(c, true, (c.Lhs), nil, c.Cap(0)) }, Value: sh13}},
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "n"}, M: e998, Action: func(c *rt.TActCtx) any { return tmk_PropertyAccessExpression(c, true, (c.Lhs), c.Cap(0), c.Cap(1)) }, Value: sh13}},
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"e"}, M: e1000, Action: func(c *rt.TActCtx) any { return tmk_ElementAccessExpression(c, true, (c.Lhs), nil, c.Cap(0)) }, Value: sh74}},
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "e"}, M: e1001, Action: func(c *rt.TActCtx) any { return tmk_ElementAccessExpression(c, true, (c.Lhs), c.Cap(0), c.Cap(1)) }, Value: sh327}},
+			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t", "l"}, M: e1003, Action: func(c *rt.TActCtx) any {
+				return tmk_TaggedTemplateExpression(c, true, (c.Lhs), nil, c.Concat(c.Cap(0)), c.Cap(1))
 			}, Value: sh13}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"e"}, M: e1492, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1530 := func() any { ; return (c.Lhs) }()
-						f_1531 := func() any { ; return c.Cap(0) }()
-						return tmk_ElementAccessExpression(c, true, f_1530, nil, f_1531)
-					}()
-				}()
+			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "t", "l"}, M: e1004, Action: func(c *rt.TActCtx) any {
+				return tmk_TaggedTemplateExpression(c, true, (c.Lhs), c.Cap(0), c.Concat(c.Cap(1)), c.Cap(2))
 			}, Value: sh74}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "e"}, M: e1495, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1532 := func() any { ; return (c.Lhs) }()
-						f_1533 := func() any { ; return c.Cap(0) }()
-						f_1534 := func() any { ; return c.Cap(1) }()
-						return tmk_ElementAccessExpression(c, true, f_1532, f_1533, f_1534)
-					}()
-				}()
-			}, Value: sh327}},
-			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t", "l"}, M: e1500, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1535 := func() any { ; return (c.Lhs) }()
-						f_1536 := func() any { ; return c.Concat(func() any { ; return c.Cap(0) }()) }()
-						f_1537 := func() any { ; return c.Cap(1) }()
-						return tmk_TaggedTemplateExpression(c, true, f_1535, nil, f_1536, f_1537)
-					}()
-				}()
+			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1005, Action: func(c *rt.TActCtx) any { return tmk_NonNullExpression(c, true, (c.Lhs)) }, Value: sh5}},
+			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t", "a"}, M: e1009, Action: func(c *rt.TActCtx) any {
+				return tmk_CallExpression(c, true, (c.Lhs), nil, c.Concat(c.Cap(0)), c.Cap(1))
 			}, Value: sh13}},
-			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "t", "l"}, M: e1504, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1538 := func() any { ; return (c.Lhs) }()
-						f_1539 := func() any { ; return c.Cap(0) }()
-						f_1540 := func() any { ; return c.Concat(func() any { ; return c.Cap(1) }()) }()
-						f_1541 := func() any { ; return c.Cap(2) }()
-						return tmk_TaggedTemplateExpression(c, true, f_1538, f_1539, f_1540, f_1541)
-					}()
-				}()
-			}, Value: sh74}},
-			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1509, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1542 := func() any { ; return (c.Lhs) }()
-						return tmk_NonNullExpression(c, true, f_1542)
-					}()
-				}()
-			}, Value: sh5}},
-			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t", "a"}, M: e1516, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1543 := func() any { ; return (c.Lhs) }()
-						f_1544 := func() any { ; return c.Concat(func() any { ; return c.Cap(0) }()) }()
-						f_1545 := func() any { ; return c.Cap(1) }()
-						return tmk_CallExpression(c, true, f_1543, nil, f_1544, f_1545)
-					}()
-				}()
-			}, Value: sh13}},
-			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "t", "a"}, M: e1520, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1546 := func() any { ; return (c.Lhs) }()
-						f_1547 := func() any { ; return c.Cap(0) }()
-						f_1548 := func() any { ; return c.Concat(func() any { ; return c.Cap(1) }()) }()
-						f_1549 := func() any { ; return c.Cap(2) }()
-						return tmk_CallExpression(c, true, f_1546, f_1547, f_1548, f_1549)
-					}()
-				}()
+			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "t", "a"}, M: e1010, Action: func(c *rt.TActCtx) any {
+				return tmk_CallExpression(c, true, (c.Lhs), c.Cap(0), c.Concat(c.Cap(1)), c.Cap(2))
 			}, Value: sh74}}},
 	}
 	trules[237].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[237], min) }
 	trules[238].OperatorsRule = &rt.TOperatorsRule{
-		Skip: e1416,
+		Skip: e966,
 		Operands: []*rt.TOperatorsRuleLine{
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1478, Action: nil, Value: sh23},
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1550, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e991, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1011, Action: nil, Value: sh23},
 		},
 		Prefix: []*rt.TOperatorsRuleOp{},
-		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n"}, M: e1483, Action: func(c *rt.TActCtx) any {
-			return func() any {
-
-				return func() any {
-					f_1551 := func() any { ; return (c.Lhs) }()
-					f_1552 := func() any { ; return c.Cap(0) }()
-					return tmk_PropertyAccessExpression(c, true, f_1551, nil, f_1552)
-				}()
-			}()
-		}, Value: sh13}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"e"}, M: e1492, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1553 := func() any { ; return (c.Lhs) }()
-						f_1554 := func() any { ; return c.Cap(0) }()
-						return tmk_ElementAccessExpression(c, true, f_1553, nil, f_1554)
-					}()
-				}()
-			}, Value: sh74}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t", "l"}, M: e1500, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1555 := func() any { ; return (c.Lhs) }()
-						f_1556 := func() any { ; return c.Concat(func() any { ; return c.Cap(0) }()) }()
-						f_1557 := func() any { ; return c.Cap(1) }()
-						return tmk_TaggedTemplateExpression(c, true, f_1555, nil, f_1556, f_1557)
-					}()
-				}()
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n"}, M: e996, Action: func(c *rt.TActCtx) any { return tmk_PropertyAccessExpression(c, true, (c.Lhs), nil, c.Cap(0)) }, Value: sh13}},
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"e"}, M: e1000, Action: func(c *rt.TActCtx) any { return tmk_ElementAccessExpression(c, true, (c.Lhs), nil, c.Cap(0)) }, Value: sh74}},
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t", "l"}, M: e1003, Action: func(c *rt.TActCtx) any {
+				return tmk_TaggedTemplateExpression(c, true, (c.Lhs), nil, c.Concat(c.Cap(0)), c.Cap(1))
 			}, Value: sh13}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1509, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1558 := func() any { ; return (c.Lhs) }()
-						return tmk_NonNullExpression(c, true, f_1558)
-					}()
-				}()
-			}, Value: sh5}}},
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1005, Action: func(c *rt.TActCtx) any { return tmk_NonNullExpression(c, true, (c.Lhs)) }, Value: sh5}}},
 	}
 	trules[238].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[238], min) }
 
 	trules[338].OperatorsRule = &rt.TOperatorsRule{
-		Skip: e1416,
+		Skip: e966,
 		Operands: []*rt.TOperatorsRuleLine{
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1559, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1012, Action: nil, Value: sh23},
 		},
 		Prefix: []*rt.TOperatorsRuleOp{},
-		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1560, Action: func(c *rt.TActCtx) any {
-			return func() any {
-
-				return func() any {
-					f_1561 := func() any { ; return (c.Lhs) }()
-					return tmk_ArrayType(c, true, f_1561)
-				}()
-			}()
-		}, Value: sh13}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"i"}, M: e1562, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1563 := func() any { ; return (c.Lhs) }()
-						f_1564 := func() any { ; return c.Cap(0) }()
-						return tmk_IndexedAccessType(c, true, f_1563, f_1564)
-					}()
-				}()
-			}, Value: sh74}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1565, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1566 := func() any { ; return (c.Lhs) }()
-						f_1567 := func() any { ; return any(true) }()
-						return tmk_JSDocNonNullableType(c, true, f_1566, f_1567)
-					}()
-				}()
-			}, Value: sh5}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1568, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1569 := func() any { ; return (c.Lhs) }()
-						f_1570 := func() any { ; return any(true) }()
-						return tmk_JSDocNullableType(c, true, f_1569, f_1570)
-					}()
-				}()
-			}, Value: sh5}}},
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1013, Action: func(c *rt.TActCtx) any { return tmk_ArrayType(c, true, (c.Lhs)) }, Value: sh13}},
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"i"}, M: e1014, Action: func(c *rt.TActCtx) any { return tmk_IndexedAccessType(c, true, (c.Lhs), c.Cap(0)) }, Value: sh74}},
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1015, Action: func(c *rt.TActCtx) any { return tmk_JSDocNonNullableType(c, true, (c.Lhs), any(true)) }, Value: sh5}},
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1016, Action: func(c *rt.TActCtx) any { return tmk_JSDocNullableType(c, true, (c.Lhs), any(true)) }, Value: sh5}}},
 	}
 	trules[338].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[338], min) }
 	trules[339].OperatorsRule = &rt.TOperatorsRule{
-		Skip: e1416,
+		Skip: e966,
 		Operands: []*rt.TOperatorsRuleLine{
-			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1559, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1012, Action: nil, Value: sh23},
 		},
 		Prefix: []*rt.TOperatorsRuleOp{},
-		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1560, Action: func(c *rt.TActCtx) any {
-			return func() any {
-
-				return func() any {
-					f_1571 := func() any { ; return (c.Lhs) }()
-					return tmk_ArrayType(c, true, f_1571)
-				}()
-			}()
-		}, Value: sh13}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"i"}, M: e1562, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1572 := func() any { ; return (c.Lhs) }()
-						f_1573 := func() any { ; return c.Cap(0) }()
-						return tmk_IndexedAccessType(c, true, f_1572, f_1573)
-					}()
-				}()
-			}, Value: sh74}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1565, Action: func(c *rt.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1574 := func() any { ; return (c.Lhs) }()
-						f_1575 := func() any { ; return any(true) }()
-						return tmk_JSDocNonNullableType(c, true, f_1574, f_1575)
-					}()
-				}()
-			}, Value: sh5}}},
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1013, Action: func(c *rt.TActCtx) any { return tmk_ArrayType(c, true, (c.Lhs)) }, Value: sh13}},
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"i"}, M: e1014, Action: func(c *rt.TActCtx) any { return tmk_IndexedAccessType(c, true, (c.Lhs), c.Cap(0)) }, Value: sh74}},
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1015, Action: func(c *rt.TActCtx) any { return tmk_JSDocNonNullableType(c, true, (c.Lhs), any(true)) }, Value: sh5}}},
 	}
 	trules[339].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[339], min) }
 
@@ -6107,7 +4872,7 @@ func u0(p *rt.TParser) (any, bool) {
 }
 
 func i0(p *rt.TParser) (any, bool) {
-	var start, x1, x9, x14 int
+	var start, x1, x9 int
 	var v, k13, v15 any
 	var c *rt.TActCtx
 	var prevEnv, x2, x10 *rt.Env
@@ -6116,7 +4881,6 @@ func i0(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x14
 	x1 = p.Pos
 	x2 = p.Env
 	x4, _, x5 = p.NextOrdinary()
@@ -6129,7 +4893,7 @@ func i0(p *rt.TParser) (any, bool) {
 	} else if _, ok = p.Parser.MatchLiteral(lit1, "\x00", 5, false); !ok {
 		goto L7
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any { return func() any { return any(64) }() }) {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any { return any(64) }) {
 		goto L7
 	}
 	goto L3
@@ -6137,8 +4901,7 @@ L7:
 	p.Pos = x1
 	p.Env = x2
 L6:
-
-	if !p.Bind("ctx", func(c *rt.TActCtx) any { return func() any { return any(0) }() }) {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any { return any(0) }) {
 		goto L8
 	}
 	goto L3
@@ -6147,7 +4910,6 @@ L8:
 	p.Env = x2
 	goto fail
 L3:
-
 	x9 = p.Pos
 	x10 = p.Env
 	if p.Pos < len(p.In) && p.In[p.Pos] == 1 {
@@ -6155,11 +4917,7 @@ L3:
 	} else if _, ok = p.Parser.MatchLiteral(lit2, "\x01", 6, false); !ok {
 		goto L11
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("+", func() any { return c.Lookup("ctx") }(), func() any { return any(2) }())
-		}()
-	}) {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any { return c.Binary("+", c.Lookup("ctx"), any(2)) }) {
 		goto L11
 	}
 	goto L12
@@ -6167,15 +4925,13 @@ L11:
 	p.Pos = x9
 	p.Env = x10
 L12:
-
-	x14 = p.Pos
 	if v15, ok = u1(p); !ok {
 		goto fail
 	}
 	k13 = v15
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "main"
-	v = func() any { return k13 }()
+	v = k13
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -6197,14 +4953,13 @@ func u1(p *rt.TParser) (any, bool) {
 }
 
 func i1(p *rt.TParser) (any, bool) {
-	var start, x1, x5, x6, x7, x8, x9, x12, x14, x21 int
+	var start, x1, x6, x7, x9, x12 int
 	var v, k4, k10, v15, v16, v17, v18, v19, k20, v22 any
 	var c *rt.TActCtx
 	var ok bool
 	var x13 []any
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x5, x8, x14, x21
 	x1 = p.Pos
 	if _, ok = s479(p); !ok {
 		goto L2
@@ -6213,19 +4968,15 @@ func i1(p *rt.TParser) (any, bool) {
 L2:
 	p.Pos = x1
 L3:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x5 = p.Pos
 	x6, x7 = p.Pos, len(p.KidStack)
-	x8 = 0
 	for {
 		x9 = p.Pos
 		k10 = nil
 		x12 = p.Pos
 		x13 = p.NewVals(1)[:0]
-		x14 = p.Pos
 		if v15, ok = s2(p); !ok {
 			goto L11
 		}
@@ -6237,7 +4988,6 @@ L3:
 		v16 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
 		v17 = p.ScopeValue(sh5, v16, x9)
 		v18 = p.AttachCaptures(v17, scope836, []any{k10}, x9, p.Pos)
-		x8++
 		p.PushKid(v18)
 		if p.Pos == x9 {
 			break
@@ -6249,24 +4999,13 @@ L3:
 	}
 	v19 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v19
-	x21 = p.Pos
 	if v22, ok = s6(p); !ok {
 		goto fail
 	}
 	k20 = v22
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "sourceFile"
-	v = func() any {
-		return func() any {
-			f_837 := func() any {
-				return c.MapList(func() any { return k4 }(), func(l_838 any) any {
-					return func() any { return c.Member(func() any { return l_838 }(), "$s") }()
-				})
-			}()
-			f_839 := func() any { return k20 }()
-			return tmk_SourceFile(c, true, f_837, f_839)
-		}()
-	}()
+	v = tmk_SourceFile(c, true, c.MapList(k4, func(l_837 any) any { return c.Member((l_837), "$s") }), k20)
 	p.Depth--
 	return v, true
 fail:
@@ -6320,23 +5059,16 @@ func u3(p *rt.TParser) (any, bool) {
 }
 
 func i3(p *rt.TParser) (any, bool) {
-	var start, x1, x4 int
+	var start, x1 int
 	var v, k3, v5 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	x1 = p.Pos
 	p.Silent++
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any {
-					return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(2) }())
-				}(), func() any { return any(2) }())
-			}(), func() any { return any(1) }())
-		}()
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(2)), any(2)), any(1))
 	}) {
 		goto L2
 	}
@@ -6349,14 +5081,13 @@ func i3(p *rt.TParser) (any, bool) {
 L2:
 	p.Silent--
 	p.Pos = x1
-	x4 = p.Pos
 	if v5, ok = u8(p); !ok {
 		goto fail
 	}
 	k3 = v5
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "otherTopLevelStatement"
-	v = func() any { return k3 }()
+	v = k3
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -6376,7 +5107,7 @@ func u4(p *rt.TParser) (any, bool) {
 }
 
 func i4(p *rt.TParser) (any, bool) {
-	var start, x1, x5 int
+	var start, x1 int
 	var v, k4, v6 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -6384,15 +5115,8 @@ func i4(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x5
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any {
-					return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(2) }())
-				}(), func() any { return any(2) }())
-			}(), func() any { return any(1) }())
-		}()
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(2)), any(2)), any(1))
 	}) {
 		goto fail
 	}
@@ -6409,22 +5133,16 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any { return any(2) }())
-		}()
-	}) {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any { return c.Binary("-", c.Lookup("ctx"), any(2)) }) {
 		goto fail
 	}
-	x5 = p.Pos
 	if v6, ok = u8(p); !ok {
 		goto fail
 	}
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "awaitFreeTopLevelStatement"
-	v = func() any { return k4 }()
+	v = k4
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -6474,13 +5192,12 @@ func u8(p *rt.TParser) (any, bool) {
 }
 
 func i8(p *rt.TParser) (any, bool) {
-	var start, x1, x6, x9, x12, x14 int
+	var start, x1, x6, x12 int
 	var v, k2, x3, v10, v15 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x9, x14
 	x1 = p.Pos
 	x3 = k2
 	x6 = p.Pos
@@ -6496,8 +5213,6 @@ L7:
 	p.Pos = x6
 	goto L5
 L8:
-
-	x9 = p.Pos
 	if v10, ok = s9(p); !ok {
 		goto L5
 	}
@@ -6517,7 +5232,6 @@ L5:
 L13:
 	p.Silent--
 	p.Pos = x12
-	x14 = p.Pos
 	if v15, ok = u12(p); !ok {
 		goto L11
 	}
@@ -6530,7 +5244,7 @@ L11:
 L4:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "statement"
-	v = func() any { return k2 }()
+	v = k2
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -6572,7 +5286,6 @@ L6:
 L10:
 	p.Pos = x1
 L9:
-
 	if v13, ok = u20(p); !ok {
 		goto L12
 	}
@@ -6630,7 +5343,6 @@ L21:
 L25:
 	p.Pos = x1
 L24:
-
 	if v28, ok = s28(p); !ok {
 		goto L27
 	}
@@ -6734,7 +5446,6 @@ L47:
 L51:
 	p.Pos = x1
 L50:
-
 	if v54, ok = u15(p); !ok {
 		goto L53
 	}
@@ -6781,14 +5492,12 @@ func u12(p *rt.TParser) (any, bool) {
 }
 
 func i12(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v7, v9 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u51(p); !ok {
 		goto L6
@@ -6809,7 +5518,7 @@ L5:
 	k1 = v4
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "plainStatement"
-	v = func() any { return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -6829,13 +5538,12 @@ func u13(p *rt.TParser) (any, bool) {
 }
 
 func i13(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x7 int
+	var start, x1, x4 int
 	var v, k6, v8 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x7
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = p.Parser.MatchLiteral(lit33, "function", 39, false); !ok {
@@ -6860,15 +5568,13 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x7 = p.Pos
 	if v8, ok = u76(p); !ok {
 		goto fail
 	}
 	k6 = v8
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "plainFunctionDeclaration"
-	v = func() any { return k6 }()
+	v = k6
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -6888,13 +5594,12 @@ func u14(p *rt.TParser) (any, bool) {
 }
 
 func i14(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x7 int
+	var start, x1, x4 int
 	var v, k6, v8 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x7
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = p.Parser.MatchLiteral(lit34, "class", 40, false); !ok {
@@ -6919,15 +5624,13 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x7 = p.Pos
 	if v8, ok = u86(p); !ok {
 		goto fail
 	}
 	k6 = v8
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "plainClassDeclaration"
-	v = func() any { return k6 }()
+	v = k6
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -6947,13 +5650,12 @@ func u15(p *rt.TParser) (any, bool) {
 }
 
 func i15(p *rt.TParser) (any, bool) {
-	var start, x1, x5 int
+	var start, x1 int
 	var v, k4, v6 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x5
 	x1 = p.Pos
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 64 {
@@ -6969,15 +5671,13 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x5 = p.Pos
 	if v6, ok = u59(p); !ok {
 		goto fail
 	}
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "decoratedDeclaration"
-	v = func() any { return k4 }()
+	v = k4
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -6997,13 +5697,12 @@ func u16(p *rt.TParser) (any, bool) {
 }
 
 func i16(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x6, x10 int
+	var start, x1, x4, x6 int
 	var v, k9, v11 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x10
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = s484(p); !ok {
@@ -7028,7 +5727,6 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
 	x6 = p.Pos
 	p.Silent++
 	if _, ok = u485(p); !ok {
@@ -7042,15 +5740,13 @@ L7:
 	p.Pos = x6
 	goto fail
 L8:
-
-	x10 = p.Pos
 	if v11, ok = u59(p); !ok {
 		goto fail
 	}
 	k9 = v11
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "contextualDeclaration"
-	v = func() any { return k9 }()
+	v = k9
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -7073,7 +5769,7 @@ func u18(p *rt.TParser) (any, bool) {
 }
 
 func i18(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x4, x5, x6, x9, x11, x17, x19, size int
+	var start, x3, x4, x6, x9, x17, x19, size int
 	var v, k1, k7, v12, v13, v14, v15, v16 any
 	var c *rt.TActCtx
 	var ok bool
@@ -7081,7 +5777,6 @@ func i18(p *rt.TParser) (any, bool) {
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x5, x11
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "{", 20, false); !ok {
@@ -7090,15 +5785,12 @@ func i18(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	x3, x4 = p.Pos, len(p.KidStack)
-	x5 = 0
 	for {
 		x6 = p.Pos
 		k7 = nil
 		x9 = p.Pos
 		x10 = p.NewVals(1)[:0]
-		x11 = p.Pos
 		if v12, ok = u8(p); !ok {
 			goto L8
 		}
@@ -7109,8 +5801,7 @@ func i18(p *rt.TParser) (any, bool) {
 		}
 		v13 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
 		v14 = p.ScopeValue(sh5, v13, x6)
-		v15 = p.AttachCaptures(v14, scope841, []any{k7}, x6, p.Pos)
-		x5++
+		v15 = p.AttachCaptures(v14, scope839, []any{k7}, x6, p.Pos)
 		p.PushKid(v15)
 		if p.Pos == x6 {
 			break
@@ -7159,16 +5850,7 @@ L18:
 	p.Pos = x17
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "block"
-	v = func() any {
-		return func() any {
-			f_842 := func() any {
-				return c.MapList(func() any { return k1 }(), func(l_843 any) any {
-					return func() any { return c.Member(func() any { return l_843 }(), "$s") }()
-				})
-			}()
-			return tmk_Block(c, true, f_842)
-		}()
-	}()
+	v = tmk_Block(c, true, c.MapList(k1, func(l_840 any) any { return c.Member((l_840), "$s") }))
 	p.Depth--
 	return v, true
 fail:
@@ -7214,13 +5896,12 @@ func u20(p *rt.TParser) (any, bool) {
 }
 
 func i20(p *rt.TParser) (any, bool) {
-	var start, x1, x5 int
+	var start, x1 int
 	var v, k4, v6 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x5
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = u486(p); !ok {
@@ -7234,8 +5915,6 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x5 = p.Pos
 	if v6, ok = u61(p); !ok {
 		goto fail
 	}
@@ -7245,12 +5924,7 @@ L3:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "variableStatement"
-	v = func() any {
-		return func() any {
-			f_844 := func() any { return k4 }()
-			return tmk_VariableStatement(c, true, nil, f_844)
-		}()
-	}()
+	v = tmk_VariableStatement(c, true, nil, k4)
 	p.Depth--
 	return v, true
 fail:
@@ -7269,13 +5943,12 @@ func u24(p *rt.TParser) (any, bool) {
 }
 
 func i24(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x7, x9, x14, x16 int
+	var start, x1, x9, x14 int
 	var v, k3, v5, k6, v8, k10, x11, v17 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x4, x7, x16
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit35, "if", 22, false); !ok {
@@ -7303,7 +5976,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u185(p); !ok {
 		goto fail
 	}
@@ -7319,7 +5991,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = u8(p); !ok {
 		goto fail
 	}
@@ -7348,7 +6019,6 @@ L15:
 	if _, ok = s480(p); !ok {
 		goto L12
 	}
-	x16 = p.Pos
 	if v17, ok = u8(p); !ok {
 		goto L12
 	}
@@ -7360,14 +6030,7 @@ L12:
 L13:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ifStatement"
-	v = func() any {
-		return func() any {
-			f_845 := func() any { return k3 }()
-			f_846 := func() any { return k6 }()
-			f_847 := func() any { return k10 }()
-			return tmk_IfStatement(c, true, f_845, f_846, f_847)
-		}()
-	}()
+	v = tmk_IfStatement(c, true, k3, k6, k10)
 	p.Depth--
 	return v, true
 fail:
@@ -7386,13 +6049,12 @@ func u25(p *rt.TParser) (any, bool) {
 }
 
 func i25(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x6, x9, x11 int
+	var start, x1, x6, x11 int
 	var v, k3, v5, k8, v10 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x4, x9
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 100 && p.In[p.Pos+1] == 111 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit36, "do", 23, false); !ok {
@@ -7412,7 +6074,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u8(p); !ok {
 		goto fail
 	}
@@ -7445,7 +6106,6 @@ L7:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x9 = p.Pos
 	if v10, ok = u185(p); !ok {
 		goto fail
 	}
@@ -7473,13 +6133,7 @@ L12:
 L13:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "doStatement"
-	v = func() any {
-		return func() any {
-			f_848 := func() any { return k3 }()
-			f_849 := func() any { return k8 }()
-			return tmk_DoStatement(c, true, f_848, f_849)
-		}()
-	}()
+	v = tmk_DoStatement(c, true, k3, k8)
 	p.Depth--
 	return v, true
 fail:
@@ -7498,13 +6152,12 @@ func u26(p *rt.TParser) (any, bool) {
 }
 
 func i26(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x7 int
+	var start, x1 int
 	var v, k3, v5, k6, v8 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x4, x7
 	if _, ok = p.Parser.MatchLiteral(lit37, "while", 24, false); !ok {
 		goto fail
 	}
@@ -7530,7 +6183,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u185(p); !ok {
 		goto fail
 	}
@@ -7546,20 +6198,13 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = u8(p); !ok {
 		goto fail
 	}
 	k6 = v8
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "whileStatement"
-	v = func() any {
-		return func() any {
-			f_850 := func() any { return k3 }()
-			f_851 := func() any { return k6 }()
-			return tmk_WhileStatement(c, true, f_850, f_851)
-		}()
-	}()
+	v = tmk_WhileStatement(c, true, k3, k6)
 	p.Depth--
 	return v, true
 fail:
@@ -7578,13 +6223,12 @@ func u27(p *rt.TParser) (any, bool) {
 }
 
 func i27(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x7 int
+	var start, x1 int
 	var v, k3, v5, k6, v8 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x4, x7
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 119 && p.In[p.Pos+1] == 105 && p.In[p.Pos+2] == 116 && p.In[p.Pos+3] == 104 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit42, "with", 28, false); !ok {
@@ -7612,7 +6256,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u185(p); !ok {
 		goto fail
 	}
@@ -7628,20 +6271,13 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = u8(p); !ok {
 		goto fail
 	}
 	k6 = v8
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "withStatement"
-	v = func() any {
-		return func() any {
-			f_852 := func() any { return k3 }()
-			f_853 := func() any { return k6 }()
-			return tmk_WithStatement(c, true, f_852, f_853)
-		}()
-	}()
+	v = tmk_WithStatement(c, true, k3, k6)
 	p.Depth--
 	return v, true
 fail:
@@ -7719,13 +6355,12 @@ func u29(p *rt.TParser) (any, bool) {
 }
 
 func i29(p *rt.TParser) (any, bool) {
-	var start, x1, x3, x8, x11, x13, x16, x19 int
+	var start, x1, x3, x13 int
 	var v, k4, x5, v9, k10, v12, k15, v17, k18, v20 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x8, x11, x16, x19
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 114 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit38, "for", 41, false); !ok {
@@ -7747,7 +6382,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto L6
 	}
-	x8 = p.Pos
 	if v9, ok = s32(p); !ok {
 		goto L6
 	}
@@ -7757,7 +6391,6 @@ L6:
 	p.Pos = x3
 	k4 = x5
 L7:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
@@ -7769,7 +6402,6 @@ L7:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x11 = p.Pos
 	if v12, ok = u33(p); !ok {
 		goto fail
 	}
@@ -7796,7 +6428,6 @@ L14:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x16 = p.Pos
 	if v17, ok = u188(p); !ok {
 		goto fail
 	}
@@ -7812,22 +6443,13 @@ L14:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x19 = p.Pos
 	if v20, ok = u8(p); !ok {
 		goto fail
 	}
 	k18 = v20
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "forOfStatement"
-	v = func() any {
-		return func() any {
-			f_854 := func() any { return k4 }()
-			f_855 := func() any { return k10 }()
-			f_856 := func() any { return k15 }()
-			f_857 := func() any { return k18 }()
-			return tmk_ForOfStatement(c, true, f_854, f_855, f_856, f_857)
-		}()
-	}()
+	v = tmk_ForOfStatement(c, true, k4, k10, k15, k18)
 	p.Depth--
 	return v, true
 fail:
@@ -7846,13 +6468,12 @@ func u30(p *rt.TParser) (any, bool) {
 }
 
 func i30(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x6, x9, x12 int
+	var start, x1, x6 int
 	var v, k3, v5, k8, v10, k11, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x4, x9, x12
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 114 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit38, "for", 41, false); !ok {
@@ -7880,7 +6501,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u33(p); !ok {
 		goto fail
 	}
@@ -7907,7 +6527,6 @@ L7:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x9 = p.Pos
 	if v10, ok = u185(p); !ok {
 		goto fail
 	}
@@ -7923,21 +6542,13 @@ L7:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x12 = p.Pos
 	if v13, ok = u8(p); !ok {
 		goto fail
 	}
 	k11 = v13
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "forInStatement"
-	v = func() any {
-		return func() any {
-			f_858 := func() any { return k3 }()
-			f_859 := func() any { return k8 }()
-			f_860 := func() any { return k11 }()
-			return tmk_ForInStatement(c, true, f_858, f_859, f_860)
-		}()
-	}()
+	v = tmk_ForInStatement(c, true, k3, k8, k11)
 	p.Depth--
 	return v, true
 fail:
@@ -7956,13 +6567,12 @@ func u31(p *rt.TParser) (any, bool) {
 }
 
 func i31(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x5, x11, x12, x18, x19, x25 int
+	var start, x1, x5, x12, x19 int
 	var v, k3, v6, v9, k10, v13, v16, k17, v20, v23, k24, v26 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x4, x11, x18, x25
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 114 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit38, "for", 41, false); !ok {
@@ -7990,7 +6600,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	x5 = p.Pos
 	if v9, ok = u33(p); !ok {
 		goto L7
@@ -8013,7 +6622,6 @@ L8:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x11 = p.Pos
 	x12 = p.Pos
 	if v16, ok = u185(p); !ok {
 		goto L14
@@ -8036,7 +6644,6 @@ L15:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x18 = p.Pos
 	x19 = p.Pos
 	if v23, ok = u185(p); !ok {
 		goto L21
@@ -8059,22 +6666,13 @@ L22:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x25 = p.Pos
 	if v26, ok = u8(p); !ok {
 		goto fail
 	}
 	k24 = v26
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "forClassicStatement"
-	v = func() any {
-		return func() any {
-			f_861 := func() any { return k3 }()
-			f_862 := func() any { return k10 }()
-			f_863 := func() any { return k17 }()
-			f_864 := func() any { return k24 }()
-			return tmk_ForStatement(c, true, f_861, f_862, f_863, f_864)
-		}()
-	}()
+	v = tmk_ForStatement(c, true, k3, k10, k17, k24)
 	p.Depth--
 	return v, true
 fail:
@@ -8132,7 +6730,7 @@ func u33(p *rt.TParser) (any, bool) {
 }
 
 func i33(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v7, v9 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -8140,23 +6738,11 @@ func i33(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x2
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("+", func() any {
-				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-					return c.Binary("*", func() any {
-						return c.Binary("%", func() any {
-							return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
-						}(), func() any { return any(2) }())
-					}(), func() any { return any(4) }())
-				}())
-			}(), func() any { return any(4) }())
-		}()
+		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(2)), any(4))), any(4))
 	}) {
 		goto fail
 	}
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u34(p); !ok {
 		goto L6
@@ -8177,7 +6763,7 @@ L5:
 	k1 = v4
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "forInitializer"
-	v = func() any { return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -8199,14 +6785,13 @@ func u34(p *rt.TParser) (any, bool) {
 }
 
 func i34(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x7, x17, x23, x27, x29, x32 int
+	var start, x1, x4, x7, x17, x23, x27, x29 int
 	var v, k31, v33 any
 	var c *rt.TActCtx
 	var x9, x19 rune
 	var x10, ok, x20 bool
 	start = p.Pos
 	p.Enter()
-	_ = x32
 	x1 = p.Pos
 	p.Silent++
 	x4 = p.Pos
@@ -8251,7 +6836,6 @@ L16:
 L15:
 	goto L6
 L8:
-
 	x17 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -8344,15 +6928,13 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x32 = p.Pos
 	if v33, ok = u61(p); !ok {
 		goto fail
 	}
 	k31 = v33
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "forDeclarationList"
-	v = func() any { return k31 }()
+	v = k31
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -8372,13 +6954,12 @@ func u36(p *rt.TParser) (any, bool) {
 }
 
 func i36(p *rt.TParser) (any, bool) {
-	var start, x1, x3, x8, x10 int
+	var start, x1, x3, x8 int
 	var v, k4, x5, v11 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x10
 	if _, ok = p.Parser.MatchLiteral(lit39, "continue", 25, false); !ok {
 		goto fail
 	}
@@ -8409,7 +6990,6 @@ L9:
 	if _, ok = s480(p); !ok {
 		goto L6
 	}
-	x10 = p.Pos
 	if v11, ok = u421(p); !ok {
 		goto L6
 	}
@@ -8419,18 +6999,12 @@ L6:
 	p.Pos = x3
 	k4 = x5
 L7:
-
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "continueStatement"
-	v = func() any {
-		return func() any {
-			f_865 := func() any { return k4 }()
-			return tmk_ContinueStatement(c, true, f_865)
-		}()
-	}()
+	v = tmk_ContinueStatement(c, true, k4)
 	p.Depth--
 	return v, true
 fail:
@@ -8449,13 +7023,12 @@ func u37(p *rt.TParser) (any, bool) {
 }
 
 func i37(p *rt.TParser) (any, bool) {
-	var start, x1, x3, x8, x10 int
+	var start, x1, x3, x8 int
 	var v, k4, x5, v11 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x10
 	if _, ok = p.Parser.MatchLiteral(lit40, "break", 26, false); !ok {
 		goto fail
 	}
@@ -8486,7 +7059,6 @@ L9:
 	if _, ok = s480(p); !ok {
 		goto L6
 	}
-	x10 = p.Pos
 	if v11, ok = u421(p); !ok {
 		goto L6
 	}
@@ -8496,18 +7068,12 @@ L6:
 	p.Pos = x3
 	k4 = x5
 L7:
-
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "breakStatement"
-	v = func() any {
-		return func() any {
-			f_866 := func() any { return k4 }()
-			return tmk_BreakStatement(c, true, f_866)
-		}()
-	}()
+	v = tmk_BreakStatement(c, true, k4)
 	p.Depth--
 	return v, true
 fail:
@@ -8526,13 +7092,12 @@ func u38(p *rt.TParser) (any, bool) {
 }
 
 func i38(p *rt.TParser) (any, bool) {
-	var start, x1, x3, x8, x10 int
+	var start, x1, x3, x8 int
 	var v, k4, x5, v11 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x10
 	if _, ok = p.Parser.MatchLiteral(lit41, "return", 27, false); !ok {
 		goto fail
 	}
@@ -8563,7 +7128,6 @@ L9:
 	if _, ok = s480(p); !ok {
 		goto L6
 	}
-	x10 = p.Pos
 	if v11, ok = u185(p); !ok {
 		goto L6
 	}
@@ -8573,18 +7137,12 @@ L6:
 	p.Pos = x3
 	k4 = x5
 L7:
-
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "returnStatement"
-	v = func() any {
-		return func() any {
-			f_867 := func() any { return k4 }()
-			return tmk_ReturnStatement(c, true, f_867)
-		}()
-	}()
+	v = tmk_ReturnStatement(c, true, k4)
 	p.Depth--
 	return v, true
 fail:
@@ -8603,13 +7161,12 @@ func u39(p *rt.TParser) (any, bool) {
 }
 
 func i39(p *rt.TParser) (any, bool) {
-	var start, x1, x3, x10, x12, x15, x16, x18, x21, x24, x27, x29 int
+	var start, x1, x3, x10, x12, x16, x21, x24, x29 int
 	var v, k4, x5, k6, x7, v17, v19, v28 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x15, x18, x27
 	if _, ok = p.Parser.MatchLiteral(lit44, "throw", 30, false); !ok {
 		goto fail
 	}
@@ -8643,7 +7200,6 @@ L11:
 	}
 	x12 = p.Pos
 	p.Silent++
-	x15 = p.Pos
 	x16 = p.Pos
 	if _, ok = u185(p); !ok {
 		goto L13
@@ -8658,8 +7214,6 @@ L13:
 	p.Pos = x12
 	goto L9
 L14:
-
-	x18 = p.Pos
 	if v19, ok = u185(p); !ok {
 		goto L9
 	}
@@ -8682,13 +7236,11 @@ L22:
 	p.Pos = x21
 	goto L20
 L23:
-
 	x24 = p.Pos
 	p.Silent++
 	if _, ok = s480(p); !ok {
 		goto L25
 	}
-	x27 = p.Pos
 	if v28, ok = s40(p); !ok {
 		goto L25
 	}
@@ -8708,7 +7260,6 @@ L20:
 	k6 = x7
 	goto fail
 L8:
-
 	x29 = p.Pos
 	if _, ok = u487(p); !ok {
 		goto L31
@@ -8716,11 +7267,7 @@ L8:
 	goto L30
 L31:
 	p.Pos = x29
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any { return c.Text(func() any { return k4 }()) }(), func() any { return any("declare") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Text(k4), any("declare")) }) {
 		goto L32
 	}
 	goto L30
@@ -8730,12 +7277,7 @@ L32:
 L30:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "throwStatement"
-	v = func() any {
-		return func() any {
-			f_868 := func() any { return k6 }()
-			return tmk_ThrowStatement(c, true, f_868)
-		}()
-	}()
+	v = tmk_ThrowStatement(c, true, k6)
 	p.Depth--
 	return v, true
 fail:
@@ -8810,13 +7352,12 @@ func u42(p *rt.TParser) (any, bool) {
 }
 
 func i42(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x7 int
+	var start, x1 int
 	var v, k3, v5, k6, v8 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x4, x7
 	if _, ok = p.Parser.MatchLiteral(lit43, "switch", 29, false); !ok {
 		goto fail
 	}
@@ -8842,7 +7383,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u185(p); !ok {
 		goto fail
 	}
@@ -8858,20 +7398,13 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = u43(p); !ok {
 		goto fail
 	}
 	k6 = v8
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "switchStatement"
-	v = func() any {
-		return func() any {
-			f_869 := func() any { return k3 }()
-			f_870 := func() any { return k6 }()
-			return tmk_SwitchStatement(c, true, f_869, f_870)
-		}()
-	}()
+	v = tmk_SwitchStatement(c, true, k3, k6)
 	p.Depth--
 	return v, true
 fail:
@@ -8890,13 +7423,12 @@ func u43(p *rt.TParser) (any, bool) {
 }
 
 func i43(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x4, x5, x8 int
+	var start, x2, x3, x5 int
 	var v, k1, k6, v9, v10 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x4, x8
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "{", 20, false); !ok {
@@ -8905,11 +7437,10 @@ func i43(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2, x3, x4 = p.Pos, len(p.KidStack), 0
+	x2, x3, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x5 = p.Pos
 		k6 = nil
-		x8 = p.Pos
 		if v9, ok = s44(p); !ok {
 			goto L7
 		}
@@ -8917,7 +7448,6 @@ func i43(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L7
 		}
-		x4++
 		p.PushKid(k6)
 		if p.Pos == x5 {
 			break
@@ -8936,14 +7466,7 @@ func i43(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "caseBlock"
-	v = func() any {
-		return func() any {
-			f_871 := func() any {
-				return c.NewList(c.ListItems("map", func() any { return k1 }()))
-			}()
-			return tmk_CaseBlock(c, true, f_871)
-		}()
-	}()
+	v = tmk_CaseBlock(c, true, c.NewList(c.ListItems("map", k1)))
 	p.Depth--
 	return v, true
 fail:
@@ -9009,14 +7532,13 @@ func u45(p *rt.TParser) (any, bool) {
 }
 
 func i45(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x7, x8, x9, x10, x11, x14, x16 int
+	var start, x1, x8, x9, x11, x14 int
 	var v, k3, v5, k6, k12, v17, v18, v19, v20, v21 any
 	var c *rt.TActCtx
 	var ok bool
 	var x15 []any
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x4, x7, x10, x16
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 99 && p.In[p.Pos+1] == 97 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit105, "case", 64, false); !ok {
@@ -9036,7 +7558,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u185(p); !ok {
 		goto fail
 	}
@@ -9049,9 +7570,7 @@ L2:
 	} else if _, ok = p.Parser.MatchLiteral(lit106, ":", 65, false); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	x8, x9 = p.Pos, len(p.KidStack)
-	x10 = 0
 	for {
 		x11 = p.Pos
 		k12 = nil
@@ -9060,7 +7579,6 @@ L2:
 		if _, ok = s480(p); !ok {
 			goto L13
 		}
-		x16 = p.Pos
 		if v17, ok = u47(p); !ok {
 			goto L13
 		}
@@ -9068,8 +7586,7 @@ L2:
 		x15 = append(x15, v17)
 		v18 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
 		v19 = p.ScopeValue(sh5, v18, x11)
-		v20 = p.AttachCaptures(v19, scope872, []any{k12}, x11, p.Pos)
-		x10++
+		v20 = p.AttachCaptures(v19, scope841, []any{k12}, x11, p.Pos)
 		p.PushKid(v20)
 		if p.Pos == x11 {
 			break
@@ -9083,17 +7600,7 @@ L2:
 	k6 = v21
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "caseClause"
-	v = func() any {
-		return func() any {
-			f_873 := func() any { return k3 }()
-			f_874 := func() any {
-				return c.MapList(func() any { return k6 }(), func(l_875 any) any {
-					return func() any { return c.Member(func() any { return l_875 }(), "$s") }()
-				})
-			}()
-			return tmk_CaseClause(c, true, f_873, f_874)
-		}()
-	}()
+	v = tmk_CaseClause(c, true, k3, c.MapList(k6, func(l_842 any) any { return c.Member((l_842), "$s") }))
 	p.Depth--
 	return v, true
 fail:
@@ -9112,14 +7619,13 @@ func u46(p *rt.TParser) (any, bool) {
 }
 
 func i46(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x5, x6, x7, x8, x11, x13 int
+	var start, x1, x5, x6, x8, x11 int
 	var v, k3, k9, v14, v15, v16, v17, v18 any
 	var c *rt.TActCtx
 	var ok bool
 	var x12 []any
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x4, x7, x13
 	if _, ok = p.Parser.MatchLiteral(lit14, "default", 12, false); !ok {
 		goto fail
 	}
@@ -9142,9 +7648,7 @@ L2:
 	} else if _, ok = p.Parser.MatchLiteral(lit106, ":", 65, false); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	x5, x6 = p.Pos, len(p.KidStack)
-	x7 = 0
 	for {
 		x8 = p.Pos
 		k9 = nil
@@ -9153,7 +7657,6 @@ L2:
 		if _, ok = s480(p); !ok {
 			goto L10
 		}
-		x13 = p.Pos
 		if v14, ok = u47(p); !ok {
 			goto L10
 		}
@@ -9161,8 +7664,7 @@ L2:
 		x12 = append(x12, v14)
 		v15 = p.NewNodeOrdinary("tuple", x11, p.Pos, x12)
 		v16 = p.ScopeValue(sh5, v15, x8)
-		v17 = p.AttachCaptures(v16, scope876, []any{k9}, x8, p.Pos)
-		x7++
+		v17 = p.AttachCaptures(v16, scope843, []any{k9}, x8, p.Pos)
 		p.PushKid(v17)
 		if p.Pos == x8 {
 			break
@@ -9176,16 +7678,7 @@ L2:
 	k3 = v18
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "defaultClause"
-	v = func() any {
-		return func() any {
-			f_877 := func() any {
-				return c.MapList(func() any { return k3 }(), func(l_878 any) any {
-					return func() any { return c.Member(func() any { return l_878 }(), "$s") }()
-				})
-			}()
-			return tmk_DefaultClause(c, true, f_877)
-		}()
-	}()
+	v = tmk_DefaultClause(c, true, c.MapList(k3, func(l_844 any) any { return c.Member((l_844), "$s") }))
 	p.Depth--
 	return v, true
 fail:
@@ -9207,14 +7700,13 @@ func u47(p *rt.TParser) (any, bool) {
 }
 
 func i47(p *rt.TParser) (any, bool) {
-	var start, x1, x3, x11, x14 int
+	var start, x1, x3, x11 int
 	var v, k13, v15 any
 	var c *rt.TActCtx
 	var x5 rune
 	var x6, ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x14
 	x1 = p.Pos
 	p.Silent++
 	x3 = p.Pos
@@ -9245,7 +7737,6 @@ L10:
 L9:
 	goto L2
 L4:
-
 	x11 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -9263,14 +7754,13 @@ L12:
 L2:
 	p.Silent--
 	p.Pos = x1
-	x14 = p.Pos
 	if v15, ok = u8(p); !ok {
 		goto fail
 	}
 	k13 = v15
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "clauseStatement"
-	v = func() any { return k13 }()
+	v = k13
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -9290,13 +7780,12 @@ func u48(p *rt.TParser) (any, bool) {
 }
 
 func i48(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x6, x11, x13, x18, x20 int
+	var start, x1, x6, x13, x18 int
 	var v, k3, v5, k7, x8, v12, k14, x15, v21 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x4, x11, x20
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 121 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit45, "try", 31, false); !ok {
@@ -9316,7 +7805,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u18(p); !ok {
 		goto fail
 	}
@@ -9326,7 +7814,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto L9
 	}
-	x11 = p.Pos
 	if v12, ok = u49(p); !ok {
 		goto L9
 	}
@@ -9336,7 +7823,6 @@ L9:
 	p.Pos = x6
 	k7 = x8
 L10:
-
 	x13 = p.Pos
 	x15 = k14
 	if _, ok = s480(p); !ok {
@@ -9359,7 +7845,6 @@ L19:
 	if _, ok = s480(p); !ok {
 		goto L16
 	}
-	x20 = p.Pos
 	if v21, ok = u18(p); !ok {
 		goto L16
 	}
@@ -9369,30 +7854,14 @@ L16:
 	p.Pos = x13
 	k14 = x15
 L17:
-
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Or(func() any {
-				return c.Binary("!=", func() any { return k7 }(), func() any { return any(nil) }())
-			}(), func() any {
-				return func() any {
-					return c.Binary("!=", func() any { return k14 }(), func() any { return any(nil) }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("!=", k7, any(nil)), func() any { return c.Binary("!=", k14, any(nil)) })
 	}) {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "tryStatement"
-	v = func() any {
-		return func() any {
-			f_879 := func() any { return k3 }()
-			f_880 := func() any { return k7 }()
-			f_881 := func() any { return k14 }()
-			return tmk_TryStatement(c, true, f_879, f_880, f_881)
-		}()
-	}()
+	v = tmk_TryStatement(c, true, k3, k7, k14)
 	p.Depth--
 	return v, true
 fail:
@@ -9411,13 +7880,12 @@ func u49(p *rt.TParser) (any, bool) {
 }
 
 func i49(p *rt.TParser) (any, bool) {
-	var start, x1, x3, x8, x11 int
+	var start, x1, x3 int
 	var v, k4, x5, v9, k10, v12 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x8, x11
 	if _, ok = p.Parser.MatchLiteral(lit114, "catch", 67, false); !ok {
 		goto fail
 	}
@@ -9445,7 +7913,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto L6
 	}
-	x8 = p.Pos
 	if v9, ok = u64(p); !ok {
 		goto L6
 	}
@@ -9463,24 +7930,16 @@ L6:
 	p.Pos = x3
 	k4 = x5
 L7:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x11 = p.Pos
 	if v12, ok = u18(p); !ok {
 		goto fail
 	}
 	k10 = v12
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "catchClause"
-	v = func() any {
-		return func() any {
-			f_882 := func() any { return k4 }()
-			f_883 := func() any { return k10 }()
-			return tmk_CatchClause(c, true, f_882, f_883)
-		}()
-	}()
+	v = tmk_CatchClause(c, true, k4, k10)
 	p.Depth--
 	return v, true
 fail:
@@ -9499,14 +7958,13 @@ func u50(p *rt.TParser) (any, bool) {
 }
 
 func i50(p *rt.TParser) (any, bool) {
-	var start, x1, x3, x6, x8, x10, x12, x14, x20, x28, x31, x32 int
+	var start, x1, x3, x6, x8, x10, x12, x14, x20, x28, x32 int
 	var v, k30, v33, v36, v38, v40 any
 	var c *rt.TActCtx
 	var ok, x16, x23 bool
 	var x15, x22 rune
 	start = p.Pos
 	p.Enter()
-	_ = x31
 	x1 = p.Pos
 	p.Silent++
 	x3 = p.Pos
@@ -9533,7 +7991,6 @@ L4:
 	p.Pos = x3
 	goto L2
 L5:
-
 	if _, ok = u485(p); !ok {
 		goto L2
 	}
@@ -9565,7 +8022,6 @@ L9:
 	p.Pos += x14
 	goto L13
 L17:
-
 	x20 = p.Pos
 	x22, _, x23 = p.NextOrdinary()
 	if !(x23 && (x22 == 102)) && p.Depth <= p.MaxDepth {
@@ -9592,7 +8048,6 @@ L27:
 L26:
 	goto L19
 L21:
-
 	x28 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -9615,7 +8070,6 @@ L13:
 L11:
 	p.Silent--
 	p.Pos = x10
-	x31 = p.Pos
 	x32 = p.Pos
 	if v36, ok = u51(p); !ok {
 		goto L35
@@ -9643,7 +8097,7 @@ L34:
 	k30 = v33
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "expressionOrLabeledStatement"
-	v = func() any { return k30 }()
+	v = k30
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -9666,16 +8120,15 @@ func u51(p *rt.TParser) (any, bool) {
 }
 
 func i51(p *rt.TParser) (any, bool) {
-	var start, x1, x5, x8 int
+	var start, x1 int
 	var v, k4, v6, k7, v9 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x5, x8
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls884) && !p.ClassSkip(&cls884, 69) {
+	if !p.ClassFast(&cls845) && !p.ClassSkip(&cls845, 69) {
 		goto L2
 	}
 	if _, ok = u492(p); !ok {
@@ -9697,8 +8150,6 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x5 = p.Pos
 	if v6, ok = u421(p); !ok {
 		goto fail
 	}
@@ -9714,20 +8165,13 @@ L3:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x8 = p.Pos
 	if v9, ok = u8(p); !ok {
 		goto fail
 	}
 	k7 = v9
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "labeledStatement"
-	v = func() any {
-		return func() any {
-			f_885 := func() any { return k4 }()
-			f_886 := func() any { return k7 }()
-			return tmk_LabeledStatement(c, true, f_885, f_886)
-		}()
-	}()
+	v = tmk_LabeledStatement(c, true, k4, k7)
 	p.Depth--
 	return v, true
 fail:
@@ -9749,14 +8193,12 @@ func u52(p *rt.TParser) (any, bool) {
 }
 
 func i52(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
-	x2 = p.Pos
 	if v3, ok = u185(p); !ok {
 		goto fail
 	}
@@ -9766,12 +8208,7 @@ func i52(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "expressionStatement"
-	v = func() any {
-		return func() any {
-			f_887 := func() any { return k1 }()
-			return tmk_ExpressionStatement(c, true, f_887)
-		}()
-	}()
+	v = tmk_ExpressionStatement(c, true, k1)
 	p.Depth--
 	return v, true
 fail:
@@ -9790,16 +8227,14 @@ func u53(p *rt.TParser) (any, bool) {
 }
 
 func i53(p *rt.TParser) (any, bool) {
-	var start, x1, x5, x6, x9 int
+	var start, x1, x6 int
 	var v, k4, v7, k8, v10 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x5, x9
 	x1 = p.Pos
 	p.Silent++
-	x5 = p.Pos
 	x6 = p.Pos
 	if _, ok = u185(p); !ok {
 		goto L2
@@ -9814,27 +8249,16 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any { return c.Text(func() any { return k4 }()) }(), func() any { return any("declare") }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Text(k4), any("declare")) }) {
 		goto fail
 	}
-	x9 = p.Pos
 	if v10, ok = s54(p); !ok {
 		goto fail
 	}
 	k8 = v10
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "declareStatement"
-	v = func() any {
-		return func() any {
-			f_888 := func() any { return k8 }()
-			return tmk_ExpressionStatement(c, true, f_888)
-		}()
-	}()
+	v = tmk_ExpressionStatement(c, true, k8)
 	p.Depth--
 	return v, true
 fail:
@@ -10002,15 +8426,13 @@ func u60(p *rt.TParser) (any, bool) {
 }
 
 func i60(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x7, x10, x22, x28, x30, x33 int
+	var start, x4, x7, x10, x22, x28, x30 int
 	var v, k1, v3, k32, v34 any
 	var c *rt.TActCtx
 	var ok, x13, x25 bool
 	var x12, x24 rune
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x33
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
@@ -10070,7 +8492,6 @@ L21:
 L20:
 	goto L9
 L11:
-
 	x22 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -10135,8 +8556,6 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
-	x33 = p.Pos
 	if v34, ok = u61(p); !ok {
 		goto fail
 	}
@@ -10146,13 +8565,7 @@ L6:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "variableStatementWithModifiers"
-	v = func() any {
-		return func() any {
-			f_889 := func() any { return k1 }()
-			f_890 := func() any { return k32 }()
-			return tmk_VariableStatement(c, true, f_889, f_890)
-		}()
-	}()
+	v = tmk_VariableStatement(c, true, k1, k32)
 	p.Depth--
 	return v, true
 fail:
@@ -10174,15 +8587,13 @@ func u61(p *rt.TParser) (any, bool) {
 }
 
 func i61(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x9, x11, x13, x16, x19, x22, x24, x26 int
+	var start, x4, x9, x11, x16, x19, x22, x24, x26 int
 	var v, k1, v3, k5, x6, v14 any
 	var c *rt.TActCtx
 	var ok, x28 bool
 	var x27 rune
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x13
-	x2 = p.Pos
 	if v3, ok = s62(p); !ok {
 		goto fail
 	}
@@ -10233,7 +8644,6 @@ L10:
 	if _, ok = s480(p); !ok {
 		goto L8
 	}
-	x13 = p.Pos
 	if v14, ok = u63(p); !ok {
 		goto L8
 	}
@@ -10303,7 +8713,6 @@ L15:
 	p.Pos += x26
 	goto L25
 L29:
-
 	if _, ok = u422(p); !ok {
 		goto L31
 	}
@@ -10326,13 +8735,7 @@ L21:
 L7:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "variableDeclarationList"
-	v = func() any {
-		return func() any {
-			f_891 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_892 := func() any { return c.Concat(func() any { return k5 }()) }()
-			return tmk_VariableDeclarationList(c, true, f_891, f_892)
-		}()
-	}()
+	v = tmk_VariableDeclarationList(c, true, c.Text(k1), c.Concat(k5))
 	p.Depth--
 	return v, true
 fail:
@@ -10401,7 +8804,6 @@ L16:
 L15:
 	goto L4
 L6:
-
 	x17 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -10471,20 +8873,18 @@ func u63(p *rt.TParser) (any, bool) {
 }
 
 func i63(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x11, x14, x17, x19, x21 int
+	var start, x5, x6, x8, x14, x17, x19, x21 int
 	var v, k1, v3, k4, k9, v12, v13 any
 	var c *rt.TActCtx
 	var ok, x23 bool
 	var x22 rune
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x7, x11
-	x2 = p.Pos
 	if v3, ok = u64(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5, x6, x7 = p.Pos, len(p.KidStack), 0
+	x5, x6, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x8 = p.Pos
 		k9 = nil
@@ -10499,12 +8899,10 @@ func i63(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L10
 		}
-		x11 = p.Pos
 		if v12, ok = u64(p); !ok {
 			goto L10
 		}
 		k9 = v12
-		x7++
 		p.PushKid(k9)
 		if p.Pos == x8 {
 			break
@@ -10539,7 +8937,6 @@ func i63(p *rt.TParser) (any, bool) {
 	p.Pos += x21
 	goto L20
 L24:
-
 	if _, ok = u422(p); !ok {
 		goto L26
 	}
@@ -10560,14 +8957,7 @@ L15:
 L16:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "variableDeclarations"
-	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { return k1 }())
-			c.PushItems(func() any { return k4 }())
-			return c.EndList(b)
-		}()
-	}()
+	v = func() any { b := len(c.P.KidStack); c.PushList(k1); c.PushItems(k4); return c.EndList(b) }()
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -10590,18 +8980,16 @@ func u64(p *rt.TParser) (any, bool) {
 }
 
 func i64(p *rt.TParser) (any, bool) {
-	var start, x1, x8, x10, x14, x17, x20, x21, x26, x31, x33, x41, x43 int
+	var start, x1, x10, x21, x26, x31, x33, x41 int
 	var v, k2, x3, k4, x5, v9, x11, v15, v18, k19, v22, v25, k27, x28, v44 any
 	var c *rt.TActCtx
 	var ok, x36 bool
 	var x35 rune
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _ = x8, x14, x17, x20, x43
 	x1 = p.Pos
 	x3 = k2
 	x5 = k4
-	x8 = p.Pos
 	if v9, ok = u422(p); !ok {
 		goto L7
 	}
@@ -10609,20 +8997,13 @@ func i64(p *rt.TParser) (any, bool) {
 	x10 = p.Pos
 	x11 = k4
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any {
-					return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
-				}(), func() any { return any(2) }())
-			}(), func() any { return any(0) }())
-		}()
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(2)), any(0))
 	}) {
 		goto L12
 	}
 	if _, ok = s494(p); !ok {
 		goto L12
 	}
-	x14 = p.Pos
 	if v15, ok = s414(p); !ok {
 		goto L12
 	}
@@ -10637,7 +9018,6 @@ L7:
 	p.Pos = x1
 	k2 = x3
 	k4 = x5
-	x17 = p.Pos
 	if v18, ok = u68(p); !ok {
 		goto L16
 	}
@@ -10649,8 +9029,6 @@ L16:
 	k4 = x5
 	goto fail
 L6:
-
-	x20 = p.Pos
 	x21 = p.Pos
 	if v25, ok = u66(p); !ok {
 		goto L23
@@ -10699,7 +9077,6 @@ L40:
 L39:
 	goto L32
 L34:
-
 	x41 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -10717,7 +9094,6 @@ L42:
 L32:
 	p.Silent--
 	p.Pos = x31
-	x43 = p.Pos
 	if v44, ok = u65(p); !ok {
 		goto L29
 	}
@@ -10729,15 +9105,7 @@ L29:
 L30:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "variableDeclaration"
-	v = func() any {
-		return func() any {
-			f_893 := func() any { return k2 }()
-			f_894 := func() any { return k4 }()
-			f_895 := func() any { return k19 }()
-			f_896 := func() any { return k27 }()
-			return tmk_VariableDeclaration(c, true, f_893, f_894, f_895, f_896)
-		}()
-	}()
+	v = tmk_VariableDeclaration(c, true, k2, k4, k19, k27)
 	p.Depth--
 	return v, true
 fail:
@@ -10759,14 +9127,13 @@ func u65(p *rt.TParser) (any, bool) {
 }
 
 func i65(p *rt.TParser) (any, bool) {
-	var start, x1, size, x4 int
+	var start, x1, size int
 	var v, k3, v5 any
 	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
@@ -10792,14 +9159,13 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u187(p); !ok {
 		goto fail
 	}
 	k3 = v5
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "initializer"
-	v = func() any { return k3 }()
+	v = k3
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -10822,13 +9188,12 @@ func u66(p *rt.TParser) (any, bool) {
 }
 
 func i66(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
@@ -10840,14 +9205,13 @@ func i66(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u315(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeAnnotation"
-	v = func() any { return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -10965,7 +9329,7 @@ func u69(p *rt.TParser) (any, bool) {
 }
 
 func i69(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v7 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -10973,7 +9337,6 @@ func i69(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "{", 20, false); !ok {
@@ -10983,19 +9346,10 @@ func i69(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("*", func() any {
-					return c.Binary("%", func() any {
-						return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
-					}(), func() any { return any(2) }())
-				}(), func() any { return any(4) }())
-			}())
-		}()
+		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(2)), any(4)))
 	}) {
 		goto fail
 	}
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u466(p); !ok {
 		goto L5
@@ -11017,12 +9371,7 @@ L6:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "objectBindingPattern"
-	v = func() any {
-		return func() any {
-			f_897 := func() any { return c.Concat(func() any { return k1 }()) }()
-			return tmk_ObjectBindingPattern(c, true, f_897)
-		}()
-	}()
+	v = tmk_ObjectBindingPattern(c, true, c.Concat(k1))
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -11086,16 +9435,14 @@ func u71(p *rt.TParser) (any, bool) {
 }
 
 func i71(p *rt.TParser) (any, bool) {
-	var start, x1, x6, x9, x12, x15, x16 int
+	var start, x1, x16 int
 	var v, k2, x3, v7, k8, v10, k11, v13, k14, v17, v20 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x6, x9, x12, x15
 	x1 = p.Pos
 	x3 = k2
-	x6 = p.Pos
 	if v7, ok = s416(p); !ok {
 		goto L4
 	}
@@ -11108,8 +9455,6 @@ L4:
 	p.Pos = x1
 	k2 = x3
 L5:
-
-	x9 = p.Pos
 	if v10, ok = u411(p); !ok {
 		goto fail
 	}
@@ -11125,12 +9470,10 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x12 = p.Pos
 	if v13, ok = u67(p); !ok {
 		goto fail
 	}
 	k11 = v13
-	x15 = p.Pos
 	x16 = p.Pos
 	if v20, ok = u65(p); !ok {
 		goto L18
@@ -11144,15 +9487,7 @@ L19:
 	k14 = v17
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "bindingElementWithPropertyName"
-	v = func() any {
-		return func() any {
-			f_898 := func() any { return k2 }()
-			f_899 := func() any { return k8 }()
-			f_900 := func() any { return k11 }()
-			f_901 := func() any { return k14 }()
-			return tmk_BindingElement(c, true, f_898, f_899, f_900, f_901)
-		}()
-	}()
+	v = tmk_BindingElement(c, true, k2, k8, k11, k14)
 	p.Depth--
 	return v, true
 fail:
@@ -11174,16 +9509,14 @@ func u72(p *rt.TParser) (any, bool) {
 }
 
 func i72(p *rt.TParser) (any, bool) {
-	var start, x1, x6, x9, x12, x13 int
+	var start, x1, x13 int
 	var v, k2, x3, v7, k8, v10, k11, v14, v17 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x6, x9, x12
 	x1 = p.Pos
 	x3 = k2
-	x6 = p.Pos
 	if v7, ok = s416(p); !ok {
 		goto L4
 	}
@@ -11196,13 +9529,10 @@ L4:
 	p.Pos = x1
 	k2 = x3
 L5:
-
-	x9 = p.Pos
 	if v10, ok = u67(p); !ok {
 		goto fail
 	}
 	k8 = v10
-	x12 = p.Pos
 	x13 = p.Pos
 	if v17, ok = u65(p); !ok {
 		goto L15
@@ -11216,14 +9546,7 @@ L16:
 	k11 = v14
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "bindingElementShorthand"
-	v = func() any {
-		return func() any {
-			f_902 := func() any { return k2 }()
-			f_903 := func() any { return k8 }()
-			f_904 := func() any { return k11 }()
-			return tmk_BindingElement(c, true, f_902, nil, f_903, f_904)
-		}()
-	}()
+	v = tmk_BindingElement(c, true, k2, nil, k8, k11)
 	p.Depth--
 	return v, true
 fail:
@@ -11242,7 +9565,7 @@ func u73(p *rt.TParser) (any, bool) {
 }
 
 func i73(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v7 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -11250,7 +9573,6 @@ func i73(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 79, false); !ok {
@@ -11260,19 +9582,10 @@ func i73(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("*", func() any {
-					return c.Binary("%", func() any {
-						return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
-					}(), func() any { return any(2) }())
-				}(), func() any { return any(4) }())
-			}())
-		}()
+		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(2)), any(4)))
 	}) {
 		goto fail
 	}
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u464(p); !ok {
 		goto L5
@@ -11294,12 +9607,7 @@ L6:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "arrayBindingPattern"
-	v = func() any {
-		return func() any {
-			f_905 := func() any { return c.Concat(func() any { return k1 }()) }()
-			return tmk_ArrayBindingPattern(c, true, f_905)
-		}()
-	}()
+	v = tmk_ArrayBindingPattern(c, true, c.Concat(k1))
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -11403,7 +9711,7 @@ func u76(p *rt.TParser) (any, bool) {
 }
 
 func i76(p *rt.TParser) (any, bool) {
-	var start, x1, x6, x9, x11, x16, x19, x22, x24, x26, x33, x36, x37, x39, x41, x46, x48, x53, x56, x59, x60, x65, x70, x73 int
+	var start, x1, x6, x11, x16, x24, x26, x33, x37, x41, x48, x60, x65, x73 int
 	var v, k2, x3, v10, k12, x13, v20, k21, v23, k27, x28, k29, x30, v38, v40, k42, x43, v47, k49, x50, v54, k55, v57, k58, v61, v64, k66, x67, v71 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -11411,12 +9719,10 @@ func i76(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _, _, _, _, _, _, _, _, _ = x9, x19, x22, x36, x39, x46, x53, x56, x59, x70
 	x1 = p.Pos
 	x3 = k2
 	x6 = p.Pos
 	p.Silent++
-	x9 = p.Pos
 	if v10, ok = u77(p); !ok {
 		goto L7
 	}
@@ -11434,12 +9740,10 @@ L4:
 	p.Pos = x1
 	k2 = x3
 L5:
-
 	x11 = p.Pos
 	x13 = k12
 	x16 = p.Pos
 	p.Silent++
-	x19 = p.Pos
 	if v20, ok = u78(p); !ok {
 		goto L17
 	}
@@ -11457,8 +9761,6 @@ L14:
 	p.Pos = x11
 	k12 = x13
 L15:
-
-	x22 = p.Pos
 	if v23, ok = u165(p); !ok {
 		goto fail
 	}
@@ -11485,7 +9787,6 @@ L25:
 	}
 	x33 = p.Pos
 	p.Silent++
-	x36 = p.Pos
 	x37 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
@@ -11502,8 +9803,6 @@ L34:
 	p.Pos = x33
 	goto L31
 L35:
-
-	x39 = p.Pos
 	if v40, ok = s415(p); !ok {
 		goto L31
 	}
@@ -11514,13 +9813,11 @@ L31:
 	k27 = x28
 	k29 = x30
 L32:
-
 	x41 = p.Pos
 	x43 = k42
 	if _, ok = s480(p); !ok {
 		goto L44
 	}
-	x46 = p.Pos
 	if v47, ok = u422(p); !ok {
 		goto L44
 	}
@@ -11530,34 +9827,13 @@ L44:
 	p.Pos = x41
 	k42 = x43
 L45:
-
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Or(func() any {
-				return c.Binary("!=", func() any { return k42 }(), func() any { return any(nil) }())
-			}(), func() any {
-				return func() any {
-					return c.Binary("!=", func() any { return k2 }(), func() any { return any(nil) }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary("!=", k42, any(nil)), func() any { return c.Binary("!=", k2, any(nil)) })
 	}) {
 		goto fail
 	}
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("+", func() any {
-				return c.Binary("+", func() any {
-					return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-						return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
-					}())
-				}(), func() any { return c.Length(func() any { return k27 }()) }())
-			}(), func() any {
-				return c.Binary("*", func() any {
-					return c.Binary("/", func() any { return c.Length(func() any { return k12 }()) }(), func() any { return any(5) }())
-				}(), func() any { return any(2) }())
-			}())
-		}()
+		return c.Binary("+", c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32))), c.Length(k27)), c.Binary("*", c.Binary("/", c.Length(k12), any(5)), any(2)))
 	}) {
 		goto fail
 	}
@@ -11566,7 +9842,6 @@ L45:
 	if _, ok = s480(p); !ok {
 		goto L51
 	}
-	x53 = p.Pos
 	if v54, ok = u375(p); !ok {
 		goto L51
 	}
@@ -11576,16 +9851,13 @@ L51:
 	p.Pos = x48
 	k49 = x50
 L52:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x56 = p.Pos
 	if v57, ok = u79(p); !ok {
 		goto fail
 	}
 	k55 = v57
-	x59 = p.Pos
 	x60 = p.Pos
 	if v64, ok = u85(p); !ok {
 		goto L62
@@ -11602,7 +9874,6 @@ L63:
 	if _, ok = s480(p); !ok {
 		goto L69
 	}
-	x70 = p.Pos
 	if v71, ok = u18(p); !ok {
 		goto L69
 	}
@@ -11638,18 +9909,7 @@ L72:
 L68:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "functionDeclaration"
-	v = func() any {
-		return func() any {
-			f_906 := func() any { return k21 }()
-			f_907 := func() any { return k29 }()
-			f_908 := func() any { return k42 }()
-			f_909 := func() any { return c.Concat(func() any { return k49 }()) }()
-			f_910 := func() any { return k55 }()
-			f_911 := func() any { return k58 }()
-			f_912 := func() any { return k66 }()
-			return tmk_FunctionDeclaration(c, true, f_906, f_907, f_908, f_909, f_910, f_911, f_912)
-		}()
-	}()
+	v = tmk_FunctionDeclaration(c, true, k21, k29, k42, c.Concat(k49), k55, k58, k66)
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -11670,15 +9930,13 @@ func u77(p *rt.TParser) (any, bool) {
 }
 
 func i77(p *rt.TParser) (any, bool) {
-	var start, x1, x2, x4, x6, x8, x18, x19, x20 int
+	var start, x2, x4, x6, x8, x19, x20 int
 	var v, k17, v22 any
 	var c *rt.TActCtx
 	var ok, x11 bool
 	var x10 rune
 	start = p.Pos
 	p.Enter()
-	_, _ = x1, x18
-	x1 = 0
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
@@ -11716,7 +9974,6 @@ func i77(p *rt.TParser) (any, bool) {
 	L13:
 		p.Pos = x8
 	L12:
-
 		if _, ok = u495(p); !ok {
 			goto L14
 		}
@@ -11736,11 +9993,9 @@ func i77(p *rt.TParser) (any, bool) {
 	L15:
 		goto L3
 	L9:
-
 		if _, ok = s480(p); !ok {
 			goto L3
 		}
-		x1++
 		if p.Pos == x2 {
 			break
 		}
@@ -11749,7 +10004,6 @@ func i77(p *rt.TParser) (any, bool) {
 		p.Pos = x2
 		break
 	}
-	x18 = p.Pos
 	x19 = p.Pos
 	if _, ok = p.Parser.MatchLiteral(lit14, "default", 12, false); !ok {
 		goto fail
@@ -11769,7 +10023,7 @@ L21:
 	k17 = v22
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "defaultModifierScan"
-	v = func() any { return k17 }()
+	v = k17
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -11792,15 +10046,13 @@ func u78(p *rt.TParser) (any, bool) {
 }
 
 func i78(p *rt.TParser) (any, bool) {
-	var start, x1, x2, x4, x6, x8, x18, x19, x20 int
+	var start, x2, x4, x6, x8, x19, x20 int
 	var v, k17, v22 any
 	var c *rt.TActCtx
 	var ok, x11 bool
 	var x10 rune
 	start = p.Pos
 	p.Enter()
-	_, _ = x1, x18
-	x1 = 0
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
@@ -11838,7 +10090,6 @@ func i78(p *rt.TParser) (any, bool) {
 	L13:
 		p.Pos = x8
 	L12:
-
 		if _, ok = u495(p); !ok {
 			goto L14
 		}
@@ -11858,11 +10109,9 @@ func i78(p *rt.TParser) (any, bool) {
 	L15:
 		goto L3
 	L9:
-
 		if _, ok = s480(p); !ok {
 			goto L3
 		}
-		x1++
 		if p.Pos == x2 {
 			break
 		}
@@ -11871,7 +10120,6 @@ func i78(p *rt.TParser) (any, bool) {
 		p.Pos = x2
 		break
 	}
-	x18 = p.Pos
 	x19 = p.Pos
 	if _, ok = p.Parser.MatchLiteral(lit54, "async", 43, false); !ok {
 		goto fail
@@ -11891,7 +10139,7 @@ L21:
 	k17 = v22
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "asyncModifierScan"
-	v = func() any { return k17 }()
+	v = k17
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -11914,13 +10162,12 @@ func u79(p *rt.TParser) (any, bool) {
 }
 
 func i79(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v7 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit78, "(", 58, false); !ok {
@@ -11929,7 +10176,6 @@ func i79(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u80(p); !ok {
 		goto L5
@@ -11951,7 +10197,7 @@ L6:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "parameterList"
-	v = func() any { return c.Concat(func() any { return k1 }()) }()
+	v = c.Concat(k1)
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -11974,19 +10220,17 @@ func u80(p *rt.TParser) (any, bool) {
 }
 
 func i80(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x11, x14 int
+	var start, x5, x6, x8, x14 int
 	var v, k1, v3, k4, k9, v12, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x7, x11
-	x2 = p.Pos
 	if v3, ok = u81(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5, x6, x7 = p.Pos, len(p.KidStack), 0
+	x5, x6, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x8 = p.Pos
 		k9 = nil
@@ -12001,12 +10245,10 @@ func i80(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L10
 		}
-		x11 = p.Pos
 		if v12, ok = u81(p); !ok {
 			goto L10
 		}
 		k9 = v12
-		x7++
 		p.PushKid(k9)
 		if p.Pos == x8 {
 			break
@@ -12033,14 +10275,7 @@ L15:
 L16:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "parameters"
-	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { return k1 }())
-			c.PushItems(func() any { return k4 }())
-			return c.EndList(b)
-		}()
-	}()
+	v = func() any { b := len(c.P.KidStack); c.PushList(k1); c.PushItems(k4); return c.EndList(b) }()
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -12078,7 +10313,6 @@ func v81(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-
 	if v10, ok = u84(p); !ok {
 		goto L9
 	}
@@ -12111,19 +10345,16 @@ func u82(p *rt.TParser) (any, bool) {
 }
 
 func i82(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6 int
+	var start, x6 int
 	var v, k1, v3, k4, v7, v10 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x5
-	x2 = p.Pos
 	if v3, ok = s83(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	x6 = p.Pos
 	if v10, ok = u66(p); !ok {
 		goto L8
@@ -12137,13 +10368,7 @@ L9:
 	k4 = v7
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "thisParameter"
-	v = func() any {
-		return func() any {
-			f_913 := func() any { return k1 }()
-			f_914 := func() any { return k4 }()
-			return tmk_Parameter(c, true, nil, nil, f_913, nil, f_914, nil)
-		}()
-	}()
+	v = tmk_Parameter(c, true, nil, nil, k1, nil, k4, nil)
 	p.Depth--
 	return v, true
 fail:
@@ -12200,21 +10425,18 @@ func u84(p *rt.TParser) (any, bool) {
 }
 
 func i84(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x9, x12, x14, x19, x22, x23, x29, x30 int
+	var start, x4, x14, x23, x30 int
 	var v, k1, v3, k5, x6, v10, k11, v13, k15, x16, v20, k21, v24, v27, k28, v31, v34 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _, _ = x2, x9, x12, x19, x22, x29
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	x4 = p.Pos
 	x6 = k5
-	x9 = p.Pos
 	if v10, ok = s416(p); !ok {
 		goto L7
 	}
@@ -12227,8 +10449,6 @@ L7:
 	p.Pos = x4
 	k5 = x6
 L8:
-
-	x12 = p.Pos
 	if v13, ok = u67(p); !ok {
 		goto fail
 	}
@@ -12238,7 +10458,6 @@ L8:
 	if _, ok = s480(p); !ok {
 		goto L17
 	}
-	x19 = p.Pos
 	if v20, ok = s413(p); !ok {
 		goto L17
 	}
@@ -12248,8 +10467,6 @@ L17:
 	p.Pos = x14
 	k15 = x16
 L18:
-
-	x22 = p.Pos
 	x23 = p.Pos
 	if v27, ok = u66(p); !ok {
 		goto L25
@@ -12261,7 +10478,6 @@ L25:
 	v24 = nil
 L26:
 	k21 = v24
-	x29 = p.Pos
 	x30 = p.Pos
 	if v34, ok = u65(p); !ok {
 		goto L32
@@ -12275,17 +10491,7 @@ L33:
 	k28 = v31
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "regularParameter"
-	v = func() any {
-		return func() any {
-			f_915 := func() any { return k1 }()
-			f_916 := func() any { return k5 }()
-			f_917 := func() any { return k11 }()
-			f_918 := func() any { return k15 }()
-			f_919 := func() any { return k21 }()
-			f_920 := func() any { return k28 }()
-			return tmk_Parameter(c, true, f_915, f_916, f_917, f_918, f_919, f_920)
-		}()
-	}()
+	v = tmk_Parameter(c, true, k1, k5, k11, k15, k21, k28)
 	p.Depth--
 	return v, true
 fail:
@@ -12307,7 +10513,7 @@ func u85(p *rt.TParser) (any, bool) {
 }
 
 func i85(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -12315,7 +10521,6 @@ func i85(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x2
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
@@ -12328,26 +10533,17 @@ func i85(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("*", func() any {
-					return c.Binary("%", func() any {
-						return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
-					}(), func() any { return any(2) }())
-				}(), func() any { return any(32) }())
-			}())
-		}()
+		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(32)), any(2)), any(32)))
 	}) {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u320(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "returnType"
-	v = func() any { return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -12372,14 +10568,12 @@ func u86(p *rt.TParser) (any, bool) {
 }
 
 func i86(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x6, x11, x13, x18, x20, x25, x28 int
+	var start, x4, x6, x13, x20 int
 	var v, k1, v3, k7, x8, v12, k14, x15, v19, k21, x22, v26, k27, v29 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _ = x2, x11, x18, x25, x28
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
@@ -12403,7 +10597,6 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto L9
 	}
-	x11 = p.Pos
 	if v12, ok = u88(p); !ok {
 		goto L9
 	}
@@ -12413,13 +10606,11 @@ L9:
 	p.Pos = x6
 	k7 = x8
 L10:
-
 	x13 = p.Pos
 	x15 = k14
 	if _, ok = s480(p); !ok {
 		goto L16
 	}
-	x18 = p.Pos
 	if v19, ok = u375(p); !ok {
 		goto L16
 	}
@@ -12429,13 +10620,11 @@ L16:
 	p.Pos = x13
 	k14 = x15
 L17:
-
 	x20 = p.Pos
 	x22 = k21
 	if _, ok = s480(p); !ok {
 		goto L23
 	}
-	x25 = p.Pos
 	if v26, ok = u89(p); !ok {
 		goto L23
 	}
@@ -12445,7 +10634,6 @@ L23:
 	p.Pos = x20
 	k21 = x22
 L24:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
@@ -12457,7 +10645,6 @@ L24:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x28 = p.Pos
 	if v29, ok = u95(p); !ok {
 		goto fail
 	}
@@ -12469,16 +10656,7 @@ L24:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classDeclaration"
-	v = func() any {
-		return func() any {
-			f_921 := func() any { return k1 }()
-			f_922 := func() any { return k7 }()
-			f_923 := func() any { return c.Concat(func() any { return k14 }()) }()
-			f_924 := func() any { return c.Concat(func() any { return k21 }()) }()
-			f_925 := func() any { return k27 }()
-			return tmk_ClassDeclaration(c, true, f_921, f_922, f_923, f_924, f_925)
-		}()
-	}()
+	v = tmk_ClassDeclaration(c, true, k1, k7, c.Concat(k14), c.Concat(k21), k27)
 	p.Depth--
 	return v, true
 fail:
@@ -12497,14 +10675,12 @@ func u87(p *rt.TParser) (any, bool) {
 }
 
 func i87(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x6, x11, x13, x18, x20, x25, x28 int
+	var start, x4, x6, x13, x20 int
 	var v, k1, v3, k7, x8, v12, k14, x15, v19, k21, x22, v26, k27, v29 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _ = x2, x11, x18, x25, x28
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
@@ -12528,7 +10704,6 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto L9
 	}
-	x11 = p.Pos
 	if v12, ok = u88(p); !ok {
 		goto L9
 	}
@@ -12538,13 +10713,11 @@ L9:
 	p.Pos = x6
 	k7 = x8
 L10:
-
 	x13 = p.Pos
 	x15 = k14
 	if _, ok = s480(p); !ok {
 		goto L16
 	}
-	x18 = p.Pos
 	if v19, ok = u375(p); !ok {
 		goto L16
 	}
@@ -12554,13 +10727,11 @@ L16:
 	p.Pos = x13
 	k14 = x15
 L17:
-
 	x20 = p.Pos
 	x22 = k21
 	if _, ok = s480(p); !ok {
 		goto L23
 	}
-	x25 = p.Pos
 	if v26, ok = u89(p); !ok {
 		goto L23
 	}
@@ -12570,7 +10741,6 @@ L23:
 	p.Pos = x20
 	k21 = x22
 L24:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
@@ -12582,7 +10752,6 @@ L24:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x28 = p.Pos
 	if v29, ok = u95(p); !ok {
 		goto fail
 	}
@@ -12594,16 +10763,7 @@ L24:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classExpression"
-	v = func() any {
-		return func() any {
-			f_926 := func() any { return k1 }()
-			f_927 := func() any { return k7 }()
-			f_928 := func() any { return c.Concat(func() any { return k14 }()) }()
-			f_929 := func() any { return c.Concat(func() any { return k21 }()) }()
-			f_930 := func() any { return k27 }()
-			return tmk_ClassExpression(c, true, f_926, f_927, f_928, f_929, f_930)
-		}()
-	}()
+	v = tmk_ClassExpression(c, true, k1, k7, c.Concat(k14), c.Concat(k21), k27)
 	p.Depth--
 	return v, true
 fail:
@@ -12625,13 +10785,12 @@ func u88(p *rt.TParser) (any, bool) {
 }
 
 func i88(p *rt.TParser) (any, bool) {
-	var start, x1, x3, x6 int
+	var start, x1, x3 int
 	var v, k5, v7 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x6
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = p.Parser.MatchLiteral(lit166, "implements", 83, false); !ok {
@@ -12660,14 +10819,13 @@ L4:
 L2:
 	p.Silent--
 	p.Pos = x1
-	x6 = p.Pos
 	if v7, ok = u422(p); !ok {
 		goto fail
 	}
 	k5 = v7
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "className"
-	v = func() any { return k5 }()
+	v = k5
 	v = c.Finish(v)
 	v = p.TConvertResult(trules[88], v)
 	p.Depth--
@@ -12691,31 +10849,27 @@ func u89(p *rt.TParser) (any, bool) {
 }
 
 func i89(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x11 int
+	var start, x5, x6, x8 int
 	var v, k1, v3, k4, k9, v12, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x7, x11
-	x2 = p.Pos
 	if v3, ok = u90(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5, x6, x7 = p.Pos, len(p.KidStack), 0
+	x5, x6, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x8 = p.Pos
 		k9 = nil
 		if _, ok = s480(p); !ok {
 			goto L10
 		}
-		x11 = p.Pos
 		if v12, ok = u90(p); !ok {
 			goto L10
 		}
 		k9 = v12
-		x7++
 		p.PushKid(k9)
 		if p.Pos == x8 {
 			break
@@ -12729,14 +10883,7 @@ func i89(p *rt.TParser) (any, bool) {
 	k4 = v13
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "heritageClauses"
-	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { return k1 }())
-			c.PushItems(func() any { return k4 }())
-			return c.EndList(b)
-		}()
-	}()
+	v = func() any { b := len(c.P.KidStack); c.PushList(k1); c.PushItems(k4); return c.EndList(b) }()
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -12759,15 +10906,13 @@ func u90(p *rt.TParser) (any, bool) {
 }
 
 func i90(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x4, x12, x15, x20, x23, x26 int
+	var start, x3, x4, x12, x15, x20, x26 int
 	var v, k1, v14, k16, x17, v24 any
 	var c *rt.TActCtx
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x23
-	x2 = p.Pos
 	x3 = p.Pos
 	x4 = p.Pos
 	x6, _, x7 = p.NextOrdinary()
@@ -12795,7 +10940,6 @@ L11:
 L10:
 	goto fail
 L5:
-
 	x12 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -12827,11 +10971,9 @@ L21:
 	p.Pos = x20
 	goto L19
 L22:
-
 	if _, ok = s480(p); !ok {
 		goto L19
 	}
-	x23 = p.Pos
 	if v24, ok = u93(p); !ok {
 		goto L19
 	}
@@ -12862,13 +11004,7 @@ L25:
 L18:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "heritageClause"
-	v = func() any {
-		return func() any {
-			f_931 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_932 := func() any { return c.Concat(func() any { return k16 }()) }()
-			return tmk_HeritageClause(c, true, f_931, f_932)
-		}()
-	}()
+	v = tmk_HeritageClause(c, true, c.Text(k1), c.Concat(k16))
 	p.Depth--
 	return v, true
 fail:
@@ -12887,19 +11023,17 @@ func u93(p *rt.TParser) (any, bool) {
 }
 
 func i93(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x11, x14, x17 int
+	var start, x5, x6, x8, x14, x17 int
 	var v, k1, v3, k4, k9, v12, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x7, x11
-	x2 = p.Pos
 	if v3, ok = u94(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5, x6, x7 = p.Pos, len(p.KidStack), 0
+	x5, x6, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x8 = p.Pos
 		k9 = nil
@@ -12914,12 +11048,10 @@ func i93(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L10
 		}
-		x11 = p.Pos
 		if v12, ok = u94(p); !ok {
 			goto L10
 		}
 		k9 = v12
-		x7++
 		p.PushKid(k9)
 		if p.Pos == x8 {
 			break
@@ -12960,14 +11092,7 @@ L15:
 L16:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "heritageTypes"
-	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { return k1 }())
-			c.PushItems(func() any { return k4 }())
-			return c.EndList(b)
-		}()
-	}()
+	v = func() any { b := len(c.P.KidStack); c.PushList(k1); c.PushItems(k4); return c.EndList(b) }()
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -12990,14 +11115,13 @@ func u94(p *rt.TParser) (any, bool) {
 }
 
 func i94(p *rt.TParser) (any, bool) {
-	var start, x1, x3, x11, x13, x15, x17, x19, x25, x33, x36, x38, x43 int
+	var start, x1, x3, x11, x13, x15, x17, x19, x25, x33, x38 int
 	var v, k35, v37, k39, x40, v44 any
 	var c *rt.TActCtx
 	var x5, x20, x27 rune
 	var x6, ok, x21, x28 bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x36, x43
 	x1 = p.Pos
 	p.Silent++
 	x3 = p.Pos
@@ -13026,7 +11150,6 @@ L10:
 L9:
 	goto L2
 L4:
-
 	x11 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -13079,7 +11202,6 @@ L2:
 	p.Pos += x19
 	goto L18
 L22:
-
 	x25 = p.Pos
 	x27, _, x28 = p.NextOrdinary()
 	if !(x28 && (x27 == 101)) && p.Depth <= p.MaxDepth {
@@ -13106,7 +11228,6 @@ L32:
 L31:
 	goto L24
 L26:
-
 	x33 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -13135,7 +11256,6 @@ L16:
 L14:
 	p.Silent--
 	p.Pos = x13
-	x36 = p.Pos
 	if v37, ok = p.InvokePlain(trules[237], 0); !ok {
 		goto fail
 	}
@@ -13145,7 +11265,6 @@ L14:
 	if _, ok = s480(p); !ok {
 		goto L41
 	}
-	x43 = p.Pos
 	if v44, ok = u373(p); !ok {
 		goto L41
 	}
@@ -13157,13 +11276,7 @@ L41:
 L42:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "expressionWithTypeArguments"
-	v = func() any {
-		return func() any {
-			f_933 := func() any { return k35 }()
-			f_934 := func() any { return c.Concat(func() any { return k39 }()) }()
-			return tmk_ExpressionWithTypeArguments(c, true, f_933, f_934)
-		}()
-	}()
+	v = tmk_ExpressionWithTypeArguments(c, true, k35, c.Concat(k39))
 	p.Depth--
 	return v, true
 fail:
@@ -13185,15 +11298,14 @@ func u95(p *rt.TParser) (any, bool) {
 }
 
 func i95(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x4, x5, x8, x11, x18 int
+	var start, x2, x3, x5, x8, x11 int
 	var v, k1, k6, v19, v20 any
 	var c *rt.TActCtx
 	var ok, x15 bool
 	var x14 rune
 	start = p.Pos
 	p.Enter()
-	_, _ = x4, x18
-	x2, x3, x4 = p.Pos, len(p.KidStack), 0
+	x2, x3, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x5 = p.Pos
 		k6 = nil
@@ -13230,8 +11342,6 @@ func i95(p *rt.TParser) (any, bool) {
 		p.Pos = x8
 		goto L7
 	L10:
-
-		x18 = p.Pos
 		if v19, ok = s100(p); !ok {
 			goto L7
 		}
@@ -13239,7 +11349,6 @@ func i95(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L7
 		}
-		x4++
 		p.PushKid(k6)
 		if p.Pos == x5 {
 			break
@@ -13253,9 +11362,7 @@ func i95(p *rt.TParser) (any, bool) {
 	k1 = v20
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classMembers"
-	v = func() any {
-		return c.NewList(c.ListItems("map", func() any { return k1 }()))
-	}()
+	v = c.NewList(c.ListItems("map", k1))
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -13282,7 +11389,6 @@ func s100(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-
 	if v10, ok = u105(p); !ok {
 		goto L9
 	}
@@ -13329,13 +11435,12 @@ func u101(p *rt.TParser) (any, bool) {
 }
 
 func i101(p *rt.TParser) (any, bool) {
-	var start, x1, x5, x6 int
+	var start, x1, x6 int
 	var v, k4, v7, v10, v12 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x5
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = u176(p); !ok {
@@ -13352,8 +11457,6 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x5 = p.Pos
 	x6 = p.Pos
 	if v10, ok = u106(p); !ok {
 		goto L9
@@ -13374,7 +11477,7 @@ L8:
 	k4 = v7
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classAccessor"
-	v = func() any { return k4 }()
+	v = k4
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -13394,13 +11497,12 @@ func u102(p *rt.TParser) (any, bool) {
 }
 
 func i102(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x5 int
+	var start, x1, x5 int
 	var v, k3, v6, v9, v11, v13, v15 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = u176(p); !ok {
@@ -13415,7 +11517,6 @@ func i102(p *rt.TParser) (any, bool) {
 L2:
 	p.Silent--
 	p.Pos = x1
-	x4 = p.Pos
 	x5 = p.Pos
 	if v9, ok = u109(p); !ok {
 		goto L8
@@ -13450,7 +11551,7 @@ L7:
 	k3 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classMemberNotAccessor"
-	v = func() any { return k3 }()
+	v = k3
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -13497,7 +11598,7 @@ func u105(p *rt.TParser) (any, bool) {
 }
 
 func i105(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x6, x10 int
+	var start, x4, x6 int
 	var v, k1, v3, k9, v11 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -13505,8 +11606,6 @@ func i105(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _ = x2, x10
-	x2 = p.Pos
 	if v3, ok = u176(p); !ok {
 		goto fail
 	}
@@ -13543,32 +11642,18 @@ L7:
 	p.Pos = x6
 	goto fail
 L8:
-
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("+", func() any {
-				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-					return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
-				}())
-			}(), func() any { return any(2) }())
-		}()
+		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32))), any(2))
 	}) {
 		goto fail
 	}
-	x10 = p.Pos
 	if v11, ok = u18(p); !ok {
 		goto fail
 	}
 	k9 = v11
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classStaticBlock"
-	v = func() any {
-		return func() any {
-			f_936 := func() any { return k1 }()
-			f_937 := func() any { return k9 }()
-			return tmk_ClassStaticBlockDeclaration(c, true, f_936, f_937)
-		}()
-	}()
+	v = tmk_ClassStaticBlockDeclaration(c, true, k1, k9)
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -13589,7 +11674,7 @@ func u106(p *rt.TParser) (any, bool) {
 }
 
 func i106(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x6, x10, x12, x17, x20, x23, x24, x29, x34, x37 int
+	var start, x4, x6, x12, x24, x29, x37 int
 	var v, k1, v3, k9, v11, k13, x14, v18, k19, v21, k22, v25, v28, k30, x31, v35 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -13597,8 +11682,6 @@ func i106(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _, _, _, _, _ = x2, x10, x17, x20, x23, x34
-	x2 = p.Pos
 	if v3, ok = u176(p); !ok {
 		goto fail
 	}
@@ -13635,21 +11718,15 @@ L7:
 	p.Pos = x6
 	goto fail
 L8:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x10 = p.Pos
 	if v11, ok = u411(p); !ok {
 		goto fail
 	}
 	k9 = v11
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
-			}())
-		}()
+		return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32)))
 	}) {
 		goto fail
 	}
@@ -13658,7 +11735,6 @@ L8:
 	if _, ok = s480(p); !ok {
 		goto L15
 	}
-	x17 = p.Pos
 	if v18, ok = u375(p); !ok {
 		goto L15
 	}
@@ -13668,16 +11744,13 @@ L15:
 	p.Pos = x12
 	k13 = x14
 L16:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x20 = p.Pos
 	if v21, ok = u79(p); !ok {
 		goto fail
 	}
 	k19 = v21
-	x23 = p.Pos
 	x24 = p.Pos
 	if v28, ok = u85(p); !ok {
 		goto L26
@@ -13694,7 +11767,6 @@ L27:
 	if _, ok = s480(p); !ok {
 		goto L33
 	}
-	x34 = p.Pos
 	if v35, ok = u18(p); !ok {
 		goto L33
 	}
@@ -13730,17 +11802,7 @@ L36:
 L32:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "getAccessor"
-	v = func() any {
-		return func() any {
-			f_938 := func() any { return k1 }()
-			f_939 := func() any { return k9 }()
-			f_940 := func() any { return c.Concat(func() any { return k13 }()) }()
-			f_941 := func() any { return k19 }()
-			f_942 := func() any { return k22 }()
-			f_943 := func() any { return k30 }()
-			return tmk_GetAccessor(c, true, f_938, f_939, f_940, f_941, f_942, f_943)
-		}()
-	}()
+	v = tmk_GetAccessor(c, true, k1, k9, c.Concat(k13), k19, k22, k30)
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -13761,7 +11823,7 @@ func u107(p *rt.TParser) (any, bool) {
 }
 
 func i107(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x6, x10, x12, x17, x20, x23, x24, x29, x34, x37 int
+	var start, x4, x6, x12, x24, x29, x37 int
 	var v, k1, v3, k9, v11, k13, x14, v18, k19, v21, k22, v25, v28, k30, x31, v35 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -13769,8 +11831,6 @@ func i107(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _, _, _, _, _ = x2, x10, x17, x20, x23, x34
-	x2 = p.Pos
 	if v3, ok = u176(p); !ok {
 		goto fail
 	}
@@ -13807,21 +11867,15 @@ L7:
 	p.Pos = x6
 	goto fail
 L8:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x10 = p.Pos
 	if v11, ok = u411(p); !ok {
 		goto fail
 	}
 	k9 = v11
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
-			}())
-		}()
+		return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32)))
 	}) {
 		goto fail
 	}
@@ -13830,7 +11884,6 @@ L8:
 	if _, ok = s480(p); !ok {
 		goto L15
 	}
-	x17 = p.Pos
 	if v18, ok = u375(p); !ok {
 		goto L15
 	}
@@ -13840,16 +11893,13 @@ L15:
 	p.Pos = x12
 	k13 = x14
 L16:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x20 = p.Pos
 	if v21, ok = u79(p); !ok {
 		goto fail
 	}
 	k19 = v21
-	x23 = p.Pos
 	x24 = p.Pos
 	if v28, ok = u85(p); !ok {
 		goto L26
@@ -13866,7 +11916,6 @@ L27:
 	if _, ok = s480(p); !ok {
 		goto L33
 	}
-	x34 = p.Pos
 	if v35, ok = u18(p); !ok {
 		goto L33
 	}
@@ -13902,17 +11951,7 @@ L36:
 L32:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "setAccessor"
-	v = func() any {
-		return func() any {
-			f_944 := func() any { return k1 }()
-			f_945 := func() any { return k9 }()
-			f_946 := func() any { return c.Concat(func() any { return k13 }()) }()
-			f_947 := func() any { return k19 }()
-			f_948 := func() any { return k22 }()
-			f_949 := func() any { return k30 }()
-			return tmk_SetAccessor(c, true, f_944, f_945, f_946, f_947, f_948, f_949)
-		}()
-	}()
+	v = tmk_SetAccessor(c, true, k1, k9, c.Concat(k13), k19, k22, k30)
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -13933,7 +11972,7 @@ func u109(p *rt.TParser) (any, bool) {
 }
 
 func i109(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x9, x12, x15, x16, x21, x26, x29 int
+	var start, x4, x16, x21, x29 int
 	var v, k1, v3, k5, x6, v10, k11, v13, k14, v17, v20, k22, x23, v27 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -13941,8 +11980,6 @@ func i109(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _, _, _, _ = x2, x9, x12, x15, x26
-	x2 = p.Pos
 	if v3, ok = u176(p); !ok {
 		goto fail
 	}
@@ -13951,11 +11988,7 @@ func i109(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
-			}())
-		}()
+		return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32)))
 	}) {
 		goto fail
 	}
@@ -13964,7 +11997,6 @@ func i109(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto L7
 	}
-	x9 = p.Pos
 	if v10, ok = u375(p); !ok {
 		goto L7
 	}
@@ -13974,16 +12006,13 @@ L7:
 	p.Pos = x4
 	k5 = x6
 L8:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x12 = p.Pos
 	if v13, ok = u79(p); !ok {
 		goto fail
 	}
 	k11 = v13
-	x15 = p.Pos
 	x16 = p.Pos
 	if v20, ok = u85(p); !ok {
 		goto L18
@@ -14000,7 +12029,6 @@ L19:
 	if _, ok = s480(p); !ok {
 		goto L25
 	}
-	x26 = p.Pos
 	if v27, ok = u18(p); !ok {
 		goto L25
 	}
@@ -14036,16 +12064,7 @@ L28:
 L24:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "constructorDeclaration"
-	v = func() any {
-		return func() any {
-			f_950 := func() any { return k1 }()
-			f_951 := func() any { return c.Concat(func() any { return k5 }()) }()
-			f_952 := func() any { return k11 }()
-			f_953 := func() any { return k14 }()
-			f_954 := func() any { return k22 }()
-			return tmk_Constructor(c, true, f_950, f_951, f_952, f_953, f_954)
-		}()
-	}()
+	v = tmk_Constructor(c, true, k1, c.Concat(k5), k11, k14, k22)
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -14066,14 +12085,12 @@ func u111(p *rt.TParser) (any, bool) {
 }
 
 func i111(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x8, x9, x15, x16 int
+	var start, x4, x9, x16 int
 	var v, k1, v3, k7, v10, v13, k14, v17, v20 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x8, x15
-	x2 = p.Pos
 	if v3, ok = u176(p); !ok {
 		goto fail
 	}
@@ -14091,7 +12108,6 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 79, false); !ok {
@@ -14100,7 +12116,6 @@ L6:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x8 = p.Pos
 	x9 = p.Pos
 	if v13, ok = u80(p); !ok {
 		goto L11
@@ -14120,7 +12135,6 @@ L12:
 	} else if _, ok = p.Parser.MatchLiteral(lit148, "]", 80, false); !ok {
 		goto fail
 	}
-	x15 = p.Pos
 	x16 = p.Pos
 	if v20, ok = u66(p); !ok {
 		goto L18
@@ -14137,14 +12151,7 @@ L19:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classIndexSignature"
-	v = func() any {
-		return func() any {
-			f_955 := func() any { return k1 }()
-			f_956 := func() any { return c.Concat(func() any { return k7 }()) }()
-			f_957 := func() any { return k14 }()
-			return tmk_IndexSignature(c, true, f_955, f_956, f_957)
-		}()
-	}()
+	v = tmk_IndexSignature(c, true, k1, c.Concat(k7), k14)
 	p.Depth--
 	return v, true
 fail:
@@ -14163,7 +12170,7 @@ func u112(p *rt.TParser) (any, bool) {
 }
 
 func i112(p *rt.TParser) (any, bool) {
-	var start, x1, x6, x9, x12, x14, x16, x23, x26, x27, x29, x32, x34, x39, x41, x45, size, x48, x53, x56, x59, x60, x65, x70, x73 int
+	var start, x1, x6, x14, x16, x23, x27, x34, x41, x45, size, x48, x60, x65, x73 int
 	var v, k2, x3, v10, k11, v13, k17, x18, k19, x20, v28, v30, k31, v33, k35, x36, v40, k49, x50, v54, k55, v57, k58, v61, v64, k66, x67, v71 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -14172,12 +12179,10 @@ func i112(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _, _, _, _, _, _, _, _, _ = x9, x12, x26, x29, x32, x39, x53, x56, x59, x70
 	x1 = p.Pos
 	x3 = k2
 	x6 = p.Pos
 	p.Silent++
-	x9 = p.Pos
 	if v10, ok = u78(p); !ok {
 		goto L7
 	}
@@ -14195,8 +12200,6 @@ L4:
 	p.Pos = x1
 	k2 = x3
 L5:
-
-	x12 = p.Pos
 	if v13, ok = u176(p); !ok {
 		goto fail
 	}
@@ -14217,7 +12220,6 @@ L15:
 	x20 = k19
 	x23 = p.Pos
 	p.Silent++
-	x26 = p.Pos
 	x27 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
@@ -14234,8 +12236,6 @@ L24:
 	p.Pos = x23
 	goto L21
 L25:
-
-	x29 = p.Pos
 	if v30, ok = s415(p); !ok {
 		goto L21
 	}
@@ -14249,8 +12249,6 @@ L21:
 	k17 = x18
 	k19 = x20
 L22:
-
-	x32 = p.Pos
 	if v33, ok = u411(p); !ok {
 		goto fail
 	}
@@ -14260,7 +12258,6 @@ L22:
 	if _, ok = s480(p); !ok {
 		goto L37
 	}
-	x39 = p.Pos
 	if v40, ok = s413(p); !ok {
 		goto L37
 	}
@@ -14270,13 +12267,8 @@ L37:
 	p.Pos = x34
 	k35 = x36
 L38:
-
 	x41 = p.Pos
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("!=", func() any { return k19 }(), func() any { return any(nil) }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("!=", k19, any(nil)) }) {
 		goto L43
 	}
 	goto L42
@@ -14306,21 +12298,8 @@ L44:
 	p.Pos = x41
 	goto fail
 L42:
-
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("+", func() any {
-				return c.Binary("+", func() any {
-					return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-						return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
-					}())
-				}(), func() any { return c.Length(func() any { return k17 }()) }())
-			}(), func() any {
-				return c.Binary("*", func() any {
-					return c.Binary("/", func() any { return c.Length(func() any { return k2 }()) }(), func() any { return any(5) }())
-				}(), func() any { return any(2) }())
-			}())
-		}()
+		return c.Binary("+", c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32))), c.Length(k17)), c.Binary("*", c.Binary("/", c.Length(k2), any(5)), any(2)))
 	}) {
 		goto fail
 	}
@@ -14329,7 +12308,6 @@ L42:
 	if _, ok = s480(p); !ok {
 		goto L51
 	}
-	x53 = p.Pos
 	if v54, ok = u375(p); !ok {
 		goto L51
 	}
@@ -14339,16 +12317,13 @@ L51:
 	p.Pos = x48
 	k49 = x50
 L52:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x56 = p.Pos
 	if v57, ok = u79(p); !ok {
 		goto fail
 	}
 	k55 = v57
-	x59 = p.Pos
 	x60 = p.Pos
 	if v64, ok = u85(p); !ok {
 		goto L62
@@ -14365,7 +12340,6 @@ L63:
 	if _, ok = s480(p); !ok {
 		goto L69
 	}
-	x70 = p.Pos
 	if v71, ok = u18(p); !ok {
 		goto L69
 	}
@@ -14401,19 +12375,7 @@ L72:
 L68:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "methodDeclaration"
-	v = func() any {
-		return func() any {
-			f_958 := func() any { return k11 }()
-			f_959 := func() any { return k19 }()
-			f_960 := func() any { return k31 }()
-			f_961 := func() any { return k35 }()
-			f_962 := func() any { return c.Concat(func() any { return k49 }()) }()
-			f_963 := func() any { return k55 }()
-			f_964 := func() any { return k58 }()
-			f_965 := func() any { return k66 }()
-			return tmk_MethodDeclaration(c, true, f_958, f_959, f_960, f_961, nil, f_962, f_963, f_964, f_965)
-		}()
-	}()
+	v = tmk_MethodDeclaration(c, true, k11, k19, k31, k35, nil, c.Concat(k49), k55, k58, k66)
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -14434,7 +12396,7 @@ func u113(p *rt.TParser) (any, bool) {
 }
 
 func i113(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x7, x9, x16, x21, x24, x27, x28, x33, x39, size, x41, x43 int
+	var start, x4, x9, x16, x28, x33, x39, size, x43 int
 	var v, k1, v3, k6, v8, k10, x11, k12, x13, x17, x18, v22, v25, k26, v29, v32, k35, x36, v42 any
 	var c *rt.TActCtx
 	var prevEnv, x34 *rt.Env
@@ -14443,8 +12405,6 @@ func i113(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _, _, _, _, _ = x2, x7, x21, x24, x27, x41
-	x2 = p.Pos
 	if v3, ok = u176(p); !ok {
 		goto fail
 	}
@@ -14460,7 +12420,6 @@ func i113(p *rt.TParser) (any, bool) {
 L5:
 	p.Silent--
 	p.Pos = x4
-	x7 = p.Pos
 	if v8, ok = u411(p); !ok {
 		goto fail
 	}
@@ -14474,7 +12433,6 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto L20
 	}
-	x21 = p.Pos
 	if v22, ok = s413(p); !ok {
 		goto L20
 	}
@@ -14487,7 +12445,6 @@ L20:
 	if _, ok = s494(p); !ok {
 		goto L23
 	}
-	x24 = p.Pos
 	if v25, ok = s414(p); !ok {
 		goto L23
 	}
@@ -14505,8 +12462,6 @@ L14:
 	k10 = x11
 	k12 = x13
 L15:
-
-	x27 = p.Pos
 	x28 = p.Pos
 	if v32, ok = u66(p); !ok {
 		goto L30
@@ -14546,16 +12501,9 @@ L40:
 	if _, ok = s480(p); !ok {
 		goto L37
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(8) }())
-			}())
-		}()
-	}) {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any { return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(8))) }) {
 		goto L37
 	}
-	x41 = p.Pos
 	if v42, ok = u187(p); !ok {
 		goto L37
 	}
@@ -14566,7 +12514,6 @@ L37:
 	p.Env = x34
 	k35 = x36
 L38:
-
 	x43 = p.Pos
 	p.Silent++
 	if _, ok = s494(p); !ok {
@@ -14589,17 +12536,7 @@ L44:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "propertyDeclaration"
-	v = func() any {
-		return func() any {
-			f_966 := func() any { return k1 }()
-			f_967 := func() any { return k6 }()
-			f_968 := func() any { return k10 }()
-			f_969 := func() any { return k12 }()
-			f_970 := func() any { return k26 }()
-			f_971 := func() any { return k35 }()
-			return tmk_PropertyDeclaration(c, true, f_966, f_967, f_968, f_969, f_970, f_971)
-		}()
-	}()
+	v = tmk_PropertyDeclaration(c, true, k1, k6, k10, k12, k26, k35)
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -14620,14 +12557,12 @@ func u114(p *rt.TParser) (any, bool) {
 }
 
 func i114(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x7, x9, x14, x16, x21, x24 int
+	var start, x4, x9, x16 int
 	var v, k1, v3, k6, v8, k10, x11, v15, k17, x18, v22, k23, v25 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _ = x2, x7, x14, x21, x24
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
@@ -14649,7 +12584,6 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = u421(p); !ok {
 		goto fail
 	}
@@ -14659,7 +12593,6 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto L12
 	}
-	x14 = p.Pos
 	if v15, ok = u375(p); !ok {
 		goto L12
 	}
@@ -14669,13 +12602,11 @@ L12:
 	p.Pos = x9
 	k10 = x11
 L13:
-
 	x16 = p.Pos
 	x18 = k17
 	if _, ok = s480(p); !ok {
 		goto L19
 	}
-	x21 = p.Pos
 	if v22, ok = u89(p); !ok {
 		goto L19
 	}
@@ -14685,27 +12616,16 @@ L19:
 	p.Pos = x16
 	k17 = x18
 L20:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x24 = p.Pos
 	if v25, ok = u384(p); !ok {
 		goto fail
 	}
 	k23 = v25
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "interfaceDeclaration"
-	v = func() any {
-		return func() any {
-			f_972 := func() any { return k1 }()
-			f_973 := func() any { return k6 }()
-			f_974 := func() any { return c.Concat(func() any { return k10 }()) }()
-			f_975 := func() any { return c.Concat(func() any { return k17 }()) }()
-			f_976 := func() any { return k23 }()
-			return tmk_InterfaceDeclaration(c, true, f_972, f_973, f_974, f_975, f_976)
-		}()
-	}()
+	v = tmk_InterfaceDeclaration(c, true, k1, k6, c.Concat(k10), c.Concat(k17), k23)
 	p.Depth--
 	return v, true
 fail:
@@ -14724,15 +12644,13 @@ func u115(p *rt.TParser) (any, bool) {
 }
 
 func i115(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x6, x9, x11, x16, x19, x20 int
+	var start, x4, x6, x11, x20 int
 	var v, k1, v3, k8, v10, k12, x13, v17, k18, v21, v27, v29 any
 	var c *rt.TActCtx
 	var ok, x24 bool
 	var x23 rune
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x2, x9, x16, x19
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
@@ -14767,7 +12685,6 @@ L7:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x9 = p.Pos
 	if v10, ok = u421(p); !ok {
 		goto fail
 	}
@@ -14777,7 +12694,6 @@ L7:
 	if _, ok = s480(p); !ok {
 		goto L14
 	}
-	x16 = p.Pos
 	if v17, ok = u375(p); !ok {
 		goto L14
 	}
@@ -14787,7 +12703,6 @@ L14:
 	p.Pos = x11
 	k12 = x13
 L15:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
@@ -14799,7 +12714,6 @@ L15:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x19 = p.Pos
 	x20 = p.Pos
 	x23, _, x24 = p.NextOrdinary()
 	if !(x24 && (x23 == 105)) && p.Depth+1 <= p.MaxDepth {
@@ -14814,7 +12728,6 @@ L15:
 L26:
 	p.Pos = x20
 L25:
-
 	if v29, ok = u315(p); !ok {
 		goto L28
 	}
@@ -14830,15 +12743,7 @@ L22:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeAliasDeclaration"
-	v = func() any {
-		return func() any {
-			f_977 := func() any { return k1 }()
-			f_978 := func() any { return k8 }()
-			f_979 := func() any { return c.Concat(func() any { return k12 }()) }()
-			f_980 := func() any { return k18 }()
-			return tmk_TypeAliasDeclaration(c, true, f_977, f_978, f_979, f_980)
-		}()
-	}()
+	v = tmk_TypeAliasDeclaration(c, true, k1, k8, c.Concat(k12), k18)
 	p.Depth--
 	return v, true
 fail:
@@ -14909,7 +12814,7 @@ func u117(p *rt.TParser) (any, bool) {
 }
 
 func i117(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x7, x10, x11 int
+	var start, x4, x11 int
 	var v, k1, v3, k6, v8, k9, v12, v15 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -14917,8 +12822,6 @@ func i117(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _, _ = x2, x7, x10
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
@@ -14942,7 +12845,6 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = u421(p); !ok {
 		goto fail
 	}
@@ -14958,16 +12860,9 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
-			}())
-		}()
-	}) {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any { return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(4))) }) {
 		goto fail
 	}
-	x10 = p.Pos
 	x11 = p.Pos
 	if v15, ok = u467(p); !ok {
 		goto L13
@@ -14989,14 +12884,7 @@ L14:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "enumDeclaration"
-	v = func() any {
-		return func() any {
-			f_981 := func() any { return k1 }()
-			f_982 := func() any { return k6 }()
-			f_983 := func() any { return c.Concat(func() any { return k9 }()) }()
-			return tmk_EnumDeclaration(c, true, f_981, f_982, f_983)
-		}()
-	}()
+	v = tmk_EnumDeclaration(c, true, k1, k6, c.Concat(k9))
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -15020,15 +12908,13 @@ func u118(p *rt.TParser) (any, bool) {
 }
 
 func i118(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x9, size, x11 int
+	var start, x4, x9, size int
 	var v, k1, v3, k5, x6, v12 any
 	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x11
-	x2 = p.Pos
 	if v3, ok = u411(p); !ok {
 		goto fail
 	}
@@ -15060,7 +12946,6 @@ L10:
 	if _, ok = s480(p); !ok {
 		goto L7
 	}
-	x11 = p.Pos
 	if v12, ok = u188(p); !ok {
 		goto L7
 	}
@@ -15072,13 +12957,7 @@ L7:
 L8:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "enumMember"
-	v = func() any {
-		return func() any {
-			f_984 := func() any { return k1 }()
-			f_985 := func() any { return k5 }()
-			return tmk_EnumMember(c, true, f_984, f_985)
-		}()
-	}()
+	v = tmk_EnumMember(c, true, k1, k5)
 	p.Depth--
 	return v, true
 fail:
@@ -15139,15 +13018,13 @@ func u120(p *rt.TParser) (any, bool) {
 }
 
 func i120(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x12, x15, x18 int
+	var start, x4, x12 int
 	var v, k1, v3, k14, v16, k17, v19 any
 	var c *rt.TActCtx
 	var ok, x7 bool
 	var x6 rune
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x15, x18
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
@@ -15178,7 +13055,6 @@ L11:
 L10:
 	goto fail
 L5:
-
 	x12 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -15193,26 +13069,17 @@ L13:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x15 = p.Pos
 	if v16, ok = u421(p); !ok {
 		goto fail
 	}
 	k14 = v16
-	x18 = p.Pos
 	if v19, ok = u121(p); !ok {
 		goto fail
 	}
 	k17 = v19
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namespaceDeclaration"
-	v = func() any {
-		return func() any {
-			f_986 := func() any { return k1 }()
-			f_987 := func() any { return k14 }()
-			f_988 := func() any { return k17 }()
-			return tmk_ModuleDeclaration(c, true, f_986, f_987, f_988)
-		}()
-	}()
+	v = tmk_ModuleDeclaration(c, true, k1, k14, k17)
 	p.Depth--
 	return v, true
 fail:
@@ -15234,13 +13101,12 @@ func u121(p *rt.TParser) (any, bool) {
 }
 
 func i121(p *rt.TParser) (any, bool) {
-	var start, x1, x6, x9 int
+	var start, x1 int
 	var v, k2, x3, v7, v10 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x6, x9
 	x1 = p.Pos
 	x3 = k2
 	if _, ok = s480(p); !ok {
@@ -15254,7 +13120,6 @@ func i121(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto L5
 	}
-	x6 = p.Pos
 	if v7, ok = u122(p); !ok {
 		goto L5
 	}
@@ -15266,7 +13131,6 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto L8
 	}
-	x9 = p.Pos
 	if v10, ok = u126(p); !ok {
 		goto L8
 	}
@@ -15279,7 +13143,7 @@ L8:
 L4:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namespaceBody"
-	v = func() any { return k2 }()
+	v = k2
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -15299,32 +13163,23 @@ func u122(p *rt.TParser) (any, bool) {
 }
 
 func i122(p *rt.TParser) (any, bool) {
-	var start, x2, x5 int
+	var start int
 	var v, k1, v3, k4, v6 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x5
-	x2 = p.Pos
 	if v3, ok = u425(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	if v6, ok = u121(p); !ok {
 		goto fail
 	}
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "nestedNamespace"
-	v = func() any {
-		return func() any {
-			f_989 := func() any { return k1 }()
-			f_990 := func() any { return k4 }()
-			return tmk_ModuleDeclaration(c, true, nil, f_989, f_990)
-		}()
-	}()
+	v = tmk_ModuleDeclaration(c, true, nil, k1, k4)
 	p.Depth--
 	return v, true
 fail:
@@ -15343,14 +13198,12 @@ func u123(p *rt.TParser) (any, bool) {
 }
 
 func i123(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x7, x9, x14 int
+	var start, x4, x9 int
 	var v, k1, v3, k6, v8, k10, x11, v15 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x7, x14
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
@@ -15372,7 +13225,6 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = u449(p); !ok {
 		goto fail
 	}
@@ -15382,7 +13234,6 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto L13
 	}
-	x14 = p.Pos
 	if v15, ok = u126(p); !ok {
 		goto L13
 	}
@@ -15402,14 +13253,7 @@ L16:
 L12:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "externalModuleDeclaration"
-	v = func() any {
-		return func() any {
-			f_991 := func() any { return k1 }()
-			f_992 := func() any { return k6 }()
-			f_993 := func() any { return k10 }()
-			return tmk_ModuleDeclaration(c, true, f_991, f_992, f_993)
-		}()
-	}()
+	v = tmk_ModuleDeclaration(c, true, k1, k6, k10)
 	p.Depth--
 	return v, true
 fail:
@@ -15428,19 +13272,16 @@ func u124(p *rt.TParser) (any, bool) {
 }
 
 func i124(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x7, x12 int
+	var start, x7 int
 	var v, k1, v3, k4, v6, k8, x9, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x5, x12
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	if v6, ok = s125(p); !ok {
 		goto fail
 	}
@@ -15450,7 +13291,6 @@ func i124(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto L11
 	}
-	x12 = p.Pos
 	if v13, ok = u126(p); !ok {
 		goto L11
 	}
@@ -15470,14 +13310,7 @@ L14:
 L10:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "globalDeclaration"
-	v = func() any {
-		return func() any {
-			f_994 := func() any { return k1 }()
-			f_995 := func() any { return k4 }()
-			f_996 := func() any { return k8 }()
-			return tmk_ModuleDeclaration(c, true, f_994, f_995, f_996)
-		}()
-	}()
+	v = tmk_ModuleDeclaration(c, true, k1, k4, k8)
 	p.Depth--
 	return v, true
 fail:
@@ -15535,14 +13368,13 @@ func u126(p *rt.TParser) (any, bool) {
 }
 
 func i126(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x4, x5, x6, x9, x11 int
+	var start, x3, x4, x6, x9 int
 	var v, k1, k7, v12, v13, v14, v15, v16 any
 	var c *rt.TActCtx
 	var ok bool
 	var x10 []any
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x5, x11
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "{", 20, false); !ok {
@@ -15551,15 +13383,12 @@ func i126(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	x3, x4 = p.Pos, len(p.KidStack)
-	x5 = 0
 	for {
 		x6 = p.Pos
 		k7 = nil
 		x9 = p.Pos
 		x10 = p.NewVals(1)[:0]
-		x11 = p.Pos
 		if v12, ok = u8(p); !ok {
 			goto L8
 		}
@@ -15570,8 +13399,7 @@ func i126(p *rt.TParser) (any, bool) {
 		}
 		v13 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
 		v14 = p.ScopeValue(sh5, v13, x6)
-		v15 = p.AttachCaptures(v14, scope997, []any{k7}, x6, p.Pos)
-		x5++
+		v15 = p.AttachCaptures(v14, scope847, []any{k7}, x6, p.Pos)
 		p.PushKid(v15)
 		if p.Pos == x6 {
 			break
@@ -15590,16 +13418,7 @@ func i126(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "moduleBlock"
-	v = func() any {
-		return func() any {
-			f_998 := func() any {
-				return c.MapList(func() any { return k1 }(), func(l_999 any) any {
-					return func() any { return c.Member(func() any { return l_999 }(), "$s") }()
-				})
-			}()
-			return tmk_ModuleBlock(c, true, f_998)
-		}()
-	}()
+	v = tmk_ModuleBlock(c, true, c.MapList(k1, func(l_848 any) any { return c.Member((l_848), "$s") }))
 	p.Depth--
 	return v, true
 fail:
@@ -15618,15 +13437,13 @@ func u127(p *rt.TParser) (any, bool) {
 }
 
 func i127(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x6, x11, x12, x14, x16, x20, x22, size, x25 int
+	var start, x4, x6, x12, x14, x16, x22, size int
 	var v, k1, v3, k7, x8, v13, k19, v21, k24, v26 any
 	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x2, x11, x20, x25
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
@@ -15650,7 +13467,6 @@ L5:
 	}
 	x6 = p.Pos
 	x8 = k7
-	x11 = p.Pos
 	x12 = p.Pos
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 121 && p.In[p.Pos+2] == 112 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
@@ -15691,8 +13507,6 @@ L9:
 	p.Pos = x6
 	k7 = x8
 L10:
-
-	x20 = p.Pos
 	if v21, ok = u421(p); !ok {
 		goto fail
 	}
@@ -15722,7 +13536,6 @@ L23:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x25 = p.Pos
 	if v26, ok = s128(p); !ok {
 		goto fail
 	}
@@ -15732,17 +13545,7 @@ L23:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importEqualsDeclaration"
-	v = func() any {
-		return func() any {
-			f_1000 := func() any { return k1 }()
-			f_1001 := func() any { return k19 }()
-			f_1002 := func() any { return k24 }()
-			f_1003 := func() any {
-				return c.Binary("!=", func() any { return k7 }(), func() any { return any(nil) }())
-			}()
-			return tmk_ImportEqualsDeclaration(c, true, f_1000, f_1001, f_1002, f_1003)
-		}()
-	}()
+	v = tmk_ImportEqualsDeclaration(c, true, k1, k19, k24, c.Binary("!=", k7, any(nil)))
 	p.Depth--
 	return v, true
 fail:
@@ -15771,7 +13574,6 @@ func s128(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-
 	if v10, ok = u371(p); !ok {
 		goto L9
 	}
@@ -15804,13 +13606,12 @@ func u129(p *rt.TParser) (any, bool) {
 }
 
 func i129(p *rt.TParser) (any, bool) {
-	var start, x1, x4 int
+	var start, x1 int
 	var v, k3, v5 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	if _, ok = p.Parser.MatchLiteral(lit228, "require", 107, false); !ok {
 		goto fail
 	}
@@ -15836,7 +13637,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u148(p); !ok {
 		goto fail
 	}
@@ -15851,12 +13651,7 @@ L2:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "externalModuleReference"
-	v = func() any {
-		return func() any {
-			f_1004 := func() any { return k3 }()
-			return tmk_ExternalModuleReference(c, true, f_1004)
-		}()
-	}()
+	v = tmk_ExternalModuleReference(c, true, k3)
 	p.Depth--
 	return v, true
 fail:
@@ -15875,15 +13670,13 @@ func u130(p *rt.TParser) (any, bool) {
 }
 
 func i130(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x6, x11, x13, x19, x21, x23, x25, x32, x34, size, x37, x39, x44 int
+	var start, x4, x6, x13, x19, x21, x23, x25, x32, x34, size, x39 int
 	var v, k1, v3, k7, x8, v12, k36, v38, k40, x41, v45 any
 	var c *rt.TActCtx
 	var ok, x16, x28 bool
 	var x15, x27, ch rune
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x2, x11, x37, x44
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
@@ -15907,7 +13700,6 @@ L5:
 	}
 	x6 = p.Pos
 	x8 = k7
-	x11 = p.Pos
 	if v12, ok = u131(p); !ok {
 		goto L10
 	}
@@ -15990,7 +13782,6 @@ L18:
 	p.Pos = x6
 	k7 = x8
 L17:
-
 	x32 = p.Pos
 	p.Silent++
 	if _, ok = u421(p); !ok {
@@ -16022,8 +13813,6 @@ L31:
 	k7 = x8
 	goto fail
 L9:
-
-	x37 = p.Pos
 	if v38, ok = u148(p); !ok {
 		goto fail
 	}
@@ -16033,7 +13822,6 @@ L9:
 	if _, ok = s494(p); !ok {
 		goto L42
 	}
-	x44 = p.Pos
 	if v45, ok = u149(p); !ok {
 		goto L42
 	}
@@ -16043,21 +13831,12 @@ L42:
 	p.Pos = x39
 	k40 = x41
 L43:
-
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importDeclaration"
-	v = func() any {
-		return func() any {
-			f_1005 := func() any { return k1 }()
-			f_1006 := func() any { return k7 }()
-			f_1007 := func() any { return k36 }()
-			f_1008 := func() any { return k40 }()
-			return tmk_ImportDeclaration(c, true, f_1005, f_1006, f_1007, f_1008)
-		}()
-	}()
+	v = tmk_ImportDeclaration(c, true, k1, k7, k36, k40)
 	p.Depth--
 	return v, true
 fail:
@@ -16076,16 +13855,14 @@ func u131(p *rt.TParser) (any, bool) {
 }
 
 func i131(p *rt.TParser) (any, bool) {
-	var start, x1, x6, x8, x15, x17, x21, x24 int
+	var start, x1, x8, x17 int
 	var v, k2, x3, v7, k9, x10, k11, x12, v16, x18, v22, v25 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x6, x15, x21, x24
 	x1 = p.Pos
 	x3 = k2
-	x6 = p.Pos
 	if v7, ok = s132(p); !ok {
 		goto L4
 	}
@@ -16098,11 +13875,9 @@ L4:
 	p.Pos = x1
 	k2 = x3
 L5:
-
 	x8 = p.Pos
 	x10 = k9
 	x12 = k11
-	x15 = p.Pos
 	if v16, ok = u421(p); !ok {
 		goto L14
 	}
@@ -16120,7 +13895,6 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto L19
 	}
-	x21 = p.Pos
 	if v22, ok = u133(p); !ok {
 		goto L19
 	}
@@ -16135,7 +13909,6 @@ L14:
 	p.Pos = x8
 	k9 = x10
 	k11 = x12
-	x24 = p.Pos
 	if v25, ok = u133(p); !ok {
 		goto L23
 	}
@@ -16149,14 +13922,7 @@ L23:
 L13:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importClause"
-	v = func() any {
-		return func() any {
-			f_1009 := func() any { return k9 }()
-			f_1010 := func() any { return k11 }()
-			f_1011 := func() any { return c.Text(func() any { return k2 }()) }()
-			return tmk_ImportClause(c, true, f_1009, f_1010, f_1011)
-		}()
-	}()
+	v = tmk_ImportClause(c, true, k9, k11, c.Text(k2))
 	p.Depth--
 	return v, true
 fail:
@@ -16282,7 +14048,6 @@ L22:
 L18:
 	p.Pos = x13
 L17:
-
 	x34 = p.Pos
 	p.Silent++
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 111 && p.In[p.Pos+3] == 109 {
@@ -16407,7 +14172,6 @@ L62:
 L58:
 	p.Pos = x53
 L57:
-
 	x64 = p.Pos
 	p.Silent++
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 111 && p.In[p.Pos+3] == 109 {
@@ -16544,13 +14308,12 @@ func u134(p *rt.TParser) (any, bool) {
 }
 
 func i134(p *rt.TParser) (any, bool) {
-	var start, x1, x4 int
+	var start, x1 int
 	var v, k3, v5 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit152, "*", 81, false); !ok {
@@ -16578,19 +14341,13 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u421(p); !ok {
 		goto fail
 	}
 	k3 = v5
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namespaceImport"
-	v = func() any {
-		return func() any {
-			f_1012 := func() any { return k3 }()
-			return tmk_NamespaceImport(c, true, f_1012)
-		}()
-	}()
+	v = tmk_NamespaceImport(c, true, k3)
 	p.Depth--
 	return v, true
 fail:
@@ -16609,13 +14366,12 @@ func u135(p *rt.TParser) (any, bool) {
 }
 
 func i135(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v7 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "{", 20, false); !ok {
@@ -16624,7 +14380,6 @@ func i135(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u470(p); !ok {
 		goto L5
@@ -16646,12 +14401,7 @@ L6:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namedImports"
-	v = func() any {
-		return func() any {
-			f_1013 := func() any { return c.Concat(func() any { return k1 }()) }()
-			return tmk_NamedImports(c, true, f_1013)
-		}()
-	}()
+	v = tmk_NamedImports(c, true, c.Concat(k1))
 	p.Depth--
 	return v, true
 fail:
@@ -16724,7 +14474,6 @@ L12:
 L16:
 	p.Pos = x1
 L15:
-
 	if v19, ok = u141(p); !ok {
 		goto L18
 	}
@@ -16757,13 +14506,12 @@ func u137(p *rt.TParser) (any, bool) {
 }
 
 func i137(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x6, x9 int
+	var start, x1, x6 int
 	var v, k3, v5, k8, v10 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x4, x9
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 121 && p.In[p.Pos+2] == 112 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit12, "type", 10, false); !ok {
@@ -16783,7 +14531,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u145(p); !ok {
 		goto fail
 	}
@@ -16810,21 +14557,13 @@ L7:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x9 = p.Pos
 	if v10, ok = u143(p); !ok {
 		goto fail
 	}
 	k8 = v10
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importSpecifierTypeAsAs"
-	v = func() any {
-		return func() any {
-			f_1014 := func() any { return k3 }()
-			f_1015 := func() any { return k8 }()
-			f_1016 := func() any { return any(true) }()
-			return tmk_ImportSpecifier(c, true, f_1014, f_1015, f_1016)
-		}()
-	}()
+	v = tmk_ImportSpecifier(c, true, k3, k8, any(true))
 	p.Depth--
 	return v, true
 fail:
@@ -16843,14 +14582,12 @@ func u138(p *rt.TParser) (any, bool) {
 }
 
 func i138(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x7 int
+	var start, x4 int
 	var v, k1, v3, k6, v8 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x7
-	x2 = p.Pos
 	if v3, ok = u142(p); !ok {
 		goto fail
 	}
@@ -16877,20 +14614,13 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = u143(p); !ok {
 		goto fail
 	}
 	k6 = v8
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importSpecifierTypeAsName"
-	v = func() any {
-		return func() any {
-			f_1017 := func() any { return k1 }()
-			f_1018 := func() any { return k6 }()
-			return tmk_ImportSpecifier(c, true, f_1017, f_1018, nil)
-		}()
-	}()
+	v = tmk_ImportSpecifier(c, true, k1, k6, nil)
 	p.Depth--
 	return v, true
 fail:
@@ -16909,13 +14639,12 @@ func u139(p *rt.TParser) (any, bool) {
 }
 
 func i139(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x6 int
+	var start, x1, x6 int
 	var v, k3, v5 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 121 && p.In[p.Pos+2] == 112 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit12, "type", 10, false); !ok {
@@ -16935,7 +14664,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u145(p); !ok {
 		goto fail
 	}
@@ -16956,13 +14684,7 @@ L7:
 	p.Pos = x6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importSpecifierTypeAs"
-	v = func() any {
-		return func() any {
-			f_1019 := func() any { return k3 }()
-			f_1020 := func() any { return any(true) }()
-			return tmk_ImportSpecifier(c, true, nil, f_1019, f_1020)
-		}()
-	}()
+	v = tmk_ImportSpecifier(c, true, nil, k3, any(true))
 	p.Depth--
 	return v, true
 fail:
@@ -16981,13 +14703,12 @@ func u140(p *rt.TParser) (any, bool) {
 }
 
 func i140(p *rt.TParser) (any, bool) {
-	var start, x1, x3, x6, x13, x15, x17, x20 int
+	var start, x1, x3, x6, x15 int
 	var v, k7, x8, k9, x10, v14, v18, v21 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x13, x17, x20
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 121 && p.In[p.Pos+2] == 112 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit12, "type", 10, false); !ok {
@@ -17020,11 +14741,9 @@ L4:
 	p.Pos = x3
 	goto fail
 L5:
-
 	x6 = p.Pos
 	x8 = k7
 	x10 = k9
-	x13 = p.Pos
 	if v14, ok = u146(p); !ok {
 		goto L12
 	}
@@ -17051,7 +14770,6 @@ L16:
 	if _, ok = s480(p); !ok {
 		goto L12
 	}
-	x17 = p.Pos
 	if v18, ok = u143(p); !ok {
 		goto L12
 	}
@@ -17061,7 +14779,6 @@ L12:
 	p.Pos = x6
 	k7 = x8
 	k9 = x10
-	x20 = p.Pos
 	if v21, ok = u143(p); !ok {
 		goto L19
 	}
@@ -17075,14 +14792,7 @@ L19:
 L11:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importSpecifierType"
-	v = func() any {
-		return func() any {
-			f_1021 := func() any { return k7 }()
-			f_1022 := func() any { return k9 }()
-			f_1023 := func() any { return any(true) }()
-			return tmk_ImportSpecifier(c, true, f_1021, f_1022, f_1023)
-		}()
-	}()
+	v = tmk_ImportSpecifier(c, true, k7, k9, any(true))
 	p.Depth--
 	return v, true
 fail:
@@ -17101,17 +14811,15 @@ func u141(p *rt.TParser) (any, bool) {
 }
 
 func i141(p *rt.TParser) (any, bool) {
-	var start, x1, x8, x10, x12, x15 int
+	var start, x1, x10 int
 	var v, k2, x3, k4, x5, v9, v13, v16 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x8, x12, x15
 	x1 = p.Pos
 	x3 = k2
 	x5 = k4
-	x8 = p.Pos
 	if v9, ok = u146(p); !ok {
 		goto L7
 	}
@@ -17138,7 +14846,6 @@ L11:
 	if _, ok = s480(p); !ok {
 		goto L7
 	}
-	x12 = p.Pos
 	if v13, ok = u143(p); !ok {
 		goto L7
 	}
@@ -17148,7 +14855,6 @@ L7:
 	p.Pos = x1
 	k2 = x3
 	k4 = x5
-	x15 = p.Pos
 	if v16, ok = u143(p); !ok {
 		goto L14
 	}
@@ -17162,13 +14868,7 @@ L14:
 L6:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importSpecifierPlain"
-	v = func() any {
-		return func() any {
-			f_1024 := func() any { return k2 }()
-			f_1025 := func() any { return k4 }()
-			return tmk_ImportSpecifier(c, true, f_1024, f_1025, nil)
-		}()
-	}()
+	v = tmk_ImportSpecifier(c, true, k2, k4, nil)
 	p.Depth--
 	return v, true
 fail:
@@ -17420,15 +15120,13 @@ func u149(p *rt.TParser) (any, bool) {
 }
 
 func i149(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x4, x12, x16 int
+	var start, x3, x4, x12 int
 	var v, k1, v14, k15, v17 any
 	var c *rt.TActCtx
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x16
-	x2 = p.Pos
 	x3 = p.Pos
 	x4 = p.Pos
 	x6, _, x7 = p.NextOrdinary()
@@ -17458,7 +15156,6 @@ L11:
 L10:
 	goto fail
 L5:
-
 	x12 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -17475,20 +15172,13 @@ L13:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x16 = p.Pos
 	if v17, ok = u150(p); !ok {
 		goto fail
 	}
 	k15 = v17
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importAttributes"
-	v = func() any {
-		return func() any {
-			f_1026 := func() any { return k15 }()
-			f_1027 := func() any { return c.Text(func() any { return k1 }()) }()
-			return tmk_ImportAttributes(c, true, f_1026, f_1027)
-		}()
-	}()
+	v = tmk_ImportAttributes(c, true, k15, c.Text(k1))
 	p.Depth--
 	return v, true
 fail:
@@ -17510,13 +15200,12 @@ func u150(p *rt.TParser) (any, bool) {
 }
 
 func i150(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v7 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "{", 20, false); !ok {
@@ -17525,7 +15214,6 @@ func i150(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u469(p); !ok {
 		goto L5
@@ -17547,7 +15235,7 @@ L6:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importAttributesBraces"
-	v = func() any { return c.Concat(func() any { return k1 }()) }()
+	v = c.Concat(k1)
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -17570,14 +15258,12 @@ func u151(p *rt.TParser) (any, bool) {
 }
 
 func i151(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x11 int
+	var start, x3 int
 	var v, k1, v4, v7, v9, k10, v12 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x11
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u449(p); !ok {
 		goto L6
@@ -17607,20 +15293,13 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x11 = p.Pos
 	if v12, ok = u187(p); !ok {
 		goto fail
 	}
 	k10 = v12
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importAttribute"
-	v = func() any {
-		return func() any {
-			f_1028 := func() any { return k1 }()
-			f_1029 := func() any { return k10 }()
-			return tmk_ImportAttribute(c, true, f_1028, f_1029)
-		}()
-	}()
+	v = tmk_ImportAttribute(c, true, k1, k10)
 	p.Depth--
 	return v, true
 fail:
@@ -17639,7 +15318,7 @@ func u152(p *rt.TParser) (any, bool) {
 }
 
 func i152(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x7, x8, x15, x17, x19, size, x25, x27, x29, x34 int
+	var start, x4, x8, x15, x17, x19, size, x25, x27, x29 int
 	var v, k1, v3, k6, v9, v18, v21, v22, v28, v31, v32, k33, v35 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -17649,8 +15328,6 @@ func i152(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _, _ = x2, x7, x34
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
@@ -17672,7 +15349,6 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	x8 = p.Pos
 	x11, _, x12 = p.NextOrdinary()
 	if !(x12 && (x11 == 61)) && p.Depth <= p.MaxDepth {
@@ -17747,21 +15423,10 @@ L10:
 		goto fail
 	}
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("+", func() any {
-				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-					return c.Binary("*", func() any {
-						return c.Binary("%", func() any {
-							return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(2) }())
-						}(), func() any { return any(2) }())
-					}(), func() any { return any(2) }())
-				}())
-			}(), func() any { return any(2) }())
-		}()
+		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(2)), any(2)), any(2))), any(2))
 	}) {
 		goto fail
 	}
-	x34 = p.Pos
 	if v35, ok = u187(p); !ok {
 		goto fail
 	}
@@ -17771,16 +15436,7 @@ L10:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportAssignment"
-	v = func() any {
-		return func() any {
-			f_1030 := func() any { return k1 }()
-			f_1031 := func() any { return k33 }()
-			f_1032 := func() any {
-				return c.Binary("==", func() any { return c.Text(func() any { return k6 }()) }(), func() any { return any("=") }())
-			}()
-			return tmk_ExportAssignment(c, true, f_1030, f_1031, f_1032)
-		}()
-	}()
+	v = tmk_ExportAssignment(c, true, k1, k33, c.Binary("==", c.Text(k6), any("=")))
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -17801,14 +15457,12 @@ func u153(p *rt.TParser) (any, bool) {
 }
 
 func i153(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x6, x8, x11 int
+	var start, x4, x6, x8 int
 	var v, k1, v3, k10, v12 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x11
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
@@ -17866,7 +15520,6 @@ L9:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x11 = p.Pos
 	if v12, ok = u421(p); !ok {
 		goto fail
 	}
@@ -17876,13 +15529,7 @@ L9:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namespaceExportDeclaration"
-	v = func() any {
-		return func() any {
-			f_1033 := func() any { return k1 }()
-			f_1034 := func() any { return k10 }()
-			return tmk_NamespaceExportDeclaration(c, true, f_1033, f_1034)
-		}()
-	}()
+	v = tmk_NamespaceExportDeclaration(c, true, k1, k10)
 	p.Depth--
 	return v, true
 fail:
@@ -17936,7 +15583,7 @@ func u155(p *rt.TParser) (any, bool) {
 }
 
 func i155(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x6, x11, x12, x14, x16, x24, x28, x31, x33, x38 int
+	var start, x4, x6, x12, x14, x16, x28, x33 int
 	var v, k1, v3, k7, x8, v13, k17, x18, v25, k30, v32, k34, x35, v39 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -17945,8 +15592,6 @@ func i155(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _, _, _, _ = x2, x11, x24, x31, x38
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
@@ -17970,7 +15615,6 @@ L5:
 	}
 	x6 = p.Pos
 	x8 = k7
-	x11 = p.Pos
 	x12 = p.Pos
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 121 && p.In[p.Pos+2] == 112 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
@@ -17998,7 +15642,6 @@ L9:
 	p.Pos = x6
 	k7 = x8
 L10:
-
 	x16 = p.Pos
 	x18 = k17
 	x20, _, x21 = p.NextOrdinary()
@@ -18006,7 +15649,6 @@ L10:
 		p.ExpectOrdinary(p.Pos, 81)
 		goto L22
 	}
-	x24 = p.Pos
 	if v25, ok = u157(p); !ok {
 		goto L23
 	}
@@ -18032,7 +15674,6 @@ L27:
 L26:
 	goto fail
 L19:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
@@ -18056,21 +15697,10 @@ L29:
 		goto fail
 	}
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("+", func() any {
-				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-					return c.Binary("*", func() any {
-						return c.Binary("%", func() any {
-							return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(2) }())
-						}(), func() any { return any(2) }())
-					}(), func() any { return any(2) }())
-				}())
-			}(), func() any { return any(2) }())
-		}()
+		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(2)), any(2)), any(2))), any(2))
 	}) {
 		goto fail
 	}
-	x31 = p.Pos
 	if v32, ok = u148(p); !ok {
 		goto fail
 	}
@@ -18080,7 +15710,6 @@ L29:
 	if _, ok = s494(p); !ok {
 		goto L36
 	}
-	x38 = p.Pos
 	if v39, ok = u149(p); !ok {
 		goto L36
 	}
@@ -18090,24 +15719,12 @@ L36:
 	p.Pos = x33
 	k34 = x35
 L37:
-
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportStarDeclaration"
-	v = func() any {
-		return func() any {
-			f_1035 := func() any { return k1 }()
-			f_1036 := func() any { return k17 }()
-			f_1037 := func() any { return k30 }()
-			f_1038 := func() any { return k34 }()
-			f_1039 := func() any {
-				return c.Binary("!=", func() any { return k7 }(), func() any { return any(nil) }())
-			}()
-			return tmk_ExportDeclaration(c, true, f_1035, f_1036, f_1037, f_1038, f_1039)
-		}()
-	}()
+	v = tmk_ExportDeclaration(c, true, k1, k17, k30, k34, c.Binary("!=", k7, any(nil)))
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -18128,7 +15745,7 @@ func u156(p *rt.TParser) (any, bool) {
 }
 
 func i156(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x6, x11, x12, x14, x17, x19, x27, x29, x31, x35 int
+	var start, x4, x6, x12, x14, x19, x27, x31 int
 	var v, k1, v3, k7, x8, v13, k16, v18, k21, x22, k23, x24, v30, x32, v36 any
 	var c *rt.TActCtx
 	var prevEnv, x20 *rt.Env
@@ -18136,8 +15753,6 @@ func i156(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _, _, _, _ = x2, x11, x17, x29, x35
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
@@ -18161,7 +15776,6 @@ L5:
 	}
 	x6 = p.Pos
 	x8 = k7
-	x11 = p.Pos
 	x12 = p.Pos
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 121 && p.In[p.Pos+2] == 112 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
@@ -18189,8 +15803,6 @@ L9:
 	p.Pos = x6
 	k7 = x8
 L10:
-
-	x17 = p.Pos
 	if v18, ok = u158(p); !ok {
 		goto fail
 	}
@@ -18222,21 +15834,10 @@ L28:
 		goto L25
 	}
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("+", func() any {
-				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-					return c.Binary("*", func() any {
-						return c.Binary("%", func() any {
-							return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(2) }())
-						}(), func() any { return any(2) }())
-					}(), func() any { return any(2) }())
-				}())
-			}(), func() any { return any(2) }())
-		}()
+		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(2)), any(2)), any(2))), any(2))
 	}) {
 		goto L25
 	}
-	x29 = p.Pos
 	if v30, ok = u148(p); !ok {
 		goto L25
 	}
@@ -18246,7 +15847,6 @@ L28:
 	if _, ok = s494(p); !ok {
 		goto L33
 	}
-	x35 = p.Pos
 	if v36, ok = u149(p); !ok {
 		goto L33
 	}
@@ -18263,24 +15863,12 @@ L25:
 	k21 = x22
 	k23 = x24
 L26:
-
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportNamedDeclaration"
-	v = func() any {
-		return func() any {
-			f_1040 := func() any { return k1 }()
-			f_1041 := func() any { return k16 }()
-			f_1042 := func() any { return k21 }()
-			f_1043 := func() any { return k23 }()
-			f_1044 := func() any {
-				return c.Binary("!=", func() any { return k7 }(), func() any { return any(nil) }())
-			}()
-			return tmk_ExportDeclaration(c, true, f_1040, f_1041, f_1042, f_1043, f_1044)
-		}()
-	}()
+	v = tmk_ExportDeclaration(c, true, k1, k16, k21, k23, c.Binary("!=", k7, any(nil)))
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -18301,13 +15889,12 @@ func u157(p *rt.TParser) (any, bool) {
 }
 
 func i157(p *rt.TParser) (any, bool) {
-	var start, x1, x4 int
+	var start, x1 int
 	var v, k3, v5 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit152, "*", 81, false); !ok {
@@ -18335,19 +15922,13 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u146(p); !ok {
 		goto fail
 	}
 	k3 = v5
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namespaceExport"
-	v = func() any {
-		return func() any {
-			f_1045 := func() any { return k3 }()
-			return tmk_NamespaceExport(c, true, f_1045)
-		}()
-	}()
+	v = tmk_NamespaceExport(c, true, k3)
 	p.Depth--
 	return v, true
 fail:
@@ -18366,13 +15947,12 @@ func u158(p *rt.TParser) (any, bool) {
 }
 
 func i158(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v7 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "{", 20, false); !ok {
@@ -18381,7 +15961,6 @@ func i158(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u468(p); !ok {
 		goto L5
@@ -18403,12 +15982,7 @@ L6:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namedExports"
-	v = func() any {
-		return func() any {
-			f_1046 := func() any { return c.Concat(func() any { return k1 }()) }()
-			return tmk_NamedExports(c, true, f_1046)
-		}()
-	}()
+	v = tmk_NamedExports(c, true, c.Concat(k1))
 	p.Depth--
 	return v, true
 fail:
@@ -18481,7 +16055,6 @@ L12:
 L16:
 	p.Pos = x1
 L15:
-
 	if v19, ok = u164(p); !ok {
 		goto L18
 	}
@@ -18514,13 +16087,12 @@ func u160(p *rt.TParser) (any, bool) {
 }
 
 func i160(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x6, x9 int
+	var start, x1, x6 int
 	var v, k3, v5, k8, v10 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x4, x9
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 121 && p.In[p.Pos+2] == 112 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit12, "type", 10, false); !ok {
@@ -18540,7 +16112,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u145(p); !ok {
 		goto fail
 	}
@@ -18567,21 +16138,13 @@ L7:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x9 = p.Pos
 	if v10, ok = u146(p); !ok {
 		goto fail
 	}
 	k8 = v10
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportSpecifierTypeAsAs"
-	v = func() any {
-		return func() any {
-			f_1047 := func() any { return k3 }()
-			f_1048 := func() any { return k8 }()
-			f_1049 := func() any { return any(true) }()
-			return tmk_ExportSpecifier(c, true, f_1047, f_1048, f_1049)
-		}()
-	}()
+	v = tmk_ExportSpecifier(c, true, k3, k8, any(true))
 	p.Depth--
 	return v, true
 fail:
@@ -18600,14 +16163,12 @@ func u161(p *rt.TParser) (any, bool) {
 }
 
 func i161(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x7 int
+	var start, x4 int
 	var v, k1, v3, k6, v8 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x7
-	x2 = p.Pos
 	if v3, ok = u142(p); !ok {
 		goto fail
 	}
@@ -18634,20 +16195,13 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = u146(p); !ok {
 		goto fail
 	}
 	k6 = v8
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportSpecifierTypeAsName"
-	v = func() any {
-		return func() any {
-			f_1050 := func() any { return k1 }()
-			f_1051 := func() any { return k6 }()
-			return tmk_ExportSpecifier(c, true, f_1050, f_1051, nil)
-		}()
-	}()
+	v = tmk_ExportSpecifier(c, true, k1, k6, nil)
 	p.Depth--
 	return v, true
 fail:
@@ -18666,13 +16220,12 @@ func u162(p *rt.TParser) (any, bool) {
 }
 
 func i162(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x6 int
+	var start, x1, x6 int
 	var v, k3, v5 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 121 && p.In[p.Pos+2] == 112 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit12, "type", 10, false); !ok {
@@ -18692,7 +16245,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u145(p); !ok {
 		goto fail
 	}
@@ -18713,13 +16265,7 @@ L7:
 	p.Pos = x6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportSpecifierTypeAs"
-	v = func() any {
-		return func() any {
-			f_1052 := func() any { return k3 }()
-			f_1053 := func() any { return any(true) }()
-			return tmk_ExportSpecifier(c, true, nil, f_1052, f_1053)
-		}()
-	}()
+	v = tmk_ExportSpecifier(c, true, nil, k3, any(true))
 	p.Depth--
 	return v, true
 fail:
@@ -18738,13 +16284,12 @@ func u163(p *rt.TParser) (any, bool) {
 }
 
 func i163(p *rt.TParser) (any, bool) {
-	var start, x1, x3, x6, x13, x15, x17, x20 int
+	var start, x1, x3, x6, x15 int
 	var v, k7, x8, k9, x10, v14, v18, v21 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x13, x17, x20
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 121 && p.In[p.Pos+2] == 112 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit12, "type", 10, false); !ok {
@@ -18777,11 +16322,9 @@ L4:
 	p.Pos = x3
 	goto fail
 L5:
-
 	x6 = p.Pos
 	x8 = k7
 	x10 = k9
-	x13 = p.Pos
 	if v14, ok = u146(p); !ok {
 		goto L12
 	}
@@ -18808,7 +16351,6 @@ L16:
 	if _, ok = s480(p); !ok {
 		goto L12
 	}
-	x17 = p.Pos
 	if v18, ok = u146(p); !ok {
 		goto L12
 	}
@@ -18818,7 +16360,6 @@ L12:
 	p.Pos = x6
 	k7 = x8
 	k9 = x10
-	x20 = p.Pos
 	if v21, ok = u146(p); !ok {
 		goto L19
 	}
@@ -18832,14 +16373,7 @@ L19:
 L11:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportSpecifierType"
-	v = func() any {
-		return func() any {
-			f_1054 := func() any { return k7 }()
-			f_1055 := func() any { return k9 }()
-			f_1056 := func() any { return any(true) }()
-			return tmk_ExportSpecifier(c, true, f_1054, f_1055, f_1056)
-		}()
-	}()
+	v = tmk_ExportSpecifier(c, true, k7, k9, any(true))
 	p.Depth--
 	return v, true
 fail:
@@ -18858,17 +16392,15 @@ func u164(p *rt.TParser) (any, bool) {
 }
 
 func i164(p *rt.TParser) (any, bool) {
-	var start, x1, x8, x10, x12, x15 int
+	var start, x1, x10 int
 	var v, k2, x3, k4, x5, v9, v13, v16 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x8, x12, x15
 	x1 = p.Pos
 	x3 = k2
 	x5 = k4
-	x8 = p.Pos
 	if v9, ok = u146(p); !ok {
 		goto L7
 	}
@@ -18895,7 +16427,6 @@ L11:
 	if _, ok = s480(p); !ok {
 		goto L7
 	}
-	x12 = p.Pos
 	if v13, ok = u146(p); !ok {
 		goto L7
 	}
@@ -18905,7 +16436,6 @@ L7:
 	p.Pos = x1
 	k2 = x3
 	k4 = x5
-	x15 = p.Pos
 	if v16, ok = u146(p); !ok {
 		goto L14
 	}
@@ -18919,13 +16449,7 @@ L14:
 L6:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportSpecifierPlain"
-	v = func() any {
-		return func() any {
-			f_1057 := func() any { return k2 }()
-			f_1058 := func() any { return k4 }()
-			return tmk_ExportSpecifier(c, true, f_1057, f_1058, nil)
-		}()
-	}()
+	v = tmk_ExportSpecifier(c, true, k2, k4, nil)
 	p.Depth--
 	return v, true
 fail:
@@ -18947,13 +16471,12 @@ func u165(p *rt.TParser) (any, bool) {
 }
 
 func i165(p *rt.TParser) (any, bool) {
-	var start, x1, x6, x9, x12, x13, x18, x25, x27, x28 int
+	var start, x1, x6, x13, x18, x28 int
 	var v, k2, x3, v10, k11, v14, v17, k19, x20, k21, x22, v26, v29, v32 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x9, x12, x25, x27
 	x1 = p.Pos
 	x3 = k2
 	x6 = p.Pos
@@ -18971,8 +16494,6 @@ L7:
 	p.Pos = x6
 	goto L4
 L8:
-
-	x9 = p.Pos
 	if v10, ok = u166(p); !ok {
 		goto L4
 	}
@@ -18982,8 +16503,6 @@ L4:
 	p.Pos = x1
 	k2 = x3
 L5:
-
-	x12 = p.Pos
 	x13 = p.Pos
 	if v17, ok = u167(p); !ok {
 		goto L15
@@ -18998,19 +16517,13 @@ L16:
 	x18 = p.Pos
 	x20 = k19
 	x22 = k21
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary(">", func() any { return c.Length(func() any { return k11 }()) }(), func() any { return any(0) }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k11), any(0)) }) {
 		goto L23
 	}
-	x25 = p.Pos
 	if v26, ok = u166(p); !ok {
 		goto L23
 	}
 	k19 = v26
-	x27 = p.Pos
 	x28 = p.Pos
 	if v32, ok = u167(p); !ok {
 		goto L30
@@ -19030,9 +16543,7 @@ L23:
 L24:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "modifiers"
-	v = func() any {
-		return c.Concat(func() any { return k2 }(), func() any { return k11 }(), func() any { return k19 }(), func() any { return k21 }())
-	}()
+	v = c.Concat(k2, k11, k19, k21)
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -19052,18 +16563,17 @@ func u166(p *rt.TParser) (any, bool) {
 }
 
 func i166(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x4, x5, x8 int
+	var start, x2, x3, x4, x5 int
 	var v, k1, k6, v9, v10 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x4, x8
+	_ = x4
 	x2, x3, x4 = p.Pos, len(p.KidStack), 0
 	for {
 		x5 = p.Pos
 		k6 = nil
-		x8 = p.Pos
 		if v9, ok = u183(p); !ok {
 			goto L7
 		}
@@ -19089,9 +16599,7 @@ func i166(p *rt.TParser) (any, bool) {
 	k1 = v10
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "decoratorList"
-	v = func() any {
-		return c.NewList(c.ListItems("map", func() any { return k1 }()))
-	}()
+	v = c.NewList(c.ListItems("map", k1))
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -19114,17 +16622,14 @@ func u167(p *rt.TParser) (any, bool) {
 }
 
 func i167(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x4, x5, x6, x9, x11, x14, x21, x22, x28, x29, x30, x31, x32, x35, x37, x40 int
+	var start, x3, x4, x6, x9, x11, x22, x29, x30, x32, x35, x37 int
 	var v, k1, k7, v15, v16, v17, v18, v19, k20, v23, v26, k27, k33, v41, v42, v43, v44, v45 any
 	var c *rt.TActCtx
 	var x10, x36 []any
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _, _, _ = x2, x5, x14, x21, x28, x31, x40
-	x2 = p.Pos
 	x3, x4 = p.Pos, len(p.KidStack)
-	x5 = 0
 	for {
 		x6 = p.Pos
 		k7 = nil
@@ -19132,7 +16637,7 @@ func i167(p *rt.TParser) (any, bool) {
 		x10 = p.NewVals(1)[:0]
 		x11 = p.Pos
 		p.Silent++
-		if !p.ClassFast(&cls1059) && !p.ClassSkip(&cls1059, 115) {
+		if !p.ClassFast(&cls849) && !p.ClassSkip(&cls849, 115) {
 			goto L12
 		}
 		p.Silent--
@@ -19143,8 +16648,6 @@ func i167(p *rt.TParser) (any, bool) {
 		p.Pos = x11
 		goto L8
 	L13:
-
-		x14 = p.Pos
 		if v15, ok = u169(p); !ok {
 			goto L8
 		}
@@ -19155,8 +16658,7 @@ func i167(p *rt.TParser) (any, bool) {
 		}
 		v16 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
 		v17 = p.ScopeValue(sh5, v16, x6)
-		v18 = p.AttachCaptures(v17, scope1060, []any{k7}, x6, p.Pos)
-		x5++
+		v18 = p.AttachCaptures(v17, scope850, []any{k7}, x6, p.Pos)
 		p.PushKid(v18)
 		if p.Pos == x6 {
 			break
@@ -19168,7 +16670,6 @@ func i167(p *rt.TParser) (any, bool) {
 	}
 	v19 = p.NewNodeOrdinary("list", x3, p.Pos, p.Kids(x4))
 	k1 = v19
-	x21 = p.Pos
 	x22 = p.Pos
 	if v26, ok = u168(p); !ok {
 		goto L24
@@ -19180,9 +16681,7 @@ L24:
 	v23 = nil
 L25:
 	k20 = v23
-	x28 = p.Pos
 	x29, x30 = p.Pos, len(p.KidStack)
-	x31 = 0
 	for {
 		x32 = p.Pos
 		k33 = nil
@@ -19190,7 +16689,7 @@ L25:
 		x36 = p.NewVals(1)[:0]
 		x37 = p.Pos
 		p.Silent++
-		if !p.ClassFast(&cls1059) && !p.ClassSkip(&cls1059, 115) {
+		if !p.ClassFast(&cls849) && !p.ClassSkip(&cls849, 115) {
 			goto L38
 		}
 		p.Silent--
@@ -19201,8 +16700,6 @@ L25:
 		p.Pos = x37
 		goto L34
 	L39:
-
-		x40 = p.Pos
 		if v41, ok = u169(p); !ok {
 			goto L34
 		}
@@ -19213,8 +16710,7 @@ L25:
 		}
 		v42 = p.NewNodeOrdinary("tuple", x35, p.Pos, x36)
 		v43 = p.ScopeValue(sh5, v42, x32)
-		v44 = p.AttachCaptures(v43, scope1061, []any{k33}, x32, p.Pos)
-		x31++
+		v44 = p.AttachCaptures(v43, scope851, []any{k33}, x32, p.Pos)
 		p.PushKid(v44)
 		if p.Pos == x32 {
 			break
@@ -19227,31 +16723,13 @@ L25:
 	v45 = p.NewNodeOrdinary("list", x29, p.Pos, p.Kids(x30))
 	k27 = v45
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Or(func() any {
-				return c.Binary(">", func() any { return c.Length(func() any { return k1 }()) }(), func() any { return any(0) }())
-			}(), func() any {
-				return func() any {
-					return c.Binary(">", func() any { return c.Length(func() any { return k20 }()) }(), func() any { return any(0) }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary(">", c.Length(k1), any(0)), func() any { return c.Binary(">", c.Length(k20), any(0)) })
 	}) {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "modifierList"
-	v = func() any {
-		return c.Concat(func() any {
-			return c.MapList(func() any { return k1 }(), func(l_1062 any) any {
-				return func() any { return c.Member(func() any { return l_1062 }(), "$m") }()
-			})
-		}(), func() any { return k20 }(), func() any {
-			return c.MapList(func() any { return k27 }(), func(l_1063 any) any {
-				return func() any { return c.Member(func() any { return l_1063 }(), "$m") }()
-			})
-		}())
-	}()
+	v = c.Concat(c.MapList(k1, func(l_852 any) any { return c.Member((l_852), "$m") }), k20, c.MapList(k27, func(l_853 any) any { return c.Member((l_853), "$m") }))
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -19274,13 +16752,12 @@ func u168(p *rt.TParser) (any, bool) {
 }
 
 func i168(p *rt.TParser) (any, bool) {
-	var start, x1, x5 int
+	var start, x1 int
 	var v, k4, v6 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x5
 	x1 = p.Pos
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 115 {
@@ -19296,8 +16773,6 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x5 = p.Pos
 	if v6, ok = u170(p); !ok {
 		goto fail
 	}
@@ -19307,7 +16782,7 @@ L3:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "staticModifierList"
-	v = func() any { return c.List(func() any { return k4 }()) }()
+	v = c.List(k4)
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -19461,7 +16936,6 @@ L26:
 L21:
 	p.Pos = x2
 L20:
-
 	x30 = p.Pos
 	x32, _, x33 = p.NextOrdinary()
 	if !(x33 && (x32 == 97)) && p.Depth <= p.MaxDepth {
@@ -19591,7 +17065,6 @@ L55:
 L54:
 	goto L29
 L31:
-
 	x56 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -19713,13 +17186,12 @@ func u176(p *rt.TParser) (any, bool) {
 }
 
 func i176(p *rt.TParser) (any, bool) {
-	var start, x1, x6, x9, x12, x13, x18, x25, x27, x28 int
+	var start, x1, x6, x13, x18, x28 int
 	var v, k2, x3, v10, k11, v14, v17, k19, x20, k21, x22, v26, v29, v32 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x9, x12, x25, x27
 	x1 = p.Pos
 	x3 = k2
 	x6 = p.Pos
@@ -19737,8 +17209,6 @@ L7:
 	p.Pos = x6
 	goto L4
 L8:
-
-	x9 = p.Pos
 	if v10, ok = u166(p); !ok {
 		goto L4
 	}
@@ -19748,8 +17218,6 @@ L4:
 	p.Pos = x1
 	k2 = x3
 L5:
-
-	x12 = p.Pos
 	x13 = p.Pos
 	if v17, ok = u177(p); !ok {
 		goto L15
@@ -19764,19 +17232,13 @@ L16:
 	x18 = p.Pos
 	x20 = k19
 	x22 = k21
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary(">", func() any { return c.Length(func() any { return k11 }()) }(), func() any { return any(0) }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">", c.Length(k11), any(0)) }) {
 		goto L23
 	}
-	x25 = p.Pos
 	if v26, ok = u166(p); !ok {
 		goto L23
 	}
 	k19 = v26
-	x27 = p.Pos
 	x28 = p.Pos
 	if v32, ok = u177(p); !ok {
 		goto L30
@@ -19796,9 +17258,7 @@ L23:
 L24:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classModifiers"
-	v = func() any {
-		return c.Concat(func() any { return k2 }(), func() any { return k11 }(), func() any { return k19 }(), func() any { return k21 }())
-	}()
+	v = c.Concat(k2, k11, k19, k21)
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -19818,17 +17278,14 @@ func u177(p *rt.TParser) (any, bool) {
 }
 
 func i177(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x4, x5, x6, x9, x11, x14, x21, x22, x28, x29, x30, x31, x32, x35, x37, x40 int
+	var start, x3, x4, x6, x9, x11, x22, x29, x30, x32, x35, x37 int
 	var v, k1, k7, v15, v16, v17, v18, v19, k20, v23, v26, k27, k33, v41, v42, v43, v44, v45 any
 	var c *rt.TActCtx
 	var x10, x36 []any
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _, _, _ = x2, x5, x14, x21, x28, x31, x40
-	x2 = p.Pos
 	x3, x4 = p.Pos, len(p.KidStack)
-	x5 = 0
 	for {
 		x6 = p.Pos
 		k7 = nil
@@ -19836,7 +17293,7 @@ func i177(p *rt.TParser) (any, bool) {
 		x10 = p.NewVals(1)[:0]
 		x11 = p.Pos
 		p.Silent++
-		if !p.ClassFast(&cls1059) && !p.ClassSkip(&cls1059, 115) {
+		if !p.ClassFast(&cls849) && !p.ClassSkip(&cls849, 115) {
 			goto L12
 		}
 		p.Silent--
@@ -19847,8 +17304,6 @@ func i177(p *rt.TParser) (any, bool) {
 		p.Pos = x11
 		goto L8
 	L13:
-
-		x14 = p.Pos
 		if v15, ok = u179(p); !ok {
 			goto L8
 		}
@@ -19859,8 +17314,7 @@ func i177(p *rt.TParser) (any, bool) {
 		}
 		v16 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
 		v17 = p.ScopeValue(sh5, v16, x6)
-		v18 = p.AttachCaptures(v17, scope1064, []any{k7}, x6, p.Pos)
-		x5++
+		v18 = p.AttachCaptures(v17, scope854, []any{k7}, x6, p.Pos)
 		p.PushKid(v18)
 		if p.Pos == x6 {
 			break
@@ -19872,7 +17326,6 @@ func i177(p *rt.TParser) (any, bool) {
 	}
 	v19 = p.NewNodeOrdinary("list", x3, p.Pos, p.Kids(x4))
 	k1 = v19
-	x21 = p.Pos
 	x22 = p.Pos
 	if v26, ok = u178(p); !ok {
 		goto L24
@@ -19884,9 +17337,7 @@ L24:
 	v23 = nil
 L25:
 	k20 = v23
-	x28 = p.Pos
 	x29, x30 = p.Pos, len(p.KidStack)
-	x31 = 0
 	for {
 		x32 = p.Pos
 		k33 = nil
@@ -19894,7 +17345,7 @@ L25:
 		x36 = p.NewVals(1)[:0]
 		x37 = p.Pos
 		p.Silent++
-		if !p.ClassFast(&cls1059) && !p.ClassSkip(&cls1059, 115) {
+		if !p.ClassFast(&cls849) && !p.ClassSkip(&cls849, 115) {
 			goto L38
 		}
 		p.Silent--
@@ -19905,8 +17356,6 @@ L25:
 		p.Pos = x37
 		goto L34
 	L39:
-
-		x40 = p.Pos
 		if v41, ok = u179(p); !ok {
 			goto L34
 		}
@@ -19917,8 +17366,7 @@ L25:
 		}
 		v42 = p.NewNodeOrdinary("tuple", x35, p.Pos, x36)
 		v43 = p.ScopeValue(sh5, v42, x32)
-		v44 = p.AttachCaptures(v43, scope1065, []any{k33}, x32, p.Pos)
-		x31++
+		v44 = p.AttachCaptures(v43, scope855, []any{k33}, x32, p.Pos)
 		p.PushKid(v44)
 		if p.Pos == x32 {
 			break
@@ -19931,31 +17379,13 @@ L25:
 	v45 = p.NewNodeOrdinary("list", x29, p.Pos, p.Kids(x30))
 	k27 = v45
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Or(func() any {
-				return c.Binary(">", func() any { return c.Length(func() any { return k1 }()) }(), func() any { return any(0) }())
-			}(), func() any {
-				return func() any {
-					return c.Binary(">", func() any { return c.Length(func() any { return k20 }()) }(), func() any { return any(0) }())
-				}()
-			})
-		}()
+		return c.Or(c.Binary(">", c.Length(k1), any(0)), func() any { return c.Binary(">", c.Length(k20), any(0)) })
 	}) {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classModifierList"
-	v = func() any {
-		return c.Concat(func() any {
-			return c.MapList(func() any { return k1 }(), func(l_1066 any) any {
-				return func() any { return c.Member(func() any { return l_1066 }(), "$m") }()
-			})
-		}(), func() any { return k20 }(), func() any {
-			return c.MapList(func() any { return k27 }(), func(l_1067 any) any {
-				return func() any { return c.Member(func() any { return l_1067 }(), "$m") }()
-			})
-		}())
-	}()
+	v = c.Concat(c.MapList(k1, func(l_856 any) any { return c.Member((l_856), "$m") }), k20, c.MapList(k27, func(l_857 any) any { return c.Member((l_857), "$m") }))
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -19975,13 +17405,12 @@ func u178(p *rt.TParser) (any, bool) {
 }
 
 func i178(p *rt.TParser) (any, bool) {
-	var start, x1, x5 int
+	var start, x1 int
 	var v, k4, v6 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x5
 	x1 = p.Pos
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 115 {
@@ -19997,8 +17426,6 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x5 = p.Pos
 	if v6, ok = s180(p); !ok {
 		goto fail
 	}
@@ -20008,7 +17435,7 @@ L3:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classStaticModifierList"
-	v = func() any { return c.List(func() any { return k4 }()) }()
+	v = c.List(k4)
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -20073,7 +17500,6 @@ L12:
 L7:
 	p.Pos = x2
 L6:
-
 	if _, ok = u495(p); !ok {
 		goto L13
 	}
@@ -20179,14 +17605,12 @@ func u181(p *rt.TParser) (any, bool) {
 }
 
 func i181(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v7 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u167(p); !ok {
 		goto L5
@@ -20200,7 +17624,7 @@ L6:
 	k1 = v4
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeMemberModifiers"
-	v = func() any { return c.Concat(func() any { return k1 }()) }()
+	v = c.Concat(k1)
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -20217,17 +17641,14 @@ func u182(p *rt.TParser) (any, bool) {
 }
 
 func i182(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x4, x5, x6, x9, x11, x14, x21, x22, x28, x29, x30, x31, x32, x35, x37, x40 int
+	var start, x3, x4, x6, x9, x11, x22, x29, x30, x32, x35, x37 int
 	var v, k1, k7, v15, v16, v17, v18, v19, k20, v23, v26, k27, k33, v41, v42, v43, v44, v45 any
 	var c *rt.TActCtx
 	var x10, x36 []any
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _, _, _ = x2, x5, x14, x21, x28, x31, x40
-	x2 = p.Pos
 	x3, x4 = p.Pos, len(p.KidStack)
-	x5 = 0
 	for {
 		x6 = p.Pos
 		k7 = nil
@@ -20235,7 +17656,7 @@ func i182(p *rt.TParser) (any, bool) {
 		x10 = p.NewVals(1)[:0]
 		x11 = p.Pos
 		p.Silent++
-		if !p.ClassFast(&cls1059) && !p.ClassSkip(&cls1059, 115) {
+		if !p.ClassFast(&cls849) && !p.ClassSkip(&cls849, 115) {
 			goto L12
 		}
 		p.Silent--
@@ -20246,8 +17667,6 @@ func i182(p *rt.TParser) (any, bool) {
 		p.Pos = x11
 		goto L8
 	L13:
-
-		x14 = p.Pos
 		if v15, ok = u179(p); !ok {
 			goto L8
 		}
@@ -20258,8 +17677,7 @@ func i182(p *rt.TParser) (any, bool) {
 		}
 		v16 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
 		v17 = p.ScopeValue(sh5, v16, x6)
-		v18 = p.AttachCaptures(v17, scope1068, []any{k7}, x6, p.Pos)
-		x5++
+		v18 = p.AttachCaptures(v17, scope858, []any{k7}, x6, p.Pos)
 		p.PushKid(v18)
 		if p.Pos == x6 {
 			break
@@ -20271,7 +17689,6 @@ func i182(p *rt.TParser) (any, bool) {
 	}
 	v19 = p.NewNodeOrdinary("list", x3, p.Pos, p.Kids(x4))
 	k1 = v19
-	x21 = p.Pos
 	x22 = p.Pos
 	if v26, ok = u168(p); !ok {
 		goto L24
@@ -20283,9 +17700,7 @@ L24:
 	v23 = nil
 L25:
 	k20 = v23
-	x28 = p.Pos
 	x29, x30 = p.Pos, len(p.KidStack)
-	x31 = 0
 	for {
 		x32 = p.Pos
 		k33 = nil
@@ -20293,7 +17708,7 @@ L25:
 		x36 = p.NewVals(1)[:0]
 		x37 = p.Pos
 		p.Silent++
-		if !p.ClassFast(&cls1059) && !p.ClassSkip(&cls1059, 115) {
+		if !p.ClassFast(&cls849) && !p.ClassSkip(&cls849, 115) {
 			goto L38
 		}
 		p.Silent--
@@ -20304,8 +17719,6 @@ L25:
 		p.Pos = x37
 		goto L34
 	L39:
-
-		x40 = p.Pos
 		if v41, ok = u179(p); !ok {
 			goto L34
 		}
@@ -20316,8 +17729,7 @@ L25:
 		}
 		v42 = p.NewNodeOrdinary("tuple", x35, p.Pos, x36)
 		v43 = p.ScopeValue(sh5, v42, x32)
-		v44 = p.AttachCaptures(v43, scope1069, []any{k33}, x32, p.Pos)
-		x31++
+		v44 = p.AttachCaptures(v43, scope859, []any{k33}, x32, p.Pos)
 		p.PushKid(v44)
 		if p.Pos == x32 {
 			break
@@ -20331,17 +17743,7 @@ L25:
 	k27 = v45
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeParameterModifiers"
-	v = func() any {
-		return c.Concat(func() any {
-			return c.MapList(func() any { return k1 }(), func(l_1070 any) any {
-				return func() any { return c.Member(func() any { return l_1070 }(), "$m") }()
-			})
-		}(), func() any { return k20 }(), func() any {
-			return c.MapList(func() any { return k27 }(), func(l_1071 any) any {
-				return func() any { return c.Member(func() any { return l_1071 }(), "$m") }()
-			})
-		}())
-	}()
+	v = c.Concat(c.MapList(k1, func(l_860 any) any { return c.Member((l_860), "$m") }), k20, c.MapList(k27, func(l_861 any) any { return c.Member((l_861), "$m") }))
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -20361,7 +17763,7 @@ func u183(p *rt.TParser) (any, bool) {
 }
 
 func i183(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -20369,7 +17771,6 @@ func i183(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 64 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit51, "@", 42, false); !ok {
@@ -20379,33 +17780,17 @@ func i183(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("+", func() any {
-				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-					return c.Binary("*", func() any {
-						return c.Binary("%", func() any {
-							return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(8) }())
-						}(), func() any { return any(2) }())
-					}(), func() any { return any(8) }())
-				}())
-			}(), func() any { return any(8) }())
-		}()
+		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(8)), any(2)), any(8))), any(8))
 	}) {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = p.Call(trules[236], 0); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "decorator"
-	v = func() any {
-		return func() any {
-			f_1072 := func() any { return k1 }()
-			return tmk_Decorator(c, true, f_1072)
-		}()
-	}()
+	v = tmk_Decorator(c, true, k1)
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -20429,7 +17814,7 @@ func u184(p *rt.TParser) (any, bool) {
 }
 
 func i184(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -20437,28 +17822,18 @@ func i184(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x2
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("*", func() any {
-					return c.Binary("%", func() any {
-						return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(8) }())
-					}(), func() any { return any(4) }())
-				}(), func() any { return any(8) }())
-			}())
-		}()
+		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(8)), any(4)), any(8)))
 	}) {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u186(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "expression"
-	v = func() any { return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -20483,7 +17858,7 @@ func u185(p *rt.TParser) (any, bool) {
 }
 
 func i185(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -20491,28 +17866,18 @@ func i185(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x2
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("*", func() any {
-					return c.Binary("%", func() any {
-						return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
-					}(), func() any { return any(8) }())
-				}(), func() any { return any(4) }())
-			}())
-		}()
+		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(8)), any(4)))
 	}) {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u186(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "expressionAllowIn"
-	v = func() any { return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -20537,22 +17902,18 @@ func u186(p *rt.TParser) (any, bool) {
 }
 
 func i186(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x9, x13, x15, x17 int
+	var start, x6, x7, x9, x13 int
 	var v, k1, v3, k4, k10, k11, v16, v18, v19, v20, v21, v22 any
 	var c *rt.TActCtx
 	var ok bool
 	var x14 []any
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _ = x2, x5, x8, x15, x17
-	x2 = p.Pos
 	if v3, ok = u189(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	x6, x7 = p.Pos, len(p.KidStack)
-	x8 = 0
 	for {
 		x9 = p.Pos
 		k10 = nil
@@ -20562,7 +17923,6 @@ func i186(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L12
 		}
-		x15 = p.Pos
 		if v16, ok = s420(p); !ok {
 			goto L12
 		}
@@ -20571,7 +17931,6 @@ func i186(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L12
 		}
-		x17 = p.Pos
 		if v18, ok = u189(p); !ok {
 			goto L12
 		}
@@ -20579,8 +17938,7 @@ func i186(p *rt.TParser) (any, bool) {
 		x14 = append(x14, v18)
 		v19 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
 		v20 = p.ScopeValue(sh13, v19, x9)
-		v21 = p.AttachCaptures(v20, scope1073, []any{k10, k11}, x9, p.Pos)
-		x8++
+		v21 = p.AttachCaptures(v20, scope862, []any{k10, k11}, x9, p.Pos)
 		p.PushKid(v21)
 		if p.Pos == x9 {
 			break
@@ -20594,18 +17952,9 @@ func i186(p *rt.TParser) (any, bool) {
 	k4 = v22
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "commaExpression"
-	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1074, l_1075 any) any {
-			return func() any {
-				return func() any {
-					f_1076 := func() any { return l_1074 }()
-					f_1077 := func() any { return c.Member(func() any { return l_1075 }(), "$o") }()
-					f_1078 := func() any { return c.Member(func() any { return l_1075 }(), "$e") }()
-					return tmk_BinaryExpression(c, false, f_1076, f_1077, f_1078)
-				}()
-			}()
-		})
-	}()
+	v = c.Fold("foldl", false, k1, k4, func(l_863, l_864 any) any {
+		return tmk_BinaryExpression(c, false, (l_863), c.Member((l_864), "$o"), c.Member((l_864), "$e"))
+	})
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -20628,7 +17977,7 @@ func u187(p *rt.TParser) (any, bool) {
 }
 
 func i187(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -20636,28 +17985,18 @@ func i187(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x2
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("*", func() any {
-					return c.Binary("%", func() any {
-						return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(8) }())
-					}(), func() any { return any(4) }())
-				}(), func() any { return any(8) }())
-			}())
-		}()
+		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(8)), any(4)), any(8)))
 	}) {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u189(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "assignmentExpression"
-	v = func() any { return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -20682,7 +18021,7 @@ func u188(p *rt.TParser) (any, bool) {
 }
 
 func i188(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -20690,28 +18029,18 @@ func i188(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x2
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("*", func() any {
-					return c.Binary("%", func() any {
-						return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
-					}(), func() any { return any(8) }())
-				}(), func() any { return any(4) }())
-			}())
-		}()
+		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(8)), any(4)))
 	}) {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u189(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "assignmentExpressionAllowIn"
-	v = func() any { return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -20736,14 +18065,13 @@ func u189(p *rt.TParser) (any, bool) {
 }
 
 func i189(p *rt.TParser) (any, bool) {
-	var start, x1, x6, x9, x12, x15, x17, x22, x26, x29, x32, x35, x38, x41, x44 int
+	var start, x1, x6, x12, x15, x17, x22, x29, x35 int
 	var v, k2, x3, v10, v27, v33, v39, v42, v45 any
 	var c *rt.TActCtx
 	var ok, x19 bool
 	var x18 rune
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _, _ = x9, x26, x32, x38, x41, x44
 	x1 = p.Pos
 	x3 = k2
 	x6 = p.Pos
@@ -20759,8 +18087,6 @@ L7:
 	p.Pos = x6
 	goto L5
 L8:
-
-	x9 = p.Pos
 	if v10, ok = u190(p); !ok {
 		goto L5
 	}
@@ -20812,8 +18138,6 @@ L13:
 	p.Pos = x12
 	goto L11
 L14:
-
-	x26 = p.Pos
 	if v27, ok = u199(p); !ok {
 		goto L11
 	}
@@ -20835,8 +18159,6 @@ L30:
 	p.Pos = x29
 	goto L28
 L31:
-
-	x32 = p.Pos
 	if v33, ok = u207(p); !ok {
 		goto L28
 	}
@@ -20847,7 +18169,7 @@ L28:
 	k2 = x3
 	x35 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls884) && !p.ClassSkip(&cls884, 69) {
+	if !p.ClassFast(&cls845) && !p.ClassSkip(&cls845, 69) {
 		goto L36
 	}
 	if _, ok = u492(p); !ok {
@@ -20869,8 +18191,6 @@ L36:
 	p.Pos = x35
 	goto L34
 L37:
-
-	x38 = p.Pos
 	if v39, ok = u205(p); !ok {
 		goto L34
 	}
@@ -20879,7 +18199,6 @@ L37:
 L34:
 	p.Pos = x1
 	k2 = x3
-	x41 = p.Pos
 	if v42, ok = u193(p); !ok {
 		goto L40
 	}
@@ -20888,7 +18207,6 @@ L34:
 L40:
 	p.Pos = x1
 	k2 = x3
-	x44 = p.Pos
 	if v45, ok = u195(p); !ok {
 		goto L43
 	}
@@ -20901,7 +18219,7 @@ L43:
 L4:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "assignmentExpressionInner"
-	v = func() any { return k2 }()
+	v = k2
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -20921,13 +18239,12 @@ func u190(p *rt.TParser) (any, bool) {
 }
 
 func i190(p *rt.TParser) (any, bool) {
-	var start, x1, x3, x7, x10, x17, x19, x23, x25 int
+	var start, x1, x3, x7, x10, x17, x19 int
 	var v, k11, x12, k13, x14, x20, v24, v26 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x23, x25
 	if _, ok = p.Parser.MatchLiteral(lit302, "yield", 120, false); !ok {
 		goto fail
 	}
@@ -20943,13 +18260,7 @@ L2:
 	p.Silent--
 	p.Pos = x1
 	x3 = p.Pos
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(2) }())
-			}(), func() any { return any(1) }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Binary("%", c.Lookup("ctx"), any(2)), any(1)) }) {
 		goto L5
 	}
 	goto L4
@@ -20976,7 +18287,6 @@ L6:
 	p.Pos = x3
 	goto fail
 L4:
-
 	x10 = p.Pos
 	x12 = k11
 	x14 = k13
@@ -20996,7 +18306,6 @@ L18:
 	p.Pos = x17
 	x19 = p.Pos
 	x20 = k11
-	x23 = p.Pos
 	if v24, ok = s415(p); !ok {
 		goto L21
 	}
@@ -21009,8 +18318,6 @@ L21:
 	p.Pos = x19
 	k11 = x20
 L22:
-
-	x25 = p.Pos
 	if v26, ok = u187(p); !ok {
 		goto L15
 	}
@@ -21023,13 +18330,7 @@ L15:
 L16:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "yieldExpression"
-	v = func() any {
-		return func() any {
-			f_1079 := func() any { return k11 }()
-			f_1080 := func() any { return k13 }()
-			return tmk_YieldExpression(c, true, f_1079, f_1080)
-		}()
-	}()
+	v = tmk_YieldExpression(c, true, k11, k13)
 	p.Depth--
 	return v, true
 fail:
@@ -21048,14 +18349,12 @@ func u193(p *rt.TParser) (any, bool) {
 }
 
 func i193(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x8, x11 int
+	var start, x4 int
 	var v, k1, v3, k7, v9, k10, v12 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x8, x11
-	x2 = p.Pos
 	if v3, ok = p.Call(trules[236], 0); !ok {
 		goto fail
 	}
@@ -21065,7 +18364,7 @@ func i193(p *rt.TParser) (any, bool) {
 	}
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1081) && !p.ClassSkip(&cls1081, 123) {
+	if !p.ClassFast(&cls865) && !p.ClassSkip(&cls865, 123) {
 		goto L5
 	}
 	p.Silent--
@@ -21076,8 +18375,6 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
-	x8 = p.Pos
 	if v9, ok = s194(p); !ok {
 		goto fail
 	}
@@ -21085,21 +18382,13 @@ L6:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x11 = p.Pos
 	if v12, ok = u189(p); !ok {
 		goto fail
 	}
 	k10 = v12
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "assignment"
-	v = func() any {
-		return func() any {
-			f_1082 := func() any { return k1 }()
-			f_1083 := func() any { return k7 }()
-			f_1084 := func() any { return k10 }()
-			return tmk_BinaryExpression(c, true, f_1082, f_1083, f_1084)
-		}()
-	}()
+	v = tmk_BinaryExpression(c, true, k1, k7, k10)
 	p.Depth--
 	return v, true
 fail:
@@ -21113,7 +18402,7 @@ func s194(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
-	if !p.SkipTerminal(term1098) {
+	if !p.SkipTerminal(term879) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
@@ -21142,22 +18431,18 @@ func u195(p *rt.TParser) (any, bool) {
 }
 
 func i195(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x9, x15, x17, x19, x21, x23 int
+	var start, x6, x7, x9, x15 int
 	var v, k1, v3, k4, k10, k11, k12, k13, v18, v20, v22, v24, v25, v26, v27, v28 any
 	var c *rt.TActCtx
 	var ok bool
 	var x16 []any
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _, _, _ = x2, x5, x8, x17, x19, x21, x23
-	x2 = p.Pos
 	if v3, ok = p.InvokePlain(trules[209], 0); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	x6, x7 = p.Pos, len(p.KidStack)
-	x8 = 0
 	for {
 		x9 = p.Pos
 		k10 = nil
@@ -21169,7 +18454,6 @@ func i195(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L14
 		}
-		x17 = p.Pos
 		if v18, ok = s198(p); !ok {
 			goto L14
 		}
@@ -21178,7 +18462,6 @@ func i195(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L14
 		}
-		x19 = p.Pos
 		if v20, ok = u196(p); !ok {
 			goto L14
 		}
@@ -21187,7 +18470,6 @@ func i195(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L14
 		}
-		x21 = p.Pos
 		if v22, ok = s418(p); !ok {
 			goto L14
 		}
@@ -21196,7 +18478,6 @@ func i195(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L14
 		}
-		x23 = p.Pos
 		if v24, ok = u197(p); !ok {
 			goto L14
 		}
@@ -21204,8 +18485,7 @@ func i195(p *rt.TParser) (any, bool) {
 		x16 = append(x16, v24)
 		v25 = p.NewNodeOrdinary("tuple", x15, p.Pos, x16)
 		v26 = p.ScopeValue(sh327, v25, x9)
-		v27 = p.AttachCaptures(v26, scope1099, []any{k10, k11, k12, k13}, x9, p.Pos)
-		x8++
+		v27 = p.AttachCaptures(v26, scope880, []any{k10, k11, k12, k13}, x9, p.Pos)
 		p.PushKid(v27)
 		if p.Pos == x9 {
 			break
@@ -21219,20 +18499,9 @@ func i195(p *rt.TParser) (any, bool) {
 	k4 = v28
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "conditionalOrBinaryExpression"
-	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1100, l_1101 any) any {
-			return func() any {
-				return func() any {
-					f_1102 := func() any { return l_1100 }()
-					f_1103 := func() any { return c.Member(func() any { return l_1101 }(), "$q") }()
-					f_1104 := func() any { return c.Member(func() any { return l_1101 }(), "$t") }()
-					f_1105 := func() any { return c.Member(func() any { return l_1101 }(), "$k") }()
-					f_1106 := func() any { return c.Member(func() any { return l_1101 }(), "$f") }()
-					return tmk_ConditionalExpression(c, false, f_1102, f_1103, f_1104, f_1105, f_1106)
-				}()
-			}()
-		})
-	}()
+	v = c.Fold("foldl", false, k1, k4, func(l_881, l_882 any) any {
+		return tmk_ConditionalExpression(c, false, (l_881), c.Member((l_882), "$q"), c.Member((l_882), "$t"), c.Member((l_882), "$k"), c.Member((l_882), "$f"))
+	})
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -21252,7 +18521,7 @@ func u196(p *rt.TParser) (any, bool) {
 }
 
 func i196(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -21260,30 +18529,18 @@ func i196(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x2
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("+", func() any {
-				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-					return c.Binary("*", func() any {
-						return c.Binary("%", func() any {
-							return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
-						}(), func() any { return any(8) }())
-					}(), func() any { return any(4) }())
-				}())
-			}(), func() any { return any(16) }())
-		}()
+		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(8)), any(4))), any(16))
 	}) {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u189(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "conditionalWhenTrue"
-	v = func() any { return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -21305,21 +18562,19 @@ func u197(p *rt.TParser) (any, bool) {
 }
 
 func i197(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
-	x2 = p.Pos
 	if v3, ok = u189(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "conditionalWhenFalse"
-	v = func() any { return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -21407,7 +18662,7 @@ func u199(p *rt.TParser) (any, bool) {
 }
 
 func i199(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x8, x10, x15, x17, x21, x24, x25, x31, x34, x36, x41 int
+	var start, x3, x8, x10, x17, x25, x36, x41 int
 	var v, k1, v4, v7, k11, x12, v16, k20, v22, k23, v26, v29, k30, v32, k33, v35 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -21415,8 +18670,6 @@ func i199(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _, _, _, _, _ = x2, x15, x21, x24, x31, x34
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u200(p); !ok {
 		goto L5
@@ -21440,21 +18693,12 @@ L9:
 	p.Silent--
 	p.Pos = x8
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("+", func() any {
-				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-					return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
-				}())
-			}(), func() any {
-				return c.Binary("*", func() any { return c.Length(func() any { return k1 }()) }(), func() any { return any(2) }())
-			}())
-		}()
+		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(4))), c.Binary("*", c.Length(k1), any(2)))
 	}) {
 		goto fail
 	}
 	x10 = p.Pos
 	x12 = k11
-	x15 = p.Pos
 	if v16, ok = u202(p); !ok {
 		goto L13
 	}
@@ -21467,7 +18711,6 @@ L13:
 	p.Pos = x10
 	k11 = x12
 L14:
-
 	x17 = p.Pos
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
@@ -21483,13 +18726,10 @@ L18:
 	p.Pos = x17
 	goto fail
 L19:
-
-	x21 = p.Pos
 	if v22, ok = u79(p); !ok {
 		goto fail
 	}
 	k20 = v22
-	x24 = p.Pos
 	x25 = p.Pos
 	if v29, ok = u85(p); !ok {
 		goto L27
@@ -21504,7 +18744,6 @@ L28:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x31 = p.Pos
 	if v32, ok = s417(p); !ok {
 		goto fail
 	}
@@ -21512,31 +18751,20 @@ L28:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x34 = p.Pos
 	if v35, ok = u208(p); !ok {
 		goto fail
 	}
 	k33 = v35
 	x36 = p.Pos
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any {
-					return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(16) }())
-				}(), func() any { return any(2) }())
-			}(), func() any { return any(0) }())
-		}()
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(16)), any(2)), any(0))
 	}) {
 		goto L38
 	}
 	goto L37
 L38:
 	p.Pos = x36
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any { return k23 }(), func() any { return any(nil) }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", k23, any(nil)) }) {
 		goto L39
 	}
 	goto L37
@@ -21567,17 +18795,7 @@ L40:
 L37:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "arrowFunction"
-	v = func() any {
-		return func() any {
-			f_1107 := func() any { return c.Concat(func() any { return k1 }()) }()
-			f_1108 := func() any { return c.Concat(func() any { return k11 }()) }()
-			f_1109 := func() any { return k20 }()
-			f_1110 := func() any { return k23 }()
-			f_1111 := func() any { return k30 }()
-			f_1112 := func() any { return k33 }()
-			return tmk_ArrowFunction(c, true, f_1107, f_1108, f_1109, f_1110, f_1111, f_1112)
-		}()
-	}()
+	v = tmk_ArrowFunction(c, true, c.Concat(k1), c.Concat(k11), k20, k23, k30, k33)
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -21598,15 +18816,13 @@ func u200(p *rt.TParser) (any, bool) {
 }
 
 func i200(p *rt.TParser) (any, bool) {
-	var start, x2, x4, size int
+	var start, x4, size int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_ = x2
-	x2 = p.Pos
 	if v3, ok = u201(p); !ok {
 		goto fail
 	}
@@ -21632,7 +18848,7 @@ L5:
 L6:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "arrowAsyncModifier"
-	v = func() any { return c.List(func() any { return k1 }()) }()
+	v = c.List(k1)
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -21696,14 +18912,13 @@ func u202(p *rt.TParser) (any, bool) {
 }
 
 func i202(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x10, x13, x17, x21 int
+	var start, x1, x4, x10, x13, x17 int
 	var v, k20, v22 any
 	var c *rt.TActCtx
 	var ok, x7 bool
 	var x6 rune
 	start = p.Pos
 	p.Enter()
-	_ = x21
 	x1 = p.Pos
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 60 {
@@ -21738,7 +18953,6 @@ L11:
 L9:
 	p.Pos = x4
 L8:
-
 	if _, ok = u421(p); !ok {
 		goto L12
 	}
@@ -21755,13 +18969,8 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
 	x13 = p.Pos
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("<", func() any { return c.Lookup("ctx") }(), func() any { return any(64) }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<", c.Lookup("ctx"), any(64)) }) {
 		goto L15
 	}
 	goto L14
@@ -21785,15 +18994,13 @@ L16:
 	p.Pos = x13
 	goto fail
 L14:
-
-	x21 = p.Pos
 	if v22, ok = u375(p); !ok {
 		goto fail
 	}
 	k20 = v22
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "arrowTypeParameters"
-	v = func() any { return k20 }()
+	v = k20
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -21813,7 +19020,7 @@ func u205(p *rt.TParser) (any, bool) {
 }
 
 func i205(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x8 int
+	var start int
 	var v, k1, v3, k4, v6, k7, v9 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -21821,8 +19028,6 @@ func i205(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _, _ = x2, x5, x8
-	x2 = p.Pos
 	if v3, ok = u206(p); !ok {
 		goto fail
 	}
@@ -21830,7 +19035,6 @@ func i205(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x5 = p.Pos
 	if v6, ok = s417(p); !ok {
 		goto fail
 	}
@@ -21838,30 +19042,16 @@ func i205(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
-			}())
-		}()
-	}) {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any { return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(4))) }) {
 		goto fail
 	}
-	x8 = p.Pos
 	if v9, ok = u208(p); !ok {
 		goto fail
 	}
 	k7 = v9
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "simpleArrowFunction"
-	v = func() any {
-		return func() any {
-			f_1114 := func() any { return c.List(func() any { return k1 }()) }()
-			f_1115 := func() any { return k4 }()
-			f_1116 := func() any { return k7 }()
-			return tmk_ArrowFunction(c, true, nil, nil, f_1114, nil, f_1115, f_1116)
-		}()
-	}()
+	v = tmk_ArrowFunction(c, true, nil, nil, c.List(k1), nil, k4, k7)
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -21885,26 +19075,19 @@ func u206(p *rt.TParser) (any, bool) {
 }
 
 func i206(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
-	x2 = p.Pos
 	if v3, ok = u421(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "simpleArrowParameter"
-	v = func() any {
-		return func() any {
-			f_1117 := func() any { return k1 }()
-			return tmk_Parameter(c, true, nil, nil, f_1117, nil, nil, nil)
-		}()
-	}()
+	v = tmk_Parameter(c, true, nil, nil, k1, nil, nil, nil)
 	p.Depth--
 	return v, true
 fail:
@@ -21923,7 +19106,7 @@ func u207(p *rt.TParser) (any, bool) {
 }
 
 func i207(p *rt.TParser) (any, bool) {
-	var start, x2, x4, size, x7, x10, x13 int
+	var start, x4, size int
 	var v, k1, v3, k6, v8, k9, v11, k12, v14 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -21932,8 +19115,6 @@ func i207(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _, _, _ = x2, x7, x10, x13
-	x2 = p.Pos
 	if v3, ok = u201(p); !ok {
 		goto fail
 	}
@@ -21955,7 +19136,6 @@ func i207(p *rt.TParser) (any, bool) {
 L5:
 	p.Silent--
 	p.Pos = x4
-	x7 = p.Pos
 	if v8, ok = u206(p); !ok {
 		goto fail
 	}
@@ -21963,7 +19143,6 @@ L5:
 	if _, ok = s494(p); !ok {
 		goto fail
 	}
-	x10 = p.Pos
 	if v11, ok = s417(p); !ok {
 		goto fail
 	}
@@ -21972,32 +19151,17 @@ L5:
 		goto fail
 	}
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("+", func() any {
-				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-					return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
-				}())
-			}(), func() any { return any(2) }())
-		}()
+		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(4))), any(2))
 	}) {
 		goto fail
 	}
-	x13 = p.Pos
 	if v14, ok = u208(p); !ok {
 		goto fail
 	}
 	k12 = v14
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "asyncSimpleArrowFunction"
-	v = func() any {
-		return func() any {
-			f_1118 := func() any { return c.List(func() any { return k1 }()) }()
-			f_1119 := func() any { return c.List(func() any { return k6 }()) }()
-			f_1120 := func() any { return k9 }()
-			f_1121 := func() any { return k12 }()
-			return tmk_ArrowFunction(c, true, f_1118, nil, f_1119, nil, f_1120, f_1121)
-		}()
-	}()
+	v = tmk_ArrowFunction(c, true, c.List(k1), nil, c.List(k6), nil, k9, k12)
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -22036,7 +19200,6 @@ func v208(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-
 	if v10, ok = u189(p); !ok {
 		goto L9
 	}
@@ -22058,12 +19221,12 @@ fail:
 	return nil, false
 }
 
-func e1416(p *rt.TParser) (any, bool) {
+func e966(p *rt.TParser) (any, bool) {
 	var x1 int
 	var ok bool
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1384) && !p.ClassSkip(&cls1384, 278) {
+	if !p.ClassFast(&cls934) && !p.ClassSkip(&cls934, 278) {
 		goto L2
 	}
 	p.Silent--
@@ -22074,7 +19237,6 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
 	if _, ok = s494(p); !ok {
 		goto fail
 	}
@@ -22083,7 +19245,7 @@ fail:
 	return nil, false
 }
 
-func e1417(p *rt.TParser) (any, bool) {
+func e967(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u222(p); !ok {
@@ -22094,18 +19256,17 @@ fail:
 	return nil, false
 }
 
-func e1419(p *rt.TParser) (any, bool) {
+func e969(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
-	var x2, x4, x7 int
+	var x2, x4 int
 	var x3 []any
 	var v8, v9 any
-	_ = x7
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(1)[:0]
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1418) && !p.ClassSkip(&cls1418, 283) {
+	if !p.ClassFast(&cls968) && !p.ClassSkip(&cls968, 283) {
 		goto L5
 	}
 	p.Silent--
@@ -22116,11 +19277,9 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = s210(p); !ok {
 		goto fail
 	}
@@ -22138,18 +19297,17 @@ fail:
 	return nil, false
 }
 
-func e1424(p *rt.TParser) (any, bool) {
+func e971(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
-	var x2, x4, x7 int
+	var x2, x4 int
 	var x3 []any
 	var v8, v9 any
-	_ = x7
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(1)[:0]
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1423) && !p.ClassSkip(&cls1423, 284) {
+	if !p.ClassFast(&cls970) && !p.ClassSkip(&cls970, 284) {
 		goto L5
 	}
 	p.Silent--
@@ -22160,11 +19318,9 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = s211(p); !ok {
 		goto fail
 	}
@@ -22182,18 +19338,17 @@ fail:
 	return nil, false
 }
 
-func e1429(p *rt.TParser) (any, bool) {
+func e973(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
-	var x2, x4, x7 int
+	var x2, x4 int
 	var x3 []any
 	var v8, v9 any
-	_ = x7
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(1)[:0]
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1428) && !p.ClassSkip(&cls1428, 285) {
+	if !p.ClassFast(&cls972) && !p.ClassSkip(&cls972, 285) {
 		goto L5
 	}
 	p.Silent--
@@ -22204,11 +19359,9 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = s212(p); !ok {
 		goto fail
 	}
@@ -22226,18 +19379,17 @@ fail:
 	return nil, false
 }
 
-func e1434(p *rt.TParser) (any, bool) {
+func e975(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
-	var x2, x4, x7 int
+	var x2, x4 int
 	var x3 []any
 	var v8, v9 any
-	_ = x7
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(1)[:0]
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1433) && !p.ClassSkip(&cls1433, 286) {
+	if !p.ClassFast(&cls974) && !p.ClassSkip(&cls974, 286) {
 		goto L5
 	}
 	p.Silent--
@@ -22248,11 +19400,9 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = s213(p); !ok {
 		goto fail
 	}
@@ -22270,18 +19420,17 @@ fail:
 	return nil, false
 }
 
-func e1438(p *rt.TParser) (any, bool) {
+func e976(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
-	var x2, x4, x7 int
+	var x2, x4 int
 	var x3 []any
 	var v8, v9 any
-	_ = x7
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(1)[:0]
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1423) && !p.ClassSkip(&cls1423, 284) {
+	if !p.ClassFast(&cls970) && !p.ClassSkip(&cls970, 284) {
 		goto L5
 	}
 	p.Silent--
@@ -22292,11 +19441,9 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = s214(p); !ok {
 		goto fail
 	}
@@ -22314,18 +19461,17 @@ fail:
 	return nil, false
 }
 
-func e1443(p *rt.TParser) (any, bool) {
+func e978(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
-	var x2, x4, x7 int
+	var x2, x4 int
 	var x3 []any
 	var v8, v9 any
-	_ = x7
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(1)[:0]
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1442) && !p.ClassSkip(&cls1442, 287) {
+	if !p.ClassFast(&cls977) && !p.ClassSkip(&cls977, 287) {
 		goto L5
 	}
 	p.Silent--
@@ -22336,11 +19482,9 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = s215(p); !ok {
 		goto fail
 	}
@@ -22358,18 +19502,17 @@ fail:
 	return nil, false
 }
 
-func e1448(p *rt.TParser) (any, bool) {
+func e980(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
-	var x2, x4, x7 int
+	var x2, x4 int
 	var x3 []any
 	var v8, v9 any
-	_ = x7
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(1)[:0]
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1447) && !p.ClassSkip(&cls1447, 288) {
+	if !p.ClassFast(&cls979) && !p.ClassSkip(&cls979, 288) {
 		goto L5
 	}
 	p.Silent--
@@ -22380,11 +19523,9 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = u216(p); !ok {
 		goto fail
 	}
@@ -22402,14 +19543,13 @@ fail:
 	return nil, false
 }
 
-func e1452(p *rt.TParser) (any, bool) {
+func e981(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
-	var x2, x4, size, x7, x11 int
+	var x2, x4, size, x7 int
 	var x3 []any
 	var ch rune
 	var v8, v12, v13 any
 	var x9 rt.Mark
-	_ = x11
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(2)[:0]
@@ -22429,7 +19569,6 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	x7 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 97 && p.In[p.Pos+1] == 115 {
 		p.Pos += 2
@@ -22453,7 +19592,6 @@ L10:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x11 = p.Pos
 	if v12, ok = u315(p); !ok {
 		goto fail
 	}
@@ -22467,14 +19605,13 @@ fail:
 	return nil, false
 }
 
-func e1455(p *rt.TParser) (any, bool) {
+func e982(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
-	var x2, x4, size, x7, x11 int
+	var x2, x4, size, x7 int
 	var x3 []any
 	var ch rune
 	var v8, v12, v13 any
 	var x9 rt.Mark
-	_ = x11
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(2)[:0]
@@ -22494,7 +19631,6 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	x7 = p.Pos
 	if _, ok = p.Parser.MatchLiteral(lit378, "satisfies", 172, false); !ok {
 		goto fail
@@ -22516,7 +19652,6 @@ L10:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x11 = p.Pos
 	if v12, ok = u315(p); !ok {
 		goto fail
 	}
@@ -22530,18 +19665,17 @@ fail:
 	return nil, false
 }
 
-func e1459(p *rt.TParser) (any, bool) {
+func e984(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
-	var x2, x4, x7 int
+	var x2, x4 int
 	var x3 []any
 	var v8, v9 any
-	_ = x7
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(1)[:0]
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1458) && !p.ClassSkip(&cls1458, 291) {
+	if !p.ClassFast(&cls983) && !p.ClassSkip(&cls983, 291) {
 		goto L5
 	}
 	p.Silent--
@@ -22552,11 +19686,9 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = s217(p); !ok {
 		goto fail
 	}
@@ -22574,18 +19706,17 @@ fail:
 	return nil, false
 }
 
-func e1464(p *rt.TParser) (any, bool) {
+func e986(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
-	var x2, x4, x7 int
+	var x2, x4 int
 	var x3 []any
 	var v8, v9 any
-	_ = x7
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(1)[:0]
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1463) && !p.ClassSkip(&cls1463, 292) {
+	if !p.ClassFast(&cls985) && !p.ClassSkip(&cls985, 292) {
 		goto L5
 	}
 	p.Silent--
@@ -22596,11 +19727,9 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = s218(p); !ok {
 		goto fail
 	}
@@ -22618,18 +19747,17 @@ fail:
 	return nil, false
 }
 
-func e1469(p *rt.TParser) (any, bool) {
+func e988(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
-	var x2, x4, x7 int
+	var x2, x4 int
 	var x3 []any
 	var v8, v9 any
-	_ = x7
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(1)[:0]
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1468) && !p.ClassSkip(&cls1468, 293) {
+	if !p.ClassFast(&cls987) && !p.ClassSkip(&cls987, 293) {
 		goto L5
 	}
 	p.Silent--
@@ -22640,11 +19768,9 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = s219(p); !ok {
 		goto fail
 	}
@@ -22662,18 +19788,17 @@ fail:
 	return nil, false
 }
 
-func e1474(p *rt.TParser) (any, bool) {
+func e990(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
-	var x2, x4, x7 int
+	var x2, x4 int
 	var x3 []any
 	var v8, v9 any
-	_ = x7
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(1)[:0]
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1473) && !p.ClassSkip(&cls1473, 294) {
+	if !p.ClassFast(&cls989) && !p.ClassSkip(&cls989, 294) {
 		goto L5
 	}
 	p.Silent--
@@ -22684,11 +19809,9 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = s220(p); !ok {
 		goto fail
 	}
@@ -23097,11 +20220,7 @@ L13:
 	p.Pos = x12
 	x14 = p.Pos
 	p.Silent++
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary(">=", func() any { return c.Lookup("ctx") }(), func() any { return any(64) }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Lookup("ctx"), any(64)) }) {
 		goto L15
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 47 {
@@ -23181,15 +20300,8 @@ L25:
 L23:
 	p.Pos = x2
 L22:
-
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any {
-					return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
-				}(), func() any { return any(2) }())
-			}(), func() any { return any(0) }())
-		}()
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(2)), any(0))
 	}) {
 		goto L26
 	}
@@ -23576,18 +20688,17 @@ func u222(p *rt.TParser) (any, bool) {
 }
 
 func i222(p *rt.TParser) (any, bool) {
-	var start, x1, x6, x9, x12, x14, x16, x19, x21, x24 int
+	var start, x1, x6, x9, x14, x16, x19, x21 int
 	var v, k2, x3, v13, v25 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x12, x24
 	x1 = p.Pos
 	x3 = k2
 	x6 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1122) && !p.ClassSkip(&cls1122, 173) {
+	if !p.ClassFast(&cls884) && !p.ClassSkip(&cls884, 173) {
 		goto L7
 	}
 	p.Silent--
@@ -23598,7 +20709,6 @@ L7:
 	p.Pos = x6
 	goto L5
 L8:
-
 	x9 = p.Pos
 	p.Silent++
 	if _, ok = u518(p); !ok {
@@ -23612,8 +20722,6 @@ L10:
 	p.Pos = x9
 	goto L5
 L11:
-
-	x12 = p.Pos
 	if v13, ok = u224(p); !ok {
 		goto L5
 	}
@@ -23655,7 +20763,7 @@ L5:
 	p.Silent++
 	x21 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1122) && !p.ClassSkip(&cls1122, 173) {
+	if !p.ClassFast(&cls884) && !p.ClassSkip(&cls884, 173) {
 		goto L22
 	}
 	p.Silent--
@@ -23666,7 +20774,6 @@ L22:
 	p.Pos = x21
 	goto L20
 L23:
-
 	if _, ok = u518(p); !ok {
 		goto L20
 	}
@@ -23676,7 +20783,6 @@ L23:
 L20:
 	p.Silent--
 	p.Pos = x19
-	x24 = p.Pos
 	if v25, ok = u232(p); !ok {
 		goto L18
 	}
@@ -23689,7 +20795,7 @@ L18:
 L4:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "unaryExpression"
-	v = func() any { return k2 }()
+	v = k2
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -23758,7 +20864,6 @@ L11:
 L15:
 	p.Pos = x1
 L14:
-
 	if v18, ok = u230(p); !ok {
 		goto L17
 	}
@@ -23785,7 +20890,6 @@ L19:
 L22:
 	p.Pos = x1
 L21:
-
 	if v25, ok = u232(p); !ok {
 		goto L24
 	}
@@ -23818,15 +20922,13 @@ func u225(p *rt.TParser) (any, bool) {
 }
 
 func i225(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x4, x10, x14, x22 int
+	var start, x3, x4, x10, x14 int
 	var v, k1, v20, k21, v23 any
 	var c *rt.TActCtx
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x22
-	x2 = p.Pos
 	x3 = p.Pos
 	x4 = p.Pos
 	x6, _, x7 = p.NextOrdinary()
@@ -23915,20 +21017,13 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x22 = p.Pos
 	if v23, ok = u224(p); !ok {
 		goto fail
 	}
 	k21 = v23
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "prefixUnaryExpression"
-	v = func() any {
-		return func() any {
-			f_1123 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1124 := func() any { return k21 }()
-			return tmk_PrefixUnaryExpression(c, true, f_1123, f_1124)
-		}()
-	}()
+	v = tmk_PrefixUnaryExpression(c, true, c.Text(k1), k21)
 	p.Depth--
 	return v, true
 fail:
@@ -23947,13 +21042,12 @@ func u226(p *rt.TParser) (any, bool) {
 }
 
 func i226(p *rt.TParser) (any, bool) {
-	var start, x1, x4 int
+	var start, x1 int
 	var v, k3, v5 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	if _, ok = p.Parser.MatchLiteral(lit382, "delete", 175, false); !ok {
 		goto fail
 	}
@@ -23971,19 +21065,13 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u224(p); !ok {
 		goto fail
 	}
 	k3 = v5
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "deleteExpression"
-	v = func() any {
-		return func() any {
-			f_1125 := func() any { return k3 }()
-			return tmk_DeleteExpression(c, true, f_1125)
-		}()
-	}()
+	v = tmk_DeleteExpression(c, true, k3)
 	p.Depth--
 	return v, true
 fail:
@@ -24002,13 +21090,12 @@ func u227(p *rt.TParser) (any, bool) {
 }
 
 func i227(p *rt.TParser) (any, bool) {
-	var start, x1, x4 int
+	var start, x1 int
 	var v, k3, v5 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	if _, ok = p.Parser.MatchLiteral(lit383, "typeof", 176, false); !ok {
 		goto fail
 	}
@@ -24026,19 +21113,13 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u224(p); !ok {
 		goto fail
 	}
 	k3 = v5
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeOfExpression"
-	v = func() any {
-		return func() any {
-			f_1126 := func() any { return k3 }()
-			return tmk_TypeOfExpression(c, true, f_1126)
-		}()
-	}()
+	v = tmk_TypeOfExpression(c, true, k3)
 	p.Depth--
 	return v, true
 fail:
@@ -24057,13 +21138,12 @@ func u228(p *rt.TParser) (any, bool) {
 }
 
 func i228(p *rt.TParser) (any, bool) {
-	var start, x1, x4 int
+	var start, x1 int
 	var v, k3, v5 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 118 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 105 && p.In[p.Pos+3] == 100 {
 		p.Pos += 4
 	} else if _, ok = p.Parser.MatchLiteral(lit384, "void", 177, false); !ok {
@@ -24083,19 +21163,13 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u224(p); !ok {
 		goto fail
 	}
 	k3 = v5
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "voidExpression"
-	v = func() any {
-		return func() any {
-			f_1127 := func() any { return k3 }()
-			return tmk_VoidExpression(c, true, f_1127)
-		}()
-	}()
+	v = tmk_VoidExpression(c, true, k3)
 	p.Depth--
 	return v, true
 fail:
@@ -24114,13 +21188,12 @@ func u229(p *rt.TParser) (any, bool) {
 }
 
 func i229(p *rt.TParser) (any, bool) {
-	var start, x1, x3, x7, x11 int
+	var start, x1, x3, x7 int
 	var v, k10, v12 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x11
 	if _, ok = p.Parser.MatchLiteral(lit32, "await", 38, false); !ok {
 		goto fail
 	}
@@ -24137,13 +21210,7 @@ L2:
 	p.Pos = x1
 	x3 = p.Pos
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any {
-					return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(2) }())
-				}(), func() any { return any(2) }())
-			}(), func() any { return any(1) }())
-		}()
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(2)), any(2)), any(1))
 	}) {
 		goto L5
 	}
@@ -24171,23 +21238,16 @@ L6:
 	p.Pos = x3
 	goto fail
 L4:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x11 = p.Pos
 	if v12, ok = u224(p); !ok {
 		goto fail
 	}
 	k10 = v12
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "awaitExpression"
-	v = func() any {
-		return func() any {
-			f_1128 := func() any { return k10 }()
-			return tmk_AwaitExpression(c, true, f_1128)
-		}()
-	}()
+	v = tmk_AwaitExpression(c, true, k10)
 	p.Depth--
 	return v, true
 fail:
@@ -24206,19 +21266,14 @@ func u230(p *rt.TParser) (any, bool) {
 }
 
 func i230(p *rt.TParser) (any, bool) {
-	var start, x1, size, x4, x7 int
+	var start, x1, size int
 	var v, k3, v5, k6, v8 any
 	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_, _ = x4, x7
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("<", func() any { return c.Lookup("ctx") }(), func() any { return any(64) }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<", c.Lookup("ctx"), any(64)) }) {
 		goto fail
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 60 {
@@ -24243,7 +21298,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u315(p); !ok {
 		goto fail
 	}
@@ -24259,20 +21313,13 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = u224(p); !ok {
 		goto fail
 	}
 	k6 = v8
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeAssertion"
-	v = func() any {
-		return func() any {
-			f_1129 := func() any { return k3 }()
-			f_1130 := func() any { return k6 }()
-			return tmk_TypeAssertionExpression(c, true, f_1129, f_1130)
-		}()
-	}()
+	v = tmk_TypeAssertionExpression(c, true, k3, k6)
 	p.Depth--
 	return v, true
 fail:
@@ -24291,18 +21338,13 @@ func u231(p *rt.TParser) (any, bool) {
 }
 
 func i231(p *rt.TParser) (any, bool) {
-	var start, x1, x5 int
+	var start, x1 int
 	var v, k4, v6 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x5
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary(">=", func() any { return c.Lookup("ctx") }(), func() any { return any(64) }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Lookup("ctx"), any(64)) }) {
 		goto fail
 	}
 	x1 = p.Pos
@@ -24320,15 +21362,13 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x5 = p.Pos
 	if v6, ok = u288(p); !ok {
 		goto fail
 	}
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxUnaryExpression"
-	v = func() any { return k4 }()
+	v = k4
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -24351,14 +21391,13 @@ func u232(p *rt.TParser) (any, bool) {
 }
 
 func i232(p *rt.TParser) (any, bool) {
-	var start, x1, x6, size, x9, x12, x15, x18 int
+	var start, x1, x6, size, x12 int
 	var v, k2, x3, v10, v16, v19 any
 	var c *rt.TActCtx
 	var ch rune
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x9, x15, x18
 	x1 = p.Pos
 	x3 = k2
 	x6 = p.Pos
@@ -24377,8 +21416,6 @@ L7:
 	p.Pos = x6
 	goto L5
 L8:
-
-	x9 = p.Pos
 	if v10, ok = u234(p); !ok {
 		goto L5
 	}
@@ -24387,11 +21424,7 @@ L8:
 L5:
 	p.Pos = x1
 	k2 = x3
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary(">=", func() any { return c.Lookup("ctx") }(), func() any { return any(64) }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Lookup("ctx"), any(64)) }) {
 		goto L11
 	}
 	x12 = p.Pos
@@ -24409,8 +21442,6 @@ L13:
 	p.Pos = x12
 	goto L11
 L14:
-
-	x15 = p.Pos
 	if v16, ok = u235(p); !ok {
 		goto L11
 	}
@@ -24419,7 +21450,6 @@ L14:
 L11:
 	p.Pos = x1
 	k2 = x3
-	x18 = p.Pos
 	if v19, ok = u233(p); !ok {
 		goto L17
 	}
@@ -24432,7 +21462,7 @@ L17:
 L4:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "updateExpression"
-	v = func() any { return k2 }()
+	v = k2
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -24452,7 +21482,7 @@ func u233(p *rt.TParser) (any, bool) {
 }
 
 func i233(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x9, x12, x14, x15, x16 int
+	var start, x6, x7, x9, x12, x15, x16 int
 	var v, k1, v3, k4, k10, v24, v25, v26, v27, v28 any
 	var c *rt.TActCtx
 	var ok, x19 bool
@@ -24460,15 +21490,11 @@ func i233(p *rt.TParser) (any, bool) {
 	var x18 rune
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x2, x5, x8, x14
-	x2 = p.Pos
 	if v3, ok = p.Call(trules[236], 0); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	x6, x7 = p.Pos, len(p.KidStack)
-	x8 = 0
 	for {
 		x9 = p.Pos
 		k10 = nil
@@ -24477,7 +21503,6 @@ func i233(p *rt.TParser) (any, bool) {
 		if _, ok = s494(p); !ok {
 			goto L11
 		}
-		x14 = p.Pos
 		x15 = p.Pos
 		x16 = p.Pos
 		x18, _, x19 = p.NextOrdinary()
@@ -24514,8 +21539,7 @@ func i233(p *rt.TParser) (any, bool) {
 		x13 = append(x13, v24)
 		v25 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
 		v26 = p.ScopeValue(sh5, v25, x9)
-		v27 = p.AttachCaptures(v26, scope1131, []any{k10}, x9, p.Pos)
-		x8++
+		v27 = p.AttachCaptures(v26, scope885, []any{k10}, x9, p.Pos)
 		p.PushKid(v27)
 		if p.Pos == x9 {
 			break
@@ -24527,28 +21551,14 @@ func i233(p *rt.TParser) (any, bool) {
 	}
 	v28 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v28
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("<=", func() any { return c.Length(func() any { return k4 }()) }(), func() any { return any(1) }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<=", c.Length(k4), any(1)) }) {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "postfixOrLeftHandSideExpression"
-	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1132, l_1133 any) any {
-			return func() any {
-				return func() any {
-					f_1134 := func() any { return l_1132 }()
-					f_1135 := func() any {
-						return c.Text(func() any { return c.Member(func() any { return l_1133 }(), "$o") }())
-					}()
-					return tmk_PostfixUnaryExpression(c, false, f_1134, f_1135)
-				}()
-			}()
-		})
-	}()
+	v = c.Fold("foldl", false, k1, k4, func(l_886, l_887 any) any {
+		return tmk_PostfixUnaryExpression(c, false, (l_886), c.Text(c.Member((l_887), "$o")))
+	})
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -24568,15 +21578,13 @@ func u234(p *rt.TParser) (any, bool) {
 }
 
 func i234(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x4, x14 int
+	var start, x3, x4 int
 	var v, k1, v12, k13, v15 any
 	var c *rt.TActCtx
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x14
-	x2 = p.Pos
 	x3 = p.Pos
 	x4 = p.Pos
 	x6, _, x7 = p.NextOrdinary()
@@ -24613,20 +21621,13 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x14 = p.Pos
 	if v15, ok = p.Call(trules[236], 0); !ok {
 		goto fail
 	}
 	k13 = v15
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "prefixUpdateExpression"
-	v = func() any {
-		return func() any {
-			f_1136 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1137 := func() any { return k13 }()
-			return tmk_PrefixUnaryExpression(c, true, f_1136, f_1137)
-		}()
-	}()
+	v = tmk_PrefixUnaryExpression(c, true, c.Text(k1), k13)
 	p.Depth--
 	return v, true
 fail:
@@ -24645,19 +21646,14 @@ func u235(p *rt.TParser) (any, bool) {
 }
 
 func i235(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x12, x14, x16, size int
+	var start, x1, x4, x14, x16, size int
 	var v, k11, v13 any
 	var c *rt.TActCtx
 	var ok, x8 bool
 	var x7, ch rune
 	start = p.Pos
 	p.Enter()
-	_ = x12
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary(">=", func() any { return c.Lookup("ctx") }(), func() any { return any(64) }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Lookup("ctx"), any(64)) }) {
 		goto fail
 	}
 	x1 = p.Pos
@@ -24701,8 +21697,6 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x12 = p.Pos
 	if v13, ok = u288(p); !ok {
 		goto fail
 	}
@@ -24739,7 +21733,7 @@ L15:
 	p.Pos = x14
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxPrimaryExpression"
-	v = func() any { return k11 }()
+	v = k11
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -24748,7 +21742,7 @@ fail:
 	return nil, false
 }
 
-func e1478(p *rt.TParser) (any, bool) {
+func e991(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u252(p); !ok {
@@ -24759,7 +21753,7 @@ fail:
 	return nil, false
 }
 
-func e1479(p *rt.TParser) (any, bool) {
+func e992(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u248(p); !ok {
@@ -24770,7 +21764,7 @@ fail:
 	return nil, false
 }
 
-func e1480(p *rt.TParser) (any, bool) {
+func e993(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u250(p); !ok {
@@ -24781,7 +21775,7 @@ fail:
 	return nil, false
 }
 
-func e1481(p *rt.TParser) (any, bool) {
+func e994(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u251(p); !ok {
@@ -24792,20 +21786,19 @@ fail:
 	return nil, false
 }
 
-func e1483(p *rt.TParser) (any, bool) {
+func e996(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
-	var x2, x4, x7, size, x11 int
+	var x2, x4, x7, size int
 	var x3 []any
 	var v8, v12, v13 any
 	var x9 rt.Mark
 	var ch rune
-	_ = x11
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(2)[:0]
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1482) && !p.ClassSkip(&cls1482, 295) {
+	if !p.ClassFast(&cls995) && !p.ClassSkip(&cls995, 295) {
 		goto L5
 	}
 	p.Silent--
@@ -24816,7 +21809,6 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
@@ -24846,7 +21838,6 @@ L10:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x11 = p.Pos
 	if v12, ok = u239(p); !ok {
 		goto fail
 	}
@@ -24860,18 +21851,17 @@ fail:
 	return nil, false
 }
 
-func e1487(p *rt.TParser) (any, bool) {
+func e998(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
-	var x2, x4, x7, x9 int
+	var x2, x4 int
 	var x3 []any
 	var v8, v10, v11 any
-	_, _ = x7, x9
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(2)[:0]
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1486) && !p.ClassSkip(&cls1486, 296) {
+	if !p.ClassFast(&cls997) && !p.ClassSkip(&cls997, 296) {
 		goto L5
 	}
 	p.Silent--
@@ -24882,11 +21872,9 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = s240(p); !ok {
 		goto fail
 	}
@@ -24896,7 +21884,6 @@ L6:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x9 = p.Pos
 	if v10, ok = u423(p); !ok {
 		goto fail
 	}
@@ -24910,18 +21897,17 @@ fail:
 	return nil, false
 }
 
-func e1492(p *rt.TParser) (any, bool) {
+func e1000(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
-	var x2, x4, x7, x9, x11 int
+	var x2, x4, x7, x11 int
 	var x3 []any
 	var v8, v10, v12, v13 any
-	_ = x9
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(3)[:0]
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1491) && !p.ClassSkip(&cls1491, 297) {
+	if !p.ClassFast(&cls999) && !p.ClassSkip(&cls999, 297) {
 		goto L5
 	}
 	p.Silent--
@@ -24932,18 +21918,11 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any {
-					return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(8) }())
-				}(), func() any { return any(2) }())
-			}(), func() any { return any(0) }())
-		}()
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(8)), any(2)), any(0))
 	}) {
 		goto fail
 	}
@@ -24959,7 +21938,6 @@ L6:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x9 = p.Pos
 	if v10, ok = u185(p); !ok {
 		goto fail
 	}
@@ -24984,18 +21962,17 @@ fail:
 	return nil, false
 }
 
-func e1495(p *rt.TParser) (any, bool) {
+func e1001(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
-	var x2, x4, x7, x9, x11, x13 int
+	var x2, x4, x9, x13 int
 	var x3 []any
 	var v8, v10, v12, v14, v15 any
-	_, _ = x7, x11
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(4)[:0]
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1486) && !p.ClassSkip(&cls1486, 296) {
+	if !p.ClassFast(&cls997) && !p.ClassSkip(&cls997, 296) {
 		goto L5
 	}
 	p.Silent--
@@ -25006,11 +21983,9 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = s240(p); !ok {
 		goto fail
 	}
@@ -25031,7 +22006,6 @@ L6:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x11 = p.Pos
 	if v12, ok = u185(p); !ok {
 		goto fail
 	}
@@ -25056,19 +22030,18 @@ fail:
 	return nil, false
 }
 
-func e1500(p *rt.TParser) (any, bool) {
+func e1003(p *rt.TParser) (any, bool) {
 	var cut1, ok, cut11 bool
-	var x2, x4, x12, x14, x18, x21 int
+	var x2, x4, x12, x18 int
 	var x3, x13 []any
 	var x7 rt.Mark
 	var v8, v15, v16, v17, v22, v23 any
-	_, _ = x14, x21
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(2)[:0]
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1499) && !p.ClassSkip(&cls1499, 298) {
+	if !p.ClassFast(&cls1002) && !p.ClassSkip(&cls1002, 298) {
 		goto L5
 	}
 	p.Silent--
@@ -25079,7 +22052,6 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
@@ -25087,7 +22059,6 @@ L6:
 	cut11 = false
 	x12 = p.Pos
 	x13 = p.NewVals(1)[:0]
-	x14 = p.Pos
 	if v15, ok = u241(p); !ok {
 		goto L9
 	}
@@ -25123,9 +22094,7 @@ L19:
 	p.Pos = x18
 	goto fail
 L20:
-
 	cut1 = true
-	x21 = p.Pos
 	if v22, ok = u283(p); !ok {
 		goto fail
 	}
@@ -25139,19 +22108,18 @@ fail:
 	return nil, false
 }
 
-func e1504(p *rt.TParser) (any, bool) {
+func e1004(p *rt.TParser) (any, bool) {
 	var cut1, ok, cut13 bool
-	var x2, x4, x7, x14, x16, x20 int
+	var x2, x4, x14 int
 	var x3, x15 []any
 	var v8, v10, v17, v18, v19, v21, v22 any
 	var x9 rt.Mark
-	_, _, _ = x7, x16, x20
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(3)[:0]
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1486) && !p.ClassSkip(&cls1486, 296) {
+	if !p.ClassFast(&cls997) && !p.ClassSkip(&cls997, 296) {
 		goto L5
 	}
 	p.Silent--
@@ -25162,11 +22130,9 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = s240(p); !ok {
 		goto fail
 	}
@@ -25180,7 +22146,6 @@ L6:
 	cut13 = false
 	x14 = p.Pos
 	x15 = p.NewVals(1)[:0]
-	x16 = p.Pos
 	if v17, ok = u241(p); !ok {
 		goto L11
 	}
@@ -25201,7 +22166,6 @@ L11:
 	v10 = nil
 L12:
 	x3 = append(x3, v10)
-	x20 = p.Pos
 	if v21, ok = u283(p); !ok {
 		goto fail
 	}
@@ -25215,7 +22179,7 @@ fail:
 	return nil, false
 }
 
-func e1509(p *rt.TParser) (any, bool) {
+func e1005(p *rt.TParser) (any, bool) {
 	var x1, x3, size, x6 int
 	var x2 []any
 	var ch rune
@@ -25240,7 +22204,6 @@ L4:
 	p.Pos = x3
 	goto fail
 L5:
-
 	x6 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 33 {
 		p.Pos++
@@ -25268,17 +22231,16 @@ fail:
 	return nil, false
 }
 
-func e1512(p *rt.TParser) (any, bool) {
-	var x1, x3, x6 int
+func e1007(p *rt.TParser) (any, bool) {
+	var x1, x3 int
 	var x2 []any
 	var ok bool
 	var v7, v8 any
-	_ = x6
 	x1 = p.Pos
 	x2 = p.NewVals(1)[:0]
 	x3 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1511) && !p.ClassSkip(&cls1511, 300) {
+	if !p.ClassFast(&cls1006) && !p.ClassSkip(&cls1006, 300) {
 		goto L4
 	}
 	p.Silent--
@@ -25289,11 +22251,9 @@ L4:
 	p.Pos = x3
 	goto fail
 L5:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x6 = p.Pos
 	if v7, ok = u241(p); !ok {
 		goto fail
 	}
@@ -25305,19 +22265,18 @@ fail:
 	return nil, false
 }
 
-func e1516(p *rt.TParser) (any, bool) {
+func e1009(p *rt.TParser) (any, bool) {
 	var cut1, ok, cut11 bool
-	var x2, x4, x12, x14, x18, x21 int
+	var x2, x4, x12, x18 int
 	var x3, x13 []any
 	var x7 rt.Mark
 	var v8, v15, v16, v17, v22, v23 any
-	_, _ = x14, x21
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(2)[:0]
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1515) && !p.ClassSkip(&cls1515, 301) {
+	if !p.ClassFast(&cls1008) && !p.ClassSkip(&cls1008, 301) {
 		goto L5
 	}
 	p.Silent--
@@ -25328,7 +22287,6 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
@@ -25336,7 +22294,6 @@ L6:
 	cut11 = false
 	x12 = p.Pos
 	x13 = p.NewVals(1)[:0]
-	x14 = p.Pos
 	if v15, ok = u241(p); !ok {
 		goto L9
 	}
@@ -25372,9 +22329,7 @@ L19:
 	p.Pos = x18
 	goto fail
 L20:
-
 	cut1 = true
-	x21 = p.Pos
 	if v22, ok = u244(p); !ok {
 		goto fail
 	}
@@ -25388,19 +22343,18 @@ fail:
 	return nil, false
 }
 
-func e1520(p *rt.TParser) (any, bool) {
+func e1010(p *rt.TParser) (any, bool) {
 	var cut1, ok, cut13 bool
-	var x2, x4, x7, x14, x16, x20 int
+	var x2, x4, x14 int
 	var x3, x15 []any
 	var v8, v10, v17, v18, v19, v21, v22 any
 	var x9 rt.Mark
-	_, _, _ = x7, x16, x20
 	cut1 = p.Cut
 	x2 = p.Pos
 	x3 = p.NewVals(3)[:0]
 	x4 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1486) && !p.ClassSkip(&cls1486, 296) {
+	if !p.ClassFast(&cls997) && !p.ClassSkip(&cls997, 296) {
 		goto L5
 	}
 	p.Silent--
@@ -25411,11 +22365,9 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = s240(p); !ok {
 		goto fail
 	}
@@ -25429,7 +22381,6 @@ L6:
 	cut13 = false
 	x14 = p.Pos
 	x15 = p.NewVals(1)[:0]
-	x16 = p.Pos
 	if v17, ok = u241(p); !ok {
 		goto L11
 	}
@@ -25450,7 +22401,6 @@ L11:
 	v10 = nil
 L12:
 	x3 = append(x3, v10)
-	x20 = p.Pos
 	if v21, ok = u244(p); !ok {
 		goto fail
 	}
@@ -25464,7 +22414,7 @@ fail:
 	return nil, false
 }
 
-func e1550(p *rt.TParser) (any, bool) {
+func e1011(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = s249(p); !ok {
@@ -25504,7 +22454,6 @@ func v239(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-
 	if v10, ok = u423(p); !ok {
 		goto L9
 	}
@@ -25582,7 +22531,7 @@ func u241(p *rt.TParser) (any, bool) {
 }
 
 func i241(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x8, size, x10 int
+	var start, x3, x8, size, x10 int
 	var v, k1, v4, v7 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -25591,7 +22540,6 @@ func i241(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 60 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit336, "<", 140, false); !ok {
@@ -25600,16 +22548,9 @@ func i241(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
-			}())
-		}()
-	}) {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any { return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(4))) }) {
 		goto fail
 	}
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u374(p); !ok {
 		goto L5
@@ -25658,7 +22599,7 @@ L11:
 L12:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeArgumentsInExpression"
-	v = func() any { return c.Concat(func() any { return k1 }()) }()
+	v = c.Concat(k1)
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -25683,7 +22624,7 @@ func u244(p *rt.TParser) (any, bool) {
 }
 
 func i244(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v7 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -25691,7 +22632,6 @@ func i244(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit78, "(", 58, false); !ok {
@@ -25701,19 +22641,10 @@ func i244(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("*", func() any {
-					return c.Binary("%", func() any {
-						return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
-					}(), func() any { return any(8) }())
-				}(), func() any { return any(4) }())
-			}())
-		}()
+		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(8)), any(4)))
 	}) {
 		goto fail
 	}
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u245(p); !ok {
 		goto L5
@@ -25735,7 +22666,7 @@ L6:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "arguments"
-	v = func() any { return c.Concat(func() any { return k1 }()) }()
+	v = c.Concat(k1)
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -25757,22 +22688,18 @@ func u245(p *rt.TParser) (any, bool) {
 }
 
 func i245(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x9, x12, x14, x16, x22 int
+	var start, x6, x7, x9, x12, x14, x22 int
 	var v, k1, v3, k4, k10, v15, v17, v18, v19, v20, v21 any
 	var c *rt.TActCtx
 	var ok bool
 	var x13 []any
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x2, x5, x8, x16
-	x2 = p.Pos
 	if v3, ok = u246(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	x6, x7 = p.Pos, len(p.KidStack)
-	x8 = 0
 	for {
 		x9 = p.Pos
 		k10 = nil
@@ -25792,7 +22719,6 @@ func i245(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L11
 		}
-		x16 = p.Pos
 		if v17, ok = u246(p); !ok {
 			goto L11
 		}
@@ -25800,8 +22726,7 @@ func i245(p *rt.TParser) (any, bool) {
 		x13 = append(x13, v17)
 		v18 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
 		v19 = p.ScopeValue(sh13, v18, x9)
-		v20 = p.AttachCaptures(v19, scope1138, []any{k10}, x9, p.Pos)
-		x8++
+		v20 = p.AttachCaptures(v19, scope888, []any{k10}, x9, p.Pos)
 		p.PushKid(v20)
 		if p.Pos == x9 {
 			break
@@ -25829,14 +22754,10 @@ L24:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "argumentList"
 	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { return k1 }())
-			c.PushMap(func() any { return k4 }(), func(l_1139 any) any {
-				return func() any { return c.Member(func() any { return l_1139 }(), "$a") }()
-			})
-			return c.EndList(b)
-		}()
+		b := len(c.P.KidStack)
+		c.PushList(k1)
+		c.PushMap(k4, func(l_889 any) any { return c.Member((l_889), "$a") })
+		return c.EndList(b)
 	}()
 	v = c.Finish(v)
 	p.Depth--
@@ -25875,7 +22796,6 @@ func v246(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-
 	if v10, ok = u189(p); !ok {
 		goto L9
 	}
@@ -25911,13 +22831,12 @@ func u247(p *rt.TParser) (any, bool) {
 }
 
 func i247(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 46 && p.In[p.Pos+1] == 46 && p.In[p.Pos+2] == 46 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit281, "...", 118, false); !ok {
@@ -25926,19 +22845,13 @@ func i247(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u187(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "spreadElement"
-	v = func() any {
-		return func() any {
-			f_1140 := func() any { return k1 }()
-			return tmk_SpreadElement(c, true, f_1140)
-		}()
-	}()
+	v = tmk_SpreadElement(c, true, k1)
 	p.Depth--
 	return v, true
 fail:
@@ -26124,13 +23037,12 @@ func u251(p *rt.TParser) (any, bool) {
 }
 
 func i251(p *rt.TParser) (any, bool) {
-	var start, x1, x4 int
+	var start, x1 int
 	var v, k3, v5 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	if _, ok = p.Parser.MatchLiteral(lit10, "import", 7, false); !ok {
 		goto fail
 	}
@@ -26156,20 +23068,13 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u425(p); !ok {
 		goto fail
 	}
 	k3 = v5
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importMetaProperty"
-	v = func() any {
-		return func() any {
-			f_1141 := func() any { return any("import") }()
-			f_1142 := func() any { return k3 }()
-			return tmk_MetaProperty(c, true, f_1141, f_1142)
-		}()
-	}()
+	v = tmk_MetaProperty(c, true, any("import"), k3)
 	p.Depth--
 	return v, true
 fail:
@@ -26191,7 +23096,7 @@ func u252(p *rt.TParser) (any, bool) {
 }
 
 func i252(p *rt.TParser) (any, bool) {
-	var start, x2, x6, x11, x14, x17 int
+	var start, x2, x6, x11 int
 	var v, k7, x8, v15, v18 any
 	var c *rt.TActCtx
 	var x1 rt.ExpMark
@@ -26199,13 +23104,12 @@ func i252(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x14, x17
 	x1 = p.Isolate(p.Pos)
 	x6 = p.Pos
 	x8 = k7
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls884) && !p.ClassSkip(&cls884, 69) {
+	if !p.ClassFast(&cls845) && !p.ClassSkip(&cls845, 69) {
 		goto L12
 	}
 	p.Silent--
@@ -26216,8 +23120,6 @@ L12:
 	p.Pos = x11
 	goto L10
 L13:
-
-	x14 = p.Pos
 	if v15, ok = u253(p); !ok {
 		goto L10
 	}
@@ -26226,7 +23128,6 @@ L13:
 L10:
 	p.Pos = x6
 	k7 = x8
-	x17 = p.Pos
 	if v18, ok = s254(p); !ok {
 		goto L16
 	}
@@ -26247,7 +23148,7 @@ L4:
 L5:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "primaryExpression"
-	v = func() any { return k7 }()
+	v = k7
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -26267,14 +23168,13 @@ func u253(p *rt.TParser) (any, bool) {
 }
 
 func i253(p *rt.TParser) (any, bool) {
-	var start, x1, x6, x8, x10, x12, x18, x22, x25, x28, x31, x34 int
+	var start, x1, x6, x8, x10 int
 	var v, k2, x3, v13, v19, v23, v26, v29, v32, v35 any
 	var c *rt.TActCtx
 	var ok, x15 bool
 	var x14 rune
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _, _, _ = x12, x18, x22, x25, x28, x31, x34
 	x1 = p.Pos
 	x3 = k2
 	x6 = p.Pos
@@ -26316,7 +23216,6 @@ L11:
 L7:
 	p.Silent--
 	p.Pos = x6
-	x12 = p.Pos
 	if v13, ok = u421(p); !ok {
 		goto L5
 	}
@@ -26330,7 +23229,6 @@ L5:
 		p.ExpectOrdinary(p.Pos, 82)
 		goto L16
 	}
-	x18 = p.Pos
 	if v19, ok = s256(p); !ok {
 		goto L17
 	}
@@ -26344,7 +23242,6 @@ L16:
 		p.ExpectOrdinary(p.Pos, 90)
 		goto L20
 	}
-	x22 = p.Pos
 	if v23, ok = u257(p); !ok {
 		goto L21
 	}
@@ -26354,8 +23251,6 @@ L21:
 	p.Pos = x1
 	k2 = x3
 L20:
-
-	x25 = p.Pos
 	if v26, ok = u258(p); !ok {
 		goto L24
 	}
@@ -26364,7 +23259,6 @@ L20:
 L24:
 	p.Pos = x1
 	k2 = x3
-	x28 = p.Pos
 	if v29, ok = u273(p); !ok {
 		goto L27
 	}
@@ -26373,7 +23267,6 @@ L24:
 L27:
 	p.Pos = x1
 	k2 = x3
-	x31 = p.Pos
 	if v32, ok = u275(p); !ok {
 		goto L30
 	}
@@ -26382,7 +23275,6 @@ L27:
 L30:
 	p.Pos = x1
 	k2 = x3
-	x34 = p.Pos
 	if v35, ok = s276(p); !ok {
 		goto L33
 	}
@@ -26395,7 +23287,7 @@ L33:
 L4:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "wordPrimary"
-	v = func() any { return k2 }()
+	v = k2
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -26487,7 +23379,6 @@ L19:
 L23:
 	p.Pos = x1
 L22:
-
 	if v26, ok = u275(p); !ok {
 		goto L25
 	}
@@ -26544,14 +23435,13 @@ func u255(p *rt.TParser) (any, bool) {
 }
 
 func i255(p *rt.TParser) (any, bool) {
-	var start, x1, size, x5, x6 int
+	var start, x1, size, x6 int
 	var v, k4, v7, v10, v12 any
 	var c *rt.TActCtx
 	var ch rune
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x5
 	x1 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
@@ -26568,8 +23458,6 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x5 = p.Pos
 	x6 = p.Pos
 	if v10, ok = u440(p); !ok {
 		goto L9
@@ -26590,7 +23478,7 @@ L8:
 	k4 = v7
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "numericOrBigIntLiteral"
-	v = func() any { return k4 }()
+	v = k4
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -26727,7 +23615,6 @@ L9:
 L8:
 	goto fail
 L3:
-
 	x10 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -26765,13 +23652,12 @@ func u259(p *rt.TParser) (any, bool) {
 }
 
 func i259(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit78, "(", 58, false); !ok {
@@ -26780,7 +23666,6 @@ func i259(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u185(p); !ok {
 		goto fail
 	}
@@ -26795,12 +23680,7 @@ func i259(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "parenthesizedExpression"
-	v = func() any {
-		return func() any {
-			f_1143 := func() any { return k1 }()
-			return tmk_ParenthesizedExpression(c, true, f_1143)
-		}()
-	}()
+	v = tmk_ParenthesizedExpression(c, true, k1)
 	p.Depth--
 	return v, true
 fail:
@@ -26819,7 +23699,7 @@ func u260(p *rt.TParser) (any, bool) {
 }
 
 func i260(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v7 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -26827,7 +23707,6 @@ func i260(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 79, false); !ok {
@@ -26837,19 +23716,10 @@ func i260(p *rt.TParser) (any, bool) {
 		goto fail
 	}
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("*", func() any {
-					return c.Binary("%", func() any {
-						return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(8) }())
-					}(), func() any { return any(4) }())
-				}(), func() any { return any(8) }())
-			}())
-		}()
+		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(8)), any(4)), any(8)))
 	}) {
 		goto fail
 	}
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u465(p); !ok {
 		goto L5
@@ -26871,12 +23741,7 @@ L6:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "arrayLiteralExpression"
-	v = func() any {
-		return func() any {
-			f_1144 := func() any { return c.Concat(func() any { return k1 }()) }()
-			return tmk_ArrayLiteralExpression(c, true, f_1144)
-		}()
-	}()
+	v = tmk_ArrayLiteralExpression(c, true, c.Concat(k1))
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -26915,7 +23780,6 @@ func v261(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-
 	if v10, ok = u189(p); !ok {
 		goto L9
 	}
@@ -26955,13 +23819,12 @@ func u262(p *rt.TParser) (any, bool) {
 }
 
 func i262(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v7 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "{", 20, false); !ok {
@@ -26970,7 +23833,6 @@ func i262(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u473(p); !ok {
 		goto L5
@@ -26992,12 +23854,7 @@ L6:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "objectLiteralExpression"
-	v = func() any {
-		return func() any {
-			f_1145 := func() any { return c.Concat(func() any { return k1 }()) }()
-			return tmk_ObjectLiteralExpression(c, true, f_1145)
-		}()
-	}()
+	v = tmk_ObjectLiteralExpression(c, true, c.Concat(k1))
 	p.Depth--
 	return v, true
 fail:
@@ -27034,7 +23891,6 @@ func v263(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-
 	if v10, ok = u264(p); !ok {
 		goto L9
 	}
@@ -27074,13 +23930,12 @@ func u264(p *rt.TParser) (any, bool) {
 }
 
 func i264(p *rt.TParser) (any, bool) {
-	var start, x1, x5, x6 int
+	var start, x1, x6 int
 	var v, k4, v7, v10, v12 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x5
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = u165(p); !ok {
@@ -27097,8 +23952,6 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x5 = p.Pos
 	x6 = p.Pos
 	if v10, ok = u268(p); !ok {
 		goto L9
@@ -27119,7 +23972,7 @@ L8:
 	k4 = v7
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "objectAccessor"
-	v = func() any { return k4 }()
+	v = k4
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -27139,13 +23992,12 @@ func u265(p *rt.TParser) (any, bool) {
 }
 
 func i265(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x5 int
+	var start, x1, x5 int
 	var v, k3, v6, v9, v11, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = u165(p); !ok {
@@ -27160,7 +24012,6 @@ func i265(p *rt.TParser) (any, bool) {
 L2:
 	p.Silent--
 	p.Pos = x1
-	x4 = p.Pos
 	x5 = p.Pos
 	if v9, ok = u270(p); !ok {
 		goto L8
@@ -27188,7 +24039,7 @@ L7:
 	k3 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "objectMemberNotAccessor"
-	v = func() any { return k3 }()
+	v = k3
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -27208,13 +24059,12 @@ func u267(p *rt.TParser) (any, bool) {
 }
 
 func i267(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 46 && p.In[p.Pos+1] == 46 && p.In[p.Pos+2] == 46 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit281, "...", 118, false); !ok {
@@ -27223,19 +24073,13 @@ func i267(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u187(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "spreadAssignment"
-	v = func() any {
-		return func() any {
-			f_1146 := func() any { return k1 }()
-			return tmk_SpreadAssignment(c, true, f_1146)
-		}()
-	}()
+	v = tmk_SpreadAssignment(c, true, k1)
 	p.Depth--
 	return v, true
 fail:
@@ -27254,7 +24098,7 @@ func u268(p *rt.TParser) (any, bool) {
 }
 
 func i268(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x6, x10, x12, x17, x20, x23, x24, x29, x34, x37 int
+	var start, x4, x6, x12, x24, x29, x37 int
 	var v, k1, v3, k9, v11, k13, x14, v18, k19, v21, k22, v25, v28, k30, x31, v35 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -27262,8 +24106,6 @@ func i268(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _, _, _, _, _ = x2, x10, x17, x20, x23, x34
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
@@ -27300,21 +24142,15 @@ L7:
 	p.Pos = x6
 	goto fail
 L8:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x10 = p.Pos
 	if v11, ok = u411(p); !ok {
 		goto fail
 	}
 	k9 = v11
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
-			}())
-		}()
+		return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32)))
 	}) {
 		goto fail
 	}
@@ -27323,7 +24159,6 @@ L8:
 	if _, ok = s480(p); !ok {
 		goto L15
 	}
-	x17 = p.Pos
 	if v18, ok = u375(p); !ok {
 		goto L15
 	}
@@ -27333,16 +24168,13 @@ L15:
 	p.Pos = x12
 	k13 = x14
 L16:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x20 = p.Pos
 	if v21, ok = u79(p); !ok {
 		goto fail
 	}
 	k19 = v21
-	x23 = p.Pos
 	x24 = p.Pos
 	if v28, ok = u85(p); !ok {
 		goto L26
@@ -27359,7 +24191,6 @@ L27:
 	if _, ok = s480(p); !ok {
 		goto L33
 	}
-	x34 = p.Pos
 	if v35, ok = u18(p); !ok {
 		goto L33
 	}
@@ -27395,17 +24226,7 @@ L36:
 L32:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "objectGetAccessor"
-	v = func() any {
-		return func() any {
-			f_1147 := func() any { return k1 }()
-			f_1148 := func() any { return k9 }()
-			f_1149 := func() any { return c.Concat(func() any { return k13 }()) }()
-			f_1150 := func() any { return k19 }()
-			f_1151 := func() any { return k22 }()
-			f_1152 := func() any { return k30 }()
-			return tmk_GetAccessor(c, true, f_1147, f_1148, f_1149, f_1150, f_1151, f_1152)
-		}()
-	}()
+	v = tmk_GetAccessor(c, true, k1, k9, c.Concat(k13), k19, k22, k30)
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -27426,7 +24247,7 @@ func u269(p *rt.TParser) (any, bool) {
 }
 
 func i269(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x6, x10, x12, x17, x20, x23, x24, x29, x34, x37 int
+	var start, x4, x6, x12, x24, x29, x37 int
 	var v, k1, v3, k9, v11, k13, x14, v18, k19, v21, k22, v25, v28, k30, x31, v35 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -27434,8 +24255,6 @@ func i269(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _, _, _, _, _ = x2, x10, x17, x20, x23, x34
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
@@ -27472,21 +24291,15 @@ L7:
 	p.Pos = x6
 	goto fail
 L8:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x10 = p.Pos
 	if v11, ok = u411(p); !ok {
 		goto fail
 	}
 	k9 = v11
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
-			}())
-		}()
+		return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32)))
 	}) {
 		goto fail
 	}
@@ -27495,7 +24308,6 @@ L8:
 	if _, ok = s480(p); !ok {
 		goto L15
 	}
-	x17 = p.Pos
 	if v18, ok = u375(p); !ok {
 		goto L15
 	}
@@ -27505,16 +24317,13 @@ L15:
 	p.Pos = x12
 	k13 = x14
 L16:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x20 = p.Pos
 	if v21, ok = u79(p); !ok {
 		goto fail
 	}
 	k19 = v21
-	x23 = p.Pos
 	x24 = p.Pos
 	if v28, ok = u85(p); !ok {
 		goto L26
@@ -27531,7 +24340,6 @@ L27:
 	if _, ok = s480(p); !ok {
 		goto L33
 	}
-	x34 = p.Pos
 	if v35, ok = u18(p); !ok {
 		goto L33
 	}
@@ -27567,17 +24375,7 @@ L36:
 L32:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "objectSetAccessor"
-	v = func() any {
-		return func() any {
-			f_1153 := func() any { return k1 }()
-			f_1154 := func() any { return k9 }()
-			f_1155 := func() any { return c.Concat(func() any { return k13 }()) }()
-			f_1156 := func() any { return k19 }()
-			f_1157 := func() any { return k22 }()
-			f_1158 := func() any { return k30 }()
-			return tmk_SetAccessor(c, true, f_1153, f_1154, f_1155, f_1156, f_1157, f_1158)
-		}()
-	}()
+	v = tmk_SetAccessor(c, true, k1, k9, c.Concat(k13), k19, k22, k30)
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -27598,7 +24396,7 @@ func u270(p *rt.TParser) (any, bool) {
 }
 
 func i270(p *rt.TParser) (any, bool) {
-	var start, x1, x6, x9, x12, x14, x21, x24, x25, x27, x30, x32, x37, x39, x44, x46, x50, size, x53, x58, x61, x64, x65, x70, x75, x78 int
+	var start, x1, x6, x14, x21, x25, x32, x39, x46, x50, size, x53, x65, x70, x78 int
 	var v, k2, x3, v10, k11, v13, k15, x16, k17, x18, v26, v28, k29, v31, k33, x34, v38, k40, x41, v45, k54, x55, v59, k60, v62, k63, v66, v69, k71, x72, v76 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -27607,12 +24405,10 @@ func i270(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _, _, _, _, _, _, _, _, _, _ = x9, x12, x24, x27, x30, x37, x44, x58, x61, x64, x75
 	x1 = p.Pos
 	x3 = k2
 	x6 = p.Pos
 	p.Silent++
-	x9 = p.Pos
 	if v10, ok = u78(p); !ok {
 		goto L7
 	}
@@ -27630,8 +24426,6 @@ L4:
 	p.Pos = x1
 	k2 = x3
 L5:
-
-	x12 = p.Pos
 	if v13, ok = u165(p); !ok {
 		goto fail
 	}
@@ -27641,7 +24435,6 @@ L5:
 	x18 = k17
 	x21 = p.Pos
 	p.Silent++
-	x24 = p.Pos
 	x25 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
@@ -27658,8 +24451,6 @@ L22:
 	p.Pos = x21
 	goto L19
 L23:
-
-	x27 = p.Pos
 	if v28, ok = s415(p); !ok {
 		goto L19
 	}
@@ -27673,8 +24464,6 @@ L19:
 	k15 = x16
 	k17 = x18
 L20:
-
-	x30 = p.Pos
 	if v31, ok = u411(p); !ok {
 		goto fail
 	}
@@ -27684,7 +24473,6 @@ L20:
 	if _, ok = s480(p); !ok {
 		goto L35
 	}
-	x37 = p.Pos
 	if v38, ok = s413(p); !ok {
 		goto L35
 	}
@@ -27694,13 +24482,11 @@ L35:
 	p.Pos = x32
 	k33 = x34
 L36:
-
 	x39 = p.Pos
 	x41 = k40
 	if _, ok = s480(p); !ok {
 		goto L42
 	}
-	x44 = p.Pos
 	if v45, ok = s414(p); !ok {
 		goto L42
 	}
@@ -27710,13 +24496,8 @@ L42:
 	p.Pos = x39
 	k40 = x41
 L43:
-
 	x46 = p.Pos
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("!=", func() any { return k17 }(), func() any { return any(nil) }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("!=", k17, any(nil)) }) {
 		goto L48
 	}
 	goto L47
@@ -27746,21 +24527,8 @@ L49:
 	p.Pos = x46
 	goto fail
 L47:
-
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("+", func() any {
-				return c.Binary("+", func() any {
-					return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-						return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
-					}())
-				}(), func() any { return c.Length(func() any { return k15 }()) }())
-			}(), func() any {
-				return c.Binary("*", func() any {
-					return c.Binary("/", func() any { return c.Length(func() any { return k2 }()) }(), func() any { return any(5) }())
-				}(), func() any { return any(2) }())
-			}())
-		}()
+		return c.Binary("+", c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32))), c.Length(k15)), c.Binary("*", c.Binary("/", c.Length(k2), any(5)), any(2)))
 	}) {
 		goto fail
 	}
@@ -27769,7 +24537,6 @@ L47:
 	if _, ok = s480(p); !ok {
 		goto L56
 	}
-	x58 = p.Pos
 	if v59, ok = u375(p); !ok {
 		goto L56
 	}
@@ -27779,16 +24546,13 @@ L56:
 	p.Pos = x53
 	k54 = x55
 L57:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x61 = p.Pos
 	if v62, ok = u79(p); !ok {
 		goto fail
 	}
 	k60 = v62
-	x64 = p.Pos
 	x65 = p.Pos
 	if v69, ok = u85(p); !ok {
 		goto L67
@@ -27805,7 +24569,6 @@ L68:
 	if _, ok = s480(p); !ok {
 		goto L74
 	}
-	x75 = p.Pos
 	if v76, ok = u18(p); !ok {
 		goto L74
 	}
@@ -27841,20 +24604,7 @@ L77:
 L73:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "objectMethod"
-	v = func() any {
-		return func() any {
-			f_1159 := func() any { return k11 }()
-			f_1160 := func() any { return k17 }()
-			f_1161 := func() any { return k29 }()
-			f_1162 := func() any { return k33 }()
-			f_1163 := func() any { return k40 }()
-			f_1164 := func() any { return c.Concat(func() any { return k54 }()) }()
-			f_1165 := func() any { return k60 }()
-			f_1166 := func() any { return k63 }()
-			f_1167 := func() any { return k71 }()
-			return tmk_MethodDeclaration(c, true, f_1159, f_1160, f_1161, f_1162, f_1163, f_1164, f_1165, f_1166, f_1167)
-		}()
-	}()
+	v = tmk_MethodDeclaration(c, true, k11, k17, k29, k33, k40, c.Concat(k54), k60, k63, k71)
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -27875,7 +24625,7 @@ func u271(p *rt.TParser) (any, bool) {
 }
 
 func i271(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x7, x12, x14, x19, x21, x23, x31, x33 int
+	var start, x7, x14, x21, x23 int
 	var v, k1, v3, k4, v6, k8, x9, v13, k15, x16, v20, k25, x26, k27, x28, v32, v34 any
 	var c *rt.TActCtx
 	var prevEnv, x24 *rt.Env
@@ -27883,13 +24633,10 @@ func i271(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _, _, _, _, _ = x2, x5, x12, x19, x31, x33
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	if v6, ok = u421(p); !ok {
 		goto fail
 	}
@@ -27899,7 +24646,6 @@ func i271(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto L10
 	}
-	x12 = p.Pos
 	if v13, ok = s413(p); !ok {
 		goto L10
 	}
@@ -27909,13 +24655,11 @@ L10:
 	p.Pos = x7
 	k8 = x9
 L11:
-
 	x14 = p.Pos
 	x16 = k15
 	if _, ok = s480(p); !ok {
 		goto L17
 	}
-	x19 = p.Pos
 	if v20, ok = s414(p); !ok {
 		goto L17
 	}
@@ -27925,7 +24669,6 @@ L17:
 	p.Pos = x14
 	k15 = x16
 L18:
-
 	x21 = p.Pos
 	p.Silent++
 	if _, ok = s480(p); !ok {
@@ -27949,7 +24692,6 @@ L22:
 	if _, ok = s480(p); !ok {
 		goto L29
 	}
-	x31 = p.Pos
 	if v32, ok = s419(p); !ok {
 		goto L29
 	}
@@ -27958,19 +24700,10 @@ L22:
 		goto L29
 	}
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("*", func() any {
-					return c.Binary("%", func() any {
-						return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
-					}(), func() any { return any(2) }())
-				}(), func() any { return any(4) }())
-			}())
-		}()
+		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(2)), any(4)))
 	}) {
 		goto L29
 	}
-	x33 = p.Pos
 	if v34, ok = u187(p); !ok {
 		goto L29
 	}
@@ -27984,17 +24717,7 @@ L29:
 L30:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "shorthandPropertyAssignment"
-	v = func() any {
-		return func() any {
-			f_1168 := func() any { return k1 }()
-			f_1169 := func() any { return k4 }()
-			f_1170 := func() any { return k8 }()
-			f_1171 := func() any { return k15 }()
-			f_1172 := func() any { return k25 }()
-			f_1173 := func() any { return k27 }()
-			return tmk_ShorthandPropertyAssignment(c, true, f_1168, f_1169, f_1170, f_1171, f_1172, f_1173)
-		}()
-	}()
+	v = tmk_ShorthandPropertyAssignment(c, true, k1, k4, k8, k15, k25, k27)
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -28015,7 +24738,7 @@ func u272(p *rt.TParser) (any, bool) {
 }
 
 func i272(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x7, x12, x14, x19, x22 int
+	var start, x7, x14 int
 	var v, k1, v3, k4, v6, k8, x9, v13, k15, x16, v20, k21, v23 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -28023,13 +24746,10 @@ func i272(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _, _, _, _ = x2, x5, x12, x19, x22
-	x2 = p.Pos
 	if v3, ok = u165(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	if v6, ok = u411(p); !ok {
 		goto fail
 	}
@@ -28039,7 +24759,6 @@ func i272(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto L10
 	}
-	x12 = p.Pos
 	if v13, ok = s413(p); !ok {
 		goto L10
 	}
@@ -28049,13 +24768,11 @@ L10:
 	p.Pos = x7
 	k8 = x9
 L11:
-
 	x14 = p.Pos
 	x16 = k15
 	if _, ok = s480(p); !ok {
 		goto L17
 	}
-	x19 = p.Pos
 	if v20, ok = s414(p); !ok {
 		goto L17
 	}
@@ -28065,7 +24782,6 @@ L17:
 	p.Pos = x14
 	k15 = x16
 L18:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
@@ -28078,35 +24794,17 @@ L18:
 		goto fail
 	}
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("*", func() any {
-					return c.Binary("%", func() any {
-						return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
-					}(), func() any { return any(2) }())
-				}(), func() any { return any(4) }())
-			}())
-		}()
+		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(2)), any(4)))
 	}) {
 		goto fail
 	}
-	x22 = p.Pos
 	if v23, ok = u187(p); !ok {
 		goto fail
 	}
 	k21 = v23
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "propertyAssignment"
-	v = func() any {
-		return func() any {
-			f_1174 := func() any { return k1 }()
-			f_1175 := func() any { return k4 }()
-			f_1176 := func() any { return k8 }()
-			f_1177 := func() any { return k15 }()
-			f_1178 := func() any { return k21 }()
-			return tmk_PropertyAssignment(c, true, f_1174, f_1175, f_1176, f_1177, f_1178)
-		}()
-	}()
+	v = tmk_PropertyAssignment(c, true, k1, k4, k8, k15, k21)
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -28127,7 +24825,7 @@ func u273(p *rt.TParser) (any, bool) {
 }
 
 func i273(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x8, x10, x17, x20, x21, x23, x25, x30, x32, x37, x40, x43, x44, x50 int
+	var start, x3, x8, x10, x17, x21, x25, x32, x44 int
 	var v, k1, v4, v7, k11, x12, k13, x14, v22, v24, k26, x27, v31, k33, x34, v38, k39, v41, k42, v45, v48, k49, v51 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -28135,8 +24833,6 @@ func i273(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_, _, _, _, _, _, _, _ = x2, x20, x23, x30, x37, x40, x43, x50
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u274(p); !ok {
 		goto L5
@@ -28170,7 +24866,6 @@ L9:
 	}
 	x17 = p.Pos
 	p.Silent++
-	x20 = p.Pos
 	x21 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
@@ -28187,8 +24882,6 @@ L18:
 	p.Pos = x17
 	goto L15
 L19:
-
-	x23 = p.Pos
 	if v24, ok = s415(p); !ok {
 		goto L15
 	}
@@ -28199,19 +24892,8 @@ L15:
 	k11 = x12
 	k13 = x14
 L16:
-
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("+", func() any {
-				return c.Binary("+", func() any {
-					return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-						return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
-					}())
-				}(), func() any { return c.Length(func() any { return k11 }()) }())
-			}(), func() any {
-				return c.Binary("*", func() any { return c.Length(func() any { return k1 }()) }(), func() any { return any(2) }())
-			}())
-		}()
+		return c.Binary("+", c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(32))), c.Length(k11)), c.Binary("*", c.Length(k1), any(2)))
 	}) {
 		goto fail
 	}
@@ -28220,7 +24902,6 @@ L16:
 	if _, ok = s480(p); !ok {
 		goto L28
 	}
-	x30 = p.Pos
 	if v31, ok = u422(p); !ok {
 		goto L28
 	}
@@ -28230,13 +24911,11 @@ L28:
 	p.Pos = x25
 	k26 = x27
 L29:
-
 	x32 = p.Pos
 	x34 = k33
 	if _, ok = s480(p); !ok {
 		goto L35
 	}
-	x37 = p.Pos
 	if v38, ok = u375(p); !ok {
 		goto L35
 	}
@@ -28246,16 +24925,13 @@ L35:
 	p.Pos = x32
 	k33 = x34
 L36:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x40 = p.Pos
 	if v41, ok = u79(p); !ok {
 		goto fail
 	}
 	k39 = v41
-	x43 = p.Pos
 	x44 = p.Pos
 	if v48, ok = u85(p); !ok {
 		goto L46
@@ -28270,25 +24946,13 @@ L47:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x50 = p.Pos
 	if v51, ok = u18(p); !ok {
 		goto fail
 	}
 	k49 = v51
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "functionExpression"
-	v = func() any {
-		return func() any {
-			f_1179 := func() any { return c.Concat(func() any { return k1 }()) }()
-			f_1180 := func() any { return k13 }()
-			f_1181 := func() any { return k26 }()
-			f_1182 := func() any { return c.Concat(func() any { return k33 }()) }()
-			f_1183 := func() any { return k39 }()
-			f_1184 := func() any { return k42 }()
-			f_1185 := func() any { return k49 }()
-			return tmk_FunctionExpression(c, true, f_1179, f_1180, f_1181, f_1182, f_1183, f_1184, f_1185)
-		}()
-	}()
+	v = tmk_FunctionExpression(c, true, c.Concat(k1), k13, k26, c.Concat(k33), k39, k42, k49)
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -28309,14 +24973,12 @@ func u274(p *rt.TParser) (any, bool) {
 }
 
 func i274(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x7 int
+	var start, x4, x7 int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
-	x2 = p.Pos
 	if v3, ok = u201(p); !ok {
 		goto fail
 	}
@@ -28350,7 +25012,7 @@ L5:
 L6:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "asyncFunctionModifier"
-	v = func() any { return c.List(func() any { return k1 }()) }()
+	v = c.List(k1)
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -28373,14 +25035,13 @@ func u275(p *rt.TParser) (any, bool) {
 }
 
 func i275(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x10, x15 int
+	var start, x1, x4, x10 int
 	var v, k14, v16 any
 	var c *rt.TActCtx
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x15
 	x1 = p.Pos
 	p.Silent++
 	x4 = p.Pos
@@ -28430,15 +25091,13 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x15 = p.Pos
 	if v16, ok = u87(p); !ok {
 		goto fail
 	}
 	k14 = v16
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classExpressionPrimary"
-	v = func() any { return k14 }()
+	v = k14
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -28505,13 +25164,12 @@ func u277(p *rt.TParser) (any, bool) {
 }
 
 func i277(p *rt.TParser) (any, bool) {
-	var start, x1, x4 int
+	var start, x1 int
 	var v, k3, v5 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 119 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit179, "new", 93, false); !ok {
@@ -28539,20 +25197,13 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u425(p); !ok {
 		goto fail
 	}
 	k3 = v5
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "newTargetMetaProperty"
-	v = func() any {
-		return func() any {
-			f_1186 := func() any { return any("new") }()
-			f_1187 := func() any { return k3 }()
-			return tmk_MetaProperty(c, true, f_1186, f_1187)
-		}()
-	}()
+	v = tmk_MetaProperty(c, true, any("new"), k3)
 	p.Depth--
 	return v, true
 fail:
@@ -28571,14 +25222,13 @@ func u278(p *rt.TParser) (any, bool) {
 }
 
 func i278(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x6, x11, x13, x15, size, x17, x22 int
+	var start, x1, x6, x13, x15, size, x17 int
 	var v, k3, v5, k7, x8, v12, k18, x19, v23 any
 	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x4, x11, x22
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 119 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit179, "new", 93, false); !ok {
@@ -28598,7 +25248,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = p.InvokePlain(trules[238], 0); !ok {
 		goto fail
 	}
@@ -28608,7 +25257,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto L9
 	}
-	x11 = p.Pos
 	if v12, ok = u241(p); !ok {
 		goto L9
 	}
@@ -28618,7 +25266,6 @@ L9:
 	p.Pos = x6
 	k7 = x8
 L10:
-
 	x13 = p.Pos
 	p.Silent++
 	if _, ok = s480(p); !ok {
@@ -28654,7 +25301,6 @@ L14:
 	if _, ok = s480(p); !ok {
 		goto L20
 	}
-	x22 = p.Pos
 	if v23, ok = u244(p); !ok {
 		goto L20
 	}
@@ -28666,14 +25312,7 @@ L20:
 L21:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "newExpressionWithTarget"
-	v = func() any {
-		return func() any {
-			f_1188 := func() any { return k3 }()
-			f_1189 := func() any { return c.Concat(func() any { return k7 }()) }()
-			f_1190 := func() any { return k18 }()
-			return tmk_NewExpression(c, true, f_1188, f_1189, f_1190)
-		}()
-	}()
+	v = tmk_NewExpression(c, true, k3, c.Concat(k7), k18)
 	p.Depth--
 	return v, true
 fail:
@@ -28692,32 +25331,23 @@ func u279(p *rt.TParser) (any, bool) {
 }
 
 func i279(p *rt.TParser) (any, bool) {
-	var start, x2, x5 int
+	var start int
 	var v, k1, v3, k4, v6 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x5
-	x2 = p.Pos
 	if v3, ok = u452(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	if v6, ok = u280(p); !ok {
 		goto fail
 	}
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "templateExpression"
-	v = func() any {
-		return func() any {
-			f_1191 := func() any { return k1 }()
-			f_1192 := func() any { return k4 }()
-			return tmk_TemplateExpression(c, true, f_1191, f_1192)
-		}()
-	}()
+	v = tmk_TemplateExpression(c, true, k1, k4)
 	p.Depth--
 	return v, true
 fail:
@@ -28736,26 +25366,23 @@ func u280(p *rt.TParser) (any, bool) {
 }
 
 func i280(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x4, x5, x8, x12 int
+	var start, x2, x3, x5 int
 	var v, k1, k6, v9, v10, k11, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x4, x8, x12
-	x2, x3, x4 = p.Pos, len(p.KidStack), 0
+	x2, x3, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x5 = p.Pos
 		k6 = nil
 		if _, ok = s480(p); !ok {
 			goto L7
 		}
-		x8 = p.Pos
 		if v9, ok = u281(p); !ok {
 			goto L7
 		}
 		k6 = v9
-		x4++
 		p.PushKid(k6)
 		if p.Pos == x5 {
 			break
@@ -28770,21 +25397,13 @@ func i280(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x12 = p.Pos
 	if v13, ok = u282(p); !ok {
 		goto fail
 	}
 	k11 = v13
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "templateSpans"
-	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushItems(func() any { return k1 }())
-			c.PushList(func() any { return k11 }())
-			return c.EndList(b)
-		}()
-	}()
+	v = func() any { b := len(c.P.KidStack); c.PushItems(k1); c.PushList(k11); return c.EndList(b) }()
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -28804,14 +25423,12 @@ func u281(p *rt.TParser) (any, bool) {
 }
 
 func i281(p *rt.TParser) (any, bool) {
-	var start, x2, x5 int
+	var start int
 	var v, k1, v3, k4, v6 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x5
-	x2 = p.Pos
 	if v3, ok = u185(p); !ok {
 		goto fail
 	}
@@ -28819,20 +25436,13 @@ func i281(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x5 = p.Pos
 	if v6, ok = u453(p); !ok {
 		goto fail
 	}
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "templateSpanMiddle"
-	v = func() any {
-		return func() any {
-			f_1193 := func() any { return k1 }()
-			f_1194 := func() any { return k4 }()
-			return tmk_TemplateSpan(c, true, f_1193, f_1194)
-		}()
-	}()
+	v = tmk_TemplateSpan(c, true, k1, k4)
 	p.Depth--
 	return v, true
 fail:
@@ -28851,14 +25461,12 @@ func u282(p *rt.TParser) (any, bool) {
 }
 
 func i282(p *rt.TParser) (any, bool) {
-	var start, x2, x5 int
+	var start int
 	var v, k1, v3, k4, v6 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x5
-	x2 = p.Pos
 	if v3, ok = u185(p); !ok {
 		goto fail
 	}
@@ -28866,20 +25474,13 @@ func i282(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x5 = p.Pos
 	if v6, ok = u454(p); !ok {
 		goto fail
 	}
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "templateSpanTail"
-	v = func() any {
-		return func() any {
-			f_1195 := func() any { return k1 }()
-			f_1196 := func() any { return k4 }()
-			return tmk_TemplateSpan(c, true, f_1195, f_1196)
-		}()
-	}()
+	v = tmk_TemplateSpan(c, true, k1, k4)
 	p.Depth--
 	return v, true
 fail:
@@ -28953,32 +25554,23 @@ func u284(p *rt.TParser) (any, bool) {
 }
 
 func i284(p *rt.TParser) (any, bool) {
-	var start, x2, x5 int
+	var start int
 	var v, k1, v3, k4, v6 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x5
-	x2 = p.Pos
 	if v3, ok = s457(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	if v6, ok = u285(p); !ok {
 		goto fail
 	}
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "rawTemplateExpression"
-	v = func() any {
-		return func() any {
-			f_1197 := func() any { return k1 }()
-			f_1198 := func() any { return k4 }()
-			return tmk_TemplateExpression(c, true, f_1197, f_1198)
-		}()
-	}()
+	v = tmk_TemplateExpression(c, true, k1, k4)
 	p.Depth--
 	return v, true
 fail:
@@ -28997,26 +25589,23 @@ func u285(p *rt.TParser) (any, bool) {
 }
 
 func i285(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x4, x5, x8, x12 int
+	var start, x2, x3, x5 int
 	var v, k1, k6, v9, v10, k11, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x4, x8, x12
-	x2, x3, x4 = p.Pos, len(p.KidStack), 0
+	x2, x3, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x5 = p.Pos
 		k6 = nil
 		if _, ok = s480(p); !ok {
 			goto L7
 		}
-		x8 = p.Pos
 		if v9, ok = u286(p); !ok {
 			goto L7
 		}
 		k6 = v9
-		x4++
 		p.PushKid(k6)
 		if p.Pos == x5 {
 			break
@@ -29031,21 +25620,13 @@ func i285(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x12 = p.Pos
 	if v13, ok = u287(p); !ok {
 		goto fail
 	}
 	k11 = v13
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "rawTemplateSpans"
-	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushItems(func() any { return k1 }())
-			c.PushList(func() any { return k11 }())
-			return c.EndList(b)
-		}()
-	}()
+	v = func() any { b := len(c.P.KidStack); c.PushItems(k1); c.PushList(k11); return c.EndList(b) }()
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -29065,14 +25646,12 @@ func u286(p *rt.TParser) (any, bool) {
 }
 
 func i286(p *rt.TParser) (any, bool) {
-	var start, x2, x5 int
+	var start int
 	var v, k1, v3, k4, v6 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x5
-	x2 = p.Pos
 	if v3, ok = u185(p); !ok {
 		goto fail
 	}
@@ -29080,20 +25659,13 @@ func i286(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x5 = p.Pos
 	if v6, ok = s458(p); !ok {
 		goto fail
 	}
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "rawTemplateSpanMiddle"
-	v = func() any {
-		return func() any {
-			f_1199 := func() any { return k1 }()
-			f_1200 := func() any { return k4 }()
-			return tmk_TemplateSpan(c, true, f_1199, f_1200)
-		}()
-	}()
+	v = tmk_TemplateSpan(c, true, k1, k4)
 	p.Depth--
 	return v, true
 fail:
@@ -29112,14 +25684,12 @@ func u287(p *rt.TParser) (any, bool) {
 }
 
 func i287(p *rt.TParser) (any, bool) {
-	var start, x2, x5 int
+	var start int
 	var v, k1, v3, k4, v6 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x5
-	x2 = p.Pos
 	if v3, ok = u185(p); !ok {
 		goto fail
 	}
@@ -29127,20 +25697,13 @@ func i287(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x5 = p.Pos
 	if v6, ok = s459(p); !ok {
 		goto fail
 	}
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "rawTemplateSpanTail"
-	v = func() any {
-		return func() any {
-			f_1201 := func() any { return k1 }()
-			f_1202 := func() any { return k4 }()
-			return tmk_TemplateSpan(c, true, f_1201, f_1202)
-		}()
-	}()
+	v = tmk_TemplateSpan(c, true, k1, k4)
 	p.Depth--
 	return v, true
 fail:
@@ -29177,7 +25740,6 @@ func v288(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-
 	if v10, ok = u290(p); !ok {
 		goto L9
 	}
@@ -29225,13 +25787,12 @@ func u289(p *rt.TParser) (any, bool) {
 }
 
 func i289(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x9, x12 int
+	var start, x4 int
 	var v, k1, v3, k5, x6, v10, k11, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x9, x12
 	if p.Pos < len(p.In) && p.In[p.Pos] == 60 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit336, "<", 140, false); !ok {
@@ -29240,7 +25801,6 @@ func i289(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u296(p); !ok {
 		goto fail
 	}
@@ -29250,7 +25810,6 @@ func i289(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto L7
 	}
-	x9 = p.Pos
 	if v10, ok = u373(p); !ok {
 		goto L7
 	}
@@ -29260,11 +25819,9 @@ L7:
 	p.Pos = x4
 	k5 = x6
 L8:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x12 = p.Pos
 	if v13, ok = u302(p); !ok {
 		goto fail
 	}
@@ -29287,14 +25844,7 @@ L8:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxSelfClosingElement"
-	v = func() any {
-		return func() any {
-			f_1203 := func() any { return k1 }()
-			f_1204 := func() any { return c.Concat(func() any { return k5 }()) }()
-			f_1205 := func() any { return k11 }()
-			return tmk_JsxSelfClosingElement(c, true, f_1203, f_1204, f_1205)
-		}()
-	}()
+	v = tmk_JsxSelfClosingElement(c, true, k1, c.Concat(k5), k11)
 	p.Depth--
 	return v, true
 fail:
@@ -29316,13 +25866,12 @@ func u290(p *rt.TParser) (any, bool) {
 }
 
 func i290(p *rt.TParser) (any, bool) {
-	var start, x1, x5, x6, x9, x12, x13, x14, x15, x16, x21, x25, x26, x29 int
+	var start, x1, x6, x13, x14, x16, x21, x26 int
 	var v, k4, v7, k8, v10, k11, v18, v19, v20, k24, v27, k28, v30 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _, _ = x5, x9, x12, x15, x25, x29
 	x1 = p.Pos
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 60 {
@@ -29333,7 +25882,6 @@ func i290(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto L2
 	}
-	x5 = p.Pos
 	x6 = p.Pos
 	if _, ok = u520(p); !ok {
 		goto L2
@@ -29348,22 +25896,17 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x9 = p.Pos
 	if v10, ok = u291(p); !ok {
 		goto fail
 	}
 	k8 = v10
-	x12 = p.Pos
 	x13, x14 = p.Pos, len(p.KidStack)
-	x15 = 0
 	for {
 		x16 = p.Pos
 		if v18, ok = u311(p); !ok {
 			goto L17
 		}
 		v19 = p.ScopeValue(sh23, v18, x16)
-		x15++
 		p.PushKid(v19)
 		if p.Pos == x16 {
 			break
@@ -29385,7 +25928,6 @@ L3:
 	if _, ok = s480(p); !ok {
 		goto L22
 	}
-	x25 = p.Pos
 	x26 = p.Pos
 	if _, ok = u520(p); !ok {
 		goto L22
@@ -29400,29 +25942,16 @@ L22:
 	p.Pos = x21
 	goto fail
 L23:
-
-	x29 = p.Pos
 	if v30, ok = u292(p); !ok {
 		goto fail
 	}
 	k28 = v30
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return any(c.P.TextEqual(c.TextStr(func() any { return k4 }()), c.TextStr(func() any { return k24 }())) == true)
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return any(c.P.TextEqual(c.TextStr(k4), c.TextStr(k24)) == true) }) {
 		goto fail
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxElement"
-	v = func() any {
-		return func() any {
-			f_1206 := func() any { return k8 }()
-			f_1207 := func() any { return c.Member(func() any { return k11 }(), "Value") }()
-			f_1208 := func() any { return k28 }()
-			return tmk_JsxElement(c, true, f_1206, f_1207, f_1208)
-		}()
-	}()
+	v = tmk_JsxElement(c, true, k8, c.Member(k11, "Value"), k28)
 	p.Depth--
 	return v, true
 fail:
@@ -29441,13 +25970,12 @@ func u291(p *rt.TParser) (any, bool) {
 }
 
 func i291(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x9, x12 int
+	var start, x4 int
 	var v, k1, v3, k5, x6, v10, k11, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x9, x12
 	if p.Pos < len(p.In) && p.In[p.Pos] == 60 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit336, "<", 140, false); !ok {
@@ -29456,7 +25984,6 @@ func i291(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u296(p); !ok {
 		goto fail
 	}
@@ -29466,7 +25993,6 @@ func i291(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto L7
 	}
-	x9 = p.Pos
 	if v10, ok = u373(p); !ok {
 		goto L7
 	}
@@ -29476,11 +26002,9 @@ L7:
 	p.Pos = x4
 	k5 = x6
 L8:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x12 = p.Pos
 	if v13, ok = u302(p); !ok {
 		goto fail
 	}
@@ -29495,14 +26019,7 @@ L8:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxOpeningElement"
-	v = func() any {
-		return func() any {
-			f_1209 := func() any { return k1 }()
-			f_1210 := func() any { return c.Concat(func() any { return k5 }()) }()
-			f_1211 := func() any { return k11 }()
-			return tmk_JsxOpeningElement(c, true, f_1209, f_1210, f_1211)
-		}()
-	}()
+	v = tmk_JsxOpeningElement(c, true, k1, c.Concat(k5), k11)
 	p.Depth--
 	return v, true
 fail:
@@ -29521,13 +26038,12 @@ func u292(p *rt.TParser) (any, bool) {
 }
 
 func i292(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 60 && p.In[p.Pos+1] == 47 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit457, "</", 191, false); !ok {
@@ -29536,7 +26052,6 @@ func i292(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u296(p); !ok {
 		goto fail
 	}
@@ -29551,12 +26066,7 @@ func i292(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxClosingElement"
-	v = func() any {
-		return func() any {
-			f_1212 := func() any { return k1 }()
-			return tmk_JsxClosingElement(c, true, f_1212)
-		}()
-	}()
+	v = tmk_JsxClosingElement(c, true, k1)
 	p.Depth--
 	return v, true
 fail:
@@ -29578,28 +26088,23 @@ func u293(p *rt.TParser) (any, bool) {
 }
 
 func i293(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x9, x15 int
+	var start, x6, x7, x9 int
 	var v, k1, v3, k4, v11, v12, v13, k14, v16 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x2, x5, x8, x15
-	x2 = p.Pos
 	if v3, ok = s294(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	x6, x7 = p.Pos, len(p.KidStack)
-	x8 = 0
 	for {
 		x9 = p.Pos
 		if v11, ok = u311(p); !ok {
 			goto L10
 		}
 		v12 = p.ScopeValue(sh23, v11, x9)
-		x8++
 		p.PushKid(v12)
 		if p.Pos == x9 {
 			break
@@ -29611,21 +26116,13 @@ func i293(p *rt.TParser) (any, bool) {
 	}
 	v13 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v13
-	x15 = p.Pos
 	if v16, ok = s295(p); !ok {
 		goto fail
 	}
 	k14 = v16
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxFragment"
-	v = func() any {
-		return func() any {
-			f_1213 := func() any { return k1 }()
-			f_1214 := func() any { return c.Member(func() any { return k4 }(), "Value") }()
-			f_1215 := func() any { return k14 }()
-			return tmk_JsxFragment(c, true, f_1213, f_1214, f_1215)
-		}()
-	}()
+	v = tmk_JsxFragment(c, true, k1, c.Member(k4, "Value"), k14)
 	p.Depth--
 	return v, true
 fail:
@@ -29757,22 +26254,18 @@ func u297(p *rt.TParser) (any, bool) {
 }
 
 func i297(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x9, x12, x14, x16 int
+	var start, x6, x7, x9, x12, x14 int
 	var v, k1, v3, k4, k10, v15, v17, v18, v19, v20, v21 any
 	var c *rt.TActCtx
 	var ok bool
 	var x13 []any
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x2, x5, x8, x16
-	x2 = p.Pos
 	if v3, ok = s298(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	x6, x7 = p.Pos, len(p.KidStack)
-	x8 = 0
 	for {
 		x9 = p.Pos
 		k10 = nil
@@ -29792,7 +26285,6 @@ func i297(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L11
 		}
-		x16 = p.Pos
 		if v17, ok = u423(p); !ok {
 			goto L11
 		}
@@ -29800,8 +26292,7 @@ func i297(p *rt.TParser) (any, bool) {
 		x13 = append(x13, v17)
 		v18 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
 		v19 = p.ScopeValue(sh13, v18, x9)
-		v20 = p.AttachCaptures(v19, scope1216, []any{k10}, x9, p.Pos)
-		x8++
+		v20 = p.AttachCaptures(v19, scope890, []any{k10}, x9, p.Pos)
 		p.PushKid(v20)
 		if p.Pos == x9 {
 			break
@@ -29815,17 +26306,9 @@ func i297(p *rt.TParser) (any, bool) {
 	k4 = v21
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxMemberName"
-	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1217, l_1218 any) any {
-			return func() any {
-				return func() any {
-					f_1219 := func() any { return l_1217 }()
-					f_1220 := func() any { return c.Member(func() any { return l_1218 }(), "$n") }()
-					return tmk_PropertyAccessExpression(c, false, f_1219, nil, f_1220)
-				}()
-			}()
-		})
-	}()
+	v = c.Fold("foldl", false, k1, k4, func(l_891, l_892 any) any {
+		return tmk_PropertyAccessExpression(c, false, (l_891), nil, c.Member((l_892), "$n"))
+	})
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -29855,7 +26338,6 @@ func s298(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-
 	if v10, ok = u300(p); !ok {
 		goto L9
 	}
@@ -29945,13 +26427,12 @@ func u300(p *rt.TParser) (any, bool) {
 }
 
 func v300(p *rt.TParser) (any, bool) {
-	var start, x1, x2, x5, x6, x8 int
+	var start, x1, x2, x6, x8 int
 	var v, v15, bv any
 	var ok, x12 bool
 	var x11 rune
 	start = p.Pos
 	p.Enter()
-	_ = x5
 	x1 = p.Pos
 	x2 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 35 {
@@ -29963,11 +26444,9 @@ func v300(p *rt.TParser) (any, bool) {
 L3:
 	p.Pos = x2
 L4:
-
 	if _, ok = u497(p); !ok {
 		goto fail
 	}
-	x5 = 0
 	for {
 		x6 = p.Pos
 		x8 = p.Pos
@@ -29993,7 +26472,6 @@ L4:
 	L13:
 		goto L7
 	L9:
-		x5++
 		if p.Pos == x6 {
 			break
 		}
@@ -30031,14 +26509,12 @@ func u301(p *rt.TParser) (any, bool) {
 }
 
 func i301(p *rt.TParser) (any, bool) {
-	var start, x2, x5 int
+	var start int
 	var v, k1, v3, k4, v6 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x5
-	x2 = p.Pos
 	if v3, ok = u300(p); !ok {
 		goto fail
 	}
@@ -30054,20 +26530,13 @@ func i301(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x5 = p.Pos
 	if v6, ok = u300(p); !ok {
 		goto fail
 	}
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxNamespacedName"
-	v = func() any {
-		return func() any {
-			f_1221 := func() any { return k1 }()
-			f_1222 := func() any { return k4 }()
-			return tmk_JsxNamespacedName(c, true, f_1221, f_1222)
-		}()
-	}()
+	v = tmk_JsxNamespacedName(c, true, k1, k4)
 	p.Depth--
 	return v, true
 fail:
@@ -30089,14 +26558,12 @@ func u302(p *rt.TParser) (any, bool) {
 }
 
 func i302(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v7 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u472(p); !ok {
 		goto L5
@@ -30110,12 +26577,7 @@ L6:
 	k1 = v4
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxAttributes"
-	v = func() any {
-		return func() any {
-			f_1223 := func() any { return c.Concat(func() any { return k1 }()) }()
-			return tmk_JsxAttributes(c, true, f_1223)
-		}()
-	}()
+	v = tmk_JsxAttributes(c, true, c.Concat(k1))
 	p.Depth--
 	return v, true
 }
@@ -30149,7 +26611,6 @@ func v303(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-
 	if v10, ok = u304(p); !ok {
 		goto L9
 	}
@@ -30182,14 +26643,12 @@ func u304(p *rt.TParser) (any, bool) {
 }
 
 func i304(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x9 int
+	var start, x4 int
 	var v, k1, v3, k5, x6, v10 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x9
-	x2 = p.Pos
 	if v3, ok = s305(p); !ok {
 		goto fail
 	}
@@ -30207,7 +26666,6 @@ func i304(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto L7
 	}
-	x9 = p.Pos
 	if v10, ok = s306(p); !ok {
 		goto L7
 	}
@@ -30219,13 +26677,7 @@ L7:
 L8:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxAttribute"
-	v = func() any {
-		return func() any {
-			f_1224 := func() any { return k1 }()
-			f_1225 := func() any { return k5 }()
-			return tmk_JsxAttribute(c, true, f_1224, f_1225)
-		}()
-	}()
+	v = tmk_JsxAttribute(c, true, k1, k5)
 	p.Depth--
 	return v, true
 fail:
@@ -30296,7 +26748,6 @@ L4:
 L9:
 	p.Pos = x1
 L8:
-
 	if v12, ok = s307(p); !ok {
 		goto L11
 	}
@@ -30339,7 +26790,6 @@ func s307(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-
 	if v10, ok = u290(p); !ok {
 		goto L9
 	}
@@ -30463,13 +26913,12 @@ func u309(p *rt.TParser) (any, bool) {
 }
 
 func i309(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v7 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "{", 20, false); !ok {
@@ -30478,7 +26927,6 @@ func i309(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u184(p); !ok {
 		goto L5
@@ -30500,12 +26948,7 @@ L6:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxAttributeExpression"
-	v = func() any {
-		return func() any {
-			f_1226 := func() any { return k1 }()
-			return tmk_JsxExpression(c, true, nil, f_1226)
-		}()
-	}()
+	v = tmk_JsxExpression(c, true, nil, k1)
 	p.Depth--
 	return v, true
 fail:
@@ -30524,13 +26967,12 @@ func u310(p *rt.TParser) (any, bool) {
 }
 
 func i310(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "{", 20, false); !ok {
@@ -30547,7 +26989,6 @@ func i310(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u184(p); !ok {
 		goto fail
 	}
@@ -30562,12 +27003,7 @@ func i310(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxSpreadAttribute"
-	v = func() any {
-		return func() any {
-			f_1227 := func() any { return k1 }()
-			return tmk_JsxSpreadAttribute(c, true, f_1227)
-		}()
-	}()
+	v = tmk_JsxSpreadAttribute(c, true, k1)
 	p.Depth--
 	return v, true
 fail:
@@ -30611,7 +27047,6 @@ L4:
 L9:
 	p.Pos = x1
 L8:
-
 	if v12, ok = u314(p); !ok {
 		goto L11
 	}
@@ -30680,13 +27115,12 @@ func u313(p *rt.TParser) (any, bool) {
 }
 
 func i313(p *rt.TParser) (any, bool) {
-	var start, x1, x6, x9, x10 int
+	var start, x1, x10 int
 	var v, k2, x3, v7, k8, v11, v14 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x6, x9
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "{", 20, false); !ok {
@@ -30697,7 +27131,6 @@ func i313(p *rt.TParser) (any, bool) {
 	}
 	x1 = p.Pos
 	x3 = k2
-	x6 = p.Pos
 	if v7, ok = s416(p); !ok {
 		goto L4
 	}
@@ -30710,8 +27143,6 @@ L4:
 	p.Pos = x1
 	k2 = x3
 L5:
-
-	x9 = p.Pos
 	x10 = p.Pos
 	if v14, ok = u184(p); !ok {
 		goto L12
@@ -30733,13 +27164,7 @@ L13:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxChildExpression"
-	v = func() any {
-		return func() any {
-			f_1228 := func() any { return k2 }()
-			f_1229 := func() any { return k8 }()
-			return tmk_JsxExpression(c, true, f_1228, f_1229)
-		}()
-	}()
+	v = tmk_JsxExpression(c, true, k2, k8)
 	p.Depth--
 	return v, true
 fail:
@@ -30758,14 +27183,13 @@ func u314(p *rt.TParser) (any, bool) {
 }
 
 func i314(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x5 int
+	var start, x1, x5 int
 	var v, k3, v6, v12, v14, v17 any
 	var c *rt.TActCtx
 	var ok, x9 bool
 	var x8 rune
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	x1 = p.Pos
 	p.Silent++
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 60 && p.In[p.Pos+1] == 47 {
@@ -30779,7 +27203,6 @@ func i314(p *rt.TParser) (any, bool) {
 L2:
 	p.Silent--
 	p.Pos = x1
-	x4 = p.Pos
 	x5 = p.Pos
 	x8, _, x9 = p.NextOrdinary()
 	if !(x9 && (x8 == 60)) && p.Depth+1 <= p.MaxDepth {
@@ -30794,7 +27217,6 @@ L2:
 L11:
 	p.Pos = x5
 L10:
-
 	if v14, ok = u290(p); !ok {
 		goto L13
 	}
@@ -30819,7 +27241,7 @@ L7:
 	k3 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxChildElement"
-	v = func() any { return k3 }()
+	v = k3
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -30842,7 +27264,7 @@ func u315(p *rt.TParser) (any, bool) {
 }
 
 func i315(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -30850,24 +27272,16 @@ func i315(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x2
-	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
-			}())
-		}()
-	}) {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any { return c.Binary("-", c.Lookup("ctx"), c.Binary("%", c.Lookup("ctx"), any(4))) }) {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u316(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeNode"
-	v = func() any { return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -30942,7 +27356,7 @@ func u317(p *rt.TParser) (any, bool) {
 }
 
 func i317(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -30950,30 +27364,18 @@ func i317(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x2
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("+", func() any {
-				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-					return c.Binary("*", func() any {
-						return c.Binary("%", func() any {
-							return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
-						}(), func() any { return any(2) }())
-					}(), func() any { return any(32) }())
-				}())
-			}(), func() any { return any(32) }())
-		}()
+		return c.Binary("+", c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(32)), any(2)), any(32))), any(32))
 	}) {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u316(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeNoConditional"
-	v = func() any { return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -30998,7 +27400,7 @@ func u318(p *rt.TParser) (any, bool) {
 }
 
 func i318(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -31006,28 +27408,18 @@ func i318(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x2
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("*", func() any {
-					return c.Binary("%", func() any {
-						return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
-					}(), func() any { return any(2) }())
-				}(), func() any { return any(32) }())
-			}())
-		}()
+		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(32)), any(2)), any(32)))
 	}) {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u316(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeAllowConditional"
-	v = func() any { return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -31049,22 +27441,18 @@ func u319(p *rt.TParser) (any, bool) {
 }
 
 func i319(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x9, x14, x16, x18, x20, x22, x24, x26, x28 int
+	var start, x6, x7, x9, x14, x16, x18, x22, x26 int
 	var v, k1, v3, k4, k10, k11, k12, v17, v21, v23, v25, v27, v29, v30, v31, v32, v33 any
 	var c *rt.TActCtx
 	var ok bool
 	var x15 []any
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _, _ = x2, x5, x8, x20, x24, x28
-	x2 = p.Pos
 	if v3, ok = u327(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	x6, x7 = p.Pos, len(p.KidStack)
-	x8 = 0
 	for {
 		x9 = p.Pos
 		k10 = nil
@@ -31073,13 +27461,7 @@ func i319(p *rt.TParser) (any, bool) {
 		x14 = p.Pos
 		x15 = p.NewVals(6)[:0]
 		if !p.Predicate(func(c *rt.TActCtx) any {
-			return func() any {
-				return c.Binary("==", func() any {
-					return c.Binary("%", func() any {
-						return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
-					}(), func() any { return any(2) }())
-				}(), func() any { return any(0) }())
-			}()
+			return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(32)), any(2)), any(0))
 		}) {
 			goto L13
 		}
@@ -31106,7 +27488,6 @@ func i319(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L13
 		}
-		x20 = p.Pos
 		if v21, ok = u317(p); !ok {
 			goto L13
 		}
@@ -31126,7 +27507,6 @@ func i319(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L13
 		}
-		x24 = p.Pos
 		if v25, ok = u318(p); !ok {
 			goto L13
 		}
@@ -31146,7 +27526,6 @@ func i319(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L13
 		}
-		x28 = p.Pos
 		if v29, ok = u318(p); !ok {
 			goto L13
 		}
@@ -31154,8 +27533,7 @@ func i319(p *rt.TParser) (any, bool) {
 		x15 = append(x15, v29)
 		v30 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
 		v31 = p.ScopeValue(sh490, v30, x9)
-		v32 = p.AttachCaptures(v31, scope1230, []any{k10, k11, k12}, x9, p.Pos)
-		x8++
+		v32 = p.AttachCaptures(v31, scope893, []any{k10, k11, k12}, x9, p.Pos)
 		p.PushKid(v32)
 		if p.Pos == x9 {
 			break
@@ -31169,19 +27547,9 @@ func i319(p *rt.TParser) (any, bool) {
 	k4 = v33
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "conditionalOrHigher"
-	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1231, l_1232 any) any {
-			return func() any {
-				return func() any {
-					f_1233 := func() any { return l_1231 }()
-					f_1234 := func() any { return c.Member(func() any { return l_1232 }(), "$e") }()
-					f_1235 := func() any { return c.Member(func() any { return l_1232 }(), "$t") }()
-					f_1236 := func() any { return c.Member(func() any { return l_1232 }(), "$f") }()
-					return tmk_ConditionalType(c, false, f_1233, f_1234, f_1235, f_1236)
-				}()
-			}()
-		})
-	}()
+	v = c.Fold("foldl", false, k1, k4, func(l_894, l_895 any) any {
+		return tmk_ConditionalType(c, false, (l_894), c.Member((l_895), "$e"), c.Member((l_895), "$t"), c.Member((l_895), "$f"))
+	})
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -31244,14 +27612,12 @@ func u321(p *rt.TParser) (any, bool) {
 }
 
 func i321(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x7 int
+	var start, x4 int
 	var v, k1, v3, k6, v8 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x7
-	x2 = p.Pos
 	if v3, ok = u421(p); !ok {
 		goto fail
 	}
@@ -31278,20 +27644,13 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = u315(p); !ok {
 		goto fail
 	}
 	k6 = v8
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typePredicate"
-	v = func() any {
-		return func() any {
-			f_1237 := func() any { return k1 }()
-			f_1238 := func() any { return k6 }()
-			return tmk_TypePredicate(c, true, nil, f_1237, f_1238)
-		}()
-	}()
+	v = tmk_TypePredicate(c, true, nil, k1, k6)
 	p.Depth--
 	return v, true
 fail:
@@ -31310,14 +27669,13 @@ func u322(p *rt.TParser) (any, bool) {
 }
 
 func i322(p *rt.TParser) (any, bool) {
-	var start, x1, size, x4, x7, x11, x14, x19, x22, x25 int
+	var start, x1, size, x4, x7, x11, x14 int
 	var v, k15, x16, v20, k21, v23, k24, v26 any
 	var c *rt.TActCtx
 	var ch rune
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x19, x22, x25
 	x1 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
@@ -31334,7 +27692,6 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
 	x4 = p.Pos
 	x7 = p.Pos
 	p.Silent++
@@ -31372,10 +27729,8 @@ L10:
 	p.Pos = x4
 	goto fail
 L5:
-
 	x14 = p.Pos
 	x16 = k15
-	x19 = p.Pos
 	if v20, ok = u375(p); !ok {
 		goto L17
 	}
@@ -31388,8 +27743,6 @@ L17:
 	p.Pos = x14
 	k15 = x16
 L18:
-
-	x22 = p.Pos
 	if v23, ok = u79(p); !ok {
 		goto fail
 	}
@@ -31405,21 +27758,13 @@ L18:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x25 = p.Pos
 	if v26, ok = u326(p); !ok {
 		goto fail
 	}
 	k24 = v26
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "functionType"
-	v = func() any {
-		return func() any {
-			f_1239 := func() any { return c.Concat(func() any { return k15 }()) }()
-			f_1240 := func() any { return k21 }()
-			f_1241 := func() any { return k24 }()
-			return tmk_FunctionType(c, true, f_1239, f_1240, f_1241)
-		}()
-	}()
+	v = tmk_FunctionType(c, true, c.Concat(k15), k21, k24)
 	p.Depth--
 	return v, true
 fail:
@@ -31438,14 +27783,13 @@ func u323(p *rt.TParser) (any, bool) {
 }
 
 func i323(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x12, x14, x19, x21, x23, x28, x31, x34 int
+	var start, x1, x4, x12, x14, x21, x23 int
 	var v, k15, x16, v20, k24, x25, v29, k30, v32, k33, v35 any
 	var c *rt.TActCtx
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x19, x28, x31, x34
 	x1 = p.Pos
 	p.Silent++
 	x4 = p.Pos
@@ -31476,7 +27820,6 @@ L11:
 L10:
 	goto L2
 L5:
-
 	x12 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -31496,10 +27839,8 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
 	x14 = p.Pos
 	x16 = k15
-	x19 = p.Pos
 	if v20, ok = u324(p); !ok {
 		goto L17
 	}
@@ -31512,7 +27853,6 @@ L17:
 	p.Pos = x14
 	k15 = x16
 L18:
-
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 119 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit179, "new", 93, false); !ok {
@@ -31534,7 +27874,6 @@ L22:
 	}
 	x23 = p.Pos
 	x25 = k24
-	x28 = p.Pos
 	if v29, ok = u375(p); !ok {
 		goto L26
 	}
@@ -31547,8 +27886,6 @@ L26:
 	p.Pos = x23
 	k24 = x25
 L27:
-
-	x31 = p.Pos
 	if v32, ok = u79(p); !ok {
 		goto fail
 	}
@@ -31564,22 +27901,13 @@ L27:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x34 = p.Pos
 	if v35, ok = u326(p); !ok {
 		goto fail
 	}
 	k33 = v35
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "constructorType"
-	v = func() any {
-		return func() any {
-			f_1242 := func() any { return c.Concat(func() any { return k15 }()) }()
-			f_1243 := func() any { return c.Concat(func() any { return k24 }()) }()
-			f_1244 := func() any { return k30 }()
-			f_1245 := func() any { return k33 }()
-			return tmk_ConstructorType(c, true, f_1242, f_1243, f_1244, f_1245)
-		}()
-	}()
+	v = tmk_ConstructorType(c, true, c.Concat(k15), c.Concat(k24), k30, k33)
 	p.Depth--
 	return v, true
 fail:
@@ -31598,21 +27926,19 @@ func u324(p *rt.TParser) (any, bool) {
 }
 
 func i324(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
-	x2 = p.Pos
 	if v3, ok = s325(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "abstractModifier"
-	v = func() any { return c.List(func() any { return k1 }()) }()
+	v = c.List(k1)
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -31671,7 +27997,7 @@ func u326(p *rt.TParser) (any, bool) {
 }
 
 func i326(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -31679,28 +28005,18 @@ func i326(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x2
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("*", func() any {
-					return c.Binary("%", func() any {
-						return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
-					}(), func() any { return any(2) }())
-				}(), func() any { return any(32) }())
-			}())
-		}()
+		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(32)), any(2)), any(32)))
 	}) {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u320(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "returnTypeOfType"
-	v = func() any { return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -31722,14 +28038,13 @@ func u327(p *rt.TParser) (any, bool) {
 }
 
 func i327(p *rt.TParser) (any, bool) {
-	var start, x1, x9, x12 int
+	var start, x1 int
 	var v, k2, x3, v10, v13 any
 	var c *rt.TActCtx
 	var x5 rune
 	var x6, ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x9, x12
 	x1 = p.Pos
 	x3 = k2
 	x5, _, x6 = p.NextOrdinary()
@@ -31737,7 +28052,6 @@ func i327(p *rt.TParser) (any, bool) {
 		p.ExpectOrdinary(p.Pos, 146)
 		goto L7
 	}
-	x9 = p.Pos
 	if v10, ok = u328(p); !ok {
 		goto L8
 	}
@@ -31747,8 +28061,6 @@ L8:
 	p.Pos = x1
 	k2 = x3
 L7:
-
-	x12 = p.Pos
 	if v13, ok = u329(p); !ok {
 		goto L11
 	}
@@ -31761,7 +28073,7 @@ L11:
 L4:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "unionOrHigher"
-	v = func() any { return k2 }()
+	v = k2
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -31781,28 +28093,24 @@ func u328(p *rt.TParser) (any, bool) {
 }
 
 func i328(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x9, x12, x15, x21 int
+	var start, x6, x7, x9, x12, x21 int
 	var v, k1, v3, k4, k10, v14, v16, v17, v18, v19, v20 any
 	var c *rt.TActCtx
 	var ok bool
 	var x13 []any
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x2, x5, x8, x15
 	if _, ok = s522(p); !ok {
 		goto fail
 	}
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u330(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	x6, x7 = p.Pos, len(p.KidStack)
-	x8 = 0
 	for {
 		x9 = p.Pos
 		k10 = nil
@@ -31818,7 +28126,6 @@ func i328(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L11
 		}
-		x15 = p.Pos
 		if v16, ok = u330(p); !ok {
 			goto L11
 		}
@@ -31826,8 +28133,7 @@ func i328(p *rt.TParser) (any, bool) {
 		x13 = append(x13, v16)
 		v17 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
 		v18 = p.ScopeValue(sh13, v17, x9)
-		v19 = p.AttachCaptures(v18, scope1246, []any{k10}, x9, p.Pos)
-		x8++
+		v19 = p.AttachCaptures(v18, scope896, []any{k10}, x9, p.Pos)
 		p.PushKid(v19)
 		if p.Pos == x9 {
 			break
@@ -31855,21 +28161,12 @@ L22:
 	p.Pos = x21
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "leadingUnionType"
-	v = func() any {
-		return func() any {
-			f_1247 := func() any {
-				return func() any {
-					b := len(c.P.KidStack)
-					c.PushList(func() any { return k1 }())
-					c.PushMap(func() any { return k4 }(), func(l_1248 any) any {
-						return func() any { return c.Member(func() any { return l_1248 }(), "$t") }()
-					})
-					return c.EndList(b)
-				}()
-			}()
-			return tmk_UnionType(c, true, f_1247)
-		}()
-	}()
+	v = tmk_UnionType(c, true, func() any {
+		b := len(c.P.KidStack)
+		c.PushList(k1)
+		c.PushMap(k4, func(l_897 any) any { return c.Member((l_897), "$t") })
+		return c.EndList(b)
+	}())
 	p.Depth--
 	return v, true
 fail:
@@ -31888,26 +28185,22 @@ func u329(p *rt.TParser) (any, bool) {
 }
 
 func i329(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x9, x12, x13, x14, x15, x16, x19, x22, x31 int
+	var start, x6, x7, x9, x13, x14, x15, x16, x19, x31 int
 	var v, k1, v3, k4, k10, k17, v21, v23, v24, v25, v26, v27, v28, v29, v30 any
 	var c *rt.TActCtx
 	var ok bool
 	var x20 []any
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _, _ = x2, x5, x8, x12, x15, x22
-	x2 = p.Pos
+	_ = x15
 	if v3, ok = u330(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	x6, x7 = p.Pos, len(p.KidStack)
-	x8 = 0
 	for {
 		x9 = p.Pos
 		k10 = nil
-		x12 = p.Pos
 		x13, x14 = p.Pos, len(p.KidStack)
 		x15 = 0
 		for {
@@ -31925,7 +28218,6 @@ func i329(p *rt.TParser) (any, bool) {
 			if _, ok = s480(p); !ok {
 				goto L18
 			}
-			x22 = p.Pos
 			if v23, ok = u330(p); !ok {
 				goto L18
 			}
@@ -31933,7 +28225,7 @@ func i329(p *rt.TParser) (any, bool) {
 			x20 = append(x20, v23)
 			v24 = p.NewNodeOrdinary("tuple", x19, p.Pos, x20)
 			v25 = p.ScopeValue(sh13, v24, x16)
-			v26 = p.AttachCaptures(v25, scope1249, []any{k17}, x16, p.Pos)
+			v26 = p.AttachCaptures(v25, scope898, []any{k17}, x16, p.Pos)
 			x15++
 			p.PushKid(v26)
 			if p.Pos == x16 {
@@ -31951,8 +28243,7 @@ func i329(p *rt.TParser) (any, bool) {
 		v27 = p.NewNodeOrdinary("list", x13, p.Pos, p.Kids(x14))
 		k10 = v27
 		v28 = p.ScopeValue(sh505, v27, x9)
-		v29 = p.AttachCaptures(v28, scope1250, []any{k10}, x9, p.Pos)
-		x8++
+		v29 = p.AttachCaptures(v28, scope899, []any{k10}, x9, p.Pos)
 		p.PushKid(v29)
 		if p.Pos == x9 {
 			break
@@ -31980,25 +28271,14 @@ L32:
 	p.Pos = x31
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "plainOrUnionType"
-	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1251, l_1252 any) any {
-			return func() any {
-				return func() any {
-					f_1253 := func() any {
-						return func() any {
-							b := len(c.P.KidStack)
-							c.PushList(func() any { return l_1251 }())
-							c.PushMap(func() any { return c.Member(func() any { return l_1252 }(), "$ts") }(), func(l_1254 any) any {
-								return func() any { return c.Member(func() any { return l_1254 }(), "$t") }()
-							})
-							return c.EndList(b)
-						}()
-					}()
-					return tmk_UnionType(c, false, f_1253)
-				}()
-			}()
-		})
-	}()
+	v = c.Fold("foldl", false, k1, k4, func(l_900, l_901 any) any {
+		return tmk_UnionType(c, false, func() any {
+			b := len(c.P.KidStack)
+			c.PushList((l_900))
+			c.PushMap(c.Member((l_901), "$ts"), func(l_902 any) any { return c.Member((l_902), "$t") })
+			return c.EndList(b)
+		}())
+	})
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -32021,14 +28301,13 @@ func u330(p *rt.TParser) (any, bool) {
 }
 
 func i330(p *rt.TParser) (any, bool) {
-	var start, x1, x9, x12 int
+	var start, x1 int
 	var v, k2, x3, v10, v13 any
 	var c *rt.TActCtx
 	var x5 rune
 	var x6, ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x9, x12
 	x1 = p.Pos
 	x3 = k2
 	x5, _, x6 = p.NextOrdinary()
@@ -32036,7 +28315,6 @@ func i330(p *rt.TParser) (any, bool) {
 		p.ExpectOrdinary(p.Pos, 149)
 		goto L7
 	}
-	x9 = p.Pos
 	if v10, ok = u331(p); !ok {
 		goto L8
 	}
@@ -32046,8 +28324,6 @@ L8:
 	p.Pos = x1
 	k2 = x3
 L7:
-
-	x12 = p.Pos
 	if v13, ok = u332(p); !ok {
 		goto L11
 	}
@@ -32060,7 +28336,7 @@ L11:
 L4:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "intersectionOrHigher"
-	v = func() any { return k2 }()
+	v = k2
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -32080,28 +28356,24 @@ func u331(p *rt.TParser) (any, bool) {
 }
 
 func i331(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x9, x12, x15, x21 int
+	var start, x6, x7, x9, x12, x21 int
 	var v, k1, v3, k4, k10, v14, v16, v17, v18, v19, v20 any
 	var c *rt.TActCtx
 	var ok bool
 	var x13 []any
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x2, x5, x8, x15
 	if _, ok = s523(p); !ok {
 		goto fail
 	}
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u333(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	x6, x7 = p.Pos, len(p.KidStack)
-	x8 = 0
 	for {
 		x9 = p.Pos
 		k10 = nil
@@ -32117,7 +28389,6 @@ func i331(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L11
 		}
-		x15 = p.Pos
 		if v16, ok = u333(p); !ok {
 			goto L11
 		}
@@ -32125,8 +28396,7 @@ func i331(p *rt.TParser) (any, bool) {
 		x13 = append(x13, v16)
 		v17 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
 		v18 = p.ScopeValue(sh13, v17, x9)
-		v19 = p.AttachCaptures(v18, scope1255, []any{k10}, x9, p.Pos)
-		x8++
+		v19 = p.AttachCaptures(v18, scope903, []any{k10}, x9, p.Pos)
 		p.PushKid(v19)
 		if p.Pos == x9 {
 			break
@@ -32154,21 +28424,12 @@ L22:
 	p.Pos = x21
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "leadingIntersectionType"
-	v = func() any {
-		return func() any {
-			f_1256 := func() any {
-				return func() any {
-					b := len(c.P.KidStack)
-					c.PushList(func() any { return k1 }())
-					c.PushMap(func() any { return k4 }(), func(l_1257 any) any {
-						return func() any { return c.Member(func() any { return l_1257 }(), "$t") }()
-					})
-					return c.EndList(b)
-				}()
-			}()
-			return tmk_IntersectionType(c, true, f_1256)
-		}()
-	}()
+	v = tmk_IntersectionType(c, true, func() any {
+		b := len(c.P.KidStack)
+		c.PushList(k1)
+		c.PushMap(k4, func(l_904 any) any { return c.Member((l_904), "$t") })
+		return c.EndList(b)
+	}())
 	p.Depth--
 	return v, true
 fail:
@@ -32187,26 +28448,22 @@ func u332(p *rt.TParser) (any, bool) {
 }
 
 func i332(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x9, x12, x13, x14, x15, x16, x19, x22, x31 int
+	var start, x6, x7, x9, x13, x14, x15, x16, x19, x31 int
 	var v, k1, v3, k4, k10, k17, v21, v23, v24, v25, v26, v27, v28, v29, v30 any
 	var c *rt.TActCtx
 	var ok bool
 	var x20 []any
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _, _ = x2, x5, x8, x12, x15, x22
-	x2 = p.Pos
+	_ = x15
 	if v3, ok = u333(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	x6, x7 = p.Pos, len(p.KidStack)
-	x8 = 0
 	for {
 		x9 = p.Pos
 		k10 = nil
-		x12 = p.Pos
 		x13, x14 = p.Pos, len(p.KidStack)
 		x15 = 0
 		for {
@@ -32224,7 +28481,6 @@ func i332(p *rt.TParser) (any, bool) {
 			if _, ok = s480(p); !ok {
 				goto L18
 			}
-			x22 = p.Pos
 			if v23, ok = u333(p); !ok {
 				goto L18
 			}
@@ -32232,7 +28488,7 @@ func i332(p *rt.TParser) (any, bool) {
 			x20 = append(x20, v23)
 			v24 = p.NewNodeOrdinary("tuple", x19, p.Pos, x20)
 			v25 = p.ScopeValue(sh13, v24, x16)
-			v26 = p.AttachCaptures(v25, scope1258, []any{k17}, x16, p.Pos)
+			v26 = p.AttachCaptures(v25, scope905, []any{k17}, x16, p.Pos)
 			x15++
 			p.PushKid(v26)
 			if p.Pos == x16 {
@@ -32250,8 +28506,7 @@ func i332(p *rt.TParser) (any, bool) {
 		v27 = p.NewNodeOrdinary("list", x13, p.Pos, p.Kids(x14))
 		k10 = v27
 		v28 = p.ScopeValue(sh505, v27, x9)
-		v29 = p.AttachCaptures(v28, scope1259, []any{k10}, x9, p.Pos)
-		x8++
+		v29 = p.AttachCaptures(v28, scope906, []any{k10}, x9, p.Pos)
 		p.PushKid(v29)
 		if p.Pos == x9 {
 			break
@@ -32279,25 +28534,14 @@ L32:
 	p.Pos = x31
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "plainOrIntersectionType"
-	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1260, l_1261 any) any {
-			return func() any {
-				return func() any {
-					f_1262 := func() any {
-						return func() any {
-							b := len(c.P.KidStack)
-							c.PushList(func() any { return l_1260 }())
-							c.PushMap(func() any { return c.Member(func() any { return l_1261 }(), "$ts") }(), func(l_1263 any) any {
-								return func() any { return c.Member(func() any { return l_1263 }(), "$t") }()
-							})
-							return c.EndList(b)
-						}()
-					}()
-					return tmk_IntersectionType(c, false, f_1262)
-				}()
-			}()
-		})
-	}()
+	v = c.Fold("foldl", false, k1, k4, func(l_907, l_908 any) any {
+		return tmk_IntersectionType(c, false, func() any {
+			b := len(c.P.KidStack)
+			c.PushList((l_907))
+			c.PushMap(c.Member((l_908), "$ts"), func(l_909 any) any { return c.Member((l_909), "$t") })
+			return c.EndList(b)
+		}())
+	})
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -32320,14 +28564,13 @@ func u333(p *rt.TParser) (any, bool) {
 }
 
 func i333(p *rt.TParser) (any, bool) {
-	var start, x1, x6, x9, x21, x23, x24, x35, x37, x49, x51 int
+	var start, x1, x6, x9, x21, x24, x35, x37, x49 int
 	var v, k2, x3, v25, v28, v33, v52 any
 	var c *rt.TActCtx
 	var x11, x29, x39 rune
 	var x12, ok, x30, x40 bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x23, x51
 	x1 = p.Pos
 	x3 = k2
 	x6 = p.Pos
@@ -32380,7 +28623,6 @@ L20:
 L19:
 	goto L7
 L10:
-
 	x21 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -32400,8 +28642,6 @@ L7:
 	p.Pos = x6
 	goto L5
 L8:
-
-	x23 = p.Pos
 	x24 = p.Pos
 	if v28, ok = u335(p); !ok {
 		goto L27
@@ -32480,7 +28720,6 @@ L48:
 L47:
 	goto L36
 L38:
-
 	x49 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -32498,7 +28737,6 @@ L50:
 L36:
 	p.Silent--
 	p.Pos = x35
-	x51 = p.Pos
 	if v52, ok = u334(p); !ok {
 		goto L34
 	}
@@ -32511,7 +28749,7 @@ L34:
 L4:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeOperatorOrHigher"
-	v = func() any { return k2 }()
+	v = k2
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -32531,7 +28769,7 @@ func u334(p *rt.TParser) (any, bool) {
 }
 
 func i334(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var prevEnv *rt.Env
@@ -32539,28 +28777,18 @@ func i334(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x2
 	if !p.Bind("ctx", func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
-				return c.Binary("*", func() any {
-					return c.Binary("%", func() any {
-						return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
-					}(), func() any { return any(2) }())
-				}(), func() any { return any(32) }())
-			}())
-		}()
+		return c.Binary("-", c.Lookup("ctx"), c.Binary("*", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(32)), any(2)), any(32)))
 	}) {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = p.InvokePlain(trules[338], 0); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "postfixTypeAllowConditional"
-	v = func() any { return k1 }()
+	v = k1
 	v = c.Finish(v)
 	p.Depth--
 	p.Env = prevEnv
@@ -32582,15 +28810,13 @@ func u335(p *rt.TParser) (any, bool) {
 }
 
 func i335(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x4, x14, x18 int
+	var start, x3, x4, x14 int
 	var v, k1, v16, k17, v19 any
 	var c *rt.TActCtx
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x18
-	x2 = p.Pos
 	x3 = p.Pos
 	x4 = p.Pos
 	x6, _, x7 = p.NextOrdinary()
@@ -32629,7 +28855,6 @@ L13:
 L12:
 	goto fail
 L5:
-
 	x14 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -32646,20 +28871,13 @@ L15:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x18 = p.Pos
 	if v19, ok = u333(p); !ok {
 		goto fail
 	}
 	k17 = v19
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeOperator"
-	v = func() any {
-		return func() any {
-			f_1264 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1265 := func() any { return k17 }()
-			return tmk_TypeOperator(c, true, f_1264, f_1265)
-		}()
-	}()
+	v = tmk_TypeOperator(c, true, c.Text(k1), k17)
 	p.Depth--
 	return v, true
 fail:
@@ -32678,13 +28896,12 @@ func u336(p *rt.TParser) (any, bool) {
 }
 
 func i336(p *rt.TParser) (any, bool) {
-	var start, x1, x4 int
+	var start, x1 int
 	var v, k3, v5 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	if _, ok = p.Parser.MatchLiteral(lit515, "infer", 200, false); !ok {
 		goto fail
 	}
@@ -32702,19 +28919,13 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u337(p); !ok {
 		goto fail
 	}
 	k3 = v5
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "inferType"
-	v = func() any {
-		return func() any {
-			f_1266 := func() any { return k3 }()
-			return tmk_InferType(c, true, f_1266)
-		}()
-	}()
+	v = tmk_InferType(c, true, k3)
 	p.Depth--
 	return v, true
 fail:
@@ -32733,14 +28944,12 @@ func u337(p *rt.TParser) (any, bool) {
 }
 
 func i337(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x9, x11, x13, x17 int
+	var start, x4, x9, x13, x17 int
 	var v, k1, v3, k5, x6, v12 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x11
-	x2 = p.Pos
 	if v3, ok = u421(p); !ok {
 		goto fail
 	}
@@ -32767,20 +28976,13 @@ L10:
 	if _, ok = s480(p); !ok {
 		goto L7
 	}
-	x11 = p.Pos
 	if v12, ok = u317(p); !ok {
 		goto L7
 	}
 	k5 = v12
 	x13 = p.Pos
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any {
-					return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
-				}(), func() any { return any(2) }())
-			}(), func() any { return any(1) }())
-		}()
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(32)), any(2)), any(1))
 	}) {
 		goto L15
 	}
@@ -32815,13 +29017,7 @@ L7:
 L8:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "inferTypeParameter"
-	v = func() any {
-		return func() any {
-			f_1267 := func() any { return k1 }()
-			f_1268 := func() any { return k5 }()
-			return tmk_TypeParameter(c, true, nil, f_1267, f_1268, nil, nil)
-		}()
-	}()
+	v = tmk_TypeParameter(c, true, nil, k1, k5, nil, nil)
 	p.Depth--
 	return v, true
 fail:
@@ -32829,7 +29025,7 @@ fail:
 	return nil, false
 }
 
-func e1559(p *rt.TParser) (any, bool) {
+func e1012(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u340(p); !ok {
@@ -32840,7 +29036,7 @@ fail:
 	return nil, false
 }
 
-func e1560(p *rt.TParser) (any, bool) {
+func e1013(p *rt.TParser) (any, bool) {
 	var x1, x3, x5 int
 	var x2 []any
 	var ok bool
@@ -32872,12 +29068,11 @@ fail:
 	return nil, false
 }
 
-func e1562(p *rt.TParser) (any, bool) {
-	var x1, x3, x5, x8, x10 int
+func e1014(p *rt.TParser) (any, bool) {
+	var x1, x3, x5, x10 int
 	var x2 []any
 	var ok bool
 	var v4, v9, v11, v12 any
-	_ = x8
 	x1 = p.Pos
 	x2 = p.NewVals(3)[:0]
 	x3 = p.Pos
@@ -32904,8 +29099,6 @@ L6:
 	p.Pos = x5
 	goto fail
 L7:
-
-	x8 = p.Pos
 	if v9, ok = u315(p); !ok {
 		goto fail
 	}
@@ -32928,7 +29121,7 @@ fail:
 	return nil, false
 }
 
-func e1565(p *rt.TParser) (any, bool) {
+func e1015(p *rt.TParser) (any, bool) {
 	var x1, x3 int
 	var x2 []any
 	var ok bool
@@ -32963,7 +29156,7 @@ fail:
 	return nil, false
 }
 
-func e1568(p *rt.TParser) (any, bool) {
+func e1016(p *rt.TParser) (any, bool) {
 	var x1, x3, size int
 	var x2 []any
 	var ok bool
@@ -33054,7 +29247,7 @@ func u340(p *rt.TParser) (any, bool) {
 }
 
 func i340(p *rt.TParser) (any, bool) {
-	var start, x2, x6, x11, x14, x17 int
+	var start, x2, x6, x11 int
 	var v, k7, x8, v15, v18 any
 	var c *rt.TActCtx
 	var x1 rt.ExpMark
@@ -33062,13 +29255,12 @@ func i340(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x14, x17
 	x1 = p.Isolate(p.Pos)
 	x6 = p.Pos
 	x8 = k7
 	x11 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls884) && !p.ClassSkip(&cls884, 69) {
+	if !p.ClassFast(&cls845) && !p.ClassSkip(&cls845, 69) {
 		goto L12
 	}
 	p.Silent--
@@ -33079,8 +29271,6 @@ L12:
 	p.Pos = x11
 	goto L10
 L13:
-
-	x14 = p.Pos
 	if v15, ok = u341(p); !ok {
 		goto L10
 	}
@@ -33089,7 +29279,6 @@ L13:
 L10:
 	p.Pos = x6
 	k7 = x8
-	x17 = p.Pos
 	if v18, ok = s343(p); !ok {
 		goto L16
 	}
@@ -33110,7 +29299,7 @@ L4:
 L5:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "nonArrayType"
-	v = func() any { return k7 }()
+	v = k7
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -33130,18 +29319,17 @@ func u341(p *rt.TParser) (any, bool) {
 }
 
 func i341(p *rt.TParser) (any, bool) {
-	var start, x1, x6, x9, x11, x14 int
+	var start, x1, x6, x9 int
 	var v, k2, x3, v12, v15 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x11, x14
 	x1 = p.Pos
 	x3 = k2
 	x6 = p.Pos
 	p.Silent++
-	if !p.SkipTerminal(term1279) {
+	if !p.SkipTerminal(term920) {
 		goto L7
 	}
 	x9 = p.Pos
@@ -33163,8 +29351,6 @@ L7:
 	p.Pos = x6
 	goto L5
 L8:
-
-	x11 = p.Pos
 	if v12, ok = s342(p); !ok {
 		goto L5
 	}
@@ -33173,7 +29359,6 @@ L8:
 L5:
 	p.Pos = x1
 	k2 = x3
-	x14 = p.Pos
 	if v15, ok = u355(p); !ok {
 		goto L13
 	}
@@ -33186,7 +29371,7 @@ L13:
 L4:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "wordType"
-	v = func() any { return k2 }()
+	v = k2
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -33242,7 +29427,6 @@ L10:
 L14:
 	p.Pos = x1
 L13:
-
 	if v17, ok = u353(p); !ok {
 		goto L16
 	}
@@ -33298,7 +29482,6 @@ L24:
 L28:
 	p.Pos = x1
 L27:
-
 	if v31, ok = u355(p); !ok {
 		goto L30
 	}
@@ -33362,7 +29545,6 @@ L8:
 L13:
 	p.Pos = x1
 L12:
-
 	if v16, ok = u358(p); !ok {
 		goto L15
 	}
@@ -33430,7 +29612,6 @@ L26:
 L30:
 	p.Pos = x1
 L29:
-
 	if v33, ok = u355(p); !ok {
 		goto L32
 	}
@@ -33577,7 +29758,6 @@ L28:
 L27:
 	goto L4
 L6:
-
 	x29 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -33664,15 +29844,13 @@ func u345(p *rt.TParser) (any, bool) {
 }
 
 func i345(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v7, v9, v11, v13, v18, v21, v24 any
 	var c *rt.TActCtx
 	var ok, x15 bool
 	var x14 rune
 	start = p.Pos
 	p.Enter()
-	_ = x2
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u449(p); !ok {
 		goto L6
@@ -33744,12 +29922,7 @@ L5:
 	k1 = v4
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "literalType"
-	v = func() any {
-		return func() any {
-			f_1280 := func() any { return k1 }()
-			return tmk_LiteralType(c, true, f_1280)
-		}()
-	}()
+	v = tmk_LiteralType(c, true, k1)
 	p.Depth--
 	return v, true
 fail:
@@ -33768,13 +29941,12 @@ func u346(p *rt.TParser) (any, bool) {
 }
 
 func i346(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v7, v9 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit372, "-", 167, false); !ok {
@@ -33783,7 +29955,6 @@ func i346(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u440(p); !ok {
 		goto L6
@@ -33804,13 +29975,7 @@ L5:
 	k1 = v4
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "negativeLiteral"
-	v = func() any {
-		return func() any {
-			f_1281 := func() any { return any("-") }()
-			f_1282 := func() any { return k1 }()
-			return tmk_PrefixUnaryExpression(c, true, f_1281, f_1282)
-		}()
-	}()
+	v = tmk_PrefixUnaryExpression(c, true, any("-"), k1)
 	p.Depth--
 	return v, true
 fail:
@@ -33875,14 +30040,12 @@ func u348(p *rt.TParser) (any, bool) {
 }
 
 func i348(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x7 int
+	var start, x4 int
 	var v, k1, v3, k6, v8 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x7
-	x2 = p.Pos
 	if v3, ok = u347(p); !ok {
 		goto fail
 	}
@@ -33909,20 +30072,13 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = u315(p); !ok {
 		goto fail
 	}
 	k6 = v8
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "thisTypePredicate"
-	v = func() any {
-		return func() any {
-			f_1283 := func() any { return k1 }()
-			f_1284 := func() any { return k6 }()
-			return tmk_TypePredicate(c, true, nil, f_1283, f_1284)
-		}()
-	}()
+	v = tmk_TypePredicate(c, true, nil, k1, k6)
 	p.Depth--
 	return v, true
 fail:
@@ -33941,15 +30097,13 @@ func u349(p *rt.TParser) (any, bool) {
 }
 
 func i349(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x8, x9, x19, x24, x26 int
+	var start, x4, x9, x19, x24 int
 	var v, k1, v3, k7, v10, v16, v18, k20, x21, v27 any
 	var c *rt.TActCtx
 	var ok, x13 bool
 	var x12 rune
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x8, x26
-	x2 = p.Pos
 	if v3, ok = s350(p); !ok {
 		goto fail
 	}
@@ -33970,11 +30124,9 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if _, ok = s494(p); !ok {
 		goto fail
 	}
-	x8 = p.Pos
 	x9 = p.Pos
 	x12, _, x13 = p.NextOrdinary()
 	if !(x13 && (x12 == 116)) && p.Depth+1 <= p.MaxDepth {
@@ -33989,7 +30141,6 @@ L6:
 L15:
 	p.Pos = x9
 L14:
-
 	if v18, ok = u421(p); !ok {
 		goto L17
 	}
@@ -34024,7 +30175,6 @@ L25:
 	if _, ok = s480(p); !ok {
 		goto L22
 	}
-	x26 = p.Pos
 	if v27, ok = u315(p); !ok {
 		goto L22
 	}
@@ -34036,14 +30186,7 @@ L22:
 L23:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "assertsTypePredicate"
-	v = func() any {
-		return func() any {
-			f_1285 := func() any { return k1 }()
-			f_1286 := func() any { return k7 }()
-			f_1287 := func() any { return k20 }()
-			return tmk_TypePredicate(c, true, f_1285, f_1286, f_1287)
-		}()
-	}()
+	v = tmk_TypePredicate(c, true, k1, k7, k20)
 	p.Depth--
 	return v, true
 fail:
@@ -34098,13 +30241,12 @@ func u352(p *rt.TParser) (any, bool) {
 }
 
 func i352(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x6, x11 int
+	var start, x1, x6 int
 	var v, k3, v5, k7, x8, v12 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x4, x11
 	if _, ok = p.Parser.MatchLiteral(lit383, "typeof", 176, false); !ok {
 		goto fail
 	}
@@ -34122,7 +30264,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u372(p); !ok {
 		goto fail
 	}
@@ -34132,7 +30273,6 @@ L2:
 	if _, ok = s494(p); !ok {
 		goto L9
 	}
-	x11 = p.Pos
 	if v12, ok = u373(p); !ok {
 		goto L9
 	}
@@ -34144,13 +30284,7 @@ L9:
 L10:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeQuery"
-	v = func() any {
-		return func() any {
-			f_1288 := func() any { return k3 }()
-			f_1289 := func() any { return c.Concat(func() any { return k7 }()) }()
-			return tmk_TypeQuery(c, true, f_1288, f_1289)
-		}()
-	}()
+	v = tmk_TypeQuery(c, true, k3, c.Concat(k7))
 	p.Depth--
 	return v, true
 fail:
@@ -34169,7 +30303,7 @@ func u353(p *rt.TParser) (any, bool) {
 }
 
 func i353(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x7, x9, x11, x15, x18, x20, x25, x33, x35, x37, x40, x45, x47, x52 int
+	var start, x3, x7, x9, x11, x15, x20, x25, x33, x37, x40, x47 int
 	var v, k1, v4, v10, v13, v14, k17, v19, k21, x22, v36, k41, x42, v46, k48, x49, v53 any
 	var c *rt.TActCtx
 	var x8 []any
@@ -34177,8 +30311,6 @@ func i353(p *rt.TParser) (any, bool) {
 	var x27 rune
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _ = x2, x18, x35, x45, x52
-	x2 = p.Pos
 	x3 = p.Pos
 	x7 = p.Pos
 	x8 = p.NewVals(1)[:0]
@@ -34236,7 +30368,6 @@ L16:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x18 = p.Pos
 	if v19, ok = u315(p); !ok {
 		goto fail
 	}
@@ -34290,7 +30421,6 @@ L32:
 L31:
 	goto L23
 L26:
-
 	x33 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -34313,7 +30443,6 @@ L34:
 	if _, ok = s480(p); !ok {
 		goto L23
 	}
-	x35 = p.Pos
 	if v36, ok = u354(p); !ok {
 		goto L23
 	}
@@ -34331,7 +30460,6 @@ L34:
 L38:
 	p.Pos = x37
 L39:
-
 	if _, ok = s480(p); !ok {
 		goto L23
 	}
@@ -34345,7 +30473,6 @@ L23:
 	p.Pos = x20
 	k21 = x22
 L24:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
@@ -34367,7 +30494,6 @@ L24:
 	if _, ok = s480(p); !ok {
 		goto L43
 	}
-	x45 = p.Pos
 	if v46, ok = u372(p); !ok {
 		goto L43
 	}
@@ -34377,13 +30503,11 @@ L43:
 	p.Pos = x40
 	k41 = x42
 L44:
-
 	x47 = p.Pos
 	x49 = k48
 	if _, ok = s494(p); !ok {
 		goto L50
 	}
-	x52 = p.Pos
 	if v53, ok = u373(p); !ok {
 		goto L50
 	}
@@ -34395,18 +30519,7 @@ L50:
 L51:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importType"
-	v = func() any {
-		return func() any {
-			f_1290 := func() any { return k17 }()
-			f_1291 := func() any { return k21 }()
-			f_1292 := func() any { return k41 }()
-			f_1293 := func() any { return c.Concat(func() any { return k48 }()) }()
-			f_1294 := func() any {
-				return c.Binary("!=", func() any { return k1 }(), func() any { return any(nil) }())
-			}()
-			return tmk_ImportType(c, true, f_1290, f_1291, f_1292, f_1293, f_1294)
-		}()
-	}()
+	v = tmk_ImportType(c, true, k17, k21, k41, c.Concat(k48), c.Binary("!=", k1, any(nil)))
 	p.Depth--
 	return v, true
 fail:
@@ -34425,27 +30538,19 @@ func u354(p *rt.TParser) (any, bool) {
 }
 
 func i354(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
-	x2 = p.Pos
 	if v3, ok = u150(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importTypeAttributes"
-	v = func() any {
-		return func() any {
-			f_1295 := func() any { return k1 }()
-			f_1296 := func() any { return any("with") }()
-			return tmk_ImportAttributes(c, true, f_1295, f_1296)
-		}()
-	}()
+	v = tmk_ImportAttributes(c, true, k1, any("with"))
 	p.Depth--
 	return v, true
 fail:
@@ -34467,14 +30572,13 @@ func u355(p *rt.TParser) (any, bool) {
 }
 
 func i355(p *rt.TParser) (any, bool) {
-	var start, x1, x3, x33, x35, x37, x40, x42, x45, x48, x53, x56 int
+	var start, x1, x3, x33, x35, x37, x42, x45, x48, x56 int
 	var v, k39, v41, k49, x50, v54 any
 	var c *rt.TActCtx
 	var x5 rune
 	var x6, ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x40, x53
 	x1 = p.Pos
 	p.Silent++
 	x3 = p.Pos
@@ -34634,7 +30738,6 @@ L32:
 L31:
 	goto L2
 L4:
-
 	x33 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -34680,7 +30783,6 @@ L38:
 L36:
 	p.Silent--
 	p.Pos = x35
-	x40 = p.Pos
 	if v41, ok = u372(p); !ok {
 		goto fail
 	}
@@ -34716,13 +30818,11 @@ L47:
 L43:
 	p.Pos = x42
 L44:
-
 	x48 = p.Pos
 	x50 = k49
 	if _, ok = s494(p); !ok {
 		goto L52
 	}
-	x53 = p.Pos
 	if v54, ok = u373(p); !ok {
 		goto L52
 	}
@@ -34755,13 +30855,7 @@ L55:
 L51:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeReference"
-	v = func() any {
-		return func() any {
-			f_1297 := func() any { return k39 }()
-			f_1298 := func() any { return c.Concat(func() any { return k49 }()) }()
-			return tmk_TypeReference(c, true, f_1297, f_1298)
-		}()
-	}()
+	v = tmk_TypeReference(c, true, k39, c.Concat(k49))
 	p.Depth--
 	return v, true
 fail:
@@ -34780,14 +30874,12 @@ func u356(p *rt.TParser) (any, bool) {
 }
 
 func i356(p *rt.TParser) (any, bool) {
-	var start, x2, x4 int
+	var start, x4 int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
-	x2 = p.Pos
 	if v3, ok = s357(p); !ok {
 		goto fail
 	}
@@ -34810,12 +30902,7 @@ L5:
 	p.Pos = x4
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "functionTypeReference"
-	v = func() any {
-		return func() any {
-			f_1299 := func() any { return k1 }()
-			return tmk_TypeReference(c, true, f_1299, nil)
-		}()
-	}()
+	v = tmk_TypeReference(c, true, k1, nil)
 	p.Depth--
 	return v, true
 fail:
@@ -34870,13 +30957,12 @@ func u358(p *rt.TParser) (any, bool) {
 }
 
 func i358(p *rt.TParser) (any, bool) {
-	var start, x1, x4 int
+	var start, x1 int
 	var v, k3, v5 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = u521(p); !ok {
@@ -34896,7 +30982,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	if v5, ok = u315(p); !ok {
 		goto fail
 	}
@@ -34911,12 +30996,7 @@ L2:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "parenthesizedType"
-	v = func() any {
-		return func() any {
-			f_1300 := func() any { return k3 }()
-			return tmk_ParenthesizedType(c, true, f_1300)
-		}()
-	}()
+	v = tmk_ParenthesizedType(c, true, k3)
 	p.Depth--
 	return v, true
 fail:
@@ -34935,32 +31015,23 @@ func u360(p *rt.TParser) (any, bool) {
 }
 
 func i360(p *rt.TParser) (any, bool) {
-	var start, x2, x5 int
+	var start int
 	var v, k1, v3, k4, v6 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x5
-	x2 = p.Pos
 	if v3, ok = u452(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	if v6, ok = u361(p); !ok {
 		goto fail
 	}
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "templateLiteralType"
-	v = func() any {
-		return func() any {
-			f_1301 := func() any { return k1 }()
-			f_1302 := func() any { return k4 }()
-			return tmk_TemplateLiteralType(c, true, f_1301, f_1302)
-		}()
-	}()
+	v = tmk_TemplateLiteralType(c, true, k1, k4)
 	p.Depth--
 	return v, true
 fail:
@@ -34979,26 +31050,23 @@ func u361(p *rt.TParser) (any, bool) {
 }
 
 func i361(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x4, x5, x8, x12 int
+	var start, x2, x3, x5 int
 	var v, k1, k6, v9, v10, k11, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x4, x8, x12
-	x2, x3, x4 = p.Pos, len(p.KidStack), 0
+	x2, x3, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x5 = p.Pos
 		k6 = nil
 		if _, ok = s480(p); !ok {
 			goto L7
 		}
-		x8 = p.Pos
 		if v9, ok = u362(p); !ok {
 			goto L7
 		}
 		k6 = v9
-		x4++
 		p.PushKid(k6)
 		if p.Pos == x5 {
 			break
@@ -35013,21 +31081,13 @@ func i361(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x12 = p.Pos
 	if v13, ok = u363(p); !ok {
 		goto fail
 	}
 	k11 = v13
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "templateTypeSpans"
-	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushItems(func() any { return k1 }())
-			c.PushList(func() any { return k11 }())
-			return c.EndList(b)
-		}()
-	}()
+	v = func() any { b := len(c.P.KidStack); c.PushItems(k1); c.PushList(k11); return c.EndList(b) }()
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -35047,14 +31107,12 @@ func u362(p *rt.TParser) (any, bool) {
 }
 
 func i362(p *rt.TParser) (any, bool) {
-	var start, x2, x5 int
+	var start int
 	var v, k1, v3, k4, v6 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x5
-	x2 = p.Pos
 	if v3, ok = u315(p); !ok {
 		goto fail
 	}
@@ -35062,20 +31120,13 @@ func i362(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x5 = p.Pos
 	if v6, ok = u453(p); !ok {
 		goto fail
 	}
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "templateTypeSpanMiddle"
-	v = func() any {
-		return func() any {
-			f_1303 := func() any { return k1 }()
-			f_1304 := func() any { return k4 }()
-			return tmk_TemplateLiteralTypeSpan(c, true, f_1303, f_1304)
-		}()
-	}()
+	v = tmk_TemplateLiteralTypeSpan(c, true, k1, k4)
 	p.Depth--
 	return v, true
 fail:
@@ -35094,14 +31145,12 @@ func u363(p *rt.TParser) (any, bool) {
 }
 
 func i363(p *rt.TParser) (any, bool) {
-	var start, x2, x5 int
+	var start int
 	var v, k1, v3, k4, v6 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x5
-	x2 = p.Pos
 	if v3, ok = u315(p); !ok {
 		goto fail
 	}
@@ -35109,20 +31158,13 @@ func i363(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x5 = p.Pos
 	if v6, ok = u454(p); !ok {
 		goto fail
 	}
 	k4 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "templateTypeSpanTail"
-	v = func() any {
-		return func() any {
-			f_1305 := func() any { return k1 }()
-			f_1306 := func() any { return k4 }()
-			return tmk_TemplateLiteralTypeSpan(c, true, f_1305, f_1306)
-		}()
-	}()
+	v = tmk_TemplateLiteralTypeSpan(c, true, k1, k4)
 	p.Depth--
 	return v, true
 fail:
@@ -35187,7 +31229,7 @@ func s365(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto L3
 	}
-	if !p.ClassFast(&cls1307) && !p.ClassSkip(&cls1307, 214) {
+	if !p.ClassFast(&cls921) && !p.ClassSkip(&cls921, 214) {
 		goto L3
 	}
 	p.Silent--
@@ -35224,13 +31266,12 @@ func u366(p *rt.TParser) (any, bool) {
 }
 
 func i366(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 63 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit331, "?", 139, false); !ok {
@@ -35239,19 +31280,13 @@ func i366(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u315(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsdocNullableType"
-	v = func() any {
-		return func() any {
-			f_1308 := func() any { return k1 }()
-			return tmk_JSDocNullableType(c, true, f_1308, nil)
-		}()
-	}()
+	v = tmk_JSDocNullableType(c, true, k1, nil)
 	p.Depth--
 	return v, true
 fail:
@@ -35270,13 +31305,12 @@ func u367(p *rt.TParser) (any, bool) {
 }
 
 func i367(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 33 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit388, "!", 179, false); !ok {
@@ -35285,19 +31319,13 @@ func i367(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u340(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsdocNonNullableType"
-	v = func() any {
-		return func() any {
-			f_1309 := func() any { return k1 }()
-			return tmk_JSDocNonNullableType(c, true, f_1309, nil)
-		}()
-	}()
+	v = tmk_JSDocNonNullableType(c, true, k1, nil)
 	p.Depth--
 	return v, true
 fail:
@@ -35316,13 +31344,12 @@ func u368(p *rt.TParser) (any, bool) {
 }
 
 func i368(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x5, x11, x12 int
+	var start, x1, x5, x12 int
 	var v, k3, v6, v9, k10, v13, v16 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x4, x11
 	if _, ok = p.Parser.MatchLiteral(lit33, "function", 39, false); !ok {
 		goto fail
 	}
@@ -35348,7 +31375,6 @@ L2:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x4 = p.Pos
 	x5 = p.Pos
 	if v9, ok = u471(p); !ok {
 		goto L7
@@ -35368,7 +31394,6 @@ L8:
 	} else if _, ok = p.Parser.MatchLiteral(lit79, ")", 59, false); !ok {
 		goto fail
 	}
-	x11 = p.Pos
 	x12 = p.Pos
 	if v16, ok = u85(p); !ok {
 		goto L14
@@ -35382,13 +31407,7 @@ L15:
 	k10 = v13
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsdocFunctionType"
-	v = func() any {
-		return func() any {
-			f_1310 := func() any { return c.Concat(func() any { return k3 }()) }()
-			f_1311 := func() any { return k10 }()
-			return tmk_JSDocFunctionType(c, true, f_1310, f_1311)
-		}()
-	}()
+	v = tmk_JSDocFunctionType(c, true, c.Concat(k3), k10)
 	p.Depth--
 	return v, true
 fail:
@@ -35410,16 +31429,14 @@ func u369(p *rt.TParser) (any, bool) {
 }
 
 func i369(p *rt.TParser) (any, bool) {
-	var start, x1, x6, x9 int
+	var start, x1 int
 	var v, k2, x3, v7, k8, v10 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x6, x9
 	x1 = p.Pos
 	x3 = k2
-	x6 = p.Pos
 	if v7, ok = s370(p); !ok {
 		goto L4
 	}
@@ -35440,21 +31457,13 @@ L4:
 	p.Pos = x1
 	k2 = x3
 L5:
-
-	x9 = p.Pos
 	if v10, ok = u315(p); !ok {
 		goto fail
 	}
 	k8 = v10
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsdocParameter"
-	v = func() any {
-		return func() any {
-			f_1312 := func() any { return k2 }()
-			f_1313 := func() any { return k8 }()
-			return tmk_Parameter(c, true, nil, nil, f_1312, nil, f_1313, nil)
-		}()
-	}()
+	v = tmk_Parameter(c, true, nil, nil, k2, nil, k8, nil)
 	p.Depth--
 	return v, true
 fail:
@@ -35500,7 +31509,6 @@ L9:
 L8:
 	goto fail
 L3:
-
 	x10 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -35538,22 +31546,18 @@ func u371(p *rt.TParser) (any, bool) {
 }
 
 func i371(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x9, x12, x14, x16 int
+	var start, x6, x7, x9, x12, x14 int
 	var v, k1, v3, k4, k10, v15, v17, v18, v19, v20, v21 any
 	var c *rt.TActCtx
 	var ok bool
 	var x13 []any
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x2, x5, x8, x16
-	x2 = p.Pos
 	if v3, ok = u421(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	x6, x7 = p.Pos, len(p.KidStack)
-	x8 = 0
 	for {
 		x9 = p.Pos
 		k10 = nil
@@ -35573,7 +31577,6 @@ func i371(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L11
 		}
-		x16 = p.Pos
 		if v17, ok = u421(p); !ok {
 			goto L11
 		}
@@ -35581,8 +31584,7 @@ func i371(p *rt.TParser) (any, bool) {
 		x13 = append(x13, v17)
 		v18 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
 		v19 = p.ScopeValue(sh13, v18, x9)
-		v20 = p.AttachCaptures(v19, scope1314, []any{k10}, x9, p.Pos)
-		x8++
+		v20 = p.AttachCaptures(v19, scope922, []any{k10}, x9, p.Pos)
 		p.PushKid(v20)
 		if p.Pos == x9 {
 			break
@@ -35596,17 +31598,7 @@ func i371(p *rt.TParser) (any, bool) {
 	k4 = v21
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "entityName"
-	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1315, l_1316 any) any {
-			return func() any {
-				return func() any {
-					f_1317 := func() any { return l_1315 }()
-					f_1318 := func() any { return c.Member(func() any { return l_1316 }(), "$n") }()
-					return tmk_QualifiedName(c, false, f_1317, f_1318)
-				}()
-			}()
-		})
-	}()
+	v = c.Fold("foldl", false, k1, k4, func(l_923, l_924 any) any { return tmk_QualifiedName(c, false, (l_923), c.Member((l_924), "$n")) })
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -35629,22 +31621,18 @@ func u372(p *rt.TParser) (any, bool) {
 }
 
 func i372(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x9, x12, x14, x16 int
+	var start, x6, x7, x9, x12, x14 int
 	var v, k1, v3, k4, k10, v15, v17, v18, v19, v20, v21 any
 	var c *rt.TActCtx
 	var ok bool
 	var x13 []any
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x2, x5, x8, x16
-	x2 = p.Pos
 	if v3, ok = u425(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	x6, x7 = p.Pos, len(p.KidStack)
-	x8 = 0
 	for {
 		x9 = p.Pos
 		k10 = nil
@@ -35664,7 +31652,6 @@ func i372(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L11
 		}
-		x16 = p.Pos
 		if v17, ok = u423(p); !ok {
 			goto L11
 		}
@@ -35672,8 +31659,7 @@ func i372(p *rt.TParser) (any, bool) {
 		x13 = append(x13, v17)
 		v18 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
 		v19 = p.ScopeValue(sh13, v18, x9)
-		v20 = p.AttachCaptures(v19, scope1319, []any{k10}, x9, p.Pos)
-		x8++
+		v20 = p.AttachCaptures(v19, scope925, []any{k10}, x9, p.Pos)
 		p.PushKid(v20)
 		if p.Pos == x9 {
 			break
@@ -35687,17 +31673,7 @@ func i372(p *rt.TParser) (any, bool) {
 	k4 = v21
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "entityNameAllowReserved"
-	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1320, l_1321 any) any {
-			return func() any {
-				return func() any {
-					f_1322 := func() any { return l_1320 }()
-					f_1323 := func() any { return c.Member(func() any { return l_1321 }(), "$n") }()
-					return tmk_QualifiedName(c, false, f_1322, f_1323)
-				}()
-			}()
-		})
-	}()
+	v = c.Fold("foldl", false, k1, k4, func(l_926, l_927 any) any { return tmk_QualifiedName(c, false, (l_926), c.Member((l_927), "$n")) })
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -35720,13 +31696,12 @@ func u373(p *rt.TParser) (any, bool) {
 }
 
 func i373(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v7 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 60 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit336, "<", 140, false); !ok {
@@ -35735,7 +31710,6 @@ func i373(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u374(p); !ok {
 		goto L5
@@ -35757,7 +31731,7 @@ L6:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeArguments"
-	v = func() any { return c.Concat(func() any { return k1 }()) }()
+	v = c.Concat(k1)
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -35780,14 +31754,13 @@ func u374(p *rt.TParser) (any, bool) {
 }
 
 func i374(p *rt.TParser) (any, bool) {
-	var start, x1, x5, x8, x9, x10, x11, x12, x15, x17, x19, x22, x28 int
+	var start, x1, x9, x10, x12, x15, x17, x19, x28 int
 	var v, k4, v6, k7, k13, v18, v23, v24, v25, v26, v27 any
 	var c *rt.TActCtx
 	var ok bool
 	var x16 []any
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x5, x8, x11, x22
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = u524(p); !ok {
@@ -35801,15 +31774,11 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x5 = p.Pos
 	if v6, ok = u315(p); !ok {
 		goto fail
 	}
 	k4 = v6
-	x8 = p.Pos
 	x9, x10 = p.Pos, len(p.KidStack)
-	x11 = 0
 	for {
 		x12 = p.Pos
 		k13 = nil
@@ -35842,8 +31811,6 @@ L3:
 		p.Pos = x19
 		goto L14
 	L21:
-
-		x22 = p.Pos
 		if v23, ok = u315(p); !ok {
 			goto L14
 		}
@@ -35851,8 +31818,7 @@ L3:
 		x16 = append(x16, v23)
 		v24 = p.NewNodeOrdinary("tuple", x15, p.Pos, x16)
 		v25 = p.ScopeValue(sh13, v24, x12)
-		v26 = p.AttachCaptures(v25, scope1324, []any{k13}, x12, p.Pos)
-		x11++
+		v26 = p.AttachCaptures(v25, scope928, []any{k13}, x12, p.Pos)
 		p.PushKid(v26)
 		if p.Pos == x12 {
 			break
@@ -35880,14 +31846,10 @@ L30:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeList"
 	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { return k4 }())
-			c.PushMap(func() any { return k7 }(), func(l_1325 any) any {
-				return func() any { return c.Member(func() any { return l_1325 }(), "$t") }()
-			})
-			return c.EndList(b)
-		}()
+		b := len(c.P.KidStack)
+		c.PushList(k4)
+		c.PushMap(k7, func(l_929 any) any { return c.Member((l_929), "$t") })
+		return c.EndList(b)
 	}()
 	v = c.Finish(v)
 	p.Depth--
@@ -35911,13 +31873,12 @@ func u375(p *rt.TParser) (any, bool) {
 }
 
 func i375(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v7 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 60 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit336, "<", 140, false); !ok {
@@ -35926,7 +31887,6 @@ func i375(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u475(p); !ok {
 		goto L5
@@ -35948,7 +31908,7 @@ L6:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeParameters"
-	v = func() any { return c.Concat(func() any { return k1 }()) }()
+	v = c.Concat(k1)
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -35971,20 +31931,17 @@ func u376(p *rt.TParser) (any, bool) {
 }
 
 func i376(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x7, x14, x16, x21, x24, x28, x30, x33, x35, x37, x42, size, x44 int
+	var start, x7, x14, x16, x21, x24, x28, x33, x37, x42, size int
 	var v, k1, v3, k4, v6, k8, x9, k10, x11, x17, x18, v31, v36, k38, x39, v45 any
 	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _ = x2, x5, x30, x35, x44
-	x2 = p.Pos
 	if v3, ok = u182(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	if v6, ok = u421(p); !ok {
 		goto fail
 	}
@@ -36048,8 +32005,6 @@ L22:
 	p.Pos = x21
 	goto L20
 L23:
-
-	x30 = p.Pos
 	if v31, ok = u315(p); !ok {
 		goto L20
 	}
@@ -36070,7 +32025,6 @@ L20:
 L34:
 	p.Silent--
 	p.Pos = x33
-	x35 = p.Pos
 	if v36, ok = u222(p); !ok {
 		goto L32
 	}
@@ -36088,7 +32042,6 @@ L12:
 	k8 = x9
 	k10 = x11
 L13:
-
 	x37 = p.Pos
 	x39 = k38
 	if _, ok = s480(p); !ok {
@@ -36116,7 +32069,6 @@ L43:
 	if _, ok = s480(p); !ok {
 		goto L40
 	}
-	x44 = p.Pos
 	if v45, ok = u315(p); !ok {
 		goto L40
 	}
@@ -36128,16 +32080,7 @@ L40:
 L41:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeParameter"
-	v = func() any {
-		return func() any {
-			f_1326 := func() any { return k1 }()
-			f_1327 := func() any { return k4 }()
-			f_1328 := func() any { return k8 }()
-			f_1329 := func() any { return k38 }()
-			f_1330 := func() any { return k10 }()
-			return tmk_TypeParameter(c, true, f_1326, f_1327, f_1328, f_1329, f_1330)
-		}()
-	}()
+	v = tmk_TypeParameter(c, true, k1, k4, k8, k38, k10)
 	p.Depth--
 	return v, true
 fail:
@@ -36156,13 +32099,12 @@ func u377(p *rt.TParser) (any, bool) {
 }
 
 func i377(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v7 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 79, false); !ok {
@@ -36171,7 +32113,6 @@ func i377(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	x3 = p.Pos
 	if v7, ok = u474(p); !ok {
 		goto L5
@@ -36193,12 +32134,7 @@ L6:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "tupleType"
-	v = func() any {
-		return func() any {
-			f_1331 := func() any { return c.Concat(func() any { return k1 }()) }()
-			return tmk_TupleType(c, true, f_1331)
-		}()
-	}()
+	v = tmk_TupleType(c, true, c.Concat(k1))
 	p.Depth--
 	return v, true
 fail:
@@ -36260,16 +32196,14 @@ func u379(p *rt.TParser) (any, bool) {
 }
 
 func i379(p *rt.TParser) (any, bool) {
-	var start, x1, x6, x9, x11, x16, x19 int
+	var start, x1, x11 int
 	var v, k2, x3, v7, k8, v10, k12, x13, v17, k18, v20 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x6, x9, x16, x19
 	x1 = p.Pos
 	x3 = k2
-	x6 = p.Pos
 	if v7, ok = s416(p); !ok {
 		goto L4
 	}
@@ -36282,8 +32216,6 @@ L4:
 	p.Pos = x1
 	k2 = x3
 L5:
-
-	x9 = p.Pos
 	if v10, ok = u425(p); !ok {
 		goto fail
 	}
@@ -36293,7 +32225,6 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto L14
 	}
-	x16 = p.Pos
 	if v17, ok = s413(p); !ok {
 		goto L14
 	}
@@ -36303,7 +32234,6 @@ L14:
 	p.Pos = x11
 	k12 = x13
 L15:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
@@ -36315,22 +32245,13 @@ L15:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x19 = p.Pos
 	if v20, ok = u380(p); !ok {
 		goto fail
 	}
 	k18 = v20
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namedTupleMember"
-	v = func() any {
-		return func() any {
-			f_1332 := func() any { return k2 }()
-			f_1333 := func() any { return k8 }()
-			f_1334 := func() any { return k12 }()
-			f_1335 := func() any { return k18 }()
-			return tmk_NamedTupleMember(c, true, f_1332, f_1333, f_1334, f_1335)
-		}()
-	}()
+	v = tmk_NamedTupleMember(c, true, k2, k8, k12, k18)
 	p.Depth--
 	return v, true
 fail:
@@ -36367,7 +32288,6 @@ func v380(p *rt.TParser) (any, bool) {
 L7:
 	p.Pos = x1
 L6:
-
 	if v10, ok = u382(p); !ok {
 		goto L9
 	}
@@ -36407,13 +32327,12 @@ func u381(p *rt.TParser) (any, bool) {
 }
 
 func i381(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 46 && p.In[p.Pos+1] == 46 && p.In[p.Pos+2] == 46 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit281, "...", 118, false); !ok {
@@ -36422,16 +32341,13 @@ func i381(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u315(p); !ok {
 		goto fail
 	}
 	k1 = v3
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "restType"
-	v = func() any {
-		return func() any { f_1336 := func() any { return k1 }(); return tmk_RestType(c, true, f_1336) }()
-	}()
+	v = tmk_RestType(c, true, k1)
 	p.Depth--
 	return v, true
 fail:
@@ -36450,15 +32366,13 @@ func u382(p *rt.TParser) (any, bool) {
 }
 
 func i382(p *rt.TParser) (any, bool) {
-	var start, x2, x4, size int
+	var start, x4, size int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_ = x2
-	x2 = p.Pos
 	if v3, ok = p.InvokePlain(trules[339], 0); !ok {
 		goto fail
 	}
@@ -36492,12 +32406,7 @@ L5:
 L6:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "optionalType"
-	v = func() any {
-		return func() any {
-			f_1337 := func() any { return k1 }()
-			return tmk_OptionalType(c, true, f_1337)
-		}()
-	}()
+	v = tmk_OptionalType(c, true, k1)
 	p.Depth--
 	return v, true
 fail:
@@ -36516,13 +32425,12 @@ func u383(p *rt.TParser) (any, bool) {
 }
 
 func i383(p *rt.TParser) (any, bool) {
-	var start, x1, x4 int
+	var start, x1 int
 	var v, k3, v5 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = u526(p); !ok {
@@ -36534,19 +32442,13 @@ func i383(p *rt.TParser) (any, bool) {
 L2:
 	p.Silent--
 	p.Pos = x1
-	x4 = p.Pos
 	if v5, ok = u384(p); !ok {
 		goto fail
 	}
 	k3 = v5
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeLiteral"
-	v = func() any {
-		return func() any {
-			f_1338 := func() any { return k3 }()
-			return tmk_TypeLiteral(c, true, f_1338)
-		}()
-	}()
+	v = tmk_TypeLiteral(c, true, k3)
 	p.Depth--
 	return v, true
 fail:
@@ -36568,13 +32470,12 @@ func u384(p *rt.TParser) (any, bool) {
 }
 
 func i384(p *rt.TParser) (any, bool) {
-	var start, x2, x3, x4, x5, x8, x11 int
+	var start, x2, x3, x5, x8 int
 	var v, k1, k6, v12, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x4, x11
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "{", 20, false); !ok {
@@ -36583,7 +32484,7 @@ func i384(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2, x3, x4 = p.Pos, len(p.KidStack), 0
+	x2, x3, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x5 = p.Pos
 		k6 = nil
@@ -36600,8 +32501,6 @@ func i384(p *rt.TParser) (any, bool) {
 		p.Pos = x8
 		goto L7
 	L10:
-
-		x11 = p.Pos
 		if v12, ok = u397(p); !ok {
 			goto L7
 		}
@@ -36609,7 +32508,6 @@ func i384(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L7
 		}
-		x4++
 		p.PushKid(k6)
 		if p.Pos == x5 {
 			break
@@ -36628,9 +32526,7 @@ func i384(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "objectTypeMembers"
-	v = func() any {
-		return c.NewList(c.ListItems("map", func() any { return k1 }()))
-	}()
+	v = c.NewList(c.ListItems("map", k1))
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -36650,13 +32546,12 @@ func u389(p *rt.TParser) (any, bool) {
 }
 
 func i389(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x9, x12, x14, x19, x21, x23, x28, x31, x32, x38, x39, x40, x41, x44, x47 int
+	var start, x1, x4, x14, x19, x23, x32, x38, x39, x41, x44 int
 	var v, k5, x6, v10, k11, v13, k15, x16, v22, k24, x25, v29, k30, v33, v36, k37, k42, v48, v49 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _, _, _ = x9, x12, x21, x28, x31, x40, x47
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = u526(p); !ok {
@@ -36670,7 +32565,6 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "{", 20, false); !ok {
@@ -36681,7 +32575,6 @@ L3:
 	}
 	x4 = p.Pos
 	x6 = k5
-	x9 = p.Pos
 	if v10, ok = u391(p); !ok {
 		goto L7
 	}
@@ -36694,7 +32587,6 @@ L7:
 	p.Pos = x4
 	k5 = x6
 L8:
-
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 79, false); !ok {
@@ -36703,7 +32595,6 @@ L8:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x12 = p.Pos
 	if v13, ok = u390(p); !ok {
 		goto fail
 	}
@@ -36732,7 +32623,6 @@ L20:
 	if _, ok = s480(p); !ok {
 		goto L17
 	}
-	x21 = p.Pos
 	if v22, ok = u315(p); !ok {
 		goto L17
 	}
@@ -36742,7 +32632,6 @@ L17:
 	p.Pos = x14
 	k15 = x16
 L18:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
@@ -36756,7 +32645,6 @@ L18:
 	if _, ok = s480(p); !ok {
 		goto L26
 	}
-	x28 = p.Pos
 	if v29, ok = u393(p); !ok {
 		goto L26
 	}
@@ -36766,8 +32654,6 @@ L26:
 	p.Pos = x23
 	k24 = x25
 L27:
-
-	x31 = p.Pos
 	x32 = p.Pos
 	if v36, ok = u66(p); !ok {
 		goto L34
@@ -36785,7 +32671,7 @@ L35:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x38, x39, x40 = p.Pos, len(p.KidStack), 0
+	x38, x39, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x41 = p.Pos
 		k42 = nil
@@ -36802,8 +32688,6 @@ L35:
 		p.Pos = x44
 		goto L43
 	L46:
-
-		x47 = p.Pos
 		if v48, ok = u397(p); !ok {
 			goto L43
 		}
@@ -36811,7 +32695,6 @@ L35:
 		if _, ok = s480(p); !ok {
 			goto L43
 		}
-		x40++
 		p.PushKid(k42)
 		if p.Pos == x41 {
 			break
@@ -36830,19 +32713,7 @@ L35:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "mappedType"
-	v = func() any {
-		return func() any {
-			f_1339 := func() any { return k5 }()
-			f_1340 := func() any { return k11 }()
-			f_1341 := func() any { return k15 }()
-			f_1342 := func() any { return k24 }()
-			f_1343 := func() any { return k30 }()
-			f_1344 := func() any {
-				return c.NewList(c.ListItems("map", func() any { return k37 }()))
-			}()
-			return tmk_MappedType(c, true, f_1339, f_1340, f_1341, f_1342, f_1343, f_1344)
-		}()
-	}()
+	v = tmk_MappedType(c, true, k5, k11, k15, k24, k30, c.NewList(c.ListItems("map", k37)))
 	p.Depth--
 	return v, true
 fail:
@@ -36861,14 +32732,12 @@ func u390(p *rt.TParser) (any, bool) {
 }
 
 func i390(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x7 int
+	var start, x4 int
 	var v, k1, v3, k6, v8 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x2, x7
-	x2 = p.Pos
 	if v3, ok = u425(p); !ok {
 		goto fail
 	}
@@ -36895,20 +32764,13 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x7 = p.Pos
 	if v8, ok = u315(p); !ok {
 		goto fail
 	}
 	k6 = v8
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "mappedTypeParameter"
-	v = func() any {
-		return func() any {
-			f_1345 := func() any { return k1 }()
-			f_1346 := func() any { return k6 }()
-			return tmk_TypeParameter(c, true, nil, f_1345, f_1346, nil, nil)
-		}()
-	}()
+	v = tmk_TypeParameter(c, true, nil, k1, k6, nil, nil)
 	p.Depth--
 	return v, true
 fail:
@@ -36927,15 +32789,13 @@ func u391(p *rt.TParser) (any, bool) {
 }
 
 func i391(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v10, v13 any
 	var c *rt.TActCtx
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
-	x2 = p.Pos
 	x3 = p.Pos
 	x6, _, x7 = p.NextOrdinary()
 	if !(x7 && (x6 == 43 || x6 == 45)) && p.Depth+2 <= p.MaxDepth {
@@ -36967,7 +32827,7 @@ L5:
 	k1 = v4
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "mappedReadonlyToken"
-	v = func() any { return k1 }()
+	v = k1
 	v = c.Finish(v)
 	v = p.TConvertResult(trules[391], v)
 	p.Depth--
@@ -36988,14 +32848,12 @@ func u392(p *rt.TParser) (any, bool) {
 }
 
 func i392(p *rt.TParser) (any, bool) {
-	var start, x2, x4 int
+	var start, x4 int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
-	x2 = p.Pos
 	if v3, ok = s395(p); !ok {
 		goto fail
 	}
@@ -37019,7 +32877,7 @@ L5:
 	p.Pos = x4
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "mappedPlusMinusReadonly"
-	v = func() any { return k1 }()
+	v = k1
 	v = c.Finish(v)
 	v = p.TConvertResult(trules[392], v)
 	p.Depth--
@@ -37040,15 +32898,13 @@ func u393(p *rt.TParser) (any, bool) {
 }
 
 func i393(p *rt.TParser) (any, bool) {
-	var start, x2, x3 int
+	var start, x3 int
 	var v, k1, v4, v10, v13 any
 	var c *rt.TActCtx
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
-	x2 = p.Pos
 	x3 = p.Pos
 	x6, _, x7 = p.NextOrdinary()
 	if !(x7 && (x6 == 43 || x6 == 45)) && p.Depth+2 <= p.MaxDepth {
@@ -37080,7 +32936,7 @@ L5:
 	k1 = v4
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "mappedQuestionToken"
-	v = func() any { return k1 }()
+	v = k1
 	v = c.Finish(v)
 	v = p.TConvertResult(trules[393], v)
 	p.Depth--
@@ -37101,14 +32957,12 @@ func u394(p *rt.TParser) (any, bool) {
 }
 
 func i394(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
-	x2 = p.Pos
 	if v3, ok = s395(p); !ok {
 		goto fail
 	}
@@ -37123,7 +32977,7 @@ func i394(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "mappedPlusMinusQuestion"
-	v = func() any { return k1 }()
+	v = k1
 	v = c.Finish(v)
 	v = p.TConvertResult(trules[394], v)
 	p.Depth--
@@ -37234,7 +33088,6 @@ L4:
 L9:
 	p.Pos = x1
 L8:
-
 	if v12, ok = u398(p); !ok {
 		goto L11
 	}
@@ -37274,13 +33127,12 @@ func u398(p *rt.TParser) (any, bool) {
 }
 
 func i398(p *rt.TParser) (any, bool) {
-	var start, x1, x5, x6 int
+	var start, x1, x6 int
 	var v, k4, v7, v10, v12 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x5
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = u181(p); !ok {
@@ -37297,8 +33149,6 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x5 = p.Pos
 	x6 = p.Pos
 	if v10, ok = u402(p); !ok {
 		goto L9
@@ -37319,7 +33169,7 @@ L8:
 	k4 = v7
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeAccessor"
-	v = func() any { return k4 }()
+	v = k4
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -37339,13 +33189,12 @@ func u399(p *rt.TParser) (any, bool) {
 }
 
 func i399(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x5 int
+	var start, x1, x5 int
 	var v, k3, v6, v9, v11, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = u181(p); !ok {
@@ -37360,7 +33209,6 @@ func i399(p *rt.TParser) (any, bool) {
 L2:
 	p.Silent--
 	p.Pos = x1
-	x4 = p.Pos
 	x5 = p.Pos
 	if v9, ok = u404(p); !ok {
 		goto L8
@@ -37388,7 +33236,7 @@ L7:
 	k3 = v6
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeMemberNotAccessor"
-	v = func() any { return k3 }()
+	v = k3
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -37408,16 +33256,14 @@ func u400(p *rt.TParser) (any, bool) {
 }
 
 func i400(p *rt.TParser) (any, bool) {
-	var start, x1, x6, x9, x12, x13 int
+	var start, x1, x13 int
 	var v, k2, x3, v7, k8, v10, k11, v14, v17 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x6, x9, x12
 	x1 = p.Pos
 	x3 = k2
-	x6 = p.Pos
 	if v7, ok = u375(p); !ok {
 		goto L4
 	}
@@ -37430,13 +33276,10 @@ L4:
 	p.Pos = x1
 	k2 = x3
 L5:
-
-	x9 = p.Pos
 	if v10, ok = u79(p); !ok {
 		goto fail
 	}
 	k8 = v10
-	x12 = p.Pos
 	x13 = p.Pos
 	if v17, ok = u85(p); !ok {
 		goto L15
@@ -37453,14 +33296,7 @@ L16:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "callSignature"
-	v = func() any {
-		return func() any {
-			f_1347 := func() any { return c.Concat(func() any { return k2 }()) }()
-			f_1348 := func() any { return k8 }()
-			f_1349 := func() any { return k11 }()
-			return tmk_CallSignature(c, true, f_1347, f_1348, f_1349)
-		}()
-	}()
+	v = tmk_CallSignature(c, true, c.Concat(k2), k8, k11)
 	p.Depth--
 	return v, true
 fail:
@@ -37479,14 +33315,13 @@ func u401(p *rt.TParser) (any, bool) {
 }
 
 func i401(p *rt.TParser) (any, bool) {
-	var start, x1, x3, size, x6, x11, x14, x17, x18 int
+	var start, x1, x3, size, x6, x18 int
 	var v, k7, x8, v12, k13, v15, k16, v19, v22 any
 	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x11, x14, x17
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 119 {
 		p.Pos += 3
 	} else if _, ok = p.Parser.MatchLiteral(lit179, "new", 93, false); !ok {
@@ -37522,10 +33357,8 @@ L4:
 	p.Pos = x3
 	goto fail
 L5:
-
 	x6 = p.Pos
 	x8 = k7
-	x11 = p.Pos
 	if v12, ok = u375(p); !ok {
 		goto L9
 	}
@@ -37538,13 +33371,10 @@ L9:
 	p.Pos = x6
 	k7 = x8
 L10:
-
-	x14 = p.Pos
 	if v15, ok = u79(p); !ok {
 		goto fail
 	}
 	k13 = v15
-	x17 = p.Pos
 	x18 = p.Pos
 	if v22, ok = u85(p); !ok {
 		goto L20
@@ -37561,14 +33391,7 @@ L21:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "constructSignature"
-	v = func() any {
-		return func() any {
-			f_1350 := func() any { return c.Concat(func() any { return k7 }()) }()
-			f_1351 := func() any { return k13 }()
-			f_1352 := func() any { return k16 }()
-			return tmk_ConstructSignature(c, true, f_1350, f_1351, f_1352)
-		}()
-	}()
+	v = tmk_ConstructSignature(c, true, c.Concat(k7), k13, k16)
 	p.Depth--
 	return v, true
 fail:
@@ -37587,14 +33410,12 @@ func u402(p *rt.TParser) (any, bool) {
 }
 
 func i402(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x6, x10, x12, x17, x20, x23, x24, x29, x34, x37 int
+	var start, x4, x6, x12, x24, x29, x37 int
 	var v, k1, v3, k9, v11, k13, x14, v18, k19, v21, k22, v25, v28, k30, x31, v35 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _, _ = x2, x10, x17, x20, x23, x34
-	x2 = p.Pos
 	if v3, ok = u181(p); !ok {
 		goto fail
 	}
@@ -37631,11 +33452,9 @@ L7:
 	p.Pos = x6
 	goto fail
 L8:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x10 = p.Pos
 	if v11, ok = u411(p); !ok {
 		goto fail
 	}
@@ -37645,7 +33464,6 @@ L8:
 	if _, ok = s480(p); !ok {
 		goto L15
 	}
-	x17 = p.Pos
 	if v18, ok = u375(p); !ok {
 		goto L15
 	}
@@ -37655,16 +33473,13 @@ L15:
 	p.Pos = x12
 	k13 = x14
 L16:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x20 = p.Pos
 	if v21, ok = u79(p); !ok {
 		goto fail
 	}
 	k19 = v21
-	x23 = p.Pos
 	x24 = p.Pos
 	if v28, ok = u85(p); !ok {
 		goto L26
@@ -37681,7 +33496,6 @@ L27:
 	if _, ok = s480(p); !ok {
 		goto L33
 	}
-	x34 = p.Pos
 	if v35, ok = u18(p); !ok {
 		goto L33
 	}
@@ -37717,17 +33531,7 @@ L36:
 L32:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeGetAccessor"
-	v = func() any {
-		return func() any {
-			f_1353 := func() any { return k1 }()
-			f_1354 := func() any { return k9 }()
-			f_1355 := func() any { return c.Concat(func() any { return k13 }()) }()
-			f_1356 := func() any { return k19 }()
-			f_1357 := func() any { return k22 }()
-			f_1358 := func() any { return k30 }()
-			return tmk_GetAccessor(c, true, f_1353, f_1354, f_1355, f_1356, f_1357, f_1358)
-		}()
-	}()
+	v = tmk_GetAccessor(c, true, k1, k9, c.Concat(k13), k19, k22, k30)
 	p.Depth--
 	return v, true
 fail:
@@ -37746,14 +33550,12 @@ func u403(p *rt.TParser) (any, bool) {
 }
 
 func i403(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x6, x10, x12, x17, x20, x23, x24, x29, x34, x37 int
+	var start, x4, x6, x12, x24, x29, x37 int
 	var v, k1, v3, k9, v11, k13, x14, v18, k19, v21, k22, v25, v28, k30, x31, v35 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _, _ = x2, x10, x17, x20, x23, x34
-	x2 = p.Pos
 	if v3, ok = u181(p); !ok {
 		goto fail
 	}
@@ -37790,11 +33592,9 @@ L7:
 	p.Pos = x6
 	goto fail
 L8:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x10 = p.Pos
 	if v11, ok = u411(p); !ok {
 		goto fail
 	}
@@ -37804,7 +33604,6 @@ L8:
 	if _, ok = s480(p); !ok {
 		goto L15
 	}
-	x17 = p.Pos
 	if v18, ok = u375(p); !ok {
 		goto L15
 	}
@@ -37814,16 +33613,13 @@ L15:
 	p.Pos = x12
 	k13 = x14
 L16:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x20 = p.Pos
 	if v21, ok = u79(p); !ok {
 		goto fail
 	}
 	k19 = v21
-	x23 = p.Pos
 	x24 = p.Pos
 	if v28, ok = u85(p); !ok {
 		goto L26
@@ -37840,7 +33636,6 @@ L27:
 	if _, ok = s480(p); !ok {
 		goto L33
 	}
-	x34 = p.Pos
 	if v35, ok = u18(p); !ok {
 		goto L33
 	}
@@ -37876,17 +33671,7 @@ L36:
 L32:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeSetAccessor"
-	v = func() any {
-		return func() any {
-			f_1359 := func() any { return k1 }()
-			f_1360 := func() any { return k9 }()
-			f_1361 := func() any { return c.Concat(func() any { return k13 }()) }()
-			f_1362 := func() any { return k19 }()
-			f_1363 := func() any { return k22 }()
-			f_1364 := func() any { return k30 }()
-			return tmk_SetAccessor(c, true, f_1359, f_1360, f_1361, f_1362, f_1363, f_1364)
-		}()
-	}()
+	v = tmk_SetAccessor(c, true, k1, k9, c.Concat(k13), k19, k22, k30)
 	p.Depth--
 	return v, true
 fail:
@@ -37905,14 +33690,12 @@ func u404(p *rt.TParser) (any, bool) {
 }
 
 func i404(p *rt.TParser) (any, bool) {
-	var start, x2, x4, x8, x9, x15, x16 int
+	var start, x4, x9, x16 int
 	var v, k1, v3, k7, v10, v13, k14, v17, v20 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x8, x15
-	x2 = p.Pos
 	if v3, ok = u181(p); !ok {
 		goto fail
 	}
@@ -37930,7 +33713,6 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 79, false); !ok {
@@ -37939,7 +33721,6 @@ L6:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x8 = p.Pos
 	x9 = p.Pos
 	if v13, ok = u80(p); !ok {
 		goto L11
@@ -37959,7 +33740,6 @@ L12:
 	} else if _, ok = p.Parser.MatchLiteral(lit148, "]", 80, false); !ok {
 		goto fail
 	}
-	x15 = p.Pos
 	x16 = p.Pos
 	if v20, ok = u66(p); !ok {
 		goto L18
@@ -37976,14 +33756,7 @@ L19:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeIndexSignature"
-	v = func() any {
-		return func() any {
-			f_1365 := func() any { return k1 }()
-			f_1366 := func() any { return c.Concat(func() any { return k7 }()) }()
-			f_1367 := func() any { return k14 }()
-			return tmk_IndexSignature(c, true, f_1365, f_1366, f_1367)
-		}()
-	}()
+	v = tmk_IndexSignature(c, true, k1, c.Concat(k7), k14)
 	p.Depth--
 	return v, true
 fail:
@@ -38002,20 +33775,17 @@ func u407(p *rt.TParser) (any, bool) {
 }
 
 func i407(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x7, x12, x14, size, x17, x22, x25, x28, x29 int
+	var start, x7, x14, size, x17, x29 int
 	var v, k1, v3, k4, v6, k8, x9, v13, k18, x19, v23, k24, v26, k27, v30, v33 any
 	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _, _ = x2, x5, x12, x22, x25, x28
-	x2 = p.Pos
 	if v3, ok = u181(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	if v6, ok = u411(p); !ok {
 		goto fail
 	}
@@ -38025,7 +33795,6 @@ func i407(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto L10
 	}
-	x12 = p.Pos
 	if v13, ok = s413(p); !ok {
 		goto L10
 	}
@@ -38035,7 +33804,6 @@ L10:
 	p.Pos = x7
 	k8 = x9
 L11:
-
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
@@ -38055,10 +33823,8 @@ L15:
 	p.Pos = x14
 	goto fail
 L16:
-
 	x17 = p.Pos
 	x19 = k18
-	x22 = p.Pos
 	if v23, ok = u375(p); !ok {
 		goto L20
 	}
@@ -38071,13 +33837,10 @@ L20:
 	p.Pos = x17
 	k18 = x19
 L21:
-
-	x25 = p.Pos
 	if v26, ok = u79(p); !ok {
 		goto fail
 	}
 	k24 = v26
-	x28 = p.Pos
 	x29 = p.Pos
 	if v33, ok = u85(p); !ok {
 		goto L31
@@ -38094,17 +33857,7 @@ L32:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "methodSignature"
-	v = func() any {
-		return func() any {
-			f_1368 := func() any { return k1 }()
-			f_1369 := func() any { return k4 }()
-			f_1370 := func() any { return k8 }()
-			f_1371 := func() any { return c.Concat(func() any { return k18 }()) }()
-			f_1372 := func() any { return k24 }()
-			f_1373 := func() any { return k27 }()
-			return tmk_MethodSignature(c, true, f_1368, f_1369, f_1370, f_1371, f_1372, f_1373)
-		}()
-	}()
+	v = tmk_MethodSignature(c, true, k1, k4, k8, c.Concat(k18), k24, k27)
 	p.Depth--
 	return v, true
 fail:
@@ -38123,19 +33876,16 @@ func u408(p *rt.TParser) (any, bool) {
 }
 
 func i408(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x7, x12, x15, x16, x22, x23 int
+	var start, x7, x16, x23 int
 	var v, k1, v3, k4, v6, k8, x9, v13, k14, v17, v20, k21, v24, v27 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _, _, _ = x2, x5, x12, x15, x22
-	x2 = p.Pos
 	if v3, ok = u181(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	if v6, ok = u411(p); !ok {
 		goto fail
 	}
@@ -38145,7 +33895,6 @@ func i408(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto L10
 	}
-	x12 = p.Pos
 	if v13, ok = s413(p); !ok {
 		goto L10
 	}
@@ -38155,8 +33904,6 @@ L10:
 	p.Pos = x7
 	k8 = x9
 L11:
-
-	x15 = p.Pos
 	x16 = p.Pos
 	if v20, ok = u66(p); !ok {
 		goto L18
@@ -38168,7 +33915,6 @@ L18:
 	v17 = nil
 L19:
 	k14 = v17
-	x22 = p.Pos
 	x23 = p.Pos
 	if v27, ok = u65(p); !ok {
 		goto L25
@@ -38185,16 +33931,7 @@ L26:
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "propertySignature"
-	v = func() any {
-		return func() any {
-			f_1374 := func() any { return k1 }()
-			f_1375 := func() any { return k4 }()
-			f_1376 := func() any { return k8 }()
-			f_1377 := func() any { return k14 }()
-			f_1378 := func() any { return k21 }()
-			return tmk_PropertySignature(c, true, f_1374, f_1375, f_1376, f_1377, f_1378)
-		}()
-	}()
+	v = tmk_PropertySignature(c, true, k1, k4, k8, k14, k21)
 	p.Depth--
 	return v, true
 fail:
@@ -38264,7 +34001,6 @@ L12:
 L16:
 	p.Pos = x1
 L15:
-
 	if v19, ok = u423(p); !ok {
 		goto L18
 	}
@@ -38297,13 +34033,12 @@ func u412(p *rt.TParser) (any, bool) {
 }
 
 func i412(p *rt.TParser) (any, bool) {
-	var start, x2 int
+	var start int
 	var v, k1, v3 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 79, false); !ok {
@@ -38312,7 +34047,6 @@ func i412(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	x2 = p.Pos
 	if v3, ok = u185(p); !ok {
 		goto fail
 	}
@@ -38327,12 +34061,7 @@ func i412(p *rt.TParser) (any, bool) {
 	}
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "computedPropertyName"
-	v = func() any {
-		return func() any {
-			f_1379 := func() any { return k1 }()
-			return tmk_ComputedPropertyName(c, true, f_1379)
-		}()
-	}()
+	v = tmk_ComputedPropertyName(c, true, k1)
 	p.Depth--
 	return v, true
 fail:
@@ -38598,18 +34327,17 @@ func u421(p *rt.TParser) (any, bool) {
 }
 
 func i421(p *rt.TParser) (any, bool) {
-	var start, x1, x3, x6, x8, x10, x12, x15 int
+	var start, x1, x3, x6, x8, x10, x12 int
 	var v, k14, v16 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x15
 	x1 = p.Pos
 	p.Silent++
 	x3 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1380) && !p.ClassSkip(&cls1380, 221) {
+	if !p.ClassFast(&cls930) && !p.ClassSkip(&cls930, 221) {
 		goto L4
 	}
 	p.Silent--
@@ -38620,7 +34348,6 @@ L4:
 	p.Pos = x3
 	goto L2
 L5:
-
 	if _, ok = u500(p); !ok {
 		goto L2
 	}
@@ -38646,13 +34373,7 @@ L2:
 L9:
 	p.Silent--
 	p.Pos = x8
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(2) }())
-			}(), func() any { return any(1) }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Binary("%", c.Lookup("ctx"), any(2)), any(1)) }) {
 		goto L7
 	}
 	p.Silent--
@@ -38678,13 +34399,7 @@ L13:
 	p.Silent--
 	p.Pos = x12
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any {
-					return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(2) }())
-				}(), func() any { return any(2) }())
-			}(), func() any { return any(1) }())
-		}()
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(2)), any(2)), any(1))
 	}) {
 		goto L11
 	}
@@ -38694,14 +34409,13 @@ L13:
 L11:
 	p.Silent--
 	p.Pos = x10
-	x15 = p.Pos
 	if v16, ok = u423(p); !ok {
 		goto fail
 	}
 	k14 = v16
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "identifier"
-	v = func() any { return k14 }()
+	v = k14
 	v = c.Finish(v)
 	v = p.TConvertResult(trules[421], v)
 	p.Depth--
@@ -38725,18 +34439,17 @@ func u422(p *rt.TParser) (any, bool) {
 }
 
 func i422(p *rt.TParser) (any, bool) {
-	var start, x1, x3, x7 int
+	var start, x1, x3 int
 	var v, k6, v8 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x7
 	x1 = p.Pos
 	p.Silent++
 	x3 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1380) && !p.ClassSkip(&cls1380, 221) {
+	if !p.ClassFast(&cls930) && !p.ClassSkip(&cls930, 221) {
 		goto L4
 	}
 	p.Silent--
@@ -38747,7 +34460,6 @@ L4:
 	p.Pos = x3
 	goto L2
 L5:
-
 	if _, ok = u500(p); !ok {
 		goto L2
 	}
@@ -38757,14 +34469,13 @@ L5:
 L2:
 	p.Silent--
 	p.Pos = x1
-	x7 = p.Pos
 	if v8, ok = u423(p); !ok {
 		goto fail
 	}
 	k6 = v8
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "bindingIdentifier"
-	v = func() any { return k6 }()
+	v = k6
 	v = c.Finish(v)
 	v = p.TConvertResult(trules[422], v)
 	p.Depth--
@@ -38799,7 +34510,6 @@ func v423(p *rt.TParser) (any, bool) {
 	p.Pos += x4
 	goto L3
 L7:
-
 	if _, ok = u509(p); !ok {
 		goto L9
 	}
@@ -38808,7 +34518,6 @@ L9:
 	p.Pos = x2
 	goto fail
 L3:
-
 	if _, ok = u492(p); !ok {
 		goto fail
 	}
@@ -38857,7 +34566,6 @@ func v424(p *rt.TParser) (any, bool) {
 	p.Pos += x4
 	goto L3
 L7:
-
 	if _, ok = u509(p); !ok {
 		goto L9
 	}
@@ -38866,7 +34574,6 @@ L9:
 	p.Pos = x2
 	goto fail
 L3:
-
 	if _, ok = u492(p); !ok {
 		goto fail
 	}
@@ -38911,7 +34618,6 @@ func v425(p *rt.TParser) (any, bool) {
 L3:
 	p.Pos = x2
 L4:
-
 	x5 = p.Pos
 	x8, x7, x9 = p.NextOrdinary()
 	if !(x9 && (x8 >= 97 && x8 <= 122 || x8 >= 65 && x8 <= 90 || x8 == 36 || x8 == 95)) && p.Depth <= p.MaxDepth {
@@ -38921,7 +34627,6 @@ L4:
 	p.Pos += x7
 	goto L6
 L10:
-
 	if _, ok = u509(p); !ok {
 		goto L12
 	}
@@ -38930,7 +34635,6 @@ L12:
 	p.Pos = x5
 	goto fail
 L6:
-
 	if _, ok = u492(p); !ok {
 		goto fail
 	}
@@ -39000,7 +34704,6 @@ L8:
 L11:
 	p.Pos = x2
 L10:
-
 	if _, ok = s532(p); !ok {
 		goto L12
 	}
@@ -39009,7 +34712,6 @@ L12:
 	p.Pos = x2
 	goto fail
 L3:
-
 	x13 = p.Pos
 	p.Silent++
 	if _, ok = u497(p); !ok {
@@ -39087,7 +34789,6 @@ L8:
 L11:
 	p.Pos = x2
 L10:
-
 	if _, ok = s533(p); !ok {
 		goto L12
 	}
@@ -39096,7 +34797,6 @@ L12:
 	p.Pos = x2
 	goto fail
 L3:
-
 	if p.Pos < len(p.In) && p.In[p.Pos] == 110 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit635, "n", 229, false); !ok {
@@ -39137,13 +34837,12 @@ func u449(p *rt.TParser) (any, bool) {
 }
 
 func v449(p *rt.TParser) (any, bool) {
-	var start, x1, x2, x8, x9, x11, size, x14, x21, x22, x24, x27 int
+	var start, x1, x2, x9, x11, size, x14, x22, x24, x27 int
 	var v, v32, bv any
 	var x4, ch, x15, x28 rune
 	var x5, ok, x16, x29 bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x8, x21
 	x1 = p.Pos
 	x2 = p.Pos
 	x4, _, x5 = p.NextOrdinary()
@@ -39156,7 +34855,6 @@ func v449(p *rt.TParser) (any, bool) {
 	} else if _, ok = p.Parser.MatchLiteral(lit476, "\"", 192, false); !ok {
 		goto L7
 	}
-	x8 = 0
 	for {
 		x9 = p.Pos
 		x11 = p.Pos
@@ -39190,7 +34888,6 @@ func v449(p *rt.TParser) (any, bool) {
 	L17:
 		goto L10
 	L12:
-		x8++
 		if p.Pos == x9 {
 			break
 		}
@@ -39217,7 +34914,6 @@ L6:
 	} else if _, ok = p.Parser.MatchLiteral(lit477, "'", 194, false); !ok {
 		goto L20
 	}
-	x21 = 0
 	for {
 		x22 = p.Pos
 		x24 = p.Pos
@@ -39251,7 +34947,6 @@ L6:
 	L30:
 		goto L23
 	L25:
-		x21++
 		if p.Pos == x22 {
 			break
 		}
@@ -39599,13 +35294,13 @@ fail:
 }
 
 func s461(p *rt.TParser) (any, bool) {
-	var start, x1, x2, size, x4, x5, x7, x10, x17, x18, x20, x23, x28, x29, x31, x33 int
+	var start, x1, x2, size, x4, x5, x7, x10, x18, x20, x23, x29, x31, x33 int
 	var v, v39, bv any
 	var ok, x12, x25, x35 bool
 	var ch, x11, x24, x34 rune
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x4, x17, x28
+	_ = x4
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 47 {
 		p.Pos++
@@ -39675,7 +35370,6 @@ L3:
 		} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 79, false); !ok {
 			goto L16
 		}
-		x17 = 0
 		for {
 			x18 = p.Pos
 			x20 = p.Pos
@@ -39717,7 +35411,6 @@ L3:
 		L26:
 			goto L19
 		L21:
-			x17++
 			if p.Pos == x18 {
 				break
 			}
@@ -39754,7 +35447,6 @@ L3:
 	} else if _, ok = p.Parser.MatchLiteral(lit363, "/", 158, false); !ok {
 		goto fail
 	}
-	x28 = 0
 	for {
 		x29 = p.Pos
 		x31 = p.Pos
@@ -39766,7 +35458,6 @@ L3:
 		p.Pos += x33
 		goto L32
 	L36:
-
 		if _, ok = s537(p); !ok {
 			goto L38
 		}
@@ -39775,7 +35466,6 @@ L3:
 		p.Pos = x31
 		goto L30
 	L32:
-		x28++
 		if p.Pos == x29 {
 			break
 		}
@@ -39810,19 +35500,17 @@ func u464(p *rt.TParser) (any, bool) {
 }
 
 func i464(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x11, x14 int
+	var start, x5, x6, x8, x14 int
 	var v, k1, v3, k4, k9, v12, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x7, x11
-	x2 = p.Pos
 	if v3, ok = u74(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5, x6, x7 = p.Pos, len(p.KidStack), 0
+	x5, x6, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x8 = p.Pos
 		k9 = nil
@@ -39837,12 +35525,10 @@ func i464(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L10
 		}
-		x11 = p.Pos
 		if v12, ok = u74(p); !ok {
 			goto L10
 		}
 		k9 = v12
-		x7++
 		p.PushKid(k9)
 		if p.Pos == x8 {
 			break
@@ -39869,14 +35555,7 @@ L15:
 L16:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "arrayBindingElementList"
-	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { return k1 }())
-			c.PushItems(func() any { return k4 }())
-			return c.EndList(b)
-		}()
-	}()
+	v = func() any { b := len(c.P.KidStack); c.PushList(k1); c.PushItems(k4); return c.EndList(b) }()
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -39896,22 +35575,18 @@ func u465(p *rt.TParser) (any, bool) {
 }
 
 func i465(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x9, x12, x14, x16, x22 int
+	var start, x6, x7, x9, x12, x14, x22 int
 	var v, k1, v3, k4, k10, v15, v17, v18, v19, v20, v21 any
 	var c *rt.TActCtx
 	var ok bool
 	var x13 []any
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x2, x5, x8, x16
-	x2 = p.Pos
 	if v3, ok = u261(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5 = p.Pos
 	x6, x7 = p.Pos, len(p.KidStack)
-	x8 = 0
 	for {
 		x9 = p.Pos
 		k10 = nil
@@ -39931,7 +35606,6 @@ func i465(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L11
 		}
-		x16 = p.Pos
 		if v17, ok = u261(p); !ok {
 			goto L11
 		}
@@ -39939,8 +35613,7 @@ func i465(p *rt.TParser) (any, bool) {
 		x13 = append(x13, v17)
 		v18 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
 		v19 = p.ScopeValue(sh13, v18, x9)
-		v20 = p.AttachCaptures(v19, scope1386, []any{k10}, x9, p.Pos)
-		x8++
+		v20 = p.AttachCaptures(v19, scope936, []any{k10}, x9, p.Pos)
 		p.PushKid(v20)
 		if p.Pos == x9 {
 			break
@@ -39968,14 +35641,10 @@ L24:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "arrayElementList"
 	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { return k1 }())
-			c.PushMap(func() any { return k4 }(), func(l_1387 any) any {
-				return func() any { return c.Member(func() any { return l_1387 }(), "$e") }()
-			})
-			return c.EndList(b)
-		}()
+		b := len(c.P.KidStack)
+		c.PushList(k1)
+		c.PushMap(k4, func(l_937 any) any { return c.Member((l_937), "$e") })
+		return c.EndList(b)
 	}()
 	v = c.Finish(v)
 	p.Depth--
@@ -39996,19 +35665,17 @@ func u466(p *rt.TParser) (any, bool) {
 }
 
 func i466(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x11, x14 int
+	var start, x5, x6, x8, x14 int
 	var v, k1, v3, k4, k9, v12, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x7, x11
-	x2 = p.Pos
 	if v3, ok = u70(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5, x6, x7 = p.Pos, len(p.KidStack), 0
+	x5, x6, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x8 = p.Pos
 		k9 = nil
@@ -40023,12 +35690,10 @@ func i466(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L10
 		}
-		x11 = p.Pos
 		if v12, ok = u70(p); !ok {
 			goto L10
 		}
 		k9 = v12
-		x7++
 		p.PushKid(k9)
 		if p.Pos == x8 {
 			break
@@ -40055,14 +35720,7 @@ L15:
 L16:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "bindingElementList"
-	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { return k1 }())
-			c.PushItems(func() any { return k4 }())
-			return c.EndList(b)
-		}()
-	}()
+	v = func() any { b := len(c.P.KidStack); c.PushList(k1); c.PushItems(k4); return c.EndList(b) }()
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -40082,19 +35740,17 @@ func u467(p *rt.TParser) (any, bool) {
 }
 
 func i467(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x11, x14 int
+	var start, x5, x6, x8, x14 int
 	var v, k1, v3, k4, k9, v12, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x7, x11
-	x2 = p.Pos
 	if v3, ok = u118(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5, x6, x7 = p.Pos, len(p.KidStack), 0
+	x5, x6, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x8 = p.Pos
 		k9 = nil
@@ -40109,12 +35765,10 @@ func i467(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L10
 		}
-		x11 = p.Pos
 		if v12, ok = u118(p); !ok {
 			goto L10
 		}
 		k9 = v12
-		x7++
 		p.PushKid(k9)
 		if p.Pos == x8 {
 			break
@@ -40141,14 +35795,7 @@ L15:
 L16:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "enumMemberList"
-	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { return k1 }())
-			c.PushItems(func() any { return k4 }())
-			return c.EndList(b)
-		}()
-	}()
+	v = func() any { b := len(c.P.KidStack); c.PushList(k1); c.PushItems(k4); return c.EndList(b) }()
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -40168,19 +35815,17 @@ func u468(p *rt.TParser) (any, bool) {
 }
 
 func i468(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x11, x14 int
+	var start, x5, x6, x8, x14 int
 	var v, k1, v3, k4, k9, v12, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x7, x11
-	x2 = p.Pos
 	if v3, ok = u159(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5, x6, x7 = p.Pos, len(p.KidStack), 0
+	x5, x6, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x8 = p.Pos
 		k9 = nil
@@ -40195,12 +35840,10 @@ func i468(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L10
 		}
-		x11 = p.Pos
 		if v12, ok = u159(p); !ok {
 			goto L10
 		}
 		k9 = v12
-		x7++
 		p.PushKid(k9)
 		if p.Pos == x8 {
 			break
@@ -40227,14 +35870,7 @@ L15:
 L16:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportSpecifierList"
-	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { return k1 }())
-			c.PushItems(func() any { return k4 }())
-			return c.EndList(b)
-		}()
-	}()
+	v = func() any { b := len(c.P.KidStack); c.PushList(k1); c.PushItems(k4); return c.EndList(b) }()
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -40254,19 +35890,17 @@ func u469(p *rt.TParser) (any, bool) {
 }
 
 func i469(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x11, x14 int
+	var start, x5, x6, x8, x14 int
 	var v, k1, v3, k4, k9, v12, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x7, x11
-	x2 = p.Pos
 	if v3, ok = u151(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5, x6, x7 = p.Pos, len(p.KidStack), 0
+	x5, x6, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x8 = p.Pos
 		k9 = nil
@@ -40281,12 +35915,10 @@ func i469(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L10
 		}
-		x11 = p.Pos
 		if v12, ok = u151(p); !ok {
 			goto L10
 		}
 		k9 = v12
-		x7++
 		p.PushKid(k9)
 		if p.Pos == x8 {
 			break
@@ -40313,14 +35945,7 @@ L15:
 L16:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importAttributeList"
-	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { return k1 }())
-			c.PushItems(func() any { return k4 }())
-			return c.EndList(b)
-		}()
-	}()
+	v = func() any { b := len(c.P.KidStack); c.PushList(k1); c.PushItems(k4); return c.EndList(b) }()
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -40340,19 +35965,17 @@ func u470(p *rt.TParser) (any, bool) {
 }
 
 func i470(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x11, x14 int
+	var start, x5, x6, x8, x14 int
 	var v, k1, v3, k4, k9, v12, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x7, x11
-	x2 = p.Pos
 	if v3, ok = u136(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5, x6, x7 = p.Pos, len(p.KidStack), 0
+	x5, x6, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x8 = p.Pos
 		k9 = nil
@@ -40367,12 +35990,10 @@ func i470(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L10
 		}
-		x11 = p.Pos
 		if v12, ok = u136(p); !ok {
 			goto L10
 		}
 		k9 = v12
-		x7++
 		p.PushKid(k9)
 		if p.Pos == x8 {
 			break
@@ -40399,14 +36020,7 @@ L15:
 L16:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importSpecifierList"
-	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { return k1 }())
-			c.PushItems(func() any { return k4 }())
-			return c.EndList(b)
-		}()
-	}()
+	v = func() any { b := len(c.P.KidStack); c.PushList(k1); c.PushItems(k4); return c.EndList(b) }()
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -40426,19 +36040,17 @@ func u471(p *rt.TParser) (any, bool) {
 }
 
 func i471(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x11 int
+	var start, x5, x6, x8 int
 	var v, k1, v3, k4, k9, v12, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x7, x11
-	x2 = p.Pos
 	if v3, ok = u369(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5, x6, x7 = p.Pos, len(p.KidStack), 0
+	x5, x6, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x8 = p.Pos
 		k9 = nil
@@ -40453,12 +36065,10 @@ func i471(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L10
 		}
-		x11 = p.Pos
 		if v12, ok = u369(p); !ok {
 			goto L10
 		}
 		k9 = v12
-		x7++
 		p.PushKid(k9)
 		if p.Pos == x8 {
 			break
@@ -40472,14 +36082,7 @@ func i471(p *rt.TParser) (any, bool) {
 	k4 = v13
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsdocParameterList"
-	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { return k1 }())
-			c.PushItems(func() any { return k4 }())
-			return c.EndList(b)
-		}()
-	}()
+	v = func() any { b := len(c.P.KidStack); c.PushList(k1); c.PushItems(k4); return c.EndList(b) }()
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -40499,31 +36102,27 @@ func u472(p *rt.TParser) (any, bool) {
 }
 
 func i472(p *rt.TParser) (any, bool) {
-	var start, x2, x5, x6, x7, x8, x11 int
+	var start, x5, x6, x8 int
 	var v, k1, v3, k4, k9, v12, v13 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x2, x7, x11
-	x2 = p.Pos
 	if v3, ok = u303(p); !ok {
 		goto fail
 	}
 	k1 = v3
-	x5, x6, x7 = p.Pos, len(p.KidStack), 0
+	x5, x6, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x8 = p.Pos
 		k9 = nil
 		if _, ok = s480(p); !ok {
 			goto L10
 		}
-		x11 = p.Pos
 		if v12, ok = u303(p); !ok {
 			goto L10
 		}
 		k9 = v12
-		x7++
 		p.PushKid(k9)
 		if p.Pos == x8 {
 			break
@@ -40537,14 +36136,7 @@ func i472(p *rt.TParser) (any, bool) {
 	k4 = v13
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxAttributeLikeList"
-	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { return k1 }())
-			c.PushItems(func() any { return k4 }())
-			return c.EndList(b)
-		}()
-	}()
+	v = func() any { b := len(c.P.KidStack); c.PushList(k1); c.PushItems(k4); return c.EndList(b) }()
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -40564,13 +36156,12 @@ func u473(p *rt.TParser) (any, bool) {
 }
 
 func i473(p *rt.TParser) (any, bool) {
-	var start, x1, x5, x8, x9, x10, x11, x14, x17, x20 int
+	var start, x1, x8, x9, x11, x14, x20 int
 	var v, k4, v6, k7, k12, v18, v19 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x5, x10, x17
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = u538(p); !ok {
@@ -40584,13 +36175,11 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x5 = p.Pos
 	if v6, ok = u263(p); !ok {
 		goto fail
 	}
 	k4 = v6
-	x8, x9, x10 = p.Pos, len(p.KidStack), 0
+	x8, x9, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x11 = p.Pos
 		k12 = nil
@@ -40618,13 +36207,10 @@ L3:
 		p.Pos = x14
 		goto L13
 	L16:
-
-		x17 = p.Pos
 		if v18, ok = u263(p); !ok {
 			goto L13
 		}
 		k12 = v18
-		x10++
 		p.PushKid(k12)
 		if p.Pos == x11 {
 			break
@@ -40651,14 +36237,7 @@ L21:
 L22:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "objectLiteralElementList"
-	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { return k4 }())
-			c.PushItems(func() any { return k7 }())
-			return c.EndList(b)
-		}()
-	}()
+	v = func() any { b := len(c.P.KidStack); c.PushList(k4); c.PushItems(k7); return c.EndList(b) }()
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -40678,14 +36257,13 @@ func u474(p *rt.TParser) (any, bool) {
 }
 
 func i474(p *rt.TParser) (any, bool) {
-	var start, x1, x5, x8, x9, x10, x11, x12, x15, x17, x19, x22, x28 int
+	var start, x1, x9, x10, x12, x15, x17, x19, x28 int
 	var v, k4, v6, k7, k13, v18, v23, v24, v25, v26, v27 any
 	var c *rt.TActCtx
 	var ok bool
 	var x16 []any
 	start = p.Pos
 	p.Enter()
-	_, _, _, _ = x5, x8, x11, x22
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = u524(p); !ok {
@@ -40699,15 +36277,11 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x5 = p.Pos
 	if v6, ok = u378(p); !ok {
 		goto fail
 	}
 	k4 = v6
-	x8 = p.Pos
 	x9, x10 = p.Pos, len(p.KidStack)
-	x11 = 0
 	for {
 		x12 = p.Pos
 		k13 = nil
@@ -40740,8 +36314,6 @@ L3:
 		p.Pos = x19
 		goto L14
 	L21:
-
-		x22 = p.Pos
 		if v23, ok = u378(p); !ok {
 			goto L14
 		}
@@ -40749,8 +36321,7 @@ L3:
 		x16 = append(x16, v23)
 		v24 = p.NewNodeOrdinary("tuple", x15, p.Pos, x16)
 		v25 = p.ScopeValue(sh13, v24, x12)
-		v26 = p.AttachCaptures(v25, scope1388, []any{k13}, x12, p.Pos)
-		x11++
+		v26 = p.AttachCaptures(v25, scope938, []any{k13}, x12, p.Pos)
 		p.PushKid(v26)
 		if p.Pos == x12 {
 			break
@@ -40778,14 +36349,10 @@ L30:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "tupleElementList"
 	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { return k4 }())
-			c.PushMap(func() any { return k7 }(), func(l_1389 any) any {
-				return func() any { return c.Member(func() any { return l_1389 }(), "$e") }()
-			})
-			return c.EndList(b)
-		}()
+		b := len(c.P.KidStack)
+		c.PushList(k4)
+		c.PushMap(k7, func(l_939 any) any { return c.Member((l_939), "$e") })
+		return c.EndList(b)
 	}()
 	v = c.Finish(v)
 	p.Depth--
@@ -40806,13 +36373,12 @@ func u475(p *rt.TParser) (any, bool) {
 }
 
 func i475(p *rt.TParser) (any, bool) {
-	var start, x1, x5, x8, x9, x10, x11, x14, x17, x20 int
+	var start, x1, x8, x9, x11, x14, x20 int
 	var v, k4, v6, k7, k12, v18, v19 any
 	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x5, x10, x17
 	x1 = p.Pos
 	p.Silent++
 	if _, ok = u539(p); !ok {
@@ -40826,13 +36392,11 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	x5 = p.Pos
 	if v6, ok = u376(p); !ok {
 		goto fail
 	}
 	k4 = v6
-	x8, x9, x10 = p.Pos, len(p.KidStack), 0
+	x8, x9, _ = p.Pos, len(p.KidStack), 0
 	for {
 		x11 = p.Pos
 		k12 = nil
@@ -40860,13 +36424,10 @@ L3:
 		p.Pos = x14
 		goto L13
 	L16:
-
-		x17 = p.Pos
 		if v18, ok = u376(p); !ok {
 			goto L13
 		}
 		k12 = v18
-		x10++
 		p.PushKid(k12)
 		if p.Pos == x11 {
 			break
@@ -40893,14 +36454,7 @@ L21:
 L22:
 	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeParameterList"
-	v = func() any {
-		return func() any {
-			b := len(c.P.KidStack)
-			c.PushList(func() any { return k4 }())
-			c.PushItems(func() any { return k7 }())
-			return c.EndList(b)
-		}()
-	}()
+	v = func() any { b := len(c.P.KidStack); c.PushList(k4); c.PushItems(k7); return c.EndList(b) }()
 	v = c.Finish(v)
 	p.Depth--
 	return v, true
@@ -40940,17 +36494,15 @@ fail:
 
 func s480(p *rt.TParser) (any, bool) {
 	var v any
-	var x1, x2, x4, x7, size, x10, x17, x18, x20 int
+	var x2, x4, x7, size, x10, x18, x20 int
 	var ch, x11 rune
 	var ok, x12 bool
 	p.Enter()
-	_, _ = x1, x17
-	x1 = 0
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
 		p.Silent++
-		if !p.ClassFast(&cls1382) && !p.ClassSkip(&cls1382, 274) {
+		if !p.ClassFast(&cls932) && !p.ClassSkip(&cls932, 274) {
 			goto L5
 		}
 		p.Silent--
@@ -40961,7 +36513,6 @@ func s480(p *rt.TParser) (any, bool) {
 		p.Pos = x4
 		goto L3
 	L6:
-
 		x7 = p.Pos
 		x10 = 0
 		for {
@@ -41010,7 +36561,6 @@ func s480(p *rt.TParser) (any, bool) {
 		} else if _, ok = p.Parser.MatchLiteral(lit125, "/*", 71, false); !ok {
 			goto L16
 		}
-		x17 = 0
 		for {
 			x18 = p.Pos
 			x20 = p.Pos
@@ -41032,7 +36582,6 @@ func s480(p *rt.TParser) (any, bool) {
 				goto L19
 			}
 			p.Pos += size
-			x17++
 			if p.Pos == x18 {
 				break
 			}
@@ -41052,7 +36601,6 @@ func s480(p *rt.TParser) (any, bool) {
 	L15:
 		goto L3
 	L8:
-		x1++
 		if p.Pos == x2 {
 			break
 		}
@@ -41075,14 +36623,12 @@ func u481(p *rt.TParser) (any, bool) {
 }
 
 func v481(p *rt.TParser) (any, bool) {
-	var start, x1, x2, x4, x10, x12, size, x16, x18, x21, x24, x27, x35, x38, x50 int
+	var start, x2, x4, x10, x12, size, x16, x18, x21, x24, x27, x35, x38, x50 int
 	var v any
 	var ok, x7, x30, x41 bool
 	var x6, ch, x29, x40 rune
 	start = p.Pos
 	p.Enter()
-	_ = x1
-	x1 = 0
 	for {
 		x2 = p.Pos
 		if _, ok = u517(p); !ok {
@@ -41091,7 +36637,6 @@ func v481(p *rt.TParser) (any, bool) {
 		if _, ok = s480(p); !ok {
 			goto L3
 		}
-		x1++
 		if p.Pos == x2 {
 			break
 		}
@@ -41187,8 +36732,11 @@ L25:
 L22:
 	p.Pos = x21
 L23:
-
-	ch, size, ok = p.NextOrdinary()
+	if p.Pos < len(p.In) {
+		ch, size, ok = p.In[p.Pos], 1, true
+	} else {
+		ch, size, ok = p.PeekOrdinary()
+	}
 	if !ok || !(ch == 61 || ch == 42 || ch == 123) {
 		p.ExpectOrdinary(p.Pos, 11)
 		goto L20
@@ -41225,7 +36773,6 @@ L34:
 L33:
 	goto L26
 L28:
-
 	x35 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -41246,7 +36793,6 @@ L19:
 L15:
 	p.Pos = x4
 L14:
-
 	x38 = p.Pos
 	x40, _, x41 = p.NextOrdinary()
 	if !(x41 && (x40 == 101)) && p.Depth <= p.MaxDepth {
@@ -41297,7 +36843,6 @@ L49:
 L48:
 	goto L37
 L39:
-
 	x50 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -41363,7 +36908,6 @@ L6:
 L9:
 	p.Pos = x1
 L8:
-
 	if _, ok = s537(p); !ok {
 		goto L10
 	}
@@ -41405,10 +36949,9 @@ func v483(p *rt.TParser) (any, bool) {
 	p.Pos += x3
 	goto L2
 L6:
-
 	x9 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls840) && !p.ClassSkip(&cls840, 34) {
+	if !p.ClassFast(&cls838) && !p.ClassSkip(&cls838, 34) {
 		goto L10
 	}
 	p.Silent--
@@ -41419,7 +36962,6 @@ L10:
 	p.Pos = x9
 	goto L8
 L11:
-
 	x12 = p.Pos
 	if _, ok = s541(p); !ok {
 		goto L14
@@ -41435,7 +36977,6 @@ L15:
 	p.Pos = x12
 	goto L8
 L13:
-
 	x16 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -41466,7 +37007,7 @@ func s484(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.SkipTerminal(term1399) {
+	if !p.SkipTerminal(term949) {
 		goto fail
 	}
 	v = nil
@@ -41570,7 +37111,6 @@ L19:
 L18:
 	goto L3
 L5:
-
 	x20 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -41653,7 +37193,6 @@ L33:
 L29:
 	p.Pos = x1
 L28:
-
 	x35 = p.Pos
 	x37, _, x38 = p.NextOrdinary()
 	if !(x38 && (x37 == 105)) && p.Depth <= p.MaxDepth {
@@ -41693,7 +37232,6 @@ L44:
 L43:
 	goto L34
 L36:
-
 	x45 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -41740,7 +37278,6 @@ L55:
 L54:
 	goto L47
 L49:
-
 	x56 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -41816,7 +37353,6 @@ L71:
 L67:
 	p.Pos = x1
 L66:
-
 	x73 = p.Pos
 	x75, _, x76 = p.NextOrdinary()
 	if !(x76 && (x75 == 97)) && p.Depth <= p.MaxDepth {
@@ -41909,7 +37445,6 @@ L92:
 L91:
 	goto L72
 L74:
-
 	x93 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -41977,7 +37512,6 @@ L100:
 L106:
 	p.Pos = x101
 L105:
-
 	x108 = p.Pos
 	p.Silent++
 	if _, ok = u493(p); !ok {
@@ -42075,7 +37609,6 @@ L123:
 	p.Pos += x120
 	goto L119
 L127:
-
 	if _, ok = u497(p); !ok {
 		goto L129
 	}
@@ -42133,7 +37666,6 @@ L138:
 L135:
 	p.Pos = x134
 L136:
-
 	x139 = p.Pos
 	x142, x141, x143 = p.NextOrdinary()
 	if !(x143 && (x142 == 61 || x142 == 42 || x142 == 123 || x142 == 64)) && p.Depth <= p.MaxDepth {
@@ -42143,7 +37675,6 @@ L136:
 	p.Pos += x141
 	goto L140
 L144:
-
 	x147 = p.Pos
 	x149, _, x150 = p.NextOrdinary()
 	if !(x150 && (x149 == 100)) && p.Depth <= p.MaxDepth {
@@ -42172,7 +37703,6 @@ L154:
 L153:
 	goto L146
 L148:
-
 	x155 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -42652,7 +38182,6 @@ L6:
 L9:
 	p.Pos = x1
 L8:
-
 	if !p.AtEndBatchOrdinary() {
 		p.ExpectOrdinary(p.Pos, rt.IdEndInput)
 		goto L10
@@ -42733,10 +38262,9 @@ func u492(p *rt.TParser) (any, bool) {
 func v492(p *rt.TParser) (any, bool) {
 	var v any
 	var ch, x9 rune
-	var size, x1, x2, x4, x7 int
+	var size, x2, x4, x7 int
 	var ok, x10 bool
 	p.Enter()
-	_ = x1
 	for {
 		ch, size, ok = p.NextOrdinary()
 		if !ok || (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 36 || ch == 95)) {
@@ -42745,7 +38273,6 @@ func v492(p *rt.TParser) (any, bool) {
 		}
 		p.Pos += size
 	}
-	x1 = 0
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
@@ -42764,7 +38291,6 @@ func v492(p *rt.TParser) (any, bool) {
 		p.Pos = x4
 		goto L3
 	L6:
-
 		x7 = p.Pos
 		x9, _, x10 = p.NextOrdinary()
 		if !(x10 && (x9 == 92)) && p.Depth <= p.MaxDepth {
@@ -42783,7 +38309,6 @@ func v492(p *rt.TParser) (any, bool) {
 	L12:
 		p.Pos = x7
 	L11:
-
 		if _, ok = s537(p); !ok {
 			goto L13
 		}
@@ -42792,7 +38317,6 @@ func v492(p *rt.TParser) (any, bool) {
 		p.Pos = x7
 		goto L3
 	L8:
-
 		for {
 			ch, size, ok = p.NextOrdinary()
 			if !ok || (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 36 || ch == 95)) {
@@ -42801,7 +38325,6 @@ func v492(p *rt.TParser) (any, bool) {
 			}
 			p.Pos += size
 		}
-		x1++
 		if p.Pos == x2 {
 			break
 		}
@@ -42829,7 +38352,7 @@ func v493(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	if !p.SkipTerminal(term1404) {
+	if !p.SkipTerminal(term954) {
 		goto fail
 	}
 	x1 = p.Pos
@@ -42854,17 +38377,15 @@ fail:
 
 func s494(p *rt.TParser) (any, bool) {
 	var v any
-	var x1, x2, x4, x7, size, x10, x17, x18, x20 int
+	var x2, x4, x7, size, x10, x18, x20 int
 	var ch, x11 rune
 	var ok, x12 bool
 	p.Enter()
-	_, _ = x1, x17
-	x1 = 0
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
 		p.Silent++
-		if !p.ClassFast(&cls1384) && !p.ClassSkip(&cls1384, 278) {
+		if !p.ClassFast(&cls934) && !p.ClassSkip(&cls934, 278) {
 			goto L5
 		}
 		p.Silent--
@@ -42875,7 +38396,6 @@ func s494(p *rt.TParser) (any, bool) {
 		p.Pos = x4
 		goto L3
 	L6:
-
 		x7 = p.Pos
 		x10 = 0
 		for {
@@ -42924,7 +38444,6 @@ func s494(p *rt.TParser) (any, bool) {
 		} else if _, ok = p.Parser.MatchLiteral(lit125, "/*", 71, false); !ok {
 			goto L16
 		}
-		x17 = 0
 		for {
 			x18 = p.Pos
 			x20 = p.Pos
@@ -42946,7 +38465,6 @@ func s494(p *rt.TParser) (any, bool) {
 				goto L19
 			}
 			p.Pos += size
-			x17++
 			if p.Pos == x18 {
 				break
 			}
@@ -42966,7 +38484,6 @@ func s494(p *rt.TParser) (any, bool) {
 	L15:
 		goto L3
 	L8:
-		x1++
 		if p.Pos == x2 {
 			break
 		}
@@ -43124,7 +38641,6 @@ L25:
 L20:
 	p.Pos = x1
 L19:
-
 	x29 = p.Pos
 	x31, _, x32 = p.NextOrdinary()
 	if !(x32 && (x31 == 97)) && p.Depth <= p.MaxDepth {
@@ -43254,7 +38770,6 @@ L54:
 L53:
 	goto L28
 L30:
-
 	x55 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -43373,7 +38888,6 @@ func v497(p *rt.TParser) (any, bool) {
 	p.Pos += x3
 	goto L2
 L6:
-
 	if _, ok = u509(p); !ok {
 		goto L8
 	}
@@ -43441,7 +38955,6 @@ func v498(p *rt.TParser) (any, bool) {
 	p.Pos += x13
 	goto L12
 L16:
-
 	x19 = p.Pos
 	x21, _, x22 = p.NextOrdinary()
 	if !(x22 && (x21 == 101)) && p.Depth <= p.MaxDepth {
@@ -43468,7 +38981,6 @@ L26:
 L25:
 	goto L18
 L20:
-
 	x27 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -43501,7 +39013,6 @@ L8:
 L6:
 	p.Pos = x1
 L5:
-
 	x30 = p.Pos
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
@@ -43543,7 +39054,6 @@ L41:
 L40:
 	goto L33
 L35:
-
 	x42 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -43706,7 +39216,6 @@ L16:
 L21:
 	p.Pos = x1
 L20:
-
 	x23 = p.Pos
 	x25, _, x26 = p.NextOrdinary()
 	if !(x26 && (x25 == 116)) && p.Depth <= p.MaxDepth {
@@ -43842,7 +39351,6 @@ L48:
 L47:
 	goto L22
 L24:
-
 	x49 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -43888,7 +39396,6 @@ L54:
 L52:
 	p.Pos = x1
 L51:
-
 	x56 = p.Pos
 	p.Silent++
 	if _, ok = u500(p); !ok {
@@ -43954,7 +39461,6 @@ L5:
 	p.Pos = x4
 	goto L3
 L6:
-
 	if _, ok = p.Parser.MatchLiteral(lit40, "break", 26, false); !ok {
 		goto L3
 	}
@@ -43976,7 +39482,6 @@ L9:
 	p.Pos = x8
 	goto L7
 L10:
-
 	x11 = p.Pos
 	x13, _, x14 = p.NextOrdinary()
 	if !(x14 && (x13 == 99)) && p.Depth <= p.MaxDepth {
@@ -44056,7 +39561,6 @@ L27:
 	p.Pos = x26
 	goto L25
 L28:
-
 	x29 = p.Pos
 	x31, _, x32 = p.NextOrdinary()
 	if !(x32 && (x31 == 100)) && p.Depth <= p.MaxDepth {
@@ -44125,7 +39629,6 @@ L43:
 	p.Pos = x42
 	goto L41
 L44:
-
 	x45 = p.Pos
 	x47, _, x48 = p.NextOrdinary()
 	if !(x48 && (x47 == 101)) && p.Depth <= p.MaxDepth {
@@ -44196,7 +39699,6 @@ L59:
 	p.Pos = x58
 	goto L57
 L60:
-
 	x61 = p.Pos
 	x63, _, x64 = p.NextOrdinary()
 	if !(x64 && (x63 == 102)) && p.Depth <= p.MaxDepth {
@@ -44265,7 +39767,6 @@ L75:
 	p.Pos = x74
 	goto L73
 L76:
-
 	x77 = p.Pos
 	x79, _, x80 = p.NextOrdinary()
 	if !(x80 && (x79 == 105)) && p.Depth <= p.MaxDepth {
@@ -44336,7 +39837,6 @@ L91:
 	p.Pos = x90
 	goto L89
 L92:
-
 	x93 = p.Pos
 	x95, _, x96 = p.NextOrdinary()
 	if !(x96 && (x95 == 110)) && p.Depth <= p.MaxDepth {
@@ -44385,7 +39885,6 @@ L103:
 	p.Pos = x102
 	goto L101
 L104:
-
 	if _, ok = p.Parser.MatchLiteral(lit41, "return", 27, false); !ok {
 		goto L101
 	}
@@ -44407,7 +39906,6 @@ L107:
 	p.Pos = x106
 	goto L105
 L108:
-
 	x109 = p.Pos
 	x111, _, x112 = p.NextOrdinary()
 	if !(x112 && (x111 == 115)) && p.Depth <= p.MaxDepth {
@@ -44452,7 +39950,6 @@ L119:
 	p.Pos = x118
 	goto L117
 L120:
-
 	x121 = p.Pos
 	x123, _, x124 = p.NextOrdinary()
 	if !(x124 && (x123 == 116)) && p.Depth <= p.MaxDepth {
@@ -44536,7 +40033,6 @@ L137:
 	p.Pos = x136
 	goto L135
 L138:
-
 	x139 = p.Pos
 	x141, _, x142 = p.NextOrdinary()
 	if !(x142 && (x141 == 118)) && p.Depth <= p.MaxDepth {
@@ -44585,7 +40081,6 @@ L149:
 	p.Pos = x148
 	goto L147
 L150:
-
 	x151 = p.Pos
 	x153, _, x154 = p.NextOrdinary()
 	if !(x154 && (x153 == 119)) && p.Depth <= p.MaxDepth {
@@ -44619,7 +40114,6 @@ L147:
 	p.Pos = x1
 	goto fail
 L2:
-
 	x159 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -44641,13 +40135,12 @@ fail:
 }
 
 func s501(p *rt.TParser) (any, bool) {
-	var start, x1, x8, x9, x11, x13, x21, x29, x32, x36, x37 int
+	var start, x1, x9, x11, x13, x21, x29, x32, x37 int
 	var v any
 	var x3, x15, x23 rune
 	var x4, ok, x16, x24 bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x8, x36
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 64)) && p.Depth <= p.MaxDepth {
@@ -44663,8 +40156,6 @@ func s501(p *rt.TParser) (any, bool) {
 L6:
 	p.Pos = x1
 L5:
-
-	x8 = 0
 	for {
 		x9 = p.Pos
 		if _, ok = u546(p); !ok {
@@ -44673,7 +40164,6 @@ L5:
 		if _, ok = s480(p); !ok {
 			goto L10
 		}
-		x8++
 		if p.Pos == x9 {
 			break
 		}
@@ -44697,7 +40187,6 @@ L14:
 	p.Pos += x13
 	goto L12
 L17:
-
 	if _, ok = u548(p); !ok {
 		goto L19
 	}
@@ -44742,7 +40231,6 @@ L28:
 L27:
 	goto L20
 L22:
-
 	x29 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -44791,7 +40279,6 @@ L7:
 	if _, ok = u546(p); !ok {
 		goto L35
 	}
-	x36 = 0
 	for {
 		x37 = p.Pos
 		if _, ok = s480(p); !ok {
@@ -44800,7 +40287,6 @@ L7:
 		if _, ok = u546(p); !ok {
 			goto L38
 		}
-		x36++
 		if p.Pos == x37 {
 			break
 		}
@@ -44871,7 +40357,6 @@ L8:
 L7:
 	goto fail
 L2:
-
 	x9 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -44938,7 +40423,6 @@ func v503(p *rt.TParser) (any, bool) {
 L6:
 	p.Pos = x1
 L5:
-
 	if _, ok = u550(p); !ok {
 		goto L7
 	}
@@ -44995,7 +40479,6 @@ L8:
 L6:
 	p.Pos = x1
 L5:
-
 	x10 = p.Pos
 	x12, _, x13 = p.NextOrdinary()
 	if !(x13 && (x12 == 34)) && p.Depth <= p.MaxDepth {
@@ -45022,7 +40505,6 @@ L17:
 L16:
 	goto L9
 L11:
-
 	x18 = p.Pos
 	p.Silent++
 	if _, ok = s480(p); !ok {
@@ -45106,7 +40588,6 @@ L5:
 L8:
 	p.Pos = x1
 L7:
-
 	if _, ok = u517(p); !ok {
 		goto L9
 	}
@@ -45290,7 +40771,6 @@ func s508(p *rt.TParser) (any, bool) {
 	p.Pos += x3
 	goto L2
 L6:
-
 	if _, ok = u509(p); !ok {
 		goto L8
 	}
@@ -45299,7 +40779,6 @@ L8:
 	p.Pos = x1
 	goto fail
 L2:
-
 	if _, ok = u492(p); !ok {
 		goto fail
 	}
@@ -45345,7 +40824,6 @@ func v509(p *rt.TParser) (any, bool) {
 L6:
 	p.Pos = x1
 L5:
-
 	if _, ok = s552(p); !ok {
 		goto L7
 	}
@@ -45430,7 +40908,6 @@ L12:
 L10:
 	p.Pos = x1
 L9:
-
 	x14 = p.Pos
 	p.Silent++
 	x16 = p.Pos
@@ -45461,7 +40938,6 @@ L23:
 L22:
 	goto L15
 L17:
-
 	x24 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -45549,7 +41025,6 @@ L13:
 L12:
 	goto L3
 L5:
-
 	x14 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -45704,7 +41179,6 @@ L6:
 L9:
 	p.Pos = x1
 L8:
-
 	if _, ok = u550(p); !ok {
 		goto L10
 	}
@@ -45870,13 +41344,7 @@ func s515(p *rt.TParser) (any, bool) {
 L8:
 	p.Silent--
 	p.Pos = x7
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(2) }())
-			}(), func() any { return any(1) }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("==", c.Binary("%", c.Lookup("ctx"), any(2)), any(1)) }) {
 		goto L6
 	}
 	goto L2
@@ -45902,13 +41370,7 @@ L12:
 	p.Silent--
 	p.Pos = x11
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any {
-					return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(2) }())
-				}(), func() any { return any(2) }())
-			}(), func() any { return any(1) }())
-		}()
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(2)), any(2)), any(1))
 	}) {
 		goto L10
 	}
@@ -45916,7 +41378,6 @@ L12:
 L10:
 	p.Pos = x1
 L9:
-
 	x14 = p.Pos
 	p.Silent++
 	x16 = p.Pos
@@ -45990,13 +41451,12 @@ L26:
 L25:
 	goto L13
 L21:
-
 	if _, ok = s480(p); !ok {
 		goto L13
 	}
 	x29 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1113) && !p.ClassSkip(&cls1113, 142) {
+	if !p.ClassFast(&cls883) && !p.ClassSkip(&cls883, 142) {
 		goto L30
 	}
 	p.Silent--
@@ -46056,7 +41516,6 @@ L5:
 L2:
 	p.Pos = x1
 L3:
-
 	if _, ok = u421(p); !ok {
 		goto fail
 	}
@@ -46310,7 +41769,6 @@ L34:
 L33:
 	goto fail
 L2:
-
 	x35 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -46348,7 +41806,7 @@ func v518(p *rt.TParser) (any, bool) {
 	p.Enter()
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1122) && !p.ClassSkip(&cls1122, 173) {
+	if !p.ClassFast(&cls884) && !p.ClassSkip(&cls884, 173) {
 		goto L2
 	}
 	p.Silent--
@@ -46359,7 +41817,6 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
 	x4 = p.Pos
 	x7, x6, x8 = p.NextOrdinary()
 	if !(x8 && (x7 == 43)) && p.Depth <= p.MaxDepth {
@@ -46421,7 +41878,6 @@ L13:
 	p.Pos += x6
 	goto L5
 L17:
-
 	x20 = p.Pos
 	x22, _, x23 = p.NextOrdinary()
 	if !(x23 && (x22 == 100)) && p.Depth <= p.MaxDepth {
@@ -46472,7 +41928,6 @@ L31:
 L30:
 	goto L19
 L21:
-
 	x32 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -46487,11 +41942,7 @@ L33:
 	goto L5
 L19:
 	p.Pos = x4
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("<", func() any { return c.Lookup("ctx") }(), func() any { return any(64) }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary("<", c.Lookup("ctx"), any(64)) }) {
 		goto L34
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 60 {
@@ -46840,7 +42291,6 @@ L5:
 L8:
 	p.Pos = x1
 L7:
-
 	if _, ok = u181(p); !ok {
 		goto L9
 	}
@@ -46876,7 +42326,6 @@ L18:
 L16:
 	p.Pos = x10
 L15:
-
 	if _, ok = u554(p); !ok {
 		goto L19
 	}
@@ -46885,7 +42334,6 @@ L19:
 	p.Pos = x10
 	goto L9
 L11:
-
 	if _, ok = s480(p); !ok {
 		goto L9
 	}
@@ -47021,7 +42469,7 @@ func v524(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
-	if !p.SkipTerminal(term1405) {
+	if !p.SkipTerminal(term955) {
 		goto L4
 	}
 	x5 = p.Pos
@@ -47145,7 +42593,6 @@ L15:
 	p.Pos += x30
 	goto L29
 L33:
-
 	if _, ok = u517(p); !ok {
 		goto L35
 	}
@@ -47170,7 +42617,6 @@ L29:
 L27:
 	p.Pos = x1
 L26:
-
 	x39 = p.Pos
 	p.Silent++
 	if _, ok = u500(p); !ok {
@@ -47297,7 +42743,6 @@ L9:
 L7:
 	p.Pos = x1
 L6:
-
 	x11 = p.Pos
 	if _, ok = p.Parser.MatchLiteral(lit64, "readonly", 53, false); !ok {
 		goto L12
@@ -47320,7 +42765,6 @@ L15:
 L12:
 	p.Pos = x11
 L13:
-
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit147, "[", 79, false); !ok {
@@ -47374,13 +42818,12 @@ func u527(p *rt.TParser) (any, bool) {
 }
 
 func v527(p *rt.TParser) (any, bool) {
-	var start, x1, x3, x9, x17, x20, x21, x24, x25, x28, x29 int
+	var start, x1, x3, x9, x17, x21, x25, x29 int
 	var v any
 	var x4, x11 rune
 	var x5, x12, ok bool
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x20, x24, x28
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
 	if !(x5 && (x4 == 40 || x4 == 60)) && p.Depth <= p.MaxDepth {
@@ -47390,7 +42833,6 @@ func v527(p *rt.TParser) (any, bool) {
 	p.Pos += x3
 	goto L2
 L6:
-
 	x9 = p.Pos
 	x11, _, x12 = p.NextOrdinary()
 	if !(x12 && (x11 == 103)) && p.Depth <= p.MaxDepth {
@@ -47421,7 +42863,6 @@ L16:
 L15:
 	goto L8
 L10:
-
 	x17 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -47436,7 +42877,6 @@ L18:
 	goto L2
 L8:
 	p.Pos = x1
-	x20 = 0
 	for {
 		x21 = p.Pos
 		if _, ok = u517(p); !ok {
@@ -47445,7 +42885,6 @@ L8:
 		if _, ok = s480(p); !ok {
 			goto L22
 		}
-		x20++
 		if p.Pos == x21 {
 			break
 		}
@@ -47462,7 +42901,6 @@ L8:
 	goto L2
 L19:
 	p.Pos = x1
-	x24 = 0
 	for {
 		x25 = p.Pos
 		if _, ok = u517(p); !ok {
@@ -47471,7 +42909,6 @@ L19:
 		if _, ok = s480(p); !ok {
 			goto L26
 		}
-		x24++
 		if p.Pos == x25 {
 			break
 		}
@@ -47492,7 +42929,6 @@ L23:
 	if _, ok = u517(p); !ok {
 		goto L27
 	}
-	x28 = 0
 	for {
 		x29 = p.Pos
 		if _, ok = s480(p); !ok {
@@ -47501,7 +42937,6 @@ L23:
 		if _, ok = u517(p); !ok {
 			goto L30
 		}
-		x28++
 		if p.Pos == x29 {
 			break
 		}
@@ -47532,7 +42967,7 @@ func s528(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.ClassesSkip(steps1408) {
+	if !p.ClassesSkip(steps958) {
 		goto fail
 	}
 	v = nil
@@ -47553,13 +42988,12 @@ func u529(p *rt.TParser) (any, bool) {
 }
 
 func v529(p *rt.TParser) (any, bool) {
-	var start, size, x1, x2, x4 int
+	var start, size, x2, x4 int
 	var v any
 	var ok bool
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_ = x1
 	if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit648, "0", 239, false); !ok {
@@ -47574,7 +43008,6 @@ func v529(p *rt.TParser) (any, bool) {
 	if _, ok = s556(p); !ok {
 		goto fail
 	}
-	x1 = 0
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
@@ -47587,11 +43020,9 @@ func v529(p *rt.TParser) (any, bool) {
 	L5:
 		p.Pos = x4
 	L6:
-
 		if _, ok = s556(p); !ok {
 			goto L3
 		}
-		x1++
 		if p.Pos == x2 {
 			break
 		}
@@ -47610,22 +43041,20 @@ fail:
 }
 
 func s530(p *rt.TParser) (any, bool) {
-	var start, x1, x2, x4, size int
+	var start, x2, x4, size int
 	var v any
 	var ok bool
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_ = x1
 	if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit648, "0", 239, false); !ok {
 		goto fail
 	}
-	if !p.ClassesSkip(steps1411) {
+	if !p.ClassesSkip(steps961) {
 		goto fail
 	}
-	x1 = 0
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
@@ -47638,14 +43067,16 @@ func s530(p *rt.TParser) (any, bool) {
 	L5:
 		p.Pos = x4
 	L6:
-
-		ch, size, ok = p.NextOrdinary()
+		if p.Pos < len(p.In) {
+			ch, size, ok = p.In[p.Pos], 1, true
+		} else {
+			ch, size, ok = p.PeekOrdinary()
+		}
 		if !ok || !(ch == 48 || ch == 49) {
 			p.ExpectOrdinary(p.Pos, 258)
 			goto L3
 		}
 		p.Pos += size
-		x1++
 		if p.Pos == x2 {
 			break
 		}
@@ -47664,22 +43095,20 @@ fail:
 }
 
 func s531(p *rt.TParser) (any, bool) {
-	var start, x1, x2, x4, size int
+	var start, x2, x4, size int
 	var v any
 	var ok bool
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_ = x1
 	if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit648, "0", 239, false); !ok {
 		goto fail
 	}
-	if !p.ClassesSkip(steps1414) {
+	if !p.ClassesSkip(steps964) {
 		goto fail
 	}
-	x1 = 0
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
@@ -47692,14 +43121,16 @@ func s531(p *rt.TParser) (any, bool) {
 	L5:
 		p.Pos = x4
 	L6:
-
-		ch, size, ok = p.NextOrdinary()
+		if p.Pos < len(p.In) {
+			ch, size, ok = p.In[p.Pos], 1, true
+		} else {
+			ch, size, ok = p.PeekOrdinary()
+		}
 		if !ok || !(ch >= 48 && ch <= 55) {
 			p.ExpectOrdinary(p.Pos, 260)
 			goto L3
 		}
 		p.Pos += size
-		x1++
 		if p.Pos == x2 {
 			break
 		}
@@ -47746,7 +43177,6 @@ L9:
 L5:
 	p.Pos = x4
 L6:
-
 	x10 = p.Pos
 	if _, ok = u558(p); !ok {
 		goto L11
@@ -47795,13 +43225,12 @@ fail:
 }
 
 func s533(p *rt.TParser) (any, bool) {
-	var start, x1, x3, x8, size, x12, x13, x15 int
+	var start, x1, x3, x8, size, x13, x15 int
 	var v any
 	var x4, ch rune
 	var x5, ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x12
 	x1 = p.Pos
 	x4, x3, x5 = p.NextOrdinary()
 	if !(x5 && (x4 == 48)) && p.Depth <= p.MaxDepth {
@@ -47836,7 +43265,6 @@ L6:
 		goto L10
 	}
 	p.Pos += x3
-	x12 = 0
 	for {
 		x13 = p.Pos
 		x15 = p.Pos
@@ -47849,14 +43277,16 @@ L6:
 	L16:
 		p.Pos = x15
 	L17:
-
-		ch, size, ok = p.NextOrdinary()
+		if p.Pos < len(p.In) {
+			ch, size, ok = p.In[p.Pos], 1, true
+		} else {
+			ch, size, ok = p.PeekOrdinary()
+		}
 		if !ok || !(ch >= 48 && ch <= 57) {
 			p.ExpectOrdinary(p.Pos, 88)
 			goto L14
 		}
 		p.Pos += size
-		x12++
 		if p.Pos == x13 {
 			break
 		}
@@ -48010,12 +43440,10 @@ func u535(p *rt.TParser) (any, bool) {
 
 func v535(p *rt.TParser) (any, bool) {
 	var v any
-	var x1, x2, x4, size, x7, x12 int
+	var x2, x4, size, x7, x12 int
 	var ch, x8 rune
 	var ok, x9 bool
 	p.Enter()
-	_ = x1
-	x1 = 0
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
@@ -48075,7 +43503,6 @@ func v535(p *rt.TParser) (any, bool) {
 	L14:
 		goto L3
 	L5:
-		x1++
 		if p.Pos == x2 {
 			break
 		}
@@ -48091,12 +43518,10 @@ func v535(p *rt.TParser) (any, bool) {
 
 func s536(p *rt.TParser) (any, bool) {
 	var v any
-	var x1, x2, x4, size, x7, x12 int
+	var x2, x4, size, x7, x12 int
 	var ch, x8 rune
 	var ok, x9 bool
 	p.Enter()
-	_ = x1
-	x1 = 0
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
@@ -48164,7 +43589,6 @@ func s536(p *rt.TParser) (any, bool) {
 	L14:
 		goto L3
 	L5:
-		x1++
 		if p.Pos == x2 {
 			break
 		}
@@ -48201,8 +43625,7 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	if !p.ClassFast(&cls1391) && !p.ClassSkip(&cls1391, 282) {
+	if !p.ClassFast(&cls941) && !p.ClassSkip(&cls941, 282) {
 		goto fail
 	}
 	v = nil
@@ -48238,7 +43661,6 @@ func v538(p *rt.TParser) (any, bool) {
 	p.Pos += x3
 	goto L2
 L6:
-
 	if _, ok = u550(p); !ok {
 		goto L8
 	}
@@ -48300,7 +43722,6 @@ L11:
 L10:
 	goto L3
 L5:
-
 	x12 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -48341,13 +43762,12 @@ func u540(p *rt.TParser) (any, bool) {
 }
 
 func v540(p *rt.TParser) (any, bool) {
-	var start, x1, x7, size, x15, x17, x23, x24, x26 int
+	var start, x1, x7, size, x15, x17, x24, x26 int
 	var v any
 	var x3, x10, ch, x29 rune
 	var x4, ok, x11, x30 bool
 	start = p.Pos
 	p.Enter()
-	_ = x23
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 48)) && p.Depth <= p.MaxDepth {
@@ -48392,7 +43812,6 @@ L8:
 L6:
 	p.Pos = x1
 L5:
-
 	x15 = p.Pos
 	p.Silent++
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 48 {
@@ -48463,7 +43882,6 @@ L19:
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "{", 20, false); !ok {
 		goto L22
 	}
-	x23 = 0
 	for {
 		x24 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
@@ -48471,7 +43889,6 @@ L19:
 		} else if _, ok = p.Parser.MatchLiteral(lit648, "0", 239, false); !ok {
 			goto L25
 		}
-		x23++
 		if p.Pos == x24 {
 			break
 		}
@@ -48517,7 +43934,6 @@ L28:
 L32:
 	p.Pos = x26
 L31:
-
 	if _, ok = u561(p); !ok {
 		goto L33
 	}
@@ -48546,7 +43962,7 @@ func s541(p *rt.TParser) (any, bool) {
 	var v any
 	start = p.Pos
 	p.Enter()
-	if !p.SkipTerminal(term1415) {
+	if !p.SkipTerminal(term965) {
 		goto fail
 	}
 	v = nil
@@ -48582,7 +43998,6 @@ func v542(p *rt.TParser) (any, bool) {
 	p.Pos += x3
 	goto L2
 L6:
-
 	if _, ok = u509(p); !ok {
 		goto L8
 	}
@@ -48591,7 +44006,6 @@ L8:
 	p.Pos = x1
 	goto fail
 L2:
-
 	if _, ok = u492(p); !ok {
 		goto fail
 	}
@@ -48675,7 +44089,6 @@ L6:
 L9:
 	p.Pos = x1
 L8:
-
 	x11 = p.Pos
 	x13, _, x14 = p.NextOrdinary()
 	if !(x14 && (x13 == 116)) && p.Depth <= p.MaxDepth {
@@ -48776,7 +44189,6 @@ L30:
 L29:
 	goto L10
 L12:
-
 	x31 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -48822,7 +44234,6 @@ L36:
 L34:
 	p.Pos = x1
 L33:
-
 	x38 = p.Pos
 	p.Silent++
 	if _, ok = u500(p); !ok {
@@ -48918,7 +44329,6 @@ L10:
 L13:
 	p.Pos = x1
 L12:
-
 	if _, ok = s565(p); !ok {
 		goto L14
 	}
@@ -48960,7 +44370,6 @@ L18:
 L20:
 	p.Pos = x1
 L19:
-
 	x22 = p.Pos
 	x24, _, x25 = p.NextOrdinary()
 	if !(x25 && (x24 == 97)) && p.Depth <= p.MaxDepth {
@@ -48989,7 +44398,6 @@ L29:
 L28:
 	goto L21
 L23:
-
 	x30 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -49126,7 +44534,6 @@ L20:
 L19:
 	goto fail
 L2:
-
 	x21 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -49235,7 +44642,6 @@ L18:
 L17:
 	goto fail
 L2:
-
 	x19 = p.Pos
 	p.Silent++
 	if _, ok = u482(p); !ok {
@@ -49290,7 +44696,6 @@ L3:
 L7:
 	p.Pos = x1
 L6:
-
 	if _, ok = u572(p); !ok {
 		goto L8
 	}
@@ -49338,7 +44743,7 @@ func v549(p *rt.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto L3
 	}
-	if !p.ClassFast(&cls935) && !p.ClassSkip(&cls935, 100) {
+	if !p.ClassFast(&cls846) && !p.ClassSkip(&cls846, 100) {
 		goto L3
 	}
 	goto L2
@@ -49435,13 +44840,12 @@ fail:
 }
 
 func s551(p *rt.TParser) (any, bool) {
-	var start, x1, x8, x10, size, x16, x17, x19 int
+	var start, x1, x8, x10, size, x17, x19 int
 	var v any
 	var x3, ch rune
 	var x4, ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x16
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 48)) && p.Depth <= p.MaxDepth {
@@ -49460,7 +44864,6 @@ func s551(p *rt.TParser) (any, bool) {
 L6:
 	p.Pos = x1
 L5:
-
 	x8 = p.Pos
 	p.Silent++
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 48 {
@@ -49531,7 +44934,6 @@ L12:
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "{", 20, false); !ok {
 		goto L15
 	}
-	x16 = 0
 	for {
 		x17 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
@@ -49539,7 +44941,6 @@ L12:
 		} else if _, ok = p.Parser.MatchLiteral(lit648, "0", 239, false); !ok {
 			goto L18
 		}
-		x16++
 		if p.Pos == x17 {
 			break
 		}
@@ -49606,8 +45007,7 @@ L2:
 	p.Pos = x1
 	goto fail
 L3:
-
-	if !p.ClassFast(&cls1390) && !p.ClassSkip(&cls1390, 281) {
+	if !p.ClassFast(&cls940) && !p.ClassSkip(&cls940, 281) {
 		goto fail
 	}
 	v = nil
@@ -49649,7 +45049,6 @@ func v553(p *rt.TParser) (any, bool) {
 L6:
 	p.Pos = x1
 L5:
-
 	x8 = p.Pos
 	p.Silent++
 	x10 = p.Pos
@@ -49794,7 +45193,6 @@ L3:
 	p.Pos += x7
 	goto L6
 L10:
-
 	if !p.AtEndBatchOrdinary() {
 		p.ExpectOrdinary(p.Pos, rt.IdEndInput)
 		goto L12
@@ -49841,20 +45239,18 @@ fail:
 }
 
 func s557(p *rt.TParser) (any, bool) {
-	var start, size, x1, x2, x4 int
+	var start, size, x2, x4 int
 	var v any
 	var ch rune
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x1
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch >= 48 && ch <= 57) {
 		p.ExpectOrdinary(p.Pos, 88)
 		goto fail
 	}
 	p.Pos += size
-	x1 = 0
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
@@ -49867,14 +45263,16 @@ func s557(p *rt.TParser) (any, bool) {
 	L5:
 		p.Pos = x4
 	L6:
-
-		ch, size, ok = p.NextOrdinary()
+		if p.Pos < len(p.In) {
+			ch, size, ok = p.In[p.Pos], 1, true
+		} else {
+			ch, size, ok = p.PeekOrdinary()
+		}
 		if !ok || !(ch >= 48 && ch <= 57) {
 			p.ExpectOrdinary(p.Pos, 88)
 			goto L3
 		}
 		p.Pos += size
-		x1++
 		if p.Pos == x2 {
 			break
 		}
@@ -49924,7 +45322,6 @@ func v558(p *rt.TParser) (any, bool) {
 L2:
 	p.Pos = x1
 L3:
-
 	if _, ok = s557(p); !ok {
 		goto fail
 	}
@@ -50169,7 +45566,6 @@ L6:
 L11:
 	p.Pos = x10
 L12:
-
 	x13 = p.Pos
 	if _, ok = s556(p); !ok {
 		goto L14
@@ -50178,7 +45574,6 @@ L12:
 L14:
 	p.Pos = x13
 L15:
-
 	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "}", 54, false); !ok {
@@ -50507,11 +45902,7 @@ L12:
 	p.Pos = x11
 	x13 = p.Pos
 	p.Silent++
-	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary(">=", func() any { return c.Lookup("ctx") }(), func() any { return any(64) }())
-		}()
-	}) {
+	if !p.Predicate(func(c *rt.TActCtx) any { return c.Binary(">=", c.Lookup("ctx"), any(64)) }) {
 		goto L14
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 47 {
@@ -50591,15 +45982,8 @@ L24:
 L22:
 	p.Pos = x1
 L21:
-
 	if !p.Predicate(func(c *rt.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any {
-					return c.Binary("/", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
-				}(), func() any { return any(2) }())
-			}(), func() any { return any(0) }())
-		}()
+		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("ctx"), any(4)), any(2)), any(0))
 	}) {
 		goto L25
 	}
@@ -50967,7 +46351,6 @@ func v571(p *rt.TParser) (any, bool) {
 	p.Pos += x3
 	goto L2
 L6:
-
 	if _, ok = u509(p); !ok {
 		goto L8
 	}
@@ -50976,7 +46359,6 @@ L8:
 	p.Pos = x1
 	goto fail
 L2:
-
 	if _, ok = u492(p); !ok {
 		goto fail
 	}
@@ -50998,13 +46380,12 @@ func u572(p *rt.TParser) (any, bool) {
 }
 
 func v572(p *rt.TParser) (any, bool) {
-	var start, x1, x7, x8, x10, size, x13, x20, x21, x23, x26 int
+	var start, x1, x8, x10, size, x13, x21, x23, x26 int
 	var v any
 	var x3, ch, x14, x27 rune
 	var x4, ok, x15, x28 bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x7, x20
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 34)) && p.Depth <= p.MaxDepth {
@@ -51016,7 +46397,6 @@ func v572(p *rt.TParser) (any, bool) {
 	} else if _, ok = p.Parser.MatchLiteral(lit476, "\"", 192, false); !ok {
 		goto L6
 	}
-	x7 = 0
 	for {
 		x8 = p.Pos
 		x10 = p.Pos
@@ -51050,7 +46430,6 @@ func v572(p *rt.TParser) (any, bool) {
 	L16:
 		goto L9
 	L11:
-		x7++
 		if p.Pos == x8 {
 			break
 		}
@@ -51077,7 +46456,6 @@ L5:
 	} else if _, ok = p.Parser.MatchLiteral(lit477, "'", 194, false); !ok {
 		goto L19
 	}
-	x20 = 0
 	for {
 		x21 = p.Pos
 		x23 = p.Pos
@@ -51111,7 +46489,6 @@ L5:
 	L29:
 		goto L22
 	L24:
-		x20++
 		if p.Pos == x21 {
 			break
 		}
@@ -51190,7 +46567,6 @@ L7:
 L10:
 	p.Pos = x1
 L9:
-
 	if _, ok = s532(p); !ok {
 		goto L11
 	}
@@ -51199,7 +46575,6 @@ L11:
 	p.Pos = x1
 	goto fail
 L2:
-
 	x12 = p.Pos
 	p.Silent++
 	if _, ok = u497(p); !ok {
@@ -51270,7 +46645,6 @@ L7:
 L10:
 	p.Pos = x1
 L9:
-
 	if _, ok = s533(p); !ok {
 		goto L11
 	}
@@ -51279,7 +46653,6 @@ L11:
 	p.Pos = x1
 	goto fail
 L2:
-
 	if p.Pos < len(p.In) && p.In[p.Pos] == 110 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit635, "n", 229, false); !ok {
@@ -51306,20 +46679,19 @@ fail:
 }
 
 func s575(p *rt.TParser) (any, bool) {
-	var start, x1, x4, x5, size, x7, x10, x13, x16, x20, x21, x24, x25 int
+	var start, x1, x5, size, x7, x10, x13, x16, x21, x24, x25 int
 	var v any
 	var ok bool
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x4, x20, x24
+	_ = x24
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "{", 20, false); !ok {
 		goto fail
 	}
 	x1 = p.Pos
-	x4 = 0
 	for {
 		x5 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
@@ -51327,7 +46699,6 @@ func s575(p *rt.TParser) (any, bool) {
 		} else if _, ok = p.Parser.MatchLiteral(lit648, "0", 239, false); !ok {
 			goto L6
 		}
-		x4++
 		if p.Pos == x5 {
 			break
 		}
@@ -51350,7 +46721,6 @@ func s575(p *rt.TParser) (any, bool) {
 L8:
 	p.Pos = x7
 L9:
-
 	x10 = p.Pos
 	if _, ok = s556(p); !ok {
 		goto L11
@@ -51359,7 +46729,6 @@ L9:
 L11:
 	p.Pos = x10
 L12:
-
 	x13 = p.Pos
 	if _, ok = s556(p); !ok {
 		goto L14
@@ -51368,7 +46737,6 @@ L12:
 L14:
 	p.Pos = x13
 L15:
-
 	x16 = p.Pos
 	if _, ok = s556(p); !ok {
 		goto L17
@@ -51377,7 +46745,6 @@ L15:
 L17:
 	p.Pos = x16
 L18:
-
 	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "}", 54, false); !ok {
@@ -51386,7 +46753,6 @@ L18:
 	goto L2
 L3:
 	p.Pos = x1
-	x20 = 0
 	for {
 		x21 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
@@ -51394,7 +46760,6 @@ L3:
 		} else if _, ok = p.Parser.MatchLiteral(lit648, "0", 239, false); !ok {
 			goto L22
 		}
-		x20++
 		if p.Pos == x21 {
 			break
 		}

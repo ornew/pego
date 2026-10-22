@@ -215,7 +215,7 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
 		}
 	}
-	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, lean: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap}
+	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap}
 	if opts.Stream {
 		gen.streamStart = start
 	}
@@ -410,6 +410,9 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	if err != nil {
 		return nil, fmt.Errorf("generated code does not compile: %w", err)
 	}
+	if src, err = dropUnread(src); err != nil {
+		return nil, fmt.Errorf("removing unread variables: %w", err)
+	}
 	if !opts.keepComments {
 		if src, err = trimComments(src); err != nil {
 			return nil, fmt.Errorf("generated code does not compile: %w", err)
@@ -505,7 +508,10 @@ type generator struct {
 	observability bool
 	// goWorkControls emits work-control charging; Go output always has it, TypeScript output has
 	// its own runtime work controls.
-	goWorkControls      bool
+	goWorkControls bool
+	// noWork leaves the step charges out of Go output generated without work controls, where
+	// no control exists to charge: the statements, and the closures that only held one.
+	noWork              bool
 	directTypedDocument bool
 	document            bool
 	workClassNames      map[string]string
@@ -1154,7 +1160,7 @@ func (g *generator) operand(t grammar.Term, s *scope, locals map[string]string) 
 	if fieldRead(t) {
 		m := t.(*grammar.Member)
 		raw := fmt.Sprintf("c.FieldOperand(%s, %q)", g.term(m.X, s, locals), m.Name)
-		if !g.goWorkControls {
+		if !g.goWorkControls || g.noWork {
 			return raw
 		}
 		// The step that term charges for the member read.
@@ -1162,6 +1168,15 @@ func (g *generator) operand(t grammar.Term, s *scope, locals map[string]string) 
 	}
 	return "TOperand{V: " + g.term(t, s, locals) + "}"
 }
+
+// step returns the statement that charges one step to the work control of recv, if there is one.
+func (g *generator) step(recv string) string {
+	if g.noWork {
+		return ""
+	}
+	return recv + ".StepWork()\n"
+}
+
 func (g *generator) frameVar() string { return g.pick("EmptyFrame", "EmptyTFrame") }
 func (g *generator) rt() string       { return g.pick("rt", "trt") }
 
@@ -1182,7 +1197,7 @@ func (g *generator) method(comment, body string) string {
 	if comment != "" {
 		fmt.Fprintf(&g.methods, "// %s\n", comment)
 	}
-	fmt.Fprintf(&g.methods, "func %s(p *%s) (%s, bool) {\n\tp.StepWork()\n%s}\n\n", name, g.recv(), g.valType(), body)
+	fmt.Fprintf(&g.methods, "func %s(p *%s) (%s, bool) {\n%s%s}\n\n", name, g.recv(), g.valType(), g.step("p"), body)
 	return name
 }
 
@@ -1237,7 +1252,7 @@ func (g *generator) plainCall(r *rule, body string) {
 	if g.observability {
 		name = g.tracePlainWrapper(r, name)
 	}
-	fmt.Fprintf(&g.methods, "// %s, called as by invokePlain\nfunc %s(p *%s) (%s, bool) {\n\tp.StepWork()\n", r.name, name, g.recv(), g.valType())
+	fmt.Fprintf(&g.methods, "// %s, called as by invokePlain\nfunc %s(p *%s) (%s, bool) {\n%s", r.name, name, g.recv(), g.valType(), g.step("p"))
 	g.methods.WriteString("\t" + g.saveRec(", trail") + " := " + g.saveRecValues(", len(p.Trail)") + "\n")
 	g.methods.WriteString(`	prevEnv, prevCut := p.Env, p.Cut
 	p.Cut = false
@@ -1351,7 +1366,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 					b.WriteString("\tch, _, more := p.Peek()\n")
 					peeked = true
 				}
-				fmt.Fprintf(&b, "\tif !(more && (%s)) && %s {\n\t\tp.StepWork()\n\t\tp.Expect(p.Pos, %d)\n%s\t} else ", cond, depthLimit(depth), desc, g.traceSkip(alt))
+				fmt.Fprintf(&b, "\tif !(more && (%s)) && %s {\n%s\t\tp.Expect(p.Pos, %d)\n%s\t} else ", cond, depthLimit(depth), g.step("p"), desc, g.traceSkip(alt))
 			}
 			fmt.Fprintf(&b, "\t{\n\t\tprevCut := p.Cut\n\t\tp.Cut = false\n\t\tv, ok := %s(p)\n\t\tcut := p.Cut\n\t\tp.Cut = prevCut\n"+
 				"\t\tif ok {\n\t\t\treturn v, true\n\t\t}\n\t\tp.Reset(m0)\n\t\tif cut {\n\t\t\treturn nil, false\n\t\t}\n\t}\n", m)
@@ -1758,7 +1773,7 @@ func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, opera
 // parameters, to Go expressions.
 func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) string {
 	raw := g.termRaw(t, s, locals)
-	if !g.goWorkControls {
+	if !g.goWorkControls || g.noWork {
 		return raw
 	}
 	return "func() any { c.P.StepWork(); return " + raw + " }()"
@@ -1804,6 +1819,39 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 			// the fields in declaration order.
 			// The fields are evaluated in the order written (an error in one must win over the
 			// next), then passed in declaration order.
+			if g.noWork {
+				// Without step charges the fields can be the arguments themselves, when they are
+				// written in declaration order: Go evaluates the arguments left to right.
+				fields := defFields(spec)
+				args := []string{"c", strconv.FormatBool(grammar.Term(t) == g.final)}
+				next, inOrder := 0, true
+				for _, given := range t.Fields {
+					for next < len(fields) && fields[next].Name != given.Name {
+						next++
+					}
+					if next == len(fields) {
+						inOrder = false
+						break
+					}
+					next++
+				}
+				vals := map[string]string{}
+				if inOrder {
+					for _, given := range t.Fields {
+						vals[given.Name] = g.term(given.Value, s, locals)
+					}
+				}
+				if inOrder {
+					for _, f := range fields {
+						if v, ok := vals[f.Name]; ok {
+							args = append(args, v)
+						} else {
+							args = append(args, "nil")
+						}
+					}
+					return "tmk_" + name + "(" + strings.Join(args, ", ") + ")"
+				}
+			}
 			var b strings.Builder
 			b.WriteString("func() any { ")
 			vars := map[string]string{}

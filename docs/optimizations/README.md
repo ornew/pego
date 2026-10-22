@@ -253,6 +253,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - [114. No comments on unexported generated code](114-no-comments-on-unexported-generated-code.md)
 - [115. Grouped variable declarations](115-grouped-variable-declarations.md)
 - [116. A short alias for the runtime import](116-short-runtime-import-alias.md)
+- [117. Straight-line actions and no unread variables in generated parsers](117-straight-line-generated-actions.md)
 
 ## Experiments That Did Not Pay Off
 

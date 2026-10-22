@@ -220,6 +220,13 @@ func (d *dgen) label() string {
 	return fmt.Sprintf("L%d", d.n)
 }
 
+// step charges one step to the work control, unless the parser is generated without any.
+func (d *dgen) step() {
+	if !d.g.noWork {
+		d.line("p.StepWork()")
+	}
+}
+
 // line writes a statement unless the current point is unreachable.
 func (d *dgen) line(format string, args ...any) {
 	if !d.dead {
@@ -364,7 +371,7 @@ func (d *dgen) mark(s *dscope, e grammar.Expr, saves bool) dmark {
 			k := d.capVar(s, name)
 			sv := d.decl("x", "any")
 			if d.g.goWorkControls {
-				d.line("p.StepWork()")
+				d.step()
 			}
 			d.line("%s = %s", sv, d.rd(k))
 			m.saves = append(m.saves, [2]string{k, sv})
@@ -389,7 +396,7 @@ func (d *dgen) reset(m dmark) {
 	}
 	for _, kv := range m.saves {
 		if d.g.goWorkControls {
-			d.line("p.StepWork()")
+			d.step()
 		}
 		d.line("%s = %s", kv[0], d.rd(kv[1]))
 	}
@@ -409,7 +416,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		// Only the first expression the alternative matches may consume the guard's character.
 		d.guarded = nil
 	}
-	d.line("p.StepWork()")
+	d.step()
 	if !build && !d.nodeBody {
 		if table, ok := g.terminalTable(e); ok {
 			d.failIf(fmt.Sprintf("!p.SkipTerminal(%s)", table), fail)
@@ -695,7 +702,11 @@ func (d *dgen) peek(ch, size, ok string) string {
 	if d.g.document {
 		guard = "p.Document == nil && " + guard
 	}
-	return fmt.Sprintf("if %s {\np.InputWork(1)\n%s, %s, %s = p.In[p.Pos], 1, true\n} else {\n%[2]s, %[3]s, %[4]s = p.Peek()\n}", guard, ch, size, ok)
+	work := "p.InputWork(1)\n"
+	if d.g.noWork {
+		work = ""
+	}
+	return fmt.Sprintf("if %s {\n%s%s, %s, %s = p.In[p.Pos], 1, true\n} else {\n%[3]s, %[4]s, %[5]s = p.Peek()\n}", guard, work, ch, size, ok)
 }
 
 // single consumes the character whose size is in size (after a successful peek), as single.
@@ -916,7 +927,7 @@ func (d *dgen) clearScope(es *dscope, e grammar.Expr) {
 		if !seen[name] {
 			seen[name] = true
 			if d.g.goWorkControls {
-				d.line("p.StepWork()")
+				d.step()
 			}
 			d.line("%s = nil", d.capVar(es, name))
 		}
@@ -1250,12 +1261,12 @@ func (g *generator) rollback(s genSnapshot) {
 // direct is a direct rule's compiled body: the declarations and statements of the method that
 // calls it, up to the rule's value in v (success falls through; failure jumps to fail).
 type direct struct {
-	vars        []dvar
-	body        string
-	fail        bool // the body can fail (fail is jumped to)
-	succeed     bool // the body can succeed
-	binds       bool // the body binds variables (the environment is restored)
-	start, ctx  bool // the value uses start, the context c
+	vars       []dvar
+	body       string
+	fail       bool // the body can fail (fail is jumped to)
+	succeed    bool // the body can succeed
+	binds      bool // the body binds variables (the environment is restored)
+	start, ctx bool // the value uses start, the context c
 }
 
 // directRule compiles the rule r as a direct rule, or returns nil if it keeps the general code.
@@ -1377,7 +1388,7 @@ func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain
 		name = g.tracePlainWrapper(r, name)
 	}
 	m := &g.methods
-	fmt.Fprintf(m, "// %s, %s (body inlined)\nfunc %s(p *%s) (%s, bool) {\n\tp.StepWork()\n", r.name, comment, name, g.recv(), g.valType())
+	fmt.Fprintf(m, "// %s, %s (body inlined)\nfunc %s(p *%s) (%s, bool) {\n%s", r.name, comment, name, g.recv(), g.valType(), g.step("\tp"))
 	if observeBody {
 		m.WriteString("p.Observation.Evaluated()\n")
 	}

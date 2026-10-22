@@ -1756,7 +1756,6 @@ func (v *AlterCmd) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Constraints))
 			for i, x := range v.Constraints {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -1774,7 +1773,6 @@ func (v *AlterCmd) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Exprs))
 			for i, x := range v.Exprs {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -1786,7 +1784,6 @@ func (v *AlterCmd) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.SortBy))
 			for i, x := range v.SortBy {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -1804,7 +1801,6 @@ func (v *AlterCmd) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Options))
 			for i, x := range v.Options {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -1816,7 +1812,6 @@ func (v *AlterCmd) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Identity))
 			for i, x := range v.Identity {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -1832,7 +1827,6 @@ func (v *AlterCmd) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Generic))
 			for i, x := range v.Generic {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -1957,7 +1951,6 @@ func (v *AlterSequenceStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Options))
 			for i, x := range v.Options {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -2026,7 +2019,6 @@ func (v *AlterTableStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Commands))
 			for i, x := range v.Commands {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -2075,7 +2067,6 @@ func (v *AnalyzeStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Columns))
 			for i, x := range v.Columns {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -2182,7 +2173,6 @@ func (v *ArrayLit) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -2325,7 +2315,6 @@ func (v *AttachStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Options))
 			for i, x := range v.Options {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -2499,7 +2488,6 @@ func (v *CTE) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Columns))
 			for i, x := range v.Columns {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -2511,7 +2499,6 @@ func (v *CTE) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.UsingKey))
 			for i, x := range v.UsingKey {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -2584,7 +2571,6 @@ func (v *Case) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Whens))
 			for i, x := range v.Whens {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -2775,7 +2761,6 @@ func (v *ColumnConstraint) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Options))
 			for i, x := range v.Options {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -2828,7 +2813,6 @@ func (v *ColumnDef) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Constraints))
 			for i, x := range v.Constraints {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -2869,7 +2853,6 @@ func (v *ColumnRef) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Parts))
 			for i, x := range v.Parts {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -3034,7 +3017,6 @@ func (v *CopyOption) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Columns))
 			for i, x := range v.Columns {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -3127,7 +3109,6 @@ func (v *CopyStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Columns))
 			for i, x := range v.Columns {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -3151,7 +3132,6 @@ func (v *CopyStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Legacy))
 			for i, x := range v.Legacy {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3163,7 +3143,6 @@ func (v *CopyStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Options))
 			for i, x := range v.Options {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3241,7 +3220,6 @@ func (v *CreateIndexStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Params))
 			for i, x := range v.Params {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3253,7 +3231,6 @@ func (v *CreateIndexStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Options))
 			for i, x := range v.Options {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3324,7 +3301,6 @@ func (v *CreateMacroStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Definitions))
 			for i, x := range v.Definitions {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3377,7 +3353,6 @@ func (v *CreateSchemaStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Elements))
 			for i, x := range v.Elements {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -3446,7 +3421,6 @@ func (v *CreateSecretStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Options))
 			for i, x := range v.Options {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3511,7 +3485,6 @@ func (v *CreateSequenceStmt) TFieldWork(p *rt.TParser, name string) (any, bool) 
 			}
 			kids := make([]any, len(v.Options))
 			for i, x := range v.Options {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3608,7 +3581,6 @@ func (v *CreateTableAsStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Columns))
 			for i, x := range v.Columns {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -3620,7 +3592,6 @@ func (v *CreateTableAsStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.PartitionSorted))
 			for i, x := range v.PartitionSorted {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3632,7 +3603,6 @@ func (v *CreateTableAsStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.With))
 			for i, x := range v.With {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3729,7 +3699,6 @@ func (v *CreateTableStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Elements))
 			for i, x := range v.Elements {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -3741,7 +3710,6 @@ func (v *CreateTableStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.PartitionSorted))
 			for i, x := range v.PartitionSorted {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3753,7 +3721,6 @@ func (v *CreateTableStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.With))
 			for i, x := range v.With {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -3828,7 +3795,6 @@ func (v *CreateTypeStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Values))
 			for i, x := range v.Values {
-
 				kids[i] = tb1(x)
 			}
 			return p.ListField(kids)
@@ -3918,7 +3884,6 @@ func (v *CreateViewStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Columns))
 			for i, x := range v.Columns {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -3930,7 +3895,6 @@ func (v *CreateViewStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Options))
 			for i, x := range v.Options {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -4058,7 +4022,6 @@ func (v *DeleteStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Using))
 			for i, x := range v.Using {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -4072,7 +4035,6 @@ func (v *DeleteStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Returning))
 			for i, x := range v.Returning {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -4145,7 +4107,6 @@ func (v *DistinctClause) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.On))
 			for i, x := range v.On {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -4280,7 +4241,6 @@ func (v *DropStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Names))
 			for i, x := range v.Names {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -4329,7 +4289,6 @@ func (v *ExecuteStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Params))
 			for i, x := range v.Params {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -4446,7 +4405,6 @@ func (v *ExplainStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Options))
 			for i, x := range v.Options {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -4508,7 +4466,6 @@ func (v *ExportStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Legacy))
 			for i, x := range v.Legacy {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -4520,7 +4477,6 @@ func (v *ExportStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Options))
 			for i, x := range v.Options {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -4569,7 +4525,6 @@ func (v *FieldStep) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Args))
 			for i, x := range v.Args {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -4720,7 +4675,6 @@ func (v *FuncCall) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Args))
 			for i, x := range v.Args {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -4791,7 +4745,6 @@ func (v *FuncTable) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.RowsFrom))
 			for i, x := range v.RowsFrom {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -4862,7 +4815,6 @@ func (v *GeneratedColumn) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.SeqOptions))
 			for i, x := range v.SeqOptions {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -4975,7 +4927,6 @@ func (v *GroupBy) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -5028,7 +4979,6 @@ func (v *Grouping) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Args))
 			for i, x := range v.Args {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -5081,7 +5031,6 @@ func (v *GroupingSet) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -5158,7 +5107,6 @@ func (v *In) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -5348,7 +5296,6 @@ func (v *InsertStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Columns))
 			for i, x := range v.Columns {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -5368,7 +5315,6 @@ func (v *InsertStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Returning))
 			for i, x := range v.Returning {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -5513,7 +5459,6 @@ func (v *IsOf) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Types))
 			for i, x := range v.Types {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -5580,7 +5525,6 @@ func (v *Join) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Using))
 			for i, x := range v.Using {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -5625,7 +5569,6 @@ func (v *Lambda) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Params))
 			for i, x := range v.Params {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -5772,7 +5715,6 @@ func (v *ListComp) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Vars))
 			for i, x := range v.Vars {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -5817,7 +5759,6 @@ func (v *ListLit) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -5912,7 +5853,6 @@ func (v *LockClause) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Of))
 			for i, x := range v.Of {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -5959,7 +5899,6 @@ func (v *MacroDef) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Params))
 			for i, x := range v.Params {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -6064,7 +6003,6 @@ func (v *MapLit) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Entries))
 			for i, x := range v.Entries {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -6149,7 +6087,6 @@ func (v *MergeAction) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Set))
 			for i, x := range v.Set {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -6165,7 +6102,6 @@ func (v *MergeAction) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Columns))
 			for i, x := range v.Columns {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -6177,7 +6113,6 @@ func (v *MergeAction) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Values))
 			for i, x := range v.Values {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -6260,7 +6195,6 @@ func (v *MergeStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Using))
 			for i, x := range v.Using {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -6272,7 +6206,6 @@ func (v *MergeStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Whens))
 			for i, x := range v.Whens {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -6284,7 +6217,6 @@ func (v *MergeStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Returning))
 			for i, x := range v.Returning {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -6367,7 +6299,6 @@ func (v *Name) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Parts))
 			for i, x := range v.Parts {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -6543,7 +6474,6 @@ func (v *OnConflict) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Target))
 			for i, x := range v.Target {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -6561,7 +6491,6 @@ func (v *OnConflict) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Set))
 			for i, x := range v.Set {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -6620,7 +6549,6 @@ func (v *OrderBy) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -6745,7 +6673,6 @@ func (v *PartitionSorted) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Exprs))
 			for i, x := range v.Exprs {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -6794,7 +6721,6 @@ func (v *PivotColumn) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.In))
 			for i, x := range v.In {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -6865,7 +6791,6 @@ func (v *PivotQuery) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.On))
 			for i, x := range v.On {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -6877,7 +6802,6 @@ func (v *PivotQuery) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Using))
 			for i, x := range v.Using {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -6889,7 +6813,6 @@ func (v *PivotQuery) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.GroupBy))
 			for i, x := range v.GroupBy {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -6958,7 +6881,6 @@ func (v *PivotRef) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Aggregates))
 			for i, x := range v.Aggregates {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -6970,7 +6892,6 @@ func (v *PivotRef) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Values))
 			for i, x := range v.Values {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -6982,7 +6903,6 @@ func (v *PivotRef) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.GroupBy))
 			for i, x := range v.GroupBy {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -7038,7 +6958,6 @@ func (v *PivotValue) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Header))
 			for i, x := range v.Header {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -7050,7 +6969,6 @@ func (v *PivotValue) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -7158,7 +7076,6 @@ func (v *PragmaStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Values))
 			for i, x := range v.Values {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -7170,7 +7087,6 @@ func (v *PragmaStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Args))
 			for i, x := range v.Args {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -7219,7 +7135,6 @@ func (v *PrepareStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Types))
 			for i, x := range v.Types {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -7272,7 +7187,6 @@ func (v *Reference) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Columns))
 			for i, x := range v.Columns {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -7497,7 +7411,6 @@ func (v *Row) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -7544,7 +7457,6 @@ func (v *RowsFromItem) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.ColDefs))
 			for i, x := range v.ColDefs {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -7631,7 +7543,6 @@ func (v *Script) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Statements))
 			for i, x := range v.Statements {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -7718,7 +7629,6 @@ func (v *Select) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Locking))
 			for i, x := range v.Locking {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -7801,7 +7711,6 @@ func (v *SelectCore) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -7815,7 +7724,6 @@ func (v *SelectCore) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.From))
 			for i, x := range v.From {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -7833,7 +7741,6 @@ func (v *SelectCore) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Windows))
 			for i, x := range v.Windows {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -7960,7 +7867,6 @@ func (v *SetClause) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Targets))
 			for i, x := range v.Targets {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -8077,7 +7983,6 @@ func (v *SetStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Values))
 			for i, x := range v.Values {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -8297,7 +8202,6 @@ func (v *SpecialCall) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Args))
 			for i, x := range v.Args {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -8309,7 +8213,6 @@ func (v *SpecialCall) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.From))
 			for i, x := range v.From {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -8384,7 +8287,6 @@ func (v *Star) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Exclude))
 			for i, x := range v.Exclude {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -8396,7 +8298,6 @@ func (v *Star) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Replace))
 			for i, x := range v.Replace {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -8408,7 +8309,6 @@ func (v *Star) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Rename))
 			for i, x := range v.Rename {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -8475,7 +8375,6 @@ func (v *StructLit) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Fields))
 			for i, x := range v.Fields {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -8593,7 +8492,6 @@ func (v *TableAlias) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Columns))
 			for i, x := range v.Columns {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -8605,7 +8503,6 @@ func (v *TableAlias) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.ColDefs))
 			for i, x := range v.ColDefs {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -8692,7 +8589,6 @@ func (v *TableConstraint) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Columns))
 			for i, x := range v.Columns {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -8710,7 +8606,6 @@ func (v *TableConstraint) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Options))
 			for i, x := range v.Options {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -8722,7 +8617,6 @@ func (v *TableConstraint) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Attributes))
 			for i, x := range v.Attributes {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -8767,7 +8661,6 @@ func (v *TableLike) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Options))
 			for i, x := range v.Options {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -8959,7 +8852,6 @@ func (v *Type) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Mods))
 			for i, x := range v.Mods {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -8971,7 +8863,6 @@ func (v *Type) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Fields))
 			for i, x := range v.Fields {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -8983,7 +8874,6 @@ func (v *Type) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Elems))
 			for i, x := range v.Elems {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -8995,7 +8885,6 @@ func (v *Type) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Dims))
 			for i, x := range v.Dims {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -9155,7 +9044,6 @@ func (v *UnpivotQuery) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.On))
 			for i, x := range v.On {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -9169,7 +9057,6 @@ func (v *UnpivotQuery) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Values))
 			for i, x := range v.Values {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -9231,7 +9118,6 @@ func (v *UnpivotRef) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Header))
 			for i, x := range v.Header {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -9243,7 +9129,6 @@ func (v *UnpivotRef) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Values))
 			for i, x := range v.Values {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -9297,7 +9182,6 @@ func (v *UnpivotValue) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Header))
 			for i, x := range v.Header {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -9309,7 +9193,6 @@ func (v *UnpivotValue) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -9354,7 +9237,6 @@ func (v *UpdateExtensionsStmt) TFieldWork(p *rt.TParser, name string) (any, bool
 			}
 			kids := make([]any, len(v.Names))
 			for i, x := range v.Names {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -9427,7 +9309,6 @@ func (v *UpdateStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Set))
 			for i, x := range v.Set {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -9439,7 +9320,6 @@ func (v *UpdateStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.From))
 			for i, x := range v.From {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -9453,7 +9333,6 @@ func (v *UpdateStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Returning))
 			for i, x := range v.Returning {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -9543,7 +9422,6 @@ func (v *VacuumStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Options))
 			for i, x := range v.Options {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -9559,7 +9437,6 @@ func (v *VacuumStmt) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Columns))
 			for i, x := range v.Columns {
-
 				kids[i] = tb0(x)
 			}
 			return p.ListField(kids)
@@ -9600,7 +9477,6 @@ func (v *ValuesClause) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Rows))
 			for i, x := range v.Rows {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
@@ -9675,7 +9551,6 @@ func (v *ValuesRow) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -9802,7 +9677,6 @@ func (v *WindowSpec) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.PartitionBy))
 			for i, x := range v.PartitionBy {
-
 				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
@@ -9851,7 +9725,6 @@ func (v *With) TFieldWork(p *rt.TParser, name string) (any, bool) {
 			}
 			kids := make([]any, len(v.CTEs))
 			for i, x := range v.CTEs {
-
 				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
