@@ -143,6 +143,137 @@ func r
 	}
 }
 
+// TestLowerFrame checks the framed functions lowered from small bodies.
+func TestLowerFrame(t *testing.T) {
+	for _, c := range []struct {
+		name  string
+		body  core.Node
+		slots []core.Slot
+		want  string
+	}{
+		{"recovery of a repetition with captures", &core.Recover{
+			Body: &core.Repeat{Min: 1, Max: -1, Scope: []core.Slot{{Name: "x"}},
+				Body: &core.Capture{Slot: 0, Name: "x", Body: &core.Lit{Text: "a"}}},
+			Skip: &core.Any{}}, nil, `
+func r framed
+  var x1 mark
+  var x2 expmark
+  var x3 int
+  var x4 expids
+  var x7 frame
+  var x8 frame
+  var x9 int
+  var x10 mark
+  var x12 int
+  var x13 int
+  var ok bool
+  var v14 value
+  var v15 value
+  var size int
+  var x17 error
+  // Recovery inlined under the runtime-owned frame.
+  x1 = mark
+  x2 = isolate
+  block L6 {
+    block L5 {
+      x9 = 0
+      loop loop1 {
+        x10 = mark
+        x8 = frame
+        x7 = newframe([x])
+        frame = x7
+        block L11 {
+          x12 = pos
+          x13 = pos
+          if _, ok = matchlit("a"); !ok {
+            exit L11
+          }
+          v14 = match(x13, "a")
+          v15 = capture(v14, x12)
+          setcapture 0, v15
+          frame = x8
+          names [x]
+          droptrail x10
+          free x7
+          x9++
+          if pos == x10.pos {
+            exit loop1
+          }
+          continue loop1
+        }
+        frame = x8
+        reset x10
+        exit loop1
+      }
+      if x9 < 1 {
+        exit L5
+      }
+      x3, x4 = unisolate(x2)
+      merge x4 at x3
+      exit L6
+    }
+    x3, x4 = unisolate(x2)
+    x4 = keep(x4)
+    reset x1
+    block L16 {
+      peek _, size, ok
+      if !ok {
+        expect #0 at pos
+        exit L16
+      }
+      advance size
+      if pos == x1.pos {
+        exit L16
+      }
+      x17 = error(x3, x4)
+      recovered x17
+      exit L6
+    }
+    reset x1
+    merge x4 at x3
+    exit fail
+  }
+  return nil
+`},
+		{"cut at the top", &core.Seq{Items: []core.Node{&core.Capture{Slot: 0, Name: "y", Body: &core.Lit{Text: "a"}}, &core.Cut{}}},
+			[]core.Slot{{Name: "y"}}, `
+func r framed
+  var cut1 bool
+  var x2 int
+  var x3 int
+  var ok bool
+  var v4 value
+  var v5 value
+  cut1 = cut
+  x2 = pos
+  x3 = pos
+  if _, ok = matchlit("a"); !ok {
+    exit fail
+  }
+  v4 = match(x3, "a")
+  v5 = capture(v4, x2)
+  setcapture 0, v5
+  cut1 = true
+  cut = cut1
+  return nil
+`},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			m, r := valueFree(c.body)
+			f, err := LowerFrame(m, r, r.Body, c.slots, false, "r", Options{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := Verify(f); err != nil {
+				t.Fatal(err)
+			}
+			if got := String(f); got != strings.TrimPrefix(c.want, "\n") {
+				t.Errorf("got\n%s\nwant\n%s", got, strings.TrimPrefix(c.want, "\n"))
+			}
+		})
+	}
+}
+
 // TestVerifyRejects checks that Verify rejects functions that break each invariant it checks.
 func TestVerifyRejects(t *testing.T) {
 	newFunc := func(body ...Stmt) *Func {
@@ -163,6 +294,11 @@ func TestVerifyRejects(t *testing.T) {
 		{"assignment arity", newFunc(&Set{Dst: []LValue{RegPos, &Discard{}}, X: []Expr{&Int{N: 1}}}), "1 values to 2 places"},
 		{"label used twice", newFunc(&Block{Label: inner}, &Block{Label: inner}), "label of its own"},
 		{"unbounded loop that never exits", newFunc(&Loop{Label: &Label{}, Body: []Stmt{&Step{}}}), "never exits"},
+		{"framed function with entry variables", func() *Func { f := newFunc(); f.Frame = true; return f }(), "entry variable"},
+		{"local function with a value", func() *Func { f := newFunc(); f.Value = &Nil{}; return f }(), "local function"},
+		{"undeclared cut flag", func() *Func {
+			return &Func{Name: "f", Fail: &Label{Name: "fail"}, Frame: true, Cut: &Var{Name: "cut1", Type: TypeBool}}
+		}(), "not declared"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			err := Verify(c.f)

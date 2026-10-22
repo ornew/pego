@@ -272,12 +272,12 @@ func (b *coreBuilder) operatorsRule(e *grammar.OperatorsRule) (*core.OperatorsRu
 	o := &core.OperatorsRule{}
 	var err error
 	if e.Skip != nil {
-		if o.Skip, err = b.opLine(e.Skip, nil, false); err != nil {
+		if o.Skip, err = b.opLine(e.Skip, nil, false, true); err != nil {
 			return nil, err
 		}
 	}
 	for _, x := range e.Operands {
-		l, err := b.opLine(x.Expr, x.Action, false)
+		l, err := b.opLine(x.Expr, x.Action, false, false)
 		if err != nil {
 			return nil, err
 		}
@@ -286,7 +286,7 @@ func (b *coreBuilder) operatorsRule(e *grammar.OperatorsRule) (*core.OperatorsRu
 	id := 0
 	for i, level := range e.Levels {
 		for _, x := range level.Operators {
-			l, err := b.opLine(x.Expr, x.Action, true)
+			l, err := b.opLine(x.Expr, x.Action, true, false)
 			if err != nil {
 				return nil, err
 			}
@@ -297,14 +297,14 @@ func (b *coreBuilder) operatorsRule(e *grammar.OperatorsRule) (*core.OperatorsRu
 	return o, nil
 }
 
-// opLine builds an Operators Rule line. Lines whose value is unused are matched without values,
-// as are all lines of a value-free rule.
-func (b *coreBuilder) opLine(e grammar.Expr, action grammar.Term, operator bool) (*core.OpLine, error) {
+// opLine builds an Operators Rule line, the skip line if skip. Lines whose value is unused are
+// matched without values, as are the skip line and all lines of a value-free rule.
+func (b *coreBuilder) opLine(e grammar.Expr, action grammar.Term, operator, skip bool) (*core.OpLine, error) {
 	var locals []string
 	if operator {
 		locals = []string{"lhs", "rhs", "op"}
 	}
-	build := !b.cur.novalue && !leanLine(action, locals)
+	build := !skip && !b.cur.novalue && !leanLine(action, locals)
 	s := b.scope(coreLayout(b.prog, b.cur, nil, e, build).names, e)
 	body, err := b.expr(e, s, build)
 	if err != nil {

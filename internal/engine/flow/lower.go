@@ -18,6 +18,11 @@ import (
 // slots the expression may write (Effects.Slots), and restores them when the expression fails.
 // Cuts are flags of the function, one per backtracking point inside a rule whose body cuts.
 //
+// A framed function (LowerFrame) keeps the captures in the runtime's frames instead: a capture
+// sets its slot of the current frame, a repetition element with captures of its own runs under a
+// frame of its own, and a backtracking point marks the whole parser state, frames included, and
+// resets to the mark when it fails. Its outermost scope cuts the flag the runtime gave it.
+//
 // The lowering follows reachability as it goes: after an Exit the point is unreachable until a
 // block that is exited to from a reachable point ends, or a loop ends. A node that begins at an
 // unreachable point is not lowered, nor are the alternatives of a choice after one that cannot
@@ -78,6 +83,46 @@ func LocalRule(r *core.Rule) bool {
 	return ok
 }
 
+// FramedBody reports whether LowerFrame can lower the body n: it has no Operators Rule, inlined
+// call or terminal region, which the runtime or a local function matches.
+func FramedBody(n core.Node) bool {
+	ok := true
+	core.Walk(n, func(n core.Node) {
+		switch n.(type) {
+		case *core.Nest, *core.OperatorsRule, *core.Terminal:
+			ok = false
+		}
+	})
+	return ok
+}
+
+// LowerFrame lowers the body n with the capture scope slots, building its value if build, to the
+// framed function name of the rule r: the body of a left-recursion leader or of a rule that
+// recovers, or a line of an Operators Rule of r. Analyze must have run on m.
+func LowerFrame(m *core.Module, r *core.Rule, n core.Node, slots []core.Slot, build bool, name string, opts Options) (*Func, error) {
+	if !FramedBody(n) {
+		return nil, fmt.Errorf("a body of rule %s is not lowered to a framed function", r.Name)
+	}
+	f := &Func{Name: name, Rule: r, Fail: &Label{Name: "fail"}, Frame: true, Binds: n.Attrs().Eff.Set&core.EffBind != 0}
+	l := &lowerer{m: m, opts: opts, f: f, used: map[*Label]bool{}, frame: true}
+	l.stack = []*[]Stmt{&f.Body}
+	core.Walk(n, func(n core.Node) {
+		if _, ok := n.(*core.Cut); ok {
+			l.localCuts = true
+		}
+	})
+	if l.localCuts {
+		f.Cut = l.decl("cut", TypeBool)
+		l.set(f.Cut, &Read{R: RegCut})
+		l.cut = f.Cut
+	}
+	v := l.node(n, newScope(slots), build, f.Fail)
+	if !l.dead {
+		f.Value = v
+	}
+	return f, nil
+}
+
 // Lower lowers the rule r of the module m, a LocalRule, to the function name. Analyze must have
 // run on m.
 func Lower(m *core.Module, r *core.Rule, name string, opts Options) (*Func, error) {
@@ -125,6 +170,8 @@ type lowerer struct {
 	guarded     *core.ClassNode
 	guardedAlt  core.Node
 	guardedSize *Var
+	// frame reports a framed function.
+	frame bool
 }
 
 // scope is a capture scope: its slots and the variables made for them.
@@ -246,14 +293,29 @@ func (l *lowerer) capVar(s *scope, slot int) *Var {
 	return s.vars[slot]
 }
 
-// mark is the state a backtracking point restores.
+// mark is the state a backtracking point restores: in a framed function, the mark state of the
+// whole parser state.
 type mark struct {
 	pos, rec, env *Var
 	saves         [][2]*Var // capture variable, saved value
+	state         *Var
+}
+
+// at is the position of the mark.
+func (m mark) at() Expr {
+	if m.state != nil {
+		return &MarkPos{M: m.state}
+	}
+	return use(m.pos)
 }
 
 // mark saves the state before n; with saves, also the capture slots of s that n may write.
 func (l *lowerer) mark(s *scope, n core.Node, saves bool) mark {
+	if l.frame {
+		m := mark{state: l.decl("x", TypeMark)}
+		l.set(m.state, &MarkState{})
+		return m
+	}
 	m := mark{pos: l.decl("x", TypeInt)}
 	if l.opts.Recovers {
 		m.rec = l.decl("x", TypeInt)
@@ -280,6 +342,10 @@ func (l *lowerer) mark(s *scope, n core.Node, saves bool) mark {
 
 // reset restores the state saved by m.
 func (l *lowerer) reset(m mark) {
+	if m.state != nil {
+		l.emit(&Reset{M: use(m.state)})
+		return
+	}
 	if m.rec == nil {
 		l.set(RegPos, use(m.pos))
 	} else {
@@ -397,7 +463,7 @@ func (l *lowerer) node(n core.Node, s *scope, build bool, fail *Label) Expr {
 		bf := l.open(f)
 		x, cut := l.cutNode(n.Body, s, build, f)
 		if build {
-			l.set(v, l.shapeOne(n.Body, x, m.pos, false))
+			l.set(v, l.shapeOne(n.Body, x, m.at(), false))
 		}
 		if l.used[f] {
 			l.exit(done)
@@ -461,6 +527,9 @@ func (l *lowerer) node(n core.Node, s *scope, build bool, fail *Label) Expr {
 		l.node(n.Body, s, false, fail)
 		return &Nil{}
 	case *core.Capture:
+		if l.frame {
+			return l.frameCapture(n, s, build, fail)
+		}
 		k := l.capVar(s, n.Slot)
 		var v Expr
 		if n.Project != "" {
@@ -468,7 +537,7 @@ func (l *lowerer) node(n core.Node, s *scope, build bool, fail *Label) Expr {
 		} else {
 			start := l.decl("x", TypeInt)
 			l.set(start, pos)
-			v = l.shapeOne(n.Body, l.node(n.Body, s, true, fail), start, true)
+			v = l.shapeOne(n.Body, l.node(n.Body, s, true, fail), use(start), true)
 		}
 		l.set(k, v)
 		if !build {
@@ -498,6 +567,10 @@ func (l *lowerer) node(n core.Node, s *scope, build bool, fail *Label) Expr {
 		return &Nil{}
 	case *core.Label:
 		return l.label_(n, s, build, fail)
+	case *core.Recover:
+		if l.frame {
+			return l.recover(n, s, build, fail)
+		}
 	}
 	panic(fmt.Sprintf("flow: cannot lower %T", n))
 }
@@ -643,7 +716,7 @@ func (l *lowerer) choice(n *core.Choice, s *scope, build bool, fail *Label) Expr
 		l.guarded, l.guardedAlt, l.guardedSize = guarded, a.Body, size
 		x, cut := l.cutNode(a.Body, s, build, f)
 		if build {
-			l.set(v, l.shapeOne(a.Body, x, m.pos, false))
+			l.set(v, l.shapeOne(a.Body, x, m.at(), false))
 		}
 		l.exit(done)
 		l.close(bf)
@@ -663,16 +736,16 @@ func (l *lowerer) choice(n *core.Choice, s *scope, build bool, fail *Label) Expr
 
 // shapeOne converts the value x of n, matched from start, to its value where it takes one
 // element; with capture, where it is captured.
-func (l *lowerer) shapeOne(n core.Node, x Expr, start *Var, capture bool) Expr {
+func (l *lowerer) shapeOne(n core.Node, x Expr, start Expr, capture bool) Expr {
 	sh := n.Attrs().Shape
 	if sh.Mode == core.SinglePass && !sh.Elems {
 		return x
 	}
 	v := l.decl("v", TypeValue)
 	if capture {
-		l.set(v, &ShapeCapture{Shape: sh, X: x, Start: use(start)})
+		l.set(v, &ShapeCapture{Shape: sh, X: x, Start: start})
 	} else {
-		l.emit(&Set{Dst: []LValue{v, &Discard{}}, X: []Expr{&ShapeSingle{Shape: sh, X: x, Start: use(start)}}})
+		l.emit(&Set{Dst: []LValue{v, &Discard{}}, X: []Expr{&ShapeSingle{Shape: sh, X: x, Start: start}}})
 	}
 	return use(v)
 }
@@ -697,6 +770,9 @@ func (l *lowerer) not(n *core.Look, s *scope, fail *Label) Expr {
 }
 
 func (l *lowerer) repeat(n *core.Repeat, s *scope, build bool, fail *Label) Expr {
+	if l.frame {
+		return l.frameRepeat(n, s, build, fail)
+	}
 	// An element with captures has its own scope per iteration.
 	own := n.Scope != nil
 	es := s
@@ -725,7 +801,7 @@ func (l *lowerer) repeat(n *core.Repeat, s *scope, build bool, fail *Label) Expr
 	}
 	if own && build {
 		attached := l.decl("v", TypeValue)
-		x := &AttachCaptures{X: v, Names: core.SlotNames(es.slots), Start: use(m.pos)}
+		x := &AttachCaptures{X: v, Names: &Names{List: core.SlotNames(es.slots)}, Start: use(m.pos)}
 		x.Vals = l.scopeVals(es)
 		l.set(attached, x)
 		v = use(attached)
@@ -875,8 +951,11 @@ func (l *lowerer) projectRepeat(n *core.Repeat, fail *Label) Expr {
 }
 
 // termCaps returns the captures of the scope s for a term, making the variables of the slots it
-// refers to.
+// refers to; in a framed function, the term reads the current frame.
 func (l *lowerer) termCaps(t core.Term, s *scope) Captures {
+	if l.frame {
+		return Captures{Names: core.SlotNames(s.slots)}
+	}
 	core.WalkTerm(t, func(t core.Term) {
 		if r, ok := t.(*core.SlotRef); ok {
 			l.capVar(s, r.Slot)
@@ -955,7 +1034,7 @@ func (l *lowerer) finish(r *core.Rule, s *scope, body Expr) {
 	case core.FinishScope:
 		l.set(f.Result, &ScopeValue{Shape: r.Finish.Shape, X: body, Start: use(f.Start)})
 		if len(s.slots) > 0 {
-			x := &AttachCaptures{X: use(f.Result), Names: core.SlotNames(s.slots), Start: use(f.Start)}
+			x := &AttachCaptures{X: use(f.Result), Names: &Names{List: core.SlotNames(s.slots)}, Start: use(f.Start)}
 			x.Vals = l.scopeVals(s)
 			l.set(f.Result, x)
 		}
@@ -964,4 +1043,183 @@ func (l *lowerer) finish(r *core.Rule, s *scope, body Expr) {
 	if r.Finish.NodeType != "" {
 		l.set(f.Result, &ConvertResult{Rule: r.ID, X: use(f.Result), Owned: owned})
 	}
+}
+
+// frameCapture lowers a capture in a framed function: it sets the slot of the current frame.
+func (l *lowerer) frameCapture(n *core.Capture, s *scope, build bool, fail *Label) Expr {
+	var v Expr
+	if n.Project != "" {
+		v = l.frameRepeat(n.Body.(*core.Repeat), s, true, fail)
+	} else {
+		start := l.decl("x", TypeInt)
+		l.set(start, pos)
+		v = l.shapeOne(n.Body, l.node(n.Body, s, true, fail), use(start), true)
+	}
+	l.emit(&SetCapture{Slot: n.Slot, X: v})
+	if !build {
+		return &Nil{}
+	}
+	return v
+}
+
+// frameRepeat lowers a repetition in a framed function. An element with captures of its own runs
+// under a new frame, which a projected repetition (Project) makes once and clears for each
+// element.
+func (l *lowerer) frameRepeat(n *core.Repeat, s *scope, build bool, fail *Label) Expr {
+	field := n.Project
+	own := n.Scope != nil
+	es := s
+	var start, base, frame, prev *Var
+	var names *Names
+	if build {
+		start, base = l.decl("x", TypeInt), l.decl("x", TypeInt)
+		l.emit(&Set{Dst: []LValue{start, base}, X: []Expr{pos, &KidsLen{}}})
+	}
+	if own {
+		es = newScope(n.Scope)
+		frame, prev = l.decl("x", TypeFrame), l.decl("x", TypeFrame)
+		names = &Names{List: core.SlotNames(es.slots), Declared: true}
+		if field != "" {
+			l.set(frame, &NewFrame{N: names})
+		}
+	}
+	count := l.decl("x", TypeInt)
+	l.set(count, &Int{})
+	lp := l.newLoop(n.Max)
+	if field != "" {
+		l.emit(&ClearVals{F: frame})
+	}
+	m := l.mark(s, n.Body, true)
+	frameReg := &Read{R: RegFrame}
+	if own {
+		l.set(prev, frameReg)
+		if field == "" {
+			l.set(frame, &NewFrame{N: names})
+		}
+		l.set(RegFrame, use(frame))
+	}
+	f := l.label()
+	bf := l.open(f)
+	v, cut := l.cutNode(n.Body, es, build && field == "", f)
+	if build && field == "" {
+		sv := l.decl("v", TypeValue)
+		l.set(sv, &ScopeValue{Shape: n.Body.Attrs().Shape, X: v, Start: m.at()})
+		v = use(sv)
+	}
+	if own {
+		l.set(RegFrame, use(prev))
+		if build {
+			if field != "" {
+				v = &FrameVal{F: frame, Slot: slotOf(es.slots, field)}
+			} else {
+				attached := l.decl("v", TypeValue)
+				l.set(attached, &AttachCaptures{X: v, Names: names, Frame: frame, Start: m.at()})
+				v = use(attached)
+			}
+		}
+		l.emit(&DeclareNames{N: names})
+		if field == "" {
+			l.emit(&DropTrail{M: use(m.state)})
+			l.emit(&FreeFrame{F: frame})
+		}
+	}
+	l.emit(&Inc{V: count})
+	if build {
+		l.emit(&PushKid{X: v})
+	}
+	l.emit(&If{Cond: &Cmp{Op: "==", L: pos, R: m.at()}, Then: []Stmt{&Exit{To: lp.Label}}})
+	if l.used[f] {
+		l.cont(lp.Label)
+		l.close(bf)
+		if own {
+			l.set(RegFrame, use(prev))
+		}
+		l.reset(m)
+		if build {
+			l.cutFail(cut, fail, &DropKids{Base: use(base)})
+		} else {
+			l.cutFail(cut, fail)
+		}
+		l.exitLoop(lp)
+	} else {
+		l.close(bf)
+	}
+	l.endLoop()
+	if n.Min > 0 {
+		cond := &Cmp{Op: "<", L: use(count), R: &Int{N: n.Min}}
+		if build {
+			l.failIf(nil, cond, fail, &DropKids{Base: use(base)})
+		} else {
+			l.failIf(nil, cond, fail)
+		}
+	}
+	if !build {
+		return &Nil{}
+	}
+	list := l.decl("v", TypeValue)
+	l.set(list, &NewNode{List: true, Start: use(start), Kids: &Kids{Base: use(base)}})
+	return use(list)
+}
+
+// slotOf returns the index of the slot name among slots.
+func slotOf(slots []core.Slot, name string) int {
+	for i, sl := range slots {
+		if sl.Name == name {
+			return i
+		}
+	}
+	panic(fmt.Sprintf("flow: no capture slot %s", name))
+}
+
+// recover lowers #recover in a framed function. The expectations recorded inside are isolated;
+// when the body fails, the parser state goes back to the mark, the skip expression consumes at
+// least one character, and the error is recorded and is the value.
+func (l *lowerer) recover(n *core.Recover, s *scope, build bool, fail *Label) Expr {
+	l.emit(&Comment{Text: "Recovery inlined under the runtime-owned frame."})
+	m := l.mark(s, n, true)
+	mk, far, exps := l.decl("x", TypeExpMark), l.decl("x", TypeInt), l.decl("x", TypeExpIDs)
+	l.set(mk, &Isolate{})
+	f, done := l.label(), l.label()
+	var v *Var
+	if build {
+		v = l.decl("v", TypeValue)
+	}
+	bd := l.open(done)
+	bf := l.open(f)
+	inner := l.node(n.Body, s, build, f)
+	if build {
+		l.set(v, l.shapeOne(n.Body, inner, m.at(), true))
+	}
+	l.emit(&Set{Dst: []LValue{far, exps}, X: []Expr{&Unisolate{Mark: use(mk)}}})
+	l.emit(&MergeExpected{Far: use(far), Exps: use(exps)})
+	if l.used[f] {
+		l.exit(done)
+		l.close(bf)
+		l.emit(&Set{Dst: []LValue{far, exps}, X: []Expr{&Unisolate{Mark: use(mk)}}})
+		l.set(exps, &Keep{Exps: use(exps)})
+		l.reset(m)
+		skipFail := l.label()
+		bs := l.open(skipFail)
+		l.node(n.Skip, s, false, skipFail)
+		l.failIf(nil, &Cmp{Op: "==", L: pos, R: m.at()}, skipFail)
+		err := l.decl("x", TypeError)
+		l.set(err, &MakeError{Far: use(far), Exps: use(exps)})
+		l.emit(&AppendError{X: use(err)})
+		if build {
+			l.set(v, &ErrorValue{Start: m.at(), X: use(err)})
+		}
+		l.exit(done)
+		l.close(bs)
+		l.reset(m)
+		l.emit(&MergeExpected{Far: use(far), Exps: use(exps)})
+		l.exit(fail)
+		l.close(bd)
+	} else {
+		l.close(bf)
+		l.close(bd)
+	}
+	if !build {
+		return &Nil{}
+	}
+	return use(v)
 }

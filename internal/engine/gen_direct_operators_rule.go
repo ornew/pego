@@ -7,7 +7,7 @@ import "github.com/ornew/pego/grammar"
 // Each typed line declares its own frame layout, unlike an LR leader that
 // shares the ordinary rule's metadata.
 func (g *generator) directTypedOperatorsRuleBody(e grammar.Expr, scope *scope, build bool, action grammar.Term, operator bool) string {
-	if g.table != "trules" || g.disableTypedOperatorsRuleBodies || !directFrameExprOK(e, !g.disableTypedFramedCuts, !g.disableTypedRecoveryBodies) {
+	if !g.typedOperatorsRuleBodyOK(e) {
 		return ""
 	}
 	snap := g.snapshot()
@@ -32,4 +32,11 @@ func (g *generator) directTypedOperatorsRuleBody(e grammar.Expr, scope *scope, b
 	// Preserve the expression value until the runtime evaluates its action.
 	// No finish operation or rule wrapper belongs in this matcher.
 	return g.finishFrameBody(d, s, scope, v, g.cur.name+" (typed OperatorsRule body inlined)")
+}
+
+// typedOperatorsRuleBodyOK reports whether the line of an Operators Rule with the expression e is
+// inlined as a matcher of the typed rules.
+func (g *generator) typedOperatorsRuleBodyOK(e grammar.Expr) bool {
+	return g.table == "trules" && !g.disableTypedOperatorsRuleBodies &&
+		directFrameExprOK(e, !g.disableTypedFramedCuts, !g.disableTypedRecoveryBodies)
 }

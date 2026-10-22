@@ -9,10 +9,14 @@
 // moving the position, matching terminals, recording expectations, calling rules, building
 // values, evaluating terms and charging work.
 //
-// The body of a rule function succeeds by running to its end, with the rule's value in the Result
-// variable, and fails by an Exit to the function's Fail label. Statements after an Exit, up to
-// the end of a block that is exited to or of a loop, are unreachable; Flow IR keeps them, and a
-// printer leaves out what is unreachable.
+// A function is local or framed. The body of a local function, a whole rule, succeeds by running
+// to its end, with the rule's value in the Result variable, and fails by an Exit to the function's
+// Fail label; its captures are variables. A framed function matches an expression whose captures
+// the runtime keeps in a frame (the body of a left-recursion leader or of a rule that recovers,
+// or a line of an Operators Rule): it succeeds with the value Value, and the runtime owns the
+// frame, the rule's value and its finish. Statements after an Exit, up to the end of a block that
+// is exited to or of a loop, are unreachable; Flow IR keeps them, and a printer leaves out what is
+// unreachable.
 package flow
 
 import "github.com/ornew/pego/internal/engine/core"
@@ -29,10 +33,16 @@ type Func struct {
 	Fail *Label
 	// Start, Result and Ctx are the entry variables: the position at which the rule was entered,
 	// the rule's value, and the context of the rule's action. The function's entry declares them;
-	// Start is set before the body runs.
+	// Start is set before the body runs. A framed function has none.
 	Start, Result, Ctx *Var
 	// Binds reports that the body may bind variables, which the entry restores.
 	Binds bool
+	// Frame reports a framed function. Value is the value it succeeds with, nil where it cannot
+	// succeed; Cut, if not nil, is the cut flag of its outermost scope, which it reads from the
+	// runtime on entry and publishes on return.
+	Frame bool
+	Value Expr
+	Cut   *Var
 }
 
 // Type is the type of a variable.
@@ -55,9 +65,15 @@ const (
 	TypeVals
 	// TypeCtx is the context of an action.
 	TypeCtx
+	// TypeMark is a mark of the whole parser state (Mark).
+	TypeMark
+	// TypeFrame is a capture frame of the runtime.
+	TypeFrame
+	// TypeError is a syntax error.
+	TypeError
 )
 
-var typeNames = [...]string{"int", "bool", "rune", "value", "env", "expmark", "expids", "vals", "ctx"}
+var typeNames = [...]string{"int", "bool", "rune", "value", "env", "expmark", "expids", "vals", "ctx", "mark", "frame", "error"}
 
 func (t Type) String() string { return typeNames[t] }
 
@@ -172,6 +188,34 @@ type DropCreated struct{ C Expr }
 // Unfresh marks the node X, if X is one, as no longer owned by its maker.
 type Unfresh struct{ X Expr }
 
+// Reset goes back to the parser state of the mark M (MarkState).
+type Reset struct{ M Expr }
+
+// SetCapture sets the capture Slot of the current frame to X.
+type SetCapture struct {
+	Slot int
+	X    Expr
+}
+
+// ClearVals sets the values of the frame F to nil.
+type ClearVals struct{ F *Var }
+
+// DropTrail drops the trail entries recorded since the mark M.
+type DropTrail struct{ M Expr }
+
+// FreeFrame returns the frame F to the runtime.
+type FreeFrame struct{ F *Var }
+
+// AppendError appends the syntax error X to the recovered errors.
+type AppendError struct{ X Expr }
+
+// DeclareNames declares the names of a frame scope, which framed repetitions name before their
+// element and declare after it.
+type DeclareNames struct{ N *Names }
+
+// Comment is a comment for readers of the printed code.
+type Comment struct{ Text string }
+
 func (*Block) stmt()         {}
 func (*Loop) stmt()          {}
 func (*If) stmt()            {}
@@ -193,6 +237,14 @@ func (*Append) stmt()        {}
 func (*SetWhere) stmt()      {}
 func (*DropCreated) stmt()   {}
 func (*Unfresh) stmt()       {}
+func (*Reset) stmt()         {}
+func (*SetCapture) stmt()    {}
+func (*ClearVals) stmt()     {}
+func (*DropTrail) stmt()     {}
+func (*FreeFrame) stmt()     {}
+func (*AppendError) stmt()   {}
+func (*DeclareNames) stmt()  {}
+func (*Comment) stmt()       {}
 
 // LValue is what Set assigns: a variable, a register or nothing.
 type LValue interface{ lvalue() }
@@ -205,6 +257,10 @@ const (
 	RegPos Reg = iota
 	// RegEnv is the variable environment.
 	RegEnv
+	// RegFrame is the current capture frame.
+	RegFrame
+	// RegCut is the cut flag of the scope the runtime entered last.
+	RegCut
 )
 
 // Discard is a place whose value is dropped.
@@ -344,13 +400,49 @@ type ScopeValue struct {
 	X, Start Expr
 }
 
-// AttachCaptures is X, matched from Start, with the captures Vals of the scope whose slots are
-// Names attached.
+// Names are the slot names of a capture scope, which printers declare once.
+type Names struct {
+	List []string
+	// Declared reports that a DeclareNames statement declares them; otherwise their first use
+	// does.
+	Declared bool
+}
+
+// AttachCaptures is X, matched from Start, with the captures of the scope whose slots are Names
+// attached: the values of the variables Vals, or of the frame Frame if it is not nil.
 type AttachCaptures struct {
 	X     Expr
-	Names []string
+	Names *Names
 	Vals  []*Var
+	Frame *Var
 	Start Expr
+}
+
+// MarkState is a mark of the whole parser state, which Reset returns to.
+type MarkState struct{}
+
+// MarkPos is the position of the mark M.
+type MarkPos struct{ M *Var }
+
+// NewFrame is a new frame for the scope of the names N.
+type NewFrame struct{ N *Names }
+
+// FrameVal is the value of the slot Slot of the frame F.
+type FrameVal struct {
+	F    *Var
+	Slot int
+}
+
+// Keep is the list of expectations Exps, kept beyond the expectation scope that recorded them.
+type Keep struct{ Exps Expr }
+
+// MakeError is the syntax error at Far with the expectations Exps.
+type MakeError struct{ Far, Exps Expr }
+
+// ErrorValue is the value of a recovered error X over the input from Start to the position.
+type ErrorValue struct {
+	Start Expr
+	X     Expr
 }
 
 // FreshNode is X if it is a node its maker still owns, or nil.
@@ -366,8 +458,9 @@ type ConvertResult struct {
 // UseCtx is a new context for the action of the rule entered at Start.
 type UseCtx struct{ Start Expr }
 
-// Captures are the capture variables a term reads: Vars holds the variable of each slot of
-// the scope, whose names are Names; a nil variable reads as nil.
+// Captures are the captures a term reads: Vars holds the variable of each slot of the scope,
+// whose names are Names, and a nil variable reads as nil. In a framed function Vars is nil: the
+// term reads the current frame.
 type Captures struct {
 	Names []string
 	Vars  []*Var
@@ -440,6 +533,13 @@ func (*Pred) expr()           {}
 func (*Bind) expr()           {}
 func (*Eval) expr()           {}
 func (*CtxFinish) expr()      {}
+func (*MarkState) expr()      {}
+func (*MarkPos) expr()        {}
+func (*NewFrame) expr()       {}
+func (*FrameVal) expr()       {}
+func (*Keep) expr()           {}
+func (*MakeError) expr()      {}
+func (*ErrorValue) expr()     {}
 
 // Results returns the number of results of x: 2 for the operations that have two, 1 otherwise.
 func Results(x Expr) int {
@@ -496,7 +596,22 @@ func Uses(x Expr, f func(*Var)) {
 		for _, v := range x.Vals {
 			f(v)
 		}
+		if x.Frame != nil {
+			f(x.Frame)
+		}
 		Uses(x.Start, f)
+	case *MarkPos:
+		f(x.M)
+	case *FrameVal:
+		f(x.F)
+	case *Keep:
+		Uses(x.Exps, f)
+	case *MakeError:
+		Uses(x.Far, f)
+		Uses(x.Exps, f)
+	case *ErrorValue:
+		Uses(x.Start, f)
+		Uses(x.X, f)
 	case *FreshNode:
 		Uses(x.X, f)
 	case *ConvertResult:

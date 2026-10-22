@@ -12,6 +12,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/engine/core"
 )
 
 // GenOptions configures code generation.
@@ -556,9 +557,11 @@ type generator struct {
 	disableTypedOutputBootstrap bool
 	flowTyped                   bool
 	// flow holds the Core IR of the typed rules while they are printed from Flow IR, or nil;
-	// flowRules counts the rules printed from Flow IR.
-	flow      *flowState
-	flowRules int
+	// flowRules counts the rules printed from Flow IR as direct rules and flowFrames the bodies
+	// and lines printed as matchers of runtime-owned frames.
+	flow       *flowState
+	flowRules  int
+	flowFrames int
 	// nodeScopes records the frame layouts shared by typed rule metadata.
 	nodeScopes map[*rule][]string
 	// decisions, if set, receives the lowering decisions (gen_decisions.go).
@@ -779,6 +782,9 @@ func (g *generator) rules() {
 					bodies[r] = body
 					continue
 				}
+			} else if body := g.flowFrameBody(r, s); body != "" {
+				bodies[r] = body
+				continue
 			} else if body := g.directTypedFrameBody(r, s); body != "" {
 				bodies[r] = body
 				continue
@@ -1750,9 +1756,18 @@ func (g *generator) attributed(e *grammar.Attributed, s *scope, build bool) stri
 func (g *generator) operatorsRule(r *rule, e *grammar.OperatorsRule) {
 	var b strings.Builder
 	fmt.Fprintf(&b, "\t%s[%d].OperatorsRule = &%s{\n", g.table, r.id, g.pick("OperatorsRule", "TOperatorsRule"))
+	// The lines of the rule's Core IR, in the order of e, if they are printed from Flow IR.
+	co := g.flowOperatorsRule(r)
 	if e.Skip != nil {
 		s := newScope()
-		m := g.directTypedOperatorsRuleBody(e.Skip, s, false, nil, false)
+		var skip *core.OpLine
+		if co != nil {
+			skip = co.Skip
+		}
+		m := g.flowOperatorsRuleBody(skip, e.Skip, s, false)
+		if m == "" {
+			m = g.directTypedOperatorsRuleBody(e.Skip, s, false, nil, false)
+		}
 		if m == "" {
 			m = g.expr(e.Skip, s, false)
 		}
@@ -1760,15 +1775,23 @@ func (g *generator) operatorsRule(r *rule, e *grammar.OperatorsRule) {
 		fmt.Fprintf(&b, "\t\tSkip: %s,\n", m)
 	}
 	fmt.Fprintf(&b, "\t\tOperands: []*%s{\n", g.pick("OperatorsRuleLine", "TOperatorsRuleLine"))
-	for _, o := range e.Operands {
-		fmt.Fprintf(&b, "\t\t\t%s,\n", g.operatorsRuleLine(o.Expr, o.Action, false, o))
+	for i, o := range e.Operands {
+		var l *core.OpLine
+		if co != nil {
+			l = co.Operands[i]
+		}
+		fmt.Fprintf(&b, "\t\t\t%s,\n", g.operatorsRuleLine(o.Expr, o.Action, false, l))
 	}
 	b.WriteString("\t\t},\n")
 	var prefix, led []string
 	id := 0
 	for i, l := range e.Levels {
 		for _, op := range l.Operators {
-			s := fmt.Sprintf("{Id: %d, Kind: %q, Assoc: %q, Level: %d, Line: %s}", id, op.Kind, op.Assoc, i+1, g.operatorsRuleLine(op.Expr, op.Action, true, op))
+			var l *core.OpLine
+			if co != nil {
+				l = co.Ops[id].Line
+			}
+			s := fmt.Sprintf("{Id: %d, Kind: %q, Assoc: %q, Level: %d, Line: %s}", id, op.Kind, op.Assoc, i+1, g.operatorsRuleLine(op.Expr, op.Action, true, l))
 			id++
 			if op.Kind == grammar.Prefix {
 				prefix = append(prefix, s)
@@ -1785,7 +1808,9 @@ func (g *generator) operatorsRule(r *rule, e *grammar.OperatorsRule) {
 	g.init.WriteString(b.String())
 }
 
-func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator bool, key any) string {
+// operatorsRuleLine returns the line of an Operators Rule with the expression e and the action;
+// l is its Core IR if it is printed from Flow IR, or nil.
+func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator bool, l *core.OpLine) string {
 	s := newScope()
 	var locals []string
 	if operator {
@@ -1794,7 +1819,10 @@ func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, opera
 	// Lines whose value is unused are matched without values, as in the engine; so are all lines
 	// of a rule without a value (in the recognizer).
 	build := !g.cur.novalue && !leanLine(action, locals)
-	m := g.directTypedOperatorsRuleBody(e, s, build, action, operator)
+	m := g.flowOperatorsRuleBody(l, e, s, build)
+	if m == "" {
+		m = g.directTypedOperatorsRuleBody(e, s, build, action, operator)
+	}
 	if m == "" {
 		m = g.expr(e, s, build)
 	}

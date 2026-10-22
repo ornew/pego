@@ -14,15 +14,25 @@ import (
 // The tests here compare the typed rules printed from Flow IR (gen_flow.go) with the direct rules
 // of dgen, generating every corpus grammar with and without GenOptions.flowTyped.
 
-// flowModes are the generator options under which flowTyped prints rules from Flow IR.
-var flowModes = []coreGenMode{
-	{"lean typed-only", GenOptions{Types: true, TypedOnly: true}},
-	{"lean with nodes", GenOptions{Types: true}},
-	{"lean recognizer", GenOptions{Types: true, Recognize: true}},
-	{"lean charged", GenOptions{Types: true, TypedOnly: true, disableOrdinaryWorkSpecialization: true}},
-	{"lean unguarded", GenOptions{Types: true, TypedOnly: true, disableGuardedClasses: true}},
-	{"lean straight terminals", GenOptions{Types: true, TypedOnly: true, disableTerminalPrograms: true}},
-	{"lean boxed", GenOptions{Types: true, TypedOnly: true, disableLiteralTextDispatch: true, boxedComparisons: true}},
+// flowModes are the generator options under which flowTyped prints rules from Flow IR; frames
+// reports that it also prints the bodies and lines under runtime-owned frames.
+var flowModes = []struct {
+	name   string
+	opts   GenOptions
+	frames bool
+}{
+	{"lean typed-only", GenOptions{Types: true, TypedOnly: true}, true},
+	{"lean with nodes", GenOptions{Types: true}, true},
+	{"lean recognizer", GenOptions{Types: true, Recognize: true}, true},
+	{"lean charged", GenOptions{Types: true, TypedOnly: true, disableOrdinaryWorkSpecialization: true}, true},
+	{"lean unguarded", GenOptions{Types: true, TypedOnly: true, disableGuardedClasses: true}, true},
+	{"lean straight terminals", GenOptions{Types: true, TypedOnly: true, disableTerminalPrograms: true}, true},
+	{"lean boxed", GenOptions{Types: true, TypedOnly: true, disableLiteralTextDispatch: true, boxedComparisons: true}, true},
+	{"lean without LR bodies", GenOptions{Types: true, TypedOnly: true, disableTypedLRBodies: true}, true},
+	{"lean without framed cuts", GenOptions{Types: true, TypedOnly: true, disableTypedFramedCuts: true}, true},
+	{"lean without recovery bodies", GenOptions{Types: true, TypedOnly: true, disableTypedRecoveryBodies: true}, true},
+	{"lean without OperatorsRule bodies", GenOptions{Types: true, TypedOnly: true, disableTypedOperatorsRuleBodies: true}, true},
+	{"lean general frame layouts", GenOptions{Types: true, TypedOnly: true, disableTypedFrameLayouts: true}, false},
 }
 
 // flowUnreadLine matches the first line of a direct rule's body, which assigns the variables
@@ -33,50 +43,50 @@ var flowModes = []coreGenMode{
 var flowUnreadLine = regexp.MustCompile(`(?m)^\t_(, _)* = [a-z0-9]+(, [a-z0-9]+)*\n`)
 
 // flowGenerate generates the parser of the grammar source with the options, joined into one
-// text, and returns the number of rules printed from Flow IR, or reports false if the generator
-// rejects the grammar.
-func flowGenerate(src string, opts GenOptions) (string, int, bool) {
+// text, and returns the numbers of rules and of framed bodies and lines printed from Flow IR, or
+// reports false if the generator rejects the grammar.
+func flowGenerate(src string, opts GenOptions) (string, int, int, bool) {
 	g, err := parseTest(src)
 	if err != nil {
-		return "", 0, false
+		return "", 0, 0, false
 	}
 	dec := &genDecisions{}
 	opts.Module, opts.keepComments, opts.decisions = "example.com/p", true, dec
 	files, err := generate(g, opts)
 	if err != nil {
-		return "", 0, false
+		return "", 0, 0, false
 	}
 	var b strings.Builder
 	for _, f := range files {
 		fmt.Fprintf(&b, "== %s\n", f.Path)
 		b.Write(f.Content)
 	}
-	n := 0
+	n, frames := 0, 0
 	if dec.gen != nil {
-		n = dec.gen.flowRules
+		n, frames = dec.gen.flowRules, dec.gen.flowFrames
 	}
-	return b.String(), n, true
+	return b.String(), n, frames, true
 }
 
 // TestFlowMatchesDirectRules checks that printing the typed rules from Flow IR writes the parser
 // that dgen writes, apart from the lines of unread variables, and that the comparison covers rules
-// printed from Flow IR.
+// and, where the mode inlines them, framed bodies and lines printed from Flow IR.
 func TestFlowMatchesDirectRules(t *testing.T) {
 	cases := append(schemaCorpus(t), coreExtraGrammars...)
 	for _, mode := range flowModes {
 		t.Run(mode.name, func(t *testing.T) {
-			compared, grammars, printed := 0, 0, 0
+			compared, grammars, printed, framed := 0, 0, 0, 0
 			for _, gc := range cases {
-				want, n, ok := flowGenerate(gc.src, mode.opts)
+				want, n, frames, ok := flowGenerate(gc.src, mode.opts)
 				if !ok {
 					continue
 				}
-				if n != 0 {
-					t.Fatalf("%s: %d rules printed from Flow IR without flowTyped", gc.name, n)
+				if n != 0 || frames != 0 {
+					t.Fatalf("%s: %d rules and %d framed bodies printed from Flow IR without flowTyped", gc.name, n, frames)
 				}
 				opts := mode.opts
 				opts.flowTyped = true
-				got, n, ok := flowGenerate(gc.src, opts)
+				got, n, frames, ok := flowGenerate(gc.src, opts)
 				if !ok {
 					t.Errorf("%s: rejected with flowTyped", gc.name)
 					continue
@@ -86,14 +96,18 @@ func TestFlowMatchesDirectRules(t *testing.T) {
 					grammars++
 					printed += n
 				}
+				framed += frames
 				w, g := flowUnreadLine.ReplaceAllString(want, ""), flowUnreadLine.ReplaceAllString(got, "")
 				if w != g {
 					t.Errorf("%s: output differs:\n%s", gc.name, firstDiff(w, g))
 				}
 			}
-			t.Logf("compared %d grammars, %d with %d rules printed from Flow IR", compared, grammars, printed)
+			t.Logf("compared %d grammars, %d with %d rules printed from Flow IR; %d framed bodies and lines", compared, grammars, printed, framed)
 			if compared < 100 || grammars < 100 {
 				t.Errorf("compared %d grammars, %d with rules printed from Flow IR", compared, grammars)
+			}
+			if mode.frames && framed < 50 || !mode.frames && framed != 0 {
+				t.Errorf("%d framed bodies and lines printed from Flow IR", framed)
 			}
 		})
 	}
@@ -155,15 +169,15 @@ func TestFlowTypedModes(t *testing.T) {
 		t.Run(mode.name, func(t *testing.T) {
 			compared := 0
 			for _, gc := range cases {
-				want, _, ok := flowGenerate(gc.src, mode.opts)
+				want, _, _, ok := flowGenerate(gc.src, mode.opts)
 				if !ok {
 					continue
 				}
 				opts := mode.opts
 				opts.flowTyped = true
-				got, n, _ := flowGenerate(gc.src, opts)
-				if n != 0 || got != want {
-					t.Errorf("%s: %d rules printed from Flow IR, same output %v", gc.name, n, got == want)
+				got, n, frames, _ := flowGenerate(gc.src, opts)
+				if n != 0 || frames != 0 || got != want {
+					t.Errorf("%s: %d rules and %d framed bodies printed from Flow IR, same output %v", gc.name, n, frames, got == want)
 				}
 				compared++
 			}

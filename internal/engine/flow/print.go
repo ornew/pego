@@ -14,6 +14,9 @@ import (
 func String(f *Func) string {
 	p := &printer{loops: map[*Label]string{}}
 	fmt.Fprintf(&p.b, "func %s", f.Name)
+	if f.Frame {
+		p.b.WriteString(" framed")
+	}
 	if f.Binds {
 		p.b.WriteString(" binds")
 	}
@@ -22,6 +25,12 @@ func String(f *Func) string {
 		fmt.Fprintf(&p.b, "  var %s %s\n", v.Name, v.Type)
 	}
 	p.stmts(f.Body, 1)
+	if f.Cut != nil {
+		p.line(1, "cut = %s", f.Cut.Name)
+	}
+	if f.Value != nil {
+		p.line(1, "return %s", p.expr(f.Value))
+	}
 	return p.b.String()
 }
 
@@ -126,6 +135,22 @@ func (p *printer) stmt(s Stmt, d int) {
 		p.line(d, "drop created %s", p.expr(s.C))
 	case *Unfresh:
 		p.line(d, "unfresh %s", p.expr(s.X))
+	case *Reset:
+		p.line(d, "reset %s", p.expr(s.M))
+	case *SetCapture:
+		p.line(d, "setcapture %d, %s", s.Slot, p.expr(s.X))
+	case *ClearVals:
+		p.line(d, "clear %s", s.F.Name)
+	case *DropTrail:
+		p.line(d, "droptrail %s", p.expr(s.M))
+	case *FreeFrame:
+		p.line(d, "free %s", s.F.Name)
+	case *AppendError:
+		p.line(d, "recovered %s", p.expr(s.X))
+	case *DeclareNames:
+		p.line(d, "names %v", s.N.List)
+	case *Comment:
+		p.line(d, "// %s", s.Text)
 	default:
 		p.line(d, "?%T", s)
 	}
@@ -164,6 +189,9 @@ func (p *printer) exprs(xs ...Expr) string {
 }
 
 func (p *printer) caps(c Captures) string {
+	if c.Vars == nil {
+		return "[frame]"
+	}
 	var xs []string
 	for i, v := range c.Vars {
 		if v != nil {
@@ -178,8 +206,13 @@ func (p *printer) expr(x Expr) string {
 	case *Use:
 		return x.V.Name
 	case *Read:
-		if x.R == RegEnv {
+		switch x.R {
+		case RegEnv:
 			return "env"
+		case RegFrame:
+			return "frame"
+		case RegCut:
+			return "cut"
 		}
 		return "pos"
 	case *RecLen:
@@ -249,7 +282,24 @@ func (p *printer) expr(x Expr) string {
 		for i, v := range x.Vals {
 			vals[i] = v.Name
 		}
-		return fmt.Sprintf("attach(%s, %v, [%s], %s)", p.expr(x.X), x.Names, strings.Join(vals, " "), p.expr(x.Start))
+		if x.Frame != nil {
+			vals = []string{x.Frame.Name + ".vals"}
+		}
+		return fmt.Sprintf("attach(%s, %v, [%s], %s)", p.expr(x.X), x.Names.List, strings.Join(vals, " "), p.expr(x.Start))
+	case *MarkState:
+		return "mark"
+	case *MarkPos:
+		return x.M.Name + ".pos"
+	case *NewFrame:
+		return fmt.Sprintf("newframe(%v)", x.N.List)
+	case *FrameVal:
+		return fmt.Sprintf("%s.vals[%d]", x.F.Name, x.Slot)
+	case *Keep:
+		return "keep(" + p.expr(x.Exps) + ")"
+	case *MakeError:
+		return "error(" + p.exprs(x.Far, x.Exps) + ")"
+	case *ErrorValue:
+		return "errorvalue(" + p.exprs(x.Start, x.X) + ")"
 	case *FreshNode:
 		return "fresh(" + p.expr(x.X) + ")"
 	case *ConvertResult:

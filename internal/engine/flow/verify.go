@@ -10,7 +10,8 @@ import (
 //   - an Exit names an enclosing block or loop, or the function's Fail label; a Continue names an
 //     enclosing loop; every block and loop has a label of its own;
 //   - every variable read or assigned is an entry variable of f or one of its Vars, each listed
-//     once;
+//     once; a local function has the entry variables, a framed one none, and its Cut is one of its
+//     Vars;
 //   - a Set has as many places as values, or one value with that many results (Results);
 //   - a loop without a bound (Counter or While) can be left: its body exits to it.
 //
@@ -20,10 +21,12 @@ import (
 func Verify(f *Func) error {
 	v := &verifier{f: f, vars: map[*Var]bool{}, labels: map[*Label]bool{f.Fail: true}}
 	for _, x := range []*Var{f.Start, f.Result, f.Ctx} {
-		if x == nil || !x.Entry {
-			return fmt.Errorf("%s: entry variable missing or not marked", f.Name)
+		if f.Frame != (x == nil) || x != nil && !x.Entry {
+			return fmt.Errorf("%s: entry variable missing, not marked or in a framed function", f.Name)
 		}
-		v.vars[x] = true
+		if x != nil {
+			v.vars[x] = true
+		}
 	}
 	for _, x := range f.Vars {
 		if v.vars[x] || x.Entry {
@@ -31,8 +34,21 @@ func Verify(f *Func) error {
 		}
 		v.vars[x] = true
 	}
+	if !f.Frame && (f.Value != nil || f.Cut != nil) {
+		return fmt.Errorf("%s: value or cut flag of a local function", f.Name)
+	}
+	if f.Cut != nil {
+		if err := v.use(f.Cut); err != nil {
+			return fmt.Errorf("%s: %w", f.Name, err)
+		}
+	}
 	if err := v.stmts(f.Body); err != nil {
 		return fmt.Errorf("%s: %w", f.Name, err)
+	}
+	if f.Value != nil {
+		if err := v.expr(f.Value); err != nil {
+			return fmt.Errorf("%s: %w", f.Name, err)
+		}
 	}
 	return nil
 }
@@ -167,7 +183,19 @@ func (v *verifier) stmt(s Stmt) error {
 		return v.expr(s.C)
 	case *Unfresh:
 		return v.expr(s.X)
-	case *Step, *Silent, *SetWhere:
+	case *Reset:
+		return v.expr(s.M)
+	case *SetCapture:
+		return v.expr(s.X)
+	case *ClearVals:
+		return v.use(s.F)
+	case *DropTrail:
+		return v.expr(s.M)
+	case *FreeFrame:
+		return v.use(s.F)
+	case *AppendError:
+		return v.expr(s.X)
+	case *Step, *Silent, *SetWhere, *DeclareNames, *Comment:
 	default:
 		return fmt.Errorf("unknown statement %T", s)
 	}

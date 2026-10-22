@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -13,9 +14,12 @@ import (
 // Typed Go rules printed from Flow IR.
 //
 // With GenOptions.flowTyped, in the parsers whose options flowSupported accepts, the typed rules
-// that flow.LocalRule accepts are built as Core IR (typedCore), lowered to Flow IR (flow.Lower)
-// and printed here into the direct rule that typedCall and directMethod wrap. The other rules
-// keep the direct rules of dgen and the general code.
+// are built as Core IR (typedCore) and printed from Flow IR here. The rules that flow.LocalRule
+// accepts are lowered to local functions (flow.Lower) and printed into the direct rule that
+// typedCall and directMethod wrap. The bodies of left-recursion leaders and of rules that recover,
+// and the lines of Operators Rules, are lowered to framed functions (flow.LowerFrame) where dgen
+// inlines them, and printed into the matcher methods that the runtime calls under the frames it
+// owns (finishFrameBody). The other rules keep the direct rules of dgen and the general code.
 //
 // The printer follows reachability as dgen does: a statement at an unreachable point is left out,
 // but its text is still formed, so that the package variables it names (literals, expectations,
@@ -67,7 +71,7 @@ func (g *generator) flowDirectRule(r *rule) *direct {
 	}
 	g.cur, g.proj = r, g.projections(r)
 	defer func() { g.proj = nil }()
-	p := &flowPrinter{g: g, used: map[*flow.Label]bool{}, reads: map[*flow.Var]bool{}, loops: map[*flow.Label]bool{}}
+	p := newFlowPrinter(g, false)
 	p.stmts(f.Body)
 	out := &direct{fail: p.used[f.Fail], succeed: !p.dead, binds: f.Binds, start: p.reads[f.Start], ctx: p.reads[f.Ctx]}
 	var unread []string
@@ -85,22 +89,141 @@ func (g *generator) flowDirectRule(r *rule) *direct {
 	return out
 }
 
+// flowFrameBody prints the body of the typed rule r from Flow IR as the matcher of its frame
+// body, as directTypedFrameBody does, or returns "" if r keeps the code of dgen.
+func (g *generator) flowFrameBody(r *rule, scope *scope) string {
+	if g.flow == nil || g.table != "trules" || g.disableTypedFrameLayouts {
+		return ""
+	}
+	comment, ok := g.typedFrameComment(r)
+	cr := g.flow.m.Rules[r.id]
+	// The runtime-owned frame has the slots of the Node rule's scope.
+	if !ok || !flow.FramedBody(cr.Body) || !slices.Equal(core.SlotNames(cr.Scope), g.nodeScopes[r]) {
+		return ""
+	}
+	f, err := flow.LowerFrame(g.flow.m, cr, cr.Body, cr.Scope, cr.Want, r.name, g.flow.opts)
+	if err != nil {
+		panic(err) // FramedBody holds
+	}
+	g.cur, g.proj = r, g.projections(r)
+	defer func() { g.proj = nil }()
+	return g.flowFramed(f, cr.Scope, scope, r.name+" ("+comment+")")
+}
+
+// flowOperatorsRuleBody prints the line l of the Operators Rule g.cur, whose expression is e, from
+// Flow IR as directTypedOperatorsRuleBody does, or returns "" if the line keeps the code of dgen.
+func (g *generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope *scope, build bool) string {
+	if g.flow == nil || l == nil || g.disableTypedFrameLayouts || !g.typedOperatorsRuleBodyOK(e) || !flow.FramedBody(l.Body) {
+		return ""
+	}
+	f, err := flow.LowerFrame(g.flow.m, g.flow.m.Rules[g.cur.id], l.Body, l.Scope, build, g.cur.name, g.flow.opts)
+	if err != nil {
+		panic(err) // FramedBody holds
+	}
+	prev := g.proj
+	g.proj = nil // the actions of the lines use no projections of the rule
+	defer func() { g.proj = prev }()
+	return g.flowFramed(f, l.Scope, scope, g.cur.name+" (typed OperatorsRule body inlined)")
+}
+
+// flowOperatorsRule returns the Core IR of the Operators Rule r, or nil if its lines are not
+// printed from Flow IR.
+func (g *generator) flowOperatorsRule(r *rule) *core.OperatorsRule {
+	if g.flow == nil || g.table != "trules" {
+		return nil
+	}
+	o, _ := g.flow.m.Rules[r.id].Body.(*core.OperatorsRule)
+	return o
+}
+
+// flowFramed prints the framed function f, whose capture scope has the slots, as a matcher method
+// with the comment, as finishFrameBody does, and sets scope to its capture scope.
+func (g *generator) flowFramed(f *flow.Func, slots []core.Slot, scope *scope, comment string) string {
+	p := newFlowPrinter(g, true)
+	p.stmts(f.Body)
+	// The function publishes the cut flag of its outermost scope on return.
+	publish := func() {
+		if f.Cut != nil {
+			p.reads[f.Cut] = true
+			p.write(fmt.Sprintf("p.Cut = %s\n", f.Cut.Name))
+		}
+	}
+	if !p.dead {
+		publish()
+		p.read(f.Value)
+		p.write(fmt.Sprintf("return %s, true\n", p.expr(f.Value)))
+	}
+	if p.used[f.Fail] {
+		p.b.WriteString("fail:\n")
+		p.dead = false
+		publish()
+		p.write("return nil, false\n")
+	}
+	var b strings.Builder
+	var vars []dvar
+	var unread []string
+	for _, v := range f.Vars {
+		vars = append(vars, dvar{v.Name, goType(v.Type)})
+		if !p.reads[v] {
+			unread = append(unread, v.Name)
+		}
+	}
+	b.WriteString(varLines(vars))
+	if len(unread) > 0 {
+		fmt.Fprintf(&b, "%s_ = %s\n", strings.Repeat("_, ", len(unread)-1), strings.Join(unread, ", "))
+	}
+	b.WriteString(p.b.String())
+	*scope = *newScope()
+	for _, sl := range slots {
+		scope.slot(sl.Name)
+	}
+	g.flowFrames++
+	return g.method(comment, b.String())
+}
+
 func goType(t flow.Type) string {
 	return [...]string{flow.TypeInt: "int", flow.TypeBool: "bool", flow.TypeRune: "rune", flow.TypeValue: "any",
 		flow.TypeEnv: "*Env", flow.TypeExpMark: "ExpMark", flow.TypeExpIDs: "[]ExpID", flow.TypeVals: "[]any",
-		flow.TypeCtx: "*TActCtx"}[t]
+		flow.TypeCtx: "*TActCtx", flow.TypeMark: "Mark", flow.TypeFrame: "*TCaptureFrame", flow.TypeError: "*SyntaxError"}[t]
 }
 
-// flowPrinter prints the body of a Flow IR function as the statements of a direct rule.
+// flowPrinter prints the body of a Flow IR function as the statements of a direct rule or, if
+// frame, of a matcher method.
 type flowPrinter struct {
-	g *generator
-	b strings.Builder
+	g     *generator
+	frame bool
+	b     strings.Builder
 	// dead reports that the current point is unreachable. used holds the labels exited to from
 	// reachable points, reads the variables read there, and loops the labels of loops.
 	dead  bool
 	used  map[*flow.Label]bool
 	reads map[*flow.Var]bool
 	loops map[*flow.Label]bool
+	// names holds the package variables of the capture names of scopes, declared on first use
+	// unless a DeclareNames statement declares them.
+	names map[*flow.Names]string
+}
+
+func newFlowPrinter(g *generator, frame bool) *flowPrinter {
+	return &flowPrinter{g: g, frame: frame, used: map[*flow.Label]bool{}, reads: map[*flow.Var]bool{},
+		loops: map[*flow.Label]bool{}, names: map[*flow.Names]string{}}
+}
+
+// scopeNames returns the package variable of the capture names n, naming it on first use.
+func (p *flowPrinter) scopeNames(n *flow.Names) string {
+	if name, ok := p.names[n]; ok {
+		return name
+	}
+	name := p.g.name("scope")
+	p.names[n] = name
+	if !n.Declared {
+		p.declare(n)
+	}
+	return name
+}
+
+func (p *flowPrinter) declare(n *flow.Names) {
+	fmt.Fprintf(&p.g.vars, "var %s = %s\n", p.names[n], goStrings(n.List))
 }
 
 // write writes s unless the current point is unreachable.
@@ -223,7 +346,11 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 		p.write(fmt.Sprintf("p.MergeExpected(%s, RenamedExpected(p.Parser, %s, %d))\n", p.expr(s.Far), p.expr(s.Exps), p.desc(s.Exp)))
 	case *flow.PushKid:
 		p.read(s.X)
-		p.write(fmt.Sprintf("p.PushKid(%s)\n", p.expr(s.X)))
+		if p.frame {
+			p.write(fmt.Sprintf("p.KidStack = append(p.KidStack, %s)\n", p.expr(s.X)))
+		} else {
+			p.write(fmt.Sprintf("p.PushKid(%s)\n", p.expr(s.X)))
+		}
 	case *flow.DropKids:
 		p.read(s.Base)
 		p.write(fmt.Sprintf("p.DropKids(%s)\n", p.expr(s.Base)))
@@ -242,6 +369,30 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 	case *flow.Unfresh:
 		p.read(s.X)
 		p.write(fmt.Sprintf("if n := AsTval(%s); n != nil {\nn.TSetFresh(false)\n}\n", p.expr(s.X)))
+	case *flow.Reset:
+		p.read(s.M)
+		p.write(fmt.Sprintf("p.Reset(%s)\n", p.expr(s.M)))
+	case *flow.SetCapture:
+		p.read(s.X)
+		p.write(fmt.Sprintf("p.SetCapture(%d, %s)\n", s.Slot, p.expr(s.X)))
+	case *flow.ClearVals:
+		p.read(&flow.Use{V: s.F})
+		p.write(fmt.Sprintf("clear(%s.Vals)\n", s.F.Name))
+	case *flow.DropTrail:
+		p.read(s.M)
+		p.write(fmt.Sprintf("p.DropTrail(%s.Trail)\n", p.expr(s.M)))
+	case *flow.FreeFrame:
+		p.read(&flow.Use{V: s.F})
+		p.write(fmt.Sprintf("p.FreeFrame(%s)\n", s.F.Name))
+	case *flow.AppendError:
+		p.read(s.X)
+		p.write(fmt.Sprintf("p.Recovered = append(p.Recovered, %s)\n", p.expr(s.X)))
+	case *flow.DeclareNames:
+		// Declared whatever the reachability, as dgen does.
+		p.scopeNames(s.N)
+		p.declare(s.N)
+	case *flow.Comment:
+		p.write("// " + s.Text + "\n")
 	default:
 		panic(fmt.Sprintf("flow printer: statement %T", s))
 	}
@@ -353,8 +504,13 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 	case *flow.Use:
 		return x.V.Name
 	case *flow.Read:
-		if x.R == flow.RegEnv {
+		switch x.R {
+		case flow.RegEnv:
 			return "p.Env"
+		case flow.RegFrame:
+			return "p.Frame"
+		case flow.RegCut:
+			return "p.Cut"
 		}
 		return "p.Pos"
 	case *flow.RecLen:
@@ -439,13 +595,30 @@ func (p *flowPrinter) expr(x flow.Expr) string {
 		return fmt.Sprintf("p.ScopeValue(%s, %s, %s)", p.shaper(x.Shape), p.expr(x.X), p.expr(x.Start))
 	case *flow.AttachCaptures:
 		v := p.expr(x.X)
-		name := g.name("scope")
-		fmt.Fprintf(&g.vars, "var %s = %s\n", name, goStrings(x.Names))
+		name := p.scopeNames(x.Names)
+		if x.Frame != nil {
+			return fmt.Sprintf("p.AttachCaptures(%s, %s, %s.Vals, %s, p.Pos)", v, name, x.Frame.Name, p.expr(x.Start))
+		}
 		vals := make([]string, len(x.Vals))
 		for i, v := range x.Vals {
 			vals[i] = v.Name
 		}
 		return fmt.Sprintf("p.AttachCaptures(%s, %s, []any{%s}, %s, p.Pos)", v, name, strings.Join(vals, ", "), p.expr(x.Start))
+	case *flow.MarkState:
+		return "p.Mark()"
+	case *flow.MarkPos:
+		return x.M.Name + ".Pos"
+	case *flow.NewFrame:
+		return fmt.Sprintf("p.NewFrame(len(%s))", p.scopeNames(x.N))
+	case *flow.FrameVal:
+		return fmt.Sprintf("%s.Vals[%d]", x.F.Name, x.Slot)
+	case *flow.Keep:
+		return fmt.Sprintf("p.Keep(%s)", p.expr(x.Exps))
+	case *flow.MakeError:
+		return fmt.Sprintf("p.MakeError(%s, %s)", p.expr(x.Far), p.expr(x.Exps))
+	case *flow.ErrorValue:
+		start := p.expr(x.Start)
+		return fmt.Sprintf("NewTError(%s, p.Pos, p.Text(%s, p.Pos), p.RecoveryErrorText(%s))", start, start, p.expr(x.X))
 	case *flow.FreshNode:
 		return fmt.Sprintf("TFreshNode(%s)", p.expr(x.X))
 	case *flow.ConvertResult:
@@ -502,11 +675,18 @@ func (p *flowPrinter) not(x flow.Expr) string {
 		}
 		return fmt.Sprintf("!p.ClassesSkip(%s)", g.classSteps(items))
 	case *flow.Pred:
+		if x.Caps.Vars == nil {
+			// The term reads the current frame.
+			return fmt.Sprintf("!p.Predicate(func(c *%s) any { return %s })", g.ctxType(), g.predicateTerm(p.term(x.Node), frameScope(x.Caps), nil))
+		}
 		defer p.caps(x.Caps)()
 		return fmt.Sprintf("!p.Predicate(func(c *TActCtx) any { return %s })", g.predicateTerm(p.term(x.Node), newScope(), nil))
 	case *flow.Bind:
-		defer p.caps(x.Caps)()
 		b := p.term(x.Node).(*grammar.Bind)
+		if x.Caps.Vars == nil {
+			return fmt.Sprintf("!p.Bind(%q, func(c *%s) any { return %s })", b.Name, g.ctxType(), g.term(b.Value, frameScope(x.Caps), nil))
+		}
+		defer p.caps(x.Caps)()
 		return fmt.Sprintf("!p.Bind(%q, func(c *TActCtx) any { return %s })", b.Name, g.term(b.Value, newScope(), nil))
 	}
 	return "!" + p.expr(x)
@@ -519,4 +699,13 @@ func (p *flowPrinter) term(n core.Node) grammar.Term {
 		panic(fmt.Sprintf("flow printer: no grammar predicate for %T", n))
 	}
 	return e.Term
+}
+
+// frameScope returns the scope of the frame whose slots the captures c name.
+func frameScope(c flow.Captures) *scope {
+	s := newScope()
+	for _, name := range c.Names {
+		s.slot(name)
+	}
+	return s
 }
