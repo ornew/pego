@@ -18,6 +18,9 @@ import (
 // start rules, which ParseAST and ParseRuleAST name) are dropped, and then the unexported
 // functions and package variables that nothing reachable names are dropped too. A function whose
 // local variable shares its name counts as naming it, which keeps more than needed, never less.
+//
+// The generator emits one statement per line and decimal indexes, which is all the matching of
+// the entry statements and of the indexes relies on.
 func pruneTypedEntries(src []byte) ([]byte, error) {
 	fset := token.NewFileSet()
 	file, err := goparser.ParseFile(fset, "", src, goparser.ParseComments)

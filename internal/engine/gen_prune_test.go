@@ -64,3 +64,88 @@ func init()  { trules[2].Entry = u2 }
 		t.Errorf("a read of the whole table must keep every entry:\n%s", got)
 	}
 }
+
+func prune(t *testing.T, src string) string {
+	t.Helper()
+	got, err := pruneTypedEntries([]byte(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(got)
+}
+
+func TestPruneTypedEntriesKeepsAllForVariableIndex(t *testing.T) {
+	got := prune(t, `package p
+
+func Parse(i int) { _ = trules[i] }
+func u2()         {}
+func init()       { trules[2].Entry = u2 }
+`)
+	if !strings.Contains(got, "trules[2].Entry = u2") || !strings.Contains(got, "func u2()") {
+		t.Errorf("a variable index must keep every entry:\n%s", got)
+	}
+}
+
+func TestPruneTypedEntriesIgnoresStringsAndComments(t *testing.T) {
+	got := prune(t, "package p\n\n"+
+		"func Parse() { _ = trules[1]; _ = \"u2 lonely\"; _ = `u2` } // u2 lonely\n\n"+
+		"var lonely = 1\nfunc u2() {}\nfunc init() { trules[2].Entry = u2 }\n")
+	for _, gone := range []string{"var lonely", "func u2()", "trules[2].Entry"} {
+		if strings.Contains(got, gone) {
+			t.Errorf("a name in a string or a comment kept %q:\n%s", gone, got)
+		}
+	}
+}
+
+func TestPruneTypedEntriesKeepsWhatEveryKindOfReferenceNames(t *testing.T) {
+	got := prune(t, `package p
+
+type T struct{}
+
+func (T) M()                { viaMethod() }
+func viaMethod()            {}
+func viaLiteral()           {}
+func viaGeneric[X any](x X) { viaGenericCallee() }
+func viaGenericCallee()     {}
+func viaVar() int           { return 1 }
+func unused()               {}
+
+var v = viaVar()
+
+func Parse() { _ = trules[1]; viaGeneric(1); _ = v }
+
+func init() {
+	trules[1].Entry = func(p int) { viaLiteral() }
+	trules[2].Entry = unused
+}
+`)
+	for _, want := range []string{"func viaMethod()", "func viaLiteral()", "func viaGenericCallee()", "func viaVar()", "var v ", "func viaGeneric["} {
+		if !strings.Contains(got, want) {
+			t.Errorf("pruned source lost %q:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "unused") {
+		t.Errorf("pruned source kept an unreferenced function:\n%s", got)
+	}
+}
+
+func TestPruneTypedEntriesRemovesDocComments(t *testing.T) {
+	got := prune(t, `package p
+
+func Parse() { _ = trules[1] }
+
+// u2 is only entered by its entry.
+// A second line.
+func u2() {}
+
+// lonely holds a table.
+var lonely = 1
+
+func init() { trules[2].Entry = u2 }
+`)
+	for _, gone := range []string{"u2", "lonely", "second line", "holds a table"} {
+		if strings.Contains(got, gone) {
+			t.Errorf("a doc comment or declaration stayed behind (%q):\n%s", gone, got)
+		}
+	}
+}

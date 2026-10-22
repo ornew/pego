@@ -60,5 +60,6 @@ pruned output.
 
 ## Decision and Limits
 
-Adopted for Go parsers with typed values. A rule can still be called by name from
-the runtime only if it is a start rule, which keeps its entry.
+Adopted for Go parsers with typed values. The runtime uses an entry only to
+enter a start rule, so only start rules keep theirs; every other rule is called
+through its body, which `p.Call` reaches.
