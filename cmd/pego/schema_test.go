@@ -152,3 +152,45 @@ func TestSchemaDiff(t *testing.T) {
 		t.Error("unknown format accepted")
 	}
 }
+
+func TestSchemaFromCompiledGrammar(t *testing.T) {
+	g := writeFile(t, "g.pego", schemaGrammar)
+	want, err := runCLI(t, "", "schema", "-g", g, "-all-rules")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	withAST := filepath.Join(dir, "ast.pegoc")
+	if _, err := runCLI(t, "", "compile", "-g", g, "-o", withAST); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runCLI(t, "", "schema", "-g", withAST, "-all-rules"); err != nil || out != want {
+		t.Errorf("file with the AST: %v\n%s", err, out)
+	}
+
+	bare := filepath.Join(dir, "bare.pegoc")
+	if _, err := runCLI(t, "", "compile", "-g", g, "-no-ast", "-o", bare); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runCLI(t, "", "schema", "-g", bare); err == nil || !strings.Contains(err.Error(), "-schema") {
+		t.Errorf("AST-less file without a schema: %v", err)
+	}
+	if _, err := runCLI(t, "", "compile", "-g", g, "-schema", "-o", bare); err == nil {
+		t.Error("-schema accepted without -no-ast")
+	}
+	stored := filepath.Join(dir, "stored.pegoc")
+	if _, err := runCLI(t, "", "compile", "-g", g, "-no-ast", "-schema", "-o", stored); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runCLI(t, "", "schema", "-g", stored, "-all-rules"); err != nil || out != want {
+		t.Errorf("AST-less file with a schema: %v\n%s", err, out)
+	}
+	// Saving the AST-less file again keeps its schema.
+	resaved := filepath.Join(dir, "resaved.pegoc")
+	if _, err := runCLI(t, "", "compile", "-g", stored, "-no-ast", "-o", resaved); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runCLI(t, "", "schema", "-g", resaved, "-all-rules"); err != nil || out != want {
+		t.Errorf("resaved file: %v\n%s", err, out)
+	}
+}

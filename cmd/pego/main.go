@@ -8,7 +8,7 @@
 //	pego convert [-to pego|json] [-o output] grammar.pego|grammar.json|grammar.pegoc
 //	pego gen -g grammar.pego -module path -o dir [-pkg name] [-runtime embed|import|only] [-s main] [-types] [-document] [-stream] [-recognize] [-observability] [-work-controls] [-typed-only] [-nodoc] [-max-depth n] [-source-info] [-default-value]
 //	pego gen -lang ts -g grammar.pego -o dir [-runtime embed|import|only] [-runtime-module specifier] [-s main] [-types] [-recognize] [-observability]
-//	pego compile -g grammar.pego [-s main] [-no-ast] [-source-info] [-default-value] -o grammar.pegoc
+//	pego compile -g grammar.pego [-s main] [-no-ast [-schema]] [-source-info] [-default-value] -o grammar.pegoc
 //	pego trace -g grammar.pego [-s main] [-i input] [-max-depth n] [-rule name] [-failures] [-f text|json]
 //	pego profile -g grammar.pego [-s main] [-i input] [-sort column] [-n rows] [-f text|json]
 //	pego explain -g grammar.pego [-s main] [-i input] [-n calls]
@@ -127,11 +127,14 @@ Commands:
       rule types, so the parser returns the default node tree; it cannot be
       combined with -types.
 
-  compile -g <grammar> [-s <rule>] [-no-ast] [-source-info] [-default-value] -o <file.pegoc>
+  compile -g <grammar> [-s <rule>] [-no-ast [-schema]] [-source-info] [-default-value] -o <file.pegoc>
       Compile a grammar and save it. The result can be used as <grammar>
       by the other commands. With -no-ast, the grammar AST is omitted; the
       result then runs only on the bytecode backends and cannot be
-      converted back to a grammar. With -source-info, its parses record
+      converted back to a grammar. With -schema as well, the result also
+      keeps the output schema, so that schema can export it; it requires
+      -no-ast, because a file with the AST derives the schema from it.
+      With -source-info, its parses record
       the rule of each node and the names of captures. With -default-value,
       value actions and declared rule types are dropped (predicates still
       run), so its parses return the default node tree.
@@ -1096,6 +1099,7 @@ func compileCmd(args []string) error {
 	start := fs.String("s", "", "start rule saved as the default (default: the one saved in a .pegoc, otherwise the grammar's default start rule)")
 	output := fs.String("o", "", "output file (.pegoc)")
 	noAST := fs.Bool("no-ast", false, "omit the grammar AST (the result runs only on the bytecode backends)")
+	schema := fs.Bool("schema", false, "store the output schema with the result, which needs -no-ast")
 	sourceInfo := fs.Bool("source-info", false, "record the rule of each node and the names of captures in parse results")
 	defaultValue := fs.Bool("default-value", false, "drop value actions and declared rule types, so parses return the default node tree")
 	if err := fs.Parse(args); err != nil {
@@ -1103,6 +1107,9 @@ func compileCmd(args []string) error {
 	}
 	if *grammarPath == "" || *output == "" {
 		return fmt.Errorf("-g and -o are required")
+	}
+	if *schema && !*noAST {
+		return fmt.Errorf("compile: -schema needs -no-ast: a file with the AST derives its schema from the AST")
 	}
 	p, err := loadParser(*grammarPath, *start, compileFlags{sourceInfo: *sourceInfo, defaultValue: *defaultValue})
 	if err != nil {
@@ -1114,6 +1121,9 @@ func compileCmd(args []string) error {
 	var opts []pego.MarshalOption
 	if *noAST {
 		opts = append(opts, pego.WithoutAST())
+	}
+	if *schema {
+		opts = append(opts, pego.WithSchema())
 	}
 	data, err := p.Marshal(opts...)
 	if err != nil {

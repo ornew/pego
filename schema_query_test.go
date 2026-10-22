@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/ornew/pego"
@@ -66,8 +67,43 @@ rule unused = "z"`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := loaded.OutputSchema(); !errors.Is(err, pego.ErrSchemaUnavailable) {
+	// A file with the AST derives the schema from the AST, as the source does.
+	fromFile, err := loaded.OutputSchema()
+	if err != nil {
 		t.Fatalf("loaded parser schema: %v", err)
+	}
+	if got, want := marshalJSON(t, fromFile), marshalJSON(t, s); !bytes.Equal(got, want) {
+		t.Fatalf("loaded schema differs:\n%s\n%s", got, want)
+	}
+	// Without the AST, the file has no schema unless it was saved with one.
+	bare, err := p.Marshal(pego.WithoutAST())
+	if err != nil {
+		t.Fatal(err)
+	}
+	bareParser, err := pego.LoadParser(bare)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := bareParser.OutputSchema(); !errors.Is(err, pego.ErrSchemaUnavailable) || !strings.Contains(err.Error(), "-schema") {
+		t.Fatalf("AST-less parser without a schema section: %v", err)
+	}
+	withSchema, err := p.Marshal(pego.WithoutAST(), pego.WithSchema())
+	if err != nil {
+		t.Fatal(err)
+	}
+	stored, err := pego.LoadParser(withSchema)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fromSection, err := stored.OutputSchema()
+	if err != nil {
+		t.Fatalf("AST-less parser with a schema section: %v", err)
+	}
+	if got, want := marshalJSON(t, fromSection), marshalJSON(t, s); !bytes.Equal(got, want) {
+		t.Fatalf("stored schema differs:\n%s\n%s", got, want)
+	}
+	if _, err := p.Marshal(pego.WithSchema()); err == nil {
+		t.Fatal("WithSchema accepted with the AST")
 	}
 }
 
@@ -296,4 +332,13 @@ rule main = x:"a" "b" => Item{Value: $x}`, "main")
 	if _, err := new(pego.QuerySchema).CompileStructuralQuery(pego.QueryPattern{Rule: "missing"}); err != nil {
 		t.Fatalf("zero QuerySchema checked the rule: %v", err)
 	}
+}
+
+func marshalJSON(t *testing.T, s *pego.OutputSchema) []byte {
+	t.Helper()
+	data, err := json.Marshal(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
 }

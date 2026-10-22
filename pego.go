@@ -604,6 +604,15 @@ func WithoutAST() MarshalOption {
 	return func(o *engine.MarshalOptions) { o.OmitAST = true }
 }
 
+// WithSchema stores the output schema in a file without the AST (use it with WithoutAST), so that
+// the parser loaded from the file can export it with OutputSchema. The schema is not written with
+// the AST: a parser loaded with the AST derives its schema from the AST, and Marshal fails when
+// WithSchema is given without WithoutAST. A file saved without the schema returns an error matching
+// ErrSchemaUnavailable from OutputSchema.
+func WithSchema() MarshalOption {
+	return func(o *engine.MarshalOptions) { o.Schema = true }
+}
+
 // Marshal encodes the parser like MarshalBinary, with options.
 func (p *Parser) Marshal(opts ...MarshalOption) ([]byte, error) {
 	var o engine.MarshalOptions
