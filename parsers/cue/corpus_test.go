@@ -1,17 +1,22 @@
 package cue
 
 import (
-	"archive/tar"
 	"bufio"
 	"compress/gzip"
 	"crypto/sha256"
 	"fmt"
 	"hash/fnv"
-	"io"
+	"maps"
 	"os"
+	"slices"
 	"sort"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
+
+	"github.com/ornew/pego/internal/corpora/corporatest"
+	"github.com/ornew/pego/parsers/cue/internal/upstream"
 )
 
 // A refResult is the result of the reference implementation (cuelang.org/go/cue/parser) for one source.
@@ -21,45 +26,87 @@ type refResult struct {
 	result string // "error: ..." or the canonical tree
 }
 
-// loadCorpus reads testdata/corpus.tar.gz: the CUE of the cue repository and the results of the reference
-// implementation (see the README for how they were made).
+// corpusSize is the number of sources of the corpus.
+const corpusSize = 4061
+
+// loadCorpus collects the CUE of the cue repository (the fetched corpus "cue") and joins it by name with the results of
+// the reference implementation in testdata/corpus.refs.gz (see the README for how they were made). The test is
+// skipped if the repository is not fetched.
 func loadCorpus(t testing.TB) []refResult {
 	t.Helper()
-	f, err := os.Open("testdata/corpus.tar.gz")
+	corpus, err := readCorpus(corporatest.Dir(t, "cue"))
 	if err != nil {
 		t.Fatal(err)
+	}
+	return corpus
+}
+
+var (
+	corpusOnce sync.Once
+	corpusData []refResult
+	corpusErr  error
+)
+
+// readCorpus reads the sources below dir and their results. A result without a source, a source without a result, a
+// source whose hash differs from the recorded one, and a count that is not corpusSize are errors.
+func readCorpus(dir string) ([]refResult, error) {
+	corpusOnce.Do(func() { corpusData, corpusErr = readCorpusFiles(dir) })
+	return slices.Clone(corpusData), corpusErr
+}
+
+func readCorpusFiles(dir string) ([]refResult, error) {
+	srcs, err := upstream.Collect(dir)
+	if err != nil {
+		return nil, err
+	}
+	f, err := os.Open("testdata/corpus.refs.gz")
+	if err != nil {
+		return nil, err
 	}
 	defer f.Close()
 	gz, err := gzip.NewReader(f)
 	if err != nil {
-		t.Fatal(err)
+		return nil, err
 	}
-	tr := tar.NewReader(gz)
-	var out []refResult
-	byName := map[string]int{}
-	for {
-		h, err := tr.Next()
-		if err == io.EOF {
-			break
+	sc := bufio.NewScanner(gz)
+	sc.Buffer(nil, 1<<26)
+	refs := map[string][2]string{} // name -> hash, result
+	for sc.Scan() {
+		fields := strings.SplitN(sc.Text(), "\t", 3)
+		if len(fields) != 3 {
+			return nil, fmt.Errorf("corpus.refs.gz: bad line %.60q", sc.Text())
 		}
+		result, err := strconv.Unquote(fields[2])
 		if err != nil {
-			t.Fatal(err)
+			return nil, fmt.Errorf("corpus.refs.gz: %s: %v", fields[0], err)
 		}
-		data, err := io.ReadAll(tr)
-		if err != nil {
-			t.Fatal(err)
+		if _, dup := refs[fields[0]]; dup {
+			return nil, fmt.Errorf("corpus.refs.gz: %s twice", fields[0])
 		}
-		if name, ok := strings.CutSuffix(h.Name, ".ref"); ok && byName[name] > 0 {
-			out[byName[name]-1].result = string(data)
-			continue
-		}
-		out = append(out, refResult{name: h.Name, src: string(data)})
-		byName[h.Name] = len(out)
+		refs[fields[0]] = [2]string{fields[1], result}
 	}
-	if len(out) < 4000 {
-		t.Fatalf("the corpus has %d sources", len(out))
+	if err := sc.Err(); err != nil {
+		return nil, err
 	}
-	return out
+	out := make([]refResult, 0, len(srcs))
+	for _, s := range srcs {
+		ref, ok := refs[s.Name]
+		if !ok {
+			return nil, fmt.Errorf("%s: no result in corpus.refs.gz", s.Name)
+		}
+		if got := upstream.Hash(s.Data); got != ref[0] {
+			return nil, fmt.Errorf("%s: the fetched source has hash %s, the results are of %s", s.Name, got, ref[0])
+		}
+		delete(refs, s.Name)
+		out = append(out, refResult{name: s.Name, src: string(s.Data), result: ref[1]})
+	}
+	if len(refs) > 0 {
+		return nil, fmt.Errorf("%d results in corpus.refs.gz have no source (for example %s)", len(refs), slices.Sorted(maps.Keys(refs))[0])
+	}
+	if len(out) != corpusSize {
+		return nil, fmt.Errorf("the corpus has %d sources, want %d", len(out), corpusSize)
+	}
+	return out, nil
 }
 
 // firstLine returns the tree of a result without its comments, and whether it is a tree.
@@ -126,6 +173,9 @@ func firstDiff(got, want string) string {
 	return fmt.Sprintf(" got  ...%.300s\n want ...%.300s", got[lo:], want[lo:])
 }
 
+// mutantCount is the number of mutants in testdata/mutants.txt.gz.
+const mutantCount = 32488
+
 // TestMutants compares the parser with the reference implementation on mutated inputs: every source of
 // the corpus with eight random edits (mutate_test.go). testdata/mutants.txt.gz records, for each mutant, the
 // hash of the input, whether the reference accepted it, and a hash of its tree.
@@ -136,7 +186,7 @@ func TestMutants(t *testing.T) {
 	for i, c := range corpus {
 		index[c.name] = i
 	}
-	// The vendored results, or those of another run of refgen (-mutants), named by CUE_MUTANTS.
+	// The recorded results, or those of another run of refgen (-mutants), named by CUE_MUTANTS.
 	name := "testdata/mutants.txt.gz"
 	if n := os.Getenv("CUE_MUTANTS"); n != "" {
 		name = n
@@ -203,6 +253,9 @@ func TestMutants(t *testing.T) {
 	}
 	if err := sc.Err(); err != nil {
 		t.Fatal(err)
+	}
+	if os.Getenv("CUE_MUTANTS") == "" && total != mutantCount {
+		t.Errorf("testdata/mutants.txt.gz holds %d mutants, want %d", total, mutantCount)
 	}
 	t.Logf("%d mutants: %d differ in acceptance, %d in the tree", total, accDiff, treeDiff)
 	for _, r := range reports {

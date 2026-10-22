@@ -26,6 +26,20 @@
 		"sha256": "4c5d4794f0ead3f071693690b5149d361f347f246bfb5d7cffd7b3374c3482ac"
 	},
 	{
+		"name": "cue",
+		"url": "https://codeload.github.com/cue-lang/cue/tar.gz/fc6c0b2ecd3666da92f7053d13fcfbf009b7d7a3",
+		"revision": "fc6c0b2ecd3666da92f7053d13fcfbf009b7d7a3",
+		"license": "Apache-2.0",
+		"include": [
+			"LICENSE",
+			"*.cue",
+			"*.txtar",
+			"cue/parser/parser_test.go",
+			"doc/ref/spec.md"
+		],
+		"sha256": "d3efa5ef3faf9c88e984933d8c8c48dee8e981d5b9520c0bc06d44eb11381888"
+	},
+	{
 		"name": "jsontestsuite",
 		"url": "https://codeload.github.com/nst/JSONTestSuite/tar.gz/1ef36fa01286573e846ac449e8683f8833c5b26a",
 		"revision": "1ef36fa01286573e846ac449e8683f8833c5b26a",

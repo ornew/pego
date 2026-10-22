@@ -1,19 +1,19 @@
 // Command refgen runs the reference implementation of CUE (cuelang.org/go/cue/parser) over a corpus
 // and writes its results: acceptance, the first error, and the syntax tree in a canonical form.
-// The results are vendored in the testdata directory of the parent module and checked by its tests.
+// The results are recorded in the testdata directory of the parent module and checked by its tests.
 //
 // Usage:
 //
 //	refgen -probe file...       print the tree or the first error of each file
-//	refgen -cue DIR -stats      statistics of the corpus (the sources of a checkout of cue-lang/cue)
-//	refgen -cue DIR -o OUTDIR   write OUTDIR/corpus.tar.gz, OUTDIR/mutants.txt.gz, OUTDIR/generated.txt.gz and
+//	refgen -cue DIR -stats      statistics of the corpus (the sources of a checkout of cue-lang/cue, or the fetched
+//	                            corpus "cue": go run ./hack/corpora dir cue, in the root of the repository)
+//	refgen -cue DIR -o OUTDIR   write OUTDIR/corpus.refs.gz, OUTDIR/mutants.txt.gz, OUTDIR/generated.txt.gz and
 //	                            OUTDIR/literals.txt.gz
 //	refgen -bench FILE          time the reference parser on a file (the default mode, without comments)
 //	refgen -cue DIR -mutants FILE -per N -seed S   write the results of more mutations
 package main
 
 import (
-	"archive/tar"
 	"bytes"
 	"compress/gzip"
 	"crypto/sha256"
@@ -23,7 +23,10 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
+
+	"github.com/ornew/pego/parsers/cue/internal/upstream"
 )
 
 func main() {
@@ -31,7 +34,7 @@ func main() {
 	cue := flag.String("cue", "", "directory of a checkout of github.com/cue-lang/cue")
 	stats := flag.Bool("stats", false, "print statistics of the corpus")
 	listRejected := flag.Bool("rejected", false, "with -stats: list the rejected sources")
-	out := flag.String("o", "", "directory to write the vendored results to")
+	out := flag.String("o", "", "directory to write the recorded results to")
 	per := flag.Int("per", 8, "with -o: the number of mutated inputs made from each source")
 	seed := flag.Uint64("seed", 0, "with -o: the first seed of the mutations")
 	mutantsOnly := flag.String("mutants", "", "write only this file of results of mutations (with -per and -seed)")
@@ -52,7 +55,7 @@ func main() {
 			fmt.Println()
 		}
 	case *stats:
-		srcs, err := collect(*cue)
+		srcs, err := upstream.Collect(*cue)
 		if err != nil {
 			fatal(err)
 		}
@@ -77,7 +80,7 @@ func main() {
 		}
 		runBench(src)
 	case *literals != "":
-		srcs, err := collect(*cue)
+		srcs, err := upstream.Collect(*cue)
 		if err != nil {
 			fatal(err)
 		}
@@ -89,7 +92,7 @@ func main() {
 			fatal(err)
 		}
 	case *mutantsOnly != "":
-		srcs, err := collect(*cue)
+		srcs, err := upstream.Collect(*cue)
 		if err != nil {
 			fatal(err)
 		}
@@ -97,11 +100,11 @@ func main() {
 			fatal(err)
 		}
 	case *out != "":
-		srcs, err := collect(*cue)
+		srcs, err := upstream.Collect(*cue)
 		if err != nil {
 			fatal(err)
 		}
-		if err := writeCorpus(filepath.Join(*out, "corpus.tar.gz"), srcs); err != nil {
+		if err := writeCorpus(filepath.Join(*out, "corpus.refs.gz"), srcs); err != nil {
 			fatal(err)
 		}
 		if err := writeMutants(filepath.Join(*out, "mutants.txt.gz"), srcs, *per, *seed); err != nil {
@@ -124,36 +127,24 @@ func fatal(err error) {
 	os.Exit(1)
 }
 
-// writeCorpus writes a tar archive, compressed, with for each source the file name and the file name.ref,
-// which holds the reference result: "error: " and the first error of a rejected source, or the tree and the
-// comments of an accepted one.
+// writeCorpus writes, compressed, a line for each source: its name, the hash of its content (upstream.Hash) and the
+// reference result as a Go string literal, separated by tabs. The result is "error: " and the first error of a rejected
+// source, or the tree and the comments of an accepted one. The sources themselves are not stored; the tests collect
+// them from the cue repository again (upstream.Collect) and join them by name.
 func writeCorpus(path string, srcs []source) error {
 	var buf bytes.Buffer
 	gz, _ := gzip.NewWriterLevel(&buf, gzip.BestCompression)
-	tw := tar.NewWriter(gz)
-	add := func(name string, data []byte) error {
-		if err := tw.WriteHeader(&tar.Header{Name: name, Mode: 0o644, Size: int64(len(data))}); err != nil {
-			return err
-		}
-		_, err := tw.Write(data)
-		return err
-	}
 	for _, s := range srcs {
-		if err := add(s.Name, s.Data); err != nil {
-			return err
-		}
-		if err := add(s.Name+".ref", []byte(run(s.Name, s.Data).dump())); err != nil {
-			return err
-		}
-	}
-	if err := tw.Close(); err != nil {
-		return err
+		fmt.Fprintf(gz, "%s\t%s\t%s\n", s.Name, upstream.Hash(s.Data), strconv.Quote(run(s.Name, s.Data).dump()))
 	}
 	if err := gz.Close(); err != nil {
 		return err
 	}
 	return os.WriteFile(path, buf.Bytes(), 0o644)
 }
+
+// A source is a CUE text of the corpus.
+type source = upstream.Source
 
 // writeMutants writes, compressed, a header line "# per=N seed=S" and a line for each mutated input: the name
 // of its source, its number, the FNV-1a hash of the input, 1 or 0 for accepted or rejected, and for an accepted

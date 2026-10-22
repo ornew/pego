@@ -4,14 +4,21 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/corpora"
+	"github.com/ornew/pego/internal/corpora/corporatest"
 )
 
-// benchInput is CUE of about 256 KB: the sources of the corpus (testdata/corpus.tar.gz) that have no package
+// benchInput is CUE of about 256 KB: the sources of the corpus (the fetched cue repository) that have no package
 // clause, imports or experiments, each as the value of a field. It is real CUE of every kind, but dense in
 // the unusual (tests of the language), not like a configuration. CUE_BENCH_OUT=file writes it, for
 // internal/refgen -bench to time the reference parser on the same input.
-var benchInput = func() string {
-	corpus := loadCorpus(&testing.B{})
+func benchInput(tb testing.TB) string {
+	corpus := loadCorpus(tb)
+	return buildBenchInput(corpus)
+}
+
+func buildBenchInput(corpus []refResult) string {
 	var b strings.Builder
 	n := 0
 	for _, c := range corpus {
@@ -30,7 +37,7 @@ var benchInput = func() string {
 		b.WriteString("\n}\n")
 	}
 	return b.String()
-}()
+}
 
 func itoa(n int) string {
 	var buf [20]byte
@@ -46,9 +53,24 @@ func itoa(n int) string {
 }
 
 func TestMain(m *testing.M) {
-	for env, src := range map[string]string{"CUE_BENCH_OUT": benchInput, "CUE_BENCH_CONFIG_OUT": configInput} {
+	srcs := map[string]func() string{
+		"CUE_BENCH_OUT": func() string {
+			s, _ := corpora.Lookup("cue")
+			dir, ok := corpora.Dir(s)
+			if !ok {
+				panic("CUE_BENCH_OUT: the corpus cue is not fetched (" + corporatest.FetchCommand + " cue)")
+			}
+			corpus, err := readCorpus(dir)
+			if err != nil {
+				panic(err)
+			}
+			return buildBenchInput(corpus)
+		},
+		"CUE_BENCH_CONFIG_OUT": func() string { return configInput },
+	}
+	for env, gen := range srcs {
 		if out := os.Getenv(env); out != "" {
-			if err := os.WriteFile(out, []byte(src), 0o644); err != nil {
+			if err := os.WriteFile(out, []byte(gen()), 0o644); err != nil {
 				panic(err)
 			}
 		}
@@ -109,7 +131,7 @@ services: svc` + n + `: {
 }()
 
 func BenchmarkParseAST(b *testing.B) {
-	for _, in := range []struct{ name, src string }{{"config", configInput}, {"corpus", benchInput}} {
+	for _, in := range []struct{ name, src string }{{"config", configInput}, {"corpus", benchInput(b)}} {
 		b.Run(in.name, func(b *testing.B) {
 			b.SetBytes(int64(len(in.src)))
 			b.ReportAllocs()
@@ -123,7 +145,7 @@ func BenchmarkParseAST(b *testing.B) {
 }
 
 func BenchmarkParseFile(b *testing.B) {
-	for _, in := range []struct{ name, src string }{{"config", configInput}, {"corpus", benchInput}} {
+	for _, in := range []struct{ name, src string }{{"config", configInput}, {"corpus", benchInput(b)}} {
 		b.Run(in.name, func(b *testing.B) {
 			b.SetBytes(int64(len(in.src)))
 			b.ReportAllocs()

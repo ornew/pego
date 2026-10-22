@@ -11,7 +11,7 @@
 //
 // # Conformance
 //
-// The tests compare with the reference results of cue/parser, vendored in testdata (see the README of the module
+// The tests compare with the reference results of cue/parser, recorded in testdata (see the README of the module
 // for the numbers and the commands): acceptance and the syntax tree for 4,061 CUE sources (the files of
 // cue-lang/cue, the CUE of its test archives and of the tests of the parser, and the examples of the
 // specification), 32,488 mutations of them, and 15,000 generated strings, numbers and token sequences, and the

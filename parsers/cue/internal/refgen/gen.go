@@ -9,7 +9,7 @@ import (
 var families = []string{"strings", "numbers", "tokens"}
 
 // generate returns an input of a family chosen by seed. The same function is in the module's tests
-// (gen_test.go): the vendored results record the hash of each input, which the tests check before comparing.
+// (gen_test.go): the recorded results record the hash of each input, which the tests check before comparing.
 func generate(family string, seed uint64) string {
 	r := rand.New(rand.NewPCG(seed, 0x67656e2d63756521))
 	switch family {

@@ -12,6 +12,9 @@ import (
 	"github.com/ornew/pego/parsers/cue/types"
 )
 
+// literalCount is the number of literals in testdata/literals.txt.gz.
+const literalCount = 4126
+
 // TestLiterals compares the values that Unquote, Int.Value and Float.Rat decode with those of the reference
 // implementation (cuelang.org/go/cue/literal), recorded in testdata/literals.txt.gz by internal/refgen: for the
 // string, integer and float literals of the corpus and of generated inputs, whether the decoding fails, and the
@@ -118,4 +121,7 @@ func TestLiterals(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("literals compared: %d strings, %d integers, %d floats; %d differ", counts["S"], counts["I"], counts["F"], bad)
+	if got := counts["S"] + counts["I"] + counts["F"]; got != literalCount {
+		t.Errorf("testdata/literals.txt.gz holds %d literals, want %d", got, literalCount)
+	}
 }

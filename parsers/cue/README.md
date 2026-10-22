@@ -91,9 +91,11 @@ prose of the specification where they differ (the comma that the scanner inserts
 `1.5K` being an integer, the hashes of strings, `try`, ...). The specification's own examples (66 marked as CUE) are
 in the corpus below.
 
-The reference's results are vendored, and the tests compare with them, with no tool but Go. [internal/refgen](internal/refgen)
-(a module of its own, since it needs `cuelang.org/go`) ran `cue/parser` over a corpus and wrote
-[testdata/](testdata/README.md):
+The reference's results are stored in [testdata/](testdata/README.md), and the tests compare with them, with no tool but
+Go. [internal/refgen](internal/refgen) (a module of its own, since it needs `cuelang.org/go`) ran `cue/parser` over a
+corpus and wrote them. The corpus is the cue repository at v0.17.1, which the tests read from the cache that
+`go run ./hack/corpora fetch cue` fills (without it, `TestCorpus` and `TestMutants` are skipped); the results are
+joined to the sources by name and hash:
 
 | Test | What is compared | Cases | Result |
 |:--|:--|--:|:--|
@@ -103,15 +105,15 @@ The reference's results are vendored, and the tests compare with them, with no t
 | `TestLiterals` | `Unquote`, `Int.Value` and `Float.Rat` against `cue/literal`: whether decoding fails, and the value | 4,126 literals (3,626 strings, 359 integers, 141 floats) | 0 differ |
 | `FuzzParse` | `ParseAST`, `Parse` and `Recognize` accept the same inputs, no panic, spans nest | `go test -fuzz FuzzParse`; 1.5 million inputs in 90 s | no failure |
 
-The same tests run on sets that are too large to vendor, made by `refgen` with other seeds (the mutants and the
+The same tests run on sets that are too large to store, made by `refgen` with other seeds (the mutants and the
 generated inputs are recorded with the hash of the input, so the test detects that its generator and `refgen`'s are
 out of step):
 
 ```bash
-git clone --branch v0.17.1 https://github.com/cue-lang/cue /tmp/cue
-cd internal/refgen
-go run . -cue /tmp/cue -mutants /tmp/mutants.txt.gz -per 150 -seed 2000000     # 609,150 mutants
-go run . -cue /tmp/cue -generated /tmp/generated.txt.gz -count 250000 -seed 5000000   # 750,000 inputs
+CUE=$(go run ./hack/corpora dir cue)               # from the root of the repository
+cd parsers/cue/internal/refgen
+go run . -cue $CUE -mutants /tmp/mutants.txt.gz -per 150 -seed 2000000     # 609,150 mutants
+go run . -cue $CUE -generated /tmp/generated.txt.gz -count 250000 -seed 5000000   # 750,000 inputs
 cd ../..
 CUE_MUTANTS=/tmp/mutants.txt.gz go test -run TestMutants -v .     # CUE_REPORTS=all lists every difference
 CUE_GENERATED=/tmp/generated.txt.gz go test -run TestGenerated -v .
@@ -198,8 +200,8 @@ go generate ./parsers                         # parser.go from cue.pego (from th
 go test ./parsers -update                     # the golden files (testdata/*.golden) from the engine
 go run ./cmd/pego lint -g parsers/cue/cue.pego
 go run ./parsers/cue/internal/unitab          # the letter and digit classes at the end of cue.pego
-cd parsers/cue/internal/refgen && go run . -cue /tmp/cue -o ../../testdata   # the vendored results (about 3 MB)
+cd parsers/cue/internal/refgen && go run . -cue "$(cd ../../../.. && go run ./hack/corpora dir cue)" -o ../../testdata   # the results (about 2.5 MB)
 ```
 
-The vendored data is described in [testdata/README.md](testdata/README.md): the sources are those of
+The data is described in [testdata/README.md](testdata/README.md): the sources are those of
 [cue-lang/cue](https://github.com/cue-lang/cue) at v0.17.1 (Apache License 2.0).

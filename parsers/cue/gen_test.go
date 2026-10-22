@@ -6,7 +6,7 @@ import (
 )
 
 // generate returns an input of a family chosen by seed. It is a copy of generate in internal/refgen/gen.go,
-// which made the vendored results (testdata/generated.txt.gz): TestGenerated checks the hash of each input first.
+// which made the recorded results (testdata/generated.txt.gz): TestGenerated checks the hash of each input first.
 func generate(family string, seed uint64) string {
 	r := rand.New(rand.NewPCG(seed, 0x67656e2d63756521))
 	switch family {

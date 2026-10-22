@@ -11,6 +11,9 @@ import (
 	"testing"
 )
 
+// generatedCount is the number of inputs in testdata/generated.txt.gz.
+const generatedCount = 15000
+
 // TestGenerated compares the parser with the reference implementation on generated inputs (gen_test.go): field
 // values that are string literals of random forms, number-like tokens, and random sequences of tokens, which
 // test the lexical rules and the insertion of commas at the borders of what the corpus holds.
@@ -79,6 +82,9 @@ func TestGenerated(t *testing.T) {
 	}
 	if err := sc.Err(); err != nil {
 		t.Fatal(err)
+	}
+	if os.Getenv("CUE_GENERATED") == "" && total != generatedCount {
+		t.Errorf("testdata/generated.txt.gz holds %d inputs, want %d", total, generatedCount)
 	}
 	t.Logf("%d generated inputs: %d accepted by the reference, %d differ in acceptance, %d in the tree", total, accepted, accDiff, treeDiff)
 	for _, r := range reports {

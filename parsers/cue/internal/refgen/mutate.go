@@ -7,7 +7,7 @@ import (
 
 // mutate returns a variation of src chosen by seed: most are near misses, valid or not, which tests the
 // parser at the borders of the syntax. The same function is in the module's tests (mutate_test.go): the
-// vendored results record the hash of each mutated input, which the tests check before comparing.
+// recorded results record the hash of each mutated input, which the tests check before comparing.
 func mutate(src []byte, seed uint64) []byte {
 	r := rand.New(rand.NewPCG(seed, 0x6375652d70656776))
 	const alphabet = "{}[](),:?!@\"'#\\ \n\t;.=&|*+-<>~_a1/`$%^"
