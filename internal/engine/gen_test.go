@@ -469,11 +469,12 @@ var viewers = []func(any) string{
 `+viewers.String()+`}
 
 func main() {
-	var inputs [][]string
+	var inputs [][][]byte
 	data, _ := os.ReadFile(os.Args[1])
 	json.Unmarshal(data, &inputs)
 	for i, in := range inputs {
-		for _, s := range in {
+		for _, b := range in {
+			s := string(b)
 			for _, bytes := range []bool{false, true} {
 				n, err := parsers[i](s, bytes)
 				out := map[string]any{"node": n}
@@ -487,7 +488,7 @@ func main() {
 	}
 }
 `)
-	data, _ := json.Marshal(inputs)
+	data, _ := json.Marshal(inputBytes(inputs))
 	write("inputs.json", string(data))
 	cmd := exec.Command(goBin, "run", ".", "inputs.json")
 	cmd.Dir = dir
@@ -699,11 +700,12 @@ func typeName(v any) string {
 }
 
 func main() {
-	var inputs [][]string
+	var inputs [][][]byte
 	data, _ := os.ReadFile(os.Args[1])
 	json.Unmarshal(data, &inputs)
 	for i, in := range inputs {
-		for _, s := range in {
+		for _, b := range in {
+			s := string(b)
 			for _, bytes := range []bool{false, true} {
 				v, err := parsers[i](s, bytes)
 				cv, cerr := converters[i](s, bytes)
@@ -726,7 +728,8 @@ func main() {
 		go func() {
 			defer wg.Done()
 			for i, in := range inputs {
-				for _, s := range in {
+				for _, b := range in {
+					s := string(b)
 					v, err := parsers[i](s, false)
 					cv, cerr := converters[i](s, false)
 					a, _ := json.Marshal(map[string]any{"value": v, "err": fmt.Sprint(err)})
@@ -741,7 +744,7 @@ func main() {
 	wg.Wait()
 }
 `)
-	data, _ := json.Marshal(inputs)
+	data, _ := json.Marshal(inputBytes(inputs))
 	write("inputs.json", string(data))
 	cmd := exec.Command(goBin, "run", ".", "inputs.json")
 	cmd.Dir = dir
@@ -820,4 +823,16 @@ func main() {
 			t.Errorf("typed %q:\n got %s\nwant %s", cases[len(cases)-1].inputs[i], got, want)
 		}
 	}
+}
+
+// inputBytes returns inputs as byte slices, which JSON carries exactly (as base64); JSON
+// strings would replace invalid UTF-8 with U+FFFD.
+func inputBytes(inputs [][]string) [][][]byte {
+	out := make([][][]byte, len(inputs))
+	for i, in := range inputs {
+		for _, s := range in {
+			out[i] = append(out[i], []byte(s))
+		}
+	}
+	return out
 }
