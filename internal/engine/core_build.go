@@ -389,12 +389,11 @@ func coreLayout(prog *Program, r *rule, proj map[string]string, e grammar.Expr, 
 	return s
 }
 
+// set sets the attributes of the node n built from the expression e that the builder sets: whether
+// its value is wanted, and its shape.
 func (b *coreBuilder) set(n core.Node, e grammar.Expr, want bool) core.Node {
 	a := n.Attrs()
-	a.Want = want
-	if want {
-		a.Shape = coreShape(b.prog, e)
-	}
+	a.Want, a.Shape = want, coreShape(b.prog, e)
 	return n
 }
 
@@ -519,32 +518,32 @@ func (b *coreBuilder) node(e grammar.Expr, s *coreScope, build bool) (core.Node,
 		}
 		return b.set(n, e, build), nil
 	case *grammar.Cut:
-		return &core.Cut{}, nil
+		return b.set(&core.Cut{}, e, build), nil
 	case *grammar.Top:
-		return &core.Succeed{}, nil
+		return b.set(&core.Succeed{}, e, build), nil
 	case *grammar.Bottom:
-		return &core.FailNode{}, nil
+		return b.set(&core.FailNode{}, e, build), nil
 	case *grammar.BeginInput:
-		return &core.Anchor{Kind: core.BeginInput}, nil
+		return b.set(&core.Anchor{Kind: core.BeginInput}, e, build), nil
 	case *grammar.EndInput:
-		return &core.Anchor{Kind: core.EndInput}, nil
+		return b.set(&core.Anchor{Kind: core.EndInput}, e, build), nil
 	case *grammar.BeginLine:
-		return &core.Anchor{Kind: core.BeginLine}, nil
+		return b.set(&core.Anchor{Kind: core.BeginLine}, e, build), nil
 	case *grammar.EndLine:
-		return &core.Anchor{Kind: core.EndLine}, nil
+		return b.set(&core.Anchor{Kind: core.EndLine}, e, build), nil
 	case *grammar.Predicate:
 		if a, ok := e.Term.(*grammar.Bind); ok {
 			t, err := b.term(a.Value, s, nil)
 			if err != nil {
 				return nil, err
 			}
-			return &core.BindNode{Var: a.Name, Term: t}, nil
+			return b.set(&core.BindNode{Var: a.Name, Term: t}, e, build), nil
 		}
 		t, err := b.term(e.Term, s, nil)
 		if err != nil {
 			return nil, err
 		}
-		return &core.Pred{Term: t}, nil
+		return b.set(&core.Pred{Term: t}, e, build), nil
 	case *grammar.Attributed:
 		return b.attributed(e, len(e.Attrs)-1, s, build)
 	}

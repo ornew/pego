@@ -11,7 +11,9 @@ type Node interface {
 type Attrs struct {
 	// Want reports that the node's value is used. A node with want false builds no value.
 	Want bool
-	// Shape is the static shape of the node's value.
+	// Shape is the static shape of the node's value, which the enclosing node converts where the
+	// node takes one element. A node that builds no value has the shape of its expression too: its
+	// value is nil, converted like any other.
 	Shape Shape
 	// Nullable reports that the node can succeed without consuming input.
 	Nullable bool
