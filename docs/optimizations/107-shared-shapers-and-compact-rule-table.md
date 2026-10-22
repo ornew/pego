@@ -62,9 +62,11 @@ to +1.4% while the unchanged yaml parser shows -0.8%.
 The shapers are values, so a site copies the package variable where it used to build
 the literal. A failed direct compilation rolls back the shapers it declared, like the
 character-class tables. A rule with no captures or variables has a nil `Scope` or
-`Vars` instead of an empty slice, which no reader distinguishes. The engine tests
-(including the checks that read the generated rule table), the root suite and
-`parsers/test.sh` pass.
+`Vars`; the readers (such as `AttachCaptures` and the variable lookup) range over them or take their length, which a nil list serves the same. A `RuleSpec` holds `Scope` and `Vars` as
+16-bit indexes and `Seen` as 32 bits, so the generator reports an error for a grammar
+that needs more than 65536 distinct lists or more than 2^31-1 deferred memoization
+indexes. The engine tests (including the checks that read the generated rule table,
+its string lists and its rare fields), the root suite and `parsers/test.sh` pass.
 
 ## Decision and Limits
 

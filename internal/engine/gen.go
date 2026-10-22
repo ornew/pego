@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/format"
 	"go/token"
+	"math"
 	"path"
 	"sort"
 	"strconv"
@@ -215,6 +216,9 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 	if gen.streamErr != nil {
 		return nil, gen.streamErr
 	}
+	if gen.tableErr != nil {
+		return nil, gen.tableErr
+	}
 	var rec *Program
 	if opts.Recognize {
 		// The recognizer: the program in which no rule builds a value (Program.recognizer), in a
@@ -225,6 +229,9 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 		gen.prog, gen.table = rec, "recRules"
 		gen.rules()
 		gen.prog, gen.table = prog, "rules"
+		if gen.tableErr != nil {
+			return nil, gen.tableErr
+		}
 	}
 	fmt.Fprintf(&gen.init, "\tpegoGrammar.Starts = %s\n", goStrings(prog.starts))
 	fmt.Fprintf(&gen.init, "\tpegoGrammar.DefaultStart = %q\n", prog.defaultStart)
@@ -492,6 +499,7 @@ type generator struct {
 	workClassKeys       []string
 	shaperNames         map[string]string
 	shaperKeys          []string
+	tableErr            error // the rule table does not fit the form of runtime.RuleSpec
 	// lean is set when the output has no work controls and no Documents, so each typed rule body
 	// is its ordinary form and may call the runtime's ordinary-parse helpers directly.
 	lean                            bool
@@ -633,6 +641,18 @@ func goStrings(xs []string) string {
 	return "[]string{" + strings.Join(q, ", ") + "}"
 }
 
+// ruleTableLimits reports whether a rule table with nstrs lists of strings and nseen deferred
+// memoization indexes fits the fields of runtime.RuleSpec (Scope and Vars are 16 bits, Seen 32).
+func ruleTableLimits(nstrs, nseen int) error {
+	if nstrs > math.MaxUint16+1 {
+		return fmt.Errorf("the rule table needs %d distinct capture or variable lists, more than %d", nstrs, math.MaxUint16+1)
+	}
+	if nseen > math.MaxInt32 {
+		return fmt.Errorf("the rule table needs %d deferred memoization indexes, more than %d", nseen, math.MaxInt32)
+	}
+	return nil
+}
+
 func (g *generator) rules() {
 	init := &g.init
 	methodsBefore := g.methods.String()
@@ -742,6 +762,9 @@ func (g *generator) rules() {
 			if w != "" || r.nodeType != "" || r.opNodeType != "" {
 				extras = append(extras, fmt.Sprintf("\t{Id: %d, Where: %q, NodeType: %q, OpNodeType: %q},\n", r.id, w, r.nodeType, r.opNodeType))
 			}
+		}
+		if err := ruleTableLimits(len(strs), g.prog.nseen); err != nil {
+			g.tableErr = err
 		}
 		spec, strTable, extraTable := g.table+"Spec", g.table+"Strs", g.table+"Extras"
 		fmt.Fprintf(&g.vars, "// %s is the compact form of the rule table, built by NewRules.\nvar %s = [...]RuleSpec{\n%s}\n\n", spec, spec, tab.String())
