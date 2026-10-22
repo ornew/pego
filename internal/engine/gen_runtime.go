@@ -311,7 +311,7 @@ func qualifyRuntime(rtImport, body string, info *runtimeInfo, tp *typesPackage) 
 		}
 		return true
 	})
-	// The offsets of the names to qualify, with the qualifier of each, from the last to the first.
+	// The offsets of the names to qualify, with the qualifier of each.
 	type insertion struct {
 		off       int
 		qualifier string
@@ -327,16 +327,21 @@ func qualifyRuntime(rtImport, body string, info *runtimeInfo, tp *typesPackage) 
 			inserts = append(inserts, insertion{off, typesAlias + "."})
 		}
 	}
-	sort.Slice(inserts, func(i, j int) bool { return inserts[i].off > inserts[j].off })
-	b := []byte(body)
-	last := -1
+	sort.Slice(inserts, func(i, j int) bool { return inserts[i].off < inserts[j].off })
+	// One pass over the insertion offsets in ascending order; a name found twice is qualified once.
+	var out strings.Builder
+	out.Grow(len(body) + len(inserts)*(len(runtimeAlias)+1))
+	done, last := 0, -1
 	for _, in := range inserts {
 		if in.off == last {
 			continue
 		}
 		last = in.off
-		b = append(b[:in.off], append([]byte(in.qualifier), b[in.off:]...)...)
+		out.WriteString(body[done:in.off])
+		out.WriteString(in.qualifier)
+		done = in.off
 	}
+	out.WriteString(body[done:])
 	var imports strings.Builder
 	var paths []string
 	for p := range std {
@@ -352,7 +357,7 @@ func qualifyRuntime(rtImport, body string, info *runtimeInfo, tp *typesPackage) 
 		fmt.Fprintf(&imports, "\t%s %q\n", typesAlias, tp.importPath)
 	}
 	imports.WriteString(")\n\n")
-	return imports.String() + string(b), nil
+	return imports.String() + out.String(), nil
 }
 
 // literalType returns the kind of the composite literal of type typ ('s' for a struct, 'm' for a
