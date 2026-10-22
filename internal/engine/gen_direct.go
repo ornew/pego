@@ -1287,14 +1287,13 @@ func (d *dgen) finishValue(r *rule, s *dscope, body string) (start, ctx bool) {
 			return false, false
 		}
 		d.line("c = p.UseCtx(TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})")
-		// The action's errors are reported with the rule's name (see tctx.result). Keep that
-		// context on panic for the parse-level evalError handler; restore it after normal return.
+		// The action's errors are reported with the rule's name (see tctx.result) by the parse-level
+		// evalError handler, which reads p.Where. Actions never nest and only their errors reach
+		// that handler, so the name is set for each action and never restored.
 		g.caps, g.final = caps, r.action
 		action := g.term(r.action, newScope(), nil)
 		d.rdTerm(r.action, caps)
 		g.caps, g.final = nil, nil
-		prevWhere := d.shared("w", "string")
-		d.line("%s = p.Where", prevWhere)
 		d.line("p.Where = %q", r.whereName())
 		d.line("v = %s", action)
 		if _, isNew := r.action.(*grammar.New); isNew {
@@ -1312,8 +1311,6 @@ func (d *dgen) finishValue(r *rule, s *dscope, body string) (start, ctx bool) {
 		} else {
 			d.line("v = c.Finish(v)")
 		}
-		// After finish, whose errors (a result that is not a node) also name the rule.
-		d.line("p.Where = %s", d.rd(prevWhere))
 		return true, true
 	case r.splice:
 		// No node of its own, and the captures end with the rule (Rule.Splice).

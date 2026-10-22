@@ -2656,7 +2656,6 @@ func i0(p *pegort.TParser) (any, bool) {
 		v36   any
 		v37   any
 		v38   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -2776,7 +2775,6 @@ L3:
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "main"
 	v = func() any {
 		return func() any {
@@ -2796,7 +2794,6 @@ L3:
 			return tmk_File(c, true, f_580, f_581)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -2910,7 +2907,6 @@ func i2(p *pegort.TParser) (any, bool) {
 		x7    bool
 		v10   any
 		v12   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -2948,7 +2944,6 @@ L11:
 L5:
 	k1 = v4
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "importDecl"
 	v = func() any {
 		return func() any {
@@ -2957,7 +2952,6 @@ L5:
 			return tmk_GenDecl(c, true, f_584, f_585)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -2985,7 +2979,6 @@ func i3(p *pegort.TParser) (any, bool) {
 		x2    int
 		ok    bool
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -2996,11 +2989,9 @@ func i3(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "importOne"
 	v = func() any { return c.List(func() any { return k1 }()) }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -3034,7 +3025,6 @@ func i4(p *pegort.TParser) (any, bool) {
 		x8    int
 		v9    any
 		v10   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -3083,13 +3073,11 @@ func i4(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "importGroup"
 	v = func() any {
 		return c.NewList(c.ListItems("map", func() any { return k1 }()))
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -3125,7 +3113,6 @@ func i5(p *pegort.TParser) (any, bool) {
 		k8    any
 		x9    int
 		v10   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -3148,7 +3135,6 @@ L6:
 	}
 	k8 = v10
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "importSpec"
 	v = func() any {
 		return func() any {
@@ -3157,7 +3143,6 @@ L6:
 			return tmk_ImportSpec(c, true, f_586, f_587)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -3191,7 +3176,6 @@ func i6(p *pegort.TParser) (any, bool) {
 		x9    bool
 		x12   int
 		v13   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -3231,11 +3215,9 @@ L10:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "importName"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
-	p.Where = w
 	v = p.TConvertResult(trules[6], v)
 	p.Depth--
 	return v, true
@@ -3319,7 +3301,6 @@ func i8(p *pegort.TParser) (any, bool) {
 		x7    bool
 		v10   any
 		v12   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -3357,7 +3338,6 @@ L11:
 L5:
 	k1 = v4
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "constDecl"
 	v = func() any {
 		return func() any {
@@ -3366,7 +3346,6 @@ L5:
 			return tmk_GenDecl(c, true, f_588, f_589)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -3394,7 +3373,6 @@ func i9(p *pegort.TParser) (any, bool) {
 		x2    int
 		ok    bool
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -3405,11 +3383,9 @@ func i9(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "constOne"
 	v = func() any { return c.List(func() any { return k1 }()) }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -3443,7 +3419,6 @@ func i10(p *pegort.TParser) (any, bool) {
 		x8    int
 		v9    any
 		v10   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -3492,13 +3467,11 @@ func i10(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "constGroup"
 	v = func() any {
 		return c.NewList(c.ListItems("map", func() any { return k1 }()))
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -3539,7 +3512,6 @@ func i11(p *pegort.TParser) (any, bool) {
 		x13   int
 		v14   any
 		v17   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -3574,7 +3546,6 @@ L15:
 L16:
 	k11 = v14
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "constSpec"
 	v = func() any {
 		return func() any {
@@ -3584,7 +3555,6 @@ L16:
 			return tmk_ValueSpec(c, true, f_590, f_591, f_592)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -3612,7 +3582,6 @@ func i12(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -3626,11 +3595,9 @@ func i12(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "typeSp"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -3670,7 +3637,6 @@ func i13(p *pegort.TParser) (any, bool) {
 		x11   int
 		v12   any
 		v13   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -3713,7 +3679,6 @@ func i13(p *pegort.TParser) (any, bool) {
 	v13 = p.NewNodeOrdinary("list", x5, p.Pos, p.Kids(x6))
 	k4 = v13
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "identList"
 	v = func() any {
 		return func() any {
@@ -3724,7 +3689,6 @@ func i13(p *pegort.TParser) (any, bool) {
 		}()
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -3756,7 +3720,6 @@ func i14(p *pegort.TParser) (any, bool) {
 		k3    any
 		x4    int
 		v5    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -3791,11 +3754,9 @@ L2:
 	}
 	k3 = v5
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "valuesSp"
 	v = func() any { return k3 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -3831,7 +3792,6 @@ func i15(p *pegort.TParser) (any, bool) {
 		x7    bool
 		v10   any
 		v12   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -3869,7 +3829,6 @@ L11:
 L5:
 	k1 = v4
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "varDecl"
 	v = func() any {
 		return func() any {
@@ -3878,7 +3837,6 @@ L5:
 			return tmk_GenDecl(c, true, f_593, f_594)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -3906,7 +3864,6 @@ func i16(p *pegort.TParser) (any, bool) {
 		x2    int
 		ok    bool
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -3917,11 +3874,9 @@ func i16(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "varOne"
 	v = func() any { return c.List(func() any { return k1 }()) }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -3955,7 +3910,6 @@ func i17(p *pegort.TParser) (any, bool) {
 		x8    int
 		v9    any
 		v10   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -4004,13 +3958,11 @@ func i17(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "varGroup"
 	v = func() any {
 		return c.NewList(c.ListItems("map", func() any { return k1 }()))
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -4096,7 +4048,6 @@ func i19(p *pegort.TParser) (any, bool) {
 		x9    int
 		v10   any
 		v13   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -4127,7 +4078,6 @@ L11:
 L12:
 	k7 = v10
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "varSpecTyped"
 	v = func() any {
 		return func() any {
@@ -4137,7 +4087,6 @@ L12:
 			return tmk_ValueSpec(c, true, f_595, f_596, f_597)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -4169,7 +4118,6 @@ func i20(p *pegort.TParser) (any, bool) {
 		k6    any
 		x7    int
 		v8    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -4209,7 +4157,6 @@ L5:
 	}
 	k6 = v8
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "varSpecUntyped"
 	v = func() any {
 		return func() any {
@@ -4218,7 +4165,6 @@ L5:
 			return tmk_ValueSpec(c, true, f_598, nil, f_599)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -4254,7 +4200,6 @@ func i21(p *pegort.TParser) (any, bool) {
 		x7    bool
 		v10   any
 		v12   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -4292,7 +4237,6 @@ L11:
 L5:
 	k1 = v4
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "typeDecl"
 	v = func() any {
 		return func() any {
@@ -4301,7 +4245,6 @@ L5:
 			return tmk_GenDecl(c, true, f_600, f_601)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -4329,7 +4272,6 @@ func i22(p *pegort.TParser) (any, bool) {
 		x2    int
 		ok    bool
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -4340,11 +4282,9 @@ func i22(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "typeOne"
 	v = func() any { return c.List(func() any { return k1 }()) }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -4378,7 +4318,6 @@ func i23(p *pegort.TParser) (any, bool) {
 		x8    int
 		v9    any
 		v10   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -4427,13 +4366,11 @@ func i23(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "typeGroup"
 	v = func() any {
 		return c.NewList(c.ListItems("map", func() any { return k1 }()))
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -4530,7 +4467,6 @@ func i25(p *pegort.TParser) (any, bool) {
 		k14   any
 		x15   int
 		v16   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -4569,7 +4505,6 @@ L12:
 	}
 	k14 = v16
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "typeSpecGeneric"
 	v = func() any {
 		return func() any {
@@ -4580,7 +4515,6 @@ L12:
 			return tmk_TypeSpec(c, true, f_602, f_603, f_604, f_605)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -4612,7 +4546,6 @@ func i26(p *pegort.TParser) (any, bool) {
 		k6    any
 		x7    int
 		v8    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -4642,7 +4575,6 @@ L5:
 	}
 	k6 = v8
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "typeSpecArray"
 	v = func() any {
 		return func() any {
@@ -4651,7 +4583,6 @@ L5:
 			return tmk_TypeSpec(c, true, f_606, nil, nil, f_607)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -4688,7 +4619,6 @@ func i27(p *pegort.TParser) (any, bool) {
 		k13   any
 		x14   int
 		v15   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -4732,7 +4662,6 @@ L11:
 	}
 	k13 = v15
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "typeSpecPlain"
 	v = func() any {
 		return func() any {
@@ -4742,7 +4671,6 @@ L11:
 			return tmk_TypeSpec(c, true, f_608, nil, f_609, f_610)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -4775,7 +4703,6 @@ func i28(p *pegort.TParser) (any, bool) {
 		ok    bool
 		x4    int
 		v6    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -4806,11 +4733,9 @@ L5:
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "aliasEq"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -4980,7 +4905,6 @@ func i31(p *pegort.TParser) (any, bool) {
 		v16   any
 		x18   int
 		v19   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -5061,11 +4985,9 @@ L17:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "genericParams"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -5107,7 +5029,6 @@ func i32(p *pegort.TParser) (any, bool) {
 		v18   any
 		v19   any
 		x20   int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -5210,7 +5131,6 @@ L22:
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "splitParams"
 	v = func() any {
 		return func() any {
@@ -5232,7 +5152,6 @@ L22:
 		}()
 	}()
 	p.DropCreated(c.Cbase)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -5280,7 +5199,6 @@ func i33(p *pegort.TParser) (any, bool) {
 		v21   any
 		v22   any
 		v23   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -5348,7 +5266,6 @@ func i33(p *pegort.TParser) (any, bool) {
 	v23 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v23
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "splitType"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_615, l_616 any) any {
@@ -5363,7 +5280,6 @@ func i33(p *pegort.TParser) (any, bool) {
 		})
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -5447,7 +5363,6 @@ func i35(p *pegort.TParser) (any, bool) {
 		k3    any
 		x4    int
 		v5    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -5479,12 +5394,10 @@ L2:
 	}
 	k3 = v5
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "splitStar"
 	v = func() any {
 		return func() any { f_620 := func() any { return k3 }(); return tmk_StarExpr(c, true, f_620) }()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -5516,7 +5429,6 @@ func i36(p *pegort.TParser) (any, bool) {
 		x7    int
 		ch    rune
 		size  int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -5574,12 +5486,10 @@ L8:
 	p.Silent--
 	p.Pos = x7
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "splitParen"
 	v = func() any {
 		return func() any { f_621 := func() any { return k1 }(); return tmk_ParenExpr(c, true, f_621) }()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -7067,7 +6977,6 @@ func i43(p *pegort.TParser) (any, bool) {
 		x36   int
 		v37   any
 		v40   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -7171,7 +7080,6 @@ L38:
 L39:
 	k34 = v37
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "funcDecl"
 	v = func() any {
 		return func() any {
@@ -7190,7 +7098,6 @@ L39:
 		}()
 	}()
 	p.DropCreated(c.Cbase)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -7218,7 +7125,6 @@ func i44(p *pegort.TParser) (any, bool) {
 		x2    int
 		ok    bool
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -7232,11 +7138,9 @@ func i44(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "recvSp"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -7264,7 +7168,6 @@ func i45(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -7278,11 +7181,9 @@ func i45(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "typeParamsSp"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -7310,7 +7211,6 @@ func i46(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -7324,11 +7224,9 @@ func i46(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "bodySp"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -7361,7 +7259,6 @@ func i47(p *pegort.TParser) (any, bool) {
 		x3    int
 		v4    any
 		v7    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -7392,7 +7289,6 @@ L6:
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "params"
 	v = func() any {
 		return func() any {
@@ -7400,7 +7296,6 @@ L6:
 			return tmk_FieldList(c, true, f_629)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -7488,7 +7383,6 @@ func i49(p *pegort.TParser) (any, bool) {
 		v20   any
 		v21   any
 		x22   int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -7558,7 +7452,6 @@ L23:
 	p.Pos = x22
 L24:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "namedParams"
 	v = func() any {
 		return func() any {
@@ -7571,7 +7464,6 @@ L24:
 		}()
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -7608,7 +7500,6 @@ func i50(p *pegort.TParser) (any, bool) {
 		x11   int
 		x15   int
 		v16   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -7668,11 +7559,9 @@ L14:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "paramGroup"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -7703,7 +7592,6 @@ func i51(p *pegort.TParser) (any, bool) {
 		k4    any
 		x5    int
 		v6    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -7722,7 +7610,6 @@ func i51(p *pegort.TParser) (any, bool) {
 	}
 	k4 = v6
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "variadicGroup"
 	v = func() any {
 		return func() any {
@@ -7731,7 +7618,6 @@ func i51(p *pegort.TParser) (any, bool) {
 			return tmk_Field(c, true, f_632, f_633, nil)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -7765,7 +7651,6 @@ func i52(p *pegort.TParser) (any, bool) {
 		k4    any
 		x5    int
 		v6    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -7784,7 +7669,6 @@ func i52(p *pegort.TParser) (any, bool) {
 	}
 	k4 = v6
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "namedGroup"
 	v = func() any {
 		return func() any {
@@ -7793,7 +7677,6 @@ func i52(p *pegort.TParser) (any, bool) {
 			return tmk_Field(c, true, f_634, f_635, nil)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -7829,7 +7712,6 @@ func i53(p *pegort.TParser) (any, bool) {
 		x14   int
 		x16   int
 		v17   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -7890,11 +7772,9 @@ L11:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "namedParamType"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -7925,7 +7805,6 @@ func i54(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -7944,12 +7823,10 @@ func i54(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "variadicType"
 	v = func() any {
 		return func() any { f_636 := func() any { return k1 }(); return tmk_Ellipsis(c, true, f_636) }()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -7987,7 +7864,6 @@ func i55(p *pegort.TParser) (any, bool) {
 		v12   any
 		v13   any
 		x14   int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -8046,7 +7922,6 @@ L15:
 	p.Pos = x14
 L16:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "unnamedParams"
 	v = func() any {
 		return func() any {
@@ -8057,7 +7932,6 @@ L16:
 		}()
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -8096,7 +7970,6 @@ func i56(p *pegort.TParser) (any, bool) {
 		x14   int
 		x18   int
 		v19   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -8163,7 +8036,6 @@ L17:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "unnamedParam"
 	v = func() any {
 		return func() any {
@@ -8171,7 +8043,6 @@ L4:
 			return tmk_Field(c, true, nil, f_637, nil)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -8217,7 +8088,6 @@ func i57(p *pegort.TParser) (any, bool) {
 		x28   int
 		x30   int
 		v31   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -8322,11 +8192,9 @@ L27:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "unnamedType"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -8357,7 +8225,6 @@ func i58(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -8371,11 +8238,9 @@ func i58(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "resultsSp"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -8454,7 +8319,6 @@ func i60(p *pegort.TParser) (any, bool) {
 		x2    int
 		ok    bool
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -8465,7 +8329,6 @@ func i60(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "resultType"
 	v = func() any {
 		return func() any {
@@ -8481,7 +8344,6 @@ func i60(p *pegort.TParser) (any, bool) {
 		}()
 	}()
 	p.DropCreated(c.Cbase)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -8511,7 +8373,6 @@ func i61(p *pegort.TParser) (any, bool) {
 		x3    int
 		v4    any
 		v7    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -8542,7 +8403,6 @@ L6:
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "resultParams"
 	v = func() any {
 		return func() any {
@@ -8550,7 +8410,6 @@ L6:
 			return tmk_FieldList(c, true, f_640)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -8630,7 +8489,6 @@ func i63(p *pegort.TParser) (any, bool) {
 		v12   any
 		v13   any
 		x14   int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -8689,7 +8547,6 @@ L15:
 	p.Pos = x14
 L16:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "namedResults"
 	v = func() any {
 		return func() any {
@@ -8700,7 +8557,6 @@ L16:
 		}()
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -8738,7 +8594,6 @@ func i64(p *pegort.TParser) (any, bool) {
 		v12   any
 		v13   any
 		x14   int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -8797,7 +8652,6 @@ L15:
 	p.Pos = x14
 L16:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "unnamedResults"
 	v = func() any {
 		return func() any {
@@ -8808,7 +8662,6 @@ L16:
 		}()
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -8839,7 +8692,6 @@ func i65(p *pegort.TParser) (any, bool) {
 		x2    int
 		ok    bool
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -8850,7 +8702,6 @@ func i65(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "unnamedResult"
 	v = func() any {
 		return func() any {
@@ -8858,7 +8709,6 @@ func i65(p *pegort.TParser) (any, bool) {
 			return tmk_Field(c, true, nil, f_641, nil)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -8899,7 +8749,6 @@ func i66(p *pegort.TParser) (any, bool) {
 		v12   any
 		v13   any
 		x14   int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -8972,7 +8821,6 @@ L16:
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "typeParams"
 	v = func() any {
 		return func() any {
@@ -8987,7 +8835,6 @@ L16:
 			return tmk_FieldList(c, true, f_642)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -9021,7 +8868,6 @@ func i67(p *pegort.TParser) (any, bool) {
 		k4    any
 		x5    int
 		v6    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -9040,7 +8886,6 @@ func i67(p *pegort.TParser) (any, bool) {
 	}
 	k4 = v6
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "typeParam"
 	v = func() any {
 		return func() any {
@@ -9049,7 +8894,6 @@ func i67(p *pegort.TParser) (any, bool) {
 			return tmk_Field(c, true, f_643, f_644, nil)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -9097,7 +8941,6 @@ func i68(p *pegort.TParser) (any, bool) {
 		v21   any
 		v22   any
 		v23   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -9165,7 +9008,6 @@ func i68(p *pegort.TParser) (any, bool) {
 	v23 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v23
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "constraint"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_646, l_647 any) any {
@@ -9180,7 +9022,6 @@ func i68(p *pegort.TParser) (any, bool) {
 		})
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -9218,7 +9059,6 @@ func i69(p *pegort.TParser) (any, bool) {
 		x18   int
 		x20   int
 		v21   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -9293,11 +9133,9 @@ L15:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "constraintFirst"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -9387,7 +9225,6 @@ func i71(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -9406,7 +9243,6 @@ func i71(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "tildeTerm"
 	v = func() any {
 		return func() any {
@@ -9415,7 +9251,6 @@ func i71(p *pegort.TParser) (any, bool) {
 			return tmk_UnaryExpr(c, true, f_651, f_652)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -9451,7 +9286,6 @@ func i72(p *pegort.TParser) (any, bool) {
 		k8    any
 		x9    int
 		v10   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -9490,7 +9324,6 @@ L6:
 	}
 	k8 = v10
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "arrayFieldType"
 	v = func() any {
 		return func() any {
@@ -9499,7 +9332,6 @@ L6:
 			return tmk_ArrayType(c, true, f_653, f_654)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -9530,7 +9362,6 @@ func i73(p *pegort.TParser) (any, bool) {
 		x2    int
 		ok    bool
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -9544,11 +9375,9 @@ func i73(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "exprSp"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -9583,7 +9412,6 @@ func i74(p *pegort.TParser) (any, bool) {
 		x5    int
 		v6    any
 		x7    int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -9632,7 +9460,6 @@ L9:
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "identIndex"
 	v = func() any {
 		return func() any {
@@ -9641,7 +9468,6 @@ L9:
 			return tmk_IndexExpr(c, true, f_655, f_656)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -9693,7 +9519,6 @@ func i75(p *pegort.TParser) (any, bool) {
 		v23   any
 		v24   any
 		x25   int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -9789,7 +9614,6 @@ L27:
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "identIndexList"
 	v = func() any {
 		return func() any {
@@ -9807,7 +9631,6 @@ L27:
 			return tmk_IndexListExpr(c, true, f_658, f_659)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -9858,7 +9681,6 @@ func i76(p *pegort.TParser) (any, bool) {
 		v36   any
 		x39   int
 		v40   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -9989,11 +9811,9 @@ L37:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "typ"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -10218,7 +10038,6 @@ func i79(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -10245,12 +10064,10 @@ func i79(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "parenType"
 	v = func() any {
 		return func() any { f_662 := func() any { return k1 }(); return tmk_ParenExpr(c, true, f_662) }()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -10279,7 +10096,6 @@ func i80(p *pegort.TParser) (any, bool) {
 		k3    any
 		x4    int
 		v5    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -10311,12 +10127,10 @@ L2:
 	}
 	k3 = v5
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "pointerType"
 	v = func() any {
 		return func() any { f_663 := func() any { return k3 }(); return tmk_StarExpr(c, true, f_663) }()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -10352,7 +10166,6 @@ func i81(p *pegort.TParser) (any, bool) {
 		x9    int
 		v10   any
 		x11   int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -10396,11 +10209,9 @@ L8:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "typeName"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -10482,7 +10293,6 @@ func i83(p *pegort.TParser) (any, bool) {
 		x5    int
 		v6    any
 		x7    int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -10531,7 +10341,6 @@ L9:
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "typeInstance"
 	v = func() any {
 		return func() any {
@@ -10540,7 +10349,6 @@ L9:
 			return tmk_IndexExpr(c, true, f_664, f_665)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -10589,7 +10397,6 @@ func i84(p *pegort.TParser) (any, bool) {
 		v23   any
 		v24   any
 		x25   int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -10685,7 +10492,6 @@ L27:
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "typeInstanceList"
 	v = func() any {
 		return func() any {
@@ -10703,7 +10509,6 @@ L27:
 			return tmk_IndexListExpr(c, true, f_667, f_668)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -10740,7 +10545,6 @@ func i85(p *pegort.TParser) (any, bool) {
 		v10   any
 		x11   int
 		x13   int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -10797,11 +10601,9 @@ L8:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "qualifiedIdent"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -10833,7 +10635,6 @@ func i86(p *pegort.TParser) (any, bool) {
 		k6    any
 		x7    int
 		v8    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -10873,7 +10674,6 @@ L5:
 	}
 	k6 = v8
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "selectorIdent"
 	v = func() any {
 		return func() any {
@@ -10882,7 +10682,6 @@ L5:
 			return tmk_SelectorExpr(c, true, f_670, f_671)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -10918,7 +10717,6 @@ func i87(p *pegort.TParser) (any, bool) {
 		k8    any
 		x9    int
 		v10   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -10957,7 +10755,6 @@ L6:
 	}
 	k8 = v10
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "arrayType"
 	v = func() any {
 		return func() any {
@@ -10966,7 +10763,6 @@ L6:
 			return tmk_ArrayType(c, true, f_672, f_673)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -11000,7 +10796,6 @@ func i88(p *pegort.TParser) (any, bool) {
 		v10   any
 		x12   int
 		v13   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -11041,11 +10836,9 @@ L11:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "arrayLen"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -11060,7 +10853,6 @@ func s89(p *pegort.TParser) (any, bool) {
 		v     any
 		c     *pegort.TActCtx
 		ok    bool
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -11070,10 +10862,8 @@ func s89(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "ellipsisLen"
 	v = func() any { return func() any { return tmk_Ellipsis(c, true, nil) }() }()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -11108,7 +10898,6 @@ func i90(p *pegort.TParser) (any, bool) {
 		k4    any
 		x5    int
 		v6    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -11149,7 +10938,6 @@ func i90(p *pegort.TParser) (any, bool) {
 	}
 	k4 = v6
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "mapType"
 	v = func() any {
 		return func() any {
@@ -11158,7 +10946,6 @@ func i90(p *pegort.TParser) (any, bool) {
 			return tmk_MapType(c, true, f_674, f_675)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -11262,7 +11049,6 @@ func i92(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -11287,7 +11073,6 @@ func i92(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "sendChanType"
 	v = func() any {
 		return func() any {
@@ -11296,7 +11081,6 @@ func i92(p *pegort.TParser) (any, bool) {
 			return tmk_ChanType(c, true, f_676, f_677)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -11325,7 +11109,6 @@ func i93(p *pegort.TParser) (any, bool) {
 		k3    any
 		x4    int
 		v5    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -11355,7 +11138,6 @@ L2:
 	}
 	k3 = v5
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "bothChanType"
 	v = func() any {
 		return func() any {
@@ -11364,7 +11146,6 @@ L2:
 			return tmk_ChanType(c, true, f_678, f_679)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -11395,7 +11176,6 @@ func i94(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -11420,7 +11200,6 @@ func i94(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "recvChanTypeT"
 	v = func() any {
 		return func() any {
@@ -11429,7 +11208,6 @@ func i94(p *pegort.TParser) (any, bool) {
 			return tmk_ChanType(c, true, f_680, f_681)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -11467,7 +11245,6 @@ func i95(p *pegort.TParser) (any, bool) {
 		v10   any
 		x11   int
 		x15   int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -11526,7 +11303,6 @@ L14:
 	goto fail
 L12:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "funcType"
 	v = func() any {
 		return func() any {
@@ -11535,7 +11311,6 @@ L12:
 			return tmk_FuncType(c, true, nil, f_682, f_683)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -11566,7 +11341,6 @@ func i96(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -11583,12 +11357,10 @@ func i96(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "structType"
 	v = func() any {
 		return func() any { f_684 := func() any { return k1 }(); return tmk_StructType(c, true, f_684) }()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -11622,7 +11394,6 @@ func i97(p *pegort.TParser) (any, bool) {
 		x8    int
 		v9    any
 		v10   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -11671,7 +11442,6 @@ func i97(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "fieldBlock"
 	v = func() any {
 		return func() any {
@@ -11681,7 +11451,6 @@ func i97(p *pegort.TParser) (any, bool) {
 			return tmk_FieldList(c, true, f_685)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -11801,7 +11570,6 @@ func i99(p *pegort.TParser) (any, bool) {
 		x22   int
 		v23   any
 		v26   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -11902,7 +11670,6 @@ L24:
 L25:
 	k20 = v23
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "embeddedField"
 	v = func() any {
 		return func() any {
@@ -11911,7 +11678,6 @@ L25:
 			return tmk_Field(c, true, nil, f_686, f_687)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -11944,7 +11710,6 @@ func i100(p *pegort.TParser) (any, bool) {
 		x6    int
 		v7    any
 		v10   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -11967,7 +11732,6 @@ L8:
 L9:
 	k4 = v7
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "starField"
 	v = func() any {
 		return func() any {
@@ -11976,7 +11740,6 @@ L9:
 			return tmk_Field(c, true, nil, f_688, f_689)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -12005,7 +11768,6 @@ func i101(p *pegort.TParser) (any, bool) {
 		k3    any
 		x4    int
 		v5    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -12037,12 +11799,10 @@ L2:
 	}
 	k3 = v5
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "starEmbedded"
 	v = func() any {
 		return func() any { f_690 := func() any { return k3 }(); return tmk_StarExpr(c, true, f_690) }()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -12087,7 +11847,6 @@ func i102(p *pegort.TParser) (any, bool) {
 		x19   int
 		v20   any
 		v23   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -12154,7 +11913,6 @@ L21:
 L22:
 	k17 = v20
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "multiNameField"
 	v = func() any {
 		return func() any {
@@ -12171,7 +11929,6 @@ L22:
 			return tmk_Field(c, true, f_691, f_692, f_693)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -12207,7 +11964,6 @@ func i103(p *pegort.TParser) (any, bool) {
 		x9    int
 		v10   any
 		v13   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -12238,7 +11994,6 @@ L11:
 L12:
 	k7 = v10
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "arrayNameField"
 	v = func() any {
 		return func() any {
@@ -12248,7 +12003,6 @@ L12:
 			return tmk_Field(c, true, f_694, f_695, f_696)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -12285,7 +12039,6 @@ func i104(p *pegort.TParser) (any, bool) {
 		x11   int
 		v12   any
 		v15   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -12329,7 +12082,6 @@ L13:
 L14:
 	k9 = v12
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "oneNameField"
 	v = func() any {
 		return func() any {
@@ -12339,7 +12091,6 @@ L14:
 			return tmk_Field(c, true, f_697, f_698, f_699)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -12375,7 +12126,6 @@ func i105(p *pegort.TParser) (any, bool) {
 		x12   int
 		v13   any
 		v16   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -12412,7 +12162,6 @@ L14:
 L15:
 	k10 = v13
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "instanceField"
 	v = func() any {
 		return func() any {
@@ -12421,7 +12170,6 @@ L15:
 			return tmk_Field(c, true, nil, f_700, f_701)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -12452,7 +12200,6 @@ func i106(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -12466,11 +12213,9 @@ func i106(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "tagSp"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	v = p.TConvertResult(trules[106], v)
 	p.Depth--
 	return v, true
@@ -12502,7 +12247,6 @@ func i107(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -12519,7 +12263,6 @@ func i107(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "interfaceType"
 	v = func() any {
 		return func() any {
@@ -12527,7 +12270,6 @@ func i107(p *pegort.TParser) (any, bool) {
 			return tmk_InterfaceType(c, true, f_702)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -12561,7 +12303,6 @@ func i108(p *pegort.TParser) (any, bool) {
 		x8    int
 		v9    any
 		v10   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -12610,7 +12351,6 @@ func i108(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "methodBlock"
 	v = func() any {
 		return func() any {
@@ -12620,7 +12360,6 @@ func i108(p *pegort.TParser) (any, bool) {
 			return tmk_FieldList(c, true, f_703)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -12693,7 +12432,6 @@ func i110(p *pegort.TParser) (any, bool) {
 		k4    any
 		x5    int
 		v6    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -12712,7 +12450,6 @@ func i110(p *pegort.TParser) (any, bool) {
 	}
 	k4 = v6
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "methodSpec"
 	v = func() any {
 		return func() any {
@@ -12721,7 +12458,6 @@ func i110(p *pegort.TParser) (any, bool) {
 			return tmk_Field(c, true, f_704, f_705, nil)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -12756,7 +12492,6 @@ func i111(p *pegort.TParser) (any, bool) {
 		v10   any
 		x11   int
 		x15   int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -12809,7 +12544,6 @@ L14:
 	goto fail
 L12:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "signature"
 	v = func() any {
 		return func() any {
@@ -12818,7 +12552,6 @@ L12:
 			return tmk_FuncType(c, true, nil, f_706, f_707)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -12866,7 +12599,6 @@ func i112(p *pegort.TParser) (any, bool) {
 		v21   any
 		v22   any
 		v23   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -12934,7 +12666,6 @@ func i112(p *pegort.TParser) (any, bool) {
 	v23 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v23
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "embeddedElem"
 	v = func() any {
 		return func() any {
@@ -12954,7 +12685,6 @@ func i112(p *pegort.TParser) (any, bool) {
 		}()
 	}()
 	p.DropCreated(c.Cbase)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -13036,7 +12766,6 @@ func i114(p *pegort.TParser) (any, bool) {
 		x5    int
 		v6    any
 		x7    int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -13085,7 +12814,6 @@ L9:
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "embeddedIndex"
 	v = func() any {
 		return func() any {
@@ -13094,7 +12822,6 @@ L9:
 			return tmk_IndexExpr(c, true, f_715, f_716)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -13143,7 +12870,6 @@ func i115(p *pegort.TParser) (any, bool) {
 		v23   any
 		v24   any
 		x25   int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -13239,7 +12965,6 @@ L27:
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "embeddedIndexList"
 	v = func() any {
 		return func() any {
@@ -13257,7 +12982,6 @@ L27:
 			return tmk_IndexListExpr(c, true, f_718, f_719)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -13300,7 +13024,6 @@ func i116(p *pegort.TParser) (any, bool) {
 		v14   any
 		v15   any
 		v16   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -13351,7 +13074,6 @@ func i116(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "block"
 	v = func() any {
 		return func() any {
@@ -13363,7 +13085,6 @@ func i116(p *pegort.TParser) (any, bool) {
 			return tmk_BlockStmt(c, true, f_722)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -13453,7 +13174,6 @@ func i118(p *pegort.TParser) (any, bool) {
 		ok    bool
 		v7    any
 		v9    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -13484,11 +13204,9 @@ L5:
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "terminatedStmt"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -13503,7 +13221,6 @@ func s119(p *pegort.TParser) (any, bool) {
 		v     any
 		c     *pegort.TActCtx
 		ok    bool
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -13513,10 +13230,8 @@ func s119(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "emptyStmt"
 	v = func() any { return func() any { return tmk_EmptyStmt(c, true) }() }()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -13533,7 +13248,6 @@ func s120(p *pegort.TParser) (any, bool) {
 		c     *pegort.TActCtx
 		x1    int
 		ok    bool
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -13553,10 +13267,8 @@ L2:
 	goto fail
 L3:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "implicitEmpty"
 	v = func() any { return func() any { return tmk_EmptyStmt(c, true) }() }()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -13598,7 +13310,6 @@ func i121(p *pegort.TParser) (any, bool) {
 		x14   bool
 		v17   any
 		v19   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -13666,7 +13377,6 @@ L18:
 L10:
 	k6 = v9
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "labeledEmpty"
 	v = func() any {
 		return func() any {
@@ -13675,7 +13385,6 @@ L10:
 			return tmk_LabeledStmt(c, true, f_724, f_725)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -13713,7 +13422,6 @@ func i122(p *pegort.TParser) (any, bool) {
 		v9    any
 		v12   any
 		v14   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -13767,7 +13475,6 @@ L13:
 L10:
 	k6 = v9
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "labeledStmt"
 	v = func() any {
 		return func() any {
@@ -13776,7 +13483,6 @@ L10:
 			return tmk_LabeledStmt(c, true, f_726, f_727)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -13824,7 +13530,6 @@ func i123(p *pegort.TParser) (any, bool) {
 		x19   int
 		v20   any
 		v23   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -13874,7 +13579,6 @@ L21:
 L22:
 	k17 = v20
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "clauseBody"
 	v = func() any {
 		return c.Concat(func() any {
@@ -13884,7 +13588,6 @@ L22:
 		}(), func() any { return k17 }())
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 }
@@ -13917,7 +13620,6 @@ func i124(p *pegort.TParser) (any, bool) {
 		v14   any
 		x15   int
 		x18   int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -13980,11 +13682,9 @@ L16:
 	goto fail
 L17:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "clauseStmt"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -14015,7 +13715,6 @@ func i125(p *pegort.TParser) (any, bool) {
 		ok    bool
 		v7    any
 		v9    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -14046,11 +13745,9 @@ L5:
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "clauseTerminated"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -14084,7 +13781,6 @@ func i126(p *pegort.TParser) (any, bool) {
 		v10   any
 		v12   any
 		v14   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -14126,11 +13822,9 @@ L13:
 L5:
 	k1 = v4
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "lastClauseStmt"
 	v = func() any { return c.List(func() any { return k1 }()) }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -14162,7 +13856,6 @@ func i127(p *pegort.TParser) (any, bool) {
 		v7    any
 		v9    any
 		x10   int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -14203,11 +13896,9 @@ L11:
 	goto fail
 L12:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "lastClauseTerminated"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -14260,7 +13951,6 @@ func i129(p *pegort.TParser) (any, bool) {
 		x45   int
 		x47   int
 		v48   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -14423,11 +14113,9 @@ L44:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "plainStmt"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -14461,7 +14149,6 @@ func i130(p *pegort.TParser) (any, bool) {
 		v10   any
 		v13   any
 		v16   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -14509,12 +14196,10 @@ L14:
 L5:
 	k1 = v4
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "declStmt"
 	v = func() any {
 		return func() any { f_730 := func() any { return k1 }(); return tmk_DeclStmt(c, true, f_730) }()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -14606,7 +14291,6 @@ func i132(p *pegort.TParser) (any, bool) {
 		k7    any
 		x8    int
 		v9    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -14633,7 +14317,6 @@ func i132(p *pegort.TParser) (any, bool) {
 	}
 	k7 = v9
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "assignStmt"
 	v = func() any {
 		return func() any {
@@ -14643,7 +14326,6 @@ func i132(p *pegort.TParser) (any, bool) {
 			return tmk_AssignStmt(c, true, f_731, f_732, f_733)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -14677,7 +14359,6 @@ func i133(p *pegort.TParser) (any, bool) {
 		k4    any
 		x5    int
 		v6    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -14704,7 +14385,6 @@ func i133(p *pegort.TParser) (any, bool) {
 	}
 	k4 = v6
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "sendStmt"
 	v = func() any {
 		return func() any {
@@ -14713,7 +14393,6 @@ func i133(p *pegort.TParser) (any, bool) {
 			return tmk_SendStmt(c, true, f_734, f_735)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -14744,7 +14423,6 @@ func i134(p *pegort.TParser) (any, bool) {
 		k4    any
 		x5    int
 		v6    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -14763,7 +14441,6 @@ func i134(p *pegort.TParser) (any, bool) {
 	}
 	k4 = v6
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "incDecStmt"
 	v = func() any {
 		return func() any {
@@ -14772,7 +14449,6 @@ func i134(p *pegort.TParser) (any, bool) {
 			return tmk_IncDecStmt(c, true, f_736, f_737)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -14803,7 +14479,6 @@ func i135(p *pegort.TParser) (any, bool) {
 		x2    int
 		ok    bool
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -14814,12 +14489,10 @@ func i135(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "exprStmt"
 	v = func() any {
 		return func() any { f_738 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_738) }()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -14919,7 +14592,6 @@ func i137(p *pegort.TParser) (any, bool) {
 		k7    any
 		x8    int
 		v9    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -14946,7 +14618,6 @@ func i137(p *pegort.TParser) (any, bool) {
 	}
 	k7 = v9
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "hassignStmt"
 	v = func() any {
 		return func() any {
@@ -14956,7 +14627,6 @@ func i137(p *pegort.TParser) (any, bool) {
 			return tmk_AssignStmt(c, true, f_739, f_740, f_741)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -14987,7 +14657,6 @@ func i138(p *pegort.TParser) (any, bool) {
 		k4    any
 		x5    int
 		v6    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -15014,7 +14683,6 @@ func i138(p *pegort.TParser) (any, bool) {
 	}
 	k4 = v6
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "hsendStmt"
 	v = func() any {
 		return func() any {
@@ -15023,7 +14691,6 @@ func i138(p *pegort.TParser) (any, bool) {
 			return tmk_SendStmt(c, true, f_742, f_743)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -15054,7 +14721,6 @@ func i139(p *pegort.TParser) (any, bool) {
 		k4    any
 		x5    int
 		v6    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -15073,7 +14739,6 @@ func i139(p *pegort.TParser) (any, bool) {
 	}
 	k4 = v6
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "hincDecStmt"
 	v = func() any {
 		return func() any {
@@ -15082,7 +14747,6 @@ func i139(p *pegort.TParser) (any, bool) {
 			return tmk_IncDecStmt(c, true, f_744, f_745)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -15110,7 +14774,6 @@ func i140(p *pegort.TParser) (any, bool) {
 		x2    int
 		ok    bool
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -15121,12 +14784,10 @@ func i140(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "hexprStmt"
 	v = func() any {
 		return func() any { f_746 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_746) }()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -15154,7 +14815,6 @@ func i141(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -15171,12 +14831,10 @@ func i141(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "goStmt"
 	v = func() any {
 		return func() any { f_747 := func() any { return k1 }(); return tmk_GoStmt(c, true, f_747) }()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -15204,7 +14862,6 @@ func i142(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -15221,12 +14878,10 @@ func i142(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "deferStmt"
 	v = func() any {
 		return func() any { f_748 := func() any { return k1 }(); return tmk_DeferStmt(c, true, f_748) }()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -15304,7 +14959,6 @@ func i144(p *pegort.TParser) (any, bool) {
 		x2    int
 		ok    bool
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -15331,7 +14985,6 @@ func i144(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "goCallEmpty"
 	v = func() any {
 		return func() any {
@@ -15339,7 +14992,6 @@ func i144(p *pegort.TParser) (any, bool) {
 			return tmk_CallExpr(c, true, f_749, nil, nil)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -15376,7 +15028,6 @@ func i145(p *pegort.TParser) (any, bool) {
 		v10   any
 		v13   any
 		x14   int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -15437,7 +15088,6 @@ L16:
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "goCallArgs"
 	v = func() any {
 		return func() any {
@@ -15447,7 +15097,6 @@ L16:
 			return tmk_CallExpr(c, true, f_750, f_751, f_752)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -15479,7 +15128,6 @@ func i146(p *pegort.TParser) (any, bool) {
 		x3    int
 		ok    bool
 		v4    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -15497,11 +15145,9 @@ func i146(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "dotsWs"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -15531,7 +15177,6 @@ func i147(p *pegort.TParser) (any, bool) {
 		x3    int
 		v4    any
 		v7    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -15552,7 +15197,6 @@ L5:
 L6:
 	k1 = v4
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "returnStmt"
 	v = func() any {
 		return func() any {
@@ -15560,7 +15204,6 @@ L6:
 			return tmk_ReturnStmt(c, true, f_753)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -15588,7 +15231,6 @@ func i148(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -15602,11 +15244,9 @@ func i148(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "returnValues"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -15717,7 +15357,6 @@ func i150(p *pegort.TParser) (any, bool) {
 		x3    int
 		v4    any
 		v7    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -15738,7 +15377,6 @@ L5:
 L6:
 	k1 = v4
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "breakStmt"
 	v = func() any {
 		return func() any {
@@ -15747,7 +15385,6 @@ L6:
 			return tmk_BranchStmt(c, true, f_754, f_755)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -15777,7 +15414,6 @@ func i151(p *pegort.TParser) (any, bool) {
 		x3    int
 		v4    any
 		v7    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -15798,7 +15434,6 @@ L5:
 L6:
 	k1 = v4
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "continueStmt"
 	v = func() any {
 		return func() any {
@@ -15807,7 +15442,6 @@ L6:
 			return tmk_BranchStmt(c, true, f_756, f_757)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -15835,7 +15469,6 @@ func i152(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -15852,7 +15485,6 @@ func i152(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "gotoStmt"
 	v = func() any {
 		return func() any {
@@ -15861,7 +15493,6 @@ func i152(p *pegort.TParser) (any, bool) {
 			return tmk_BranchStmt(c, true, f_758, f_759)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -15876,7 +15507,6 @@ func s153(p *pegort.TParser) (any, bool) {
 		v     any
 		c     *pegort.TActCtx
 		ok    bool
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -15884,7 +15514,6 @@ func s153(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "fallthroughStmt"
 	v = func() any {
 		return func() any {
@@ -15892,7 +15521,6 @@ func s153(p *pegort.TParser) (any, bool) {
 			return tmk_BranchStmt(c, true, f_760, nil)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -15924,7 +15552,6 @@ func i154(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -15938,11 +15565,9 @@ func i154(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "labelSp"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	v = p.TConvertResult(trules[154], v)
 	p.Depth--
 	return v, true
@@ -15991,7 +15616,6 @@ func i155(p *pegort.TParser) (any, bool) {
 		x24   int
 		v25   any
 		v28   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -16067,7 +15691,6 @@ L26:
 L27:
 	k22 = v25
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "ifStmt"
 	v = func() any {
 		return func() any {
@@ -16078,7 +15701,6 @@ L27:
 			return tmk_IfStmt(c, true, f_761, f_762, f_763, f_764)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -16106,7 +15728,6 @@ func i156(p *pegort.TParser) (any, bool) {
 		x2    int
 		ok    bool
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -16126,11 +15747,9 @@ func i156(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "hsimpleSemi"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -16163,7 +15782,6 @@ func i157(p *pegort.TParser) (any, bool) {
 		x7    bool
 		v10   any
 		v13   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -16208,11 +15826,9 @@ L11:
 L5:
 	k1 = v4
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "elseSp"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -16300,7 +15916,6 @@ func i159(p *pegort.TParser) (any, bool) {
 		v4    any
 		ok    bool
 		v7    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -16327,11 +15942,9 @@ L6:
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "switchInit"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -16369,7 +15982,6 @@ func i160(p *pegort.TParser) (any, bool) {
 		k15   any
 		x16   int
 		v17   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -16413,7 +16025,6 @@ L13:
 	}
 	k15 = v17
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "exprSwitchStmt"
 	v = func() any {
 		return func() any {
@@ -16423,7 +16034,6 @@ L13:
 			return tmk_SwitchStmt(c, true, f_765, f_766, f_767)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -16459,7 +16069,6 @@ func i161(p *pegort.TParser) (any, bool) {
 		k11   any
 		x12   int
 		v13   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -16496,7 +16105,6 @@ L6:
 	}
 	k11 = v13
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "typeSwitchStmt"
 	v = func() any {
 		return func() any {
@@ -16506,7 +16114,6 @@ L6:
 			return tmk_TypeSwitchStmt(c, true, f_768, f_769, f_770)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -16579,7 +16186,6 @@ func i163(p *pegort.TParser) (any, bool) {
 		k4    any
 		x5    int
 		v6    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -16606,7 +16212,6 @@ func i163(p *pegort.TParser) (any, bool) {
 	}
 	k4 = v6
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "guardAssign"
 	v = func() any {
 		return func() any {
@@ -16616,7 +16221,6 @@ func i163(p *pegort.TParser) (any, bool) {
 			return tmk_AssignStmt(c, true, f_771, f_772, f_773)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -16644,7 +16248,6 @@ func i164(p *pegort.TParser) (any, bool) {
 		x2    int
 		ok    bool
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -16655,12 +16258,10 @@ func i164(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "guardExpr"
 	v = func() any {
 		return func() any { f_774 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_774) }()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -16691,7 +16292,6 @@ func i165(p *pegort.TParser) (any, bool) {
 		x2    int
 		ok    bool
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -16730,7 +16330,6 @@ func i165(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "guardAssert"
 	v = func() any {
 		return func() any {
@@ -16738,7 +16337,6 @@ func i165(p *pegort.TParser) (any, bool) {
 			return tmk_TypeAssertExpr(c, true, f_775, nil)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -16776,7 +16374,6 @@ func i166(p *pegort.TParser) (any, bool) {
 		v9    any
 		x10   int
 		v13   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -16831,7 +16428,6 @@ func i166(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "caseBlock"
 	v = func() any {
 		return func() any {
@@ -16841,7 +16437,6 @@ func i166(p *pegort.TParser) (any, bool) {
 			return tmk_BlockStmt(c, true, f_776)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -16928,7 +16523,6 @@ func i168(p *pegort.TParser) (any, bool) {
 		k6    any
 		x7    int
 		v8    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -16971,7 +16565,6 @@ L5:
 	}
 	k6 = v8
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "caseClauseList"
 	v = func() any {
 		return func() any {
@@ -16980,7 +16573,6 @@ L5:
 			return tmk_CaseClause(c, true, f_777, f_778)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -17009,7 +16601,6 @@ func i169(p *pegort.TParser) (any, bool) {
 		k3    any
 		x4    int
 		v5    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -17044,7 +16635,6 @@ L2:
 	}
 	k3 = v5
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "caseClauseDefault"
 	v = func() any {
 		return func() any {
@@ -17052,7 +16642,6 @@ L2:
 			return tmk_CaseClause(c, true, nil, f_779)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -17080,7 +16669,6 @@ func i170(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -17097,12 +16685,10 @@ func i170(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "selectStmt"
 	v = func() any {
 		return func() any { f_780 := func() any { return k1 }(); return tmk_SelectStmt(c, true, f_780) }()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -17137,7 +16723,6 @@ func i171(p *pegort.TParser) (any, bool) {
 		v9    any
 		x10   int
 		v13   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -17192,7 +16777,6 @@ func i171(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "commBlock"
 	v = func() any {
 		return func() any {
@@ -17202,7 +16786,6 @@ func i171(p *pegort.TParser) (any, bool) {
 			return tmk_BlockStmt(c, true, f_781)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -17289,7 +16872,6 @@ func i173(p *pegort.TParser) (any, bool) {
 		k6    any
 		x7    int
 		v8    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -17332,7 +16914,6 @@ L5:
 	}
 	k6 = v8
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "commClauseCase"
 	v = func() any {
 		return func() any {
@@ -17341,7 +16922,6 @@ L5:
 			return tmk_CommClause(c, true, f_782, f_783)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -17370,7 +16950,6 @@ func i174(p *pegort.TParser) (any, bool) {
 		k3    any
 		x4    int
 		v5    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -17405,7 +16984,6 @@ L2:
 	}
 	k3 = v5
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "commClauseDefault"
 	v = func() any {
 		return func() any {
@@ -17413,7 +16991,6 @@ L2:
 			return tmk_CommClause(c, true, nil, f_784)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -17520,7 +17097,6 @@ func i176(p *pegort.TParser) (any, bool) {
 		k37   any
 		x38   int
 		v39   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -17632,7 +17208,6 @@ L27:
 	}
 	k37 = v39
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "commRecv"
 	v = func() any {
 		return func() any {
@@ -17651,7 +17226,6 @@ L27:
 			return tmk_AssignStmt(c, true, f_786, f_788, f_789)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -17760,7 +17334,6 @@ func i178(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -17777,7 +17350,6 @@ func i178(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "forInfinite"
 	v = func() any {
 		return func() any {
@@ -17785,7 +17357,6 @@ func i178(p *pegort.TParser) (any, bool) {
 			return tmk_ForStmt(c, true, nil, nil, nil, f_790)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -17816,7 +17387,6 @@ func i179(p *pegort.TParser) (any, bool) {
 		k4    any
 		x5    int
 		v6    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -17841,7 +17411,6 @@ func i179(p *pegort.TParser) (any, bool) {
 	}
 	k4 = v6
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "forCond"
 	v = func() any {
 		return func() any {
@@ -17850,7 +17419,6 @@ func i179(p *pegort.TParser) (any, bool) {
 			return tmk_ForStmt(c, true, nil, f_791, nil, f_792)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -17893,7 +17461,6 @@ func i180(p *pegort.TParser) (any, bool) {
 		k22   any
 		x23   int
 		v24   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -17967,7 +17534,6 @@ L20:
 	}
 	k22 = v24
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "forClause"
 	v = func() any {
 		return func() any {
@@ -17978,7 +17544,6 @@ L20:
 			return tmk_ForStmt(c, true, f_793, f_794, f_795, f_796)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -18029,7 +17594,6 @@ func i181(p *pegort.TParser) (any, bool) {
 		k34   any
 		x35   int
 		v36   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -18142,7 +17706,6 @@ L9:
 	}
 	k34 = v36
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "forRange"
 	v = func() any {
 		return func() any {
@@ -18154,7 +17717,6 @@ L9:
 			return tmk_RangeStmt(c, true, f_797, f_798, f_799, f_800, f_801)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -18182,7 +17744,6 @@ func i182(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -18204,11 +17765,9 @@ func i182(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "rangeValue"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -18244,7 +17803,6 @@ func i183(p *pegort.TParser) (any, bool) {
 		x8    int
 		x11   int
 		v12   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -18286,11 +17844,9 @@ L10:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "expr"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -18338,7 +17894,6 @@ func i184(p *pegort.TParser) (any, bool) {
 		v19   any
 		v20   any
 		v21   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -18392,7 +17947,6 @@ func i184(p *pegort.TParser) (any, bool) {
 	v21 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v21
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "exprList"
 	v = func() any {
 		return func() any {
@@ -18405,7 +17959,6 @@ func i184(p *pegort.TParser) (any, bool) {
 		}()
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -18451,7 +18004,6 @@ func i185(p *pegort.TParser) (any, bool) {
 		v20   any
 		v21   any
 		v22   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -18504,7 +18056,6 @@ func i185(p *pegort.TParser) (any, bool) {
 	v22 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v22
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "orExpr"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_805, l_806 any) any {
@@ -18521,7 +18072,6 @@ func i185(p *pegort.TParser) (any, bool) {
 		})
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -18570,7 +18120,6 @@ func i186(p *pegort.TParser) (any, bool) {
 		v20   any
 		v21   any
 		v22   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -18623,7 +18172,6 @@ func i186(p *pegort.TParser) (any, bool) {
 	v22 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v22
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "andExpr"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_811, l_812 any) any {
@@ -18640,7 +18188,6 @@ func i186(p *pegort.TParser) (any, bool) {
 		})
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -18689,7 +18236,6 @@ func i187(p *pegort.TParser) (any, bool) {
 		v20   any
 		v21   any
 		v22   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -18742,7 +18288,6 @@ func i187(p *pegort.TParser) (any, bool) {
 	v22 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v22
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "cmpExpr"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_817, l_818 any) any {
@@ -18759,7 +18304,6 @@ func i187(p *pegort.TParser) (any, bool) {
 		})
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -18808,7 +18352,6 @@ func i188(p *pegort.TParser) (any, bool) {
 		v20   any
 		v21   any
 		v22   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -18861,7 +18404,6 @@ func i188(p *pegort.TParser) (any, bool) {
 	v22 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v22
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "addExpr"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_823, l_824 any) any {
@@ -18878,7 +18420,6 @@ func i188(p *pegort.TParser) (any, bool) {
 		})
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -18927,7 +18468,6 @@ func i189(p *pegort.TParser) (any, bool) {
 		v20   any
 		v21   any
 		v22   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -18980,7 +18520,6 @@ func i189(p *pegort.TParser) (any, bool) {
 	v22 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v22
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "mulExpr"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_829, l_830 any) any {
@@ -18997,7 +18536,6 @@ func i189(p *pegort.TParser) (any, bool) {
 		})
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -19040,7 +18578,6 @@ func i190(p *pegort.TParser) (any, bool) {
 		v25   any
 		x27   int
 		v28   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -19127,11 +18664,9 @@ L26:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "unaryExpr"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -19165,7 +18700,6 @@ func i191(p *pegort.TParser) (any, bool) {
 		x4    int
 		ch    rune
 		size  int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -19193,11 +18727,9 @@ L5:
 	p.Silent--
 	p.Pos = x4
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "recvChanType"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -19229,7 +18761,6 @@ func i192(p *pegort.TParser) (any, bool) {
 		k5    any
 		x6    int
 		v7    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -19276,7 +18807,6 @@ L2:
 	}
 	k5 = v7
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "recvExpr"
 	v = func() any {
 		return func() any {
@@ -19285,7 +18815,6 @@ L2:
 			return tmk_UnaryExpr(c, true, f_835, f_836)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -19316,7 +18845,6 @@ func i193(p *pegort.TParser) (any, bool) {
 		k4    any
 		x5    int
 		v6    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -19335,7 +18863,6 @@ func i193(p *pegort.TParser) (any, bool) {
 	}
 	k4 = v6
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "unaryOpExpr"
 	v = func() any {
 		return func() any {
@@ -19344,7 +18871,6 @@ func i193(p *pegort.TParser) (any, bool) {
 			return tmk_UnaryExpr(c, true, f_837, f_838)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -19373,7 +18899,6 @@ func i194(p *pegort.TParser) (any, bool) {
 		k3    any
 		x4    int
 		v5    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -19405,12 +18930,10 @@ L2:
 	}
 	k3 = v5
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "starExpr"
 	v = func() any {
 		return func() any { f_839 := func() any { return k3 }(); return tmk_StarExpr(c, true, f_839) }()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -19445,7 +18968,6 @@ func i195(p *pegort.TParser) (any, bool) {
 		size  int
 		x11   int
 		v12   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -19490,11 +19012,9 @@ L10:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "primaryExpr"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -20352,7 +19872,6 @@ func i197(p *pegort.TParser) (any, bool) {
 		v22   any
 		x25   int
 		v26   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -20442,11 +19961,9 @@ L23:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "primaryOperand"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -20593,7 +20110,6 @@ func i200(p *pegort.TParser) (any, bool) {
 		v20   any
 		v21   any
 		x22   int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -20667,7 +20183,6 @@ L23:
 	p.Pos = x22
 L24:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "indexList"
 	v = func() any {
 		return func() any {
@@ -20680,7 +20195,6 @@ L24:
 		}()
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -20711,7 +20225,6 @@ func i201(p *pegort.TParser) (any, bool) {
 		k1    any
 		x2    int
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -20738,12 +20251,10 @@ func i201(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "parenExpr"
 	v = func() any {
 		return func() any { f_843 := func() any { return k1 }(); return tmk_ParenExpr(c, true, f_843) }()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -20777,7 +20288,6 @@ func i202(p *pegort.TParser) (any, bool) {
 		k4    any
 		x5    int
 		v6    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -20796,7 +20306,6 @@ func i202(p *pegort.TParser) (any, bool) {
 	}
 	k4 = v6
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "funcLit"
 	v = func() any {
 		return func() any {
@@ -20805,7 +20314,6 @@ func i202(p *pegort.TParser) (any, bool) {
 			return tmk_FuncLit(c, true, f_844, f_845)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -20838,7 +20346,6 @@ func i203(p *pegort.TParser) (any, bool) {
 		x3    int
 		v4    any
 		v7    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -20869,11 +20376,9 @@ L6:
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "litValue"
 	v = func() any { return c.Concat(func() any { return k1 }()) }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -20919,7 +20424,6 @@ func i204(p *pegort.TParser) (any, bool) {
 		v20   any
 		v21   any
 		x22   int
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -20989,7 +20493,6 @@ L23:
 	p.Pos = x22
 L24:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "elements"
 	v = func() any {
 		return func() any {
@@ -21002,7 +20505,6 @@ L24:
 		}()
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -21084,7 +20586,6 @@ func i206(p *pegort.TParser) (any, bool) {
 		k6    any
 		x7    int
 		v8    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -21124,7 +20625,6 @@ L5:
 	}
 	k6 = v8
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "keyValue"
 	v = func() any {
 		return func() any {
@@ -21133,7 +20633,6 @@ L5:
 			return tmk_KeyValueExpr(c, true, f_848, f_849)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -21220,7 +20719,6 @@ func i208(p *pegort.TParser) (any, bool) {
 		x2    int
 		ok    bool
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -21231,7 +20729,6 @@ func i208(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "elidedLit"
 	v = func() any {
 		return func() any {
@@ -21239,7 +20736,6 @@ func i208(p *pegort.TParser) (any, bool) {
 			return tmk_CompositeLit(c, true, nil, f_850)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -21491,7 +20987,6 @@ func i211(p *pegort.TParser) (any, bool) {
 		x8    int
 		x11   int
 		v12   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -21533,11 +21028,9 @@ L10:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "hexpr"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -21585,7 +21078,6 @@ func i212(p *pegort.TParser) (any, bool) {
 		v19   any
 		v20   any
 		v21   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -21639,7 +21131,6 @@ func i212(p *pegort.TParser) (any, bool) {
 	v21 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v21
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "hexprList"
 	v = func() any {
 		return func() any {
@@ -21652,7 +21143,6 @@ func i212(p *pegort.TParser) (any, bool) {
 		}()
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -21698,7 +21188,6 @@ func i213(p *pegort.TParser) (any, bool) {
 		v20   any
 		v21   any
 		v22   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -21751,7 +21240,6 @@ func i213(p *pegort.TParser) (any, bool) {
 	v22 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v22
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "horExpr"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_854, l_855 any) any {
@@ -21768,7 +21256,6 @@ func i213(p *pegort.TParser) (any, bool) {
 		})
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -21817,7 +21304,6 @@ func i214(p *pegort.TParser) (any, bool) {
 		v20   any
 		v21   any
 		v22   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -21870,7 +21356,6 @@ func i214(p *pegort.TParser) (any, bool) {
 	v22 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v22
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "handExpr"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_860, l_861 any) any {
@@ -21887,7 +21372,6 @@ func i214(p *pegort.TParser) (any, bool) {
 		})
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -21936,7 +21420,6 @@ func i215(p *pegort.TParser) (any, bool) {
 		v20   any
 		v21   any
 		v22   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -21989,7 +21472,6 @@ func i215(p *pegort.TParser) (any, bool) {
 	v22 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v22
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "hcmpExpr"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_866, l_867 any) any {
@@ -22006,7 +21488,6 @@ func i215(p *pegort.TParser) (any, bool) {
 		})
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -22055,7 +21536,6 @@ func i216(p *pegort.TParser) (any, bool) {
 		v20   any
 		v21   any
 		v22   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -22108,7 +21588,6 @@ func i216(p *pegort.TParser) (any, bool) {
 	v22 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v22
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "haddExpr"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_872, l_873 any) any {
@@ -22125,7 +21604,6 @@ func i216(p *pegort.TParser) (any, bool) {
 		})
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -22174,7 +21652,6 @@ func i217(p *pegort.TParser) (any, bool) {
 		v20   any
 		v21   any
 		v22   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -22227,7 +21704,6 @@ func i217(p *pegort.TParser) (any, bool) {
 	v22 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v22
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "hmulExpr"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_878, l_879 any) any {
@@ -22244,7 +21720,6 @@ func i217(p *pegort.TParser) (any, bool) {
 		})
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -22287,7 +21762,6 @@ func i218(p *pegort.TParser) (any, bool) {
 		v25   any
 		x27   int
 		v28   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -22374,11 +21848,9 @@ L26:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "hunaryExpr"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -22410,7 +21882,6 @@ func i219(p *pegort.TParser) (any, bool) {
 		k5    any
 		x6    int
 		v7    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -22457,7 +21928,6 @@ L2:
 	}
 	k5 = v7
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "hrecvExpr"
 	v = func() any {
 		return func() any {
@@ -22466,7 +21936,6 @@ L2:
 			return tmk_UnaryExpr(c, true, f_883, f_884)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -22497,7 +21966,6 @@ func i220(p *pegort.TParser) (any, bool) {
 		k4    any
 		x5    int
 		v6    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -22516,7 +21984,6 @@ func i220(p *pegort.TParser) (any, bool) {
 	}
 	k4 = v6
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "hunaryOpExpr"
 	v = func() any {
 		return func() any {
@@ -22525,7 +21992,6 @@ func i220(p *pegort.TParser) (any, bool) {
 			return tmk_UnaryExpr(c, true, f_885, f_886)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -22554,7 +22020,6 @@ func i221(p *pegort.TParser) (any, bool) {
 		k3    any
 		x4    int
 		v5    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -22586,12 +22051,10 @@ L2:
 	}
 	k3 = v5
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "hstarExpr"
 	v = func() any {
 		return func() any { f_887 := func() any { return k3 }(); return tmk_StarExpr(c, true, f_887) }()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -22626,7 +22089,6 @@ func i222(p *pegort.TParser) (any, bool) {
 		size  int
 		x11   int
 		v12   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -22671,11 +22133,9 @@ L10:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "hprimaryExpr"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -23228,7 +22688,6 @@ func i224(p *pegort.TParser) (any, bool) {
 		v49   any
 		x52   int
 		v53   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -23440,11 +22899,9 @@ L50:
 	goto fail
 L4:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "hoperand"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -23481,7 +22938,6 @@ func i225(p *pegort.TParser) (any, bool) {
 		k17   any
 		x18   int
 		v19   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -23537,7 +22993,6 @@ L5:
 	}
 	k17 = v19
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "compositeLitH"
 	v = func() any {
 		return func() any {
@@ -23546,7 +23001,6 @@ L5:
 			return tmk_CompositeLit(c, true, f_888, f_889)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:

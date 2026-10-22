@@ -2620,7 +2620,6 @@ func i0(p *pegort.TParser) (any, bool) {
 			v14   any
 			v15   any
 			v16   any
-			w     string
 		)
 		start = p.Pos
 		p.Enter()
@@ -2666,7 +2665,6 @@ func i0(p *pegort.TParser) (any, bool) {
 		}
 		v16 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
 		c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-		w = p.Where
 		p.Where = "main"
 		v = func() any {
 			return func() any {
@@ -2674,7 +2672,6 @@ func i0(p *pegort.TParser) (any, bool) {
 				return tmk_File(c, true, f_20)
 			}()
 		}()
-		p.Where = w
 		p.Depth--
 		return v, true
 	fail_ordinary:
@@ -2701,7 +2698,6 @@ func i0(p *pegort.TParser) (any, bool) {
 		v14   any
 		v15   any
 		v16   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -2755,7 +2751,6 @@ L5:
 	}
 	v16 = p.NewNode("tuple", x1, p.Pos, x2)
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "main"
 	v = func() any {
 		c.P.StepWork()
@@ -2764,7 +2759,6 @@ L5:
 			return tmk_File(c, true, f_20)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -2812,7 +2806,6 @@ func i1(p *pegort.TParser) (any, bool) {
 			x13   int
 			v14   any
 			v15   any
-			w     string
 		)
 		start = p.Pos
 		p.Enter()
@@ -2864,7 +2857,6 @@ func i1(p *pegort.TParser) (any, bool) {
 			goto fail_ordinary
 		}
 		c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-		w = p.Where
 		p.Where = "record"
 		v = func() any {
 			return func() any {
@@ -2879,7 +2871,6 @@ func i1(p *pegort.TParser) (any, bool) {
 				return tmk_Record(c, true, f_21)
 			}()
 		}()
-		p.Where = w
 		p.Depth--
 		return v, true
 	fail_ordinary:
@@ -2906,7 +2897,6 @@ func i1(p *pegort.TParser) (any, bool) {
 		x13   int
 		v14   any
 		v15   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -2971,7 +2961,6 @@ L2:
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "record"
 	v = func() any {
 		c.P.StepWork()
@@ -2988,7 +2977,6 @@ L2:
 			return tmk_Record(c, true, f_21)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:

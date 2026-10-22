@@ -2008,7 +2008,6 @@ func i0(p *pegort.TParser) (any, bool) {
 			x2    int
 			ok    bool
 			v3    any
-			w     string
 		)
 		start = p.Pos
 		p.Enter()
@@ -2026,11 +2025,9 @@ func i0(p *pegort.TParser) (any, bool) {
 			goto fail_ordinary
 		}
 		c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-		w = p.Where
 		p.Where = "main"
 		v = func() any { return k1 }()
 		v = c.Finish(v)
-		p.Where = w
 		p.Depth--
 		return v, true
 	fail_ordinary:
@@ -2047,7 +2044,6 @@ func i0(p *pegort.TParser) (any, bool) {
 		x2    int
 		ok    bool
 		v3    any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -2070,11 +2066,9 @@ func i0(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "main"
 	v = func() any { c.P.StepWork(); return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:

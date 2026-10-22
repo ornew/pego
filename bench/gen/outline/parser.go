@@ -2377,7 +2377,6 @@ func i0(p *pegort.TParser) (any, bool) {
 			v3      any
 			x4      int
 			x5      int
-			w       string
 		)
 		start = p.Pos
 		prevEnv = p.Env
@@ -2411,11 +2410,9 @@ func i0(p *pegort.TParser) (any, bool) {
 			goto fail_ordinary
 		}
 		c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-		w = p.Where
 		p.Where = "main"
 		v = func() any { return k1 }()
 		v = c.Finish(v)
-		p.Where = w
 		p.Depth--
 		p.Env = prevEnv
 		return v, true
@@ -2437,7 +2434,6 @@ func i0(p *pegort.TParser) (any, bool) {
 		v3      any
 		x4      int
 		x5      int
-		w       string
 	)
 	start = p.Pos
 	prevEnv = p.Env
@@ -2478,11 +2474,9 @@ func i0(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "main"
 	v = func() any { c.P.StepWork(); return k1 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
@@ -2536,7 +2530,6 @@ func i1(p *pegort.TParser) (any, bool) {
 			x11   int
 			v12   any
 			v13   any
-			w     string
 		)
 		start = p.Pos
 		p.Enter()
@@ -2582,13 +2575,11 @@ func i1(p *pegort.TParser) (any, bool) {
 		v13 = p.NewNodeOrdinary("list", x2, p.Pos, p.Kids(x3))
 		k1 = v13
 		c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-		w = p.Where
 		p.Where = "block"
 		v = func() any {
 			return c.NewList(c.ListItems("map", func() any { return k1 }()))
 		}()
 		v = c.Finish(v)
-		p.Where = w
 		p.Depth--
 		return v, true
 	fail_ordinary:
@@ -2613,7 +2604,6 @@ func i1(p *pegort.TParser) (any, bool) {
 		x11   int
 		v12   any
 		v13   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -2666,14 +2656,12 @@ func i1(p *pegort.TParser) (any, bool) {
 	v13 = p.NewNode("list", x2, p.Pos, p.Kids(x3))
 	k1 = v13
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "block"
 	v = func() any {
 		c.P.StepWork()
 		return c.NewList(c.ListItems("map", func() any { c.P.StepWork(); return k1 }()))
 	}()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -2719,7 +2707,6 @@ func i2(p *pegort.TParser) (any, bool) {
 			x9    int
 			v10   any
 			v13   any
-			w     string
 		)
 		start = p.Pos
 		p.Enter()
@@ -2757,7 +2744,6 @@ func i2(p *pegort.TParser) (any, bool) {
 	L12_ordinary:
 		k7 = v10
 		c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-		w = p.Where
 		p.Where = "item"
 		v = func() any {
 			return func() any {
@@ -2766,7 +2752,6 @@ func i2(p *pegort.TParser) (any, bool) {
 				return tmk_Item(c, true, f_26, f_27)
 			}()
 		}()
-		p.Where = w
 		p.Depth--
 		return v, true
 	fail_ordinary:
@@ -2791,7 +2776,6 @@ func i2(p *pegort.TParser) (any, bool) {
 		x9    int
 		v10   any
 		v13   any
-		w     string
 	)
 	start = p.Pos
 	p.Enter()
@@ -2840,7 +2824,6 @@ L11:
 L12:
 	k7 = v10
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "item"
 	v = func() any {
 		c.P.StepWork()
@@ -2850,7 +2833,6 @@ L12:
 			return tmk_Item(c, true, f_26, f_27)
 		}()
 	}()
-	p.Where = w
 	p.Depth--
 	return v, true
 fail:
@@ -2895,7 +2877,6 @@ func i3(p *pegort.TParser) (any, bool) {
 			k10     any
 			x11     int
 			v12     any
-			w       string
 		)
 		start = p.Pos
 		prevEnv = p.Env
@@ -2950,11 +2931,9 @@ func i3(p *pegort.TParser) (any, bool) {
 		}
 		k10 = v12
 		c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-		w = p.Where
 		p.Where = "children"
 		v = func() any { return k10 }()
 		v = c.Finish(v)
-		p.Where = w
 		p.Depth--
 		p.Env = prevEnv
 		return v, true
@@ -2980,7 +2959,6 @@ func i3(p *pegort.TParser) (any, bool) {
 		k10     any
 		x11     int
 		v12     any
-		w       string
 	)
 	start = p.Pos
 	prevEnv = p.Env
@@ -3046,11 +3024,9 @@ L3:
 	}
 	k10 = v12
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
-	w = p.Where
 	p.Where = "children"
 	v = func() any { c.P.StepWork(); return k10 }()
 	v = c.Finish(v)
-	p.Where = w
 	p.Depth--
 	p.Env = prevEnv
 	return v, true
