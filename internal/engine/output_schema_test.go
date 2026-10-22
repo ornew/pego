@@ -227,3 +227,27 @@ rule main = (-"a")*`)
 		t.Fatalf("value-free repeat: %s", data)
 	}
 }
+
+// TestOutputSchemaMergesRepeatedCaptures checks that captures of one name in one node export as a
+// single capture with the paths of all of them, which keeps the schema valid.
+func TestOutputSchemaMergesRepeatedCaptures(t *testing.T) {
+	p := compileBare(t, "@start\nrule main = a:\"x\" b:\"y\" a:\"z\"\n", Options{DefaultValue: true})
+	s, err := p.OutputSchemaPrototype("main", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Validate(); err != nil {
+		t.Fatalf("schema with repeated captures: %v", err)
+	}
+	var paths [][]int
+	count := 0
+	for _, c := range s.Types[0].Shape.Captures {
+		if c.Name == "a" {
+			paths = c.Paths
+			count++
+		}
+	}
+	if want := [][]int{{0}, {2}}; count != 1 || !reflect.DeepEqual(paths, want) {
+		t.Fatalf("capture a: %d entries with paths %v, want one with %v", count, paths, want)
+	}
+}

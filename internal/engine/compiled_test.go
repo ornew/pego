@@ -348,3 +348,25 @@ func grammarTypes(prog *Program) string {
 	}
 	return b.String()
 }
+
+// TestCompiledFormatVersion checks that only the current container version is read: earlier and
+// later versions are refused with the version in the message.
+func TestCompiledFormatVersion(t *testing.T) {
+	data, err := compile(t, `rule main = "a"`).MarshalBinary("main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resum := func(b []byte) []byte {
+		b = append([]byte(nil), b[:len(b)-4]...)
+		return binary.LittleEndian.AppendUint32(b, crc32.ChecksumIEEE(b))
+	}
+	for _, v := range []byte{1, 2, 3, compiledVersion + 1} {
+		d := append([]byte(nil), data...)
+		d[len(compiledMagic)] = v
+		_, _, err := LoadProgram(resum(d), Options{})
+		want := fmt.Sprintf("unsupported compiled grammar version %d (want %d)", v, compiledVersion)
+		if err == nil || err.Error() != want {
+			t.Errorf("version %d: got %v, want %q", v, err, want)
+		}
+	}
+}

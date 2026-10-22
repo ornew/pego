@@ -141,9 +141,9 @@ func TestCompiledSchemaBackendAgreement(t *testing.T) {
 	}
 }
 
-// marshalWithSchemaSection writes an AST-less file with the given schema section, for the tests of
-// malformed sections.
-func marshalWithSchemaSection(prog *Program, start string, section []byte) []byte {
+// marshalWithSchemaSection writes a file with the given schema section, with the AST when withAST is
+// set, for the tests of malformed sections and of the section with the AST.
+func marshalWithSchemaSection(prog *Program, start string, section []byte, withAST bool) []byte {
 	m := prog.Module()
 	w := &encoder{strs: map[string]int{}}
 	for i, s := range m.Strings {
@@ -157,7 +157,10 @@ func marshalWithSchemaSection(prog *Program, start string, section []byte) []byt
 	w.bool(true)
 	w.uint(len(section))
 	w.body.Write(section)
-	w.bool(false) // AST omitted
+	w.bool(withAST)
+	if withAST {
+		w.statements(prog)
+	}
 	var out bytes.Buffer
 	out.WriteString(compiledMagic)
 	out.WriteByte(compiledVersion)
@@ -175,7 +178,7 @@ rule other = "b"`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := LoadProgram(marshalWithSchemaSection(p, "main", section), Options{}); err != nil {
+	if _, _, err := LoadProgram(marshalWithSchemaSection(p, "main", section, false), Options{}); err != nil {
 		t.Fatalf("valid section: %v", err)
 	}
 	for _, tc := range []struct {
@@ -190,7 +193,7 @@ rule other = "b"`)
 		{"start count", dropLastStart.ReplaceAllString(string(section), "]}"), "start rules in the schema for"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			_, _, err := LoadProgram(marshalWithSchemaSection(p, "main", []byte(tc.section)), Options{})
+			_, _, err := LoadProgram(marshalWithSchemaSection(p, "main", []byte(tc.section), false), Options{})
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("error %v, want %q", err, tc.want)
 			}
@@ -223,5 +226,19 @@ func TestCompiledSchemaUnavailable(t *testing.T) {
 	// Saving a file without a schema section with the schema option derives it from nothing.
 	if _, err := loaded.MarshalBinaryWith("main", MarshalOptions{OmitAST: true, Schema: true}); !errors.Is(err, ErrSchemaUnavailable) {
 		t.Fatalf("schema added to a file that has none: %v", err)
+	}
+}
+
+// TestCompiledSchemaWithAST checks that a file with the AST refuses a schema section: its schema is
+// derived from the AST on load, so a stored one would be a second source of the same schema.
+func TestCompiledSchemaWithAST(t *testing.T) {
+	p := compile(t, `rule main = "a"`)
+	section, err := p.encodeSchemaSection()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, err = LoadProgram(marshalWithSchemaSection(p, "main", section, true), Options{})
+	if err == nil || !strings.Contains(err.Error(), "a schema section with the AST") {
+		t.Fatalf("file with the AST and a schema section: %v", err)
 	}
 }
