@@ -122,6 +122,9 @@ type GenOptions struct {
 	disableGuardedClasses bool
 	// boxedComparisons evaluates comparisons of fields as other binary operations, for tests.
 	boxedComparisons bool
+	// decisions, if set, receives the lowering decisions of the generator (gen_decisions.go), for
+	// tests.
+	decisions *genDecisions
 	// Independent generation-only controls for typed object and list slabs.
 	// Reference parsers allocate each object or list separately.
 	disableTypedObjectSlabs bool
@@ -218,6 +221,9 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap}
 	if opts.Stream {
 		gen.streamStart = start
+	}
+	if opts.decisions != nil {
+		gen.decisions, opts.decisions.gen = opts.decisions, gen
 	}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
@@ -547,6 +553,8 @@ type generator struct {
 	disableTypedOutputBootstrap bool
 	// nodeScopes records the frame layouts shared by typed rule metadata.
 	nodeScopes map[*rule][]string
+	// decisions, if set, receives the lowering decisions (gen_decisions.go).
+	decisions *genDecisions
 	// typedOnly leaves out the untyped Node family: the rule table keeps only the metadata the
 	// typed table shares.
 	typedOnly bool
@@ -1294,6 +1302,7 @@ func (g *generator) projected(t *grammar.Call, locals map[string]string) (gramma
 func (g *generator) projectRepeat(b *strings.Builder, e *grammar.Repeat, field string) {
 	elemScope := newScope()
 	m := g.expr(e.Expr, elemScope, false)
+	g.decide(decScope, e.Expr, genDecision{names: elemScope.names})
 	slot := elemScope.slots[field]
 	fmt.Fprintf(b, "\tstart := p.Pos\n\tbase := len(p.KidStack)\n\tf := p.NewFrame(%d)\n\tcount := 0\n", len(elemScope.names))
 	if e.Max < 0 {
@@ -1312,6 +1321,7 @@ func (g *generator) projectRepeat(b *strings.Builder, e *grammar.Repeat, field s
 }
 
 func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
+	g.decide(decExpr, e, genDecision{})
 	var b strings.Builder
 	switch e := e.(type) {
 	case *grammar.Literal:
@@ -1350,6 +1360,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 				"\treturn p.NewNode(\"tuple\", start, p.Pos, kids), true\n"))
 		} else {
 			b.WriteString("\treturn nil, true\n")
+			g.decide(decClassRuns, e, genDecision{})
 		}
 	case *grammar.Choice:
 		b.WriteString("\tm0 := p.Mark()\n")
@@ -1359,7 +1370,9 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 			if build {
 				m = g.singleMethod(alt, m, false)
 			}
-			if cond, desc, depth, ok := g.first(alt, 0, map[string]bool{}); ok {
+			cond, desc, depth, ok := g.first(alt, 0, map[string]bool{})
+			g.decide(decGuard, alt, genDecision{guard: genGuard{ok: ok, cond: cond, desc: desc, depth: depth}})
+			if ok {
 				// An alternative whose first terminal does not match the next character is skipped,
 				// with the expectation it would record (see first).
 				if !peeked {
@@ -1496,6 +1509,9 @@ func (g *generator) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, buil
 	}
 	m := g.expr(e.Expr, elemScope, build)
 	own := elemScope != s
+	if own {
+		g.decide(decScope, e.Expr, genDecision{names: elemScope.names})
+	}
 	if build {
 		// Element values are gathered on p.kidStack and copied out once.
 		b.WriteString("\tstart := p.Pos\n\tbase := len(p.KidStack)\n")
@@ -1593,6 +1609,7 @@ func (g *generator) scanRepeat(b *strings.Builder, e *grammar.Repeat) bool {
 	}
 	fmt.Fprintf(b, "\t\tif %s\n\t\t\tbreak\n\t\t}\n\t\tp.Pos += size\n\t\tcount++\n\t}\n", cond)
 	fmt.Fprintf(b, "\treturn nil, count >= %d\n", e.Min)
+	g.decide(decScan, e, genDecision{})
 	return true
 }
 
@@ -1713,6 +1730,7 @@ func (g *generator) operatorsRule(r *rule, e *grammar.OperatorsRule) {
 		if m == "" {
 			m = g.expr(e.Skip, s, false)
 		}
+		g.decide(decScope, e.Skip, genDecision{names: s.names})
 		fmt.Fprintf(&b, "\t\tSkip: %s,\n", m)
 	}
 	fmt.Fprintf(&b, "\t\tOperands: []*%s{\n", g.pick("OperatorsRuleLine", "TOperatorsRuleLine"))
@@ -1754,6 +1772,7 @@ func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, opera
 	if m == "" {
 		m = g.expr(e, s, build)
 	}
+	g.decide(decScope, e, genDecision{names: s.names})
 	act := "nil"
 	if action != nil && !g.cur.novalue {
 		var locals map[string]string

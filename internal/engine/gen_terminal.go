@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/engine/core"
 )
 
 // Value-free terminal expressions in lean typed Go parsers.
@@ -28,9 +29,8 @@ import (
 const minTerminalTable = 4
 
 // minTerminalLeaves is the smallest number of literals and classes for which a terminal
-// expression with a choice is lowered to a program. Smaller ones stay straight-line code, which
-// costs less to run than the interpreter's calls.
-const minTerminalLeaves = 16
+// expression with a choice is lowered to a program (core.MinTerminalLeaves).
+const minTerminalLeaves = core.MinTerminalLeaves
 
 // terminalLeaves returns the number of literals and classes of e, and whether e is a terminal
 // expression containing a choice. It returns ok false for any other expression.

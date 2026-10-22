@@ -131,6 +131,7 @@ func (d *dgen) nodeRepeat(e *grammar.Repeat, s *dscope, build bool, fail, field 
 			}
 		}
 		fmt.Fprintf(&d.g.vars, "var %s = %s\n", names, goStrings(d.frameScope(es).names))
+		d.g.decide(decScope, e.Expr, genDecision{names: d.frameScope(es).names})
 		if d.g.table == "trules" && field == "" {
 			d.line("p.DropTrail(%s.Trail)", d.rd(m.frameMark))
 			d.line("p.FreeFrame(%s)", d.rd(frame))

@@ -416,9 +416,11 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		// Only the first expression the alternative matches may consume the guard's character.
 		d.guarded = nil
 	}
+	g.decide(decExpr, e, genDecision{})
 	d.step()
 	if !build && !d.nodeBody {
 		if table, ok := g.terminalTable(e); ok {
+			g.decide(decTerminal, e, genDecision{})
 			d.failIf(fmt.Sprintf("!p.SkipTerminal(%s)", table), fail)
 			return "nil"
 		}
@@ -517,10 +519,12 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 			d.line("%s = p.%s(%d)[:0]", kids, g.pick("Nodes", "NewVals"), valuedCount(d.g.prog, e))
 		}
 		// The value is the tuple node of the elements, flattened through nested sequences.
+		var runs [][2]int
 		for i := 0; i < len(e.Items); i++ {
 			it := e.Items[i]
 			if run := classRun(e.Items[i:]); !build && g.leanTyped() && run > 1 && it != d.guarded {
 				d.failIf(fmt.Sprintf("!p.ClassesSkip(%s)", g.classSteps(e.Items[i:i+run])), fail)
+				runs = append(runs, [2]int{i, run})
 				i += run - 1
 				continue
 			}
@@ -533,6 +537,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 			}
 		}
 		if !build {
+			g.decide(decClassRuns, e, genDecision{runs: runs})
 			return "nil"
 		}
 		v := d.decl("v", d.g.valType())
@@ -768,7 +773,8 @@ func (d *dgen) choice(e *grammar.Choice, s *dscope, build bool, fail string) str
 		}
 		skip := ""
 		var guarded *grammar.CharClass
-		if cond, desc, depth, ok := g.first(alt, 0, map[string]bool{}); ok {
+		cond, desc, depth, ok := g.first(alt, 0, map[string]bool{})
+		if ok {
 			// The alternative is skipped when the next character cannot start it (see first).
 			if ch == "" {
 				ch, more = d.decl("x", "rune"), d.decl("x", "bool")
@@ -781,6 +787,7 @@ func (d *dgen) choice(e *grammar.Choice, s *dscope, build bool, fail string) str
 			d.failIf(fmt.Sprintf("!(%s && (%s)) && %s", d.rd(more), chIdent.ReplaceAllString(cond, d.rd(ch)), depthLimit(depth)), skip,
 				fmt.Sprintf("p.Expect(p.Pos, %d)", desc)+g.traceSkip(alt))
 		}
+		g.decide(decGuard, alt, genDecision{guard: genGuard{ok: ok, cond: cond, desc: desc, depth: depth, class: guarded != nil}})
 		f := d.label()
 		d.guarded, d.guardedAlt, d.guardedSize = guarded, alt, size
 		x, cut := d.cutExpr(alt, s, build, f)
@@ -849,6 +856,9 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 	}
 	f := d.label()
 	v, cut := d.cutExpr(e.Expr, es, build, f)
+	if own {
+		d.g.decide(decScope, e.Expr, genDecision{names: es.names})
+	}
 	if build {
 		v = d.scopeValue(e.Expr, v, m.pos)
 	}
@@ -981,6 +991,7 @@ func (d *dgen) scan(e *grammar.Repeat, fail string) (string, bool) {
 	if e.Min > 0 {
 		d.failIf(fmt.Sprintf("%s < %d", d.rd(count), e.Min), fail)
 	}
+	d.g.decide(decScan, e, genDecision{})
 	return "nil", true
 }
 
@@ -995,6 +1006,7 @@ func (d *dgen) projectRepeat(e *grammar.Repeat, field, fail string) string {
 	d.clearScope(es, e.Expr)
 	f := d.label()
 	_, cut := d.cutExpr(e.Expr, es, false, f)
+	d.g.decide(decScope, e.Expr, genDecision{names: es.names})
 	fv, ok := es.vars[field]
 	if !ok {
 		d.bad = true
@@ -1208,6 +1220,7 @@ func (d *dgen) attr(e *grammar.Attributed, i int, s *dscope, build bool, fail st
 
 // genSnapshot is the state of the generator a failed direct compilation rolls back.
 type genSnapshot struct {
+	decisions                      int
 	workClasses                    int
 	vars, methods                  string
 	n, descs, literals, methodKeys int
@@ -1216,11 +1229,18 @@ type genSnapshot struct {
 }
 
 func (g *generator) snapshot() genSnapshot {
-	return genSnapshot{workClasses: len(g.workClassKeys), shapers: len(g.shaperKeys), vars: g.vars.String(), methods: g.methods.String(), n: g.n,
+	var decisions int
+	if d := g.decisions; d != nil {
+		decisions = len(d.log)
+	}
+	return genSnapshot{decisions: decisions, workClasses: len(g.workClassKeys), shapers: len(g.shaperKeys), vars: g.vars.String(), methods: g.methods.String(), n: g.n,
 		descs: len(g.descs), literals: len(g.literalKeys), methodKeys: len(g.methodKeys), fieldTypes: len(g.fieldTypeKeys)}
 }
 
 func (g *generator) rollback(s genSnapshot) {
+	if d := g.decisions; d != nil {
+		d.log = d.log[:s.decisions]
+	}
 	for _, key := range g.workClassKeys[s.workClasses:] {
 		delete(g.workClassNames, key)
 	}
