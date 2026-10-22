@@ -206,7 +206,7 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
 		}
 	}
-	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap}
+	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, lean: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap}
 	if opts.Stream {
 		gen.streamStart = start
 	}
@@ -480,11 +480,14 @@ type generator struct {
 	observability bool
 	// goWorkControls emits work-control charging; Go output always has it, TypeScript output has
 	// its own runtime work controls.
-	goWorkControls                  bool
-	directTypedDocument             bool
-	document                        bool
-	workClassNames                  map[string]string
-	workClassKeys                   []string
+	goWorkControls      bool
+	directTypedDocument bool
+	document            bool
+	workClassNames      map[string]string
+	workClassKeys       []string
+	// lean is set when the output has no work controls and no Documents, so each typed rule body
+	// is its ordinary form and may call the runtime's ordinary-parse helpers directly.
+	lean                            bool
 	disableTypedCuts                bool
 	disableTypedLRBodies            bool
 	disableTypedOperatorsRuleBodies bool
@@ -1892,4 +1895,81 @@ func (g *generator) atLineStart() string {
 		return "AtLineStartBatch"
 	}
 	return "AtLineStart"
+}
+
+// leanTyped reports whether typed rule bodies are emitted in their ordinary form only.
+func (g *generator) leanTyped() bool {
+	return g.lean && g.goWorkControls && g.table == "trules"
+}
+
+// classTable returns the name of the package variable that holds the membership table of e,
+// declaring it on first use.
+func (g *generator) classTable(e *grammar.CharClass) string {
+	key := fmt.Sprintf("cls%v%#v", e.Negated, e.Ranges)
+	if g.workClassNames == nil {
+		g.workClassNames = map[string]string{}
+	}
+	if name := g.workClassNames[key]; name != "" {
+		return name
+	}
+	name := g.name("cls")
+	g.workClassNames[key] = name
+	g.workClassKeys = append(g.workClassKeys, key)
+	var ascii [2]uint64
+	var wide []string
+	for c := rune(0); c < 128; c++ {
+		in := false
+		for _, r := range e.Ranges {
+			in = in || (c >= r.Lo && c <= r.Hi)
+		}
+		if in != e.Negated {
+			ascii[c>>6] |= 1 << (uint(c) & 63)
+		}
+	}
+	for _, r := range e.Ranges {
+		if r.Hi >= 128 {
+			wide = append(wide, strconv.Itoa(int(max(r.Lo, 128))), strconv.Itoa(int(r.Hi)))
+		}
+	}
+	fmt.Fprintf(&g.vars, "var %s = Class{ASCII: [2]uint64{%#x, %#x}", name, ascii[0], ascii[1])
+	if len(wide) > 0 {
+		fmt.Fprintf(&g.vars, ", Wide: []rune{%s}", strings.Join(wide, ", "))
+	}
+	if e.Negated {
+		g.vars.WriteString(", Neg: true")
+	}
+	g.vars.WriteString("}\n")
+	return name
+}
+
+// classRun returns how many of the leading items are character classes.
+func classRun(items []grammar.Expr) int {
+	n := 0
+	for n < len(items) {
+		if _, ok := items[n].(*grammar.CharClass); !ok {
+			break
+		}
+		n++
+	}
+	return n
+}
+
+// classSteps returns the name of the package variable that lists the class steps of items, which
+// are character classes, declaring it on first use.
+func (g *generator) classSteps(items []grammar.Expr) string {
+	var steps []string
+	for _, it := range items {
+		c := it.(*grammar.CharClass)
+		steps = append(steps, fmt.Sprintf("{C: &%s, ID: %d}", g.classTable(c), g.desc(charClassString(c))))
+	}
+	body := strings.Join(steps, ", ")
+	key := "steps" + body
+	if name := g.workClassNames[key]; name != "" {
+		return name
+	}
+	name := g.name("steps")
+	g.workClassNames[key] = name
+	g.workClassKeys = append(g.workClassKeys, key)
+	fmt.Fprintf(&g.vars, "var %s = []ClassStep{%s}\n", name, body)
+	return name
 }

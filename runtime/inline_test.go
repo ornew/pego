@@ -33,6 +33,7 @@ var hotInline = []string{
 	"(*TMatch).TSetFresh",
 	"(*TMatch).TStruct",
 	"(*TMatch).TText",
+	"(*TParser).ClassFast",
 }
 
 func TestHotPathHooksInline(t *testing.T) {

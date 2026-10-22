@@ -1634,47 +1634,69 @@ var scope604 = []string{"t"}
 var scope620 = []string{"g"}
 var scope635 = []string{"t"}
 var scope647 = []string{"e"}
-var scope655 = []string{"t"}
-var scope697 = []string{"t"}
-var scope706 = []string{"t"}
-var scope710 = []string{"s"}
-var scope717 = []string{"s"}
-var scope774 = []string{"x"}
-var scope791 = []string{"x"}
-var scope793 = []string{"o", "r"}
-var scope799 = []string{"o", "r"}
-var scope805 = []string{"o", "r"}
-var scope811 = []string{"o", "r"}
-var scope817 = []string{"o", "r"}
-var scope828 = []string{"t"}
-var scope833 = []string{"e"}
-var scope838 = []string{"x"}
-var scope840 = []string{"o", "r"}
-var scope846 = []string{"o", "r"}
-var scope852 = []string{"o", "r"}
-var scope858 = []string{"o", "r"}
-var scope864 = []string{"o", "r"}
-var scope877 = []string{"c1"}
-var scope878 = []string{"c2"}
-var scope879 = []string{"c3"}
-var scope880 = []string{"c4"}
-var scope881 = []string{"c5"}
-var scope882 = []string{"c6"}
-var scope883 = []string{"n1", "n2", "n3", "n4"}
+var cls651 = pegort.Class{ASCII: [2]uint64{0x1000050000000000, 0x7fffffe8ffffffe}, Wide: []rune{128, 1114111}}
+var scope656 = []string{"t"}
+var scope698 = []string{"t"}
+var scope707 = []string{"t"}
+var scope711 = []string{"s"}
+var scope718 = []string{"s"}
+var scope775 = []string{"x"}
+var scope792 = []string{"x"}
+var scope794 = []string{"o", "r"}
+var scope800 = []string{"o", "r"}
+var scope806 = []string{"o", "r"}
+var scope812 = []string{"o", "r"}
+var scope818 = []string{"o", "r"}
+var cls824 = pegort.Class{ASCII: [2]uint64{0x10002c4200000000, 0x4000000040000000}}
+var cls830 = pegort.Class{ASCII: [2]uint64{0x13ff418400000000, 0x7ffffff8ffffffe}, Wide: []rune{128, 1114111}}
+var scope831 = []string{"t"}
+var scope836 = []string{"e"}
+var scope841 = []string{"x"}
+var scope843 = []string{"o", "r"}
+var scope849 = []string{"o", "r"}
+var scope855 = []string{"o", "r"}
+var scope861 = []string{"o", "r"}
+var scope867 = []string{"o", "r"}
+var cls880 = pegort.Class{ASCII: [2]uint64{0x7000ac6200000000, 0x1000000040000000}}
+var cls881 = pegort.Class{ASCII: [2]uint64{0x5000846000000000, 0x0}}
+var cls882 = pegort.Class{ASCII: [2]uint64{0x284200000000, 0x4000000040000000}}
+var cls883 = pegort.Class{ASCII: [2]uint64{0x7400ac6000000000, 0x1000000040000000}}
 var scope884 = []string{"c1"}
-var scope885 = []string{"c2"}
-var scope886 = []string{"c3"}
-var scope887 = []string{"c4"}
-var scope888 = []string{"c5"}
-var scope889 = []string{"c6"}
-var scope890 = []string{"c7"}
-var scope891 = []string{"c8"}
-var scope892 = []string{"c9"}
-var scope893 = []string{"c10"}
-var scope894 = []string{"n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8"}
-var scope895 = []string{"c"}
-var scope896 = []string{"n"}
-var scope897 = []string{"n"}
+var cls885 = pegort.Class{ASCII: [2]uint64{0xfbfffbfffffffffe, 0xffffffffffffffff}, Wide: []rune{65279, 65279, 65533, 65533}, Neg: true}
+var scope886 = []string{"c2"}
+var scope887 = []string{"c3"}
+var scope888 = []string{"c4"}
+var scope889 = []string{"c5"}
+var scope890 = []string{"c6"}
+var scope891 = []string{"n1", "n2", "n3", "n4"}
+var cls892 = pegort.Class{ASCII: [2]uint64{0x800100002600, 0x0}}
+var cls893 = pegort.Class{ASCII: [2]uint64{0xfbffffffffffdbfe, 0xffffffffffffffff}, Wide: []rune{65279, 65279, 65533, 65533}, Neg: true}
+var scope894 = []string{"c1"}
+var scope895 = []string{"c2"}
+var scope896 = []string{"c3"}
+var scope897 = []string{"c4"}
+var scope898 = []string{"c5"}
+var scope899 = []string{"c6"}
+var scope900 = []string{"c7"}
+var scope901 = []string{"c8"}
+var scope902 = []string{"c9"}
+var scope903 = []string{"c10"}
+var scope904 = []string{"n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8"}
+var scope905 = []string{"c"}
+var scope906 = []string{"n"}
+var scope907 = []string{"n"}
+var cls908 = pegort.Class{ASCII: [2]uint64{0x3ff000000000000, 0x7fffffe87fffffe}, Wide: []rune{128, 1114111}}
+var cls909 = pegort.Class{ASCII: [2]uint64{0x3ff400000000000, 0x7fffffe87fffffe}}
+var cls910 = pegort.Class{ASCII: [2]uint64{0x8000000000, 0x54404610000000}}
+var cls911 = pegort.Class{ASCII: [2]uint64{0x400000000, 0x54404610000000}}
+var cls912 = pegort.Class{ASCII: [2]uint64{0x0, 0x1000000010}}
+var cls913 = pegort.Class{ASCII: [2]uint64{0x300000000000000, 0x7e0000007e}}
+var steps914 = []pegort.ClassStep{{C: &cls912, ID: 151}, {C: &cls913, ID: 152}}
+var cls915 = pegort.Class{ASCII: [2]uint64{0x0, 0x0}, Wide: []rune{170, 170, 181, 181, 186, 186, 192, 214, 216, 246, 248, 705, 710, 721, 736, 740, 748, 748, 750, 750, 880, 884, 886, 887, 890, 893, 895, 895, 902, 902, 904, 906, 908, 908, 910, 929, 931, 1013, 1015, 1153, 1162, 1327, 1329, 1366, 1369, 1369, 1376, 1416, 1488, 1514, 1519, 1522, 1568, 1610, 1646, 1647, 1649, 1747, 1749, 1749, 1765, 1766, 1774, 1775, 1786, 1788, 1791, 1791, 1808, 1808, 1810, 1839, 1869, 1957, 1969, 1969, 1994, 2026, 2036, 2037, 2042, 2042, 2048, 2069, 2074, 2074, 2084, 2084, 2088, 2088, 2112, 2136, 2144, 2154, 2160, 2183, 2185, 2191, 2208, 2249, 2308, 2361, 2365, 2365, 2384, 2384, 2392, 2401, 2417, 2432, 2437, 2444, 2447, 2448, 2451, 2472, 2474, 2480, 2482, 2482, 2486, 2489, 2493, 2493, 2510, 2510, 2524, 2525, 2527, 2529, 2544, 2545, 2556, 2556, 2565, 2570, 2575, 2576, 2579, 2600, 2602, 2608, 2610, 2611, 2613, 2614, 2616, 2617, 2649, 2652, 2654, 2654, 2674, 2676, 2693, 2701, 2703, 2705, 2707, 2728, 2730, 2736, 2738, 2739, 2741, 2745, 2749, 2749, 2768, 2768, 2784, 2785, 2809, 2809, 2821, 2828, 2831, 2832, 2835, 2856, 2858, 2864, 2866, 2867, 2869, 2873, 2877, 2877, 2908, 2909, 2911, 2913, 2929, 2929, 2947, 2947, 2949, 2954, 2958, 2960, 2962, 2965, 2969, 2970, 2972, 2972, 2974, 2975, 2979, 2980, 2984, 2986, 2990, 3001, 3024, 3024, 3077, 3084, 3086, 3088, 3090, 3112, 3114, 3129, 3133, 3133, 3160, 3162, 3164, 3165, 3168, 3169, 3200, 3200, 3205, 3212, 3214, 3216, 3218, 3240, 3242, 3251, 3253, 3257, 3261, 3261, 3292, 3294, 3296, 3297, 3313, 3314, 3332, 3340, 3342, 3344, 3346, 3386, 3389, 3389, 3406, 3406, 3412, 3414, 3423, 3425, 3450, 3455, 3461, 3478, 3482, 3505, 3507, 3515, 3517, 3517, 3520, 3526, 3585, 3632, 3634, 3635, 3648, 3654, 3713, 3714, 3716, 3716, 3718, 3722, 3724, 3747, 3749, 3749, 3751, 3760, 3762, 3763, 3773, 3773, 3776, 3780, 3782, 3782, 3804, 3807, 3840, 3840, 3904, 3911, 3913, 3948, 3976, 3980, 4096, 4138, 4159, 4159, 4176, 4181, 4186, 4189, 4193, 4193, 4197, 4198, 4206, 4208, 4213, 4225, 4238, 4238, 4256, 4293, 4295, 4295, 4301, 4301, 4304, 4346, 4348, 4680, 4682, 4685, 4688, 4694, 4696, 4696, 4698, 4701, 4704, 4744, 4746, 4749, 4752, 4784, 4786, 4789, 4792, 4798, 4800, 4800, 4802, 4805, 4808, 4822, 4824, 4880, 4882, 4885, 4888, 4954, 4992, 5007, 5024, 5109, 5112, 5117, 5121, 5740, 5743, 5759, 5761, 5786, 5792, 5866, 5873, 5880, 5888, 5905, 5919, 5937, 5952, 5969, 5984, 5996, 5998, 6000, 6016, 6067, 6103, 6103, 6108, 6108, 6176, 6264, 6272, 6276, 6279, 6312, 6314, 6314, 6320, 6389, 6400, 6430, 6480, 6509, 6512, 6516, 6528, 6571, 6576, 6601, 6656, 6678, 6688, 6740, 6823, 6823, 6917, 6963, 6981, 6988, 7043, 7072, 7086, 7087, 7098, 7141, 7168, 7203, 7245, 7247, 7258, 7293, 7296, 7306, 7312, 7354, 7357, 7359, 7401, 7404, 7406, 7411, 7413, 7414, 7418, 7418, 7424, 7615, 7680, 7957, 7960, 7965, 7968, 8005, 8008, 8013, 8016, 8023, 8025, 8025, 8027, 8027, 8029, 8029, 8031, 8061, 8064, 8116, 8118, 8124, 8126, 8126, 8130, 8132, 8134, 8140, 8144, 8147, 8150, 8155, 8160, 8172, 8178, 8180, 8182, 8188, 8305, 8305, 8319, 8319, 8336, 8348, 8450, 8450, 8455, 8455, 8458, 8467, 8469, 8469, 8473, 8477, 8484, 8484, 8486, 8486, 8488, 8488, 8490, 8493, 8495, 8505, 8508, 8511, 8517, 8521, 8526, 8526, 8579, 8580, 11264, 11492, 11499, 11502, 11506, 11507, 11520, 11557, 11559, 11559, 11565, 11565, 11568, 11623, 11631, 11631, 11648, 11670, 11680, 11686, 11688, 11694, 11696, 11702, 11704, 11710, 11712, 11718, 11720, 11726, 11728, 11734, 11736, 11742, 11823, 11823, 12293, 12294, 12337, 12341, 12347, 12348, 12353, 12438, 12445, 12447, 12449, 12538, 12540, 12543, 12549, 12591, 12593, 12686, 12704, 12735, 12784, 12799, 13312, 19903, 19968, 42124, 42192, 42237, 42240, 42508, 42512, 42527, 42538, 42539, 42560, 42606, 42623, 42653, 42656, 42725, 42775, 42783, 42786, 42888, 42891, 42972, 42993, 43009, 43011, 43013, 43015, 43018, 43020, 43042, 43072, 43123, 43138, 43187, 43250, 43255, 43259, 43259, 43261, 43262, 43274, 43301, 43312, 43334, 43360, 43388, 43396, 43442, 43471, 43471, 43488, 43492, 43494, 43503, 43514, 43518, 43520, 43560, 43584, 43586, 43588, 43595, 43616, 43638, 43642, 43642, 43646, 43695, 43697, 43697, 43701, 43702, 43705, 43709, 43712, 43712, 43714, 43714, 43739, 43741, 43744, 43754, 43762, 43764, 43777, 43782, 43785, 43790, 43793, 43798, 43808, 43814, 43816, 43822, 43824, 43866, 43868, 43881, 43888, 44002, 44032, 55203, 55216, 55238, 55243, 55291, 63744, 64109, 64112, 64217, 64256, 64262, 64275, 64279, 64285, 64285, 64287, 64296, 64298, 64310, 64312, 64316, 64318, 64318, 64320, 64321, 64323, 64324, 64326, 64433, 64467, 64829, 64848, 64911, 64914, 64967, 65008, 65019, 65136, 65140, 65142, 65276, 65313, 65338, 65345, 65370, 65382, 65470, 65474, 65479, 65482, 65487, 65490, 65495, 65498, 65500, 65536, 65547, 65549, 65574, 65576, 65594, 65596, 65597, 65599, 65613, 65616, 65629, 65664, 65786, 66176, 66204, 66208, 66256, 66304, 66335, 66349, 66368, 66370, 66377, 66384, 66421, 66432, 66461, 66464, 66499, 66504, 66511, 66560, 66717, 66736, 66771, 66776, 66811, 66816, 66855, 66864, 66915, 66928, 66938, 66940, 66954, 66956, 66962, 66964, 66965, 66967, 66977, 66979, 66993, 66995, 67001, 67003, 67004, 67008, 67059, 67072, 67382, 67392, 67413, 67424, 67431, 67456, 67461, 67463, 67504, 67506, 67514, 67584, 67589, 67592, 67592, 67594, 67637, 67639, 67640, 67644, 67644, 67647, 67669, 67680, 67702, 67712, 67742, 67808, 67826, 67828, 67829, 67840, 67861, 67872, 67897, 67904, 67929, 67968, 68023, 68030, 68031, 68096, 68096, 68112, 68115, 68117, 68119, 68121, 68149, 68192, 68220, 68224, 68252, 68288, 68295, 68297, 68324, 68352, 68405, 68416, 68437, 68448, 68466, 68480, 68497, 68608, 68680, 68736, 68786, 68800, 68850, 68864, 68899, 68938, 68965, 68975, 68997, 69248, 69289, 69296, 69297, 69314, 69319, 69376, 69404, 69415, 69415, 69424, 69445, 69488, 69505, 69552, 69572, 69600, 69622, 69635, 69687, 69745, 69746, 69749, 69749, 69763, 69807, 69840, 69864, 69891, 69926, 69956, 69956, 69959, 69959, 69968, 70002, 70006, 70006, 70019, 70066, 70081, 70084, 70106, 70106, 70108, 70108, 70144, 70161, 70163, 70187, 70207, 70208, 70272, 70278, 70280, 70280, 70282, 70285, 70287, 70301, 70303, 70312, 70320, 70366, 70405, 70412, 70415, 70416, 70419, 70440, 70442, 70448, 70450, 70451, 70453, 70457, 70461, 70461, 70480, 70480, 70493, 70497, 70528, 70537, 70539, 70539, 70542, 70542, 70544, 70581, 70583, 70583, 70609, 70609, 70611, 70611, 70656, 70708, 70727, 70730, 70751, 70753, 70784, 70831, 70852, 70853, 70855, 70855, 71040, 71086, 71128, 71131, 71168, 71215, 71236, 71236, 71296, 71338, 71352, 71352, 71424, 71450, 71488, 71494, 71680, 71723, 71840, 71903, 71935, 71942, 71945, 71945, 71948, 71955, 71957, 71958, 71960, 71983, 71999, 71999, 72001, 72001, 72096, 72103, 72106, 72144, 72161, 72161, 72163, 72163, 72192, 72192, 72203, 72242, 72250, 72250, 72272, 72272, 72284, 72329, 72349, 72349, 72368, 72440, 72640, 72672, 72704, 72712, 72714, 72750, 72768, 72768, 72818, 72847, 72960, 72966, 72968, 72969, 72971, 73008, 73030, 73030, 73056, 73061, 73063, 73064, 73066, 73097, 73112, 73112, 73136, 73179, 73440, 73458, 73474, 73474, 73476, 73488, 73490, 73523, 73648, 73648, 73728, 74649, 74880, 75075, 77712, 77808, 77824, 78895, 78913, 78918, 78944, 82938, 82944, 83526, 90368, 90397, 92160, 92728, 92736, 92766, 92784, 92862, 92880, 92909, 92928, 92975, 92992, 92995, 93027, 93047, 93053, 93071, 93504, 93548, 93760, 93823, 93856, 93880, 93883, 93907, 93952, 94026, 94032, 94032, 94099, 94111, 94176, 94177, 94179, 94179, 94194, 94195, 94208, 101589, 101631, 101662, 101760, 101874, 110576, 110579, 110581, 110587, 110589, 110590, 110592, 110882, 110898, 110898, 110928, 110930, 110933, 110933, 110948, 110951, 110960, 111355, 113664, 113770, 113776, 113788, 113792, 113800, 113808, 113817, 119808, 119892, 119894, 119964, 119966, 119967, 119970, 119970, 119973, 119974, 119977, 119980, 119982, 119993, 119995, 119995, 119997, 120003, 120005, 120069, 120071, 120074, 120077, 120084, 120086, 120092, 120094, 120121, 120123, 120126, 120128, 120132, 120134, 120134, 120138, 120144, 120146, 120485, 120488, 120512, 120514, 120538, 120540, 120570, 120572, 120596, 120598, 120628, 120630, 120654, 120656, 120686, 120688, 120712, 120714, 120744, 120746, 120770, 120772, 120779, 122624, 122654, 122661, 122666, 122928, 122989, 123136, 123180, 123191, 123197, 123214, 123214, 123536, 123565, 123584, 123627, 124112, 124139, 124368, 124397, 124400, 124400, 124608, 124638, 124640, 124642, 124644, 124645, 124647, 124653, 124656, 124660, 124670, 124671, 124896, 124902, 124904, 124907, 124909, 124910, 124912, 124926, 124928, 125124, 125184, 125251, 125259, 125259, 126464, 126467, 126469, 126495, 126497, 126498, 126500, 126500, 126503, 126503, 126505, 126514, 126516, 126519, 126521, 126521, 126523, 126523, 126530, 126530, 126535, 126535, 126537, 126537, 126539, 126539, 126541, 126543, 126545, 126546, 126548, 126548, 126551, 126551, 126553, 126553, 126555, 126555, 126557, 126557, 126559, 126559, 126561, 126562, 126564, 126564, 126567, 126570, 126572, 126578, 126580, 126583, 126585, 126588, 126590, 126590, 126592, 126601, 126603, 126619, 126625, 126627, 126629, 126633, 126635, 126651, 131072, 173791, 173824, 178205, 178208, 183981, 183984, 191456, 191472, 192093, 194560, 195101, 196608, 201546, 201552, 210041}}
+var cls916 = pegort.Class{ASCII: [2]uint64{0x0, 0x0}, Wide: []rune{1632, 1641, 1776, 1785, 1984, 1993, 2406, 2415, 2534, 2543, 2662, 2671, 2790, 2799, 2918, 2927, 3046, 3055, 3174, 3183, 3302, 3311, 3430, 3439, 3558, 3567, 3664, 3673, 3792, 3801, 3872, 3881, 4160, 4169, 4240, 4249, 6112, 6121, 6160, 6169, 6470, 6479, 6608, 6617, 6784, 6793, 6800, 6809, 6992, 7001, 7088, 7097, 7232, 7241, 7248, 7257, 42528, 42537, 43216, 43225, 43264, 43273, 43472, 43481, 43504, 43513, 43600, 43609, 44016, 44025, 65296, 65305, 66720, 66729, 68912, 68921, 68928, 68937, 69734, 69743, 69872, 69881, 69942, 69951, 70096, 70105, 70384, 70393, 70736, 70745, 70864, 70873, 71248, 71257, 71360, 71369, 71376, 71395, 71472, 71481, 71904, 71913, 72016, 72025, 72688, 72697, 72784, 72793, 73040, 73049, 73120, 73129, 73184, 73193, 73552, 73561, 90416, 90425, 92768, 92777, 92864, 92873, 93008, 93017, 93552, 93561, 118000, 118009, 120782, 120831, 123200, 123209, 123632, 123641, 124144, 124153, 124401, 124410, 125264, 125273, 130032, 130041}}
+var cls917 = pegort.Class{ASCII: [2]uint64{0xf000000000000, 0x0}}
+var cls918 = pegort.Class{ASCII: [2]uint64{0xff000000000000, 0x0}}
+var steps919 = []pegort.ClassStep{{C: &cls917, ID: 148}, {C: &cls918, ID: 133}, {C: &cls918, ID: 133}}
 
 func init() {
 	rules = []*pegort.Rule{
@@ -2761,110 +2783,110 @@ func init() {
 	trules[194].Entry = u194
 	trules[195].Entry = u195
 	trules[196].OperatorsRule = &pegort.TOperatorsRule{
-		Skip: e898,
+		Skip: e920,
 		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e899, Action: nil, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}},
+			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e921, Action: nil, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}},
 		},
 		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e900, Action: func(c *pegort.TActCtx) any {
+		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e922, Action: func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return func() any {
-					f_901 := func() any { ; return (c.Lhs) }()
-					f_902 := func() any { ; return c.Cap(0) }()
-					return tmk_SelectorExpr(c, true, f_901, f_902)
+					f_923 := func() any { ; return (c.Lhs) }()
+					f_924 := func() any { ; return c.Cap(0) }()
+					return tmk_SelectorExpr(c, true, f_923, f_924)
 				}()
 			}()
 		}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e903, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_904 := func() any { ; return (c.Lhs) }()
-						return tmk_TypeAssertExpr(c, true, f_904, nil)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t"}, M: e905, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_906 := func() any { ; return (c.Lhs) }()
-						f_907 := func() any { ; return c.Cap(0) }()
-						return tmk_TypeAssertExpr(c, true, f_906, f_907)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e908, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_909 := func() any { ; return (c.Lhs) }()
-						f_910 := func() any { ; return c.Cap(0) }()
-						return tmk_IndexExpr(c, true, f_909, f_910)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e911, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_912 := func() any { ; return (c.Lhs) }()
-						f_913 := func() any { ; return c.Cap(0) }()
-						return tmk_IndexListExpr(c, true, f_912, f_913)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h"}, M: e914, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_915 := func() any { ; return (c.Lhs) }()
-						f_916 := func() any { ; return c.Cap(0) }()
-						f_917 := func() any { ; return c.Cap(1) }()
-						return tmk_SliceExpr(c, true, f_915, f_916, f_917, nil)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h", "m"}, M: e918, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_919 := func() any { ; return (c.Lhs) }()
-						f_920 := func() any { ; return c.Cap(0) }()
-						f_921 := func() any { ; return c.Cap(1) }()
-						f_922 := func() any { ; return c.Cap(2) }()
-						return tmk_SliceExpr(c, true, f_919, f_920, f_921, f_922)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e923, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_924 := func() any { ; return (c.Lhs) }()
-						return tmk_CallExpr(c, true, f_924, nil, nil)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"as", "e"}, M: e925, Action: func(c *pegort.TActCtx) any {
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e925, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
 						f_926 := func() any { ; return (c.Lhs) }()
-						f_927 := func() any { ; return c.Cap(0) }()
-						f_928 := func() any { ; return c.Cap(1) }()
-						return tmk_CallExpr(c, true, f_926, f_927, f_928)
+						return tmk_TypeAssertExpr(c, true, f_926, nil)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 9, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"v"}, M: e929, Action: func(c *pegort.TActCtx) any {
+			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}}},
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t"}, M: e927, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_930 := func() any { ; return (c.Lhs) }()
-						f_931 := func() any { ; return c.Cap(0) }()
-						return tmk_CompositeLit(c, true, f_930, f_931)
+						f_928 := func() any { ; return (c.Lhs) }()
+						f_929 := func() any { ; return c.Cap(0) }()
+						return tmk_TypeAssertExpr(c, true, f_928, f_929)
+					}()
+				}()
+			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}}},
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e930, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_931 := func() any { ; return (c.Lhs) }()
+						f_932 := func() any { ; return c.Cap(0) }()
+						return tmk_IndexExpr(c, true, f_931, f_932)
+					}()
+				}()
+			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}}},
+			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e933, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_934 := func() any { ; return (c.Lhs) }()
+						f_935 := func() any { ; return c.Cap(0) }()
+						return tmk_IndexListExpr(c, true, f_934, f_935)
+					}()
+				}()
+			}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}}},
+			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h"}, M: e936, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_937 := func() any { ; return (c.Lhs) }()
+						f_938 := func() any { ; return c.Cap(0) }()
+						f_939 := func() any { ; return c.Cap(1) }()
+						return tmk_SliceExpr(c, true, f_937, f_938, f_939, nil)
+					}()
+				}()
+			}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}}},
+			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h", "m"}, M: e940, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_941 := func() any { ; return (c.Lhs) }()
+						f_942 := func() any { ; return c.Cap(0) }()
+						f_943 := func() any { ; return c.Cap(1) }()
+						f_944 := func() any { ; return c.Cap(2) }()
+						return tmk_SliceExpr(c, true, f_941, f_942, f_943, f_944)
+					}()
+				}()
+			}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}}},
+			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e945, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_946 := func() any { ; return (c.Lhs) }()
+						return tmk_CallExpr(c, true, f_946, nil, nil)
+					}()
+				}()
+			}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
+			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"as", "e"}, M: e947, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_948 := func() any { ; return (c.Lhs) }()
+						f_949 := func() any { ; return c.Cap(0) }()
+						f_950 := func() any { ; return c.Cap(1) }()
+						return tmk_CallExpr(c, true, f_948, f_949, f_950)
+					}()
+				}()
+			}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}}},
+			{Id: 9, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"v"}, M: e951, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_952 := func() any { ; return (c.Lhs) }()
+						f_953 := func() any { ; return c.Cap(0) }()
+						return tmk_CompositeLit(c, true, f_952, f_953)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}}}},
@@ -2883,110 +2905,110 @@ func init() {
 	trules[207].Entry = u207
 	trules[208].Entry = u208
 	trules[209].OperatorsRule = &pegort.TOperatorsRule{
-		Skip: e898,
+		Skip: e920,
 		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e899, Action: nil, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}},
+			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e921, Action: nil, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}},
 		},
 		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e900, Action: func(c *pegort.TActCtx) any {
+		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e922, Action: func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return func() any {
-					f_932 := func() any { ; return (c.Lhs) }()
-					f_933 := func() any { ; return c.Cap(0) }()
-					return tmk_SelectorExpr(c, true, f_932, f_933)
+					f_954 := func() any { ; return (c.Lhs) }()
+					f_955 := func() any { ; return c.Cap(0) }()
+					return tmk_SelectorExpr(c, true, f_954, f_955)
 				}()
 			}()
 		}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e903, Action: func(c *pegort.TActCtx) any {
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e925, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_934 := func() any { ; return (c.Lhs) }()
-						return tmk_TypeAssertExpr(c, true, f_934, nil)
+						f_956 := func() any { ; return (c.Lhs) }()
+						return tmk_TypeAssertExpr(c, true, f_956, nil)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t"}, M: e905, Action: func(c *pegort.TActCtx) any {
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t"}, M: e927, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_935 := func() any { ; return (c.Lhs) }()
-						f_936 := func() any { ; return c.Cap(0) }()
-						return tmk_TypeAssertExpr(c, true, f_935, f_936)
+						f_957 := func() any { ; return (c.Lhs) }()
+						f_958 := func() any { ; return c.Cap(0) }()
+						return tmk_TypeAssertExpr(c, true, f_957, f_958)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e908, Action: func(c *pegort.TActCtx) any {
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e930, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_937 := func() any { ; return (c.Lhs) }()
-						f_938 := func() any { ; return c.Cap(0) }()
-						return tmk_IndexExpr(c, true, f_937, f_938)
+						f_959 := func() any { ; return (c.Lhs) }()
+						f_960 := func() any { ; return c.Cap(0) }()
+						return tmk_IndexExpr(c, true, f_959, f_960)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e911, Action: func(c *pegort.TActCtx) any {
+			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e933, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_939 := func() any { ; return (c.Lhs) }()
-						f_940 := func() any { ; return c.Cap(0) }()
-						return tmk_IndexListExpr(c, true, f_939, f_940)
+						f_961 := func() any { ; return (c.Lhs) }()
+						f_962 := func() any { ; return c.Cap(0) }()
+						return tmk_IndexListExpr(c, true, f_961, f_962)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h"}, M: e914, Action: func(c *pegort.TActCtx) any {
+			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h"}, M: e936, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_941 := func() any { ; return (c.Lhs) }()
-						f_942 := func() any { ; return c.Cap(0) }()
-						f_943 := func() any { ; return c.Cap(1) }()
-						return tmk_SliceExpr(c, true, f_941, f_942, f_943, nil)
+						f_963 := func() any { ; return (c.Lhs) }()
+						f_964 := func() any { ; return c.Cap(0) }()
+						f_965 := func() any { ; return c.Cap(1) }()
+						return tmk_SliceExpr(c, true, f_963, f_964, f_965, nil)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h", "m"}, M: e918, Action: func(c *pegort.TActCtx) any {
+			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h", "m"}, M: e940, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_944 := func() any { ; return (c.Lhs) }()
-						f_945 := func() any { ; return c.Cap(0) }()
-						f_946 := func() any { ; return c.Cap(1) }()
-						f_947 := func() any { ; return c.Cap(2) }()
-						return tmk_SliceExpr(c, true, f_944, f_945, f_946, f_947)
+						f_966 := func() any { ; return (c.Lhs) }()
+						f_967 := func() any { ; return c.Cap(0) }()
+						f_968 := func() any { ; return c.Cap(1) }()
+						f_969 := func() any { ; return c.Cap(2) }()
+						return tmk_SliceExpr(c, true, f_966, f_967, f_968, f_969)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e948, Action: func(c *pegort.TActCtx) any {
+			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e970, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_949 := func() any { ; return (c.Lhs) }()
-						return tmk_CallExpr(c, true, f_949, nil, nil)
+						f_971 := func() any { ; return (c.Lhs) }()
+						return tmk_CallExpr(c, true, f_971, nil, nil)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"as", "e"}, M: e950, Action: func(c *pegort.TActCtx) any {
+			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"as", "e"}, M: e972, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_951 := func() any { ; return (c.Lhs) }()
-						f_952 := func() any { ; return c.Cap(0) }()
-						f_953 := func() any { ; return c.Cap(1) }()
-						return tmk_CallExpr(c, true, f_951, f_952, f_953)
+						f_973 := func() any { ; return (c.Lhs) }()
+						f_974 := func() any { ; return c.Cap(0) }()
+						f_975 := func() any { ; return c.Cap(1) }()
+						return tmk_CallExpr(c, true, f_973, f_974, f_975)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 9, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"v"}, M: e929, Action: func(c *pegort.TActCtx) any {
+			{Id: 9, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"v"}, M: e951, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_954 := func() any { ; return (c.Lhs) }()
-						f_955 := func() any { ; return c.Cap(0) }()
-						return tmk_CompositeLit(c, true, f_954, f_955)
+						f_976 := func() any { ; return (c.Lhs) }()
+						f_977 := func() any { ; return c.Cap(0) }()
+						return tmk_CompositeLit(c, true, f_976, f_977)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}}}},
@@ -3006,175 +3028,72 @@ func init() {
 	trules[221].Entry = u221
 	trules[222].Entry = u222
 	trules[223].OperatorsRule = &pegort.TOperatorsRule{
-		Skip: e898,
+		Skip: e920,
 		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e956, Action: nil, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}},
+			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e978, Action: nil, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}},
 		},
 		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e900, Action: func(c *pegort.TActCtx) any {
+		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e922, Action: func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return func() any {
-					f_957 := func() any { ; return (c.Lhs) }()
-					f_958 := func() any { ; return c.Cap(0) }()
-					return tmk_SelectorExpr(c, true, f_957, f_958)
+					f_979 := func() any { ; return (c.Lhs) }()
+					f_980 := func() any { ; return c.Cap(0) }()
+					return tmk_SelectorExpr(c, true, f_979, f_980)
 				}()
 			}()
 		}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e959, Action: func(c *pegort.TActCtx) any {
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e981, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_960 := func() any { ; return (c.Lhs) }()
-						return tmk_TypeAssertExpr(c, true, f_960, nil)
+						f_982 := func() any { ; return (c.Lhs) }()
+						return tmk_TypeAssertExpr(c, true, f_982, nil)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t"}, M: e961, Action: func(c *pegort.TActCtx) any {
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t"}, M: e983, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_962 := func() any { ; return (c.Lhs) }()
-						f_963 := func() any { ; return c.Cap(0) }()
-						return tmk_TypeAssertExpr(c, true, f_962, f_963)
+						f_984 := func() any { ; return (c.Lhs) }()
+						f_985 := func() any { ; return c.Cap(0) }()
+						return tmk_TypeAssertExpr(c, true, f_984, f_985)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e908, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_964 := func() any { ; return (c.Lhs) }()
-						f_965 := func() any { ; return c.Cap(0) }()
-						return tmk_IndexExpr(c, true, f_964, f_965)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e911, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_966 := func() any { ; return (c.Lhs) }()
-						f_967 := func() any { ; return c.Cap(0) }()
-						return tmk_IndexListExpr(c, true, f_966, f_967)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h"}, M: e968, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_969 := func() any { ; return (c.Lhs) }()
-						f_970 := func() any { ; return c.Cap(0) }()
-						f_971 := func() any { ; return c.Cap(1) }()
-						return tmk_SliceExpr(c, true, f_969, f_970, f_971, nil)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h", "m"}, M: e972, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_973 := func() any { ; return (c.Lhs) }()
-						f_974 := func() any { ; return c.Cap(0) }()
-						f_975 := func() any { ; return c.Cap(1) }()
-						f_976 := func() any { ; return c.Cap(2) }()
-						return tmk_SliceExpr(c, true, f_973, f_974, f_975, f_976)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e977, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_978 := func() any { ; return (c.Lhs) }()
-						return tmk_CallExpr(c, true, f_978, nil, nil)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"as", "e"}, M: e979, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_980 := func() any { ; return (c.Lhs) }()
-						f_981 := func() any { ; return c.Cap(0) }()
-						f_982 := func() any { ; return c.Cap(1) }()
-						return tmk_CallExpr(c, true, f_980, f_981, f_982)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}}}},
-	}
-	trules[223].Body = func(p *pegort.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[223], min) }
-	trules[224].Entry = u224
-	trules[225].Entry = u225
-	trules[226].Entry = u226
-	trules[227].OperatorsRule = &pegort.TOperatorsRule{
-		Skip: e898,
-		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e956, Action: nil, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}},
-		},
-		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e900, Action: func(c *pegort.TActCtx) any {
-			return func() any {
-
-				return func() any {
-					f_983 := func() any { ; return (c.Lhs) }()
-					f_984 := func() any { ; return c.Cap(0) }()
-					return tmk_SelectorExpr(c, true, f_983, f_984)
-				}()
-			}()
-		}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e903, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_985 := func() any { ; return (c.Lhs) }()
-						return tmk_TypeAssertExpr(c, true, f_985, nil)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t"}, M: e961, Action: func(c *pegort.TActCtx) any {
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e930, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
 						f_986 := func() any { ; return (c.Lhs) }()
 						f_987 := func() any { ; return c.Cap(0) }()
-						return tmk_TypeAssertExpr(c, true, f_986, f_987)
+						return tmk_IndexExpr(c, true, f_986, f_987)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e908, Action: func(c *pegort.TActCtx) any {
+			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e933, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
 						f_988 := func() any { ; return (c.Lhs) }()
 						f_989 := func() any { ; return c.Cap(0) }()
-						return tmk_IndexExpr(c, true, f_988, f_989)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e911, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_990 := func() any { ; return (c.Lhs) }()
-						f_991 := func() any { ; return c.Cap(0) }()
-						return tmk_IndexListExpr(c, true, f_990, f_991)
+						return tmk_IndexListExpr(c, true, f_988, f_989)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h"}, M: e968, Action: func(c *pegort.TActCtx) any {
+			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h"}, M: e990, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_992 := func() any { ; return (c.Lhs) }()
-						f_993 := func() any { ; return c.Cap(0) }()
-						f_994 := func() any { ; return c.Cap(1) }()
-						return tmk_SliceExpr(c, true, f_992, f_993, f_994, nil)
+						f_991 := func() any { ; return (c.Lhs) }()
+						f_992 := func() any { ; return c.Cap(0) }()
+						f_993 := func() any { ; return c.Cap(1) }()
+						return tmk_SliceExpr(c, true, f_991, f_992, f_993, nil)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h", "m"}, M: e972, Action: func(c *pegort.TActCtx) any {
+			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h", "m"}, M: e994, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -3186,23 +3105,126 @@ func init() {
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e977, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_999 := func() any { ; return (c.Lhs) }()
-						return tmk_CallExpr(c, true, f_999, nil, nil)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"as", "e"}, M: e979, Action: func(c *pegort.TActCtx) any {
+			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e999, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
 						f_1000 := func() any { ; return (c.Lhs) }()
-						f_1001 := func() any { ; return c.Cap(0) }()
-						f_1002 := func() any { ; return c.Cap(1) }()
-						return tmk_CallExpr(c, true, f_1000, f_1001, f_1002)
+						return tmk_CallExpr(c, true, f_1000, nil, nil)
+					}()
+				}()
+			}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
+			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"as", "e"}, M: e1001, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1002 := func() any { ; return (c.Lhs) }()
+						f_1003 := func() any { ; return c.Cap(0) }()
+						f_1004 := func() any { ; return c.Cap(1) }()
+						return tmk_CallExpr(c, true, f_1002, f_1003, f_1004)
+					}()
+				}()
+			}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}}}},
+	}
+	trules[223].Body = func(p *pegort.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[223], min) }
+	trules[224].Entry = u224
+	trules[225].Entry = u225
+	trules[226].Entry = u226
+	trules[227].OperatorsRule = &pegort.TOperatorsRule{
+		Skip: e920,
+		Operands: []*pegort.TOperatorsRuleLine{
+			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e978, Action: nil, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}},
+		},
+		Prefix: []*pegort.TOperatorsRuleOp{},
+		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e922, Action: func(c *pegort.TActCtx) any {
+			return func() any {
+
+				return func() any {
+					f_1005 := func() any { ; return (c.Lhs) }()
+					f_1006 := func() any { ; return c.Cap(0) }()
+					return tmk_SelectorExpr(c, true, f_1005, f_1006)
+				}()
+			}()
+		}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e925, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1007 := func() any { ; return (c.Lhs) }()
+						return tmk_TypeAssertExpr(c, true, f_1007, nil)
+					}()
+				}()
+			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}}},
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t"}, M: e983, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1008 := func() any { ; return (c.Lhs) }()
+						f_1009 := func() any { ; return c.Cap(0) }()
+						return tmk_TypeAssertExpr(c, true, f_1008, f_1009)
+					}()
+				}()
+			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}}},
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e930, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1010 := func() any { ; return (c.Lhs) }()
+						f_1011 := func() any { ; return c.Cap(0) }()
+						return tmk_IndexExpr(c, true, f_1010, f_1011)
+					}()
+				}()
+			}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}}},
+			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e933, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1012 := func() any { ; return (c.Lhs) }()
+						f_1013 := func() any { ; return c.Cap(0) }()
+						return tmk_IndexListExpr(c, true, f_1012, f_1013)
+					}()
+				}()
+			}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}}},
+			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h"}, M: e990, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1014 := func() any { ; return (c.Lhs) }()
+						f_1015 := func() any { ; return c.Cap(0) }()
+						f_1016 := func() any { ; return c.Cap(1) }()
+						return tmk_SliceExpr(c, true, f_1014, f_1015, f_1016, nil)
+					}()
+				}()
+			}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}}},
+			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"l", "h", "m"}, M: e994, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1017 := func() any { ; return (c.Lhs) }()
+						f_1018 := func() any { ; return c.Cap(0) }()
+						f_1019 := func() any { ; return c.Cap(1) }()
+						f_1020 := func() any { ; return c.Cap(2) }()
+						return tmk_SliceExpr(c, true, f_1017, f_1018, f_1019, f_1020)
+					}()
+				}()
+			}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}}},
+			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e999, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1021 := func() any { ; return (c.Lhs) }()
+						return tmk_CallExpr(c, true, f_1021, nil, nil)
+					}()
+				}()
+			}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
+			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"as", "e"}, M: e1001, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1022 := func() any { ; return (c.Lhs) }()
+						f_1023 := func() any { ; return c.Cap(0) }()
+						f_1024 := func() any { ; return c.Cap(1) }()
+						return tmk_CallExpr(c, true, f_1022, f_1023, f_1024)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}}}},
@@ -13152,9 +13174,6 @@ func s77(p *pegort.TParser) (any, bool) {
 		x2    int
 		v3    any
 		x6    int
-		ch    rune
-		size  int
-		ok    bool
 		v9    any
 		x11   pegort.ExpMark
 		x12   int
@@ -13170,12 +13189,9 @@ func s77(p *pegort.TParser) (any, bool) {
 	x1, x2 = p.Pos, len(p.Recovered)
 	x6 = p.Pos
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch == 95 || ch == 91 || ch == 42 || ch == 60 || ch == 40 || ch >= 128 && ch <= 1114111)) {
-		p.ExpectOrdinary(p.Pos, 30)
+	if !p.ClassFast(&cls651) && !p.ClassSkip(&cls651, 30) {
 		goto L7
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x6
 	goto L8
@@ -13705,7 +13721,7 @@ func i79(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "parenType"
 	v = func() any {
-		return func() any { f_651 := func() any { return k1 }(); return tmk_ParenExpr(c, true, f_651) }()
+		return func() any { f_652 := func() any { return k1 }(); return tmk_ParenExpr(c, true, f_652) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -13778,7 +13794,7 @@ L3:
 	w = p.Where
 	p.Where = "pointerType"
 	v = func() any {
-		return func() any { f_652 := func() any { return k4 }(); return tmk_StarExpr(c, true, f_652) }()
+		return func() any { f_653 := func() any { return k4 }(); return tmk_StarExpr(c, true, f_653) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -14070,9 +14086,9 @@ L10:
 	p.Where = "typeInstance"
 	v = func() any {
 		return func() any {
-			f_653 := func() any { return k1 }()
-			f_654 := func() any { return k4 }()
-			return tmk_IndexExpr(c, true, f_653, f_654)
+			f_654 := func() any { return k1 }()
+			f_655 := func() any { return k4 }()
+			return tmk_IndexExpr(c, true, f_654, f_655)
 		}()
 	}()
 	p.Where = w
@@ -14186,7 +14202,7 @@ func i84(p *pegort.TParser) (any, bool) {
 		x17 = append(x17, v21)
 		v22 = p.NewNodeOrdinary("tuple", x16, p.Pos, x17)
 		v23 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v22, x12)
-		v24 = p.AttachCaptures(v23, scope655, []any{k14}, x12, p.Pos)
+		v24 = p.AttachCaptures(v23, scope656, []any{k14}, x12, p.Pos)
 		x11++
 		p.PushKid(v24)
 		if p.Pos == x12 {
@@ -14232,18 +14248,18 @@ L29:
 	p.Where = "typeInstanceList"
 	v = func() any {
 		return func() any {
-			f_656 := func() any { return k1 }()
-			f_657 := func() any {
+			f_657 := func() any { return k1 }()
+			f_658 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k4 }())
-					c.PushMap(func() any { return k7 }(), func(l_658 any) any {
-						return func() any { return c.Member(func() any { return l_658 }(), "$t") }()
+					c.PushMap(func() any { return k7 }(), func(l_659 any) any {
+						return func() any { return c.Member(func() any { return l_659 }(), "$t") }()
 					})
 					return c.EndList(b)
 				}()
 			}()
-			return tmk_IndexListExpr(c, true, f_656, f_657)
+			return tmk_IndexListExpr(c, true, f_657, f_658)
 		}()
 	}()
 	p.Where = w
@@ -14440,9 +14456,9 @@ L6:
 	p.Where = "selectorIdent"
 	v = func() any {
 		return func() any {
-			f_659 := func() any { return k1 }()
-			f_660 := func() any { return k7 }()
-			return tmk_SelectorExpr(c, true, f_659, f_660)
+			f_660 := func() any { return k1 }()
+			f_661 := func() any { return k7 }()
+			return tmk_SelectorExpr(c, true, f_660, f_661)
 		}()
 	}()
 	p.Where = w
@@ -14530,9 +14546,9 @@ L7:
 	p.Where = "arrayType"
 	v = func() any {
 		return func() any {
-			f_661 := func() any { return k1 }()
-			f_662 := func() any { return k9 }()
-			return tmk_ArrayType(c, true, f_661, f_662)
+			f_662 := func() any { return k1 }()
+			f_663 := func() any { return k9 }()
+			return tmk_ArrayType(c, true, f_662, f_663)
 		}()
 	}()
 	p.Where = w
@@ -14738,9 +14754,9 @@ func i90(p *pegort.TParser) (any, bool) {
 	p.Where = "mapType"
 	v = func() any {
 		return func() any {
-			f_663 := func() any { return k1 }()
-			f_664 := func() any { return k4 }()
-			return tmk_MapType(c, true, f_663, f_664)
+			f_664 := func() any { return k1 }()
+			f_665 := func() any { return k4 }()
+			return tmk_MapType(c, true, f_664, f_665)
 		}()
 	}()
 	p.Where = w
@@ -14963,9 +14979,9 @@ func i92(p *pegort.TParser) (any, bool) {
 	p.Where = "sendChanType"
 	v = func() any {
 		return func() any {
-			f_665 := func() any { return any(1) }()
-			f_666 := func() any { return k1 }()
-			return tmk_ChanType(c, true, f_665, f_666)
+			f_666 := func() any { return any(1) }()
+			f_667 := func() any { return k1 }()
+			return tmk_ChanType(c, true, f_666, f_667)
 		}()
 	}()
 	p.Where = w
@@ -15038,9 +15054,9 @@ L3:
 	p.Where = "bothChanType"
 	v = func() any {
 		return func() any {
-			f_667 := func() any { return any(3) }()
-			f_668 := func() any { return k4 }()
-			return tmk_ChanType(c, true, f_667, f_668)
+			f_668 := func() any { return any(3) }()
+			f_669 := func() any { return k4 }()
+			return tmk_ChanType(c, true, f_668, f_669)
 		}()
 	}()
 	p.Where = w
@@ -15107,9 +15123,9 @@ func i94(p *pegort.TParser) (any, bool) {
 	p.Where = "recvChanTypeT"
 	v = func() any {
 		return func() any {
-			f_669 := func() any { return any(2) }()
-			f_670 := func() any { return k1 }()
-			return tmk_ChanType(c, true, f_669, f_670)
+			f_670 := func() any { return any(2) }()
+			f_671 := func() any { return k1 }()
+			return tmk_ChanType(c, true, f_670, f_671)
 		}()
 	}()
 	p.Where = w
@@ -15225,9 +15241,9 @@ L14:
 	p.Where = "funcType"
 	v = func() any {
 		return func() any {
-			f_671 := func() any { return k1 }()
-			f_672 := func() any { return k4 }()
-			return tmk_FuncType(c, true, nil, f_671, f_672)
+			f_672 := func() any { return k1 }()
+			f_673 := func() any { return k4 }()
+			return tmk_FuncType(c, true, nil, f_672, f_673)
 		}()
 	}()
 	p.Where = w
@@ -15285,7 +15301,7 @@ func i96(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "structType"
 	v = func() any {
-		return func() any { f_673 := func() any { return k1 }(); return tmk_StructType(c, true, f_673) }()
+		return func() any { f_674 := func() any { return k1 }(); return tmk_StructType(c, true, f_674) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -15380,10 +15396,10 @@ func i97(p *pegort.TParser) (any, bool) {
 	p.Where = "fieldBlock"
 	v = func() any {
 		return func() any {
-			f_674 := func() any {
+			f_675 := func() any {
 				return c.NewList(c.ListItems("map", func() any { return k1 }()))
 			}()
-			return tmk_FieldList(c, true, f_674)
+			return tmk_FieldList(c, true, f_675)
 		}()
 	}()
 	p.Where = w
@@ -15635,9 +15651,9 @@ L27:
 	p.Where = "embeddedField"
 	v = func() any {
 		return func() any {
-			f_675 := func() any { return k18 }()
-			f_676 := func() any { return k21 }()
-			return tmk_Field(c, true, nil, f_675, f_676)
+			f_676 := func() any { return k18 }()
+			f_677 := func() any { return k21 }()
+			return tmk_Field(c, true, nil, f_676, f_677)
 		}()
 	}()
 	p.Where = w
@@ -15706,9 +15722,9 @@ L10:
 	p.Where = "starField"
 	v = func() any {
 		return func() any {
-			f_677 := func() any { return k1 }()
-			f_678 := func() any { return k4 }()
-			return tmk_Field(c, true, nil, f_677, f_678)
+			f_678 := func() any { return k1 }()
+			f_679 := func() any { return k4 }()
+			return tmk_Field(c, true, nil, f_678, f_679)
 		}()
 	}()
 	p.Where = w
@@ -15782,7 +15798,7 @@ L3:
 	w = p.Where
 	p.Where = "starEmbedded"
 	v = func() any {
-		return func() any { f_679 := func() any { return k4 }(); return tmk_StarExpr(c, true, f_679) }()
+		return func() any { f_680 := func() any { return k4 }(); return tmk_StarExpr(c, true, f_680) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -15908,7 +15924,7 @@ L24:
 	p.Where = "multiNameField"
 	v = func() any {
 		return func() any {
-			f_680 := func() any {
+			f_681 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k1 }())
@@ -15916,9 +15932,9 @@ L24:
 					return c.EndList(b)
 				}()
 			}()
-			f_681 := func() any { return k15 }()
-			f_682 := func() any { return k18 }()
-			return tmk_Field(c, true, f_680, f_681, f_682)
+			f_682 := func() any { return k15 }()
+			f_683 := func() any { return k18 }()
+			return tmk_Field(c, true, f_681, f_682, f_683)
 		}()
 	}()
 	p.Where = w
@@ -15998,10 +16014,10 @@ L13:
 	p.Where = "arrayNameField"
 	v = func() any {
 		return func() any {
-			f_683 := func() any { return c.List(func() any { return k1 }()) }()
-			f_684 := func() any { return k4 }()
-			f_685 := func() any { return k7 }()
-			return tmk_Field(c, true, f_683, f_684, f_685)
+			f_684 := func() any { return c.List(func() any { return k1 }()) }()
+			f_685 := func() any { return k4 }()
+			f_686 := func() any { return k7 }()
+			return tmk_Field(c, true, f_684, f_685, f_686)
 		}()
 	}()
 	p.Where = w
@@ -16098,10 +16114,10 @@ L16:
 	p.Where = "oneNameField"
 	v = func() any {
 		return func() any {
-			f_686 := func() any { return c.List(func() any { return k1 }()) }()
-			f_687 := func() any { return k7 }()
-			f_688 := func() any { return k10 }()
-			return tmk_Field(c, true, f_686, f_687, f_688)
+			f_687 := func() any { return c.List(func() any { return k1 }()) }()
+			f_688 := func() any { return k7 }()
+			f_689 := func() any { return k10 }()
+			return tmk_Field(c, true, f_687, f_688, f_689)
 		}()
 	}()
 	p.Where = w
@@ -16190,9 +16206,9 @@ L17:
 	p.Where = "instanceField"
 	v = func() any {
 		return func() any {
-			f_689 := func() any { return k1 }()
-			f_690 := func() any { return k11 }()
-			return tmk_Field(c, true, nil, f_689, f_690)
+			f_690 := func() any { return k1 }()
+			f_691 := func() any { return k11 }()
+			return tmk_Field(c, true, nil, f_690, f_691)
 		}()
 	}()
 	p.Where = w
@@ -16305,8 +16321,8 @@ func i107(p *pegort.TParser) (any, bool) {
 	p.Where = "interfaceType"
 	v = func() any {
 		return func() any {
-			f_691 := func() any { return k1 }()
-			return tmk_InterfaceType(c, true, f_691)
+			f_692 := func() any { return k1 }()
+			return tmk_InterfaceType(c, true, f_692)
 		}()
 	}()
 	p.Where = w
@@ -16402,10 +16418,10 @@ func i108(p *pegort.TParser) (any, bool) {
 	p.Where = "methodBlock"
 	v = func() any {
 		return func() any {
-			f_692 := func() any {
+			f_693 := func() any {
 				return c.NewList(c.ListItems("map", func() any { return k1 }()))
 			}()
-			return tmk_FieldList(c, true, f_692)
+			return tmk_FieldList(c, true, f_693)
 		}()
 	}()
 	p.Where = w
@@ -16516,9 +16532,9 @@ func i110(p *pegort.TParser) (any, bool) {
 	p.Where = "methodSpec"
 	v = func() any {
 		return func() any {
-			f_693 := func() any { return c.List(func() any { return k1 }()) }()
-			f_694 := func() any { return k4 }()
-			return tmk_Field(c, true, f_693, f_694, nil)
+			f_694 := func() any { return c.List(func() any { return k1 }()) }()
+			f_695 := func() any { return k4 }()
+			return tmk_Field(c, true, f_694, f_695, nil)
 		}()
 	}()
 	p.Where = w
@@ -16625,9 +16641,9 @@ L14:
 	p.Where = "signature"
 	v = func() any {
 		return func() any {
-			f_695 := func() any { return k1 }()
-			f_696 := func() any { return k4 }()
-			return tmk_FuncType(c, true, nil, f_695, f_696)
+			f_696 := func() any { return k1 }()
+			f_697 := func() any { return k4 }()
+			return tmk_FuncType(c, true, nil, f_696, f_697)
 		}()
 	}()
 	p.Where = w
@@ -16740,7 +16756,7 @@ func i112(p *pegort.TParser) (any, bool) {
 		x14 = append(x14, v21)
 		v22 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
 		v23 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v22, x9)
-		v24 = p.AttachCaptures(v23, scope697, []any{k11}, x9, p.Pos)
+		v24 = p.AttachCaptures(v23, scope698, []any{k11}, x9, p.Pos)
 		x8++
 		p.PushKid(v24)
 		if p.Pos == x9 {
@@ -16759,19 +16775,19 @@ func i112(p *pegort.TParser) (any, bool) {
 	p.Where = "embeddedElem"
 	v = func() any {
 		return func() any {
-			f_698 := func() any {
-				return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_699, l_700 any) any {
+			f_699 := func() any {
+				return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_700, l_701 any) any {
 					return func() any {
 						return func() any {
-							f_701 := func() any { return l_699 }()
-							f_702 := func() any { return any("|") }()
-							f_703 := func() any { return c.Member(func() any { return l_700 }(), "$t") }()
-							return tmk_BinaryExpr(c, false, f_701, f_702, f_703)
+							f_702 := func() any { return l_700 }()
+							f_703 := func() any { return any("|") }()
+							f_704 := func() any { return c.Member(func() any { return l_701 }(), "$t") }()
+							return tmk_BinaryExpr(c, false, f_702, f_703, f_704)
 						}()
 					}()
 				})
 			}()
-			return tmk_Field(c, true, nil, f_698, nil)
+			return tmk_Field(c, true, nil, f_699, nil)
 		}()
 	}()
 	p.DropCreated(c.Cbase)
@@ -16925,9 +16941,9 @@ L10:
 	p.Where = "embeddedIndex"
 	v = func() any {
 		return func() any {
-			f_704 := func() any { return k1 }()
-			f_705 := func() any { return k4 }()
-			return tmk_IndexExpr(c, true, f_704, f_705)
+			f_705 := func() any { return k1 }()
+			f_706 := func() any { return k4 }()
+			return tmk_IndexExpr(c, true, f_705, f_706)
 		}()
 	}()
 	p.Where = w
@@ -17041,7 +17057,7 @@ func i115(p *pegort.TParser) (any, bool) {
 		x17 = append(x17, v21)
 		v22 = p.NewNodeOrdinary("tuple", x16, p.Pos, x17)
 		v23 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v22, x12)
-		v24 = p.AttachCaptures(v23, scope706, []any{k14}, x12, p.Pos)
+		v24 = p.AttachCaptures(v23, scope707, []any{k14}, x12, p.Pos)
 		x11++
 		p.PushKid(v24)
 		if p.Pos == x12 {
@@ -17087,18 +17103,18 @@ L29:
 	p.Where = "embeddedIndexList"
 	v = func() any {
 		return func() any {
-			f_707 := func() any { return k1 }()
-			f_708 := func() any {
+			f_708 := func() any { return k1 }()
+			f_709 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k4 }())
-					c.PushMap(func() any { return k7 }(), func(l_709 any) any {
-						return func() any { return c.Member(func() any { return l_709 }(), "$t") }()
+					c.PushMap(func() any { return k7 }(), func(l_710 any) any {
+						return func() any { return c.Member(func() any { return l_710 }(), "$t") }()
 					})
 					return c.EndList(b)
 				}()
 			}()
-			return tmk_IndexListExpr(c, true, f_707, f_708)
+			return tmk_IndexListExpr(c, true, f_708, f_709)
 		}()
 	}()
 	p.Where = w
@@ -17181,7 +17197,7 @@ func i116(p *pegort.TParser) (any, bool) {
 		}
 		v14 = p.NewNodeOrdinary("tuple", x10, p.Pos, x11)
 		v15 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v14, x6)
-		v16 = p.AttachCaptures(v15, scope710, []any{k8}, x6, p.Pos)
+		v16 = p.AttachCaptures(v15, scope711, []any{k8}, x6, p.Pos)
 		x5++
 		p.PushKid(v16)
 		if p.Pos == x6 {
@@ -17205,12 +17221,12 @@ func i116(p *pegort.TParser) (any, bool) {
 	p.Where = "block"
 	v = func() any {
 		return func() any {
-			f_711 := func() any {
-				return c.MapList(func() any { return k1 }(), func(l_712 any) any {
-					return func() any { return c.Member(func() any { return l_712 }(), "$s") }()
+			f_712 := func() any {
+				return c.MapList(func() any { return k1 }(), func(l_713 any) any {
+					return func() any { return c.Member(func() any { return l_713 }(), "$s") }()
 				})
 			}()
-			return tmk_BlockStmt(c, true, f_711)
+			return tmk_BlockStmt(c, true, f_712)
 		}()
 	}()
 	p.Where = w
@@ -17557,9 +17573,9 @@ L12:
 	p.Where = "labeledEmpty"
 	v = func() any {
 		return func() any {
-			f_713 := func() any { return k1 }()
-			f_714 := func() any { return k7 }()
-			return tmk_LabeledStmt(c, true, f_713, f_714)
+			f_714 := func() any { return k1 }()
+			f_715 := func() any { return k7 }()
+			return tmk_LabeledStmt(c, true, f_714, f_715)
 		}()
 	}()
 	p.Where = w
@@ -17668,9 +17684,9 @@ L12:
 	p.Where = "labeledStmt"
 	v = func() any {
 		return func() any {
-			f_715 := func() any { return k1 }()
-			f_716 := func() any { return k7 }()
-			return tmk_LabeledStmt(c, true, f_715, f_716)
+			f_716 := func() any { return k1 }()
+			f_717 := func() any { return k7 }()
+			return tmk_LabeledStmt(c, true, f_716, f_717)
 		}()
 	}()
 	p.Where = w
@@ -17751,7 +17767,7 @@ func i123(p *pegort.TParser) (any, bool) {
 		x11 = append(x11, v13)
 		v14 = p.NewNodeOrdinary("tuple", x10, p.Pos, x11)
 		v15 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v14, x6)
-		v16 = p.AttachCaptures(v15, scope717, []any{k8}, x6, p.Pos)
+		v16 = p.AttachCaptures(v15, scope718, []any{k8}, x6, p.Pos)
 		x5++
 		p.PushKid(v16)
 		if p.Pos == x6 {
@@ -17783,8 +17799,8 @@ L24:
 	p.Where = "clauseBody"
 	v = func() any {
 		return c.Concat(func() any {
-			return c.MapList(func() any { return k1 }(), func(l_718 any) any {
-				return func() any { return c.Member(func() any { return l_718 }(), "$s") }()
+			return c.MapList(func() any { return k1 }(), func(l_719 any) any {
+				return func() any { return c.Member(func() any { return l_719 }(), "$s") }()
 			})
 		}(), func() any { return k18 }())
 	}()
@@ -18561,7 +18577,7 @@ L6:
 	w = p.Where
 	p.Where = "declStmt"
 	v = func() any {
-		return func() any { f_719 := func() any { return k1 }(); return tmk_DeclStmt(c, true, f_719) }()
+		return func() any { f_720 := func() any { return k1 }(); return tmk_DeclStmt(c, true, f_720) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -18700,10 +18716,10 @@ func i132(p *pegort.TParser) (any, bool) {
 	p.Where = "assignStmt"
 	v = func() any {
 		return func() any {
-			f_720 := func() any { return k1 }()
-			f_721 := func() any { return c.Text(func() any { return k4 }()) }()
-			f_722 := func() any { return k7 }()
-			return tmk_AssignStmt(c, true, f_720, f_721, f_722)
+			f_721 := func() any { return k1 }()
+			f_722 := func() any { return c.Text(func() any { return k4 }()) }()
+			f_723 := func() any { return k7 }()
+			return tmk_AssignStmt(c, true, f_721, f_722, f_723)
 		}()
 	}()
 	p.Where = w
@@ -18775,9 +18791,9 @@ func i133(p *pegort.TParser) (any, bool) {
 	p.Where = "sendStmt"
 	v = func() any {
 		return func() any {
-			f_723 := func() any { return k1 }()
-			f_724 := func() any { return k4 }()
-			return tmk_SendStmt(c, true, f_723, f_724)
+			f_724 := func() any { return k1 }()
+			f_725 := func() any { return k4 }()
+			return tmk_SendStmt(c, true, f_724, f_725)
 		}()
 	}()
 	p.Where = w
@@ -18838,9 +18854,9 @@ func i134(p *pegort.TParser) (any, bool) {
 	p.Where = "incDecStmt"
 	v = func() any {
 		return func() any {
-			f_725 := func() any { return k1 }()
-			f_726 := func() any { return c.Text(func() any { return k4 }()) }()
-			return tmk_IncDecStmt(c, true, f_725, f_726)
+			f_726 := func() any { return k1 }()
+			f_727 := func() any { return c.Text(func() any { return k4 }()) }()
+			return tmk_IncDecStmt(c, true, f_726, f_727)
 		}()
 	}()
 	p.Where = w
@@ -18892,7 +18908,7 @@ func i135(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "exprStmt"
 	v = func() any {
-		return func() any { f_727 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_727) }()
+		return func() any { f_728 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_728) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -19104,10 +19120,10 @@ func i137(p *pegort.TParser) (any, bool) {
 	p.Where = "hassignStmt"
 	v = func() any {
 		return func() any {
-			f_728 := func() any { return k1 }()
-			f_729 := func() any { return c.Text(func() any { return k4 }()) }()
-			f_730 := func() any { return k7 }()
-			return tmk_AssignStmt(c, true, f_728, f_729, f_730)
+			f_729 := func() any { return k1 }()
+			f_730 := func() any { return c.Text(func() any { return k4 }()) }()
+			f_731 := func() any { return k7 }()
+			return tmk_AssignStmt(c, true, f_729, f_730, f_731)
 		}()
 	}()
 	p.Where = w
@@ -19176,9 +19192,9 @@ func i138(p *pegort.TParser) (any, bool) {
 	p.Where = "hsendStmt"
 	v = func() any {
 		return func() any {
-			f_731 := func() any { return k1 }()
-			f_732 := func() any { return k4 }()
-			return tmk_SendStmt(c, true, f_731, f_732)
+			f_732 := func() any { return k1 }()
+			f_733 := func() any { return k4 }()
+			return tmk_SendStmt(c, true, f_732, f_733)
 		}()
 	}()
 	p.Where = w
@@ -19239,9 +19255,9 @@ func i139(p *pegort.TParser) (any, bool) {
 	p.Where = "hincDecStmt"
 	v = func() any {
 		return func() any {
-			f_733 := func() any { return k1 }()
-			f_734 := func() any { return c.Text(func() any { return k4 }()) }()
-			return tmk_IncDecStmt(c, true, f_733, f_734)
+			f_734 := func() any { return k1 }()
+			f_735 := func() any { return c.Text(func() any { return k4 }()) }()
+			return tmk_IncDecStmt(c, true, f_734, f_735)
 		}()
 	}()
 	p.Where = w
@@ -19290,7 +19306,7 @@ func i140(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "hexprStmt"
 	v = func() any {
-		return func() any { f_735 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_735) }()
+		return func() any { f_736 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_736) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -19344,7 +19360,7 @@ func i141(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "goStmt"
 	v = func() any {
-		return func() any { f_736 := func() any { return k1 }(); return tmk_GoStmt(c, true, f_736) }()
+		return func() any { f_737 := func() any { return k1 }(); return tmk_GoStmt(c, true, f_737) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -19398,7 +19414,7 @@ func i142(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "deferStmt"
 	v = func() any {
-		return func() any { f_737 := func() any { return k1 }(); return tmk_DeferStmt(c, true, f_737) }()
+		return func() any { f_738 := func() any { return k1 }(); return tmk_DeferStmt(c, true, f_738) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -19568,8 +19584,8 @@ func i144(p *pegort.TParser) (any, bool) {
 	p.Where = "goCallEmpty"
 	v = func() any {
 		return func() any {
-			f_738 := func() any { return k1 }()
-			return tmk_CallExpr(c, true, f_738, nil, nil)
+			f_739 := func() any { return k1 }()
+			return tmk_CallExpr(c, true, f_739, nil, nil)
 		}()
 	}()
 	p.Where = w
@@ -19682,10 +19698,10 @@ L18:
 	p.Where = "goCallArgs"
 	v = func() any {
 		return func() any {
-			f_739 := func() any { return k1 }()
-			f_740 := func() any { return k4 }()
-			f_741 := func() any { return k7 }()
-			return tmk_CallExpr(c, true, f_739, f_740, f_741)
+			f_740 := func() any { return k1 }()
+			f_741 := func() any { return k4 }()
+			f_742 := func() any { return k7 }()
+			return tmk_CallExpr(c, true, f_740, f_741, f_742)
 		}()
 	}()
 	p.Where = w
@@ -19807,8 +19823,8 @@ L7:
 	p.Where = "returnStmt"
 	v = func() any {
 		return func() any {
-			f_742 := func() any { return c.Concat(func() any { return k1 }()) }()
-			return tmk_ReturnStmt(c, true, f_742)
+			f_743 := func() any { return c.Concat(func() any { return k1 }()) }()
+			return tmk_ReturnStmt(c, true, f_743)
 		}()
 	}()
 	p.Where = w
@@ -20013,9 +20029,9 @@ L7:
 	p.Where = "breakStmt"
 	v = func() any {
 		return func() any {
-			f_743 := func() any { return any("break") }()
-			f_744 := func() any { return k1 }()
-			return tmk_BranchStmt(c, true, f_743, f_744)
+			f_744 := func() any { return any("break") }()
+			f_745 := func() any { return k1 }()
+			return tmk_BranchStmt(c, true, f_744, f_745)
 		}()
 	}()
 	p.Where = w
@@ -20079,9 +20095,9 @@ L7:
 	p.Where = "continueStmt"
 	v = func() any {
 		return func() any {
-			f_745 := func() any { return any("continue") }()
-			f_746 := func() any { return k1 }()
-			return tmk_BranchStmt(c, true, f_745, f_746)
+			f_746 := func() any { return any("continue") }()
+			f_747 := func() any { return k1 }()
+			return tmk_BranchStmt(c, true, f_746, f_747)
 		}()
 	}()
 	p.Where = w
@@ -20137,9 +20153,9 @@ func i152(p *pegort.TParser) (any, bool) {
 	p.Where = "gotoStmt"
 	v = func() any {
 		return func() any {
-			f_747 := func() any { return any("goto") }()
-			f_748 := func() any { return k1 }()
-			return tmk_BranchStmt(c, true, f_747, f_748)
+			f_748 := func() any { return any("goto") }()
+			f_749 := func() any { return k1 }()
+			return tmk_BranchStmt(c, true, f_748, f_749)
 		}()
 	}()
 	p.Where = w
@@ -20173,8 +20189,8 @@ func s153(p *pegort.TParser) (any, bool) {
 	p.Where = "fallthroughStmt"
 	v = func() any {
 		return func() any {
-			f_749 := func() any { return any("fallthrough") }()
-			return tmk_BranchStmt(c, true, f_749, nil)
+			f_750 := func() any { return any("fallthrough") }()
+			return tmk_BranchStmt(c, true, f_750, nil)
 		}()
 	}()
 	p.Where = w
@@ -20372,11 +20388,11 @@ L30:
 	p.Where = "ifStmt"
 	v = func() any {
 		return func() any {
-			f_750 := func() any { return k3 }()
-			f_751 := func() any { return k18 }()
-			f_752 := func() any { return k21 }()
-			f_753 := func() any { return k24 }()
-			return tmk_IfStmt(c, true, f_750, f_751, f_752, f_753)
+			f_751 := func() any { return k3 }()
+			f_752 := func() any { return k18 }()
+			f_753 := func() any { return k21 }()
+			f_754 := func() any { return k24 }()
+			return tmk_IfStmt(c, true, f_751, f_752, f_753, f_754)
 		}()
 	}()
 	p.Where = w
@@ -20751,10 +20767,10 @@ L15:
 	p.Where = "exprSwitchStmt"
 	v = func() any {
 		return func() any {
-			f_754 := func() any { return k1 }()
-			f_755 := func() any { return k9 }()
-			f_756 := func() any { return k17 }()
-			return tmk_SwitchStmt(c, true, f_754, f_755, f_756)
+			f_755 := func() any { return k1 }()
+			f_756 := func() any { return k9 }()
+			f_757 := func() any { return k17 }()
+			return tmk_SwitchStmt(c, true, f_755, f_756, f_757)
 		}()
 	}()
 	p.Where = w
@@ -20840,10 +20856,10 @@ L7:
 	p.Where = "typeSwitchStmt"
 	v = func() any {
 		return func() any {
-			f_757 := func() any { return k1 }()
-			f_758 := func() any { return k9 }()
-			f_759 := func() any { return k12 }()
-			return tmk_TypeSwitchStmt(c, true, f_757, f_758, f_759)
+			f_758 := func() any { return k1 }()
+			f_759 := func() any { return k9 }()
+			f_760 := func() any { return k12 }()
+			return tmk_TypeSwitchStmt(c, true, f_758, f_759, f_760)
 		}()
 	}()
 	p.Where = w
@@ -20962,10 +20978,10 @@ func i163(p *pegort.TParser) (any, bool) {
 	p.Where = "guardAssign"
 	v = func() any {
 		return func() any {
-			f_760 := func() any { return c.List(func() any { return k1 }()) }()
-			f_761 := func() any { return any(":=") }()
-			f_762 := func() any { return c.List(func() any { return k4 }()) }()
-			return tmk_AssignStmt(c, true, f_760, f_761, f_762)
+			f_761 := func() any { return c.List(func() any { return k1 }()) }()
+			f_762 := func() any { return any(":=") }()
+			f_763 := func() any { return c.List(func() any { return k4 }()) }()
+			return tmk_AssignStmt(c, true, f_761, f_762, f_763)
 		}()
 	}()
 	p.Where = w
@@ -21014,7 +21030,7 @@ func i164(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "guardExpr"
 	v = func() any {
-		return func() any { f_763 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_763) }()
+		return func() any { f_764 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_764) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -21094,8 +21110,8 @@ func i165(p *pegort.TParser) (any, bool) {
 	p.Where = "guardAssert"
 	v = func() any {
 		return func() any {
-			f_764 := func() any { return k1 }()
-			return tmk_TypeAssertExpr(c, true, f_764, nil)
+			f_765 := func() any { return k1 }()
+			return tmk_TypeAssertExpr(c, true, f_765, nil)
 		}()
 	}()
 	p.Where = w
@@ -21203,10 +21219,10 @@ func i166(p *pegort.TParser) (any, bool) {
 	p.Where = "caseBlock"
 	v = func() any {
 		return func() any {
-			f_765 := func() any {
+			f_766 := func() any {
 				return c.NewList(c.ListItems("map", func() any { return k1 }()))
 			}()
-			return tmk_BlockStmt(c, true, f_765)
+			return tmk_BlockStmt(c, true, f_766)
 		}()
 	}()
 	p.Where = w
@@ -21358,9 +21374,9 @@ L6:
 	p.Where = "caseClauseList"
 	v = func() any {
 		return func() any {
-			f_766 := func() any { return k1 }()
-			f_767 := func() any { return k7 }()
-			return tmk_CaseClause(c, true, f_766, f_767)
+			f_767 := func() any { return k1 }()
+			f_768 := func() any { return k7 }()
+			return tmk_CaseClause(c, true, f_767, f_768)
 		}()
 	}()
 	p.Where = w
@@ -21438,8 +21454,8 @@ L3:
 	p.Where = "caseClauseDefault"
 	v = func() any {
 		return func() any {
-			f_768 := func() any { return k4 }()
-			return tmk_CaseClause(c, true, nil, f_768)
+			f_769 := func() any { return k4 }()
+			return tmk_CaseClause(c, true, nil, f_769)
 		}()
 	}()
 	p.Where = w
@@ -21494,7 +21510,7 @@ func i170(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "selectStmt"
 	v = func() any {
-		return func() any { f_769 := func() any { return k1 }(); return tmk_SelectStmt(c, true, f_769) }()
+		return func() any { f_770 := func() any { return k1 }(); return tmk_SelectStmt(c, true, f_770) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -21598,10 +21614,10 @@ func i171(p *pegort.TParser) (any, bool) {
 	p.Where = "commBlock"
 	v = func() any {
 		return func() any {
-			f_770 := func() any {
+			f_771 := func() any {
 				return c.NewList(c.ListItems("map", func() any { return k1 }()))
 			}()
-			return tmk_BlockStmt(c, true, f_770)
+			return tmk_BlockStmt(c, true, f_771)
 		}()
 	}()
 	p.Where = w
@@ -21753,9 +21769,9 @@ L6:
 	p.Where = "commClauseCase"
 	v = func() any {
 		return func() any {
-			f_771 := func() any { return k1 }()
-			f_772 := func() any { return k7 }()
-			return tmk_CommClause(c, true, f_771, f_772)
+			f_772 := func() any { return k1 }()
+			f_773 := func() any { return k7 }()
+			return tmk_CommClause(c, true, f_772, f_773)
 		}()
 	}()
 	p.Where = w
@@ -21833,8 +21849,8 @@ L3:
 	p.Where = "commClauseDefault"
 	v = func() any {
 		return func() any {
-			f_773 := func() any { return k4 }()
-			return tmk_CommClause(c, true, nil, f_773)
+			f_774 := func() any { return k4 }()
+			return tmk_CommClause(c, true, nil, f_774)
 		}()
 	}()
 	p.Where = w
@@ -22000,7 +22016,7 @@ func i176(p *pegort.TParser) (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
 		v21 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v20, x10)
-		v22 = p.AttachCaptures(v21, scope774, []any{k12}, x10, p.Pos)
+		v22 = p.AttachCaptures(v21, scope775, []any{k12}, x10, p.Pos)
 		x8++
 		p.PushKid(v22)
 		if p.Pos == x10 {
@@ -22081,19 +22097,19 @@ L29:
 	p.Where = "commRecv"
 	v = func() any {
 		return func() any {
-			f_775 := func() any {
+			f_776 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k1 }())
-					c.PushMap(func() any { return k4 }(), func(l_776 any) any {
-						return func() any { return c.Member(func() any { return l_776 }(), "$x") }()
+					c.PushMap(func() any { return k4 }(), func(l_777 any) any {
+						return func() any { return c.Member(func() any { return l_777 }(), "$x") }()
 					})
 					return c.EndList(b)
 				}()
 			}()
-			f_777 := func() any { return c.Text(func() any { return k24 }()) }()
-			f_778 := func() any { return c.List(func() any { return k40 }()) }()
-			return tmk_AssignStmt(c, true, f_775, f_777, f_778)
+			f_778 := func() any { return c.Text(func() any { return k24 }()) }()
+			f_779 := func() any { return c.List(func() any { return k40 }()) }()
+			return tmk_AssignStmt(c, true, f_776, f_778, f_779)
 		}()
 	}()
 	p.Where = w
@@ -22240,8 +22256,8 @@ func i178(p *pegort.TParser) (any, bool) {
 	p.Where = "forInfinite"
 	v = func() any {
 		return func() any {
-			f_779 := func() any { return k1 }()
-			return tmk_ForStmt(c, true, nil, nil, nil, f_779)
+			f_780 := func() any { return k1 }()
+			return tmk_ForStmt(c, true, nil, nil, nil, f_780)
 		}()
 	}()
 	p.Where = w
@@ -22308,9 +22324,9 @@ func i179(p *pegort.TParser) (any, bool) {
 	p.Where = "forCond"
 	v = func() any {
 		return func() any {
-			f_780 := func() any { return k1 }()
-			f_781 := func() any { return k4 }()
-			return tmk_ForStmt(c, true, nil, f_780, nil, f_781)
+			f_781 := func() any { return k1 }()
+			f_782 := func() any { return k4 }()
+			return tmk_ForStmt(c, true, nil, f_781, nil, f_782)
 		}()
 	}()
 	p.Where = w
@@ -22444,11 +22460,11 @@ L23:
 	p.Where = "forClause"
 	v = func() any {
 		return func() any {
-			f_782 := func() any { return k1 }()
-			f_783 := func() any { return k9 }()
-			f_784 := func() any { return k17 }()
-			f_785 := func() any { return k25 }()
-			return tmk_ForStmt(c, true, f_782, f_783, f_784, f_785)
+			f_783 := func() any { return k1 }()
+			f_784 := func() any { return k9 }()
+			f_785 := func() any { return k17 }()
+			f_786 := func() any { return k25 }()
+			return tmk_ForStmt(c, true, f_783, f_784, f_785, f_786)
 		}()
 	}()
 	p.Where = w
@@ -22633,12 +22649,12 @@ L10:
 	p.Where = "forRange"
 	v = func() any {
 		return func() any {
-			f_786 := func() any { return k3 }()
-			f_787 := func() any { return k5 }()
-			f_788 := func() any { return c.Text(func() any { return k7 }()) }()
-			f_789 := func() any { return k35 }()
-			f_790 := func() any { return k38 }()
-			return tmk_RangeStmt(c, true, f_786, f_787, f_788, f_789, f_790)
+			f_787 := func() any { return k3 }()
+			f_788 := func() any { return k5 }()
+			f_789 := func() any { return c.Text(func() any { return k7 }()) }()
+			f_790 := func() any { return k35 }()
+			f_791 := func() any { return k38 }()
+			return tmk_RangeStmt(c, true, f_787, f_788, f_789, f_790, f_791)
 		}()
 	}()
 	p.Where = w
@@ -22884,7 +22900,7 @@ func i184(p *pegort.TParser) (any, bool) {
 		x14 = append(x14, v18)
 		v19 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
 		v20 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v19, x9)
-		v21 = p.AttachCaptures(v20, scope791, []any{k11}, x9, p.Pos)
+		v21 = p.AttachCaptures(v20, scope792, []any{k11}, x9, p.Pos)
 		x8++
 		p.PushKid(v21)
 		if p.Pos == x9 {
@@ -22905,8 +22921,8 @@ func i184(p *pegort.TParser) (any, bool) {
 		return func() any {
 			b := len(c.P.KidStack)
 			c.PushList(func() any { return k1 }())
-			c.PushMap(func() any { return k4 }(), func(l_792 any) any {
-				return func() any { return c.Member(func() any { return l_792 }(), "$x") }()
+			c.PushMap(func() any { return k4 }(), func(l_793 any) any {
+				return func() any { return c.Member(func() any { return l_793 }(), "$x") }()
 			})
 			return c.EndList(b)
 		}()
@@ -23002,7 +23018,7 @@ func i185(p *pegort.TParser) (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
 		v21 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v20, x9)
-		v22 = p.AttachCaptures(v21, scope793, []any{k11, k12}, x9, p.Pos)
+		v22 = p.AttachCaptures(v21, scope794, []any{k11, k12}, x9, p.Pos)
 		x8++
 		p.PushKid(v22)
 		if p.Pos == x9 {
@@ -23020,15 +23036,15 @@ func i185(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "orExpr"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_794, l_795 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_795, l_796 any) any {
 			return func() any {
 				return func() any {
-					f_796 := func() any { return l_794 }()
-					f_797 := func() any {
-						return c.Text(func() any { return c.Member(func() any { return l_795 }(), "$o") }())
+					f_797 := func() any { return l_795 }()
+					f_798 := func() any {
+						return c.Text(func() any { return c.Member(func() any { return l_796 }(), "$o") }())
 					}()
-					f_798 := func() any { return c.Member(func() any { return l_795 }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_796, f_797, f_798)
+					f_799 := func() any { return c.Member(func() any { return l_796 }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_797, f_798, f_799)
 				}()
 			}()
 		})
@@ -23127,7 +23143,7 @@ func i186(p *pegort.TParser) (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
 		v21 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v20, x9)
-		v22 = p.AttachCaptures(v21, scope799, []any{k11, k12}, x9, p.Pos)
+		v22 = p.AttachCaptures(v21, scope800, []any{k11, k12}, x9, p.Pos)
 		x8++
 		p.PushKid(v22)
 		if p.Pos == x9 {
@@ -23145,15 +23161,15 @@ func i186(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "andExpr"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_800, l_801 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_801, l_802 any) any {
 			return func() any {
 				return func() any {
-					f_802 := func() any { return l_800 }()
-					f_803 := func() any {
-						return c.Text(func() any { return c.Member(func() any { return l_801 }(), "$o") }())
+					f_803 := func() any { return l_801 }()
+					f_804 := func() any {
+						return c.Text(func() any { return c.Member(func() any { return l_802 }(), "$o") }())
 					}()
-					f_804 := func() any { return c.Member(func() any { return l_801 }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_802, f_803, f_804)
+					f_805 := func() any { return c.Member(func() any { return l_802 }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_803, f_804, f_805)
 				}()
 			}()
 		})
@@ -23252,7 +23268,7 @@ func i187(p *pegort.TParser) (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
 		v21 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v20, x9)
-		v22 = p.AttachCaptures(v21, scope805, []any{k11, k12}, x9, p.Pos)
+		v22 = p.AttachCaptures(v21, scope806, []any{k11, k12}, x9, p.Pos)
 		x8++
 		p.PushKid(v22)
 		if p.Pos == x9 {
@@ -23270,15 +23286,15 @@ func i187(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "cmpExpr"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_806, l_807 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_807, l_808 any) any {
 			return func() any {
 				return func() any {
-					f_808 := func() any { return l_806 }()
-					f_809 := func() any {
-						return c.Text(func() any { return c.Member(func() any { return l_807 }(), "$o") }())
+					f_809 := func() any { return l_807 }()
+					f_810 := func() any {
+						return c.Text(func() any { return c.Member(func() any { return l_808 }(), "$o") }())
 					}()
-					f_810 := func() any { return c.Member(func() any { return l_807 }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_808, f_809, f_810)
+					f_811 := func() any { return c.Member(func() any { return l_808 }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_809, f_810, f_811)
 				}()
 			}()
 		})
@@ -23377,7 +23393,7 @@ func i188(p *pegort.TParser) (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
 		v21 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v20, x9)
-		v22 = p.AttachCaptures(v21, scope811, []any{k11, k12}, x9, p.Pos)
+		v22 = p.AttachCaptures(v21, scope812, []any{k11, k12}, x9, p.Pos)
 		x8++
 		p.PushKid(v22)
 		if p.Pos == x9 {
@@ -23395,15 +23411,15 @@ func i188(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "addExpr"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_812, l_813 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_813, l_814 any) any {
 			return func() any {
 				return func() any {
-					f_814 := func() any { return l_812 }()
-					f_815 := func() any {
-						return c.Text(func() any { return c.Member(func() any { return l_813 }(), "$o") }())
+					f_815 := func() any { return l_813 }()
+					f_816 := func() any {
+						return c.Text(func() any { return c.Member(func() any { return l_814 }(), "$o") }())
 					}()
-					f_816 := func() any { return c.Member(func() any { return l_813 }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_814, f_815, f_816)
+					f_817 := func() any { return c.Member(func() any { return l_814 }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_815, f_816, f_817)
 				}()
 			}()
 		})
@@ -23502,7 +23518,7 @@ func i189(p *pegort.TParser) (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
 		v21 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v20, x9)
-		v22 = p.AttachCaptures(v21, scope817, []any{k11, k12}, x9, p.Pos)
+		v22 = p.AttachCaptures(v21, scope818, []any{k11, k12}, x9, p.Pos)
 		x8++
 		p.PushKid(v22)
 		if p.Pos == x9 {
@@ -23520,15 +23536,15 @@ func i189(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "mulExpr"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_818, l_819 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_819, l_820 any) any {
 			return func() any {
 				return func() any {
-					f_820 := func() any { return l_818 }()
-					f_821 := func() any {
-						return c.Text(func() any { return c.Member(func() any { return l_819 }(), "$o") }())
+					f_821 := func() any { return l_819 }()
+					f_822 := func() any {
+						return c.Text(func() any { return c.Member(func() any { return l_820 }(), "$o") }())
 					}()
-					f_822 := func() any { return c.Member(func() any { return l_819 }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_820, f_821, f_822)
+					f_823 := func() any { return c.Member(func() any { return l_820 }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_821, f_822, f_823)
 				}()
 			}()
 		})
@@ -23567,15 +23583,13 @@ func i190(p *pegort.TParser) (any, bool) {
 		k3    any
 		x4    any
 		x7    int
-		ch    rune
-		size  int
-		ok    bool
 		x10   int
 		x11   int
 		x12   int
 		v13   any
 		x15   rune
 		x16   bool
+		ok    bool
 		v19   any
 		v22   any
 		v24   any
@@ -23594,12 +23608,9 @@ func i190(p *pegort.TParser) (any, bool) {
 	x4 = k3
 	x7 = p.Pos
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 60 || ch == 43 || ch == 45 || ch == 33 || ch == 94 || ch == 38 || ch == 126 || ch == 42)) {
-		p.ExpectOrdinary(p.Pos, 52)
+	if !p.ClassFast(&cls824) && !p.ClassSkip(&cls824, 52) {
 		goto L8
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x7
 	goto L9
@@ -23851,9 +23862,9 @@ L3:
 	p.Where = "recvExpr"
 	v = func() any {
 		return func() any {
-			f_823 := func() any { return any("<-") }()
-			f_824 := func() any { return k7 }()
-			return tmk_UnaryExpr(c, true, f_823, f_824)
+			f_825 := func() any { return any("<-") }()
+			f_826 := func() any { return k7 }()
+			return tmk_UnaryExpr(c, true, f_825, f_826)
 		}()
 	}()
 	p.Where = w
@@ -23914,9 +23925,9 @@ func i193(p *pegort.TParser) (any, bool) {
 	p.Where = "unaryOpExpr"
 	v = func() any {
 		return func() any {
-			f_825 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_826 := func() any { return k4 }()
-			return tmk_UnaryExpr(c, true, f_825, f_826)
+			f_827 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_828 := func() any { return k4 }()
+			return tmk_UnaryExpr(c, true, f_827, f_828)
 		}()
 	}()
 	p.Where = w
@@ -23990,7 +24001,7 @@ L3:
 	w = p.Where
 	p.Where = "starExpr"
 	v = func() any {
-		return func() any { f_827 := func() any { return k4 }(); return tmk_StarExpr(c, true, f_827) }()
+		return func() any { f_829 := func() any { return k4 }(); return tmk_StarExpr(c, true, f_829) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -24095,7 +24106,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e898(p *pegort.TParser) (any, bool) {
+func e920(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
 	)
@@ -24108,7 +24119,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e899(p *pegort.TParser) (any, bool) {
+func e921(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
 		v1 any
@@ -24122,7 +24133,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e900(p *pegort.TParser) (any, bool) {
+func e922(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -24155,7 +24166,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e903(p *pegort.TParser) (any, bool) {
+func e925(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -24227,7 +24238,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e905(p *pegort.TParser) (any, bool) {
+func e927(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -24303,7 +24314,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e908(p *pegort.TParser) (any, bool) {
+func e930(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -24385,7 +24396,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e911(p *pegort.TParser) (any, bool) {
+func e933(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -24433,7 +24444,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e914(p *pegort.TParser) (any, bool) {
+func e936(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -24551,7 +24562,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e918(p *pegort.TParser) (any, bool) {
+func e940(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -24695,7 +24706,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e923(p *pegort.TParser) (any, bool) {
+func e945(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -24751,7 +24762,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e925(p *pegort.TParser) (any, bool) {
+func e947(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -24867,7 +24878,7 @@ fail:
 }
 
 // operatorsExpr (typed OperatorsRule body inlined)
-func e929(p *pegort.TParser) (any, bool) {
+func e951(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -25069,9 +25080,6 @@ func s198(p *pegort.TParser) (any, bool) {
 		x2    int
 		v3    any
 		x6    int
-		ch    rune
-		size  int
-		ok    bool
 		v9    any
 		x11   pegort.ExpMark
 		x12   int
@@ -25087,12 +25095,9 @@ func s198(p *pegort.TParser) (any, bool) {
 	x1, x2 = p.Pos, len(p.Recovered)
 	x6 = p.Pos
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch == 95 || ch >= 48 && ch <= 57 || ch == 46 || ch == 39 || ch == 34 || ch == 96 || ch == 40 || ch == 91 || ch == 60 || ch >= 128 && ch <= 1114111)) {
-		p.ExpectOrdinary(p.Pos, 53)
+	if !p.ClassFast(&cls830) && !p.ClassSkip(&cls830, 53) {
 		goto L7
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x6
 	goto L8
@@ -25328,7 +25333,7 @@ func i200(p *pegort.TParser) (any, bool) {
 		x14 = append(x14, v18)
 		v19 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
 		v20 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v19, x9)
-		v21 = p.AttachCaptures(v20, scope828, []any{k11}, x9, p.Pos)
+		v21 = p.AttachCaptures(v20, scope831, []any{k11}, x9, p.Pos)
 		x8++
 		p.PushKid(v21)
 		if p.Pos == x9 {
@@ -25370,8 +25375,8 @@ L26:
 		return func() any {
 			b := len(c.P.KidStack)
 			c.PushList(func() any { return k1 }())
-			c.PushMap(func() any { return k4 }(), func(l_829 any) any {
-				return func() any { return c.Member(func() any { return l_829 }(), "$t") }()
+			c.PushMap(func() any { return k4 }(), func(l_832 any) any {
+				return func() any { return c.Member(func() any { return l_832 }(), "$t") }()
 			})
 			return c.EndList(b)
 		}()
@@ -25442,7 +25447,7 @@ func i201(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "parenExpr"
 	v = func() any {
-		return func() any { f_830 := func() any { return k1 }(); return tmk_ParenExpr(c, true, f_830) }()
+		return func() any { f_833 := func() any { return k1 }(); return tmk_ParenExpr(c, true, f_833) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -25505,9 +25510,9 @@ func i202(p *pegort.TParser) (any, bool) {
 	p.Where = "funcLit"
 	v = func() any {
 		return func() any {
-			f_831 := func() any { return k1 }()
-			f_832 := func() any { return k4 }()
-			return tmk_FuncLit(c, true, f_831, f_832)
+			f_834 := func() any { return k1 }()
+			f_835 := func() any { return k4 }()
+			return tmk_FuncLit(c, true, f_834, f_835)
 		}()
 	}()
 	p.Where = w
@@ -25676,7 +25681,7 @@ func i204(p *pegort.TParser) (any, bool) {
 		x14 = append(x14, v18)
 		v19 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
 		v20 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v19, x9)
-		v21 = p.AttachCaptures(v20, scope833, []any{k11}, x9, p.Pos)
+		v21 = p.AttachCaptures(v20, scope836, []any{k11}, x9, p.Pos)
 		x8++
 		p.PushKid(v21)
 		if p.Pos == x9 {
@@ -25714,8 +25719,8 @@ L26:
 		return func() any {
 			b := len(c.P.KidStack)
 			c.PushList(func() any { return k1 }())
-			c.PushMap(func() any { return k4 }(), func(l_834 any) any {
-				return func() any { return c.Member(func() any { return l_834 }(), "$e") }()
+			c.PushMap(func() any { return k4 }(), func(l_837 any) any {
+				return func() any { return c.Member(func() any { return l_837 }(), "$e") }()
 			})
 			return c.EndList(b)
 		}()
@@ -25909,9 +25914,9 @@ L6:
 	p.Where = "keyValue"
 	v = func() any {
 		return func() any {
-			f_835 := func() any { return k1 }()
-			f_836 := func() any { return k7 }()
-			return tmk_KeyValueExpr(c, true, f_835, f_836)
+			f_838 := func() any { return k1 }()
+			f_839 := func() any { return k7 }()
+			return tmk_KeyValueExpr(c, true, f_838, f_839)
 		}()
 	}()
 	p.Where = w
@@ -26084,8 +26089,8 @@ func i208(p *pegort.TParser) (any, bool) {
 	p.Where = "elidedLit"
 	v = func() any {
 		return func() any {
-			f_837 := func() any { return k1 }()
-			return tmk_CompositeLit(c, true, nil, f_837)
+			f_840 := func() any { return k1 }()
+			return tmk_CompositeLit(c, true, nil, f_840)
 		}()
 	}()
 	p.Where = w
@@ -26097,7 +26102,7 @@ fail:
 }
 
 // goPrimary (typed OperatorsRule body inlined)
-func e948(p *pegort.TParser) (any, bool) {
+func e970(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -26175,7 +26180,7 @@ fail:
 }
 
 // goPrimary (typed OperatorsRule body inlined)
-func e950(p *pegort.TParser) (any, bool) {
+func e972(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -26658,7 +26663,7 @@ func i212(p *pegort.TParser) (any, bool) {
 		x14 = append(x14, v18)
 		v19 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
 		v20 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v19, x9)
-		v21 = p.AttachCaptures(v20, scope838, []any{k11}, x9, p.Pos)
+		v21 = p.AttachCaptures(v20, scope841, []any{k11}, x9, p.Pos)
 		x8++
 		p.PushKid(v21)
 		if p.Pos == x9 {
@@ -26679,8 +26684,8 @@ func i212(p *pegort.TParser) (any, bool) {
 		return func() any {
 			b := len(c.P.KidStack)
 			c.PushList(func() any { return k1 }())
-			c.PushMap(func() any { return k4 }(), func(l_839 any) any {
-				return func() any { return c.Member(func() any { return l_839 }(), "$x") }()
+			c.PushMap(func() any { return k4 }(), func(l_842 any) any {
+				return func() any { return c.Member(func() any { return l_842 }(), "$x") }()
 			})
 			return c.EndList(b)
 		}()
@@ -26776,7 +26781,7 @@ func i213(p *pegort.TParser) (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
 		v21 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v20, x9)
-		v22 = p.AttachCaptures(v21, scope840, []any{k11, k12}, x9, p.Pos)
+		v22 = p.AttachCaptures(v21, scope843, []any{k11, k12}, x9, p.Pos)
 		x8++
 		p.PushKid(v22)
 		if p.Pos == x9 {
@@ -26794,15 +26799,15 @@ func i213(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "horExpr"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_841, l_842 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_844, l_845 any) any {
 			return func() any {
 				return func() any {
-					f_843 := func() any { return l_841 }()
-					f_844 := func() any {
-						return c.Text(func() any { return c.Member(func() any { return l_842 }(), "$o") }())
+					f_846 := func() any { return l_844 }()
+					f_847 := func() any {
+						return c.Text(func() any { return c.Member(func() any { return l_845 }(), "$o") }())
 					}()
-					f_845 := func() any { return c.Member(func() any { return l_842 }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_843, f_844, f_845)
+					f_848 := func() any { return c.Member(func() any { return l_845 }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_846, f_847, f_848)
 				}()
 			}()
 		})
@@ -26901,7 +26906,7 @@ func i214(p *pegort.TParser) (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
 		v21 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v20, x9)
-		v22 = p.AttachCaptures(v21, scope846, []any{k11, k12}, x9, p.Pos)
+		v22 = p.AttachCaptures(v21, scope849, []any{k11, k12}, x9, p.Pos)
 		x8++
 		p.PushKid(v22)
 		if p.Pos == x9 {
@@ -26919,15 +26924,15 @@ func i214(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "handExpr"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_847, l_848 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_850, l_851 any) any {
 			return func() any {
 				return func() any {
-					f_849 := func() any { return l_847 }()
-					f_850 := func() any {
-						return c.Text(func() any { return c.Member(func() any { return l_848 }(), "$o") }())
+					f_852 := func() any { return l_850 }()
+					f_853 := func() any {
+						return c.Text(func() any { return c.Member(func() any { return l_851 }(), "$o") }())
 					}()
-					f_851 := func() any { return c.Member(func() any { return l_848 }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_849, f_850, f_851)
+					f_854 := func() any { return c.Member(func() any { return l_851 }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_852, f_853, f_854)
 				}()
 			}()
 		})
@@ -27026,7 +27031,7 @@ func i215(p *pegort.TParser) (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
 		v21 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v20, x9)
-		v22 = p.AttachCaptures(v21, scope852, []any{k11, k12}, x9, p.Pos)
+		v22 = p.AttachCaptures(v21, scope855, []any{k11, k12}, x9, p.Pos)
 		x8++
 		p.PushKid(v22)
 		if p.Pos == x9 {
@@ -27044,15 +27049,15 @@ func i215(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "hcmpExpr"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_853, l_854 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_856, l_857 any) any {
 			return func() any {
 				return func() any {
-					f_855 := func() any { return l_853 }()
-					f_856 := func() any {
-						return c.Text(func() any { return c.Member(func() any { return l_854 }(), "$o") }())
+					f_858 := func() any { return l_856 }()
+					f_859 := func() any {
+						return c.Text(func() any { return c.Member(func() any { return l_857 }(), "$o") }())
 					}()
-					f_857 := func() any { return c.Member(func() any { return l_854 }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_855, f_856, f_857)
+					f_860 := func() any { return c.Member(func() any { return l_857 }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_858, f_859, f_860)
 				}()
 			}()
 		})
@@ -27151,7 +27156,7 @@ func i216(p *pegort.TParser) (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
 		v21 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v20, x9)
-		v22 = p.AttachCaptures(v21, scope858, []any{k11, k12}, x9, p.Pos)
+		v22 = p.AttachCaptures(v21, scope861, []any{k11, k12}, x9, p.Pos)
 		x8++
 		p.PushKid(v22)
 		if p.Pos == x9 {
@@ -27169,15 +27174,15 @@ func i216(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "haddExpr"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_859, l_860 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_862, l_863 any) any {
 			return func() any {
 				return func() any {
-					f_861 := func() any { return l_859 }()
-					f_862 := func() any {
-						return c.Text(func() any { return c.Member(func() any { return l_860 }(), "$o") }())
+					f_864 := func() any { return l_862 }()
+					f_865 := func() any {
+						return c.Text(func() any { return c.Member(func() any { return l_863 }(), "$o") }())
 					}()
-					f_863 := func() any { return c.Member(func() any { return l_860 }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_861, f_862, f_863)
+					f_866 := func() any { return c.Member(func() any { return l_863 }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_864, f_865, f_866)
 				}()
 			}()
 		})
@@ -27276,7 +27281,7 @@ func i217(p *pegort.TParser) (any, bool) {
 		x15 = append(x15, v19)
 		v20 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
 		v21 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v20, x9)
-		v22 = p.AttachCaptures(v21, scope864, []any{k11, k12}, x9, p.Pos)
+		v22 = p.AttachCaptures(v21, scope867, []any{k11, k12}, x9, p.Pos)
 		x8++
 		p.PushKid(v22)
 		if p.Pos == x9 {
@@ -27294,15 +27299,15 @@ func i217(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "hmulExpr"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_865, l_866 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_868, l_869 any) any {
 			return func() any {
 				return func() any {
-					f_867 := func() any { return l_865 }()
-					f_868 := func() any {
-						return c.Text(func() any { return c.Member(func() any { return l_866 }(), "$o") }())
+					f_870 := func() any { return l_868 }()
+					f_871 := func() any {
+						return c.Text(func() any { return c.Member(func() any { return l_869 }(), "$o") }())
 					}()
-					f_869 := func() any { return c.Member(func() any { return l_866 }(), "$r") }()
-					return tmk_BinaryExpr(c, false, f_867, f_868, f_869)
+					f_872 := func() any { return c.Member(func() any { return l_869 }(), "$r") }()
+					return tmk_BinaryExpr(c, false, f_870, f_871, f_872)
 				}()
 			}()
 		})
@@ -27341,15 +27346,13 @@ func i218(p *pegort.TParser) (any, bool) {
 		k3    any
 		x4    any
 		x7    int
-		ch    rune
-		size  int
-		ok    bool
 		x10   int
 		x11   int
 		x12   int
 		v13   any
 		x15   rune
 		x16   bool
+		ok    bool
 		v19   any
 		v22   any
 		v24   any
@@ -27368,12 +27371,9 @@ func i218(p *pegort.TParser) (any, bool) {
 	x4 = k3
 	x7 = p.Pos
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 60 || ch == 43 || ch == 45 || ch == 33 || ch == 94 || ch == 38 || ch == 126 || ch == 42)) {
-		p.ExpectOrdinary(p.Pos, 52)
+	if !p.ClassFast(&cls824) && !p.ClassSkip(&cls824, 52) {
 		goto L8
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x7
 	goto L9
@@ -27552,9 +27552,9 @@ L3:
 	p.Where = "hrecvExpr"
 	v = func() any {
 		return func() any {
-			f_870 := func() any { return any("<-") }()
-			f_871 := func() any { return k7 }()
-			return tmk_UnaryExpr(c, true, f_870, f_871)
+			f_873 := func() any { return any("<-") }()
+			f_874 := func() any { return k7 }()
+			return tmk_UnaryExpr(c, true, f_873, f_874)
 		}()
 	}()
 	p.Where = w
@@ -27615,9 +27615,9 @@ func i220(p *pegort.TParser) (any, bool) {
 	p.Where = "hunaryOpExpr"
 	v = func() any {
 		return func() any {
-			f_872 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_873 := func() any { return k4 }()
-			return tmk_UnaryExpr(c, true, f_872, f_873)
+			f_875 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_876 := func() any { return k4 }()
+			return tmk_UnaryExpr(c, true, f_875, f_876)
 		}()
 	}()
 	p.Where = w
@@ -27691,7 +27691,7 @@ L3:
 	w = p.Where
 	p.Where = "hstarExpr"
 	v = func() any {
-		return func() any { f_874 := func() any { return k4 }(); return tmk_StarExpr(c, true, f_874) }()
+		return func() any { f_877 := func() any { return k4 }(); return tmk_StarExpr(c, true, f_877) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -27796,7 +27796,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func e956(p *pegort.TParser) (any, bool) {
+func e978(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
 		v1 any
@@ -27810,7 +27810,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func e959(p *pegort.TParser) (any, bool) {
+func e981(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -27865,7 +27865,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func e961(p *pegort.TParser) (any, bool) {
+func e983(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -27924,7 +27924,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func e968(p *pegort.TParser) (any, bool) {
+func e990(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -28025,7 +28025,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func e972(p *pegort.TParser) (any, bool) {
+func e994(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -28152,7 +28152,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func e977(p *pegort.TParser) (any, bool) {
+func e999(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -28191,7 +28191,7 @@ fail:
 }
 
 // hoperatorsExpr (typed OperatorsRule body inlined)
-func e979(p *pegort.TParser) (any, bool) {
+func e1001(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -28689,9 +28689,9 @@ L6:
 	p.Where = "compositeLitH"
 	v = func() any {
 		return func() any {
-			f_875 := func() any { return k1 }()
-			f_876 := func() any { return k18 }()
-			return tmk_CompositeLit(c, true, f_875, f_876)
+			f_878 := func() any { return k1 }()
+			f_879 := func() any { return k18 }()
+			return tmk_CompositeLit(c, true, f_878, f_879)
 		}()
 	}()
 	p.Where = w
@@ -29031,12 +29031,10 @@ func v229(p *pegort.TParser) (any, bool) {
 		x1    int
 		x2    []any
 		x3    int
-		ch    rune
-		size  int
-		ok    bool
 		x6    int
 		x7    int
 		v8    any
+		ok    bool
 		v11   any
 		v13   any
 		v15   any
@@ -29053,12 +29051,9 @@ func v229(p *pegort.TParser) (any, bool) {
 	x2 = p.NewVals(1)[:0]
 	x3 = p.Pos
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 124 || ch == 38 || ch == 61 || ch == 33 || ch == 60 || ch == 62 || ch == 43 || ch == 45 || ch == 94 || ch == 42 || ch == 47 || ch == 37)) {
-		p.ExpectOrdinary(p.Pos, 55)
+	if !p.ClassFast(&cls880) && !p.ClassSkip(&cls880, 55) {
 		goto L4
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x3
 	goto L5
@@ -29134,12 +29129,10 @@ func i229(p *pegort.TParser) (any, bool) {
 		x1    int
 		x2    []any
 		x3    int
-		ch    rune
-		size  int
-		ok    bool
 		x6    int
 		x7    int
 		v8    any
+		ok    bool
 		v11   any
 		v13   any
 		v15   any
@@ -29156,12 +29149,9 @@ func i229(p *pegort.TParser) (any, bool) {
 	x2 = p.NewVals(1)[:0]
 	x3 = p.Pos
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 124 || ch == 38 || ch == 61 || ch == 33 || ch == 60 || ch == 62 || ch == 43 || ch == 45 || ch == 94 || ch == 42 || ch == 47 || ch == 37)) {
-		p.ExpectOrdinary(p.Pos, 55)
+	if !p.ClassFast(&cls880) && !p.ClassSkip(&cls880, 55) {
 		goto L4
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x3
 	goto L5
@@ -29730,18 +29720,18 @@ func s234(p *pegort.TParser) (any, bool) {
 		x1    int
 		x2    []any
 		x3    int
-		ch    rune
-		size  int
-		ok    bool
 		x6    int
 		x7    int
 		x8    int
 		x10   rune
 		x11   bool
+		ok    bool
 		x14   int
 		x15   int
 		x19   int
 		x20   int
+		ch    rune
+		size  int
 		x24   int
 		x25   int
 		x29   int
@@ -29764,12 +29754,9 @@ func s234(p *pegort.TParser) (any, bool) {
 	x2 = p.NewVals(1)[:0]
 	x3 = p.Pos
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 42 || ch == 47 || ch == 37 || ch == 60 || ch == 62 || ch == 38)) {
-		p.ExpectOrdinary(p.Pos, 73)
+	if !p.ClassFast(&cls881) && !p.ClassSkip(&cls881, 73) {
 		goto L4
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x3
 	goto L5
@@ -30014,16 +30001,16 @@ func s235(p *pegort.TParser) (any, bool) {
 		x1    int
 		x2    []any
 		x3    int
-		ch    rune
-		size  int
-		ok    bool
 		x6    int
 		x7    int
 		x8    int
 		x10   rune
 		x11   bool
+		ok    bool
 		x14   int
 		x15   int
+		ch    rune
+		size  int
 		x19   int
 		x20   int
 		x24   int
@@ -30044,12 +30031,9 @@ func s235(p *pegort.TParser) (any, bool) {
 	x2 = p.NewVals(1)[:0]
 	x3 = p.Pos
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 43 || ch == 45 || ch == 33 || ch == 94 || ch == 38 || ch == 126)) {
-		p.ExpectOrdinary(p.Pos, 81)
+	if !p.ClassFast(&cls882) && !p.ClassSkip(&cls882, 81) {
 		goto L4
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x3
 	goto L5
@@ -30251,14 +30235,12 @@ func s236(p *pegort.TParser) (any, bool) {
 		x1    int
 		x2    []any
 		x3    int
-		ch    rune
-		size  int
-		ok    bool
 		x6    int
 		x7    int
 		x8    int
 		x10   rune
 		x11   bool
+		ok    bool
 		x14   int
 		x15   int
 		v41   any
@@ -30273,12 +30255,9 @@ func s236(p *pegort.TParser) (any, bool) {
 	x2 = p.NewVals(1)[:0]
 	x3 = p.Pos
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 61 || ch == 58 || ch == 43 || ch == 45 || ch == 42 || ch == 47 || ch == 37 || ch == 38 || ch == 124 || ch == 94 || ch == 60 || ch == 62)) {
-		p.ExpectOrdinary(p.Pos, 83)
+	if !p.ClassFast(&cls883) && !p.ClassSkip(&cls883, 83) {
 		goto L4
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x3
 	goto L5
@@ -32022,7 +32001,7 @@ func s243(p *pegort.TParser) (any, bool) {
 			goto L62
 		L67:
 			v90 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v66, x59)
-			v91 = p.AttachCaptures(v90, scope877, []any{k61}, x59, p.Pos)
+			v91 = p.AttachCaptures(v90, scope884, []any{k61}, x59, p.Pos)
 			x58++
 			p.PushKid(v91)
 			if p.Pos == x59 {
@@ -32149,13 +32128,10 @@ func s243(p *pegort.TParser) (any, bool) {
 			x152 = 0
 			for {
 				x153, x154 = p.Pos, len(p.Recovered)
-				ch, size, ok = p.NextOrdinary()
-				if !ok || (ch == 58 || ch == 42 || ch == 0 || ch == 65279 || ch == 65533) {
-					p.ExpectOrdinary(p.Pos, 108)
+				x156 = p.Pos
+				if !p.ClassFast(&cls885) && !p.ClassSkip(&cls885, 108) {
 					goto L155
 				}
-				x156 = p.Pos
-				p.Pos += size
 				v157 = p.NewMatchOrdinary(x156, p.Pos, p.Text(x156, p.Pos), true)
 				v158 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v157, x153)
 				x152++
@@ -32254,7 +32230,7 @@ func s243(p *pegort.TParser) (any, bool) {
 			goto L143
 		L148:
 			v182 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v147, x140)
-			v183 = p.AttachCaptures(v182, scope878, []any{k142}, x140, p.Pos)
+			v183 = p.AttachCaptures(v182, scope886, []any{k142}, x140, p.Pos)
 			x139++
 			p.PushKid(v183)
 			if p.Pos == x140 {
@@ -32551,7 +32527,7 @@ func s243(p *pegort.TParser) (any, bool) {
 			x201 = append(x201, v240)
 			v268 = p.NewNodeOrdinary("tuple", x200, p.Pos, x201)
 			v269 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v268, x196)
-			v270 = p.AttachCaptures(v269, scope879, []any{k198}, x196, p.Pos)
+			v270 = p.AttachCaptures(v269, scope887, []any{k198}, x196, p.Pos)
 			x195++
 			p.PushKid(v270)
 			if p.Pos == x196 {
@@ -32821,13 +32797,10 @@ func s243(p *pegort.TParser) (any, bool) {
 			x344 = 0
 			for {
 				x345, x346 = p.Pos, len(p.Recovered)
-				ch, size, ok = p.NextOrdinary()
-				if !ok || (ch == 58 || ch == 42 || ch == 0 || ch == 65279 || ch == 65533) {
-					p.ExpectOrdinary(p.Pos, 108)
+				x348 = p.Pos
+				if !p.ClassFast(&cls885) && !p.ClassSkip(&cls885, 108) {
 					goto L347
 				}
-				x348 = p.Pos
-				p.Pos += size
 				v349 = p.NewMatchOrdinary(x348, p.Pos, p.Text(x348, p.Pos), true)
 				v350 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v349, x345)
 				x344++
@@ -32926,7 +32899,7 @@ func s243(p *pegort.TParser) (any, bool) {
 			goto L335
 		L340:
 			v374 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v339, x332)
-			v375 = p.AttachCaptures(v374, scope880, []any{k334}, x332, p.Pos)
+			v375 = p.AttachCaptures(v374, scope888, []any{k334}, x332, p.Pos)
 			x331++
 			p.PushKid(v375)
 			if p.Pos == x332 {
@@ -33087,13 +33060,10 @@ func s243(p *pegort.TParser) (any, bool) {
 			x417 = 0
 			for {
 				x418, x419 = p.Pos, len(p.Recovered)
-				ch, size, ok = p.NextOrdinary()
-				if !ok || (ch == 58 || ch == 42 || ch == 0 || ch == 65279 || ch == 65533) {
-					p.ExpectOrdinary(p.Pos, 108)
+				x421 = p.Pos
+				if !p.ClassFast(&cls885) && !p.ClassSkip(&cls885, 108) {
 					goto L420
 				}
-				x421 = p.Pos
-				p.Pos += size
 				v422 = p.NewMatchOrdinary(x421, p.Pos, p.Text(x421, p.Pos), true)
 				v423 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v422, x418)
 				x417++
@@ -33192,7 +33162,7 @@ func s243(p *pegort.TParser) (any, bool) {
 			goto L408
 		L413:
 			v447 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v412, x405)
-			v448 = p.AttachCaptures(v447, scope881, []any{k407}, x405, p.Pos)
+			v448 = p.AttachCaptures(v447, scope889, []any{k407}, x405, p.Pos)
 			x404++
 			p.PushKid(v448)
 			if p.Pos == x405 {
@@ -33475,7 +33445,7 @@ func s243(p *pegort.TParser) (any, bool) {
 			goto L484
 		L489:
 			v523 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v488, x481)
-			v524 = p.AttachCaptures(v523, scope882, []any{k483}, x481, p.Pos)
+			v524 = p.AttachCaptures(v523, scope890, []any{k483}, x481, p.Pos)
 			x480++
 			p.PushKid(v524)
 			if p.Pos == x481 {
@@ -33527,7 +33497,7 @@ func s243(p *pegort.TParser) (any, bool) {
 		x12 = append(x12, v22)
 		v532 = p.NewNodeOrdinary("tuple", x11, p.Pos, x12)
 		v533 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v532, x4)
-		v534 = p.AttachCaptures(v533, scope883, []any{k6, k7, k8, k9}, x4, p.Pos)
+		v534 = p.AttachCaptures(v533, scope891, []any{k6, k7, k8, k9}, x4, p.Pos)
 		x3++
 		p.PushKid(v534)
 		if p.Pos == x4 {
@@ -33569,9 +33539,6 @@ func s244(p *pegort.TParser) (any, bool) {
 		x15   int
 		x16   []any
 		x17   int
-		ch    rune
-		size  int
-		ok    bool
 		x20   int
 		x21   int
 		x22   any
@@ -33587,6 +33554,9 @@ func s244(p *pegort.TParser) (any, bool) {
 		x33   bool
 		x36   int
 		x37   []any
+		ch    rune
+		size  int
+		ok    bool
 		x38   int
 		v39   any
 		x40   int
@@ -34334,12 +34304,9 @@ func s244(p *pegort.TParser) (any, bool) {
 		x16 = p.NewVals(1)[:0]
 		x17 = p.Pos
 		p.Silent++
-		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch == 32 || ch == 9 || ch == 13 || ch == 10 || ch == 47)) {
-			p.ExpectOrdinary(p.Pos, 114)
+		if !p.ClassFast(&cls892) && !p.ClassSkip(&cls892, 114) {
 			goto L18
 		}
-		p.Pos += size
 		p.Silent--
 		p.Pos = x17
 		goto L19
@@ -34468,13 +34435,10 @@ func s244(p *pegort.TParser) (any, bool) {
 			x89 = 0
 			for {
 				x90, x91 = p.Pos, len(p.Recovered)
-				ch, size, ok = p.NextOrdinary()
-				if !ok || (ch == 58 || ch == 10 || ch == 13 || ch == 0 || ch == 65279 || ch == 65533) {
-					p.ExpectOrdinary(p.Pos, 117)
+				x93 = p.Pos
+				if !p.ClassFast(&cls893) && !p.ClassSkip(&cls893, 117) {
 					goto L92
 				}
-				x93 = p.Pos
-				p.Pos += size
 				v94 = p.NewMatchOrdinary(x93, p.Pos, p.Text(x93, p.Pos), true)
 				v95 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v94, x90)
 				x89++
@@ -34595,7 +34559,7 @@ func s244(p *pegort.TParser) (any, bool) {
 			goto L80
 		L85:
 			v127 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v84, x77)
-			v128 = p.AttachCaptures(v127, scope884, []any{k79}, x77, p.Pos)
+			v128 = p.AttachCaptures(v127, scope894, []any{k79}, x77, p.Pos)
 			x76++
 			p.PushKid(v128)
 			if p.Pos == x77 {
@@ -34980,7 +34944,7 @@ func s244(p *pegort.TParser) (any, bool) {
 			x161 = append(x161, v231)
 			v248 = p.NewNodeOrdinary("tuple", x160, p.Pos, x161)
 			v249 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v248, x156)
-			v250 = p.AttachCaptures(v249, scope885, []any{k158}, x156, p.Pos)
+			v250 = p.AttachCaptures(v249, scope895, []any{k158}, x156, p.Pos)
 			x155++
 			p.PushKid(v250)
 			if p.Pos == x156 {
@@ -35250,13 +35214,10 @@ func s244(p *pegort.TParser) (any, bool) {
 			x324 = 0
 			for {
 				x325, x326 = p.Pos, len(p.Recovered)
-				ch, size, ok = p.NextOrdinary()
-				if !ok || (ch == 58 || ch == 10 || ch == 13 || ch == 0 || ch == 65279 || ch == 65533) {
-					p.ExpectOrdinary(p.Pos, 117)
+				x328 = p.Pos
+				if !p.ClassFast(&cls893) && !p.ClassSkip(&cls893, 117) {
 					goto L327
 				}
-				x328 = p.Pos
-				p.Pos += size
 				v329 = p.NewMatchOrdinary(x328, p.Pos, p.Text(x328, p.Pos), true)
 				v330 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v329, x325)
 				x324++
@@ -35377,7 +35338,7 @@ func s244(p *pegort.TParser) (any, bool) {
 			goto L315
 		L320:
 			v362 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v319, x312)
-			v363 = p.AttachCaptures(v362, scope886, []any{k314}, x312, p.Pos)
+			v363 = p.AttachCaptures(v362, scope896, []any{k314}, x312, p.Pos)
 			x311++
 			p.PushKid(v363)
 			if p.Pos == x312 {
@@ -35576,13 +35537,10 @@ func s244(p *pegort.TParser) (any, bool) {
 			x420 = 0
 			for {
 				x421, x422 = p.Pos, len(p.Recovered)
-				ch, size, ok = p.NextOrdinary()
-				if !ok || (ch == 58 || ch == 10 || ch == 13 || ch == 0 || ch == 65279 || ch == 65533) {
-					p.ExpectOrdinary(p.Pos, 117)
+				x424 = p.Pos
+				if !p.ClassFast(&cls893) && !p.ClassSkip(&cls893, 117) {
 					goto L423
 				}
-				x424 = p.Pos
-				p.Pos += size
 				v425 = p.NewMatchOrdinary(x424, p.Pos, p.Text(x424, p.Pos), true)
 				v426 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v425, x421)
 				x420++
@@ -35703,7 +35661,7 @@ func s244(p *pegort.TParser) (any, bool) {
 			goto L411
 		L416:
 			v458 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v415, x408)
-			v459 = p.AttachCaptures(v458, scope887, []any{k410}, x408, p.Pos)
+			v459 = p.AttachCaptures(v458, scope897, []any{k410}, x408, p.Pos)
 			x407++
 			p.PushKid(v459)
 			if p.Pos == x408 {
@@ -36000,7 +35958,7 @@ func s244(p *pegort.TParser) (any, bool) {
 			goto L512
 		L517:
 			v540 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v516, x509)
-			v541 = p.AttachCaptures(v540, scope888, []any{k511}, x509, p.Pos)
+			v541 = p.AttachCaptures(v540, scope898, []any{k511}, x509, p.Pos)
 			x508++
 			p.PushKid(v541)
 			if p.Pos == x509 {
@@ -36079,13 +36037,10 @@ func s244(p *pegort.TParser) (any, bool) {
 			x593 = 0
 			for {
 				x594, x595 = p.Pos, len(p.Recovered)
-				ch, size, ok = p.NextOrdinary()
-				if !ok || (ch == 58 || ch == 42 || ch == 0 || ch == 65279 || ch == 65533) {
-					p.ExpectOrdinary(p.Pos, 108)
+				x597 = p.Pos
+				if !p.ClassFast(&cls885) && !p.ClassSkip(&cls885, 108) {
 					goto L596
 				}
-				x597 = p.Pos
-				p.Pos += size
 				v598 = p.NewMatchOrdinary(x597, p.Pos, p.Text(x597, p.Pos), true)
 				v599 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v598, x594)
 				x593++
@@ -36184,7 +36139,7 @@ func s244(p *pegort.TParser) (any, bool) {
 			goto L584
 		L589:
 			v623 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v588, x581)
-			v624 = p.AttachCaptures(v623, scope889, []any{k583}, x581, p.Pos)
+			v624 = p.AttachCaptures(v623, scope899, []any{k583}, x581, p.Pos)
 			x580++
 			p.PushKid(v624)
 			if p.Pos == x581 {
@@ -36481,7 +36436,7 @@ func s244(p *pegort.TParser) (any, bool) {
 			x642 = append(x642, v681)
 			v709 = p.NewNodeOrdinary("tuple", x641, p.Pos, x642)
 			v710 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v709, x637)
-			v711 = p.AttachCaptures(v710, scope890, []any{k639}, x637, p.Pos)
+			v711 = p.AttachCaptures(v710, scope900, []any{k639}, x637, p.Pos)
 			x636++
 			p.PushKid(v711)
 			if p.Pos == x637 {
@@ -36751,13 +36706,10 @@ func s244(p *pegort.TParser) (any, bool) {
 			x785 = 0
 			for {
 				x786, x787 = p.Pos, len(p.Recovered)
-				ch, size, ok = p.NextOrdinary()
-				if !ok || (ch == 58 || ch == 42 || ch == 0 || ch == 65279 || ch == 65533) {
-					p.ExpectOrdinary(p.Pos, 108)
+				x789 = p.Pos
+				if !p.ClassFast(&cls885) && !p.ClassSkip(&cls885, 108) {
 					goto L788
 				}
-				x789 = p.Pos
-				p.Pos += size
 				v790 = p.NewMatchOrdinary(x789, p.Pos, p.Text(x789, p.Pos), true)
 				v791 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v790, x786)
 				x785++
@@ -36856,7 +36808,7 @@ func s244(p *pegort.TParser) (any, bool) {
 			goto L776
 		L781:
 			v815 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v780, x773)
-			v816 = p.AttachCaptures(v815, scope891, []any{k775}, x773, p.Pos)
+			v816 = p.AttachCaptures(v815, scope901, []any{k775}, x773, p.Pos)
 			x772++
 			p.PushKid(v816)
 			if p.Pos == x773 {
@@ -37017,13 +36969,10 @@ func s244(p *pegort.TParser) (any, bool) {
 			x858 = 0
 			for {
 				x859, x860 = p.Pos, len(p.Recovered)
-				ch, size, ok = p.NextOrdinary()
-				if !ok || (ch == 58 || ch == 42 || ch == 0 || ch == 65279 || ch == 65533) {
-					p.ExpectOrdinary(p.Pos, 108)
+				x862 = p.Pos
+				if !p.ClassFast(&cls885) && !p.ClassSkip(&cls885, 108) {
 					goto L861
 				}
-				x862 = p.Pos
-				p.Pos += size
 				v863 = p.NewMatchOrdinary(x862, p.Pos, p.Text(x862, p.Pos), true)
 				v864 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v863, x859)
 				x858++
@@ -37122,7 +37071,7 @@ func s244(p *pegort.TParser) (any, bool) {
 			goto L849
 		L854:
 			v888 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v853, x846)
-			v889 = p.AttachCaptures(v888, scope892, []any{k848}, x846, p.Pos)
+			v889 = p.AttachCaptures(v888, scope902, []any{k848}, x846, p.Pos)
 			x845++
 			p.PushKid(v889)
 			if p.Pos == x846 {
@@ -37405,7 +37354,7 @@ func s244(p *pegort.TParser) (any, bool) {
 			goto L925
 		L930:
 			v964 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v929, x922)
-			v965 = p.AttachCaptures(v964, scope893, []any{k924}, x922, p.Pos)
+			v965 = p.AttachCaptures(v964, scope903, []any{k924}, x922, p.Pos)
 			x921++
 			p.PushKid(v965)
 			if p.Pos == x922 {
@@ -37462,7 +37411,7 @@ func s244(p *pegort.TParser) (any, bool) {
 		x16 = append(x16, v30)
 		v973 = p.NewNodeOrdinary("tuple", x15, p.Pos, x16)
 		v974 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v973, x4)
-		v975 = p.AttachCaptures(v974, scope894, []any{k6, k7, k8, k9, k10, k11, k12, k13}, x4, p.Pos)
+		v975 = p.AttachCaptures(v974, scope904, []any{k6, k7, k8, k9, k10, k11, k12, k13}, x4, p.Pos)
 		x3++
 		p.PushKid(v975)
 		if p.Pos == x4 {
@@ -37952,7 +37901,7 @@ func i247(p *pegort.TParser) (any, bool) {
 	}
 	v7 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
 	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v7, start)
-	v = p.AttachCaptures(v, scope895, []any{k3}, start, p.Pos)
+	v = p.AttachCaptures(v, scope905, []any{k3}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -38349,9 +38298,6 @@ func v250(p *pegort.TParser) (any, bool) {
 		x14   int
 		x15   int
 		x16   int
-		ch    rune
-		size  int
-		ok    bool
 		x18   int
 		v19   any
 		v20   any
@@ -38361,6 +38307,7 @@ func v250(p *pegort.TParser) (any, bool) {
 		x26   int
 		x27   []any
 		x28   int
+		ok    bool
 		v29   any
 		x30   int
 		x31   int
@@ -38385,13 +38332,10 @@ func v250(p *pegort.TParser) (any, bool) {
 		x14 = 0
 		for {
 			x15, x16 = p.Pos, len(p.Recovered)
-			ch, size, ok = p.NextOrdinary()
-			if !ok || (ch == 58 || ch == 42 || ch == 0 || ch == 65279 || ch == 65533) {
-				p.ExpectOrdinary(p.Pos, 108)
+			x18 = p.Pos
+			if !p.ClassFast(&cls885) && !p.ClassSkip(&cls885, 108) {
 				goto L17
 			}
-			x18 = p.Pos
-			p.Pos += size
 			v19 = p.NewMatchOrdinary(x18, p.Pos, p.Text(x18, p.Pos), true)
 			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v19, x15)
 			x14++
@@ -38507,9 +38451,6 @@ func i250(p *pegort.TParser) (any, bool) {
 		x14   int
 		x15   int
 		x16   int
-		ch    rune
-		size  int
-		ok    bool
 		x18   int
 		v19   any
 		v20   any
@@ -38519,6 +38460,7 @@ func i250(p *pegort.TParser) (any, bool) {
 		x26   int
 		x27   []any
 		x28   int
+		ok    bool
 		v29   any
 		x30   int
 		x31   int
@@ -38543,13 +38485,10 @@ func i250(p *pegort.TParser) (any, bool) {
 		x14 = 0
 		for {
 			x15, x16 = p.Pos, len(p.Recovered)
-			ch, size, ok = p.NextOrdinary()
-			if !ok || (ch == 58 || ch == 42 || ch == 0 || ch == 65279 || ch == 65533) {
-				p.ExpectOrdinary(p.Pos, 108)
+			x18 = p.Pos
+			if !p.ClassFast(&cls885) && !p.ClassSkip(&cls885, 108) {
 				goto L17
 			}
-			x18 = p.Pos
-			p.Pos += size
 			v19 = p.NewMatchOrdinary(x18, p.Pos, p.Text(x18, p.Pos), true)
 			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v19, x15)
 			x14++
@@ -38895,7 +38834,7 @@ func i252(p *pegort.TParser) (any, bool) {
 	}
 	v17 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
 	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v17, start)
-	v = p.AttachCaptures(v, scope896, []any{k13}, start, p.Pos)
+	v = p.AttachCaptures(v, scope906, []any{k13}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -39041,7 +38980,7 @@ L22:
 	}
 	v24 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
 	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v24, start)
-	v = p.AttachCaptures(v, scope897, []any{k16}, start, p.Pos)
+	v = p.AttachCaptures(v, scope907, []any{k16}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -39272,9 +39211,6 @@ func s256(p *pegort.TParser) (any, bool) {
 		x7    int
 		x8    []any
 		x9    int
-		ch    rune
-		size  int
-		ok    bool
 		x12   int
 		x13   int
 		v14   any
@@ -39282,6 +39218,9 @@ func s256(p *pegort.TParser) (any, bool) {
 		x17   bool
 		x20   int
 		x21   []any
+		ch    rune
+		size  int
+		ok    bool
 		x22   int
 		v23   any
 		x24   int
@@ -39319,12 +39258,9 @@ func s256(p *pegort.TParser) (any, bool) {
 		x8 = p.NewVals(1)[:0]
 		x9 = p.Pos
 		p.Silent++
-		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95 || ch >= 128 && ch <= 1114111)) {
-			p.ExpectOrdinary(p.Pos, 122)
+		if !p.ClassFast(&cls908) && !p.ClassSkip(&cls908, 122) {
 			goto L10
 		}
-		p.Pos += size
 		p.Silent--
 		p.Pos = x9
 		goto L11
@@ -39454,9 +39390,6 @@ func s257(p *pegort.TParser) (any, bool) {
 		start int
 		v     any
 		rec   int
-		ch    rune
-		size  int
-		ok    bool
 		x1    int
 		v2    any
 	)
@@ -39465,13 +39398,10 @@ func s257(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95 || ch >= 128 && ch <= 1114111)) {
-		p.ExpectOrdinary(p.Pos, 122)
+	x1 = p.Pos
+	if !p.ClassFast(&cls908) && !p.ClassSkip(&cls908, 122) {
 		goto fail
 	}
-	x1 = p.Pos
-	p.Pos += size
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v2, start)
 	if n := pegort.AsTval(v); n != nil {
@@ -42930,12 +42860,9 @@ L4:
 
 	x45, x46 = p.Pos, len(p.Recovered)
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch == 95 || ch == 46)) {
-		p.ExpectOrdinary(p.Pos, 134)
+	if !p.ClassFast(&cls909) && !p.ClassSkip(&cls909, 134) {
 		goto L47
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x45
 	p.Recovered = p.Recovered[:x46]
@@ -45345,8 +45272,6 @@ func s299(p *pegort.TParser) (any, bool) {
 		v7    any
 		x9    rune
 		x10   bool
-		ch    rune
-		size  int
 		x13   int
 		v14   any
 		v16   any
@@ -45373,13 +45298,10 @@ func s299(p *pegort.TParser) (any, bool) {
 		p.ExpectOrdinary(p.Pos, 146)
 		goto L11
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 97 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116 || ch == 118 || ch == 92 || ch == 39)) {
-		p.ExpectOrdinary(p.Pos, 146)
+	x13 = p.Pos
+	if !p.ClassFast(&cls910) && !p.ClassSkip(&cls910, 146) {
 		goto L12
 	}
-	x13 = p.Pos
-	p.Pos += size
 	v14 = p.NewMatchOrdinary(x13, p.Pos, p.Text(x13, p.Pos), true)
 	v7 = v14
 	goto L8
@@ -45429,8 +45351,6 @@ func s300(p *pegort.TParser) (any, bool) {
 		v7    any
 		x9    rune
 		x10   bool
-		ch    rune
-		size  int
 		x13   int
 		v14   any
 		v16   any
@@ -45457,13 +45377,10 @@ func s300(p *pegort.TParser) (any, bool) {
 		p.ExpectOrdinary(p.Pos, 147)
 		goto L11
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 97 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116 || ch == 118 || ch == 92 || ch == 34)) {
-		p.ExpectOrdinary(p.Pos, 147)
+	x13 = p.Pos
+	if !p.ClassFast(&cls911) && !p.ClassSkip(&cls911, 147) {
 		goto L12
 	}
-	x13 = p.Pos
-	p.Pos += size
 	v14 = p.NewMatchOrdinary(x13, p.Pos, p.Text(x13, p.Pos), true)
 	v7 = v14
 	goto L8
@@ -45680,18 +45597,9 @@ L19:
 	x32 = append(x32, v34)
 	x35, x36 = p.Pos, len(p.Recovered)
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 100 || ch == 68) {
-		p.ExpectOrdinary(p.Pos, 151)
+	if !p.ClassesSkip(steps914) {
 		goto L37
 	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 56 || ch == 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
-		p.ExpectOrdinary(p.Pos, 152)
-		goto L37
-	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x35
 	p.Recovered = p.Recovered[:x36]
@@ -45769,18 +45677,9 @@ L29:
 	} else if _, ok = p.Parser.MatchLiteral(lit346, "0", 111, false); !ok {
 		goto L66
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 100 || ch == 68) {
-		p.ExpectOrdinary(p.Pos, 151)
+	if !p.ClassesSkip(steps914) {
 		goto L66
 	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 56 || ch == 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
-		p.ExpectOrdinary(p.Pos, 152)
-		goto L66
-	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x64
 	p.Recovered = p.Recovered[:x65]
@@ -46055,18 +45954,9 @@ L19:
 	x32 = append(x32, v34)
 	x35, x36 = p.Pos, len(p.Recovered)
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 100 || ch == 68) {
-		p.ExpectOrdinary(p.Pos, 151)
+	if !p.ClassesSkip(steps914) {
 		goto L37
 	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 56 || ch == 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
-		p.ExpectOrdinary(p.Pos, 152)
-		goto L37
-	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x35
 	p.Recovered = p.Recovered[:x36]
@@ -46144,18 +46034,9 @@ L29:
 	} else if _, ok = p.Parser.MatchLiteral(lit346, "0", 111, false); !ok {
 		goto L66
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 100 || ch == 68) {
-		p.ExpectOrdinary(p.Pos, 151)
+	if !p.ClassesSkip(steps914) {
 		goto L66
 	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 56 || ch == 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
-		p.ExpectOrdinary(p.Pos, 152)
-		goto L66
-	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x64
 	p.Recovered = p.Recovered[:x65]
@@ -46301,7 +46182,6 @@ func s303(p *pegort.TParser) (any, bool) {
 		x1    int
 		x2    []any
 		x3    int
-		ch    rune
 		size  int
 		ok    bool
 		x6    int
@@ -46317,12 +46197,9 @@ func s303(p *pegort.TParser) (any, bool) {
 	x2 = p.NewVals(1)[:0]
 	x3 = p.Pos
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 170 || ch == 181 || ch == 186 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 705 || ch >= 710 && ch <= 721 || ch >= 736 && ch <= 740 || ch == 748 || ch == 750 || ch >= 880 && ch <= 884 || ch >= 886 && ch <= 887 || ch >= 890 && ch <= 893 || ch == 895 || ch == 902 || ch >= 904 && ch <= 906 || ch == 908 || ch >= 910 && ch <= 929 || ch >= 931 && ch <= 1013 || ch >= 1015 && ch <= 1153 || ch >= 1162 && ch <= 1327 || ch >= 1329 && ch <= 1366 || ch == 1369 || ch >= 1376 && ch <= 1416 || ch >= 1488 && ch <= 1514 || ch >= 1519 && ch <= 1522 || ch >= 1568 && ch <= 1610 || ch >= 1646 && ch <= 1647 || ch >= 1649 && ch <= 1747 || ch == 1749 || ch >= 1765 && ch <= 1766 || ch >= 1774 && ch <= 1775 || ch >= 1786 && ch <= 1788 || ch == 1791 || ch == 1808 || ch >= 1810 && ch <= 1839 || ch >= 1869 && ch <= 1957 || ch == 1969 || ch >= 1994 && ch <= 2026 || ch >= 2036 && ch <= 2037 || ch == 2042 || ch >= 2048 && ch <= 2069 || ch == 2074 || ch == 2084 || ch == 2088 || ch >= 2112 && ch <= 2136 || ch >= 2144 && ch <= 2154 || ch >= 2160 && ch <= 2183 || ch >= 2185 && ch <= 2191 || ch >= 2208 && ch <= 2249 || ch >= 2308 && ch <= 2361 || ch == 2365 || ch == 2384 || ch >= 2392 && ch <= 2401 || ch >= 2417 && ch <= 2432 || ch >= 2437 && ch <= 2444 || ch >= 2447 && ch <= 2448 || ch >= 2451 && ch <= 2472 || ch >= 2474 && ch <= 2480 || ch == 2482 || ch >= 2486 && ch <= 2489 || ch == 2493 || ch == 2510 || ch >= 2524 && ch <= 2525 || ch >= 2527 && ch <= 2529 || ch >= 2544 && ch <= 2545 || ch == 2556 || ch >= 2565 && ch <= 2570 || ch >= 2575 && ch <= 2576 || ch >= 2579 && ch <= 2600 || ch >= 2602 && ch <= 2608 || ch >= 2610 && ch <= 2611 || ch >= 2613 && ch <= 2614 || ch >= 2616 && ch <= 2617 || ch >= 2649 && ch <= 2652 || ch == 2654 || ch >= 2674 && ch <= 2676 || ch >= 2693 && ch <= 2701 || ch >= 2703 && ch <= 2705 || ch >= 2707 && ch <= 2728 || ch >= 2730 && ch <= 2736 || ch >= 2738 && ch <= 2739 || ch >= 2741 && ch <= 2745 || ch == 2749 || ch == 2768 || ch >= 2784 && ch <= 2785 || ch == 2809 || ch >= 2821 && ch <= 2828 || ch >= 2831 && ch <= 2832 || ch >= 2835 && ch <= 2856 || ch >= 2858 && ch <= 2864 || ch >= 2866 && ch <= 2867 || ch >= 2869 && ch <= 2873 || ch == 2877 || ch >= 2908 && ch <= 2909 || ch >= 2911 && ch <= 2913 || ch == 2929 || ch == 2947 || ch >= 2949 && ch <= 2954 || ch >= 2958 && ch <= 2960 || ch >= 2962 && ch <= 2965 || ch >= 2969 && ch <= 2970 || ch == 2972 || ch >= 2974 && ch <= 2975 || ch >= 2979 && ch <= 2980 || ch >= 2984 && ch <= 2986 || ch >= 2990 && ch <= 3001 || ch == 3024 || ch >= 3077 && ch <= 3084 || ch >= 3086 && ch <= 3088 || ch >= 3090 && ch <= 3112 || ch >= 3114 && ch <= 3129 || ch == 3133 || ch >= 3160 && ch <= 3162 || ch >= 3164 && ch <= 3165 || ch >= 3168 && ch <= 3169 || ch == 3200 || ch >= 3205 && ch <= 3212 || ch >= 3214 && ch <= 3216 || ch >= 3218 && ch <= 3240 || ch >= 3242 && ch <= 3251 || ch >= 3253 && ch <= 3257 || ch == 3261 || ch >= 3292 && ch <= 3294 || ch >= 3296 && ch <= 3297 || ch >= 3313 && ch <= 3314 || ch >= 3332 && ch <= 3340 || ch >= 3342 && ch <= 3344 || ch >= 3346 && ch <= 3386 || ch == 3389 || ch == 3406 || ch >= 3412 && ch <= 3414 || ch >= 3423 && ch <= 3425 || ch >= 3450 && ch <= 3455 || ch >= 3461 && ch <= 3478 || ch >= 3482 && ch <= 3505 || ch >= 3507 && ch <= 3515 || ch == 3517 || ch >= 3520 && ch <= 3526 || ch >= 3585 && ch <= 3632 || ch >= 3634 && ch <= 3635 || ch >= 3648 && ch <= 3654 || ch >= 3713 && ch <= 3714 || ch == 3716 || ch >= 3718 && ch <= 3722 || ch >= 3724 && ch <= 3747 || ch == 3749 || ch >= 3751 && ch <= 3760 || ch >= 3762 && ch <= 3763 || ch == 3773 || ch >= 3776 && ch <= 3780 || ch == 3782 || ch >= 3804 && ch <= 3807 || ch == 3840 || ch >= 3904 && ch <= 3911 || ch >= 3913 && ch <= 3948 || ch >= 3976 && ch <= 3980 || ch >= 4096 && ch <= 4138 || ch == 4159 || ch >= 4176 && ch <= 4181 || ch >= 4186 && ch <= 4189 || ch == 4193 || ch >= 4197 && ch <= 4198 || ch >= 4206 && ch <= 4208 || ch >= 4213 && ch <= 4225 || ch == 4238 || ch >= 4256 && ch <= 4293 || ch == 4295 || ch == 4301 || ch >= 4304 && ch <= 4346 || ch >= 4348 && ch <= 4680 || ch >= 4682 && ch <= 4685 || ch >= 4688 && ch <= 4694 || ch == 4696 || ch >= 4698 && ch <= 4701 || ch >= 4704 && ch <= 4744 || ch >= 4746 && ch <= 4749 || ch >= 4752 && ch <= 4784 || ch >= 4786 && ch <= 4789 || ch >= 4792 && ch <= 4798 || ch == 4800 || ch >= 4802 && ch <= 4805 || ch >= 4808 && ch <= 4822 || ch >= 4824 && ch <= 4880 || ch >= 4882 && ch <= 4885 || ch >= 4888 && ch <= 4954 || ch >= 4992 && ch <= 5007 || ch >= 5024 && ch <= 5109 || ch >= 5112 && ch <= 5117 || ch >= 5121 && ch <= 5740 || ch >= 5743 && ch <= 5759 || ch >= 5761 && ch <= 5786 || ch >= 5792 && ch <= 5866 || ch >= 5873 && ch <= 5880 || ch >= 5888 && ch <= 5905 || ch >= 5919 && ch <= 5937 || ch >= 5952 && ch <= 5969 || ch >= 5984 && ch <= 5996 || ch >= 5998 && ch <= 6000 || ch >= 6016 && ch <= 6067 || ch == 6103 || ch == 6108 || ch >= 6176 && ch <= 6264 || ch >= 6272 && ch <= 6276 || ch >= 6279 && ch <= 6312 || ch == 6314 || ch >= 6320 && ch <= 6389 || ch >= 6400 && ch <= 6430 || ch >= 6480 && ch <= 6509 || ch >= 6512 && ch <= 6516 || ch >= 6528 && ch <= 6571 || ch >= 6576 && ch <= 6601 || ch >= 6656 && ch <= 6678 || ch >= 6688 && ch <= 6740 || ch == 6823 || ch >= 6917 && ch <= 6963 || ch >= 6981 && ch <= 6988 || ch >= 7043 && ch <= 7072 || ch >= 7086 && ch <= 7087 || ch >= 7098 && ch <= 7141 || ch >= 7168 && ch <= 7203 || ch >= 7245 && ch <= 7247 || ch >= 7258 && ch <= 7293 || ch >= 7296 && ch <= 7306 || ch >= 7312 && ch <= 7354 || ch >= 7357 && ch <= 7359 || ch >= 7401 && ch <= 7404 || ch >= 7406 && ch <= 7411 || ch >= 7413 && ch <= 7414 || ch == 7418 || ch >= 7424 && ch <= 7615 || ch >= 7680 && ch <= 7957 || ch >= 7960 && ch <= 7965 || ch >= 7968 && ch <= 8005 || ch >= 8008 && ch <= 8013 || ch >= 8016 && ch <= 8023 || ch == 8025 || ch == 8027 || ch == 8029 || ch >= 8031 && ch <= 8061 || ch >= 8064 && ch <= 8116 || ch >= 8118 && ch <= 8124 || ch == 8126 || ch >= 8130 && ch <= 8132 || ch >= 8134 && ch <= 8140 || ch >= 8144 && ch <= 8147 || ch >= 8150 && ch <= 8155 || ch >= 8160 && ch <= 8172 || ch >= 8178 && ch <= 8180 || ch >= 8182 && ch <= 8188 || ch == 8305 || ch == 8319 || ch >= 8336 && ch <= 8348 || ch == 8450 || ch == 8455 || ch >= 8458 && ch <= 8467 || ch == 8469 || ch >= 8473 && ch <= 8477 || ch == 8484 || ch == 8486 || ch == 8488 || ch >= 8490 && ch <= 8493 || ch >= 8495 && ch <= 8505 || ch >= 8508 && ch <= 8511 || ch >= 8517 && ch <= 8521 || ch == 8526 || ch >= 8579 && ch <= 8580 || ch >= 11264 && ch <= 11492 || ch >= 11499 && ch <= 11502 || ch >= 11506 && ch <= 11507 || ch >= 11520 && ch <= 11557 || ch == 11559 || ch == 11565 || ch >= 11568 && ch <= 11623 || ch == 11631 || ch >= 11648 && ch <= 11670 || ch >= 11680 && ch <= 11686 || ch >= 11688 && ch <= 11694 || ch >= 11696 && ch <= 11702 || ch >= 11704 && ch <= 11710 || ch >= 11712 && ch <= 11718 || ch >= 11720 && ch <= 11726 || ch >= 11728 && ch <= 11734 || ch >= 11736 && ch <= 11742 || ch == 11823 || ch >= 12293 && ch <= 12294 || ch >= 12337 && ch <= 12341 || ch >= 12347 && ch <= 12348 || ch >= 12353 && ch <= 12438 || ch >= 12445 && ch <= 12447 || ch >= 12449 && ch <= 12538 || ch >= 12540 && ch <= 12543 || ch >= 12549 && ch <= 12591 || ch >= 12593 && ch <= 12686 || ch >= 12704 && ch <= 12735 || ch >= 12784 && ch <= 12799 || ch >= 13312 && ch <= 19903 || ch >= 19968 && ch <= 42124 || ch >= 42192 && ch <= 42237 || ch >= 42240 && ch <= 42508 || ch >= 42512 && ch <= 42527 || ch >= 42538 && ch <= 42539 || ch >= 42560 && ch <= 42606 || ch >= 42623 && ch <= 42653 || ch >= 42656 && ch <= 42725 || ch >= 42775 && ch <= 42783 || ch >= 42786 && ch <= 42888 || ch >= 42891 && ch <= 42972 || ch >= 42993 && ch <= 43009 || ch >= 43011 && ch <= 43013 || ch >= 43015 && ch <= 43018 || ch >= 43020 && ch <= 43042 || ch >= 43072 && ch <= 43123 || ch >= 43138 && ch <= 43187 || ch >= 43250 && ch <= 43255 || ch == 43259 || ch >= 43261 && ch <= 43262 || ch >= 43274 && ch <= 43301 || ch >= 43312 && ch <= 43334 || ch >= 43360 && ch <= 43388 || ch >= 43396 && ch <= 43442 || ch == 43471 || ch >= 43488 && ch <= 43492 || ch >= 43494 && ch <= 43503 || ch >= 43514 && ch <= 43518 || ch >= 43520 && ch <= 43560 || ch >= 43584 && ch <= 43586 || ch >= 43588 && ch <= 43595 || ch >= 43616 && ch <= 43638 || ch == 43642 || ch >= 43646 && ch <= 43695 || ch == 43697 || ch >= 43701 && ch <= 43702 || ch >= 43705 && ch <= 43709 || ch == 43712 || ch == 43714 || ch >= 43739 && ch <= 43741 || ch >= 43744 && ch <= 43754 || ch >= 43762 && ch <= 43764 || ch >= 43777 && ch <= 43782 || ch >= 43785 && ch <= 43790 || ch >= 43793 && ch <= 43798 || ch >= 43808 && ch <= 43814 || ch >= 43816 && ch <= 43822 || ch >= 43824 && ch <= 43866 || ch >= 43868 && ch <= 43881 || ch >= 43888 && ch <= 44002 || ch >= 44032 && ch <= 55203 || ch >= 55216 && ch <= 55238 || ch >= 55243 && ch <= 55291 || ch >= 63744 && ch <= 64109 || ch >= 64112 && ch <= 64217 || ch >= 64256 && ch <= 64262 || ch >= 64275 && ch <= 64279 || ch == 64285 || ch >= 64287 && ch <= 64296 || ch >= 64298 && ch <= 64310 || ch >= 64312 && ch <= 64316 || ch == 64318 || ch >= 64320 && ch <= 64321 || ch >= 64323 && ch <= 64324 || ch >= 64326 && ch <= 64433 || ch >= 64467 && ch <= 64829 || ch >= 64848 && ch <= 64911 || ch >= 64914 && ch <= 64967 || ch >= 65008 && ch <= 65019 || ch >= 65136 && ch <= 65140 || ch >= 65142 && ch <= 65276 || ch >= 65313 && ch <= 65338 || ch >= 65345 && ch <= 65370 || ch >= 65382 && ch <= 65470 || ch >= 65474 && ch <= 65479 || ch >= 65482 && ch <= 65487 || ch >= 65490 && ch <= 65495 || ch >= 65498 && ch <= 65500 || ch >= 65536 && ch <= 65547 || ch >= 65549 && ch <= 65574 || ch >= 65576 && ch <= 65594 || ch >= 65596 && ch <= 65597 || ch >= 65599 && ch <= 65613 || ch >= 65616 && ch <= 65629 || ch >= 65664 && ch <= 65786 || ch >= 66176 && ch <= 66204 || ch >= 66208 && ch <= 66256 || ch >= 66304 && ch <= 66335 || ch >= 66349 && ch <= 66368 || ch >= 66370 && ch <= 66377 || ch >= 66384 && ch <= 66421 || ch >= 66432 && ch <= 66461 || ch >= 66464 && ch <= 66499 || ch >= 66504 && ch <= 66511 || ch >= 66560 && ch <= 66717 || ch >= 66736 && ch <= 66771 || ch >= 66776 && ch <= 66811 || ch >= 66816 && ch <= 66855 || ch >= 66864 && ch <= 66915 || ch >= 66928 && ch <= 66938 || ch >= 66940 && ch <= 66954 || ch >= 66956 && ch <= 66962 || ch >= 66964 && ch <= 66965 || ch >= 66967 && ch <= 66977 || ch >= 66979 && ch <= 66993 || ch >= 66995 && ch <= 67001 || ch >= 67003 && ch <= 67004 || ch >= 67008 && ch <= 67059 || ch >= 67072 && ch <= 67382 || ch >= 67392 && ch <= 67413 || ch >= 67424 && ch <= 67431 || ch >= 67456 && ch <= 67461 || ch >= 67463 && ch <= 67504 || ch >= 67506 && ch <= 67514 || ch >= 67584 && ch <= 67589 || ch == 67592 || ch >= 67594 && ch <= 67637 || ch >= 67639 && ch <= 67640 || ch == 67644 || ch >= 67647 && ch <= 67669 || ch >= 67680 && ch <= 67702 || ch >= 67712 && ch <= 67742 || ch >= 67808 && ch <= 67826 || ch >= 67828 && ch <= 67829 || ch >= 67840 && ch <= 67861 || ch >= 67872 && ch <= 67897 || ch >= 67904 && ch <= 67929 || ch >= 67968 && ch <= 68023 || ch >= 68030 && ch <= 68031 || ch == 68096 || ch >= 68112 && ch <= 68115 || ch >= 68117 && ch <= 68119 || ch >= 68121 && ch <= 68149 || ch >= 68192 && ch <= 68220 || ch >= 68224 && ch <= 68252 || ch >= 68288 && ch <= 68295 || ch >= 68297 && ch <= 68324 || ch >= 68352 && ch <= 68405 || ch >= 68416 && ch <= 68437 || ch >= 68448 && ch <= 68466 || ch >= 68480 && ch <= 68497 || ch >= 68608 && ch <= 68680 || ch >= 68736 && ch <= 68786 || ch >= 68800 && ch <= 68850 || ch >= 68864 && ch <= 68899 || ch >= 68938 && ch <= 68965 || ch >= 68975 && ch <= 68997 || ch >= 69248 && ch <= 69289 || ch >= 69296 && ch <= 69297 || ch >= 69314 && ch <= 69319 || ch >= 69376 && ch <= 69404 || ch == 69415 || ch >= 69424 && ch <= 69445 || ch >= 69488 && ch <= 69505 || ch >= 69552 && ch <= 69572 || ch >= 69600 && ch <= 69622 || ch >= 69635 && ch <= 69687 || ch >= 69745 && ch <= 69746 || ch == 69749 || ch >= 69763 && ch <= 69807 || ch >= 69840 && ch <= 69864 || ch >= 69891 && ch <= 69926 || ch == 69956 || ch == 69959 || ch >= 69968 && ch <= 70002 || ch == 70006 || ch >= 70019 && ch <= 70066 || ch >= 70081 && ch <= 70084 || ch == 70106 || ch == 70108 || ch >= 70144 && ch <= 70161 || ch >= 70163 && ch <= 70187 || ch >= 70207 && ch <= 70208 || ch >= 70272 && ch <= 70278 || ch == 70280 || ch >= 70282 && ch <= 70285 || ch >= 70287 && ch <= 70301 || ch >= 70303 && ch <= 70312 || ch >= 70320 && ch <= 70366 || ch >= 70405 && ch <= 70412 || ch >= 70415 && ch <= 70416 || ch >= 70419 && ch <= 70440 || ch >= 70442 && ch <= 70448 || ch >= 70450 && ch <= 70451 || ch >= 70453 && ch <= 70457 || ch == 70461 || ch == 70480 || ch >= 70493 && ch <= 70497 || ch >= 70528 && ch <= 70537 || ch == 70539 || ch == 70542 || ch >= 70544 && ch <= 70581 || ch == 70583 || ch == 70609 || ch == 70611 || ch >= 70656 && ch <= 70708 || ch >= 70727 && ch <= 70730 || ch >= 70751 && ch <= 70753 || ch >= 70784 && ch <= 70831 || ch >= 70852 && ch <= 70853 || ch == 70855 || ch >= 71040 && ch <= 71086 || ch >= 71128 && ch <= 71131 || ch >= 71168 && ch <= 71215 || ch == 71236 || ch >= 71296 && ch <= 71338 || ch == 71352 || ch >= 71424 && ch <= 71450 || ch >= 71488 && ch <= 71494 || ch >= 71680 && ch <= 71723 || ch >= 71840 && ch <= 71903 || ch >= 71935 && ch <= 71942 || ch == 71945 || ch >= 71948 && ch <= 71955 || ch >= 71957 && ch <= 71958 || ch >= 71960 && ch <= 71983 || ch == 71999 || ch == 72001 || ch >= 72096 && ch <= 72103 || ch >= 72106 && ch <= 72144 || ch == 72161 || ch == 72163 || ch == 72192 || ch >= 72203 && ch <= 72242 || ch == 72250 || ch == 72272 || ch >= 72284 && ch <= 72329 || ch == 72349 || ch >= 72368 && ch <= 72440 || ch >= 72640 && ch <= 72672 || ch >= 72704 && ch <= 72712 || ch >= 72714 && ch <= 72750 || ch == 72768 || ch >= 72818 && ch <= 72847 || ch >= 72960 && ch <= 72966 || ch >= 72968 && ch <= 72969 || ch >= 72971 && ch <= 73008 || ch == 73030 || ch >= 73056 && ch <= 73061 || ch >= 73063 && ch <= 73064 || ch >= 73066 && ch <= 73097 || ch == 73112 || ch >= 73136 && ch <= 73179 || ch >= 73440 && ch <= 73458 || ch == 73474 || ch >= 73476 && ch <= 73488 || ch >= 73490 && ch <= 73523 || ch == 73648 || ch >= 73728 && ch <= 74649 || ch >= 74880 && ch <= 75075 || ch >= 77712 && ch <= 77808 || ch >= 77824 && ch <= 78895 || ch >= 78913 && ch <= 78918 || ch >= 78944 && ch <= 82938 || ch >= 82944 && ch <= 83526 || ch >= 90368 && ch <= 90397 || ch >= 92160 && ch <= 92728 || ch >= 92736 && ch <= 92766 || ch >= 92784 && ch <= 92862 || ch >= 92880 && ch <= 92909 || ch >= 92928 && ch <= 92975 || ch >= 92992 && ch <= 92995 || ch >= 93027 && ch <= 93047 || ch >= 93053 && ch <= 93071 || ch >= 93504 && ch <= 93548 || ch >= 93760 && ch <= 93823 || ch >= 93856 && ch <= 93880 || ch >= 93883 && ch <= 93907 || ch >= 93952 && ch <= 94026 || ch == 94032 || ch >= 94099 && ch <= 94111 || ch >= 94176 && ch <= 94177 || ch == 94179 || ch >= 94194 && ch <= 94195 || ch >= 94208 && ch <= 101589 || ch >= 101631 && ch <= 101662 || ch >= 101760 && ch <= 101874 || ch >= 110576 && ch <= 110579 || ch >= 110581 && ch <= 110587 || ch >= 110589 && ch <= 110590 || ch >= 110592 && ch <= 110882 || ch == 110898 || ch >= 110928 && ch <= 110930 || ch == 110933 || ch >= 110948 && ch <= 110951 || ch >= 110960 && ch <= 111355 || ch >= 113664 && ch <= 113770 || ch >= 113776 && ch <= 113788 || ch >= 113792 && ch <= 113800 || ch >= 113808 && ch <= 113817 || ch >= 119808 && ch <= 119892 || ch >= 119894 && ch <= 119964 || ch >= 119966 && ch <= 119967 || ch == 119970 || ch >= 119973 && ch <= 119974 || ch >= 119977 && ch <= 119980 || ch >= 119982 && ch <= 119993 || ch == 119995 || ch >= 119997 && ch <= 120003 || ch >= 120005 && ch <= 120069 || ch >= 120071 && ch <= 120074 || ch >= 120077 && ch <= 120084 || ch >= 120086 && ch <= 120092 || ch >= 120094 && ch <= 120121 || ch >= 120123 && ch <= 120126 || ch >= 120128 && ch <= 120132 || ch == 120134 || ch >= 120138 && ch <= 120144 || ch >= 120146 && ch <= 120485 || ch >= 120488 && ch <= 120512 || ch >= 120514 && ch <= 120538 || ch >= 120540 && ch <= 120570 || ch >= 120572 && ch <= 120596 || ch >= 120598 && ch <= 120628 || ch >= 120630 && ch <= 120654 || ch >= 120656 && ch <= 120686 || ch >= 120688 && ch <= 120712 || ch >= 120714 && ch <= 120744 || ch >= 120746 && ch <= 120770 || ch >= 120772 && ch <= 120779 || ch >= 122624 && ch <= 122654 || ch >= 122661 && ch <= 122666 || ch >= 122928 && ch <= 122989 || ch >= 123136 && ch <= 123180 || ch >= 123191 && ch <= 123197 || ch == 123214 || ch >= 123536 && ch <= 123565 || ch >= 123584 && ch <= 123627 || ch >= 124112 && ch <= 124139 || ch >= 124368 && ch <= 124397 || ch == 124400 || ch >= 124608 && ch <= 124638 || ch >= 124640 && ch <= 124642 || ch >= 124644 && ch <= 124645 || ch >= 124647 && ch <= 124653 || ch >= 124656 && ch <= 124660 || ch >= 124670 && ch <= 124671 || ch >= 124896 && ch <= 124902 || ch >= 124904 && ch <= 124907 || ch >= 124909 && ch <= 124910 || ch >= 124912 && ch <= 124926 || ch >= 124928 && ch <= 125124 || ch >= 125184 && ch <= 125251 || ch == 125259 || ch >= 126464 && ch <= 126467 || ch >= 126469 && ch <= 126495 || ch >= 126497 && ch <= 126498 || ch == 126500 || ch == 126503 || ch >= 126505 && ch <= 126514 || ch >= 126516 && ch <= 126519 || ch == 126521 || ch == 126523 || ch == 126530 || ch == 126535 || ch == 126537 || ch == 126539 || ch >= 126541 && ch <= 126543 || ch >= 126545 && ch <= 126546 || ch == 126548 || ch == 126551 || ch == 126553 || ch == 126555 || ch == 126557 || ch == 126559 || ch >= 126561 && ch <= 126562 || ch == 126564 || ch >= 126567 && ch <= 126570 || ch >= 126572 && ch <= 126578 || ch >= 126580 && ch <= 126583 || ch >= 126585 && ch <= 126588 || ch == 126590 || ch >= 126592 && ch <= 126601 || ch >= 126603 && ch <= 126619 || ch >= 126625 && ch <= 126627 || ch >= 126629 && ch <= 126633 || ch >= 126635 && ch <= 126651 || ch >= 131072 && ch <= 173791 || ch >= 173824 && ch <= 178205 || ch >= 178208 && ch <= 183981 || ch >= 183984 && ch <= 191456 || ch >= 191472 && ch <= 192093 || ch >= 194560 && ch <= 195101 || ch >= 196608 && ch <= 201546 || ch >= 201552 && ch <= 210041)) {
-		p.ExpectOrdinary(p.Pos, 156)
+	if !p.ClassFast(&cls915) && !p.ClassSkip(&cls915, 156) {
 		goto L4
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x3
 	goto L5
@@ -46364,7 +46241,6 @@ func s304(p *pegort.TParser) (any, bool) {
 		x1    int
 		x2    []any
 		x3    int
-		ch    rune
 		size  int
 		ok    bool
 		x6    int
@@ -46380,12 +46256,9 @@ func s304(p *pegort.TParser) (any, bool) {
 	x2 = p.NewVals(1)[:0]
 	x3 = p.Pos
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch >= 1632 && ch <= 1641 || ch >= 1776 && ch <= 1785 || ch >= 1984 && ch <= 1993 || ch >= 2406 && ch <= 2415 || ch >= 2534 && ch <= 2543 || ch >= 2662 && ch <= 2671 || ch >= 2790 && ch <= 2799 || ch >= 2918 && ch <= 2927 || ch >= 3046 && ch <= 3055 || ch >= 3174 && ch <= 3183 || ch >= 3302 && ch <= 3311 || ch >= 3430 && ch <= 3439 || ch >= 3558 && ch <= 3567 || ch >= 3664 && ch <= 3673 || ch >= 3792 && ch <= 3801 || ch >= 3872 && ch <= 3881 || ch >= 4160 && ch <= 4169 || ch >= 4240 && ch <= 4249 || ch >= 6112 && ch <= 6121 || ch >= 6160 && ch <= 6169 || ch >= 6470 && ch <= 6479 || ch >= 6608 && ch <= 6617 || ch >= 6784 && ch <= 6793 || ch >= 6800 && ch <= 6809 || ch >= 6992 && ch <= 7001 || ch >= 7088 && ch <= 7097 || ch >= 7232 && ch <= 7241 || ch >= 7248 && ch <= 7257 || ch >= 42528 && ch <= 42537 || ch >= 43216 && ch <= 43225 || ch >= 43264 && ch <= 43273 || ch >= 43472 && ch <= 43481 || ch >= 43504 && ch <= 43513 || ch >= 43600 && ch <= 43609 || ch >= 44016 && ch <= 44025 || ch >= 65296 && ch <= 65305 || ch >= 66720 && ch <= 66729 || ch >= 68912 && ch <= 68921 || ch >= 68928 && ch <= 68937 || ch >= 69734 && ch <= 69743 || ch >= 69872 && ch <= 69881 || ch >= 69942 && ch <= 69951 || ch >= 70096 && ch <= 70105 || ch >= 70384 && ch <= 70393 || ch >= 70736 && ch <= 70745 || ch >= 70864 && ch <= 70873 || ch >= 71248 && ch <= 71257 || ch >= 71360 && ch <= 71369 || ch >= 71376 && ch <= 71395 || ch >= 71472 && ch <= 71481 || ch >= 71904 && ch <= 71913 || ch >= 72016 && ch <= 72025 || ch >= 72688 && ch <= 72697 || ch >= 72784 && ch <= 72793 || ch >= 73040 && ch <= 73049 || ch >= 73120 && ch <= 73129 || ch >= 73184 && ch <= 73193 || ch >= 73552 && ch <= 73561 || ch >= 90416 && ch <= 90425 || ch >= 92768 && ch <= 92777 || ch >= 92864 && ch <= 92873 || ch >= 93008 && ch <= 93017 || ch >= 93552 && ch <= 93561 || ch >= 118000 && ch <= 118009 || ch >= 120782 && ch <= 120831 || ch >= 123200 && ch <= 123209 || ch >= 123632 && ch <= 123641 || ch >= 124144 && ch <= 124153 || ch >= 124401 && ch <= 124410 || ch >= 125264 && ch <= 125273 || ch >= 130032 && ch <= 130041)) {
-		p.ExpectOrdinary(p.Pos, 157)
+	if !p.ClassFast(&cls916) && !p.ClassSkip(&cls916, 157) {
 		goto L4
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x3
 	goto L5
@@ -46434,9 +46307,6 @@ func s305(p *pegort.TParser) (any, bool) {
 		k10  any
 		k11  any
 		x13  int
-		ch   rune
-		size int
-		ok   bool
 		x16  int
 		x17  int
 		x18  any
@@ -46449,6 +46319,9 @@ func s305(p *pegort.TParser) (any, bool) {
 		x25  any
 		x27  rune
 		x28  bool
+		ch   rune
+		size int
+		ok   bool
 		x31  int
 		x32  int
 		x33  int
@@ -46801,12 +46674,9 @@ func s305(p *pegort.TParser) (any, bool) {
 		k11 = nil
 		x13 = p.Pos
 		p.Silent++
-		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch == 32 || ch == 9 || ch == 13 || ch == 10 || ch == 47)) {
-			p.ExpectOrdinary(p.Pos, 114)
+		if !p.ClassFast(&cls892) && !p.ClassSkip(&cls892, 114) {
 			goto L14
 		}
-		p.Pos += size
 		p.Silent--
 		p.Pos = x13
 		goto L15
@@ -51616,11 +51486,9 @@ func v315(p *pegort.TParser) (any, bool) {
 		v     any
 		rec   int
 		x1    int
-		ch    rune
-		size  int
-		ok    bool
 		x4    int
 		x5    int
+		ok    bool
 	)
 	start, rec = p.Pos, len(p.Recovered)
 	p.Depth++
@@ -51629,12 +51497,9 @@ func v315(p *pegort.TParser) (any, bool) {
 	}
 	x1 = p.Pos
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 124 || ch == 38 || ch == 61 || ch == 33 || ch == 60 || ch == 62 || ch == 43 || ch == 45 || ch == 94 || ch == 42 || ch == 47 || ch == 37)) {
-		p.ExpectOrdinary(p.Pos, 55)
+	if !p.ClassFast(&cls880) && !p.ClassSkip(&cls880, 55) {
 		goto L2
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x1
 	goto L3
@@ -51695,13 +51560,11 @@ fail:
 // binaryOp, invoked as by invoke (body inlined)
 func i315(p *pegort.TParser) (any, bool) {
 	var (
-		v    any
-		x1   int
-		ch   rune
-		size int
-		ok   bool
-		x4   int
-		x5   int
+		v  any
+		x1 int
+		x4 int
+		x5 int
+		ok bool
 	)
 	p.Depth++
 	if p.Depth > p.MaxDepth {
@@ -51709,12 +51572,9 @@ func i315(p *pegort.TParser) (any, bool) {
 	}
 	x1 = p.Pos
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 124 || ch == 38 || ch == 61 || ch == 33 || ch == 60 || ch == 62 || ch == 43 || ch == 45 || ch == 94 || ch == 42 || ch == 47 || ch == 37)) {
-		p.ExpectOrdinary(p.Pos, 55)
+	if !p.ClassFast(&cls880) && !p.ClassSkip(&cls880, 55) {
 		goto L2
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x1
 	goto L3
@@ -54190,9 +54050,6 @@ func s325(p *pegort.TParser) (any, bool) {
 		x1    int
 		x2    int
 		x5    int
-		ch    rune
-		size  int
-		ok    bool
 		x9    pegort.ExpMark
 		x10   int
 		x11   []pegort.ExpID
@@ -54206,12 +54063,9 @@ func s325(p *pegort.TParser) (any, bool) {
 	x1, x2 = p.Pos, len(p.Recovered)
 	x5 = p.Pos
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch == 95 || ch == 91 || ch == 42 || ch == 60 || ch == 40 || ch >= 128 && ch <= 1114111)) {
-		p.ExpectOrdinary(p.Pos, 30)
+	if !p.ClassFast(&cls651) && !p.ClassSkip(&cls651, 30) {
 		goto L6
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x5
 	goto L7
@@ -56727,9 +56581,6 @@ func s351(p *pegort.TParser) (any, bool) {
 		x1    int
 		x2    int
 		x5    int
-		ch    rune
-		size  int
-		ok    bool
 		x9    pegort.ExpMark
 		x10   int
 		x11   []pegort.ExpID
@@ -56743,12 +56594,9 @@ func s351(p *pegort.TParser) (any, bool) {
 	x1, x2 = p.Pos, len(p.Recovered)
 	x5 = p.Pos
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch == 95 || ch >= 48 && ch <= 57 || ch == 46 || ch == 39 || ch == 34 || ch == 96 || ch == 40 || ch == 91 || ch == 60 || ch >= 128 && ch <= 1114111)) {
-		p.ExpectOrdinary(p.Pos, 53)
+	if !p.ClassFast(&cls830) && !p.ClassSkip(&cls830, 53) {
 		goto L6
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x5
 	goto L7
@@ -57528,13 +57376,13 @@ func s357(p *pegort.TParser) (any, bool) {
 		x2   int
 		x3   int
 		x5   int
-		ch   rune
-		size int
-		ok   bool
 		x8   int
 		x9   int
 		x11  rune
 		x12  bool
+		ch   rune
+		size int
+		ok   bool
 		x15  int
 		x16  int
 		x17  int
@@ -57550,12 +57398,9 @@ func s357(p *pegort.TParser) (any, bool) {
 		x2, x3 = p.Pos, len(p.Recovered)
 		x5 = p.Pos
 		p.Silent++
-		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95 || ch >= 128 && ch <= 1114111)) {
-			p.ExpectOrdinary(p.Pos, 122)
+		if !p.ClassFast(&cls908) && !p.ClassSkip(&cls908, 122) {
 			goto L6
 		}
-		p.Pos += size
 		p.Silent--
 		p.Pos = x5
 		goto L7
@@ -57656,21 +57501,15 @@ func s358(p *pegort.TParser) (any, bool) {
 		start int
 		v     any
 		rec   int
-		ch    rune
-		size  int
-		ok    bool
 	)
 	start, rec = p.Pos, len(p.Recovered)
 	p.Depth++
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95 || ch >= 128 && ch <= 1114111)) {
-		p.ExpectOrdinary(p.Pos, 122)
+	if !p.ClassFast(&cls908) && !p.ClassSkip(&cls908, 122) {
 		goto fail
 	}
-	p.Pos += size
 	v = nil
 	p.Depth--
 	return v, true
@@ -58511,8 +58350,6 @@ func s365(p *pegort.TParser) (any, bool) {
 		x2    int
 		x4    rune
 		x5    bool
-		ch    rune
-		size  int
 	)
 	start, rec = p.Pos, len(p.Recovered)
 	p.Depth++
@@ -58530,12 +58367,9 @@ func s365(p *pegort.TParser) (any, bool) {
 		p.ExpectOrdinary(p.Pos, 146)
 		goto L6
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 97 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116 || ch == 118 || ch == 92 || ch == 39)) {
-		p.ExpectOrdinary(p.Pos, 146)
+	if !p.ClassFast(&cls910) && !p.ClassSkip(&cls910, 146) {
 		goto L7
 	}
-	p.Pos += size
 	goto L3
 L7:
 	p.Pos = x1
@@ -58695,8 +58529,6 @@ func s367(p *pegort.TParser) (any, bool) {
 		x2    int
 		x4    rune
 		x5    bool
-		ch    rune
-		size  int
 	)
 	start, rec = p.Pos, len(p.Recovered)
 	p.Depth++
@@ -58714,12 +58546,9 @@ func s367(p *pegort.TParser) (any, bool) {
 		p.ExpectOrdinary(p.Pos, 147)
 		goto L6
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 97 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116 || ch == 118 || ch == 92 || ch == 34)) {
-		p.ExpectOrdinary(p.Pos, 147)
+	if !p.ClassFast(&cls911) && !p.ClassSkip(&cls911, 147) {
 		goto L7
 	}
-	p.Pos += size
 	goto L3
 L7:
 	p.Pos = x1
@@ -59403,17 +59232,17 @@ func s374(p *pegort.TParser) (any, bool) {
 		v     any
 		rec   int
 		x1    int
-		ch    rune
-		size  int
-		ok    bool
 		x4    int
 		x5    int
 		x7    rune
 		x8    bool
+		ok    bool
 		x11   int
 		x12   int
 		x16   int
 		x17   int
+		ch    rune
+		size  int
 		x21   int
 		x22   int
 		x26   int
@@ -59432,12 +59261,9 @@ func s374(p *pegort.TParser) (any, bool) {
 	}
 	x1 = p.Pos
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 42 || ch == 47 || ch == 37 || ch == 60 || ch == 62 || ch == 38)) {
-		p.ExpectOrdinary(p.Pos, 73)
+	if !p.ClassFast(&cls881) && !p.ClassSkip(&cls881, 73) {
 		goto L2
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x1
 	goto L3
@@ -60114,7 +59940,6 @@ func s377(p *pegort.TParser) (any, bool) {
 		v     any
 		rec   int
 		x1    int
-		ch    rune
 		size  int
 		ok    bool
 	)
@@ -60125,12 +59950,9 @@ func s377(p *pegort.TParser) (any, bool) {
 	}
 	x1 = p.Pos
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 170 || ch == 181 || ch == 186 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 705 || ch >= 710 && ch <= 721 || ch >= 736 && ch <= 740 || ch == 748 || ch == 750 || ch >= 880 && ch <= 884 || ch >= 886 && ch <= 887 || ch >= 890 && ch <= 893 || ch == 895 || ch == 902 || ch >= 904 && ch <= 906 || ch == 908 || ch >= 910 && ch <= 929 || ch >= 931 && ch <= 1013 || ch >= 1015 && ch <= 1153 || ch >= 1162 && ch <= 1327 || ch >= 1329 && ch <= 1366 || ch == 1369 || ch >= 1376 && ch <= 1416 || ch >= 1488 && ch <= 1514 || ch >= 1519 && ch <= 1522 || ch >= 1568 && ch <= 1610 || ch >= 1646 && ch <= 1647 || ch >= 1649 && ch <= 1747 || ch == 1749 || ch >= 1765 && ch <= 1766 || ch >= 1774 && ch <= 1775 || ch >= 1786 && ch <= 1788 || ch == 1791 || ch == 1808 || ch >= 1810 && ch <= 1839 || ch >= 1869 && ch <= 1957 || ch == 1969 || ch >= 1994 && ch <= 2026 || ch >= 2036 && ch <= 2037 || ch == 2042 || ch >= 2048 && ch <= 2069 || ch == 2074 || ch == 2084 || ch == 2088 || ch >= 2112 && ch <= 2136 || ch >= 2144 && ch <= 2154 || ch >= 2160 && ch <= 2183 || ch >= 2185 && ch <= 2191 || ch >= 2208 && ch <= 2249 || ch >= 2308 && ch <= 2361 || ch == 2365 || ch == 2384 || ch >= 2392 && ch <= 2401 || ch >= 2417 && ch <= 2432 || ch >= 2437 && ch <= 2444 || ch >= 2447 && ch <= 2448 || ch >= 2451 && ch <= 2472 || ch >= 2474 && ch <= 2480 || ch == 2482 || ch >= 2486 && ch <= 2489 || ch == 2493 || ch == 2510 || ch >= 2524 && ch <= 2525 || ch >= 2527 && ch <= 2529 || ch >= 2544 && ch <= 2545 || ch == 2556 || ch >= 2565 && ch <= 2570 || ch >= 2575 && ch <= 2576 || ch >= 2579 && ch <= 2600 || ch >= 2602 && ch <= 2608 || ch >= 2610 && ch <= 2611 || ch >= 2613 && ch <= 2614 || ch >= 2616 && ch <= 2617 || ch >= 2649 && ch <= 2652 || ch == 2654 || ch >= 2674 && ch <= 2676 || ch >= 2693 && ch <= 2701 || ch >= 2703 && ch <= 2705 || ch >= 2707 && ch <= 2728 || ch >= 2730 && ch <= 2736 || ch >= 2738 && ch <= 2739 || ch >= 2741 && ch <= 2745 || ch == 2749 || ch == 2768 || ch >= 2784 && ch <= 2785 || ch == 2809 || ch >= 2821 && ch <= 2828 || ch >= 2831 && ch <= 2832 || ch >= 2835 && ch <= 2856 || ch >= 2858 && ch <= 2864 || ch >= 2866 && ch <= 2867 || ch >= 2869 && ch <= 2873 || ch == 2877 || ch >= 2908 && ch <= 2909 || ch >= 2911 && ch <= 2913 || ch == 2929 || ch == 2947 || ch >= 2949 && ch <= 2954 || ch >= 2958 && ch <= 2960 || ch >= 2962 && ch <= 2965 || ch >= 2969 && ch <= 2970 || ch == 2972 || ch >= 2974 && ch <= 2975 || ch >= 2979 && ch <= 2980 || ch >= 2984 && ch <= 2986 || ch >= 2990 && ch <= 3001 || ch == 3024 || ch >= 3077 && ch <= 3084 || ch >= 3086 && ch <= 3088 || ch >= 3090 && ch <= 3112 || ch >= 3114 && ch <= 3129 || ch == 3133 || ch >= 3160 && ch <= 3162 || ch >= 3164 && ch <= 3165 || ch >= 3168 && ch <= 3169 || ch == 3200 || ch >= 3205 && ch <= 3212 || ch >= 3214 && ch <= 3216 || ch >= 3218 && ch <= 3240 || ch >= 3242 && ch <= 3251 || ch >= 3253 && ch <= 3257 || ch == 3261 || ch >= 3292 && ch <= 3294 || ch >= 3296 && ch <= 3297 || ch >= 3313 && ch <= 3314 || ch >= 3332 && ch <= 3340 || ch >= 3342 && ch <= 3344 || ch >= 3346 && ch <= 3386 || ch == 3389 || ch == 3406 || ch >= 3412 && ch <= 3414 || ch >= 3423 && ch <= 3425 || ch >= 3450 && ch <= 3455 || ch >= 3461 && ch <= 3478 || ch >= 3482 && ch <= 3505 || ch >= 3507 && ch <= 3515 || ch == 3517 || ch >= 3520 && ch <= 3526 || ch >= 3585 && ch <= 3632 || ch >= 3634 && ch <= 3635 || ch >= 3648 && ch <= 3654 || ch >= 3713 && ch <= 3714 || ch == 3716 || ch >= 3718 && ch <= 3722 || ch >= 3724 && ch <= 3747 || ch == 3749 || ch >= 3751 && ch <= 3760 || ch >= 3762 && ch <= 3763 || ch == 3773 || ch >= 3776 && ch <= 3780 || ch == 3782 || ch >= 3804 && ch <= 3807 || ch == 3840 || ch >= 3904 && ch <= 3911 || ch >= 3913 && ch <= 3948 || ch >= 3976 && ch <= 3980 || ch >= 4096 && ch <= 4138 || ch == 4159 || ch >= 4176 && ch <= 4181 || ch >= 4186 && ch <= 4189 || ch == 4193 || ch >= 4197 && ch <= 4198 || ch >= 4206 && ch <= 4208 || ch >= 4213 && ch <= 4225 || ch == 4238 || ch >= 4256 && ch <= 4293 || ch == 4295 || ch == 4301 || ch >= 4304 && ch <= 4346 || ch >= 4348 && ch <= 4680 || ch >= 4682 && ch <= 4685 || ch >= 4688 && ch <= 4694 || ch == 4696 || ch >= 4698 && ch <= 4701 || ch >= 4704 && ch <= 4744 || ch >= 4746 && ch <= 4749 || ch >= 4752 && ch <= 4784 || ch >= 4786 && ch <= 4789 || ch >= 4792 && ch <= 4798 || ch == 4800 || ch >= 4802 && ch <= 4805 || ch >= 4808 && ch <= 4822 || ch >= 4824 && ch <= 4880 || ch >= 4882 && ch <= 4885 || ch >= 4888 && ch <= 4954 || ch >= 4992 && ch <= 5007 || ch >= 5024 && ch <= 5109 || ch >= 5112 && ch <= 5117 || ch >= 5121 && ch <= 5740 || ch >= 5743 && ch <= 5759 || ch >= 5761 && ch <= 5786 || ch >= 5792 && ch <= 5866 || ch >= 5873 && ch <= 5880 || ch >= 5888 && ch <= 5905 || ch >= 5919 && ch <= 5937 || ch >= 5952 && ch <= 5969 || ch >= 5984 && ch <= 5996 || ch >= 5998 && ch <= 6000 || ch >= 6016 && ch <= 6067 || ch == 6103 || ch == 6108 || ch >= 6176 && ch <= 6264 || ch >= 6272 && ch <= 6276 || ch >= 6279 && ch <= 6312 || ch == 6314 || ch >= 6320 && ch <= 6389 || ch >= 6400 && ch <= 6430 || ch >= 6480 && ch <= 6509 || ch >= 6512 && ch <= 6516 || ch >= 6528 && ch <= 6571 || ch >= 6576 && ch <= 6601 || ch >= 6656 && ch <= 6678 || ch >= 6688 && ch <= 6740 || ch == 6823 || ch >= 6917 && ch <= 6963 || ch >= 6981 && ch <= 6988 || ch >= 7043 && ch <= 7072 || ch >= 7086 && ch <= 7087 || ch >= 7098 && ch <= 7141 || ch >= 7168 && ch <= 7203 || ch >= 7245 && ch <= 7247 || ch >= 7258 && ch <= 7293 || ch >= 7296 && ch <= 7306 || ch >= 7312 && ch <= 7354 || ch >= 7357 && ch <= 7359 || ch >= 7401 && ch <= 7404 || ch >= 7406 && ch <= 7411 || ch >= 7413 && ch <= 7414 || ch == 7418 || ch >= 7424 && ch <= 7615 || ch >= 7680 && ch <= 7957 || ch >= 7960 && ch <= 7965 || ch >= 7968 && ch <= 8005 || ch >= 8008 && ch <= 8013 || ch >= 8016 && ch <= 8023 || ch == 8025 || ch == 8027 || ch == 8029 || ch >= 8031 && ch <= 8061 || ch >= 8064 && ch <= 8116 || ch >= 8118 && ch <= 8124 || ch == 8126 || ch >= 8130 && ch <= 8132 || ch >= 8134 && ch <= 8140 || ch >= 8144 && ch <= 8147 || ch >= 8150 && ch <= 8155 || ch >= 8160 && ch <= 8172 || ch >= 8178 && ch <= 8180 || ch >= 8182 && ch <= 8188 || ch == 8305 || ch == 8319 || ch >= 8336 && ch <= 8348 || ch == 8450 || ch == 8455 || ch >= 8458 && ch <= 8467 || ch == 8469 || ch >= 8473 && ch <= 8477 || ch == 8484 || ch == 8486 || ch == 8488 || ch >= 8490 && ch <= 8493 || ch >= 8495 && ch <= 8505 || ch >= 8508 && ch <= 8511 || ch >= 8517 && ch <= 8521 || ch == 8526 || ch >= 8579 && ch <= 8580 || ch >= 11264 && ch <= 11492 || ch >= 11499 && ch <= 11502 || ch >= 11506 && ch <= 11507 || ch >= 11520 && ch <= 11557 || ch == 11559 || ch == 11565 || ch >= 11568 && ch <= 11623 || ch == 11631 || ch >= 11648 && ch <= 11670 || ch >= 11680 && ch <= 11686 || ch >= 11688 && ch <= 11694 || ch >= 11696 && ch <= 11702 || ch >= 11704 && ch <= 11710 || ch >= 11712 && ch <= 11718 || ch >= 11720 && ch <= 11726 || ch >= 11728 && ch <= 11734 || ch >= 11736 && ch <= 11742 || ch == 11823 || ch >= 12293 && ch <= 12294 || ch >= 12337 && ch <= 12341 || ch >= 12347 && ch <= 12348 || ch >= 12353 && ch <= 12438 || ch >= 12445 && ch <= 12447 || ch >= 12449 && ch <= 12538 || ch >= 12540 && ch <= 12543 || ch >= 12549 && ch <= 12591 || ch >= 12593 && ch <= 12686 || ch >= 12704 && ch <= 12735 || ch >= 12784 && ch <= 12799 || ch >= 13312 && ch <= 19903 || ch >= 19968 && ch <= 42124 || ch >= 42192 && ch <= 42237 || ch >= 42240 && ch <= 42508 || ch >= 42512 && ch <= 42527 || ch >= 42538 && ch <= 42539 || ch >= 42560 && ch <= 42606 || ch >= 42623 && ch <= 42653 || ch >= 42656 && ch <= 42725 || ch >= 42775 && ch <= 42783 || ch >= 42786 && ch <= 42888 || ch >= 42891 && ch <= 42972 || ch >= 42993 && ch <= 43009 || ch >= 43011 && ch <= 43013 || ch >= 43015 && ch <= 43018 || ch >= 43020 && ch <= 43042 || ch >= 43072 && ch <= 43123 || ch >= 43138 && ch <= 43187 || ch >= 43250 && ch <= 43255 || ch == 43259 || ch >= 43261 && ch <= 43262 || ch >= 43274 && ch <= 43301 || ch >= 43312 && ch <= 43334 || ch >= 43360 && ch <= 43388 || ch >= 43396 && ch <= 43442 || ch == 43471 || ch >= 43488 && ch <= 43492 || ch >= 43494 && ch <= 43503 || ch >= 43514 && ch <= 43518 || ch >= 43520 && ch <= 43560 || ch >= 43584 && ch <= 43586 || ch >= 43588 && ch <= 43595 || ch >= 43616 && ch <= 43638 || ch == 43642 || ch >= 43646 && ch <= 43695 || ch == 43697 || ch >= 43701 && ch <= 43702 || ch >= 43705 && ch <= 43709 || ch == 43712 || ch == 43714 || ch >= 43739 && ch <= 43741 || ch >= 43744 && ch <= 43754 || ch >= 43762 && ch <= 43764 || ch >= 43777 && ch <= 43782 || ch >= 43785 && ch <= 43790 || ch >= 43793 && ch <= 43798 || ch >= 43808 && ch <= 43814 || ch >= 43816 && ch <= 43822 || ch >= 43824 && ch <= 43866 || ch >= 43868 && ch <= 43881 || ch >= 43888 && ch <= 44002 || ch >= 44032 && ch <= 55203 || ch >= 55216 && ch <= 55238 || ch >= 55243 && ch <= 55291 || ch >= 63744 && ch <= 64109 || ch >= 64112 && ch <= 64217 || ch >= 64256 && ch <= 64262 || ch >= 64275 && ch <= 64279 || ch == 64285 || ch >= 64287 && ch <= 64296 || ch >= 64298 && ch <= 64310 || ch >= 64312 && ch <= 64316 || ch == 64318 || ch >= 64320 && ch <= 64321 || ch >= 64323 && ch <= 64324 || ch >= 64326 && ch <= 64433 || ch >= 64467 && ch <= 64829 || ch >= 64848 && ch <= 64911 || ch >= 64914 && ch <= 64967 || ch >= 65008 && ch <= 65019 || ch >= 65136 && ch <= 65140 || ch >= 65142 && ch <= 65276 || ch >= 65313 && ch <= 65338 || ch >= 65345 && ch <= 65370 || ch >= 65382 && ch <= 65470 || ch >= 65474 && ch <= 65479 || ch >= 65482 && ch <= 65487 || ch >= 65490 && ch <= 65495 || ch >= 65498 && ch <= 65500 || ch >= 65536 && ch <= 65547 || ch >= 65549 && ch <= 65574 || ch >= 65576 && ch <= 65594 || ch >= 65596 && ch <= 65597 || ch >= 65599 && ch <= 65613 || ch >= 65616 && ch <= 65629 || ch >= 65664 && ch <= 65786 || ch >= 66176 && ch <= 66204 || ch >= 66208 && ch <= 66256 || ch >= 66304 && ch <= 66335 || ch >= 66349 && ch <= 66368 || ch >= 66370 && ch <= 66377 || ch >= 66384 && ch <= 66421 || ch >= 66432 && ch <= 66461 || ch >= 66464 && ch <= 66499 || ch >= 66504 && ch <= 66511 || ch >= 66560 && ch <= 66717 || ch >= 66736 && ch <= 66771 || ch >= 66776 && ch <= 66811 || ch >= 66816 && ch <= 66855 || ch >= 66864 && ch <= 66915 || ch >= 66928 && ch <= 66938 || ch >= 66940 && ch <= 66954 || ch >= 66956 && ch <= 66962 || ch >= 66964 && ch <= 66965 || ch >= 66967 && ch <= 66977 || ch >= 66979 && ch <= 66993 || ch >= 66995 && ch <= 67001 || ch >= 67003 && ch <= 67004 || ch >= 67008 && ch <= 67059 || ch >= 67072 && ch <= 67382 || ch >= 67392 && ch <= 67413 || ch >= 67424 && ch <= 67431 || ch >= 67456 && ch <= 67461 || ch >= 67463 && ch <= 67504 || ch >= 67506 && ch <= 67514 || ch >= 67584 && ch <= 67589 || ch == 67592 || ch >= 67594 && ch <= 67637 || ch >= 67639 && ch <= 67640 || ch == 67644 || ch >= 67647 && ch <= 67669 || ch >= 67680 && ch <= 67702 || ch >= 67712 && ch <= 67742 || ch >= 67808 && ch <= 67826 || ch >= 67828 && ch <= 67829 || ch >= 67840 && ch <= 67861 || ch >= 67872 && ch <= 67897 || ch >= 67904 && ch <= 67929 || ch >= 67968 && ch <= 68023 || ch >= 68030 && ch <= 68031 || ch == 68096 || ch >= 68112 && ch <= 68115 || ch >= 68117 && ch <= 68119 || ch >= 68121 && ch <= 68149 || ch >= 68192 && ch <= 68220 || ch >= 68224 && ch <= 68252 || ch >= 68288 && ch <= 68295 || ch >= 68297 && ch <= 68324 || ch >= 68352 && ch <= 68405 || ch >= 68416 && ch <= 68437 || ch >= 68448 && ch <= 68466 || ch >= 68480 && ch <= 68497 || ch >= 68608 && ch <= 68680 || ch >= 68736 && ch <= 68786 || ch >= 68800 && ch <= 68850 || ch >= 68864 && ch <= 68899 || ch >= 68938 && ch <= 68965 || ch >= 68975 && ch <= 68997 || ch >= 69248 && ch <= 69289 || ch >= 69296 && ch <= 69297 || ch >= 69314 && ch <= 69319 || ch >= 69376 && ch <= 69404 || ch == 69415 || ch >= 69424 && ch <= 69445 || ch >= 69488 && ch <= 69505 || ch >= 69552 && ch <= 69572 || ch >= 69600 && ch <= 69622 || ch >= 69635 && ch <= 69687 || ch >= 69745 && ch <= 69746 || ch == 69749 || ch >= 69763 && ch <= 69807 || ch >= 69840 && ch <= 69864 || ch >= 69891 && ch <= 69926 || ch == 69956 || ch == 69959 || ch >= 69968 && ch <= 70002 || ch == 70006 || ch >= 70019 && ch <= 70066 || ch >= 70081 && ch <= 70084 || ch == 70106 || ch == 70108 || ch >= 70144 && ch <= 70161 || ch >= 70163 && ch <= 70187 || ch >= 70207 && ch <= 70208 || ch >= 70272 && ch <= 70278 || ch == 70280 || ch >= 70282 && ch <= 70285 || ch >= 70287 && ch <= 70301 || ch >= 70303 && ch <= 70312 || ch >= 70320 && ch <= 70366 || ch >= 70405 && ch <= 70412 || ch >= 70415 && ch <= 70416 || ch >= 70419 && ch <= 70440 || ch >= 70442 && ch <= 70448 || ch >= 70450 && ch <= 70451 || ch >= 70453 && ch <= 70457 || ch == 70461 || ch == 70480 || ch >= 70493 && ch <= 70497 || ch >= 70528 && ch <= 70537 || ch == 70539 || ch == 70542 || ch >= 70544 && ch <= 70581 || ch == 70583 || ch == 70609 || ch == 70611 || ch >= 70656 && ch <= 70708 || ch >= 70727 && ch <= 70730 || ch >= 70751 && ch <= 70753 || ch >= 70784 && ch <= 70831 || ch >= 70852 && ch <= 70853 || ch == 70855 || ch >= 71040 && ch <= 71086 || ch >= 71128 && ch <= 71131 || ch >= 71168 && ch <= 71215 || ch == 71236 || ch >= 71296 && ch <= 71338 || ch == 71352 || ch >= 71424 && ch <= 71450 || ch >= 71488 && ch <= 71494 || ch >= 71680 && ch <= 71723 || ch >= 71840 && ch <= 71903 || ch >= 71935 && ch <= 71942 || ch == 71945 || ch >= 71948 && ch <= 71955 || ch >= 71957 && ch <= 71958 || ch >= 71960 && ch <= 71983 || ch == 71999 || ch == 72001 || ch >= 72096 && ch <= 72103 || ch >= 72106 && ch <= 72144 || ch == 72161 || ch == 72163 || ch == 72192 || ch >= 72203 && ch <= 72242 || ch == 72250 || ch == 72272 || ch >= 72284 && ch <= 72329 || ch == 72349 || ch >= 72368 && ch <= 72440 || ch >= 72640 && ch <= 72672 || ch >= 72704 && ch <= 72712 || ch >= 72714 && ch <= 72750 || ch == 72768 || ch >= 72818 && ch <= 72847 || ch >= 72960 && ch <= 72966 || ch >= 72968 && ch <= 72969 || ch >= 72971 && ch <= 73008 || ch == 73030 || ch >= 73056 && ch <= 73061 || ch >= 73063 && ch <= 73064 || ch >= 73066 && ch <= 73097 || ch == 73112 || ch >= 73136 && ch <= 73179 || ch >= 73440 && ch <= 73458 || ch == 73474 || ch >= 73476 && ch <= 73488 || ch >= 73490 && ch <= 73523 || ch == 73648 || ch >= 73728 && ch <= 74649 || ch >= 74880 && ch <= 75075 || ch >= 77712 && ch <= 77808 || ch >= 77824 && ch <= 78895 || ch >= 78913 && ch <= 78918 || ch >= 78944 && ch <= 82938 || ch >= 82944 && ch <= 83526 || ch >= 90368 && ch <= 90397 || ch >= 92160 && ch <= 92728 || ch >= 92736 && ch <= 92766 || ch >= 92784 && ch <= 92862 || ch >= 92880 && ch <= 92909 || ch >= 92928 && ch <= 92975 || ch >= 92992 && ch <= 92995 || ch >= 93027 && ch <= 93047 || ch >= 93053 && ch <= 93071 || ch >= 93504 && ch <= 93548 || ch >= 93760 && ch <= 93823 || ch >= 93856 && ch <= 93880 || ch >= 93883 && ch <= 93907 || ch >= 93952 && ch <= 94026 || ch == 94032 || ch >= 94099 && ch <= 94111 || ch >= 94176 && ch <= 94177 || ch == 94179 || ch >= 94194 && ch <= 94195 || ch >= 94208 && ch <= 101589 || ch >= 101631 && ch <= 101662 || ch >= 101760 && ch <= 101874 || ch >= 110576 && ch <= 110579 || ch >= 110581 && ch <= 110587 || ch >= 110589 && ch <= 110590 || ch >= 110592 && ch <= 110882 || ch == 110898 || ch >= 110928 && ch <= 110930 || ch == 110933 || ch >= 110948 && ch <= 110951 || ch >= 110960 && ch <= 111355 || ch >= 113664 && ch <= 113770 || ch >= 113776 && ch <= 113788 || ch >= 113792 && ch <= 113800 || ch >= 113808 && ch <= 113817 || ch >= 119808 && ch <= 119892 || ch >= 119894 && ch <= 119964 || ch >= 119966 && ch <= 119967 || ch == 119970 || ch >= 119973 && ch <= 119974 || ch >= 119977 && ch <= 119980 || ch >= 119982 && ch <= 119993 || ch == 119995 || ch >= 119997 && ch <= 120003 || ch >= 120005 && ch <= 120069 || ch >= 120071 && ch <= 120074 || ch >= 120077 && ch <= 120084 || ch >= 120086 && ch <= 120092 || ch >= 120094 && ch <= 120121 || ch >= 120123 && ch <= 120126 || ch >= 120128 && ch <= 120132 || ch == 120134 || ch >= 120138 && ch <= 120144 || ch >= 120146 && ch <= 120485 || ch >= 120488 && ch <= 120512 || ch >= 120514 && ch <= 120538 || ch >= 120540 && ch <= 120570 || ch >= 120572 && ch <= 120596 || ch >= 120598 && ch <= 120628 || ch >= 120630 && ch <= 120654 || ch >= 120656 && ch <= 120686 || ch >= 120688 && ch <= 120712 || ch >= 120714 && ch <= 120744 || ch >= 120746 && ch <= 120770 || ch >= 120772 && ch <= 120779 || ch >= 122624 && ch <= 122654 || ch >= 122661 && ch <= 122666 || ch >= 122928 && ch <= 122989 || ch >= 123136 && ch <= 123180 || ch >= 123191 && ch <= 123197 || ch == 123214 || ch >= 123536 && ch <= 123565 || ch >= 123584 && ch <= 123627 || ch >= 124112 && ch <= 124139 || ch >= 124368 && ch <= 124397 || ch == 124400 || ch >= 124608 && ch <= 124638 || ch >= 124640 && ch <= 124642 || ch >= 124644 && ch <= 124645 || ch >= 124647 && ch <= 124653 || ch >= 124656 && ch <= 124660 || ch >= 124670 && ch <= 124671 || ch >= 124896 && ch <= 124902 || ch >= 124904 && ch <= 124907 || ch >= 124909 && ch <= 124910 || ch >= 124912 && ch <= 124926 || ch >= 124928 && ch <= 125124 || ch >= 125184 && ch <= 125251 || ch == 125259 || ch >= 126464 && ch <= 126467 || ch >= 126469 && ch <= 126495 || ch >= 126497 && ch <= 126498 || ch == 126500 || ch == 126503 || ch >= 126505 && ch <= 126514 || ch >= 126516 && ch <= 126519 || ch == 126521 || ch == 126523 || ch == 126530 || ch == 126535 || ch == 126537 || ch == 126539 || ch >= 126541 && ch <= 126543 || ch >= 126545 && ch <= 126546 || ch == 126548 || ch == 126551 || ch == 126553 || ch == 126555 || ch == 126557 || ch == 126559 || ch >= 126561 && ch <= 126562 || ch == 126564 || ch >= 126567 && ch <= 126570 || ch >= 126572 && ch <= 126578 || ch >= 126580 && ch <= 126583 || ch >= 126585 && ch <= 126588 || ch == 126590 || ch >= 126592 && ch <= 126601 || ch >= 126603 && ch <= 126619 || ch >= 126625 && ch <= 126627 || ch >= 126629 && ch <= 126633 || ch >= 126635 && ch <= 126651 || ch >= 131072 && ch <= 173791 || ch >= 173824 && ch <= 178205 || ch >= 178208 && ch <= 183981 || ch >= 183984 && ch <= 191456 || ch >= 191472 && ch <= 192093 || ch >= 194560 && ch <= 195101 || ch >= 196608 && ch <= 201546 || ch >= 201552 && ch <= 210041)) {
-		p.ExpectOrdinary(p.Pos, 156)
+	if !p.ClassFast(&cls915) && !p.ClassSkip(&cls915, 156) {
 		goto L2
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x1
 	goto L3
@@ -60163,7 +59985,6 @@ func s378(p *pegort.TParser) (any, bool) {
 		v     any
 		rec   int
 		x1    int
-		ch    rune
 		size  int
 		ok    bool
 	)
@@ -60174,12 +59995,9 @@ func s378(p *pegort.TParser) (any, bool) {
 	}
 	x1 = p.Pos
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch >= 1632 && ch <= 1641 || ch >= 1776 && ch <= 1785 || ch >= 1984 && ch <= 1993 || ch >= 2406 && ch <= 2415 || ch >= 2534 && ch <= 2543 || ch >= 2662 && ch <= 2671 || ch >= 2790 && ch <= 2799 || ch >= 2918 && ch <= 2927 || ch >= 3046 && ch <= 3055 || ch >= 3174 && ch <= 3183 || ch >= 3302 && ch <= 3311 || ch >= 3430 && ch <= 3439 || ch >= 3558 && ch <= 3567 || ch >= 3664 && ch <= 3673 || ch >= 3792 && ch <= 3801 || ch >= 3872 && ch <= 3881 || ch >= 4160 && ch <= 4169 || ch >= 4240 && ch <= 4249 || ch >= 6112 && ch <= 6121 || ch >= 6160 && ch <= 6169 || ch >= 6470 && ch <= 6479 || ch >= 6608 && ch <= 6617 || ch >= 6784 && ch <= 6793 || ch >= 6800 && ch <= 6809 || ch >= 6992 && ch <= 7001 || ch >= 7088 && ch <= 7097 || ch >= 7232 && ch <= 7241 || ch >= 7248 && ch <= 7257 || ch >= 42528 && ch <= 42537 || ch >= 43216 && ch <= 43225 || ch >= 43264 && ch <= 43273 || ch >= 43472 && ch <= 43481 || ch >= 43504 && ch <= 43513 || ch >= 43600 && ch <= 43609 || ch >= 44016 && ch <= 44025 || ch >= 65296 && ch <= 65305 || ch >= 66720 && ch <= 66729 || ch >= 68912 && ch <= 68921 || ch >= 68928 && ch <= 68937 || ch >= 69734 && ch <= 69743 || ch >= 69872 && ch <= 69881 || ch >= 69942 && ch <= 69951 || ch >= 70096 && ch <= 70105 || ch >= 70384 && ch <= 70393 || ch >= 70736 && ch <= 70745 || ch >= 70864 && ch <= 70873 || ch >= 71248 && ch <= 71257 || ch >= 71360 && ch <= 71369 || ch >= 71376 && ch <= 71395 || ch >= 71472 && ch <= 71481 || ch >= 71904 && ch <= 71913 || ch >= 72016 && ch <= 72025 || ch >= 72688 && ch <= 72697 || ch >= 72784 && ch <= 72793 || ch >= 73040 && ch <= 73049 || ch >= 73120 && ch <= 73129 || ch >= 73184 && ch <= 73193 || ch >= 73552 && ch <= 73561 || ch >= 90416 && ch <= 90425 || ch >= 92768 && ch <= 92777 || ch >= 92864 && ch <= 92873 || ch >= 93008 && ch <= 93017 || ch >= 93552 && ch <= 93561 || ch >= 118000 && ch <= 118009 || ch >= 120782 && ch <= 120831 || ch >= 123200 && ch <= 123209 || ch >= 123632 && ch <= 123641 || ch >= 124144 && ch <= 124153 || ch >= 124401 && ch <= 124410 || ch >= 125264 && ch <= 125273 || ch >= 130032 && ch <= 130041)) {
-		p.ExpectOrdinary(p.Pos, 157)
+	if !p.ClassFast(&cls916) && !p.ClassSkip(&cls916, 157) {
 		goto L2
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x1
 	goto L3
@@ -60392,8 +60210,6 @@ func v381(p *pegort.TParser) (any, bool) {
 		x2    int
 		x4    rune
 		x5    bool
-		ch    rune
-		size  int
 		ok    bool
 		x12   int
 		x13   int
@@ -60415,24 +60231,9 @@ func v381(p *pegort.TParser) (any, bool) {
 		p.ExpectOrdinary(p.Pos, 148)
 		goto L6
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch >= 48 && ch <= 51) {
-		p.ExpectOrdinary(p.Pos, 148)
+	if !p.ClassesSkip(steps919) {
 		goto L7
 	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch >= 48 && ch <= 55) {
-		p.ExpectOrdinary(p.Pos, 133)
-		goto L7
-	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch >= 48 && ch <= 55) {
-		p.ExpectOrdinary(p.Pos, 133)
-		goto L7
-	}
-	p.Pos += size
 	goto L3
 L7:
 	p.Pos = x1
@@ -60469,18 +60270,9 @@ L8:
 	}
 	x12, x13 = p.Pos, len(p.Recovered)
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 100 || ch == 68) {
-		p.ExpectOrdinary(p.Pos, 151)
+	if !p.ClassesSkip(steps914) {
 		goto L14
 	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 56 || ch == 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
-		p.ExpectOrdinary(p.Pos, 152)
-		goto L14
-	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x12
 	p.Recovered = p.Recovered[:x13]
@@ -60538,18 +60330,9 @@ L10:
 	} else if _, ok = p.Parser.MatchLiteral(lit346, "0", 111, false); !ok {
 		goto L26
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 100 || ch == 68) {
-		p.ExpectOrdinary(p.Pos, 151)
+	if !p.ClassesSkip(steps914) {
 		goto L26
 	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 56 || ch == 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
-		p.ExpectOrdinary(p.Pos, 152)
-		goto L26
-	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x24
 	p.Recovered = p.Recovered[:x25]
@@ -60626,22 +60409,20 @@ fail:
 // escapeValue, invoked as by invoke (body inlined)
 func i381(p *pegort.TParser) (any, bool) {
 	var (
-		v    any
-		x1   int
-		x2   int
-		x4   rune
-		x5   bool
-		ch   rune
-		size int
-		ok   bool
-		x12  int
-		x13  int
-		x17  int
-		x18  int
-		x20  rune
-		x21  bool
-		x24  int
-		x25  int
+		v   any
+		x1  int
+		x2  int
+		x4  rune
+		x5  bool
+		ok  bool
+		x12 int
+		x13 int
+		x17 int
+		x18 int
+		x20 rune
+		x21 bool
+		x24 int
+		x25 int
 	)
 	p.Depth++
 	if p.Depth > p.MaxDepth {
@@ -60653,24 +60434,9 @@ func i381(p *pegort.TParser) (any, bool) {
 		p.ExpectOrdinary(p.Pos, 148)
 		goto L6
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch >= 48 && ch <= 51) {
-		p.ExpectOrdinary(p.Pos, 148)
+	if !p.ClassesSkip(steps919) {
 		goto L7
 	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch >= 48 && ch <= 55) {
-		p.ExpectOrdinary(p.Pos, 133)
-		goto L7
-	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch >= 48 && ch <= 55) {
-		p.ExpectOrdinary(p.Pos, 133)
-		goto L7
-	}
-	p.Pos += size
 	goto L3
 L7:
 	p.Pos = x1
@@ -60707,18 +60473,9 @@ L8:
 	}
 	x12, x13 = p.Pos, len(p.Recovered)
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 100 || ch == 68) {
-		p.ExpectOrdinary(p.Pos, 151)
+	if !p.ClassesSkip(steps914) {
 		goto L14
 	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 56 || ch == 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
-		p.ExpectOrdinary(p.Pos, 152)
-		goto L14
-	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x12
 	p.Recovered = p.Recovered[:x13]
@@ -60776,18 +60533,9 @@ L10:
 	} else if _, ok = p.Parser.MatchLiteral(lit346, "0", 111, false); !ok {
 		goto L26
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 100 || ch == 68) {
-		p.ExpectOrdinary(p.Pos, 151)
+	if !p.ClassesSkip(steps914) {
 		goto L26
 	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 56 || ch == 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
-		p.ExpectOrdinary(p.Pos, 152)
-		goto L26
-	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x24
 	p.Recovered = p.Recovered[:x25]

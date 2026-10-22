@@ -425,6 +425,20 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		d.line("%s = %s", v, d.match(d.rd(start), text))
 		return v
 	case *grammar.CharClass:
+		// A short class is cheaper to test in place than through its table.
+		if g.leanTyped() && len(e.Ranges) > 4 {
+			table, id := g.classTable(e), g.desc(charClassString(e))
+			if !build {
+				d.failIf(fmt.Sprintf("!p.ClassFast(&%s) && !p.ClassSkip(&%s, %d)", table, table, id), fail)
+				return "nil"
+			}
+			start := d.decl("x", "int")
+			d.line("%s = p.Pos", start)
+			d.failIf(fmt.Sprintf("!p.ClassFast(&%s) && !p.ClassSkip(&%s, %d)", table, table, id), fail)
+			v := d.decl("v", d.g.valType())
+			d.line("%s = %s", v, d.match(d.rd(start), fmt.Sprintf("p.Text(%s, p.Pos)", start)))
+			return v
+		}
 		ch, size, ok := d.rd(d.shared("ch", "rune")), d.rd(d.shared("size", "int")), d.ok()
 		d.line("%s", d.peek(ch, size, ok))
 		d.failIf(fmt.Sprintf("!%s || %s", ok, g.controlledClassReject(e)), fail, fmt.Sprintf("p.Expect(p.Pos, %d)", g.desc(charClassString(e))))
@@ -451,7 +465,13 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 			d.line("%s = p.%s(%d)[:0]", kids, g.pick("Nodes", "NewVals"), valuedCount(d.g.prog, e))
 		}
 		// The value is the tuple node of the elements, flattened through nested sequences.
-		for _, it := range e.Items {
+		for i := 0; i < len(e.Items); i++ {
+			it := e.Items[i]
+			if run := classRun(e.Items[i:]); !build && g.leanTyped() && run > 1 {
+				d.failIf(fmt.Sprintf("!p.ClassesSkip(%s)", g.classSteps(e.Items[i:i+run])), fail)
+				i += run - 1
+				continue
+			}
 			v := d.expr(it, s, build, fail)
 			switch {
 			case build && isElems(d.g.prog, it):

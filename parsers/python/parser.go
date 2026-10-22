@@ -2564,8 +2564,30 @@ var scope1054 = []string{"x"}
 var scope1072 = []string{"x"}
 var scope1073 = []string{"rs", "c"}
 var scope1088 = []string{"x"}
-var scope1109 = []string{"p"}
-var scope1113 = []string{"p"}
+var cls1109 = pegort.Class{ASCII: [2]uint64{0x0, 0x34004400340044}}
+var scope1110 = []string{"p"}
+var scope1114 = []string{"p"}
+var cls1118 = pegort.Class{ASCII: [2]uint64{0xffffff7fffffdbfe, 0xffffffffefffffff}, Neg: true}
+var cls1119 = pegort.Class{ASCII: [2]uint64{0xfffffffbffffdbfe, 0xffffffffefffffff}, Neg: true}
+var cls1120 = pegort.Class{ASCII: [2]uint64{0x3ff200100000000, 0x7fffffe07fffffe}}
+var cls1121 = pegort.Class{ASCII: [2]uint64{0xffffffffffffdbfe, 0xfedfffffffdfbfff}, Neg: true}
+var cls1122 = pegort.Class{ASCII: [2]uint64{0xffffff7fffffdbfe, 0xffffffffefffffff}, Wide: []rune{128, 1114111}, Neg: true}
+var cls1123 = pegort.Class{ASCII: [2]uint64{0xfffffffbffffdbfe, 0xffffffffefffffff}, Wide: []rune{128, 1114111}, Neg: true}
+var cls1124 = pegort.Class{ASCII: [2]uint64{0xffffffffffffdbfe, 0xfeffffffffffffff}, Wide: []rune{128, 1114111}, Neg: true}
+var cls1125 = pegort.Class{ASCII: [2]uint64{0x0, 0x4000000040000}}
+var cls1126 = pegort.Class{ASCII: [2]uint64{0x0, 0x4000000040}}
+var steps1127 = []pegort.ClassStep{{C: &cls1125, ID: 116}, {C: &cls1126, ID: 142}}
+var steps1128 = []pegort.ClassStep{{C: &cls1126, ID: 142}, {C: &cls1125, ID: 116}}
+var cls1129 = pegort.Class{ASCII: [2]uint64{0x0, 0x10000000100000}}
+var steps1130 = []pegort.ClassStep{{C: &cls1125, ID: 116}, {C: &cls1129, ID: 144}}
+var steps1131 = []pegort.ClassStep{{C: &cls1129, ID: 144}, {C: &cls1125, ID: 116}}
+var cls1132 = pegort.Class{ASCII: [2]uint64{0xffffffffffffdbfe, 0xd6dfffffffdfbfff}, Neg: true}
+var cls1144 = pegort.Class{ASCII: [2]uint64{0x0, 0x100800401008004}}
+var cls1145 = pegort.Class{ASCII: [2]uint64{0x0, 0x0}, Wide: []rune{170, 170, 181, 181, 186, 186, 192, 214, 216, 246, 248, 705, 710, 721, 736, 740, 748, 748, 750, 750, 880, 884, 886, 887, 891, 893, 895, 895, 902, 902, 904, 906, 908, 908, 910, 929, 931, 1013, 1015, 1153, 1162, 1327, 1329, 1366, 1369, 1369, 1376, 1416, 1488, 1514, 1519, 1522, 1568, 1610, 1646, 1647, 1649, 1747, 1749, 1749, 1765, 1766, 1774, 1775, 1786, 1788, 1791, 1791, 1808, 1808, 1810, 1839, 1869, 1957, 1969, 1969, 1994, 2026, 2036, 2037, 2042, 2042, 2048, 2069, 2074, 2074, 2084, 2084, 2088, 2088, 2112, 2136, 2144, 2154, 2160, 2183, 2185, 2190, 2208, 2249, 2308, 2361, 2365, 2365, 2384, 2384, 2392, 2401, 2417, 2432, 2437, 2444, 2447, 2448, 2451, 2472, 2474, 2480, 2482, 2482, 2486, 2489, 2493, 2493, 2510, 2510, 2524, 2525, 2527, 2529, 2544, 2545, 2556, 2556, 2565, 2570, 2575, 2576, 2579, 2600, 2602, 2608, 2610, 2611, 2613, 2614, 2616, 2617, 2649, 2652, 2654, 2654, 2674, 2676, 2693, 2701, 2703, 2705, 2707, 2728, 2730, 2736, 2738, 2739, 2741, 2745, 2749, 2749, 2768, 2768, 2784, 2785, 2809, 2809, 2821, 2828, 2831, 2832, 2835, 2856, 2858, 2864, 2866, 2867, 2869, 2873, 2877, 2877, 2908, 2909, 2911, 2913, 2929, 2929, 2947, 2947, 2949, 2954, 2958, 2960, 2962, 2965, 2969, 2970, 2972, 2972, 2974, 2975, 2979, 2980, 2984, 2986, 2990, 3001, 3024, 3024, 3077, 3084, 3086, 3088, 3090, 3112, 3114, 3129, 3133, 3133, 3160, 3162, 3165, 3165, 3168, 3169, 3200, 3200, 3205, 3212, 3214, 3216, 3218, 3240, 3242, 3251, 3253, 3257, 3261, 3261, 3293, 3294, 3296, 3297, 3313, 3314, 3332, 3340, 3342, 3344, 3346, 3386, 3389, 3389, 3406, 3406, 3412, 3414, 3423, 3425, 3450, 3455, 3461, 3478, 3482, 3505, 3507, 3515, 3517, 3517, 3520, 3526, 3585, 3632, 3634, 3634, 3648, 3654, 3713, 3714, 3716, 3716, 3718, 3722, 3724, 3747, 3749, 3749, 3751, 3760, 3762, 3762, 3773, 3773, 3776, 3780, 3782, 3782, 3804, 3807, 3840, 3840, 3904, 3911, 3913, 3948, 3976, 3980, 4096, 4138, 4159, 4159, 4176, 4181, 4186, 4189, 4193, 4193, 4197, 4198, 4206, 4208, 4213, 4225, 4238, 4238, 4256, 4293, 4295, 4295, 4301, 4301, 4304, 4346, 4348, 4680, 4682, 4685, 4688, 4694, 4696, 4696, 4698, 4701, 4704, 4744, 4746, 4749, 4752, 4784, 4786, 4789, 4792, 4798, 4800, 4800, 4802, 4805, 4808, 4822, 4824, 4880, 4882, 4885, 4888, 4954, 4992, 5007, 5024, 5109, 5112, 5117, 5121, 5740, 5743, 5759, 5761, 5786, 5792, 5866, 5870, 5880, 5888, 5905, 5919, 5937, 5952, 5969, 5984, 5996, 5998, 6000, 6016, 6067, 6103, 6103, 6108, 6108, 6176, 6264, 6272, 6312, 6314, 6314, 6320, 6389, 6400, 6430, 6480, 6509, 6512, 6516, 6528, 6571, 6576, 6601, 6656, 6678, 6688, 6740, 6823, 6823, 6917, 6963, 6981, 6988, 7043, 7072, 7086, 7087, 7098, 7141, 7168, 7203, 7245, 7247, 7258, 7293, 7296, 7306, 7312, 7354, 7357, 7359, 7401, 7404, 7406, 7411, 7413, 7414, 7418, 7418, 7424, 7615, 7680, 7957, 7960, 7965, 7968, 8005, 8008, 8013, 8016, 8023, 8025, 8025, 8027, 8027, 8029, 8029, 8031, 8061, 8064, 8116, 8118, 8124, 8126, 8126, 8130, 8132, 8134, 8140, 8144, 8147, 8150, 8155, 8160, 8172, 8178, 8180, 8182, 8188, 8305, 8305, 8319, 8319, 8336, 8348, 8450, 8450, 8455, 8455, 8458, 8467, 8469, 8469, 8472, 8477, 8484, 8484, 8486, 8486, 8488, 8488, 8490, 8505, 8508, 8511, 8517, 8521, 8526, 8526, 8544, 8584, 11264, 11492, 11499, 11502, 11506, 11507, 11520, 11557, 11559, 11559, 11565, 11565, 11568, 11623, 11631, 11631, 11648, 11670, 11680, 11686, 11688, 11694, 11696, 11702, 11704, 11710, 11712, 11718, 11720, 11726, 11728, 11734, 11736, 11742, 12293, 12295, 12321, 12329, 12337, 12341, 12344, 12348, 12353, 12438, 12445, 12447, 12449, 12538, 12540, 12543, 12549, 12591, 12593, 12686, 12704, 12735, 12784, 12799, 13312, 19903, 19968, 42124, 42192, 42237, 42240, 42508, 42512, 42527, 42538, 42539, 42560, 42606, 42623, 42653, 42656, 42735, 42775, 42783, 42786, 42888, 42891, 42957, 42960, 42961, 42963, 42963, 42965, 42972, 42994, 43009, 43011, 43013, 43015, 43018, 43020, 43042, 43072, 43123, 43138, 43187, 43250, 43255, 43259, 43259, 43261, 43262, 43274, 43301, 43312, 43334, 43360, 43388, 43396, 43442, 43471, 43471, 43488, 43492, 43494, 43503, 43514, 43518, 43520, 43560, 43584, 43586, 43588, 43595, 43616, 43638, 43642, 43642, 43646, 43695, 43697, 43697, 43701, 43702, 43705, 43709, 43712, 43712, 43714, 43714, 43739, 43741, 43744, 43754, 43762, 43764, 43777, 43782, 43785, 43790, 43793, 43798, 43808, 43814, 43816, 43822, 43824, 43866, 43868, 43881, 43888, 44002, 44032, 55203, 55216, 55238, 55243, 55291, 63744, 64109, 64112, 64217, 64256, 64262, 64275, 64279, 64285, 64285, 64287, 64296, 64298, 64310, 64312, 64316, 64318, 64318, 64320, 64321, 64323, 64324, 64326, 64433, 64467, 64605, 64612, 64829, 64848, 64911, 64914, 64967, 65008, 65017, 65137, 65137, 65139, 65139, 65143, 65143, 65145, 65145, 65147, 65147, 65149, 65149, 65151, 65276, 65313, 65338, 65345, 65370, 65382, 65437, 65440, 65470, 65474, 65479, 65482, 65487, 65490, 65495, 65498, 65500, 65536, 65547, 65549, 65574, 65576, 65594, 65596, 65597, 65599, 65613, 65616, 65629, 65664, 65786, 65856, 65908, 66176, 66204, 66208, 66256, 66304, 66335, 66349, 66378, 66384, 66421, 66432, 66461, 66464, 66499, 66504, 66511, 66513, 66517, 66560, 66717, 66736, 66771, 66776, 66811, 66816, 66855, 66864, 66915, 66928, 66938, 66940, 66954, 66956, 66962, 66964, 66965, 66967, 66977, 66979, 66993, 66995, 67001, 67003, 67004, 67008, 67059, 67072, 67382, 67392, 67413, 67424, 67431, 67456, 67461, 67463, 67504, 67506, 67514, 67584, 67589, 67592, 67592, 67594, 67637, 67639, 67640, 67644, 67644, 67647, 67669, 67680, 67702, 67712, 67742, 67808, 67826, 67828, 67829, 67840, 67861, 67872, 67897, 67968, 68023, 68030, 68031, 68096, 68096, 68112, 68115, 68117, 68119, 68121, 68149, 68192, 68220, 68224, 68252, 68288, 68295, 68297, 68324, 68352, 68405, 68416, 68437, 68448, 68466, 68480, 68497, 68608, 68680, 68736, 68786, 68800, 68850, 68864, 68899, 68938, 68965, 68975, 68997, 69248, 69289, 69296, 69297, 69314, 69316, 69376, 69404, 69415, 69415, 69424, 69445, 69488, 69505, 69552, 69572, 69600, 69622, 69635, 69687, 69745, 69746, 69749, 69749, 69763, 69807, 69840, 69864, 69891, 69926, 69956, 69956, 69959, 69959, 69968, 70002, 70006, 70006, 70019, 70066, 70081, 70084, 70106, 70106, 70108, 70108, 70144, 70161, 70163, 70187, 70207, 70208, 70272, 70278, 70280, 70280, 70282, 70285, 70287, 70301, 70303, 70312, 70320, 70366, 70405, 70412, 70415, 70416, 70419, 70440, 70442, 70448, 70450, 70451, 70453, 70457, 70461, 70461, 70480, 70480, 70493, 70497, 70528, 70537, 70539, 70539, 70542, 70542, 70544, 70581, 70583, 70583, 70609, 70609, 70611, 70611, 70656, 70708, 70727, 70730, 70751, 70753, 70784, 70831, 70852, 70853, 70855, 70855, 71040, 71086, 71128, 71131, 71168, 71215, 71236, 71236, 71296, 71338, 71352, 71352, 71424, 71450, 71488, 71494, 71680, 71723, 71840, 71903, 71935, 71942, 71945, 71945, 71948, 71955, 71957, 71958, 71960, 71983, 71999, 71999, 72001, 72001, 72096, 72103, 72106, 72144, 72161, 72161, 72163, 72163, 72192, 72192, 72203, 72242, 72250, 72250, 72272, 72272, 72284, 72329, 72349, 72349, 72368, 72440, 72640, 72672, 72704, 72712, 72714, 72750, 72768, 72768, 72818, 72847, 72960, 72966, 72968, 72969, 72971, 73008, 73030, 73030, 73056, 73061, 73063, 73064, 73066, 73097, 73112, 73112, 73440, 73458, 73474, 73474, 73476, 73488, 73490, 73523, 73648, 73648, 73728, 74649, 74752, 74862, 74880, 75075, 77712, 77808, 77824, 78895, 78913, 78918, 78944, 82938, 82944, 83526, 90368, 90397, 92160, 92728, 92736, 92766, 92784, 92862, 92880, 92909, 92928, 92975, 92992, 92995, 93027, 93047, 93053, 93071, 93504, 93548, 93760, 93823, 93952, 94026, 94032, 94032, 94099, 94111, 94176, 94177, 94179, 94179, 94208, 100343, 100352, 101589, 101631, 101640, 110576, 110579, 110581, 110587, 110589, 110590, 110592, 110882, 110898, 110898, 110928, 110930, 110933, 110933, 110948, 110951, 110960, 111355, 113664, 113770, 113776, 113788, 113792, 113800, 113808, 113817, 119808, 119892, 119894, 119964, 119966, 119967, 119970, 119970, 119973, 119974, 119977, 119980, 119982, 119993, 119995, 119995, 119997, 120003, 120005, 120069, 120071, 120074, 120077, 120084, 120086, 120092, 120094, 120121, 120123, 120126, 120128, 120132, 120134, 120134, 120138, 120144, 120146, 120485, 120488, 120512, 120514, 120538, 120540, 120570, 120572, 120596, 120598, 120628, 120630, 120654, 120656, 120686, 120688, 120712, 120714, 120744, 120746, 120770, 120772, 120779, 122624, 122654, 122661, 122666, 122928, 122989, 123136, 123180, 123191, 123197, 123214, 123214, 123536, 123565, 123584, 123627, 124112, 124139, 124368, 124397, 124400, 124400, 124896, 124902, 124904, 124907, 124909, 124910, 124912, 124926, 124928, 125124, 125184, 125251, 125259, 125259, 126464, 126467, 126469, 126495, 126497, 126498, 126500, 126500, 126503, 126503, 126505, 126514, 126516, 126519, 126521, 126521, 126523, 126523, 126530, 126530, 126535, 126535, 126537, 126537, 126539, 126539, 126541, 126543, 126545, 126546, 126548, 126548, 126551, 126551, 126553, 126553, 126555, 126555, 126557, 126557, 126559, 126559, 126561, 126562, 126564, 126564, 126567, 126570, 126572, 126578, 126580, 126583, 126585, 126588, 126590, 126590, 126592, 126601, 126603, 126619, 126625, 126627, 126629, 126633, 126635, 126651, 131072, 173791, 173824, 177977, 177984, 178205, 178208, 183969, 183984, 191456, 191472, 192093, 194560, 195101, 196608, 201546, 201552, 205743}}
+var cls1146 = pegort.Class{ASCII: [2]uint64{0x0, 0x0}, Wide: []rune{170, 170, 181, 181, 183, 183, 186, 186, 192, 214, 216, 246, 248, 705, 710, 721, 736, 740, 748, 748, 750, 750, 768, 884, 886, 887, 891, 893, 895, 895, 902, 906, 908, 908, 910, 929, 931, 1013, 1015, 1153, 1155, 1159, 1162, 1327, 1329, 1366, 1369, 1369, 1376, 1416, 1425, 1469, 1471, 1471, 1473, 1474, 1476, 1477, 1479, 1479, 1488, 1514, 1519, 1522, 1552, 1562, 1568, 1641, 1646, 1747, 1749, 1756, 1759, 1768, 1770, 1788, 1791, 1791, 1808, 1866, 1869, 1969, 1984, 2037, 2042, 2042, 2045, 2045, 2048, 2093, 2112, 2139, 2144, 2154, 2160, 2183, 2185, 2190, 2199, 2273, 2275, 2403, 2406, 2415, 2417, 2435, 2437, 2444, 2447, 2448, 2451, 2472, 2474, 2480, 2482, 2482, 2486, 2489, 2492, 2500, 2503, 2504, 2507, 2510, 2519, 2519, 2524, 2525, 2527, 2531, 2534, 2545, 2556, 2556, 2558, 2558, 2561, 2563, 2565, 2570, 2575, 2576, 2579, 2600, 2602, 2608, 2610, 2611, 2613, 2614, 2616, 2617, 2620, 2620, 2622, 2626, 2631, 2632, 2635, 2637, 2641, 2641, 2649, 2652, 2654, 2654, 2662, 2677, 2689, 2691, 2693, 2701, 2703, 2705, 2707, 2728, 2730, 2736, 2738, 2739, 2741, 2745, 2748, 2757, 2759, 2761, 2763, 2765, 2768, 2768, 2784, 2787, 2790, 2799, 2809, 2815, 2817, 2819, 2821, 2828, 2831, 2832, 2835, 2856, 2858, 2864, 2866, 2867, 2869, 2873, 2876, 2884, 2887, 2888, 2891, 2893, 2901, 2903, 2908, 2909, 2911, 2915, 2918, 2927, 2929, 2929, 2946, 2947, 2949, 2954, 2958, 2960, 2962, 2965, 2969, 2970, 2972, 2972, 2974, 2975, 2979, 2980, 2984, 2986, 2990, 3001, 3006, 3010, 3014, 3016, 3018, 3021, 3024, 3024, 3031, 3031, 3046, 3055, 3072, 3084, 3086, 3088, 3090, 3112, 3114, 3129, 3132, 3140, 3142, 3144, 3146, 3149, 3157, 3158, 3160, 3162, 3165, 3165, 3168, 3171, 3174, 3183, 3200, 3203, 3205, 3212, 3214, 3216, 3218, 3240, 3242, 3251, 3253, 3257, 3260, 3268, 3270, 3272, 3274, 3277, 3285, 3286, 3293, 3294, 3296, 3299, 3302, 3311, 3313, 3315, 3328, 3340, 3342, 3344, 3346, 3396, 3398, 3400, 3402, 3406, 3412, 3415, 3423, 3427, 3430, 3439, 3450, 3455, 3457, 3459, 3461, 3478, 3482, 3505, 3507, 3515, 3517, 3517, 3520, 3526, 3530, 3530, 3535, 3540, 3542, 3542, 3544, 3551, 3558, 3567, 3570, 3571, 3585, 3642, 3648, 3662, 3664, 3673, 3713, 3714, 3716, 3716, 3718, 3722, 3724, 3747, 3749, 3749, 3751, 3773, 3776, 3780, 3782, 3782, 3784, 3790, 3792, 3801, 3804, 3807, 3840, 3840, 3864, 3865, 3872, 3881, 3893, 3893, 3895, 3895, 3897, 3897, 3902, 3911, 3913, 3948, 3953, 3972, 3974, 3991, 3993, 4028, 4038, 4038, 4096, 4169, 4176, 4253, 4256, 4293, 4295, 4295, 4301, 4301, 4304, 4346, 4348, 4680, 4682, 4685, 4688, 4694, 4696, 4696, 4698, 4701, 4704, 4744, 4746, 4749, 4752, 4784, 4786, 4789, 4792, 4798, 4800, 4800, 4802, 4805, 4808, 4822, 4824, 4880, 4882, 4885, 4888, 4954, 4957, 4959, 4969, 4977, 4992, 5007, 5024, 5109, 5112, 5117, 5121, 5740, 5743, 5759, 5761, 5786, 5792, 5866, 5870, 5880, 5888, 5909, 5919, 5940, 5952, 5971, 5984, 5996, 5998, 6000, 6002, 6003, 6016, 6099, 6103, 6103, 6108, 6109, 6112, 6121, 6155, 6157, 6159, 6169, 6176, 6264, 6272, 6314, 6320, 6389, 6400, 6430, 6432, 6443, 6448, 6459, 6470, 6509, 6512, 6516, 6528, 6571, 6576, 6601, 6608, 6618, 6656, 6683, 6688, 6750, 6752, 6780, 6783, 6793, 6800, 6809, 6823, 6823, 6832, 6845, 6847, 6862, 6912, 6988, 6992, 7001, 7019, 7027, 7040, 7155, 7168, 7223, 7232, 7241, 7245, 7293, 7296, 7306, 7312, 7354, 7357, 7359, 7376, 7378, 7380, 7418, 7424, 7957, 7960, 7965, 7968, 8005, 8008, 8013, 8016, 8023, 8025, 8025, 8027, 8027, 8029, 8029, 8031, 8061, 8064, 8116, 8118, 8124, 8126, 8126, 8130, 8132, 8134, 8140, 8144, 8147, 8150, 8155, 8160, 8172, 8178, 8180, 8182, 8188, 8204, 8205, 8255, 8256, 8276, 8276, 8305, 8305, 8319, 8319, 8336, 8348, 8400, 8412, 8417, 8417, 8421, 8432, 8450, 8450, 8455, 8455, 8458, 8467, 8469, 8469, 8472, 8477, 8484, 8484, 8486, 8486, 8488, 8488, 8490, 8505, 8508, 8511, 8517, 8521, 8526, 8526, 8544, 8584, 11264, 11492, 11499, 11507, 11520, 11557, 11559, 11559, 11565, 11565, 11568, 11623, 11631, 11631, 11647, 11670, 11680, 11686, 11688, 11694, 11696, 11702, 11704, 11710, 11712, 11718, 11720, 11726, 11728, 11734, 11736, 11742, 11744, 11775, 12293, 12295, 12321, 12335, 12337, 12341, 12344, 12348, 12353, 12438, 12441, 12442, 12445, 12447, 12449, 12543, 12549, 12591, 12593, 12686, 12704, 12735, 12784, 12799, 13312, 19903, 19968, 42124, 42192, 42237, 42240, 42508, 42512, 42539, 42560, 42607, 42612, 42621, 42623, 42737, 42775, 42783, 42786, 42888, 42891, 42957, 42960, 42961, 42963, 42963, 42965, 42972, 42994, 43047, 43052, 43052, 43072, 43123, 43136, 43205, 43216, 43225, 43232, 43255, 43259, 43259, 43261, 43309, 43312, 43347, 43360, 43388, 43392, 43456, 43471, 43481, 43488, 43518, 43520, 43574, 43584, 43597, 43600, 43609, 43616, 43638, 43642, 43714, 43739, 43741, 43744, 43759, 43762, 43766, 43777, 43782, 43785, 43790, 43793, 43798, 43808, 43814, 43816, 43822, 43824, 43866, 43868, 43881, 43888, 44010, 44012, 44013, 44016, 44025, 44032, 55203, 55216, 55238, 55243, 55291, 63744, 64109, 64112, 64217, 64256, 64262, 64275, 64279, 64285, 64296, 64298, 64310, 64312, 64316, 64318, 64318, 64320, 64321, 64323, 64324, 64326, 64433, 64467, 64605, 64612, 64829, 64848, 64911, 64914, 64967, 65008, 65017, 65024, 65039, 65056, 65071, 65075, 65076, 65101, 65103, 65137, 65137, 65139, 65139, 65143, 65143, 65145, 65145, 65147, 65147, 65149, 65149, 65151, 65276, 65296, 65305, 65313, 65338, 65343, 65343, 65345, 65370, 65381, 65470, 65474, 65479, 65482, 65487, 65490, 65495, 65498, 65500, 65536, 65547, 65549, 65574, 65576, 65594, 65596, 65597, 65599, 65613, 65616, 65629, 65664, 65786, 65856, 65908, 66045, 66045, 66176, 66204, 66208, 66256, 66272, 66272, 66304, 66335, 66349, 66378, 66384, 66426, 66432, 66461, 66464, 66499, 66504, 66511, 66513, 66517, 66560, 66717, 66720, 66729, 66736, 66771, 66776, 66811, 66816, 66855, 66864, 66915, 66928, 66938, 66940, 66954, 66956, 66962, 66964, 66965, 66967, 66977, 66979, 66993, 66995, 67001, 67003, 67004, 67008, 67059, 67072, 67382, 67392, 67413, 67424, 67431, 67456, 67461, 67463, 67504, 67506, 67514, 67584, 67589, 67592, 67592, 67594, 67637, 67639, 67640, 67644, 67644, 67647, 67669, 67680, 67702, 67712, 67742, 67808, 67826, 67828, 67829, 67840, 67861, 67872, 67897, 67968, 68023, 68030, 68031, 68096, 68099, 68101, 68102, 68108, 68115, 68117, 68119, 68121, 68149, 68152, 68154, 68159, 68159, 68192, 68220, 68224, 68252, 68288, 68295, 68297, 68326, 68352, 68405, 68416, 68437, 68448, 68466, 68480, 68497, 68608, 68680, 68736, 68786, 68800, 68850, 68864, 68903, 68912, 68921, 68928, 68965, 68969, 68973, 68975, 68997, 69248, 69289, 69291, 69292, 69296, 69297, 69314, 69316, 69372, 69404, 69415, 69415, 69424, 69456, 69488, 69509, 69552, 69572, 69600, 69622, 69632, 69702, 69734, 69749, 69759, 69818, 69826, 69826, 69840, 69864, 69872, 69881, 69888, 69940, 69942, 69951, 69956, 69959, 69968, 70003, 70006, 70006, 70016, 70084, 70089, 70092, 70094, 70106, 70108, 70108, 70144, 70161, 70163, 70199, 70206, 70209, 70272, 70278, 70280, 70280, 70282, 70285, 70287, 70301, 70303, 70312, 70320, 70378, 70384, 70393, 70400, 70403, 70405, 70412, 70415, 70416, 70419, 70440, 70442, 70448, 70450, 70451, 70453, 70457, 70459, 70468, 70471, 70472, 70475, 70477, 70480, 70480, 70487, 70487, 70493, 70499, 70502, 70508, 70512, 70516, 70528, 70537, 70539, 70539, 70542, 70542, 70544, 70581, 70583, 70592, 70594, 70594, 70597, 70597, 70599, 70602, 70604, 70611, 70625, 70626, 70656, 70730, 70736, 70745, 70750, 70753, 70784, 70853, 70855, 70855, 70864, 70873, 71040, 71093, 71096, 71104, 71128, 71133, 71168, 71232, 71236, 71236, 71248, 71257, 71296, 71352, 71360, 71369, 71376, 71395, 71424, 71450, 71453, 71467, 71472, 71481, 71488, 71494, 71680, 71738, 71840, 71913, 71935, 71942, 71945, 71945, 71948, 71955, 71957, 71958, 71960, 71989, 71991, 71992, 71995, 72003, 72016, 72025, 72096, 72103, 72106, 72151, 72154, 72161, 72163, 72164, 72192, 72254, 72263, 72263, 72272, 72345, 72349, 72349, 72368, 72440, 72640, 72672, 72688, 72697, 72704, 72712, 72714, 72758, 72760, 72768, 72784, 72793, 72818, 72847, 72850, 72871, 72873, 72886, 72960, 72966, 72968, 72969, 72971, 73014, 73018, 73018, 73020, 73021, 73023, 73031, 73040, 73049, 73056, 73061, 73063, 73064, 73066, 73102, 73104, 73105, 73107, 73112, 73120, 73129, 73440, 73462, 73472, 73488, 73490, 73530, 73534, 73538, 73552, 73562, 73648, 73648, 73728, 74649, 74752, 74862, 74880, 75075, 77712, 77808, 77824, 78895, 78912, 78933, 78944, 82938, 82944, 83526, 90368, 90425, 92160, 92728, 92736, 92766, 92768, 92777, 92784, 92862, 92864, 92873, 92880, 92909, 92912, 92916, 92928, 92982, 92992, 92995, 93008, 93017, 93027, 93047, 93053, 93071, 93504, 93548, 93552, 93561, 93760, 93823, 93952, 94026, 94031, 94087, 94095, 94111, 94176, 94177, 94179, 94180, 94192, 94193, 94208, 100343, 100352, 101589, 101631, 101640, 110576, 110579, 110581, 110587, 110589, 110590, 110592, 110882, 110898, 110898, 110928, 110930, 110933, 110933, 110948, 110951, 110960, 111355, 113664, 113770, 113776, 113788, 113792, 113800, 113808, 113817, 113821, 113822, 118000, 118009, 118528, 118573, 118576, 118598, 119141, 119145, 119149, 119154, 119163, 119170, 119173, 119179, 119210, 119213, 119362, 119364, 119808, 119892, 119894, 119964, 119966, 119967, 119970, 119970, 119973, 119974, 119977, 119980, 119982, 119993, 119995, 119995, 119997, 120003, 120005, 120069, 120071, 120074, 120077, 120084, 120086, 120092, 120094, 120121, 120123, 120126, 120128, 120132, 120134, 120134, 120138, 120144, 120146, 120485, 120488, 120512, 120514, 120538, 120540, 120570, 120572, 120596, 120598, 120628, 120630, 120654, 120656, 120686, 120688, 120712, 120714, 120744, 120746, 120770, 120772, 120779, 120782, 120831, 121344, 121398, 121403, 121452, 121461, 121461, 121476, 121476, 121499, 121503, 121505, 121519, 122624, 122654, 122661, 122666, 122880, 122886, 122888, 122904, 122907, 122913, 122915, 122916, 122918, 122922, 122928, 122989, 123023, 123023, 123136, 123180, 123184, 123197, 123200, 123209, 123214, 123214, 123536, 123566, 123584, 123641, 124112, 124153, 124368, 124410, 124896, 124902, 124904, 124907, 124909, 124910, 124912, 124926, 124928, 125124, 125136, 125142, 125184, 125259, 125264, 125273, 126464, 126467, 126469, 126495, 126497, 126498, 126500, 126500, 126503, 126503, 126505, 126514, 126516, 126519, 126521, 126521, 126523, 126523, 126530, 126530, 126535, 126535, 126537, 126537, 126539, 126539, 126541, 126543, 126545, 126546, 126548, 126548, 126551, 126551, 126553, 126553, 126555, 126555, 126557, 126557, 126559, 126559, 126561, 126562, 126564, 126564, 126567, 126570, 126572, 126578, 126580, 126583, 126585, 126588, 126590, 126590, 126592, 126601, 126603, 126619, 126625, 126627, 126629, 126633, 126635, 126651, 130032, 130041, 131072, 173791, 173824, 177977, 177984, 178205, 178208, 183969, 183984, 191456, 191472, 192093, 194560, 195101, 196608, 201546, 201552, 205743, 917760, 917999}}
+var cls1159 = pegort.Class{ASCII: [2]uint64{0x0, 0x400000004}}
+var steps1160 = []pegort.ClassStep{{C: &cls1159, ID: 117}, {C: &cls1125, ID: 116}}
+var steps1161 = []pegort.ClassStep{{C: &cls1125, ID: 116}, {C: &cls1159, ID: 117}}
 
 func init() {
 	rules = []*pegort.Rule{
@@ -3741,95 +3763,95 @@ func init() {
 	trules[173].Entry = u173
 	trules[174].Entry = s174
 	trules[175].OperatorsRule = &pegort.TOperatorsRule{
-		Skip: e1140,
+		Skip: e1162,
 		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1141, Action: nil, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}},
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1142, Action: nil, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}},
+			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1163, Action: nil, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}},
+			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1164, Action: nil, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}},
 		},
-		Prefix: []*pegort.TOperatorsRuleOp{{Id: 6, Kind: "prefix", Assoc: "", Level: 7, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1167, Action: func(c *pegort.TActCtx) any {
+		Prefix: []*pegort.TOperatorsRuleOp{{Id: 6, Kind: "prefix", Assoc: "", Level: 7, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1189, Action: func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return func() any {
-					f_1168 := func() any { ; return c.Cap(0) }()
-					f_1169 := func() any { ; return (c.Rhs) }()
-					return tmk_UnaryOp(c, true, f_1168, f_1169)
+					f_1190 := func() any { ; return c.Cap(0) }()
+					f_1191 := func() any { ; return (c.Rhs) }()
+					return tmk_UnaryOp(c, true, f_1190, f_1191)
 				}()
 			}()
 		}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}}},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "left", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1143, Action: func(c *pegort.TActCtx) any {
+		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "left", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1165, Action: func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return func() any {
-					f_1144 := func() any { ; return (c.Lhs) }()
-					f_1145 := func() any { ; return c.Cap(0) }()
-					f_1146 := func() any { ; return (c.Rhs) }()
-					return tmk_BinOp(c, true, f_1144, f_1145, f_1146)
+					f_1166 := func() any { ; return (c.Lhs) }()
+					f_1167 := func() any { ; return c.Cap(0) }()
+					f_1168 := func() any { ; return (c.Rhs) }()
+					return tmk_BinOp(c, true, f_1166, f_1167, f_1168)
 				}()
 			}()
 		}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}},
-			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1147, Action: func(c *pegort.TActCtx) any {
+			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1169, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_1148 := func() any { ; return (c.Lhs) }()
-						f_1149 := func() any { ; return c.Cap(0) }()
-						f_1150 := func() any { ; return (c.Rhs) }()
-						return tmk_BinOp(c, true, f_1148, f_1149, f_1150)
+						f_1170 := func() any { ; return (c.Lhs) }()
+						f_1171 := func() any { ; return c.Cap(0) }()
+						f_1172 := func() any { ; return (c.Rhs) }()
+						return tmk_BinOp(c, true, f_1170, f_1171, f_1172)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}},
-			{Id: 2, Kind: "infix", Assoc: "left", Level: 3, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1151, Action: func(c *pegort.TActCtx) any {
+			{Id: 2, Kind: "infix", Assoc: "left", Level: 3, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1173, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_1152 := func() any { ; return (c.Lhs) }()
-						f_1153 := func() any { ; return c.Cap(0) }()
-						f_1154 := func() any { ; return (c.Rhs) }()
-						return tmk_BinOp(c, true, f_1152, f_1153, f_1154)
+						f_1174 := func() any { ; return (c.Lhs) }()
+						f_1175 := func() any { ; return c.Cap(0) }()
+						f_1176 := func() any { ; return (c.Rhs) }()
+						return tmk_BinOp(c, true, f_1174, f_1175, f_1176)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}},
-			{Id: 3, Kind: "infix", Assoc: "left", Level: 4, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1155, Action: func(c *pegort.TActCtx) any {
+			{Id: 3, Kind: "infix", Assoc: "left", Level: 4, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1177, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_1156 := func() any { ; return (c.Lhs) }()
-						f_1157 := func() any { ; return c.Cap(0) }()
-						f_1158 := func() any { ; return (c.Rhs) }()
-						return tmk_BinOp(c, true, f_1156, f_1157, f_1158)
+						f_1178 := func() any { ; return (c.Lhs) }()
+						f_1179 := func() any { ; return c.Cap(0) }()
+						f_1180 := func() any { ; return (c.Rhs) }()
+						return tmk_BinOp(c, true, f_1178, f_1179, f_1180)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}},
-			{Id: 4, Kind: "infix", Assoc: "left", Level: 5, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1159, Action: func(c *pegort.TActCtx) any {
+			{Id: 4, Kind: "infix", Assoc: "left", Level: 5, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1181, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_1160 := func() any { ; return (c.Lhs) }()
-						f_1161 := func() any { ; return c.Cap(0) }()
-						f_1162 := func() any { ; return (c.Rhs) }()
-						return tmk_BinOp(c, true, f_1160, f_1161, f_1162)
+						f_1182 := func() any { ; return (c.Lhs) }()
+						f_1183 := func() any { ; return c.Cap(0) }()
+						f_1184 := func() any { ; return (c.Rhs) }()
+						return tmk_BinOp(c, true, f_1182, f_1183, f_1184)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}},
-			{Id: 5, Kind: "infix", Assoc: "left", Level: 6, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1163, Action: func(c *pegort.TActCtx) any {
+			{Id: 5, Kind: "infix", Assoc: "left", Level: 6, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1185, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_1164 := func() any { ; return (c.Lhs) }()
-						f_1165 := func() any { ; return c.Cap(0) }()
-						f_1166 := func() any { ; return (c.Rhs) }()
-						return tmk_BinOp(c, true, f_1164, f_1165, f_1166)
+						f_1186 := func() any { ; return (c.Lhs) }()
+						f_1187 := func() any { ; return c.Cap(0) }()
+						f_1188 := func() any { ; return (c.Rhs) }()
+						return tmk_BinOp(c, true, f_1186, f_1187, f_1188)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}},
-			{Id: 7, Kind: "infix", Assoc: "right", Level: 8, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1170, Action: func(c *pegort.TActCtx) any {
+			{Id: 7, Kind: "infix", Assoc: "right", Level: 8, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1192, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_1171 := func() any { ; return (c.Lhs) }()
-						f_1172 := func() any { ; return c.Cap(0) }()
-						f_1173 := func() any { ; return (c.Rhs) }()
-						return tmk_BinOp(c, true, f_1171, f_1172, f_1173)
+						f_1193 := func() any { ; return (c.Lhs) }()
+						f_1194 := func() any { ; return c.Cap(0) }()
+						f_1195 := func() any { ; return (c.Rhs) }()
+						return tmk_BinOp(c, true, f_1193, f_1194, f_1195)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}}},
@@ -3847,83 +3869,83 @@ func init() {
 	trules[185].Entry = u185
 	trules[186].Entry = u186
 	trules[187].OperatorsRule = &pegort.TOperatorsRule{
-		Skip: e1140,
+		Skip: e1162,
 		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1174, Action: nil, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}},
+			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1196, Action: nil, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}},
 		},
 		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"n"}, M: e1175, Action: func(c *pegort.TActCtx) any {
+		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"n"}, M: e1197, Action: func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return func() any {
-					f_1176 := func() any { ; return (c.Lhs) }()
-					f_1177 := func() any { ; return c.Text(func() any { ; return c.Cap(0) }()) }()
-					f_1178 := func() any { ; return any("Load") }()
-					return tmk_Attribute(c, true, f_1176, f_1177, f_1178)
+					f_1198 := func() any { ; return (c.Lhs) }()
+					f_1199 := func() any { ; return c.Text(func() any { ; return c.Cap(0) }()) }()
+					f_1200 := func() any { ; return any("Load") }()
+					return tmk_Attribute(c, true, f_1198, f_1199, f_1200)
 				}()
 			}()
 		}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"g"}, M: e1179, Action: func(c *pegort.TActCtx) any {
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"g"}, M: e1201, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_1180 := func() any { ; return (c.Lhs) }()
-						f_1181 := func() any { ; return c.List(func() any { ; return c.Cap(0) }()) }()
-						return tmk_Call(c, true, f_1180, f_1181, nil)
+						f_1202 := func() any { ; return (c.Lhs) }()
+						f_1203 := func() any { ; return c.List(func() any { ; return c.Cap(0) }()) }()
+						return tmk_Call(c, true, f_1202, f_1203, nil)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"c"}, M: e1182, Action: func(c *pegort.TActCtx) any {
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"c"}, M: e1204, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_1183 := func() any { ; return (c.Lhs) }()
-						f_1184 := func() any {
+						f_1205 := func() any { ; return (c.Lhs) }()
+						f_1206 := func() any {
 
 							return c.Concat(func() any {
 
-								return c.MapList(func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$pos") }(), func(l_1185 any) any {
-									return func() any { ; return c.Member(func() any { ; return (l_1185) }(), "$a") }()
+								return c.MapList(func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$pos") }(), func(l_1207 any) any {
+									return func() any { ; return c.Member(func() any { ; return (l_1207) }(), "$a") }()
 								})
 							}(), func() any {
 
-								return c.Fold("foldl", false, func() any { ; return c.List() }(), func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw1") }(), func(l_1186, l_1187 any) any {
+								return c.Fold("foldl", false, func() any { ; return c.List() }(), func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw1") }(), func(l_1208, l_1209 any) any {
 									return func() any {
 
-										return c.Concat(func() any { ; return (l_1186) }(), func() any { ; return c.Member(func() any { ; return (l_1187) }(), "$ss") }())
+										return c.Concat(func() any { ; return (l_1208) }(), func() any { ; return c.Member(func() any { ; return (l_1209) }(), "$ss") }())
 									}()
 								})
 							}())
 						}()
-						f_1188 := func() any {
+						f_1210 := func() any {
 
 							return c.Concat(func() any {
 
-								return c.Fold("foldl", false, func() any { ; return c.List() }(), func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw1") }(), func(l_1189, l_1190 any) any {
+								return c.Fold("foldl", false, func() any { ; return c.List() }(), func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw1") }(), func(l_1211, l_1212 any) any {
 									return func() any {
 
-										return c.Concat(func() any { ; return (l_1189) }(), func() any { ; return c.Member(func() any { ; return (l_1190) }(), "$ks") }())
+										return c.Concat(func() any { ; return (l_1211) }(), func() any { ; return c.Member(func() any { ; return (l_1212) }(), "$ks") }())
 									}()
 								})
 							}(), func() any {
 
-								return c.MapList(func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw2") }(), func(l_1191 any) any {
-									return func() any { ; return c.Member(func() any { ; return (l_1191) }(), "$k") }()
+								return c.MapList(func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw2") }(), func(l_1213 any) any {
+									return func() any { ; return c.Member(func() any { ; return (l_1213) }(), "$k") }()
 								})
 							}())
 						}()
-						return tmk_Call(c, true, f_1183, f_1184, f_1188)
+						return tmk_Call(c, true, f_1205, f_1206, f_1210)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e1192, Action: func(c *pegort.TActCtx) any {
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e1214, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_1193 := func() any { ; return (c.Lhs) }()
-						f_1194 := func() any { ; return c.Cap(0) }()
-						f_1195 := func() any { ; return any("Load") }()
-						return tmk_Subscript(c, true, f_1193, f_1194, f_1195)
+						f_1215 := func() any { ; return (c.Lhs) }()
+						f_1216 := func() any { ; return c.Cap(0) }()
+						f_1217 := func() any { ; return any("Load") }()
+						return tmk_Subscript(c, true, f_1215, f_1216, f_1217)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}}},
@@ -3981,83 +4003,83 @@ func init() {
 	trules[237].Entry = u237
 	trules[238].Entry = u238
 	trules[239].OperatorsRule = &pegort.TOperatorsRule{
-		Skip: e1140,
+		Skip: e1162,
 		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{"a"}, M: e1196, Action: func(c *pegort.TActCtx) any { return func() any { ; return c.Cap(0) }() }, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}},
+			&pegort.TOperatorsRuleLine{Scope: []string{"a"}, M: e1218, Action: func(c *pegort.TActCtx) any { return func() any { ; return c.Cap(0) }() }, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}},
 		},
 		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"n"}, M: e1197, Action: func(c *pegort.TActCtx) any {
+		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"n"}, M: e1219, Action: func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return func() any {
-					f_1198 := func() any { ; return (c.Lhs) }()
-					f_1199 := func() any { ; return c.Text(func() any { ; return c.Cap(0) }()) }()
-					f_1200 := func() any { ; return any("Load") }()
-					return tmk_Attribute(c, true, f_1198, f_1199, f_1200)
+					f_1220 := func() any { ; return (c.Lhs) }()
+					f_1221 := func() any { ; return c.Text(func() any { ; return c.Cap(0) }()) }()
+					f_1222 := func() any { ; return any("Load") }()
+					return tmk_Attribute(c, true, f_1220, f_1221, f_1222)
 				}()
 			}()
 		}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"g"}, M: e1201, Action: func(c *pegort.TActCtx) any {
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"g"}, M: e1223, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_1202 := func() any { ; return (c.Lhs) }()
-						f_1203 := func() any { ; return c.List(func() any { ; return c.Cap(0) }()) }()
-						return tmk_Call(c, true, f_1202, f_1203, nil)
+						f_1224 := func() any { ; return (c.Lhs) }()
+						f_1225 := func() any { ; return c.List(func() any { ; return c.Cap(0) }()) }()
+						return tmk_Call(c, true, f_1224, f_1225, nil)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"c"}, M: e1204, Action: func(c *pegort.TActCtx) any {
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"c"}, M: e1226, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_1205 := func() any { ; return (c.Lhs) }()
-						f_1206 := func() any {
+						f_1227 := func() any { ; return (c.Lhs) }()
+						f_1228 := func() any {
 
 							return c.Concat(func() any {
 
-								return c.MapList(func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$pos") }(), func(l_1207 any) any {
-									return func() any { ; return c.Member(func() any { ; return (l_1207) }(), "$a") }()
+								return c.MapList(func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$pos") }(), func(l_1229 any) any {
+									return func() any { ; return c.Member(func() any { ; return (l_1229) }(), "$a") }()
 								})
 							}(), func() any {
 
-								return c.Fold("foldl", false, func() any { ; return c.List() }(), func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw1") }(), func(l_1208, l_1209 any) any {
+								return c.Fold("foldl", false, func() any { ; return c.List() }(), func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw1") }(), func(l_1230, l_1231 any) any {
 									return func() any {
 
-										return c.Concat(func() any { ; return (l_1208) }(), func() any { ; return c.Member(func() any { ; return (l_1209) }(), "$ss") }())
+										return c.Concat(func() any { ; return (l_1230) }(), func() any { ; return c.Member(func() any { ; return (l_1231) }(), "$ss") }())
 									}()
 								})
 							}())
 						}()
-						f_1210 := func() any {
+						f_1232 := func() any {
 
 							return c.Concat(func() any {
 
-								return c.Fold("foldl", false, func() any { ; return c.List() }(), func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw1") }(), func(l_1211, l_1212 any) any {
+								return c.Fold("foldl", false, func() any { ; return c.List() }(), func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw1") }(), func(l_1233, l_1234 any) any {
 									return func() any {
 
-										return c.Concat(func() any { ; return (l_1211) }(), func() any { ; return c.Member(func() any { ; return (l_1212) }(), "$ks") }())
+										return c.Concat(func() any { ; return (l_1233) }(), func() any { ; return c.Member(func() any { ; return (l_1234) }(), "$ks") }())
 									}()
 								})
 							}(), func() any {
 
-								return c.MapList(func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw2") }(), func(l_1213 any) any {
-									return func() any { ; return c.Member(func() any { ; return (l_1213) }(), "$k") }()
+								return c.MapList(func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw2") }(), func(l_1235 any) any {
+									return func() any { ; return c.Member(func() any { ; return (l_1235) }(), "$k") }()
 								})
 							}())
 						}()
-						return tmk_Call(c, true, f_1205, f_1206, f_1210)
+						return tmk_Call(c, true, f_1227, f_1228, f_1232)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e1214, Action: func(c *pegort.TActCtx) any {
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e1236, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_1215 := func() any { ; return (c.Lhs) }()
-						f_1216 := func() any { ; return c.Cap(0) }()
-						f_1217 := func() any { ; return any("Load") }()
-						return tmk_Subscript(c, true, f_1215, f_1216, f_1217)
+						f_1237 := func() any { ; return (c.Lhs) }()
+						f_1238 := func() any { ; return c.Cap(0) }()
+						f_1239 := func() any { ; return any("Load") }()
+						return tmk_Subscript(c, true, f_1237, f_1238, f_1239)
 					}()
 				}()
 			}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}}}},
@@ -25705,7 +25727,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1140(p *pegort.TParser) (any, bool) {
+func e1162(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
 	)
@@ -25718,7 +25740,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1141(p *pegort.TParser) (any, bool) {
+func e1163(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
 		v1 any
@@ -25732,7 +25754,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1142(p *pegort.TParser) (any, bool) {
+func e1164(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
 		v1 any
@@ -25746,7 +25768,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1143(p *pegort.TParser) (any, bool) {
+func e1165(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -25764,7 +25786,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1147(p *pegort.TParser) (any, bool) {
+func e1169(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -25782,7 +25804,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1151(p *pegort.TParser) (any, bool) {
+func e1173(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -25800,7 +25822,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1155(p *pegort.TParser) (any, bool) {
+func e1177(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -25818,7 +25840,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1159(p *pegort.TParser) (any, bool) {
+func e1181(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -25836,7 +25858,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1163(p *pegort.TParser) (any, bool) {
+func e1185(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -25854,7 +25876,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1167(p *pegort.TParser) (any, bool) {
+func e1189(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -25872,7 +25894,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1170(p *pegort.TParser) (any, bool) {
+func e1192(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -26916,7 +26938,7 @@ fail:
 }
 
 // primary_chain (typed OperatorsRule body inlined)
-func e1174(p *pegort.TParser) (any, bool) {
+func e1196(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
 		v1 any
@@ -26930,7 +26952,7 @@ fail:
 }
 
 // primary_chain (typed OperatorsRule body inlined)
-func e1175(p *pegort.TParser) (any, bool) {
+func e1197(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -26982,7 +27004,7 @@ fail:
 }
 
 // primary_chain (typed OperatorsRule body inlined)
-func e1179(p *pegort.TParser) (any, bool) {
+func e1201(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -27000,7 +27022,7 @@ fail:
 }
 
 // primary_chain (typed OperatorsRule body inlined)
-func e1182(p *pegort.TParser) (any, bool) {
+func e1204(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -27018,7 +27040,7 @@ fail:
 }
 
 // primary_chain (typed OperatorsRule body inlined)
-func e1192(p *pegort.TParser) (any, bool) {
+func e1214(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -34040,7 +34062,7 @@ fail:
 }
 
 // t_primary (typed OperatorsRule body inlined)
-func e1196(p *pegort.TParser) (any, bool) {
+func e1218(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -34075,7 +34097,7 @@ fail:
 }
 
 // t_primary (typed OperatorsRule body inlined)
-func e1197(p *pegort.TParser) (any, bool) {
+func e1219(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -34144,7 +34166,7 @@ fail:
 }
 
 // t_primary (typed OperatorsRule body inlined)
-func e1201(p *pegort.TParser) (any, bool) {
+func e1223(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -34186,7 +34208,7 @@ fail:
 }
 
 // t_primary (typed OperatorsRule body inlined)
-func e1204(p *pegort.TParser) (any, bool) {
+func e1226(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -34228,7 +34250,7 @@ fail:
 }
 
 // t_primary (typed OperatorsRule body inlined)
-func e1214(p *pegort.TParser) (any, bool) {
+func e1236(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -35351,13 +35373,13 @@ func s250(p *pegort.TParser) (any, bool) {
 		x6    int
 		x7    int
 		x8    int
-		ch    rune
-		size  int
-		ok    bool
 		x10   int
 		v11   any
 		v12   any
 		v13   any
+		ch    rune
+		size  int
+		ok    bool
 		x14   int
 		v15   any
 		v16   any
@@ -35374,13 +35396,10 @@ func s250(p *pegort.TParser) (any, bool) {
 	x5 = 0
 	for x6 = 0; x6 < 2; x6++ {
 		x7, x8 = p.Pos, len(p.Recovered)
-		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch == 114 || ch == 82 || ch == 98 || ch == 66 || ch == 117 || ch == 85 || ch == 102 || ch == 70 || ch == 116 || ch == 84)) {
-			p.ExpectOrdinary(p.Pos, 113)
+		x10 = p.Pos
+		if !p.ClassFast(&cls1109) && !p.ClassSkip(&cls1109, 113) {
 			goto L9
 		}
-		x10 = p.Pos
-		p.Pos += size
 		v11 = p.NewMatchOrdinary(x10, p.Pos, p.Text(x10, p.Pos), true)
 		v12 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v11, x7)
 		x5++
@@ -35644,7 +35663,7 @@ func i253(p *pegort.TParser) (any, bool) {
 		x14 = append(x14, v16)
 		v17 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
 		v18 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v17, x9)
-		v19 = p.AttachCaptures(v18, scope1109, []any{k11}, x9, p.Pos)
+		v19 = p.AttachCaptures(v18, scope1110, []any{k11}, x9, p.Pos)
 		x8++
 		p.PushKid(v19)
 		if p.Pos == x9 {
@@ -35679,14 +35698,14 @@ L23:
 	p.Where = "fjoined"
 	v = func() any {
 		return func() any {
-			f_1110 := func() any {
-				return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1111, l_1112 any) any {
+			f_1111 := func() any {
+				return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1112, l_1113 any) any {
 					return func() any {
-						return c.Concat(func() any { return l_1111 }(), func() any { return c.Member(func() any { return l_1112 }(), "$p") }())
+						return c.Concat(func() any { return l_1112 }(), func() any { return c.Member(func() any { return l_1113 }(), "$p") }())
 					}()
 				})
 			}()
-			return tmk_JoinedStr(c, true, f_1110)
+			return tmk_JoinedStr(c, true, f_1111)
 		}()
 	}()
 	p.Where = w
@@ -35956,7 +35975,7 @@ func i257(p *pegort.TParser) (any, bool) {
 		x14 = append(x14, v16)
 		v17 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
 		v18 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v17, x9)
-		v19 = p.AttachCaptures(v18, scope1113, []any{k11}, x9, p.Pos)
+		v19 = p.AttachCaptures(v18, scope1114, []any{k11}, x9, p.Pos)
 		x8++
 		p.PushKid(v19)
 		if p.Pos == x9 {
@@ -35991,14 +36010,14 @@ L23:
 	p.Where = "tstrings"
 	v = func() any {
 		return func() any {
-			f_1114 := func() any {
-				return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1115, l_1116 any) any {
+			f_1115 := func() any {
+				return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1116, l_1117 any) any {
 					return func() any {
-						return c.Concat(func() any { return l_1115 }(), func() any { return c.Member(func() any { return l_1116 }(), "$p") }())
+						return c.Concat(func() any { return l_1116 }(), func() any { return c.Member(func() any { return l_1117 }(), "$p") }())
 					}()
 				})
 			}()
-			return tmk_TemplateStr(c, true, f_1114)
+			return tmk_TemplateStr(c, true, f_1115)
 		}()
 	}()
 	p.Where = w
@@ -37075,13 +37094,10 @@ L108:
 		x124 = 0
 		for {
 			x125, x126 = p.Pos, len(p.Recovered)
-			ch, size, ok = p.NextOrdinary()
-			if !ok || (ch == 39 || ch == 92 || ch == 10 || ch == 13 || ch == 0) {
-				p.ExpectOrdinary(p.Pos, 124)
+			x128 = p.Pos
+			if !p.ClassFast(&cls1118) && !p.ClassSkip(&cls1118, 124) {
 				goto L127
 			}
-			x128 = p.Pos
-			p.Pos += size
 			v129 = p.NewMatchOrdinary(x128, p.Pos, p.Text(x128, p.Pos), true)
 			v130 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v129, x125)
 			x124++
@@ -37184,13 +37200,10 @@ L148:
 		x164 = 0
 		for {
 			x165, x166 = p.Pos, len(p.Recovered)
-			ch, size, ok = p.NextOrdinary()
-			if !ok || (ch == 34 || ch == 92 || ch == 10 || ch == 13 || ch == 0) {
-				p.ExpectOrdinary(p.Pos, 125)
+			x168 = p.Pos
+			if !p.ClassFast(&cls1119) && !p.ClassSkip(&cls1119, 125) {
 				goto L167
 			}
-			x168 = p.Pos
-			p.Pos += size
 			v169 = p.NewMatchOrdinary(x168, p.Pos, p.Text(x168, p.Pos), true)
 			v170 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v169, x165)
 			x164++
@@ -37733,13 +37746,10 @@ L108:
 		x124 = 0
 		for {
 			x125, x126 = p.Pos, len(p.Recovered)
-			ch, size, ok = p.NextOrdinary()
-			if !ok || (ch == 39 || ch == 92 || ch == 10 || ch == 13 || ch == 0) {
-				p.ExpectOrdinary(p.Pos, 124)
+			x128 = p.Pos
+			if !p.ClassFast(&cls1118) && !p.ClassSkip(&cls1118, 124) {
 				goto L127
 			}
-			x128 = p.Pos
-			p.Pos += size
 			v129 = p.NewMatchOrdinary(x128, p.Pos, p.Text(x128, p.Pos), true)
 			v130 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v129, x125)
 			x124++
@@ -37842,13 +37852,10 @@ L148:
 		x164 = 0
 		for {
 			x165, x166 = p.Pos, len(p.Recovered)
-			ch, size, ok = p.NextOrdinary()
-			if !ok || (ch == 34 || ch == 92 || ch == 10 || ch == 13 || ch == 0) {
-				p.ExpectOrdinary(p.Pos, 125)
+			x168 = p.Pos
+			if !p.ClassFast(&cls1119) && !p.ClassSkip(&cls1119, 125) {
 				goto L167
 			}
-			x168 = p.Pos
-			p.Pos += size
 			v169 = p.NewMatchOrdinary(x168, p.Pos, p.Text(x168, p.Pos), true)
 			v170 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v169, x165)
 			x164++
@@ -38014,8 +38021,6 @@ func v261(p *pegort.TParser) (any, bool) {
 		x82   int
 		x83   int
 		x84   int
-		ch    rune
-		size  int
 		x86   int
 		v87   any
 		v88   any
@@ -38247,13 +38252,10 @@ L35:
 	x82 = 0
 	for {
 		x83, x84 = p.Pos, len(p.Recovered)
-		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 32 || ch == 45)) {
-			p.ExpectOrdinary(p.Pos, 132)
+		x86 = p.Pos
+		if !p.ClassFast(&cls1120) && !p.ClassSkip(&cls1120, 132) {
 			goto L85
 		}
-		x86 = p.Pos
-		p.Pos += size
 		v87 = p.NewMatchOrdinary(x86, p.Pos, p.Text(x86, p.Pos), true)
 		v88 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v87, x83)
 		x82++
@@ -38293,13 +38295,10 @@ L74:
 		p.ExpectOrdinary(p.Pos, 133)
 		goto L94
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (ch == 120 || ch == 117 || ch == 85 || ch == 78 || ch == 10 || ch == 13 || ch == 0) {
-		p.ExpectOrdinary(p.Pos, 133)
+	x96 = p.Pos
+	if !p.ClassFast(&cls1121) && !p.ClassSkip(&cls1121, 133) {
 		goto L95
 	}
-	x96 = p.Pos
-	p.Pos += size
 	v97 = p.NewMatchOrdinary(x96, p.Pos, p.Text(x96, p.Pos), true)
 	v7 = v97
 	goto L8
@@ -38399,8 +38398,6 @@ func i261(p *pegort.TParser) (any, bool) {
 		x82   int
 		x83   int
 		x84   int
-		ch    rune
-		size  int
 		x86   int
 		v87   any
 		v88   any
@@ -38632,13 +38629,10 @@ L35:
 	x82 = 0
 	for {
 		x83, x84 = p.Pos, len(p.Recovered)
-		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 32 || ch == 45)) {
-			p.ExpectOrdinary(p.Pos, 132)
+		x86 = p.Pos
+		if !p.ClassFast(&cls1120) && !p.ClassSkip(&cls1120, 132) {
 			goto L85
 		}
-		x86 = p.Pos
-		p.Pos += size
 		v87 = p.NewMatchOrdinary(x86, p.Pos, p.Text(x86, p.Pos), true)
 		v88 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v87, x83)
 		x82++
@@ -38678,13 +38672,10 @@ L74:
 		p.ExpectOrdinary(p.Pos, 133)
 		goto L94
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (ch == 120 || ch == 117 || ch == 85 || ch == 78 || ch == 10 || ch == 13 || ch == 0) {
-		p.ExpectOrdinary(p.Pos, 133)
+	x96 = p.Pos
+	if !p.ClassFast(&cls1121) && !p.ClassSkip(&cls1121, 133) {
 		goto L95
 	}
-	x96 = p.Pos
-	p.Pos += size
 	v97 = p.NewMatchOrdinary(x96, p.Pos, p.Text(x96, p.Pos), true)
 	v7 = v97
 	goto L8
@@ -39245,13 +39236,10 @@ L122:
 		x138 = 0
 		for {
 			x139, x140 = p.Pos, len(p.Recovered)
-			ch, size, ok = p.NextOrdinary()
-			if !ok || (ch == 39 || ch == 92 || ch == 10 || ch == 13 || ch == 0) {
-				p.ExpectOrdinary(p.Pos, 124)
+			x142 = p.Pos
+			if !p.ClassFast(&cls1118) && !p.ClassSkip(&cls1118, 124) {
 				goto L141
 			}
-			x142 = p.Pos
-			p.Pos += size
 			v143 = p.NewMatchOrdinary(x142, p.Pos, p.Text(x142, p.Pos), true)
 			v144 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v143, x139)
 			x138++
@@ -39403,13 +39391,10 @@ L181:
 		x197 = 0
 		for {
 			x198, x199 = p.Pos, len(p.Recovered)
-			ch, size, ok = p.NextOrdinary()
-			if !ok || (ch == 34 || ch == 92 || ch == 10 || ch == 13 || ch == 0) {
-				p.ExpectOrdinary(p.Pos, 125)
+			x201 = p.Pos
+			if !p.ClassFast(&cls1119) && !p.ClassSkip(&cls1119, 125) {
 				goto L200
 			}
-			x201 = p.Pos
-			p.Pos += size
 			v202 = p.NewMatchOrdinary(x201, p.Pos, p.Text(x201, p.Pos), true)
 			v203 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v202, x198)
 			x197++
@@ -40002,13 +39987,10 @@ L108:
 		x124 = 0
 		for {
 			x125, x126 = p.Pos, len(p.Recovered)
-			ch, size, ok = p.NextOrdinary()
-			if !ok || (ch == 39 || ch == 92 || ch == 10 || ch == 13 || ch == 0 || ch >= 128 && ch <= 1114111) {
-				p.ExpectOrdinary(p.Pos, 137)
+			x128 = p.Pos
+			if !p.ClassFast(&cls1122) && !p.ClassSkip(&cls1122, 137) {
 				goto L127
 			}
-			x128 = p.Pos
-			p.Pos += size
 			v129 = p.NewMatchOrdinary(x128, p.Pos, p.Text(x128, p.Pos), true)
 			v130 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v129, x125)
 			x124++
@@ -40111,13 +40093,10 @@ L148:
 		x164 = 0
 		for {
 			x165, x166 = p.Pos, len(p.Recovered)
-			ch, size, ok = p.NextOrdinary()
-			if !ok || (ch == 34 || ch == 92 || ch == 10 || ch == 13 || ch == 0 || ch >= 128 && ch <= 1114111) {
-				p.ExpectOrdinary(p.Pos, 138)
+			x168 = p.Pos
+			if !p.ClassFast(&cls1123) && !p.ClassSkip(&cls1123, 138) {
 				goto L167
 			}
-			x168 = p.Pos
-			p.Pos += size
 			v169 = p.NewMatchOrdinary(x168, p.Pos, p.Text(x168, p.Pos), true)
 			v170 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v169, x165)
 			x164++
@@ -40234,8 +40213,6 @@ func v264(p *pegort.TParser) (any, bool) {
 		v20   any
 		v21   any
 		v22   any
-		ch    rune
-		size  int
 		x25   int
 		v26   any
 		v27   any
@@ -40299,13 +40276,10 @@ L13:
 		p.ExpectOrdinary(p.Pos, 139)
 		goto L23
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (ch == 120 || ch == 10 || ch == 13 || ch == 0 || ch >= 128 && ch <= 1114111) {
-		p.ExpectOrdinary(p.Pos, 139)
+	x25 = p.Pos
+	if !p.ClassFast(&cls1124) && !p.ClassSkip(&cls1124, 139) {
 		goto L24
 	}
-	x25 = p.Pos
-	p.Pos += size
 	v26 = p.NewMatchOrdinary(x25, p.Pos, p.Text(x25, p.Pos), true)
 	v7 = v26
 	goto L8
@@ -40354,8 +40328,6 @@ func i264(p *pegort.TParser) (any, bool) {
 		v20   any
 		v21   any
 		v22   any
-		ch    rune
-		size  int
 		x25   int
 		v26   any
 		v27   any
@@ -40419,13 +40391,10 @@ L13:
 		p.ExpectOrdinary(p.Pos, 139)
 		goto L23
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (ch == 120 || ch == 10 || ch == 13 || ch == 0 || ch >= 128 && ch <= 1114111) {
-		p.ExpectOrdinary(p.Pos, 139)
+	x25 = p.Pos
+	if !p.ClassFast(&cls1124) && !p.ClassSkip(&cls1124, 139) {
 		goto L24
 	}
-	x25 = p.Pos
-	p.Pos += size
 	v26 = p.NewMatchOrdinary(x25, p.Pos, p.Text(x25, p.Pos), true)
 	v7 = v26
 	goto L8
@@ -40986,13 +40955,10 @@ L122:
 		x138 = 0
 		for {
 			x139, x140 = p.Pos, len(p.Recovered)
-			ch, size, ok = p.NextOrdinary()
-			if !ok || (ch == 39 || ch == 92 || ch == 10 || ch == 13 || ch == 0 || ch >= 128 && ch <= 1114111) {
-				p.ExpectOrdinary(p.Pos, 137)
+			x142 = p.Pos
+			if !p.ClassFast(&cls1122) && !p.ClassSkip(&cls1122, 137) {
 				goto L141
 			}
-			x142 = p.Pos
-			p.Pos += size
 			v143 = p.NewMatchOrdinary(x142, p.Pos, p.Text(x142, p.Pos), true)
 			v144 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v143, x139)
 			x138++
@@ -41144,13 +41110,10 @@ L181:
 		x197 = 0
 		for {
 			x198, x199 = p.Pos, len(p.Recovered)
-			ch, size, ok = p.NextOrdinary()
-			if !ok || (ch == 34 || ch == 92 || ch == 10 || ch == 13 || ch == 0 || ch >= 128 && ch <= 1114111) {
-				p.ExpectOrdinary(p.Pos, 138)
+			x201 = p.Pos
+			if !p.ClassFast(&cls1123) && !p.ClassSkip(&cls1123, 138) {
 				goto L200
 			}
-			x201 = p.Pos
-			p.Pos += size
 			v202 = p.NewMatchOrdinary(x201, p.Pos, p.Text(x201, p.Pos), true)
 			v203 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v202, x198)
 			x197++
@@ -41381,18 +41344,9 @@ func i267(p *pegort.TParser) (any, bool) {
 		p.ExpectOrdinary(p.Pos, 116)
 		goto L7
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 114 || ch == 82) {
-		p.ExpectOrdinary(p.Pos, 116)
+	if !p.ClassesSkip(steps1127) {
 		goto L8
 	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 102 || ch == 70) {
-		p.ExpectOrdinary(p.Pos, 142)
-		goto L8
-	}
-	p.Pos += size
 	if !p.Bind("lv", func(c *pegort.TActCtx) any {
 		return func() any {
 			return c.Binary("+", func() any {
@@ -41412,18 +41366,9 @@ L7:
 		p.ExpectOrdinary(p.Pos, 142)
 		goto L9
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 102 || ch == 70) {
-		p.ExpectOrdinary(p.Pos, 142)
+	if !p.ClassesSkip(steps1128) {
 		goto L10
 	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 114 || ch == 82) {
-		p.ExpectOrdinary(p.Pos, 116)
-		goto L10
-	}
-	p.Pos += size
 	if !p.Bind("lv", func(c *pegort.TActCtx) any {
 		return func() any {
 			return c.Binary("+", func() any {
@@ -41677,18 +41622,9 @@ func i268(p *pegort.TParser) (any, bool) {
 		p.ExpectOrdinary(p.Pos, 116)
 		goto L7
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 114 || ch == 82) {
-		p.ExpectOrdinary(p.Pos, 116)
+	if !p.ClassesSkip(steps1130) {
 		goto L8
 	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 116 || ch == 84) {
-		p.ExpectOrdinary(p.Pos, 144)
-		goto L8
-	}
-	p.Pos += size
 	if !p.Bind("lv", func(c *pegort.TActCtx) any {
 		return func() any {
 			return c.Binary("+", func() any {
@@ -41708,18 +41644,9 @@ L7:
 		p.ExpectOrdinary(p.Pos, 144)
 		goto L9
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 116 || ch == 84) {
-		p.ExpectOrdinary(p.Pos, 144)
+	if !p.ClassesSkip(steps1131) {
 		goto L10
 	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 114 || ch == 82) {
-		p.ExpectOrdinary(p.Pos, 116)
-		goto L10
-	}
-	p.Pos += size
 	if !p.Bind("lv", func(c *pegort.TActCtx) any {
 		return func() any {
 			return c.Binary("+", func() any {
@@ -43479,8 +43406,6 @@ func v275(p *pegort.TParser) (any, bool) {
 		x82   int
 		x83   int
 		x84   int
-		ch    rune
-		size  int
 		x86   int
 		v87   any
 		v88   any
@@ -43492,6 +43417,8 @@ func v275(p *pegort.TParser) (any, bool) {
 		x96   int
 		v97   any
 		x99   int
+		ch    rune
+		size  int
 		v102  any
 		v103  any
 	)
@@ -43714,13 +43641,10 @@ L35:
 	x82 = 0
 	for {
 		x83, x84 = p.Pos, len(p.Recovered)
-		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 32 || ch == 45)) {
-			p.ExpectOrdinary(p.Pos, 132)
+		x86 = p.Pos
+		if !p.ClassFast(&cls1120) && !p.ClassSkip(&cls1120, 132) {
 			goto L85
 		}
-		x86 = p.Pos
-		p.Pos += size
 		v87 = p.NewMatchOrdinary(x86, p.Pos, p.Text(x86, p.Pos), true)
 		v88 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v87, x83)
 		x82++
@@ -43760,13 +43684,10 @@ L74:
 		p.ExpectOrdinary(p.Pos, 149)
 		goto L94
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (ch == 120 || ch == 117 || ch == 85 || ch == 78 || ch == 123 || ch == 125 || ch == 10 || ch == 13 || ch == 0) {
-		p.ExpectOrdinary(p.Pos, 149)
+	x96 = p.Pos
+	if !p.ClassFast(&cls1132) && !p.ClassSkip(&cls1132, 149) {
 		goto L95
 	}
-	x96 = p.Pos
-	p.Pos += size
 	v97 = p.NewMatchOrdinary(x96, p.Pos, p.Text(x96, p.Pos), true)
 	v7 = v97
 	goto L8
@@ -43889,8 +43810,6 @@ func i275(p *pegort.TParser) (any, bool) {
 		x82   int
 		x83   int
 		x84   int
-		ch    rune
-		size  int
 		x86   int
 		v87   any
 		v88   any
@@ -43902,6 +43821,8 @@ func i275(p *pegort.TParser) (any, bool) {
 		x96   int
 		v97   any
 		x99   int
+		ch    rune
+		size  int
 		v102  any
 		v103  any
 	)
@@ -44124,13 +44045,10 @@ L35:
 	x82 = 0
 	for {
 		x83, x84 = p.Pos, len(p.Recovered)
-		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 32 || ch == 45)) {
-			p.ExpectOrdinary(p.Pos, 132)
+		x86 = p.Pos
+		if !p.ClassFast(&cls1120) && !p.ClassSkip(&cls1120, 132) {
 			goto L85
 		}
-		x86 = p.Pos
-		p.Pos += size
 		v87 = p.NewMatchOrdinary(x86, p.Pos, p.Text(x86, p.Pos), true)
 		v88 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v87, x83)
 		x82++
@@ -44170,13 +44088,10 @@ L74:
 		p.ExpectOrdinary(p.Pos, 149)
 		goto L94
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (ch == 120 || ch == 117 || ch == 85 || ch == 78 || ch == 123 || ch == 125 || ch == 10 || ch == 13 || ch == 0) {
-		p.ExpectOrdinary(p.Pos, 149)
+	x96 = p.Pos
+	if !p.ClassFast(&cls1132) && !p.ClassSkip(&cls1132, 149) {
 		goto L95
 	}
-	x96 = p.Pos
-	p.Pos += size
 	v97 = p.NewMatchOrdinary(x96, p.Pos, p.Text(x96, p.Pos), true)
 	v7 = v97
 	goto L8
@@ -44522,12 +44437,12 @@ L35:
 	p.Where = "ffield"
 	v = func() any {
 		return func() any {
-			f_1117 := func() any { return k10 }()
-			f_1118 := func() any { return c.Text(func() any { return k6 }()) }()
-			f_1119 := func() any { return c.Text(func() any { return k15 }()) }()
-			f_1120 := func() any { return c.Text(func() any { return k23 }()) }()
-			f_1121 := func() any { return k33 }()
-			return tmk_FormattedValue(c, true, f_1117, f_1118, f_1119, f_1120, f_1121)
+			f_1133 := func() any { return k10 }()
+			f_1134 := func() any { return c.Text(func() any { return k6 }()) }()
+			f_1135 := func() any { return c.Text(func() any { return k15 }()) }()
+			f_1136 := func() any { return c.Text(func() any { return k23 }()) }()
+			f_1137 := func() any { return k33 }()
+			return tmk_FormattedValue(c, true, f_1133, f_1134, f_1135, f_1136, f_1137)
 		}()
 	}()
 	p.Where = w
@@ -44719,12 +44634,12 @@ L35:
 	p.Where = "tfield"
 	v = func() any {
 		return func() any {
-			f_1122 := func() any { return k10 }()
-			f_1123 := func() any { return c.Text(func() any { return k6 }()) }()
-			f_1124 := func() any { return c.Text(func() any { return k15 }()) }()
-			f_1125 := func() any { return c.Text(func() any { return k23 }()) }()
-			f_1126 := func() any { return k33 }()
-			return tmk_Interpolation(c, true, f_1122, f_1123, f_1124, f_1125, f_1126)
+			f_1138 := func() any { return k10 }()
+			f_1139 := func() any { return c.Text(func() any { return k6 }()) }()
+			f_1140 := func() any { return c.Text(func() any { return k15 }()) }()
+			f_1141 := func() any { return c.Text(func() any { return k23 }()) }()
+			f_1142 := func() any { return k33 }()
+			return tmk_Interpolation(c, true, f_1138, f_1139, f_1140, f_1141, f_1142)
 		}()
 	}()
 	p.Where = w
@@ -45007,8 +44922,8 @@ func i281(p *pegort.TParser) (any, bool) {
 	p.Where = "fspec"
 	v = func() any {
 		return func() any {
-			f_1127 := func() any { return c.Member(func() any { return k1 }(), "Value") }()
-			return tmk_JoinedStr(c, true, f_1127)
+			f_1143 := func() any { return c.Member(func() any { return k1 }(), "Value") }()
+			return tmk_JoinedStr(c, true, f_1143)
 		}()
 	}()
 	p.Where = w
@@ -47145,8 +47060,6 @@ func s297(p *pegort.TParser) (any, bool) {
 		v24   any
 		x25   int
 		x26   int
-		ch    rune
-		size  int
 		v28   any
 	)
 	start, rec = p.Pos, len(p.Recovered)
@@ -47212,12 +47125,9 @@ func s297(p *pegort.TParser) (any, bool) {
 	x2 = append(x2, v24)
 	x25, x26 = p.Pos, len(p.Recovered)
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 120 || ch == 88 || ch == 111 || ch == 79 || ch == 98 || ch == 66)) {
-		p.ExpectOrdinary(p.Pos, 165)
+	if !p.ClassFast(&cls1144) && !p.ClassSkip(&cls1144, 165) {
 		goto L27
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x25
 	p.Recovered = p.Recovered[:x26]
@@ -51179,9 +51089,6 @@ func s335(p *pegort.TParser) (any, bool) {
 		start int
 		v     any
 		rec   int
-		ch    rune
-		size  int
-		ok    bool
 		x1    int
 		v2    any
 	)
@@ -51190,13 +51097,10 @@ func s335(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 170 || ch == 181 || ch == 186 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 705 || ch >= 710 && ch <= 721 || ch >= 736 && ch <= 740 || ch == 748 || ch == 750 || ch >= 880 && ch <= 884 || ch >= 886 && ch <= 887 || ch >= 891 && ch <= 893 || ch == 895 || ch == 902 || ch >= 904 && ch <= 906 || ch == 908 || ch >= 910 && ch <= 929 || ch >= 931 && ch <= 1013 || ch >= 1015 && ch <= 1153 || ch >= 1162 && ch <= 1327 || ch >= 1329 && ch <= 1366 || ch == 1369 || ch >= 1376 && ch <= 1416 || ch >= 1488 && ch <= 1514 || ch >= 1519 && ch <= 1522 || ch >= 1568 && ch <= 1610 || ch >= 1646 && ch <= 1647 || ch >= 1649 && ch <= 1747 || ch == 1749 || ch >= 1765 && ch <= 1766 || ch >= 1774 && ch <= 1775 || ch >= 1786 && ch <= 1788 || ch == 1791 || ch == 1808 || ch >= 1810 && ch <= 1839 || ch >= 1869 && ch <= 1957 || ch == 1969 || ch >= 1994 && ch <= 2026 || ch >= 2036 && ch <= 2037 || ch == 2042 || ch >= 2048 && ch <= 2069 || ch == 2074 || ch == 2084 || ch == 2088 || ch >= 2112 && ch <= 2136 || ch >= 2144 && ch <= 2154 || ch >= 2160 && ch <= 2183 || ch >= 2185 && ch <= 2190 || ch >= 2208 && ch <= 2249 || ch >= 2308 && ch <= 2361 || ch == 2365 || ch == 2384 || ch >= 2392 && ch <= 2401 || ch >= 2417 && ch <= 2432 || ch >= 2437 && ch <= 2444 || ch >= 2447 && ch <= 2448 || ch >= 2451 && ch <= 2472 || ch >= 2474 && ch <= 2480 || ch == 2482 || ch >= 2486 && ch <= 2489 || ch == 2493 || ch == 2510 || ch >= 2524 && ch <= 2525 || ch >= 2527 && ch <= 2529 || ch >= 2544 && ch <= 2545 || ch == 2556 || ch >= 2565 && ch <= 2570 || ch >= 2575 && ch <= 2576 || ch >= 2579 && ch <= 2600 || ch >= 2602 && ch <= 2608 || ch >= 2610 && ch <= 2611 || ch >= 2613 && ch <= 2614 || ch >= 2616 && ch <= 2617 || ch >= 2649 && ch <= 2652 || ch == 2654 || ch >= 2674 && ch <= 2676 || ch >= 2693 && ch <= 2701 || ch >= 2703 && ch <= 2705 || ch >= 2707 && ch <= 2728 || ch >= 2730 && ch <= 2736 || ch >= 2738 && ch <= 2739 || ch >= 2741 && ch <= 2745 || ch == 2749 || ch == 2768 || ch >= 2784 && ch <= 2785 || ch == 2809 || ch >= 2821 && ch <= 2828 || ch >= 2831 && ch <= 2832 || ch >= 2835 && ch <= 2856 || ch >= 2858 && ch <= 2864 || ch >= 2866 && ch <= 2867 || ch >= 2869 && ch <= 2873 || ch == 2877 || ch >= 2908 && ch <= 2909 || ch >= 2911 && ch <= 2913 || ch == 2929 || ch == 2947 || ch >= 2949 && ch <= 2954 || ch >= 2958 && ch <= 2960 || ch >= 2962 && ch <= 2965 || ch >= 2969 && ch <= 2970 || ch == 2972 || ch >= 2974 && ch <= 2975 || ch >= 2979 && ch <= 2980 || ch >= 2984 && ch <= 2986 || ch >= 2990 && ch <= 3001 || ch == 3024 || ch >= 3077 && ch <= 3084 || ch >= 3086 && ch <= 3088 || ch >= 3090 && ch <= 3112 || ch >= 3114 && ch <= 3129 || ch == 3133 || ch >= 3160 && ch <= 3162 || ch == 3165 || ch >= 3168 && ch <= 3169 || ch == 3200 || ch >= 3205 && ch <= 3212 || ch >= 3214 && ch <= 3216 || ch >= 3218 && ch <= 3240 || ch >= 3242 && ch <= 3251 || ch >= 3253 && ch <= 3257 || ch == 3261 || ch >= 3293 && ch <= 3294 || ch >= 3296 && ch <= 3297 || ch >= 3313 && ch <= 3314 || ch >= 3332 && ch <= 3340 || ch >= 3342 && ch <= 3344 || ch >= 3346 && ch <= 3386 || ch == 3389 || ch == 3406 || ch >= 3412 && ch <= 3414 || ch >= 3423 && ch <= 3425 || ch >= 3450 && ch <= 3455 || ch >= 3461 && ch <= 3478 || ch >= 3482 && ch <= 3505 || ch >= 3507 && ch <= 3515 || ch == 3517 || ch >= 3520 && ch <= 3526 || ch >= 3585 && ch <= 3632 || ch == 3634 || ch >= 3648 && ch <= 3654 || ch >= 3713 && ch <= 3714 || ch == 3716 || ch >= 3718 && ch <= 3722 || ch >= 3724 && ch <= 3747 || ch == 3749 || ch >= 3751 && ch <= 3760 || ch == 3762 || ch == 3773 || ch >= 3776 && ch <= 3780 || ch == 3782 || ch >= 3804 && ch <= 3807 || ch == 3840 || ch >= 3904 && ch <= 3911 || ch >= 3913 && ch <= 3948 || ch >= 3976 && ch <= 3980 || ch >= 4096 && ch <= 4138 || ch == 4159 || ch >= 4176 && ch <= 4181 || ch >= 4186 && ch <= 4189 || ch == 4193 || ch >= 4197 && ch <= 4198 || ch >= 4206 && ch <= 4208 || ch >= 4213 && ch <= 4225 || ch == 4238 || ch >= 4256 && ch <= 4293 || ch == 4295 || ch == 4301 || ch >= 4304 && ch <= 4346 || ch >= 4348 && ch <= 4680 || ch >= 4682 && ch <= 4685 || ch >= 4688 && ch <= 4694 || ch == 4696 || ch >= 4698 && ch <= 4701 || ch >= 4704 && ch <= 4744 || ch >= 4746 && ch <= 4749 || ch >= 4752 && ch <= 4784 || ch >= 4786 && ch <= 4789 || ch >= 4792 && ch <= 4798 || ch == 4800 || ch >= 4802 && ch <= 4805 || ch >= 4808 && ch <= 4822 || ch >= 4824 && ch <= 4880 || ch >= 4882 && ch <= 4885 || ch >= 4888 && ch <= 4954 || ch >= 4992 && ch <= 5007 || ch >= 5024 && ch <= 5109 || ch >= 5112 && ch <= 5117 || ch >= 5121 && ch <= 5740 || ch >= 5743 && ch <= 5759 || ch >= 5761 && ch <= 5786 || ch >= 5792 && ch <= 5866 || ch >= 5870 && ch <= 5880 || ch >= 5888 && ch <= 5905 || ch >= 5919 && ch <= 5937 || ch >= 5952 && ch <= 5969 || ch >= 5984 && ch <= 5996 || ch >= 5998 && ch <= 6000 || ch >= 6016 && ch <= 6067 || ch == 6103 || ch == 6108 || ch >= 6176 && ch <= 6264 || ch >= 6272 && ch <= 6312 || ch == 6314 || ch >= 6320 && ch <= 6389 || ch >= 6400 && ch <= 6430 || ch >= 6480 && ch <= 6509 || ch >= 6512 && ch <= 6516 || ch >= 6528 && ch <= 6571 || ch >= 6576 && ch <= 6601 || ch >= 6656 && ch <= 6678 || ch >= 6688 && ch <= 6740 || ch == 6823 || ch >= 6917 && ch <= 6963 || ch >= 6981 && ch <= 6988 || ch >= 7043 && ch <= 7072 || ch >= 7086 && ch <= 7087 || ch >= 7098 && ch <= 7141 || ch >= 7168 && ch <= 7203 || ch >= 7245 && ch <= 7247 || ch >= 7258 && ch <= 7293 || ch >= 7296 && ch <= 7306 || ch >= 7312 && ch <= 7354 || ch >= 7357 && ch <= 7359 || ch >= 7401 && ch <= 7404 || ch >= 7406 && ch <= 7411 || ch >= 7413 && ch <= 7414 || ch == 7418 || ch >= 7424 && ch <= 7615 || ch >= 7680 && ch <= 7957 || ch >= 7960 && ch <= 7965 || ch >= 7968 && ch <= 8005 || ch >= 8008 && ch <= 8013 || ch >= 8016 && ch <= 8023 || ch == 8025 || ch == 8027 || ch == 8029 || ch >= 8031 && ch <= 8061 || ch >= 8064 && ch <= 8116 || ch >= 8118 && ch <= 8124 || ch == 8126 || ch >= 8130 && ch <= 8132 || ch >= 8134 && ch <= 8140 || ch >= 8144 && ch <= 8147 || ch >= 8150 && ch <= 8155 || ch >= 8160 && ch <= 8172 || ch >= 8178 && ch <= 8180 || ch >= 8182 && ch <= 8188 || ch == 8305 || ch == 8319 || ch >= 8336 && ch <= 8348 || ch == 8450 || ch == 8455 || ch >= 8458 && ch <= 8467 || ch == 8469 || ch >= 8472 && ch <= 8477 || ch == 8484 || ch == 8486 || ch == 8488 || ch >= 8490 && ch <= 8505 || ch >= 8508 && ch <= 8511 || ch >= 8517 && ch <= 8521 || ch == 8526 || ch >= 8544 && ch <= 8584 || ch >= 11264 && ch <= 11492 || ch >= 11499 && ch <= 11502 || ch >= 11506 && ch <= 11507 || ch >= 11520 && ch <= 11557 || ch == 11559 || ch == 11565 || ch >= 11568 && ch <= 11623 || ch == 11631 || ch >= 11648 && ch <= 11670 || ch >= 11680 && ch <= 11686 || ch >= 11688 && ch <= 11694 || ch >= 11696 && ch <= 11702 || ch >= 11704 && ch <= 11710 || ch >= 11712 && ch <= 11718 || ch >= 11720 && ch <= 11726 || ch >= 11728 && ch <= 11734 || ch >= 11736 && ch <= 11742 || ch >= 12293 && ch <= 12295 || ch >= 12321 && ch <= 12329 || ch >= 12337 && ch <= 12341 || ch >= 12344 && ch <= 12348 || ch >= 12353 && ch <= 12438 || ch >= 12445 && ch <= 12447 || ch >= 12449 && ch <= 12538 || ch >= 12540 && ch <= 12543 || ch >= 12549 && ch <= 12591 || ch >= 12593 && ch <= 12686 || ch >= 12704 && ch <= 12735 || ch >= 12784 && ch <= 12799 || ch >= 13312 && ch <= 19903 || ch >= 19968 && ch <= 42124 || ch >= 42192 && ch <= 42237 || ch >= 42240 && ch <= 42508 || ch >= 42512 && ch <= 42527 || ch >= 42538 && ch <= 42539 || ch >= 42560 && ch <= 42606 || ch >= 42623 && ch <= 42653 || ch >= 42656 && ch <= 42735 || ch >= 42775 && ch <= 42783 || ch >= 42786 && ch <= 42888 || ch >= 42891 && ch <= 42957 || ch >= 42960 && ch <= 42961 || ch == 42963 || ch >= 42965 && ch <= 42972 || ch >= 42994 && ch <= 43009 || ch >= 43011 && ch <= 43013 || ch >= 43015 && ch <= 43018 || ch >= 43020 && ch <= 43042 || ch >= 43072 && ch <= 43123 || ch >= 43138 && ch <= 43187 || ch >= 43250 && ch <= 43255 || ch == 43259 || ch >= 43261 && ch <= 43262 || ch >= 43274 && ch <= 43301 || ch >= 43312 && ch <= 43334 || ch >= 43360 && ch <= 43388 || ch >= 43396 && ch <= 43442 || ch == 43471 || ch >= 43488 && ch <= 43492 || ch >= 43494 && ch <= 43503 || ch >= 43514 && ch <= 43518 || ch >= 43520 && ch <= 43560 || ch >= 43584 && ch <= 43586 || ch >= 43588 && ch <= 43595 || ch >= 43616 && ch <= 43638 || ch == 43642 || ch >= 43646 && ch <= 43695 || ch == 43697 || ch >= 43701 && ch <= 43702 || ch >= 43705 && ch <= 43709 || ch == 43712 || ch == 43714 || ch >= 43739 && ch <= 43741 || ch >= 43744 && ch <= 43754 || ch >= 43762 && ch <= 43764 || ch >= 43777 && ch <= 43782 || ch >= 43785 && ch <= 43790 || ch >= 43793 && ch <= 43798 || ch >= 43808 && ch <= 43814 || ch >= 43816 && ch <= 43822 || ch >= 43824 && ch <= 43866 || ch >= 43868 && ch <= 43881 || ch >= 43888 && ch <= 44002 || ch >= 44032 && ch <= 55203 || ch >= 55216 && ch <= 55238 || ch >= 55243 && ch <= 55291 || ch >= 63744 && ch <= 64109 || ch >= 64112 && ch <= 64217 || ch >= 64256 && ch <= 64262 || ch >= 64275 && ch <= 64279 || ch == 64285 || ch >= 64287 && ch <= 64296 || ch >= 64298 && ch <= 64310 || ch >= 64312 && ch <= 64316 || ch == 64318 || ch >= 64320 && ch <= 64321 || ch >= 64323 && ch <= 64324 || ch >= 64326 && ch <= 64433 || ch >= 64467 && ch <= 64605 || ch >= 64612 && ch <= 64829 || ch >= 64848 && ch <= 64911 || ch >= 64914 && ch <= 64967 || ch >= 65008 && ch <= 65017 || ch == 65137 || ch == 65139 || ch == 65143 || ch == 65145 || ch == 65147 || ch == 65149 || ch >= 65151 && ch <= 65276 || ch >= 65313 && ch <= 65338 || ch >= 65345 && ch <= 65370 || ch >= 65382 && ch <= 65437 || ch >= 65440 && ch <= 65470 || ch >= 65474 && ch <= 65479 || ch >= 65482 && ch <= 65487 || ch >= 65490 && ch <= 65495 || ch >= 65498 && ch <= 65500 || ch >= 65536 && ch <= 65547 || ch >= 65549 && ch <= 65574 || ch >= 65576 && ch <= 65594 || ch >= 65596 && ch <= 65597 || ch >= 65599 && ch <= 65613 || ch >= 65616 && ch <= 65629 || ch >= 65664 && ch <= 65786 || ch >= 65856 && ch <= 65908 || ch >= 66176 && ch <= 66204 || ch >= 66208 && ch <= 66256 || ch >= 66304 && ch <= 66335 || ch >= 66349 && ch <= 66378 || ch >= 66384 && ch <= 66421 || ch >= 66432 && ch <= 66461 || ch >= 66464 && ch <= 66499 || ch >= 66504 && ch <= 66511 || ch >= 66513 && ch <= 66517 || ch >= 66560 && ch <= 66717 || ch >= 66736 && ch <= 66771 || ch >= 66776 && ch <= 66811 || ch >= 66816 && ch <= 66855 || ch >= 66864 && ch <= 66915 || ch >= 66928 && ch <= 66938 || ch >= 66940 && ch <= 66954 || ch >= 66956 && ch <= 66962 || ch >= 66964 && ch <= 66965 || ch >= 66967 && ch <= 66977 || ch >= 66979 && ch <= 66993 || ch >= 66995 && ch <= 67001 || ch >= 67003 && ch <= 67004 || ch >= 67008 && ch <= 67059 || ch >= 67072 && ch <= 67382 || ch >= 67392 && ch <= 67413 || ch >= 67424 && ch <= 67431 || ch >= 67456 && ch <= 67461 || ch >= 67463 && ch <= 67504 || ch >= 67506 && ch <= 67514 || ch >= 67584 && ch <= 67589 || ch == 67592 || ch >= 67594 && ch <= 67637 || ch >= 67639 && ch <= 67640 || ch == 67644 || ch >= 67647 && ch <= 67669 || ch >= 67680 && ch <= 67702 || ch >= 67712 && ch <= 67742 || ch >= 67808 && ch <= 67826 || ch >= 67828 && ch <= 67829 || ch >= 67840 && ch <= 67861 || ch >= 67872 && ch <= 67897 || ch >= 67968 && ch <= 68023 || ch >= 68030 && ch <= 68031 || ch == 68096 || ch >= 68112 && ch <= 68115 || ch >= 68117 && ch <= 68119 || ch >= 68121 && ch <= 68149 || ch >= 68192 && ch <= 68220 || ch >= 68224 && ch <= 68252 || ch >= 68288 && ch <= 68295 || ch >= 68297 && ch <= 68324 || ch >= 68352 && ch <= 68405 || ch >= 68416 && ch <= 68437 || ch >= 68448 && ch <= 68466 || ch >= 68480 && ch <= 68497 || ch >= 68608 && ch <= 68680 || ch >= 68736 && ch <= 68786 || ch >= 68800 && ch <= 68850 || ch >= 68864 && ch <= 68899 || ch >= 68938 && ch <= 68965 || ch >= 68975 && ch <= 68997 || ch >= 69248 && ch <= 69289 || ch >= 69296 && ch <= 69297 || ch >= 69314 && ch <= 69316 || ch >= 69376 && ch <= 69404 || ch == 69415 || ch >= 69424 && ch <= 69445 || ch >= 69488 && ch <= 69505 || ch >= 69552 && ch <= 69572 || ch >= 69600 && ch <= 69622 || ch >= 69635 && ch <= 69687 || ch >= 69745 && ch <= 69746 || ch == 69749 || ch >= 69763 && ch <= 69807 || ch >= 69840 && ch <= 69864 || ch >= 69891 && ch <= 69926 || ch == 69956 || ch == 69959 || ch >= 69968 && ch <= 70002 || ch == 70006 || ch >= 70019 && ch <= 70066 || ch >= 70081 && ch <= 70084 || ch == 70106 || ch == 70108 || ch >= 70144 && ch <= 70161 || ch >= 70163 && ch <= 70187 || ch >= 70207 && ch <= 70208 || ch >= 70272 && ch <= 70278 || ch == 70280 || ch >= 70282 && ch <= 70285 || ch >= 70287 && ch <= 70301 || ch >= 70303 && ch <= 70312 || ch >= 70320 && ch <= 70366 || ch >= 70405 && ch <= 70412 || ch >= 70415 && ch <= 70416 || ch >= 70419 && ch <= 70440 || ch >= 70442 && ch <= 70448 || ch >= 70450 && ch <= 70451 || ch >= 70453 && ch <= 70457 || ch == 70461 || ch == 70480 || ch >= 70493 && ch <= 70497 || ch >= 70528 && ch <= 70537 || ch == 70539 || ch == 70542 || ch >= 70544 && ch <= 70581 || ch == 70583 || ch == 70609 || ch == 70611 || ch >= 70656 && ch <= 70708 || ch >= 70727 && ch <= 70730 || ch >= 70751 && ch <= 70753 || ch >= 70784 && ch <= 70831 || ch >= 70852 && ch <= 70853 || ch == 70855 || ch >= 71040 && ch <= 71086 || ch >= 71128 && ch <= 71131 || ch >= 71168 && ch <= 71215 || ch == 71236 || ch >= 71296 && ch <= 71338 || ch == 71352 || ch >= 71424 && ch <= 71450 || ch >= 71488 && ch <= 71494 || ch >= 71680 && ch <= 71723 || ch >= 71840 && ch <= 71903 || ch >= 71935 && ch <= 71942 || ch == 71945 || ch >= 71948 && ch <= 71955 || ch >= 71957 && ch <= 71958 || ch >= 71960 && ch <= 71983 || ch == 71999 || ch == 72001 || ch >= 72096 && ch <= 72103 || ch >= 72106 && ch <= 72144 || ch == 72161 || ch == 72163 || ch == 72192 || ch >= 72203 && ch <= 72242 || ch == 72250 || ch == 72272 || ch >= 72284 && ch <= 72329 || ch == 72349 || ch >= 72368 && ch <= 72440 || ch >= 72640 && ch <= 72672 || ch >= 72704 && ch <= 72712 || ch >= 72714 && ch <= 72750 || ch == 72768 || ch >= 72818 && ch <= 72847 || ch >= 72960 && ch <= 72966 || ch >= 72968 && ch <= 72969 || ch >= 72971 && ch <= 73008 || ch == 73030 || ch >= 73056 && ch <= 73061 || ch >= 73063 && ch <= 73064 || ch >= 73066 && ch <= 73097 || ch == 73112 || ch >= 73440 && ch <= 73458 || ch == 73474 || ch >= 73476 && ch <= 73488 || ch >= 73490 && ch <= 73523 || ch == 73648 || ch >= 73728 && ch <= 74649 || ch >= 74752 && ch <= 74862 || ch >= 74880 && ch <= 75075 || ch >= 77712 && ch <= 77808 || ch >= 77824 && ch <= 78895 || ch >= 78913 && ch <= 78918 || ch >= 78944 && ch <= 82938 || ch >= 82944 && ch <= 83526 || ch >= 90368 && ch <= 90397 || ch >= 92160 && ch <= 92728 || ch >= 92736 && ch <= 92766 || ch >= 92784 && ch <= 92862 || ch >= 92880 && ch <= 92909 || ch >= 92928 && ch <= 92975 || ch >= 92992 && ch <= 92995 || ch >= 93027 && ch <= 93047 || ch >= 93053 && ch <= 93071 || ch >= 93504 && ch <= 93548 || ch >= 93760 && ch <= 93823 || ch >= 93952 && ch <= 94026 || ch == 94032 || ch >= 94099 && ch <= 94111 || ch >= 94176 && ch <= 94177 || ch == 94179 || ch >= 94208 && ch <= 100343 || ch >= 100352 && ch <= 101589 || ch >= 101631 && ch <= 101640 || ch >= 110576 && ch <= 110579 || ch >= 110581 && ch <= 110587 || ch >= 110589 && ch <= 110590 || ch >= 110592 && ch <= 110882 || ch == 110898 || ch >= 110928 && ch <= 110930 || ch == 110933 || ch >= 110948 && ch <= 110951 || ch >= 110960 && ch <= 111355 || ch >= 113664 && ch <= 113770 || ch >= 113776 && ch <= 113788 || ch >= 113792 && ch <= 113800 || ch >= 113808 && ch <= 113817 || ch >= 119808 && ch <= 119892 || ch >= 119894 && ch <= 119964 || ch >= 119966 && ch <= 119967 || ch == 119970 || ch >= 119973 && ch <= 119974 || ch >= 119977 && ch <= 119980 || ch >= 119982 && ch <= 119993 || ch == 119995 || ch >= 119997 && ch <= 120003 || ch >= 120005 && ch <= 120069 || ch >= 120071 && ch <= 120074 || ch >= 120077 && ch <= 120084 || ch >= 120086 && ch <= 120092 || ch >= 120094 && ch <= 120121 || ch >= 120123 && ch <= 120126 || ch >= 120128 && ch <= 120132 || ch == 120134 || ch >= 120138 && ch <= 120144 || ch >= 120146 && ch <= 120485 || ch >= 120488 && ch <= 120512 || ch >= 120514 && ch <= 120538 || ch >= 120540 && ch <= 120570 || ch >= 120572 && ch <= 120596 || ch >= 120598 && ch <= 120628 || ch >= 120630 && ch <= 120654 || ch >= 120656 && ch <= 120686 || ch >= 120688 && ch <= 120712 || ch >= 120714 && ch <= 120744 || ch >= 120746 && ch <= 120770 || ch >= 120772 && ch <= 120779 || ch >= 122624 && ch <= 122654 || ch >= 122661 && ch <= 122666 || ch >= 122928 && ch <= 122989 || ch >= 123136 && ch <= 123180 || ch >= 123191 && ch <= 123197 || ch == 123214 || ch >= 123536 && ch <= 123565 || ch >= 123584 && ch <= 123627 || ch >= 124112 && ch <= 124139 || ch >= 124368 && ch <= 124397 || ch == 124400 || ch >= 124896 && ch <= 124902 || ch >= 124904 && ch <= 124907 || ch >= 124909 && ch <= 124910 || ch >= 124912 && ch <= 124926 || ch >= 124928 && ch <= 125124 || ch >= 125184 && ch <= 125251 || ch == 125259 || ch >= 126464 && ch <= 126467 || ch >= 126469 && ch <= 126495 || ch >= 126497 && ch <= 126498 || ch == 126500 || ch == 126503 || ch >= 126505 && ch <= 126514 || ch >= 126516 && ch <= 126519 || ch == 126521 || ch == 126523 || ch == 126530 || ch == 126535 || ch == 126537 || ch == 126539 || ch >= 126541 && ch <= 126543 || ch >= 126545 && ch <= 126546 || ch == 126548 || ch == 126551 || ch == 126553 || ch == 126555 || ch == 126557 || ch == 126559 || ch >= 126561 && ch <= 126562 || ch == 126564 || ch >= 126567 && ch <= 126570 || ch >= 126572 && ch <= 126578 || ch >= 126580 && ch <= 126583 || ch >= 126585 && ch <= 126588 || ch == 126590 || ch >= 126592 && ch <= 126601 || ch >= 126603 && ch <= 126619 || ch >= 126625 && ch <= 126627 || ch >= 126629 && ch <= 126633 || ch >= 126635 && ch <= 126651 || ch >= 131072 && ch <= 173791 || ch >= 173824 && ch <= 177977 || ch >= 177984 && ch <= 178205 || ch >= 178208 && ch <= 183969 || ch >= 183984 && ch <= 191456 || ch >= 191472 && ch <= 192093 || ch >= 194560 && ch <= 195101 || ch >= 196608 && ch <= 201546 || ch >= 201552 && ch <= 205743)) {
-		p.ExpectOrdinary(p.Pos, 180)
+	x1 = p.Pos
+	if !p.ClassFast(&cls1145) && !p.ClassSkip(&cls1145, 180) {
 		goto fail
 	}
-	x1 = p.Pos
-	p.Pos += size
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v2, start)
 	if n := pegort.AsTval(v); n != nil {
@@ -51217,9 +51121,6 @@ func s336(p *pegort.TParser) (any, bool) {
 		start int
 		v     any
 		rec   int
-		ch    rune
-		size  int
-		ok    bool
 		x1    int
 		v2    any
 	)
@@ -51228,13 +51129,10 @@ func s336(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 170 || ch == 181 || ch == 183 || ch == 186 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 705 || ch >= 710 && ch <= 721 || ch >= 736 && ch <= 740 || ch == 748 || ch == 750 || ch >= 768 && ch <= 884 || ch >= 886 && ch <= 887 || ch >= 891 && ch <= 893 || ch == 895 || ch >= 902 && ch <= 906 || ch == 908 || ch >= 910 && ch <= 929 || ch >= 931 && ch <= 1013 || ch >= 1015 && ch <= 1153 || ch >= 1155 && ch <= 1159 || ch >= 1162 && ch <= 1327 || ch >= 1329 && ch <= 1366 || ch == 1369 || ch >= 1376 && ch <= 1416 || ch >= 1425 && ch <= 1469 || ch == 1471 || ch >= 1473 && ch <= 1474 || ch >= 1476 && ch <= 1477 || ch == 1479 || ch >= 1488 && ch <= 1514 || ch >= 1519 && ch <= 1522 || ch >= 1552 && ch <= 1562 || ch >= 1568 && ch <= 1641 || ch >= 1646 && ch <= 1747 || ch >= 1749 && ch <= 1756 || ch >= 1759 && ch <= 1768 || ch >= 1770 && ch <= 1788 || ch == 1791 || ch >= 1808 && ch <= 1866 || ch >= 1869 && ch <= 1969 || ch >= 1984 && ch <= 2037 || ch == 2042 || ch == 2045 || ch >= 2048 && ch <= 2093 || ch >= 2112 && ch <= 2139 || ch >= 2144 && ch <= 2154 || ch >= 2160 && ch <= 2183 || ch >= 2185 && ch <= 2190 || ch >= 2199 && ch <= 2273 || ch >= 2275 && ch <= 2403 || ch >= 2406 && ch <= 2415 || ch >= 2417 && ch <= 2435 || ch >= 2437 && ch <= 2444 || ch >= 2447 && ch <= 2448 || ch >= 2451 && ch <= 2472 || ch >= 2474 && ch <= 2480 || ch == 2482 || ch >= 2486 && ch <= 2489 || ch >= 2492 && ch <= 2500 || ch >= 2503 && ch <= 2504 || ch >= 2507 && ch <= 2510 || ch == 2519 || ch >= 2524 && ch <= 2525 || ch >= 2527 && ch <= 2531 || ch >= 2534 && ch <= 2545 || ch == 2556 || ch == 2558 || ch >= 2561 && ch <= 2563 || ch >= 2565 && ch <= 2570 || ch >= 2575 && ch <= 2576 || ch >= 2579 && ch <= 2600 || ch >= 2602 && ch <= 2608 || ch >= 2610 && ch <= 2611 || ch >= 2613 && ch <= 2614 || ch >= 2616 && ch <= 2617 || ch == 2620 || ch >= 2622 && ch <= 2626 || ch >= 2631 && ch <= 2632 || ch >= 2635 && ch <= 2637 || ch == 2641 || ch >= 2649 && ch <= 2652 || ch == 2654 || ch >= 2662 && ch <= 2677 || ch >= 2689 && ch <= 2691 || ch >= 2693 && ch <= 2701 || ch >= 2703 && ch <= 2705 || ch >= 2707 && ch <= 2728 || ch >= 2730 && ch <= 2736 || ch >= 2738 && ch <= 2739 || ch >= 2741 && ch <= 2745 || ch >= 2748 && ch <= 2757 || ch >= 2759 && ch <= 2761 || ch >= 2763 && ch <= 2765 || ch == 2768 || ch >= 2784 && ch <= 2787 || ch >= 2790 && ch <= 2799 || ch >= 2809 && ch <= 2815 || ch >= 2817 && ch <= 2819 || ch >= 2821 && ch <= 2828 || ch >= 2831 && ch <= 2832 || ch >= 2835 && ch <= 2856 || ch >= 2858 && ch <= 2864 || ch >= 2866 && ch <= 2867 || ch >= 2869 && ch <= 2873 || ch >= 2876 && ch <= 2884 || ch >= 2887 && ch <= 2888 || ch >= 2891 && ch <= 2893 || ch >= 2901 && ch <= 2903 || ch >= 2908 && ch <= 2909 || ch >= 2911 && ch <= 2915 || ch >= 2918 && ch <= 2927 || ch == 2929 || ch >= 2946 && ch <= 2947 || ch >= 2949 && ch <= 2954 || ch >= 2958 && ch <= 2960 || ch >= 2962 && ch <= 2965 || ch >= 2969 && ch <= 2970 || ch == 2972 || ch >= 2974 && ch <= 2975 || ch >= 2979 && ch <= 2980 || ch >= 2984 && ch <= 2986 || ch >= 2990 && ch <= 3001 || ch >= 3006 && ch <= 3010 || ch >= 3014 && ch <= 3016 || ch >= 3018 && ch <= 3021 || ch == 3024 || ch == 3031 || ch >= 3046 && ch <= 3055 || ch >= 3072 && ch <= 3084 || ch >= 3086 && ch <= 3088 || ch >= 3090 && ch <= 3112 || ch >= 3114 && ch <= 3129 || ch >= 3132 && ch <= 3140 || ch >= 3142 && ch <= 3144 || ch >= 3146 && ch <= 3149 || ch >= 3157 && ch <= 3158 || ch >= 3160 && ch <= 3162 || ch == 3165 || ch >= 3168 && ch <= 3171 || ch >= 3174 && ch <= 3183 || ch >= 3200 && ch <= 3203 || ch >= 3205 && ch <= 3212 || ch >= 3214 && ch <= 3216 || ch >= 3218 && ch <= 3240 || ch >= 3242 && ch <= 3251 || ch >= 3253 && ch <= 3257 || ch >= 3260 && ch <= 3268 || ch >= 3270 && ch <= 3272 || ch >= 3274 && ch <= 3277 || ch >= 3285 && ch <= 3286 || ch >= 3293 && ch <= 3294 || ch >= 3296 && ch <= 3299 || ch >= 3302 && ch <= 3311 || ch >= 3313 && ch <= 3315 || ch >= 3328 && ch <= 3340 || ch >= 3342 && ch <= 3344 || ch >= 3346 && ch <= 3396 || ch >= 3398 && ch <= 3400 || ch >= 3402 && ch <= 3406 || ch >= 3412 && ch <= 3415 || ch >= 3423 && ch <= 3427 || ch >= 3430 && ch <= 3439 || ch >= 3450 && ch <= 3455 || ch >= 3457 && ch <= 3459 || ch >= 3461 && ch <= 3478 || ch >= 3482 && ch <= 3505 || ch >= 3507 && ch <= 3515 || ch == 3517 || ch >= 3520 && ch <= 3526 || ch == 3530 || ch >= 3535 && ch <= 3540 || ch == 3542 || ch >= 3544 && ch <= 3551 || ch >= 3558 && ch <= 3567 || ch >= 3570 && ch <= 3571 || ch >= 3585 && ch <= 3642 || ch >= 3648 && ch <= 3662 || ch >= 3664 && ch <= 3673 || ch >= 3713 && ch <= 3714 || ch == 3716 || ch >= 3718 && ch <= 3722 || ch >= 3724 && ch <= 3747 || ch == 3749 || ch >= 3751 && ch <= 3773 || ch >= 3776 && ch <= 3780 || ch == 3782 || ch >= 3784 && ch <= 3790 || ch >= 3792 && ch <= 3801 || ch >= 3804 && ch <= 3807 || ch == 3840 || ch >= 3864 && ch <= 3865 || ch >= 3872 && ch <= 3881 || ch == 3893 || ch == 3895 || ch == 3897 || ch >= 3902 && ch <= 3911 || ch >= 3913 && ch <= 3948 || ch >= 3953 && ch <= 3972 || ch >= 3974 && ch <= 3991 || ch >= 3993 && ch <= 4028 || ch == 4038 || ch >= 4096 && ch <= 4169 || ch >= 4176 && ch <= 4253 || ch >= 4256 && ch <= 4293 || ch == 4295 || ch == 4301 || ch >= 4304 && ch <= 4346 || ch >= 4348 && ch <= 4680 || ch >= 4682 && ch <= 4685 || ch >= 4688 && ch <= 4694 || ch == 4696 || ch >= 4698 && ch <= 4701 || ch >= 4704 && ch <= 4744 || ch >= 4746 && ch <= 4749 || ch >= 4752 && ch <= 4784 || ch >= 4786 && ch <= 4789 || ch >= 4792 && ch <= 4798 || ch == 4800 || ch >= 4802 && ch <= 4805 || ch >= 4808 && ch <= 4822 || ch >= 4824 && ch <= 4880 || ch >= 4882 && ch <= 4885 || ch >= 4888 && ch <= 4954 || ch >= 4957 && ch <= 4959 || ch >= 4969 && ch <= 4977 || ch >= 4992 && ch <= 5007 || ch >= 5024 && ch <= 5109 || ch >= 5112 && ch <= 5117 || ch >= 5121 && ch <= 5740 || ch >= 5743 && ch <= 5759 || ch >= 5761 && ch <= 5786 || ch >= 5792 && ch <= 5866 || ch >= 5870 && ch <= 5880 || ch >= 5888 && ch <= 5909 || ch >= 5919 && ch <= 5940 || ch >= 5952 && ch <= 5971 || ch >= 5984 && ch <= 5996 || ch >= 5998 && ch <= 6000 || ch >= 6002 && ch <= 6003 || ch >= 6016 && ch <= 6099 || ch == 6103 || ch >= 6108 && ch <= 6109 || ch >= 6112 && ch <= 6121 || ch >= 6155 && ch <= 6157 || ch >= 6159 && ch <= 6169 || ch >= 6176 && ch <= 6264 || ch >= 6272 && ch <= 6314 || ch >= 6320 && ch <= 6389 || ch >= 6400 && ch <= 6430 || ch >= 6432 && ch <= 6443 || ch >= 6448 && ch <= 6459 || ch >= 6470 && ch <= 6509 || ch >= 6512 && ch <= 6516 || ch >= 6528 && ch <= 6571 || ch >= 6576 && ch <= 6601 || ch >= 6608 && ch <= 6618 || ch >= 6656 && ch <= 6683 || ch >= 6688 && ch <= 6750 || ch >= 6752 && ch <= 6780 || ch >= 6783 && ch <= 6793 || ch >= 6800 && ch <= 6809 || ch == 6823 || ch >= 6832 && ch <= 6845 || ch >= 6847 && ch <= 6862 || ch >= 6912 && ch <= 6988 || ch >= 6992 && ch <= 7001 || ch >= 7019 && ch <= 7027 || ch >= 7040 && ch <= 7155 || ch >= 7168 && ch <= 7223 || ch >= 7232 && ch <= 7241 || ch >= 7245 && ch <= 7293 || ch >= 7296 && ch <= 7306 || ch >= 7312 && ch <= 7354 || ch >= 7357 && ch <= 7359 || ch >= 7376 && ch <= 7378 || ch >= 7380 && ch <= 7418 || ch >= 7424 && ch <= 7957 || ch >= 7960 && ch <= 7965 || ch >= 7968 && ch <= 8005 || ch >= 8008 && ch <= 8013 || ch >= 8016 && ch <= 8023 || ch == 8025 || ch == 8027 || ch == 8029 || ch >= 8031 && ch <= 8061 || ch >= 8064 && ch <= 8116 || ch >= 8118 && ch <= 8124 || ch == 8126 || ch >= 8130 && ch <= 8132 || ch >= 8134 && ch <= 8140 || ch >= 8144 && ch <= 8147 || ch >= 8150 && ch <= 8155 || ch >= 8160 && ch <= 8172 || ch >= 8178 && ch <= 8180 || ch >= 8182 && ch <= 8188 || ch >= 8204 && ch <= 8205 || ch >= 8255 && ch <= 8256 || ch == 8276 || ch == 8305 || ch == 8319 || ch >= 8336 && ch <= 8348 || ch >= 8400 && ch <= 8412 || ch == 8417 || ch >= 8421 && ch <= 8432 || ch == 8450 || ch == 8455 || ch >= 8458 && ch <= 8467 || ch == 8469 || ch >= 8472 && ch <= 8477 || ch == 8484 || ch == 8486 || ch == 8488 || ch >= 8490 && ch <= 8505 || ch >= 8508 && ch <= 8511 || ch >= 8517 && ch <= 8521 || ch == 8526 || ch >= 8544 && ch <= 8584 || ch >= 11264 && ch <= 11492 || ch >= 11499 && ch <= 11507 || ch >= 11520 && ch <= 11557 || ch == 11559 || ch == 11565 || ch >= 11568 && ch <= 11623 || ch == 11631 || ch >= 11647 && ch <= 11670 || ch >= 11680 && ch <= 11686 || ch >= 11688 && ch <= 11694 || ch >= 11696 && ch <= 11702 || ch >= 11704 && ch <= 11710 || ch >= 11712 && ch <= 11718 || ch >= 11720 && ch <= 11726 || ch >= 11728 && ch <= 11734 || ch >= 11736 && ch <= 11742 || ch >= 11744 && ch <= 11775 || ch >= 12293 && ch <= 12295 || ch >= 12321 && ch <= 12335 || ch >= 12337 && ch <= 12341 || ch >= 12344 && ch <= 12348 || ch >= 12353 && ch <= 12438 || ch >= 12441 && ch <= 12442 || ch >= 12445 && ch <= 12447 || ch >= 12449 && ch <= 12543 || ch >= 12549 && ch <= 12591 || ch >= 12593 && ch <= 12686 || ch >= 12704 && ch <= 12735 || ch >= 12784 && ch <= 12799 || ch >= 13312 && ch <= 19903 || ch >= 19968 && ch <= 42124 || ch >= 42192 && ch <= 42237 || ch >= 42240 && ch <= 42508 || ch >= 42512 && ch <= 42539 || ch >= 42560 && ch <= 42607 || ch >= 42612 && ch <= 42621 || ch >= 42623 && ch <= 42737 || ch >= 42775 && ch <= 42783 || ch >= 42786 && ch <= 42888 || ch >= 42891 && ch <= 42957 || ch >= 42960 && ch <= 42961 || ch == 42963 || ch >= 42965 && ch <= 42972 || ch >= 42994 && ch <= 43047 || ch == 43052 || ch >= 43072 && ch <= 43123 || ch >= 43136 && ch <= 43205 || ch >= 43216 && ch <= 43225 || ch >= 43232 && ch <= 43255 || ch == 43259 || ch >= 43261 && ch <= 43309 || ch >= 43312 && ch <= 43347 || ch >= 43360 && ch <= 43388 || ch >= 43392 && ch <= 43456 || ch >= 43471 && ch <= 43481 || ch >= 43488 && ch <= 43518 || ch >= 43520 && ch <= 43574 || ch >= 43584 && ch <= 43597 || ch >= 43600 && ch <= 43609 || ch >= 43616 && ch <= 43638 || ch >= 43642 && ch <= 43714 || ch >= 43739 && ch <= 43741 || ch >= 43744 && ch <= 43759 || ch >= 43762 && ch <= 43766 || ch >= 43777 && ch <= 43782 || ch >= 43785 && ch <= 43790 || ch >= 43793 && ch <= 43798 || ch >= 43808 && ch <= 43814 || ch >= 43816 && ch <= 43822 || ch >= 43824 && ch <= 43866 || ch >= 43868 && ch <= 43881 || ch >= 43888 && ch <= 44010 || ch >= 44012 && ch <= 44013 || ch >= 44016 && ch <= 44025 || ch >= 44032 && ch <= 55203 || ch >= 55216 && ch <= 55238 || ch >= 55243 && ch <= 55291 || ch >= 63744 && ch <= 64109 || ch >= 64112 && ch <= 64217 || ch >= 64256 && ch <= 64262 || ch >= 64275 && ch <= 64279 || ch >= 64285 && ch <= 64296 || ch >= 64298 && ch <= 64310 || ch >= 64312 && ch <= 64316 || ch == 64318 || ch >= 64320 && ch <= 64321 || ch >= 64323 && ch <= 64324 || ch >= 64326 && ch <= 64433 || ch >= 64467 && ch <= 64605 || ch >= 64612 && ch <= 64829 || ch >= 64848 && ch <= 64911 || ch >= 64914 && ch <= 64967 || ch >= 65008 && ch <= 65017 || ch >= 65024 && ch <= 65039 || ch >= 65056 && ch <= 65071 || ch >= 65075 && ch <= 65076 || ch >= 65101 && ch <= 65103 || ch == 65137 || ch == 65139 || ch == 65143 || ch == 65145 || ch == 65147 || ch == 65149 || ch >= 65151 && ch <= 65276 || ch >= 65296 && ch <= 65305 || ch >= 65313 && ch <= 65338 || ch == 65343 || ch >= 65345 && ch <= 65370 || ch >= 65381 && ch <= 65470 || ch >= 65474 && ch <= 65479 || ch >= 65482 && ch <= 65487 || ch >= 65490 && ch <= 65495 || ch >= 65498 && ch <= 65500 || ch >= 65536 && ch <= 65547 || ch >= 65549 && ch <= 65574 || ch >= 65576 && ch <= 65594 || ch >= 65596 && ch <= 65597 || ch >= 65599 && ch <= 65613 || ch >= 65616 && ch <= 65629 || ch >= 65664 && ch <= 65786 || ch >= 65856 && ch <= 65908 || ch == 66045 || ch >= 66176 && ch <= 66204 || ch >= 66208 && ch <= 66256 || ch == 66272 || ch >= 66304 && ch <= 66335 || ch >= 66349 && ch <= 66378 || ch >= 66384 && ch <= 66426 || ch >= 66432 && ch <= 66461 || ch >= 66464 && ch <= 66499 || ch >= 66504 && ch <= 66511 || ch >= 66513 && ch <= 66517 || ch >= 66560 && ch <= 66717 || ch >= 66720 && ch <= 66729 || ch >= 66736 && ch <= 66771 || ch >= 66776 && ch <= 66811 || ch >= 66816 && ch <= 66855 || ch >= 66864 && ch <= 66915 || ch >= 66928 && ch <= 66938 || ch >= 66940 && ch <= 66954 || ch >= 66956 && ch <= 66962 || ch >= 66964 && ch <= 66965 || ch >= 66967 && ch <= 66977 || ch >= 66979 && ch <= 66993 || ch >= 66995 && ch <= 67001 || ch >= 67003 && ch <= 67004 || ch >= 67008 && ch <= 67059 || ch >= 67072 && ch <= 67382 || ch >= 67392 && ch <= 67413 || ch >= 67424 && ch <= 67431 || ch >= 67456 && ch <= 67461 || ch >= 67463 && ch <= 67504 || ch >= 67506 && ch <= 67514 || ch >= 67584 && ch <= 67589 || ch == 67592 || ch >= 67594 && ch <= 67637 || ch >= 67639 && ch <= 67640 || ch == 67644 || ch >= 67647 && ch <= 67669 || ch >= 67680 && ch <= 67702 || ch >= 67712 && ch <= 67742 || ch >= 67808 && ch <= 67826 || ch >= 67828 && ch <= 67829 || ch >= 67840 && ch <= 67861 || ch >= 67872 && ch <= 67897 || ch >= 67968 && ch <= 68023 || ch >= 68030 && ch <= 68031 || ch >= 68096 && ch <= 68099 || ch >= 68101 && ch <= 68102 || ch >= 68108 && ch <= 68115 || ch >= 68117 && ch <= 68119 || ch >= 68121 && ch <= 68149 || ch >= 68152 && ch <= 68154 || ch == 68159 || ch >= 68192 && ch <= 68220 || ch >= 68224 && ch <= 68252 || ch >= 68288 && ch <= 68295 || ch >= 68297 && ch <= 68326 || ch >= 68352 && ch <= 68405 || ch >= 68416 && ch <= 68437 || ch >= 68448 && ch <= 68466 || ch >= 68480 && ch <= 68497 || ch >= 68608 && ch <= 68680 || ch >= 68736 && ch <= 68786 || ch >= 68800 && ch <= 68850 || ch >= 68864 && ch <= 68903 || ch >= 68912 && ch <= 68921 || ch >= 68928 && ch <= 68965 || ch >= 68969 && ch <= 68973 || ch >= 68975 && ch <= 68997 || ch >= 69248 && ch <= 69289 || ch >= 69291 && ch <= 69292 || ch >= 69296 && ch <= 69297 || ch >= 69314 && ch <= 69316 || ch >= 69372 && ch <= 69404 || ch == 69415 || ch >= 69424 && ch <= 69456 || ch >= 69488 && ch <= 69509 || ch >= 69552 && ch <= 69572 || ch >= 69600 && ch <= 69622 || ch >= 69632 && ch <= 69702 || ch >= 69734 && ch <= 69749 || ch >= 69759 && ch <= 69818 || ch == 69826 || ch >= 69840 && ch <= 69864 || ch >= 69872 && ch <= 69881 || ch >= 69888 && ch <= 69940 || ch >= 69942 && ch <= 69951 || ch >= 69956 && ch <= 69959 || ch >= 69968 && ch <= 70003 || ch == 70006 || ch >= 70016 && ch <= 70084 || ch >= 70089 && ch <= 70092 || ch >= 70094 && ch <= 70106 || ch == 70108 || ch >= 70144 && ch <= 70161 || ch >= 70163 && ch <= 70199 || ch >= 70206 && ch <= 70209 || ch >= 70272 && ch <= 70278 || ch == 70280 || ch >= 70282 && ch <= 70285 || ch >= 70287 && ch <= 70301 || ch >= 70303 && ch <= 70312 || ch >= 70320 && ch <= 70378 || ch >= 70384 && ch <= 70393 || ch >= 70400 && ch <= 70403 || ch >= 70405 && ch <= 70412 || ch >= 70415 && ch <= 70416 || ch >= 70419 && ch <= 70440 || ch >= 70442 && ch <= 70448 || ch >= 70450 && ch <= 70451 || ch >= 70453 && ch <= 70457 || ch >= 70459 && ch <= 70468 || ch >= 70471 && ch <= 70472 || ch >= 70475 && ch <= 70477 || ch == 70480 || ch == 70487 || ch >= 70493 && ch <= 70499 || ch >= 70502 && ch <= 70508 || ch >= 70512 && ch <= 70516 || ch >= 70528 && ch <= 70537 || ch == 70539 || ch == 70542 || ch >= 70544 && ch <= 70581 || ch >= 70583 && ch <= 70592 || ch == 70594 || ch == 70597 || ch >= 70599 && ch <= 70602 || ch >= 70604 && ch <= 70611 || ch >= 70625 && ch <= 70626 || ch >= 70656 && ch <= 70730 || ch >= 70736 && ch <= 70745 || ch >= 70750 && ch <= 70753 || ch >= 70784 && ch <= 70853 || ch == 70855 || ch >= 70864 && ch <= 70873 || ch >= 71040 && ch <= 71093 || ch >= 71096 && ch <= 71104 || ch >= 71128 && ch <= 71133 || ch >= 71168 && ch <= 71232 || ch == 71236 || ch >= 71248 && ch <= 71257 || ch >= 71296 && ch <= 71352 || ch >= 71360 && ch <= 71369 || ch >= 71376 && ch <= 71395 || ch >= 71424 && ch <= 71450 || ch >= 71453 && ch <= 71467 || ch >= 71472 && ch <= 71481 || ch >= 71488 && ch <= 71494 || ch >= 71680 && ch <= 71738 || ch >= 71840 && ch <= 71913 || ch >= 71935 && ch <= 71942 || ch == 71945 || ch >= 71948 && ch <= 71955 || ch >= 71957 && ch <= 71958 || ch >= 71960 && ch <= 71989 || ch >= 71991 && ch <= 71992 || ch >= 71995 && ch <= 72003 || ch >= 72016 && ch <= 72025 || ch >= 72096 && ch <= 72103 || ch >= 72106 && ch <= 72151 || ch >= 72154 && ch <= 72161 || ch >= 72163 && ch <= 72164 || ch >= 72192 && ch <= 72254 || ch == 72263 || ch >= 72272 && ch <= 72345 || ch == 72349 || ch >= 72368 && ch <= 72440 || ch >= 72640 && ch <= 72672 || ch >= 72688 && ch <= 72697 || ch >= 72704 && ch <= 72712 || ch >= 72714 && ch <= 72758 || ch >= 72760 && ch <= 72768 || ch >= 72784 && ch <= 72793 || ch >= 72818 && ch <= 72847 || ch >= 72850 && ch <= 72871 || ch >= 72873 && ch <= 72886 || ch >= 72960 && ch <= 72966 || ch >= 72968 && ch <= 72969 || ch >= 72971 && ch <= 73014 || ch == 73018 || ch >= 73020 && ch <= 73021 || ch >= 73023 && ch <= 73031 || ch >= 73040 && ch <= 73049 || ch >= 73056 && ch <= 73061 || ch >= 73063 && ch <= 73064 || ch >= 73066 && ch <= 73102 || ch >= 73104 && ch <= 73105 || ch >= 73107 && ch <= 73112 || ch >= 73120 && ch <= 73129 || ch >= 73440 && ch <= 73462 || ch >= 73472 && ch <= 73488 || ch >= 73490 && ch <= 73530 || ch >= 73534 && ch <= 73538 || ch >= 73552 && ch <= 73562 || ch == 73648 || ch >= 73728 && ch <= 74649 || ch >= 74752 && ch <= 74862 || ch >= 74880 && ch <= 75075 || ch >= 77712 && ch <= 77808 || ch >= 77824 && ch <= 78895 || ch >= 78912 && ch <= 78933 || ch >= 78944 && ch <= 82938 || ch >= 82944 && ch <= 83526 || ch >= 90368 && ch <= 90425 || ch >= 92160 && ch <= 92728 || ch >= 92736 && ch <= 92766 || ch >= 92768 && ch <= 92777 || ch >= 92784 && ch <= 92862 || ch >= 92864 && ch <= 92873 || ch >= 92880 && ch <= 92909 || ch >= 92912 && ch <= 92916 || ch >= 92928 && ch <= 92982 || ch >= 92992 && ch <= 92995 || ch >= 93008 && ch <= 93017 || ch >= 93027 && ch <= 93047 || ch >= 93053 && ch <= 93071 || ch >= 93504 && ch <= 93548 || ch >= 93552 && ch <= 93561 || ch >= 93760 && ch <= 93823 || ch >= 93952 && ch <= 94026 || ch >= 94031 && ch <= 94087 || ch >= 94095 && ch <= 94111 || ch >= 94176 && ch <= 94177 || ch >= 94179 && ch <= 94180 || ch >= 94192 && ch <= 94193 || ch >= 94208 && ch <= 100343 || ch >= 100352 && ch <= 101589 || ch >= 101631 && ch <= 101640 || ch >= 110576 && ch <= 110579 || ch >= 110581 && ch <= 110587 || ch >= 110589 && ch <= 110590 || ch >= 110592 && ch <= 110882 || ch == 110898 || ch >= 110928 && ch <= 110930 || ch == 110933 || ch >= 110948 && ch <= 110951 || ch >= 110960 && ch <= 111355 || ch >= 113664 && ch <= 113770 || ch >= 113776 && ch <= 113788 || ch >= 113792 && ch <= 113800 || ch >= 113808 && ch <= 113817 || ch >= 113821 && ch <= 113822 || ch >= 118000 && ch <= 118009 || ch >= 118528 && ch <= 118573 || ch >= 118576 && ch <= 118598 || ch >= 119141 && ch <= 119145 || ch >= 119149 && ch <= 119154 || ch >= 119163 && ch <= 119170 || ch >= 119173 && ch <= 119179 || ch >= 119210 && ch <= 119213 || ch >= 119362 && ch <= 119364 || ch >= 119808 && ch <= 119892 || ch >= 119894 && ch <= 119964 || ch >= 119966 && ch <= 119967 || ch == 119970 || ch >= 119973 && ch <= 119974 || ch >= 119977 && ch <= 119980 || ch >= 119982 && ch <= 119993 || ch == 119995 || ch >= 119997 && ch <= 120003 || ch >= 120005 && ch <= 120069 || ch >= 120071 && ch <= 120074 || ch >= 120077 && ch <= 120084 || ch >= 120086 && ch <= 120092 || ch >= 120094 && ch <= 120121 || ch >= 120123 && ch <= 120126 || ch >= 120128 && ch <= 120132 || ch == 120134 || ch >= 120138 && ch <= 120144 || ch >= 120146 && ch <= 120485 || ch >= 120488 && ch <= 120512 || ch >= 120514 && ch <= 120538 || ch >= 120540 && ch <= 120570 || ch >= 120572 && ch <= 120596 || ch >= 120598 && ch <= 120628 || ch >= 120630 && ch <= 120654 || ch >= 120656 && ch <= 120686 || ch >= 120688 && ch <= 120712 || ch >= 120714 && ch <= 120744 || ch >= 120746 && ch <= 120770 || ch >= 120772 && ch <= 120779 || ch >= 120782 && ch <= 120831 || ch >= 121344 && ch <= 121398 || ch >= 121403 && ch <= 121452 || ch == 121461 || ch == 121476 || ch >= 121499 && ch <= 121503 || ch >= 121505 && ch <= 121519 || ch >= 122624 && ch <= 122654 || ch >= 122661 && ch <= 122666 || ch >= 122880 && ch <= 122886 || ch >= 122888 && ch <= 122904 || ch >= 122907 && ch <= 122913 || ch >= 122915 && ch <= 122916 || ch >= 122918 && ch <= 122922 || ch >= 122928 && ch <= 122989 || ch == 123023 || ch >= 123136 && ch <= 123180 || ch >= 123184 && ch <= 123197 || ch >= 123200 && ch <= 123209 || ch == 123214 || ch >= 123536 && ch <= 123566 || ch >= 123584 && ch <= 123641 || ch >= 124112 && ch <= 124153 || ch >= 124368 && ch <= 124410 || ch >= 124896 && ch <= 124902 || ch >= 124904 && ch <= 124907 || ch >= 124909 && ch <= 124910 || ch >= 124912 && ch <= 124926 || ch >= 124928 && ch <= 125124 || ch >= 125136 && ch <= 125142 || ch >= 125184 && ch <= 125259 || ch >= 125264 && ch <= 125273 || ch >= 126464 && ch <= 126467 || ch >= 126469 && ch <= 126495 || ch >= 126497 && ch <= 126498 || ch == 126500 || ch == 126503 || ch >= 126505 && ch <= 126514 || ch >= 126516 && ch <= 126519 || ch == 126521 || ch == 126523 || ch == 126530 || ch == 126535 || ch == 126537 || ch == 126539 || ch >= 126541 && ch <= 126543 || ch >= 126545 && ch <= 126546 || ch == 126548 || ch == 126551 || ch == 126553 || ch == 126555 || ch == 126557 || ch == 126559 || ch >= 126561 && ch <= 126562 || ch == 126564 || ch >= 126567 && ch <= 126570 || ch >= 126572 && ch <= 126578 || ch >= 126580 && ch <= 126583 || ch >= 126585 && ch <= 126588 || ch == 126590 || ch >= 126592 && ch <= 126601 || ch >= 126603 && ch <= 126619 || ch >= 126625 && ch <= 126627 || ch >= 126629 && ch <= 126633 || ch >= 126635 && ch <= 126651 || ch >= 130032 && ch <= 130041 || ch >= 131072 && ch <= 173791 || ch >= 173824 && ch <= 177977 || ch >= 177984 && ch <= 178205 || ch >= 178208 && ch <= 183969 || ch >= 183984 && ch <= 191456 || ch >= 191472 && ch <= 192093 || ch >= 194560 && ch <= 195101 || ch >= 196608 && ch <= 201546 || ch >= 201552 && ch <= 205743 || ch >= 917760 && ch <= 917999)) {
-		p.ExpectOrdinary(p.Pos, 181)
+	x1 = p.Pos
+	if !p.ClassFast(&cls1146) && !p.ClassSkip(&cls1146, 181) {
 		goto fail
 	}
-	x1 = p.Pos
-	p.Pos += size
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v2, start)
 	if n := pegort.AsTval(v); n != nil {
@@ -51855,13 +51753,13 @@ L4:
 			return c.Binary("==", func() any {
 				return c.Binary("+", func() any {
 					return c.Binary("+", func() any {
-						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k9 }(), "$segs") }(), func(l_1128, l_1129 any) any {
+						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k9 }(), "$segs") }(), func(l_1147, l_1148 any) any {
 							return func() any {
 								return c.Binary("+", func() any {
 									return c.Binary("*", func() any {
 										return c.Binary("/", func() any {
-											return c.Binary("+", func() any { return l_1128 }(), func() any {
-												return c.Length(func() any { return c.Member(func() any { return l_1129 }(), "$sp") }())
+											return c.Binary("+", func() any { return l_1147 }(), func() any {
+												return c.Length(func() any { return c.Member(func() any { return l_1148 }(), "$sp") }())
 											}())
 										}(), func() any { return any(8) }())
 									}(), func() any { return any(8) }())
@@ -51874,11 +51772,11 @@ L4:
 				}(), func() any {
 					return c.Binary("*", func() any { return any(4194304) }(), func() any {
 						return c.Binary("+", func() any {
-							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k9 }(), "$segs") }(), func(l_1130, l_1131 any) any {
+							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k9 }(), "$segs") }(), func(l_1149, l_1150 any) any {
 								return func() any {
 									return c.Binary("+", func() any {
-										return c.Binary("+", func() any { return l_1130 }(), func() any {
-											return c.Length(func() any { return c.Member(func() any { return l_1131 }(), "$sp") }())
+										return c.Binary("+", func() any { return l_1149 }(), func() any {
+											return c.Length(func() any { return c.Member(func() any { return l_1150 }(), "$sp") }())
 										}())
 									}(), func() any { return any(1) }())
 								}()
@@ -53144,13 +53042,13 @@ L4:
 			return c.Binary("==", func() any {
 				return c.Binary("+", func() any {
 					return c.Binary("+", func() any {
-						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k9 }(), "$segs") }(), func(l_1132, l_1133 any) any {
+						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k9 }(), "$segs") }(), func(l_1151, l_1152 any) any {
 							return func() any {
 								return c.Binary("+", func() any {
 									return c.Binary("*", func() any {
 										return c.Binary("/", func() any {
-											return c.Binary("+", func() any { return l_1132 }(), func() any {
-												return c.Length(func() any { return c.Member(func() any { return l_1133 }(), "$sp") }())
+											return c.Binary("+", func() any { return l_1151 }(), func() any {
+												return c.Length(func() any { return c.Member(func() any { return l_1152 }(), "$sp") }())
 											}())
 										}(), func() any { return any(8) }())
 									}(), func() any { return any(8) }())
@@ -53163,11 +53061,11 @@ L4:
 				}(), func() any {
 					return c.Binary("*", func() any { return any(4194304) }(), func() any {
 						return c.Binary("+", func() any {
-							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k9 }(), "$segs") }(), func(l_1134, l_1135 any) any {
+							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k9 }(), "$segs") }(), func(l_1153, l_1154 any) any {
 								return func() any {
 									return c.Binary("+", func() any {
-										return c.Binary("+", func() any { return l_1134 }(), func() any {
-											return c.Length(func() any { return c.Member(func() any { return l_1135 }(), "$sp") }())
+										return c.Binary("+", func() any { return l_1153 }(), func() any {
+											return c.Length(func() any { return c.Member(func() any { return l_1154 }(), "$sp") }())
 										}())
 									}(), func() any { return any(1) }())
 								}()
@@ -53945,13 +53843,13 @@ func i369(p *pegort.TParser) (any, bool) {
 			return c.Binary("==", func() any {
 				return c.Binary("+", func() any {
 					return c.Binary("+", func() any {
-						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_1136, l_1137 any) any {
+						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_1155, l_1156 any) any {
 							return func() any {
 								return c.Binary("+", func() any {
 									return c.Binary("*", func() any {
 										return c.Binary("/", func() any {
-											return c.Binary("+", func() any { return l_1136 }(), func() any {
-												return c.Length(func() any { return c.Member(func() any { return l_1137 }(), "$sp") }())
+											return c.Binary("+", func() any { return l_1155 }(), func() any {
+												return c.Length(func() any { return c.Member(func() any { return l_1156 }(), "$sp") }())
 											}())
 										}(), func() any { return any(8) }())
 									}(), func() any { return any(8) }())
@@ -53964,11 +53862,11 @@ func i369(p *pegort.TParser) (any, bool) {
 				}(), func() any {
 					return c.Binary("*", func() any { return any(4194304) }(), func() any {
 						return c.Binary("+", func() any {
-							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_1138, l_1139 any) any {
+							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_1157, l_1158 any) any {
 								return func() any {
 									return c.Binary("+", func() any {
-										return c.Binary("+", func() any { return l_1138 }(), func() any {
-											return c.Length(func() any { return c.Member(func() any { return l_1139 }(), "$sp") }())
+										return c.Binary("+", func() any { return l_1157 }(), func() any {
+											return c.Length(func() any { return c.Member(func() any { return l_1158 }(), "$sp") }())
 										}())
 									}(), func() any { return any(1) }())
 								}()
@@ -55546,11 +55444,11 @@ func v386(p *pegort.TParser) (any, bool) {
 		x6    int
 		x8    rune
 		x9    bool
-		ch    rune
-		size  int
 		ok    bool
 		x14   rune
 		x15   bool
+		ch    rune
+		size  int
 	)
 	start, rec = p.Pos, len(p.Recovered)
 	p.Depth++
@@ -55564,18 +55462,9 @@ func v386(p *pegort.TParser) (any, bool) {
 		p.ExpectOrdinary(p.Pos, 117)
 		goto L10
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 98 || ch == 66) {
-		p.ExpectOrdinary(p.Pos, 117)
+	if !p.ClassesSkip(steps1160) {
 		goto L11
 	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 114 || ch == 82) {
-		p.ExpectOrdinary(p.Pos, 116)
-		goto L11
-	}
-	p.Pos += size
 	goto L7
 L11:
 	p.Pos = x5
@@ -55585,18 +55474,9 @@ L10:
 		p.ExpectOrdinary(p.Pos, 116)
 		goto L12
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 114 || ch == 82) {
-		p.ExpectOrdinary(p.Pos, 116)
+	if !p.ClassesSkip(steps1161) {
 		goto L13
 	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 98 || ch == 66) {
-		p.ExpectOrdinary(p.Pos, 117)
-		goto L13
-	}
-	p.Pos += size
 	goto L7
 L13:
 	p.Pos = x5
@@ -55653,11 +55533,11 @@ func i386(p *pegort.TParser) (any, bool) {
 		x6   int
 		x8   rune
 		x9   bool
-		ch   rune
-		size int
 		ok   bool
 		x14  rune
 		x15  bool
+		ch   rune
+		size int
 	)
 	p.Depth++
 	if p.Depth > p.MaxDepth {
@@ -55670,18 +55550,9 @@ func i386(p *pegort.TParser) (any, bool) {
 		p.ExpectOrdinary(p.Pos, 117)
 		goto L10
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 98 || ch == 66) {
-		p.ExpectOrdinary(p.Pos, 117)
+	if !p.ClassesSkip(steps1160) {
 		goto L11
 	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 114 || ch == 82) {
-		p.ExpectOrdinary(p.Pos, 116)
-		goto L11
-	}
-	p.Pos += size
 	goto L7
 L11:
 	p.Pos = x5
@@ -55691,18 +55562,9 @@ L10:
 		p.ExpectOrdinary(p.Pos, 116)
 		goto L12
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 114 || ch == 82) {
-		p.ExpectOrdinary(p.Pos, 116)
+	if !p.ClassesSkip(steps1161) {
 		goto L13
 	}
-	p.Pos += size
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 98 || ch == 66) {
-		p.ExpectOrdinary(p.Pos, 117)
-		goto L13
-	}
-	p.Pos += size
 	goto L7
 L13:
 	p.Pos = x5
@@ -56480,12 +56342,9 @@ L22:
 		p.ExpectOrdinary(p.Pos, 149)
 		goto L25
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (ch == 120 || ch == 117 || ch == 85 || ch == 78 || ch == 123 || ch == 125 || ch == 10 || ch == 13 || ch == 0) {
-		p.ExpectOrdinary(p.Pos, 149)
+	if !p.ClassFast(&cls1132) && !p.ClassSkip(&cls1132, 149) {
 		goto L26
 	}
-	p.Pos += size
 	goto L3
 L26:
 	p.Pos = x1
@@ -56715,12 +56574,9 @@ L22:
 		p.ExpectOrdinary(p.Pos, 149)
 		goto L25
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (ch == 120 || ch == 117 || ch == 85 || ch == 78 || ch == 123 || ch == 125 || ch == 10 || ch == 13 || ch == 0) {
-		p.ExpectOrdinary(p.Pos, 149)
+	if !p.ClassFast(&cls1132) && !p.ClassSkip(&cls1132, 149) {
 		goto L26
 	}
-	p.Pos += size
 	goto L3
 L26:
 	p.Pos = x1
@@ -58546,21 +58402,15 @@ func s404(p *pegort.TParser) (any, bool) {
 		start int
 		v     any
 		rec   int
-		ch    rune
-		size  int
-		ok    bool
 	)
 	start, rec = p.Pos, len(p.Recovered)
 	p.Depth++
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 170 || ch == 181 || ch == 183 || ch == 186 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 705 || ch >= 710 && ch <= 721 || ch >= 736 && ch <= 740 || ch == 748 || ch == 750 || ch >= 768 && ch <= 884 || ch >= 886 && ch <= 887 || ch >= 891 && ch <= 893 || ch == 895 || ch >= 902 && ch <= 906 || ch == 908 || ch >= 910 && ch <= 929 || ch >= 931 && ch <= 1013 || ch >= 1015 && ch <= 1153 || ch >= 1155 && ch <= 1159 || ch >= 1162 && ch <= 1327 || ch >= 1329 && ch <= 1366 || ch == 1369 || ch >= 1376 && ch <= 1416 || ch >= 1425 && ch <= 1469 || ch == 1471 || ch >= 1473 && ch <= 1474 || ch >= 1476 && ch <= 1477 || ch == 1479 || ch >= 1488 && ch <= 1514 || ch >= 1519 && ch <= 1522 || ch >= 1552 && ch <= 1562 || ch >= 1568 && ch <= 1641 || ch >= 1646 && ch <= 1747 || ch >= 1749 && ch <= 1756 || ch >= 1759 && ch <= 1768 || ch >= 1770 && ch <= 1788 || ch == 1791 || ch >= 1808 && ch <= 1866 || ch >= 1869 && ch <= 1969 || ch >= 1984 && ch <= 2037 || ch == 2042 || ch == 2045 || ch >= 2048 && ch <= 2093 || ch >= 2112 && ch <= 2139 || ch >= 2144 && ch <= 2154 || ch >= 2160 && ch <= 2183 || ch >= 2185 && ch <= 2190 || ch >= 2199 && ch <= 2273 || ch >= 2275 && ch <= 2403 || ch >= 2406 && ch <= 2415 || ch >= 2417 && ch <= 2435 || ch >= 2437 && ch <= 2444 || ch >= 2447 && ch <= 2448 || ch >= 2451 && ch <= 2472 || ch >= 2474 && ch <= 2480 || ch == 2482 || ch >= 2486 && ch <= 2489 || ch >= 2492 && ch <= 2500 || ch >= 2503 && ch <= 2504 || ch >= 2507 && ch <= 2510 || ch == 2519 || ch >= 2524 && ch <= 2525 || ch >= 2527 && ch <= 2531 || ch >= 2534 && ch <= 2545 || ch == 2556 || ch == 2558 || ch >= 2561 && ch <= 2563 || ch >= 2565 && ch <= 2570 || ch >= 2575 && ch <= 2576 || ch >= 2579 && ch <= 2600 || ch >= 2602 && ch <= 2608 || ch >= 2610 && ch <= 2611 || ch >= 2613 && ch <= 2614 || ch >= 2616 && ch <= 2617 || ch == 2620 || ch >= 2622 && ch <= 2626 || ch >= 2631 && ch <= 2632 || ch >= 2635 && ch <= 2637 || ch == 2641 || ch >= 2649 && ch <= 2652 || ch == 2654 || ch >= 2662 && ch <= 2677 || ch >= 2689 && ch <= 2691 || ch >= 2693 && ch <= 2701 || ch >= 2703 && ch <= 2705 || ch >= 2707 && ch <= 2728 || ch >= 2730 && ch <= 2736 || ch >= 2738 && ch <= 2739 || ch >= 2741 && ch <= 2745 || ch >= 2748 && ch <= 2757 || ch >= 2759 && ch <= 2761 || ch >= 2763 && ch <= 2765 || ch == 2768 || ch >= 2784 && ch <= 2787 || ch >= 2790 && ch <= 2799 || ch >= 2809 && ch <= 2815 || ch >= 2817 && ch <= 2819 || ch >= 2821 && ch <= 2828 || ch >= 2831 && ch <= 2832 || ch >= 2835 && ch <= 2856 || ch >= 2858 && ch <= 2864 || ch >= 2866 && ch <= 2867 || ch >= 2869 && ch <= 2873 || ch >= 2876 && ch <= 2884 || ch >= 2887 && ch <= 2888 || ch >= 2891 && ch <= 2893 || ch >= 2901 && ch <= 2903 || ch >= 2908 && ch <= 2909 || ch >= 2911 && ch <= 2915 || ch >= 2918 && ch <= 2927 || ch == 2929 || ch >= 2946 && ch <= 2947 || ch >= 2949 && ch <= 2954 || ch >= 2958 && ch <= 2960 || ch >= 2962 && ch <= 2965 || ch >= 2969 && ch <= 2970 || ch == 2972 || ch >= 2974 && ch <= 2975 || ch >= 2979 && ch <= 2980 || ch >= 2984 && ch <= 2986 || ch >= 2990 && ch <= 3001 || ch >= 3006 && ch <= 3010 || ch >= 3014 && ch <= 3016 || ch >= 3018 && ch <= 3021 || ch == 3024 || ch == 3031 || ch >= 3046 && ch <= 3055 || ch >= 3072 && ch <= 3084 || ch >= 3086 && ch <= 3088 || ch >= 3090 && ch <= 3112 || ch >= 3114 && ch <= 3129 || ch >= 3132 && ch <= 3140 || ch >= 3142 && ch <= 3144 || ch >= 3146 && ch <= 3149 || ch >= 3157 && ch <= 3158 || ch >= 3160 && ch <= 3162 || ch == 3165 || ch >= 3168 && ch <= 3171 || ch >= 3174 && ch <= 3183 || ch >= 3200 && ch <= 3203 || ch >= 3205 && ch <= 3212 || ch >= 3214 && ch <= 3216 || ch >= 3218 && ch <= 3240 || ch >= 3242 && ch <= 3251 || ch >= 3253 && ch <= 3257 || ch >= 3260 && ch <= 3268 || ch >= 3270 && ch <= 3272 || ch >= 3274 && ch <= 3277 || ch >= 3285 && ch <= 3286 || ch >= 3293 && ch <= 3294 || ch >= 3296 && ch <= 3299 || ch >= 3302 && ch <= 3311 || ch >= 3313 && ch <= 3315 || ch >= 3328 && ch <= 3340 || ch >= 3342 && ch <= 3344 || ch >= 3346 && ch <= 3396 || ch >= 3398 && ch <= 3400 || ch >= 3402 && ch <= 3406 || ch >= 3412 && ch <= 3415 || ch >= 3423 && ch <= 3427 || ch >= 3430 && ch <= 3439 || ch >= 3450 && ch <= 3455 || ch >= 3457 && ch <= 3459 || ch >= 3461 && ch <= 3478 || ch >= 3482 && ch <= 3505 || ch >= 3507 && ch <= 3515 || ch == 3517 || ch >= 3520 && ch <= 3526 || ch == 3530 || ch >= 3535 && ch <= 3540 || ch == 3542 || ch >= 3544 && ch <= 3551 || ch >= 3558 && ch <= 3567 || ch >= 3570 && ch <= 3571 || ch >= 3585 && ch <= 3642 || ch >= 3648 && ch <= 3662 || ch >= 3664 && ch <= 3673 || ch >= 3713 && ch <= 3714 || ch == 3716 || ch >= 3718 && ch <= 3722 || ch >= 3724 && ch <= 3747 || ch == 3749 || ch >= 3751 && ch <= 3773 || ch >= 3776 && ch <= 3780 || ch == 3782 || ch >= 3784 && ch <= 3790 || ch >= 3792 && ch <= 3801 || ch >= 3804 && ch <= 3807 || ch == 3840 || ch >= 3864 && ch <= 3865 || ch >= 3872 && ch <= 3881 || ch == 3893 || ch == 3895 || ch == 3897 || ch >= 3902 && ch <= 3911 || ch >= 3913 && ch <= 3948 || ch >= 3953 && ch <= 3972 || ch >= 3974 && ch <= 3991 || ch >= 3993 && ch <= 4028 || ch == 4038 || ch >= 4096 && ch <= 4169 || ch >= 4176 && ch <= 4253 || ch >= 4256 && ch <= 4293 || ch == 4295 || ch == 4301 || ch >= 4304 && ch <= 4346 || ch >= 4348 && ch <= 4680 || ch >= 4682 && ch <= 4685 || ch >= 4688 && ch <= 4694 || ch == 4696 || ch >= 4698 && ch <= 4701 || ch >= 4704 && ch <= 4744 || ch >= 4746 && ch <= 4749 || ch >= 4752 && ch <= 4784 || ch >= 4786 && ch <= 4789 || ch >= 4792 && ch <= 4798 || ch == 4800 || ch >= 4802 && ch <= 4805 || ch >= 4808 && ch <= 4822 || ch >= 4824 && ch <= 4880 || ch >= 4882 && ch <= 4885 || ch >= 4888 && ch <= 4954 || ch >= 4957 && ch <= 4959 || ch >= 4969 && ch <= 4977 || ch >= 4992 && ch <= 5007 || ch >= 5024 && ch <= 5109 || ch >= 5112 && ch <= 5117 || ch >= 5121 && ch <= 5740 || ch >= 5743 && ch <= 5759 || ch >= 5761 && ch <= 5786 || ch >= 5792 && ch <= 5866 || ch >= 5870 && ch <= 5880 || ch >= 5888 && ch <= 5909 || ch >= 5919 && ch <= 5940 || ch >= 5952 && ch <= 5971 || ch >= 5984 && ch <= 5996 || ch >= 5998 && ch <= 6000 || ch >= 6002 && ch <= 6003 || ch >= 6016 && ch <= 6099 || ch == 6103 || ch >= 6108 && ch <= 6109 || ch >= 6112 && ch <= 6121 || ch >= 6155 && ch <= 6157 || ch >= 6159 && ch <= 6169 || ch >= 6176 && ch <= 6264 || ch >= 6272 && ch <= 6314 || ch >= 6320 && ch <= 6389 || ch >= 6400 && ch <= 6430 || ch >= 6432 && ch <= 6443 || ch >= 6448 && ch <= 6459 || ch >= 6470 && ch <= 6509 || ch >= 6512 && ch <= 6516 || ch >= 6528 && ch <= 6571 || ch >= 6576 && ch <= 6601 || ch >= 6608 && ch <= 6618 || ch >= 6656 && ch <= 6683 || ch >= 6688 && ch <= 6750 || ch >= 6752 && ch <= 6780 || ch >= 6783 && ch <= 6793 || ch >= 6800 && ch <= 6809 || ch == 6823 || ch >= 6832 && ch <= 6845 || ch >= 6847 && ch <= 6862 || ch >= 6912 && ch <= 6988 || ch >= 6992 && ch <= 7001 || ch >= 7019 && ch <= 7027 || ch >= 7040 && ch <= 7155 || ch >= 7168 && ch <= 7223 || ch >= 7232 && ch <= 7241 || ch >= 7245 && ch <= 7293 || ch >= 7296 && ch <= 7306 || ch >= 7312 && ch <= 7354 || ch >= 7357 && ch <= 7359 || ch >= 7376 && ch <= 7378 || ch >= 7380 && ch <= 7418 || ch >= 7424 && ch <= 7957 || ch >= 7960 && ch <= 7965 || ch >= 7968 && ch <= 8005 || ch >= 8008 && ch <= 8013 || ch >= 8016 && ch <= 8023 || ch == 8025 || ch == 8027 || ch == 8029 || ch >= 8031 && ch <= 8061 || ch >= 8064 && ch <= 8116 || ch >= 8118 && ch <= 8124 || ch == 8126 || ch >= 8130 && ch <= 8132 || ch >= 8134 && ch <= 8140 || ch >= 8144 && ch <= 8147 || ch >= 8150 && ch <= 8155 || ch >= 8160 && ch <= 8172 || ch >= 8178 && ch <= 8180 || ch >= 8182 && ch <= 8188 || ch >= 8204 && ch <= 8205 || ch >= 8255 && ch <= 8256 || ch == 8276 || ch == 8305 || ch == 8319 || ch >= 8336 && ch <= 8348 || ch >= 8400 && ch <= 8412 || ch == 8417 || ch >= 8421 && ch <= 8432 || ch == 8450 || ch == 8455 || ch >= 8458 && ch <= 8467 || ch == 8469 || ch >= 8472 && ch <= 8477 || ch == 8484 || ch == 8486 || ch == 8488 || ch >= 8490 && ch <= 8505 || ch >= 8508 && ch <= 8511 || ch >= 8517 && ch <= 8521 || ch == 8526 || ch >= 8544 && ch <= 8584 || ch >= 11264 && ch <= 11492 || ch >= 11499 && ch <= 11507 || ch >= 11520 && ch <= 11557 || ch == 11559 || ch == 11565 || ch >= 11568 && ch <= 11623 || ch == 11631 || ch >= 11647 && ch <= 11670 || ch >= 11680 && ch <= 11686 || ch >= 11688 && ch <= 11694 || ch >= 11696 && ch <= 11702 || ch >= 11704 && ch <= 11710 || ch >= 11712 && ch <= 11718 || ch >= 11720 && ch <= 11726 || ch >= 11728 && ch <= 11734 || ch >= 11736 && ch <= 11742 || ch >= 11744 && ch <= 11775 || ch >= 12293 && ch <= 12295 || ch >= 12321 && ch <= 12335 || ch >= 12337 && ch <= 12341 || ch >= 12344 && ch <= 12348 || ch >= 12353 && ch <= 12438 || ch >= 12441 && ch <= 12442 || ch >= 12445 && ch <= 12447 || ch >= 12449 && ch <= 12543 || ch >= 12549 && ch <= 12591 || ch >= 12593 && ch <= 12686 || ch >= 12704 && ch <= 12735 || ch >= 12784 && ch <= 12799 || ch >= 13312 && ch <= 19903 || ch >= 19968 && ch <= 42124 || ch >= 42192 && ch <= 42237 || ch >= 42240 && ch <= 42508 || ch >= 42512 && ch <= 42539 || ch >= 42560 && ch <= 42607 || ch >= 42612 && ch <= 42621 || ch >= 42623 && ch <= 42737 || ch >= 42775 && ch <= 42783 || ch >= 42786 && ch <= 42888 || ch >= 42891 && ch <= 42957 || ch >= 42960 && ch <= 42961 || ch == 42963 || ch >= 42965 && ch <= 42972 || ch >= 42994 && ch <= 43047 || ch == 43052 || ch >= 43072 && ch <= 43123 || ch >= 43136 && ch <= 43205 || ch >= 43216 && ch <= 43225 || ch >= 43232 && ch <= 43255 || ch == 43259 || ch >= 43261 && ch <= 43309 || ch >= 43312 && ch <= 43347 || ch >= 43360 && ch <= 43388 || ch >= 43392 && ch <= 43456 || ch >= 43471 && ch <= 43481 || ch >= 43488 && ch <= 43518 || ch >= 43520 && ch <= 43574 || ch >= 43584 && ch <= 43597 || ch >= 43600 && ch <= 43609 || ch >= 43616 && ch <= 43638 || ch >= 43642 && ch <= 43714 || ch >= 43739 && ch <= 43741 || ch >= 43744 && ch <= 43759 || ch >= 43762 && ch <= 43766 || ch >= 43777 && ch <= 43782 || ch >= 43785 && ch <= 43790 || ch >= 43793 && ch <= 43798 || ch >= 43808 && ch <= 43814 || ch >= 43816 && ch <= 43822 || ch >= 43824 && ch <= 43866 || ch >= 43868 && ch <= 43881 || ch >= 43888 && ch <= 44010 || ch >= 44012 && ch <= 44013 || ch >= 44016 && ch <= 44025 || ch >= 44032 && ch <= 55203 || ch >= 55216 && ch <= 55238 || ch >= 55243 && ch <= 55291 || ch >= 63744 && ch <= 64109 || ch >= 64112 && ch <= 64217 || ch >= 64256 && ch <= 64262 || ch >= 64275 && ch <= 64279 || ch >= 64285 && ch <= 64296 || ch >= 64298 && ch <= 64310 || ch >= 64312 && ch <= 64316 || ch == 64318 || ch >= 64320 && ch <= 64321 || ch >= 64323 && ch <= 64324 || ch >= 64326 && ch <= 64433 || ch >= 64467 && ch <= 64605 || ch >= 64612 && ch <= 64829 || ch >= 64848 && ch <= 64911 || ch >= 64914 && ch <= 64967 || ch >= 65008 && ch <= 65017 || ch >= 65024 && ch <= 65039 || ch >= 65056 && ch <= 65071 || ch >= 65075 && ch <= 65076 || ch >= 65101 && ch <= 65103 || ch == 65137 || ch == 65139 || ch == 65143 || ch == 65145 || ch == 65147 || ch == 65149 || ch >= 65151 && ch <= 65276 || ch >= 65296 && ch <= 65305 || ch >= 65313 && ch <= 65338 || ch == 65343 || ch >= 65345 && ch <= 65370 || ch >= 65381 && ch <= 65470 || ch >= 65474 && ch <= 65479 || ch >= 65482 && ch <= 65487 || ch >= 65490 && ch <= 65495 || ch >= 65498 && ch <= 65500 || ch >= 65536 && ch <= 65547 || ch >= 65549 && ch <= 65574 || ch >= 65576 && ch <= 65594 || ch >= 65596 && ch <= 65597 || ch >= 65599 && ch <= 65613 || ch >= 65616 && ch <= 65629 || ch >= 65664 && ch <= 65786 || ch >= 65856 && ch <= 65908 || ch == 66045 || ch >= 66176 && ch <= 66204 || ch >= 66208 && ch <= 66256 || ch == 66272 || ch >= 66304 && ch <= 66335 || ch >= 66349 && ch <= 66378 || ch >= 66384 && ch <= 66426 || ch >= 66432 && ch <= 66461 || ch >= 66464 && ch <= 66499 || ch >= 66504 && ch <= 66511 || ch >= 66513 && ch <= 66517 || ch >= 66560 && ch <= 66717 || ch >= 66720 && ch <= 66729 || ch >= 66736 && ch <= 66771 || ch >= 66776 && ch <= 66811 || ch >= 66816 && ch <= 66855 || ch >= 66864 && ch <= 66915 || ch >= 66928 && ch <= 66938 || ch >= 66940 && ch <= 66954 || ch >= 66956 && ch <= 66962 || ch >= 66964 && ch <= 66965 || ch >= 66967 && ch <= 66977 || ch >= 66979 && ch <= 66993 || ch >= 66995 && ch <= 67001 || ch >= 67003 && ch <= 67004 || ch >= 67008 && ch <= 67059 || ch >= 67072 && ch <= 67382 || ch >= 67392 && ch <= 67413 || ch >= 67424 && ch <= 67431 || ch >= 67456 && ch <= 67461 || ch >= 67463 && ch <= 67504 || ch >= 67506 && ch <= 67514 || ch >= 67584 && ch <= 67589 || ch == 67592 || ch >= 67594 && ch <= 67637 || ch >= 67639 && ch <= 67640 || ch == 67644 || ch >= 67647 && ch <= 67669 || ch >= 67680 && ch <= 67702 || ch >= 67712 && ch <= 67742 || ch >= 67808 && ch <= 67826 || ch >= 67828 && ch <= 67829 || ch >= 67840 && ch <= 67861 || ch >= 67872 && ch <= 67897 || ch >= 67968 && ch <= 68023 || ch >= 68030 && ch <= 68031 || ch >= 68096 && ch <= 68099 || ch >= 68101 && ch <= 68102 || ch >= 68108 && ch <= 68115 || ch >= 68117 && ch <= 68119 || ch >= 68121 && ch <= 68149 || ch >= 68152 && ch <= 68154 || ch == 68159 || ch >= 68192 && ch <= 68220 || ch >= 68224 && ch <= 68252 || ch >= 68288 && ch <= 68295 || ch >= 68297 && ch <= 68326 || ch >= 68352 && ch <= 68405 || ch >= 68416 && ch <= 68437 || ch >= 68448 && ch <= 68466 || ch >= 68480 && ch <= 68497 || ch >= 68608 && ch <= 68680 || ch >= 68736 && ch <= 68786 || ch >= 68800 && ch <= 68850 || ch >= 68864 && ch <= 68903 || ch >= 68912 && ch <= 68921 || ch >= 68928 && ch <= 68965 || ch >= 68969 && ch <= 68973 || ch >= 68975 && ch <= 68997 || ch >= 69248 && ch <= 69289 || ch >= 69291 && ch <= 69292 || ch >= 69296 && ch <= 69297 || ch >= 69314 && ch <= 69316 || ch >= 69372 && ch <= 69404 || ch == 69415 || ch >= 69424 && ch <= 69456 || ch >= 69488 && ch <= 69509 || ch >= 69552 && ch <= 69572 || ch >= 69600 && ch <= 69622 || ch >= 69632 && ch <= 69702 || ch >= 69734 && ch <= 69749 || ch >= 69759 && ch <= 69818 || ch == 69826 || ch >= 69840 && ch <= 69864 || ch >= 69872 && ch <= 69881 || ch >= 69888 && ch <= 69940 || ch >= 69942 && ch <= 69951 || ch >= 69956 && ch <= 69959 || ch >= 69968 && ch <= 70003 || ch == 70006 || ch >= 70016 && ch <= 70084 || ch >= 70089 && ch <= 70092 || ch >= 70094 && ch <= 70106 || ch == 70108 || ch >= 70144 && ch <= 70161 || ch >= 70163 && ch <= 70199 || ch >= 70206 && ch <= 70209 || ch >= 70272 && ch <= 70278 || ch == 70280 || ch >= 70282 && ch <= 70285 || ch >= 70287 && ch <= 70301 || ch >= 70303 && ch <= 70312 || ch >= 70320 && ch <= 70378 || ch >= 70384 && ch <= 70393 || ch >= 70400 && ch <= 70403 || ch >= 70405 && ch <= 70412 || ch >= 70415 && ch <= 70416 || ch >= 70419 && ch <= 70440 || ch >= 70442 && ch <= 70448 || ch >= 70450 && ch <= 70451 || ch >= 70453 && ch <= 70457 || ch >= 70459 && ch <= 70468 || ch >= 70471 && ch <= 70472 || ch >= 70475 && ch <= 70477 || ch == 70480 || ch == 70487 || ch >= 70493 && ch <= 70499 || ch >= 70502 && ch <= 70508 || ch >= 70512 && ch <= 70516 || ch >= 70528 && ch <= 70537 || ch == 70539 || ch == 70542 || ch >= 70544 && ch <= 70581 || ch >= 70583 && ch <= 70592 || ch == 70594 || ch == 70597 || ch >= 70599 && ch <= 70602 || ch >= 70604 && ch <= 70611 || ch >= 70625 && ch <= 70626 || ch >= 70656 && ch <= 70730 || ch >= 70736 && ch <= 70745 || ch >= 70750 && ch <= 70753 || ch >= 70784 && ch <= 70853 || ch == 70855 || ch >= 70864 && ch <= 70873 || ch >= 71040 && ch <= 71093 || ch >= 71096 && ch <= 71104 || ch >= 71128 && ch <= 71133 || ch >= 71168 && ch <= 71232 || ch == 71236 || ch >= 71248 && ch <= 71257 || ch >= 71296 && ch <= 71352 || ch >= 71360 && ch <= 71369 || ch >= 71376 && ch <= 71395 || ch >= 71424 && ch <= 71450 || ch >= 71453 && ch <= 71467 || ch >= 71472 && ch <= 71481 || ch >= 71488 && ch <= 71494 || ch >= 71680 && ch <= 71738 || ch >= 71840 && ch <= 71913 || ch >= 71935 && ch <= 71942 || ch == 71945 || ch >= 71948 && ch <= 71955 || ch >= 71957 && ch <= 71958 || ch >= 71960 && ch <= 71989 || ch >= 71991 && ch <= 71992 || ch >= 71995 && ch <= 72003 || ch >= 72016 && ch <= 72025 || ch >= 72096 && ch <= 72103 || ch >= 72106 && ch <= 72151 || ch >= 72154 && ch <= 72161 || ch >= 72163 && ch <= 72164 || ch >= 72192 && ch <= 72254 || ch == 72263 || ch >= 72272 && ch <= 72345 || ch == 72349 || ch >= 72368 && ch <= 72440 || ch >= 72640 && ch <= 72672 || ch >= 72688 && ch <= 72697 || ch >= 72704 && ch <= 72712 || ch >= 72714 && ch <= 72758 || ch >= 72760 && ch <= 72768 || ch >= 72784 && ch <= 72793 || ch >= 72818 && ch <= 72847 || ch >= 72850 && ch <= 72871 || ch >= 72873 && ch <= 72886 || ch >= 72960 && ch <= 72966 || ch >= 72968 && ch <= 72969 || ch >= 72971 && ch <= 73014 || ch == 73018 || ch >= 73020 && ch <= 73021 || ch >= 73023 && ch <= 73031 || ch >= 73040 && ch <= 73049 || ch >= 73056 && ch <= 73061 || ch >= 73063 && ch <= 73064 || ch >= 73066 && ch <= 73102 || ch >= 73104 && ch <= 73105 || ch >= 73107 && ch <= 73112 || ch >= 73120 && ch <= 73129 || ch >= 73440 && ch <= 73462 || ch >= 73472 && ch <= 73488 || ch >= 73490 && ch <= 73530 || ch >= 73534 && ch <= 73538 || ch >= 73552 && ch <= 73562 || ch == 73648 || ch >= 73728 && ch <= 74649 || ch >= 74752 && ch <= 74862 || ch >= 74880 && ch <= 75075 || ch >= 77712 && ch <= 77808 || ch >= 77824 && ch <= 78895 || ch >= 78912 && ch <= 78933 || ch >= 78944 && ch <= 82938 || ch >= 82944 && ch <= 83526 || ch >= 90368 && ch <= 90425 || ch >= 92160 && ch <= 92728 || ch >= 92736 && ch <= 92766 || ch >= 92768 && ch <= 92777 || ch >= 92784 && ch <= 92862 || ch >= 92864 && ch <= 92873 || ch >= 92880 && ch <= 92909 || ch >= 92912 && ch <= 92916 || ch >= 92928 && ch <= 92982 || ch >= 92992 && ch <= 92995 || ch >= 93008 && ch <= 93017 || ch >= 93027 && ch <= 93047 || ch >= 93053 && ch <= 93071 || ch >= 93504 && ch <= 93548 || ch >= 93552 && ch <= 93561 || ch >= 93760 && ch <= 93823 || ch >= 93952 && ch <= 94026 || ch >= 94031 && ch <= 94087 || ch >= 94095 && ch <= 94111 || ch >= 94176 && ch <= 94177 || ch >= 94179 && ch <= 94180 || ch >= 94192 && ch <= 94193 || ch >= 94208 && ch <= 100343 || ch >= 100352 && ch <= 101589 || ch >= 101631 && ch <= 101640 || ch >= 110576 && ch <= 110579 || ch >= 110581 && ch <= 110587 || ch >= 110589 && ch <= 110590 || ch >= 110592 && ch <= 110882 || ch == 110898 || ch >= 110928 && ch <= 110930 || ch == 110933 || ch >= 110948 && ch <= 110951 || ch >= 110960 && ch <= 111355 || ch >= 113664 && ch <= 113770 || ch >= 113776 && ch <= 113788 || ch >= 113792 && ch <= 113800 || ch >= 113808 && ch <= 113817 || ch >= 113821 && ch <= 113822 || ch >= 118000 && ch <= 118009 || ch >= 118528 && ch <= 118573 || ch >= 118576 && ch <= 118598 || ch >= 119141 && ch <= 119145 || ch >= 119149 && ch <= 119154 || ch >= 119163 && ch <= 119170 || ch >= 119173 && ch <= 119179 || ch >= 119210 && ch <= 119213 || ch >= 119362 && ch <= 119364 || ch >= 119808 && ch <= 119892 || ch >= 119894 && ch <= 119964 || ch >= 119966 && ch <= 119967 || ch == 119970 || ch >= 119973 && ch <= 119974 || ch >= 119977 && ch <= 119980 || ch >= 119982 && ch <= 119993 || ch == 119995 || ch >= 119997 && ch <= 120003 || ch >= 120005 && ch <= 120069 || ch >= 120071 && ch <= 120074 || ch >= 120077 && ch <= 120084 || ch >= 120086 && ch <= 120092 || ch >= 120094 && ch <= 120121 || ch >= 120123 && ch <= 120126 || ch >= 120128 && ch <= 120132 || ch == 120134 || ch >= 120138 && ch <= 120144 || ch >= 120146 && ch <= 120485 || ch >= 120488 && ch <= 120512 || ch >= 120514 && ch <= 120538 || ch >= 120540 && ch <= 120570 || ch >= 120572 && ch <= 120596 || ch >= 120598 && ch <= 120628 || ch >= 120630 && ch <= 120654 || ch >= 120656 && ch <= 120686 || ch >= 120688 && ch <= 120712 || ch >= 120714 && ch <= 120744 || ch >= 120746 && ch <= 120770 || ch >= 120772 && ch <= 120779 || ch >= 120782 && ch <= 120831 || ch >= 121344 && ch <= 121398 || ch >= 121403 && ch <= 121452 || ch == 121461 || ch == 121476 || ch >= 121499 && ch <= 121503 || ch >= 121505 && ch <= 121519 || ch >= 122624 && ch <= 122654 || ch >= 122661 && ch <= 122666 || ch >= 122880 && ch <= 122886 || ch >= 122888 && ch <= 122904 || ch >= 122907 && ch <= 122913 || ch >= 122915 && ch <= 122916 || ch >= 122918 && ch <= 122922 || ch >= 122928 && ch <= 122989 || ch == 123023 || ch >= 123136 && ch <= 123180 || ch >= 123184 && ch <= 123197 || ch >= 123200 && ch <= 123209 || ch == 123214 || ch >= 123536 && ch <= 123566 || ch >= 123584 && ch <= 123641 || ch >= 124112 && ch <= 124153 || ch >= 124368 && ch <= 124410 || ch >= 124896 && ch <= 124902 || ch >= 124904 && ch <= 124907 || ch >= 124909 && ch <= 124910 || ch >= 124912 && ch <= 124926 || ch >= 124928 && ch <= 125124 || ch >= 125136 && ch <= 125142 || ch >= 125184 && ch <= 125259 || ch >= 125264 && ch <= 125273 || ch >= 126464 && ch <= 126467 || ch >= 126469 && ch <= 126495 || ch >= 126497 && ch <= 126498 || ch == 126500 || ch == 126503 || ch >= 126505 && ch <= 126514 || ch >= 126516 && ch <= 126519 || ch == 126521 || ch == 126523 || ch == 126530 || ch == 126535 || ch == 126537 || ch == 126539 || ch >= 126541 && ch <= 126543 || ch >= 126545 && ch <= 126546 || ch == 126548 || ch == 126551 || ch == 126553 || ch == 126555 || ch == 126557 || ch == 126559 || ch >= 126561 && ch <= 126562 || ch == 126564 || ch >= 126567 && ch <= 126570 || ch >= 126572 && ch <= 126578 || ch >= 126580 && ch <= 126583 || ch >= 126585 && ch <= 126588 || ch == 126590 || ch >= 126592 && ch <= 126601 || ch >= 126603 && ch <= 126619 || ch >= 126625 && ch <= 126627 || ch >= 126629 && ch <= 126633 || ch >= 126635 && ch <= 126651 || ch >= 130032 && ch <= 130041 || ch >= 131072 && ch <= 173791 || ch >= 173824 && ch <= 177977 || ch >= 177984 && ch <= 178205 || ch >= 178208 && ch <= 183969 || ch >= 183984 && ch <= 191456 || ch >= 191472 && ch <= 192093 || ch >= 194560 && ch <= 195101 || ch >= 196608 && ch <= 201546 || ch >= 201552 && ch <= 205743 || ch >= 917760 && ch <= 917999)) {
-		p.ExpectOrdinary(p.Pos, 181)
+	if !p.ClassFast(&cls1146) && !p.ClassSkip(&cls1146, 181) {
 		goto fail
 	}
-	p.Pos += size
 	v = nil
 	p.Depth--
 	return v, true
@@ -60890,8 +60740,6 @@ func s411(p *pegort.TParser) (any, bool) {
 		x6    int
 		x9    int
 		x10   int
-		ch    rune
-		size  int
 	)
 	start, rec = p.Pos, len(p.Recovered)
 	p.Depth++
@@ -60936,12 +60784,9 @@ func s411(p *pegort.TParser) (any, bool) {
 	}
 	x9, x10 = p.Pos, len(p.Recovered)
 	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 120 || ch == 88 || ch == 111 || ch == 79 || ch == 98 || ch == 66)) {
-		p.ExpectOrdinary(p.Pos, 165)
+	if !p.ClassFast(&cls1144) && !p.ClassSkip(&cls1144, 165) {
 		goto L11
 	}
-	p.Pos += size
 	p.Silent--
 	p.Pos = x9
 	p.Recovered = p.Recovered[:x10]
@@ -60966,21 +60811,15 @@ func s412(p *pegort.TParser) (any, bool) {
 		start int
 		v     any
 		rec   int
-		ch    rune
-		size  int
-		ok    bool
 	)
 	start, rec = p.Pos, len(p.Recovered)
 	p.Depth++
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (!(ch == 170 || ch == 181 || ch == 186 || ch >= 192 && ch <= 214 || ch >= 216 && ch <= 246 || ch >= 248 && ch <= 705 || ch >= 710 && ch <= 721 || ch >= 736 && ch <= 740 || ch == 748 || ch == 750 || ch >= 880 && ch <= 884 || ch >= 886 && ch <= 887 || ch >= 891 && ch <= 893 || ch == 895 || ch == 902 || ch >= 904 && ch <= 906 || ch == 908 || ch >= 910 && ch <= 929 || ch >= 931 && ch <= 1013 || ch >= 1015 && ch <= 1153 || ch >= 1162 && ch <= 1327 || ch >= 1329 && ch <= 1366 || ch == 1369 || ch >= 1376 && ch <= 1416 || ch >= 1488 && ch <= 1514 || ch >= 1519 && ch <= 1522 || ch >= 1568 && ch <= 1610 || ch >= 1646 && ch <= 1647 || ch >= 1649 && ch <= 1747 || ch == 1749 || ch >= 1765 && ch <= 1766 || ch >= 1774 && ch <= 1775 || ch >= 1786 && ch <= 1788 || ch == 1791 || ch == 1808 || ch >= 1810 && ch <= 1839 || ch >= 1869 && ch <= 1957 || ch == 1969 || ch >= 1994 && ch <= 2026 || ch >= 2036 && ch <= 2037 || ch == 2042 || ch >= 2048 && ch <= 2069 || ch == 2074 || ch == 2084 || ch == 2088 || ch >= 2112 && ch <= 2136 || ch >= 2144 && ch <= 2154 || ch >= 2160 && ch <= 2183 || ch >= 2185 && ch <= 2190 || ch >= 2208 && ch <= 2249 || ch >= 2308 && ch <= 2361 || ch == 2365 || ch == 2384 || ch >= 2392 && ch <= 2401 || ch >= 2417 && ch <= 2432 || ch >= 2437 && ch <= 2444 || ch >= 2447 && ch <= 2448 || ch >= 2451 && ch <= 2472 || ch >= 2474 && ch <= 2480 || ch == 2482 || ch >= 2486 && ch <= 2489 || ch == 2493 || ch == 2510 || ch >= 2524 && ch <= 2525 || ch >= 2527 && ch <= 2529 || ch >= 2544 && ch <= 2545 || ch == 2556 || ch >= 2565 && ch <= 2570 || ch >= 2575 && ch <= 2576 || ch >= 2579 && ch <= 2600 || ch >= 2602 && ch <= 2608 || ch >= 2610 && ch <= 2611 || ch >= 2613 && ch <= 2614 || ch >= 2616 && ch <= 2617 || ch >= 2649 && ch <= 2652 || ch == 2654 || ch >= 2674 && ch <= 2676 || ch >= 2693 && ch <= 2701 || ch >= 2703 && ch <= 2705 || ch >= 2707 && ch <= 2728 || ch >= 2730 && ch <= 2736 || ch >= 2738 && ch <= 2739 || ch >= 2741 && ch <= 2745 || ch == 2749 || ch == 2768 || ch >= 2784 && ch <= 2785 || ch == 2809 || ch >= 2821 && ch <= 2828 || ch >= 2831 && ch <= 2832 || ch >= 2835 && ch <= 2856 || ch >= 2858 && ch <= 2864 || ch >= 2866 && ch <= 2867 || ch >= 2869 && ch <= 2873 || ch == 2877 || ch >= 2908 && ch <= 2909 || ch >= 2911 && ch <= 2913 || ch == 2929 || ch == 2947 || ch >= 2949 && ch <= 2954 || ch >= 2958 && ch <= 2960 || ch >= 2962 && ch <= 2965 || ch >= 2969 && ch <= 2970 || ch == 2972 || ch >= 2974 && ch <= 2975 || ch >= 2979 && ch <= 2980 || ch >= 2984 && ch <= 2986 || ch >= 2990 && ch <= 3001 || ch == 3024 || ch >= 3077 && ch <= 3084 || ch >= 3086 && ch <= 3088 || ch >= 3090 && ch <= 3112 || ch >= 3114 && ch <= 3129 || ch == 3133 || ch >= 3160 && ch <= 3162 || ch == 3165 || ch >= 3168 && ch <= 3169 || ch == 3200 || ch >= 3205 && ch <= 3212 || ch >= 3214 && ch <= 3216 || ch >= 3218 && ch <= 3240 || ch >= 3242 && ch <= 3251 || ch >= 3253 && ch <= 3257 || ch == 3261 || ch >= 3293 && ch <= 3294 || ch >= 3296 && ch <= 3297 || ch >= 3313 && ch <= 3314 || ch >= 3332 && ch <= 3340 || ch >= 3342 && ch <= 3344 || ch >= 3346 && ch <= 3386 || ch == 3389 || ch == 3406 || ch >= 3412 && ch <= 3414 || ch >= 3423 && ch <= 3425 || ch >= 3450 && ch <= 3455 || ch >= 3461 && ch <= 3478 || ch >= 3482 && ch <= 3505 || ch >= 3507 && ch <= 3515 || ch == 3517 || ch >= 3520 && ch <= 3526 || ch >= 3585 && ch <= 3632 || ch == 3634 || ch >= 3648 && ch <= 3654 || ch >= 3713 && ch <= 3714 || ch == 3716 || ch >= 3718 && ch <= 3722 || ch >= 3724 && ch <= 3747 || ch == 3749 || ch >= 3751 && ch <= 3760 || ch == 3762 || ch == 3773 || ch >= 3776 && ch <= 3780 || ch == 3782 || ch >= 3804 && ch <= 3807 || ch == 3840 || ch >= 3904 && ch <= 3911 || ch >= 3913 && ch <= 3948 || ch >= 3976 && ch <= 3980 || ch >= 4096 && ch <= 4138 || ch == 4159 || ch >= 4176 && ch <= 4181 || ch >= 4186 && ch <= 4189 || ch == 4193 || ch >= 4197 && ch <= 4198 || ch >= 4206 && ch <= 4208 || ch >= 4213 && ch <= 4225 || ch == 4238 || ch >= 4256 && ch <= 4293 || ch == 4295 || ch == 4301 || ch >= 4304 && ch <= 4346 || ch >= 4348 && ch <= 4680 || ch >= 4682 && ch <= 4685 || ch >= 4688 && ch <= 4694 || ch == 4696 || ch >= 4698 && ch <= 4701 || ch >= 4704 && ch <= 4744 || ch >= 4746 && ch <= 4749 || ch >= 4752 && ch <= 4784 || ch >= 4786 && ch <= 4789 || ch >= 4792 && ch <= 4798 || ch == 4800 || ch >= 4802 && ch <= 4805 || ch >= 4808 && ch <= 4822 || ch >= 4824 && ch <= 4880 || ch >= 4882 && ch <= 4885 || ch >= 4888 && ch <= 4954 || ch >= 4992 && ch <= 5007 || ch >= 5024 && ch <= 5109 || ch >= 5112 && ch <= 5117 || ch >= 5121 && ch <= 5740 || ch >= 5743 && ch <= 5759 || ch >= 5761 && ch <= 5786 || ch >= 5792 && ch <= 5866 || ch >= 5870 && ch <= 5880 || ch >= 5888 && ch <= 5905 || ch >= 5919 && ch <= 5937 || ch >= 5952 && ch <= 5969 || ch >= 5984 && ch <= 5996 || ch >= 5998 && ch <= 6000 || ch >= 6016 && ch <= 6067 || ch == 6103 || ch == 6108 || ch >= 6176 && ch <= 6264 || ch >= 6272 && ch <= 6312 || ch == 6314 || ch >= 6320 && ch <= 6389 || ch >= 6400 && ch <= 6430 || ch >= 6480 && ch <= 6509 || ch >= 6512 && ch <= 6516 || ch >= 6528 && ch <= 6571 || ch >= 6576 && ch <= 6601 || ch >= 6656 && ch <= 6678 || ch >= 6688 && ch <= 6740 || ch == 6823 || ch >= 6917 && ch <= 6963 || ch >= 6981 && ch <= 6988 || ch >= 7043 && ch <= 7072 || ch >= 7086 && ch <= 7087 || ch >= 7098 && ch <= 7141 || ch >= 7168 && ch <= 7203 || ch >= 7245 && ch <= 7247 || ch >= 7258 && ch <= 7293 || ch >= 7296 && ch <= 7306 || ch >= 7312 && ch <= 7354 || ch >= 7357 && ch <= 7359 || ch >= 7401 && ch <= 7404 || ch >= 7406 && ch <= 7411 || ch >= 7413 && ch <= 7414 || ch == 7418 || ch >= 7424 && ch <= 7615 || ch >= 7680 && ch <= 7957 || ch >= 7960 && ch <= 7965 || ch >= 7968 && ch <= 8005 || ch >= 8008 && ch <= 8013 || ch >= 8016 && ch <= 8023 || ch == 8025 || ch == 8027 || ch == 8029 || ch >= 8031 && ch <= 8061 || ch >= 8064 && ch <= 8116 || ch >= 8118 && ch <= 8124 || ch == 8126 || ch >= 8130 && ch <= 8132 || ch >= 8134 && ch <= 8140 || ch >= 8144 && ch <= 8147 || ch >= 8150 && ch <= 8155 || ch >= 8160 && ch <= 8172 || ch >= 8178 && ch <= 8180 || ch >= 8182 && ch <= 8188 || ch == 8305 || ch == 8319 || ch >= 8336 && ch <= 8348 || ch == 8450 || ch == 8455 || ch >= 8458 && ch <= 8467 || ch == 8469 || ch >= 8472 && ch <= 8477 || ch == 8484 || ch == 8486 || ch == 8488 || ch >= 8490 && ch <= 8505 || ch >= 8508 && ch <= 8511 || ch >= 8517 && ch <= 8521 || ch == 8526 || ch >= 8544 && ch <= 8584 || ch >= 11264 && ch <= 11492 || ch >= 11499 && ch <= 11502 || ch >= 11506 && ch <= 11507 || ch >= 11520 && ch <= 11557 || ch == 11559 || ch == 11565 || ch >= 11568 && ch <= 11623 || ch == 11631 || ch >= 11648 && ch <= 11670 || ch >= 11680 && ch <= 11686 || ch >= 11688 && ch <= 11694 || ch >= 11696 && ch <= 11702 || ch >= 11704 && ch <= 11710 || ch >= 11712 && ch <= 11718 || ch >= 11720 && ch <= 11726 || ch >= 11728 && ch <= 11734 || ch >= 11736 && ch <= 11742 || ch >= 12293 && ch <= 12295 || ch >= 12321 && ch <= 12329 || ch >= 12337 && ch <= 12341 || ch >= 12344 && ch <= 12348 || ch >= 12353 && ch <= 12438 || ch >= 12445 && ch <= 12447 || ch >= 12449 && ch <= 12538 || ch >= 12540 && ch <= 12543 || ch >= 12549 && ch <= 12591 || ch >= 12593 && ch <= 12686 || ch >= 12704 && ch <= 12735 || ch >= 12784 && ch <= 12799 || ch >= 13312 && ch <= 19903 || ch >= 19968 && ch <= 42124 || ch >= 42192 && ch <= 42237 || ch >= 42240 && ch <= 42508 || ch >= 42512 && ch <= 42527 || ch >= 42538 && ch <= 42539 || ch >= 42560 && ch <= 42606 || ch >= 42623 && ch <= 42653 || ch >= 42656 && ch <= 42735 || ch >= 42775 && ch <= 42783 || ch >= 42786 && ch <= 42888 || ch >= 42891 && ch <= 42957 || ch >= 42960 && ch <= 42961 || ch == 42963 || ch >= 42965 && ch <= 42972 || ch >= 42994 && ch <= 43009 || ch >= 43011 && ch <= 43013 || ch >= 43015 && ch <= 43018 || ch >= 43020 && ch <= 43042 || ch >= 43072 && ch <= 43123 || ch >= 43138 && ch <= 43187 || ch >= 43250 && ch <= 43255 || ch == 43259 || ch >= 43261 && ch <= 43262 || ch >= 43274 && ch <= 43301 || ch >= 43312 && ch <= 43334 || ch >= 43360 && ch <= 43388 || ch >= 43396 && ch <= 43442 || ch == 43471 || ch >= 43488 && ch <= 43492 || ch >= 43494 && ch <= 43503 || ch >= 43514 && ch <= 43518 || ch >= 43520 && ch <= 43560 || ch >= 43584 && ch <= 43586 || ch >= 43588 && ch <= 43595 || ch >= 43616 && ch <= 43638 || ch == 43642 || ch >= 43646 && ch <= 43695 || ch == 43697 || ch >= 43701 && ch <= 43702 || ch >= 43705 && ch <= 43709 || ch == 43712 || ch == 43714 || ch >= 43739 && ch <= 43741 || ch >= 43744 && ch <= 43754 || ch >= 43762 && ch <= 43764 || ch >= 43777 && ch <= 43782 || ch >= 43785 && ch <= 43790 || ch >= 43793 && ch <= 43798 || ch >= 43808 && ch <= 43814 || ch >= 43816 && ch <= 43822 || ch >= 43824 && ch <= 43866 || ch >= 43868 && ch <= 43881 || ch >= 43888 && ch <= 44002 || ch >= 44032 && ch <= 55203 || ch >= 55216 && ch <= 55238 || ch >= 55243 && ch <= 55291 || ch >= 63744 && ch <= 64109 || ch >= 64112 && ch <= 64217 || ch >= 64256 && ch <= 64262 || ch >= 64275 && ch <= 64279 || ch == 64285 || ch >= 64287 && ch <= 64296 || ch >= 64298 && ch <= 64310 || ch >= 64312 && ch <= 64316 || ch == 64318 || ch >= 64320 && ch <= 64321 || ch >= 64323 && ch <= 64324 || ch >= 64326 && ch <= 64433 || ch >= 64467 && ch <= 64605 || ch >= 64612 && ch <= 64829 || ch >= 64848 && ch <= 64911 || ch >= 64914 && ch <= 64967 || ch >= 65008 && ch <= 65017 || ch == 65137 || ch == 65139 || ch == 65143 || ch == 65145 || ch == 65147 || ch == 65149 || ch >= 65151 && ch <= 65276 || ch >= 65313 && ch <= 65338 || ch >= 65345 && ch <= 65370 || ch >= 65382 && ch <= 65437 || ch >= 65440 && ch <= 65470 || ch >= 65474 && ch <= 65479 || ch >= 65482 && ch <= 65487 || ch >= 65490 && ch <= 65495 || ch >= 65498 && ch <= 65500 || ch >= 65536 && ch <= 65547 || ch >= 65549 && ch <= 65574 || ch >= 65576 && ch <= 65594 || ch >= 65596 && ch <= 65597 || ch >= 65599 && ch <= 65613 || ch >= 65616 && ch <= 65629 || ch >= 65664 && ch <= 65786 || ch >= 65856 && ch <= 65908 || ch >= 66176 && ch <= 66204 || ch >= 66208 && ch <= 66256 || ch >= 66304 && ch <= 66335 || ch >= 66349 && ch <= 66378 || ch >= 66384 && ch <= 66421 || ch >= 66432 && ch <= 66461 || ch >= 66464 && ch <= 66499 || ch >= 66504 && ch <= 66511 || ch >= 66513 && ch <= 66517 || ch >= 66560 && ch <= 66717 || ch >= 66736 && ch <= 66771 || ch >= 66776 && ch <= 66811 || ch >= 66816 && ch <= 66855 || ch >= 66864 && ch <= 66915 || ch >= 66928 && ch <= 66938 || ch >= 66940 && ch <= 66954 || ch >= 66956 && ch <= 66962 || ch >= 66964 && ch <= 66965 || ch >= 66967 && ch <= 66977 || ch >= 66979 && ch <= 66993 || ch >= 66995 && ch <= 67001 || ch >= 67003 && ch <= 67004 || ch >= 67008 && ch <= 67059 || ch >= 67072 && ch <= 67382 || ch >= 67392 && ch <= 67413 || ch >= 67424 && ch <= 67431 || ch >= 67456 && ch <= 67461 || ch >= 67463 && ch <= 67504 || ch >= 67506 && ch <= 67514 || ch >= 67584 && ch <= 67589 || ch == 67592 || ch >= 67594 && ch <= 67637 || ch >= 67639 && ch <= 67640 || ch == 67644 || ch >= 67647 && ch <= 67669 || ch >= 67680 && ch <= 67702 || ch >= 67712 && ch <= 67742 || ch >= 67808 && ch <= 67826 || ch >= 67828 && ch <= 67829 || ch >= 67840 && ch <= 67861 || ch >= 67872 && ch <= 67897 || ch >= 67968 && ch <= 68023 || ch >= 68030 && ch <= 68031 || ch == 68096 || ch >= 68112 && ch <= 68115 || ch >= 68117 && ch <= 68119 || ch >= 68121 && ch <= 68149 || ch >= 68192 && ch <= 68220 || ch >= 68224 && ch <= 68252 || ch >= 68288 && ch <= 68295 || ch >= 68297 && ch <= 68324 || ch >= 68352 && ch <= 68405 || ch >= 68416 && ch <= 68437 || ch >= 68448 && ch <= 68466 || ch >= 68480 && ch <= 68497 || ch >= 68608 && ch <= 68680 || ch >= 68736 && ch <= 68786 || ch >= 68800 && ch <= 68850 || ch >= 68864 && ch <= 68899 || ch >= 68938 && ch <= 68965 || ch >= 68975 && ch <= 68997 || ch >= 69248 && ch <= 69289 || ch >= 69296 && ch <= 69297 || ch >= 69314 && ch <= 69316 || ch >= 69376 && ch <= 69404 || ch == 69415 || ch >= 69424 && ch <= 69445 || ch >= 69488 && ch <= 69505 || ch >= 69552 && ch <= 69572 || ch >= 69600 && ch <= 69622 || ch >= 69635 && ch <= 69687 || ch >= 69745 && ch <= 69746 || ch == 69749 || ch >= 69763 && ch <= 69807 || ch >= 69840 && ch <= 69864 || ch >= 69891 && ch <= 69926 || ch == 69956 || ch == 69959 || ch >= 69968 && ch <= 70002 || ch == 70006 || ch >= 70019 && ch <= 70066 || ch >= 70081 && ch <= 70084 || ch == 70106 || ch == 70108 || ch >= 70144 && ch <= 70161 || ch >= 70163 && ch <= 70187 || ch >= 70207 && ch <= 70208 || ch >= 70272 && ch <= 70278 || ch == 70280 || ch >= 70282 && ch <= 70285 || ch >= 70287 && ch <= 70301 || ch >= 70303 && ch <= 70312 || ch >= 70320 && ch <= 70366 || ch >= 70405 && ch <= 70412 || ch >= 70415 && ch <= 70416 || ch >= 70419 && ch <= 70440 || ch >= 70442 && ch <= 70448 || ch >= 70450 && ch <= 70451 || ch >= 70453 && ch <= 70457 || ch == 70461 || ch == 70480 || ch >= 70493 && ch <= 70497 || ch >= 70528 && ch <= 70537 || ch == 70539 || ch == 70542 || ch >= 70544 && ch <= 70581 || ch == 70583 || ch == 70609 || ch == 70611 || ch >= 70656 && ch <= 70708 || ch >= 70727 && ch <= 70730 || ch >= 70751 && ch <= 70753 || ch >= 70784 && ch <= 70831 || ch >= 70852 && ch <= 70853 || ch == 70855 || ch >= 71040 && ch <= 71086 || ch >= 71128 && ch <= 71131 || ch >= 71168 && ch <= 71215 || ch == 71236 || ch >= 71296 && ch <= 71338 || ch == 71352 || ch >= 71424 && ch <= 71450 || ch >= 71488 && ch <= 71494 || ch >= 71680 && ch <= 71723 || ch >= 71840 && ch <= 71903 || ch >= 71935 && ch <= 71942 || ch == 71945 || ch >= 71948 && ch <= 71955 || ch >= 71957 && ch <= 71958 || ch >= 71960 && ch <= 71983 || ch == 71999 || ch == 72001 || ch >= 72096 && ch <= 72103 || ch >= 72106 && ch <= 72144 || ch == 72161 || ch == 72163 || ch == 72192 || ch >= 72203 && ch <= 72242 || ch == 72250 || ch == 72272 || ch >= 72284 && ch <= 72329 || ch == 72349 || ch >= 72368 && ch <= 72440 || ch >= 72640 && ch <= 72672 || ch >= 72704 && ch <= 72712 || ch >= 72714 && ch <= 72750 || ch == 72768 || ch >= 72818 && ch <= 72847 || ch >= 72960 && ch <= 72966 || ch >= 72968 && ch <= 72969 || ch >= 72971 && ch <= 73008 || ch == 73030 || ch >= 73056 && ch <= 73061 || ch >= 73063 && ch <= 73064 || ch >= 73066 && ch <= 73097 || ch == 73112 || ch >= 73440 && ch <= 73458 || ch == 73474 || ch >= 73476 && ch <= 73488 || ch >= 73490 && ch <= 73523 || ch == 73648 || ch >= 73728 && ch <= 74649 || ch >= 74752 && ch <= 74862 || ch >= 74880 && ch <= 75075 || ch >= 77712 && ch <= 77808 || ch >= 77824 && ch <= 78895 || ch >= 78913 && ch <= 78918 || ch >= 78944 && ch <= 82938 || ch >= 82944 && ch <= 83526 || ch >= 90368 && ch <= 90397 || ch >= 92160 && ch <= 92728 || ch >= 92736 && ch <= 92766 || ch >= 92784 && ch <= 92862 || ch >= 92880 && ch <= 92909 || ch >= 92928 && ch <= 92975 || ch >= 92992 && ch <= 92995 || ch >= 93027 && ch <= 93047 || ch >= 93053 && ch <= 93071 || ch >= 93504 && ch <= 93548 || ch >= 93760 && ch <= 93823 || ch >= 93952 && ch <= 94026 || ch == 94032 || ch >= 94099 && ch <= 94111 || ch >= 94176 && ch <= 94177 || ch == 94179 || ch >= 94208 && ch <= 100343 || ch >= 100352 && ch <= 101589 || ch >= 101631 && ch <= 101640 || ch >= 110576 && ch <= 110579 || ch >= 110581 && ch <= 110587 || ch >= 110589 && ch <= 110590 || ch >= 110592 && ch <= 110882 || ch == 110898 || ch >= 110928 && ch <= 110930 || ch == 110933 || ch >= 110948 && ch <= 110951 || ch >= 110960 && ch <= 111355 || ch >= 113664 && ch <= 113770 || ch >= 113776 && ch <= 113788 || ch >= 113792 && ch <= 113800 || ch >= 113808 && ch <= 113817 || ch >= 119808 && ch <= 119892 || ch >= 119894 && ch <= 119964 || ch >= 119966 && ch <= 119967 || ch == 119970 || ch >= 119973 && ch <= 119974 || ch >= 119977 && ch <= 119980 || ch >= 119982 && ch <= 119993 || ch == 119995 || ch >= 119997 && ch <= 120003 || ch >= 120005 && ch <= 120069 || ch >= 120071 && ch <= 120074 || ch >= 120077 && ch <= 120084 || ch >= 120086 && ch <= 120092 || ch >= 120094 && ch <= 120121 || ch >= 120123 && ch <= 120126 || ch >= 120128 && ch <= 120132 || ch == 120134 || ch >= 120138 && ch <= 120144 || ch >= 120146 && ch <= 120485 || ch >= 120488 && ch <= 120512 || ch >= 120514 && ch <= 120538 || ch >= 120540 && ch <= 120570 || ch >= 120572 && ch <= 120596 || ch >= 120598 && ch <= 120628 || ch >= 120630 && ch <= 120654 || ch >= 120656 && ch <= 120686 || ch >= 120688 && ch <= 120712 || ch >= 120714 && ch <= 120744 || ch >= 120746 && ch <= 120770 || ch >= 120772 && ch <= 120779 || ch >= 122624 && ch <= 122654 || ch >= 122661 && ch <= 122666 || ch >= 122928 && ch <= 122989 || ch >= 123136 && ch <= 123180 || ch >= 123191 && ch <= 123197 || ch == 123214 || ch >= 123536 && ch <= 123565 || ch >= 123584 && ch <= 123627 || ch >= 124112 && ch <= 124139 || ch >= 124368 && ch <= 124397 || ch == 124400 || ch >= 124896 && ch <= 124902 || ch >= 124904 && ch <= 124907 || ch >= 124909 && ch <= 124910 || ch >= 124912 && ch <= 124926 || ch >= 124928 && ch <= 125124 || ch >= 125184 && ch <= 125251 || ch == 125259 || ch >= 126464 && ch <= 126467 || ch >= 126469 && ch <= 126495 || ch >= 126497 && ch <= 126498 || ch == 126500 || ch == 126503 || ch >= 126505 && ch <= 126514 || ch >= 126516 && ch <= 126519 || ch == 126521 || ch == 126523 || ch == 126530 || ch == 126535 || ch == 126537 || ch == 126539 || ch >= 126541 && ch <= 126543 || ch >= 126545 && ch <= 126546 || ch == 126548 || ch == 126551 || ch == 126553 || ch == 126555 || ch == 126557 || ch == 126559 || ch >= 126561 && ch <= 126562 || ch == 126564 || ch >= 126567 && ch <= 126570 || ch >= 126572 && ch <= 126578 || ch >= 126580 && ch <= 126583 || ch >= 126585 && ch <= 126588 || ch == 126590 || ch >= 126592 && ch <= 126601 || ch >= 126603 && ch <= 126619 || ch >= 126625 && ch <= 126627 || ch >= 126629 && ch <= 126633 || ch >= 126635 && ch <= 126651 || ch >= 131072 && ch <= 173791 || ch >= 173824 && ch <= 177977 || ch >= 177984 && ch <= 178205 || ch >= 178208 && ch <= 183969 || ch >= 183984 && ch <= 191456 || ch >= 191472 && ch <= 192093 || ch >= 194560 && ch <= 195101 || ch >= 196608 && ch <= 201546 || ch >= 201552 && ch <= 205743)) {
-		p.ExpectOrdinary(p.Pos, 180)
+	if !p.ClassFast(&cls1145) && !p.ClassSkip(&cls1145, 180) {
 		goto fail
 	}
-	p.Pos += size
 	v = nil
 	p.Depth--
 	return v, true
@@ -61192,12 +61031,9 @@ L22:
 		p.ExpectOrdinary(p.Pos, 133)
 		goto L25
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (ch == 120 || ch == 117 || ch == 85 || ch == 78 || ch == 10 || ch == 13 || ch == 0) {
-		p.ExpectOrdinary(p.Pos, 133)
+	if !p.ClassFast(&cls1121) && !p.ClassSkip(&cls1121, 133) {
 		goto L26
 	}
-	p.Pos += size
 	goto L3
 L26:
 	p.Pos = x1
@@ -61405,12 +61241,9 @@ L22:
 		p.ExpectOrdinary(p.Pos, 133)
 		goto L25
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (ch == 120 || ch == 117 || ch == 85 || ch == 78 || ch == 10 || ch == 13 || ch == 0) {
-		p.ExpectOrdinary(p.Pos, 133)
+	if !p.ClassFast(&cls1121) && !p.ClassSkip(&cls1121, 133) {
 		goto L26
 	}
-	p.Pos += size
 	goto L3
 L26:
 	p.Pos = x1
@@ -61445,8 +61278,6 @@ func v414(p *pegort.TParser) (any, bool) {
 		x2    int
 		x5    rune
 		x6    bool
-		ch    rune
-		size  int
 	)
 	start, rec = p.Pos, len(p.Recovered)
 	p.Depth++
@@ -61491,12 +61322,9 @@ L7:
 		p.ExpectOrdinary(p.Pos, 139)
 		goto L9
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (ch == 120 || ch == 10 || ch == 13 || ch == 0 || ch >= 128 && ch <= 1114111) {
-		p.ExpectOrdinary(p.Pos, 139)
+	if !p.ClassFast(&cls1124) && !p.ClassSkip(&cls1124, 139) {
 		goto L10
 	}
-	p.Pos += size
 	goto L3
 L10:
 	p.Pos = x1
@@ -61517,14 +61345,12 @@ fail:
 // bytes_esc, invoked as by invoke (body inlined)
 func i414(p *pegort.TParser) (any, bool) {
 	var (
-		v    any
-		ok   bool
-		x1   int
-		x2   int
-		x5   rune
-		x6   bool
-		ch   rune
-		size int
+		v  any
+		ok bool
+		x1 int
+		x2 int
+		x5 rune
+		x6 bool
 	)
 	p.Depth++
 	if p.Depth > p.MaxDepth {
@@ -61568,12 +61394,9 @@ L7:
 		p.ExpectOrdinary(p.Pos, 139)
 		goto L9
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || (ch == 120 || ch == 10 || ch == 13 || ch == 0 || ch >= 128 && ch <= 1114111) {
-		p.ExpectOrdinary(p.Pos, 139)
+	if !p.ClassFast(&cls1124) && !p.ClassSkip(&cls1124, 139) {
 		goto L10
 	}
-	p.Pos += size
 	goto L3
 L10:
 	p.Pos = x1

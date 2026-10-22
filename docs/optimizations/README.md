@@ -241,6 +241,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - [102. Read text struct fields without a struct lookup](102-read-text-struct-fields-without-a-struct-lookup.md)
 - [103. Inline the common work charge](103-inline-the-common-work-charge.md)
 - [104. Smaller generated Go parsers](104-smaller-generated-go-parsers.md)
+- [105. Character class tables in generated Go parsers](105-character-class-tables.md)
 
 ## Experiments That Did Not Pay Off
 
