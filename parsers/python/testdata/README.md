@@ -14,6 +14,8 @@ The rest of the data comes from [CPython](https://github.com/python/cpython) 3.1
   `test_patma`, `test_fstring`, `test_tstring`, `test_syntax`, `test_type_params`, `test_type_aliases`,
   `test_unparse`, `test_positional_only_arg`, `test_keywordonlyarg`, `test_with`, `test_ast/snippets` and
   `test_future_stmt/test_future`).
-- `bench/_pydecimal.py` and `bench/typing.py`: files of CPython's `Lib` (unchanged), the inputs of the benchmarks.
+The inputs of the benchmarks, `Lib/_pydecimal.py` and `Lib/typing.py`, are not here: the corpus `cpython` (see
+`internal/corpora/manifest.json` in the root of the repository) holds them, and `go run ./hack/corpora fetch cpython`
+puts them in the cache.
 
 `internal/refgen/generate.sh` regenerates the two `jsonl.gz` files (see the README of the module).

@@ -5,20 +5,26 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/ornew/pego/internal/corpora/corporatest"
 	"github.com/ornew/pego/parsers/python"
 )
 
 // benchFiles are two of the largest modules of the standard library, the inputs of the benchmarks
-// (CPython 3.14.0's Lib, vendored in testdata/bench; PEGO_BENCH_DIR names another directory with
-// files of these names). There is no Python parser in the Go standard library to compare with:
+// (CPython 3.14.0's Lib, the corpus "cpython" fetched by go run ./hack/corpora fetch; PEGO_BENCH_DIR names another
+// directory with files of these names). There is no Python parser in the Go standard library to compare with:
 // CPython's own, ast.parse, is measured on the same files with the command in the README.
 var benchFiles = []string{"_pydecimal.py", "typing.py"}
 
-func benchmark(b *testing.B, parse func(string) error) {
-	dir := os.Getenv("PEGO_BENCH_DIR")
-	if dir == "" {
-		dir = filepath.Join("testdata", "bench")
+// benchDir is the directory of the benchmark files: PEGO_BENCH_DIR, or the Lib of the fetched CPython.
+func benchDir(b *testing.B) string {
+	if dir := os.Getenv("PEGO_BENCH_DIR"); dir != "" {
+		return dir
 	}
+	return filepath.Join(corporatest.Dir(b, "cpython"), "Lib")
+}
+
+func benchmark(b *testing.B, parse func(string) error) {
+	dir := benchDir(b)
 	for _, name := range benchFiles {
 		data, err := os.ReadFile(filepath.Join(dir, name))
 		if err != nil {
@@ -54,11 +60,7 @@ func BenchmarkParseModule(b *testing.B) {
 
 // BenchmarkDump prints the tree as ast.dump does (ParseAST is not part of the measurement).
 func BenchmarkDump(b *testing.B) {
-	dir := os.Getenv("PEGO_BENCH_DIR")
-	if dir == "" {
-		dir = filepath.Join("testdata", "bench")
-	}
-	data, err := os.ReadFile(filepath.Join(dir, "typing.py"))
+	data, err := os.ReadFile(filepath.Join(benchDir(b), "typing.py"))
 	if err != nil {
 		b.Fatal(err)
 	}

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/corpora/corporatest"
 	"github.com/ornew/pego/parsers/json"
 )
 
@@ -17,9 +18,10 @@ import (
 // what encoding/json decodes, n_ files must be rejected, and i_ files may go either way, but Recognize
 // and ParseAST must agree.
 func TestJSONTestSuite(t *testing.T) {
-	files, err := filepath.Glob("testdata/JSONTestSuite/test_parsing/*.json")
-	if err != nil || len(files) == 0 {
-		t.Fatalf("no test files: %v", err)
+	dir := corporatest.Dir(t, "jsontestsuite")
+	files, err := filepath.Glob(filepath.Join(dir, "test_parsing", "*.json"))
+	if err != nil || len(files) != 318 {
+		t.Fatalf("%d test files in %s, want 318: %v", len(files), dir, err)
 	}
 	for _, f := range files {
 		data, err := os.ReadFile(f)

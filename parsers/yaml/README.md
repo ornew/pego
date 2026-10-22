@@ -107,7 +107,7 @@ directive shape; it is not validation of an arbitrary AST graph.
 ## Conformance
 
 The tests run the [yaml-test-suite](https://github.com/yaml/yaml-test-suite), data release 2022-01-17, which is
-vendored in `testdata/yaml-test-suite` (MIT License): for each of the 402 tests, a valid input must give the events
+fetched by `go run ./hack/corpora fetch yaml-test-suite` (MIT License; the tests skip without it): for each of the 402 tests, a valid input must give the events
 of `test.event` and the values of `in.json` where it exists, and an invalid input must be rejected by `Events` and
 `LoadAll`. All 402 pass: 308 valid inputs (279 with JSON values) and 94 invalid ones, 92 of which the parser
 rejects and 2 `Check` (an undeclared tag handle, QLJ7, and a second `%YAML` directive, SF5V). `ParseAST` and

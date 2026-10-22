@@ -19,9 +19,8 @@
 //
 // # Conformance
 //
-// Every test of the yaml-test-suite passes (data release 2022-01-17, vendored in
-// testdata/yaml-test-suite, and the source definitions of its main branch at commit da267a5, which
-// give the same tests): the events and JSON values of the 308 valid inputs, and the rejection of the 94
+// Every test of the yaml-test-suite passes (data release 2022-01-17, and the source definitions of its main branch
+// at commit da267a5, which give the same tests): the events and JSON values of the 308 valid inputs, and the rejection of the 94
 // invalid ones, 92 by the parser and 2 by Check. Known deviations and choices:
 //
 //   - A carriage return alone is a line break, but does not start a line for the rules that test the

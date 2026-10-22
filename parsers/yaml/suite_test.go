@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/internal/corpora/corporatest"
 	"github.com/ornew/pego/parsers/yaml"
 )
 
@@ -56,12 +57,16 @@ func dataCases(t *testing.T, root string) []suiteCase {
 	return cases
 }
 
-// TestSuite runs every test of the yaml-test-suite (testdata/yaml-test-suite, data release
-// 2022-01-17): a valid input must give the events of test.event and, where in.json exists, the values
+// TestSuite runs every test of the yaml-test-suite (the corpus "yaml-test-suite", data release
+// 2022-01-17, fetched by go run ./hack/corpora fetch): a valid input must give the events of test.event and, where in.json exists, the values
 // it holds; an input with an error file must be rejected by Events and LoadAll. Recognize and ParseAST
 // must agree on every input.
 func TestSuite(t *testing.T) {
-	runSuite(t, dataCases(t, filepath.Join("testdata", "yaml-test-suite")))
+	cases := dataCases(t, corporatest.Dir(t, "yaml-test-suite"))
+	if len(cases) != 402 {
+		t.Fatalf("%d tests in the yaml-test-suite, want 402", len(cases))
+	}
+	runSuite(t, cases)
 }
 
 func runSuite(t *testing.T, cases []suiteCase) {
@@ -122,7 +127,7 @@ func runSuiteCase(c suiteCase, st *suiteStats) error {
 }
 
 // TestSuiteSource runs the tests of the source definitions of the yaml-test-suite (the src directory of
-// its main branch, newer than the data release in testdata), if YAML_TEST_SUITE_SRC names that
+// its main branch, newer than the data release of TestSuite), if YAML_TEST_SUITE_SRC names that
 // directory. The definitions are YAML, read with this package, and are converted as the suite's
 // bin/suite-to-data.pl does.
 func TestSuiteSource(t *testing.T) {

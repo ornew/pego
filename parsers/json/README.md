@@ -57,7 +57,7 @@ Positions are in code points by default; `json.ParseAST(src, json.WithUnit(json.
 The parser accepts exactly the JSON texts of RFC 8259: any value at the top level, surrounded by optional whitespace.
 The tests check:
 
-- every case of [JSONTestSuite](https://github.com/nst/JSONTestSuite) (in `testdata/JSONTestSuite`): the 95 `y_` files
+- every case of [JSONTestSuite](https://github.com/nst/JSONTestSuite) (MIT License, fetched by `go run ./hack/corpora fetch jsontestsuite`; the tests skip without it): the 95 `y_` files
   are accepted and decode to what `encoding/json` decodes, the 188 `n_` files are rejected, and `Recognize` and
   `ParseAST` agree on the 35 `i_` files;
 - `Decode` against `encoding/json` on 2,000 random documents, and on arbitrary input in `FuzzDecode`

@@ -156,7 +156,8 @@ direct code (see the [code generation guide](../../docs/guide/generated-typed-va
 
 ## Performance
 
-Parsing the largest modules of the standard library in memory (`go test -bench .`; the files are in `testdata/bench`;
+Parsing the largest modules of the standard library in memory (`go test -bench .`; the files are `Lib/_pydecimal.py` and `Lib/typing.py` of the corpus `cpython`, fetched by
+`go run ./hack/corpora fetch cpython`;
 Apple M3 Max, Go 1.27, median of 3 runs of 100 iterations):
 
 | | `_pydecimal.py` (229 KB) | | `typing.py` (135 KB) | |
@@ -167,7 +168,7 @@ Apple M3 Max, Go 1.27, median of 3 runs of 100 iterations):
 | CPython 3.14.0 `ast.parse` (same files; builds Python objects) | 13.1 ms (17.5 MB/s) | | 8.4 ms (16.0 MB/s) | |
 
 CPython's `ast.parse` was timed outside the Go tests with `python3.14 -I internal/refgen/astparse_time.py
-testdata/bench/*.py` (median of 30 runs after 30 warm-ups). So `ParseAST` takes about 1.9 times and 1.5 times as long
+_pydecimal.py typing.py` (median of 30 runs after 30 warm-ups). So `ParseAST` takes about 1.9 times and 1.5 times as long
 as CPython's hand-written C parser, which builds its tree with Python objects, from a grammar that has no tokenizer.
 There is no Python parser in the Go standard library to compare with.
 
@@ -193,7 +194,7 @@ PEGO_MUTANTS=400000 PEGO_MUTANTS_SEED=1 go test -v -run 'TestCPythonMutations|Te
 
 go test -fuzz FuzzParse               # fuzz the parser
 go test -bench .                      # benchmarks (PEGO_BENCH_DIR: another directory with _pydecimal.py and typing.py)
-python3.14 -I internal/refgen/astparse_time.py testdata/bench/*.py   # CPython's ast.parse on the same files
+python3.14 -I internal/refgen/astparse_time.py $(cd ../.. && go run ./hack/corpora dir cpython)/Lib/{_pydecimal,typing}.py   # CPython's ast.parse on the same files
 ```
 
 The vendored reference data (`testdata/cpython-*.jsonl.gz`) is regenerated from a CPython checkout with
