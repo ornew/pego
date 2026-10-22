@@ -5,6 +5,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"compress/gzip"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -144,5 +145,22 @@ func TestFetchZip(t *testing.T) {
 	s.SHA256 = sum
 	if _, err := Fetch(s); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestPieces(t *testing.T) {
+	var ps []Piece
+	if err := json.Unmarshal([]byte(`[[2,3],"\n",[0,1]]`), &ps); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Assemble([]byte("abcdefg"), ps)
+	if err != nil || string(got) != "cde\na" {
+		t.Fatalf("Assemble = %q, %v", got, err)
+	}
+	if _, err := Assemble([]byte("ab"), ps); err == nil {
+		t.Fatal("a copy outside the range was accepted")
+	}
+	if Hash([]byte("a"), 8) != "ca978112" {
+		t.Fatalf("Hash = %s", Hash([]byte("a"), 8))
 	}
 }

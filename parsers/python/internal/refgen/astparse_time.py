@@ -1,6 +1,6 @@
 # Times CPython's ast.parse on files (the reference of the benchmarks of the module):
 #
-#   python3.14 -I internal/refgen/astparse_time.py testdata/bench/_pydecimal.py testdata/bench/typing.py
+#   python3.14 -I internal/refgen/astparse_time.py "$(go run ./hack/corpora dir cpython)"/Lib/_pydecimal.py "$(go run ./hack/corpora dir cpython)"/Lib/typing.py
 #
 # For each file it prints the best and the median of 30 runs after 30 warm-up runs.
 import ast

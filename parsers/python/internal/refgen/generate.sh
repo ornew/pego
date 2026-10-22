@@ -1,5 +1,5 @@
 #!/bin/sh
-# Regenerates the vendored reference data of the tests (testdata/cpython-*.jsonl.gz) with CPython
+# Regenerates the recorded reference data of the tests (testdata/cpython-*.jsonl.gz) with CPython
 # 3.14.0:
 #
 #   PEGO_PYTHON=python3.14 internal/refgen/generate.sh /path/to/cpython-checkout
@@ -19,5 +19,5 @@ t="$src/Lib/test"
 for f in test_grammar test_patma test_fstring test_tstring test_syntax test_type_params test_type_aliases \
 	test_unparse test_positional_only_arg test_keywordonlyarg test_with test_ast/snippets test_future_stmt/test_future; do
 	echo "$t/$f.py"
-done | "$py" -I -c "$(cat internal/refgen/refgen.py)" -b | gzip -9n > testdata/cpython-files.jsonl.gz
+done | "$py" -I -c "$(cat internal/refgen/refgen.py)" -b -r "$t" | gzip -9n > testdata/cpython-files.jsonl.gz
 ls -l testdata/cpython-*.jsonl.gz

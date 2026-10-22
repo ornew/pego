@@ -97,8 +97,10 @@ mutations a line continuation before the end of the input). The positions are th
 both accept (the files and the snippets of the table). A fuzz test (`FuzzParse`) checks that the parser never panics and that
 `ParseAST`, `Recognize` and the dumps agree.
 
-The tests that need only Go (`go test`) run the vendored reference data in `testdata`: the CPython results, from
+The tests that need only Go (`go test`) run the reference data in `testdata`: the CPython results, from
 `ast.parse`, for the 61,540 snippets and for 13 test files of `Lib/test` (see [testdata/README.md](testdata/README.md)).
+The texts are in CPython's `Lib/test`, which `go run ./hack/corpora fetch cpython` puts in the cache from the root of
+the repository (the tests are skipped without it).
 The others run CPython 3.14 and are skipped without it.
 
 ### Deviations
@@ -182,11 +184,11 @@ memoized call), not in the grammar.
 ```bash
 go generate ./parsers                 # regenerate parser.go after changing python.pego (from the repository root)
 go test ./parsers                     # parser.go up to date; golden files on every backend of the engine
-cd parsers/python && go test ./...    # the golden files, the vendored reference data, the examples (Go alone)
+cd parsers/python && go test ./...    # the golden files, the recorded reference data, the examples (Go alone)
 
 # The comparisons with CPython: PEGO_PYTHON is CPython 3.14 (python3.14 on PATH by default); its standard library is the
 # corpus. PEGO_CPYTHON_SRC is a checkout of CPython 3.14.0 (git clone --branch v3.14.0 https://github.com/python/cpython),
-# whose Lib/test is a corpus too and the source of the snippets.
+# whose Lib/test is a corpus too and the source of the snippets. CPython is under the PSF License.
 export PEGO_PYTHON=python3.14 PEGO_CPYTHON_SRC=/path/to/cpython
 go test -v -run 'TestCPython' .       # the corpora: files, snippets, positions, mutations, line structures
 PEGO_PYTHON_ONLY=test_grammar go test -run TestCPythonCorpus .       # the files whose path contains a string
@@ -197,7 +199,7 @@ go test -bench .                      # benchmarks (PEGO_BENCH_DIR: another dire
 python3.14 -I internal/refgen/astparse_time.py $(cd ../.. && go run ./hack/corpora dir cpython)/Lib/{_pydecimal,typing}.py   # CPython's ast.parse on the same files
 ```
 
-The vendored reference data (`testdata/cpython-*.jsonl.gz`) is regenerated from a CPython checkout with
-`PEGO_PYTHON=python3.14 internal/refgen/generate.sh /path/to/cpython` (run from this directory), and the Unicode tables
+The reference data (`testdata/cpython-*.jsonl.gz`) is regenerated from a CPython checkout (or the fetched corpus
+`cpython`) with `PEGO_PYTHON=python3.14 internal/refgen/generate.sh /path/to/cpython` (run from this directory), and the Unicode tables
 (`tables.go`, `unicode.bin` and the identifier classes of the grammar) from CPython's `unicodedata` with
 `tools/gentables.py` (Unicode 16.0.0).

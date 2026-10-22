@@ -68,8 +68,9 @@
 		"include": [
 			"LICENSE",
 			"Lib/_pydecimal.py",
-			"Lib/typing.py"
+			"Lib/typing.py",
+			"Lib/test/"
 		],
-		"sha256": "1355ee0341fb128f94d410a8cf5cb27e84987cae2b227dbcd0453c4a99137294"
+		"sha256": "7c2466cf15e2e2a11d06cf8a82199da93b199da68c1af9248a34dc97110fc91d"
 	}
 ]

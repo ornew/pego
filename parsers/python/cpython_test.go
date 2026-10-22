@@ -307,13 +307,13 @@ func firstLine(err error) string {
 }
 
 // TestCPythonMutations compares the parser with CPython on random mutations (deleted, inserted,
-// replaced and swapped characters and tokens) of the snippets of the vendored reference data that
+// replaced and swapped characters and tokens) of the snippets of the reference data that
 // both accept: inputs near the border of the language, where grammars differ. The same mutants
 // must be accepted, with the same ast.dump.
 func TestCPythonMutations(t *testing.T) {
 	py := findPython(t)
 	var seeds []string
-	for _, r := range readReferences(t, "testdata/cpython-snippets.jsonl.gz") {
+	for _, r := range readReferences(t, "testdata/cpython-snippets.jsonl.gz", 61540) {
 		if r.OK && len(r.Source) <= 400 {
 			seeds = append(seeds, r.Source)
 		}
