@@ -996,12 +996,21 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 		name = g.traceCallWrapper(r, name, false)
 	}
 	fmt.Fprintf(m, "// %s, called as by call\nfunc %s(p *TParser) (any, bool) {\n", r.name, name)
+	// Without Documents the invocation of a direct rule without captures is its plain method: the
+	// two bodies differ only in the rollback to the start on failure, which the callers of the
+	// invocation repeat harmlessly, so one body serves both. A Document reads the position the
+	// invocation leaves at its failure to find the frontier it examined, so Documents keep both.
+	merged := d != nil && ncaps == 0 && !g.document
+	iname := fmt.Sprintf("i%d", r.id)
+	if merged {
+		iname = fmt.Sprintf("v%d", r.id)
+	}
 	if g.directTypedDocument {
-		fmt.Fprintf(m, " if p.TypedDocument != nil { return p.DocumentCall(trules[%d], 0, i%d) }\n", r.id, r.id)
+		fmt.Fprintf(m, " if p.TypedDocument != nil { return p.DocumentCall(trules[%d], 0, %s) }\n", r.id, iname)
 	}
 	memo := r.memo && !r.transient
 	if memo {
-		fmt.Fprintf(m, "\tif !p.FirstCall(rules[%d]) {\n\t\treturn p.CallMemo(trules[%d], i%d)\n\t}\n", r.id, r.id, r.id)
+		fmt.Fprintf(m, "\tif !p.FirstCall(rules[%d]) {\n\t\treturn p.CallMemo(trules[%d], %s)\n\t}\n", r.id, r.id, iname)
 	}
 	if ncaps == 0 {
 		fmt.Fprintf(m, "\treturn v%d(p)\n}\n\n", r.id)
@@ -1010,6 +1019,9 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 		fmt.Fprintf(m, "\tstart, rec := p.Pos, len(p.Recovered)\n\tv, ok := i%d(p)\n\tif !ok {\n\t\tp.Restore(start, rec)\n\t}\n\treturn v, ok\n}\n\n", r.id)
 	}
 	// i<id>: the invocation (also used by the memo).
+	if merged {
+		return // v<id>
+	}
 	if d != nil {
 		g.directMethod(r, d, fmt.Sprintf("i%d", r.id), "invoked as by invoke", false)
 		return

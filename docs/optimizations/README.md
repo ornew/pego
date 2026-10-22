@@ -245,6 +245,7 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - [106. Dropping what only non-start rule entries reach](106-start-rule-reachability.md)
 - [107. Shared shapers and a compact rule table](107-shared-shapers-and-compact-rule-table.md)
 - [108. Prologue and rollback helpers](108-prologue-and-rollback-helpers.md)
+- [109. One body for the invocation and the plain call](109-one-body-for-invoke-and-plain-call.md)
 
 ## Experiments That Did Not Pay Off
 

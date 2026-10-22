@@ -4468,13 +4468,13 @@ fail:
 func u5(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[5]) {
-			return p.CallMemo(trules[5], i5)
+			return p.CallMemo(trules[5], v5)
 		}
 		return v5(p)
 	}
 
 	if !p.FirstCall(rules[5]) {
-		return p.CallMemo(trules[5], i5)
+		return p.CallMemo(trules[5], v5)
 	}
 	return v5(p)
 }
@@ -4567,93 +4567,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// unary, invoked as by invoke (body inlined)
-func i5(p *pegort.TParser) (any, bool) {
-	if p.Control == nil {
-		var (
-			start int
-			v     any
-			x1    int
-			x2    int
-			v3    any
-			ok    bool
-			v6    any
-			v8    any
-		)
-		start = p.Pos
-		p.Enter()
-		x1, x2 = p.Pos, len(p.Recovered)
-		if v6, ok = u6(p); !ok {
-			goto L5_ordinary
-		}
-		v3 = v6
-		goto L4_ordinary
-	L5_ordinary:
-		p.Restore(x1, x2)
-		if v8, ok = s7(p); !ok {
-			goto L7_ordinary
-		}
-		v3 = v8
-		goto L4_ordinary
-	L7_ordinary:
-		p.Restore(x1, x2)
-		goto fail_ordinary
-	L4_ordinary:
-		v = p.ScopeValue(sh26, v3, start)
-		if n := pegort.AsTval(v); n != nil {
-			n.TSetFresh(false)
-		}
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		return nil, false
-	}
-
-	p.StepWork()
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		v8    any
-	)
-	start = p.Pos
-	p.Enter()
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.StepWork()
-	if v6, ok = u6(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	p.StepWork()
-	if v8, ok = s7(p); !ok {
-		goto L7
-	}
-	v3 = v8
-	goto L4
-L7:
-	p.Restore(x1, x2)
-	goto fail
-L4:
-	v = p.ScopeValue(sh26, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 

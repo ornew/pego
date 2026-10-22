@@ -31136,13 +31136,13 @@ fail:
 func u19(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[19]) {
-			return p.CallMemo(trules[19], i19)
+			return p.CallMemo(trules[19], v19)
 		}
 		return v19(p)
 	}
 
 	if !p.FirstCall(rules[19]) {
-		return p.CallMemo(trules[19], i19)
+		return p.CallMemo(trules[19], v19)
 	}
 	return v19(p)
 }
@@ -31266,124 +31266,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// external_id, invoked as by invoke (body inlined)
-func i19(p *pegort.TParser) (any, bool) {
-	if p.Control == nil {
-		var (
-			start int
-			v     any
-			x1    int
-			x2    int
-			v3    any
-			x5    rune
-			x6    bool
-			ok    bool
-			v9    any
-			v12   any
-		)
-		start = p.Pos
-		p.Enter()
-		x1, x2 = p.Pos, len(p.Recovered)
-		x5, _, x6 = p.NextOrdinary()
-		if !(x6 && (x5 == 83)) && p.Depth+1 <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 37)
-			goto L7_ordinary
-		}
-		if v9, ok = u20(p); !ok {
-			goto L8_ordinary
-		}
-		v3 = v9
-		goto L4_ordinary
-	L8_ordinary:
-		p.Restore(x1, x2)
-	L7_ordinary:
-		if !(x6 && (x5 == 80)) && p.Depth+1 <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 38)
-			goto L10_ordinary
-		}
-		if v12, ok = u21(p); !ok {
-			goto L11_ordinary
-		}
-		v3 = v12
-		goto L4_ordinary
-	L11_ordinary:
-		p.Restore(x1, x2)
-	L10_ordinary:
-		goto fail_ordinary
-	L4_ordinary:
-		v = p.ScopeValue(sh136, v3, start)
-		if n := pegort.AsTval(v); n != nil {
-			n.TSetFresh(false)
-		}
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		return nil, false
-	}
-
-	p.StepWork()
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		x5    rune
-		x6    bool
-		ok    bool
-		v9    any
-		v12   any
-	)
-	start = p.Pos
-	p.Enter()
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if p.Pos < len(p.In) {
-		p.InputWork(1)
-		x5, _, x6 = p.In[p.Pos], 1, true
-	} else {
-		x5, _, x6 = p.Peek()
-	}
-	if !(x6 && (x5 == 83)) && p.Depth+1 <= p.MaxDepth {
-		p.Expect(p.Pos, 37)
-		goto L7
-	}
-	p.StepWork()
-	if v9, ok = u20(p); !ok {
-		goto L8
-	}
-	v3 = v9
-	goto L4
-L8:
-	p.Restore(x1, x2)
-L7:
-	if !(x6 && (x5 == 80)) && p.Depth+1 <= p.MaxDepth {
-		p.Expect(p.Pos, 38)
-		goto L10
-	}
-	p.StepWork()
-	if v12, ok = u21(p); !ok {
-		goto L11
-	}
-	v3 = v12
-	goto L4
-L11:
-	p.Restore(x1, x2)
-L10:
-	goto fail
-L4:
-	v = p.ScopeValue(sh136, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -33806,13 +33688,13 @@ fail:
 func u35(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[35]) {
-			return p.CallMemo(trules[35], i35)
+			return p.CallMemo(trules[35], v35)
 		}
 		return v35(p)
 	}
 
 	if !p.FirstCall(rules[35]) {
-		return p.CallMemo(trules[35], i35)
+		return p.CallMemo(trules[35], v35)
 	}
 	return v35(p)
 }
@@ -33963,151 +33845,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// cp, invoked as by invoke (body inlined)
-func i35(p *pegort.TParser) (any, bool) {
-	if p.Control == nil {
-		var (
-			start int
-			v     any
-			x1    int
-			x2    int
-			v3    any
-			x5    rune
-			x6    bool
-			ok    bool
-			v9    any
-			v12   any
-			v15   any
-		)
-		start = p.Pos
-		p.Enter()
-		x1, x2 = p.Pos, len(p.Recovered)
-		x5, _, x6 = p.NextOrdinary()
-		if !(x6 && (!(!(x5 >= 97 && x5 <= 122 || x5 >= 65 && x5 <= 90 || x5 == 95 || x5 == 58 || x5 >= 192 && x5 <= 214 || x5 >= 216 && x5 <= 246 || x5 >= 248 && x5 <= 767 || x5 >= 880 && x5 <= 893 || x5 >= 895 && x5 <= 8191 || x5 >= 8204 && x5 <= 8205 || x5 >= 8304 && x5 <= 8591 || x5 >= 11264 && x5 <= 12271 || x5 >= 12289 && x5 <= 55295 || x5 >= 63744 && x5 <= 64975 || x5 >= 65008 && x5 <= 65533 || x5 >= 65536 && x5 <= 983039)))) && p.Depth+2 <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 51)
-			goto L7_ordinary
-		}
-		if v9, ok = u36(p); !ok {
-			goto L8_ordinary
-		}
-		v3 = v9
-		goto L4_ordinary
-	L8_ordinary:
-		p.Restore(x1, x2)
-	L7_ordinary:
-		if !(x6 && (x5 == 40)) && p.Depth+1 <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 45)
-			goto L10_ordinary
-		}
-		if v12, ok = u33(p); !ok {
-			goto L11_ordinary
-		}
-		v3 = v12
-		goto L4_ordinary
-	L11_ordinary:
-		p.Restore(x1, x2)
-	L10_ordinary:
-		if !(x6 && (x5 == 40)) && p.Depth+1 <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 45)
-			goto L13_ordinary
-		}
-		if v15, ok = u34(p); !ok {
-			goto L14_ordinary
-		}
-		v3 = v15
-		goto L4_ordinary
-	L14_ordinary:
-		p.Restore(x1, x2)
-	L13_ordinary:
-		goto fail_ordinary
-	L4_ordinary:
-		v = p.ScopeValue(sh136, v3, start)
-		if n := pegort.AsTval(v); n != nil {
-			n.TSetFresh(false)
-		}
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		return nil, false
-	}
-
-	p.StepWork()
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		x5    rune
-		x6    bool
-		ok    bool
-		v9    any
-		v12   any
-		v15   any
-	)
-	start = p.Pos
-	p.Enter()
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if p.Pos < len(p.In) {
-		p.InputWork(1)
-		x5, _, x6 = p.In[p.Pos], 1, true
-	} else {
-		x5, _, x6 = p.Peek()
-	}
-	if !(x6 && (!((pegort.WorkControlsEnabled && p.Control != nil && p.RejectWorkClass(x5, workClass83, false)) || ((!pegort.WorkControlsEnabled || p.Control == nil) && (!(x5 >= 97 && x5 <= 122 || x5 >= 65 && x5 <= 90 || x5 == 95 || x5 == 58 || x5 >= 192 && x5 <= 214 || x5 >= 216 && x5 <= 246 || x5 >= 248 && x5 <= 767 || x5 >= 880 && x5 <= 893 || x5 >= 895 && x5 <= 8191 || x5 >= 8204 && x5 <= 8205 || x5 >= 8304 && x5 <= 8591 || x5 >= 11264 && x5 <= 12271 || x5 >= 12289 && x5 <= 55295 || x5 >= 63744 && x5 <= 64975 || x5 >= 65008 && x5 <= 65533 || x5 >= 65536 && x5 <= 983039)))))) && p.Depth+2 <= p.MaxDepth {
-		p.Expect(p.Pos, 51)
-		goto L7
-	}
-	p.StepWork()
-	if v9, ok = u36(p); !ok {
-		goto L8
-	}
-	v3 = v9
-	goto L4
-L8:
-	p.Restore(x1, x2)
-L7:
-	if !(x6 && (x5 == 40)) && p.Depth+1 <= p.MaxDepth {
-		p.Expect(p.Pos, 45)
-		goto L10
-	}
-	p.StepWork()
-	if v12, ok = u33(p); !ok {
-		goto L11
-	}
-	v3 = v12
-	goto L4
-L11:
-	p.Restore(x1, x2)
-L10:
-	if !(x6 && (x5 == 40)) && p.Depth+1 <= p.MaxDepth {
-		p.Expect(p.Pos, 45)
-		goto L13
-	}
-	p.StepWork()
-	if v15, ok = u34(p); !ok {
-		goto L14
-	}
-	v3 = v15
-	goto L4
-L14:
-	p.Restore(x1, x2)
-L13:
-	goto fail
-L4:
-	v = p.ScopeValue(sh136, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -39573,13 +39310,13 @@ func s65(p *pegort.TParser) (any, bool) {
 func u66(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[66]) {
-			return p.CallMemo(trules[66], i66)
+			return p.CallMemo(trules[66], v66)
 		}
 		return v66(p)
 	}
 
 	if !p.FirstCall(rules[66]) {
-		return p.CallMemo(trules[66], i66)
+		return p.CallMemo(trules[66], v66)
 	}
 	return v66(p)
 }
@@ -39693,114 +39430,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// reference, invoked as by invoke (body inlined)
-func i66(p *pegort.TParser) (any, bool) {
-	if p.Control == nil {
-		var (
-			start int
-			v     any
-			x1    int
-			x2    int
-			v3    any
-			ok    bool
-			v6    any
-			x7    rune
-			x8    bool
-			v11   any
-		)
-		start = p.Pos
-		p.Enter()
-		x1, x2 = p.Pos, len(p.Recovered)
-		if v6, ok = s67(p); !ok {
-			goto L5_ordinary
-		}
-		v3 = v6
-		goto L4_ordinary
-	L5_ordinary:
-		p.Restore(x1, x2)
-		x7, _, x8 = p.NextOrdinary()
-		if !(x8 && (x7 == 38)) && p.Depth+1 <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 80)
-			goto L9_ordinary
-		}
-		if v11, ok = s68(p); !ok {
-			goto L10_ordinary
-		}
-		v3 = v11
-		goto L4_ordinary
-	L10_ordinary:
-		p.Restore(x1, x2)
-	L9_ordinary:
-		goto fail_ordinary
-	L4_ordinary:
-		v = p.ScopeValue(sh136, v3, start)
-		if n := pegort.AsTval(v); n != nil {
-			n.TSetFresh(false)
-		}
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		return nil, false
-	}
-
-	p.StepWork()
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		x7    rune
-		x8    bool
-		v11   any
-	)
-	start = p.Pos
-	p.Enter()
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.StepWork()
-	if v6, ok = s67(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	if p.Pos < len(p.In) {
-		p.InputWork(1)
-		x7, _, x8 = p.In[p.Pos], 1, true
-	} else {
-		x7, _, x8 = p.Peek()
-	}
-	if !(x8 && (x7 == 38)) && p.Depth+1 <= p.MaxDepth {
-		p.Expect(p.Pos, 80)
-		goto L9
-	}
-	p.StepWork()
-	if v11, ok = s68(p); !ok {
-		goto L10
-	}
-	v3 = v11
-	goto L4
-L10:
-	p.Restore(x1, x2)
-L9:
-	goto fail
-L4:
-	v = p.ScopeValue(sh136, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -40232,13 +39861,13 @@ fail:
 func u71(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[71]) {
-			return p.CallMemo(trules[71], i71)
+			return p.CallMemo(trules[71], v71)
 		}
 		return v71(p)
 	}
 
 	if !p.FirstCall(rules[71]) {
-		return p.CallMemo(trules[71], i71)
+		return p.CallMemo(trules[71], v71)
 	}
 	return v71(p)
 }
@@ -40345,107 +39974,6 @@ func v71(p *pegort.TParser) (any, bool) {
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// nmtoken, invoked as by invoke (body inlined)
-func i71(p *pegort.TParser) (any, bool) {
-	if p.Control == nil {
-		var (
-			start int
-			v     any
-			x1    int
-			x2    int
-			x3    int
-			x4    int
-			ok    bool
-			v6    any
-			bv    any
-		)
-		start = p.Pos
-		p.Enter()
-		_ = x2
-		x1 = p.Pos
-		x2 = 0
-		for {
-			x3, x4 = p.Pos, len(p.Recovered)
-			if _, ok = s79(p); !ok {
-				goto L5_ordinary
-			}
-			x2++
-			if p.Pos == x3 {
-				break
-			}
-			continue
-		L5_ordinary:
-			p.Restore(x3, x4)
-			break
-		}
-		if x2 < 1 {
-			goto fail_ordinary
-		}
-		v6 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-		bv = pegort.TFreshNode(v6)
-		v = p.ScopeValue(sh136, v6, start)
-		if n := pegort.AsTval(v); n != nil {
-			n.TSetFresh(false)
-		}
-		v = p.TConvertResultOwned(trules[71], v, bv)
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		return nil, false
-	}
-
-	p.StepWork()
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		x3    int
-		x4    int
-		ok    bool
-		v6    any
-		bv    any
-	)
-	start = p.Pos
-	p.Enter()
-	_ = x2
-	p.StepWork()
-	x1 = p.Pos
-	p.StepWork()
-	x2 = 0
-	for {
-		x3, x4 = p.Pos, len(p.Recovered)
-		p.StepWork()
-		if _, ok = s79(p); !ok {
-			goto L5
-		}
-		x2++
-		if p.Pos == x3 {
-			break
-		}
-		continue
-	L5:
-		p.Restore(x3, x4)
-		break
-	}
-	if x2 < 1 {
-		goto fail
-	}
-	v6 = p.NewMatch(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v6)
-	v = p.ScopeValue(sh136, v6, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	v = p.TConvertResultOwned(trules[71], v, bv)
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -40692,13 +40220,13 @@ fail:
 func u76(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[76]) {
-			return p.CallMemo(trules[76], i76)
+			return p.CallMemo(trules[76], v76)
 		}
 		return v76(p)
 	}
 
 	if !p.FirstCall(rules[76]) {
-		return p.CallMemo(trules[76], i76)
+		return p.CallMemo(trules[76], v76)
 	}
 	return v76(p)
 }
@@ -40764,62 +40292,6 @@ func v76(p *pegort.TParser) (any, bool) {
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// eq, invoked as by invoke (body inlined)
-func i76(p *pegort.TParser) (any, bool) {
-	if p.Control == nil {
-		var (
-			v  any
-			ok bool
-		)
-		p.Enter()
-		if _, ok = s74(p); !ok {
-			goto fail_ordinary
-		}
-		if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
-			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit24, "=", 21, false); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = s74(p); !ok {
-			goto fail_ordinary
-		}
-		v = nil
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		return nil, false
-	}
-
-	p.StepWork()
-	var (
-		v  any
-		ok bool
-	)
-	p.Enter()
-	p.StepWork()
-	p.StepWork()
-	if _, ok = s74(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 61) {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit24, "=", 21, false); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if _, ok = s74(p); !ok {
-		goto fail
-	}
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -40911,13 +40383,13 @@ fail:
 func u78(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[78]) {
-			return p.CallMemo(trules[78], i78)
+			return p.CallMemo(trules[78], v78)
 		}
 		return v78(p)
 	}
 
 	if !p.FirstCall(rules[78]) {
-		return p.CallMemo(trules[78], i78)
+		return p.CallMemo(trules[78], v78)
 	}
 	return v78(p)
 }
@@ -41015,94 +40487,6 @@ L3:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// reference, invoked as by invoke (body inlined)
-func i78(p *pegort.TParser) (any, bool) {
-	if p.Control == nil {
-		var (
-			v  any
-			x1 int
-			x2 int
-			ok bool
-			x5 rune
-			x6 bool
-		)
-		p.Enter()
-		x1, x2 = p.Pos, len(p.Recovered)
-		if _, ok = s80(p); !ok {
-			goto L4_ordinary
-		}
-		goto L3_ordinary
-	L4_ordinary:
-		p.Restore(x1, x2)
-		x5, _, x6 = p.NextOrdinary()
-		if !(x6 && (x5 == 38)) && p.Depth+1 <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 80)
-			goto L7_ordinary
-		}
-		if _, ok = s81(p); !ok {
-			goto L8_ordinary
-		}
-		goto L3_ordinary
-	L8_ordinary:
-		p.Restore(x1, x2)
-	L7_ordinary:
-		goto fail_ordinary
-	L3_ordinary:
-		v = nil
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		return nil, false
-	}
-
-	p.StepWork()
-	var (
-		v  any
-		x1 int
-		x2 int
-		ok bool
-		x5 rune
-		x6 bool
-	)
-	p.Enter()
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.StepWork()
-	if _, ok = s80(p); !ok {
-		goto L4
-	}
-	goto L3
-L4:
-	p.Restore(x1, x2)
-	if p.Pos < len(p.In) {
-		p.InputWork(1)
-		x5, _, x6 = p.In[p.Pos], 1, true
-	} else {
-		x5, _, x6 = p.Peek()
-	}
-	if !(x6 && (x5 == 38)) && p.Depth+1 <= p.MaxDepth {
-		p.Expect(p.Pos, 80)
-		goto L7
-	}
-	p.StepWork()
-	if _, ok = s81(p); !ok {
-		goto L8
-	}
-	goto L3
-L8:
-	p.Restore(x1, x2)
-L7:
-	goto fail
-L3:
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 

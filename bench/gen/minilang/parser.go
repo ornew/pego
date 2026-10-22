@@ -18296,13 +18296,13 @@ fail:
 func u16(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[16]) {
-			return p.CallMemo(trules[16], i16)
+			return p.CallMemo(trules[16], v16)
 		}
 		return v16(p)
 	}
 
 	if !p.FirstCall(rules[16]) {
-		return p.CallMemo(trules[16], i16)
+		return p.CallMemo(trules[16], v16)
 	}
 	return v16(p)
 }
@@ -18454,152 +18454,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// ident, invoked as by invoke (body inlined)
-func i16(p *pegort.TParser) (any, bool) {
-	if p.Control == nil {
-		var (
-			start int
-			v     any
-			x1    int
-			x2    int
-			x3    int
-			ok    bool
-			ch    rune
-			size  int
-			x5    int
-			x6    int
-			x7    int
-			v9    any
-			bv    any
-		)
-		start = p.Pos
-		p.Enter()
-		_ = x5
-		x1 = p.Pos
-		x2, x3 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if _, ok = s38(p); !ok {
-			goto L4_ordinary
-		}
-		p.Silent--
-		p.Restore(x2, x3)
-		goto fail_ordinary
-	L4_ordinary:
-		p.Silent--
-		p.Restore(x2, x3)
-		ch, size, ok = p.NextOrdinary()
-		if !ok || !(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch == 95) {
-			p.ExpectOrdinary(p.Pos, 19)
-			goto fail_ordinary
-		}
-		p.Pos += size
-		x5 = 0
-		for {
-			x6, x7 = p.Pos, len(p.Recovered)
-			if _, ok = s39(p); !ok {
-				goto L8_ordinary
-			}
-			x5++
-			if p.Pos == x6 {
-				break
-			}
-			continue
-		L8_ordinary:
-			p.Restore(x6, x7)
-			break
-		}
-		v9 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-		bv = pegort.TFreshNode(v9)
-		v = p.ScopeValue(sh66, v9, start)
-		if n := pegort.AsTval(v); n != nil {
-			n.TSetFresh(false)
-		}
-		v = p.TConvertResultOwned(trules[16], v, bv)
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		return nil, false
-	}
-
-	p.StepWork()
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		x3    int
-		ok    bool
-		ch    rune
-		size  int
-		x5    int
-		x6    int
-		x7    int
-		v9    any
-		bv    any
-	)
-	start = p.Pos
-	p.Enter()
-	_ = x5
-	p.StepWork()
-	x1 = p.Pos
-	p.StepWork()
-	p.StepWork()
-	x2, x3 = p.Pos, len(p.Recovered)
-	p.Silent++
-	p.StepWork()
-	if _, ok = s38(p); !ok {
-		goto L4
-	}
-	p.Silent--
-	p.Restore(x2, x3)
-	goto fail
-L4:
-	p.Silent--
-	p.Restore(x2, x3)
-	p.StepWork()
-	if p.Pos < len(p.In) {
-		p.InputWork(1)
-		ch, size, ok = p.In[p.Pos], 1, true
-	} else {
-		ch, size, ok = p.Peek()
-	}
-	if !ok || !(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch == 95) {
-		p.Expect(p.Pos, 19)
-		goto fail
-	}
-	p.Pos += size
-	p.StepWork()
-	x5 = 0
-	for {
-		x6, x7 = p.Pos, len(p.Recovered)
-		p.StepWork()
-		if _, ok = s39(p); !ok {
-			goto L8
-		}
-		x5++
-		if p.Pos == x6 {
-			break
-		}
-		continue
-	L8:
-		p.Restore(x6, x7)
-		break
-	}
-	v9 = p.NewMatch(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v9)
-	v = p.ScopeValue(sh66, v9, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	v = p.TConvertResultOwned(trules[16], v, bv)
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 

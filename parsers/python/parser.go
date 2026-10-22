@@ -5243,7 +5243,7 @@ func s14(p *pegort.TParser) (any, bool) {
 // stmt, called as by call
 func u15(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[15]) {
-		return p.CallMemo(trules[15], i15)
+		return p.CallMemo(trules[15], v15)
 	}
 	return v15(p)
 }
@@ -5292,52 +5292,10 @@ fail:
 	return nil, false
 }
 
-// stmt, invoked as by invoke (body inlined)
-func i15(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		v8    any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if v6, ok = s48(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	if v8, ok = u16(p); !ok {
-		goto L7
-	}
-	v3 = v8
-	goto L4
-L7:
-	p.Restore(x1, x2)
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // simple_stmt, called as by call
 func u16(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[16]) {
-		return p.CallMemo(trules[16], i16)
+		return p.CallMemo(trules[16], v16)
 	}
 	return v16(p)
 }
@@ -5552,217 +5510,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// simple_stmt, invoked as by invoke (body inlined)
-func i16(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		x5    rune
-		x6    bool
-		ok    bool
-		v9    any
-		v12   any
-		v15   any
-		v18   any
-		v21   any
-		v24   any
-		v27   any
-		v30   any
-		v33   any
-		v36   any
-		v39   any
-		v41   any
-		v44   any
-		v46   any
-		v48   any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 112)) && p.Depth+2 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 21)
-		goto L7
-	}
-	if v9, ok = s26(p); !ok {
-		goto L8
-	}
-	v3 = v9
-	goto L4
-L8:
-	p.Restore(x1, x2)
-L7:
-	if !(x6 && (x5 == 98)) && p.Depth+2 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 22)
-		goto L10
-	}
-	if v12, ok = s27(p); !ok {
-		goto L11
-	}
-	v3 = v12
-	goto L4
-L11:
-	p.Restore(x1, x2)
-L10:
-	if !(x6 && (x5 == 99)) && p.Depth+2 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 23)
-		goto L13
-	}
-	if v15, ok = s28(p); !ok {
-		goto L14
-	}
-	v3 = v15
-	goto L4
-L14:
-	p.Restore(x1, x2)
-L13:
-	if !(x6 && (x5 == 114)) && p.Depth+2 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 24)
-		goto L16
-	}
-	if v18, ok = u29(p); !ok {
-		goto L17
-	}
-	v3 = v18
-	goto L4
-L17:
-	p.Restore(x1, x2)
-L16:
-	if !(x6 && (x5 == 114)) && p.Depth+2 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 25)
-		goto L19
-	}
-	if v21, ok = u30(p); !ok {
-		goto L20
-	}
-	v3 = v21
-	goto L4
-L20:
-	p.Restore(x1, x2)
-L19:
-	if !(x6 && (x5 == 103)) && p.Depth+2 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 26)
-		goto L22
-	}
-	if v24, ok = u31(p); !ok {
-		goto L23
-	}
-	v3 = v24
-	goto L4
-L23:
-	p.Restore(x1, x2)
-L22:
-	if !(x6 && (x5 == 110)) && p.Depth+2 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 27)
-		goto L25
-	}
-	if v27, ok = u32(p); !ok {
-		goto L26
-	}
-	v3 = v27
-	goto L4
-L26:
-	p.Restore(x1, x2)
-L25:
-	if !(x6 && (x5 == 100)) && p.Depth+2 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 28)
-		goto L28
-	}
-	if v30, ok = u33(p); !ok {
-		goto L29
-	}
-	v3 = v30
-	goto L4
-L29:
-	p.Restore(x1, x2)
-L28:
-	if !(x6 && (x5 == 97)) && p.Depth+2 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 29)
-		goto L31
-	}
-	if v33, ok = u34(p); !ok {
-		goto L32
-	}
-	v3 = v33
-	goto L4
-L32:
-	p.Restore(x1, x2)
-L31:
-	if !(x6 && (x5 == 105)) && p.Depth+2 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 30)
-		goto L34
-	}
-	if v36, ok = u37(p); !ok {
-		goto L35
-	}
-	v3 = v36
-	goto L4
-L35:
-	p.Restore(x1, x2)
-L34:
-	if !(x6 && (x5 == 102)) && p.Depth+2 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 31)
-		goto L37
-	}
-	if v39, ok = u40(p); !ok {
-		goto L38
-	}
-	v3 = v39
-	goto L4
-L38:
-	p.Restore(x1, x2)
-L37:
-
-	if v41, ok = u35(p); !ok {
-		goto L40
-	}
-	v3 = v41
-	goto L4
-L40:
-	p.Restore(x1, x2)
-	if !(x6 && (x5 == 116)) && p.Depth+2 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 32)
-		goto L42
-	}
-	if v44, ok = u36(p); !ok {
-		goto L43
-	}
-	v3 = v44
-	goto L4
-L43:
-	p.Restore(x1, x2)
-L42:
-
-	if v46, ok = u17(p); !ok {
-		goto L45
-	}
-	v3 = v46
-	goto L4
-L45:
-	p.Restore(x1, x2)
-	if v48, ok = s18(p); !ok {
-		goto L47
-	}
-	v3 = v48
-	goto L4
-L47:
-	p.Restore(x1, x2)
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -6805,7 +6552,7 @@ fail:
 // annotated_rhs, called as by call
 func u25(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[25]) {
-		return p.CallMemo(trules[25], i25)
+		return p.CallMemo(trules[25], v25)
 	}
 	return v25(p)
 }
@@ -6851,48 +6598,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// annotated_rhs, invoked as by invoke (body inlined)
-func i25(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		v8    any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if v6, ok = u163(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	if v8, ok = u144(p); !ok {
-		goto L7
-	}
-	v3 = v8
-	goto L4
-L7:
-	p.Restore(x1, x2)
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -9793,7 +9498,7 @@ fail:
 // with_items, called as by call
 func u58(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[58]) {
-		return p.CallMemo(trules[58], i58)
+		return p.CallMemo(trules[58], v58)
 	}
 	return v58(p)
 }
@@ -9848,57 +9553,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// with_items, invoked as by invoke (body inlined)
-func i58(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		x5    rune
-		x6    bool
-		ok    bool
-		v9    any
-		v11   any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 40)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 35)
-		goto L7
-	}
-	if v9, ok = u59(p); !ok {
-		goto L8
-	}
-	v3 = v9
-	goto L4
-L8:
-	p.Restore(x1, x2)
-L7:
-
-	if v11, ok = u60(p); !ok {
-		goto L10
-	}
-	v3 = v11
-	goto L4
-L10:
-	p.Restore(x1, x2)
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -10164,7 +9818,7 @@ fail:
 // with_item, called as by call
 func u61(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[61]) {
-		return p.CallMemo(trules[61], i61)
+		return p.CallMemo(trules[61], v61)
 	}
 	return v61(p)
 }
@@ -10210,48 +9864,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// with_item, invoked as by invoke (body inlined)
-func i61(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		v8    any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if v6, ok = u62(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	if v8, ok = u63(p); !ok {
-		goto L7
-	}
-	v3 = v8
-	goto L4
-L7:
-	p.Restore(x1, x2)
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -12916,7 +12528,7 @@ fail:
 // pattern, called as by call
 func u89(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[89]) {
-		return p.CallMemo(trules[89], i89)
+		return p.CallMemo(trules[89], v89)
 	}
 	return v89(p)
 }
@@ -12962,48 +12574,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// pattern, invoked as by invoke (body inlined)
-func i89(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		v8    any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if v6, ok = u90(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	if v8, ok = u91(p); !ok {
-		goto L7
-	}
-	v3 = v8
-	goto L4
-L7:
-	p.Restore(x1, x2)
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -13245,7 +12815,7 @@ fail:
 // closed_pattern, called as by call
 func u92(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[92]) {
-		return p.CallMemo(trules[92], i92)
+		return p.CallMemo(trules[92], v92)
 	}
 	return v92(p)
 }
@@ -13360,117 +12930,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// closed_pattern, invoked as by invoke (body inlined)
-func i92(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		v8    any
-		x9    rune
-		x10   bool
-		v13   any
-		v15   any
-		v18   any
-		v20   any
-		v23   any
-		v25   any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if v6, ok = s93(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	if v8, ok = u108(p); !ok {
-		goto L7
-	}
-	v3 = v8
-	goto L4
-L7:
-	p.Restore(x1, x2)
-	x9, _, x10 = p.NextOrdinary()
-	if !(x10 && (x9 == 95)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 67)
-		goto L11
-	}
-	if v13, ok = s110(p); !ok {
-		goto L12
-	}
-	v3 = v13
-	goto L4
-L12:
-	p.Restore(x1, x2)
-L11:
-
-	if v15, ok = u111(p); !ok {
-		goto L14
-	}
-	v3 = v15
-	goto L4
-L14:
-	p.Restore(x1, x2)
-	if !(x10 && (x9 == 40)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 35)
-		goto L16
-	}
-	if v18, ok = u114(p); !ok {
-		goto L17
-	}
-	v3 = v18
-	goto L4
-L17:
-	p.Restore(x1, x2)
-L16:
-
-	if v20, ok = s115(p); !ok {
-		goto L19
-	}
-	v3 = v20
-	goto L4
-L19:
-	p.Restore(x1, x2)
-	if !(x10 && (x9 == 123)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 68)
-		goto L21
-	}
-	if v23, ok = u122(p); !ok {
-		goto L22
-	}
-	v3 = v23
-	goto L4
-L22:
-	p.Restore(x1, x2)
-L21:
-
-	if v25, ok = u125(p); !ok {
-		goto L24
-	}
-	v3 = v25
-	goto L4
-L24:
-	p.Restore(x1, x2)
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -13737,7 +13196,7 @@ fail:
 // singleton, called as by call
 func u98(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[98]) {
-		return p.CallMemo(trules[98], i98)
+		return p.CallMemo(trules[98], v98)
 	}
 	return v98(p)
 }
@@ -13827,92 +13286,6 @@ L15:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// singleton, invoked as by invoke (body inlined)
-func i98(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		x3    int
-		x5    rune
-		x6    bool
-		ok    bool
-		x13   int
-		x14   int
-		v16   any
-		bv    any
-	)
-	start = p.Pos
-	p.Enter()
-	x1 = p.Pos
-	x2, x3 = p.Pos, len(p.Recovered)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 78)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 70)
-		goto L7
-	}
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 78 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 110 && p.In[p.Pos+3] == 101 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit193, "None", 70, false); !ok {
-		goto L8
-	}
-	goto L4
-L8:
-	p.Restore(x2, x3)
-L7:
-	if !(x6 && (x5 == 84)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 71)
-		goto L9
-	}
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 84 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit194, "True", 71, false); !ok {
-		goto L10
-	}
-	goto L4
-L10:
-	p.Restore(x2, x3)
-L9:
-	if !(x6 && (x5 == 70)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 72)
-		goto L11
-	}
-	if _, ok = p.Parser.MatchLiteral(lit195, "False", 72, false); !ok {
-		goto L12
-	}
-	goto L4
-L12:
-	p.Restore(x2, x3)
-L11:
-	goto fail
-L4:
-
-	x13, x14 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L15
-	}
-	p.Silent--
-	p.Restore(x13, x14)
-	goto fail
-L15:
-	p.Silent--
-	p.Restore(x13, x14)
-	v16 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v16)
-	v = p.ScopeValue(sh8, v16, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	v = p.TConvertResultOwned(trules[98], v, bv)
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -14043,7 +13416,7 @@ fail:
 // signed_number, called as by call
 func u101(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[101]) {
-		return p.CallMemo(trules[101], i101)
+		return p.CallMemo(trules[101], v101)
 	}
 	return v101(p)
 }
@@ -14097,56 +13470,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// signed_number, invoked as by invoke (body inlined)
-func i101(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		x7    rune
-		x8    bool
-		v11   any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if v6, ok = u285(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	x7, _, x8 = p.NextOrdinary()
-	if !(x8 && (x7 == 45)) && p.Depth+2 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 73)
-		goto L9
-	}
-	if v11, ok = u102(p); !ok {
-		goto L10
-	}
-	v3 = v11
-	goto L4
-L10:
-	p.Restore(x1, x2)
-L9:
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -15645,7 +14968,7 @@ fail:
 // maybe_star_pattern, called as by call
 func u120(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[120]) {
-		return p.CallMemo(trules[120], i120)
+		return p.CallMemo(trules[120], v120)
 	}
 	return v120(p)
 }
@@ -15700,57 +15023,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// maybe_star_pattern, invoked as by invoke (body inlined)
-func i120(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		x5    rune
-		x6    bool
-		ok    bool
-		v9    any
-		v11   any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 42)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 52)
-		goto L7
-	}
-	if v9, ok = u121(p); !ok {
-		goto L8
-	}
-	v3 = v9
-	goto L4
-L8:
-	p.Restore(x1, x2)
-L7:
-
-	if v11, ok = u89(p); !ok {
-		goto L10
-	}
-	v3 = v11
-	goto L4
-L10:
-	p.Restore(x1, x2)
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -16882,7 +16154,7 @@ fail:
 // type_param, called as by call
 func u130(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[130]) {
-		return p.CallMemo(trules[130], i130)
+		return p.CallMemo(trules[130], v130)
 	}
 	return v130(p)
 }
@@ -16949,69 +16221,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// type_param, invoked as by invoke (body inlined)
-func i130(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		x7    rune
-		x8    bool
-		v11   any
-		v14   any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if v6, ok = u131(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	x7, _, x8 = p.NextOrdinary()
-	if !(x8 && (x7 == 42)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 52)
-		goto L9
-	}
-	if v11, ok = u132(p); !ok {
-		goto L10
-	}
-	v3 = v11
-	goto L4
-L10:
-	p.Restore(x1, x2)
-L9:
-	if !(x8 && (x7 == 42)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 79)
-		goto L12
-	}
-	if v14, ok = u133(p); !ok {
-		goto L13
-	}
-	v3 = v14
-	goto L4
-L13:
-	p.Restore(x1, x2)
-L12:
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -18910,7 +18119,7 @@ fail:
 // star_expression, called as by call
 func u145(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[145]) {
-		return p.CallMemo(trules[145], i145)
+		return p.CallMemo(trules[145], v145)
 	}
 	return v145(p)
 }
@@ -18968,61 +18177,10 @@ fail:
 	return nil, false
 }
 
-// star_expression, invoked as by invoke (body inlined)
-func i145(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		x5    rune
-		x6    bool
-		ok    bool
-		v9    any
-		v11   any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 42)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 52)
-		goto L7
-	}
-	if v9, ok = u147(p); !ok {
-		goto L8
-	}
-	v3 = v9
-	goto L4
-L8:
-	p.Restore(x1, x2)
-L7:
-
-	if v11, ok = u152(p); !ok {
-		goto L10
-	}
-	v3 = v11
-	goto L4
-L10:
-	p.Restore(x1, x2)
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // star_named_expression, called as by call
 func u146(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[146]) {
-		return p.CallMemo(trules[146], i146)
+		return p.CallMemo(trules[146], v146)
 	}
 	return v146(p)
 }
@@ -19077,57 +18235,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// star_named_expression, invoked as by invoke (body inlined)
-func i146(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		x5    rune
-		x6    bool
-		ok    bool
-		v9    any
-		v11   any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 42)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 52)
-		goto L7
-	}
-	if v9, ok = u147(p); !ok {
-		goto L8
-	}
-	v3 = v9
-	goto L4
-L8:
-	p.Restore(x1, x2)
-L7:
-
-	if v11, ok = u149(p); !ok {
-		goto L10
-	}
-	v3 = v11
-	goto L4
-L10:
-	p.Restore(x1, x2)
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -19288,7 +18395,7 @@ fail:
 // named_expression, called as by call
 func u149(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[149]) {
-		return p.CallMemo(trules[149], i149)
+		return p.CallMemo(trules[149], v149)
 	}
 	return v149(p)
 }
@@ -19334,48 +18441,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// named_expression, invoked as by invoke (body inlined)
-func i149(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		v8    any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if v6, ok = u151(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	if v8, ok = u150(p); !ok {
-		goto L7
-	}
-	v3 = v8
-	goto L4
-L7:
-	p.Restore(x1, x2)
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -19513,7 +18578,7 @@ fail:
 // expression, called as by call
 func u152(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[152]) {
-		return p.CallMemo(trules[152], i152)
+		return p.CallMemo(trules[152], v152)
 	}
 	return v152(p)
 }
@@ -19567,56 +18632,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// expression, invoked as by invoke (body inlined)
-func i152(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		x7    rune
-		x8    bool
-		v11   any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if v6, ok = u153(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	x7, _, x8 = p.NextOrdinary()
-	if !(x8 && (x7 == 108)) && p.Depth+2 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 87)
-		goto L9
-	}
-	if v11, ok = u154(p); !ok {
-		goto L10
-	}
-	v3 = v11
-	goto L4
-L10:
-	p.Restore(x1, x2)
-L9:
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -20804,7 +19819,7 @@ fail:
 // yield_expr, called as by call
 func u163(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[163]) {
-		return p.CallMemo(trules[163], i163)
+		return p.CallMemo(trules[163], v163)
 	}
 	return v163(p)
 }
@@ -20863,61 +19878,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// yield_expr, invoked as by invoke (body inlined)
-func i163(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		x5    rune
-		x6    bool
-		ok    bool
-		v9    any
-		v12   any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 121)) && p.Depth+2 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 89)
-		goto L7
-	}
-	if v9, ok = u164(p); !ok {
-		goto L8
-	}
-	v3 = v9
-	goto L4
-L8:
-	p.Restore(x1, x2)
-L7:
-	if !(x6 && (x5 == 121)) && p.Depth+2 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 89)
-		goto L10
-	}
-	if v12, ok = u165(p); !ok {
-		goto L11
-	}
-	v3 = v12
-	goto L4
-L11:
-	p.Restore(x1, x2)
-L10:
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -21408,7 +20368,7 @@ fail:
 // or_op, called as by call
 func u168(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[168]) {
-		return p.CallMemo(trules[168], i168)
+		return p.CallMemo(trules[168], v168)
 	}
 	return v168(p)
 }
@@ -21460,55 +20420,10 @@ fail:
 	return nil, false
 }
 
-// or_op, invoked as by invoke (body inlined)
-func i168(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		ok    bool
-		x2    int
-		x3    int
-		v5    any
-		bv    any
-	)
-	start = p.Pos
-	p.Enter()
-	x1 = p.Pos
-	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 111 && p.In[p.Pos+1] == 114 {
-		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit295, "or", 90, false); !ok {
-		goto fail
-	}
-	x2, x3 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L4
-	}
-	p.Silent--
-	p.Restore(x2, x3)
-	goto fail
-L4:
-	p.Silent--
-	p.Restore(x2, x3)
-	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(sh8, v5, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	v = p.TConvertResultOwned(trules[168], v, bv)
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // and_op, called as by call
 func u169(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[169]) {
-		return p.CallMemo(trules[169], i169)
+		return p.CallMemo(trules[169], v169)
 	}
 	return v169(p)
 }
@@ -21560,55 +20475,10 @@ fail:
 	return nil, false
 }
 
-// and_op, invoked as by invoke (body inlined)
-func i169(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		ok    bool
-		x2    int
-		x3    int
-		v5    any
-		bv    any
-	)
-	start = p.Pos
-	p.Enter()
-	x1 = p.Pos
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 97 && p.In[p.Pos+1] == 110 && p.In[p.Pos+2] == 100 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit297, "and", 91, false); !ok {
-		goto fail
-	}
-	x2, x3 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L4
-	}
-	p.Silent--
-	p.Restore(x2, x3)
-	goto fail
-L4:
-	p.Silent--
-	p.Restore(x2, x3)
-	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(sh8, v5, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	v = p.TConvertResultOwned(trules[169], v, bv)
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // inversion, called as by call
 func u170(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[170]) {
-		return p.CallMemo(trules[170], i170)
+		return p.CallMemo(trules[170], v170)
 	}
 	return v170(p)
 }
@@ -21663,57 +20533,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// inversion, invoked as by invoke (body inlined)
-func i170(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		x5    rune
-		x6    bool
-		ok    bool
-		v9    any
-		v11   any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 110)) && p.Depth+2 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 92)
-		goto L7
-	}
-	if v9, ok = u171(p); !ok {
-		goto L8
-	}
-	v3 = v9
-	goto L4
-L8:
-	p.Restore(x1, x2)
-L7:
-
-	if v11, ok = u173(p); !ok {
-		goto L10
-	}
-	v3 = v11
-	goto L4
-L10:
-	p.Restore(x1, x2)
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -23202,7 +22021,7 @@ fail:
 // primary, called as by call
 func u185(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[185]) {
-		return p.CallMemo(trules[185], i185)
+		return p.CallMemo(trules[185], v185)
 	}
 	return v185(p)
 }
@@ -23248,48 +22067,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// primary, invoked as by invoke (body inlined)
-func i185(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		v8    any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if v6, ok = u186(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	if v8, ok = p.InvokePlain(trules[187], 0); !ok {
-		goto L7
-	}
-	v3 = v8
-	goto L4
-L7:
-	p.Restore(x1, x2)
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -24784,7 +23561,7 @@ fail:
 // slice_or_star, called as by call
 func u201(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[201]) {
-		return p.CallMemo(trules[201], i201)
+		return p.CallMemo(trules[201], v201)
 	}
 	return v201(p)
 }
@@ -24841,60 +23618,10 @@ fail:
 	return nil, false
 }
 
-// slice_or_star, invoked as by invoke (body inlined)
-func i201(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		x7    rune
-		x8    bool
-		v11   any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if v6, ok = u202(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	x7, _, x8 = p.NextOrdinary()
-	if !(x8 && (x7 == 42)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 52)
-		goto L9
-	}
-	if v11, ok = u148(p); !ok {
-		goto L10
-	}
-	v3 = v11
-	goto L4
-L10:
-	p.Restore(x1, x2)
-L9:
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // slice, called as by call
 func u202(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[202]) {
-		return p.CallMemo(trules[202], i202)
+		return p.CallMemo(trules[202], v202)
 	}
 	return v202(p)
 }
@@ -24940,48 +23667,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// slice, invoked as by invoke (body inlined)
-func i202(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		v8    any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if v6, ok = u203(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	if v8, ok = u149(p); !ok {
-		goto L7
-	}
-	v3 = v8
-	goto L4
-L7:
-	p.Restore(x1, x2)
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -25402,7 +24087,7 @@ fail:
 // atom, called as by call
 func u206(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[206]) {
-		return p.CallMemo(trules[206], i206)
+		return p.CallMemo(trules[206], v206)
 	}
 	return v206(p)
 }
@@ -25504,104 +24189,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// atom, invoked as by invoke (body inlined)
-func i206(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		v8    any
-		v10   any
-		v12   any
-		v14   any
-		v16   any
-		v18   any
-		x19   rune
-		x20   bool
-		v23   any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if v6, ok = u249(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	if v8, ok = u207(p); !ok {
-		goto L7
-	}
-	v3 = v8
-	goto L4
-L7:
-	p.Restore(x1, x2)
-	if v10, ok = u285(p); !ok {
-		goto L9
-	}
-	v3 = v10
-	goto L4
-L9:
-	p.Restore(x1, x2)
-	if v12, ok = s208(p); !ok {
-		goto L11
-	}
-	v3 = v12
-	goto L4
-L11:
-	p.Restore(x1, x2)
-	if v14, ok = s210(p); !ok {
-		goto L13
-	}
-	v3 = v14
-	goto L4
-L13:
-	p.Restore(x1, x2)
-	if v16, ok = s215(p); !ok {
-		goto L15
-	}
-	v3 = v16
-	goto L4
-L15:
-	p.Restore(x1, x2)
-	if v18, ok = s218(p); !ok {
-		goto L17
-	}
-	v3 = v18
-	goto L4
-L17:
-	p.Restore(x1, x2)
-	x19, _, x20 = p.NextOrdinary()
-	if !(x20 && (x19 == 46)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 51)
-		goto L21
-	}
-	if v23, ok = s209(p); !ok {
-		goto L22
-	}
-	v3 = v23
-	goto L4
-L22:
-	p.Restore(x1, x2)
-L21:
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -28425,7 +27012,7 @@ fail:
 // star_target, called as by call
 func u224(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[224]) {
-		return p.CallMemo(trules[224], i224)
+		return p.CallMemo(trules[224], v224)
 	}
 	return v224(p)
 }
@@ -28480,57 +27067,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// star_target, invoked as by invoke (body inlined)
-func i224(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		x5    rune
-		x6    bool
-		ok    bool
-		v9    any
-		v11   any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 42)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 52)
-		goto L7
-	}
-	if v9, ok = u225(p); !ok {
-		goto L8
-	}
-	v3 = v9
-	goto L4
-L8:
-	p.Restore(x1, x2)
-L7:
-
-	if v11, ok = u226(p); !ok {
-		goto L10
-	}
-	v3 = v11
-	goto L4
-L10:
-	p.Restore(x1, x2)
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -28626,7 +27162,7 @@ fail:
 // target_with_star_atom, called as by call
 func u226(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[226]) {
-		return p.CallMemo(trules[226], i226)
+		return p.CallMemo(trules[226], v226)
 	}
 	return v226(p)
 }
@@ -28680,56 +27216,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// target_with_star_atom, invoked as by invoke (body inlined)
-func i226(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		v8    any
-		v10   any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if v6, ok = u227(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	if v8, ok = u228(p); !ok {
-		goto L7
-	}
-	v3 = v8
-	goto L4
-L7:
-	p.Restore(x1, x2)
-	if v10, ok = s229(p); !ok {
-		goto L9
-	}
-	v3 = v10
-	goto L4
-L9:
-	p.Restore(x1, x2)
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -29592,7 +28078,7 @@ fail:
 // single_target, called as by call
 func u235(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[235]) {
-		return p.CallMemo(trules[235], i235)
+		return p.CallMemo(trules[235], v235)
 	}
 	return v235(p)
 }
@@ -29657,68 +28143,10 @@ fail:
 	return nil, false
 }
 
-// single_target, invoked as by invoke (body inlined)
-func i235(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		v8    any
-		x9    rune
-		x10   bool
-		v13   any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if v6, ok = u236(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	if v8, ok = u238(p); !ok {
-		goto L7
-	}
-	v3 = v8
-	goto L4
-L7:
-	p.Restore(x1, x2)
-	x9, _, x10 = p.NextOrdinary()
-	if !(x10 && (x9 == 40)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 35)
-		goto L11
-	}
-	if v13, ok = u237(p); !ok {
-		goto L12
-	}
-	v3 = v13
-	goto L4
-L12:
-	p.Restore(x1, x2)
-L11:
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // single_subscript_attribute_target, called as by call
 func u236(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[236]) {
-		return p.CallMemo(trules[236], i236)
+		return p.CallMemo(trules[236], v236)
 	}
 	return v236(p)
 }
@@ -29764,48 +28192,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// single_subscript_attribute_target, invoked as by invoke (body inlined)
-func i236(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		v8    any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if v6, ok = u227(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	if v8, ok = u228(p); !ok {
-		goto L7
-	}
-	v3 = v8
-	goto L4
-L7:
-	p.Restore(x1, x2)
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -30179,7 +28565,7 @@ fail:
 // del_target, called as by call
 func u241(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[241]) {
-		return p.CallMemo(trules[241], i241)
+		return p.CallMemo(trules[241], v241)
 	}
 	return v241(p)
 }
@@ -30275,98 +28661,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// del_target, invoked as by invoke (body inlined)
-func i241(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		v8    any
-		v10   any
-		x11   rune
-		x12   bool
-		v15   any
-		v18   any
-		v21   any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if v6, ok = u242(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	if v8, ok = u243(p); !ok {
-		goto L7
-	}
-	v3 = v8
-	goto L4
-L7:
-	p.Restore(x1, x2)
-	if v10, ok = u244(p); !ok {
-		goto L9
-	}
-	v3 = v10
-	goto L4
-L9:
-	p.Restore(x1, x2)
-	x11, _, x12 = p.NextOrdinary()
-	if !(x12 && (x11 == 40)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 35)
-		goto L13
-	}
-	if v15, ok = u245(p); !ok {
-		goto L14
-	}
-	v3 = v15
-	goto L4
-L14:
-	p.Restore(x1, x2)
-L13:
-	if !(x12 && (x11 == 40)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 35)
-		goto L16
-	}
-	if v18, ok = u246(p); !ok {
-		goto L17
-	}
-	v3 = v18
-	goto L4
-L17:
-	p.Restore(x1, x2)
-L16:
-	if !(x12 && (x11 == 91)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 77)
-		goto L19
-	}
-	if v21, ok = u247(p); !ok {
-		goto L20
-	}
-	v3 = v21
-	goto L4
-L20:
-	p.Restore(x1, x2)
-L19:
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -31337,7 +29631,7 @@ fail:
 // fjoin_item, called as by call
 func u254(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[254]) {
-		return p.CallMemo(trules[254], i254)
+		return p.CallMemo(trules[254], v254)
 	}
 	return v254(p)
 }
@@ -31383,48 +29677,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// fjoin_item, invoked as by invoke (body inlined)
-func i254(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		v3    any
-		ok    bool
-		v6    any
-		v8    any
-	)
-	start = p.Pos
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if v6, ok = u267(p); !ok {
-		goto L5
-	}
-	v3 = v6
-	goto L4
-L5:
-	p.Restore(x1, x2)
-	if v8, ok = u255(p); !ok {
-		goto L7
-	}
-	v3 = v8
-	goto L4
-L7:
-	p.Restore(x1, x2)
-	goto fail
-L4:
-	v = p.ScopeValue(sh8, v3, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -32272,7 +30524,7 @@ fail:
 // ftext, called as by call
 func u272(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[272]) {
-		return p.CallMemo(trules[272], i272)
+		return p.CallMemo(trules[272], v272)
 	}
 	return v272(p)
 }
@@ -32406,137 +30658,10 @@ fail:
 	return nil, false
 }
 
-// ftext, invoked as by invoke (body inlined)
-func i272(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		x3    int
-		x4    int
-		x6    int
-		x7    int
-		ch    rune
-		size  int
-		ok    bool
-		x10   int
-		x12   rune
-		x13   bool
-		v20   any
-		bv    any
-	)
-	start = p.Pos
-	p.Enter()
-	_ = x2
-	x1 = p.Pos
-	if !p.Predicate(func(c *pegort.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any {
-					return c.Binary("/", func() any { return c.Lookup("lv") }(), func() any { return any(4096) }())
-				}(), func() any { return any(2) }())
-			}(), func() any { return any(0) }())
-		}()
-	}) {
-		goto fail
-	}
-	x2 = 0
-	for {
-		x3, x4 = p.Pos, len(p.Recovered)
-		x6, x7 = p.Pos, len(p.Recovered)
-		x10 = 0
-		for {
-			ch, size, ok = p.NextOrdinary()
-			if !ok || (ch == 39 || ch == 34 || ch == 92 || ch == 123 || ch == 125 || ch == 10 || ch == 13 || ch == 0) {
-				p.ExpectOrdinary(p.Pos, 146)
-				break
-			}
-			p.Pos += size
-			x10++
-		}
-		if x10 < 1 {
-			goto L9
-		}
-		goto L8
-	L9:
-		p.Restore(x6, x7)
-		if _, ok = u388(p); !ok {
-			goto L11
-		}
-		goto L8
-	L11:
-		p.Restore(x6, x7)
-		x12, _, x13 = p.NextOrdinary()
-		if !(x13 && (x12 == 123)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 147)
-			goto L14
-		}
-		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 123 && p.In[p.Pos+1] == 123 {
-			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit455, "{{", 147, false); !ok {
-			goto L15
-		}
-		goto L8
-	L15:
-		p.Restore(x6, x7)
-	L14:
-		if !(x13 && (x12 == 125)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 148)
-			goto L16
-		}
-		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 125 && p.In[p.Pos+1] == 125 {
-			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit456, "}}", 148, false); !ok {
-			goto L17
-		}
-		goto L8
-	L17:
-		p.Restore(x6, x7)
-	L16:
-		if !(x13 && (x12 == 92)) && p.Depth+1 <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 9)
-			goto L18
-		}
-		if _, ok = u389(p); !ok {
-			goto L19
-		}
-		goto L8
-	L19:
-		p.Restore(x6, x7)
-	L18:
-		goto L5
-	L8:
-		x2++
-		if p.Pos == x3 {
-			break
-		}
-		continue
-	L5:
-		p.Restore(x3, x4)
-		break
-	}
-	if x2 < 1 {
-		goto fail
-	}
-	v20 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v20)
-	v = p.ScopeValue(sh8, v20, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	v = p.TConvertResultOwned(trules[272], v, bv)
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // fraw_text, called as by call
 func u273(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[273]) {
-		return p.CallMemo(trules[273], i273)
+		return p.CallMemo(trules[273], v273)
 	}
 	return v273(p)
 }
@@ -32667,133 +30792,6 @@ func v273(p *pegort.TParser) (any, bool) {
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// fraw_text, invoked as by invoke (body inlined)
-func i273(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		x3    int
-		x4    int
-		x6    int
-		x7    int
-		ch    rune
-		size  int
-		ok    bool
-		x10   int
-		x12   rune
-		x13   bool
-		v20   any
-		bv    any
-	)
-	start = p.Pos
-	p.Enter()
-	_ = x2
-	x1 = p.Pos
-	if !p.Predicate(func(c *pegort.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any {
-					return c.Binary("/", func() any { return c.Lookup("lv") }(), func() any { return any(4096) }())
-				}(), func() any { return any(2) }())
-			}(), func() any { return any(1) }())
-		}()
-	}) {
-		goto fail
-	}
-	x2 = 0
-	for {
-		x3, x4 = p.Pos, len(p.Recovered)
-		x6, x7 = p.Pos, len(p.Recovered)
-		x10 = 0
-		for {
-			ch, size, ok = p.NextOrdinary()
-			if !ok || (ch == 39 || ch == 34 || ch == 92 || ch == 123 || ch == 125 || ch == 10 || ch == 13 || ch == 0) {
-				p.ExpectOrdinary(p.Pos, 146)
-				break
-			}
-			p.Pos += size
-			x10++
-		}
-		if x10 < 1 {
-			goto L9
-		}
-		goto L8
-	L9:
-		p.Restore(x6, x7)
-		if _, ok = u388(p); !ok {
-			goto L11
-		}
-		goto L8
-	L11:
-		p.Restore(x6, x7)
-		x12, _, x13 = p.NextOrdinary()
-		if !(x13 && (x12 == 123)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 147)
-			goto L14
-		}
-		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 123 && p.In[p.Pos+1] == 123 {
-			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit455, "{{", 147, false); !ok {
-			goto L15
-		}
-		goto L8
-	L15:
-		p.Restore(x6, x7)
-	L14:
-		if !(x13 && (x12 == 125)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 148)
-			goto L16
-		}
-		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 125 && p.In[p.Pos+1] == 125 {
-			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit456, "}}", 148, false); !ok {
-			goto L17
-		}
-		goto L8
-	L17:
-		p.Restore(x6, x7)
-	L16:
-		if !(x13 && (x12 == 92)) && p.Depth+1 <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 9)
-			goto L18
-		}
-		if _, ok = s390(p); !ok {
-			goto L19
-		}
-		goto L8
-	L19:
-		p.Restore(x6, x7)
-	L18:
-		goto L5
-	L8:
-		x2++
-		if p.Pos == x3 {
-			break
-		}
-		continue
-	L5:
-		p.Restore(x3, x4)
-		break
-	}
-	if x2 < 1 {
-		goto fail
-	}
-	v20 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v20)
-	v = p.ScopeValue(sh8, v20, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	v = p.TConvertResultOwned(trules[273], v, bv)
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -33181,7 +31179,7 @@ fail:
 // fdebug, called as by call
 func u279(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[279]) {
-		return p.CallMemo(trules[279], i279)
+		return p.CallMemo(trules[279], v279)
 	}
 	return v279(p)
 }
@@ -33231,52 +31229,6 @@ func v279(p *pegort.TParser) (any, bool) {
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// fdebug, invoked as by invoke (body inlined)
-func i279(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    []any
-		ok    bool
-		v3    any
-		x4    int
-		v5    any
-		v6    any
-		v7    any
-	)
-	start = p.Pos
-	p.Enter()
-	x1 = p.Pos
-	x2 = p.NewVals(3)[:0]
-	if v3, ok = s14(p); !ok {
-		goto fail
-	}
-	x2 = append(x2, v3)
-	x4 = p.Pos
-	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
-		goto fail
-	}
-	v5 = p.NewMatchOrdinary(x4, p.Pos, "=", true)
-	x2 = append(x2, v5)
-	if v6, ok = s14(p); !ok {
-		goto fail
-	}
-	x2 = append(x2, v6)
-	v7 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh11, v7, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -33713,7 +31665,7 @@ fail:
 // number, called as by call
 func u285(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[285]) {
-		return p.CallMemo(trules[285], i285)
+		return p.CallMemo(trules[285], v285)
 	}
 	return v285(p)
 }
@@ -33799,89 +31751,10 @@ fail:
 	return nil, false
 }
 
-// number, invoked as by invoke (body inlined)
-func i285(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		x3    int
-		x5    rune
-		x6    bool
-		ok    bool
-		v14   any
-		bv    any
-	)
-	start = p.Pos
-	p.Enter()
-	x1 = p.Pos
-	x2, x3 = p.Pos, len(p.Recovered)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 48)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 156)
-		goto L7
-	}
-	if _, ok = s391(p); !ok {
-		goto L8
-	}
-	goto L4
-L8:
-	p.Restore(x2, x3)
-L7:
-	if !(x6 && (x5 == 48)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 156)
-		goto L9
-	}
-	if _, ok = s392(p); !ok {
-		goto L10
-	}
-	goto L4
-L10:
-	p.Restore(x2, x3)
-L9:
-	if !(x6 && (x5 == 48)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 156)
-		goto L11
-	}
-	if _, ok = s393(p); !ok {
-		goto L12
-	}
-	goto L4
-L12:
-	p.Restore(x2, x3)
-L11:
-
-	if _, ok = s394(p); !ok {
-		goto L13
-	}
-	goto L4
-L13:
-	p.Restore(x2, x3)
-	goto fail
-L4:
-
-	if _, ok = s395(p); !ok {
-		goto fail
-	}
-	v14 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v14)
-	v = p.ScopeValue(sh8, v14, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	v = p.TConvertResultOwned(trules[285], v, bv)
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // real_number, called as by call
 func u286(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[286]) {
-		return p.CallMemo(trules[286], i286)
+		return p.CallMemo(trules[286], v286)
 	}
 	return v286(p)
 }
@@ -33985,103 +31858,6 @@ fail:
 	return nil, false
 }
 
-// real_number, invoked as by invoke (body inlined)
-func i286(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		x3    int
-		x5    rune
-		x6    bool
-		ok    bool
-		x14   int
-		x15   int
-		ch    rune
-		size  int
-		v17   any
-		bv    any
-	)
-	start = p.Pos
-	p.Enter()
-	x1 = p.Pos
-	x2, x3 = p.Pos, len(p.Recovered)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 48)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 156)
-		goto L7
-	}
-	if _, ok = s391(p); !ok {
-		goto L8
-	}
-	goto L4
-L8:
-	p.Restore(x2, x3)
-L7:
-	if !(x6 && (x5 == 48)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 156)
-		goto L9
-	}
-	if _, ok = s392(p); !ok {
-		goto L10
-	}
-	goto L4
-L10:
-	p.Restore(x2, x3)
-L9:
-	if !(x6 && (x5 == 48)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 156)
-		goto L11
-	}
-	if _, ok = s393(p); !ok {
-		goto L12
-	}
-	goto L4
-L12:
-	p.Restore(x2, x3)
-L11:
-
-	if _, ok = s396(p); !ok {
-		goto L13
-	}
-	goto L4
-L13:
-	p.Restore(x2, x3)
-	goto fail
-L4:
-
-	x14, x15 = p.Pos, len(p.Recovered)
-	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 106 || ch == 74) {
-		p.ExpectOrdinary(p.Pos, 157)
-		goto L16
-	}
-	p.Pos += size
-	p.Silent--
-	p.Restore(x14, x15)
-	goto fail
-L16:
-	p.Silent--
-	p.Restore(x14, x15)
-	if _, ok = s395(p); !ok {
-		goto fail
-	}
-	v17 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v17)
-	v = p.ScopeValue(sh8, v17, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	v = p.TConvertResultOwned(trules[286], v, bv)
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // imag_number, called as by invokePlain (body inlined)
 func s287(p *pegort.TParser) (any, bool) {
 	var (
@@ -34171,7 +31947,7 @@ fail:
 // ident, called as by call
 func u299(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[299]) {
-		return p.CallMemo(trules[299], i299)
+		return p.CallMemo(trules[299], v299)
 	}
 	return v299(p)
 }
@@ -34237,69 +32013,10 @@ fail:
 	return nil, false
 }
 
-// ident, invoked as by invoke (body inlined)
-func i299(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		x3    int
-		ok    bool
-		x5    int
-		x6    int
-		x7    int
-		v9    any
-	)
-	start = p.Pos
-	p.Enter()
-	_ = x5
-	x1 = p.Pos
-	x2, x3 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = s400(p); !ok {
-		goto L4
-	}
-	p.Silent--
-	p.Restore(x2, x3)
-	goto fail
-L4:
-	p.Silent--
-	p.Restore(x2, x3)
-	if _, ok = s401(p); !ok {
-		goto fail
-	}
-	x5 = 0
-	for {
-		x6, x7 = p.Pos, len(p.Recovered)
-		if _, ok = u374(p); !ok {
-			goto L8
-		}
-		x5++
-		if p.Pos == x6 {
-			break
-		}
-		continue
-	L8:
-		p.Restore(x6, x7)
-		break
-	}
-	v9 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(sh8, v9, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // identifier, called as by call
 func u300(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[300]) {
-		return p.CallMemo(trules[300], i300)
+		return p.CallMemo(trules[300], v300)
 	}
 	return v300(p)
 }
@@ -34336,40 +32053,10 @@ fail:
 	return nil, false
 }
 
-// identifier, invoked as by invoke (body inlined)
-func i300(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		ok    bool
-		v2    any
-		bv    any
-	)
-	start = p.Pos
-	p.Enter()
-	x1 = p.Pos
-	if _, ok = u402(p); !ok {
-		goto fail
-	}
-	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
-	v = p.ScopeValue(sh8, v2, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	v = p.TConvertResultOwned(trules[300], v, bv)
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // kw_async, called as by call
 func u306(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[306]) {
-		return p.CallMemo(trules[306], i306)
+		return p.CallMemo(trules[306], v306)
 	}
 	return v306(p)
 }
@@ -34423,57 +32110,10 @@ fail:
 	return nil, false
 }
 
-// kw_async, invoked as by invoke (body inlined)
-func i306(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    []any
-		x3    int
-		ok    bool
-		v4    any
-		x5    int
-		x6    int
-		v8    any
-	)
-	start = p.Pos
-	p.Enter()
-	x1 = p.Pos
-	x2 = p.NewVals(1)[:0]
-	x3 = p.Pos
-	if _, ok = p.Parser.MatchLiteral(lit496, "async", 59, false); !ok {
-		goto fail
-	}
-	v4 = p.NewMatchOrdinary(x3, p.Pos, "async", true)
-	x2 = append(x2, v4)
-	x5, x6 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L7
-	}
-	p.Silent--
-	p.Restore(x5, x6)
-	goto fail
-L7:
-	p.Silent--
-	p.Restore(x5, x6)
-	v8 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh14, v8, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // kw_else, called as by call
 func u315(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[315]) {
-		return p.CallMemo(trules[315], i315)
+		return p.CallMemo(trules[315], v315)
 	}
 	return v315(p)
 }
@@ -34529,59 +32169,10 @@ fail:
 	return nil, false
 }
 
-// kw_else, invoked as by invoke (body inlined)
-func i315(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    []any
-		x3    int
-		ok    bool
-		v4    any
-		x5    int
-		x6    int
-		v8    any
-	)
-	start = p.Pos
-	p.Enter()
-	x1 = p.Pos
-	x2 = p.NewVals(1)[:0]
-	x3 = p.Pos
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit487, "else", 166, false); !ok {
-		goto fail
-	}
-	v4 = p.NewMatchOrdinary(x3, p.Pos, "else", true)
-	x2 = append(x2, v4)
-	x5, x6 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L7
-	}
-	p.Silent--
-	p.Restore(x5, x6)
-	goto fail
-L7:
-	p.Silent--
-	p.Restore(x5, x6)
-	v8 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh14, v8, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // kw_if, called as by call
 func u321(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[321]) {
-		return p.CallMemo(trules[321], i321)
+		return p.CallMemo(trules[321], v321)
 	}
 	return v321(p)
 }
@@ -34637,59 +32228,10 @@ fail:
 	return nil, false
 }
 
-// kw_if, invoked as by invoke (body inlined)
-func i321(p *pegort.TParser) (any, bool) {
-	var (
-		start int
-		v     any
-		x1    int
-		x2    []any
-		x3    int
-		ok    bool
-		v4    any
-		x5    int
-		x6    int
-		v8    any
-	)
-	start = p.Pos
-	p.Enter()
-	x1 = p.Pos
-	x2 = p.NewVals(1)[:0]
-	x3 = p.Pos
-	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
-		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit509, "if", 54, false); !ok {
-		goto fail
-	}
-	v4 = p.NewMatchOrdinary(x3, p.Pos, "if", true)
-	x2 = append(x2, v4)
-	x5, x6 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L7
-	}
-	p.Silent--
-	p.Restore(x5, x6)
-	goto fail
-L7:
-	p.Silent--
-	p.Restore(x5, x6)
-	v8 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(sh14, v8, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // blank, called as by call
 func u337(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[337]) {
-		return p.CallMemo(trules[337], i337)
+		return p.CallMemo(trules[337], v337)
 	}
 	return v337(p)
 }
@@ -34780,91 +32322,6 @@ L11:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// blank, invoked as by invoke (body inlined)
-func i337(p *pegort.TParser) (any, bool) {
-	var (
-		v    any
-		ch   rune
-		size int
-		ok   bool
-		x1   int
-		x2   int
-		x3   int
-		x5   int
-		x6   int
-		x8   int
-		x9   int
-	)
-	p.Enter()
-	_ = x1
-	for {
-		ch, size, ok = p.NextOrdinary()
-		if !ok || !(ch == 32 || ch == 9 || ch == 12) {
-			p.ExpectOrdinary(p.Pos, 8)
-			break
-		}
-		p.Pos += size
-	}
-	x1 = 0
-	for {
-		x2, x3 = p.Pos, len(p.Recovered)
-		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
-			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
-			goto L4
-		}
-		if _, ok = s342(p); !ok {
-			goto L4
-		}
-		x5, x6 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if !p.AtEndBatchOrdinary() {
-			p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
-			goto L7
-		}
-		p.Silent--
-		p.Restore(x5, x6)
-		goto L4
-	L7:
-		p.Silent--
-		p.Restore(x5, x6)
-		for {
-			ch, size, ok = p.NextOrdinary()
-			if !ok || !(ch == 32 || ch == 9 || ch == 12) {
-				p.ExpectOrdinary(p.Pos, 8)
-				break
-			}
-			p.Pos += size
-		}
-		x1++
-		if p.Pos == x2 {
-			break
-		}
-		continue
-	L4:
-		p.Restore(x2, x3)
-		break
-	}
-	x8, x9 = p.Pos, len(p.Recovered)
-	if _, ok = s403(p); !ok {
-		goto L10
-	}
-	goto L11
-L10:
-	p.Restore(x8, x9)
-L11:
-
-	if _, ok = s342(p); !ok {
-		goto fail
-	}
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -35301,7 +32758,7 @@ fail:
 // eol, called as by call
 func u341(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[341]) {
-		return p.CallMemo(trules[341], i341)
+		return p.CallMemo(trules[341], v341)
 	}
 	return v341(p)
 }
@@ -35354,53 +32811,6 @@ L7:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// eol, invoked as by invoke (body inlined)
-func i341(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		ok bool
-		x1 int
-		x2 int
-		x5 int
-		x6 int
-	)
-	p.Enter()
-	if _, ok = s339(p); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	if _, ok = s403(p); !ok {
-		goto L3
-	}
-	goto L4
-L3:
-	p.Restore(x1, x2)
-L4:
-
-	x5, x6 = p.Pos, len(p.Recovered)
-	if _, ok = s342(p); !ok {
-		goto L8
-	}
-	goto L7
-L8:
-	p.Restore(x5, x6)
-	if !p.AtEndBatchOrdinary() {
-		p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
-		goto L9
-	}
-	goto L7
-L9:
-	p.Restore(x5, x6)
-	goto fail
-L7:
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -35836,7 +33246,7 @@ fail:
 // kw_from, called as by call
 func u349(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[349]) {
-		return p.CallMemo(trules[349], i349)
+		return p.CallMemo(trules[349], v349)
 	}
 	return v349(p)
 }
@@ -35875,39 +33285,6 @@ L3:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// kw_from, invoked as by invoke (body inlined)
-func i349(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		ok bool
-		x1 int
-		x2 int
-	)
-	p.Enter()
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 111 && p.In[p.Pos+3] == 109 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit507, "from", 31, false); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -36093,7 +33470,7 @@ fail:
 // kw_import, called as by call
 func u355(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[355]) {
-		return p.CallMemo(trules[355], i355)
+		return p.CallMemo(trules[355], v355)
 	}
 	return v355(p)
 }
@@ -36133,41 +33510,10 @@ fail:
 	return nil, false
 }
 
-// kw_import, invoked as by invoke (body inlined)
-func i355(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		ok bool
-		x1 int
-		x2 int
-	)
-	p.Enter()
-	if _, ok = p.Parser.MatchLiteral(lit510, "import", 30, false); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // kw_as, called as by call
 func u356(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[356]) {
-		return p.CallMemo(trules[356], i356)
+		return p.CallMemo(trules[356], v356)
 	}
 	return v356(p)
 }
@@ -36209,43 +33555,10 @@ fail:
 	return nil, false
 }
 
-// kw_as, invoked as by invoke (body inlined)
-func i356(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		ok bool
-		x1 int
-		x2 int
-	)
-	p.Enter()
-	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 97 && p.In[p.Pos+1] == 115 {
-		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit497, "as", 173, false); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // kw_if, called as by call
 func u357(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[357]) {
-		return p.CallMemo(trules[357], i357)
+		return p.CallMemo(trules[357], v357)
 	}
 	return v357(p)
 }
@@ -36284,39 +33597,6 @@ L3:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// kw_if, invoked as by invoke (body inlined)
-func i357(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		ok bool
-		x1 int
-		x2 int
-	)
-	p.Enter()
-	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
-		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit509, "if", 54, false); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -36481,7 +33761,7 @@ fail:
 // kw_else, called as by call
 func u360(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[360]) {
-		return p.CallMemo(trules[360], i360)
+		return p.CallMemo(trules[360], v360)
 	}
 	return v360(p)
 }
@@ -36523,39 +33803,6 @@ fail:
 	return nil, false
 }
 
-// kw_else, invoked as by invoke (body inlined)
-func i360(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		ok bool
-		x1 int
-		x2 int
-	)
-	p.Enter()
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit487, "else", 166, false); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // kw_while, called as by invokePlain (body inlined)
 func s361(p *pegort.TParser) (any, bool) {
 	var (
@@ -36594,7 +33841,7 @@ fail:
 // kw_for, called as by call
 func u362(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[362]) {
-		return p.CallMemo(trules[362], i362)
+		return p.CallMemo(trules[362], v362)
 	}
 	return v362(p)
 }
@@ -36636,43 +33883,10 @@ fail:
 	return nil, false
 }
 
-// kw_for, invoked as by invoke (body inlined)
-func i362(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		ok bool
-		x1 int
-		x2 int
-	)
-	p.Enter()
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 114 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit488, "for", 56, false); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // kw_in, called as by call
 func u363(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[363]) {
-		return p.CallMemo(trules[363], i363)
+		return p.CallMemo(trules[363], v363)
 	}
 	return v363(p)
 }
@@ -36714,43 +33928,10 @@ fail:
 	return nil, false
 }
 
-// kw_in, invoked as by invoke (body inlined)
-func i363(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		ok bool
-		x1 int
-		x2 int
-	)
-	p.Enter()
-	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 110 {
-		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit313, "in", 102, false); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // kw_async, called as by call
 func u364(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[364]) {
-		return p.CallMemo(trules[364], i364)
+		return p.CallMemo(trules[364], v364)
 	}
 	return v364(p)
 }
@@ -36790,41 +33971,10 @@ fail:
 	return nil, false
 }
 
-// kw_async, invoked as by invoke (body inlined)
-func i364(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		ok bool
-		x1 int
-		x2 int
-	)
-	p.Enter()
-	if _, ok = p.Parser.MatchLiteral(lit496, "async", 59, false); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // kw_with, called as by call
 func u365(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[365]) {
-		return p.CallMemo(trules[365], i365)
+		return p.CallMemo(trules[365], v365)
 	}
 	return v365(p)
 }
@@ -36863,39 +34013,6 @@ L3:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// kw_with, invoked as by invoke (body inlined)
-func i365(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		ok bool
-		x1 int
-		x2 int
-	)
-	p.Enter()
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 119 && p.In[p.Pos+1] == 105 && p.In[p.Pos+2] == 116 && p.In[p.Pos+3] == 104 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit518, "with", 58, false); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -36974,7 +34091,7 @@ fail:
 // kw_except, called as by call
 func u368(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[368]) {
-		return p.CallMemo(trules[368], i368)
+		return p.CallMemo(trules[368], v368)
 	}
 	return v368(p)
 }
@@ -37011,37 +34128,6 @@ L3:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// kw_except, invoked as by invoke (body inlined)
-func i368(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		ok bool
-		x1 int
-		x2 int
-	)
-	p.Enter()
-	if _, ok = p.Parser.MatchLiteral(lit505, "except", 63, false); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -37150,7 +34236,7 @@ fail:
 // kw_def, called as by call
 func u370(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[370]) {
-		return p.CallMemo(trules[370], i370)
+		return p.CallMemo(trules[370], v370)
 	}
 	return v370(p)
 }
@@ -37192,43 +34278,10 @@ fail:
 	return nil, false
 }
 
-// kw_def, invoked as by invoke (body inlined)
-func i370(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		ok bool
-		x1 int
-		x2 int
-	)
-	p.Enter()
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 100 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 102 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit502, "def", 176, false); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // kw_class, called as by call
 func u371(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[371]) {
-		return p.CallMemo(trules[371], i371)
+		return p.CallMemo(trules[371], v371)
 	}
 	return v371(p)
 }
@@ -37265,37 +34318,6 @@ L3:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// kw_class, invoked as by invoke (body inlined)
-func i371(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		ok bool
-		x1 int
-		x2 int
-	)
-	p.Enter()
-	if _, ok = p.Parser.MatchLiteral(lit500, "class", 175, false); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -37374,7 +34396,7 @@ fail:
 // idcont, called as by call
 func u374(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[374]) {
-		return p.CallMemo(trules[374], i374)
+		return p.CallMemo(trules[374], v374)
 	}
 	return v374(p)
 }
@@ -37459,86 +34481,10 @@ fail:
 	return nil, false
 }
 
-// idcont, invoked as by invoke (body inlined)
-func i374(p *pegort.TParser) (any, bool) {
-	var (
-		v    any
-		x1   int
-		x2   int
-		x4   rune
-		x5   bool
-		ch   rune
-		size int
-		ok   bool
-		x9   int
-		x12  pegort.ExpMark
-		x13  int
-		x14  []pegort.ExpID
-	)
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 >= 48 && x4 <= 57 || x4 == 95)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 169)
-		goto L6
-	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95) {
-		p.ExpectOrdinary(p.Pos, 169)
-		goto L7
-	}
-	p.Pos += size
-	goto L3
-L7:
-	p.Restore(x1, x2)
-L6:
-
-	x9 = p.Pos
-	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch >= 128 && ch <= 1114111) {
-		p.ExpectOrdinary(p.Pos, 171)
-		goto L10
-	}
-	p.Pos += size
-	p.Silent--
-	p.Pos = x9
-	goto L11
-L10:
-	p.Silent--
-	p.Pos = x9
-	goto L8
-L11:
-
-	x12 = p.Isolate(p.Pos)
-	if _, ok = s404(p); !ok {
-		goto L15
-	}
-	x13, x14 = p.Unisolate(x12)
-	p.MergeExpected(x13, x14)
-	goto L16
-L15:
-	x13, x14 = p.Unisolate(x12)
-	p.ExpectOrdinary(x13, pegort.MsgBit|172)
-	goto L8
-L16:
-	goto L3
-L8:
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // pend, called as by call
 func u375(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[375]) {
-		return p.CallMemo(trules[375], i375)
+		return p.CallMemo(trules[375], v375)
 	}
 	return v375(p)
 }
@@ -37609,68 +34555,6 @@ fail:
 	return nil, false
 }
 
-// pend, invoked as by invoke (body inlined)
-func i375(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		ok bool
-		x1 int
-		x2 int
-		x4 rune
-		x5 bool
-		x9 int
-	)
-	p.Enter()
-	if _, ok = s339(p); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 44)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 49)
-		goto L6
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
-		goto L7
-	}
-	if _, ok = s339(p); !ok {
-		goto L7
-	}
-	goto L3
-L7:
-	p.Restore(x1, x2)
-L6:
-
-	x9 = p.Pos
-	p.Silent++
-	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
-		goto L10
-	}
-	p.Silent--
-	p.Pos = x9
-	goto L11
-L10:
-	p.Silent--
-	p.Pos = x9
-	goto L8
-L11:
-	goto L3
-L8:
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // kw_lambda, called as by invokePlain (body inlined)
 func s376(p *pegort.TParser) (any, bool) {
 	var (
@@ -37709,7 +34593,7 @@ fail:
 // lpend, called as by call
 func u377(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[377]) {
-		return p.CallMemo(trules[377], i377)
+		return p.CallMemo(trules[377], v377)
 	}
 	return v377(p)
 }
@@ -37795,87 +34679,10 @@ fail:
 	return nil, false
 }
 
-// lpend, invoked as by invoke (body inlined)
-func i377(p *pegort.TParser) (any, bool) {
-	var (
-		v   any
-		ok  bool
-		x1  int
-		x2  int
-		x4  rune
-		x5  bool
-		x9  int
-		x12 int
-		x13 int
-	)
-	p.Enter()
-	if _, ok = s339(p); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 44)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 49)
-		goto L6
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
-		goto L7
-	}
-	if _, ok = s339(p); !ok {
-		goto L7
-	}
-	goto L3
-L7:
-	p.Restore(x1, x2)
-L6:
-
-	x9 = p.Pos
-	p.Silent++
-	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
-		goto L10
-	}
-	x12, x13 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
-		goto L14
-	}
-	p.Silent--
-	p.Restore(x12, x13)
-	goto L10
-L14:
-	p.Silent--
-	p.Restore(x12, x13)
-	p.Silent--
-	p.Pos = x9
-	goto L11
-L10:
-	p.Silent--
-	p.Pos = x9
-	goto L8
-L11:
-	goto L3
-L8:
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // kw_yield, called as by call
 func u378(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[378]) {
-		return p.CallMemo(trules[378], i378)
+		return p.CallMemo(trules[378], v378)
 	}
 	return v378(p)
 }
@@ -37915,41 +34722,10 @@ fail:
 	return nil, false
 }
 
-// kw_yield, invoked as by invoke (body inlined)
-func i378(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		ok bool
-		x1 int
-		x2 int
-	)
-	p.Enter()
-	if _, ok = p.Parser.MatchLiteral(lit519, "yield", 89, false); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // or_op, called as by call
 func u379(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[379]) {
-		return p.CallMemo(trules[379], i379)
+		return p.CallMemo(trules[379], v379)
 	}
 	return v379(p)
 }
@@ -37991,43 +34767,10 @@ fail:
 	return nil, false
 }
 
-// or_op, invoked as by invoke (body inlined)
-func i379(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		ok bool
-		x1 int
-		x2 int
-	)
-	p.Enter()
-	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 111 && p.In[p.Pos+1] == 114 {
-		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit295, "or", 90, false); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // and_op, called as by call
 func u380(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[380]) {
-		return p.CallMemo(trules[380], i380)
+		return p.CallMemo(trules[380], v380)
 	}
 	return v380(p)
 }
@@ -38069,39 +34812,6 @@ fail:
 	return nil, false
 }
 
-// and_op, invoked as by invoke (body inlined)
-func i380(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		ok bool
-		x1 int
-		x2 int
-	)
-	p.Enter()
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 97 && p.In[p.Pos+1] == 110 && p.In[p.Pos+2] == 100 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit297, "and", 91, false); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = u374(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // kw_await, called as by invokePlain (body inlined)
 func s381(p *pegort.TParser) (any, bool) {
 	var (
@@ -38140,7 +34850,7 @@ fail:
 // arg_sep, called as by call
 func u382(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[382]) {
-		return p.CallMemo(trules[382], i382)
+		return p.CallMemo(trules[382], v382)
 	}
 	return v382(p)
 }
@@ -38208,68 +34918,6 @@ L3:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// arg_sep, invoked as by invoke (body inlined)
-func i382(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		ok bool
-		x1 int
-		x2 int
-		x4 rune
-		x5 bool
-		x9 int
-	)
-	p.Enter()
-	if _, ok = s339(p); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 44)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 49)
-		goto L6
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
-		goto L7
-	}
-	if _, ok = s339(p); !ok {
-		goto L7
-	}
-	goto L3
-L7:
-	p.Restore(x1, x2)
-L6:
-
-	x9 = p.Pos
-	p.Silent++
-	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
-		goto L10
-	}
-	p.Silent--
-	p.Pos = x9
-	goto L11
-L10:
-	p.Silent--
-	p.Pos = x9
-	goto L8
-L11:
-	goto L3
-L8:
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -38385,7 +35033,7 @@ fail:
 // str_lit, called as by call
 func u385(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[385]) {
-		return p.CallMemo(trules[385], i385)
+		return p.CallMemo(trules[385], v385)
 	}
 	return v385(p)
 }
@@ -38460,76 +35108,10 @@ fail:
 	return nil, false
 }
 
-// str_lit, invoked as by invoke (body inlined)
-func i385(p *pegort.TParser) (any, bool) {
-	var (
-		v    any
-		x1   int
-		x2   int
-		x4   rune
-		x5   bool
-		ch   rune
-		size int
-		ok   bool
-	)
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 117 || x4 == 85)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 115)
-		goto L6
-	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 117 || ch == 85) {
-		p.ExpectOrdinary(p.Pos, 115)
-		goto L7
-	}
-	p.Pos += size
-	if _, ok = u405(p); !ok {
-		goto L7
-	}
-	goto L3
-L7:
-	p.Restore(x1, x2)
-L6:
-	if !(x5 && (x4 == 114 || x4 == 82)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 116)
-		goto L8
-	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 114 || ch == 82) {
-		p.ExpectOrdinary(p.Pos, 116)
-		goto L9
-	}
-	p.Pos += size
-	if _, ok = s406(p); !ok {
-		goto L9
-	}
-	goto L3
-L9:
-	p.Restore(x1, x2)
-L8:
-
-	if _, ok = u405(p); !ok {
-		goto L10
-	}
-	goto L3
-L10:
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // bytes_lit, called as by call
 func u386(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[386]) {
-		return p.CallMemo(trules[386], i386)
+		return p.CallMemo(trules[386], v386)
 	}
 	return v386(p)
 }
@@ -38614,85 +35196,6 @@ L3:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// bytes_lit, invoked as by invoke (body inlined)
-func i386(p *pegort.TParser) (any, bool) {
-	var (
-		v    any
-		x1   int
-		x2   int
-		x5   int
-		x6   int
-		x8   rune
-		x9   bool
-		ok   bool
-		x14  rune
-		x15  bool
-		ch   rune
-		size int
-	)
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	x5, x6 = p.Pos, len(p.Recovered)
-	x8, _, x9 = p.NextOrdinary()
-	if !(x9 && (x8 == 98 || x8 == 66)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 117)
-		goto L10
-	}
-	if !p.ClassesSkip(steps1173) {
-		goto L11
-	}
-	goto L7
-L11:
-	p.Restore(x5, x6)
-L10:
-	if !(x9 && (x8 == 114 || x8 == 82)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 116)
-		goto L12
-	}
-	if !p.ClassesSkip(steps1174) {
-		goto L13
-	}
-	goto L7
-L13:
-	p.Restore(x5, x6)
-L12:
-	goto L4
-L7:
-
-	if _, ok = s407(p); !ok {
-		goto L4
-	}
-	goto L3
-L4:
-	p.Restore(x1, x2)
-	x14, _, x15 = p.NextOrdinary()
-	if !(x15 && (x14 == 98 || x14 == 66)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 117)
-		goto L16
-	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 98 || ch == 66) {
-		p.ExpectOrdinary(p.Pos, 117)
-		goto L17
-	}
-	p.Pos += size
-	if _, ok = s408(p); !ok {
-		goto L17
-	}
-	goto L3
-L17:
-	p.Restore(x1, x2)
-L16:
-	goto fail
-L3:
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -38799,7 +35302,7 @@ fail:
 // fquote, called as by call
 func u388(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[388]) {
-		return p.CallMemo(trules[388], i388)
+		return p.CallMemo(trules[388], v388)
 	}
 	return v388(p)
 }
@@ -38996,198 +35499,10 @@ fail:
 	return nil, false
 }
 
-// fquote, invoked as by invoke (body inlined)
-func i388(p *pegort.TParser) (any, bool) {
-	var (
-		v   any
-		x1  int
-		x2  int
-		ok  bool
-		x7  int
-		x8  int
-		x11 int
-		x12 int
-		x14 rune
-		x15 bool
-		x20 int
-		x21 int
-		x24 int
-		x25 int
-		x27 rune
-		x28 bool
-	)
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	if !p.Predicate(func(c *pegort.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any {
-					return c.Binary("/", func() any { return c.Lookup("lv") }(), func() any { return any(512) }())
-				}(), func() any { return any(8) }())
-			}(), func() any { return any(1) }())
-		}()
-	}) {
-		goto L4
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
-		goto L4
-	}
-	goto L3
-L4:
-	p.Restore(x1, x2)
-	if !p.Predicate(func(c *pegort.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any {
-					return c.Binary("/", func() any { return c.Lookup("lv") }(), func() any { return any(512) }())
-				}(), func() any { return any(8) }())
-			}(), func() any { return any(2) }())
-		}()
-	}) {
-		goto L5
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
-		goto L5
-	}
-	goto L3
-L5:
-	p.Restore(x1, x2)
-	if !p.Predicate(func(c *pegort.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any {
-					return c.Binary("/", func() any { return c.Lookup("lv") }(), func() any { return any(512) }())
-				}(), func() any { return any(8) }())
-			}(), func() any { return any(3) }())
-		}()
-	}) {
-		goto L6
-	}
-	x7, x8 = p.Pos, len(p.Recovered)
-	x11, x12 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
-		goto L13
-	}
-	p.Silent--
-	p.Restore(x11, x12)
-	goto L10
-L13:
-	p.Silent--
-	p.Restore(x11, x12)
-	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
-		goto L10
-	}
-	goto L9
-L10:
-	p.Restore(x7, x8)
-	x14, _, x15 = p.NextOrdinary()
-	if !(x15 && (x14 == 34)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 123)
-		goto L16
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
-		goto L17
-	}
-	goto L9
-L17:
-	p.Restore(x7, x8)
-L16:
-
-	if _, ok = s342(p); !ok {
-		goto L18
-	}
-	goto L9
-L18:
-	p.Restore(x7, x8)
-	goto L6
-L9:
-	goto L3
-L6:
-	p.Restore(x1, x2)
-	if !p.Predicate(func(c *pegort.TActCtx) any {
-		return func() any {
-			return c.Binary("==", func() any {
-				return c.Binary("%", func() any {
-					return c.Binary("/", func() any { return c.Lookup("lv") }(), func() any { return any(512) }())
-				}(), func() any { return any(8) }())
-			}(), func() any { return any(4) }())
-		}()
-	}) {
-		goto L19
-	}
-	x20, x21 = p.Pos, len(p.Recovered)
-	x24, x25 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
-		goto L26
-	}
-	p.Silent--
-	p.Restore(x24, x25)
-	goto L23
-L26:
-	p.Silent--
-	p.Restore(x24, x25)
-	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
-		goto L23
-	}
-	goto L22
-L23:
-	p.Restore(x20, x21)
-	x27, _, x28 = p.NextOrdinary()
-	if !(x28 && (x27 == 39)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 120)
-		goto L29
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
-		goto L30
-	}
-	goto L22
-L30:
-	p.Restore(x20, x21)
-L29:
-
-	if _, ok = s342(p); !ok {
-		goto L31
-	}
-	goto L22
-L31:
-	p.Restore(x20, x21)
-	goto L19
-L22:
-	goto L3
-L19:
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // fesc, called as by call
 func u389(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[389]) {
-		return p.CallMemo(trules[389], i389)
+		return p.CallMemo(trules[389], v389)
 	}
 	return v389(p)
 }
@@ -39411,224 +35726,6 @@ L3:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// fesc, invoked as by invoke (body inlined)
-func i389(p *pegort.TParser) (any, bool) {
-	var (
-		v    any
-		ok   bool
-		x1   int
-		x2   int
-		x5   rune
-		x6   bool
-		x13  int
-		x14  int
-		x16  rune
-		x17  bool
-		ch   rune
-		size int
-		x24  int
-		x28  int
-	)
-	p.Enter()
-	if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	if _, ok = s342(p); !ok {
-		goto L4
-	}
-	goto L3
-L4:
-	p.Restore(x1, x2)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 120)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 126)
-		goto L7
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 120 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit430, "x", 126, false); !ok {
-		goto L8
-	}
-	if _, ok = s409(p); !ok {
-		goto L8
-	}
-	if _, ok = s409(p); !ok {
-		goto L8
-	}
-	goto L3
-L8:
-	p.Restore(x1, x2)
-L7:
-	if !(x6 && (x5 == 117)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 127)
-		goto L9
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 117 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit431, "u", 127, false); !ok {
-		goto L10
-	}
-	if _, ok = s409(p); !ok {
-		goto L10
-	}
-	if _, ok = s409(p); !ok {
-		goto L10
-	}
-	if _, ok = s409(p); !ok {
-		goto L10
-	}
-	if _, ok = s409(p); !ok {
-		goto L10
-	}
-	goto L3
-L10:
-	p.Restore(x1, x2)
-L9:
-	if !(x6 && (x5 == 85)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 128)
-		goto L11
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 85 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit433, "U", 128, false); !ok {
-		goto L12
-	}
-	x13, x14 = p.Pos, len(p.Recovered)
-	x16, _, x17 = p.NextOrdinary()
-	if !(x17 && (x16 == 48)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 129)
-		goto L18
-	}
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 48 && p.In[p.Pos+2] == 49 && p.In[p.Pos+3] == 48 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit434, "0010", 129, false); !ok {
-		goto L19
-	}
-	if _, ok = s409(p); !ok {
-		goto L19
-	}
-	if _, ok = s409(p); !ok {
-		goto L19
-	}
-	if _, ok = s409(p); !ok {
-		goto L19
-	}
-	if _, ok = s409(p); !ok {
-		goto L19
-	}
-	goto L15
-L19:
-	p.Restore(x13, x14)
-L18:
-	if !(x17 && (x16 == 48)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 130)
-		goto L20
-	}
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 48 && p.In[p.Pos+2] == 48 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit435, "000", 130, false); !ok {
-		goto L21
-	}
-	if _, ok = s409(p); !ok {
-		goto L21
-	}
-	if _, ok = s409(p); !ok {
-		goto L21
-	}
-	if _, ok = s409(p); !ok {
-		goto L21
-	}
-	if _, ok = s409(p); !ok {
-		goto L21
-	}
-	if _, ok = s409(p); !ok {
-		goto L21
-	}
-	goto L15
-L21:
-	p.Restore(x13, x14)
-L20:
-	goto L12
-L15:
-	goto L3
-L12:
-	p.Restore(x1, x2)
-L11:
-	if !(x6 && (x5 == 78)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 131)
-		goto L22
-	}
-	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 78 && p.In[p.Pos+1] == 123 {
-		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit437, "N{", 131, false); !ok {
-		goto L23
-	}
-	x24 = 0
-	for {
-		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 32 || ch == 45)) {
-			p.ExpectOrdinary(p.Pos, 132)
-			break
-		}
-		p.Pos += size
-		x24++
-	}
-	if x24 < 1 {
-		goto L23
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit229, "}", 80, false); !ok {
-		goto L23
-	}
-	goto L3
-L23:
-	p.Restore(x1, x2)
-L22:
-	if !(x6 && (!(x5 == 120 || x5 == 117 || x5 == 85 || x5 == 78 || x5 == 123 || x5 == 125 || x5 == 10 || x5 == 13 || x5 == 0))) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 149)
-		goto L25
-	}
-	if !p.ClassFast(&cls1145) && !p.ClassSkip(&cls1145, 149) {
-		goto L26
-	}
-	goto L3
-L26:
-	p.Restore(x1, x2)
-L25:
-
-	x28 = p.Pos
-	p.Silent++
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 123 || ch == 125) {
-		p.ExpectOrdinary(p.Pos, 150)
-		goto L29
-	}
-	p.Pos += size
-	p.Silent--
-	p.Pos = x28
-	goto L30
-L29:
-	p.Silent--
-	p.Pos = x28
-	goto L27
-L30:
-	goto L3
-L27:
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -40282,7 +36379,7 @@ fail:
 // pointfloat, called as by call
 func u397(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[397]) {
-		return p.CallMemo(trules[397], i397)
+		return p.CallMemo(trules[397], v397)
 	}
 	return v397(p)
 }
@@ -40356,75 +36453,10 @@ fail:
 	return nil, false
 }
 
-// pointfloat, invoked as by invoke (body inlined)
-func i397(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		x1 int
-		x2 int
-		x4 rune
-		x5 bool
-		ok bool
-		x8 int
-		x9 int
-	)
-	p.Enter()
-	x1, x2 = p.Pos, len(p.Recovered)
-	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 >= 48 && x4 <= 57)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 158)
-		goto L6
-	}
-	if _, ok = s399(p); !ok {
-		goto L7
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit98, ".", 50, false); !ok {
-		goto L7
-	}
-	x8, x9 = p.Pos, len(p.Recovered)
-	if _, ok = s399(p); !ok {
-		goto L10
-	}
-	goto L11
-L10:
-	p.Restore(x8, x9)
-L11:
-	goto L3
-L7:
-	p.Restore(x1, x2)
-L6:
-	if !(x5 && (x4 == 46)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 50)
-		goto L12
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit98, ".", 50, false); !ok {
-		goto L13
-	}
-	if _, ok = s399(p); !ok {
-		goto L13
-	}
-	goto L3
-L13:
-	p.Restore(x1, x2)
-L12:
-	goto fail
-L3:
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // exponent, called as by call
 func u398(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[398]) {
-		return p.CallMemo(trules[398], i398)
+		return p.CallMemo(trules[398], v398)
 	}
 	return v398(p)
 }
@@ -40470,46 +36502,6 @@ L4:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// exponent, invoked as by invoke (body inlined)
-func i398(p *pegort.TParser) (any, bool) {
-	var (
-		v    any
-		ch   rune
-		size int
-		ok   bool
-		x1   int
-		x2   int
-	)
-	p.Enter()
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 101 || ch == 69) {
-		p.ExpectOrdinary(p.Pos, 164)
-		goto fail
-	}
-	p.Pos += size
-	x1, x2 = p.Pos, len(p.Recovered)
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 43 || ch == 45) {
-		p.ExpectOrdinary(p.Pos, 69)
-		goto L3
-	}
-	p.Pos += size
-	goto L4
-L3:
-	p.Restore(x1, x2)
-L4:
-
-	if _, ok = s399(p); !ok {
-		goto fail
-	}
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -41120,7 +37112,7 @@ fail:
 // ident, called as by call
 func u402(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[402]) {
-		return p.CallMemo(trules[402], i402)
+		return p.CallMemo(trules[402], v402)
 	}
 	return v402(p)
 }
@@ -41176,56 +37168,6 @@ L3:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// ident, invoked as by invoke (body inlined)
-func i402(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		x1 int
-		x2 int
-		ok bool
-		x4 int
-		x5 int
-		x6 int
-	)
-	p.Enter()
-	_ = x4
-	x1, x2 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if _, ok = s400(p); !ok {
-		goto L3
-	}
-	p.Silent--
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	p.Silent--
-	p.Restore(x1, x2)
-	if _, ok = s401(p); !ok {
-		goto fail
-	}
-	x4 = 0
-	for {
-		x5, x6 = p.Pos, len(p.Recovered)
-		if _, ok = u374(p); !ok {
-			goto L7
-		}
-		x4++
-		if p.Pos == x5 {
-			break
-		}
-		continue
-	L7:
-		p.Restore(x5, x6)
-		break
-	}
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -41287,7 +37229,7 @@ fail:
 // str_body, called as by call
 func u405(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[405]) {
-		return p.CallMemo(trules[405], i405)
+		return p.CallMemo(trules[405], v405)
 	}
 	return v405(p)
 }
@@ -41662,375 +37604,6 @@ L3:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// str_body, invoked as by invoke (body inlined)
-func i405(p *pegort.TParser) (any, bool) {
-	var (
-		v    any
-		x1   int
-		x2   int
-		x4   rune
-		x5   bool
-		ok   bool
-		x8   int
-		x9   int
-		x10  int
-		x12  int
-		x13  int
-		ch   rune
-		size int
-		x16  int
-		x18  int
-		x19  int
-		x21  rune
-		x22  bool
-		x27  int
-		x28  int
-		x29  int
-		x31  int
-		x32  int
-		x35  int
-		x37  int
-		x38  int
-		x40  rune
-		x41  bool
-		x45  int
-		x46  int
-		x48  int
-		x49  int
-		x50  int
-		x52  int
-		x53  int
-		x56  int
-		x57  rune
-		x58  bool
-		x62  int
-		x63  int
-		x65  int
-		x66  int
-		x67  int
-		x69  int
-		x70  int
-		x73  int
-		x74  rune
-		x75  bool
-	)
-	p.Enter()
-	_, _, _, _ = x8, x27, x48, x65
-	x1, x2 = p.Pos, len(p.Recovered)
-	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 == 39)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 118)
-		goto L6
-	}
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
-		goto L7
-	}
-	x8 = 0
-	for {
-		x9, x10 = p.Pos, len(p.Recovered)
-		x12, x13 = p.Pos, len(p.Recovered)
-		x16 = 0
-		for {
-			ch, size, ok = p.NextOrdinary()
-			if !ok || (ch == 39 || ch == 92 || ch == 0) {
-				p.ExpectOrdinary(p.Pos, 119)
-				break
-			}
-			p.Pos += size
-			x16++
-		}
-		if x16 < 1 {
-			goto L15
-		}
-		goto L14
-	L15:
-		p.Restore(x12, x13)
-		x18, x19 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
-			p.Pos += 3
-		} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
-			goto L20
-		}
-		p.Silent--
-		p.Restore(x18, x19)
-		goto L17
-	L20:
-		p.Silent--
-		p.Restore(x18, x19)
-		if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
-			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
-			goto L17
-		}
-		goto L14
-	L17:
-		p.Restore(x12, x13)
-		x21, _, x22 = p.NextOrdinary()
-		if !(x22 && (x21 == 92)) && p.Depth+1 <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 9)
-			goto L23
-		}
-		if _, ok = u413(p); !ok {
-			goto L24
-		}
-		goto L14
-	L24:
-		p.Restore(x12, x13)
-	L23:
-		goto L11
-	L14:
-		x8++
-		if p.Pos == x9 {
-			break
-		}
-		continue
-	L11:
-		p.Restore(x9, x10)
-		break
-	}
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
-		goto L7
-	}
-	goto L3
-L7:
-	p.Restore(x1, x2)
-L6:
-	if !(x5 && (x4 == 34)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 121)
-		goto L25
-	}
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
-		goto L26
-	}
-	x27 = 0
-	for {
-		x28, x29 = p.Pos, len(p.Recovered)
-		x31, x32 = p.Pos, len(p.Recovered)
-		x35 = 0
-		for {
-			ch, size, ok = p.NextOrdinary()
-			if !ok || (ch == 34 || ch == 92 || ch == 0) {
-				p.ExpectOrdinary(p.Pos, 122)
-				break
-			}
-			p.Pos += size
-			x35++
-		}
-		if x35 < 1 {
-			goto L34
-		}
-		goto L33
-	L34:
-		p.Restore(x31, x32)
-		x37, x38 = p.Pos, len(p.Recovered)
-		p.Silent++
-		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
-			p.Pos += 3
-		} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
-			goto L39
-		}
-		p.Silent--
-		p.Restore(x37, x38)
-		goto L36
-	L39:
-		p.Silent--
-		p.Restore(x37, x38)
-		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
-			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
-			goto L36
-		}
-		goto L33
-	L36:
-		p.Restore(x31, x32)
-		x40, _, x41 = p.NextOrdinary()
-		if !(x41 && (x40 == 92)) && p.Depth+1 <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 9)
-			goto L42
-		}
-		if _, ok = u413(p); !ok {
-			goto L43
-		}
-		goto L33
-	L43:
-		p.Restore(x31, x32)
-	L42:
-		goto L30
-	L33:
-		x27++
-		if p.Pos == x28 {
-			break
-		}
-		continue
-	L30:
-		p.Restore(x28, x29)
-		break
-	}
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
-		goto L26
-	}
-	goto L3
-L26:
-	p.Restore(x1, x2)
-L25:
-
-	x45, x46 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
-		goto L47
-	}
-	p.Silent--
-	p.Restore(x45, x46)
-	goto L44
-L47:
-	p.Silent--
-	p.Restore(x45, x46)
-	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
-		goto L44
-	}
-	x48 = 0
-	for {
-		x49, x50 = p.Pos, len(p.Recovered)
-		x52, x53 = p.Pos, len(p.Recovered)
-		x56 = 0
-		for {
-			ch, size, ok = p.NextOrdinary()
-			if !ok || (ch == 39 || ch == 92 || ch == 10 || ch == 13 || ch == 0) {
-				p.ExpectOrdinary(p.Pos, 124)
-				break
-			}
-			p.Pos += size
-			x56++
-		}
-		if x56 < 1 {
-			goto L55
-		}
-		goto L54
-	L55:
-		p.Restore(x52, x53)
-		x57, _, x58 = p.NextOrdinary()
-		if !(x58 && (x57 == 92)) && p.Depth+1 <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 9)
-			goto L59
-		}
-		if _, ok = u413(p); !ok {
-			goto L60
-		}
-		goto L54
-	L60:
-		p.Restore(x52, x53)
-	L59:
-		goto L51
-	L54:
-		x48++
-		if p.Pos == x49 {
-			break
-		}
-		continue
-	L51:
-		p.Restore(x49, x50)
-		break
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
-		goto L44
-	}
-	goto L3
-L44:
-	p.Restore(x1, x2)
-	x62, x63 = p.Pos, len(p.Recovered)
-	p.Silent++
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
-		goto L64
-	}
-	p.Silent--
-	p.Restore(x62, x63)
-	goto L61
-L64:
-	p.Silent--
-	p.Restore(x62, x63)
-	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
-		goto L61
-	}
-	x65 = 0
-	for {
-		x66, x67 = p.Pos, len(p.Recovered)
-		x69, x70 = p.Pos, len(p.Recovered)
-		x73 = 0
-		for {
-			ch, size, ok = p.NextOrdinary()
-			if !ok || (ch == 34 || ch == 92 || ch == 10 || ch == 13 || ch == 0) {
-				p.ExpectOrdinary(p.Pos, 125)
-				break
-			}
-			p.Pos += size
-			x73++
-		}
-		if x73 < 1 {
-			goto L72
-		}
-		goto L71
-	L72:
-		p.Restore(x69, x70)
-		x74, _, x75 = p.NextOrdinary()
-		if !(x75 && (x74 == 92)) && p.Depth+1 <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 9)
-			goto L76
-		}
-		if _, ok = u413(p); !ok {
-			goto L77
-		}
-		goto L71
-	L77:
-		p.Restore(x69, x70)
-	L76:
-		goto L68
-	L71:
-		x65++
-		if p.Pos == x66 {
-			break
-		}
-		continue
-	L68:
-		p.Restore(x66, x67)
-		break
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
-		goto L61
-	}
-	goto L3
-L61:
-	p.Restore(x1, x2)
-	goto fail
-L3:
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
 
@@ -43517,7 +39090,7 @@ fail:
 // str_esc, called as by call
 func u413(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[413]) {
-		return p.CallMemo(trules[413], i413)
+		return p.CallMemo(trules[413], v413)
 	}
 	return v413(p)
 }
@@ -43723,207 +39296,10 @@ fail:
 	return nil, false
 }
 
-// str_esc, invoked as by invoke (body inlined)
-func i413(p *pegort.TParser) (any, bool) {
-	var (
-		v    any
-		ok   bool
-		x1   int
-		x2   int
-		x5   rune
-		x6   bool
-		x13  int
-		x14  int
-		x16  rune
-		x17  bool
-		ch   rune
-		size int
-		x24  int
-	)
-	p.Enter()
-	if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	if _, ok = s342(p); !ok {
-		goto L4
-	}
-	goto L3
-L4:
-	p.Restore(x1, x2)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 120)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 126)
-		goto L7
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 120 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit430, "x", 126, false); !ok {
-		goto L8
-	}
-	if _, ok = s409(p); !ok {
-		goto L8
-	}
-	if _, ok = s409(p); !ok {
-		goto L8
-	}
-	goto L3
-L8:
-	p.Restore(x1, x2)
-L7:
-	if !(x6 && (x5 == 117)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 127)
-		goto L9
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 117 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit431, "u", 127, false); !ok {
-		goto L10
-	}
-	if _, ok = s409(p); !ok {
-		goto L10
-	}
-	if _, ok = s409(p); !ok {
-		goto L10
-	}
-	if _, ok = s409(p); !ok {
-		goto L10
-	}
-	if _, ok = s409(p); !ok {
-		goto L10
-	}
-	goto L3
-L10:
-	p.Restore(x1, x2)
-L9:
-	if !(x6 && (x5 == 85)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 128)
-		goto L11
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 85 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit433, "U", 128, false); !ok {
-		goto L12
-	}
-	x13, x14 = p.Pos, len(p.Recovered)
-	x16, _, x17 = p.NextOrdinary()
-	if !(x17 && (x16 == 48)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 129)
-		goto L18
-	}
-	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 48 && p.In[p.Pos+2] == 49 && p.In[p.Pos+3] == 48 {
-		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit434, "0010", 129, false); !ok {
-		goto L19
-	}
-	if _, ok = s409(p); !ok {
-		goto L19
-	}
-	if _, ok = s409(p); !ok {
-		goto L19
-	}
-	if _, ok = s409(p); !ok {
-		goto L19
-	}
-	if _, ok = s409(p); !ok {
-		goto L19
-	}
-	goto L15
-L19:
-	p.Restore(x13, x14)
-L18:
-	if !(x17 && (x16 == 48)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 130)
-		goto L20
-	}
-	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 48 && p.In[p.Pos+2] == 48 {
-		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit435, "000", 130, false); !ok {
-		goto L21
-	}
-	if _, ok = s409(p); !ok {
-		goto L21
-	}
-	if _, ok = s409(p); !ok {
-		goto L21
-	}
-	if _, ok = s409(p); !ok {
-		goto L21
-	}
-	if _, ok = s409(p); !ok {
-		goto L21
-	}
-	if _, ok = s409(p); !ok {
-		goto L21
-	}
-	goto L15
-L21:
-	p.Restore(x13, x14)
-L20:
-	goto L12
-L15:
-	goto L3
-L12:
-	p.Restore(x1, x2)
-L11:
-	if !(x6 && (x5 == 78)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 131)
-		goto L22
-	}
-	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 78 && p.In[p.Pos+1] == 123 {
-		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit437, "N{", 131, false); !ok {
-		goto L23
-	}
-	x24 = 0
-	for {
-		ch, size, ok = p.NextOrdinary()
-		if !ok || (!(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 32 || ch == 45)) {
-			p.ExpectOrdinary(p.Pos, 132)
-			break
-		}
-		p.Pos += size
-		x24++
-	}
-	if x24 < 1 {
-		goto L23
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit229, "}", 80, false); !ok {
-		goto L23
-	}
-	goto L3
-L23:
-	p.Restore(x1, x2)
-L22:
-	if !(x6 && (!(x5 == 120 || x5 == 117 || x5 == 85 || x5 == 78 || x5 == 10 || x5 == 13 || x5 == 0))) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 133)
-		goto L25
-	}
-	if !p.ClassFast(&cls1134) && !p.ClassSkip(&cls1134, 133) {
-		goto L26
-	}
-	goto L3
-L26:
-	p.Restore(x1, x2)
-L25:
-	goto fail
-L3:
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	return nil, false
-}
-
 // bytes_esc, called as by call
 func u414(p *pegort.TParser) (any, bool) {
 	if !p.FirstCall(rules[414]) {
-		return p.CallMemo(trules[414], i414)
+		return p.CallMemo(trules[414], v414)
 	}
 	return v414(p)
 }
@@ -43993,69 +39369,5 @@ L3:
 fail:
 	p.Depth--
 	p.Restore(start, rec)
-	return nil, false
-}
-
-// bytes_esc, invoked as by invoke (body inlined)
-func i414(p *pegort.TParser) (any, bool) {
-	var (
-		v  any
-		ok bool
-		x1 int
-		x2 int
-		x5 rune
-		x6 bool
-	)
-	p.Enter()
-	if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
-		goto fail
-	}
-	x1, x2 = p.Pos, len(p.Recovered)
-	if _, ok = s342(p); !ok {
-		goto L4
-	}
-	goto L3
-L4:
-	p.Restore(x1, x2)
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (x5 == 120)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 126)
-		goto L7
-	}
-	if p.Pos < len(p.In) && p.In[p.Pos] == 120 {
-		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit430, "x", 126, false); !ok {
-		goto L8
-	}
-	if _, ok = s409(p); !ok {
-		goto L8
-	}
-	if _, ok = s409(p); !ok {
-		goto L8
-	}
-	goto L3
-L8:
-	p.Restore(x1, x2)
-L7:
-	if !(x6 && (!(x5 == 120 || x5 == 10 || x5 == 13 || x5 == 0 || x5 >= 128 && x5 <= 1114111))) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 139)
-		goto L9
-	}
-	if !p.ClassFast(&cls1137) && !p.ClassSkip(&cls1137, 139) {
-		goto L10
-	}
-	goto L3
-L10:
-	p.Restore(x1, x2)
-L9:
-	goto fail
-L3:
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
 	return nil, false
 }
