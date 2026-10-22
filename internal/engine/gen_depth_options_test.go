@@ -48,7 +48,7 @@ func TestGeneratedMaxDepthValidation(t *testing.T) {
 				}
 				continue
 			}
-			want := fmt.Sprintf("var pegoGrammar = pegort.NewGrammar(%d)", n)
+			want := fmt.Sprintf("var pegoGrammar = rt.NewGrammar(%d)", n)
 			if ts {
 				want = fmt.Sprintf("const G = mkGrammar(%d, ", n)
 			}

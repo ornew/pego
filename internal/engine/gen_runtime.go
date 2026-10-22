@@ -27,7 +27,7 @@ const RuntimeImportPath = "github.com/ornew/pego/runtime"
 // runtimeAlias is the name generated code gives to the runtime package, and typesAlias the name
 // it gives to the types package of a typed parser.
 const (
-	runtimeAlias = "pegort"
+	runtimeAlias = "rt"
 	typesAlias   = "types"
 )
 

@@ -83,7 +83,7 @@ func TestGeneratedTypedLocalLayouts(t *testing.T) {
 		}
 		opts := GenOptions{Package: "localfixture", Start: "main", Types: true, Recognize: true}
 		code, err := generateCode(ast, opts)
-		if err != nil || !strings.Contains(string(code), "pegort.TParse(trules") || !localBodyInlined(code) {
+		if err != nil || !strings.Contains(string(code), "rt.TParse(trules") || !localBodyInlined(code) {
 			t.Fatalf("%s: typed local body unavailable: %v", c.name, err)
 		}
 		opts.disableTypedLocalLayouts = true
@@ -113,7 +113,7 @@ func localBodyInlined(code []byte) bool {
 	lines := strings.Split(string(code), "\n")
 	for i, line := range lines {
 		if strings.HasPrefix(line, "// body, ") && strings.Contains(line, "(body inlined)") &&
-			i+1 < len(lines) && strings.HasPrefix(lines[i+1], "func i") && strings.Contains(lines[i+1], "(p *pegort.TParser)") {
+			i+1 < len(lines) && strings.HasPrefix(lines[i+1], "func i") && strings.Contains(lines[i+1], "(p *rt.TParser)") {
 			return true
 		}
 	}

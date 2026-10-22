@@ -5,33 +5,33 @@ package outline
 
 import (
 	types "github.com/ornew/pego/bench/gen/outline/types"
-	pegort "github.com/ornew/pego/runtime"
+	rt "github.com/ornew/pego/runtime"
 )
 
 // Parse parses the whole input with the rule main. Options select position units, depth, cancellation and work limits.
 // If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.
-func Parse(input string, opts ...pegort.ParseOption) (*pegort.Node, error) {
-	return pegort.RunParse(rules[0], input, opts)
+func Parse(input string, opts ...rt.ParseOption) (*rt.Node, error) {
+	return rt.RunParse(rules[0], input, opts)
 }
 
 // Recognize checks that the whole input matches the rule main without building a tree, and returns the
 // syntax errors Parse would return (SyntaxErrors for errors recovered with #recover). Actions needed by
 // predicates are evaluated and can report runtime errors; other actions are skipped.
-func Recognize(input string, opts ...pegort.ParseOption) error {
-	_, err := pegort.RunParse(recRules[0], input, opts)
+func Recognize(input string, opts ...rt.ParseOption) error {
+	_, err := rt.RunParse(recRules[0], input, opts)
 	return err
 }
 
-var recRules []*pegort.Rule
-var pegoRecGrammar = pegort.NewGrammar(100000)
+var recRules []*rt.Rule
+var pegoRecGrammar = rt.NewGrammar(100000)
 
-var rules []*pegort.Rule
-var pegoGrammar = pegort.NewGrammar(100000)
+var rules []*rt.Rule
+var pegoGrammar = rt.NewGrammar(100000)
 
 // ParseRule parses the whole input with the start rule name, a rule marked @start; an empty
 // name selects the grammar's default start rule.
-func ParseRule(name, input string, opts ...pegort.ParseOption) (*pegort.Node, error) {
-	o, err := pegort.ResolveOptions(pegoGrammar, opts)
+func ParseRule(name, input string, opts ...rt.ParseOption) (*rt.Node, error) {
+	o, err := rt.ResolveOptions(pegoGrammar, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func ParseRule(name, input string, opts ...pegort.ParseOption) (*pegort.Node, er
 	if err != nil {
 		return nil, err
 	}
-	return pegort.RunParseResolved(r, input, o)
+	return rt.RunParseResolved(r, input, o)
 }
 
 type astChunk[T any] struct {
@@ -98,23 +98,23 @@ func astSlice[T any](s *astChunk[T], n int) []T {
 func tinit() {
 }
 
-func tmk_Item(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_Item(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 	c.P.StepWork()
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tItem)
 	c.P.StepWork()
-	v.Text = (*types.TNode[string])(pegort.TPubMatch(f0))
+	v.Text = (*types.TNode[string])(rt.TPubMatch(f0))
 	c.P.StepWork()
 	v.Children = tl0(a, f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 	c.P.StepWork()
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	c.P.StepWork()
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
@@ -123,14 +123,14 @@ func tl0(a *tslabs, v any) []*types.Item {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []*types.Item{}
 	}
 	out := astSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[*types.Item](c)
+		out[i] = rt.TAs[*types.Item](c)
 	}
 	return out
 }
@@ -146,14 +146,14 @@ func tv1(a *tslabs, v any) []*types.Item {
 }
 
 type tslabs struct {
-	control  *pegort.WorkControl
+	control  *rt.WorkControl
 	tItem    astChunk[types.Item]
 	tl0Chunk astChunk[*types.Item]
 }
 
-func (a *tslabs) SetWorkControl(c *pegort.WorkControl) { a.control = c }
+func (a *tslabs) SetWorkControl(c *rt.WorkControl) { a.control = c }
 func (a *tslabs) stepWork() {
-	if pegort.WorkControlsEnabled && a.control != nil {
+	if rt.WorkControlsEnabled && a.control != nil {
 		a.control.Charge(0, 1)
 	}
 }
@@ -162,9 +162,9 @@ func (a *tslabs) stepWork() {
 // from errors, the result is returned together with SyntaxErrors; an Error node where a struct
 // type is expected becomes nil.
 // It builds the values directly, without the nodes Parse returns.
-func ParseAST(input string, opts ...pegort.ParseOption) ([]*types.Item, error) {
+func ParseAST(input string, opts ...rt.ParseOption) ([]*types.Item, error) {
 	a := &tslabs{}
-	return pegort.TParse(trules[0], input, opts, a, func(v any) []*types.Item { return tv0(a, v) })
+	return rt.TParse(trules[0], input, opts, a, func(v any) []*types.Item { return tv0(a, v) })
 }
 
 // ParseRuleAST parses the whole input with the named start rule and returns its typed value; an empty
@@ -173,15 +173,15 @@ func ParseAST(input string, opts ...pegort.ParseOption) ([]*types.Item, error) {
 // Invalid options and names of rules that are not start rules return nil with an error. Start rule result types:
 //
 //	main: []*types.Item
-func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
-	o, err := pegort.ResolveOptions(pegoGrammar, opts)
+func ParseRuleAST(name, input string, opts ...rt.ParseOption) (any, error) {
+	o, err := rt.ResolveOptions(pegoGrammar, opts)
 	if err != nil {
 		return nil, err
 	}
 	switch name {
 	case "main", "":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[0], input, o, a, func(v any) []*types.Item { return tv0(a, v) })
+		return rt.TParseResolved(trules[0], input, o, a, func(v any) []*types.Item { return tv0(a, v) })
 	default:
 		return nil, pegoGrammar.StartError(name)
 	}
@@ -190,24 +190,24 @@ func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 var scope2 = []string{"i"}
 var lit6 = []rune(" ")
 var lit9 = []rune("\n")
-var sh10 = pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}
-var sh12 = pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}
-var sh16 = pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}
-var sh17 = pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}
-var sh18 = pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}
-var sh19 = pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}
+var sh10 = rt.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}
+var sh12 = rt.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}
+var sh16 = rt.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}
+var sh17 = rt.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}
+var sh18 = rt.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}
+var sh19 = rt.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}
 
-var rulesSpec = [...]pegort.RuleSpec{
+var rulesSpec = [...]rt.RuleSpec{
 	{Name: "main", Value: &sh16, Seen: -1, Scope: 1, Vars: 2},
-	{Name: "block", Value: &sh17, Flags: pegort.RuleMemo, Scope: 3, Vars: 2},
+	{Name: "block", Value: &sh17, Flags: rt.RuleMemo, Scope: 3, Vars: 2},
 	{Name: "item", Value: &sh18, Seen: -1, Scope: 4, Vars: 2},
 	{Name: "children", Value: &sh19, Seen: -1, Scope: 5, Vars: 2},
 	{Name: "spaces", Value: &sh12, Seen: -1},
 	{Name: "line", Value: &sh12, Seen: -1},
 	{Name: "eol", Value: &sh12, Seen: -1},
 	{Name: "blank", Value: &sh16, Seen: -1},
-	{Name: "blank", Value: &sh16, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "eol", Value: &sh12, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "blank", Value: &sh16, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "eol", Value: &sh12, Flags: rt.RuleNovalue, Seen: -1},
 }
 
 var rulesStrs = [...][]string{
@@ -219,19 +219,19 @@ var rulesStrs = [...][]string{
 	{"s", "b"},
 }
 
-var rulesExtras = [...]pegort.RuleExtra{}
+var rulesExtras = [...]rt.RuleExtra{}
 
 var scope21 = []string{}
 
-var recRulesSpec = [...]pegort.RuleSpec{
-	{Name: "main", Value: &sh16, Flags: pegort.RuleNovalue, Seen: -1, Vars: 1},
-	{Name: "block", Value: &sh17, Flags: pegort.RuleMemo | pegort.RuleNovalue, Vars: 1},
-	{Name: "item", Value: &sh18, Flags: pegort.RuleNovalue, Seen: -1, Scope: 2, Vars: 1},
-	{Name: "children", Value: &sh19, Flags: pegort.RuleNovalue, Seen: -1, Scope: 2, Vars: 1},
+var recRulesSpec = [...]rt.RuleSpec{
+	{Name: "main", Value: &sh16, Flags: rt.RuleNovalue, Seen: -1, Vars: 1},
+	{Name: "block", Value: &sh17, Flags: rt.RuleMemo | rt.RuleNovalue, Vars: 1},
+	{Name: "item", Value: &sh18, Flags: rt.RuleNovalue, Seen: -1, Scope: 2, Vars: 1},
+	{Name: "children", Value: &sh19, Flags: rt.RuleNovalue, Seen: -1, Scope: 2, Vars: 1},
 	{Name: "spaces", Value: &sh12, Seen: -1},
-	{Name: "line", Value: &sh12, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "eol", Value: &sh12, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "blank", Value: &sh16, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "line", Value: &sh12, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "eol", Value: &sh12, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "blank", Value: &sh16, Flags: rt.RuleNovalue, Seen: -1},
 }
 
 var recRulesStrs = [...][]string{
@@ -240,66 +240,66 @@ var recRulesStrs = [...][]string{
 	{"s"},
 }
 
-var recRulesExtras = [...]pegort.RuleExtra{}
+var recRulesExtras = [...]rt.RuleExtra{}
 
 func init() {
-	rules = pegort.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])
+	rules = rt.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])
 	pegoGrammar.SetRules(rules, 1)
-	rules[0].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e1(p) }
-	rules[0].Action = func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
-	rules[1].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e3(p) }
-	rules[1].Action = func(c *pegort.ActCtx) any {
+	rules[0].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e1(p) }
+	rules[0].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
+	rules[1].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e3(p) }
+	rules[1].Action = func(c *rt.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.NewList(c.ListItems("map", func() any { c.P.StepWork(); return c.Cap(0) }()))
 		}()
 	}
-	rules[2].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e4(p) }
-	rules[2].Action = func(c *pegort.ActCtx) any {
+	rules[2].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e4(p) }
+	rules[2].Action = func(c *rt.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.NewStruct("Item", "Text", func() any { c.P.StepWork(); return c.Cap(1) }(), "Children", func() any { c.P.StepWork(); return c.Concat(func() any { c.P.StepWork(); return c.Cap(2) }()) }())
 		}()
 	}
-	rules[3].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e5(p) }
-	rules[3].Action = func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(1) }() }
-	rules[4].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e7(p) }
-	rules[5].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e8(p) }
-	rules[6].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e11(p) }
-	rules[7].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e13(p) }
-	rules[8].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e14(p) }
-	rules[9].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e15(p) }
+	rules[3].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e5(p) }
+	rules[3].Action = func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(1) }() }
+	rules[4].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e7(p) }
+	rules[5].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e8(p) }
+	rules[6].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e11(p) }
+	rules[7].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e13(p) }
+	rules[8].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e14(p) }
+	rules[9].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e15(p) }
 	pegoGrammar.StructFields["Item"] = map[string]bool{"Text": true, "Children": true}
-	pegoGrammar.TypeKinds["Item"] = pegort.KindOf("Item", "")
-	recRules = pegort.NewRules(recRulesSpec[:], recRulesStrs[:], recRulesExtras[:])
+	pegoGrammar.TypeKinds["Item"] = rt.KindOf("Item", "")
+	recRules = rt.NewRules(recRulesSpec[:], recRulesStrs[:], recRulesExtras[:])
 	pegoRecGrammar.SetRules(recRules, 1)
-	recRules[0].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e20(p) }
-	recRules[1].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e22(p) }
-	recRules[2].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e23(p) }
-	recRules[3].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e24(p) }
-	recRules[4].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e7(p) }
-	recRules[5].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e25(p) }
-	recRules[6].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e15(p) }
-	recRules[7].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e14(p) }
+	recRules[0].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e20(p) }
+	recRules[1].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e22(p) }
+	recRules[2].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e23(p) }
+	recRules[3].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e24(p) }
+	recRules[4].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e7(p) }
+	recRules[5].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e25(p) }
+	recRules[6].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e15(p) }
+	recRules[7].Body = func(p *rt.Parser, _ int) (*rt.Node, bool) { return e14(p) }
 	pegoGrammar.Starts = []string{"main"}
 	pegoGrammar.DefaultStart = "main"
 	pegoGrammar.Descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\" \"", "[^\\n]", "\"\\n\"", "[ \\t]"}
 	pegoGrammar.SetVars([]string{"indent"}, []any{0})
 	pegoRecGrammar.Share(pegoGrammar)
-	trules = pegort.NewTRules(rules)
+	trules = rt.NewTRules(rules)
 	defer tinit()
 	trules[0].Entry = u0
 
 }
 
-func e1(p *pegort.Parser) (*pegort.Node, bool) {
+func e1(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var x1, x3 int
 		var ok bool
-		var v2 *pegort.Node
-		var x4 pegort.Mark
+		var v2 *rt.Node
+		var x4 rt.Mark
 		_, _ = x1, x3
-		if !p.Bind("indent", func(c *pegort.ActCtx) any { return func() any { return any(0) }() }) {
+		if !p.Bind("indent", func(c *rt.ActCtx) any { return func() any { return any(0) }() }) {
 			goto fail_ordinary
 		}
 		x1 = p.Pos
@@ -323,7 +323,7 @@ func e1(p *pegort.Parser) (*pegort.Node, bool) {
 			break
 		}
 		if !p.AtEndBatchOrdinary() {
-			p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
+			p.ExpectOrdinary(p.Pos, rt.IdEndInput)
 			goto fail_ordinary
 		}
 		return nil, true
@@ -334,12 +334,12 @@ func e1(p *pegort.Parser) (*pegort.Node, bool) {
 	p.StepWork()
 	var x1, x3 int
 	var ok bool
-	var v2 *pegort.Node
-	var x4 pegort.Mark
+	var v2 *rt.Node
+	var x4 rt.Mark
 	_, _ = x1, x3
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("indent", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
+	if !p.Bind("indent", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -368,7 +368,7 @@ func e1(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 	p.StepWork()
 	if !p.AtEndBatch() {
-		p.Expect(p.Pos, pegort.IdEndInput)
+		p.Expect(p.Pos, rt.IdEndInput)
 		goto fail
 	}
 	return nil, true
@@ -376,13 +376,13 @@ fail:
 	return nil, false
 }
 
-func e3(p *pegort.Parser) (*pegort.Node, bool) {
+func e3(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var x1, x2, x5, x8, x11 int
-		var x3, x4 *pegort.CaptureFrame
-		var x6, x9 pegort.Mark
+		var x3, x4 *rt.CaptureFrame
+		var x6, x9 rt.Mark
 		var ok bool
-		var v12, v13 *pegort.Node
+		var v12, v13 *rt.Node
 		_, _ = x8, x11
 		x1, x2 = p.Pos, len(p.KidStack)
 		x3 = p.NewFrame(len(scope2))
@@ -428,7 +428,7 @@ func e3(p *pegort.Parser) (*pegort.Node, bool) {
 			p.DropKids(x2)
 			goto fail_ordinary
 		}
-		v13 = p.NewBranchOrdinary(pegort.RawKindList, x1, p.Kids(x2))
+		v13 = p.NewBranchOrdinary(rt.RawKindList, x1, p.Kids(x2))
 		p.SetCaptureOrdinary(0, v13)
 		return nil, true
 	fail_ordinary:
@@ -437,10 +437,10 @@ func e3(p *pegort.Parser) (*pegort.Node, bool) {
 
 	p.StepWork()
 	var x1, x2, x5, x8, x11 int
-	var x3, x4 *pegort.CaptureFrame
-	var x6, x9 pegort.Mark
+	var x3, x4 *rt.CaptureFrame
+	var x6, x9 rt.Mark
 	var ok bool
-	var v12, v13 *pegort.Node
+	var v12, v13 *rt.Node
 	_, _ = x8, x11
 	p.StepWork()
 	x1, x2 = p.Pos, len(p.KidStack)
@@ -492,26 +492,26 @@ func e3(p *pegort.Parser) (*pegort.Node, bool) {
 		p.DropKids(x2)
 		goto fail
 	}
-	v13 = p.NewBranch(pegort.RawKindList, x1, p.Kids(x2))
+	v13 = p.NewBranch(rt.RawKindList, x1, p.Kids(x2))
 	p.SetCapture(0, v13)
 	return nil, true
 fail:
 	return nil, false
 }
 
-func e4(p *pegort.Parser) (*pegort.Node, bool) {
+func e4(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var x1, x3, x5 int
 		var ok bool
-		var v2, v4, v7, v10 *pegort.Node
-		var x6 pegort.Mark
+		var v2, v4, v7, v10 *rt.Node
+		var x6 rt.Mark
 		_, _, _ = x1, x3, x5
 		x1 = p.Pos
 		if v2, ok = r4(p); !ok {
 			goto fail_ordinary
 		}
 		p.SetCaptureOrdinary(0, v2)
-		if !p.Predicate(func(c *pegort.ActCtx) any {
+		if !p.Predicate(func(c *rt.ActCtx) any {
 			return func() any {
 				return c.Binary("==", func() any { return c.Length(func() any { return c.Cap(0) }()) }(), func() any { return c.Lookup("indent") }())
 			}()
@@ -546,8 +546,8 @@ func e4(p *pegort.Parser) (*pegort.Node, bool) {
 	p.StepWork()
 	var x1, x3, x5 int
 	var ok bool
-	var v2, v4, v7, v10 *pegort.Node
-	var x6 pegort.Mark
+	var v2, v4, v7, v10 *rt.Node
+	var x6 rt.Mark
 	_, _, _ = x1, x3, x5
 	p.StepWork()
 	p.StepWork()
@@ -558,7 +558,7 @@ func e4(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 	p.SetCapture(0, v2)
 	p.StepWork()
-	if !p.Predicate(func(c *pegort.ActCtx) any {
+	if !p.Predicate(func(c *rt.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("==", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("indent") }())
@@ -597,12 +597,12 @@ fail:
 	return nil, false
 }
 
-func e5(p *pegort.Parser) (*pegort.Node, bool) {
+func e5(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var x1, x4, x7, x9 int
-		var x5 pegort.Mark
+		var x5 rt.Mark
 		var ok bool
-		var v8, v10 *pegort.Node
+		var v8, v10 *rt.Node
 		_, _, _ = x4, x7, x9
 		x1 = p.Pos
 		p.Silent++
@@ -635,14 +635,14 @@ func e5(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail_ordinary
 	L3_ordinary:
 		p.StepWork()
-		if !p.Predicate(func(c *pegort.ActCtx) any {
+		if !p.Predicate(func(c *rt.ActCtx) any {
 			return func() any {
 				return c.Binary(">", func() any { return c.Length(func() any { return c.Cap(0) }()) }(), func() any { return c.Lookup("indent") }())
 			}()
 		}) {
 			goto fail_ordinary
 		}
-		if !p.Bind("indent", func(c *pegort.ActCtx) any {
+		if !p.Bind("indent", func(c *rt.ActCtx) any {
 			return func() any { return c.Length(func() any { return c.Cap(0) }()) }()
 		}) {
 			goto fail_ordinary
@@ -659,9 +659,9 @@ func e5(p *pegort.Parser) (*pegort.Node, bool) {
 
 	p.StepWork()
 	var x1, x4, x7, x9 int
-	var x5 pegort.Mark
+	var x5 rt.Mark
 	var ok bool
-	var v8, v10 *pegort.Node
+	var v8, v10 *rt.Node
 	_, _, _ = x4, x7, x9
 	p.StepWork()
 	p.StepWork()
@@ -701,7 +701,7 @@ L2:
 	goto fail
 L3:
 	p.StepWork()
-	if !p.Predicate(func(c *pegort.ActCtx) any {
+	if !p.Predicate(func(c *rt.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("indent") }())
@@ -710,7 +710,7 @@ L3:
 		goto fail
 	}
 	p.StepWork()
-	if !p.Bind("indent", func(c *pegort.ActCtx) any {
+	if !p.Bind("indent", func(c *rt.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
 	}) {
 		goto fail
@@ -727,12 +727,12 @@ fail:
 	return nil, false
 }
 
-func e7(p *pegort.Parser) (*pegort.Node, bool) {
+func e7(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var x1, x2 int
-		var x3 pegort.Mark
+		var x3 rt.Mark
 		var ok bool
-		var v5 *pegort.Node
+		var v5 *rt.Node
 		_ = x2
 		x1 = p.Pos
 		x2 = 0
@@ -758,9 +758,9 @@ func e7(p *pegort.Parser) (*pegort.Node, bool) {
 
 	p.StepWork()
 	var x1, x2 int
-	var x3 pegort.Mark
+	var x3 rt.Mark
 	var ok bool
-	var v5 *pegort.Node
+	var v5 *rt.Node
 	_ = x2
 	p.StepWork()
 	x1 = p.Pos
@@ -769,7 +769,7 @@ func e7(p *pegort.Parser) (*pegort.Node, bool) {
 	for {
 		x3 = p.Mark()
 		p.StepWork()
-		if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 32) {
+		if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 32) {
 			p.Pos++
 		} else if _, ok = p.MatchLiteral(lit6, " ", 5, false); !ok {
 			goto L4
@@ -787,12 +787,12 @@ func e7(p *pegort.Parser) (*pegort.Node, bool) {
 	return v5, true
 }
 
-func e8(p *pegort.Parser) (*pegort.Node, bool) {
+func e8(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var x1, size, x2 int
 		var ch rune
 		var ok bool
-		var v3 *pegort.Node
+		var v3 *rt.Node
 		x1 = p.Pos
 		x2 = 0
 		for {
@@ -817,7 +817,7 @@ func e8(p *pegort.Parser) (*pegort.Node, bool) {
 	var x1, size, x2 int
 	var ch rune
 	var ok bool
-	var v3 *pegort.Node
+	var v3 *rt.Node
 	p.StepWork()
 	x1 = p.Pos
 	p.StepWork()
@@ -845,10 +845,10 @@ fail:
 	return nil, false
 }
 
-func e11(p *pegort.Parser) (*pegort.Node, bool) {
+func e11(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		var x1 pegort.Mark
-		var v2, v9, v11 *pegort.Node
+		var x1 rt.Mark
+		var v2, v9, v11 *rt.Node
 		var x4 rune
 		var x5, ok bool
 		var x8 int
@@ -872,7 +872,7 @@ func e11(p *pegort.Parser) (*pegort.Node, bool) {
 	L6_ordinary:
 		p.StepWork()
 		if !p.AtEndBatchOrdinary() {
-			p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
+			p.ExpectOrdinary(p.Pos, rt.IdEndInput)
 			goto L10_ordinary
 		}
 		v11, _ = p.ShapeSingle(sh10, nil, x1.Pos)
@@ -888,8 +888,8 @@ func e11(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 
 	p.StepWork()
-	var x1 pegort.Mark
-	var v2, v9, v11 *pegort.Node
+	var x1 rt.Mark
+	var v2, v9, v11 *rt.Node
 	var x4 rune
 	var x5, ok bool
 	var x8 int
@@ -907,7 +907,7 @@ func e11(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 	p.StepWork()
 	x8 = p.Pos
-	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
+	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit9, "\n", 7, false); !ok {
 		goto L7
@@ -920,7 +920,7 @@ L7:
 L6:
 	p.StepWork()
 	if !p.AtEndBatch() {
-		p.Expect(p.Pos, pegort.IdEndInput)
+		p.Expect(p.Pos, rt.IdEndInput)
 		goto L10
 	}
 	v11, _ = p.ShapeSingle(sh10, nil, x1.Pos)
@@ -935,14 +935,14 @@ fail:
 	return nil, false
 }
 
-func e13(p *pegort.Parser) (*pegort.Node, bool) {
+func e13(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var x1, x3, x4, x5, size, x8, x12 int
-		var x2 []*pegort.Node
-		var x6 pegort.Mark
+		var x2 []*rt.Node
+		var x6 rt.Mark
 		var ch rune
 		var ok bool
-		var v9, v10, v11, v13, v14 *pegort.Node
+		var v9, v10, v11, v13, v14 *rt.Node
 		_ = x5
 		x1 = p.Pos
 		x2 = p.Nodes(2)[:0]
@@ -969,7 +969,7 @@ func e13(p *pegort.Parser) (*pegort.Node, bool) {
 			p.Reset(x6)
 			break
 		}
-		v11 = p.NewBranchOrdinary(pegort.RawKindList, x3, p.Kids(x4))
+		v11 = p.NewBranchOrdinary(rt.RawKindList, x3, p.Kids(x4))
 		x2 = append(x2, v11)
 		x12 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 10 {
@@ -979,7 +979,7 @@ func e13(p *pegort.Parser) (*pegort.Node, bool) {
 		}
 		v13 = p.NewTerminalOrdinary(x12, "\n")
 		x2 = append(x2, v13)
-		v14 = p.NewBranchOrdinary(pegort.RawKindSeq, x1, x2)
+		v14 = p.NewBranchOrdinary(rt.RawKindSeq, x1, x2)
 		return v14, true
 	fail_ordinary:
 		return nil, false
@@ -987,11 +987,11 @@ func e13(p *pegort.Parser) (*pegort.Node, bool) {
 
 	p.StepWork()
 	var x1, x3, x4, x5, size, x8, x12 int
-	var x2 []*pegort.Node
-	var x6 pegort.Mark
+	var x2 []*rt.Node
+	var x6 rt.Mark
 	var ch rune
 	var ok bool
-	var v9, v10, v11, v13, v14 *pegort.Node
+	var v9, v10, v11, v13, v14 *rt.Node
 	_ = x5
 	p.StepWork()
 	x1 = p.Pos
@@ -1026,26 +1026,26 @@ func e13(p *pegort.Parser) (*pegort.Node, bool) {
 		p.Reset(x6)
 		break
 	}
-	v11 = p.NewBranch(pegort.RawKindList, x3, p.Kids(x4))
+	v11 = p.NewBranch(rt.RawKindList, x3, p.Kids(x4))
 	x2 = append(x2, v11)
 	p.StepWork()
 	x12 = p.Pos
-	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
+	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit9, "\n", 7, false); !ok {
 		goto fail
 	}
 	v13 = p.NewTerminal(x12, "\n")
 	x2 = append(x2, v13)
-	v14 = p.NewBranch(pegort.RawKindSeq, x1, x2)
+	v14 = p.NewBranch(rt.RawKindSeq, x1, x2)
 	return v14, true
 fail:
 	return nil, false
 }
 
-func e14(p *pegort.Parser) (*pegort.Node, bool) {
+func e14(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		var v *pegort.Node
+		var v *rt.Node
 		var ch rune
 		var size int
 		var ok bool
@@ -1069,7 +1069,7 @@ func e14(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 
 	p.StepWork()
-	var v *pegort.Node
+	var v *rt.Node
 	var ch rune
 	var size int
 	var ok bool
@@ -1089,7 +1089,7 @@ func e14(p *pegort.Parser) (*pegort.Node, bool) {
 		p.Pos += size
 	}
 	p.StepWork()
-	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
+	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit9, "\n", 7, false); !ok {
 		goto fail
@@ -1100,9 +1100,9 @@ fail:
 	return nil, false
 }
 
-func e15(p *pegort.Parser) (*pegort.Node, bool) {
+func e15(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		var v *pegort.Node
+		var v *rt.Node
 		var x1 int
 		var x3 rune
 		var x4, ok bool
@@ -1123,7 +1123,7 @@ func e15(p *pegort.Parser) (*pegort.Node, bool) {
 	L5_ordinary:
 		p.StepWork()
 		if !p.AtEndBatchOrdinary() {
-			p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
+			p.ExpectOrdinary(p.Pos, rt.IdEndInput)
 			goto L7_ordinary
 		}
 		goto L2_ordinary
@@ -1138,7 +1138,7 @@ func e15(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 
 	p.StepWork()
-	var v *pegort.Node
+	var v *rt.Node
 	var x1 int
 	var x3 rune
 	var x4, ok bool
@@ -1155,7 +1155,7 @@ func e15(p *pegort.Parser) (*pegort.Node, bool) {
 		goto L5
 	}
 	p.StepWork()
-	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
+	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit9, "\n", 7, false); !ok {
 		goto L6
@@ -1166,7 +1166,7 @@ L6:
 L5:
 	p.StepWork()
 	if !p.AtEndBatch() {
-		p.Expect(p.Pos, pegort.IdEndInput)
+		p.Expect(p.Pos, rt.IdEndInput)
 		goto L7
 	}
 	goto L2
@@ -1180,7 +1180,7 @@ fail:
 	return nil, false
 }
 
-func r4(p *pegort.Parser) (*pegort.Node, bool) {
+func r4(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
 		prevEnv, prevCut := p.Env, p.Cut
@@ -1191,7 +1191,7 @@ func r4(p *pegort.Parser) (*pegort.Node, bool) {
 		p.Cut = prevCut
 		p.Trail = p.Trail[:trail]
 		if ok {
-			v = p.Finish(rules[4], pegort.EmptyFrame, v, start)
+			v = p.Finish(rules[4], rt.EmptyFrame, v, start)
 		} else {
 			p.Pos = start
 		}
@@ -1209,7 +1209,7 @@ func r4(p *pegort.Parser) (*pegort.Node, bool) {
 	p.Cut = prevCut
 	p.Trail = p.Trail[:trail]
 	if ok {
-		v = p.Finish(rules[4], pegort.EmptyFrame, v, start)
+		v = p.Finish(rules[4], rt.EmptyFrame, v, start)
 	} else {
 		p.Pos = start
 	}
@@ -1217,7 +1217,7 @@ func r4(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-func r5(p *pegort.Parser) (*pegort.Node, bool) {
+func r5(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
 		prevEnv, prevCut := p.Env, p.Cut
@@ -1228,7 +1228,7 @@ func r5(p *pegort.Parser) (*pegort.Node, bool) {
 		p.Cut = prevCut
 		p.Trail = p.Trail[:trail]
 		if ok {
-			v = p.Finish(rules[5], pegort.EmptyFrame, v, start)
+			v = p.Finish(rules[5], rt.EmptyFrame, v, start)
 		} else {
 			p.Pos = start
 		}
@@ -1246,7 +1246,7 @@ func r5(p *pegort.Parser) (*pegort.Node, bool) {
 	p.Cut = prevCut
 	p.Trail = p.Trail[:trail]
 	if ok {
-		v = p.Finish(rules[5], pegort.EmptyFrame, v, start)
+		v = p.Finish(rules[5], rt.EmptyFrame, v, start)
 	} else {
 		p.Pos = start
 	}
@@ -1254,10 +1254,10 @@ func r5(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-func r8(p *pegort.Parser) (*pegort.Node, bool) {
+func r8(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var start, size int
-		var v *pegort.Node
+		var v *rt.Node
 		var ch rune
 		var ok bool
 		start = p.Pos
@@ -1286,7 +1286,7 @@ func r8(p *pegort.Parser) (*pegort.Node, bool) {
 
 	p.StepWork()
 	var start, size int
-	var v *pegort.Node
+	var v *rt.Node
 	var ch rune
 	var ok bool
 	start = p.Pos
@@ -1307,7 +1307,7 @@ func r8(p *pegort.Parser) (*pegort.Node, bool) {
 		p.Pos += size
 	}
 	p.StepWork()
-	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
+	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit9, "\n", 7, false); !ok {
 		goto fail
@@ -1321,10 +1321,10 @@ fail:
 	return nil, false
 }
 
-func r9(p *pegort.Parser) (*pegort.Node, bool) {
+func r9(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var start, x1 int
-		var v *pegort.Node
+		var v *rt.Node
 		var x3 rune
 		var x4, ok bool
 		start = p.Pos
@@ -1346,7 +1346,7 @@ func r9(p *pegort.Parser) (*pegort.Node, bool) {
 	L5_ordinary:
 		p.StepWork()
 		if !p.AtEndBatchOrdinary() {
-			p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
+			p.ExpectOrdinary(p.Pos, rt.IdEndInput)
 			goto L7_ordinary
 		}
 		goto L2_ordinary
@@ -1365,7 +1365,7 @@ func r9(p *pegort.Parser) (*pegort.Node, bool) {
 
 	p.StepWork()
 	var start, x1 int
-	var v *pegort.Node
+	var v *rt.Node
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
@@ -1383,7 +1383,7 @@ func r9(p *pegort.Parser) (*pegort.Node, bool) {
 		goto L5
 	}
 	p.StepWork()
-	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
+	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit9, "\n", 7, false); !ok {
 		goto L6
@@ -1394,7 +1394,7 @@ L6:
 L5:
 	p.StepWork()
 	if !p.AtEndBatch() {
-		p.Expect(p.Pos, pegort.IdEndInput)
+		p.Expect(p.Pos, rt.IdEndInput)
 		goto L7
 	}
 	goto L2
@@ -1411,13 +1411,13 @@ fail:
 	return nil, false
 }
 
-func e20(p *pegort.Parser) (*pegort.Node, bool) {
+func e20(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var ok bool
 		var x1 int
-		var x2 pegort.Mark
+		var x2 rt.Mark
 		_ = x1
-		if !p.Bind("indent", func(c *pegort.ActCtx) any { return func() any { return any(0) }() }) {
+		if !p.Bind("indent", func(c *rt.ActCtx) any { return func() any { return any(0) }() }) {
 			goto fail_ordinary
 		}
 		if _, ok = p.Call(recRules[1], 0); !ok {
@@ -1439,7 +1439,7 @@ func e20(p *pegort.Parser) (*pegort.Node, bool) {
 			break
 		}
 		if !p.AtEndBatchOrdinary() {
-			p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
+			p.ExpectOrdinary(p.Pos, rt.IdEndInput)
 			goto fail_ordinary
 		}
 		return nil, true
@@ -1450,11 +1450,11 @@ func e20(p *pegort.Parser) (*pegort.Node, bool) {
 	p.StepWork()
 	var ok bool
 	var x1 int
-	var x2 pegort.Mark
+	var x2 rt.Mark
 	_ = x1
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("indent", func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
+	if !p.Bind("indent", func(c *rt.ActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -1481,7 +1481,7 @@ func e20(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 	p.StepWork()
 	if !p.AtEndBatch() {
-		p.Expect(p.Pos, pegort.IdEndInput)
+		p.Expect(p.Pos, rt.IdEndInput)
 		goto fail
 	}
 	return nil, true
@@ -1489,11 +1489,11 @@ fail:
 	return nil, false
 }
 
-func e22(p *pegort.Parser) (*pegort.Node, bool) {
+func e22(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		var x1, x2 *pegort.CaptureFrame
+		var x1, x2 *rt.CaptureFrame
 		var x3, x6 int
-		var x4, x7 pegort.Mark
+		var x4, x7 rt.Mark
 		var ok bool
 		_ = x6
 		x3 = 0
@@ -1540,9 +1540,9 @@ func e22(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 
 	p.StepWork()
-	var x1, x2 *pegort.CaptureFrame
+	var x1, x2 *rt.CaptureFrame
 	var x3, x6 int
-	var x4, x7 pegort.Mark
+	var x4, x7 rt.Mark
 	var ok bool
 	_ = x6
 	p.StepWork()
@@ -1595,19 +1595,19 @@ fail:
 	return nil, false
 }
 
-func e23(p *pegort.Parser) (*pegort.Node, bool) {
+func e23(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var x1 int
 		var ok bool
-		var v2 *pegort.Node
-		var x3 pegort.Mark
+		var v2 *rt.Node
+		var x3 rt.Mark
 		_ = x1
 		x1 = p.Pos
 		if v2, ok = q4(p); !ok {
 			goto fail_ordinary
 		}
 		p.SetCaptureOrdinary(0, v2)
-		if !p.Predicate(func(c *pegort.ActCtx) any {
+		if !p.Predicate(func(c *rt.ActCtx) any {
 			return func() any {
 				return c.Binary("==", func() any { return c.Length(func() any { return c.Cap(0) }()) }(), func() any { return c.Lookup("indent") }())
 			}()
@@ -1636,8 +1636,8 @@ func e23(p *pegort.Parser) (*pegort.Node, bool) {
 	p.StepWork()
 	var x1 int
 	var ok bool
-	var v2 *pegort.Node
-	var x3 pegort.Mark
+	var v2 *rt.Node
+	var x3 rt.Mark
 	_ = x1
 	p.StepWork()
 	p.StepWork()
@@ -1648,7 +1648,7 @@ func e23(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 	p.SetCapture(0, v2)
 	p.StepWork()
-	if !p.Predicate(func(c *pegort.ActCtx) any {
+	if !p.Predicate(func(c *rt.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("==", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("indent") }())
@@ -1681,12 +1681,12 @@ fail:
 	return nil, false
 }
 
-func e24(p *pegort.Parser) (*pegort.Node, bool) {
+func e24(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var x1, x4, x7 int
-		var x5 pegort.Mark
+		var x5 rt.Mark
 		var ok bool
-		var v8 *pegort.Node
+		var v8 *rt.Node
 		_, _ = x4, x7
 		x1 = p.Pos
 		p.Silent++
@@ -1719,14 +1719,14 @@ func e24(p *pegort.Parser) (*pegort.Node, bool) {
 		goto fail_ordinary
 	L3_ordinary:
 		p.StepWork()
-		if !p.Predicate(func(c *pegort.ActCtx) any {
+		if !p.Predicate(func(c *rt.ActCtx) any {
 			return func() any {
 				return c.Binary(">", func() any { return c.Length(func() any { return c.Cap(0) }()) }(), func() any { return c.Lookup("indent") }())
 			}()
 		}) {
 			goto fail_ordinary
 		}
-		if !p.Bind("indent", func(c *pegort.ActCtx) any {
+		if !p.Bind("indent", func(c *rt.ActCtx) any {
 			return func() any { return c.Length(func() any { return c.Cap(0) }()) }()
 		}) {
 			goto fail_ordinary
@@ -1741,9 +1741,9 @@ func e24(p *pegort.Parser) (*pegort.Node, bool) {
 
 	p.StepWork()
 	var x1, x4, x7 int
-	var x5 pegort.Mark
+	var x5 rt.Mark
 	var ok bool
-	var v8 *pegort.Node
+	var v8 *rt.Node
 	_, _ = x4, x7
 	p.StepWork()
 	p.StepWork()
@@ -1783,7 +1783,7 @@ L2:
 	goto fail
 L3:
 	p.StepWork()
-	if !p.Predicate(func(c *pegort.ActCtx) any {
+	if !p.Predicate(func(c *rt.ActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }(), func() any { c.P.StepWork(); return c.Lookup("indent") }())
@@ -1792,7 +1792,7 @@ L3:
 		goto fail
 	}
 	p.StepWork()
-	if !p.Bind("indent", func(c *pegort.ActCtx) any {
+	if !p.Bind("indent", func(c *rt.ActCtx) any {
 		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return c.Cap(0) }()) }()
 	}) {
 		goto fail
@@ -1807,9 +1807,9 @@ fail:
 	return nil, false
 }
 
-func e25(p *pegort.Parser) (*pegort.Node, bool) {
+func e25(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
-		var v *pegort.Node
+		var v *rt.Node
 		var ch rune
 		var size, x1 int
 		var ok bool
@@ -1833,7 +1833,7 @@ func e25(p *pegort.Parser) (*pegort.Node, bool) {
 	}
 
 	p.StepWork()
-	var v *pegort.Node
+	var v *rt.Node
 	var ch rune
 	var size, x1 int
 	var ok bool
@@ -1863,7 +1863,7 @@ fail:
 	return nil, false
 }
 
-func q4(p *pegort.Parser) (*pegort.Node, bool) {
+func q4(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		start, trail := p.Pos, len(p.Trail)
 		prevEnv, prevCut := p.Env, p.Cut
@@ -1874,7 +1874,7 @@ func q4(p *pegort.Parser) (*pegort.Node, bool) {
 		p.Cut = prevCut
 		p.Trail = p.Trail[:trail]
 		if ok {
-			v = p.Finish(recRules[4], pegort.EmptyFrame, v, start)
+			v = p.Finish(recRules[4], rt.EmptyFrame, v, start)
 		} else {
 			p.Pos = start
 		}
@@ -1892,7 +1892,7 @@ func q4(p *pegort.Parser) (*pegort.Node, bool) {
 	p.Cut = prevCut
 	p.Trail = p.Trail[:trail]
 	if ok {
-		v = p.Finish(recRules[4], pegort.EmptyFrame, v, start)
+		v = p.Finish(recRules[4], rt.EmptyFrame, v, start)
 	} else {
 		p.Pos = start
 	}
@@ -1900,10 +1900,10 @@ func q4(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-func q5(p *pegort.Parser) (*pegort.Node, bool) {
+func q5(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var start, size, x1 int
-		var v *pegort.Node
+		var v *rt.Node
 		var ch rune
 		var ok bool
 		start = p.Pos
@@ -1932,7 +1932,7 @@ func q5(p *pegort.Parser) (*pegort.Node, bool) {
 
 	p.StepWork()
 	var start, size, x1 int
-	var v *pegort.Node
+	var v *rt.Node
 	var ch rune
 	var ok bool
 	start = p.Pos
@@ -1966,10 +1966,10 @@ fail:
 	return nil, false
 }
 
-func q6(p *pegort.Parser) (*pegort.Node, bool) {
+func q6(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var start, x1 int
-		var v *pegort.Node
+		var v *rt.Node
 		var x3 rune
 		var x4, ok bool
 		start = p.Pos
@@ -1991,7 +1991,7 @@ func q6(p *pegort.Parser) (*pegort.Node, bool) {
 	L5_ordinary:
 		p.StepWork()
 		if !p.AtEndBatchOrdinary() {
-			p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
+			p.ExpectOrdinary(p.Pos, rt.IdEndInput)
 			goto L7_ordinary
 		}
 		goto L2_ordinary
@@ -2010,7 +2010,7 @@ func q6(p *pegort.Parser) (*pegort.Node, bool) {
 
 	p.StepWork()
 	var start, x1 int
-	var v *pegort.Node
+	var v *rt.Node
 	var x3 rune
 	var x4, ok bool
 	start = p.Pos
@@ -2028,7 +2028,7 @@ func q6(p *pegort.Parser) (*pegort.Node, bool) {
 		goto L5
 	}
 	p.StepWork()
-	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
+	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit9, "\n", 7, false); !ok {
 		goto L6
@@ -2039,7 +2039,7 @@ L6:
 L5:
 	p.StepWork()
 	if !p.AtEndBatch() {
-		p.Expect(p.Pos, pegort.IdEndInput)
+		p.Expect(p.Pos, rt.IdEndInput)
 		goto L7
 	}
 	goto L2
@@ -2056,10 +2056,10 @@ fail:
 	return nil, false
 }
 
-func q7(p *pegort.Parser) (*pegort.Node, bool) {
+func q7(p *rt.Parser) (*rt.Node, bool) {
 	if p.Control == nil {
 		var start, size int
-		var v *pegort.Node
+		var v *rt.Node
 		var ch rune
 		var ok bool
 		start = p.Pos
@@ -2088,7 +2088,7 @@ func q7(p *pegort.Parser) (*pegort.Node, bool) {
 
 	p.StepWork()
 	var start, size int
-	var v *pegort.Node
+	var v *rt.Node
 	var ch rune
 	var ok bool
 	start = p.Pos
@@ -2109,7 +2109,7 @@ func q7(p *pegort.Parser) (*pegort.Node, bool) {
 		p.Pos += size
 	}
 	p.StepWork()
-	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
+	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
 		p.Pos++
 	} else if _, ok = p.MatchLiteral(lit9, "\n", 7, false); !ok {
 		goto fail
@@ -2123,10 +2123,10 @@ fail:
 	return nil, false
 }
 
-var trules []*pegort.TRule
+var trules []*rt.TRule
 
 // rule main
-func u0(p *pegort.TParser) (any, bool) {
+func u0(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
 		v, ok := i0(p)
@@ -2144,18 +2144,18 @@ func u0(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i0(p *pegort.TParser) (any, bool) {
+func i0(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var start, x2, x4, x5 int
 		var v, k1, v3 any
-		var c *pegort.TActCtx
-		var prevEnv *pegort.Env
+		var c *rt.TActCtx
+		var prevEnv *rt.Env
 		var ok bool
 		start = p.Pos
 		prevEnv = p.Env
 		p.Enter()
 		_, _ = x2, x4
-		if !p.Bind("indent", func(c *pegort.TActCtx) any { return func() any { return any(0) }() }) {
+		if !p.Bind("indent", func(c *rt.TActCtx) any { return func() any { return any(0) }() }) {
 			goto fail_ordinary
 		}
 		x2 = p.Pos
@@ -2179,10 +2179,10 @@ func i0(p *pegort.TParser) (any, bool) {
 			break
 		}
 		if !p.AtEndBatchOrdinary() {
-			p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
+			p.ExpectOrdinary(p.Pos, rt.IdEndInput)
 			goto fail_ordinary
 		}
-		c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		p.Where = "main"
 		v = func() any { return k1 }()
 		v = c.Finish(v)
@@ -2198,8 +2198,8 @@ func i0(p *pegort.TParser) (any, bool) {
 	p.StepWork()
 	var start, x2, x4, x5 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -2207,7 +2207,7 @@ func i0(p *pegort.TParser) (any, bool) {
 	_, _ = x2, x4
 	p.StepWork()
 	p.StepWork()
-	if !p.Bind("indent", func(c *pegort.TActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
+	if !p.Bind("indent", func(c *rt.TActCtx) any { return func() any { c.P.StepWork(); return any(0) }() }) {
 		goto fail
 	}
 	p.StepWork()
@@ -2236,10 +2236,10 @@ func i0(p *pegort.TParser) (any, bool) {
 	}
 	p.StepWork()
 	if !p.AtEndBatch() {
-		p.Expect(p.Pos, pegort.IdEndInput)
+		p.Expect(p.Pos, rt.IdEndInput)
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "main"
 	v = func() any { c.P.StepWork(); return k1 }()
 	v = c.Finish(v)
@@ -2253,7 +2253,7 @@ fail:
 }
 
 // rule block
-func u1(p *pegort.TParser) (any, bool) {
+func u1(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		if !p.FirstCall(rules[1]) {
 			return p.CallMemo(trules[1], i1)
@@ -2277,11 +2277,11 @@ func u1(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i1(p *pegort.TParser) (any, bool) {
+func i1(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var start, x2, x3, x4, x5, x8, x9, x11 int
 		var v, k1, k6, v12, v13 any
-		var c *pegort.TActCtx
+		var c *rt.TActCtx
 		var ok bool
 		start = p.Pos
 		p.Enter()
@@ -2326,7 +2326,7 @@ func i1(p *pegort.TParser) (any, bool) {
 		}
 		v13 = p.NewNodeOrdinary("list", x2, p.Pos, p.Kids(x3))
 		k1 = v13
-		c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		p.Where = "block"
 		v = func() any {
 			return c.NewList(c.ListItems("map", func() any { return k1 }()))
@@ -2342,7 +2342,7 @@ func i1(p *pegort.TParser) (any, bool) {
 	p.StepWork()
 	var start, x2, x3, x4, x5, x8, x9, x11 int
 	var v, k1, k6, v12, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -2394,7 +2394,7 @@ func i1(p *pegort.TParser) (any, bool) {
 	}
 	v13 = p.NewNode("list", x2, p.Pos, p.Kids(x3))
 	k1 = v13
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "block"
 	v = func() any {
 		c.P.StepWork()
@@ -2409,7 +2409,7 @@ fail:
 }
 
 // rule item
-func u2(p *pegort.TParser) (any, bool) {
+func u2(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
 		v, ok := i2(p)
@@ -2427,11 +2427,11 @@ func u2(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i2(p *pegort.TParser) (any, bool) {
+func i2(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var start, x2, x5, x8, x9 int
 		var v, k1, v3, k4, v6, k7, v10, v13 any
-		var c *pegort.TActCtx
+		var c *rt.TActCtx
 		var ok bool
 		start = p.Pos
 		p.Enter()
@@ -2441,7 +2441,7 @@ func i2(p *pegort.TParser) (any, bool) {
 			goto fail_ordinary
 		}
 		k1 = v3
-		if !p.Predicate(func(c *pegort.TActCtx) any {
+		if !p.Predicate(func(c *rt.TActCtx) any {
 			return func() any {
 				return c.Binary("==", func() any { return c.Length(func() any { return k1 }()) }(), func() any { return c.Lookup("indent") }())
 			}()
@@ -2468,7 +2468,7 @@ func i2(p *pegort.TParser) (any, bool) {
 		v10 = nil
 	L12_ordinary:
 		k7 = v10
-		c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		p.Where = "item"
 		v = func() any {
 			return func() any {
@@ -2487,7 +2487,7 @@ func i2(p *pegort.TParser) (any, bool) {
 	p.StepWork()
 	var start, x2, x5, x8, x9 int
 	var v, k1, v3, k4, v6, k7, v10, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -2501,7 +2501,7 @@ func i2(p *pegort.TParser) (any, bool) {
 	}
 	k1 = v3
 	p.StepWork()
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary("==", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k1 }()) }(), func() any { c.P.StepWork(); return c.Lookup("indent") }())
@@ -2535,7 +2535,7 @@ L11:
 	v10 = nil
 L12:
 	k7 = v10
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "item"
 	v = func() any {
 		c.P.StepWork()
@@ -2553,7 +2553,7 @@ fail:
 }
 
 // rule children
-func u3(p *pegort.TParser) (any, bool) {
+func u3(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		start := p.Pos
 		v, ok := i3(p)
@@ -2571,12 +2571,12 @@ func u3(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i3(p *pegort.TParser) (any, bool) {
+func i3(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var start, x1, x4, x5, x8, x11 int
 		var v, k7, v9, k10, v12 any
-		var c *pegort.TActCtx
-		var prevEnv *pegort.Env
+		var c *rt.TActCtx
+		var prevEnv *rt.Env
 		var ok bool
 		start = p.Pos
 		prevEnv = p.Env
@@ -2613,14 +2613,14 @@ func i3(p *pegort.TParser) (any, bool) {
 		goto fail_ordinary
 	L3_ordinary:
 		p.StepWork()
-		if !p.Predicate(func(c *pegort.TActCtx) any {
+		if !p.Predicate(func(c *rt.TActCtx) any {
 			return func() any {
 				return c.Binary(">", func() any { return c.Length(func() any { return k7 }()) }(), func() any { return c.Lookup("indent") }())
 			}()
 		}) {
 			goto fail_ordinary
 		}
-		if !p.Bind("indent", func(c *pegort.TActCtx) any {
+		if !p.Bind("indent", func(c *rt.TActCtx) any {
 			return func() any { return c.Length(func() any { return k7 }()) }()
 		}) {
 			goto fail_ordinary
@@ -2630,7 +2630,7 @@ func i3(p *pegort.TParser) (any, bool) {
 			goto fail_ordinary
 		}
 		k10 = v12
-		c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+		c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 		p.Where = "children"
 		v = func() any { return k10 }()
 		v = c.Finish(v)
@@ -2646,8 +2646,8 @@ func i3(p *pegort.TParser) (any, bool) {
 	p.StepWork()
 	var start, x1, x4, x5, x8, x11 int
 	var v, k7, v9, k10, v12 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -2691,7 +2691,7 @@ L2:
 	goto fail
 L3:
 	p.StepWork()
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			c.P.StepWork()
 			return c.Binary(">", func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k7 }()) }(), func() any { c.P.StepWork(); return c.Lookup("indent") }())
@@ -2700,7 +2700,7 @@ L3:
 		goto fail
 	}
 	p.StepWork()
-	if !p.Bind("indent", func(c *pegort.TActCtx) any {
+	if !p.Bind("indent", func(c *rt.TActCtx) any {
 		return func() any { c.P.StepWork(); return c.Length(func() any { c.P.StepWork(); return k7 }()) }()
 	}) {
 		goto fail
@@ -2712,7 +2712,7 @@ L3:
 		goto fail
 	}
 	k10 = v12
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "children"
 	v = func() any { c.P.StepWork(); return k10 }()
 	v = c.Finish(v)
@@ -2725,7 +2725,7 @@ fail:
 	return nil, false
 }
 
-func s4(p *pegort.TParser) (any, bool) {
+func s4(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var start, x1, x2, x3 int
 		var v, v5 any
@@ -2753,7 +2753,7 @@ func s4(p *pegort.TParser) (any, bool) {
 		}
 		v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 		v = p.ScopeValue(sh12, v5, start)
-		if n := pegort.AsTval(v); n != nil {
+		if n := rt.AsTval(v); n != nil {
 			n.TSetFresh(false)
 		}
 		p.Depth--
@@ -2774,7 +2774,7 @@ func s4(p *pegort.TParser) (any, bool) {
 	for {
 		x3 = p.Pos
 		p.StepWork()
-		if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 32) {
+		if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 32) {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit6, " ", 5, false); !ok {
 			goto L4
@@ -2790,14 +2790,14 @@ func s4(p *pegort.TParser) (any, bool) {
 	}
 	v5 = p.NewMatch(x1, p.Pos, p.Text(x1, p.Pos), true)
 	v = p.ScopeValue(sh12, v5, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
 	return v, true
 }
 
-func s5(p *pegort.TParser) (any, bool) {
+func s5(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var start, x1, size, x2 int
 		var v, v3 any
@@ -2821,7 +2821,7 @@ func s5(p *pegort.TParser) (any, bool) {
 		}
 		v3 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 		v = p.ScopeValue(sh12, v3, start)
-		if n := pegort.AsTval(v); n != nil {
+		if n := rt.AsTval(v); n != nil {
 			n.TSetFresh(false)
 		}
 		p.Depth--
@@ -2862,7 +2862,7 @@ func s5(p *pegort.TParser) (any, bool) {
 	}
 	v3 = p.NewMatch(x1, p.Pos, p.Text(x1, p.Pos), true)
 	v = p.ScopeValue(sh12, v3, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -2873,7 +2873,7 @@ fail:
 	return nil, false
 }
 
-func s8(p *pegort.TParser) (any, bool) {
+func s8(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var start, size int
 		var v any
@@ -2926,7 +2926,7 @@ func s8(p *pegort.TParser) (any, bool) {
 		p.Pos += size
 	}
 	p.StepWork()
-	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
+	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit9, "\n", 7, false); !ok {
 		goto fail
@@ -2940,7 +2940,7 @@ fail:
 	return nil, false
 }
 
-func s9(p *pegort.TParser) (any, bool) {
+func s9(p *rt.TParser) (any, bool) {
 	if p.Control == nil {
 		var start, x1 int
 		var v any
@@ -2965,7 +2965,7 @@ func s9(p *pegort.TParser) (any, bool) {
 	L5_ordinary:
 		p.StepWork()
 		if !p.AtEndBatchOrdinary() {
-			p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
+			p.ExpectOrdinary(p.Pos, rt.IdEndInput)
 			goto L7_ordinary
 		}
 		goto L2_ordinary
@@ -3002,7 +3002,7 @@ func s9(p *pegort.TParser) (any, bool) {
 		goto L5
 	}
 	p.StepWork()
-	if (!pegort.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
+	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 10) {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit9, "\n", 7, false); !ok {
 		goto L6
@@ -3013,7 +3013,7 @@ L6:
 L5:
 	p.StepWork()
 	if !p.AtEndBatch() {
-		p.Expect(p.Pos, pegort.IdEndInput)
+		p.Expect(p.Pos, rt.IdEndInput)
 		goto L7
 	}
 	goto L2

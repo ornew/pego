@@ -108,10 +108,10 @@ rule part WithTrace = t:("a") #atomic => WithTrace{Text: text($t)}`, input: "a",
 			generatePackageIn(t, dir, "typedtracefixture", opts.Package, g, opts)
 			opts.Package, opts.Observability = pkg, true
 			code := generatePackageIn(t, dir, "typedtracefixture", pkg, g, opts)
-			if !convert && !f.fallback && !strings.Contains(code, "return pegort.TParse(trules[") {
+			if !convert && !f.fallback && !strings.Contains(code, "return rt.TParse(trules[") {
 				t.Fatal(pkg, "direct start unexpectedly unavailable")
 			}
-			if (convert || f.fallback) && !strings.Contains(code, "return pegort.RunParseConverted(rules[") {
+			if (convert || f.fallback) && !strings.Contains(code, "return rt.RunParseConverted(rules[") {
 				t.Fatal(pkg, "missing Node conversion")
 			}
 			nodeChecks := strings.NewReplacer("PACKAGE", pkg, "INPUT", fmt.Sprintf("%q", f.input), "CHECKS", f.checks).Replace(strings.ReplaceAll(generatedNodeTraceConsumer, "tracefixture/", "typedtracefixture/"))

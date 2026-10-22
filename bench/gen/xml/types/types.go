@@ -4,32 +4,32 @@
 package types
 
 import (
-	pegort "github.com/ornew/pego/runtime"
+	rt "github.com/ornew/pego/runtime"
 )
 
 // TNode is a node whose Value has type T: a string node (TNode[string]) holds the text a
 // literal, a character class, ., a #atomic or _ matched, and a tuple or list node holds its
 // elements. A node of a statically unknown value is a TNode[any] whose Value is a string, or a
 // []any of the elements of a tuple or list.
-type TNode[T any] pegort.TNode[T]
+type TNode[T any] rt.TNode[T]
 
 // Error is input skipped by error recovery (#recover).
-type Error pegort.Error
+type Error rt.Error
 
 // PegoHooks makes the values of the types of this package from those the typed runtime builds, and
 // back. It is for generated parsers.
-var PegoHooks = &pegort.TPubHooks{
-	Match: func(m *pegort.TNode[string]) any { return (*TNode[string])(m) },
-	Error: func(e *pegort.Error) any { return (*Error)(e) },
-	Node:  func(n *pegort.TNode[any]) any { return (*TNode[any])(n) },
+var PegoHooks = &rt.TPubHooks{
+	Match: func(m *rt.TNode[string]) any { return (*TNode[string])(m) },
+	Error: func(e *rt.Error) any { return (*Error)(e) },
+	Node:  func(n *rt.TNode[any]) any { return (*TNode[any])(n) },
 	Back: func(v any) any {
 		switch x := v.(type) {
 		case *TNode[string]:
-			return (*pegort.TNode[string])(x)
+			return (*rt.TNode[string])(x)
 		case *Error:
-			return (*pegort.Error)(x)
+			return (*rt.Error)(x)
 		case *TNode[any]:
-			return (*pegort.TNode[any])(x)
+			return (*rt.TNode[any])(x)
 		}
 		return v
 	},
@@ -37,7 +37,7 @@ var PegoHooks = &pegort.TPubHooks{
 
 // AttDef is the struct type AttDef.
 type AttDef struct {
-	pegort.Span
+	rt.Span
 	Name    *Name
 	Type    AttType
 	Default *Keyword
@@ -46,28 +46,28 @@ type AttDef struct {
 
 // AttlistDecl is the struct type AttlistDecl.
 type AttlistDecl struct {
-	pegort.Span
+	rt.Span
 	Name *Name
 	Defs []*AttDef
 }
 
 // Attribute is the struct type Attribute.
 type Attribute struct {
-	pegort.Span
+	rt.Span
 	Name  *Name
 	Value *AttValue
 }
 
 // Choice is the struct type Choice.
 type Choice struct {
-	pegort.Span
+	rt.Span
 	Items []Particle
 	Occur *Occurrence
 }
 
 // Doctype is the struct type Doctype.
 type Doctype struct {
-	pegort.Span
+	rt.Span
 	Name       *Name
 	ExternalID *ExternalID
 	Subset     []Decl
@@ -75,7 +75,7 @@ type Doctype struct {
 
 // Document is the struct type Document.
 type Document struct {
-	pegort.Span
+	rt.Span
 	Decl    *XMLDecl
 	Prolog  []Misc
 	Doctype *Doctype
@@ -85,7 +85,7 @@ type Document struct {
 
 // Element is the struct type Element.
 type Element struct {
-	pegort.Span
+	rt.Span
 	Name    *Name
 	Attrs   []*Attribute
 	Content []Content
@@ -93,14 +93,14 @@ type Element struct {
 
 // ElementDecl is the struct type ElementDecl.
 type ElementDecl struct {
-	pegort.Span
+	rt.Span
 	Name    *Name
 	Content ContentSpec
 }
 
 // EntityDecl is the struct type EntityDecl.
 type EntityDecl struct {
-	pegort.Span
+	rt.Span
 	Parameter  bool
 	Name       *Name
 	Value      *EntityValue
@@ -110,60 +110,60 @@ type EntityDecl struct {
 
 // Enumeration is the struct type Enumeration.
 type Enumeration struct {
-	pegort.Span
+	rt.Span
 	Values []*Nmtoken
 }
 
 // ExternalID is the struct type ExternalID.
 type ExternalID struct {
-	pegort.Span
+	rt.Span
 	Public *PubidLiteral
 	System *SystemLiteral
 }
 
 // Mixed is the struct type Mixed.
 type Mixed struct {
-	pegort.Span
+	rt.Span
 	Names []*Name
 }
 
 // NameParticle is the struct type NameParticle.
 type NameParticle struct {
-	pegort.Span
+	rt.Span
 	Name  *Name
 	Occur *Occurrence
 }
 
 // NotationDecl is the struct type NotationDecl.
 type NotationDecl struct {
-	pegort.Span
+	rt.Span
 	Name       *Name
 	ExternalID *ExternalID
 }
 
 // NotationType is the struct type NotationType.
 type NotationType struct {
-	pegort.Span
+	rt.Span
 	Names []*Name
 }
 
 // PI is the struct type PI.
 type PI struct {
-	pegort.Span
+	rt.Span
 	Target *Name
 	Data   *PIData
 }
 
 // Sequence is the struct type Sequence.
 type Sequence struct {
-	pegort.Span
+	rt.Span
 	Items []Particle
 	Occur *Occurrence
 }
 
 // XMLDecl is the struct type XMLDecl.
 type XMLDecl struct {
-	pegort.Span
+	rt.Span
 	Version    *Version
 	Encoding   *EncName
 	Standalone *YesNo
@@ -285,7 +285,7 @@ func (v *AttDef) TField(name string) (any, bool) {
 	case "Name":
 		return tb0(v.Name), true
 	case "Type":
-		return pegort.TBack(PegoHooks, v.Type), true
+		return rt.TBack(PegoHooks, v.Type), true
 	case "Default":
 		return tb1(v.Default), true
 	case "Value":
@@ -294,12 +294,12 @@ func (v *AttDef) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *AttDef) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *AttDef) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
 	case "Type":
-		return pegort.TBack(PegoHooks, v.Type), true
+		return rt.TBack(PegoHooks, v.Type), true
 	case "Default":
 		return tb1(v.Default), true
 	case "Value":
@@ -325,15 +325,15 @@ func (v *AttlistDecl) TField(name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Defs))
 			for i, x := range v.Defs {
-				kids[i] = pegort.TPtr(x)
+				kids[i] = rt.TPtr(x)
 			}
-			return pegort.TListOf(kids)
+			return rt.TListOf(kids)
 		}(), true
 	}
 	return nil, false
 }
 
-func (v *AttlistDecl) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *AttlistDecl) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
@@ -345,7 +345,7 @@ func (v *AttlistDecl) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			kids := make([]any, len(v.Defs))
 			for i, x := range v.Defs {
 				p.StepWork()
-				kids[i] = pegort.TPtr(x)
+				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
 		}(), true
@@ -369,7 +369,7 @@ func (v *Attribute) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Attribute) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Attribute) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
@@ -394,9 +394,9 @@ func (v *Choice) TField(name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-				kids[i] = pegort.TBack(PegoHooks, x)
+				kids[i] = rt.TBack(PegoHooks, x)
 			}
-			return pegort.TListOf(kids)
+			return rt.TListOf(kids)
 		}(), true
 	case "Occur":
 		return tb3(v.Occur), true
@@ -404,7 +404,7 @@ func (v *Choice) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Choice) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Choice) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Items":
 		return func() any {
@@ -414,7 +414,7 @@ func (v *Choice) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
 				p.StepWork()
-				kids[i] = pegort.TBack(PegoHooks, x)
+				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
 		}(), true
@@ -435,7 +435,7 @@ func (v *Doctype) TField(name string) (any, bool) {
 	case "Name":
 		return tb0(v.Name), true
 	case "ExternalID":
-		return pegort.TPtr(v.ExternalID), true
+		return rt.TPtr(v.ExternalID), true
 	case "Subset":
 		return func() any {
 			if v.Subset == nil {
@@ -443,20 +443,20 @@ func (v *Doctype) TField(name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Subset))
 			for i, x := range v.Subset {
-				kids[i] = pegort.TBack(PegoHooks, x)
+				kids[i] = rt.TBack(PegoHooks, x)
 			}
-			return pegort.TListOf(kids)
+			return rt.TListOf(kids)
 		}(), true
 	}
 	return nil, false
 }
 
-func (v *Doctype) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Doctype) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
 	case "ExternalID":
-		return pegort.TPtr(v.ExternalID), true
+		return rt.TPtr(v.ExternalID), true
 	case "Subset":
 		return func() any {
 			if v.Subset == nil {
@@ -465,7 +465,7 @@ func (v *Doctype) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			kids := make([]any, len(v.Subset))
 			for i, x := range v.Subset {
 				p.StepWork()
-				kids[i] = pegort.TBack(PegoHooks, x)
+				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
 		}(), true
@@ -482,7 +482,7 @@ func (v *Document) TSetFresh(bool)        {}
 func (v *Document) TField(name string) (any, bool) {
 	switch name {
 	case "Decl":
-		return pegort.TPtr(v.Decl), true
+		return rt.TPtr(v.Decl), true
 	case "Prolog":
 		return func() any {
 			if v.Prolog == nil {
@@ -490,14 +490,14 @@ func (v *Document) TField(name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Prolog))
 			for i, x := range v.Prolog {
-				kids[i] = pegort.TBack(PegoHooks, x)
+				kids[i] = rt.TBack(PegoHooks, x)
 			}
-			return pegort.TListOf(kids)
+			return rt.TListOf(kids)
 		}(), true
 	case "Doctype":
-		return pegort.TPtr(v.Doctype), true
+		return rt.TPtr(v.Doctype), true
 	case "Root":
-		return pegort.TPtr(v.Root), true
+		return rt.TPtr(v.Root), true
 	case "Epilog":
 		return func() any {
 			if v.Epilog == nil {
@@ -505,18 +505,18 @@ func (v *Document) TField(name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Epilog))
 			for i, x := range v.Epilog {
-				kids[i] = pegort.TBack(PegoHooks, x)
+				kids[i] = rt.TBack(PegoHooks, x)
 			}
-			return pegort.TListOf(kids)
+			return rt.TListOf(kids)
 		}(), true
 	}
 	return nil, false
 }
 
-func (v *Document) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Document) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Decl":
-		return pegort.TPtr(v.Decl), true
+		return rt.TPtr(v.Decl), true
 	case "Prolog":
 		return func() any {
 			if v.Prolog == nil {
@@ -525,14 +525,14 @@ func (v *Document) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			kids := make([]any, len(v.Prolog))
 			for i, x := range v.Prolog {
 				p.StepWork()
-				kids[i] = pegort.TBack(PegoHooks, x)
+				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
 		}(), true
 	case "Doctype":
-		return pegort.TPtr(v.Doctype), true
+		return rt.TPtr(v.Doctype), true
 	case "Root":
-		return pegort.TPtr(v.Root), true
+		return rt.TPtr(v.Root), true
 	case "Epilog":
 		return func() any {
 			if v.Epilog == nil {
@@ -541,7 +541,7 @@ func (v *Document) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			kids := make([]any, len(v.Epilog))
 			for i, x := range v.Epilog {
 				p.StepWork()
-				kids[i] = pegort.TBack(PegoHooks, x)
+				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
 		}(), true
@@ -566,9 +566,9 @@ func (v *Element) TField(name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Attrs))
 			for i, x := range v.Attrs {
-				kids[i] = pegort.TPtr(x)
+				kids[i] = rt.TPtr(x)
 			}
-			return pegort.TListOf(kids)
+			return rt.TListOf(kids)
 		}(), true
 	case "Content":
 		return func() any {
@@ -577,15 +577,15 @@ func (v *Element) TField(name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Content))
 			for i, x := range v.Content {
-				kids[i] = pegort.TBack(PegoHooks, x)
+				kids[i] = rt.TBack(PegoHooks, x)
 			}
-			return pegort.TListOf(kids)
+			return rt.TListOf(kids)
 		}(), true
 	}
 	return nil, false
 }
 
-func (v *Element) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Element) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
@@ -597,7 +597,7 @@ func (v *Element) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			kids := make([]any, len(v.Attrs))
 			for i, x := range v.Attrs {
 				p.StepWork()
-				kids[i] = pegort.TPtr(x)
+				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
 		}(), true
@@ -609,7 +609,7 @@ func (v *Element) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			kids := make([]any, len(v.Content))
 			for i, x := range v.Content {
 				p.StepWork()
-				kids[i] = pegort.TBack(PegoHooks, x)
+				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
 		}(), true
@@ -628,17 +628,17 @@ func (v *ElementDecl) TField(name string) (any, bool) {
 	case "Name":
 		return tb0(v.Name), true
 	case "Content":
-		return pegort.TBack(PegoHooks, v.Content), true
+		return rt.TBack(PegoHooks, v.Content), true
 	}
 	return nil, false
 }
 
-func (v *ElementDecl) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *ElementDecl) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
 	case "Content":
-		return pegort.TBack(PegoHooks, v.Content), true
+		return rt.TBack(PegoHooks, v.Content), true
 	}
 	return nil, false
 }
@@ -658,14 +658,14 @@ func (v *EntityDecl) TField(name string) (any, bool) {
 	case "Value":
 		return tb4(v.Value), true
 	case "ExternalID":
-		return pegort.TPtr(v.ExternalID), true
+		return rt.TPtr(v.ExternalID), true
 	case "NData":
 		return tb0(v.NData), true
 	}
 	return nil, false
 }
 
-func (v *EntityDecl) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *EntityDecl) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Parameter":
 		return any(v.Parameter), true
@@ -674,7 +674,7 @@ func (v *EntityDecl) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 	case "Value":
 		return tb4(v.Value), true
 	case "ExternalID":
-		return pegort.TPtr(v.ExternalID), true
+		return rt.TPtr(v.ExternalID), true
 	case "NData":
 		return tb0(v.NData), true
 	}
@@ -698,13 +698,13 @@ func (v *Enumeration) TField(name string) (any, bool) {
 			for i, x := range v.Values {
 				kids[i] = tb5(x)
 			}
-			return pegort.TListOf(kids)
+			return rt.TListOf(kids)
 		}(), true
 	}
 	return nil, false
 }
 
-func (v *Enumeration) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Enumeration) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Values":
 		return func() any {
@@ -738,7 +738,7 @@ func (v *ExternalID) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *ExternalID) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *ExternalID) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Public":
 		return tb6(v.Public), true
@@ -765,13 +765,13 @@ func (v *Mixed) TField(name string) (any, bool) {
 			for i, x := range v.Names {
 				kids[i] = tb0(x)
 			}
-			return pegort.TListOf(kids)
+			return rt.TListOf(kids)
 		}(), true
 	}
 	return nil, false
 }
 
-func (v *Mixed) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Mixed) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Names":
 		return func() any {
@@ -805,7 +805,7 @@ func (v *NameParticle) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *NameParticle) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *NameParticle) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
@@ -826,17 +826,17 @@ func (v *NotationDecl) TField(name string) (any, bool) {
 	case "Name":
 		return tb0(v.Name), true
 	case "ExternalID":
-		return pegort.TPtr(v.ExternalID), true
+		return rt.TPtr(v.ExternalID), true
 	}
 	return nil, false
 }
 
-func (v *NotationDecl) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *NotationDecl) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
 	case "ExternalID":
-		return pegort.TPtr(v.ExternalID), true
+		return rt.TPtr(v.ExternalID), true
 	}
 	return nil, false
 }
@@ -858,13 +858,13 @@ func (v *NotationType) TField(name string) (any, bool) {
 			for i, x := range v.Names {
 				kids[i] = tb0(x)
 			}
-			return pegort.TListOf(kids)
+			return rt.TListOf(kids)
 		}(), true
 	}
 	return nil, false
 }
 
-func (v *NotationType) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *NotationType) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Names":
 		return func() any {
@@ -898,7 +898,7 @@ func (v *PI) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *PI) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *PI) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Target":
 		return tb0(v.Target), true
@@ -923,9 +923,9 @@ func (v *Sequence) TField(name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-				kids[i] = pegort.TBack(PegoHooks, x)
+				kids[i] = rt.TBack(PegoHooks, x)
 			}
-			return pegort.TListOf(kids)
+			return rt.TListOf(kids)
 		}(), true
 	case "Occur":
 		return tb3(v.Occur), true
@@ -933,7 +933,7 @@ func (v *Sequence) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Sequence) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Sequence) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Items":
 		return func() any {
@@ -943,7 +943,7 @@ func (v *Sequence) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
 				p.StepWork()
-				kids[i] = pegort.TBack(PegoHooks, x)
+				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
 		}(), true
@@ -971,7 +971,7 @@ func (v *XMLDecl) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *XMLDecl) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *XMLDecl) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Version":
 		return tb9(v.Version), true
@@ -987,84 +987,84 @@ func tb0(v *Name) any {
 	if v == nil {
 		return nil
 	}
-	return pegort.TSetNodeType(pegort.TBack(PegoHooks, &v.TNode), PegoNodeTypes[10])
+	return rt.TSetNodeType(rt.TBack(PegoHooks, &v.TNode), PegoNodeTypes[10])
 }
 
 func tb1(v *Keyword) any {
 	if v == nil {
 		return nil
 	}
-	return pegort.TSetNodeType(pegort.TBack(PegoHooks, &v.TNode), PegoNodeTypes[9])
+	return rt.TSetNodeType(rt.TBack(PegoHooks, &v.TNode), PegoNodeTypes[9])
 }
 
 func tb2(v *AttValue) any {
 	if v == nil {
 		return nil
 	}
-	return pegort.TSetNodeType(pegort.TBack(PegoHooks, &v.TNode), PegoNodeTypes[1])
+	return rt.TSetNodeType(rt.TBack(PegoHooks, &v.TNode), PegoNodeTypes[1])
 }
 
 func tb3(v *Occurrence) any {
 	if v == nil {
 		return nil
 	}
-	return pegort.TSetNodeType(pegort.TBack(PegoHooks, &v.TNode), PegoNodeTypes[12])
+	return rt.TSetNodeType(rt.TBack(PegoHooks, &v.TNode), PegoNodeTypes[12])
 }
 
 func tb4(v *EntityValue) any {
 	if v == nil {
 		return nil
 	}
-	return pegort.TSetNodeType(pegort.TBack(PegoHooks, &v.TNode), PegoNodeTypes[8])
+	return rt.TSetNodeType(rt.TBack(PegoHooks, &v.TNode), PegoNodeTypes[8])
 }
 
 func tb5(v *Nmtoken) any {
 	if v == nil {
 		return nil
 	}
-	return pegort.TSetNodeType(pegort.TBack(PegoHooks, &v.TNode), PegoNodeTypes[11])
+	return rt.TSetNodeType(rt.TBack(PegoHooks, &v.TNode), PegoNodeTypes[11])
 }
 
 func tb6(v *PubidLiteral) any {
 	if v == nil {
 		return nil
 	}
-	return pegort.TSetNodeType(pegort.TBack(PegoHooks, &v.TNode), PegoNodeTypes[15])
+	return rt.TSetNodeType(rt.TBack(PegoHooks, &v.TNode), PegoNodeTypes[15])
 }
 
 func tb7(v *SystemLiteral) any {
 	if v == nil {
 		return nil
 	}
-	return pegort.TSetNodeType(pegort.TBack(PegoHooks, &v.TNode), PegoNodeTypes[16])
+	return rt.TSetNodeType(rt.TBack(PegoHooks, &v.TNode), PegoNodeTypes[16])
 }
 
 func tb8(v *PIData) any {
 	if v == nil {
 		return nil
 	}
-	return pegort.TSetNodeType(pegort.TBack(PegoHooks, &v.TNode), PegoNodeTypes[14])
+	return rt.TSetNodeType(rt.TBack(PegoHooks, &v.TNode), PegoNodeTypes[14])
 }
 
 func tb9(v *Version) any {
 	if v == nil {
 		return nil
 	}
-	return pegort.TSetNodeType(pegort.TBack(PegoHooks, &v.TNode), PegoNodeTypes[17])
+	return rt.TSetNodeType(rt.TBack(PegoHooks, &v.TNode), PegoNodeTypes[17])
 }
 
 func tb10(v *EncName) any {
 	if v == nil {
 		return nil
 	}
-	return pegort.TSetNodeType(pegort.TBack(PegoHooks, &v.TNode), PegoNodeTypes[6])
+	return rt.TSetNodeType(rt.TBack(PegoHooks, &v.TNode), PegoNodeTypes[6])
 }
 
 func tb11(v *YesNo) any {
 	if v == nil {
 		return nil
 	}
-	return pegort.TSetNodeType(pegort.TBack(PegoHooks, &v.TNode), PegoNodeTypes[18])
+	return rt.TSetNodeType(rt.TBack(PegoHooks, &v.TNode), PegoNodeTypes[18])
 }
 
 // PegoNodeTypes holds the registered indexes of the named node types by their generated index; index 0

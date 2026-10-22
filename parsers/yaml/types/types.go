@@ -3,32 +3,32 @@
 package types
 
 import (
-	pegort "github.com/ornew/pego/runtime"
+	rt "github.com/ornew/pego/runtime"
 )
 
 // TNode is a node whose Value has type T: a string node (TNode[string]) holds the text a
 // literal, a character class, ., a #atomic or _ matched, and a tuple or list node holds its
 // elements. A node of a statically unknown value is a TNode[any] whose Value is a string, or a
 // []any of the elements of a tuple or list.
-type TNode[T any] pegort.TNode[T]
+type TNode[T any] rt.TNode[T]
 
 // Error is input skipped by error recovery (#recover).
-type Error pegort.Error
+type Error rt.Error
 
 // PegoHooks makes the values of the types of this package from those the typed runtime builds, and
 // back. It is for generated parsers.
-var PegoHooks = &pegort.TPubHooks{
-	Match: func(m *pegort.TNode[string]) any { return (*TNode[string])(m) },
-	Error: func(e *pegort.Error) any { return (*Error)(e) },
-	Node:  func(n *pegort.TNode[any]) any { return (*TNode[any])(n) },
+var PegoHooks = &rt.TPubHooks{
+	Match: func(m *rt.TNode[string]) any { return (*TNode[string])(m) },
+	Error: func(e *rt.Error) any { return (*Error)(e) },
+	Node:  func(n *rt.TNode[any]) any { return (*TNode[any])(n) },
 	Back: func(v any) any {
 		switch x := v.(type) {
 		case *TNode[string]:
-			return (*pegort.TNode[string])(x)
+			return (*rt.TNode[string])(x)
 		case *Error:
-			return (*pegort.Error)(x)
+			return (*rt.Error)(x)
 		case *TNode[any]:
-			return (*pegort.TNode[any])(x)
+			return (*rt.TNode[any])(x)
 		}
 		return v
 	},
@@ -36,14 +36,14 @@ var PegoHooks = &pegort.TPubHooks{
 
 // Directive is the struct type Directive.
 type Directive struct {
-	pegort.Span
+	rt.Span
 	Name   *Word
 	Params []*Word
 }
 
 // Document is the struct type Document.
 type Document struct {
-	pegort.Span
+	rt.Span
 	Directives []*Directive
 	Start_     *Marker
 	Root       Value
@@ -52,7 +52,7 @@ type Document struct {
 
 // Mapping is the struct type Mapping.
 type Mapping struct {
-	pegort.Span
+	rt.Span
 	Props *Properties
 	Flow  bool
 	Pairs []*Pair
@@ -60,21 +60,21 @@ type Mapping struct {
 
 // Pair is the struct type Pair.
 type Pair struct {
-	pegort.Span
+	rt.Span
 	Key   Value
 	Value Value
 }
 
 // Properties is the struct type Properties.
 type Properties struct {
-	pegort.Span
+	rt.Span
 	Tag    *Tag
 	Anchor *Anchor
 }
 
 // Scalar is the struct type Scalar.
 type Scalar struct {
-	pegort.Span
+	rt.Span
 	Props  *Properties
 	Style  int
 	Indent int
@@ -83,7 +83,7 @@ type Scalar struct {
 
 // Sequence is the struct type Sequence.
 type Sequence struct {
-	pegort.Span
+	rt.Span
 	Props *Properties
 	Flow  bool
 	Items []Value
@@ -91,7 +91,7 @@ type Sequence struct {
 
 // Stream is the struct type Stream.
 type Stream struct {
-	pegort.Span
+	rt.Span
 	Documents []*Document
 }
 
@@ -138,13 +138,13 @@ func (v *Directive) TField(name string) (any, bool) {
 			for i, x := range v.Params {
 				kids[i] = tb0(x)
 			}
-			return pegort.TListOf(kids)
+			return rt.TListOf(kids)
 		}(), true
 	}
 	return nil, false
 }
 
-func (v *Directive) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Directive) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Name":
 		return tb0(v.Name), true
@@ -179,21 +179,21 @@ func (v *Document) TField(name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Directives))
 			for i, x := range v.Directives {
-				kids[i] = pegort.TPtr(x)
+				kids[i] = rt.TPtr(x)
 			}
-			return pegort.TListOf(kids)
+			return rt.TListOf(kids)
 		}(), true
 	case "Start":
 		return tb1(v.Start_), true
 	case "Root":
-		return pegort.TBack(PegoHooks, v.Root), true
+		return rt.TBack(PegoHooks, v.Root), true
 	case "End":
 		return tb1(v.End_), true
 	}
 	return nil, false
 }
 
-func (v *Document) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Document) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Directives":
 		return func() any {
@@ -203,14 +203,14 @@ func (v *Document) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			kids := make([]any, len(v.Directives))
 			for i, x := range v.Directives {
 				p.StepWork()
-				kids[i] = pegort.TPtr(x)
+				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
 		}(), true
 	case "Start":
 		return tb1(v.Start_), true
 	case "Root":
-		return pegort.TBack(PegoHooks, v.Root), true
+		return rt.TBack(PegoHooks, v.Root), true
 	case "End":
 		return tb1(v.End_), true
 	}
@@ -226,7 +226,7 @@ func (v *Mapping) TSetFresh(bool)        {}
 func (v *Mapping) TField(name string) (any, bool) {
 	switch name {
 	case "Props":
-		return pegort.TPtr(v.Props), true
+		return rt.TPtr(v.Props), true
 	case "Flow":
 		return any(v.Flow), true
 	case "Pairs":
@@ -236,18 +236,18 @@ func (v *Mapping) TField(name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Pairs))
 			for i, x := range v.Pairs {
-				kids[i] = pegort.TPtr(x)
+				kids[i] = rt.TPtr(x)
 			}
-			return pegort.TListOf(kids)
+			return rt.TListOf(kids)
 		}(), true
 	}
 	return nil, false
 }
 
-func (v *Mapping) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Mapping) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Props":
-		return pegort.TPtr(v.Props), true
+		return rt.TPtr(v.Props), true
 	case "Flow":
 		return any(v.Flow), true
 	case "Pairs":
@@ -258,7 +258,7 @@ func (v *Mapping) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			kids := make([]any, len(v.Pairs))
 			for i, x := range v.Pairs {
 				p.StepWork()
-				kids[i] = pegort.TPtr(x)
+				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
 		}(), true
@@ -275,19 +275,19 @@ func (v *Pair) TSetFresh(bool)        {}
 func (v *Pair) TField(name string) (any, bool) {
 	switch name {
 	case "Key":
-		return pegort.TBack(PegoHooks, v.Key), true
+		return rt.TBack(PegoHooks, v.Key), true
 	case "Value":
-		return pegort.TBack(PegoHooks, v.Value), true
+		return rt.TBack(PegoHooks, v.Value), true
 	}
 	return nil, false
 }
 
-func (v *Pair) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Pair) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Key":
-		return pegort.TBack(PegoHooks, v.Key), true
+		return rt.TBack(PegoHooks, v.Key), true
 	case "Value":
-		return pegort.TBack(PegoHooks, v.Value), true
+		return rt.TBack(PegoHooks, v.Value), true
 	}
 	return nil, false
 }
@@ -308,7 +308,7 @@ func (v *Properties) TField(name string) (any, bool) {
 	return nil, false
 }
 
-func (v *Properties) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Properties) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Tag":
 		return tb2(v.Tag), true
@@ -327,7 +327,7 @@ func (v *Scalar) TSetFresh(bool)        {}
 func (v *Scalar) TField(name string) (any, bool) {
 	switch name {
 	case "Props":
-		return pegort.TPtr(v.Props), true
+		return rt.TPtr(v.Props), true
 	case "Style":
 		return any(v.Style), true
 	case "Indent":
@@ -346,10 +346,10 @@ func (v *Scalar) TStrField(name string) (string, bool) {
 	return "", false
 }
 
-func (v *Scalar) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Scalar) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Props":
-		return pegort.TPtr(v.Props), true
+		return rt.TPtr(v.Props), true
 	case "Style":
 		return any(v.Style), true
 	case "Indent":
@@ -369,7 +369,7 @@ func (v *Sequence) TSetFresh(bool)        {}
 func (v *Sequence) TField(name string) (any, bool) {
 	switch name {
 	case "Props":
-		return pegort.TPtr(v.Props), true
+		return rt.TPtr(v.Props), true
 	case "Flow":
 		return any(v.Flow), true
 	case "Items":
@@ -379,18 +379,18 @@ func (v *Sequence) TField(name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
-				kids[i] = pegort.TBack(PegoHooks, x)
+				kids[i] = rt.TBack(PegoHooks, x)
 			}
-			return pegort.TListOf(kids)
+			return rt.TListOf(kids)
 		}(), true
 	}
 	return nil, false
 }
 
-func (v *Sequence) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Sequence) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Props":
-		return pegort.TPtr(v.Props), true
+		return rt.TPtr(v.Props), true
 	case "Flow":
 		return any(v.Flow), true
 	case "Items":
@@ -401,7 +401,7 @@ func (v *Sequence) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			kids := make([]any, len(v.Items))
 			for i, x := range v.Items {
 				p.StepWork()
-				kids[i] = pegort.TBack(PegoHooks, x)
+				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
 		}(), true
@@ -424,15 +424,15 @@ func (v *Stream) TField(name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Documents))
 			for i, x := range v.Documents {
-				kids[i] = pegort.TPtr(x)
+				kids[i] = rt.TPtr(x)
 			}
-			return pegort.TListOf(kids)
+			return rt.TListOf(kids)
 		}(), true
 	}
 	return nil, false
 }
 
-func (v *Stream) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Stream) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Documents":
 		return func() any {
@@ -442,7 +442,7 @@ func (v *Stream) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			kids := make([]any, len(v.Documents))
 			for i, x := range v.Documents {
 				p.StepWork()
-				kids[i] = pegort.TPtr(x)
+				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
 		}(), true
@@ -454,28 +454,28 @@ func tb0(v *Word) any {
 	if v == nil {
 		return nil
 	}
-	return pegort.TSetNodeType(pegort.TBack(PegoHooks, &v.TNode), PegoNodeTypes[5])
+	return rt.TSetNodeType(rt.TBack(PegoHooks, &v.TNode), PegoNodeTypes[5])
 }
 
 func tb1(v *Marker) any {
 	if v == nil {
 		return nil
 	}
-	return pegort.TSetNodeType(pegort.TBack(PegoHooks, &v.TNode), PegoNodeTypes[3])
+	return rt.TSetNodeType(rt.TBack(PegoHooks, &v.TNode), PegoNodeTypes[3])
 }
 
 func tb2(v *Tag) any {
 	if v == nil {
 		return nil
 	}
-	return pegort.TSetNodeType(pegort.TBack(PegoHooks, &v.TNode), PegoNodeTypes[4])
+	return rt.TSetNodeType(rt.TBack(PegoHooks, &v.TNode), PegoNodeTypes[4])
 }
 
 func tb3(v *Anchor) any {
 	if v == nil {
 		return nil
 	}
-	return pegort.TSetNodeType(pegort.TBack(PegoHooks, &v.TNode), PegoNodeTypes[2])
+	return rt.TSetNodeType(rt.TBack(PegoHooks, &v.TNode), PegoNodeTypes[2])
 }
 
 // PegoNodeTypes holds the registered indexes of the named node types by their generated index; index 0

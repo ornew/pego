@@ -5,7 +5,7 @@ package python
 import (
 	"context"
 
-	pegort "github.com/ornew/pego/runtime"
+	rt "github.com/ornew/pego/runtime"
 )
 
 var _ context.Context
@@ -16,112 +16,110 @@ var _ context.Context
 // captures.
 //
 // Of its fields and methods, BaseNode, RawChildren, RawEnd, RawField, RawFields, RawFresh, RawKind, RawStart, RawTerminal, RawText are for generated parsers; not a stable API.
-type Node = pegort.Node
+type Node = rt.Node
 
 // NodeField is a field of a node.
-type NodeField = pegort.NodeField
+type NodeField = rt.NodeField
 
 // Fields lists the fields of a node. It encodes to JSON as an object with keys in sorted order.
-type Fields = pegort.Fields
+type Fields = rt.Fields
 
 // NodeKind is what a Node stands for in the value model.
-type NodeKind = pegort.NodeKind
+type NodeKind = rt.NodeKind
 
 // KindString is a node whose value is a string, the text it matched: Text.
-const KindString = pegort.KindString
+const KindString = rt.KindString
 
 // KindTuple is a node whose value is a tuple: Len and Elem.
-const KindTuple = pegort.KindTuple
+const KindTuple = rt.KindTuple
 
 // KindList is a node whose value is a list: Len and Elem.
-const KindList = pegort.KindList
+const KindList = rt.KindList
 
 // KindError is an error value of recovery: Text is its message.
-const KindError = pegort.KindError
+const KindError = rt.KindError
 
 // KindStruct is a struct built by an action: Type and Field.
-const KindStruct = pegort.KindStruct
+const KindStruct = rt.KindStruct
 
 // KindTupleValue is a tuple built by an action, without a range: Len and Elem.
-const KindTupleValue = pegort.KindTupleValue
+const KindTupleValue = rt.KindTupleValue
 
 // KindListValue is a list built by an action, without a range: Len and Elem.
-const KindListValue = pegort.KindListValue
+const KindListValue = rt.KindListValue
 
 // KindValue is any other value built by an action, such as an int or a bool: Value.
-const KindValue = pegort.KindValue
+const KindValue = rt.KindValue
 
 // SyntaxError reports that the input does not match the grammar.
-type SyntaxError = pegort.SyntaxError
+type SyntaxError = rt.SyntaxError
 
 // SyntaxErrors lists the syntax errors recovered from with #recover.
-type SyntaxErrors = pegort.SyntaxErrors
+type SyntaxErrors = rt.SyntaxErrors
 
 // PositionUnit is the unit of input positions.
-type PositionUnit = pegort.PositionUnit
+type PositionUnit = rt.PositionUnit
 
 // CodePoints counts Unicode code points. It is the default.
-const CodePoints = pegort.CodePoints
+const CodePoints = rt.CodePoints
 
 // Bytes counts UTF-8 bytes.
-const Bytes = pegort.Bytes
+const Bytes = rt.Bytes
 
 // ParseOption configures an individual parsing invocation. Options apply in order.
-type ParseOption = pegort.ParseOption
+type ParseOption = rt.ParseOption
 
 // WithUnit selects the unit of input positions (CodePoints by default).
-func WithUnit(unit PositionUnit) ParseOption { return pegort.WithUnit(unit) }
+func WithUnit(unit PositionUnit) ParseOption { return rt.WithUnit(unit) }
 
 // WithMaxDepth limits nested rule calls. Zero selects the generated default;
 // a negative effective limit returns an error before parsing.
 // A larger limit does not guarantee that the host stack can accommodate it.
-func WithMaxDepth(n int) ParseOption { return pegort.WithMaxDepth(n) }
+func WithMaxDepth(n int) ParseOption { return rt.WithMaxDepth(n) }
 
 // Cursor filters edge-oriented node visits using spans in Unit. Unit must match
 // the parse that populated Root's positions; it is never inferred or converted.
 // Parent spans do not prune traversal. Scalar and list values have no spans.
-type Cursor = pegort.Cursor
+type Cursor = rt.Cursor
 
 // CycleError describes an active-path back-edge, including the root and failing edge.
-type CycleError = pegort.CycleError
+type CycleError = rt.CycleError
 
 // WalkAction controls descent after a visit.
-type WalkAction = pegort.WalkAction
+type WalkAction = rt.WalkAction
 
-const WalkContinue = pegort.WalkContinue
+const WalkContinue = rt.WalkContinue
 
-const WalkSkip = pegort.WalkSkip
+const WalkSkip = rt.WalkSkip
 
-const WalkStop = pegort.WalkStop
+const WalkStop = rt.WalkStop
 
 // WalkVisit describes a live value and its nearest owning node. Depth counts edges.
 // Node is populated only for non-nil *Node values; Value retains typed nil leaves.
-type WalkVisit = pegort.WalkVisit
+type WalkVisit = rt.WalkVisit
 
 // WalkEdge identifies an incoming edge. Only its Kind's index or name is meaningful.
-type WalkEdge = pegort.WalkEdge
+type WalkEdge = rt.WalkEdge
 
 // WalkEdgeKind identifies the incoming edge of a value.
-type WalkEdgeKind = pegort.WalkEdgeKind
+type WalkEdgeKind = rt.WalkEdgeKind
 
-const WalkRoot = pegort.WalkRoot
+const WalkRoot = rt.WalkRoot
 
-const WalkChild = pegort.WalkChild
+const WalkChild = rt.WalkChild
 
-const WalkField = pegort.WalkField
+const WalkField = rt.WalkField
 
-const WalkListElement = pegort.WalkListElement
+const WalkListElement = rt.WalkListElement
 
 // Walk visits the root, then children in slice order, then fields in sorted name order.
 // Nested []any values are visited in index order. Other containers are leaves. Shared
 // nodes and lists are visited per edge; only cycles on the active path are rejected.
 // Callback errors return unchanged; Stop succeeds; Skip omits the value's descendants.
 // The graph must not be mutated concurrently. Walk does not mutate or retain it.
-func Walk(root *Node, visit func(WalkVisit) (WalkAction, error)) error {
-	return pegort.Walk(root, visit)
-}
+func Walk(root *Node, visit func(WalkVisit) (WalkAction, error)) error { return rt.Walk(root, visit) }
 
 // Span is the range of input a typed value covers, in the parse's position unit (End is exclusive).
 //
 // Of its fields and methods, TSetSpan, TSpan are for generated parsers; not a stable API.
-type Span = pegort.Span
+type Span = rt.Span

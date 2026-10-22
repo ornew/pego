@@ -4,32 +4,32 @@
 package types
 
 import (
-	pegort "github.com/ornew/pego/runtime"
+	rt "github.com/ornew/pego/runtime"
 )
 
 // TNode is a node whose Value has type T: a string node (TNode[string]) holds the text a
 // literal, a character class, ., a #atomic or _ matched, and a tuple or list node holds its
 // elements. A node of a statically unknown value is a TNode[any] whose Value is a string, or a
 // []any of the elements of a tuple or list.
-type TNode[T any] pegort.TNode[T]
+type TNode[T any] rt.TNode[T]
 
 // Error is input skipped by error recovery (#recover).
-type Error pegort.Error
+type Error rt.Error
 
 // PegoHooks makes the values of the types of this package from those the typed runtime builds, and
 // back. It is for generated parsers.
-var PegoHooks = &pegort.TPubHooks{
-	Match: func(m *pegort.TNode[string]) any { return (*TNode[string])(m) },
-	Error: func(e *pegort.Error) any { return (*Error)(e) },
-	Node:  func(n *pegort.TNode[any]) any { return (*TNode[any])(n) },
+var PegoHooks = &rt.TPubHooks{
+	Match: func(m *rt.TNode[string]) any { return (*TNode[string])(m) },
+	Error: func(e *rt.Error) any { return (*Error)(e) },
+	Node:  func(n *rt.TNode[any]) any { return (*TNode[any])(n) },
 	Back: func(v any) any {
 		switch x := v.(type) {
 		case *TNode[string]:
-			return (*pegort.TNode[string])(x)
+			return (*rt.TNode[string])(x)
 		case *Error:
-			return (*pegort.Error)(x)
+			return (*rt.Error)(x)
 		case *TNode[any]:
-			return (*pegort.TNode[any])(x)
+			return (*rt.TNode[any])(x)
 		}
 		return v
 	},
@@ -37,7 +37,7 @@ var PegoHooks = &pegort.TPubHooks{
 
 // Binary is the struct type Binary.
 type Binary struct {
-	pegort.Span
+	rt.Span
 	Left  Expr
 	Op    *TNode[string]
 	Right Expr
@@ -45,7 +45,7 @@ type Binary struct {
 
 // Unary is the struct type Unary.
 type Unary struct {
-	pegort.Span
+	rt.Span
 	Op *TNode[string]
 	X  Expr
 }
@@ -70,23 +70,23 @@ func (v *Binary) TSetFresh(bool)        {}
 func (v *Binary) TField(name string) (any, bool) {
 	switch name {
 	case "Left":
-		return pegort.TBack(PegoHooks, v.Left), true
+		return rt.TBack(PegoHooks, v.Left), true
 	case "Op":
-		return pegort.TBack(PegoHooks, v.Op), true
+		return rt.TBack(PegoHooks, v.Op), true
 	case "Right":
-		return pegort.TBack(PegoHooks, v.Right), true
+		return rt.TBack(PegoHooks, v.Right), true
 	}
 	return nil, false
 }
 
-func (v *Binary) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Binary) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Left":
-		return pegort.TBack(PegoHooks, v.Left), true
+		return rt.TBack(PegoHooks, v.Left), true
 	case "Op":
-		return pegort.TBack(PegoHooks, v.Op), true
+		return rt.TBack(PegoHooks, v.Op), true
 	case "Right":
-		return pegort.TBack(PegoHooks, v.Right), true
+		return rt.TBack(PegoHooks, v.Right), true
 	}
 	return nil, false
 }
@@ -100,19 +100,19 @@ func (v *Unary) TSetFresh(bool)        {}
 func (v *Unary) TField(name string) (any, bool) {
 	switch name {
 	case "Op":
-		return pegort.TBack(PegoHooks, v.Op), true
+		return rt.TBack(PegoHooks, v.Op), true
 	case "X":
-		return pegort.TBack(PegoHooks, v.X), true
+		return rt.TBack(PegoHooks, v.X), true
 	}
 	return nil, false
 }
 
-func (v *Unary) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Unary) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Op":
-		return pegort.TBack(PegoHooks, v.Op), true
+		return rt.TBack(PegoHooks, v.Op), true
 	case "X":
-		return pegort.TBack(PegoHooks, v.X), true
+		return rt.TBack(PegoHooks, v.X), true
 	}
 	return nil, false
 }

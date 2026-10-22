@@ -6,14 +6,14 @@ import (
 	"unsafe"
 
 	types "github.com/ornew/pego/parsers/typescript/types"
-	pegort "github.com/ornew/pego/runtime"
+	rt "github.com/ornew/pego/runtime"
 )
 
-var rules []*pegort.Rule
-var pegoGrammar = pegort.NewGrammar(100000)
+var rules []*rt.Rule
+var pegoGrammar = rt.NewGrammar(100000)
 
-func astString(v any) string { s, _ := pegort.UnboxValue(v).(string); return s }
-func astBool(v any) bool     { x, _ := pegort.UnboxValue(v).(bool); return x }
+func astString(v any) string { s, _ := rt.UnboxValue(v).(string); return s }
+func astBool(v any) bool     { x, _ := rt.UnboxValue(v).(bool); return x }
 
 type astChunk[T any] struct {
 	free      []T
@@ -69,7 +69,7 @@ func astSlice[T any](s *astChunk[T], n int) []T {
 }
 
 func tinit() {
-	tnamedPub := func(a any, x pegort.TVal) any {
+	tnamedPub := func(a any, x rt.TVal) any {
 		s, _ := a.(*tslabs)
 		if s == nil {
 			s = &tslabs{}
@@ -137,7 +137,7 @@ func tinit() {
 		return nil
 	}
 	for i, name := range []string{"BigIntLiteral", "BooleanLiteral", "DebuggerStatement", "EmptyStatement", "EndOfFileToken", "Identifier", "ImportExpression", "JSDocAllType", "JSDocUnknownType", "JsxClosingFragment", "JsxOpeningFragment", "JsxText", "KeywordTypeNode", "Modifier", "NoSubstitutionTemplateLiteral", "NullLiteral", "NumericLiteral", "OmittedExpression", "PrivateIdentifier", "RegularExpressionLiteral", "SemicolonClassElement", "StringLiteral", "SuperExpression", "TemplateHead", "TemplateMiddle", "TemplateTail", "ThisExpression", "ThisTypeNode", "Token"} {
-		types.PegoNodeTypes[i+1] = pegort.TRegisterNodeType(name, tnamedPub)
+		types.PegoNodeTypes[i+1] = rt.TRegisterNodeType(name, tnamedPub)
 	}
 	trules[6].Nt = types.PegoNodeTypes[5]
 	trules[19].Nt = types.PegoNodeTypes[4]
@@ -227,55 +227,55 @@ func tinit() {
 	trules[461].Nt = types.PegoNodeTypes[20]
 }
 
-func tmk_ArrayBindingPattern(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_ArrayBindingPattern(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tArrayBindingPattern)
 
 	v.Elements = tl0(a, f0)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ArrayLiteralExpression(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_ArrayLiteralExpression(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tArrayLiteralExpression)
 
 	v.Elements = tl1(a, f0)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ArrayType(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_ArrayType(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tArrayType)
 
-	v.ElementType = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.ElementType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ArrowFunction(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
+func tmk_ArrowFunction(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tArrowFunction)
@@ -286,157 +286,157 @@ func tmk_ArrowFunction(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3
 
 	v.Parameters = tl4(a, f2)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f3))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f3))
 
 	v.EqualsGreaterThanToken = tv28(a, f4)
 
-	v.Body = pegort.TAs[types.ConciseBody](pegort.TPubIn(types.PegoHooks, a, f5))
+	v.Body = rt.TAs[types.ConciseBody](rt.TPubIn(types.PegoHooks, a, f5))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 
-	pegort.FieldSpanOf(f5, &first, &start, &end)
+	rt.FieldSpanOf(f5, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_AsExpression(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_AsExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tAsExpression)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_AwaitExpression(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_AwaitExpression(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tAwaitExpression)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_BinaryExpression(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_BinaryExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tBinaryExpression)
 
-	v.Left = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Left = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 
 	v.OperatorToken = tv28(a, f1)
 
-	v.Right = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.Right = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_BindingElement(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
+func tmk_BindingElement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tBindingElement)
 
 	v.DotDotDotToken = tv28(a, f0)
 
-	v.PropertyName = pegort.TAs[types.PropertyName](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.PropertyName = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
 
-	v.Name = pegort.TAs[types.BindingName](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.Name = rt.TAs[types.BindingName](rt.TPubIn(types.PegoHooks, a, f2))
 
-	v.Initializer = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f3))
+	v.Initializer = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f3))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_Block(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_Block(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tBlock)
 
 	v.Statements = tl5(a, f0)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_BreakStatement(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_BreakStatement(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tBreakStatement)
 
 	v.Label = tv5(a, f0)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_CallExpression(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
+func tmk_CallExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tCallExpression)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 
 	v.QuestionDotToken = tv28(a, f1)
 
@@ -444,22 +444,22 @@ func tmk_CallExpression(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f
 
 	v.Arguments = tl1(a, f3)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_CallSignature(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_CallSignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tCallSignature)
@@ -468,78 +468,78 @@ func tmk_CallSignature(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) an
 
 	v.Parameters = tl4(a, f1)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_CaseBlock(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_CaseBlock(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tCaseBlock)
 
 	v.Clauses = tl7(a, f0)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_CaseClause(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_CaseClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tCaseClause)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 
 	v.Statements = tl5(a, f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_CatchClause(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_CatchClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tCatchClause)
 
-	v.VariableDeclaration = pegort.TAs[*types.VariableDeclaration](f0)
+	v.VariableDeclaration = rt.TAs[*types.VariableDeclaration](f0)
 
-	v.Block = pegort.TAs[*types.Block](f1)
+	v.Block = rt.TAs[*types.Block](f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ClassDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
+func tmk_ClassDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tClassDeclaration)
@@ -554,24 +554,24 @@ func tmk_ClassDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any,
 
 	v.Members = tl9(a, f4)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ClassExpression(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
+func tmk_ClassExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tClassExpression)
@@ -586,120 +586,120 @@ func tmk_ClassExpression(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, 
 
 	v.Members = tl9(a, f4)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ClassStaticBlockDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_ClassStaticBlockDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tClassStaticBlockDeclaration)
 
 	v.Modifiers = tl2(a, f0)
 
-	v.Body = pegort.TAs[*types.Block](f1)
+	v.Body = rt.TAs[*types.Block](f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ComputedPropertyName(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_ComputedPropertyName(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tComputedPropertyName)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ConditionalExpression(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
+func tmk_ConditionalExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tConditionalExpression)
 
-	v.Condition = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Condition = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 
 	v.QuestionToken = tv28(a, f1)
 
-	v.WhenTrue = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.WhenTrue = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
 
 	v.ColonToken = tv28(a, f3)
 
-	v.WhenFalse = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f4))
+	v.WhenFalse = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f4))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ConditionalType(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
+func tmk_ConditionalType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tConditionalType)
 
-	v.CheckType = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.CheckType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 
-	v.ExtendsType = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.ExtendsType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f1))
 
-	v.TrueType = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.TrueType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
 
-	v.FalseType = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f3))
+	v.FalseType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f3))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ConstructSignature(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_ConstructSignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tConstructSignature)
@@ -708,22 +708,22 @@ func tmk_ConstructSignature(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 an
 
 	v.Parameters = tl4(a, f1)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_Constructor(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
+func tmk_Constructor(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tConstructor)
@@ -734,28 +734,28 @@ func tmk_Constructor(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 a
 
 	v.Parameters = tl4(a, f2)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f3))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f3))
 
-	v.Body = pegort.TAs[*types.Block](f4)
+	v.Body = rt.TAs[*types.Block](f4)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ConstructorType(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
+func tmk_ConstructorType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tConstructorType)
@@ -766,132 +766,132 @@ func tmk_ConstructorType(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, 
 
 	v.Parameters = tl4(a, f2)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f3))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f3))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ContinueStatement(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_ContinueStatement(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tContinueStatement)
 
 	v.Label = tv5(a, f0)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_Decorator(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_Decorator(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tDecorator)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_DefaultClause(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_DefaultClause(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tDefaultClause)
 
 	v.Statements = tl5(a, f0)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_DeleteExpression(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_DeleteExpression(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tDeleteExpression)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_DoStatement(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_DoStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tDoStatement)
 
-	v.Statement = pegort.TAs[types.Statement](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Statement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f0))
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ElementAccessExpression(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_ElementAccessExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tElementAccessExpression)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 
 	v.QuestionDotToken = tv28(a, f1)
 
-	v.ArgumentExpression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.ArgumentExpression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_EnumDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_EnumDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tEnumDeclaration)
@@ -902,252 +902,252 @@ func tmk_EnumDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) 
 
 	v.Members = tl10(a, f2)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_EnumMember(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_EnumMember(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tEnumMember)
 
-	v.Name = pegort.TAs[types.PropertyName](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f0))
 
-	v.Initializer = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Initializer = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ExportAssignment(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_ExportAssignment(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tExportAssignment)
 
 	v.Modifiers = tl2(a, f0)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 
 	v.IsExportEquals = astBool(f2)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ExportDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
+func tmk_ExportDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tExportDeclaration)
 
 	v.Modifiers = tl2(a, f0)
 
-	v.ExportClause = pegort.TAs[types.NamedExportBindings](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.ExportClause = rt.TAs[types.NamedExportBindings](rt.TPubIn(types.PegoHooks, a, f1))
 
-	v.ModuleSpecifier = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.ModuleSpecifier = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
 
-	v.Attributes = pegort.TAs[*types.ImportAttributes](f3)
+	v.Attributes = rt.TAs[*types.ImportAttributes](f3)
 
 	v.IsTypeOnly = astBool(f4)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ExportSpecifier(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_ExportSpecifier(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tExportSpecifier)
 
-	v.PropertyName = pegort.TAs[types.ImportAttributeName](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.PropertyName = rt.TAs[types.ImportAttributeName](rt.TPubIn(types.PegoHooks, a, f0))
 
-	v.Name = pegort.TAs[types.ImportAttributeName](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Name = rt.TAs[types.ImportAttributeName](rt.TPubIn(types.PegoHooks, a, f1))
 
 	v.IsTypeOnly = astBool(f2)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ExpressionStatement(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_ExpressionStatement(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tExpressionStatement)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ExpressionWithTypeArguments(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_ExpressionWithTypeArguments(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tExpressionWithTypeArguments)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 
 	v.TypeArguments = tl6(a, f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ExternalModuleReference(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_ExternalModuleReference(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tExternalModuleReference)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ForInStatement(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_ForInStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tForInStatement)
 
-	v.Initializer = pegort.TAs[types.ForInitializer](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Initializer = rt.TAs[types.ForInitializer](rt.TPubIn(types.PegoHooks, a, f0))
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 
-	v.Statement = pegort.TAs[types.Statement](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.Statement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ForOfStatement(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
+func tmk_ForOfStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tForOfStatement)
 
 	v.AwaitModifier = tv28(a, f0)
 
-	v.Initializer = pegort.TAs[types.ForInitializer](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Initializer = rt.TAs[types.ForInitializer](rt.TPubIn(types.PegoHooks, a, f1))
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
 
-	v.Statement = pegort.TAs[types.Statement](pegort.TPubIn(types.PegoHooks, a, f3))
+	v.Statement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f3))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ForStatement(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
+func tmk_ForStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tForStatement)
 
-	v.Initializer = pegort.TAs[types.ForInitializer](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Initializer = rt.TAs[types.ForInitializer](rt.TPubIn(types.PegoHooks, a, f0))
 
-	v.Condition = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Condition = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 
-	v.Incrementor = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.Incrementor = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
 
-	v.Statement = pegort.TAs[types.Statement](pegort.TPubIn(types.PegoHooks, a, f3))
+	v.Statement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f3))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_FunctionDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any) any {
+func tmk_FunctionDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tFunctionDeclaration)
@@ -1162,32 +1162,32 @@ func tmk_FunctionDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 a
 
 	v.Parameters = tl4(a, f4)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f5))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f5))
 
-	v.Body = pegort.TAs[*types.Block](f6)
+	v.Body = rt.TAs[*types.Block](f6)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 
-	pegort.FieldSpanOf(f5, &first, &start, &end)
+	rt.FieldSpanOf(f5, &first, &start, &end)
 
-	pegort.FieldSpanOf(f6, &first, &start, &end)
+	rt.FieldSpanOf(f6, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_FunctionExpression(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any) any {
+func tmk_FunctionExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tFunctionExpression)
@@ -1202,32 +1202,32 @@ func tmk_FunctionExpression(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 an
 
 	v.Parameters = tl4(a, f4)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f5))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f5))
 
-	v.Body = pegort.TAs[*types.Block](f6)
+	v.Body = rt.TAs[*types.Block](f6)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 
-	pegort.FieldSpanOf(f5, &first, &start, &end)
+	rt.FieldSpanOf(f5, &first, &start, &end)
 
-	pegort.FieldSpanOf(f6, &first, &start, &end)
+	rt.FieldSpanOf(f6, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_FunctionType(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_FunctionType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tFunctionType)
@@ -1236,58 +1236,58 @@ func tmk_FunctionType(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any
 
 	v.Parameters = tl4(a, f1)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_GetAccessor(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
+func tmk_GetAccessor(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tGetAccessor)
 
 	v.Modifiers = tl2(a, f0)
 
-	v.Name = pegort.TAs[types.PropertyName](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
 
 	v.TypeParameters = tl3(a, f2)
 
 	v.Parameters = tl4(a, f3)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f4))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f4))
 
-	v.Body = pegort.TAs[*types.Block](f5)
+	v.Body = rt.TAs[*types.Block](f5)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 
-	pegort.FieldSpanOf(f5, &first, &start, &end)
+	rt.FieldSpanOf(f5, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_HeritageClause(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_HeritageClause(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tHeritageClause)
@@ -1296,62 +1296,62 @@ func tmk_HeritageClause(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	v.Types = tl11(a, f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_IfStatement(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_IfStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tIfStatement)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 
-	v.ThenStatement = pegort.TAs[types.Statement](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.ThenStatement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f1))
 
-	v.ElseStatement = pegort.TAs[types.Statement](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.ElseStatement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ImportAttribute(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_ImportAttribute(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tImportAttribute)
 
-	v.Name = pegort.TAs[types.ImportAttributeName](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Name = rt.TAs[types.ImportAttributeName](rt.TPubIn(types.PegoHooks, a, f0))
 
-	v.Value = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Value = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ImportAttributes(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_ImportAttributes(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tImportAttributes)
@@ -1360,70 +1360,70 @@ func tmk_ImportAttributes(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	v.Token = astString(f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ImportClause(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_ImportClause(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tImportClause)
 
 	v.Name = tv5(a, f0)
 
-	v.NamedBindings = pegort.TAs[types.NamedImportBindings](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.NamedBindings = rt.TAs[types.NamedImportBindings](rt.TPubIn(types.PegoHooks, a, f1))
 
 	v.PhaseModifier = astString(f2)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ImportDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
+func tmk_ImportDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tImportDeclaration)
 
 	v.Modifiers = tl2(a, f0)
 
-	v.ImportClause = pegort.TAs[*types.ImportClause](f1)
+	v.ImportClause = rt.TAs[*types.ImportClause](f1)
 
-	v.ModuleSpecifier = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.ModuleSpecifier = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f2))
 
-	v.Attributes = pegort.TAs[*types.ImportAttributes](f3)
+	v.Attributes = rt.TAs[*types.ImportAttributes](f3)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ImportEqualsDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
+func tmk_ImportEqualsDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tImportEqualsDeclaration)
@@ -1432,82 +1432,82 @@ func tmk_ImportEqualsDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, 
 
 	v.Name = tv5(a, f1)
 
-	v.ModuleReference = pegort.TAs[types.ModuleReference](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.ModuleReference = rt.TAs[types.ModuleReference](rt.TPubIn(types.PegoHooks, a, f2))
 
 	v.IsTypeOnly = astBool(f3)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ImportSpecifier(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_ImportSpecifier(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tImportSpecifier)
 
-	v.PropertyName = pegort.TAs[types.ImportAttributeName](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.PropertyName = rt.TAs[types.ImportAttributeName](rt.TPubIn(types.PegoHooks, a, f0))
 
 	v.Name = tv5(a, f1)
 
 	v.IsTypeOnly = astBool(f2)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ImportType(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
+func tmk_ImportType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tImportType)
 
-	v.Argument = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Argument = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 
-	v.Attributes = pegort.TAs[*types.ImportAttributes](f1)
+	v.Attributes = rt.TAs[*types.ImportAttributes](f1)
 
-	v.Qualifier = pegort.TAs[types.EntityName](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.Qualifier = rt.TAs[types.EntityName](rt.TPubIn(types.PegoHooks, a, f2))
 
 	v.TypeArguments = tl6(a, f3)
 
 	v.IsTypeOf = astBool(f4)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_IndexSignature(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_IndexSignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tIndexSignature)
@@ -1516,58 +1516,58 @@ func tmk_IndexSignature(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) a
 
 	v.Parameters = tl4(a, f1)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_IndexedAccessType(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_IndexedAccessType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tIndexedAccessType)
 
-	v.ObjectType = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.ObjectType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 
-	v.IndexType = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.IndexType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_InferType(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_InferType(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tInferType)
 
-	v.TypeParameter = pegort.TAs[*types.TypeParameter](f0)
+	v.TypeParameter = rt.TAs[*types.TypeParameter](f0)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_InterfaceDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
+func tmk_InterfaceDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tInterfaceDeclaration)
@@ -1582,196 +1582,196 @@ func tmk_InterfaceDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 
 
 	v.Members = tl13(a, f4)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_IntersectionType(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_IntersectionType(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tIntersectionType)
 
 	v.Types = tl6(a, f0)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_JSDocFunctionType(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_JSDocFunctionType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJSDocFunctionType)
 
 	v.Parameters = tl4(a, f0)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_JSDocNonNullableType(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_JSDocNonNullableType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJSDocNonNullableType)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 
 	v.Postfix = astBool(f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_JSDocNullableType(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_JSDocNullableType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJSDocNullableType)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 
 	v.Postfix = astBool(f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_JsxAttribute(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_JsxAttribute(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxAttribute)
 
-	v.Name = pegort.TAs[types.JsxAttributeName](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Name = rt.TAs[types.JsxAttributeName](rt.TPubIn(types.PegoHooks, a, f0))
 
-	v.Initializer = pegort.TAs[types.JsxAttributeValue](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Initializer = rt.TAs[types.JsxAttributeValue](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_JsxAttributes(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_JsxAttributes(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxAttributes)
 
 	v.Properties = tl14(a, f0)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_JsxClosingElement(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_JsxClosingElement(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxClosingElement)
 
-	v.TagName = pegort.TAs[types.JsxTagName](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.TagName = rt.TAs[types.JsxTagName](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_JsxElement(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_JsxElement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxElement)
 
-	v.OpeningElement = pegort.TAs[*types.JsxOpeningElement](f0)
+	v.OpeningElement = rt.TAs[*types.JsxOpeningElement](f0)
 
 	v.Children = tl15(a, f1)
 
-	v.ClosingElement = pegort.TAs[*types.JsxClosingElement](f2)
+	v.ClosingElement = rt.TAs[*types.JsxClosingElement](f2)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_JsxExpression(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_JsxExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxExpression)
 
 	v.DotDotDotToken = tv28(a, f0)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_JsxFragment(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_JsxFragment(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxFragment)
@@ -1782,20 +1782,20 @@ func tmk_JsxFragment(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any 
 
 	v.ClosingFragment = tv9(a, f2)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_JsxNamespacedName(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_JsxNamespacedName(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxNamespacedName)
@@ -1804,154 +1804,154 @@ func tmk_JsxNamespacedName(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	v.Name = tv5(a, f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_JsxOpeningElement(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_JsxOpeningElement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxOpeningElement)
 
-	v.TagName = pegort.TAs[types.JsxTagName](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.TagName = rt.TAs[types.JsxTagName](rt.TPubIn(types.PegoHooks, a, f0))
 
 	v.TypeArguments = tl6(a, f1)
 
-	v.Attributes = pegort.TAs[*types.JsxAttributes](f2)
+	v.Attributes = rt.TAs[*types.JsxAttributes](f2)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_JsxSelfClosingElement(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_JsxSelfClosingElement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxSelfClosingElement)
 
-	v.TagName = pegort.TAs[types.JsxTagName](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.TagName = rt.TAs[types.JsxTagName](rt.TPubIn(types.PegoHooks, a, f0))
 
 	v.TypeArguments = tl6(a, f1)
 
-	v.Attributes = pegort.TAs[*types.JsxAttributes](f2)
+	v.Attributes = rt.TAs[*types.JsxAttributes](f2)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_JsxSpreadAttribute(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_JsxSpreadAttribute(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tJsxSpreadAttribute)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_LabeledStatement(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_LabeledStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tLabeledStatement)
 
 	v.Label = tv5(a, f0)
 
-	v.Statement = pegort.TAs[types.Statement](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Statement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_LiteralType(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_LiteralType(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tLiteralType)
 
-	v.Literal = pegort.TAs[types.LiteralTypeLiteral](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Literal = rt.TAs[types.LiteralTypeLiteral](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_MappedType(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
+func tmk_MappedType(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tMappedType)
 
 	v.ReadonlyToken = tv28(a, f0)
 
-	v.TypeParameter = pegort.TAs[*types.TypeParameter](f1)
+	v.TypeParameter = rt.TAs[*types.TypeParameter](f1)
 
-	v.NameType = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.NameType = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
 
 	v.QuestionToken = tv28(a, f3)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f4))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f4))
 
 	v.Members = tl13(a, f5)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 
-	pegort.FieldSpanOf(f5, &first, &start, &end)
+	rt.FieldSpanOf(f5, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_MetaProperty(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_MetaProperty(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tMetaProperty)
@@ -1960,18 +1960,18 @@ func tmk_MetaProperty(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	v.Name = tv5(a, f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_MethodDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any, f7 any, f8 any) any {
+func tmk_MethodDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any, f7 any, f8 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tMethodDeclaration)
@@ -1980,7 +1980,7 @@ func tmk_MethodDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any
 
 	v.AsteriskToken = tv28(a, f1)
 
-	v.Name = pegort.TAs[types.PropertyName](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f2))
 
 	v.QuestionToken = tv28(a, f3)
 
@@ -1990,43 +1990,43 @@ func tmk_MethodDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any
 
 	v.Parameters = tl4(a, f6)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f7))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f7))
 
-	v.Body = pegort.TAs[*types.Block](f8)
+	v.Body = rt.TAs[*types.Block](f8)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 
-	pegort.FieldSpanOf(f5, &first, &start, &end)
+	rt.FieldSpanOf(f5, &first, &start, &end)
 
-	pegort.FieldSpanOf(f6, &first, &start, &end)
+	rt.FieldSpanOf(f6, &first, &start, &end)
 
-	pegort.FieldSpanOf(f7, &first, &start, &end)
+	rt.FieldSpanOf(f7, &first, &start, &end)
 
-	pegort.FieldSpanOf(f8, &first, &start, &end)
+	rt.FieldSpanOf(f8, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_MethodSignature(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
+func tmk_MethodSignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tMethodSignature)
 
 	v.Modifiers = tl2(a, f0)
 
-	v.Name = pegort.TAs[types.PropertyName](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
 
 	v.QuestionToken = tv28(a, f2)
 
@@ -2034,100 +2034,100 @@ func tmk_MethodSignature(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, 
 
 	v.Parameters = tl4(a, f4)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f5))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f5))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 
-	pegort.FieldSpanOf(f5, &first, &start, &end)
+	rt.FieldSpanOf(f5, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ModuleBlock(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_ModuleBlock(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tModuleBlock)
 
 	v.Statements = tl5(a, f0)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ModuleDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_ModuleDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tModuleDeclaration)
 
 	v.Modifiers = tl2(a, f0)
 
-	v.Name = pegort.TAs[types.ImportAttributeName](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Name = rt.TAs[types.ImportAttributeName](rt.TPubIn(types.PegoHooks, a, f1))
 
-	v.Body = pegort.TAs[types.ModuleBody](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.Body = rt.TAs[types.ModuleBody](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_NamedExports(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_NamedExports(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tNamedExports)
 
 	v.Elements = tl16(a, f0)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_NamedImports(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_NamedImports(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tNamedImports)
 
 	v.Elements = tl17(a, f0)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_NamedTupleMember(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
+func tmk_NamedTupleMember(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tNamedTupleMember)
@@ -2138,40 +2138,40 @@ func tmk_NamedTupleMember(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any,
 
 	v.QuestionToken = tv28(a, f2)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f3))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f3))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_NamespaceExport(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_NamespaceExport(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tNamespaceExport)
 
-	v.Name = pegort.TAs[types.ImportAttributeName](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Name = rt.TAs[types.ImportAttributeName](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_NamespaceExportDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_NamespaceExportDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tNamespaceExportDeclaration)
@@ -2180,122 +2180,122 @@ func tmk_NamespaceExportDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 an
 
 	v.Name = tv5(a, f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_NamespaceImport(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_NamespaceImport(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tNamespaceImport)
 
 	v.Name = tv5(a, f0)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_NewExpression(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_NewExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tNewExpression)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 
 	v.TypeArguments = tl6(a, f1)
 
 	v.Arguments = tl1(a, f2)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_NonNullExpression(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_NonNullExpression(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tNonNullExpression)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ObjectBindingPattern(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_ObjectBindingPattern(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tObjectBindingPattern)
 
 	v.Elements = tl18(a, f0)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ObjectLiteralExpression(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_ObjectLiteralExpression(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tObjectLiteralExpression)
 
 	v.Properties = tl19(a, f0)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_OptionalType(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_OptionalType(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tOptionalType)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_Parameter(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
+func tmk_Parameter(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tParameter)
@@ -2304,338 +2304,338 @@ func tmk_Parameter(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any
 
 	v.DotDotDotToken = tv28(a, f1)
 
-	v.Name = pegort.TAs[types.BindingName](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.Name = rt.TAs[types.BindingName](rt.TPubIn(types.PegoHooks, a, f2))
 
 	v.QuestionToken = tv28(a, f3)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f4))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f4))
 
-	v.Initializer = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f5))
+	v.Initializer = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f5))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 
-	pegort.FieldSpanOf(f5, &first, &start, &end)
+	rt.FieldSpanOf(f5, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ParenthesizedExpression(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_ParenthesizedExpression(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tParenthesizedExpression)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ParenthesizedType(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_ParenthesizedType(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tParenthesizedType)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_PostfixUnaryExpression(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_PostfixUnaryExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tPostfixUnaryExpression)
 
-	v.Operand = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Operand = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 
 	v.Operator = astString(f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_PrefixUnaryExpression(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_PrefixUnaryExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tPrefixUnaryExpression)
 
 	v.Operator = astString(f0)
 
-	v.Operand = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Operand = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_PropertyAccessExpression(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_PropertyAccessExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tPropertyAccessExpression)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 
 	v.QuestionDotToken = tv28(a, f1)
 
-	v.Name = pegort.TAs[types.MemberName](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.Name = rt.TAs[types.MemberName](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_PropertyAssignment(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
+func tmk_PropertyAssignment(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tPropertyAssignment)
 
 	v.Modifiers = tl2(a, f0)
 
-	v.Name = pegort.TAs[types.PropertyName](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
 
 	v.QuestionToken = tv28(a, f2)
 
 	v.ExclamationToken = tv28(a, f3)
 
-	v.Initializer = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f4))
+	v.Initializer = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f4))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_PropertyDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
+func tmk_PropertyDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tPropertyDeclaration)
 
 	v.Modifiers = tl2(a, f0)
 
-	v.Name = pegort.TAs[types.PropertyName](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
 
 	v.QuestionToken = tv28(a, f2)
 
 	v.ExclamationToken = tv28(a, f3)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f4))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f4))
 
-	v.Initializer = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f5))
+	v.Initializer = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f5))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 
-	pegort.FieldSpanOf(f5, &first, &start, &end)
+	rt.FieldSpanOf(f5, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_PropertySignature(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
+func tmk_PropertySignature(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tPropertySignature)
 
 	v.Modifiers = tl2(a, f0)
 
-	v.Name = pegort.TAs[types.PropertyName](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
 
 	v.QuestionToken = tv28(a, f2)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f3))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f3))
 
-	v.Initializer = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f4))
+	v.Initializer = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f4))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_QualifiedName(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_QualifiedName(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tQualifiedName)
 
-	v.Left = pegort.TAs[types.EntityName](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Left = rt.TAs[types.EntityName](rt.TPubIn(types.PegoHooks, a, f0))
 
 	v.Right = tv5(a, f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_RestType(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_RestType(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tRestType)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ReturnStatement(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_ReturnStatement(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tReturnStatement)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_SatisfiesExpression(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_SatisfiesExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tSatisfiesExpression)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_SetAccessor(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
+func tmk_SetAccessor(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tSetAccessor)
 
 	v.Modifiers = tl2(a, f0)
 
-	v.Name = pegort.TAs[types.PropertyName](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Name = rt.TAs[types.PropertyName](rt.TPubIn(types.PegoHooks, a, f1))
 
 	v.TypeParameters = tl3(a, f2)
 
 	v.Parameters = tl4(a, f3)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f4))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f4))
 
-	v.Body = pegort.TAs[*types.Block](f5)
+	v.Body = rt.TAs[*types.Block](f5)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 
-	pegort.FieldSpanOf(f5, &first, &start, &end)
+	rt.FieldSpanOf(f5, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ShorthandPropertyAssignment(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
+func tmk_ShorthandPropertyAssignment(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tShorthandPropertyAssignment)
@@ -2650,28 +2650,28 @@ func tmk_ShorthandPropertyAssignment(c *pegort.TActCtx, final bool, f0 any, f1 a
 
 	v.EqualsToken = tv28(a, f4)
 
-	v.ObjectAssignmentInitializer = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f5))
+	v.ObjectAssignmentInitializer = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f5))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 
-	pegort.FieldSpanOf(f5, &first, &start, &end)
+	rt.FieldSpanOf(f5, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_SourceFile(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_SourceFile(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tSourceFile)
@@ -2680,98 +2680,98 @@ func tmk_SourceFile(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	v.EndOfFileToken = tv4(a, f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_SpreadAssignment(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_SpreadAssignment(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tSpreadAssignment)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_SpreadElement(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_SpreadElement(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tSpreadElement)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_SwitchStatement(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_SwitchStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tSwitchStatement)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 
-	v.CaseBlock = pegort.TAs[*types.CaseBlock](f1)
+	v.CaseBlock = rt.TAs[*types.CaseBlock](f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_TaggedTemplateExpression(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
+func tmk_TaggedTemplateExpression(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTaggedTemplateExpression)
 
-	v.Tag = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Tag = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 
 	v.QuestionDotToken = tv28(a, f1)
 
 	v.TypeArguments = tl6(a, f2)
 
-	v.Template = pegort.TAs[types.TemplateLiteral](pegort.TPubIn(types.PegoHooks, a, f3))
+	v.Template = rt.TAs[types.TemplateLiteral](rt.TPubIn(types.PegoHooks, a, f3))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_TemplateExpression(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_TemplateExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTemplateExpression)
@@ -2780,18 +2780,18 @@ func tmk_TemplateExpression(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
 
 	v.TemplateSpans = tl20(a, f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_TemplateLiteralType(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_TemplateLiteralType(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTemplateLiteralType)
@@ -2800,114 +2800,114 @@ func tmk_TemplateLiteralType(c *pegort.TActCtx, final bool, f0 any, f1 any) any 
 
 	v.TemplateSpans = tl21(a, f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_TemplateLiteralTypeSpan(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_TemplateLiteralTypeSpan(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTemplateLiteralTypeSpan)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 
-	v.Literal = pegort.TAs[types.TemplateMiddleOrTail](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Literal = rt.TAs[types.TemplateMiddleOrTail](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_TemplateSpan(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_TemplateSpan(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTemplateSpan)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 
-	v.Literal = pegort.TAs[types.TemplateMiddleOrTail](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Literal = rt.TAs[types.TemplateMiddleOrTail](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_ThrowStatement(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_ThrowStatement(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tThrowStatement)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_TryStatement(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_TryStatement(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTryStatement)
 
-	v.TryBlock = pegort.TAs[*types.Block](f0)
+	v.TryBlock = rt.TAs[*types.Block](f0)
 
-	v.CatchClause = pegort.TAs[*types.CatchClause](f1)
+	v.CatchClause = rt.TAs[*types.CatchClause](f1)
 
-	v.FinallyBlock = pegort.TAs[*types.Block](f2)
+	v.FinallyBlock = rt.TAs[*types.Block](f2)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_TupleType(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_TupleType(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTupleType)
 
 	v.Elements = tl6(a, f0)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_TypeAliasDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
+func tmk_TypeAliasDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTypeAliasDeclaration)
@@ -2918,96 +2918,96 @@ func tmk_TypeAliasDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 
 
 	v.TypeParameters = tl3(a, f2)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f3))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f3))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_TypeAssertionExpression(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_TypeAssertionExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTypeAssertionExpression)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f0))
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_TypeLiteral(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_TypeLiteral(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTypeLiteral)
 
 	v.Members = tl13(a, f0)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_TypeOfExpression(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_TypeOfExpression(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTypeOfExpression)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_TypeOperator(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_TypeOperator(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTypeOperator)
 
 	v.Operator = astString(f0)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_TypeParameter(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
+func tmk_TypeParameter(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTypeParameter)
@@ -3016,138 +3016,138 @@ func tmk_TypeParameter(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3
 
 	v.Name = tv5(a, f1)
 
-	v.Constraint = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.Constraint = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
 
-	v.Default = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f3))
+	v.Default = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f3))
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f4))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f4))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 
-	pegort.FieldSpanOf(f4, &first, &start, &end)
+	rt.FieldSpanOf(f4, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_TypePredicate(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any) any {
+func tmk_TypePredicate(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTypePredicate)
 
 	v.AssertsModifier = tv28(a, f0)
 
-	v.ParameterName = pegort.TAs[types.TypePredicateParameterName](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.ParameterName = rt.TAs[types.TypePredicateParameterName](rt.TPubIn(types.PegoHooks, a, f1))
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_TypeQuery(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_TypeQuery(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTypeQuery)
 
-	v.ExprName = pegort.TAs[types.EntityName](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.ExprName = rt.TAs[types.EntityName](rt.TPubIn(types.PegoHooks, a, f0))
 
 	v.TypeArguments = tl6(a, f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_TypeReference(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_TypeReference(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tTypeReference)
 
-	v.TypeName = pegort.TAs[types.EntityName](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.TypeName = rt.TAs[types.EntityName](rt.TPubIn(types.PegoHooks, a, f0))
 
 	v.TypeArguments = tl6(a, f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_UnionType(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_UnionType(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tUnionType)
 
 	v.Types = tl6(a, f0)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_VariableDeclaration(c *pegort.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
+func tmk_VariableDeclaration(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tVariableDeclaration)
 
-	v.Name = pegort.TAs[types.BindingName](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Name = rt.TAs[types.BindingName](rt.TPubIn(types.PegoHooks, a, f0))
 
 	v.ExclamationToken = tv28(a, f1)
 
-	v.Type = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, f2))
+	v.Type = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, f2))
 
-	v.Initializer = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f3))
+	v.Initializer = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f3))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 
-	pegort.FieldSpanOf(f2, &first, &start, &end)
+	rt.FieldSpanOf(f2, &first, &start, &end)
 
-	pegort.FieldSpanOf(f3, &first, &start, &end)
+	rt.FieldSpanOf(f3, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_VariableDeclarationList(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_VariableDeclarationList(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tVariableDeclarationList)
@@ -3156,110 +3156,110 @@ func tmk_VariableDeclarationList(c *pegort.TActCtx, final bool, f0 any, f1 any) 
 
 	v.Declarations = tl22(a, f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_VariableStatement(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_VariableStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tVariableStatement)
 
 	v.Modifiers = tl2(a, f0)
 
-	v.DeclarationList = pegort.TAs[*types.VariableDeclarationList](f1)
+	v.DeclarationList = rt.TAs[*types.VariableDeclarationList](f1)
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_VoidExpression(c *pegort.TActCtx, final bool, f0 any) any {
+func tmk_VoidExpression(c *rt.TActCtx, final bool, f0 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tVoidExpression)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_WhileStatement(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_WhileStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tWhileStatement)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 
-	v.Statement = pegort.TAs[types.Statement](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Statement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_WithStatement(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_WithStatement(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tWithStatement)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f0))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f0))
 
-	v.Statement = pegort.TAs[types.Statement](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Statement = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
-func tmk_YieldExpression(c *pegort.TActCtx, final bool, f0 any, f1 any) any {
+func tmk_YieldExpression(c *rt.TActCtx, final bool, f0 any, f1 any) any {
 
 	a := c.P.Ext.(*tslabs)
 	v := astNew(&a.tYieldExpression)
 
 	v.AsteriskToken = tv28(a, f0)
 
-	v.Expression = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, f1))
+	v.Expression = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, f1))
 	if final {
-		v.Span = pegort.Span{Start: c.Start, End: c.End}
+		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v
 	}
 	first, start, end := true, 0, 0
 
-	pegort.FieldSpanOf(f0, &first, &start, &end)
+	rt.FieldSpanOf(f0, &first, &start, &end)
 
-	pegort.FieldSpanOf(f1, &first, &start, &end)
+	rt.FieldSpanOf(f1, &first, &start, &end)
 	return c.Made(v, first, start, end)
 }
 
@@ -3268,14 +3268,14 @@ func tl0(a *tslabs, v any) []types.ArrayBindingElement {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []types.ArrayBindingElement{}
 	}
 	out := astSlice(&a.tl0Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[types.ArrayBindingElement](pegort.TPubIn(types.PegoHooks, a, c))
+		out[i] = rt.TAs[types.ArrayBindingElement](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
@@ -3285,14 +3285,14 @@ func tl1(a *tslabs, v any) []types.Expression {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []types.Expression{}
 	}
 	out := astSlice(&a.tl1Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[types.Expression](pegort.TPubIn(types.PegoHooks, a, c))
+		out[i] = rt.TAs[types.Expression](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
@@ -3302,14 +3302,14 @@ func tl2(a *tslabs, v any) []types.ModifierLike {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []types.ModifierLike{}
 	}
 	out := astSlice(&a.tl2Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[types.ModifierLike](pegort.TPubIn(types.PegoHooks, a, c))
+		out[i] = rt.TAs[types.ModifierLike](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
@@ -3319,14 +3319,14 @@ func tl3(a *tslabs, v any) []*types.TypeParameter {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []*types.TypeParameter{}
 	}
 	out := astSlice(&a.tl3Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[*types.TypeParameter](c)
+		out[i] = rt.TAs[*types.TypeParameter](c)
 	}
 	return out
 }
@@ -3336,14 +3336,14 @@ func tl4(a *tslabs, v any) []*types.Parameter {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []*types.Parameter{}
 	}
 	out := astSlice(&a.tl4Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[*types.Parameter](c)
+		out[i] = rt.TAs[*types.Parameter](c)
 	}
 	return out
 }
@@ -3353,14 +3353,14 @@ func tl5(a *tslabs, v any) []types.Statement {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []types.Statement{}
 	}
 	out := astSlice(&a.tl5Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[types.Statement](pegort.TPubIn(types.PegoHooks, a, c))
+		out[i] = rt.TAs[types.Statement](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
@@ -3370,14 +3370,14 @@ func tl6(a *tslabs, v any) []types.TypeNode {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []types.TypeNode{}
 	}
 	out := astSlice(&a.tl6Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[types.TypeNode](pegort.TPubIn(types.PegoHooks, a, c))
+		out[i] = rt.TAs[types.TypeNode](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
@@ -3387,14 +3387,14 @@ func tl7(a *tslabs, v any) []types.CaseOrDefaultClause {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []types.CaseOrDefaultClause{}
 	}
 	out := astSlice(&a.tl7Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[types.CaseOrDefaultClause](pegort.TPubIn(types.PegoHooks, a, c))
+		out[i] = rt.TAs[types.CaseOrDefaultClause](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
@@ -3404,14 +3404,14 @@ func tl8(a *tslabs, v any) []*types.HeritageClause {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []*types.HeritageClause{}
 	}
 	out := astSlice(&a.tl8Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[*types.HeritageClause](c)
+		out[i] = rt.TAs[*types.HeritageClause](c)
 	}
 	return out
 }
@@ -3421,14 +3421,14 @@ func tl9(a *tslabs, v any) []types.ClassElement {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []types.ClassElement{}
 	}
 	out := astSlice(&a.tl9Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[types.ClassElement](pegort.TPubIn(types.PegoHooks, a, c))
+		out[i] = rt.TAs[types.ClassElement](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
@@ -3438,14 +3438,14 @@ func tl10(a *tslabs, v any) []*types.EnumMember {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []*types.EnumMember{}
 	}
 	out := astSlice(&a.tl10Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[*types.EnumMember](c)
+		out[i] = rt.TAs[*types.EnumMember](c)
 	}
 	return out
 }
@@ -3455,14 +3455,14 @@ func tl11(a *tslabs, v any) []*types.ExpressionWithTypeArguments {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []*types.ExpressionWithTypeArguments{}
 	}
 	out := astSlice(&a.tl11Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[*types.ExpressionWithTypeArguments](c)
+		out[i] = rt.TAs[*types.ExpressionWithTypeArguments](c)
 	}
 	return out
 }
@@ -3472,14 +3472,14 @@ func tl12(a *tslabs, v any) []*types.ImportAttribute {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []*types.ImportAttribute{}
 	}
 	out := astSlice(&a.tl12Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[*types.ImportAttribute](c)
+		out[i] = rt.TAs[*types.ImportAttribute](c)
 	}
 	return out
 }
@@ -3489,14 +3489,14 @@ func tl13(a *tslabs, v any) []types.TypeElement {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []types.TypeElement{}
 	}
 	out := astSlice(&a.tl13Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[types.TypeElement](pegort.TPubIn(types.PegoHooks, a, c))
+		out[i] = rt.TAs[types.TypeElement](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
@@ -3506,14 +3506,14 @@ func tl14(a *tslabs, v any) []types.JsxAttributeLike {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []types.JsxAttributeLike{}
 	}
 	out := astSlice(&a.tl14Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[types.JsxAttributeLike](pegort.TPubIn(types.PegoHooks, a, c))
+		out[i] = rt.TAs[types.JsxAttributeLike](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
@@ -3523,14 +3523,14 @@ func tl15(a *tslabs, v any) []types.JsxChild {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []types.JsxChild{}
 	}
 	out := astSlice(&a.tl15Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[types.JsxChild](pegort.TPubIn(types.PegoHooks, a, c))
+		out[i] = rt.TAs[types.JsxChild](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
@@ -3540,14 +3540,14 @@ func tl16(a *tslabs, v any) []*types.ExportSpecifier {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []*types.ExportSpecifier{}
 	}
 	out := astSlice(&a.tl16Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[*types.ExportSpecifier](c)
+		out[i] = rt.TAs[*types.ExportSpecifier](c)
 	}
 	return out
 }
@@ -3557,14 +3557,14 @@ func tl17(a *tslabs, v any) []*types.ImportSpecifier {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []*types.ImportSpecifier{}
 	}
 	out := astSlice(&a.tl17Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[*types.ImportSpecifier](c)
+		out[i] = rt.TAs[*types.ImportSpecifier](c)
 	}
 	return out
 }
@@ -3574,14 +3574,14 @@ func tl18(a *tslabs, v any) []*types.BindingElement {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []*types.BindingElement{}
 	}
 	out := astSlice(&a.tl18Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[*types.BindingElement](c)
+		out[i] = rt.TAs[*types.BindingElement](c)
 	}
 	return out
 }
@@ -3591,14 +3591,14 @@ func tl19(a *tslabs, v any) []types.ObjectLiteralElement {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []types.ObjectLiteralElement{}
 	}
 	out := astSlice(&a.tl19Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[types.ObjectLiteralElement](pegort.TPubIn(types.PegoHooks, a, c))
+		out[i] = rt.TAs[types.ObjectLiteralElement](rt.TPubIn(types.PegoHooks, a, c))
 	}
 	return out
 }
@@ -3608,14 +3608,14 @@ func tl20(a *tslabs, v any) []*types.TemplateSpan {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []*types.TemplateSpan{}
 	}
 	out := astSlice(&a.tl20Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[*types.TemplateSpan](c)
+		out[i] = rt.TAs[*types.TemplateSpan](c)
 	}
 	return out
 }
@@ -3625,14 +3625,14 @@ func tl21(a *tslabs, v any) []*types.TemplateLiteralTypeSpan {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []*types.TemplateLiteralTypeSpan{}
 	}
 	out := astSlice(&a.tl21Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[*types.TemplateLiteralTypeSpan](c)
+		out[i] = rt.TAs[*types.TemplateLiteralTypeSpan](c)
 	}
 	return out
 }
@@ -3642,14 +3642,14 @@ func tl22(a *tslabs, v any) []*types.VariableDeclaration {
 	if v == nil {
 		return nil
 	}
-	n, _ := v.(*pegort.TSeq)
+	n, _ := v.(*rt.TSeq)
 	if n == nil {
 		return []*types.VariableDeclaration{}
 	}
 	out := astSlice(&a.tl22Chunk, len(n.Kids))
 	for i, c := range n.Kids {
 		a.stepWork()
-		out[i] = pegort.TAs[*types.VariableDeclaration](c)
+		out[i] = rt.TAs[*types.VariableDeclaration](c)
 	}
 	return out
 }
@@ -3657,295 +3657,295 @@ func tl22(a *tslabs, v any) []*types.VariableDeclaration {
 func tv0(a *tslabs, v any) *types.BigIntLiteral {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.BigIntLiteral{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[1] {
 		return nil
 	}
-	return pegort.TMatchAs[types.BigIntLiteral](x)
+	return rt.TMatchAs[types.BigIntLiteral](x)
 }
 
 func tv1(a *tslabs, v any) *types.BooleanLiteral {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.BooleanLiteral{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[2] {
 		return nil
 	}
-	return pegort.TMatchAs[types.BooleanLiteral](x)
+	return rt.TMatchAs[types.BooleanLiteral](x)
 }
 
 func tv2(a *tslabs, v any) *types.DebuggerStatement {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.DebuggerStatement{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[3] {
 		return nil
 	}
-	return pegort.TMatchAs[types.DebuggerStatement](x)
+	return rt.TMatchAs[types.DebuggerStatement](x)
 }
 
 func tv3(a *tslabs, v any) *types.EmptyStatement {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.EmptyStatement{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[4] {
 		return nil
 	}
-	return pegort.TMatchAs[types.EmptyStatement](x)
+	return rt.TMatchAs[types.EmptyStatement](x)
 }
 
 func tv4(a *tslabs, v any) *types.EndOfFileToken {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.EndOfFileToken{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[5] {
 		return nil
 	}
-	return pegort.TMatchAs[types.EndOfFileToken](x)
+	return rt.TMatchAs[types.EndOfFileToken](x)
 }
 
 func tv5(a *tslabs, v any) *types.Identifier {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.Identifier{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[6] {
 		return nil
 	}
-	return pegort.TMatchAs[types.Identifier](x)
+	return rt.TMatchAs[types.Identifier](x)
 }
 
 func tv6(a *tslabs, v any) *types.ImportExpression {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.ImportExpression{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[7] {
 		return nil
 	}
-	return pegort.TMatchAs[types.ImportExpression](x)
+	return rt.TMatchAs[types.ImportExpression](x)
 }
 
 func tv7(a *tslabs, v any) *types.JSDocAllType {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.JSDocAllType{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[8] {
 		return nil
 	}
-	return pegort.TMatchAs[types.JSDocAllType](x)
+	return rt.TMatchAs[types.JSDocAllType](x)
 }
 
 func tv8(a *tslabs, v any) *types.JSDocUnknownType {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.JSDocUnknownType{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[9] {
 		return nil
 	}
-	return pegort.TMatchAs[types.JSDocUnknownType](x)
+	return rt.TMatchAs[types.JSDocUnknownType](x)
 }
 
 func tv9(a *tslabs, v any) *types.JsxClosingFragment {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.JsxClosingFragment{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[10] {
 		return nil
 	}
-	return pegort.TMatchAs[types.JsxClosingFragment](x)
+	return rt.TMatchAs[types.JsxClosingFragment](x)
 }
 
 func tv10(a *tslabs, v any) *types.JsxOpeningFragment {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.JsxOpeningFragment{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[11] {
 		return nil
 	}
-	return pegort.TMatchAs[types.JsxOpeningFragment](x)
+	return rt.TMatchAs[types.JsxOpeningFragment](x)
 }
 
 func tv11(a *tslabs, v any) *types.JsxText {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.JsxText{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[12] {
 		return nil
 	}
-	return pegort.TMatchAs[types.JsxText](x)
+	return rt.TMatchAs[types.JsxText](x)
 }
 
 func tv12(a *tslabs, v any) *types.KeywordTypeNode {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.KeywordTypeNode{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[13] {
 		return nil
 	}
-	return pegort.TMatchAs[types.KeywordTypeNode](x)
+	return rt.TMatchAs[types.KeywordTypeNode](x)
 }
 
 func tv13(a *tslabs, v any) *types.Modifier {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.Modifier{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[14] {
 		return nil
 	}
-	return pegort.TMatchAs[types.Modifier](x)
+	return rt.TMatchAs[types.Modifier](x)
 }
 
 func tv14(a *tslabs, v any) *types.NoSubstitutionTemplateLiteral {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.NoSubstitutionTemplateLiteral{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[15] {
 		return nil
 	}
-	return pegort.TMatchAs[types.NoSubstitutionTemplateLiteral](x)
+	return rt.TMatchAs[types.NoSubstitutionTemplateLiteral](x)
 }
 
 func tv15(a *tslabs, v any) *types.NullLiteral {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.NullLiteral{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[16] {
 		return nil
 	}
-	return pegort.TMatchAs[types.NullLiteral](x)
+	return rt.TMatchAs[types.NullLiteral](x)
 }
 
 func tv16(a *tslabs, v any) *types.NumericLiteral {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.NumericLiteral{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[17] {
 		return nil
 	}
-	return pegort.TMatchAs[types.NumericLiteral](x)
+	return rt.TMatchAs[types.NumericLiteral](x)
 }
 
 func tv17(a *tslabs, v any) *types.OmittedExpression {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.OmittedExpression{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[18] {
 		return nil
 	}
-	return pegort.TMatchAs[types.OmittedExpression](x)
+	return rt.TMatchAs[types.OmittedExpression](x)
 }
 
 func tv18(a *tslabs, v any) *types.PrivateIdentifier {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.PrivateIdentifier{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[19] {
 		return nil
 	}
-	return pegort.TMatchAs[types.PrivateIdentifier](x)
+	return rt.TMatchAs[types.PrivateIdentifier](x)
 }
 
 func tv19(a *tslabs, v any) *types.RegularExpressionLiteral {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.RegularExpressionLiteral{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[20] {
 		return nil
 	}
-	return pegort.TMatchAs[types.RegularExpressionLiteral](x)
+	return rt.TMatchAs[types.RegularExpressionLiteral](x)
 }
 
 func tv20(a *tslabs, v any) *types.SemicolonClassElement {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.SemicolonClassElement{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[21] {
 		return nil
 	}
-	return pegort.TMatchAs[types.SemicolonClassElement](x)
+	return rt.TMatchAs[types.SemicolonClassElement](x)
 }
 
 func tv21(a *tslabs, v any) *types.StringLiteral {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.StringLiteral{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[22] {
 		return nil
 	}
-	return pegort.TMatchAs[types.StringLiteral](x)
+	return rt.TMatchAs[types.StringLiteral](x)
 }
 
 func tv22(a *tslabs, v any) *types.SuperExpression {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.SuperExpression{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[23] {
 		return nil
 	}
-	return pegort.TMatchAs[types.SuperExpression](x)
+	return rt.TMatchAs[types.SuperExpression](x)
 }
 
 func tv23(a *tslabs, v any) *types.TemplateHead {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.TemplateHead{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[24] {
 		return nil
 	}
-	return pegort.TMatchAs[types.TemplateHead](x)
+	return rt.TMatchAs[types.TemplateHead](x)
 }
 
 func tv24(a *tslabs, v any) *types.TemplateMiddle {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.TemplateMiddle{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[25] {
 		return nil
 	}
-	return pegort.TMatchAs[types.TemplateMiddle](x)
+	return rt.TMatchAs[types.TemplateMiddle](x)
 }
 
 func tv25(a *tslabs, v any) *types.TemplateTail {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.TemplateTail{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[26] {
 		return nil
 	}
-	return pegort.TMatchAs[types.TemplateTail](x)
+	return rt.TMatchAs[types.TemplateTail](x)
 }
 
 func tv26(a *tslabs, v any) *types.ThisExpression {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.ThisExpression{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[27] {
 		return nil
 	}
-	return pegort.TMatchAs[types.ThisExpression](x)
+	return rt.TMatchAs[types.ThisExpression](x)
 }
 
 func tv27(a *tslabs, v any) *types.ThisTypeNode {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.ThisTypeNode{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[28] {
 		return nil
 	}
-	return pegort.TMatchAs[types.ThisTypeNode](x)
+	return rt.TMatchAs[types.ThisTypeNode](x)
 }
 
 func tv28(a *tslabs, v any) *types.Token {
 	a.stepWork()
 	const _ = -(unsafe.Sizeof(types.Token{}) - unsafe.Sizeof(types.TNode[string]{}))
-	x, _ := v.(*pegort.TMatch)
+	x, _ := v.(*rt.TMatch)
 	if x == nil || x.Nt != types.PegoNodeTypes[29] {
 		return nil
 	}
-	return pegort.TMatchAs[types.Token](x)
+	return rt.TMatchAs[types.Token](x)
 }
 
 type tslabs struct {
-	control                      *pegort.WorkControl
+	control                      *rt.WorkControl
 	tArrayBindingPattern         astChunk[types.ArrayBindingPattern]
 	tArrayLiteralExpression      astChunk[types.ArrayLiteralExpression]
 	tArrayType                   astChunk[types.ArrayType]
@@ -4106,9 +4106,9 @@ type tslabs struct {
 	tl22Chunk                    astChunk[*types.VariableDeclaration]
 }
 
-func (a *tslabs) SetWorkControl(c *pegort.WorkControl) { a.control = c }
+func (a *tslabs) SetWorkControl(c *rt.WorkControl) { a.control = c }
 func (a *tslabs) stepWork() {
-	if pegort.WorkControlsEnabled && a.control != nil {
+	if rt.WorkControlsEnabled && a.control != nil {
 		a.control.Charge(0, 1)
 	}
 }
@@ -4117,9 +4117,9 @@ func (a *tslabs) stepWork() {
 // from errors, the result is returned together with SyntaxErrors; an Error node where a struct
 // type is expected becomes nil.
 // It builds the values directly, without the nodes Parse returns.
-func ParseAST(input string, opts ...pegort.ParseOption) (*types.SourceFile, error) {
+func ParseAST(input string, opts ...rt.ParseOption) (*types.SourceFile, error) {
 	a := &tslabs{}
-	return pegort.TParse(trules[0], input, opts, a, func(v any) *types.SourceFile { return pegort.TAs[*types.SourceFile](v) })
+	return rt.TParse(trules[0], input, opts, a, func(v any) *types.SourceFile { return rt.TAs[*types.SourceFile](v) })
 }
 
 // ParseRuleAST parses the whole input with the named start rule and returns its typed value; an empty
@@ -4128,15 +4128,15 @@ func ParseAST(input string, opts ...pegort.ParseOption) (*types.SourceFile, erro
 // Invalid options and names of rules that are not start rules return nil with an error. Start rule result types:
 //
 //	main: *types.SourceFile
-func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
-	o, err := pegort.ResolveOptions(pegoGrammar, opts)
+func ParseRuleAST(name, input string, opts ...rt.ParseOption) (any, error) {
+	o, err := rt.ResolveOptions(pegoGrammar, opts)
 	if err != nil {
 		return nil, err
 	}
 	switch name {
 	case "main", "":
 		a := &tslabs{}
-		return pegort.TParseResolved(trules[0], input, o, a, func(v any) *types.SourceFile { return pegort.TAs[*types.SourceFile](v) })
+		return rt.TParseResolved(trules[0], input, o, a, func(v any) *types.SourceFile { return rt.TAs[*types.SourceFile](v) })
 	default:
 		return nil, pegoGrammar.StartError(name)
 	}
@@ -4144,12 +4144,12 @@ func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 
 var lit1 = []rune("\x00")
 var lit2 = []rune("\x01")
-var sh5 = pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}
+var sh5 = rt.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}
 
 var lit10 = []rune("import")
 var lit11 = []rune("export")
 var lit12 = []rune("type")
-var sh13 = pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}
+var sh13 = rt.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}
 var lit14 = []rune("default")
 var lit15 = []rune("as")
 var lit16 = []rune("enum")
@@ -4157,7 +4157,7 @@ var lit17 = []rune("namespace")
 var lit18 = []rune("module")
 var lit19 = []rune("global")
 var lit22 = []rune("#!")
-var sh23 = pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}
+var sh23 = rt.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}
 
 var lit29 = []rune("var")
 var lit30 = []rune("let")
@@ -4194,7 +4194,7 @@ var lit66 = []rune("{")
 var lit68 = []rune("}")
 var lit69 = []rune("=")
 var lit71 = []rune(";")
-var sh74 = pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}
+var sh74 = rt.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}
 var lit78 = []rune("(")
 var lit79 = []rune(")")
 var lit80 = []rune("else")
@@ -4264,7 +4264,7 @@ var lit321 = []rune("%=")
 var lit322 = []rune("&=")
 var lit323 = []rune("|=")
 var lit324 = []rune("^=")
-var sh327 = pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}
+var sh327 = rt.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}
 
 var lit331 = []rune("?")
 var lit336 = []rune("<")
@@ -4307,11 +4307,11 @@ var lit457 = []rune("</")
 
 var lit476 = []rune("\"")
 var lit477 = []rune("'")
-var sh490 = pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}
+var sh490 = rt.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}
 
 var lit493 = []rune("is")
 
-var sh505 = pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}
+var sh505 = rt.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}
 
 var lit513 = []rune("keyof")
 var lit514 = []rune("unique")
@@ -4351,7 +4351,7 @@ var lit655 = []rune("5")
 var lit656 = []rune("6")
 var lit657 = []rune("7")
 var lit659 = []rune("10")
-var sh662 = pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}
+var sh662 = rt.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}
 var lit668 = []rune("_")
 var lit676 = []rune("\\")
 
@@ -4365,23 +4365,23 @@ var lit688 = []rune("$")
 var lit700 = []rune("//")
 var lit701 = []rune("*/")
 
-var sh832 = pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}
-var sh833 = pegort.Shaper{Elems: true, K: 8, Mode: 2, Tuple: true, Shared: false}
-var sh834 = pegort.Shaper{Elems: true, K: 9, Mode: 2, Tuple: true, Shared: false}
-var sh835 = pegort.Shaper{Elems: true, K: 11, Mode: 2, Tuple: true, Shared: false}
+var sh832 = rt.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}
+var sh833 = rt.Shaper{Elems: true, K: 8, Mode: 2, Tuple: true, Shared: false}
+var sh834 = rt.Shaper{Elems: true, K: 9, Mode: 2, Tuple: true, Shared: false}
+var sh835 = rt.Shaper{Elems: true, K: 11, Mode: 2, Tuple: true, Shared: false}
 
-var rulesSpec = [...]pegort.RuleSpec{
+var rulesSpec = [...]rt.RuleSpec{
 	{Name: "main", Value: &sh74, Seen: -1, Scope: 1, Vars: 2},
 	{Name: "sourceFile", Value: &sh74, Seen: -1, Scope: 3, Vars: 2},
 	{Name: "topLevelStatement", Value: &sh23, Seen: -1, Vars: 2},
 	{Name: "otherTopLevelStatement", Value: &sh5, Seen: -1, Scope: 4, Vars: 2},
 	{Name: "awaitFreeTopLevelStatement", Value: &sh5, Seen: -1, Scope: 4, Vars: 2},
-	{Name: "topLevelAwaitFreeStart", Value: &sh13, Flags: pegort.RuleMemo},
+	{Name: "topLevelAwaitFreeStart", Value: &sh13, Flags: rt.RuleMemo},
 	{Name: "endOfFile", Value: &sh23, Seen: -1},
 	{Name: "hashbang", Value: &sh13, Seen: -1},
-	{Name: "statement", Value: &sh505, Flags: pegort.RuleMemo, Seen: 1, Scope: 4, Vars: 2},
+	{Name: "statement", Value: &sh505, Flags: rt.RuleMemo, Seen: 1, Scope: 4, Vars: 2},
 	{Name: "specialStatement", Value: &sh23, Seen: -1, Vars: 2},
-	{Name: "statementSpecialStart", Value: &sh23, Flags: pegort.RuleMemo, Seen: 2},
+	{Name: "statementSpecialStart", Value: &sh23, Flags: rt.RuleMemo, Seen: 2},
 	{Name: "statementKeyword", Value: &sh23, Seen: -1},
 	{Name: "plainStatement", Value: &sh505, Seen: -1, Scope: 4, Vars: 2},
 	{Name: "plainFunctionDeclaration", Value: &sh5, Seen: -1, Scope: 5, Vars: 2},
@@ -4389,12 +4389,12 @@ var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "decoratedDeclaration", Value: &sh5, Seen: -1, Scope: 5, Vars: 2},
 	{Name: "contextualDeclaration", Value: &sh5, Seen: -1, Scope: 5, Vars: 2},
 	{Name: "declarationKeyword", Value: &sh23, Seen: -1},
-	{Name: "block", Value: &sh74, Flags: pegort.RuleMemo, Seen: 3, Scope: 6, Vars: 2},
+	{Name: "block", Value: &sh74, Flags: rt.RuleMemo, Seen: 3, Scope: 6, Vars: 2},
 	{Name: "emptyStatement", Value: &sh23, Seen: -1},
 	{Name: "variableStatement", Value: &sh13, Seen: -1, Scope: 7, Vars: 2},
-	{Name: "variableStatementStart", Value: &sh23, Flags: pegort.RuleMemo, Seen: 4},
+	{Name: "variableStatementStart", Value: &sh23, Flags: rt.RuleMemo, Seen: 4},
 	{Name: "letFollows", Value: &sh5, Seen: -1},
-	{Name: "usingFollows", Value: &sh13, Flags: pegort.RuleMemo, Seen: 5},
+	{Name: "usingFollows", Value: &sh13, Flags: rt.RuleMemo, Seen: 5},
 	{Name: "ifStatement", Value: &sh490, Seen: -1, Scope: 8, Vars: 2},
 	{Name: "doStatement", Value: &sh662, Seen: -1, Scope: 9, Vars: 2},
 	{Name: "whileStatement", Value: &sh832, Seen: -1, Scope: 10, Vars: 2},
@@ -4404,7 +4404,7 @@ var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "forInStatement", Value: &sh662, Seen: -1, Scope: 12, Vars: 2},
 	{Name: "forClassicStatement", Value: &sh834, Seen: -1, Scope: 13, Vars: 2},
 	{Name: "awaitToken", Value: &sh23, Seen: -1},
-	{Name: "forInitializer", Value: &sh5, Flags: pegort.RuleMemo, Seen: 6, Scope: 14, Vars: 2},
+	{Name: "forInitializer", Value: &sh5, Flags: rt.RuleMemo, Seen: 6, Scope: 14, Vars: 2},
 	{Name: "forDeclarationList", Value: &sh5, Seen: -1, Scope: 7, Vars: 2},
 	{Name: "forUsingFollows", Value: &sh23, Seen: -1},
 	{Name: "continueStatement", Value: &sh74, Seen: -1, Scope: 15, Vars: 2},
@@ -4418,70 +4418,70 @@ var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "caseOrDefaultClause", Value: &sh23, Seen: -1, Vars: 2},
 	{Name: "caseClause", Value: &sh327, Seen: -1, Scope: 20, Vars: 2},
 	{Name: "defaultClause", Value: &sh74, Seen: -1, Scope: 6, Vars: 2},
-	{Name: "clauseStatement", Value: &sh5, Flags: pegort.RuleMemo, Seen: 7, Scope: 4, Vars: 2},
+	{Name: "clauseStatement", Value: &sh5, Flags: rt.RuleMemo, Seen: 7, Scope: 4, Vars: 2},
 	{Name: "tryStatement", Value: &sh327, Seen: -1, Scope: 21, Vars: 2},
 	{Name: "catchClause", Value: &sh74, Seen: -1, Scope: 22, Vars: 2},
 	{Name: "expressionOrLabeledStatement", Value: &sh5, Seen: -1, Scope: 4, Vars: 2},
-	{Name: "labeledStatement", Value: &sh74, Flags: pegort.RuleMemo, Seen: 8, Scope: 23, Vars: 2},
-	{Name: "expressionStatement", Value: &sh13, Flags: pegort.RuleMemo, Seen: 9, Scope: 16, Vars: 2},
+	{Name: "labeledStatement", Value: &sh74, Flags: rt.RuleMemo, Seen: 8, Scope: 23, Vars: 2},
+	{Name: "expressionStatement", Value: &sh13, Flags: rt.RuleMemo, Seen: 9, Scope: 16, Vars: 2},
 	{Name: "declareStatement", Value: &sh5, Seen: -1, Scope: 24, Vars: 2},
 	{Name: "declareIdentifier", Value: &sh23, Seen: -1},
-	{Name: "eos", Value: &sh23, Flags: pegort.RuleMemo, Seen: 10},
-	{Name: "canParseSemicolon", Value: &sh13, Flags: pegort.RuleMemo, Seen: 11},
-	{Name: "nlAhead", Value: &sh13, Flags: pegort.RuleMemo, Seen: 12},
-	{Name: "declarationStart", Value: &sh23, Flags: pegort.RuleMemo, Seen: 13, Vars: 2},
-	{Name: "declaration", Value: &sh23, Flags: pegort.RuleMemo, Seen: 14, Vars: 2},
+	{Name: "eos", Value: &sh23, Flags: rt.RuleMemo, Seen: 10},
+	{Name: "canParseSemicolon", Value: &sh13, Flags: rt.RuleMemo, Seen: 11},
+	{Name: "nlAhead", Value: &sh13, Flags: rt.RuleMemo, Seen: 12},
+	{Name: "declarationStart", Value: &sh23, Flags: rt.RuleMemo, Seen: 13, Vars: 2},
+	{Name: "declaration", Value: &sh23, Flags: rt.RuleMemo, Seen: 14, Vars: 2},
 	{Name: "variableStatementWithModifiers", Value: &sh74, Seen: -1, Scope: 25, Vars: 2},
-	{Name: "variableDeclarationList", Value: &sh13, Flags: pegort.RuleMemo, Seen: 15, Scope: 26, Vars: 2},
+	{Name: "variableDeclarationList", Value: &sh13, Flags: rt.RuleMemo, Seen: 15, Scope: 26, Vars: 2},
 	{Name: "declarationListKeyword", Value: &sh23, Seen: -1},
 	{Name: "variableDeclarations", Value: &sh74, Seen: -1, Scope: 27, Vars: 2},
-	{Name: "variableDeclaration", Value: &sh74, Flags: pegort.RuleMemo, Seen: 16, Scope: 28, Vars: 2},
-	{Name: "initializer", Value: &sh13, Flags: pegort.RuleMemo, Seen: 17, Scope: 16, Vars: 2},
-	{Name: "typeAnnotation", Value: &sh13, Flags: pegort.RuleMemo, Seen: 18, Scope: 29, Vars: 2},
-	{Name: "bindingName", Value: &sh23, Flags: pegort.RuleMemo, Seen: 19, Vars: 2},
-	{Name: "bindingPattern", Value: &sh23, Flags: pegort.RuleMemo, Seen: 20, Vars: 2},
+	{Name: "variableDeclaration", Value: &sh74, Flags: rt.RuleMemo, Seen: 16, Scope: 28, Vars: 2},
+	{Name: "initializer", Value: &sh13, Flags: rt.RuleMemo, Seen: 17, Scope: 16, Vars: 2},
+	{Name: "typeAnnotation", Value: &sh13, Flags: rt.RuleMemo, Seen: 18, Scope: 29, Vars: 2},
+	{Name: "bindingName", Value: &sh23, Flags: rt.RuleMemo, Seen: 19, Vars: 2},
+	{Name: "bindingPattern", Value: &sh23, Flags: rt.RuleMemo, Seen: 20, Vars: 2},
 	{Name: "objectBindingPattern", Value: &sh74, Seen: -1, Scope: 30, Vars: 2},
-	{Name: "bindingElement", Value: &sh23, Flags: pegort.RuleMemo, Seen: 21, Vars: 2},
+	{Name: "bindingElement", Value: &sh23, Flags: rt.RuleMemo, Seen: 21, Vars: 2},
 	{Name: "bindingElementWithPropertyName", Value: &sh832, Seen: -1, Scope: 31, Vars: 2},
-	{Name: "bindingElementShorthand", Value: &sh74, Flags: pegort.RuleMemo, Seen: 22, Scope: 32, Vars: 2},
+	{Name: "bindingElementShorthand", Value: &sh74, Flags: rt.RuleMemo, Seen: 22, Scope: 32, Vars: 2},
 	{Name: "arrayBindingPattern", Value: &sh74, Seen: -1, Scope: 30, Vars: 2},
-	{Name: "arrayBindingElement", Value: &sh23, Flags: pegort.RuleMemo, Seen: 23, Vars: 2},
+	{Name: "arrayBindingElement", Value: &sh23, Flags: rt.RuleMemo, Seen: 23, Vars: 2},
 	{Name: "omittedExpression", Value: &sh23, Seen: -1},
-	{Name: "functionDeclaration", Value: &sh833, Flags: pegort.RuleMemo, Seen: 24, Scope: 33, Vars: 2},
+	{Name: "functionDeclaration", Value: &sh833, Flags: rt.RuleMemo, Seen: 24, Scope: 33, Vars: 2},
 	{Name: "defaultModifierScan", Value: &sh13, Seen: -1, Scope: 5, Vars: 2},
-	{Name: "asyncModifierScan", Value: &sh13, Flags: pegort.RuleMemo, Seen: 25, Scope: 34, Vars: 2},
-	{Name: "parameterList", Value: &sh74, Flags: pegort.RuleMemo, Seen: 26, Scope: 35, Vars: 2},
-	{Name: "parameters", Value: &sh74, Flags: pegort.RuleMemo, Seen: 27, Scope: 27, Vars: 2},
-	{Name: "parameter", Value: &sh23, Flags: pegort.RuleMemo, Seen: 28, Vars: 2},
+	{Name: "asyncModifierScan", Value: &sh13, Flags: rt.RuleMemo, Seen: 25, Scope: 34, Vars: 2},
+	{Name: "parameterList", Value: &sh74, Flags: rt.RuleMemo, Seen: 26, Scope: 35, Vars: 2},
+	{Name: "parameters", Value: &sh74, Flags: rt.RuleMemo, Seen: 27, Scope: 27, Vars: 2},
+	{Name: "parameter", Value: &sh23, Flags: rt.RuleMemo, Seen: 28, Vars: 2},
 	{Name: "thisParameter", Value: &sh13, Seen: -1, Scope: 36, Vars: 2},
 	{Name: "thisIdentifier", Value: &sh23, Seen: -1},
 	{Name: "regularParameter", Value: &sh490, Seen: -1, Scope: 37, Vars: 2},
-	{Name: "returnType", Value: &sh13, Flags: pegort.RuleMemo, Seen: 29, Scope: 29, Vars: 2},
-	{Name: "classDeclaration", Value: &sh833, Flags: pegort.RuleMemo, Seen: 30, Scope: 38, Vars: 2},
+	{Name: "returnType", Value: &sh13, Flags: rt.RuleMemo, Seen: 29, Scope: 29, Vars: 2},
+	{Name: "classDeclaration", Value: &sh833, Flags: rt.RuleMemo, Seen: 30, Scope: 38, Vars: 2},
 	{Name: "classExpression", Value: &sh833, Seen: -1, Scope: 38, Vars: 2},
-	{Name: "className", Value: &sh5, Flags: pegort.RuleMemo, Seen: 31, Scope: 14},
-	{Name: "heritageClauses", Value: &sh13, Flags: pegort.RuleMemo, Seen: 32, Scope: 27, Vars: 2},
-	{Name: "heritageClause", Value: &sh13, Flags: pegort.RuleMemo, Seen: 33, Scope: 39, Vars: 2},
-	{Name: "heritageElementStart", Value: &sh23, Flags: pegort.RuleMemo, Seen: 34, Vars: 2},
+	{Name: "className", Value: &sh5, Flags: rt.RuleMemo, Seen: 31, Scope: 14},
+	{Name: "heritageClauses", Value: &sh13, Flags: rt.RuleMemo, Seen: 32, Scope: 27, Vars: 2},
+	{Name: "heritageClause", Value: &sh13, Flags: rt.RuleMemo, Seen: 33, Scope: 39, Vars: 2},
+	{Name: "heritageElementStart", Value: &sh23, Flags: rt.RuleMemo, Seen: 34, Vars: 2},
 	{Name: "leftHandSideExpressionStart", Value: &sh23, Seen: -1},
 	{Name: "heritageTypes", Value: &sh74, Seen: -1, Scope: 27, Vars: 2},
-	{Name: "expressionWithTypeArguments", Value: &sh13, Flags: pegort.RuleMemo, Seen: 35, Scope: 40, Vars: 2},
-	{Name: "classMembers", Value: &sh505, Flags: pegort.RuleMemo, Seen: 36, Scope: 41, Vars: 2},
+	{Name: "expressionWithTypeArguments", Value: &sh13, Flags: rt.RuleMemo, Seen: 35, Scope: 40, Vars: 2},
+	{Name: "classMembers", Value: &sh505, Flags: rt.RuleMemo, Seen: 36, Scope: 41, Vars: 2},
 	{Name: "classMemberStart", Value: &sh23, Seen: -1},
-	{Name: "nonMemberModifier", Value: &sh5, Flags: pegort.RuleMemo, Seen: 37},
+	{Name: "nonMemberModifier", Value: &sh5, Flags: rt.RuleMemo, Seen: 37},
 	{Name: "memberModifier", Value: &sh5, Seen: -1},
-	{Name: "classMemberNameFollows", Value: &sh23, Flags: pegort.RuleMemo, Seen: 38},
+	{Name: "classMemberNameFollows", Value: &sh23, Flags: rt.RuleMemo, Seen: 38},
 	{Name: "classElement", Value: &sh23, Seen: -1, Vars: 2},
 	{Name: "classAccessor", Value: &sh5, Seen: -1, Scope: 42, Vars: 2},
 	{Name: "classMemberNotAccessor", Value: &sh5, Seen: -1, Scope: 42, Vars: 2},
-	{Name: "accessorKeyword", Value: &sh5, Flags: pegort.RuleMemo, Seen: 39},
+	{Name: "accessorKeyword", Value: &sh5, Flags: rt.RuleMemo, Seen: 39},
 	{Name: "semicolonClassElement", Value: &sh23, Seen: -1},
 	{Name: "classStaticBlock", Value: &sh74, Seen: -1, Scope: 43, Vars: 2},
 	{Name: "getAccessor", Value: &sh662, Seen: -1, Scope: 44, Vars: 2},
 	{Name: "setAccessor", Value: &sh662, Seen: -1, Scope: 44, Vars: 2},
-	{Name: "canFollowGetOrSet", Value: &sh23, Flags: pegort.RuleMemo, Seen: 40},
+	{Name: "canFollowGetOrSet", Value: &sh23, Flags: rt.RuleMemo, Seen: 40},
 	{Name: "constructorDeclaration", Value: &sh490, Seen: -1, Scope: 45, Vars: 2},
-	{Name: "constructorName", Value: &sh23, Flags: pegort.RuleMemo, Seen: 41},
+	{Name: "constructorName", Value: &sh23, Flags: rt.RuleMemo, Seen: 41},
 	{Name: "classIndexSignature", Value: &sh490, Seen: -1, Scope: 46, Vars: 2},
 	{Name: "methodDeclaration", Value: &sh833, Seen: -1, Scope: 47, Vars: 2},
 	{Name: "propertyDeclaration", Value: &sh490, Seen: -1, Scope: 48, Vars: 2},
@@ -4489,40 +4489,40 @@ var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "typeAliasDeclaration", Value: &sh662, Seen: -1, Scope: 50, Vars: 2},
 	{Name: "intrinsicKeyword", Value: &sh23, Seen: -1},
 	{Name: "enumDeclaration", Value: &sh490, Seen: -1, Scope: 51, Vars: 2},
-	{Name: "enumMember", Value: &sh13, Flags: pegort.RuleMemo, Seen: 42, Scope: 52, Vars: 2},
+	{Name: "enumMember", Value: &sh13, Flags: rt.RuleMemo, Seen: 42, Scope: 52, Vars: 2},
 	{Name: "moduleDeclaration", Value: &sh23, Seen: -1, Vars: 2},
 	{Name: "namespaceDeclaration", Value: &sh327, Seen: -1, Scope: 53, Vars: 2},
-	{Name: "namespaceBody", Value: &sh505, Flags: pegort.RuleMemo, Seen: 43, Scope: 5, Vars: 2},
+	{Name: "namespaceBody", Value: &sh505, Flags: rt.RuleMemo, Seen: 43, Scope: 5, Vars: 2},
 	{Name: "nestedNamespace", Value: &sh13, Seen: -1, Scope: 54, Vars: 2},
 	{Name: "externalModuleDeclaration", Value: &sh327, Seen: -1, Scope: 55, Vars: 2},
 	{Name: "globalDeclaration", Value: &sh74, Seen: -1, Scope: 55, Vars: 2},
 	{Name: "globalIdentifier", Value: &sh23, Seen: -1},
-	{Name: "moduleBlock", Value: &sh74, Flags: pegort.RuleMemo, Seen: 44, Scope: 6, Vars: 2},
+	{Name: "moduleBlock", Value: &sh74, Flags: rt.RuleMemo, Seen: 44, Scope: 6, Vars: 2},
 	{Name: "importEqualsDeclaration", Value: &sh662, Seen: -1, Scope: 56, Vars: 2},
 	{Name: "moduleReference", Value: &sh23, Seen: -1, Vars: 2},
 	{Name: "externalModuleReference", Value: &sh327, Seen: -1, Scope: 16, Vars: 2},
 	{Name: "importDeclaration", Value: &sh490, Seen: -1, Scope: 57, Vars: 2},
 	{Name: "importClause", Value: &sh13, Seen: -1, Scope: 58, Vars: 2},
 	{Name: "importPhase", Value: &sh23, Seen: -1, Vars: 2},
-	{Name: "namedImportBindings", Value: &sh23, Flags: pegort.RuleMemo, Seen: 45, Vars: 2},
+	{Name: "namedImportBindings", Value: &sh23, Flags: rt.RuleMemo, Seen: 45, Vars: 2},
 	{Name: "namespaceImport", Value: &sh74, Seen: -1, Scope: 15, Vars: 2},
 	{Name: "namedImports", Value: &sh74, Seen: -1, Scope: 30, Vars: 2},
-	{Name: "importSpecifier", Value: &sh23, Flags: pegort.RuleMemo, Seen: 46, Vars: 2},
+	{Name: "importSpecifier", Value: &sh23, Flags: rt.RuleMemo, Seen: 46, Vars: 2},
 	{Name: "importSpecifierTypeAsAs", Value: &sh327, Seen: -1, Scope: 59, Vars: 2},
 	{Name: "importSpecifierTypeAsName", Value: &sh74, Seen: -1, Scope: 59, Vars: 2},
 	{Name: "importSpecifierTypeAs", Value: &sh13, Seen: -1, Scope: 15},
 	{Name: "importSpecifierType", Value: &sh13, Seen: -1, Scope: 59, Vars: 2},
 	{Name: "importSpecifierPlain", Value: &sh505, Seen: -1, Scope: 59, Vars: 2},
-	{Name: "typeIdentifier", Value: &sh23, Flags: pegort.RuleMemo, Seen: 47},
-	{Name: "importedName", Value: &sh23, Flags: pegort.RuleMemo, Seen: 48, Vars: 2},
+	{Name: "typeIdentifier", Value: &sh23, Flags: rt.RuleMemo, Seen: 47},
+	{Name: "importedName", Value: &sh23, Flags: rt.RuleMemo, Seen: 48, Vars: 2},
 	{Name: "privateName", Value: &sh23, Seen: -1},
-	{Name: "asIdentifier", Value: &sh23, Flags: pegort.RuleMemo, Seen: 49},
-	{Name: "moduleExportName", Value: &sh23, Flags: pegort.RuleMemo, Seen: 50},
-	{Name: "moduleExportNameStart", Value: &sh23, Flags: pegort.RuleMemo, Seen: 51},
-	{Name: "moduleSpecifier", Value: &sh23, Flags: pegort.RuleMemo, Seen: 52, Vars: 2},
-	{Name: "importAttributes", Value: &sh13, Flags: pegort.RuleMemo, Seen: 53, Scope: 60, Vars: 2},
-	{Name: "importAttributesBraces", Value: &sh74, Flags: pegort.RuleMemo, Seen: 54, Scope: 30, Vars: 2},
-	{Name: "importAttribute", Value: &sh74, Flags: pegort.RuleMemo, Seen: 55, Scope: 52, Vars: 2},
+	{Name: "asIdentifier", Value: &sh23, Flags: rt.RuleMemo, Seen: 49},
+	{Name: "moduleExportName", Value: &sh23, Flags: rt.RuleMemo, Seen: 50},
+	{Name: "moduleExportNameStart", Value: &sh23, Flags: rt.RuleMemo, Seen: 51},
+	{Name: "moduleSpecifier", Value: &sh23, Flags: rt.RuleMemo, Seen: 52, Vars: 2},
+	{Name: "importAttributes", Value: &sh13, Flags: rt.RuleMemo, Seen: 53, Scope: 60, Vars: 2},
+	{Name: "importAttributesBraces", Value: &sh74, Flags: rt.RuleMemo, Seen: 54, Scope: 30, Vars: 2},
+	{Name: "importAttribute", Value: &sh74, Flags: rt.RuleMemo, Seen: 55, Scope: 52, Vars: 2},
 	{Name: "exportAssignment", Value: &sh832, Seen: -1, Scope: 61, Vars: 2},
 	{Name: "namespaceExportDeclaration", Value: &sh490, Seen: -1, Scope: 62, Vars: 2},
 	{Name: "exportDeclaration", Value: &sh23, Seen: -1, Vars: 2},
@@ -4530,39 +4530,39 @@ var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "exportNamedDeclaration", Value: &sh490, Seen: -1, Scope: 63, Vars: 2},
 	{Name: "namespaceExport", Value: &sh74, Seen: -1, Scope: 15},
 	{Name: "namedExports", Value: &sh74, Seen: -1, Scope: 30},
-	{Name: "exportSpecifier", Value: &sh23, Flags: pegort.RuleMemo, Seen: 56},
+	{Name: "exportSpecifier", Value: &sh23, Flags: rt.RuleMemo, Seen: 56},
 	{Name: "exportSpecifierTypeAsAs", Value: &sh327, Seen: -1, Scope: 59},
 	{Name: "exportSpecifierTypeAsName", Value: &sh74, Seen: -1, Scope: 59},
 	{Name: "exportSpecifierTypeAs", Value: &sh13, Seen: -1, Scope: 15},
 	{Name: "exportSpecifierType", Value: &sh13, Seen: -1, Scope: 59},
 	{Name: "exportSpecifierPlain", Value: &sh505, Seen: -1, Scope: 59},
-	{Name: "modifiers", Value: &sh74, Flags: pegort.RuleMemo, Seen: 57, Scope: 64, Vars: 2},
-	{Name: "decoratorList", Value: &sh505, Flags: pegort.RuleMemo, Seen: 58, Scope: 65, Vars: 2},
-	{Name: "modifierList", Value: &sh74, Flags: pegort.RuleMemo, Seen: 59, Scope: 66},
-	{Name: "staticModifierList", Value: &sh5, Flags: pegort.RuleMemo, Seen: 60, Scope: 42},
-	{Name: "modifier", Value: &sh23, Flags: pegort.RuleMemo, Seen: 61},
-	{Name: "staticModifier", Value: &sh23, Flags: pegort.RuleMemo, Seen: 62},
+	{Name: "modifiers", Value: &sh74, Flags: rt.RuleMemo, Seen: 57, Scope: 64, Vars: 2},
+	{Name: "decoratorList", Value: &sh505, Flags: rt.RuleMemo, Seen: 58, Scope: 65, Vars: 2},
+	{Name: "modifierList", Value: &sh74, Flags: rt.RuleMemo, Seen: 59, Scope: 66},
+	{Name: "staticModifierList", Value: &sh5, Flags: rt.RuleMemo, Seen: 60, Scope: 42},
+	{Name: "modifier", Value: &sh23, Flags: rt.RuleMemo, Seen: 61},
+	{Name: "staticModifier", Value: &sh23, Flags: rt.RuleMemo, Seen: 62},
 	{Name: "exportModifierFollows", Value: &sh23, Seen: -1},
-	{Name: "canFollowExportModifier", Value: &sh23, Flags: pegort.RuleMemo, Seen: 63},
-	{Name: "defaultModifierFollows", Value: &sh23, Flags: pegort.RuleMemo, Seen: 64},
-	{Name: "canFollowModifier", Value: &sh23, Flags: pegort.RuleMemo, Seen: 65},
-	{Name: "literalPropertyNameStart", Value: &sh23, Flags: pegort.RuleMemo, Seen: 66},
-	{Name: "classModifiers", Value: &sh74, Flags: pegort.RuleMemo, Seen: 67, Scope: 64, Vars: 2},
-	{Name: "classModifierList", Value: &sh74, Flags: pegort.RuleMemo, Seen: 68, Scope: 66},
+	{Name: "canFollowExportModifier", Value: &sh23, Flags: rt.RuleMemo, Seen: 63},
+	{Name: "defaultModifierFollows", Value: &sh23, Flags: rt.RuleMemo, Seen: 64},
+	{Name: "canFollowModifier", Value: &sh23, Flags: rt.RuleMemo, Seen: 65},
+	{Name: "literalPropertyNameStart", Value: &sh23, Flags: rt.RuleMemo, Seen: 66},
+	{Name: "classModifiers", Value: &sh74, Flags: rt.RuleMemo, Seen: 67, Scope: 64, Vars: 2},
+	{Name: "classModifierList", Value: &sh74, Flags: rt.RuleMemo, Seen: 68, Scope: 66},
 	{Name: "classStaticModifierList", Value: &sh5, Seen: -1, Scope: 42},
-	{Name: "classModifier", Value: &sh23, Flags: pegort.RuleMemo, Seen: 69},
+	{Name: "classModifier", Value: &sh23, Flags: rt.RuleMemo, Seen: 69},
 	{Name: "classStaticModifier", Value: &sh23, Seen: -1},
-	{Name: "typeMemberModifiers", Value: &sh505, Flags: pegort.RuleMemo, Seen: 70, Scope: 41},
+	{Name: "typeMemberModifiers", Value: &sh505, Flags: rt.RuleMemo, Seen: 70, Scope: 41},
 	{Name: "typeParameterModifiers", Value: &sh74, Seen: -1, Scope: 66},
-	{Name: "decorator", Value: &sh13, Flags: pegort.RuleMemo, Seen: 71, Scope: 16, Vars: 2},
-	{Name: "expression", Value: &sh5, Flags: pegort.RuleMemo, Seen: 72, Scope: 16, Vars: 2},
-	{Name: "expressionAllowIn", Value: &sh5, Flags: pegort.RuleMemo, Seen: 73, Scope: 16, Vars: 2},
-	{Name: "commaExpression", Value: &sh13, Flags: pegort.RuleMemo, Seen: 74, Scope: 27, Vars: 2},
-	{Name: "assignmentExpression", Value: &sh5, Flags: pegort.RuleMemo, Seen: 75, Scope: 16, Vars: 2},
-	{Name: "assignmentExpressionAllowIn", Value: &sh5, Flags: pegort.RuleMemo, Seen: 76, Scope: 16, Vars: 2},
-	{Name: "assignmentExpressionInner", Value: &sh505, Flags: pegort.RuleMemo, Seen: 77, Scope: 16, Vars: 2},
+	{Name: "decorator", Value: &sh13, Flags: rt.RuleMemo, Seen: 71, Scope: 16, Vars: 2},
+	{Name: "expression", Value: &sh5, Flags: rt.RuleMemo, Seen: 72, Scope: 16, Vars: 2},
+	{Name: "expressionAllowIn", Value: &sh5, Flags: rt.RuleMemo, Seen: 73, Scope: 16, Vars: 2},
+	{Name: "commaExpression", Value: &sh13, Flags: rt.RuleMemo, Seen: 74, Scope: 27, Vars: 2},
+	{Name: "assignmentExpression", Value: &sh5, Flags: rt.RuleMemo, Seen: 75, Scope: 16, Vars: 2},
+	{Name: "assignmentExpressionAllowIn", Value: &sh5, Flags: rt.RuleMemo, Seen: 76, Scope: 16, Vars: 2},
+	{Name: "assignmentExpressionInner", Value: &sh505, Flags: rt.RuleMemo, Seen: 77, Scope: 16, Vars: 2},
 	{Name: "yieldExpression", Value: &sh13, Seen: -1, Scope: 67, Vars: 2},
-	{Name: "identifierOrKeywordOrLiteralStart", Value: &sh23, Flags: pegort.RuleMemo, Seen: 78},
+	{Name: "identifierOrKeywordOrLiteralStart", Value: &sh23, Flags: rt.RuleMemo, Seen: 78},
 	{Name: "nlStart", Value: &sh23, Seen: -1},
 	{Name: "assignment", Value: &sh74, Seen: -1, Scope: 68, Vars: 2},
 	{Name: "assignmentOperator", Value: &sh23, Seen: -1},
@@ -4572,14 +4572,14 @@ var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "conditionalQuestionToken", Value: &sh23, Seen: -1},
 	{Name: "arrowFunction", Value: &sh490, Seen: -1, Scope: 70, Vars: 2},
 	{Name: "arrowAsyncModifier", Value: &sh5, Seen: -1, Scope: 42},
-	{Name: "asyncKeywordModifier", Value: &sh23, Flags: pegort.RuleMemo, Seen: 79},
+	{Name: "asyncKeywordModifier", Value: &sh23, Flags: rt.RuleMemo, Seen: 79},
 	{Name: "arrowTypeParameters", Value: &sh5, Seen: -1, Scope: 71, Vars: 2},
 	{Name: "tsxArrowTypeParametersStart", Value: &sh327, Seen: -1, Vars: 2},
 	{Name: "arrowParenthesisIsNotParameterList", Value: &sh13, Seen: -1, Vars: 2},
 	{Name: "simpleArrowFunction", Value: &sh74, Seen: -1, Scope: 72, Vars: 2},
-	{Name: "simpleArrowParameter", Value: &sh505, Flags: pegort.RuleMemo, Seen: 80, Scope: 15, Vars: 2},
+	{Name: "simpleArrowParameter", Value: &sh505, Flags: rt.RuleMemo, Seen: 80, Scope: 15, Vars: 2},
 	{Name: "asyncSimpleArrowFunction", Value: &sh327, Seen: -1, Scope: 73, Vars: 2},
-	{Name: "arrowBody", Value: &sh23, Flags: pegort.RuleMemo, Seen: 81, Vars: 2},
+	{Name: "arrowBody", Value: &sh23, Flags: rt.RuleMemo, Seen: 81, Vars: 2},
 	{Name: "binaryExpression", Seen: -1, Vars: 2},
 	{Name: "coalesceOrToken", Value: &sh23, Seen: -1},
 	{Name: "ampersandAmpersandToken", Value: &sh23, Seen: -1},
@@ -4587,15 +4587,15 @@ var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "caretToken", Value: &sh23, Seen: -1},
 	{Name: "ampersandToken", Value: &sh23, Seen: -1},
 	{Name: "equalityToken", Value: &sh23, Seen: -1},
-	{Name: "relationalToken", Value: &sh23, Flags: pegort.RuleMemo, Seen: 82, Vars: 2},
+	{Name: "relationalToken", Value: &sh23, Flags: rt.RuleMemo, Seen: 82, Vars: 2},
 	{Name: "shiftToken", Value: &sh23, Seen: -1},
 	{Name: "additiveToken", Value: &sh23, Seen: -1},
 	{Name: "multiplicativeToken", Value: &sh23, Seen: -1},
 	{Name: "asteriskAsteriskToken", Value: &sh23, Seen: -1},
-	{Name: "binaryOperatorStart", Value: &sh23, Flags: pegort.RuleMemo, Seen: 83, Vars: 2},
-	{Name: "unaryExpression", Value: &sh505, Flags: pegort.RuleMemo, Seen: 84, Scope: 74, Vars: 2},
-	{Name: "unaryOperatorStart", Value: &sh5, Flags: pegort.RuleMemo, Seen: 85, Vars: 2},
-	{Name: "simpleUnaryExpression", Value: &sh23, Flags: pegort.RuleMemo, Seen: 86, Vars: 2},
+	{Name: "binaryOperatorStart", Value: &sh23, Flags: rt.RuleMemo, Seen: 83, Vars: 2},
+	{Name: "unaryExpression", Value: &sh505, Flags: rt.RuleMemo, Seen: 84, Scope: 74, Vars: 2},
+	{Name: "unaryOperatorStart", Value: &sh5, Flags: rt.RuleMemo, Seen: 85, Vars: 2},
+	{Name: "simpleUnaryExpression", Value: &sh23, Flags: rt.RuleMemo, Seen: 86, Vars: 2},
 	{Name: "prefixUnaryExpression", Value: &sh13, Seen: -1, Scope: 75, Vars: 2},
 	{Name: "deleteExpression", Value: &sh13, Seen: -1, Scope: 16, Vars: 2},
 	{Name: "typeOfExpression", Value: &sh13, Seen: -1, Scope: 16, Vars: 2},
@@ -4603,41 +4603,41 @@ var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "awaitExpression", Value: &sh13, Seen: -1, Scope: 16, Vars: 2},
 	{Name: "typeAssertion", Value: &sh327, Seen: -1, Scope: 76, Vars: 2},
 	{Name: "jsxUnaryExpression", Value: &sh5, Seen: -1, Scope: 16, Vars: 2},
-	{Name: "updateExpression", Value: &sh505, Flags: pegort.RuleMemo, Seen: 87, Scope: 16, Vars: 2},
+	{Name: "updateExpression", Value: &sh505, Flags: rt.RuleMemo, Seen: 87, Scope: 16, Vars: 2},
 	{Name: "postfixOrLeftHandSideExpression", Value: &sh13, Seen: -1, Scope: 77, Vars: 2},
 	{Name: "prefixUpdateExpression", Value: &sh13, Seen: -1, Scope: 75, Vars: 2},
 	{Name: "jsxPrimaryExpression", Value: &sh5, Seen: -1, Scope: 16, Vars: 2},
-	{Name: "leftHandSideExpression", Flags: pegort.RuleMemo, Seen: 88, Vars: 2},
+	{Name: "leftHandSideExpression", Flags: rt.RuleMemo, Seen: 88, Vars: 2},
 	{Name: "heritageExpression", Seen: -1, Vars: 2},
 	{Name: "newTarget", Seen: -1, Vars: 2},
-	{Name: "memberName", Value: &sh23, Flags: pegort.RuleMemo, Seen: 89},
+	{Name: "memberName", Value: &sh23, Flags: rt.RuleMemo, Seen: 89},
 	{Name: "questionDotToken", Value: &sh23, Seen: -1},
-	{Name: "typeArgumentsInExpression", Value: &sh74, Flags: pegort.RuleMemo, Seen: 90, Scope: 78, Vars: 2},
+	{Name: "typeArgumentsInExpression", Value: &sh74, Flags: rt.RuleMemo, Seen: 90, Scope: 78, Vars: 2},
 	{Name: "typeArgumentsCanFollow", Value: &sh23, Seen: -1, Vars: 2},
-	{Name: "expressionStart", Value: &sh23, Flags: pegort.RuleMemo, Seen: 91, Vars: 2},
-	{Name: "arguments", Value: &sh74, Flags: pegort.RuleMemo, Seen: 92, Scope: 79, Vars: 2},
+	{Name: "expressionStart", Value: &sh23, Flags: rt.RuleMemo, Seen: 91, Vars: 2},
+	{Name: "arguments", Value: &sh74, Flags: rt.RuleMemo, Seen: 92, Scope: 79, Vars: 2},
 	{Name: "argumentList", Value: &sh74, Seen: -1, Scope: 27, Vars: 2},
-	{Name: "argument", Value: &sh23, Flags: pegort.RuleMemo, Seen: 93, Vars: 2},
-	{Name: "spreadElement", Value: &sh13, Flags: pegort.RuleMemo, Seen: 94, Scope: 16, Vars: 2},
-	{Name: "superExpression", Value: &sh23, Flags: pegort.RuleMemo, Seen: 95},
+	{Name: "argument", Value: &sh23, Flags: rt.RuleMemo, Seen: 93, Vars: 2},
+	{Name: "spreadElement", Value: &sh13, Flags: rt.RuleMemo, Seen: 94, Scope: 16, Vars: 2},
+	{Name: "superExpression", Value: &sh23, Flags: rt.RuleMemo, Seen: 95},
 	{Name: "superKeyword", Value: &sh23, Seen: -1},
-	{Name: "importCallee", Value: &sh23, Flags: pegort.RuleMemo, Seen: 96},
-	{Name: "importMetaProperty", Value: &sh74, Flags: pegort.RuleMemo, Seen: 97, Scope: 15},
-	{Name: "primaryExpression", Value: &sh505, Flags: pegort.RuleMemo, Seen: 98, Scope: 16, Vars: 2},
+	{Name: "importCallee", Value: &sh23, Flags: rt.RuleMemo, Seen: 96},
+	{Name: "importMetaProperty", Value: &sh74, Flags: rt.RuleMemo, Seen: 97, Scope: 15},
+	{Name: "primaryExpression", Value: &sh505, Flags: rt.RuleMemo, Seen: 98, Scope: 16, Vars: 2},
 	{Name: "wordPrimary", Value: &sh505, Seen: -1, Scope: 16, Vars: 2},
 	{Name: "symbolPrimary", Value: &sh23, Seen: -1, Vars: 2},
 	{Name: "numericOrBigIntLiteral", Value: &sh5, Seen: -1, Scope: 16},
 	{Name: "thisKeyword", Value: &sh23, Seen: -1},
-	{Name: "nullKeyword", Value: &sh23, Flags: pegort.RuleMemo, Seen: 99},
-	{Name: "booleanKeyword", Value: &sh23, Flags: pegort.RuleMemo, Seen: 100},
+	{Name: "nullKeyword", Value: &sh23, Flags: rt.RuleMemo, Seen: 99},
+	{Name: "booleanKeyword", Value: &sh23, Flags: rt.RuleMemo, Seen: 100},
 	{Name: "parenthesizedExpression", Value: &sh74, Seen: -1, Scope: 16, Vars: 2},
 	{Name: "arrayLiteralExpression", Value: &sh74, Seen: -1, Scope: 30, Vars: 2},
-	{Name: "arrayElement", Value: &sh23, Flags: pegort.RuleMemo, Seen: 101, Vars: 2},
+	{Name: "arrayElement", Value: &sh23, Flags: rt.RuleMemo, Seen: 101, Vars: 2},
 	{Name: "objectLiteralExpression", Value: &sh74, Seen: -1, Scope: 35, Vars: 2},
-	{Name: "objectLiteralElement", Value: &sh23, Flags: pegort.RuleMemo, Seen: 102, Vars: 2},
+	{Name: "objectLiteralElement", Value: &sh23, Flags: rt.RuleMemo, Seen: 102, Vars: 2},
 	{Name: "objectAccessor", Value: &sh5, Seen: -1, Scope: 42, Vars: 2},
 	{Name: "objectMemberNotAccessor", Value: &sh5, Seen: -1, Scope: 42, Vars: 2},
-	{Name: "objectLiteralElementStart", Value: &sh23, Flags: pegort.RuleMemo, Seen: 103},
+	{Name: "objectLiteralElementStart", Value: &sh23, Flags: rt.RuleMemo, Seen: 103},
 	{Name: "spreadAssignment", Value: &sh13, Seen: -1, Scope: 16, Vars: 2},
 	{Name: "objectGetAccessor", Value: &sh662, Seen: -1, Scope: 44, Vars: 2},
 	{Name: "objectSetAccessor", Value: &sh662, Seen: -1, Scope: 44, Vars: 2},
@@ -4646,7 +4646,7 @@ var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "propertyAssignment", Value: &sh490, Seen: -1, Scope: 82, Vars: 2},
 	{Name: "functionExpression", Value: &sh833, Seen: -1, Scope: 83, Vars: 2},
 	{Name: "asyncFunctionModifier", Value: &sh5, Seen: -1, Scope: 42},
-	{Name: "classExpressionPrimary", Value: &sh5, Flags: pegort.RuleMemo, Seen: 104, Scope: 84, Vars: 2},
+	{Name: "classExpressionPrimary", Value: &sh5, Flags: rt.RuleMemo, Seen: 104, Scope: 84, Vars: 2},
 	{Name: "newExpression", Value: &sh23, Seen: -1, Vars: 2},
 	{Name: "newTargetMetaProperty", Value: &sh74, Seen: -1, Scope: 15},
 	{Name: "newExpressionWithTarget", Value: &sh327, Seen: -1, Scope: 85, Vars: 2},
@@ -4654,27 +4654,27 @@ var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "templateSpans", Value: &sh13, Seen: -1, Scope: 87, Vars: 2},
 	{Name: "templateSpanMiddle", Value: &sh13, Seen: -1, Scope: 88, Vars: 2},
 	{Name: "templateSpanTail", Value: &sh13, Seen: -1, Scope: 88, Vars: 2},
-	{Name: "taggedTemplate", Value: &sh23, Flags: pegort.RuleMemo, Seen: 105, Vars: 2},
+	{Name: "taggedTemplate", Value: &sh23, Flags: rt.RuleMemo, Seen: 105, Vars: 2},
 	{Name: "rawTemplateExpression", Value: &sh13, Seen: -1, Scope: 86, Vars: 2},
 	{Name: "rawTemplateSpans", Value: &sh13, Seen: -1, Scope: 87, Vars: 2},
 	{Name: "rawTemplateSpanMiddle", Value: &sh13, Seen: -1, Scope: 88, Vars: 2},
 	{Name: "rawTemplateSpanTail", Value: &sh13, Seen: -1, Scope: 88, Vars: 2},
-	{Name: "jsxElementOrFragment", Value: &sh23, Flags: pegort.RuleMemo, Seen: 106, Vars: 2},
-	{Name: "jsxSelfClosingElement", Value: &sh490, Flags: pegort.RuleMemo, Seen: 107, Scope: 89, Vars: 2},
-	{Name: "jsxElement", Value: &sh74, Flags: pegort.RuleMemo, Seen: 108, Scope: 90, Vars: 2},
+	{Name: "jsxElementOrFragment", Value: &sh23, Flags: rt.RuleMemo, Seen: 106, Vars: 2},
+	{Name: "jsxSelfClosingElement", Value: &sh490, Flags: rt.RuleMemo, Seen: 107, Scope: 89, Vars: 2},
+	{Name: "jsxElement", Value: &sh74, Flags: rt.RuleMemo, Seen: 108, Scope: 90, Vars: 2},
 	{Name: "jsxOpeningElement", Value: &sh832, Seen: -1, Scope: 89, Vars: 2},
 	{Name: "jsxClosingElement", Value: &sh74, Seen: -1, Scope: 15},
-	{Name: "jsxFragment", Value: &sh74, Flags: pegort.RuleMemo, Seen: 109, Scope: 91, Vars: 2},
+	{Name: "jsxFragment", Value: &sh74, Flags: rt.RuleMemo, Seen: 109, Scope: 91, Vars: 2},
 	{Name: "jsxOpeningFragment", Value: &sh23, Seen: -1},
 	{Name: "jsxClosingFragment", Value: &sh23, Seen: -1},
-	{Name: "jsxElementName", Value: &sh23, Flags: pegort.RuleMemo, Seen: 110},
+	{Name: "jsxElementName", Value: &sh23, Flags: rt.RuleMemo, Seen: 110},
 	{Name: "jsxMemberName", Value: &sh13, Seen: -1, Scope: 27},
 	{Name: "jsxTagNameStart", Value: &sh23, Seen: -1},
 	{Name: "jsxThis", Value: &sh23, Seen: -1},
-	{Name: "jsxIdentifier", Value: &sh23, Flags: pegort.RuleMemo, Seen: 111},
-	{Name: "jsxNamespacedName", Value: &sh74, Flags: pegort.RuleMemo, Seen: 112, Scope: 92},
-	{Name: "jsxAttributes", Value: &sh505, Flags: pegort.RuleMemo, Seen: 113, Scope: 35, Vars: 2},
-	{Name: "jsxAttributeLike", Value: &sh23, Flags: pegort.RuleMemo, Seen: 114, Vars: 2},
+	{Name: "jsxIdentifier", Value: &sh23, Flags: rt.RuleMemo, Seen: 111},
+	{Name: "jsxNamespacedName", Value: &sh74, Flags: rt.RuleMemo, Seen: 112, Scope: 92},
+	{Name: "jsxAttributes", Value: &sh505, Flags: rt.RuleMemo, Seen: 113, Scope: 35, Vars: 2},
+	{Name: "jsxAttributeLike", Value: &sh23, Flags: rt.RuleMemo, Seen: 114, Vars: 2},
 	{Name: "jsxAttribute", Value: &sh13, Seen: -1, Scope: 93, Vars: 2},
 	{Name: "jsxAttributeName", Value: &sh23, Seen: -1},
 	{Name: "jsxAttributeValue", Value: &sh23, Seen: -1, Vars: 2},
@@ -4682,55 +4682,55 @@ var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "jsxAttributeString", Value: &sh23, Seen: -1},
 	{Name: "jsxAttributeExpression", Value: &sh74, Seen: -1, Scope: 16, Vars: 2},
 	{Name: "jsxSpreadAttribute", Value: &sh327, Seen: -1, Scope: 16, Vars: 2},
-	{Name: "jsxChild", Value: &sh23, Flags: pegort.RuleMemo, Seen: 115, Vars: 2},
+	{Name: "jsxChild", Value: &sh23, Flags: rt.RuleMemo, Seen: 115, Vars: 2},
 	{Name: "jsxText", Value: &sh23, Seen: -1},
 	{Name: "jsxChildExpression", Value: &sh327, Seen: -1, Scope: 94, Vars: 2},
 	{Name: "jsxChildElement", Value: &sh5, Seen: -1, Scope: 16, Vars: 2},
-	{Name: "typeNode", Value: &sh5, Flags: pegort.RuleMemo, Seen: 116, Scope: 29, Vars: 2},
-	{Name: "typeInner", Value: &sh23, Flags: pegort.RuleMemo, Seen: 117, Vars: 2},
-	{Name: "typeNoConditional", Value: &sh5, Flags: pegort.RuleMemo, Seen: 118, Scope: 29, Vars: 2},
-	{Name: "typeAllowConditional", Value: &sh5, Flags: pegort.RuleMemo, Seen: 119, Scope: 29, Vars: 2},
+	{Name: "typeNode", Value: &sh5, Flags: rt.RuleMemo, Seen: 116, Scope: 29, Vars: 2},
+	{Name: "typeInner", Value: &sh23, Flags: rt.RuleMemo, Seen: 117, Vars: 2},
+	{Name: "typeNoConditional", Value: &sh5, Flags: rt.RuleMemo, Seen: 118, Scope: 29, Vars: 2},
+	{Name: "typeAllowConditional", Value: &sh5, Flags: rt.RuleMemo, Seen: 119, Scope: 29, Vars: 2},
 	{Name: "conditionalOrHigher", Value: &sh13, Seen: -1, Scope: 69, Vars: 2},
-	{Name: "typeOrTypePredicate", Value: &sh23, Flags: pegort.RuleMemo, Seen: 120, Vars: 2},
+	{Name: "typeOrTypePredicate", Value: &sh23, Flags: rt.RuleMemo, Seen: 120, Vars: 2},
 	{Name: "typePredicate", Value: &sh74, Seen: -1, Scope: 36, Vars: 2},
 	{Name: "functionType", Value: &sh327, Seen: -1, Scope: 95, Vars: 2},
 	{Name: "constructorType", Value: &sh490, Seen: -1, Scope: 96, Vars: 2},
 	{Name: "abstractModifier", Value: &sh505, Seen: -1, Scope: 42},
 	{Name: "abstractKeywordModifier", Value: &sh23, Seen: -1},
-	{Name: "returnTypeOfType", Value: &sh5, Flags: pegort.RuleMemo, Seen: 121, Scope: 29, Vars: 2},
+	{Name: "returnTypeOfType", Value: &sh5, Flags: rt.RuleMemo, Seen: 121, Scope: 29, Vars: 2},
 	{Name: "unionOrHigher", Value: &sh505, Seen: -1, Scope: 74, Vars: 2},
 	{Name: "leadingUnionType", Value: &sh74, Seen: -1, Scope: 97, Vars: 2},
 	{Name: "plainOrUnionType", Value: &sh13, Seen: -1, Scope: 98, Vars: 2},
-	{Name: "intersectionOrHigher", Value: &sh505, Flags: pegort.RuleMemo, Seen: 122, Scope: 74, Vars: 2},
+	{Name: "intersectionOrHigher", Value: &sh505, Flags: rt.RuleMemo, Seen: 122, Scope: 74, Vars: 2},
 	{Name: "leadingIntersectionType", Value: &sh74, Seen: -1, Scope: 97, Vars: 2},
 	{Name: "plainOrIntersectionType", Value: &sh13, Seen: -1, Scope: 98, Vars: 2},
-	{Name: "typeOperatorOrHigher", Value: &sh505, Flags: pegort.RuleMemo, Seen: 123, Scope: 29, Vars: 2},
+	{Name: "typeOperatorOrHigher", Value: &sh505, Flags: rt.RuleMemo, Seen: 123, Scope: 29, Vars: 2},
 	{Name: "postfixTypeAllowConditional", Value: &sh5, Seen: -1, Scope: 29, Vars: 2},
 	{Name: "typeOperator", Value: &sh13, Seen: -1, Scope: 99, Vars: 2},
 	{Name: "inferType", Value: &sh13, Seen: -1, Scope: 100, Vars: 2},
 	{Name: "inferTypeParameter", Value: &sh13, Seen: -1, Scope: 101, Vars: 2},
 	{Name: "postfixType", Seen: -1, Vars: 2},
 	{Name: "postfixTypeNoQuestion", Seen: -1, Vars: 2},
-	{Name: "nonArrayType", Value: &sh505, Flags: pegort.RuleMemo, Seen: 124, Scope: 29, Vars: 2},
+	{Name: "nonArrayType", Value: &sh505, Flags: rt.RuleMemo, Seen: 124, Scope: 29, Vars: 2},
 	{Name: "wordType", Value: &sh505, Seen: -1, Scope: 29, Vars: 2},
 	{Name: "specialWordType", Value: &sh23, Seen: -1, Vars: 2},
 	{Name: "symbolType", Value: &sh23, Seen: -1, Vars: 2},
 	{Name: "keywordType", Value: &sh23, Seen: -1},
-	{Name: "literalType", Value: &sh505, Flags: pegort.RuleMemo, Seen: 125, Scope: 7},
+	{Name: "literalType", Value: &sh505, Flags: rt.RuleMemo, Seen: 125, Scope: 7},
 	{Name: "negativeLiteral", Value: &sh13, Seen: -1, Scope: 7},
-	{Name: "thisType", Value: &sh23, Flags: pegort.RuleMemo, Seen: 126},
+	{Name: "thisType", Value: &sh23, Flags: rt.RuleMemo, Seen: 126},
 	{Name: "thisTypePredicate", Value: &sh74, Seen: -1, Scope: 36, Vars: 2},
 	{Name: "assertsTypePredicate", Value: &sh74, Seen: -1, Scope: 102, Vars: 2},
 	{Name: "assertsToken", Value: &sh23, Seen: -1},
-	{Name: "identifierOrKeywordStart", Value: &sh23, Flags: pegort.RuleMemo, Seen: 127},
+	{Name: "identifierOrKeywordStart", Value: &sh23, Flags: rt.RuleMemo, Seen: 127},
 	{Name: "typeQuery", Value: &sh74, Seen: -1, Scope: 36, Vars: 2},
 	{Name: "importType", Value: &sh833, Seen: -1, Scope: 103, Vars: 2},
 	{Name: "importTypeAttributes", Value: &sh505, Seen: -1, Scope: 34, Vars: 2},
-	{Name: "typeReference", Value: &sh74, Flags: pegort.RuleMemo, Seen: 128, Scope: 36, Vars: 2},
+	{Name: "typeReference", Value: &sh74, Flags: rt.RuleMemo, Seen: 128, Scope: 36, Vars: 2},
 	{Name: "functionTypeReference", Value: &sh5, Seen: -1, Scope: 15},
 	{Name: "functionIdentifier", Value: &sh23, Seen: -1},
 	{Name: "parenthesizedType", Value: &sh74, Seen: -1, Scope: 29, Vars: 2},
-	{Name: "unambiguousFunctionTypeStart", Value: &sh13, Flags: pegort.RuleMemo, Seen: 129, Vars: 2},
+	{Name: "unambiguousFunctionTypeStart", Value: &sh13, Flags: rt.RuleMemo, Seen: 129, Vars: 2},
 	{Name: "templateLiteralType", Value: &sh13, Seen: -1, Scope: 86, Vars: 2},
 	{Name: "templateTypeSpans", Value: &sh13, Seen: -1, Scope: 87, Vars: 2},
 	{Name: "templateTypeSpanMiddle", Value: &sh13, Seen: -1, Scope: 39, Vars: 2},
@@ -4740,26 +4740,26 @@ var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "jsdocNullableType", Value: &sh13, Seen: -1, Scope: 29, Vars: 2},
 	{Name: "jsdocNonNullableType", Value: &sh13, Seen: -1, Scope: 29, Vars: 2},
 	{Name: "jsdocFunctionType", Value: &sh832, Seen: -1, Scope: 104, Vars: 2},
-	{Name: "jsdocParameter", Value: &sh13, Flags: pegort.RuleMemo, Seen: 130, Scope: 105, Vars: 2},
+	{Name: "jsdocParameter", Value: &sh13, Flags: rt.RuleMemo, Seen: 130, Scope: 105, Vars: 2},
 	{Name: "jsdocParameterName", Value: &sh23, Seen: -1},
 	{Name: "entityName", Value: &sh13, Seen: -1, Scope: 27, Vars: 2},
-	{Name: "entityNameAllowReserved", Value: &sh13, Flags: pegort.RuleMemo, Seen: 131, Scope: 27},
-	{Name: "typeArguments", Value: &sh74, Flags: pegort.RuleMemo, Seen: 132, Scope: 78, Vars: 2},
-	{Name: "typeList", Value: &sh74, Flags: pegort.RuleMemo, Seen: 133, Scope: 27, Vars: 2},
-	{Name: "typeParameters", Value: &sh74, Flags: pegort.RuleMemo, Seen: 134, Scope: 35, Vars: 2},
-	{Name: "typeParameter", Value: &sh327, Flags: pegort.RuleMemo, Seen: 135, Scope: 106, Vars: 2},
+	{Name: "entityNameAllowReserved", Value: &sh13, Flags: rt.RuleMemo, Seen: 131, Scope: 27},
+	{Name: "typeArguments", Value: &sh74, Flags: rt.RuleMemo, Seen: 132, Scope: 78, Vars: 2},
+	{Name: "typeList", Value: &sh74, Flags: rt.RuleMemo, Seen: 133, Scope: 27, Vars: 2},
+	{Name: "typeParameters", Value: &sh74, Flags: rt.RuleMemo, Seen: 134, Scope: 35, Vars: 2},
+	{Name: "typeParameter", Value: &sh327, Flags: rt.RuleMemo, Seen: 135, Scope: 106, Vars: 2},
 	{Name: "tupleType", Value: &sh74, Seen: -1, Scope: 30, Vars: 2},
-	{Name: "tupleElement", Value: &sh23, Flags: pegort.RuleMemo, Seen: 136, Vars: 2},
+	{Name: "tupleElement", Value: &sh23, Flags: rt.RuleMemo, Seen: 136, Vars: 2},
 	{Name: "namedTupleMember", Value: &sh832, Seen: -1, Scope: 107, Vars: 2},
-	{Name: "tupleElementType", Value: &sh23, Flags: pegort.RuleMemo, Seen: 137, Vars: 2},
+	{Name: "tupleElementType", Value: &sh23, Flags: rt.RuleMemo, Seen: 137, Vars: 2},
 	{Name: "restType", Value: &sh13, Seen: -1, Scope: 29, Vars: 2},
 	{Name: "optionalType", Value: &sh13, Seen: -1, Scope: 29, Vars: 2},
 	{Name: "typeLiteral", Value: &sh5, Seen: -1, Scope: 42, Vars: 2},
-	{Name: "objectTypeMembers", Value: &sh74, Flags: pegort.RuleMemo, Seen: 138, Scope: 41, Vars: 2},
-	{Name: "typeMemberStart", Value: &sh23, Flags: pegort.RuleMemo, Seen: 139},
-	{Name: "typeMemberNameFollows", Value: &sh23, Flags: pegort.RuleMemo, Seen: 140},
-	{Name: "literalPropertyNameToken", Value: &sh23, Flags: pegort.RuleMemo, Seen: 141},
-	{Name: "mappedTypeStart", Value: &sh13, Flags: pegort.RuleMemo, Seen: 142, Vars: 2},
+	{Name: "objectTypeMembers", Value: &sh74, Flags: rt.RuleMemo, Seen: 138, Scope: 41, Vars: 2},
+	{Name: "typeMemberStart", Value: &sh23, Flags: rt.RuleMemo, Seen: 139},
+	{Name: "typeMemberNameFollows", Value: &sh23, Flags: rt.RuleMemo, Seen: 140},
+	{Name: "literalPropertyNameToken", Value: &sh23, Flags: rt.RuleMemo, Seen: 141},
+	{Name: "mappedTypeStart", Value: &sh13, Flags: rt.RuleMemo, Seen: 142, Vars: 2},
 	{Name: "mappedType", Value: &sh835, Seen: -1, Scope: 108, Vars: 2},
 	{Name: "mappedTypeParameter", Value: &sh74, Seen: -1, Scope: 109, Vars: 2},
 	{Name: "mappedReadonlyToken", Value: &sh505, Seen: -1, Scope: 29},
@@ -4768,7 +4768,7 @@ var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "mappedPlusMinusQuestion", Value: &sh13, Seen: -1, Scope: 29},
 	{Name: "plusMinusToken", Value: &sh23, Seen: -1},
 	{Name: "readonlyToken", Value: &sh23, Seen: -1},
-	{Name: "typeMember", Value: &sh23, Flags: pegort.RuleMemo, Seen: 143, Vars: 2},
+	{Name: "typeMember", Value: &sh23, Flags: rt.RuleMemo, Seen: 143, Vars: 2},
 	{Name: "typeAccessor", Value: &sh5, Seen: -1, Scope: 42, Vars: 2},
 	{Name: "typeMemberNotAccessor", Value: &sh5, Seen: -1, Scope: 42, Vars: 2},
 	{Name: "callSignature", Value: &sh327, Seen: -1, Scope: 110, Vars: 2},
@@ -4776,13 +4776,13 @@ var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "typeGetAccessor", Value: &sh662, Seen: -1, Scope: 44, Vars: 2},
 	{Name: "typeSetAccessor", Value: &sh662, Seen: -1, Scope: 44, Vars: 2},
 	{Name: "typeIndexSignature", Value: &sh490, Seen: -1, Scope: 46, Vars: 2},
-	{Name: "indexSignatureStart", Value: &sh13, Flags: pegort.RuleMemo, Seen: 144, Vars: 2},
-	{Name: "modifierKeyword", Value: &sh5, Flags: pegort.RuleMemo, Seen: 145},
+	{Name: "indexSignatureStart", Value: &sh13, Flags: rt.RuleMemo, Seen: 144, Vars: 2},
+	{Name: "modifierKeyword", Value: &sh5, Flags: rt.RuleMemo, Seen: 145},
 	{Name: "methodSignature", Value: &sh662, Seen: -1, Scope: 111, Vars: 2},
 	{Name: "propertySignature", Value: &sh490, Seen: -1, Scope: 112, Vars: 2},
-	{Name: "typeMemberSemicolon", Value: &sh23, Flags: pegort.RuleMemo, Seen: 146},
-	{Name: "typeStart", Value: &sh23, Flags: pegort.RuleMemo, Seen: 147},
-	{Name: "propertyName", Value: &sh23, Flags: pegort.RuleMemo, Seen: 148, Vars: 2},
+	{Name: "typeMemberSemicolon", Value: &sh23, Flags: rt.RuleMemo, Seen: 146},
+	{Name: "typeStart", Value: &sh23, Flags: rt.RuleMemo, Seen: 147},
+	{Name: "propertyName", Value: &sh23, Flags: rt.RuleMemo, Seen: 148, Vars: 2},
 	{Name: "computedPropertyName", Value: &sh74, Seen: -1, Scope: 16, Vars: 2},
 	{Name: "questionToken", Value: &sh23, Seen: -1},
 	{Name: "exclamationToken", Value: &sh23, Seen: -1},
@@ -4792,41 +4792,41 @@ var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "colonToken", Value: &sh23, Seen: -1},
 	{Name: "equalsToken", Value: &sh23, Seen: -1},
 	{Name: "commaToken", Value: &sh23, Seen: -1},
-	{Name: "identifier", Value: &sh5, Flags: pegort.RuleMemo, Seen: 149, Scope: 14, Vars: 2},
-	{Name: "bindingIdentifier", Value: &sh5, Flags: pegort.RuleMemo, Seen: 150, Scope: 14},
-	{Name: "identifierName", Value: &sh23, Flags: pegort.RuleMemo, Seen: 151},
-	{Name: "privateIdentifier", Value: &sh23, Flags: pegort.RuleMemo, Seen: 152},
-	{Name: "identifierNameOrPrivate", Value: &sh23, Flags: pegort.RuleMemo, Seen: 153},
-	{Name: "anyKeyword", Value: &sh5, Flags: pegort.RuleMemo, Seen: 154},
-	{Name: "reservedWord", Value: &sh5, Flags: pegort.RuleMemo, Seen: 155},
-	{Name: "identifierRest", Value: &sh13, Flags: pegort.RuleMemo, Seen: 156},
-	{Name: "idStart", Value: &sh23, Flags: pegort.RuleMemo, Seen: 157},
-	{Name: "idStartOther", Value: &sh23, Flags: pegort.RuleMemo, Seen: 158},
-	{Name: "idPart", Value: &sh23, Flags: pegort.RuleMemo, Seen: 159},
+	{Name: "identifier", Value: &sh5, Flags: rt.RuleMemo, Seen: 149, Scope: 14, Vars: 2},
+	{Name: "bindingIdentifier", Value: &sh5, Flags: rt.RuleMemo, Seen: 150, Scope: 14},
+	{Name: "identifierName", Value: &sh23, Flags: rt.RuleMemo, Seen: 151},
+	{Name: "privateIdentifier", Value: &sh23, Flags: rt.RuleMemo, Seen: 152},
+	{Name: "identifierNameOrPrivate", Value: &sh23, Flags: rt.RuleMemo, Seen: 153},
+	{Name: "anyKeyword", Value: &sh5, Flags: rt.RuleMemo, Seen: 154},
+	{Name: "reservedWord", Value: &sh5, Flags: rt.RuleMemo, Seen: 155},
+	{Name: "identifierRest", Value: &sh13, Flags: rt.RuleMemo, Seen: 156},
+	{Name: "idStart", Value: &sh23, Flags: rt.RuleMemo, Seen: 157},
+	{Name: "idStartOther", Value: &sh23, Flags: rt.RuleMemo, Seen: 158},
+	{Name: "idPart", Value: &sh23, Flags: rt.RuleMemo, Seen: 159},
 	{Name: "identifierStartEscape", Value: &sh23, Seen: -1},
-	{Name: "identifierPartEscape", Value: &sh23, Flags: pegort.RuleMemo, Seen: 160},
+	{Name: "identifierPartEscape", Value: &sh23, Flags: rt.RuleMemo, Seen: 160},
 	{Name: "surrogate", Value: &sh13, Seen: -1},
 	{Name: "asciiIdentifierStartHex", Value: &sh23, Seen: -1},
-	{Name: "nonASCIIBraced", Value: &sh23, Flags: pegort.RuleMemo, Seen: 161},
+	{Name: "nonASCIIBraced", Value: &sh23, Flags: rt.RuleMemo, Seen: 161},
 	{Name: "unicodeEscape", Value: &sh23, Seen: -1},
 	{Name: "unicodeBraced", Value: &sh13, Seen: -1},
 	{Name: "hex", Value: &sh23, Seen: -1},
-	{Name: "numericLiteral", Value: &sh23, Flags: pegort.RuleMemo, Seen: 162},
-	{Name: "bigIntLiteral", Value: &sh23, Flags: pegort.RuleMemo, Seen: 163},
+	{Name: "numericLiteral", Value: &sh23, Flags: rt.RuleMemo, Seen: 162},
+	{Name: "bigIntLiteral", Value: &sh23, Flags: rt.RuleMemo, Seen: 163},
 	{Name: "decimalLiteral", Value: &sh23, Seen: -1},
 	{Name: "decimalInteger", Value: &sh23, Seen: -1},
 	{Name: "decimalDigits", Value: &sh13, Seen: -1},
-	{Name: "exponentPart", Value: &sh74, Flags: pegort.RuleMemo, Seen: 164},
-	{Name: "hexLiteral", Value: &sh327, Flags: pegort.RuleMemo, Seen: 165},
+	{Name: "exponentPart", Value: &sh74, Flags: rt.RuleMemo, Seen: 164},
+	{Name: "hexLiteral", Value: &sh327, Flags: rt.RuleMemo, Seen: 165},
 	{Name: "binaryLiteral", Value: &sh327, Seen: -1},
 	{Name: "octalLiteral", Value: &sh327, Seen: -1},
-	{Name: "stringLiteral", Value: &sh23, Flags: pegort.RuleMemo, Seen: 166},
-	{Name: "escapeSequence", Value: &sh13, Flags: pegort.RuleMemo, Seen: 167},
-	{Name: "noSubstitutionTemplateLiteral", Value: &sh23, Flags: pegort.RuleMemo, Seen: 168},
-	{Name: "templateHead", Value: &sh23, Flags: pegort.RuleMemo, Seen: 169},
-	{Name: "templateMiddle", Value: &sh23, Flags: pegort.RuleMemo, Seen: 170},
-	{Name: "templateTail", Value: &sh23, Flags: pegort.RuleMemo, Seen: 171},
-	{Name: "templateCharacters", Value: &sh23, Flags: pegort.RuleMemo, Seen: 172},
+	{Name: "stringLiteral", Value: &sh23, Flags: rt.RuleMemo, Seen: 166},
+	{Name: "escapeSequence", Value: &sh13, Flags: rt.RuleMemo, Seen: 167},
+	{Name: "noSubstitutionTemplateLiteral", Value: &sh23, Flags: rt.RuleMemo, Seen: 168},
+	{Name: "templateHead", Value: &sh23, Flags: rt.RuleMemo, Seen: 169},
+	{Name: "templateMiddle", Value: &sh23, Flags: rt.RuleMemo, Seen: 170},
+	{Name: "templateTail", Value: &sh23, Flags: rt.RuleMemo, Seen: 171},
+	{Name: "templateCharacters", Value: &sh23, Flags: rt.RuleMemo, Seen: 172},
 	{Name: "rawNoSubstitutionTemplateLiteral", Value: &sh23, Seen: -1},
 	{Name: "rawTemplateHead", Value: &sh23, Seen: -1},
 	{Name: "rawTemplateMiddle", Value: &sh23, Seen: -1},
@@ -4847,106 +4847,106 @@ var rulesSpec = [...]pegort.RuleSpec{
 	{Name: "objectLiteralElementList", Value: &sh74, Seen: -1, Scope: 97, Vars: 2},
 	{Name: "tupleElementList", Value: &sh74, Seen: -1, Scope: 97, Vars: 2},
 	{Name: "typeParameterList", Value: &sh74, Seen: -1, Scope: 97, Vars: 2},
-	{Name: "typeParameterStart", Value: &sh23, Flags: pegort.RuleMemo, Seen: 173, Vars: 2},
+	{Name: "typeParameterStart", Value: &sh23, Flags: rt.RuleMemo, Seen: 173, Vars: 2},
 	{Name: "uniIdStart", Value: &sh5, Seen: -1},
 	{Name: "uniIdPart", Value: &sh5, Seen: -1},
-	{Name: "hashbang", Value: &sh13, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "ws", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "topLevelAwaitFreeStart", Value: &sh13, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 174},
-	{Name: "idPart", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 175},
-	{Name: "statementSpecialStart", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 176},
-	{Name: "declarationKeyword", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "declarationStart", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 177, Vars: 2},
-	{Name: "variableStatementStart", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 178},
-	{Name: "eos", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 179},
-	{Name: "forUsingFollows", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "usingFollows", Value: &sh13, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 180},
-	{Name: "canParseSemicolon", Value: &sh13, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 181},
-	{Name: "nlAhead", Value: &sh13, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 182},
-	{Name: "identifierRest", Value: &sh13, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 183},
-	{Name: "anyKeyword", Value: &sh5, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 184},
-	{Name: "sp", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "modifier", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 185},
-	{Name: "staticModifier", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 186},
-	{Name: "idStart", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 187},
-	{Name: "heritageElementStart", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 188, Vars: 2},
-	{Name: "expressionStart", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 189, Vars: 2},
-	{Name: "reservedWord", Value: &sh5, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 190},
-	{Name: "classMemberStart", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "accessorKeyword", Value: &sh5, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 191},
-	{Name: "canFollowGetOrSet", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 192},
-	{Name: "constructorName", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 193},
-	{Name: "indexSignatureStart", Value: &sh13, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 194, Vars: 2},
-	{Name: "typeMemberSemicolon", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 195},
-	{Name: "moduleExportNameStart", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 196},
-	{Name: "privateName", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "idStartOther", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 197},
-	{Name: "exportModifierFollows", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "defaultModifierFollows", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 198},
-	{Name: "canFollowModifier", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 199},
-	{Name: "identifierOrKeywordOrLiteralStart", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 200},
-	{Name: "nlStart", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "arrowParenthesisIsNotParameterList", Value: &sh13, Flags: pegort.RuleNovalue, Seen: -1, Vars: 2},
-	{Name: "tsxArrowTypeParametersStart", Value: &sh327, Flags: pegort.RuleNovalue, Seen: -1, Vars: 2},
-	{Name: "modifierKeyword", Value: &sh5, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 201},
-	{Name: "unaryOperatorStart", Value: &sh5, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 202, Vars: 2},
-	{Name: "typeArgumentsCanFollow", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1, Vars: 2},
-	{Name: "jsxElementName", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 203},
-	{Name: "unambiguousFunctionTypeStart", Value: &sh13, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 204, Vars: 2},
-	{Name: "barToken", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "ampersandToken", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "typeStart", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 205},
-	{Name: "identifierOrKeywordStart", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 206},
-	{Name: "mappedTypeStart", Value: &sh13, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 207, Vars: 2},
-	{Name: "typeMemberStart", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 208},
-	{Name: "surrogate", Value: &sh13, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "hexLiteral", Value: &sh327, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 209},
-	{Name: "binaryLiteral", Value: &sh327, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "octalLiteral", Value: &sh327, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "decimalLiteral", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "decimalInteger", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "escapeSequence", Value: &sh13, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 210},
-	{Name: "templateCharacters", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 211},
-	{Name: "rawTemplateCharacters", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "uniIdPart", Value: &sh5, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "objectLiteralElementStart", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 212},
-	{Name: "typeParameterStart", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 213, Vars: 2},
-	{Name: "identifierPartEscape", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 214},
-	{Name: "statementKeyword", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "identifierName", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 215},
-	{Name: "letFollows", Value: &sh5, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "leftHandSideExpressionStart", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "binaryOperatorStart", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 216, Vars: 2},
-	{Name: "nonMemberModifier", Value: &sh5, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 217},
-	{Name: "memberModifier", Value: &sh5, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "literalPropertyNameToken", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 218},
-	{Name: "classMemberNameFollows", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 219},
-	{Name: "literalPropertyNameStart", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 220},
-	{Name: "identifierStartEscape", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "uniIdStart", Value: &sh5, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "canFollowExportModifier", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 221},
-	{Name: "bindingPattern", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 222, Vars: 2},
-	{Name: "typeMemberNameFollows", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 223},
-	{Name: "hex", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "decimalDigits", Value: &sh13, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "exponentPart", Value: &sh74, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 224},
-	{Name: "unicodeEscape", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "asciiIdentifierStartHex", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "nonASCIIBraced", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 225},
-	{Name: "coalesceOrToken", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "ampersandAmpersandToken", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "caretToken", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "equalityToken", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "relationalToken", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 226, Vars: 2},
-	{Name: "shiftToken", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "additiveToken", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "multiplicativeToken", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "asteriskAsteriskToken", Value: &sh23, Flags: pegort.RuleNovalue, Seen: -1},
-	{Name: "privateIdentifier", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 227},
-	{Name: "stringLiteral", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 228},
-	{Name: "numericLiteral", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 229},
-	{Name: "bigIntLiteral", Value: &sh23, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 230},
-	{Name: "unicodeBraced", Value: &sh13, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "hashbang", Value: &sh13, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ws", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "topLevelAwaitFreeStart", Value: &sh13, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 174},
+	{Name: "idPart", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 175},
+	{Name: "statementSpecialStart", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 176},
+	{Name: "declarationKeyword", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "declarationStart", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 177, Vars: 2},
+	{Name: "variableStatementStart", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 178},
+	{Name: "eos", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 179},
+	{Name: "forUsingFollows", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "usingFollows", Value: &sh13, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 180},
+	{Name: "canParseSemicolon", Value: &sh13, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 181},
+	{Name: "nlAhead", Value: &sh13, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 182},
+	{Name: "identifierRest", Value: &sh13, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 183},
+	{Name: "anyKeyword", Value: &sh5, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 184},
+	{Name: "sp", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "modifier", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 185},
+	{Name: "staticModifier", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 186},
+	{Name: "idStart", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 187},
+	{Name: "heritageElementStart", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 188, Vars: 2},
+	{Name: "expressionStart", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 189, Vars: 2},
+	{Name: "reservedWord", Value: &sh5, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 190},
+	{Name: "classMemberStart", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "accessorKeyword", Value: &sh5, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 191},
+	{Name: "canFollowGetOrSet", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 192},
+	{Name: "constructorName", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 193},
+	{Name: "indexSignatureStart", Value: &sh13, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 194, Vars: 2},
+	{Name: "typeMemberSemicolon", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 195},
+	{Name: "moduleExportNameStart", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 196},
+	{Name: "privateName", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "idStartOther", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 197},
+	{Name: "exportModifierFollows", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "defaultModifierFollows", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 198},
+	{Name: "canFollowModifier", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 199},
+	{Name: "identifierOrKeywordOrLiteralStart", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 200},
+	{Name: "nlStart", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "arrowParenthesisIsNotParameterList", Value: &sh13, Flags: rt.RuleNovalue, Seen: -1, Vars: 2},
+	{Name: "tsxArrowTypeParametersStart", Value: &sh327, Flags: rt.RuleNovalue, Seen: -1, Vars: 2},
+	{Name: "modifierKeyword", Value: &sh5, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 201},
+	{Name: "unaryOperatorStart", Value: &sh5, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 202, Vars: 2},
+	{Name: "typeArgumentsCanFollow", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1, Vars: 2},
+	{Name: "jsxElementName", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 203},
+	{Name: "unambiguousFunctionTypeStart", Value: &sh13, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 204, Vars: 2},
+	{Name: "barToken", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ampersandToken", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "typeStart", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 205},
+	{Name: "identifierOrKeywordStart", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 206},
+	{Name: "mappedTypeStart", Value: &sh13, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 207, Vars: 2},
+	{Name: "typeMemberStart", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 208},
+	{Name: "surrogate", Value: &sh13, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "hexLiteral", Value: &sh327, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 209},
+	{Name: "binaryLiteral", Value: &sh327, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "octalLiteral", Value: &sh327, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "decimalLiteral", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "decimalInteger", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "escapeSequence", Value: &sh13, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 210},
+	{Name: "templateCharacters", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 211},
+	{Name: "rawTemplateCharacters", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "uniIdPart", Value: &sh5, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "objectLiteralElementStart", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 212},
+	{Name: "typeParameterStart", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 213, Vars: 2},
+	{Name: "identifierPartEscape", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 214},
+	{Name: "statementKeyword", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "identifierName", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 215},
+	{Name: "letFollows", Value: &sh5, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "leftHandSideExpressionStart", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "binaryOperatorStart", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 216, Vars: 2},
+	{Name: "nonMemberModifier", Value: &sh5, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 217},
+	{Name: "memberModifier", Value: &sh5, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "literalPropertyNameToken", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 218},
+	{Name: "classMemberNameFollows", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 219},
+	{Name: "literalPropertyNameStart", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 220},
+	{Name: "identifierStartEscape", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "uniIdStart", Value: &sh5, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "canFollowExportModifier", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 221},
+	{Name: "bindingPattern", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 222, Vars: 2},
+	{Name: "typeMemberNameFollows", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 223},
+	{Name: "hex", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "decimalDigits", Value: &sh13, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "exponentPart", Value: &sh74, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 224},
+	{Name: "unicodeEscape", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "asciiIdentifierStartHex", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "nonASCIIBraced", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 225},
+	{Name: "coalesceOrToken", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "ampersandAmpersandToken", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "caretToken", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "equalityToken", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "relationalToken", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 226, Vars: 2},
+	{Name: "shiftToken", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "additiveToken", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "multiplicativeToken", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "asteriskAsteriskToken", Value: &sh23, Flags: rt.RuleNovalue, Seen: -1},
+	{Name: "privateIdentifier", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 227},
+	{Name: "stringLiteral", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 228},
+	{Name: "numericLiteral", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 229},
+	{Name: "bigIntLiteral", Value: &sh23, Flags: rt.RuleMemo | rt.RuleNovalue, Seen: 230},
+	{Name: "unicodeBraced", Value: &sh13, Flags: rt.RuleNovalue, Seen: -1},
 }
 
 var rulesStrs = [...][]string{
@@ -5065,7 +5065,7 @@ var rulesStrs = [...][]string{
 	{"m", "n", "qt", "t", "i"},
 }
 
-var rulesExtras = [...]pegort.RuleExtra{
+var rulesExtras = [...]rt.RuleExtra{
 	{Id: 6, Where: "", NodeType: "EndOfFileToken", OpNodeType: ""},
 	{Id: 19, Where: "", NodeType: "EmptyStatement", OpNodeType: ""},
 	{Id: 32, Where: "", NodeType: "Token", OpNodeType: ""},
@@ -5155,14 +5155,14 @@ var rulesExtras = [...]pegort.RuleExtra{
 }
 
 var scope836 = []string{"s"}
-var cls840 = pegort.Class{ASCII: [2]uint64{0x0, 0xfdf2fe00000000}}
+var cls840 = rt.Class{ASCII: [2]uint64{0x0, 0xfdf2fe00000000}}
 var scope841 = []string{"s"}
 var scope872 = []string{"s"}
 var scope876 = []string{"s"}
-var cls884 = pegort.Class{ASCII: [2]uint64{0x1000000000, 0x7fffffe97fffffe}, Wide: []rune{128, 1114111}}
-var cls935 = pegort.Class{ASCII: [2]uint64{0xb400010200000000, 0x0}}
+var cls884 = rt.Class{ASCII: [2]uint64{0x1000000000, 0x7fffffe97fffffe}, Wide: []rune{128, 1114111}}
+var cls935 = rt.Class{ASCII: [2]uint64{0xb400010200000000, 0x0}}
 var scope997 = []string{"s"}
-var cls1059 = pegort.Class{ASCII: [2]uint64{0x0, 0x5823a00000000}}
+var cls1059 = rt.Class{ASCII: [2]uint64{0x0, 0x5823a00000000}}
 var scope1060 = []string{"m"}
 var scope1061 = []string{"m"}
 var scope1064 = []string{"m"}
@@ -5170,25 +5170,25 @@ var scope1065 = []string{"m"}
 var scope1068 = []string{"m"}
 var scope1069 = []string{"m"}
 var scope1073 = []string{"o", "e"}
-var cls1081 = pegort.Class{ASCII: [2]uint64{0xf000ac6000000000, 0x1000000040000000}}
-var cls1085 = pegort.Class{ASCII: [2]uint64{0x4000000000000000, 0x0}}
-var cls1086 = pegort.Class{ASCII: [2]uint64{0x40000000000, 0x0}}
-var cls1087 = pegort.Class{ASCII: [2]uint64{0x1000000000000000, 0x0}}
-var cls1088 = pegort.Class{ASCII: [2]uint64{0x4000000000, 0x0}}
-var cls1089 = pegort.Class{ASCII: [2]uint64{0x0, 0x1000000000000000}}
-var cls1090 = pegort.Class{ASCII: [2]uint64{0x8000000000000000, 0x0}}
-var cls1091 = pegort.Class{ASCII: [2]uint64{0x80000000000, 0x0}}
-var cls1092 = pegort.Class{ASCII: [2]uint64{0x200000000000, 0x0}}
-var cls1093 = pegort.Class{ASCII: [2]uint64{0x800000000000, 0x0}}
-var cls1094 = pegort.Class{ASCII: [2]uint64{0x2000000000, 0x0}}
-var cls1095 = pegort.Class{ASCII: [2]uint64{0x0, 0x40000000}}
-var cls1096 = pegort.Class{ASCII: [2]uint64{0x2000000000000000, 0x0}}
-var cls1097 = pegort.Class{ASCII: [2]uint64{0x6000000000000000, 0x0}}
-var term1098Data = pegort.TerminalProgram{Code: []uint16{3, 139, 0, 6, 8, 0, 124, 1, 4, 0, 124, 6, 8, 1, 125, 1, 4, 1, 125, 6, 8, 2, 126, 1, 4, 2, 126, 6, 8, 0, 127, 1, 4, 3, 127, 6, 8, 3, 128, 1, 4, 4, 128, 6, 8, 4, 129, 1, 4, 5, 129, 6, 8, 5, 130, 1, 4, 6, 130, 6, 8, 6, 131, 1, 4, 7, 131, 6, 8, 7, 132, 1, 4, 8, 132, 6, 8, 1, 133, 1, 4, 9, 133, 6, 8, 8, 134, 1, 4, 10, 134, 6, 8, 9, 135, 1, 4, 11, 135, 6, 8, 3, 136, 1, 4, 12, 136, 6, 8, 4, 137, 1, 4, 13, 137, 6, 8, 10, 138, 1, 4, 14, 138, 6, 16, 11, 55, 2, 12, 1, 4, 15, 55, 5, 6, 0, 4, 12, 56}, Classes: []*pegort.Class{&cls1085, &cls1086, &cls1087, &cls1088, &cls1089, &cls1090, &cls1091, &cls1092, &cls1093, &cls1094, &cls1095, &cls1096, &cls1097}, Literals: []pegort.TerminalText{{Runes: lit310, Text: ">>>="}, {Runes: lit311, Text: "**="}, {Runes: lit312, Text: "<<="}, {Runes: lit313, Text: ">>="}, {Runes: lit314, Text: "&&="}, {Runes: lit315, Text: "||="}, {Runes: lit316, Text: "??="}, {Runes: lit317, Text: "+="}, {Runes: lit318, Text: "-="}, {Runes: lit319, Text: "*="}, {Runes: lit320, Text: "/="}, {Runes: lit321, Text: "%="}, {Runes: lit322, Text: "&="}, {Runes: lit323, Text: "|="}, {Runes: lit324, Text: "^="}, {Runes: lit69, Text: "="}}}
+var cls1081 = rt.Class{ASCII: [2]uint64{0xf000ac6000000000, 0x1000000040000000}}
+var cls1085 = rt.Class{ASCII: [2]uint64{0x4000000000000000, 0x0}}
+var cls1086 = rt.Class{ASCII: [2]uint64{0x40000000000, 0x0}}
+var cls1087 = rt.Class{ASCII: [2]uint64{0x1000000000000000, 0x0}}
+var cls1088 = rt.Class{ASCII: [2]uint64{0x4000000000, 0x0}}
+var cls1089 = rt.Class{ASCII: [2]uint64{0x0, 0x1000000000000000}}
+var cls1090 = rt.Class{ASCII: [2]uint64{0x8000000000000000, 0x0}}
+var cls1091 = rt.Class{ASCII: [2]uint64{0x80000000000, 0x0}}
+var cls1092 = rt.Class{ASCII: [2]uint64{0x200000000000, 0x0}}
+var cls1093 = rt.Class{ASCII: [2]uint64{0x800000000000, 0x0}}
+var cls1094 = rt.Class{ASCII: [2]uint64{0x2000000000, 0x0}}
+var cls1095 = rt.Class{ASCII: [2]uint64{0x0, 0x40000000}}
+var cls1096 = rt.Class{ASCII: [2]uint64{0x2000000000000000, 0x0}}
+var cls1097 = rt.Class{ASCII: [2]uint64{0x6000000000000000, 0x0}}
+var term1098Data = rt.TerminalProgram{Code: []uint16{3, 139, 0, 6, 8, 0, 124, 1, 4, 0, 124, 6, 8, 1, 125, 1, 4, 1, 125, 6, 8, 2, 126, 1, 4, 2, 126, 6, 8, 0, 127, 1, 4, 3, 127, 6, 8, 3, 128, 1, 4, 4, 128, 6, 8, 4, 129, 1, 4, 5, 129, 6, 8, 5, 130, 1, 4, 6, 130, 6, 8, 6, 131, 1, 4, 7, 131, 6, 8, 7, 132, 1, 4, 8, 132, 6, 8, 1, 133, 1, 4, 9, 133, 6, 8, 8, 134, 1, 4, 10, 134, 6, 8, 9, 135, 1, 4, 11, 135, 6, 8, 3, 136, 1, 4, 12, 136, 6, 8, 4, 137, 1, 4, 13, 137, 6, 8, 10, 138, 1, 4, 14, 138, 6, 16, 11, 55, 2, 12, 1, 4, 15, 55, 5, 6, 0, 4, 12, 56}, Classes: []*rt.Class{&cls1085, &cls1086, &cls1087, &cls1088, &cls1089, &cls1090, &cls1091, &cls1092, &cls1093, &cls1094, &cls1095, &cls1096, &cls1097}, Literals: []rt.TerminalText{{Runes: lit310, Text: ">>>="}, {Runes: lit311, Text: "**="}, {Runes: lit312, Text: "<<="}, {Runes: lit313, Text: ">>="}, {Runes: lit314, Text: "&&="}, {Runes: lit315, Text: "||="}, {Runes: lit316, Text: "??="}, {Runes: lit317, Text: "+="}, {Runes: lit318, Text: "-="}, {Runes: lit319, Text: "*="}, {Runes: lit320, Text: "/="}, {Runes: lit321, Text: "%="}, {Runes: lit322, Text: "&="}, {Runes: lit323, Text: "|="}, {Runes: lit324, Text: "^="}, {Runes: lit69, Text: "="}}}
 var term1098 = term1098Data.Prepare()
 var scope1099 = []string{"q", "t", "k", "f"}
-var cls1113 = pegort.Class{ASCII: [2]uint64{0xa400120000000000, 0x0}}
-var cls1122 = pegort.Class{ASCII: [2]uint64{0x1000280200000000, 0x4050001200000000}}
+var cls1113 = rt.Class{ASCII: [2]uint64{0xa400120000000000, 0x0}}
+var cls1122 = rt.Class{ASCII: [2]uint64{0x1000280200000000, 0x4050001200000000}}
 var scope1131 = []string{"o"}
 var scope1138 = []string{"a"}
 var scope1216 = []string{"n"}
@@ -5199,394 +5199,394 @@ var scope1250 = []string{"ts"}
 var scope1255 = []string{"t"}
 var scope1258 = []string{"t"}
 var scope1259 = []string{"ts"}
-var cls1269 = pegort.Class{ASCII: [2]uint64{0x0, 0x200000000}}
-var cls1270 = pegort.Class{ASCII: [2]uint64{0x0, 0x20000000000000}}
-var cls1271 = pegort.Class{ASCII: [2]uint64{0x0, 0x8000000000000}}
-var cls1272 = pegort.Class{ASCII: [2]uint64{0x0, 0x400000000000}}
-var cls1273 = pegort.Class{ASCII: [2]uint64{0x0, 0x400000000}}
-var cls1274 = pegort.Class{ASCII: [2]uint64{0x0, 0x800000000000}}
-var cls1275 = pegort.Class{ASCII: [2]uint64{0x0, 0x40000000000000}}
-var cls1276 = pegort.Class{ASCII: [2]uint64{0x0, 0x10000000000000}}
-var cls1277 = pegort.Class{ASCII: [2]uint64{0x0, 0x4000000000}}
-var cls1278 = pegort.Class{ASCII: [2]uint64{0x0, 0x20000000000}}
-var term1279Data = pegort.TerminalProgram{Code: []uint16{3, 155, 0, 6, 8, 0, 202, 1, 4, 0, 202, 6, 8, 1, 203, 1, 4, 1, 203, 6, 8, 2, 204, 1, 4, 2, 204, 6, 8, 3, 205, 1, 4, 3, 205, 6, 8, 4, 206, 1, 4, 4, 206, 6, 8, 2, 207, 1, 4, 5, 207, 6, 8, 4, 208, 1, 4, 6, 208, 6, 8, 1, 209, 1, 4, 7, 209, 6, 8, 3, 210, 1, 4, 8, 210, 6, 8, 5, 211, 1, 4, 9, 211, 6, 8, 6, 177, 1, 4, 10, 177, 6, 8, 7, 91, 1, 4, 11, 91, 6, 8, 8, 92, 1, 4, 12, 92, 6, 8, 3, 90, 1, 4, 13, 90, 6, 8, 7, 82, 1, 4, 14, 82, 6, 8, 7, 176, 1, 4, 15, 176, 6, 8, 9, 7, 1, 4, 16, 7, 6, 8, 0, 212, 1, 4, 17, 212, 6, 8, 8, 39, 1, 4, 18, 39}, Classes: []*pegort.Class{&cls1269, &cls1270, &cls1271, &cls1272, &cls1273, &cls1274, &cls1275, &cls1276, &cls1277, &cls1278}, Literals: []pegort.TerminalText{{Runes: lit522, Text: "any"}, {Runes: lit523, Text: "unknown"}, {Runes: lit524, Text: "string"}, {Runes: lit525, Text: "number"}, {Runes: lit526, Text: "bigint"}, {Runes: lit527, Text: "symbol"}, {Runes: lit528, Text: "boolean"}, {Runes: lit529, Text: "undefined"}, {Runes: lit530, Text: "never"}, {Runes: lit531, Text: "object"}, {Runes: lit384, Text: "void"}, {Runes: lit177, Text: "true"}, {Runes: lit178, Text: "false"}, {Runes: lit176, Text: "null"}, {Runes: lit161, Text: "this"}, {Runes: lit383, Text: "typeof"}, {Runes: lit10, Text: "import"}, {Runes: lit532, Text: "asserts"}, {Runes: lit33, Text: "function"}}}
+var cls1269 = rt.Class{ASCII: [2]uint64{0x0, 0x200000000}}
+var cls1270 = rt.Class{ASCII: [2]uint64{0x0, 0x20000000000000}}
+var cls1271 = rt.Class{ASCII: [2]uint64{0x0, 0x8000000000000}}
+var cls1272 = rt.Class{ASCII: [2]uint64{0x0, 0x400000000000}}
+var cls1273 = rt.Class{ASCII: [2]uint64{0x0, 0x400000000}}
+var cls1274 = rt.Class{ASCII: [2]uint64{0x0, 0x800000000000}}
+var cls1275 = rt.Class{ASCII: [2]uint64{0x0, 0x40000000000000}}
+var cls1276 = rt.Class{ASCII: [2]uint64{0x0, 0x10000000000000}}
+var cls1277 = rt.Class{ASCII: [2]uint64{0x0, 0x4000000000}}
+var cls1278 = rt.Class{ASCII: [2]uint64{0x0, 0x20000000000}}
+var term1279Data = rt.TerminalProgram{Code: []uint16{3, 155, 0, 6, 8, 0, 202, 1, 4, 0, 202, 6, 8, 1, 203, 1, 4, 1, 203, 6, 8, 2, 204, 1, 4, 2, 204, 6, 8, 3, 205, 1, 4, 3, 205, 6, 8, 4, 206, 1, 4, 4, 206, 6, 8, 2, 207, 1, 4, 5, 207, 6, 8, 4, 208, 1, 4, 6, 208, 6, 8, 1, 209, 1, 4, 7, 209, 6, 8, 3, 210, 1, 4, 8, 210, 6, 8, 5, 211, 1, 4, 9, 211, 6, 8, 6, 177, 1, 4, 10, 177, 6, 8, 7, 91, 1, 4, 11, 91, 6, 8, 8, 92, 1, 4, 12, 92, 6, 8, 3, 90, 1, 4, 13, 90, 6, 8, 7, 82, 1, 4, 14, 82, 6, 8, 7, 176, 1, 4, 15, 176, 6, 8, 9, 7, 1, 4, 16, 7, 6, 8, 0, 212, 1, 4, 17, 212, 6, 8, 8, 39, 1, 4, 18, 39}, Classes: []*rt.Class{&cls1269, &cls1270, &cls1271, &cls1272, &cls1273, &cls1274, &cls1275, &cls1276, &cls1277, &cls1278}, Literals: []rt.TerminalText{{Runes: lit522, Text: "any"}, {Runes: lit523, Text: "unknown"}, {Runes: lit524, Text: "string"}, {Runes: lit525, Text: "number"}, {Runes: lit526, Text: "bigint"}, {Runes: lit527, Text: "symbol"}, {Runes: lit528, Text: "boolean"}, {Runes: lit529, Text: "undefined"}, {Runes: lit530, Text: "never"}, {Runes: lit531, Text: "object"}, {Runes: lit384, Text: "void"}, {Runes: lit177, Text: "true"}, {Runes: lit178, Text: "false"}, {Runes: lit176, Text: "null"}, {Runes: lit161, Text: "this"}, {Runes: lit383, Text: "typeof"}, {Runes: lit10, Text: "import"}, {Runes: lit532, Text: "asserts"}, {Runes: lit33, Text: "function"}}}
 var term1279 = term1279Data.Prepare()
-var cls1307 = pegort.Class{ASCII: [2]uint64{0x6000120000000000, 0x3000000000000000}}
+var cls1307 = rt.Class{ASCII: [2]uint64{0x6000120000000000, 0x3000000000000000}}
 var scope1314 = []string{"n"}
 var scope1319 = []string{"n"}
 var scope1324 = []string{"t"}
-var cls1380 = pegort.Class{ASCII: [2]uint64{0x0, 0xdc427c00000000}}
+var cls1380 = rt.Class{ASCII: [2]uint64{0x0, 0xdc427c00000000}}
 
-var cls1382 = pegort.Class{ASCII: [2]uint64{0x800100003e00, 0x0}, Wide: []rune{160, 160, 133, 133, 5760, 5760, 8192, 8203, 8232, 8232, 8233, 8233, 8239, 8239, 8287, 8287, 12288, 12288, 65279, 65279}}
+var cls1382 = rt.Class{ASCII: [2]uint64{0x800100003e00, 0x0}, Wide: []rune{160, 160, 133, 133, 5760, 5760, 8192, 8203, 8232, 8232, 8233, 8233, 8239, 8239, 8287, 8287, 12288, 12288, 65279, 65279}}
 
-var cls1384 = pegort.Class{ASCII: [2]uint64{0x800100001a00, 0x0}, Wide: []rune{160, 160, 133, 133, 5760, 5760, 8192, 8203, 8239, 8239, 8287, 8287, 12288, 12288, 65279, 65279}}
+var cls1384 = rt.Class{ASCII: [2]uint64{0x800100001a00, 0x0}, Wide: []rune{160, 160, 133, 133, 5760, 5760, 8192, 8203, 8239, 8239, 8287, 8287, 12288, 12288, 65279, 65279}}
 
 var scope1386 = []string{"e"}
 var scope1388 = []string{"e"}
-var cls1390 = pegort.Class{ASCII: [2]uint64{0x0, 0x0}, Wide: []rune{170, 170, 181, 181, 186, 186, 192, 214, 216, 246, 248, 705, 710, 721, 736, 740, 748, 748, 750, 750, 880, 884, 886, 887, 890, 893, 895, 895, 902, 902, 904, 906, 908, 908, 910, 929, 931, 1013, 1015, 1153, 1162, 1327, 1329, 1366, 1369, 1369, 1376, 1416, 1488, 1514, 1519, 1522, 1568, 1610, 1646, 1647, 1649, 1747, 1749, 1749, 1765, 1766, 1774, 1775, 1786, 1788, 1791, 1791, 1808, 1808, 1810, 1839, 1869, 1957, 1969, 1969, 1994, 2026, 2036, 2037, 2042, 2042, 2048, 2069, 2074, 2074, 2084, 2084, 2088, 2088, 2112, 2136, 2144, 2154, 2160, 2183, 2185, 2190, 2208, 2249, 2308, 2361, 2365, 2365, 2384, 2384, 2392, 2401, 2417, 2432, 2437, 2444, 2447, 2448, 2451, 2472, 2474, 2480, 2482, 2482, 2486, 2489, 2493, 2493, 2510, 2510, 2524, 2525, 2527, 2529, 2544, 2545, 2556, 2556, 2565, 2570, 2575, 2576, 2579, 2600, 2602, 2608, 2610, 2611, 2613, 2614, 2616, 2617, 2649, 2652, 2654, 2654, 2674, 2676, 2693, 2701, 2703, 2705, 2707, 2728, 2730, 2736, 2738, 2739, 2741, 2745, 2749, 2749, 2768, 2768, 2784, 2785, 2809, 2809, 2821, 2828, 2831, 2832, 2835, 2856, 2858, 2864, 2866, 2867, 2869, 2873, 2877, 2877, 2908, 2909, 2911, 2913, 2929, 2929, 2947, 2947, 2949, 2954, 2958, 2960, 2962, 2965, 2969, 2970, 2972, 2972, 2974, 2975, 2979, 2980, 2984, 2986, 2990, 3001, 3024, 3024, 3077, 3084, 3086, 3088, 3090, 3112, 3114, 3129, 3133, 3133, 3160, 3162, 3165, 3165, 3168, 3169, 3200, 3200, 3205, 3212, 3214, 3216, 3218, 3240, 3242, 3251, 3253, 3257, 3261, 3261, 3293, 3294, 3296, 3297, 3313, 3314, 3332, 3340, 3342, 3344, 3346, 3386, 3389, 3389, 3406, 3406, 3412, 3414, 3423, 3425, 3450, 3455, 3461, 3478, 3482, 3505, 3507, 3515, 3517, 3517, 3520, 3526, 3585, 3632, 3634, 3635, 3648, 3654, 3713, 3714, 3716, 3716, 3718, 3722, 3724, 3747, 3749, 3749, 3751, 3760, 3762, 3763, 3773, 3773, 3776, 3780, 3782, 3782, 3804, 3807, 3840, 3840, 3904, 3911, 3913, 3948, 3976, 3980, 4096, 4138, 4159, 4159, 4176, 4181, 4186, 4189, 4193, 4193, 4197, 4198, 4206, 4208, 4213, 4225, 4238, 4238, 4256, 4293, 4295, 4295, 4301, 4301, 4304, 4346, 4348, 4680, 4682, 4685, 4688, 4694, 4696, 4696, 4698, 4701, 4704, 4744, 4746, 4749, 4752, 4784, 4786, 4789, 4792, 4798, 4800, 4800, 4802, 4805, 4808, 4822, 4824, 4880, 4882, 4885, 4888, 4954, 4992, 5007, 5024, 5109, 5112, 5117, 5121, 5740, 5743, 5759, 5761, 5786, 5792, 5866, 5870, 5880, 5888, 5905, 5919, 5937, 5952, 5969, 5984, 5996, 5998, 6000, 6016, 6067, 6103, 6103, 6108, 6108, 6176, 6264, 6272, 6312, 6314, 6314, 6320, 6389, 6400, 6430, 6480, 6509, 6512, 6516, 6528, 6571, 6576, 6601, 6656, 6678, 6688, 6740, 6823, 6823, 6917, 6963, 6981, 6988, 7043, 7072, 7086, 7087, 7098, 7141, 7168, 7203, 7245, 7247, 7258, 7293, 7296, 7304, 7312, 7354, 7357, 7359, 7401, 7404, 7406, 7411, 7413, 7414, 7418, 7418, 7424, 7615, 7680, 7957, 7960, 7965, 7968, 8005, 8008, 8013, 8016, 8023, 8025, 8025, 8027, 8027, 8029, 8029, 8031, 8061, 8064, 8116, 8118, 8124, 8126, 8126, 8130, 8132, 8134, 8140, 8144, 8147, 8150, 8155, 8160, 8172, 8178, 8180, 8182, 8188, 8305, 8305, 8319, 8319, 8336, 8348, 8450, 8450, 8455, 8455, 8458, 8467, 8469, 8469, 8472, 8477, 8484, 8484, 8486, 8486, 8488, 8488, 8490, 8505, 8508, 8511, 8517, 8521, 8526, 8526, 8544, 8584, 11264, 11492, 11499, 11502, 11506, 11507, 11520, 11557, 11559, 11559, 11565, 11565, 11568, 11623, 11631, 11631, 11648, 11670, 11680, 11686, 11688, 11694, 11696, 11702, 11704, 11710, 11712, 11718, 11720, 11726, 11728, 11734, 11736, 11742, 12293, 12295, 12321, 12329, 12337, 12341, 12344, 12348, 12353, 12438, 12443, 12447, 12449, 12538, 12540, 12543, 12549, 12591, 12593, 12686, 12704, 12735, 12784, 12799, 13312, 19903, 19968, 42124, 42192, 42237, 42240, 42508, 42512, 42527, 42538, 42539, 42560, 42606, 42623, 42653, 42656, 42735, 42775, 42783, 42786, 42888, 42891, 42954, 42960, 42961, 42963, 42963, 42965, 42969, 42994, 43009, 43011, 43013, 43015, 43018, 43020, 43042, 43072, 43123, 43138, 43187, 43250, 43255, 43259, 43259, 43261, 43262, 43274, 43301, 43312, 43334, 43360, 43388, 43396, 43442, 43471, 43471, 43488, 43492, 43494, 43503, 43514, 43518, 43520, 43560, 43584, 43586, 43588, 43595, 43616, 43638, 43642, 43642, 43646, 43695, 43697, 43697, 43701, 43702, 43705, 43709, 43712, 43712, 43714, 43714, 43739, 43741, 43744, 43754, 43762, 43764, 43777, 43782, 43785, 43790, 43793, 43798, 43808, 43814, 43816, 43822, 43824, 43866, 43868, 43881, 43888, 44002, 44032, 55203, 55216, 55238, 55243, 55291, 63744, 64109, 64112, 64217, 64256, 64262, 64275, 64279, 64285, 64285, 64287, 64296, 64298, 64310, 64312, 64316, 64318, 64318, 64320, 64321, 64323, 64324, 64326, 64433, 64467, 64829, 64848, 64911, 64914, 64967, 65008, 65019, 65136, 65140, 65142, 65276, 65313, 65338, 65345, 65370, 65382, 65470, 65474, 65479, 65482, 65487, 65490, 65495, 65498, 65500, 65536, 65547, 65549, 65574, 65576, 65594, 65596, 65597, 65599, 65613, 65616, 65629, 65664, 65786, 65856, 65908, 66176, 66204, 66208, 66256, 66304, 66335, 66349, 66378, 66384, 66421, 66432, 66461, 66464, 66499, 66504, 66511, 66513, 66517, 66560, 66717, 66736, 66771, 66776, 66811, 66816, 66855, 66864, 66915, 66928, 66938, 66940, 66954, 66956, 66962, 66964, 66965, 66967, 66977, 66979, 66993, 66995, 67001, 67003, 67004, 67072, 67382, 67392, 67413, 67424, 67431, 67456, 67461, 67463, 67504, 67506, 67514, 67584, 67589, 67592, 67592, 67594, 67637, 67639, 67640, 67644, 67644, 67647, 67669, 67680, 67702, 67712, 67742, 67808, 67826, 67828, 67829, 67840, 67861, 67872, 67897, 67968, 68023, 68030, 68031, 68096, 68096, 68112, 68115, 68117, 68119, 68121, 68149, 68192, 68220, 68224, 68252, 68288, 68295, 68297, 68324, 68352, 68405, 68416, 68437, 68448, 68466, 68480, 68497, 68608, 68680, 68736, 68786, 68800, 68850, 68864, 68899, 69248, 69289, 69296, 69297, 69376, 69404, 69415, 69415, 69424, 69445, 69488, 69505, 69552, 69572, 69600, 69622, 69635, 69687, 69745, 69746, 69749, 69749, 69763, 69807, 69840, 69864, 69891, 69926, 69956, 69956, 69959, 69959, 69968, 70002, 70006, 70006, 70019, 70066, 70081, 70084, 70106, 70106, 70108, 70108, 70144, 70161, 70163, 70187, 70207, 70208, 70272, 70278, 70280, 70280, 70282, 70285, 70287, 70301, 70303, 70312, 70320, 70366, 70405, 70412, 70415, 70416, 70419, 70440, 70442, 70448, 70450, 70451, 70453, 70457, 70461, 70461, 70480, 70480, 70493, 70497, 70656, 70708, 70727, 70730, 70751, 70753, 70784, 70831, 70852, 70853, 70855, 70855, 71040, 71086, 71128, 71131, 71168, 71215, 71236, 71236, 71296, 71338, 71352, 71352, 71424, 71450, 71488, 71494, 71680, 71723, 71840, 71903, 71935, 71942, 71945, 71945, 71948, 71955, 71957, 71958, 71960, 71983, 71999, 71999, 72001, 72001, 72096, 72103, 72106, 72144, 72161, 72161, 72163, 72163, 72192, 72192, 72203, 72242, 72250, 72250, 72272, 72272, 72284, 72329, 72349, 72349, 72368, 72440, 72704, 72712, 72714, 72750, 72768, 72768, 72818, 72847, 72960, 72966, 72968, 72969, 72971, 73008, 73030, 73030, 73056, 73061, 73063, 73064, 73066, 73097, 73112, 73112, 73440, 73458, 73474, 73474, 73476, 73488, 73490, 73523, 73648, 73648, 73728, 74649, 74752, 74862, 74880, 75075, 77712, 77808, 77824, 78895, 78913, 78918, 82944, 83526, 92160, 92728, 92736, 92766, 92784, 92862, 92880, 92909, 92928, 92975, 92992, 92995, 93027, 93047, 93053, 93071, 93760, 93823, 93952, 94026, 94032, 94032, 94099, 94111, 94176, 94177, 94179, 94179, 94208, 100343, 100352, 101589, 101632, 101640, 110576, 110579, 110581, 110587, 110589, 110590, 110592, 110882, 110898, 110898, 110928, 110930, 110933, 110933, 110948, 110951, 110960, 111355, 113664, 113770, 113776, 113788, 113792, 113800, 113808, 113817, 119808, 119892, 119894, 119964, 119966, 119967, 119970, 119970, 119973, 119974, 119977, 119980, 119982, 119993, 119995, 119995, 119997, 120003, 120005, 120069, 120071, 120074, 120077, 120084, 120086, 120092, 120094, 120121, 120123, 120126, 120128, 120132, 120134, 120134, 120138, 120144, 120146, 120485, 120488, 120512, 120514, 120538, 120540, 120570, 120572, 120596, 120598, 120628, 120630, 120654, 120656, 120686, 120688, 120712, 120714, 120744, 120746, 120770, 120772, 120779, 122624, 122654, 122661, 122666, 122928, 122989, 123136, 123180, 123191, 123197, 123214, 123214, 123536, 123565, 123584, 123627, 124112, 124139, 124896, 124902, 124904, 124907, 124909, 124910, 124912, 124926, 124928, 125124, 125184, 125251, 125259, 125259, 126464, 126467, 126469, 126495, 126497, 126498, 126500, 126500, 126503, 126503, 126505, 126514, 126516, 126519, 126521, 126521, 126523, 126523, 126530, 126530, 126535, 126535, 126537, 126537, 126539, 126539, 126541, 126543, 126545, 126546, 126548, 126548, 126551, 126551, 126553, 126553, 126555, 126555, 126557, 126557, 126559, 126559, 126561, 126562, 126564, 126564, 126567, 126570, 126572, 126578, 126580, 126583, 126585, 126588, 126590, 126590, 126592, 126601, 126603, 126619, 126625, 126627, 126629, 126633, 126635, 126651, 131072, 173791, 173824, 177977, 177984, 178205, 178208, 183969, 183984, 191456, 191472, 192093, 194560, 195101, 196608, 201546, 201552, 205743}}
-var cls1391 = pegort.Class{ASCII: [2]uint64{0x0, 0x0}, Wide: []rune{170, 170, 181, 181, 183, 183, 186, 186, 192, 214, 216, 246, 248, 705, 710, 721, 736, 740, 748, 748, 750, 750, 768, 884, 886, 887, 890, 893, 895, 895, 902, 906, 908, 908, 910, 929, 931, 1013, 1015, 1153, 1155, 1159, 1162, 1327, 1329, 1366, 1369, 1369, 1376, 1416, 1425, 1469, 1471, 1471, 1473, 1474, 1476, 1477, 1479, 1479, 1488, 1514, 1519, 1522, 1552, 1562, 1568, 1641, 1646, 1747, 1749, 1756, 1759, 1768, 1770, 1788, 1791, 1791, 1808, 1866, 1869, 1969, 1984, 2037, 2042, 2042, 2045, 2045, 2048, 2093, 2112, 2139, 2144, 2154, 2160, 2183, 2185, 2190, 2200, 2273, 2275, 2403, 2406, 2415, 2417, 2435, 2437, 2444, 2447, 2448, 2451, 2472, 2474, 2480, 2482, 2482, 2486, 2489, 2492, 2500, 2503, 2504, 2507, 2510, 2519, 2519, 2524, 2525, 2527, 2531, 2534, 2545, 2556, 2556, 2558, 2558, 2561, 2563, 2565, 2570, 2575, 2576, 2579, 2600, 2602, 2608, 2610, 2611, 2613, 2614, 2616, 2617, 2620, 2620, 2622, 2626, 2631, 2632, 2635, 2637, 2641, 2641, 2649, 2652, 2654, 2654, 2662, 2677, 2689, 2691, 2693, 2701, 2703, 2705, 2707, 2728, 2730, 2736, 2738, 2739, 2741, 2745, 2748, 2757, 2759, 2761, 2763, 2765, 2768, 2768, 2784, 2787, 2790, 2799, 2809, 2815, 2817, 2819, 2821, 2828, 2831, 2832, 2835, 2856, 2858, 2864, 2866, 2867, 2869, 2873, 2876, 2884, 2887, 2888, 2891, 2893, 2901, 2903, 2908, 2909, 2911, 2915, 2918, 2927, 2929, 2929, 2946, 2947, 2949, 2954, 2958, 2960, 2962, 2965, 2969, 2970, 2972, 2972, 2974, 2975, 2979, 2980, 2984, 2986, 2990, 3001, 3006, 3010, 3014, 3016, 3018, 3021, 3024, 3024, 3031, 3031, 3046, 3055, 3072, 3084, 3086, 3088, 3090, 3112, 3114, 3129, 3132, 3140, 3142, 3144, 3146, 3149, 3157, 3158, 3160, 3162, 3165, 3165, 3168, 3171, 3174, 3183, 3200, 3203, 3205, 3212, 3214, 3216, 3218, 3240, 3242, 3251, 3253, 3257, 3260, 3268, 3270, 3272, 3274, 3277, 3285, 3286, 3293, 3294, 3296, 3299, 3302, 3311, 3313, 3315, 3328, 3340, 3342, 3344, 3346, 3396, 3398, 3400, 3402, 3406, 3412, 3415, 3423, 3427, 3430, 3439, 3450, 3455, 3457, 3459, 3461, 3478, 3482, 3505, 3507, 3515, 3517, 3517, 3520, 3526, 3530, 3530, 3535, 3540, 3542, 3542, 3544, 3551, 3558, 3567, 3570, 3571, 3585, 3642, 3648, 3662, 3664, 3673, 3713, 3714, 3716, 3716, 3718, 3722, 3724, 3747, 3749, 3749, 3751, 3773, 3776, 3780, 3782, 3782, 3784, 3790, 3792, 3801, 3804, 3807, 3840, 3840, 3864, 3865, 3872, 3881, 3893, 3893, 3895, 3895, 3897, 3897, 3902, 3911, 3913, 3948, 3953, 3972, 3974, 3991, 3993, 4028, 4038, 4038, 4096, 4169, 4176, 4253, 4256, 4293, 4295, 4295, 4301, 4301, 4304, 4346, 4348, 4680, 4682, 4685, 4688, 4694, 4696, 4696, 4698, 4701, 4704, 4744, 4746, 4749, 4752, 4784, 4786, 4789, 4792, 4798, 4800, 4800, 4802, 4805, 4808, 4822, 4824, 4880, 4882, 4885, 4888, 4954, 4957, 4959, 4969, 4977, 4992, 5007, 5024, 5109, 5112, 5117, 5121, 5740, 5743, 5759, 5761, 5786, 5792, 5866, 5870, 5880, 5888, 5909, 5919, 5940, 5952, 5971, 5984, 5996, 5998, 6000, 6002, 6003, 6016, 6099, 6103, 6103, 6108, 6109, 6112, 6121, 6155, 6157, 6159, 6169, 6176, 6264, 6272, 6314, 6320, 6389, 6400, 6430, 6432, 6443, 6448, 6459, 6470, 6509, 6512, 6516, 6528, 6571, 6576, 6601, 6608, 6618, 6656, 6683, 6688, 6750, 6752, 6780, 6783, 6793, 6800, 6809, 6823, 6823, 6832, 6845, 6847, 6862, 6912, 6988, 6992, 7001, 7019, 7027, 7040, 7155, 7168, 7223, 7232, 7241, 7245, 7293, 7296, 7304, 7312, 7354, 7357, 7359, 7376, 7378, 7380, 7418, 7424, 7957, 7960, 7965, 7968, 8005, 8008, 8013, 8016, 8023, 8025, 8025, 8027, 8027, 8029, 8029, 8031, 8061, 8064, 8116, 8118, 8124, 8126, 8126, 8130, 8132, 8134, 8140, 8144, 8147, 8150, 8155, 8160, 8172, 8178, 8180, 8182, 8188, 8204, 8205, 8255, 8256, 8276, 8276, 8305, 8305, 8319, 8319, 8336, 8348, 8400, 8412, 8417, 8417, 8421, 8432, 8450, 8450, 8455, 8455, 8458, 8467, 8469, 8469, 8472, 8477, 8484, 8484, 8486, 8486, 8488, 8488, 8490, 8505, 8508, 8511, 8517, 8521, 8526, 8526, 8544, 8584, 11264, 11492, 11499, 11507, 11520, 11557, 11559, 11559, 11565, 11565, 11568, 11623, 11631, 11631, 11647, 11670, 11680, 11686, 11688, 11694, 11696, 11702, 11704, 11710, 11712, 11718, 11720, 11726, 11728, 11734, 11736, 11742, 11744, 11775, 12293, 12295, 12321, 12335, 12337, 12341, 12344, 12348, 12353, 12438, 12441, 12447, 12449, 12543, 12549, 12591, 12593, 12686, 12704, 12735, 12784, 12799, 13312, 19903, 19968, 42124, 42192, 42237, 42240, 42508, 42512, 42539, 42560, 42607, 42612, 42621, 42623, 42737, 42775, 42783, 42786, 42888, 42891, 42954, 42960, 42961, 42963, 42963, 42965, 42969, 42994, 43047, 43052, 43052, 43072, 43123, 43136, 43205, 43216, 43225, 43232, 43255, 43259, 43259, 43261, 43309, 43312, 43347, 43360, 43388, 43392, 43456, 43471, 43481, 43488, 43518, 43520, 43574, 43584, 43597, 43600, 43609, 43616, 43638, 43642, 43714, 43739, 43741, 43744, 43759, 43762, 43766, 43777, 43782, 43785, 43790, 43793, 43798, 43808, 43814, 43816, 43822, 43824, 43866, 43868, 43881, 43888, 44010, 44012, 44013, 44016, 44025, 44032, 55203, 55216, 55238, 55243, 55291, 63744, 64109, 64112, 64217, 64256, 64262, 64275, 64279, 64285, 64296, 64298, 64310, 64312, 64316, 64318, 64318, 64320, 64321, 64323, 64324, 64326, 64433, 64467, 64829, 64848, 64911, 64914, 64967, 65008, 65019, 65024, 65039, 65056, 65071, 65075, 65076, 65101, 65103, 65136, 65140, 65142, 65276, 65296, 65305, 65313, 65338, 65343, 65343, 65345, 65370, 65381, 65470, 65474, 65479, 65482, 65487, 65490, 65495, 65498, 65500, 65536, 65547, 65549, 65574, 65576, 65594, 65596, 65597, 65599, 65613, 65616, 65629, 65664, 65786, 65856, 65908, 66045, 66045, 66176, 66204, 66208, 66256, 66272, 66272, 66304, 66335, 66349, 66378, 66384, 66426, 66432, 66461, 66464, 66499, 66504, 66511, 66513, 66517, 66560, 66717, 66720, 66729, 66736, 66771, 66776, 66811, 66816, 66855, 66864, 66915, 66928, 66938, 66940, 66954, 66956, 66962, 66964, 66965, 66967, 66977, 66979, 66993, 66995, 67001, 67003, 67004, 67072, 67382, 67392, 67413, 67424, 67431, 67456, 67461, 67463, 67504, 67506, 67514, 67584, 67589, 67592, 67592, 67594, 67637, 67639, 67640, 67644, 67644, 67647, 67669, 67680, 67702, 67712, 67742, 67808, 67826, 67828, 67829, 67840, 67861, 67872, 67897, 67968, 68023, 68030, 68031, 68096, 68099, 68101, 68102, 68108, 68115, 68117, 68119, 68121, 68149, 68152, 68154, 68159, 68159, 68192, 68220, 68224, 68252, 68288, 68295, 68297, 68326, 68352, 68405, 68416, 68437, 68448, 68466, 68480, 68497, 68608, 68680, 68736, 68786, 68800, 68850, 68864, 68903, 68912, 68921, 69248, 69289, 69291, 69292, 69296, 69297, 69373, 69404, 69415, 69415, 69424, 69456, 69488, 69509, 69552, 69572, 69600, 69622, 69632, 69702, 69734, 69749, 69759, 69818, 69826, 69826, 69840, 69864, 69872, 69881, 69888, 69940, 69942, 69951, 69956, 69959, 69968, 70003, 70006, 70006, 70016, 70084, 70089, 70092, 70094, 70106, 70108, 70108, 70144, 70161, 70163, 70199, 70206, 70209, 70272, 70278, 70280, 70280, 70282, 70285, 70287, 70301, 70303, 70312, 70320, 70378, 70384, 70393, 70400, 70403, 70405, 70412, 70415, 70416, 70419, 70440, 70442, 70448, 70450, 70451, 70453, 70457, 70459, 70468, 70471, 70472, 70475, 70477, 70480, 70480, 70487, 70487, 70493, 70499, 70502, 70508, 70512, 70516, 70656, 70730, 70736, 70745, 70750, 70753, 70784, 70853, 70855, 70855, 70864, 70873, 71040, 71093, 71096, 71104, 71128, 71133, 71168, 71232, 71236, 71236, 71248, 71257, 71296, 71352, 71360, 71369, 71424, 71450, 71453, 71467, 71472, 71481, 71488, 71494, 71680, 71738, 71840, 71913, 71935, 71942, 71945, 71945, 71948, 71955, 71957, 71958, 71960, 71989, 71991, 71992, 71995, 72003, 72016, 72025, 72096, 72103, 72106, 72151, 72154, 72161, 72163, 72164, 72192, 72254, 72263, 72263, 72272, 72345, 72349, 72349, 72368, 72440, 72704, 72712, 72714, 72758, 72760, 72768, 72784, 72793, 72818, 72847, 72850, 72871, 72873, 72886, 72960, 72966, 72968, 72969, 72971, 73014, 73018, 73018, 73020, 73021, 73023, 73031, 73040, 73049, 73056, 73061, 73063, 73064, 73066, 73102, 73104, 73105, 73107, 73112, 73120, 73129, 73440, 73462, 73472, 73488, 73490, 73530, 73534, 73538, 73552, 73561, 73648, 73648, 73728, 74649, 74752, 74862, 74880, 75075, 77712, 77808, 77824, 78895, 78912, 78933, 82944, 83526, 92160, 92728, 92736, 92766, 92768, 92777, 92784, 92862, 92864, 92873, 92880, 92909, 92912, 92916, 92928, 92982, 92992, 92995, 93008, 93017, 93027, 93047, 93053, 93071, 93760, 93823, 93952, 94026, 94031, 94087, 94095, 94111, 94176, 94177, 94179, 94180, 94192, 94193, 94208, 100343, 100352, 101589, 101632, 101640, 110576, 110579, 110581, 110587, 110589, 110590, 110592, 110882, 110898, 110898, 110928, 110930, 110933, 110933, 110948, 110951, 110960, 111355, 113664, 113770, 113776, 113788, 113792, 113800, 113808, 113817, 113821, 113822, 118528, 118573, 118576, 118598, 119141, 119145, 119149, 119154, 119163, 119170, 119173, 119179, 119210, 119213, 119362, 119364, 119808, 119892, 119894, 119964, 119966, 119967, 119970, 119970, 119973, 119974, 119977, 119980, 119982, 119993, 119995, 119995, 119997, 120003, 120005, 120069, 120071, 120074, 120077, 120084, 120086, 120092, 120094, 120121, 120123, 120126, 120128, 120132, 120134, 120134, 120138, 120144, 120146, 120485, 120488, 120512, 120514, 120538, 120540, 120570, 120572, 120596, 120598, 120628, 120630, 120654, 120656, 120686, 120688, 120712, 120714, 120744, 120746, 120770, 120772, 120779, 120782, 120831, 121344, 121398, 121403, 121452, 121461, 121461, 121476, 121476, 121499, 121503, 121505, 121519, 122624, 122654, 122661, 122666, 122880, 122886, 122888, 122904, 122907, 122913, 122915, 122916, 122918, 122922, 122928, 122989, 123023, 123023, 123136, 123180, 123184, 123197, 123200, 123209, 123214, 123214, 123536, 123566, 123584, 123641, 124112, 124153, 124896, 124902, 124904, 124907, 124909, 124910, 124912, 124926, 124928, 125124, 125136, 125142, 125184, 125259, 125264, 125273, 126464, 126467, 126469, 126495, 126497, 126498, 126500, 126500, 126503, 126503, 126505, 126514, 126516, 126519, 126521, 126521, 126523, 126523, 126530, 126530, 126535, 126535, 126537, 126537, 126539, 126539, 126541, 126543, 126545, 126546, 126548, 126548, 126551, 126551, 126553, 126553, 126555, 126555, 126557, 126557, 126559, 126559, 126561, 126562, 126564, 126564, 126567, 126570, 126572, 126578, 126580, 126583, 126585, 126588, 126590, 126590, 126592, 126601, 126603, 126619, 126625, 126627, 126629, 126633, 126635, 126651, 130032, 130041, 131072, 173791, 173824, 177977, 177984, 178205, 178208, 183969, 183984, 191456, 191472, 192093, 194560, 195101, 196608, 201546, 201552, 205743, 917760, 917999}}
-var cls1392 = pegort.Class{ASCII: [2]uint64{0x0, 0x200000000000}}
-var cls1393 = pegort.Class{ASCII: [2]uint64{0x0, 0x1000000000}}
-var cls1394 = pegort.Class{ASCII: [2]uint64{0x0, 0x800000000}}
-var cls1395 = pegort.Class{ASCII: [2]uint64{0x0, 0x2000000000}}
-var cls1396 = pegort.Class{ASCII: [2]uint64{0x0, 0x1000000000000}}
-var cls1397 = pegort.Class{ASCII: [2]uint64{0x0, 0x4000000000000}}
-var cls1398 = pegort.Class{ASCII: [2]uint64{0x0, 0x8000000000}}
-var term1399Data = pegort.TerminalProgram{Code: []uint16{3, 147, 0, 6, 8, 0, 43, 1, 4, 0, 43, 6, 8, 1, 44, 1, 4, 1, 44, 6, 8, 2, 10, 1, 4, 2, 10, 6, 8, 3, 16, 1, 4, 3, 16, 6, 8, 4, 15, 1, 4, 4, 15, 6, 8, 5, 45, 1, 4, 5, 45, 6, 8, 6, 46, 1, 4, 6, 46, 6, 8, 7, 14, 1, 4, 7, 14, 6, 8, 7, 9, 1, 4, 8, 9, 6, 8, 1, 7, 1, 4, 9, 7, 6, 8, 8, 47, 1, 4, 10, 47, 6, 8, 8, 48, 1, 4, 11, 48, 6, 8, 8, 49, 1, 4, 12, 49, 6, 8, 0, 50, 1, 4, 13, 50, 6, 8, 0, 51, 1, 4, 14, 51, 6, 8, 9, 52, 1, 4, 15, 52, 6, 8, 10, 53, 1, 4, 16, 53, 6, 8, 11, 17, 1, 4, 17, 17}, Classes: []*pegort.Class{&cls1269, &cls1278, &cls1276, &cls1392, &cls1272, &cls1393, &cls1394, &cls1395, &cls1396, &cls1271, &cls1397, &cls1398}, Literals: []pegort.TerminalText{{Runes: lit54, Text: "async"}, {Runes: lit55, Text: "interface"}, {Runes: lit12, Text: "type"}, {Runes: lit18, Text: "module"}, {Runes: lit17, Text: "namespace"}, {Runes: lit56, Text: "declare"}, {Runes: lit57, Text: "const"}, {Runes: lit16, Text: "enum"}, {Runes: lit11, Text: "export"}, {Runes: lit10, Text: "import"}, {Runes: lit58, Text: "private"}, {Runes: lit59, Text: "protected"}, {Runes: lit60, Text: "public"}, {Runes: lit61, Text: "abstract"}, {Runes: lit62, Text: "accessor"}, {Runes: lit63, Text: "static"}, {Runes: lit64, Text: "readonly"}, {Runes: lit19, Text: "global"}}}
+var cls1390 = rt.Class{ASCII: [2]uint64{0x0, 0x0}, Wide: []rune{170, 170, 181, 181, 186, 186, 192, 214, 216, 246, 248, 705, 710, 721, 736, 740, 748, 748, 750, 750, 880, 884, 886, 887, 890, 893, 895, 895, 902, 902, 904, 906, 908, 908, 910, 929, 931, 1013, 1015, 1153, 1162, 1327, 1329, 1366, 1369, 1369, 1376, 1416, 1488, 1514, 1519, 1522, 1568, 1610, 1646, 1647, 1649, 1747, 1749, 1749, 1765, 1766, 1774, 1775, 1786, 1788, 1791, 1791, 1808, 1808, 1810, 1839, 1869, 1957, 1969, 1969, 1994, 2026, 2036, 2037, 2042, 2042, 2048, 2069, 2074, 2074, 2084, 2084, 2088, 2088, 2112, 2136, 2144, 2154, 2160, 2183, 2185, 2190, 2208, 2249, 2308, 2361, 2365, 2365, 2384, 2384, 2392, 2401, 2417, 2432, 2437, 2444, 2447, 2448, 2451, 2472, 2474, 2480, 2482, 2482, 2486, 2489, 2493, 2493, 2510, 2510, 2524, 2525, 2527, 2529, 2544, 2545, 2556, 2556, 2565, 2570, 2575, 2576, 2579, 2600, 2602, 2608, 2610, 2611, 2613, 2614, 2616, 2617, 2649, 2652, 2654, 2654, 2674, 2676, 2693, 2701, 2703, 2705, 2707, 2728, 2730, 2736, 2738, 2739, 2741, 2745, 2749, 2749, 2768, 2768, 2784, 2785, 2809, 2809, 2821, 2828, 2831, 2832, 2835, 2856, 2858, 2864, 2866, 2867, 2869, 2873, 2877, 2877, 2908, 2909, 2911, 2913, 2929, 2929, 2947, 2947, 2949, 2954, 2958, 2960, 2962, 2965, 2969, 2970, 2972, 2972, 2974, 2975, 2979, 2980, 2984, 2986, 2990, 3001, 3024, 3024, 3077, 3084, 3086, 3088, 3090, 3112, 3114, 3129, 3133, 3133, 3160, 3162, 3165, 3165, 3168, 3169, 3200, 3200, 3205, 3212, 3214, 3216, 3218, 3240, 3242, 3251, 3253, 3257, 3261, 3261, 3293, 3294, 3296, 3297, 3313, 3314, 3332, 3340, 3342, 3344, 3346, 3386, 3389, 3389, 3406, 3406, 3412, 3414, 3423, 3425, 3450, 3455, 3461, 3478, 3482, 3505, 3507, 3515, 3517, 3517, 3520, 3526, 3585, 3632, 3634, 3635, 3648, 3654, 3713, 3714, 3716, 3716, 3718, 3722, 3724, 3747, 3749, 3749, 3751, 3760, 3762, 3763, 3773, 3773, 3776, 3780, 3782, 3782, 3804, 3807, 3840, 3840, 3904, 3911, 3913, 3948, 3976, 3980, 4096, 4138, 4159, 4159, 4176, 4181, 4186, 4189, 4193, 4193, 4197, 4198, 4206, 4208, 4213, 4225, 4238, 4238, 4256, 4293, 4295, 4295, 4301, 4301, 4304, 4346, 4348, 4680, 4682, 4685, 4688, 4694, 4696, 4696, 4698, 4701, 4704, 4744, 4746, 4749, 4752, 4784, 4786, 4789, 4792, 4798, 4800, 4800, 4802, 4805, 4808, 4822, 4824, 4880, 4882, 4885, 4888, 4954, 4992, 5007, 5024, 5109, 5112, 5117, 5121, 5740, 5743, 5759, 5761, 5786, 5792, 5866, 5870, 5880, 5888, 5905, 5919, 5937, 5952, 5969, 5984, 5996, 5998, 6000, 6016, 6067, 6103, 6103, 6108, 6108, 6176, 6264, 6272, 6312, 6314, 6314, 6320, 6389, 6400, 6430, 6480, 6509, 6512, 6516, 6528, 6571, 6576, 6601, 6656, 6678, 6688, 6740, 6823, 6823, 6917, 6963, 6981, 6988, 7043, 7072, 7086, 7087, 7098, 7141, 7168, 7203, 7245, 7247, 7258, 7293, 7296, 7304, 7312, 7354, 7357, 7359, 7401, 7404, 7406, 7411, 7413, 7414, 7418, 7418, 7424, 7615, 7680, 7957, 7960, 7965, 7968, 8005, 8008, 8013, 8016, 8023, 8025, 8025, 8027, 8027, 8029, 8029, 8031, 8061, 8064, 8116, 8118, 8124, 8126, 8126, 8130, 8132, 8134, 8140, 8144, 8147, 8150, 8155, 8160, 8172, 8178, 8180, 8182, 8188, 8305, 8305, 8319, 8319, 8336, 8348, 8450, 8450, 8455, 8455, 8458, 8467, 8469, 8469, 8472, 8477, 8484, 8484, 8486, 8486, 8488, 8488, 8490, 8505, 8508, 8511, 8517, 8521, 8526, 8526, 8544, 8584, 11264, 11492, 11499, 11502, 11506, 11507, 11520, 11557, 11559, 11559, 11565, 11565, 11568, 11623, 11631, 11631, 11648, 11670, 11680, 11686, 11688, 11694, 11696, 11702, 11704, 11710, 11712, 11718, 11720, 11726, 11728, 11734, 11736, 11742, 12293, 12295, 12321, 12329, 12337, 12341, 12344, 12348, 12353, 12438, 12443, 12447, 12449, 12538, 12540, 12543, 12549, 12591, 12593, 12686, 12704, 12735, 12784, 12799, 13312, 19903, 19968, 42124, 42192, 42237, 42240, 42508, 42512, 42527, 42538, 42539, 42560, 42606, 42623, 42653, 42656, 42735, 42775, 42783, 42786, 42888, 42891, 42954, 42960, 42961, 42963, 42963, 42965, 42969, 42994, 43009, 43011, 43013, 43015, 43018, 43020, 43042, 43072, 43123, 43138, 43187, 43250, 43255, 43259, 43259, 43261, 43262, 43274, 43301, 43312, 43334, 43360, 43388, 43396, 43442, 43471, 43471, 43488, 43492, 43494, 43503, 43514, 43518, 43520, 43560, 43584, 43586, 43588, 43595, 43616, 43638, 43642, 43642, 43646, 43695, 43697, 43697, 43701, 43702, 43705, 43709, 43712, 43712, 43714, 43714, 43739, 43741, 43744, 43754, 43762, 43764, 43777, 43782, 43785, 43790, 43793, 43798, 43808, 43814, 43816, 43822, 43824, 43866, 43868, 43881, 43888, 44002, 44032, 55203, 55216, 55238, 55243, 55291, 63744, 64109, 64112, 64217, 64256, 64262, 64275, 64279, 64285, 64285, 64287, 64296, 64298, 64310, 64312, 64316, 64318, 64318, 64320, 64321, 64323, 64324, 64326, 64433, 64467, 64829, 64848, 64911, 64914, 64967, 65008, 65019, 65136, 65140, 65142, 65276, 65313, 65338, 65345, 65370, 65382, 65470, 65474, 65479, 65482, 65487, 65490, 65495, 65498, 65500, 65536, 65547, 65549, 65574, 65576, 65594, 65596, 65597, 65599, 65613, 65616, 65629, 65664, 65786, 65856, 65908, 66176, 66204, 66208, 66256, 66304, 66335, 66349, 66378, 66384, 66421, 66432, 66461, 66464, 66499, 66504, 66511, 66513, 66517, 66560, 66717, 66736, 66771, 66776, 66811, 66816, 66855, 66864, 66915, 66928, 66938, 66940, 66954, 66956, 66962, 66964, 66965, 66967, 66977, 66979, 66993, 66995, 67001, 67003, 67004, 67072, 67382, 67392, 67413, 67424, 67431, 67456, 67461, 67463, 67504, 67506, 67514, 67584, 67589, 67592, 67592, 67594, 67637, 67639, 67640, 67644, 67644, 67647, 67669, 67680, 67702, 67712, 67742, 67808, 67826, 67828, 67829, 67840, 67861, 67872, 67897, 67968, 68023, 68030, 68031, 68096, 68096, 68112, 68115, 68117, 68119, 68121, 68149, 68192, 68220, 68224, 68252, 68288, 68295, 68297, 68324, 68352, 68405, 68416, 68437, 68448, 68466, 68480, 68497, 68608, 68680, 68736, 68786, 68800, 68850, 68864, 68899, 69248, 69289, 69296, 69297, 69376, 69404, 69415, 69415, 69424, 69445, 69488, 69505, 69552, 69572, 69600, 69622, 69635, 69687, 69745, 69746, 69749, 69749, 69763, 69807, 69840, 69864, 69891, 69926, 69956, 69956, 69959, 69959, 69968, 70002, 70006, 70006, 70019, 70066, 70081, 70084, 70106, 70106, 70108, 70108, 70144, 70161, 70163, 70187, 70207, 70208, 70272, 70278, 70280, 70280, 70282, 70285, 70287, 70301, 70303, 70312, 70320, 70366, 70405, 70412, 70415, 70416, 70419, 70440, 70442, 70448, 70450, 70451, 70453, 70457, 70461, 70461, 70480, 70480, 70493, 70497, 70656, 70708, 70727, 70730, 70751, 70753, 70784, 70831, 70852, 70853, 70855, 70855, 71040, 71086, 71128, 71131, 71168, 71215, 71236, 71236, 71296, 71338, 71352, 71352, 71424, 71450, 71488, 71494, 71680, 71723, 71840, 71903, 71935, 71942, 71945, 71945, 71948, 71955, 71957, 71958, 71960, 71983, 71999, 71999, 72001, 72001, 72096, 72103, 72106, 72144, 72161, 72161, 72163, 72163, 72192, 72192, 72203, 72242, 72250, 72250, 72272, 72272, 72284, 72329, 72349, 72349, 72368, 72440, 72704, 72712, 72714, 72750, 72768, 72768, 72818, 72847, 72960, 72966, 72968, 72969, 72971, 73008, 73030, 73030, 73056, 73061, 73063, 73064, 73066, 73097, 73112, 73112, 73440, 73458, 73474, 73474, 73476, 73488, 73490, 73523, 73648, 73648, 73728, 74649, 74752, 74862, 74880, 75075, 77712, 77808, 77824, 78895, 78913, 78918, 82944, 83526, 92160, 92728, 92736, 92766, 92784, 92862, 92880, 92909, 92928, 92975, 92992, 92995, 93027, 93047, 93053, 93071, 93760, 93823, 93952, 94026, 94032, 94032, 94099, 94111, 94176, 94177, 94179, 94179, 94208, 100343, 100352, 101589, 101632, 101640, 110576, 110579, 110581, 110587, 110589, 110590, 110592, 110882, 110898, 110898, 110928, 110930, 110933, 110933, 110948, 110951, 110960, 111355, 113664, 113770, 113776, 113788, 113792, 113800, 113808, 113817, 119808, 119892, 119894, 119964, 119966, 119967, 119970, 119970, 119973, 119974, 119977, 119980, 119982, 119993, 119995, 119995, 119997, 120003, 120005, 120069, 120071, 120074, 120077, 120084, 120086, 120092, 120094, 120121, 120123, 120126, 120128, 120132, 120134, 120134, 120138, 120144, 120146, 120485, 120488, 120512, 120514, 120538, 120540, 120570, 120572, 120596, 120598, 120628, 120630, 120654, 120656, 120686, 120688, 120712, 120714, 120744, 120746, 120770, 120772, 120779, 122624, 122654, 122661, 122666, 122928, 122989, 123136, 123180, 123191, 123197, 123214, 123214, 123536, 123565, 123584, 123627, 124112, 124139, 124896, 124902, 124904, 124907, 124909, 124910, 124912, 124926, 124928, 125124, 125184, 125251, 125259, 125259, 126464, 126467, 126469, 126495, 126497, 126498, 126500, 126500, 126503, 126503, 126505, 126514, 126516, 126519, 126521, 126521, 126523, 126523, 126530, 126530, 126535, 126535, 126537, 126537, 126539, 126539, 126541, 126543, 126545, 126546, 126548, 126548, 126551, 126551, 126553, 126553, 126555, 126555, 126557, 126557, 126559, 126559, 126561, 126562, 126564, 126564, 126567, 126570, 126572, 126578, 126580, 126583, 126585, 126588, 126590, 126590, 126592, 126601, 126603, 126619, 126625, 126627, 126629, 126633, 126635, 126651, 131072, 173791, 173824, 177977, 177984, 178205, 178208, 183969, 183984, 191456, 191472, 192093, 194560, 195101, 196608, 201546, 201552, 205743}}
+var cls1391 = rt.Class{ASCII: [2]uint64{0x0, 0x0}, Wide: []rune{170, 170, 181, 181, 183, 183, 186, 186, 192, 214, 216, 246, 248, 705, 710, 721, 736, 740, 748, 748, 750, 750, 768, 884, 886, 887, 890, 893, 895, 895, 902, 906, 908, 908, 910, 929, 931, 1013, 1015, 1153, 1155, 1159, 1162, 1327, 1329, 1366, 1369, 1369, 1376, 1416, 1425, 1469, 1471, 1471, 1473, 1474, 1476, 1477, 1479, 1479, 1488, 1514, 1519, 1522, 1552, 1562, 1568, 1641, 1646, 1747, 1749, 1756, 1759, 1768, 1770, 1788, 1791, 1791, 1808, 1866, 1869, 1969, 1984, 2037, 2042, 2042, 2045, 2045, 2048, 2093, 2112, 2139, 2144, 2154, 2160, 2183, 2185, 2190, 2200, 2273, 2275, 2403, 2406, 2415, 2417, 2435, 2437, 2444, 2447, 2448, 2451, 2472, 2474, 2480, 2482, 2482, 2486, 2489, 2492, 2500, 2503, 2504, 2507, 2510, 2519, 2519, 2524, 2525, 2527, 2531, 2534, 2545, 2556, 2556, 2558, 2558, 2561, 2563, 2565, 2570, 2575, 2576, 2579, 2600, 2602, 2608, 2610, 2611, 2613, 2614, 2616, 2617, 2620, 2620, 2622, 2626, 2631, 2632, 2635, 2637, 2641, 2641, 2649, 2652, 2654, 2654, 2662, 2677, 2689, 2691, 2693, 2701, 2703, 2705, 2707, 2728, 2730, 2736, 2738, 2739, 2741, 2745, 2748, 2757, 2759, 2761, 2763, 2765, 2768, 2768, 2784, 2787, 2790, 2799, 2809, 2815, 2817, 2819, 2821, 2828, 2831, 2832, 2835, 2856, 2858, 2864, 2866, 2867, 2869, 2873, 2876, 2884, 2887, 2888, 2891, 2893, 2901, 2903, 2908, 2909, 2911, 2915, 2918, 2927, 2929, 2929, 2946, 2947, 2949, 2954, 2958, 2960, 2962, 2965, 2969, 2970, 2972, 2972, 2974, 2975, 2979, 2980, 2984, 2986, 2990, 3001, 3006, 3010, 3014, 3016, 3018, 3021, 3024, 3024, 3031, 3031, 3046, 3055, 3072, 3084, 3086, 3088, 3090, 3112, 3114, 3129, 3132, 3140, 3142, 3144, 3146, 3149, 3157, 3158, 3160, 3162, 3165, 3165, 3168, 3171, 3174, 3183, 3200, 3203, 3205, 3212, 3214, 3216, 3218, 3240, 3242, 3251, 3253, 3257, 3260, 3268, 3270, 3272, 3274, 3277, 3285, 3286, 3293, 3294, 3296, 3299, 3302, 3311, 3313, 3315, 3328, 3340, 3342, 3344, 3346, 3396, 3398, 3400, 3402, 3406, 3412, 3415, 3423, 3427, 3430, 3439, 3450, 3455, 3457, 3459, 3461, 3478, 3482, 3505, 3507, 3515, 3517, 3517, 3520, 3526, 3530, 3530, 3535, 3540, 3542, 3542, 3544, 3551, 3558, 3567, 3570, 3571, 3585, 3642, 3648, 3662, 3664, 3673, 3713, 3714, 3716, 3716, 3718, 3722, 3724, 3747, 3749, 3749, 3751, 3773, 3776, 3780, 3782, 3782, 3784, 3790, 3792, 3801, 3804, 3807, 3840, 3840, 3864, 3865, 3872, 3881, 3893, 3893, 3895, 3895, 3897, 3897, 3902, 3911, 3913, 3948, 3953, 3972, 3974, 3991, 3993, 4028, 4038, 4038, 4096, 4169, 4176, 4253, 4256, 4293, 4295, 4295, 4301, 4301, 4304, 4346, 4348, 4680, 4682, 4685, 4688, 4694, 4696, 4696, 4698, 4701, 4704, 4744, 4746, 4749, 4752, 4784, 4786, 4789, 4792, 4798, 4800, 4800, 4802, 4805, 4808, 4822, 4824, 4880, 4882, 4885, 4888, 4954, 4957, 4959, 4969, 4977, 4992, 5007, 5024, 5109, 5112, 5117, 5121, 5740, 5743, 5759, 5761, 5786, 5792, 5866, 5870, 5880, 5888, 5909, 5919, 5940, 5952, 5971, 5984, 5996, 5998, 6000, 6002, 6003, 6016, 6099, 6103, 6103, 6108, 6109, 6112, 6121, 6155, 6157, 6159, 6169, 6176, 6264, 6272, 6314, 6320, 6389, 6400, 6430, 6432, 6443, 6448, 6459, 6470, 6509, 6512, 6516, 6528, 6571, 6576, 6601, 6608, 6618, 6656, 6683, 6688, 6750, 6752, 6780, 6783, 6793, 6800, 6809, 6823, 6823, 6832, 6845, 6847, 6862, 6912, 6988, 6992, 7001, 7019, 7027, 7040, 7155, 7168, 7223, 7232, 7241, 7245, 7293, 7296, 7304, 7312, 7354, 7357, 7359, 7376, 7378, 7380, 7418, 7424, 7957, 7960, 7965, 7968, 8005, 8008, 8013, 8016, 8023, 8025, 8025, 8027, 8027, 8029, 8029, 8031, 8061, 8064, 8116, 8118, 8124, 8126, 8126, 8130, 8132, 8134, 8140, 8144, 8147, 8150, 8155, 8160, 8172, 8178, 8180, 8182, 8188, 8204, 8205, 8255, 8256, 8276, 8276, 8305, 8305, 8319, 8319, 8336, 8348, 8400, 8412, 8417, 8417, 8421, 8432, 8450, 8450, 8455, 8455, 8458, 8467, 8469, 8469, 8472, 8477, 8484, 8484, 8486, 8486, 8488, 8488, 8490, 8505, 8508, 8511, 8517, 8521, 8526, 8526, 8544, 8584, 11264, 11492, 11499, 11507, 11520, 11557, 11559, 11559, 11565, 11565, 11568, 11623, 11631, 11631, 11647, 11670, 11680, 11686, 11688, 11694, 11696, 11702, 11704, 11710, 11712, 11718, 11720, 11726, 11728, 11734, 11736, 11742, 11744, 11775, 12293, 12295, 12321, 12335, 12337, 12341, 12344, 12348, 12353, 12438, 12441, 12447, 12449, 12543, 12549, 12591, 12593, 12686, 12704, 12735, 12784, 12799, 13312, 19903, 19968, 42124, 42192, 42237, 42240, 42508, 42512, 42539, 42560, 42607, 42612, 42621, 42623, 42737, 42775, 42783, 42786, 42888, 42891, 42954, 42960, 42961, 42963, 42963, 42965, 42969, 42994, 43047, 43052, 43052, 43072, 43123, 43136, 43205, 43216, 43225, 43232, 43255, 43259, 43259, 43261, 43309, 43312, 43347, 43360, 43388, 43392, 43456, 43471, 43481, 43488, 43518, 43520, 43574, 43584, 43597, 43600, 43609, 43616, 43638, 43642, 43714, 43739, 43741, 43744, 43759, 43762, 43766, 43777, 43782, 43785, 43790, 43793, 43798, 43808, 43814, 43816, 43822, 43824, 43866, 43868, 43881, 43888, 44010, 44012, 44013, 44016, 44025, 44032, 55203, 55216, 55238, 55243, 55291, 63744, 64109, 64112, 64217, 64256, 64262, 64275, 64279, 64285, 64296, 64298, 64310, 64312, 64316, 64318, 64318, 64320, 64321, 64323, 64324, 64326, 64433, 64467, 64829, 64848, 64911, 64914, 64967, 65008, 65019, 65024, 65039, 65056, 65071, 65075, 65076, 65101, 65103, 65136, 65140, 65142, 65276, 65296, 65305, 65313, 65338, 65343, 65343, 65345, 65370, 65381, 65470, 65474, 65479, 65482, 65487, 65490, 65495, 65498, 65500, 65536, 65547, 65549, 65574, 65576, 65594, 65596, 65597, 65599, 65613, 65616, 65629, 65664, 65786, 65856, 65908, 66045, 66045, 66176, 66204, 66208, 66256, 66272, 66272, 66304, 66335, 66349, 66378, 66384, 66426, 66432, 66461, 66464, 66499, 66504, 66511, 66513, 66517, 66560, 66717, 66720, 66729, 66736, 66771, 66776, 66811, 66816, 66855, 66864, 66915, 66928, 66938, 66940, 66954, 66956, 66962, 66964, 66965, 66967, 66977, 66979, 66993, 66995, 67001, 67003, 67004, 67072, 67382, 67392, 67413, 67424, 67431, 67456, 67461, 67463, 67504, 67506, 67514, 67584, 67589, 67592, 67592, 67594, 67637, 67639, 67640, 67644, 67644, 67647, 67669, 67680, 67702, 67712, 67742, 67808, 67826, 67828, 67829, 67840, 67861, 67872, 67897, 67968, 68023, 68030, 68031, 68096, 68099, 68101, 68102, 68108, 68115, 68117, 68119, 68121, 68149, 68152, 68154, 68159, 68159, 68192, 68220, 68224, 68252, 68288, 68295, 68297, 68326, 68352, 68405, 68416, 68437, 68448, 68466, 68480, 68497, 68608, 68680, 68736, 68786, 68800, 68850, 68864, 68903, 68912, 68921, 69248, 69289, 69291, 69292, 69296, 69297, 69373, 69404, 69415, 69415, 69424, 69456, 69488, 69509, 69552, 69572, 69600, 69622, 69632, 69702, 69734, 69749, 69759, 69818, 69826, 69826, 69840, 69864, 69872, 69881, 69888, 69940, 69942, 69951, 69956, 69959, 69968, 70003, 70006, 70006, 70016, 70084, 70089, 70092, 70094, 70106, 70108, 70108, 70144, 70161, 70163, 70199, 70206, 70209, 70272, 70278, 70280, 70280, 70282, 70285, 70287, 70301, 70303, 70312, 70320, 70378, 70384, 70393, 70400, 70403, 70405, 70412, 70415, 70416, 70419, 70440, 70442, 70448, 70450, 70451, 70453, 70457, 70459, 70468, 70471, 70472, 70475, 70477, 70480, 70480, 70487, 70487, 70493, 70499, 70502, 70508, 70512, 70516, 70656, 70730, 70736, 70745, 70750, 70753, 70784, 70853, 70855, 70855, 70864, 70873, 71040, 71093, 71096, 71104, 71128, 71133, 71168, 71232, 71236, 71236, 71248, 71257, 71296, 71352, 71360, 71369, 71424, 71450, 71453, 71467, 71472, 71481, 71488, 71494, 71680, 71738, 71840, 71913, 71935, 71942, 71945, 71945, 71948, 71955, 71957, 71958, 71960, 71989, 71991, 71992, 71995, 72003, 72016, 72025, 72096, 72103, 72106, 72151, 72154, 72161, 72163, 72164, 72192, 72254, 72263, 72263, 72272, 72345, 72349, 72349, 72368, 72440, 72704, 72712, 72714, 72758, 72760, 72768, 72784, 72793, 72818, 72847, 72850, 72871, 72873, 72886, 72960, 72966, 72968, 72969, 72971, 73014, 73018, 73018, 73020, 73021, 73023, 73031, 73040, 73049, 73056, 73061, 73063, 73064, 73066, 73102, 73104, 73105, 73107, 73112, 73120, 73129, 73440, 73462, 73472, 73488, 73490, 73530, 73534, 73538, 73552, 73561, 73648, 73648, 73728, 74649, 74752, 74862, 74880, 75075, 77712, 77808, 77824, 78895, 78912, 78933, 82944, 83526, 92160, 92728, 92736, 92766, 92768, 92777, 92784, 92862, 92864, 92873, 92880, 92909, 92912, 92916, 92928, 92982, 92992, 92995, 93008, 93017, 93027, 93047, 93053, 93071, 93760, 93823, 93952, 94026, 94031, 94087, 94095, 94111, 94176, 94177, 94179, 94180, 94192, 94193, 94208, 100343, 100352, 101589, 101632, 101640, 110576, 110579, 110581, 110587, 110589, 110590, 110592, 110882, 110898, 110898, 110928, 110930, 110933, 110933, 110948, 110951, 110960, 111355, 113664, 113770, 113776, 113788, 113792, 113800, 113808, 113817, 113821, 113822, 118528, 118573, 118576, 118598, 119141, 119145, 119149, 119154, 119163, 119170, 119173, 119179, 119210, 119213, 119362, 119364, 119808, 119892, 119894, 119964, 119966, 119967, 119970, 119970, 119973, 119974, 119977, 119980, 119982, 119993, 119995, 119995, 119997, 120003, 120005, 120069, 120071, 120074, 120077, 120084, 120086, 120092, 120094, 120121, 120123, 120126, 120128, 120132, 120134, 120134, 120138, 120144, 120146, 120485, 120488, 120512, 120514, 120538, 120540, 120570, 120572, 120596, 120598, 120628, 120630, 120654, 120656, 120686, 120688, 120712, 120714, 120744, 120746, 120770, 120772, 120779, 120782, 120831, 121344, 121398, 121403, 121452, 121461, 121461, 121476, 121476, 121499, 121503, 121505, 121519, 122624, 122654, 122661, 122666, 122880, 122886, 122888, 122904, 122907, 122913, 122915, 122916, 122918, 122922, 122928, 122989, 123023, 123023, 123136, 123180, 123184, 123197, 123200, 123209, 123214, 123214, 123536, 123566, 123584, 123641, 124112, 124153, 124896, 124902, 124904, 124907, 124909, 124910, 124912, 124926, 124928, 125124, 125136, 125142, 125184, 125259, 125264, 125273, 126464, 126467, 126469, 126495, 126497, 126498, 126500, 126500, 126503, 126503, 126505, 126514, 126516, 126519, 126521, 126521, 126523, 126523, 126530, 126530, 126535, 126535, 126537, 126537, 126539, 126539, 126541, 126543, 126545, 126546, 126548, 126548, 126551, 126551, 126553, 126553, 126555, 126555, 126557, 126557, 126559, 126559, 126561, 126562, 126564, 126564, 126567, 126570, 126572, 126578, 126580, 126583, 126585, 126588, 126590, 126590, 126592, 126601, 126603, 126619, 126625, 126627, 126629, 126633, 126635, 126651, 130032, 130041, 131072, 173791, 173824, 177977, 177984, 178205, 178208, 183969, 183984, 191456, 191472, 192093, 194560, 195101, 196608, 201546, 201552, 205743, 917760, 917999}}
+var cls1392 = rt.Class{ASCII: [2]uint64{0x0, 0x200000000000}}
+var cls1393 = rt.Class{ASCII: [2]uint64{0x0, 0x1000000000}}
+var cls1394 = rt.Class{ASCII: [2]uint64{0x0, 0x800000000}}
+var cls1395 = rt.Class{ASCII: [2]uint64{0x0, 0x2000000000}}
+var cls1396 = rt.Class{ASCII: [2]uint64{0x0, 0x1000000000000}}
+var cls1397 = rt.Class{ASCII: [2]uint64{0x0, 0x4000000000000}}
+var cls1398 = rt.Class{ASCII: [2]uint64{0x0, 0x8000000000}}
+var term1399Data = rt.TerminalProgram{Code: []uint16{3, 147, 0, 6, 8, 0, 43, 1, 4, 0, 43, 6, 8, 1, 44, 1, 4, 1, 44, 6, 8, 2, 10, 1, 4, 2, 10, 6, 8, 3, 16, 1, 4, 3, 16, 6, 8, 4, 15, 1, 4, 4, 15, 6, 8, 5, 45, 1, 4, 5, 45, 6, 8, 6, 46, 1, 4, 6, 46, 6, 8, 7, 14, 1, 4, 7, 14, 6, 8, 7, 9, 1, 4, 8, 9, 6, 8, 1, 7, 1, 4, 9, 7, 6, 8, 8, 47, 1, 4, 10, 47, 6, 8, 8, 48, 1, 4, 11, 48, 6, 8, 8, 49, 1, 4, 12, 49, 6, 8, 0, 50, 1, 4, 13, 50, 6, 8, 0, 51, 1, 4, 14, 51, 6, 8, 9, 52, 1, 4, 15, 52, 6, 8, 10, 53, 1, 4, 16, 53, 6, 8, 11, 17, 1, 4, 17, 17}, Classes: []*rt.Class{&cls1269, &cls1278, &cls1276, &cls1392, &cls1272, &cls1393, &cls1394, &cls1395, &cls1396, &cls1271, &cls1397, &cls1398}, Literals: []rt.TerminalText{{Runes: lit54, Text: "async"}, {Runes: lit55, Text: "interface"}, {Runes: lit12, Text: "type"}, {Runes: lit18, Text: "module"}, {Runes: lit17, Text: "namespace"}, {Runes: lit56, Text: "declare"}, {Runes: lit57, Text: "const"}, {Runes: lit16, Text: "enum"}, {Runes: lit11, Text: "export"}, {Runes: lit10, Text: "import"}, {Runes: lit58, Text: "private"}, {Runes: lit59, Text: "protected"}, {Runes: lit60, Text: "public"}, {Runes: lit61, Text: "abstract"}, {Runes: lit62, Text: "accessor"}, {Runes: lit63, Text: "static"}, {Runes: lit64, Text: "readonly"}, {Runes: lit19, Text: "global"}}}
 var term1399 = term1399Data.Prepare()
-var cls1400 = pegort.Class{ASCII: [2]uint64{0x0, 0x80000000000}}
-var cls1401 = pegort.Class{ASCII: [2]uint64{0x0, 0x100000000000}}
-var cls1402 = pegort.Class{ASCII: [2]uint64{0x0, 0x80000000000000}}
-var cls1403 = pegort.Class{ASCII: [2]uint64{0x0, 0x200000000000000}}
-var term1404Data = pegort.TerminalProgram{Code: []uint16{3, 675, 0, 6, 8, 0, 50, 1, 4, 0, 50, 6, 8, 0, 51, 1, 4, 1, 51, 6, 8, 0, 202, 1, 4, 2, 202, 6, 8, 0, 212, 1, 4, 3, 212, 6, 8, 0, 114, 1, 4, 4, 114, 6, 8, 0, 43, 1, 4, 5, 43, 6, 8, 0, 13, 1, 4, 6, 13, 6, 8, 0, 38, 1, 4, 7, 38, 6, 8, 1, 206, 1, 4, 8, 206, 6, 8, 1, 208, 1, 4, 9, 208, 6, 8, 1, 26, 1, 4, 10, 26, 6, 8, 2, 64, 1, 4, 11, 64, 6, 8, 2, 67, 1, 4, 12, 67, 6, 8, 2, 40, 1, 4, 13, 40, 6, 8, 2, 101, 1, 4, 14, 101, 6, 8, 2, 46, 1, 4, 15, 46, 6, 8, 2, 25, 1, 4, 16, 25, 6, 8, 3, 32, 1, 4, 17, 32, 6, 8, 3, 45, 1, 4, 18, 45, 6, 8, 3, 12, 1, 4, 19, 12, 6, 8, 3, 73, 1, 4, 20, 73, 6, 8, 3, 175, 1, 4, 21, 175, 6, 8, 3, 23, 1, 4, 22, 23, 6, 8, 4, 60, 1, 4, 23, 60, 6, 8, 4, 14, 1, 4, 24, 14, 6, 8, 4, 9, 1, 4, 25, 9, 6, 8, 4, 84, 1, 4, 26, 84, 6, 8, 5, 92, 1, 4, 27, 92, 6, 8, 5, 66, 1, 4, 28, 66, 6, 8, 5, 41, 1, 4, 29, 41, 6, 8, 5, 108, 1, 4, 30, 108, 6, 8, 5, 39, 1, 4, 31, 39, 6, 8, 6, 96, 1, 4, 32, 96, 6, 8, 6, 17, 1, 4, 33, 17, 6, 8, 7, 22, 1, 4, 34, 22, 6, 8, 7, 83, 1, 4, 35, 83, 6, 8, 7, 7, 1, 4, 36, 7, 6, 8, 7, 200, 1, 4, 37, 200, 6, 8, 7, 161, 1, 4, 38, 161, 6, 8, 7, 44, 1, 4, 39, 44, 6, 8, 7, 106, 1, 4, 40, 106, 6, 8, 7, 62, 1, 4, 41, 62, 6, 8, 7, 197, 1, 4, 42, 197, 6, 8, 8, 198, 1, 4, 43, 198, 6, 8, 9, 36, 1, 4, 44, 36, 6, 8, 10, 16, 1, 4, 45, 16, 6, 8, 11, 15, 1, 4, 46, 15, 6, 8, 11, 210, 1, 4, 47, 210, 6, 8, 11, 93, 1, 4, 48, 93, 6, 8, 11, 90, 1, 4, 49, 90, 6, 8, 11, 205, 1, 4, 50, 205, 6, 8, 12, 211, 1, 4, 51, 211, 6, 8, 12, 61, 1, 4, 52, 61, 6, 8, 12, 98, 1, 4, 53, 98, 6, 8, 12, 99, 1, 4, 54, 99, 6, 8, 13, 222, 1, 4, 55, 222, 6, 8, 13, 47, 1, 4, 56, 47, 6, 8, 13, 48, 1, 4, 57, 48, 6, 8, 13, 49, 1, 4, 58, 49, 6, 8, 14, 53, 1, 4, 59, 53, 6, 8, 14, 107, 1, 4, 60, 107, 6, 8, 14, 27, 1, 4, 61, 27, 6, 8, 15, 172, 1, 4, 62, 172, 6, 8, 15, 97, 1, 4, 63, 97, 6, 8, 15, 52, 1, 4, 64, 52, 6, 8, 15, 204, 1, 4, 65, 204, 6, 8, 15, 89, 1, 4, 66, 89, 6, 8, 15, 29, 1, 4, 67, 29, 6, 8, 15, 207, 1, 4, 68, 207, 6, 8, 16, 82, 1, 4, 69, 82, 6, 8, 16, 30, 1, 4, 70, 30, 6, 8, 16, 91, 1, 4, 71, 91, 6, 8, 16, 31, 1, 4, 72, 31, 6, 8, 16, 176, 1, 4, 73, 176, 6, 8, 16, 10, 1, 4, 74, 10, 6, 8, 17, 209, 1, 4, 75, 209, 6, 8, 17, 199, 1, 4, 76, 199, 6, 8, 17, 203, 1, 4, 77, 203, 6, 8, 17, 37, 1, 4, 78, 37, 6, 8, 18, 35, 1, 4, 79, 35, 6, 8, 18, 177, 1, 4, 80, 177, 6, 8, 19, 24, 1, 4, 81, 24, 6, 8, 19, 28, 1, 4, 82, 28, 6, 8, 20, 120, 1, 4, 83, 120}, Classes: []*pegort.Class{&cls1269, &cls1273, &cls1394, &cls1393, &cls1395, &cls1277, &cls1398, &cls1278, &cls1400, &cls1401, &cls1392, &cls1272, &cls1274, &cls1396, &cls1397, &cls1271, &cls1276, &cls1270, &cls1275, &cls1402, &cls1403}, Literals: []pegort.TerminalText{{Runes: lit61, Text: "abstract"}, {Runes: lit62, Text: "accessor"}, {Runes: lit522, Text: "any"}, {Runes: lit532, Text: "asserts"}, {Runes: lit251, Text: "assert"}, {Runes: lit54, Text: "async"}, {Runes: lit15, Text: "as"}, {Runes: lit32, Text: "await"}, {Runes: lit526, Text: "bigint"}, {Runes: lit528, Text: "boolean"}, {Runes: lit40, Text: "break"}, {Runes: lit105, Text: "case"}, {Runes: lit114, Text: "catch"}, {Runes: lit34, Text: "class"}, {Runes: lit204, Text: "constructor"}, {Runes: lit57, Text: "const"}, {Runes: lit39, Text: "continue"}, {Runes: lit46, Text: "debugger"}, {Runes: lit56, Text: "declare"}, {Runes: lit14, Text: "default"}, {Runes: lit128, Text: "defer"}, {Runes: lit382, Text: "delete"}, {Runes: lit36, Text: "do"}, {Runes: lit80, Text: "else"}, {Runes: lit16, Text: "enum"}, {Runes: lit11, Text: "export"}, {Runes: lit170, Text: "extends"}, {Runes: lit178, Text: "false"}, {Runes: lit112, Text: "finally"}, {Runes: lit38, Text: "for"}, {Runes: lit230, Text: "from"}, {Runes: lit33, Text: "function"}, {Runes: lit186, Text: "get"}, {Runes: lit19, Text: "global"}, {Runes: lit35, Text: "if"}, {Runes: lit166, Text: "implements"}, {Runes: lit10, Text: "import"}, {Runes: lit515, Text: "infer"}, {Runes: lit365, Text: "instanceof"}, {Runes: lit55, Text: "interface"}, {Runes: lit213, Text: "intrinsic"}, {Runes: lit88, Text: "in"}, {Runes: lit493, Text: "is"}, {Runes: lit513, Text: "keyof"}, {Runes: lit30, Text: "let"}, {Runes: lit18, Text: "module"}, {Runes: lit17, Text: "namespace"}, {Runes: lit530, Text: "never"}, {Runes: lit179, Text: "new"}, {Runes: lit176, Text: "null"}, {Runes: lit525, Text: "number"}, {Runes: lit531, Text: "object"}, {Runes: lit86, Text: "of"}, {Runes: lit189, Text: "out"}, {Runes: lit191, Text: "override"}, {Runes: lit627, Text: "package"}, {Runes: lit58, Text: "private"}, {Runes: lit59, Text: "protected"}, {Runes: lit60, Text: "public"}, {Runes: lit64, Text: "readonly"}, {Runes: lit228, Text: "require"}, {Runes: lit41, Text: "return"}, {Runes: lit378, Text: "satisfies"}, {Runes: lit187, Text: "set"}, {Runes: lit63, Text: "static"}, {Runes: lit524, Text: "string"}, {Runes: lit175, Text: "super"}, {Runes: lit43, Text: "switch"}, {Runes: lit527, Text: "symbol"}, {Runes: lit161, Text: "this"}, {Runes: lit44, Text: "throw"}, {Runes: lit177, Text: "true"}, {Runes: lit45, Text: "try"}, {Runes: lit383, Text: "typeof"}, {Runes: lit12, Text: "type"}, {Runes: lit529, Text: "undefined"}, {Runes: lit514, Text: "unique"}, {Runes: lit523, Text: "unknown"}, {Runes: lit31, Text: "using"}, {Runes: lit29, Text: "var"}, {Runes: lit384, Text: "void"}, {Runes: lit37, Text: "while"}, {Runes: lit42, Text: "with"}, {Runes: lit302, Text: "yield"}}}
+var cls1400 = rt.Class{ASCII: [2]uint64{0x0, 0x80000000000}}
+var cls1401 = rt.Class{ASCII: [2]uint64{0x0, 0x100000000000}}
+var cls1402 = rt.Class{ASCII: [2]uint64{0x0, 0x80000000000000}}
+var cls1403 = rt.Class{ASCII: [2]uint64{0x0, 0x200000000000000}}
+var term1404Data = rt.TerminalProgram{Code: []uint16{3, 675, 0, 6, 8, 0, 50, 1, 4, 0, 50, 6, 8, 0, 51, 1, 4, 1, 51, 6, 8, 0, 202, 1, 4, 2, 202, 6, 8, 0, 212, 1, 4, 3, 212, 6, 8, 0, 114, 1, 4, 4, 114, 6, 8, 0, 43, 1, 4, 5, 43, 6, 8, 0, 13, 1, 4, 6, 13, 6, 8, 0, 38, 1, 4, 7, 38, 6, 8, 1, 206, 1, 4, 8, 206, 6, 8, 1, 208, 1, 4, 9, 208, 6, 8, 1, 26, 1, 4, 10, 26, 6, 8, 2, 64, 1, 4, 11, 64, 6, 8, 2, 67, 1, 4, 12, 67, 6, 8, 2, 40, 1, 4, 13, 40, 6, 8, 2, 101, 1, 4, 14, 101, 6, 8, 2, 46, 1, 4, 15, 46, 6, 8, 2, 25, 1, 4, 16, 25, 6, 8, 3, 32, 1, 4, 17, 32, 6, 8, 3, 45, 1, 4, 18, 45, 6, 8, 3, 12, 1, 4, 19, 12, 6, 8, 3, 73, 1, 4, 20, 73, 6, 8, 3, 175, 1, 4, 21, 175, 6, 8, 3, 23, 1, 4, 22, 23, 6, 8, 4, 60, 1, 4, 23, 60, 6, 8, 4, 14, 1, 4, 24, 14, 6, 8, 4, 9, 1, 4, 25, 9, 6, 8, 4, 84, 1, 4, 26, 84, 6, 8, 5, 92, 1, 4, 27, 92, 6, 8, 5, 66, 1, 4, 28, 66, 6, 8, 5, 41, 1, 4, 29, 41, 6, 8, 5, 108, 1, 4, 30, 108, 6, 8, 5, 39, 1, 4, 31, 39, 6, 8, 6, 96, 1, 4, 32, 96, 6, 8, 6, 17, 1, 4, 33, 17, 6, 8, 7, 22, 1, 4, 34, 22, 6, 8, 7, 83, 1, 4, 35, 83, 6, 8, 7, 7, 1, 4, 36, 7, 6, 8, 7, 200, 1, 4, 37, 200, 6, 8, 7, 161, 1, 4, 38, 161, 6, 8, 7, 44, 1, 4, 39, 44, 6, 8, 7, 106, 1, 4, 40, 106, 6, 8, 7, 62, 1, 4, 41, 62, 6, 8, 7, 197, 1, 4, 42, 197, 6, 8, 8, 198, 1, 4, 43, 198, 6, 8, 9, 36, 1, 4, 44, 36, 6, 8, 10, 16, 1, 4, 45, 16, 6, 8, 11, 15, 1, 4, 46, 15, 6, 8, 11, 210, 1, 4, 47, 210, 6, 8, 11, 93, 1, 4, 48, 93, 6, 8, 11, 90, 1, 4, 49, 90, 6, 8, 11, 205, 1, 4, 50, 205, 6, 8, 12, 211, 1, 4, 51, 211, 6, 8, 12, 61, 1, 4, 52, 61, 6, 8, 12, 98, 1, 4, 53, 98, 6, 8, 12, 99, 1, 4, 54, 99, 6, 8, 13, 222, 1, 4, 55, 222, 6, 8, 13, 47, 1, 4, 56, 47, 6, 8, 13, 48, 1, 4, 57, 48, 6, 8, 13, 49, 1, 4, 58, 49, 6, 8, 14, 53, 1, 4, 59, 53, 6, 8, 14, 107, 1, 4, 60, 107, 6, 8, 14, 27, 1, 4, 61, 27, 6, 8, 15, 172, 1, 4, 62, 172, 6, 8, 15, 97, 1, 4, 63, 97, 6, 8, 15, 52, 1, 4, 64, 52, 6, 8, 15, 204, 1, 4, 65, 204, 6, 8, 15, 89, 1, 4, 66, 89, 6, 8, 15, 29, 1, 4, 67, 29, 6, 8, 15, 207, 1, 4, 68, 207, 6, 8, 16, 82, 1, 4, 69, 82, 6, 8, 16, 30, 1, 4, 70, 30, 6, 8, 16, 91, 1, 4, 71, 91, 6, 8, 16, 31, 1, 4, 72, 31, 6, 8, 16, 176, 1, 4, 73, 176, 6, 8, 16, 10, 1, 4, 74, 10, 6, 8, 17, 209, 1, 4, 75, 209, 6, 8, 17, 199, 1, 4, 76, 199, 6, 8, 17, 203, 1, 4, 77, 203, 6, 8, 17, 37, 1, 4, 78, 37, 6, 8, 18, 35, 1, 4, 79, 35, 6, 8, 18, 177, 1, 4, 80, 177, 6, 8, 19, 24, 1, 4, 81, 24, 6, 8, 19, 28, 1, 4, 82, 28, 6, 8, 20, 120, 1, 4, 83, 120}, Classes: []*rt.Class{&cls1269, &cls1273, &cls1394, &cls1393, &cls1395, &cls1277, &cls1398, &cls1278, &cls1400, &cls1401, &cls1392, &cls1272, &cls1274, &cls1396, &cls1397, &cls1271, &cls1276, &cls1270, &cls1275, &cls1402, &cls1403}, Literals: []rt.TerminalText{{Runes: lit61, Text: "abstract"}, {Runes: lit62, Text: "accessor"}, {Runes: lit522, Text: "any"}, {Runes: lit532, Text: "asserts"}, {Runes: lit251, Text: "assert"}, {Runes: lit54, Text: "async"}, {Runes: lit15, Text: "as"}, {Runes: lit32, Text: "await"}, {Runes: lit526, Text: "bigint"}, {Runes: lit528, Text: "boolean"}, {Runes: lit40, Text: "break"}, {Runes: lit105, Text: "case"}, {Runes: lit114, Text: "catch"}, {Runes: lit34, Text: "class"}, {Runes: lit204, Text: "constructor"}, {Runes: lit57, Text: "const"}, {Runes: lit39, Text: "continue"}, {Runes: lit46, Text: "debugger"}, {Runes: lit56, Text: "declare"}, {Runes: lit14, Text: "default"}, {Runes: lit128, Text: "defer"}, {Runes: lit382, Text: "delete"}, {Runes: lit36, Text: "do"}, {Runes: lit80, Text: "else"}, {Runes: lit16, Text: "enum"}, {Runes: lit11, Text: "export"}, {Runes: lit170, Text: "extends"}, {Runes: lit178, Text: "false"}, {Runes: lit112, Text: "finally"}, {Runes: lit38, Text: "for"}, {Runes: lit230, Text: "from"}, {Runes: lit33, Text: "function"}, {Runes: lit186, Text: "get"}, {Runes: lit19, Text: "global"}, {Runes: lit35, Text: "if"}, {Runes: lit166, Text: "implements"}, {Runes: lit10, Text: "import"}, {Runes: lit515, Text: "infer"}, {Runes: lit365, Text: "instanceof"}, {Runes: lit55, Text: "interface"}, {Runes: lit213, Text: "intrinsic"}, {Runes: lit88, Text: "in"}, {Runes: lit493, Text: "is"}, {Runes: lit513, Text: "keyof"}, {Runes: lit30, Text: "let"}, {Runes: lit18, Text: "module"}, {Runes: lit17, Text: "namespace"}, {Runes: lit530, Text: "never"}, {Runes: lit179, Text: "new"}, {Runes: lit176, Text: "null"}, {Runes: lit525, Text: "number"}, {Runes: lit531, Text: "object"}, {Runes: lit86, Text: "of"}, {Runes: lit189, Text: "out"}, {Runes: lit191, Text: "override"}, {Runes: lit627, Text: "package"}, {Runes: lit58, Text: "private"}, {Runes: lit59, Text: "protected"}, {Runes: lit60, Text: "public"}, {Runes: lit64, Text: "readonly"}, {Runes: lit228, Text: "require"}, {Runes: lit41, Text: "return"}, {Runes: lit378, Text: "satisfies"}, {Runes: lit187, Text: "set"}, {Runes: lit63, Text: "static"}, {Runes: lit524, Text: "string"}, {Runes: lit175, Text: "super"}, {Runes: lit43, Text: "switch"}, {Runes: lit527, Text: "symbol"}, {Runes: lit161, Text: "this"}, {Runes: lit44, Text: "throw"}, {Runes: lit177, Text: "true"}, {Runes: lit45, Text: "try"}, {Runes: lit383, Text: "typeof"}, {Runes: lit12, Text: "type"}, {Runes: lit529, Text: "undefined"}, {Runes: lit514, Text: "unique"}, {Runes: lit523, Text: "unknown"}, {Runes: lit31, Text: "using"}, {Runes: lit29, Text: "var"}, {Runes: lit384, Text: "void"}, {Runes: lit37, Text: "while"}, {Runes: lit42, Text: "with"}, {Runes: lit302, Text: "yield"}}}
 var term1404 = term1404Data.Prepare()
-var term1405Data = pegort.TerminalProgram{Code: []uint16{3, 187, 0, 6, 8, 0, 202, 1, 4, 0, 202, 6, 8, 1, 203, 1, 4, 1, 203, 6, 8, 2, 204, 1, 4, 2, 204, 6, 8, 3, 205, 1, 4, 3, 205, 6, 8, 4, 206, 1, 4, 4, 206, 6, 8, 4, 208, 1, 4, 5, 208, 6, 8, 5, 53, 1, 4, 6, 53, 6, 8, 2, 207, 1, 4, 7, 207, 6, 8, 1, 199, 1, 4, 8, 199, 6, 8, 6, 177, 1, 4, 9, 177, 6, 8, 1, 209, 1, 4, 10, 209, 6, 8, 3, 90, 1, 4, 11, 90, 6, 8, 7, 82, 1, 4, 12, 82, 6, 8, 7, 176, 1, 4, 13, 176, 6, 8, 3, 210, 1, 4, 14, 210, 6, 8, 7, 91, 1, 4, 15, 91, 6, 8, 8, 92, 1, 4, 16, 92, 6, 8, 9, 211, 1, 4, 17, 211, 6, 8, 3, 93, 1, 4, 18, 93, 6, 8, 10, 200, 1, 4, 19, 200, 6, 8, 10, 7, 1, 4, 20, 7, 6, 8, 0, 212, 1, 4, 21, 212, 6, 8, 8, 39, 1, 4, 22, 39}, Classes: []*pegort.Class{&cls1269, &cls1270, &cls1271, &cls1272, &cls1273, &cls1397, &cls1275, &cls1276, &cls1277, &cls1274, &cls1278}, Literals: []pegort.TerminalText{{Runes: lit522, Text: "any"}, {Runes: lit523, Text: "unknown"}, {Runes: lit524, Text: "string"}, {Runes: lit525, Text: "number"}, {Runes: lit526, Text: "bigint"}, {Runes: lit528, Text: "boolean"}, {Runes: lit64, Text: "readonly"}, {Runes: lit527, Text: "symbol"}, {Runes: lit514, Text: "unique"}, {Runes: lit384, Text: "void"}, {Runes: lit529, Text: "undefined"}, {Runes: lit176, Text: "null"}, {Runes: lit161, Text: "this"}, {Runes: lit383, Text: "typeof"}, {Runes: lit530, Text: "never"}, {Runes: lit177, Text: "true"}, {Runes: lit178, Text: "false"}, {Runes: lit531, Text: "object"}, {Runes: lit179, Text: "new"}, {Runes: lit515, Text: "infer"}, {Runes: lit10, Text: "import"}, {Runes: lit532, Text: "asserts"}, {Runes: lit33, Text: "function"}}}
+var term1405Data = rt.TerminalProgram{Code: []uint16{3, 187, 0, 6, 8, 0, 202, 1, 4, 0, 202, 6, 8, 1, 203, 1, 4, 1, 203, 6, 8, 2, 204, 1, 4, 2, 204, 6, 8, 3, 205, 1, 4, 3, 205, 6, 8, 4, 206, 1, 4, 4, 206, 6, 8, 4, 208, 1, 4, 5, 208, 6, 8, 5, 53, 1, 4, 6, 53, 6, 8, 2, 207, 1, 4, 7, 207, 6, 8, 1, 199, 1, 4, 8, 199, 6, 8, 6, 177, 1, 4, 9, 177, 6, 8, 1, 209, 1, 4, 10, 209, 6, 8, 3, 90, 1, 4, 11, 90, 6, 8, 7, 82, 1, 4, 12, 82, 6, 8, 7, 176, 1, 4, 13, 176, 6, 8, 3, 210, 1, 4, 14, 210, 6, 8, 7, 91, 1, 4, 15, 91, 6, 8, 8, 92, 1, 4, 16, 92, 6, 8, 9, 211, 1, 4, 17, 211, 6, 8, 3, 93, 1, 4, 18, 93, 6, 8, 10, 200, 1, 4, 19, 200, 6, 8, 10, 7, 1, 4, 20, 7, 6, 8, 0, 212, 1, 4, 21, 212, 6, 8, 8, 39, 1, 4, 22, 39}, Classes: []*rt.Class{&cls1269, &cls1270, &cls1271, &cls1272, &cls1273, &cls1397, &cls1275, &cls1276, &cls1277, &cls1274, &cls1278}, Literals: []rt.TerminalText{{Runes: lit522, Text: "any"}, {Runes: lit523, Text: "unknown"}, {Runes: lit524, Text: "string"}, {Runes: lit525, Text: "number"}, {Runes: lit526, Text: "bigint"}, {Runes: lit528, Text: "boolean"}, {Runes: lit64, Text: "readonly"}, {Runes: lit527, Text: "symbol"}, {Runes: lit514, Text: "unique"}, {Runes: lit384, Text: "void"}, {Runes: lit529, Text: "undefined"}, {Runes: lit176, Text: "null"}, {Runes: lit161, Text: "this"}, {Runes: lit383, Text: "typeof"}, {Runes: lit530, Text: "never"}, {Runes: lit177, Text: "true"}, {Runes: lit178, Text: "false"}, {Runes: lit531, Text: "object"}, {Runes: lit179, Text: "new"}, {Runes: lit515, Text: "infer"}, {Runes: lit10, Text: "import"}, {Runes: lit532, Text: "asserts"}, {Runes: lit33, Text: "function"}}}
 var term1405 = term1405Data.Prepare()
-var cls1406 = pegort.Class{ASCII: [2]uint64{0x0, 0x1000000010}}
-var cls1407 = pegort.Class{ASCII: [2]uint64{0x300000000000000, 0x7e0000007e}}
-var steps1408 = []pegort.ClassStep{{C: &cls1406, ID: 241}, {C: &cls1407, ID: 238}}
-var cls1409 = pegort.Class{ASCII: [2]uint64{0x0, 0x400000004}}
-var cls1410 = pegort.Class{ASCII: [2]uint64{0x3000000000000, 0x0}}
-var steps1411 = []pegort.ClassStep{{C: &cls1409, ID: 257}, {C: &cls1410, ID: 258}}
-var cls1412 = pegort.Class{ASCII: [2]uint64{0x0, 0x800000008000}}
-var cls1413 = pegort.Class{ASCII: [2]uint64{0xff000000000000, 0x0}}
-var steps1414 = []pegort.ClassStep{{C: &cls1412, ID: 259}, {C: &cls1413, ID: 260}}
-var term1415Data = pegort.TerminalProgram{Code: []uint16{3, 147, 0, 6, 8, 0, 35, 1, 4, 0, 35, 6, 8, 1, 36, 1, 4, 1, 36, 6, 8, 2, 37, 1, 4, 2, 37, 6, 8, 3, 38, 1, 4, 3, 38, 6, 8, 4, 39, 1, 4, 4, 39, 6, 8, 5, 40, 1, 4, 5, 40, 6, 8, 6, 22, 1, 4, 6, 22, 6, 8, 7, 23, 1, 4, 7, 23, 6, 8, 8, 24, 1, 4, 8, 24, 6, 8, 4, 41, 1, 4, 9, 41, 6, 8, 5, 25, 1, 4, 10, 25, 6, 8, 9, 26, 1, 4, 11, 26, 6, 8, 10, 27, 1, 4, 12, 27, 6, 8, 8, 28, 1, 4, 13, 28, 6, 8, 11, 29, 1, 4, 14, 29, 6, 8, 12, 30, 1, 4, 15, 30, 6, 8, 12, 31, 1, 4, 16, 31, 6, 8, 7, 32, 1, 4, 17, 32}, Classes: []*pegort.Class{&cls1275, &cls1401, &cls1270, &cls1269, &cls1277, &cls1394, &cls1278, &cls1393, &cls1402, &cls1273, &cls1397, &cls1271, &cls1276}, Literals: []pegort.TerminalText{{Runes: lit29, Text: "var"}, {Runes: lit30, Text: "let"}, {Runes: lit31, Text: "using"}, {Runes: lit32, Text: "await"}, {Runes: lit33, Text: "function"}, {Runes: lit34, Text: "class"}, {Runes: lit35, Text: "if"}, {Runes: lit36, Text: "do"}, {Runes: lit37, Text: "while"}, {Runes: lit38, Text: "for"}, {Runes: lit39, Text: "continue"}, {Runes: lit40, Text: "break"}, {Runes: lit41, Text: "return"}, {Runes: lit42, Text: "with"}, {Runes: lit43, Text: "switch"}, {Runes: lit44, Text: "throw"}, {Runes: lit45, Text: "try"}, {Runes: lit46, Text: "debugger"}}}
+var cls1406 = rt.Class{ASCII: [2]uint64{0x0, 0x1000000010}}
+var cls1407 = rt.Class{ASCII: [2]uint64{0x300000000000000, 0x7e0000007e}}
+var steps1408 = []rt.ClassStep{{C: &cls1406, ID: 241}, {C: &cls1407, ID: 238}}
+var cls1409 = rt.Class{ASCII: [2]uint64{0x0, 0x400000004}}
+var cls1410 = rt.Class{ASCII: [2]uint64{0x3000000000000, 0x0}}
+var steps1411 = []rt.ClassStep{{C: &cls1409, ID: 257}, {C: &cls1410, ID: 258}}
+var cls1412 = rt.Class{ASCII: [2]uint64{0x0, 0x800000008000}}
+var cls1413 = rt.Class{ASCII: [2]uint64{0xff000000000000, 0x0}}
+var steps1414 = []rt.ClassStep{{C: &cls1412, ID: 259}, {C: &cls1413, ID: 260}}
+var term1415Data = rt.TerminalProgram{Code: []uint16{3, 147, 0, 6, 8, 0, 35, 1, 4, 0, 35, 6, 8, 1, 36, 1, 4, 1, 36, 6, 8, 2, 37, 1, 4, 2, 37, 6, 8, 3, 38, 1, 4, 3, 38, 6, 8, 4, 39, 1, 4, 4, 39, 6, 8, 5, 40, 1, 4, 5, 40, 6, 8, 6, 22, 1, 4, 6, 22, 6, 8, 7, 23, 1, 4, 7, 23, 6, 8, 8, 24, 1, 4, 8, 24, 6, 8, 4, 41, 1, 4, 9, 41, 6, 8, 5, 25, 1, 4, 10, 25, 6, 8, 9, 26, 1, 4, 11, 26, 6, 8, 10, 27, 1, 4, 12, 27, 6, 8, 8, 28, 1, 4, 13, 28, 6, 8, 11, 29, 1, 4, 14, 29, 6, 8, 12, 30, 1, 4, 15, 30, 6, 8, 12, 31, 1, 4, 16, 31, 6, 8, 7, 32, 1, 4, 17, 32}, Classes: []*rt.Class{&cls1275, &cls1401, &cls1270, &cls1269, &cls1277, &cls1394, &cls1278, &cls1393, &cls1402, &cls1273, &cls1397, &cls1271, &cls1276}, Literals: []rt.TerminalText{{Runes: lit29, Text: "var"}, {Runes: lit30, Text: "let"}, {Runes: lit31, Text: "using"}, {Runes: lit32, Text: "await"}, {Runes: lit33, Text: "function"}, {Runes: lit34, Text: "class"}, {Runes: lit35, Text: "if"}, {Runes: lit36, Text: "do"}, {Runes: lit37, Text: "while"}, {Runes: lit38, Text: "for"}, {Runes: lit39, Text: "continue"}, {Runes: lit40, Text: "break"}, {Runes: lit41, Text: "return"}, {Runes: lit42, Text: "with"}, {Runes: lit43, Text: "switch"}, {Runes: lit44, Text: "throw"}, {Runes: lit45, Text: "try"}, {Runes: lit46, Text: "debugger"}}}
 var term1415 = term1415Data.Prepare()
-var cls1418 = pegort.Class{ASCII: [2]uint64{0x8000800000002400, 0x1000000000000000}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1423 = pegort.Class{ASCII: [2]uint64{0x804000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1428 = pegort.Class{ASCII: [2]uint64{0x800000002400, 0x1000000000000000}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1433 = pegort.Class{ASCII: [2]uint64{0x800000002400, 0x40000000}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1442 = pegort.Class{ASCII: [2]uint64{0x2000800200002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1447 = pegort.Class{ASCII: [2]uint64{0x5000800000002400, 0x20000000000}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1458 = pegort.Class{ASCII: [2]uint64{0x5000800000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1463 = pegort.Class{ASCII: [2]uint64{0xa80000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1468 = pegort.Class{ASCII: [2]uint64{0x842000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1473 = pegort.Class{ASCII: [2]uint64{0x840000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1482 = pegort.Class{ASCII: [2]uint64{0xc00000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1486 = pegort.Class{ASCII: [2]uint64{0x8000800000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1491 = pegort.Class{ASCII: [2]uint64{0x800000002400, 0x8000000}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1499 = pegort.Class{ASCII: [2]uint64{0x1000800000002400, 0x100000000}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1511 = pegort.Class{ASCII: [2]uint64{0x1000800000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
-var cls1515 = pegort.Class{ASCII: [2]uint64{0x1000810000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls1418 = rt.Class{ASCII: [2]uint64{0x8000800000002400, 0x1000000000000000}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls1423 = rt.Class{ASCII: [2]uint64{0x804000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls1428 = rt.Class{ASCII: [2]uint64{0x800000002400, 0x1000000000000000}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls1433 = rt.Class{ASCII: [2]uint64{0x800000002400, 0x40000000}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls1442 = rt.Class{ASCII: [2]uint64{0x2000800200002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls1447 = rt.Class{ASCII: [2]uint64{0x5000800000002400, 0x20000000000}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls1458 = rt.Class{ASCII: [2]uint64{0x5000800000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls1463 = rt.Class{ASCII: [2]uint64{0xa80000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls1468 = rt.Class{ASCII: [2]uint64{0x842000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls1473 = rt.Class{ASCII: [2]uint64{0x840000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls1482 = rt.Class{ASCII: [2]uint64{0xc00000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls1486 = rt.Class{ASCII: [2]uint64{0x8000800000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls1491 = rt.Class{ASCII: [2]uint64{0x800000002400, 0x8000000}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls1499 = rt.Class{ASCII: [2]uint64{0x1000800000002400, 0x100000000}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls1511 = rt.Class{ASCII: [2]uint64{0x1000800000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
+var cls1515 = rt.Class{ASCII: [2]uint64{0x1000810000002400, 0x0}, Wide: []rune{8232, 8232, 8233, 8233}}
 
 func init() {
-	rules = pegort.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])
+	rules = rt.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])
 	pegoGrammar.SetRules(rules, 231)
 	pegoGrammar.StructFields["ArrayBindingPattern"] = map[string]bool{"Elements": true}
-	pegoGrammar.TypeKinds["ArrayBindingPattern"] = pegort.KindOf("ArrayBindingPattern", "")
+	pegoGrammar.TypeKinds["ArrayBindingPattern"] = rt.KindOf("ArrayBindingPattern", "")
 	pegoGrammar.StructFields["ArrayLiteralExpression"] = map[string]bool{"Elements": true}
-	pegoGrammar.TypeKinds["ArrayLiteralExpression"] = pegort.KindOf("ArrayLiteralExpression", "")
+	pegoGrammar.TypeKinds["ArrayLiteralExpression"] = rt.KindOf("ArrayLiteralExpression", "")
 	pegoGrammar.StructFields["ArrayType"] = map[string]bool{"ElementType": true}
-	pegoGrammar.TypeKinds["ArrayType"] = pegort.KindOf("ArrayType", "")
+	pegoGrammar.TypeKinds["ArrayType"] = rt.KindOf("ArrayType", "")
 	pegoGrammar.StructFields["ArrowFunction"] = map[string]bool{"Modifiers": true, "TypeParameters": true, "Parameters": true, "Type": true, "EqualsGreaterThanToken": true, "Body": true}
-	pegoGrammar.TypeKinds["ArrowFunction"] = pegort.KindOf("ArrowFunction", "")
+	pegoGrammar.TypeKinds["ArrowFunction"] = rt.KindOf("ArrowFunction", "")
 	pegoGrammar.StructFields["AsExpression"] = map[string]bool{"Expression": true, "Type": true}
-	pegoGrammar.TypeKinds["AsExpression"] = pegort.KindOf("AsExpression", "")
+	pegoGrammar.TypeKinds["AsExpression"] = rt.KindOf("AsExpression", "")
 	pegoGrammar.StructFields["AwaitExpression"] = map[string]bool{"Expression": true}
-	pegoGrammar.TypeKinds["AwaitExpression"] = pegort.KindOf("AwaitExpression", "")
+	pegoGrammar.TypeKinds["AwaitExpression"] = rt.KindOf("AwaitExpression", "")
 	pegoGrammar.StructFields["BinaryExpression"] = map[string]bool{"Left": true, "OperatorToken": true, "Right": true}
-	pegoGrammar.TypeKinds["BinaryExpression"] = pegort.KindOf("BinaryExpression", "")
+	pegoGrammar.TypeKinds["BinaryExpression"] = rt.KindOf("BinaryExpression", "")
 	pegoGrammar.StructFields["BindingElement"] = map[string]bool{"DotDotDotToken": true, "PropertyName": true, "Name": true, "Initializer": true}
-	pegoGrammar.TypeKinds["BindingElement"] = pegort.KindOf("BindingElement", "")
+	pegoGrammar.TypeKinds["BindingElement"] = rt.KindOf("BindingElement", "")
 	pegoGrammar.StructFields["Block"] = map[string]bool{"Statements": true}
-	pegoGrammar.TypeKinds["Block"] = pegort.KindOf("Block", "")
+	pegoGrammar.TypeKinds["Block"] = rt.KindOf("Block", "")
 	pegoGrammar.StructFields["BreakStatement"] = map[string]bool{"Label": true}
-	pegoGrammar.TypeKinds["BreakStatement"] = pegort.KindOf("BreakStatement", "")
+	pegoGrammar.TypeKinds["BreakStatement"] = rt.KindOf("BreakStatement", "")
 	pegoGrammar.StructFields["CallExpression"] = map[string]bool{"Expression": true, "QuestionDotToken": true, "TypeArguments": true, "Arguments": true}
-	pegoGrammar.TypeKinds["CallExpression"] = pegort.KindOf("CallExpression", "")
+	pegoGrammar.TypeKinds["CallExpression"] = rt.KindOf("CallExpression", "")
 	pegoGrammar.StructFields["CallSignature"] = map[string]bool{"TypeParameters": true, "Parameters": true, "Type": true}
-	pegoGrammar.TypeKinds["CallSignature"] = pegort.KindOf("CallSignature", "")
+	pegoGrammar.TypeKinds["CallSignature"] = rt.KindOf("CallSignature", "")
 	pegoGrammar.StructFields["CaseBlock"] = map[string]bool{"Clauses": true}
-	pegoGrammar.TypeKinds["CaseBlock"] = pegort.KindOf("CaseBlock", "")
+	pegoGrammar.TypeKinds["CaseBlock"] = rt.KindOf("CaseBlock", "")
 	pegoGrammar.StructFields["CaseClause"] = map[string]bool{"Expression": true, "Statements": true}
-	pegoGrammar.TypeKinds["CaseClause"] = pegort.KindOf("CaseClause", "")
+	pegoGrammar.TypeKinds["CaseClause"] = rt.KindOf("CaseClause", "")
 	pegoGrammar.StructFields["CatchClause"] = map[string]bool{"VariableDeclaration": true, "Block": true}
-	pegoGrammar.TypeKinds["CatchClause"] = pegort.KindOf("CatchClause", "")
+	pegoGrammar.TypeKinds["CatchClause"] = rt.KindOf("CatchClause", "")
 	pegoGrammar.StructFields["ClassDeclaration"] = map[string]bool{"Modifiers": true, "Name": true, "TypeParameters": true, "HeritageClauses": true, "Members": true}
-	pegoGrammar.TypeKinds["ClassDeclaration"] = pegort.KindOf("ClassDeclaration", "")
+	pegoGrammar.TypeKinds["ClassDeclaration"] = rt.KindOf("ClassDeclaration", "")
 	pegoGrammar.StructFields["ClassExpression"] = map[string]bool{"Modifiers": true, "Name": true, "TypeParameters": true, "HeritageClauses": true, "Members": true}
-	pegoGrammar.TypeKinds["ClassExpression"] = pegort.KindOf("ClassExpression", "")
+	pegoGrammar.TypeKinds["ClassExpression"] = rt.KindOf("ClassExpression", "")
 	pegoGrammar.StructFields["ClassStaticBlockDeclaration"] = map[string]bool{"Modifiers": true, "Body": true}
-	pegoGrammar.TypeKinds["ClassStaticBlockDeclaration"] = pegort.KindOf("ClassStaticBlockDeclaration", "")
+	pegoGrammar.TypeKinds["ClassStaticBlockDeclaration"] = rt.KindOf("ClassStaticBlockDeclaration", "")
 	pegoGrammar.StructFields["ComputedPropertyName"] = map[string]bool{"Expression": true}
-	pegoGrammar.TypeKinds["ComputedPropertyName"] = pegort.KindOf("ComputedPropertyName", "")
+	pegoGrammar.TypeKinds["ComputedPropertyName"] = rt.KindOf("ComputedPropertyName", "")
 	pegoGrammar.StructFields["ConditionalExpression"] = map[string]bool{"Condition": true, "QuestionToken": true, "WhenTrue": true, "ColonToken": true, "WhenFalse": true}
-	pegoGrammar.TypeKinds["ConditionalExpression"] = pegort.KindOf("ConditionalExpression", "")
+	pegoGrammar.TypeKinds["ConditionalExpression"] = rt.KindOf("ConditionalExpression", "")
 	pegoGrammar.StructFields["ConditionalType"] = map[string]bool{"CheckType": true, "ExtendsType": true, "TrueType": true, "FalseType": true}
-	pegoGrammar.TypeKinds["ConditionalType"] = pegort.KindOf("ConditionalType", "")
+	pegoGrammar.TypeKinds["ConditionalType"] = rt.KindOf("ConditionalType", "")
 	pegoGrammar.StructFields["ConstructSignature"] = map[string]bool{"TypeParameters": true, "Parameters": true, "Type": true}
-	pegoGrammar.TypeKinds["ConstructSignature"] = pegort.KindOf("ConstructSignature", "")
+	pegoGrammar.TypeKinds["ConstructSignature"] = rt.KindOf("ConstructSignature", "")
 	pegoGrammar.StructFields["Constructor"] = map[string]bool{"Modifiers": true, "TypeParameters": true, "Parameters": true, "Type": true, "Body": true}
-	pegoGrammar.TypeKinds["Constructor"] = pegort.KindOf("Constructor", "")
+	pegoGrammar.TypeKinds["Constructor"] = rt.KindOf("Constructor", "")
 	pegoGrammar.StructFields["ConstructorType"] = map[string]bool{"Modifiers": true, "TypeParameters": true, "Parameters": true, "Type": true}
-	pegoGrammar.TypeKinds["ConstructorType"] = pegort.KindOf("ConstructorType", "")
+	pegoGrammar.TypeKinds["ConstructorType"] = rt.KindOf("ConstructorType", "")
 	pegoGrammar.StructFields["ContinueStatement"] = map[string]bool{"Label": true}
-	pegoGrammar.TypeKinds["ContinueStatement"] = pegort.KindOf("ContinueStatement", "")
+	pegoGrammar.TypeKinds["ContinueStatement"] = rt.KindOf("ContinueStatement", "")
 	pegoGrammar.StructFields["Decorator"] = map[string]bool{"Expression": true}
-	pegoGrammar.TypeKinds["Decorator"] = pegort.KindOf("Decorator", "")
+	pegoGrammar.TypeKinds["Decorator"] = rt.KindOf("Decorator", "")
 	pegoGrammar.StructFields["DefaultClause"] = map[string]bool{"Statements": true}
-	pegoGrammar.TypeKinds["DefaultClause"] = pegort.KindOf("DefaultClause", "")
+	pegoGrammar.TypeKinds["DefaultClause"] = rt.KindOf("DefaultClause", "")
 	pegoGrammar.StructFields["DeleteExpression"] = map[string]bool{"Expression": true}
-	pegoGrammar.TypeKinds["DeleteExpression"] = pegort.KindOf("DeleteExpression", "")
+	pegoGrammar.TypeKinds["DeleteExpression"] = rt.KindOf("DeleteExpression", "")
 	pegoGrammar.StructFields["DoStatement"] = map[string]bool{"Statement": true, "Expression": true}
-	pegoGrammar.TypeKinds["DoStatement"] = pegort.KindOf("DoStatement", "")
+	pegoGrammar.TypeKinds["DoStatement"] = rt.KindOf("DoStatement", "")
 	pegoGrammar.StructFields["ElementAccessExpression"] = map[string]bool{"Expression": true, "QuestionDotToken": true, "ArgumentExpression": true}
-	pegoGrammar.TypeKinds["ElementAccessExpression"] = pegort.KindOf("ElementAccessExpression", "")
+	pegoGrammar.TypeKinds["ElementAccessExpression"] = rt.KindOf("ElementAccessExpression", "")
 	pegoGrammar.StructFields["EnumDeclaration"] = map[string]bool{"Modifiers": true, "Name": true, "Members": true}
-	pegoGrammar.TypeKinds["EnumDeclaration"] = pegort.KindOf("EnumDeclaration", "")
+	pegoGrammar.TypeKinds["EnumDeclaration"] = rt.KindOf("EnumDeclaration", "")
 	pegoGrammar.StructFields["EnumMember"] = map[string]bool{"Name": true, "Initializer": true}
-	pegoGrammar.TypeKinds["EnumMember"] = pegort.KindOf("EnumMember", "")
+	pegoGrammar.TypeKinds["EnumMember"] = rt.KindOf("EnumMember", "")
 	pegoGrammar.StructFields["ExportAssignment"] = map[string]bool{"Modifiers": true, "Expression": true, "IsExportEquals": true}
-	pegoGrammar.TypeKinds["ExportAssignment"] = pegort.KindOf("ExportAssignment", "")
+	pegoGrammar.TypeKinds["ExportAssignment"] = rt.KindOf("ExportAssignment", "")
 	pegoGrammar.StructFields["ExportDeclaration"] = map[string]bool{"Modifiers": true, "ExportClause": true, "ModuleSpecifier": true, "Attributes": true, "IsTypeOnly": true}
-	pegoGrammar.TypeKinds["ExportDeclaration"] = pegort.KindOf("ExportDeclaration", "")
+	pegoGrammar.TypeKinds["ExportDeclaration"] = rt.KindOf("ExportDeclaration", "")
 	pegoGrammar.StructFields["ExportSpecifier"] = map[string]bool{"PropertyName": true, "Name": true, "IsTypeOnly": true}
-	pegoGrammar.TypeKinds["ExportSpecifier"] = pegort.KindOf("ExportSpecifier", "")
+	pegoGrammar.TypeKinds["ExportSpecifier"] = rt.KindOf("ExportSpecifier", "")
 	pegoGrammar.StructFields["ExpressionStatement"] = map[string]bool{"Expression": true}
-	pegoGrammar.TypeKinds["ExpressionStatement"] = pegort.KindOf("ExpressionStatement", "")
+	pegoGrammar.TypeKinds["ExpressionStatement"] = rt.KindOf("ExpressionStatement", "")
 	pegoGrammar.StructFields["ExpressionWithTypeArguments"] = map[string]bool{"Expression": true, "TypeArguments": true}
-	pegoGrammar.TypeKinds["ExpressionWithTypeArguments"] = pegort.KindOf("ExpressionWithTypeArguments", "")
+	pegoGrammar.TypeKinds["ExpressionWithTypeArguments"] = rt.KindOf("ExpressionWithTypeArguments", "")
 	pegoGrammar.StructFields["ExternalModuleReference"] = map[string]bool{"Expression": true}
-	pegoGrammar.TypeKinds["ExternalModuleReference"] = pegort.KindOf("ExternalModuleReference", "")
+	pegoGrammar.TypeKinds["ExternalModuleReference"] = rt.KindOf("ExternalModuleReference", "")
 	pegoGrammar.StructFields["ForInStatement"] = map[string]bool{"Initializer": true, "Expression": true, "Statement": true}
-	pegoGrammar.TypeKinds["ForInStatement"] = pegort.KindOf("ForInStatement", "")
+	pegoGrammar.TypeKinds["ForInStatement"] = rt.KindOf("ForInStatement", "")
 	pegoGrammar.StructFields["ForOfStatement"] = map[string]bool{"AwaitModifier": true, "Initializer": true, "Expression": true, "Statement": true}
-	pegoGrammar.TypeKinds["ForOfStatement"] = pegort.KindOf("ForOfStatement", "")
+	pegoGrammar.TypeKinds["ForOfStatement"] = rt.KindOf("ForOfStatement", "")
 	pegoGrammar.StructFields["ForStatement"] = map[string]bool{"Initializer": true, "Condition": true, "Incrementor": true, "Statement": true}
-	pegoGrammar.TypeKinds["ForStatement"] = pegort.KindOf("ForStatement", "")
+	pegoGrammar.TypeKinds["ForStatement"] = rt.KindOf("ForStatement", "")
 	pegoGrammar.StructFields["FunctionDeclaration"] = map[string]bool{"Modifiers": true, "AsteriskToken": true, "Name": true, "TypeParameters": true, "Parameters": true, "Type": true, "Body": true}
-	pegoGrammar.TypeKinds["FunctionDeclaration"] = pegort.KindOf("FunctionDeclaration", "")
+	pegoGrammar.TypeKinds["FunctionDeclaration"] = rt.KindOf("FunctionDeclaration", "")
 	pegoGrammar.StructFields["FunctionExpression"] = map[string]bool{"Modifiers": true, "AsteriskToken": true, "Name": true, "TypeParameters": true, "Parameters": true, "Type": true, "Body": true}
-	pegoGrammar.TypeKinds["FunctionExpression"] = pegort.KindOf("FunctionExpression", "")
+	pegoGrammar.TypeKinds["FunctionExpression"] = rt.KindOf("FunctionExpression", "")
 	pegoGrammar.StructFields["FunctionType"] = map[string]bool{"TypeParameters": true, "Parameters": true, "Type": true}
-	pegoGrammar.TypeKinds["FunctionType"] = pegort.KindOf("FunctionType", "")
+	pegoGrammar.TypeKinds["FunctionType"] = rt.KindOf("FunctionType", "")
 	pegoGrammar.StructFields["GetAccessor"] = map[string]bool{"Modifiers": true, "Name": true, "TypeParameters": true, "Parameters": true, "Type": true, "Body": true}
-	pegoGrammar.TypeKinds["GetAccessor"] = pegort.KindOf("GetAccessor", "")
+	pegoGrammar.TypeKinds["GetAccessor"] = rt.KindOf("GetAccessor", "")
 	pegoGrammar.StructFields["HeritageClause"] = map[string]bool{"Token": true, "Types": true}
-	pegoGrammar.TypeKinds["HeritageClause"] = pegort.KindOf("HeritageClause", "")
+	pegoGrammar.TypeKinds["HeritageClause"] = rt.KindOf("HeritageClause", "")
 	pegoGrammar.StructFields["IfStatement"] = map[string]bool{"Expression": true, "ThenStatement": true, "ElseStatement": true}
-	pegoGrammar.TypeKinds["IfStatement"] = pegort.KindOf("IfStatement", "")
+	pegoGrammar.TypeKinds["IfStatement"] = rt.KindOf("IfStatement", "")
 	pegoGrammar.StructFields["ImportAttribute"] = map[string]bool{"Name": true, "Value": true}
-	pegoGrammar.TypeKinds["ImportAttribute"] = pegort.KindOf("ImportAttribute", "")
+	pegoGrammar.TypeKinds["ImportAttribute"] = rt.KindOf("ImportAttribute", "")
 	pegoGrammar.StructFields["ImportAttributes"] = map[string]bool{"Elements": true, "Token": true}
-	pegoGrammar.TypeKinds["ImportAttributes"] = pegort.KindOf("ImportAttributes", "")
+	pegoGrammar.TypeKinds["ImportAttributes"] = rt.KindOf("ImportAttributes", "")
 	pegoGrammar.StructFields["ImportClause"] = map[string]bool{"Name": true, "NamedBindings": true, "PhaseModifier": true}
-	pegoGrammar.TypeKinds["ImportClause"] = pegort.KindOf("ImportClause", "")
+	pegoGrammar.TypeKinds["ImportClause"] = rt.KindOf("ImportClause", "")
 	pegoGrammar.StructFields["ImportDeclaration"] = map[string]bool{"Modifiers": true, "ImportClause": true, "ModuleSpecifier": true, "Attributes": true}
-	pegoGrammar.TypeKinds["ImportDeclaration"] = pegort.KindOf("ImportDeclaration", "")
+	pegoGrammar.TypeKinds["ImportDeclaration"] = rt.KindOf("ImportDeclaration", "")
 	pegoGrammar.StructFields["ImportEqualsDeclaration"] = map[string]bool{"Modifiers": true, "Name": true, "ModuleReference": true, "IsTypeOnly": true}
-	pegoGrammar.TypeKinds["ImportEqualsDeclaration"] = pegort.KindOf("ImportEqualsDeclaration", "")
+	pegoGrammar.TypeKinds["ImportEqualsDeclaration"] = rt.KindOf("ImportEqualsDeclaration", "")
 	pegoGrammar.StructFields["ImportSpecifier"] = map[string]bool{"PropertyName": true, "Name": true, "IsTypeOnly": true}
-	pegoGrammar.TypeKinds["ImportSpecifier"] = pegort.KindOf("ImportSpecifier", "")
+	pegoGrammar.TypeKinds["ImportSpecifier"] = rt.KindOf("ImportSpecifier", "")
 	pegoGrammar.StructFields["ImportType"] = map[string]bool{"Argument": true, "Attributes": true, "Qualifier": true, "TypeArguments": true, "IsTypeOf": true}
-	pegoGrammar.TypeKinds["ImportType"] = pegort.KindOf("ImportType", "")
+	pegoGrammar.TypeKinds["ImportType"] = rt.KindOf("ImportType", "")
 	pegoGrammar.StructFields["IndexSignature"] = map[string]bool{"Modifiers": true, "Parameters": true, "Type": true}
-	pegoGrammar.TypeKinds["IndexSignature"] = pegort.KindOf("IndexSignature", "")
+	pegoGrammar.TypeKinds["IndexSignature"] = rt.KindOf("IndexSignature", "")
 	pegoGrammar.StructFields["IndexedAccessType"] = map[string]bool{"ObjectType": true, "IndexType": true}
-	pegoGrammar.TypeKinds["IndexedAccessType"] = pegort.KindOf("IndexedAccessType", "")
+	pegoGrammar.TypeKinds["IndexedAccessType"] = rt.KindOf("IndexedAccessType", "")
 	pegoGrammar.StructFields["InferType"] = map[string]bool{"TypeParameter": true}
-	pegoGrammar.TypeKinds["InferType"] = pegort.KindOf("InferType", "")
+	pegoGrammar.TypeKinds["InferType"] = rt.KindOf("InferType", "")
 	pegoGrammar.StructFields["InterfaceDeclaration"] = map[string]bool{"Modifiers": true, "Name": true, "TypeParameters": true, "HeritageClauses": true, "Members": true}
-	pegoGrammar.TypeKinds["InterfaceDeclaration"] = pegort.KindOf("InterfaceDeclaration", "")
+	pegoGrammar.TypeKinds["InterfaceDeclaration"] = rt.KindOf("InterfaceDeclaration", "")
 	pegoGrammar.StructFields["IntersectionType"] = map[string]bool{"Types": true}
-	pegoGrammar.TypeKinds["IntersectionType"] = pegort.KindOf("IntersectionType", "")
+	pegoGrammar.TypeKinds["IntersectionType"] = rt.KindOf("IntersectionType", "")
 	pegoGrammar.StructFields["JSDocFunctionType"] = map[string]bool{"Parameters": true, "Type": true}
-	pegoGrammar.TypeKinds["JSDocFunctionType"] = pegort.KindOf("JSDocFunctionType", "")
+	pegoGrammar.TypeKinds["JSDocFunctionType"] = rt.KindOf("JSDocFunctionType", "")
 	pegoGrammar.StructFields["JSDocNonNullableType"] = map[string]bool{"Type": true, "Postfix": true}
-	pegoGrammar.TypeKinds["JSDocNonNullableType"] = pegort.KindOf("JSDocNonNullableType", "")
+	pegoGrammar.TypeKinds["JSDocNonNullableType"] = rt.KindOf("JSDocNonNullableType", "")
 	pegoGrammar.StructFields["JSDocNullableType"] = map[string]bool{"Type": true, "Postfix": true}
-	pegoGrammar.TypeKinds["JSDocNullableType"] = pegort.KindOf("JSDocNullableType", "")
+	pegoGrammar.TypeKinds["JSDocNullableType"] = rt.KindOf("JSDocNullableType", "")
 	pegoGrammar.StructFields["JsxAttribute"] = map[string]bool{"Name": true, "Initializer": true}
-	pegoGrammar.TypeKinds["JsxAttribute"] = pegort.KindOf("JsxAttribute", "")
+	pegoGrammar.TypeKinds["JsxAttribute"] = rt.KindOf("JsxAttribute", "")
 	pegoGrammar.StructFields["JsxAttributes"] = map[string]bool{"Properties": true}
-	pegoGrammar.TypeKinds["JsxAttributes"] = pegort.KindOf("JsxAttributes", "")
+	pegoGrammar.TypeKinds["JsxAttributes"] = rt.KindOf("JsxAttributes", "")
 	pegoGrammar.StructFields["JsxClosingElement"] = map[string]bool{"TagName": true}
-	pegoGrammar.TypeKinds["JsxClosingElement"] = pegort.KindOf("JsxClosingElement", "")
+	pegoGrammar.TypeKinds["JsxClosingElement"] = rt.KindOf("JsxClosingElement", "")
 	pegoGrammar.StructFields["JsxElement"] = map[string]bool{"OpeningElement": true, "Children": true, "ClosingElement": true}
-	pegoGrammar.TypeKinds["JsxElement"] = pegort.KindOf("JsxElement", "")
+	pegoGrammar.TypeKinds["JsxElement"] = rt.KindOf("JsxElement", "")
 	pegoGrammar.StructFields["JsxExpression"] = map[string]bool{"DotDotDotToken": true, "Expression": true}
-	pegoGrammar.TypeKinds["JsxExpression"] = pegort.KindOf("JsxExpression", "")
+	pegoGrammar.TypeKinds["JsxExpression"] = rt.KindOf("JsxExpression", "")
 	pegoGrammar.StructFields["JsxFragment"] = map[string]bool{"OpeningFragment": true, "Children": true, "ClosingFragment": true}
-	pegoGrammar.TypeKinds["JsxFragment"] = pegort.KindOf("JsxFragment", "")
+	pegoGrammar.TypeKinds["JsxFragment"] = rt.KindOf("JsxFragment", "")
 	pegoGrammar.StructFields["JsxNamespacedName"] = map[string]bool{"Namespace": true, "Name": true}
-	pegoGrammar.TypeKinds["JsxNamespacedName"] = pegort.KindOf("JsxNamespacedName", "")
+	pegoGrammar.TypeKinds["JsxNamespacedName"] = rt.KindOf("JsxNamespacedName", "")
 	pegoGrammar.StructFields["JsxOpeningElement"] = map[string]bool{"TagName": true, "TypeArguments": true, "Attributes": true}
-	pegoGrammar.TypeKinds["JsxOpeningElement"] = pegort.KindOf("JsxOpeningElement", "")
+	pegoGrammar.TypeKinds["JsxOpeningElement"] = rt.KindOf("JsxOpeningElement", "")
 	pegoGrammar.StructFields["JsxSelfClosingElement"] = map[string]bool{"TagName": true, "TypeArguments": true, "Attributes": true}
-	pegoGrammar.TypeKinds["JsxSelfClosingElement"] = pegort.KindOf("JsxSelfClosingElement", "")
+	pegoGrammar.TypeKinds["JsxSelfClosingElement"] = rt.KindOf("JsxSelfClosingElement", "")
 	pegoGrammar.StructFields["JsxSpreadAttribute"] = map[string]bool{"Expression": true}
-	pegoGrammar.TypeKinds["JsxSpreadAttribute"] = pegort.KindOf("JsxSpreadAttribute", "")
+	pegoGrammar.TypeKinds["JsxSpreadAttribute"] = rt.KindOf("JsxSpreadAttribute", "")
 	pegoGrammar.StructFields["LabeledStatement"] = map[string]bool{"Label": true, "Statement": true}
-	pegoGrammar.TypeKinds["LabeledStatement"] = pegort.KindOf("LabeledStatement", "")
+	pegoGrammar.TypeKinds["LabeledStatement"] = rt.KindOf("LabeledStatement", "")
 	pegoGrammar.StructFields["LiteralType"] = map[string]bool{"Literal": true}
-	pegoGrammar.TypeKinds["LiteralType"] = pegort.KindOf("LiteralType", "")
+	pegoGrammar.TypeKinds["LiteralType"] = rt.KindOf("LiteralType", "")
 	pegoGrammar.StructFields["MappedType"] = map[string]bool{"ReadonlyToken": true, "TypeParameter": true, "NameType": true, "QuestionToken": true, "Type": true, "Members": true}
-	pegoGrammar.TypeKinds["MappedType"] = pegort.KindOf("MappedType", "")
+	pegoGrammar.TypeKinds["MappedType"] = rt.KindOf("MappedType", "")
 	pegoGrammar.StructFields["MetaProperty"] = map[string]bool{"KeywordToken": true, "Name": true}
-	pegoGrammar.TypeKinds["MetaProperty"] = pegort.KindOf("MetaProperty", "")
+	pegoGrammar.TypeKinds["MetaProperty"] = rt.KindOf("MetaProperty", "")
 	pegoGrammar.StructFields["MethodDeclaration"] = map[string]bool{"Modifiers": true, "AsteriskToken": true, "Name": true, "QuestionToken": true, "ExclamationToken": true, "TypeParameters": true, "Parameters": true, "Type": true, "Body": true}
-	pegoGrammar.TypeKinds["MethodDeclaration"] = pegort.KindOf("MethodDeclaration", "")
+	pegoGrammar.TypeKinds["MethodDeclaration"] = rt.KindOf("MethodDeclaration", "")
 	pegoGrammar.StructFields["MethodSignature"] = map[string]bool{"Modifiers": true, "Name": true, "QuestionToken": true, "TypeParameters": true, "Parameters": true, "Type": true}
-	pegoGrammar.TypeKinds["MethodSignature"] = pegort.KindOf("MethodSignature", "")
+	pegoGrammar.TypeKinds["MethodSignature"] = rt.KindOf("MethodSignature", "")
 	pegoGrammar.StructFields["ModuleBlock"] = map[string]bool{"Statements": true}
-	pegoGrammar.TypeKinds["ModuleBlock"] = pegort.KindOf("ModuleBlock", "")
+	pegoGrammar.TypeKinds["ModuleBlock"] = rt.KindOf("ModuleBlock", "")
 	pegoGrammar.StructFields["ModuleDeclaration"] = map[string]bool{"Modifiers": true, "Name": true, "Body": true}
-	pegoGrammar.TypeKinds["ModuleDeclaration"] = pegort.KindOf("ModuleDeclaration", "")
+	pegoGrammar.TypeKinds["ModuleDeclaration"] = rt.KindOf("ModuleDeclaration", "")
 	pegoGrammar.StructFields["NamedExports"] = map[string]bool{"Elements": true}
-	pegoGrammar.TypeKinds["NamedExports"] = pegort.KindOf("NamedExports", "")
+	pegoGrammar.TypeKinds["NamedExports"] = rt.KindOf("NamedExports", "")
 	pegoGrammar.StructFields["NamedImports"] = map[string]bool{"Elements": true}
-	pegoGrammar.TypeKinds["NamedImports"] = pegort.KindOf("NamedImports", "")
+	pegoGrammar.TypeKinds["NamedImports"] = rt.KindOf("NamedImports", "")
 	pegoGrammar.StructFields["NamedTupleMember"] = map[string]bool{"DotDotDotToken": true, "Name": true, "QuestionToken": true, "Type": true}
-	pegoGrammar.TypeKinds["NamedTupleMember"] = pegort.KindOf("NamedTupleMember", "")
+	pegoGrammar.TypeKinds["NamedTupleMember"] = rt.KindOf("NamedTupleMember", "")
 	pegoGrammar.StructFields["NamespaceExport"] = map[string]bool{"Name": true}
-	pegoGrammar.TypeKinds["NamespaceExport"] = pegort.KindOf("NamespaceExport", "")
+	pegoGrammar.TypeKinds["NamespaceExport"] = rt.KindOf("NamespaceExport", "")
 	pegoGrammar.StructFields["NamespaceExportDeclaration"] = map[string]bool{"Modifiers": true, "Name": true}
-	pegoGrammar.TypeKinds["NamespaceExportDeclaration"] = pegort.KindOf("NamespaceExportDeclaration", "")
+	pegoGrammar.TypeKinds["NamespaceExportDeclaration"] = rt.KindOf("NamespaceExportDeclaration", "")
 	pegoGrammar.StructFields["NamespaceImport"] = map[string]bool{"Name": true}
-	pegoGrammar.TypeKinds["NamespaceImport"] = pegort.KindOf("NamespaceImport", "")
+	pegoGrammar.TypeKinds["NamespaceImport"] = rt.KindOf("NamespaceImport", "")
 	pegoGrammar.StructFields["NewExpression"] = map[string]bool{"Expression": true, "TypeArguments": true, "Arguments": true}
-	pegoGrammar.TypeKinds["NewExpression"] = pegort.KindOf("NewExpression", "")
+	pegoGrammar.TypeKinds["NewExpression"] = rt.KindOf("NewExpression", "")
 	pegoGrammar.StructFields["NonNullExpression"] = map[string]bool{"Expression": true}
-	pegoGrammar.TypeKinds["NonNullExpression"] = pegort.KindOf("NonNullExpression", "")
+	pegoGrammar.TypeKinds["NonNullExpression"] = rt.KindOf("NonNullExpression", "")
 	pegoGrammar.StructFields["ObjectBindingPattern"] = map[string]bool{"Elements": true}
-	pegoGrammar.TypeKinds["ObjectBindingPattern"] = pegort.KindOf("ObjectBindingPattern", "")
+	pegoGrammar.TypeKinds["ObjectBindingPattern"] = rt.KindOf("ObjectBindingPattern", "")
 	pegoGrammar.StructFields["ObjectLiteralExpression"] = map[string]bool{"Properties": true}
-	pegoGrammar.TypeKinds["ObjectLiteralExpression"] = pegort.KindOf("ObjectLiteralExpression", "")
+	pegoGrammar.TypeKinds["ObjectLiteralExpression"] = rt.KindOf("ObjectLiteralExpression", "")
 	pegoGrammar.StructFields["OptionalType"] = map[string]bool{"Type": true}
-	pegoGrammar.TypeKinds["OptionalType"] = pegort.KindOf("OptionalType", "")
+	pegoGrammar.TypeKinds["OptionalType"] = rt.KindOf("OptionalType", "")
 	pegoGrammar.StructFields["Parameter"] = map[string]bool{"Modifiers": true, "DotDotDotToken": true, "Name": true, "QuestionToken": true, "Type": true, "Initializer": true}
-	pegoGrammar.TypeKinds["Parameter"] = pegort.KindOf("Parameter", "")
+	pegoGrammar.TypeKinds["Parameter"] = rt.KindOf("Parameter", "")
 	pegoGrammar.StructFields["ParenthesizedExpression"] = map[string]bool{"Expression": true}
-	pegoGrammar.TypeKinds["ParenthesizedExpression"] = pegort.KindOf("ParenthesizedExpression", "")
+	pegoGrammar.TypeKinds["ParenthesizedExpression"] = rt.KindOf("ParenthesizedExpression", "")
 	pegoGrammar.StructFields["ParenthesizedType"] = map[string]bool{"Type": true}
-	pegoGrammar.TypeKinds["ParenthesizedType"] = pegort.KindOf("ParenthesizedType", "")
+	pegoGrammar.TypeKinds["ParenthesizedType"] = rt.KindOf("ParenthesizedType", "")
 	pegoGrammar.StructFields["PostfixUnaryExpression"] = map[string]bool{"Operand": true, "Operator": true}
-	pegoGrammar.TypeKinds["PostfixUnaryExpression"] = pegort.KindOf("PostfixUnaryExpression", "")
+	pegoGrammar.TypeKinds["PostfixUnaryExpression"] = rt.KindOf("PostfixUnaryExpression", "")
 	pegoGrammar.StructFields["PrefixUnaryExpression"] = map[string]bool{"Operator": true, "Operand": true}
-	pegoGrammar.TypeKinds["PrefixUnaryExpression"] = pegort.KindOf("PrefixUnaryExpression", "")
+	pegoGrammar.TypeKinds["PrefixUnaryExpression"] = rt.KindOf("PrefixUnaryExpression", "")
 	pegoGrammar.StructFields["PropertyAccessExpression"] = map[string]bool{"Expression": true, "QuestionDotToken": true, "Name": true}
-	pegoGrammar.TypeKinds["PropertyAccessExpression"] = pegort.KindOf("PropertyAccessExpression", "")
+	pegoGrammar.TypeKinds["PropertyAccessExpression"] = rt.KindOf("PropertyAccessExpression", "")
 	pegoGrammar.StructFields["PropertyAssignment"] = map[string]bool{"Modifiers": true, "Name": true, "QuestionToken": true, "ExclamationToken": true, "Initializer": true}
-	pegoGrammar.TypeKinds["PropertyAssignment"] = pegort.KindOf("PropertyAssignment", "")
+	pegoGrammar.TypeKinds["PropertyAssignment"] = rt.KindOf("PropertyAssignment", "")
 	pegoGrammar.StructFields["PropertyDeclaration"] = map[string]bool{"Modifiers": true, "Name": true, "QuestionToken": true, "ExclamationToken": true, "Type": true, "Initializer": true}
-	pegoGrammar.TypeKinds["PropertyDeclaration"] = pegort.KindOf("PropertyDeclaration", "")
+	pegoGrammar.TypeKinds["PropertyDeclaration"] = rt.KindOf("PropertyDeclaration", "")
 	pegoGrammar.StructFields["PropertySignature"] = map[string]bool{"Modifiers": true, "Name": true, "QuestionToken": true, "Type": true, "Initializer": true}
-	pegoGrammar.TypeKinds["PropertySignature"] = pegort.KindOf("PropertySignature", "")
+	pegoGrammar.TypeKinds["PropertySignature"] = rt.KindOf("PropertySignature", "")
 	pegoGrammar.StructFields["QualifiedName"] = map[string]bool{"Left": true, "Right": true}
-	pegoGrammar.TypeKinds["QualifiedName"] = pegort.KindOf("QualifiedName", "")
+	pegoGrammar.TypeKinds["QualifiedName"] = rt.KindOf("QualifiedName", "")
 	pegoGrammar.StructFields["RestType"] = map[string]bool{"Type": true}
-	pegoGrammar.TypeKinds["RestType"] = pegort.KindOf("RestType", "")
+	pegoGrammar.TypeKinds["RestType"] = rt.KindOf("RestType", "")
 	pegoGrammar.StructFields["ReturnStatement"] = map[string]bool{"Expression": true}
-	pegoGrammar.TypeKinds["ReturnStatement"] = pegort.KindOf("ReturnStatement", "")
+	pegoGrammar.TypeKinds["ReturnStatement"] = rt.KindOf("ReturnStatement", "")
 	pegoGrammar.StructFields["SatisfiesExpression"] = map[string]bool{"Expression": true, "Type": true}
-	pegoGrammar.TypeKinds["SatisfiesExpression"] = pegort.KindOf("SatisfiesExpression", "")
+	pegoGrammar.TypeKinds["SatisfiesExpression"] = rt.KindOf("SatisfiesExpression", "")
 	pegoGrammar.StructFields["SetAccessor"] = map[string]bool{"Modifiers": true, "Name": true, "TypeParameters": true, "Parameters": true, "Type": true, "Body": true}
-	pegoGrammar.TypeKinds["SetAccessor"] = pegort.KindOf("SetAccessor", "")
+	pegoGrammar.TypeKinds["SetAccessor"] = rt.KindOf("SetAccessor", "")
 	pegoGrammar.StructFields["ShorthandPropertyAssignment"] = map[string]bool{"Modifiers": true, "Name": true, "QuestionToken": true, "ExclamationToken": true, "EqualsToken": true, "ObjectAssignmentInitializer": true}
-	pegoGrammar.TypeKinds["ShorthandPropertyAssignment"] = pegort.KindOf("ShorthandPropertyAssignment", "")
+	pegoGrammar.TypeKinds["ShorthandPropertyAssignment"] = rt.KindOf("ShorthandPropertyAssignment", "")
 	pegoGrammar.StructFields["SourceFile"] = map[string]bool{"Statements": true, "EndOfFileToken": true}
-	pegoGrammar.TypeKinds["SourceFile"] = pegort.KindOf("SourceFile", "")
+	pegoGrammar.TypeKinds["SourceFile"] = rt.KindOf("SourceFile", "")
 	pegoGrammar.StructFields["SpreadAssignment"] = map[string]bool{"Expression": true}
-	pegoGrammar.TypeKinds["SpreadAssignment"] = pegort.KindOf("SpreadAssignment", "")
+	pegoGrammar.TypeKinds["SpreadAssignment"] = rt.KindOf("SpreadAssignment", "")
 	pegoGrammar.StructFields["SpreadElement"] = map[string]bool{"Expression": true}
-	pegoGrammar.TypeKinds["SpreadElement"] = pegort.KindOf("SpreadElement", "")
+	pegoGrammar.TypeKinds["SpreadElement"] = rt.KindOf("SpreadElement", "")
 	pegoGrammar.StructFields["SwitchStatement"] = map[string]bool{"Expression": true, "CaseBlock": true}
-	pegoGrammar.TypeKinds["SwitchStatement"] = pegort.KindOf("SwitchStatement", "")
+	pegoGrammar.TypeKinds["SwitchStatement"] = rt.KindOf("SwitchStatement", "")
 	pegoGrammar.StructFields["TaggedTemplateExpression"] = map[string]bool{"Tag": true, "QuestionDotToken": true, "TypeArguments": true, "Template": true}
-	pegoGrammar.TypeKinds["TaggedTemplateExpression"] = pegort.KindOf("TaggedTemplateExpression", "")
+	pegoGrammar.TypeKinds["TaggedTemplateExpression"] = rt.KindOf("TaggedTemplateExpression", "")
 	pegoGrammar.StructFields["TemplateExpression"] = map[string]bool{"Head": true, "TemplateSpans": true}
-	pegoGrammar.TypeKinds["TemplateExpression"] = pegort.KindOf("TemplateExpression", "")
+	pegoGrammar.TypeKinds["TemplateExpression"] = rt.KindOf("TemplateExpression", "")
 	pegoGrammar.StructFields["TemplateLiteralType"] = map[string]bool{"Head": true, "TemplateSpans": true}
-	pegoGrammar.TypeKinds["TemplateLiteralType"] = pegort.KindOf("TemplateLiteralType", "")
+	pegoGrammar.TypeKinds["TemplateLiteralType"] = rt.KindOf("TemplateLiteralType", "")
 	pegoGrammar.StructFields["TemplateLiteralTypeSpan"] = map[string]bool{"Type": true, "Literal": true}
-	pegoGrammar.TypeKinds["TemplateLiteralTypeSpan"] = pegort.KindOf("TemplateLiteralTypeSpan", "")
+	pegoGrammar.TypeKinds["TemplateLiteralTypeSpan"] = rt.KindOf("TemplateLiteralTypeSpan", "")
 	pegoGrammar.StructFields["TemplateSpan"] = map[string]bool{"Expression": true, "Literal": true}
-	pegoGrammar.TypeKinds["TemplateSpan"] = pegort.KindOf("TemplateSpan", "")
+	pegoGrammar.TypeKinds["TemplateSpan"] = rt.KindOf("TemplateSpan", "")
 	pegoGrammar.StructFields["ThrowStatement"] = map[string]bool{"Expression": true}
-	pegoGrammar.TypeKinds["ThrowStatement"] = pegort.KindOf("ThrowStatement", "")
+	pegoGrammar.TypeKinds["ThrowStatement"] = rt.KindOf("ThrowStatement", "")
 	pegoGrammar.StructFields["TryStatement"] = map[string]bool{"TryBlock": true, "CatchClause": true, "FinallyBlock": true}
-	pegoGrammar.TypeKinds["TryStatement"] = pegort.KindOf("TryStatement", "")
+	pegoGrammar.TypeKinds["TryStatement"] = rt.KindOf("TryStatement", "")
 	pegoGrammar.StructFields["TupleType"] = map[string]bool{"Elements": true}
-	pegoGrammar.TypeKinds["TupleType"] = pegort.KindOf("TupleType", "")
+	pegoGrammar.TypeKinds["TupleType"] = rt.KindOf("TupleType", "")
 	pegoGrammar.StructFields["TypeAliasDeclaration"] = map[string]bool{"Modifiers": true, "Name": true, "TypeParameters": true, "Type": true}
-	pegoGrammar.TypeKinds["TypeAliasDeclaration"] = pegort.KindOf("TypeAliasDeclaration", "")
+	pegoGrammar.TypeKinds["TypeAliasDeclaration"] = rt.KindOf("TypeAliasDeclaration", "")
 	pegoGrammar.StructFields["TypeAssertionExpression"] = map[string]bool{"Type": true, "Expression": true}
-	pegoGrammar.TypeKinds["TypeAssertionExpression"] = pegort.KindOf("TypeAssertionExpression", "")
+	pegoGrammar.TypeKinds["TypeAssertionExpression"] = rt.KindOf("TypeAssertionExpression", "")
 	pegoGrammar.StructFields["TypeLiteral"] = map[string]bool{"Members": true}
-	pegoGrammar.TypeKinds["TypeLiteral"] = pegort.KindOf("TypeLiteral", "")
+	pegoGrammar.TypeKinds["TypeLiteral"] = rt.KindOf("TypeLiteral", "")
 	pegoGrammar.StructFields["TypeOfExpression"] = map[string]bool{"Expression": true}
-	pegoGrammar.TypeKinds["TypeOfExpression"] = pegort.KindOf("TypeOfExpression", "")
+	pegoGrammar.TypeKinds["TypeOfExpression"] = rt.KindOf("TypeOfExpression", "")
 	pegoGrammar.StructFields["TypeOperator"] = map[string]bool{"Operator": true, "Type": true}
-	pegoGrammar.TypeKinds["TypeOperator"] = pegort.KindOf("TypeOperator", "")
+	pegoGrammar.TypeKinds["TypeOperator"] = rt.KindOf("TypeOperator", "")
 	pegoGrammar.StructFields["TypeParameter"] = map[string]bool{"Modifiers": true, "Name": true, "Constraint": true, "Default": true, "Expression": true}
-	pegoGrammar.TypeKinds["TypeParameter"] = pegort.KindOf("TypeParameter", "")
+	pegoGrammar.TypeKinds["TypeParameter"] = rt.KindOf("TypeParameter", "")
 	pegoGrammar.StructFields["TypePredicate"] = map[string]bool{"AssertsModifier": true, "ParameterName": true, "Type": true}
-	pegoGrammar.TypeKinds["TypePredicate"] = pegort.KindOf("TypePredicate", "")
+	pegoGrammar.TypeKinds["TypePredicate"] = rt.KindOf("TypePredicate", "")
 	pegoGrammar.StructFields["TypeQuery"] = map[string]bool{"ExprName": true, "TypeArguments": true}
-	pegoGrammar.TypeKinds["TypeQuery"] = pegort.KindOf("TypeQuery", "")
+	pegoGrammar.TypeKinds["TypeQuery"] = rt.KindOf("TypeQuery", "")
 	pegoGrammar.StructFields["TypeReference"] = map[string]bool{"TypeName": true, "TypeArguments": true}
-	pegoGrammar.TypeKinds["TypeReference"] = pegort.KindOf("TypeReference", "")
+	pegoGrammar.TypeKinds["TypeReference"] = rt.KindOf("TypeReference", "")
 	pegoGrammar.StructFields["UnionType"] = map[string]bool{"Types": true}
-	pegoGrammar.TypeKinds["UnionType"] = pegort.KindOf("UnionType", "")
+	pegoGrammar.TypeKinds["UnionType"] = rt.KindOf("UnionType", "")
 	pegoGrammar.StructFields["VariableDeclaration"] = map[string]bool{"Name": true, "ExclamationToken": true, "Type": true, "Initializer": true}
-	pegoGrammar.TypeKinds["VariableDeclaration"] = pegort.KindOf("VariableDeclaration", "")
+	pegoGrammar.TypeKinds["VariableDeclaration"] = rt.KindOf("VariableDeclaration", "")
 	pegoGrammar.StructFields["VariableDeclarationList"] = map[string]bool{"Keyword": true, "Declarations": true}
-	pegoGrammar.TypeKinds["VariableDeclarationList"] = pegort.KindOf("VariableDeclarationList", "")
+	pegoGrammar.TypeKinds["VariableDeclarationList"] = rt.KindOf("VariableDeclarationList", "")
 	pegoGrammar.StructFields["VariableStatement"] = map[string]bool{"Modifiers": true, "DeclarationList": true}
-	pegoGrammar.TypeKinds["VariableStatement"] = pegort.KindOf("VariableStatement", "")
+	pegoGrammar.TypeKinds["VariableStatement"] = rt.KindOf("VariableStatement", "")
 	pegoGrammar.StructFields["VoidExpression"] = map[string]bool{"Expression": true}
-	pegoGrammar.TypeKinds["VoidExpression"] = pegort.KindOf("VoidExpression", "")
+	pegoGrammar.TypeKinds["VoidExpression"] = rt.KindOf("VoidExpression", "")
 	pegoGrammar.StructFields["WhileStatement"] = map[string]bool{"Expression": true, "Statement": true}
-	pegoGrammar.TypeKinds["WhileStatement"] = pegort.KindOf("WhileStatement", "")
+	pegoGrammar.TypeKinds["WhileStatement"] = rt.KindOf("WhileStatement", "")
 	pegoGrammar.StructFields["WithStatement"] = map[string]bool{"Expression": true, "Statement": true}
-	pegoGrammar.TypeKinds["WithStatement"] = pegort.KindOf("WithStatement", "")
+	pegoGrammar.TypeKinds["WithStatement"] = rt.KindOf("WithStatement", "")
 	pegoGrammar.StructFields["YieldExpression"] = map[string]bool{"AsteriskToken": true, "Expression": true}
-	pegoGrammar.TypeKinds["YieldExpression"] = pegort.KindOf("YieldExpression", "")
-	pegoGrammar.NodeTypes["BigIntLiteral"] = pegort.NewNodeTypeKinds("BigIntLiteral")
-	pegoGrammar.NodeTypes["BooleanLiteral"] = pegort.NewNodeTypeKinds("BooleanLiteral")
-	pegoGrammar.NodeTypes["DebuggerStatement"] = pegort.NewNodeTypeKinds("DebuggerStatement")
-	pegoGrammar.NodeTypes["EmptyStatement"] = pegort.NewNodeTypeKinds("EmptyStatement")
-	pegoGrammar.NodeTypes["EndOfFileToken"] = pegort.NewNodeTypeKinds("EndOfFileToken")
-	pegoGrammar.NodeTypes["Identifier"] = pegort.NewNodeTypeKinds("Identifier")
-	pegoGrammar.NodeTypes["ImportExpression"] = pegort.NewNodeTypeKinds("ImportExpression")
-	pegoGrammar.NodeTypes["JSDocAllType"] = pegort.NewNodeTypeKinds("JSDocAllType")
-	pegoGrammar.NodeTypes["JSDocUnknownType"] = pegort.NewNodeTypeKinds("JSDocUnknownType")
-	pegoGrammar.NodeTypes["JsxClosingFragment"] = pegort.NewNodeTypeKinds("JsxClosingFragment")
-	pegoGrammar.NodeTypes["JsxOpeningFragment"] = pegort.NewNodeTypeKinds("JsxOpeningFragment")
-	pegoGrammar.NodeTypes["JsxText"] = pegort.NewNodeTypeKinds("JsxText")
-	pegoGrammar.NodeTypes["KeywordTypeNode"] = pegort.NewNodeTypeKinds("KeywordTypeNode")
-	pegoGrammar.NodeTypes["Modifier"] = pegort.NewNodeTypeKinds("Modifier")
-	pegoGrammar.NodeTypes["NoSubstitutionTemplateLiteral"] = pegort.NewNodeTypeKinds("NoSubstitutionTemplateLiteral")
-	pegoGrammar.NodeTypes["NullLiteral"] = pegort.NewNodeTypeKinds("NullLiteral")
-	pegoGrammar.NodeTypes["NumericLiteral"] = pegort.NewNodeTypeKinds("NumericLiteral")
-	pegoGrammar.NodeTypes["OmittedExpression"] = pegort.NewNodeTypeKinds("OmittedExpression")
-	pegoGrammar.NodeTypes["PrivateIdentifier"] = pegort.NewNodeTypeKinds("PrivateIdentifier")
-	pegoGrammar.NodeTypes["RegularExpressionLiteral"] = pegort.NewNodeTypeKinds("RegularExpressionLiteral")
-	pegoGrammar.NodeTypes["SemicolonClassElement"] = pegort.NewNodeTypeKinds("SemicolonClassElement")
-	pegoGrammar.NodeTypes["StringLiteral"] = pegort.NewNodeTypeKinds("StringLiteral")
-	pegoGrammar.NodeTypes["SuperExpression"] = pegort.NewNodeTypeKinds("SuperExpression")
-	pegoGrammar.NodeTypes["TemplateHead"] = pegort.NewNodeTypeKinds("TemplateHead")
-	pegoGrammar.NodeTypes["TemplateMiddle"] = pegort.NewNodeTypeKinds("TemplateMiddle")
-	pegoGrammar.NodeTypes["TemplateTail"] = pegort.NewNodeTypeKinds("TemplateTail")
-	pegoGrammar.NodeTypes["ThisExpression"] = pegort.NewNodeTypeKinds("ThisExpression")
-	pegoGrammar.NodeTypes["ThisTypeNode"] = pegort.NewNodeTypeKinds("ThisTypeNode")
-	pegoGrammar.NodeTypes["Token"] = pegort.NewNodeTypeKinds("Token")
+	pegoGrammar.TypeKinds["YieldExpression"] = rt.KindOf("YieldExpression", "")
+	pegoGrammar.NodeTypes["BigIntLiteral"] = rt.NewNodeTypeKinds("BigIntLiteral")
+	pegoGrammar.NodeTypes["BooleanLiteral"] = rt.NewNodeTypeKinds("BooleanLiteral")
+	pegoGrammar.NodeTypes["DebuggerStatement"] = rt.NewNodeTypeKinds("DebuggerStatement")
+	pegoGrammar.NodeTypes["EmptyStatement"] = rt.NewNodeTypeKinds("EmptyStatement")
+	pegoGrammar.NodeTypes["EndOfFileToken"] = rt.NewNodeTypeKinds("EndOfFileToken")
+	pegoGrammar.NodeTypes["Identifier"] = rt.NewNodeTypeKinds("Identifier")
+	pegoGrammar.NodeTypes["ImportExpression"] = rt.NewNodeTypeKinds("ImportExpression")
+	pegoGrammar.NodeTypes["JSDocAllType"] = rt.NewNodeTypeKinds("JSDocAllType")
+	pegoGrammar.NodeTypes["JSDocUnknownType"] = rt.NewNodeTypeKinds("JSDocUnknownType")
+	pegoGrammar.NodeTypes["JsxClosingFragment"] = rt.NewNodeTypeKinds("JsxClosingFragment")
+	pegoGrammar.NodeTypes["JsxOpeningFragment"] = rt.NewNodeTypeKinds("JsxOpeningFragment")
+	pegoGrammar.NodeTypes["JsxText"] = rt.NewNodeTypeKinds("JsxText")
+	pegoGrammar.NodeTypes["KeywordTypeNode"] = rt.NewNodeTypeKinds("KeywordTypeNode")
+	pegoGrammar.NodeTypes["Modifier"] = rt.NewNodeTypeKinds("Modifier")
+	pegoGrammar.NodeTypes["NoSubstitutionTemplateLiteral"] = rt.NewNodeTypeKinds("NoSubstitutionTemplateLiteral")
+	pegoGrammar.NodeTypes["NullLiteral"] = rt.NewNodeTypeKinds("NullLiteral")
+	pegoGrammar.NodeTypes["NumericLiteral"] = rt.NewNodeTypeKinds("NumericLiteral")
+	pegoGrammar.NodeTypes["OmittedExpression"] = rt.NewNodeTypeKinds("OmittedExpression")
+	pegoGrammar.NodeTypes["PrivateIdentifier"] = rt.NewNodeTypeKinds("PrivateIdentifier")
+	pegoGrammar.NodeTypes["RegularExpressionLiteral"] = rt.NewNodeTypeKinds("RegularExpressionLiteral")
+	pegoGrammar.NodeTypes["SemicolonClassElement"] = rt.NewNodeTypeKinds("SemicolonClassElement")
+	pegoGrammar.NodeTypes["StringLiteral"] = rt.NewNodeTypeKinds("StringLiteral")
+	pegoGrammar.NodeTypes["SuperExpression"] = rt.NewNodeTypeKinds("SuperExpression")
+	pegoGrammar.NodeTypes["TemplateHead"] = rt.NewNodeTypeKinds("TemplateHead")
+	pegoGrammar.NodeTypes["TemplateMiddle"] = rt.NewNodeTypeKinds("TemplateMiddle")
+	pegoGrammar.NodeTypes["TemplateTail"] = rt.NewNodeTypeKinds("TemplateTail")
+	pegoGrammar.NodeTypes["ThisExpression"] = rt.NewNodeTypeKinds("ThisExpression")
+	pegoGrammar.NodeTypes["ThisTypeNode"] = rt.NewNodeTypeKinds("ThisTypeNode")
+	pegoGrammar.NodeTypes["Token"] = rt.NewNodeTypeKinds("Token")
 	pegoGrammar.Starts = []string{"main"}
 	pegoGrammar.DefaultStart = "main"
 	pegoGrammar.NoWorkControls = true
 	pegoGrammar.SetVars([]string{"ctx"}, []any{0})
-	trules = pegort.NewTRules(rules)
+	trules = rt.NewTRules(rules)
 	defer tinit()
 	trules[0].Entry = u0
 
-	trules[209].OperatorsRule = &pegort.TOperatorsRule{
+	trules[209].OperatorsRule = &rt.TOperatorsRule{
 		Skip: e1416,
-		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1417, Action: nil, Value: sh23},
+		Operands: []*rt.TOperatorsRuleLine{
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1417, Action: nil, Value: sh23},
 		},
-		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "left", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1419, Action: func(c *pegort.TActCtx) any {
+		Prefix: []*rt.TOperatorsRuleOp{},
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "left", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1419, Action: func(c *rt.TActCtx) any {
 			return func() any {
 
 				return func() any {
@@ -5597,7 +5597,7 @@ func init() {
 				}()
 			}()
 		}, Value: sh5}},
-			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1424, Action: func(c *pegort.TActCtx) any {
+			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1424, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5608,7 +5608,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh5}},
-			{Id: 2, Kind: "infix", Assoc: "left", Level: 3, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1429, Action: func(c *pegort.TActCtx) any {
+			{Id: 2, Kind: "infix", Assoc: "left", Level: 3, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1429, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5619,7 +5619,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh5}},
-			{Id: 3, Kind: "infix", Assoc: "left", Level: 4, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1434, Action: func(c *pegort.TActCtx) any {
+			{Id: 3, Kind: "infix", Assoc: "left", Level: 4, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1434, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5630,7 +5630,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh5}},
-			{Id: 4, Kind: "infix", Assoc: "left", Level: 5, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1438, Action: func(c *pegort.TActCtx) any {
+			{Id: 4, Kind: "infix", Assoc: "left", Level: 5, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1438, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5641,7 +5641,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh5}},
-			{Id: 5, Kind: "infix", Assoc: "left", Level: 6, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1443, Action: func(c *pegort.TActCtx) any {
+			{Id: 5, Kind: "infix", Assoc: "left", Level: 6, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1443, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5652,7 +5652,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh5}},
-			{Id: 6, Kind: "infix", Assoc: "left", Level: 7, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1448, Action: func(c *pegort.TActCtx) any {
+			{Id: 6, Kind: "infix", Assoc: "left", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1448, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5663,7 +5663,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh5}},
-			{Id: 7, Kind: "postfix", Assoc: "", Level: 7, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t"}, M: e1452, Action: func(c *pegort.TActCtx) any {
+			{Id: 7, Kind: "postfix", Assoc: "", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{"t"}, M: e1452, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5673,7 +5673,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh13}},
-			{Id: 8, Kind: "postfix", Assoc: "", Level: 7, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t"}, M: e1455, Action: func(c *pegort.TActCtx) any {
+			{Id: 8, Kind: "postfix", Assoc: "", Level: 7, Line: &rt.TOperatorsRuleLine{Scope: []string{"t"}, M: e1455, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5683,7 +5683,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh13}},
-			{Id: 9, Kind: "infix", Assoc: "left", Level: 8, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1459, Action: func(c *pegort.TActCtx) any {
+			{Id: 9, Kind: "infix", Assoc: "left", Level: 8, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1459, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5694,7 +5694,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh5}},
-			{Id: 10, Kind: "infix", Assoc: "left", Level: 9, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1464, Action: func(c *pegort.TActCtx) any {
+			{Id: 10, Kind: "infix", Assoc: "left", Level: 9, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1464, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5705,7 +5705,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh5}},
-			{Id: 11, Kind: "infix", Assoc: "left", Level: 10, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1469, Action: func(c *pegort.TActCtx) any {
+			{Id: 11, Kind: "infix", Assoc: "left", Level: 10, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1469, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5716,7 +5716,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh5}},
-			{Id: 12, Kind: "infix", Assoc: "right", Level: 11, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1474, Action: func(c *pegort.TActCtx) any {
+			{Id: 12, Kind: "infix", Assoc: "right", Level: 11, Line: &rt.TOperatorsRuleLine{Scope: []string{"o"}, M: e1474, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5728,18 +5728,18 @@ func init() {
 				}()
 			}, Value: sh5}}},
 	}
-	trules[209].Body = func(p *pegort.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[209], min) }
+	trules[209].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[209], min) }
 
-	trules[236].OperatorsRule = &pegort.TOperatorsRule{
+	trules[236].OperatorsRule = &rt.TOperatorsRule{
 		Skip: e1416,
-		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1478, Action: nil, Value: sh23},
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1479, Action: nil, Value: sh23},
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1480, Action: nil, Value: sh23},
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1481, Action: nil, Value: sh23},
+		Operands: []*rt.TOperatorsRuleLine{
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1478, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1479, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1480, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1481, Action: nil, Value: sh23},
 		},
-		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"n"}, M: e1483, Action: func(c *pegort.TActCtx) any {
+		Prefix: []*rt.TOperatorsRuleOp{},
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n"}, M: e1483, Action: func(c *rt.TActCtx) any {
 			return func() any {
 
 				return func() any {
@@ -5749,7 +5749,7 @@ func init() {
 				}()
 			}()
 		}, Value: sh13}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"q", "n"}, M: e1487, Action: func(c *pegort.TActCtx) any {
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "n"}, M: e1487, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5760,7 +5760,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh13}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"e"}, M: e1492, Action: func(c *pegort.TActCtx) any {
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"e"}, M: e1492, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5770,7 +5770,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh74}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"q", "e"}, M: e1495, Action: func(c *pegort.TActCtx) any {
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "e"}, M: e1495, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5781,7 +5781,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh327}},
-			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t", "l"}, M: e1500, Action: func(c *pegort.TActCtx) any {
+			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t", "l"}, M: e1500, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5792,7 +5792,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh13}},
-			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"q", "t", "l"}, M: e1504, Action: func(c *pegort.TActCtx) any {
+			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "t", "l"}, M: e1504, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5804,7 +5804,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh74}},
-			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e1509, Action: func(c *pegort.TActCtx) any {
+			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1509, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5813,7 +5813,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh5}},
-			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t"}, M: e1512, Action: func(c *pegort.TActCtx) any {
+			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t"}, M: e1512, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5823,7 +5823,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh5}},
-			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t", "a"}, M: e1516, Action: func(c *pegort.TActCtx) any {
+			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t", "a"}, M: e1516, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5834,7 +5834,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh13}},
-			{Id: 9, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"q", "t", "a"}, M: e1520, Action: func(c *pegort.TActCtx) any {
+			{Id: 9, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "t", "a"}, M: e1520, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5847,17 +5847,17 @@ func init() {
 				}()
 			}, Value: sh74}}},
 	}
-	trules[236].Body = func(p *pegort.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[236], min) }
-	trules[237].OperatorsRule = &pegort.TOperatorsRule{
+	trules[236].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[236], min) }
+	trules[237].OperatorsRule = &rt.TOperatorsRule{
 		Skip: e1416,
-		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1478, Action: nil, Value: sh23},
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1479, Action: nil, Value: sh23},
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1480, Action: nil, Value: sh23},
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1481, Action: nil, Value: sh23},
+		Operands: []*rt.TOperatorsRuleLine{
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1478, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1479, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1480, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1481, Action: nil, Value: sh23},
 		},
-		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"n"}, M: e1483, Action: func(c *pegort.TActCtx) any {
+		Prefix: []*rt.TOperatorsRuleOp{},
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n"}, M: e1483, Action: func(c *rt.TActCtx) any {
 			return func() any {
 
 				return func() any {
@@ -5867,7 +5867,7 @@ func init() {
 				}()
 			}()
 		}, Value: sh13}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"q", "n"}, M: e1487, Action: func(c *pegort.TActCtx) any {
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "n"}, M: e1487, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5878,7 +5878,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh13}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"e"}, M: e1492, Action: func(c *pegort.TActCtx) any {
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"e"}, M: e1492, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5888,7 +5888,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh74}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"q", "e"}, M: e1495, Action: func(c *pegort.TActCtx) any {
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "e"}, M: e1495, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5899,7 +5899,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh327}},
-			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t", "l"}, M: e1500, Action: func(c *pegort.TActCtx) any {
+			{Id: 4, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t", "l"}, M: e1500, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5910,7 +5910,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh13}},
-			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"q", "t", "l"}, M: e1504, Action: func(c *pegort.TActCtx) any {
+			{Id: 5, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "t", "l"}, M: e1504, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5922,7 +5922,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh74}},
-			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e1509, Action: func(c *pegort.TActCtx) any {
+			{Id: 6, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1509, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5931,7 +5931,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh5}},
-			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t", "a"}, M: e1516, Action: func(c *pegort.TActCtx) any {
+			{Id: 7, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t", "a"}, M: e1516, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5942,7 +5942,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh13}},
-			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"q", "t", "a"}, M: e1520, Action: func(c *pegort.TActCtx) any {
+			{Id: 8, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"q", "t", "a"}, M: e1520, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5955,15 +5955,15 @@ func init() {
 				}()
 			}, Value: sh74}}},
 	}
-	trules[237].Body = func(p *pegort.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[237], min) }
-	trules[238].OperatorsRule = &pegort.TOperatorsRule{
+	trules[237].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[237], min) }
+	trules[238].OperatorsRule = &rt.TOperatorsRule{
 		Skip: e1416,
-		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1478, Action: nil, Value: sh23},
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1550, Action: nil, Value: sh23},
+		Operands: []*rt.TOperatorsRuleLine{
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1478, Action: nil, Value: sh23},
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1550, Action: nil, Value: sh23},
 		},
-		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"n"}, M: e1483, Action: func(c *pegort.TActCtx) any {
+		Prefix: []*rt.TOperatorsRuleOp{},
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"n"}, M: e1483, Action: func(c *rt.TActCtx) any {
 			return func() any {
 
 				return func() any {
@@ -5973,7 +5973,7 @@ func init() {
 				}()
 			}()
 		}, Value: sh13}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"e"}, M: e1492, Action: func(c *pegort.TActCtx) any {
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"e"}, M: e1492, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5983,7 +5983,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh74}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"t", "l"}, M: e1500, Action: func(c *pegort.TActCtx) any {
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"t", "l"}, M: e1500, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -5994,7 +5994,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh13}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e1509, Action: func(c *pegort.TActCtx) any {
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1509, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -6004,15 +6004,15 @@ func init() {
 				}()
 			}, Value: sh5}}},
 	}
-	trules[238].Body = func(p *pegort.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[238], min) }
+	trules[238].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[238], min) }
 
-	trules[338].OperatorsRule = &pegort.TOperatorsRule{
+	trules[338].OperatorsRule = &rt.TOperatorsRule{
 		Skip: e1416,
-		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1559, Action: nil, Value: sh23},
+		Operands: []*rt.TOperatorsRuleLine{
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1559, Action: nil, Value: sh23},
 		},
-		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e1560, Action: func(c *pegort.TActCtx) any {
+		Prefix: []*rt.TOperatorsRuleOp{},
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1560, Action: func(c *rt.TActCtx) any {
 			return func() any {
 
 				return func() any {
@@ -6021,7 +6021,7 @@ func init() {
 				}()
 			}()
 		}, Value: sh13}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e1562, Action: func(c *pegort.TActCtx) any {
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"i"}, M: e1562, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -6031,7 +6031,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh74}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e1565, Action: func(c *pegort.TActCtx) any {
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1565, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -6041,7 +6041,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh5}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e1568, Action: func(c *pegort.TActCtx) any {
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1568, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -6052,14 +6052,14 @@ func init() {
 				}()
 			}, Value: sh5}}},
 	}
-	trules[338].Body = func(p *pegort.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[338], min) }
-	trules[339].OperatorsRule = &pegort.TOperatorsRule{
+	trules[338].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[338], min) }
+	trules[339].OperatorsRule = &rt.TOperatorsRule{
 		Skip: e1416,
-		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1559, Action: nil, Value: sh23},
+		Operands: []*rt.TOperatorsRuleLine{
+			&rt.TOperatorsRuleLine{Scope: []string{}, M: e1559, Action: nil, Value: sh23},
 		},
-		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e1560, Action: func(c *pegort.TActCtx) any {
+		Prefix: []*rt.TOperatorsRuleOp{},
+		Led: []*rt.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1560, Action: func(c *rt.TActCtx) any {
 			return func() any {
 
 				return func() any {
@@ -6068,7 +6068,7 @@ func init() {
 				}()
 			}()
 		}, Value: sh13}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"i"}, M: e1562, Action: func(c *pegort.TActCtx) any {
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{"i"}, M: e1562, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -6078,7 +6078,7 @@ func init() {
 					}()
 				}()
 			}, Value: sh74}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{}, M: e1565, Action: func(c *pegort.TActCtx) any {
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &rt.TOperatorsRuleLine{Scope: []string{}, M: e1565, Action: func(c *rt.TActCtx) any {
 				return func() any {
 
 					return func() any {
@@ -6089,15 +6089,15 @@ func init() {
 				}()
 			}, Value: sh5}}},
 	}
-	trules[339].Body = func(p *pegort.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[339], min) }
+	trules[339].Body = func(p *rt.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[339], min) }
 
 	pegoGrammar.Descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"\\x00\"", "\"\\x01\"", "\"import\"", "[(.]", "\"export\"", "\"type\"", "[=*{]", "\"default\"", "\"as\"", "\"enum\"", "\"namespace\"", "\"module\"", "\"global\"", "\"#!\"", "[^\\n\\r\\u2028\\u2029]", "\"{\"", "\";\"", "\"if\"", "\"do\"", "\"while\"", "\"continue\"", "\"break\"", "\"return\"", "\"with\"", "\"switch\"", "\"throw\"", "\"try\"", "\"debugger\"", "[{;@]", "[abcdefgilmnoprstuvw]", "\"var\"", "\"let\"", "\"using\"", "\"await\"", "\"function\"", "\"class\"", "\"for\"", "\"@\"", "\"async\"", "\"interface\"", "\"declare\"", "\"const\"", "\"private\"", "\"protected\"", "\"public\"", "\"abstract\"", "\"accessor\"", "\"static\"", "\"readonly\"", "\"}\"", "\"=\"", "[=>]", "[\\[{]", "\"(\"", "\")\"", "\"else\"", "\"of\"", "\"in\"", "[=;:]", "\"case\"", "\":\"", "\"finally\"", "\"catch\"", "[{@]", "[a-zA-Z$_\\\\\\u0080-\\U0010ffff]", "[;}\\n\\r\\u2028\\u2029]", "\"/*\"", "[\\n\\r\\u2028\\u2029]", "\"defer\"", "[\"\\']", "[\"\\'*{#]", "[=*{@]", "[{\\[#]", "\",\"", "\"[\"", "\"]\"", "\"*\"", "\"this\"", "\"implements\"", "\"extends\"", "[,{]", "[0-9\"\\'`(\\[{/]", "\".\"", "[0-9]", "\"super\"", "\"null\"", "\"true\"", "\"false\"", "\"new\"", "[(<.]", "[*\\[]", "\"get\"", "\"set\"", "\"out\"", "\"override\"", "[(<!:=?]", "\"constructor\"", "\"\\\"constructor\\\"\"", "\"'constructor'\"", "[(<]", "[@(]", "\"intrinsic\"", "\"require\"", "\"from\"", "[*{,=]", "[*{]", "[,=]", "\"#\"", "[a-zA-Z$_]", "\"assert\"", "[acdeiopr]", "\"s\"", "[\\[{*]", "\"...\"", "[\"\\'0-9]", "\"yield\"", "\"=>\"", "[0-9\"\\']", "[>*<&|?+\\-/%\\^=]", "\">>>=\"", "\"**=\"", "\"<<=\"", "\">>=\"", "\"&&=\"", "\"||=\"", "\"??=\"", "\"+=\"", "\"-=\"", "\"*=\"", "\"/=\"", "\"%=\"", "\"&=\"", "\"|=\"", "\"^=\"", "\"?\"", "\"<\"", "[=>/]", "[:?,=)]", "\"??\"", "\"||\"", "\"&&\"", "\"|\"", "[|=]", "\"^\"", "\"&\"", "[&=]", "\"===\"", "\"!==\"", "\"==\"", "\"!=\"", "\"<=\"", "\">=\"", "[<=]", "\"/\"", "\">\"", "[>=]", "\"instanceof\"", "\">>>\"", "\">>\"", "\"<<\"", "\"+\"", "[+=]", "\"-\"", "[\\-=]", "[*=]", "\"%\"", "\"**\"", "\"satisfies\"", "[+\\-~!<dtva]", "[~!]", "\"delete\"", "\"typeof\"", "\"void\"", "\"~\"", "\"!\"", "[+\\-]", "\"++\"", "\"--\"", "\"?.\"", "[(`]", "[0-9\"\\'`(\\[{/~!#@]", "[(.\\[]", "expected an expression", "\"`\"", "[0-9.]", "[\\[*.]", "\"</\"", "\"\\\"\"", "[^\"]", "\"'\"", "[^\\']", "[^{}<>]", "\"is\"", "\"keyof\"", "\"unique\"", "\"infer\"", "expected a type", "\"any\"", "\"unknown\"", "\"string\"", "\"number\"", "\"bigint\"", "\"symbol\"", "\"boolean\"", "\"undefined\"", "\"never\"", "\"object\"", "\"asserts\"", "[:,?=]", "[,})>=|]", "[,\\]]", "[(<?:,;}]", "[:,]", "[:,\\]]", "[{\\[<|&\"\\'0-9*?!`]", "[)\\[{@.#]", "[bcdefinrstvw]", "\"package\"", "\"b\"", "\"c\"", "\"d\"", "\"e\"", "\"f\"", "\"i\"", "\"n\"", "\"r\"", "\"t\"", "\"v\"", "\"w\"", "[a-zA-Z0-9$_]", "[\\\\\\u0080-\\U0010ffff]", "\"\\\\u\"", "\"00\"", "[89a-fA-F]", "\"0\"", "\"3\"", "[dD]", "\"24\"", "\"4\"", "[1-9a-fA-F]", "\"5\"", "[0-9aA]", "[fF]", "\"6\"", "\"7\"", "\"10\"", "[0-9a-fA-F]", "[0-9_]", "[1-9]", "\"_\"", "[eE]", "[xX]", "[bB]", "[01]", "[oO]", "[0-7]", "[^\"\\\\\\n\\r]", "\"\\\\\"", "[^\\'\\\\\\n\\r]", "[^0-9xu\\n\\r\\u2028\\u2029]", "\"x\"", "\"u\"", "\"\\r\\n\"", "\"${\"", "[^`\\\\$]", "\"$\"", "[*/]", "[^/\\\\\\[\\n\\r\\u2028\\u2029]", "[^\\]\\\\\\n\\r\\u2028\\u2029]", "[ \\t\\n\\r\\v\\f\\u00a0\\u0085\\u1680\\u2000-\\u200b\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff/]", "[ \\t\\n\\r\\v\\f\\u00a0\\u0085\\u1680\\u2000-\\u200b\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]", "\"//\"", "\"*/\"", "[ \\t\\v\\f\\u00a0\\u0085\\u1680\\u2000-\\u200b\\u202f\\u205f\\u3000\\ufeff/]", "[ \\t\\v\\f\\u00a0\\u0085\\u1680\\u2000-\\u200b\\u202f\\u205f\\u3000\\ufeff]", "[\\u0080-\\U0010ffff]", "[ªµºÀ-ÖØ-öø-ˁˆ-ˑˠ-ˤˬˮͰ-ʹͶ-ͷͺ-ͽͿΆΈ-ΊΌΎ-ΡΣ-ϵϷ-ҁҊ-ԯԱ-Ֆՙՠ-ֈא-תׯ-ײؠ-يٮ-ٯٱ-ۓەۥ-ۦۮ-ۯۺ-ۼۿܐܒ-ܯݍ-ޥޱߊ-ߪߴ-ߵߺࠀ-ࠕࠚࠤࠨࡀ-ࡘࡠ-ࡪࡰ-ࢇࢉ-ࢎࢠ-ࣉऄ-हऽॐक़-ॡॱ-ঀঅ-ঌএ-ঐও-নপ-রলশ-হঽৎড়-ঢ়য়-ৡৰ-ৱৼਅ-ਊਏ-ਐਓ-ਨਪ-ਰਲ-ਲ਼ਵ-ਸ਼ਸ-ਹਖ਼-ੜਫ਼ੲ-ੴઅ-ઍએ-ઑઓ-નપ-રલ-ળવ-હઽૐૠ-ૡૹଅ-ଌଏ-ଐଓ-ନପ-ରଲ-ଳଵ-ହଽଡ଼-ଢ଼ୟ-ୡୱஃஅ-ஊஎ-ஐஒ-கங-சஜஞ-டண-தந-பம-ஹௐఅ-ఌఎ-ఐఒ-నప-హఽౘ-ౚౝౠ-ౡಀಅ-ಌಎ-ಐಒ-ನಪ-ಳವ-ಹಽೝ-ೞೠ-ೡೱ-ೲഄ-ഌഎ-ഐഒ-ഺഽൎൔ-ൖൟ-ൡൺ-ൿඅ-ඖක-නඳ-රලව-ෆก-ะา-ำเ-ๆກ-ຂຄຆ-ຊຌ-ຣລວ-ະາ-ຳຽເ-ໄໆໜ-ໟༀཀ-ཇཉ-ཬྈ-ྌက-ဪဿၐ-ၕၚ-ၝၡၥ-ၦၮ-ၰၵ-ႁႎႠ-ჅჇჍა-ჺჼ-ቈቊ-ቍቐ-ቖቘቚ-ቝበ-ኈኊ-ኍነ-ኰኲ-ኵኸ-ኾዀዂ-ዅወ-ዖዘ-ጐጒ-ጕጘ-ፚᎀ-ᎏᎠ-Ᏽᏸ-ᏽᐁ-ᙬᙯ-ᙿᚁ-ᚚᚠ-ᛪᛮ-ᛸᜀ-ᜑᜟ-ᜱᝀ-ᝑᝠ-ᝬᝮ-ᝰក-ឳៗៜᠠ-ᡸᢀ-ᢨᢪᢰ-ᣵᤀ-ᤞᥐ-ᥭᥰ-ᥴᦀ-ᦫᦰ-ᧉᨀ-ᨖᨠ-ᩔᪧᬅ-ᬳᭅ-ᭌᮃ-ᮠᮮ-ᮯᮺ-ᯥᰀ-ᰣᱍ-ᱏᱚ-ᱽᲀ-ᲈᲐ-ᲺᲽ-Ჿᳩ-ᳬᳮ-ᳳᳵ-ᳶᳺᴀ-ᶿḀ-ἕἘ-Ἕἠ-ὅὈ-Ὅὐ-ὗὙὛὝὟ-ώᾀ-ᾴᾶ-ᾼιῂ-ῄῆ-ῌῐ-ΐῖ-Ίῠ-Ῥῲ-ῴῶ-ῼⁱⁿₐ-ₜℂℇℊ-ℓℕ℘-ℝℤΩℨK-ℹℼ-ℿⅅ-ⅉⅎⅠ-ↈⰀ-ⳤⳫ-ⳮⳲ-ⳳⴀ-ⴥⴧⴭⴰ-ⵧⵯⶀ-ⶖⶠ-ⶦⶨ-ⶮⶰ-ⶶⶸ-ⶾⷀ-ⷆⷈ-ⷎⷐ-ⷖⷘ-ⷞ々-〇〡-〩〱-〵〸-〼ぁ-ゖ゛-ゟァ-ヺー-ヿㄅ-ㄯㄱ-ㆎㆠ-ㆿㇰ-ㇿ㐀-䶿一-ꒌꓐ-ꓽꔀ-ꘌꘐ-ꘟꘪ-ꘫꙀ-ꙮꙿ-ꚝꚠ-ꛯꜗ-ꜟꜢ-ꞈꞋ-ꟊꟐ-ꟑꟓꟕ-ꟙꟲ-ꠁꠃ-ꠅꠇ-ꠊꠌ-ꠢꡀ-ꡳꢂ-ꢳꣲ-ꣷꣻꣽ-ꣾꤊ-ꤥꤰ-ꥆꥠ-ꥼꦄ-ꦲꧏꧠ-ꧤꧦ-ꧯꧺ-ꧾꨀ-ꨨꩀ-ꩂꩄ-ꩋꩠ-ꩶꩺꩾ-ꪯꪱꪵ-ꪶꪹ-ꪽꫀꫂꫛ-ꫝꫠ-ꫪꫲ-ꫴꬁ-ꬆꬉ-ꬎꬑ-ꬖꬠ-ꬦꬨ-ꬮꬰ-ꭚꭜ-ꭩꭰ-ꯢ가-힣ힰ-ퟆퟋ-ퟻ豈-舘並-龎ﬀ-ﬆﬓ-ﬗיִײַ-ﬨשׁ-זּטּ-לּמּנּ-סּףּ-פּצּ-ﮱﯓ-ﴽﵐ-ﶏﶒ-ﷇﷰ-ﷻﹰ-ﹴﹶ-ﻼＡ-Ｚａ-ｚｦ-ﾾￂ-ￇￊ-ￏￒ-ￗￚ-ￜ𐀀-𐀋𐀍-𐀦𐀨-𐀺𐀼-𐀽𐀿-𐁍𐁐-𐁝𐂀-𐃺𐅀-𐅴𐊀-𐊜𐊠-𐋐𐌀-𐌟𐌭-𐍊𐍐-𐍵𐎀-𐎝𐎠-𐏃𐏈-𐏏𐏑-𐏕𐐀-𐒝𐒰-𐓓𐓘-𐓻𐔀-𐔧𐔰-𐕣𐕰-𐕺𐕼-𐖊𐖌-𐖒𐖔-𐖕𐖗-𐖡𐖣-𐖱𐖳-𐖹𐖻-𐖼𐘀-𐜶𐝀-𐝕𐝠-𐝧𐞀-𐞅𐞇-𐞰𐞲-𐞺𐠀-𐠅𐠈𐠊-𐠵𐠷-𐠸𐠼𐠿-𐡕𐡠-𐡶𐢀-𐢞𐣠-𐣲𐣴-𐣵𐤀-𐤕𐤠-𐤹𐦀-𐦷𐦾-𐦿𐨀𐨐-𐨓𐨕-𐨗𐨙-𐨵𐩠-𐩼𐪀-𐪜𐫀-𐫇𐫉-𐫤𐬀-𐬵𐭀-𐭕𐭠-𐭲𐮀-𐮑𐰀-𐱈𐲀-𐲲𐳀-𐳲𐴀-𐴣𐺀-𐺩𐺰-𐺱𐼀-𐼜𐼧𐼰-𐽅𐽰-𐾁𐾰-𐿄𐿠-𐿶𑀃-𑀷𑁱-𑁲𑁵𑂃-𑂯𑃐-𑃨𑄃-𑄦𑅄𑅇𑅐-𑅲𑅶𑆃-𑆲𑇁-𑇄𑇚𑇜𑈀-𑈑𑈓-𑈫𑈿-𑉀𑊀-𑊆𑊈𑊊-𑊍𑊏-𑊝𑊟-𑊨𑊰-𑋞𑌅-𑌌𑌏-𑌐𑌓-𑌨𑌪-𑌰𑌲-𑌳𑌵-𑌹𑌽𑍐𑍝-𑍡𑐀-𑐴𑑇-𑑊𑑟-𑑡𑒀-𑒯𑓄-𑓅𑓇𑖀-𑖮𑗘-𑗛𑘀-𑘯𑙄𑚀-𑚪𑚸𑜀-𑜚𑝀-𑝆𑠀-𑠫𑢠-𑣟𑣿-𑤆𑤉𑤌-𑤓𑤕-𑤖𑤘-𑤯𑤿𑥁𑦠-𑦧𑦪-𑧐𑧡𑧣𑨀𑨋-𑨲𑨺𑩐𑩜-𑪉𑪝𑪰-𑫸𑰀-𑰈𑰊-𑰮𑱀𑱲-𑲏𑴀-𑴆𑴈-𑴉𑴋-𑴰𑵆𑵠-𑵥𑵧-𑵨𑵪-𑶉𑶘𑻠-𑻲𑼂𑼄-𑼐𑼒-𑼳𑾰𒀀-𒎙𒐀-𒑮𒒀-𒕃𒾐-𒿰𓀀-𓐯𓑁-𓑆𔐀-𔙆𖠀-𖨸𖩀-𖩞𖩰-𖪾𖫐-𖫭𖬀-𖬯𖭀-𖭃𖭣-𖭷𖭽-𖮏𖹀-𖹿𖼀-𖽊𖽐𖾓-𖾟𖿠-𖿡𖿣𗀀-𘟷𘠀-𘳕𘴀-𘴈𚿰-𚿳𚿵-𚿻𚿽-𚿾𛀀-𛄢𛄲𛅐-𛅒𛅕𛅤-𛅧𛅰-𛋻𛰀-𛱪𛱰-𛱼𛲀-𛲈𛲐-𛲙𝐀-𝑔𝑖-𝒜𝒞-𝒟𝒢𝒥-𝒦𝒩-𝒬𝒮-𝒹𝒻𝒽-𝓃𝓅-𝔅𝔇-𝔊𝔍-𝔔𝔖-𝔜𝔞-𝔹𝔻-𝔾𝕀-𝕄𝕆𝕊-𝕐𝕒-𝚥𝚨-𝛀𝛂-𝛚𝛜-𝛺𝛼-𝜔𝜖-𝜴𝜶-𝝎𝝐-𝝮𝝰-𝞈𝞊-𝞨𝞪-𝟂𝟄-𝟋𝼀-𝼞𝼥-𝼪𞀰-𞁭𞄀-𞄬𞄷-𞄽𞅎𞊐-𞊭𞋀-𞋫𞓐-𞓫𞟠-𞟦𞟨-𞟫𞟭-𞟮𞟰-𞟾𞠀-𞣄𞤀-𞥃𞥋𞸀-𞸃𞸅-𞸟𞸡-𞸢𞸤𞸧𞸩-𞸲𞸴-𞸷𞸹𞸻𞹂𞹇𞹉𞹋𞹍-𞹏𞹑-𞹒𞹔𞹗𞹙𞹛𞹝𞹟𞹡-𞹢𞹤𞹧-𞹪𞹬-𞹲𞹴-𞹷𞹹-𞹼𞹾𞺀-𞺉𞺋-𞺛𞺡-𞺣𞺥-𞺩𞺫-𞺻𠀀-𪛟𪜀-𫜹𫝀-𫠝𫠠-𬺡𬺰-𮯠𮯰-𮹝丽-𪘀𰀀-𱍊𱍐-𲎯]", "[ªµ·ºÀ-ÖØ-öø-ˁˆ-ˑˠ-ˤˬˮ̀-ʹͶ-ͷͺ-ͽͿΆ-ΊΌΎ-ΡΣ-ϵϷ-ҁ҃-҇Ҋ-ԯԱ-Ֆՙՠ-ֈ֑-ֽֿׁ-ׂׄ-ׇׅא-תׯ-ײؐ-ؚؠ-٩ٮ-ۓە-ۜ۟-۪ۨ-ۼۿܐ-݊ݍ-ޱ߀-ߵߺ߽ࠀ-࠭ࡀ-࡛ࡠ-ࡪࡰ-ࢇࢉ-ࢎ࢘-ࣣ࣡-ॣ०-९ॱ-ঃঅ-ঌএ-ঐও-নপ-রলশ-হ়-ৄে-ৈো-ৎৗড়-ঢ়য়-ৣ০-ৱৼ৾ਁ-ਃਅ-ਊਏ-ਐਓ-ਨਪ-ਰਲ-ਲ਼ਵ-ਸ਼ਸ-ਹ਼ਾ-ੂੇ-ੈੋ-੍ੑਖ਼-ੜਫ਼੦-ੵઁ-ઃઅ-ઍએ-ઑઓ-નપ-રલ-ળવ-હ઼-ૅે-ૉો-્ૐૠ-ૣ૦-૯ૹ-૿ଁ-ଃଅ-ଌଏ-ଐଓ-ନପ-ରଲ-ଳଵ-ହ଼-ୄେ-ୈୋ-୍୕-ୗଡ଼-ଢ଼ୟ-ୣ୦-୯ୱஂ-ஃஅ-ஊஎ-ஐஒ-கங-சஜஞ-டண-தந-பம-ஹா-ூெ-ைொ-்ௐௗ௦-௯ఀ-ఌఎ-ఐఒ-నప-హ఼-ౄె-ైొ-్ౕ-ౖౘ-ౚౝౠ-ౣ౦-౯ಀ-ಃಅ-ಌಎ-ಐಒ-ನಪ-ಳವ-ಹ಼-ೄೆ-ೈೊ-್ೕ-ೖೝ-ೞೠ-ೣ೦-೯ೱ-ೳഀ-ഌഎ-ഐഒ-ൄെ-ൈൊ-ൎൔ-ൗൟ-ൣ൦-൯ൺ-ൿඁ-ඃඅ-ඖක-නඳ-රලව-ෆ්ා-ුූෘ-ෟ෦-෯ෲ-ෳก-ฺเ-๎๐-๙ກ-ຂຄຆ-ຊຌ-ຣລວ-ຽເ-ໄໆ່-໎໐-໙ໜ-ໟༀ༘-༙༠-༩༹༵༷༾-ཇཉ-ཬཱ-྄྆-ྗྙ-ྼ࿆က-၉ၐ-ႝႠ-ჅჇჍა-ჺჼ-ቈቊ-ቍቐ-ቖቘቚ-ቝበ-ኈኊ-ኍነ-ኰኲ-ኵኸ-ኾዀዂ-ዅወ-ዖዘ-ጐጒ-ጕጘ-ፚ፝-፟፩-፱ᎀ-ᎏᎠ-Ᏽᏸ-ᏽᐁ-ᙬᙯ-ᙿᚁ-ᚚᚠ-ᛪᛮ-ᛸᜀ-᜕ᜟ-᜴ᝀ-ᝓᝠ-ᝬᝮ-ᝰᝲ-ᝳក-៓ៗៜ-៝០-៩᠋-᠍᠏-᠙ᠠ-ᡸᢀ-ᢪᢰ-ᣵᤀ-ᤞᤠ-ᤫᤰ-᤻᥆-ᥭᥰ-ᥴᦀ-ᦫᦰ-ᧉ᧐-᧚ᨀ-ᨛᨠ-ᩞ᩠-᩿᩼-᪉᪐-᪙ᪧ᪰-᪽ᪿ-ᫎᬀ-ᭌ᭐-᭙᭫-᭳ᮀ-᯳ᰀ-᰷᱀-᱉ᱍ-ᱽᲀ-ᲈᲐ-ᲺᲽ-Ჿ᳐-᳔᳒-ᳺᴀ-ἕἘ-Ἕἠ-ὅὈ-Ὅὐ-ὗὙὛὝὟ-ώᾀ-ᾴᾶ-ᾼιῂ-ῄῆ-ῌῐ-ΐῖ-Ίῠ-Ῥῲ-ῴῶ-ῼ\\u200c-\\u200d‿-⁀⁔ⁱⁿₐ-ₜ⃐-⃥⃜⃡-⃰ℂℇℊ-ℓℕ℘-ℝℤΩℨK-ℹℼ-ℿⅅ-ⅉⅎⅠ-ↈⰀ-ⳤⳫ-ⳳⴀ-ⴥⴧⴭⴰ-ⵧⵯ⵿-ⶖⶠ-ⶦⶨ-ⶮⶰ-ⶶⶸ-ⶾⷀ-ⷆⷈ-ⷎⷐ-ⷖⷘ-ⷞⷠ-ⷿ々-〇〡-〯〱-〵〸-〼ぁ-ゖ゙-ゟァ-ヿㄅ-ㄯㄱ-ㆎㆠ-ㆿㇰ-ㇿ㐀-䶿一-ꒌꓐ-ꓽꔀ-ꘌꘐ-ꘫꙀ-꙯ꙴ-꙽ꙿ-꛱ꜗ-ꜟꜢ-ꞈꞋ-ꟊꟐ-ꟑꟓꟕ-ꟙꟲ-ꠧ꠬ꡀ-ꡳꢀ-ꣅ꣐-꣙꣠-ꣷꣻꣽ-꤭ꤰ-꥓ꥠ-ꥼꦀ-꧀ꧏ-꧙ꧠ-ꧾꨀ-ꨶꩀ-ꩍ꩐-꩙ꩠ-ꩶꩺ-ꫂꫛ-ꫝꫠ-ꫯꫲ-꫶ꬁ-ꬆꬉ-ꬎꬑ-ꬖꬠ-ꬦꬨ-ꬮꬰ-ꭚꭜ-ꭩꭰ-ꯪ꯬-꯭꯰-꯹가-힣ힰ-ퟆퟋ-ퟻ豈-舘並-龎ﬀ-ﬆﬓ-ﬗיִ-ﬨשׁ-זּטּ-לּמּנּ-סּףּ-פּצּ-ﮱﯓ-ﴽﵐ-ﶏﶒ-ﷇﷰ-ﷻ︀-️︠-︯︳-︴﹍-﹏ﹰ-ﹴﹶ-ﻼ０-９Ａ-Ｚ＿ａ-ｚ･-ﾾￂ-ￇￊ-ￏￒ-ￗￚ-ￜ𐀀-𐀋𐀍-𐀦𐀨-𐀺𐀼-𐀽𐀿-𐁍𐁐-𐁝𐂀-𐃺𐅀-𐅴𐇽𐊀-𐊜𐊠-𐋐𐋠𐌀-𐌟𐌭-𐍊𐍐-𐍺𐎀-𐎝𐎠-𐏃𐏈-𐏏𐏑-𐏕𐐀-𐒝𐒠-𐒩𐒰-𐓓𐓘-𐓻𐔀-𐔧𐔰-𐕣𐕰-𐕺𐕼-𐖊𐖌-𐖒𐖔-𐖕𐖗-𐖡𐖣-𐖱𐖳-𐖹𐖻-𐖼𐘀-𐜶𐝀-𐝕𐝠-𐝧𐞀-𐞅𐞇-𐞰𐞲-𐞺𐠀-𐠅𐠈𐠊-𐠵𐠷-𐠸𐠼𐠿-𐡕𐡠-𐡶𐢀-𐢞𐣠-𐣲𐣴-𐣵𐤀-𐤕𐤠-𐤹𐦀-𐦷𐦾-𐦿𐨀-𐨃𐨅-𐨆𐨌-𐨓𐨕-𐨗𐨙-𐨵𐨸-𐨿𐨺𐩠-𐩼𐪀-𐪜𐫀-𐫇𐫉-𐫦𐬀-𐬵𐭀-𐭕𐭠-𐭲𐮀-𐮑𐰀-𐱈𐲀-𐲲𐳀-𐳲𐴀-𐴧𐴰-𐴹𐺀-𐺩𐺫-𐺬𐺰-𐺱𐻽-𐼜𐼧𐼰-𐽐𐽰-𐾅𐾰-𐿄𐿠-𐿶𑀀-𑁆𑁦-𑁵𑁿-𑂺𑃂𑃐-𑃨𑃰-𑃹𑄀-𑄴𑄶-𑄿𑅄-𑅇𑅐-𑅳𑅶𑆀-𑇄𑇉-𑇌𑇎-𑇚𑇜𑈀-𑈑𑈓-𑈷𑈾-𑉁𑊀-𑊆𑊈𑊊-𑊍𑊏-𑊝𑊟-𑊨𑊰-𑋪𑋰-𑋹𑌀-𑌃𑌅-𑌌𑌏-𑌐𑌓-𑌨𑌪-𑌰𑌲-𑌳𑌵-𑌹𑌻-𑍄𑍇-𑍈𑍋-𑍍𑍐𑍗𑍝-𑍣𑍦-𑍬𑍰-𑍴𑐀-𑑊𑑐-𑑙𑑞-𑑡𑒀-𑓅𑓇𑓐-𑓙𑖀-𑖵𑖸-𑗀𑗘-𑗝𑘀-𑙀𑙄𑙐-𑙙𑚀-𑚸𑛀-𑛉𑜀-𑜚𑜝-𑜫𑜰-𑜹𑝀-𑝆𑠀-𑠺𑢠-𑣩𑣿-𑤆𑤉𑤌-𑤓𑤕-𑤖𑤘-𑤵𑤷-𑤸𑤻-𑥃𑥐-𑥙𑦠-𑦧𑦪-𑧗𑧚-𑧡𑧣-𑧤𑨀-𑨾𑩇𑩐-𑪙𑪝𑪰-𑫸𑰀-𑰈𑰊-𑰶𑰸-𑱀𑱐-𑱙𑱲-𑲏𑲒-𑲧𑲩-𑲶𑴀-𑴆𑴈-𑴉𑴋-𑴶𑴺𑴼-𑴽𑴿-𑵇𑵐-𑵙𑵠-𑵥𑵧-𑵨𑵪-𑶎𑶐-𑶑𑶓-𑶘𑶠-𑶩𑻠-𑻶𑼀-𑼐𑼒-𑼺𑼾-𑽂𑽐-𑽙𑾰𒀀-𒎙𒐀-𒑮𒒀-𒕃𒾐-𒿰𓀀-𓐯𓑀-𓑕𔐀-𔙆𖠀-𖨸𖩀-𖩞𖩠-𖩩𖩰-𖪾𖫀-𖫉𖫐-𖫭𖫰-𖫴𖬀-𖬶𖭀-𖭃𖭐-𖭙𖭣-𖭷𖭽-𖮏𖹀-𖹿𖼀-𖽊𖽏-𖾇𖾏-𖾟𖿠-𖿡𖿣-𖿤𖿰-𖿱𗀀-𘟷𘠀-𘳕𘴀-𘴈𚿰-𚿳𚿵-𚿻𚿽-𚿾𛀀-𛄢𛄲𛅐-𛅒𛅕𛅤-𛅧𛅰-𛋻𛰀-𛱪𛱰-𛱼𛲀-𛲈𛲐-𛲙𛲝-𛲞𜼀-𜼭𜼰-𜽆𝅥-𝅩𝅭-𝅲𝅻-𝆂𝆅-𝆋𝆪-𝆭𝉂-𝉄𝐀-𝑔𝑖-𝒜𝒞-𝒟𝒢𝒥-𝒦𝒩-𝒬𝒮-𝒹𝒻𝒽-𝓃𝓅-𝔅𝔇-𝔊𝔍-𝔔𝔖-𝔜𝔞-𝔹𝔻-𝔾𝕀-𝕄𝕆𝕊-𝕐𝕒-𝚥𝚨-𝛀𝛂-𝛚𝛜-𝛺𝛼-𝜔𝜖-𝜴𝜶-𝝎𝝐-𝝮𝝰-𝞈𝞊-𝞨𝞪-𝟂𝟄-𝟋𝟎-𝟿𝨀-𝨶𝨻-𝩬𝩵𝪄𝪛-𝪟𝪡-𝪯𝼀-𝼞𝼥-𝼪𞀀-𞀆𞀈-𞀘𞀛-𞀡𞀣-𞀤𞀦-𞀪𞀰-𞁭𞂏𞄀-𞄬𞄰-𞄽𞅀-𞅉𞅎𞊐-𞊮𞋀-𞋹𞓐-𞓹𞟠-𞟦𞟨-𞟫𞟭-𞟮𞟰-𞟾𞠀-𞣄𞣐-𞣖𞤀-𞥋𞥐-𞥙𞸀-𞸃𞸅-𞸟𞸡-𞸢𞸤𞸧𞸩-𞸲𞸴-𞸷𞸹𞸻𞹂𞹇𞹉𞹋𞹍-𞹏𞹑-𞹒𞹔𞹗𞹙𞹛𞹝𞹟𞹡-𞹢𞹤𞹧-𞹪𞹬-𞹲𞹴-𞹷𞹹-𞹼𞹾𞺀-𞺉𞺋-𞺛𞺡-𞺣𞺥-𞺩𞺫-𞺻🯰-🯹𠀀-𪛟𪜀-𫜹𫝀-𫠝𫠠-𬺡𬺰-𮯠𮯰-𮹝丽-𪘀𰀀-𱍊𱍐-𲎯󠄀-󠇯]", "[\\n\\r\\u2028\\u2029/?|]", "[\\n\\r\\u2028\\u2029/&]", "[\\n\\r\\u2028\\u2029/|]", "[\\n\\r\\u2028\\u2029/\\^]", "[\\n\\r\\u2028\\u2029/=!]", "[\\n\\r\\u2028\\u2029/<>i]", "[a]", "[s]", "[\\n\\r\\u2028\\u2029/<>]", "[\\n\\r\\u2028\\u2029/+\\-]", "[\\n\\r\\u2028\\u2029/*%]", "[\\n\\r\\u2028\\u2029/*]", "[\\n\\r\\u2028\\u2029/.]", "[\\n\\r\\u2028\\u2029/?]", "[\\n\\r\\u2028\\u2029/\\[]", "[\\n\\r\\u2028\\u2029/<`]", "[!]", "[\\n\\r\\u2028\\u2029/<]", "[\\n\\r\\u2028\\u2029/<(]"}
 }
 
-var trules []*pegort.TRule
+var trules []*rt.TRule
 
 // rule main
-func u0(p *pegort.TParser) (any, bool) {
+func u0(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i0(p)
 	if !ok {
@@ -6106,11 +6106,11 @@ func u0(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i0(p *pegort.TParser) (any, bool) {
+func i0(p *rt.TParser) (any, bool) {
 	var start, x1, x9, x14 int
 	var v, k13, v15 any
-	var c *pegort.TActCtx
-	var prevEnv, x2, x10 *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv, x2, x10 *rt.Env
 	var x4 rune
 	var x5, ok bool
 	start = p.Pos
@@ -6129,7 +6129,7 @@ func i0(p *pegort.TParser) (any, bool) {
 	} else if _, ok = p.Parser.MatchLiteral(lit1, "\x00", 5, false); !ok {
 		goto L7
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any { return func() any { return any(64) }() }) {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any { return func() any { return any(64) }() }) {
 		goto L7
 	}
 	goto L3
@@ -6138,7 +6138,7 @@ L7:
 	p.Env = x2
 L6:
 
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any { return func() any { return any(0) }() }) {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any { return func() any { return any(0) }() }) {
 		goto L8
 	}
 	goto L3
@@ -6155,7 +6155,7 @@ L3:
 	} else if _, ok = p.Parser.MatchLiteral(lit2, "\x01", 6, false); !ok {
 		goto L11
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("+", func() any { return c.Lookup("ctx") }(), func() any { return any(2) }())
 		}()
@@ -6173,7 +6173,7 @@ L12:
 		goto fail
 	}
 	k13 = v15
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "main"
 	v = func() any { return k13 }()
 	v = c.Finish(v)
@@ -6187,7 +6187,7 @@ fail:
 }
 
 // rule sourceFile
-func u1(p *pegort.TParser) (any, bool) {
+func u1(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i1(p)
 	if !ok {
@@ -6196,10 +6196,10 @@ func u1(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i1(p *pegort.TParser) (any, bool) {
+func i1(p *rt.TParser) (any, bool) {
 	var start, x1, x5, x6, x7, x8, x9, x12, x14, x21 int
 	var v, k4, k10, v15, v16, v17, v18, v19, k20, v22 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var x13 []any
 	start = p.Pos
@@ -6254,7 +6254,7 @@ L3:
 		goto fail
 	}
 	k20 = v22
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "sourceFile"
 	v = func() any {
 		return func() any {
@@ -6274,7 +6274,7 @@ fail:
 	return nil, false
 }
 
-func s2(p *pegort.TParser) (any, bool) {
+func s2(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v7 any
 	var ok bool
@@ -6298,7 +6298,7 @@ L6:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -6310,7 +6310,7 @@ fail:
 }
 
 // rule otherTopLevelStatement
-func u3(p *pegort.TParser) (any, bool) {
+func u3(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i3(p)
 	if !ok {
@@ -6319,17 +6319,17 @@ func u3(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i3(p *pegort.TParser) (any, bool) {
+func i3(p *rt.TParser) (any, bool) {
 	var start, x1, x4 int
 	var v, k3, v5 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x4
 	x1 = p.Pos
 	p.Silent++
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("==", func() any {
 				return c.Binary("%", func() any {
@@ -6354,7 +6354,7 @@ L2:
 		goto fail
 	}
 	k3 = v5
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "otherTopLevelStatement"
 	v = func() any { return k3 }()
 	v = c.Finish(v)
@@ -6366,7 +6366,7 @@ fail:
 }
 
 // rule awaitFreeTopLevelStatement
-func u4(p *pegort.TParser) (any, bool) {
+func u4(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i4(p)
 	if !ok {
@@ -6375,17 +6375,17 @@ func u4(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i4(p *pegort.TParser) (any, bool) {
+func i4(p *rt.TParser) (any, bool) {
 	var start, x1, x5 int
 	var v, k4, v6 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
 	_ = x5
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("==", func() any {
 				return c.Binary("%", func() any {
@@ -6410,7 +6410,7 @@ L2:
 	goto fail
 L3:
 
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any { return any(2) }())
 		}()
@@ -6422,7 +6422,7 @@ L3:
 		goto fail
 	}
 	k4 = v6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "awaitFreeTopLevelStatement"
 	v = func() any { return k4 }()
 	v = c.Finish(v)
@@ -6435,20 +6435,20 @@ fail:
 	return nil, false
 }
 
-func s6(p *pegort.TParser) (any, bool) {
+func s6(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
 	if !p.AtEndBatchOrdinary() {
-		p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
+		p.ExpectOrdinary(p.Pos, rt.IdEndInput)
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[6], v, bv)
@@ -6461,7 +6461,7 @@ fail:
 }
 
 // rule statement
-func u8(p *pegort.TParser) (any, bool) {
+func u8(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[8]) {
 		return p.CallMemo(trules[8], i8)
 	}
@@ -6473,10 +6473,10 @@ func u8(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i8(p *pegort.TParser) (any, bool) {
+func i8(p *rt.TParser) (any, bool) {
 	var start, x1, x6, x9, x12, x14 int
 	var v, k2, x3, v10, v15 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -6528,7 +6528,7 @@ L11:
 	k2 = x3
 	goto fail
 L4:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "statement"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
@@ -6539,7 +6539,7 @@ fail:
 	return nil, false
 }
 
-func s9(p *pegort.TParser) (any, bool) {
+func s9(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v11, v13, v15, v17, v20, v23, v26, v28, v31, v34, v37, v40, v43, v46, v49, v52, v54, v56, v58 any
 	var x4 rune
@@ -6759,7 +6759,7 @@ L57:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -6771,7 +6771,7 @@ fail:
 }
 
 // rule plainStatement
-func u12(p *pegort.TParser) (any, bool) {
+func u12(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i12(p)
 	if !ok {
@@ -6780,10 +6780,10 @@ func u12(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i12(p *pegort.TParser) (any, bool) {
+func i12(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v7, v9 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -6807,7 +6807,7 @@ L8:
 	goto fail
 L5:
 	k1 = v4
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "plainStatement"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
@@ -6819,7 +6819,7 @@ fail:
 }
 
 // rule plainFunctionDeclaration
-func u13(p *pegort.TParser) (any, bool) {
+func u13(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i13(p)
 	if !ok {
@@ -6828,10 +6828,10 @@ func u13(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i13(p *pegort.TParser) (any, bool) {
+func i13(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x7 int
 	var v, k6, v8 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -6866,7 +6866,7 @@ L3:
 		goto fail
 	}
 	k6 = v8
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "plainFunctionDeclaration"
 	v = func() any { return k6 }()
 	v = c.Finish(v)
@@ -6878,7 +6878,7 @@ fail:
 }
 
 // rule plainClassDeclaration
-func u14(p *pegort.TParser) (any, bool) {
+func u14(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i14(p)
 	if !ok {
@@ -6887,10 +6887,10 @@ func u14(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i14(p *pegort.TParser) (any, bool) {
+func i14(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x7 int
 	var v, k6, v8 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -6925,7 +6925,7 @@ L3:
 		goto fail
 	}
 	k6 = v8
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "plainClassDeclaration"
 	v = func() any { return k6 }()
 	v = c.Finish(v)
@@ -6937,7 +6937,7 @@ fail:
 }
 
 // rule decoratedDeclaration
-func u15(p *pegort.TParser) (any, bool) {
+func u15(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i15(p)
 	if !ok {
@@ -6946,10 +6946,10 @@ func u15(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i15(p *pegort.TParser) (any, bool) {
+func i15(p *rt.TParser) (any, bool) {
 	var start, x1, x5 int
 	var v, k4, v6 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -6975,7 +6975,7 @@ L3:
 		goto fail
 	}
 	k4 = v6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "decoratedDeclaration"
 	v = func() any { return k4 }()
 	v = c.Finish(v)
@@ -6987,7 +6987,7 @@ fail:
 }
 
 // rule contextualDeclaration
-func u16(p *pegort.TParser) (any, bool) {
+func u16(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i16(p)
 	if !ok {
@@ -6996,10 +6996,10 @@ func u16(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i16(p *pegort.TParser) (any, bool) {
+func i16(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x6, x10 int
 	var v, k9, v11 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -7048,7 +7048,7 @@ L8:
 		goto fail
 	}
 	k9 = v11
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "contextualDeclaration"
 	v = func() any { return k9 }()
 	v = c.Finish(v)
@@ -7060,7 +7060,7 @@ fail:
 }
 
 // rule block
-func u18(p *pegort.TParser) (any, bool) {
+func u18(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[18]) {
 		return p.CallMemo(trules[18], i18)
 	}
@@ -7072,10 +7072,10 @@ func u18(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i18(p *pegort.TParser) (any, bool) {
+func i18(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x4, x5, x6, x9, x11, x17, x19, size int
 	var v, k1, k7, v12, v13, v14, v15, v16 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var x10 []any
 	var ch rune
@@ -7157,7 +7157,7 @@ L20:
 L18:
 	p.Silent--
 	p.Pos = x17
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "block"
 	v = func() any {
 		return func() any {
@@ -7176,7 +7176,7 @@ fail:
 	return nil, false
 }
 
-func s19(p *pegort.TParser) (any, bool) {
+func s19(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	var ok bool
@@ -7189,9 +7189,9 @@ func s19(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[19], v, bv)
@@ -7204,7 +7204,7 @@ fail:
 }
 
 // rule variableStatement
-func u20(p *pegort.TParser) (any, bool) {
+func u20(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i20(p)
 	if !ok {
@@ -7213,10 +7213,10 @@ func u20(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i20(p *pegort.TParser) (any, bool) {
+func i20(p *rt.TParser) (any, bool) {
 	var start, x1, x5 int
 	var v, k4, v6 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -7243,7 +7243,7 @@ L3:
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "variableStatement"
 	v = func() any {
 		return func() any {
@@ -7259,7 +7259,7 @@ fail:
 }
 
 // rule ifStatement
-func u24(p *pegort.TParser) (any, bool) {
+func u24(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i24(p)
 	if !ok {
@@ -7268,10 +7268,10 @@ func u24(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i24(p *pegort.TParser) (any, bool) {
+func i24(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x7, x9, x14, x16 int
 	var v, k3, v5, k6, v8, k10, x11, v17 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -7358,7 +7358,7 @@ L12:
 	p.Pos = x9
 	k10 = x11
 L13:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "ifStatement"
 	v = func() any {
 		return func() any {
@@ -7376,7 +7376,7 @@ fail:
 }
 
 // rule doStatement
-func u25(p *pegort.TParser) (any, bool) {
+func u25(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i25(p)
 	if !ok {
@@ -7385,10 +7385,10 @@ func u25(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i25(p *pegort.TParser) (any, bool) {
+func i25(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x6, x9, x11 int
 	var v, k3, v5, k8, v10 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -7471,7 +7471,7 @@ L7:
 L12:
 	p.Pos = x11
 L13:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "doStatement"
 	v = func() any {
 		return func() any {
@@ -7488,7 +7488,7 @@ fail:
 }
 
 // rule whileStatement
-func u26(p *pegort.TParser) (any, bool) {
+func u26(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i26(p)
 	if !ok {
@@ -7497,10 +7497,10 @@ func u26(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i26(p *pegort.TParser) (any, bool) {
+func i26(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x7 int
 	var v, k3, v5, k6, v8 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -7551,7 +7551,7 @@ L2:
 		goto fail
 	}
 	k6 = v8
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "whileStatement"
 	v = func() any {
 		return func() any {
@@ -7568,7 +7568,7 @@ fail:
 }
 
 // rule withStatement
-func u27(p *pegort.TParser) (any, bool) {
+func u27(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i27(p)
 	if !ok {
@@ -7577,10 +7577,10 @@ func u27(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i27(p *pegort.TParser) (any, bool) {
+func i27(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x7 int
 	var v, k3, v5, k6, v8 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -7633,7 +7633,7 @@ L2:
 		goto fail
 	}
 	k6 = v8
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "withStatement"
 	v = func() any {
 		return func() any {
@@ -7649,7 +7649,7 @@ fail:
 	return nil, false
 }
 
-func s28(p *pegort.TParser) (any, bool) {
+func s28(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v11, v14 any
 	var x4 rune
@@ -7697,7 +7697,7 @@ L12:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -7709,7 +7709,7 @@ fail:
 }
 
 // rule forOfStatement
-func u29(p *pegort.TParser) (any, bool) {
+func u29(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i29(p)
 	if !ok {
@@ -7718,10 +7718,10 @@ func u29(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i29(p *pegort.TParser) (any, bool) {
+func i29(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x8, x11, x13, x16, x19 int
 	var v, k4, x5, v9, k10, v12, k15, v17, k18, v20 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -7817,7 +7817,7 @@ L14:
 		goto fail
 	}
 	k18 = v20
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "forOfStatement"
 	v = func() any {
 		return func() any {
@@ -7836,7 +7836,7 @@ fail:
 }
 
 // rule forInStatement
-func u30(p *pegort.TParser) (any, bool) {
+func u30(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i30(p)
 	if !ok {
@@ -7845,10 +7845,10 @@ func u30(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i30(p *pegort.TParser) (any, bool) {
+func i30(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x6, x9, x12 int
 	var v, k3, v5, k8, v10, k11, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -7928,7 +7928,7 @@ L7:
 		goto fail
 	}
 	k11 = v13
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "forInStatement"
 	v = func() any {
 		return func() any {
@@ -7946,7 +7946,7 @@ fail:
 }
 
 // rule forClassicStatement
-func u31(p *pegort.TParser) (any, bool) {
+func u31(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i31(p)
 	if !ok {
@@ -7955,10 +7955,10 @@ func u31(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i31(p *pegort.TParser) (any, bool) {
+func i31(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x5, x11, x12, x18, x19, x25 int
 	var v, k3, v6, v9, k10, v13, v16, k17, v20, v23, k24, v26 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -8064,7 +8064,7 @@ L22:
 		goto fail
 	}
 	k24 = v26
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "forClassicStatement"
 	v = func() any {
 		return func() any {
@@ -8082,7 +8082,7 @@ fail:
 	return nil, false
 }
 
-func s32(p *pegort.TParser) (any, bool) {
+func s32(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -8104,9 +8104,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[32], v, bv)
@@ -8119,7 +8119,7 @@ fail:
 }
 
 // rule forInitializer
-func u33(p *pegort.TParser) (any, bool) {
+func u33(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[33]) {
 		return p.CallMemo(trules[33], i33)
 	}
@@ -8131,17 +8131,17 @@ func u33(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i33(p *pegort.TParser) (any, bool) {
+func i33(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v7, v9 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
 	_ = x2
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("+", func() any {
 				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
@@ -8175,7 +8175,7 @@ L8:
 	goto fail
 L5:
 	k1 = v4
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "forInitializer"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
@@ -8189,7 +8189,7 @@ fail:
 }
 
 // rule forDeclarationList
-func u34(p *pegort.TParser) (any, bool) {
+func u34(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i34(p)
 	if !ok {
@@ -8198,10 +8198,10 @@ func u34(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i34(p *pegort.TParser) (any, bool) {
+func i34(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x7, x17, x23, x27, x29, x32 int
 	var v, k31, v33 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x9, x19 rune
 	var x10, ok, x20 bool
 	start = p.Pos
@@ -8350,7 +8350,7 @@ L3:
 		goto fail
 	}
 	k31 = v33
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "forDeclarationList"
 	v = func() any { return k31 }()
 	v = c.Finish(v)
@@ -8362,7 +8362,7 @@ fail:
 }
 
 // rule continueStatement
-func u36(p *pegort.TParser) (any, bool) {
+func u36(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i36(p)
 	if !ok {
@@ -8371,10 +8371,10 @@ func u36(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i36(p *pegort.TParser) (any, bool) {
+func i36(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x8, x10 int
 	var v, k4, x5, v11 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -8423,7 +8423,7 @@ L7:
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "continueStatement"
 	v = func() any {
 		return func() any {
@@ -8439,7 +8439,7 @@ fail:
 }
 
 // rule breakStatement
-func u37(p *pegort.TParser) (any, bool) {
+func u37(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i37(p)
 	if !ok {
@@ -8448,10 +8448,10 @@ func u37(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i37(p *pegort.TParser) (any, bool) {
+func i37(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x8, x10 int
 	var v, k4, x5, v11 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -8500,7 +8500,7 @@ L7:
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "breakStatement"
 	v = func() any {
 		return func() any {
@@ -8516,7 +8516,7 @@ fail:
 }
 
 // rule returnStatement
-func u38(p *pegort.TParser) (any, bool) {
+func u38(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i38(p)
 	if !ok {
@@ -8525,10 +8525,10 @@ func u38(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i38(p *pegort.TParser) (any, bool) {
+func i38(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x8, x10 int
 	var v, k4, x5, v11 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -8577,7 +8577,7 @@ L7:
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "returnStatement"
 	v = func() any {
 		return func() any {
@@ -8593,7 +8593,7 @@ fail:
 }
 
 // rule throwStatement
-func u39(p *pegort.TParser) (any, bool) {
+func u39(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i39(p)
 	if !ok {
@@ -8602,10 +8602,10 @@ func u39(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i39(p *pegort.TParser) (any, bool) {
+func i39(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x10, x12, x15, x16, x18, x21, x24, x27, x29 int
 	var v, k4, x5, k6, x7, v17, v19, v28 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -8716,7 +8716,7 @@ L8:
 	goto L30
 L31:
 	p.Pos = x29
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("==", func() any { return c.Text(func() any { return k4 }()) }(), func() any { return any("declare") }())
 		}()
@@ -8728,7 +8728,7 @@ L32:
 	p.Pos = x29
 	goto fail
 L30:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "throwStatement"
 	v = func() any {
 		return func() any {
@@ -8743,16 +8743,16 @@ fail:
 	return nil, false
 }
 
-func s40(p *pegort.TParser) (any, bool) {
+func s40(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	start = p.Pos
 	p.Enter()
 	x1 = p.Pos
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[40], v, bv)
@@ -8760,7 +8760,7 @@ func s40(p *pegort.TParser) (any, bool) {
 	return v, true
 }
 
-func s41(p *pegort.TParser) (any, bool) {
+func s41(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -8785,9 +8785,9 @@ L3:
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[41], v, bv)
@@ -8800,7 +8800,7 @@ fail:
 }
 
 // rule switchStatement
-func u42(p *pegort.TParser) (any, bool) {
+func u42(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i42(p)
 	if !ok {
@@ -8809,10 +8809,10 @@ func u42(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i42(p *pegort.TParser) (any, bool) {
+func i42(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x7 int
 	var v, k3, v5, k6, v8 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -8863,7 +8863,7 @@ L2:
 		goto fail
 	}
 	k6 = v8
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "switchStatement"
 	v = func() any {
 		return func() any {
@@ -8880,7 +8880,7 @@ fail:
 }
 
 // rule caseBlock
-func u43(p *pegort.TParser) (any, bool) {
+func u43(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i43(p)
 	if !ok {
@@ -8889,10 +8889,10 @@ func u43(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i43(p *pegort.TParser) (any, bool) {
+func i43(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x4, x5, x8 int
 	var v, k1, k6, v9, v10 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -8934,7 +8934,7 @@ func i43(p *pegort.TParser) (any, bool) {
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "}", 54, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "caseBlock"
 	v = func() any {
 		return func() any {
@@ -8951,7 +8951,7 @@ fail:
 	return nil, false
 }
 
-func s44(p *pegort.TParser) (any, bool) {
+func s44(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v11 any
 	var x4 rune
@@ -8987,7 +8987,7 @@ L9:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -8999,7 +8999,7 @@ fail:
 }
 
 // rule caseClause
-func u45(p *pegort.TParser) (any, bool) {
+func u45(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i45(p)
 	if !ok {
@@ -9008,10 +9008,10 @@ func u45(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i45(p *pegort.TParser) (any, bool) {
+func i45(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x7, x8, x9, x10, x11, x14, x16 int
 	var v, k3, v5, k6, k12, v17, v18, v19, v20, v21 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var x15 []any
 	start = p.Pos
@@ -9081,7 +9081,7 @@ L2:
 	}
 	v21 = p.NewNodeOrdinary("list", x8, p.Pos, p.Kids(x9))
 	k6 = v21
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "caseClause"
 	v = func() any {
 		return func() any {
@@ -9102,7 +9102,7 @@ fail:
 }
 
 // rule defaultClause
-func u46(p *pegort.TParser) (any, bool) {
+func u46(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i46(p)
 	if !ok {
@@ -9111,10 +9111,10 @@ func u46(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i46(p *pegort.TParser) (any, bool) {
+func i46(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x5, x6, x7, x8, x11, x13 int
 	var v, k3, k9, v14, v15, v16, v17, v18 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var x12 []any
 	start = p.Pos
@@ -9174,7 +9174,7 @@ L2:
 	}
 	v18 = p.NewNodeOrdinary("list", x5, p.Pos, p.Kids(x6))
 	k3 = v18
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "defaultClause"
 	v = func() any {
 		return func() any {
@@ -9194,7 +9194,7 @@ fail:
 }
 
 // rule clauseStatement
-func u47(p *pegort.TParser) (any, bool) {
+func u47(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[47]) {
 		return p.CallMemo(trules[47], i47)
 	}
@@ -9206,10 +9206,10 @@ func u47(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i47(p *pegort.TParser) (any, bool) {
+func i47(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x11, x14 int
 	var v, k13, v15 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x5 rune
 	var x6, ok bool
 	start = p.Pos
@@ -9268,7 +9268,7 @@ L2:
 		goto fail
 	}
 	k13 = v15
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "clauseStatement"
 	v = func() any { return k13 }()
 	v = c.Finish(v)
@@ -9280,7 +9280,7 @@ fail:
 }
 
 // rule tryStatement
-func u48(p *pegort.TParser) (any, bool) {
+func u48(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i48(p)
 	if !ok {
@@ -9289,10 +9289,10 @@ func u48(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i48(p *pegort.TParser) (any, bool) {
+func i48(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x6, x11, x13, x18, x20 int
 	var v, k3, v5, k7, x8, v12, k14, x15, v21 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -9370,7 +9370,7 @@ L16:
 	k14 = x15
 L17:
 
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Or(func() any {
 				return c.Binary("!=", func() any { return k7 }(), func() any { return any(nil) }())
@@ -9383,7 +9383,7 @@ L17:
 	}) {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "tryStatement"
 	v = func() any {
 		return func() any {
@@ -9401,7 +9401,7 @@ fail:
 }
 
 // rule catchClause
-func u49(p *pegort.TParser) (any, bool) {
+func u49(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i49(p)
 	if !ok {
@@ -9410,10 +9410,10 @@ func u49(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i49(p *pegort.TParser) (any, bool) {
+func i49(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x8, x11 int
 	var v, k4, x5, v9, k10, v12 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -9472,7 +9472,7 @@ L7:
 		goto fail
 	}
 	k10 = v12
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "catchClause"
 	v = func() any {
 		return func() any {
@@ -9489,7 +9489,7 @@ fail:
 }
 
 // rule expressionOrLabeledStatement
-func u50(p *pegort.TParser) (any, bool) {
+func u50(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i50(p)
 	if !ok {
@@ -9498,10 +9498,10 @@ func u50(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i50(p *pegort.TParser) (any, bool) {
+func i50(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x6, x8, x10, x12, x14, x20, x28, x31, x32 int
 	var v, k30, v33, v36, v38, v40 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok, x16, x23 bool
 	var x15, x22 rune
 	start = p.Pos
@@ -9641,7 +9641,7 @@ L39:
 	goto fail
 L34:
 	k30 = v33
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "expressionOrLabeledStatement"
 	v = func() any { return k30 }()
 	v = c.Finish(v)
@@ -9653,7 +9653,7 @@ fail:
 }
 
 // rule labeledStatement
-func u51(p *pegort.TParser) (any, bool) {
+func u51(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[51]) {
 		return p.CallMemo(trules[51], i51)
 	}
@@ -9665,10 +9665,10 @@ func u51(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i51(p *pegort.TParser) (any, bool) {
+func i51(p *rt.TParser) (any, bool) {
 	var start, x1, x5, x8 int
 	var v, k4, v6, k7, v9 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -9719,7 +9719,7 @@ L3:
 		goto fail
 	}
 	k7 = v9
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "labeledStatement"
 	v = func() any {
 		return func() any {
@@ -9736,7 +9736,7 @@ fail:
 }
 
 // rule expressionStatement
-func u52(p *pegort.TParser) (any, bool) {
+func u52(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[52]) {
 		return p.CallMemo(trules[52], i52)
 	}
@@ -9748,10 +9748,10 @@ func u52(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i52(p *pegort.TParser) (any, bool) {
+func i52(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -9764,7 +9764,7 @@ func i52(p *pegort.TParser) (any, bool) {
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "expressionStatement"
 	v = func() any {
 		return func() any {
@@ -9780,7 +9780,7 @@ fail:
 }
 
 // rule declareStatement
-func u53(p *pegort.TParser) (any, bool) {
+func u53(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i53(p)
 	if !ok {
@@ -9789,10 +9789,10 @@ func u53(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i53(p *pegort.TParser) (any, bool) {
+func i53(p *rt.TParser) (any, bool) {
 	var start, x1, x5, x6, x9 int
 	var v, k4, v7, k8, v10 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -9815,7 +9815,7 @@ L2:
 	goto fail
 L3:
 
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("==", func() any { return c.Text(func() any { return k4 }()) }(), func() any { return any("declare") }())
 		}()
@@ -9827,7 +9827,7 @@ L3:
 		goto fail
 	}
 	k8 = v10
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "declareStatement"
 	v = func() any {
 		return func() any {
@@ -9842,7 +9842,7 @@ fail:
 	return nil, false
 }
 
-func s54(p *pegort.TParser) (any, bool) {
+func s54(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -9864,9 +9864,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[54], v, bv)
@@ -9879,14 +9879,14 @@ fail:
 }
 
 // rule declaration
-func u59(p *pegort.TParser) (any, bool) {
+func u59(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[59]) {
 		return p.CallMemo(trules[59], v59)
 	}
 	return v59(p)
 }
 
-func v59(p *pegort.TParser) (any, bool) {
+func v59(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v7, v9, v11, v13, v15, v17, v19, v21, v23, v25, v27 any
 	var ok bool
@@ -9980,7 +9980,7 @@ L26:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -9992,7 +9992,7 @@ fail:
 }
 
 // rule variableStatementWithModifiers
-func u60(p *pegort.TParser) (any, bool) {
+func u60(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i60(p)
 	if !ok {
@@ -10001,10 +10001,10 @@ func u60(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i60(p *pegort.TParser) (any, bool) {
+func i60(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x7, x10, x22, x28, x30, x33 int
 	var v, k1, v3, k32, v34 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok, x13, x25 bool
 	var x12, x24 rune
 	start = p.Pos
@@ -10144,7 +10144,7 @@ L6:
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "variableStatementWithModifiers"
 	v = func() any {
 		return func() any {
@@ -10161,7 +10161,7 @@ fail:
 }
 
 // rule variableDeclarationList
-func u61(p *pegort.TParser) (any, bool) {
+func u61(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[61]) {
 		return p.CallMemo(trules[61], i61)
 	}
@@ -10173,10 +10173,10 @@ func u61(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i61(p *pegort.TParser) (any, bool) {
+func i61(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x9, x11, x13, x16, x19, x22, x24, x26 int
 	var v, k1, v3, k5, x6, v14 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok, x28 bool
 	var x27 rune
 	start = p.Pos
@@ -10324,7 +10324,7 @@ L21:
 	k5 = x6
 	goto fail
 L7:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "variableDeclarationList"
 	v = func() any {
 		return func() any {
@@ -10340,7 +10340,7 @@ fail:
 	return nil, false
 }
 
-func s62(p *pegort.TParser) (any, bool) {
+func s62(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x5, x17, x23 int
 	var v, v25 any
 	var x7, x19 rune
@@ -10449,7 +10449,7 @@ L21:
 L3:
 	v25 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	v = p.ScopeValue(sh23, v25, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -10461,7 +10461,7 @@ fail:
 }
 
 // rule variableDeclarations
-func u63(p *pegort.TParser) (any, bool) {
+func u63(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i63(p)
 	if !ok {
@@ -10470,10 +10470,10 @@ func u63(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i63(p *pegort.TParser) (any, bool) {
+func i63(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x11, x14, x17, x19, x21 int
 	var v, k1, v3, k4, k9, v12, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok, x23 bool
 	var x22 rune
 	start = p.Pos
@@ -10558,7 +10558,7 @@ L18:
 L15:
 	p.Pos = x14
 L16:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "variableDeclarations"
 	v = func() any {
 		return func() any {
@@ -10577,7 +10577,7 @@ fail:
 }
 
 // rule variableDeclaration
-func u64(p *pegort.TParser) (any, bool) {
+func u64(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[64]) {
 		return p.CallMemo(trules[64], i64)
 	}
@@ -10589,10 +10589,10 @@ func u64(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i64(p *pegort.TParser) (any, bool) {
+func i64(p *rt.TParser) (any, bool) {
 	var start, x1, x8, x10, x14, x17, x20, x21, x26, x31, x33, x41, x43 int
 	var v, k2, x3, k4, x5, v9, x11, v15, v18, k19, v22, v25, k27, x28, v44 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok, x36 bool
 	var x35 rune
 	start = p.Pos
@@ -10608,7 +10608,7 @@ func i64(p *pegort.TParser) (any, bool) {
 	k2 = v9
 	x10 = p.Pos
 	x11 = k4
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("==", func() any {
 				return c.Binary("%", func() any {
@@ -10727,7 +10727,7 @@ L29:
 	p.Pos = x26
 	k27 = x28
 L30:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "variableDeclaration"
 	v = func() any {
 		return func() any {
@@ -10746,7 +10746,7 @@ fail:
 }
 
 // rule initializer
-func u65(p *pegort.TParser) (any, bool) {
+func u65(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[65]) {
 		return p.CallMemo(trules[65], i65)
 	}
@@ -10758,10 +10758,10 @@ func u65(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i65(p *pegort.TParser) (any, bool) {
+func i65(p *rt.TParser) (any, bool) {
 	var start, x1, size, x4 int
 	var v, k3, v5 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
@@ -10797,7 +10797,7 @@ L2:
 		goto fail
 	}
 	k3 = v5
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "initializer"
 	v = func() any { return k3 }()
 	v = c.Finish(v)
@@ -10809,7 +10809,7 @@ fail:
 }
 
 // rule typeAnnotation
-func u66(p *pegort.TParser) (any, bool) {
+func u66(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[66]) {
 		return p.CallMemo(trules[66], i66)
 	}
@@ -10821,10 +10821,10 @@ func u66(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i66(p *pegort.TParser) (any, bool) {
+func i66(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -10845,7 +10845,7 @@ func i66(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeAnnotation"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
@@ -10857,14 +10857,14 @@ fail:
 }
 
 // rule bindingName
-func u67(p *pegort.TParser) (any, bool) {
+func u67(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[67]) {
 		return p.CallMemo(trules[67], v67)
 	}
 	return v67(p)
 }
 
-func v67(p *pegort.TParser) (any, bool) {
+func v67(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v7 any
 	var ok bool
@@ -10888,7 +10888,7 @@ L6:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -10900,14 +10900,14 @@ fail:
 }
 
 // rule bindingPattern
-func u68(p *pegort.TParser) (any, bool) {
+func u68(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[68]) {
 		return p.CallMemo(trules[68], v68)
 	}
 	return v68(p)
 }
 
-func v68(p *pegort.TParser) (any, bool) {
+func v68(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v11 any
 	var x4 rune
@@ -10943,7 +10943,7 @@ L9:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -10955,7 +10955,7 @@ fail:
 }
 
 // rule objectBindingPattern
-func u69(p *pegort.TParser) (any, bool) {
+func u69(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i69(p)
 	if !ok {
@@ -10964,11 +10964,11 @@ func u69(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i69(p *pegort.TParser) (any, bool) {
+func i69(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v7 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -10982,7 +10982,7 @@ func i69(p *pegort.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("*", func() any {
@@ -11015,7 +11015,7 @@ L6:
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "}", 54, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "objectBindingPattern"
 	v = func() any {
 		return func() any {
@@ -11033,14 +11033,14 @@ fail:
 }
 
 // rule bindingElement
-func u70(p *pegort.TParser) (any, bool) {
+func u70(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[70]) {
 		return p.CallMemo(trules[70], v70)
 	}
 	return v70(p)
 }
 
-func v70(p *pegort.TParser) (any, bool) {
+func v70(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v7 any
 	var ok bool
@@ -11064,7 +11064,7 @@ L6:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -11076,7 +11076,7 @@ fail:
 }
 
 // rule bindingElementWithPropertyName
-func u71(p *pegort.TParser) (any, bool) {
+func u71(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i71(p)
 	if !ok {
@@ -11085,10 +11085,10 @@ func u71(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i71(p *pegort.TParser) (any, bool) {
+func i71(p *rt.TParser) (any, bool) {
 	var start, x1, x6, x9, x12, x15, x16 int
 	var v, k2, x3, v7, k8, v10, k11, v13, k14, v17, v20 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -11142,7 +11142,7 @@ L18:
 	v17 = nil
 L19:
 	k14 = v17
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "bindingElementWithPropertyName"
 	v = func() any {
 		return func() any {
@@ -11161,7 +11161,7 @@ fail:
 }
 
 // rule bindingElementShorthand
-func u72(p *pegort.TParser) (any, bool) {
+func u72(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[72]) {
 		return p.CallMemo(trules[72], i72)
 	}
@@ -11173,10 +11173,10 @@ func u72(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i72(p *pegort.TParser) (any, bool) {
+func i72(p *rt.TParser) (any, bool) {
 	var start, x1, x6, x9, x12, x13 int
 	var v, k2, x3, v7, k8, v10, k11, v14, v17 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -11214,7 +11214,7 @@ L15:
 	v14 = nil
 L16:
 	k11 = v14
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "bindingElementShorthand"
 	v = func() any {
 		return func() any {
@@ -11232,7 +11232,7 @@ fail:
 }
 
 // rule arrayBindingPattern
-func u73(p *pegort.TParser) (any, bool) {
+func u73(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i73(p)
 	if !ok {
@@ -11241,11 +11241,11 @@ func u73(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i73(p *pegort.TParser) (any, bool) {
+func i73(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v7 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -11259,7 +11259,7 @@ func i73(p *pegort.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("*", func() any {
@@ -11292,7 +11292,7 @@ L6:
 	} else if _, ok = p.Parser.MatchLiteral(lit148, "]", 80, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "arrayBindingPattern"
 	v = func() any {
 		return func() any {
@@ -11310,14 +11310,14 @@ fail:
 }
 
 // rule arrayBindingElement
-func u74(p *pegort.TParser) (any, bool) {
+func u74(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[74]) {
 		return p.CallMemo(trules[74], v74)
 	}
 	return v74(p)
 }
 
-func v74(p *pegort.TParser) (any, bool) {
+func v74(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v7 any
 	var ok bool
@@ -11341,7 +11341,7 @@ L6:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -11352,7 +11352,7 @@ fail:
 	return nil, false
 }
 
-func s75(p *pegort.TParser) (any, bool) {
+func s75(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v5, bv any
 	var ok bool
@@ -11375,9 +11375,9 @@ L3:
 	goto fail
 L4:
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v5)
+	bv = rt.TFreshNode(v5)
 	v = p.ScopeValue(sh23, v5, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[75], v, bv)
@@ -11390,7 +11390,7 @@ fail:
 }
 
 // rule functionDeclaration
-func u76(p *pegort.TParser) (any, bool) {
+func u76(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[76]) {
 		return p.CallMemo(trules[76], i76)
 	}
@@ -11402,11 +11402,11 @@ func u76(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i76(p *pegort.TParser) (any, bool) {
+func i76(p *rt.TParser) (any, bool) {
 	var start, x1, x6, x9, x11, x16, x19, x22, x24, x26, x33, x36, x37, x39, x41, x46, x48, x53, x56, x59, x60, x65, x70, x73 int
 	var v, k2, x3, v10, k12, x13, v20, k21, v23, k27, x28, k29, x30, v38, v40, k42, x43, v47, k49, x50, v54, k55, v57, k58, v61, v64, k66, x67, v71 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -11531,7 +11531,7 @@ L44:
 	k42 = x43
 L45:
 
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Or(func() any {
 				return c.Binary("!=", func() any { return k42 }(), func() any { return any(nil) }())
@@ -11544,7 +11544,7 @@ L45:
 	}) {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("+", func() any {
 				return c.Binary("+", func() any {
@@ -11636,7 +11636,7 @@ L72:
 	k66 = x67
 	goto fail
 L68:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "functionDeclaration"
 	v = func() any {
 		return func() any {
@@ -11660,7 +11660,7 @@ fail:
 }
 
 // rule defaultModifierScan
-func u77(p *pegort.TParser) (any, bool) {
+func u77(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i77(p)
 	if !ok {
@@ -11669,10 +11669,10 @@ func u77(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i77(p *pegort.TParser) (any, bool) {
+func i77(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x4, x6, x8, x18, x19, x20 int
 	var v, k17, v22 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok, x11 bool
 	var x10 rune
 	start = p.Pos
@@ -11767,7 +11767,7 @@ L21:
 	p.Pos = x20
 	v22 = p.NewMatchOrdinary(x19, p.Pos, p.Text(x19, p.Pos), true)
 	k17 = v22
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "defaultModifierScan"
 	v = func() any { return k17 }()
 	v = c.Finish(v)
@@ -11779,7 +11779,7 @@ fail:
 }
 
 // rule asyncModifierScan
-func u78(p *pegort.TParser) (any, bool) {
+func u78(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[78]) {
 		return p.CallMemo(trules[78], i78)
 	}
@@ -11791,10 +11791,10 @@ func u78(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i78(p *pegort.TParser) (any, bool) {
+func i78(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x4, x6, x8, x18, x19, x20 int
 	var v, k17, v22 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok, x11 bool
 	var x10 rune
 	start = p.Pos
@@ -11889,7 +11889,7 @@ L21:
 	p.Pos = x20
 	v22 = p.NewMatchOrdinary(x19, p.Pos, p.Text(x19, p.Pos), true)
 	k17 = v22
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "asyncModifierScan"
 	v = func() any { return k17 }()
 	v = c.Finish(v)
@@ -11901,7 +11901,7 @@ fail:
 }
 
 // rule parameterList
-func u79(p *pegort.TParser) (any, bool) {
+func u79(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[79]) {
 		return p.CallMemo(trules[79], i79)
 	}
@@ -11913,10 +11913,10 @@ func u79(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i79(p *pegort.TParser) (any, bool) {
+func i79(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v7 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -11949,7 +11949,7 @@ L6:
 	} else if _, ok = p.Parser.MatchLiteral(lit79, ")", 59, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "parameterList"
 	v = func() any { return c.Concat(func() any { return k1 }()) }()
 	v = c.Finish(v)
@@ -11961,7 +11961,7 @@ fail:
 }
 
 // rule parameters
-func u80(p *pegort.TParser) (any, bool) {
+func u80(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[80]) {
 		return p.CallMemo(trules[80], i80)
 	}
@@ -11973,10 +11973,10 @@ func u80(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i80(p *pegort.TParser) (any, bool) {
+func i80(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x11, x14 int
 	var v, k1, v3, k4, k9, v12, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -12031,7 +12031,7 @@ func i80(p *pegort.TParser) (any, bool) {
 L15:
 	p.Pos = x14
 L16:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "parameters"
 	v = func() any {
 		return func() any {
@@ -12050,14 +12050,14 @@ fail:
 }
 
 // rule parameter
-func u81(p *pegort.TParser) (any, bool) {
+func u81(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[81]) {
 		return p.CallMemo(trules[81], v81)
 	}
 	return v81(p)
 }
 
-func v81(p *pegort.TParser) (any, bool) {
+func v81(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v10 any
 	var x4 rune
@@ -12089,7 +12089,7 @@ L9:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -12101,7 +12101,7 @@ fail:
 }
 
 // rule thisParameter
-func u82(p *pegort.TParser) (any, bool) {
+func u82(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i82(p)
 	if !ok {
@@ -12110,10 +12110,10 @@ func u82(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i82(p *pegort.TParser) (any, bool) {
+func i82(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6 int
 	var v, k1, v3, k4, v7, v10 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -12135,7 +12135,7 @@ L8:
 	v7 = nil
 L9:
 	k4 = v7
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "thisParameter"
 	v = func() any {
 		return func() any {
@@ -12151,7 +12151,7 @@ fail:
 	return nil, false
 }
 
-func s83(p *pegort.TParser) (any, bool) {
+func s83(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -12175,9 +12175,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[83], v, bv)
@@ -12190,7 +12190,7 @@ fail:
 }
 
 // rule regularParameter
-func u84(p *pegort.TParser) (any, bool) {
+func u84(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i84(p)
 	if !ok {
@@ -12199,10 +12199,10 @@ func u84(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i84(p *pegort.TParser) (any, bool) {
+func i84(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x9, x12, x14, x19, x22, x23, x29, x30 int
 	var v, k1, v3, k5, x6, v10, k11, v13, k15, x16, v20, k21, v24, v27, k28, v31, v34 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -12273,7 +12273,7 @@ L32:
 	v31 = nil
 L33:
 	k28 = v31
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "regularParameter"
 	v = func() any {
 		return func() any {
@@ -12294,7 +12294,7 @@ fail:
 }
 
 // rule returnType
-func u85(p *pegort.TParser) (any, bool) {
+func u85(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[85]) {
 		return p.CallMemo(trules[85], i85)
 	}
@@ -12306,11 +12306,11 @@ func u85(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i85(p *pegort.TParser) (any, bool) {
+func i85(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -12327,7 +12327,7 @@ func i85(p *pegort.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("*", func() any {
@@ -12345,7 +12345,7 @@ func i85(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "returnType"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
@@ -12359,7 +12359,7 @@ fail:
 }
 
 // rule classDeclaration
-func u86(p *pegort.TParser) (any, bool) {
+func u86(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[86]) {
 		return p.CallMemo(trules[86], i86)
 	}
@@ -12371,10 +12371,10 @@ func u86(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i86(p *pegort.TParser) (any, bool) {
+func i86(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x6, x11, x13, x18, x20, x25, x28 int
 	var v, k1, v3, k7, x8, v12, k14, x15, v19, k21, x22, v26, k27, v29 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -12467,7 +12467,7 @@ L24:
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "}", 54, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classDeclaration"
 	v = func() any {
 		return func() any {
@@ -12487,7 +12487,7 @@ fail:
 }
 
 // rule classExpression
-func u87(p *pegort.TParser) (any, bool) {
+func u87(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i87(p)
 	if !ok {
@@ -12496,10 +12496,10 @@ func u87(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i87(p *pegort.TParser) (any, bool) {
+func i87(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x6, x11, x13, x18, x20, x25, x28 int
 	var v, k1, v3, k7, x8, v12, k14, x15, v19, k21, x22, v26, k27, v29 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -12592,7 +12592,7 @@ L24:
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "}", 54, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classExpression"
 	v = func() any {
 		return func() any {
@@ -12612,7 +12612,7 @@ fail:
 }
 
 // rule className
-func u88(p *pegort.TParser) (any, bool) {
+func u88(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[88]) {
 		return p.CallMemo(trules[88], i88)
 	}
@@ -12624,10 +12624,10 @@ func u88(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i88(p *pegort.TParser) (any, bool) {
+func i88(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x6 int
 	var v, k5, v7 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -12665,7 +12665,7 @@ L2:
 		goto fail
 	}
 	k5 = v7
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "className"
 	v = func() any { return k5 }()
 	v = c.Finish(v)
@@ -12678,7 +12678,7 @@ fail:
 }
 
 // rule heritageClauses
-func u89(p *pegort.TParser) (any, bool) {
+func u89(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[89]) {
 		return p.CallMemo(trules[89], i89)
 	}
@@ -12690,10 +12690,10 @@ func u89(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i89(p *pegort.TParser) (any, bool) {
+func i89(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x11 int
 	var v, k1, v3, k4, k9, v12, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -12727,7 +12727,7 @@ func i89(p *pegort.TParser) (any, bool) {
 	}
 	v13 = p.NewNodeOrdinary("list", x5, p.Pos, p.Kids(x6))
 	k4 = v13
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "heritageClauses"
 	v = func() any {
 		return func() any {
@@ -12746,7 +12746,7 @@ fail:
 }
 
 // rule heritageClause
-func u90(p *pegort.TParser) (any, bool) {
+func u90(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[90]) {
 		return p.CallMemo(trules[90], i90)
 	}
@@ -12758,10 +12758,10 @@ func u90(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i90(p *pegort.TParser) (any, bool) {
+func i90(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x4, x12, x15, x20, x23, x26 int
 	var v, k1, v14, k16, x17, v24 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
@@ -12860,7 +12860,7 @@ L25:
 	k16 = x17
 	goto fail
 L18:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "heritageClause"
 	v = func() any {
 		return func() any {
@@ -12877,7 +12877,7 @@ fail:
 }
 
 // rule heritageTypes
-func u93(p *pegort.TParser) (any, bool) {
+func u93(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i93(p)
 	if !ok {
@@ -12886,10 +12886,10 @@ func u93(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i93(p *pegort.TParser) (any, bool) {
+func i93(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x11, x14, x17 int
 	var v, k1, v3, k4, k9, v12, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -12958,7 +12958,7 @@ L18:
 L15:
 	p.Pos = x14
 L16:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "heritageTypes"
 	v = func() any {
 		return func() any {
@@ -12977,7 +12977,7 @@ fail:
 }
 
 // rule expressionWithTypeArguments
-func u94(p *pegort.TParser) (any, bool) {
+func u94(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[94]) {
 		return p.CallMemo(trules[94], i94)
 	}
@@ -12989,10 +12989,10 @@ func u94(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i94(p *pegort.TParser) (any, bool) {
+func i94(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x11, x13, x15, x17, x19, x25, x33, x36, x38, x43 int
 	var v, k35, v37, k39, x40, v44 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x5, x20, x27 rune
 	var x6, ok, x21, x28 bool
 	start = p.Pos
@@ -13155,7 +13155,7 @@ L41:
 	p.Pos = x38
 	k39 = x40
 L42:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "expressionWithTypeArguments"
 	v = func() any {
 		return func() any {
@@ -13172,7 +13172,7 @@ fail:
 }
 
 // rule classMembers
-func u95(p *pegort.TParser) (any, bool) {
+func u95(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[95]) {
 		return p.CallMemo(trules[95], i95)
 	}
@@ -13184,10 +13184,10 @@ func u95(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i95(p *pegort.TParser) (any, bool) {
+func i95(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x4, x5, x8, x11, x18 int
 	var v, k1, k6, v19, v20 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok, x15 bool
 	var x14 rune
 	start = p.Pos
@@ -13251,7 +13251,7 @@ func i95(p *pegort.TParser) (any, bool) {
 	}
 	v20 = p.NewNodeOrdinary("list", x2, p.Pos, p.Kids(x3))
 	k1 = v20
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classMembers"
 	v = func() any {
 		return c.NewList(c.ListItems("map", func() any { return k1 }()))
@@ -13261,7 +13261,7 @@ func i95(p *pegort.TParser) (any, bool) {
 	return v, true
 }
 
-func s100(p *pegort.TParser) (any, bool) {
+func s100(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v10, v12, v14 any
 	var x4 rune
@@ -13307,7 +13307,7 @@ L13:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -13319,7 +13319,7 @@ fail:
 }
 
 // rule classAccessor
-func u101(p *pegort.TParser) (any, bool) {
+func u101(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i101(p)
 	if !ok {
@@ -13328,10 +13328,10 @@ func u101(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i101(p *pegort.TParser) (any, bool) {
+func i101(p *rt.TParser) (any, bool) {
 	var start, x1, x5, x6 int
 	var v, k4, v7, v10, v12 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -13372,7 +13372,7 @@ L11:
 	goto fail
 L8:
 	k4 = v7
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classAccessor"
 	v = func() any { return k4 }()
 	v = c.Finish(v)
@@ -13384,7 +13384,7 @@ fail:
 }
 
 // rule classMemberNotAccessor
-func u102(p *pegort.TParser) (any, bool) {
+func u102(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i102(p)
 	if !ok {
@@ -13393,10 +13393,10 @@ func u102(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i102(p *pegort.TParser) (any, bool) {
+func i102(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x5 int
 	var v, k3, v6, v9, v11, v13, v15 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -13448,7 +13448,7 @@ L14:
 	goto fail
 L7:
 	k3 = v6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classMemberNotAccessor"
 	v = func() any { return k3 }()
 	v = c.Finish(v)
@@ -13459,7 +13459,7 @@ fail:
 	return nil, false
 }
 
-func s104(p *pegort.TParser) (any, bool) {
+func s104(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	var ok bool
@@ -13472,9 +13472,9 @@ func s104(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[104], v, bv)
@@ -13487,7 +13487,7 @@ fail:
 }
 
 // rule classStaticBlock
-func u105(p *pegort.TParser) (any, bool) {
+func u105(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i105(p)
 	if !ok {
@@ -13496,11 +13496,11 @@ func u105(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i105(p *pegort.TParser) (any, bool) {
+func i105(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x6, x10 int
 	var v, k1, v3, k9, v11 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -13544,7 +13544,7 @@ L7:
 	goto fail
 L8:
 
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("+", func() any {
 				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
@@ -13560,7 +13560,7 @@ L8:
 		goto fail
 	}
 	k9 = v11
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classStaticBlock"
 	v = func() any {
 		return func() any {
@@ -13579,7 +13579,7 @@ fail:
 }
 
 // rule getAccessor
-func u106(p *pegort.TParser) (any, bool) {
+func u106(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i106(p)
 	if !ok {
@@ -13588,11 +13588,11 @@ func u106(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i106(p *pegort.TParser) (any, bool) {
+func i106(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x6, x10, x12, x17, x20, x23, x24, x29, x34, x37 int
 	var v, k1, v3, k9, v11, k13, x14, v18, k19, v21, k22, v25, v28, k30, x31, v35 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -13644,7 +13644,7 @@ L8:
 		goto fail
 	}
 	k9 = v11
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
@@ -13728,7 +13728,7 @@ L36:
 	k30 = x31
 	goto fail
 L32:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "getAccessor"
 	v = func() any {
 		return func() any {
@@ -13751,7 +13751,7 @@ fail:
 }
 
 // rule setAccessor
-func u107(p *pegort.TParser) (any, bool) {
+func u107(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i107(p)
 	if !ok {
@@ -13760,11 +13760,11 @@ func u107(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i107(p *pegort.TParser) (any, bool) {
+func i107(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x6, x10, x12, x17, x20, x23, x24, x29, x34, x37 int
 	var v, k1, v3, k9, v11, k13, x14, v18, k19, v21, k22, v25, v28, k30, x31, v35 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -13816,7 +13816,7 @@ L8:
 		goto fail
 	}
 	k9 = v11
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
@@ -13900,7 +13900,7 @@ L36:
 	k30 = x31
 	goto fail
 L32:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "setAccessor"
 	v = func() any {
 		return func() any {
@@ -13923,7 +13923,7 @@ fail:
 }
 
 // rule constructorDeclaration
-func u109(p *pegort.TParser) (any, bool) {
+func u109(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i109(p)
 	if !ok {
@@ -13932,11 +13932,11 @@ func u109(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i109(p *pegort.TParser) (any, bool) {
+func i109(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x9, x12, x15, x16, x21, x26, x29 int
 	var v, k1, v3, k5, x6, v10, k11, v13, k14, v17, v20, k22, x23, v27 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -13950,7 +13950,7 @@ func i109(p *pegort.TParser) (any, bool) {
 	if _, ok = u504(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
@@ -14034,7 +14034,7 @@ L28:
 	k22 = x23
 	goto fail
 L24:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "constructorDeclaration"
 	v = func() any {
 		return func() any {
@@ -14056,7 +14056,7 @@ fail:
 }
 
 // rule classIndexSignature
-func u111(p *pegort.TParser) (any, bool) {
+func u111(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i111(p)
 	if !ok {
@@ -14065,10 +14065,10 @@ func u111(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i111(p *pegort.TParser) (any, bool) {
+func i111(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x8, x9, x15, x16 int
 	var v, k1, v3, k7, v10, v13, k14, v17, v20 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -14135,7 +14135,7 @@ L19:
 	if _, ok = u506(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classIndexSignature"
 	v = func() any {
 		return func() any {
@@ -14153,7 +14153,7 @@ fail:
 }
 
 // rule methodDeclaration
-func u112(p *pegort.TParser) (any, bool) {
+func u112(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i112(p)
 	if !ok {
@@ -14162,11 +14162,11 @@ func u112(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i112(p *pegort.TParser) (any, bool) {
+func i112(p *rt.TParser) (any, bool) {
 	var start, x1, x6, x9, x12, x14, x16, x23, x26, x27, x29, x32, x34, x39, x41, x45, size, x48, x53, x56, x59, x60, x65, x70, x73 int
 	var v, k2, x3, v10, k11, v13, k17, x18, k19, x20, v28, v30, k31, v33, k35, x36, v40, k49, x50, v54, k55, v57, k58, v61, v64, k66, x67, v71 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	var ch rune
 	start = p.Pos
@@ -14272,7 +14272,7 @@ L37:
 L38:
 
 	x41 = p.Pos
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("!=", func() any { return k19 }(), func() any { return any(nil) }())
 		}()
@@ -14307,7 +14307,7 @@ L44:
 	goto fail
 L42:
 
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("+", func() any {
 				return c.Binary("+", func() any {
@@ -14399,7 +14399,7 @@ L72:
 	k66 = x67
 	goto fail
 L68:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "methodDeclaration"
 	v = func() any {
 		return func() any {
@@ -14424,7 +14424,7 @@ fail:
 }
 
 // rule propertyDeclaration
-func u113(p *pegort.TParser) (any, bool) {
+func u113(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i113(p)
 	if !ok {
@@ -14433,11 +14433,11 @@ func u113(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i113(p *pegort.TParser) (any, bool) {
+func i113(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x7, x9, x16, x21, x24, x27, x28, x33, x39, size, x41, x43 int
 	var v, k1, v3, k6, v8, k10, x11, k12, x13, x17, x18, v22, v25, k26, v29, v32, k35, x36, v42 any
-	var c *pegort.TActCtx
-	var prevEnv, x34 *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv, x34 *rt.Env
 	var ok bool
 	var ch rune
 	start = p.Pos
@@ -14546,7 +14546,7 @@ L40:
 	if _, ok = s480(p); !ok {
 		goto L37
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(8) }())
@@ -14587,7 +14587,7 @@ L44:
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "propertyDeclaration"
 	v = func() any {
 		return func() any {
@@ -14610,7 +14610,7 @@ fail:
 }
 
 // rule interfaceDeclaration
-func u114(p *pegort.TParser) (any, bool) {
+func u114(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i114(p)
 	if !ok {
@@ -14619,10 +14619,10 @@ func u114(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i114(p *pegort.TParser) (any, bool) {
+func i114(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x7, x9, x14, x16, x21, x24 int
 	var v, k1, v3, k6, v8, k10, x11, v15, k17, x18, v22, k23, v25 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -14694,7 +14694,7 @@ L20:
 		goto fail
 	}
 	k23 = v25
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "interfaceDeclaration"
 	v = func() any {
 		return func() any {
@@ -14714,7 +14714,7 @@ fail:
 }
 
 // rule typeAliasDeclaration
-func u115(p *pegort.TParser) (any, bool) {
+func u115(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i115(p)
 	if !ok {
@@ -14723,10 +14723,10 @@ func u115(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i115(p *pegort.TParser) (any, bool) {
+func i115(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x6, x9, x11, x16, x19, x20 int
 	var v, k1, v3, k8, v10, k12, x13, v17, k18, v21, v27, v29 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok, x24 bool
 	var x23 rune
 	start = p.Pos
@@ -14828,7 +14828,7 @@ L22:
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeAliasDeclaration"
 	v = func() any {
 		return func() any {
@@ -14846,7 +14846,7 @@ fail:
 	return nil, false
 }
 
-func s116(p *pegort.TParser) (any, bool) {
+func s116(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x4 int
 	var v, v6, bv any
 	var ok bool
@@ -14884,9 +14884,9 @@ L5:
 	p.Silent--
 	p.Pos = x4
 	v6 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v6)
+	bv = rt.TFreshNode(v6)
 	v = p.ScopeValue(sh23, v6, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[116], v, bv)
@@ -14899,7 +14899,7 @@ fail:
 }
 
 // rule enumDeclaration
-func u117(p *pegort.TParser) (any, bool) {
+func u117(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i117(p)
 	if !ok {
@@ -14908,11 +14908,11 @@ func u117(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i117(p *pegort.TParser) (any, bool) {
+func i117(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x7, x10, x11 int
 	var v, k1, v3, k6, v8, k9, v12, v15 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -14958,7 +14958,7 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
@@ -14987,7 +14987,7 @@ L14:
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "}", 54, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "enumDeclaration"
 	v = func() any {
 		return func() any {
@@ -15007,7 +15007,7 @@ fail:
 }
 
 // rule enumMember
-func u118(p *pegort.TParser) (any, bool) {
+func u118(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[118]) {
 		return p.CallMemo(trules[118], i118)
 	}
@@ -15019,10 +15019,10 @@ func u118(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i118(p *pegort.TParser) (any, bool) {
+func i118(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x9, size, x11 int
 	var v, k1, v3, k5, x6, v12 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
@@ -15070,7 +15070,7 @@ L7:
 	p.Pos = x4
 	k5 = x6
 L8:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "enumMember"
 	v = func() any {
 		return func() any {
@@ -15086,7 +15086,7 @@ fail:
 	return nil, false
 }
 
-func s119(p *pegort.TParser) (any, bool) {
+func s119(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v7, v9 any
 	var ok bool
@@ -15117,7 +15117,7 @@ L8:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -15129,7 +15129,7 @@ fail:
 }
 
 // rule namespaceDeclaration
-func u120(p *pegort.TParser) (any, bool) {
+func u120(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i120(p)
 	if !ok {
@@ -15138,10 +15138,10 @@ func u120(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i120(p *pegort.TParser) (any, bool) {
+func i120(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x12, x15, x18 int
 	var v, k1, v3, k14, v16, k17, v19 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok, x7 bool
 	var x6 rune
 	start = p.Pos
@@ -15203,7 +15203,7 @@ L13:
 		goto fail
 	}
 	k17 = v19
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namespaceDeclaration"
 	v = func() any {
 		return func() any {
@@ -15221,7 +15221,7 @@ fail:
 }
 
 // rule namespaceBody
-func u121(p *pegort.TParser) (any, bool) {
+func u121(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[121]) {
 		return p.CallMemo(trules[121], i121)
 	}
@@ -15233,10 +15233,10 @@ func u121(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i121(p *pegort.TParser) (any, bool) {
+func i121(p *rt.TParser) (any, bool) {
 	var start, x1, x6, x9 int
 	var v, k2, x3, v7, v10 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -15277,7 +15277,7 @@ L8:
 	k2 = x3
 	goto fail
 L4:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namespaceBody"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
@@ -15289,7 +15289,7 @@ fail:
 }
 
 // rule nestedNamespace
-func u122(p *pegort.TParser) (any, bool) {
+func u122(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i122(p)
 	if !ok {
@@ -15298,10 +15298,10 @@ func u122(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i122(p *pegort.TParser) (any, bool) {
+func i122(p *rt.TParser) (any, bool) {
 	var start, x2, x5 int
 	var v, k1, v3, k4, v6 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -15316,7 +15316,7 @@ func i122(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k4 = v6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "nestedNamespace"
 	v = func() any {
 		return func() any {
@@ -15333,7 +15333,7 @@ fail:
 }
 
 // rule externalModuleDeclaration
-func u123(p *pegort.TParser) (any, bool) {
+func u123(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i123(p)
 	if !ok {
@@ -15342,10 +15342,10 @@ func u123(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i123(p *pegort.TParser) (any, bool) {
+func i123(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x7, x9, x14 int
 	var v, k1, v3, k6, v8, k10, x11, v15 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -15400,7 +15400,7 @@ L16:
 	k10 = x11
 	goto fail
 L12:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "externalModuleDeclaration"
 	v = func() any {
 		return func() any {
@@ -15418,7 +15418,7 @@ fail:
 }
 
 // rule globalDeclaration
-func u124(p *pegort.TParser) (any, bool) {
+func u124(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i124(p)
 	if !ok {
@@ -15427,10 +15427,10 @@ func u124(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i124(p *pegort.TParser) (any, bool) {
+func i124(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x7, x12 int
 	var v, k1, v3, k4, v6, k8, x9, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -15468,7 +15468,7 @@ L14:
 	k8 = x9
 	goto fail
 L10:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "globalDeclaration"
 	v = func() any {
 		return func() any {
@@ -15485,7 +15485,7 @@ fail:
 	return nil, false
 }
 
-func s125(p *pegort.TParser) (any, bool) {
+func s125(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -15507,9 +15507,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[125], v, bv)
@@ -15522,7 +15522,7 @@ fail:
 }
 
 // rule moduleBlock
-func u126(p *pegort.TParser) (any, bool) {
+func u126(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[126]) {
 		return p.CallMemo(trules[126], i126)
 	}
@@ -15534,10 +15534,10 @@ func u126(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i126(p *pegort.TParser) (any, bool) {
+func i126(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x4, x5, x6, x9, x11 int
 	var v, k1, k7, v12, v13, v14, v15, v16 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var x10 []any
 	start = p.Pos
@@ -15588,7 +15588,7 @@ func i126(p *pegort.TParser) (any, bool) {
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "}", 54, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "moduleBlock"
 	v = func() any {
 		return func() any {
@@ -15608,7 +15608,7 @@ fail:
 }
 
 // rule importEqualsDeclaration
-func u127(p *pegort.TParser) (any, bool) {
+func u127(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i127(p)
 	if !ok {
@@ -15617,10 +15617,10 @@ func u127(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i127(p *pegort.TParser) (any, bool) {
+func i127(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x6, x11, x12, x14, x16, x20, x22, size, x25 int
 	var v, k1, v3, k7, x8, v13, k19, v21, k24, v26 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
@@ -15730,7 +15730,7 @@ L23:
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importEqualsDeclaration"
 	v = func() any {
 		return func() any {
@@ -15750,7 +15750,7 @@ fail:
 	return nil, false
 }
 
-func s128(p *pegort.TParser) (any, bool) {
+func s128(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v10 any
 	var x4 rune
@@ -15782,7 +15782,7 @@ L9:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -15794,7 +15794,7 @@ fail:
 }
 
 // rule externalModuleReference
-func u129(p *pegort.TParser) (any, bool) {
+func u129(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i129(p)
 	if !ok {
@@ -15803,10 +15803,10 @@ func u129(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i129(p *pegort.TParser) (any, bool) {
+func i129(p *rt.TParser) (any, bool) {
 	var start, x1, x4 int
 	var v, k3, v5 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -15849,7 +15849,7 @@ L2:
 	} else if _, ok = p.Parser.MatchLiteral(lit79, ")", 59, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "externalModuleReference"
 	v = func() any {
 		return func() any {
@@ -15865,7 +15865,7 @@ fail:
 }
 
 // rule importDeclaration
-func u130(p *pegort.TParser) (any, bool) {
+func u130(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i130(p)
 	if !ok {
@@ -15874,10 +15874,10 @@ func u130(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i130(p *pegort.TParser) (any, bool) {
+func i130(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x6, x11, x13, x19, x21, x23, x25, x32, x34, size, x37, x39, x44 int
 	var v, k1, v3, k7, x8, v12, k36, v38, k40, x41, v45 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok, x16, x28 bool
 	var x15, x27, ch rune
 	start = p.Pos
@@ -16047,7 +16047,7 @@ L43:
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importDeclaration"
 	v = func() any {
 		return func() any {
@@ -16066,7 +16066,7 @@ fail:
 }
 
 // rule importClause
-func u131(p *pegort.TParser) (any, bool) {
+func u131(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i131(p)
 	if !ok {
@@ -16075,10 +16075,10 @@ func u131(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i131(p *pegort.TParser) (any, bool) {
+func i131(p *rt.TParser) (any, bool) {
 	var start, x1, x6, x8, x15, x17, x21, x24 int
 	var v, k2, x3, v7, k9, x10, k11, x12, v16, x18, v22, v25 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -16147,7 +16147,7 @@ L23:
 	k11 = x12
 	goto fail
 L13:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importClause"
 	v = func() any {
 		return func() any {
@@ -16164,7 +16164,7 @@ fail:
 	return nil, false
 }
 
-func s132(p *pegort.TParser) (any, bool) {
+func s132(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x8, x10, x13, x19, x21, x27, x31, x34, x36, x38, x40, x48, x50, x53, x59, x61, size, x64, x66, x68 int
 	var v, v70 any
 	var x4, x15, x23, x42, x55, ch rune
@@ -16467,7 +16467,7 @@ L46:
 L3:
 	v70 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	v = p.ScopeValue(sh23, v70, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -16479,14 +16479,14 @@ fail:
 }
 
 // rule namedImportBindings
-func u133(p *pegort.TParser) (any, bool) {
+func u133(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[133]) {
 		return p.CallMemo(trules[133], v133)
 	}
 	return v133(p)
 }
 
-func v133(p *pegort.TParser) (any, bool) {
+func v133(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v11 any
 	var x4 rune
@@ -16522,7 +16522,7 @@ L9:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -16534,7 +16534,7 @@ fail:
 }
 
 // rule namespaceImport
-func u134(p *pegort.TParser) (any, bool) {
+func u134(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i134(p)
 	if !ok {
@@ -16543,10 +16543,10 @@ func u134(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i134(p *pegort.TParser) (any, bool) {
+func i134(p *rt.TParser) (any, bool) {
 	var start, x1, x4 int
 	var v, k3, v5 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -16583,7 +16583,7 @@ L2:
 		goto fail
 	}
 	k3 = v5
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namespaceImport"
 	v = func() any {
 		return func() any {
@@ -16599,7 +16599,7 @@ fail:
 }
 
 // rule namedImports
-func u135(p *pegort.TParser) (any, bool) {
+func u135(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i135(p)
 	if !ok {
@@ -16608,10 +16608,10 @@ func u135(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i135(p *pegort.TParser) (any, bool) {
+func i135(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v7 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -16644,7 +16644,7 @@ L6:
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "}", 54, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namedImports"
 	v = func() any {
 		return func() any {
@@ -16660,14 +16660,14 @@ fail:
 }
 
 // rule importSpecifier
-func u136(p *pegort.TParser) (any, bool) {
+func u136(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[136]) {
 		return p.CallMemo(trules[136], v136)
 	}
 	return v136(p)
 }
 
-func v136(p *pegort.TParser) (any, bool) {
+func v136(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v11, v14, v17, v19 any
 	var x4 rune
@@ -16735,7 +16735,7 @@ L18:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -16747,7 +16747,7 @@ fail:
 }
 
 // rule importSpecifierTypeAsAs
-func u137(p *pegort.TParser) (any, bool) {
+func u137(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i137(p)
 	if !ok {
@@ -16756,10 +16756,10 @@ func u137(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i137(p *pegort.TParser) (any, bool) {
+func i137(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x6, x9 int
 	var v, k3, v5, k8, v10 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -16815,7 +16815,7 @@ L7:
 		goto fail
 	}
 	k8 = v10
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importSpecifierTypeAsAs"
 	v = func() any {
 		return func() any {
@@ -16833,7 +16833,7 @@ fail:
 }
 
 // rule importSpecifierTypeAsName
-func u138(p *pegort.TParser) (any, bool) {
+func u138(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i138(p)
 	if !ok {
@@ -16842,10 +16842,10 @@ func u138(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i138(p *pegort.TParser) (any, bool) {
+func i138(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x7 int
 	var v, k1, v3, k6, v8 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -16882,7 +16882,7 @@ L5:
 		goto fail
 	}
 	k6 = v8
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importSpecifierTypeAsName"
 	v = func() any {
 		return func() any {
@@ -16899,7 +16899,7 @@ fail:
 }
 
 // rule importSpecifierTypeAs
-func u139(p *pegort.TParser) (any, bool) {
+func u139(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i139(p)
 	if !ok {
@@ -16908,10 +16908,10 @@ func u139(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i139(p *pegort.TParser) (any, bool) {
+func i139(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x6 int
 	var v, k3, v5 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -16954,7 +16954,7 @@ L2:
 L7:
 	p.Silent--
 	p.Pos = x6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importSpecifierTypeAs"
 	v = func() any {
 		return func() any {
@@ -16971,7 +16971,7 @@ fail:
 }
 
 // rule importSpecifierType
-func u140(p *pegort.TParser) (any, bool) {
+func u140(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i140(p)
 	if !ok {
@@ -16980,10 +16980,10 @@ func u140(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i140(p *pegort.TParser) (any, bool) {
+func i140(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x6, x13, x15, x17, x20 int
 	var v, k7, x8, k9, x10, v14, v18, v21 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -17073,7 +17073,7 @@ L19:
 	k9 = x10
 	goto fail
 L11:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importSpecifierType"
 	v = func() any {
 		return func() any {
@@ -17091,7 +17091,7 @@ fail:
 }
 
 // rule importSpecifierPlain
-func u141(p *pegort.TParser) (any, bool) {
+func u141(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i141(p)
 	if !ok {
@@ -17100,10 +17100,10 @@ func u141(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i141(p *pegort.TParser) (any, bool) {
+func i141(p *rt.TParser) (any, bool) {
 	var start, x1, x8, x10, x12, x15 int
 	var v, k2, x3, k4, x5, v9, v13, v16 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -17160,7 +17160,7 @@ L14:
 	k4 = x5
 	goto fail
 L6:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importSpecifierPlain"
 	v = func() any {
 		return func() any {
@@ -17177,14 +17177,14 @@ fail:
 }
 
 // rule typeIdentifier
-func u142(p *pegort.TParser) (any, bool) {
+func u142(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[142]) {
 		return p.CallMemo(trules[142], v142)
 	}
 	return v142(p)
 }
 
-func v142(p *pegort.TParser) (any, bool) {
+func v142(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -17208,9 +17208,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[142], v, bv)
@@ -17223,14 +17223,14 @@ fail:
 }
 
 // rule importedName
-func u143(p *pegort.TParser) (any, bool) {
+func u143(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[143]) {
 		return p.CallMemo(trules[143], v143)
 	}
 	return v143(p)
 }
 
-func v143(p *pegort.TParser) (any, bool) {
+func v143(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v9, bv any
 	var ok, x6 bool
@@ -17260,9 +17260,9 @@ L7:
 	goto fail
 L3:
 	v9 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v9)
+	bv = rt.TFreshNode(v9)
 	v = p.ScopeValue(sh23, v9, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[143], v, bv)
@@ -17275,14 +17275,14 @@ fail:
 }
 
 // rule asIdentifier
-func u145(p *pegort.TParser) (any, bool) {
+func u145(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[145]) {
 		return p.CallMemo(trules[145], v145)
 	}
 	return v145(p)
 }
 
-func v145(p *pegort.TParser) (any, bool) {
+func v145(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -17306,9 +17306,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[145], v, bv)
@@ -17321,14 +17321,14 @@ fail:
 }
 
 // rule moduleExportName
-func u146(p *pegort.TParser) (any, bool) {
+func u146(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[146]) {
 		return p.CallMemo(trules[146], v146)
 	}
 	return v146(p)
 }
 
-func v146(p *pegort.TParser) (any, bool) {
+func v146(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v7 any
 	var ok bool
@@ -17352,7 +17352,7 @@ L6:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -17364,14 +17364,14 @@ fail:
 }
 
 // rule moduleSpecifier
-func u148(p *pegort.TParser) (any, bool) {
+func u148(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[148]) {
 		return p.CallMemo(trules[148], v148)
 	}
 	return v148(p)
 }
 
-func v148(p *pegort.TParser) (any, bool) {
+func v148(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v7 any
 	var ok bool
@@ -17395,7 +17395,7 @@ L6:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -17407,7 +17407,7 @@ fail:
 }
 
 // rule importAttributes
-func u149(p *pegort.TParser) (any, bool) {
+func u149(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[149]) {
 		return p.CallMemo(trules[149], i149)
 	}
@@ -17419,10 +17419,10 @@ func u149(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i149(p *pegort.TParser) (any, bool) {
+func i149(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x4, x12, x16 int
 	var v, k1, v14, k15, v17 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
@@ -17480,7 +17480,7 @@ L13:
 		goto fail
 	}
 	k15 = v17
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importAttributes"
 	v = func() any {
 		return func() any {
@@ -17497,7 +17497,7 @@ fail:
 }
 
 // rule importAttributesBraces
-func u150(p *pegort.TParser) (any, bool) {
+func u150(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[150]) {
 		return p.CallMemo(trules[150], i150)
 	}
@@ -17509,10 +17509,10 @@ func u150(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i150(p *pegort.TParser) (any, bool) {
+func i150(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v7 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -17545,7 +17545,7 @@ L6:
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "}", 54, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importAttributesBraces"
 	v = func() any { return c.Concat(func() any { return k1 }()) }()
 	v = c.Finish(v)
@@ -17557,7 +17557,7 @@ fail:
 }
 
 // rule importAttribute
-func u151(p *pegort.TParser) (any, bool) {
+func u151(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[151]) {
 		return p.CallMemo(trules[151], i151)
 	}
@@ -17569,10 +17569,10 @@ func u151(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i151(p *pegort.TParser) (any, bool) {
+func i151(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x11 int
 	var v, k1, v4, v7, v9, k10, v12 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -17612,7 +17612,7 @@ L5:
 		goto fail
 	}
 	k10 = v12
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importAttribute"
 	v = func() any {
 		return func() any {
@@ -17629,7 +17629,7 @@ fail:
 }
 
 // rule exportAssignment
-func u152(p *pegort.TParser) (any, bool) {
+func u152(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i152(p)
 	if !ok {
@@ -17638,11 +17638,11 @@ func u152(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i152(p *pegort.TParser) (any, bool) {
+func i152(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x7, x8, x15, x17, x19, size, x25, x27, x29, x34 int
 	var v, k1, v3, k6, v9, v18, v21, v22, v28, v31, v32, k33, v35 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok, x12 bool
 	var x11, ch rune
 	var x16, x26 []any
@@ -17746,7 +17746,7 @@ L10:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("+", func() any {
 				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
@@ -17769,7 +17769,7 @@ L10:
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportAssignment"
 	v = func() any {
 		return func() any {
@@ -17791,7 +17791,7 @@ fail:
 }
 
 // rule namespaceExportDeclaration
-func u153(p *pegort.TParser) (any, bool) {
+func u153(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i153(p)
 	if !ok {
@@ -17800,10 +17800,10 @@ func u153(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i153(p *pegort.TParser) (any, bool) {
+func i153(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x6, x8, x11 int
 	var v, k1, v3, k10, v12 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -17874,7 +17874,7 @@ L9:
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namespaceExportDeclaration"
 	v = func() any {
 		return func() any {
@@ -17890,7 +17890,7 @@ fail:
 	return nil, false
 }
 
-func s154(p *pegort.TParser) (any, bool) {
+func s154(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v7 any
 	var ok bool
@@ -17914,7 +17914,7 @@ L6:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -17926,7 +17926,7 @@ fail:
 }
 
 // rule exportStarDeclaration
-func u155(p *pegort.TParser) (any, bool) {
+func u155(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i155(p)
 	if !ok {
@@ -17935,11 +17935,11 @@ func u155(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i155(p *pegort.TParser) (any, bool) {
+func i155(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x6, x11, x12, x14, x16, x24, x28, x31, x33, x38 int
 	var v, k1, v3, k7, x8, v13, k17, x18, v25, k30, v32, k34, x35, v39 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok, x21 bool
 	var x20 rune
 	start = p.Pos
@@ -18055,7 +18055,7 @@ L29:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("+", func() any {
 				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
@@ -18094,7 +18094,7 @@ L37:
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportStarDeclaration"
 	v = func() any {
 		return func() any {
@@ -18118,7 +18118,7 @@ fail:
 }
 
 // rule exportNamedDeclaration
-func u156(p *pegort.TParser) (any, bool) {
+func u156(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i156(p)
 	if !ok {
@@ -18127,11 +18127,11 @@ func u156(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i156(p *pegort.TParser) (any, bool) {
+func i156(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x6, x11, x12, x14, x17, x19, x27, x29, x31, x35 int
 	var v, k1, v3, k7, x8, v13, k16, v18, k21, x22, k23, x24, v30, x32, v36 any
-	var c *pegort.TActCtx
-	var prevEnv, x20 *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv, x20 *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -18221,7 +18221,7 @@ L28:
 	if _, ok = s480(p); !ok {
 		goto L25
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("+", func() any {
 				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
@@ -18267,7 +18267,7 @@ L26:
 	if _, ok = u487(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportNamedDeclaration"
 	v = func() any {
 		return func() any {
@@ -18291,7 +18291,7 @@ fail:
 }
 
 // rule namespaceExport
-func u157(p *pegort.TParser) (any, bool) {
+func u157(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i157(p)
 	if !ok {
@@ -18300,10 +18300,10 @@ func u157(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i157(p *pegort.TParser) (any, bool) {
+func i157(p *rt.TParser) (any, bool) {
 	var start, x1, x4 int
 	var v, k3, v5 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -18340,7 +18340,7 @@ L2:
 		goto fail
 	}
 	k3 = v5
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namespaceExport"
 	v = func() any {
 		return func() any {
@@ -18356,7 +18356,7 @@ fail:
 }
 
 // rule namedExports
-func u158(p *pegort.TParser) (any, bool) {
+func u158(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i158(p)
 	if !ok {
@@ -18365,10 +18365,10 @@ func u158(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i158(p *pegort.TParser) (any, bool) {
+func i158(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v7 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -18401,7 +18401,7 @@ L6:
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "}", 54, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namedExports"
 	v = func() any {
 		return func() any {
@@ -18417,14 +18417,14 @@ fail:
 }
 
 // rule exportSpecifier
-func u159(p *pegort.TParser) (any, bool) {
+func u159(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[159]) {
 		return p.CallMemo(trules[159], v159)
 	}
 	return v159(p)
 }
 
-func v159(p *pegort.TParser) (any, bool) {
+func v159(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v11, v14, v17, v19 any
 	var x4 rune
@@ -18492,7 +18492,7 @@ L18:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -18504,7 +18504,7 @@ fail:
 }
 
 // rule exportSpecifierTypeAsAs
-func u160(p *pegort.TParser) (any, bool) {
+func u160(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i160(p)
 	if !ok {
@@ -18513,10 +18513,10 @@ func u160(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i160(p *pegort.TParser) (any, bool) {
+func i160(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x6, x9 int
 	var v, k3, v5, k8, v10 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -18572,7 +18572,7 @@ L7:
 		goto fail
 	}
 	k8 = v10
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportSpecifierTypeAsAs"
 	v = func() any {
 		return func() any {
@@ -18590,7 +18590,7 @@ fail:
 }
 
 // rule exportSpecifierTypeAsName
-func u161(p *pegort.TParser) (any, bool) {
+func u161(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i161(p)
 	if !ok {
@@ -18599,10 +18599,10 @@ func u161(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i161(p *pegort.TParser) (any, bool) {
+func i161(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x7 int
 	var v, k1, v3, k6, v8 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -18639,7 +18639,7 @@ L5:
 		goto fail
 	}
 	k6 = v8
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportSpecifierTypeAsName"
 	v = func() any {
 		return func() any {
@@ -18656,7 +18656,7 @@ fail:
 }
 
 // rule exportSpecifierTypeAs
-func u162(p *pegort.TParser) (any, bool) {
+func u162(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i162(p)
 	if !ok {
@@ -18665,10 +18665,10 @@ func u162(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i162(p *pegort.TParser) (any, bool) {
+func i162(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x6 int
 	var v, k3, v5 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -18711,7 +18711,7 @@ L2:
 L7:
 	p.Silent--
 	p.Pos = x6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportSpecifierTypeAs"
 	v = func() any {
 		return func() any {
@@ -18728,7 +18728,7 @@ fail:
 }
 
 // rule exportSpecifierType
-func u163(p *pegort.TParser) (any, bool) {
+func u163(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i163(p)
 	if !ok {
@@ -18737,10 +18737,10 @@ func u163(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i163(p *pegort.TParser) (any, bool) {
+func i163(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x6, x13, x15, x17, x20 int
 	var v, k7, x8, k9, x10, v14, v18, v21 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -18830,7 +18830,7 @@ L19:
 	k9 = x10
 	goto fail
 L11:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportSpecifierType"
 	v = func() any {
 		return func() any {
@@ -18848,7 +18848,7 @@ fail:
 }
 
 // rule exportSpecifierPlain
-func u164(p *pegort.TParser) (any, bool) {
+func u164(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i164(p)
 	if !ok {
@@ -18857,10 +18857,10 @@ func u164(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i164(p *pegort.TParser) (any, bool) {
+func i164(p *rt.TParser) (any, bool) {
 	var start, x1, x8, x10, x12, x15 int
 	var v, k2, x3, k4, x5, v9, v13, v16 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -18917,7 +18917,7 @@ L14:
 	k4 = x5
 	goto fail
 L6:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportSpecifierPlain"
 	v = func() any {
 		return func() any {
@@ -18934,7 +18934,7 @@ fail:
 }
 
 // rule modifiers
-func u165(p *pegort.TParser) (any, bool) {
+func u165(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[165]) {
 		return p.CallMemo(trules[165], i165)
 	}
@@ -18946,10 +18946,10 @@ func u165(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i165(p *pegort.TParser) (any, bool) {
+func i165(p *rt.TParser) (any, bool) {
 	var start, x1, x6, x9, x12, x13, x18, x25, x27, x28 int
 	var v, k2, x3, v10, k11, v14, v17, k19, x20, k21, x22, v26, v29, v32 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -18998,7 +18998,7 @@ L16:
 	x18 = p.Pos
 	x20 = k19
 	x22 = k21
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary(">", func() any { return c.Length(func() any { return k11 }()) }(), func() any { return any(0) }())
 		}()
@@ -19028,7 +19028,7 @@ L23:
 	k19 = x20
 	k21 = x22
 L24:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "modifiers"
 	v = func() any {
 		return c.Concat(func() any { return k2 }(), func() any { return k11 }(), func() any { return k19 }(), func() any { return k21 }())
@@ -19039,7 +19039,7 @@ L24:
 }
 
 // rule decoratorList
-func u166(p *pegort.TParser) (any, bool) {
+func u166(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[166]) {
 		return p.CallMemo(trules[166], i166)
 	}
@@ -19051,10 +19051,10 @@ func u166(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i166(p *pegort.TParser) (any, bool) {
+func i166(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x4, x5, x8 int
 	var v, k1, k6, v9, v10 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -19087,7 +19087,7 @@ func i166(p *pegort.TParser) (any, bool) {
 	}
 	v10 = p.NewNodeOrdinary("list", x2, p.Pos, p.Kids(x3))
 	k1 = v10
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "decoratorList"
 	v = func() any {
 		return c.NewList(c.ListItems("map", func() any { return k1 }()))
@@ -19101,7 +19101,7 @@ fail:
 }
 
 // rule modifierList
-func u167(p *pegort.TParser) (any, bool) {
+func u167(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[167]) {
 		return p.CallMemo(trules[167], i167)
 	}
@@ -19113,10 +19113,10 @@ func u167(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i167(p *pegort.TParser) (any, bool) {
+func i167(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x4, x5, x6, x9, x11, x14, x21, x22, x28, x29, x30, x31, x32, x35, x37, x40 int
 	var v, k1, k7, v15, v16, v17, v18, v19, k20, v23, v26, k27, k33, v41, v42, v43, v44, v45 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x10, x36 []any
 	var ok bool
 	start = p.Pos
@@ -19226,7 +19226,7 @@ L25:
 	}
 	v45 = p.NewNodeOrdinary("list", x29, p.Pos, p.Kids(x30))
 	k27 = v45
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Or(func() any {
 				return c.Binary(">", func() any { return c.Length(func() any { return k1 }()) }(), func() any { return any(0) }())
@@ -19239,7 +19239,7 @@ L25:
 	}) {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "modifierList"
 	v = func() any {
 		return c.Concat(func() any {
@@ -19261,7 +19261,7 @@ fail:
 }
 
 // rule staticModifierList
-func u168(p *pegort.TParser) (any, bool) {
+func u168(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[168]) {
 		return p.CallMemo(trules[168], i168)
 	}
@@ -19273,10 +19273,10 @@ func u168(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i168(p *pegort.TParser) (any, bool) {
+func i168(p *rt.TParser) (any, bool) {
 	var start, x1, x5 int
 	var v, k4, v6 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -19305,7 +19305,7 @@ L3:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "staticModifierList"
 	v = func() any { return c.List(func() any { return k4 }()) }()
 	v = c.Finish(v)
@@ -19317,14 +19317,14 @@ fail:
 }
 
 // rule modifier
-func u169(p *pegort.TParser) (any, bool) {
+func u169(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[169]) {
 		return p.CallMemo(trules[169], v169)
 	}
 	return v169(p)
 }
 
-func v169(p *pegort.TParser) (any, bool) {
+func v169(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x8, x10, x15, x17, x22, x24, x27, x30, x56, x58 int
 	var v, v61, bv any
 	var x4, x32 rune
@@ -19625,9 +19625,9 @@ L29:
 	goto fail
 L3:
 	v61 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v61)
+	bv = rt.TFreshNode(v61)
 	v = p.ScopeValue(sh23, v61, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[169], v, bv)
@@ -19640,14 +19640,14 @@ fail:
 }
 
 // rule staticModifier
-func u170(p *pegort.TParser) (any, bool) {
+func u170(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[170]) {
 		return p.CallMemo(trules[170], v170)
 	}
 	return v170(p)
 }
 
-func v170(p *pegort.TParser) (any, bool) {
+func v170(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x4 int
 	var v, v7, bv any
 	var ok bool
@@ -19685,9 +19685,9 @@ L5:
 	goto fail
 L6:
 	v7 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v7)
+	bv = rt.TFreshNode(v7)
 	v = p.ScopeValue(sh23, v7, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[170], v, bv)
@@ -19700,7 +19700,7 @@ fail:
 }
 
 // rule classModifiers
-func u176(p *pegort.TParser) (any, bool) {
+func u176(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[176]) {
 		return p.CallMemo(trules[176], i176)
 	}
@@ -19712,10 +19712,10 @@ func u176(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i176(p *pegort.TParser) (any, bool) {
+func i176(p *rt.TParser) (any, bool) {
 	var start, x1, x6, x9, x12, x13, x18, x25, x27, x28 int
 	var v, k2, x3, v10, k11, v14, v17, k19, x20, k21, x22, v26, v29, v32 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -19764,7 +19764,7 @@ L16:
 	x18 = p.Pos
 	x20 = k19
 	x22 = k21
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary(">", func() any { return c.Length(func() any { return k11 }()) }(), func() any { return any(0) }())
 		}()
@@ -19794,7 +19794,7 @@ L23:
 	k19 = x20
 	k21 = x22
 L24:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classModifiers"
 	v = func() any {
 		return c.Concat(func() any { return k2 }(), func() any { return k11 }(), func() any { return k19 }(), func() any { return k21 }())
@@ -19805,7 +19805,7 @@ L24:
 }
 
 // rule classModifierList
-func u177(p *pegort.TParser) (any, bool) {
+func u177(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[177]) {
 		return p.CallMemo(trules[177], i177)
 	}
@@ -19817,10 +19817,10 @@ func u177(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i177(p *pegort.TParser) (any, bool) {
+func i177(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x4, x5, x6, x9, x11, x14, x21, x22, x28, x29, x30, x31, x32, x35, x37, x40 int
 	var v, k1, k7, v15, v16, v17, v18, v19, k20, v23, v26, k27, k33, v41, v42, v43, v44, v45 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x10, x36 []any
 	var ok bool
 	start = p.Pos
@@ -19930,7 +19930,7 @@ L25:
 	}
 	v45 = p.NewNodeOrdinary("list", x29, p.Pos, p.Kids(x30))
 	k27 = v45
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Or(func() any {
 				return c.Binary(">", func() any { return c.Length(func() any { return k1 }()) }(), func() any { return any(0) }())
@@ -19943,7 +19943,7 @@ L25:
 	}) {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classModifierList"
 	v = func() any {
 		return c.Concat(func() any {
@@ -19965,7 +19965,7 @@ fail:
 }
 
 // rule classStaticModifierList
-func u178(p *pegort.TParser) (any, bool) {
+func u178(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i178(p)
 	if !ok {
@@ -19974,10 +19974,10 @@ func u178(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i178(p *pegort.TParser) (any, bool) {
+func i178(p *rt.TParser) (any, bool) {
 	var start, x1, x5 int
 	var v, k4, v6 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -20006,7 +20006,7 @@ L3:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classStaticModifierList"
 	v = func() any { return c.List(func() any { return k4 }()) }()
 	v = c.Finish(v)
@@ -20018,14 +20018,14 @@ fail:
 }
 
 // rule classModifier
-func u179(p *pegort.TParser) (any, bool) {
+func u179(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[179]) {
 		return p.CallMemo(trules[179], v179)
 	}
 	return v179(p)
 }
 
-func v179(p *pegort.TParser) (any, bool) {
+func v179(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x8, x10 int
 	var v, v14, bv any
 	var x4 rune
@@ -20083,9 +20083,9 @@ L13:
 	goto fail
 L3:
 	v14 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v14)
+	bv = rt.TFreshNode(v14)
 	v = p.ScopeValue(sh23, v14, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[179], v, bv)
@@ -20097,7 +20097,7 @@ fail:
 	return nil, false
 }
 
-func s180(p *pegort.TParser) (any, bool) {
+func s180(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x4, x6 int
 	var v, v9, bv any
 	var ok bool
@@ -20151,9 +20151,9 @@ L7:
 	goto fail
 L8:
 	v9 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v9)
+	bv = rt.TFreshNode(v9)
 	v = p.ScopeValue(sh23, v9, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[180], v, bv)
@@ -20166,7 +20166,7 @@ fail:
 }
 
 // rule typeMemberModifiers
-func u181(p *pegort.TParser) (any, bool) {
+func u181(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[181]) {
 		return p.CallMemo(trules[181], i181)
 	}
@@ -20178,10 +20178,10 @@ func u181(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i181(p *pegort.TParser) (any, bool) {
+func i181(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v7 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -20198,7 +20198,7 @@ L5:
 	v4 = nil
 L6:
 	k1 = v4
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeMemberModifiers"
 	v = func() any { return c.Concat(func() any { return k1 }()) }()
 	v = c.Finish(v)
@@ -20207,7 +20207,7 @@ L6:
 }
 
 // rule typeParameterModifiers
-func u182(p *pegort.TParser) (any, bool) {
+func u182(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i182(p)
 	if !ok {
@@ -20216,10 +20216,10 @@ func u182(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i182(p *pegort.TParser) (any, bool) {
+func i182(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x4, x5, x6, x9, x11, x14, x21, x22, x28, x29, x30, x31, x32, x35, x37, x40 int
 	var v, k1, k7, v15, v16, v17, v18, v19, k20, v23, v26, k27, k33, v41, v42, v43, v44, v45 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x10, x36 []any
 	var ok bool
 	start = p.Pos
@@ -20329,7 +20329,7 @@ L25:
 	}
 	v45 = p.NewNodeOrdinary("list", x29, p.Pos, p.Kids(x30))
 	k27 = v45
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeParameterModifiers"
 	v = func() any {
 		return c.Concat(func() any {
@@ -20348,7 +20348,7 @@ L25:
 }
 
 // rule decorator
-func u183(p *pegort.TParser) (any, bool) {
+func u183(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[183]) {
 		return p.CallMemo(trules[183], i183)
 	}
@@ -20360,11 +20360,11 @@ func u183(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i183(p *pegort.TParser) (any, bool) {
+func i183(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -20378,7 +20378,7 @@ func i183(p *pegort.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("+", func() any {
 				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
@@ -20398,7 +20398,7 @@ func i183(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "decorator"
 	v = func() any {
 		return func() any {
@@ -20416,7 +20416,7 @@ fail:
 }
 
 // rule expression
-func u184(p *pegort.TParser) (any, bool) {
+func u184(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[184]) {
 		return p.CallMemo(trules[184], i184)
 	}
@@ -20428,17 +20428,17 @@ func u184(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i184(p *pegort.TParser) (any, bool) {
+func i184(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
 	_ = x2
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("*", func() any {
@@ -20456,7 +20456,7 @@ func i184(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "expression"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
@@ -20470,7 +20470,7 @@ fail:
 }
 
 // rule expressionAllowIn
-func u185(p *pegort.TParser) (any, bool) {
+func u185(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[185]) {
 		return p.CallMemo(trules[185], i185)
 	}
@@ -20482,17 +20482,17 @@ func u185(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i185(p *pegort.TParser) (any, bool) {
+func i185(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
 	_ = x2
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("*", func() any {
@@ -20510,7 +20510,7 @@ func i185(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "expressionAllowIn"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
@@ -20524,7 +20524,7 @@ fail:
 }
 
 // rule commaExpression
-func u186(p *pegort.TParser) (any, bool) {
+func u186(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[186]) {
 		return p.CallMemo(trules[186], i186)
 	}
@@ -20536,10 +20536,10 @@ func u186(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i186(p *pegort.TParser) (any, bool) {
+func i186(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x9, x13, x15, x17 int
 	var v, k1, v3, k4, k10, k11, v16, v18, v19, v20, v21, v22 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var x14 []any
 	start = p.Pos
@@ -20592,7 +20592,7 @@ func i186(p *pegort.TParser) (any, bool) {
 	}
 	v22 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v22
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "commaExpression"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1074, l_1075 any) any {
@@ -20615,7 +20615,7 @@ fail:
 }
 
 // rule assignmentExpression
-func u187(p *pegort.TParser) (any, bool) {
+func u187(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[187]) {
 		return p.CallMemo(trules[187], i187)
 	}
@@ -20627,17 +20627,17 @@ func u187(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i187(p *pegort.TParser) (any, bool) {
+func i187(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
 	_ = x2
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("*", func() any {
@@ -20655,7 +20655,7 @@ func i187(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "assignmentExpression"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
@@ -20669,7 +20669,7 @@ fail:
 }
 
 // rule assignmentExpressionAllowIn
-func u188(p *pegort.TParser) (any, bool) {
+func u188(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[188]) {
 		return p.CallMemo(trules[188], i188)
 	}
@@ -20681,17 +20681,17 @@ func u188(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i188(p *pegort.TParser) (any, bool) {
+func i188(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
 	_ = x2
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("*", func() any {
@@ -20709,7 +20709,7 @@ func i188(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "assignmentExpressionAllowIn"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
@@ -20723,7 +20723,7 @@ fail:
 }
 
 // rule assignmentExpressionInner
-func u189(p *pegort.TParser) (any, bool) {
+func u189(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[189]) {
 		return p.CallMemo(trules[189], i189)
 	}
@@ -20735,10 +20735,10 @@ func u189(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i189(p *pegort.TParser) (any, bool) {
+func i189(p *rt.TParser) (any, bool) {
 	var start, x1, x6, x9, x12, x15, x17, x22, x26, x29, x32, x35, x38, x41, x44 int
 	var v, k2, x3, v10, v27, v33, v39, v42, v45 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok, x19 bool
 	var x18 rune
 	start = p.Pos
@@ -20899,7 +20899,7 @@ L43:
 	k2 = x3
 	goto fail
 L4:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "assignmentExpressionInner"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
@@ -20911,7 +20911,7 @@ fail:
 }
 
 // rule yieldExpression
-func u190(p *pegort.TParser) (any, bool) {
+func u190(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i190(p)
 	if !ok {
@@ -20920,10 +20920,10 @@ func u190(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i190(p *pegort.TParser) (any, bool) {
+func i190(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x7, x10, x17, x19, x23, x25 int
 	var v, k11, x12, k13, x14, x20, v24, v26 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -20943,7 +20943,7 @@ L2:
 	p.Silent--
 	p.Pos = x1
 	x3 = p.Pos
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("==", func() any {
 				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(2) }())
@@ -21021,7 +21021,7 @@ L15:
 	k11 = x12
 	k13 = x14
 L16:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "yieldExpression"
 	v = func() any {
 		return func() any {
@@ -21038,7 +21038,7 @@ fail:
 }
 
 // rule assignment
-func u193(p *pegort.TParser) (any, bool) {
+func u193(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i193(p)
 	if !ok {
@@ -21047,10 +21047,10 @@ func u193(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i193(p *pegort.TParser) (any, bool) {
+func i193(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x8, x11 int
 	var v, k1, v3, k7, v9, k10, v12 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -21090,7 +21090,7 @@ L6:
 		goto fail
 	}
 	k10 = v12
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "assignment"
 	v = func() any {
 		return func() any {
@@ -21107,7 +21107,7 @@ fail:
 	return nil, false
 }
 
-func s194(p *pegort.TParser) (any, bool) {
+func s194(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	start = p.Pos
@@ -21117,9 +21117,9 @@ func s194(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[194], v, bv)
@@ -21132,7 +21132,7 @@ fail:
 }
 
 // rule conditionalOrBinaryExpression
-func u195(p *pegort.TParser) (any, bool) {
+func u195(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i195(p)
 	if !ok {
@@ -21141,10 +21141,10 @@ func u195(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i195(p *pegort.TParser) (any, bool) {
+func i195(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x9, x15, x17, x19, x21, x23 int
 	var v, k1, v3, k4, k10, k11, k12, k13, v18, v20, v22, v24, v25, v26, v27, v28 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var x16 []any
 	start = p.Pos
@@ -21217,7 +21217,7 @@ func i195(p *pegort.TParser) (any, bool) {
 	}
 	v28 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v28
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "conditionalOrBinaryExpression"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1100, l_1101 any) any {
@@ -21242,7 +21242,7 @@ fail:
 }
 
 // rule conditionalWhenTrue
-func u196(p *pegort.TParser) (any, bool) {
+func u196(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i196(p)
 	if !ok {
@@ -21251,17 +21251,17 @@ func u196(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i196(p *pegort.TParser) (any, bool) {
+func i196(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
 	_ = x2
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("+", func() any {
 				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
@@ -21281,7 +21281,7 @@ func i196(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "conditionalWhenTrue"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
@@ -21295,7 +21295,7 @@ fail:
 }
 
 // rule conditionalWhenFalse
-func u197(p *pegort.TParser) (any, bool) {
+func u197(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i197(p)
 	if !ok {
@@ -21304,10 +21304,10 @@ func u197(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i197(p *pegort.TParser) (any, bool) {
+func i197(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -21317,7 +21317,7 @@ func i197(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "conditionalWhenFalse"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
@@ -21328,7 +21328,7 @@ fail:
 	return nil, false
 }
 
-func s198(p *pegort.TParser) (any, bool) {
+func s198(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x4, x6, size int
 	var v, v8, bv any
 	var ok bool
@@ -21382,9 +21382,9 @@ L5:
 	p.Silent--
 	p.Pos = x4
 	v8 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v8)
+	bv = rt.TFreshNode(v8)
 	v = p.ScopeValue(sh23, v8, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[198], v, bv)
@@ -21397,7 +21397,7 @@ fail:
 }
 
 // rule arrowFunction
-func u199(p *pegort.TParser) (any, bool) {
+func u199(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i199(p)
 	if !ok {
@@ -21406,11 +21406,11 @@ func u199(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i199(p *pegort.TParser) (any, bool) {
+func i199(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x8, x10, x15, x17, x21, x24, x25, x31, x34, x36, x41 int
 	var v, k1, v4, v7, k11, x12, v16, k20, v22, k23, v26, v29, k30, v32, k33, v35 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -21439,7 +21439,7 @@ L6:
 L9:
 	p.Silent--
 	p.Pos = x8
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("+", func() any {
 				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
@@ -21518,7 +21518,7 @@ L28:
 	}
 	k33 = v35
 	x36 = p.Pos
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("==", func() any {
 				return c.Binary("%", func() any {
@@ -21532,7 +21532,7 @@ L28:
 	goto L37
 L38:
 	p.Pos = x36
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("==", func() any { return k23 }(), func() any { return any(nil) }())
 		}()
@@ -21565,7 +21565,7 @@ L40:
 	p.Pos = x36
 	goto fail
 L37:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "arrowFunction"
 	v = func() any {
 		return func() any {
@@ -21588,7 +21588,7 @@ fail:
 }
 
 // rule arrowAsyncModifier
-func u200(p *pegort.TParser) (any, bool) {
+func u200(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i200(p)
 	if !ok {
@@ -21597,10 +21597,10 @@ func u200(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i200(p *pegort.TParser) (any, bool) {
+func i200(p *rt.TParser) (any, bool) {
 	var start, x2, x4, size int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
@@ -21630,7 +21630,7 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "arrowAsyncModifier"
 	v = func() any { return c.List(func() any { return k1 }()) }()
 	v = c.Finish(v)
@@ -21642,14 +21642,14 @@ fail:
 }
 
 // rule asyncKeywordModifier
-func u201(p *pegort.TParser) (any, bool) {
+func u201(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[201]) {
 		return p.CallMemo(trules[201], v201)
 	}
 	return v201(p)
 }
 
-func v201(p *pegort.TParser) (any, bool) {
+func v201(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -21671,9 +21671,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[201], v, bv)
@@ -21686,7 +21686,7 @@ fail:
 }
 
 // rule arrowTypeParameters
-func u202(p *pegort.TParser) (any, bool) {
+func u202(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i202(p)
 	if !ok {
@@ -21695,10 +21695,10 @@ func u202(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i202(p *pegort.TParser) (any, bool) {
+func i202(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x10, x13, x17, x21 int
 	var v, k20, v22 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok, x7 bool
 	var x6 rune
 	start = p.Pos
@@ -21757,7 +21757,7 @@ L2:
 L3:
 
 	x13 = p.Pos
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("<", func() any { return c.Lookup("ctx") }(), func() any { return any(64) }())
 		}()
@@ -21791,7 +21791,7 @@ L14:
 		goto fail
 	}
 	k20 = v22
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "arrowTypeParameters"
 	v = func() any { return k20 }()
 	v = c.Finish(v)
@@ -21803,7 +21803,7 @@ fail:
 }
 
 // rule simpleArrowFunction
-func u205(p *pegort.TParser) (any, bool) {
+func u205(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i205(p)
 	if !ok {
@@ -21812,11 +21812,11 @@ func u205(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i205(p *pegort.TParser) (any, bool) {
+func i205(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x8 int
 	var v, k1, v3, k4, v6, k7, v9 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -21838,7 +21838,7 @@ func i205(p *pegort.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
@@ -21852,7 +21852,7 @@ func i205(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k7 = v9
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "simpleArrowFunction"
 	v = func() any {
 		return func() any {
@@ -21872,7 +21872,7 @@ fail:
 }
 
 // rule simpleArrowParameter
-func u206(p *pegort.TParser) (any, bool) {
+func u206(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[206]) {
 		return p.CallMemo(trules[206], i206)
 	}
@@ -21884,10 +21884,10 @@ func u206(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i206(p *pegort.TParser) (any, bool) {
+func i206(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -21897,7 +21897,7 @@ func i206(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "simpleArrowParameter"
 	v = func() any {
 		return func() any {
@@ -21913,7 +21913,7 @@ fail:
 }
 
 // rule asyncSimpleArrowFunction
-func u207(p *pegort.TParser) (any, bool) {
+func u207(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i207(p)
 	if !ok {
@@ -21922,11 +21922,11 @@ func u207(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i207(p *pegort.TParser) (any, bool) {
+func i207(p *rt.TParser) (any, bool) {
 	var start, x2, x4, size, x7, x10, x13 int
 	var v, k1, v3, k6, v8, k9, v11, k12, v14 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	var ch rune
 	start = p.Pos
@@ -21971,7 +21971,7 @@ L5:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("+", func() any {
 				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
@@ -21987,7 +21987,7 @@ L5:
 		goto fail
 	}
 	k12 = v14
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "asyncSimpleArrowFunction"
 	v = func() any {
 		return func() any {
@@ -22008,14 +22008,14 @@ fail:
 }
 
 // rule arrowBody
-func u208(p *pegort.TParser) (any, bool) {
+func u208(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[208]) {
 		return p.CallMemo(trules[208], v208)
 	}
 	return v208(p)
 }
 
-func v208(p *pegort.TParser) (any, bool) {
+func v208(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v10 any
 	var x4 rune
@@ -22047,7 +22047,7 @@ L9:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -22058,7 +22058,7 @@ fail:
 	return nil, false
 }
 
-func e1416(p *pegort.TParser) (any, bool) {
+func e1416(p *rt.TParser) (any, bool) {
 	var x1 int
 	var ok bool
 	x1 = p.Pos
@@ -22083,7 +22083,7 @@ fail:
 	return nil, false
 }
 
-func e1417(p *pegort.TParser) (any, bool) {
+func e1417(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u222(p); !ok {
@@ -22094,7 +22094,7 @@ fail:
 	return nil, false
 }
 
-func e1419(p *pegort.TParser) (any, bool) {
+func e1419(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
 	var x2, x4, x7 int
 	var x3 []any
@@ -22138,7 +22138,7 @@ fail:
 	return nil, false
 }
 
-func e1424(p *pegort.TParser) (any, bool) {
+func e1424(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
 	var x2, x4, x7 int
 	var x3 []any
@@ -22182,7 +22182,7 @@ fail:
 	return nil, false
 }
 
-func e1429(p *pegort.TParser) (any, bool) {
+func e1429(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
 	var x2, x4, x7 int
 	var x3 []any
@@ -22226,7 +22226,7 @@ fail:
 	return nil, false
 }
 
-func e1434(p *pegort.TParser) (any, bool) {
+func e1434(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
 	var x2, x4, x7 int
 	var x3 []any
@@ -22270,7 +22270,7 @@ fail:
 	return nil, false
 }
 
-func e1438(p *pegort.TParser) (any, bool) {
+func e1438(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
 	var x2, x4, x7 int
 	var x3 []any
@@ -22314,7 +22314,7 @@ fail:
 	return nil, false
 }
 
-func e1443(p *pegort.TParser) (any, bool) {
+func e1443(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
 	var x2, x4, x7 int
 	var x3 []any
@@ -22358,7 +22358,7 @@ fail:
 	return nil, false
 }
 
-func e1448(p *pegort.TParser) (any, bool) {
+func e1448(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
 	var x2, x4, x7 int
 	var x3 []any
@@ -22402,13 +22402,13 @@ fail:
 	return nil, false
 }
 
-func e1452(p *pegort.TParser) (any, bool) {
+func e1452(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
 	var x2, x4, size, x7, x11 int
 	var x3 []any
 	var ch rune
 	var v8, v12, v13 any
-	var x9 pegort.Mark
+	var x9 rt.Mark
 	_ = x11
 	cut1 = p.Cut
 	x2 = p.Pos
@@ -22467,13 +22467,13 @@ fail:
 	return nil, false
 }
 
-func e1455(p *pegort.TParser) (any, bool) {
+func e1455(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
 	var x2, x4, size, x7, x11 int
 	var x3 []any
 	var ch rune
 	var v8, v12, v13 any
-	var x9 pegort.Mark
+	var x9 rt.Mark
 	_ = x11
 	cut1 = p.Cut
 	x2 = p.Pos
@@ -22530,7 +22530,7 @@ fail:
 	return nil, false
 }
 
-func e1459(p *pegort.TParser) (any, bool) {
+func e1459(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
 	var x2, x4, x7 int
 	var x3 []any
@@ -22574,7 +22574,7 @@ fail:
 	return nil, false
 }
 
-func e1464(p *pegort.TParser) (any, bool) {
+func e1464(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
 	var x2, x4, x7 int
 	var x3 []any
@@ -22618,7 +22618,7 @@ fail:
 	return nil, false
 }
 
-func e1469(p *pegort.TParser) (any, bool) {
+func e1469(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
 	var x2, x4, x7 int
 	var x3 []any
@@ -22662,7 +22662,7 @@ fail:
 	return nil, false
 }
 
-func e1474(p *pegort.TParser) (any, bool) {
+func e1474(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
 	var x2, x4, x7 int
 	var x3 []any
@@ -22706,7 +22706,7 @@ fail:
 	return nil, false
 }
 
-func s210(p *pegort.TParser) (any, bool) {
+func s210(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x8, x12 int
 	var v, v14, bv any
 	var x4 rune
@@ -22771,9 +22771,9 @@ L10:
 	goto fail
 L3:
 	v14 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v14)
+	bv = rt.TFreshNode(v14)
 	v = p.ScopeValue(sh23, v14, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[210], v, bv)
@@ -22785,7 +22785,7 @@ fail:
 	return nil, false
 }
 
-func s211(p *pegort.TParser) (any, bool) {
+func s211(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -22811,9 +22811,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[211], v, bv)
@@ -22825,7 +22825,7 @@ fail:
 	return nil, false
 }
 
-func s212(p *pegort.TParser) (any, bool) {
+func s212(p *rt.TParser) (any, bool) {
 	var start, x1, x2, size int
 	var v, v4, bv any
 	var ok bool
@@ -22853,9 +22853,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[212], v, bv)
@@ -22867,7 +22867,7 @@ fail:
 	return nil, false
 }
 
-func s213(p *pegort.TParser) (any, bool) {
+func s213(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -22893,9 +22893,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[213], v, bv)
@@ -22907,7 +22907,7 @@ fail:
 	return nil, false
 }
 
-func s214(p *pegort.TParser) (any, bool) {
+func s214(p *rt.TParser) (any, bool) {
 	var start, x1, x2, size int
 	var v, v4, bv any
 	var ok bool
@@ -22935,9 +22935,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[214], v, bv)
@@ -22949,7 +22949,7 @@ fail:
 	return nil, false
 }
 
-func s215(p *pegort.TParser) (any, bool) {
+func s215(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v14, bv any
 	var x4 rune
@@ -23014,9 +23014,9 @@ L12:
 	goto fail
 L3:
 	v14 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v14)
+	bv = rt.TFreshNode(v14)
 	v = p.ScopeValue(sh23, v14, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[215], v, bv)
@@ -23029,14 +23029,14 @@ fail:
 }
 
 // rule relationalToken
-func u216(p *pegort.TParser) (any, bool) {
+func u216(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[216]) {
 		return p.CallMemo(trules[216], v216)
 	}
 	return v216(p)
 }
 
-func v216(p *pegort.TParser) (any, bool) {
+func v216(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x12, size, x14, x16, x20, x24, x27 int
 	var v, v29, bv any
 	var x4, ch rune
@@ -23097,7 +23097,7 @@ L13:
 	p.Pos = x12
 	x14 = p.Pos
 	p.Silent++
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary(">=", func() any { return c.Lookup("ctx") }(), func() any { return any(64) }())
 		}()
@@ -23182,7 +23182,7 @@ L23:
 	p.Pos = x2
 L22:
 
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("==", func() any {
 				return c.Binary("%", func() any {
@@ -23215,9 +23215,9 @@ L26:
 	goto fail
 L3:
 	v29 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v29)
+	bv = rt.TFreshNode(v29)
 	v = p.ScopeValue(sh23, v29, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[216], v, bv)
@@ -23229,7 +23229,7 @@ fail:
 	return nil, false
 }
 
-func s217(p *pegort.TParser) (any, bool) {
+func s217(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x8, x12, size, x16 int
 	var v, v18, bv any
 	var x4, ch rune
@@ -23321,9 +23321,9 @@ L14:
 	goto fail
 L3:
 	v18 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v18)
+	bv = rt.TFreshNode(v18)
 	v = p.ScopeValue(sh23, v18, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[217], v, bv)
@@ -23335,7 +23335,7 @@ fail:
 	return nil, false
 }
 
-func s218(p *pegort.TParser) (any, bool) {
+func s218(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x8, size, x12 int
 	var v, v14, bv any
 	var x4, ch rune
@@ -23402,9 +23402,9 @@ L10:
 	goto fail
 L3:
 	v14 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v14)
+	bv = rt.TFreshNode(v14)
 	v = p.ScopeValue(sh23, v14, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[218], v, bv)
@@ -23416,7 +23416,7 @@ fail:
 	return nil, false
 }
 
-func s219(p *pegort.TParser) (any, bool) {
+func s219(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x8, size, x12, x16 int
 	var v, v18, bv any
 	var x4, ch rune
@@ -23508,9 +23508,9 @@ L14:
 	goto fail
 L3:
 	v18 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v18)
+	bv = rt.TFreshNode(v18)
 	v = p.ScopeValue(sh23, v18, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[219], v, bv)
@@ -23522,7 +23522,7 @@ fail:
 	return nil, false
 }
 
-func s220(p *pegort.TParser) (any, bool) {
+func s220(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -23548,9 +23548,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[220], v, bv)
@@ -23563,7 +23563,7 @@ fail:
 }
 
 // rule unaryExpression
-func u222(p *pegort.TParser) (any, bool) {
+func u222(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[222]) {
 		return p.CallMemo(trules[222], i222)
 	}
@@ -23575,10 +23575,10 @@ func u222(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i222(p *pegort.TParser) (any, bool) {
+func i222(p *rt.TParser) (any, bool) {
 	var start, x1, x6, x9, x12, x14, x16, x19, x21, x24 int
 	var v, k2, x3, v13, v25 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -23687,7 +23687,7 @@ L18:
 	k2 = x3
 	goto fail
 L4:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "unaryExpression"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
@@ -23699,14 +23699,14 @@ fail:
 }
 
 // rule simpleUnaryExpression
-func u224(p *pegort.TParser) (any, bool) {
+func u224(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[224]) {
 		return p.CallMemo(trules[224], v224)
 	}
 	return v224(p)
 }
 
-func v224(p *pegort.TParser) (any, bool) {
+func v224(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v10, v13, v16, v18, v20, v23, v25 any
 	var ok, x7 bool
@@ -23796,7 +23796,7 @@ L24:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -23808,7 +23808,7 @@ fail:
 }
 
 // rule prefixUnaryExpression
-func u225(p *pegort.TParser) (any, bool) {
+func u225(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i225(p)
 	if !ok {
@@ -23817,10 +23817,10 @@ func u225(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i225(p *pegort.TParser) (any, bool) {
+func i225(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x4, x10, x14, x22 int
 	var v, k1, v20, k21, v23 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
@@ -23920,7 +23920,7 @@ L5:
 		goto fail
 	}
 	k21 = v23
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "prefixUnaryExpression"
 	v = func() any {
 		return func() any {
@@ -23937,7 +23937,7 @@ fail:
 }
 
 // rule deleteExpression
-func u226(p *pegort.TParser) (any, bool) {
+func u226(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i226(p)
 	if !ok {
@@ -23946,10 +23946,10 @@ func u226(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i226(p *pegort.TParser) (any, bool) {
+func i226(p *rt.TParser) (any, bool) {
 	var start, x1, x4 int
 	var v, k3, v5 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -23976,7 +23976,7 @@ L2:
 		goto fail
 	}
 	k3 = v5
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "deleteExpression"
 	v = func() any {
 		return func() any {
@@ -23992,7 +23992,7 @@ fail:
 }
 
 // rule typeOfExpression
-func u227(p *pegort.TParser) (any, bool) {
+func u227(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i227(p)
 	if !ok {
@@ -24001,10 +24001,10 @@ func u227(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i227(p *pegort.TParser) (any, bool) {
+func i227(p *rt.TParser) (any, bool) {
 	var start, x1, x4 int
 	var v, k3, v5 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -24031,7 +24031,7 @@ L2:
 		goto fail
 	}
 	k3 = v5
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeOfExpression"
 	v = func() any {
 		return func() any {
@@ -24047,7 +24047,7 @@ fail:
 }
 
 // rule voidExpression
-func u228(p *pegort.TParser) (any, bool) {
+func u228(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i228(p)
 	if !ok {
@@ -24056,10 +24056,10 @@ func u228(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i228(p *pegort.TParser) (any, bool) {
+func i228(p *rt.TParser) (any, bool) {
 	var start, x1, x4 int
 	var v, k3, v5 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -24088,7 +24088,7 @@ L2:
 		goto fail
 	}
 	k3 = v5
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "voidExpression"
 	v = func() any {
 		return func() any {
@@ -24104,7 +24104,7 @@ fail:
 }
 
 // rule awaitExpression
-func u229(p *pegort.TParser) (any, bool) {
+func u229(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i229(p)
 	if !ok {
@@ -24113,10 +24113,10 @@ func u229(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i229(p *pegort.TParser) (any, bool) {
+func i229(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x7, x11 int
 	var v, k10, v12 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -24136,7 +24136,7 @@ L2:
 	p.Silent--
 	p.Pos = x1
 	x3 = p.Pos
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("==", func() any {
 				return c.Binary("%", func() any {
@@ -24180,7 +24180,7 @@ L4:
 		goto fail
 	}
 	k10 = v12
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "awaitExpression"
 	v = func() any {
 		return func() any {
@@ -24196,7 +24196,7 @@ fail:
 }
 
 // rule typeAssertion
-func u230(p *pegort.TParser) (any, bool) {
+func u230(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i230(p)
 	if !ok {
@@ -24205,16 +24205,16 @@ func u230(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i230(p *pegort.TParser) (any, bool) {
+func i230(p *rt.TParser) (any, bool) {
 	var start, x1, size, x4, x7 int
 	var v, k3, v5, k6, v8 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
 	p.Enter()
 	_, _ = x4, x7
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("<", func() any { return c.Lookup("ctx") }(), func() any { return any(64) }())
 		}()
@@ -24264,7 +24264,7 @@ L2:
 		goto fail
 	}
 	k6 = v8
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeAssertion"
 	v = func() any {
 		return func() any {
@@ -24281,7 +24281,7 @@ fail:
 }
 
 // rule jsxUnaryExpression
-func u231(p *pegort.TParser) (any, bool) {
+func u231(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i231(p)
 	if !ok {
@@ -24290,15 +24290,15 @@ func u231(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i231(p *pegort.TParser) (any, bool) {
+func i231(p *rt.TParser) (any, bool) {
 	var start, x1, x5 int
 	var v, k4, v6 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
 	_ = x5
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary(">=", func() any { return c.Lookup("ctx") }(), func() any { return any(64) }())
 		}()
@@ -24326,7 +24326,7 @@ L3:
 		goto fail
 	}
 	k4 = v6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxUnaryExpression"
 	v = func() any { return k4 }()
 	v = c.Finish(v)
@@ -24338,7 +24338,7 @@ fail:
 }
 
 // rule updateExpression
-func u232(p *pegort.TParser) (any, bool) {
+func u232(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[232]) {
 		return p.CallMemo(trules[232], i232)
 	}
@@ -24350,10 +24350,10 @@ func u232(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i232(p *pegort.TParser) (any, bool) {
+func i232(p *rt.TParser) (any, bool) {
 	var start, x1, x6, size, x9, x12, x15, x18 int
 	var v, k2, x3, v10, v16, v19 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ch rune
 	var ok bool
 	start = p.Pos
@@ -24387,7 +24387,7 @@ L8:
 L5:
 	p.Pos = x1
 	k2 = x3
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary(">=", func() any { return c.Lookup("ctx") }(), func() any { return any(64) }())
 		}()
@@ -24430,7 +24430,7 @@ L17:
 	k2 = x3
 	goto fail
 L4:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "updateExpression"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
@@ -24442,7 +24442,7 @@ fail:
 }
 
 // rule postfixOrLeftHandSideExpression
-func u233(p *pegort.TParser) (any, bool) {
+func u233(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i233(p)
 	if !ok {
@@ -24451,10 +24451,10 @@ func u233(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i233(p *pegort.TParser) (any, bool) {
+func i233(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x9, x12, x14, x15, x16 int
 	var v, k1, v3, k4, k10, v24, v25, v26, v27, v28 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok, x19 bool
 	var x13 []any
 	var x18 rune
@@ -24527,14 +24527,14 @@ func i233(p *pegort.TParser) (any, bool) {
 	}
 	v28 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v28
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("<=", func() any { return c.Length(func() any { return k4 }()) }(), func() any { return any(1) }())
 		}()
 	}) {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "postfixOrLeftHandSideExpression"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1132, l_1133 any) any {
@@ -24558,7 +24558,7 @@ fail:
 }
 
 // rule prefixUpdateExpression
-func u234(p *pegort.TParser) (any, bool) {
+func u234(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i234(p)
 	if !ok {
@@ -24567,10 +24567,10 @@ func u234(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i234(p *pegort.TParser) (any, bool) {
+func i234(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x4, x14 int
 	var v, k1, v12, k13, v15 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
@@ -24618,7 +24618,7 @@ L5:
 		goto fail
 	}
 	k13 = v15
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "prefixUpdateExpression"
 	v = func() any {
 		return func() any {
@@ -24635,7 +24635,7 @@ fail:
 }
 
 // rule jsxPrimaryExpression
-func u235(p *pegort.TParser) (any, bool) {
+func u235(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i235(p)
 	if !ok {
@@ -24644,16 +24644,16 @@ func u235(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i235(p *pegort.TParser) (any, bool) {
+func i235(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x12, x14, x16, size int
 	var v, k11, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok, x8 bool
 	var x7, ch rune
 	start = p.Pos
 	p.Enter()
 	_ = x12
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary(">=", func() any { return c.Lookup("ctx") }(), func() any { return any(64) }())
 		}()
@@ -24737,7 +24737,7 @@ L17:
 L15:
 	p.Silent--
 	p.Pos = x14
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxPrimaryExpression"
 	v = func() any { return k11 }()
 	v = c.Finish(v)
@@ -24748,7 +24748,7 @@ fail:
 	return nil, false
 }
 
-func e1478(p *pegort.TParser) (any, bool) {
+func e1478(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u252(p); !ok {
@@ -24759,7 +24759,7 @@ fail:
 	return nil, false
 }
 
-func e1479(p *pegort.TParser) (any, bool) {
+func e1479(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u248(p); !ok {
@@ -24770,7 +24770,7 @@ fail:
 	return nil, false
 }
 
-func e1480(p *pegort.TParser) (any, bool) {
+func e1480(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u250(p); !ok {
@@ -24781,7 +24781,7 @@ fail:
 	return nil, false
 }
 
-func e1481(p *pegort.TParser) (any, bool) {
+func e1481(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u251(p); !ok {
@@ -24792,12 +24792,12 @@ fail:
 	return nil, false
 }
 
-func e1483(p *pegort.TParser) (any, bool) {
+func e1483(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
 	var x2, x4, x7, size, x11 int
 	var x3 []any
 	var v8, v12, v13 any
-	var x9 pegort.Mark
+	var x9 rt.Mark
 	var ch rune
 	_ = x11
 	cut1 = p.Cut
@@ -24860,7 +24860,7 @@ fail:
 	return nil, false
 }
 
-func e1487(p *pegort.TParser) (any, bool) {
+func e1487(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
 	var x2, x4, x7, x9 int
 	var x3 []any
@@ -24910,7 +24910,7 @@ fail:
 	return nil, false
 }
 
-func e1492(p *pegort.TParser) (any, bool) {
+func e1492(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
 	var x2, x4, x7, x9, x11 int
 	var x3 []any
@@ -24936,7 +24936,7 @@ L6:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("==", func() any {
 				return c.Binary("%", func() any {
@@ -24984,7 +24984,7 @@ fail:
 	return nil, false
 }
 
-func e1495(p *pegort.TParser) (any, bool) {
+func e1495(p *rt.TParser) (any, bool) {
 	var cut1, ok bool
 	var x2, x4, x7, x9, x11, x13 int
 	var x3 []any
@@ -25056,11 +25056,11 @@ fail:
 	return nil, false
 }
 
-func e1500(p *pegort.TParser) (any, bool) {
+func e1500(p *rt.TParser) (any, bool) {
 	var cut1, ok, cut11 bool
 	var x2, x4, x12, x14, x18, x21 int
 	var x3, x13 []any
-	var x7 pegort.Mark
+	var x7 rt.Mark
 	var v8, v15, v16, v17, v22, v23 any
 	_, _ = x14, x21
 	cut1 = p.Cut
@@ -25139,12 +25139,12 @@ fail:
 	return nil, false
 }
 
-func e1504(p *pegort.TParser) (any, bool) {
+func e1504(p *rt.TParser) (any, bool) {
 	var cut1, ok, cut13 bool
 	var x2, x4, x7, x14, x16, x20 int
 	var x3, x15 []any
 	var v8, v10, v17, v18, v19, v21, v22 any
-	var x9 pegort.Mark
+	var x9 rt.Mark
 	_, _, _ = x7, x16, x20
 	cut1 = p.Cut
 	x2 = p.Pos
@@ -25215,13 +25215,13 @@ fail:
 	return nil, false
 }
 
-func e1509(p *pegort.TParser) (any, bool) {
+func e1509(p *rt.TParser) (any, bool) {
 	var x1, x3, size, x6 int
 	var x2 []any
 	var ch rune
 	var ok bool
 	var v7, v10 any
-	var x8 pegort.Mark
+	var x8 rt.Mark
 	x1 = p.Pos
 	x2 = p.NewVals(1)[:0]
 	x3 = p.Pos
@@ -25268,7 +25268,7 @@ fail:
 	return nil, false
 }
 
-func e1512(p *pegort.TParser) (any, bool) {
+func e1512(p *rt.TParser) (any, bool) {
 	var x1, x3, x6 int
 	var x2 []any
 	var ok bool
@@ -25305,11 +25305,11 @@ fail:
 	return nil, false
 }
 
-func e1516(p *pegort.TParser) (any, bool) {
+func e1516(p *rt.TParser) (any, bool) {
 	var cut1, ok, cut11 bool
 	var x2, x4, x12, x14, x18, x21 int
 	var x3, x13 []any
-	var x7 pegort.Mark
+	var x7 rt.Mark
 	var v8, v15, v16, v17, v22, v23 any
 	_, _ = x14, x21
 	cut1 = p.Cut
@@ -25388,12 +25388,12 @@ fail:
 	return nil, false
 }
 
-func e1520(p *pegort.TParser) (any, bool) {
+func e1520(p *rt.TParser) (any, bool) {
 	var cut1, ok, cut13 bool
 	var x2, x4, x7, x14, x16, x20 int
 	var x3, x15 []any
 	var v8, v10, v17, v18, v19, v21, v22 any
-	var x9 pegort.Mark
+	var x9 rt.Mark
 	_, _, _ = x7, x16, x20
 	cut1 = p.Cut
 	x2 = p.Pos
@@ -25464,7 +25464,7 @@ fail:
 	return nil, false
 }
 
-func e1550(p *pegort.TParser) (any, bool) {
+func e1550(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = s249(p); !ok {
@@ -25476,14 +25476,14 @@ fail:
 }
 
 // rule memberName
-func u239(p *pegort.TParser) (any, bool) {
+func u239(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[239]) {
 		return p.CallMemo(trules[239], v239)
 	}
 	return v239(p)
 }
 
-func v239(p *pegort.TParser) (any, bool) {
+func v239(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v10 any
 	var x4 rune
@@ -25515,7 +25515,7 @@ L9:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -25526,7 +25526,7 @@ fail:
 	return nil, false
 }
 
-func s240(p *pegort.TParser) (any, bool) {
+func s240(p *rt.TParser) (any, bool) {
 	var start, x1, x2, size int
 	var v, v4, bv any
 	var ok bool
@@ -25554,9 +25554,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[240], v, bv)
@@ -25569,7 +25569,7 @@ fail:
 }
 
 // rule typeArgumentsInExpression
-func u241(p *pegort.TParser) (any, bool) {
+func u241(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[241]) {
 		return p.CallMemo(trules[241], i241)
 	}
@@ -25581,11 +25581,11 @@ func u241(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i241(p *pegort.TParser) (any, bool) {
+func i241(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x8, size, x10 int
 	var v, k1, v4, v7 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	var ch rune
 	start = p.Pos
@@ -25600,7 +25600,7 @@ func i241(p *pegort.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
@@ -25656,7 +25656,7 @@ L11:
 	p.Pos = x10
 	goto fail
 L12:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeArgumentsInExpression"
 	v = func() any { return c.Concat(func() any { return k1 }()) }()
 	v = c.Finish(v)
@@ -25670,7 +25670,7 @@ fail:
 }
 
 // rule arguments
-func u244(p *pegort.TParser) (any, bool) {
+func u244(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[244]) {
 		return p.CallMemo(trules[244], i244)
 	}
@@ -25682,11 +25682,11 @@ func u244(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i244(p *pegort.TParser) (any, bool) {
+func i244(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v7 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -25700,7 +25700,7 @@ func i244(p *pegort.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("*", func() any {
@@ -25733,7 +25733,7 @@ L6:
 	} else if _, ok = p.Parser.MatchLiteral(lit79, ")", 59, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "arguments"
 	v = func() any { return c.Concat(func() any { return k1 }()) }()
 	v = c.Finish(v)
@@ -25747,7 +25747,7 @@ fail:
 }
 
 // rule argumentList
-func u245(p *pegort.TParser) (any, bool) {
+func u245(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i245(p)
 	if !ok {
@@ -25756,10 +25756,10 @@ func u245(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i245(p *pegort.TParser) (any, bool) {
+func i245(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x9, x12, x14, x16, x22 int
 	var v, k1, v3, k4, k10, v15, v17, v18, v19, v20, v21 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var x13 []any
 	start = p.Pos
@@ -25826,7 +25826,7 @@ func i245(p *pegort.TParser) (any, bool) {
 L23:
 	p.Pos = x22
 L24:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "argumentList"
 	v = func() any {
 		return func() any {
@@ -25847,14 +25847,14 @@ fail:
 }
 
 // rule argument
-func u246(p *pegort.TParser) (any, bool) {
+func u246(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[246]) {
 		return p.CallMemo(trules[246], v246)
 	}
 	return v246(p)
 }
 
-func v246(p *pegort.TParser) (any, bool) {
+func v246(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v10 any
 	var x4 rune
@@ -25886,7 +25886,7 @@ L9:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -25898,7 +25898,7 @@ fail:
 }
 
 // rule spreadElement
-func u247(p *pegort.TParser) (any, bool) {
+func u247(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[247]) {
 		return p.CallMemo(trules[247], i247)
 	}
@@ -25910,10 +25910,10 @@ func u247(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i247(p *pegort.TParser) (any, bool) {
+func i247(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -25931,7 +25931,7 @@ func i247(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "spreadElement"
 	v = func() any {
 		return func() any {
@@ -25947,14 +25947,14 @@ fail:
 }
 
 // rule superExpression
-func u248(p *pegort.TParser) (any, bool) {
+func u248(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[248]) {
 		return p.CallMemo(trules[248], v248)
 	}
 	return v248(p)
 }
 
-func v248(p *pegort.TParser) (any, bool) {
+func v248(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x4, size int
 	var v, v7, bv any
 	var ok bool
@@ -25996,9 +25996,9 @@ L5:
 	goto fail
 L6:
 	v7 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v7)
+	bv = rt.TFreshNode(v7)
 	v = p.ScopeValue(sh23, v7, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[248], v, bv)
@@ -26010,7 +26010,7 @@ fail:
 	return nil, false
 }
 
-func s249(p *pegort.TParser) (any, bool) {
+func s249(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -26032,9 +26032,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[249], v, bv)
@@ -26047,14 +26047,14 @@ fail:
 }
 
 // rule importCallee
-func u250(p *pegort.TParser) (any, bool) {
+func u250(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[250]) {
 		return p.CallMemo(trules[250], v250)
 	}
 	return v250(p)
 }
 
-func v250(p *pegort.TParser) (any, bool) {
+func v250(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x4, size int
 	var v, v7, bv any
 	var ok bool
@@ -26096,9 +26096,9 @@ L5:
 	goto fail
 L6:
 	v7 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v7)
+	bv = rt.TFreshNode(v7)
 	v = p.ScopeValue(sh23, v7, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[250], v, bv)
@@ -26111,7 +26111,7 @@ fail:
 }
 
 // rule importMetaProperty
-func u251(p *pegort.TParser) (any, bool) {
+func u251(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[251]) {
 		return p.CallMemo(trules[251], i251)
 	}
@@ -26123,10 +26123,10 @@ func u251(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i251(p *pegort.TParser) (any, bool) {
+func i251(p *rt.TParser) (any, bool) {
 	var start, x1, x4 int
 	var v, k3, v5 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -26161,7 +26161,7 @@ L2:
 		goto fail
 	}
 	k3 = v5
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importMetaProperty"
 	v = func() any {
 		return func() any {
@@ -26178,7 +26178,7 @@ fail:
 }
 
 // rule primaryExpression
-func u252(p *pegort.TParser) (any, bool) {
+func u252(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[252]) {
 		return p.CallMemo(trules[252], i252)
 	}
@@ -26190,12 +26190,12 @@ func u252(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i252(p *pegort.TParser) (any, bool) {
+func i252(p *rt.TParser) (any, bool) {
 	var start, x2, x6, x11, x14, x17 int
 	var v, k7, x8, v15, v18 any
-	var c *pegort.TActCtx
-	var x1 pegort.ExpMark
-	var x3 []pegort.ExpID
+	var c *rt.TActCtx
+	var x1 rt.ExpMark
+	var x3 []rt.ExpID
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -26242,10 +26242,10 @@ L9:
 	goto L5
 L4:
 	x2, x3 = p.Unisolate(x1)
-	p.ExpectOrdinary(x2, pegort.MsgBit|187)
+	p.ExpectOrdinary(x2, rt.MsgBit|187)
 	goto fail
 L5:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "primaryExpression"
 	v = func() any { return k7 }()
 	v = c.Finish(v)
@@ -26257,7 +26257,7 @@ fail:
 }
 
 // rule wordPrimary
-func u253(p *pegort.TParser) (any, bool) {
+func u253(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i253(p)
 	if !ok {
@@ -26266,10 +26266,10 @@ func u253(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i253(p *pegort.TParser) (any, bool) {
+func i253(p *rt.TParser) (any, bool) {
 	var start, x1, x6, x8, x10, x12, x18, x22, x25, x28, x31, x34 int
 	var v, k2, x3, v13, v19, v23, v26, v29, v32, v35 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok, x15 bool
 	var x14 rune
 	start = p.Pos
@@ -26393,7 +26393,7 @@ L33:
 	k2 = x3
 	goto fail
 L4:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "wordPrimary"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
@@ -26404,7 +26404,7 @@ fail:
 	return nil, false
 }
 
-func s254(p *pegort.TParser) (any, bool) {
+func s254(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v7, v12, v15, v18, v21, v24, v26, v29, v32 any
 	var ok, x9 bool
@@ -26522,7 +26522,7 @@ L30:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -26534,7 +26534,7 @@ fail:
 }
 
 // rule numericOrBigIntLiteral
-func u255(p *pegort.TParser) (any, bool) {
+func u255(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i255(p)
 	if !ok {
@@ -26543,10 +26543,10 @@ func u255(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i255(p *pegort.TParser) (any, bool) {
+func i255(p *rt.TParser) (any, bool) {
 	var start, x1, size, x5, x6 int
 	var v, k4, v7, v10, v12 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ch rune
 	var ok bool
 	start = p.Pos
@@ -26588,7 +26588,7 @@ L11:
 	goto fail
 L8:
 	k4 = v7
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "numericOrBigIntLiteral"
 	v = func() any { return k4 }()
 	v = c.Finish(v)
@@ -26599,7 +26599,7 @@ fail:
 	return nil, false
 }
 
-func s256(p *pegort.TParser) (any, bool) {
+func s256(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -26623,9 +26623,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[256], v, bv)
@@ -26638,14 +26638,14 @@ fail:
 }
 
 // rule nullKeyword
-func u257(p *pegort.TParser) (any, bool) {
+func u257(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[257]) {
 		return p.CallMemo(trules[257], v257)
 	}
 	return v257(p)
 }
 
-func v257(p *pegort.TParser) (any, bool) {
+func v257(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -26669,9 +26669,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[257], v, bv)
@@ -26684,14 +26684,14 @@ fail:
 }
 
 // rule booleanKeyword
-func u258(p *pegort.TParser) (any, bool) {
+func u258(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[258]) {
 		return p.CallMemo(trules[258], v258)
 	}
 	return v258(p)
 }
 
-func v258(p *pegort.TParser) (any, bool) {
+func v258(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x10 int
 	var v, v12, bv any
 	var x4 rune
@@ -26740,9 +26740,9 @@ L11:
 	p.Silent--
 	p.Pos = x10
 	v12 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v12)
+	bv = rt.TFreshNode(v12)
 	v = p.ScopeValue(sh23, v12, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[258], v, bv)
@@ -26755,7 +26755,7 @@ fail:
 }
 
 // rule parenthesizedExpression
-func u259(p *pegort.TParser) (any, bool) {
+func u259(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i259(p)
 	if !ok {
@@ -26764,10 +26764,10 @@ func u259(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i259(p *pegort.TParser) (any, bool) {
+func i259(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -26793,7 +26793,7 @@ func i259(p *pegort.TParser) (any, bool) {
 	} else if _, ok = p.Parser.MatchLiteral(lit79, ")", 59, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "parenthesizedExpression"
 	v = func() any {
 		return func() any {
@@ -26809,7 +26809,7 @@ fail:
 }
 
 // rule arrayLiteralExpression
-func u260(p *pegort.TParser) (any, bool) {
+func u260(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i260(p)
 	if !ok {
@@ -26818,11 +26818,11 @@ func u260(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i260(p *pegort.TParser) (any, bool) {
+func i260(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v7 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -26836,7 +26836,7 @@ func i260(p *pegort.TParser) (any, bool) {
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("*", func() any {
@@ -26869,7 +26869,7 @@ L6:
 	} else if _, ok = p.Parser.MatchLiteral(lit148, "]", 80, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "arrayLiteralExpression"
 	v = func() any {
 		return func() any {
@@ -26887,14 +26887,14 @@ fail:
 }
 
 // rule arrayElement
-func u261(p *pegort.TParser) (any, bool) {
+func u261(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[261]) {
 		return p.CallMemo(trules[261], v261)
 	}
 	return v261(p)
 }
 
-func v261(p *pegort.TParser) (any, bool) {
+func v261(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v10, v12 any
 	var x4 rune
@@ -26933,7 +26933,7 @@ L11:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -26945,7 +26945,7 @@ fail:
 }
 
 // rule objectLiteralExpression
-func u262(p *pegort.TParser) (any, bool) {
+func u262(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i262(p)
 	if !ok {
@@ -26954,10 +26954,10 @@ func u262(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i262(p *pegort.TParser) (any, bool) {
+func i262(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v7 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -26990,7 +26990,7 @@ L6:
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "}", 54, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "objectLiteralExpression"
 	v = func() any {
 		return func() any {
@@ -27006,14 +27006,14 @@ fail:
 }
 
 // rule objectLiteralElement
-func u263(p *pegort.TParser) (any, bool) {
+func u263(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[263]) {
 		return p.CallMemo(trules[263], v263)
 	}
 	return v263(p)
 }
 
-func v263(p *pegort.TParser) (any, bool) {
+func v263(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v10, v12 any
 	var x4 rune
@@ -27052,7 +27052,7 @@ L11:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -27064,7 +27064,7 @@ fail:
 }
 
 // rule objectAccessor
-func u264(p *pegort.TParser) (any, bool) {
+func u264(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i264(p)
 	if !ok {
@@ -27073,10 +27073,10 @@ func u264(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i264(p *pegort.TParser) (any, bool) {
+func i264(p *rt.TParser) (any, bool) {
 	var start, x1, x5, x6 int
 	var v, k4, v7, v10, v12 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -27117,7 +27117,7 @@ L11:
 	goto fail
 L8:
 	k4 = v7
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "objectAccessor"
 	v = func() any { return k4 }()
 	v = c.Finish(v)
@@ -27129,7 +27129,7 @@ fail:
 }
 
 // rule objectMemberNotAccessor
-func u265(p *pegort.TParser) (any, bool) {
+func u265(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i265(p)
 	if !ok {
@@ -27138,10 +27138,10 @@ func u265(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i265(p *pegort.TParser) (any, bool) {
+func i265(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x5 int
 	var v, k3, v6, v9, v11, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -27186,7 +27186,7 @@ L12:
 	goto fail
 L7:
 	k3 = v6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "objectMemberNotAccessor"
 	v = func() any { return k3 }()
 	v = c.Finish(v)
@@ -27198,7 +27198,7 @@ fail:
 }
 
 // rule spreadAssignment
-func u267(p *pegort.TParser) (any, bool) {
+func u267(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i267(p)
 	if !ok {
@@ -27207,10 +27207,10 @@ func u267(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i267(p *pegort.TParser) (any, bool) {
+func i267(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -27228,7 +27228,7 @@ func i267(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "spreadAssignment"
 	v = func() any {
 		return func() any {
@@ -27244,7 +27244,7 @@ fail:
 }
 
 // rule objectGetAccessor
-func u268(p *pegort.TParser) (any, bool) {
+func u268(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i268(p)
 	if !ok {
@@ -27253,11 +27253,11 @@ func u268(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i268(p *pegort.TParser) (any, bool) {
+func i268(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x6, x10, x12, x17, x20, x23, x24, x29, x34, x37 int
 	var v, k1, v3, k9, v11, k13, x14, v18, k19, v21, k22, v25, v28, k30, x31, v35 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -27309,7 +27309,7 @@ L8:
 		goto fail
 	}
 	k9 = v11
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
@@ -27393,7 +27393,7 @@ L36:
 	k30 = x31
 	goto fail
 L32:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "objectGetAccessor"
 	v = func() any {
 		return func() any {
@@ -27416,7 +27416,7 @@ fail:
 }
 
 // rule objectSetAccessor
-func u269(p *pegort.TParser) (any, bool) {
+func u269(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i269(p)
 	if !ok {
@@ -27425,11 +27425,11 @@ func u269(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i269(p *pegort.TParser) (any, bool) {
+func i269(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x6, x10, x12, x17, x20, x23, x24, x29, x34, x37 int
 	var v, k1, v3, k9, v11, k13, x14, v18, k19, v21, k22, v25, v28, k30, x31, v35 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -27481,7 +27481,7 @@ L8:
 		goto fail
 	}
 	k9 = v11
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(32) }())
@@ -27565,7 +27565,7 @@ L36:
 	k30 = x31
 	goto fail
 L32:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "objectSetAccessor"
 	v = func() any {
 		return func() any {
@@ -27588,7 +27588,7 @@ fail:
 }
 
 // rule objectMethod
-func u270(p *pegort.TParser) (any, bool) {
+func u270(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i270(p)
 	if !ok {
@@ -27597,11 +27597,11 @@ func u270(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i270(p *pegort.TParser) (any, bool) {
+func i270(p *rt.TParser) (any, bool) {
 	var start, x1, x6, x9, x12, x14, x21, x24, x25, x27, x30, x32, x37, x39, x44, x46, x50, size, x53, x58, x61, x64, x65, x70, x75, x78 int
 	var v, k2, x3, v10, k11, v13, k15, x16, k17, x18, v26, v28, k29, v31, k33, x34, v38, k40, x41, v45, k54, x55, v59, k60, v62, k63, v66, v69, k71, x72, v76 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	var ch rune
 	start = p.Pos
@@ -27712,7 +27712,7 @@ L42:
 L43:
 
 	x46 = p.Pos
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("!=", func() any { return k17 }(), func() any { return any(nil) }())
 		}()
@@ -27747,7 +27747,7 @@ L49:
 	goto fail
 L47:
 
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("+", func() any {
 				return c.Binary("+", func() any {
@@ -27839,7 +27839,7 @@ L77:
 	k71 = x72
 	goto fail
 L73:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "objectMethod"
 	v = func() any {
 		return func() any {
@@ -27865,7 +27865,7 @@ fail:
 }
 
 // rule shorthandPropertyAssignment
-func u271(p *pegort.TParser) (any, bool) {
+func u271(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i271(p)
 	if !ok {
@@ -27874,11 +27874,11 @@ func u271(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i271(p *pegort.TParser) (any, bool) {
+func i271(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x7, x12, x14, x19, x21, x23, x31, x33 int
 	var v, k1, v3, k4, v6, k8, x9, v13, k15, x16, v20, k25, x26, k27, x28, v32, v34 any
-	var c *pegort.TActCtx
-	var prevEnv, x24 *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv, x24 *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -27957,7 +27957,7 @@ L22:
 	if _, ok = s480(p); !ok {
 		goto L29
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("*", func() any {
@@ -27982,7 +27982,7 @@ L29:
 	k25 = x26
 	k27 = x28
 L30:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "shorthandPropertyAssignment"
 	v = func() any {
 		return func() any {
@@ -28005,7 +28005,7 @@ fail:
 }
 
 // rule propertyAssignment
-func u272(p *pegort.TParser) (any, bool) {
+func u272(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i272(p)
 	if !ok {
@@ -28014,11 +28014,11 @@ func u272(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i272(p *pegort.TParser) (any, bool) {
+func i272(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x7, x12, x14, x19, x22 int
 	var v, k1, v3, k4, v6, k8, x9, v13, k15, x16, v20, k21, v23 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -28077,7 +28077,7 @@ L18:
 	if _, ok = s480(p); !ok {
 		goto fail
 	}
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("*", func() any {
@@ -28095,7 +28095,7 @@ L18:
 		goto fail
 	}
 	k21 = v23
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "propertyAssignment"
 	v = func() any {
 		return func() any {
@@ -28117,7 +28117,7 @@ fail:
 }
 
 // rule functionExpression
-func u273(p *pegort.TParser) (any, bool) {
+func u273(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i273(p)
 	if !ok {
@@ -28126,11 +28126,11 @@ func u273(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i273(p *pegort.TParser) (any, bool) {
+func i273(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x8, x10, x17, x20, x21, x23, x25, x30, x32, x37, x40, x43, x44, x50 int
 	var v, k1, v4, v7, k11, x12, k13, x14, v22, v24, k26, x27, v31, k33, x34, v38, k39, v41, k42, v45, v48, k49, v51 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
@@ -28200,7 +28200,7 @@ L15:
 	k13 = x14
 L16:
 
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("+", func() any {
 				return c.Binary("+", func() any {
@@ -28275,7 +28275,7 @@ L47:
 		goto fail
 	}
 	k49 = v51
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "functionExpression"
 	v = func() any {
 		return func() any {
@@ -28299,7 +28299,7 @@ fail:
 }
 
 // rule asyncFunctionModifier
-func u274(p *pegort.TParser) (any, bool) {
+func u274(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i274(p)
 	if !ok {
@@ -28308,10 +28308,10 @@ func u274(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i274(p *pegort.TParser) (any, bool) {
+func i274(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x7 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -28348,7 +28348,7 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "asyncFunctionModifier"
 	v = func() any { return c.List(func() any { return k1 }()) }()
 	v = c.Finish(v)
@@ -28360,7 +28360,7 @@ fail:
 }
 
 // rule classExpressionPrimary
-func u275(p *pegort.TParser) (any, bool) {
+func u275(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[275]) {
 		return p.CallMemo(trules[275], i275)
 	}
@@ -28372,10 +28372,10 @@ func u275(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i275(p *pegort.TParser) (any, bool) {
+func i275(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x10, x15 int
 	var v, k14, v16 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
@@ -28436,7 +28436,7 @@ L3:
 		goto fail
 	}
 	k14 = v16
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "classExpressionPrimary"
 	v = func() any { return k14 }()
 	v = c.Finish(v)
@@ -28447,7 +28447,7 @@ fail:
 	return nil, false
 }
 
-func s276(p *pegort.TParser) (any, bool) {
+func s276(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v11 any
 	var x4 rune
@@ -28483,7 +28483,7 @@ L9:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -28495,7 +28495,7 @@ fail:
 }
 
 // rule newTargetMetaProperty
-func u277(p *pegort.TParser) (any, bool) {
+func u277(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i277(p)
 	if !ok {
@@ -28504,10 +28504,10 @@ func u277(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i277(p *pegort.TParser) (any, bool) {
+func i277(p *rt.TParser) (any, bool) {
 	var start, x1, x4 int
 	var v, k3, v5 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -28544,7 +28544,7 @@ L2:
 		goto fail
 	}
 	k3 = v5
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "newTargetMetaProperty"
 	v = func() any {
 		return func() any {
@@ -28561,7 +28561,7 @@ fail:
 }
 
 // rule newExpressionWithTarget
-func u278(p *pegort.TParser) (any, bool) {
+func u278(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i278(p)
 	if !ok {
@@ -28570,10 +28570,10 @@ func u278(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i278(p *pegort.TParser) (any, bool) {
+func i278(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x6, x11, x13, x15, size, x17, x22 int
 	var v, k3, v5, k7, x8, v12, k18, x19, v23 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
@@ -28664,7 +28664,7 @@ L20:
 	p.Pos = x17
 	k18 = x19
 L21:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "newExpressionWithTarget"
 	v = func() any {
 		return func() any {
@@ -28682,7 +28682,7 @@ fail:
 }
 
 // rule templateExpression
-func u279(p *pegort.TParser) (any, bool) {
+func u279(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i279(p)
 	if !ok {
@@ -28691,10 +28691,10 @@ func u279(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i279(p *pegort.TParser) (any, bool) {
+func i279(p *rt.TParser) (any, bool) {
 	var start, x2, x5 int
 	var v, k1, v3, k4, v6 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -28709,7 +28709,7 @@ func i279(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k4 = v6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "templateExpression"
 	v = func() any {
 		return func() any {
@@ -28726,7 +28726,7 @@ fail:
 }
 
 // rule templateSpans
-func u280(p *pegort.TParser) (any, bool) {
+func u280(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i280(p)
 	if !ok {
@@ -28735,10 +28735,10 @@ func u280(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i280(p *pegort.TParser) (any, bool) {
+func i280(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x4, x5, x8, x12 int
 	var v, k1, k6, v9, v10, k11, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -28775,7 +28775,7 @@ func i280(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k11 = v13
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "templateSpans"
 	v = func() any {
 		return func() any {
@@ -28794,7 +28794,7 @@ fail:
 }
 
 // rule templateSpanMiddle
-func u281(p *pegort.TParser) (any, bool) {
+func u281(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i281(p)
 	if !ok {
@@ -28803,10 +28803,10 @@ func u281(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i281(p *pegort.TParser) (any, bool) {
+func i281(p *rt.TParser) (any, bool) {
 	var start, x2, x5 int
 	var v, k1, v3, k4, v6 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -28824,7 +28824,7 @@ func i281(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k4 = v6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "templateSpanMiddle"
 	v = func() any {
 		return func() any {
@@ -28841,7 +28841,7 @@ fail:
 }
 
 // rule templateSpanTail
-func u282(p *pegort.TParser) (any, bool) {
+func u282(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i282(p)
 	if !ok {
@@ -28850,10 +28850,10 @@ func u282(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i282(p *pegort.TParser) (any, bool) {
+func i282(p *rt.TParser) (any, bool) {
 	var start, x2, x5 int
 	var v, k1, v3, k4, v6 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -28871,7 +28871,7 @@ func i282(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k4 = v6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "templateSpanTail"
 	v = func() any {
 		return func() any {
@@ -28888,14 +28888,14 @@ fail:
 }
 
 // rule taggedTemplate
-func u283(p *pegort.TParser) (any, bool) {
+func u283(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[283]) {
 		return p.CallMemo(trules[283], v283)
 	}
 	return v283(p)
 }
 
-func v283(p *pegort.TParser) (any, bool) {
+func v283(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v11 any
 	var x4 rune
@@ -28931,7 +28931,7 @@ L9:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -28943,7 +28943,7 @@ fail:
 }
 
 // rule rawTemplateExpression
-func u284(p *pegort.TParser) (any, bool) {
+func u284(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i284(p)
 	if !ok {
@@ -28952,10 +28952,10 @@ func u284(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i284(p *pegort.TParser) (any, bool) {
+func i284(p *rt.TParser) (any, bool) {
 	var start, x2, x5 int
 	var v, k1, v3, k4, v6 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -28970,7 +28970,7 @@ func i284(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k4 = v6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "rawTemplateExpression"
 	v = func() any {
 		return func() any {
@@ -28987,7 +28987,7 @@ fail:
 }
 
 // rule rawTemplateSpans
-func u285(p *pegort.TParser) (any, bool) {
+func u285(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i285(p)
 	if !ok {
@@ -28996,10 +28996,10 @@ func u285(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i285(p *pegort.TParser) (any, bool) {
+func i285(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x4, x5, x8, x12 int
 	var v, k1, k6, v9, v10, k11, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -29036,7 +29036,7 @@ func i285(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k11 = v13
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "rawTemplateSpans"
 	v = func() any {
 		return func() any {
@@ -29055,7 +29055,7 @@ fail:
 }
 
 // rule rawTemplateSpanMiddle
-func u286(p *pegort.TParser) (any, bool) {
+func u286(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i286(p)
 	if !ok {
@@ -29064,10 +29064,10 @@ func u286(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i286(p *pegort.TParser) (any, bool) {
+func i286(p *rt.TParser) (any, bool) {
 	var start, x2, x5 int
 	var v, k1, v3, k4, v6 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -29085,7 +29085,7 @@ func i286(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k4 = v6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "rawTemplateSpanMiddle"
 	v = func() any {
 		return func() any {
@@ -29102,7 +29102,7 @@ fail:
 }
 
 // rule rawTemplateSpanTail
-func u287(p *pegort.TParser) (any, bool) {
+func u287(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i287(p)
 	if !ok {
@@ -29111,10 +29111,10 @@ func u287(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i287(p *pegort.TParser) (any, bool) {
+func i287(p *rt.TParser) (any, bool) {
 	var start, x2, x5 int
 	var v, k1, v3, k4, v6 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -29132,7 +29132,7 @@ func i287(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k4 = v6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "rawTemplateSpanTail"
 	v = func() any {
 		return func() any {
@@ -29149,14 +29149,14 @@ fail:
 }
 
 // rule jsxElementOrFragment
-func u288(p *pegort.TParser) (any, bool) {
+func u288(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[288]) {
 		return p.CallMemo(trules[288], v288)
 	}
 	return v288(p)
 }
 
-func v288(p *pegort.TParser) (any, bool) {
+func v288(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v10, v13 any
 	var x4 rune
@@ -29200,7 +29200,7 @@ L11:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -29212,7 +29212,7 @@ fail:
 }
 
 // rule jsxSelfClosingElement
-func u289(p *pegort.TParser) (any, bool) {
+func u289(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[289]) {
 		return p.CallMemo(trules[289], i289)
 	}
@@ -29224,10 +29224,10 @@ func u289(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i289(p *pegort.TParser) (any, bool) {
+func i289(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x9, x12 int
 	var v, k1, v3, k5, x6, v10, k11, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -29285,7 +29285,7 @@ L8:
 	} else if _, ok = p.Parser.MatchLiteral(lit364, ">", 159, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxSelfClosingElement"
 	v = func() any {
 		return func() any {
@@ -29303,7 +29303,7 @@ fail:
 }
 
 // rule jsxElement
-func u290(p *pegort.TParser) (any, bool) {
+func u290(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[290]) {
 		return p.CallMemo(trules[290], i290)
 	}
@@ -29315,10 +29315,10 @@ func u290(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i290(p *pegort.TParser) (any, bool) {
+func i290(p *rt.TParser) (any, bool) {
 	var start, x1, x5, x6, x9, x12, x13, x14, x15, x16, x21, x25, x26, x29 int
 	var v, k4, v7, k8, v10, k11, v18, v19, v20, k24, v27, k28, v30 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -29406,14 +29406,14 @@ L23:
 		goto fail
 	}
 	k28 = v30
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return any(c.P.TextEqual(c.TextStr(func() any { return k4 }()), c.TextStr(func() any { return k24 }())) == true)
 		}()
 	}) {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxElement"
 	v = func() any {
 		return func() any {
@@ -29431,7 +29431,7 @@ fail:
 }
 
 // rule jsxOpeningElement
-func u291(p *pegort.TParser) (any, bool) {
+func u291(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i291(p)
 	if !ok {
@@ -29440,10 +29440,10 @@ func u291(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i291(p *pegort.TParser) (any, bool) {
+func i291(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x9, x12 int
 	var v, k1, v3, k5, x6, v10, k11, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -29493,7 +29493,7 @@ L8:
 	} else if _, ok = p.Parser.MatchLiteral(lit364, ">", 159, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxOpeningElement"
 	v = func() any {
 		return func() any {
@@ -29511,7 +29511,7 @@ fail:
 }
 
 // rule jsxClosingElement
-func u292(p *pegort.TParser) (any, bool) {
+func u292(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i292(p)
 	if !ok {
@@ -29520,10 +29520,10 @@ func u292(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i292(p *pegort.TParser) (any, bool) {
+func i292(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -29549,7 +29549,7 @@ func i292(p *pegort.TParser) (any, bool) {
 	} else if _, ok = p.Parser.MatchLiteral(lit364, ">", 159, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxClosingElement"
 	v = func() any {
 		return func() any {
@@ -29565,7 +29565,7 @@ fail:
 }
 
 // rule jsxFragment
-func u293(p *pegort.TParser) (any, bool) {
+func u293(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[293]) {
 		return p.CallMemo(trules[293], i293)
 	}
@@ -29577,10 +29577,10 @@ func u293(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i293(p *pegort.TParser) (any, bool) {
+func i293(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x9, x15 int
 	var v, k1, v3, k4, v11, v12, v13, k14, v16 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -29616,7 +29616,7 @@ func i293(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k14 = v16
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxFragment"
 	v = func() any {
 		return func() any {
@@ -29633,7 +29633,7 @@ fail:
 	return nil, false
 }
 
-func s294(p *pegort.TParser) (any, bool) {
+func s294(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	var ok bool
@@ -29654,9 +29654,9 @@ func s294(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[294], v, bv)
@@ -29668,7 +29668,7 @@ fail:
 	return nil, false
 }
 
-func s295(p *pegort.TParser) (any, bool) {
+func s295(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	var ok bool
@@ -29689,9 +29689,9 @@ func s295(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[295], v, bv)
@@ -29704,14 +29704,14 @@ fail:
 }
 
 // rule jsxElementName
-func u296(p *pegort.TParser) (any, bool) {
+func u296(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[296]) {
 		return p.CallMemo(trules[296], v296)
 	}
 	return v296(p)
 }
 
-func v296(p *pegort.TParser) (any, bool) {
+func v296(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v7 any
 	var ok bool
@@ -29735,7 +29735,7 @@ L6:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -29747,7 +29747,7 @@ fail:
 }
 
 // rule jsxMemberName
-func u297(p *pegort.TParser) (any, bool) {
+func u297(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i297(p)
 	if !ok {
@@ -29756,10 +29756,10 @@ func u297(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i297(p *pegort.TParser) (any, bool) {
+func i297(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x9, x12, x14, x16 int
 	var v, k1, v3, k4, k10, v15, v17, v18, v19, v20, v21 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var x13 []any
 	start = p.Pos
@@ -29813,7 +29813,7 @@ func i297(p *pegort.TParser) (any, bool) {
 	}
 	v21 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v21
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxMemberName"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1217, l_1218 any) any {
@@ -29834,7 +29834,7 @@ fail:
 	return nil, false
 }
 
-func s298(p *pegort.TParser) (any, bool) {
+func s298(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v10 any
 	var x4 rune
@@ -29866,7 +29866,7 @@ L9:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -29877,7 +29877,7 @@ fail:
 	return nil, false
 }
 
-func s299(p *pegort.TParser) (any, bool) {
+func s299(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x4 int
 	var v, v11, bv any
 	var ok, x8 bool
@@ -29922,9 +29922,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v11 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v11)
+	bv = rt.TFreshNode(v11)
 	v = p.ScopeValue(sh23, v11, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[299], v, bv)
@@ -29937,14 +29937,14 @@ fail:
 }
 
 // rule jsxIdentifier
-func u300(p *pegort.TParser) (any, bool) {
+func u300(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[300]) {
 		return p.CallMemo(trules[300], v300)
 	}
 	return v300(p)
 }
 
-func v300(p *pegort.TParser) (any, bool) {
+func v300(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x5, x6, x8 int
 	var v, v15, bv any
 	var ok, x12 bool
@@ -30003,9 +30003,9 @@ L4:
 		break
 	}
 	v15 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v15)
+	bv = rt.TFreshNode(v15)
 	v = p.ScopeValue(sh23, v15, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[300], v, bv)
@@ -30018,7 +30018,7 @@ fail:
 }
 
 // rule jsxNamespacedName
-func u301(p *pegort.TParser) (any, bool) {
+func u301(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[301]) {
 		return p.CallMemo(trules[301], i301)
 	}
@@ -30030,10 +30030,10 @@ func u301(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i301(p *pegort.TParser) (any, bool) {
+func i301(p *rt.TParser) (any, bool) {
 	var start, x2, x5 int
 	var v, k1, v3, k4, v6 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -30059,7 +30059,7 @@ func i301(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k4 = v6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxNamespacedName"
 	v = func() any {
 		return func() any {
@@ -30076,7 +30076,7 @@ fail:
 }
 
 // rule jsxAttributes
-func u302(p *pegort.TParser) (any, bool) {
+func u302(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[302]) {
 		return p.CallMemo(trules[302], i302)
 	}
@@ -30088,10 +30088,10 @@ func u302(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i302(p *pegort.TParser) (any, bool) {
+func i302(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v7 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -30108,7 +30108,7 @@ L5:
 	v4 = nil
 L6:
 	k1 = v4
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxAttributes"
 	v = func() any {
 		return func() any {
@@ -30121,14 +30121,14 @@ L6:
 }
 
 // rule jsxAttributeLike
-func u303(p *pegort.TParser) (any, bool) {
+func u303(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[303]) {
 		return p.CallMemo(trules[303], v303)
 	}
 	return v303(p)
 }
 
-func v303(p *pegort.TParser) (any, bool) {
+func v303(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v10 any
 	var x4 rune
@@ -30160,7 +30160,7 @@ L9:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -30172,7 +30172,7 @@ fail:
 }
 
 // rule jsxAttribute
-func u304(p *pegort.TParser) (any, bool) {
+func u304(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i304(p)
 	if !ok {
@@ -30181,10 +30181,10 @@ func u304(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i304(p *pegort.TParser) (any, bool) {
+func i304(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x9 int
 	var v, k1, v3, k5, x6, v10 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -30217,7 +30217,7 @@ L7:
 	p.Pos = x4
 	k5 = x6
 L8:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxAttribute"
 	v = func() any {
 		return func() any {
@@ -30233,7 +30233,7 @@ fail:
 	return nil, false
 }
 
-func s305(p *pegort.TParser) (any, bool) {
+func s305(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v7 any
 	var ok bool
@@ -30257,7 +30257,7 @@ L6:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -30268,7 +30268,7 @@ fail:
 	return nil, false
 }
 
-func s306(p *pegort.TParser) (any, bool) {
+func s306(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v10, v12 any
 	var ok, x7 bool
@@ -30307,7 +30307,7 @@ L11:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -30318,7 +30318,7 @@ fail:
 	return nil, false
 }
 
-func s307(p *pegort.TParser) (any, bool) {
+func s307(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v10, v13 any
 	var x4 rune
@@ -30362,7 +30362,7 @@ L11:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -30373,7 +30373,7 @@ fail:
 	return nil, false
 }
 
-func s308(p *pegort.TParser) (any, bool) {
+func s308(p *rt.TParser) (any, bool) {
 	var start, x1, x2, size int
 	var v, v10, bv any
 	var x4, ch rune
@@ -30438,9 +30438,9 @@ L8:
 	goto fail
 L3:
 	v10 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v10)
+	bv = rt.TFreshNode(v10)
 	v = p.ScopeValue(sh23, v10, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[308], v, bv)
@@ -30453,7 +30453,7 @@ fail:
 }
 
 // rule jsxAttributeExpression
-func u309(p *pegort.TParser) (any, bool) {
+func u309(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i309(p)
 	if !ok {
@@ -30462,10 +30462,10 @@ func u309(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i309(p *pegort.TParser) (any, bool) {
+func i309(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v7 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -30498,7 +30498,7 @@ L6:
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "}", 54, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxAttributeExpression"
 	v = func() any {
 		return func() any {
@@ -30514,7 +30514,7 @@ fail:
 }
 
 // rule jsxSpreadAttribute
-func u310(p *pegort.TParser) (any, bool) {
+func u310(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i310(p)
 	if !ok {
@@ -30523,10 +30523,10 @@ func u310(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i310(p *pegort.TParser) (any, bool) {
+func i310(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -30560,7 +30560,7 @@ func i310(p *pegort.TParser) (any, bool) {
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "}", 54, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxSpreadAttribute"
 	v = func() any {
 		return func() any {
@@ -30576,14 +30576,14 @@ fail:
 }
 
 // rule jsxChild
-func u311(p *pegort.TParser) (any, bool) {
+func u311(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[311]) {
 		return p.CallMemo(trules[311], v311)
 	}
 	return v311(p)
 }
 
-func v311(p *pegort.TParser) (any, bool) {
+func v311(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v10, v12 any
 	var ok, x7 bool
@@ -30622,7 +30622,7 @@ L11:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -30633,7 +30633,7 @@ fail:
 	return nil, false
 }
 
-func s312(p *pegort.TParser) (any, bool) {
+func s312(p *rt.TParser) (any, bool) {
 	var start, x1, size, x2 int
 	var v, v3, bv any
 	var ch rune
@@ -30655,9 +30655,9 @@ func s312(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v3 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v3)
+	bv = rt.TFreshNode(v3)
 	v = p.ScopeValue(sh23, v3, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[312], v, bv)
@@ -30670,7 +30670,7 @@ fail:
 }
 
 // rule jsxChildExpression
-func u313(p *pegort.TParser) (any, bool) {
+func u313(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i313(p)
 	if !ok {
@@ -30679,10 +30679,10 @@ func u313(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i313(p *pegort.TParser) (any, bool) {
+func i313(p *rt.TParser) (any, bool) {
 	var start, x1, x6, x9, x10 int
 	var v, k2, x3, v7, k8, v11, v14 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -30731,7 +30731,7 @@ L13:
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "}", 54, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxChildExpression"
 	v = func() any {
 		return func() any {
@@ -30748,7 +30748,7 @@ fail:
 }
 
 // rule jsxChildElement
-func u314(p *pegort.TParser) (any, bool) {
+func u314(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i314(p)
 	if !ok {
@@ -30757,10 +30757,10 @@ func u314(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i314(p *pegort.TParser) (any, bool) {
+func i314(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x5 int
 	var v, k3, v6, v12, v14, v17 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok, x9 bool
 	var x8 rune
 	start = p.Pos
@@ -30817,7 +30817,7 @@ L15:
 	goto fail
 L7:
 	k3 = v6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxChildElement"
 	v = func() any { return k3 }()
 	v = c.Finish(v)
@@ -30829,7 +30829,7 @@ fail:
 }
 
 // rule typeNode
-func u315(p *pegort.TParser) (any, bool) {
+func u315(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[315]) {
 		return p.CallMemo(trules[315], i315)
 	}
@@ -30841,17 +30841,17 @@ func u315(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i315(p *pegort.TParser) (any, bool) {
+func i315(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
 	_ = x2
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(4) }())
@@ -30865,7 +30865,7 @@ func i315(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeNode"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
@@ -30879,14 +30879,14 @@ fail:
 }
 
 // rule typeInner
-func u316(p *pegort.TParser) (any, bool) {
+func u316(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[316]) {
 		return p.CallMemo(trules[316], v316)
 	}
 	return v316(p)
 }
 
-func v316(p *pegort.TParser) (any, bool) {
+func v316(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v7, v9 any
 	var ok bool
@@ -30917,7 +30917,7 @@ L8:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -30929,7 +30929,7 @@ fail:
 }
 
 // rule typeNoConditional
-func u317(p *pegort.TParser) (any, bool) {
+func u317(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[317]) {
 		return p.CallMemo(trules[317], i317)
 	}
@@ -30941,17 +30941,17 @@ func u317(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i317(p *pegort.TParser) (any, bool) {
+func i317(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
 	_ = x2
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("+", func() any {
 				return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
@@ -30971,7 +30971,7 @@ func i317(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeNoConditional"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
@@ -30985,7 +30985,7 @@ fail:
 }
 
 // rule typeAllowConditional
-func u318(p *pegort.TParser) (any, bool) {
+func u318(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[318]) {
 		return p.CallMemo(trules[318], i318)
 	}
@@ -30997,17 +30997,17 @@ func u318(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i318(p *pegort.TParser) (any, bool) {
+func i318(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
 	_ = x2
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("*", func() any {
@@ -31025,7 +31025,7 @@ func i318(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeAllowConditional"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
@@ -31039,7 +31039,7 @@ fail:
 }
 
 // rule conditionalOrHigher
-func u319(p *pegort.TParser) (any, bool) {
+func u319(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i319(p)
 	if !ok {
@@ -31048,10 +31048,10 @@ func u319(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i319(p *pegort.TParser) (any, bool) {
+func i319(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x9, x14, x16, x18, x20, x22, x24, x26, x28 int
 	var v, k1, v3, k4, k10, k11, k12, v17, v21, v23, v25, v27, v29, v30, v31, v32, v33 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var x15 []any
 	start = p.Pos
@@ -31072,7 +31072,7 @@ func i319(p *pegort.TParser) (any, bool) {
 		k12 = nil
 		x14 = p.Pos
 		x15 = p.NewVals(6)[:0]
-		if !p.Predicate(func(c *pegort.TActCtx) any {
+		if !p.Predicate(func(c *rt.TActCtx) any {
 			return func() any {
 				return c.Binary("==", func() any {
 					return c.Binary("%", func() any {
@@ -31167,7 +31167,7 @@ func i319(p *pegort.TParser) (any, bool) {
 	}
 	v33 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v33
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "conditionalOrHigher"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1231, l_1232 any) any {
@@ -31191,14 +31191,14 @@ fail:
 }
 
 // rule typeOrTypePredicate
-func u320(p *pegort.TParser) (any, bool) {
+func u320(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[320]) {
 		return p.CallMemo(trules[320], v320)
 	}
 	return v320(p)
 }
 
-func v320(p *pegort.TParser) (any, bool) {
+func v320(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v7 any
 	var ok bool
@@ -31222,7 +31222,7 @@ L6:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -31234,7 +31234,7 @@ fail:
 }
 
 // rule typePredicate
-func u321(p *pegort.TParser) (any, bool) {
+func u321(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i321(p)
 	if !ok {
@@ -31243,10 +31243,10 @@ func u321(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i321(p *pegort.TParser) (any, bool) {
+func i321(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x7 int
 	var v, k1, v3, k6, v8 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -31283,7 +31283,7 @@ L5:
 		goto fail
 	}
 	k6 = v8
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typePredicate"
 	v = func() any {
 		return func() any {
@@ -31300,7 +31300,7 @@ fail:
 }
 
 // rule functionType
-func u322(p *pegort.TParser) (any, bool) {
+func u322(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i322(p)
 	if !ok {
@@ -31309,10 +31309,10 @@ func u322(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i322(p *pegort.TParser) (any, bool) {
+func i322(p *rt.TParser) (any, bool) {
 	var start, x1, size, x4, x7, x11, x14, x19, x22, x25 int
 	var v, k15, x16, v20, k21, v23, k24, v26 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ch rune
 	var ok bool
 	start = p.Pos
@@ -31410,7 +31410,7 @@ L18:
 		goto fail
 	}
 	k24 = v26
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "functionType"
 	v = func() any {
 		return func() any {
@@ -31428,7 +31428,7 @@ fail:
 }
 
 // rule constructorType
-func u323(p *pegort.TParser) (any, bool) {
+func u323(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i323(p)
 	if !ok {
@@ -31437,10 +31437,10 @@ func u323(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i323(p *pegort.TParser) (any, bool) {
+func i323(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x12, x14, x19, x21, x23, x28, x31, x34 int
 	var v, k15, x16, v20, k24, x25, v29, k30, v32, k33, v35 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
@@ -31569,7 +31569,7 @@ L27:
 		goto fail
 	}
 	k33 = v35
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "constructorType"
 	v = func() any {
 		return func() any {
@@ -31588,7 +31588,7 @@ fail:
 }
 
 // rule abstractModifier
-func u324(p *pegort.TParser) (any, bool) {
+func u324(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i324(p)
 	if !ok {
@@ -31597,10 +31597,10 @@ func u324(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i324(p *pegort.TParser) (any, bool) {
+func i324(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -31610,7 +31610,7 @@ func i324(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "abstractModifier"
 	v = func() any { return c.List(func() any { return k1 }()) }()
 	v = c.Finish(v)
@@ -31621,7 +31621,7 @@ fail:
 	return nil, false
 }
 
-func s325(p *pegort.TParser) (any, bool) {
+func s325(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -31643,9 +31643,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[325], v, bv)
@@ -31658,7 +31658,7 @@ fail:
 }
 
 // rule returnTypeOfType
-func u326(p *pegort.TParser) (any, bool) {
+func u326(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[326]) {
 		return p.CallMemo(trules[326], i326)
 	}
@@ -31670,17 +31670,17 @@ func u326(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i326(p *pegort.TParser) (any, bool) {
+func i326(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
 	_ = x2
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("*", func() any {
@@ -31698,7 +31698,7 @@ func i326(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "returnTypeOfType"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
@@ -31712,7 +31712,7 @@ fail:
 }
 
 // rule unionOrHigher
-func u327(p *pegort.TParser) (any, bool) {
+func u327(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i327(p)
 	if !ok {
@@ -31721,10 +31721,10 @@ func u327(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i327(p *pegort.TParser) (any, bool) {
+func i327(p *rt.TParser) (any, bool) {
 	var start, x1, x9, x12 int
 	var v, k2, x3, v10, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x5 rune
 	var x6, ok bool
 	start = p.Pos
@@ -31759,7 +31759,7 @@ L11:
 	k2 = x3
 	goto fail
 L4:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "unionOrHigher"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
@@ -31771,7 +31771,7 @@ fail:
 }
 
 // rule leadingUnionType
-func u328(p *pegort.TParser) (any, bool) {
+func u328(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i328(p)
 	if !ok {
@@ -31780,10 +31780,10 @@ func u328(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i328(p *pegort.TParser) (any, bool) {
+func i328(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x9, x12, x15, x21 int
 	var v, k1, v3, k4, k10, v14, v16, v17, v18, v19, v20 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var x13 []any
 	start = p.Pos
@@ -31853,7 +31853,7 @@ func i328(p *pegort.TParser) (any, bool) {
 L22:
 	p.Silent--
 	p.Pos = x21
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "leadingUnionType"
 	v = func() any {
 		return func() any {
@@ -31878,7 +31878,7 @@ fail:
 }
 
 // rule plainOrUnionType
-func u329(p *pegort.TParser) (any, bool) {
+func u329(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i329(p)
 	if !ok {
@@ -31887,10 +31887,10 @@ func u329(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i329(p *pegort.TParser) (any, bool) {
+func i329(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x9, x12, x13, x14, x15, x16, x19, x22, x31 int
 	var v, k1, v3, k4, k10, k17, v21, v23, v24, v25, v26, v27, v28, v29, v30 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var x20 []any
 	start = p.Pos
@@ -31978,7 +31978,7 @@ func i329(p *pegort.TParser) (any, bool) {
 L32:
 	p.Silent--
 	p.Pos = x31
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "plainOrUnionType"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1251, l_1252 any) any {
@@ -32008,7 +32008,7 @@ fail:
 }
 
 // rule intersectionOrHigher
-func u330(p *pegort.TParser) (any, bool) {
+func u330(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[330]) {
 		return p.CallMemo(trules[330], i330)
 	}
@@ -32020,10 +32020,10 @@ func u330(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i330(p *pegort.TParser) (any, bool) {
+func i330(p *rt.TParser) (any, bool) {
 	var start, x1, x9, x12 int
 	var v, k2, x3, v10, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x5 rune
 	var x6, ok bool
 	start = p.Pos
@@ -32058,7 +32058,7 @@ L11:
 	k2 = x3
 	goto fail
 L4:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "intersectionOrHigher"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
@@ -32070,7 +32070,7 @@ fail:
 }
 
 // rule leadingIntersectionType
-func u331(p *pegort.TParser) (any, bool) {
+func u331(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i331(p)
 	if !ok {
@@ -32079,10 +32079,10 @@ func u331(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i331(p *pegort.TParser) (any, bool) {
+func i331(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x9, x12, x15, x21 int
 	var v, k1, v3, k4, k10, v14, v16, v17, v18, v19, v20 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var x13 []any
 	start = p.Pos
@@ -32152,7 +32152,7 @@ func i331(p *pegort.TParser) (any, bool) {
 L22:
 	p.Silent--
 	p.Pos = x21
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "leadingIntersectionType"
 	v = func() any {
 		return func() any {
@@ -32177,7 +32177,7 @@ fail:
 }
 
 // rule plainOrIntersectionType
-func u332(p *pegort.TParser) (any, bool) {
+func u332(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i332(p)
 	if !ok {
@@ -32186,10 +32186,10 @@ func u332(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i332(p *pegort.TParser) (any, bool) {
+func i332(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x9, x12, x13, x14, x15, x16, x19, x22, x31 int
 	var v, k1, v3, k4, k10, k17, v21, v23, v24, v25, v26, v27, v28, v29, v30 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var x20 []any
 	start = p.Pos
@@ -32277,7 +32277,7 @@ func i332(p *pegort.TParser) (any, bool) {
 L32:
 	p.Silent--
 	p.Pos = x31
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "plainOrIntersectionType"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1260, l_1261 any) any {
@@ -32307,7 +32307,7 @@ fail:
 }
 
 // rule typeOperatorOrHigher
-func u333(p *pegort.TParser) (any, bool) {
+func u333(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[333]) {
 		return p.CallMemo(trules[333], i333)
 	}
@@ -32319,10 +32319,10 @@ func u333(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i333(p *pegort.TParser) (any, bool) {
+func i333(p *rt.TParser) (any, bool) {
 	var start, x1, x6, x9, x21, x23, x24, x35, x37, x49, x51 int
 	var v, k2, x3, v25, v28, v33, v52 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x11, x29, x39 rune
 	var x12, ok, x30, x40 bool
 	start = p.Pos
@@ -32509,7 +32509,7 @@ L34:
 	k2 = x3
 	goto fail
 L4:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeOperatorOrHigher"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
@@ -32521,7 +32521,7 @@ fail:
 }
 
 // rule postfixTypeAllowConditional
-func u334(p *pegort.TParser) (any, bool) {
+func u334(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i334(p)
 	if !ok {
@@ -32530,17 +32530,17 @@ func u334(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i334(p *pegort.TParser) (any, bool) {
+func i334(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
-	var prevEnv *pegort.Env
+	var c *rt.TActCtx
+	var prevEnv *rt.Env
 	var ok bool
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
 	_ = x2
-	if !p.Bind("ctx", func(c *pegort.TActCtx) any {
+	if !p.Bind("ctx", func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("-", func() any { return c.Lookup("ctx") }(), func() any {
 				return c.Binary("*", func() any {
@@ -32558,7 +32558,7 @@ func i334(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "postfixTypeAllowConditional"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
@@ -32572,7 +32572,7 @@ fail:
 }
 
 // rule typeOperator
-func u335(p *pegort.TParser) (any, bool) {
+func u335(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i335(p)
 	if !ok {
@@ -32581,10 +32581,10 @@ func u335(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i335(p *pegort.TParser) (any, bool) {
+func i335(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x4, x14, x18 int
 	var v, k1, v16, k17, v19 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
@@ -32651,7 +32651,7 @@ L15:
 		goto fail
 	}
 	k17 = v19
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeOperator"
 	v = func() any {
 		return func() any {
@@ -32668,7 +32668,7 @@ fail:
 }
 
 // rule inferType
-func u336(p *pegort.TParser) (any, bool) {
+func u336(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i336(p)
 	if !ok {
@@ -32677,10 +32677,10 @@ func u336(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i336(p *pegort.TParser) (any, bool) {
+func i336(p *rt.TParser) (any, bool) {
 	var start, x1, x4 int
 	var v, k3, v5 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -32707,7 +32707,7 @@ L2:
 		goto fail
 	}
 	k3 = v5
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "inferType"
 	v = func() any {
 		return func() any {
@@ -32723,7 +32723,7 @@ fail:
 }
 
 // rule inferTypeParameter
-func u337(p *pegort.TParser) (any, bool) {
+func u337(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i337(p)
 	if !ok {
@@ -32732,10 +32732,10 @@ func u337(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i337(p *pegort.TParser) (any, bool) {
+func i337(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x9, x11, x13, x17 int
 	var v, k1, v3, k5, x6, v12 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -32773,7 +32773,7 @@ L10:
 	}
 	k5 = v12
 	x13 = p.Pos
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("==", func() any {
 				return c.Binary("%", func() any {
@@ -32813,7 +32813,7 @@ L7:
 	p.Pos = x4
 	k5 = x6
 L8:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "inferTypeParameter"
 	v = func() any {
 		return func() any {
@@ -32829,7 +32829,7 @@ fail:
 	return nil, false
 }
 
-func e1559(p *pegort.TParser) (any, bool) {
+func e1559(p *rt.TParser) (any, bool) {
 	var ok bool
 	var v1 any
 	if v1, ok = u340(p); !ok {
@@ -32840,7 +32840,7 @@ fail:
 	return nil, false
 }
 
-func e1560(p *pegort.TParser) (any, bool) {
+func e1560(p *rt.TParser) (any, bool) {
 	var x1, x3, x5 int
 	var x2 []any
 	var ok bool
@@ -32872,7 +32872,7 @@ fail:
 	return nil, false
 }
 
-func e1562(p *pegort.TParser) (any, bool) {
+func e1562(p *rt.TParser) (any, bool) {
 	var x1, x3, x5, x8, x10 int
 	var x2 []any
 	var ok bool
@@ -32928,12 +32928,12 @@ fail:
 	return nil, false
 }
 
-func e1565(p *pegort.TParser) (any, bool) {
+func e1565(p *rt.TParser) (any, bool) {
 	var x1, x3 int
 	var x2 []any
 	var ok bool
 	var v4, v7 any
-	var x5 pegort.Mark
+	var x5 rt.Mark
 	x1 = p.Pos
 	x2 = p.NewVals(1)[:0]
 	x3 = p.Pos
@@ -32963,12 +32963,12 @@ fail:
 	return nil, false
 }
 
-func e1568(p *pegort.TParser) (any, bool) {
+func e1568(p *rt.TParser) (any, bool) {
 	var x1, x3, size int
 	var x2 []any
 	var ok bool
 	var v4, v13 any
-	var x5, x7, x9, x11 pegort.Mark
+	var x5, x7, x9, x11 rt.Mark
 	var ch rune
 	x1 = p.Pos
 	x2 = p.NewVals(1)[:0]
@@ -33041,7 +33041,7 @@ fail:
 }
 
 // rule nonArrayType
-func u340(p *pegort.TParser) (any, bool) {
+func u340(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[340]) {
 		return p.CallMemo(trules[340], i340)
 	}
@@ -33053,12 +33053,12 @@ func u340(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i340(p *pegort.TParser) (any, bool) {
+func i340(p *rt.TParser) (any, bool) {
 	var start, x2, x6, x11, x14, x17 int
 	var v, k7, x8, v15, v18 any
-	var c *pegort.TActCtx
-	var x1 pegort.ExpMark
-	var x3 []pegort.ExpID
+	var c *rt.TActCtx
+	var x1 rt.ExpMark
+	var x3 []rt.ExpID
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -33105,10 +33105,10 @@ L9:
 	goto L5
 L4:
 	x2, x3 = p.Unisolate(x1)
-	p.ExpectOrdinary(x2, pegort.MsgBit|201)
+	p.ExpectOrdinary(x2, rt.MsgBit|201)
 	goto fail
 L5:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "nonArrayType"
 	v = func() any { return k7 }()
 	v = c.Finish(v)
@@ -33120,7 +33120,7 @@ fail:
 }
 
 // rule wordType
-func u341(p *pegort.TParser) (any, bool) {
+func u341(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i341(p)
 	if !ok {
@@ -33129,10 +33129,10 @@ func u341(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i341(p *pegort.TParser) (any, bool) {
+func i341(p *rt.TParser) (any, bool) {
 	var start, x1, x6, x9, x11, x14 int
 	var v, k2, x3, v12, v15 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -33184,7 +33184,7 @@ L13:
 	k2 = x3
 	goto fail
 L4:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "wordType"
 	v = func() any { return k2 }()
 	v = c.Finish(v)
@@ -33195,7 +33195,7 @@ fail:
 	return nil, false
 }
 
-func s342(p *pegort.TParser) (any, bool) {
+func s342(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v7, v12, v15, v17, v20, v23, v26, v29, v31 any
 	var ok, x9 bool
@@ -33309,7 +33309,7 @@ L30:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -33320,7 +33320,7 @@ fail:
 	return nil, false
 }
 
-func s343(p *pegort.TParser) (any, bool) {
+func s343(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v7, v9, v14, v16, v19, v22, v25, v28, v31, v33 any
 	var ok, x11 bool
@@ -33441,7 +33441,7 @@ L32:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -33452,7 +33452,7 @@ fail:
 	return nil, false
 }
 
-func s344(p *pegort.TParser) (any, bool) {
+func s344(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x5, x29, x31, x37 int
 	var v, v39, bv any
 	var x7, x33 rune
@@ -33636,9 +33636,9 @@ L35:
 	goto fail
 L3:
 	v39 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v39)
+	bv = rt.TFreshNode(v39)
 	v = p.ScopeValue(sh23, v39, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[344], v, bv)
@@ -33651,7 +33651,7 @@ fail:
 }
 
 // rule literalType
-func u345(p *pegort.TParser) (any, bool) {
+func u345(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[345]) {
 		return p.CallMemo(trules[345], i345)
 	}
@@ -33663,10 +33663,10 @@ func u345(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i345(p *pegort.TParser) (any, bool) {
+func i345(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v7, v9, v11, v13, v18, v21, v24 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok, x15 bool
 	var x14 rune
 	start = p.Pos
@@ -33742,7 +33742,7 @@ L22:
 	goto fail
 L5:
 	k1 = v4
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "literalType"
 	v = func() any {
 		return func() any {
@@ -33758,7 +33758,7 @@ fail:
 }
 
 // rule negativeLiteral
-func u346(p *pegort.TParser) (any, bool) {
+func u346(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i346(p)
 	if !ok {
@@ -33767,10 +33767,10 @@ func u346(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i346(p *pegort.TParser) (any, bool) {
+func i346(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v7, v9 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -33802,7 +33802,7 @@ L8:
 	goto fail
 L5:
 	k1 = v4
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "negativeLiteral"
 	v = func() any {
 		return func() any {
@@ -33819,14 +33819,14 @@ fail:
 }
 
 // rule thisType
-func u347(p *pegort.TParser) (any, bool) {
+func u347(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[347]) {
 		return p.CallMemo(trules[347], v347)
 	}
 	return v347(p)
 }
 
-func v347(p *pegort.TParser) (any, bool) {
+func v347(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -33850,9 +33850,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[347], v, bv)
@@ -33865,7 +33865,7 @@ fail:
 }
 
 // rule thisTypePredicate
-func u348(p *pegort.TParser) (any, bool) {
+func u348(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i348(p)
 	if !ok {
@@ -33874,10 +33874,10 @@ func u348(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i348(p *pegort.TParser) (any, bool) {
+func i348(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x7 int
 	var v, k1, v3, k6, v8 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -33914,7 +33914,7 @@ L5:
 		goto fail
 	}
 	k6 = v8
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "thisTypePredicate"
 	v = func() any {
 		return func() any {
@@ -33931,7 +33931,7 @@ fail:
 }
 
 // rule assertsTypePredicate
-func u349(p *pegort.TParser) (any, bool) {
+func u349(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i349(p)
 	if !ok {
@@ -33940,10 +33940,10 @@ func u349(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i349(p *pegort.TParser) (any, bool) {
+func i349(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x8, x9, x19, x24, x26 int
 	var v, k1, v3, k7, v10, v16, v18, k20, x21, v27 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok, x13 bool
 	var x12 rune
 	start = p.Pos
@@ -34034,7 +34034,7 @@ L22:
 	p.Pos = x19
 	k20 = x21
 L23:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "assertsTypePredicate"
 	v = func() any {
 		return func() any {
@@ -34051,7 +34051,7 @@ fail:
 	return nil, false
 }
 
-func s350(p *pegort.TParser) (any, bool) {
+func s350(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -34073,9 +34073,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[350], v, bv)
@@ -34088,7 +34088,7 @@ fail:
 }
 
 // rule typeQuery
-func u352(p *pegort.TParser) (any, bool) {
+func u352(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i352(p)
 	if !ok {
@@ -34097,10 +34097,10 @@ func u352(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i352(p *pegort.TParser) (any, bool) {
+func i352(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x6, x11 int
 	var v, k3, v5, k7, x8, v12 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -34142,7 +34142,7 @@ L9:
 	p.Pos = x6
 	k7 = x8
 L10:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeQuery"
 	v = func() any {
 		return func() any {
@@ -34159,7 +34159,7 @@ fail:
 }
 
 // rule importType
-func u353(p *pegort.TParser) (any, bool) {
+func u353(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i353(p)
 	if !ok {
@@ -34168,10 +34168,10 @@ func u353(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i353(p *pegort.TParser) (any, bool) {
+func i353(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x7, x9, x11, x15, x18, x20, x25, x33, x35, x37, x40, x45, x47, x52 int
 	var v, k1, v4, v10, v13, v14, k17, v19, k21, x22, v36, k41, x42, v46, k48, x49, v53 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x8 []any
 	var ok, x28 bool
 	var x27 rune
@@ -34393,7 +34393,7 @@ L50:
 	p.Pos = x47
 	k48 = x49
 L51:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importType"
 	v = func() any {
 		return func() any {
@@ -34415,7 +34415,7 @@ fail:
 }
 
 // rule importTypeAttributes
-func u354(p *pegort.TParser) (any, bool) {
+func u354(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i354(p)
 	if !ok {
@@ -34424,10 +34424,10 @@ func u354(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i354(p *pegort.TParser) (any, bool) {
+func i354(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -34437,7 +34437,7 @@ func i354(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importTypeAttributes"
 	v = func() any {
 		return func() any {
@@ -34454,7 +34454,7 @@ fail:
 }
 
 // rule typeReference
-func u355(p *pegort.TParser) (any, bool) {
+func u355(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[355]) {
 		return p.CallMemo(trules[355], i355)
 	}
@@ -34466,10 +34466,10 @@ func u355(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i355(p *pegort.TParser) (any, bool) {
+func i355(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x33, x35, x37, x40, x42, x45, x48, x53, x56 int
 	var v, k39, v41, k49, x50, v54 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x5 rune
 	var x6, ok bool
 	start = p.Pos
@@ -34753,7 +34753,7 @@ L55:
 	k49 = x50
 	goto fail
 L51:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeReference"
 	v = func() any {
 		return func() any {
@@ -34770,7 +34770,7 @@ fail:
 }
 
 // rule functionTypeReference
-func u356(p *pegort.TParser) (any, bool) {
+func u356(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i356(p)
 	if !ok {
@@ -34779,10 +34779,10 @@ func u356(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i356(p *pegort.TParser) (any, bool) {
+func i356(p *rt.TParser) (any, bool) {
 	var start, x2, x4 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -34808,7 +34808,7 @@ func i356(p *pegort.TParser) (any, bool) {
 L5:
 	p.Silent--
 	p.Pos = x4
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "functionTypeReference"
 	v = func() any {
 		return func() any {
@@ -34823,7 +34823,7 @@ fail:
 	return nil, false
 }
 
-func s357(p *pegort.TParser) (any, bool) {
+func s357(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -34845,9 +34845,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[357], v, bv)
@@ -34860,7 +34860,7 @@ fail:
 }
 
 // rule parenthesizedType
-func u358(p *pegort.TParser) (any, bool) {
+func u358(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i358(p)
 	if !ok {
@@ -34869,10 +34869,10 @@ func u358(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i358(p *pegort.TParser) (any, bool) {
+func i358(p *rt.TParser) (any, bool) {
 	var start, x1, x4 int
 	var v, k3, v5 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -34909,7 +34909,7 @@ L2:
 	} else if _, ok = p.Parser.MatchLiteral(lit79, ")", 59, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "parenthesizedType"
 	v = func() any {
 		return func() any {
@@ -34925,7 +34925,7 @@ fail:
 }
 
 // rule templateLiteralType
-func u360(p *pegort.TParser) (any, bool) {
+func u360(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i360(p)
 	if !ok {
@@ -34934,10 +34934,10 @@ func u360(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i360(p *pegort.TParser) (any, bool) {
+func i360(p *rt.TParser) (any, bool) {
 	var start, x2, x5 int
 	var v, k1, v3, k4, v6 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -34952,7 +34952,7 @@ func i360(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k4 = v6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "templateLiteralType"
 	v = func() any {
 		return func() any {
@@ -34969,7 +34969,7 @@ fail:
 }
 
 // rule templateTypeSpans
-func u361(p *pegort.TParser) (any, bool) {
+func u361(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i361(p)
 	if !ok {
@@ -34978,10 +34978,10 @@ func u361(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i361(p *pegort.TParser) (any, bool) {
+func i361(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x4, x5, x8, x12 int
 	var v, k1, k6, v9, v10, k11, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -35018,7 +35018,7 @@ func i361(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k11 = v13
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "templateTypeSpans"
 	v = func() any {
 		return func() any {
@@ -35037,7 +35037,7 @@ fail:
 }
 
 // rule templateTypeSpanMiddle
-func u362(p *pegort.TParser) (any, bool) {
+func u362(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i362(p)
 	if !ok {
@@ -35046,10 +35046,10 @@ func u362(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i362(p *pegort.TParser) (any, bool) {
+func i362(p *rt.TParser) (any, bool) {
 	var start, x2, x5 int
 	var v, k1, v3, k4, v6 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -35067,7 +35067,7 @@ func i362(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k4 = v6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "templateTypeSpanMiddle"
 	v = func() any {
 		return func() any {
@@ -35084,7 +35084,7 @@ fail:
 }
 
 // rule templateTypeSpanTail
-func u363(p *pegort.TParser) (any, bool) {
+func u363(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i363(p)
 	if !ok {
@@ -35093,10 +35093,10 @@ func u363(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i363(p *pegort.TParser) (any, bool) {
+func i363(p *rt.TParser) (any, bool) {
 	var start, x2, x5 int
 	var v, k1, v3, k4, v6 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -35114,7 +35114,7 @@ func i363(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k4 = v6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "templateTypeSpanTail"
 	v = func() any {
 		return func() any {
@@ -35130,7 +35130,7 @@ fail:
 	return nil, false
 }
 
-func s364(p *pegort.TParser) (any, bool) {
+func s364(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -35156,9 +35156,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[364], v, bv)
@@ -35170,7 +35170,7 @@ fail:
 	return nil, false
 }
 
-func s365(p *pegort.TParser) (any, bool) {
+func s365(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v5, bv any
 	var ok bool
@@ -35199,9 +35199,9 @@ L3:
 	goto fail
 L4:
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v5)
+	bv = rt.TFreshNode(v5)
 	v = p.ScopeValue(sh23, v5, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[365], v, bv)
@@ -35214,7 +35214,7 @@ fail:
 }
 
 // rule jsdocNullableType
-func u366(p *pegort.TParser) (any, bool) {
+func u366(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i366(p)
 	if !ok {
@@ -35223,10 +35223,10 @@ func u366(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i366(p *pegort.TParser) (any, bool) {
+func i366(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -35244,7 +35244,7 @@ func i366(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsdocNullableType"
 	v = func() any {
 		return func() any {
@@ -35260,7 +35260,7 @@ fail:
 }
 
 // rule jsdocNonNullableType
-func u367(p *pegort.TParser) (any, bool) {
+func u367(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i367(p)
 	if !ok {
@@ -35269,10 +35269,10 @@ func u367(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i367(p *pegort.TParser) (any, bool) {
+func i367(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -35290,7 +35290,7 @@ func i367(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsdocNonNullableType"
 	v = func() any {
 		return func() any {
@@ -35306,7 +35306,7 @@ fail:
 }
 
 // rule jsdocFunctionType
-func u368(p *pegort.TParser) (any, bool) {
+func u368(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i368(p)
 	if !ok {
@@ -35315,10 +35315,10 @@ func u368(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i368(p *pegort.TParser) (any, bool) {
+func i368(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x5, x11, x12 int
 	var v, k3, v6, v9, k10, v13, v16 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -35380,7 +35380,7 @@ L14:
 	v13 = nil
 L15:
 	k10 = v13
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsdocFunctionType"
 	v = func() any {
 		return func() any {
@@ -35397,7 +35397,7 @@ fail:
 }
 
 // rule jsdocParameter
-func u369(p *pegort.TParser) (any, bool) {
+func u369(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[369]) {
 		return p.CallMemo(trules[369], i369)
 	}
@@ -35409,10 +35409,10 @@ func u369(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i369(p *pegort.TParser) (any, bool) {
+func i369(p *rt.TParser) (any, bool) {
 	var start, x1, x6, x9 int
 	var v, k2, x3, v7, k8, v10 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -35446,7 +35446,7 @@ L5:
 		goto fail
 	}
 	k8 = v10
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsdocParameter"
 	v = func() any {
 		return func() any {
@@ -35462,7 +35462,7 @@ fail:
 	return nil, false
 }
 
-func s370(p *pegort.TParser) (any, bool) {
+func s370(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x10 int
 	var v, v12, bv any
 	var x4 rune
@@ -35513,9 +35513,9 @@ L11:
 	p.Silent--
 	p.Pos = x10
 	v12 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v12)
+	bv = rt.TFreshNode(v12)
 	v = p.ScopeValue(sh23, v12, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[370], v, bv)
@@ -35528,7 +35528,7 @@ fail:
 }
 
 // rule entityName
-func u371(p *pegort.TParser) (any, bool) {
+func u371(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i371(p)
 	if !ok {
@@ -35537,10 +35537,10 @@ func u371(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i371(p *pegort.TParser) (any, bool) {
+func i371(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x9, x12, x14, x16 int
 	var v, k1, v3, k4, k10, v15, v17, v18, v19, v20, v21 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var x13 []any
 	start = p.Pos
@@ -35594,7 +35594,7 @@ func i371(p *pegort.TParser) (any, bool) {
 	}
 	v21 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v21
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "entityName"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1315, l_1316 any) any {
@@ -35616,7 +35616,7 @@ fail:
 }
 
 // rule entityNameAllowReserved
-func u372(p *pegort.TParser) (any, bool) {
+func u372(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[372]) {
 		return p.CallMemo(trules[372], i372)
 	}
@@ -35628,10 +35628,10 @@ func u372(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i372(p *pegort.TParser) (any, bool) {
+func i372(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x9, x12, x14, x16 int
 	var v, k1, v3, k4, k10, v15, v17, v18, v19, v20, v21 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var x13 []any
 	start = p.Pos
@@ -35685,7 +35685,7 @@ func i372(p *pegort.TParser) (any, bool) {
 	}
 	v21 = p.NewNodeOrdinary("list", x6, p.Pos, p.Kids(x7))
 	k4 = v21
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "entityNameAllowReserved"
 	v = func() any {
 		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1320, l_1321 any) any {
@@ -35707,7 +35707,7 @@ fail:
 }
 
 // rule typeArguments
-func u373(p *pegort.TParser) (any, bool) {
+func u373(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[373]) {
 		return p.CallMemo(trules[373], i373)
 	}
@@ -35719,10 +35719,10 @@ func u373(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i373(p *pegort.TParser) (any, bool) {
+func i373(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v7 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -35755,7 +35755,7 @@ L6:
 	} else if _, ok = p.Parser.MatchLiteral(lit364, ">", 159, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeArguments"
 	v = func() any { return c.Concat(func() any { return k1 }()) }()
 	v = c.Finish(v)
@@ -35767,7 +35767,7 @@ fail:
 }
 
 // rule typeList
-func u374(p *pegort.TParser) (any, bool) {
+func u374(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[374]) {
 		return p.CallMemo(trules[374], i374)
 	}
@@ -35779,10 +35779,10 @@ func u374(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i374(p *pegort.TParser) (any, bool) {
+func i374(p *rt.TParser) (any, bool) {
 	var start, x1, x5, x8, x9, x10, x11, x12, x15, x17, x19, x22, x28 int
 	var v, k4, v6, k7, k13, v18, v23, v24, v25, v26, v27 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var x16 []any
 	start = p.Pos
@@ -35877,7 +35877,7 @@ L3:
 L29:
 	p.Pos = x28
 L30:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeList"
 	v = func() any {
 		return func() any {
@@ -35898,7 +35898,7 @@ fail:
 }
 
 // rule typeParameters
-func u375(p *pegort.TParser) (any, bool) {
+func u375(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[375]) {
 		return p.CallMemo(trules[375], i375)
 	}
@@ -35910,10 +35910,10 @@ func u375(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i375(p *pegort.TParser) (any, bool) {
+func i375(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v7 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -35946,7 +35946,7 @@ L6:
 	} else if _, ok = p.Parser.MatchLiteral(lit364, ">", 159, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeParameters"
 	v = func() any { return c.Concat(func() any { return k1 }()) }()
 	v = c.Finish(v)
@@ -35958,7 +35958,7 @@ fail:
 }
 
 // rule typeParameter
-func u376(p *pegort.TParser) (any, bool) {
+func u376(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[376]) {
 		return p.CallMemo(trules[376], i376)
 	}
@@ -35970,10 +35970,10 @@ func u376(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i376(p *pegort.TParser) (any, bool) {
+func i376(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x7, x14, x16, x21, x24, x28, x30, x33, x35, x37, x42, size, x44 int
 	var v, k1, v3, k4, v6, k8, x9, k10, x11, x17, x18, v31, v36, k38, x39, v45 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
@@ -36126,7 +36126,7 @@ L40:
 	p.Pos = x37
 	k38 = x39
 L41:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeParameter"
 	v = func() any {
 		return func() any {
@@ -36146,7 +36146,7 @@ fail:
 }
 
 // rule tupleType
-func u377(p *pegort.TParser) (any, bool) {
+func u377(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i377(p)
 	if !ok {
@@ -36155,10 +36155,10 @@ func u377(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i377(p *pegort.TParser) (any, bool) {
+func i377(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v7 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -36191,7 +36191,7 @@ L6:
 	} else if _, ok = p.Parser.MatchLiteral(lit148, "]", 80, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "tupleType"
 	v = func() any {
 		return func() any {
@@ -36207,14 +36207,14 @@ fail:
 }
 
 // rule tupleElement
-func u378(p *pegort.TParser) (any, bool) {
+func u378(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[378]) {
 		return p.CallMemo(trules[378], v378)
 	}
 	return v378(p)
 }
 
-func v378(p *pegort.TParser) (any, bool) {
+func v378(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v7 any
 	var ok bool
@@ -36238,7 +36238,7 @@ L6:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -36250,7 +36250,7 @@ fail:
 }
 
 // rule namedTupleMember
-func u379(p *pegort.TParser) (any, bool) {
+func u379(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i379(p)
 	if !ok {
@@ -36259,10 +36259,10 @@ func u379(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i379(p *pegort.TParser) (any, bool) {
+func i379(p *rt.TParser) (any, bool) {
 	var start, x1, x6, x9, x11, x16, x19 int
 	var v, k2, x3, v7, k8, v10, k12, x13, v17, k18, v20 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -36320,7 +36320,7 @@ L15:
 		goto fail
 	}
 	k18 = v20
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "namedTupleMember"
 	v = func() any {
 		return func() any {
@@ -36339,14 +36339,14 @@ fail:
 }
 
 // rule tupleElementType
-func u380(p *pegort.TParser) (any, bool) {
+func u380(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[380]) {
 		return p.CallMemo(trules[380], v380)
 	}
 	return v380(p)
 }
 
-func v380(p *pegort.TParser) (any, bool) {
+func v380(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v8, v10, v12 any
 	var x4 rune
@@ -36385,7 +36385,7 @@ L11:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -36397,7 +36397,7 @@ fail:
 }
 
 // rule restType
-func u381(p *pegort.TParser) (any, bool) {
+func u381(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i381(p)
 	if !ok {
@@ -36406,10 +36406,10 @@ func u381(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i381(p *pegort.TParser) (any, bool) {
+func i381(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -36427,7 +36427,7 @@ func i381(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	k1 = v3
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "restType"
 	v = func() any {
 		return func() any { f_1336 := func() any { return k1 }(); return tmk_RestType(c, true, f_1336) }()
@@ -36440,7 +36440,7 @@ fail:
 }
 
 // rule optionalType
-func u382(p *pegort.TParser) (any, bool) {
+func u382(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i382(p)
 	if !ok {
@@ -36449,10 +36449,10 @@ func u382(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i382(p *pegort.TParser) (any, bool) {
+func i382(p *rt.TParser) (any, bool) {
 	var start, x2, x4, size int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
@@ -36490,7 +36490,7 @@ L5:
 	p.Pos = x4
 	goto fail
 L6:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "optionalType"
 	v = func() any {
 		return func() any {
@@ -36506,7 +36506,7 @@ fail:
 }
 
 // rule typeLiteral
-func u383(p *pegort.TParser) (any, bool) {
+func u383(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i383(p)
 	if !ok {
@@ -36515,10 +36515,10 @@ func u383(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i383(p *pegort.TParser) (any, bool) {
+func i383(p *rt.TParser) (any, bool) {
 	var start, x1, x4 int
 	var v, k3, v5 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -36539,7 +36539,7 @@ L2:
 		goto fail
 	}
 	k3 = v5
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeLiteral"
 	v = func() any {
 		return func() any {
@@ -36555,7 +36555,7 @@ fail:
 }
 
 // rule objectTypeMembers
-func u384(p *pegort.TParser) (any, bool) {
+func u384(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[384]) {
 		return p.CallMemo(trules[384], i384)
 	}
@@ -36567,10 +36567,10 @@ func u384(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i384(p *pegort.TParser) (any, bool) {
+func i384(p *rt.TParser) (any, bool) {
 	var start, x2, x3, x4, x5, x8, x11 int
 	var v, k1, k6, v12, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -36626,7 +36626,7 @@ func i384(p *pegort.TParser) (any, bool) {
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "}", 54, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "objectTypeMembers"
 	v = func() any {
 		return c.NewList(c.ListItems("map", func() any { return k1 }()))
@@ -36640,7 +36640,7 @@ fail:
 }
 
 // rule mappedType
-func u389(p *pegort.TParser) (any, bool) {
+func u389(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i389(p)
 	if !ok {
@@ -36649,10 +36649,10 @@ func u389(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i389(p *pegort.TParser) (any, bool) {
+func i389(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x9, x12, x14, x19, x21, x23, x28, x31, x32, x38, x39, x40, x41, x44, x47 int
 	var v, k5, x6, v10, k11, v13, k15, x16, v22, k24, x25, v29, k30, v33, v36, k37, k42, v48, v49 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -36828,7 +36828,7 @@ L35:
 	} else if _, ok = p.Parser.MatchLiteral(lit68, "}", 54, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "mappedType"
 	v = func() any {
 		return func() any {
@@ -36851,7 +36851,7 @@ fail:
 }
 
 // rule mappedTypeParameter
-func u390(p *pegort.TParser) (any, bool) {
+func u390(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i390(p)
 	if !ok {
@@ -36860,10 +36860,10 @@ func u390(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i390(p *pegort.TParser) (any, bool) {
+func i390(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x7 int
 	var v, k1, v3, k6, v8 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -36900,7 +36900,7 @@ L5:
 		goto fail
 	}
 	k6 = v8
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "mappedTypeParameter"
 	v = func() any {
 		return func() any {
@@ -36917,7 +36917,7 @@ fail:
 }
 
 // rule mappedReadonlyToken
-func u391(p *pegort.TParser) (any, bool) {
+func u391(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i391(p)
 	if !ok {
@@ -36926,10 +36926,10 @@ func u391(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i391(p *pegort.TParser) (any, bool) {
+func i391(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v10, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
@@ -36965,7 +36965,7 @@ L11:
 	goto fail
 L5:
 	k1 = v4
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "mappedReadonlyToken"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
@@ -36978,7 +36978,7 @@ fail:
 }
 
 // rule mappedPlusMinusReadonly
-func u392(p *pegort.TParser) (any, bool) {
+func u392(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i392(p)
 	if !ok {
@@ -36987,10 +36987,10 @@ func u392(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i392(p *pegort.TParser) (any, bool) {
+func i392(p *rt.TParser) (any, bool) {
 	var start, x2, x4 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -37017,7 +37017,7 @@ func i392(p *pegort.TParser) (any, bool) {
 L5:
 	p.Silent--
 	p.Pos = x4
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "mappedPlusMinusReadonly"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
@@ -37030,7 +37030,7 @@ fail:
 }
 
 // rule mappedQuestionToken
-func u393(p *pegort.TParser) (any, bool) {
+func u393(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i393(p)
 	if !ok {
@@ -37039,10 +37039,10 @@ func u393(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i393(p *pegort.TParser) (any, bool) {
+func i393(p *rt.TParser) (any, bool) {
 	var start, x2, x3 int
 	var v, k1, v4, v10, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var x6 rune
 	var x7, ok bool
 	start = p.Pos
@@ -37078,7 +37078,7 @@ L11:
 	goto fail
 L5:
 	k1 = v4
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "mappedQuestionToken"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
@@ -37091,7 +37091,7 @@ fail:
 }
 
 // rule mappedPlusMinusQuestion
-func u394(p *pegort.TParser) (any, bool) {
+func u394(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i394(p)
 	if !ok {
@@ -37100,10 +37100,10 @@ func u394(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i394(p *pegort.TParser) (any, bool) {
+func i394(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -37121,7 +37121,7 @@ func i394(p *pegort.TParser) (any, bool) {
 	} else if _, ok = p.Parser.MatchLiteral(lit331, "?", 139, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "mappedPlusMinusQuestion"
 	v = func() any { return k1 }()
 	v = c.Finish(v)
@@ -37133,7 +37133,7 @@ fail:
 	return nil, false
 }
 
-func s395(p *pegort.TParser) (any, bool) {
+func s395(p *rt.TParser) (any, bool) {
 	var start, x1, size int
 	var v, v2, bv any
 	var ch rune
@@ -37148,9 +37148,9 @@ func s395(p *pegort.TParser) (any, bool) {
 	}
 	p.Pos += size
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[395], v, bv)
@@ -37162,7 +37162,7 @@ fail:
 	return nil, false
 }
 
-func s396(p *pegort.TParser) (any, bool) {
+func s396(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -37184,9 +37184,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[396], v, bv)
@@ -37199,14 +37199,14 @@ fail:
 }
 
 // rule typeMember
-func u397(p *pegort.TParser) (any, bool) {
+func u397(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[397]) {
 		return p.CallMemo(trules[397], v397)
 	}
 	return v397(p)
 }
 
-func v397(p *pegort.TParser) (any, bool) {
+func v397(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v10, v12, v14 any
 	var ok, x7 bool
@@ -37252,7 +37252,7 @@ L13:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -37264,7 +37264,7 @@ fail:
 }
 
 // rule typeAccessor
-func u398(p *pegort.TParser) (any, bool) {
+func u398(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i398(p)
 	if !ok {
@@ -37273,10 +37273,10 @@ func u398(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i398(p *pegort.TParser) (any, bool) {
+func i398(p *rt.TParser) (any, bool) {
 	var start, x1, x5, x6 int
 	var v, k4, v7, v10, v12 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -37317,7 +37317,7 @@ L11:
 	goto fail
 L8:
 	k4 = v7
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeAccessor"
 	v = func() any { return k4 }()
 	v = c.Finish(v)
@@ -37329,7 +37329,7 @@ fail:
 }
 
 // rule typeMemberNotAccessor
-func u399(p *pegort.TParser) (any, bool) {
+func u399(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i399(p)
 	if !ok {
@@ -37338,10 +37338,10 @@ func u399(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i399(p *pegort.TParser) (any, bool) {
+func i399(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x5 int
 	var v, k3, v6, v9, v11, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -37386,7 +37386,7 @@ L12:
 	goto fail
 L7:
 	k3 = v6
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeMemberNotAccessor"
 	v = func() any { return k3 }()
 	v = c.Finish(v)
@@ -37398,7 +37398,7 @@ fail:
 }
 
 // rule callSignature
-func u400(p *pegort.TParser) (any, bool) {
+func u400(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i400(p)
 	if !ok {
@@ -37407,10 +37407,10 @@ func u400(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i400(p *pegort.TParser) (any, bool) {
+func i400(p *rt.TParser) (any, bool) {
 	var start, x1, x6, x9, x12, x13 int
 	var v, k2, x3, v7, k8, v10, k11, v14, v17 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -37451,7 +37451,7 @@ L16:
 	if _, ok = u506(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "callSignature"
 	v = func() any {
 		return func() any {
@@ -37469,7 +37469,7 @@ fail:
 }
 
 // rule constructSignature
-func u401(p *pegort.TParser) (any, bool) {
+func u401(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i401(p)
 	if !ok {
@@ -37478,10 +37478,10 @@ func u401(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i401(p *pegort.TParser) (any, bool) {
+func i401(p *rt.TParser) (any, bool) {
 	var start, x1, x3, size, x6, x11, x14, x17, x18 int
 	var v, k7, x8, v12, k13, v15, k16, v19, v22 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
@@ -37559,7 +37559,7 @@ L21:
 	if _, ok = u506(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "constructSignature"
 	v = func() any {
 		return func() any {
@@ -37577,7 +37577,7 @@ fail:
 }
 
 // rule typeGetAccessor
-func u402(p *pegort.TParser) (any, bool) {
+func u402(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i402(p)
 	if !ok {
@@ -37586,10 +37586,10 @@ func u402(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i402(p *pegort.TParser) (any, bool) {
+func i402(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x6, x10, x12, x17, x20, x23, x24, x29, x34, x37 int
 	var v, k1, v3, k9, v11, k13, x14, v18, k19, v21, k22, v25, v28, k30, x31, v35 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -37715,7 +37715,7 @@ L36:
 	k30 = x31
 	goto fail
 L32:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeGetAccessor"
 	v = func() any {
 		return func() any {
@@ -37736,7 +37736,7 @@ fail:
 }
 
 // rule typeSetAccessor
-func u403(p *pegort.TParser) (any, bool) {
+func u403(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i403(p)
 	if !ok {
@@ -37745,10 +37745,10 @@ func u403(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i403(p *pegort.TParser) (any, bool) {
+func i403(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x6, x10, x12, x17, x20, x23, x24, x29, x34, x37 int
 	var v, k1, v3, k9, v11, k13, x14, v18, k19, v21, k22, v25, v28, k30, x31, v35 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -37874,7 +37874,7 @@ L36:
 	k30 = x31
 	goto fail
 L32:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeSetAccessor"
 	v = func() any {
 		return func() any {
@@ -37895,7 +37895,7 @@ fail:
 }
 
 // rule typeIndexSignature
-func u404(p *pegort.TParser) (any, bool) {
+func u404(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i404(p)
 	if !ok {
@@ -37904,10 +37904,10 @@ func u404(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i404(p *pegort.TParser) (any, bool) {
+func i404(p *rt.TParser) (any, bool) {
 	var start, x2, x4, x8, x9, x15, x16 int
 	var v, k1, v3, k7, v10, v13, k14, v17, v20 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -37974,7 +37974,7 @@ L19:
 	if _, ok = u506(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeIndexSignature"
 	v = func() any {
 		return func() any {
@@ -37992,7 +37992,7 @@ fail:
 }
 
 // rule methodSignature
-func u407(p *pegort.TParser) (any, bool) {
+func u407(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i407(p)
 	if !ok {
@@ -38001,10 +38001,10 @@ func u407(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i407(p *pegort.TParser) (any, bool) {
+func i407(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x7, x12, x14, size, x17, x22, x25, x28, x29 int
 	var v, k1, v3, k4, v6, k8, x9, v13, k18, x19, v23, k24, v26, k27, v30, v33 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var ch rune
 	start = p.Pos
@@ -38092,7 +38092,7 @@ L32:
 	if _, ok = u506(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "methodSignature"
 	v = func() any {
 		return func() any {
@@ -38113,7 +38113,7 @@ fail:
 }
 
 // rule propertySignature
-func u408(p *pegort.TParser) (any, bool) {
+func u408(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i408(p)
 	if !ok {
@@ -38122,10 +38122,10 @@ func u408(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i408(p *pegort.TParser) (any, bool) {
+func i408(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x7, x12, x15, x16, x22, x23 int
 	var v, k1, v3, k4, v6, k8, x9, v13, k14, v17, v20, k21, v24, v27 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -38183,7 +38183,7 @@ L26:
 	if _, ok = u506(p); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "propertySignature"
 	v = func() any {
 		return func() any {
@@ -38203,14 +38203,14 @@ fail:
 }
 
 // rule propertyName
-func u411(p *pegort.TParser) (any, bool) {
+func u411(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[411]) {
 		return p.CallMemo(trules[411], v411)
 	}
 	return v411(p)
 }
 
-func v411(p *pegort.TParser) (any, bool) {
+func v411(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, v5, v7, v9, v14, v17, v19 any
 	var ok, x11 bool
@@ -38275,7 +38275,7 @@ L18:
 	goto fail
 L3:
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	p.Depth--
@@ -38287,7 +38287,7 @@ fail:
 }
 
 // rule computedPropertyName
-func u412(p *pegort.TParser) (any, bool) {
+func u412(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i412(p)
 	if !ok {
@@ -38296,10 +38296,10 @@ func u412(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i412(p *pegort.TParser) (any, bool) {
+func i412(p *rt.TParser) (any, bool) {
 	var start, x2 int
 	var v, k1, v3 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -38325,7 +38325,7 @@ func i412(p *pegort.TParser) (any, bool) {
 	} else if _, ok = p.Parser.MatchLiteral(lit148, "]", 80, false); !ok {
 		goto fail
 	}
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "computedPropertyName"
 	v = func() any {
 		return func() any {
@@ -38340,7 +38340,7 @@ fail:
 	return nil, false
 }
 
-func s413(p *pegort.TParser) (any, bool) {
+func s413(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	var ok bool
@@ -38353,9 +38353,9 @@ func s413(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[413], v, bv)
@@ -38367,7 +38367,7 @@ fail:
 	return nil, false
 }
 
-func s414(p *pegort.TParser) (any, bool) {
+func s414(p *rt.TParser) (any, bool) {
 	var start, x1, x2 int
 	var v, v4, bv any
 	var ok bool
@@ -38393,9 +38393,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[414], v, bv)
@@ -38407,7 +38407,7 @@ fail:
 	return nil, false
 }
 
-func s415(p *pegort.TParser) (any, bool) {
+func s415(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	var ok bool
@@ -38420,9 +38420,9 @@ func s415(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[415], v, bv)
@@ -38434,7 +38434,7 @@ fail:
 	return nil, false
 }
 
-func s416(p *pegort.TParser) (any, bool) {
+func s416(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	var ok bool
@@ -38447,9 +38447,9 @@ func s416(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[416], v, bv)
@@ -38461,7 +38461,7 @@ fail:
 	return nil, false
 }
 
-func s417(p *pegort.TParser) (any, bool) {
+func s417(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	var ok bool
@@ -38474,9 +38474,9 @@ func s417(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[417], v, bv)
@@ -38488,7 +38488,7 @@ fail:
 	return nil, false
 }
 
-func s418(p *pegort.TParser) (any, bool) {
+func s418(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	var ok bool
@@ -38501,9 +38501,9 @@ func s418(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[418], v, bv)
@@ -38515,7 +38515,7 @@ fail:
 	return nil, false
 }
 
-func s419(p *pegort.TParser) (any, bool) {
+func s419(p *rt.TParser) (any, bool) {
 	var start, x1, x2, size int
 	var v, v4, bv any
 	var ok bool
@@ -38543,9 +38543,9 @@ L3:
 	p.Silent--
 	p.Pos = x2
 	v4 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v4)
+	bv = rt.TFreshNode(v4)
 	v = p.ScopeValue(sh23, v4, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[419], v, bv)
@@ -38557,7 +38557,7 @@ fail:
 	return nil, false
 }
 
-func s420(p *pegort.TParser) (any, bool) {
+func s420(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	var ok bool
@@ -38570,9 +38570,9 @@ func s420(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[420], v, bv)
@@ -38585,7 +38585,7 @@ fail:
 }
 
 // rule identifier
-func u421(p *pegort.TParser) (any, bool) {
+func u421(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[421]) {
 		return p.CallMemo(trules[421], i421)
 	}
@@ -38597,10 +38597,10 @@ func u421(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i421(p *pegort.TParser) (any, bool) {
+func i421(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x6, x8, x10, x12, x15 int
 	var v, k14, v16 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -38646,7 +38646,7 @@ L2:
 L9:
 	p.Silent--
 	p.Pos = x8
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("==", func() any {
 				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(2) }())
@@ -38677,7 +38677,7 @@ L7:
 L13:
 	p.Silent--
 	p.Pos = x12
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("==", func() any {
 				return c.Binary("%", func() any {
@@ -38699,7 +38699,7 @@ L11:
 		goto fail
 	}
 	k14 = v16
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "identifier"
 	v = func() any { return k14 }()
 	v = c.Finish(v)
@@ -38712,7 +38712,7 @@ fail:
 }
 
 // rule bindingIdentifier
-func u422(p *pegort.TParser) (any, bool) {
+func u422(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[422]) {
 		return p.CallMemo(trules[422], i422)
 	}
@@ -38724,10 +38724,10 @@ func u422(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i422(p *pegort.TParser) (any, bool) {
+func i422(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x7 int
 	var v, k6, v8 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -38762,7 +38762,7 @@ L2:
 		goto fail
 	}
 	k6 = v8
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "bindingIdentifier"
 	v = func() any { return k6 }()
 	v = c.Finish(v)
@@ -38775,14 +38775,14 @@ fail:
 }
 
 // rule identifierName
-func u423(p *pegort.TParser) (any, bool) {
+func u423(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[423]) {
 		return p.CallMemo(trules[423], v423)
 	}
 	return v423(p)
 }
 
-func v423(p *pegort.TParser) (any, bool) {
+func v423(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x4 int
 	var v, v10, bv any
 	var x5 rune
@@ -38813,9 +38813,9 @@ L3:
 		goto fail
 	}
 	v10 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v10)
+	bv = rt.TFreshNode(v10)
 	v = p.ScopeValue(sh23, v10, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[423], v, bv)
@@ -38828,14 +38828,14 @@ fail:
 }
 
 // rule privateIdentifier
-func u424(p *pegort.TParser) (any, bool) {
+func u424(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[424]) {
 		return p.CallMemo(trules[424], v424)
 	}
 	return v424(p)
 }
 
-func v424(p *pegort.TParser) (any, bool) {
+func v424(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x4 int
 	var v, v10, bv any
 	var ok, x6 bool
@@ -38871,9 +38871,9 @@ L3:
 		goto fail
 	}
 	v10 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v10)
+	bv = rt.TFreshNode(v10)
 	v = p.ScopeValue(sh23, v10, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[424], v, bv)
@@ -38886,14 +38886,14 @@ fail:
 }
 
 // rule identifierNameOrPrivate
-func u425(p *pegort.TParser) (any, bool) {
+func u425(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[425]) {
 		return p.CallMemo(trules[425], v425)
 	}
 	return v425(p)
 }
 
-func v425(p *pegort.TParser) (any, bool) {
+func v425(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x5, x7 int
 	var v, v13, bv any
 	var ok, x9 bool
@@ -38935,9 +38935,9 @@ L6:
 		goto fail
 	}
 	v13 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v13)
+	bv = rt.TFreshNode(v13)
 	v = p.ScopeValue(sh23, v13, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[425], v, bv)
@@ -38950,14 +38950,14 @@ fail:
 }
 
 // rule numericLiteral
-func u440(p *pegort.TParser) (any, bool) {
+func u440(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[440]) {
 		return p.CallMemo(trules[440], v440)
 	}
 	return v440(p)
 }
 
-func v440(p *pegort.TParser) (any, bool) {
+func v440(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x13 int
 	var v, v15, bv any
 	var x4 rune
@@ -39022,9 +39022,9 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v15)
+	bv = rt.TFreshNode(v15)
 	v = p.ScopeValue(sh23, v15, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[440], v, bv)
@@ -39037,14 +39037,14 @@ fail:
 }
 
 // rule bigIntLiteral
-func u441(p *pegort.TParser) (any, bool) {
+func u441(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[441]) {
 		return p.CallMemo(trules[441], v441)
 	}
 	return v441(p)
 }
 
-func v441(p *pegort.TParser) (any, bool) {
+func v441(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x13 int
 	var v, v15, bv any
 	var x4 rune
@@ -39114,9 +39114,9 @@ L14:
 	p.Silent--
 	p.Pos = x13
 	v15 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v15)
+	bv = rt.TFreshNode(v15)
 	v = p.ScopeValue(sh23, v15, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[441], v, bv)
@@ -39129,14 +39129,14 @@ fail:
 }
 
 // rule stringLiteral
-func u449(p *pegort.TParser) (any, bool) {
+func u449(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[449]) {
 		return p.CallMemo(trules[449], v449)
 	}
 	return v449(p)
 }
 
-func v449(p *pegort.TParser) (any, bool) {
+func v449(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x8, x9, x11, size, x14, x21, x22, x24, x27 int
 	var v, v32, bv any
 	var x4, ch, x15, x28 rune
@@ -39272,9 +39272,9 @@ L19:
 	goto fail
 L3:
 	v32 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v32)
+	bv = rt.TFreshNode(v32)
 	v = p.ScopeValue(sh23, v32, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[449], v, bv)
@@ -39287,14 +39287,14 @@ fail:
 }
 
 // rule noSubstitutionTemplateLiteral
-func u451(p *pegort.TParser) (any, bool) {
+func u451(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[451]) {
 		return p.CallMemo(trules[451], v451)
 	}
 	return v451(p)
 }
 
-func v451(p *pegort.TParser) (any, bool) {
+func v451(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	var ok bool
@@ -39315,9 +39315,9 @@ func v451(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[451], v, bv)
@@ -39330,14 +39330,14 @@ fail:
 }
 
 // rule templateHead
-func u452(p *pegort.TParser) (any, bool) {
+func u452(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[452]) {
 		return p.CallMemo(trules[452], v452)
 	}
 	return v452(p)
 }
 
-func v452(p *pegort.TParser) (any, bool) {
+func v452(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	var ok bool
@@ -39358,9 +39358,9 @@ func v452(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[452], v, bv)
@@ -39373,14 +39373,14 @@ fail:
 }
 
 // rule templateMiddle
-func u453(p *pegort.TParser) (any, bool) {
+func u453(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[453]) {
 		return p.CallMemo(trules[453], v453)
 	}
 	return v453(p)
 }
 
-func v453(p *pegort.TParser) (any, bool) {
+func v453(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	var ok bool
@@ -39401,9 +39401,9 @@ func v453(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[453], v, bv)
@@ -39416,14 +39416,14 @@ fail:
 }
 
 // rule templateTail
-func u454(p *pegort.TParser) (any, bool) {
+func u454(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[454]) {
 		return p.CallMemo(trules[454], v454)
 	}
 	return v454(p)
 }
 
-func v454(p *pegort.TParser) (any, bool) {
+func v454(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	var ok bool
@@ -39444,9 +39444,9 @@ func v454(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[454], v, bv)
@@ -39458,7 +39458,7 @@ fail:
 	return nil, false
 }
 
-func s456(p *pegort.TParser) (any, bool) {
+func s456(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	var ok bool
@@ -39479,9 +39479,9 @@ func s456(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[456], v, bv)
@@ -39493,7 +39493,7 @@ fail:
 	return nil, false
 }
 
-func s457(p *pegort.TParser) (any, bool) {
+func s457(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	var ok bool
@@ -39514,9 +39514,9 @@ func s457(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[457], v, bv)
@@ -39528,7 +39528,7 @@ fail:
 	return nil, false
 }
 
-func s458(p *pegort.TParser) (any, bool) {
+func s458(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	var ok bool
@@ -39549,9 +39549,9 @@ func s458(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[458], v, bv)
@@ -39563,7 +39563,7 @@ fail:
 	return nil, false
 }
 
-func s459(p *pegort.TParser) (any, bool) {
+func s459(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v, v2, bv any
 	var ok bool
@@ -39584,9 +39584,9 @@ func s459(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v2)
+	bv = rt.TFreshNode(v2)
 	v = p.ScopeValue(sh23, v2, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[459], v, bv)
@@ -39598,7 +39598,7 @@ fail:
 	return nil, false
 }
 
-func s461(p *pegort.TParser) (any, bool) {
+func s461(p *rt.TParser) (any, bool) {
 	var start, x1, x2, size, x4, x5, x7, x10, x17, x18, x20, x23, x28, x29, x31, x33 int
 	var v, v39, bv any
 	var ok, x12, x25, x35 bool
@@ -39785,9 +39785,9 @@ L3:
 		break
 	}
 	v39 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	bv = pegort.TFreshNode(v39)
+	bv = rt.TFreshNode(v39)
 	v = p.ScopeValue(sh23, v39, start)
-	if n := pegort.AsTval(v); n != nil {
+	if n := rt.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
 	v = p.TConvertResultOwned(trules[461], v, bv)
@@ -39800,7 +39800,7 @@ fail:
 }
 
 // rule arrayBindingElementList
-func u464(p *pegort.TParser) (any, bool) {
+func u464(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i464(p)
 	if !ok {
@@ -39809,10 +39809,10 @@ func u464(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i464(p *pegort.TParser) (any, bool) {
+func i464(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x11, x14 int
 	var v, k1, v3, k4, k9, v12, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -39867,7 +39867,7 @@ func i464(p *pegort.TParser) (any, bool) {
 L15:
 	p.Pos = x14
 L16:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "arrayBindingElementList"
 	v = func() any {
 		return func() any {
@@ -39886,7 +39886,7 @@ fail:
 }
 
 // rule arrayElementList
-func u465(p *pegort.TParser) (any, bool) {
+func u465(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i465(p)
 	if !ok {
@@ -39895,10 +39895,10 @@ func u465(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i465(p *pegort.TParser) (any, bool) {
+func i465(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x9, x12, x14, x16, x22 int
 	var v, k1, v3, k4, k10, v15, v17, v18, v19, v20, v21 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var x13 []any
 	start = p.Pos
@@ -39965,7 +39965,7 @@ func i465(p *pegort.TParser) (any, bool) {
 L23:
 	p.Pos = x22
 L24:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "arrayElementList"
 	v = func() any {
 		return func() any {
@@ -39986,7 +39986,7 @@ fail:
 }
 
 // rule bindingElementList
-func u466(p *pegort.TParser) (any, bool) {
+func u466(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i466(p)
 	if !ok {
@@ -39995,10 +39995,10 @@ func u466(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i466(p *pegort.TParser) (any, bool) {
+func i466(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x11, x14 int
 	var v, k1, v3, k4, k9, v12, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -40053,7 +40053,7 @@ func i466(p *pegort.TParser) (any, bool) {
 L15:
 	p.Pos = x14
 L16:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "bindingElementList"
 	v = func() any {
 		return func() any {
@@ -40072,7 +40072,7 @@ fail:
 }
 
 // rule enumMemberList
-func u467(p *pegort.TParser) (any, bool) {
+func u467(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i467(p)
 	if !ok {
@@ -40081,10 +40081,10 @@ func u467(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i467(p *pegort.TParser) (any, bool) {
+func i467(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x11, x14 int
 	var v, k1, v3, k4, k9, v12, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -40139,7 +40139,7 @@ func i467(p *pegort.TParser) (any, bool) {
 L15:
 	p.Pos = x14
 L16:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "enumMemberList"
 	v = func() any {
 		return func() any {
@@ -40158,7 +40158,7 @@ fail:
 }
 
 // rule exportSpecifierList
-func u468(p *pegort.TParser) (any, bool) {
+func u468(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i468(p)
 	if !ok {
@@ -40167,10 +40167,10 @@ func u468(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i468(p *pegort.TParser) (any, bool) {
+func i468(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x11, x14 int
 	var v, k1, v3, k4, k9, v12, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -40225,7 +40225,7 @@ func i468(p *pegort.TParser) (any, bool) {
 L15:
 	p.Pos = x14
 L16:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exportSpecifierList"
 	v = func() any {
 		return func() any {
@@ -40244,7 +40244,7 @@ fail:
 }
 
 // rule importAttributeList
-func u469(p *pegort.TParser) (any, bool) {
+func u469(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i469(p)
 	if !ok {
@@ -40253,10 +40253,10 @@ func u469(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i469(p *pegort.TParser) (any, bool) {
+func i469(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x11, x14 int
 	var v, k1, v3, k4, k9, v12, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -40311,7 +40311,7 @@ func i469(p *pegort.TParser) (any, bool) {
 L15:
 	p.Pos = x14
 L16:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importAttributeList"
 	v = func() any {
 		return func() any {
@@ -40330,7 +40330,7 @@ fail:
 }
 
 // rule importSpecifierList
-func u470(p *pegort.TParser) (any, bool) {
+func u470(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i470(p)
 	if !ok {
@@ -40339,10 +40339,10 @@ func u470(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i470(p *pegort.TParser) (any, bool) {
+func i470(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x11, x14 int
 	var v, k1, v3, k4, k9, v12, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -40397,7 +40397,7 @@ func i470(p *pegort.TParser) (any, bool) {
 L15:
 	p.Pos = x14
 L16:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "importSpecifierList"
 	v = func() any {
 		return func() any {
@@ -40416,7 +40416,7 @@ fail:
 }
 
 // rule jsdocParameterList
-func u471(p *pegort.TParser) (any, bool) {
+func u471(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i471(p)
 	if !ok {
@@ -40425,10 +40425,10 @@ func u471(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i471(p *pegort.TParser) (any, bool) {
+func i471(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x11 int
 	var v, k1, v3, k4, k9, v12, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -40470,7 +40470,7 @@ func i471(p *pegort.TParser) (any, bool) {
 	}
 	v13 = p.NewNodeOrdinary("list", x5, p.Pos, p.Kids(x6))
 	k4 = v13
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsdocParameterList"
 	v = func() any {
 		return func() any {
@@ -40489,7 +40489,7 @@ fail:
 }
 
 // rule jsxAttributeLikeList
-func u472(p *pegort.TParser) (any, bool) {
+func u472(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i472(p)
 	if !ok {
@@ -40498,10 +40498,10 @@ func u472(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i472(p *pegort.TParser) (any, bool) {
+func i472(p *rt.TParser) (any, bool) {
 	var start, x2, x5, x6, x7, x8, x11 int
 	var v, k1, v3, k4, k9, v12, v13 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -40535,7 +40535,7 @@ func i472(p *pegort.TParser) (any, bool) {
 	}
 	v13 = p.NewNodeOrdinary("list", x5, p.Pos, p.Kids(x6))
 	k4 = v13
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "jsxAttributeLikeList"
 	v = func() any {
 		return func() any {
@@ -40554,7 +40554,7 @@ fail:
 }
 
 // rule objectLiteralElementList
-func u473(p *pegort.TParser) (any, bool) {
+func u473(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i473(p)
 	if !ok {
@@ -40563,10 +40563,10 @@ func u473(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i473(p *pegort.TParser) (any, bool) {
+func i473(p *rt.TParser) (any, bool) {
 	var start, x1, x5, x8, x9, x10, x11, x14, x17, x20 int
 	var v, k4, v6, k7, k12, v18, v19 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -40649,7 +40649,7 @@ L3:
 L21:
 	p.Pos = x20
 L22:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "objectLiteralElementList"
 	v = func() any {
 		return func() any {
@@ -40668,7 +40668,7 @@ fail:
 }
 
 // rule tupleElementList
-func u474(p *pegort.TParser) (any, bool) {
+func u474(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i474(p)
 	if !ok {
@@ -40677,10 +40677,10 @@ func u474(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i474(p *pegort.TParser) (any, bool) {
+func i474(p *rt.TParser) (any, bool) {
 	var start, x1, x5, x8, x9, x10, x11, x12, x15, x17, x19, x22, x28 int
 	var v, k4, v6, k7, k13, v18, v23, v24, v25, v26, v27 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	var x16 []any
 	start = p.Pos
@@ -40775,7 +40775,7 @@ L3:
 L29:
 	p.Pos = x28
 L30:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "tupleElementList"
 	v = func() any {
 		return func() any {
@@ -40796,7 +40796,7 @@ fail:
 }
 
 // rule typeParameterList
-func u475(p *pegort.TParser) (any, bool) {
+func u475(p *rt.TParser) (any, bool) {
 	start := p.Pos
 	v, ok := i475(p)
 	if !ok {
@@ -40805,10 +40805,10 @@ func u475(p *pegort.TParser) (any, bool) {
 	return v, ok
 }
 
-func i475(p *pegort.TParser) (any, bool) {
+func i475(p *rt.TParser) (any, bool) {
 	var start, x1, x5, x8, x9, x10, x11, x14, x17, x20 int
 	var v, k4, v6, k7, k12, v18, v19 any
-	var c *pegort.TActCtx
+	var c *rt.TActCtx
 	var ok bool
 	start = p.Pos
 	p.Enter()
@@ -40891,7 +40891,7 @@ L3:
 L21:
 	p.Pos = x20
 L22:
-	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
+	c = p.UseCtx(rt.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "typeParameterList"
 	v = func() any {
 		return func() any {
@@ -40909,7 +40909,7 @@ fail:
 	return nil, false
 }
 
-func s479(p *pegort.TParser) (any, bool) {
+func s479(p *rt.TParser) (any, bool) {
 	var start, size int
 	var v any
 	var ok bool
@@ -40938,7 +40938,7 @@ fail:
 	return nil, false
 }
 
-func s480(p *pegort.TParser) (any, bool) {
+func s480(p *rt.TParser) (any, bool) {
 	var v any
 	var x1, x2, x4, x7, size, x10, x17, x18, x20 int
 	var ch, x11 rune
@@ -41028,7 +41028,7 @@ func s480(p *pegort.TParser) (any, bool) {
 			p.Pos = x20
 			_, size, ok = p.NextOrdinary()
 			if !ok {
-				p.ExpectOrdinary(p.Pos, pegort.IdAny)
+				p.ExpectOrdinary(p.Pos, rt.IdAny)
 				goto L19
 			}
 			p.Pos += size
@@ -41067,14 +41067,14 @@ func s480(p *pegort.TParser) (any, bool) {
 }
 
 // rule topLevelAwaitFreeStart
-func u481(p *pegort.TParser) (any, bool) {
+func u481(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[481]) {
 		return p.CallMemo(trules[481], v481)
 	}
 	return v481(p)
 }
 
-func v481(p *pegort.TParser) (any, bool) {
+func v481(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x4, x10, x12, size, x16, x18, x21, x24, x27, x35, x38, x50 int
 	var v any
 	var ok, x7, x30, x41 bool
@@ -41324,14 +41324,14 @@ fail:
 }
 
 // rule idPart
-func u482(p *pegort.TParser) (any, bool) {
+func u482(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[482]) {
 		return p.CallMemo(trules[482], v482)
 	}
 	return v482(p)
 }
 
-func v482(p *pegort.TParser) (any, bool) {
+func v482(p *rt.TParser) (any, bool) {
 	var start, x1, x3 int
 	var v any
 	var x4 rune
@@ -41382,14 +41382,14 @@ fail:
 }
 
 // rule statementSpecialStart
-func u483(p *pegort.TParser) (any, bool) {
+func u483(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[483]) {
 		return p.CallMemo(trules[483], v483)
 	}
 	return v483(p)
 }
 
-func v483(p *pegort.TParser) (any, bool) {
+func v483(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x9, x12, x16 int
 	var v any
 	var x4 rune
@@ -41461,7 +41461,7 @@ fail:
 	return nil, false
 }
 
-func s484(p *pegort.TParser) (any, bool) {
+func s484(p *rt.TParser) (any, bool) {
 	var start int
 	var v any
 	start = p.Pos
@@ -41479,14 +41479,14 @@ fail:
 }
 
 // rule declarationStart
-func u485(p *pegort.TParser) (any, bool) {
+func u485(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[485]) {
 		return p.CallMemo(trules[485], v485)
 	}
 	return v485(p)
 }
 
-func v485(p *pegort.TParser) (any, bool) {
+func v485(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x20, x26, x30, x32, x35, x45, x48, x56, x58, x60, x68, x70, x73, x93, x95, x99, x101, x108, x112, x116, x118, x120, x125, x132, x134, x137, x139, x141, x147, x155, x159, x163 int
 	var v any
 	var x6, x22, x37, x50, x62, x75, x103, x121, x142, x149 rune
@@ -42261,14 +42261,14 @@ fail:
 }
 
 // rule variableStatementStart
-func u486(p *pegort.TParser) (any, bool) {
+func u486(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[486]) {
 		return p.CallMemo(trules[486], v486)
 	}
 	return v486(p)
 }
 
-func v486(p *pegort.TParser) (any, bool) {
+func v486(p *rt.TParser) (any, bool) {
 	var start, x1, x7, x11, x15, x19, x21 int
 	var v any
 	var x3 rune
@@ -42407,14 +42407,14 @@ fail:
 }
 
 // rule eos
-func u487(p *pegort.TParser) (any, bool) {
+func u487(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[487]) {
 		return p.CallMemo(trules[487], v487)
 	}
 	return v487(p)
 }
 
-func v487(p *pegort.TParser) (any, bool) {
+func v487(p *rt.TParser) (any, bool) {
 	var start, x1, x5 int
 	var v any
 	var ok bool
@@ -42459,7 +42459,7 @@ fail:
 	return nil, false
 }
 
-func s488(p *pegort.TParser) (any, bool) {
+func s488(p *rt.TParser) (any, bool) {
 	var start, x1, x4, size, x7, x9, x11 int
 	var v any
 	var ok, x15 bool
@@ -42563,14 +42563,14 @@ fail:
 }
 
 // rule usingFollows
-func u489(p *pegort.TParser) (any, bool) {
+func u489(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[489]) {
 		return p.CallMemo(trules[489], v489)
 	}
 	return v489(p)
 }
 
-func v489(p *pegort.TParser) (any, bool) {
+func v489(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v any
 	var ok, x5 bool
@@ -42613,14 +42613,14 @@ fail:
 }
 
 // rule canParseSemicolon
-func u490(p *pegort.TParser) (any, bool) {
+func u490(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[490]) {
 		return p.CallMemo(trules[490], v490)
 	}
 	return v490(p)
 }
 
-func v490(p *pegort.TParser) (any, bool) {
+func v490(p *rt.TParser) (any, bool) {
 	var start, x1, x3 int
 	var v any
 	var ok, x5 bool
@@ -42654,7 +42654,7 @@ L9:
 L8:
 
 	if !p.AtEndBatchOrdinary() {
-		p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
+		p.ExpectOrdinary(p.Pos, rt.IdEndInput)
 		goto L10
 	}
 	goto L2
@@ -42672,14 +42672,14 @@ fail:
 }
 
 // rule nlAhead
-func u491(p *pegort.TParser) (any, bool) {
+func u491(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[491]) {
 		return p.CallMemo(trules[491], v491)
 	}
 	return v491(p)
 }
 
-func v491(p *pegort.TParser) (any, bool) {
+func v491(p *rt.TParser) (any, bool) {
 	var start, x1, x3 int
 	var v any
 	var ok, x5 bool
@@ -42723,14 +42723,14 @@ fail:
 }
 
 // rule identifierRest
-func u492(p *pegort.TParser) (any, bool) {
+func u492(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[492]) {
 		return p.CallMemo(trules[492], v492)
 	}
 	return v492(p)
 }
 
-func v492(p *pegort.TParser) (any, bool) {
+func v492(p *rt.TParser) (any, bool) {
 	var v any
 	var ch, x9 rune
 	var size, x1, x2, x4, x7 int
@@ -42816,14 +42816,14 @@ func v492(p *pegort.TParser) (any, bool) {
 }
 
 // rule anyKeyword
-func u493(p *pegort.TParser) (any, bool) {
+func u493(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[493]) {
 		return p.CallMemo(trules[493], v493)
 	}
 	return v493(p)
 }
 
-func v493(p *pegort.TParser) (any, bool) {
+func v493(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v any
 	var ok bool
@@ -42852,7 +42852,7 @@ fail:
 	return nil, false
 }
 
-func s494(p *pegort.TParser) (any, bool) {
+func s494(p *rt.TParser) (any, bool) {
 	var v any
 	var x1, x2, x4, x7, size, x10, x17, x18, x20 int
 	var ch, x11 rune
@@ -42981,14 +42981,14 @@ func s494(p *pegort.TParser) (any, bool) {
 }
 
 // rule modifier
-func u495(p *pegort.TParser) (any, bool) {
+func u495(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[495]) {
 		return p.CallMemo(trules[495], v495)
 	}
 	return v495(p)
 }
 
-func v495(p *pegort.TParser) (any, bool) {
+func v495(p *rt.TParser) (any, bool) {
 	var start, x1, x7, x9, x14, x16, x21, x23, x26, x29, x55, x57 int
 	var v any
 	var x3, x31 rune
@@ -43297,14 +43297,14 @@ fail:
 }
 
 // rule staticModifier
-func u496(p *pegort.TParser) (any, bool) {
+func u496(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[496]) {
 		return p.CallMemo(trules[496], v496)
 	}
 	return v496(p)
 }
 
-func v496(p *pegort.TParser) (any, bool) {
+func v496(p *rt.TParser) (any, bool) {
 	var start, x1, x3 int
 	var v any
 	var ok bool
@@ -43350,14 +43350,14 @@ fail:
 }
 
 // rule idStart
-func u497(p *pegort.TParser) (any, bool) {
+func u497(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[497]) {
 		return p.CallMemo(trules[497], v497)
 	}
 	return v497(p)
 }
 
-func v497(p *pegort.TParser) (any, bool) {
+func v497(p *rt.TParser) (any, bool) {
 	var start, x1, x3 int
 	var v any
 	var x4 rune
@@ -43392,14 +43392,14 @@ fail:
 }
 
 // rule heritageElementStart
-func u498(p *pegort.TParser) (any, bool) {
+func u498(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[498]) {
 		return p.CallMemo(trules[498], v498)
 	}
 	return v498(p)
 }
 
-func v498(p *pegort.TParser) (any, bool) {
+func v498(p *rt.TParser) (any, bool) {
 	var start, x1, x7, x9, x11, x13, x19, x27, x30, x32, x34, x42 int
 	var v any
 	var x3, x14, x21, x36 rune
@@ -43585,14 +43585,14 @@ fail:
 }
 
 // rule expressionStart
-func u499(p *pegort.TParser) (any, bool) {
+func u499(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[499]) {
 		return p.CallMemo(trules[499], v499)
 	}
 	return v499(p)
 }
 
-func v499(p *pegort.TParser) (any, bool) {
+func v499(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x10, size, x14, x18, x23, x49, x53, x56 int
 	var v any
 	var x4, ch, x25 rune
@@ -43924,14 +43924,14 @@ fail:
 }
 
 // rule reservedWord
-func u500(p *pegort.TParser) (any, bool) {
+func u500(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[500]) {
 		return p.CallMemo(trules[500], v500)
 	}
 	return v500(p)
 }
 
-func v500(p *pegort.TParser) (any, bool) {
+func v500(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x8, x11, x26, x29, x42, x45, x58, x61, x74, x77, x90, x93, x102, x106, x109, x118, x121, x136, x139, x148, x151, x159 int
 	var v any
 	var ok, x14, x32, x48, x64, x80, x96, x112, x124, x142, x154 bool
@@ -44640,7 +44640,7 @@ fail:
 	return nil, false
 }
 
-func s501(p *pegort.TParser) (any, bool) {
+func s501(p *rt.TParser) (any, bool) {
 	var start, x1, x8, x9, x11, x13, x21, x29, x32, x36, x37 int
 	var v any
 	var x3, x15, x23 rune
@@ -44827,14 +44827,14 @@ fail:
 }
 
 // rule accessorKeyword
-func u502(p *pegort.TParser) (any, bool) {
+func u502(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[502]) {
 		return p.CallMemo(trules[502], v502)
 	}
 	return v502(p)
 }
 
-func v502(p *pegort.TParser) (any, bool) {
+func v502(p *rt.TParser) (any, bool) {
 	var start, x1, x9, x11 int
 	var v any
 	var x3 rune
@@ -44909,14 +44909,14 @@ fail:
 }
 
 // rule canFollowGetOrSet
-func u503(p *pegort.TParser) (any, bool) {
+func u503(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[503]) {
 		return p.CallMemo(trules[503], v503)
 	}
 	return v503(p)
 }
 
-func v503(p *pegort.TParser) (any, bool) {
+func v503(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v any
 	var x3 rune
@@ -44957,14 +44957,14 @@ fail:
 }
 
 // rule constructorName
-func u504(p *pegort.TParser) (any, bool) {
+func u504(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[504]) {
 		return p.CallMemo(trules[504], v504)
 	}
 	return v504(p)
 }
 
-func v504(p *pegort.TParser) (any, bool) {
+func v504(p *rt.TParser) (any, bool) {
 	var start, x1, x7, x10, x18 int
 	var v any
 	var x3, x12 rune
@@ -45056,14 +45056,14 @@ fail:
 }
 
 // rule indexSignatureStart
-func u505(p *pegort.TParser) (any, bool) {
+func u505(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[505]) {
 		return p.CallMemo(trules[505], v505)
 	}
 	return v505(p)
 }
 
-func v505(p *pegort.TParser) (any, bool) {
+func v505(p *rt.TParser) (any, bool) {
 	var start, x1, x11, x13, size int
 	var v any
 	var ok, x4, x15 bool
@@ -45173,14 +45173,14 @@ fail:
 }
 
 // rule typeMemberSemicolon
-func u506(p *pegort.TParser) (any, bool) {
+func u506(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[506]) {
 		return p.CallMemo(trules[506], v506)
 	}
 	return v506(p)
 }
 
-func v506(p *pegort.TParser) (any, bool) {
+func v506(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v any
 	var ok bool
@@ -45216,14 +45216,14 @@ fail:
 }
 
 // rule moduleExportNameStart
-func u507(p *pegort.TParser) (any, bool) {
+func u507(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[507]) {
 		return p.CallMemo(trules[507], v507)
 	}
 	return v507(p)
 }
 
-func v507(p *pegort.TParser) (any, bool) {
+func v507(p *rt.TParser) (any, bool) {
 	var start, x1, x3 int
 	var v any
 	var ok, x6 bool
@@ -45269,7 +45269,7 @@ fail:
 	return nil, false
 }
 
-func s508(p *pegort.TParser) (any, bool) {
+func s508(p *rt.TParser) (any, bool) {
 	var start, x1, x3 int
 	var v any
 	var ok, x5 bool
@@ -45313,14 +45313,14 @@ fail:
 }
 
 // rule idStartOther
-func u509(p *pegort.TParser) (any, bool) {
+func u509(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[509]) {
 		return p.CallMemo(trules[509], v509)
 	}
 	return v509(p)
 }
 
-func v509(p *pegort.TParser) (any, bool) {
+func v509(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v any
 	var x3 rune
@@ -45363,7 +45363,7 @@ fail:
 	return nil, false
 }
 
-func s510(p *pegort.TParser) (any, bool) {
+func s510(p *rt.TParser) (any, bool) {
 	var start, x1, x7, x11, x14, x16, x24 int
 	var v any
 	var x3, x18 rune
@@ -45497,14 +45497,14 @@ fail:
 }
 
 // rule defaultModifierFollows
-func u511(p *pegort.TParser) (any, bool) {
+func u511(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[511]) {
 		return p.CallMemo(trules[511], v511)
 	}
 	return v511(p)
 }
 
-func v511(p *pegort.TParser) (any, bool) {
+func v511(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x14, x22, x24, x28, x30 int
 	var v any
 	var x6, x16 rune
@@ -45668,14 +45668,14 @@ fail:
 }
 
 // rule canFollowModifier
-func u512(p *pegort.TParser) (any, bool) {
+func u512(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[512]) {
 		return p.CallMemo(trules[512], v512)
 	}
 	return v512(p)
 }
 
-func v512(p *pegort.TParser) (any, bool) {
+func v512(p *rt.TParser) (any, bool) {
 	var start, x1, x3 int
 	var v any
 	var x4 rune
@@ -45723,14 +45723,14 @@ fail:
 }
 
 // rule identifierOrKeywordOrLiteralStart
-func u513(p *pegort.TParser) (any, bool) {
+func u513(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[513]) {
 		return p.CallMemo(trules[513], v513)
 	}
 	return v513(p)
 }
 
-func v513(p *pegort.TParser) (any, bool) {
+func v513(p *rt.TParser) (any, bool) {
 	var start, x1, x3, size int
 	var v any
 	var ok, x6 bool
@@ -45795,7 +45795,7 @@ fail:
 	return nil, false
 }
 
-func s514(p *pegort.TParser) (any, bool) {
+func s514(p *rt.TParser) (any, bool) {
 	var start, x1, x3 int
 	var v any
 	var x4 rune
@@ -45835,7 +45835,7 @@ fail:
 	return nil, false
 }
 
-func s515(p *pegort.TParser) (any, bool) {
+func s515(p *rt.TParser) (any, bool) {
 	var start, x1, x7, x11, x14, x16, x18, x20, x27, x29 int
 	var v any
 	var ok, x4, x24 bool
@@ -45870,7 +45870,7 @@ func s515(p *pegort.TParser) (any, bool) {
 L8:
 	p.Silent--
 	p.Pos = x7
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("==", func() any {
 				return c.Binary("%", func() any { return c.Lookup("ctx") }(), func() any { return any(2) }())
@@ -45901,7 +45901,7 @@ L5:
 L12:
 	p.Silent--
 	p.Pos = x11
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("==", func() any {
 				return c.Binary("%", func() any {
@@ -46019,7 +46019,7 @@ fail:
 	return nil, false
 }
 
-func s516(p *pegort.TParser) (any, bool) {
+func s516(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x6, x8, x13, x15, size int
 	var v any
 	var ok, x10 bool
@@ -46123,14 +46123,14 @@ fail:
 }
 
 // rule modifierKeyword
-func u517(p *pegort.TParser) (any, bool) {
+func u517(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[517]) {
 		return p.CallMemo(trules[517], v517)
 	}
 	return v517(p)
 }
 
-func v517(p *pegort.TParser) (any, bool) {
+func v517(p *rt.TParser) (any, bool) {
 	var start, x1, x35 int
 	var v any
 	var x3 rune
@@ -46332,14 +46332,14 @@ fail:
 }
 
 // rule unaryOperatorStart
-func u518(p *pegort.TParser) (any, bool) {
+func u518(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[518]) {
 		return p.CallMemo(trules[518], v518)
 	}
 	return v518(p)
 }
 
-func v518(p *pegort.TParser) (any, bool) {
+func v518(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x6, x11, x15, x20, x32 int
 	var v any
 	var x7, x22 rune
@@ -46487,7 +46487,7 @@ L33:
 	goto L5
 L19:
 	p.Pos = x4
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("<", func() any { return c.Lookup("ctx") }(), func() any { return any(64) }())
 		}()
@@ -46513,7 +46513,7 @@ fail:
 	return nil, false
 }
 
-func s519(p *pegort.TParser) (any, bool) {
+func s519(p *rt.TParser) (any, bool) {
 	var start, x1, size, x5, x7, x13, x19, x23, x27, x31, x33, x38 int
 	var v any
 	var ok, x10 bool
@@ -46752,14 +46752,14 @@ fail:
 }
 
 // rule jsxElementName
-func u520(p *pegort.TParser) (any, bool) {
+func u520(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[520]) {
 		return p.CallMemo(trules[520], v520)
 	}
 	return v520(p)
 }
 
-func v520(p *pegort.TParser) (any, bool) {
+func v520(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v any
 	var ok bool
@@ -46790,14 +46790,14 @@ fail:
 }
 
 // rule unambiguousFunctionTypeStart
-func u521(p *pegort.TParser) (any, bool) {
+func u521(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[521]) {
 		return p.CallMemo(trules[521], v521)
 	}
 	return v521(p)
 }
 
-func v521(p *pegort.TParser) (any, bool) {
+func v521(p *rt.TParser) (any, bool) {
 	var start, x1, x10, x17, x20, x22 int
 	var v any
 	var ok, x4, x14, x24 bool
@@ -46935,7 +46935,7 @@ fail:
 	return nil, false
 }
 
-func s522(p *pegort.TParser) (any, bool) {
+func s522(p *rt.TParser) (any, bool) {
 	var start, x1, size int
 	var v any
 	var ok bool
@@ -46970,7 +46970,7 @@ fail:
 	return nil, false
 }
 
-func s523(p *pegort.TParser) (any, bool) {
+func s523(p *rt.TParser) (any, bool) {
 	var start, x1, size int
 	var v any
 	var ok bool
@@ -47006,14 +47006,14 @@ fail:
 }
 
 // rule typeStart
-func u524(p *pegort.TParser) (any, bool) {
+func u524(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[524]) {
 		return p.CallMemo(trules[524], v524)
 	}
 	return v524(p)
 }
 
-func v524(p *pegort.TParser) (any, bool) {
+func v524(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x5, size, x17, x19, x28, x30, x39 int
 	var v any
 	var ok, x8, x21, x32 bool
@@ -47200,14 +47200,14 @@ fail:
 }
 
 // rule identifierOrKeywordStart
-func u525(p *pegort.TParser) (any, bool) {
+func u525(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[525]) {
 		return p.CallMemo(trules[525], v525)
 	}
 	return v525(p)
 }
 
-func v525(p *pegort.TParser) (any, bool) {
+func v525(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v any
 	var ok, x5 bool
@@ -47247,14 +47247,14 @@ fail:
 }
 
 // rule mappedTypeStart
-func u526(p *pegort.TParser) (any, bool) {
+func u526(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[526]) {
 		return p.CallMemo(trules[526], v526)
 	}
 	return v526(p)
 }
 
-func v526(p *pegort.TParser) (any, bool) {
+func v526(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x8, x11, x14, x16 int
 	var v any
 	var ok, x5 bool
@@ -47366,14 +47366,14 @@ fail:
 }
 
 // rule typeMemberStart
-func u527(p *pegort.TParser) (any, bool) {
+func u527(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[527]) {
 		return p.CallMemo(trules[527], v527)
 	}
 	return v527(p)
 }
 
-func v527(p *pegort.TParser) (any, bool) {
+func v527(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x9, x17, x20, x21, x24, x25, x28, x29 int
 	var v any
 	var x4, x11 rune
@@ -47527,7 +47527,7 @@ fail:
 	return nil, false
 }
 
-func s528(p *pegort.TParser) (any, bool) {
+func s528(p *rt.TParser) (any, bool) {
 	var start int
 	var v any
 	start = p.Pos
@@ -47545,14 +47545,14 @@ fail:
 }
 
 // rule hexLiteral
-func u529(p *pegort.TParser) (any, bool) {
+func u529(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[529]) {
 		return p.CallMemo(trules[529], v529)
 	}
 	return v529(p)
 }
 
-func v529(p *pegort.TParser) (any, bool) {
+func v529(p *rt.TParser) (any, bool) {
 	var start, size, x1, x2, x4 int
 	var v any
 	var ok bool
@@ -47609,7 +47609,7 @@ fail:
 	return nil, false
 }
 
-func s530(p *pegort.TParser) (any, bool) {
+func s530(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x4, size int
 	var v any
 	var ok bool
@@ -47663,7 +47663,7 @@ fail:
 	return nil, false
 }
 
-func s531(p *pegort.TParser) (any, bool) {
+func s531(p *rt.TParser) (any, bool) {
 	var start, x1, x2, x4, size int
 	var v any
 	var ok bool
@@ -47717,7 +47717,7 @@ fail:
 	return nil, false
 }
 
-func s532(p *pegort.TParser) (any, bool) {
+func s532(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x7, x10, x17 int
 	var v any
 	var ok, x14 bool
@@ -47794,7 +47794,7 @@ fail:
 	return nil, false
 }
 
-func s533(p *pegort.TParser) (any, bool) {
+func s533(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x8, size, x12, x13, x15 int
 	var v any
 	var x4, ch rune
@@ -47879,14 +47879,14 @@ fail:
 }
 
 // rule escapeSequence
-func u534(p *pegort.TParser) (any, bool) {
+func u534(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[534]) {
 		return p.CallMemo(trules[534], v534)
 	}
 	return v534(p)
 }
 
-func v534(p *pegort.TParser) (any, bool) {
+func v534(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x10, size int
 	var v any
 	var ok, x5 bool
@@ -48001,14 +48001,14 @@ fail:
 }
 
 // rule templateCharacters
-func u535(p *pegort.TParser) (any, bool) {
+func u535(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[535]) {
 		return p.CallMemo(trules[535], v535)
 	}
 	return v535(p)
 }
 
-func v535(p *pegort.TParser) (any, bool) {
+func v535(p *rt.TParser) (any, bool) {
 	var v any
 	var x1, x2, x4, size, x7, x12 int
 	var ch, x8 rune
@@ -48089,7 +48089,7 @@ func v535(p *pegort.TParser) (any, bool) {
 	return v, true
 }
 
-func s536(p *pegort.TParser) (any, bool) {
+func s536(p *rt.TParser) (any, bool) {
 	var v any
 	var x1, x2, x4, size, x7, x12 int
 	var ch, x8 rune
@@ -48154,7 +48154,7 @@ func s536(p *pegort.TParser) (any, bool) {
 		}
 		_, size, ok = p.NextOrdinary()
 		if !ok {
-			p.ExpectOrdinary(p.Pos, pegort.IdAny)
+			p.ExpectOrdinary(p.Pos, rt.IdAny)
 			goto L15
 		}
 		p.Pos += size
@@ -48178,7 +48178,7 @@ func s536(p *pegort.TParser) (any, bool) {
 	return v, true
 }
 
-func s537(p *pegort.TParser) (any, bool) {
+func s537(p *rt.TParser) (any, bool) {
 	var start, x1, size int
 	var v any
 	var ch rune
@@ -48215,14 +48215,14 @@ fail:
 }
 
 // rule objectLiteralElementStart
-func u538(p *pegort.TParser) (any, bool) {
+func u538(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[538]) {
 		return p.CallMemo(trules[538], v538)
 	}
 	return v538(p)
 }
 
-func v538(p *pegort.TParser) (any, bool) {
+func v538(p *rt.TParser) (any, bool) {
 	var start, x1, x3 int
 	var v any
 	var x4 rune
@@ -48257,14 +48257,14 @@ fail:
 }
 
 // rule typeParameterStart
-func u539(p *pegort.TParser) (any, bool) {
+func u539(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[539]) {
 		return p.CallMemo(trules[539], v539)
 	}
 	return v539(p)
 }
 
-func v539(p *pegort.TParser) (any, bool) {
+func v539(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x12 int
 	var v any
 	var x6 rune
@@ -48333,14 +48333,14 @@ fail:
 }
 
 // rule identifierPartEscape
-func u540(p *pegort.TParser) (any, bool) {
+func u540(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[540]) {
 		return p.CallMemo(trules[540], v540)
 	}
 	return v540(p)
 }
 
-func v540(p *pegort.TParser) (any, bool) {
+func v540(p *rt.TParser) (any, bool) {
 	var start, x1, x7, size, x15, x17, x23, x24, x26 int
 	var v any
 	var x3, x10, ch, x29 rune
@@ -48541,7 +48541,7 @@ fail:
 	return nil, false
 }
 
-func s541(p *pegort.TParser) (any, bool) {
+func s541(p *rt.TParser) (any, bool) {
 	var start int
 	var v any
 	start = p.Pos
@@ -48559,14 +48559,14 @@ fail:
 }
 
 // rule identifierName
-func u542(p *pegort.TParser) (any, bool) {
+func u542(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[542]) {
 		return p.CallMemo(trules[542], v542)
 	}
 	return v542(p)
 }
 
-func v542(p *pegort.TParser) (any, bool) {
+func v542(p *rt.TParser) (any, bool) {
 	var start, x1, x3 int
 	var v any
 	var x4 rune
@@ -48604,7 +48604,7 @@ fail:
 	return nil, false
 }
 
-func s543(p *pegort.TParser) (any, bool) {
+func s543(p *rt.TParser) (any, bool) {
 	var start, x1, x3 int
 	var v any
 	var ok, x6 bool
@@ -48640,7 +48640,7 @@ fail:
 	return nil, false
 }
 
-func s544(p *pegort.TParser) (any, bool) {
+func s544(p *rt.TParser) (any, bool) {
 	var start, x1, x3, size, x11, x31, x35, x38 int
 	var v any
 	var x4, ch, x13 rune
@@ -48852,14 +48852,14 @@ fail:
 }
 
 // rule binaryOperatorStart
-func u545(p *pegort.TParser) (any, bool) {
+func u545(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[545]) {
 		return p.CallMemo(trules[545], v545)
 	}
 	return v545(p)
 }
 
-func v545(p *pegort.TParser) (any, bool) {
+func v545(p *rt.TParser) (any, bool) {
 	var start, x1, x22, x30 int
 	var v any
 	var ok, x5, x25 bool
@@ -49016,14 +49016,14 @@ fail:
 }
 
 // rule nonMemberModifier
-func u546(p *pegort.TParser) (any, bool) {
+func u546(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[546]) {
 		return p.CallMemo(trules[546], v546)
 	}
 	return v546(p)
 }
 
-func v546(p *pegort.TParser) (any, bool) {
+func v546(p *rt.TParser) (any, bool) {
 	var start, x1, x21 int
 	var v any
 	var x3 rune
@@ -49147,7 +49147,7 @@ fail:
 	return nil, false
 }
 
-func s547(p *pegort.TParser) (any, bool) {
+func s547(p *rt.TParser) (any, bool) {
 	var start, x1, x19 int
 	var v any
 	var x3 rune
@@ -49257,14 +49257,14 @@ fail:
 }
 
 // rule literalPropertyNameToken
-func u548(p *pegort.TParser) (any, bool) {
+func u548(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[548]) {
 		return p.CallMemo(trules[548], v548)
 	}
 	return v548(p)
 }
 
-func v548(p *pegort.TParser) (any, bool) {
+func v548(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v any
 	var ok, x5 bool
@@ -49321,14 +49321,14 @@ fail:
 }
 
 // rule classMemberNameFollows
-func u549(p *pegort.TParser) (any, bool) {
+func u549(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[549]) {
 		return p.CallMemo(trules[549], v549)
 	}
 	return v549(p)
 }
 
-func v549(p *pegort.TParser) (any, bool) {
+func v549(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v any
 	var ok bool
@@ -49362,14 +49362,14 @@ fail:
 }
 
 // rule literalPropertyNameStart
-func u550(p *pegort.TParser) (any, bool) {
+func u550(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[550]) {
 		return p.CallMemo(trules[550], v550)
 	}
 	return v550(p)
 }
 
-func v550(p *pegort.TParser) (any, bool) {
+func v550(p *rt.TParser) (any, bool) {
 	var start, x1, x3, size int
 	var v any
 	var ok, x6 bool
@@ -49434,7 +49434,7 @@ fail:
 	return nil, false
 }
 
-func s551(p *pegort.TParser) (any, bool) {
+func s551(p *rt.TParser) (any, bool) {
 	var start, x1, x8, x10, size, x16, x17, x19 int
 	var v any
 	var x3, ch rune
@@ -49583,7 +49583,7 @@ fail:
 	return nil, false
 }
 
-func s552(p *pegort.TParser) (any, bool) {
+func s552(p *rt.TParser) (any, bool) {
 	var start, x1, size int
 	var v any
 	var ch rune
@@ -49620,14 +49620,14 @@ fail:
 }
 
 // rule canFollowExportModifier
-func u553(p *pegort.TParser) (any, bool) {
+func u553(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[553]) {
 		return p.CallMemo(trules[553], v553)
 	}
 	return v553(p)
 }
 
-func v553(p *pegort.TParser) (any, bool) {
+func v553(p *rt.TParser) (any, bool) {
 	var start, x1, x8, x10, x12, x19 int
 	var v any
 	var x3, x13 rune
@@ -49711,14 +49711,14 @@ fail:
 }
 
 // rule bindingPattern
-func u554(p *pegort.TParser) (any, bool) {
+func u554(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[554]) {
 		return p.CallMemo(trules[554], v554)
 	}
 	return v554(p)
 }
 
-func v554(p *pegort.TParser) (any, bool) {
+func v554(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v any
 	var x3 rune
@@ -49761,14 +49761,14 @@ fail:
 }
 
 // rule typeMemberNameFollows
-func u555(p *pegort.TParser) (any, bool) {
+func u555(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[555]) {
 		return p.CallMemo(trules[555], v555)
 	}
 	return v555(p)
 }
 
-func v555(p *pegort.TParser) (any, bool) {
+func v555(p *rt.TParser) (any, bool) {
 	var start, x1, x5, x7 int
 	var v any
 	var ok, x9 bool
@@ -49796,7 +49796,7 @@ L3:
 L10:
 
 	if !p.AtEndBatchOrdinary() {
-		p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
+		p.ExpectOrdinary(p.Pos, rt.IdEndInput)
 		goto L12
 	}
 	goto L6
@@ -49818,7 +49818,7 @@ fail:
 	return nil, false
 }
 
-func s556(p *pegort.TParser) (any, bool) {
+func s556(p *rt.TParser) (any, bool) {
 	var start, size int
 	var v any
 	var ch rune
@@ -49840,7 +49840,7 @@ fail:
 	return nil, false
 }
 
-func s557(p *pegort.TParser) (any, bool) {
+func s557(p *rt.TParser) (any, bool) {
 	var start, size, x1, x2, x4 int
 	var v any
 	var ch rune
@@ -49893,14 +49893,14 @@ fail:
 }
 
 // rule exponentPart
-func u558(p *pegort.TParser) (any, bool) {
+func u558(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[558]) {
 		return p.CallMemo(trules[558], v558)
 	}
 	return v558(p)
 }
 
-func v558(p *pegort.TParser) (any, bool) {
+func v558(p *rt.TParser) (any, bool) {
 	var start, size, x1 int
 	var v any
 	var ch rune
@@ -49937,7 +49937,7 @@ fail:
 	return nil, false
 }
 
-func s559(p *pegort.TParser) (any, bool) {
+func s559(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v any
 	var x3 rune
@@ -49988,7 +49988,7 @@ fail:
 	return nil, false
 }
 
-func s560(p *pegort.TParser) (any, bool) {
+func s560(p *rt.TParser) (any, bool) {
 	var start, x1, size int
 	var v any
 	var x3, ch rune
@@ -50117,14 +50117,14 @@ fail:
 }
 
 // rule nonASCIIBraced
-func u561(p *pegort.TParser) (any, bool) {
+func u561(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[561]) {
 		return p.CallMemo(trules[561], v561)
 	}
 	return v561(p)
 }
 
-func v561(p *pegort.TParser) (any, bool) {
+func v561(p *rt.TParser) (any, bool) {
 	var start, x1, x3, x10, x13 int
 	var v any
 	var x4 rune
@@ -50229,7 +50229,7 @@ fail:
 	return nil, false
 }
 
-func s562(p *pegort.TParser) (any, bool) {
+func s562(p *rt.TParser) (any, bool) {
 	var start, x1, x7, x11 int
 	var v any
 	var x3 rune
@@ -50301,7 +50301,7 @@ fail:
 	return nil, false
 }
 
-func s563(p *pegort.TParser) (any, bool) {
+func s563(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v any
 	var ok bool
@@ -50334,7 +50334,7 @@ fail:
 	return nil, false
 }
 
-func s564(p *pegort.TParser) (any, bool) {
+func s564(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v any
 	var ok bool
@@ -50367,7 +50367,7 @@ fail:
 	return nil, false
 }
 
-func s565(p *pegort.TParser) (any, bool) {
+func s565(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v any
 	var x3 rune
@@ -50440,14 +50440,14 @@ fail:
 }
 
 // rule relationalToken
-func u566(p *pegort.TParser) (any, bool) {
+func u566(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[566]) {
 		return p.CallMemo(trules[566], v566)
 	}
 	return v566(p)
 }
 
-func v566(p *pegort.TParser) (any, bool) {
+func v566(p *rt.TParser) (any, bool) {
 	var start, x1, x11, size, x13, x15, x19, x23, x26 int
 	var v any
 	var x3, ch rune
@@ -50507,7 +50507,7 @@ L12:
 	p.Pos = x11
 	x13 = p.Pos
 	p.Silent++
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary(">=", func() any { return c.Lookup("ctx") }(), func() any { return any(64) }())
 		}()
@@ -50592,7 +50592,7 @@ L22:
 	p.Pos = x1
 L21:
 
-	if !p.Predicate(func(c *pegort.TActCtx) any {
+	if !p.Predicate(func(c *rt.TActCtx) any {
 		return func() any {
 			return c.Binary("==", func() any {
 				return c.Binary("%", func() any {
@@ -50633,7 +50633,7 @@ fail:
 	return nil, false
 }
 
-func s567(p *pegort.TParser) (any, bool) {
+func s567(p *rt.TParser) (any, bool) {
 	var start, x1, x7, x11, size, x15 int
 	var v any
 	var x3, ch rune
@@ -50732,7 +50732,7 @@ fail:
 	return nil, false
 }
 
-func s568(p *pegort.TParser) (any, bool) {
+func s568(p *rt.TParser) (any, bool) {
 	var start, x1, x7, size, x11 int
 	var v any
 	var x3, ch rune
@@ -50806,7 +50806,7 @@ fail:
 	return nil, false
 }
 
-func s569(p *pegort.TParser) (any, bool) {
+func s569(p *rt.TParser) (any, bool) {
 	var start, x1, x7, size, x11, x15 int
 	var v any
 	var x3, ch rune
@@ -50905,7 +50905,7 @@ fail:
 	return nil, false
 }
 
-func s570(p *pegort.TParser) (any, bool) {
+func s570(p *rt.TParser) (any, bool) {
 	var start, x1 int
 	var v any
 	var ok bool
@@ -50939,14 +50939,14 @@ fail:
 }
 
 // rule privateIdentifier
-func u571(p *pegort.TParser) (any, bool) {
+func u571(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[571]) {
 		return p.CallMemo(trules[571], v571)
 	}
 	return v571(p)
 }
 
-func v571(p *pegort.TParser) (any, bool) {
+func v571(p *rt.TParser) (any, bool) {
 	var start, x1, x3 int
 	var v any
 	var ok, x5 bool
@@ -50990,14 +50990,14 @@ fail:
 }
 
 // rule stringLiteral
-func u572(p *pegort.TParser) (any, bool) {
+func u572(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[572]) {
 		return p.CallMemo(trules[572], v572)
 	}
 	return v572(p)
 }
 
-func v572(p *pegort.TParser) (any, bool) {
+func v572(p *rt.TParser) (any, bool) {
 	var start, x1, x7, x8, x10, size, x13, x20, x21, x23, x26 int
 	var v any
 	var x3, ch, x14, x27 rune
@@ -51141,14 +51141,14 @@ fail:
 }
 
 // rule numericLiteral
-func u573(p *pegort.TParser) (any, bool) {
+func u573(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[573]) {
 		return p.CallMemo(trules[573], v573)
 	}
 	return v573(p)
 }
 
-func v573(p *pegort.TParser) (any, bool) {
+func v573(p *rt.TParser) (any, bool) {
 	var start, x1, x12 int
 	var v any
 	var x3 rune
@@ -51221,14 +51221,14 @@ fail:
 }
 
 // rule bigIntLiteral
-func u574(p *pegort.TParser) (any, bool) {
+func u574(p *rt.TParser) (any, bool) {
 	if !p.FirstCall(rules[574]) {
 		return p.CallMemo(trules[574], v574)
 	}
 	return v574(p)
 }
 
-func v574(p *pegort.TParser) (any, bool) {
+func v574(p *rt.TParser) (any, bool) {
 	var start, x1, x12 int
 	var v any
 	var x3 rune
@@ -51305,7 +51305,7 @@ fail:
 	return nil, false
 }
 
-func s575(p *pegort.TParser) (any, bool) {
+func s575(p *rt.TParser) (any, bool) {
 	var start, x1, x4, x5, size, x7, x10, x13, x16, x20, x21, x24, x25 int
 	var v any
 	var ok bool

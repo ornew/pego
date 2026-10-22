@@ -123,7 +123,7 @@ func TestGeneratedNodeDirectRoutes(t *testing.T) {
 			if strings.Contains(c.name, "memo_action") {
 				name = "pair"
 			}
-			body := regexp.MustCompile(`// ` + name + ` \(Node body inlined\)\s+func (\w+)\(p \*pegort\.Parser\)`).FindSubmatch(code)
+			body := regexp.MustCompile(`// ` + name + ` \(Node body inlined\)\s+func (\w+)\(p \*rt\.Parser\)`).FindSubmatch(code)
 			if len(body) != 2 {
 				t.Fatalf("no direct Node body for %s", name)
 			}
@@ -132,7 +132,7 @@ func TestGeneratedNodeDirectRoutes(t *testing.T) {
 			}
 			if name == "pair" {
 				// The rule table is the list of specs; the id of a rule is its position.
-				specs := regexp.MustCompile(`(?s)var rulesSpec = \[\.\.\.\]pegort\.RuleSpec\{\n(.*?)\n\}\n`).FindSubmatch(code)
+				specs := regexp.MustCompile(`(?s)var rulesSpec = \[\.\.\.\]rt\.RuleSpec\{\n(.*?)\n\}\n`).FindSubmatch(code)
 				if len(specs) != 2 {
 					t.Fatal("no rule table")
 				}

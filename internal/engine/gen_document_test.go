@@ -18,14 +18,14 @@ func TestGenerateDocumentNode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(code), "func NewDocument(") || !strings.Contains(string(code), "type Document = pegort.Document") {
+	if !strings.Contains(string(code), "func NewDocument(") || !strings.Contains(string(code), "type Document = rt.Document") {
 		t.Fatal("Document public API missing from requested source")
 	}
 	ordinary, err := generateCode(g, GenOptions{Package: "fixture", Start: "main"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(ordinary), "func NewDocument(") || strings.Contains(string(ordinary), "type Document = pegort.Document") {
+	if strings.Contains(string(ordinary), "func NewDocument(") || strings.Contains(string(ordinary), "type Document = rt.Document") {
 		t.Fatal("ordinary generated source includes the Document API")
 	}
 	dir := t.TempDir()

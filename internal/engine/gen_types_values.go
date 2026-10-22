@@ -371,24 +371,24 @@ func (t *typedGen) backHelpers(b *strings.Builder, done *int) bool {
 			fmt.Fprintf(b, "\tif v == nil {\n\t\treturn nil\n\t}\n\treturn %s\n", t.back(x.elem, "(*v)"))
 		case tupleTy:
 			if len(x.elems) == 0 {
-				b.WriteString("\treturn &pegort.TSeq{Typ: pegort.TypeTupleValue}\n")
+				b.WriteString("\treturn &rt.TSeq{Typ: rt.TypeTupleValue}\n")
 			} else {
-				fmt.Fprintf(b, "\treturn &pegort.TSeq{Typ: pegort.TypeTupleValue, Kids: %s}\n", elems(x, "v"))
+				fmt.Fprintf(b, "\treturn &rt.TSeq{Typ: rt.TypeTupleValue, Kids: %s}\n", elems(x, "v"))
 			}
 		case nodeTy:
 			b.WriteString("\tif v == nil {\n\t\treturn nil\n\t}\n")
 			if x.name != "" {
-				fmt.Fprintf(b, "\treturn pegort.TSetNodeType(%s, %s)\n}\n\n", t.back(x.underlying(), "&v.TNode"), t.g.nodeTypeID(x.name))
+				fmt.Fprintf(b, "\treturn rt.TSetNodeType(%s, %s)\n}\n\n", t.back(x.underlying(), "&v.TNode"), t.g.nodeTypeID(x.name))
 				continue
 			}
 			switch value := x.value.(type) {
 			case listTy:
-				fmt.Fprintf(b, "\tkids := make([]any, len(v.Value))\n\tfor i, x := range v.Value {\n\t\tkids[i] = %s\n\t}\n\treturn &pegort.TSeq{Span: v.Span, Typ: \"list\", Kids: kids}\n", t.back(value.elem, "x"))
+				fmt.Fprintf(b, "\tkids := make([]any, len(v.Value))\n\tfor i, x := range v.Value {\n\t\tkids[i] = %s\n\t}\n\treturn &rt.TSeq{Span: v.Span, Typ: \"list\", Kids: kids}\n", t.back(value.elem, "x"))
 			case tupleTy:
 				if len(value.elems) == 0 {
-					fmt.Fprintf(b, "\treturn &pegort.TSeq{Span: v.Span, Typ: \"tuple\"}\n")
+					fmt.Fprintf(b, "\treturn &rt.TSeq{Span: v.Span, Typ: \"tuple\"}\n")
 				} else {
-					fmt.Fprintf(b, "\treturn &pegort.TSeq{Span: v.Span, Typ: \"tuple\", Kids: %s}\n", elems(value, "v.Value"))
+					fmt.Fprintf(b, "\treturn &rt.TSeq{Span: v.Span, Typ: \"tuple\", Kids: %s}\n", elems(value, "v.Value"))
 				}
 			default:
 				b.WriteString("\treturn nil\n")

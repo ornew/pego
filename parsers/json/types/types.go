@@ -3,32 +3,32 @@
 package types
 
 import (
-	pegort "github.com/ornew/pego/runtime"
+	rt "github.com/ornew/pego/runtime"
 )
 
 // TNode is a node whose Value has type T: a string node (TNode[string]) holds the text a
 // literal, a character class, ., a #atomic or _ matched, and a tuple or list node holds its
 // elements. A node of a statically unknown value is a TNode[any] whose Value is a string, or a
 // []any of the elements of a tuple or list.
-type TNode[T any] pegort.TNode[T]
+type TNode[T any] rt.TNode[T]
 
 // Error is input skipped by error recovery (#recover).
-type Error pegort.Error
+type Error rt.Error
 
 // PegoHooks makes the values of the types of this package from those the typed runtime builds, and
 // back. It is for generated parsers.
-var PegoHooks = &pegort.TPubHooks{
-	Match: func(m *pegort.TNode[string]) any { return (*TNode[string])(m) },
-	Error: func(e *pegort.Error) any { return (*Error)(e) },
-	Node:  func(n *pegort.TNode[any]) any { return (*TNode[any])(n) },
+var PegoHooks = &rt.TPubHooks{
+	Match: func(m *rt.TNode[string]) any { return (*TNode[string])(m) },
+	Error: func(e *rt.Error) any { return (*Error)(e) },
+	Node:  func(n *rt.TNode[any]) any { return (*TNode[any])(n) },
 	Back: func(v any) any {
 		switch x := v.(type) {
 		case *TNode[string]:
-			return (*pegort.TNode[string])(x)
+			return (*rt.TNode[string])(x)
 		case *Error:
-			return (*pegort.Error)(x)
+			return (*rt.Error)(x)
 		case *TNode[any]:
-			return (*pegort.TNode[any])(x)
+			return (*rt.TNode[any])(x)
 		}
 		return v
 	},
@@ -36,20 +36,20 @@ var PegoHooks = &pegort.TPubHooks{
 
 // Array is the struct type Array.
 type Array struct {
-	pegort.Span
+	rt.Span
 	Elements []Value
 }
 
 // Member is the struct type Member.
 type Member struct {
-	pegort.Span
+	rt.Span
 	Key   *String
 	Value Value
 }
 
 // Object is the struct type Object.
 type Object struct {
-	pegort.Span
+	rt.Span
 	Members []*Member
 }
 
@@ -91,15 +91,15 @@ func (v *Array) TField(name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Elements))
 			for i, x := range v.Elements {
-				kids[i] = pegort.TBack(PegoHooks, x)
+				kids[i] = rt.TBack(PegoHooks, x)
 			}
-			return pegort.TListOf(kids)
+			return rt.TListOf(kids)
 		}(), true
 	}
 	return nil, false
 }
 
-func (v *Array) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Array) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Elements":
 		return func() any {
@@ -109,7 +109,7 @@ func (v *Array) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			kids := make([]any, len(v.Elements))
 			for i, x := range v.Elements {
 				p.StepWork()
-				kids[i] = pegort.TBack(PegoHooks, x)
+				kids[i] = rt.TBack(PegoHooks, x)
 			}
 			return p.ListField(kids)
 		}(), true
@@ -128,17 +128,17 @@ func (v *Member) TField(name string) (any, bool) {
 	case "Key":
 		return tb0(v.Key), true
 	case "Value":
-		return pegort.TBack(PegoHooks, v.Value), true
+		return rt.TBack(PegoHooks, v.Value), true
 	}
 	return nil, false
 }
 
-func (v *Member) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Member) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Key":
 		return tb0(v.Key), true
 	case "Value":
-		return pegort.TBack(PegoHooks, v.Value), true
+		return rt.TBack(PegoHooks, v.Value), true
 	}
 	return nil, false
 }
@@ -158,15 +158,15 @@ func (v *Object) TField(name string) (any, bool) {
 			}
 			kids := make([]any, len(v.Members))
 			for i, x := range v.Members {
-				kids[i] = pegort.TPtr(x)
+				kids[i] = rt.TPtr(x)
 			}
-			return pegort.TListOf(kids)
+			return rt.TListOf(kids)
 		}(), true
 	}
 	return nil, false
 }
 
-func (v *Object) TFieldWork(p *pegort.TParser, name string) (any, bool) {
+func (v *Object) TFieldWork(p *rt.TParser, name string) (any, bool) {
 	switch name {
 	case "Members":
 		return func() any {
@@ -176,7 +176,7 @@ func (v *Object) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 			kids := make([]any, len(v.Members))
 			for i, x := range v.Members {
 				p.StepWork()
-				kids[i] = pegort.TPtr(x)
+				kids[i] = rt.TPtr(x)
 			}
 			return p.ListField(kids)
 		}(), true
@@ -188,7 +188,7 @@ func tb0(v *String) any {
 	if v == nil {
 		return nil
 	}
-	return pegort.TSetNodeType(pegort.TBack(PegoHooks, &v.TNode), PegoNodeTypes[4])
+	return rt.TSetNodeType(rt.TBack(PegoHooks, &v.TNode), PegoNodeTypes[4])
 }
 
 // PegoNodeTypes holds the registered indexes of the named node types by their generated index; index 0

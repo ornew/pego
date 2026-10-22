@@ -35,7 +35,7 @@ func TestWithGeneratedMaxDepth(t *testing.T) {
 			}
 		}
 		got, err := generate(pego.WithGeneratedMaxDepth(-1), pego.WithGeneratedMaxDepth(7))
-		want := "var pegoGrammar = pegort.NewGrammar(7)"
+		want := "var pegoGrammar = rt.NewGrammar(7)"
 		if ts {
 			want = "const G = mkGrammar(7, "
 		}

@@ -894,8 +894,8 @@ func TestGenerateStreamKeepsBatchBodies(t *testing.T) {
 			table := func(code []byte) string {
 				src := string(code)
 				// the specs, the string lists and the rare fields of the rules
-				i := strings.Index(src, "var rulesSpec = [...]pegort.RuleSpec{")
-				j := i + strings.Index(src[i:], "var rulesExtras = [...]pegort.RuleExtra{")
+				i := strings.Index(src, "var rulesSpec = [...]rt.RuleSpec{")
+				j := i + strings.Index(src[i:], "var rulesExtras = [...]rt.RuleExtra{")
 				return src[i : j+strings.Index(src[j:], "\n\n")]
 			}
 			if table(plain) != table(stream) {

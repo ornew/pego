@@ -165,7 +165,7 @@ func TestTerminalProgramEligibility(t *testing.T) {
 			if strings.HasPrefix(line, "func ") {
 				fn = line
 			}
-			if strings.Contains(line, "SkipTerminal(") && !strings.Contains(fn, "(p *pegort.TParser)") {
+			if strings.Contains(line, "SkipTerminal(") && !strings.Contains(fn, "(p *rt.TParser)") {
 				t.Errorf("%s:%d: a program outside a typed body: %s", c.name, i+1, fn)
 			}
 		}

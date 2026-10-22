@@ -79,7 +79,7 @@ rule main Text = v1:[aé😀]* #atomic => Text{S: text($v1)}`, []string{"", "aé
 		if err != nil {
 			t.Fatalf("%s: %v", pkg, err)
 		}
-		if !strings.Contains(string(code), "return pegort.TypedDocumentParse(") {
+		if !strings.Contains(string(code), "return rt.TypedDocumentParse(") {
 			t.Fatalf("%s uses conversion instead of direct matching", pkg)
 		}
 		write(pkg+"/parser.go", string(code))
@@ -87,7 +87,7 @@ rule main Text = v1:[aé😀]* #atomic => Text{S: text($v1)}`, []string{"", "aé
 		if err != nil {
 			t.Fatal(err)
 		}
-		if strings.Contains(string(reference), "return pegort.TypedDocumentParse(") {
+		if strings.Contains(string(reference), "return rt.TypedDocumentParse(") {
 			t.Fatal("reference contains direct matching")
 		}
 		write(pkg+"/reference/parser.go", string(reference))
