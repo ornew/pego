@@ -209,7 +209,7 @@ func TestInlineActionCaptureScopes(t *testing.T) {
 		{"plain group", "rule num = [0-9]+\nrule q = a:num (b:num) => $", []string{"a", "b"}},
 		{"lambda in the rule action", "rule num = [0-9]+\nrule q = a:num (b:num => $b) xs:num* => map($xs, (e) => $", []string{"a", "xs"}},
 		{"lambda in an inline action", "rule num = [0-9]+\nrule q = a:num (xs:num* => map($xs, (e) => $", []string{"xs"}},
-		{"closed inline action after the cursor", "rule num = [0-9]+\nrule q = a:num => $", []string{"a"}},
+		{"inline action around a closed one", "rule num = [0-9]+\nrule q = a:num ((b:num => $b) c:num => $", []string{"c"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			uri := "file:///scopes-" + strings.ReplaceAll(tc.name, " ", "-") + ".pego"

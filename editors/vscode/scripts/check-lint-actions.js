@@ -117,7 +117,7 @@ async function main() {
         { range: { start: { line: 2, character: 0 }, end: { line: 2, character: 0 } }, newText: '// lint:ignore unused-capture\n' }]]] } }],
       ['two documents', { ...suppression(), edit: { entries: () => [...suppression().edit.entries(), ...suppression(diagnostic(), { toString: () => 'file:///other.pego' }).edit.entries()] } }],
       ['two findings', { ...suppression(), diagnostics: [diagnostic(), diagnostic()] }],
-      ['edit and command', { ...suppression(), command: { command: 'pego.showExplanation', arguments: [] } }],
+      ['edit and command', { ...suppression(), command: { command: 'pego.showExplanation', arguments: ['unused-capture', 'message', 'explanation'] } }],
     ];
     for (const [name, candidate] of unsafe) {
       assert.deepEqual(await actions(h, d, () => [candidate]), [], name + ': unsafe edit is not surfaced');

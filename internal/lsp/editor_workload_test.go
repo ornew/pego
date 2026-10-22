@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 )
@@ -28,6 +27,7 @@ type editorSession struct {
 	versions  map[int]time.Time // publication time by diagnostics version
 	pubs      int
 	lastPub   int // highest version published so far
+	duplicates int // replies to an id that already had one, or to an id never sent
 	reordered int // publications of a version below an earlier one
 	peakOut   int
 	out       chan []byte
@@ -51,6 +51,7 @@ type editorResult struct {
 	FinalPublishMs float64
 	Publications   int
 	Reordered      int
+	Duplicates     int // replies to an id that already had one, or to one never sent
 	// Replies to the typing-phase requests by outcome.
 	Results, ContentModified, Cancelled, Rejected int
 	PeakOutstanding                               int
@@ -102,7 +103,7 @@ func (s *editorSession) request(method string, params any) int {
 	return id
 }
 
-// drain records every message that has arrived, without blocking.
+// record accounts for one message from the server: a publication or the reply to a request.
 func (s *editorSession) record(m map[string]json.RawMessage) {
 	now := time.Now()
 	if _, ok := m["method"]; ok {
@@ -119,6 +120,14 @@ func (s *editorSession) record(m map[string]json.RawMessage) {
 	}
 	id, err := strconv.Atoi(string(m["id"]))
 	if err != nil {
+		return
+	}
+	if _, sent := s.sent[id]; !sent {
+		s.duplicates++
+		return
+	}
+	if _, again := s.replies[id]; again {
+		s.duplicates++
 		return
 	}
 	reply := editorReply{at: now}
@@ -148,13 +157,10 @@ func (s *editorSession) waitFor(done func() bool) {
 	}
 }
 
-// type_ sends keystrokes at the given interval, with the requests of an editor after each, while
-// a goroutine would otherwise be needed to read: replies are read between keystrokes.
+// typeText sends keystrokes at the given interval with the requests of an editor after each, and
+// reads the server's messages between keystrokes, so that no reader goroutine is needed.
 func (s *editorSession) typeText(keystrokes int, interval time.Duration) (last time.Time, finalVersion int) {
 	tokens := -1
-	idx := newTextIndex(s.text)
-	position := idx.position(strings.Index(s.text, "\n") + 1)
-	_ = position
 	for i := range keystrokes {
 		version := i + 2
 		s.write(map[string]any{"jsonrpc": "2.0", "method": "textDocument/didChange", "params": map[string]any{
@@ -248,7 +254,6 @@ func runEditorSession(t *testing.T, text string, keystrokes int, interval time.D
 		}
 	}
 	result.PeakOutstanding = s.peakOut
-	typed := len(s.sent)
 	ids, start := s.burst(text, 4)
 	s.waitFor(func() bool { return len(s.replies) == len(s.sent) })
 	var lat []float64
@@ -266,7 +271,7 @@ func runEditorSession(t *testing.T, text string, keystrokes int, interval time.D
 	sort.Float64s(lat)
 	result.BatchRequests = len(ids)
 	result.BatchMs, result.BatchP50Ms, result.BatchMaxMs = milliseconds(end.Sub(start)), lat[len(lat)/2], lat[len(lat)-1]
-	_ = typed
+	result.Duplicates = s.duplicates
 	s.peer.shutdown()
 	close(s.out)
 	<-s.written
@@ -309,6 +314,9 @@ func TestEditorSession(t *testing.T) {
 	for _, capacity := range []struct{ workers, maxRequests int }{{1, 64}, {4, 64}, {8, 48}} {
 		t.Run(fmt.Sprintf("workers=%d/max=%d", capacity.workers, capacity.maxRequests), func(t *testing.T) {
 			result := runEditorSession(t, text, 40, 0, capacity.workers, capacity.maxRequests)
+			if result.Duplicates != 0 {
+				t.Fatalf("a request received more than one reply: %+v", result)
+			}
 			if result.Reordered != 0 {
 				t.Fatalf("a version was published after a later one: %+v", result)
 			}

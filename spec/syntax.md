@@ -485,7 +485,7 @@ rule source_gap_flag = &source_after_boundary_trailing
 ## What the Grammar Does Not Express
 
 The grammar includes the ASCII identifier form. Names beginning with `_` are
-parsed and preserved, then rejected by semantic validation. The following
+parsed and preserved. Semantic validation rejects them, except as a rule name. The following
 additional constraints are checked outside this source grammar.
 
 - **Reserved identifiers.** Names beginning with `_` are reserved, except the name of a
