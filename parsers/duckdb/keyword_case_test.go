@@ -21,7 +21,7 @@ func alternatingCase(word string, upperFirst bool) string {
 }
 
 // Compare every keyword spelling in both restrictive and permissive name
-// contexts. Canonical spellings are also covered by the vendored DuckDB oracle.
+// contexts. Canonical spellings are also covered by the recorded DuckDB results.
 func TestKeywordCaseInvariance(t *testing.T) {
 	templates := []string{"SELECT 1 %s", "SELECT 1 AS %s", "SELECT %s FROM t", "CREATE TABLE t (x %s)", "CREATE TABLE t (x schema.%s)", "SELECT 1 %s_suffix"}
 	for word := range duckdb.Keywords() {

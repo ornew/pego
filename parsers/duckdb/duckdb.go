@@ -21,7 +21,7 @@
 // json_serialize_sql) on 158,605 texts: the 45,912 statements of DuckDB's own tests, 7,655 expressions made of
 // every pair of operators, 1,219 literals, names and comments of the scanner, 83,619 uses of every keyword where
 // a name may stand, 20,000 mutations of the tests (a token deleted, duplicated, swapped, replaced, inserted,
-// or the statement cut short), and 200 texts that an earlier version got wrong. The data is vendored in
+// or the statement cut short), and 200 texts that an earlier version got wrong. The results are in
 // testdata/reference. On every one of them but seven (testdata/deviations.jsonl) the parser and DuckDB agree on
 // whether the text has a syntax error: DuckDB rejects 1,575 of the texts that the parser
 // accepts, but not with a syntax error: after parsing, in the step that turns the syntax tree into its own

@@ -15,6 +15,7 @@ BLOCKS.jsonl is extract.py's output (for mutants). Everything is deterministic: 
 """
 import json
 import os
+import hashlib
 import random
 import re
 import sys
@@ -34,6 +35,11 @@ def tokens(sql):
     return [m.group(0) for m in TOKEN.finditer(sql)]
 
 
+def block_hash(sql):
+    """The first 16 hexadecimal digits of the SHA-256 of a text: how a mutant names the text it is made from."""
+    return hashlib.sha256(sql.encode('utf-8')).hexdigest()[:16]
+
+
 def load_keywords():
     kws = set()
     for f in os.listdir(os.path.join(HERE, 'keywords')):
@@ -42,6 +48,19 @@ def load_keywords():
             if l:
                 kws.add(l[:-2] if l.endswith('_p') else l)
     return sorted(kws)
+
+
+def join_pieces(pieces):
+    """Joins neighbouring copies of the block that are neighbours in it, and neighbouring texts."""
+    out = []
+    for p in pieces:
+        if out and isinstance(p, str) and isinstance(out[-1], str):
+            out[-1] += p
+        elif out and isinstance(p, list) and isinstance(out[-1], list) and out[-1][0] + out[-1][1] == p[0]:
+            out[-1] = [out[-1][0], out[-1][1] + p[1]]
+        else:
+            out.append(p if isinstance(p, str) else list(p))
+    return out
 
 
 def mutants(blocks, out, count, seed=20260101):
@@ -55,36 +74,51 @@ def mutants(blocks, out, count, seed=20260101):
     while n < count:
         r = rnd.choice(rows)
         toks = tokens(r['sql'])
+        # Each token as the pieces it is made of, so that a mutant can be recorded as a list of copies of parts of
+        # its block and the few characters of its own: [start, size] in bytes of the block, or a string.
+        spans, pos = [], 0
+        for tok in toks:
+            size = len(tok.encode('utf-8'))
+            spans.append([[pos, size]])
+            pos += size
         idx = [i for i, t in enumerate(toks) if not t.isspace() and not t.startswith(('--', '/*'))]
         if len(idx) < 3:
             continue
         op = rnd.choice(['cut', 'delete', 'dup', 'swap', 'replace', 'insert', 'kw', 'delete2'])
         t = list(toks)
+        sp = list(spans)
         i = rnd.choice(idx)
         if op == 'cut':
             t = t[:i]
+            sp = sp[:i]
         elif op == 'delete':
-            del t[i]
+            del t[i], sp[i]
         elif op == 'delete2':
             j = rnd.choice(idx)
             for k in sorted({i, j}, reverse=True):
-                del t[k]
+                del t[k], sp[k]
         elif op == 'dup':
             t.insert(i, t[i] + ' ' if t[i].isalnum() else t[i])
+            sp.insert(i, sp[i] + [' '] if toks[i].isalnum() else sp[i])
         elif op == 'swap':
             j = rnd.choice(idx)
             t[i], t[j] = t[j], t[i]
+            sp[i], sp[j] = sp[j], sp[i]
         elif op == 'replace':
             t[i] = rnd.choice(puncts)
+            sp[i] = [t[i]]
         elif op == 'insert':
             t.insert(i, rnd.choice(puncts) + ' ')
+            sp.insert(i, [t[i]])
         elif op == 'kw':
             t[i] = rnd.choice(kws) + ' '
+            sp[i] = [t[i]]
         sql = ''.join(t)
         if sql in seen or not sql.strip():
             continue
         seen.add(sql)
-        out.append({'sql': sql, 'file': 'mutant of ' + r['file'], 'gen': op})
+        out.append({'sql': sql, 'file': 'mutant of ' + r['file'], 'gen': op, 'base': block_hash(r['sql']),
+                    'p': join_pieces([p for s in sp for p in s])})
         n += 1
 
 

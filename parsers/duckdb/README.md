@@ -105,7 +105,9 @@ replaces by spaces.
 
 ## Conformance
 
-The tests compare the parser with DuckDB 1.5.6 on 158,605 texts, all vendored in [testdata/reference](testdata/):
+The tests compare the parser with DuckDB 1.5.6 on 158,605 texts, whose results are in [testdata/reference](testdata/). The texts of the first and the fifth corpus are
+DuckDB's: the tests read them from `test/sql` of the corpus `duckdb`, which `go run ./hack/corpora fetch duckdb` puts in
+the cache from the root of the repository (those two are skipped without it):
 
 | Corpus | Texts | What it is |
 |:--|--:|:--|
@@ -301,7 +303,7 @@ python3 parsers/duckdb/internal/refgen/keywords.py parsers/duckdb/duckdb.pego --
 # After changing a keyword list, run the same command without --check, then regenerate parser.go below.
 go generate ./parsers                 # regenerate parser.go after changing duckdb.pego (from the repository root)
 go test ./parsers                     # parser.go up to date; golden files on every backend of the engine
-cd parsers/duckdb && go test ./...    # conformance against the vendored data, the examples, the other tests
+cd parsers/duckdb && go test ./...    # conformance against the reference data, the examples, the other tests
 go test -short                        # a fraction of the texts
 go test -bench .                      # benchmarks
 go test -fuzz FuzzParse               # fuzz the parser (ParseAST agrees between position units, nothing panics)
@@ -309,5 +311,5 @@ NESTING_LIMITS=1 go test -v -run TestNesting   # the depth at which each constru
 ```
 
 The reference data is made by [internal/refgen](internal/refgen/) and is described in [testdata/README.md](testdata/README.md),
-with the command that makes it again from a checkout of DuckDB v1.5.6 and its Python module. Only the data is part of
-the module; DuckDB is not a dependency of anything that is built or tested here.
+with the command that makes it again from a checkout of DuckDB v1.5.6 and its Python module. Only the results are part of
+the module, not DuckDB's text; DuckDB is not a dependency of anything that is built or tested here.

@@ -13,6 +13,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/ornew/pego/internal/corpora"
+	"github.com/ornew/pego/internal/corpora/corporatest"
 	"github.com/ornew/pego/parsers/duckdb"
 	"github.com/ornew/pego/parsers/duckdb/types"
 )
@@ -20,17 +22,28 @@ import (
 // The reference data in testdata/reference is what DuckDB 1.5.6 says about each text: whether its parser accepts
 // it, how it splits it into statements and, for a SELECT, the AST that json_serialize_sql returns (reduced to a
 // canonical form). internal/refgen makes it; the README of testdata explains the files.
+//
+// The texts of the tests of DuckDB (tests.jsonl.gz) and the mutants made of them (mutants.jsonl.gz) are DuckDB's, so the
+// files do not hold them: each line says where its text is in test/sql of the fetched corpus "duckdb" (a mutant: in
+// which test, and how it was changed), and has the start of its hash, which is checked.
 
-// A refStmt is a statement as DuckDB splits a script. Text is omitted when it is the whole text.
+// A refStmt is a statement as DuckDB splits a script. Text is omitted when it is the whole text; where DuckDB
+// rewrote the statement, the file has the pieces that make Text from the text of the case instead.
 type refStmt struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
+	Type   string          `json:"type"`
+	Text   string          `json:"text"`
+	Pieces []corpora.Piece `json:"p"`
 }
 
 // A refCase is a text and what DuckDB says about it.
 type refCase struct {
 	SQL    string            `json:"sql"`
 	File   string            `json:"file"`
+	Off    int               `json:"o"` // of a test: the offset and size of its lines in File, a file of the corpus
+	Size   int               `json:"n"`
+	Base   string            `json:"base"` // of a mutant: the hash of the test that it is made from
+	Pieces []corpora.Piece   `json:"p"`    // how the text is made from its lines (a test) or from the test (a mutant)
+	Hash   string            `json:"h"`    // the start of the SHA-256 of the text
 	Gen    string            `json:"gen"`
 	OK     bool              `json:"ok"`
 	Kind   string            `json:"kind"` // of a rejection: "syntax" or "semantic"
@@ -44,13 +57,32 @@ var (
 	refCache = map[string][]refCase{}
 )
 
-// loadRef reads testdata/reference/<name>.jsonl.gz.
+// refCounts are the numbers of texts of the reference files, which the tests require: a file that lost lines must not
+// pass with fewer cases.
+var refCounts = map[string]int{"tests": 45912, "exprs": 7655, "lexical": 1219, "keywords": 83619, "mutants": 20000, "found": 200}
+
+var testTexts = map[string]string{} // the texts of tests.jsonl.gz by hash, which the mutants are made of
+
+// loadRef reads testdata/reference/<name>.jsonl.gz and, for the tests and the mutants, makes their texts from the
+// fetched corpus "duckdb". The test is skipped if the corpus is not fetched.
 func loadRef(t testing.TB, name string) []refCase {
 	t.Helper()
 	refMu.Lock()
 	defer refMu.Unlock()
+	return loadRefLocked(t, name)
+}
+
+func loadRefLocked(t testing.TB, name string) []refCase {
+	t.Helper()
 	if c, ok := refCache[name]; ok {
 		return c
+	}
+	var files *corpora.Files
+	if name == "tests" || name == "mutants" {
+		files = &corpora.Files{Dir: corporatest.Dir(t, "duckdb")}
+		if name == "mutants" {
+			loadRefLocked(t, "tests")
+		}
 	}
 	f, err := os.Open(filepath.Join("testdata", "reference", name+".jsonl.gz"))
 	if err != nil {
@@ -69,8 +101,36 @@ func loadRef(t testing.TB, name string) []refCase {
 		if err := json.Unmarshal(sc.Bytes(), &c); err != nil {
 			t.Fatalf("%s: %v", name, err)
 		}
+		if files != nil {
+			var text []byte
+			var err error
+			if name == "tests" {
+				text, err = files.Text(corpora.Place{File: c.File, Off: c.Off, Size: c.Size, Pieces: c.Pieces})
+			} else if base, ok := testTexts[c.Base]; !ok {
+				err = fmt.Errorf("no test has the hash %q", c.Base)
+			} else {
+				text, err = corpora.Assemble([]byte(base), c.Pieces)
+			}
+			if err != nil {
+				t.Fatalf("%s: line %d: %v", name, len(cases)+1, err)
+			}
+			if got := corpora.Hash(text, len(c.Hash)); c.Hash == "" || got != c.Hash {
+				t.Fatalf("%s: line %d (%s): the text has hash %s, the data is about %s", name, len(cases)+1, c.File, got, c.Hash)
+			}
+			c.SQL = string(text)
+			if name == "tests" {
+				testTexts[c.Hash] = c.SQL
+			}
+		}
 		for i := range c.Stmts {
-			if c.Stmts[i].Text == "" && len(c.Stmts) == 1 {
+			switch {
+			case c.Stmts[i].Pieces != nil:
+				text, err := corpora.Assemble([]byte(c.SQL), c.Stmts[i].Pieces)
+				if err != nil {
+					t.Fatalf("%s: line %d: statement %d: %v", name, len(cases)+1, i, err)
+				}
+				c.Stmts[i].Text = string(text)
+			case c.Stmts[i].Text == "" && len(c.Stmts) == 1:
 				c.Stmts[i].Text = c.SQL
 			}
 		}
@@ -78,6 +138,9 @@ func loadRef(t testing.TB, name string) []refCase {
 	}
 	if err := sc.Err(); err != nil {
 		t.Fatal(err)
+	}
+	if want, ok := refCounts[name]; ok && len(cases) != want {
+		t.Fatalf("%s: %d texts, want %d", name, len(cases), want)
 	}
 	refCache[name] = cases
 	return cases
@@ -133,12 +196,17 @@ func sample(cases []refCase, n int) []refCase {
 func TestReferenceAcceptance(t *testing.T) {
 	dev := readDeviations(t)
 	deviated := map[string]bool{}
+	complete := true // a corpus that is skipped cannot show that a deviation is gone
 	for _, name := range refCorpora {
+		ran := false
 		t.Run(name, func(t *testing.T) {
-			checkAcceptance(t, sample(loadRef(t, name), 8), dev, deviated)
+			cases := sample(loadRef(t, name), 8)
+			ran = true
+			checkAcceptance(t, cases, dev, deviated)
 		})
+		complete = complete && ran
 	}
-	if testing.Short() {
+	if testing.Short() || !complete {
 		return
 	}
 	// a deviation that is no longer one must be removed from the list
@@ -307,7 +375,7 @@ func TestReferenceStatements(t *testing.T) {
 }
 
 // TestReferenceFile compares the parser with DuckDB on the texts of another file made by internal/refgen (a plain or
-// gzipped JSON lines file, named by REFERENCE_FILE), to run a larger or another corpus than the vendored ones, for
+// gzipped JSON lines file, named by REFERENCE_FILE), to run a larger or another corpus than the recorded ones, for
 // example the mutations of the tests with another seed (the README of testdata gives the commands).
 func TestReferenceFile(t *testing.T) {
 	path := os.Getenv("REFERENCE_FILE")

@@ -40,6 +40,17 @@
 		"sha256": "d3efa5ef3faf9c88e984933d8c8c48dee8e981d5b9520c0bc06d44eb11381888"
 	},
 	{
+		"name": "duckdb",
+		"url": "https://codeload.github.com/duckdb/duckdb/tar.gz/069cc9f9b5be802405797faecc284961b07c70ef",
+		"revision": "069cc9f9b5be802405797faecc284961b07c70ef",
+		"license": "MIT",
+		"include": [
+			"LICENSE",
+			"test/sql/"
+		],
+		"sha256": "097c3bd12aba3296cb607553cb49ccd3213cf340b8a155898b9b487cbd8f8d74"
+	},
+	{
 		"name": "jsontestsuite",
 		"url": "https://codeload.github.com/nst/JSONTestSuite/tar.gz/1ef36fa01286573e846ac449e8683f8833c5b26a",
 		"revision": "1ef36fa01286573e846ac449e8683f8833c5b26a",

@@ -3,7 +3,7 @@
 #
 #   DUCKDB_SRC=/path/to/duckdb PYTHON=/path/to/python internal/refgen/generate.sh
 #
-# DUCKDB_SRC is a checkout of DuckDB at tag v1.5.6 (only test/sql is read), PYTHON an interpreter that has the
+# DUCKDB_SRC is a checkout of DuckDB at tag v1.5.6, or the fetched corpus "duckdb" (only test/sql is read), PYTHON an interpreter that has the
 # duckdb module in version 1.5.6 (pip install duckdb==1.5.6). The scratch files go to a temporary directory.
 set -e
 : "${DUCKDB_SRC:?set DUCKDB_SRC to a checkout of DuckDB v1.5.6}"
@@ -22,11 +22,15 @@ mkdir -p "$out"
 "$PYTHON" "$here/corpus.py" found "$tmp/blocks.jsonl" "$tmp/found.jsonl"
 
 # the ASTs of SELECT statements are kept for the tests of DuckDB and for the expressions
-"$PYTHON" "$here/refgen.py" "$tmp/blocks.jsonl" "$out/tests.jsonl.gz"
+"$PYTHON" "$here/refgen.py" "$tmp/blocks.jsonl" "$tmp/tests-ref.jsonl"
 "$PYTHON" "$here/refgen.py" "$tmp/exprs.jsonl" "$out/exprs.jsonl.gz"
 "$PYTHON" "$here/refgen.py" "$tmp/lexical.jsonl" "$out/lexical.jsonl.gz"
 "$PYTHON" "$here/refgen.py" "$tmp/found.jsonl" "$out/found.jsonl.gz"
 "$PYTHON" "$here/refgen.py" "$tmp/keywords.jsonl" "$out/keywords.jsonl.gz" --no-shapes
-"$PYTHON" "$here/refgen.py" "$tmp/mutants.jsonl" "$out/mutants.jsonl.gz" --no-shapes
+"$PYTHON" "$here/refgen.py" "$tmp/mutants.jsonl" "$tmp/mutants-ref.jsonl" --no-shapes
+
+# the texts of the tests and of the mutants made of them are DuckDB's: the data says where they are in the checkout
+"$PYTHON" "$here/pack.py" tests "$tmp/tests-ref.jsonl" "$DUCKDB_SRC" "$out/tests.jsonl.gz"
+"$PYTHON" "$here/pack.py" mutants "$tmp/mutants-ref.jsonl" "$DUCKDB_SRC" "$out/mutants.jsonl.gz"
 rm -rf "$tmp"
 ls -l "$out"

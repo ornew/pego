@@ -6,7 +6,8 @@ Usage: extract.py SUITE_ROOT OUT.jsonl
 SUITE_ROOT is a checkout of the DuckDB sources that holds test/sql. Every `statement` and `query` block of every
 file is read; `loop` and `foreach` blocks are expanded (the first values only, so the output stays small); a block
 that still refers to a ${variable} is dropped. The unique SQL texts are written one JSON object per line:
-{"sql": ..., "file": the first file the text occurs in}.
+{"sql": ..., "file": the first file the text occurs in, "o": offset and "n": size in bytes of the lines of the
+block in that file, before the variables of a loop are replaced}.
 
 Whether DuckDB's parser accepts a text is not read from the test (statement error often fails when binding or
 executing, not when parsing): refgen.py asks the parser.
@@ -20,7 +21,8 @@ MAX_VALUES = 4  # values of a loop or foreach that are expanded
 
 
 def blocks(lines):
-    """Yields ('sql', text) for each statement or query block and nested loops as ('loop', ...)."""
+    """Returns the blocks: ('sql', text, first line, line after the last) for each statement or query block, and
+    nested loops as ('loop', ...)."""
     out = []
     i = 0
     n = len(lines)
@@ -53,6 +55,7 @@ def blocks(lines):
         elif cmd in ('statement', 'query'):
             i += 1
             body = []
+            first = i
             while i < n:
                 l = lines[i]
                 if l.strip() == '':
@@ -66,7 +69,7 @@ def blocks(lines):
             # skip the expected results
             while i < n and lines[i].strip() != '':
                 i += 1
-            cur.append(('sql', '\n'.join(body)))
+            cur.append(('sql', '\n'.join(body), first, first + len(body)))
         else:
             # require, mode, skipif, onlyif, load, restart, reset, hash-threshold, ...
             i += 1
@@ -83,7 +86,7 @@ def subst(text, env):
 def expand(items, env, emit):
     for it in items:
         if it[0] == 'sql':
-            emit(subst(it[1], env))
+            emit(subst(it[1], env), it[2], it[3])
         elif it[0] == 'loop':
             _, var, args, body = it
             try:
@@ -119,11 +122,22 @@ def main():
     def mk(path):
         rel = os.path.relpath(path, root)
 
-        def emit(sql):
+        with open(path, 'rb') as fh:
+            raw = fh.read()
+        if b'\r' in raw:
+            sys.exit(path + ' has carriage returns: the offsets of its blocks would not be those of the text')
+        # the offset of each line, and one past the end for the line after the last
+        starts = [0]
+        for i, c in enumerate(raw):
+            if c == 10:
+                starts.append(i + 1)
+        starts.append(len(raw) + 1)
+
+        def emit(sql, first, end):
             if '${' in sql or sql.strip() == '':
                 return
             if sql not in seen:
-                seen[sql] = rel
+                seen[sql] = (rel, starts[first], starts[end] - 1 - starts[first])
         return emit
 
     for path in files:
@@ -131,8 +145,8 @@ def main():
             lines = fh.read().split('\n')
         expand(blocks(lines), env0, mk(path))
     with open(outp, 'w', encoding='utf-8') as out:
-        for sql, f in seen.items():
-            out.write(json.dumps({'sql': sql, 'file': f}, ensure_ascii=False) + '\n')
+        for sql, (f, o, n) in seen.items():
+            out.write(json.dumps({'sql': sql, 'file': f, 'o': o, 'n': n}, ensure_ascii=False) + '\n')
     print(len(files), 'files,', len(seen), 'unique blocks', file=sys.stderr)
 
 
