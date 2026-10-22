@@ -29,7 +29,7 @@ import (
 //	ref declared X  *X
 //	ref inferred Y  the shape of Y
 //	list of S       []S
-//	optional S      *S, or S when S is already a pointer or an interface
+//	optional S      the Go type of S; an optional adds no pointer
 //	join of X..     an interface that the types X.. implement (all of them, and only them)
 //
 // and to TypeScript, where every reference is nullable (`X | null`), a list is `readonly (...)[] | null`
@@ -335,8 +335,9 @@ func parseTS(src string) map[string]tsDecl {
 	return decls
 }
 
-// tsNames returns the declared type names of a schema shape as TypeScript writes them: a reference
-// is its name, a join is the names of its alternatives.
+// tsNames returns the names of a schema shape as TypeScript writes them in a union or a list: a
+// reference is its name, a node of a string is TNode<string>, an optional is its element, and a join
+// is the names of its alternatives.
 func tsNames(sc confSchema, sh *confShape) ([]string, error) {
 	sh, err := sc.resolve(sh)
 	if err != nil {
@@ -347,6 +348,12 @@ func tsNames(sc confSchema, sh *confShape) ([]string, error) {
 		if strings.HasPrefix(sh.Ref, "declared/") {
 			return []string{strings.TrimPrefix(sh.Ref, "declared/")}, nil
 		}
+	case "node":
+		if sh.Value != nil && sh.Value.Kind == "scalar" && sh.Value.Scalar == "string" {
+			return []string{"TNode<string>"}, nil
+		}
+	case "optional":
+		return tsNames(sc, sh.Element)
 	case "error":
 		return nil, nil
 	case "join":
@@ -556,24 +563,20 @@ func checkTypedGeneration(t *testing.T, sc confSchema, g typedGeneration, src st
 	return out
 }
 
-// typedUnmapped lists the violations that the mapping does not decide, by generated package. Each
-// is a shape whose generated type is not a case of the mapping above: the test reports it, and it
-// must still be reported (a stale entry fails the test), so that a change to the mapping or to the
-// generator is seen rather than hidden.
-var typedUnmapped = map[string][]string{
-	"duckdb": {
-		"TypeScript: TableConstraint.Attributes: unmapped schema shape node",
-		"TypeScript: TableLike.Options: unmapped schema shape node",
-		"TypeScript: VacuumStmt.Options: unmapped schema shape node",
-	},
-	"python": {
-		"TypeScript: Arguments.KwDefaults: unmapped schema shape optional",
-		"TypeScript: Dict.Keys: unmapped schema shape optional",
-	},
+// typedDivergence lists the violations that are known generator divergences: the mapping above decides
+// the shape, and the generated type is not what it decides. Each entry is reported as known rather than
+// hidden, and an entry that no longer has a violation fails the test, so the list stays current. A
+// divergence is a generator change to make, not a case of the mapping.
+var typedDivergence = map[string][]string{
 	"../bench/gen/minilang": {
+		// The Go generator writes any for If.Else, where the join of its alternatives is an interface.
 		"Go: If.Else: want an interface for a join, got any",
-		"TypeScript: Block.Body: want members",
+		// The TypeScript generator writes If.Else as TypedValue, where the join of its alternatives is
+		// a union; see the TypeScript join in internal/engine/gen_ts_types.go.
 		"TypeScript: If.Else: want members",
+		// The TypeScript generator adds TNode<unknown> to the members of these joins (the cstJoin
+		// member in internal/engine/gen_ts_types.go), so their members are not the joined types alone.
+		"TypeScript: Block.Body: want members",
 		"TypeScript: Program.Body: want members",
 	},
 }
@@ -588,24 +591,24 @@ func TestTypedConformance(t *testing.T) {
 				t.Fatal(err)
 			}
 			sc := conformanceSchema(t, g.grammar)
-			unmapped := typedUnmapped[g.name]
-			seen := make([]bool, len(unmapped))
+			divergence := typedDivergence[g.name]
+			seen := make([]bool, len(divergence))
 			for _, v := range checkTypedGeneration(t, sc, g, string(src)) {
 				matched := false
-				for i, prefix := range unmapped {
+				for i, prefix := range divergence {
 					if strings.HasPrefix(v, prefix) {
 						seen[i], matched = true, true
 					}
 				}
 				if matched {
-					t.Logf("unmapped: %s", v)
+					t.Logf("known generator divergence: %s", v)
 					continue
 				}
 				t.Error(v)
 			}
-			for i, prefix := range unmapped {
+			for i, prefix := range divergence {
 				if !seen[i] {
-					t.Errorf("stale unmapped entry %q: no violation has it", prefix)
+					t.Errorf("stale known divergence %q: no violation has it", prefix)
 				}
 			}
 		})
