@@ -51,9 +51,9 @@ with implementation changes; regenerate generated files.
 
 - Issue #1 is the living backlog: https://github.com/ornew/pego/issues/1.
   Categories are two-digit B, O, F, Q, I, D, plus M for ready-made parsers.
-  Keep incomplete parent items; archive completion only after verified
-  integration, with a commit link and outcome sentence. IDs belong in Issue #1,
-  not reader-facing docs.
+  Keep incomplete parent items; mark completion only after verified
+  integration, in the recent-completions list with a commit link and outcome
+  sentence. IDs belong in Issue #1, not reader-facing docs.
 - Write commits, issues and PRs in the owner's voice: omit references to agents,
   AI assistance, the owner/user, requests, delegation or work history. Follow
   `docs/commit-messages.md`; include a body explaining the problem and rationale.
