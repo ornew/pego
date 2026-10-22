@@ -10,7 +10,7 @@ import "github.com/ornew/pego/grammar"
 // recognition) keep their actions and types. Unchanged declarations are shared with g; g itself
 // does not change.
 func defaultValueGrammar(g *grammar.Grammar, control *compileControl) *grammar.Grammar {
-	needed := valueNeededRulesControlled(control.rules(g), control)
+	needed := valueNeededRulesControlled(control.rules(g), control, false)
 	decls, changed := normalizeItems(g.File.Decls, false, func(d grammar.Decl) grammar.Decl {
 		control.poll()
 		rd, ok := d.(*grammar.RuleDef)

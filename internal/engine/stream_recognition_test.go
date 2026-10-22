@@ -3,8 +3,11 @@ package engine
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestStreamCaptureRecognition(t *testing.T) {
@@ -102,5 +105,59 @@ func BenchmarkStreamCaptureRecognition(b *testing.B) {
 				}
 			})
 		}
+	}
+}
+
+// TestStreamRecognitionCompiled checks that a program compiled with recognition streams the
+// elements of a #stream repetition as values on every backend, whether it is compiled in memory
+// or loaded from a file without the AST, and that the recognizer built from an ordinary program
+// builds none.
+func TestStreamRecognitionCompiled(t *testing.T) {
+	g, err := syntax.Parse(startRestrictionSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prog, err := Compile(g, Options{recognize: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := prog.MarshalBinaryWith("", MarshalOptions{OmitAST: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	loaded, _, err := LoadProgram(data, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, p := range map[string]*Program{"compiled": prog, "loaded": loaded} {
+		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+			if name == "loaded" && b == Closure {
+				continue
+			}
+			var got []string
+			err := p.ParseStreamWith("main", strings.NewReader("aa"), func(n *Node) error {
+				got = append(got, n.Text())
+				return nil
+			}, ParseOptions{Backend: b})
+			if err != nil || !slices.Equal(got, []string{"a", "a"}) {
+				t.Errorf("%s %s: elements %q, error %v; want a, a", name, b, got, err)
+			}
+		}
+	}
+	// The recognizer of an ordinary program only recognizes.
+	g, err = syntax.Parse(startRestrictionSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ordinary, err := Compile(g, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rec, err := ordinary.recognizer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r := rec.byName["main"]; !r.novalue {
+		t.Error("the recognizer builds values for the rule with a #stream repetition")
 	}
 }

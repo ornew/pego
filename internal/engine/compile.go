@@ -56,10 +56,11 @@ type Program struct {
 	// and the types of casts (castType).
 	fieldTypes sync.Map
 
-	workOnce      sync.Once
-	workProgram   *Program
-	workErr       error
-	workRecognize bool
+	workOnce       sync.Once
+	workProgram    *Program
+	workErr        error
+	workRecognize  bool
+	workRecognizer bool
 
 	moduleOnce         sync.Once
 	module             *Module
@@ -107,6 +108,9 @@ type Options struct {
 	// recognize builds a program that only checks whether the input conforms to the grammar, without
 	// building a tree (Program.recognizer).
 	recognize bool
+	// recognizer marks the program Program.recognizer builds, which only runs with Recognize: it
+	// builds no stream elements either.
+	recognizer bool
 	// noProjections compiles repetitions as written (project.go), for tests: with projections in
 	// every backend, only a program without them can check what they produce.
 	noProjections bool
@@ -441,7 +445,7 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 		}()
 	}
 	prog.starts, prog.defaultStart = starts, defaultStart
-	prog.workRecognize = opts.recognize
+	prog.workRecognize, prog.workRecognizer = opts.recognize, opts.recognizer
 	prog.noProjections = opts.noProjections
 	prog.sourceInfo = opts.SourceInfo
 	prog.defaultValue = opts.DefaultValue
@@ -508,8 +512,9 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 	}
 	if opts.recognize {
 		// Only rules whose values are referenced by predicates, and the rules needed to build those
-		// values, are evaluated as usual.
-		needed := valueNeededRulesControlled(rules, control)
+		// values, are evaluated as usual; so are the rules with a #stream repetition, whose elements
+		// a stream hands to its caller, unless the program is the recognizer, which only recognizes.
+		needed := valueNeededRulesControlled(rules, control, !opts.recognizer)
 		for _, r := range prog.rules {
 			control.poll()
 			if !needed[r.name] {
@@ -710,8 +715,9 @@ func predicateCapturesControlled(e grammar.Expr, control *compileControl) map[st
 }
 
 // valueNeededRules returns the rules that must build values even in a program that builds no
-// tree: the rules called within captures referenced by predicates, and every rule they call.
-func valueNeededRulesControlled(rules []*grammar.RuleDef, control *compileControl) map[string]bool {
+// tree: the rules called within captures referenced by predicates, and every rule they call. With
+// streams, also the rules with a #stream repetition (see Program.ParseStream) and every rule they call.
+func valueNeededRulesControlled(rules []*grammar.RuleDef, control *compileControl, streams bool) map[string]bool {
 	control.poll()
 	byName := map[string]*grammar.RuleDef{}
 	for _, rd := range rules {
@@ -732,6 +738,9 @@ func valueNeededRulesControlled(rules []*grammar.RuleDef, control *compileContro
 	}
 	for _, rd := range rules {
 		control.poll()
+		if streams && hasStreamControlled(rd.Expr, control) {
+			mark(rd.Name)
+		}
 		pc := predicateCapturesControlled(rd.Expr, control)
 		walkExprControlled(rd.Expr, func(x grammar.Expr) {
 			if cp, ok := x.(*grammar.Capture); ok && pc[cp.Name] {
@@ -1540,7 +1549,7 @@ func (c *compiler) checkStream(body grammar.Expr) bool {
 func predicateCaptures(e grammar.Expr) map[string]bool { return predicateCapturesControlled(e, nil) }
 
 func valueNeededRules(rules []*grammar.RuleDef) map[string]bool {
-	return valueNeededRulesControlled(rules, nil)
+	return valueNeededRulesControlled(rules, nil, false)
 }
 
 func hasStream(e grammar.Expr) bool { return hasStreamControlled(e, nil) }

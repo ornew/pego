@@ -131,9 +131,7 @@ rule _h = "c"
 
 // checkStartRestriction checks that every way into prog parses only from start rules. Streams
 // and documents do not recognize, so they are left out with o.Recognize.
-// streams says whether prog can stream on its backend: a program compiled with a recognition
-// bundle does not stream on the bytecode backends yet, whatever its start rules.
-func checkStartRestriction(t *testing.T, prog *Program, o ParseOptions, streams bool) {
+func checkStartRestriction(t *testing.T, prog *Program, o ParseOptions) {
 	t.Helper()
 	notStart := "rule other is not a start rule; parsing can begin only at a rule marked @start"
 	for _, tc := range []struct{ start, want string }{
@@ -175,7 +173,7 @@ func checkStartRestriction(t *testing.T, prog *Program, o ParseOptions, streams 
 		if _, err := prog.NewDocumentWith("", "aa", o); err != nil {
 			t.Errorf("NewDocument(\"\"): %v", err)
 		}
-		if streams {
+		{
 			if err := prog.ParseStreamWith("", strings.NewReader("aa"), func(*Node) error { return nil }, o); err != nil {
 				t.Errorf("ParseStream(\"\"): %v", err)
 			}
@@ -201,7 +199,7 @@ func checkStartRestriction(t *testing.T, prog *Program, o ParseOptions, streams 
 			t.Errorf("NewDocument(%q): %v", start, err)
 		}
 	}
-	if o.Recognize || !streams {
+	if o.Recognize {
 		return
 	}
 	if err := prog.ParseStreamWith("main", strings.NewReader("aa"), func(*Node) error { return nil }, o); err != nil {
@@ -228,7 +226,7 @@ func TestStartRestriction(t *testing.T) {
 		for _, b := range []Backend{Default, Closure, Bytecode, BytecodeIterative} {
 			for _, recognize := range []bool{false, true} {
 				t.Run(b.String(), func(t *testing.T) {
-					checkStartRestriction(t, prog, ParseOptions{Backend: b, Recognize: recognize}, !recognition || prog.backend(b) == Closure)
+					checkStartRestriction(t, prog, ParseOptions{Backend: b, Recognize: recognize})
 				})
 			}
 		}
@@ -266,7 +264,7 @@ func TestStartRoundTrip(t *testing.T) {
 					backends = append(backends, Closure)
 				}
 				for _, b := range backends {
-					checkStartRestriction(t, loaded, ParseOptions{Backend: b}, !recognition || b == Closure)
+					checkStartRestriction(t, loaded, ParseOptions{Backend: b})
 				}
 			}
 		}
