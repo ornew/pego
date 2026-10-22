@@ -287,16 +287,12 @@ func pruneSpliceTypes(p *Program, rules []*grammar.RuleDef, out map[string]ty) m
 		if !ok {
 			continue
 		}
-		text := t.String()
-		for _, rd := range rules {
-			if kept[rd.Name] {
-				continue
+		walkTy(t, func(u ty) {
+			if r, ok := u.(ruleTy); ok && !kept[r.name] {
+				kept[r.name] = true
+				queue = append(queue, r.name)
 			}
-			if i := strings.Index(text, rd.Name); i >= 0 && namesRule(text, rd.Name) {
-				kept[rd.Name] = true
-				queue = append(queue, rd.Name)
-			}
-		}
+		})
 	}
 	pruned := make(map[string]ty, len(kept))
 	for name, t := range out {
@@ -307,26 +303,74 @@ func pruneSpliceTypes(p *Program, rules []*grammar.RuleDef, out map[string]ty) m
 	return pruned
 }
 
-// namesRule reports whether text, the text of a type, refers to the rule name as a whole word.
-func namesRule(text, name string) bool {
-	for i := 0; ; {
-		j := strings.Index(text[i:], name)
-		if j < 0 {
-			return false
+// walkTy calls visit on t and on every type it is made of, including the types of the captures of
+// a node type.
+func walkTy(t ty, visit func(ty)) {
+	visit(t)
+	switch u := t.(type) {
+	case tupleTy:
+		for _, e := range u.elems {
+			walkTy(e, visit)
 		}
-		j += i
-		end := j + len(name)
-		before := j == 0 || !isWordByte(text[j-1])
-		after := end == len(text) || !isWordByte(text[end])
-		if before && after {
-			return true
+	case nodeTy:
+		walkTy(u.value, visit)
+		for _, c := range u.caps {
+			if c.t != nil {
+				walkTy(c.t, visit)
+			}
+			if c.set != nil {
+				walkTy(c.set, visit)
+			}
 		}
-		i = j + 1
+	case listTy:
+		walkTy(u.elem, visit)
+	case optTy:
+		walkTy(u.elem, visit)
+	case joinTy:
+		for _, a := range u.alts {
+			walkTy(a, visit)
+		}
+	case recordTy:
+		for _, f := range u.fields {
+			walkTy(f, visit)
+		}
 	}
 }
 
-func isWordByte(c byte) bool {
-	return c == '_' || c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'
+// mapTy returns t with the types for which f reports a replacement replaced; it does not look
+// inside a replacement. The captures of a node type are not mapped: they are not part of its text.
+func mapTy(t ty, f func(ty) (ty, bool)) ty {
+	if r, ok := f(t); ok {
+		return r
+	}
+	switch u := t.(type) {
+	case tupleTy:
+		elems := make([]ty, len(u.elems))
+		for i, e := range u.elems {
+			elems[i] = mapTy(e, f)
+		}
+		return tupleTy{elems}
+	case nodeTy:
+		u.value = mapTy(u.value, f)
+		return u
+	case listTy:
+		return listTy{mapTy(u.elem, f)}
+	case optTy:
+		return optTy{mapTy(u.elem, f)}
+	case joinTy:
+		alts := make([]ty, len(u.alts))
+		for i, a := range u.alts {
+			alts[i] = mapTy(a, f)
+		}
+		return joinTy{alts}
+	case recordTy:
+		fields := make(map[string]ty, len(u.fields))
+		for k, e := range u.fields {
+			fields[k] = mapTy(e, f)
+		}
+		return recordTy{fields}
+	}
+	return t
 }
 
 // ruleCycles returns the strongly connected components of the references between rules that

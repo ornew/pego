@@ -223,3 +223,49 @@ func TestInlineActionNamesInMessages(t *testing.T) {
 		t.Errorf("describes a declared rule: %q", got)
 	}
 }
+
+// Inside a type, an inline action stands for the type of its result, not for the rule that holds
+// it; a type in a message never shows a name the author did not write. Elsewhere the message names
+// the rule that holds the inline action.
+func TestInlineActionTypesInMessages(t *testing.T) {
+	for _, c := range []struct{ src, want string }{
+		{"type T = { A node[string] }\nrule main T = (x:\"a\" \"c\" => $x) \"b\"", "rule main produces node[(node[string], node[string])], which is not assignable to T"},
+		{"type T = { A string }\nrule main = i:(x:\"a\" => 1)* \"b\" => T{A: $i}", "cannot use node[[]int] as string in field A of T"},
+		{"type T = { A string }\nrule main = i:(x:\"a\" => 1)? \"b\" => T{A: $i}", "cannot use *int as string in field A of T"},
+		{"rule main string = (x:\"a\" => 1) (x:\"a\" => 1)", "rule main produces node[(int, int)], which is not assignable to string"},
+		{"rule main string = (x:\"a\" => (1, \"s\")) (x:\"a\" => nil)", "rule main produces node[((int, string), nil)], which is not assignable to string"},
+	} {
+		msg := compileError(t, c.src)
+		if !strings.Contains(msg, c.want) {
+			t.Errorf("%s:\n%s\nwant %q", c.src, msg, c.want)
+		}
+		if strings.Contains(msg, "(the inline action") || strings.Contains(msg, "[]the inline action") {
+			t.Errorf("%s: an inline action inside a type: %s", c.src, msg)
+		}
+	}
+}
+
+// The rules a type refers to are found in the structure of the type, including the types of the
+// captures of a node, which have no place in its text.
+func TestPruneSpliceTypesFollowsTheStructureOfTypes(t *testing.T) {
+	p := compile(t, "rule main = \"a\" _m\nrule _m = \"b\" _m?")
+	rules := p.Grammar.Rules()
+	for _, c := range []struct {
+		name string
+		main ty
+		kept bool
+	}{
+		{"element", tupleTy{[]ty{tyStringNode, optTy{ruleTy{"_m"}}}}, true},
+		{"list", listTy{ruleTy{"_m"}}, true},
+		{"join", joinTy{[]ty{tyStringNode, ruleTy{"_m"}}}, true},
+		{"capture", nodeTy{value: tyStringNode, caps: []capIndex{{name: "x", paths: [][]int{{0}}, t: ruleTy{"_m"}}}}, true},
+		{"capture set", nodeTy{value: tyStringNode, caps: []capIndex{{name: "x", paths: [][]int{{0}}, t: tyStringNode, maybe: true, set: ruleTy{"_m"}}}}, true},
+		{"no reference", tupleTy{[]ty{tyStringNode}}, false},
+		{"a name that holds the rule's", ruleTy{"x_m"}, false},
+	} {
+		out := pruneSpliceTypes(p, rules, map[string]ty{"main": c.main, "_m": tyStringNode})
+		if _, got := out["_m"]; got != c.kept {
+			t.Errorf("%s: kept %v, want %v", c.name, got, c.kept)
+		}
+	}
+}

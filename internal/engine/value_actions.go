@@ -42,7 +42,39 @@ func (v *valueInference) errorf(pos grammar.Pos, format string, args ...any) {
 	if !pos.IsValid() && v.rule != nil {
 		pos = v.rule.Diagnostic()
 	}
+	for i, a := range args {
+		if t, ok := a.(ty); ok {
+			args[i] = v.shown(t)
+		}
+	}
 	v.errs = append(v.errs, &Error{Pos: pos, Msg: fmt.Sprintf(format, args...)})
+}
+
+// shown returns t as a message shows it. The rule of an inline action has no name the author
+// wrote, so inside a type it stands for the type of its result.
+func (v *valueInference) shown(t ty) ty {
+	return v.shownSeen(t, nil)
+}
+
+func (v *valueInference) shownSeen(t ty, seen map[string]bool) ty {
+	if v.prog == nil {
+		return t
+	}
+	return mapTy(t, func(u ty) (ty, bool) {
+		r, ok := u.(ruleTy)
+		if !ok || seen[r.name] {
+			return nil, false
+		}
+		if rl := v.prog.byName[r.name]; rl == nil || rl.where == "" {
+			return nil, false
+		}
+		next := maps.Clone(seen)
+		if next == nil {
+			next = map[string]bool{}
+		}
+		next[r.name] = true
+		return v.shownSeen(v.ruleValue(r.name), next), true
+	})
 }
 
 // resolve maps a type expression of the grammar to the value model.
