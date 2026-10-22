@@ -97,7 +97,7 @@ enqueueing, character-range checks in chunks of at most 256 ranges, and
 attribute argument collection, returning no partial diagnostic on
 cancellation. Ordinary validation retains its previous result and ordering and
 does not poll per character range. Shared grammar-analysis success/failure/cut
-proofs now poll during recursive traversal and fixed-point rule visits. The
+proofs poll during recursive traversal and fixed-point rule visits. The
 grammar package also offers context-aware `Rules`, `Types`, `AllComments` and
 `Attribute.ExpressionArgs` collection. Controlled compiler and lint paths use
 the rule and type collectors; lint also uses the comment collector. Nested
@@ -211,12 +211,38 @@ Use `WorkspaceEdit.documentChanges` with `TextDocumentEdit` and a `VersionedText
 A fix is offered for exactly these findings, because for each the proof below shows that the tree and the values cannot change:
 
 - **`char-class`, overlapping or repeated ranges.** The class is replaced by one with merged ranges. The proof is equality of the two code-point sets, checked at the ends of every range, with the negation unchanged. A class that also matches the punctuation between letters, such as `[A-z]`, gets no fix, because only the writer knows which characters were meant.
-- **`useless-lookahead`, a lookahead that always succeeds.** The lookahead is removed. The proof is that it holds only literals, character classes, any-character, groups, sequences, choices, options and repetitions, so it has no capture, cut, call, predicate, recovery or attribute; a lookahead consumes nothing and has no value. Only a lookahead that is itself an item of a sequence qualifies: under a discard `-`, deleting it would move the `-` onto the next item (`"a" - &"b"* "c"` would become `"a" - "c"`), and a label, an operator or a repetition would lose its operand, so those get no fix.
+- **`useless-lookahead`, a lookahead that always succeeds.** The lookahead is removed. The proof is that it holds only literals, character classes, any-character, groups, sequences, choices, options and repetitions, so it has no capture, cut, call, predicate, recovery or attribute; a lookahead consumes nothing and has no value. Only a lookahead that is itself an item of a sequence of at least three items qualifies. With fewer, what remains is no longer a tuple: an inline action `g:(&"b"* "cc") => len($g.Value)` would see one value instead of two. Under a discard `-`, deleting it would move the `-` onto the next item (`"a" - &"b"* "c"` would become `"a" - "c"`), and a label, an operator or a repetition would lose its operand, so those get no fix.
 - **`unreachable-rule`, a rule no start rule reaches.** The rule definition, with its attributes and the comment lines that document it, is deleted. The proof is that no start rule reaches it, directly or through an inline action, so nothing calls it and no parse starts at it. A start rule is never deleted, a file-wide `lint:file-ignore` directive stays, and nothing is deleted from `pego.pego`.
 
 These are not offered, because the tree or the values could change: removing a shadowed alternative (including a left-recursive one), changing a redundant optional or a nullable repetition, dropping an unused or duplicate capture (it changes the captured value or the node type), and any rewrite of a rule that is called or a lookahead that contains a call, a capture or a predicate.
 
-The server computes each fix from `lint.Rewrites` and then verifies it on a copy of the document: the copy must compile, the target finding must be gone, no other finding may appear or disappear (the positions in messages are not compared, and neither is the message of another unreachable-rule finding, which names the callers), the start rules and the default start must be unchanged, and no remaining rule may change its type or the shape that any of its subexpressions contributes to its scope (`Program.ShapeSignature`), because the type of a rule can hide a change inside it. The work polls the request context, so a newer edit cancels it, and the edit is a versioned `documentChanges` edit for the analyzed version. The VS Code client turns it into the command `pego.applyLintFix`, which judges the text the edit replaces against the shape of the check and applies it under the same synchronous version check as a suppression (see "VS Code Suppression").
+The server computes each fix from `lint.Rewrites` and then verifies it on a copy of the document. The verification guarantees exactly this:
+
+- The copy compiles, with no syntax error.
+- The target finding is gone and no other finding appears or disappears. The positions in the messages are not compared; neither is the message of an unreachable-rule finding, which names the callers; and the findings inside a deleted rule go with it.
+- The start rules and the default start are unchanged.
+- Every other declared rule has the same type and the same shape signature (`Program.ShapeSignature`). The signature records, for every subexpression except lookaheads and what they hold, the elements and captures it contributes to the tuple of its scope. The type of a rule can hide a change inside it, such as a discard that moved to another element, but the signature shows it.
+- Every inline action has the same type and shape signature. An inline action is a rule that the compiler generates, so it is not among the declared rules. Both grammars are lowered, so that each inline action is a hidden rule named by its holder and number, which an edit does not change, and the lowered rules are compared like the declared ones. The inline actions of a deleted rule are not compared.
+
+It does not parse inputs. That the edit leaves the language and the values unchanged rests on the proof of each kind above, with these comparisons as the check on it. The work polls the request context, so a newer edit cancels it, and the edit is a versioned `documentChanges` edit for the analyzed version. The VS Code client applies it under the same synchronous version check as a suppression (see "VS Code Suppression").
+
+### Resolved Edits
+
+Verifying a suppression or a fix compiles and lints an edited copy, which costs a large part of a second on a large grammar, and VS Code requests code actions whenever the cursor moves. A client that advertises `textDocument.codeAction.dataSupport` and `resolveSupport` for `edit` therefore gets the actions listed without edits: a title, the diagnostic, and `data` naming the document version, the generation, the finding and which edit to compute. The title of a fix names no source text, so it is the same before and after resolving. A suppression is listed only if its line holds no directive and starts no declaration. A fix is listed for every finding of the three checks, so a finding such as `[A-z]` is listed and resolves to no edit.
+
+`codeAction/resolve` runs the same verification for one action and returns the action with its versioned edit. It returns the action without an edit if the edit cannot be proven, if the title is not the one the server lists for the finding, if the finding no longer has that index and check, or if the document is not at the version of the data. Clients without resolve support get the edits in the list. The server advertises `resolveProvider` only to a client that supports resolving; the responsive actor handles the request like a text-document request, on the snapshot of the document in the data.
+
+VS Code resolves only the edit of an action, and an edit it applies carries no check against the analyzed version, so the extension does not use the editor's resolve. It turns each listed action into the command `pego.applyLintAction`, which sends `codeAction/resolve` itself and, when the answer arrives, requires the document to be at the analyzed version, the generation to be current, and the answer to be one text edit of that document stamped with that version and of the shape of its check. Then the check and the call of `workspace.applyEdit` are one synchronous step, as for an action listed with its edit. A failed request, a refused answer or a changed document applies nothing.
+
+Focused timings used Go 1.27.1 on an Apple M3 Max (darwin/arm64), under the benchmark lock, with `TestCodeActionResolveProbe` (`PEGO_LSP_RESOLVE_PROBE=1`) on `parsers/duckdb/duckdb.pego` (about 2,600 lines; its only own finding is a right-recursion hint). The probe appends one rule that nothing uses, with a class of overlapping ranges, so that a fixable finding exists. Each figure is the median of seven requests; three runs are given as a range.
+
+| Request covering one `unreachable-rule` or `char-class` finding | Median |
+| --- | --- |
+| List with edits (client without resolve support) | 335–342 ms |
+| List for a client that resolves | 39–48 µs |
+| Resolve the fix | 186–190 ms |
+
+The list request is cheap because it reads the cached lint findings and verifies nothing; the verification runs once, when the user picks an action. The resolve time of a suppression was not measured. The timings do not include the editor.
 
 ### Responsive Snapshots, Cancellation and Publication
 
@@ -1176,7 +1202,7 @@ at the guarded version. `scripts/check-lint-actions.js` covers the surfaced
 edits, the synchronous call with the stamped version, replay after an edit, a
 forged or foreign guard, malformed arguments, a main-thread refusal, a new
 publication and close. Its host stand-in implements the stamp and refusal rules
-as read from the sources; no real VS Code was run.
+as read from the sources; no real VS Code was run. The tests of `pego.applyLintAction` use the same stand-in and add a stand-in for the resolve request.
 
 ## Limitations and Open Questions
 

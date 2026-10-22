@@ -242,7 +242,7 @@ rule c = !_|_ y // warning: _|_ never matches, so !_|_ always succeeds
 
 The usual cause is an operand that can match nothing (`?`, `*`): negate the expression itself (`!"x"`).
 
-The language-server quick fix removes a lookahead that always succeeds when it is an item of a sequence (not after a `-`, under a label or an operator) and holds only literals, classes, groups, sequences, choices, options and repetitions (`&"a"*` qualifies; `&ws*` does not, because it calls a rule), because such a lookahead consumes nothing and has no value. A lookahead with a call, capture or predicate is left to you.
+The language-server quick fix removes a lookahead that always succeeds when it is an item of a sequence of at least three items (not after a `-`, under a label or an operator) and holds only literals, classes, groups, sequences, choices, options and repetitions (`&"a"*` qualifies; `&ws*` does not, because it calls a rule), because such a lookahead consumes nothing and has no value. A lookahead with a call, capture or predicate is left to you.
 
 ### `nullable-repetition`
 
