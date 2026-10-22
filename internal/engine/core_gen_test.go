@@ -158,6 +158,18 @@ type coreGenerated1 struct {
 	dec  *genDecisions
 }
 
+// coreExtraGrammars are grammars with term forms that the typed rules of the corpus lack: text
+// comparisons of two captures and comparisons of fields.
+var coreExtraGrammars = []genCase{
+	{name: "text equality", src: `rule main = a:[a-z]+ "=" b:[a-z]+ => text($a) != text($b) || text($a) == text($b)
+`},
+	{name: "field comparison", src: `type P = { N int; S string }
+type R = { A bool; B bool; C bool }
+rule main R = p:pair q:pair => R{A: $p.N == 1, B: $p.S != "x", C: $p.N < $q.N}
+rule pair P = n:[0-9]+ s:[a-z] => P{N: len($n), S: text($s)}
+`},
+}
+
 // coreGenerations generates every corpus grammar in the mode, once for all tests.
 func coreGenerations(t *testing.T, mode coreGenMode) []coreGenerated1 {
 	t.Helper()
@@ -165,7 +177,7 @@ func coreGenerations(t *testing.T, mode coreGenMode) []coreGenerated1 {
 		return out
 	}
 	var out []coreGenerated1
-	for _, gc := range schemaCorpus(t) {
+	for _, gc := range append(schemaCorpus(t), coreExtraGrammars...) {
 		if dec, ok := coreGenerate(gc.src, mode.opts); ok && writesTyped(dec) {
 			out = append(out, coreGenerated1{gc.name, dec})
 		}
@@ -265,12 +277,14 @@ func guardString(g *generator, m *core.Module, f *core.First) (string, string) {
 
 // coreDecisionCounts counts the decisions compared.
 type coreDecisionCounts struct {
-	terminals, guards, guardedClasses, classRuns, scans, scopes int
+	terminals, guards, guardedClasses, classRuns, scans, scopes, terms int
+	// forms counts the special forms of the terms compared.
+	forms map[string]int
 }
 
 // compareCoreDecisions compares the Core IR of c with the decisions of the generator for its table
 // and returns the differences, each prefixed with its aspect (terminal, guard, class runs,
-// scan, scope; verify for a pass after which Verify fails, generator for decisions of the
+// scan, scope, term; verify for a pass after which Verify fails, generator for decisions of the
 // generator that disagree):
 //
 //   - the Terminals are the expressions the generator runs as terminal programs;
@@ -279,7 +293,8 @@ type coreDecisionCounts struct {
 //     alternative as a terminal program, which reads its characters itself);
 //   - the class runs of every value-free sequence are the generator's;
 //   - the scans are the repetitions the generator writes as scans;
-//   - the scopes of repetition elements and Operators Rule lines are the generator's.
+//   - the scopes of repetition elements and Operators Rule lines are the generator's;
+//   - every action, predicate and binding has the structure and forms the generator writes.
 //
 // Nodes built from expressions the generator does not write (alternatives after one that cannot
 // fail) are not compared; every decision of the generator is.
@@ -417,6 +432,7 @@ func compareCoreDecisions(c *coreGenCase, n *coreDecisionCounts) []string {
 			}
 		})
 	}
+	errs = append(errs, compareCoreTerms(c, n)...)
 	// Every decision of the generator is one of the Core IR's.
 	for k, d := range idx {
 		switch k.kind {
@@ -434,6 +450,169 @@ func compareCoreDecisions(c *coreGenCase, n *coreDecisionCounts) []string {
 		}
 	}
 	slices.Sort(errs)
+	return errs
+}
+
+// coreTermTree returns the structure and forms of a Core term as the generator records them
+// (genTerm): a struct constructor is in declaration order only where the generator writes it so,
+// in a parser without step charges.
+func coreTermTree(t core.Term, noWork bool) *genTerm {
+	n := &genTerm{}
+	kids := core.TermChildren(t)
+	switch t := t.(type) {
+	case *core.Const:
+		n.form = "const"
+	case *core.SlotRef, *core.Local:
+		n.form = "capture"
+	case *core.VarRef:
+		n.form = "var"
+	case *core.Member:
+		n.form = "member"
+	case *core.New:
+		n.form = "new"
+		if noWork && t.InOrder {
+			n.form = "new-in-order"
+		}
+	case *core.Convert:
+		n.form = "convert"
+	case *core.Tuple:
+		n.form = "tuple"
+	case *core.Builtin:
+		n.form = "call:" + t.Func
+	case *core.Lambda:
+		n.form = "lambda"
+	case *core.Binary:
+		n.form = "binary:" + t.Op
+	case *core.Unary:
+		n.form = "unary:" + t.Op
+	case *core.Cast:
+		n.form = "cast"
+	case *core.TextEq:
+		n.form = "text-eq"
+	case *core.FieldCompare:
+		n.form = "field-cmp"
+	case *core.TextIn:
+		n.form = "text-in"
+	case *core.ProjectedMap:
+		n.form = "projected-map"
+	case *core.ConcatFused:
+		n.form = "concat-fused"
+		kids = nil
+		for _, p := range t.Parts {
+			part := &genTerm{form: [...]string{core.PartList: "part-list", core.PartMap: "part-map", core.PartItems: "part-items"}[p.Kind]}
+			for _, x := range p.Args {
+				part.kids = append(part.kids, coreTermTree(x, noWork))
+			}
+			if p.X != nil {
+				part.kids = append(part.kids, coreTermTree(p.X, noWork))
+			}
+			if p.Fn != nil {
+				part.kids = append(part.kids, coreTermTree(p.Fn, noWork))
+			}
+			n.kids = append(n.kids, part)
+		}
+	default:
+		n.form = fmt.Sprintf("%T", t)
+	}
+	for _, k := range kids {
+		n.kids = append(n.kids, coreTermTree(k, noWork))
+	}
+	return n
+}
+
+func (n *genTerm) String() string {
+	if len(n.kids) == 0 {
+		return n.form
+	}
+	xs := make([]string, len(n.kids))
+	for i, k := range n.kids {
+		xs[i] = k.String()
+	}
+	return n.form + "(" + strings.Join(xs, " ") + ")"
+}
+
+// countForms adds the special forms of the tree to forms.
+func countForms(n *genTerm, forms map[string]int) {
+	switch n.form {
+	case "text-eq", "field-cmp", "text-in", "projected-map", "concat-fused", "new-in-order", "part-items":
+		forms[n.form]++
+	}
+	for _, k := range n.kids {
+		countForms(k, forms)
+	}
+}
+
+// compareCoreTerms compares every action, predicate and binding of the Core IR of c with the tree
+// the generator records for it, and every term the generator records with one of the Core IR.
+func compareCoreTerms(c *coreGenCase, n *coreDecisionCounts) []string {
+	g := c.g()
+	type termKey struct {
+		rule *rule
+		t    grammar.Term
+	}
+	gen := map[termKey]string{}
+	for _, rec := range c.dec.terms {
+		if rec.table != c.table {
+			continue
+		}
+		k := termKey{rec.rule, rec.t}
+		s := rec.tree.String()
+		if prev, ok := gen[k]; ok && prev != s {
+			return []string{fmt.Sprintf("generator: rule %s: term written as %s and %s", rec.rule.name, prev, s)}
+		}
+		gen[k] = s
+	}
+	idx, _ := genIndex(c.dec, c.table)
+	var errs []string
+	seen := map[termKey]bool{}
+	compare := func(r *rule, e grammar.Expr, gt grammar.Term, ct core.Term) {
+		k := termKey{r, gt}
+		want, ok := gen[k]
+		if !ok {
+			if _, written := idx[genKey{r, decExpr, e}]; written || e == nil {
+				errs = append(errs, fmt.Sprintf("term: rule %s: term %s, generator none", r.name, core.TermString(ct)))
+			}
+			return
+		}
+		seen[k] = true
+		tree := coreTermTree(ct, g.noWork && c.table == "trules") // only the typed runtime takes fields in order
+		if got := tree.String(); got != want {
+			errs = append(errs, fmt.Sprintf("term: rule %s: term %s, generator %s", r.name, got, want))
+		}
+		if n.forms == nil {
+			n.forms = map[string]int{}
+		}
+		countForms(tree, n.forms)
+		n.terms++
+	}
+	for _, cr := range c.m.Rules {
+		r := c.rules[cr.ID]
+		if cr.Finish.Kind == core.FinishAction {
+			compare(r, nil, r.action, cr.Finish.Action)
+		}
+		coreNodes(cr, func(x core.Node) {
+			switch x := x.(type) {
+			case *core.Pred:
+				e := c.origin[x].(*grammar.Predicate)
+				compare(r, e, e.Term, x.Term)
+			case *core.BindNode:
+				e := c.origin[x].(*grammar.Predicate)
+				compare(r, e, e.Term.(*grammar.Bind).Value, x.Term)
+			case *core.OperatorsRule:
+				lines, _, actions := opLines(x, r.def.Expr.(*grammar.OperatorsRule))
+				for i, l := range lines {
+					if l.Action != nil {
+						compare(r, nil, actions[i], l.Action)
+					}
+				}
+			}
+		})
+	}
+	for k := range gen {
+		if !seen[k] {
+			errs = append(errs, fmt.Sprintf("term: rule %s: generator term %s, Core none", k.rule.name, gen[k]))
+		}
+	}
 	return errs
 }
 
@@ -461,9 +640,13 @@ func TestCoreMatchesGenerator(t *testing.T) {
 			}
 			lean := !mode.opts.WorkControls
 			terminals := lean && !mode.opts.Observability
-			if n.guards == 0 || n.scans == 0 || n.scopes == 0 ||
+			if n.guards == 0 || n.scans == 0 || n.scopes == 0 || n.terms == 0 ||
 				(n.terminals > 0) != terminals || (n.classRuns > 0) != lean || (n.guardedClasses > 0) != lean {
 				t.Errorf("counts %+v", n)
+			}
+			if mode.opts.boxedComparisons != (n.forms["field-cmp"] == 0) || mode.opts.disableLiteralTextDispatch != (n.forms["text-in"] == 0) ||
+				n.forms["concat-fused"] == 0 || n.forms["projected-map"]+n.forms["part-items"] == 0 {
+				t.Errorf("forms %v", n.forms)
 			}
 		})
 	}

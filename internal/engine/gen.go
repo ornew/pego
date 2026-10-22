@@ -891,14 +891,18 @@ func (g *generator) rules() {
 		fmt.Fprintf(init, "\t%s[%d].Body = func(p *%s, _ int) (%s, bool) { return %s(p) }\n", g.table, r.id, g.recv(), g.valType(), bodies[r])
 		if r.action != nil && g.table == "trules" {
 			// A function of its own, which typedCall calls directly.
+			done := g.decidingFor(r)
 			g.proj, g.final = g.projections(r), r.action
 			fmt.Fprintf(&g.methods, "// The action of %s.\nfunc ta%d(c *TActCtx) any { return %s }\n\n", r.name, r.id, g.term(r.action, scopes[r], nil))
 			g.proj, g.final = nil, nil
+			done()
 			fmt.Fprintf(init, "\ttrules[%d].Action = ta%d\n", r.id, r.id)
 		} else if r.action != nil {
+			done := g.decidingFor(r)
 			g.proj = g.projections(r)
 			fmt.Fprintf(init, "\t%s[%d].Action = func(c *%s) any { return %s }\n", g.table, r.id, g.ctxType(), g.term(r.action, scopes[r], nil))
 			g.proj = nil
+			done()
 		}
 		if g.table == "trules" {
 			g.typedCall(r, bodies[r], scopes[r], nil)
@@ -1791,6 +1795,7 @@ func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, opera
 // term converts a value expression into a Go expression of type any. locals maps names, such as lambda
 // parameters, to Go expressions.
 func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) string {
+	defer g.enterTerm(t, termKind(t))()
 	raw := g.termRaw(t, s, locals)
 	if !g.goWorkControls || g.noWork {
 		return raw
@@ -1861,6 +1866,7 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 					}
 				}
 				if inOrder {
+					g.termForm("new-in-order")
 					for _, f := range fields {
 						if v, ok := vals[f.Name]; ok {
 							args = append(args, v)
@@ -1907,6 +1913,7 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 		if t.Func == "concat" && fusable(t) {
 			// Push the elements of list, map and concat arguments directly (see fusable and
 			// evalCtx.pushConcatArg).
+			g.termForm("concat-fused")
 			var b strings.Builder
 			b.WriteString("func() any { b := len(c.P.KidStack); ")
 			g.concatParts(&b, t, s, locals)
@@ -1931,6 +1938,9 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 			return fmt.Sprintf("%sFold(%q, %v, %s, %s, %s)", g.rt(), t.Func, t.Func == "foldr", args[0], args[1], g.lambda(t.Args[2], s, locals))
 		case "map":
 			if x, ok := g.projected(t, locals); ok {
+				// The arguments written above are not part of the code.
+				g.termForm("projected-map")
+				g.discardTermKids()
 				if g.goWorkControls {
 					return "c.NewList(c.ListItems(\"map\", " + g.term(x, s, locals) + "))"
 				}
@@ -1948,6 +1958,7 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 		if lx, ok := textArg(t.L); ok && (t.Op == "==" || t.Op == "!=") {
 			if rx, ok := textArg(t.R); ok {
 				// Compare the strings directly (see evalCtx.binary).
+				g.termForm("text-eq")
 				if g.goWorkControls {
 					return fmt.Sprintf("any(c.P.TextEqual(c.TextStr(%s), c.TextStr(%s)) == %v)", g.term(lx, s, locals), g.term(rx, s, locals), t.Op == "==")
 				}
@@ -1956,6 +1967,7 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 		}
 		if g.table == "trules" && comparison(t.Op) && (fieldRead(t.L) || fieldRead(t.R)) && !g.boxedComparisons {
 			// Compare string fields without boxing them (see tctx.compare).
+			g.termForm("field-cmp")
 			return fmt.Sprintf("c.Compare(%q, %s, %s)", t.Op, g.operand(t.L, s, locals), g.operand(t.R, s, locals))
 		}
 		l, r := g.term(t.L, s, locals), g.term(t.R, s, locals)
@@ -1979,6 +1991,7 @@ func (g *generator) termRaw(t grammar.Term, s *scope, locals map[string]string) 
 		x := g.term(t.X, s, locals)
 		ft := g.prog.resolveCheck(t.Type)
 		if ft == nil {
+			g.termForm("") // every value fits the type
 			return x
 		}
 		v := g.fieldTypeVar(t, ft, func(v string, t *fieldType) string { return fmt.Sprintf("var %s = %s\n", v, goFieldType(t)) })
@@ -2037,6 +2050,7 @@ func literalTextMembership(t grammar.Term) (string, []string, bool) {
 func (g *generator) predicateTerm(t grammar.Term, s *scope, locals map[string]string) string {
 	if !g.disableLiteralTextDispatch {
 		if name, literals, ok := literalTextMembership(t); ok {
+			defer g.enterTerm(t, "text-in")()
 			var cases []string
 			seen := map[string]bool{}
 			for _, literal := range literals {
@@ -2047,9 +2061,12 @@ func (g *generator) predicateTerm(t grammar.Term, s *scope, locals map[string]st
 			}
 			if g.goWorkControls {
 				ordinary := g.term(t, s, locals)
+				unmute := g.muteTerms() // the read of the capture, which ordinary has
 				fast := fmt.Sprintf("func() any { switch c.TextStr(%s) { case %s: return true; default: return false } }()", g.term(&grammar.CaptureRef{Name: name}, s, locals), strings.Join(cases, ", "))
+				unmute()
 				return "func() any { if c.P.Control != nil { return " + ordinary + " }; return " + fast + " }()"
 			}
+			defer g.muteTerms()()
 			return fmt.Sprintf("func() any { switch c.TextStr(%s) { case %s: return true; default: return false } }()", g.term(&grammar.CaptureRef{Name: name}, s, locals), strings.Join(cases, ", "))
 		}
 	}
@@ -2062,17 +2079,23 @@ func (g *generator) concatParts(b *strings.Builder, t *grammar.Call, s *scope, l
 		call, ok := a.(*grammar.Call)
 		switch {
 		case ok && call.Func == "list":
+			end := g.enterTerm(call, "part-list")
 			args := make([]string, len(call.Args))
 			for i, x := range call.Args {
 				args[i] = g.term(x, s, locals)
 			}
 			b.WriteString("c.PushList(" + strings.Join(args, ", ") + "); ")
+			end()
 		case ok && call.Func == "map" && len(call.Args) == 2:
 			if x, ok := g.projected(call, locals); ok {
+				end := g.enterTerm(call, "part-items")
 				b.WriteString("c.PushItems(" + g.term(x, s, locals) + "); ")
+				end()
 				break
 			}
+			end := g.enterTerm(call, "part-map")
 			fmt.Fprintf(b, "c.PushMap(%s, %s); ", g.term(call.Args[0], s, locals), g.lambda(call.Args[1], s, locals))
+			end()
 		case ok && call.Func == "concat":
 			g.concatParts(b, call, s, locals)
 		default:
@@ -2083,6 +2106,7 @@ func (g *generator) concatParts(b *strings.Builder, t *grammar.Call, s *scope, l
 
 func (g *generator) lambda(t grammar.Term, s *scope, locals map[string]string) string {
 	l := t.(*grammar.Lambda)
+	defer g.enterTerm(l, "lambda")()
 	inner := map[string]string{}
 	for k, v := range locals {
 		inner[k] = v

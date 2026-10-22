@@ -1220,7 +1220,7 @@ func (d *dgen) attr(e *grammar.Attributed, i int, s *dscope, build bool, fail st
 
 // genSnapshot is the state of the generator a failed direct compilation rolls back.
 type genSnapshot struct {
-	decisions                      int
+	decisions, terms               int
 	workClasses                    int
 	vars, methods                  string
 	n, descs, literals, methodKeys int
@@ -1229,17 +1229,17 @@ type genSnapshot struct {
 }
 
 func (g *generator) snapshot() genSnapshot {
-	var decisions int
+	var decisions, terms int
 	if d := g.decisions; d != nil {
-		decisions = len(d.log)
+		decisions, terms = len(d.log), len(d.terms)
 	}
-	return genSnapshot{decisions: decisions, workClasses: len(g.workClassKeys), shapers: len(g.shaperKeys), vars: g.vars.String(), methods: g.methods.String(), n: g.n,
+	return genSnapshot{decisions: decisions, terms: terms, workClasses: len(g.workClassKeys), shapers: len(g.shaperKeys), vars: g.vars.String(), methods: g.methods.String(), n: g.n,
 		descs: len(g.descs), literals: len(g.literalKeys), methodKeys: len(g.methodKeys), fieldTypes: len(g.fieldTypeKeys)}
 }
 
 func (g *generator) rollback(s genSnapshot) {
 	if d := g.decisions; d != nil {
-		d.log = d.log[:s.decisions]
+		d.log, d.terms = d.log[:s.decisions], d.terms[:s.terms]
 	}
 	for _, key := range g.workClassKeys[s.workClasses:] {
 		delete(g.workClassNames, key)

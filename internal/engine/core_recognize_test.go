@@ -31,6 +31,8 @@ func coreRecognizeCase(name string, dec *genDecisions) (*coreGenCase, error) {
 		}
 	}
 	check("build")
+	core.RewriteTerms(m, core.TermOptions{TextDispatch: !g.disableLiteralTextDispatch, FieldCompare: !g.boxedComparisons})
+	check("terms")
 	core.Guards(m, g.lean && !g.disableGuardedClasses)
 	check("guards")
 	repeats := followRepeats(m, c.origin)
@@ -43,7 +45,8 @@ func coreRecognizeCase(name string, dec *genDecisions) (*coreGenCase, error) {
 	return c, nil
 }
 
-// recognizeAspects are the aspects compared in recognizers.
+// recognizeAspects are the aspects compared in recognizers. The terms are not: the recognizer's
+// table writes actions without projections, where Core IR projects as in the other tables.
 var recognizeAspects = []string{"verify", "generator", "terminal", "guard", "class runs", "scan", "scope"}
 
 // recognizeDifferences returns the differences of the Core IR of c with the generated recognizer
@@ -80,7 +83,7 @@ func TestCoreMatchesRecognizer(t *testing.T) {
 		t.Run(mode.name, func(t *testing.T) {
 			var n coreDecisionCounts
 			cases := 0
-			for _, gc := range schemaCorpus(t) {
+			for _, gc := range append(schemaCorpus(t), coreExtraGrammars...) {
 				dec, ok := coreGenerate(gc.src, mode.opts)
 				if !ok {
 					continue

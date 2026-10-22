@@ -804,6 +804,7 @@ func (b *coreBuilder) termNode(t grammar.Term, s *coreScope, env map[string]*cor
 }
 
 // typedCore builds the Core IR of the typed Go rules and runs the passes of the typed Go backend:
+// term rewrites (with literal text dispatch and unboxed field comparisons unless disabled),
 // terminal regions (in rules lowered to Go-local code of lean parsers without observability),
 // choice guards (with guarded classes in lean parsers), scans and, in lean parsers, class runs.
 // With a decisions hook (tests), it calls the hook with the module after it is built and after
@@ -823,6 +824,8 @@ func (g *generator) typedCore(origin map[core.Node]grammar.Expr) (*core.Module, 
 		core.Terminals(m, coreLocalRule)
 		hook("terminals", m)
 	}
+	core.RewriteTerms(m, core.TermOptions{TextDispatch: !g.disableLiteralTextDispatch, FieldCompare: !g.boxedComparisons})
+	hook("terms", m)
 	core.Analyze(m)
 	core.Guards(m, g.lean && !g.disableGuardedClasses)
 	hook("guards", m)
