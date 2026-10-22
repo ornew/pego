@@ -167,7 +167,9 @@ fmt.Println(node, err)         // [Pair{Key: "abc", Value: "12"}] <nil>
 
 ## Size and Load Time
 
-A schema section makes an AST-less file about 2.1 to 3.0 times its size without the section; the section alone adds 1.1 to 2.0 times the AST-less size.
+The AST-less file includes its recognition bundle, so omitting the AST changes load time more than size. For cel the
+bundle is about 8 KB of the 20,988-byte AST-less file (12,846 bytes without it). A schema section makes an AST-less
+file 2.1 to 3.0 times its size without the section.
 
 | Parser | AST file | AST-less file | AST-less with schema |
 |---|---:|---:|---:|
@@ -184,7 +186,7 @@ A schema section makes an AST-less file about 2.1 to 3.0 times its size without 
 
 The columns are the exact file sizes in bytes: AST file is `pego compile -g`, AST-less file is `pego compile -no-ast`,
 and AST-less with schema is `pego compile -no-ast -schema`. The focused synthetic comparison of the recognition bundle
-and its limits are recorded in [design 045](../design/045-compiled-grammar-recognition.md#focused-ast-less-bundle-measurements).
+and its limits are described in [design 045](../design/045-compiled-grammar-recognition.md#measurements).
 The program below measures your grammar with the current writer; results depend on grammar size and recognition
 dependencies.
 
@@ -247,9 +249,11 @@ func main() {
 
 </details>
 
-Whether this matters depends on how often the program starts. A long-running service compiles once and parses millions
-of times, and 60 ms is nothing. A command-line tool, a function that starts for each request or a test that compiles a
-large grammar in every process pays it every time.
+Loading the cel grammar takes a median of 1.15 ms from the AST file, 97 µs from the AST-less file and 624 µs from the
+AST-less file with a schema (darwin/arm64, median of 200 loads each, measured on this tree). Whether this matters
+depends on how often the program starts. A long-running service loads once and parses millions of times, so the
+difference is negligible. A command-line tool, a function that starts for each request or a test that loads a large
+grammar in every process pays it every time.
 
 ## Embedding With `go:embed`
 
