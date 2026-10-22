@@ -84,7 +84,8 @@ See [Output Schemas and Queries](schemas-and-queries.md).
   section. A file without the AST and without a bundle cannot gain a bundle by
   re-saving.
 - Saving a file with the AST writes its AST and no recognition bundle and no schema
-  section.
+  section. A loader rejects a file that holds both the AST and a recognition bundle,
+  because no writer produces that layout.
 - `-schema` is an error without `-no-ast`, and `WithSchema` is an error without
   `WithoutAST`, because a file with the AST derives its schema from the AST.
 
