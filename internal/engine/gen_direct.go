@@ -120,6 +120,12 @@ type dgen struct {
 	dead bool
 	// bad reports an expression that cannot be compiled; the rule keeps the general code.
 	bad bool
+	// guarded is the class that begins the alternative guardedAlt being written, which the
+	// guard of the choice has already read and accepted; guardedSize holds the size of that
+	// character (gen_choice_guard.go). expr forgets guarded at any other expression.
+	guarded     *grammar.CharClass
+	guardedAlt  grammar.Expr
+	guardedSize string
 }
 
 type dvar struct{ name, typ string }
@@ -381,6 +387,10 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		return "nil"
 	}
 	g := d.g
+	if d.guarded != nil && e != d.guarded && e != d.guardedAlt {
+		// Only the first expression the alternative matches may consume the guard's character.
+		d.guarded = nil
+	}
 	d.line("p.StepWork()")
 	if !build && !d.nodeBody {
 		if table, ok := g.terminalTable(e); ok {
@@ -439,6 +449,9 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		d.line("%s = %s", v, d.match(d.rd(start), text))
 		return v
 	case *grammar.CharClass:
+		if e == d.guarded {
+			return d.guardedClass(build)
+		}
 		// A short class is cheaper to test in place than through its table.
 		if g.leanTyped() && len(e.Ranges) > 4 {
 			table, id := g.classTable(e), g.desc(charClassString(e))
@@ -481,7 +494,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		// The value is the tuple node of the elements, flattened through nested sequences.
 		for i := 0; i < len(e.Items); i++ {
 			it := e.Items[i]
-			if run := classRun(e.Items[i:]); !build && g.leanTyped() && run > 1 {
+			if run := classRun(e.Items[i:]); !build && g.leanTyped() && run > 1 && it != d.guarded {
 				d.failIf(fmt.Sprintf("!p.ClassesSkip(%s)", g.classSteps(e.Items[i:i+run])), fail)
 				i += run - 1
 				continue
@@ -719,22 +732,28 @@ func (d *dgen) choice(e *grammar.Choice, s *dscope, build bool, fail string) str
 		v = d.decl("v", d.g.valType())
 	}
 	done := d.label()
+	size := d.guardSize(e)
 	for _, alt := range e.Alts {
 		if d.dead {
 			break // the alternatives after one that cannot fail are never tried
 		}
 		skip := ""
+		var guarded *grammar.CharClass
 		if cond, desc, depth, ok := g.first(alt, 0, map[string]bool{}); ok {
 			// The alternative is skipped when the next character cannot start it (see first).
 			if ch == "" {
 				ch, more = d.decl("x", "rune"), d.decl("x", "bool")
-				d.line("%s", d.peek(ch, "_", more))
+				d.line("%s", d.peek(ch, size, more))
+			}
+			if size != "_" {
+				guarded = guardedFirst(alt) // a class that begins alt is its own guard, at depth 0
 			}
 			skip = d.label()
 			d.failIf(fmt.Sprintf("!(%s && (%s)) && %s", d.rd(more), chIdent.ReplaceAllString(cond, d.rd(ch)), depthLimit(depth)), skip,
 				fmt.Sprintf("p.Expect(p.Pos, %d)", desc)+g.traceSkip(alt))
 		}
 		f := d.label()
+		d.guarded, d.guardedAlt, d.guardedSize = guarded, alt, size
 		x, cut := d.cutExpr(alt, s, build, f)
 		if build {
 			d.line("%s = %s", v, d.rd(d.shapeOne(alt, x, m.pos, false)))

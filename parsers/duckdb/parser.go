@@ -7470,17 +7470,17 @@ var rulesExtras = [...]pegort.RuleExtra{
 var cls1565 = pegort.Class{ASCII: [2]uint64{0x100003600, 0x0}, Wide: []rune{160, 160, 8192, 8203, 8239, 8239, 8287, 8287, 8288, 8288, 12288, 12288, 65279, 65279}}
 var cls1566 = pegort.Class{ASCII: [2]uint64{0x3ff001000000000, 0x7fffffe87fffffe}, Wide: []rune{128, 159, 161, 8191, 8204, 8238, 8240, 8286, 8289, 12287, 12289, 65278, 65280, 1114111}}
 var cls1567 = pegort.Class{ASCII: [2]uint64{0x0, 0x7fffffe87fffffe}, Wide: []rune{128, 159, 161, 8191, 8204, 8238, 8240, 8286, 8289, 12287, 12289, 65278, 65280, 1114111}}
-var cls1568 = pegort.Class{ASCII: [2]uint64{0x0, 0x100402401004024}}
 
-var cls1572 = pegort.Class{ASCII: [2]uint64{0x3ff000000000000, 0x7fffffe87fffffe}, Wide: []rune{128, 1114111}}
-var cls1575 = pegort.Class{ASCII: [2]uint64{0x7000ac6200000000, 0x5000000140000001}}
-var cls1576 = pegort.Class{ASCII: [2]uint64{0x7000ac0000000000, 0x0}}
-var cls1577 = pegort.Class{ASCII: [2]uint64{0x6200000000, 0x5000000140000001}}
-var cls1578 = pegort.Class{ASCII: [2]uint64{0x7000840000000000, 0x0}}
+var cls1571 = pegort.Class{ASCII: [2]uint64{0x3ff000000000000, 0x7fffffe87fffffe}, Wide: []rune{128, 1114111}}
+var cls1574 = pegort.Class{ASCII: [2]uint64{0x7000ac6200000000, 0x5000000140000001}}
+var cls1575 = pegort.Class{ASCII: [2]uint64{0x7000ac0000000000, 0x0}}
+var cls1576 = pegort.Class{ASCII: [2]uint64{0x6200000000, 0x5000000140000001}}
+var cls1577 = pegort.Class{ASCII: [2]uint64{0x7000840000000000, 0x0}}
 
-var scope1727 = []string{"t"}
-var scope1743 = []string{"n"}
-var scope1749 = []string{"n"}
+var scope1726 = []string{"t"}
+var scope1742 = []string{"n"}
+var scope1748 = []string{"n"}
+var cls1776 = pegort.Class{ASCII: [2]uint64{0x0, 0x100402401004024}}
 var scope1786 = []string{"n"}
 var scope1792 = []string{"n"}
 var scope2377 = []string{"n"}
@@ -9778,79 +9778,70 @@ func s23(p *pegort.TParser) (any, bool) {
 		v     any
 		x1    int
 		v2    any
-		x4    rune
-		x5    bool
-		x8    int
-		x9    []any
-		ch    rune
-		size  int
-		ok    bool
-		x10   int
-		v11   any
-		x12   int
+		x4    int
+		x5    rune
+		x6    bool
+		x9    int
+		x10   []any
+		x11   int
+		v12   any
 		x13   int
 		x14   int
 		x15   int
-		x17   int
-		v18   any
+		x16   int
+		x18   int
 		v19   any
 		v20   any
 		v21   any
 		v22   any
-		v24   any
+		v23   any
+		v25   any
 	)
 	start = p.Pos
 	p.Enter()
-	_ = x14
+	_ = x15
 	x1 = p.Pos
-	x4, _, x5 = p.NextOrdinary()
-	if !(x5 && (x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 == 95 || x4 >= 128 && x4 <= 1114111)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 40)
-		goto L6
-	}
-	x8 = p.Pos
-	x9 = p.NewVals(2)[:0]
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch == 95 || ch >= 128 && ch <= 1114111) {
+	x5, x4, x6 = p.NextOrdinary()
+	if !(x6 && (x5 >= 97 && x5 <= 122 || x5 >= 65 && x5 <= 90 || x5 == 95 || x5 >= 128 && x5 <= 1114111)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 40)
 		goto L7
 	}
-	x10 = p.Pos
-	p.Pos += size
-	v11 = p.NewMatchOrdinary(x10, p.Pos, p.Text(x10, p.Pos), true)
-	x9 = append(x9, v11)
-	x12, x13 = p.Pos, len(p.KidStack)
-	x14 = 0
+	x9 = p.Pos
+	x10 = p.NewVals(2)[:0]
+	x11 = p.Pos
+	p.Pos += x4
+	v12 = p.NewMatchOrdinary(x11, p.Pos, p.Text(x11, p.Pos), true)
+	x10 = append(x10, v12)
+	x13, x14 = p.Pos, len(p.KidStack)
+	x15 = 0
 	for {
-		x15 = p.Pos
-		x17 = p.Pos
-		if !p.ClassFast(&cls1572) && !p.ClassSkip(&cls1572, 41) {
-			goto L16
+		x16 = p.Pos
+		x18 = p.Pos
+		if !p.ClassFast(&cls1571) && !p.ClassSkip(&cls1571, 41) {
+			goto L17
 		}
-		v18 = p.NewMatchOrdinary(x17, p.Pos, p.Text(x17, p.Pos), true)
-		v19 = p.ScopeValue(sh2, v18, x15)
-		x14++
-		p.PushKid(v19)
-		if p.Pos == x15 {
+		v19 = p.NewMatchOrdinary(x18, p.Pos, p.Text(x18, p.Pos), true)
+		v20 = p.ScopeValue(sh2, v19, x16)
+		x15++
+		p.PushKid(v20)
+		if p.Pos == x16 {
 			break
 		}
 		continue
-	L16:
-		p.Pos = x15
+	L17:
+		p.Pos = x16
 		break
 	}
-	v20 = p.NewNodeOrdinary("list", x12, p.Pos, p.Kids(x13))
-	x9 = append(x9, v20)
-	v21 = p.NewNodeOrdinary("tuple", x8, p.Pos, x9)
-	v22, _ = p.ShapeSingle(sh3, v21, x1)
-	v2 = v22
+	v21 = p.NewNodeOrdinary("list", x13, p.Pos, p.Kids(x14))
+	x10 = append(x10, v21)
+	v22 = p.NewNodeOrdinary("tuple", x9, p.Pos, x10)
+	v23, _ = p.ShapeSingle(sh3, v22, x1)
+	v2 = v23
 	goto L3
 L7:
-	p.Pos = x1
-L6:
 
-	v24, _ = p.ShapeSingle(sh46, nil, x1)
-	v2 = v24
+	v25, _ = p.ShapeSingle(sh46, nil, x1)
+	v2 = v25
 	goto L3
 L3:
 	v = p.ScopeValue(sh2, v2, start)
@@ -10093,8 +10084,8 @@ L22:
 	p.Where = "number"
 	v = func() any {
 		return func() any {
-			f_1573 := func() any { return c.Text(func() any { return k1 }()) }()
-			return tmk_Number(c, true, f_1573)
+			f_1572 := func() any { return c.Text(func() any { return k1 }()) }()
+			return tmk_Number(c, true, f_1572)
 		}()
 	}()
 	p.Depth--
@@ -10176,8 +10167,8 @@ func i30(p *pegort.TParser) (any, bool) {
 	p.Where = "iconst"
 	v = func() any {
 		return func() any {
-			f_1574 := func() any { return c.Text(func() any { return k1 }()) }()
-			return tmk_Number(c, true, f_1574)
+			f_1573 := func() any { return c.Text(func() any { return k1 }()) }()
+			return tmk_Number(c, true, f_1573)
 		}()
 	}()
 	p.Depth--
@@ -11527,7 +11518,7 @@ func i63(p *pegort.TParser) (any, bool) {
 	p.Where = "qn_dotted"
 	v = func() any {
 		return func() any {
-			f_1579 := func() any {
+			f_1578 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k1 }())
@@ -11535,7 +11526,7 @@ func i63(p *pegort.TParser) (any, bool) {
 					return c.EndList(b)
 				}()
 			}()
-			return tmk_Name(c, true, f_1579)
+			return tmk_Name(c, true, f_1578)
 		}()
 	}()
 	p.Depth--
@@ -11578,8 +11569,8 @@ func i64(p *pegort.TParser) (any, bool) {
 	p.Where = "qn_string"
 	v = func() any {
 		return func() any {
-			f_1580 := func() any { return c.List(func() any { return k1 }()) }()
-			return tmk_Name(c, true, f_1580)
+			f_1579 := func() any { return c.List(func() any { return k1 }()) }()
+			return tmk_Name(c, true, f_1579)
 		}()
 	}()
 	p.Depth--
@@ -11666,7 +11657,7 @@ func i65(p *pegort.TParser) (any, bool) {
 	p.Where = "any_name"
 	v = func() any {
 		return func() any {
-			f_1581 := func() any {
+			f_1580 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k1 }())
@@ -11674,7 +11665,7 @@ func i65(p *pegort.TParser) (any, bool) {
 					return c.EndList(b)
 				}()
 			}()
-			return tmk_Name(c, true, f_1581)
+			return tmk_Name(c, true, f_1580)
 		}()
 	}()
 	p.Depth--
@@ -12054,7 +12045,7 @@ func i70(p *pegort.TParser) (any, bool) {
 	p.Where = "fn_dotted"
 	v = func() any {
 		return func() any {
-			f_1582 := func() any {
+			f_1581 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k1 }())
@@ -12062,7 +12053,7 @@ func i70(p *pegort.TParser) (any, bool) {
 					return c.EndList(b)
 				}()
 			}()
-			return tmk_Name(c, true, f_1582)
+			return tmk_Name(c, true, f_1581)
 		}()
 	}()
 	p.Depth--
@@ -12124,8 +12115,8 @@ L6:
 	p.Where = "fn_single"
 	v = func() any {
 		return func() any {
-			f_1583 := func() any { return c.List(func() any { return k1 }()) }()
-			return tmk_Name(c, true, f_1583)
+			f_1582 := func() any { return c.List(func() any { return k1 }()) }()
+			return tmk_Name(c, true, f_1582)
 		}()
 	}()
 	p.Depth--
@@ -14453,9 +14444,9 @@ L8:
 	p.Where = "op_rhs_prefix"
 	v = func() any {
 		return func() any {
-			f_1584 := func() any { return k1 }()
-			f_1585 := func() any { return k4 }()
-			return tmk_Unary(c, true, f_1584, f_1585)
+			f_1583 := func() any { return k1 }()
+			f_1584 := func() any { return k4 }()
+			return tmk_Unary(c, true, f_1583, f_1584)
 		}()
 	}()
 	p.Depth--
@@ -15710,7 +15701,7 @@ func i85(p *pegort.TParser) (any, bool) {
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "any_source_query"
 	v = func() any {
-		return func() any { f_1586 := func() any { return k1 }(); return tmk_Subquery(c, true, f_1586) }()
+		return func() any { f_1585 := func() any { return k1 }(); return tmk_Subquery(c, true, f_1585) }()
 	}()
 	p.Depth--
 	return v, true
@@ -16984,8 +16975,8 @@ func i98(p *pegort.TParser) (any, bool) {
 	p.Where = "positional_ref"
 	v = func() any {
 		return func() any {
-			f_1588 := func() any { return k1 }()
-			return tmk_PositionalRef(c, true, f_1588)
+			f_1587 := func() any { return k1 }()
+			return tmk_PositionalRef(c, true, f_1587)
 		}()
 	}()
 	p.Depth--
@@ -17030,10 +17021,9 @@ func i99(p *pegort.TParser) (any, bool) {
 		v46   any
 		x47   int
 		x49   int
-		x51   rune
-		x52   bool
-		ch    rune
-		size  int
+		x51   int
+		x52   rune
+		x53   bool
 	)
 	start = p.Pos
 	p.Enter()
@@ -17224,94 +17214,87 @@ L2:
 		goto L48
 	}
 	x49 = p.Pos
-	x51, _, x52 = p.NextOrdinary()
-	if !(x52 && (x51 == 40)) && p.Depth <= p.MaxDepth {
+	x52, x51, x53 = p.NextOrdinary()
+	if !(x53 && (x52 == 40)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 70)
-		goto L53
+		goto L54
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit125, "(", 70, false); !ok {
-		goto L54
+		goto L55
 	}
 	goto L50
-L54:
+L55:
 	p.Pos = x49
-L53:
-	if !(x52 && (x51 == 123)) && p.Depth <= p.MaxDepth {
+L54:
+	if !(x53 && (x52 == 123)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 81)
-		goto L55
+		goto L56
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit156, "{", 81, false); !ok {
-		goto L56
+		goto L57
 	}
 	goto L50
-L56:
+L57:
 	p.Pos = x49
-L55:
-	if !(x52 && (x51 == 39)) && p.Depth <= p.MaxDepth {
+L56:
+	if !(x53 && (x52 == 39)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 13)
-		goto L57
+		goto L58
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
-		goto L58
+		goto L59
 	}
 	goto L50
-L58:
+L59:
 	p.Pos = x49
-L57:
-	if !(x52 && (x51 == 36)) && p.Depth <= p.MaxDepth {
+L58:
+	if !(x53 && (x52 == 36)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 38)
-		goto L59
+		goto L60
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 36 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit42, "$", 38, false); !ok {
-		goto L60
-	}
-	goto L50
-L60:
-	p.Pos = x49
-L59:
-	if !(x52 && (!(!(x51 == 101 || x51 == 69 || x51 == 98 || x51 == 66 || x51 == 120 || x51 == 88 || x51 == 110 || x51 == 78)))) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 12)
 		goto L61
 	}
-	if !p.ClassFast(&cls1568) && !p.ClassSkip(&cls1568, 12) {
+	goto L50
+L61:
+	p.Pos = x49
+L60:
+	if !(x53 && (!(!(x52 == 101 || x52 == 69 || x52 == 98 || x52 == 66 || x52 == 120 || x52 == 88 || x52 == 110 || x52 == 78)))) && p.Depth <= p.MaxDepth {
+		p.ExpectOrdinary(p.Pos, 12)
 		goto L62
 	}
+	p.Pos += x51
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
-		goto L62
-	}
-	goto L50
-L62:
-	p.Pos = x49
-L61:
-	if !(x52 && (x51 == 117 || x51 == 85)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 14)
 		goto L63
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 117 || ch == 85) {
+	goto L50
+L63:
+	p.Pos = x49
+L62:
+	if !(x53 && (x52 == 117 || x52 == 85)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 14)
 		goto L64
 	}
-	p.Pos += size
+	p.Pos += x51
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 38 && p.In[p.Pos+1] == 39 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit17, "&'", 15, false); !ok {
-		goto L64
+		goto L65
 	}
 	goto L50
-L64:
+L65:
 	p.Pos = x49
-L63:
+L64:
 	goto L48
 L50:
 	p.Silent--
@@ -17324,8 +17307,8 @@ L48:
 	p.Where = "plain_column"
 	v = func() any {
 		return func() any {
-			f_1589 := func() any { return k44 }()
-			return tmk_ColumnRef(c, true, f_1589)
+			f_1588 := func() any { return k44 }()
+			return tmk_ColumnRef(c, true, f_1588)
 		}()
 	}()
 	p.Depth--
@@ -17371,8 +17354,8 @@ func i100(p *pegort.TParser) (any, bool) {
 	p.Where = "column_ref"
 	v = func() any {
 		return func() any {
-			f_1590 := func() any { return k1 }()
-			return tmk_ColumnRef(c, true, f_1590)
+			f_1589 := func() any { return k1 }()
+			return tmk_ColumnRef(c, true, f_1589)
 		}()
 	}()
 	p.Depth--
@@ -17573,7 +17556,7 @@ func i103(p *pegort.TParser) (any, bool) {
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "subquery_expr"
 	v = func() any {
-		return func() any { f_1591 := func() any { return k1 }(); return tmk_Subquery(c, true, f_1591) }()
+		return func() any { f_1590 := func() any { return k1 }(); return tmk_Subquery(c, true, f_1590) }()
 	}()
 	p.Depth--
 	return v, true
@@ -17676,7 +17659,7 @@ func i104(p *pegort.TParser) (any, bool) {
 	p.Where = "row_expr"
 	v = func() any {
 		return func() any {
-			f_1592 := func() any {
+			f_1591 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k1 }())
@@ -17684,8 +17667,8 @@ func i104(p *pegort.TParser) (any, bool) {
 					return c.EndList(b)
 				}()
 			}()
-			f_1593 := func() any { return any(false) }()
-			return tmk_Row(c, true, f_1592, f_1593)
+			f_1592 := func() any { return any(false) }()
+			return tmk_Row(c, true, f_1591, f_1592)
 		}()
 	}()
 	p.Depth--
@@ -17746,7 +17729,7 @@ func i105(p *pegort.TParser) (any, bool) {
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "paren_expr"
 	v = func() any {
-		return func() any { f_1594 := func() any { return k1 }(); return tmk_Paren(c, true, f_1594) }()
+		return func() any { f_1593 := func() any { return k1 }(); return tmk_Paren(c, true, f_1593) }()
 	}()
 	p.Depth--
 	return v, true
@@ -18111,8 +18094,8 @@ L6:
 	p.Where = "list_lit"
 	v = func() any {
 		return func() any {
-			f_1595 := func() any { return c.Concat(func() any { return k1 }()) }()
-			return tmk_ListLit(c, true, f_1595)
+			f_1594 := func() any { return c.Concat(func() any { return k1 }()) }()
+			return tmk_ListLit(c, true, f_1594)
 		}()
 	}()
 	p.Depth--
@@ -18216,8 +18199,8 @@ func i111(p *pegort.TParser) (any, bool) {
 	p.Where = "array_subquery"
 	v = func() any {
 		return func() any {
-			f_1596 := func() any { return k1 }()
-			return tmk_ArraySubquery(c, true, f_1596)
+			f_1595 := func() any { return k1 }()
+			return tmk_ArraySubquery(c, true, f_1595)
 		}()
 	}()
 	p.Depth--
@@ -18291,8 +18274,8 @@ L6:
 	p.Where = "array_lit"
 	v = func() any {
 		return func() any {
-			f_1597 := func() any { return c.Concat(func() any { return k1 }()) }()
-			return tmk_ArrayLit(c, true, f_1597)
+			f_1596 := func() any { return c.Concat(func() any { return k1 }()) }()
+			return tmk_ArrayLit(c, true, f_1596)
 		}()
 	}()
 	p.Depth--
@@ -18407,7 +18390,7 @@ L16:
 	p.Where = "struct_lit"
 	v = func() any {
 		return func() any {
-			f_1598 := func() any {
+			f_1597 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k1 }())
@@ -18415,7 +18398,7 @@ L16:
 					return c.EndList(b)
 				}()
 			}()
-			return tmk_StructLit(c, true, f_1598)
+			return tmk_StructLit(c, true, f_1597)
 		}()
 	}()
 	p.Depth--
@@ -18478,9 +18461,9 @@ func i114(p *pegort.TParser) (any, bool) {
 	p.Where = "struct_field"
 	v = func() any {
 		return func() any {
-			f_1599 := func() any { return k1 }()
-			f_1600 := func() any { return k4 }()
-			return tmk_StructField(c, true, f_1599, f_1600)
+			f_1598 := func() any { return k1 }()
+			f_1599 := func() any { return k4 }()
+			return tmk_StructField(c, true, f_1598, f_1599)
 		}()
 	}()
 	p.Depth--
@@ -18554,8 +18537,8 @@ L6:
 	p.Where = "map_lit"
 	v = func() any {
 		return func() any {
-			f_1601 := func() any { return c.Concat(func() any { return k1 }()) }()
-			return tmk_MapLit(c, true, f_1601)
+			f_1600 := func() any { return c.Concat(func() any { return k1 }()) }()
+			return tmk_MapLit(c, true, f_1600)
 		}()
 	}()
 	p.Depth--
@@ -18720,9 +18703,9 @@ func i117(p *pegort.TParser) (any, bool) {
 	p.Where = "map_entry"
 	v = func() any {
 		return func() any {
-			f_1602 := func() any { return k1 }()
-			f_1603 := func() any { return k4 }()
-			return tmk_MapEntry(c, true, f_1602, f_1603)
+			f_1601 := func() any { return k1 }()
+			f_1602 := func() any { return k4 }()
+			return tmk_MapEntry(c, true, f_1601, f_1602)
 		}()
 	}()
 	p.Depth--
@@ -18887,11 +18870,11 @@ func i119(p *pegort.TParser) (any, bool) {
 	p.Where = "list_comp_if"
 	v = func() any {
 		return func() any {
-			f_1604 := func() any { return k1 }()
-			f_1605 := func() any { return k4 }()
-			f_1606 := func() any { return k7 }()
-			f_1607 := func() any { return k10 }()
-			return tmk_ListComp(c, true, f_1604, f_1605, f_1606, f_1607)
+			f_1603 := func() any { return k1 }()
+			f_1604 := func() any { return k4 }()
+			f_1605 := func() any { return k7 }()
+			f_1606 := func() any { return k10 }()
+			return tmk_ListComp(c, true, f_1603, f_1604, f_1605, f_1606)
 		}()
 	}()
 	p.Depth--
@@ -18984,10 +18967,10 @@ func i120(p *pegort.TParser) (any, bool) {
 	p.Where = "list_comp"
 	v = func() any {
 		return func() any {
-			f_1608 := func() any { return k1 }()
-			f_1609 := func() any { return k4 }()
-			f_1610 := func() any { return k7 }()
-			return tmk_ListComp(c, true, f_1608, f_1609, f_1610, nil)
+			f_1607 := func() any { return k1 }()
+			f_1608 := func() any { return k4 }()
+			f_1609 := func() any { return k7 }()
+			return tmk_ListComp(c, true, f_1607, f_1608, f_1609, nil)
 		}()
 	}()
 	p.Depth--
@@ -19102,10 +19085,10 @@ L17:
 	p.Where = "case_expr"
 	v = func() any {
 		return func() any {
-			f_1611 := func() any { return k2 }()
-			f_1612 := func() any { return k10 }()
-			f_1613 := func() any { return k14 }()
-			return tmk_Case(c, true, f_1611, f_1612, f_1613)
+			f_1610 := func() any { return k2 }()
+			f_1611 := func() any { return k10 }()
+			f_1612 := func() any { return k14 }()
+			return tmk_Case(c, true, f_1610, f_1611, f_1612)
 		}()
 	}()
 	p.Depth--
@@ -19254,9 +19237,9 @@ func i123(p *pegort.TParser) (any, bool) {
 	p.Where = "when_clause"
 	v = func() any {
 		return func() any {
-			f_1614 := func() any { return k1 }()
-			f_1615 := func() any { return k4 }()
-			return tmk_When(c, true, f_1614, f_1615)
+			f_1613 := func() any { return k1 }()
+			f_1614 := func() any { return k4 }()
+			return tmk_When(c, true, f_1613, f_1614)
 		}()
 	}()
 	p.Depth--
@@ -19330,9 +19313,9 @@ L6:
 	p.Where = "qualified_row"
 	v = func() any {
 		return func() any {
-			f_1616 := func() any { return c.Concat(func() any { return k1 }()) }()
-			f_1617 := func() any { return any(true) }()
-			return tmk_Row(c, true, f_1616, f_1617)
+			f_1615 := func() any { return c.Concat(func() any { return k1 }()) }()
+			f_1616 := func() any { return any(true) }()
+			return tmk_Row(c, true, f_1615, f_1616)
 		}()
 	}()
 	p.Depth--
@@ -19692,9 +19675,9 @@ func i129(p *pegort.TParser) (any, bool) {
 	p.Where = "columns_expr"
 	v = func() any {
 		return func() any {
-			f_1618 := func() any { return k1 }()
-			f_1619 := func() any { return any(false) }()
-			return tmk_ColumnsExpr(c, true, f_1618, f_1619)
+			f_1617 := func() any { return k1 }()
+			f_1618 := func() any { return any(false) }()
+			return tmk_ColumnsExpr(c, true, f_1617, f_1618)
 		}()
 	}()
 	p.Depth--
@@ -19765,9 +19748,9 @@ func i130(p *pegort.TParser) (any, bool) {
 	p.Where = "star_columns"
 	v = func() any {
 		return func() any {
-			f_1620 := func() any { return k1 }()
-			f_1621 := func() any { return any(true) }()
-			return tmk_ColumnsExpr(c, true, f_1620, f_1621)
+			f_1619 := func() any { return k1 }()
+			f_1620 := func() any { return any(true) }()
+			return tmk_ColumnsExpr(c, true, f_1619, f_1620)
 		}()
 	}()
 	p.Depth--
@@ -19832,8 +19815,8 @@ func i131(p *pegort.TParser) (any, bool) {
 	p.Where = "unpack_expr"
 	v = func() any {
 		return func() any {
-			f_1622 := func() any { return k1 }()
-			return tmk_UnpackExpr(c, true, f_1622)
+			f_1621 := func() any { return k1 }()
+			return tmk_UnpackExpr(c, true, f_1621)
 		}()
 	}()
 	p.Depth--
@@ -19933,10 +19916,10 @@ L19:
 	p.Where = "star_expr"
 	v = func() any {
 		return func() any {
-			f_1623 := func() any { return c.Concat(func() any { return k2 }()) }()
-			f_1624 := func() any { return c.Concat(func() any { return k9 }()) }()
-			f_1625 := func() any { return c.Concat(func() any { return k16 }()) }()
-			return tmk_Star(c, true, nil, f_1623, f_1624, f_1625)
+			f_1622 := func() any { return c.Concat(func() any { return k2 }()) }()
+			f_1623 := func() any { return c.Concat(func() any { return k9 }()) }()
+			f_1624 := func() any { return c.Concat(func() any { return k16 }()) }()
+			return tmk_Star(c, true, nil, f_1622, f_1623, f_1624)
 		}()
 	}()
 	p.Depth--
@@ -20055,11 +20038,11 @@ L22:
 	p.Where = "qualified_star"
 	v = func() any {
 		return func() any {
-			f_1626 := func() any { return k1 }()
-			f_1627 := func() any { return c.Concat(func() any { return k5 }()) }()
-			f_1628 := func() any { return c.Concat(func() any { return k12 }()) }()
-			f_1629 := func() any { return c.Concat(func() any { return k19 }()) }()
-			return tmk_Star(c, true, f_1626, f_1627, f_1628, f_1629)
+			f_1625 := func() any { return k1 }()
+			f_1626 := func() any { return c.Concat(func() any { return k5 }()) }()
+			f_1627 := func() any { return c.Concat(func() any { return k12 }()) }()
+			f_1628 := func() any { return c.Concat(func() any { return k19 }()) }()
+			return tmk_Star(c, true, f_1625, f_1626, f_1627, f_1628)
 		}()
 	}()
 	p.Depth--
@@ -20125,10 +20108,10 @@ func i134(p *pegort.TParser) (any, bool) {
 	p.Where = "lambda_expr"
 	v = func() any {
 		return func() any {
-			f_1630 := func() any { return k1 }()
-			f_1631 := func() any { return k4 }()
-			f_1632 := func() any { return any(true) }()
-			return tmk_Lambda(c, true, f_1630, f_1631, f_1632)
+			f_1629 := func() any { return k1 }()
+			f_1630 := func() any { return k4 }()
+			f_1631 := func() any { return any(true) }()
+			return tmk_Lambda(c, true, f_1629, f_1630, f_1631)
 		}()
 	}()
 	p.Depth--
@@ -20215,7 +20198,7 @@ func i135(p *pegort.TParser) (any, bool) {
 	p.Where = "except_name"
 	v = func() any {
 		return func() any {
-			f_1633 := func() any {
+			f_1632 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k1 }())
@@ -20223,7 +20206,7 @@ func i135(p *pegort.TParser) (any, bool) {
 					return c.EndList(b)
 				}()
 			}()
-			return tmk_Name(c, true, f_1633)
+			return tmk_Name(c, true, f_1632)
 		}()
 	}()
 	p.Depth--
@@ -20559,9 +20542,9 @@ func i140(p *pegort.TParser) (any, bool) {
 	p.Where = "replace_item"
 	v = func() any {
 		return func() any {
-			f_1634 := func() any { return k1 }()
-			f_1635 := func() any { return k4 }()
-			return tmk_ReplaceItem(c, true, f_1634, f_1635)
+			f_1633 := func() any { return k1 }()
+			f_1634 := func() any { return k4 }()
+			return tmk_ReplaceItem(c, true, f_1633, f_1634)
 		}()
 	}()
 	p.Depth--
@@ -20858,9 +20841,9 @@ func i144(p *pegort.TParser) (any, bool) {
 	p.Where = "rename_item"
 	v = func() any {
 		return func() any {
-			f_1636 := func() any { return k1 }()
-			f_1637 := func() any { return k4 }()
-			return tmk_RenameItem(c, true, f_1636, f_1637)
+			f_1635 := func() any { return k1 }()
+			f_1636 := func() any { return k4 }()
+			return tmk_RenameItem(c, true, f_1635, f_1636)
 		}()
 	}()
 	p.Depth--
@@ -21370,7 +21353,7 @@ func i151(p *pegort.TParser) (any, bool) {
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "exists_expr"
 	v = func() any {
-		return func() any { f_1638 := func() any { return k1 }(); return tmk_Exists(c, true, f_1638) }()
+		return func() any { f_1637 := func() any { return k1 }(); return tmk_Exists(c, true, f_1637) }()
 	}()
 	p.Depth--
 	return v, true
@@ -21468,9 +21451,9 @@ L5:
 	p.Where = "grouping_expr"
 	v = func() any {
 		return func() any {
-			f_1639 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1640 := func() any { return k13 }()
-			return tmk_Grouping(c, true, f_1639, f_1640)
+			f_1638 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1639 := func() any { return k13 }()
+			return tmk_Grouping(c, true, f_1638, f_1639)
 		}()
 	}()
 	p.Depth--
@@ -21615,11 +21598,11 @@ func i154(p *pegort.TParser) (any, bool) {
 	p.Where = "cast_plain"
 	v = func() any {
 		return func() any {
-			f_1641 := func() any { return k1 }()
-			f_1642 := func() any { return k4 }()
+			f_1640 := func() any { return k1 }()
+			f_1641 := func() any { return k4 }()
+			f_1642 := func() any { return any(false) }()
 			f_1643 := func() any { return any(false) }()
-			f_1644 := func() any { return any(false) }()
-			return tmk_Cast(c, true, f_1641, f_1642, f_1643, f_1644)
+			return tmk_Cast(c, true, f_1640, f_1641, f_1642, f_1643)
 		}()
 	}()
 	p.Depth--
@@ -21701,11 +21684,11 @@ func i155(p *pegort.TParser) (any, bool) {
 	p.Where = "cast_try"
 	v = func() any {
 		return func() any {
-			f_1645 := func() any { return k1 }()
-			f_1646 := func() any { return k4 }()
-			f_1647 := func() any { return any(true) }()
-			f_1648 := func() any { return any(false) }()
-			return tmk_Cast(c, true, f_1645, f_1646, f_1647, f_1648)
+			f_1644 := func() any { return k1 }()
+			f_1645 := func() any { return k4 }()
+			f_1646 := func() any { return any(true) }()
+			f_1647 := func() any { return any(false) }()
+			return tmk_Cast(c, true, f_1644, f_1645, f_1646, f_1647)
 		}()
 	}()
 	p.Depth--
@@ -21845,9 +21828,9 @@ L8:
 	p.Where = "interval_paren"
 	v = func() any {
 		return func() any {
-			f_1649 := func() any { return k1 }()
-			f_1650 := func() any { return k5 }()
-			return tmk_IntervalLit(c, true, f_1649, f_1650)
+			f_1648 := func() any { return k1 }()
+			f_1649 := func() any { return k5 }()
+			return tmk_IntervalLit(c, true, f_1648, f_1649)
 		}()
 	}()
 	p.Depth--
@@ -21942,9 +21925,9 @@ L17:
 	p.Where = "interval_const"
 	v = func() any {
 		return func() any {
-			f_1651 := func() any { return k1 }()
-			f_1652 := func() any { return k14 }()
-			return tmk_IntervalLit(c, true, f_1651, f_1652)
+			f_1650 := func() any { return k1 }()
+			f_1651 := func() any { return k14 }()
+			return tmk_IntervalLit(c, true, f_1650, f_1651)
 		}()
 	}()
 	p.Depth--
@@ -22311,9 +22294,9 @@ func i163(p *pegort.TParser) (any, bool) {
 	p.Where = "sc_coalesce"
 	v = func() any {
 		return func() any {
-			f_1653 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1654 := func() any { return k4 }()
-			return tmk_SpecialCall(c, true, f_1653, nil, f_1654, nil, nil, nil, nil, nil)
+			f_1652 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1653 := func() any { return k4 }()
+			return tmk_SpecialCall(c, true, f_1652, nil, f_1653, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.Depth--
@@ -22402,11 +22385,11 @@ func i164(p *pegort.TParser) (any, bool) {
 	p.Where = "sc_nullif"
 	v = func() any {
 		return func() any {
-			f_1655 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1656 := func() any {
+			f_1654 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1655 := func() any {
 				return c.List(func() any { return k4 }(), func() any { return k7 }())
 			}()
-			return tmk_SpecialCall(c, true, f_1655, nil, f_1656, nil, nil, nil, nil, nil)
+			return tmk_SpecialCall(c, true, f_1654, nil, f_1655, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.Depth--
@@ -22493,10 +22476,10 @@ func i165(p *pegort.TParser) (any, bool) {
 	p.Where = "sc_extract"
 	v = func() any {
 		return func() any {
-			f_1657 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1658 := func() any { return c.Text(func() any { return k4 }()) }()
-			f_1659 := func() any { return c.List(func() any { return k7 }()) }()
-			return tmk_SpecialCall(c, true, f_1657, f_1658, f_1659, nil, nil, nil, nil, nil)
+			f_1656 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1657 := func() any { return c.Text(func() any { return k4 }()) }()
+			f_1658 := func() any { return c.List(func() any { return k7 }()) }()
+			return tmk_SpecialCall(c, true, f_1656, f_1657, f_1658, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.Depth--
@@ -22555,8 +22538,8 @@ func i166(p *pegort.TParser) (any, bool) {
 	p.Where = "sc_extract_empty"
 	v = func() any {
 		return func() any {
-			f_1660 := func() any { return c.Text(func() any { return k1 }()) }()
-			return tmk_SpecialCall(c, true, f_1660, nil, nil, nil, nil, nil, nil, nil)
+			f_1659 := func() any { return c.Text(func() any { return k1 }()) }()
+			return tmk_SpecialCall(c, true, f_1659, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.Depth--
@@ -22687,12 +22670,12 @@ L17:
 	p.Where = "sc_overlay"
 	v = func() any {
 		return func() any {
-			f_1661 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1662 := func() any { return c.List(func() any { return k4 }()) }()
-			f_1663 := func() any { return k7 }()
-			f_1664 := func() any { return c.List(func() any { return k10 }()) }()
-			f_1665 := func() any { return k14 }()
-			return tmk_SpecialCall(c, true, f_1661, nil, f_1662, f_1664, f_1665, f_1663, nil, nil)
+			f_1660 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1661 := func() any { return c.List(func() any { return k4 }()) }()
+			f_1662 := func() any { return k7 }()
+			f_1663 := func() any { return c.List(func() any { return k10 }()) }()
+			f_1664 := func() any { return k14 }()
+			return tmk_SpecialCall(c, true, f_1660, nil, f_1661, f_1663, f_1664, f_1662, nil, nil)
 		}()
 	}()
 	p.Depth--
@@ -22779,11 +22762,11 @@ func i168(p *pegort.TParser) (any, bool) {
 	p.Where = "sc_position"
 	v = func() any {
 		return func() any {
-			f_1666 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1667 := func() any {
+			f_1665 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1666 := func() any {
 				return c.List(func() any { return k4 }(), func() any { return k7 }())
 			}()
-			return tmk_SpecialCall(c, true, f_1666, nil, f_1667, nil, nil, nil, nil, nil)
+			return tmk_SpecialCall(c, true, f_1665, nil, f_1666, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.Depth--
@@ -22842,8 +22825,8 @@ func i169(p *pegort.TParser) (any, bool) {
 	p.Where = "sc_position_empty"
 	v = func() any {
 		return func() any {
-			f_1668 := func() any { return c.Text(func() any { return k1 }()) }()
-			return tmk_SpecialCall(c, true, f_1668, nil, nil, nil, nil, nil, nil, nil)
+			f_1667 := func() any { return c.Text(func() any { return k1 }()) }()
+			return tmk_SpecialCall(c, true, f_1667, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.Depth--
@@ -22957,11 +22940,11 @@ L14:
 	p.Where = "sc_substring_from"
 	v = func() any {
 		return func() any {
-			f_1669 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1670 := func() any { return c.List(func() any { return k4 }()) }()
-			f_1671 := func() any { return c.List(func() any { return k7 }()) }()
-			f_1672 := func() any { return k11 }()
-			return tmk_SpecialCall(c, true, f_1669, nil, f_1670, f_1671, f_1672, nil, nil, nil)
+			f_1668 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1669 := func() any { return c.List(func() any { return k4 }()) }()
+			f_1670 := func() any { return c.List(func() any { return k7 }()) }()
+			f_1671 := func() any { return k11 }()
+			return tmk_SpecialCall(c, true, f_1668, nil, f_1669, f_1670, f_1671, nil, nil, nil)
 		}()
 	}()
 	p.Depth--
@@ -23065,11 +23048,11 @@ func i171(p *pegort.TParser) (any, bool) {
 	p.Where = "sc_substring_for_from"
 	v = func() any {
 		return func() any {
-			f_1673 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1674 := func() any { return c.List(func() any { return k4 }()) }()
-			f_1675 := func() any { return c.List(func() any { return k10 }()) }()
-			f_1676 := func() any { return k7 }()
-			return tmk_SpecialCall(c, true, f_1673, nil, f_1674, f_1675, f_1676, nil, nil, nil)
+			f_1672 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1673 := func() any { return c.List(func() any { return k4 }()) }()
+			f_1674 := func() any { return c.List(func() any { return k10 }()) }()
+			f_1675 := func() any { return k7 }()
+			return tmk_SpecialCall(c, true, f_1672, nil, f_1673, f_1674, f_1675, nil, nil, nil)
 		}()
 	}()
 	p.Depth--
@@ -23156,10 +23139,10 @@ func i172(p *pegort.TParser) (any, bool) {
 	p.Where = "sc_substring_for"
 	v = func() any {
 		return func() any {
-			f_1677 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1678 := func() any { return c.List(func() any { return k4 }()) }()
-			f_1679 := func() any { return k7 }()
-			return tmk_SpecialCall(c, true, f_1677, nil, f_1678, nil, f_1679, nil, nil, nil)
+			f_1676 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1677 := func() any { return c.List(func() any { return k4 }()) }()
+			f_1678 := func() any { return k7 }()
+			return tmk_SpecialCall(c, true, f_1676, nil, f_1677, nil, f_1678, nil, nil, nil)
 		}()
 	}()
 	p.Depth--
@@ -23229,9 +23212,9 @@ func i173(p *pegort.TParser) (any, bool) {
 	p.Where = "sc_substring_list"
 	v = func() any {
 		return func() any {
-			f_1680 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1681 := func() any { return k4 }()
-			return tmk_SpecialCall(c, true, f_1680, nil, f_1681, nil, nil, nil, nil, nil)
+			f_1679 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1680 := func() any { return k4 }()
+			return tmk_SpecialCall(c, true, f_1679, nil, f_1680, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.Depth--
@@ -23290,8 +23273,8 @@ func i174(p *pegort.TParser) (any, bool) {
 	p.Where = "sc_substring_empty"
 	v = func() any {
 		return func() any {
-			f_1682 := func() any { return c.Text(func() any { return k1 }()) }()
-			return tmk_SpecialCall(c, true, f_1682, nil, nil, nil, nil, nil, nil, nil)
+			f_1681 := func() any { return c.Text(func() any { return k1 }()) }()
+			return tmk_SpecialCall(c, true, f_1681, nil, nil, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.Depth--
@@ -23378,10 +23361,10 @@ func i175(p *pegort.TParser) (any, bool) {
 	p.Where = "sc_treat"
 	v = func() any {
 		return func() any {
-			f_1683 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1684 := func() any { return c.List(func() any { return k4 }()) }()
-			f_1685 := func() any { return k7 }()
-			return tmk_SpecialCall(c, true, f_1683, nil, f_1684, nil, nil, nil, nil, f_1685)
+			f_1682 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1683 := func() any { return c.List(func() any { return k4 }()) }()
+			f_1684 := func() any { return k7 }()
+			return tmk_SpecialCall(c, true, f_1682, nil, f_1683, nil, nil, nil, nil, f_1684)
 		}()
 	}()
 	p.Depth--
@@ -23532,11 +23515,11 @@ L8:
 	p.Where = "sc_trim_chars"
 	v = func() any {
 		return func() any {
-			f_1686 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1687 := func() any { return c.Text(func() any { return k5 }()) }()
-			f_1688 := func() any { return k27 }()
-			f_1689 := func() any { return k24 }()
-			return tmk_SpecialCall(c, true, f_1686, f_1687, f_1688, nil, nil, nil, f_1689, nil)
+			f_1685 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1686 := func() any { return c.Text(func() any { return k5 }()) }()
+			f_1687 := func() any { return k27 }()
+			f_1688 := func() any { return k24 }()
+			return tmk_SpecialCall(c, true, f_1685, f_1686, f_1687, nil, nil, nil, f_1688, nil)
 		}()
 	}()
 	p.Depth--
@@ -23696,10 +23679,10 @@ L28:
 	p.Where = "sc_trim"
 	v = func() any {
 		return func() any {
-			f_1690 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1691 := func() any { return c.Text(func() any { return k5 }()) }()
-			f_1692 := func() any { return k24 }()
-			return tmk_SpecialCall(c, true, f_1690, f_1691, f_1692, nil, nil, nil, nil, nil)
+			f_1689 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1690 := func() any { return c.Text(func() any { return k5 }()) }()
+			f_1691 := func() any { return k24 }()
+			return tmk_SpecialCall(c, true, f_1689, f_1690, f_1691, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.Depth--
@@ -23778,9 +23761,9 @@ func i178(p *pegort.TParser) (any, bool) {
 	p.Where = "sc_collation"
 	v = func() any {
 		return func() any {
-			f_1693 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1694 := func() any { return c.List(func() any { return k5 }()) }()
-			return tmk_SpecialCall(c, true, f_1693, nil, f_1694, nil, nil, nil, nil, nil)
+			f_1692 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1693 := func() any { return c.List(func() any { return k5 }()) }()
+			return tmk_SpecialCall(c, true, f_1692, nil, f_1693, nil, nil, nil, nil, nil)
 		}()
 	}()
 	p.Depth--
@@ -24279,19 +24262,19 @@ L93:
 	p.Where = "func_call"
 	v = func() any {
 		return func() any {
-			f_1695 := func() any { return k1 }()
-			f_1696 := func() any { return c.Text(func() any { return k5 }()) }()
-			f_1697 := func() any { return c.Concat(func() any { return k7 }()) }()
-			f_1698 := func() any { return k9 }()
-			f_1699 := func() any { return k55 }()
-			f_1700 := func() any { return c.Text(func() any { return k62 }()) }()
-			f_1701 := func() any { return k69 }()
-			f_1702 := func() any { return k76 }()
-			f_1703 := func() any {
+			f_1694 := func() any { return k1 }()
+			f_1695 := func() any { return c.Text(func() any { return k5 }()) }()
+			f_1696 := func() any { return c.Concat(func() any { return k7 }()) }()
+			f_1697 := func() any { return k9 }()
+			f_1698 := func() any { return k55 }()
+			f_1699 := func() any { return c.Text(func() any { return k62 }()) }()
+			f_1700 := func() any { return k69 }()
+			f_1701 := func() any { return k76 }()
+			f_1702 := func() any {
 				return c.Binary(">", func() any { return c.Length(func() any { return k83 }()) }(), func() any { return any(0) }())
 			}()
-			f_1704 := func() any { return k90 }()
-			return tmk_FuncCall(c, true, f_1695, f_1696, f_1697, f_1698, f_1699, f_1700, f_1701, f_1702, f_1703, f_1704)
+			f_1703 := func() any { return k90 }()
+			return tmk_FuncCall(c, true, f_1694, f_1695, f_1696, f_1697, f_1698, f_1699, f_1700, f_1701, f_1702, f_1703)
 		}()
 	}()
 	p.Depth--
@@ -24372,15 +24355,15 @@ func i183(p *pegort.TParser) (any, bool) {
 	p.Where = "typed_literal_args"
 	v = func() any {
 		return func() any {
-			f_1705 := func() any {
+			f_1704 := func() any {
 				return func() any {
-					f_1706 := func() any { return c.Text(func() any { return k1 }()) }()
-					f_1707 := func() any { return k4 }()
-					return tmk_Type(c, false, f_1706, f_1707, nil, nil, nil, nil)
+					f_1705 := func() any { return c.Text(func() any { return k1 }()) }()
+					f_1706 := func() any { return k4 }()
+					return tmk_Type(c, false, f_1705, f_1706, nil, nil, nil, nil)
 				}()
 			}()
-			f_1708 := func() any { return k7 }()
-			return tmk_TypedLit(c, true, f_1705, f_1708)
+			f_1707 := func() any { return k7 }()
+			return tmk_TypedLit(c, true, f_1704, f_1707)
 		}()
 	}()
 	p.DropCreated(c.Cbase)
@@ -24663,9 +24646,9 @@ L5:
 	p.Where = "named_arg"
 	v = func() any {
 		return func() any {
-			f_1709 := func() any { return k1 }()
-			f_1710 := func() any { return k12 }()
-			return tmk_NamedArg(c, true, f_1709, f_1710, nil)
+			f_1708 := func() any { return k1 }()
+			f_1709 := func() any { return k12 }()
+			return tmk_NamedArg(c, true, f_1708, f_1709, nil)
 		}()
 	}()
 	p.Depth--
@@ -24893,9 +24876,9 @@ L6:
 	p.Where = "over_clause"
 	v = func() any {
 		return func() any {
-			f_1711 := func() any { return k4 }()
-			f_1712 := func() any { return k2 }()
-			return tmk_WindowOver(c, true, f_1711, f_1712)
+			f_1710 := func() any { return k4 }()
+			f_1711 := func() any { return k2 }()
+			return tmk_WindowOver(c, true, f_1710, f_1711)
 		}()
 	}()
 	p.Depth--
@@ -25102,11 +25085,11 @@ L40:
 	p.Where = "window_specification"
 	v = func() any {
 		return func() any {
-			f_1713 := func() any { return k2 }()
-			f_1714 := func() any { return c.Concat(func() any { return k23 }()) }()
-			f_1715 := func() any { return k30 }()
-			f_1716 := func() any { return k37 }()
-			return tmk_WindowSpec(c, true, f_1713, f_1714, f_1715, f_1716)
+			f_1712 := func() any { return k2 }()
+			f_1713 := func() any { return c.Concat(func() any { return k23 }()) }()
+			f_1714 := func() any { return k30 }()
+			f_1715 := func() any { return k37 }()
+			return tmk_WindowSpec(c, true, f_1712, f_1713, f_1714, f_1715)
 		}()
 	}()
 	p.Depth--
@@ -25310,10 +25293,10 @@ L26:
 	p.Where = "frame_single"
 	v = func() any {
 		return func() any {
-			f_1717 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1718 := func() any { return k19 }()
-			f_1719 := func() any { return c.Text(func() any { return k23 }()) }()
-			return tmk_Frame(c, true, f_1717, f_1718, nil, f_1719)
+			f_1716 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1717 := func() any { return k19 }()
+			f_1718 := func() any { return c.Text(func() any { return k23 }()) }()
+			return tmk_Frame(c, true, f_1716, f_1717, nil, f_1718)
 		}()
 	}()
 	p.Depth--
@@ -25465,11 +25448,11 @@ L29:
 	p.Where = "frame_between"
 	v = func() any {
 		return func() any {
-			f_1720 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1721 := func() any { return k19 }()
-			f_1722 := func() any { return k22 }()
-			f_1723 := func() any { return c.Text(func() any { return k26 }()) }()
-			return tmk_Frame(c, true, f_1720, f_1721, f_1722, f_1723)
+			f_1719 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1720 := func() any { return k19 }()
+			f_1721 := func() any { return k22 }()
+			f_1722 := func() any { return c.Text(func() any { return k26 }()) }()
+			return tmk_Frame(c, true, f_1719, f_1720, f_1721, f_1722)
 		}()
 	}()
 	p.Depth--
@@ -25629,8 +25612,8 @@ L5:
 	p.Where = "frame_bound_kw"
 	v = func() any {
 		return func() any {
-			f_1724 := func() any { return c.Text(func() any { return k1 }()) }()
-			return tmk_FrameBound(c, true, f_1724, nil)
+			f_1723 := func() any { return c.Text(func() any { return k1 }()) }()
+			return tmk_FrameBound(c, true, f_1723, nil)
 		}()
 	}()
 	p.Depth--
@@ -25714,9 +25697,9 @@ L8:
 	p.Where = "frame_bound_expr"
 	v = func() any {
 		return func() any {
-			f_1725 := func() any { return c.Text(func() any { return k4 }()) }()
-			f_1726 := func() any { return k1 }()
-			return tmk_FrameBound(c, true, f_1725, f_1726)
+			f_1724 := func() any { return c.Text(func() any { return k4 }()) }()
+			f_1725 := func() any { return k1 }()
+			return tmk_FrameBound(c, true, f_1724, f_1725)
 		}()
 	}()
 	p.Depth--
@@ -25902,7 +25885,7 @@ func i201(p *pegort.TParser) (any, bool) {
 		x13 = append(x13, v15)
 		v16 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
 		v17 = p.ScopeValue(sh9, v16, x9)
-		v18 = p.AttachCaptures(v17, scope1727, []any{k10}, x9, p.Pos)
+		v18 = p.AttachCaptures(v17, scope1726, []any{k10}, x9, p.Pos)
 		x8++
 		p.PushKid(v18)
 		if p.Pos == x9 {
@@ -25921,8 +25904,8 @@ func i201(p *pegort.TParser) (any, bool) {
 		return func() any {
 			b := len(c.P.KidStack)
 			c.PushList(func() any { return k1 }())
-			c.PushMap(func() any { return k4 }(), func(l_1728 any) any {
-				return func() any { return c.Member(func() any { return l_1728 }(), "$t") }()
+			c.PushMap(func() any { return k4 }(), func(l_1727 any) any {
+				return func() any { return c.Member(func() any { return l_1727 }(), "$t") }()
 			})
 			return c.EndList(b)
 		}()
@@ -26313,9 +26296,9 @@ L10:
 	p.Where = "type_setof_qualified"
 	v = func() any {
 		return func() any {
-			f_1729 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1730 := func() any { return k11 }()
-			return tmk_Type(c, true, f_1729, nil, nil, nil, f_1730, nil)
+			f_1728 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1729 := func() any { return k11 }()
+			return tmk_Type(c, true, f_1728, nil, nil, nil, f_1729, nil)
 		}()
 	}()
 	p.Depth--
@@ -26440,7 +26423,7 @@ L6:
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
 	p.Where = "array_dim"
 	v = func() any {
-		return func() any { f_1731 := func() any { return k1 }(); return tmk_ArrayDim(c, true, f_1731) }()
+		return func() any { f_1730 := func() any { return k1 }(); return tmk_ArrayDim(c, true, f_1730) }()
 	}()
 	p.Depth--
 	return v, true
@@ -26582,8 +26565,8 @@ func i210(p *pegort.TParser) (any, bool) {
 	v = func() any {
 		return c.List(func() any {
 			return func() any {
-				f_1732 := func() any { return k1 }()
-				return tmk_ArrayDim(c, false, f_1732)
+				f_1731 := func() any { return k1 }()
+				return tmk_ArrayDim(c, false, f_1731)
 			}()
 		}())
 	}()
@@ -26810,10 +26793,10 @@ L23:
 	p.Where = "type_struct"
 	v = func() any {
 		return func() any {
-			f_1733 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1734 := func() any { return k15 }()
-			f_1735 := func() any { return c.Concat(func() any { return k18 }()) }()
-			return tmk_Type(c, true, f_1733, nil, f_1734, nil, f_1735, nil)
+			f_1732 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1733 := func() any { return k15 }()
+			f_1734 := func() any { return c.Concat(func() any { return k18 }()) }()
+			return tmk_Type(c, true, f_1732, nil, f_1733, nil, f_1734, nil)
 		}()
 	}()
 	p.Depth--
@@ -26958,9 +26941,9 @@ func i215(p *pegort.TParser) (any, bool) {
 	p.Where = "colid_type"
 	v = func() any {
 		return func() any {
-			f_1736 := func() any { return k1 }()
-			f_1737 := func() any { return k4 }()
-			return tmk_TypeField(c, true, f_1736, f_1737)
+			f_1735 := func() any { return k1 }()
+			f_1736 := func() any { return k4 }()
+			return tmk_TypeField(c, true, f_1735, f_1736)
 		}()
 	}()
 	p.Depth--
@@ -27050,10 +27033,10 @@ L13:
 	p.Where = "type_map"
 	v = func() any {
 		return func() any {
-			f_1738 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1739 := func() any { return k5 }()
-			f_1740 := func() any { return c.Concat(func() any { return k8 }()) }()
-			return tmk_Type(c, true, f_1738, nil, nil, f_1739, f_1740, nil)
+			f_1737 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1738 := func() any { return k5 }()
+			f_1739 := func() any { return c.Concat(func() any { return k8 }()) }()
+			return tmk_Type(c, true, f_1737, nil, nil, f_1738, f_1739, nil)
 		}()
 	}()
 	p.Depth--
@@ -27160,9 +27143,9 @@ L17:
 	p.Where = "type_interval"
 	v = func() any {
 		return func() any {
-			f_1741 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1742 := func() any { return c.Concat(func() any { return k12 }()) }()
-			return tmk_Type(c, true, f_1741, nil, nil, nil, f_1742, nil)
+			f_1740 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1741 := func() any { return c.Concat(func() any { return k12 }()) }()
+			return tmk_Type(c, true, f_1740, nil, nil, nil, f_1741, nil)
 		}()
 	}()
 	p.Depth--
@@ -27291,7 +27274,7 @@ L5:
 		}
 		v26 = p.NewNodeOrdinary("tuple", x22, p.Pos, x23)
 		v27 = p.ScopeValue(sh9, v26, x19)
-		v28 = p.AttachCaptures(v27, scope1743, []any{k20}, x19, p.Pos)
+		v28 = p.AttachCaptures(v27, scope1742, []any{k20}, x19, p.Pos)
 		x17++
 		p.PushKid(v28)
 		if p.Pos == x19 {
@@ -27336,15 +27319,15 @@ L42:
 	p.Where = "type_datetime"
 	v = func() any {
 		return func() any {
-			f_1744 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1745 := func() any {
-				return c.MapList(func() any { return k13 }(), func(l_1746 any) any {
-					return func() any { return c.Member(func() any { return l_1746 }(), "$n") }()
+			f_1743 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1744 := func() any {
+				return c.MapList(func() any { return k13 }(), func(l_1745 any) any {
+					return func() any { return c.Member(func() any { return l_1745 }(), "$n") }()
 				})
 			}()
-			f_1747 := func() any { return c.Text(func() any { return k31 }()) }()
-			f_1748 := func() any { return c.Concat(func() any { return k37 }()) }()
-			return tmk_Type(c, true, f_1744, f_1745, nil, nil, f_1748, f_1747)
+			f_1746 := func() any { return c.Text(func() any { return k31 }()) }()
+			f_1747 := func() any { return c.Concat(func() any { return k37 }()) }()
+			return tmk_Type(c, true, f_1743, f_1744, nil, nil, f_1747, f_1746)
 		}()
 	}()
 	p.Depth--
@@ -27514,7 +27497,7 @@ func i220(p *pegort.TParser) (any, bool) {
 		}
 		v17 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
 		v18 = p.ScopeValue(sh9, v17, x10)
-		v19 = p.AttachCaptures(v18, scope1749, []any{k11}, x10, p.Pos)
+		v19 = p.AttachCaptures(v18, scope1748, []any{k11}, x10, p.Pos)
 		x8++
 		p.PushKid(v19)
 		if p.Pos == x10 {
@@ -27543,14 +27526,14 @@ L26:
 	p.Where = "type_char"
 	v = func() any {
 		return func() any {
-			f_1750 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1751 := func() any {
-				return c.MapList(func() any { return k4 }(), func(l_1752 any) any {
-					return func() any { return c.Member(func() any { return l_1752 }(), "$n") }()
+			f_1749 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1750 := func() any {
+				return c.MapList(func() any { return k4 }(), func(l_1751 any) any {
+					return func() any { return c.Member(func() any { return l_1751 }(), "$n") }()
 				})
 			}()
-			f_1753 := func() any { return c.Concat(func() any { return k21 }()) }()
-			return tmk_Type(c, true, f_1750, f_1751, nil, nil, f_1753, nil)
+			f_1752 := func() any { return c.Concat(func() any { return k21 }()) }()
+			return tmk_Type(c, true, f_1749, f_1750, nil, nil, f_1752, nil)
 		}()
 	}()
 	p.Depth--
@@ -27838,10 +27821,10 @@ L20:
 	p.Where = "type_bit"
 	v = func() any {
 		return func() any {
-			f_1754 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1755 := func() any { return c.Concat(func() any { return k9 }()) }()
-			f_1756 := func() any { return c.Concat(func() any { return k15 }()) }()
-			return tmk_Type(c, true, f_1754, f_1755, nil, nil, f_1756, nil)
+			f_1753 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1754 := func() any { return c.Concat(func() any { return k9 }()) }()
+			f_1755 := func() any { return c.Concat(func() any { return k15 }()) }()
+			return tmk_Type(c, true, f_1753, f_1754, nil, nil, f_1755, nil)
 		}()
 	}()
 	p.Depth--
@@ -27969,9 +27952,9 @@ L10:
 	p.Where = "type_double"
 	v = func() any {
 		return func() any {
-			f_1757 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1758 := func() any { return c.Concat(func() any { return k5 }()) }()
-			return tmk_Type(c, true, f_1757, nil, nil, nil, f_1758, nil)
+			f_1756 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1757 := func() any { return c.Concat(func() any { return k5 }()) }()
+			return tmk_Type(c, true, f_1756, nil, nil, nil, f_1757, nil)
 		}()
 	}()
 	p.Depth--
@@ -28135,12 +28118,12 @@ L21:
 	p.Where = "type_float"
 	v = func() any {
 		return func() any {
-			f_1759 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1760 := func() any {
+			f_1758 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1759 := func() any {
 				return c.NewList(c.ListItems("map", func() any { return k5 }()))
 			}()
-			f_1761 := func() any { return c.Concat(func() any { return k16 }()) }()
-			return tmk_Type(c, true, f_1759, f_1760, nil, nil, f_1761, nil)
+			f_1760 := func() any { return c.Concat(func() any { return k16 }()) }()
+			return tmk_Type(c, true, f_1758, f_1759, nil, nil, f_1760, nil)
 		}()
 	}()
 	p.Depth--
@@ -28261,10 +28244,10 @@ L27:
 	p.Where = "type_decimal"
 	v = func() any {
 		return func() any {
-			f_1762 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1763 := func() any { return c.Concat(func() any { return k16 }()) }()
-			f_1764 := func() any { return c.Concat(func() any { return k22 }()) }()
-			return tmk_Type(c, true, f_1762, f_1763, nil, nil, f_1764, nil)
+			f_1761 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1762 := func() any { return c.Concat(func() any { return k16 }()) }()
+			f_1763 := func() any { return c.Concat(func() any { return k22 }()) }()
+			return tmk_Type(c, true, f_1761, f_1762, nil, nil, f_1763, nil)
 		}()
 	}()
 	p.Depth--
@@ -28397,9 +28380,9 @@ L26:
 	p.Where = "type_numeric_plain"
 	v = func() any {
 		return func() any {
-			f_1765 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1766 := func() any { return c.Concat(func() any { return k21 }()) }()
-			return tmk_Type(c, true, f_1765, nil, nil, nil, f_1766, nil)
+			f_1764 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1765 := func() any { return c.Concat(func() any { return k21 }()) }()
+			return tmk_Type(c, true, f_1764, nil, nil, nil, f_1765, nil)
 		}()
 	}()
 	p.Depth--
@@ -28493,9 +28476,9 @@ L13:
 	p.Where = "type_qualified"
 	v = func() any {
 		return func() any {
-			f_1767 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1768 := func() any { return c.Concat(func() any { return k8 }()) }()
-			return tmk_Type(c, true, f_1767, nil, nil, nil, f_1768, nil)
+			f_1766 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1767 := func() any { return c.Concat(func() any { return k8 }()) }()
+			return tmk_Type(c, true, f_1766, nil, nil, nil, f_1767, nil)
 		}()
 	}()
 	p.Depth--
@@ -28579,10 +28562,10 @@ L17:
 	p.Where = "type_generic"
 	v = func() any {
 		return func() any {
-			f_1769 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1770 := func() any { return c.Concat(func() any { return k6 }()) }()
-			f_1771 := func() any { return c.Concat(func() any { return k12 }()) }()
-			return tmk_Type(c, true, f_1769, f_1770, nil, nil, f_1771, nil)
+			f_1768 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1769 := func() any { return c.Concat(func() any { return k6 }()) }()
+			f_1770 := func() any { return c.Concat(func() any { return k12 }()) }()
+			return tmk_Type(c, true, f_1768, f_1769, nil, nil, f_1770, nil)
 		}()
 	}()
 	p.Depth--
@@ -28777,14 +28760,14 @@ L7:
 	p.Where = "typed_literal_nchar"
 	v = func() any {
 		return func() any {
-			f_1772 := func() any {
+			f_1771 := func() any {
 				return func() any {
-					f_1773 := func() any { return c.Text(func() any { return k1 }()) }()
-					return tmk_Type(c, false, f_1773, nil, nil, nil, nil, nil)
+					f_1772 := func() any { return c.Text(func() any { return k1 }()) }()
+					return tmk_Type(c, false, f_1772, nil, nil, nil, nil, nil)
 				}()
 			}()
-			f_1774 := func() any { return k8 }()
-			return tmk_TypedLit(c, true, f_1772, f_1774)
+			f_1773 := func() any { return k8 }()
+			return tmk_TypedLit(c, true, f_1771, f_1773)
 		}()
 	}()
 	p.DropCreated(c.Cbase)
@@ -28839,9 +28822,9 @@ func i233(p *pegort.TParser) (any, bool) {
 	p.Where = "typed_literal_const"
 	v = func() any {
 		return func() any {
-			f_1775 := func() any { return k1 }()
-			f_1776 := func() any { return k4 }()
-			return tmk_TypedLit(c, true, f_1775, f_1776)
+			f_1774 := func() any { return k1 }()
+			f_1775 := func() any { return k4 }()
+			return tmk_TypedLit(c, true, f_1774, f_1775)
 		}()
 	}()
 	p.Depth--
@@ -28881,7 +28864,7 @@ func i234(p *pegort.TParser) (any, bool) {
 	_, _ = x4, x7
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1568) && !p.ClassSkip(&cls1568, 12) {
+	if !p.ClassFast(&cls1776) && !p.ClassSkip(&cls1776, 12) {
 		goto L2
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
@@ -84954,61 +84937,55 @@ func v1029(p *pegort.TParser) (any, bool) {
 		v     any
 		x1    int
 		x3    int
-		x5    rune
-		x6    bool
+		x5    int
+		x6    rune
+		x7    bool
 		ok    bool
+		x12   int
+		x14   int
 		ch    rune
 		size  int
-		x11   int
-		x13   int
-		x16   int
-		x18   rune
-		x19   bool
-		x24   int
+		x17   int
+		x19   rune
+		x20   bool
 		x25   int
+		x26   int
 	)
 	start = p.Pos
 	p.Enter()
-	_ = x24
+	_ = x25
 	x1 = p.Pos
 	p.Silent++
 	x3 = p.Pos
-	x5, _, x6 = p.NextOrdinary()
-	if !(x6 && (!(!(x5 == 101 || x5 == 69 || x5 == 98 || x5 == 66 || x5 == 120 || x5 == 88 || x5 == 110 || x5 == 78)))) && p.Depth <= p.MaxDepth {
+	x6, x5, x7 = p.NextOrdinary()
+	if !(x7 && (!(!(x6 == 101 || x6 == 69 || x6 == 98 || x6 == 66 || x6 == 120 || x6 == 88 || x6 == 110 || x6 == 78)))) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 12)
-		goto L7
-	}
-	if !p.ClassFast(&cls1568) && !p.ClassSkip(&cls1568, 12) {
 		goto L8
 	}
+	p.Pos += x5
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit16, "'", 13, false); !ok {
-		goto L8
-	}
-	goto L4
-L8:
-	p.Pos = x3
-L7:
-	if !(x6 && (x5 == 117 || x5 == 85)) && p.Depth <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 14)
 		goto L9
 	}
-	ch, size, ok = p.NextOrdinary()
-	if !ok || !(ch == 117 || ch == 85) {
+	goto L4
+L9:
+	p.Pos = x3
+L8:
+	if !(x7 && (x6 == 117 || x6 == 85)) && p.Depth <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 14)
 		goto L10
 	}
-	p.Pos += size
+	p.Pos += x5
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 38 && p.In[p.Pos+1] == 39 {
 		p.Pos += 2
 	} else if _, ok = p.Parser.MatchLiteral(lit17, "&'", 15, false); !ok {
-		goto L10
+		goto L11
 	}
 	goto L4
-L10:
+L11:
 	p.Pos = x3
-L9:
+L10:
 	goto L2
 L4:
 	p.Silent--
@@ -85017,79 +84994,79 @@ L4:
 L2:
 	p.Silent--
 	p.Pos = x1
-	x11 = p.Pos
+	x12 = p.Pos
 	p.Silent++
-	x13 = p.Pos
+	x14 = p.Pos
 	p.Silent++
 	ch, size, ok = p.NextOrdinary()
 	if !ok || !(ch == 110 || ch == 78) {
 		p.ExpectOrdinary(p.Pos, 16)
-		goto L14
+		goto L15
 	}
 	p.Pos += size
 	p.Silent--
-	p.Pos = x13
-	goto L15
-L14:
-	p.Silent--
-	p.Pos = x13
-	goto L12
+	p.Pos = x14
+	goto L16
 L15:
+	p.Silent--
+	p.Pos = x14
+	goto L13
+L16:
 
 	if _, ok = s1022(p); !ok {
-		goto L12
+		goto L13
 	}
 	if _, ok = u1023(p); !ok {
-		goto L12
+		goto L13
 	}
-	x16 = p.Pos
-	x18, _, x19 = p.NextOrdinary()
-	if !(x19 && (x18 == 102 || x18 == 70)) && p.Depth+1 <= p.MaxDepth {
+	x17 = p.Pos
+	x19, _, x20 = p.NextOrdinary()
+	if !(x20 && (x19 == 102 || x19 == 70)) && p.Depth+1 <= p.MaxDepth {
 		p.ExpectOrdinary(p.Pos, 17)
-		goto L20
-	}
-	if _, ok = s1024(p); !ok {
 		goto L21
 	}
-	goto L17
-L21:
-	p.Pos = x16
-L20:
-	if !(x19 && (x18 == 108 || x18 == 76)) && p.Depth+1 <= p.MaxDepth {
-		p.ExpectOrdinary(p.Pos, 18)
+	if _, ok = s1024(p); !ok {
 		goto L22
 	}
-	if _, ok = s1025(p); !ok {
+	goto L18
+L22:
+	p.Pos = x17
+L21:
+	if !(x20 && (x19 == 108 || x19 == 76)) && p.Depth+1 <= p.MaxDepth {
+		p.ExpectOrdinary(p.Pos, 18)
 		goto L23
 	}
-	goto L17
+	if _, ok = s1025(p); !ok {
+		goto L24
+	}
+	goto L18
+L24:
+	p.Pos = x17
 L23:
-	p.Pos = x16
-L22:
-	goto L12
-L17:
+	goto L13
+L18:
 	p.Silent--
-	p.Pos = x11
+	p.Pos = x12
 	goto fail
-L12:
+L13:
 	p.Silent--
-	p.Pos = x11
+	p.Pos = x12
 	if _, ok = s1367(p); !ok {
 		goto fail
 	}
-	x24 = 0
+	x25 = 0
 	for {
-		x25 = p.Pos
+		x26 = p.Pos
 		if _, ok = s1368(p); !ok {
-			goto L26
+			goto L27
 		}
-		x24++
-		if p.Pos == x25 {
+		x25++
+		if p.Pos == x26 {
 			break
 		}
 		continue
-	L26:
-		p.Pos = x25
+	L27:
+		p.Pos = x26
 		break
 	}
 	v = nil
@@ -86101,8 +86078,9 @@ func s1048(p *pegort.TParser) (any, bool) {
 		x1    int
 		x2    int
 		x4    int
-		x6    rune
-		x7    bool
+		x6    int
+		x7    rune
+		x8    bool
 	)
 	start = p.Pos
 	p.Enter()
@@ -86117,40 +86095,33 @@ func s1048(p *pegort.TParser) (any, bool) {
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
-		x6, _, x7 = p.NextOrdinary()
-		if !(x7 && (x6 >= 48 && x6 <= 57)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 43)
-			goto L8
-		}
-		ch, size, ok = p.NextOrdinary()
-		if !ok || !(ch >= 48 && ch <= 57) {
+		x7, x6, x8 = p.NextOrdinary()
+		if !(x8 && (x7 >= 48 && x7 <= 57)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 43)
 			goto L9
 		}
-		p.Pos += size
+		p.Pos += x6
 		goto L5
 	L9:
-		p.Pos = x4
-	L8:
-		if !(x7 && (x6 == 95)) && p.Depth <= p.MaxDepth {
+		if !(x8 && (x7 == 95)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 44)
-			goto L10
+			goto L11
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 95 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit51, "_", 44, false); !ok {
-			goto L11
+			goto L12
 		}
 		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch >= 48 && ch <= 57) {
 			p.ExpectOrdinary(p.Pos, 43)
-			goto L11
+			goto L12
 		}
 		p.Pos += size
 		goto L5
-	L11:
+	L12:
 		p.Pos = x4
-	L10:
+	L11:
 		goto L3
 	L5:
 		x1++
@@ -86386,7 +86357,7 @@ func s1053(p *pegort.TParser) (any, bool) {
 	)
 	start = p.Pos
 	p.Enter()
-	if !p.ClassFast(&cls1575) && !p.ClassSkip(&cls1575, 47) {
+	if !p.ClassFast(&cls1574) && !p.ClassSkip(&cls1574, 47) {
 		goto fail
 	}
 	v = nil
@@ -86496,7 +86467,7 @@ L2:
 	L19:
 		p.Silent--
 		p.Pos = x18
-		if !p.ClassFast(&cls1576) && !p.ClassSkip(&cls1576, 66) {
+		if !p.ClassFast(&cls1575) && !p.ClassSkip(&cls1575, 66) {
 			goto L17
 		}
 		x15++
@@ -86508,7 +86479,7 @@ L2:
 		p.Pos = x16
 		break
 	}
-	if !p.ClassFast(&cls1577) && !p.ClassSkip(&cls1577, 67) {
+	if !p.ClassFast(&cls1576) && !p.ClassSkip(&cls1576, 67) {
 		goto fail
 	}
 	x20 = 0
@@ -86759,7 +86730,7 @@ func s1056(p *pegort.TParser) (any, bool) {
 	p.Enter()
 	x1 = p.Pos
 	p.Silent++
-	if !p.ClassFast(&cls1578) && !p.ClassSkip(&cls1578, 68) {
+	if !p.ClassFast(&cls1577) && !p.ClassSkip(&cls1577, 68) {
 		goto L2
 	}
 	x3 = p.Pos
@@ -99374,10 +99345,11 @@ func v1373(p *pegort.TParser) (any, bool) {
 		x8   rune
 		x9   bool
 		x14  int
-		x16  rune
-		x17  bool
-		x20  int
-		x24  int
+		x16  int
+		x17  rune
+		x18  bool
+		x21  int
+		x25  int
 	)
 	p.Enter()
 	_ = x1
@@ -99425,57 +99397,52 @@ func v1373(p *pegort.TParser) (any, bool) {
 			goto L13
 		}
 		x14 = p.Pos
-		x16, _, x17 = p.NextOrdinary()
-		if !(x17 && (x16 == 117 || x16 == 85)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 14)
-			goto L18
-		}
-		ch, size, ok = p.NextOrdinary()
-		if !ok || !(ch == 117 || ch == 85) {
+		x17, x16, x18 = p.NextOrdinary()
+		if !(x18 && (x17 == 117 || x17 == 85)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 14)
 			goto L19
 		}
-		p.Pos += size
-		x20 = p.Pos
+		p.Pos += x16
+		x21 = p.Pos
 		p.Silent++
 		if _, ok = s1041(p); !ok {
-			goto L21
+			goto L22
 		}
 		p.Silent--
-		p.Pos = x20
-		goto L22
-	L21:
-		p.Silent--
-		p.Pos = x20
-		goto L19
+		p.Pos = x21
+		goto L23
 	L22:
+		p.Silent--
+		p.Pos = x21
+		goto L20
+	L23:
 		goto L15
-	L19:
+	L20:
 		p.Pos = x14
-	L18:
+	L19:
 
-		x24 = p.Pos
+		x25 = p.Pos
 		p.Silent++
 		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch == 117 || ch == 85) {
 			p.ExpectOrdinary(p.Pos, 14)
-			goto L25
+			goto L26
 		}
 		p.Pos += size
 		p.Silent--
-		p.Pos = x24
-		goto L23
-	L25:
+		p.Pos = x25
+		goto L24
+	L26:
 		p.Silent--
-		p.Pos = x24
+		p.Pos = x25
 		_, size, ok = p.NextOrdinary()
 		if !ok {
 			p.ExpectOrdinary(p.Pos, pegort.IdAny)
-			goto L23
+			goto L24
 		}
 		p.Pos += size
 		goto L15
-	L23:
+	L24:
 		p.Pos = x14
 		goto L13
 	L15:
@@ -99507,48 +99474,42 @@ func s1374(p *pegort.TParser) (any, bool) {
 		x1    int
 		x2    int
 		x4    int
-		x6    rune
-		x7    bool
+		x6    int
+		x7    rune
+		x8    bool
+		ok    bool
 		ch    rune
 		size  int
-		ok    bool
-		x12   int
 		x13   int
-		x15   int
-		x18   int
-		x19   rune
-		x20   bool
+		x14   int
+		x16   int
+		x19   int
+		x20   rune
+		x21   bool
 	)
 	start = p.Pos
 	p.Enter()
-	_, _ = x1, x12
+	_, _ = x1, x13
 	x1 = 0
 	for {
 		x2 = p.Pos
 		x4 = p.Pos
-		x6, _, x7 = p.NextOrdinary()
-		if !(x7 && (x6 == 9 || x6 == 12 || x6 == 32)) && p.Depth <= p.MaxDepth {
-			p.ExpectOrdinary(p.Pos, 31)
-			goto L8
-		}
-		ch, size, ok = p.NextOrdinary()
-		if !ok || !(ch == 9 || ch == 12 || ch == 32) {
+		x7, x6, x8 = p.NextOrdinary()
+		if !(x8 && (x7 == 9 || x7 == 12 || x7 == 32)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 31)
 			goto L9
 		}
-		p.Pos += size
+		p.Pos += x6
 		goto L5
 	L9:
-		p.Pos = x4
-	L8:
-		if !(x7 && (x6 == 45)) && p.Depth <= p.MaxDepth {
+		if !(x8 && (x7 == 45)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 6)
-			goto L10
+			goto L11
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 45 && p.In[p.Pos+1] == 45 {
 			p.Pos += 2
 		} else if _, ok = p.Parser.MatchLiteral(lit5, "--", 6, false); !ok {
-			goto L11
+			goto L12
 		}
 		for {
 			ch, size, ok = p.NextOrdinary()
@@ -99559,9 +99520,9 @@ func s1374(p *pegort.TParser) (any, bool) {
 			p.Pos += size
 		}
 		goto L5
-	L11:
+	L12:
 		p.Pos = x4
-	L10:
+	L11:
 		goto L3
 	L5:
 		x1++
@@ -99579,11 +99540,11 @@ func s1374(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	p.Pos += size
-	x12 = 0
+	x13 = 0
 	for {
-		x13 = p.Pos
-		x15 = p.Pos
-		x18 = 0
+		x14 = p.Pos
+		x16 = p.Pos
+		x19 = 0
 		for {
 			ch, size, ok = p.NextOrdinary()
 			if !ok || (!(ch == 9 || ch == 10 || ch == 12 || ch == 13 || ch == 32)) {
@@ -99591,23 +99552,23 @@ func s1374(p *pegort.TParser) (any, bool) {
 				break
 			}
 			p.Pos += size
-			x18++
+			x19++
 		}
-		if x18 < 1 {
-			goto L17
+		if x19 < 1 {
+			goto L18
 		}
-		goto L16
-	L17:
-		p.Pos = x15
-		x19, _, x20 = p.NextOrdinary()
-		if !(x20 && (x19 == 45)) && p.Depth <= p.MaxDepth {
+		goto L17
+	L18:
+		p.Pos = x16
+		x20, _, x21 = p.NextOrdinary()
+		if !(x21 && (x20 == 45)) && p.Depth <= p.MaxDepth {
 			p.ExpectOrdinary(p.Pos, 6)
-			goto L21
+			goto L22
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 45 && p.In[p.Pos+1] == 45 {
 			p.Pos += 2
 		} else if _, ok = p.Parser.MatchLiteral(lit5, "--", 6, false); !ok {
-			goto L22
+			goto L23
 		}
 		for {
 			ch, size, ok = p.NextOrdinary()
@@ -99620,22 +99581,22 @@ func s1374(p *pegort.TParser) (any, bool) {
 		ch, size, ok = p.NextOrdinary()
 		if !ok || !(ch == 13 || ch == 10) {
 			p.ExpectOrdinary(p.Pos, 32)
-			goto L22
+			goto L23
 		}
 		p.Pos += size
-		goto L16
+		goto L17
+	L23:
+		p.Pos = x16
 	L22:
-		p.Pos = x15
-	L21:
-		goto L14
-	L16:
-		x12++
-		if p.Pos == x13 {
+		goto L15
+	L17:
+		x13++
+		if p.Pos == x14 {
 			break
 		}
 		continue
-	L14:
-		p.Pos = x13
+	L15:
+		p.Pos = x14
 		break
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
@@ -99721,7 +99682,7 @@ func v1375(p *pegort.TParser) (any, bool) {
 	L10:
 		p.Silent--
 		p.Pos = x9
-		if !p.ClassFast(&cls1578) && !p.ClassSkip(&cls1578, 68) {
+		if !p.ClassFast(&cls1577) && !p.ClassSkip(&cls1577, 68) {
 			goto L3
 		}
 		x1++
