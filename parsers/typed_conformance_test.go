@@ -34,7 +34,8 @@ import (
 //
 // and to TypeScript, where every reference is nullable (`X | null`), a list is `readonly (...)[] | null`
 // and a join is the union of its alternatives. A shape outside these mappings is reported as unmapped
-// rather than checked by guess.
+// rather than checked by guess. The nullability of list elements is not checked in either language: an
+// optional element adds no Go pointer, and a TypeScript list element always carries `| null`.
 
 // confSchema is the part of the output schema JSON that the checks read.
 type confSchema struct {
