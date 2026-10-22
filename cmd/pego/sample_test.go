@@ -213,12 +213,8 @@ func TestSampleInvalid(t *testing.T) {
 func TestSampleCompiledGrammar(t *testing.T) {
 	g := writeFile(t, "kv.pego", kvList)
 	dir := t.TempDir()
-	pc := filepath.Join(dir, "kv.pegoc")
-	if _, err := runCLI(t, "", "compile", "-g", g, "-s", "pair", "-o", pc); err != nil {
-		t.Fatal(err)
-	}
-	// The start rule saved in the compiled grammar is the default.
-	out, err := runCLI(t, "", "sample", "-g", pc, "-n", "3")
+	// Sampling needs the grammar source, which samples the start rule of -s.
+	out, err := runCLI(t, "", "sample", "-g", g, "-s", "pair", "-n", "3")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -227,11 +223,13 @@ func TestSampleCompiledGrammar(t *testing.T) {
 			t.Errorf("start pair: %q", in)
 		}
 	}
-	noAST := filepath.Join(dir, "kv-noast.pegoc")
-	if _, err := runCLI(t, "", "compile", "-g", g, "-no-ast", "-o", noAST); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := runCLI(t, "", "sample", "-g", noAST); err == nil || !strings.Contains(err.Error(), "AST") {
-		t.Errorf("got %v", err)
+	for _, mode := range []string{"parse", "recognize", "document"} {
+		path := filepath.Join(dir, "kv-"+mode+".pegoc")
+		if _, err := runCLI(t, "", "compile", "-g", g, "-mode", mode, "-o", path); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := runCLI(t, "", "sample", "-g", path); err == nil || !strings.Contains(err.Error(), "sample needs the grammar source") {
+			t.Errorf("%s mode: got %v", mode, err)
+		}
 	}
 }

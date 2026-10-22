@@ -460,17 +460,19 @@ func TestNoInput(t *testing.T) {
 	if _, err := sample.New(compile(t, `rule main = "a" _|_`)); err == nil {
 		t.Error("expected an error for a start rule that can never match")
 	}
-	// A parser without the grammar AST.
-	data, err := compile(t, `rule main = "a"`).Marshal(pego.WithoutAST())
-	if err != nil {
-		t.Fatal(err)
-	}
-	q, err := pego.LoadParser(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := sample.New(q); err == nil {
-		t.Error("expected an error for a parser without the AST")
+	// A parser loaded from a compiled grammar, which holds no grammar AST, in each mode.
+	for _, mode := range []pego.CompiledMode{pego.CompiledParse, pego.CompiledRecognize, pego.CompiledDocument} {
+		data, err := compile(t, `rule main = "a"`).Marshal(mode)
+		if err != nil {
+			t.Fatal(err)
+		}
+		q, err := pego.LoadParser(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := sample.New(q); err == nil {
+			t.Errorf("expected an error for a parser loaded in %s mode", mode)
+		}
 	}
 }
 

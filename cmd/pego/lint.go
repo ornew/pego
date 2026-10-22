@@ -1,7 +1,6 @@
 package main
 
 import (
-	"cmp"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -46,8 +45,8 @@ func (l *checkList) Set(s string) error {
 
 func lintCmd(args []string, stdout io.Writer) error {
 	fs := flag.NewFlagSet("lint", flag.ContinueOnError)
-	grammarPath := fs.String("g", "", "grammar file (.pego, .json, or .pegoc with the AST)")
-	start := fs.String("s", "", "start rule (default: the one saved in a .pegoc, otherwise the grammar's default start rule)")
+	grammarPath := fs.String("g", "", "grammar file (.pego or .json)")
+	start := fs.String("s", "", "start rule (default: the grammar's default start rule)")
 	format := fs.String("f", "text", "output format: text or json")
 	strict := fs.Bool("strict", false, "fail on warnings too, not only on errors")
 	list := fs.Bool("list", false, "list the checks and exit")
@@ -69,11 +68,10 @@ func lintCmd(args []string, stdout io.Writer) error {
 	if *format != "text" && *format != "json" {
 		return fmt.Errorf("unknown format %q", *format)
 	}
-	g, saved, err := loadGrammar(*grammarPath)
+	g, err := loadGrammar(*grammarPath, "lint")
 	if err != nil {
 		return err
 	}
-	*start = cmp.Or(*start, saved)
 	if *start == "" {
 		p, err := pego.Compile(g, "")
 		if err != nil {

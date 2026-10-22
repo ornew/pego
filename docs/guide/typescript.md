@@ -126,8 +126,8 @@ pego gen -lang ts -g <grammar> -o <directory> [-s <rule>] [-runtime embed|import
 | Flag | Default | Meaning |
 |:--|:--|:--|
 | `-lang` | `go` | `ts` generates TypeScript |
-| `-g` | (required) | The grammar: `.pego`, `.json`, or a `.pegoc` that contains the AST |
-| `-s` | saved in a `.pegoc`, otherwise the default start rule | The start rule of `parse` |
+| `-g` | (required) | The grammar: `.pego` or `.json` |
+| `-s` | the default start rule | The start rule of `parse` |
 | `-o` | (required) | The output directory (it is created). Generated files that the new run does not write again are removed, except that `-runtime import` leaves `runtime.ts` alone; a file that pego did not generate is never removed or overwritten |
 | `-runtime` | `embed` | `embed` writes `runtime.ts` next to `parser.ts`; `import` imports the runtime from `-runtime-module` and writes no copy; `only` writes just `runtime.ts` (no `-g`) |
 | `-runtime-module` | (required with `-runtime import`) | The module specifier `parser.ts` and `types.ts` import the runtime from, for example `../shared/runtime.ts`. Several parsers share one runtime this way: generate it once with `-runtime only` |

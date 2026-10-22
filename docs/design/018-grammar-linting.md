@@ -60,7 +60,7 @@ form "always succeeds" would survive that. The analyses assume the limit is not 
 ## Analyses
 
 The checks share one analysis of the grammar AST (`internal/lint/analysis.go`). It works on the AST alone, so it
-applies to grammars from source, JSON or a `.pegoc` with the AST (without source positions, findings then have none).
+applies to grammars from source or JSON (without source positions, findings then have none).
 
 - **nullable** (may succeed without consuming input) is a least fixed point over the rules, as in the engine, but
   computed separately for "at the end of the input" and "elsewhere". Without that split, a line rule such as

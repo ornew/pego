@@ -58,7 +58,7 @@ rule _a = "a" "b"`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := LoadProgram(data, Options{}); err != nil {
+	if _, _, err := LoadProgram(data); err != nil {
 		t.Fatal(err)
 	}
 	// The same holds for the rule of an inline action, whose name nobody declared.
@@ -115,7 +115,7 @@ rule _b = "b"`
 		if err != nil {
 			t.Fatal(err)
 		}
-		loaded, _, err := LoadProgram(data, Options{})
+		loaded, _, err := LoadProgram(data)
 		if err != nil {
 			t.Fatalf("%+v: %v", opts, err)
 		}

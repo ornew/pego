@@ -33,10 +33,10 @@ What it does not do:
   fails a full parse with `action in main: division by zero` but is accepted by recognition (`pego parse -check` prints
   `ok`). Use recognition for syntax checks, and a full parse where action errors matter.
 - Captures that [predicates](../../spec/predicates.md) read are still built, since a predicate can depend on them.
-- Recognition needs either the grammar AST or a saved recognition bundle. An AST-less `.pegoc` with a recognition
-  bundle can recognize on bytecode backends; an AST-less file without a bundle returns
-  `recognition needs the grammar or a recognition bundle; recompile this compiled grammar from source`. The [compiled
-  grammars guide](compiled-grammars.md#with-and-without-the-ast) explains the distinction.
+- A compiled grammar recognizes when it is saved in recognize mode (`pego compile -mode recognize`, or
+  `Marshal(pego.CompiledRecognize)`), on the bytecode backends. A file in another mode returns an error that names
+  the mode it needs, and traced or profiled recognition needs the grammar source. The [compiled grammars
+  guide](compiled-grammars.md#modes) explains the modes.
 - It cannot be combined with `ParseStream` or `NewDocument`: both return errors (`recognition is not supported for
   stream parsing`, `recognition is not supported for documents`).
 

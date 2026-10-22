@@ -51,7 +51,7 @@ complete, runnable examples, and points to the [specification](../../spec/README
 
 | Guide | Contents |
 |:--|:--|
-| [Compiled Grammars](compiled-grammars.md) | Saving a grammar as a `.pegoc` file and loading it: what a file without the AST cannot do, sizes and load times, `go:embed`, versions, untrusted data, and when to use it instead of generated code |
+| [Compiled Grammars](compiled-grammars.md) | Saving a grammar as a `.pegoc` file and loading it: the modes and what each serves, sizes and load times, `go:embed`, versions, untrusted data, and when to use it instead of generated code |
 | [Generating Parsers](code-generation.md) | Standalone parsers with `pego gen`: why generate, the command and its options, what is supported, keeping generated code up to date, trade-offs |
 | [The Generated Go API](generated-go-api.md) | The Go package `pego gen` writes: `Parse`, `ParseRule`, nodes and errors, recognition, call options, cancellation and work limits |
 | [Typed Values in Generated Go](generated-typed-values.md) | `-types`: a Go type for each grammar type, `ParseAST`, the type mapping, speed and named rules |

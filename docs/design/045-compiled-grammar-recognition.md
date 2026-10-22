@@ -1,8 +1,13 @@
 # 045. Serialized Recognition Programs for Compiled Grammars
 
-- **Status**: Accepted
+- **Status**: Superseded
 - **Author**: @ornew
 - **Date**: 2026-10-11
+
+> **Note**: Superseded by the saved-program decision of
+> [Backend-Independent Optimization IR](062-backend-independent-optimization-ir.md#decisions): a compiled grammar
+> holds the module of one mode, and a file saved in recognize mode holds the recognizer's module
+> ([Compiled Grammars](../../spec/compiled-grammars.md)). The record keeps the original decision.
 
 ## Summary
 

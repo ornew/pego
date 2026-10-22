@@ -88,37 +88,40 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 					if err := validateModule(p.Module()); err != nil {
 						t.Errorf("module: %v", err)
 					}
-					for _, marshal := range []MarshalOptions{{}, {OmitAST: true}} {
-						data, err := p.MarshalBinaryWith("main", marshal)
+					if ast := executableASTJSON(t, p.Grammar); ast != savedAST {
+						t.Fatal("compiled executable AST changed")
+					}
+					for _, mode := range allModes {
+						data, err := p.Marshal("main", mode)
 						if err != nil {
 							t.Fatal(err)
 						}
-						if want := byte(isaVersion); data[len(compiledMagic)+1] != want {
-							t.Fatalf("negative maxima alone must not require wide instructions: instruction set %d, want %d", data[len(compiledMagic)+1], want)
+						if want := byte(isaVersion); data[isaOffset] != want {
+							t.Fatalf("negative maxima alone must not require wide instructions: instruction set %d, want %d", data[isaOffset], want)
 						}
-						loaded, _, err := LoadProgram(data, Options{})
+						loaded, _, err := LoadProgram(data)
 						if err != nil {
 							t.Fatalf("load: %v", err)
 						}
-						if !marshal.OmitAST {
-							if ast := executableASTJSON(t, loaded.Grammar); ast != savedAST {
-								t.Fatal("saved executable AST changed")
-							}
-						}
 						for _, prog := range []*Program{p, loaded} {
 							for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-								if marshal.OmitAST && prog == loaded && b == Closure {
+								if prog == loaded && b == Closure {
+									_, err := loaded.ParseWith("main", "", servedBy(mode, ParseOptions{Backend: b}))
+									wantClosureRefused(t, err)
 									continue
 								}
 								for _, unit := range []PositionUnit{CodePoints, Bytes} {
 									for _, recognize := range []bool{false, true} {
-										if marshal.OmitAST && prog == loaded && recognize {
-											continue // Recognition without the AST remains a separate capability.
+										if prog == loaded && recognize != (mode == CompiledRecognize) {
+											continue // A compiled grammar serves the parses of its mode only.
 										}
 										for _, input := range []string{"", "é", "ééé", "x", "éx"} {
 											ref := ParseOptions{Unit: unit, Recognize: recognize}
 											want, we := p.ParseWith("main", input, ref)
 											ref.Backend = b
+											if prog == loaded {
+												ref = servedBy(mode, ref)
+											}
 											got, ge := prog.ParseWith("main", input, ref)
 											if resultJSON(got, ge) != resultJSON(want, we) {
 												t.Errorf("%s/%s recognize=%v input=%q: got %s, want %s", b, unit, recognize, input, resultJSON(got, ge), resultJSON(want, we))
@@ -186,23 +189,22 @@ func TestCompiledSourceMetadataOmitted(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	data, err := p.MarshalBinary("main")
-	if err != nil {
-		t.Fatal(err)
-	}
-	loaded, _, err := LoadProgram(data, Options{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	encoded, err := grammar.MarshalJSON(loaded.Grammar)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if strings.Contains(string(encoded), `"source"`) || strings.Contains(string(encoded), `"packageSource"`) || strings.Contains(string(encoded), "documentation") {
-		t.Fatalf("compiled AST unexpectedly archives source metadata: %s", encoded)
-	}
-	if executableASTJSON(t, loaded.Grammar) != executableASTJSON(t, p.Grammar) {
-		t.Fatal("compiled executable structure changed")
+	for _, mode := range allModes {
+		data, err := p.Marshal("main", mode)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// A compiled grammar holds no grammar, so it archives no source metadata.
+		if strings.Contains(string(data), "documentation") {
+			t.Fatalf("%s mode file archives source metadata", mode)
+		}
+		loaded, _, err := LoadProgram(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if loaded.SourceGrammar() != nil {
+			t.Fatalf("%s mode file holds a grammar", mode)
+		}
 	}
 }
 
@@ -233,21 +235,14 @@ func TestNegativeMaximumWithWideMinimum(t *testing.T) {
 			if !found {
 				t.Fatal("wide instruction missing")
 			}
-			for _, marshal := range []MarshalOptions{{}, {OmitAST: true}} {
-				data, err := p.MarshalBinaryWith("main", marshal)
-				if err != nil {
-					t.Fatal(err)
-				}
-				loaded, _, err := LoadProgram(data, Options{})
-				if err != nil {
-					t.Fatal(err)
-				}
+			for _, mode := range valueModes {
+				loaded := saveLoad(t, p, "main", mode)
 				for _, b := range []Backend{Bytecode, BytecodeIterative} {
 					for _, unit := range []PositionUnit{CodePoints, Bytes} {
 						ref := ParseOptions{Unit: unit}
 						want, we := p.ParseWith("main", "éé", ref)
 						ref.Backend = b
-						got, ge := loaded.ParseWith("main", "éé", ref)
+						got, ge := loaded.ParseWith("main", "éé", servedBy(mode, ref))
 						if resultJSON(got, ge) != resultJSON(want, we) {
 							t.Fatalf("wide %s/%s got %s, want %s", b, unit, resultJSON(got, ge), resultJSON(want, we))
 						}
@@ -268,27 +263,30 @@ func TestNegativeMaximumDocumentsAndStreams(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, marshal := range []MarshalOptions{{}, {OmitAST: true}} {
-			data, err := p.MarshalBinaryWith("main", marshal)
-			if err != nil {
-				t.Fatal(err)
-			}
-			loaded, _, err := LoadProgram(data, Options{})
-			if err != nil {
-				t.Fatal(err)
-			}
+		for _, mode := range valueModes {
+			loaded := saveLoad(t, p, "main", mode)
 			for _, prog := range []*Program{p, loaded} {
 				for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
-					if marshal.OmitAST && prog == loaded && b == Closure {
+					if prog == loaded && b == Closure {
+						_, err := loaded.NewDocumentWith("main", "", ParseOptions{Backend: b})
+						if mode == CompiledDocument {
+							wantClosureRefused(t, err)
+						} else if err == nil {
+							t.Fatalf("Document on a %s-mode file accepted", mode)
+						}
 						continue
 					}
 					for _, unit := range []PositionUnit{CodePoints, Bytes} {
 						opts := ParseOptions{Backend: b, Unit: unit}
+						streamOpts := opts
+						if prog == loaded {
+							streamOpts = servedBy(mode, opts)
+						}
 						var got []string
 						err := prog.ParseStreamWith("main", strings.NewReader("ééé"), func(n *Node) error {
 							got = append(got, resultJSON(n, nil))
 							return nil
-						}, opts)
+						}, streamOpts)
 						var want []string
 						we := p.ParseStreamWith("main", strings.NewReader("ééé"), func(n *Node) error {
 							want = append(want, resultJSON(n, nil))
@@ -298,6 +296,12 @@ func TestNegativeMaximumDocumentsAndStreams(t *testing.T) {
 							t.Fatalf("max=%d stream %s/%s got %v, %v", maximum, b, unit, got, err)
 						}
 						d, err := prog.NewDocumentWith("main", strings.Repeat("é", 100), opts)
+						if prog == loaded && mode != CompiledDocument {
+							if err == nil || !strings.Contains(err.Error(), "documents need document mode") {
+								t.Fatalf("Document on a %s-mode file: %v", mode, err)
+							}
+							continue
+						}
 						if err != nil {
 							t.Fatal(err)
 						}

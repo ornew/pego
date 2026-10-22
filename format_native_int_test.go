@@ -62,6 +62,13 @@ func TestFormatNativeMinimumRoundTrip(t *testing.T) {
 					for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
 						for _, unit := range []pego.PositionUnit{pego.CodePoints, pego.Bytes} {
 							n, err := parser.Parse("é", pego.WithBackend(backend), pego.WithUnit(unit))
+							if parser == loaded && backend == pego.Closure {
+								// A compiled grammar runs on the bytecode backends only.
+								if err == nil {
+									t.Fatalf("closure backend on a compiled grammar: %v", n)
+								}
+								continue
+							}
 							want := fmt.Sprintf("N{V: %d}", tc.want)
 							if err != nil || n.String() != want {
 								t.Fatalf("backend %v, unit %v: %v, %v; want %s", backend, unit, n, err, want)

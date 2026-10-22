@@ -120,23 +120,18 @@ func TestPredicateBlocksSourceAndSavedGrammar(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, options := range []MarshalOptions{{}, {OmitAST: true}} {
-			data, err := program.MarshalBinaryWith("main", options)
-			if err != nil {
-				t.Fatal(err)
-			}
-			loaded, _, err := LoadProgram(data, Options{})
-			if err != nil {
-				t.Fatal(err)
-			}
+		for _, mode := range valueModes {
+			loaded := saveLoad(t, program, "main", mode)
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-				if options.OmitAST && backend == Closure {
+				if backend == Closure {
+					_, err := loaded.ParseWith("main", "", servedBy(mode, ParseOptions{Backend: backend}))
+					wantClosureRefused(t, err)
 					continue
 				}
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, input := range []string{"é", "", "a", "éé"} {
 						parseOptions := ParseOptions{Backend: backend, Unit: unit}
-						got := resultJSON(loaded.ParseWith("main", input, parseOptions))
+						got := resultJSON(loaded.ParseWith("main", input, servedBy(mode, parseOptions)))
 						want := resultJSON(program.ParseWith("main", input, parseOptions))
 						if got != want {
 							t.Fatalf("saved %s/%s input=%q: %s / %s", backend, unit, input, got, want)

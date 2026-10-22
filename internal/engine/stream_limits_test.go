@@ -37,13 +37,9 @@ func TestFiniteStreamRepetitions(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			src := fmt.Sprintf("rule main = %s #stream %s $$\n%s", tc.repeat, tc.suffix, tc.definitions)
 			prog := compile(t, src)
-			data, err := prog.MarshalBinary("main")
-			if err != nil {
-				t.Fatal(err)
-			}
-			saved, _, err := LoadProgram(data, Options{})
-			if err != nil {
-				t.Fatal(err)
+			programs := []*Program{prog}
+			for _, mode := range allModes {
+				programs = append(programs, saveLoad(t, prog, "main", mode))
 			}
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				var expected []string
@@ -54,9 +50,19 @@ func TestFiniteStreamRepetitions(t *testing.T) {
 				if len(expected) != tc.count || (refErr == nil) != tc.ok {
 					t.Fatalf("closure/%s: emitted %d, error %v; want %d, success %v", unit, len(expected), refErr, tc.count, tc.ok)
 				}
-				for _, p := range []*Program{prog, saved} {
+				for _, p := range programs {
 					for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 						opts := ParseOptions{Backend: backend, Unit: unit}
+						if _, loaded := p.Mode(); loaded && backend == Closure {
+							_, err := p.ParseWith("main", tc.input, servedBy(p.mode, opts))
+							wantClosureRefused(t, err)
+							continue
+						}
+						if p.checkMode(opts, false) != nil {
+							// A compiled grammar in recognize or document mode serves neither batch
+							// value parses nor streams; the mode tests cover the refusal.
+							continue
+						}
 						if _, err := p.ParseWith("main", tc.input, opts); (err == nil) != tc.ok {
 							t.Errorf("batch %s/%s: error %v, want success %v", backend, unit, err, tc.ok)
 						}

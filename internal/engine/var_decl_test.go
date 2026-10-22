@@ -135,23 +135,24 @@ rule item E = {n := n + 1} "a" => E{N: n}
 			t.Errorf("stream %v: got %v, %v", backend, got, err)
 		}
 	}
-	// A saved program keeps them, with and without its syntax tree.
-	for _, o := range []MarshalOptions{{}, {OmitAST: true}} {
-		data, err := prog.MarshalBinaryWith("main", o)
+	// A saved program keeps them in each mode that builds values.
+	for _, mode := range valueModes {
+		data, err := prog.Marshal("main", mode)
 		if err != nil {
 			t.Fatal(err)
 		}
-		loaded, start, err := LoadProgram(data, Options{})
+		loaded, start, err := LoadProgram(data)
 		if err != nil {
 			t.Fatal(err)
 		}
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			if o.OmitAST && backend == Closure {
+			n, err := loaded.ParseWith(start, "a", servedBy(mode, ParseOptions{Backend: backend}))
+			if backend == Closure {
+				wantClosureRefused(t, err)
 				continue
 			}
-			n, err := loaded.ParseWith(start, "a", ParseOptions{Backend: backend})
 			if err != nil || n.String() != want {
-				t.Errorf("loaded (omit AST %t) %v: got %v, %v", o.OmitAST, backend, n, err)
+				t.Errorf("loaded (%s mode) %v: got %v, %v", mode, backend, n, err)
 			}
 		}
 	}
@@ -242,11 +243,11 @@ rule ds = "s" => "str"
 			t.Errorf("ASSIGN with operand C = %d", in.C)
 		}
 	}
-	data, err := cast.MarshalBinaryWith("main", MarshalOptions{})
+	data, err := cast.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	loaded, start, err := LoadProgram(data, Options{})
+	loaded, start, err := LoadProgram(data)
 	if err != nil {
 		t.Fatal(err)
 	}

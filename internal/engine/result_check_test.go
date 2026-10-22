@@ -167,21 +167,12 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 			if err != nil {
 				t.Fatal(err)
 			}
-			data, err := checked.MarshalBinary("main")
-			if err != nil {
-				t.Fatal(err)
-			}
-			loaded, _, err := LoadProgram(data, Options{})
-			if err != nil {
-				t.Fatal(err)
-			}
-			bare, err := checked.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-			if err != nil {
-				t.Fatal(err)
-			}
-			loadedBare, _, err := LoadProgram(bare, Options{})
-			if err != nil {
-				t.Fatal(err)
+			loaded := saveLoad(t, checked, "main", CompiledDocument)
+			loadedBare := saveLoad(t, checked, "main", CompiledParse)
+			for _, p := range []*Program{loaded, loadedBare} {
+				mode, _ := p.Mode()
+				_, err := p.ParseWith("main", "", servedBy(mode, ParseOptions{Backend: Closure}))
+				wantClosureRefused(t, err)
 			}
 			ug, err := parse(resultGrammar(typ, "_"))
 			if err != nil {
@@ -207,23 +198,35 @@ func checkRuleResultType(t *testing.T, typ string, resultGrammar func(typ, rt st
 					{"iterative", checked, ParseOptions{Backend: BytecodeIterative}},
 					{"limited closure", checked, ParseOptions{Backend: Closure, WorkLimits: limits}},
 					{"limited bytecode", checked, ParseOptions{Backend: Bytecode, WorkLimits: limits}},
-					{"loaded closure", loaded, ParseOptions{Backend: Closure}},
-					{"loaded bytecode", loaded, ParseOptions{Backend: BytecodeIterative}},
-					{"limited loaded closure", loaded, ParseOptions{Backend: Closure, WorkLimits: limits}},
-					{"bare bytecode", loadedBare, ParseOptions{Backend: Bytecode}},
+					{"document bytecode", loaded, ParseOptions{Backend: Bytecode}},
+					{"document iterative", loaded, ParseOptions{Backend: BytecodeIterative}},
+					{"limited document bytecode", loaded, ParseOptions{Backend: Bytecode, WorkLimits: limits}},
+					{"parse bytecode", loadedBare, ParseOptions{Backend: Bytecode}},
+					{"limited parse bytecode", loadedBare, ParseOptions{Backend: Bytecode, WorkLimits: limits}},
 				}
 				var want string
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, run := range runs {
 						o := run.o
 						o.Unit = unit
-						got := resultWith(run.prog, in, o)
+						mode, isLoaded := run.prog.Mode()
+						po := o
+						if isLoaded {
+							po = servedBy(mode, o)
+						}
+						got := resultWith(run.prog, in, po)
 						if want == "" {
 							want = got
 						} else if got != want {
 							t.Fatalf("%q %s %s: %s\nwant %s", in, run.name, unit, got, want)
 						}
 						d, err := run.prog.NewDocumentWith("main", in, o)
+						if isLoaded && mode != CompiledDocument {
+							if err == nil {
+								t.Fatalf("%s: Document on a %s-mode file accepted", run.name, mode)
+							}
+							continue
+						}
 						if err != nil {
 							t.Fatal(err)
 						}
@@ -328,7 +331,7 @@ rule ops Int | O = operators {
 	if err != nil {
 		t.Fatal(err)
 	}
-	loaded, _, err := LoadProgram(data, Options{})
+	loaded, _, err := LoadProgram(data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -338,7 +341,14 @@ rule ops Int | O = operators {
 			t.Fatalf("%q: %s", in, want)
 		}
 		for _, b := range []Backend{Closure, Bytecode} {
-			if got := resultWith(loaded, in, ParseOptions{Backend: b}); got != want {
+			got := resultWith(loaded, in, ParseOptions{Backend: b})
+			if b == Closure {
+				if !strings.Contains(got, "closure backend needs the grammar source") {
+					t.Fatalf("%q loaded %s: %s, want the closure backend refused", in, b, got)
+				}
+				continue
+			}
+			if got != want {
 				t.Fatalf("%q loaded %s: %s\nwant %s", in, b, got, want)
 			}
 		}
@@ -405,10 +415,12 @@ func TestOperatorResultChecks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	loaded, _, err := LoadProgram(data, Options{})
+	loaded, _, err := LoadProgram(data)
 	if err != nil {
 		t.Fatal(err)
 	}
+	_, err = loaded.ParseWith("main", "", ParseOptions{Backend: Closure})
+	wantClosureRefused(t, err)
 	for _, in := range operatorResultCheckInputs {
 		want := resultWith(prog, in, ParseOptions{})
 		rejected := !strings.Contains(in, "l")
@@ -425,9 +437,9 @@ func TestOperatorResultChecks(t *testing.T) {
 			{"bytecode", prog, ParseOptions{Backend: Bytecode}},
 			{"iterative", prog, ParseOptions{Backend: BytecodeIterative}},
 			{"limited closure", prog, ParseOptions{Backend: Closure, WorkLimits: limits}},
-			{"loaded closure", loaded, ParseOptions{Backend: Closure}},
 			{"loaded bytecode", loaded, ParseOptions{Backend: Bytecode}},
-			{"limited loaded closure", loaded, ParseOptions{Backend: Closure, WorkLimits: limits}},
+			{"loaded iterative", loaded, ParseOptions{Backend: BytecodeIterative}},
+			{"limited loaded bytecode", loaded, ParseOptions{Backend: Bytecode, WorkLimits: limits}},
 		} {
 			if got := resultWith(run.prog, in, run.o); got != want {
 				t.Errorf("%q %s: %s\nwant %s", in, run.name, got, want)

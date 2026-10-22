@@ -36,8 +36,8 @@ The first three are selected per parse:
 n, err := p.Parse("abc=12", pego.WithBackend(pego.BytecodeIterative))
 ```
 
-`pego.DefaultBackend`, used when you give no option, is the **closure backend when the grammar AST is available and
-recursive bytecode otherwise** (that is, for a parser loaded from a `.pegoc` file saved without the AST). On the command
+`pego.DefaultBackend`, used when you give no option, is the **closure backend for a parser compiled from a grammar and
+recursive bytecode for a parser loaded from a `.pegoc` file**, which runs on the bytecode backends only. On the command
 line, `-backend closure|bytecode|bytecode-iterative` does the same.
 
 ### Which One

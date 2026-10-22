@@ -93,8 +93,8 @@ pego sample -g parsers/json/json.pego -n 2 -seed 5 -f json
 `stats` counts the work, as `Stats` does in Go (see [From Go](#from-go)). `ruleCuts` splits the cuts by the rule
 whose body holds the check or predicate, the rules with the most cuts first, as `Generator.Cuts` does.
 
-`-s` selects the start rule (the one saved in a `.pegoc`, otherwise the grammar's default start rule). A grammar compiled with
-`pego compile -no-ast` cannot be sampled: generation needs the grammar AST.
+`-s` selects the start rule (the grammar's default start rule if omitted). A compiled grammar (`.pegoc`) cannot be
+sampled: generation needs the grammar source.
 
 If the grammar accepts fewer distinct inputs than requested, or the generator cannot find more, `pego sample` prints
 what it found and says so on standard error (`pego sample: found only 3 distinct inputs`). If it finds none at all, it

@@ -246,22 +246,16 @@ func TestWorkClassOptimizedRoutes(t *testing.T) {
 			if !found {
 				t.Fatalf("optimized instruction %v was not emitted", tc.op)
 			}
-			// Exercise the same VM paths after loading a module without an AST.
-			data, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-			if err != nil {
-				t.Fatal(err)
-			}
-			loaded, _, err := LoadProgram(data, Options{})
-			if err != nil {
-				t.Fatal(err)
-			}
+			// Exercise the same VM paths after loading the module; the checks below trace
+			// the parse, which a compiled grammar serves in document mode.
+			loaded := saveLoad(t, p, "main", CompiledDocument)
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					for _, program := range []*Program{p, loaded} {
 						if program == loaded && backend == Closure {
 							continue
 						}
-						workClassNode(t, program, tc.input, ParseOptions{Backend: backend, Unit: unit})
+						workClassNode(t, program, tc.input, servedBy(program.mode, ParseOptions{Backend: backend, Unit: unit}))
 						requireClassWorkLimit(t, program, tc.input, backend, unit)
 						var c *workControl
 						var start uint64
@@ -278,7 +272,7 @@ func TestWorkClassOptimizedRoutes(t *testing.T) {
 						if n != nil || !errors.Is(err, context.Canceled) || c == nil || c.stepsUsed-start < 128 {
 							t.Fatalf("%v/%v: cancellation did not interrupt optimized membership: node=%v error type=%T", backend, unit, n, err)
 						}
-						workClassNode(t, program, tc.input, ParseOptions{Backend: backend, Unit: unit})
+						workClassNode(t, program, tc.input, servedBy(program.mode, ParseOptions{Backend: backend, Unit: unit}))
 					}
 				}
 			}

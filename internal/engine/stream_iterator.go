@@ -43,6 +43,9 @@ func (prog *Program) Iterate(start string, r io.Reader, o ParseOptions) (it *Str
 		return nil, fmt.Errorf("recognition is not supported for stream parsing")
 	}
 	start = prog.resolveStart(start) // an empty name selects the default start rule
+	if err := prog.checkMode(o, false); err != nil {
+		return nil, err
+	}
 	if _, _, _, err = prog.admitParse(start, o, true); err != nil {
 		return nil, err
 	}

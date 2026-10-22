@@ -172,15 +172,10 @@ var compiled []byte
 p, err := pego.LoadParser(compiled) // then p.Parse(...) as with CompileSource
 ```
 
-Loading is faster than compiling, and fastest without the grammar's syntax tree (`-no-ast`, which allows only the
-bytecode backends). For the Python grammar of [parsers/python](../../parsers/python/) (85 KB of source), on an Apple M3
-Max with Go 1.27.1:
-
-| Preparing the parser | Time |
-|:--|--:|
-| `pego.CompileSource` | 19 ms |
-| `pego.LoadParser` of the `.pegoc` | 8 ms |
-| `pego.LoadParser` of the `.pegoc` made with `-no-ast` | 1.0 ms |
+The file serves `Parse` and `ParseStream` on the bytecode backends; compile it with `-mode recognize` for
+`pego.RecognizeOnly()` or `-mode document` for documents and traces. Loading is much faster than compiling: for the
+Python grammar of [parsers/python](../../parsers/python/), on an Apple M3 Max with Go 1.27.1, `pego.CompileSource` took
+about 60 ms and `pego.LoadParser` of the `.pegoc` under 1 ms in every mode.
 
 A generated parser needs no preparation at all, and is also the fastest at parsing.
 

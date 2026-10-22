@@ -38,70 +38,50 @@ func TestCompiledRoundTripTerminalConstructors(t *testing.T) {
 }
 
 func checkCompiledRoundTrip(t *testing.T, prog *Program, inputs []string) {
-	data, err := prog.MarshalBinary("main")
-	if err != nil {
-		t.Fatal(err)
-	}
-	loaded, start, err := LoadProgram(data, Options{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if start != "main" {
-		t.Errorf("start %q", start)
-	}
-	for _, in := range inputs {
-		n1, err1 := prog.Parse("main", in)
-		n2, err2 := loaded.Parse(start, in)
-		if a, b := resultJSON(n1, err1), resultJSON(n2, err2); a != b {
-			t.Errorf("input %q\n original %s\n loaded   %s", in, a, b)
+	for _, mode := range allModes {
+		data, err := prog.Marshal("main", mode)
+		if err != nil {
+			t.Fatal(err)
 		}
-	}
-	// Saving the loaded program again produces the same bytes.
-	again, err := loaded.MarshalBinary("main")
-	if err != nil || !bytes.Equal(data, again) {
-		t.Errorf("re-marshaled data differs (%v)", err)
-	}
-	// An AST-less file carries a recognition bundle and returns the same
-	// results on the bytecode backend. The bundle can make it larger.
-	bare, err := prog.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if data[len(compiledMagic)] != compiledVersion || bare[len(compiledMagic)] != compiledVersion {
-		t.Fatalf("compiled versions: with AST %d, without AST %d", data[len(compiledMagic)], bare[len(compiledMagic)])
-	}
-	bareProg, _, err := LoadProgram(bare, Options{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if bareProg.Grammar != nil || strings.Join(bareProg.Rules(), ",") != strings.Join(prog.Rules(), ",") {
-		t.Errorf("bare program: grammar %v, rules %v", bareProg.Grammar, bareProg.Rules())
-	}
-	if _, err := bareProg.ParseWith("main", "", ParseOptions{Backend: Closure}); err == nil || !strings.Contains(err.Error(), "closure backend") {
-		t.Errorf("closure backend without the AST: %v", err)
-	}
-	if again, err := bareProg.MarshalBinary("main"); err != nil || !bytes.Equal(bare, again) {
-		t.Errorf("re-marshaled bare data differs (%v)", err)
-	}
-	for _, in := range inputs {
-		want := resultJSON(prog.Parse("main", in))
-		for _, l := range []struct {
-			name string
-			prog *Program
-			b    Backend
-		}{{"bare", bareProg, Default}, {"bytecode", loaded, Bytecode}, {"iterative", bareProg, BytecodeIterative}} {
-			if got := resultJSON(l.prog.ParseWith("main", in, ParseOptions{Backend: l.b})); got != want {
-				t.Errorf("%s: input %q\n original %s\n loaded   %s", l.name, in, want, got)
+		if data[len(compiledMagic)] != compiledVersion || CompiledMode(data[len(compiledMagic)+1]) != mode {
+			t.Fatalf("%s mode: compiled version %d, mode %d", mode, data[len(compiledMagic)], data[len(compiledMagic)+1])
+		}
+		loaded, start, err := LoadProgram(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if start != "main" {
+			t.Errorf("%s mode: start %q", mode, start)
+		}
+		if got, ok := loaded.Mode(); !ok || got != mode {
+			t.Errorf("loaded mode %v %v, want %s", got, ok, mode)
+		}
+		if loaded.Grammar != nil || strings.Join(loaded.Rules(), ",") != strings.Join(prog.Rules(), ",") {
+			t.Errorf("%s mode: grammar %v, rules %v", mode, loaded.Grammar, loaded.Rules())
+		}
+		// Saving the loaded program again produces the same bytes.
+		again, err := loaded.Marshal("main", mode)
+		if err != nil || !bytes.Equal(data, again) {
+			t.Errorf("%s mode: re-marshaled data differs (%v)", mode, err)
+		}
+		_, err = loaded.ParseWith("main", "", servedBy(mode, ParseOptions{Backend: Closure}))
+		wantClosureRefused(t, err)
+		for _, in := range inputs {
+			for _, b := range []Backend{Default, Bytecode, BytecodeIterative} {
+				want := resultJSON(prog.ParseWith("main", in, servedBy(mode, ParseOptions{Backend: b})))
+				if got := resultJSON(loaded.ParseWith(start, in, servedBy(mode, ParseOptions{Backend: b}))); got != want {
+					t.Errorf("%s mode %v: input %q\n original %s\n loaded   %s", mode, b, in, want, got)
+				}
 			}
 		}
 	}
 }
 
-// TestCompiledStreamAndDocument checks that stream and incremental parsing work with a loaded
-// program.
+// TestCompiledStreamAndDocument checks that stream parsing works with a program loaded in parse
+// mode and incremental parsing with one loaded in document mode.
 func TestCompiledStreamAndDocument(t *testing.T) {
 	data, _ := compile(t, records).MarshalBinary("")
-	prog, start, err := LoadProgram(data, Options{})
+	prog, start, err := LoadProgram(data)
 	if err != nil || start != "" {
 		t.Fatalf("%v %q", err, start)
 	}
@@ -115,9 +95,19 @@ func TestCompiledStreamAndDocument(t *testing.T) {
 	}
 
 	data, _ = compile(t, incrementalGrammar).MarshalBinary("main")
-	prog, _, _ = LoadProgram(data, Options{})
+	prog, _, _ = LoadProgram(data)
+	if doc, err := prog.NewDocument("main", "x = 1+2\n"); doc != nil {
+		t.Errorf("document on a parse-mode program: %v", err)
+	} else {
+		wantModeRefused(t, err, CompiledParse, CompiledDocument)
+	}
+	data, _ = compile(t, incrementalGrammar).Marshal("main", CompiledDocument)
+	prog, _, _ = LoadProgram(data)
 	fresh := compile(t, incrementalGrammar)
-	doc, _ := prog.NewDocument("main", "x = 1+2\nab,cd\n")
+	doc, err := prog.NewDocument("main", "x = 1+2\nab,cd\n")
+	if err != nil {
+		t.Fatal(err)
+	}
 	doc.Parse()
 	doc.Edit(4, 5, "(7)")
 	n, err := doc.Parse()
@@ -139,7 +129,7 @@ func TestCompiledErrors(t *testing.T) {
 	version := append([]byte(nil), data...)
 	version[len(compiledMagic)] = 99
 	isa := append([]byte(nil), data...)
-	isa[len(compiledMagic)+1] = isaVersion + 1
+	isa[isaOffset] = isaVersion + 1
 	isa = resum(isa)
 	flipped := append([]byte(nil), data...)
 	flipped[20] ^= 0xff
@@ -157,7 +147,7 @@ func TestCompiledErrors(t *testing.T) {
 		{"trailing", resum(append(append([]byte(nil), data[:len(data)-4]...), 0, 0, 0, 0, 0)), "trailing bytes"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if _, _, err := LoadProgram(tc.data, Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
+			if _, _, err := LoadProgram(tc.data); err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Errorf("got %v, want %q", err, tc.want)
 			}
 		})
@@ -182,8 +172,8 @@ func TestCompiledEarlierInstructionSet(t *testing.T) {
 	}
 	for _, isa := range []byte{1, 8, 12, isaVersion, isaVersion + 1} {
 		d := append([]byte(nil), data...)
-		d[len(compiledMagic)+1] = isa
-		prog, _, err := LoadProgram(resum(d), Options{})
+		d[isaOffset] = isa
+		prog, _, err := LoadProgram(resum(d))
 		switch {
 		case isa < isaVersion:
 			if err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
@@ -211,12 +201,13 @@ func TestCompiledCorruptionDoesNotPanic(t *testing.T) {
 	var seeds [][]byte
 	for _, c := range genCorpus(t) {
 		prog := compile(t, c.src)
-		data, err := prog.MarshalBinary("main")
-		if err != nil {
-			t.Fatal(err)
+		for _, mode := range allModes {
+			data, err := prog.Marshal("main", mode)
+			if err != nil {
+				t.Fatal(err)
+			}
+			seeds = append(seeds, data)
 		}
-		bare, _ := prog.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-		seeds = append(seeds, data, bare)
 	}
 	rng := rand.New(rand.NewSource(1))
 	for i := 0; i < 3000; i++ {
@@ -236,12 +227,14 @@ func TestCompiledCorruptionDoesNotPanic(t *testing.T) {
 					t.Fatalf("panic on corrupted data: %v\n%s", x, debug.Stack())
 				}
 			}()
-			prog, start, err := LoadProgram(b, Options{})
+			prog, start, err := LoadProgram(b)
 			if err == nil && start != "" {
 				// Non-terminating recursion, for example from corrupted left-recursion marks, fails at the
 				// nesting depth limit.
 				for _, b := range []Backend{Default, Bytecode, BytecodeIterative} {
-					prog.ParseWith(start, "1+2", ParseOptions{Backend: b, MaxDepth: 1000})
+					for _, mode := range allModes {
+						prog.ParseWith(start, "1+2", servedBy(mode, ParseOptions{Backend: b, MaxDepth: 1000}))
+					}
 				}
 			}
 		}()
@@ -255,16 +248,18 @@ func FuzzLoadProgram(f *testing.F) {
 		if err != nil {
 			f.Fatal(err)
 		}
-		data, _ := prog.MarshalBinary("main")
-		f.Add(data)
-		bare, _ := prog.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-		f.Add(bare)
+		for _, mode := range allModes {
+			data, _ := prog.Marshal("main", mode)
+			f.Add(data)
+		}
 	}
 	f.Fuzz(func(t *testing.T, data []byte) {
-		prog, start, err := LoadProgram(data, Options{})
+		prog, start, err := LoadProgram(data)
 		if err == nil && start != "" {
-			prog.ParseWith(start, "a=1\n", ParseOptions{MaxDepth: 1000})
-			prog.ParseWith(start, "a=1\n", ParseOptions{Backend: Bytecode, MaxDepth: 1000})
+			for _, mode := range allModes {
+				prog.ParseWith(start, "a=1\n", servedBy(mode, ParseOptions{MaxDepth: 1000}))
+				prog.ParseWith(start, "a=1\n", servedBy(mode, ParseOptions{Backend: Bytecode, MaxDepth: 1000}))
+			}
 		}
 	})
 }
@@ -285,13 +280,13 @@ func BenchmarkLoad(b *testing.B) {
 	})
 	b.Run("compiled", func(b *testing.B) {
 		for b.Loop() {
-			LoadProgram(data, Options{})
+			LoadProgram(data)
 		}
 	})
 }
 
-// TestCompiledTypeExpressions checks that every form of type expression survives a compiled
-// grammar: a load that read only some of them would misread the rest of the file.
+// TestCompiledTypeExpressions checks that a grammar with every form of type expression runs the
+// same from a compiled grammar, which holds no types: they stay with the grammar source.
 func TestCompiledTypeExpressions(t *testing.T) {
 	src := `type P = { A node[string]; B *(int); C []node[string] }
 type Q ~ P | node[string] & node[_]
@@ -302,12 +297,18 @@ rule pair node[(string)] = [a-z]`
 	if err != nil {
 		t.Fatal(err)
 	}
-	loaded, _, err := LoadProgram(data, Options{})
+	loaded, _, err := LoadProgram(data)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if again, err := loaded.MarshalBinary("main"); err != nil || !bytes.Equal(data, again) {
 		t.Errorf("re-marshaled data differs (%v)", err)
+	}
+	if loaded.Grammar != nil || bytes.Contains(data, []byte("node[")) {
+		t.Errorf("compiled grammar keeps the types: grammar %v", loaded.Grammar)
+	}
+	if grammarTypes(prog) == "" {
+		t.Error("source grammar has no types")
 	}
 	for _, rule := range []string{"main", "pair"} {
 		for _, in := range []string{"a", "ab", ""} {
@@ -317,9 +318,6 @@ rule pair node[(string)] = [a-z]`
 				t.Errorf("%s %q\n original %s\n loaded   %s", rule, in, a, b)
 			}
 		}
-	}
-	if a, b := grammarTypes(prog), grammarTypes(loaded); a != b {
-		t.Errorf("types differ\n original %s\n loaded   %s", a, b)
 	}
 }
 
@@ -360,11 +358,11 @@ func TestCompiledFormatVersion(t *testing.T) {
 		b = append([]byte(nil), b[:len(b)-4]...)
 		return binary.LittleEndian.AppendUint32(b, crc32.ChecksumIEEE(b))
 	}
-	for _, v := range []byte{1, 2, 3, compiledVersion + 1} {
+	for _, v := range []byte{1, 2, 3, compiledVersion - 1, compiledVersion + 1} {
 		d := append([]byte(nil), data...)
 		d[len(compiledMagic)] = v
-		_, _, err := LoadProgram(resum(d), Options{})
-		want := fmt.Sprintf("unsupported compiled grammar version %d (want %d)", v, compiledVersion)
+		_, _, err := LoadProgram(resum(d))
+		want := fmt.Sprintf("unsupported compiled grammar version %d (want %d): compile the grammar again", v, compiledVersion)
 		if err == nil || err.Error() != want {
 			t.Errorf("version %d: got %v, want %q", v, err, want)
 		}

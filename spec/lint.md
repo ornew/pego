@@ -27,9 +27,9 @@ linter, identified by a name.
 
 - `pego.Lint` takes a grammar AST and the start rule and returns the findings. If
   the grammar does not compile, it returns an error and no findings.
-- `pego lint` accepts PEGO source, grammar JSON and a compiled grammar that holds
-  the AST. The start rule is the one `-s` names, otherwise the one a compiled
-  grammar saved, otherwise the default start rule of the grammar. A grammar that does not compile is reported with its compile
+- `pego lint` accepts PEGO source and grammar JSON; a compiled grammar holds no
+  grammar and is an error. The start rule is the one `-s` names, otherwise the
+  default start rule of the grammar. A grammar that does not compile is reported with its compile
   errors.
 - Each finding prints on one line as `file:line:col: severity: message [check]`,
   followed by a line `fix: ...` when there is a suggested fix. A run that exits
@@ -42,7 +42,7 @@ linter, identified by a name.
 - `pego lint` exits with status 1 if there is a finding of severity `error`, and
   with 0 otherwise. With `-strict`, a warning also gives status 1. A hint never
   does.
-- A grammar decoded from JSON or loaded from a compiled grammar has no source
+- A grammar decoded from JSON has no source
   positions: its findings have the zero `Pos` and name the rule they are in. Such
   a grammar has no comments, so it cannot carry [directives](#suppressing-findings).
 
@@ -191,7 +191,7 @@ as `lint-directive`.
 |:--|:--|
 | The grammar does not compile | `pego.Lint` returns the compile errors and no findings |
 | `-disable` or `DisableChecks` names an unknown check | An error |
-| A compiled grammar without the AST | Error: `the compiled grammar omits the AST` |
+| A compiled grammar | Error: `lint needs the grammar source (.pego or .json)` |
 
 ## Compatibility and Support
 

@@ -5,10 +5,10 @@
 //	pego parse -g grammar.pego [-s main] [-i input] [-f json|sexpr] [-stream] [-unit u] [-backend b] [-source-info] [-default-value]
 //	pego test -f suite.json [-format text|json] [-backend closure,bytecode] [-equivalence] [-update]
 //	pego fmt [-w] [-l] [-check] [-syntax] [grammar.pego ...]
-//	pego convert [-to pego|json] [-o output] grammar.pego|grammar.json|grammar.pegoc
+//	pego convert [-to pego|json] [-o output] grammar.pego|grammar.json
 //	pego gen -g grammar.pego -module path -o dir [-pkg name] [-runtime embed|import|only] [-s main] [-types] [-document] [-stream] [-recognize] [-observability] [-work-controls] [-typed-only] [-nodoc] [-max-depth n] [-source-info] [-default-value]
 //	pego gen -lang ts -g grammar.pego -o dir [-runtime embed|import|only] [-runtime-module specifier] [-s main] [-types] [-recognize] [-observability]
-//	pego compile -g grammar.pego [-s main] [-no-ast [-schema]] [-source-info] [-default-value] -o grammar.pegoc
+//	pego compile -g grammar.pego [-s main] [-mode parse|recognize|document] [-source-info] [-default-value] -o grammar.pegoc
 //	pego trace -g grammar.pego [-s main] [-i input] [-max-depth n] [-rule name] [-failures] [-f text|json]
 //	pego profile -g grammar.pego [-s main] [-i input] [-sort column] [-n rows] [-f text|json]
 //	pego explain -g grammar.pego [-s main] [-i input] [-n calls]
@@ -74,7 +74,7 @@ Commands:
 
   convert [-to pego|json] [-o <file>] <grammar>
       Convert a grammar between PEGO source and JSON. -to defaults to the
-      other format of the input and is required for compiled grammars.
+      other format of the input.
 
   gen -g <grammar> -module <import path> -o <dir> [-pkg <package>] [-runtime embed|import|only] [-s <rule>] [-types]
         [-document] [-stream] [-recognize] [-observability] [-work-controls] [-typed-only] [-max-depth <n>] [-nodoc] [-source-info] [-default-value]
@@ -127,14 +127,15 @@ Commands:
       rule types, so the parser returns the default node tree; it cannot be
       combined with -types.
 
-  compile -g <grammar> [-s <rule>] [-no-ast [-schema]] [-source-info] [-default-value] -o <file.pegoc>
-      Compile a grammar and save it. The result can be used as <grammar>
-      by the other commands. With -no-ast, the grammar AST is omitted; the
-      result then runs only on the bytecode backends and cannot be
-      converted back to a grammar. With -schema as well, the result also
-      keeps the output schema, so that schema can export it; it requires
-      -no-ast, because a file with the AST derives the schema from it.
-      With -source-info, its parses record
+  compile -g <grammar> [-s <rule>] [-mode parse|recognize|document] [-source-info] [-default-value] -o <file.pegoc>
+      Compile a grammar and save the bytecode of one mode. The result runs
+      on the bytecode backends as the <grammar> of parse, trace, profile
+      and explain, for the parses of its mode only: parse (the default)
+      serves parse and parse -stream; recognize serves parse -check;
+      document serves trace, profile and explain. The commands that need
+      the grammar itself (convert, gen, lint, sample, schema) take the
+      source. A compiled grammar given as <grammar> is saved again only in
+      its own mode. With -source-info, its parses record
       the rule of each node and the names of captures. With -default-value,
       value actions and declared rule types are dropped (predicates still
       run), so its parses return the default node tree.
@@ -194,8 +195,9 @@ Commands:
       input and output, for editors: diagnostics, formatting, go to
       definition, references, hover, rename and completion.
 
-A <grammar> is PEGO source (.pego), a grammar in JSON (.json), or a
-grammar compiled with pego compile (.pegoc).
+A <grammar> is PEGO source (.pego), a grammar in JSON (.json), or, for
+parse, trace, profile, explain and compile, a grammar compiled with pego
+compile (.pegoc).
 
 Run "pego <command> -h" for the flags of a command.`
 
@@ -459,7 +461,7 @@ func formatFile(path string, write, list bool, stdout io.Writer) error {
 
 func formatFileMode(path string, write, list, syntaxOnly bool, stdout io.Writer) error {
 	if filepath.Ext(path) != ".pego" {
-		return fmt.Errorf("%s: fmt formats only PEGO source files (.pego); use pego convert for JSON or compiled grammars", path)
+		return fmt.Errorf("%s: fmt formats only PEGO source files (.pego); use pego convert for JSON grammars; a compiled grammar holds no source", path)
 	}
 	src, err := os.ReadFile(path)
 	if err != nil {
@@ -477,7 +479,7 @@ func formatSource(name string, src []byte, write, list bool, stdout io.Writer) e
 
 func formatSourceMode(name string, src []byte, write, list, syntaxOnly bool, stdout io.Writer) error {
 	if pego.IsCompiled(src) {
-		return fmt.Errorf("%s: a compiled grammar is not PEGO source; use pego convert -to pego to print its source", name)
+		return fmt.Errorf("%s: a compiled grammar is not PEGO source and holds none; format the grammar source it was compiled from", name)
 	}
 	if t := bytes.TrimSpace(src); len(t) > 0 && t[0] == '{' {
 		return fmt.Errorf("%s: JSON is not PEGO source; use pego convert to convert it", name)
@@ -576,7 +578,7 @@ func convertCmd(args []string, stdout io.Writer) error {
 	if target == "" {
 		switch {
 		case pego.IsCompiled(data):
-			return fmt.Errorf("convert: %s is a compiled grammar; choose the output format with -to pego or -to json", path)
+			return compiledNeedsSource(path, "convert")
 		case filepath.Ext(path) == ".json":
 			target = "pego"
 		default:
@@ -586,7 +588,7 @@ func convertCmd(args []string, stdout io.Writer) error {
 	if target != "pego" && target != "json" {
 		return fmt.Errorf("convert: unknown format %q (want pego or json)", target)
 	}
-	g, _, err := loadGrammar(path)
+	g, err := loadGrammar(path, "convert")
 	if err != nil {
 		return err
 	}
@@ -627,32 +629,46 @@ type wrappedError struct {
 func (e *wrappedError) Error() string { return e.msg }
 func (e *wrappedError) Unwrap() error { return e.err }
 
-// loadGrammar reads the grammar file at path. For a compiled grammar, it also returns the start
-// rule saved in it.
-func loadGrammar(path string) (g *grammar.Grammar, saved string, err error) {
+// compiledNeedsSource is the error of a command that needs the grammar source given the compiled
+// grammar at path.
+func compiledNeedsSource(path, command string) error {
+	return fmt.Errorf("%s: a compiled grammar holds only the bytecode of one mode; %s needs the grammar source (.pego or .json)", path, command)
+}
+
+// loadGrammar reads the grammar source at path for command, which needs the grammar itself and
+// so rejects a compiled grammar.
+func loadGrammar(path, command string) (*grammar.Grammar, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	if pego.IsCompiled(data) {
-		p, err := pego.LoadParser(data)
-		if err != nil {
-			return nil, "", fmt.Errorf("%s: %w", path, err)
-		}
-		if p.Grammar() == nil {
-			return nil, "", fmt.Errorf("%s: the compiled grammar omits the AST", path)
-		}
-		return p.Grammar(), p.Start(), nil
+		return nil, compiledNeedsSource(path, command)
 	}
+	var g *grammar.Grammar
 	if strings.HasSuffix(path, ".json") {
 		g, err = grammar.UnmarshalJSON(data)
 	} else {
 		g, err = pego.ParseGrammar(string(data))
 	}
 	if err != nil {
-		return nil, "", fileError(path, err)
+		return nil, fileError(path, err)
 	}
-	return g, "", nil
+	return g, nil
+}
+
+// loadSourceParser compiles the grammar source at path for command, starting at the rule start
+// (the grammar's default start rule if empty); see loadGrammar.
+func loadSourceParser(path, start, command string) (*pego.Parser, error) {
+	g, err := loadGrammar(path, command)
+	if err != nil {
+		return nil, err
+	}
+	p, err := pego.Compile(g, start)
+	if err != nil {
+		return nil, fileError(path, err)
+	}
+	return p, nil
 }
 
 func parse(args []string, stdin io.Reader, stdout io.Writer) error {
@@ -780,13 +796,13 @@ func isFlagSet(fs *flag.FlagSet, name string) bool {
 
 func gen(args []string, stdout io.Writer) error {
 	fs := flag.NewFlagSet("gen", flag.ContinueOnError)
-	grammarPath := fs.String("g", "", "grammar file (.pego, .json, or .pegoc)")
+	grammarPath := fs.String("g", "", "grammar file (.pego or .json)")
 	lang := fs.String("lang", "go", "language of the generated code: go or ts (TypeScript)")
 	pkg := fs.String("pkg", "", "package name of the generated code (Go; default: the last element of -module without a major version suffix)")
 	module := fs.String("module", "", "import path of the generated Go package")
 	runtimeMode := fs.String("runtime", "embed", "how generated code reaches the runtime: embed (a copy: internal/runtime in Go, runtime.ts in TypeScript), import (github.com/ornew/pego/runtime in Go; the module of -runtime-module in TypeScript) or only (just the embedded copy)")
 	runtimeModule := fs.String("runtime-module", "", "module specifier a TypeScript parser imports its runtime from with -runtime import, such as ../shared/runtime.ts")
-	start := fs.String("s", "", "start rule of the generated Parse function (default: the one saved in a .pegoc, otherwise the grammar's default start rule)")
+	start := fs.String("s", "", "start rule of the generated Parse function (default: the grammar's default start rule)")
 	output := fs.String("o", "", "output directory")
 	types := fs.Bool("types", false, "also generate typed values and ParseAST (parseAST in TypeScript)")
 	document := fs.Bool("document", false, "also generate a Go incremental Document (typed ParseAST with -types; incompatible with -lang ts)")
@@ -881,12 +897,9 @@ func gen(args []string, stdout io.Writer) error {
 		}
 		return writeGenerated(*output, files, mode, *lang == "ts")
 	}
-	g, saved, err := loadGrammar(*grammarPath)
+	g, err := loadGrammar(*grammarPath, "gen")
 	if err != nil {
 		return err
-	}
-	if *start == "" {
-		*start = saved
 	}
 	opts := []pego.GenOption{pego.WithGeneratedMaxDepth(*maxDepth)}
 	if *types {
@@ -1082,7 +1095,7 @@ func loadParser(path, start string, flags compileFlags) (*pego.Parser, error) {
 		}
 		return p.WithStart(start)
 	}
-	g, _, err := loadGrammar(path)
+	g, err := loadGrammar(path, "this command")
 	if err != nil {
 		return nil, err
 	}
@@ -1095,11 +1108,10 @@ func loadParser(path, start string, flags compileFlags) (*pego.Parser, error) {
 
 func compileCmd(args []string) error {
 	fs := flag.NewFlagSet("compile", flag.ContinueOnError)
-	grammarPath := fs.String("g", "", "grammar file (.pego, .json, or .pegoc)")
+	grammarPath := fs.String("g", "", "grammar file (.pego, .json, or a .pegoc to save again in its own mode)")
 	start := fs.String("s", "", "start rule saved as the default (default: the one saved in a .pegoc, otherwise the grammar's default start rule)")
 	output := fs.String("o", "", "output file (.pegoc)")
-	noAST := fs.Bool("no-ast", false, "omit the grammar AST (the result runs only on the bytecode backends)")
-	schema := fs.Bool("schema", false, "store the output schema with the result, which needs -no-ast")
+	modeName := fs.String("mode", "parse", "the parses the result serves: parse, recognize (parse -check) or document (Documents, trace, profile)")
 	sourceInfo := fs.Bool("source-info", false, "record the rule of each node and the names of captures in parse results")
 	defaultValue := fs.Bool("default-value", false, "drop value actions and declared rule types, so parses return the default node tree")
 	if err := fs.Parse(args); err != nil {
@@ -1108,24 +1120,18 @@ func compileCmd(args []string) error {
 	if *grammarPath == "" || *output == "" {
 		return fmt.Errorf("-g and -o are required")
 	}
-	if *schema && !*noAST {
-		return fmt.Errorf("compile: -schema needs -no-ast: a file with the AST derives its schema from the AST")
+	mode, err := pego.ParseCompiledMode(*modeName)
+	if err != nil {
+		return fmt.Errorf("compile: %w", err)
 	}
 	p, err := loadParser(*grammarPath, *start, compileFlags{sourceInfo: *sourceInfo, defaultValue: *defaultValue})
 	if err != nil {
 		return err
 	}
-	if !*noAST && p.Grammar() == nil {
-		return fmt.Errorf("compile: %s: the compiled grammar omits the AST; use the original grammar source or pass -no-ast to keep a bytecode-only file", *grammarPath)
+	if have, loaded := p.CompiledMode(); loaded && have != mode {
+		return fmt.Errorf("compile: %s: the compiled grammar is in %s mode and is saved again only in that mode: pass -mode %s, or compile the grammar source with -mode %s", *grammarPath, have, have, mode)
 	}
-	var opts []pego.MarshalOption
-	if *noAST {
-		opts = append(opts, pego.WithoutAST())
-	}
-	if *schema {
-		opts = append(opts, pego.WithSchema())
-	}
-	data, err := p.Marshal(opts...)
+	data, err := p.Marshal(mode)
 	if err != nil {
 		return err
 	}

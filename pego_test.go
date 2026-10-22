@@ -1,8 +1,10 @@
 package pego_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -138,11 +140,144 @@ rule key = [a-z]+ #atomic`, "main", pego.WithSourceInfo())
 	if _, err := loaded.WithStart("nope"); err == nil {
 		t.Error("expected an error")
 	}
-	if got := grammar.Format(loaded.Grammar()); !strings.Contains(got, "rule key = [a-z]+ #atomic") {
+	// The grammar stays with the source: a compiled grammar holds only bytecode.
+	if loaded.Grammar() != nil {
+		t.Errorf("grammar of a loaded parser %s", grammar.Format(loaded.Grammar()))
+	}
+	if got := grammar.Format(p.Grammar()); !strings.Contains(got, "rule key = [a-z]+ #atomic") {
 		t.Errorf("grammar %s", got)
+	}
+	if mode, ok := loaded.CompiledMode(); !ok || mode != pego.CompiledParse {
+		t.Errorf("mode of MarshalBinary: %v %v", mode, ok)
+	}
+	if _, ok := p.CompiledMode(); ok {
+		t.Error("mode of a parser compiled from source")
 	}
 	if _, err := pego.LoadParser([]byte("garbage")); err == nil {
 		t.Error("expected an error")
+	}
+}
+
+// TestCompiledModes checks that each mode of a compiled grammar serves its own operations, refuses
+// the others with the mode they need, is saved again in its own mode only, and is named by
+// ParseCompiledMode.
+func TestCompiledModes(t *testing.T) {
+	p, err := compileTestSource(`rule main = pair* #stream $$
+rule pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => list($k, $v)`, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	modes := []pego.CompiledMode{pego.CompiledParse, pego.CompiledRecognize, pego.CompiledDocument}
+	for _, mode := range modes {
+		if got, err := pego.ParseCompiledMode(mode.String()); err != nil || got != mode {
+			t.Errorf("ParseCompiledMode(%q) = %v, %v", mode.String(), got, err)
+		}
+	}
+	if _, err := pego.ParseCompiledMode("ast"); err == nil {
+		t.Error("ParseCompiledMode accepted an unknown mode")
+	}
+	parse := func(q *pego.Parser) error { _, err := q.Parse("a=1"); return err }
+	stream := func(q *pego.Parser) error {
+		return q.ParseStream(strings.NewReader("a=1"), func(*pego.Node) error { return nil })
+	}
+	prefix := func(q *pego.Parser) error { _, err := q.ParsePrefix("main", "a=1"); return err }
+	iterate := func(opts ...pego.ParseOption) func(q *pego.Parser) error {
+		return func(q *pego.Parser) error {
+			it, err := q.Iterate(strings.NewReader("a=1b=2"), opts...)
+			if err != nil {
+				return err
+			}
+			defer it.Close()
+			n := 0
+			for {
+				_, ok, err := it.Next()
+				if err != nil {
+					return err
+				}
+				if !ok {
+					break
+				}
+				n++
+			}
+			if n != 2 {
+				return fmt.Errorf("iterate: %d elements, want 2", n)
+			}
+			return nil
+		}
+	}
+	recognize := func(q *pego.Parser) error { _, err := q.Parse("a=1", pego.RecognizeOnly()); return err }
+	trace := func(q *pego.Parser) error {
+		_, err := q.Parse("a=1", pego.WithTrace(func(pego.TraceEvent) {}))
+		return err
+	}
+	profile := func(q *pego.Parser) error { _, err := q.Parse("a=1", pego.WithProfile(&pego.Profile{})); return err }
+	document := func(q *pego.Parser) error {
+		doc, err := q.NewDocument("a=1")
+		if err == nil {
+			_, err = doc.Parse()
+		}
+		return err
+	}
+	ops := []struct {
+		name string
+		run  func(*pego.Parser) error
+		need pego.CompiledMode
+	}{
+		{"parse", parse, pego.CompiledParse},
+		{"stream", stream, pego.CompiledParse},
+		{"prefix", prefix, pego.CompiledParse},
+		{"iterate", iterate(), pego.CompiledParse},
+		{"traced iterate", iterate(pego.WithTrace(func(pego.TraceEvent) {})), pego.CompiledDocument},
+		{"recognize", recognize, pego.CompiledRecognize},
+		{"trace", trace, pego.CompiledDocument},
+		{"profile", profile, pego.CompiledDocument},
+		{"document", document, pego.CompiledDocument},
+	}
+	for _, mode := range modes {
+		data, err := p.Marshal(mode)
+		if err != nil {
+			t.Fatal(err)
+		}
+		loaded, err := pego.LoadParser(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got, ok := loaded.CompiledMode(); !ok || got != mode {
+			t.Errorf("%s: loaded mode %v %v", mode, got, ok)
+		}
+		if again, err := loaded.Marshal(mode); err != nil || !bytes.Equal(again, data) {
+			t.Errorf("%s: saved again differently: %v", mode, err)
+		}
+		for _, other := range modes {
+			if other == mode {
+				continue
+			}
+			if _, err := loaded.Marshal(other); err == nil || !strings.Contains(err.Error(), "saved only in that mode") {
+				t.Errorf("%s file saved in %s mode: %v", mode, other, err)
+			}
+		}
+		for _, op := range ops {
+			err := op.run(loaded)
+			if op.need == mode {
+				if err != nil {
+					t.Errorf("%s file, %s: %v", mode, op.name, err)
+				}
+				continue
+			}
+			if err == nil || !strings.Contains(err.Error(), "the compiled grammar is in "+mode.String()+" mode") ||
+				!strings.Contains(err.Error(), " "+op.need.String()+" mode: compile it") || !strings.Contains(err.Error(), "-mode "+op.need.String()) {
+				t.Errorf("%s file, %s: %v", mode, op.name, err)
+			}
+		}
+		// Traced or profiled recognition needs the grammar source in every mode.
+		for _, opt := range []pego.ParseOption{pego.WithTrace(func(pego.TraceEvent) {}), pego.WithProfile(&pego.Profile{})} {
+			if _, err := loaded.Parse("a=1", pego.RecognizeOnly(), opt); err == nil || !strings.Contains(err.Error(), "needs the grammar source") {
+				t.Errorf("%s file, traced recognition: %v", mode, err)
+			}
+		}
+	}
+	if _, err := p.Marshal(pego.CompiledMode(9)); err == nil {
+		t.Error("saved in an unknown mode")
 	}
 }
 
@@ -181,33 +316,40 @@ rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`, 
 			t.Errorf("%v: %v %v", b, n, err)
 		}
 	}
-	// A parser saved without the AST parses with the bytecode backend.
-	data, err := p.Marshal(pego.WithoutAST())
-	if err != nil {
-		t.Fatal(err)
+	// A compiled grammar runs on the bytecode backends, each mode serving its own operations.
+	load := func(mode pego.CompiledMode) *pego.Parser {
+		t.Helper()
+		data, err := p.Marshal(mode)
+		if err != nil {
+			t.Fatal(err)
+		}
+		loaded, err := pego.LoadParser(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if loaded.Grammar() != nil {
+			t.Errorf("grammar of a parser loaded in %s mode", mode)
+		}
+		return loaded
 	}
-	bare, err := pego.LoadParser(data)
-	if err != nil {
-		t.Fatal(err)
+	parsing := load(pego.CompiledParse)
+	if n, err := parsing.Parse("abc=12"); err != nil || n.String() != `Pair{Key: "abc", Value: "12"}` {
+		t.Errorf("parse mode: %v %v", n, err)
 	}
-	if bare.Grammar() != nil {
-		t.Error("grammar of a parser saved without AST")
+	if _, err := parsing.Parse("abc=12", pego.WithBackend(pego.Closure)); err == nil || !strings.Contains(err.Error(), "closure backend needs the grammar source") {
+		t.Errorf("closure backend on a compiled grammar: %v", err)
 	}
-	if n, err := bare.Parse("abc=12"); err != nil || n.String() != `Pair{Key: "abc", Value: "12"}` {
-		t.Errorf("bare: %v %v", n, err)
-	}
+	recognizing := load(pego.CompiledRecognize)
 	for _, backend := range []pego.Backend{pego.Bytecode, pego.BytecodeIterative} {
-		if n, err := bare.Parse("abc=12", pego.WithBackend(backend), pego.RecognizeOnly()); n != nil || err != nil {
-			t.Errorf("bare recognition on %v: %v %v", backend, n, err)
+		if n, err := recognizing.Parse("abc=12", pego.WithBackend(backend), pego.RecognizeOnly()); n != nil || err != nil {
+			t.Errorf("recognition on %v: %v %v", backend, n, err)
 		}
 	}
-	if _, err := bare.Parse("abc=12", pego.WithBackend(pego.Closure)); err == nil {
-		t.Error("closure backend without AST")
+	documents := load(pego.CompiledDocument)
+	if _, err := documents.NewDocument("a=1", pego.WithBackend(pego.Closure)); err == nil || !strings.Contains(err.Error(), "closure backend needs the grammar source") {
+		t.Errorf("document with the closure backend on a compiled grammar: %v", err)
 	}
-	if _, err := bare.NewDocument("a=1", pego.WithBackend(pego.Closure)); err == nil {
-		t.Error("document with closure backend without AST")
-	}
-	doc, err := bare.NewDocument("a=1")
+	doc, err := documents.NewDocument("a=1")
 	if err != nil {
 		t.Fatal(err)
 	}

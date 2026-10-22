@@ -28,7 +28,7 @@ and it needs nothing internal: only `Parser.Grammar`, `Parser.Start` and `Parser
 core API small, keeps programs that only parse from linking it, and shows that the public API is enough. The fuzzing
 helper takes an interface satisfied by `*testing.F`, so importing `sample` does not import `testing`.
 
-A parser loaded from a `.pegoc` saved without the AST cannot be sampled: the bytecode alone does not describe the
+A parser loaded from a `.pegoc` cannot be sampled: the bytecode alone does not describe the
 grammar well enough (actions, levels, captures).
 
 ## Why Validation by Parsing Is Mandatory

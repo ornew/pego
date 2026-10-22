@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 
@@ -66,13 +67,8 @@ rule value = x:"é😀" "!" => $x`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, omitAST := range []bool{false, true} {
-		var data []byte
-		if omitAST {
-			data, err = p.Marshal(pego.WithoutAST())
-		} else {
-			data, err = p.MarshalBinary()
-		}
+	for _, mode := range []pego.CompiledMode{pego.CompiledParse, pego.CompiledRecognize} {
+		data, err := p.Marshal(mode)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -87,8 +83,15 @@ rule value = x:"é😀" "!" => $x`, "main")
 					opts = append(opts, pego.RecognizeOnly())
 				}
 				r, err := loaded.ParsePrefix("value", "é😀!tail", opts...)
+				if recognize != (mode == pego.CompiledRecognize) {
+					// Each mode refuses the operations of the other.
+					if err == nil || !strings.Contains(err.Error(), "the compiled grammar is in "+mode.String()+" mode") {
+						t.Fatalf("compiled %s mode %v/recognize=%v: %+v %v", mode, backend, recognize, r, err)
+					}
+					continue
+				}
 				if err != nil || r.Consumed != 3 || r.ConsumedBytes != 7 || recognize && r.Node != nil {
-					t.Fatalf("compiled omitAST=%v %v/recognize=%v: %+v %v", omitAST, backend, recognize, r, err)
+					t.Fatalf("compiled %s mode %v/recognize=%v: %+v %v", mode, backend, recognize, r, err)
 				}
 				// The module's configured start remains a whole-input parse.
 				if _, err = loaded.Parse("é😀!tail", opts...); err == nil {

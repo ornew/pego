@@ -212,23 +212,18 @@ func TestInlineActionsCompiledRoundTrip(t *testing.T) {
 			if got := prog.SourceGrammar(); len(got.Rules()) != len(written.Rules()) || len(prog.Grammar.Rules()) <= len(written.Rules()) {
 				t.Fatalf("the source grammar has %d rules, the lowered grammar %d, the written one %d", len(got.Rules()), len(prog.Grammar.Rules()), len(written.Rules()))
 			}
-			for _, omit := range []bool{false, true} {
-				data, err := prog.MarshalBinaryWith("main", MarshalOptions{OmitAST: omit})
-				if err != nil {
-					t.Fatal(err)
-				}
-				loaded, _, err := LoadProgram(data, Options{})
-				if err != nil {
-					t.Fatal(err)
-				}
+			for _, mode := range valueModes {
+				loaded := saveLoad(t, prog, "main", mode)
 				for _, input := range tc.inputs {
-					want, got := resultJSON(prog.Parse("main", input)), resultJSON(loaded.Parse("main", input))
+					want, got := resultJSON(prog.Parse("main", input)), resultJSON(loaded.ParseWith("main", input, servedBy(mode, ParseOptions{})))
 					if got != want {
-						t.Errorf("%q (omit AST %v): %s / %s", input, omit, got, want)
+						t.Errorf("%q (%s mode): %s / %s", input, mode, got, want)
 					}
 				}
-				if !omit && len(loaded.SourceGrammar().Rules()) != len(written.Rules()) {
-					t.Fatalf("the loaded grammar has %d rules, want %d", len(loaded.SourceGrammar().Rules()), len(written.Rules()))
+				// A compiled grammar holds no grammar, so the hidden rules of inline actions are
+				// only in its module.
+				if loaded.SourceGrammar() != nil {
+					t.Fatalf("the loaded program has a grammar of %d rules", len(loaded.SourceGrammar().Rules()))
 				}
 			}
 		})

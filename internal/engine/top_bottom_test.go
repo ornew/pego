@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bytes"
 	"encoding/json"
 	"os/exec"
 	"path/filepath"
@@ -108,18 +109,18 @@ func TestTopBottomListCheck(t *testing.T) {
 		src := "type T = { A " + tc.field + " }\ntype U = { F _ }\nrule main = x:\"a\" => T{A: U{F: \"s\"}.F.(" + tc.field + ")}\nrule ok = x:\"a\"* => T{A: U{F: $x.Value}.F.(" + tc.field + ")}\nrule rule []_ = x:\"a\"* => U{F: $x.Value}.F.([]_)\nrule bad []_ = x:\"a\" => U{F: $x}.F.([]_)"
 		for _, opts := range []Options{{}} {
 			program := compile(t, src, opts)
-			data, err := program.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
+			data, err := program.MarshalBinary("main")
 			if err != nil {
 				t.Fatal(err)
 			}
-			loaded, _, err := LoadProgram(data, Options{})
+			loaded, _, err := LoadProgram(data)
 			if err != nil {
 				t.Fatalf("%s: %v", tc.field, err)
 			}
 			for _, p := range []*Program{program, loaded} {
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 					if p == loaded && backend == Closure {
-						continue // a module without the AST runs on the VM
+						continue // a loaded program runs on the bytecode backends
 					}
 					if _, err := p.ParseWith("main", "a", ParseOptions{Backend: backend}); err == nil || !strings.Contains(err.Error(), "cannot cast string to "+tc.want) {
 						t.Fatalf("%s %s: %v", tc.field, backend, err)
@@ -216,7 +217,7 @@ func TestTopBottomSyntax(t *testing.T) {
 	if b, ok := alias.Types[2].(*grammar.TypeRef); !ok || b.Name != "_|_" {
 		t.Fatalf("bottom %#v", alias.Types[2])
 	}
-	// The JSON AST and compiled files keep meets and the top and bottom types.
+	// The JSON AST keeps meets and the top and bottom types; compiled files keep no types.
 	data, err := grammar.MarshalJSON(g)
 	if err != nil {
 		t.Fatal(err)
@@ -234,16 +235,22 @@ func TestTopBottomSyntax(t *testing.T) {
 		t.Fatalf("JSON round trip:\n%s\nwant\n%s", again, data)
 	}
 	program := compile(t, src)
-	bin, err := program.MarshalBinaryWith("main", MarshalOptions{})
+	bin, err := program.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	loaded, _, err := LoadProgram(bin, Options{})
+	loaded, _, err := LoadProgram(bin)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := grammar.Format(loaded.Grammar); !strings.Contains(got, "type A ~ []B & *C | _ & (D | B) | _|_") || !strings.Contains(got, "$x.(_ & node[_])") {
-		t.Fatalf("compiled round trip:\n%s", got)
+	if loaded.Grammar != nil || bytes.Contains(bin, []byte("_|_")) {
+		t.Fatalf("compiled file keeps the types: %v", loaded.Grammar)
+	}
+	if again, err := loaded.MarshalBinary("main"); err != nil || !bytes.Equal(again, bin) {
+		t.Fatalf("compiled round trip differs: %v", err)
+	}
+	if got := grammar.Format(program.Grammar); !strings.Contains(got, "type A ~ []B & *C | _ & (D | B) | _|_") || !strings.Contains(got, "$x.(_ & node[_])") {
+		t.Fatalf("source grammar:\n%s", got)
 	}
 }
 

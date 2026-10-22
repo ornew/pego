@@ -76,23 +76,18 @@ func TestAliasNodeIdentity(t *testing.T) {
 				for _, input := range c.inputs {
 					checkBackends(t, prog, "main", input)
 				}
-				for _, marshal := range []MarshalOptions{{}, {OmitAST: true}} {
-					data, err := prog.MarshalBinaryWith("main", marshal)
-					if err != nil {
-						t.Fatal(err)
-					}
-					loaded, _, err := LoadProgram(data, Options{SourceInfo: true})
-					if err != nil {
-						t.Fatal(err)
-					}
+				for _, mode := range valueModes {
+					loaded := saveLoad(t, prog, "main", mode)
 					for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-						if marshal.OmitAST && backend == Closure {
+						if backend == Closure {
+							_, err := loaded.ParseWith("main", c.inputs[0], servedBy(mode, ParseOptions{Backend: backend}))
+							wantClosureRefused(t, err)
 							continue
 						}
 						for _, unit := range []PositionUnit{CodePoints, Bytes} {
 							for _, input := range c.inputs {
 								want, wantErr := prog.ParseWith("main", input, ParseOptions{Unit: unit})
-								got, gotErr := loaded.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit})
+								got, gotErr := loaded.ParseWith("main", input, servedBy(mode, ParseOptions{Backend: backend, Unit: unit}))
 								if resultJSON(got, gotErr) != resultJSON(want, wantErr) {
 									t.Errorf("loaded %s/%s on %q: got %s, want %s", backend, unit, input, resultJSON(got, gotErr), resultJSON(want, wantErr))
 								}

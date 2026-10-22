@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"fmt"
 	"maps"
 
 	"github.com/ornew/pego/grammar"
@@ -195,20 +194,4 @@ func (p *parser) seedVars() {
 		p.env, p.initEnv = t.env, t.env
 		p.bound = maps.Clone(t.bound)
 	}
-}
-
-// sameVars reports the first difference between the variables of two tables: their number, names,
-// types and initial values.
-func sameVars(a, b *varTable) error {
-	x, y := a.all(), b.all()
-	if len(x) != len(y) {
-		return fmt.Errorf("%d variables in one table and %d in the other", len(x), len(y))
-	}
-	for i := range x {
-		if x[i].name != y[i].name || x[i].typ != y[i].typ || x[i].init != y[i].init {
-			return fmt.Errorf("variable %s (%s = %v) differs from variable %s (%s = %v)",
-				x[i].name, x[i].typ, x[i].init, y[i].name, y[i].typ, y[i].init)
-		}
-	}
-	return nil
 }

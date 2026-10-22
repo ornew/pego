@@ -73,11 +73,11 @@ func TestWideRepetitionModuleValidation(t *testing.T) {
 				if !found {
 					t.Fatal("wide instruction not emitted")
 				}
-				data, err := prog.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
+				data, err := prog.MarshalBinary("main")
 				if err != nil {
 					t.Fatal(err)
 				}
-				if _, _, err := LoadProgram(data, Options{}); err == nil {
+				if _, _, err := LoadProgram(data); err == nil {
 					t.Fatal("invalid wide operands loaded successfully")
 				}
 			})
@@ -91,27 +91,27 @@ func TestWideRepetitionInstructionSet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if data[len(compiledMagic)+1] != isaVersion {
-		t.Fatalf("ordinary module instruction set %d", data[len(compiledMagic)+1])
+	if data[isaOffset] != isaVersion {
+		t.Fatalf("ordinary module instruction set %d", data[isaOffset])
 	}
 	if strconv.IntSize < 64 {
 		return
 	}
 	wide := compile(t, `rule main = "a" #repeat(0, 4294967296) $$`)
-	data, err = wide.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
+	data, err = wide.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if data[len(compiledMagic)+1] != isaVersion {
-		t.Fatalf("wide module instruction set %d", data[len(compiledMagic)+1])
+	if data[isaOffset] != isaVersion {
+		t.Fatalf("wide module instruction set %d", data[isaOffset])
 	}
 	if !strings.Contains(wide.Module().Disassemble(), "max=4294967296") {
 		t.Fatal("disassembly must display the complete bound")
 	}
 	// A valid checksum does not make a false instruction-set declaration valid.
-	data[len(compiledMagic)+1] = isaVersion - 1
+	data[isaOffset] = isaVersion - 1
 	data = binary.LittleEndian.AppendUint32(data[:len(data)-4], crc32.ChecksumIEEE(data[:len(data)-4]))
-	if _, _, err := LoadProgram(data, Options{}); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
+	if _, _, err := LoadProgram(data); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
 		t.Fatalf("wide instruction in old ISA: %v", err)
 	}
 }
@@ -127,24 +127,26 @@ func TestWideRepetitionBounds(t *testing.T) {
 				for _, input := range c.inputs {
 					checkBackends(t, prog, "main", input)
 				}
-				for _, marshal := range []MarshalOptions{{}, {OmitAST: true}} {
-					data, err := prog.MarshalBinaryWith("main", marshal)
+				for _, mode := range valueModes {
+					data, err := prog.Marshal("main", mode)
 					if err != nil {
 						t.Fatal(err)
 					}
-					loaded, _, err := LoadProgram(data, Options{SourceInfo: true})
+					loaded, _, err := LoadProgram(data)
 					if err != nil {
 						t.Errorf("load: %v", err)
 						continue
 					}
 					for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-						if marshal.OmitAST && backend == Closure {
+						if backend == Closure {
+							_, err := loaded.ParseWith("main", c.inputs[0], servedBy(mode, ParseOptions{Backend: backend}))
+							wantClosureRefused(t, err)
 							continue
 						}
 						for _, unit := range []PositionUnit{CodePoints, Bytes} {
 							for _, input := range c.inputs {
 								want, wantErr := prog.ParseWith("main", input, ParseOptions{Unit: unit})
-								got, gotErr := loaded.ParseWith("main", input, ParseOptions{Backend: backend, Unit: unit})
+								got, gotErr := loaded.ParseWith("main", input, servedBy(mode, ParseOptions{Backend: backend, Unit: unit}))
 								if resultJSON(got, gotErr) != resultJSON(want, wantErr) {
 									t.Errorf("loaded %s/%s on %q: got %s, want %s", backend, unit, input, resultJSON(got, gotErr), resultJSON(want, wantErr))
 								}
@@ -163,17 +165,21 @@ func TestWideRepetitionDocumentsAndStreams(t *testing.T) {
 	}
 	for _, bound := range []string{"2147483648", "4294967296", "9223372036854775807"} {
 		prog := compile(t, fmt.Sprintf(`rule main = "é" #repeat(0,%s) #stream $$`, bound))
-		data, err := prog.MarshalBinary("main")
-		if err != nil {
-			t.Fatal(err)
+		modes := map[*Program]CompiledMode{prog: CompiledParse}
+		programs := []*Program{prog}
+		for _, mode := range valueModes {
+			saved := saveLoad(t, prog, "main", mode)
+			modes[saved] = mode
+			programs = append(programs, saved)
 		}
-		saved, _, err := LoadProgram(data, Options{})
-		if err != nil {
-			t.Errorf("%s: load: %v", bound, err)
-			continue
-		}
-		for _, p := range []*Program{prog, saved} {
+		for _, p := range programs {
+			mode, loaded := p.Mode()
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+				if loaded && backend == Closure {
+					_, err := p.ParseWith("main", "é", servedBy(mode, ParseOptions{Backend: backend}))
+					wantClosureRefused(t, err)
+					continue
+				}
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					opts := ParseOptions{Backend: backend, Unit: unit}
 					count := 0
@@ -183,12 +189,18 @@ func TestWideRepetitionDocumentsAndStreams(t *testing.T) {
 						}
 						count++
 						return nil
-					}, opts)
+					}, servedBy(modes[p], opts))
 					if err != nil || count != 2 {
 						t.Errorf("%s %s/%s: emitted %d, error %v", bound, backend, unit, count, err)
 					}
 					// Document repetitions use run-site metadata as well as the VM operands.
 					d, err := p.NewDocumentWith("main", "é", opts)
+					if loaded && mode != CompiledDocument {
+						if err == nil || !strings.Contains(err.Error(), "documents need document mode") {
+							t.Errorf("Document on a %s-mode file: %v", mode, err)
+						}
+						continue
+					}
 					if err != nil {
 						t.Fatal(err)
 					}

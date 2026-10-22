@@ -76,38 +76,51 @@ func TestRawInvalidASTLiterals(t *testing.T) {
 					t.Fatal(err)
 				}
 				programs := map[string]*Program{"AST": p}
-				for _, omit := range []bool{false, true} {
-					data, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: omit})
+				modes := map[string]CompiledMode{}
+				var recognizer *Program // the program loaded in recognize mode
+				for _, mode := range allModes {
+					data, err := p.Marshal("main", mode)
 					if err != nil {
 						t.Fatal(err)
 					}
-					loaded, _, err := LoadProgram(data, Options{})
+					loaded, _, err := LoadProgram(data)
 					if err != nil {
 						t.Fatal(err)
 					}
-					again, err := loaded.MarshalBinaryWith("main", MarshalOptions{OmitAST: omit})
+					again, err := loaded.Marshal("main", mode)
 					if err != nil || !bytes.Equal(data, again) {
 						t.Fatalf("module bytes changed: %v", err)
 					}
-					programs[fmt.Sprintf("saved/omitAST=%t", omit)] = loaded
+					if mode == CompiledRecognize {
+						recognizer = loaded
+						continue
+					}
+					name := "saved/" + mode.String()
+					programs[name], modes[name] = loaded, mode
 				}
 				for name, prog := range programs {
 					for _, backend := range []Backend{Default, Closure, Bytecode, BytecodeIterative} {
 						if prog.Grammar == nil && backend == Closure {
+							_, err := prog.ParseWith("main", raw, servedBy(modes[name], ParseOptions{Backend: backend}))
+							wantClosureRefused(t, err)
 							continue
 						}
 						for _, unit := range []PositionUnit{CodePoints, Bytes} {
 							for _, input := range []string{raw, string([]rune(raw)), raw + "x", string([]rune(raw)) + "x", raw + raw, string([]rune(raw)) + string([]rune(raw)), "é", "éx", "other", "", "\xffx", "\x80x"} {
 								opts := ParseOptions{Backend: backend, Unit: unit}
-								n, err := prog.ParseWith("main", input, opts)
+								n, err := prog.ParseWith("main", input, servedBy(modes[name], opts))
 								wn, we := want.ParseWith("main", input, opts)
 								if (err == nil) != (we == nil) {
 									t.Errorf("%s %s/%s input=%x: %v, want success=%t", name, backend, unit, input, err, we == nil)
 									continue
 								}
-								if prog.Grammar != nil {
+								{
+									recognizing := prog
+									if prog.Grammar == nil {
+										recognizing = recognizer
+									}
 									opts.Recognize = true
-									_, re := prog.ParseWith("main", input, opts)
+									_, re := recognizing.ParseWith("main", input, opts)
 									if fmt.Sprint(re) != fmt.Sprint(err) {
 										t.Errorf("%s recognition differs: %v / %v", name, re, err)
 									}

@@ -29,13 +29,6 @@ type Program struct {
 	twins           []*rule   // value-free twins (rule.twin); ids start at len(rules)
 	nseen           int       // number of rules with rule.seen set
 	typed           *typeInfo // types found by the type checker (nil if it did not run)
-	// storedSchema is the schema section of a compiled grammar without the AST (compiled_schema.go).
-	storedSchema *storedSchema
-	// schemaOnce guards schemaChecked and schemaErr: the checked program that a loaded grammar with
-	// the AST exports its schema from (schemaProgram).
-	schemaOnce    sync.Once
-	schemaChecked *Program
-	schemaErr     error
 	// projected holds the map calls of actions that read a projected repetition (project.go).
 	projected     map[*grammar.Call]bool
 	noProjections bool
@@ -62,23 +55,19 @@ type Program struct {
 	workRecognize  bool
 	workRecognizer bool
 
-	moduleOnce         sync.Once
-	module             *Module
-	recOnce            sync.Once
-	rec                *Program // program that builds no tree (recognizer)
-	recErr             error
-	recognitionModule  *Module
-	recognitionEntries []recognitionEntry
-	recognitionStarts  []recognitionEntry
-	// Freshly compiled recognizers are owned by this program and do not change
-	// after recOnce. Loaded recognition modules remain mutable and are not cached.
-	recognitionBytesOnce sync.Once
-	recognitionBytes     []byte
-	vmOnce               sync.Once
-	vm                   *vmProgram
-	ivmOnce              sync.Once
-	ivm                  *vmProgram
-	pkg                  string // package name when loaded from a file without the AST
+	moduleOnce sync.Once
+	module     *Module
+	recOnce    sync.Once
+	rec        *Program // program that builds no tree (recognizer)
+	recErr     error
+	vmOnce     sync.Once
+	vm         *vmProgram
+	ivmOnce    sync.Once
+	ivm        *vmProgram
+	// loaded reports that the program was loaded from a compiled grammar, whose module serves the
+	// parses of mode only (checkMode).
+	loaded bool
+	mode   CompiledMode
 	// typeKinds holds the node kinds of the grammar's types (typeKind), made with the program.
 	typeKinds map[string]*nodeKind
 	// nodeKinds holds the kinds of the grammar's named node types, also under the names of the

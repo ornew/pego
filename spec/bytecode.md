@@ -308,27 +308,24 @@ Expectation strings are those the compiler placed in the string table: literals 
 
 ## File Format
 
-A compiled grammar uses container version 4. It stores one module, an optional recognition bundle, an optional schema section and an optional grammar AST. The container version and each module's instruction-set version are separate version axes. A loader accepts only container version 4. Integers are variable-length: unsigned integers use LEB128 and signed integers use zigzag-encoded LEB128. A boolean is one byte (0 or 1).
+A compiled grammar uses container version 5. It stores one execution-only compile result: the module of one mode and the start rule, with no grammar AST and no output schema (see [Compiled Grammars](compiled-grammars.md)). The container version and the module's instruction-set version are separate version axes. A loader accepts only container version 5. Integers are variable-length: unsigned integers use LEB128 and signed integers use zigzag-encoded LEB128. A boolean is one byte (0 or 1).
 
 | Part | Contents |
 |:--|:--|
 | Magic | `PEGOC\x00` (6 bytes) |
-| Version | 1 byte: 4. A loader refuses any other value. |
-| Instruction-set version | Unsigned integer for this module: 26. Every module uses this version, whatever instructions it contains, and the optional recognition bundle declares it too. Earlier versions built the syntax trees that preceded the value model, held terminal types, wrote field types with the earlier node type names, had no named node types, had no default-value flag, had no tuple values, carried text struct node types and the text flag of `EMEMBER` and `EBIN`, did not give the node type of an Operators Rule its meaning, had no variable table, had no start rules, or checked field values, rule results and bindings when they ran (the `ECHECK` instruction, the check operands of `BIND` and `ENODE`, and the checks of rules and lines); a runtime rejects them and asks for the grammar to be compiled again. |
+| Version | 1 byte: 5. A loader refuses any other value. |
+| Mode | 1 byte: 0 parse, 1 recognize, 2 document. The module serves the operations of this mode only. A parse-mode or document-mode module is the module of the grammar; a recognize-mode module is the module of its recognizer. A loader refuses any other value. |
+| Instruction-set version | Unsigned integer for this module: 26. Every module uses this version, whatever instructions it contains. Earlier versions built the syntax trees that preceded the value model, held terminal types, wrote field types with the earlier node type names, had no named node types, had no default-value flag, had no tuple values, carried text struct node types and the text flag of `EMEMBER` and `EBIN`, did not give the node type of an Operators Rule its meaning, had no variable table, had no start rules, or checked field values, rule results and bindings when they ran (the `ECHECK` instruction, the check operands of `BIND` and `ENODE`, and the checks of rules and lines); a runtime rejects them and asks for the grammar to be compiled again. |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
 | Start rule | String index, unsigned: the start rule the saved parser uses. It is a start rule of the module, or the empty string for the module's default start rule. |
-| Package name | String index, unsigned |
 | Module | See below |
-| Recognition bundle | Boolean, then when true an unsigned length in bytes and a recognition bundle. The bundle has its own instruction-set version, string table and module, followed by an ordered list mapping public start-rule names to rule indices. Its module and string table are independent of the main module. The loader validates that its ordered start names and rule indices, and its start rules, match the main module. A file with the AST writes the boolean as false, and a loader rejects a true value in a file with the AST. |
-| Schema section | Boolean, then when true an unsigned length in bytes and the schema section: a compact JSON document of the complete output schema and, per start rule, the rule names and type IDs of its export (see [Compiled Grammars](compiled-grammars.md#schema-section)). A file with the AST writes the boolean as false, and a loader rejects a true value in a file with the AST. |
-| AST present | Boolean. If true, the grammar AST and static-analysis results follow (including, per rule, whether it may have a value-free twin). The AST does not record declaration attributes: a loader marks the rules that the module lists as start rules with `@start`, and the default one with `@start(default)` when there are several. Every start rule of the module MUST be a rule of the AST. These serve the closure backend and grammar tools; a runtime may skip them. The AST codec does not serialize source positions, except the position of each cast when the module records source information, nor normalized comment ownership or formatter trivia. |
 | Checksum | CRC-32 (IEEE) of everything from the magic up to this point, 4 bytes little-endian |
 
-The main module is laid out in the following order. A *list* is a count (unsigned) followed by its elements. Indices, positions and other integers inside the module are signed unless stated otherwise. A recognition bundle, when present, contains the same module layout plus the ordered start-name/index map described above.
+The module is laid out in the following order. A *list* is a count (unsigned) followed by its elements. Indices, positions and other integers inside the module are signed unless stated otherwise.
 
 1. The number of module strings, unsigned (this many strings from the start of the string table form the module's string table).
-2. Source information, a boolean: whether the values a parse returns carry the rule names and capture names of the grammar. A loaded program keeps it, and the load options can also request it.
-3. Default value, a boolean: whether the program was compiled with default values, which drop value actions and the declared types of rules (except for the rules that make values read by predicates) before compilation. A loaded program keeps it, and the load options can also request it.
+2. Source information, a boolean: whether the values a parse returns carry the rule names and capture names of the grammar. A loaded program keeps it.
+3. Default value, a boolean: whether the program was compiled with default values, which drop value actions and the declared types of rules (except for the rules that make values read by predicates) before compilation. A loaded program keeps it.
 4. Character class table: a list of (negated, expectation string, number of ranges (unsigned), followed by the lower and upper bound of each range).
 5. Type table: a list of (name, list of field names, underlying node type). The underlying node type is a string index, or -1 for a struct type.
 6. Field-list table, then scope table: each a list of lists of string indices.
@@ -342,9 +339,9 @@ The main module is laid out in the following order. A *list* is a count (unsigne
 
 On load, a runtime checks the following and rejects the file if any check fails:
 
-- The checksum, the version and the instruction-set version are valid, and no data remains after the end.
+- The checksum, the version, the mode and the instruction-set version are valid, the start rule is empty or a start rule of the module, and no data remains after the module.
 - Each variable is named once, has a valid type, and has an initial value that matches its type.
-- Every reference in the tables and instructions (strings, character classes, scopes, field lists, rules, Operators Rule tables, expression code, built-in functions) is in range. A recognition bundle must have a valid independent module and start map matching the main module.
+- Every reference in the tables and instructions (strings, character classes, scopes, field lists, rules, Operators Rule tables, expression code, built-in functions) is in range.
 - There is at least one start rule. The start rules are in increasing order and have distinct names, and the default start rule is one of them.
 - Every opcode is known, and every flag operand is within its range.
 - The node type of a rule names a named node type, or a declared type with a field `Text`. The node type of a rule with an Operators Rule names a named node type.
@@ -354,4 +351,4 @@ On load, a runtime checks the following and rejects the file if any check fails:
 - Every jump target is forward. Only `NEXT` jumps backward. The target of `EFUNC` is also forward.
 - Every `RECOVER` body ends at an `ENDRECOVER` immediately before its skip target; that instruction jumps past an `ENDSKIP`. These recovery regions are nested and contain no stream-mode `NEXT` (mode 2) in either the protected body or skip. Element-local recovery ends before the enclosing streaming repetition's `NEXT`.
 
-A runtime does not verify that instruction sequences use the value stack and the entry stack correctly. Runtime errors caused by invalid code are reported as parse errors, but termination is not guaranteed, so load files only from trusted sources.
+A runtime does not verify that instruction sequences use the value stack and the entry stack correctly, and it trusts the mode as it trusts the module's types: it checks that the mode byte names a mode, not that the module is the one a compiler writes for that mode. A file whose mode does not match its module MAY return wrong results without an error, such as no value from a parse. Runtime errors caused by invalid code are reported as parse errors, but termination is not guaranteed, so load files only from trusted sources.

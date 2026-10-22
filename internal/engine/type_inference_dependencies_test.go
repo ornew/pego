@@ -189,21 +189,16 @@ func TestInferenceFiniteJoinCycle(t *testing.T) {
 
 func TestInferenceChainSavedValues(t *testing.T) {
 	p := compile(t, inferredChain(64, false, ""))
-	for _, marshal := range []MarshalOptions{{}, {OmitAST: true}} {
-		data, err := p.MarshalBinaryWith("main", marshal)
-		if err != nil {
-			t.Fatal(err)
-		}
-		q, _, err := LoadProgram(data, Options{})
-		if err != nil {
-			t.Fatal(err)
-		}
+	for _, mode := range valueModes {
+		q := saveLoad(t, p, "main", mode)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-			if marshal.OmitAST && backend == Closure {
+			if backend == Closure {
+				_, err := q.ParseWith("main", "a", servedBy(mode, ParseOptions{Backend: backend}))
+				wantClosureRefused(t, err)
 				continue
 			}
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
-				n, err := q.ParseWith("main", "a", ParseOptions{Backend: backend, Unit: unit})
+				n, err := q.ParseWith("main", "a", servedBy(mode, ParseOptions{Backend: backend, Unit: unit}))
 				if err != nil || n.String() != "P{}" {
 					t.Errorf("saved %s/%s result: %v, %v", backend, unit, n, err)
 				}

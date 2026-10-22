@@ -82,28 +82,29 @@ func TestLeftRecursionReachabilitySavedAndDocuments(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			for _, options := range []Options{{}, {DisableMemo: true}} {
 				p := compile(t, c.src, options)
-				for _, marshal := range []MarshalOptions{{}, {OmitAST: true}} {
-					data, err := p.MarshalBinaryWith("main", marshal)
-					if err != nil {
-						t.Fatal(err)
-					}
-					q, _, err := LoadProgram(data, Options{})
-					if err != nil {
-						t.Fatal(err)
-					}
+				for _, mode := range valueModes {
+					q := saveLoad(t, p, "main", mode)
 					for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-						if marshal.OmitAST && backend == Closure {
+						if backend == Closure {
+							_, err := q.ParseWith("main", "", servedBy(mode, ParseOptions{Backend: backend}))
+							wantClosureRefused(t, err)
 							continue
 						}
 						for _, unit := range []PositionUnit{CodePoints, Bytes} {
 							o := ParseOptions{Backend: backend, Unit: unit}
 							for _, text := range c.inputs {
 								want, wantErr := p.ParseWith("main", text, o)
-								got, gotErr := q.ParseWith("main", text, o)
+								got, gotErr := q.ParseWith("main", text, servedBy(mode, o))
 								if resultJSON(got, gotErr) != resultJSON(want, wantErr) {
-									t.Fatalf("saved %s/%s input %q differs", backend, unit, text)
+									t.Fatalf("saved %s mode %s/%s input %q differs", mode, backend, unit, text)
 								}
 								doc, err := q.NewDocumentWith("main", text, o)
+								if mode != CompiledDocument {
+									if err == nil || !strings.Contains(err.Error(), "documents need document mode") {
+										t.Fatalf("Document in %s mode: %v", mode, err)
+									}
+									continue
+								}
 								if err != nil {
 									t.Fatal(err)
 								}
@@ -112,7 +113,7 @@ func TestLeftRecursionReachabilitySavedAndDocuments(t *testing.T) {
 									if err := doc.Edit(0, len(doc.Text()), inserted); err != nil {
 										t.Fatal(err)
 									}
-									want, wantErr := q.ParseWith("main", doc.Text(), o)
+									want, wantErr := q.ParseWith("main", doc.Text(), servedBy(mode, o))
 									got, gotErr := doc.Parse()
 									if resultJSON(got, gotErr) != resultJSON(want, wantErr) {
 										t.Fatalf("Document %s/%s input %q differs from fresh", backend, unit, doc.Text())

@@ -70,8 +70,10 @@ pego parse -g config.pego -check -backend bytecode-iterative < example.conf   # 
 n, err := p.Parse("abc=12", pego.WithBackend(pego.Bytecode)) // also pego.WithUnit(pego.Bytes), pego.RecognizeOnly()
 ```
 
-`pego compile -g config.pego -o config.pegoc` saves a compiled grammar that every command accepts in place of the
-`.pego` file (`pego parse -g config.pegoc ...`), and `pego.LoadParser` loads it without recompiling.
+`pego compile -g config.pego -o config.pegoc` saves a compiled grammar that `pego parse` accepts in place of the
+`.pego` file (`pego parse -g config.pegoc ...`), and `pego.LoadParser` loads it without recompiling. The file serves
+the parses of one mode: `-mode parse` (the default) for parsing, `-mode recognize` for `-check`, and `-mode document`
+for documents and traces.
 `pego convert -to json config.pego` converts a grammar to JSON, which is handy for tools that generate grammars.
 The [Running Parsers](../guide/running-parsers.md) guide describes the backends and options in detail, and the
 [Compiled Grammars](../guide/compiled-grammars.md) guide the `.pegoc` format.

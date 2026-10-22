@@ -60,11 +60,11 @@ The text of a string node follows the input: byte positions preserve consumed so
 positions return decoded text. For example, the same raw-invalid-byte literal can match either
 valid U+FFFD or an invalid input byte, but byte-mode `text($capture)` distinguishes their spellings.
 Rebuild generated parsers from older invalid-byte ASTs to update their embedded matching data;
-existing full and AST-omitted binary modules gain the corrected comparison when loaded.
+compiled grammars use the corrected comparison when loaded.
 
-Both VMs and generated parsers honor negative unbounded maxima. Saving a
-compiled grammar preserves the original maximum in its AST and uses the
-standard unbounded representation in its bytecode. Recompile older artifacts
+Both VMs and generated parsers honor negative unbounded maxima. Compilation
+preserves the original maximum in the AST and uses the standard unbounded
+representation in the bytecode. Recompile older artifacts
 created from noncanonical negative maxima to replace incorrectly narrowed
 or rejected bytecode.
 
@@ -251,10 +251,8 @@ constructors, list constructors and tuples. Other source forms remain outside
 this increment's coverage, so this is not a lossless formatter guarantee for
 every grammar form.
 
-Direct grammar JSON includes normalized source metadata. The current `.pegoc`
-AST codec does not serialize source positions or comments, so an AST-bearing
-compiled grammar preserves the executable tree but not source-documentation
-ownership. This behavior does not change the `.pegoc` format.
+Direct grammar JSON includes normalized source metadata. A compiled grammar
+(`.pegoc`) holds bytecode only, with no tree, source positions or comments.
 
 Source-only syntax has dedicated AST nodes. An explicit Rule Expression grouping is `Group{Expr}`; formatting and JSON preserve the group, while compilation normalizes it away before matching. The source-aware AST retains the group body, closing-delimiter comments and layout. Parenthesized type and action expressions likewise use source-only `TypeGroup{Type}` and `TermGroup{Term}` nodes; `TypeGroup` implements `TypeExpr`, while the `TermGroup.Term` field has type `Term` and `TermGroup` implements `Term`. These groups preserve their delimiters and enclosed comments in source formatting. Their `OpenBreak`, `BodyBreak`, `CloseBreak` and `OneLine` fields retain raw line placement; `TupleLit`, `Call`, `New` and `ListConstructor` keep the comments at their delimiters in `OpenBreak`, `BodyBreak` and `CloseBreak`. A tuple, call, constructor, list constructor, tuple type, type application, attribute or lambda writes one element per line when it has a trailing comma (`TrailingComma`) or a comment that needs its own line, and is otherwise written on one line; the comma of a one-element tuple does not count. Compilation and generators lower the wrappers transparently before execution. JSON retains normalized source positions and ownership but omits formatter layout and exact raw comment tokens. A braced action sequence is `Block{Statements}`. A single-statement Predicate Action remains in `Predicate.Term`; a nonempty multi-statement block is represented by `Block{Statements}` and executes its statements in order, like adjacent Predicate Actions. Empty predicate blocks and braced Value Actions can be parsed, formatted and serialized, but semantic checking rejects them as unsupported.
 
@@ -264,11 +262,9 @@ Their payloads follow each pragma's own syntax. Compilation lowers recovery
 and streaming into its executable representation without changing the source
 AST. An `InlineAction` node is formatted and serialized as written; compilation
 lowers it to a hidden rule called at its position. The grammar of a parser
-(`Parser.Grammar`), the formatter and the compiled form keep the inline action
-as written.
+(`Parser.Grammar`) and the formatter keep the inline action as written.
 
 After loading, use `pego.Compile(g, "main")` to perform semantic checking.
-Compile and the generators also run structural validation themselves, including
-the reconstruction of an AST-bearing compiled grammar. A compiled file's
-existing trust and bytecode validation rules still apply; see
+Compile and the generators also run structural validation themselves. A
+compiled file holds no AST; its trust and bytecode validation rules are in
 [compiled grammars](compiled-grammars.md).

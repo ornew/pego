@@ -606,7 +606,7 @@ func TestDocumentMatchesFreshParse(t *testing.T) {
 and unit, and save a failing edit sequence as a file that replays it ([fuzzing edits](sampling-and-fuzzing.md#fuzzing-edits)).
 
 **A compiled grammar** must behave like the grammar it was made from ([compiled grammars](compiled-grammars.md)). This
-test uses the form without the AST, which runs on the bytecode backend:
+test saves the parse mode, which serves `Parse` on the bytecode backends:
 
 ```go
 package pairs_test
@@ -621,7 +621,7 @@ import (
 
 // TestLoadedMatchesCompiled checks that a grammar saved and loaded again behaves like the one compiled from source.
 func TestLoadedMatchesCompiled(t *testing.T) {
-	data, err := parser.Marshal(pego.WithoutAST())
+	data, err := parser.Marshal(pego.CompiledParse)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -40,10 +40,12 @@ func (r *setupCountingReader) Read(p []byte) (int, error) {
 	return r.r.Read(p)
 }
 
-func setupProgram(t *testing.T, src string, omitAST bool) *Program {
+// setupProgram compiles src; with moduleOnly it returns a program built from the compiled module
+// alone, without the grammar, which runs only on the bytecode backends.
+func setupProgram(t *testing.T, src string, moduleOnly bool) *Program {
 	t.Helper()
 	p := compile(t, src)
-	if omitAST {
+	if moduleOnly {
 		return moduleProgram(p.Module())
 	}
 	return p
@@ -77,10 +79,10 @@ func setupDonePanicContext(token *workContextPanicToken) context.Context {
 func TestWorkSetupValidationPrecedesContextMethods(t *testing.T) {
 	ordinary := `rule main = "x" $$`
 	stream := `rule main = "x"* #stream $$`
-	for _, omitted := range []bool{false, true} {
+	for _, moduleOnly := range []bool{false, true} {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative, Backend(99)} {
-			t.Run(setupASTLabel(omitted)+"/"+backend.String(), func(t *testing.T) {
-				p := setupProgram(t, ordinary, omitted)
+			t.Run(setupProgramLabel(moduleOnly)+"/"+backend.String(), func(t *testing.T) {
+				p := setupProgram(t, ordinary, moduleOnly)
 				ctxToken := &workContextPanicToken{phase: "validation accessed Context.Done"}
 				ctx := setupDonePanicContext(ctxToken)
 				opts := ParseOptions{Backend: backend, Context: ctx}
@@ -101,10 +103,10 @@ func TestWorkSetupValidationPrecedesContextMethods(t *testing.T) {
 				if got != nil || returnedErr == nil {
 					t.Fatalf("NewDocumentWith recognition rejection panic=%v err=%v", got, returnedErr)
 				}
-				if omitted {
+				if moduleOnly {
 					got = workContextRecover(func() { _, returnedErr = p.ParseWith("main", "x", ParseOptions{Backend: Closure, Context: ctx}) })
 					if got != nil || returnedErr == nil {
-						t.Fatalf("AST-omitted Closure panic=%v err=%v", got, returnedErr)
+						t.Fatalf("AST-moduleOnly Closure panic=%v err=%v", got, returnedErr)
 					}
 				}
 
@@ -119,7 +121,7 @@ func TestWorkSetupValidationPrecedesContextMethods(t *testing.T) {
 					}
 				}
 
-				streamProgram := setupProgram(t, stream, omitted)
+				streamProgram := setupProgram(t, stream, moduleOnly)
 				got = workContextRecover(func() {
 					returnedErr = streamProgram.ParseStreamWith("missing", strings.NewReader("x"), nil, opts)
 				})
@@ -140,7 +142,7 @@ func TestWorkSetupValidationPrecedesContextMethods(t *testing.T) {
 				if got != nil || returnedErr == nil {
 					t.Fatalf("ParseStreamWith recognition rejection panic=%v err=%v", got, returnedErr)
 				}
-				plain := setupProgram(t, ordinary, omitted)
+				plain := setupProgram(t, ordinary, moduleOnly)
 				got = workContextRecover(func() {
 					returnedErr = plain.ParseStreamWith("main", strings.NewReader("x"), nil, ParseOptions{Backend: backend, Context: ctx})
 				})
@@ -157,36 +159,36 @@ func TestWorkSetupValidationPrecedesContextMethods(t *testing.T) {
 	// Recognition is unavailable without the grammar; reject before constructing a recognizer or
 	// consulting the caller's Context.
 	p := setupProgram(t, ordinary, true)
-	token := &workContextPanicToken{phase: "omitted recognition touched Context"}
+	token := &workContextPanicToken{phase: "module-only recognition touched Context"}
 	ctx := setupDonePanicContext(token)
 	var err error
 	got := workContextRecover(func() {
 		_, err = p.ParseWith("main", "x", ParseOptions{Backend: Bytecode, Recognize: true, Context: ctx})
 	})
 	if got != nil || err == nil || p.rec != nil || p.vm != nil || p.ivm != nil {
-		t.Fatalf("AST-omitted recognition panic=%v err=%v rec=%p vm=%p ivm=%p", got, err, p.rec, p.vm, p.ivm)
+		t.Fatalf("module-only recognition panic=%v err=%v rec=%p vm=%p ivm=%p", got, err, p.rec, p.vm, p.ivm)
 	}
 }
 
-func setupASTLabel(omitted bool) string {
-	if omitted {
-		return "omitted"
+func setupProgramLabel(moduleOnly bool) string {
+	if moduleOnly {
+		return "moduleOnly"
 	}
-	return "ast"
+	return "source"
 }
 
 func TestWorkSetupPreCancelledLeavesColdProgramsUnprepared(t *testing.T) {
 	const text = "#records\na=1\nbc=22\n"
-	for _, omitted := range []bool{false, true} {
+	for _, moduleOnly := range []bool{false, true} {
 		for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 			for _, recognize := range []bool{false, true} {
-				if omitted && recognize {
+				if moduleOnly && recognize {
 					continue // Covered by fixed recognition rejection above.
 				}
-				t.Run(setupASTLabel(omitted)+"/"+backend.String()+"/recognize="+map[bool]string{true: "yes", false: "no"}[recognize], func(t *testing.T) {
-					p := setupProgram(t, `rule main = [a-z]* #atomic $$`, omitted)
+				t.Run(setupProgramLabel(moduleOnly)+"/"+backend.String()+"/recognize="+map[bool]string{true: "yes", false: "no"}[recognize], func(t *testing.T) {
+					p := setupProgram(t, `rule main = [a-z]* #atomic $$`, moduleOnly)
 					assertSetupBackendState(t, p, backend, false)
-					if !omitted && p.module != nil {
+					if !moduleOnly && p.module != nil {
 						t.Fatal("pre-cancelled parse compiled its lazy Module")
 					}
 					ctx, cancel := context.WithCancel(context.Background())
@@ -201,7 +203,7 @@ func TestWorkSetupPreCancelledLeavesColdProgramsUnprepared(t *testing.T) {
 						t.Fatal("pre-cancelled recognition prepared the recognizer")
 					}
 
-					docProg := setupProgram(t, `rule main = "a" $$`, omitted)
+					docProg := setupProgram(t, `rule main = "a" $$`, moduleOnly)
 					ctx, cancel = context.WithCancel(context.Background())
 					cancel()
 					d, err := docProg.NewDocumentWith("main", strings.Repeat("a", 8192), ParseOptions{Backend: backend, Context: ctx, WorkLimits: WorkLimits{MaxInputWork: 1}})
@@ -209,11 +211,11 @@ func TestWorkSetupPreCancelledLeavesColdProgramsUnprepared(t *testing.T) {
 						t.Fatalf("NewDocumentWith document=%v err=%v", d, err)
 					}
 					assertSetupBackendState(t, docProg, backend, false)
-					if !omitted && docProg.module != nil {
+					if !moduleOnly && docProg.module != nil {
 						t.Fatal("pre-cancelled Document construction compiled its lazy Module")
 					}
 
-					streamProg := setupProgram(t, records, omitted)
+					streamProg := setupProgram(t, records, moduleOnly)
 					ctx, cancel = context.WithCancel(context.Background())
 					cancel()
 					reader := &setupCountingReader{r: strings.NewReader(text)}
@@ -223,7 +225,7 @@ func TestWorkSetupPreCancelledLeavesColdProgramsUnprepared(t *testing.T) {
 						t.Fatalf("ParseStreamWith err=%v reads=%d emits=%d traces=%d", err, reader.reads, emits, traces)
 					}
 					assertSetupBackendState(t, streamProg, backend, false)
-					if !omitted && streamProg.module != nil {
+					if !moduleOnly && streamProg.module != nil {
 						t.Fatal("pre-cancelled stream setup compiled its lazy Module")
 					}
 				})
@@ -233,10 +235,10 @@ func TestWorkSetupPreCancelledLeavesColdProgramsUnprepared(t *testing.T) {
 }
 
 func TestWorkSetupPostBackendChecksStopBeforePublication(t *testing.T) {
-	for _, omitted := range []bool{false, true} {
+	for _, moduleOnly := range []bool{false, true} {
 		for _, backend := range []Backend{Bytecode, BytecodeIterative} {
-			t.Run(setupASTLabel(omitted)+"/"+backend.String(), func(t *testing.T) {
-				prog := setupProgram(t, `rule main = [a-z]* #atomic $$`, omitted)
+			t.Run(setupProgramLabel(moduleOnly)+"/"+backend.String(), func(t *testing.T) {
+				prog := setupProgram(t, `rule main = [a-z]* #atomic $$`, moduleOnly)
 				gate := newSetupPhaseContext(func() bool { return setupBackendReady(prog, backend) })
 				traceCalls := 0
 				n, err := prog.ParseWith("main", strings.Repeat("a", 8192), ParseOptions{Backend: backend, Context: gate, WorkLimits: WorkLimits{MaxInputWork: 1}, Trace: func(TraceEvent) { traceCalls++ }})
@@ -248,7 +250,7 @@ func TestWorkSetupPostBackendChecksStopBeforePublication(t *testing.T) {
 					t.Fatalf("ParseWith retry node=%v err=%v", p, err)
 				}
 
-				docProg := setupProgram(t, `rule main = "a" $$`, omitted)
+				docProg := setupProgram(t, `rule main = "a" $$`, moduleOnly)
 				docGate := newSetupPhaseContext(func() bool { return setupBackendReady(docProg, backend) })
 				doc, err := docProg.NewDocumentWith("main", strings.Repeat("a", 8192), ParseOptions{Backend: backend, Context: docGate, WorkLimits: WorkLimits{MaxInputWork: 1}})
 				if doc != nil || !errors.Is(err, context.Canceled) || !docGate.triggered {
@@ -259,7 +261,7 @@ func TestWorkSetupPostBackendChecksStopBeforePublication(t *testing.T) {
 					t.Fatalf("NewDocumentWith retry document=%v err=%v", d, err)
 				}
 
-				streamProg := setupProgram(t, records, omitted)
+				streamProg := setupProgram(t, records, moduleOnly)
 				streamGate := newSetupPhaseContext(func() bool { return setupBackendReady(streamProg, backend) })
 				reader := &setupCountingReader{r: strings.NewReader("#records\na=1\n")}
 				emits, traces := 0, 0
@@ -370,11 +372,11 @@ func (c *setupPhasePanicContext) Err() error {
 }
 
 func TestWorkSetupPostBackendPanicIdentity(t *testing.T) {
-	for _, omitted := range []bool{false, true} {
+	for _, moduleOnly := range []bool{false, true} {
 		for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 			for _, api := range []string{"batch", "document", "stream"} {
-				t.Run(setupASTLabel(omitted)+"/"+backend.String()+"/"+api, func(t *testing.T) {
-					prog := setupProgram(t, records, omitted)
+				t.Run(setupProgramLabel(moduleOnly)+"/"+backend.String()+"/"+api, func(t *testing.T) {
+					prog := setupProgram(t, records, moduleOnly)
 					ctx, cancel := context.WithCancel(context.Background())
 					defer cancel()
 					token := &workContextPanicToken{phase: "post-backend setup"}

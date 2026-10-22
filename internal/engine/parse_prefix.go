@@ -30,6 +30,9 @@ func (prog *Program) ParsePrefixWith(start, input string, o ParseOptions) (resul
 		}
 	}()
 	start = prog.resolveStart(start) // an empty name selects the default start rule
+	if err := prog.checkMode(o, false); err != nil {
+		return PrefixResult{}, err
+	}
 	active, _, control, err := prog.admitParse(start, o, false)
 	if err != nil {
 		return PrefixResult{}, err

@@ -34,20 +34,25 @@ func TestStreamCaptureRecognition(t *testing.T) {
 			plain := compile(t, strings.ReplaceAll(source, " #stream", ""))
 			for _, disableMemo := range []bool{false, true} {
 				p := compile(t, source, Options{DisableMemo: disableMemo})
-				data, err := p.MarshalBinary("main")
-				if err != nil {
-					t.Fatal(err)
+				programs := []*Program{p}
+				for _, mode := range allModes {
+					programs = append(programs, saveLoad(t, p, "main", mode))
 				}
-				saved, _, err := LoadProgram(data, Options{DisableMemo: disableMemo})
-				if err != nil {
-					t.Fatal(err)
-				}
-				for _, program := range []*Program{p, saved} {
+				for _, program := range programs {
 					for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+						if _, loaded := program.Mode(); loaded && backend == Closure {
+							_, err := program.ParseWith("main", tc.input, servedBy(program.mode, ParseOptions{Backend: backend}))
+							wantClosureRefused(t, err)
+							continue
+						}
 						for _, unit := range []PositionUnit{CodePoints, Bytes} {
 							opts := ParseOptions{Backend: backend, Unit: unit}
 							for _, recognize := range []bool{false, true} {
 								opts.Recognize = recognize
+								if program.checkMode(opts, false) != nil {
+									// A compiled grammar runs the parses of its mode only.
+									continue
+								}
 								n, err := program.ParseWith("main", tc.input, opts)
 								want, werr := plain.ParseWith("main", tc.input, opts)
 								if (err == nil) != tc.ok || resultJSON(n, err) != resultJSON(want, werr) {
@@ -55,6 +60,9 @@ func TestStreamCaptureRecognition(t *testing.T) {
 								}
 							}
 							opts.Recognize = false
+							if program.checkMode(opts, false) != nil {
+								continue
+							}
 							count := 0
 							err := program.ParseStreamWith("main", strings.NewReader(tc.input), func(*Node) error { count++; return nil }, opts)
 							if count != tc.count || (err == nil) != tc.ok {
@@ -110,7 +118,7 @@ func BenchmarkStreamCaptureRecognition(b *testing.B) {
 
 // TestStreamRecognitionCompiled checks that a program compiled with recognition streams the
 // elements of a #stream repetition as values on every backend, whether it is compiled in memory
-// or loaded from a file without the AST, and that the recognizer built from an ordinary program
+// or loaded from a compiled grammar, and that the recognizer built from an ordinary program
 // builds none.
 func TestStreamRecognitionCompiled(t *testing.T) {
 	g, err := syntax.Parse(startRestrictionSource)
@@ -121,11 +129,11 @@ func TestStreamRecognitionCompiled(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	data, err := prog.MarshalBinaryWith("", MarshalOptions{OmitAST: true})
+	data, err := prog.MarshalBinary("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	loaded, _, err := LoadProgram(data, Options{})
+	loaded, _, err := LoadProgram(data)
 	if err != nil {
 		t.Fatal(err)
 	}

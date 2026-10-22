@@ -68,7 +68,7 @@ func TestRepetitionPragmaBounds(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			loaded, start, err := engine.LoadProgram(data, engine.Options{})
+			loaded, start, err := engine.LoadProgram(data)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -76,6 +76,13 @@ func TestRepetitionPragmaBounds(t *testing.T) {
 			for _, program := range []*engine.Program{p, loaded} {
 				for _, backend := range []engine.Backend{engine.Closure, engine.Bytecode, engine.BytecodeIterative} {
 					n, err := program.ParseWith(start, tc.input, engine.ParseOptions{Backend: backend})
+					if program == loaded && backend == engine.Closure {
+						// A compiled grammar runs on the bytecode backends only.
+						if err == nil {
+							t.Fatal("closure backend on a compiled grammar")
+						}
+						continue
+					}
 					if err != nil {
 						t.Fatal(err)
 					}

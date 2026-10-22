@@ -235,27 +235,27 @@ rule main = {value := 1} {Int{Text: value} != nil} "x" / "x"`,
 }
 
 func TestNodeConstructorCompiledVersions(t *testing.T) {
-	for _, omit := range []bool{false, true} {
+	for _, mode := range valueModes {
 		p := compileLegacy(t, legacyConstructorGrammar)
-		data, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: omit})
-		if err != nil || data[len(compiledMagic)+1] != isaVersion {
+		data, err := p.Marshal("main", mode)
+		if err != nil || data[isaOffset] != isaVersion {
 			t.Fatalf("constructor ISA: %v", err)
 		}
-		loaded, _, err := LoadProgram(data, Options{})
+		loaded, _, err := LoadProgram(data)
 		if err != nil {
 			t.Fatal(err)
 		}
 		for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				opts := ParseOptions{Backend: backend, Unit: unit}
-				if got, want := resultJSON(loaded.ParseWith("main", "😀", opts)), resultJSON(p.ParseWith("main", "😀", opts)); got != want {
+				if got, want := resultJSON(loaded.ParseWith("main", "😀", servedBy(mode, opts))), resultJSON(p.ParseWith("main", "😀", opts)); got != want {
 					t.Fatalf("loaded constructors: %s / %s", got, want)
 				}
 			}
 		}
-		data[len(compiledMagic)+1] = isaVersion - 1
+		data[isaOffset] = isaVersion - 1
 		binary.LittleEndian.PutUint32(data[len(data)-4:], crc32.ChecksumIEEE(data[:len(data)-4]))
-		if _, _, err := LoadProgram(data, Options{}); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
+		if _, _, err := LoadProgram(data); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
 			t.Fatalf("wrong ISA accepted: %v", err)
 		}
 		module := p.Module()
@@ -271,8 +271,8 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 	}
 	for _, source := range []string{`rule main = "x"`, `rule main = v1:"x" => []node[string]{$v1}`} {
 		p := compile(t, source)
-		data, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-		if err != nil || data[len(compiledMagic)+1] != isaVersion {
+		data, err := p.MarshalBinary("main")
+		if err != nil || data[isaOffset] != isaVersion {
 			t.Fatalf("unchanged/list-only ISA: %v", err)
 		}
 	}

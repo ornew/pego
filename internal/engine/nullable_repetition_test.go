@@ -17,29 +17,40 @@ func TestNullableRepetitionMinimum(t *testing.T) {
 				src := "rule main = (" + body + ")" + bound.text + " #stream $$\nrule r = _ => nil"
 				for _, disabled := range []bool{false, true} {
 					prog := compile(t, src, Options{DisableMemo: disabled})
-					data, err := prog.MarshalBinary("main")
-					if err != nil {
-						t.Fatal(err)
+					programs := []*Program{prog}
+					for _, mode := range allModes {
+						programs = append(programs, saveLoad(t, prog, "main", mode))
 					}
-					saved, _, err := LoadProgram(data, Options{DisableMemo: disabled})
-					if err != nil {
-						t.Fatal(err)
-					}
-					for _, p := range []*Program{prog, saved} {
+					for _, p := range programs {
+						_, loaded := p.Mode()
 						for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+							if loaded && backend == Closure {
+								_, err := p.ParseWith("main", "", servedBy(p.mode, ParseOptions{Backend: backend}))
+								wantClosureRefused(t, err)
+								continue
+							}
 							for _, unit := range []PositionUnit{CodePoints, Bytes} {
 								opts := ParseOptions{Backend: backend, Unit: unit}
 								for _, recognize := range []bool{false, true} {
 									opts.Recognize = recognize
+									if p.checkMode(opts, false) != nil {
+										// A compiled grammar runs the parses of its mode only.
+										continue
+									}
 									if _, err := p.ParseWith("main", "", opts); (err == nil) != bound.ok {
 										t.Errorf("batch %s/%s recognize=%v: %v, want success=%v", backend, unit, recognize, err, bound.ok)
 									}
 								}
 								opts.Recognize = false
-								count := 0
-								err := p.ParseStreamWith("main", strings.NewReader(""), func(*Node) error { count++; return nil }, opts)
-								if count != bound.count || (err == nil) != bound.ok {
-									t.Errorf("stream %s/%s: %d values, %v; want %d, success=%v", backend, unit, count, err, bound.count, bound.ok)
+								if p.checkMode(opts, false) == nil {
+									count := 0
+									err := p.ParseStreamWith("main", strings.NewReader(""), func(*Node) error { count++; return nil }, opts)
+									if count != bound.count || (err == nil) != bound.ok {
+										t.Errorf("stream %s/%s: %d values, %v; want %d, success=%v", backend, unit, count, err, bound.count, bound.ok)
+									}
+								}
+								if p.checkMode(opts, true) != nil {
+									continue
 								}
 								d, err := p.NewDocumentWith("main", "", opts)
 								if err != nil {

@@ -75,7 +75,7 @@ Observing a parse, saving and generating parsers, describing their output and ch
 | | Chapter | Defines |
 |--:|:--|:--|
 | 17 | [Tracing and Profiling](observability.md) | Rule tracing and profiling of the engine and of generated parsers |
-| 18 | [Compiled Grammars](compiled-grammars.md) | Saving and loading `.pegoc` files, with and without the AST, versions and loading checks |
+| 18 | [Compiled Grammars](compiled-grammars.md) | Saving and loading `.pegoc` files, their modes and the operations each serves, versions and loading checks |
 | 19 | [Generated Parsers](generated-parsers.md) | `pego gen`: the Go and TypeScript parsers, their APIs and what each supports |
 | 20 | [Output Schemas and Structural Queries](schemas-and-queries.md) | Describing the output of a grammar and searching result nodes (experimental) |
 | 21 | [Grammar Lint](lint.md) | The checks of the linter, severities and suppression directives |

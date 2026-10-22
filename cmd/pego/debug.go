@@ -70,6 +70,10 @@ func (f *debugFlags) load(args []string, stdin io.Reader) (*pego.Parser, string,
 	if err != nil {
 		return nil, "", nil, err
 	}
+	// These commands trace the parse, which a compiled grammar serves in document mode.
+	if mode, loaded := p.CompiledMode(); loaded && mode != pego.CompiledDocument {
+		return nil, "", nil, fmt.Errorf("%s: the compiled grammar is in %s mode; %s traces the parse, which needs document mode: compile it with -mode document, or use the grammar source", *f.grammar, mode, f.fs.Name())
+	}
 	src := *f.input
 	if !isFlagSet(f.fs, "i") {
 		b, err := io.ReadAll(stdin)

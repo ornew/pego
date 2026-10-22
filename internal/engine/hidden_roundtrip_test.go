@@ -20,24 +20,19 @@ func TestHiddenRulesCompiledRoundTrip(t *testing.T) {
 		t.Run(s.name, func(t *testing.T) {
 			for _, opts := range []Options{{}, {DefaultValue: true}, {SourceInfo: true}} {
 				prog := compileBare(t, s.src, opts)
-				for _, omit := range []bool{false, true} {
-					data, err := prog.MarshalBinaryWith("main", MarshalOptions{OmitAST: omit})
-					if err != nil {
-						t.Fatal(err)
-					}
-					loaded, _, err := LoadProgram(data, Options{})
-					if err != nil {
-						t.Fatalf("%+v: %v", opts, err)
-					}
+				for _, mode := range valueModes {
+					loaded := saveLoad(t, prog, "main", mode)
 					for _, input := range s.inputs {
 						for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-							if omit && backend == Closure {
-								continue // the closure backend needs the grammar
+							if backend == Closure {
+								_, err := loaded.ParseWith("main", input, servedBy(mode, ParseOptions{Backend: backend}))
+								wantClosureRefused(t, err) // the closure backend needs the grammar
+								continue
 							}
 							want := resultJSON(prog.ParseWith("main", input, ParseOptions{Backend: backend}))
-							got := resultJSON(loaded.ParseWith("main", input, ParseOptions{Backend: backend}))
+							got := resultJSON(loaded.ParseWith("main", input, servedBy(mode, ParseOptions{Backend: backend})))
 							if got != want {
-								t.Errorf("%+v omit AST %v %q on %s:\nloaded:   %s\ncompiled: %s", opts, omit, input, backend, got, want)
+								t.Errorf("%+v %s mode %q on %s:\nloaded:   %s\ncompiled: %s", opts, mode, input, backend, got, want)
 							}
 						}
 					}

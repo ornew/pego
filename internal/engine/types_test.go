@@ -173,7 +173,7 @@ rule main = ps any $$`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	loaded, _, err := LoadProgram(data, Options{})
+	loaded, _, err := LoadProgram(data)
 	if err != nil {
 		t.Fatal(err)
 	}

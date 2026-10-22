@@ -34,6 +34,9 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *Node, er
 		}
 	}()
 	start = prog.resolveStart(start) // an empty name selects the default start rule
+	if err := prog.checkMode(o, false); err != nil {
+		return nil, err
+	}
 	active, _, control, err := prog.admitParse(start, o, false)
 	if err != nil {
 		return nil, err
@@ -58,18 +61,25 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *Node, er
 	return n, err
 }
 
+// recognizable reports an error when prog cannot recognize: without the grammar, only the module
+// of a compiled grammar in recognize mode recognizes. It builds nothing, so parses check it before
+// any other work.
+func (prog *Program) recognizable() error {
+	if prog.Grammar != nil || prog.loaded && prog.mode == CompiledRecognize {
+		return nil
+	}
+	return modeError(prog.mode, CompiledRecognize, "recognition needs")
+}
+
 // recognizer returns a program that only checks whether the input conforms to the grammar,
 // without building a tree (recognition); it is built on first use. The memo for value-free rules
 // belongs to that separate program, so it does not mix with that of ordinary parses.
 func (prog *Program) recognizer() (*Program, error) {
 	prog.recOnce.Do(func() {
 		if prog.Grammar == nil {
-			if prog.recognitionModule != nil {
-				prog.rec = moduleProgram(prog.recognitionModule)
-				prog.rec.recognitionStarts = prog.recognitionEntries
-				return
+			if prog.recErr = prog.recognizable(); prog.recErr == nil {
+				prog.rec = prog // the module of a compiled grammar in recognize mode is the recognizer's
 			}
-			prog.recErr = fmt.Errorf("recognition needs the grammar or a recognition bundle; recompile this compiled grammar from source")
 			return
 		}
 		flags := make([]ruleFlags, len(prog.rules))
@@ -77,10 +87,6 @@ func (prog *Program) recognizer() (*Program, error) {
 			flags[i] = ruleFlags{memo: r.memo, leader: r.leader, positional: r.positional, twin: r.twinOK}
 		}
 		prog.rec, prog.recErr = build(prog.Grammar, Options{recognize: true, recognizer: true, SourceInfo: prog.sourceInfo, DefaultValue: prog.defaultValue}, flags)
-		if prog.recErr == nil && prog.recognitionModule != nil {
-			prog.rec.moduleOnce.Do(func() { prog.rec.module = prog.recognitionModule })
-			prog.rec.recognitionStarts = prog.recognitionEntries
-		}
 	})
 	return prog.rec, prog.recErr
 }
@@ -108,13 +114,13 @@ func (prog *Program) rule(b Backend, name string) (*rule, error) {
 	switch prog.backend(b) {
 	case Bytecode:
 		prog.vmOnce.Do(func() { prog.vm = newVMProgram(prog.Module(), false) })
-		r = prog.vmRule(prog.vm, name)
+		r = prog.vm.byName[name]
 	case BytecodeIterative:
 		prog.ivmOnce.Do(func() { prog.ivm = newVMProgram(prog.Module(), true) })
-		r = prog.vmRule(prog.ivm, name)
+		r = prog.ivm.byName[name]
 	case Closure:
 		if prog.Grammar == nil {
-			return nil, fmt.Errorf("the closure backend needs the grammar, which the compiled grammar omits")
+			return nil, errClosureNeedsSource
 		}
 		r = prog.byName[name]
 	default:
@@ -269,6 +275,9 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 		return fmt.Errorf("recognition is not supported for stream parsing")
 	}
 	start = prog.resolveStart(start) // an empty name selects the default start rule
+	if err := prog.checkMode(o, false); err != nil {
+		return err
+	}
 	_, rule, control, err := prog.admitParse(start, o, true)
 	if err != nil {
 		return err

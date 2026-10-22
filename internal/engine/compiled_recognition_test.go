@@ -13,72 +13,44 @@ import (
 	"github.com/ornew/pego/grammar"
 )
 
-// marshalWithoutRecognition writes an AST-less file with neither a recognition bundle nor a schema
-// section, which is what a save without the bundle looks like.
-func marshalWithoutRecognition(prog *Program, start string) []byte {
-	m := prog.Module()
-	w := &encoder{strs: map[string]int{}}
-	for i, s := range m.Strings {
-		w.strs[s] = i
-		w.list = append(w.list, s)
+// moduleRuleNames returns the names of the rules of m in order, each once: value-free twins follow
+// the rules they belong to and have their names.
+func moduleRuleNames(m *Module) []string {
+	var names []string
+	seen := map[string]bool{}
+	for _, r := range m.Rules {
+		if name := m.Strings[r.Name]; !seen[name] {
+			seen[name] = true
+			names = append(names, name)
+		}
 	}
-	w.str(start)
-	pkg := prog.pkg
-	if prog.Grammar != nil {
-		pkg = prog.Grammar.File.Pkg.Name
-	}
-	w.str(pkg)
-	w.module(m)
-	w.bool(false) // no recognition bundle
-	w.bool(false) // no schema section
-	w.bool(false) // AST omitted
-	var out bytes.Buffer
-	out.WriteString(compiledMagic)
-	out.WriteByte(compiledVersion)
-	out.Write(binary.AppendUvarint(nil, uint64(m.instructionSetVersion())))
-	w.finish(&out)
-	return out.Bytes()
+	return names
 }
 
-// marshalASTWithBundle writes the AST together with a recognition bundle, a layout that
-// MarshalBinary never writes. The loader must drop the bundle when the file is saved again.
-func marshalASTWithBundle(prog *Program, start string, recognition *Program) []byte {
-	m := prog.Module()
-	w := &encoder{strs: map[string]int{}}
-	for i, s := range m.Strings {
-		w.strs[s] = i
-		w.list = append(w.list, s)
+// wantModeRefused fails unless err refuses an operation that needs mode need on a compiled grammar
+// in mode have, naming both modes and how to get the right file.
+func wantModeRefused(t *testing.T, err error, have, need CompiledMode) {
+	t.Helper()
+	if err == nil || !strings.Contains(err.Error(), "the compiled grammar is in "+have.String()+" mode") ||
+		!strings.Contains(err.Error(), " "+need.String()+" mode: compile it") || !strings.Contains(err.Error(), "-mode "+need.String()) ||
+		!strings.Contains(err.Error(), "compile the grammar from source") {
+		t.Fatalf("operation for %s mode on a %s-mode file: %v", need, have, err)
 	}
-	w.str(start)
-	w.str(prog.Grammar.File.Pkg.Name)
-	w.module(m)
-	w.bool(true)
-	bundle := encodeRecognition(recognition)
-	w.uint(len(bundle))
-	w.body.Write(bundle)
-	w.bool(false) // no schema section with the AST
-	w.bool(true)
-	w.statements(prog)
-	var out bytes.Buffer
-	out.WriteString(compiledMagic)
-	out.WriteByte(compiledVersion)
-	out.Write(binary.AppendUvarint(nil, uint64(m.instructionSetVersion())))
-	w.finish(&out)
-	return out.Bytes()
 }
 
-// TestCompiledRecognitionASTFileRejectsBundle checks that a file with the AST and a recognition bundle
-// is rejected. Version 4 writes the bundle only without the AST, so such a layout is not a file the
-// writer produces.
+// TestCompiledRecognitionASTFileRejectsBundle checks that a file holds one module: a second module
+// after the first, such as the recognizer's, is data the format does not have.
 func TestCompiledRecognitionASTFileRejectsBundle(t *testing.T) {
 	p := compile(t, `rule main = "a" $$`)
 	rec, err := p.recognizer()
 	if err != nil {
 		t.Fatal(err)
 	}
-	stored := marshalASTWithBundle(p, "main", rec)
-	if _, _, err := LoadProgram(stored, Options{}); err == nil || !strings.Contains(err.Error(), "a recognition bundle with the AST") {
-		t.Fatalf("AST file with a recognition bundle: %v", err)
+	w := &encoder{strs: map[string]int{}}
+	w.module(rec.Module())
+	stored := marshalWithTrailing(p, "main", w.body.Bytes())
+	if _, _, err := LoadProgram(stored); err == nil || !strings.Contains(err.Error(), "trailing bytes") {
+		t.Fatalf("file with a second module: %v", err)
 	}
 }
 
@@ -86,30 +58,34 @@ func TestCompiledRecognitionRoundTrip(t *testing.T) {
 	for _, c := range genCorpus(t) {
 		t.Run(c.name, func(t *testing.T) {
 			p := compile(t, c.src)
-			for _, omit := range []bool{false, true} {
-				data, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: omit})
+			for _, mode := range allModes {
+				data, err := p.Marshal("main", mode)
 				if err != nil {
 					t.Fatal(err)
 				}
 				if version := int(data[len(compiledMagic)]); version != compiledVersion {
-					t.Fatalf("omitAST=%t compiled version=%d", omit, version)
+					t.Fatalf("%s mode compiled version=%d", mode, version)
 				}
-				loaded, _, err := LoadProgram(data, Options{})
+				loaded, _, err := LoadProgram(data)
 				if err != nil {
 					t.Fatal(err)
 				}
-				again, err := loaded.MarshalBinaryWith("main", MarshalOptions{OmitAST: omit})
+				again, err := loaded.Marshal("main", mode)
 				if err != nil || !bytes.Equal(data, again) {
 					t.Fatalf("resave differs: %v", err)
 				}
-				for _, entry := range moduleEntries(p.Module()) {
+				for _, name := range moduleRuleNames(p.Module()) {
 					for _, input := range append(append([]string{}, c.inputs...), "\xff", "", "trailing") {
 						for _, unit := range []PositionUnit{CodePoints, Bytes} {
-							want, werr := p.ParseWith(entry.name, input, ParseOptions{Recognize: true, Unit: unit})
+							want, werr := p.ParseWith(name, input, ParseOptions{Recognize: true, Unit: unit})
 							for _, backend := range []Backend{Default, Bytecode, BytecodeIterative} {
-								got, gerr := loaded.ParseWith(entry.name, input, ParseOptions{Recognize: true, Unit: unit, Backend: backend})
+								got, gerr := loaded.ParseWith(name, input, ParseOptions{Recognize: true, Unit: unit, Backend: backend})
+								if mode != CompiledRecognize {
+									wantModeRefused(t, gerr, mode, CompiledRecognize)
+									continue
+								}
 								if got != nil || want != nil || resultJSON(got, gerr) != resultJSON(want, werr) {
-									t.Fatalf("omit=%t start=%s unit=%v backend=%v input=%q: got %s want %s", omit, entry.name, unit, backend, input, resultJSON(got, gerr), resultJSON(want, werr))
+									t.Fatalf("%s mode start=%s unit=%v backend=%v input=%q: got %s want %s", mode, name, unit, backend, input, resultJSON(got, gerr), resultJSON(want, werr))
 								}
 							}
 						}
@@ -120,83 +96,84 @@ func TestCompiledRecognitionRoundTrip(t *testing.T) {
 	}
 }
 
+// TestCompiledRecognitionWithoutBundle checks that a file in parse mode refuses recognition with the
+// mode it needs, and is saved again unchanged.
 func TestCompiledRecognitionWithoutBundle(t *testing.T) {
 	p := moduleProgram(compile(t, `rule main = "a"`).Module())
 	data, err := p.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	loaded, _, err := LoadProgram(data, Options{})
+	loaded, _, err := LoadProgram(data)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if loaded.recognitionModule != nil {
-		t.Fatal("a save without a bundle gained a recognition bundle")
-	}
 	for _, backend := range []Backend{Default, Bytecode, BytecodeIterative} {
 		n, err := loaded.ParseWith("main", "a", ParseOptions{Backend: backend, Recognize: true})
-		if n != nil || err == nil || !strings.Contains(err.Error(), "recompile") {
-			t.Fatalf("node=%v error=%v", n, err)
+		if n != nil {
+			t.Fatalf("node=%v", n)
 		}
+		wantModeRefused(t, err, CompiledParse, CompiledRecognize)
 	}
 	again, err := loaded.MarshalBinary("main")
 	if err != nil || !bytes.Equal(data, again) {
-		t.Fatalf("legacy resave differs: %v", err)
+		t.Fatalf("resave differs: %v", err)
 	}
 }
 
+// TestCompiledRecognitionBundleBaseline checks the two modes side by side: the recognize-mode file
+// recognizes and refuses value parses, and the parse-mode file parses and refuses recognition.
 func TestCompiledRecognitionBundleBaseline(t *testing.T) {
 	p := compile(t, `rule main = first / second $$
 rule first = "a"
 rule second = "é"`)
-	withAST, err := p.MarshalBinary("main")
+	parseData, err := p.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if withAST[len(compiledMagic)] != compiledVersion {
-		t.Fatalf("AST-bearing save has version %d", withAST[len(compiledMagic)])
+	if parseData[len(compiledMagic)] != compiledVersion {
+		t.Fatalf("parse-mode save has version %d", parseData[len(compiledMagic)])
 	}
 	if p.rec != nil {
-		t.Fatal("AST-bearing save built an unused recognizer")
+		t.Fatal("parse-mode save built an unused recognizer")
 	}
-	noBundleData := marshalWithoutRecognition(p, "main")
-	bundledData, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
+	recognizeData, err := p.Marshal("main", CompiledRecognize)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bundledData[len(compiledMagic)] != compiledVersion {
+	if recognizeData[len(compiledMagic)] != compiledVersion || CompiledMode(recognizeData[len(compiledMagic)+1]) != CompiledRecognize {
 		t.Fatal("recognition save is not the current format")
 	}
-	noBundle, _, err := LoadProgram(noBundleData, Options{})
+	parsing, _, err := LoadProgram(parseData)
 	if err != nil {
 		t.Fatal(err)
 	}
-	bundled, _, err := LoadProgram(bundledData, Options{})
+	recognizing, _, err := LoadProgram(recognizeData)
 	if err != nil {
 		t.Fatal(err)
 	}
-	v2, v3 := noBundle, bundled
 	for _, tc := range []struct {
 		input string
 		match bool
 	}{{"a", true}, {"é", true}, {"", false}, {"a?", false}} {
 		for _, unit := range []PositionUnit{CodePoints, Bytes} {
 			for _, backend := range []Backend{Bytecode, BytecodeIterative} {
-				got, gotErr := v3.ParseWith("main", tc.input, ParseOptions{Backend: backend, Unit: unit, Recognize: true})
+				got, gotErr := recognizing.ParseWith("main", tc.input, ParseOptions{Backend: backend, Unit: unit, Recognize: true})
 				if got != nil || (gotErr == nil) != tc.match {
-					t.Fatalf("v3 recognition %v/%v %q: node=%v err=%v", backend, unit, tc.input, got, gotErr)
+					t.Fatalf("recognition %v/%v %q: node=%v err=%v", backend, unit, tc.input, got, gotErr)
 				}
-				noRecognition, noRecognitionErr := v2.ParseWith("main", tc.input, ParseOptions{Backend: backend, Unit: unit, Recognize: true})
-				if noRecognition != nil || noRecognitionErr == nil || !strings.Contains(noRecognitionErr.Error(), "recognition needs") {
-					t.Fatalf("recognition without a bundle %v/%v %q: node=%v err=%v", backend, unit, tc.input, noRecognition, noRecognitionErr)
+				noRecognition, noRecognitionErr := parsing.ParseWith("main", tc.input, ParseOptions{Backend: backend, Unit: unit, Recognize: true})
+				if noRecognition != nil {
+					t.Fatalf("recognition in parse mode %v/%v %q: node=%v", backend, unit, tc.input, noRecognition)
 				}
+				wantModeRefused(t, noRecognitionErr, CompiledParse, CompiledRecognize)
 				want, wantErr := p.ParseWith("main", tc.input, ParseOptions{Backend: backend, Unit: unit})
-				for _, loaded := range []*Program{v2, v3} {
-					got, gotErr := loaded.ParseWith("main", tc.input, ParseOptions{Backend: backend, Unit: unit})
-					if resultJSON(got, gotErr) != resultJSON(want, wantErr) {
-						t.Fatalf("normal parse %v/%v %q: got %s want %s", backend, unit, tc.input, resultJSON(got, gotErr), resultJSON(want, wantErr))
-					}
+				got, gotErr = parsing.ParseWith("main", tc.input, ParseOptions{Backend: backend, Unit: unit})
+				if resultJSON(got, gotErr) != resultJSON(want, wantErr) {
+					t.Fatalf("normal parse %v/%v %q: got %s want %s", backend, unit, tc.input, resultJSON(got, gotErr), resultJSON(want, wantErr))
 				}
+				_, gotErr = recognizing.ParseWith("main", tc.input, ParseOptions{Backend: backend, Unit: unit})
+				wantModeRefused(t, gotErr, CompiledRecognize, CompiledParse)
 			}
 		}
 	}
@@ -212,21 +189,15 @@ func TestCompiledRecognitionASTSaveAfterClassMutation(t *testing.T) {
 		t.Fatal(err)
 	}
 	if p.rec != nil || data[len(compiledMagic)] != compiledVersion {
-		t.Fatal("AST-bearing save gained an unused recognition bundle")
+		t.Fatal("parse-mode save built an unused recognizer")
 	}
 }
 
 func TestCompiledRecognitionControlsAndConcurrency(t *testing.T) {
-	p := compile(t, `rule main = [a-z]* $$
+	src := compile(t, `rule main = [a-z]* $$
 rule other = "é" $$`)
-	data, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	p, _, err = LoadProgram(data, Options{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	p := saveLoad(t, src, "main", CompiledRecognize)
+	parsing := saveLoad(t, src, "main", CompiledParse)
 	for _, backend := range []Backend{Default, Bytecode, BytecodeIterative} {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
@@ -243,9 +214,8 @@ rule other = "é" $$`)
 			t.Fatalf("retry node=%v error=%v", n, err)
 		}
 	}
-	if _, err := p.ParseWith("main", "abc", ParseOptions{Backend: Closure, Recognize: true}); err == nil {
-		t.Fatal("AST-less closure succeeded")
-	}
+	_, err := p.ParseWith("main", "abc", ParseOptions{Backend: Closure, Recognize: true})
+	wantClosureRefused(t, err)
 	var wg sync.WaitGroup
 	for i := 0; i < 8; i++ {
 		wg.Add(1)
@@ -253,7 +223,11 @@ rule other = "é" $$`)
 			defer wg.Done()
 			for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 				for _, recognize := range []bool{false, true} {
-					n, err := p.ParseWith("other", "é", ParseOptions{Backend: backend, Recognize: recognize})
+					prog := parsing
+					if recognize {
+						prog = p
+					}
+					n, err := prog.ParseWith("other", "é", ParseOptions{Backend: backend, Recognize: recognize})
 					if err != nil || (n == nil) != recognize {
 						t.Errorf("concurrent node=%v error=%v", n, err)
 					}
@@ -267,7 +241,7 @@ rule other = "é" $$`)
 func TestCompiledRecognitionRepeatedConcurrentSave(t *testing.T) {
 	const source = `rule main = "a" $$
 rule other = "b" $$`
-	want, err := compile(t, source).MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
+	want, err := compile(t, source).Marshal("main", CompiledRecognize)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -278,114 +252,130 @@ rule other = "b" $$`
 		go func() {
 			defer wg.Done()
 			for j := 0; j < 8; j++ {
-				got, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
+				got, err := p.Marshal("main", CompiledRecognize)
 				if err != nil || !bytes.Equal(got, want) {
 					t.Errorf("concurrent save differs: %v", err)
 					return
 				}
-				got[0] ^= 0xff // The returned file must not own the cached bundle.
+				got[0] ^= 0xff // The returned file must not share memory with the program.
 			}
 		}()
 	}
 	wg.Wait()
-	if len(p.recognitionBytes) == 0 {
-		t.Fatal("source recognizer bundle was not cached")
+	if p.rec == nil {
+		t.Fatal("the recognizer was not kept for later saves")
 	}
-	again, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
+	again, err := p.Marshal("main", CompiledRecognize)
 	if err != nil || !bytes.Equal(again, want) {
 		t.Fatalf("save after caller mutation differs: %v", err)
 	}
 }
 
 func TestCompiledRecognitionLoadedModuleMutation(t *testing.T) {
-	data, err := compile(t, `rule main = "a" $$`).MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
+	data, err := compile(t, `rule main = "a" $$`).Marshal("main", CompiledRecognize)
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, _, err := LoadProgram(data, Options{})
+	p, _, err := LoadProgram(data)
 	if err != nil {
 		t.Fatal(err)
 	}
-	p.recognitionModule.Strings = append(p.recognitionModule.Strings, "unused")
-	changed, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
+	p.Module().Strings = append(p.Module().Strings, "unused")
+	changed, err := p.Marshal("main", CompiledRecognize)
 	if err != nil || bytes.Equal(changed, data) {
-		t.Fatalf("loaded bundle mutation was not serialized: %v", err)
+		t.Fatalf("loaded module mutation was not serialized: %v", err)
 	}
-	if _, _, err := LoadProgram(changed, Options{}); err != nil {
-		t.Fatalf("mutated bundle is not loadable: %v", err)
+	if _, _, err := LoadProgram(changed); err != nil {
+		t.Fatalf("mutated module is not loadable: %v", err)
 	}
 }
 
 func TestCompiledRecognitionCorruptMainAndBundle(t *testing.T) {
 	p := compile(t, `rule main = "a" $$`)
-	data, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
+	data, err := p.Marshal("main", CompiledRecognize)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := LoadProgram(data, Options{}); err != nil {
+	if _, _, err := LoadProgram(data); err != nil {
 		t.Fatal(err)
 	}
+	corrupt := append([]byte(nil), data...)
+	corrupt[isaOffset] = 99 // unsupported instruction set
+	binary.LittleEndian.PutUint32(corrupt[len(corrupt)-4:], crc32.ChecksumIEEE(corrupt[:len(corrupt)-4]))
+	if _, _, err := LoadProgram(corrupt); err == nil || !strings.Contains(err.Error(), "unsupported instruction set version 99") {
+		t.Fatalf("corrupt instruction set: %v", err)
+	}
+	reserved := append([]byte(nil), data...)
+	reserved[isaOffset] = 7 // reserved instruction set is not a supported version
+	binary.LittleEndian.PutUint32(reserved[len(reserved)-4:], crc32.ChecksumIEEE(reserved[:len(reserved)-4]))
+	if _, _, err := LoadProgram(reserved); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
+		t.Fatalf("reserved instruction set: %v", err)
+	}
+	mode := append([]byte(nil), data...)
+	mode[len(compiledMagic)+1] = 3 // no such mode
+	binary.LittleEndian.PutUint32(mode[len(mode)-4:], crc32.ChecksumIEEE(mode[:len(mode)-4]))
+	if _, _, err := LoadProgram(mode); err == nil || !strings.Contains(err.Error(), "unknown mode 3") {
+		t.Fatalf("unknown mode: %v", err)
+	}
+
+	// Invalid rule names are rejected.
 	rec, err := p.recognizer()
 	if err != nil {
 		t.Fatal(err)
 	}
-	bundle := encodeRecognition(rec)
-	pos := bytes.Index(data, bundle)
-	if pos < 0 {
-		t.Fatal("bundle not found in saved file")
-	}
-	corruptBundle := append([]byte(nil), data...)
-	corruptBundle[pos] = 99 // unsupported bundle instruction set
-	binary.LittleEndian.PutUint32(corruptBundle[len(corruptBundle)-4:], crc32.ChecksumIEEE(corruptBundle[:len(corruptBundle)-4]))
-	if _, _, err := LoadProgram(corruptBundle, Options{}); err == nil || !strings.Contains(err.Error(), "recognition instruction set") {
-		t.Fatalf("corrupt bundle: %v", err)
-	}
-	reservedBundle := append([]byte(nil), data...)
-	reservedBundle[pos] = 7 // reserved instruction set is not a supported version
-	binary.LittleEndian.PutUint32(reservedBundle[len(reservedBundle)-4:], crc32.ChecksumIEEE(reservedBundle[:len(reservedBundle)-4]))
-	if _, _, err := LoadProgram(reservedBundle, Options{}); err == nil || !strings.Contains(err.Error(), "recognition instruction set") {
-		t.Fatalf("reserved bundle instruction set: %v", err)
-	}
-
-	// Invalid main rule names must be rejected before bundle entry comparison.
-	p.Module().Rules[0].Name = len(p.Module().Strings)
-	corruptMain, err := p.MarshalBinaryWith("", MarshalOptions{OmitAST: true})
+	rec.Module().Rules[0].Name = len(rec.Module().Strings)
+	corruptMain, err := p.Marshal("", CompiledRecognize)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := LoadProgram(corruptMain, Options{}); err == nil || !strings.Contains(err.Error(), "invalid compiled grammar") {
-		t.Fatalf("corrupt main module: %v", err)
+	if _, _, err := LoadProgram(corruptMain); err == nil || !strings.Contains(err.Error(), "invalid compiled grammar") {
+		t.Fatalf("corrupt module: %v", err)
 	}
 }
 
+// TestCompiledRecognitionBundleValidation checks that a recognize-mode file starts each rule name at
+// the first rule of that name, the rule itself rather than its value-free twin, and that truncated
+// or extended files are rejected.
 func TestCompiledRecognitionBundleValidation(t *testing.T) {
 	p := compile(t, `rule main = "a"
 rule other = "b"`)
-	rec, err := p.recognizer()
+	valid, err := p.Marshal("main", CompiledRecognize)
 	if err != nil {
 		t.Fatal(err)
 	}
-	valid := encodeRecognition(rec)
-	if _, _, err := decodeRecognition(valid, p.Module()); err != nil {
+	loaded, _, err := LoadProgram(valid)
+	if err != nil {
 		t.Fatal(err)
 	}
-	for _, entries := range [][]recognitionEntry{
-		{},
-		{{"main", 0}},
-		{{"main", 0}, {"main", 1}},
-		{{"main", 1}, {"other", 0}},
-		{{"other", 1}, {"main", 0}},
-		{{"main", 0}, {"other", 999999}},
-	} {
-		rec.recognitionStarts = entries
-		if _, _, err := decodeRecognition(encodeRecognition(rec), p.Module()); err == nil {
-			t.Fatalf("invalid entries accepted: %+v", entries)
+	m := loaded.Module()
+	for _, backend := range []Backend{Bytecode, BytecodeIterative} {
+		for _, name := range moduleRuleNames(m) {
+			r, err := loaded.rule(backend, name)
+			if err != nil {
+				t.Fatal(err)
+			}
+			first := -1
+			for i, mr := range m.Rules {
+				if m.Strings[mr.Name] == name {
+					first = i
+					break
+				}
+			}
+			if r.id != first {
+				t.Fatalf("%s: rule %s starts at rule %d, want %d", backend, name, r.id, first)
+			}
 		}
 	}
-	rec.recognitionStarts = nil
-	for _, data := range [][]byte{valid[:len(valid)-1], append(append([]byte{}, valid...), 0), append([]byte{99}, valid[1:]...)} {
-		if _, _, err := decodeRecognition(data, p.Module()); err == nil {
-			t.Fatal("invalid bundle accepted")
+	resum := func(d []byte) []byte {
+		d = append([]byte(nil), d...)
+		binary.LittleEndian.PutUint32(d[len(d)-4:], crc32.ChecksumIEEE(d[:len(d)-4]))
+		return d
+	}
+	truncated := resum(append(append([]byte(nil), valid[:len(valid)-5]...), 0, 0, 0, 0))
+	extended := resum(append(append(append([]byte(nil), valid[:len(valid)-4]...), 0), 0, 0, 0, 0))
+	for _, data := range [][]byte{truncated, extended} {
+		if _, _, err := LoadProgram(data); err == nil {
+			t.Fatal("invalid file accepted")
 		}
 	}
 }

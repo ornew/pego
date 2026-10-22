@@ -6,7 +6,7 @@
 
 ## Summary
 
-Expose a deterministic, versioned description of grammar-declared types and inferred rule output shapes for tooling and query consumers. The format distinguishes declared typed values, inferred shapes, CST nodes, captures, and dynamic `any`; it does not promise Tree-sitter JSON compatibility. The Go export of schema version 2, the deterministic semantic diff, and the persistence of the schema in compiled grammars without the AST are implemented. The version-2 validation contract includes canonical rule/type relationships, reserved CST identities and strict JSON decoding. Structural queries are checked against the schema, including nested and join shapes.
+Expose a deterministic, versioned description of grammar-declared types and inferred rule output shapes for tooling and query consumers. The format distinguishes declared typed values, inferred shapes, CST nodes, captures, and dynamic `any`; it does not promise Tree-sitter JSON compatibility. The Go export of schema version 2 and the deterministic semantic diff are implemented; the schema is exported from the grammar source. The version-2 validation contract includes canonical rule/type relationships, reserved CST identities and strict JSON decoding. Structural queries are checked against the schema, including nested and join shapes.
 
 ## Motivation
 
@@ -100,15 +100,11 @@ Build the export from the checked grammar/type information behind `pego.Parser`,
 
 ## Persistence
 
-A parser loaded from a file with the AST derives its schema from the AST on the first `OutputSchema` call. Loading does not perform this check, so a load that only parses pays nothing for the schema. The derivation checks the grammar the way compilation does, with the options the file records.
-
-A file without the AST holds a schema section only when it was saved with the schema (`pego.WithSchema` with `pego.WithoutAST`, or `pego compile -no-ast -schema`). The section is compact JSON: the complete schema of the grammar, and for each start rule the names of the rules and the type IDs of its export. The export of a start rule is the complete schema restricted to those names, so it equals the export from the checked grammar. The section is specified in [Compiled Grammars](../../spec/compiled-grammars.md#schema-section). A loaded section is kept as it was loaded, so saving the file again reproduces its bytes.
-
-A file with the AST cannot hold a schema section, because the AST provides the schema. A file without the AST and without a section returns an error matching `ErrSchemaUnavailable`, which names the options that save the schema.
+A compiled grammar holds only the bytecode of one mode ([Compiled Grammars](../../spec/compiled-grammars.md)), so the schema is not persisted. A parser loaded from a compiled grammar returns an error matching `ErrSchemaUnavailable` that asks for the schema to be exported from the grammar source; a program that needs the schema next to a compiled grammar exports it with `pego schema` and ships the JSON file.
 
 ## Compatibility and Backend Support
 
-Schema export is metadata on a compiled grammar and is independent of runtime backend: Closure, recursive bytecode, and iterative bytecode return the same schema, and the tests check this agreement for both the source and the compiled grammar. Generated Go and TypeScript typed values are already supported; the schema describes their grammar-level shapes without claiming target-language layout or serializer identity. `GenerateGo`/`GenerateTypeScript` are separate APIs. Grammar JSON and Node JSON are separate formats.
+Schema export is metadata on a compiled grammar and is independent of runtime backend: Closure, recursive bytecode, and iterative bytecode return the same schema, and the tests check this agreement. Generated Go and TypeScript typed values are already supported; the schema describes their grammar-level shapes without claiming target-language layout or serializer identity. `GenerateGo`/`GenerateTypeScript` are separate APIs. Grammar JSON and Node JSON are separate formats.
 
 ## Schema Consumers
 
@@ -123,7 +119,7 @@ Structural queries are checked against the schema. The query compiler validates 
 
 ## Testing and Performance
 
-The tests cover the export, decoding and validation of the JSON contract, the semantic diff, the schema section of compiled grammars and the backend agreement. They are in `internal/engine/output_schema_*_test.go`, `internal/engine/compiled_schema_test.go` and `schema_diff_test.go`. Export time and allocations are measured separately from parse and code generation, with `internal/engine/output_schema_export_bench_test.go`, `internal/engine/output_schema_validate_bench_test.go` and `schema_diff_bench_test.go`.
+The tests cover the export, decoding and validation of the JSON contract, the semantic diff, the refusal of schema export by loaded compiled grammars and the backend agreement. They are in `internal/engine/output_schema_*_test.go`, `internal/engine/compiled_schema_test.go` and `schema_diff_test.go`. Export time and allocations are measured separately from parse and code generation, with `internal/engine/output_schema_export_bench_test.go`, `internal/engine/output_schema_validate_bench_test.go` and `schema_diff_bench_test.go`.
 
 ## Performance and Results
 
@@ -182,9 +178,8 @@ in [design 040](040-structural-queries-and-highlighting.md).
 
 `engine.Program.OutputSchemaPrototype(start, allRules)` provides the schema version 2
 implementation, exposed through `Parser.OutputSchema` and
-`WithAllSchemaRules` in Go. It requires a checked grammar or a stored schema section: a parser
-loaded from a file with the AST derives the schema from the AST, and a parser loaded from a file
-without the AST and without a section returns `ErrSchemaUnavailable`. It does not change parse results. The public types mirror the
+`WithAllSchemaRules` in Go. It requires a checked grammar: a parser
+loaded from a compiled grammar returns `ErrSchemaUnavailable`. It does not change parse results. The public types mirror the
 versioned engine schema; the Go surface and JSON format are experimental.
 
 The default selects the supplied start rule and its syntactic rule-call closure,
@@ -213,5 +208,4 @@ to its matching `inferred/<rule-name>` type, and reserved `cst/` entries to
 match built-in identities and shapes. Omitted, nil, and empty optional shape
 slices are equivalent for reserved-shape validation. Shared acyclic inline
 shapes are visited once; named-reference cycles are allowed. The same full
-validation applies to in-memory schemas, to both operands of semantic diff, and
-to the schema section of a compiled grammar; envelope metadata is not itself reported as a diff.
+validation applies to in-memory schemas and to both operands of semantic diff; envelope metadata is not itself reported as a diff.

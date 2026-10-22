@@ -96,6 +96,9 @@ func (prog *Program) NewDocumentWith(start, text string, o ParseOptions) (d *Doc
 		return nil, fmt.Errorf("recognition is not supported for documents")
 	}
 	start = prog.resolveStart(start) // an empty name selects the default start rule
+	if err := prog.checkMode(o, true); err != nil {
+		return nil, err
+	}
 	_, _, c, err := prog.admitParse(start, o, false)
 	if err != nil {
 		return nil, err

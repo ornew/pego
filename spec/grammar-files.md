@@ -49,8 +49,8 @@ grammar (see [Start Rules](#start-rules)).
 `package <name>` names the package of the grammar, with an identifier. If
 present, it MUST be the first item of the file. The package name does not
 affect parsing. The reference implementation records it, writes it back when
-it formats the grammar, and stores it in compiled grammars; the package name
-of generated Go code is given when the code is generated.
+it formats the grammar; the package name of generated Go code is given when the
+code is generated.
 
 ### Grammar AST Source Metadata
 
@@ -306,8 +306,8 @@ from JSON formats every list on one line.
 
 `pego.ParseGrammar` returns this source-preserving AST. Compilation removes
 source-only type and term groups from the executable grammar; consequently,
-`Parser.Grammar()` and the AST embedded in a compiled grammar expose the
-normalized executable form rather than those grouping nodes.
+`Parser.Grammar()` exposes the normalized executable form rather than those
+grouping nodes.
 
 ### Type Declaration Statements
 
@@ -481,16 +481,15 @@ bad.pego:3:14: undefined rule unknown
 
 Besides `.pego` source files, a grammar can be represented as JSON, which is
 the abstract syntax tree of the grammar (the public package `grammar`), and as
-a compiled grammar file (`.pegoc`), which holds the bytecode of the grammar
-and, optionally, the tree (see [File Format](bytecode.md#file-format)). All
-representations describe the same language. The `pego convert` command
-converts between them, and `pego fmt` formats `.pego` source files, keeping
+a compiled grammar file (`.pegoc`), which holds the bytecode of one mode and
+no tree (see [Compiled Grammars](compiled-grammars.md) and
+[File Format](bytecode.md#file-format)). Source and JSON describe the same
+grammar, and a compiled grammar runs it. The `pego convert` command converts
+between source and JSON, and `pego fmt` formats `.pego` source files, keeping
 comments.
 
 Direct grammar JSON can preserve normalized source positions and comment
-ownership. The optional AST in the current `.pegoc` format does not encode that
-metadata or formatter trivia; it preserves the compiled grammar tree only.
-This distinction does not change the `.pegoc` format or version.
+ownership.
 
 JSON decoding requires one complete document and rejects trailing
 non-whitespace data. JSON and hand-built ASTs must have nonnil required
@@ -527,14 +526,13 @@ message `Msg`.
 
 Validation is structural. It does not resolve names, check the types of actions,
 validate attributes or enforce the semantics of an Operators Rule; compilation does.
-It does not validate comments or layout. Compilation, the generators and the
-reconstruction of an AST from a compiled grammar run structural validation
-themselves. `grammar.Format` and `grammar.MarshalJSON` expect a structurally valid
+It does not validate comments or layout. Compilation and the generators run
+structural validation themselves. `grammar.Format` and `grammar.MarshalJSON` expect a structurally valid
 AST.
 
 Both bytecode VMs and generated parsers treat any negative maximum as unbounded.
-Saving a compiled grammar preserves the original maximum in its AST and writes the
-standard unbounded representation to the bytecode.
+Compilation preserves the original maximum in the AST and writes the standard
+unbounded representation to the bytecode.
 
 ### Grammar JSON
 
@@ -574,8 +572,7 @@ is `Block{Statements}`: a single statement stays in `Predicate.Term`, and a none
 multi-statement block executes its statements in order like adjacent Predicate
 Actions. Empty predicate blocks, braced Value Actions and `InlineAction` nodes can be
 parsed, formatted and serialized, but semantic checking or compilation rejects them
-as unsupported. The AST of a compiled grammar and `Parser.Grammar()` return the
-normalized grammar, which MAY share unchanged nodes with the source AST and is not a
+as unsupported. `Parser.Grammar()` returns the normalized grammar, which MAY share unchanged nodes with the source AST and is not a
 detached copy. Normalization does not mutate the caller's AST; the source and
 normalized ASTs are treated as immutable while a parser uses them, and
 `Grammar.Clone()` returns an independent copy.

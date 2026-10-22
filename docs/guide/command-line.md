@@ -9,14 +9,16 @@ and in the generated command reference.
 Errors are printed to standard error as `pego: ...` and give exit status 1. `fmt` and `convert` accept flags before or
 after their file arguments.
 
-A `<grammar>` argument is PEGO source (`.pego`), a grammar in JSON (`.json`) or a compiled grammar (`.pegoc`). The type
-is recognized by the contents of a `.pegoc` and by the `.json` suffix; anything else is parsed as PEGO source.
+A `<grammar>` argument is PEGO source (`.pego`), a grammar in JSON (`.json`) or, for `parse`, `trace`, `profile`,
+`explain` and `compile`, a compiled grammar (`.pegoc`). The type is recognized by the contents of a `.pegoc` and by the
+`.json` suffix; anything else is parsed as PEGO source. A compiled grammar runs only the parses of the mode it was
+saved in, and the commands that need the grammar itself (`convert`, `gen`, `lint`, `sample` and `schema`) reject it.
 
 | Command | Use it to | Read more |
 |:--|:--|:--|
 | `parse` | Parse input and print the tree, or only check it | [Parse](#parse) |
 | `fmt`, `fix`, `convert` | Format grammar source, rewrite old syntax, convert between source and JSON | [Fmt](#fmt) |
-| `compile` | Save a compiled grammar | [Compiled Grammars](compiled-grammars.md) |
+| `compile` | Save a compiled grammar of one mode | [Compiled Grammars](compiled-grammars.md) |
 | `gen` | Generate a Go or TypeScript parser | [Generating Parsers](code-generation.md), [Generated TypeScript Parsers](typescript.md) |
 | `test` | Run a fixture suite | [Testing Grammars](testing-grammars.md) |
 | `lint` | Find likely mistakes in a grammar | [Linting Grammars](linting.md) |
@@ -150,7 +152,7 @@ pego fmt [-w] [-l] [-check] [<file.pego> ...]
 Formats PEGO source and **keeps comments**. Without `-w` it prints the result; `-w` rewrites the files in place;
 `-l` lists the files whose formatting differs. `-check` lists them too, without changing them, and exits with status 1
 when there are any and 2 when a file cannot be read or parsed, so a CI job can run `pego fmt -check *.pego`; `-l` alone
-exits with status 0 whatever it lists. Without file arguments it formats standard input (`-w` is then an error). It accepts only `.pego` files; for JSON and compiled grammars it points you to `convert`.
+exits with status 0 whatever it lists. Without file arguments it formats standard input (`-w` is then an error). It accepts only `.pego` files; for JSON grammars it points you to `convert`.
 Adjacent minus operators stay separated: `- -"a"` remains two discards, and `- -1` remains two unary negations.
 The whitespace keeps either expression from becoming `--`, a reserved token that is an error.
 
@@ -264,30 +266,36 @@ pego convert [-to pego|json] [-o <file>] <grammar>
 ```
 
 Converts between PEGO source and the JSON form of the grammar AST. `-to` defaults to the other format (`.pego` becomes
-JSON, `.json` becomes PEGO source), and is required for a `.pegoc` input. Without `-o`, the result goes to standard
+JSON, `.json` becomes PEGO source); a compiled grammar holds no source and is rejected. Without `-o`, the result goes to standard
 output. JSON carries the comments that declarations, struct fields and operators rule lines own, and converting it
-back to source writes them again, but it carries no layout and no other comments; compiled grammars carry none. Keep the
+back to source writes them again, but it carries no layout and no other comments. Keep the
 `.pego` as the source of truth.
 
 ```bash
 pego convert -to json pairs.pego -o pairs.json
 pego parse -g pairs.json -f sexpr -i 'abc=12'      # JSON grammars work everywhere a grammar is expected
-pego convert -to pego pairs.pegoc                  # recover the source of a compiled grammar that has the AST
 ```
 
 ## `compile`
 
 ```bash
-pego compile -g <grammar> [-s <rule>] [-no-ast [-schema]] [-source-info] [-default-value] -o <file.pegoc>
+pego compile -g <grammar> [-s <rule>] [-mode parse|recognize|document] [-source-info] [-default-value] -o <file.pegoc>
 ```
 
 Saves a compiled grammar; see [compiled grammars](compiled-grammars.md). `-s` sets the default start rule stored in
-the file, `-no-ast` omits the AST, `-schema` (which needs `-no-ast`) also stores the output schema so that the file can export it, `-source-info` makes the parser record the rule of each node and the names of captures, and `-default-value` makes it return default values (the flag is stored in the file). When the input is an AST-less `.pegoc`, pass `-no-ast`; the command rejects
-AST-less input without it rather than implying that the missing AST was restored. Re-saving an AST-less file with
-`-no-ast` keeps its recognition bundle and its schema section. Both `-g` and `-o` are required.
+the file, `-mode` chooses the parses the file serves, `-source-info` makes the parser record the rule of each node and
+the names of captures, and `-default-value` makes it return default values (the flag is stored in the file). Both `-g`
+and `-o` are required.
 
-When `<grammar>` is an AST-less `.pegoc`, `-no-ast` is required. Without it, compilation reports the missing AST and
-writes no output. The option preserves bytecode-only form; it cannot restore source grammar data.
+| `-mode` | The file serves |
+|:--|:--|
+| `parse` (default) | `pego parse` and `pego parse -stream` |
+| `recognize` | `pego parse -check` |
+| `document` | `pego trace`, `pego profile` and `pego explain` |
+
+Another command given the file reports the file's mode and the `-mode` it needs. When `<grammar>` is itself a `.pegoc`,
+it is saved again only in its own mode, so pass that mode with `-mode`; otherwise the command reports the mismatch and
+writes no output. To save another mode, compile the grammar source.
 
 ## `gen`
 
@@ -301,7 +309,7 @@ parser (see [typescript.md](typescript.md)). `-g` is required (except with `-run
 `-default-value` makes the generated parser return default values; it cannot be combined with `-types`, because the
 types come from the dropped actions.
 
-A `.pegoc` compiled without `-default-value` cannot be used with `-default-value` in `parse` or `gen`: the command
+A `.pegoc` compiled without `-default-value` cannot be used with `-default-value` in `parse`: the command
 asks you to compile it again with `-default-value`.
 
 ## `schema`

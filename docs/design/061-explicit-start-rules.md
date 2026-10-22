@@ -90,10 +90,8 @@ models and does not depend on which tables a backend has built.
 A compiled grammar stores the start rules and the default in the bytecode
 module, after the rule table, and the loader validates them: at least one
 start rule, distinct and in rule-table order, and the default among them. The
-syntax tree stored in a compiled grammar does not keep declaration attributes;
-the loader marks its rules from the module's start rules, and a program built
-from the tree must agree with the module. A recognition bundle must have the
-start rules of its main module.
+compiled grammar holds no syntax tree, so the module's start rules are the only
+record of them in the file.
 
 Generated parsers record the start rule names. The Go `ParseRule` and the
 TypeScript `parseRule` look a name up among them and report the same errors as

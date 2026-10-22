@@ -296,8 +296,8 @@ VMs share one program between these parses and all others and decide at every ca
 plain path (`r.plain && !p.noPlain` in `compile.go`, `vm.go` and `ivm.go`; `setTrace` in `trace.go` and
 every Document parse in `document.go` set `noPlain`). Recognition and, in the closure backend, work
 controls already select separate programs, built on first use under a `sync.Once` of the shared
-`Program` (`Program.recognizer` in `parse.go`, `prepareControlledProgram` in `work_setup.go`) and stored
-for recognition in programs saved without the AST.
+`Program` (`Program.recognizer` in `parse.go`, `prepareControlledProgram` in `work_setup.go`); a program
+saved in recognize mode stores the recognizer's module.
 
 Closures and bytecode therefore compile each program in two **families**:
 
@@ -328,7 +328,7 @@ The family is independent of the other variants, which gives this matrix:
 |:--|:--|--:|
 | Closures | family × work control × recognition | up to 8 closure graphs, each built on first use |
 | VMs | family × recognition (work controls do not select a separate program) | up to 4 modules |
-| Programs saved without the AST | family × recognition | up to 4 modules |
+| Saved programs | one mode per file: parse (inlined family), recognize (recognition in the inlined family) or document (call-preserving family) | 1 module per file |
 
 [Performance and Results](#performance-and-results) measures the first-use cost of each family and the
 size of saved programs.
@@ -338,7 +338,7 @@ and the compiler marks every rule outside a call-graph cycle unless memoization 
 (`compile.go`). The only rules a Document parse does not memoize are non-leader rules on a cycle (and, while
 `#missing` insertion is active, rules that can insert), and only a call from outside the cycle could
 inline them. A third family, inlined for Documents, would add
-`Compile` work, a module per saved program and a variant to keep in step for that single case, so
+`Compile` work, a saved mode and a variant to keep in step for that single case, so
 Documents use the call-preserving family. Generated Document variants differ because their pipeline
 knows the variant when it is generated; they inline only rules that their Documents never memoize.
 
@@ -458,11 +458,11 @@ the loader does not verify stack use ([Load-Time Validation](../../spec/bytecode
 
 The recursive and iterative VMs share `step` and the call stages
 ([Execution Models](../../spec/bytecode.md#execution-models)), so both get the instructions from one
-implementation, and recognition bundles ([design 045](045-compiled-grammar-recognition.md)) are the
-bytecode of the recognition specialization in each family.
+implementation, and the recognizer's modules, which a recognize-mode file saves, are the bytecode of the
+recognition specialization in each family.
 
 **Closures.** The closure backend compiles Core IR optimized by the closure pipeline, in both families. It
-stays the default backend for grammars with an AST and the only `#missing` backend. Once it is built from
+stays the default backend for grammars compiled from source and the only `#missing` backend. Once it is built from
 Core IR, the same compiler run on Core IR without optimizing passes is the reference for rewrites, so no
 separate interpreter is maintained.
 
@@ -478,7 +478,7 @@ separate interpreter is maintained.
 | Character classes, class tables, VM ASCII masks | Interned Core classes; each emitter chooses its representation |
 | Value-needed rules, twins, lean bodies, projections (`project.go`) | Want and value elision; twin and recognition variants |
 | Terminal programs (`gen_terminal.go`) | `Terminal` nodes; the emitter keeps the runtime table format |
-| Recognizer program and recognition bundles | Recognition specialization of Core IR in each family; bytecode emitted from it |
+| Recognizer program and recognize-mode modules | Recognition specialization of Core IR in each family; bytecode emitted from it |
 | Helper sharing by printed body ([record 090](../optimizations/090-share-identical-generated-helpers.md)) | Structural sharing of identical Flow IR functions before printing |
 | `pruneTypedEntries` | Reachability from start rules on Core IR |
 | Compile-cancellation copies (`…Controlled`) | The pass driver polls the compile control between and within passes |
@@ -486,13 +486,10 @@ separate interpreter is maintained.
 ### Compatibility and Backend Support
 
 The public API and the grammar language do not change. The bytecode instruction set gains `NEST` and
-`ENDNEST`, and the instruction-set version of every module, including recognition bundles, goes from 26
-to 27. The compiled-file container gets a new version. The main module, whose string table is a prefix of
-the container's, is the call-preserving family's. A program saved without the AST also stores an inlined
-bundle: like the recognition bundle, it has its own instruction-set version, string table and module and
-a start map that must match the main module's, and it carries its own recognition bundle. A program saved
-with the AST stores only the main module and builds the inlined family from the AST on first use. Loaders
-reject earlier versions, which are compiled again; the format keeps no compatibility before the first
+`ENDNEST`, and the instruction-set version of every module goes from 26 to 27. The compiled-file container
+gets a new version. A saved file holds one module of one mode: a parse-mode file the inlined family's, a
+document-mode file the call-preserving family's, and a recognize-mode file the recognition specialization
+of the inlined family. Loaders reject earlier versions, which are compiled again; the format keeps no compatibility before the first
 release. `spec/bytecode.md` specifies the two instructions, their failure handling and cut base, the
 families and which parses use each, the derivation of `plain`, the file layout and the load-time checks.
 Generated Go and TypeScript change in internal names and shape, not in API. Work counts may change, which
@@ -529,7 +526,7 @@ stage of its first consumer, so its differential tests and negative controls run
    grammars and the specification test data; the inlined family is verified by the
    differential tests and by event-free equality with the call-preserving family (equal results, errors,
    expected sets, recovered errors and positions on every parse without events) in both VMs; saved
-   programs with both families load and run in both families; the VM benchmarks, `Compile` cost and
+   programs of each mode load and run in their family; the VM benchmarks, `Compile` cost and
    saved-file size. Then remove the match and expression-code lowering of `bcompile.go` and the VMs'
    `noPlain` checks.
 5. **Closures**, in both families. Gate: unchanged results and engine event streams; event-free equality
@@ -623,8 +620,7 @@ machine:
 - **Closure and bytecode:** `Compile` time and allocations, which the closure backend pays at run time and
   the language server pays on edits; the time and allocations of building each family on its first use,
   which the first parse of each kind pays, and of the variants in the matrix of
-  [Rule Calls in Each Target](#rule-calls-in-each-target); the size of programs saved without the AST,
-  which store both families; and the full-suite benchmarks of each backend in each family.
+  [Rule Calls in Each Target](#rule-calls-in-each-target); the size of saved programs in each mode; and the full-suite benchmarks of each backend in each family.
 
 Each enabled pass records its measured effect in the [optimization catalog](../optimizations/README.md).
 
@@ -644,9 +640,9 @@ Each enabled pass records its measured effect in the [optimization catalog](../o
    ([Rule Calls in Each Target](#rule-calls-in-each-target)). The VMs execute `Nest` with `NEST` and
    `ENDNEST` ([Emission](#emission)). Instructions for `ClassRun` and `Terminal` are a measured follow-up
    with a design of their own if VM profiles show that terminal and class runs dominate.
-4. **Saved programs.** A program saved without the AST stores the call-preserving family as the main
-   module and the inlined family as a bundle with its own string table, each with its recognition bundle,
-   so it runs every kind of parse without the AST. The container and instruction-set
+4. **Saved programs.** A saved file holds one module of one mode: parse stores the inlined family,
+   document the call-preserving family and recognize the recognition specialization, and the file serves
+   only that mode's parses. The container and instruction-set
    versions change, and the format keeps no compatibility before the first release.
 5. **Closure backend.** Closures are compiled from Core IR. An IR interpreter is unmeasured and would give
    up the dispatch that closures resolve when they compile; the closure compiler over unoptimized Core IR
@@ -675,7 +671,7 @@ The following are predictions to be measured by the gates in
 - the cost of building Core IR and running the passes, in generation and in `Compile`;
 - the closure backend's `Compile` time and allocations when compiled from Core IR, and the first-use cost
   of each family;
-- the parse-time gain of inlining in closures and the VMs, and the size of saved programs with both
-  families;
+- the parse-time gain of inlining in closures and the VMs, and the size of saved programs in each
+  mode;
 - the speed and size of generated Go and TypeScript printed from Flow IR, and the cost of `any` at rule
   boundaries.

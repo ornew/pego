@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -48,9 +49,18 @@ func schemaCorpus(t *testing.T) []genCase {
 	return cases
 }
 
-// TestCompiledSchemaMatchesSource checks that a loaded parser exports the schema of its source for
-// every start rule and for all rules, with and without the AST, and that the AST-less file keeps
-// its schema section when it is saved again.
+// wantSchemaNeedsSource fails unless err is the schema error of a program loaded from a compiled
+// grammar.
+func wantSchemaNeedsSource(t *testing.T, err error) {
+	t.Helper()
+	if !errors.Is(err, ErrSchemaUnavailable) || !strings.Contains(err.Error(), "export the schema from the grammar source") {
+		t.Fatalf("schema of a loaded program: %v", err)
+	}
+}
+
+// TestCompiledSchemaMatchesSource checks that a compiled grammar holds no schema in any mode: a
+// loaded parser refuses every start rule and all rules, the source still exports them, and saving
+// the loaded file again reproduces it.
 func TestCompiledSchemaMatchesSource(t *testing.T) {
 	for _, c := range schemaCorpus(t) {
 		for _, options := range []Options{{SourceInfo: true}, {DefaultValue: true}} {
@@ -60,41 +70,31 @@ func TestCompiledSchemaMatchesSource(t *testing.T) {
 					t.Fatal("no start rule")
 				}
 				def := src.DefaultStart()
-				withAST, err := src.MarshalBinary(def)
-				if err != nil {
-					t.Fatal(err)
-				}
-				bare, err := src.MarshalBinaryWith(def, MarshalOptions{OmitAST: true, Schema: true})
-				if err != nil {
-					t.Fatal(err)
-				}
-				if bare[len(compiledMagic)] != compiledVersion || withAST[len(compiledMagic)] != compiledVersion {
-					t.Fatal("saves are not the current format")
-				}
-				loadedAST, _, err := LoadProgram(withAST, Options{})
-				if err != nil {
-					t.Fatal(err)
-				}
-				loadedBare, _, err := LoadProgram(bare, Options{})
-				if err != nil {
-					t.Fatal(err)
-				}
-				again, err := loadedBare.MarshalBinaryWith(def, MarshalOptions{OmitAST: true})
-				if err != nil || !bytes.Equal(bare, again) {
-					t.Fatalf("AST-less file did not keep its schema section on save: %v", err)
-				}
-				for _, start := range append(append([]string{}, src.starts...), "") {
-					name := start
-					if name == "" {
-						name = def
+				for _, mode := range allModes {
+					data, err := src.Marshal(def, mode)
+					if err != nil {
+						t.Fatal(err)
 					}
-					for _, all := range []bool{false, true} {
-						want := schemaJSON(t, src, name, all)
-						if got := schemaJSON(t, loadedAST, name, all); got != want {
-							t.Fatalf("with AST, start %s all %t:\n%s\nwant\n%s", name, all, got, want)
+					if data[len(compiledMagic)] != compiledVersion || CompiledMode(data[len(compiledMagic)+1]) != mode {
+						t.Fatal("saves are not the current format")
+					}
+					loaded, _, err := LoadProgram(data)
+					if err != nil {
+						t.Fatal(err)
+					}
+					again, err := loaded.Marshal(def, mode)
+					if err != nil || !bytes.Equal(data, again) {
+						t.Fatalf("%s mode file changed on save: %v", mode, err)
+					}
+					for _, start := range append(append([]string{}, src.starts...), "") {
+						name := start
+						if name == "" {
+							name = def
 						}
-						if got := schemaJSON(t, loadedBare, name, all); got != want {
-							t.Fatalf("without AST, start %s all %t:\n%s\nwant\n%s", name, all, got, want)
+						for _, all := range []bool{false, true} {
+							schemaJSON(t, src, name, all)
+							_, err := loaded.OutputSchemaPrototype(name, all)
+							wantSchemaNeedsSource(t, err)
 						}
 					}
 				}
@@ -105,22 +105,15 @@ func TestCompiledSchemaMatchesSource(t *testing.T) {
 
 // TestCompiledSchemaBackendAgreement parses the inputs of each grammar with every backend and checks
 // that the schema exported afterwards is the same. The closure backend runs on the source program;
-// the two bytecode backends run on the file without the AST, which has no other backend.
+// the two bytecode backends also run on the file in parse mode, which has no schema before or after
+// parsing.
 func TestCompiledSchemaBackendAgreement(t *testing.T) {
 	for _, c := range genCorpus(t) {
 		t.Run(c.name, func(t *testing.T) {
 			src := compile(t, c.src)
 			def := src.DefaultStart()
 			want := schemaJSON(t, src, def, true)
-			wantStart := schemaJSON(t, src, def, false)
-			bare, err := src.MarshalBinaryWith(def, MarshalOptions{OmitAST: true, Schema: true})
-			if err != nil {
-				t.Fatal(err)
-			}
-			loaded, _, err := LoadProgram(bare, Options{})
-			if err != nil {
-				t.Fatal(err)
-			}
+			loaded := saveLoad(t, src, def, CompiledParse)
 			for _, input := range c.inputs {
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 					src.ParseWith(def, input, ParseOptions{Backend: backend})
@@ -131,20 +124,18 @@ func TestCompiledSchemaBackendAgreement(t *testing.T) {
 				if got := schemaJSON(t, src, def, true); got != want {
 					t.Fatalf("source schema changed after parsing %q", input)
 				}
-				if got := schemaJSON(t, loaded, def, true); got != want {
-					t.Fatalf("loaded schema differs after parsing %q", input)
-				}
-				if got := schemaJSON(t, loaded, def, false); got != wantStart {
-					t.Fatalf("loaded start schema differs after parsing %q", input)
-				}
+				_, err := loaded.OutputSchemaPrototype(def, true)
+				wantSchemaNeedsSource(t, err)
+				_, err = loaded.OutputSchemaPrototype(def, false)
+				wantSchemaNeedsSource(t, err)
 			}
 		})
 	}
 }
 
-// marshalWithSchemaSection writes a file with the given schema section, with the AST when withAST is
-// set, for the tests of malformed sections and of the section with the AST.
-func marshalWithSchemaSection(prog *Program, start string, section []byte, withAST bool) []byte {
+// marshalWithTrailing writes a compiled grammar in parse mode with section after the module, where
+// the format has nothing more, for the tests of data after the module.
+func marshalWithTrailing(prog *Program, start string, section []byte) []byte {
 	m := prog.Module()
 	w := &encoder{strs: map[string]int{}}
 	for i, s := range m.Strings {
@@ -152,151 +143,129 @@ func marshalWithSchemaSection(prog *Program, start string, section []byte, withA
 		w.list = append(w.list, s)
 	}
 	w.str(start)
-	w.str(prog.pkg)
 	w.module(m)
-	w.bool(false) // no recognition bundle
-	w.bool(true)
-	w.uint(len(section))
 	w.body.Write(section)
-	w.bool(withAST)
-	if withAST {
-		w.statements(prog)
-	}
 	var out bytes.Buffer
 	out.WriteString(compiledMagic)
 	out.WriteByte(compiledVersion)
+	out.WriteByte(byte(CompiledParse))
 	out.Write(binary.AppendUvarint(nil, uint64(m.instructionSetVersion())))
 	w.finish(&out)
 	return out.Bytes()
 }
 
+// TestCompiledSchemaSectionErrors checks that a compiled grammar has no place for a schema: a schema
+// document after the module, valid or not, is data the format does not have, and the file is
+// rejected.
 func TestCompiledSchemaSectionErrors(t *testing.T) {
 	p := compile(t, `@start(default)
 rule main = "a"
 @start
 rule other = "b"`)
-	section, err := p.encodeSchemaSection()
+	if _, _, err := LoadProgram(marshalWithTrailing(p, "main", nil)); err != nil {
+		t.Fatalf("file without trailing data: %v", err)
+	}
+	s, err := p.OutputSchemaPrototype("main", true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := LoadProgram(marshalWithSchemaSection(p, "main", section, false), Options{}); err != nil {
-		t.Fatalf("valid section: %v", err)
+	section, err := json.Marshal(s)
+	if err != nil {
+		t.Fatal(err)
 	}
 	for _, tc := range []struct {
-		name, section, want string
+		name, section string
 	}{
-		{"not JSON", "x", "invalid schema section"},
-		{"unknown member", strings.Replace(string(section), `"starts"`, `"extra":1,"starts"`, 1), "unknown field"},
-		{"trailing data", string(section) + " {}", "trailing data"},
-		{"missing start rule", strings.Replace(string(section), `"start":"other"`, `"start":"absent"`, 1), "where \"other\" is expected"},
-		{"unknown rule", strings.Replace(string(section), `"rules":["main"]`, `"rules":["absent"]`, 1), "unknown rule"},
-		{"unknown type", strings.Replace(string(section), `"types":["`, `"types":["declared/Absent","`, 1), "unknown type"},
-		{"start count", dropLastStart.ReplaceAllString(string(section), "]}"), "start rules in the schema for"},
-		// The schema's own start rule is the first "start" member of the section.
-		{"default start", strings.Replace(string(section), `"start":"main"`, `"start":"other"`, 1), "the schema starts at \"other\""},
+		{"valid schema", string(section)},
+		{"not JSON", "x"},
+		{"unknown member", strings.Replace(string(section), `"rules"`, `"extra":1,"rules"`, 1)},
+		{"trailing data", string(section) + " {}"},
+		{"missing start rule", strings.Replace(string(section), `"start":"main"`, `"start":"absent"`, 1)},
+		{"unknown rule", strings.Replace(string(section), `"main"`, `"absent"`, 1)},
+		{"start count", dropLastStart.ReplaceAllString(string(section), "]}")},
+		{"default start", strings.Replace(string(section), `"start":"main"`, `"start":"other"`, 1)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			_, _, err := LoadProgram(marshalWithSchemaSection(p, "main", []byte(tc.section), false), Options{})
-			if err == nil || !strings.Contains(err.Error(), tc.want) {
-				t.Fatalf("error %v, want %q", err, tc.want)
+			_, _, err := LoadProgram(marshalWithTrailing(p, "main", []byte(tc.section)))
+			if err == nil || !strings.Contains(err.Error(), "trailing bytes") {
+				t.Fatalf("error %v, want trailing bytes", err)
 			}
-			if !strings.HasPrefix(err.Error(), "invalid compiled grammar: invalid schema section: ") {
+			if !strings.HasPrefix(err.Error(), "invalid compiled grammar") {
 				t.Fatalf("error %q lacks the compiled grammar prefix", err)
 			}
 		})
 	}
 }
 
-// dropLastStart matches the last start rule entry of a schema section of the two-start grammar of
+// dropLastStart matches the end of the last rule entry of the schema of the two-start grammar of
 // TestCompiledSchemaSectionErrors.
-var dropLastStart = regexp.MustCompile(`,\{"start":"other".*\]\}$`)
+var dropLastStart = regexp.MustCompile(`,\{"name":"other".*\]\}$`)
 
-// TestCompiledSchemaUnavailable checks that an AST-less file without a schema section reports the
-// option that adds one, and that the schema is not stored with the AST.
+// TestCompiledSchemaUnavailable checks that a loaded file in each mode reports that its schema
+// needs the grammar source, while the source exports it.
 func TestCompiledSchemaUnavailable(t *testing.T) {
 	p := compile(t, `rule main = "a"`)
-	bare, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-	if err != nil {
-		t.Fatal(err)
+	if _, err := p.OutputSchemaPrototype("main", false); err != nil {
+		t.Fatalf("source schema: %v", err)
 	}
-	loaded, _, err := LoadProgram(bare, Options{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := loaded.OutputSchemaPrototype("main", false); !errors.Is(err, ErrSchemaUnavailable) || !strings.Contains(err.Error(), "-schema") {
-		t.Fatalf("AST-less file without a schema: %v", err)
-	}
-	if _, err := p.MarshalBinaryWith("main", MarshalOptions{Schema: true}); err == nil {
-		t.Fatal("schema stored with the AST")
-	}
-	// Saving a file without a schema section with the schema option derives it from nothing.
-	if _, err := loaded.MarshalBinaryWith("main", MarshalOptions{OmitAST: true, Schema: true}); !errors.Is(err, ErrSchemaUnavailable) {
-		t.Fatalf("schema added to a file that has none: %v", err)
+	for _, mode := range allModes {
+		loaded := saveLoad(t, p, "main", mode)
+		_, err := loaded.OutputSchemaPrototype("main", false)
+		wantSchemaNeedsSource(t, err)
+		// A loaded file is saved again only in its own mode, never with a schema.
+		for _, other := range allModes {
+			if _, err := loaded.Marshal("main", other); (err == nil) != (other == mode) {
+				t.Fatalf("%s mode file saved in %s mode: %v", mode, other, err)
+			}
+		}
 	}
 }
 
-// TestCompiledSchemaWithAST checks that a file with the AST refuses a schema section: its schema is
-// derived from the AST on load, so a stored one would be a second source of the same schema.
+// TestCompiledSchemaWithAST checks that a file of another container version, such as the earlier
+// one that held the grammar and a schema, is rejected and needs to be compiled again.
 func TestCompiledSchemaWithAST(t *testing.T) {
 	p := compile(t, `rule main = "a"`)
-	section, err := p.encodeSchemaSection()
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, _, err = LoadProgram(marshalWithSchemaSection(p, "main", section, true), Options{})
-	if err == nil || !strings.Contains(err.Error(), "a schema section with the AST") {
-		t.Fatalf("file with the AST and a schema section: %v", err)
+	for _, version := range []byte{compiledVersion - 1, compiledVersion + 1} {
+		data, err := p.MarshalBinary("main")
+		if err != nil {
+			t.Fatal(err)
+		}
+		data[len(compiledMagic)] = version
+		binary.LittleEndian.PutUint32(data[len(data)-4:], crc32.ChecksumIEEE(data[:len(data)-4]))
+		_, _, err = LoadProgram(data)
+		if err == nil || !strings.Contains(err.Error(), fmt.Sprintf("unsupported compiled grammar version %d", version)) || !strings.Contains(err.Error(), "compile the grammar again") {
+			t.Fatalf("container version %d: %v", version, err)
+		}
 	}
 }
 
-// TestCompiledSchemaStartNames checks that the complete schema of an AST-less file accepts the same
-// start names as the source it was saved from: any rule, and only unknown names are rejected with
-// the same error.
+// TestCompiledSchemaStartNames checks that the source accepts any rule as the start of the complete
+// schema and only start rules otherwise, and that a loaded file refuses every name the same way,
+// because it holds no schema.
 func TestCompiledSchemaStartNames(t *testing.T) {
 	p := compile(t, `@start
 rule main = a:"x"
 rule helper = "y"`)
-	bare, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true, Schema: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	loaded, _, err := LoadProgram(bare, Options{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	loaded := saveLoad(t, p, "main", CompiledParse)
 	for _, start := range []string{"helper", "nosuch"} {
-		want, wantErr := p.OutputSchemaPrototype(start, true)
-		got, gotErr := loaded.OutputSchemaPrototype(start, true)
-		if (wantErr == nil) != (gotErr == nil) {
-			t.Fatalf("start %q: source error %v, stored error %v", start, wantErr, gotErr)
+		_, wantErr := p.OutputSchemaPrototype(start, true)
+		if (wantErr == nil) != (start == "helper") {
+			t.Fatalf("start %q: source error %v", start, wantErr)
 		}
-		if gotErr != nil {
-			if gotErr.Error() != wantErr.Error() || gotErr.Error() != `unknown schema start rule "nosuch"` {
-				t.Fatalf("start %q: source error %v, stored error %v", start, wantErr, gotErr)
-			}
-			continue
+		if wantErr != nil && wantErr.Error() != `unknown schema start rule "nosuch"` {
+			t.Fatalf("start %q: source error %v", start, wantErr)
 		}
-		wj, err := json.Marshal(want)
-		if err != nil {
-			t.Fatal(err)
-		}
-		gj, err := json.Marshal(got)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !bytes.Equal(wj, gj) {
-			t.Fatalf("start %q: stored all-rules schema differs from the source", start)
-		}
+		_, gotErr := loaded.OutputSchemaPrototype(start, true)
+		wantSchemaNeedsSource(t, gotErr)
 	}
-	// Without all rules only start rules export: a rule that is not a start rule is an unknown start on
-	// both paths, with the same error.
+	// Without all rules only start rules export: a rule that is not a start rule is an unknown start.
 	for _, start := range []string{"helper", "nosuch"} {
 		_, wantErr := p.OutputSchemaPrototype(start, false)
-		_, gotErr := loaded.OutputSchemaPrototype(start, false)
-		if wantErr == nil || gotErr == nil || wantErr.Error() != gotErr.Error() ||
-			wantErr.Error() != fmt.Sprintf("unknown schema start rule %q", start) {
-			t.Fatalf("start %q without all rules: source error %v, stored error %v", start, wantErr, gotErr)
+		if wantErr == nil || wantErr.Error() != fmt.Sprintf("unknown schema start rule %q", start) {
+			t.Fatalf("start %q without all rules: source error %v", start, wantErr)
 		}
+		_, gotErr := loaded.OutputSchemaPrototype(start, false)
+		wantSchemaNeedsSource(t, gotErr)
 	}
 	if _, err := p.OutputSchemaPrototype("main", false); err != nil {
 		t.Fatalf("start rule main: %v", err)

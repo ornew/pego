@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/ornew/pego"
@@ -16,7 +17,7 @@ rule other = "é" $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	data, err := p.Marshal(pego.WithoutAST())
+	data, err := p.Marshal(pego.CompiledRecognize)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +47,10 @@ rule other = "é" $$`, "main")
 		t.Fatalf("failure printed success: %q %v", got, err)
 	}
 	if _, err := runCLI(t, "", "parse", "-g", path, "-i", "a", "-check", "-backend", "closure"); err == nil {
-		t.Fatal("AST-less closure succeeded")
+		t.Fatal("closure backend on a compiled grammar succeeded")
+	}
+	if _, err := runCLI(t, "", "parse", "-g", path, "-i", "a"); err == nil || !strings.Contains(err.Error(), "needs parse mode") {
+		t.Fatalf("value parse on a recognize-mode file: %v", err)
 	}
 	if _, err := runCLI(t, "", "parse", "-g", path, "-check", "-stream"); err == nil {
 		t.Fatal("check/stream combination accepted")

@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -75,15 +76,15 @@ func TestModuleVariableValidation(t *testing.T) {
 	}
 }
 
-// TestLoadedVariablesMatch checks that a saved grammar whose module disagrees with its syntax
-// tree about a variable is rejected on load, and so is a recognition bundle that disagrees with
-// the main module.
+// TestLoadedVariablesMatch checks that a compiled grammar, which holds one module and no syntax
+// tree, loads exactly the variables of its module in each mode: a changed variable table is the
+// one the loaded program runs with, or the file is rejected when the module validation rejects it.
 func TestLoadedVariablesMatch(t *testing.T) {
-	good, err := compile(t, varModuleSource).MarshalBinaryWith("main", MarshalOptions{})
+	good, err := compile(t, varModuleSource).MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := LoadProgram(good, Options{}); err != nil {
+	if _, _, err := LoadProgram(good); err != nil {
 		t.Fatal(err)
 	}
 	for _, tc := range []struct {
@@ -102,33 +103,39 @@ func TestLoadedVariablesMatch(t *testing.T) {
 			m.Vars = append(m.Vars, VarInfo{Name: len(m.Strings) - 1, Type: varInt, Str: -1})
 		}},
 	} {
-		t.Run("syntax tree "+tc.name, func(t *testing.T) {
-			p := compile(t, varModuleSource)
-			m := p.Module()
-			m.Vars = append([]VarInfo(nil), m.Vars...)
-			tc.mutate(m)
-			data, err := p.MarshalBinaryWith("main", MarshalOptions{})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if _, _, err := LoadProgram(data, Options{}); err == nil {
-				t.Fatal("a module that differs from its syntax tree was loaded")
-			}
-		})
-		t.Run("recognition "+tc.name, func(t *testing.T) {
-			p := compile(t, varModuleSource)
-			rec, err := p.recognizer()
-			if err != nil {
-				t.Fatal(err)
-			}
-			m := rec.Module()
-			m.Vars = append([]VarInfo(nil), m.Vars...)
-			tc.mutate(m)
-			bundle := encodeRecognition(rec)
-			if _, _, err := decodeRecognition(bundle, compile(t, varModuleSource).Module()); err == nil {
-				t.Fatal("a bundle that differs from the main module was accepted")
-			}
-		})
+		for _, mode := range allModes {
+			t.Run(mode.String()+" "+tc.name, func(t *testing.T) {
+				p := compile(t, varModuleSource)
+				saved := p
+				if mode == CompiledRecognize {
+					rec, err := p.recognizer()
+					if err != nil {
+						t.Fatal(err)
+					}
+					saved = rec
+				}
+				m := saved.Module()
+				m.Vars = append([]VarInfo(nil), m.Vars...)
+				tc.mutate(m)
+				data, err := p.Marshal("main", mode)
+				if err != nil {
+					t.Fatal(err)
+				}
+				loaded, _, err := LoadProgram(data)
+				if verr := validateModule(m); verr != nil {
+					if err == nil {
+						t.Fatalf("a module that fails validation (%v) was loaded", verr)
+					}
+					return
+				}
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := sameVars(loaded.vars, moduleVarTable(m)); err != nil {
+					t.Fatalf("the loaded variables differ from the module: %v", err)
+				}
+			})
+		}
 	}
 }
 
@@ -156,4 +163,20 @@ func TestModuleInitialValueMatchesType(t *testing.T) {
 			}
 		})
 	}
+}
+
+// sameVars reports the first difference between the variables of two tables: their number, names,
+// types and initial values.
+func sameVars(a, b *varTable) error {
+	x, y := a.all(), b.all()
+	if len(x) != len(y) {
+		return fmt.Errorf("%d variables in one table and %d in the other", len(x), len(y))
+	}
+	for i := range x {
+		if x[i].name != y[i].name || x[i].typ != y[i].typ || x[i].init != y[i].init {
+			return fmt.Errorf("variable %s (%s = %v) differs from variable %s (%s = %v)",
+				x[i].name, x[i].typ, x[i].init, y[i].name, y[i].typ, y[i].init)
+		}
+	}
+	return nil
 }

@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego"
 )
 
 func writeFile(t *testing.T, name, content string) string {
@@ -227,7 +230,8 @@ func TestFmtRejectsOtherFormats(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := runCLI(t, string(data), "fmt"); err == nil || !strings.Contains(err.Error(), "pego convert") {
+	// A compiled grammar holds no source, so fmt points to the source instead of convert.
+	if _, err := runCLI(t, string(data), "fmt"); err == nil || !strings.Contains(err.Error(), "grammar source it was compiled from") || strings.Contains(err.Error(), "convert") {
 		t.Errorf("compiled grammar on stdin: got %v", err)
 	}
 	// The old json command is gone.
@@ -472,23 +476,31 @@ func TestCompile(t *testing.T) {
 	if got, err := runCLI(t, "", "parse", "-g", out, "-s", "other", "-i", "x", "-f", "sexpr"); err != nil || got != `"x"@other`+"\n" {
 		t.Errorf("got %q, %v", got, err)
 	}
-	// A compiled grammar with its AST converts to either format, given -to.
-	if got, err := runCLI(t, "", "convert", "-to", "pego", out); err != nil || !strings.Contains(got, `rule other = "x"`) {
-		t.Errorf("got %q, %v", got, err)
+	// The default mode is parse.
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if got, err := runCLI(t, "", "convert", "-to", "json", out); err != nil || !strings.Contains(got, `"name": "other"`) {
-		t.Errorf("got %q, %v", got, err)
+	if p, err := pego.LoadParser(data); err != nil {
+		t.Fatal(err)
+	} else if mode, ok := p.CompiledMode(); !ok || mode != pego.CompiledParse {
+		t.Errorf("default mode %v %v, want parse", mode, ok)
 	}
-	if _, err := runCLI(t, "", "convert", out); err == nil || !strings.Contains(err.Error(), "-to") {
-		t.Errorf("got %v", err)
+	// A compiled grammar holds no grammar: it does not convert, with or without -to.
+	for _, args := range [][]string{{"convert", "-to", "pego", out}, {"convert", "-to", "json", out}, {"convert", out}} {
+		if _, err := runCLI(t, "", args...); err == nil || !strings.Contains(err.Error(), "needs the grammar source") {
+			t.Errorf("%v: got %v", args, err)
+		}
 	}
 	if _, err := runCLI(t, "", "compile", "-g", g); err == nil {
 		t.Error("expected an error without -o")
 	}
-	// A file without the AST runs on the bytecode backend but cannot be
-	// converted.
+	if _, err := runCLI(t, "", "compile", "-g", g, "-mode", "ast", "-o", out); err == nil || !strings.Contains(err.Error(), "unknown compiled grammar mode") {
+		t.Errorf("unknown mode: %v", err)
+	}
+	// A file runs on the bytecode backends, for the parses of its mode.
 	bare := filepath.Join(t.TempDir(), "kv-bare.pegoc")
-	if _, err := runCLI(t, "", "compile", "-g", g, "-no-ast", "-o", bare); err != nil {
+	if _, err := runCLI(t, "", "compile", "-g", g, "-o", bare); err != nil {
 		t.Fatal(err)
 	}
 	if got, err := runCLI(t, "", "parse", "-g", bare, "-i", "a=1", "-f", "sexpr"); err != nil || got != `("a" "=" "1")`+"\n" {
@@ -498,24 +510,59 @@ func TestCompile(t *testing.T) {
 	if _, err := runCLI(t, "", "parse", "-g", bare, "-i", "a=1", "-source-info"); err == nil || !strings.Contains(err.Error(), "compile it with -source-info") {
 		t.Errorf("got %v", err)
 	}
-	if _, err := runCLI(t, "", "parse", "-g", bare, "-i", "a=1", "-backend", "closure"); err == nil {
-		t.Error("expected an error for the closure backend without AST")
+	if _, err := runCLI(t, "", "parse", "-g", bare, "-i", "a=1", "-backend", "closure"); err == nil || !strings.Contains(err.Error(), "closure backend needs the grammar source") {
+		t.Errorf("closure backend on a compiled grammar: %v", err)
 	}
-	if _, err := runCLI(t, "", "convert", "-to", "pego", bare); err == nil || !strings.Contains(err.Error(), "omits the AST") {
-		t.Errorf("got %v", err)
+	if _, err := runCLI(t, "", "parse", "-g", bare, "-i", "a=1", "-check"); err == nil || !strings.Contains(err.Error(), "needs recognize mode") {
+		t.Errorf("recognition on a parse-mode file: %v", err)
 	}
-	// Recompiling an AST-less file cannot restore the AST. Require the
-	// bytecode-only output to be explicit instead of silently dropping it.
-	copyPath := filepath.Join(t.TempDir(), "kv-copy.pegoc")
-	if _, err := runCLI(t, "", "compile", "-g", bare, "-o", copyPath); err == nil ||
-		!strings.Contains(err.Error(), "omits the AST") || !strings.Contains(err.Error(), "-no-ast") {
-		t.Errorf("got %v", err)
+	for _, cmd := range []string{"trace", "profile", "explain"} {
+		if _, err := runCLI(t, "", cmd, "-g", bare, "-i", "a=1"); err == nil || !strings.Contains(err.Error(), "needs document mode") {
+			t.Errorf("%s on a parse-mode file: %v", cmd, err)
+		}
 	}
-	if _, err := os.Stat(copyPath); !os.IsNotExist(err) {
-		t.Errorf("compile wrote output after rejecting AST-less input: stat error %v", err)
+	for _, mode := range []string{"recognize", "document"} {
+		path := filepath.Join(t.TempDir(), mode+".pegoc")
+		if _, err := runCLI(t, "", "compile", "-g", g, "-mode", mode, "-o", path); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := runCLI(t, "", "parse", "-g", path, "-i", "a=1"); err == nil || !strings.Contains(err.Error(), "the compiled grammar is in "+mode+" mode; parsing needs parse mode") {
+			t.Errorf("%s mode parse: %v", mode, err)
+		}
+		for _, cmd := range []string{"trace", "profile", "explain"} {
+			_, err := runCLI(t, "", cmd, "-g", path, "-i", "a=1")
+			if served := mode == "document"; served != (err == nil) {
+				t.Errorf("%s on a %s-mode file: %v", cmd, mode, err)
+			}
+		}
+		if mode == "document" {
+			want, err := runCLI(t, "", "explain", "-g", g, "-i", "a=")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got, err := runCLI(t, "", "explain", "-g", path, "-i", "a="); err != nil || got != want || !strings.Contains(got, "expected") {
+				t.Errorf("explain on a document-mode file: %v\n%s\nwant\n%s", err, got, want)
+			}
+		}
+		// A file is saved again in its own mode only.
+		copyPath := filepath.Join(t.TempDir(), "copy.pegoc")
+		if _, err := runCLI(t, "", "compile", "-g", path, "-o", copyPath); err == nil || !strings.Contains(err.Error(), "pass -mode "+mode) {
+			t.Errorf("%s mode resaved as parse: %v", mode, err)
+		}
+		if _, err := os.Stat(copyPath); !os.IsNotExist(err) {
+			t.Errorf("compile wrote output after rejecting the mode: stat error %v", err)
+		}
+		if _, err := runCLI(t, "", "compile", "-g", path, "-mode", mode, "-o", copyPath); err != nil {
+			t.Fatal(err)
+		}
+		a, _ := os.ReadFile(path)
+		b, _ := os.ReadFile(copyPath)
+		if !bytes.Equal(a, b) {
+			t.Errorf("%s mode: saving again changed the file", mode)
+		}
 	}
-	if _, err := runCLI(t, "", "compile", "-g", bare, "-no-ast", "-o", copyPath); err != nil {
-		t.Fatal(err)
+	if got, err := runCLI(t, "", "parse", "-g", filepath.Join(t.TempDir(), "missing.pegoc"), "-i", "a=1"); err == nil {
+		t.Errorf("missing file: %q", got)
 	}
 	// Without -s, the start rule saved by compile -s is used.
 	other := filepath.Join(t.TempDir(), "other.pegoc")
@@ -528,16 +575,12 @@ func TestCompile(t *testing.T) {
 	if got, err := runCLI(t, "", "parse", "-g", other, "-s", "main", "-i", "a=1", "-f", "sexpr"); err != nil || got != `(k:"a" "=" v:"1")@main`+"\n" {
 		t.Errorf("got %q, %v", got, err)
 	}
-	fromOther, err := runGenGo(t, "-g", other, "-pkg", "p")
-	if err != nil {
-		t.Fatal(err)
+	// Generating code needs the grammar source.
+	if _, err := runGenGo(t, "-g", other, "-pkg", "p"); err == nil || !strings.Contains(err.Error(), "gen needs the grammar source") {
+		t.Errorf("gen from a .pegoc: %v", err)
 	}
-	withOther, err := runGenGo(t, "-g", g, "-pkg", "p", "-s", "other")
-	if err != nil {
+	if _, err := runGenGo(t, "-g", g, "-pkg", "p", "-s", "other"); err != nil {
 		t.Fatal(err)
-	}
-	if fromOther != withOther {
-		t.Error("gen from a .pegoc does not use its saved start rule")
 	}
 	broken := writeFile(t, "broken.pegoc", "PEGOC\x00\x01garbage")
 	if _, err := runCLI(t, "", "parse", "-g", broken, "-i", "a=1"); err == nil || !strings.Contains(err.Error(), "broken.pegoc") {

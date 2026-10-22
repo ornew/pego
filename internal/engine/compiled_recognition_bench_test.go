@@ -50,83 +50,45 @@ func BenchmarkCompiledRecognitionSerialization(b *testing.B) {
 	for _, ruleCount := range []int{16, 128} {
 		b.Run(fmt.Sprintf("Rules%d", ruleCount), func(b *testing.B) {
 			g, p := compiledRecognitionBenchmarkGrammar(b, ruleCount)
-			noBundle := marshalWithoutRecognition(p, "main")
-			bundle, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-			if err != nil {
-				b.Fatal(err)
-			}
-			// Warm the lazy recognition program so SerializeCached measures encoding,
-			// while CompileAndFirstSave includes its first-save construction cost.
-			if _, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true}); err != nil {
-				b.Fatal(err)
+			files := map[CompiledMode][]byte{}
+			for _, mode := range []CompiledMode{CompiledParse, CompiledRecognize} {
+				// Saving once also builds the recognition program, so SerializeCached measures
+				// encoding while CompileAndFirstSave includes its first-save construction cost.
+				files[mode] = mustMarshal(p.Marshal("main", mode))
 			}
 
-			for _, tc := range []struct {
-				name    string
-				data    []byte
-				bundled bool
-			}{{"no-bundle", noBundle, false}, {"bundle", bundle, true}} {
-				b.Run("SerializeCached/"+tc.name, func(b *testing.B) {
+			for _, mode := range []CompiledMode{CompiledParse, CompiledRecognize} {
+				data := files[mode]
+				b.Run("SerializeCached/"+mode.String(), func(b *testing.B) {
 					b.ReportAllocs()
 					for b.Loop() {
-						var data []byte
-						var err error
-						if tc.bundled {
-							data, err = p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-						} else {
-							data = marshalWithoutRecognition(p, "main")
-						}
-						if err != nil {
-							b.Fatal(err)
-						}
-						compiledRecognitionSaveSink = data
+						compiledRecognitionSaveSink = mustMarshal(p.Marshal("main", mode))
 					}
-					b.ReportMetric(float64(len(tc.data)), "B/file")
+					b.ReportMetric(float64(len(data)), "B/file")
 				})
-				b.Run("CompileAndFirstSave/"+tc.name, func(b *testing.B) {
+				b.Run("CompileAndFirstSave/"+mode.String(), func(b *testing.B) {
 					b.ReportAllocs()
 					for b.Loop() {
 						fresh, err := Compile(g, Options{})
 						if err != nil {
 							b.Fatal(err)
 						}
-						var data []byte
-						if tc.bundled {
-							data, err = fresh.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-						} else {
-							data = marshalWithoutRecognition(fresh, "main")
-						}
+						compiledRecognitionSaveSink = mustMarshal(fresh.Marshal("main", mode))
+					}
+					b.ReportMetric(float64(len(data)), "B/file")
+				})
+				b.Run("Load/"+mode.String(), func(b *testing.B) {
+					b.ReportAllocs()
+					for b.Loop() {
+						loaded, _, err := LoadProgram(data)
 						if err != nil {
 							b.Fatal(err)
 						}
-						compiledRecognitionSaveSink = data
+						compiledRecognitionLoadSink = loaded
 					}
-					b.ReportMetric(float64(len(tc.data)), "B/file")
+					b.ReportMetric(float64(len(data)), "B/file")
 				})
 			}
-
-			b.Run("Load/no-bundle", func(b *testing.B) {
-				b.ReportAllocs()
-				for b.Loop() {
-					loaded, _, err := LoadProgram(noBundle, Options{})
-					if err != nil {
-						b.Fatal(err)
-					}
-					compiledRecognitionLoadSink = loaded
-				}
-				b.ReportMetric(float64(len(noBundle)), "B/file")
-			})
-			b.Run("Load/bundle", func(b *testing.B) {
-				b.ReportAllocs()
-				for b.Loop() {
-					loaded, _, err := LoadProgram(bundle, Options{})
-					if err != nil {
-						b.Fatal(err)
-					}
-					compiledRecognitionLoadSink = loaded
-				}
-				b.ReportMetric(float64(len(bundle)), "B/file")
-			})
 		})
 	}
 }
@@ -145,7 +107,7 @@ func BenchmarkCompiledRecognitionASTBearing(b *testing.B) {
 			if data[len(compiledMagic)] != compiledVersion {
 				b.Fatalf("unexpected format version: %d", data[len(compiledMagic)])
 			}
-			loaded, _, err := LoadProgram(data, Options{})
+			loaded, _, err := LoadProgram(data)
 			if err != nil {
 				b.Fatalf("load fixture: %v", err)
 			}
@@ -184,7 +146,7 @@ func BenchmarkCompiledRecognitionASTBearing(b *testing.B) {
 			b.Run("Load", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
-					loaded, _, err := LoadProgram(data, Options{})
+					loaded, _, err := LoadProgram(data)
 					if err != nil {
 						b.Fatal(err)
 					}

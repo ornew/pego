@@ -302,14 +302,8 @@ func TestWorkContextErrPanicIdentityAtCountedWorkAndRetry(t *testing.T) {
 func TestWorkContextErrPanicIdentityLoadedASTOmittedProgram(t *testing.T) {
 	literal := strings.Repeat("a", 1024)
 	source := compile(t, `rule main = "`+literal+`" $$`)
-	data, err := source.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	prog, _, err := LoadProgram(data, Options{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	// The parse below is traced, which a compiled grammar serves in document mode.
+	prog := saveLoad(t, source, "main", CompiledDocument)
 	if prog.Grammar != nil {
 		t.Fatal("loaded fixture retained an AST")
 	}
@@ -317,7 +311,7 @@ func TestWorkContextErrPanicIdentityLoadedASTOmittedProgram(t *testing.T) {
 	for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 		for _, unit := range []PositionUnit{Bytes, CodePoints} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
-				retained, err := prog.ParseWith("main", literal, ParseOptions{Backend: backend, Unit: unit})
+				retained, err := prog.ParseWith("main", literal, servedBy(CompiledDocument, ParseOptions{Backend: backend, Unit: unit}))
 				if err != nil || retained == nil {
 					t.Fatalf("baseline node=%v err=%v", retained, err)
 				}
@@ -344,7 +338,7 @@ func TestWorkContextErrPanicIdentityLoadedASTOmittedProgram(t *testing.T) {
 				}
 				workContextAssertCleanup(t, observed)
 
-				retry, retryErr := prog.ParseWith("main", literal, ParseOptions{Backend: backend, Unit: unit})
+				retry, retryErr := prog.ParseWith("main", literal, servedBy(CompiledDocument, ParseOptions{Backend: backend, Unit: unit}))
 				if retryErr != nil || string(workContextNodeJSON(t, retry)) != string(before) || string(workContextNodeJSON(t, retained)) != string(before) {
 					t.Fatalf("loaded retry node=%v err=%v; retained=%v", retry, retryErr, retained)
 				}

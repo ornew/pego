@@ -147,8 +147,8 @@ type RuleCuts struct {
 	Predicates int
 }
 
-// New returns a generator of inputs for p, starting at p's start rule. The parser must have its grammar
-// AST (a parser loaded from a .pegoc saved without it cannot be sampled).
+// New returns a generator of inputs for p, starting at p's start rule. The parser must be compiled from
+// the grammar source: a parser loaded from a compiled grammar has no grammar AST and cannot be sampled.
 func New(p *pego.Parser, opts ...Option) (*Generator, error) {
 	g := p.Grammar()
 	if g == nil {

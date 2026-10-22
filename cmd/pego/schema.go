@@ -48,8 +48,8 @@ func schemaCmd(args []string, stdout io.Writer) error {
 		return schemaDiffCmd(args[1:], stdout)
 	}
 	fs := flag.NewFlagSet("schema", flag.ContinueOnError)
-	grammarPath := fs.String("g", "", "grammar file (.pego, .json, or .pegoc)")
-	start := fs.String("s", "", "start rule (default: the one saved in a .pegoc, otherwise the grammar's default start rule)")
+	grammarPath := fs.String("g", "", "grammar file (.pego or .json)")
+	start := fs.String("s", "", "start rule (default: the grammar's default start rule)")
 	allRules := fs.Bool("all-rules", false, "include unreachable rules and all declared types, not only those the start rule uses")
 	output := fs.String("o", "", "output file (default: standard output)")
 	paths, err := parseFlags(fs, args)
@@ -62,7 +62,7 @@ func schemaCmd(args []string, stdout io.Writer) error {
 	if *grammarPath == "" {
 		return errors.New("-g is required")
 	}
-	p, err := loadParser(*grammarPath, *start, compileFlags{})
+	p, err := loadSourceParser(*grammarPath, *start, "schema")
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func loadSchemaOperand(path, start string, allRules bool) (*pego.OutputSchema, e
 		}
 		return &s, nil
 	}
-	p, err := loadParser(path, start, compileFlags{})
+	p, err := loadSourceParser(path, start, "schema diff")
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func isOutputSchema(data []byte) bool {
 func schemaDiffCmd(args []string, stdout io.Writer) error {
 	fs := flag.NewFlagSet("schema diff", flag.ContinueOnError)
 	format := fs.String("f", "text", "output format: text or json")
-	start := fs.String("s", "", "start rule of grammar operands (default: the one saved in a .pegoc, otherwise the grammar's default start rule)")
+	start := fs.String("s", "", "start rule of grammar operands (default: the grammar's default start rule)")
 	allRules := fs.Bool("all-rules", false, "for grammar operands, include unreachable rules and all declared types")
 	paths, err := parseFlags(fs, args)
 	if err != nil {

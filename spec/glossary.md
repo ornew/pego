@@ -15,7 +15,7 @@ definition and the place where the term is defined.
 | character class | `[...]` or `[^...]`: matches one code point from a set of characters and ranges. See [Character Matching](parser-expressions.md#character-classes). |
 | choice | `a / b`: an ordered choice, which commits to the first alternative that succeeds. See [Ordered choice](parser-expressions.md#ordered-choice). |
 | code point | A Unicode code point; the unit in which the input is matched. See [Input and positions](parsing.md#input-and-positions). |
-| compiled grammar | A grammar saved as a `.pegoc` file, with or without its grammar AST, that loads without parsing grammar source. See [Compiled Grammars](compiled-grammars.md). |
+| compiled grammar | A grammar saved as a `.pegoc` file holding the bytecode of one mode (parse, recognize or document), with no grammar AST, that loads without parsing grammar source. See [Compiled Grammars](compiled-grammars.md). |
 | concrete syntax tree (CST) | The tree of nodes that Rule Expressions produce when no action is involved: string nodes, tuples for sequences and lists for repetitions. See [Values and the concrete syntax tree](parser-expressions.md#values-and-the-concrete-syntax-tree). |
 | contextual word | A grammar word interpreted as syntax only in a Declaration Statement or Operators Rule position; the same spelling may be an identifier elsewhere. See [Contextual Words](lexical.md#contextual-words). |
 | cut | `#cut`: commits the enclosing choice to the current alternative. See [Cut](parser-expressions.md#cut). |

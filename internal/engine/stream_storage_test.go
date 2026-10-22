@@ -97,7 +97,7 @@ func TestStreamPrefixAllocationBudget(t *testing.T) {
 }
 
 // Prefix captures and emitted values must survive isolation for both compact
-// and wide repetition instructions, including bytecode loaded without an AST.
+// and wide repetition instructions, including bytecode loaded from a compiled grammar.
 func TestStreamPrefixLoadedRepetitions(t *testing.T) {
 	bounds := []string{"#repeat(0)", "#repeat(2)", "*"}
 	if strconv.IntSize == 64 {
@@ -110,23 +110,18 @@ func TestStreamPrefixLoadedRepetitions(t *testing.T) {
 		}
 		source := `rule main = h:"#head\n" #atomic (x:"x" #atomic)` + bound + ` #stream $$ {text($h) == "#head\n"}`
 		prog := compile(t, source)
-		for _, omitAST := range []bool{false, true} {
-			data, err := prog.MarshalBinaryWith("main", MarshalOptions{OmitAST: omitAST})
-			if err != nil {
-				t.Fatal(err)
-			}
-			saved, _, err := LoadProgram(data, Options{})
-			if err != nil {
-				t.Fatal(err)
-			}
+		for _, mode := range valueModes {
+			saved := saveLoad(t, prog, "main", mode)
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-				if omitAST && backend == Closure {
+				if backend == Closure {
+					err := saved.ParseStreamWith("main", strings.NewReader(text), func(*Node) error { return nil }, servedBy(mode, ParseOptions{Backend: backend}))
+					wantClosureRefused(t, err)
 					continue
 				}
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
-					t.Run(fmt.Sprintf("%s/omitAST=%t/%s/%s", bound, omitAST, backend, unit), func(t *testing.T) {
+					t.Run(fmt.Sprintf("%s/%s/%s/%s", bound, mode, backend, unit), func(t *testing.T) {
 						var retained []*Node
-						err := saved.ParseStreamWith("main", strings.NewReader(text), func(n *Node) error { retained = append(retained, n); return nil }, ParseOptions{Backend: backend, Unit: unit})
+						err := saved.ParseStreamWith("main", strings.NewReader(text), func(n *Node) error { retained = append(retained, n); return nil }, servedBy(mode, ParseOptions{Backend: backend, Unit: unit}))
 						if err != nil || len(retained) != count {
 							t.Fatalf("got %d rows: %v", len(retained), err)
 						}

@@ -171,6 +171,9 @@ func (r *fieldTypeReader) join() (*fieldType, error) {
 	return u, nil
 }
 
+// maxDepth bounds the nesting of a field type that fieldTypeReader reads.
+const maxDepth = 10000
+
 func (r *fieldTypeReader) term() (*fieldType, error) {
 	r.depth++
 	defer func() { r.depth-- }()

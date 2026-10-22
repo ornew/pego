@@ -100,16 +100,19 @@ func TestLintOtherGrammars(t *testing.T) {
 		t.Errorf("got\n%s\nwant\n%s", out, want)
 	}
 
-	// A compiled grammar is linted from its AST, with the start rule saved in it and the start
-	// rules of the grammar.
+	// A compiled grammar holds no grammar to lint: lint needs the source, which it lints with the
+	// start rules of the grammar.
 	several := writeFile(t, "several.pego", "@start(default)\nrule main = \"a\"\n@start\nrule x = \"b\"\nrule y = \"c\"")
 	c := filepath.Join(t.TempDir(), "g.pegoc")
 	if _, err := runCLI(t, "", "compile", "-g", several, "-s", "x", "-o", c); err != nil {
 		t.Fatal(err)
 	}
-	out, err = runCLI(t, "", "lint", "-g", c, "-f", "json")
+	if _, err := runCLI(t, "", "lint", "-g", c, "-f", "json"); err == nil || !strings.Contains(err.Error(), "lint needs the grammar source") {
+		t.Errorf("compiled: %v", err)
+	}
+	out, err = runCLI(t, "", "lint", "-g", several, "-s", "x", "-f", "json")
 	if err != nil || !strings.Contains(out, `"start": "x"`) || !strings.Contains(out, "rule y is never used: no start rule calls it") || strings.Contains(out, "rule main is never used") {
-		t.Errorf("compiled: %v\n%s", err, out)
+		t.Errorf("source: %v\n%s", err, out)
 	}
 
 	// A grammar that does not compile is an error, with the compile errors.

@@ -174,22 +174,10 @@ func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string)
 			if err != nil {
 				t.Fatal(err)
 			}
-			data, err := checked.MarshalBinary("main")
-			if err != nil {
-				t.Fatal(err)
-			}
-			loaded, _, err := LoadProgram(data, Options{})
-			if err != nil {
-				t.Fatal(err)
-			}
-			bare, err := checked.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-			if err != nil {
-				t.Fatal(err)
-			}
-			loadedBare, _, err := LoadProgram(bare, Options{})
-			if err != nil {
-				t.Fatal(err)
-			}
+			loaded := saveLoad(t, checked, "main", CompiledDocument)
+			loadedBare := saveLoad(t, checked, "main", CompiledParse)
+			_, err = loaded.ParseWith("main", "", servedBy(CompiledDocument, ParseOptions{Backend: Closure}))
+			wantClosureRefused(t, err)
 			for _, in := range fieldCheckInputs() {
 				value := fieldCheckValues[in[:1]]
 				accepted := strings.Contains(fields[typ], in[:1])
@@ -198,13 +186,14 @@ func checkConstructedFieldType(t *testing.T, typ, src string, parse func(string)
 					for _, run := range []struct {
 						name string
 						prog *Program
+						mode CompiledMode
 						b    Backend
 					}{
-						{"closure", checked, Closure}, {"bytecode", checked, Bytecode}, {"iterative", checked, BytecodeIterative},
-						{"loaded closure", loaded, Closure}, {"loaded bytecode", loaded, BytecodeIterative},
-						{"bare bytecode", loadedBare, Bytecode},
+						{"closure", checked, CompiledParse, Closure}, {"bytecode", checked, CompiledParse, Bytecode}, {"iterative", checked, CompiledParse, BytecodeIterative},
+						{"document bytecode", loaded, CompiledDocument, Bytecode}, {"document iterative", loaded, CompiledDocument, BytecodeIterative},
+						{"parse bytecode", loadedBare, CompiledParse, Bytecode},
 					} {
-						n, err := run.prog.ParseWith("main", in, ParseOptions{Backend: run.b, Unit: unit})
+						n, err := run.prog.ParseWith("main", in, servedBy(run.mode, ParseOptions{Backend: run.b, Unit: unit}))
 						got := resultJSON(n, err)
 						if want == "" {
 							want = got
@@ -308,14 +297,14 @@ func TestCompiledFieldChecksValidation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if data[len(compiledMagic)+1] != isaVersion {
-		t.Fatalf("instruction set %d", data[len(compiledMagic)+1])
+	if data[isaOffset] != isaVersion {
+		t.Fatalf("instruction set %d", data[isaOffset])
 	}
 	d := append([]byte(nil), data[:len(data)-4]...)
-	d[len(compiledMagic)+1] = isaVersion - 1
+	d[isaOffset] = isaVersion - 1
 	d = binary.LittleEndian.AppendUint32(d, crc32.ChecksumIEEE(d))
 	// A file of an earlier instruction set is rejected before its records are read.
-	if _, _, err := LoadProgram(d, Options{}); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
+	if _, _, err := LoadProgram(d); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
 		t.Fatalf("earlier instruction set: %v", err)
 	}
 	m := *prog.Module()

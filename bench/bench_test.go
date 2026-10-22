@@ -465,8 +465,8 @@ func BenchmarkStream(b *testing.B) {
 	})
 }
 
-// BenchmarkPrepare compares compiling a grammar from source with loading a saved grammar (with and without
-// the AST), including backend setup on the first parse after loading.
+// BenchmarkPrepare compares compiling a grammar from source with loading a compiled grammar of each mode,
+// including backend setup on the first parse after loading.
 func BenchmarkPrepare(b *testing.B) {
 	for _, path := range []string{"../parsers/json/json.pego", "../examples/minilang/minilang.pego"} {
 		name := strings.TrimSuffix(path[strings.LastIndex(path, "/")+1:], ".pego")
@@ -475,8 +475,6 @@ func BenchmarkPrepare(b *testing.B) {
 			b.Fatal(err)
 		}
 		p := load(b, path)
-		full, _ := p.MarshalBinary()
-		bare, _ := p.Marshal(pego.WithoutAST())
 		b.Run(name+"/source", func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
@@ -486,20 +484,28 @@ func BenchmarkPrepare(b *testing.B) {
 			}
 		})
 		for _, c := range []struct {
-			name string
-			data []byte
-			b    pego.Backend
-		}{{"pegoc/closure", full, pego.Closure}, {"pegoc/bytecode", full, pego.Bytecode}, {"pegoc-noast/bytecode", bare, pego.Bytecode}} {
-			b.Run(name+"/"+c.name, func(b *testing.B) {
+			mode pego.CompiledMode
+			opts []pego.ParseOption // a parse the mode serves
+		}{
+			{pego.CompiledParse, nil},
+			{pego.CompiledRecognize, []pego.ParseOption{pego.RecognizeOnly()}},
+			{pego.CompiledDocument, []pego.ParseOption{pego.WithTrace(func(pego.TraceEvent) {})}},
+		} {
+			data, err := p.Marshal(c.mode)
+			if err != nil {
+				b.Fatal(err)
+			}
+			opts := append([]pego.ParseOption{pego.WithBackend(pego.Bytecode)}, c.opts...)
+			b.Run(name+"/pegoc/"+c.mode.String()+"/bytecode", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
-					lp, err := pego.LoadParser(c.data)
+					lp, err := pego.LoadParser(data)
 					if err != nil {
 						b.Fatal(err)
 					}
-					lp.Parse("", pego.WithBackend(c.b)) // set up the backend (the parse may fail)
+					lp.Parse("", opts...) // set up the backend (the parse may fail)
 				}
-				b.ReportMetric(float64(len(c.data)), "file-bytes") // after the loop, which resets metrics
+				b.ReportMetric(float64(len(data)), "file-bytes") // after the loop, which resets metrics
 			})
 		}
 	}

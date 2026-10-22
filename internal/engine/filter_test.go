@@ -102,26 +102,26 @@ rule main = v1:"a" => Out{Items: filter(list($v1, nil), (x) => x != nil)}`,
 
 func TestFilterCompiledInstructionSet(t *testing.T) {
 	program := compile(t, filterIdentitySource)
-	for _, omit := range []bool{false, true} {
-		data, err := program.MarshalBinaryWith("main", MarshalOptions{OmitAST: omit})
-		if err != nil || data[len(compiledMagic)+1] != isaVersion {
+	for _, mode := range valueModes {
+		data, err := program.Marshal("main", mode)
+		if err != nil || data[isaOffset] != isaVersion {
 			t.Fatalf("filter ISA: %v", err)
 		}
-		loaded, _, err := LoadProgram(data, Options{})
+		loaded, _, err := LoadProgram(data)
 		if err != nil {
 			t.Fatal(err)
 		}
 		for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 			for _, unit := range []PositionUnit{CodePoints, Bytes} {
 				options := ParseOptions{Backend: backend, Unit: unit}
-				if got, want := resultJSON(loaded.ParseWith("main", "ab", options)), resultJSON(program.ParseWith("main", "ab", options)); got != want {
+				if got, want := resultJSON(loaded.ParseWith("main", "ab", servedBy(mode, options))), resultJSON(program.ParseWith("main", "ab", options)); got != want {
 					t.Fatalf("loaded filter: %s / %s", got, want)
 				}
 			}
 		}
-		data[len(compiledMagic)+1] = isaVersion - 1
+		data[isaOffset] = isaVersion - 1
 		binary.LittleEndian.PutUint32(data[len(data)-4:], crc32.ChecksumIEEE(data[:len(data)-4]))
-		if _, _, err := LoadProgram(data, Options{}); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
+		if _, _, err := LoadProgram(data); err == nil || !strings.Contains(err.Error(), "compile the grammar again") {
 			t.Fatalf("under-declared filter ISA accepted: %v", err)
 		}
 	}

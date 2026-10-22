@@ -157,20 +157,13 @@ func TestDefaultValueCompiledRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := result(prog, "x")
-	for _, withAST := range []bool{true, false} {
-		data, err := prog.MarshalBinaryWith("main", MarshalOptions{OmitAST: !withAST})
-		if err != nil {
-			t.Fatal(err)
-		}
-		loaded, _, err := LoadProgram(data, Options{})
-		if err != nil {
-			t.Fatalf("with AST %v: %v", withAST, err)
-		}
+	for _, mode := range valueModes {
+		loaded := saveLoad(t, prog, "main", mode)
 		if !loaded.DefaultValue() {
-			t.Errorf("with AST %v: the loaded program lost the option", withAST)
+			t.Errorf("%s mode: the loaded program lost the option", mode)
 		}
-		if got := result(loaded, "x"); got != want {
-			t.Errorf("with AST %v: got %s, want %s", withAST, got, want)
+		if got := resultWith(loaded, "x", servedBy(mode, ParseOptions{})); got != want {
+			t.Errorf("%s mode: got %s, want %s", mode, got, want)
 		}
 	}
 }

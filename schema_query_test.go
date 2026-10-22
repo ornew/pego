@@ -67,43 +67,30 @@ rule unused = "z"`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	// A file with the AST derives the schema from the AST, as the source does.
-	fromFile, err := loaded.OutputSchema()
-	if err != nil {
+	// A compiled grammar holds no schema in any mode: the schema comes from the grammar source.
+	if _, err := loaded.OutputSchema(); !errors.Is(err, pego.ErrSchemaUnavailable) || !strings.Contains(err.Error(), "grammar source") {
 		t.Fatalf("loaded parser schema: %v", err)
 	}
-	if got, want := marshalJSON(t, fromFile), marshalJSON(t, s); !bytes.Equal(got, want) {
-		t.Fatalf("loaded schema differs:\n%s\n%s", got, want)
+	for _, mode := range []pego.CompiledMode{pego.CompiledParse, pego.CompiledRecognize, pego.CompiledDocument} {
+		data, err := p.Marshal(mode)
+		if err != nil {
+			t.Fatal(err)
+		}
+		loaded, err := pego.LoadParser(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := loaded.OutputSchema(); !errors.Is(err, pego.ErrSchemaUnavailable) || !strings.Contains(err.Error(), "grammar source") {
+			t.Fatalf("%s mode: loaded parser schema: %v", mode, err)
+		}
 	}
-	// Without the AST, the file has no schema unless it was saved with one.
-	bare, err := p.Marshal(pego.WithoutAST())
+	// The source keeps its schema after saving.
+	again, err := p.OutputSchema()
 	if err != nil {
 		t.Fatal(err)
 	}
-	bareParser, err := pego.LoadParser(bare)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := bareParser.OutputSchema(); !errors.Is(err, pego.ErrSchemaUnavailable) || !strings.Contains(err.Error(), "-schema") {
-		t.Fatalf("AST-less parser without a schema section: %v", err)
-	}
-	withSchema, err := p.Marshal(pego.WithoutAST(), pego.WithSchema())
-	if err != nil {
-		t.Fatal(err)
-	}
-	stored, err := pego.LoadParser(withSchema)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fromSection, err := stored.OutputSchema()
-	if err != nil {
-		t.Fatalf("AST-less parser with a schema section: %v", err)
-	}
-	if got, want := marshalJSON(t, fromSection), marshalJSON(t, s); !bytes.Equal(got, want) {
-		t.Fatalf("stored schema differs:\n%s\n%s", got, want)
-	}
-	if _, err := p.Marshal(pego.WithSchema()); err == nil {
-		t.Fatal("WithSchema accepted with the AST")
+	if got, want := marshalJSON(t, again), marshalJSON(t, s); !bytes.Equal(got, want) {
+		t.Fatalf("source schema differs after saving:\n%s\n%s", got, want)
 	}
 }
 

@@ -40,8 +40,10 @@ func (prog *Program) admitParse(start string, o ParseOptions, stream bool) (*Pro
 	if stream && !isStream {
 		return nil, nil, nil, fmt.Errorf("rule %s has no #stream repetition", start)
 	}
-	if o.Recognize && prog.Grammar == nil && prog.recognitionModule == nil {
-		return nil, nil, nil, fmt.Errorf("recognition needs the grammar or a recognition bundle; recompile this compiled grammar from source")
+	if o.Recognize {
+		if err := prog.recognizable(); err != nil {
+			return nil, nil, nil, err
+		}
 	}
 	c := newWorkControl(o.Context, o.WorkLimits)
 	if !workControlsEnabled && c != nil {
@@ -65,12 +67,12 @@ func (prog *Program) admitParse(start string, o ParseOptions, stream bool) (*Pro
 }
 
 // preflightRule uses compilation metadata without materializing a Module or VM.
-// Programs loaded without an AST already own their validated immutable module.
+// Programs loaded from a compiled grammar already own their validated immutable module.
 func (prog *Program) preflightRule(b Backend, name string, stream bool) (bool, error) {
 	switch prog.backend(b) {
 	case Closure:
 		if prog.Grammar == nil {
-			return false, fmt.Errorf("the closure backend needs the grammar, which the compiled grammar omits")
+			return false, errClosureNeedsSource
 		}
 	case Bytecode, BytecodeIterative:
 	default:

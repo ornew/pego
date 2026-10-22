@@ -55,8 +55,8 @@ keywords first, and to make sure that they are whole words: `rule item =  ("true
 [Sampling inputs and fuzzing](sampling-and-fuzzing.md#coverage).)
 
 `pego lint` exits with status 1 if it finds an error, and 0 otherwise; with `-strict`, warnings fail too. Hints never
-fail. The grammar can be PEGO source, JSON or a compiled grammar with the AST; the start rule is the one `-s`
-names, otherwise the one a compiled grammar saved, otherwise the grammar's default start rule. A grammar that does not compile is reported with its compile errors,
+fail. The grammar is PEGO source or JSON (a compiled grammar holds no grammar to lint); the start rule is the one `-s`
+names, otherwise the grammar's default start rule. A grammar that does not compile is reported with its compile errors,
 like the other commands do.
 
 With `-f json`, the findings are printed as one JSON document:
@@ -129,7 +129,7 @@ func TestGrammarLint(t *testing.T) {
 }
 ```
 
-A grammar decoded from JSON or loaded from a compiled grammar has no source positions; its findings have the zero
+A grammar decoded from JSON has no source positions; its findings have the zero
 `Pos` and name the rule they are in.
 
 ## Severities
@@ -367,7 +367,7 @@ rule main = (
 - `// lint:file-ignore check reason` applies to the whole grammar.
 
 A directive that names an unknown check, or that suppresses nothing, is reported as `lint-directive`, so that
-suppressions do not outlive what they excused. Grammars without comments (JSON, compiled grammars) use `-disable` or
+suppressions do not outlive what they excused. Grammars without comments (JSON) use `-disable` or
 `pego.DisableChecks` instead.
 
 ## What the Linter Does Not Find

@@ -173,7 +173,8 @@ func WithUnit(u PositionUnit) ParseOption {
 type Backend = engine.Backend
 
 const (
-	// DefaultBackend uses Closure when the grammar AST is available and Bytecode otherwise.
+	// DefaultBackend uses Closure for a parser compiled from a grammar and Bytecode for one
+	// loaded from a compiled grammar.
 	DefaultBackend = engine.Default
 	// Closure compiles parsing expressions into Go closures.
 	Closure = engine.Closure
@@ -383,7 +384,8 @@ type ParseStats = engine.Stats
 // NewDocument creates a Document for text. opts select its fixed unit and backend
 // and the defaults for later Parse calls. Construction and each Parse use fresh
 // work counters. Edit uses the same unit and is outside parse work controls.
-// It returns an error if the backend is unavailable (Closure without the AST).
+// It returns an error if the backend is unavailable (Closure on a loaded parser) or the parser
+// is loaded from a compiled grammar that is not in document mode.
 func (p *Parser) NewDocument(text string, opts ...ParseOption) (*Document, error) {
 	d, err := p.prog.NewDocumentWith(p.start, text, parseOptions(opts))
 	if err != nil {
@@ -589,37 +591,36 @@ func GenerateTypeScriptRuntime() ([]GeneratedFile, error) {
 	return engine.GenerateTS(nil, engine.GenOptions{Runtime: RuntimeOnly})
 }
 
-// MarshalBinary encodes the parser (bytecode, grammar AST and start rule) in the .pegoc format.
-// LoadParser restores it without parsing, analyzing, type checking or compiling the grammar again.
+// CompiledMode is the mode of a compiled grammar file, chosen when it is saved. A file holds the
+// module of one mode and serves only the parses of that mode; the closure backend, Grammar and
+// OutputSchema need the grammar source.
+type CompiledMode = engine.CompiledMode
+
+const (
+	// CompiledParse serves Parse, ParsePrefix, ParseStream and Iterate without WithTrace or
+	// WithProfile.
+	CompiledParse = engine.CompiledParse
+	// CompiledRecognize serves RecognizeOnly parses without WithTrace or WithProfile.
+	CompiledRecognize = engine.CompiledRecognize
+	// CompiledDocument serves NewDocument, and Parse, ParsePrefix, ParseStream and Iterate with
+	// WithTrace or WithProfile.
+	CompiledDocument = engine.CompiledDocument
+)
+
+// ParseCompiledMode returns the mode named s: "parse", "recognize" or "document".
+func ParseCompiledMode(s string) (CompiledMode, error) { return engine.ParseCompiledMode(s) }
+
+// MarshalBinary encodes the parser in parse mode (CompiledParse); see Marshal.
 func (p *Parser) MarshalBinary() ([]byte, error) {
-	return p.prog.MarshalBinary(p.start)
+	return p.prog.Marshal(p.start, CompiledParse)
 }
 
-// MarshalOption configures Marshal.
-type MarshalOption func(*engine.MarshalOptions)
-
-// WithoutAST omits the grammar AST. The file becomes smaller and holds only the bytecode needed to run,
-// but a parser loaded from it can only use the bytecode backends, and its Grammar method returns nil.
-func WithoutAST() MarshalOption {
-	return func(o *engine.MarshalOptions) { o.OmitAST = true }
-}
-
-// WithSchema stores the output schema in a file without the AST (use it with WithoutAST), so that
-// the parser loaded from the file can export it with OutputSchema. The schema is not written with
-// the AST: a parser loaded with the AST derives its schema from the AST, and Marshal fails when
-// WithSchema is given without WithoutAST. A file saved without the schema returns an error matching
-// ErrSchemaUnavailable from OutputSchema.
-func WithSchema() MarshalOption {
-	return func(o *engine.MarshalOptions) { o.Schema = true }
-}
-
-// Marshal encodes the parser like MarshalBinary, with options.
-func (p *Parser) Marshal(opts ...MarshalOption) ([]byte, error) {
-	var o engine.MarshalOptions
-	for _, opt := range opts {
-		opt(&o)
-	}
-	return p.prog.MarshalBinaryWith(p.start, o)
+// Marshal encodes the parser in the .pegoc format: the bytecode of mode and the start rule.
+// LoadParser restores it without parsing, analyzing, type checking or compiling the grammar again.
+// A loaded parser is saved only in its own mode (CompiledMode), which reproduces the file it was
+// loaded from; saving another mode needs the grammar source.
+func (p *Parser) Marshal(mode CompiledMode) ([]byte, error) {
+	return p.prog.Marshal(p.start, mode)
 }
 
 // IsCompiled reports whether data is a compiled grammar written by MarshalBinary or Marshal.
@@ -627,9 +628,10 @@ func IsCompiled(data []byte) bool { return engine.IsCompiled(data) }
 
 // LoadParser loads a parser saved by MarshalBinary or Marshal. Corruption is detected by a checksum and
 // structural validation, but types are not checked again: load only data from trusted sources, such as
-// the output of pego compile or MarshalBinary.
+// the output of pego compile or MarshalBinary. The parser runs on the bytecode backends and serves
+// the parses of the file's mode only; any other parse returns an error that names the mode it needs.
 func LoadParser(data []byte) (*Parser, error) {
-	prog, start, err := engine.LoadProgram(data, engine.Options{})
+	prog, start, err := engine.LoadProgram(data)
 	if err != nil {
 		return nil, err
 	}
@@ -638,6 +640,10 @@ func LoadParser(data []byte) (*Parser, error) {
 	}
 	return &Parser{prog: prog, start: start}, nil
 }
+
+// CompiledMode returns the mode of a parser loaded with LoadParser and true, or false for a parser
+// compiled from a grammar, which serves every mode.
+func (p *Parser) CompiledMode() (CompiledMode, bool) { return p.prog.Mode() }
 
 // WithStart returns a parser that starts at the rule name, which must be a start rule; an empty
 // name selects the grammar's default start rule. The compiled grammar is shared.
@@ -662,8 +668,7 @@ func (p *Parser) Starts() []string { return p.prog.Starts() }
 // start.
 func (p *Parser) DefaultStart() string { return p.prog.DefaultStart() }
 
-// Grammar returns the parser's grammar. The grammar of a loaded parser has no source positions, and it is
-// nil for a parser saved without the AST.
+// Grammar returns the parser's grammar, or nil for a parser loaded from a compiled grammar.
 func (p *Parser) Grammar() *grammar.Grammar { return p.prog.SourceGrammar() }
 
 // ParseRuntimeMode returns the runtime mode named s: "embed", "import" or "only".

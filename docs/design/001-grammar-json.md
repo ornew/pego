@@ -118,7 +118,7 @@ The example omits the optional `source` objects.
 
 1.  **Type registry**: Every concrete AST type is registered by name (`grammar/json.go`).
 2.  **Reflection-based codec**: `MarshalJSON` and `UnmarshalJSON` walk the structures with reflection, adding or resolving `@type` for interface-typed values. New AST types only need to be registered.
-3.  **Two-way conversion**: `grammar.Format` prints a grammar as PEGO source, so JSON and PEGO source can be converted in both directions (`pego convert`, which also reads compiled `.pegoc` files that include the AST; `pego fmt` formats `.pego` source).
+3.  **Two-way conversion**: `grammar.Format` prints a grammar as PEGO source, so JSON and PEGO source can be converted in both directions (`pego convert`; `pego fmt` formats `.pego` source).
 4.  **Testing**: A round-trip test covers every AST type (`grammar/json_test.go`).
 
 ## Conclusion

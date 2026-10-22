@@ -578,7 +578,8 @@ func validateStreamRecovery(code []Instr) error {
 	return nil
 }
 
-// moduleProgram builds a program without an AST (it can only be run by the bytecode backend).
+// moduleProgram builds a program from a module alone, without the grammar; only the bytecode
+// backends run it.
 func moduleProgram(m *Module) *Program {
 	prog := &Program{byName: map[string]*rule{}, types: map[string]grammar.TypeDecl{}, sourceInfo: m.SourceInfo, defaultValue: m.DefaultValue}
 	for _, t := range m.Types {

@@ -178,18 +178,13 @@ func TestDocumentBatchFreshParity(t *testing.T) {
 rule item = .`, incrementalGrammar, `rule main = ("a" @error("need a") #recover(skip=.))* $$`} {
 		original := compile(t, grammar)
 		programs := []*Program{original}
-		data, err := original.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-		if err != nil {
-			t.Fatal(err)
-		}
-		loaded, _, err := LoadProgram(data, Options{})
-		if err != nil {
-			t.Fatal(err)
-		}
+		loaded := saveLoad(t, original, "main", CompiledDocument)
 		programs = append(programs, loaded)
 		for pi, p := range programs {
 			for _, back := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				if pi == 1 && back == Closure {
+					_, err := p.NewDocumentWith("main", "", ParseOptions{Backend: back})
+					wantClosureRefused(t, err)
 					continue
 				}
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
@@ -235,7 +230,8 @@ rule item = .`, incrementalGrammar, `rule main = ("a" @error("need a") #recover(
 									t.Fatal("original-coordinate text/version mismatch")
 								}
 								got, err := d.Parse()
-								want, werr := p.ParseWith("main", wantText, ParseOptions{Backend: back, Unit: unit})
+								// A document-mode program parses whole texts only when traced.
+								want, werr := p.ParseWith("main", wantText, servedBy(CompiledDocument, ParseOptions{Backend: back, Unit: unit}))
 								if dump(t, got, err) != dump(t, want, werr) {
 									t.Fatalf("batch%d: %q got%s want%s", i, wantText, dump(t, got, err), dump(t, want, werr))
 								}

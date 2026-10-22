@@ -34,13 +34,10 @@ node and the labels of its captures. Rule constraints need it.
 - `sourceInfo` records whether the parser was compiled with source information.
 - Entries, fields, join alternatives and captures have a stable order, so repeated
   exports of one checked grammar encode to identical JSON bytes.
-- Export needs checked grammar metadata, which a loaded parser gets in one of two ways.
-  A parser loaded from a file with the AST derives the schema from the AST on the first
-  export. A parser loaded from a file without the AST exports the schema section that
-  the file holds, and such a file holds one only when it was saved with the schema
-  (`pego compile -no-ast -schema`, or `pego.WithSchema` with `pego.WithoutAST`). For any
-  other file without the AST, the export fails with an error that matches
-  `pego.ErrSchemaUnavailable`.
+- Export needs checked grammar metadata, which only the grammar source has. A
+  parser loaded from a compiled grammar holds none, in any mode: its export fails
+  with an error that matches `pego.ErrSchemaUnavailable`, and `pego schema`
+  rejects a compiled grammar. Export the schema from the grammar source.
 
 ### Shapes
 
@@ -188,7 +185,7 @@ matches or an error.
 
 | Condition | Result |
 |:--|:--|
-| Schema export from an AST-less file without a schema section | `pego.ErrSchemaUnavailable` |
+| Schema export from a parser loaded from a compiled grammar | `pego.ErrSchemaUnavailable` |
 | Invalid schema | An error from `Validate`, `CompileStructuralQuery`, `PrepareQuerySchema` or `DiffOutputSchemas` |
 | Pattern that cannot match any value the schema describes | An error from compilation |
 | Cycle on the active path during evaluation | `pego.ErrQueryCycle` |

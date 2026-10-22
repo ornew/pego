@@ -24,7 +24,12 @@ func explainCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 	// failing call, since the error positions are known only at its end: a 2.3 MB JSON input with
 	// an error at the end has 2.3 million of them, while the untraced parse takes about a quarter
 	// of the command's time.
-	_, perr := p.Parse(src, opts...)
+	first := opts
+	if _, loaded := p.CompiledMode(); loaded {
+		// A compiled grammar here is in document mode, which serves only traced parses.
+		first = append(slices.Clip(opts), pego.WithTrace(func(pego.TraceEvent) {}))
+	}
+	_, perr := p.Parse(src, first...)
 	var errs []*pego.SyntaxError
 	var se *pego.SyntaxError
 	var list pego.SyntaxErrors

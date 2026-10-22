@@ -118,8 +118,7 @@ func (s *OutputSchema) UnmarshalJSON(data []byte) error {
 
 // OutputSchemaPrototype exports the start rule, the rules it calls or whose values its values
 // contain, and the struct types they refer to; or every rule and type with allRules. It has no
-// effect on parsing or generation. A program loaded without the AST exports the schema section it
-// was saved with; a program loaded with the AST exports the schema checked from its grammar.
+// effect on parsing or generation. A program loaded from a compiled grammar has no schema.
 func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSchema, error) {
 	if p == nil {
 		return nil, ErrSchemaUnavailable
@@ -127,36 +126,10 @@ func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSch
 	if err := EntryError(start); err != nil {
 		return nil, err
 	}
-	if p.storedSchema != nil {
-		return p.storedSchema.export(start, allRules)
-	}
-	checked, err := p.schemaProgram()
-	if err != nil {
-		return nil, err
-	}
-	return checked.exportSchema(start, allRules)
-}
-
-// schemaProgram returns the checked program that a schema is exported from: p itself when it was
-// checked, or, for a program loaded with the AST (which is not type checked on load), the program
-// built from its grammar on first use. The grammar is checked the way Compile checks it, with the
-// options that the file records.
-func (p *Program) schemaProgram() (*Program, error) {
-	if p.typed != nil {
-		return p, nil
-	}
 	if p.Grammar == nil {
-		return nil, errSchemaOmitted
+		return nil, errSchemaNeedsSource
 	}
-	p.schemaOnce.Do(func() {
-		checked, err := build(p.SourceGrammar(), Options{SourceInfo: p.sourceInfo, DefaultValue: p.defaultValue}, nil)
-		if err != nil {
-			p.schemaErr = fmt.Errorf("schema of the compiled grammar: %w", err)
-			return
-		}
-		p.schemaChecked = checked
-	})
-	return p.schemaChecked, p.schemaErr
+	return p.exportSchema(start, allRules)
 }
 
 // exportSchema exports the schema of a checked program; see OutputSchemaPrototype.

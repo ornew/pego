@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"strings"
@@ -32,16 +33,20 @@ func TestInvalidCharacterClassEntryPoints(t *testing.T) {
 					}
 				})
 			}
-			// Encode a malformed AST alongside an otherwise valid module to
-			// verify the actual compiled-file intake, not just its rebuild helper.
+			// A compiled file holds the module alone: a malformed AST beside a valid module
+			// does not reach the file, which loads as the module's own.
 			p := compile(t, `rule main = [a-z]`)
-			p.Grammar = g
-			data, err := p.MarshalBinary("main")
+			want, err := p.MarshalBinary("main")
 			if err != nil {
 				t.Fatal(err)
 			}
-			if loaded, _, err := LoadProgram(data, Options{}); loaded != nil || err == nil || !strings.Contains(err.Error(), "ranges[0]") {
-				t.Fatalf("compiled intake accepted invalid AST: %v, %v", loaded != nil, err)
+			p.Grammar = g
+			data, err := p.MarshalBinary("main")
+			if err != nil || !bytes.Equal(data, want) {
+				t.Fatalf("compiled file depends on the AST: %v", err)
+			}
+			if loaded, _, err := LoadProgram(data); err != nil || loaded.Grammar != nil {
+				t.Fatalf("load: %v", err)
 			}
 		})
 	}

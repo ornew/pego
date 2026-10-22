@@ -170,9 +170,10 @@ actual end of the entire supplied string, so a fragment is confined by slicing
 both its beginning and its end. Cuts and left recursion keep their ordinary
 meaning. Prefix parsing shares no memo entries with a `Document`, does not
 shift positions to absolute coordinates and does not map escaped or noncontiguous
-fragments. It can run concurrently on one parser. Compiled grammars support it
-through the bytecode backends; recognition keeps the recognition requirements of
-the compiled grammar.
+fragments. It can run concurrently on one parser. A compiled grammar supports it
+on the bytecode backends in the mode that serves the parse: a value parse in parse
+mode, recognition in recognize mode and a traced parse in document mode (see
+[Compiled Grammars](compiled-grammars.md#operations-of-a-loaded-parser)).
 
 ## Incremental Documents
 

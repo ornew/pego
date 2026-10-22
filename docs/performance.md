@@ -189,7 +189,7 @@ PEGO backends return the same results.
 | Incremental | `examples/minilang` | Repeated one-character insertions and deletions in 300 functions | Memo reuse with `Document` (compared with a full parse each time) |
 | Incremental, long | `parsers/csv` | Repeated one-character insertions and deletions in the middle of 50,000 records | Resuming long repetitions with `Document` |
 | Stream | `parsers/csv` | 50,000 rows (2.2 MB) | Reading and discarding with `ParseStream` |
-| Prepare | JSON, minilang | None | Compiling from source and loading `.pegoc` (with and without the AST) |
+| Prepare | JSON, minilang | None | Compiling from source and loading `.pegoc` (in each mode) |
 
 The 2026-10-09 run and the current analysis use the ready-made grammars in `parsers/csv` and `parsers/xml`.
 Older runs used the simpler grammars of `examples/csv` and `examples/xml`, since removed. Their figures do not

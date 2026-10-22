@@ -82,13 +82,17 @@ func legacyStreamRecovery(t *testing.T, streamFirst bool) *Program {
 func TestCompiledStreamRecoveryRejected(t *testing.T) {
 	for _, streamFirst := range []bool{false, true} {
 		p := legacyStreamRecovery(t, streamFirst)
-		for _, omit := range []bool{false, true} {
-			data, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: omit})
+		for _, mode := range allModes {
+			data, err := p.Marshal("main", mode)
 			if err != nil {
-				t.Fatal(err)
+				// Building the recognizer of recognize mode rejects the shape before saving.
+				if !strings.Contains(err.Error(), "recover") {
+					t.Errorf("legacy streamFirst=%v %s mode save: %v", streamFirst, mode, err)
+				}
+				continue
 			}
-			if _, _, err := LoadProgram(data, Options{}); err == nil || !strings.Contains(err.Error(), "recover") {
-				t.Errorf("legacy streamFirst=%v omit=%v: %v", streamFirst, omit, err)
+			if _, _, err := LoadProgram(data); err == nil || !strings.Contains(err.Error(), "recover") {
+				t.Errorf("legacy streamFirst=%v %s mode: %v", streamFirst, mode, err)
 			}
 		}
 	}
@@ -98,27 +102,29 @@ func TestStreamElementRecovery(t *testing.T) {
 	for _, body := range []string{`("ab" #recover(skip=[^a]+))`, `(("ab" #recover(skip=[^a]+)) #recover(skip="!"))`, `item`} {
 		p := compile(t, `rule main = `+body+`+ #stream $$
 rule item = "ab" @error(message="record") #recover(skip=[^a]+)`)
-		for _, omit := range []bool{false, true} {
-			data, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: omit})
+		for _, mode := range valueModes {
+			data, err := p.Marshal("main", mode)
 			if err != nil {
 				t.Fatal(err)
 			}
-			loaded, _, err := LoadProgram(data, Options{})
+			loaded, _, err := LoadProgram(data)
 			if err != nil {
 				t.Fatal(err)
 			}
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-				if omit && backend == Closure {
+				if backend == Closure {
+					err := loaded.ParseStreamWith("main", strings.NewReader("abX!ab"), func(*Node) error { return nil }, servedBy(mode, ParseOptions{Backend: backend}))
+					wantClosureRefused(t, err)
 					continue
 				}
 				for _, unit := range []PositionUnit{CodePoints, Bytes} {
 					count := 0
-					err := loaded.ParseStreamWith("main", strings.NewReader("abX!ab"), func(*Node) error { count++; return nil }, ParseOptions{Backend: backend, Unit: unit})
+					err := loaded.ParseStreamWith("main", strings.NewReader("abX!ab"), func(*Node) error { count++; return nil }, servedBy(mode, ParseOptions{Backend: backend, Unit: unit}))
 					var recovered SyntaxErrors
 					if !errors.As(err, &recovered) || len(recovered) != 1 || count != 3 {
-						t.Errorf("%s omit=%v %s/%s: count=%d error=%v", body, omit, backend, unit, count, err)
+						t.Errorf("%s %s mode %s/%s: count=%d error=%v", body, mode, backend, unit, count, err)
 					}
-					again, err := loaded.MarshalBinary("main")
+					again, err := loaded.Marshal("main", mode)
 					if err != nil || !bytes.Equal(data, again) {
 						t.Errorf("roundtrip: %v", err)
 					}
@@ -185,7 +191,7 @@ func BenchmarkStreamRecoveryPreparation(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		data, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
+		data, err := p.MarshalBinary("main")
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -200,7 +206,7 @@ func BenchmarkStreamRecoveryPreparation(b *testing.B) {
 		b.Run(fmt.Sprintf("LoadBare/%d", n), func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				if _, _, err := LoadProgram(data, Options{}); err != nil {
+				if _, _, err := LoadProgram(data); err != nil {
 					b.Fatal(err)
 				}
 			}
