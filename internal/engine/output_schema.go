@@ -167,6 +167,10 @@ func (p *Program) exportSchema(start string, allRules bool) (*OutputSchema, erro
 	if p.byName[start] == nil {
 		return nil, fmt.Errorf("unknown schema start rule %q", start)
 	}
+	// Without all rules, the export is the start rule's reachable part, which is stored per start rule.
+	if !allRules && !slices.Contains(p.starts, start) {
+		return nil, fmt.Errorf("unknown schema start rule %q", start)
+	}
 	values := p.valueTypes()
 	if values == nil {
 		return nil, ErrSchemaUnavailable

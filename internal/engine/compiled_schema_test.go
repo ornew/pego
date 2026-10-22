@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -286,5 +287,18 @@ rule helper = "y"`)
 		if !bytes.Equal(wj, gj) {
 			t.Fatalf("start %q: stored all-rules schema differs from the source", start)
 		}
+	}
+	// Without all rules only start rules export: a rule that is not a start rule is an unknown start on
+	// both paths, with the same error.
+	for _, start := range []string{"helper", "nosuch"} {
+		_, wantErr := p.OutputSchemaPrototype(start, false)
+		_, gotErr := loaded.OutputSchemaPrototype(start, false)
+		if wantErr == nil || gotErr == nil || wantErr.Error() != gotErr.Error() ||
+			wantErr.Error() != fmt.Sprintf("unknown schema start rule %q", start) {
+			t.Fatalf("start %q without all rules: source error %v, stored error %v", start, wantErr, gotErr)
+		}
+	}
+	if _, err := p.OutputSchemaPrototype("main", false); err != nil {
+		t.Fatalf("start rule main: %v", err)
 	}
 }
