@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"slices"
 	"sort"
 
@@ -355,27 +354,38 @@ func schemaValue(t ty) (SchemaShape, error) {
 		}
 		s := SchemaShape{Kind: "node", Value: &v}
 		// A name captured in several places (an alternative, or a lookahead beside the tuple)
-		// has one entry: its locations are the union of the places, and its shapes are joined.
-		index := map[string]int{}
+		// has one entry: its locations are the union of the places, and its type is the join of
+		// the types of the places, joined once so that the result is flat and sorted.
+		type capGroup struct {
+			name  string
+			paths [][]int
+			side  bool
+			types []ty
+		}
+		var groups []*capGroup
+		index := map[string]*capGroup{}
 		for _, c := range t.caps {
-			cs, err := schemaValue(c.t)
-			if err != nil {
-				return SchemaShape{}, fmt.Errorf("capture %s: %w", c.name, err)
+			g, ok := index[c.name]
+			if !ok {
+				g = &capGroup{name: c.name}
+				index[c.name] = g
+				groups = append(groups, g)
 			}
 			var paths [][]int
 			for _, path := range c.paths {
 				paths = append(paths, append([]int{}, path...))
 			}
-			if i, ok := index[c.name]; ok {
-				capture := &s.Captures[i]
-				capture.Paths = mergeCapturePaths(capture.Paths, paths)
-				capture.Side = capture.Side || c.side
-				capture.Shape = joinSchemaShapes(capture.Shape, cs)
-				continue
+			g.paths = mergeCapturePaths(g.paths, paths)
+			g.side = g.side || c.side
+			g.types = append(g.types, c.t)
+		}
+		sort.Slice(groups, func(i, j int) bool { return groups[i].name < groups[j].name })
+		for _, g := range groups {
+			cs, err := schemaValue(vjoin(g.types...))
+			if err != nil {
+				return SchemaShape{}, fmt.Errorf("capture %s: %w", g.name, err)
 			}
-			sort.Slice(paths, func(i, j int) bool { return slices.Compare(paths[i], paths[j]) < 0 })
-			index[c.name] = len(s.Captures)
-			s.Captures = append(s.Captures, SchemaCapture{Name: c.name, Paths: paths, Side: c.side, Shape: cs})
+			s.Captures = append(s.Captures, SchemaCapture{Name: g.name, Paths: g.paths, Side: g.side, Shape: cs})
 		}
 		return s, nil
 	case tupleTy:
@@ -424,14 +434,4 @@ func mergeCapturePaths(a, b [][]int) [][]int {
 	out := append(append([][]int{}, a...), b...)
 	sort.Slice(out, func(i, j int) bool { return slices.Compare(out[i], out[j]) < 0 })
 	return slices.CompactFunc(out, func(x, y []int) bool { return slices.Equal(x, y) })
-}
-
-// joinSchemaShapes returns the shape of values that are either a or b. Equal shapes stay as they are.
-func joinSchemaShapes(a, b SchemaShape) SchemaShape {
-	if reflect.DeepEqual(a, b) {
-		return a
-	}
-	alts := []SchemaShape{a, b}
-	sortSchemaAlternatives(alts)
-	return SchemaShape{Kind: "join", Alternatives: alts}
 }

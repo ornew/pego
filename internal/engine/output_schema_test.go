@@ -157,9 +157,11 @@ func TestOutputSchemaInferredCaptureAndDynamic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Captures are listed by name, whatever the order of the places in the node.
 	if shape.Kind != "node" || shape.Value.Kind != "tuple" || len(shape.Value.Elements) != 3 || shape.Value.Elements[1].Kind != "top" ||
-		len(shape.Captures) != 3 || shape.Captures[0].Name != "z" || shape.Captures[0].Shape.Kind != "top" ||
-		!reflect.DeepEqual(shape.Captures[1].Paths, [][]int{{0}, {2}}) || !shape.Captures[2].Side || shape.Captures[2].Paths != nil {
+		len(shape.Captures) != 3 || shape.Captures[0].Name != "a" || shape.Captures[0].Shape.Kind != "optional" ||
+		!reflect.DeepEqual(shape.Captures[0].Paths, [][]int{{0}, {2}}) || shape.Captures[1].Name != "s" || !shape.Captures[1].Side ||
+		len(shape.Captures[1].Paths) != 0 || shape.Captures[2].Name != "z" || shape.Captures[2].Shape.Kind != "top" {
 		t.Fatalf("shape %+v", shape)
 	}
 	joinShape, err := schemaValue(joinTy{[]ty{tyString, tyInt}})
@@ -249,5 +251,92 @@ func TestOutputSchemaMergesRepeatedCaptures(t *testing.T) {
 	}
 	if want := [][]int{{0}, {2}}; count != 1 || !reflect.DeepEqual(paths, want) {
 		t.Fatalf("capture a: %d entries with paths %v, want one with %v", count, paths, want)
+	}
+}
+
+// TestOutputSchemaRepeatedCaptureJoin checks the type of a capture that several places of one node
+// bind. The types of the places are joined once: the result is flat, sorted and without duplicates,
+// and it is the same whatever the order of the places.
+func TestOutputSchemaRepeatedCaptureJoin(t *testing.T) {
+	p := compileBare(t, "@start\nrule main = a:\"x\" a:[0-9]+ a:\"q\" a:[0-9]+\n", Options{DefaultValue: true})
+	s, err := p.OutputSchemaPrototype("main", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	caps := s.Types[0].Shape.Captures
+	if len(caps) != 1 {
+		t.Fatalf("captures: %d, want one entry for a", len(caps))
+	}
+	got, err := json.Marshal(caps[0].Shape)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const want = `{"kind":"join","alternatives":[{"kind":"node","value":{"kind":"list","element":{"kind":"node","value":{"kind":"scalar","scalar":"string"}}}},{"kind":"node","value":{"kind":"scalar","scalar":"string"}}]}`
+	if string(got) != want {
+		t.Fatalf("shape of a:\n%s\nwant\n%s", got, want)
+	}
+}
+
+// TestOutputSchemaLookaheadCapture checks that a capture beside a lookahead keeps the Side flag
+// whatever place comes last, and that its type joins with the type of the real capture.
+func TestOutputSchemaLookaheadCapture(t *testing.T) {
+	for _, tc := range []struct {
+		name, src string
+		side      bool
+		join      bool
+	}{
+		{"same shape", "@start\nrule main = &a:\"x\" b:\"y\" a:\"z\"\n", true, false},
+		{"differing shapes", "@start\nrule main = &a:[0-9]+ b:\"y\" a:\"z\"\n", true, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := compileBare(t, tc.src, Options{DefaultValue: true})
+			s, err := p.OutputSchemaPrototype("main", false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var found *SchemaCapture
+			for i := range s.Types[0].Shape.Captures {
+				if c := &s.Types[0].Shape.Captures[i]; c.Name == "a" {
+					found = c
+				}
+			}
+			if found == nil {
+				t.Fatal("no capture a")
+			}
+			if found.Side != tc.side {
+				t.Errorf("side %t, want %t", found.Side, tc.side)
+			}
+			if (found.Shape.Kind == "join") != tc.join {
+				t.Errorf("shape kind %s, join %t wanted", found.Shape.Kind, tc.join)
+			}
+			if err := s.Validate(); err != nil {
+				t.Fatalf("schema: %v", err)
+			}
+		})
+	}
+}
+
+// TestOutputSchemaCaptureOrderIndependent checks that the capture entries of a node do not depend on
+// the order in which the captures are listed.
+func TestOutputSchemaCaptureOrderIndependent(t *testing.T) {
+	caps := []capIndex{
+		{name: "b", paths: [][]int{{1}}, t: tyString},
+		{name: "a", paths: [][]int{{0}}, t: listTy{elem: tyString}},
+		{name: "a", paths: [][]int{{2}}, t: tyString},
+	}
+	reversed := []capIndex{caps[2], caps[1], caps[0]}
+	render := func(caps []capIndex) string {
+		v, err := schemaValue(nodeTy{value: tyString, caps: caps})
+		if err != nil {
+			t.Fatal(err)
+		}
+		data, err := json.Marshal(v)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(data)
+	}
+	if a, b := render(caps), render(reversed); a != b {
+		t.Fatalf("order changes the shape:\n%s\n%s", a, b)
 	}
 }
