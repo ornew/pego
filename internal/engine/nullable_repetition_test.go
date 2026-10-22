@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestNullableRepetitionMinimum(t *testing.T) {
@@ -141,14 +139,14 @@ func TestNullableRepetitionProjection(t *testing.T) {
 
 func TestNullableRepetitionAnalysis(t *testing.T) {
 	for _, minimum := range []int{0, 1, 2, 3} {
-		g, err := syntax.Parse(fmt.Sprintf("rule main = _ #repeat(%d, )", minimum))
+		g, err := parseTest(fmt.Sprintf("rule main = _ #repeat(%d, )", minimum))
 		if err != nil {
 			t.Fatal(err)
 		}
 		if got := analyze(g.Rules()).nullable["main"]; got != (minimum <= 1) {
 			t.Errorf("minimum %d: nullable=%v", minimum, got)
 		}
-		g, err = syntax.Parse(fmt.Sprintf("rule main = _ #repeat(%d, ) r / \"a\"\nrule r = main", minimum))
+		g, err = parseTest(fmt.Sprintf("rule main = _ #repeat(%d, ) r / \"a\"\nrule r = main", minimum))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -166,7 +164,7 @@ rule item = "a"`},
 rule item = "a" / _`},
 		{"Projected", `rule main = xs:(f:"a" / f:_) #repeat(2, ) $$ => map($xs, (x) => x.$f)`},
 	} {
-		g, err := syntax.Parse(strings.ReplaceAll(tc.source, "; ", "\n"))
+		g, err := parseTest(strings.ReplaceAll(tc.source, "; ", "\n"))
 		if err != nil {
 			b.Fatal(err)
 		}

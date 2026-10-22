@@ -8,7 +8,8 @@ import (
 )
 
 func ExampleWithTrace() {
-	p, err := pego.CompileSource(`rule main = pair (";" pair)* $$
+	p, err := pego.CompileSource(`@start
+rule main = pair (";" pair)* $$
 rule pair = key "=" value
 rule key = [a-z]+ #atomic
 rule value = [0-9]+ #atomic`, "main")
@@ -47,7 +48,8 @@ rule value = [0-9]+ #atomic`, "main")
 }
 
 func ExampleWithProfile() {
-	p, err := pego.CompileSource(`rule main = (stmt ";")* $$
+	p, err := pego.CompileSource(`@start
+rule main = (stmt ";")* $$
 rule stmt = name "=" num / name "+=" num
 rule name = [a-z]+ #atomic
 rule num = [0-9]+ #atomic`, "main")

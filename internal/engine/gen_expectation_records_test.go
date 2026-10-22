@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // Large failure sets traverse memo, lookahead, label and recovery scopes;
@@ -27,7 +25,7 @@ func TestGeneratedExpectationRecords(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(`type N = node[string]
+	g, err := parseTest(`type N = node[string]
 rule main N = ("é") #atomic`)
 	if err != nil {
 		t.Fatal(err)

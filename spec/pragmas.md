@@ -90,6 +90,7 @@ matches.
 
 ```pego
 // Receive a log one record at a time.
+@start
 rule main = ^^ header records:record* #stream $$
 ```
 
@@ -142,6 +143,7 @@ match fails. Omission or zero disables insertion. A negative effective limit
 is a configuration error; parse options resolve once in order, last value wins.
 
 ```pego
+@start
 rule main = name ";" #missing $$
 rule name = [a-z]+ #atomic
 ```

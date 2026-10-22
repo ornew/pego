@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // ruleVariablesDFS retains the previous per-root closure as an independent
@@ -109,7 +108,7 @@ func variableManyReads(n int, cyclic bool) string {
 
 func TestVariableDependencyGrowingSets(t *testing.T) {
 	for _, cyclic := range []bool{false, true} {
-		g, err := syntax.Parse(variableManyReads(64, cyclic))
+		g, err := parseTest(variableManyReads(64, cyclic))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -132,7 +131,7 @@ func TestVariableDependencyGraphs(t *testing.T) {
 		for _, reverse := range []bool{false, true} {
 			for _, reads := range []bool{false, true} {
 				t.Run(fmt.Sprintf("chain/%d/reverse=%v/reads=%v", n, reverse, reads), func(t *testing.T) {
-					g, err := syntax.Parse(variableChain(n, reverse, reads))
+					g, err := parseTest(variableChain(n, reverse, reads))
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -156,7 +155,7 @@ func TestVariableDependencyGraphs(t *testing.T) {
 		}
 	}
 	for _, cyclic := range []bool{false, true} {
-		g, err := syntax.Parse(variableGraph(128, cyclic))
+		g, err := parseTest(variableGraph(128, cyclic))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -204,7 +203,7 @@ rule postfixRule = {postVar == 1} "!"
 rule missingCaller = missing
 rule self = {selfVar == 1} self / "h"
 rule binding = {local := 9} "i"`
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -256,7 +255,7 @@ func BenchmarkVariableDependencies(b *testing.B) {
 	}
 	for _, c := range cases {
 		b.Run(c.name, func(b *testing.B) {
-			g, err := syntax.Parse(c.src)
+			g, err := parseTest(c.src)
 			if err != nil {
 				b.Fatal(err)
 			}

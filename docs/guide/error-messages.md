@@ -31,6 +31,7 @@ together with everything that was expected there. If the whole parse fails, that
 
 ```pego
 // calc.pego
+@start
 rule main = expr
 rule expr = term (("+" / "-") term)*
 rule term = factor (("*" / "/") factor)*
@@ -100,6 +101,7 @@ carriage return is the last column of its line). Columns are counted in the
 
 ```pego
 // unit.pego
+@start
 rule main = "é" "x"
 ```
 
@@ -129,6 +131,7 @@ record something, often the start of the input:
 
 ```pego
 // keyword.pego
+@start
 rule main = !keyword ident $$
 rule keyword = ("if" / "else") ![a-z]
 rule ident = [a-z]+ #atomic
@@ -208,6 +211,7 @@ type Expr ~ Name | Num | Sum
 type Stmt ~ Let | Print | Block
 type Program = { Body []Stmt }
 
+@start
 rule main Program = body:stmts ws $$ => Program{Body: $body}
 rule stmts = ss:(-ws s:stmt)* => map($ss, (x) => x.$s)
 
@@ -344,7 +348,9 @@ The last two points are easiest to see in a tiny grammar:
 
 ```pego
 // labels.pego
+@start(default)
 rule joined = "a" @error(message="m1") / "b" @error(message="m2")
+@start
 rule dropped = "a" "b" @error(message="after a") / "a" "c" "d"
 ```
 
@@ -383,6 +389,7 @@ fails and can carry the label:
 
 ```pego
 // xmlish.pego
+@start
 rule pair = "<" a:name ">" "</" b:name {text($a) == text($b)} @error(message="mismatched end tag") ">"
 rule name = [a-z]+ #atomic
 rule unknown = "x" / _|_ @error(message="expected 'x'")
@@ -425,16 +432,19 @@ same position:
 
 ```pego
 // cut.pego
+@start(default)
 rule plain = stmt $$
 rule stmt = let / call
 rule let = "let" ws name ws "=" ws num ";"
 rule call = name ws "(" ")" ";"
 
 // The cut and the choice it commits are in the same rule.
+@start
 rule committed = stmt_cut $$
 rule stmt_cut = "let" #cut ws name ws "=" ws num ";" / call
 
 // The cut is in another rule than the choice, so it commits nothing.
+@start
 rule elsewhere = stmt_far $$
 rule stmt_far = let_cut / call
 rule let_cut = "let" #cut ws name ws "=" ws num ";"

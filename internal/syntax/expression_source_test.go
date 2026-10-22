@@ -6,6 +6,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -86,7 +87,7 @@ func TestExpressionSourceInlineActionsCompile(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := engine.Compile(g, engine.Options{}); err != nil {
+		if _, err := engine.Compile(starttest.MarkAll(g), engine.Options{}); err != nil {
 			t.Fatalf("inline action in %s: %v", src, err)
 		}
 	}
@@ -115,10 +116,10 @@ func TestExpressionSourceHeaderComments(t *testing.T) {
 		if len(again.File.HeaderComments) == 0 {
 			t.Fatalf("formatter removed header placement error:\n%s", formatted)
 		}
-		if _, err := engine.Compile(again, engine.Options{}); err == nil {
+		if _, err := engine.Compile(starttest.MarkAll(again), engine.Options{}); err == nil {
 			t.Fatal("formatted header became compilable")
 		}
-		_, err = engine.Compile(g, engine.Options{})
+		_, err = engine.Compile(starttest.MarkAll(g), engine.Options{})
 		if err == nil || !strings.Contains(err.Error(), "comments are not allowed inside statement headers") {
 			t.Fatalf("expected positioned semantic rejection, got %v", err)
 		}
@@ -139,7 +140,7 @@ rule main = v1:"a" "b" {x := 1} => N{Value: len($v1)} /*after action*/`
 	if len(g.File.HeaderComments) != 0 {
 		t.Fatal("expression comments marked as headers")
 	}
-	if _, err := engine.Compile(g, engine.Options{}); err != nil {
+	if _, err := engine.Compile(starttest.MarkAll(g), engine.Options{}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -151,7 +152,7 @@ func TestExpressionSourceDefaultCST(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		p, err := engine.Compile(g, engine.Options{})
+		p, err := engine.Compile(starttest.MarkAll(g), engine.Options{})
 		if err != nil {
 			t.Fatal(err)
 		}

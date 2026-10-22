@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestNormalizationCopyOnChangeParity(t *testing.T) {
@@ -32,7 +31,7 @@ rule main (Alias) = {count := (1)} {(count == 1)} n:([0-9]+) => (Number{Text: (t
 		`rule main = "a" #repeat(3, 1)`,
 	} {
 		t.Run(source, func(t *testing.T) {
-			g, err := syntax.Parse(source)
+			g, err := parseTest(source)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -129,7 +128,7 @@ func TestNormalizationAttributeBindingDoesNotMutate(t *testing.T) {
 }
 
 func TestNormalizationSharesUnchangedNodes(t *testing.T) {
-	g, err := syntax.Parse(`rule main = "a" "b"*`)
+	g, err := parseTest(`rule main = "a" "b"*`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,7 +139,7 @@ func TestNormalizationSharesUnchangedNodes(t *testing.T) {
 	if normalized != g {
 		t.Fatal("unchanged grammar was copied")
 	}
-	g, err = syntax.Parse("rule main = (\"a\") \"b\"*\nrule other = \"c\"")
+	g, err = parseTest("rule main = (\"a\") \"b\"*\nrule other = \"c\"")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -179,7 +178,7 @@ func BenchmarkAttributeNormalization(b *testing.B) {
 		sources[name] = string(data)
 	}
 	for name, source := range sources {
-		g, err := syntax.Parse(source)
+		g, err := parseTest(source)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -211,7 +210,7 @@ func BenchmarkAttributeNormalization(b *testing.B) {
 			b.Run(name+"/"+mode+"/source-prepare", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
-					ast, err := syntax.Parse(source)
+					ast, err := parseTest(source)
 					if err != nil {
 						b.Fatal(err)
 					}

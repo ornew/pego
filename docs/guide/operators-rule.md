@@ -41,6 +41,7 @@ type Unary = {
 
 type Expr ~ node[string] | Binary | Unary
 
+@start
 rule main Expr = e:expr ws $$ => $e
 
 rule expr Expr = operators {
@@ -133,6 +134,7 @@ type Unary = {
 
 type Expr ~ node[string] | Binary | Unary
 
+@start
 rule main Expr = e:expr ws $$ => $e
 
 rule expr Expr = add / term
@@ -207,10 +209,12 @@ again with the same length, nothing grows, and the rest of the input is left ove
 
 ```pego
 // lr-order.pego
+@start(default)
 rule good = expr $$
 rule expr = expr "+" term / term
 rule term = [0-9]+ #atomic
 
+@start
 rule bad = expr2 $$
 rule expr2 = term / expr2 "+" term
 ```
@@ -234,7 +238,9 @@ follow it in every operator list. An Operators Rule does not have the problem ([
 
 ```pego
 // lr-ops.pego
+@start(default)
 rule rel = l:num op:("<" / "<=") r:num
+@start
 rule rel2 = l:num op:("<=" / "<") r:num
 rule num = [0-9]+ #atomic
 ```
@@ -261,6 +267,7 @@ type Binary = { Left Expr; Op node[string]; Right Expr }
 type Unary = { Op node[string]; X Expr }
 type Expr ~ node[string] | Binary | Unary
 
+@start
 rule main Expr = e:expr ws $$ => $e
 
 rule expr Expr = l:term rest:(ws op:("+" / "-") #atomic r:term)* => foldl($l, $rest, (acc, i) => Binary{Left: acc, Op: i.$op, Right: i.$r})
@@ -304,6 +311,7 @@ per level, whitespace handled by hand, and one rule call per level for every ope
 type Bin = { L E; Op node[string]; R E }
 type E ~ node[string] | Bin
 
+@start
 rule main E = e:cmp ws $$ => $e
 
 // at most one comparison: "1 < 2 < 3" is a syntax error
@@ -354,6 +362,7 @@ type Index = { X Expr; Index Expr }
 type Member = { X Expr; Name node[string] }
 type Expr ~ node[string] | Comma | Assign | Cond | Bin | Unary | Call | Index | Member
 
+@start
 rule expr Expr = operators {
     skip ws
     operand number
@@ -448,6 +457,7 @@ type App = { Fn E; Arg E }
 type Neg = { X E }
 type E ~ node[string] | Bin | App | Neg
 
+@start
 rule e E = operators {
     skip ws
     operand num
@@ -489,6 +499,7 @@ type Neg = { X E }
 type Fact = { X E }
 type E ~ node[string] | Neg | Fact
 
+@start(default)
 rule same E = operators {
     operand num
     level mixed {
@@ -497,6 +508,7 @@ rule same E = operators {
     }
 }
 
+@start
 rule tighter E = operators {
     operand num
     level prefix { prefix "-" => Neg{X: $rhs} }
@@ -525,6 +537,7 @@ carries the rule name and the captures `lhs`, `op` and `rhs`:
 
 ```pego
 // raw.pego
+@start
 rule e = operators {
     operand [0-9]+ #atomic
     level additive { infix left "+" }
@@ -550,6 +563,7 @@ number passes through every level:
 
 ```pego
 // chain-cst.pego
+@start
 rule expr = term (("+" / "-") term)*
 rule term = factor (("*" / "/") factor)*
 rule factor = [0-9]+ #atomic
@@ -572,6 +586,7 @@ declared join that includes `node[_]` accepts the tuples, as `type E ~ node[_] |
 ```pego
 // raw-typed.pego
 type Bin = { L node[string]; Op node[string]; R node[string] }
+@start
 rule t Bin = operators {
     operand num
     level additive { infix left "+" }
@@ -584,8 +599,8 @@ pego parse -g raw-typed.pego -s t -i '1+2'
 ```
 
 ```text
-pego: raw-typed.pego:3:1: operatorsRule t produces node[string], which is not assignable to Bin
-raw-typed.pego:3:1: operators of t without an action produce a tuple node, which is not assignable to Bin
+pego: raw-typed.pego:4:1: operatorsRule t produces node[string], which is not assignable to Bin
+raw-typed.pego:4:1: operators of t without an action produce a tuple node, which is not assignable to Bin
 ```
 
 A rule declared with exactly a named node type, as `type E = node[_]` and `rule t E = operators { ... }`, converts every
@@ -603,6 +618,7 @@ actions use the captures of their line:
 type Paren = { X E }
 type E ~ node[string] | Paren
 
+@start
 rule e E = operators {
     operand num
     operand "(" e:e ")" => Paren{X: $e}
@@ -661,6 +677,7 @@ pick another name such as `atom`. The complete list is in
 
 ```pego
 // operand-lr.pego
+@start
 rule e = operators {
     operand e "!"
     operand [0-9]+
@@ -673,7 +690,7 @@ pego parse -g operand-lr.pego -s e -i '1'
 ```
 
 ```text
-pego: operand-lr.pego:2:20: operand of e calls e at its start (left recursion); use infix or postfix instead
+pego: operand-lr.pego:3:20: operand of e calls e at its start (left recursion); use infix or postfix instead
 ```
 
 Write `!` as a postfix operator instead.
@@ -694,12 +711,14 @@ consume trailing whitespace (the `main` rules of the calculators say `ws $$`).
 type Cond = { C E; T E; F E }
 type E ~ node[string] | Cond
 
+@start(default)
 rule loose E = operators {
     skip ws
     operand num
     operand id
     level conditional { infix right "?" t:loose ":" => Cond{C: $lhs, T: $t, F: $rhs} }
 }
+@start
 rule tight E = operators {
     skip ws
     operand num
@@ -741,6 +760,7 @@ type Un = { Op node[string]; X E }
 type Post = { X E; Op node[string] }
 type E ~ node[string] | Bin | Un | Post
 
+@start
 rule main E = e:e $$ => $e
 
 rule e E = operators {
@@ -777,6 +797,7 @@ type Bin = { L E; Op node[(node[string],)]; R E }
 type Not = { X E }
 type E ~ node[string] | Bin | Not
 
+@start
 rule e E = operators {
     skip ws
     operand id
@@ -821,7 +842,9 @@ rule committed E = operators {
     level additive { infix left "+" #cut => Bin{L: $lhs, Op: $op, R: $rhs} }
 }
 
+@start(default)
 rule m1 = plain ws "+" ws "x" $$
+@start
 rule m2 = committed ws "+" ws "x" $$
 rule num = [0-9]+ #atomic
 rule ws = " "*

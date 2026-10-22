@@ -17,6 +17,7 @@ type Call = { Name Name; Args []Expr }
 type Expr ~ Call | Name | Num
 type Program = { Body []Expr }
 
+@start
 rule main Program = -ws body:stmts $$ => Program{Body: $body}
 rule stmts = es:(e:expr -ws ";" -ws)* => map($es, (x) => x.$e)
 rule expr Expr = call / name / number

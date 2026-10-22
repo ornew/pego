@@ -41,7 +41,9 @@ read the captures `$label` made **earlier in the same rule**. Three consequences
 ```pego
 // truthy.pego
 rule zero = {0} "a"
+@start(default)
 rule lenonly = s:"x"* #atomic {len($s)} "a"
+@start
 rule compared = s:"x"* #atomic {len($s) > 0} "a"
 ```
 
@@ -68,7 +70,9 @@ cover the same text. Use `text(x)` (the matched text) or `len(x)`:
 
 ```pego
 // identity.pego
+@start(default)
 rule by_identity = "<" a:name "></" b:name {$a == $b} ">"
+@start
 rule by_text = "<" a:name "></" b:name {text($a) == text($b)} ">"
 rule name = [a-z]+ #atomic
 ```
@@ -101,6 +105,7 @@ undeclared name when the grammar is compiled:
 ```pego
 // typo.pego
 var indent int
+@start
 rule main = {indent := 0} "a" {idnent == 0}
 ```
 
@@ -109,7 +114,7 @@ pego parse -g typo.pego -i 'a'
 ```
 
 ```text
-pego: typo.pego:3:32: undefined variable idnent; declare it with var idnent at the top level
+pego: typo.pego:4:32: undefined variable idnent; declare it with var idnent at the top level
 ```
 
 If a predicate unexpectedly fails, check the values and conditions it compares.
@@ -160,23 +165,30 @@ var r int
 var o int
 var p int
 
+@start(default)
 rule inherit = {x := 1} reads_x
 rule reads_x = {x == 1}
 
 // A callee's definition shadows the caller's only inside the callee.
+@start
 rule shadow = {x := 1} shadows_x {x == 1}
 rule shadows_x = {x == 1} {x := 2} {x == 2}
 
 // A definition made in a callee is not visible to the caller.
+@start
 rule hidden = defines_y {y == 1}
 rule defines_y = {y := 1}
 
 // Backtracking undoes definitions: the first alternative defined x = 1, then failed.
+@start
 rule undone = ({x := 1} "a" "b" / {x := 2} "a" "c") {x == 2}
 
 // A definition made inside a repetition, an optional or a positive lookahead stays.
+@start
 rule stays = ({r := 1} "a")* {r == 1}
+@start
 rule kept = ({o := 1} "a")? {o == 1}
+@start
 rule peeked = &{p := 1} {p == 1}
 ```
 
@@ -266,6 +278,7 @@ is restored.** This lets a rule peek at something, bind it, and test it before c
 
 ```pego
 // peek.pego
+@start
 rule main = &s:[a-z]+ {len($s) == 3} [a-z]+ $$
 ```
 
@@ -333,6 +346,7 @@ What this means when you write a grammar:
 // memoization that is 2^n work for n levels; `group` reads `mode`.
 var mode int
 
+@start
 rule main = {mode := 1} group $$
 rule group = "(" group ")" "x" {mode == 1} / "(" group ")" "y" {mode == 1} / "z" {mode == 1}
 ```
@@ -385,6 +399,7 @@ package tags
 type Element = { Name node[string]; Children []Content }
 type Content ~ Element | node[string]
 
+@start
 rule main Element = e:element $$ => $e
 
 // The open tag defines `tag`; every rule called after that can read it.
@@ -442,6 +457,7 @@ type Item = {
 
 var indent int
 
+@start
 rule main = {indent := 0} items:block blank* $$ => $items
 
 // Items at the current indentation.
@@ -566,6 +582,7 @@ only below the rule that defines it, the flag turns off by itself when the brack
 // Statements end at a newline, except inside brackets, where a newline is whitespace.
 var nl bool
 
+@start
 rule main = {nl := false} lines:(ws s:stmt ws "\n")* ws $$ => map($lines, (x) => x.$s)
 
 rule stmt = name ws "=" ws expr
@@ -613,6 +630,7 @@ package doc
 type Heredoc = { Tag node[string]; Lines []node[string] }
 type Command = { Words []node[string]; Doc *Heredoc }
 
+@start
 rule main = cs:(-ws c:command)* ws $$ => map($cs, (x) => x.$c)
 
 rule command Command = ws:(-sp w:word)+ -sp d:heredoc? eol => Command{Words: map($ws, (x) => x.$w), Doc: $d}
@@ -655,6 +673,7 @@ detected when the grammar is compiled:
 
 ```pego
 // scope_bad.pego
+@start
 rule main = t:word ("," w:word {text($w) != text($t)})* $$
 rule word = [a-z]+ #atomic
 ```
@@ -664,7 +683,7 @@ pego parse -g scope_bad.pego -i 'a,b'
 ```
 
 ```text
-pego: scope_bad.pego:2:50: capture $t is not visible in a repetition element, which sees only its own captures; define a variable from it before the repetition
+pego: scope_bad.pego:3:50: capture $t is not visible in a repetition element, which sees only its own captures; define a variable from it before the repetition
 ```
 
 A variable crosses scopes (it is visible to everything below the rule that defines it, including repetition bodies),
@@ -688,6 +707,7 @@ that reads it:
 
 ```pego
 // longstr.pego
+@start
 rule main = long_string $$
 var level int
 
@@ -725,6 +745,7 @@ siblings at the same level see the same value:
 // Parentheses nested at most three levels deep.
 var depth int
 
+@start
 rule main = {depth := 0} group $$
 
 rule group = "(" {depth := depth + 1} {depth <= 3} @error(message="nested too deeply") group* ")"

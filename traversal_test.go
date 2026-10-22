@@ -10,7 +10,7 @@ import (
 )
 
 func TestTraversalPublicFacade(t *testing.T) {
-	parser, err := pego.CompileSource(`rule main = "é"`, "main")
+	parser, err := compileTestSource(`rule main = "é"`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

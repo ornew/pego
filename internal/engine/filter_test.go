@@ -8,8 +8,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 const filterIdentitySource = `type Out = { First node[string]; Kept []node[string]; Empty []node[string] }
@@ -84,7 +82,7 @@ func TestFilterTypeAndRuntimeValidation(t *testing.T) {
 		`type Out = { Items []node[string] }
 rule main = v1:"a" => Out{Items: filter(list($v1, nil), (x) => x != nil)}`,
 	} {
-		g, err := syntax.Parse(source)
+		g, err := parseTest(source)
 		if err != nil {
 			t.Fatal(err)
 		}

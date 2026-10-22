@@ -34,7 +34,7 @@ func lspLintContext(t *testing.T, cancelAt int) *lspLintPollContext {
 
 func TestCancelledLintDoesNotCommitCache(t *testing.T) {
 	var source strings.Builder
-	source.WriteString("rule main = \"a\"\n")
+	source.WriteString("@start\nrule main = \"a\"\n")
 	for i := range 512 {
 		fmt.Fprintf(&source, "rule unused%d = \"b\"\n", i)
 	}
@@ -59,7 +59,7 @@ func TestCancelledLintDoesNotCommitCache(t *testing.T) {
 }
 
 func TestCancelledLintMappingReturnsNoDiagnostics(t *testing.T) {
-	a := analyze(`rule main = "a"`)
+	a := analyze("@start\nrule main = \"a\"")
 	a.lintCached = true
 	a.lintCache = make([]lint.Finding, 512)
 	for i := range a.lintCache {
@@ -103,13 +103,13 @@ func TestResponsiveLintMappingCancellationProtocol(t *testing.T) {
 	c := newResponsiveClient(t, true)
 	defer func() { releaseWorker(); c.exit() }()
 	var source strings.Builder
-	source.WriteString("rule main = \"a\"\n")
+	source.WriteString("@start\nrule main = \"a\"\n")
 	for i := range 512 {
 		fmt.Fprintf(&source, "rule unused%d = \"b\"\n", i)
 	}
 	c.notify("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": uri, "version": 1, "text": source.String()}})
 	awaitBarrier(t, started)
-	c.notify("textDocument/didChange", map[string]any{"textDocument": map[string]any{"uri": uri, "version": 2}, "contentChanges": []any{map[string]any{"text": `rule main = "b"`}}})
+	c.notify("textDocument/didChange", map[string]any{"textDocument": map[string]any{"uri": uri, "version": 2}, "contentChanges": []any{map[string]any{"text": "@start\nrule main = \"b\""}}})
 	awaitBarrier(t, cancelled)
 	asyncRequest(c, 701, "textDocument/documentSymbol", docParams(uri))
 	c.notify("$/cancelRequest", map[string]any{"id": 701})

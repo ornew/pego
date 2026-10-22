@@ -79,6 +79,7 @@ type Config = {
     Entries []Entry
 }
 
+@start
 rule main Config = -ws es:entry* $$ => Config{Entries: $es.Value}
 
 rule entry Entry = (k:key -ws -"=" -ws v:value -ws) #recover(skip=[^\n]* "\n"?) -ws => Entry{Key: $k, Value: $v}

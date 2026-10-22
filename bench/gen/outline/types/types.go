@@ -86,9 +86,3 @@ func (v *Item) TFieldWork(p *pegort.TParser, name string) (any, bool) {
 	}
 	return nil, false
 }
-
-// Tuple2 is a tuple of 2 elements.
-type Tuple2[E0, E1 any] struct {
-	E0 E0
-	E1 E1
-}

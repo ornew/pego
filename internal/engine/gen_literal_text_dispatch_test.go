@@ -10,13 +10,11 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestLiteralTextPredicateDispatchGeneration(t *testing.T) {
 	const source = `rule main = w:[a-z]+ #atomic {text($w) == "a" || "b" == text($w)} $$`
-	g, err := syntax.Parse(source)
+	g, err := parseTest(source)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +59,7 @@ rule main = w:[a-z]+ #atomic {alias := text($w)} {alias == "a" || alias == "b"} 
 rule main = w:[a-z]+ #atomic {result := text($w) == "a" || text($w) == "b"} $$`,
 	}
 	for i, source := range cases {
-		g, err := syntax.Parse(source)
+		g, err := parseTest(source)
 		if err != nil {
 			t.Fatalf("case %d: %v", i, err)
 		}
@@ -94,7 +92,7 @@ func TestLiteralTextPredicateDispatchTSDisabledParity(t *testing.T) {
 		t.Skip("node not found")
 	}
 	const source = `rule main = w:[^!]* #atomic {text($w) == "" || text($w) == "a" || text($w) == "b" || text($w) == "é" || text($w) == "😀" || text($w) == "a"} $$`
-	g, err := syntax.Parse(source)
+	g, err := parseTest(source)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -221,7 +219,7 @@ func TestGeneratedLiteralDispatchWorkload(t *testing.T) {
 	}
 	manifest := literalDispatchManifest{Schema: 1, GoVersion: "1.27.1"}
 	for _, workload := range workloads {
-		g, err := syntax.Parse(workload.source)
+		g, err := parseTest(workload.source)
 		if err != nil {
 			t.Fatalf("%s: %v", workload.name, err)
 		}
@@ -374,7 +372,7 @@ func literalDispatchGoAdapter(typed bool, unitAPI string) string {
 
 func writeLiteralDispatchTypeScript(t *testing.T, dir string, workload literalDispatchWorkload, manifest *literalDispatchManifest) error {
 	t.Helper()
-	g, err := syntax.Parse(workload.source)
+	g, err := parseTest(workload.source)
 	if err != nil {
 		return err
 	}

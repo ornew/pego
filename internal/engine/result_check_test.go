@@ -145,8 +145,8 @@ func TestRuleResultChecks(t *testing.T) {
 		parse   func(string) (*grammar.Grammar, error)
 		fields  map[string]string
 	}{
-		{"text struct", resultCheckGrammar, syntax.Parse, fieldCheckFields},
-		{"terminal", resultCheckGrammarLegacy, syntax.ParseLegacy, fieldCheckFields},
+		{"text struct", resultCheckGrammar, parseTest, fieldCheckFields},
+		{"terminal", resultCheckGrammarLegacy, parseLegacyTest, fieldCheckFields},
 	} {
 		t.Run(model.name, func(t *testing.T) {
 			for _, typ := range resultCheckTypesOf(model.fields) {
@@ -343,7 +343,7 @@ rule ops Int | O = operators {
 			}
 		}
 	}
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -393,7 +393,7 @@ var operatorResultCheckInputs = []string{"om^", "ot^", "ol^", "oz^", "!mo", "!lo
 // by the operator application rather than by the rule, and the checks of rules that compiling
 // copies, in every program form.
 func TestOperatorResultChecks(t *testing.T) {
-	g, err := syntax.Parse(operatorResultCheckGrammar)
+	g, err := parseTest(operatorResultCheckGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}

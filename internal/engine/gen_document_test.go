@@ -6,13 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGenerateDocumentNode(t *testing.T) {
 	needsWorkControls(t)
-	g, err := syntax.Parse("rule main = item+ $$\nrule item = \"a\"")
+	g, err := parseTest("rule main = item+ $$\nrule item = \"a\"")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,7 +148,7 @@ func TestGeneratedDocumentCloneCyclicAndSharedSlices(t *testing.T) {
 }
 
 func TestGenerateDocumentCombinations(t *testing.T) {
-	g, err := syntax.Parse("rule main = \"a\"")
+	g, err := parseTest("rule main = \"a\"")
 	if err != nil {
 		t.Fatal(err)
 	}

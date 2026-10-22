@@ -154,7 +154,7 @@ func TestFuzzErrors(t *testing.T) {
 		opts Options
 		want string
 	}{
-		{testGrammars[0], Options{}, "no start rule"},
+		{testGrammars[0], Options{Start: "item"}, "rule item is not a start rule"},
 		{testGrammars[0], Options{Start: "nope"}, "nope"},
 		{"rule main =", Options{Start: "main"}, ""},
 		{testGrammars[0], Options{Start: "main", Backend: pego.Backend(9)}, "unknown backend"},
@@ -163,6 +163,10 @@ func TestFuzzErrors(t *testing.T) {
 		if err := Fuzz([]byte(tc.src), tc.opts); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%+v: got %v", tc.opts, err)
 		}
+	}
+	// An empty start rule selects the default start rule.
+	if err := Fuzz([]byte(testGrammars[0]), Options{}); err != nil {
+		t.Errorf("default start rule: %v", err)
 	}
 	// Without a failure directory, the message holds the sequence.
 	defer func() { corruptDocumentResult = nil }()

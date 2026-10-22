@@ -5,8 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // TestGeneratedDocumentBenchmarkFixture exports source for a focused benchmark.
@@ -18,7 +16,7 @@ func TestGeneratedDocumentBenchmarkFixture(t *testing.T) {
 		t.Skip("set PEGO_GENERATED_DOCUMENT_BENCH_DIR to export the benchmark fixture")
 	}
 	observability := os.Getenv("PEGO_GENERATED_DOCUMENT_OBSERVABILITY") == "1"
-	g, err := syntax.Parse(`rule main = record+ $$
+	g, err := parseTest(`rule main = record+ $$
 rule record = k:"é" ":" v:("0" / "1") ";"`)
 	if err != nil {
 		t.Fatal(err)
@@ -38,7 +36,7 @@ rule record = k:"é" ":" v:("0" / "1") ";"`)
 			t.Fatal(err)
 		}
 	}
-	typedGrammar, err := syntax.Parse(`type Item = { Key node[string]; Value node[string]; N int; S string; B bool }
+	typedGrammar, err := parseTest(`type Item = { Key node[string]; Value node[string]; N int; S string; B bool }
 rule main []Item = item*
 rule item Item = k:[a-zé😀]+ #atomic "=" v:[0-9]+ #atomic ";" => Item{Key: $k, Value: $v, N: len($v), S: text($k), B: true}`)
 	if err != nil {

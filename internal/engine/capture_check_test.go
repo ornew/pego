@@ -8,7 +8,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // A name captured several times in one match has the join of the types of its captures: the
@@ -93,7 +92,7 @@ func TestDuplicateCaptureDiagnosticPositions(t *testing.T) {
 }
 
 func captureCheckProgram(src string) (*Program, error) {
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		return nil, err
 	}

@@ -8,8 +8,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // TestGeneratedDocumentInvalidUTF8EditEquivalence is the generated Document
@@ -39,7 +37,7 @@ rule other Char = t:(.) #atomic => Char{Text: text($t)}`,
 	}
 	files := map[string]string{"go.mod": testGoMod("fixture")}
 	for i, src := range grammars {
-		g, err := syntax.Parse(src)
+		g, err := parseTest(src)
 		if err != nil {
 			t.Fatal(err)
 		}

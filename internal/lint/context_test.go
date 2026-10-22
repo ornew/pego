@@ -10,6 +10,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -40,7 +41,7 @@ func lintContextGrammar(t *testing.T, source string) *grammar.Grammar {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := engine.Compile(g, engine.Options{}); err != nil {
+	if _, err := engine.Compile(starttest.MarkAll(g), engine.Options{}); err != nil {
 		t.Fatal(err)
 	}
 	return g
@@ -48,7 +49,7 @@ func lintContextGrammar(t *testing.T, source string) *grammar.Grammar {
 
 func lintManyRules() string {
 	var source strings.Builder
-	source.WriteString("rule main = \"a\"\n")
+	source.WriteString("@start\nrule main = \"a\"\n")
 	for i := range 512 {
 		fmt.Fprintf(&source, "rule unused%d = \"b\"\n", i)
 	}

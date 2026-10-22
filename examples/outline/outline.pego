@@ -15,6 +15,7 @@ type Item = {
     Children []Item
 }
 
+@start
 rule main = {indent := 0} items:block blank* $$ => $items
 
 // Items at the current indentation.

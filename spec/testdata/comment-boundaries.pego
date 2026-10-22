@@ -7,6 +7,7 @@ type SourceElement = { Name string; Comments OwnedComments }
 type SourceExample = { Package SourceElement; Rule SourceElement }
 
 // Boundary captures construct owners while parsing, not in a later pass.
+@start
 rule owner_example SourceExample = (
     first:remaining "package" -horizontal package_name:[a-zA-Z_]+ between:after_boundary
     "rule" -horizontal rule_name:[a-zA-Z_]+ -horizontal "=" -horizontal "\"b\"" last:after_boundary $$
@@ -29,7 +30,9 @@ rule owner_example SourceExample = (
     },
 }
 
+@start(default)
 rule start = b:remaining -.* $$ => $b
+@start
 rule after = b:after_boundary -.* $$ => $b
 
 rule after_boundary CommentBoundary = (

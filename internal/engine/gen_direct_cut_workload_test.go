@@ -6,8 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // PEGO_TYPED_CUT_DIR preserves both latest-generator variants so their test
@@ -16,7 +14,7 @@ func TestGeneratedTypedCutWorkload(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(`type Row = { Key node[string]; Value node[string] }
+	g, err := parseTest(`type Row = { Key node[string]; Value node[string] }
 type Doc = { Rows []Row }
 rule main Doc = rows:row+ $$ => Doc{Rows: $rows.Value}
 rule row Row = "let" " " #cut key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" / "var" " " #cut key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" => Row{Key: $key, Value: $value}

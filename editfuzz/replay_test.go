@@ -15,15 +15,16 @@ var units = []pego.PositionUnit{pego.CodePoints, pego.Bytes}
 // Grammars exercising success and failure, recovered errors, left recursion, lookahead and long
 // repetitions.
 var testGrammars = []string{
-	"rule main = item* $$\nrule item = .",
-	`rule main = (stmt ";")* $$
+	"@start\nrule main = item* $$\nrule item = .",
+	`@start
+rule main = (stmt ";")* $$
 rule stmt = ("let" sp name "=" expr) #recover(skip=[^;]*)
 rule name = [a-z]+ #atomic
 rule expr = expr "+" term / term
 rule term = [0-9]+ #atomic / "(" expr ")"
 rule sp = " "*`,
-	"rule main = (word / other)* $$\nrule word = &[a-z] [a-zé]+ !\"!\" #atomic\nrule other = .",
-	"rule main = x $$\nrule x = x \"+\" \"a\" / \"a\"",
+	"@start\nrule main = (word / other)* $$\nrule word = &[a-z] [a-zé]+ !\"!\" #atomic\nrule other = .",
+	"@start\nrule main = x $$\nrule x = x \"+\" \"a\" / \"a\"",
 }
 
 func edit(start, end int, text string) Operation {
@@ -246,7 +247,8 @@ func TestReplayInvalid(t *testing.T) {
 	}{
 		{sequence(src, pego.Closure, pego.CodePoints, "a"), "rule main = .", -1, "hash"},
 		{sequence("rule main = ", pego.Closure, pego.CodePoints, "a"), "rule main = ", -1, ""},
-		{&Sequence{GrammarSHA256: GrammarHash([]byte(src)), Start: "other", Backend: pego.Closure}, src, -1, "start rule"},
+		{&Sequence{GrammarSHA256: GrammarHash([]byte(src)), Start: "other", Backend: pego.Closure}, src, -1, "rule other is not defined"},
+		{&Sequence{GrammarSHA256: GrammarHash([]byte(src)), Start: "item", Backend: pego.Closure}, src, -1, "rule item is not a start rule"},
 		{sequence(src, pego.Closure, pego.CodePoints, "a", checkpoint, undo), src, 1, "nothing to undo"},
 		{sequence(src, pego.Closure, pego.CodePoints, "a", edit(0, 1, "b"), redo), src, 1, "nothing to redo"},
 		{sequence(src, pego.Closure, pego.CodePoints, "a", edit(0, 2, "b")), src, 0, "invalid range"},

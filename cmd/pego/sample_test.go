@@ -10,7 +10,9 @@ import (
 	"github.com/ornew/pego"
 )
 
-const kvList = `rule main = pair ("," pair)*
+const kvList = `@start(default)
+rule main = pair ("," pair)*
+@start
 rule pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic`
 
 // captureStderr replaces sampleStderr for the duration of the test.
@@ -66,7 +68,8 @@ func TestSample(t *testing.T) {
 }
 
 func TestSampleOptions(t *testing.T) {
-	g := writeFile(t, "nest.pego", `rule main = "(" main ")" / "x"`)
+	g := writeFile(t, "nest.pego", `@start
+rule main = "(" main ")" / "x"`)
 	// -max-depth 0: the shortest way from the start.
 	out, err := runCLI(t, "", "sample", "-g", g, "-n", "3", "-max-depth", "0")
 	if err != nil {
@@ -99,7 +102,8 @@ func TestSampleOptions(t *testing.T) {
 		{"sample", "-g", g, "-f", "xml"},
 		{"sample", "-g", g, "-n", "-3"},
 		{"sample", "-g", g, "-s", "nope"},
-		{"sample", "-g", writeFile(t, "never.pego", `rule main = "a"* "a"`), "-n", "1"},
+		{"sample", "-g", writeFile(t, "never.pego", `@start
+rule main = "a"* "a"`), "-n", "1"},
 	} {
 		if _, err := runCLI(t, "", args...); err == nil {
 			t.Errorf("%q: expected an error", args)
@@ -108,7 +112,8 @@ func TestSampleOptions(t *testing.T) {
 }
 
 func TestSampleCoverage(t *testing.T) {
-	g := writeFile(t, "kv.pego", `rule main = item ("," item)*
+	g := writeFile(t, "kv.pego", `@start
+rule main = item ("," item)*
 rule item = word / number / "true" / "false"
 rule word = [a-z]+ #atomic
 rule number = [0-9]+ #atomic`)
@@ -153,7 +158,8 @@ rule number = [0-9]+ #atomic`)
 
 func TestSampleCoverageWithoutInputs(t *testing.T) {
 	// No input parses: the report still shows what the search exercised, then the command fails.
-	g := writeFile(t, "never.pego", `rule main = item+ "a"
+	g := writeFile(t, "never.pego", `@start
+rule main = item+ "a"
 rule item = "a" / "b"`)
 	stderr := captureStderr(t)
 	out, err := runCLI(t, "", "sample", "-g", g, "-n", "3", "-coverage")

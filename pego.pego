@@ -144,7 +144,9 @@ type Lambda = { Params []Ident; Body ActionExpr }
 
 // File and statements. Delimiter-owned expressions enable multiline trivia;
 // declaration and item lists keep physical newlines as statement boundaries.
+@start(default)
 rule main File = f:file => $f
+@start
 rule file File = (
     &cs:source_comments &gaps:source_gaps &src:(.* #atomic) f:file_contents
 ) => File{

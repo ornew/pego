@@ -23,6 +23,7 @@ type Array = { Elements []Value }
 type Text = { Value string }
 type Value ~ Object | Array | Text
 
+@start
 rule main Value = ws v:value ws $$ => $v
 rule value Value = object / array / string / number
 rule object Object = "{" ws ms:members? ws "}" => Object{Members: concat($ms)}

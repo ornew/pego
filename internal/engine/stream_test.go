@@ -7,8 +7,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 const records = `rule main = ^^ header items:record* #stream $$
@@ -245,7 +243,7 @@ func TestStreamCompileErrors(t *testing.T) {
 }
 
 func TestStreamPragmaRejectsArguments(t *testing.T) {
-	if _, err := syntax.Parse(`rule main = "a"* #stream(x="y")`); err == nil {
+	if _, err := parseTest(`rule main = "a"* #stream(x="y")`); err == nil {
 		t.Fatal("accepted arguments to #stream")
 	}
 }

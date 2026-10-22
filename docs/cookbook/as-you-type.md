@@ -14,6 +14,7 @@ is half typed is not valid, so the grammar recovers from errors, and every keyst
 type Setting = { Key node[string]; Value node[string] }
 type Item ~ Setting | error
 
+@start
 rule main = -ws (setting -ws)* $$
 
 // If a setting does not parse, skip to the next ";" (but not past a line end) and carry on.

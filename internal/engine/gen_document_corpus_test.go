@@ -8,8 +8,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // TestGeneratedDocumentsMatchBatchOnCorpus checks generated Documents against
@@ -38,7 +36,7 @@ func TestGeneratedDocumentsMatchBatchOnCorpus(t *testing.T) {
 	var imports, checks strings.Builder
 	cases := genCorpus(t)
 	for i, c := range cases {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

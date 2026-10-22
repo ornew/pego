@@ -22,7 +22,7 @@ const (
 
 // Options configure Fuzz.
 type Options struct {
-	// Start is the start rule. It must be set.
+	// Start is the start rule. Empty selects the grammar's default start rule.
 	Start string
 	// Backend is the backend of the Documents and the fresh parses. The default backend is Closure.
 	Backend pego.Backend
@@ -105,9 +105,6 @@ func Fuzz(src []byte, opts Options) error {
 	if _, err := unitName(opts.Unit); err != nil {
 		return err
 	}
-	if opts.Start == "" {
-		return errors.New("no start rule")
-	}
 	p, err := pego.CompileSource(string(src), opts.Start)
 	if err != nil {
 		return err
@@ -123,7 +120,7 @@ func Fuzz(src []byte, opts Options) error {
 	}
 	rng := rand.New(rand.NewPCG(opts.Seed, 0x9e3779b97f4a7c15))
 	for range opts.Sequences {
-		seq := &Sequence{GrammarSHA256: GrammarHash(src), Start: opts.Start, Backend: opts.Backend, Unit: opts.Unit,
+		seq := &Sequence{GrammarSHA256: GrammarHash(src), Start: p.Start(), Backend: opts.Backend, Unit: opts.Unit,
 			Seed: opts.Seed, Initial: initial(rng, texts)}
 		err := run(p, seq, &generator{rng: rng, texts: texts}, opts.Operations)
 		if sequenceDone != nil {

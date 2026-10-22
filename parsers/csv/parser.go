@@ -3,7 +3,6 @@
 package csv
 
 import (
-	"fmt"
 	"unsafe"
 
 	types "github.com/ornew/pego/parsers/csv/types"
@@ -34,18 +33,15 @@ var pegoRecGrammar = pegort.NewGrammar(100000)
 var rules []*pegort.Rule
 var pegoGrammar = pegort.NewGrammar(100000)
 
-// ParseRule parses the whole input with the rule name.
+// ParseRule parses the whole input with the start rule name, a rule marked @start.
 func ParseRule(name, input string, opts ...pegort.ParseOption) (*pegort.Node, error) {
 	o, err := pegort.ResolveOptions(pegoGrammar, opts)
 	if err != nil {
 		return nil, err
 	}
-	if len(name) > 0 && name[0] == '_' {
-		return nil, fmt.Errorf("rule %s is hidden: a rule whose name begins with an underscore is not an entry point", name)
-	}
-	r := pegoGrammar.RuleByName(name)
-	if r == nil {
-		return nil, fmt.Errorf("rule %s is not defined", name)
+	r, err := pegoGrammar.StartRule(name)
+	if err != nil {
+		return nil, err
 	}
 	return pegort.RunParseResolved(r, input, o)
 }
@@ -244,11 +240,6 @@ func tv0(a *tslabs, v any) *types.Field {
 	return pegort.TMatchAs[types.Field](x)
 }
 
-func tv1(a *tslabs, v any) any {
-	a.stepWork()
-	return pegort.TPubIn(types.PegoHooks, a, v)
-}
-
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
 	control  *pegort.WorkControl
@@ -274,14 +265,11 @@ func ParseAST(input string, opts ...pegort.ParseOption) (*types.File, error) {
 	return pegort.TParse(trules[0], input, opts, a, func(v any) *types.File { return pegort.TAs[*types.File](v) })
 }
 
-// ParseRuleAST parses the whole input with the named rule and returns its typed value.
+// ParseRuleAST parses the whole input with the named start rule and returns its typed value.
 // Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
-// Invalid options and undefined names return nil with an error. Rule result types:
+// Invalid options and names of rules that are not start rules return nil with an error. Start rule result types:
 //
 //	main: *types.File
-//	record: *types.Record
-//	field: *types.Field
-//	eol: any
 func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 	o, err := pegort.ResolveOptions(pegoGrammar, opts)
 	if err != nil {
@@ -291,20 +279,8 @@ func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 	case "main":
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[0], input, o, a, func(v any) *types.File { return pegort.TAs[*types.File](v) })
-	case "record":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[1], input, o, a, func(v any) *types.Record { return pegort.TAs[*types.Record](v) })
-	case "field":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[2], input, o, a, func(v any) *types.Field { return tv0(a, v) })
-	case "eol":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[3], input, o, a, func(v any) any { return tv1(a, v) })
 	default:
-		if len(name) > 0 && name[0] == '_' {
-			return nil, fmt.Errorf("rule %s is hidden: a rule whose name begins with an underscore is not an entry point", name)
-		}
-		return nil, fmt.Errorf("rule %s is not defined", name)
+		return nil, pegoGrammar.StartError(name)
 	}
 }
 
@@ -367,6 +343,7 @@ func init() {
 	recRules[1].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e15(p) }
 	recRules[2].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e16(p) }
 	recRules[3].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e13(p) }
+	pegoGrammar.Starts = []string{"main"}
 	pegoGrammar.Descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"\\ufeff\"", "\",\"", "\"\\\"\"", "[^\"]", "\"\\\"\\\"\"", "[^,\"\\r\\n]", "\"\\r\"", "[^\\n]", "\"\\r\\n\"", "\"\\n\""}
 	pegoRecGrammar.Share(pegoGrammar)
 	trules = []*pegort.TRule{

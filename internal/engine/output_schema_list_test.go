@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestOutputSchemaListQueries(t *testing.T) {
@@ -41,7 +39,7 @@ type Holder = { Values [][]Token }
 rule main = "x" => Holder{Values: [][]Token{[]Token{Token{Text: "one"}}}}`, "x", holder(list(list(token)))},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			g, err := syntax.Parse(tc.source)
+			g, err := parseTest(tc.source)
 			if err != nil {
 				t.Fatal(err)
 			}

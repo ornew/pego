@@ -9,7 +9,7 @@ import (
 )
 
 func TestParsePrefixCursor(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = "(" inner ")" $$
+	p, err := compileTestSource(`rule main = "(" inner ")" $$
 rule inner = x:"é😀" "!" => $x
 rule empty = x:"a"? => $x
 rule nilvalue = -"é😀"

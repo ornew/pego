@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGeneratedGoMemoEnvironmentWork(t *testing.T) {
@@ -31,7 +29,7 @@ rule word Word = t:(x:[a-z]+ #atomic {text($x) == v}) => Word{Text: text($t)}`
 		alternatives = append(alternatives, name, name)
 	}
 	source += "\nrule spare_root Word = " + strings.Join(alternatives, " / ")
-	g, err := syntax.Parse(source)
+	g, err := parseTest(source)
 	if err != nil {
 		t.Fatal(err)
 	}

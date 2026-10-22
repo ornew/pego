@@ -23,6 +23,7 @@ type Assign = {
     Value node[string]
 }
 
+@start
 rule main = ^^ assign $$
 rule assign Assign = k:name -ws -"=" -ws v:value -";" => Assign{Name: $k, Value: $v}
 rule value = number / name
@@ -58,6 +59,7 @@ A leaf of the tree that should have a type of its own and keep the text it match
 // named-node.pego
 type Identifier = node[string]
 
+@start
 rule ident Identifier = [a-z]+ #atomic
 ```
 
@@ -96,6 +98,7 @@ type Decl = {
 
 type Program = { Decls []Decl }
 
+@start
 rule main Program = ds:decls $$ => Program{Decls: $ds}
 rule decls = ds:(-ws d:decl)* -ws => map($ds, (x) => x.$d)
 rule decl Decl = -"let" -ws n:ident v:init? -ws -";" => Decl{Name: $n, Value: $v}
@@ -144,6 +147,7 @@ tuple value as `(node[string], Expr)` and the node of a repetition as `node[[]It
 type Entry ~ node[(node[string], node[string], node[string])]
 type Table = { Entries []Entry }
 
+@start
 rule main Table = es:(-ws e:entry)* -ws $$ => Table{Entries: map($es, (x) => x.$e)}
 rule entry Entry = key "=" val
 rule key = [a-z]+ #atomic
@@ -169,6 +173,7 @@ type shows up in the error messages, for example when a field expects an `int` a
 ```pego
 // field-type.pego
 type Pair = { Key node[string]; Value int }
+@start
 rule pair Pair = k:key "=" v:value => Pair{Key: $k, Value: $v}
 rule key = [a-z]+ #atomic
 rule value = [0-9]+ #atomic
@@ -179,7 +184,7 @@ pego parse -g field-type.pego -s pair -i 'a=1'
 ```
 
 ```text
-pego: field-type.pego:3:53: cannot use node[string] as int in field Value of Pair
+pego: field-type.pego:4:53: cannot use node[string] as int in field Value of Pair
 ```
 
 The fix is to declare the field `node[string]`, or to convert the text in the action, as in `Value: text($v)` for a `string` field.

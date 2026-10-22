@@ -7,16 +7,18 @@ import (
 	"testing"
 )
 
-const lintGrammar = `rule main = "a" / "ab" / x
+const lintGrammar = `@start(default)
+rule main = "a" / "ab" / x
+@start
 rule x = k:"x" v:"y" => $k
 `
 
 func TestLint(t *testing.T) {
 	g := writeFile(t, "g.pego", lintGrammar)
 	out, err := runCLI(t, "", "lint", "-g", g)
-	want := g + `:1:19: error: alternative 2 (` + "`\"ab\"`" + `) can never match: alternative 1 (` + "`\"a\"`" + ` at 1:13) matches first wherever it could [shadowed-alternative]
+	want := g + `:2:19: error: alternative 2 (` + "`\"ab\"`" + `) can never match: alternative 1 (` + "`\"a\"`" + ` at 2:13) matches first wherever it could [shadowed-alternative]
 	fix: move it before alternative 1
-` + g + `:2:16: warning: capture v is never used: the action does not refer to it [unused-capture]
+` + g + `:4:16: warning: capture v is never used: the action does not refer to it [unused-capture]
 	fix: remove v:, or use $v
 `
 	if out != want {
@@ -45,10 +47,15 @@ func TestLint(t *testing.T) {
 		t.Errorf("unknown check: %v", err)
 	}
 
-	// The start rule decides what is unreachable.
+	// Every start rule is reached, whichever one -s selects; the rules none of them reach are not.
 	out, _ = runCLI(t, "", "lint", "-g", g, "-s", "x")
-	if !strings.Contains(out, ":1:1: warning: rule main is never used: x does not call it") {
+	if strings.Contains(out, "unreachable-rule") {
 		t.Errorf("-s x:\n%s", out)
+	}
+	several := writeFile(t, "several.pego", "@start(default)\nrule main = \"a\"\n@start\nrule x = \"b\"\nrule y = \"c\"")
+	out, _ = runCLI(t, "", "lint", "-g", several, "-s", "x")
+	if !strings.Contains(out, ":5:1: warning: rule y is never used: no start rule calls it") {
+		t.Errorf("-s x, several start rules:\n%s", out)
 	}
 }
 
@@ -66,12 +73,12 @@ func TestLintJSON(t *testing.T) {
 		t.Fatalf("got %+v", doc)
 	}
 	if !strings.Contains(out, `"severity": "error"`) || !strings.Contains(out, `"check": "shadowed-alternative"`) ||
-		!strings.Contains(out, `"line": 1`) || !strings.Contains(out, `"col": 19`) || !strings.Contains(out, `"rule": "main"`) ||
+		!strings.Contains(out, `"line": 2`) || !strings.Contains(out, `"col": 19`) || !strings.Contains(out, `"rule": "main"`) ||
 		!strings.Contains(out, `"fix": "move it before alternative 1"`) {
 		t.Errorf("got\n%s", out)
 	}
 
-	clean := writeFile(t, "clean.pego", `rule main = "a"`)
+	clean := writeFile(t, "clean.pego", "@start\nrule main = \"a\"")
 	out, err = runCLI(t, "", "lint", "-g", clean, "-f", "json")
 	if err != nil || !strings.Contains(out, `"findings": []`) {
 		t.Errorf("no findings: %v\n%s", err, out)
@@ -80,7 +87,7 @@ func TestLintJSON(t *testing.T) {
 
 func TestLintOtherGrammars(t *testing.T) {
 	// Source-derived JSON retains coordinates from the original grammar source.
-	g := writeFile(t, "g.pego", "rule main = \"a\"\nrule x = \"b\"")
+	g := writeFile(t, "g.pego", "@start\nrule main = \"a\"\nrule x = \"b\"")
 	j := filepath.Join(t.TempDir(), "g.json")
 	if _, err := runCLI(t, "", "convert", "-o", j, g); err != nil {
 		t.Fatal(err)
@@ -89,23 +96,25 @@ func TestLintOtherGrammars(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := j + ":2:1: warning: rule x is never used: main does not call it, directly or indirectly [unreachable-rule]\n"; !strings.HasPrefix(out, want) {
+	if want := j + ":3:1: warning: rule x is never used: main does not call it, directly or indirectly [unreachable-rule]\n"; !strings.HasPrefix(out, want) {
 		t.Errorf("got\n%s\nwant\n%s", out, want)
 	}
 
-	// A compiled grammar is linted from its AST, with the start rule saved in it.
+	// A compiled grammar is linted from its AST, with the start rule saved in it and the start
+	// rules of the grammar.
+	several := writeFile(t, "several.pego", "@start(default)\nrule main = \"a\"\n@start\nrule x = \"b\"\nrule y = \"c\"")
 	c := filepath.Join(t.TempDir(), "g.pegoc")
-	if _, err := runCLI(t, "", "compile", "-g", g, "-s", "x", "-o", c); err != nil {
+	if _, err := runCLI(t, "", "compile", "-g", several, "-s", "x", "-o", c); err != nil {
 		t.Fatal(err)
 	}
-	out, err = runCLI(t, "", "lint", "-g", c)
-	if err != nil || !strings.Contains(out, "rule main is never used: x does not call it") {
+	out, err = runCLI(t, "", "lint", "-g", c, "-f", "json")
+	if err != nil || !strings.Contains(out, `"start": "x"`) || !strings.Contains(out, "rule y is never used: no start rule calls it") || strings.Contains(out, "rule main is never used") {
 		t.Errorf("compiled: %v\n%s", err, out)
 	}
 
 	// A grammar that does not compile is an error, with the compile errors.
-	bad := writeFile(t, "bad.pego", "rule main = y")
-	if _, err := runCLI(t, "", "lint", "-g", bad); err == nil || !strings.Contains(err.Error(), bad+":1:13: undefined rule y") {
+	bad := writeFile(t, "bad.pego", "@start\nrule main = y")
+	if _, err := runCLI(t, "", "lint", "-g", bad); err == nil || !strings.Contains(err.Error(), bad+":2:13: undefined rule y") {
 		t.Errorf("bad grammar: %v", err)
 	}
 	if _, err := runCLI(t, "", "lint"); err == nil || !strings.Contains(err.Error(), "-g is required") {

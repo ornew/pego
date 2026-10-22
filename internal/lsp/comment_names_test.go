@@ -8,7 +8,7 @@ import (
 )
 
 func commentedNamesSource(typeGap, defGap, newGap, typeName, ruleName string) string {
-	return fmt.Sprintf("// Box documentation.\ntype%s%s = {Text string}\nrule%s%s = \"a\"\nrule%s main %s = %s => (%s%s{Text:\"a\"})\n",
+	return fmt.Sprintf("// Box documentation.\ntype%s%s = {Text string}\nrule%s%s = \"a\"\n@start\nrule%s main %s = %s => (%s%s{Text:\"a\"})\n",
 		typeGap, typeName, defGap, ruleName, defGap, typeName, ruleName, newGap, typeName)
 }
 

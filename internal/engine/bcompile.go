@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"slices"
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
@@ -148,6 +149,14 @@ func (c *bcompiler) compile() {
 			ri.NodeType = int(c.str(r.opNodeType)) // that of the operator nodes of an Operators Rule
 		}
 		c.m.Rules = append(c.m.Rules, ri)
+	}
+	for i, r := range c.prog.rules {
+		if slices.Contains(c.prog.starts, r.name) {
+			c.m.Starts = append(c.m.Starts, i)
+		}
+		if r.name == c.prog.defaultStart {
+			c.m.DefaultStart = i
+		}
 	}
 	for i, r := range all {
 		c.cur = r

@@ -5,8 +5,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 var typedDirectCutCases = []genCase{
@@ -59,7 +57,7 @@ func TestGeneratedTypedDirectCuts(t *testing.T) {
 		t.Skip("builds generated code")
 	}
 	for _, c := range typedDirectCutCases {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

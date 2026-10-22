@@ -10,8 +10,6 @@ import (
 	"go/token"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // Compare token streams rather than positions changed by emitted formatting.
@@ -55,7 +53,7 @@ func ordinaryFunctions(t *testing.T, src []byte) map[ordinaryMethodKey]*goast.Fu
 
 func TestGeneratedOrdinaryControlledBodiesPreserved(t *testing.T) {
 	needsWorkControls(t)
-	g, err := syntax.Parse(`type Text = { Text string }
+	g, err := parseTest(`type Text = { Text string }
 rule main Text = (a:("a"* #atomic) "b") #recover(skip="?") => Text{Text: text($a)}
 rule recursive Text = t:(recursive "+" "a" / "a") #atomic => Text{Text: text($t)}
 rule expr Text = operators {
@@ -121,7 +119,7 @@ rule expr Text = operators {
 // branch only outside a Document.
 func TestGeneratedOrdinaryGuardExcludesDocuments(t *testing.T) {
 	needsWorkControls(t)
-	g, err := syntax.Parse(`rule main = "a" "b"`)
+	g, err := parseTest(`rule main = "a" "b"`)
 	if err != nil {
 		t.Fatal(err)
 	}

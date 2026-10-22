@@ -8,6 +8,7 @@ The examples use `pairs.pego` and a parser `p` compiled as in [Running Parsers](
 ```pego
 type Pair = { Key node[string]; Value node[string] }
 
+@start
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
 rule key = [a-zあ-ん]+ #atomic

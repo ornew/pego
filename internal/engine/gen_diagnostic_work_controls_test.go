@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGeneratedGoDiagnosticWork(t *testing.T) {
@@ -16,7 +14,7 @@ func TestGeneratedGoDiagnosticWork(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated diagnostic-control consumers")
 	}
-	g, err := syntax.Parse(`type Word = { Text string }
+	g, err := parseTest(`type Word = { Text string }
 
 rule main Word = t:(letter #recover(skip="!")) #atomic => Word{Text: text($t)}
 
@@ -141,7 +139,7 @@ func TestGeneratedGoRecoveryMessageWork(t *testing.T) {
 		t.Skip("builds generated long recovery-message consumers")
 	}
 	message := strings.Repeat("details λ; ", 512)
-	g, err := syntax.Parse(fmt.Sprintf(`type Text ~ node[string] | error
+	g, err := parseTest(fmt.Sprintf(`type Text ~ node[string] | error
 type Doc = { Text Text }
  rule main Doc = x:(("z" @error(message=%q)) #recover(skip="!")) => Doc{Text: $x}`, message))
 	if err != nil {

@@ -70,6 +70,7 @@ type Comment = node[string] // between "<!--" and "-->"
 type Name = node[string]
 
 // A byte order mark (U+FEFF) may precede the document (Appendix F).
+@start
 rule main Document = (
     "\u{feff}"? d:xml_decl? p1:misc_list dt:doctype? p2:misc_list r:element e:misc_list $$
 ) => Document{Decl: $d, Prolog: concat($p1, $p2), Doctype: $dt, Root: $r, Epilog: $e}

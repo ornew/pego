@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 const frameScratchGrammar = `rule main = h:"#head\n" #atomic items:record* #stream $$ {text($h) == "#head\n"}
@@ -19,7 +17,7 @@ rule value = v:[0-9]+ #atomic ","`
 func BenchmarkStreamFrameScratch(b *testing.B) {
 	for _, size := range []int{32, 5000} {
 		input := "#head\n" + strings.Repeat("keyé😀=42,21,\n", size)
-		g, err := syntax.Parse(frameScratchGrammar)
+		g, err := parseTest(frameScratchGrammar)
 		if err != nil {
 			b.Fatal(err)
 		}

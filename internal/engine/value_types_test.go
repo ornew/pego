@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // The value types of rules follow the value model (spec/types.md).
@@ -67,7 +65,7 @@ func TestValueTypes(t *testing.T) {
 		// A rule with an action has the action's type, in which a capture has the type of its value.
 		{`rule a = x:"1"* => $x`, "a", `node[[]node[string]]`},
 	} {
-		g, err := syntax.Parse(tc.src)
+		g, err := parseTest(tc.src)
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
@@ -99,7 +97,7 @@ func TestValueTypesOfRepositoryGrammars(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		g, err := syntax.Parse(string(data))
+		g, err := parseTest(string(data))
 		if err != nil {
 			t.Fatalf("%s: %v", path, err)
 		}
@@ -118,7 +116,7 @@ func TestValueTypesOfRepositoryGrammars(t *testing.T) {
 
 // A capture under ? is optional in the enclosing node only, not in the node it captures.
 func TestValueTypesOptionalCaptures(t *testing.T) {
-	g, err := syntax.Parse("rule a = (x:b c)? d\nrule b = \"b\"\nrule c = \"c\"\nrule d = \"d\"")
+	g, err := parseTest("rule a = (x:b c)? d\nrule b = \"b\"\nrule c = \"c\"\nrule d = \"d\"")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +139,7 @@ func TestValueTypesOptionalCaptures(t *testing.T) {
 // grammars.
 func valueTypesOf(t *testing.T, src string) (map[string]ty, ErrorList) {
 	t.Helper()
-	g, err := syntax.ParseLegacy(src)
+	g, err := parseLegacyTest(src)
 	if err != nil {
 		t.Fatalf("%q: %v", src, err)
 	}

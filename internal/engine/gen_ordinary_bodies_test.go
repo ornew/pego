@@ -5,14 +5,12 @@ import (
 	goparser "go/parser"
 	"go/token"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // Every generated rule-body function (a top-level function charging StepWork first) must have the
 // parser parameter p, so that no body silently misses its ordinary specialization.
 func TestGeneratedRuleBodiesAreSpecialized(t *testing.T) {
-	g, err := syntax.Parse(`type Text = { Text string }
+	g, err := parseTest(`type Text = { Text string }
 rule main Text = (a:("a"* #atomic) "b") #recover(skip="?") => Text{Text: text($a)}
 rule recursive Text = t:(recursive "+" "a" / "a") #atomic => Text{Text: text($t)}
 rule expr Text = operators {

@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func inferredChain(depth int, reverse bool, mainType string) string {
@@ -34,7 +32,7 @@ func TestInferenceDependencyChains(t *testing.T) {
 	for _, depth := range []int{45, 50, 128, 512} {
 		for _, reverse := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%d/reversed=%v", depth, reverse), func(t *testing.T) {
-				g, err := syntax.Parse(inferredChain(depth, reverse, ":node[string]"))
+				g, err := parseTest(inferredChain(depth, reverse, ":node[string]"))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -147,7 +145,7 @@ func BenchmarkInferenceDependencies(b *testing.B) {
 		{"growing-list", `rule main = xs:main? => list($xs)`},
 	} {
 		b.Run(c.name, func(b *testing.B) {
-			g, err := syntax.Parse(c.source)
+			g, err := parseTest(c.source)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -216,7 +214,7 @@ func TestInferenceChainSavedValues(t *testing.T) {
 
 func TestInferenceChainFieldMismatch(t *testing.T) {
 	src := "type Holder = { Value node[string] }\n" + strings.Replace(inferredChain(128, false, ""), "rule main = r0", "rule main = r0:r0 => Holder{Value: $r0}", 1)
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}

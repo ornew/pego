@@ -6,8 +6,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestSparseMemoRuleAndPageBoundaries(t *testing.T) {
@@ -92,7 +90,7 @@ func TestSparseMemoParseControls(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	g, err := syntax.Parse(string(src))
+	g, err := parseTest(string(src))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +119,7 @@ func TestSparseMemoInputSelection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	g, err := syntax.Parse(string(data))
+	g, err := parseTest(string(data))
 	if err != nil {
 		t.Fatal(err)
 	}

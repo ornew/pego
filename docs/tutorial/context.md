@@ -19,6 +19,7 @@ Captured values are read with `$name`, and `text($name)` gives the matched text.
 letters. Save as `names.pego`:
 
 ```pego
+@start
 rule main = name ("," name)* $$
 
 rule name = n:[a-z]+ #atomic {len(text($n)) <= 8} @error(message="a name has at most 8 letters")
@@ -51,6 +52,7 @@ type Chars = node[string]
 type Element = { Name Name; Children []Content }
 type Content ~ Element | Chars
 
+@start
 rule main Element = e:element $$ => $e
 
 // The open tag defines `tag`; every rule called after that can read it.

@@ -11,8 +11,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // Compare public typed values with the existing generated Go Node-conversion
@@ -115,7 +113,7 @@ rule num Num = t:([0-9]) #atomic => Num{$t}`, []string{"", "a1", "a1b2"}})
 	var named [][]string
 	var files []string
 	for i, c := range cases {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

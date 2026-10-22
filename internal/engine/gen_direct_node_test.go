@@ -8,8 +8,6 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 var nodeDirectCases = []genCase{
@@ -36,7 +34,7 @@ rule main N = items:(x:[a-z] #atomic ",")+ $$ => N{Items: map($items, (e) => e.$
 		`var size int
 rule main = n:[0-9] #atomic {size := len($n)} {size == 1} "é" $$ => $n`,
 	} {
-		g, err := syntax.Parse(src)
+		g, err := parseTest(src)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -57,7 +55,7 @@ func TestGeneratedNodeDirectRetention(t *testing.T) {
 		t.Skip("builds generated code")
 	}
 	c := nodeDirectCases[0]
-	g, err := syntax.Parse(c.src)
+	g, err := parseTest(c.src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +110,7 @@ func TestRetainedTrees(t *testing.T) {
 func TestGeneratedNodeDirectRoutes(t *testing.T) {
 	for _, c := range nodeDirectCases {
 		t.Run(c.name, func(t *testing.T) {
-			g, err := syntax.Parse(c.src)
+			g, err := parseTest(c.src)
 			if err != nil {
 				t.Fatal(err)
 			}

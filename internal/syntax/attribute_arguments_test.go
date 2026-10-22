@@ -8,6 +8,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -24,7 +25,7 @@ func TestRepetitionPragmaBounds(t *testing.T) {
 		{`"a" #repeat(2, )`, []any{2, nil}, 2, -1, "aaaa"},
 	} {
 		t.Run(tc.source, func(t *testing.T) {
-			g, err := syntax.Parse("rule main = " + tc.source)
+			g, err := syntax.Parse("@start\nrule main = " + tc.source)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -103,7 +104,7 @@ func TestAttributeArgumentBinding(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := engine.Compile(g, engine.Options{}); err != nil {
+		if _, err := engine.Compile(starttest.MarkAll(g), engine.Options{}); err != nil {
 			t.Fatalf("%s: %v", src, err)
 		}
 	}
@@ -122,7 +123,7 @@ func TestAttributeArgumentBinding(t *testing.T) {
 		if err != nil {
 			continue
 		}
-		if _, err := engine.Compile(g, engine.Options{}); err == nil {
+		if _, err := engine.Compile(starttest.MarkAll(g), engine.Options{}); err == nil {
 			t.Fatalf("accepted %s", src)
 		}
 	}

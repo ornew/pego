@@ -5,15 +5,13 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // Report live memory after the parser has gone, with either one early row
 // or all rows retained. Input and compiled-program storage precede the
 // baseline GC and are held through the final GC in both variants.
 func BenchmarkStreamTextRetainedHeap(b *testing.B) {
-	g, err := syntax.Parse(`rule main = row* #stream $$
+	g, err := parseTest(`rule main = row* #stream $$
 rule row = key:[a-z]+ #atomic "=" value:[0-9]+ #atomic "\n"`)
 	if err != nil {
 		b.Fatal(err)

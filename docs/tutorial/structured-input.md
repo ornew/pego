@@ -25,6 +25,7 @@ more, `?` is zero or one). A rule can call another rule by name. Save as `kv.peg
 contents with the next version:
 
 ```pego
+@start
 rule main = key "=" value
 rule key = [a-z]+
 rule value = [0-9]+
@@ -47,6 +48,7 @@ single-letter strings.
 part. `[a-z]+ #atomic` applies atomic construction suppression to the repeated character class:
 
 ```pego
+@start
 rule main = key "=" value
 rule key = [a-z]+ #atomic
 rule value = [0-9]+ #atomic
@@ -62,6 +64,7 @@ The `=` is needed to parse the input but is of no interest in the tree. `-expr` 
 away:
 
 ```pego
+@start
 rule main = key -"=" value
 rule key = [a-z]+ #atomic
 rule value = [0-9]+ #atomic
@@ -78,6 +81,7 @@ the sequence, but actions refer to it as `$name`, as the next step shows. The na
 source information with `-source-info`:
 
 ```pego
+@start
 rule main = k:key "=" v:value
 rule key = [a-z]+ #atomic
 rule value = [0-9]+ #atomic
@@ -105,6 +109,7 @@ declared with `type`. This is the grammar from the README (`kv.pego`, final vers
 ```pego
 type Pair = { Key node[string]; Value node[string] }
 
+@start
 rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}
 ```
 
@@ -152,6 +157,7 @@ EOF
 Save the following grammar as `config-cst.pego`. It produces plain syntax-tree nodes, with no actions; the next lesson adds types.
 
 ```pego
+@start
 rule main = -ws entry* $$
 
 rule entry = k:key -ws -"=" -ws v:value -ws
@@ -188,6 +194,7 @@ Without `-i`, `pego parse` reads the input from standard input. The new pieces:
   reconsidered.
 
   ```pego
+  @start
   rule main = ("a" / "ab") $$
   ```
 

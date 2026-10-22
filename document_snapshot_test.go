@@ -10,7 +10,7 @@ import (
 )
 
 func TestDocumentSnapshotPublicContract(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = "a"+ $$`, "main")
+	p, err := compileTestSource(`rule main = "a"+ $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

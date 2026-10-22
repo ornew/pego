@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // A hidden rule, and the rule of an inline action, is not an entry point of a TypeScript parser
@@ -21,7 +19,7 @@ func TestGeneratedTSHiddenRulesAreNotEntryPoints(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	g, err := syntax.Parse(`rule main = _a (x:"b" => $x) _c
+	g, err := parseTest(`rule main = _a (x:"b" => $x) _c
 rule _a = "a"
 rule _c = "c"`)
 	if err != nil {

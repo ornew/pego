@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGeneratedTypedTrace(t *testing.T) {
@@ -97,7 +95,7 @@ rule part WithTrace = t:("a") #atomic => WithTrace{Text: text($t)}`, input: "a",
 		}
 	}
 	for _, f := range fixtures {
-		g, err := syntax.Parse(f.grammar)
+		g, err := parseTest(f.grammar)
 		if err != nil {
 			t.Fatal(f.name, err)
 		}
@@ -187,7 +185,7 @@ func TestTypedTraceLifecycle(t *testing.T){
 
 func TestGeneratedTracePrivateTypeNamesRemainInvalid(t *testing.T) {
 	for _, name := range []string{"observation", "observationCall", "tracePanic"} {
-		g, err := syntax.Parse("type " + name + " = { Text string }\nrule main = \"a\"")
+		g, err := parseTest("type " + name + " = { Text string }\nrule main = \"a\"")
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 const topBottomRules = "type Num = { Text string }\nrule n Num = t:([0-9]+) #atomic => Num{Text: text($t)}\nrule w = [a-z]+\n"
@@ -66,7 +65,7 @@ func TestTopBottomTypes(t *testing.T) {
 		{"type T = { A (node[string], int) & (node[string], bool) }\nrule main = \"a\"", "field A of T has type _|_"},
 		{"type T = { A (node[string],) & (node[string], node[string]) }\nrule main = \"a\"", "field A of T has type _|_"},
 	} {
-		g, err := syntax.Parse(tc.src)
+		g, err := parseTest(tc.src)
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
@@ -89,7 +88,7 @@ func TestTopBottomTypes(t *testing.T) {
 		"type T = { A *[](node[string] | node[_]) & [](node[_] | node[_]) }\nrule main = x:(\"a\" \"b\")* => T{A: $x.Value}",
 		"type T = { A ([]node[string] | int) & []node[_] }\nrule main = x:\"a\"* => T{A: $x.Value}",
 	} {
-		g, err := syntax.Parse(src)
+		g, err := parseTest(src)
 		if err != nil {
 			t.Fatalf("%q: %v", src, err)
 		}
@@ -140,7 +139,7 @@ func TestTopBottomListCheck(t *testing.T) {
 }
 
 func TestTopBottomReportedOnce(t *testing.T) {
-	g, err := syntax.Parse("type T = { A int & string }\nrule main = x:\"a\" => T{A: $x}")
+	g, err := parseTest("type T = { A int & string }\nrule main = x:\"a\" => T{A: $x}")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +147,7 @@ func TestTopBottomReportedOnce(t *testing.T) {
 	if err == nil || strings.Count(err.Error(), "_|_") != 1 || strings.Contains(err.Error(), "never") {
 		t.Fatalf("got %v, want one _|_ error", err)
 	}
-	g, err = syntax.Parse("rule main = x:\"a\" => [](int & string){$x}")
+	g, err = parseTest("rule main = x:\"a\" => [](int & string){$x}")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,7 +155,7 @@ func TestTopBottomReportedOnce(t *testing.T) {
 		t.Fatalf("got %v, want one _|_ error", err)
 	}
 	// An empty meet (only an AST can hold one) is _.
-	g, err = syntax.Parse("type T = { A node[string] }\nrule main = x:\"a\" => T{A: $x}")
+	g, err = parseTest("type T = { A node[string] }\nrule main = x:\"a\" => T{A: $x}")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -177,7 +176,7 @@ func TestTopBottomLocationsAreRejected(t *testing.T) {
 		{"rule main = x:\"a\" => []_|_{$x}", "the list element has type _|_"},
 		{"rule main = x:\"a\" => [](int & string){$x}", "the list element has type _|_"},
 	} {
-		g, err := syntax.Parse(tc.src)
+		g, err := parseTest(tc.src)
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
@@ -186,7 +185,7 @@ func TestTopBottomLocationsAreRejected(t *testing.T) {
 		}
 	}
 	// Other type errors are reported too.
-	g, err := syntax.Parse("type T = { A node[string] }\nrule main = \"a\" => T{A: 1}")
+	g, err := parseTest("type T = { A node[string] }\nrule main = \"a\" => T{A: 1}")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,7 +196,7 @@ func TestTopBottomLocationsAreRejected(t *testing.T) {
 
 func TestTopBottomSyntax(t *testing.T) {
 	src := "type A ~ []B & *C | _ & (D | B) | _|_\ntype E ~ [](B & C) & *(B | C)\ntype B = { Text string }\ntype C = { Text string }\ntype D = { Text string }\nrule main = x:\"a\" => $x.(_ & node[_])"
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -87,7 +87,7 @@ func BenchmarkF08Analyze(b *testing.B) {
 // handling without producing a quadratic ordered-choice lint workload.
 func f08BenchmarkGrammar() string {
 	var source strings.Builder
-	source.WriteString("rule main = ")
+	source.WriteString("@start\nrule main = ")
 	for i := 0; i < 1024; i++ {
 		fmt.Fprintf(&source, "entry%04d ", i)
 	}
@@ -277,7 +277,7 @@ func BenchmarkF08ProtocolCancel(b *testing.B) {
 	b.StopTimer()
 	peer := newF08BenchmarkPeer(b)
 	defer func() { peer.abort(); requestHook = nil }()
-	peer.send("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": "file:///cancel-benchmark.pego", "version": 1, "text": "rule main = \"a\""}}, false)
+	peer.send("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": "file:///cancel-benchmark.pego", "version": 1, "text": "@start\nrule main = \"a\""}}, false)
 	notification := peer.receive()
 	if notification.Method != "textDocument/publishDiagnostics" {
 		b.Fatalf("unexpected initialization message: %+v", notification)
@@ -324,7 +324,7 @@ func BenchmarkF08ProtocolCancel(b *testing.B) {
 	b.StartTimer() // Setup ended with the timer stopped; B.Loop requires it running.
 	for b.Loop() {
 		b.StopTimer()
-		id := peer.send("textDocument/hover", map[string]any{"textDocument": map[string]any{"uri": "file:///cancel-benchmark.pego"}, "position": Position{Line: 0, Character: 5}}, true)
+		id := peer.send("textDocument/hover", map[string]any{"textDocument": map[string]any{"uri": "file:///cancel-benchmark.pego"}, "position": Position{Line: 1, Character: 5}}, true)
 		<-active
 		b.StartTimer()
 		cancelAt := time.Now()

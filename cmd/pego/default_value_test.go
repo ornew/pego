@@ -7,7 +7,7 @@ import (
 )
 
 func TestParseDefaultValue(t *testing.T) {
-	g := writeFile(t, "kv-action.pego", "type KV = { K node[string]; V node[string] }\nrule main KV = k:[a-z]+ #atomic \"=\" v:[0-9]+ #atomic => KV{K: $k, V: $v}")
+	g := writeFile(t, "kv-action.pego", "type KV = { K node[string]; V node[string] }\n@start\nrule main KV = k:[a-z]+ #atomic \"=\" v:[0-9]+ #atomic => KV{K: $k, V: $v}")
 	out, err := runCLI(t, "", "parse", "-g", g, "-i", "a=1", "-f", "sexpr")
 	if want := `KV{K: "a", V: "1"}` + "\n"; err != nil || out != want {
 		t.Errorf("got %q, %v", out, err)

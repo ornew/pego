@@ -15,7 +15,11 @@ import (
 func metadataWideSource(n int, invalid bool) string {
 	var b strings.Builder
 	for i := range n {
-		fmt.Fprintf(&b, "// Definition %d\ntype T%d = { Text string }\nrule r%d T%d = ", i, i, i, i)
+		fmt.Fprintf(&b, "// Definition %d\ntype T%d = { Text string }\n", i, i)
+		if i == 0 {
+			b.WriteString("@start\n")
+		}
+		fmt.Fprintf(&b, "rule r%d T%d = ", i, i)
 		if invalid {
 			b.WriteString("missing\n")
 		} else {
@@ -29,7 +33,7 @@ func metadataSources(tb testing.TB) []semanticSourceCase {
 		semanticSourceCase{"wide512", metadataWideSource(512, false)},
 		semanticSourceCase{"partial512", metadataWideSource(512, false) + "rule unfinished = (\n"},
 		semanticSourceCase{"compile-errors512", metadataWideSource(512, true)},
-		semanticSourceCase{"docs512", strings.Repeat("// Documentation line\n", 512) + "rule main = \"a\"\n"},
+		semanticSourceCase{"docs512", "@start\n" + strings.Repeat("// Documentation line\n", 512) + "rule main = \"a\"\n"},
 	)
 }
 func metadataPrepared(tb testing.TB, text string) *analysis {

@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestFiniteStreamRepetitions(t *testing.T) {
@@ -130,7 +128,7 @@ func TestFiniteStreamConsumerError(t *testing.T) {
 
 func BenchmarkStreamRepetitionLimit(b *testing.B) {
 	for _, tc := range []struct{ name, bound string }{{"Finite", "#repeat(10000)"}, {"Unbounded", "*"}} {
-		g, err := syntax.Parse("rule main = \"a\"" + tc.bound + " #stream $$")
+		g, err := parseTest("rule main = \"a\"" + tc.bound + " #stream $$")
 		if err != nil {
 			b.Fatal(err)
 		}

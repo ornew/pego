@@ -7,6 +7,7 @@ import (
 
 	"github.com/ornew/pego"
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/starttest"
 )
 
 func TestFormatSyntax(t *testing.T) {
@@ -59,7 +60,7 @@ func TestFormatSyntaxNormalizedPragmas(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := pego.Compile(g, "main")
+	p, err := pego.Compile(starttest.MarkAll(g), "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,7 +89,11 @@ rule value T = "x" => T{N: 1}`)
 	if strings.Contains(out, "x:value") {
 		t.Fatalf("capture retained: %s", out)
 	}
-	if _, err := pego.CompileSource(out, "main"); err == nil {
+	proj, err := pego.ParseGrammar(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pego.Compile(starttest.MarkAll(proj), "main"); err == nil {
 		t.Fatal("expected value-dependent projection to require the full grammar")
 	}
 }
@@ -118,13 +123,13 @@ func TestFormatSyntaxGrouping(t *testing.T) {
 			if grammar.FormatSyntax(projected) != out {
 				t.Fatal("projection not idempotent")
 			}
-			p, err := pego.Compile(projected, "main")
+			p, err := pego.Compile(starttest.MarkAll(projected), "main")
 			if err != nil {
 				t.Fatal(err)
 			}
 			// The corresponding full grammar has identical matching behavior
 			// whenever it does not require an unimplemented inline action.
-			full, err := pego.Compile(g, "main")
+			full, err := pego.Compile(starttest.MarkAll(g), "main")
 			if err != nil {
 				return
 			}

@@ -12,7 +12,8 @@ import (
 // results for the same 1,000-error stream. Element delivery stays enabled in
 // both modes so each recovery is committed at the same stream boundary.
 func BenchmarkStreamDiagnosticLimit(b *testing.B) {
-	p, err := pego.CompileSource(`rule main = item+ #stream $$
+	p, err := pego.CompileSource(`@start
+rule main = item+ #stream $$
 rule item = "ab" #recover(skip=[^a]+)`, "main")
 	if err != nil {
 		b.Fatal(err)

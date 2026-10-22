@@ -15,6 +15,7 @@ type Neg = { X Expr }
 type Call = { Fn Name; Args []Expr }
 type Expr ~ Num | Name | Bin | Neg | Call
 
+@start
 rule main Expr = e:expr ws $$ => $e
 
 rule expr Expr = operators {

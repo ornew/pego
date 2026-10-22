@@ -12,7 +12,7 @@ import (
 
 func TestTestCommandTextAndBackendSelection(t *testing.T) {
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "grammar.pego"), []byte(`rule main = "a"`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "grammar.pego"), []byte("@start\nrule main = \"a\""), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	suite := filepath.Join(dir, "suite.json")
@@ -32,7 +32,7 @@ func TestTestCommandTextAndBackendSelection(t *testing.T) {
 
 func TestTestCommandDispatchRunsSuite(t *testing.T) {
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "grammar.pego"), []byte(`rule main = "a"`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "grammar.pego"), []byte("@start\nrule main = \"a\""), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	suite := filepath.Join(dir, "suite.json")
@@ -50,7 +50,7 @@ func TestTestCommandDispatchRunsSuite(t *testing.T) {
 
 func TestTestCommandUpdateRequiresBackendAndPreservesOutcome(t *testing.T) {
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "grammar.pego"), []byte(`rule main = "a"`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "grammar.pego"), []byte("@start\nrule main = \"a\""), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	suite := filepath.Join(dir, "suite.json")

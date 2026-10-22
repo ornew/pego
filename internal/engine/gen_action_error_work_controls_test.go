@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGeneratedGoActionErrorWork(t *testing.T) {
@@ -36,7 +34,7 @@ func TestGeneratedGoActionErrorWork(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, c := range cases {
-		g, err := syntax.Parse(c.grammar)
+		g, err := parseTest(c.grammar)
 		if err != nil {
 			t.Fatal(err)
 		}

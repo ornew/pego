@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/starttest"
 )
 
 const workGuardedChoiceAlternatives = 512
@@ -36,6 +37,7 @@ func workGuardedChoiceProgram(t *testing.T) (*Program, *grammar.Choice) {
 		&grammar.RuleDef{Name: "main", Expr: main},
 		&grammar.RuleDef{Name: "fallback", Expr: &grammar.Literal{Value: "z"}},
 	}}}
+	starttest.MarkAll(g)
 	prog, err := Compile(g, Options{})
 	if err != nil {
 		t.Fatalf("compile guarded-choice grammar: %v", err)

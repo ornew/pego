@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGeneratedTSDepthOptions(t *testing.T) {
@@ -44,7 +42,7 @@ rule n = ("(" n ")" / "é") #recover(skip="?")`, []string{"é", "(é)", "((é))"
 	script.WriteString(`import assert from "node:assert/strict";
 `)
 	for i, c := range fixtures {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatal(err)
 		}

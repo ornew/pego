@@ -28,7 +28,7 @@ func newDebugFlags(name string) *debugFlags {
 	return &debugFlags{
 		fs:      fs,
 		grammar: fs.String("g", "", "grammar file (.pego, .json, or .pegoc)"),
-		start:   fs.String("s", "", "start rule name (default: the one saved in a .pegoc, otherwise main)"),
+		start:   fs.String("s", "", "start rule name (default: the one saved in a .pegoc, otherwise the grammar's default start rule)"),
 		input:   fs.String("i", "", "input string (default: standard input)"),
 		unit:    fs.String("unit", "codepoints", "unit of positions: codepoints or bytes"),
 		backend: fs.String("backend", "", "execution backend: closure, bytecode, or bytecode-iterative (default: chosen for the grammar)"),

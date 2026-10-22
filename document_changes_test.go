@@ -9,7 +9,7 @@ import (
 )
 
 func TestDocumentChangesPublicOptIn(t *testing.T) {
-	p, err := pego.CompileSource(`type Entry = { Name string }
+	p, err := compileTestSource(`type Entry = { Name string }
 rule main Entry = x:([a-zé]+ #atomic) $$ => Entry{Name: text($x)}`, "main")
 	if err != nil {
 		t.Fatal(err)
@@ -83,7 +83,7 @@ rule main Entry = x:([a-zé]+ #atomic) $$ => Entry{Name: text($x)}`, "main")
 }
 
 func TestDocumentChangesPublicFullRefresh(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = .* $$`, "main")
+	p, err := compileTestSource(`rule main = .* $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

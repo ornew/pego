@@ -6,8 +6,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestStructuralQuerySharedEdgesAndCaptures(t *testing.T) {
@@ -91,7 +89,7 @@ func TestStructuralQueryElementsSeeThroughNodes(t *testing.T) {
 }
 
 func TestStructuralQueryRuleNeedsSourceInfo(t *testing.T) {
-	g, err := syntax.Parse(`rule main = item ("," item)*
+	g, err := parseTest(`rule main = item ("," item)*
 rule item = [a-z]`)
 	if err != nil {
 		t.Fatal(err)

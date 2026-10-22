@@ -8,8 +8,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // TestGeneratedDocumentLeftRecursionAbortedGrowth is the generated Document
@@ -50,7 +48,7 @@ rule a A = t:("a") #atomic => A{Text: text($t)}`, "a+a+a+a"},
 	}
 	files := map[string]string{"go.mod": testGoMod("fixture")}
 	for i, g := range grammars {
-		parsed, err := syntax.Parse(g.src)
+		parsed, err := parseTest(g.src)
 		if err != nil {
 			t.Fatal(err)
 		}

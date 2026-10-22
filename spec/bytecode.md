@@ -314,13 +314,13 @@ A compiled grammar uses container version 2 or 3. Version 2 stores one module an
 |:--|:--|
 | Magic | `PEGOC\x00` (6 bytes) |
 | Version | 1 byte (2 or 3). Version 2 has no recognition-bundle field. Version 3 adds that field after the main module. |
-| Instruction-set version | Unsigned integer for this module: 25. Every module uses this version, whatever instructions it contains, and the optional recognition bundle declares it too. Earlier versions built the syntax trees that preceded the value model, held terminal types, wrote field types with the earlier node type names, had no named node types, had no default-value flag, had no tuple values, carried text struct node types and the text flag of `EMEMBER` and `EBIN`, did not give the node type of an Operators Rule its meaning, had no variable table, or checked field values, rule results and bindings when they ran (the `ECHECK` instruction, the check operands of `BIND` and `ENODE`, and the checks of rules and lines); a runtime rejects them and asks for the grammar to be compiled again. |
+| Instruction-set version | Unsigned integer for this module: 26. Every module uses this version, whatever instructions it contains, and the optional recognition bundle declares it too. Earlier versions built the syntax trees that preceded the value model, held terminal types, wrote field types with the earlier node type names, had no named node types, had no default-value flag, had no tuple values, carried text struct node types and the text flag of `EMEMBER` and `EBIN`, did not give the node type of an Operators Rule its meaning, had no variable table, had no start rules, or checked field values, rule results and bindings when they ran (the `ECHECK` instruction, the check operands of `BIND` and `ENODE`, and the checks of rules and lines); a runtime rejects them and asks for the grammar to be compiled again. |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
-| Start rule | String index, unsigned (the empty string means no default start rule) |
+| Start rule | String index, unsigned: the start rule the saved parser uses. It is a start rule of the module, or the empty string for the module's default start rule. |
 | Package name | String index, unsigned |
 | Module | See below |
-| Recognition bundle (version 3 only) | Boolean, then when true an unsigned length in bytes and a recognition bundle. The bundle has its own instruction-set version, string table and module, followed by an ordered list mapping public start-rule names to rule indices. Its module and string table are independent of the main module. The loader validates that its ordered start names and rule indices match the main module. |
-| AST present | Boolean. If true, the grammar AST and static-analysis results follow (including, per rule, whether it may have a value-free twin). These serve the closure backend and grammar tools; a runtime may skip them. The AST codec does not serialize source positions, except the position of each cast when the module records source information, nor normalized comment ownership or formatter trivia. |
+| Recognition bundle (version 3 only) | Boolean, then when true an unsigned length in bytes and a recognition bundle. The bundle has its own instruction-set version, string table and module, followed by an ordered list mapping public start-rule names to rule indices. Its module and string table are independent of the main module. The loader validates that its ordered start names and rule indices, and its start rules, match the main module. |
+| AST present | Boolean. If true, the grammar AST and static-analysis results follow (including, per rule, whether it may have a value-free twin). The AST does not record declaration attributes: a loader marks the rules that the module lists as start rules with `@start`, and the default one with `@start(default)` when there are several. Every start rule of the module MUST be a rule of the AST. These serve the closure backend and grammar tools; a runtime may skip them. The AST codec does not serialize source positions, except the position of each cast when the module records source information, nor normalized comment ownership or formatter trivia. |
 | Checksum | CRC-32 (IEEE) of everything from the magic up to this point, 4 bytes little-endian |
 
 The main module is laid out in the following order. A *list* is a count (unsigned) followed by its elements. Indices, positions and other integers inside the module are signed unless stated otherwise. A recognition bundle, when present, contains the same module layout plus the ordered start-name/index map described above.
@@ -333,8 +333,9 @@ The main module is laid out in the following order. A *list* is a count (unsigne
 6. Field-list table, then scope table: each a list of lists of string indices.
 7. Variable table: a list of (name, type, integer, string). The type is 0 for `int`, 1 for `string` and 2 for `bool`. The integer is the initial value of an `int` variable, and 0 or 1 for a `bool` variable. The string is the string table index of the initial value of a `string` variable, and -1 for the other types.
 8. Rule table: a list of (name, body, scope, action, body is a sequence, node type, memoize, leader, position-dependent, Operators Rule, value-free twin, transient, where, splice, variables, check).
-9. Operators Rule table: a list of (skip, list of operand lines, list of prefix operators, list of infix and postfix operators). A line is (start, scope, action, body is a sequence, check); an operator is (index, kind, associativity, level, line).
-10. Match code, then expression code: each a list of instructions (opcode as 1 byte, then `A`, `B`, `C`).
+9. Start rules: a list of the rule table indices of the start rules, the rules marked `@start`, in increasing order, followed by the rule table index of the default start rule. Parsing begins only at these rules.
+10. Operators Rule table: a list of (skip, list of operand lines, list of prefix operators, list of infix and postfix operators). A line is (start, scope, action, body is a sequence, check); an operator is (index, kind, associativity, level, line).
+11. Match code, then expression code: each a list of instructions (opcode as 1 byte, then `A`, `B`, `C`).
 
 ### Load-Time Validation
 
@@ -343,6 +344,7 @@ On load, a runtime checks the following and rejects the file if any check fails:
 - The checksum, the version and the instruction-set version are valid, and no data remains after the end.
 - Each variable is named once, has a valid type, and has an initial value that matches its type.
 - Every reference in the tables and instructions (strings, character classes, scopes, field lists, rules, Operators Rule tables, expression code, built-in functions) is in range. A version 3 recognition bundle must have a valid independent module and start map matching the main module.
+- There is at least one start rule. The start rules are in increasing order and have distinct names, and the default start rule is one of them.
 - Every opcode is known, and every flag operand is within its range.
 - The node type of a rule names a named node type, or a declared type with a field `Text`. The node type of a rule with an Operators Rule names a named node type.
 - A named node type has no fields, and its underlying node type is a type text, parsed as the type of `ECAST` is, of the form `node[T]`. The type A of `ENODE` names a named node type, and B is 0.

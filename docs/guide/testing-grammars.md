@@ -38,6 +38,7 @@ semicolons and whitespace:
 ```pego
 type Pair = { Key node[string]; Value node[string] }
 
+@start
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
 rule key = [a-zあ-ん]+ #atomic
@@ -270,6 +271,7 @@ suite file; each case must provide an `input` string and an expected outcome:
 For example, `grammar.pego` can contain:
 
 ```pego
+@start
 rule main = "a" #recover(skip=[^;]+ ";"?)
 ```
 
@@ -286,7 +288,7 @@ that case and backend, and later cases continue; syntax errors are represented b
 outcome and their locations.
 
 The `backends` list may be omitted to use the default backend. Equivalence is opt-in and compared separately from
-the expected outcome and goldens. The suite may select a `start` rule and a `unit` (`codepoints` or `bytes`). Expectations
+the expected outcome and goldens. The suite may select a `start` rule (by default, the grammar's default start rule) and a `unit` (`codepoints` or `bytes`). Expectations
 may additionally include node JSON, root `start`/`end` positions, and ordered syntax-error locations.
 
 To refresh observed node and location goldens for one backend, select it explicitly:

@@ -18,6 +18,7 @@ func TestGenerateGoEmbeddedPackageBuilds(t *testing.T) {
 		t.Skip("builds a generated parser")
 	}
 	g, err := pego.ParseGrammar(`type Pair = { Key node[string]; Value node[string] }
+@start
 rule main Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`)
 	if err != nil {
 		t.Fatal(err)

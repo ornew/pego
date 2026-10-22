@@ -20,6 +20,7 @@ type Number = node[string]
 type Binary = { Left Expr; Op node[string]; Right Expr }
 type Expr ~ Number | Binary
 
+@start
 rule main Expr = e:expr $$ => $e
 
 rule expr Expr = operators {
@@ -66,6 +67,7 @@ type Binary = { Left Expr; Op node[string]; Right Expr }
 type Unary = { Op node[string]; X Expr }
 type Expr ~ Number | Binary | Unary
 
+@start
 rule main Expr = e:expr ws $$ => $e
 
 rule expr Expr = operators {
@@ -117,6 +119,7 @@ type Number = node[string]
 type Binary = { Left Expr; Op node[string]; Right Expr }
 type Expr ~ Number | Binary
 
+@start
 rule main Expr = ws e:expr ws $$ => $e
 
 rule expr Expr = sum / product

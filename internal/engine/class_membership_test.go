@@ -2,13 +2,12 @@ package engine
 
 import (
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 	"testing"
 )
 
 func classMembershipProgram(t *testing.T, expr grammar.Expr) *Program {
 	t.Helper()
-	g, err := syntax.Parse(`rule main = [a]`)
+	g, err := parseTest(`rule main = [a]`)
 	if err != nil {
 		t.Fatal(err)
 	}

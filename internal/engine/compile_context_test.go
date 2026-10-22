@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // Cancel at a deterministic poll, without timing or global compiler hooks.
@@ -35,7 +34,7 @@ func compileTestContext(t *testing.T, polls int) *compilePollContext {
 
 func compileTestGrammar(t *testing.T) *grammar.Grammar {
 	t.Helper()
-	g, err := syntax.Parse(inferredChain(1024, false, ""))
+	g, err := parseTest(inferredChain(1024, false, ""))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,7 +167,7 @@ func TestCompileContextOrdinaryParity(t *testing.T) {
 		`rule main = "a" / missing`,
 		`type P = { X node[string] }; rule main = "a" => P{X: 1}`,
 	} {
-		g, err := syntax.Parse(src)
+		g, err := parseTest(src)
 		if err != nil {
 			t.Fatal(err)
 		}

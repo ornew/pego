@@ -6,8 +6,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // stringFieldCases read struct fields in actions and predicates. direct reports whether the
@@ -88,7 +86,7 @@ func TestGeneratedStringFieldReads(t *testing.T) {
 	var cases []genCase
 	direct := 0
 	for _, c := range stringFieldCases() {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

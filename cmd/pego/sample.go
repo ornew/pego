@@ -54,7 +54,7 @@ type ruleCutsOutput struct {
 func sampleCmd(args []string, stdout io.Writer) error {
 	fs := flag.NewFlagSet("sample", flag.ContinueOnError)
 	grammarPath := fs.String("g", "", "grammar file (.pego, .json, or .pegoc with the AST)")
-	start := fs.String("s", "", "start rule (default: the one saved in a .pegoc, otherwise main)")
+	start := fs.String("s", "", "start rule (default: the one saved in a .pegoc, otherwise the grammar's default start rule)")
 	n := fs.Int("n", 10, "number of distinct inputs to generate")
 	seed := fs.Uint64("seed", 0, "seed of the random decisions; the same seed gives the same inputs")
 	maxDepth := fs.Int("max-depth", sample.DefaultMaxDepth, "recursion depth beyond which the generator finishes the input the shortest way")

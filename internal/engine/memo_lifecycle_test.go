@@ -5,8 +5,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 const memoizedStream = `rule main = item* #stream $$
@@ -115,7 +113,7 @@ func BenchmarkMemoLifecycle(b *testing.B) {
 			{"StreamLeftRec", leftRecursiveStream, "abc,abc\n"},
 		} {
 			b.Run(fmt.Sprintf("%s/%s", c.name, backend), func(b *testing.B) {
-				g, err := syntax.Parse(c.src)
+				g, err := parseTest(c.src)
 				if err != nil {
 					b.Fatal(err)
 				}

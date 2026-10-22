@@ -29,6 +29,7 @@ type Entry = {
     Value Value
 }
 
+@start
 rule main = -ws entry* #stream $$
 
 rule entry Entry = k:key -ws -"=" -ws v:value -ws => Entry{Key: $k, Value: $v}

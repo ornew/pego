@@ -54,8 +54,8 @@ func DisableChecks(names ...string) LintOption {
 // by position. Comments of the form "// lint:ignore check reason" in the source suppress findings
 // (see docs/guide/linting.md).
 //
-// Lint returns an error, and no findings, if g does not compile, if start is not a rule of g, or
-// if an option names an unknown check.
+// An empty start selects the default start rule. Lint returns an error, and no findings, if g
+// does not compile, if start is not a start rule of g, or if an option names an unknown check.
 func Lint(g *grammar.Grammar, start string, opts ...LintOption) ([]Finding, error) {
 	var o lint.Options
 	for _, opt := range opts {
@@ -70,8 +70,10 @@ func Lint(g *grammar.Grammar, start string, opts ...LintOption) ([]Finding, erro
 	if err != nil {
 		return nil, err
 	}
-	if !slices.Contains(prog.Rules(), start) {
-		return nil, fmt.Errorf("start rule %s is not defined", start)
+	if start == "" {
+		start = prog.DefaultStart()
+	} else if err := prog.CheckStart(start); err != nil {
+		return nil, err
 	}
 	return lint.Run(g, start, o), nil
 }

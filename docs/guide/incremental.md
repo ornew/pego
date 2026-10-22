@@ -214,7 +214,8 @@ import (
 	"github.com/ornew/pego"
 )
 
-const grammar = `rule main =  line* $$
+const grammar = `@start
+rule main =  line* $$
 rule line =  [a-z]+ "\n" `
 
 func main() {
@@ -297,7 +298,8 @@ func js(n *pego.Node) string {
 }
 
 func main() {
-	p, _ := pego.CompileSource(`rule main =  line* $$
+	p, _ := pego.CompileSource(`@start
+rule main =  line* $$
 rule line =  [a-z]+ "\n" `, "main")
 	d, _ := p.NewDocument(strings.Repeat("ab\n", 100))
 	t1, _ := d.Parse()

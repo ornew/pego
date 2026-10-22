@@ -29,6 +29,7 @@ design, and how the checks are kept free of false positives, is in
 Take a list whose items may be words, numbers or booleans:
 
 ```pego
+@start
 rule main = item ("," item)*
 rule item = word / number / "true" / "false"
 rule word = [a-z]+ #atomic
@@ -40,9 +41,9 @@ pego lint -g items.pego
 ```
 
 ```text
-items.pego:2:28: error: alternative 3 (`"true"`) can never match: alternative 1 (`word` at 2:12) matches first wherever it could [shadowed-alternative]
+items.pego:3:29: error: alternative 3 (`"true"`) can never match: alternative 1 (`word` at 3:13) matches first wherever it could [shadowed-alternative]
 	fix: move it before alternative 1
-items.pego:2:37: error: alternative 4 (`"false"`) can never match: alternative 1 (`word` at 2:12) matches first wherever it could [shadowed-alternative]
+items.pego:3:38: error: alternative 4 (`"false"`) can never match: alternative 1 (`word` at 3:13) matches first wherever it could [shadowed-alternative]
 	fix: move it before alternative 1
 pego: lint: 2 errors, 0 warnings, 0 hints
 ```
@@ -54,8 +55,8 @@ keywords first, and to make sure that they are whole words: `rule item =  ("true
 [Sampling inputs and fuzzing](sampling-and-fuzzing.md#coverage).)
 
 `pego lint` exits with status 1 if it finds an error, and 0 otherwise; with `-strict`, warnings fail too. Hints never
-fail. The grammar can be PEGO source, JSON or a compiled grammar with the AST; the start rule is `main` unless `-s`
-says otherwise or a compiled grammar saved one. A grammar that does not compile is reported with its compile errors,
+fail. The grammar can be PEGO source, JSON or a compiled grammar with the AST; the start rule is the one `-s`
+names, otherwise the one a compiled grammar saved, otherwise the grammar's default start rule. A grammar that does not compile is reported with its compile errors,
 like the other commands do.
 
 With `-f json`, the findings are printed as one JSON document:
@@ -70,12 +71,12 @@ pego lint -g items.pego -f json
   "start": "main",
   "findings": [
     {
-      "line": 2,
-      "col": 28,
+      "line": 3,
+      "col": 29,
       "severity": "error",
       "check": "shadowed-alternative",
       "rule": "item",
-      "message": "alternative 3 (`\"true\"`) can never match: alternative 1 (`word` at 2:12) matches first wherever it could",
+      "message": "alternative 3 (`\"true\"`) can never match: alternative 1 (`word` at 3:13) matches first wherever it could",
       "fix": "move it before alternative 1"
     },
     ...
@@ -285,6 +286,7 @@ A capture stores its value after its expression matches. For nested captures, th
 the outer capture then overwrites it. The finding points to the outer capture and identifies the inner one:
 
 ```pego
+@start
 rule main = a:a:"x"
 ```
 
@@ -302,8 +304,8 @@ The fix shows the class without the overlap, or without the punctuation: `[A-Za-
 
 ### `unreachable-rule`
 
-Rules that the start rule never calls, directly or indirectly. A grammar with several entry points
-(`Parser.WithStart`) can suppress the finding for those rules, or disable the check.
+Rules that no start rule calls, directly or indirectly. Every rule marked `@start` is where parsing may begin, so
+the rules it reaches are used even when the start rule given to the linter does not reach them.
 
 ### `right-recursion`
 
@@ -340,11 +342,12 @@ anywhere in what it examined invalidates the rule's results in a `Document`. Loo
 A comment that starts with `lint:ignore` and the names of checks suppresses their findings, with an optional reason:
 
 ```pego
-// lint:ignore unreachable-rule called with WithStart("expr") by the REPL
+// lint:ignore unreachable-rule kept for the next version of the format
 rule expr_entry = expr $$
 
 rule stmt = s:simple k:keyword => $s // lint:ignore unused-capture k is kept for the tree view
 
+@start
 rule main = (
     // lint:ignore nullable-repetition,unused-capture an empty item marks the end
     items:item?* $$) => nil

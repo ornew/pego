@@ -6,6 +6,7 @@ import (
 
 	"github.com/ornew/pego"
 	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/sample"
 )
 
@@ -15,7 +16,11 @@ import (
 func TestSampleCorpus(t *testing.T) {
 	for _, c := range engine.Corpus(t) {
 		t.Run(c.Name, func(t *testing.T) {
-			p, err := pego.CompileSource(c.Src, "main")
+			ast, err := pego.ParseGrammar(c.Src)
+			if err != nil {
+				t.Fatal(err)
+			}
+			p, err := pego.Compile(starttest.MarkAll(ast), "main")
 			if err != nil {
 				t.Fatal(err)
 			}

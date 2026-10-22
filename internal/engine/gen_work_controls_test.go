@@ -8,8 +8,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGeneratedGoWorkControls(t *testing.T) {
@@ -17,7 +15,7 @@ func TestGeneratedGoWorkControls(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated work-control consumers")
 	}
-	g, err := syntax.Parse(`type Word = { Text string }
+	g, err := parseTest(`type Word = { Text string }
 
 rule main Word = t:("a"* "é") #atomic => Word{Text: text($t)}
 
@@ -205,7 +203,7 @@ func TestGeneratedGoConversionWork(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated conversion consumers")
 	}
-	g, err := syntax.Parse(`type Leaf = { Text string }
+	g, err := parseTest(`type Leaf = { Text string }
 
 type Branch = {
     Leaves []Leaf
@@ -278,7 +276,7 @@ func TestGeneratedGoWorkControlNameCollisions(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated public-name collision consumers")
 	}
-	g, err := syntax.Parse(`type WorkLimits = { Text string }
+	g, err := parseTest(`type WorkLimits = { Text string }
 
 type WorkLimits_ = { Text string }
 
@@ -364,7 +362,7 @@ func TestGeneratedGoNilWorkPublication(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds typed nil publication consumer")
 	}
-	g, err := syntax.Parse(`type Word = { Text string }
+	g, err := parseTest(`type Word = { Text string }
 
 type Maybe ~ *Word
 
@@ -451,7 +449,7 @@ func TestGeneratedGoLegacyNilControls(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds configured legacy nil consumers")
 	}
-	g, err := syntax.Parse(`type Word = { Text string }
+	g, err := parseTest(`type Word = { Text string }
 
 rule main _ = x:leaf? => $x
 
@@ -519,7 +517,7 @@ rule main _ = "x" => A{N: 1 / 0}`, "x", "WithMaxDepth(100000)"},
 rule recurse = "a" recurse?`, "aa", "WithMaxDepth(1)"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			g, err := syntax.Parse(tc.source)
+			g, err := parseTest(tc.source)
 			if err != nil {
 				t.Fatal(err)
 			}

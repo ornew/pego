@@ -15,8 +15,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // streamRun is one stream parse of a differential test. The reader returns
@@ -276,7 +274,7 @@ func testGeneratedStreams(t *testing.T, goBin string, cases []genCase, opts GenO
 	var want []string
 	var names []string
 	for i, c := range cases {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -501,7 +499,7 @@ func engineStream(prog *Program, v streamRun) string {
 }
 
 func TestGenerateStreamOptions(t *testing.T) {
-	g, err := syntax.Parse(`rule main = item* #stream $$
+	g, err := parseTest(`rule main = item* #stream $$
 rule item = "a"
 rule other = "b"`)
 	if err != nil {
@@ -606,7 +604,7 @@ func TestGeneratedTypedStreamMatchesBatch(t *testing.T) {
 	var runs []streamRun
 	var names []string
 	for i, c := range typedStreamCorpus {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -868,7 +866,7 @@ func TestGenerateStreamKeepsBatchBodies(t *testing.T) {
 	}
 	n := 0
 	for _, c := range cases {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -916,7 +914,7 @@ func TestGeneratedStreamAPI(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds a generated standalone stream consumer")
 	}
-	g, err := syntax.Parse(`type Pair = { Key node[string]; Value node[string] }
+	g, err := parseTest(`type Pair = { Key node[string]; Value node[string] }
 rule main = item* #stream $$
 rule item Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" => Pair{Key: $k, Value: $v}`)
 	if err != nil {
@@ -933,14 +931,14 @@ rule item Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" => Pair{Key: $k, Val
 	}
 	// Elements of varying size end at varying places in the allocation
 	// chunks, and the reference frame allocator has no scratch to rewind.
-	lists, err := syntax.Parse(`rule main = item* #stream $$
+	lists, err := parseTest(`rule main = item* #stream $$
 rule item = "(" a:atom b:atom c:list ")" "\n"
 rule list = "[" xs:atom* "]"
 rule atom = [a-z] #atomic " "?`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	memo, err := syntax.Parse(streamMemoGrammar)
+	memo, err := parseTest(streamMemoGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -949,7 +947,7 @@ rule atom = [a-z] #atomic " "?`)
 		t.Fatal(err)
 	}
 	files["memo/parser.go"] = string(code)
-	typed, err := syntax.Parse(`type P = { A node[string]; B node[string]; Xs []node[string] }
+	typed, err := parseTest(`type P = { A node[string]; B node[string]; Xs []node[string] }
 rule main = item* #stream $$
 rule item P = x:[a-z] ys:[0-9]* ";" => P{A: $x, B: $x, Xs: $ys.Value}`)
 	if err != nil {
@@ -960,7 +958,7 @@ rule item P = x:[a-z] ys:[0-9]* ";" => P{A: $x, B: $x, Xs: $ys.Value}`)
 		t.Fatal(err)
 	}
 	files["typed/parser.go"] = string(code)
-	recovering, err := syntax.Parse(`type S = { N node[string] }
+	recovering, err := parseTest(`type S = { N node[string] }
 rule main = (stmt #recover(skip=[^;]+ ";"))* #stream $$
 rule stmt S = n:[a-z]+ #atomic ";" => S{N: $n}`)
 	if err != nil {

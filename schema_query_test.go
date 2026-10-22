@@ -13,7 +13,7 @@ import (
 )
 
 func TestPublicOutputSchema(t *testing.T) {
-	p, err := pego.CompileSource(`type Item = { Value string }
+	p, err := compileTestSource(`type Item = { Value string }
 rule main = item
 rule item = x:"a" => Item{Value: text($x)}
 rule unused = "z"`, "main")
@@ -72,7 +72,7 @@ rule unused = "z"`, "main")
 }
 
 func TestPublicStructuralQuerySharedEdgesAndLimits(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = x:"a" "b" => list($x, $x)`, "main")
+	p, err := compileTestSource(`rule main = x:"a" "b" => list($x, $x)`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,7 +124,7 @@ func TestPublicStructuralQuerySharedEdgesAndLimits(t *testing.T) {
 }
 
 func TestPublicSchemaQueryMatchesUncapturedElements(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = "a" "b"`, "main")
+	p, err := compileTestSource(`rule main = "a" "b"`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,7 +156,7 @@ func TestPublicSchemaQueryMatchesUncapturedElements(t *testing.T) {
 }
 
 func TestPublicQueryOptionalScalarFieldValidation(t *testing.T) {
-	p, err := pego.CompileSource(`type Item = { Value *string }
+	p, err := compileTestSource(`type Item = { Value *string }
 rule main = "a" => Item{Value: nil}`, "main")
 	if err != nil {
 		t.Fatal(err)
@@ -210,7 +210,7 @@ rule main = "a" => Item{Value: nil}`, "main")
 }
 
 func TestPublicQueryScalarAliasFieldValidation(t *testing.T) {
-	p, err := pego.CompileSource(`type Label ~ string
+	p, err := compileTestSource(`type Label ~ string
 type DisplayLabel ~ Label
 type Item = { Value DisplayLabel }
 rule main = x:"a" => Item{Value: text($x)}`, "main")
@@ -251,7 +251,7 @@ rule main = x:"a" => Item{Value: text($x)}`, "main")
 }
 
 func TestPublicPreparedQuerySchema(t *testing.T) {
-	p, err := pego.CompileSource(`type Item = { Value node[string] }
+	p, err := compileTestSource(`type Item = { Value node[string] }
 rule main = x:"a" "b" => Item{Value: $x}`, "main")
 	if err != nil {
 		t.Fatal(err)

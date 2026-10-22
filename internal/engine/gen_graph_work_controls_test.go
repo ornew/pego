@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGeneratedGoGraphWork(t *testing.T) {
@@ -16,7 +14,7 @@ func TestGeneratedGoGraphWork(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated graph-control consumers")
 	}
-	g, err := syntax.Parse(`type Leaf = { Text string }
+	g, err := parseTest(`type Leaf = { Text string }
 
 type Bag = {
     Items  []Leaf

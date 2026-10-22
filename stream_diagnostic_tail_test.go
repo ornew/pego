@@ -10,7 +10,7 @@ import (
 )
 
 func TestPublicStreamDiagnosticTail(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = item+ #stream $$
+	p, err := compileTestSource(`rule main = item+ #stream $$
 rule item = "ab" @error(message="record") #recover(skip=[^a]+)`, "main")
 	if err != nil {
 		t.Fatal(err)
@@ -81,7 +81,7 @@ rule item = "ab" @error(message="record") #recover(skip=[^a]+)`, "main")
 }
 
 func TestPublicStreamDiagnosticTailIteratorAndSuffix(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = item* #stream ("b" #recover(skip="x")) $$
+	p, err := compileTestSource(`rule main = item* #stream ("b" #recover(skip="x")) $$
 rule item = "a" #recover(skip="!")`, "main")
 	if err != nil {
 		t.Fatal(err)
@@ -118,7 +118,7 @@ rule item = "a" #recover(skip="!")`, "main")
 }
 
 func TestPublicStreamDiagnosticLimitCallbackStopsBeforeElement(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = item+ #stream $$
+	p, err := compileTestSource(`rule main = item+ #stream $$
 rule item = "ab" #recover(skip="!")`, "main")
 	if err != nil {
 		t.Fatal(err)
@@ -139,7 +139,7 @@ rule item = "ab" #recover(skip="!")`, "main")
 }
 
 func TestPublicStreamDiagnosticLimitValidation(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = "a"* #stream $$`, "main")
+	p, err := compileTestSource(`rule main = "a"* #stream $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

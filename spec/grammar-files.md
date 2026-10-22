@@ -17,6 +17,7 @@ An Operators Rule is a specialized Rule Definition.
 ```pego
 package example
 type Number = node[string]
+@start
 rule main Number = ([0-9]+) #atomic
 rule expr Expr = operators { ... }
 ```
@@ -40,8 +41,8 @@ binary operator, `.`, `=>`, a constructor `{` or an index `[` ends the expressio
 unless a delimiter encloses it, and the `[` of an index follows its operand directly,
 without white space or a comment.
 
-An empty file is a valid grammar with no rules, but it cannot be used to parse
-anything, because there is no start rule to select.
+An empty file has no rules, and so no start rule, which makes it an invalid
+grammar (see [Start Rules](#start-rules)).
 
 ### Package Clause
 
@@ -379,14 +380,15 @@ attributes and before `rule`. The arguments follow the attribute argument
 syntax of [Attributes](attributes.md).
 
 ```pego
-@start(default) @foo
-@bar
+// The rule where parsing begins.
+@start // a comment may follow an attribute
 rule main = item*
+rule item = "a"
 ```
 
 Only Rule Declaration Statements take declaration attributes: attributes
-before `type` or `var` are a syntax error. A declaration attribute that this
-specification does not define is a grammar error.
+before `type` or `var` are a syntax error. The only declaration attribute is
+`@start`, defined in [Start Rules](#start-rules); any other is a grammar error.
 
 ## Names
 
@@ -406,10 +408,32 @@ The names that a definition can use are constrained as follows:
 | Variable | An identifier, declared by a Variable Declaration Statement. See [Variables](predicates.md#variables). |
 | Capture label, level, lambda parameter | An identifier. Captures have their own scope; see [Capture](parser-expressions.md#capture). Variables are the only names a binding `name := expr` may bind. Lambda parameters are variables of the lambda body; see [Built-In Functions](actions.md#built-in-functions). A level name MUST be unique within its Operators Rule declaration. |
 
-## Start Rule
+## Start Rules
 
-Parsing begins with a start rule, which is not named in the grammar file: it
-is selected when the grammar is compiled or when parsing is started. See
+Parsing begins at a start rule. The **start rules** of a grammar are the rules
+marked with the declaration attribute `@start`; parsing can begin only at one
+of them, and the others are called only from Rule Expressions. One start rule
+is the **default start rule**, used when parsing names no rule: the only start
+rule, or the one marked `@start(default)`.
+
+```pego
+@start(default)
+rule file = stmt*
+@start
+rule stmt = expr ";"
+rule expr = [0-9]+
+```
+
+Here `file` is the default start rule, `stmt` is another start rule, and `expr`
+is not a start rule. Declaration order does not matter.
+
+The argument of `@start`, if any, MUST be the bare identifier `default`. A
+grammar MUST have a start rule and, if it has several, exactly one marked
+`@start(default)`; no rule may be marked `@start` twice, and no
+[hidden rule](actions.md#hidden-rules) may be marked `@start`. Each violation is a
+grammar error. The reference implementation reports these errors only when the
+grammar has no other error, so the errors of a grammar under construction come
+first. How a parse selects its start rule is described in
 [Start Rule](parsing.md#start-rule).
 
 ## Errors in a Grammar
@@ -422,11 +446,13 @@ the line and column of the construct it concerns in the grammar source (see
 |:--|:--|:--|
 | Lexical and syntax errors | An unterminated string, an unknown escape, a character that starts no token, a missing `)`, a malformed declaration, a repetition whose maximum is less than its minimum | [Lexical Structure](lexical.md), [Grammar Syntax](syntax.md) |
 | Definition and reference errors | A name defined twice, a variable that is read or bound but not declared, a variable declared with an unsupported type or an initial value of another type, a reserved or non-uppercase-ASCII type name, an undefined rule, a call with an unknown level, a capture of an expression without a value, an unknown attribute or pragma, a header comment, a `#stream` outside its permitted position | The chapter of the construct |
+| Start rule errors | No start rule, several start rules without a default, two defaults, `@start` on a hidden rule | [Start Rules](#start-rules) |
 | Type errors | A field that the struct does not declare, a value that is not assignable to the declared type | [Type Checking](type-checking.md#checked-errors) |
 
 The reference implementation reports all lexical and syntax errors of a file
 (at most 100), then, if there are none, all definition and reference errors,
-and then, if there are none, the type errors. This file has three definition
+then, if there are none, the type errors, and then, if there are none, the
+start rule errors. This file has three definition
 and reference errors:
 
 ```pego

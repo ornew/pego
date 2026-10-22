@@ -14,6 +14,7 @@ type Num = node[string]
 type Ident = node[string]
 type Version = { Major Num; Minor Num; Patch Num; Pre *Ident }
 
+@start
 rule main Version = v:version $$ => $v
 
 rule version Version = (

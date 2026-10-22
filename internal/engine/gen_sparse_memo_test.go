@@ -10,14 +10,13 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // Small tables cannot select sparse storage, so their default TypeScript
 // output must match the static dense control rather than retain a
 // matching-time branch.
 func TestGeneratedSparseMemoSmallTable(t *testing.T) {
-	g, err := syntax.Parse(`rule main = "a"*`)
+	g, err := parseTest(`rule main = "a"*`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +49,7 @@ func TestGeneratedSparseMemo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	g, err := syntax.Parse(string(src))
+	g, err := parseTest(string(src))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +109,7 @@ func TestGeneratedTSSparseMemoControls(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	g, err := syntax.Parse(string(src))
+	g, err := parseTest(string(src))
 	if err != nil {
 		t.Fatal(err)
 	}

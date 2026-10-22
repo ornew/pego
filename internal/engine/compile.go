@@ -35,6 +35,10 @@ type Program struct {
 	// (Options.DefaultValue).
 	defaultValue bool
 	byName       map[string]*rule
+	// starts holds the start rules in declaration order and defaultStart the default one
+	// (resolveStarts).
+	starts       []string
+	defaultStart string
 	types        map[string]grammar.TypeDecl
 	// vars holds the declared variables (nil if there are none).
 	vars *varTable
@@ -353,10 +357,6 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 	}
 	for _, rd := range control.rules(g) {
 		control.poll()
-		for _, a := range rd.Attrs {
-			control.poll()
-			unsupported = append(unsupported, &Error{Pos: a.Diagnostic(), Msg: fmt.Sprintf("unknown declaration attribute %s%s", annotationMarker(a), a.Name)})
-		}
 		checkBlocks(rd.Action)
 		root := rd.Expr
 		for {
@@ -398,6 +398,7 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 			}
 		}, control)
 	}
+	starts, defaultStart, startErrors := resolveStarts(control.rules(g), control)
 	control.check()
 	if len(unsupported) != 0 {
 		return nil, unsupported
@@ -427,6 +428,7 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 			}
 		}()
 	}
+	prog.starts, prog.defaultStart = starts, defaultStart
 	prog.workRecognize = opts.recognize
 	prog.noProjections = opts.noProjections
 	prog.sourceInfo = opts.SourceInfo
@@ -561,6 +563,10 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 		if len(c.errs) > 0 {
 			return nil, c.errs
 		}
+	}
+	// The start rules are reported once the grammar is otherwise valid.
+	if len(startErrors) > 0 {
+		return nil, startErrors
 	}
 
 	control.check()

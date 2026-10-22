@@ -19,7 +19,7 @@ func TestDiagnostics(t *testing.T) {
 		name, text string
 		want       []Diagnostic
 	}{
-		{"valid", "rule main = \"a\"", nil},
+		{"valid", "@start\nrule main = \"a\"", nil},
 		{
 			// The ")" follows an astral character, which takes two UTF-16 code units.
 			"syntax error", "rule a = \"😀\" )\n",
@@ -37,21 +37,21 @@ func TestDiagnostics(t *testing.T) {
 			[]Diagnostic{{Range: rng(0, 9, 0, 13), Message: "unterminated string"}},
 		},
 		{
-			"undefined rule", "rule main = \"😀\" ab x",
-			[]Diagnostic{{Range: rng(0, 17, 0, 19), Message: "undefined rule ab"}, {Range: rng(0, 20, 0, 21), Message: "undefined rule x"}},
+			"undefined rule", "@start\nrule main = \"😀\" ab x",
+			[]Diagnostic{{Range: rng(1, 17, 1, 19), Message: "undefined rule ab"}, {Range: rng(1, 20, 1, 21), Message: "undefined rule x"}},
 		},
 		{
 			// The error of a definition is reported at its name.
-			"duplicate rule", "rule a = \"b\"\n\nrule a = \"c\"\nrule main = a",
+			"duplicate rule", "rule a = \"b\"\n\nrule a = \"c\"\n@start\nrule main = a",
 			[]Diagnostic{{Range: rng(2, 5, 2, 6), Message: "rule a is already defined"}},
 		},
 		{
-			"type error", "type P = { X node[string] }\nrule main = \"a\" => P{X: 1}",
-			[]Diagnostic{{Range: rng(1, 21, 1, 22), Message: "cannot use int as node[string] in field X of P"}},
+			"type error", "type P = { X node[string] }\n@start\nrule main = \"a\" => P{X: 1}",
+			[]Diagnostic{{Range: rng(2, 21, 2, 22), Message: "cannot use int as node[string] in field X of P"}},
 		},
 		{
-			"undefined type", "rule main Nope = \"a\"",
-			[]Diagnostic{{Range: rng(0, 10, 0, 14), Message: "undefined type Nope"}},
+			"undefined type", "@start\nrule main Nope = \"a\"",
+			[]Diagnostic{{Range: rng(1, 10, 1, 14), Message: "undefined type Nope"}},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -96,35 +96,35 @@ func messages(diags []Diagnostic) string {
 func TestIncrementalChanges(t *testing.T) {
 	c := newInitialized(t)
 	uri := "file:///inc.pego"
-	if d := c.open(uri, "rule main = \"😀\" x"); messages(d) != "undefined rule x" || d[0].Range != rng(0, 17, 0, 18) {
+	if d := c.open(uri, "@start\nrule main = \"😀\" x"); messages(d) != "undefined rule x" || d[0].Range != rng(1, 17, 1, 18) {
 		t.Fatalf("diagnostics %+v", d)
 	}
 	// Replace x after the astral character.
-	if d := change(c, uri, 2, edit(0, 17, 0, 18, `"y"`)); len(d) != 0 {
+	if d := change(c, uri, 2, edit(1, 17, 1, 18, `"y"`)); len(d) != 0 {
 		t.Errorf("after the fix: %+v", d)
 	}
 	// Two changes in one notification: the second applies to the result of the first.
 	d := change(c, uri, 3,
-		edit(0, 15, 0, 15, "😀"),            // "😀😀"
-		edit(0, 22, 0, 22, "\nrule y = z"), // at the end, after "y"
+		edit(1, 15, 1, 15, "😀"),            // "😀😀"
+		edit(1, 22, 1, 22, "\nrule y = z"), // at the end, after "y"
 	)
-	if messages(d) != "undefined rule z" || d[0].Range != rng(1, 9, 1, 10) {
+	if messages(d) != "undefined rule z" || d[0].Range != rng(2, 9, 2, 10) {
 		t.Errorf("diagnostics %+v", d)
 	}
 	// Delete across the line break, and replace the whole document.
-	if d := change(c, uri, 4, edit(0, 22, 1, 10, "")); len(d) != 0 {
+	if d := change(c, uri, 4, edit(1, 22, 2, 10, "")); len(d) != 0 {
 		t.Errorf("after deleting the line: %+v", d)
 	}
 	var syms []DocumentSymbol
 	c.requestInto("textDocument/documentSymbol", docParams(uri), &syms)
-	if len(syms) != 1 || syms[0].Name != "main" || syms[0].Range != rng(0, 0, 0, 22) {
+	if len(syms) != 1 || syms[0].Name != "main" || syms[0].Range != rng(0, 0, 1, 22) {
 		t.Errorf("symbols %+v", syms)
 	}
 	if d := change(c, uri, 5, map[string]any{"text": "rule"}); messages(d) != "expected identifier, found end of file" {
 		t.Errorf("after replacing the document: %+v", d)
 	}
 	// Saving and closing.
-	c.notify("textDocument/didSave", map[string]any{"textDocument": map[string]any{"uri": uri}, "text": "rule main = \"a\""})
+	c.notify("textDocument/didSave", map[string]any{"textDocument": map[string]any{"uri": uri}, "text": "@start\nrule main = \"a\""})
 	if d := c.diagnostics(uri); len(d.Diagnostics) != 0 {
 		t.Errorf("after save: %+v", d)
 	}
@@ -195,6 +195,7 @@ rule num Num = t:([0-9]+ #atomic) => Num{Text: text($t)}
 // Two numbers
 // with an emoji.
 rule pair = l:num "😀" r:num? => Pair{Left: $l, Right: $r}
+@start
 rule main = (pair / num) $$`
 
 func TestDefinitionAndReferences(t *testing.T) {
@@ -212,7 +213,7 @@ func TestDefinitionAndReferences(t *testing.T) {
 		{12, 14, []Location{numDef}},                            // l:num
 		{12, 17, []Location{numDef}},                            // just after l:num
 		{12, 26, []Location{numDef}},                            // r:num after the emoji
-		{13, 21, []Location{numDef}},                            // (pair / num)
+		{14, 21, []Location{numDef}},                            // (pair / num)
 		{8, 6, []Location{numDef}},                              // the definition itself
 		{12, 34, []Location{pairType}},                          // new Pair
 		{6, 11, []Location{pairType}},                           // type Any = Pair
@@ -238,10 +239,10 @@ func TestDefinitionAndReferences(t *testing.T) {
 		}
 		return rs
 	}
-	if got, want := refs(8, 6, true), []Range{rng(8, 5, 8, 8), rng(12, 14, 12, 17), rng(12, 25, 12, 28), rng(13, 20, 13, 23)}; !reflect.DeepEqual(got, want) {
+	if got, want := refs(8, 6, true), []Range{rng(8, 5, 8, 8), rng(12, 14, 12, 17), rng(12, 25, 12, 28), rng(14, 20, 14, 23)}; !reflect.DeepEqual(got, want) {
 		t.Errorf("references of num: %v", got)
 	}
-	if got, want := refs(12, 26, false), []Range{rng(12, 14, 12, 17), rng(12, 25, 12, 28), rng(13, 20, 13, 23)}; !reflect.DeepEqual(got, want) {
+	if got, want := refs(12, 26, false), []Range{rng(12, 14, 12, 17), rng(12, 25, 12, 28), rng(14, 20, 14, 23)}; !reflect.DeepEqual(got, want) {
 		t.Errorf("references of num without the declaration: %v", got)
 	}
 	// The type Num and the rule num are different names.
@@ -250,7 +251,7 @@ func TestDefinitionAndReferences(t *testing.T) {
 	}
 
 	var hs []documentHighlight
-	c.requestInto("textDocument/documentHighlight", at(uri, 13, 14), &hs)
+	c.requestInto("textDocument/documentHighlight", at(uri, 14, 14), &hs)
 	if len(hs) != 2 || hs[0].Range != rng(12, 5, 12, 9) || hs[0].Kind != highlightWrite || hs[1].Kind != highlightRead {
 		t.Errorf("highlights %+v", hs)
 	}
@@ -285,7 +286,7 @@ func TestDocumentSymbols(t *testing.T) {
 		{"Any", "~ Pair | Num", symbolKindInterface, rng(6, 0, 6, 21), rng(6, 5, 6, 8), 0},
 		{"num", "Num", symbolKindFunction, rng(8, 0, 8, 56), rng(8, 5, 8, 8), 0},
 		{"pair", "Pair", symbolKindFunction, rng(12, 0, 12, 58), rng(12, 5, 12, 9), 0},
-		{"main", "node[(pair | Num,)]", symbolKindFunction, rng(13, 0, 13, 27), rng(13, 5, 13, 9), 0},
+		{"main", "node[(pair | Num,)]", symbolKindFunction, rng(13, 0, 14, 27), rng(14, 5, 14, 9), 0},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got\n%+v\nwant\n%+v", got, want)
@@ -326,26 +327,26 @@ func TestHover(t *testing.T) {
 		r          Range
 	}{
 		{12, 6, "```pego\nrule pair Pair\n```\n\n*Inferred type.*\n\nTwo numbers\nwith an emoji.", rng(12, 5, 12, 9)},
-		{13, 13, "```pego\nrule pair Pair\n```\n\n*Inferred type.*\n\nTwo numbers\nwith an emoji.", rng(13, 13, 13, 17)},
+		{14, 13, "```pego\nrule pair Pair\n```\n\n*Inferred type.*\n\nTwo numbers\nwith an emoji.", rng(14, 13, 14, 17)},
 		{12, 26, "```pego\nrule num Num\n```", rng(12, 25, 12, 28)},
-		{13, 5, "```pego\nrule main node[(pair | Num,)]\n```\n\n*Inferred type.*", rng(13, 5, 13, 9)},
-		{14, 5, "```pego\nrule lst node[[]Num]\n```\n\n*Inferred type.*", rng(14, 5, 14, 8)},
+		{14, 5, "```pego\nrule main node[(pair | Num,)]\n```\n\n*Inferred type.*", rng(14, 5, 14, 9)},
+		{15, 5, "```pego\nrule lst node[[]Num]\n```\n\n*Inferred type.*", rng(15, 5, 15, 8)},
 		{1, 6, "```pego\ntype Num = { Text string }\n```\n\nA number.", rng(1, 5, 1, 8)},
 		{12, 34, "```pego\ntype Pair = {\n    Left  Num // the left\n    Right *Num\n}\n```", rng(12, 33, 12, 37)},
 		{6, 6, "```pego\ntype Any ~ Pair | Num\n```\n\nanything", rng(6, 5, 6, 8)},
-		{14, 22, "```pego\nlen(x) int\n```\n" + findBuiltin(builtinFuncs, "len").doc, rng(14, 20, 14, 23)},
-		{14, 33, "```pego\n@error(message=\"...\")\n```\n" + findBuiltin(attributes, "error").doc, rng(14, 32, 14, 37)},
-		{15, 19, "```pego\nStart int\n```\n" + findBuiltin(builtinMembers, "Start").doc, rng(15, 18, 15, 23)},
+		{15, 22, "```pego\nlen(x) int\n```\n" + findBuiltin(builtinFuncs, "len").doc, rng(15, 20, 15, 23)},
+		{15, 33, "```pego\n@error(message=\"...\")\n```\n" + findBuiltin(attributes, "error").doc, rng(15, 32, 15, 37)},
+		{16, 19, "```pego\nStart int\n```\n" + findBuiltin(builtinMembers, "Start").doc, rng(16, 18, 16, 23)},
 	} {
-		if tc.line == 14 && strings.Contains(tc.want, "@error") {
-			line := strings.Split(src, "\n")[14]
-			col := strings.Index(line, "error(")
-			tc.char, tc.r = col+1, rng(14, col, 14, col+len("error"))
-		}
-		if tc.line == 15 {
+		if tc.line == 15 && strings.Contains(tc.want, "@error") {
 			line := strings.Split(src, "\n")[15]
+			col := strings.Index(line, "error(")
+			tc.char, tc.r = col+1, rng(15, col, 15, col+len("error"))
+		}
+		if tc.line == 16 {
+			line := strings.Split(src, "\n")[16]
 			col := strings.Index(line, "Start")
-			tc.char, tc.r = col+1, rng(15, col, 15, col+len("Start"))
+			tc.char, tc.r = col+1, rng(16, col, 16, col+len("Start"))
 		}
 		got, r := hoverText(c, uri, tc.line, tc.char)
 		if got != tc.want || r == nil || *r != tc.r {
@@ -545,9 +546,9 @@ func TestCompletion(t *testing.T) {
 		t.Errorf("empty file: %q", got)
 	}
 	// Items carry the rule's type and documentation, and snippets for functions.
-	c.open("file:///items.pego", "// The digits.\nrule num = [0-9]+\nrule main = num")
+	c.open("file:///items.pego", "// The digits.\nrule num = [0-9]+\n@start\nrule main = num")
 	var list completionList
-	c.requestInto("textDocument/completion", at("file:///items.pego", 2, 14), &list)
+	c.requestInto("textDocument/completion", at("file:///items.pego", 3, 14), &list)
 	var num CompletionItem
 	for _, it := range list.Items {
 		if it.Label == "num" {
@@ -594,12 +595,12 @@ func TestFilterBuiltinHoverAndCompletion(t *testing.T) {
 	defer c.exit()
 
 	hoverURI := "file:///filter-hover.pego"
-	source := "rule main = x:value => filter(list($x), (item) => true)\nrule value = \"x\""
+	source := "@start\nrule main = x:value => filter(list($x), (item) => true)\nrule value = \"x\""
 	if d := c.open(hoverURI, source); len(d) != 0 {
 		t.Fatalf("diagnostics %+v", d)
 	}
-	filterStart := strings.Index(source, "filter")
-	got, _ := hoverText(c, hoverURI, 0, filterStart+1)
+	filterStart := strings.Index(source, "filter") - len("@start\n")
+	got, _ := hoverText(c, hoverURI, 1, filterStart+1)
 	want := "```pego\nfilter(list, (item) => bool) []T\n```\n" + findBuiltin(builtinFuncs, "filter").doc
 	if got != want {
 		t.Errorf("filter hover = %q, want %q", got, want)
@@ -725,7 +726,7 @@ func BenchmarkAnalyze(b *testing.B) {
 func TestReservedTypeReferences(t *testing.T) {
 	c := newInitialized(t)
 	uri := "file:///reserved.pego"
-	d := c.open(uri, "type Num = { Text string }\ntype A ~ node[Num] | (Num, A) | { F Num }\nrule main = \"a\"\n")
+	d := c.open(uri, "type Num = { Text string }\ntype A ~ node[Num] | (Num, A) | { F Num }\n@start\nrule main = \"a\"\n")
 	if !slices.ContainsFunc(d, func(x Diagnostic) bool { return strings.Contains(x.Message, "not supported yet") }) {
 		t.Fatalf("diagnostics %+v", d)
 	}

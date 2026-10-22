@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 var typedAllocatorControls = []struct {
@@ -28,7 +26,7 @@ func TestGeneratedTypedOutputRetentionFixture(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(`type Token = { Text string }
+	g, err := parseTest(`type Token = { Text string }
 type Pair = { Text string; Left Token; Right Token }
 type Values = { Items []Token }
 type LargeValues = { Items []Pair }

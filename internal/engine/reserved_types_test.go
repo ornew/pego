@@ -12,7 +12,7 @@ import (
 // compile; other type arguments are errors.
 func TestReservedTypeSyntax(t *testing.T) {
 	src := "type A ~ () | (B,) | (B, *C) | node[B] | []node[(B, C), D]\ntype B = { Text string }\ntype C = { Text string }\ntype D = { Text string }\nrule main = \"a\""
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func TestReservedTypeSyntax(t *testing.T) {
 		"type A ~ node[node[string]] | node[int]\nrule main = \"a\"",
 	} {
 		for _, opts := range []Options{{}} {
-			g, err := syntax.Parse(src)
+			g, err := parseTest(src)
 			if err != nil {
 				t.Fatalf("%q: %v", src, err)
 			}
@@ -67,7 +67,7 @@ func TestReservedTypeSyntax(t *testing.T) {
 		{"rule main () = \"a\"", "1:1: rule main produces node[string], which is not assignable to ()"},
 		{"rule main = x:\"a\" => $x.(node[node[string]])", "1:25: cannot cast node[string] to node[node[string]]"},
 	} {
-		g, err := syntax.Parse(tc.src)
+		g, err := parseTest(tc.src)
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
@@ -87,7 +87,7 @@ func TestReservedTypeSyntax(t *testing.T) {
 		{"rule main Nope[int] = \"a\"", "undefined type Nope"},
 	} {
 		for _, opts := range []Options{{}} {
-			g, err := syntax.Parse(tc.src)
+			g, err := parseTest(tc.src)
 			if err != nil {
 				t.Fatalf("%q: %v", tc.src, err)
 			}
@@ -100,7 +100,7 @@ func TestReservedTypeSyntax(t *testing.T) {
 		}
 	}
 	// An undefined name is reported as such, not as one that takes no type arguments.
-	g, err = syntax.Parse("type A ~ Nope[int]\nrule main A = \"a\"")
+	g, err = parseTest("type A ~ Nope[int]\nrule main A = \"a\"")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +113,7 @@ func TestReservedTypeSyntax(t *testing.T) {
 		"type A ~ node[string, int]\nrule main = x:\"a\" {$x.(A) == $x} => $x.(A)",
 	} {
 		for _, opts := range []Options{{}} {
-			g, err := syntax.Parse(src)
+			g, err := parseTest(src)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -133,7 +133,7 @@ func TestNodeStringType(t *testing.T) {
 		"type W = { V int }\ntype T ~ node[string] | W\nrule main T = \"a\"",
 	} {
 		for _, opts := range []Options{{}} {
-			g, err := syntax.Parse(src)
+			g, err := parseTest(src)
 			if err != nil {
 				t.Fatalf("%q: %v", src, err)
 			}
@@ -151,7 +151,7 @@ func TestNodeStringType(t *testing.T) {
 		{"type P = { K node[string] }\nrule main P = k:(\"a\" \"b\") => P{K: $k}", "cannot use"},
 		{"rule main node[string] = \"a\" \"b\"", "not assignable"},
 	} {
-		g, err := syntax.Parse(tc.src)
+		g, err := parseTest(tc.src)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -159,7 +159,7 @@ func TestNodeStringType(t *testing.T) {
 			t.Errorf("%q: got %v, want %q", tc.src, err, tc.want)
 		}
 	}
-	g, err := syntax.Parse("rule main = k:(\"a\" \"b\") => $k.(node[_]).(node[string])")
+	g, err := parseTest("rule main = k:(\"a\" \"b\") => $k.(node[_]).(node[string])")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +207,7 @@ func TestReservedUnnamedStructType(t *testing.T) {
 		t.Fatalf("JSON round trip:\n%s", got)
 	}
 	// Without comments the struct type stays on one line.
-	plain, err := syntax.Parse("type A ~ []{ Name string; Inner { V int } }\nrule main = \"a\"")
+	plain, err := parseTest("type A ~ []{ Name string; Inner { V int } }\nrule main = \"a\"")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -235,7 +235,7 @@ func TestReservedUnnamedStructType(t *testing.T) {
 		{"type A ~ { A node[string] }\nrule main = x:\"a\" {[]A{$x} == nil} => []A{$x}", "1:10"},
 	} {
 		for _, opts := range []Options{{}} {
-			g, err := syntax.Parse(tc.src)
+			g, err := parseTest(tc.src)
 			if err != nil {
 				t.Fatalf("%q: %v", tc.src, err)
 			}
@@ -283,7 +283,7 @@ rule opt *TYPE = x:val? => $x`
 	// node without a type argument is not a type: the grammar API and earlier syntax reach the
 	// checker with it.
 	for _, typ := range []string{"node", "*node", "[]node"} {
-		g, err := syntax.ParseLegacy(strings.ReplaceAll(src, "TYPE", typ))
+		g, err := parseLegacyTest(strings.ReplaceAll(src, "TYPE", typ))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -299,7 +299,7 @@ rule other TYPE = "i" => T{Text: "i"}
 rule cast = x:"a" => S{F: 1}`
 	errs := map[string]string{}
 	for _, typ := range []string{"node[_]"} {
-		g, err := syntax.Parse(strings.ReplaceAll(bad, "TYPE", typ))
+		g, err := parseTest(strings.ReplaceAll(bad, "TYPE", typ))
 		if err != nil {
 			t.Fatal(err)
 		}

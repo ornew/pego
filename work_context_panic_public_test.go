@@ -42,7 +42,7 @@ func (c *publicContextErrPanic) Err() error {
 
 func TestContextErrRuntimePanicIdentityThroughPublicOptions(t *testing.T) {
 	literal := strings.Repeat("a", 1024)
-	p, err := pego.CompileSource(`rule main = "`+literal+`" $$`, "main")
+	p, err := compileTestSource(`rule main = "`+literal+`" $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -7,8 +7,8 @@ import (
 )
 
 func TestFix(t *testing.T) {
-	const old = "package p\n\nrule a = \"a\" -- \"b\" / \"c\" // a -- comment\n"
-	const fixed = "package p\n\nrule a = \"a\" #cut \"b\" / \"c\" // a -- comment\n"
+	const old = "package p\n\n@start\nrule a = \"a\" -- \"b\" / \"c\" // a -- comment\n"
+	const fixed = "package p\n\n@start\nrule a = \"a\" #cut \"b\" / \"c\" // a -- comment\n"
 	if out, err := runCLI(t, old, "fix"); err != nil || out != fixed {
 		t.Errorf("stdin: got %q, %v", out, err)
 	}
@@ -42,10 +42,12 @@ func TestFixAnyTypes(t *testing.T) {
 	// A value of type _ is narrowed with a cast before it is used as another type, as one of type
 	// any is, so every reference to any can become _.
 	const old = "type Box = { V any; L []any; O *any }\ntype Out = { S string; A any }\n" +
+		"@start\n" +
 		"rule main Out = b:box => Out{S: $b.V.(string), A: $b.V}\n" +
 		"rule box Box = x:\"x\" => Box{V: $x, L: list($x), O: nil}\n" +
 		"rule c any = x:\"y\" => $x.(any)\n"
 	const fixed = "type Box = { V _; L []_; O *_ }\ntype Out = { S string; A _ }\n" +
+		"@start\n" +
 		"rule main Out = b:box => Out{S: $b.V.(string), A: $b.V}\n" +
 		"rule box Box = x:\"x\" => Box{V: $x, L: list($x), O: nil}\n" +
 		"rule c _ = x:\"y\" => $x.(_)\n"
@@ -56,7 +58,7 @@ func TestFixAnyTypes(t *testing.T) {
 		t.Errorf("second fix: got %q, %v", out, err)
 	}
 	// Source that does not compile is left as it is.
-	const bad = "type Box = { V any }\nrule main Box = undefined\n"
+	const bad = "type Box = { V any }\n@start\nrule main Box = undefined\n"
 	if out, err := runCLI(t, bad, "fix"); err != nil || out != bad {
 		t.Errorf("bad: got %q, %v", out, err)
 	}
@@ -66,9 +68,11 @@ func TestFixNodeTypes(t *testing.T) {
 	// K holds string nodes and becomes node[string]; V also holds a tuple node and the rule type
 	// of pair a list node, so they become node[_]. A node[_] written as such is kept.
 	const old = "type P = { K node; V node; W node[_] }\n" +
+		"@start\n" +
 		"rule main P = k:\"k\" v:(\"v\" / \"w\" \"x\") => P{K: $k, V: $v, W: $k}\n" +
 		"rule pair node = \"a\"*\n"
 	const fixed = "type P = { K node[string]; V node[_]; W node[_] }\n" +
+		"@start\n" +
 		"rule main P = k:\"k\" v:(\"v\" / \"w\" \"x\") => P{K: $k, V: $v, W: $k}\n" +
 		"rule pair node[_] = \"a\"*\n"
 	if out, err := runCLI(t, old, "fix"); err != nil || out != fixed {
@@ -85,11 +89,13 @@ func TestFixNodeTypesKeepsCastsAndNames(t *testing.T) {
 	// The terminal rewrite before the node sites shifts their offsets.
 	const old = "type Name terminal\n" +
 		"type Q = { A node; B node }\n" +
+		"@start\n" +
 		"// a node\n" +
 		"rule main Q = a:node b:(\"x\" / \"y\" \"z\") => Q{A: $a, B: $b.(node)}\n" +
 		"rule node = \"node\"\n"
 	const fixed = "type Name = node[string]\n" +
 		"type Q = { A node[string]; B node[_] }\n" +
+		"@start\n" +
 		"// a node\n" +
 		"rule main Q = a:node b:(\"x\" / \"y\" \"z\") => Q{A: $a, B: $b.(node[_])}\n" +
 		"rule node = \"node\"\n"

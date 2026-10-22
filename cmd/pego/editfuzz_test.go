@@ -11,7 +11,7 @@ import (
 	"github.com/ornew/pego/editfuzz"
 )
 
-const editFuzzGrammar = "rule main = (word / other)* $$\nrule word = [a-z]+ #atomic\nrule other = .\n"
+const editFuzzGrammar = "@start\nrule main = (word / other)* $$\nrule word = [a-z]+ #atomic\nrule other = .\n"
 
 func TestEditFuzz(t *testing.T) {
 	dir := t.TempDir()

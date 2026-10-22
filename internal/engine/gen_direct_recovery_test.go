@@ -6,8 +6,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 var typedRecoveryCases = []genCase{
@@ -91,7 +89,7 @@ func TestGeneratedTypedRecoveryBodies(t *testing.T) {
 	}
 	marker := "// Recovery inlined under the runtime-owned frame."
 	for _, c := range typedRecoveryCases {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

@@ -14,7 +14,7 @@ func TestInvalidSourceDecimalReferences(t *testing.T) {
 		if g, err := pego.ParseGrammar(source); g != nil || err == nil || !strings.Contains(err.Error(), "invalid positional reference") {
 			t.Fatalf("ParseGrammar accepted %q: %v, %v", source, g, err)
 		}
-		if p, err := pego.CompileSource(source, "main"); p != nil || err == nil || !strings.Contains(err.Error(), "invalid positional reference") {
+		if p, err := compileTestSource(source, "main"); p != nil || err == nil || !strings.Contains(err.Error(), "invalid positional reference") {
 			t.Fatalf("CompileSource accepted %q: %v, %v", source, p, err)
 		}
 	}
@@ -27,7 +27,7 @@ func TestDecimalReferenceValues(t *testing.T) {
 		{`rule main = v1:"a" "b" => $v1`, `"a"`},
 		{`rule main = "a" v2:"b" => $v2`, `"b"`},
 	} {
-		p, err := pego.CompileSource(tc.source, "main")
+		p, err := compileTestSource(tc.source, "main")
 		if err != nil {
 			t.Fatal(err)
 		}

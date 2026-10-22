@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // A parser generated without work controls holds only the ordinary form of its functions, does not
@@ -21,7 +19,7 @@ rule item = word / num / " "
 rule word = [a-zA-Z_ä-ö]+
 rule num = [0-9]+ ("." [0-9]+)?
 `
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}

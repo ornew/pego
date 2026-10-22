@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestNormalizationContextCancellation(t *testing.T) {
@@ -99,7 +98,7 @@ rule main (Alias) = n:([0-9]+) => (T{Text: (text($n))})`,
 		`rule main = "a" #repeat(3, 1)`,
 	} {
 		t.Run(source, func(t *testing.T) {
-			g, err := syntax.Parse(source)
+			g, err := parseTest(source)
 			if err != nil {
 				t.Fatal(err)
 			}

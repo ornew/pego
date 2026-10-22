@@ -95,7 +95,7 @@ func TestCommentAssociativityCurrentSyntaxProtocol(t *testing.T) {
 		for _, assoc := range []string{"left", "right", "none"} {
 			c := newInitialized(t)
 			uri := "file:///associativity.pego"
-			source := "rule main = operators {" + newline + "operand [0-9]" + newline + "level { infix " + assoc + " ( // 😀 gap" + newline + "// second" + newline + "\"+\" ) }" + newline + "}"
+			source := "@start" + newline + "rule main = operators {" + newline + "operand [0-9]" + newline + "level { infix " + assoc + " ( // 😀 gap" + newline + "// second" + newline + "\"+\" ) }" + newline + "}"
 			if diags := c.open(uri, source); len(diags) != 0 {
 				t.Fatalf("current grammar diagnostics: %+v", diags)
 			}
@@ -139,9 +139,9 @@ func TestPlainDocumentationPreservesCode(t *testing.T) {
 
 func TestRejectedHeaderCommentsProtocol(t *testing.T) {
 	for _, source := range []string{
-		"rule main = \"a\" @ /* gap */ error(message=\"e\")",
-		"rule main = operators { operand [0-9]; level { infix /* gap */ left \"+\" } }",
-		"rule main = operators {\noperand [0-9]\nlevel { infix // gap\nleft \"+\" }\n}",
+		"@start\nrule main = \"a\" @ /* gap */ error(message=\"e\")",
+		"@start\nrule main = operators { operand [0-9]; level { infix /* gap */ left \"+\" } }",
+		"@start\nrule main = operators {\noperand [0-9]\nlevel { infix // gap\nleft \"+\" }\n}",
 	} {
 		c := newInitialized(t)
 		if diagnostics := c.open("file:///invalid-header.pego", source); len(diagnostics) == 0 {
@@ -210,7 +210,7 @@ func TestGuardedCodeActionsProtocol(t *testing.T) {
 			}})
 			defer c.exit()
 			uri := "file:///actions.pego"
-			source := "rule main = (" + newline + "  a:\"a\" b:\"b\"" + newline + ") => $a"
+			source := "@start" + newline + "rule main = (" + newline + "  a:\"a\" b:\"b\"" + newline + ") => $a"
 			diagnostics := c.open(uri, source)
 			var target Diagnostic
 			for _, diagnostic := range diagnostics {
@@ -267,7 +267,7 @@ func TestLintDiagnosticsPrototypeIsOptIn(t *testing.T) {
 	c := newInitialized(t)
 	defer c.exit()
 	uri := "file:///ordinary.pego"
-	if got := c.open(uri, "rule main = \"a\" / \"ab\""); len(got) != 0 {
+	if got := c.open(uri, "@start\nrule main = \"a\" / \"ab\""); len(got) != 0 {
 		t.Fatalf("changed default diagnostics: %+v", got)
 	}
 	var actions []codeAction

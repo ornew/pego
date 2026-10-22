@@ -4,7 +4,6 @@
 package calclr
 
 import (
-	"fmt"
 	"unsafe"
 
 	types "github.com/ornew/pego/bench/gen/calclr/types"
@@ -35,18 +34,15 @@ var pegoRecGrammar = pegort.NewGrammar(100000)
 var rules []*pegort.Rule
 var pegoGrammar = pegort.NewGrammar(100000)
 
-// ParseRule parses the whole input with the rule name.
+// ParseRule parses the whole input with the start rule name, a rule marked @start.
 func ParseRule(name, input string, opts ...pegort.ParseOption) (*pegort.Node, error) {
 	o, err := pegort.ResolveOptions(pegoGrammar, opts)
 	if err != nil {
 		return nil, err
 	}
-	if len(name) > 0 && name[0] == '_' {
-		return nil, fmt.Errorf("rule %s is hidden: a rule whose name begins with an underscore is not an entry point", name)
-	}
-	r := pegoGrammar.RuleByName(name)
-	if r == nil {
-		return nil, fmt.Errorf("rule %s is not defined", name)
+	r, err := pegoGrammar.StartRule(name)
+	if err != nil {
+		return nil, err
 	}
 	return pegort.RunParseResolved(r, input, o)
 }
@@ -223,60 +219,11 @@ func tv0(a *tslabs, v any) *types.Number {
 	return pegort.TMatchAs[types.Number](x)
 }
 
-func tv1(a *tslabs, v any) *types.TNode[[]*types.TNode[string]] {
-	a.stepWork()
-	return tv2(a, v)
-}
-
-func tv2(a *tslabs, v any) *types.TNode[[]*types.TNode[string]] {
-	a.stepWork()
-	switch x := v.(type) {
-	case *pegort.TSeq:
-		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
-			return nil
-		}
-		out := &types.TNode[[]*types.TNode[string]]{Span: x.Span}
-		out.Value = tl0(a, x)
-		return out
-	case *pegort.TError:
-		return nil
-	case pegort.TVal:
-		if x.TStruct() {
-			return nil
-		}
-		s, e := x.TSpan()
-		text, _ := x.TText()
-		_ = text
-		out := &types.TNode[[]*types.TNode[string]]{Span: pegort.Span{Start: s, End: e}}
-		out.Value = tl0(a, text)
-		return out
-	}
-	return nil
-}
-
-func tl0(a *tslabs, v any) []*types.TNode[string] {
-	a.stepWork()
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*pegort.TSeq)
-	if n == nil {
-		return []*types.TNode[string]{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl0Chunk, len(n.Kids))
-	for i, c := range n.Kids {
-		a.stepWork()
-		out[i] = (*types.TNode[string])(pegort.TPubMatch(c))
-	}
-	return out
-}
-
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
-	control  *pegort.WorkControl
-	tBinary  astChunk[types.Binary]
-	tUnary   astChunk[types.Unary]
-	tl0Chunk astChunk[*types.TNode[string]]
+	control *pegort.WorkControl
+	tBinary astChunk[types.Binary]
+	tUnary  astChunk[types.Unary]
 }
 
 func (a *tslabs) SetWorkControl(c *pegort.WorkControl) { a.control = c }
@@ -295,23 +242,11 @@ func ParseAST(input string, opts ...pegort.ParseOption) (types.Expr, error) {
 	return pegort.TParse(trules[0], input, opts, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
 }
 
-// ParseRuleAST parses the whole input with the named rule and returns its typed value.
+// ParseRuleAST parses the whole input with the named start rule and returns its typed value.
 // Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
-// Invalid options and undefined names return nil with an error. Rule result types:
+// Invalid options and names of rules that are not start rules return nil with an error. Start rule result types:
 //
 //	main: types.Expr
-//	expr: types.Expr
-//	add: types.Expr
-//	term: types.Expr
-//	mul: types.Expr
-//	unary: types.Expr
-//	neg: types.Expr
-//	power: types.Expr
-//	pow: types.Expr
-//	primary: types.Expr
-//	group: types.Expr
-//	number: *types.Number
-//	ws: *TNode[[]*TNode[string]]
 func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 	o, err := pegort.ResolveOptions(pegoGrammar, opts)
 	if err != nil {
@@ -321,47 +256,8 @@ func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 	case "main":
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[0], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
-	case "expr":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[1], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
-	case "add":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[2], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
-	case "term":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[3], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
-	case "mul":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[4], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
-	case "unary":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[5], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
-	case "neg":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[6], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
-	case "power":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[7], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
-	case "pow":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[8], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
-	case "primary":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[9], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
-	case "group":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[10], input, o, a, func(v any) types.Expr { return pegort.TAs[types.Expr](pegort.TPubIn(types.PegoHooks, a, v)) })
-	case "number":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[11], input, o, a, func(v any) *types.Number { return tv0(a, v) })
-	case "ws":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[12], input, o, a, func(v any) *types.TNode[[]*types.TNode[string]] { return tv1(a, v) })
 	default:
-		if len(name) > 0 && name[0] == '_' {
-			return nil, fmt.Errorf("rule %s is hidden: a rule whose name begins with an underscore is not an entry point", name)
-		}
-		return nil, fmt.Errorf("rule %s is not defined", name)
+		return nil, pegoGrammar.StartError(name)
 	}
 }
 
@@ -468,6 +364,7 @@ func init() {
 	recRules[10].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e42(p) }
 	recRules[11].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e43(p) }
 	recRules[12].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e27(p) }
+	pegoGrammar.Starts = []string{"main"}
 	pegoGrammar.Descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"+\"", "\"-\"", "\"*\"", "\"/\"", "\"%\"", "\"^\"", "\"(\"", "\")\"", "[0-9]", "\".\"", "[ \\t\\r\\n]"}
 	pegoRecGrammar.Share(pegoGrammar)
 	trules = []*pegort.TRule{

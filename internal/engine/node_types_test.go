@@ -6,8 +6,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // node[T] takes any value type T, and tuple types (A, B) are value types: they are checked
@@ -75,7 +73,7 @@ func TestNodeTypesCheckedAtCompileTime(t *testing.T) {
 		{"type P = { T (node[string],) }\nrule main P = v:(\"a\" \"b\") => P{T: $v.Value}", "cannot use", "ab"},
 		{"rule main node[[]node[string]] = \"a\" \"b\"", "not assignable", "ab"},
 	} {
-		g, err := syntax.Parse(tc.src)
+		g, err := parseTest(tc.src)
 		if err != nil {
 			t.Fatal(err)
 		}

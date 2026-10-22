@@ -5,8 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // A typed-only parser has the typed entry points and none of the Node family. These tests check what it
@@ -69,7 +67,7 @@ func TestTranscript(t *testing.T) {
 `
 
 func TestGeneratedTypedOnly(t *testing.T) {
-	g, err := syntax.Parse(ordinaryOnlyTyped)
+	g, err := parseTest(ordinaryOnlyTyped)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +159,7 @@ func TestGeneratedTypedOnlyConvertedEntries(t *testing.T) {
 		t.Skip("builds generated code")
 	}
 	program := strings.NewReplacer(`"sum"`, `"main"`, `"a"`, `"item"`).Replace(ordinaryOnlyTypedEntries)
-	g, err := syntax.Parse(ordinaryOnlyConverted)
+	g, err := parseTest(ordinaryOnlyConverted)
 	if err != nil {
 		t.Fatal(err)
 	}

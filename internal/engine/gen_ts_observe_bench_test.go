@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // Export standalone controls and raw measurements outside the repository.
@@ -37,7 +35,7 @@ func TestExportGeneratedTSTraceBenchmarks(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		g, err := syntax.Parse(string(data))
+		g, err := parseTest(string(data))
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -272,9 +272,6 @@ func Load(path string) (*Suite, error) {
 	if suite.Unit != "codepoints" && suite.Unit != "bytes" {
 		return nil, fmt.Errorf("%s: unknown unit %q", path, suite.Unit)
 	}
-	if suite.Start == "" {
-		suite.Start = "main"
-	}
 	if len(suite.Cases) == 0 {
 		return nil, fmt.Errorf("%s: cases must not be empty", path)
 	}

@@ -17,16 +17,31 @@ func at(p grammar.Pos) string {
 
 // --- unreachable-rule ---
 
+// unreachable reports the rules that no start rule reaches: start and the rules marked @start
+// are where parsing may begin.
 func (l *linter) unreachable(start string) {
 	control := l.control
 	control.poll()
 
 	a := l.an
-	if a.rules[start] == nil {
+	var roots []string
+	if a.rules[start] != nil {
+		roots = append(roots, start)
+	}
+	for _, r := range a.order {
+		control.poll()
+		if !slices.Contains(roots, r.Name) && slices.ContainsFunc(r.Attrs, func(x *grammar.Attribute) bool { return !x.Pragma && x.Name == "start" }) {
+			roots = append(roots, r.Name)
+		}
+	}
+	if len(roots) == 0 {
 		return
 	}
-	seen := map[string]bool{start: true}
-	stack := []string{start}
+	seen := map[string]bool{}
+	stack := slices.Clone(roots)
+	for _, r := range roots {
+		seen[r] = true
+	}
 	for len(stack) > 0 {
 		control.poll()
 		n := stack[len(stack)-1]
@@ -54,13 +69,24 @@ func (l *linter) unreachable(start string) {
 		if seen[r.Name] {
 			return
 		}
-		fix := "remove the rule, or call it from a rule that " + start + " reaches"
-		if cs := callers[r.Name]; len(cs) > 0 {
-			l.report(CheckUnreachableRule, Warning, r.Diagnostic(), fix,
-				"rule %s is never used: only %s, which %s does not reach either, call it", r.Name, strings.Join(cs, ", "), start)
+		if len(roots) > 1 {
+			fix := "remove the rule, or call it from a rule that a start rule reaches"
+			if cs := callers[r.Name]; len(cs) > 0 {
+				l.report(CheckUnreachableRule, Warning, r.Diagnostic(), fix,
+					"rule %s is never used: only %s, which no start rule reaches either, call it", r.Name, strings.Join(cs, ", "))
+				return
+			}
+			l.report(CheckUnreachableRule, Warning, r.Diagnostic(), fix, "rule %s is never used: no start rule calls it, directly or indirectly", r.Name)
 			return
 		}
-		l.report(CheckUnreachableRule, Warning, r.Diagnostic(), fix, "rule %s is never used: %s does not call it, directly or indirectly", r.Name, start)
+		root := roots[0]
+		fix := "remove the rule, or call it from a rule that " + root + " reaches"
+		if cs := callers[r.Name]; len(cs) > 0 {
+			l.report(CheckUnreachableRule, Warning, r.Diagnostic(), fix,
+				"rule %s is never used: only %s, which %s does not reach either, call it", r.Name, strings.Join(cs, ", "), root)
+			return
+		}
+		l.report(CheckUnreachableRule, Warning, r.Diagnostic(), fix, "rule %s is never used: %s does not call it, directly or indirectly", r.Name, root)
 	})
 }
 

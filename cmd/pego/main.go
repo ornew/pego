@@ -23,7 +23,6 @@ package main
 
 import (
 	"bytes"
-	"cmp"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -430,10 +429,10 @@ func fixAnyTypes(src string) string {
 // typeChecks reports whether src parses and compiles.
 func typeChecks(src string) bool {
 	g, err := pego.ParseGrammar(src)
-	if err != nil || len(g.Rules()) == 0 {
+	if err != nil {
 		return false
 	}
-	_, err = pego.Compile(g, g.Rules()[0].Name)
+	_, err = pego.Compile(g, "")
 	return err == nil
 }
 
@@ -642,7 +641,7 @@ func loadGrammar(path string) (g *grammar.Grammar, saved string, err error) {
 func parse(args []string, stdin io.Reader, stdout io.Writer) error {
 	fs := flag.NewFlagSet("parse", flag.ContinueOnError)
 	grammarPath := fs.String("g", "", "grammar file (.pego, .json, or .pegoc)")
-	start := fs.String("s", "", "start rule name (default: the one saved in a .pegoc, otherwise main)")
+	start := fs.String("s", "", "start rule name (default: the one saved in a .pegoc, otherwise the grammar's default start rule)")
 	input := fs.String("i", "", "input string (default: standard input)")
 	format := fs.String("f", "json", "output format: json or sexpr")
 	stream := fs.Bool("stream", false, "print each #stream element of the start rule on its own line as soon as it matches")
@@ -770,7 +769,7 @@ func gen(args []string, stdout io.Writer) error {
 	module := fs.String("module", "", "import path of the generated Go package")
 	runtimeMode := fs.String("runtime", "embed", "how generated code reaches the runtime: embed (a copy: internal/runtime in Go, runtime.ts in TypeScript), import (github.com/ornew/pego/runtime in Go; the module of -runtime-module in TypeScript) or only (just the embedded copy)")
 	runtimeModule := fs.String("runtime-module", "", "module specifier a TypeScript parser imports its runtime from with -runtime import, such as ../shared/runtime.ts")
-	start := fs.String("s", "", "start rule of the generated Parse function (default: the one saved in a .pegoc, otherwise main)")
+	start := fs.String("s", "", "start rule of the generated Parse function (default: the one saved in a .pegoc, otherwise the grammar's default start rule)")
 	output := fs.String("o", "", "output directory")
 	types := fs.Bool("types", false, "also generate typed values and ParseAST (parseAST in TypeScript)")
 	document := fs.Bool("document", false, "also generate a Go incremental Document (typed ParseAST with -types; incompatible with -lang ts)")
@@ -870,7 +869,7 @@ func gen(args []string, stdout io.Writer) error {
 		return err
 	}
 	if *start == "" {
-		*start = cmp.Or(saved, "main")
+		*start = saved
 	}
 	opts := []pego.GenOption{pego.WithGeneratedMaxDepth(*maxDepth)}
 	if *types {
@@ -1070,7 +1069,7 @@ func loadParser(path, start string, flags compileFlags) (*pego.Parser, error) {
 	if err != nil {
 		return nil, err
 	}
-	p, err := pego.Compile(g, cmp.Or(start, "main"), flags.options()...)
+	p, err := pego.Compile(g, start, flags.options()...)
 	if err != nil {
 		return nil, fileError(path, err)
 	}
@@ -1080,7 +1079,7 @@ func loadParser(path, start string, flags compileFlags) (*pego.Parser, error) {
 func compileCmd(args []string) error {
 	fs := flag.NewFlagSet("compile", flag.ContinueOnError)
 	grammarPath := fs.String("g", "", "grammar file (.pego, .json, or .pegoc)")
-	start := fs.String("s", "", "start rule saved as the default (default: the one saved in a .pegoc, otherwise main)")
+	start := fs.String("s", "", "start rule saved as the default (default: the one saved in a .pegoc, otherwise the grammar's default start rule)")
 	output := fs.String("o", "", "output file (.pegoc)")
 	noAST := fs.Bool("no-ast", false, "omit the grammar AST (the result runs only on the bytecode backends)")
 	sourceInfo := fs.Bool("source-info", false, "record the rule of each node and the names of captures in parse results")

@@ -12,7 +12,8 @@ import (
 )
 
 func TestWorkOptionsOrderAndTraceComposition(t *testing.T) {
-	p, err := CompileSource(`rule main = "abc" $$`, "main")
+	p, err := CompileSource(`@start
+rule main = "abc" $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +32,8 @@ func TestWorkOptionsOrderAndTraceComposition(t *testing.T) {
 }
 
 func TestWorkStreamPublicOptions(t *testing.T) {
-	p, err := CompileSource(`rule main = "a"* #stream $$`, "main")
+	p, err := CompileSource(`@start
+rule main = "a"* #stream $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

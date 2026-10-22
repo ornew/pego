@@ -151,7 +151,7 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, op
 	var wants []want
 	var files []string
 	for i, c := range cases {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -271,28 +271,31 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, op
 }
 
 func TestGenerateTSErrors(t *testing.T) {
-	g, _ := syntax.Parse(`rule main = "a"`)
-	if _, err := generateTSBundle(g, GenOptions{Start: "nope"}); err == nil || err.Error() != "start rule nope is not defined" {
+	g, _ := syntax.Parse("@start\nrule main = \"a\" b\nrule b = \"b\"")
+	if _, err := generateTSBundle(g, GenOptions{Start: "nope"}); err == nil || err.Error() != "rule nope is not defined" {
 		t.Errorf("got %v", err)
+	}
+	if _, err := generateTSBundle(g, GenOptions{Start: "b"}); err == nil || err.Error() != "rule b is not a start rule; parsing can begin only at a rule marked @start" {
+		t.Errorf("not a start rule: got %v", err)
 	}
 	if code, err := generateTSBundle(g, GenOptions{Start: "main", Types: true}); err != nil || !strings.Contains(string(code), "export function parseAST(") {
 		t.Errorf("Types: %v", err)
 	}
-	bad, _ := syntax.Parse(`rule main = x`)
+	bad, _ := parseTest(`rule main = x`)
 	if _, err := generateTSBundle(bad, GenOptions{Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
 		t.Errorf("got %v", err)
 	}
 	// Generating is deterministic.
 	src, _ := os.ReadFile("../../parsers/json/json.pego")
-	jg, err := syntax.Parse(string(src))
+	jg, err := parseTest(string(src))
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, err := generateTSBundle(jg, GenOptions{Start: "value", Recognize: true})
+	a, err := generateTSBundle(jg, GenOptions{Start: "main", Recognize: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, _ := generateTSBundle(jg, GenOptions{Start: "value", Recognize: true})
+	b, _ := generateTSBundle(jg, GenOptions{Start: "main", Recognize: true})
 	if string(a) != string(b) {
 		t.Error("generating twice gives different code")
 	}
@@ -345,7 +348,7 @@ func diffAt(a, b string) int {
 // the standard output.
 func runTSScript(t *testing.T, src, script string) string {
 	t.Helper()
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -464,7 +467,7 @@ process.stdout.write(r.error === null ? String(r.node) : r.error.message);
 // JavaScript objects.
 func TestGeneratedTSFieldNames(t *testing.T) {
 	src := `rule main = prototype:"a" constructor:"b" toString:"c" hasOwnProperty:"d"`
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}

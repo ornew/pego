@@ -19,7 +19,7 @@ func TestLSP(t *testing.T) {
 	in := lspMessages(
 		`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}}`,
 		`{"jsonrpc":"2.0","method":"initialized","params":{}}`,
-		`{"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":"file:///a.pego","languageId":"pego","version":1,"text":"rule main = x"}}}`,
+		`{"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":"file:///a.pego","languageId":"pego","version":1,"text":"@start\nrule main = x"}}}`,
 		`{"jsonrpc":"2.0","id":2,"method":"shutdown"}`,
 		`{"jsonrpc":"2.0","method":"exit"}`,
 	)

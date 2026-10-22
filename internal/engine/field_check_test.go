@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // fieldCheckValues are the dynamically typed values that fieldCheckGrammar passes to a struct
@@ -152,8 +151,8 @@ func TestConstructedFieldChecks(t *testing.T) {
 		parse   func(string) (*grammar.Grammar, error)
 		fields  map[string]string
 	}{
-		{"text struct", fieldCheckGrammar, syntax.Parse, fieldCheckFields},
-		{"terminal", fieldCheckGrammarLegacy, syntax.ParseLegacy, fieldCheckFields},
+		{"text struct", fieldCheckGrammar, parseTest, fieldCheckFields},
+		{"terminal", fieldCheckGrammarLegacy, parseLegacyTest, fieldCheckFields},
 	} {
 		t.Run(model.name, func(t *testing.T) {
 			for _, typ := range fieldCheckTypesOf(model.fields) {
@@ -288,7 +287,7 @@ rule val _ = "v"
 	if d := rec.Module().Disassemble(); strings.Count(d, "ECAST") != 1 {
 		t.Fatalf("recognizer disassembly:\n%s", d)
 	}
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}

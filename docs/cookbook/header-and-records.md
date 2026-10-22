@@ -25,6 +25,7 @@ type Pair = { Key Key; Value Value }
 type Key = node[string]
 type Value = node[string]
 
+@start
 rule main =  ^^ item* #stream $$
 rule item =  header / pair
 rule header Header =  "#version " v:version "\n" => Header{Version: $v}

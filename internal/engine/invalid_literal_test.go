@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/ornew/pego/internal/syntax"
 	"io"
 	"os"
 	"os/exec"
@@ -328,7 +327,7 @@ func BenchmarkByteLiteralMatching(b *testing.B) {
 			}
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				prog := func() *Program {
-					g, err := syntax.Parse("rule main = " + strconv.Quote(literal) + " $$")
+					g, err := parseTest("rule main = " + strconv.Quote(literal) + " $$")
 					if err != nil {
 						b.Fatal(err)
 					}

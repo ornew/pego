@@ -11,6 +11,7 @@ import (
 	"weak"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/starttest"
 )
 
 func contextClassRanges() []grammar.CharRange {
@@ -123,6 +124,7 @@ func TestClassConstructionCompileContextParity(t *testing.T) {
 			e = &grammar.Discard{Expr: &grammar.Repeat{Expr: cl, Min: 1, Max: -1}}
 		}
 		g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: e}}}}
+		starttest.MarkAll(g)
 		for _, compiledRecognition := range []bool{false, true} {
 			a, err := Compile(g, Options{recognize: compiledRecognition})
 			if err != nil {
@@ -177,6 +179,7 @@ func classProgramWithoutContext(t *testing.T) (*Program, weak.Pointer[classCompi
 	ref := weak.Make(ctx)
 	cl := &grammar.CharClass{Ranges: []grammar.CharRange{{Lo: 'a', Hi: 'a'}, {Lo: 'b', Hi: 'b'}, {Lo: 'β', Hi: 'β'}}}
 	g := &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{&grammar.RuleDef{Name: "main", Expr: &grammar.Choice{Alts: []grammar.Expr{&grammar.Seq{Items: []grammar.Expr{cl, &grammar.EndInput{}}}, &grammar.Discard{Expr: &grammar.Repeat{Expr: cl, Min: 1, Max: -1}}}}}}}}
+	starttest.MarkAll(g)
 	p, err := CompileContext(ctx, g, Options{})
 	if err != nil {
 		t.Fatal(err)

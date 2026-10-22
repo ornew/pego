@@ -118,9 +118,9 @@ func TestCodeActionInteriorWalksCancel(t *testing.T) {
 	t.Run("suppression-tokens", func(t *testing.T) {
 		// This line refuses an edit before candidate analysis, so compiler polls
 		// cannot hide a missing check in the preceding token walk.
-		long := analyze("rule main = " + strings.Repeat("\"a\" ", 4096) + "\n// lint:ignore\n")
+		long := analyze("@start\nrule main = " + strings.Repeat("\"a\" ", 4096) + "\n// lint:ignore\n")
 		doc := codeActionServer(long, nil, true, true, true).docs[codeActionURI]
-		target := Diagnostic{Code: "unused-capture", Range: Range{Start: Position{Line: 1}}}
+		target := Diagnostic{Code: "unused-capture", Range: Range{Start: Position{Line: 2}}}
 		assertOccurrencePhaseCancels(t, 3, func(c *renderControl) (any, *rpcError) {
 			edit, ok := doc.suppressionEditControlled(c.ctx, target, c)
 			return struct {

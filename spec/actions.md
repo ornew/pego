@@ -95,8 +95,10 @@ it is memoized, may recur (also on the left), counts against the maximum call
 depth, and a cut or a recovery inside it is scoped to the rule. It differs from
 other rules in three ways.
 
-- **Not an entry point.** A hidden rule MUST NOT be the start rule of a grammar, a
-  compiled grammar, a schema or a generated parser, and cannot be parsed by name
+- **Not an entry point.** A hidden rule MUST NOT be marked
+  [`@start`](grammar-files.md#start-rules), which is a grammar error at the
+  attribute, so it is not a start rule of a grammar, a compiled grammar, a schema
+  or a generated parser. It cannot be parsed by name
   (`ParseRule`, `Parse(name, ...)`, `WithStart`, `parseRule` and `parseRuleWithOptions` of a
   TypeScript parser); each of these is an error that
   says the rule is hidden. The rules a parser lists do not include hidden rules.

@@ -9,8 +9,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 const aliasExportsGrammar = `type Word = { Text string }
@@ -41,7 +39,7 @@ func TestGeneratedAliasExports(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(aliasExportsGrammar)
+	g, err := parseTest(aliasExportsGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +127,7 @@ func BenchmarkGenerateAliasExports(b *testing.B) {
 				fmt.Fprintf(&src, "type Alias%d = Word\n", i)
 			}
 			src.WriteString("rule main Word = \"a\"\n")
-			g, err := syntax.Parse(src.String())
+			g, err := parseTest(src.String())
 			if err != nil {
 				b.Fatal(err)
 			}

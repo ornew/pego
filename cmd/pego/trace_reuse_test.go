@@ -15,7 +15,8 @@ import (
 func TestTraceReusedElementsPresentation(t *testing.T) {
 	for _, format := range []string{"text", "json"} {
 		t.Run(format, func(t *testing.T) {
-			p, err := pego.CompileSource(`rule main = lines $$
+			p, err := pego.CompileSource(`@start
+rule main = lines $$
 rule lines = line*
 rule line = [a-z]+ #atomic "\n"`, "main")
 			if err != nil {

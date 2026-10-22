@@ -28,6 +28,7 @@ type Cond = { Cond Expr; Then Expr; Else Expr }
 type ArrayLit = { Elems []Expr }
 type Expr ~ Ident | Number | String | Bool | Binary | Unary | Call | Index | Member | Cond | ArrayLit
 
+@start
 rule main Program = body:stmts ws $$ => Program{Body: $body}
 
 rule stmts = ss:(-ws s:stmt)* => map($ss, (x) => x.$s)

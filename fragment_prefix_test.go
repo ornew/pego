@@ -11,7 +11,7 @@ import (
 )
 
 func TestParsePrefixRuleSemantics(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = expr $$
+	p, err := compileTestSource(`rule main = expr $$
 rule expr = expr "+" "a" / "a"
 rule cut = "a" #cut "b" / "a" "c"
 rule nilaction = missing:"z"? "a" => $missing
@@ -61,7 +61,7 @@ rule recoveryThenFailure = ("a" #recover(skip="x")) "!"`, "main")
 }
 
 func TestParsePrefixCompiled(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = value $$
+	p, err := compileTestSource(`rule main = value $$
 rule value = x:"é😀" "!" => $x`, "main")
 	if err != nil {
 		t.Fatal(err)
@@ -100,7 +100,7 @@ rule value = x:"é😀" "!" => $x`, "main")
 }
 
 func TestParsePrefixConcurrentAndReentrant(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = "z" $$
+	p, err := compileTestSource(`rule main = "z" $$
 rule item = "é😀"`, "main")
 	if err != nil {
 		t.Fatal(err)
@@ -140,7 +140,7 @@ rule item = "é😀"`, "main")
 }
 
 func TestParsePrefixRejectsDiagnosticCallback(t *testing.T) {
-	parser, err := pego.CompileSource(`rule main = ("a" ";") #recover(skip=[^;]* ";")`, "main")
+	parser, err := compileTestSource(`rule main = ("a" ";") #recover(skip=[^;]* ";")`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -8,8 +8,23 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/syntax"
 )
+
+// parseLegacyTest parses PEGO source with syntax.ParseLegacy and marks its start rules as
+// parseTest does.
+func parseLegacyTest(src string) (*grammar.Grammar, error) {
+	g, err := syntax.ParseLegacy(src)
+	return starttest.MarkAll(g), err
+}
+
+// parseTest parses PEGO source for a test whose subject is not start rules: unless the source
+// has declaration attributes, every rule becomes a start rule, the first one the default.
+func parseTest(src string) (*grammar.Grammar, error) {
+	g, err := syntax.Parse(src)
+	return starttest.MarkAll(g), err
+}
 
 // compile compiles PEGO source with source information, so that results show rule names and
 // capture labels.
@@ -27,7 +42,7 @@ func compile(t *testing.T, src string, opts ...Options) *Program {
 // they request it.
 func compileBare(t *testing.T, src string, opts ...Options) *Program {
 	t.Helper()
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatalf("syntax error: %v\n%s", err, src)
 	}
@@ -46,7 +61,7 @@ func compileBare(t *testing.T, src string, opts ...Options) *Program {
 // syntax.ParseLegacy accepts; the engine still accepts grammar.TerminalSpec from JSON ASTs.
 func compileLegacy(t *testing.T, src string, opts ...Options) *Program {
 	t.Helper()
-	g, err := syntax.ParseLegacy(src)
+	g, err := parseLegacyTest(src)
 	if err != nil {
 		t.Fatalf("syntax error: %v\n%s", err, src)
 	}
@@ -65,7 +80,7 @@ func compileLegacy(t *testing.T, src string, opts ...Options) *Program {
 // compileError returns the compile error message.
 func compileError(t *testing.T, src string) string {
 	t.Helper()
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatalf("syntax error: %v\n%s", err, src)
 	}
@@ -137,7 +152,7 @@ func TestMain(m *testing.M) {
 func lines(s ...string) string { return strings.Join(s, "\n") }
 
 func mustParse(src string) *grammar.Grammar {
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		panic(err)
 	}

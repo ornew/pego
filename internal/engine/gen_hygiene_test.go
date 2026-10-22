@@ -5,12 +5,10 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGeneratedGoActionContextAndExpressions(t *testing.T) {
-	grammar, err := syntax.Parse(`type Result = { Text string }
+	grammar, err := parseTest(`type Result = { Text string }
 rule main Result = (leaf / [a-z]) => Result{Text: "ok"}
 rule leaf = "a"
 `)

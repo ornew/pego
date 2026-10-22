@@ -5,8 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // PEGO_TYPED_FRAME_LAYOUT_DIR preserves same-generator layout controls for
@@ -66,7 +64,7 @@ func BenchmarkTypedFrameLayoutGeneration(b *testing.B) {
 		{"calculator", string(calculator)}, {"typescript", string(typescript)},
 	} {
 		b.Run(c.name, func(b *testing.B) {
-			g, err := syntax.Parse(c.src)
+			g, err := parseTest(c.src)
 			if err != nil {
 				b.Fatal(err)
 			}

@@ -26,6 +26,7 @@ Start with the smallest grammar that has some structure:
 
 ```pego
 // assign.pego
+@start
 rule main = ^^ assign $$
 rule assign = name ws "=" ws value ";"
 rule name = [a-z]+
@@ -77,6 +78,7 @@ The default JSON format carries the same information and adds positions. Here is
 
 ```pego
 // optional.pego
+@start
 rule main = name ("," name)?
 rule name = [a-z]+ #atomic
 ```
@@ -134,12 +136,18 @@ creates *in its own body* is labeled with the rule's name; a node that comes fro
 
 ```pego
 // cst.pego
+@start(default)
 rule seq = "y" "z"
+@start
 rule alt = "x" / "y" "z"
 rule one = "x"
+@start
 rule same = one
+@start
 rule rep = "x"*
+@start
 rule opt = "x"?
+@start
 rule cap = k:"x" "y"
 ```
 
@@ -184,6 +192,7 @@ needs but the tree does not:
 
 ```pego
 // shape.pego
+@start
 rule main = ^^ assign $$
 rule assign = name -ws -"=" -ws value -";"
 rule name = [a-z]+ #atomic
@@ -213,12 +222,15 @@ a capture does not change the value of the rule; it only names an element of it,
 
 ```pego
 // capture.pego
+@start(default)
 rule pair = k:name -ws -"=" -ws v:value -";"
 rule name = [a-z]+ #atomic
 rule value = number / name
 rule number = [0-9]+ #atomic
 rule ws = " "*
+@start
 rule list = name ("," n:name)*
+@start
 rule list2 = name (-"," n:name)*
 ```
 
@@ -253,6 +265,7 @@ A start rule such as `main = ^^ expr $$` wraps the real result in a tuple. When 
 want instead:
 
 ```pego
+@start
 rule main Expr = e:expr $$ => $e
 ```
 

@@ -438,7 +438,7 @@ rule e = operators {
     level { prefix "¬"; infix left "!" }
 }`},
 	} {
-		p, err := pego.CompileSource(c.src, "main")
+		p, err := compileMarked(c.src)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -485,7 +485,7 @@ func BenchmarkSampleOperatorsRuleScopes(b *testing.B) {
 		input := strings.Repeat("a<a|", n) + "a<a"
 		src := fmt.Sprintf(`rule main = &(%q $$) e $$
 rule e = operators { operand "a"; level { infix left "|" }; level { infix none "<" } }`, input)
-		p, err := pego.CompileSource(src, "main")
+		p, err := compileMarked(src)
 		if err != nil {
 			b.Fatal(err)
 		}

@@ -13,8 +13,6 @@ import (
 	"sort"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // goVetAndTest runs go vet and go test in the module in dir.
@@ -65,7 +63,7 @@ func TestGeneratedTypesNamedLikeRuntimeExports(t *testing.T) {
 		fmt.Fprintf(&src, "type %s = { Value int }\n", name)
 	}
 	src.WriteString("rule main Node = \"a\" => Node{Value: 7}\n")
-	g, err := syntax.Parse(src.String())
+	g, err := parseTest(src.String())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,7 +170,7 @@ func TestGeneratedTypeNamesIgnoreTheOutput(t *testing.T) {
 	} {
 		opts := c.opts
 		for _, name := range c.grammars {
-			g, err := syntax.Parse(grammars[name])
+			g, err := parseTest(grammars[name])
 			if err != nil {
 				t.Fatalf("%s: %v", name, err)
 			}
@@ -214,7 +212,7 @@ func TestGeneratedTypeNamedLikeTypesPackageName(t *testing.T) {
 		{"tuple of another size", "type Tuple3 = { Value int }\nrule main = \"a\" \"b\" => (1, 2)\n", false},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			g, err := syntax.Parse(c.grammar)
+			g, err := parseTest(c.grammar)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -252,7 +250,7 @@ func TestGeneratedTypesPackageNamesTheRuntimeExplicitly(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			g, err := syntax.Parse(string(data))
+			g, err := parseTest(string(data))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -288,7 +286,7 @@ func TestGeneratedTypesNamedLikeEveryRuntimeExport(t *testing.T) {
 			continue
 		}
 		// The grammar language reserves some names (Error, ...).
-		if g, err := syntax.Parse("type " + name + " = { Value int }\nrule main = \"a\"\n"); err == nil {
+		if g, err := parseTest("type " + name + " = { Value int }\nrule main = \"a\"\n"); err == nil {
 			if _, err := Compile(g, Options{}); err == nil {
 				names = append(names, name)
 			}
@@ -303,7 +301,7 @@ func TestGeneratedTypesNamedLikeEveryRuntimeExport(t *testing.T) {
 		fmt.Fprintf(&src, "type %s = { Value int }\n", name)
 	}
 	src.WriteString("rule main = \"a\"* #stream $$\n")
-	g, err := syntax.Parse(src.String())
+	g, err := parseTest(src.String())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -342,7 +340,7 @@ func TestGeneratedTypesNamedLikeEveryRuntimeExport(t *testing.T) {
 // in common, whatever options are on: no type of the grammar is among them, so the names are
 // the generator's own.
 func TestParserAndAPIDeclareDistinctNames(t *testing.T) {
-	g, err := syntax.Parse("type Pair = { A int; B int }\nrule main = item* #stream $$\nrule item = \"a\" => Pair{A: 1, B: 2}\n")
+	g, err := parseTest("type Pair = { A int; B int }\nrule main = item* #stream $$\nrule item = \"a\" => Pair{A: 1, B: 2}\n")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -387,7 +385,7 @@ func TestGeneratedTypedFieldNamedRange(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
 	}
-	g, err := syntax.Parse("type R = { Range int }\nrule main R = [0-9]+ #atomic => R{Range: 7}\n")
+	g, err := parseTest("type R = { Range int }\nrule main R = [0-9]+ #atomic => R{Range: 7}\n")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -445,7 +443,7 @@ func TestDefaultPackageName(t *testing.T) {
 			t.Errorf("DefaultPackageName(%q) = %q, want %q", module, got, want)
 		}
 	}
-	g, err := syntax.Parse("rule main = \"a\"\n")
+	g, err := parseTest("rule main = \"a\"\n")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -547,7 +545,7 @@ func TestEmbeddedModeCompilesRichGrammars(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			g, err := syntax.Parse(string(data))
+			g, err := parseTest(string(data))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -611,14 +609,14 @@ func TestGeneratedRichGrammarsWithTypesNamedLikeRuntimeExports(t *testing.T) {
 					continue
 				}
 				// The grammar language reserves some names (Error, ...).
-				if g, err := syntax.Parse("type " + n + " = { Value int }\nrule main = \"a\"\n"); err != nil {
+				if g, err := parseTest("type " + n + " = { Value int }\nrule main = \"a\"\n"); err != nil {
 					continue
 				} else if _, err := Compile(g, Options{}); err != nil {
 					continue
 				}
 				fmt.Fprintf(&src, "type %s = { Value int }\n", n)
 			}
-			g, err := syntax.Parse(src.String())
+			g, err := parseTest(src.String())
 			if err != nil {
 				t.Fatal(err)
 			}

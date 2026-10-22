@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
+	"github.com/ornew/pego/internal/starttest"
 )
 
 const streamRecoveryError = "#recover cannot wrap a #stream repetition; recover inside each element instead"
@@ -16,7 +16,7 @@ const streamRecoveryError = "#recover cannot wrap a #stream repetition; recover 
 func TestStreamRecoveryRejected(t *testing.T) {
 	for _, pragmas := range []string{`#stream #recover(skip=.*)`, `#recover(skip=.*) #stream`} {
 		src := `rule main = "ab" #repeat(2) ` + pragmas + ` $$`
-		g, err := syntax.Parse(src)
+		g, err := parseTest(src)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -44,6 +44,7 @@ func TestStreamRecoveryRejected(t *testing.T) {
 	}},
 		Skip: &grammar.Repeat{Expr: &grammar.Any{}, Min: 0, Max: -1},
 	}}}}}
+	starttest.MarkAll(g)
 	_, err := Compile(g, Options{})
 	if errs, ok := err.(ErrorList); !ok || len(errs) != 1 || errs[0].Pos != pos || !strings.Contains(err.Error(), streamRecoveryError) {
 		t.Errorf("public AST: %v; want positioned recovery error", err)
@@ -176,7 +177,7 @@ func BenchmarkStreamRecoveryPreparation(b *testing.B) {
 			}
 			fmt.Fprintf(&src, "rule %s = \"ab\" #recover(skip=[^a]+)\n", name)
 		}
-		g, err := syntax.Parse(src.String())
+		g, err := parseTest(src.String())
 		if err != nil {
 			b.Fatal(err)
 		}

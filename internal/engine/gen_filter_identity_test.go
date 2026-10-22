@@ -8,8 +8,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 const typedFilterIdentityGrammar = `type Word = { Text string }
@@ -38,7 +36,7 @@ func TestGeneratedTypedFilterIdentity(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated typed consumers")
 	}
-	grammar, err := syntax.Parse(typedFilterIdentityGrammar)
+	grammar, err := parseTest(typedFilterIdentityGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}

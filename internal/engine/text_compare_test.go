@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // textCompareGrammar compares string fields of structs with each other, with literals and in
@@ -60,7 +58,7 @@ func TestGeneratedTextFieldComparisons(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	g, err := syntax.Parse(textCompareGrammar)
+	g, err := parseTest(textCompareGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}

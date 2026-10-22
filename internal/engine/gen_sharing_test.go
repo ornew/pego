@@ -8,8 +8,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGeneratedSharingRollback(t *testing.T) {
@@ -71,7 +69,7 @@ func TestGeneratedSharingIdentity(t *testing.T) {
 }
 
 func TestGeneratedSharingDeterministic(t *testing.T) {
-	g, err := syntax.Parse(`rule main = a "!" / a "?"
+	g, err := parseTest(`rule main = a "!" / a "?"
 rule a = ("é" / "ab")+ #atomic`)
 	if err != nil {
 		t.Fatal(err)
@@ -157,7 +155,7 @@ func BenchmarkGeneratedSharing(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		g, err := syntax.Parse(string(src))
+		g, err := parseTest(string(src))
 		if err != nil {
 			b.Fatal(err)
 		}

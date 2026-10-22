@@ -35,6 +35,7 @@ type Config = {
     Entries []Entry
 }
 
+@start
 rule main Config = -ws es:entry* $$ => Config{Entries: $es.Value}
 
 rule entry Entry = k:key -ws -"=" -ws v:value -ws => Entry{Key: $k, Value: $v}
@@ -84,8 +85,8 @@ pego parse -g bad-type.pego -f sexpr -i 'a=1'   # ... Entry{Key: $v, Value: $k}
 ```
 
 ```text
-pego: bad-type.pego:20:60: cannot use Number | String | Bool as Key in field Key of Entry
-bad-type.pego:20:69: cannot use Key as Number | String | Bool in field Value of Entry
+pego: bad-type.pego:21:60: cannot use Number | String | Bool as Key in field Key of Entry
+bad-type.pego:21:69: cannot use Key as Number | String | Bool in field Value of Entry
 ```
 
 and misspelling a field name:
@@ -95,7 +96,7 @@ pego parse -g bad-field.pego -f sexpr -i 'a=1'   # ... Entry{Key: $k, Valu: $v}
 ```
 
 ```text
-pego: bad-field.pego:20:69: Entry has no field Valu
+pego: bad-field.pego:21:69: Entry has no field Valu
 ```
 
 ### Using the Tree From Go

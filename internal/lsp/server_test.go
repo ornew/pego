@@ -58,7 +58,7 @@ func TestRequestBeforeInitialize(t *testing.T) {
 		"textDocument": map[string]any{"uri": "file:///early.pego", "languageId": "pego", "version": 1, "text": "rule"},
 	})
 	c.request("initialize", map[string]any{"capabilities": map[string]any{}})
-	if diags := c.open("file:///late.pego", `rule main = "a"`); len(diags) != 0 {
+	if diags := c.open("file:///late.pego", "@start\nrule main = \"a\""); len(diags) != 0 {
 		t.Errorf("diagnostics %v", diags)
 	}
 	if e := c.requestError("textDocument/hover", at("file:///early.pego", 0, 0)); e.Code != codeRequestFailed {

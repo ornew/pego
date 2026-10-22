@@ -13,6 +13,7 @@ type Millis = node[string]
 type Entry = { Level Level; Millis Millis }
 
 // Each entry is one line: time level service method path status millis.
+@start
 rule main = entry* #stream $$
 
 rule entry Entry = -token " " l:severity " " -token " " -token " " -token " " -token " " ms:millis "ms\n" => Entry{Level: $l, Millis: $ms}

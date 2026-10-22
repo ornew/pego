@@ -28,8 +28,8 @@ linter, identified by a name.
 - `pego.Lint` takes a grammar AST and the start rule and returns the findings. If
   the grammar does not compile, it returns an error and no findings.
 - `pego lint` accepts PEGO source, grammar JSON and a compiled grammar that holds
-  the AST. The start rule is `main` unless `-s` names another or a compiled
-  grammar saved one. A grammar that does not compile is reported with its compile
+  the AST. The start rule is the one `-s` names, otherwise the one a compiled
+  grammar saved, otherwise the default start rule of the grammar. A grammar that does not compile is reported with its compile
   errors.
 - Each finding prints on one line as `file:line:col: severity: message [check]`,
   followed by a line `fix: ...` when there is a suggested fix. A run that exits

@@ -58,7 +58,7 @@ func runDocumentResourceCase(t *testing.T, n int, responsive, measure bool) docu
 			"contentChanges": []map[string]any{{"range": Range{}, "text": "// changed\n"}},
 		}})
 	}
-	burst = append(burst, map[string]any{"jsonrpc": "2.0", "id": 7000, "method": "textDocument/hover", "params": at(uri(n-1), 1, 5)})
+	burst = append(burst, map[string]any{"jsonrpc": "2.0", "id": 7000, "method": "textDocument/hover", "params": at(uri(n-1), 2, 5)})
 	start = time.Now()
 	written := sendAll(c, burst)
 	published := map[string]bool{}

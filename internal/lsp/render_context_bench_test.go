@@ -20,7 +20,7 @@ func renderBenchmarkSource(fields int) string {
 	for i := range fields {
 		fmt.Fprintf(&source, " F%d node[string]\n", i)
 	}
-	source.WriteString("}\n// The main rule.\nrule main = ")
+	source.WriteString("}\n// The main rule.\n@start\nrule main = ")
 	for i := range fields {
 		fmt.Fprintf(&source, "c%d:\"a\" ", i)
 	}

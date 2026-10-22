@@ -6,8 +6,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 const joinMemberRules = `type A = { F string; X int }
@@ -82,7 +80,7 @@ func TestMemberAccessOnJoinTypeErrors(t *testing.T) {
 		// A member that may be nil is rejected.
 		{joinMemberRules + "rule main = x:u? => $x.F", "may be nil"},
 	} {
-		g, err := syntax.Parse(tc.src)
+		g, err := parseTest(tc.src)
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}

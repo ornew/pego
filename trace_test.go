@@ -9,7 +9,7 @@ import (
 )
 
 func TestWithTrace(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = pair (";" pair)* $$
+	p, err := compileTestSource(`rule main = pair (";" pair)* $$
 rule pair = key "=" value
 rule key = [a-z]+ #atomic
 rule value = [0-9]+ #atomic`, "main")
@@ -50,7 +50,7 @@ rule value = [0-9]+ #atomic`, "main")
 }
 
 func TestWithProfile(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = item+ $$
+	p, err := compileTestSource(`rule main = item+ $$
 rule item = word / num
 rule word = [a-z]+ #atomic " "?
 rule num = [0-9]+ #atomic " "?`, "main")
@@ -82,7 +82,7 @@ rule num = [0-9]+ #atomic " "?`, "main")
 // TestNilTraceOptions checks that WithTrace(nil) and WithProfile(nil) are ignored, alone and
 // combined with other trace functions.
 func TestNilTraceOptions(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = [a-z]+ #atomic $$`, "main")
+	p, err := compileTestSource(`rule main = [a-z]+ #atomic $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

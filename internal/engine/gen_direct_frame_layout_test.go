@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 var typedFrameLayoutCases = []genCase{
@@ -71,7 +70,7 @@ func TestGeneratedTypedFrameLayouts(t *testing.T) {
 		}
 	}
 	for _, c := range cases {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

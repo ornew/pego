@@ -12,6 +12,7 @@ type Setting = { Key node[string]; Value node[string] }
 type Item ~ Setting | error
 type File = { Settings []Item }
 
+@start
 rule main File = -ws ss:(s:setting -ws)* $$ => File{Settings: map($ss, (x) => x.$s)}
 
 // If a setting does not parse, skip to the next ";" (but not past a line end) and carry on.

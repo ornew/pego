@@ -14,7 +14,7 @@ import (
 )
 
 func TestMissingTokensPublicOptions(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = ";" #missing $$`, "main")
+	p, err := compileTestSource(`rule main = ";" #missing $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +49,7 @@ func TestMissingTokensPublicOptions(t *testing.T) {
 }
 
 func TestMissingTokensConcurrentReentrantAndRetry(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = ";" #missing $$`, "main")
+	p, err := compileTestSource(`rule main = ";" #missing $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +103,7 @@ func (r *missingUnusableReader) Read([]byte) (int, error) {
 }
 
 func TestMissingTokensUnsupportedPublicPaths(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = (";" #missing)* #stream $$`, "main")
+	p, err := compileTestSource(`rule main = (";" #missing)* #stream $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,7 +136,7 @@ func TestMissingTokensUnsupportedPublicPaths(t *testing.T) {
 	if _, err := pego.GenerateTypeScript(p.Grammar(), "main"); err == nil {
 		t.Fatal("TS generator silently discarded #missing")
 	}
-	strict, err := pego.CompileSource(`rule main = ";" $$`, "main")
+	strict, err := compileTestSource(`rule main = ";" $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

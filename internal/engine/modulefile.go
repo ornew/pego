@@ -3,6 +3,7 @@ package engine
 import (
 	"encoding/binary"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/ornew/pego/grammar"
@@ -85,6 +86,8 @@ func (w *encoder) module(m *Module) {
 		w.bool(r.Splice)
 		w.ints(r.Vars)
 	}
+	w.ints(m.Starts)
+	w.int(m.DefaultStart)
 	w.uint(len(m.OperatorsRules))
 	for _, p := range m.OperatorsRules {
 		w.int(p.Skip)
@@ -193,6 +196,8 @@ func (r *decoder) module() *Module {
 		}
 		m.Rules = append(m.Rules, ri)
 	}
+	m.Starts = r.ints()
+	m.DefaultStart = int(r.int32())
 	n = r.count()
 	for i := 0; i < n && r.err == nil; i++ {
 		p := OperatorsRuleInfo{Skip: int(r.int32())}
@@ -341,6 +346,22 @@ func validateModule(m *Module) error {
 		for _, v := range r.Vars {
 			declared(v)
 		}
+	}
+	if len(m.Starts) == 0 {
+		fail("no start rule")
+	}
+	startNames := map[int]bool{}
+	for i, x := range m.Starts {
+		in("start rule", x, len(m.Rules))
+		if err == nil && (i > 0 && x <= m.Starts[i-1] || startNames[m.Rules[x].Name]) {
+			fail("invalid start rule %d", x)
+		}
+		if err == nil {
+			startNames[m.Rules[x].Name] = true
+		}
+	}
+	if err == nil && !slices.Contains(m.Starts, m.DefaultStart) {
+		fail("default start rule %d is not a start rule", m.DefaultStart)
 	}
 	for _, p := range m.OperatorsRules {
 		opt("entry", p.Skip, len(m.Code))
@@ -573,6 +594,7 @@ func moduleProgram(m *Module) *Program {
 		prog.types[m.Strings[t.Name]] = &grammar.TypeDef{Name: m.Strings[t.Name], Type: st}
 	}
 	prog.vars = moduleVarTable(m)
+	prog.starts, prog.defaultStart = moduleStarts(m), moduleDefaultStart(m)
 	prog.moduleOnce.Do(func() { prog.module = m })
 	return prog
 }

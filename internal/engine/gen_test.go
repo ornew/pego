@@ -422,7 +422,7 @@ func testGeneratedParsersCorpus(t *testing.T, goBin string, cases []genCase, opt
 	var inputs [][]string
 	var want []string
 	for i, c := range cases {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -513,9 +513,12 @@ func main() {
 }
 
 func TestGenerateErrors(t *testing.T) {
-	g, _ := syntax.Parse(`rule main = "a"`)
-	if _, err := generateCode(g, GenOptions{Package: "p", Start: "nope"}); err == nil || err.Error() != "start rule nope is not defined" {
+	g, _ := syntax.Parse("@start\nrule main = \"a\" b\nrule b = \"b\"")
+	if _, err := generateCode(g, GenOptions{Package: "p", Start: "nope"}); err == nil || err.Error() != "rule nope is not defined" {
 		t.Errorf("got %v", err)
+	}
+	if _, err := generateCode(g, GenOptions{Package: "p", Start: "b"}); err == nil || err.Error() != "rule b is not a start rule; parsing can begin only at a rule marked @start" {
+		t.Errorf("not a start rule: got %v", err)
 	}
 	if _, err := generateCode(g, GenOptions{Start: "main"}); err == nil {
 		t.Error("expected an error for a missing package name")
@@ -525,7 +528,7 @@ func TestGenerateErrors(t *testing.T) {
 			t.Errorf("package %q: got %v", pkg, err)
 		}
 	}
-	bad, _ := syntax.Parse(`rule main = x`)
+	bad, _ := parseTest(`rule main = x`)
 	if _, err := generateCode(bad, GenOptions{Package: "p", Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
 		t.Errorf("got %v", err)
 	}
@@ -630,7 +633,7 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, refer
 	var wantErr []string
 	typedRuntime := 0
 	for i, c := range cases {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

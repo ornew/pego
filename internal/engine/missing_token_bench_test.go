@@ -3,8 +3,6 @@ package engine
 import (
 	"errors"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 var missingBenchmarkNode *Node
@@ -23,7 +21,7 @@ func BenchmarkMissingLiteral(b *testing.B) {
 		{"enabled-valid", `rule main = "name" ";" #missing $$`, "name;", 2, false},
 		{"enabled-missing", `rule main = "name" ";" #missing $$`, "name", 2, true},
 	} {
-		g, err := syntax.Parse(tc.source)
+		g, err := parseTest(tc.source)
 		if err != nil {
 			b.Fatal(err)
 		}

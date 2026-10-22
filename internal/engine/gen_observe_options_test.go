@@ -4,8 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // TestGeneratedTraceOptionsNeedObservability checks that a parser generated without observability
@@ -15,7 +13,7 @@ func TestGeneratedTraceOptionsNeedObservability(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
 	}
-	g, err := syntax.Parse("type N = { Text string }\nrule main N = t:(\"a\"+) #atomic => N{Text: text($t)}\n")
+	g, err := parseTest("type N = { Text string }\nrule main N = t:(\"a\"+) #atomic => N{Text: text($t)}\n")
 	if err != nil {
 		t.Fatal(err)
 	}

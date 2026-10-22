@@ -20,7 +20,9 @@ import (
 
 func main() {
     parser, err := pego.CompileSource(`
+@start(default)
 rule main = value $$
+@start
 rule value = x:"é😀" "!" => $x
 `, "main")
     if err != nil {

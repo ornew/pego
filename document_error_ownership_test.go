@@ -9,7 +9,7 @@ import (
 )
 
 func TestDocumentDiagnosticOwnership(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = item* $$
+	p, err := compileTestSource(`rule main = item* $$
 rule item = "a;" @error(message="original") #recover(skip=[^;]+ ";")`, "main")
 	if err != nil {
 		t.Fatal(err)

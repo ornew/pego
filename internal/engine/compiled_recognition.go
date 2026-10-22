@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"slices"
 )
 
 // recognitionEntry separates public start names from internal value-free twins.
@@ -24,6 +25,18 @@ func (prog *Program) vmRule(vm *vmProgram, name string) *rule {
 	}
 	return vm.byName[name]
 }
+
+// moduleStarts returns the names of the start rules of a validated module.
+func moduleStarts(m *Module) []string {
+	names := make([]string, len(m.Starts))
+	for i, x := range m.Starts {
+		names[i] = m.Strings[m.Rules[x].Name]
+	}
+	return names
+}
+
+// moduleDefaultStart returns the name of the default start rule of a validated module.
+func moduleDefaultStart(m *Module) string { return m.Strings[m.Rules[m.DefaultStart].Name] }
 
 func moduleEntries(m *Module) []recognitionEntry {
 	entries := []recognitionEntry{}
@@ -88,6 +101,9 @@ func decodeRecognition(data []byte, main *Module) (*Module, []recognitionEntry, 
 	}
 	if err := sameVars(moduleVarTable(main), moduleVarTable(m)); err != nil {
 		return nil, nil, fmt.Errorf("invalid compiled grammar: the variables of the recognition bundle differ from the main module: %w", err)
+	}
+	if !slices.Equal(moduleStarts(main), moduleStarts(m)) || moduleDefaultStart(main) != moduleDefaultStart(m) {
+		return nil, nil, fmt.Errorf("invalid compiled grammar: recognition start rules do not match main module")
 	}
 	want, available := moduleEntries(main), moduleEntries(m)
 	if len(entries) != len(want) || len(entries) != len(available) {

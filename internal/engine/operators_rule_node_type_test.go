@@ -6,8 +6,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // operatorsNamedNodeCases declare an Operators Rule with a named node type: every prefix, infix and
@@ -241,7 +239,7 @@ func TestOperatorsRuleNamedNodeTypeRuntimeError(t *testing.T) {
 		if got := compileMessage(t, defs+tc.src); !strings.Contains(got, tc.static) {
 			t.Errorf("%q: checked compilation: got %q, want an error containing %q", tc.src, got, tc.static)
 		}
-		g, err := syntax.Parse(defs + tc.src)
+		g, err := parseTest(defs + tc.src)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -273,7 +271,7 @@ func TestOperatorsRuleNamedNodeTypeErrors(t *testing.T) {
 		{"rule expr Expr = operators {\n operand num\n level { prefix \"-\" => 1 }\n}", "which cannot be converted to Expr"},
 		{"type Num = node[string]\nrule expr Expr = operators {\n operand n2\n level { infix left \"+\" => Expr{$op} }\n}\nrule n2 Num = [0-9]+ #atomic", "operand of expr produces Num, which is not assignable to Expr; an operand is not converted: declare the operand rule as Expr, or declare expr as a join that includes Num"},
 	} {
-		g, err := syntax.Parse(defs + tc.src)
+		g, err := parseTest(defs + tc.src)
 		if err != nil {
 			t.Fatal(err)
 		}

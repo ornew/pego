@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // A fold whose accumulator keeps growing in nesting depth does not converge; the callback result
@@ -31,7 +29,7 @@ func TestCompiledBytesIgnoreLayoutWithoutSourceInfo(t *testing.T) {
 	b := "\n\n  " + strings.ReplaceAll(a, " => ", "   =>   ")
 	bytesOf := func(src string, opts ...Options) []byte {
 		t.Helper()
-		g, err := syntax.Parse(src)
+		g, err := parseTest(src)
 		if err != nil {
 			t.Fatal(err)
 		}

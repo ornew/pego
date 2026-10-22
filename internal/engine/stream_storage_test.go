@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 const streamStorageGrammar = `rule main = h:"#head\n" #atomic row* #stream $$ {text($h) == "#head\n"}
@@ -259,7 +257,7 @@ func BenchmarkStreamStorageRetainedHeap(b *testing.B) {
 			src = strings.ReplaceAll(src, `h:"#head\n" #atomic`, `"#head\n"`)
 			src = strings.ReplaceAll(src, ` {text($h) == "#head\n"}`, "")
 		}
-		g, err := syntax.Parse(src)
+		g, err := parseTest(src)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -309,7 +307,7 @@ func BenchmarkStreamStorageRetainedHeap(b *testing.B) {
 // Compare a large-first stream with uniform small and uniformly wide rows.
 // This reports cumulative allocation and throughput; it does not force GC.
 func BenchmarkStreamRetentionWorkload(b *testing.B) {
-	g, err := syntax.Parse(streamStorageGrammar)
+	g, err := parseTest(streamStorageGrammar)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -353,7 +351,7 @@ func BenchmarkStreamRetentionWorkload(b *testing.B) {
 // A large retained prefix must not turn normal element allocation into
 // per-node allocation, and nil callbacks keep whole-repetition behavior.
 func BenchmarkStreamPrefixSize(b *testing.B) {
-	g, err := syntax.Parse(strings.ReplaceAll(strings.ReplaceAll(streamStorageGrammar, `h:"#head\n" #atomic`, `h:row`), ` {text($h) == "#head\n"}`, ``))
+	g, err := parseTest(strings.ReplaceAll(strings.ReplaceAll(streamStorageGrammar, `h:"#head\n" #atomic`, `h:row`), ` {text($h) == "#head\n"}`, ``))
 	if err != nil {
 		b.Fatal(err)
 	}

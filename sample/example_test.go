@@ -16,7 +16,7 @@ rule value = [0-9]+ #atomic / "\"" [^"\n]* #atomic "\"" / "true" / "false"
 `
 
 func ExampleGenerate() {
-	p, err := pego.CompileSource(settings, "main")
+	p, err := compileMarked(settings)
 	if err != nil {
 		panic(err)
 	}
@@ -36,7 +36,7 @@ func ExampleGenerate() {
 }
 
 func ExampleGenerator_Coverage() {
-	p, err := pego.CompileSource(settings, "main")
+	p, err := compileMarked(settings)
 	if err != nil {
 		panic(err)
 	}
@@ -64,7 +64,7 @@ func ExampleGenerator_Coverage() {
 }
 
 func ExampleGenerator_GenerateInvalid() {
-	p, err := pego.CompileSource(settings, "main")
+	p, err := compileMarked(settings)
 	if err != nil {
 		panic(err)
 	}

@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // PEGO_GENERATED_SHARING_DIR preserves standalone controls for prebuilt
@@ -27,7 +25,7 @@ func TestGeneratedSharingWorkloads(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			g, err := syntax.Parse(string(src))
+			g, err := parseTest(string(src))
 			if err != nil {
 				t.Fatal(err)
 			}

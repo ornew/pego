@@ -22,8 +22,10 @@ func call[T any](t *testing.T, method string, req any) T {
 
 const pairs = `type Pair = { Key node[string]; Value node[string] }
 
+@start(default)
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
+@start
 rule key = [a-z]+ #atomic
 rule value = [0-9]+ #atomic
 rule ws = [ \t\n]*
@@ -41,8 +43,14 @@ func TestCompileInfo(t *testing.T) {
 	if got := strings.Join(names, " "); got != "main pair key value ws" {
 		t.Errorf("rules = %s", got)
 	}
-	if c.Rules[1].Type != "Pair" || c.Rules[1].Line != 4 || c.Rules[1].Col != 1 {
+	if c.Rules[1].Type != "Pair" || c.Rules[1].Line != 5 || c.Rules[1].Col != 1 {
 		t.Errorf("pair = %+v", c.Rules[1])
+	}
+	// Only the rules marked @start can begin a parse.
+	for i, want := range []bool{true, false, true, false, false} {
+		if c.Rules[i].Start != want {
+			t.Errorf("rule %s: start = %t, want %t", c.Rules[i].Name, c.Rules[i].Start, want)
+		}
 	}
 	if len(c.Types) != 1 || c.Types[0].Kind != "struct" || c.Types[0].Spec != "{ Key node[string]; Value node[string] }" {
 		t.Errorf("types = %+v", c.Types)
@@ -59,8 +67,9 @@ func TestCompileDiagnostics(t *testing.T) {
 		msgContain string
 	}{
 		{"rule main = (", 1, 14, "expected an expression"},
-		{"rule main = other", 1, 13, "undefined rule other"},
-		{"", 0, 0, "no rules"},
+		{"@start\nrule main = other", 2, 13, "undefined rule other"},
+		{"rule main = \"a\"", 1, 1, "the grammar has no start rule"},
+		{"", 0, 0, "the grammar has no start rule"},
 	} {
 		c := call[compileResult](t, "compile", grammarRequest{Grammar: tc.src})
 		if c.OK || len(c.Diagnostics) == 0 {
@@ -79,6 +88,7 @@ func TestCompileDiagnostics(t *testing.T) {
 func TestParseNamedNodeTypes(t *testing.T) {
 	const named = `type Ident = node[string]
 type Out = { Id Ident; Plain node[string] }
+@start
 rule main Out = id:ident "," plain:digits $$ => Out{Id: $id, Plain: $plain}
 rule ident Ident = [a-z]+ #atomic
 rule digits = [0-9]+ #atomic
@@ -144,17 +154,30 @@ func TestParse(t *testing.T) {
 	}
 	// An unknown start rule is an error, not a silent fallback to the default.
 	r = call[parseResult](t, "parse", parseRequest{Grammar: pairs, Input: "a=1", Start: "nope"})
-	if r.Start != "" || r.Matched || r.Error != "start rule nope is not defined" || !r.Compile.OK {
+	if r.Start != "" || r.Matched || r.Error != "rule nope is not defined" || !r.Compile.OK {
 		t.Errorf("unknown start: %+v", r)
 	}
 	g := call[generateResult](t, "generate", generateRequest{Grammar: pairs, Start: "nope"})
-	if g.Code != "" || len(g.Diagnostics) != 1 || g.Diagnostics[0].Message != "start rule nope is not defined" {
+	if g.Code != "" || len(g.Diagnostics) != 1 || g.Diagnostics[0].Message != "rule nope is not defined" {
 		t.Errorf("generate with an unknown start: %+v", g)
 	}
-	// An empty start rule selects the default: main, or else the first rule.
-	r = call[parseResult](t, "parse", parseRequest{Grammar: "rule a = \"x\"\nrule b = \"y\"", Input: "x"})
-	if r.Start != "a" || !r.Matched {
+	// A rule that is not marked @start cannot begin a parse.
+	r = call[parseResult](t, "parse", parseRequest{Grammar: pairs, Input: "a=1", Start: "pair"})
+	if r.Start != "" || r.Matched || r.Error != "rule pair is not a start rule; parsing can begin only at a rule marked @start" || !r.Compile.OK {
+		t.Errorf("not a start rule: %+v", r)
+	}
+	g = call[generateResult](t, "generate", generateRequest{Grammar: pairs, Start: "pair"})
+	if g.Code != "" || len(g.Diagnostics) != 1 || g.Diagnostics[0].Message != "rule pair is not a start rule; parsing can begin only at a rule marked @start" {
+		t.Errorf("generate with a rule that is not a start rule: %+v", g)
+	}
+	// An empty start rule selects the rule marked @start(default), wherever it is.
+	r = call[parseResult](t, "parse", parseRequest{Grammar: "@start\nrule a = \"x\"\n@start(default)\nrule b = \"y\"", Input: "y"})
+	if r.Start != "b" || !r.Matched {
 		t.Errorf("default start: %+v", r)
+	}
+	r = call[parseResult](t, "parse", parseRequest{Grammar: "@start\nrule a = \"x\"\nrule b = \"y\"", Input: "x"})
+	if r.Start != "a" || !r.Matched {
+		t.Errorf("only start: %+v", r)
 	}
 	r = call[parseResult](t, "parse", parseRequest{Grammar: pairs, Input: "a=1", Backend: "nope"})
 	if !strings.Contains(r.Error, "unknown backend") {
@@ -163,7 +186,8 @@ func TestParse(t *testing.T) {
 }
 
 func TestParseRecovered(t *testing.T) {
-	src := `rule main = stmt* $$
+	src := `@start
+rule main = stmt* $$
 rule stmt = s:([a-z]+ ";") #recover(skip=[^;]+ ";") => $s
 `
 	r := call[parseResult](t, "parse", parseRequest{Grammar: src, Input: "ab;1;cd;"})
@@ -238,7 +262,8 @@ func TestBadRequests(t *testing.T) {
 func TestDepthLimits(t *testing.T) {
 	defer func(d, td int) { maxDepth, maxTreeDepth = d, td }(maxDepth, maxTreeDepth)
 	maxDepth, maxTreeDepth = 50, 30
-	src := `rule main = value $$
+	src := `@start
+rule main = value $$
 rule value = list / "x"
 rule list = "[" value* "]"
 `
@@ -270,7 +295,8 @@ rule list = "[" value* "]"
 
 func TestDeepTreeNatively(t *testing.T) {
 	// encoding/json refuses trees nested more than 10,000 levels; the limit reports them first.
-	src := `rule main = value $$
+	src := `@start
+rule main = value $$
 rule value = list / "x"
 rule list = "[" value* "]"
 `
@@ -285,7 +311,7 @@ func TestParseWithoutValue(t *testing.T) {
 	// A start rule whose elements are all dropped matches with the node of the empty tuple, and
 	// recognition matches without a tree.
 	for _, recognize := range []bool{false, true} {
-		r := call[parseResult](t, "parse", parseRequest{Grammar: `rule main = -"a"`, Input: "a", Recognize: recognize})
+		r := call[parseResult](t, "parse", parseRequest{Grammar: "@start\nrule main = -\"a\"", Input: "a", Recognize: recognize})
 		want := "()"
 		if recognize {
 			want = ""
@@ -295,7 +321,8 @@ func TestParseWithoutValue(t *testing.T) {
 		}
 	}
 	// So does a recognition that recovered from errors, which reports them.
-	src := `rule main = stmt* $$
+	src := `@start
+rule main = stmt* $$
 rule stmt = s:([a-z]+ ";") #recover(skip=[^;]+ ";") => $s
 `
 	r := call[parseResult](t, "parse", parseRequest{Grammar: src, Input: "ab;1;", Recognize: true})
@@ -303,7 +330,7 @@ rule stmt = s:([a-z]+ ";") #recover(skip=[^;]+ ";") => $s
 		t.Errorf("recognize with recovery: %+v", r)
 	}
 	// A runtime error is not a match.
-	r = call[parseResult](t, "parse", parseRequest{Grammar: "type T = { D int }\nrule main T = \"a\" => T{D: 1 / 0}", Input: "a"})
+	r = call[parseResult](t, "parse", parseRequest{Grammar: "type T = { D int }\n@start\nrule main T = \"a\" => T{D: 1 / 0}", Input: "a"})
 	if r.Matched || r.Error == "" {
 		t.Errorf("runtime error: %+v", r)
 	}

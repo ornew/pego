@@ -14,6 +14,7 @@ position of the `*pego.SyntaxError`.
 
 ```pego
 // settings.pego
+@start
 rule main = -ws setting* $$
 
 rule setting = key -ws "=" @error(message="expected '='") -ws value -ws ";" @error(message="expected ';'") -ws

@@ -48,6 +48,7 @@ package kv
 
 type Pair = { Key node[string]; Value node[string] }
 
+@start
 rule main = pair* #stream $$
 
 rule pair Pair = k:key "=" v:value "\n" => Pair{Key: $k, Value: $v}
@@ -84,6 +85,7 @@ const grammar = `package kv
 
 type Pair = { Key node; Value node }
 
+@start
 rule main = pair* #stream $$
 
 rule pair Pair = k:key "=" v:value "\n" => Pair{Key: $k, Value: $v}
@@ -213,11 +215,13 @@ func run(grammar string, chunks ...string) {
 
 func main() {
 	fmt.Println("elements that end with a literal:")
-	run(`rule main =  line* #stream $$
+	run(`@start
+rule main =  line* #stream $$
 rule line =  [a-z]+ #atomic "\n" `, "ab\nc", "d\n", "ef\n")
 
 	fmt.Println("elements that end with a repetition:")
-	run(`rule main =  word* #stream $$
+	run(`@start
+rule main =  word* #stream $$
 rule word =  [a-z]+ #atomic " "? `, "ab ", "cd", " ef")
 }
 ```
@@ -320,7 +324,8 @@ func (r *failingReader) Read(b []byte) (int, error) {
 }
 
 func main() {
-	lines := compile(`rule main =  line* #stream $$
+	lines := compile(`@start
+rule main =  line* #stream $$
 rule line =  [a-z0-9]+ #atomic "\n" `)
 	print := func(n *pego.Node) error {
 		fmt.Printf("  element [%d,%d)\n", n.Start(), n.End())
@@ -355,7 +360,8 @@ rule line =  [a-z0-9]+ #atomic "\n" `)
 
 	// 4. Errors recovered with #recover are reported after the last element.
 	fmt.Println("recovered errors:")
-	entries := compile(`rule main =  entry* #stream $$
+	entries := compile(`@start
+rule main =  entry* #stream $$
 rule entry =  (name "=" num "\n") #recover(skip=[^\n]* "\n")
 rule name =  [a-z]+ #atomic
 rule num =  [0-9]+ #atomic `)
@@ -479,9 +485,11 @@ import (
 
 // Two grammars for the same input: the elements are either tuple nodes or structs built by an action.
 var grammars = map[string]string{
-	"cst": `rule main =  item* #stream $$
+	"cst": `@start
+rule main =  item* #stream $$
 rule item =  ^ k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" `,
 	"action": `type Pair = { Key node; Value node }
+@start
 rule main = item* #stream $$
 rule item Pair = k:key "=" v:value "\n" => Pair{Key: $k, Value: $v}
 rule key = [a-z]+ #atomic

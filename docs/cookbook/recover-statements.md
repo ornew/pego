@@ -18,6 +18,7 @@ type Block = { Cond Name; Body []Stmt }
 type Stmt ~ Set | Block | error
 type Script = { Body []Stmt }
 
+@start
 rule main Script = -ws body:stmts -ws $$ => Script{Body: $body}
 rule stmts = ss:(s:stmt -ws)* => map($ss, (x) => x.$s)
 

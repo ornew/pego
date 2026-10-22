@@ -10,6 +10,7 @@ type Bool = node[string]
 type Null = node[string]
 type Value ~ Object | Array | String | Number | Bool | Null
 
+@start
 rule main Value = ws v:value ws $$ => $v
 
 rule value Value = object / array / string / number / bool / null

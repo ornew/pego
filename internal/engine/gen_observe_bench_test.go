@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // The exporter keeps timing and generated artifacts outside the repository.
@@ -40,7 +38,7 @@ func TestExportGeneratedTraceBenchmarks(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		g, err := syntax.Parse(string(src))
+		g, err := parseTest(string(src))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -90,7 +88,7 @@ func BenchmarkGeneratedObservabilityGeneration(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		g, err := syntax.Parse(string(source))
+		g, err := parseTest(string(source))
 		if err != nil {
 			b.Fatal(err)
 		}

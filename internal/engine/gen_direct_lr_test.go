@@ -6,8 +6,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 var typedLRBodyCases = []genCase{
@@ -81,7 +79,7 @@ func TestGeneratedTypedLRBodies(t *testing.T) {
 		t.Skip("builds generated code")
 	}
 	for _, c := range typedLRBodyCases {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

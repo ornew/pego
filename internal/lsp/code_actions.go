@@ -38,7 +38,7 @@ type codeAction struct {
 }
 
 // lintFindings shares the already successful compilation with the linter.
-// Without main, reachability is omitted because no editor start-rule setting exists.
+// Reachability is checked from the grammar's default start rule.
 func (a *analysis) lintFindings() []lint.Finding {
 	findings, _ := a.lintFindingsContext(context.Background())
 	return findings
@@ -54,11 +54,7 @@ func (a *analysis) lintFindingsContext(ctx context.Context) ([]lint.Finding, err
 	if a.lintCached {
 		return a.lintCache, nil
 	}
-	start := ""
-	if a.rules["main"] != nil {
-		start = "main"
-	}
-	return lint.RunContext(ctx, a.g, start, lint.Options{})
+	return lint.RunContext(ctx, a.g, a.prog.DefaultStart(), lint.Options{})
 }
 
 // cacheLintContext commits a complete lint result; cancelled work retains no partial cache.

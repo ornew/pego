@@ -4,8 +4,6 @@
 package outline
 
 import (
-	"fmt"
-
 	types "github.com/ornew/pego/bench/gen/outline/types"
 	pegort "github.com/ornew/pego/runtime"
 )
@@ -34,18 +32,15 @@ var pegoRecGrammar = pegort.NewGrammar(100000)
 var rules []*pegort.Rule
 var pegoGrammar = pegort.NewGrammar(100000)
 
-// ParseRule parses the whole input with the rule name.
+// ParseRule parses the whole input with the start rule name, a rule marked @start.
 func ParseRule(name, input string, opts ...pegort.ParseOption) (*pegort.Node, error) {
 	o, err := pegort.ResolveOptions(pegoGrammar, opts)
 	if err != nil {
 		return nil, err
 	}
-	if len(name) > 0 && name[0] == '_' {
-		return nil, fmt.Errorf("rule %s is hidden: a rule whose name begins with an underscore is not an entry point", name)
-	}
-	r := pegoGrammar.RuleByName(name)
-	if r == nil {
-		return nil, fmt.Errorf("rule %s is not defined", name)
+	r, err := pegoGrammar.StartRule(name)
+	if err != nil {
+		return nil, err
 	}
 	return pegort.RunParseResolved(r, input, o)
 }
@@ -199,118 +194,11 @@ func tv1(a *tslabs, v any) []*types.Item {
 	return tl0(a, v)
 }
 
-func tv2(a *tslabs, v any) []*types.Item {
-	a.stepWork()
-	return tv1(a, v)
-}
-
-func tv3(a *tslabs, v any) *types.TNode[string] {
-	a.stepWork()
-	return (*types.TNode[string])(pegort.TPubMatch(v))
-}
-
-func tv4(a *tslabs, v any) *types.TNode[string] {
-	a.stepWork()
-	return (*types.TNode[string])(pegort.TPubMatch(v))
-}
-
-func tv5(a *tslabs, v any) *types.TNode[string] {
-	a.stepWork()
-	return (*types.TNode[string])(pegort.TPubMatch(v))
-}
-
-func tv6(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[string]]] {
-	a.stepWork()
-	return tv7(a, v)
-}
-
-func tv7(a *tslabs, v any) *types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[string]]] {
-	a.stepWork()
-	switch x := v.(type) {
-	case *pegort.TSeq:
-		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
-			return nil
-		}
-		out := &types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[string]]]{Span: x.Span}
-		out.Value = tv8(a, x)
-		return out
-	case *pegort.TError:
-		return nil
-	case pegort.TVal:
-		if x.TStruct() {
-			return nil
-		}
-		s, e := x.TSpan()
-		text, _ := x.TText()
-		_ = text
-		out := &types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[string]]]{Span: pegort.Span{Start: s, End: e}}
-		out.Value = tv8(a, text)
-		return out
-	}
-	return nil
-}
-
-func tv8(a *tslabs, v any) types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[string]] {
-	a.stepWork()
-	var out types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[string]]
-	x, _ := v.(*pegort.TSeq)
-	if x == nil {
-		return out
-	}
-	out.E0 = tv9(a, pegort.TKid(x.Kids, 0))
-	out.E1 = (*types.TNode[string])(pegort.TPubMatch(pegort.TKid(x.Kids, 1)))
-	return out
-}
-
-func tv9(a *tslabs, v any) *types.TNode[[]*types.TNode[string]] {
-	a.stepWork()
-	switch x := v.(type) {
-	case *pegort.TSeq:
-		if x.Typ == pegort.TypeTupleValue || x.Typ == pegort.TypeListValue {
-			return nil
-		}
-		out := &types.TNode[[]*types.TNode[string]]{Span: x.Span}
-		out.Value = tl1(a, x)
-		return out
-	case *pegort.TError:
-		return nil
-	case pegort.TVal:
-		if x.TStruct() {
-			return nil
-		}
-		s, e := x.TSpan()
-		text, _ := x.TText()
-		_ = text
-		out := &types.TNode[[]*types.TNode[string]]{Span: pegort.Span{Start: s, End: e}}
-		out.Value = tl1(a, text)
-		return out
-	}
-	return nil
-}
-
-func tl1(a *tslabs, v any) []*types.TNode[string] {
-	a.stepWork()
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*pegort.TSeq)
-	if n == nil {
-		return []*types.TNode[string]{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl1Chunk, len(n.Kids))
-	for i, c := range n.Kids {
-		a.stepWork()
-		out[i] = (*types.TNode[string])(pegort.TPubMatch(c))
-	}
-	return out
-}
-
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
 	control  *pegort.WorkControl
 	tItem    astChunk[types.Item]
 	tl0Chunk astChunk[*types.Item]
-	tl1Chunk astChunk[*types.TNode[string]]
 }
 
 func (a *tslabs) SetWorkControl(c *pegort.WorkControl) { a.control = c }
@@ -329,18 +217,11 @@ func ParseAST(input string, opts ...pegort.ParseOption) ([]*types.Item, error) {
 	return pegort.TParse(trules[0], input, opts, a, func(v any) []*types.Item { return tv0(a, v) })
 }
 
-// ParseRuleAST parses the whole input with the named rule and returns its typed value.
+// ParseRuleAST parses the whole input with the named start rule and returns its typed value.
 // Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
-// Invalid options and undefined names return nil with an error. Rule result types:
+// Invalid options and names of rules that are not start rules return nil with an error. Start rule result types:
 //
 //	main: []*types.Item
-//	block: []*types.Item
-//	item: *types.Item
-//	children: []*types.Item
-//	spaces: *TNode[string]
-//	line: *TNode[string]
-//	eol: *TNode[string]
-//	blank: *TNode[Tuple2[*TNode[[]*TNode[string]], *TNode[string]]]
 func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 	o, err := pegort.ResolveOptions(pegoGrammar, opts)
 	if err != nil {
@@ -350,34 +231,8 @@ func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 	case "main":
 		a := &tslabs{}
 		return pegort.TParseResolved(trules[0], input, o, a, func(v any) []*types.Item { return tv0(a, v) })
-	case "block":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[1], input, o, a, func(v any) []*types.Item { return tv1(a, v) })
-	case "item":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[2], input, o, a, func(v any) *types.Item { return pegort.TAs[*types.Item](v) })
-	case "children":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[3], input, o, a, func(v any) []*types.Item { return tv2(a, v) })
-	case "spaces":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[4], input, o, a, func(v any) *types.TNode[string] { return tv3(a, v) })
-	case "line":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[5], input, o, a, func(v any) *types.TNode[string] { return tv4(a, v) })
-	case "eol":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[6], input, o, a, func(v any) *types.TNode[string] { return tv5(a, v) })
-	case "blank":
-		a := &tslabs{}
-		return pegort.TParseResolved(trules[7], input, o, a, func(v any) *types.TNode[types.Tuple2[*types.TNode[[]*types.TNode[string]], *types.TNode[string]]] {
-			return tv6(a, v)
-		})
 	default:
-		if len(name) > 0 && name[0] == '_' {
-			return nil, fmt.Errorf("rule %s is hidden: a rule whose name begins with an underscore is not an entry point", name)
-		}
-		return nil, fmt.Errorf("rule %s is not defined", name)
+		return nil, pegoGrammar.StartError(name)
 	}
 }
 
@@ -445,6 +300,7 @@ func init() {
 	recRules[5].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e19(p) }
 	recRules[6].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e13(p) }
 	recRules[7].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e12(p) }
+	pegoGrammar.Starts = []string{"main"}
 	pegoGrammar.Descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\" \"", "[^\\n]", "\"\\n\"", "[ \\t]"}
 	pegoGrammar.SetVars([]string{"indent"}, []any{0})
 	pegoRecGrammar.Share(pegoGrammar)

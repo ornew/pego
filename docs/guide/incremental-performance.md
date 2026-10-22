@@ -31,7 +31,8 @@ var grammars = []struct {
 	name, grammar string
 	line          func(i int) string
 }{
-	{"settings, one rule per line", `rule main =  (setting / blank)* $$
+	{"settings, one rule per line", `@start
+rule main =  (setting / blank)* $$
 rule setting =  key " = " value "\n"
 rule key =  [a-z_]+ #atomic
 rule value =  [^\n]+ #atomic
@@ -39,6 +40,7 @@ rule blank =  "\n" `,
 		func(i int) string { return fmt.Sprintf("key_%c = value %d\n", 'a'+i%26, i) }},
 
 	{"calc (Operators Rule expressions)", `
+@start
 rule main =  (assign / blank)* $$
 rule assign =  n:name " = " e:expr "\n"
 rule name =  [a-z_]+ #atomic
@@ -51,7 +53,8 @@ rule expr = operators {
 }`,
 		func(i int) string { return fmt.Sprintf("x_%c = 1+2*(3-%d)*4/5+6\n", 'a'+i%26, i%10) }},
 
-	{"settings, everything in one rule", `rule main =  ([a-z_]+ #atomic " = " [^\n]+ #atomic "\n" / "\n")* $$ `,
+	{"settings, everything in one rule", `@start
+rule main =  ([a-z_]+ #atomic " = " [^\n]+ #atomic "\n" / "\n")* $$ `,
 		func(i int) string { return fmt.Sprintf("key_%c = value %d\n", 'a'+i%26, i) }},
 }
 

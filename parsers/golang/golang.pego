@@ -107,6 +107,7 @@ type Stmt ~ DeclStmt | EmptyStmt | LabeledStmt | ExprStmt | SendStmt | IncDecStm
 
 // A byte order mark is allowed only as the first character. Imports come before the other
 // declarations; each declaration ends with a semicolon.
+@start
 rule main File = (
     -"\u{feff}"? -ws kw_package -ws n:ident -sp -semi -ws
     is:(d:importDecl -sp -semi -ws)* ds:(d:topDecl -sp -semi -ws)* $$

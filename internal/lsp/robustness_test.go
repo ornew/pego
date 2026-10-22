@@ -46,7 +46,7 @@ func TestHostileInput(t *testing.T) {
 	}
 	// Compile errors: the server publishes at most 100.
 	refs := strings.Repeat(" x", 300)
-	if d := c.open("file:///undefined.pego", "rule a ="+refs); len(d) != 101 || d[100].Message != "200 more errors" || d[100].Range != rng(0, 209, 0, 210) {
+	if d := c.open("file:///undefined.pego", "@start\nrule a ="+refs); len(d) != 101 || d[100].Message != "200 more errors" || d[100].Range != rng(1, 209, 1, 210) {
 		t.Errorf("many compile errors: %d diagnostics, the last %+v", len(d), d[len(d)-1])
 	}
 	c.exit()
@@ -139,23 +139,23 @@ func TestDecimalReferenceErrorRange(t *testing.T) {
 func TestLoneCarriageReturns(t *testing.T) {
 	c := newInitialized(t)
 	uri := "file:///cr.pego"
-	text := "// The rules.\rrule a = b x // c\rrule b = \"😀\"\r"
+	text := "// The rules.\r@start\rrule a = b x // c\rrule b = \"😀\"\r"
 	d := c.open(uri, text)
-	if messages(d) != "undefined rule x" || d[0].Range != rng(1, 11, 1, 12) {
+	if messages(d) != "undefined rule x" || d[0].Range != rng(2, 11, 2, 12) {
 		t.Errorf("diagnostics %+v", d)
 	}
 	var syms []DocumentSymbol
 	c.requestInto("textDocument/documentSymbol", docParams(uri), &syms)
-	if len(syms) != 2 || syms[0].SelectionRange != rng(1, 5, 1, 6) || syms[1].Range != rng(2, 0, 2, 13) {
+	if len(syms) != 2 || syms[0].SelectionRange != rng(2, 5, 2, 6) || syms[1].Range != rng(3, 0, 3, 13) {
 		t.Errorf("symbols %+v", syms)
 	}
-	if h, _ := hoverText(c, uri, 1, 5); !strings.Contains(h, "The rules.") {
+	if h, _ := hoverText(c, uri, 2, 5); !strings.Contains(h, "The rules.") {
 		t.Errorf("hover %q", h)
 	}
 	// Formatting keeps the line ends.
-	change(c, uri, 2, edit(1, 11, 1, 13, ""))
-	text = "// The rules.\rrule a = b // c\rrule b = \"😀\"\r"
-	if got := formatDoc(c, uri, text); got != "// The rules.\rrule a = b // c\rrule b = \"😀\"\r" {
+	change(c, uri, 2, edit(2, 11, 2, 13, ""))
+	text = "// The rules.\r@start\rrule a = b // c\rrule b = \"😀\"\r"
+	if got := formatDoc(c, uri, text); got != "// The rules.\r@start\rrule a = b // c\rrule b = \"😀\"\r" {
 		t.Errorf("formatted %q", got)
 	}
 	c.exit()
@@ -185,7 +185,7 @@ func TestFailedAnalysis(t *testing.T) {
 
 	// A later version fails: the analysis of the earlier one is kept.
 	uri := "file:///boom.pego"
-	c.open(uri, "rule a = \"x\"\nrule main = a")
+	c.open(uri, "rule a = \"x\"\n@start\nrule main = a")
 	if d := change(c, uri, 2, edit(1, 0, 1, 0, "# BOOM\n")); messages(d) != want {
 		t.Errorf("diagnostics %+v", d)
 	}
@@ -194,7 +194,7 @@ func TestFailedAnalysis(t *testing.T) {
 		t.Errorf("symbols %+v", syms)
 	}
 	var locs []Location
-	c.requestInto("textDocument/definition", at(uri, 1, 12), &locs)
+	c.requestInto("textDocument/definition", at(uri, 2, 12), &locs)
 	if len(locs) != 1 || locs[0].Range != rng(0, 5, 0, 6) {
 		t.Errorf("definition %+v", locs)
 	}
@@ -202,7 +202,7 @@ func TestFailedAnalysis(t *testing.T) {
 	if r := c.request("textDocument/formatting", docParams(uri)); string(r) != "[]" {
 		t.Errorf("formatting %s", r)
 	}
-	if e := c.requestError("textDocument/prepareRename", at(uri, 1, 12)); e.Code != codeRequestFailed {
+	if e := c.requestError("textDocument/prepareRename", at(uri, 2, 12)); e.Code != codeRequestFailed {
 		t.Errorf("prepareRename %+v", e)
 	}
 	// Once the text analyzes again, everything is back.

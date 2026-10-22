@@ -20,6 +20,7 @@ type Token ~ Comment | Keyword | Ident | Number | String | Punct | Space | Unkno
 type Tokens = { Items []Token }
 
 // Every character belongs to a token, so tokenizing never fails, however broken the input is.
+@start
 rule main Tokens = ts:token* $$ => Tokens{Items: $ts.Value}
 
 rule token Token = comment / string / number / keyword / ident / punct / space / unknown

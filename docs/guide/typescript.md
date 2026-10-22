@@ -46,8 +46,10 @@ The grammar, `pairs.pego`, is the one of the Go guide:
 ```pego
 type Pair = { Key node[string]; Value node[string] }
 
+@start(default)
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
+@start
 rule key = [a-zあ-ん]+ #atomic
 rule value = [0-9]+ #atomic
 rule ws = [ \t\n]*
@@ -80,7 +82,7 @@ for (const pair of node!.children) {
 // Positions in UTF-8 bytes.
 console.log(parse("あい=3", Bytes).node!.children[0]!.end);
 
-// Any rule can be the start rule.
+// Any rule marked @start can be the start rule.
 const k = parseRule("key", "abc");
 console.log(String(k.node), k.error);
 console.log(parseRule("nope", "abc").error?.message);
@@ -125,7 +127,7 @@ pego gen -lang ts -g <grammar> -o <directory> [-s <rule>] [-runtime embed|import
 |:--|:--|:--|
 | `-lang` | `go` | `ts` generates TypeScript |
 | `-g` | (required) | The grammar: `.pego`, `.json`, or a `.pegoc` that contains the AST |
-| `-s` | saved in a `.pegoc`, otherwise `main` | The start rule of `parse` |
+| `-s` | saved in a `.pegoc`, otherwise the default start rule | The start rule of `parse` |
 | `-o` | (required) | The output directory (it is created). Generated files that the new run does not write again are removed, except that `-runtime import` leaves `runtime.ts` alone; a file that pego did not generate is never removed or overwritten |
 | `-runtime` | `embed` | `embed` writes `runtime.ts` next to `parser.ts`; `import` imports the runtime from `-runtime-module` and writes no copy; `only` writes just `runtime.ts` (no `-g`) |
 | `-runtime-module` | (required with `-runtime import`) | The module specifier `parser.ts` and `types.ts` import the runtime from, for example `../shared/runtime.ts`. Several parsers share one runtime this way: generate it once with `-runtime only` |
@@ -260,6 +262,7 @@ For a variant of the quick-start grammar whose fields are strings, generate and 
 ```pego
 type Pair = { Key string; Value string }
 
+@start
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: text($k), Value: text($v)}
 rule key = [a-zあ-ん]+ #atomic

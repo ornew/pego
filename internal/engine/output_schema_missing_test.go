@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 const missingSchemaGrammar = `type P = { M missing; E error; O *missing; L []missing }
@@ -14,7 +12,7 @@ rule semi = ";" #missing`
 
 func missingSchema(t *testing.T) *OutputSchema {
 	t.Helper()
-	g, err := syntax.Parse(missingSchemaGrammar)
+	g, err := parseTest(missingSchemaGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}

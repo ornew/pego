@@ -7,7 +7,7 @@ import (
 )
 
 func TestPublicDocumentCacheControls(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = line* $$
+	p, err := compileTestSource(`rule main = line* $$
 rule line = [a-z]+ "\n"`, "main")
 	if err != nil {
 		t.Fatal(err)

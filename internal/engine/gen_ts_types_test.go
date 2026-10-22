@@ -8,8 +8,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func runTypedTSFixture(t *testing.T, src, consumer string, opts GenOptions, keep string) {
@@ -29,7 +27,7 @@ func runTypedTSFixtureWithLib(t *testing.T, src, consumer string, opts GenOption
 	if err != nil {
 		t.Skip("tsc not found")
 	}
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -262,7 +260,7 @@ rule main T = x:n #atomic => T{X: $x}
 rule n = "(" n ")" / "x"`, `import {parseAST, parseASTWithOptions} from "./parser.ts";
 `+tsTypedAssert+`check(parseAST("(((x)))").error?.message.includes("nesting too deep"), "generated limit"); check(parseASTWithOptions("(((x)))", {maxDepth:20}).value?.X?.value === "(((x)))", "override"); check(stable(parseASTWithOptions("x", {maxDepth:0}).value).includes("T"), "zero default");`, GenOptions{MaxDepth: 3}, "")
 	for _, scalar := range []string{"int", "string", "bool"} {
-		g, err := syntax.Parse("rule main " + scalar + ` = "" => nil`)
+		g, err := parseTest("rule main " + scalar + ` = "" => nil`)
 		if err != nil {
 			t.Fatal(err)
 		}

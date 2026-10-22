@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/ornew/pego"
+	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/sample"
 )
 
@@ -41,9 +42,19 @@ func exampleParsers(t *testing.T) map[string]*pego.Parser {
 	return ps
 }
 
+// compileMarked compiles src with every rule a start rule, for tests whose grammars do not
+// annotate their start rules.
+func compileMarked(src string) (*pego.Parser, error) {
+	g, err := pego.ParseGrammar(src)
+	if err != nil {
+		return nil, err
+	}
+	return pego.Compile(starttest.MarkAll(g), "main")
+}
+
 func compile(t *testing.T, src string) *pego.Parser {
 	t.Helper()
-	p, err := pego.CompileSource(src, "main")
+	p, err := compileMarked(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -373,7 +384,7 @@ func BenchmarkSampleRepetitionControl(b *testing.B) {
 		{"Ordinary", `rule main = ("a" "b"?) #repeat(2, 8) $$`},
 		{"NullableMinimumOne", `rule main = ("a" / _) #repeat(1, 8) $$`},
 	} {
-		p, err := pego.CompileSource(tc.source, "main")
+		p, err := compileMarked(tc.source)
 		if err != nil {
 			b.Fatal(err)
 		}

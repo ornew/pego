@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGeneratedTSProfile(t *testing.T) {
@@ -44,7 +42,7 @@ func TestGeneratedTSProfile(t *testing.T) {
 		{"unicode", "type W = { Text string }\nrule main W = t:(part part) #atomic => W{Text: text($t)}\nrule part W = t:(\"é\") #atomic => W{Text: text($t)}", "éé", `check(s.rules.find(r=>r.rule==="main")!.consumed===(unit===p.Bytes?4:2),"position units");`},
 		{"nilvalue", "type W = { Text string }\nrule main *W = part => nil\nrule part W = t:(\"a\") #atomic => W{Text: text($t)}", "a", ``},
 	} {
-		g, err := syntax.Parse(f.grammar)
+		g, err := parseTest(f.grammar)
 		if err != nil {
 			t.Fatal(f.name, err)
 		}

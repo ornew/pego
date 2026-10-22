@@ -455,15 +455,19 @@ function apply(res, req) {
 }
 
 let rulesKey = "";
+let defaultStart = "";
 function updateRules(c) {
-  // A requested start rule that the grammar does not define (after an edit, or from a link) stays
-  // selected, marked, and the parse reports it, rather than silently parsing from another rule.
-  const missing = requestedStart && !c.rules.some((r) => r.name === requestedStart) ? requestedStart : "";
-  const key = c.rules.map((r) => r.name).join(" ") + "|" + c.start + "|" + missing;
-  if (key !== rulesKey && (c.rules.length || missing)) {
+  // Parsing may begin only at the rules marked @start. A requested start rule that is not one of
+  // them (after an edit, or from a link) stays selected, marked, and the parse reports it, rather
+  // than silently parsing from another rule.
+  defaultStart = c.start || "";
+  const starts = c.rules.filter((r) => r.start);
+  const missing = requestedStart && !starts.some((r) => r.name === requestedStart) ? requestedStart : "";
+  const key = starts.map((r) => r.name).join(" ") + "|" + c.start + "|" + missing;
+  if (key !== rulesKey && (starts.length || missing)) {
     rulesKey = key;
     startSelect.textContent = "";
-    for (const r of c.rules) {
+    for (const r of starts) {
       const o = document.createElement("option");
       o.value = r.name;
       o.textContent = r.name === c.start ? `${r.name} (default)` : r.name;
@@ -472,11 +476,11 @@ function updateRules(c) {
     if (missing) {
       const o = document.createElement("option");
       o.value = missing;
-      o.textContent = `${missing} (not defined)`;
+      o.textContent = c.rules.some((r) => r.name === missing) ? `${missing} (not a start rule)` : `${missing} (not defined)`;
       startSelect.append(o);
     }
   }
-  if (c.rules.length || missing) startSelect.value = requestedStart || c.start;
+  if (starts.length || missing) startSelect.value = requestedStart || c.start;
 
   // Rules and types tab.
   const out = $("pg-outline");
@@ -490,7 +494,7 @@ function updateRules(c) {
   for (const r of c.rules) {
     html += `<tr><td><button type="button" class="link-button mono" data-line="${r.line}" data-col="${r.col}">${escapeHTML(r.name)}</button></td>` +
       `<td><code>${escapeHTML(r.type || "")}</code></td><td>${r.line}</td>` +
-      `<td><button type="button" class="link-button" data-start="${escapeHTML(r.name)}">${r.name === startSelect.value ? "start rule" : "parse from here"}</button></td></tr>`;
+      `<td>${!r.start ? "" : `<button type="button" class="link-button" data-start="${escapeHTML(r.name)}">${r.name === startSelect.value ? "start rule" : "parse from here"}</button>`}</td></tr>`;
   }
   html += "</tbody></table>";
   if (c.types.length) {
@@ -562,7 +566,7 @@ async function generate() {
     recognize: $("gen-recognize").checked,
   };
   const flags = language === "go" ? [`-module example.com/${pkg}`, "-runtime import"] : ["-lang ts", "-o out"];
-  if (req.start && req.start !== "main") flags.push(`-s ${req.start}`);
+  if (req.start && req.start !== defaultStart) flags.push(`-s ${req.start}`);
   if (req.types) flags.push("-types");
   if (req.recognize) flags.push("-recognize");
   $("gen-cmd").innerHTML = `<code>pego gen -g grammar.pego ${escapeHTML(flags.join(" "))}</code>`;

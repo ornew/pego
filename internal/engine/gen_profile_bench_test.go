@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // Export standalone controls; keep generated fixtures and results outside Git.
@@ -38,7 +36,7 @@ func TestExportGeneratedGoProfileBenchmarks(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		g, err := syntax.Parse(string(src))
+		g, err := parseTest(string(src))
 		if err != nil {
 			t.Fatal(err)
 		}

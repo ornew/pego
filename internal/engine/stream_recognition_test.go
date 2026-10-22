@@ -5,8 +5,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestStreamCaptureRecognition(t *testing.T) {
@@ -80,7 +78,7 @@ func BenchmarkStreamCaptureRecognition(b *testing.B) {
 		if os.Getenv("PEGO_BENCH_RECOGNITION_PLAIN") != "" {
 			source = strings.ReplaceAll(source, " #stream", "")
 		}
-		g, err := syntax.Parse(source)
+		g, err := parseTest(source)
 		if err != nil {
 			b.Fatal(err)
 		}

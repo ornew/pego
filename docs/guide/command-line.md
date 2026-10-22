@@ -29,8 +29,10 @@ The examples use the grammar `pairs.pego`:
 ```pego
 type Pair = { Key node[string]; Value node[string] }
 
+@start(default)
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
+@start
 rule key = [a-zあ-ん]+ #atomic
 rule value = [0-9]+ #atomic
 rule ws = [ \t\n]*
@@ -46,7 +48,7 @@ pego parse -g <grammar> [-s <rule>] [-i <input>] [-f json|sexpr] [-stream] [-che
 | Flag | Default | Meaning |
 |:--|:--|:--|
 | `-g` | (required) | The grammar |
-| `-s` | saved in a `.pegoc`, otherwise `main` | Start rule |
+| `-s` | saved in a `.pegoc`, otherwise the default start rule | Start rule |
 | `-i` | standard input | The input text. Without `-i`, input is read from standard input. |
 | `-f` | `json` | Output format: `json` (indented, like `encoding/json`'s `MarshalIndent`) or `sexpr` (`Node.String()`) |
 | `-check` | off | Recognition only: print `ok`, or the syntax error |
@@ -168,6 +170,7 @@ cat messy.pego
 
 ```text
 // A messy grammar.
+@start
 rule main =    ws   "x"+   ws   $$    // trailing comment
 rule ws =  [ \t\n]*
 ```
@@ -186,6 +189,7 @@ pego fmt -w messy.pego && cat messy.pego
 
 ```text
 // A messy grammar.
+@start
 rule main =  ws "x"+ ws $$  // trailing comment
 rule ws =  [ \t\n]*
 ```

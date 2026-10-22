@@ -16,7 +16,9 @@ type Number = node[string]
 type Unit = node[string]
 type Quantity = { Value Number; Unit Unit }
 
+@start(default)
 rule duration []Quantity = qs:quantity+ $$ => $qs.Value
+@start
 rule size Quantity = q:quantity $$ => $q
 
 rule quantity Quantity = v:number u:unit => Quantity{Value: $v, Unit: $u}

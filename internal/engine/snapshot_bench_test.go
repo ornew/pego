@@ -5,8 +5,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 var snapshotBenchmarkResult any
@@ -25,7 +23,7 @@ type snapshotLegacyResult struct {
 // plus Clone of the current result. The grammar, text, and memo are warmed
 // before timing; methods are run serially by go test.
 func BenchmarkDocumentSnapshotCapture(b *testing.B) {
-	g, err := syntax.Parse(`rule main = item* $$
+	g, err := parseTest(`rule main = item* $$
 rule item = [a-z]`)
 	if err != nil {
 		b.Fatal(err)
@@ -93,7 +91,7 @@ rule item = [a-z]`)
 // Prefix insert/delete forces shifted spans. Keep the previous snapshot live
 // through capture so both exact-record fallback and relative sharing are tested.
 func BenchmarkDocumentSnapshotPrefixEdit(b *testing.B) {
-	g, err := syntax.Parse(`rule main = item* $$
+	g, err := parseTest(`rule main = item* $$
 rule item = [a-z]`)
 	if err != nil {
 		b.Fatal(err)
@@ -140,7 +138,7 @@ rule item = [a-z]`)
 // changing the containing record's generation. Keep each previous snapshot
 // alive so sharing is eligible on every capture.
 func BenchmarkDocumentSnapshotMiddleEdit(b *testing.B) {
-	g, err := syntax.Parse(`rule main = item* $$
+	g, err := parseTest(`rule main = item* $$
 rule item = [a-z]`)
 	if err != nil {
 		b.Fatal(err)
@@ -190,7 +188,7 @@ func BenchmarkDocumentSnapshotPrefixEditRead(b *testing.B) {
 }
 
 func benchmarkDocumentSnapshotEditRead(b *testing.B, prefix bool) {
-	g, err := syntax.Parse(`rule main = item* $$
+	g, err := parseTest(`rule main = item* $$
 rule item = [a-z]`)
 	if err != nil {
 		b.Fatal(err)

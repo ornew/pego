@@ -6,7 +6,8 @@ import (
 	"testing"
 )
 
-const pairs = `rule main = ws pair+ $$
+const pairs = `@start
+rule main = ws pair+ $$
 rule pair = key "=" value ";"? ws
 rule key = [a-z]+ #atomic
 rule value = [0-9]+ #atomic
@@ -104,7 +105,8 @@ func toStrings(v any) []string {
 
 // TestTraceLeftRecursion shows the growth of a left-recursive rule and memo hits.
 func TestTraceLeftRecursion(t *testing.T) {
-	g := writeFile(t, "lr.pego", `rule main = sum $$
+	g := writeFile(t, "lr.pego", `@start
+rule main = sum $$
 rule sum = sum "+" n / n
 rule n = [0-9]+ #atomic`)
 	out, err := runCLI(t, "", "trace", "-g", g, "-i", "1+2")
@@ -221,7 +223,8 @@ Calls that recorded what was expected at 1:5 (innermost first):
 		t.Errorf("got %v\n%s\nwant\n%s", err, out, want)
 	}
 	// Without $$, the parser expects the end of input after the start rule returns.
-	unanchored := writeFile(t, "unanchored.pego", `rule main = pair+
+	unanchored := writeFile(t, "unanchored.pego", `@start
+rule main = pair+
 rule pair = [a-z] #atomic "=" [0-9] #atomic`)
 	out, err = runCLI(t, "", "explain", "-g", unanchored, "-i", "a=1!")
 	want = `1:4: syntax error: expected [a-z], end of input
@@ -240,7 +243,8 @@ Calls that recorded what was expected at 1:4 (innermost first):
 		t.Errorf("got %v %q", err, out)
 	}
 	// Errors recovered by #recover are explained one by one.
-	r := writeFile(t, "recover.pego", `rule main = stmt* $$
+	r := writeFile(t, "recover.pego", `@start
+rule main = stmt* $$
 rule stmt = (word ";") #recover(skip=[^;]+ ";")
 rule word = [a-z]+ #atomic`)
 	out, err = runCLI(t, "", "explain", "-g", r, "-i", "a;1;b;2;")
@@ -258,7 +262,8 @@ rule word = [a-z]+ #atomic`)
 // TestExplainErrorLabel checks that expectations that #error replaced with its message, which
 // the calls in its expression still recorded, are not listed.
 func TestExplainErrorLabel(t *testing.T) {
-	g := writeFile(t, "let.pego", `rule main = "let" " " name @error(message="expected a name") ";"
+	g := writeFile(t, "let.pego", `@start
+rule main = "let" " " name @error(message="expected a name") ";"
 rule name = [a-z]+ #atomic [0-9]*`)
 	out, err := runCLI(t, "", "explain", "-g", g, "-i", "let 1;")
 	want := `1:5: expected a name
@@ -275,7 +280,8 @@ Calls that recorded what was expected at 1:5 (innermost first):
 // TestExplainRecoveredBody checks that the expectations of the expression a #recover recovered
 // from, which the record of the enclosing call no longer holds, are attributed to that call.
 func TestExplainRecoveredBody(t *testing.T) {
-	r := writeFile(t, "recover.pego", `rule main = stmt* $$
+	r := writeFile(t, "recover.pego", `@start
+rule main = stmt* $$
 rule stmt = (word ";") #recover(skip=[^;]+ ";")
 rule word = [a-z]+ #atomic`)
 	out, err := runCLI(t, "", "explain", "-g", r, "-i", "ab1;cd;", "-backend", "bytecode")

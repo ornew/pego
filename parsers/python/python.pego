@@ -198,6 +198,7 @@ type Op = node[string]
 // Module, blocks and lines
 // ============================================================================
 
+@start
 rule main Module = (
     {ind := 0} {lv := 0}
     -blank* b:first_stmts? -module_end $$ @error(message="invalid syntax")

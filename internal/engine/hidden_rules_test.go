@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // The generated name of an inline action's rule never satisfies a reference: a reference resolves
@@ -72,7 +71,7 @@ rule _a = "a" "b"`)
 rule _a = "a"`, "_a"},
 		{`rule main = (x:"a" => $x)`, "_main_1"},
 	} {
-		parsed, err := syntax.Parse(g.src)
+		parsed, err := parseTest(g.src)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -134,7 +133,7 @@ func TestDefaultValueAcceptsWhatItDropsWithInlineActions(t *testing.T) {
 		`rule main = "a" => nil`,
 		`rule main = (x:"a" => nil) "b"`,
 	} {
-		g, err := syntax.Parse(src)
+		g, err := parseTest(src)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -175,7 +174,7 @@ func TestDefaultValueValidationReportsTheGrammarAsWritten(t *testing.T) {
 		{"in a nested inline action", "rule main = (x:(y:\"a\"+ => nil) \"b\" => nil)", "decls[0]"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			g, err := syntax.Parse(tc.src)
+			g, err := parseTest(tc.src)
 			if err != nil {
 				t.Fatal(err)
 			}

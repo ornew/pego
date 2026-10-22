@@ -115,7 +115,7 @@ func runRequestResourceCase(t *testing.T, count, filters int, measure bool) requ
 	uri := "file:///resource.pego"
 	source := f08BenchmarkGrammar()
 	method := "textDocument/hover"
-	var params any = at(uri, 0, 5)
+	var params any = at(uri, 1, 5)
 	if filters > 0 {
 		method = "textDocument/codeAction"
 		only := make([]string, filters)
@@ -225,7 +225,7 @@ func runRequestResourceCase(t *testing.T, count, filters int, measure bool) requ
 	}
 	hold.Store(false)
 	var hover any
-	c.requestInto("textDocument/hover", at(uri, 0, 5), &hover)
+	c.requestInto("textDocument/hover", at(uri, 1, 5), &hover)
 	if hover == nil {
 		t.Fatal("normal request did not recover after cancellation")
 	}

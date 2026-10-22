@@ -466,6 +466,7 @@ MUST come before the base case**: if the base case comes first, it matches again
 with the same length, nothing grows, and the input after it is left over.
 
 ```pego
+@start
 rule main = a $$
 rule a = a "x" / "y"
 ```

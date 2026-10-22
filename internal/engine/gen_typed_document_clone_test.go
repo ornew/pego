@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGeneratedTypedDocumentPublicationClone(t *testing.T) {
@@ -15,7 +13,7 @@ func TestGeneratedTypedDocumentPublicationClone(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds a standalone generated parser")
 	}
-	g, err := syntax.Parse(`type Token = { Text string }
+	g, err := parseTest(`type Token = { Text string }
 type Document = { Text string }
 type ParseStats = { Text string }
 type Span = { Text string }

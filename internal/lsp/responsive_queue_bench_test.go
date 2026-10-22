@@ -15,7 +15,7 @@ func BenchmarkResponsiveDispatch(b *testing.B) {
 			b.StopTimer()
 			peer := newF08BenchmarkPeer(b)
 			uri := "file:///dispatch.pego"
-			peer.send("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": uri, "version": 1, "text": `rule main = "a"`}}, false)
+			peer.send("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": uri, "version": 1, "text": "@start\nrule main = \"a\""}}, false)
 			notification := peer.receive()
 			if notification.Method != "textDocument/publishDiagnostics" {
 				b.Fatalf("unexpected initial message: %+v", notification)
@@ -24,7 +24,7 @@ func BenchmarkResponsiveDispatch(b *testing.B) {
 			if err := json.Unmarshal(notification.Params, &diagnostics); err != nil || len(diagnostics.Diagnostics) != 0 {
 				b.Fatalf("invalid initial diagnostics: %s", notification.Params)
 			}
-			var params any = at(uri, 0, 5)
+			var params any = at(uri, 1, 5)
 			if method == "textDocument/documentSymbol" {
 				params = docParams(uri)
 			}

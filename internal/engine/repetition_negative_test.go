@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func negativeMaxima() []int {
@@ -26,7 +25,7 @@ func negativeMaxima() []int {
 
 func grammarWithNegativeMaximum(t testing.TB, src string, maximum int) *grammar.Grammar {
 	t.Helper()
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -179,7 +178,7 @@ func executableASTJSON(t testing.TB, g *grammar.Grammar) string {
 }
 
 func TestCompiledSourceMetadataOmitted(t *testing.T) {
-	g, err := syntax.Parse("// documentation\npackage p\n// rule documentation\nrule main = \"x\" #atomic")
+	g, err := parseTest("// documentation\npackage p\n// rule documentation\nrule main = \"x\" #atomic")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -417,7 +416,7 @@ func BenchmarkBytecodeLowering(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			g, err := syntax.Parse(string(source))
+			g, err := parseTest(string(source))
 			if err != nil {
 				b.Fatal(err)
 			}

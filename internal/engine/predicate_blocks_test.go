@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 type predicateBlockCase struct {
@@ -103,7 +102,7 @@ func TestPredicateBlocksAdjacentParity(t *testing.T) {
 
 func TestPredicateBlocksSourceAndSavedGrammar(t *testing.T) {
 	const source = "var x int\nrule main = {\n // first\n x := (1 +\n 1)\n // second\n x == 2;\n} \"é\" $$"
-	g, err := syntax.Parse(source)
+	g, err := parseTest(source)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +111,7 @@ func TestPredicateBlocksSourceAndSavedGrammar(t *testing.T) {
 		t.Fatal(err)
 	}
 	formatted := grammar.Format(g)
-	formattedGrammar, err := syntax.Parse(formatted)
+	formattedGrammar, err := parseTest(formatted)
 	if err != nil || grammar.Format(formattedGrammar) != formatted {
 		t.Fatalf("formatter round trip: %v", err)
 	}
@@ -161,7 +160,7 @@ rule main = {x := 1; len(true)} "a"`,
 		`rule main = {true; text($missing) == "a"} "a"`,
 	} {
 		// ParseLegacy reads $1, which still reaches the checker from JSON grammars.
-		g, err := syntax.ParseLegacy(source)
+		g, err := parseLegacyTest(source)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -170,7 +169,7 @@ rule main = {x := 1; len(true)} "a"`,
 		}
 	}
 	for _, source := range []string{`rule main = {}`, `rule main = "a" => {true; true}`} {
-		g, err := syntax.Parse(source)
+		g, err := parseTest(source)
 		if err != nil {
 			t.Fatal(err)
 		}

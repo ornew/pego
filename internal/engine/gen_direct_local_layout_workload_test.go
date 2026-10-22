@@ -4,8 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // PEGO_TYPED_LOCAL_LAYOUT_DIR preserves generated controls for benchmarks of
@@ -67,7 +65,7 @@ func BenchmarkTypedLocalLayoutGeneration(b *testing.B) {
 		disableTypedLocalLayouts: os.Getenv("PEGO_REFERENCE_LOCAL_LAYOUTS") == "1"}
 	for _, c := range cases {
 		b.Run(c.name, func(b *testing.B) {
-			g, err := syntax.Parse(c.src)
+			g, err := parseTest(c.src)
 			if err != nil {
 				b.Fatal(err)
 			}

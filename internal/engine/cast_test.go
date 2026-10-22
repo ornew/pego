@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 const castRules = "type Num = { Text string }\ntype P = { N Num }\nrule n Num = t:([0-9]+) #atomic => Num{Text: text($t)}\nrule w = [a-z]+\nrule pair = n:n \"=\" => P{N: $n}\n"
@@ -79,7 +78,7 @@ func TestCastErrors(t *testing.T) {
 		{"rule main = x:n => $x.(Num).N\n" + castRules, "N"},
 		{`rule main = "a" => (1).(string)`, "cannot cast int to string"},
 	} {
-		g, err := syntax.Parse(tc.src)
+		g, err := parseTest(tc.src)
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
@@ -88,7 +87,7 @@ func TestCastErrors(t *testing.T) {
 		}
 	}
 	// An unknown type is rejected.
-	g, err := syntax.Parse(`rule main = x:"a" => $x.(Nope)`)
+	g, err := parseTest(`rule main = x:"a" => $x.(Nope)`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +97,7 @@ func TestCastErrors(t *testing.T) {
 }
 
 func TestCastSyntax(t *testing.T) {
-	g, err := syntax.Parse("type Foo = { A node[string] }\ntype Word = { Text string }\nrule main = x:\"a\" => $x.( []Foo | *Word ).Start\nrule one = \"a\" => (1).(int)")
+	g, err := parseTest("type Foo = { A node[string] }\ntype Word = { Text string }\nrule main = x:\"a\" => $x.( []Foo | *Word ).Start\nrule one = \"a\" => (1).(int)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +107,7 @@ func TestCastSyntax(t *testing.T) {
 			t.Fatalf("formatted lacks %q:\n%s", want, formatted)
 		}
 	}
-	if _, err := syntax.Parse(formatted); err != nil {
+	if _, err := parseTest(formatted); err != nil {
 		t.Fatalf("formatted grammar does not parse: %v", err)
 	}
 	member := g.Rules()[0].Action.(*grammar.Member)

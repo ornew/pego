@@ -5,8 +5,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 const boundStream = `var limit int
@@ -102,7 +100,7 @@ func BenchmarkEnvironmentBindings(b *testing.B) {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, n := range []int{2000, 4000, 8000, 16000} {
 				b.Run(fmt.Sprintf("%s/%s/%d", c.name, backend, n), func(b *testing.B) {
-					g, err := syntax.Parse(`var limit int
+					g, err := parseTest(`var limit int
 var i int
 var j int
 rule main = {limit := 1} {i := 0} {j := 0} (` + c.body + `)* $$`)
@@ -140,7 +138,7 @@ func BenchmarkDistinctBindings(b *testing.B) {
 				fmt.Fprintf(&src, "{v%d := 1} ", i)
 			}
 			src.WriteString("$$")
-			g, err := syntax.Parse(src.String())
+			g, err := parseTest(src.String())
 			if err != nil {
 				b.Fatal(err)
 			}

@@ -57,7 +57,8 @@ type GenOptions struct {
 	RuntimeModule string
 	// MaxDepth is the generated default rule-call limit. Zero selects 100,000.
 	MaxDepth int
-	// Start is the start rule of the generated Parse function.
+	// Start is the start rule of the generated Parse function, a rule marked @start. Empty
+	// selects the default start rule.
 	Start string
 	// Types generates Go types, ParseAST for the start rule, and ParseRuleAST
 	// for a named rule as values of those types (see gen_types.go).
@@ -196,12 +197,9 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 	if prog.hasMissing {
 		return nil, missingUnsupported("generated parsers")
 	}
-	if hiddenRule(opts.Start) {
-		return nil, fmt.Errorf("start rule %s is hidden: a rule whose name begins with an underscore is not an entry point", opts.Start)
-	}
-	start := prog.byName[opts.Start]
-	if start == nil {
-		return nil, fmt.Errorf("start rule %s is not defined", opts.Start)
+	start, err := prog.startRule(opts.Start)
+	if err != nil {
+		return nil, err
 	}
 	if opts.Stream {
 		if !start.stream {
@@ -228,6 +226,7 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 		gen.rules()
 		gen.prog, gen.table = prog, "rules"
 	}
+	fmt.Fprintf(&gen.init, "\tpegoGrammar.Starts = %s\n", goStrings(prog.starts))
 	if !opts.TypedOnly {
 		fmt.Fprintf(&gen.init, "\tpegoGrammar.Descs = %s\n", goStrings(gen.descs))
 	}
@@ -295,18 +294,15 @@ func Iterate(r io.Reader, opts ...ParseOption) (*StreamIterator, error) {
 	}
 	fmt.Fprintf(&out, "// rules is the rule table, and pegoGrammar its grammar.\nvar rules []*Rule\nvar pegoGrammar = NewGrammar(%d)\n\n", opts.generatedMaxDepth())
 	if !opts.TypedOnly {
-		out.WriteString(`// ParseRule parses the whole input with the rule name.
+		out.WriteString(`// ParseRule parses the whole input with the start rule name, a rule marked @start.
 func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	o, err := ResolveOptions(pegoGrammar, opts)
 	if err != nil {
 		return nil, err
 	}
-	if len(name) > 0 && name[0] == '_' {
-		return nil, fmt.Errorf("rule %s is hidden: a rule whose name begins with an underscore is not an entry point", name)
-	}
-	r := pegoGrammar.RuleByName(name)
-	if r == nil {
-		return nil, fmt.Errorf("rule %s is not defined", name)
+	r, err := pegoGrammar.StartRule(name)
+	if err != nil {
+		return nil, err
 	}
 	return RunParseResolved(r, input, o)
 }

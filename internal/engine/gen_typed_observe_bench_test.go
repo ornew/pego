@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // Export isolated typed tracing controls, keeping generation, compilation and
@@ -42,7 +40,7 @@ func TestExportGeneratedTypedTraceBenchmarks(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		g, err := syntax.Parse(string(data))
+		g, err := parseTest(string(data))
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -74,7 +74,8 @@ func run() error {
 	default:
 		return fmt.Errorf("invalid unit %q", *unitName)
 	}
-	parser, err := pego.CompileSource(`rule main = item* $$
+	parser, err := pego.CompileSource(`@start
+rule main = item* $$
 rule item = [a-z]`, "main")
 	if err != nil {
 		return err

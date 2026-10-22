@@ -24,7 +24,7 @@ func (r *publicIteratorReader) Close() error {
 }
 
 func TestPublicStreamIteratorLifecycle(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = ("é" / "a")* #stream $$`, "main")
+	p, err := compileTestSource(`rule main = ("é" / "a")* #stream $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +90,7 @@ func TestPublicStreamIteratorLifecycle(t *testing.T) {
 }
 
 func TestPublicStreamIteratorAdmission(t *testing.T) {
-	plain, err := pego.CompileSource(`rule main = "a"* $$`, "main")
+	plain, err := compileTestSource(`rule main = "a"* $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +98,7 @@ func TestPublicStreamIteratorAdmission(t *testing.T) {
 	if it, err := plain.Iterate(r); it != nil || err == nil || r.reads != 0 {
 		t.Fatalf("non-stream admission: it=%v err=%v reads=%d", it, err, r.reads)
 	}
-	stream, err := pego.CompileSource(`rule main = "a"* #stream $$`, "main")
+	stream, err := compileTestSource(`rule main = "a"* #stream $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

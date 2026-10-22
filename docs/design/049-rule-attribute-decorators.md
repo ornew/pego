@@ -1,8 +1,12 @@
 # 049. Rule Attribute Prefixes
 
-- **Status**: Rejected
+- **Status**: Superseded
 - **Author**: @ornew
 - **Date**: 2026-10-12
+
+> **Note (2026-10)**: Superseded by [Explicit Start Rules](061-explicit-start-rules.md): a rule declaration
+> takes declaration attributes on the lines before `rule`, and `@start` marks the rules where parsing may begin.
+> Attributes in Rule Expressions stay postfix. The record keeps the original decision.
 
 ## Decision
 

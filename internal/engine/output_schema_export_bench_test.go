@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 var outputSchemaExportSink *OutputSchema
@@ -28,7 +26,7 @@ func BenchmarkOutputSchemaExport(b *testing.B) {
 	}
 	for _, tc := range cases {
 		b.Run(tc.name, func(b *testing.B) {
-			g, err := syntax.Parse(tc.source)
+			g, err := parseTest(tc.source)
 			if err != nil {
 				b.Fatal(err)
 			}

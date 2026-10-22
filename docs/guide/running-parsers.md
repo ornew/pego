@@ -11,6 +11,7 @@ All examples use one small grammar, `pairs.pego`, that reads `key=value` pairs s
 ```pego
 type Pair = { Key node[string]; Value node[string] }
 
+@start
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
 rule key = [a-zあ-ん]+ #atomic
@@ -91,9 +92,9 @@ Errors in the grammar (syntax errors, undefined rules, type errors) are reported
 when the grammar came from source:
 
 ```go
-_, err = pego.CompileSource("rule main = (", "main")
+_, err = pego.CompileSource("@start\nrule main = (", "main")
 fmt.Println(err) // A source position and syntax error.
-_, err = pego.CompileSource("rule main =  other ", "main")
+_, err = pego.CompileSource("@start\nrule main =  other ", "main")
 fmt.Println(err) // A source position and undefined-rule error.
 ```
 
@@ -146,6 +147,7 @@ fmt.Println(n, err)
 ```
 
 ```text
+@start
 rule main =  word $$
 
 rule word =  [a-z]+ #atomic
@@ -202,7 +204,7 @@ To accept a named rule's prefix and get its consumed code-point and byte lengths
 [`Parser.ParsePrefix`](prefix-parsing.md). It selects a rule per call without changing the parser's start rule.
 
 On the command line, `-s` selects the start rule for `parse`, `compile` and `gen` (default: the one saved in a
-`.pegoc`, otherwise `main`).
+`.pegoc`, otherwise the grammar's default start rule).
 
 ## Parsing, Errors and Concurrency
 

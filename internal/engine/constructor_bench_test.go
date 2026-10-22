@@ -3,8 +3,6 @@ package engine
 import (
 	"fmt"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // BenchmarkNodeListConstruction compares explicit element types with the
@@ -18,7 +16,7 @@ func BenchmarkNodeListConstruction(b *testing.B) {
 		b.Run(workload.name, func(b *testing.B) {
 			var want string
 			for _, variant := range []struct{ name, action string }{{"Function", workload.function}, {"Typed", workload.typed}} {
-				g, err := syntax.Parse("type Word = { Text string }\nrule word Word = t:(\"x\") #atomic => Word{Text: text($t)}\nrule main = " + workload.body + " => " + variant.action)
+				g, err := parseTest("type Word = { Text string }\nrule word Word = t:(\"x\") #atomic => Word{Text: text($t)}\nrule main = " + workload.body + " => " + variant.action)
 				if err != nil {
 					b.Fatal(err)
 				}

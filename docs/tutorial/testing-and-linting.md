@@ -65,6 +65,7 @@ continuous integration job as it is. Cases can also pin the tree, the root range
 `pego lint` examines a grammar without running it. Save a grammar with two mistakes as `buggy.pego`:
 
 ```pego
+@start
 rule main = "a" ws op ws "b" $$
 rule op = "<" / "<="
 rule ws = " "*
@@ -76,9 +77,9 @@ pego lint -g buggy.pego
 ```
 
 ```text
-buggy.pego:2:17: error: alternative 2 (`"<="`) can never match: alternative 1 (`"<"` at 2:11) matches first wherever it could [shadowed-alternative]
+buggy.pego:3:17: error: alternative 2 (`"<="`) can never match: alternative 1 (`"<"` at 3:11) matches first wherever it could [shadowed-alternative]
 	fix: move it before alternative 1
-buggy.pego:4:1: warning: rule unused is never used: main does not call it, directly or indirectly [unreachable-rule]
+buggy.pego:5:1: warning: rule unused is never used: main does not call it, directly or indirectly [unreachable-rule]
 	fix: remove the rule, or call it from a rule that main reaches
 pego: lint: 1 error, 1 warning, 0 hints
 ```

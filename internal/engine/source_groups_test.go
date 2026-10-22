@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestSourceGroupsExecutableParity(t *testing.T) {
@@ -22,7 +21,7 @@ var count int
 rule main Value = {count := 1 + 2 * 3} {count == 7 && true} n:number => Value{Number: $n, Items: map(list($n), (item) => item), Flag: count == 7}
 rule number Alias = v1:[0-9]+ => Number{Text: text($v1)}
 `
-	g, err := syntax.Parse(grouped)
+	g, err := parseTest(grouped)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +56,7 @@ rule number Alias = v1:[0-9]+ => Number{Text: text($v1)}
 		// untyped targets; source grouping must not change generated code.
 		for _, typed := range []bool{false, true} {
 			opts := GenOptions{Package: "sample", Start: "main", Types: typed}
-			plainAST, err := syntax.Parse(plain)
+			plainAST, err := parseTest(plain)
 			if err != nil {
 				t.Fatal(err)
 			}

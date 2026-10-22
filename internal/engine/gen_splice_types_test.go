@@ -10,8 +10,6 @@ import (
 	"sort"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // spliceTypeCases are grammars whose hidden rule calls itself, in every place that takes one
@@ -105,7 +103,7 @@ func TestGeneratedRecursiveSpliceTypesKeepTheTree(t *testing.T) {
 	}
 	var imports, table strings.Builder
 	for i, c := range cases {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

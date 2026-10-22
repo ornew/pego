@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 const constructorGrammar = `type Int = { Text string }
@@ -29,7 +28,7 @@ rule main Values = v1:"😀" => Values{Items: []Int{Int{"0"}, Alias{text($v1)}},
 
 func TestTypedNodeConstructors(t *testing.T) {
 	const source = legacyConstructorGrammar
-	g, err := syntax.ParseLegacy(source)
+	g, err := parseLegacyTest(source)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +160,7 @@ func TestTypedNodeConstructorErrors(t *testing.T) {
 		{`Other{"x"}`, "Other has no field Text"},
 	} {
 		t.Run(tc.action, func(t *testing.T) {
-			g, err := syntax.ParseLegacy(`type Int terminal
+			g, err := parseLegacyTest(`type Int terminal
 type Other = {}
 var x int
 rule main = {x := 1} d:dyn "x" => ` + tc.action + `
@@ -177,7 +176,7 @@ rule dyn _ = _ => 1`)
 	}
 	// Lists may hold ints, strings and bools.
 	for _, action := range []string{`[]_{}`, `[][]_{}`, `[]int{}`, `[][]string{}`, `[]int{1, 2}`, `[]*bool{nil, true}`} {
-		g, err := syntax.ParseLegacy("var x int\nrule main = {x := 1} \"x\" => " + action)
+		g, err := parseLegacyTest("var x int\nrule main = {x := 1} \"x\" => " + action)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -188,7 +187,7 @@ rule dyn _ = _ => 1`)
 	// A terminal constructor needed exactly one positional argument; a text struct is an ordinary
 	// struct, whose constructor may leave Text unset or name it.
 	for _, action := range []string{`Int{}`, `Int{Text: "0"}`} {
-		g, err := syntax.ParseLegacy("type Int terminal\nrule main = \"x\" => " + action)
+		g, err := parseLegacyTest("type Int terminal\nrule main = \"x\" => " + action)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -207,7 +206,7 @@ rule main = {value := 1} "x" => Int{value}`,
 var value int
 rule main = {value := 1} {Int{value} != nil} "x" / "x"`,
 	} {
-		g, err := syntax.ParseLegacy(source)
+		g, err := parseLegacyTest(source)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -282,7 +281,7 @@ func TestNodeConstructorCompiledVersions(t *testing.T) {
 func TestNodeConstructorShapes(t *testing.T) {
 	const header = "type Int terminal\ntype Other = {}\nrule main = \"x\" => "
 	for _, action := range []string{`[]any{}`, `Int{"a", "b"}`, `Other{"a"}`} {
-		g, err := syntax.ParseLegacy(header + action)
+		g, err := parseLegacyTest(header + action)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -291,20 +290,20 @@ func TestNodeConstructorShapes(t *testing.T) {
 		}
 	}
 	for _, action := range []string{`[]int{}`, `[][]string{}`} {
-		if g, err := syntax.ParseLegacy(header + action); err != nil {
+		if g, err := parseLegacyTest(header + action); err != nil {
 			t.Fatal(err)
 		} else if _, err := Compile(g, Options{}); err != nil {
 			t.Errorf("rejected a list of values %s: %v", action, err)
 		}
 	}
-	if g, err := syntax.ParseLegacy(header + `Int{}`); err != nil {
+	if g, err := parseLegacyTest(header + `Int{}`); err != nil {
 		t.Fatal(err)
 	} else if _, err := Compile(g, Options{}); err != nil {
 		t.Fatalf("Int{} is a text struct with no field set: %v", err)
 	}
 	// Values of the wrong type are rejected when the grammar is compiled, in actions and predicates.
 	for _, action := range []string{`[]Int{nil}`, `[]Int{Other{}}`, `[]Int{1}`, `Int{1}`} {
-		g, err := syntax.ParseLegacy(header + action)
+		g, err := parseLegacyTest(header + action)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -313,7 +312,7 @@ func TestNodeConstructorShapes(t *testing.T) {
 		}
 	}
 	for _, action := range []string{`[]Int{1}`, `Int{1}`} {
-		g, err := syntax.ParseLegacy("type Int terminal\nrule main = {" + action + " != nil} \"x\" / \"x\"")
+		g, err := parseLegacyTest("type Int terminal\nrule main = {" + action + " != nil} \"x\" / \"x\"")
 		if err != nil {
 			t.Fatal(err)
 		}

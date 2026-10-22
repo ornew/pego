@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGeneratedGoClassDispatchWork(t *testing.T) {
@@ -28,7 +26,7 @@ rule negative Text = t:[^` + chars.String() + `] #atomic => Text{Text: text($t)}
 rule negative_scan Text = t:([^` + chars.String() + `]+) #atomic => Text{Text: text($t)}
 rule optional Text = t:([` + chars.String() + `]? "z") #atomic => Text{Text: text($t)}
 rule fallback Text = t:([` + chars.String() + `] / "z") #atomic => Text{Text: text($t)}`
-	g, err := syntax.Parse(source)
+	g, err := parseTest(source)
 	if err != nil {
 		t.Fatal(err)
 	}

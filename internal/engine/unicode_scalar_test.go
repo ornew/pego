@@ -8,7 +8,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestInvalidCharacterClassEntryPoints(t *testing.T) {
@@ -83,7 +82,7 @@ func BenchmarkCharacterRangeValidation(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			g, err := syntax.Parse(string(source))
+			g, err := parseTest(string(source))
 			if err != nil {
 				b.Fatal(err)
 			}

@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // PEGO_TYPED_LR_DIR preserves both same-generator routes for prebuilt paired
@@ -51,7 +49,7 @@ func testTypedLRWorkload(t *testing.T, src, fixture, dir string) {
 
 func testGeneratedTypedBodyWorkload(t *testing.T, src, fixture, dir, marker string, reference GenOptions, unaffectedMarkers ...int) {
 	t.Helper()
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}

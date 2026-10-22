@@ -9,8 +9,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // nodeTypeGrammar uses named node types: rule conversions, constructors, unions of named
@@ -168,7 +166,7 @@ rule main A = x:("a" / "b" "c") => A{$x}`, "bc", "cannot convert node[string] | 
 		}
 	}
 	// The generated parsers convert through an alias with the same name.
-	g, err := syntax.Parse(`type N = node[string]
+	g, err := parseTest(`type N = node[string]
 type A ~ N
 rule main A = x:"a" => A{$x}`)
 	if err != nil {
@@ -257,7 +255,7 @@ func runGeneratedNamedNodeProgram(t *testing.T, src, body, want string) {
 	if _, err := os.Stat(goBin); err != nil {
 		t.Skip("go command not found")
 	}
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -425,7 +423,7 @@ type O = { F node[[]Tree] }
 rule main O = t:tree $$ => O{F: $t.Value[0]}
 rule tree Tree = "(" ts:tree* ")" => Tree{$ts}`,
 	} {
-		g, err := syntax.Parse(src)
+		g, err := parseTest(src)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -449,7 +447,7 @@ rule tree Tree = "(" ts:tree* ")" => Tree{$ts}`,
 		fmt.Fprintf(&b, "rule r%d T%d = \"(\" xs:r%d* \")\" => T%d{$xs}\n", i, i, (i+1)%n, i)
 	}
 	start := time.Now()
-	g, err := syntax.Parse(b.String())
+	g, err := parseTest(b.String())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -640,7 +638,7 @@ func TestGeneratedNamedNodeTypesTypedRuntime(t *testing.T) {
 	converted := map[string]bool{"named node in any fields": true}
 	cases := namedNodeTypeCases()
 	for _, c := range cases {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -705,7 +703,7 @@ rule q Q = p
 rule a A = [a-zé] #atomic`, []string{"()abcd", "(()(()))abcd", "((é))éaéa", "()ab", "("}},
 	} {
 		pkg := fmt.Sprintf("case%d", i)
-		g, err := syntax.Parse(c.grammar)
+		g, err := parseTest(c.grammar)
 		if err != nil {
 			t.Fatalf("%s: %v", pkg, err)
 		}
@@ -759,7 +757,7 @@ rule tail node[_] = item item?`, []string{"abab", "ababab", "abx", ""}},
 // that they match the conversion of the nodes of Parse.
 func TestGeneratedDeclaredNodeAny(t *testing.T) {
 	src := declaredNodeAnyCases()[0].src
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -788,7 +786,7 @@ func TestGeneratedDeclaredNodeAny(t *testing.T) {
 	}
 	cases := declaredNodeAnyCases()
 	for _, c := range cases {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

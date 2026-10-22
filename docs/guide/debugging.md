@@ -24,6 +24,7 @@ A small configuration language with assignments, updates and calls:
 
 ```pego
 // config.pego
+@start
 rule main = ws (stmt ws)* $$
 rule stmt = assign / update / call
 rule assign = ident ws "=" ws value ";"

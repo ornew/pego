@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -14,7 +15,7 @@ func TestMissingTokenDoesNotProveAChoiceShadowed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := engine.Compile(g, engine.Options{}); err != nil {
+	if _, err := engine.Compile(starttest.MarkAll(g), engine.Options{}); err != nil {
 		t.Fatal(err)
 	}
 	for _, finding := range Run(g, "main", Options{}) {

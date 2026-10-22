@@ -1069,10 +1069,3 @@ func tb11(v *YesNo) any {
 // PegoNodeTypes holds the registered indexes of the named node types by their generated index; index 0
 // is no named node type. It is for generated parsers.
 var PegoNodeTypes [19]uint16
-
-// Tuple3 is a tuple of 3 elements.
-type Tuple3[E0, E1, E2 any] struct {
-	E0 E0
-	E1 E1
-	E2 E2
-}

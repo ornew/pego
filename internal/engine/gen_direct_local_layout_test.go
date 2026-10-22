@@ -7,8 +7,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 var typedLocalLayoutCases = []genCase{
@@ -79,7 +77,7 @@ rule body Doc = (
 
 func TestGeneratedTypedLocalLayouts(t *testing.T) {
 	for _, c := range typedLocalLayoutCases {
-		ast, err := syntax.Parse(c.src)
+		ast, err := parseTest(c.src)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -128,7 +126,7 @@ func TestGeneratedTypedLocalLayoutControls(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		ast, err := syntax.Parse(string(src))
+		ast, err := parseTest(string(src))
 		if err != nil {
 			t.Fatal(err)
 		}

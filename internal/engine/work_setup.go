@@ -5,6 +5,9 @@ import "fmt"
 // admitParse validates fixed metadata before caller Context methods. Lazy setup
 // is not charged, but active calls check immediately around each component.
 func (prog *Program) admitParse(start string, o ParseOptions, stream bool) (*Program, *rule, *workControl, error) {
+	if err := prog.CheckStart(start); err != nil {
+		return nil, nil, nil, err
+	}
 	if err := prog.admitMissing(o, stream); err != nil {
 		return nil, nil, nil, err
 	}

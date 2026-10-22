@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"hash/crc32"
+	"slices"
 	"sort"
 
 	"github.com/ornew/pego/grammar"
@@ -36,7 +37,7 @@ const (
 	// isaVersion is the instruction set of the value model, the only one supported. Earlier
 	// versions built the previous syntax trees, so their files are not loaded and need to be
 	// compiled again.
-	isaVersion = 25
+	isaVersion = 26
 	maxDepth   = 10000
 )
 
@@ -163,8 +164,8 @@ type MarshalOptions struct {
 	OmitAST bool
 }
 
-// MarshalBinary encodes the compiled grammar as bytes. start is the default start rule (may be
-// empty).
+// MarshalBinary encodes the compiled grammar as bytes. start is the start rule a loaded parser
+// uses: a start rule of the grammar, or empty for its default start rule.
 func (prog *Program) MarshalBinary(start string) ([]byte, error) {
 	return prog.MarshalBinaryWith(start, MarshalOptions{})
 }
@@ -175,12 +176,9 @@ func (prog *Program) MarshalBinaryWith(start string, o MarshalOptions) ([]byte, 
 		return nil, missingUnsupported("compiled grammar serialization")
 	}
 	if start != "" {
-		if err := EntryError(start); err != nil {
-			return nil, fmt.Errorf("start rule %s is hidden: a rule whose name begins with an underscore is not an entry point", start)
+		if err := prog.CheckStart(start); err != nil {
+			return nil, err
 		}
-	}
-	if start != "" && !prog.hasRule(start) {
-		return nil, fmt.Errorf("start rule %s is not defined", start)
 	}
 	m := prog.Module()
 	withAST := prog.Grammar != nil && !o.OmitAST
@@ -693,8 +691,8 @@ func (r *decoder) enter() bool {
 
 func (r *decoder) leave() { r.depth-- }
 
-// LoadProgram loads a compiled grammar. It also returns the saved default start rule (empty if
-// none). It does not perform parsing, static analysis, type checking, or compilation to bytecode.
+// LoadProgram loads a compiled grammar. It also returns the saved start rule (empty for the
+// default start rule). It does not perform parsing, static analysis, type checking, or compilation to bytecode.
 // A program loaded from a file without the AST can only be run by the bytecode backend.
 func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	if !IsCompiled(data) {
@@ -741,6 +739,7 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	if r.bool() {
 		g, flags := r.statements(pkg)
 		if r.err == nil {
+			markStarts(g, m)
 			o := opts
 			o.SourceInfo = o.SourceInfo || m.SourceInfo
 			o.DefaultValue = o.DefaultValue || m.DefaultValue
@@ -769,14 +768,16 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 		if err := sameVars(prog.vars, moduleVarTable(m)); err != nil {
 			return nil, "", fmt.Errorf("invalid compiled grammar: the variables of the module differ from the syntax tree: %w", err)
 		}
+		if !slices.Equal(prog.starts, moduleStarts(m)) || prog.defaultStart != moduleDefaultStart(m) {
+			return nil, "", fmt.Errorf("invalid compiled grammar: the start rules of the module are not rules of the syntax tree")
+		}
 		prog.moduleOnce.Do(func() { prog.module = m })
 	}
 	prog.recognitionModule, prog.recognitionEntries = recognitionModule, entries
-	if start != "" && hiddenRule(start) {
-		return nil, "", fmt.Errorf("invalid compiled grammar: start rule %s is hidden", start)
-	}
-	if start != "" && !prog.hasRule(start) {
-		return nil, "", fmt.Errorf("invalid compiled grammar: start rule %s is not defined", start)
+	if start != "" {
+		if err := prog.CheckStart(start); err != nil {
+			return nil, "", fmt.Errorf("invalid compiled grammar: %w", err)
+		}
 	}
 	return prog, start, nil
 }
@@ -790,6 +791,22 @@ func (r *decoder) strings() {
 		}
 		r.strs = append(r.strs, string(r.data[r.pos:r.pos+l]))
 		r.pos += l
+	}
+}
+
+// markStarts marks the rules of a decoded syntax tree with the start rules of its module, which
+// the syntax tree does not record, as the source marked them with @start.
+func markStarts(g *grammar.Grammar, m *Module) {
+	starts, def := moduleStarts(m), moduleDefaultStart(m)
+	for _, rd := range g.Rules() {
+		if !slices.Contains(starts, rd.Name) {
+			continue
+		}
+		a := &grammar.Attribute{Name: "start"}
+		if rd.Name == def && len(starts) > 1 {
+			a.Args = []any{&grammar.Ref{Name: "default"}}
+		}
+		rd.Attrs = []*grammar.Attribute{a}
 	}
 }
 

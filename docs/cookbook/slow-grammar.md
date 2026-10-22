@@ -13,6 +13,7 @@ The grammar reads lines of comma-separated items that end with `;` or `.`, and w
 
 ```pego
 // slow.pego
+@start
 rule main = line* $$
 
 rule line = spaced / plain
@@ -64,6 +65,7 @@ What to look at:
 
 ```pego
 // fast.pego
+@start
 rule main = line* $$
 
 rule line = ws item (ws "," ws item)* ws ("." / ";") "\n"

@@ -14,7 +14,7 @@ const codeActionURI = "file:///code-action.pego"
 var codeActionBenchmarkResult any
 
 func codeActionSource(newline string) string {
-	return strings.Join([]string{"rule main = (", "  a:\"a\" b:\"b\"", ") => $a"}, newline)
+	return strings.Join([]string{"@start", "rule main = (", "  a:\"a\" b:\"b\"", ") => $a"}, newline)
 }
 func codeActionServer(a *analysis, ctx context.Context, enabled, explain, edit bool) *Server {
 	s := &Server{docs: map[string]*document{codeActionURI: {uri: codeActionURI, text: a.text, version: 7, generation: 11, an: a}}, state: stateInitialized, requestContext: ctx}
@@ -118,21 +118,21 @@ func codeActionResponseCorpus(tb testing.TB) []codeActionCase {
 	add("outside-range", a, codeActionMessage(Range{Start: Position{Line: 100}, End: Position{Line: 101}}, []Diagnostic{target}, nil), true, true, true)
 	add("late-match", a, codeActionMessage(target.Range, codeActionSupplied(target, 128, true), nil), true, true, true)
 	for _, fixture := range []struct{ name, text string }{
-		{"existing-ignore-text", "rule main = (\n a:\"lint:ignore\" b:\"b\"\n) => $a"},
-		{"multiline-token", "rule main = (\n a:\"a\" /*\n comment\n */ b:\"b\"\n) => $a"},
+		{"existing-ignore-text", "@start\nrule main = (\n a:\"lint:ignore\" b:\"b\"\n) => $a"},
+		{"multiline-token", "@start\nrule main = (\n a:\"a\" /*\n comment\n */ b:\"b\"\n) => $a"},
 		{"mixed-newlines", "/* comment\r\n */\r" + codeActionSource("\r")},
 	} {
 		b := codeActionAnalysis(tb, fixture.text)
 		d := codeActionTarget(tb, b)
 		add(fixture.name, b, codeActionMessage(d.Range, []Diagnostic{d}, nil), true, true, true)
 	}
-	b := codeActionAnalysis(tb, "rule main = \"a\"\nrule unused = \"b\"")
+	b := codeActionAnalysis(tb, "@start\nrule main = \"a\"\nrule unused = \"b\"")
 	ds := codeActionServer(b, nil, true, true, true).docs[codeActionURI].lintDiagnostics()
 	if len(ds) == 0 {
 		tb.Fatal("missing unreachable-rule diagnostic")
 	}
 	add("declaration-wide", b, codeActionMessage(Range{End: Position{Line: 100}}, ds, nil), true, true, true)
-	for _, text := range []string{"rule main = )", "rule main = missing"} {
+	for _, text := range []string{"rule main = )", "@start\nrule main = missing"} {
 		b := codeActionAnalysis(tb, text)
 		add("invalid/"+text, b, codeActionMessage(target.Range, []Diagnostic{target}, nil), true, true, true)
 	}
@@ -178,11 +178,11 @@ func codeActionBenchmarkCases(tb testing.TB) []codeActionCase {
 		{"supplied4096-match", a, codeActionMessage(target.Range, codeActionSupplied(target, 4096, true), nil), true, true, false},
 		{"supplied4096-miss", a, codeActionMessage(target.Range, codeActionSupplied(target, 4096, false), nil), true, true, false},
 	}
-	long := codeActionAnalysis(tb, "rule atom = \"a\"\nrule main = (\n"+strings.Repeat("atom ", 512)+"a:\"a\" b:\"b\"\n) => $a")
+	long := codeActionAnalysis(tb, "rule atom = \"a\"\n@start\nrule main = (\n"+strings.Repeat("atom ", 512)+"a:\"a\" b:\"b\"\n) => $a")
 	d := codeActionTarget(tb, long)
 	cases = append(cases, codeActionCase{"suppression512", long, codeActionMessage(d.Range, []Diagnostic{d}, nil), true, true, true})
 	var text strings.Builder
-	text.WriteString("rule main = \"a\"\n")
+	text.WriteString("@start\nrule main = \"a\"\n")
 	for i := range 128 {
 		fmt.Fprintf(&text, "rule unused%d = \"b\"\n", i)
 	}

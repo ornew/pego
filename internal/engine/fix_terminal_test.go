@@ -20,7 +20,7 @@ func TestFixTerminalTypes(t *testing.T) {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
 		for _, opts := range []Options{{}} {
-			g, err := syntax.Parse(fixed)
+			g, err := parseTest(fixed)
 			if err != nil {
 				t.Fatalf("%q: %v", fixed, err)
 			}

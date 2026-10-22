@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"runtime"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 const nilActionStream = `type V = { N int }
@@ -110,7 +108,7 @@ func TestNilActionStreamMemoryIsBounded(t *testing.T) {
 }
 
 func BenchmarkNilActionStream(b *testing.B) {
-	g, err := syntax.Parse(nilActionStream)
+	g, err := parseTest(nilActionStream)
 	if err != nil {
 		b.Fatal(err)
 	}

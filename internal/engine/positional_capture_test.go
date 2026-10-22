@@ -3,8 +3,6 @@ package engine
 import (
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // TestPositionalCaptureCompileErrors checks the diagnostics for positional captures. The grammar
@@ -21,7 +19,7 @@ rule b = "b"`, `1:19: positional capture $1 is removed; name the element with a 
 }`, `3:31: positional capture $1 is removed; name the element with a capture`},
 	} {
 		t.Run(tc.want, func(t *testing.T) {
-			g, err := syntax.ParseLegacy(tc.src)
+			g, err := parseLegacyTest(tc.src)
 			if err != nil {
 				t.Fatalf("syntax error: %v\n%s", err, tc.src)
 			}

@@ -7,12 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGeneratedTraceOptions(t *testing.T) {
-	g, err := syntax.Parse(`rule main = "a"`)
+	g, err := parseTest(`rule main = "a"`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +76,7 @@ rule part = "é"`, "éé", `last:=events[len(events)-1];expectedEnd:=2;if unit==
 		t.Fatal(err)
 	}
 	for _, fixture := range fixtures {
-		g, err := syntax.Parse(fixture.grammar)
+		g, err := parseTest(fixture.grammar)
 		if err != nil {
 			t.Fatal(fixture.name, err)
 		}

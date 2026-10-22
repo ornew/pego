@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // PEGO_TYPED_POOL_DIR preserves this generated fixture for standalone heap and
@@ -16,7 +14,7 @@ func TestGeneratedTypedPoolRetention(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(`type A = { Text string }
+	g, err := parseTest(`type A = { Text string }
 rule main A = x:large x:small #cut => $x
 rule large A = t:([a]*) #atomic => A{Text: text($t)}
 rule small A = t:("b") #atomic => A{Text: text($t)}
@@ -72,7 +70,7 @@ func TestGeneratedUntypedPoolRetention(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(`type A = node[string]
+	g, err := parseTest(`type A = node[string]
 rule main A = lead value:small => $value
 rule lead = [^b]*
 rule small A = ("b") #atomic`)

@@ -5,8 +5,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func BenchmarkNormalizationCompileCancellation(b *testing.B) {
@@ -20,7 +18,7 @@ func BenchmarkNormalizationCompileCancellation(b *testing.B) {
 	}
 	for _, name := range []string{"json", "source-grammar", "attributes"} {
 		source := sources[name]
-		g, err := syntax.Parse(source)
+		g, err := parseTest(source)
 		if err != nil {
 			b.Fatal(err)
 		}

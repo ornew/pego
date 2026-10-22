@@ -6,15 +6,13 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGenerateDocumentDiagnosticOwnership(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds standalone generated parsers")
 	}
-	g, err := syntax.Parse(`type Token = { Text string }
+	g, err := parseTest(`type Token = { Text string }
 type Box = { Token Token | error; Any _ }
 rule main []Box = xs:item* => $xs.Value
 rule item Box = t:(token #recover(skip=[^;]+ ";")) => Box{Token: $t}

@@ -88,7 +88,7 @@ func TestCaptureAccessMatchesField(t *testing.T) {
 	if a := ruleProjections(access, access.rules[0]); a["xs"] != "y" {
 		t.Fatalf("projection: %v", a)
 	}
-	g, err := syntax.ParseLegacy(`rule main = xs:(-"," y:[a-z])* $$ => map($xs, (i) => i.y)`)
+	g, err := parseLegacyTest(`rule main = xs:(-"," y:[a-z])* $$ => map($xs, (i) => i.y)`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,7 +117,7 @@ func TestCaptureAccessErrors(t *testing.T) {
 		{`rule main = "a" => (1).$y`, "int has no capture y"},
 		{`rule main = x:((y:"a" "b") / (z:"c" "d")) => $x.$y`, "has no capture y"},
 	} {
-		g, err := syntax.Parse(tc.src)
+		g, err := parseTest(tc.src)
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
@@ -132,7 +132,7 @@ func TestCaptureAccessErrors(t *testing.T) {
 }
 
 func TestCaptureAccessSyntax(t *testing.T) {
-	g, err := syntax.Parse(`rule main = xs:(y:"a")+ => map($xs, (i) => i.$y.Start)`)
+	g, err := parseTest(`rule main = xs:(y:"a")+ => map($xs, (i) => i.$y.Start)`)
 	if err != nil {
 		t.Fatal(err)
 	}

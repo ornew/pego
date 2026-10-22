@@ -16,6 +16,7 @@ type Binary = { Left Expr; Op node[string]; Right Expr }
 type Not = { X Expr }
 type Expr ~ Num | Str | Bool | Field | Binary | Not
 
+@start
 rule main Expr = ws e:expr ws $$ => $e
 
 rule expr Expr = operators {

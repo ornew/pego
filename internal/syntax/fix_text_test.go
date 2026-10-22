@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -56,7 +57,7 @@ func TestFixTextStructs(t *testing.T) {
 			t.Errorf("%q does not parse: %v", got, err)
 			continue
 		}
-		if _, err := engine.Compile(g, engine.Options{}); err != nil {
+		if _, err := engine.Compile(starttest.MarkAll(g), engine.Options{}); err != nil {
 			t.Errorf("%q does not compile: %v", got, err)
 		}
 	}
@@ -98,7 +99,7 @@ func TestFixTextStructsResults(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		p, err := engine.Compile(g, engine.Options{})
+		p, err := engine.Compile(starttest.MarkAll(g), engine.Options{})
 		if err != nil {
 			t.Fatal(err)
 		}

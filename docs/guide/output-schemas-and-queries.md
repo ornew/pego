@@ -19,7 +19,7 @@ import (
 )
 
 func main() {
-	p, err := pego.CompileSource("rule main = name\nrule name = [a-z]+ #atomic", "main")
+	p, err := pego.CompileSource("@start\nrule main = name\nrule name = [a-z]+ #atomic", "main")
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -12,7 +12,8 @@ import (
 )
 
 func TestWorkDocumentPublicDefaultsAndOptionsOnce(t *testing.T) {
-	p, err := CompileSource(`rule main = inner $$
+	p, err := CompileSource(`@start
+rule main = inner $$
 
 rule inner = "a"`, "main")
 	if err != nil {
@@ -61,7 +62,8 @@ rule inner = "a"`, "main")
 }
 
 func TestWorkDocumentPublicContextOverrideAndTraceOrder(t *testing.T) {
-	p, err := CompileSource(`rule main = "a" $$`, "main")
+	p, err := CompileSource(`@start
+rule main = "a" $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -11,6 +11,7 @@ The examples use the grammar `pairs.pego`:
 ```pego
 type Pair = { Key node[string]; Value node[string] }
 
+@start
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
 rule key = [a-zあ-ん]+ #atomic
@@ -136,6 +137,7 @@ const src = `type Bin = {
 }
 type Expr ~ node | Bin
 
+@start
 rule sum Expr = (
     first:num rest:(-ws op:op -ws n:num)*
 ) => foldl($first, $rest, (acc, i) => Bin{Left: acc, Op: i.$op, Right: i.$n})

@@ -18,7 +18,9 @@ context-free grammar, where `<` and `<=` can be listed in any order.
 // choice.pego
 rule bad  = "<" / "<="
 rule good = "<=" / "<"
+@start(default)
 rule m1 = bad $$
+@start
 rule m2 = good $$
 ```
 
@@ -43,6 +45,7 @@ iteration for itself therefore cannot work:
 
 ```pego
 // greedy.pego
+@start
 rule x = [a-z]* [a-z] $$
 ```
 
@@ -60,6 +63,7 @@ repetition of "not the marker, then any character":
 
 ```pego
 // until.pego
+@start
 rule b = (!"y" .)* "y" $$
 ```
 
@@ -84,7 +88,9 @@ already tells which construct is meant.
 // cut.pego
 rule nocut   = "if" ws "(" ws "x" ws ")" / "if" ws "x"
 rule withcut = "if" ws #cut "(" ws "x" ws ")" / "if" ws "x"
+@start(default)
 rule m3 = nocut $$
+@start
 rule m4 = withcut $$
 rule ws = [ \t]*
 ```
@@ -113,6 +119,7 @@ of nodes follow where white space is consumed.
 
 ```pego
 // list.pego
+@start
 rule list = "[" ws (item (ws "," ws item)*)? ws "]" $$
 rule item = [0-9]+ #atomic
 rule ws = [ \t]*
@@ -139,7 +146,9 @@ silently accepts a longer word:
 
 ```pego
 // keyword.pego
+@start(default)
 rule kwbad  = "in" ws id $$
+@start
 rule kwgood = "in" !idc ws id $$
 rule id  = [a-z]+ #atomic
 rule idc = [a-z0-9_]

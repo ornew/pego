@@ -38,13 +38,15 @@ mkdir pego-tutorial && cd pego-tutorial
 ## Your First Grammar
 
 A PEGO grammar is a set of **rules**. A rule has a name and a body that says what input it matches. Parsing starts at
-the **start rule**, which is called `main` by default. Save this as `hello.pego`:
+a **start rule**, a rule marked with `@start` on the line before it. Save this as `hello.pego`:
 
 ```pego
+@start
 rule main = "hello" " " "world"
 ```
 
-`main` matches the string literal `hello`, then a space, then `world`. Run it with `pego parse`, giving the grammar with
+`main` matches the string literal `hello`, then a space, then `world`. Other rules, which later grammars add, are
+called from the start rule; a grammar with several start rules marks the one used by default `@start(default)`. Run it with `pego parse`, giving the grammar with
 `-g` and the input with `-i`:
 
 ```bash
@@ -148,7 +150,8 @@ import (
 	"github.com/ornew/pego"
 )
 
-const src = `rule main = "hello" " " "world"`
+const src = `@start
+rule main = "hello" " " "world"`
 
 func main() {
 	p, err := pego.CompileSource(src, "main")

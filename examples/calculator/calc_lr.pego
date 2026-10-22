@@ -17,6 +17,7 @@ type Unary = {
 
 type Expr ~ Number | Binary | Unary
 
+@start
 rule main Expr = e:expr ws $$ => $e
 
 rule expr Expr = add / term

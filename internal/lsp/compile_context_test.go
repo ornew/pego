@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -27,7 +28,7 @@ func (c *lspCompilePollContext) Err() error {
 
 func TestCompileCancellationDoesNotPublishDiagnostics(t *testing.T) {
 	var source strings.Builder
-	source.WriteString("rule main = r0\n")
+	source.WriteString("@start\nrule main = r0\n")
 	for i := range 1024 {
 		fmt.Fprintf(&source, "rule r%d = \"a\"\n", i)
 	}
@@ -59,9 +60,9 @@ func TestGrammarValidationCancellationDoesNotPublishDiagnostics(t *testing.T) {
 	}
 	items[len(items)-1] = nil
 	a := newAnalysis(`rule main = "a"`)
-	a.g = &grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{
+	a.g = starttest.MarkAll(&grammar.Grammar{File: grammar.File{Decls: []grammar.Decl{
 		&grammar.RuleDef{Name: "main", Expr: &grammar.Seq{Items: items}},
-	}}}
+	}}})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	controlled := &lspCompilePollContext{Context: ctx, cancel: cancel, left: 4}

@@ -3,14 +3,12 @@ package engine
 import (
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // compileMessage compiles src and returns the error message, or "" if it compiles.
 func compileMessage(t *testing.T, src string, opts ...Options) string {
 	t.Helper()
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatalf("%q: %v", src, err)
 	}

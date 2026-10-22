@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func missingNodes(t *testing.T, root *Node) []*Node {
@@ -302,7 +301,7 @@ rule main Root = x:(";" #missing) => Root{Token: $x}`
 		t.Fatal(err)
 	}
 	formatted := grammar.Format(g)
-	parsed, err := syntax.Parse(formatted)
+	parsed, err := parseTest(formatted)
 	if err != nil {
 		t.Fatal(err)
 	}

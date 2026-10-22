@@ -24,6 +24,7 @@ type Num = node[string]
 type Bin = { Left Expr; Op node[string]; Right Expr }
 type Expr ~ Bin | Num
 
+@start
 rule main Expr = operators {
     skip " "*
     operand num

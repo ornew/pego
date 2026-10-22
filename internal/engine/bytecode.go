@@ -7,13 +7,17 @@ import (
 // Module is a grammar compiled to bytecode. It is the only thing the VM runs.
 // The instruction set and its semantics are specified in spec/bytecode.md.
 type Module struct {
-	Strings        []string   // string table
-	Classes        []Class    // character class table
-	Types          []TypeInfo // type table (struct fields and named node types)
-	FieldLists     [][]int    // field name lists for new (string table indices)
-	Scopes         [][]int    // scopes of repetition elements (lists of capture names)
-	Vars           []VarInfo  // variable table
-	Rules          []RuleInfo // rule table
+	Strings    []string   // string table
+	Classes    []Class    // character class table
+	Types      []TypeInfo // type table (struct fields and named node types)
+	FieldLists [][]int    // field name lists for new (string table indices)
+	Scopes     [][]int    // scopes of repetition elements (lists of capture names)
+	Vars       []VarInfo  // variable table
+	Rules      []RuleInfo // rule table
+	// Starts holds the rule table indices of the start rules, the rules where parsing may begin,
+	// in declaration order, and DefaultStart that of the default one.
+	Starts         []int
+	DefaultStart   int
 	OperatorsRules []OperatorsRuleInfo
 	Code           []Instr // matching code
 	Exprs          []Instr // expression code (actions and predicates)

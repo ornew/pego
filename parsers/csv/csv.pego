@@ -11,6 +11,7 @@ type File = { Records []Record }
 type Record = { Fields []Field }
 type Field = node[string] // the raw field: a quoted field keeps its quotes and doubled ""
 
+@start
 rule main File = -"\u{feff}"? rs:record* #stream $$ => File{Records: $rs.Value}
 
 // A record's span includes its line break (its fields end at the End of the last one): a rule that

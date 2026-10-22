@@ -16,6 +16,7 @@ type Entry = {
 
 var indent int
 
+@start
 rule main = {indent := 0} es:block blank* $$ => $es
 
 // The entries at the current indentation.

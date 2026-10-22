@@ -6,8 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // TestGeneratedActionTracking inspects state after real generated rules have
@@ -26,7 +24,7 @@ type Outer = { Inner Inner }
 rule main = "a" => Outer{Inner: Inner{N: 1}}`, "a"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			g, err := syntax.Parse(c.src)
+			g, err := parseTest(c.src)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -82,7 +80,7 @@ func TestGeneratedTSActionTracking(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	g, err := syntax.Parse(nilActionStream)
+	g, err := parseTest(nilActionStream)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +135,7 @@ func TestGeneratedEnvironmentBindings(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(boundStream)
+	g, err := parseTest(boundStream)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +185,7 @@ func TestGeneratedTSEnvironmentBindings(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	g, err := syntax.Parse(boundStream)
+	g, err := parseTest(boundStream)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // TestGeneratedDepthBenchmarkWorkloads validates benchmarks without timing them.
@@ -36,7 +34,7 @@ func TestGeneratedDepthBenchmarkWorkloads(t *testing.T) {
 		}
 	}
 	write("go.mod", []byte(testGoMod("depthbench")))
-	g, err := syntax.Parse(`type Word = { Text string }
+	g, err := parseTest(`type Word = { Text string }
 rule main Word = t:(n+) #atomic => Word{Text: text($t)}
 rule n Word = t:("(" n ")" / "é") #atomic => Word{Text: text($t)}`)
 	if err != nil {

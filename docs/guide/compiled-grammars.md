@@ -23,7 +23,9 @@ The examples use the grammar `pairs.pego` of the [Running Parsers](running-parse
 ```pego
 type Pair = { Key node[string]; Value node[string] }
 
+@start(default)
 rule main = ws ps:pair+ $$ => $ps
+@start
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
 rule key = [a-zあ-ん]+ #atomic
 rule value = [0-9]+ #atomic
@@ -43,7 +45,7 @@ pego parse -g pairs.pegoc -f sexpr -i 'abc=12; あい=3'
 [Pair{Key: "abc", Value: "12"} Pair{Key: "あい", Value: "3"}]
 ```
 
-The start rule is saved with the grammar (`-s` chooses a rule other than `main`), and `pego parse`, `pego compile` and
+The start rule is saved with the grammar (`-s` chooses another rule marked `@start` than the default), and `pego parse`, `pego compile` and
 `pego gen` use it when you give no `-s` of your own:
 
 ```bash
@@ -165,7 +167,7 @@ limits are recorded in [design 045](../design/045-compiled-grammar-recognition.m
 The program below measures your grammar with the current writer; results depend on grammar size and recognition
 dependencies.
 
-The program (run it as `go run . grammar.pego 'input'` in a module that requires PEGO; the start rule is `main`):
+The program (run it as `go run . grammar.pego 'input'` in a module that requires PEGO; the start rule is the grammar's default start rule):
 
 <details>
 <summary>The measuring program</summary>

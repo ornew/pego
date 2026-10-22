@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 const namedASTGrammar = `type T = { Text string }
@@ -59,7 +57,7 @@ func TestGeneratedNamedAST(t *testing.T) {
 		{"mixed-start", "", "cst", false},
 	} {
 		t.Run(variant.name, func(t *testing.T) {
-			g, err := syntax.Parse(namedASTGrammar + variant.extra)
+			g, err := parseTest(namedASTGrammar + variant.extra)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -101,7 +99,7 @@ func TestGeneratedNamedAST(t *testing.T) {
 }
 
 func TestGeneratedNamedASTUntypedAndTS(t *testing.T) {
-	g, err := syntax.Parse(namedASTGrammar)
+	g, err := parseTest(namedASTGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +127,7 @@ func TestGeneratedNamedASTScalarResults(t *testing.T) {
 		{`rule main = "a" => "s"`, "(string, error)"},
 		{`rule main = "a" => true`, "(bool, error)"},
 	} {
-		g, err := syntax.Parse(tc.source)
+		g, err := parseTest(tc.source)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -141,7 +139,7 @@ func TestGeneratedNamedASTScalarResults(t *testing.T) {
 			t.Errorf("%q: no %q", tc.source, want)
 		}
 	}
-	g, err := syntax.Parse(`rule main int = "a"`)
+	g, err := parseTest(`rule main int = "a"`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -230,7 +228,14 @@ func TestGeneratedNamedASTXMLFragments(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	g, err := syntax.Parse(string(source))
+	// The fragments below enter content and int_subset, so they become start
+	// rules here, beside main.
+	src := strings.NewReplacer(
+		"@start\nrule main ", "@start(default)\nrule main ",
+		"\nrule int_subset ", "\n@start\nrule int_subset ",
+		"\nrule content ", "\n@start\nrule content ",
+	).Replace(string(source))
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -297,7 +302,7 @@ func TestGeneratedNamedASTSuccessfulNil(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated nil-result consumers")
 	}
-	g, err := syntax.Parse(`type T = { Text string }
+	g, err := parseTest(`type T = { Text string }
 type S = { T T }
 type U ~ S | T
 type MaybeU ~ *U

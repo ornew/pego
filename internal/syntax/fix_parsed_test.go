@@ -7,6 +7,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -69,7 +70,7 @@ func TestFixPositional(t *testing.T) {
 			t.Fatalf("%q: %v", got, err)
 		}
 		pb := compileLegacy(t, tc.in, before)
-		pa, err := engine.Compile(after, engine.Options{})
+		pa, err := engine.Compile(starttest.MarkAll(after), engine.Options{})
 		if err != nil {
 			t.Fatalf("%q: %v", got, err)
 		}
@@ -89,7 +90,7 @@ func TestFixPositional(t *testing.T) {
 // and endPos): such a grammar no longer runs, so the rewrite is checked by its text alone.
 func compileLegacy(t *testing.T, src string, g *grammar.Grammar) *engine.Program {
 	t.Helper()
-	p, err := engine.Compile(g, engine.Options{})
+	p, err := engine.Compile(starttest.MarkAll(g), engine.Options{})
 	if err != nil {
 		if msg := err.Error(); strings.Contains(msg, "is removed") || strings.Contains(msg, "read the capture with .$") {
 			return nil
@@ -169,7 +170,7 @@ func TestFixLambdaParams(t *testing.T) {
 			t.Fatalf("%q: %v", got, err)
 		}
 		pb := compileLegacy(t, tc.in, before)
-		pa, err := engine.Compile(after, engine.Options{})
+		pa, err := engine.Compile(starttest.MarkAll(after), engine.Options{})
 		if err != nil {
 			t.Fatalf("%q: %v", got, err)
 		}

@@ -14,7 +14,7 @@ const occurrenceURI = "file:///occurrences.pego"
 var occurrenceBenchmarkResult any
 
 func occurrenceSource(count int) string {
-	return "// Unicode positions: 😀\r\nrule atom = \"a\"\r\nrule main = " + strings.Repeat("atom ", count) + "\r\n"
+	return "// Unicode positions: 😀\r\nrule atom = \"a\"\r\n@start\r\nrule main = " + strings.Repeat("atom ", count) + "\r\n"
 }
 
 func occurrenceServer(a *analysis, ctx context.Context) *Server {

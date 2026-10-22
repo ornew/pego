@@ -11,7 +11,7 @@ import (
 )
 
 func TestParsePrefixCancellation(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = "abc"`, "main")
+	p, err := compileTestSource(`rule main = "abc"`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

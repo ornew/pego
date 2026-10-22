@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGenerateTypedDocument(t *testing.T) {
@@ -15,7 +13,7 @@ func TestGenerateTypedDocument(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds a standalone generated parser")
 	}
-	g, err := syntax.Parse(typedFilterIdentityGrammar)
+	g, err := parseTest(typedFilterIdentityGrammar)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +97,7 @@ func TestGenerateTypedDocumentNilAndRecovery(t *testing.T) {
 	// not implement the union interface (S | Seq did). This test is about nil results and
 	// recovery, so the grammar uses a string node member instead.
 	source := strings.NewReplacer("type Mixed ~ S | node[_]\n", "type Mixed ~ S | node[string]\n", "rule mixed Mixed = cst\n", "rule mixed Mixed = \"t\"\n").Replace(namedASTGrammar)
-	g, err := syntax.Parse(source)
+	g, err := parseTest(source)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,7 +160,7 @@ func TestGenerateTypedDocumentOpenUnion(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds a standalone generated parser")
 	}
-	g, err := syntax.Parse(`type S = { A node[string] }
+	g, err := parseTest(`type S = { A node[string] }
 type Mixed ~ S | node[_]
 type First ~ node[_] | S
 type Out = { M []Mixed; F []First }
@@ -220,7 +218,7 @@ func TestGenerateTypedDocumentNameCollisions(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds a standalone generated parser")
 	}
-	g, err := syntax.Parse(`type Document = { Text string }
+	g, err := parseTest(`type Document = { Text string }
 type NewDocument = { Text string }
 type ParseStats = { Text string }
 rule main Document = t:("a") #atomic => Document{Text: text($t)}`)
@@ -270,7 +268,7 @@ func TestGenerateObservedDocumentNameCollisions(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds a standalone generated parser")
 	}
-	g, err := syntax.Parse(`type ErrDocumentBusy = { Text string }
+	g, err := parseTest(`type ErrDocumentBusy = { Text string }
 rule main ErrDocumentBusy = t:("a") #atomic => ErrDocumentBusy{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)

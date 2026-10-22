@@ -5,8 +5,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // An edit can complete an incomplete UTF-8 sequence that ends before it. The
@@ -88,7 +86,7 @@ func TestCompletedPrefix(t *testing.T) {
 `, GenOptions{Package: "fixture", Start: "main", Types: true, Document: true}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			g, err := syntax.Parse(tc.grammar)
+			g, err := parseTest(tc.grammar)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -4,8 +4,6 @@ import (
 	"errors"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestErrorAttribute(t *testing.T) {
@@ -142,7 +140,7 @@ func TestRecoveryPragmaSyntaxErrors(t *testing.T) {
 		`rule main = "a" #recover(skip="x", until="y")`,
 	} {
 		t.Run(src, func(t *testing.T) {
-			if _, err := syntax.Parse(src); err == nil {
+			if _, err := parseTest(src); err == nil {
 				t.Fatal("malformed recovery pragma parsed successfully")
 			}
 		})

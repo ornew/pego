@@ -73,12 +73,9 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	if prog.hasMissing {
 		return nil, missingUnsupported("generated parsers")
 	}
-	if hiddenRule(opts.Start) {
-		return nil, fmt.Errorf("start rule %s is hidden: a rule whose name begins with an underscore is not an entry point", opts.Start)
-	}
-	start := prog.byName[opts.Start]
-	if start == nil {
-		return nil, fmt.Errorf("start rule %s is not defined", opts.Start)
+	start, err := prog.startRule(opts.Start)
+	if err != nil {
+		return nil, err
 	}
 	gen := &tsGen{generator: &generator{prog: prog, table: "rules", observability: opts.Observability, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing || !opts.enableTSLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch}, plainUsed: map[*rule]bool{}}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
@@ -100,15 +97,10 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]GeneratedFile, error) {
 	out.WriteString(" * decoded as UTF-8 (invalid sequences as U+FFFD, one per byte). If the parse recovered from errors\n")
 	out.WriteString(" * with #recover, the result has both the node and SyntaxErrors.\n */\n")
 	fmt.Fprintf(&out, "export function parse(input: string | Uint8Array, unit?: Unit): ParseResult {\n  return run(G, R%d, nseen, input, unit);\n}\n\n", start.id)
-	out.WriteString(`/** Parses the whole input with the rule name. */
+	out.WriteString(`/** Parses the whole input with the start rule name, a rule marked @start. */
 export function parseRule(name: string, input: string | Uint8Array, unit?: Unit): ParseResult {
-  if (name.startsWith("_")) {
-    return { node: null, error: new Error("rule " + name + " is hidden: a rule whose name begins with an underscore is not an entry point") };
-  }
-  const r = ruleIn(rules, name);
-  if (r === null) {
-    return { node: null, error: new Error(` + "`rule ${name} is not defined`" + `) };
-  }
+  const r = startIn(rules, starts, name);
+  if (r instanceof Error) return { node: null, error: r };
   return run(G, r, nseen, input, unit);
 }
 
@@ -126,13 +118,12 @@ export function parseWithOptions(input: string | Uint8Array, options?: ParseOpti
   return withObservedOptions(o, control => run(G, R%d, nseen, input, o.unit, o.maxDepth, control, o), error => ({ node: null, error }));
 }
 
-/** Parses a named rule with invocation-local options, validated before rule lookup. */
+/** Parses a named start rule with invocation-local options, validated before rule lookup. */
 export function parseRuleWithOptions(name: string, input: string | Uint8Array, options?: ParseOptions): ParseResult {
   const o = resolveOptions(G, options);
   if (o instanceof Error) return { node: null, error: o };
-  if (name.startsWith("_")) return { node: null, error: new Error("rule " + name + " is hidden: a rule whose name begins with an underscore is not an entry point") };
-  const r = ruleIn(rules, name);
-  if (r === null) return { node: null, error: new Error("rule " + name + " is not defined") };
+  const r = startIn(rules, starts, name);
+  if (r instanceof Error) return { node: null, error: r };
   return withObservedOptions(o, control => run(G, r, nseen, input, o.unit, o.maxDepth, control, o), error => ({ node: null, error }));
 }
 
@@ -578,8 +569,9 @@ func (g *tsGen) rules() {
 		}
 	}
 	if g.table == "rules" {
-		// The table, for parseRule (the recognizer has none).
+		// The table and the start rules, for parseRule (the recognizer has none).
 		fmt.Fprintf(init, "const rules: Rule[] = [%s];\n", strings.Join(vars, ", "))
+		fmt.Fprintf(init, "const starts = %s;\n", tsStrings(g.prog.starts))
 	}
 	fmt.Fprintf(init, "const %s = %d;\n", g.seenVar(), g.prog.nseen)
 	for _, r := range all {

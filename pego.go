@@ -6,9 +6,7 @@ package pego
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"slices"
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/engine"
@@ -80,7 +78,8 @@ func WithDefaultValue() CompileOption {
 	return func(o *engine.Options) { o.DefaultValue = true }
 }
 
-// Compile compiles the grammar g into a parser that starts parsing at the rule start.
+// Compile compiles the grammar g into a parser that starts parsing at the rule start, which must
+// be a start rule, a rule marked @start. An empty start selects the default start rule.
 func Compile(g *grammar.Grammar, start string, opts ...CompileOption) (*Parser, error) {
 	var o engine.Options
 	for _, opt := range opts {
@@ -90,11 +89,10 @@ func Compile(g *grammar.Grammar, start string, opts ...CompileOption) (*Parser, 
 	if err != nil {
 		return nil, err
 	}
-	if err := engine.EntryError(start); err != nil {
-		return nil, fmt.Errorf("start %w", err)
-	}
-	if !slices.Contains(prog.Rules(), start) {
-		return nil, fmt.Errorf("start rule %s is not defined", start)
+	if start == "" {
+		start = prog.DefaultStart()
+	} else if err := prog.CheckStart(start); err != nil {
+		return nil, err
 	}
 	return &Parser{prog: prog, start: start}, nil
 }
@@ -105,7 +103,8 @@ func (p *Parser) DefaultValue() bool { return p.prog.DefaultValue() }
 // SourceInfo reports whether the parser records source information (WithSourceInfo).
 func (p *Parser) SourceInfo() bool { return p.prog.SourceInfo() }
 
-// CompileSource compiles PEGO source code into a parser that starts parsing at the rule start.
+// CompileSource compiles PEGO source code into a parser that starts parsing at the rule start, as
+// Compile does.
 func CompileSource(src, start string, opts ...CompileOption) (*Parser, error) {
 	g, err := ParseGrammar(src)
 	if err != nil {
@@ -535,7 +534,8 @@ func WithPackageName(name string) GenOption {
 type GeneratedFile = engine.GeneratedFile
 
 // GenerateGo generates the files of a Go parser for g in the package with import path module: its
-// Parse(input) parses from the rule start. The files are parser.go, with the code generated from
+// Parse(input) parses from the rule start, which must be a start rule (a rule marked @start); an
+// empty start selects the default start rule. The files are parser.go, with the code generated from
 // the grammar, api.go, which re-exports the runtime names the parser's users need, with WithTypes
 // types/types.go, the package module/types that declares the Go types of the grammar (module must
 // then be set), and, with RuntimeEmbed, the files of a copy of the runtime in internal/runtime.
@@ -564,7 +564,7 @@ func WithRuntimeModule(specifier string) GenOption {
 }
 
 // GenerateTypeScript generates the files of a TypeScript parser for g: its parse(input) parses from
-// the rule start and returns the same trees and errors as the engine. The files are
+// the rule start, as for GenerateGo, and returns the same trees and errors as the engine. The files are
 //
 //   - runtime.ts, the runtime, which does not depend on the grammar (with RuntimeEmbed, the default),
 //   - parser.ts, the code generated from the grammar, which imports ./runtime.ts, and
@@ -625,24 +625,30 @@ func LoadParser(data []byte) (*Parser, error) {
 		return nil, err
 	}
 	if start == "" {
-		return nil, fmt.Errorf("compiled grammar has no start rule")
+		start = prog.DefaultStart()
 	}
 	return &Parser{prog: prog, start: start}, nil
 }
 
-// WithStart returns a parser that starts at the rule name. The compiled grammar is shared.
+// WithStart returns a parser that starts at the rule name, which must be a start rule. The
+// compiled grammar is shared.
 func (p *Parser) WithStart(name string) (*Parser, error) {
-	if err := engine.EntryError(name); err != nil {
-		return nil, fmt.Errorf("start %w", err)
-	}
-	if !slices.Contains(p.prog.Rules(), name) {
-		return nil, fmt.Errorf("start rule %s is not defined", name)
+	if err := p.prog.CheckStart(name); err != nil {
+		return nil, err
 	}
 	return &Parser{prog: p.prog, start: name}, nil
 }
 
 // Start returns the name of the parser's start rule.
 func (p *Parser) Start() string { return p.start }
+
+// Starts returns the start rules of the grammar, the rules marked @start where parsing may begin,
+// in declaration order. The one marked @start(default), or the only one, is the default.
+func (p *Parser) Starts() []string { return p.prog.Starts() }
+
+// DefaultStart returns the default start rule of the grammar, which Compile selects for an empty
+// start.
+func (p *Parser) DefaultStart() string { return p.prog.DefaultStart() }
 
 // Grammar returns the parser's grammar. The grammar of a loaded parser has no source positions, and it is
 // nil for a parser saved without the AST.

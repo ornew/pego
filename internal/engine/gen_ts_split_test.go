@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // tsStrictFlags are the strictest checks there are, so that generated code compiles in any project;
@@ -64,7 +63,7 @@ func TestGeneratedTSSplitFiles(t *testing.T) {
 rule main Pair = k:key "=" vs:num+ => Pair{Key: $k, Values: $vs.Value}
 rule key string = t:([a-z]+) #atomic => text($t)
 rule num int = t:([0-9]+ ","?) #atomic => 1`
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +148,7 @@ process.stdout.write("ok\n");
 		if len(only) != 1 || only[0].Path != "runtime.ts" {
 			t.Fatalf("only wrote %v", only)
 		}
-		g2, err := syntax.Parse(`rule main = "x"`)
+		g2, err := parseTest(`rule main = "x"`)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -179,7 +178,7 @@ process.stdout.write("ok\n");
 // is rejected, instead of silently renamed or shadowing it.
 func TestGeneratedTSReservedTypes(t *testing.T) {
 	for _, name := range tsReservedTypes {
-		g, err := syntax.Parse("type " + name + " = { Text string }\nrule main " + name + " = t:(\"x\") #atomic => " + name + "{Text: text($t)}")
+		g, err := parseTest("type " + name + " = { Text string }\nrule main " + name + " = t:(\"x\") #atomic => " + name + "{Text: text($t)}")
 		if err != nil {
 			t.Errorf("type %s: %v", name, err)
 			continue
@@ -215,7 +214,7 @@ func runTSSplit(t *testing.T, src string, opts GenOptions, consumer string) {
 	if err != nil {
 		t.Skip("tsc not found")
 	}
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}

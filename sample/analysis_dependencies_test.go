@@ -10,6 +10,7 @@ import (
 
 	"github.com/ornew/pego"
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/starttest"
 )
 
 func analysisChain(n int, leafFirst bool) string {
@@ -98,7 +99,7 @@ func TestAnalysisDependencyChains(t *testing.T) {
 					}
 				}
 				if n == 128 {
-					p, err := pego.Compile(g, "main")
+					p, err := pego.Compile(starttest.MarkAll(g), "main")
 					if err != nil {
 						t.Fatal(err)
 					}

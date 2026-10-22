@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 var compiledRecognitionLoadSink *Program
@@ -93,7 +92,7 @@ func compiledRecognitionBenchmarkGrammar(b *testing.B, ruleCount int) (*grammar.
 	for i := 0; i < ruleCount; i++ {
 		fmt.Fprintf(&src, "rule r%03d = %q\n", i, fmt.Sprintf("token-%03d", i))
 	}
-	g, err := syntax.Parse(src.String())
+	g, err := parseTest(src.String())
 	if err != nil {
 		b.Fatalf("parse benchmark grammar: %v", err)
 	}

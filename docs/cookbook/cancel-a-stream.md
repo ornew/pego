@@ -23,7 +23,8 @@ import (
 	"github.com/ornew/pego"
 )
 
-const grammar = `rule main =  line* #stream $$
+const grammar = `@start
+rule main =  line* #stream $$
 rule line =  [a-z0-9]+ #atomic "\n" `
 
 // parseContext streams r into emit and gives up when ctx is cancelled. The parser blocks inside r.Read, so

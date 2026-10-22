@@ -5,8 +5,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func runGeneratedTSControlGCTest(t *testing.T, consumer string, hooks string) {
@@ -22,7 +20,7 @@ func runGeneratedTSControlGCTest(t *testing.T, consumer string, hooks string) {
 	if err != nil {
 		t.Skip("tsc not found")
 	}
-	g, err := syntax.Parse(`type Text = { Text string }
+	g, err := parseTest(`type Text = { Text string }
 
 rule main Text = t:([a]* #atomic) => Text{Text: text($t)}`)
 	if err != nil {

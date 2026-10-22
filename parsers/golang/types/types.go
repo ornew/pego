@@ -2111,34 +2111,3 @@ func tb1(v *StringLit) any {
 // PegoNodeTypes holds the registered indexes of the named node types by their generated index; index 0
 // is no named node type. It is for generated parsers.
 var PegoNodeTypes [7]uint16
-
-// Unit is the value of the empty tuple ().
-type Unit struct{}
-
-// Tuple1 is a tuple of 1 elements.
-type Tuple1[E0 any] struct {
-	E0 E0
-}
-
-// Tuple2 is a tuple of 2 elements.
-type Tuple2[E0, E1 any] struct {
-	E0 E0
-	E1 E1
-}
-
-// Tuple3 is a tuple of 3 elements.
-type Tuple3[E0, E1, E2 any] struct {
-	E0 E0
-	E1 E1
-	E2 E2
-}
-
-// Tuple6 is a tuple of 6 elements.
-type Tuple6[E0, E1, E2, E3, E4, E5 any] struct {
-	E0 E0
-	E1 E1
-	E2 E2
-	E3 E3
-	E4 E4
-	E5 E5
-}

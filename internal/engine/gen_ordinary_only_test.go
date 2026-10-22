@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // The parsers generated without work controls (the form most parsers have) and with typed-only entry
@@ -182,7 +180,7 @@ const ordinaryOnlyTypedNode = `
 // ordinaryOnlyPackage generates the grammar src as the package pkg of the module dir, with opts.
 func ordinaryOnlyPackage(t *testing.T, dir, pkg, src string, opts GenOptions, program string, inputs []string) {
 	t.Helper()
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -307,7 +305,7 @@ func firstTranscriptDifference(a, b string) string {
 }
 
 func TestGenerateTypeScriptRejectsWorkControls(t *testing.T) {
-	g, err := syntax.Parse(ordinaryOnlyUntyped)
+	g, err := parseTest(ordinaryOnlyUntyped)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -5,8 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // PEGO_TYPED_RECOVERY_DIR retains generated modules for separately built,
@@ -72,7 +70,7 @@ func BenchmarkTypedRecoveryGeneration(b *testing.B) {
 		disableTypedRecoveryBodies: os.Getenv("PEGO_REFERENCE_RECOVERY") == "1"}
 	for _, c := range cases {
 		b.Run(c.name, func(b *testing.B) {
-			g, err := syntax.Parse(c.src)
+			g, err := parseTest(c.src)
 			if err != nil {
 				b.Fatal(err)
 			}

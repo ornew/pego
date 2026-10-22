@@ -19,7 +19,7 @@ func TestSharedGrammarInitialValues(t *testing.T) {
 	rec.Share(base)
 
 	for name, g := range map[string]*grammar{"base": base, "recognizer": rec} {
-		r := g.RuleByName("r")
+		r := g.ruleByName("r")
 		want := []any{"x", 3, nil}
 		if !reflect.DeepEqual(r.initVals, want) {
 			t.Errorf("%s: initial values %v; want %v", name, r.initVals, want)

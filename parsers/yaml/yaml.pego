@@ -38,6 +38,7 @@ type Properties = { Tag *Tag; Anchor *Anchor }
 type Tag = node[string]
 type Anchor = node[string]
 
+@start
 rule main Stream = l_yaml_stream
 
 // ---- Streams and documents (chapter 9) ----

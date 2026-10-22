@@ -476,6 +476,7 @@ type JsxTagNameStart ~ Identifier | ThisExpression
 // Source files
 // ===================================================================
 
+@start
 rule main SourceFile = ("\u{0}" {ctx := 64} / {ctx := 0}) ("\u{1}" {ctx := ctx + 2})? f:sourceFile => $f
 
 rule sourceFile SourceFile = (

@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 	"unicode/utf8"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // failOnRead lets decode read buffered bytes but reports every attempt to
@@ -151,7 +149,7 @@ func TestStreamIncompletePrefixPropagatesReaderError(t *testing.T) {
 // BenchmarkRuneInputDelivery exercises the affected stream decoder and compares
 // whole-input parsing, whose buffer already has a known end, in both units.
 func BenchmarkRuneInputDelivery(b *testing.B) {
-	g, err := syntax.Parse("rule main = item* #stream $$\nrule item = . \"\\n\"")
+	g, err := parseTest("rule main = item* #stream $$\nrule item = . \"\\n\"")
 	if err != nil {
 		b.Fatal(err)
 	}

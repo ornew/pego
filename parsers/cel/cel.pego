@@ -40,6 +40,7 @@ type Optional = { X Expr }
 
 type Expr ~ Ident | IntLit | UintLit | DoubleLit | StringLit | BytesLit | BoolLit | NullLit | Paren | Select | Index | Call | Unary | Binary | Conditional | ListLit | MapLit | MessageLit | Optional
 
+@start
 rule main Expr = ws e:expr ws $$ => $e
 
 // ---- Operators ----

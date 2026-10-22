@@ -10,6 +10,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -28,7 +29,8 @@ func lintSourceWith(t *testing.T, parse func(string) (*grammar.Grammar, error), 
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := engine.Compile(g, engine.Options{}); err != nil {
+	// The marks go on a copy, so that unreachable-rule sees the start rules of the source.
+	if _, err := engine.Compile(starttest.MarkAll(g.Clone()), engine.Options{}); err != nil {
 		t.Fatalf("the test grammar does not compile: %v", err)
 	}
 	fs := Run(g, "main", opts)
@@ -266,6 +268,14 @@ func TestUnreachableRule(t *testing.T) {
 			"2:1 warning unreachable-rule", "3:1 warning unreachable-rule"}},
 		{name: "used in attributes and operatorsRule", src: "rule main = (e \";\") #recover(skip=s)\nrule s = [^;]+\n" +
 			"rule e = operators {\n    operand n\n    level { infix left o }\n}\nrule n = [0-9]\nrule o = \"+\""},
+		{name: "one start rule", src: "@start\nrule main = \"a\"\nrule x = \"b\"",
+			want: []string{"3:1 warning unreachable-rule"}, msg: "rule x is never used: main does not call it"},
+		// Every start rule is where parsing may begin, so the rules it reaches are used.
+		{name: "several start rules", src: "@start(default)\nrule main = \"a\"\n@start\nrule x = y\nrule y = \"b\"\nrule z = \"c\" w?\nrule w = z",
+			want: []string{"6:1 warning unreachable-rule", "7:1 warning unreachable-rule"},
+			msg:  "rule z is never used: only w, which no start rule reaches either, call it"},
+		{name: "several start rules, no caller", src: "@start(default)\nrule main = \"a\"\n@start\nrule x = \"b\"\nrule z = \"c\"",
+			want: []string{"5:1 warning unreachable-rule"}, msg: "rule z is never used: no start rule calls it, directly or indirectly"},
 	})
 	got, _ := lintSource(t, "rule main = \"a\"\nrule x = \"b\"", Options{Disable: map[string]bool{CheckUnreachableRule: true}})
 	if len(got) != 0 {
@@ -367,7 +377,7 @@ func TestAnyIsNotAType(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := engine.Compile(g, engine.Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
+		if _, err := engine.Compile(starttest.MarkAll(g), engine.Options{}); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%q: got %v; want it to contain %q", tc.src, err, tc.want)
 		}
 	}

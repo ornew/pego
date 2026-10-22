@@ -93,7 +93,7 @@ pego sample -g parsers/json/json.pego -n 2 -seed 5 -f json
 `stats` counts the work, as `Stats` does in Go (see [From Go](#from-go)). `ruleCuts` splits the cuts by the rule
 whose body holds the check or predicate, the rules with the most cuts first, as `Generator.Cuts` does.
 
-`-s` selects the start rule (`main` by default, or the one saved in a `.pegoc`). A grammar compiled with
+`-s` selects the start rule (the one saved in a `.pegoc`, otherwise the grammar's default start rule). A grammar compiled with
 `pego compile -no-ast` cannot be sampled: generation needs the grammar AST.
 
 If the grammar accepts fewer distinct inputs than requested, or the generator cannot find more, `pego sample` prints
@@ -166,6 +166,7 @@ reports on standard error what the inputs exercised and what they missed. Take a
 numbers or booleans:
 
 ```pego
+@start
 rule main = item ("," item)*
 rule item = word / number / "true" / "false"
 rule word = [a-z]+ #atomic
@@ -287,7 +288,8 @@ parser rejects" (`sample.ErrNoInvalid` in Go), not with the error for grammars t
 parser's start rule (use `Parser.WithStart` for another).
 
 ```go
-p, err := pego.CompileSource(`rule main =  pair ("," " "? pair)*
+p, err := pego.CompileSource(`@start
+rule main =  pair ("," " "? pair)*
 rule pair =  key "=" value
 rule key =  [a-z]+ #atomic
 rule value =  [0-9]+ #atomic / "\"" [^"\n]* #atomic "\"" / "true" / "false" `, "main")

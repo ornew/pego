@@ -31,6 +31,7 @@ type Line = {
 }
 type Log = { Lines []Line }
 
+@start
 rule main Log = ls:line* $$ => Log{Lines: $ls.Value}
 
 rule line Line = (

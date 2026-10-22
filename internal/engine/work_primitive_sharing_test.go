@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // A shared AST leaf is first compiled value-free for a text struct rule, then
@@ -24,7 +23,7 @@ func TestWorkPrimitiveASTAliases(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			source := fmt.Sprintf("type Token = { Text string }\nrule token Token = t:(%s) #atomic => Token{Text: text($t)}\nrule value = %s\nrule main = a:value b:token c:value $$", tc.expr, tc.expr)
 			reference := compile(t, source)
-			g, err := syntax.Parse(source)
+			g, err := parseTest(source)
 			if err != nil {
 				t.Fatal(err)
 			}

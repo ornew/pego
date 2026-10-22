@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func indexCases() []genCase {
@@ -89,7 +88,7 @@ func TestIndexTypeErrors(t *testing.T) {
 		{`rule main = x:"a" => $x[0]`, "cannot index node[string]"},
 		{`rule main = "a" => (1)[0]`, "cannot index int"},
 	} {
-		g, err := syntax.Parse(tc.src)
+		g, err := parseTest(tc.src)
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}
@@ -101,7 +100,7 @@ func TestIndexTypeErrors(t *testing.T) {
 	for _, src := range []string{
 		"rule main = x:item => $x[0]\nrule item = a:\"a\" b:\"b\" => list($a, $b)",
 	} {
-		g, err := syntax.Parse(src)
+		g, err := parseTest(src)
 		if err != nil {
 			t.Fatalf("%q: %v", src, err)
 		}
@@ -114,7 +113,7 @@ func TestIndexTypeErrors(t *testing.T) {
 		field string
 		ok    bool
 	}{{"node[string]", true}, {"*node[string]", true}, {"int", false}} {
-		g, err := syntax.Parse("type Out = { First " + tc.field + " }\nrule main = xs:\"a\"+ => Out{First: $xs[0]}")
+		g, err := parseTest("type Out = { First " + tc.field + " }\nrule main = xs:\"a\"+ => Out{First: $xs[0]}")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -153,7 +152,7 @@ func TestIndexValueElements(t *testing.T) {
 // Indexing is written directly after the indexed value; with a space before it, "[" begins a
 // character class.
 func TestIndexSyntax(t *testing.T) {
-	g, err := syntax.Parse(`rule main = xs:item+ => list($xs, $xs)[1][0]
+	g, err := parseTest(`rule main = xs:item+ => list($xs, $xs)[1][0]
 rule item = [a-z]`)
 	if err != nil {
 		t.Fatal(err)
@@ -176,7 +175,7 @@ rule item = [a-z]`)
 			t.Errorf("formatted %T index: %s", x, formatted)
 		}
 	}
-	if _, err := syntax.Parse(`rule main = item[a-z]
+	if _, err := parseTest(`rule main = item[a-z]
 rule item = "a"`); err == nil || !strings.Contains(err.Error(), "write a space before it") {
 		t.Fatalf("adjacent character class: %v", err)
 	}
@@ -186,7 +185,7 @@ rule item = "a"`); err == nil || !strings.Contains(err.Error(), "write a space b
 		"rule main = [a-z][0-9]",
 		"rule main = \"a\"[0-9]",
 	} {
-		if _, err := syntax.Parse(src); err != nil {
+		if _, err := parseTest(src); err != nil {
 			t.Errorf("%q: %v", src, err)
 		}
 	}
@@ -240,7 +239,7 @@ func TestIndexGeneratedGoWork(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated consumers")
 	}
-	g, err := syntax.Parse(`type Out = { First node[string] }
+	g, err := parseTest(`type Out = { First node[string] }
 rule main = xs:item+ $$ => Out{First: $xs[1]}
 rule item = [a-z]`)
 	if err != nil {

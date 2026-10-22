@@ -8,7 +8,7 @@ type PrefixResult struct {
 	ConsumedBytes int // Exact UTF-8 byte endpoint in the supplied input.
 }
 
-// ParsePrefix parses the named rule at the beginning of input without requiring
+// ParsePrefix parses the named start rule at the beginning of input without requiring
 // whole-input consumption. EOF assertions still refer to the complete input.
 // Positions remain local to input. For a source slice, add its starting byte
 // offset to ConsumedBytes to find the consumed endpoint in the original source.

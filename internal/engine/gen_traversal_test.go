@@ -11,7 +11,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ornew/pego/internal/syntax"
 	pegort "github.com/ornew/pego/runtime"
 )
 
@@ -106,7 +105,7 @@ func TestGeneratedTreeTraversal(t *testing.T) {
 		fmt.Fprintf(&source, "type %s = { Value int }\n", name)
 	}
 	source.WriteString("rule main = \"é\"\n")
-	grammar, err := syntax.Parse(source.String())
+	grammar, err := parseTest(source.String())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,7 +155,7 @@ func TestGeneratedTreeTraversal(t *testing.T) {
 // DuckDB supplies Inspect(any, func(any) bool) for its typed AST. Compile its actual
 // helper beside a fresh generated parser and exercise both traversal surfaces.
 func TestGeneratedDuckDBInspectCompatibility(t *testing.T) {
-	grammar, err := syntax.Parse("type Leaf = { Text string }\nrule main Leaf = t:(\"é\") #atomic => Leaf{Text: text($t)}\n")
+	grammar, err := parseTest("type Leaf = { Text string }\nrule main Leaf = t:(\"é\") #atomic => Leaf{Text: text($t)}\n")
 	if err != nil {
 		t.Fatal(err)
 	}

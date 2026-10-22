@@ -37,7 +37,9 @@ var ml bool
 
 // File and statements. Delimiter-owned expressions enable multiline trivia;
 // declaration and item lists keep physical newlines as statement boundaries.
+@start(default)
 rule main = file
+@start
 rule file = &source_comments &source_gaps &.* #atomic file_contents
 rule file_contents = (
     {ml := false}

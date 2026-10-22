@@ -310,7 +310,7 @@ func (a *analysis) collectControlled(control *renderControl) {
 				a.markAttributeName(at)
 			}
 			a.mark(s.Diagnostic(), semKeyword, 0)
-			d := a.defineControlled(kindRule, s.Name, s.Diagnostic(), control)
+			d := a.defineControlled(kindRule, s.Name, s.Pos, s.Diagnostic(), control)
 			if d == nil {
 				continue
 			}
@@ -339,7 +339,7 @@ func (a *analysis) collectControlled(control *renderControl) {
 			}
 		case grammar.TypeDecl:
 			a.mark(s.Diagnostic(), semKeyword, 0)
-			d := a.defineControlled(kindType, s.DeclName(), s.Diagnostic(), control)
+			d := a.defineControlled(kindType, s.DeclName(), s.Diagnostic(), s.Diagnostic(), control)
 			if d == nil {
 				continue
 			}
@@ -385,26 +385,32 @@ func (a *analysis) markToken(i int, typ semTokenType, mods int) {
 	}
 }
 
-// define records the definition whose keyword is at pos.
-func (a *analysis) defineControlled(kind symKind, name string, pos grammar.Pos, control *renderControl) *definition {
+// define records the definition that starts at start, with its first declaration attribute if it
+// has any, and whose keyword is at pos.
+func (a *analysis) defineControlled(kind symKind, name string, start, pos grammar.Pos, control *renderControl) *definition {
 	control.poll()
 	i, ok := a.tokenIndex(pos)
 	if !ok {
 		return nil
+	}
+	first, ok := a.tokenIndex(start)
+	if !ok || first > i {
+		first = i
 	}
 	next := a.significantTokenControlled(i+1, control)
 	if next >= len(a.toks) || a.toks[next].Kind != syntax.TokenIdent || a.toks[next].Text != name {
 		return nil
 	}
 	kw, n := a.toks[i], a.toks[next]
-	d := &definition{kind: kind, name: name, kwStart: kw.start, nameStart: n.start, nameEnd: n.end, start: kw.start}
-	// Declarations end at a top-level separator or the next declaration. A
-	// constructor or operators block closing brace can still precede an action.
+	d := &definition{kind: kind, name: name, kwStart: kw.start, nameStart: n.start, nameEnd: n.end, start: a.toks[first].start}
+	// Declarations end at a top-level separator or the next declaration, which
+	// may start with declaration attributes. A constructor or operators block
+	// closing brace can still precede an action.
 	last, depth := next, 0
 	for j := next + 1; j < len(a.toks); j++ {
 		control.poll()
 		t := a.toks[j]
-		if depth == 0 && (a.isDefKeyword(j) || a.declarationStart(j) && a.isIdent(j, "package") || a.isPunct(j, ";")) {
+		if depth == 0 && (a.isDefKeyword(j) || a.declarationStart(j) && (a.isIdent(j, "package") || a.isPunct(j, "@")) || a.isPunct(j, ";")) {
 			break
 		}
 		if t.Kind != syntax.TokenComment {
@@ -421,7 +427,7 @@ func (a *analysis) defineControlled(kind symKind, name string, pos grammar.Pos, 
 	}
 
 	d.end = a.toks[last].end
-	d.doc = a.docCommentControlled(i, last, control)
+	d.doc = a.docCommentControlled(first, last, control)
 	a.defs = append(a.defs, d)
 	a.occs = append(a.occs, occurrence{kind: kind, name: name, start: n.start, end: n.end, def: d})
 	return d

@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGeneratedTSTrace(t *testing.T) {
@@ -80,7 +78,7 @@ rule part W = t:("input, o.unit, o.maxDepth, control)") #atomic => W{Text: text(
 	files := []string{}
 	var harness strings.Builder
 	for _, fixture := range fixtures {
-		g, err := syntax.Parse(fixture.grammar)
+		g, err := parseTest(fixture.grammar)
 		if err != nil {
 			t.Fatal(fixture.name, err)
 		}

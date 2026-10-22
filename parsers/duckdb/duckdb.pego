@@ -1803,6 +1803,7 @@ rule update_extensions_stmt UpdateExtensionsStmt = (w:with_clause ws)? UPDATE ws
 
 rule stmt_end = ws (";" / $$)
 
+@start
 rule main Script = (
     ws (";" ws)* first:statement #repeat(,1) rest:(-ws -";" -ws (-";" -ws)* s:statement)* ws (";" ws)* $$
 ) => Script{Statements: concat($first, map($rest, (r) => r.$s))}

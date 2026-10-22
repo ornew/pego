@@ -957,13 +957,25 @@ export function mkGrammar(maxDepth: number, sparse: boolean, observable: boolean
   return { maxDepth, sparse, observable, sourceInfo: false, initialVars: [], descs: [], structFields: new Map() };
 }
 
-export function ruleIn(table: Rule[], name: string): Rule | null {
+function ruleIn(table: Rule[], name: string): Rule | null {
   for (const r of table) {
     if (r.name === name) {
       return r;
     }
   }
   return null;
+}
+
+/**
+ * Returns the start rule name of table, one of starts, or an error that names the rule and tells
+ * whether the table defines it.
+ */
+export function startIn(table: Rule[], starts: readonly string[], name: string): Rule | Error {
+  if (starts.includes(name)) return ruleIn(table, name)!;
+  if (name === "") return new Error("no start rule is given");
+  if (name.startsWith("_")) return new Error("rule " + name + " is hidden: a rule whose name begins with an underscore is not an entry point");
+  if (ruleIn(table, name) === null) return new Error(`rule ${name} is not defined`);
+  return new Error(`rule ${name} is not a start rule; parsing can begin only at a rule marked @start`);
 }
 
 /** Options for one invocation. Zero maxDepth selects the default of the grammar. */

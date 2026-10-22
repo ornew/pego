@@ -9,11 +9,10 @@ import (
 	"testing"
 
 	"github.com/ornew/pego/grammar"
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestOutputSchemaPrototype(t *testing.T) {
-	g, err := syntax.Parse(`type Item = { Value string; Next *Item; Count int; Flag bool; Values []node[string] }
+	g, err := parseTest(`type Item = { Value string; Next *Item; Count int; Flag bool; Values []node[string] }
 type Unused = { Text string }
 type Either ~ Item | node[string]
 rule main = item
@@ -199,7 +198,7 @@ func TestOutputSchemaRejectsUnresolvedShapes(t *testing.T) {
 }
 
 func TestOutputSchemaAnyAndValueFreeRepeat(t *testing.T) {
-	g, err := syntax.Parse(`type Open ~ _
+	g, err := parseTest(`type Open ~ _
 type Bag = { Values []_ }
 rule main = (-"a")*`)
 	if err != nil {

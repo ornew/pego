@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // TestGeneratedTypedFieldsNamedLikeRuntimeMethods checks that a struct field may be named like a
@@ -19,7 +17,7 @@ func TestGeneratedTypedFieldsNamedLikeRuntimeMethods(t *testing.T) {
 	}
 	const src = `type Pair = { TName string; TText string; TKids string; TStruct string; TFresh string; TSetFresh string; TField string; TFieldWork string; TSpan string; TSetSpan string; TStrField string }
 rule main Pair = a:"a" => Pair{TName: "n", TText: "t", TKids: "k", TStruct: "s", TFresh: "f", TSetFresh: "sf", TField: "fd", TFieldWork: "fw", TSpan: "sp", TSetSpan: "ss", TStrField: "sr"}`
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}

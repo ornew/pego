@@ -7,8 +7,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 var typedOperatorsRuleBodyCases = []genCase{
@@ -154,7 +152,7 @@ func TestGeneratedTypedOperatorsRuleBodies(t *testing.T) {
 	cases = append(cases, genCase{"typed/OperatorsRule_calculator", string(calculator), []string{"1", "1+2*3", "2^3^4", "-(1+2)", "1+", "(1+2", "é", ""}})
 	cases = append(cases, prefixPartCutCorpus())
 	for _, c := range cases {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

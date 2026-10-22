@@ -20,6 +20,7 @@ type Op = node[string]
 type Expr ~ Num | Name | Bin
 
 // A fragment is an expression followed by the closing delimiter.
+@start
 rule fragment Expr = -ws e:sum -ws "}}" @error(message="expected an operator or '}}'") => $e
 
 rule sum Expr = first:product rest:(-ws op:addop -ws p:product)* => foldl($first, $rest, (acc, i) => Bin{Op: i.$op, Left: acc, Right: i.$p})

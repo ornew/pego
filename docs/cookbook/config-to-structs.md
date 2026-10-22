@@ -18,6 +18,7 @@ type Value ~ Int | Str | Bool | Array
 type Entry = { Key Key; Value Value }
 type Config = { Entries []Entry }
 
+@start
 rule main Config = -ws es:entry* $$ => Config{Entries: $es.Value}
 
 rule entry Entry = k:key -ws -"=" -ws v:value -ws => Entry{Key: $k, Value: $v}

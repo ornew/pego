@@ -26,7 +26,7 @@ func writeFixtureFile(t *testing.T, dir, name, body string) string {
 
 func TestRunOutcomesLocationsAndEquivalence(t *testing.T) {
 	dir := t.TempDir()
-	writeFixtureFile(t, dir, "grammar.pego", `rule main = "a"`)
+	writeFixtureFile(t, dir, "grammar.pego", "@start\nrule main = \"a\"")
 	suitePath := writeFixtureFile(t, dir, "suite.json", `{
   "version": 1,
   "grammar": "grammar.pego",
@@ -55,9 +55,9 @@ func TestRunClassifiesNilNodeRecoveryAndRejection(t *testing.T) {
 		name, grammar, input string
 		want                 Outcome
 	}{
-		{"nil node success", `rule main _ = "a" => nil`, "a", Accepted},
-		{"recovered completion", `rule main = "a" #recover(skip="?") $$`, "?", Recovered},
-		{"syntax rejection", `rule main = "a" $$`, "b", Rejected},
+		{"nil node success", "@start\nrule main _ = \"a\" => nil", "a", Accepted},
+		{"recovered completion", "@start\nrule main = \"a\" #recover(skip=\"?\") $$", "?", Recovered},
+		{"syntax rejection", "@start\nrule main = \"a\" $$", "b", Rejected},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -84,7 +84,7 @@ func TestRunClassifiesNilNodeRecoveryAndRejection(t *testing.T) {
 
 func TestRunRecordsRuntimeErrorAndContinues(t *testing.T) {
 	dir := t.TempDir()
-	writeFixtureFile(t, dir, "grammar.pego", `rule main = [a-z]+ #atomic $$`)
+	writeFixtureFile(t, dir, "grammar.pego", "@start\nrule main = [a-z]+ #atomic $$")
 	long := strings.Repeat("a", 10000)
 	suiteJSON := fmt.Sprintf(`{"version":1,"grammar":"grammar.pego","cases":[{"name":"before","input":"a","expect":{"outcome":"accepted"}},{"name":"limit","input":%q,"expect":{"outcome":"accepted"}},{"name":"after","input":"a","expect":{"outcome":"accepted"}}]}`, long)
 	suite, err := Load(writeFixtureFile(t, dir, "suite.json", suiteJSON))
@@ -119,7 +119,7 @@ func TestRunRecordsRuntimeErrorAndContinues(t *testing.T) {
 
 func TestRunCancellationStopsInvocation(t *testing.T) {
 	dir := t.TempDir()
-	writeFixtureFile(t, dir, "grammar.pego", `rule main = "a"`)
+	writeFixtureFile(t, dir, "grammar.pego", "@start\nrule main = \"a\"")
 	suite, err := Load(writeFixtureFile(t, dir, "suite.json", `{"version":1,"grammar":"grammar.pego","cases":[{"name":"case","input":"a","expect":{"outcome":"accepted"}}]}`))
 	if err != nil {
 		t.Fatal(err)
@@ -134,7 +134,7 @@ func TestRunCancellationStopsInvocation(t *testing.T) {
 
 func TestLoadRequiresInputButAllowsEmptyString(t *testing.T) {
 	dir := t.TempDir()
-	writeFixtureFile(t, dir, "grammar.pego", `rule main = ""`)
+	writeFixtureFile(t, dir, "grammar.pego", "@start\nrule main = \"\"")
 	t.Run("missing", func(t *testing.T) {
 		path := writeFixtureFile(t, dir, "missing.json", `{"version":1,"grammar":"grammar.pego","cases":[{"name":"empty","expect":{"outcome":"accepted"}}]}`)
 		if _, err := Load(path); err == nil || !strings.Contains(err.Error(), "input is required") {
@@ -162,7 +162,7 @@ func TestLoadRequiresInputButAllowsEmptyString(t *testing.T) {
 
 func TestLoadRequiresExpectObjectEvenWithBackendOutcome(t *testing.T) {
 	dir := t.TempDir()
-	writeFixtureFile(t, dir, "grammar.pego", `rule main = "a"`)
+	writeFixtureFile(t, dir, "grammar.pego", "@start\nrule main = \"a\"")
 	for _, tc := range []struct {
 		name, expectField string
 	}{
@@ -181,7 +181,7 @@ func TestLoadRequiresExpectObjectEvenWithBackendOutcome(t *testing.T) {
 
 func TestLoadRejectsNullTopLevelFields(t *testing.T) {
 	dir := t.TempDir()
-	writeFixtureFile(t, dir, "grammar.pego", `rule main = "a"`)
+	writeFixtureFile(t, dir, "grammar.pego", "@start\nrule main = \"a\"")
 	for _, field := range []string{"unit", "start", "backends", "equivalence"} {
 		t.Run(field, func(t *testing.T) {
 			body := fmt.Sprintf(`{"version":1,"grammar":"grammar.pego","%s":null,"cases":[{"name":"case","input":"a","expect":{"outcome":"accepted"}}]}`, field)
@@ -195,7 +195,7 @@ func TestLoadRejectsNullTopLevelFields(t *testing.T) {
 
 func TestLoadRejectsInvalidErrorLocationsAndSpans(t *testing.T) {
 	dir := t.TempDir()
-	writeFixtureFile(t, dir, "grammar.pego", `rule main = "a"`)
+	writeFixtureFile(t, dir, "grammar.pego", "@start\nrule main = \"a\"")
 	tests := []struct {
 		name, expectation, wantError string
 	}{
@@ -232,7 +232,7 @@ func TestLoadRejectsInvalidErrorLocationsAndSpans(t *testing.T) {
 
 func TestLoadValidatesEffectiveBackendExpectations(t *testing.T) {
 	dir := t.TempDir()
-	writeFixtureFile(t, dir, "grammar.pego", `rule main = "a"`)
+	writeFixtureFile(t, dir, "grammar.pego", "@start\nrule main = \"a\"")
 	path := writeFixtureFile(t, dir, "effective.json", `{"version":1,"grammar":"grammar.pego","backends":["closure"],"cases":[{"name":"case","input":"a","expect":{"outcome":"accepted","start":5,"end":10},"byBackend":{"closure":{"end":3}}}]}`)
 	if _, err := Load(path); err == nil || !strings.Contains(err.Error(), "end must not be before start") {
 		t.Fatalf("Load error = %v, want merged-span validation error", err)
@@ -241,7 +241,7 @@ func TestLoadValidatesEffectiveBackendExpectations(t *testing.T) {
 
 func TestLoadValidatesUnselectedBackendOverrides(t *testing.T) {
 	dir := t.TempDir()
-	writeFixtureFile(t, dir, "grammar.pego", `rule main = "a"`)
+	writeFixtureFile(t, dir, "grammar.pego", "@start\nrule main = \"a\"")
 	path := writeFixtureFile(t, dir, "effective-unselected.json", `{"version":1,"grammar":"grammar.pego","backends":["closure"],"cases":[{"name":"case","input":"a","expect":{"outcome":"accepted","start":5,"end":10},"byBackend":{"bytecode":{"end":3}}}]}`)
 	if _, err := Load(path); err == nil || !strings.Contains(err.Error(), "backend bytecode: end must not be before start") {
 		t.Fatalf("Load error = %v, want merged bytecode-span validation error", err)
@@ -250,7 +250,7 @@ func TestLoadValidatesUnselectedBackendOverrides(t *testing.T) {
 
 func TestLoadValidatesBackendClearFields(t *testing.T) {
 	dir := t.TempDir()
-	writeFixtureFile(t, dir, "grammar.pego", `rule main = "a"`)
+	writeFixtureFile(t, dir, "grammar.pego", "@start\nrule main = \"a\"")
 	tests := []struct {
 		name, override, want string
 	}{
@@ -279,7 +279,7 @@ func TestLoadValidatesBackendClearFields(t *testing.T) {
 
 func TestLoadRejectsNullTypedExpectationsAndAllowsNullNode(t *testing.T) {
 	dir := t.TempDir()
-	writeFixtureFile(t, dir, "grammar.pego", `rule main = "a"`)
+	writeFixtureFile(t, dir, "grammar.pego", "@start\nrule main = \"a\"")
 	tests := []struct {
 		name, caseFields, wantError string
 	}{
@@ -357,7 +357,7 @@ func TestBackendsRejectAliasesOfSameRuntimeBackend(t *testing.T) {
 
 func TestUpdateGoldensPreservesInputAndAcceptance(t *testing.T) {
 	dir := t.TempDir()
-	writeFixtureFile(t, dir, "grammar.pego", `rule main = "a"`)
+	writeFixtureFile(t, dir, "grammar.pego", "@start\nrule main = \"a\"")
 	suitePath := writeFixtureFile(t, dir, "suite.json", `{
   "version": 1,
   "grammar": "grammar.pego",
@@ -404,7 +404,7 @@ func TestUpdateGoldensPreservesInputAndAcceptance(t *testing.T) {
 
 func TestUpdateGoldensRefusesOutcomeMismatchWithoutPartialChanges(t *testing.T) {
 	dir := t.TempDir()
-	writeFixtureFile(t, dir, "grammar.pego", `rule main = "a"`)
+	writeFixtureFile(t, dir, "grammar.pego", "@start\nrule main = \"a\"")
 	suitePath := writeFixtureFile(t, dir, "suite.json", `{
   "version": 1,
   "grammar": "grammar.pego",
@@ -457,7 +457,7 @@ func TestCanonicalJSONIgnoresObjectMemberOrder(t *testing.T) {
 
 func TestExpectationFailureDoesNotBecomeAnEquivalencePass(t *testing.T) {
 	dir := t.TempDir()
-	writeFixtureFile(t, dir, "grammar.pego", `rule main = "a"`)
+	writeFixtureFile(t, dir, "grammar.pego", "@start\nrule main = \"a\"")
 	suitePath := writeFixtureFile(t, dir, "suite.json", `{
   "version": 1,
   "grammar": "grammar.pego",
@@ -483,7 +483,7 @@ func TestExpectationFailureDoesNotBecomeAnEquivalencePass(t *testing.T) {
 
 func TestBackendUpdateRecordsClearsAndPreservesEmptyErrors(t *testing.T) {
 	dir := t.TempDir()
-	writeFixtureFile(t, dir, "grammar.pego", `rule main = "a"`)
+	writeFixtureFile(t, dir, "grammar.pego", "@start\nrule main = \"a\"")
 	suitePath := writeFixtureFile(t, dir, "suite.json", `{
   "version": 1,
   "grammar": "grammar.pego",
@@ -548,7 +548,7 @@ func TestBackendUpdateRecordsClearsAndPreservesEmptyErrors(t *testing.T) {
 
 func TestBackendSpecificUpdateDoesNotCopySharedAcceptance(t *testing.T) {
 	dir := t.TempDir()
-	writeFixtureFile(t, dir, "grammar.pego", `rule main = "a"`)
+	writeFixtureFile(t, dir, "grammar.pego", "@start\nrule main = \"a\"")
 	suitePath := writeFixtureFile(t, dir, "suite.json", `{
   "version": 1,
   "grammar": "grammar.pego",

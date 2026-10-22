@@ -23,6 +23,7 @@ inside are not visible outside.
 ```pego
 // inline-action.pego
 type Pair = { Left node[string]; Right node[string] }
+@start
 rule pairs = (l:[a-z] r:[a-z] => Pair{Left: $l, Right: $r})+
 ```
 
@@ -67,6 +68,7 @@ mismatches are compile-time errors:
 // field-errors.pego
 type Assign = { Name node[string]; Value node[string] }
 
+@start
 rule a Assign = k:name "=" v:name => Assign{Name: $k, Value: $v}
 rule b Assign = k:name "=" v:number => Assign{Name: $k, Valu: $v}
 rule name = [a-z]+ #atomic
@@ -78,7 +80,7 @@ pego parse -g field-errors.pego -s a -i 'a=b'
 ```
 
 ```text
-pego: field-errors.pego:5:57: Assign has no field Valu
+pego: field-errors.pego:6:57: Assign has no field Valu
 ```
 
 ## Typed Lists
@@ -118,6 +120,7 @@ type Word = {
     To     int
 }
 
+@start
 rule main Word = ws w:word ws $$ => $w
 rule word Word = n:[a-z]+ #atomic => Word{Text: text($n), Length: len($n), Long: len($n) > 4, From: $n.Start, To: $n.End}
 rule ws = " "*
@@ -171,6 +174,7 @@ type Call = {
     Raw   string
 }
 
+@start
 rule call Call = n:[a-z]+ #atomic "(" args:(a:[a-z]+ #atomic -","?)* ")" => Call{Name: text($n), Arity: len($args), Raw: text($args)}
 ```
 
@@ -191,6 +195,7 @@ pair the key with every item:
 type Pair = { A node[string]; B node[string] }
 type Pairs = { Items []Pair }
 
+@start
 rule pairs Pairs = k:ident ":" xs:(x:ident -","?)* => Pairs{Items: map($xs, (r) => Pair{A: $k, B: r.$x})}
 rule ident = [a-z]+ #atomic
 ```
@@ -225,6 +230,7 @@ are measured. The value `v` below starts at position 3 in code points and at 7 i
 ```pego
 // unit.pego
 rule name = [^=]+ #atomic
+@start
 rule kv = k:name "=" v:name
 ```
 
@@ -258,6 +264,7 @@ type Bin = {
 }
 type Expr ~ node[string] | Bin
 
+@start
 rule main Expr = e:sum $$ => $e
 rule sum Expr = first:num rest:(-ws op:op -ws n:num)* => foldl($first, $rest, (acc, i) => Bin{Left: acc, Op: i.$op, Right: i.$n})
 rule num = [0-9]+ #atomic
@@ -294,6 +301,7 @@ type Bin = {
 }
 type Expr ~ node[string] | Bin
 
+@start
 rule pow Expr = pairs:(l:num -ws op:op -ws)* last:num => foldr($last, $pairs, (acc, i) => Bin{Left: i.$l, Op: i.$op, Right: acc})
 rule num = [0-9]+ #atomic
 rule op = "^"
@@ -326,6 +334,7 @@ type Member = {
 }
 type Path ~ node[string] | Member
 
+@start
 rule path Path = first:ident rest:(-"." n:ident)* => foldl($first, $rest, (acc, i) => Member{X: acc, Name: i.$n})
 rule ident = [a-z]+ #atomic
 ```
@@ -351,8 +360,10 @@ type Call = {
     Args []node[string]
 }
 
+@start(default)
 rule call Call = fn:ident -ws "(" -ws args:args? -ws ")" => Call{Fn: $fn, Args: concat($args)}
 rule args = first:ident rest:(-ws "," -ws x:ident)* => concat(list($first), map($rest, (r) => r.$x))
+@start
 rule args_cst = ident (-ws "," -ws ident)*
 rule ident = [a-z]+ #atomic
 rule ws = " "*
@@ -376,6 +387,7 @@ Call{Args: [], Fn: "f"}
 ```pego
 // args-optional.pego
 type Call = { Fn node[string]; Args []node[string] }
+@start
 rule call Call = fn:ident "(" args:args? ")" => Call{Fn: $fn, Args: $args}
 rule args = first:ident rest:(-"," x:ident)* => concat(list($first), map($rest, (r) => r.$x))
 rule ident = [a-z]+ #atomic
@@ -408,6 +420,7 @@ type Entry = {
 }
 type Config = { Entries []Entry }
 
+@start
 rule main Config = es:entries ws $$ => Config{Entries: $es}
 rule entries = es:(-ws e:entry)* => map($es, (x) => x.$e)
 rule entry Entry = k:key -ws -"=" -ws v:value -ws -";" => Entry{Key: $k, Value: $v}

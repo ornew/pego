@@ -6,8 +6,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // valueResultCases have rules and list elements whose values are ints, strings and bools.
@@ -65,7 +63,7 @@ func TestValueResults(t *testing.T) {
 		"rule main = \"a\" => list((x) => x)",
 		"rule main = \"a\" => (x) => x",
 	} {
-		g, err := syntax.Parse(src)
+		g, err := parseTest(src)
 		if err != nil {
 			t.Fatal(err)
 		}

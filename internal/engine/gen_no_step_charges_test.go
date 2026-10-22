@@ -3,8 +3,6 @@ package engine
 import (
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // Without work controls no function of the parser package or the types package charges steps, including the
@@ -12,7 +10,7 @@ import (
 // the rule functions does not reach.
 func TestGeneratedNoStepChargesInTypedCode(t *testing.T) {
 	for _, src := range []string{ordinaryOnlyTyped, ordinaryOnlyConverted} {
-		g, err := syntax.Parse(src)
+		g, err := parseTest(src)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -45,7 +43,7 @@ func TestGeneratedNoStepChargesInTypedCode(t *testing.T) {
 		}
 	}
 	// The conversions of the types package charge steps only in a controlled parser, for a list.
-	g, err := syntax.Parse(ordinaryOnlyConverted)
+	g, err := parseTest(ordinaryOnlyConverted)
 	if err != nil {
 		t.Fatal(err)
 	}

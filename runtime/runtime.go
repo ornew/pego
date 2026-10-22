@@ -901,11 +901,14 @@ type Rule struct {
 // one for its rule table and, with Recognize, one for the recognizer's rule
 // table, which shares the other tables. Every rule refers to its grammar.
 //
-// Of its fields and methods, Descs, NodeTypes, Observable, RuleByName, SetRules, Share, SourceInfo, StructFields, TypeKinds are for generated parsers; not a stable API.
+// Of its fields and methods, Descs, NodeTypes, Observable, SetRules, Share, SourceInfo, StartError, StartRule, Starts, StructFields, TypeKinds are for generated parsers; not a stable API.
 type grammar struct {
 	// rules is the rule table and nseen the number of its rules with rule.Seen set.
 	rules []*Rule
 	nseen int
+	// Starts holds the names of the start rules, the rules marked @start where parsing may
+	// begin.
+	Starts []string
 	// Descs maps expectation IDs to their descriptions. It starts with the fixed expectations
 	// below.
 	Descs []string
@@ -998,13 +1001,37 @@ func (g *grammar) Share(base *grammar) {
 	g.indexInitVals() // the rules are the recognizer's own
 }
 
-func (g *grammar) RuleByName(name string) *Rule {
+func (g *grammar) ruleByName(name string) *Rule {
 	for _, r := range g.rules {
 		if r.Name == name {
 			return r
 		}
 	}
 	return nil
+}
+
+// StartRule returns the start rule name, or the error of StartError if name is not a start rule.
+func (g *grammar) StartRule(name string) (*Rule, error) {
+	for _, s := range g.Starts {
+		if s == name {
+			return g.ruleByName(name), nil
+		}
+	}
+	return nil, g.StartError(name)
+}
+
+// StartError returns the error for name, which is not a start rule: it names the rule and tells
+// whether the grammar defines it or hides it.
+func (g *grammar) StartError(name string) error {
+	switch {
+	case name == "":
+		return fmt.Errorf("no start rule is given")
+	case name[0] == '_':
+		return fmt.Errorf("rule %s is hidden: a rule whose name begins with an underscore is not an entry point", name)
+	case g.ruleByName(name) == nil:
+		return fmt.Errorf("rule %s is not defined", name)
+	}
+	return fmt.Errorf("rule %s is not a start rule; parsing can begin only at a rule marked @start", name)
 }
 
 // PositionUnit is the unit of input positions.

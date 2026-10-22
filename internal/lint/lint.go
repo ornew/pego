@@ -131,8 +131,8 @@ type Options struct {
 }
 
 // Run lints the grammar g, whose start rule is start. g must be a valid grammar (one that
-// compiles); start may be "" when the grammar has no single start rule, which disables
-// unreachable-rule. The findings are sorted by position.
+// compiles); start may be "". unreachable-rule reports the rules that neither start nor a rule
+// marked @start reaches. The findings are sorted by position.
 //
 // Findings can be suppressed with comments in the source (see the directive syntax in
 // docs/guide/linting.md).

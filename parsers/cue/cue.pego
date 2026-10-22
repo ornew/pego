@@ -77,6 +77,7 @@ type Expr ~ Ident | Int | Float | String | Bool | Null | Bottom | Interpolation 
 // valid does not search the set of the items that the farthest failure expects, which it needs only for the error of
 // a file that is not. The values built in a lookahead stay, and the rest of the input is skipped. If the file is not
 // valid, it is read again outside, which gives the error. (ParseAST of 256 KB: 37 ms to 26 ms.)
+@start
 rule main File = main_fast / file
 rule main_fast File = &f:file .* => $f
 rule file File = (

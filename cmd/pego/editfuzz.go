@@ -18,7 +18,7 @@ import (
 func editFuzzCmd(args []string, stdout io.Writer) error {
 	fs := flag.NewFlagSet("edit-fuzz", flag.ContinueOnError)
 	grammarPath := fs.String("g", "", "grammar source file (.pego); sequences record a hash of its exact bytes")
-	start := fs.String("s", "main", "start rule")
+	start := fs.String("s", "", "start rule (default: the grammar's default start rule)")
 	backends := fs.String("backend", "closure,bytecode,bytecode-iterative", "comma-separated backends to fuzz")
 	units := fs.String("unit", "codepoints,bytes", "comma-separated position units to fuzz")
 	seed := fs.Uint64("seed", 0, "seed of the generated sequences")

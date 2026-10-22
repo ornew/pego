@@ -6,8 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // This opt-in artifact writer makes latest-generator benchmark controls
@@ -39,7 +37,7 @@ func TestGeneratedOrdinaryWorkBenchmarkOverlay(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		g, err := syntax.Parse(string(source))
+		g, err := parseTest(string(source))
 		if err != nil {
 			t.Fatal(err)
 		}

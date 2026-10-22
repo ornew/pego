@@ -108,8 +108,8 @@ func TestResponsiveRequestCancellationProtocol(t *testing.T) {
 	c := newResponsiveClient(t, false)
 	defer c.exit()
 	uri := "file:///cancel.pego"
-	c.open(uri, "rule main = \"a\"")
-	asyncRequest(c, 100, "textDocument/hover", at(uri, 0, 5))
+	c.open(uri, "@start\nrule main = \"a\"")
+	asyncRequest(c, 100, "textDocument/hover", at(uri, 1, 5))
 	awaitBarrier(t, started)
 	c.notify("$/cancelRequest", map[string]any{"id": 100})
 	assertResponseError(t, c.response("100"), codeRequestCancelled)
@@ -138,10 +138,10 @@ func TestResponsiveAnalysisCoalescingProtocol(t *testing.T) {
 	c := newResponsiveClient(t, false)
 	defer func() { releaseWorker(); c.exit() }()
 	uri := "file:///coalesce.pego"
-	c.notify("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": uri, "version": 1, "text": "rule first = \"a\""}})
+	c.notify("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": uri, "version": 1, "text": "@start\nrule first = \"a\""}})
 	awaitBarrier(t, started)
-	c.notify("textDocument/didChange", map[string]any{"textDocument": map[string]any{"uri": uri, "version": 2}, "contentChanges": []any{map[string]any{"text": "rule obsolete = \"b\""}}})
-	c.notify("textDocument/didChange", map[string]any{"textDocument": map[string]any{"uri": uri, "version": 3}, "contentChanges": []any{map[string]any{"text": "rule latest = \"c\""}}})
+	c.notify("textDocument/didChange", map[string]any{"textDocument": map[string]any{"uri": uri, "version": 2}, "contentChanges": []any{map[string]any{"text": "@start\nrule obsolete = \"b\""}}})
+	c.notify("textDocument/didChange", map[string]any{"textDocument": map[string]any{"uri": uri, "version": 3}, "contentChanges": []any{map[string]any{"text": "@start\nrule latest = \"c\""}}})
 	// Cancelling a request waiting for analysis proves the actor processed both changes.
 	asyncRequest(c, 101, "textDocument/documentSymbol", docParams(uri))
 	c.notify("$/cancelRequest", map[string]any{"id": 101})
@@ -177,7 +177,7 @@ func TestResponsiveCloseDropsPendingAnalysisProtocol(t *testing.T) {
 	c := newResponsiveClient(t, false)
 	defer func() { releaseWorker(); c.exit() }()
 	uri := "file:///closed.pego"
-	c.notify("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": uri, "version": 1, "text": "rule blocked = \"a\""}})
+	c.notify("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": uri, "version": 1, "text": "@start\nrule blocked = \"a\""}})
 	awaitBarrier(t, started)
 	c.notify("textDocument/didClose", docParams(uri))
 	clear := c.diagnostics(uri)
@@ -187,7 +187,7 @@ func TestResponsiveCloseDropsPendingAnalysisProtocol(t *testing.T) {
 	c.requestError("textDocument/documentSymbol", docParams(uri))
 	releaseWorker()
 	other := "file:///other.pego"
-	c.notify("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": other, "version": 1, "text": "rule main = \"b\""}})
+	c.notify("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": other, "version": 1, "text": "@start\nrule main = \"b\""}})
 	var published publishDiagnosticsParams
 	message := c.next()
 	if err := json.Unmarshal(message["params"], &published); err != nil {
@@ -220,7 +220,7 @@ func TestResponsiveCodeActionContentModifiedProtocol(t *testing.T) {
 	c := newResponsiveClient(t, true)
 	defer func() { releaseWorker(); c.exit() }()
 	uri := "file:///stale-actions.pego"
-	source := "rule main = (\n  a:\"a\" b:\"b\"\n) => $a"
+	source := "@start\nrule main = (\n  a:\"a\" b:\"b\"\n) => $a"
 	diagnostics := c.open(uri, source)
 	var target Diagnostic
 	for _, d := range diagnostics {
@@ -254,7 +254,7 @@ func TestResponsiveFailedAnalysisDropsLintProtocol(t *testing.T) {
 	c := newResponsiveClient(t, true)
 	defer c.exit()
 	uri := "file:///failed-lint.pego"
-	first := c.open(uri, "rule main = \"a\" / \"ab\"")
+	first := c.open(uri, "@start\nrule main = \"a\" / \"ab\"")
 	if len(first) == 0 || first[0].Source != "pego-lint" {
 		t.Fatalf("lint diagnostics=%+v", first)
 	}
@@ -278,8 +278,8 @@ func TestResponsiveShutdownCancelsRequestProtocol(t *testing.T) {
 	t.Cleanup(func() { requestHook = nil })
 	c := newResponsiveClient(t, false)
 	uri := "file:///shutdown.pego"
-	c.open(uri, "rule main = \"a\"")
-	asyncRequest(c, 103, "textDocument/hover", at(uri, 0, 5))
+	c.open(uri, "@start\nrule main = \"a\"")
+	asyncRequest(c, 103, "textDocument/hover", at(uri, 1, 5))
 	awaitBarrier(t, started)
 	asyncRequest(c, 104, "shutdown", nil)
 	assertResponseError(t, c.response("103"), codeRequestCancelled)
@@ -294,7 +294,7 @@ func TestResponsiveSaveRejectsOldFindingGenerationProtocol(t *testing.T) {
 	c := newResponsiveClient(t, true)
 	defer c.exit()
 	uri := "file:///save-generation.pego"
-	source := "rule main = (\n a:\"a\" b:\"b\"\n) => $a"
+	source := "@start\nrule main = (\n a:\"a\" b:\"b\"\n) => $a"
 	diagnostics := c.open(uri, source)
 	var target Diagnostic
 	for _, diagnostic := range diagnostics {
@@ -335,7 +335,7 @@ func TestResponsiveRequestPrioritizesAnalysisProtocol(t *testing.T) {
 	c := newResponsiveClient(t, false)
 	defer func() { releaseWorker(); c.exit() }()
 	open := func(name string) {
-		c.notify("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": "file:///" + name + ".pego", "version": 1, "text": "rule " + name + " = \"a\""}})
+		c.notify("textDocument/didOpen", map[string]any{"textDocument": map[string]any{"uri": "file:///" + name + ".pego", "version": 1, "text": "@start\nrule " + name + " = \"a\""}})
 	}
 	open("blocked")
 	awaitBarrier(t, started)
@@ -354,7 +354,7 @@ func TestResponsiveRequestPrioritizesAnalysisProtocol(t *testing.T) {
 	var order []string
 	for range 4 {
 		text := <-analyzed
-		order = append(order, strings.Fields(text)[1])
+		order = append(order, strings.Fields(text)[2])
 	}
 	if strings.Join(order, " ") != "blocked requested first second" {
 		t.Fatalf("analysis order %v", order)

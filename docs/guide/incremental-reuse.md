@@ -87,19 +87,22 @@ func lines(corrupt int) string {
 var variants = []struct {
 	name, grammar, text string
 }{
-	{"one rule per line", `rule main =  (line / blank)* $$
+	{"one rule per line", `@start
+rule main =  (line / blank)* $$
 rule line =  name " = " num "\n"
 rule name =  [a-z_]+ #atomic
 rule num =  [0-9]+ #atomic
 rule blank =  "\n" `, lines(-1)},
 
-	{"line start anchor ^", `rule main =  (line / blank)* $$
+	{"line start anchor ^", `@start
+rule main =  (line / blank)* $$
 rule line =  ^ name " = " num "\n"
 rule name =  [a-z_]+ #atomic
 rule num =  [0-9]+ #atomic
 rule blank =  "\n" `, lines(-1)},
 
 	{"variable read in each line", `var x int
+@start
 rule main = {x := 1} (line / blank)* $$
 rule line =  name " = " num {x == 1} "\n"
 rule name =  [a-z_]+ #atomic
@@ -107,31 +110,36 @@ rule num =  [0-9]+ #atomic
 rule blank =  "\n" `, lines(-1)},
 
 	{".Start in an action", `type At = { Pos int; Text node }
+@start
 rule main =  (line / blank)* $$
 rule line =  name " = " n:num "\n"
 rule name =  [a-z_]+ #atomic
 rule num At =  t:[0-9]+ #atomic => At{Pos: $t.Start, Text: $t}
 rule blank =  "\n" `, lines(-1)},
 
-	{"right-recursive list", `rule main =  lines $$
+	{"right-recursive list", `@start
+rule main =  lines $$
 rule lines =  line lines?
 rule line =  name " = " num "\n"
 rule name =  [a-z_]+ #atomic
 rule num =  [0-9]+ #atomic `, lines(-1)},
 
-	{"lookahead to the end of text", `rule main =  (line / blank)* $$
+	{"lookahead to the end of text", `@start
+rule main =  (line / blank)* $$
 rule line =  name " = " num "\n" &([^!]* ($$ / "!"))
 rule name =  [a-z_]+ #atomic
 rule num =  [0-9]+ #atomic
 rule blank =  "\n" `, lines(-1)},
 
-	{"#recover, bad line 900", `rule main =  (line / blank)* $$
+	{"#recover, bad line 900", `@start
+rule main =  (line / blank)* $$
 rule line =  (name " = " num "\n") #recover(skip=[^\n]* "\n")
 rule name =  [a-z_]+ #atomic
 rule num =  [0-9]+ #atomic
 rule blank =  "\n" `, lines(900)},
 
-	{"everything in one rule", `rule main =  ([a-z_]+ #atomic " = " [0-9]+ #atomic "\n")* $$ `, lines(-1)},
+	{"everything in one rule", `@start
+rule main =  ([a-z_]+ #atomic " = " [0-9]+ #atomic "\n")* $$ `, lines(-1)},
 }
 
 func main() {

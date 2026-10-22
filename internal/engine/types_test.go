@@ -4,8 +4,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestTypeErrors(t *testing.T) {
@@ -126,7 +124,7 @@ rule r0 = ";"
 rule r1 = "a"
 rule r2 = r3 "é" / "a"
 rule r3 = ((c1:r3 {v := len($c1)}) c2:r1 ";" #recover(skip=[^;]* ";")) @error(message="m1") => map(concat(list($c1), $c1), (i) => concat(list(i), map($c1, (j) => list(i, j))))`
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -192,7 +190,7 @@ func TestAliasErrorsReportedOnce(t *testing.T) {
 		{"type A ~ Nope\ntype B = { F A; G []A }\nrule main A = \"a\"\nrule other A = \"b\"\nrule x = v:main => B{F: $v, G: list($v)}", "1:10: undefined type Nope"},
 		{"type A ~ *A\nrule main A = \"a\"\nrule other A = \"b\"", "type A refers to itself"},
 	} {
-		g, err := syntax.Parse(tc.src)
+		g, err := parseTest(tc.src)
 		if err != nil {
 			t.Fatalf("%q: %v", tc.src, err)
 		}

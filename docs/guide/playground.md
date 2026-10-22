@@ -18,7 +18,7 @@ a result panel. Every edit re-parses after a short pause; the grammar is compile
 | Part | What it does |
 |:--|:--|
 | **Example** | Loads one of the grammars of [`examples/`](../../examples/README.md) or [`parsers/`](../../parsers/README.md) with a sample input: the calculator (Operators Rule and left-recursive), JSON, CSV, XML (and an XML error), the indentation outline, and minilang (and a minilang input that `#recover` recovers from) |
-| **Start** | The start rule (`pego parse -s`). The default is `main`, or the first rule if the grammar has no `main` (where `pego parse` without `-s` would report that `main` is not defined). A start rule that the grammar does not define, after an edit or in a shared link, stays selected and is reported as an error |
+| **Start** | The start rule (`pego parse -s`), one of the rules marked `@start`. The default is the grammar's default start rule. A start rule that is no longer one, after an edit or in a shared link, stays selected and is reported as an error |
 | **Options** | The position unit (code points or bytes, `-unit`), the backend (`-backend`) and recognition mode (`pego.RecognizeOnly`, which builds no tree), **Default value** (`-default-value`: drops value actions and declared rule types, so the tree is the default node tree; predicates still run), and **Source info** (`-source-info`: the rule of each node and the names of its captures, which `pego parse` leaves out by default). Like `pego parse -check`, recognition reports the same syntax errors as a full parse; where the command prints `ok` only for an input without errors, the playground also shows an input that `#recover` recovered from as a match, with its errors |
 | **WASM compiler** | Go is the default. Sites built in dual mode also offer TinyGo. The selection stays in the shared URL's `compiler` query parameter; a TinyGo link on a Go-only site shows an unavailable message |
 | **Format** | Formats the grammar like `pego fmt`, keeping comments. The change can be undone |
@@ -121,9 +121,9 @@ page or Node:
 error that stops the parse, or another error such as a runtime error in an action, makes it false. `json` and `sexpr` are exactly what `pego parse` prints with `-f json` and `-f sexpr` (with `-source-info` when `sourceInfo` is true, without the final newline), and
 `message` is the description of an error as the command prints it after `line:col:`. `maxDepth` overrides the [nesting limit](#nesting-limits) (for any backend); `nodes` and `depth` are the number of
 nodes of the tree and how deeply they nest. `runs` (default 1, at most 100) parses the input that many times; `micros`
-is then the median time of those parses and `runs` is the number of parses it is measured over. An empty `start` selects the default start rule (`main`, or else the first rule); a `start` that the grammar does not
-define is reported as the error `start rule X is not defined` (in `error` for `parse`, in `diagnostics` for
-`generate`). `unit` is `codepoints` (the
+is then the median time of those parses and `runs` is the number of parses it is measured over. An empty `start` selects the grammar's default start rule; a `start` that is not a start rule is reported as the
+error `rule X is not a start rule; parsing can begin only at a rule marked @start`, or `rule X is not defined` if
+the grammar does not define it (in `error` for `parse`, in `diagnostics` for `generate`). `unit` is `codepoints` (the
 default) or `bytes`; `backend` is empty (the default), `closure`, `bytecode` or `bytecode-iterative`. Grammar diagnostics
 count columns in code points. A request that cannot be decoded, or an internal error, returns `{error}`.
 
@@ -134,7 +134,7 @@ require("./wasm_exec.js"); // from $(go env GOROOT)/lib/wasm
 const go = new Go();
 const { instance } = await WebAssembly.instantiate(fs.readFileSync("pego.wasm"), go.importObject);
 go.run(instance);
-const res = JSON.parse(pego.parse(JSON.stringify({ grammar: 'rule main =  "a"+ ', input: "aaa" })));
+const res = JSON.parse(pego.parse(JSON.stringify({ grammar: '@start\nrule main =  "a"+ ', input: "aaa" })));
 ```
 
 The binary is about 8.3 MB before compression (2.2 MB with gzip or 1.6 MB with Brotli). The landing page loads it only when its live example scrolls into view.

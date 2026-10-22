@@ -10,7 +10,7 @@ import (
 func TestDiffOutputSchemasMissingAndError(t *testing.T) {
 	compile := func(typ string) *pego.OutputSchema {
 		t.Helper()
-		p, err := pego.CompileSource("type P = { S "+typ+" }\nrule main = \"(\" semi \")\" $$ => P{}\nrule semi = \";\" #missing", "main")
+		p, err := compileTestSource("type P = { S "+typ+" }\nrule main = \"(\" semi \")\" $$ => P{}\nrule semi = \";\" #missing", "main")
 		if err != nil {
 			t.Fatal(err)
 		}

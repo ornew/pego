@@ -41,6 +41,7 @@ type Expr ~ node[string] | Sum
 type Stmt ~ Let | Print | Block | error
 type Program = { Body []Stmt }
 
+@start
 rule main Program = body:stmts ws $$ => Program{Body: $body}
 rule stmts = ss:(-ws s:stmt)* => map($ss, (x) => x.$s)
 
@@ -148,7 +149,9 @@ Details worth knowing:
 
 ```pego
 // order.pego
+@start(default)
 rule good = stmt @error(message="bad statement") #recover(skip=[^;]* ";")* $$
+@start
 rule bad = stmt #recover(skip=[^;]* ";") @error(message="bad statement")* $$
 rule stmt = "a" ";"
 ```
@@ -326,6 +329,7 @@ type Expr ~ node[string]
 type Stmt ~ Let | Print | Block | error
 type Program = { Body []Stmt }
 
+@start
 rule main Program = body:stmts ws $$ => Program{Body: $body}
 rule stmts = ss:(-ws s:stmt)* => map($ss, (x) => x.$s)
 
@@ -460,6 +464,7 @@ type Stmt ~ Assign | If | error
 
 var indent int
 
+@start
 rule main []Stmt = {indent := 0} ss:stmts blank* $$ => $ss
 rule stmts = v1:(blank* s:stmt)+ => map($v1, (x) => x.$s)
 
@@ -518,6 +523,7 @@ package nums
 type Item ~ node[string] | error
 type Numbers = { Items []Item }
 
+@start
 rule main Numbers = ws l:list ws $$ => $l
 
 rule list Numbers = "[" ws xs:items? ws "]" @error(message="expected ',' or ']'") => Numbers{Items: concat($xs)}

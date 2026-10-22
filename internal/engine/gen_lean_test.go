@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // External rule-table entry and nested direct calls must count the same rule
@@ -35,7 +33,7 @@ rule expression = operators {
 }
 rule left = left "+" "é" / "é"
 `
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}

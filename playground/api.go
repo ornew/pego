@@ -43,8 +43,10 @@ type diagnostic struct {
 type ruleInfo struct {
 	Name string `json:"name"`
 	Type string `json:"type,omitempty"` // the declared type, if any
-	Line int    `json:"line"`
-	Col  int    `json:"col"`
+	// Start reports that the rule is marked @start, so parsing may begin at it.
+	Start bool `json:"start,omitempty"`
+	Line  int  `json:"line"`
+	Col   int  `json:"col"`
 }
 
 type typeInfo struct {
@@ -71,7 +73,7 @@ type grammarRequest struct {
 type parseRequest struct {
 	Grammar   string `json:"grammar"`
 	Input     string `json:"input"`
-	Start     string `json:"start"`     // start rule; empty selects the default (main, or else the first rule)
+	Start     string `json:"start"`     // start rule; empty selects the grammar's default start rule
 	Unit      string `json:"unit"`      // codepoints (default) or bytes
 	Backend   string `json:"backend"`   // closure, bytecode, bytecode-iterative, or empty for the default
 	Recognize bool   `json:"recognize"` // check the input without building a tree
@@ -283,7 +285,8 @@ func compileSource(src string) *compiled {
 	c.g = g
 	c.info.Package = g.File.Pkg.Name
 	for _, r := range g.Rules() {
-		ri := ruleInfo{Name: r.Name, Line: r.Pos.Line, Col: r.Pos.Col}
+		pos := r.Diagnostic()
+		ri := ruleInfo{Name: r.Name, Line: pos.Line, Col: pos.Col, Start: markedStart(r)}
 		if r.Type != nil {
 			ri.Type = grammar.FormatType(r.Type)
 		}
@@ -292,17 +295,12 @@ func compileSource(src string) *compiled {
 	for _, t := range g.Types() {
 		c.info.Types = append(c.info.Types, describeType(t))
 	}
-	c.info.Start = defaultStart(c.info.Rules)
-	if c.info.Start == "" {
-		c.info.Diagnostics = []diagnostic{{Message: "the grammar defines no rules"}}
-		last = c
-		return c
-	}
-	p, err := pego.Compile(g, c.info.Start)
+	p, err := pego.Compile(g, "")
 	if err != nil {
 		c.info.Diagnostics = diagnostics(err)
 	} else {
 		c.parser = p
+		c.info.Start = p.Start()
 		c.info.OK = true
 	}
 	last = c
@@ -311,17 +309,10 @@ func compileSource(src string) *compiled {
 
 func compileInfo(src string) compileResult { return compileSource(src).info }
 
-// defaultStart returns main if the grammar defines it, and otherwise its first rule, as the start rule.
-func defaultStart(rules []ruleInfo) string {
-	if len(rules) == 0 {
-		return ""
-	}
-	for _, r := range rules {
-		if r.Name == "main" {
-			return "main"
-		}
-	}
-	return rules[0].Name
+// markedStart reports whether the rule is marked @start. In a grammar that compiles, these are
+// its start rules.
+func markedStart(r *grammar.RuleDef) bool {
+	return slices.ContainsFunc(r.Attrs, func(a *grammar.Attribute) bool { return !a.Pragma && a.Name == "start" })
 }
 
 func describeType(t grammar.TypeDecl) typeInfo {
@@ -419,7 +410,7 @@ func parse(req parseRequest) parseResult {
 	if req.Start != "" && req.Start != p.Start() {
 		var err error
 		if p, err = p.WithStart(req.Start); err != nil {
-			res.Error = err.Error() // start rule X is not defined
+			res.Error = err.Error() // rule X is not a start rule, or is not defined
 			return res
 		}
 	}
@@ -553,13 +544,7 @@ func generate(req generateRequest) generateResult {
 	if pkg == "" {
 		pkg = "parser"
 	}
-	start := req.Start
-	if start == "" {
-		start = c.info.Start
-	} else if !slices.ContainsFunc(c.info.Rules, func(r ruleInfo) bool { return r.Name == start }) {
-		res.Diagnostics = []diagnostic{{Message: fmt.Sprintf("start rule %s is not defined", start)}}
-		return res
-	}
+	start := req.Start // empty selects the default start rule
 	var opts []pego.GenOption
 	if req.Types {
 		opts = append(opts, pego.WithTypes())

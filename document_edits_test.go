@@ -8,7 +8,7 @@ import (
 )
 
 func TestDocumentVersionAndBatchAfterInterruption(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = .* $$`, "main")
+	p, err := compileTestSource(`rule main = .* $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,7 +45,7 @@ func TestDocumentVersionAndBatchAfterInterruption(t *testing.T) {
 }
 
 func TestDocumentEditBatchPublicContract(t *testing.T) {
-	parser, err := pego.CompileSource(`rule main = .* $$`, "main")
+	parser, err := compileTestSource(`rule main = .* $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

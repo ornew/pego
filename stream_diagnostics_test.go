@@ -10,7 +10,7 @@ import (
 )
 
 func TestPublicStreamDiagnosticCallbackOrderAndAbort(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = item+ #stream $$
+	p, err := compileTestSource(`rule main = item+ #stream $$
 rule item = "ab" @error(message="record") #recover(skip=[^a]+)`, "main")
 	if err != nil {
 		t.Fatal(err)
@@ -80,7 +80,7 @@ rule item = "ab" @error(message="record") #recover(skip=[^a]+)`, "main")
 }
 
 func TestPublicStreamDiagnosticCallbackIsStreamOnly(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = "a"* #stream $$`, "main")
+	p, err := compileTestSource(`rule main = "a"* #stream $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

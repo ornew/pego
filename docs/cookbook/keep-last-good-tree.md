@@ -30,6 +30,7 @@ type Setting = { Key Key; Value Value }
 type Key = node[string]
 type Value = node[string]
 
+@start
 rule main =  (setting / blank)* $$
 rule setting Setting =  k:key " = " v:value "\n" => Setting{Key: $k, Value: $v}
 rule key Key =  ([a-z_]+) #atomic

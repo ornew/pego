@@ -9,12 +9,10 @@ import (
 	"slices"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGeneratedMaxDepthValidation(t *testing.T) {
-	g, err := syntax.Parse(`rule main = "x"`)
+	g, err := parseTest(`rule main = "x"`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,7 +109,7 @@ rule n Word = t:(("(" n ")" / "é") #recover(skip="?")) #atomic => Word{Text: te
 	}
 	write("go.mod", []byte(testGoMod("depthoptions")))
 	for i, c := range fixtures {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -215,7 +213,7 @@ type ParseOption_ = { Text string }
 type WithUnit ~ ParseOption
 type WithMaxDepth = { Item WithUnit }
 rule main WithUnit = t:("é") #atomic => ParseOption{Text: text($t)}`
-	g, err := syntax.Parse(src)
+	g, err := parseTest(src)
 	if err != nil {
 		t.Fatal(err)
 	}

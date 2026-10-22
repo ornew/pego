@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 // PEGO_TYPED_CHUNK_DIR retains both generated paths for paired allocation
@@ -16,7 +14,7 @@ func TestGeneratedTypedChunkOwnership(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(`type Token = { Text string }
+	g, err := parseTest(`type Token = { Text string }
 type Item = { Token Token }
 type Group = { Items []Item }
 type Root = { Groups []Group; Missing *Group }

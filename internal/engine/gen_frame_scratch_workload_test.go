@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 const nodeFrameScratchGrammar = `type Tok = { Text string }
@@ -48,7 +46,7 @@ rule main Tok = t:(("é" / "�")* $$) #atomic => Tok{Text: text($t)}`, `func fr
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			g, err := syntax.Parse(c.source)
+			g, err := parseTest(c.source)
 			if err != nil {
 				t.Fatal(err)
 			}

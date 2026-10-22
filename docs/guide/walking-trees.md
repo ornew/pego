@@ -17,7 +17,8 @@ import (
 )
 
 func main() {
-	parser, err := pego.CompileSource(`rule start = "a" "b"`, "start")
+	parser, err := pego.CompileSource(`@start
+rule start = "a" "b"`, "start")
 	if err != nil {
 		log.Fatal(err)
 	}

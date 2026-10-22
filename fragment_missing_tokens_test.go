@@ -9,7 +9,7 @@ import (
 )
 
 func TestParsePrefixRejectsMissingTokenOptions(t *testing.T) {
-	parser, err := pego.CompileSource(`rule main = "x"`, "main")
+	parser, err := compileTestSource(`rule main = "x"`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func TestParsePrefixRejectsMissingTokenOptions(t *testing.T) {
 }
 
 func TestParsePrefixMissingGrammarKeepsWholeInputInsertionScope(t *testing.T) {
-	parser, err := pego.CompileSource(`rule main = token $$
+	parser, err := compileTestSource(`rule main = token $$
 rule token = "x" ";" #missing`, "main")
 	if err != nil {
 		t.Fatal(err)

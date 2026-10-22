@@ -97,16 +97,16 @@ func TestMetadataInteriorCancellation(t *testing.T) {
 		assertMetadataPhaseCancels(t, a.indexDeclarationStartsControlled)
 	})
 	t.Run("definition", func(t *testing.T) {
-		a := metadataPrepared(t, "rule main = "+strings.Repeat("\"a\" ", n))
+		a := metadataPrepared(t, "@start\nrule main = "+strings.Repeat("\"a\" ", n))
 		a.indexDeclarationStarts()
 		r := a.g.File.Decls[0].(*grammar.RuleDef)
-		assertMetadataPhaseCancels(t, func(c *renderControl) { a.defineControlled(kindRule, r.Name, r.Diagnostic(), c) })
+		assertMetadataPhaseCancels(t, func(c *renderControl) { a.defineControlled(kindRule, r.Name, r.Pos, r.Diagnostic(), c) })
 	})
 	t.Run("documentation", func(t *testing.T) {
-		a := metadataPrepared(t, strings.Repeat("// documentation\n", n)+"rule main = \"a\"")
+		a := metadataPrepared(t, strings.Repeat("// documentation\n", n)+"@start\nrule main = \"a\"")
 		a.indexDeclarationStarts()
 		r := a.g.File.Decls[0].(*grammar.RuleDef)
-		assertMetadataPhaseCancels(t, func(c *renderControl) { a.defineControlled(kindRule, r.Name, r.Diagnostic(), c) })
+		assertMetadataPhaseCancels(t, func(c *renderControl) { a.defineControlled(kindRule, r.Name, r.Pos, r.Diagnostic(), c) })
 	})
 	t.Run("comment-trim", func(t *testing.T) {
 		assertMetadataPhaseCancels(t, func(c *renderControl) { commentTextControlled("/*"+strings.Repeat(" \t\u2000", n)+"*/", c) })

@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestGenerateDirectTypedDocument(t *testing.T) {
@@ -73,7 +71,7 @@ rule token Token = t:("é") #atomic => Token{Text: text($t)}`, []string{"", "é"
 rule main Text = v1:[aé😀]* #atomic => Text{S: text($v1)}`, []string{"", "aé😀", "b", "\xff"}},
 	} {
 		pkg := fmt.Sprintf("case%d", i)
-		g, err := syntax.Parse(c.grammar)
+		g, err := parseTest(c.grammar)
 		if err != nil {
 			t.Fatalf("%s: %v", pkg, err)
 		}

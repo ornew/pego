@@ -9,7 +9,9 @@ import (
 )
 
 func TestParseCheckCompiledRecognition(t *testing.T) {
-	p, err := pego.CompileSource(`rule main = "a" $$
+	p, err := pego.CompileSource(`@start(default)
+rule main = "a" $$
+@start
 rule other = "é" $$`, "main")
 	if err != nil {
 		t.Fatal(err)

@@ -178,12 +178,14 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 
 `, r.name, t.goType(et), newConv, result)
 	}
-	named.WriteString("// ParseRuleAST parses the whole input with the named rule and returns its typed value.\n")
-	named.WriteString("// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.\n// Invalid options and undefined names return nil with an error. Rule result types:\n")
-	for _, r := range g.prog.rules {
-		if hiddenRule(r.name) {
-			continue
-		}
+	// Only start rules are entries, so only they need a case and its converters.
+	starts := make([]*rule, len(g.prog.starts))
+	for i, name := range g.prog.starts {
+		starts[i] = g.prog.byName[name]
+	}
+	named.WriteString("// ParseRuleAST parses the whole input with the named start rule and returns its typed value.\n")
+	named.WriteString("// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.\n// Invalid options and names of rules that are not start rules return nil with an error. Start rule result types:\n")
+	for _, r := range starts {
 		fmt.Fprintf(&named, "//\t%s: %s\n", r.name, t.goType(ruleType(r)))
 	}
 	named.WriteString(`func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
@@ -193,10 +195,7 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 	}
 	switch name {
 `)
-	for _, r := range g.prog.rules {
-		if hiddenRule(r.name) {
-			continue // a hidden rule is not an entry point
-		}
+	for _, r := range starts {
 		x := ruleType(r)
 		fmt.Fprintf(&named, "\tcase %q:\n", r.name)
 		if !conv && t.runtimeOK(x) {
@@ -214,7 +213,7 @@ func (it *StreamASTIterator) Close() { it.pull.Close() }
 			fmt.Fprintf(&named, "\t\t\treturn %s\n\t\t})\n", result)
 		}
 	}
-	named.WriteString("\tdefault:\n\t\tif len(name) > 0 && name[0] == '_' {\n\t\t\treturn nil, fmt.Errorf(\"rule %s is hidden: a rule whose name begins with an underscore is not an entry point\", name)\n\t\t}\n\t\treturn nil, fmt.Errorf(\"rule %s is not defined\", name)\n\t}\n}\n")
+	named.WriteString("\tdefault:\n\t\treturn nil, pegoGrammar.StartError(name)\n\t}\n}\n")
 	b.WriteString(astHelpers)
 	bootstrap := !g.disableTypedOutputBootstrap
 	if g.disableTypedObjectSlabs {

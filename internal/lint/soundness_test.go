@@ -10,6 +10,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/starttest"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -42,7 +43,7 @@ func TestSoundness(t *testing.T) {
 		if err != nil {
 			t.Fatalf("generated grammar does not parse: %v\n%s", err, src)
 		}
-		prog, err := engine.Compile(g, engine.Options{})
+		prog, err := engine.Compile(starttest.MarkAll(g), engine.Options{})
 		if err != nil {
 			t.Fatalf("generated grammar does not compile: %v\n%s", err, src)
 		}
@@ -61,7 +62,7 @@ func TestSoundness(t *testing.T) {
 				} else {
 					checked[f.Check]++
 				}
-				prog2, err := engine.Compile(g2, engine.Options{})
+				prog2, err := engine.Compile(starttest.MarkAll(g2), engine.Options{})
 				if err != nil {
 					t.Fatalf("grammar %d: the change for %v does not compile: %v\n%s", n, f, err, src)
 				}

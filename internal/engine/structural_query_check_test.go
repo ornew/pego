@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/internal/syntax"
 )
 
 const queryShapeGrammar = `type Int = { Text string }
@@ -98,7 +96,7 @@ func TestStructuralQueryNestedShapesAreSound(t *testing.T) {
 	cases = append(cases, resultCheckCases()...)
 	schemas, patterns, recovered := 0, 0, 0
 	for _, c := range cases {
-		g, err := syntax.Parse(c.src)
+		g, err := parseTest(c.src)
 		if err != nil {
 			continue
 		}
@@ -174,7 +172,7 @@ rule semi = ";" #missing`, []string{"(;)", "()"}},
 // TestStructuralQueryRecoveryNodes checks patterns of recovery nodes where declared types are
 // expected, and of their fields.
 func TestStructuralQueryRecoveryNodes(t *testing.T) {
-	g, err := syntax.Parse(queryRecoveryCases[0].src)
+	g, err := parseTest(queryRecoveryCases[0].src)
 	if err != nil {
 		t.Fatal(err)
 	}
