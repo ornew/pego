@@ -8,7 +8,11 @@ import "github.com/ornew/pego/grammar"
 // shapeElems returns the elements e contributes to the tuple of its scope, without types of rule
 // calls (they do not change the shape).
 func shapeElems(p *Program, e grammar.Expr) []valueElem {
-	return (&valueInference{prog: p}).elems(e)
+	var control *compileControl
+	if p != nil {
+		control = p.shapeControl
+	}
+	return (&valueInference{prog: p, control: control}).elems(e)
 }
 
 // spliceBody returns the body of the rule name if it is a splice rule: a rule that makes no node of

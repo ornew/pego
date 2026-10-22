@@ -14,6 +14,9 @@ import (
 // Program is a compiled grammar. It can be used by multiple parses concurrently.
 type Program struct {
 	hasMissing bool // immutable syntax metadata; bytecode/generation are unsupported
+	// shapeControl is the compilation's cancellation control while the program is being built, so that
+	// the shape analysis of rule bodies (shapeElems) polls it; nil otherwise.
+	shapeControl *compileControl
 	Grammar    *grammar.Grammar
 	// source is the grammar as written when Grammar is its lowering (inline actions replaced by
 	// hidden rules, inline_actions.go); nil when Grammar is the grammar itself.
@@ -421,7 +424,9 @@ func buildNamed(g *grammar.Grammar, opts Options, flags []ruleFlags, names inlin
 		descTable: append([]string(nil), fixedDescs...)}
 	c := &compiler{control: control, prog: prog, opts: opts, plainDispatch: !opts.controlledDispatch}
 	if control != nil {
+		prog.shapeControl = control
 		defer func() {
+			prog.shapeControl = nil
 			c.control = nil
 			if c.an != nil {
 				c.an.control = nil

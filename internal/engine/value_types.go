@@ -257,7 +257,7 @@ func valueTypesChecked(p *Program, control *compileControl, nodeMembers map[*gra
 	for _, rd := range rules {
 		v.rules[rd.Name] = rd
 	}
-	v.cycle = ruleCycles(rules, v.rules)
+	v.cycle = ruleCyclesControlled(rules, v.rules, control)
 	for _, rd := range rules {
 		control.poll()
 		v.ruleValue(rd.Name)
@@ -373,17 +373,19 @@ func mapTy(t ty, f func(ty) (ty, bool)) ty {
 	return t
 }
 
-// ruleCycles returns the strongly connected components of the references between rules that
+// ruleCyclesControlled returns the strongly connected components of the references between rules that
 // have a cycle, for each of their rules. The value of a rule can only depend on the rules it
 // refers to, directly or through other rules, since a rule type comes from a reference.
-func ruleCycles(rules []*grammar.RuleDef, byName map[string]*grammar.RuleDef) map[string][]string {
+func ruleCyclesControlled(rules []*grammar.RuleDef, byName map[string]*grammar.RuleDef, control *compileControl) map[string][]string {
 	refs := map[string][]string{}
 	for _, rd := range rules {
-		walkExpr(rd.Expr, func(e grammar.Expr) {
+		control.poll()
+		walkExprControlled(rd.Expr, func(e grammar.Expr) {
+			control.poll()
 			if r, ok := e.(*grammar.Ref); ok && byName[r.Name] != nil {
 				refs[rd.Name] = append(refs[rd.Name], r.Name)
 			}
-		})
+		}, control)
 	}
 	// Tarjan's algorithm.
 	index, low := map[string]int{}, map[string]int{}
@@ -392,6 +394,7 @@ func ruleCycles(rules []*grammar.RuleDef, byName map[string]*grammar.RuleDef) ma
 	out := map[string][]string{}
 	var visit func(n string)
 	visit = func(n string) {
+		control.poll()
 		index[n], low[n] = len(index), len(index)
 		stack = append(stack, n)
 		onStack[n] = true
