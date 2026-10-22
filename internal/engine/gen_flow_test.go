@@ -14,7 +14,8 @@ import (
 // The tests here compare the typed rules printed from Flow IR (gen_flow.go) with the direct rules
 // of dgen, generating every corpus grammar with and without GenOptions.flowTyped.
 
-// flowModes are the generator options under which flowTyped prints rules from Flow IR; frames
+// flowModes are the generator options under which flowTyped prints rules from Flow IR, lean and
+// with work controls; frames
 // reports that it also prints the bodies and lines under runtime-owned frames.
 var flowModes = []struct {
 	name   string
@@ -33,14 +34,20 @@ var flowModes = []struct {
 	{"lean without recovery bodies", GenOptions{Types: true, TypedOnly: true, disableTypedRecoveryBodies: true}, true},
 	{"lean without OperatorsRule bodies", GenOptions{Types: true, TypedOnly: true, disableTypedOperatorsRuleBodies: true}, true},
 	{"lean general frame layouts", GenOptions{Types: true, TypedOnly: true, disableTypedFrameLayouts: true}, false},
+	{"controlled typed-only", GenOptions{Types: true, TypedOnly: true, WorkControls: true}, true},
+	{"controlled with nodes", GenOptions{Types: true, WorkControls: true}, true},
+	{"controlled recognizer", GenOptions{Types: true, Recognize: true, WorkControls: true}, true},
+	{"controlled unguarded", GenOptions{Types: true, TypedOnly: true, WorkControls: true, disableGuardedClasses: true}, true},
+	{"controlled boxed", GenOptions{Types: true, TypedOnly: true, WorkControls: true, disableLiteralTextDispatch: true, boxedComparisons: true}, true},
 }
 
-// flowUnreadLine matches the first line of a direct rule's body, which assigns the variables
+// flowUnreadLine matches the first line of a direct rule's body or matcher, also of the copy
+// that work controls specialize for parses without a control, which assigns the variables
 // that no statement reads to the blank identifier. dgen tracks reads where it writes the names
 // of variables and Flow IR where an expression uses them, which differ in a few spots (a count
 // compared with the minimum of a repetition), so the lines are left out of the comparison; the
 // compilation of the generated parsers checks them.
-var flowUnreadLine = regexp.MustCompile(`(?m)^\t_(, _)* = [a-z0-9]+(, [a-z0-9]+)*\n`)
+var flowUnreadLine = regexp.MustCompile(`(?m)^\t+_(, _)* = [a-z0-9]+(, [a-z0-9]+)*\n`)
 
 // flowGenerate generates the parser of the grammar source with the options, joined into one
 // text, and returns the numbers of rules and of framed bodies and lines printed from Flow IR, or
@@ -139,9 +146,9 @@ func firstDiff(a, b string) string {
 	return out.String()
 }
 
-// TestFlowTypedCorpus builds the parsers of the typed corpus without work controls, where
-// flowTyped prints rules from Flow IR, and checks that they parse every input as those of dgen do:
-// the comparison of their text leaves out the lines of unread variables, which the compiler
+// TestFlowTypedCorpus builds the parsers of the typed corpus with and without work controls, with
+// flowTyped printing rules from Flow IR, and checks that they parse every input as those of dgen
+// do: the comparison of their text leaves out the lines of unread variables, which the compiler
 // checks here.
 func TestFlowTypedCorpus(t *testing.T) {
 	if testing.Short() {
@@ -151,8 +158,12 @@ func TestFlowTypedCorpus(t *testing.T) {
 	if _, err := os.Stat(goBin); err != nil {
 		t.Skip("go command not found")
 	}
-	t.Setenv("PEGO_TEST_ORDINARY", "1")
-	testGeneratedTypesCorpus(t, goBin, generatedTypesCases(t), GenOptions{flowTyped: true})
+	for _, ordinary := range []string{"", "1"} {
+		t.Run("ordinary="+ordinary, func(t *testing.T) {
+			t.Setenv("PEGO_TEST_ORDINARY", ordinary)
+			testGeneratedTypesCorpus(t, goBin, generatedTypesCases(t), GenOptions{flowTyped: true})
+		})
+	}
 }
 
 // TestFlowTypedModes pins the options under which flowTyped leaves every rule on dgen and the
@@ -160,7 +171,6 @@ func TestFlowTypedCorpus(t *testing.T) {
 func TestFlowTypedModes(t *testing.T) {
 	cases := append(schemaCorpus(t), coreExtraGrammars...)
 	for _, mode := range []coreGenMode{
-		{"work controls", GenOptions{Types: true, TypedOnly: true, WorkControls: true}},
 		{"Document", GenOptions{Types: true, Document: true}},
 		{"observable", GenOptions{Types: true, TypedOnly: true, Observability: true}},
 		{"general cuts", GenOptions{Types: true, TypedOnly: true, disableTypedCuts: true}},
