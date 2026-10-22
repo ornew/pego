@@ -167,6 +167,7 @@ is up to the program.
 | `invalid compiled grammar: checksum mismatch` | The file is truncated or changed |
 | `invalid compiled grammar: ...` | The structure is wrong although the checksum matches, or the schema section is invalid |
 | `invalid compiled grammar: a schema section with the AST` | A file with the AST carries a schema section |
+| `invalid compiled grammar: a recognition bundle with the AST` | A file with the AST carries a recognition bundle |
 | `the closure backend needs the grammar, which the compiled grammar omits` | `Closure` was requested for a file without the AST |
 | `recognition needs the grammar or a recognition bundle; recompile this compiled grammar from source` | Recognition was requested for a file without the AST and without a bundle |
 | `output schema unavailable: the compiled grammar omits the AST and has no schema section; save it with the schema (pego compile -no-ast -schema, or pego.WithSchema with pego.WithoutAST)` | `OutputSchema` was called on a file without the AST and without a schema section; the error matches `ErrSchemaUnavailable` |

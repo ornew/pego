@@ -67,10 +67,10 @@ func marshalASTWithBundle(prog *Program, start string, recognition *Program) []b
 	return out.Bytes()
 }
 
-// TestCompiledRecognitionASTFileDropsBundle checks that a file with the AST and a recognition bundle
+// TestCompiledRecognitionASTFileRejectsBundle checks that a file with the AST and a recognition bundle
 // is rejected. Version 4 writes the bundle only without the AST, so such a layout is not a file the
 // writer produces.
-func TestCompiledRecognitionASTFileDropsBundle(t *testing.T) {
+func TestCompiledRecognitionASTFileRejectsBundle(t *testing.T) {
 	p := compile(t, `rule main = "a" $$`)
 	rec, err := p.recognizer()
 	if err != nil {

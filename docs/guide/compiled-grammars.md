@@ -185,8 +185,8 @@ file 2.1 to 3.0 times its size without the section.
 | yaml | 33,557 | 43,667 | 105,585 |
 
 The columns are the exact file sizes in bytes: AST file is `pego compile -g`, AST-less file is `pego compile -no-ast`,
-and AST-less with schema is `pego compile -no-ast -schema`. The focused synthetic comparison of the recognition bundle
-and its limits are described in [design 045](../design/045-compiled-grammar-recognition.md#measurements).
+and AST-less with schema is `pego compile -no-ast -schema`. The benchmark that reproduces the AST-less
+serialization and load measurements is `go test -run '^$' -bench '^BenchmarkCompiledRecognitionSerialization$' -benchmem ./internal/engine`.
 The program below measures your grammar with the current writer; results depend on grammar size and recognition
 dependencies.
 
@@ -463,6 +463,8 @@ in a profile, and to generated code when parsing speed does.
 | `unsupported compiled grammar version N (want 4)` | The file was written by a different format version. Rebuild it with your release. |
 | `unsupported instruction set version N` | The file requires an unsupported or newer instruction set. Upgrade PEGO or rebuild the file. |
 | `invalid compiled grammar: checksum mismatch` | The file is truncated or changed (a bad download, an editor that converted line endings, a merge). |
+| `invalid compiled grammar: a schema section with the AST` | A file with the AST carries a schema section. |
+| `invalid compiled grammar: a recognition bundle with the AST` | A file with the AST carries a recognition bundle. |
 | `invalid compiled grammar: ...` (other) | The structure is wrong, though the checksum matches. Rebuild the file. |
 | `the closure backend needs the grammar, which the compiled grammar omits` | You asked a file without the AST for `Closure`. Use a bytecode backend, or the full file. |
 | `recognition needs the grammar or a recognition bundle; recompile this compiled grammar from source` | Recognition was requested for an AST-less file without a bundle. Recompile from source with `-no-ast` to write a recognition bundle. |
