@@ -195,7 +195,7 @@ func (v *verifier) stmt(s Stmt) error {
 		return v.use(s.F)
 	case *AppendError:
 		return v.expr(s.X)
-	case *Step, *Silent, *SetWhere, *DeclareNames, *Comment:
+	case *Step, *Silent, *SetWhere, *DeclareNames, *Comment, *ObserveSkip:
 	default:
 		return fmt.Errorf("unknown statement %T", s)
 	}

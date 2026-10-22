@@ -152,6 +152,10 @@ type Expect struct {
 	Message bool
 }
 
+// ObserveSkip reports to the parser's observation that the guard of a choice skips the alternative
+// Alt.
+type ObserveSkip struct{ Alt core.Node }
+
 // Restore goes back to the position Pos and the number of recovered errors Rec.
 type Restore struct{ Pos, Rec Expr }
 
@@ -245,6 +249,7 @@ func (*FreeFrame) stmt()     {}
 func (*AppendError) stmt()   {}
 func (*DeclareNames) stmt()  {}
 func (*Comment) stmt()       {}
+func (*ObserveSkip) stmt()   {}
 
 // LValue is what Set assigns: a variable, a register or nothing.
 type LValue interface{ lvalue() }

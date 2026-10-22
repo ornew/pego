@@ -35,11 +35,10 @@ type flowState struct {
 	rules []*rule
 }
 
-// flowSupported reports whether flowTyped covers the generator's options: output without
-// observability, with the typed cuts and local capture layouts that dgen uses.
+// flowSupported reports whether flowTyped covers the generator's options: those with the typed
+// cuts and local capture layouts that dgen uses.
 func (g *generator) flowSupported() bool {
-	return !g.observability &&
-		!g.disableTypedCuts && !g.disableTypedLocalLayouts
+	return !g.disableTypedCuts && !g.disableTypedLocalLayouts
 }
 
 // startFlow builds the Core IR of the typed rules for printing them from Flow IR.
@@ -51,7 +50,7 @@ func (g *generator) startFlow() error {
 	}
 	g.flow = &flowState{m: m, origin: origin, rules: append(append([]*rule(nil), g.prog.rules...), g.prog.twins...),
 		opts: flow.Options{Work: !g.noWork, Recovers: flow.Recovers(m), ClassTables: g.leanTyped(),
-			GuardedClasses: g.lean && !g.disableGuardedClasses, InlineLiterals: maxInlineLiteral}}
+			GuardedClasses: g.lean && !g.disableGuardedClasses, InlineLiterals: maxInlineLiteral, Observe: g.observability}}
 	return nil
 }
 
@@ -393,6 +392,12 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 		p.declare(s.N)
 	case *flow.Comment:
 		p.write("// " + s.Text + "\n")
+	case *flow.ObserveSkip:
+		// The alternative's expression begins with the call it skips, if any; a blank line follows
+		// the report, as in the code of dgen.
+		if trace := p.g.traceSkip(p.g.flow.origin[s.Alt]); trace != "" {
+			p.write(strings.TrimPrefix(trace, "\n") + "\n")
+		}
 	default:
 		panic(fmt.Sprintf("flow printer: statement %T", s))
 	}

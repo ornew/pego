@@ -151,6 +151,8 @@ func (p *printer) stmt(s Stmt, d int) {
 		p.line(d, "names %v", s.N.List)
 	case *Comment:
 		p.line(d, "// %s", s.Text)
+	case *ObserveSkip:
+		p.line(d, "observe skip")
 	default:
 		p.line(d, "?%T", s)
 	}

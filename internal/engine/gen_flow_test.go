@@ -41,6 +41,10 @@ var flowModes = []struct {
 	{"controlled boxed", GenOptions{Types: true, TypedOnly: true, WorkControls: true, disableLiteralTextDispatch: true, boxedComparisons: true}, true},
 	{"Document", GenOptions{Types: true, Document: true}, true},
 	{"Document with work controls", GenOptions{Types: true, Document: true, WorkControls: true}, true},
+	{"observable typed-only", GenOptions{Types: true, TypedOnly: true, Observability: true}, true},
+	{"observable with nodes", GenOptions{Types: true, Observability: true}, true},
+	{"observable controlled", GenOptions{Types: true, TypedOnly: true, Observability: true, WorkControls: true}, true},
+	{"observable Document", GenOptions{Types: true, Observability: true, Document: true}, true},
 }
 
 // flowUnreadLine matches the first line of a direct rule's body or matcher, also of the copy
@@ -179,7 +183,6 @@ func TestFlowTypedDocument(t *testing.T) {
 func TestFlowTypedModes(t *testing.T) {
 	cases := append(schemaCorpus(t), coreExtraGrammars...)
 	for _, mode := range []coreGenMode{
-		{"observable", GenOptions{Types: true, TypedOnly: true, Observability: true}},
 		{"general cuts", GenOptions{Types: true, TypedOnly: true, disableTypedCuts: true}},
 		{"frame layouts", GenOptions{Types: true, TypedOnly: true, disableTypedLocalLayouts: true}},
 	} {

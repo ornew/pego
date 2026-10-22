@@ -46,6 +46,8 @@ type Options struct {
 	GuardedClasses bool
 	// InlineLiterals compares literals of at most this many code points in place first.
 	InlineLiterals int
+	// Observe reports the alternatives that the guards of choices skip (ObserveSkip).
+	Observe bool
 }
 
 // Recovers reports whether the module has a Recover, which appends recovered errors.
@@ -709,7 +711,11 @@ func (l *lowerer) choice(n *core.Choice, s *scope, build bool, fail *Label) Expr
 			}
 			skip := l.label()
 			bs = l.open(skip)
-			l.failIf(nil, &GuardFails{Guard: a.Guard, Ch: ch, More: more}, skip, &Expect{At: pos, Exp: a.Guard.Exp})
+			pre := []Stmt{&Expect{At: pos, Exp: a.Guard.Exp}}
+			if l.opts.Observe {
+				pre = append(pre, &ObserveSkip{Alt: a.Body})
+			}
+			l.failIf(nil, &GuardFails{Guard: a.Guard, Ch: ch, More: more}, skip, pre...)
 		}
 		f := l.label()
 		bf := l.open(f)
