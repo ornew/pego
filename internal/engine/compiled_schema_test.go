@@ -191,11 +191,16 @@ rule other = "b"`)
 		{"unknown rule", strings.Replace(string(section), `"rules":["main"]`, `"rules":["absent"]`, 1), "unknown rule"},
 		{"unknown type", strings.Replace(string(section), `"types":["`, `"types":["declared/Absent","`, 1), "unknown type"},
 		{"start count", dropLastStart.ReplaceAllString(string(section), "]}"), "start rules in the schema for"},
+		// The schema's own start rule is the first "start" member of the section.
+		{"default start", strings.Replace(string(section), `"start":"main"`, `"start":"other"`, 1), "the schema starts at \"other\""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			_, _, err := LoadProgram(marshalWithSchemaSection(p, "main", []byte(tc.section), false), Options{})
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("error %v, want %q", err, tc.want)
+			}
+			if !strings.HasPrefix(err.Error(), "invalid compiled grammar: invalid schema section: ") {
+				t.Fatalf("error %q lacks the compiled grammar prefix", err)
 			}
 		})
 	}
@@ -240,5 +245,46 @@ func TestCompiledSchemaWithAST(t *testing.T) {
 	_, _, err = LoadProgram(marshalWithSchemaSection(p, "main", section, true), Options{})
 	if err == nil || !strings.Contains(err.Error(), "a schema section with the AST") {
 		t.Fatalf("file with the AST and a schema section: %v", err)
+	}
+}
+
+// TestCompiledSchemaStartNames checks that the complete schema of an AST-less file accepts the same
+// start names as the source it was saved from: any rule, and only unknown names are rejected with
+// the same error.
+func TestCompiledSchemaStartNames(t *testing.T) {
+	p := compile(t, `@start
+rule main = a:"x"
+rule helper = "y"`)
+	bare, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: true, Schema: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	loaded, _, err := LoadProgram(bare, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, start := range []string{"helper", "nosuch"} {
+		want, wantErr := p.OutputSchemaPrototype(start, true)
+		got, gotErr := loaded.OutputSchemaPrototype(start, true)
+		if (wantErr == nil) != (gotErr == nil) {
+			t.Fatalf("start %q: source error %v, stored error %v", start, wantErr, gotErr)
+		}
+		if gotErr != nil {
+			if gotErr.Error() != wantErr.Error() || gotErr.Error() != `unknown schema start rule "nosuch"` {
+				t.Fatalf("start %q: source error %v, stored error %v", start, wantErr, gotErr)
+			}
+			continue
+		}
+		wj, err := json.Marshal(want)
+		if err != nil {
+			t.Fatal(err)
+		}
+		gj, err := json.Marshal(got)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(wj, gj) {
+			t.Fatalf("start %q: stored all-rules schema differs from the source", start)
+		}
 	}
 }

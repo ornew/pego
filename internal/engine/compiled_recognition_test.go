@@ -67,6 +67,9 @@ func marshalASTWithBundle(prog *Program, start string, recognition *Program) []b
 	return out.Bytes()
 }
 
+// TestCompiledRecognitionASTFileDropsBundle checks that a file with the AST and a recognition bundle
+// is rejected. Version 4 writes the bundle only without the AST, so such a layout is not a file the
+// writer produces.
 func TestCompiledRecognitionASTFileDropsBundle(t *testing.T) {
 	p := compile(t, `rule main = "a" $$`)
 	rec, err := p.recognizer()
@@ -74,31 +77,8 @@ func TestCompiledRecognitionASTFileDropsBundle(t *testing.T) {
 		t.Fatal(err)
 	}
 	stored := marshalASTWithBundle(p, "main", rec)
-	loaded, start, err := LoadProgram(stored, Options{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if start != "main" || loaded.Grammar == nil || loaded.recognitionModule == nil {
-		t.Fatal("AST and recognition bundle were not loaded")
-	}
-	got, err := loaded.MarshalBinary("main")
-	if err != nil {
-		t.Fatal(err)
-	}
-	want, err := p.MarshalBinary("main")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got[len(compiledMagic)] != compiledVersion || !bytes.Equal(got, want) {
-		t.Fatal("AST-bearing file with a bundle did not save without the bundle")
-	}
-	withoutAST, err := loaded.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
-	if err != nil {
-		t.Fatalf("AST-less resave lost the recognition bundle: %v", err)
-	}
-	reloaded, _, err := LoadProgram(withoutAST, Options{})
-	if err != nil || reloaded.recognitionModule == nil {
-		t.Fatalf("AST-less resave has no recognition bundle: %v", err)
+	if _, _, err := LoadProgram(stored, Options{}); err == nil || !strings.Contains(err.Error(), "a recognition bundle with the AST") {
+		t.Fatalf("AST file with a recognition bundle: %v", err)
 	}
 }
 

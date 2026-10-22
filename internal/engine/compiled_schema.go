@@ -123,6 +123,14 @@ func decodeSchemaSection(data []byte, starts []string, defaultStart string) (*st
 // returns a copy that shares no shapes with the stored schema.
 func (s *storedSchema) export(start string, allRules bool) (*OutputSchema, error) {
 	if allRules {
+		// Like the source path, any rule name is a valid start for the complete schema.
+		known := false
+		for _, r := range s.all.Rules {
+			known = known || r.Name == start
+		}
+		if !known {
+			return nil, fmt.Errorf("unknown schema start rule %q", start)
+		}
 		out := s.all
 		out.Start = start
 		return copyOutputSchema(&out), nil

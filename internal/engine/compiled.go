@@ -758,6 +758,9 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 		n := r.count()
 		if r.err == nil {
 			schema, r.err = decodeSchemaSection(r.data[r.pos:r.pos+n], moduleStarts(m), moduleDefaultStart(m))
+			if r.err != nil {
+				r.err = fmt.Errorf("invalid compiled grammar: %w", r.err)
+			}
 			r.pos += n
 		}
 	}
@@ -798,6 +801,10 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 			return nil, "", fmt.Errorf("invalid compiled grammar: the start rules of the module are not rules of the syntax tree")
 		}
 		prog.moduleOnce.Do(func() { prog.module = m })
+	}
+	if prog.Grammar != nil && recognitionModule != nil {
+		// Version 4 writes the recognition bundle only without the AST.
+		return nil, "", errors.New("invalid compiled grammar: a recognition bundle with the AST")
 	}
 	prog.recognitionModule, prog.recognitionEntries = recognitionModule, entries
 	if schema != nil {
