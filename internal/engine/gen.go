@@ -363,6 +363,11 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 			}
 		}
 	}
+	if opts.Types {
+		if whole, err = pruneTypedEntries(whole); err != nil {
+			return nil, err
+		}
+	}
 	body := strings.TrimPrefix(string(whole), "package "+opts.Package+"\n")
 	var tp *typesPackage
 	var typesFile []byte
@@ -1915,21 +1920,10 @@ func (g *generator) classTable(e *grammar.CharClass) string {
 	name := g.name("cls")
 	g.workClassNames[key] = name
 	g.workClassKeys = append(g.workClassKeys, key)
-	var ascii [2]uint64
+	ascii, wideRunes := classBits(e)
 	var wide []string
-	for c := rune(0); c < 128; c++ {
-		in := false
-		for _, r := range e.Ranges {
-			in = in || (c >= r.Lo && c <= r.Hi)
-		}
-		if in != e.Negated {
-			ascii[c>>6] |= 1 << (uint(c) & 63)
-		}
-	}
-	for _, r := range e.Ranges {
-		if r.Hi >= 128 {
-			wide = append(wide, strconv.Itoa(int(max(r.Lo, 128))), strconv.Itoa(int(r.Hi)))
-		}
+	for _, r := range wideRunes {
+		wide = append(wide, strconv.Itoa(int(r)))
 	}
 	fmt.Fprintf(&g.vars, "var %s = Class{ASCII: [2]uint64{%#x, %#x}", name, ascii[0], ascii[1])
 	if len(wide) > 0 {
@@ -1972,4 +1966,25 @@ func (g *generator) classSteps(items []grammar.Expr) string {
 	g.workClassKeys = append(g.workClassKeys, key)
 	fmt.Fprintf(&g.vars, "var %s = []ClassStep{%s}\n", name, body)
 	return name
+}
+
+// classBits returns the membership tables of a character class as the runtime's Class holds
+// them: the bitset of the matching characters below 128, with the negation applied, and the
+// inclusive pairs of the ranges at or above 128 (a range that starts below is cut at 128).
+func classBits(e *grammar.CharClass) (ascii [2]uint64, wide []rune) {
+	for c := rune(0); c < 128; c++ {
+		in := false
+		for _, r := range e.Ranges {
+			in = in || (c >= r.Lo && c <= r.Hi)
+		}
+		if in != e.Negated {
+			ascii[c>>6] |= 1 << (uint(c) & 63)
+		}
+	}
+	for _, r := range e.Ranges {
+		if r.Hi >= 128 {
+			wide = append(wide, max(r.Lo, 128), r.Hi)
+		}
+	}
+	return ascii, wide
 }

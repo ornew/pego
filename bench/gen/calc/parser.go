@@ -50,40 +50,6 @@ func ParseRule(name, input string, opts ...pegort.ParseOption) (*pegort.Node, er
 
 // --- Typed values ---
 
-func astNode(v any) *pegort.Node { n, _ := v.(*pegort.Node); return n }
-func astIsNil(v any) bool        { n, ok := v.(*pegort.Node); return v == nil || ok && n == nil }
-
-// astKid returns the value of element i of a tuple node's children (nil if there is none).
-func astKid(kids []*pegort.Node, i int) any {
-	if i < len(kids) {
-		return pegort.UnboxNode(kids[i])
-	}
-	return nil
-}
-
-// The value of a rule, and a list element, holds an int, string or bool in a box.
-func astInt(v any) int       { i, _ := pegort.UnboxValue(v).(int); return i }
-func astString(v any) string { s, _ := pegort.UnboxValue(v).(string); return s }
-func astBool(v any) bool     { x, _ := pegort.UnboxValue(v).(bool); return x }
-func astPtrInt(v any) *int {
-	if i, ok := pegort.UnboxValue(v).(int); ok {
-		return &i
-	}
-	return nil
-}
-func astPtrString(v any) *string {
-	if s, ok := pegort.UnboxValue(v).(string); ok {
-		return &s
-	}
-	return nil
-}
-func astPtrBool(v any) *bool {
-	if x, ok := pegort.UnboxValue(v).(bool); ok {
-		return &x
-	}
-	return nil
-}
-
 // astChunk owns unused values and the next allocation size for one type.
 // Handed-out values are never reused, even when a parse discards them.
 type astChunk[T any] struct {
@@ -121,27 +87,6 @@ func astNew[T any](s *astChunk[T]) *T {
 	}
 	v := &s.free[0]
 	s.free = s.free[1:]
-	return v
-}
-
-// astSlice allocates the first nonempty small list independently to keep
-// its backing values separate from later published lists of the same type.
-func astSlice[T any](s *astChunk[T], n int) []T {
-	if n == 0 {
-		return []T{} // an empty list, not nil
-	}
-	if n > 256 {
-		return make([]T, n)
-	}
-	if len(s.free) < n {
-		if s.bootstrap == 0 {
-			s.bootstrap = 1
-			return make([]T, n)
-		}
-		s.grow(n, 64, 1024)
-	}
-	v := s.free[:n:n]
-	s.free = s.free[n:]
 	return v
 }
 
@@ -410,9 +355,7 @@ func init() {
 			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}}}},
 	}
 	trules[1].Body = func(p *pegort.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[1], min) }
-	trules[2].Entry = s2
-	trules[3].Entry = s3
-	trules[4].Entry = s4
+
 }
 
 // main (Node body inlined)
@@ -1217,52 +1160,6 @@ func r2(p *pegort.Parser) (*pegort.Node, bool) {
 	return v, ok
 }
 
-// ws, called as by invokePlain
-func r3(p *pegort.Parser) (*pegort.Node, bool) {
-	if p.Control == nil {
-		start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
-		prevEnv, prevCut := p.Env, p.Cut
-		p.Cut = false
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
-		v, ok := e4(p)
-		p.Depth--
-		p.Cut = prevCut
-		p.Trail = p.Trail[:trail]
-		if ok {
-			v = p.Finish(rules[3], pegort.EmptyFrame, v, start)
-		} else {
-			p.Pos = start
-			p.Recovered = p.Recovered[:rec]
-		}
-		p.Env = prevEnv
-		return v, ok
-	}
-
-	p.StepWork()
-	start, rec, trail := p.Pos, len(p.Recovered), len(p.Trail)
-	prevEnv, prevCut := p.Env, p.Cut
-	p.Cut = false
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
-	v, ok := e4(p)
-	p.Depth--
-	p.Cut = prevCut
-	p.Trail = p.Trail[:trail]
-	if ok {
-		v = p.Finish(rules[3], pegort.EmptyFrame, v, start)
-	} else {
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
-	}
-	p.Env = prevEnv
-	return v, ok
-}
-
 // ws, called as by invokePlain (body inlined)
 func r4(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
@@ -1492,77 +1389,6 @@ L5:
 	v = nil
 	return v, true
 fail:
-	return nil, false
-}
-
-// main, called as by invokePlain (body inlined)
-func q0(p *pegort.Parser) (*pegort.Node, bool) {
-	if p.Control == nil {
-		var (
-			start int
-			v     *pegort.Node
-			rec   int
-			ok    bool
-		)
-		start, rec = p.Pos, len(p.Recovered)
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
-		if _, ok = p.Call(recRules[1], 0); !ok {
-			goto fail_ordinary
-		}
-		if _, ok = q3(p); !ok {
-			goto fail_ordinary
-		}
-		if !p.AtEndBatchOrdinary() {
-			p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
-			goto fail_ordinary
-		}
-		v = nil
-		p.Depth--
-		return v, true
-	fail_ordinary:
-		p.Depth--
-		p.Pos = start
-		p.Recovered = p.Recovered[:rec]
-		return nil, false
-	}
-
-	p.StepWork()
-	var (
-		start int
-		v     *pegort.Node
-		rec   int
-		ok    bool
-	)
-	start, rec = p.Pos, len(p.Recovered)
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
-	p.StepWork()
-	p.StepWork()
-	p.StepWork()
-	if _, ok = p.Call(recRules[1], 0); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if _, ok = q3(p); !ok {
-		goto fail
-	}
-	p.StepWork()
-	if !p.AtEndBatch() {
-		p.Expect(p.Pos, pegort.IdEndInput)
-		goto fail
-	}
-	v = nil
-	p.Depth--
-	return v, true
-fail:
-	p.Depth--
-	p.Pos = start
-	p.Recovered = p.Recovered[:rec]
 	return nil, false
 }
 
@@ -2998,127 +2824,6 @@ fail:
 	p.Pos = start
 	p.Recovered = p.Recovered[:rec]
 	return nil, false
-}
-
-// ws, called as by invokePlain (body inlined)
-func s3(p *pegort.TParser) (any, bool) {
-	if p.Control == nil {
-		var (
-			start int
-			v     any
-			x1    int
-			x2    int
-			x3    int
-			x4    int
-			x5    int
-			ch    rune
-			size  int
-			ok    bool
-			x7    int
-			v8    any
-			v9    any
-			v10   any
-		)
-		start = p.Pos
-		p.Depth++
-		if p.Depth > p.MaxDepth {
-			p.TooDeep()
-		}
-		_ = x3
-		x1, x2 = p.Pos, len(p.KidStack)
-		x3 = 0
-		for {
-			x4, x5 = p.Pos, len(p.Recovered)
-			ch, size, ok = p.NextOrdinary()
-			if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
-				p.ExpectOrdinary(p.Pos, 7)
-				goto L6_ordinary
-			}
-			x7 = p.Pos
-			p.Pos += size
-			v8 = p.NewMatchOrdinary(x7, p.Pos, p.Text(x7, p.Pos), true)
-			v9 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v8, x4)
-			x3++
-			p.PushKid(v9)
-			if p.Pos == x4 {
-				break
-			}
-			continue
-		L6_ordinary:
-			p.Pos = x4
-			p.Recovered = p.Recovered[:x5]
-			break
-		}
-		v10 = p.NewNodeOrdinary("list", x1, p.Pos, p.Kids(x2))
-		v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v10, start)
-		if n := pegort.AsTval(v); n != nil {
-			n.TSetFresh(false)
-		}
-		p.Depth--
-		return v, true
-	}
-
-	p.StepWork()
-	var (
-		start int
-		v     any
-		x1    int
-		x2    int
-		x3    int
-		x4    int
-		x5    int
-		ch    rune
-		size  int
-		ok    bool
-		x7    int
-		v8    any
-		v9    any
-		v10   any
-	)
-	start = p.Pos
-	p.Depth++
-	if p.Depth > p.MaxDepth {
-		p.TooDeep()
-	}
-	_ = x3
-	p.StepWork()
-	x1, x2 = p.Pos, len(p.KidStack)
-	x3 = 0
-	for {
-		x4, x5 = p.Pos, len(p.Recovered)
-		p.StepWork()
-		if p.Pos < len(p.In) {
-			p.InputWork(1)
-			ch, size, ok = p.In[p.Pos], 1, true
-		} else {
-			ch, size, ok = p.Peek()
-		}
-		if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
-			p.Expect(p.Pos, 7)
-			goto L6
-		}
-		x7 = p.Pos
-		p.Pos += size
-		v8 = p.NewMatch(x7, p.Pos, p.Text(x7, p.Pos), true)
-		v9 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v8, x4)
-		x3++
-		p.PushKid(v9)
-		if p.Pos == x4 {
-			break
-		}
-		continue
-	L6:
-		p.Pos = x4
-		p.Recovered = p.Recovered[:x5]
-		break
-	}
-	v10 = p.NewNode("list", x1, p.Pos, p.Kids(x2))
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v10, start)
-	if n := pegort.AsTval(v); n != nil {
-		n.TSetFresh(false)
-	}
-	p.Depth--
-	return v, true
 }
 
 // ws, called as by invokePlain (body inlined)
