@@ -1,10 +1,39 @@
 [
 	{
+		"name": "cel-spec",
+		"url": "https://codeload.github.com/google/cel-spec/tar.gz/40a3c9007a9305d1f2638d5f538a4e011732cace",
+		"revision": "40a3c9007a9305d1f2638d5f538a4e011732cace",
+		"license": "Apache-2.0",
+		"include": [
+			"LICENSE",
+			"tests/simple/testdata/"
+		],
+		"sha256": "630910ab7d126c24a1dc80e1422a517a4842b3e38223cc11b29a4f2e589949af"
+	},
+	{
+		"name": "cel-go",
+		"url": "https://proxy.golang.org/cel.dev/cel-go/@v/v0.32.0.zip",
+		"format": "zip",
+		"strip": "cel.dev/cel-go@v0.32.0/",
+		"revision": "v0.32.0",
+		"license": "Apache-2.0",
+		"include": [
+			"LICENSE",
+			"parser/parser_test.go",
+			"parser/unparser_test.go",
+			"parser/unescape_test.go"
+		],
+		"sha256": "4c5d4794f0ead3f071693690b5149d361f347f246bfb5d7cffd7b3374c3482ac"
+	},
+	{
 		"name": "jsontestsuite",
 		"url": "https://codeload.github.com/nst/JSONTestSuite/tar.gz/1ef36fa01286573e846ac449e8683f8833c5b26a",
 		"revision": "1ef36fa01286573e846ac449e8683f8833c5b26a",
 		"license": "MIT",
-		"include": ["LICENSE", "test_parsing/"],
+		"include": [
+			"LICENSE",
+			"test_parsing/"
+		],
 		"sha256": "4803a2bfbce431a1d0b5bd044384536cb830d2bd9f05d0eb8630968e0499d23d"
 	},
 	{
@@ -12,7 +41,9 @@
 		"url": "https://codeload.github.com/yaml/yaml-test-suite/tar.gz/6ad3d2c62885d82fc349026c136ef560838fdf3d",
 		"revision": "6ad3d2c62885d82fc349026c136ef560838fdf3d",
 		"license": "MIT",
-		"include": ["*"],
+		"include": [
+			"*"
+		],
 		"sha256": "0897d6cb42ba393e6365ec88e1d29b699f76e25a8aa0179c5769ad3710d2ccf4"
 	},
 	{
@@ -20,7 +51,11 @@
 		"url": "https://codeload.github.com/python/cpython/tar.gz/ebf955df7a89ed0c7968f79faec1de49f61ed7cb",
 		"revision": "ebf955df7a89ed0c7968f79faec1de49f61ed7cb",
 		"license": "PSF-2.0",
-		"include": ["LICENSE", "Lib/_pydecimal.py", "Lib/typing.py"],
+		"include": [
+			"LICENSE",
+			"Lib/_pydecimal.py",
+			"Lib/typing.py"
+		],
 		"sha256": "1355ee0341fb128f94d410a8cf5cb27e84987cae2b227dbcd0453c4a99137294"
 	}
 ]

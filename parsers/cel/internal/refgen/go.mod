@@ -2,7 +2,10 @@ module github.com/ornew/pego/parsers/cel/internal/refgen
 
 go 1.27.1
 
-require cel.dev/cel-go v0.32.0
+require (
+	cel.dev/cel-go v0.32.0
+	github.com/ornew/pego/parsers/cel v0.0.0-00010101000000-000000000000
+)
 
 require (
 	cel.dev/expr v0.25.1 // indirect
@@ -12,3 +15,7 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240826202546-f6391c0de4c7 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 )
+
+replace github.com/ornew/pego/parsers/cel => ../..
+
+replace github.com/ornew/pego => ../../../..

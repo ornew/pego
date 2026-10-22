@@ -9,6 +9,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/ornew/pego/internal/corpora/corporatest"
 	"github.com/ornew/pego/parsers/cel"
 	"github.com/ornew/pego/parsers/cel/types"
 )
@@ -124,11 +125,12 @@ func textprotoString(t testing.TB, s string) string {
 }
 
 // TestConformanceSuite parses the expression of every test of the simple conformance suite of cel-spec
-// (testdata/cel-spec), all of which are valid, and checks the typed values, the nodes and the recognizer agree.
+// (the corpus cel-spec, fetched by go run ./hack/corpora fetch), all of which are valid, and checks the typed values,
+// the nodes and the recognizer agree.
 func TestConformanceSuite(t *testing.T) {
-	files, _ := filepath.Glob(filepath.Join("testdata", "cel-spec", "*.textproto"))
-	if len(files) == 0 {
-		t.Fatal("no test files")
+	files, _ := filepath.Glob(filepath.Join(corporatest.Dir(t, "cel-spec"), "tests", "simple", "testdata", "*.textproto"))
+	if len(files) != 31 {
+		t.Fatalf("%d test files, want 31", len(files))
 	}
 	total, distinct := 0, map[string]bool{}
 	for _, f := range files {

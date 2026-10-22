@@ -1,358 +1,358 @@
-"      '😁' in ['😁', '😑', '😦']\n\t\t\t&& in.😁"	ERR@2:7
-"! false"	(call@0 !_ false@2)
-"!!true"	true@2
-"!a"	(call@0 !_ a@1)
-"!true"	(call@0 !_ true@1)
-"'"	ERR@1:1
-"'''\"Kim\\t\"'''"	s:"\"Kim\t\""@0
-"'''x''x'''"	s:"x''x"@0
-"'3# < 10\" '& tru ^^"	ERR@1:12
-"'\\udead' == '\\ufffd'"	ERR@1:1
-"'hello'"	s:"hello"@0
-"((a))"	a@2
-"(1 + 2) * 3"	(call@8 _*_ (call@3 _+_ i:1@1 i:2@5) i:3@10)
-"(a + b) * c / (d - e)"	(call@12 _/_ (call@8 _*_ (call@3 _+_ a@1 b@5) c@10) (call@17 _-_ d@15 e@19))
-"(a + b).name"	(sel@7 (call@3 _+_ a@1 b@5) name)
-"(a ? b : c).method(d)"	(mcall@18 method (call@3 _?_:_ a@1 b@5 c@9) d@19)
-"(a ? b : c).name"	(sel@11 (call@3 _?_:_ a@1 b@5 c@9) name)
-"(a ? b : c)[0]"	(call@11 _[_] (call@3 _?_:_ a@1 b@5 c@9) i:0@12)
-"(a || b ? c : d).e"	(sel@16 (call@8 _?_:_ (call@3 _||_ a@1 b@6) c@10 d@14) e)
-"(a)"	a@1
-"(a1 && a2) ? b : c"	(call@11 _?_:_ (call@4 _&&_ a1@1 a2@7) b@13 c@17)
-"(false && !true || false) ? 2 : 3"	(call@26 _?_:_ (call@16 _||_ (call@7 _&&_ false@1 (call@10 !_ true@11)) false@19) i:2@28 i:3@32)
-"(false && !true) || false"	(call@17 _||_ (call@7 _&&_ false@1 (call@10 !_ true@11)) false@20)
-"(has(a.b) || has(c.d)).string()"	(mcall@29 string (call@10 _||_ (call@4 has (sel@6 a@5 b)) (call@16 has (sel@18 c@17 d))))
-"(x < 5) ? x : 5"	(call@8 _?_:_ (call@3 _<_ x@1 i:5@5) x@10 i:5@14)
-"(x > 5) ? ((x > 10) ? (x - 10) : 5) : 0"	(call@8 _?_:_ (call@3 _>_ x@1 i:5@5) (call@20 _?_:_ (call@14 _>_ x@12 i:10@16) (call@25 _-_ x@23 i:10@27) i:5@33) i:0@38)
-"(x > 5) ? (x - 5) : 0"	(call@8 _?_:_ (call@3 _>_ x@1 i:5@5) (call@13 _-_ x@11 i:5@15) i:0@20)
-"*@a | b"	ERR@1:2
-"*hello*"	ERR@1:1
-"-((x > 5) ? (x - 5) : 0)"	(call@0 -_ (call@10 _?_:_ (call@5 _>_ x@3 i:5@7) (call@15 _-_ x@13 i:5@17) i:0@22))
-"-(1 * 2)"	(call@0 -_ (call@4 _*_ i:1@2 i:2@6))
-"-(1 + 2)"	(call@0 -_ (call@4 _+_ i:1@2 i:2@6))
-"--"	ERR@1:3
-"-1"	i:-1@0
-"-405069"	i:-405069@0
-"-42.101"	d:-42.101@0
-"-[-1--1--1--1---1--1--1--0--1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1\n\t\t--3-[-1--1--1--1---1--1--1--0--1--1--1--1--0--3--1--1--0--1--1--1--1--0--1--1--1\n\t\t--3-[-1--1--1--1---1--1--1--0-/1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1\n\t\t--3-[-1--1--1--1---1--1--1--0--1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1\n\t\t--3-[-1--1--1--1---1--1--1--0--1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1\n\t\t--3-[-1--1--1--1---1--1--1--0--1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1\n\t\t--3-[-1--1--1--1---1--1--1--0--1--1--1--1--0--3--1--1--0--1--1--1--1--0--1--1--1\n\t\t--3-[-1--1--1--1---1--1--1--0-/1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1\n\t\t--3-[-1--1--1--1---1-1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1--3-[-1--1\n\t\t--1--1---1--1--1--0--1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1--3-[-1--1\n\t\t--1--1---1--1-À1--0--1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1--3-[-1--1\n\t\t--1--1---1--1--1--0--1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1--3-[-1--1\n\t\t--1--1---1--1--1--0--1--1--1--1--0--3--1--1--0--1--1--1--1--0--1--1--1--3-[-1--1\n\t\t--1--1---1--1--1--0-/1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1--3-[-1--1\n\t\t--1--1---1--1--1--0--1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1--3-[-1--1\n\t\t--1--1---1--1--1--0--1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1--3-[-1--1\n\t\t--1--1---1--1--1--0--1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1--3-[-1--1\n\t\t--1--1---1--1--1--0--1--1--1--1--0--3--1--1--0--1--1--1\n\t\t--1--0--1--1--1--3-[-1--1--1--1---1--1--1--0-/1--1--1--1--0--2--1--1--0--1--1--1\n\t\t--1--0--1--1--1--3-[-1--1--1--1---1--1--1--0--1--1--1--1--0--2--1--1--0--1--1--1\n\t\t--1--0--1--1--1--3-[-1--1--1--1---1--1--1--0--1--1--1--1--0--2--1--1--0--1--1--1\n\t\t--1--0--1--1--1--3-[-1--1--1--1---1--1--1--0--1--1--1--1--0--2--1--1--0--1--1--1\n\t\t--1--0--1--1--1--3-[-1--1--1--1---1--1--1--0--1--1--1--1--0--3--1--1--0--1--1--1\n\t\t--1--0--1--1--1--3-[-1--1--1--1---1--1--1--0-/1--1--1--1--0--2--1--1--0--1--1--1\n\t\t--1--0--1--1--1--3-[-1--1--1--1---1--1--1--0--1--1--1--1--0--1--1--1--3-[-1--1--1\n\t\t--1---1--1--1--0--1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1--3-[-1--1--1\n\t\t--1---1--1--1--0--1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1--3-[-1--1--1\n\t\t--1---1--1--1--0--1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1--3-[-1--1--1\n\t\t--1---1--1--1--0--1--1--1--1--0--3--1--1--0--1--1--1--1--0--1--1--1--3-[-1--1--1\n\t\t--1---1--1--1--0-/1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1--3-[-1--1--1\n\t\t--1---1--1--1--0--1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1--3-[-1--1--1\n\t\t--1---1--1--1--0--1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1--3-[-1--1--1\n\t\t--1---1--1--1--0--1--1--1--1--0--2--1--1--0--1--1--1--1--0--1--1--1--3-[-1--1--1\n\t\t--1---1--1--1--0--1--1--1--1--0--3--1--1--0--1"	ERR@3:33
-"-a"	(call@0 -_ a@1)
-"-num"	(call@0 -_ num@1)
-"-x ? (x - 5) : 0"	(call@3 _?_:_ (call@0 -_ x@1) (call@8 _-_ x@6 i:5@10) i:0@15)
-"0"	i:0@0
-"0.000000001"	d:1e-09@0
-"0.00001"	d:1e-05@0
-"0u"	u:0@0
-"0xF"	i:15@0
-"0xFFFFFFFFFFFFFFFFF"	ERR@1:1
-"0xFFFFFFFFFFFFFFFFFu"	ERR@1:1
-"0xFu"	u:15@0
-"1 + $"	ERR@1:5
-"1 + +"	ERR@1:5
-"1 + 2 * 3 - 1 / 2 == 6 % 1"	(call@18 _==_ (call@10 _-_ (call@2 _+_ i:1@0 (call@6 _*_ i:2@4 i:3@8)) (call@14 _/_ i:1@12 i:2@16)) (call@23 _%_ i:6@21 i:1@25))
-"1 + 2 * 3"	(call@2 _+_ i:1@0 (call@6 _*_ i:2@4 i:3@8))
-"1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10\n\t\t+ 11 + 12 + 13 + 14 + 15 + 16 + 17 + 18 + 19 + 20\n\t\t+ 21 + 22 + 23 + 24 + 25 + 26 + 27 + 28 + 29 + 30\n\t\t+ 31 + 32 + 33 + 34"	(call@160 _+_ (call@155 _+_ (call@150 _+_ (call@145 _+_ (call@138 _+_ (call@133 _+_ (call@128 _+_ (call@123 _+_ (call@118 _+_ (call@113 _+_ (call@108 _+_ (call@103 _+_ (call@98 _+_ (call@93 _+_ (call@86 _+_ (call@81 _+_ (call@76 _+_ (call@71 _+_ (call@66 _+_ (call@61 _+_ (call@56 _+_ (call@51 _+_ (call@46 _+_ (call@41 _+_ (call@34 _+_ (call@30 _+_ (call@26 _+_ (call@22 _+_ (call@18 _+_ (call@14 _+_ (call@10 _+_ (call@6 _+_ (call@2 _+_ i:1@0 i:2@4) i:3@8) i:4@12) i:5@16) i:6@20) i:7@24) i:8@28) i:9@32) i:10@36) i:11@43) i:12@48) i:13@53) i:14@58) i:15@63) i:16@68) i:17@73) i:18@78) i:19@83) i:20@88) i:21@95) i:22@100) i:23@105) i:24@110) i:25@115) i:26@120) i:27@125) i:28@130) i:29@135) i:30@140) i:31@147) i:32@152) i:33@157) i:34@162)
-"1 + 2\n3 +"	ERR@2:1
-"1 - (2 == -1)"	(call@2 _-_ i:1@0 (call@7 _==_ i:2@5 i:-1@10))
-"1.99e90000009"	ERR@1:1
-"1.all(2, 3)"	(mcall@5 all i:1@0 i:2@6 i:3@9)
-"1E7"	d:1e+07@0
-"1e30"	d:1e+30@0
-"23.39"	d:23.39@0
-"23u"	u:23@0
-"24u"	u:24@0
-"4--4"	(call@1 _-_ i:4@0 i:-4@2)
-"4--4.1"	(call@1 _-_ i:4@0 d:-4.1@2)
-"42"	i:42@0
-"42u"	u:42@0
-"5e-5"	d:5e-05@0
-"?"	ERR@1:1
-"Message{`in`: true}"	(msg@7 Message (field@12 in true@14))
-"Msg{?field: value} && {?'key': value}"	(call@19 _&&_ (msg@3 Msg (?field@10 field value@12)) (map@22 (?entry@29 s:"key"@24 value@31)))
-"Msg{?field: value}"	(msg@3 Msg (?field@10 field value@12))
-"MyType{`in`: false}"	(msg@6 MyType (field@11 in false@13))
-"SomeMessage{foo: 5, bar: \"xyz\"}"	(msg@11 SomeMessage (field@15 foo i:5@17) (field@23 bar s:"xyz"@25))
-"TestAllTypes(){}"	ERR@1:15
-"TestAllTypes{single_int32: 1, single_int64: 2}"	(msg@12 TestAllTypes (field@25 single_int32 i:1@27) (field@42 single_int64 i:2@44))
-"TestAllTypes{}()"	ERR@1:15
-"[1, 2, 3]"	(list@0 i:1@1 i:2@4 i:3@7)
-"[1, 2, 3].all(x, x > 0)"	(mcall@13 all (list@0 i:1@1 i:2@4 i:3@7) x@14 (call@19 _>_ x@17 i:0@21))
-"[1, 2, 3].exists(x, x > 0)"	(mcall@16 exists (list@0 i:1@1 i:2@4 i:3@7) x@17 (call@22 _>_ x@20 i:0@24))
-"[1, 2, 3].exists_one(x, x >= 2)"	(mcall@20 exists_one (list@0 i:1@1 i:2@4 i:3@7) x@21 (call@26 _>=_ x@24 i:2@29))
-"[1, 2, 3].map(var, var * var)"	ERR@1:15
-"[1, 2, 3].map(x, x >= 2, x * 4)"	(mcall@13 map (list@0 i:1@1 i:2@4 i:3@7) x@14 (call@19 _>=_ x@17 i:2@22) (call@27 _*_ x@25 i:4@29))
-"[1, 2, 3].map(x, x >= 2, x * 4).filter(x, x <= 10)"	(mcall@38 filter (mcall@13 map (list@0 i:1@1 i:2@4 i:3@7) x@14 (call@19 _>=_ x@17 i:2@22) (call@27 _*_ x@25 i:4@29)) x@39 (call@44 _<=_ x@42 i:10@47))
-"[1, 2.0, 3u]"	(list@0 i:1@1 d:2@4 u:3@9)
-"[1,3,4][0]"	(call@7 _[_] (list@0 i:1@1 i:3@3 i:4@5) i:0@8)
-"[1.0, 2.0, 3.0]"	(list@0 d:1@1 d:2@6 d:3@11)
-"[1.1, 2.1, 3.1]"	(list@0 d:1.1@1 d:2.1@6 d:3.1@11)
-"[1]"	(list@0 i:1@1)
-"[1u, 2u, 3u]"	(list@0 u:1@1 u:2@5 u:3@9)
-"[3, 4, 5,]"	(list@0 i:3@1 i:4@4 i:5@7)
-"[3, 4, 5]"	(list@0 i:3@1 i:4@4 i:5@7)
-"[?a, ?b, c]"	(list@0 ?a@2 ?b@6 c@9)
-"[?a, ?b]"	(list@0 ?a@2 ?b@6)
-"[?a, b[?0], c].map(x, x >= 2, x * 4).filter(x, x <= 10)"	(mcall@43 filter (mcall@18 map (list@0 ?a@2 (call@6 _[?_] b@5 i:0@8) c@12) x@19 (call@24 _>=_ x@22 i:2@27) (call@32 _*_ x@30 i:4@34)) x@44 (call@49 _<=_ x@47 i:10@52))
-"[?a[?b]]"	(list@0 ?(call@3 _[?_] a@2 b@5))
-"[[1], [2], [3]].map(x, x.filter(y, y > 1))"	(mcall@19 map (list@0 (list@1 i:1@2) (list@6 i:2@7) (list@11 i:3@12)) x@20 (mcall@31 filter x@23 y@32 (call@37 _>_ y@35 i:1@39)))
-"[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[['not fine']]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]"	(list@0 (list@1 (list@2 (list@3 (list@4 (list@5 (list@6 (list@7 (list@8 (list@9 (list@10 (list@11 (list@12 (list@13 (list@14 (list@15 (list@16 (list@17 (list@18 (list@19 (list@20 (list@21 (list@22 (list@23 (list@24 (list@25 (list@26 (list@27 (list@28 (list@29 (list@30 (list@31 s:"not fine"@32))))))))))))))))))))))))))))))))
-"[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[\n\t\t\t[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[['too many']]]]]]]]]]]]]]]]]]]]]]]]]]]]\n\t\t\t]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]"	(list@0 (list@1 (list@2 (list@3 (list@4 (list@5 (list@6 (list@7 (list@8 (list@9 (list@10 (list@11 (list@12 (list@13 (list@14 (list@15 (list@16 (list@17 (list@18 (list@19 (list@20 (list@21 (list@22 (list@23 (list@24 (list@25 (list@26 (list@27 (list@28 (list@29 (list@30 (list@31 (list@32 (list@33 (list@34 (list@35 (list@36 (list@37 (list@38 (list@39 (list@40 (list@41 (list@42 (list@43 (list@44 (list@45 (list@46 (list@47 (list@48 (list@49 (list@50 (list@51 (list@52 (list@53 (list@54 (list@55 (list@56 (list@57 (list@58 (list@59 (list@60 (list@61 (list@62 (list@63 (list@64 (list@65 (list@66 (list@67 (list@68 (list@69 (list@70 (list@71 (list@76 (list@77 (list@78 (list@79 (list@80 (list@81 (list@82 (list@83 (list@84 (list@85 (list@86 (list@87 (list@88 (list@89 (list@90 (list@91 (list@92 (list@93 (list@94 (list@95 (list@96 (list@97 (list@98 (list@99 (list@100 (list@101 (list@102 (list@103 (list@104 (list@105 (list@106 (list@107 (list@108 (list@109 s:"too many"@110))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
-"[\"hello, world\", \"goodbye, world\", \"sure, why not?\"]"	(list@0 s:"hello, world"@1 s:"goodbye, world"@17 s:"sure, why not?"@35)
-"[] + [1, 2, 3] + [4]"	(call@15 _+_ (call@3 _+_ (list@0) (list@5 i:1@6 i:2@9 i:3@12)) (list@17 i:4@18))
-"[] + [1,2,3,] + [4]"	(call@14 _+_ (call@3 _+_ (list@0) (list@5 i:1@6 i:2@8 i:3@10)) (list@16 i:4@17))
-"[]"	(list@0)
-"[].existsOne(__result__, __result__)"	(mcall@12 existsOne (list@0) __result__@13 __result__@25)
-"[a, b, c]"	(list@0 a@1 b@4 c@7)
-"[a]"	(list@0 a@1)
-"[has(a.b), has(c.d)].exists(e, e)"	(mcall@27 exists (list@0 (call@4 has (sel@6 a@5 b)) (call@14 has (sel@16 c@15 d))) e@28 e@31)
-"\"A\""	s:"A"@0
-"\"\""	s:""@0
-"\"\"\"x\"\"x\"\"\""	s:"x\"\"x"@0
-"\"\\267\\\""	ERR@1:1
-"\"\\268\""	ERR@1:1
-"\"\\26\""	ERR@1:1
-"\"\\303\\277\""	s:"Ã¿"@0
-"\"\\377\""	s:"ÿ"@0
-"\"\\U000003A8\\?\""	s:"Ψ?"@0
-"\"\\U00ff\""	ERR@1:1
-"\"\\\"\""	s:"\""@0
-"\"\\\\\""	s:"\\"@0
-"\"\\\\\\\"\""	s:"\\\""@0
-"\"\\a\\b\\f\\n\\r\\t\\v'\\\"\\\\ Legal escapes \\u2764\""	s:"\a\b\f\n\r\t\v'\"\\ Legal escapes ❤"@0
-"\"\\a\\b\\f\\n\\r\\t\\v'\\\"\\\\\\? Legal escapes\""	s:"\a\b\f\n\r\t\v'\"\\? Legal escapes"@0
-"\"\\a\\b\\f\\n\\r\\t\\v\\'\\\"\\\\\\? Illegal escape \\>\""	ERR@1:1
-"\"\\a\\b\\f\\n\\r\\t\\v\\'\\\"\\\\\\? Legal escapes\""	s:"\a\b\f\n\r\t\v'\"\\? Legal escapes"@0
-"\"\\u00f\""	ERR@1:1
-"\"\\u00ff\""	s:"ÿ"@0
-"\"\\u00fÿ\""	ERR@1:1
-"\"\\u263A\\u263A\""	s:"☺☺"@0
-"\"\\u2764\""	s:"❤"@0
-"\"\\xC3\\XBF\""	s:"Ã¿"@0
-"\"\\xFh\""	ERR@1:1
-"\"\\xc3\\xbf\""	s:"Ã¿"@0
-"\"\\xff\""	s:"ÿ"@0
-"\"abc\" + \"def\""	(call@6 _+_ s:"abc"@0 s:"def"@8)
-"\"abc\""	s:"abc"@0
-"\"hello:\\\"world\\\"\""	s:"hello:\"world\""@0
-"\"hello:\\t'world'\""	s:"hello:\t'world'"@0
-"\"hi\\u263A \\u263Athere\""	s:"hi☺ ☺there"@0
-"\"my-principal-group\" in request.auth.claims && request.auth.claims.iat > now - duration(\"5m\")"	(call@44 _&&_ (call@21 @in s:"my-principal-group"@0 (sel@36 (sel@31 request@24 auth) claims)) (call@71 _>_ (sel@66 (sel@59 (sel@54 request@47 auth) claims) iat) (call@77 _-_ now@73 (call@87 duration s:"5m"@88))))
-"\"ÿ\""	s:"ÿ"@0
-"\"❤\""	s:"❤"@0
-"\"😁\" in [\"😁\", \"😑\", \"😦\"]"	(call@4 @in s:"😁"@0 (list@7 s:"😁"@8 s:"😑"@13 s:"😦"@18))
-"`b-c`"	ERR@1:1
-"`b-c`()"	ERR@1:1
-"a != b != c != d != e"	(call@17 _!=_ (call@12 _!=_ (call@7 _!=_ (call@2 _!=_ a@0 b@5) c@10) d@15) e@20)
-"a != b"	(call@2 _!=_ a@0 b@5)
-"a % b % c % d % e"	(call@14 _%_ (call@10 _%_ (call@6 _%_ (call@2 _%_ a@0 b@4) c@8) d@12) e@16)
-"a % b"	(call@2 _%_ a@0 b@4)
-"a && b && c && d && e && f && g"	(call@2 _&&_ a@0 b@5 c@10 d@15 e@20 f@25 g@30)
-"a && b && c && d && e"	(call@2 _&&_ a@0 b@5 c@10 d@15 e@20)
-"a && b && c && d || e && f && g && h"	(call@17 _||_ (call@2 _&&_ a@0 b@5 c@10 d@15) (call@22 _&&_ e@20 f@25 g@30 h@35))
-"a && b"	(call@2 _&&_ a@0 b@5)
-"a * (b / c) % 0"	(call@12 _%_ (call@2 _*_ a@0 (call@7 _/_ b@5 c@9)) i:0@14)
-"a * b * c * d * e"	(call@14 _*_ (call@10 _*_ (call@6 _*_ (call@2 _*_ a@0 b@4) c@8) d@12) e@16)
-"a * b + c - d * e"	(call@10 _-_ (call@6 _+_ (call@2 _*_ a@0 b@4) c@8) (call@14 _*_ d@12 e@16))
-"a * b / c % 0"	(call@10 _%_ (call@6 _/_ (call@2 _*_ a@0 b@4) c@8) i:0@12)
-"a * b"	(call@2 _*_ a@0 b@4)
-"a + b * c"	(call@2 _+_ a@0 (call@6 _*_ b@4 c@8))
-"a + b + c + d"	(call@10 _+_ (call@6 _+_ (call@2 _+_ a@0 b@4) c@8) d@12)
-"a + b - c"	(call@6 _-_ (call@2 _+_ a@0 b@4) c@8)
-"a + b - d * e"	(call@6 _-_ (call@2 _+_ a@0 b@4) (call@10 _*_ d@8 e@12))
-"a + b"	(call@2 _+_ a@0 b@4)
-"a - b"	(call@2 _-_ a@0 b@4)
-"a . b . c"	(sel@6 (sel@2 a@0 b) c)
-"a / b / c / d / e"	(call@14 _/_ (call@10 _/_ (call@6 _/_ (call@2 _/_ a@0 b@4) c@8) d@12) e@16)
-"a / b"	(call@2 _/_ a@0 b@4)
-"a < 1 < 2 < 3 < 4 < 5 < 6 < 7 < 8 < 9 < 10 < 11\n\t\t      < 12 < 13 < 14 < 15 < 16 < 17 < 18 < 19 < 20 < 21\n\t\t\t  < 22 < 23 < 24 < 25 < 26 < 27 < 28 < 29 < 30 < 31\n\t\t\t  < 32 < 33"	(call@171 _<_ (call@166 _<_ (call@156 _<_ (call@151 _<_ (call@146 _<_ (call@141 _<_ (call@136 _<_ (call@131 _<_ (call@126 _<_ (call@121 _<_ (call@116 _<_ (call@111 _<_ (call@101 _<_ (call@96 _<_ (call@91 _<_ (call@86 _<_ (call@81 _<_ (call@76 _<_ (call@71 _<_ (call@66 _<_ (call@61 _<_ (call@56 _<_ (call@43 _<_ (call@38 _<_ (call@34 _<_ (call@30 _<_ (call@26 _<_ (call@22 _<_ (call@18 _<_ (call@14 _<_ (call@10 _<_ (call@6 _<_ (call@2 _<_ a@0 i:1@4) i:2@8) i:3@12) i:4@16) i:5@20) i:6@24) i:7@28) i:8@32) i:9@36) i:10@40) i:11@45) i:12@58) i:13@63) i:14@68) i:15@73) i:16@78) i:17@83) i:18@88) i:19@93) i:20@98) i:21@103) i:22@113) i:23@118) i:24@123) i:25@128) i:26@133) i:27@138) i:28@143) i:29@148) i:30@153) i:31@158) i:32@168) i:33@173)
-"a < 5 || a > 10"	(call@6 _||_ (call@2 _<_ a@0 i:5@4) (call@11 _>_ a@9 i:10@13))
-"a < b < c < d < e"	(call@14 _<_ (call@10 _<_ (call@6 _<_ (call@2 _<_ a@0 b@4) c@8) d@12) e@16)
-"a < b"	(call@2 _<_ a@0 b@4)
-"a <= b <= c <= d <= e"	(call@17 _<=_ (call@12 _<=_ (call@7 _<=_ (call@2 _<=_ a@0 b@5) c@10) d@15) e@20)
-"a <= b"	(call@2 _<=_ a@0 b@5)
-"a == b == c == d == e"	(call@17 _==_ (call@12 _==_ (call@7 _==_ (call@2 _==_ a@0 b@5) c@10) d@15) e@20)
-"a == b"	(call@2 _==_ a@0 b@5)
-"a > 5 && && b < 10"	ERR@1:10
-"a > 5 && a < 10"	(call@6 _&&_ (call@2 _>_ a@0 i:5@4) (call@11 _<_ a@9 i:10@13))
-"a > 5 && b < 10 || c == \"xyz\""	(call@16 _||_ (call@6 _&&_ (call@2 _>_ a@0 i:5@4) (call@11 _<_ b@9 i:10@13)) (call@21 _==_ c@19 s:"xyz"@24))
-"a > b > c > d > e"	(call@14 _>_ (call@10 _>_ (call@6 _>_ (call@2 _>_ a@0 b@4) c@8) d@12) e@16)
-"a > b"	(call@2 _>_ a@0 b@4)
-"a >= b >= c >= d >= e"	(call@17 _>=_ (call@12 _>=_ (call@7 _>=_ (call@2 _>=_ a@0 b@5) c@10) d@15) e@20)
-"a >= b"	(call@2 _>=_ a@0 b@5)
-"a ? (b1 || b2) : (c1 && c2)"	(call@2 _?_:_ a@0 (call@8 _||_ b1@5 b2@11) (call@21 _&&_ c1@18 c2@24))
-"a ? (c ? d : e) : b"	(call@2 _?_:_ a@0 (call@7 _?_:_ c@5 d@9 e@13) b@18)
-"a ? b          : c"	(call@2 _?_:_ a@0 b@4 c@17)
-"a ? b ((?))"	ERR@1:9
-"a ? b : c ? d : e"	(call@2 _?_:_ a@0 b@4 (call@10 _?_:_ c@8 d@12 e@16))
-"a ? b : c"	(call@2 _?_:_ a@0 b@4 c@8)
-"a in b in c in d in e"	(call@17 @in (call@12 @in (call@7 @in (call@2 @in a@0 b@5) c@10) d@15) e@20)
-"a in b"	(call@2 @in a@0 b@5)
-"a | b"	ERR@1:3
-"a || b && (c || d) && e"	(call@2 _||_ a@0 (call@7 _&&_ b@5 (call@13 _||_ c@11 d@16) e@22))
-"a || b || c || d || e || f "	(call@2 _||_ a@0 b@5 c@10 d@15 e@20 f@25)
-"a || b || c || d || e"	(call@2 _||_ a@0 b@5 c@10 d@15 e@20)
-"a || b"	(call@2 _||_ a@0 b@5)
-"a"	a@0
-"a()"	(call@1 a)
-"a(b)"	(call@1 a b@2)
-"a(b, c)"	(call@1 a b@2 c@5)
-"a+b-c"	(call@3 _-_ (call@1 _+_ a@0 b@2) c@4)
-"a.?`b.c`"	(call@1 _?._ a@0 s:"b.c"@3)
-"a.?b && a[?b]"	(call@5 _&&_ (call@1 _?._ a@0 s:"b"@3) (call@9 _[?_] a@8 b@11))
-"a.?b"	(call@1 _?._ a@0 s:"b"@3)
-"a.?b[?0] && a[?c]"	(call@9 _&&_ (call@4 _[?_] (call@1 _?._ a@0 s:"b"@3) i:0@6) (call@13 _[?_] a@12 c@15))
-"a.`$b`"	ERR@1:3
-"a.`/foo`"	(sel@1 a@0 /foo)
-"a.`b c`"	(sel@1 a@0 b c)
-"a.`b-c`"	(sel@1 a@0 b-c)
-"a.`b.c`"	(sel@1 a@0 b.c)
-"a.`b.c`()"	ERR@1:8
-"a.`in`"	(sel@1 a@0 in)
-"a.b"	(sel@1 a@0 b)
-"a.b()"	(mcall@3 b a@0)
-"a.b(5)"	(mcall@3 b a@0 i:5@4)
-"a.b(c)"	(mcall@3 b a@0 c@4)
-"a.b.c"	(sel@3 (sel@1 a@0 b) c)
-"a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u.v.w.x.y.z.A.B.C.D.E.F.G.H"	(sel@65 (sel@63 (sel@61 (sel@59 (sel@57 (sel@55 (sel@53 (sel@51 (sel@49 (sel@47 (sel@45 (sel@43 (sel@41 (sel@39 (sel@37 (sel@35 (sel@33 (sel@31 (sel@29 (sel@27 (sel@25 (sel@23 (sel@21 (sel@19 (sel@17 (sel@15 (sel@13 (sel@11 (sel@9 (sel@7 (sel@5 (sel@3 (sel@1 a@0 b) c) d) e) f) g) h) i) j) k) l) m) n) o) p) q) r) s) t) u) v) w) x) y) z) A) B) C) D) E) F) G) H)
-"a.hello(\"world\")"	(mcall@7 hello a@0 s:"world"@8)
-"a?b:c"	(call@1 _?_:_ a@0 b@2 c@4)
-"a[  1  ][\"b\"]"	(call@8 _[_] (call@1 _[_] a@0 i:1@4) s:"b"@9)
-"a[1][2][3][4][5][6][7][8][9][10][11][12][13][14][15][16][17][18][19][20] !=\n\t\ta[1][2][3][4][5][6][7][8][9][10][11][12][13][14][15][16][17][18][19][20] !=\n\t\ta[1][2][3][4][5][6][7][8][9][10][11][12][13][14][15][16][17][18][19][20] !=\n\t\ta[1][2][3][4][5][6][7][8][9][10][11][12][13][14][15][16][17][18][19][20] !=\n\t\ta[1][2][3][4][5][6][7][8][9][10][11][12][13][14][15][16][17][18][19][20] !=\n\t\ta[1][2][3][4][5][6][7][8][9][10][11][12][13][14][15][16][17][18][19][20] !=\n\t\ta[1][2][3][4][5][6][7][8][9][10][11][12][13][14][15][16][17][18][19][20] !=\n\t\ta[1][2][3][4][5][6][7][8][9][10][11][12][13][14][15][16][17][18][19][20] !=\n\t\ta[1][2][3][4][5][6][7][8][9][10][11][12][13][14][15][16][17][18][19][20] !=\n\t\ta[1][2][3][4][5][6][7][8][9][10][11][12][13][14][15][16][17][18][19][20] !=\n\t\ta[1][2][3][4][5][6][7][8][9][10][11][12][13][14][15][16][17][18][19][20] !=\n\t\ta[1][2][3][4][5][6][7][8][9][10][11][12][13][14][15][16][17][18][19][20] !=\n\t\ta[1][2][3][4][5][6][7][8][9][10][11][12][13][14][15][16][17][18][19][20] !=\n\t\ta[1][2][3][4][5][6][7][8][9][10][11][12][13][14][15][16][17][18][19][20]"	(call@1009 _!=_ (call@931 _!=_ (call@853 _!=_ (call@775 _!=_ (call@697 _!=_ (call@619 _!=_ (call@541 _!=_ (call@463 _!=_ (call@385 _!=_ (call@307 _!=_ (call@229 _!=_ (call@151 _!=_ (call@73 _!=_ (call@68 _[_] (call@64 _[_] (call@60 _[_] (call@56 _[_] (call@52 _[_] (call@48 _[_] (call@44 _[_] (call@40 _[_] (call@36 _[_] (call@32 _[_] (call@28 _[_] (call@25 _[_] (call@22 _[_] (call@19 _[_] (call@16 _[_] (call@13 _[_] (call@10 _[_] (call@7 _[_] (call@4 _[_] (call@1 _[_] a@0 i:1@2) i:2@5) i:3@8) i:4@11) i:5@14) i:6@17) i:7@20) i:8@23) i:9@26) i:10@29) i:11@33) i:12@37) i:13@41) i:14@45) i:15@49) i:16@53) i:17@57) i:18@61) i:19@65) i:20@69) (call@146 _[_] (call@142 _[_] (call@138 _[_] (call@134 _[_] (call@130 _[_] (call@126 _[_] (call@122 _[_] (call@118 _[_] (call@114 _[_] (call@110 _[_] (call@106 _[_] (call@103 _[_] (call@100 _[_] (call@97 _[_] (call@94 _[_] (call@91 _[_] (call@88 _[_] (call@85 _[_] (call@82 _[_] (call@79 _[_] a@78 i:1@80) i:2@83) i:3@86) i:4@89) i:5@92) i:6@95) i:7@98) i:8@101) i:9@104) i:10@107) i:11@111) i:12@115) i:13@119) i:14@123) i:15@127) i:16@131) i:17@135) i:18@139) i:19@143) i:20@147)) (call@224 _[_] (call@220 _[_] (call@216 _[_] (call@212 _[_] (call@208 _[_] (call@204 _[_] (call@200 _[_] (call@196 _[_] (call@192 _[_] (call@188 _[_] (call@184 _[_] (call@181 _[_] (call@178 _[_] (call@175 _[_] (call@172 _[_] (call@169 _[_] (call@166 _[_] (call@163 _[_] (call@160 _[_] (call@157 _[_] a@156 i:1@158) i:2@161) i:3@164) i:4@167) i:5@170) i:6@173) i:7@176) i:8@179) i:9@182) i:10@185) i:11@189) i:12@193) i:13@197) i:14@201) i:15@205) i:16@209) i:17@213) i:18@217) i:19@221) i:20@225)) (call@302 _[_] (call@298 _[_] (call@294 _[_] (call@290 _[_] (call@286 _[_] (call@282 _[_] (call@278 _[_] (call@274 _[_] (call@270 _[_] (call@266 _[_] (call@262 _[_] (call@259 _[_] (call@256 _[_] (call@253 _[_] (call@250 _[_] (call@247 _[_] (call@244 _[_] (call@241 _[_] (call@238 _[_] (call@235 _[_] a@234 i:1@236) i:2@239) i:3@242) i:4@245) i:5@248) i:6@251) i:7@254) i:8@257) i:9@260) i:10@263) i:11@267) i:12@271) i:13@275) i:14@279) i:15@283) i:16@287) i:17@291) i:18@295) i:19@299) i:20@303)) (call@380 _[_] (call@376 _[_] (call@372 _[_] (call@368 _[_] (call@364 _[_] (call@360 _[_] (call@356 _[_] (call@352 _[_] (call@348 _[_] (call@344 _[_] (call@340 _[_] (call@337 _[_] (call@334 _[_] (call@331 _[_] (call@328 _[_] (call@325 _[_] (call@322 _[_] (call@319 _[_] (call@316 _[_] (call@313 _[_] a@312 i:1@314) i:2@317) i:3@320) i:4@323) i:5@326) i:6@329) i:7@332) i:8@335) i:9@338) i:10@341) i:11@345) i:12@349) i:13@353) i:14@357) i:15@361) i:16@365) i:17@369) i:18@373) i:19@377) i:20@381)) (call@458 _[_] (call@454 _[_] (call@450 _[_] (call@446 _[_] (call@442 _[_] (call@438 _[_] (call@434 _[_] (call@430 _[_] (call@426 _[_] (call@422 _[_] (call@418 _[_] (call@415 _[_] (call@412 _[_] (call@409 _[_] (call@406 _[_] (call@403 _[_] (call@400 _[_] (call@397 _[_] (call@394 _[_] (call@391 _[_] a@390 i:1@392) i:2@395) i:3@398) i:4@401) i:5@404) i:6@407) i:7@410) i:8@413) i:9@416) i:10@419) i:11@423) i:12@427) i:13@431) i:14@435) i:15@439) i:16@443) i:17@447) i:18@451) i:19@455) i:20@459)) (call@536 _[_] (call@532 _[_] (call@528 _[_] (call@524 _[_] (call@520 _[_] (call@516 _[_] (call@512 _[_] (call@508 _[_] (call@504 _[_] (call@500 _[_] (call@496 _[_] (call@493 _[_] (call@490 _[_] (call@487 _[_] (call@484 _[_] (call@481 _[_] (call@478 _[_] (call@475 _[_] (call@472 _[_] (call@469 _[_] a@468 i:1@470) i:2@473) i:3@476) i:4@479) i:5@482) i:6@485) i:7@488) i:8@491) i:9@494) i:10@497) i:11@501) i:12@505) i:13@509) i:14@513) i:15@517) i:16@521) i:17@525) i:18@529) i:19@533) i:20@537)) (call@614 _[_] (call@610 _[_] (call@606 _[_] (call@602 _[_] (call@598 _[_] (call@594 _[_] (call@590 _[_] (call@586 _[_] (call@582 _[_] (call@578 _[_] (call@574 _[_] (call@571 _[_] (call@568 _[_] (call@565 _[_] (call@562 _[_] (call@559 _[_] (call@556 _[_] (call@553 _[_] (call@550 _[_] (call@547 _[_] a@546 i:1@548) i:2@551) i:3@554) i:4@557) i:5@560) i:6@563) i:7@566) i:8@569) i:9@572) i:10@575) i:11@579) i:12@583) i:13@587) i:14@591) i:15@595) i:16@599) i:17@603) i:18@607) i:19@611) i:20@615)) (call@692 _[_] (call@688 _[_] (call@684 _[_] (call@680 _[_] (call@676 _[_] (call@672 _[_] (call@668 _[_] (call@664 _[_] (call@660 _[_] (call@656 _[_] (call@652 _[_] (call@649 _[_] (call@646 _[_] (call@643 _[_] (call@640 _[_] (call@637 _[_] (call@634 _[_] (call@631 _[_] (call@628 _[_] (call@625 _[_] a@624 i:1@626) i:2@629) i:3@632) i:4@635) i:5@638) i:6@641) i:7@644) i:8@647) i:9@650) i:10@653) i:11@657) i:12@661) i:13@665) i:14@669) i:15@673) i:16@677) i:17@681) i:18@685) i:19@689) i:20@693)) (call@770 _[_] (call@766 _[_] (call@762 _[_] (call@758 _[_] (call@754 _[_] (call@750 _[_] (call@746 _[_] (call@742 _[_] (call@738 _[_] (call@734 _[_] (call@730 _[_] (call@727 _[_] (call@724 _[_] (call@721 _[_] (call@718 _[_] (call@715 _[_] (call@712 _[_] (call@709 _[_] (call@706 _[_] (call@703 _[_] a@702 i:1@704) i:2@707) i:3@710) i:4@713) i:5@716) i:6@719) i:7@722) i:8@725) i:9@728) i:10@731) i:11@735) i:12@739) i:13@743) i:14@747) i:15@751) i:16@755) i:17@759) i:18@763) i:19@767) i:20@771)) (call@848 _[_] (call@844 _[_] (call@840 _[_] (call@836 _[_] (call@832 _[_] (call@828 _[_] (call@824 _[_] (call@820 _[_] (call@816 _[_] (call@812 _[_] (call@808 _[_] (call@805 _[_] (call@802 _[_] (call@799 _[_] (call@796 _[_] (call@793 _[_] (call@790 _[_] (call@787 _[_] (call@784 _[_] (call@781 _[_] a@780 i:1@782) i:2@785) i:3@788) i:4@791) i:5@794) i:6@797) i:7@800) i:8@803) i:9@806) i:10@809) i:11@813) i:12@817) i:13@821) i:14@825) i:15@829) i:16@833) i:17@837) i:18@841) i:19@845) i:20@849)) (call@926 _[_] (call@922 _[_] (call@918 _[_] (call@914 _[_] (call@910 _[_] (call@906 _[_] (call@902 _[_] (call@898 _[_] (call@894 _[_] (call@890 _[_] (call@886 _[_] (call@883 _[_] (call@880 _[_] (call@877 _[_] (call@874 _[_] (call@871 _[_] (call@868 _[_] (call@865 _[_] (call@862 _[_] (call@859 _[_] a@858 i:1@860) i:2@863) i:3@866) i:4@869) i:5@872) i:6@875) i:7@878) i:8@881) i:9@884) i:10@887) i:11@891) i:12@895) i:13@899) i:14@903) i:15@907) i:16@911) i:17@915) i:18@919) i:19@923) i:20@927)) (call@1004 _[_] (call@1000 _[_] (call@996 _[_] (call@992 _[_] (call@988 _[_] (call@984 _[_] (call@980 _[_] (call@976 _[_] (call@972 _[_] (call@968 _[_] (call@964 _[_] (call@961 _[_] (call@958 _[_] (call@955 _[_] (call@952 _[_] (call@949 _[_] (call@946 _[_] (call@943 _[_] (call@940 _[_] (call@937 _[_] a@936 i:1@938) i:2@941) i:3@944) i:4@947) i:5@950) i:6@953) i:7@956) i:8@959) i:9@962) i:10@965) i:11@969) i:12@973) i:13@977) i:14@981) i:15@985) i:16@989) i:17@993) i:18@997) i:19@1001) i:20@1005)) (call@1082 _[_] (call@1078 _[_] (call@1074 _[_] (call@1070 _[_] (call@1066 _[_] (call@1062 _[_] (call@1058 _[_] (call@1054 _[_] (call@1050 _[_] (call@1046 _[_] (call@1042 _[_] (call@1039 _[_] (call@1036 _[_] (call@1033 _[_] (call@1030 _[_] (call@1027 _[_] (call@1024 _[_] (call@1021 _[_] (call@1018 _[_] (call@1015 _[_] a@1014 i:1@1016) i:2@1019) i:3@1022) i:4@1025) i:5@1028) i:6@1031) i:7@1034) i:8@1037) i:9@1040) i:10@1043) i:11@1047) i:12@1051) i:13@1055) i:14@1059) i:15@1063) i:16@1067) i:17@1071) i:18@1075) i:19@1079) i:20@1083))
-"a[1][2][3][4][5][6][7][8][9][10][11][12][13][14][15][16][17][18][19][20]\n\t\t     [21][22][23][24][25][26][27][28][29][30][31][32][33]"	(call@128 _[_] (call@124 _[_] (call@120 _[_] (call@116 _[_] (call@112 _[_] (call@108 _[_] (call@104 _[_] (call@100 _[_] (call@96 _[_] (call@92 _[_] (call@88 _[_] (call@84 _[_] (call@80 _[_] (call@68 _[_] (call@64 _[_] (call@60 _[_] (call@56 _[_] (call@52 _[_] (call@48 _[_] (call@44 _[_] (call@40 _[_] (call@36 _[_] (call@32 _[_] (call@28 _[_] (call@25 _[_] (call@22 _[_] (call@19 _[_] (call@16 _[_] (call@13 _[_] (call@10 _[_] (call@7 _[_] (call@4 _[_] (call@1 _[_] a@0 i:1@2) i:2@5) i:3@8) i:4@11) i:5@14) i:6@17) i:7@20) i:8@23) i:9@26) i:10@29) i:11@33) i:12@37) i:13@41) i:14@45) i:15@49) i:16@53) i:17@57) i:18@61) i:19@65) i:20@69) i:21@81) i:22@85) i:23@89) i:24@93) i:25@97) i:26@101) i:27@105) i:28@109) i:29@113) i:30@117) i:31@121) i:32@125) i:33@129)
-"a[1][\"b\"]"	(call@4 _[_] (call@1 _[_] a@0 i:1@2) s:"b"@5)
-"a[3]"	(call@1 _[_] a@0 i:3@2)
-"a[?b]"	(call@1 _[?_] a@0 b@3)
-"a[b]"	(call@1 _[_] a@0 b@2)
-"a[b][c].name"	(sel@7 (call@4 _[_] (call@1 _[_] a@0 b@2) c@5) name)
-"and(d, 32u)"	(call@3 and d@4 u:32@7)
-"as"	ERR@1:1
-"b'"	ERR@1:2
-"b'''\"Kim\\t\"'''"	b:"\"Kim\t\""@0
-"b'''x''x'''"	b:"x''x"@0
-"b'aaa\"bbb'"	b:"aaa\"bbb"@0
-"b'hello'"	b:"hello"@0
-"b*hello*"	ERR@1:9
-"b\"\""	b:""@0
-"b\"\"\"x\"\"x\"\"\""	b:"x\"\"x"@0
-"b\"\\267\\\""	ERR@1:2
-"b\"\\268\""	ERR@1:2
-"b\"\\26\""	ERR@1:2
-"b\"\\303\\203\\302\\277\""	b:"Ã¿"@0
-"b\"\\303\\277\""	b:"ÿ"@0
-"b\"\\377\""	b:"\xff"@0
-"b\"\\U00ff\""	ERR@1:2
-"b\"\\\\\""	b:"\\"@0
-"b\"\\\\\\\"\""	b:"\\\""@0
-"b\"\\a\\b\\f\\n\\r\\t\\v\\'\\\"\\\\\\? Illegal escape \\>\""	ERR@1:2
-"b\"\\a\\b\\f\\n\\r\\t\\v\\'\\\"\\\\\\? Legal escapes\""	b:"\a\b\f\n\r\t\v'\"\\? Legal escapes"@0
-"b\"\\u00f\""	ERR@1:2
-"b\"\\u00ff\""	ERR@1:1
-"b\"\\u00fÿ\""	ERR@1:2
-"b\"\\u263A\\u263A\""	ERR@1:1
-"b\"\\xc3\\xbf\""	b:"ÿ"@0
-"b\"\\xff\""	b:"\xff"@0
-"b\"abc\" + B\"def\""	(call@7 _+_ b:"abc"@0 b:"def"@9)
-"b\"abc\""	b:"abc"@0
-"b\"ÿ\""	b:"ÿ"@0
-"br'''hello'"	ERR@1:5
-"br'hello'"	b:"hello"@0
-"br\"\"\"hello\""	ERR@1:5
-"break"	ERR@1:1
-"const"	ERR@1:1
-"continue"	ERR@1:1
-"else"	ERR@1:1
-"false && !true || false ? 2 : 3"	(call@24 _?_:_ (call@15 _||_ (call@6 _&&_ false@0 (call@9 !_ true@10)) false@18) i:2@26 i:3@30)
-"false && !true || false"	(call@15 _||_ (call@6 _&&_ false@0 (call@9 !_ true@10)) false@18)
-"false && (!true || false)"	(call@6 _&&_ false@0 (call@16 _||_ (call@10 !_ true@11) false@19))
-"false"	false@0
-"foo.bar.baz(1, 2, \"abc\""	ERR@1:24
-"foo.bar.baz(1, 2, \"abc\")"	(mcall@11 baz (sel@3 foo@0 bar) i:1@12 i:2@15 s:"abc"@18)
-"foo{ a:b }"	(msg@3 foo (field@6 a b@7))
-"foo{ a:b, c:d }"	(msg@3 foo (field@6 a b@7) (field@11 c d@12))
-"foo{ }"	(msg@3 foo)
-"for"	ERR@1:1
-"function"	ERR@1:1
-"func{{a}}"	ERR@1:6
-"has(a.b).asList().exists(c, c)"	(mcall@24 exists (mcall@15 asList (call@3 has (sel@5 a@4 b))) c@25 c@28)
-"has(a.b).filter(c, c)"	(mcall@15 filter (call@3 has (sel@5 a@4 b)) c@16 c@19)
-"has(hello.world)"	(call@3 has (sel@9 hello@4 world))
-"has(m)"	(call@3 has m@4)
-"has(m.f)"	(call@3 has (sel@5 m@4 f))
-"if"	ERR@1:1
-"import"	ERR@1:1
-"in"	ERR@1:1
-"ind[a{b}]"	ERR@1:8
-"jwt.extra_claims.filter(c, c.startsWith(\"group\")).all(c, jwt.extra_claims[c].all(g, g.endsWith(\"@acme.co\"))) && jwt.extra_claims.exists(c, c.startsWith(\"group\")) || request.auth.claims.group == \"admin\" || request.auth.principal == \"user:me@acme.co\""	(call@162 _||_ (call@109 _&&_ (mcall@53 all (mcall@23 filter (sel@3 jwt@0 extra_claims) c@24 (mcall@39 startsWith c@27 s:"group"@40)) c@54 (mcall@80 all (call@73 _[_] (sel@60 jwt@57 extra_claims) c@74) g@81 (mcall@94 endsWith g@84 s:"@acme.co"@95))) (mcall@135 exists (sel@115 jwt@112 extra_claims) c@136 (mcall@151 startsWith c@139 s:"group"@152))) (call@191 _==_ (sel@184 (sel@177 (sel@172 request@165 auth) claims) group) s:"admin"@194) (call@228 _==_ (sel@217 (sel@212 request@205 auth) principal) s:"user:me@acme.co"@231))
-"let"	ERR@1:1
-"longVariableA && longVariableB && longVariableC"	(call@14 _&&_ longVariableA@0 longVariableB@17 longVariableC@34)
-"longVariableA && longVariableB || longVariableC + longVariableD - longVariableE"	(call@31 _||_ (call@14 _&&_ longVariableA@0 longVariableB@17) (call@64 _-_ (call@48 _+_ longVariableC@34 longVariableD@50) longVariableE@66))
-"loop"	ERR@1:1
-"m.all(v, f)"	(mcall@5 all m@0 v@6 f@9)
-"m.exists(v, f)"	(mcall@8 exists m@0 v@9 f@12)
-"m.existsOne(v, f)"	(mcall@11 existsOne m@0 v@12 f@15)
-"m.exists_one(v, v == 1)"	(mcall@12 exists_one m@0 v@13 (call@18 _==_ v@16 i:1@21))
-"m.filter(__result__, false)"	(mcall@8 filter m@0 __result__@9 false@21)
-"m.filter(a.b, false)"	(mcall@8 filter m@0 (sel@10 a@9 b) false@14)
-"m.filter(v, p)"	(mcall@8 filter m@0 v@9 p@12)
-"m.filter(v, v > 0)"	(mcall@8 filter m@0 v@9 (call@14 _>_ v@12 i:0@16))
-"m.map(__result__, __result__)"	(mcall@5 map m@0 __result__@6 __result__@18)
-"m.map(v, f)"	(mcall@5 map m@0 v@6 f@9)
-"m.map(v, p, f)"	(mcall@5 map m@0 v@6 p@9 f@12)
-"m.map(v, v * 2)"	(mcall@5 map m@0 v@6 (call@11 _*_ v@9 i:2@13))
-"m.optMap(v, v + 1)"	(mcall@8 optMap m@0 v@9 (call@14 _+_ v@12 i:1@16))
-"max(a, b, 100)"	(call@3 max a@4 b@7 i:100@10)
-"msg{:a}"	ERR@1:5
-"my_ident"	my_ident@0
-"namespace"	ERR@1:1
-"noop_macro(123)"	(call@10 noop_macro i:123@11)
-"null"	null@0
-"one(\"a\")"	(call@3 one s:"a"@4)
-"package"	ERR@1:1
-"r'''hello'"	ERR@1:4
-"r'hello'"	s:"hello"@0
-"r\"\"\"hello\""	ERR@1:4
-"return"	ERR@1:1
-"self.true == 1"	ERR@1:6
-"size(a ? (b ? c : d) : e)"	(call@4 size (call@7 _?_:_ a@5 (call@12 _?_:_ b@10 c@14 d@18) e@23))
-"size(x) == x.size()"	(call@8 _==_ (call@4 size x@5) (mcall@17 size x@11))
-"true"	true@0
-"v1alpha1.Expr{?id: id, call_expr: v1alpha1.Call_Expr{function: \"name\"}}"	(msg@13 v1alpha1.Expr (?field@17 id id@19) (field@32 call_expr (msg@52 v1alpha1.Call_Expr (field@61 function s:"name"@63))))
-"v1alpha1.Expr{id: 1, call_expr: v1alpha1.Call_Expr{function: \"name\"}}"	(msg@13 v1alpha1.Expr (field@16 id i:1@18) (field@30 call_expr (msg@50 v1alpha1.Call_Expr (field@59 function s:"name"@61))))
-"v1alpha1.Expr{}"	(msg@13 v1alpha1.Expr)
-"var"	ERR@1:1
-"void"	ERR@1:1
-"while"	ERR@1:1
-"x != \"a\""	(call@2 _!=_ x@0 s:"a"@5)
-"x * 2 + y / 3"	(call@6 _+_ (call@2 _*_ x@0 i:2@4) (call@10 _/_ y@8 i:3@12))
-"x * 2 + y /"	ERR@1:12
-"x * 2"	(call@2 _*_ x@0 i:2@4)
-"x * 2.0"	(call@2 _*_ x@0 d:2@4)
-"x * 2u"	(call@2 _*_ x@0 u:2@4)
-"x ? y : z"	(call@2 _?_:_ x@0 y@4 z@8)
-"x.filter(y, y.exists(z, has(z.a)) && y.exists(z, has(z.b)))"	(mcall@8 filter x@0 y@9 (call@34 _&&_ (mcall@20 exists y@12 z@21 (call@27 has (sel@29 z@28 a))) (mcall@45 exists y@37 z@46 (call@52 has (sel@54 z@53 b)))))
-"x.filter(y, y.exists(z, has(z.a)))"	(mcall@8 filter x@0 y@9 (mcall@20 exists y@12 z@21 (call@27 has (sel@29 z@28 a))))
-"x.filter(y, y.filter(z, z > 0))"	(mcall@8 filter x@0 y@9 (mcall@20 filter y@12 z@21 (call@26 _>_ z@24 i:0@28)))
-"x.single_nested_message != null"	(call@24 _!=_ (sel@1 x@0 single_nested_message) null@27)
-"x[\"a\"].single_int32 == 23"	(call@20 _==_ (sel@6 (call@1 _[_] x@0 s:"a"@2) single_int32) i:23@23)
-"x{."	ERR@1:3
-"x{?."	ERR@1:4
-"y!=y!=y!=y!=y!=y!=y!=y!=y!=-y!=-y!=-y!=-y-y!=-y!=-y!=-y-y!=-y!=-y!=-y-y!=-y\n\t\t!=-y!=-y-y!=-y!=-y!=-y-y!=-y!=-y!=-y-y!=-y!=-y!=-y-y!=-y!=-y!=-y-y!=-y!=-y!=-y-y\n\t\t!=-y!=-y!=-y-y!=-y!=-y!=-y-y!=-y!=-y!=-y-y!=-y!=-y!=-y-y!=-y!=-y!=-y-y!=-y!=-y\n\t\t!=-y-y!=-y!=-y!=-y-y!=-y!=-y!=-y-y!=-y!=-y!=-y-y!=-y!=-y!=-y-y!=-y!=-y!=-y-y!=-y\n\t\t!=-y!=-y-y!=-y!=-y!=-y-y!=-y!=-y!=-y-y!=-y!=-y!=-y-y!=-y!=-y!=-y-y!=-y!=-y!=-y-y\n\t\t!=-y!=-y!=-y-y!=-y!=-y!=-y-y!=-y!=-y!=-y-y!=-y"	(call@450 _!=_ (call@444 _!=_ (call@440 _!=_ (call@436 _!=_ (call@430 _!=_ (call@426 _!=_ (call@422 _!=_ (call@416 _!=_ (call@412 _!=_ (call@408 _!=_ (call@399 _!=_ (call@395 _!=_ (call@391 _!=_ (call@385 _!=_ (call@381 _!=_ (call@377 _!=_ (call@371 _!=_ (call@367 _!=_ (call@363 _!=_ (call@357 _!=_ (call@353 _!=_ (call@349 _!=_ (call@343 _!=_ (call@339 _!=_ (call@335 _!=_ (call@329 _!=_ (call@325 _!=_ (call@318 _!=_ (call@312 _!=_ (call@308 _!=_ (call@304 _!=_ (call@298 _!=_ (call@294 _!=_ (call@290 _!=_ (call@284 _!=_ (call@280 _!=_ (call@276 _!=_ (call@270 _!=_ (call@266 _!=_ (call@262 _!=_ (call@256 _!=_ (call@252 _!=_ (call@248 _!=_ (call@242 _!=_ (call@235 _!=_ (call@231 _!=_ (call@225 _!=_ (call@221 _!=_ (call@217 _!=_ (call@211 _!=_ (call@207 _!=_ (call@203 _!=_ (call@197 _!=_ (call@193 _!=_ (call@189 _!=_ (call@183 _!=_ (call@179 _!=_ (call@175 _!=_ (call@169 _!=_ (call@165 _!=_ (call@161 _!=_ (call@152 _!=_ (call@148 _!=_ (call@144 _!=_ (call@138 _!=_ (call@134 _!=_ (call@130 _!=_ (call@124 _!=_ (call@120 _!=_ (call@116 _!=_ (call@110 _!=_ (call@106 _!=_ (call@102 _!=_ (call@96 _!=_ (call@92 _!=_ (call@88 _!=_ (call@82 _!=_ (call@78 _!=_ (call@71 _!=_ (call@65 _!=_ (call@61 _!=_ (call@57 _!=_ (call@51 _!=_ (call@47 _!=_ (call@43 _!=_ (call@37 _!=_ (call@33 _!=_ (call@29 _!=_ (call@25 _!=_ (call@22 _!=_ (call@19 _!=_ (call@16 _!=_ (call@13 _!=_ (call@10 _!=_ (call@7 _!=_ (call@4 _!=_ (call@1 _!=_ y@0 y@3) y@6) y@9) y@12) y@15) y@18) y@21) y@24) (call@27 -_ y@28)) (call@31 -_ y@32)) (call@35 -_ y@36)) (call@41 _-_ (call@39 -_ y@40) y@42)) (call@45 -_ y@46)) (call@49 -_ y@50)) (call@55 _-_ (call@53 -_ y@54) y@56)) (call@59 -_ y@60)) (call@63 -_ y@64)) (call@69 _-_ (call@67 -_ y@68) y@70)) (call@73 -_ y@74)) (call@80 -_ y@81)) (call@86 _-_ (call@84 -_ y@85) y@87)) (call@90 -_ y@91)) (call@94 -_ y@95)) (call@100 _-_ (call@98 -_ y@99) y@101)) (call@104 -_ y@105)) (call@108 -_ y@109)) (call@114 _-_ (call@112 -_ y@113) y@115)) (call@118 -_ y@119)) (call@122 -_ y@123)) (call@128 _-_ (call@126 -_ y@127) y@129)) (call@132 -_ y@133)) (call@136 -_ y@137)) (call@142 _-_ (call@140 -_ y@141) y@143)) (call@146 -_ y@147)) (call@150 -_ y@151)) (call@156 _-_ (call@154 -_ y@155) y@157)) (call@163 -_ y@164)) (call@167 -_ y@168)) (call@173 _-_ (call@171 -_ y@172) y@174)) (call@177 -_ y@178)) (call@181 -_ y@182)) (call@187 _-_ (call@185 -_ y@186) y@188)) (call@191 -_ y@192)) (call@195 -_ y@196)) (call@201 _-_ (call@199 -_ y@200) y@202)) (call@205 -_ y@206)) (call@209 -_ y@210)) (call@215 _-_ (call@213 -_ y@214) y@216)) (call@219 -_ y@220)) (call@223 -_ y@224)) (call@229 _-_ (call@227 -_ y@228) y@230)) (call@233 -_ y@234)) (call@237 -_ y@238)) (call@246 _-_ (call@244 -_ y@245) y@247)) (call@250 -_ y@251)) (call@254 -_ y@255)) (call@260 _-_ (call@258 -_ y@259) y@261)) (call@264 -_ y@265)) (call@268 -_ y@269)) (call@274 _-_ (call@272 -_ y@273) y@275)) (call@278 -_ y@279)) (call@282 -_ y@283)) (call@288 _-_ (call@286 -_ y@287) y@289)) (call@292 -_ y@293)) (call@296 -_ y@297)) (call@302 _-_ (call@300 -_ y@301) y@303)) (call@306 -_ y@307)) (call@310 -_ y@311)) (call@316 _-_ (call@314 -_ y@315) y@317)) (call@320 -_ y@321)) (call@327 -_ y@328)) (call@333 _-_ (call@331 -_ y@332) y@334)) (call@337 -_ y@338)) (call@341 -_ y@342)) (call@347 _-_ (call@345 -_ y@346) y@348)) (call@351 -_ y@352)) (call@355 -_ y@356)) (call@361 _-_ (call@359 -_ y@360) y@362)) (call@365 -_ y@366)) (call@369 -_ y@370)) (call@375 _-_ (call@373 -_ y@374) y@376)) (call@379 -_ y@380)) (call@383 -_ y@384)) (call@389 _-_ (call@387 -_ y@388) y@390)) (call@393 -_ y@394)) (call@397 -_ y@398)) (call@403 _-_ (call@401 -_ y@402) y@404)) (call@410 -_ y@411)) (call@414 -_ y@415)) (call@420 _-_ (call@418 -_ y@419) y@421)) (call@424 -_ y@425)) (call@428 -_ y@429)) (call@434 _-_ (call@432 -_ y@433) y@435)) (call@438 -_ y@439)) (call@442 -_ y@443)) (call@448 _-_ (call@446 -_ y@447) y@449)) (call@452 -_ y@453))
-"zero()"	(call@4 zero)
-"{"	ERR@1:2
-"{1:2u, 2:3u}"	(map@0 (entry@2 i:1@1 u:2@3) (entry@8 i:2@7 u:3@9))
-"{:a}"	ERR@1:2
-"{?'key': value}"	(map@0 (?entry@7 s:"key"@2 value@9))
-"{?a: b, c: d}"	(map@0 (?entry@3 a@2 b@5) (entry@9 c@8 d@11))
-"{?a: b[?0]}.map(k, x >= 2, x * 4)"	(mcall@15 map (map@0 (?entry@3 a@2 (call@6 _[?_] b@5 i:0@8))) k@16 (call@21 _>=_ x@19 i:2@24) (call@29 _*_ x@27 i:4@31))
-"{\"a\": 1}.\"a\""	ERR@1:10
-"{\"a\": a.b.c, b\"\\142\": bytes(a.b.c)}"	(map@0 (entry@4 s:"a"@1 (sel@9 (sel@7 a@6 b) c)) (entry@20 b:"b"@13 (call@27 bytes (sel@31 (sel@29 a@28 b) c))))
-"{\"foo\": 1, \"bar\": [2, 3"	ERR@1:24
-"{\"foo\": 1, \"bar\": [2, 3]}"	(map@0 (entry@6 s:"foo"@1 i:1@8) (entry@16 s:"bar"@11 (list@18 i:2@19 i:3@22)))
-"{a: [1, 2].all(i > 0)}.exists(k, k != \"\")"	(mcall@29 exists (map@0 (entry@2 a@1 (mcall@14 all (list@4 i:1@5 i:2@8) (call@17 _>_ i@15 i:0@19)))) k@30 (call@35 _!=_ k@33 s:""@38))
-"{a: a, b: a.b, c: a.b.c, a ? b : c: false, a || b: true}"	(map@0 (entry@2 a@1 a@4) (entry@8 b@7 (sel@11 a@10 b)) (entry@16 c@15 (sel@21 (sel@19 a@18 b) c)) (entry@34 (call@27 _?_:_ a@25 b@29 c@33) false@36) (entry@49 (call@45 _||_ a@43 b@48) true@51))
-"{a: has(b.c)}.exists(k, k != \"\")"	(mcall@20 exists (map@0 (entry@2 a@1 (call@7 has (sel@9 b@8 c)))) k@21 (call@26 _!=_ k@24 s:""@29))
-"{a:b, c:d}"	(map@0 (entry@2 a@1 b@3) (entry@7 c@6 d@8))
-"{a}"	ERR@1:3
-"{foo: 5, bar: \"xyz\", }"	(map@0 (entry@4 foo@1 i:5@6) (entry@12 bar@9 s:"xyz"@14))
-"{foo: 5, bar: \"xyz\"}"	(map@0 (entry@4 foo@1 i:5@6) (entry@12 bar@9 s:"xyz"@14))
-"{}"	(map@0)
-"ó\u00a0¢\n\t\tó\u00a00\u00a0\n\t\t\x7f0\"\"\"\\\"\"\\\"\"\"\\\"\"\\\"\"\"\\\"\"\\\"\"\"\\\"\"\\\"\"\"\\\"\\\"\"\"\\\"\"\\\"\"\"\\\"\"\\\"\"\"\\\"\"\\\"\"\"\\\"!\\\"\"\"\\\"\"\\\"\"\"\\\"\"\\\""	ERR@1:1
+sha256:008e689f14b06a4b020b110546f3609f	(call@2 _+_ i:1@0 (call@6 _*_ i:2@4 i:3@8))
+sha256:012141784b679b356da5f0a6fb1221e5	s:"hello:\t'world'"@0
+sha256:021fb596db81e6d02bf3d2586ee3981f	ERR@1:2
+sha256:0266b93cf3014995a269f322cc0dee93	(call@0 !_ a@1)
+sha256:026895625e86891c9eb8af9938e3da18	s:"ÿ"@0
+sha256:0325655e5e449dad32a80d217b538de9	(call@19 _&&_ (msg@3 Msg (?field@10 field value@12)) (map@22 (?entry@29 s:"key"@24 value@31)))
+sha256:04ce8dba10fcf317f30470c4cbc9b0c7	s:"hello:\"world\""@0
+sha256:05b9c5f007cbaa569f393fe4d367186f	(call@2 _>=_ a@0 b@5)
+sha256:068fcd8d4c337a73eb9b993f03d888b7	b:"\\\""@0
+sha256:0746fdd2f4d012ffaeb1af2305aa7db6	(call@6 _&&_ false@0 (call@16 _||_ (call@10 !_ true@11) false@19))
+sha256:07668d89e548caa6acf72ea2f1cc0f9e	(call@15 _+_ (call@3 _+_ (list@0) (list@5 i:1@6 i:2@9 i:3@12)) (list@17 i:4@18))
+sha256:079e14324a5b190d957731c8b97d0418	s:"x''x"@0
+sha256:07a8750738828ffd36a9bbfc198cf5d3	ERR@1:1
+sha256:080a9ed428559ef602668b4c00f114f1	(list@0 i:1@1)
+sha256:0810eb76494df74756e57c6841af86a9	(call@17 _!=_ (call@12 _!=_ (call@7 _!=_ (call@2 _!=_ a@0 b@5) c@10) d@15) e@20)
+sha256:08781c026ce9627c26a0c139323accba	(call@1009 _!=_ (call@931 _!=_ (call@853 _!=_ (call@775 _!=_ (call@697 _!=_ (call@619 _!=_ (call@541 _!=_ (call@463 _!=_ (call@385 _!=_ (call@307 _!=_ (call@229 _!=_ (call@151 _!=_ (call@73 _!=_ (call@68 _[_] (call@64 _[_] (call@60 _[_] (call@56 _[_] (call@52 _[_] (call@48 _[_] (call@44 _[_] (call@40 _[_] (call@36 _[_] (call@32 _[_] (call@28 _[_] (call@25 _[_] (call@22 _[_] (call@19 _[_] (call@16 _[_] (call@13 _[_] (call@10 _[_] (call@7 _[_] (call@4 _[_] (call@1 _[_] a@0 i:1@2) i:2@5) i:3@8) i:4@11) i:5@14) i:6@17) i:7@20) i:8@23) i:9@26) i:10@29) i:11@33) i:12@37) i:13@41) i:14@45) i:15@49) i:16@53) i:17@57) i:18@61) i:19@65) i:20@69) (call@146 _[_] (call@142 _[_] (call@138 _[_] (call@134 _[_] (call@130 _[_] (call@126 _[_] (call@122 _[_] (call@118 _[_] (call@114 _[_] (call@110 _[_] (call@106 _[_] (call@103 _[_] (call@100 _[_] (call@97 _[_] (call@94 _[_] (call@91 _[_] (call@88 _[_] (call@85 _[_] (call@82 _[_] (call@79 _[_] a@78 i:1@80) i:2@83) i:3@86) i:4@89) i:5@92) i:6@95) i:7@98) i:8@101) i:9@104) i:10@107) i:11@111) i:12@115) i:13@119) i:14@123) i:15@127) i:16@131) i:17@135) i:18@139) i:19@143) i:20@147)) (call@224 _[_] (call@220 _[_] (call@216 _[_] (call@212 _[_] (call@208 _[_] (call@204 _[_] (call@200 _[_] (call@196 _[_] (call@192 _[_] (call@188 _[_] (call@184 _[_] (call@181 _[_] (call@178 _[_] (call@175 _[_] (call@172 _[_] (call@169 _[_] (call@166 _[_] (call@163 _[_] (call@160 _[_] (call@157 _[_] a@156 i:1@158) i:2@161) i:3@164) i:4@167) i:5@170) i:6@173) i:7@176) i:8@179) i:9@182) i:10@185) i:11@189) i:12@193) i:13@197) i:14@201) i:15@205) i:16@209) i:17@213) i:18@217) i:19@221) i:20@225)) (call@302 _[_] (call@298 _[_] (call@294 _[_] (call@290 _[_] (call@286 _[_] (call@282 _[_] (call@278 _[_] (call@274 _[_] (call@270 _[_] (call@266 _[_] (call@262 _[_] (call@259 _[_] (call@256 _[_] (call@253 _[_] (call@250 _[_] (call@247 _[_] (call@244 _[_] (call@241 _[_] (call@238 _[_] (call@235 _[_] a@234 i:1@236) i:2@239) i:3@242) i:4@245) i:5@248) i:6@251) i:7@254) i:8@257) i:9@260) i:10@263) i:11@267) i:12@271) i:13@275) i:14@279) i:15@283) i:16@287) i:17@291) i:18@295) i:19@299) i:20@303)) (call@380 _[_] (call@376 _[_] (call@372 _[_] (call@368 _[_] (call@364 _[_] (call@360 _[_] (call@356 _[_] (call@352 _[_] (call@348 _[_] (call@344 _[_] (call@340 _[_] (call@337 _[_] (call@334 _[_] (call@331 _[_] (call@328 _[_] (call@325 _[_] (call@322 _[_] (call@319 _[_] (call@316 _[_] (call@313 _[_] a@312 i:1@314) i:2@317) i:3@320) i:4@323) i:5@326) i:6@329) i:7@332) i:8@335) i:9@338) i:10@341) i:11@345) i:12@349) i:13@353) i:14@357) i:15@361) i:16@365) i:17@369) i:18@373) i:19@377) i:20@381)) (call@458 _[_] (call@454 _[_] (call@450 _[_] (call@446 _[_] (call@442 _[_] (call@438 _[_] (call@434 _[_] (call@430 _[_] (call@426 _[_] (call@422 _[_] (call@418 _[_] (call@415 _[_] (call@412 _[_] (call@409 _[_] (call@406 _[_] (call@403 _[_] (call@400 _[_] (call@397 _[_] (call@394 _[_] (call@391 _[_] a@390 i:1@392) i:2@395) i:3@398) i:4@401) i:5@404) i:6@407) i:7@410) i:8@413) i:9@416) i:10@419) i:11@423) i:12@427) i:13@431) i:14@435) i:15@439) i:16@443) i:17@447) i:18@451) i:19@455) i:20@459)) (call@536 _[_] (call@532 _[_] (call@528 _[_] (call@524 _[_] (call@520 _[_] (call@516 _[_] (call@512 _[_] (call@508 _[_] (call@504 _[_] (call@500 _[_] (call@496 _[_] (call@493 _[_] (call@490 _[_] (call@487 _[_] (call@484 _[_] (call@481 _[_] (call@478 _[_] (call@475 _[_] (call@472 _[_] (call@469 _[_] a@468 i:1@470) i:2@473) i:3@476) i:4@479) i:5@482) i:6@485) i:7@488) i:8@491) i:9@494) i:10@497) i:11@501) i:12@505) i:13@509) i:14@513) i:15@517) i:16@521) i:17@525) i:18@529) i:19@533) i:20@537)) (call@614 _[_] (call@610 _[_] (call@606 _[_] (call@602 _[_] (call@598 _[_] (call@594 _[_] (call@590 _[_] (call@586 _[_] (call@582 _[_] (call@578 _[_] (call@574 _[_] (call@571 _[_] (call@568 _[_] (call@565 _[_] (call@562 _[_] (call@559 _[_] (call@556 _[_] (call@553 _[_] (call@550 _[_] (call@547 _[_] a@546 i:1@548) i:2@551) i:3@554) i:4@557) i:5@560) i:6@563) i:7@566) i:8@569) i:9@572) i:10@575) i:11@579) i:12@583) i:13@587) i:14@591) i:15@595) i:16@599) i:17@603) i:18@607) i:19@611) i:20@615)) (call@692 _[_] (call@688 _[_] (call@684 _[_] (call@680 _[_] (call@676 _[_] (call@672 _[_] (call@668 _[_] (call@664 _[_] (call@660 _[_] (call@656 _[_] (call@652 _[_] (call@649 _[_] (call@646 _[_] (call@643 _[_] (call@640 _[_] (call@637 _[_] (call@634 _[_] (call@631 _[_] (call@628 _[_] (call@625 _[_] a@624 i:1@626) i:2@629) i:3@632) i:4@635) i:5@638) i:6@641) i:7@644) i:8@647) i:9@650) i:10@653) i:11@657) i:12@661) i:13@665) i:14@669) i:15@673) i:16@677) i:17@681) i:18@685) i:19@689) i:20@693)) (call@770 _[_] (call@766 _[_] (call@762 _[_] (call@758 _[_] (call@754 _[_] (call@750 _[_] (call@746 _[_] (call@742 _[_] (call@738 _[_] (call@734 _[_] (call@730 _[_] (call@727 _[_] (call@724 _[_] (call@721 _[_] (call@718 _[_] (call@715 _[_] (call@712 _[_] (call@709 _[_] (call@706 _[_] (call@703 _[_] a@702 i:1@704) i:2@707) i:3@710) i:4@713) i:5@716) i:6@719) i:7@722) i:8@725) i:9@728) i:10@731) i:11@735) i:12@739) i:13@743) i:14@747) i:15@751) i:16@755) i:17@759) i:18@763) i:19@767) i:20@771)) (call@848 _[_] (call@844 _[_] (call@840 _[_] (call@836 _[_] (call@832 _[_] (call@828 _[_] (call@824 _[_] (call@820 _[_] (call@816 _[_] (call@812 _[_] (call@808 _[_] (call@805 _[_] (call@802 _[_] (call@799 _[_] (call@796 _[_] (call@793 _[_] (call@790 _[_] (call@787 _[_] (call@784 _[_] (call@781 _[_] a@780 i:1@782) i:2@785) i:3@788) i:4@791) i:5@794) i:6@797) i:7@800) i:8@803) i:9@806) i:10@809) i:11@813) i:12@817) i:13@821) i:14@825) i:15@829) i:16@833) i:17@837) i:18@841) i:19@845) i:20@849)) (call@926 _[_] (call@922 _[_] (call@918 _[_] (call@914 _[_] (call@910 _[_] (call@906 _[_] (call@902 _[_] (call@898 _[_] (call@894 _[_] (call@890 _[_] (call@886 _[_] (call@883 _[_] (call@880 _[_] (call@877 _[_] (call@874 _[_] (call@871 _[_] (call@868 _[_] (call@865 _[_] (call@862 _[_] (call@859 _[_] a@858 i:1@860) i:2@863) i:3@866) i:4@869) i:5@872) i:6@875) i:7@878) i:8@881) i:9@884) i:10@887) i:11@891) i:12@895) i:13@899) i:14@903) i:15@907) i:16@911) i:17@915) i:18@919) i:19@923) i:20@927)) (call@1004 _[_] (call@1000 _[_] (call@996 _[_] (call@992 _[_] (call@988 _[_] (call@984 _[_] (call@980 _[_] (call@976 _[_] (call@972 _[_] (call@968 _[_] (call@964 _[_] (call@961 _[_] (call@958 _[_] (call@955 _[_] (call@952 _[_] (call@949 _[_] (call@946 _[_] (call@943 _[_] (call@940 _[_] (call@937 _[_] a@936 i:1@938) i:2@941) i:3@944) i:4@947) i:5@950) i:6@953) i:7@956) i:8@959) i:9@962) i:10@965) i:11@969) i:12@973) i:13@977) i:14@981) i:15@985) i:16@989) i:17@993) i:18@997) i:19@1001) i:20@1005)) (call@1082 _[_] (call@1078 _[_] (call@1074 _[_] (call@1070 _[_] (call@1066 _[_] (call@1062 _[_] (call@1058 _[_] (call@1054 _[_] (call@1050 _[_] (call@1046 _[_] (call@1042 _[_] (call@1039 _[_] (call@1036 _[_] (call@1033 _[_] (call@1030 _[_] (call@1027 _[_] (call@1024 _[_] (call@1021 _[_] (call@1018 _[_] (call@1015 _[_] a@1014 i:1@1016) i:2@1019) i:3@1022) i:4@1025) i:5@1028) i:6@1031) i:7@1034) i:8@1037) i:9@1040) i:10@1043) i:11@1047) i:12@1051) i:13@1055) i:14@1059) i:15@1063) i:16@1067) i:17@1071) i:18@1075) i:19@1079) i:20@1083))
+sha256:08fea05051da6f62e9cc7ae86ba2666f	(msg@7 Message (field@12 in true@14))
+sha256:09738a643dd7b8ceb4088051e0600e26	ERR@1:5
+sha256:099bc4a6fb91535e22976c3b5bd0b740	b:"\"Kim\t\""@0
+sha256:0a200aa7d2fe4241c7447e54e174ad41	b:"hello"@0
+sha256:0a9ed8ef1c18188cada085d44c16a009	(call@162 _||_ (call@109 _&&_ (mcall@53 all (mcall@23 filter (sel@3 jwt@0 extra_claims) c@24 (mcall@39 startsWith c@27 s:"group"@40)) c@54 (mcall@80 all (call@73 _[_] (sel@60 jwt@57 extra_claims) c@74) g@81 (mcall@94 endsWith g@84 s:"@acme.co"@95))) (mcall@135 exists (sel@115 jwt@112 extra_claims) c@136 (mcall@151 startsWith c@139 s:"group"@152))) (call@191 _==_ (sel@184 (sel@177 (sel@172 request@165 auth) claims) group) s:"admin"@194) (call@228 _==_ (sel@217 (sel@212 request@205 auth) principal) s:"user:me@acme.co"@231))
+sha256:0b9e033111f07e3befd8a039776b6d3d	(call@3 has (sel@9 hello@4 world))
+sha256:0be96fc313ecf335db495bc82b9ef77c	i:-405069@0
+sha256:0c59ab58b42e9655200175bced7bc862	(call@14 _>_ (call@10 _>_ (call@6 _>_ (call@2 _>_ a@0 b@4) c@8) d@12) e@16)
+sha256:0c926fba014b31b506cd4ceb60d646c0	s:"\""@0
+sha256:0e42636c36c5562996397916db250930	(msg@12 TestAllTypes (field@25 single_int32 i:1@27) (field@42 single_int64 i:2@44))
+sha256:0ff5d7521645e39f3b2076eb2a8dd4f8	(call@2 _||_ a@0 b@5 c@10 d@15 e@20)
+sha256:10c22bcf4c768b515be4e94bcafc71bf	ERR@1:1
+sha256:1227774f64fae4ae8d4615e0984bd971	(call@2 _-_ i:1@0 (call@7 _==_ i:2@5 i:-1@10))
+sha256:124490e0f2dbbac7b19cf41a2965876a	(call@2 _%_ a@0 b@4)
+sha256:12ae32cb1ec02d01eda3581b127c1fee	s:""@0
+sha256:12fc1bf5b0f3ef1c68906a4037d29528	(call@1 _-_ i:4@0 d:-4.1@2)
+sha256:1409767e7e460948a187988adc067914	ERR@1:5
+sha256:14ebe56a5008e7c251101e9e1fdbe281	ERR@1:1
+sha256:16e7a821739effd7797121286dfd4161	(list@0 i:3@1 i:4@4 i:5@7)
+sha256:16f8e867f4eafebbf34cc3ea25b53f15	(sel@7 (call@3 _+_ a@1 b@5) name)
+sha256:189dd840fd82b9a86dfecfbca4ac475e	s:"Ψ?"@0
+sha256:18dfe06baa74df7788e370def7d69fc6	(list@0 i:1@1 d:2@4 u:3@9)
+sha256:1b87bf78a6b06d65432d38dc9140fcea	ERR@2:1
+sha256:1bad6b8cf97131fceab8543e81f77571	i:-1@0
+sha256:1c6424d9a7209f816db1bfe4c8a0963d	(call@2 _>_ a@0 b@4)
+sha256:1c7673a34ac4eb7b08a389f650e044c5	(call@4 _[_] (call@1 _[_] a@0 i:1@2) s:"b"@5)
+sha256:1e924821f6101adcb8e5d5044a85f1b2	ERR@1:2
+sha256:1f5c36a6250f1d6b299c003398b44d6c	(call@3 _-_ (call@1 _+_ a@0 b@2) c@4)
+sha256:1fd743f03945fd05cf46589b070e37af	(call@1 a b@2 c@5)
+sha256:1fddcfe979c50ff486f100dd2477069e	(map@0 (?entry@3 a@2 b@5) (entry@9 c@8 d@11))
+sha256:1ff632a611885373673516162c18b64c	b:"hello"@0
+sha256:21b10d1783542976db89ccc2aeb6b058	ERR@1:15
+sha256:21f25cbbb84f01416d194fb900cf8223	s:"\a\b\f\n\r\t\v'\"\\ Legal escapes ❤"@0
+sha256:22119a1d30256255f14145ae8cfd81f8	ERR@1:3
+sha256:22883f4e27e6b65f5c0987b30dffae7b	(mcall@15 filter (call@3 has (sel@5 a@4 b)) c@16 c@19)
+sha256:22e6038e801ff4f5263cc93e4623f81a	(mcall@5 map m@0 v@6 (call@11 _*_ v@9 i:2@13))
+sha256:2418fddf06e515f8cd5d203b48b45dca	(call@2 @in a@0 b@5)
+sha256:2446354fe20f549d89e6dd4f6ccb85d8	(map@0 (entry@4 s:"a"@1 (sel@9 (sel@7 a@6 b) c)) (entry@20 b:"b"@13 (call@27 bytes (sel@31 (sel@29 a@28 b) c))))
+sha256:254637f72efcddb6a545bccbd0c3bb84	ERR@1:1
+sha256:265fda17a34611b1533d8a281ff680dc	ERR@1:1
+sha256:26974bc54e93b19134d8a50f86ebca28	(call@1 _[_] a@0 b@2)
+sha256:2748f893685a0010a47a4d473225efe6	(call@24 _?_:_ (call@15 _||_ (call@6 _&&_ false@0 (call@9 !_ true@10)) false@18) i:2@26 i:3@30)
+sha256:2849bea0b34d0c2bc9d3be3afdfb1f98	(call@3 has (sel@5 m@4 f))
+sha256:28e4d8e6e71c57054ebb8035275eda68	(msg@3 foo)
+sha256:29f831f7587e5dea24dcbfaef75a1892	ERR@1:2
+sha256:2babc7d284215b58256ed8d53c206ba4	s:"x\"\"x"@0
+sha256:2c3ca2fce815ecc2f26f717df2aa50c2	(mcall@24 exists (mcall@15 asList (call@3 has (sel@5 a@4 b))) c@25 c@28)
+sha256:2e7336dc8eba87ef472df568c35482ab	(sel@1 a@0 b)
+sha256:2fd5f13698f9411ea085838f615a0bc4	(call@9 _&&_ (call@4 _[?_] (call@1 _?._ a@0 s:"b"@3) i:0@6) (call@13 _[?_] a@12 c@15))
+sha256:304545404d60e6dc83fd8dc5ee5b64eb	(call@0 -_ (call@10 _?_:_ (call@5 _>_ x@3 i:5@7) (call@15 _-_ x@13 i:5@17) i:0@22))
+sha256:31700965d093686f6e3cf5d46a76f2ad	(call@14 _&&_ longVariableA@0 longVariableB@17 longVariableC@34)
+sha256:31793db5ca24630b813316810385ecd9	(call@11 _?_:_ (call@4 _&&_ a1@1 a2@7) b@13 c@17)
+sha256:32332ffee853ef6d87d16e1dbc55f722	(list@0 a@1)
+sha256:326c8abe8d3e3d269fbe20c2e95d55be	ERR@1:9
+sha256:32ad1b5cd4c32230e1048791d2dae91e	(mcall@20 exists (map@0 (entry@2 a@1 (call@7 has (sel@9 b@8 c)))) k@21 (call@26 _!=_ k@24 s:""@29))
+sha256:334f428025e72cfb0049546f22a16b00	ERR@1:2
+sha256:3409bf1d198717d637005b8bb06da26a	ERR@1:1
+sha256:349d9898468c731501a244142d0a1aaa	(call@15 _||_ (call@6 _&&_ false@0 (call@9 !_ true@10)) false@18)
+sha256:35aab037c22630f558ba8d164a8207d4	(map@0 (entry@2 a@1 a@4) (entry@8 b@7 (sel@11 a@10 b)) (entry@16 c@15 (sel@21 (sel@19 a@18 b) c)) (entry@34 (call@27 _?_:_ a@25 b@29 c@33) false@36) (entry@49 (call@45 _||_ a@43 b@48) true@51))
+sha256:362e451e0f79bf57d4b9a06d675d41c1	(mcall@5 map m@0 v@6 f@9)
+sha256:36e3393b0c779af24981538a22427d9e	b:"x\"\"x"@0
+sha256:3834400ffc18926a52ae35c70d7dadc3	ERR@1:1
+sha256:396c51561c9836dfa79f4cd6f497a04a	(mcall@8 optMap m@0 v@9 (call@14 _+_ v@12 i:1@16))
+sha256:3b85eb861a9797ec7c19eac68baa1580	s:"\"Kim\t\""@0
+sha256:3cb295ebe888a9e88d9b13a9566fbfee	d:-42.101@0
+sha256:3d30873e9d337f62e102d2b26bf6aa3e	(call@0 !_ true@1)
+sha256:3dcb522fcecf33bacb8bbc4a20198d11	ERR@1:15
+sha256:3de8b6004a0252ea7b06c9a11b02942a	ERR@1:6
+sha256:3e9ed64b3b0aa3ac1203776aa0463ffd	ERR@1:3
+sha256:40907ec460da7d5d3a68ee6bdea4be0f	(call@6 _||_ (call@2 _<_ a@0 i:5@4) (call@11 _>_ a@9 i:10@13))
+sha256:40a00ddc0f710b5898776073c5865b9f	(list@0 ?(call@3 _[?_] a@2 b@5))
+sha256:40ae7615ea098d4fb1733b921308d5b9	(msg@3 Msg (?field@10 field value@12))
+sha256:426a6dcbb89763a8069ddbde7a489b65	ERR@3:33
+sha256:432db2329957f31fb06f79b9ba55db57	(mcall@43 filter (mcall@18 map (list@0 ?a@2 (call@6 _[?_] b@5 i:0@8) c@12) x@19 (call@24 _>=_ x@22 i:2@27) (call@32 _*_ x@30 i:4@34)) x@44 (call@49 _<=_ x@47 i:10@52))
+sha256:44136fa355b3678a1146ad16f7e8649e	(map@0)
+sha256:444bce9f54fafa14d9a46e4ed17e46a2	(call@10 _-_ (call@6 _+_ (call@2 _*_ a@0 b@4) c@8) (call@14 _*_ d@12 e@16))
+sha256:445be54d48a2e6294369c84c61cd0929	ERR@1:1
+sha256:446c91bfe41e6dc9c6926c9ff73e86e4	b:"aaa\"bbb"@0
+sha256:460c3a93211614ac783c0f1d1bbbcb45	ERR@1:3
+sha256:468e507302dcf3c486cb4b5456eb3d7f	ERR@1:15
+sha256:48e75e62dcaefb1b718282c58e1d8e05	(call@14 _*_ (call@10 _*_ (call@6 _*_ (call@2 _*_ a@0 b@4) c@8) d@12) e@16)
+sha256:4a5df62b9839046fb86b584ac062007e	(call@0 -_ (call@4 _*_ i:1@2 i:2@6))
+sha256:4aad31c0b642249f396a39c2c5a5f0c3	(map@0 (entry@2 a@1 b@3) (entry@7 c@6 d@8))
+sha256:4bd484808e2d6310522e173a43baf6b3	(mcall@3 b a@0 i:5@4)
+sha256:4c9f8a4ef990c4ae773d4dcefa08fa1d	(call@2 _!=_ x@0 s:"a"@5)
+sha256:4dd2d9e0215b92651bed954a003a5d95	(mcall@12 existsOne (list@0) __result__@13 __result__@25)
+sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5	(list@0)
+sha256:4f9f71cd4ecb27df13d31653f815898d	ERR@1:24
+sha256:507b193aad9fa76940dfdf1db0085de6	ERR@1:1
+sha256:52fa0e94dd1f1f7531b0b57fb4788621	(msg@6 MyType (field@11 in false@13))
+sha256:55042164766f3aa345749fca18898db3	(mcall@8 filter x@0 y@9 (call@34 _&&_ (mcall@20 exists y@12 z@21 (call@27 has (sel@29 z@28 a))) (mcall@45 exists y@37 z@46 (call@52 has (sel@54 z@53 b)))))
+sha256:5517f6a798245ca236ed17851969f045	(msg@3 foo (field@6 a b@7))
+sha256:5654d4106d7025c2578858f4fc5ad235	ERR@1:1
+sha256:56ed1a3de5577fec7fb67b317a933988	(call@0 -_ num@1)
+sha256:582967534d0f909d196b97f9e6921342	ERR@1:1
+sha256:5913a0d65ea52b219e095cae5b3d94a3	ERR@1:1
+sha256:5a079debdfff12da1d964e8d70c9517e	(call@2 _-_ a@0 b@4)
+sha256:5c3b86e42f90e50d1d708fe38b8d02af	(sel@65 (sel@63 (sel@61 (sel@59 (sel@57 (sel@55 (sel@53 (sel@51 (sel@49 (sel@47 (sel@45 (sel@43 (sel@41 (sel@39 (sel@37 (sel@35 (sel@33 (sel@31 (sel@29 (sel@27 (sel@25 (sel@23 (sel@21 (sel@19 (sel@17 (sel@15 (sel@13 (sel@11 (sel@9 (sel@7 (sel@5 (sel@3 (sel@1 a@0 b) c) d) e) f) g) h) i) j) k) l) m) n) o) p) q) r) s) t) u) v) w) x) y) z) A) B) C) D) E) F) G) H)
+sha256:5d1a7c61bf13545714bdd6f20a665143	a@2
+sha256:5d4795089404e32f05e6cf9ca3cef560	ERR@1:1
+sha256:5d7dd11fea7f86aa5c7a37cda9d7c11c	ERR@1:2
+sha256:5e08b1537b51987be1986aa161437a34	d:5e-05@0
+sha256:5f09c8926619e3f91ffc5c3f699330a8	ERR@1:2
+sha256:5fb9932590db83980183031cb25b6187	(mcall@3 b a@0)
+sha256:5feceb66ffc86f38d952786c6d696c79	i:0@0
+sha256:6023419f1455a8731b1e2075ff268463	ERR@1:3
+sha256:6040cd93eac0fbf80918d6c8724ac99f	(call@14 _%_ (call@10 _%_ (call@6 _%_ (call@2 _%_ a@0 b@4) c@8) d@12) e@16)
+sha256:61f9b80f09df2cc2c63d3c040e238210	(sel@1 a@0 in)
+sha256:629e46d79dc9b7555c8c1179277c9148	(sel@1 a@0 /foo)
+sha256:62d3bde62f83c438be3f4ee2c6487c64	b:""@0
+sha256:635879daa984b5af2dd927579bafc01e	u:15@0
+sha256:641eeb89a2c6d155c148c8e31a6b6850	(call@0 -_ (call@4 _+_ i:1@2 i:2@6))
+sha256:6467e1e615a0e575f82bddbb501add8d	(call@0 !_ false@2)
+sha256:65eced41735b3b7af352b9cbea712855	(call@4 @in s:"😁"@0 (list@7 s:"😁"@8 s:"😑"@13 s:"😦"@18))
+sha256:661710915adfa7c40b5dbd6b2122dfa6	d:1e-05@0
+sha256:6649c6deafb261efad3328363e5a0d23	s:"\a\b\f\n\r\t\v'\"\\? Legal escapes"@0
+sha256:66d788ef6d5ae098b1809f61a0b1ab7b	(call@20 _==_ (sel@6 (call@1 _[_] x@0 s:"a"@2) single_int32) i:23@23)
+sha256:67a9af4174096b4da4463ecab0c477d9	(mcall@8 filter m@0 v@9 p@12)
+sha256:687a9ed5a2b7019504648f874bb683f5	s:"\\"@0
+sha256:68b34fcc562b6699a653518a0b0b87ef	(list@0 d:1.1@1 d:2.1@6 d:3.1@11)
+sha256:68ca9d48ed5a7b2187422a76eb17d5de	s:"hello"@0
+sha256:69ce6758edb4c9d638472f51b6c030e2	(mcall@8 filter m@0 (sel@10 a@9 b) false@14)
+sha256:6b1c83e67904aae09ca68f04db5ac722	(mcall@8 filter m@0 __result__@9 false@21)
+sha256:6bf383288f967d00d820ced572828d4a	ERR@1:2
+sha256:6c105c6e3f3a528b236e26fe6adce825	(mcall@5 all i:1@0 i:2@6 i:3@9)
+sha256:6cc43f858fbb763301637b5af970e2a4	s:"abc"@0
+sha256:6d4a40c36a9b6dc41366ea52bbbd843d	(call@3 _?_:_ (call@0 -_ x@1) (call@8 _-_ x@6 i:5@10) i:0@15)
+sha256:6d566e8065f9cd32930cb6a804ae5e20	(mcall@8 filter x@0 y@9 (mcall@20 exists y@12 z@21 (call@27 has (sel@29 z@28 a))))
+sha256:6d6ebde8ac038abdc0123a86b5ddded2	s:"ÿ"@0
+sha256:6e0df44e1ef382b65e6d3a0cb321094c	(mcall@11 existsOne m@0 v@12 f@15)
+sha256:6ed0659e0c0e046be68a22165e744e0a	(call@1 _?._ a@0 s:"b.c"@3)
+sha256:6f44344b9d4a5555554ffe3f2c76ff11	s:"Ã¿"@0
+sha256:70d0fb9d8aa6073931b0b1b767b61284	d:23.39@0
+sha256:7175cadee834194d5df045f52d277614	s:"☺☺"@0
+sha256:7187f0675eb3827939741acf7342ba78	ERR@1:1
+sha256:72f249ec1131dd9e66719bd7995c8350	(call@2 _?_:_ a@0 (call@7 _?_:_ c@5 d@9 e@13) b@18)
+sha256:73475cb40a568e8da8a045ced110137e	i:42@0
+sha256:7355c48750a35ce0584f0ae2a98b8df3	u:23@0
+sha256:73b2294734fd3158044ec18e9e28cd21	(call@8 _?_:_ (call@3 _<_ x@1 i:5@5) x@10 i:5@14)
+sha256:7419bd48591260a7219ab75cdb7f80e6	i:15@0
+sha256:74234e98afe7498fb5daf1f36ac2d78a	null@0
+sha256:7484f8f15cd53f689156b1c64f0ff6bd	ERR@1:1
+sha256:74f5d751259b8a59e3170136b39e3e48	(mcall@5 map m@0 v@6 p@9 f@12)
+sha256:77627f58b78449079de30e279d8b8ff6	b:"Ã¿"@0
+sha256:77a8bd2471af370b5fd3ba923eacd571	ERR@1:12
+sha256:780ebbc5a8c58273d92d6899fc5206cb	(msg@13 v1alpha1.Expr (?field@17 id id@19) (field@32 call_expr (msg@52 v1alpha1.Call_Expr (field@61 function s:"name"@63))))
+sha256:787a52819ba9edef22bb44b189b28c55	ERR@1:10
+sha256:78f9ac018e554365069108352dacabb7	ERR@1:1
+sha256:798640599597df7a8daa32b1132f0785	s:"A"@0
+sha256:79c56308f7483117887f1bc8721ae98d	(mcall@5 all m@0 v@6 f@9)
+sha256:7a283c90f71cbb2b42cf7761383196a5	ERR@1:1
+sha256:7a468c98ee3d97642ed64013556aef83	(list@0 i:3@1 i:4@4 i:5@7)
+sha256:7a90591437214752b41d15834997a2de	(msg@13 v1alpha1.Expr (field@16 id i:1@18) (field@30 call_expr (msg@50 v1alpha1.Call_Expr (field@59 function s:"name"@61))))
+sha256:7c2dba15fe51ec3357818811dafd9eea	(sel@11 (call@3 _?_:_ a@1 b@5 c@9) name)
+sha256:7c49b632c48ef39d9145b42d513f1a3c	(call@11 _[_] (call@3 _?_:_ a@1 b@5 c@9) i:0@12)
+sha256:7c656c99e3d8825294a2a6972f89d1bd	(call@2 _&&_ a@0 b@5 c@10 d@15 e@20 f@25 g@30)
+sha256:7c66029d02b3033c6c7dcdf43331136b	(call@2 _||_ a@0 (call@7 _&&_ b@5 (call@13 _||_ c@11 d@16) e@22))
+sha256:7dd530c4d36da47cd33396718ef1fa1e	ERR@1:1
+sha256:7e88047a36603238b73ca1782d50305f	(call@2 _!=_ a@0 b@5)
+sha256:7ed1168dd01ddf1ed68793d175709986	(mcall@7 hello a@0 s:"world"@8)
+sha256:7f91a48f0b6d332b7e5b072ae953101c	(call@8 _?_:_ (call@3 _>_ x@1 i:5@5) (call@20 _?_:_ (call@14 _>_ x@12 i:10@16) (call@25 _-_ x@23 i:10@27) i:5@33) i:0@38)
+sha256:809f0a67e319d99186e76395fd81fb20	ERR@1:6
+sha256:817b24856785e7ff030daba8abf97885	b:"ÿ"@0
+sha256:81c6ab98593c1815478c82e11d621e43	(call@24 _!=_ (sel@1 x@0 single_nested_message) null@27)
+sha256:83be845806be857cdd83106edf3cddf5	b:"x''x"@0
+sha256:845e30448809e2bc8958eb025bfc7952	(sel@3 (sel@1 a@0 b) c)
+sha256:84b4e031a83c4c8982c615e17ed5b2bd	d:1e+30@0
+sha256:84c87d18ff0c4ca035e73365eabe9b59	(msg@3 foo (field@6 a b@7) (field@11 c d@12))
+sha256:850569f92a40464504d32481919db167	ERR@1:1
+sha256:85ddf30c9ee2dfa1e7d3fd26983667a5	(call@2 _||_ a@0 b@5 c@10 d@15 e@20 f@25)
+sha256:85e7f30ce035b48ebd959d9a8e5404ff	(call@17 _||_ (call@7 _&&_ false@1 (call@10 !_ true@11)) false@20)
+sha256:8634933c5d10943c6fa08c53b6fa425d	(call@14 _<_ (call@10 _<_ (call@6 _<_ (call@2 _<_ a@0 b@4) c@8) d@12) e@16)
+sha256:86b42384e3d11d08f33c9ed3cc6895c3	u:0@0
+sha256:889db232daa22ff13d0cc7b64316594a	ERR@1:1
+sha256:8977afec8280e5cf80d9e11ba9c43594	(call@2 _&&_ a@0 b@5 c@10 d@15 e@20)
+sha256:8a8de823d5ed3e12746a62ef169bcf37	ERR@1:1
+sha256:8bfacf862c3e1adbb4b9a4555c950a7a	(call@3 max a@4 b@7 i:100@10)
+sha256:8fb92893baa61fb7740776cd67011f98	(call@17 _<=_ (call@12 _<=_ (call@7 _<=_ (call@2 _<=_ a@0 b@5) c@10) d@15) e@20)
+sha256:9178c18507d63e3b45d5c3db9cc76f99	ERR@1:2
+sha256:9208254b5f8a8481376dd121a6de35a2	(call@2 _==_ a@0 b@5)
+sha256:92dd079c741d2a95238a86c512a0e83f	(call@2 _<=_ a@0 b@5)
+sha256:93495321bb7567601b83362734a1d976	s:"❤"@0
+sha256:9359f3bb2efa7aabd0264fb67fb1d99f	ERR@1:1
+sha256:935f68319d4f227e02bfd54a0ddf85b8	ERR@1:1
+sha256:94e49565c9bde2c4b9c86724783010c9	(call@8 _[_] (call@1 _[_] a@0 i:1@4) s:"b"@9)
+sha256:94f214c49e2789b1b399fa835b5d2dcb	(call@17 @in (call@12 @in (call@7 @in (call@2 @in a@0 b@5) c@10) d@15) e@20)
+sha256:95470a5ae820f8a8875fe4d52328cb9d	(list@0 (list@1 (list@2 (list@3 (list@4 (list@5 (list@6 (list@7 (list@8 (list@9 (list@10 (list@11 (list@12 (list@13 (list@14 (list@15 (list@16 (list@17 (list@18 (list@19 (list@20 (list@21 (list@22 (list@23 (list@24 (list@25 (list@26 (list@27 (list@28 (list@29 (list@30 (list@31 s:"not fine"@32))))))))))))))))))))))))))))))))
+sha256:9642b88043847d1051923037b6e149c5	ERR@1:8
+sha256:969b750356eb25b3d00f50d94a8cef88	u:24@0
+sha256:9760828b300a5cd3c30fc55af1bd48f6	(call@10 _+_ (call@6 _+_ (call@2 _+_ a@0 b@4) c@8) d@12)
+sha256:97e7d0a093133605a59a952c22fe2ba2	(mcall@27 exists (list@0 (call@4 has (sel@6 a@5 b)) (call@14 has (sel@16 c@15 d))) e@28 e@31)
+sha256:98161adcb6439b6dc2bcb70aa4bcc181	(call@17 _>=_ (call@12 _>=_ (call@7 _>=_ (call@2 _>=_ a@0 b@5) c@10) d@15) e@20)
+sha256:98c1deb5a5305150ec705c228bee0222	ERR@1:2
+sha256:9b38b1e4384b2ff2139a9118b4895bce	(mcall@8 exists m@0 v@9 f@12)
+sha256:9df28ea121d508dde74c684b8567c603	(call@4 size (call@7 _?_:_ a@5 (call@12 _?_:_ b@10 c@14 d@18) e@23))
+sha256:a368c8c2240841382552e8e987fad2a4	(call@171 _<_ (call@166 _<_ (call@156 _<_ (call@151 _<_ (call@146 _<_ (call@141 _<_ (call@136 _<_ (call@131 _<_ (call@126 _<_ (call@121 _<_ (call@116 _<_ (call@111 _<_ (call@101 _<_ (call@96 _<_ (call@91 _<_ (call@86 _<_ (call@81 _<_ (call@76 _<_ (call@71 _<_ (call@66 _<_ (call@61 _<_ (call@56 _<_ (call@43 _<_ (call@38 _<_ (call@34 _<_ (call@30 _<_ (call@26 _<_ (call@22 _<_ (call@18 _<_ (call@14 _<_ (call@10 _<_ (call@6 _<_ (call@2 _<_ a@0 i:1@4) i:2@8) i:3@12) i:4@16) i:5@20) i:6@24) i:7@28) i:8@32) i:9@36) i:10@40) i:11@45) i:12@58) i:13@63) i:14@68) i:15@73) i:16@78) i:17@83) i:18@88) i:19@93) i:20@98) i:21@103) i:22@113) i:23@118) i:24@123) i:25@128) i:26@133) i:27@138) i:28@143) i:29@148) i:30@153) i:31@158) i:32@168) i:33@173)
+sha256:a36b1f2c3f84522dd1005145646617d7	(list@0 i:1@1 i:2@4 i:3@7)
+sha256:a3a74633960cd85234bccf37265b6d58	b:"\a\b\f\n\r\t\v'\"\\? Legal escapes"@0
+sha256:a498f8f71f20e6c85f200fc0c277b9dd	(call@160 _+_ (call@155 _+_ (call@150 _+_ (call@145 _+_ (call@138 _+_ (call@133 _+_ (call@128 _+_ (call@123 _+_ (call@118 _+_ (call@113 _+_ (call@108 _+_ (call@103 _+_ (call@98 _+_ (call@93 _+_ (call@86 _+_ (call@81 _+_ (call@76 _+_ (call@71 _+_ (call@66 _+_ (call@61 _+_ (call@56 _+_ (call@51 _+_ (call@46 _+_ (call@41 _+_ (call@34 _+_ (call@30 _+_ (call@26 _+_ (call@22 _+_ (call@18 _+_ (call@14 _+_ (call@10 _+_ (call@6 _+_ (call@2 _+_ i:1@0 i:2@4) i:3@8) i:4@12) i:5@16) i:6@20) i:7@24) i:8@28) i:9@32) i:10@36) i:11@43) i:12@48) i:13@53) i:14@58) i:15@63) i:16@68) i:17@73) i:18@78) i:19@83) i:20@88) i:21@95) i:22@100) i:23@105) i:24@110) i:25@115) i:26@120) i:27@125) i:28@130) i:29@135) i:30@140) i:31@147) i:32@152) i:33@157) i:34@162)
+sha256:a52b718d6ed83451485dc2f1d6f2c7cb	ERR@1:1
+sha256:a57f1587701c756b07117a4414919b0a	s:"hi☺ ☺there"@0
+sha256:a5ff22cafedb7ce3e26ec33572b6d284	(call@44 _&&_ (call@21 @in s:"my-principal-group"@0 (sel@36 (sel@31 request@24 auth) claims)) (call@71 _>_ (sel@66 (sel@59 (sel@54 request@47 auth) claims) iat) (call@77 _-_ now@73 (call@87 duration s:"5m"@88))))
+sha256:a63caf60f3ae86b712e4812124804d5d	(sel@1 a@0 b c)
+sha256:a74ef492f0adc88c9cf513ebf023457a	(call@1 _?._ a@0 s:"b"@3)
+sha256:a81a223b6212edf629b6a2e17cf0eec8	(map@0 (entry@6 s:"foo"@1 i:1@8) (entry@16 s:"bar"@11 (list@18 i:2@19 i:3@22)))
+sha256:a930fabd60b5178461454f104a269020	(call@12 _%_ (call@2 _*_ a@0 (call@7 _/_ b@5 c@9)) i:0@14)
+sha256:a9551a38b4ae4f497eb97630290d4758	(call@7 _+_ b:"abc"@0 b:"def"@9)
+sha256:a95a430608fb6e9ab984c01c1a9dc039	(call@1 a)
+sha256:aabce84b5b1ef59002c6ce5fa3044240	ERR@1:24
+sha256:aad726bb7811fbb85c57b6702108c6d1	(mcall@38 filter (mcall@13 map (list@0 i:1@1 i:2@4 i:3@7) x@14 (call@19 _>=_ x@17 i:2@22) (call@27 _*_ x@25 i:4@29)) x@39 (call@44 _<=_ x@42 i:10@47))
+sha256:ac190fcd0bcd9b166f24948a89898189	ERR@2:7
+sha256:acc72c34ba7b9cac2abc13df035c63d9	(mcall@15 map (map@0 (?entry@3 a@2 (call@6 _[?_] b@5 i:0@8))) k@16 (call@21 _>=_ x@19 i:2@24) (call@29 _*_ x@27 i:4@31))
+sha256:ad7febd8a4e87a15a446cd92ea3851aa	b:"ÿ"@0
+sha256:adad54e09949b0e92325b2815e303733	(call@2 _&&_ a@0 b@5)
+sha256:ae2c50f29cc3d8af3f400472eea2a816	(call@3 has m@4)
+sha256:ae3fdeaf56f735e69a5c9d94bdc88a96	d:1e-09@0
+sha256:ae9edefbf8319e9b4e2230857d1b1c81	(call@31 _||_ (call@14 _&&_ longVariableA@0 longVariableB@17) (call@64 _-_ (call@48 _+_ longVariableC@34 longVariableD@50) longVariableE@66))
+sha256:aefa0b5b77560d6bf0e2d89aae578156	(call@2 _?_:_ a@0 (call@8 _||_ b1@5 b2@11) (call@21 _&&_ c1@18 c2@24))
+sha256:af19f9701348a08f9c54f5184785169d	(call@6 _&&_ (call@2 _>_ a@0 i:5@4) (call@11 _<_ a@9 i:10@13))
+sha256:afdb0984192cda4ae677ae55c510c024	(mcall@16 exists (list@0 i:1@1 i:2@4 i:3@7) x@17 (call@22 _>_ x@20 i:0@24))
+sha256:b16274d4f75ff6cf246e31f7e76b1670	(mcall@5 map m@0 __result__@6 __result__@18)
+sha256:b16cdaa75d999ecddd08f91dad31ce67	(call@8 _*_ (call@3 _+_ i:1@1 i:2@5) i:3@10)
+sha256:b2fd9cdc0312f20912045ca2e44d3a2e	ERR@1:8
+sha256:b36ac7dace67707aa36ded0afbe11994	(sel@7 (call@4 _[_] (call@1 _[_] a@0 b@2) c@5) name)
+sha256:b3eab8162c821f276a91d6872fb7de8c	(call@2 _*_ x@0 i:2@4)
+sha256:b416e685b40bda716082ea6b96907629	ERR@1:4
+sha256:b47b23a54e54a0489decfeca099da006	(call@4 zero)
+sha256:b4857d0b65dad8dbf51a0d9be12526ab	(map@0 (entry@2 i:1@1 u:2@3) (entry@8 i:2@7 u:3@9))
+sha256:b4fd515757840a7cf94e68925cad62bf	(call@6 _-_ (call@2 _+_ a@0 b@4) (call@10 _*_ d@8 e@12))
+sha256:b5bea41b6c623f7c09f1bf24dcae58eb	true@0
+sha256:b5d65e26035495f2b88d7a4bfe594d84	true@2
+sha256:b6224d6ca2f5b62a90360abf67b27e94	(call@2 _?_:_ a@0 b@4 c@8)
+sha256:b6270baeb1dfe3e6b93ba789c82110c6	(call@26 _?_:_ (call@16 _||_ (call@7 _&&_ false@1 (call@10 !_ true@11)) false@19) i:2@28 i:3@32)
+sha256:b639fb0e1608ea6de3ebb779b472105d	(call@2 _?_:_ x@0 y@4 z@8)
+sha256:b7836105073ec8155df9ba18d0e94488	(mcall@3 b a@0 c@4)
+sha256:b8d836bedbff7d7f03d7d5a1048cbce8	(list@0 ?a@2 ?b@6 c@9)
+sha256:b90549727f9f59f8aab0b6454cba65ad	(call@1 _-_ i:4@0 i:-4@2)
+sha256:ba486a48dae090de7dccec8aa6d8b8b0	b:"ÿ"@0
+sha256:ba9ff9622e3af89b5e943cdd02fdf3bc	(call@2 _?_:_ a@0 b@4 c@17)
+sha256:bafce9ad67673c6fd54c122caf72f0d3	(list@0 a@1 b@4 c@7)
+sha256:bb8a00b96030c3eaea3febe489420cf0	u:42@0
+sha256:bb98610855636b32a9161fd35088f622	ERR@1:2
+sha256:bc4a71180870f7945155fbb02f4b0a2e	ERR@1:1
+sha256:bcd567b2860fd55b70a2b4ca86a714c6	(sel@6 (sel@2 a@0 b) c)
+sha256:bcfd4b3d364a4882ad6096957f9980ef	s:"Ã¿"@0
+sha256:bd710ee6c565429810e5fc10471c9f56	ERR@1:1
+sha256:bdc3772229dc4160a8d061d917598ea6	(mcall@29 exists (map@0 (entry@2 a@1 (mcall@14 all (list@4 i:1@5 i:2@8) (call@17 _>_ i@15 i:0@19)))) k@30 (call@35 _!=_ k@33 s:""@38))
+sha256:c07890e2a86bc593aa3399cf42d5266b	(call@8 _==_ (call@4 size x@5) (mcall@17 size x@11))
+sha256:c09f65ac8a7b1dc0ab83b1f60d653785	(call@2 _?_:_ a@0 b@4 (call@10 _?_:_ c@8 d@12 e@16))
+sha256:c173d465cff7e4b434991e73d2f4f11a	(call@10 noop_macro i:123@11)
+sha256:c24da2ce6761a80a2719d84e445d6fc5	(call@6 _-_ (call@2 _+_ a@0 b@4) c@8)
+sha256:c274891790345c56cef3b53c026bdc48	(call@0 -_ a@1)
+sha256:c43230229446854d2e137ccec0cf1997	(map@0 (entry@4 foo@1 i:5@6) (entry@12 bar@9 s:"xyz"@14))
+sha256:c5a9f7419df7ced91e7c82da0a0462d9	ERR@1:4
+sha256:c5d3f20fdb57c9718dbe71edef847b9d	(call@1 _[?_] a@0 b@3)
+sha256:c612f163cf0113132ebbf347d8419bb3	s:"\\\""@0
+sha256:c63cadad2fbb646d05a428a646f6189e	b:"\xff"@0
+sha256:c68071615ee96114b4c583502c8ebe8a	(mcall@19 map (list@0 (list@1 i:1@2) (list@6 i:2@7) (list@11 i:3@12)) x@20 (mcall@31 filter x@23 y@32 (call@37 _>_ y@35 i:1@39)))
+sha256:c86872dc97dd35aabbbd845130a5fcd6	ERR@1:1
+sha256:c9c4ebb42635518f8e66667d0ae114fb	(call@128 _[_] (call@124 _[_] (call@120 _[_] (call@116 _[_] (call@112 _[_] (call@108 _[_] (call@104 _[_] (call@100 _[_] (call@96 _[_] (call@92 _[_] (call@88 _[_] (call@84 _[_] (call@80 _[_] (call@68 _[_] (call@64 _[_] (call@60 _[_] (call@56 _[_] (call@52 _[_] (call@48 _[_] (call@44 _[_] (call@40 _[_] (call@36 _[_] (call@32 _[_] (call@28 _[_] (call@25 _[_] (call@22 _[_] (call@19 _[_] (call@16 _[_] (call@13 _[_] (call@10 _[_] (call@7 _[_] (call@4 _[_] (call@1 _[_] a@0 i:1@2) i:2@5) i:3@8) i:4@11) i:5@14) i:6@17) i:7@20) i:8@23) i:9@26) i:10@29) i:11@33) i:12@37) i:13@41) i:14@45) i:15@49) i:16@53) i:17@57) i:18@61) i:19@65) i:20@69) i:21@81) i:22@85) i:23@89) i:24@93) i:25@97) i:26@101) i:27@105) i:28@109) i:29@113) i:30@117) i:31@121) i:32@125) i:33@129)
+sha256:ca978112ca1bbdcafac231b39a23dc4d	a@0
+sha256:ca9e29160e271b68d9cd5090cbf8c544	s:"Ã¿"@0
+sha256:cb23f6635a581786f970184faab1f816	(call@2 _+_ a@0 b@4)
+sha256:cb66ca63b17f16c612e96464c2ebd255	(call@450 _!=_ (call@444 _!=_ (call@440 _!=_ (call@436 _!=_ (call@430 _!=_ (call@426 _!=_ (call@422 _!=_ (call@416 _!=_ (call@412 _!=_ (call@408 _!=_ (call@399 _!=_ (call@395 _!=_ (call@391 _!=_ (call@385 _!=_ (call@381 _!=_ (call@377 _!=_ (call@371 _!=_ (call@367 _!=_ (call@363 _!=_ (call@357 _!=_ (call@353 _!=_ (call@349 _!=_ (call@343 _!=_ (call@339 _!=_ (call@335 _!=_ (call@329 _!=_ (call@325 _!=_ (call@318 _!=_ (call@312 _!=_ (call@308 _!=_ (call@304 _!=_ (call@298 _!=_ (call@294 _!=_ (call@290 _!=_ (call@284 _!=_ (call@280 _!=_ (call@276 _!=_ (call@270 _!=_ (call@266 _!=_ (call@262 _!=_ (call@256 _!=_ (call@252 _!=_ (call@248 _!=_ (call@242 _!=_ (call@235 _!=_ (call@231 _!=_ (call@225 _!=_ (call@221 _!=_ (call@217 _!=_ (call@211 _!=_ (call@207 _!=_ (call@203 _!=_ (call@197 _!=_ (call@193 _!=_ (call@189 _!=_ (call@183 _!=_ (call@179 _!=_ (call@175 _!=_ (call@169 _!=_ (call@165 _!=_ (call@161 _!=_ (call@152 _!=_ (call@148 _!=_ (call@144 _!=_ (call@138 _!=_ (call@134 _!=_ (call@130 _!=_ (call@124 _!=_ (call@120 _!=_ (call@116 _!=_ (call@110 _!=_ (call@106 _!=_ (call@102 _!=_ (call@96 _!=_ (call@92 _!=_ (call@88 _!=_ (call@82 _!=_ (call@78 _!=_ (call@71 _!=_ (call@65 _!=_ (call@61 _!=_ (call@57 _!=_ (call@51 _!=_ (call@47 _!=_ (call@43 _!=_ (call@37 _!=_ (call@33 _!=_ (call@29 _!=_ (call@25 _!=_ (call@22 _!=_ (call@19 _!=_ (call@16 _!=_ (call@13 _!=_ (call@10 _!=_ (call@7 _!=_ (call@4 _!=_ (call@1 _!=_ y@0 y@3) y@6) y@9) y@12) y@15) y@18) y@21) y@24) (call@27 -_ y@28)) (call@31 -_ y@32)) (call@35 -_ y@36)) (call@41 _-_ (call@39 -_ y@40) y@42)) (call@45 -_ y@46)) (call@49 -_ y@50)) (call@55 _-_ (call@53 -_ y@54) y@56)) (call@59 -_ y@60)) (call@63 -_ y@64)) (call@69 _-_ (call@67 -_ y@68) y@70)) (call@73 -_ y@74)) (call@80 -_ y@81)) (call@86 _-_ (call@84 -_ y@85) y@87)) (call@90 -_ y@91)) (call@94 -_ y@95)) (call@100 _-_ (call@98 -_ y@99) y@101)) (call@104 -_ y@105)) (call@108 -_ y@109)) (call@114 _-_ (call@112 -_ y@113) y@115)) (call@118 -_ y@119)) (call@122 -_ y@123)) (call@128 _-_ (call@126 -_ y@127) y@129)) (call@132 -_ y@133)) (call@136 -_ y@137)) (call@142 _-_ (call@140 -_ y@141) y@143)) (call@146 -_ y@147)) (call@150 -_ y@151)) (call@156 _-_ (call@154 -_ y@155) y@157)) (call@163 -_ y@164)) (call@167 -_ y@168)) (call@173 _-_ (call@171 -_ y@172) y@174)) (call@177 -_ y@178)) (call@181 -_ y@182)) (call@187 _-_ (call@185 -_ y@186) y@188)) (call@191 -_ y@192)) (call@195 -_ y@196)) (call@201 _-_ (call@199 -_ y@200) y@202)) (call@205 -_ y@206)) (call@209 -_ y@210)) (call@215 _-_ (call@213 -_ y@214) y@216)) (call@219 -_ y@220)) (call@223 -_ y@224)) (call@229 _-_ (call@227 -_ y@228) y@230)) (call@233 -_ y@234)) (call@237 -_ y@238)) (call@246 _-_ (call@244 -_ y@245) y@247)) (call@250 -_ y@251)) (call@254 -_ y@255)) (call@260 _-_ (call@258 -_ y@259) y@261)) (call@264 -_ y@265)) (call@268 -_ y@269)) (call@274 _-_ (call@272 -_ y@273) y@275)) (call@278 -_ y@279)) (call@282 -_ y@283)) (call@288 _-_ (call@286 -_ y@287) y@289)) (call@292 -_ y@293)) (call@296 -_ y@297)) (call@302 _-_ (call@300 -_ y@301) y@303)) (call@306 -_ y@307)) (call@310 -_ y@311)) (call@316 _-_ (call@314 -_ y@315) y@317)) (call@320 -_ y@321)) (call@327 -_ y@328)) (call@333 _-_ (call@331 -_ y@332) y@334)) (call@337 -_ y@338)) (call@341 -_ y@342)) (call@347 _-_ (call@345 -_ y@346) y@348)) (call@351 -_ y@352)) (call@355 -_ y@356)) (call@361 _-_ (call@359 -_ y@360) y@362)) (call@365 -_ y@366)) (call@369 -_ y@370)) (call@375 _-_ (call@373 -_ y@374) y@376)) (call@379 -_ y@380)) (call@383 -_ y@384)) (call@389 _-_ (call@387 -_ y@388) y@390)) (call@393 -_ y@394)) (call@397 -_ y@398)) (call@403 _-_ (call@401 -_ y@402) y@404)) (call@410 -_ y@411)) (call@414 -_ y@415)) (call@420 _-_ (call@418 -_ y@419) y@421)) (call@424 -_ y@425)) (call@428 -_ y@429)) (call@434 _-_ (call@432 -_ y@433) y@435)) (call@438 -_ y@439)) (call@442 -_ y@443)) (call@448 _-_ (call@446 -_ y@447) y@449)) (call@452 -_ y@453))
+sha256:cce46ea1b663b76005cb6b75988f27d3	(call@1 a b@2)
+sha256:ceecde6d008d9b3904ff0359444b4f88	(mcall@12 exists_one m@0 v@13 (call@18 _==_ v@16 i:1@21))
+sha256:cf52a096a6fdcc9e9a2fa38d28232774	(call@2 _*_ x@0 u:2@4)
+sha256:cf601577f5d3cb802d9b90e9aa8d56f1	(sel@1 a@0 b-c)
+sha256:cf9f388189ca4f32dfdb6a291dc659d2	ERR@1:9
+sha256:d0840ac7f5261121250069c7e702651d	(map@0 (?entry@7 s:"key"@2 value@9))
+sha256:d13fb35193f50bf72eb70cfc773dbdc3	(call@3 and d@4 u:32@7)
+sha256:d23264e6b9f2008f61808300b8b04581	(call@2 _*_ x@0 d:2@4)
+sha256:d2f60303651a28438c29536a1369efbc	(msg@11 SomeMessage (field@15 foo i:5@17) (field@23 bar s:"xyz"@25))
+sha256:d3b18f0ae468895ccc0cf803609b3d72	(call@7 _[_] (list@0 i:1@1 i:3@3 i:4@5) i:0@8)
+sha256:d3bc8cc2c239b25f25b3c1dc5bd90a57	(call@2 _*_ a@0 b@4)
+sha256:d3f3860c407cda063545af2b7111871a	(sel@1 a@0 b.c)
+sha256:d47c20cdc4c1da5ad391f50b774faf90	(call@3 one s:"a"@4)
+sha256:d4a79e39dc582e89b3ebbe984485c365	ERR@1:12
+sha256:d4ab5ad55f1dc0ffe69d38b31485c73e	(list@0 d:1@1 d:2@6 d:3@11)
+sha256:d543699194a3343443ab84395c0464b0	s:"hello"@0
+sha256:d556e76fb06dec5b013a4a696dc4f187	my_ident@0
+sha256:d592a54c7e990b5d826ea1166a357e37	(list@0 s:"hello, world"@1 s:"goodbye, world"@17 s:"sure, why not?"@35)
+sha256:d650d9236f1ad31824585b19863230fd	(list@0 u:1@1 u:2@5 u:3@9)
+sha256:d71a17a6fc38435142c9bfbba87ac62f	(mcall@8 filter x@0 y@9 (mcall@20 filter y@12 z@21 (call@26 _>_ z@24 i:0@28)))
+sha256:d8156bae0c4243d3742fc4e9774d8ace	ERR@1:3
+sha256:d8c332a9636caf70f3c9d0c78bcb2248	ERR@1:1
+sha256:d917a549d3f308d8cffd5d848fcffa8c	(call@2 _/_ a@0 b@4)
+sha256:d942f64886578d8747312e368ed92d9f	ERR@1:1
+sha256:d9795c3cdca3e8aeb560b02bd837ab41	(mcall@20 exists_one (list@0 i:1@1 i:2@4 i:3@7) x@21 (call@26 _>=_ x@24 i:2@29))
+sha256:dc686383ad88ca3cab6b004dd6b6c47f	(call@16 _||_ (call@6 _&&_ (call@2 _>_ a@0 i:5@4) (call@11 _<_ b@9 i:10@13)) (call@21 _==_ c@19 s:"xyz"@24))
+sha256:dd634b339f0099ed39685d966961e5ec	ERR@1:2
+sha256:de25a35f5b10529c1bdd72289caa4b77	ERR@1:1
+sha256:de3e35d99aa2cf06f23cdb796ea5002b	(call@12 _/_ (call@8 _*_ (call@3 _+_ a@1 b@5) c@10) (call@17 _-_ d@15 e@19))
+sha256:df4eb225b4ba9ae274cf80a4687bcd5f	(call@1 _?_:_ a@0 b@2 c@4)
+sha256:e02c39077b2805c3c21ce7bd21bcea5a	(call@17 _||_ (call@2 _&&_ a@0 b@5 c@10 d@15) (call@22 _&&_ e@20 f@25 g@30 h@35))
+sha256:e087cac98d24d84c7fef82d80f412c85	b:"abc"@0
+sha256:e150ecc355707eaedf217a6bc83395a7	d:1e+07@0
+sha256:e193b998b5dfda204731e4f32fe55606	s:"\a\b\f\n\r\t\v'\"\\? Legal escapes"@0
+sha256:e256ee8e7aff6957a781d8328f0f68e2	ERR@1:1
+sha256:e41e0a113df13ec3d2447a8f562f27c1	(msg@13 v1alpha1.Expr)
+sha256:e4a65eb713a535897a1dff9668ee6685	(call@14 _+_ (call@3 _+_ (list@0) (list@5 i:1@6 i:2@8 i:3@10)) (list@16 i:4@17))
+sha256:e63b1c97ae5adc1aa8f2a93734211c8c	ERR@1:1
+sha256:e63d8a91f82cd40b18f62aa1790f6df8	s:"ÿ"@0
+sha256:e6a38eee266d78fc0771053af44f61d7	(call@10 _%_ (call@6 _/_ (call@2 _*_ a@0 b@4) c@8) i:0@12)
+sha256:e8e48f66650c84119fabaa8967948ddf	(list@0 ?a@2 ?b@6)
+sha256:e9a74729daea9b844d7bcc267f1eeed2	(call@2 _+_ a@0 (call@6 _*_ b@4 c@8))
+sha256:e9bd4bb785c98e78898ad591583ecffe	ERR@1:4
+sha256:ea3bdf3e18e56ba4cfd9eb5b85db5306	(map@0 (entry@4 foo@1 i:5@6) (entry@12 bar@9 s:"xyz"@14))
+sha256:eb4833f932384d62d916f55a25dadd08	(mcall@18 method (call@3 _?_:_ a@1 b@5 c@9) d@19)
+sha256:eba3b094d0183ff1774c23deb4701830	(call@14 _/_ (call@10 _/_ (call@6 _/_ (call@2 _/_ a@0 b@4) c@8) d@12) e@16)
+sha256:ec13030441a3ea3e7051ac2d99a240a8	(call@1 _[_] a@0 i:3@2)
+sha256:ec6f316df656eea6e205e4f973dc9aa5	(mcall@8 filter m@0 v@9 (call@14 _>_ v@12 i:0@16))
+sha256:ece9646bcc2c0af49d130c5185f73abc	(list@0 (list@1 (list@2 (list@3 (list@4 (list@5 (list@6 (list@7 (list@8 (list@9 (list@10 (list@11 (list@12 (list@13 (list@14 (list@15 (list@16 (list@17 (list@18 (list@19 (list@20 (list@21 (list@22 (list@23 (list@24 (list@25 (list@26 (list@27 (list@28 (list@29 (list@30 (list@31 (list@32 (list@33 (list@34 (list@35 (list@36 (list@37 (list@38 (list@39 (list@40 (list@41 (list@42 (list@43 (list@44 (list@45 (list@46 (list@47 (list@48 (list@49 (list@50 (list@51 (list@52 (list@53 (list@54 (list@55 (list@56 (list@57 (list@58 (list@59 (list@60 (list@61 (list@62 (list@63 (list@64 (list@65 (list@66 (list@67 (list@68 (list@69 (list@70 (list@71 (list@76 (list@77 (list@78 (list@79 (list@80 (list@81 (list@82 (list@83 (list@84 (list@85 (list@86 (list@87 (list@88 (list@89 (list@90 (list@91 (list@92 (list@93 (list@94 (list@95 (list@96 (list@97 (list@98 (list@99 (list@100 (list@101 (list@102 (list@103 (list@104 (list@105 (list@106 (list@107 (list@108 (list@109 s:"too many"@110))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+sha256:ed62d6f938238ade703fb8146512f415	(mcall@13 map (list@0 i:1@1 i:2@4 i:3@7) x@14 (call@19 _>=_ x@17 i:2@22) (call@27 _*_ x@25 i:4@29))
+sha256:ee497dcb1d461f4cf70e5ee1937dcc0c	ERR@1:5
+sha256:eec97f84ea51bc79773344853748aa84	(call@8 _?_:_ (call@3 _>_ x@1 i:5@5) (call@13 _-_ x@11 i:5@15) i:0@20)
+sha256:ef8125cd9dfae2361390afac957f4529	ERR@1:1
+sha256:ef820b3f94099828f759a109da60f45d	(mcall@29 string (call@10 _||_ (call@4 has (sel@6 a@5 b)) (call@16 has (sel@18 c@17 d))))
+sha256:efe1e5c7656bf0ba9071ab2814faa7d8	(call@2 _<_ a@0 b@4)
+sha256:f052d4dd834afd1c906219fb37f62564	ERR@1:1
+sha256:f311192af8a7f46d14f1a5c8c5f83c15	(call@6 _+_ s:"abc"@0 s:"def"@8)
+sha256:f3a1288f1e221743fcdc301af536c39d	(call@6 _+_ (call@2 _*_ x@0 i:2@4) (call@10 _/_ y@8 i:3@12))
+sha256:f3b4ed40fa879086bf8a395feb969e23	s:"ÿ"@0
+sha256:f40ef02295a3a15c00ecc17f64ed5895	(call@5 _&&_ (call@1 _?._ a@0 s:"b"@3) (call@9 _[?_] a@8 b@11))
+sha256:f41c3dae2b5b86ea31a9a2b1757bce55	ERR@1:5
+sha256:f4bf9f7fcbedaba0392f108c59d8f4a3	ERR@1:1
+sha256:f5023f7e90e1ec614817a59938387499	(mcall@11 baz (sel@3 foo@0 bar) i:1@12 i:2@15 s:"abc"@18)
+sha256:f645be3a7ca84d5a68e339754da2ab6c	ERR@1:10
+sha256:f69ee9df2a87dc7ffdec94f1f39e0ba4	(mcall@13 all (list@0 i:1@1 i:2@4 i:3@7) x@14 (call@19 _>_ x@17 i:0@21))
+sha256:f75c6596507878933aa2bc17dfd9a868	ERR@1:1
+sha256:f7a036037994c0639f5992ab13de693f	(call@18 _==_ (call@10 _-_ (call@2 _+_ i:1@0 (call@6 _*_ i:2@4 i:3@8)) (call@14 _/_ i:1@12 i:2@16)) (call@23 _%_ i:6@21 i:1@25))
+sha256:f85d4a5b7ae4cf6cc72fb7d76ef78328	ERR@1:1
+sha256:f89bf797c3b1dda4ee48380783e5e979	a@1
+sha256:f8dc2e8bbddcdfbe9a9fface8f87fe25	(call@2 _||_ a@0 b@5)
+sha256:f970aa8a7e3c8892728eded08b11a1a2	(call@17 _==_ (call@12 _==_ (call@7 _==_ (call@2 _==_ a@0 b@5) c@10) d@15) e@20)
+sha256:fb650da31da3c5bf815b2dd647ad5e0a	ERR@1:1
+sha256:fbb12abb90488da209f27df62f71d434	ERR@1:5
+sha256:fcbcf165908dd18a9e49f7ff27810176	false@0
+sha256:fd8908f417e7a7074caf0a8e0d07fbf5	b:"\xff"@0
+sha256:fe910733f7f613704a7748765c3dc6f7	s:"❤"@0
+sha256:ff031323f41955240c271ea4669e4de6	b:"\\"@0
+sha256:ff1ff361d927aef7125127facad80e67	(sel@16 (call@8 _?_:_ (call@3 _||_ a@1 b@6) c@10 d@14) e)

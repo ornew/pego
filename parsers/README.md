@@ -5,7 +5,7 @@ that depends only on the standard library and the PEGO runtime (`github.com/orne
 
 | Language | Module | Specification | Checked against |
 |:--|:--|:--|:--|
-| CEL | [`github.com/ornew/pego/parsers/cel`](cel/) | The [CEL language definition](https://github.com/google/cel-spec/blob/master/doc/langdef.md), as cel-go parses it | All 2,527 conformance tests of cel-spec; cel-go v0.32.0 (trees, offsets and literal values on 32,794 vendored expressions; fuzz tests) |
+| CEL | [`github.com/ornew/pego/parsers/cel`](cel/) | The [CEL language definition](https://github.com/google/cel-spec/blob/master/doc/langdef.md), as cel-go parses it | All 2,527 conformance tests of cel-spec; cel-go v0.32.0 (trees, offsets and literal values on 32,794 expressions; fuzz tests) |
 | CSV | [`github.com/ornew/pego/parsers/csv`](csv/) | [RFC 4180](https://www.rfc-editor.org/rfc/rfc4180), with the leniencies of `encoding/csv` | 73 edge cases, `encoding/csv` (differential and fuzz tests) |
 | CUE | [`github.com/ornew/pego/parsers/cue`](cue/) | [The CUE Language Specification](https://cuelang.org/docs/reference/spec/), as `cue/parser` v0.17.1 parses it | `cue/parser`: 4,061 sources of the CUE repository, 32,488 mutants, 15,000 generated inputs and 4,126 literals (trees, offsets and comments; no difference); fuzz tests |
 | DuckDB SQL | [`github.com/ornew/pego/parsers/duckdb`](duckdb/) | DuckDB 1.5.6's SQL dialect | DuckDB 1.5.6 on 158,605 texts (acceptance, statement splitting and the AST of SELECT statements; 13 known deviations) |

@@ -8,9 +8,12 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
+	"github.com/ornew/pego/internal/corpora/corporatest"
 	"github.com/ornew/pego/parsers/cel"
+	"github.com/ornew/pego/parsers/cel/internal/upstream"
 )
 
 // refDir is the directory of the reference results of cel-go: testdata/ref, or the directory that the environment
@@ -22,7 +25,51 @@ func refDir() string {
 	return filepath.Join("testdata", "ref")
 }
 
-// refCase is a line of testdata/ref/*.tsv: an expression and what cel-go makes of it (see internal/refgen).
+// refCounts are the numbers of cases of the files of testdata/ref, which the tests require: a file that lost lines
+// must not pass with fewer cases. (CEL_REF_DIR names other files, which are not counted.)
+var refCounts = map[string]int{
+	"celgo.tsv": 358, "conformance.tsv": 2263, "deep.tsv": 1000, "edge.tsv": 854, "literals.tsv": 4000,
+	"macros.tsv": 12319, "random.tsv": 12000,
+}
+
+// upstreamTexts maps the hash of each expression of the conformance tests of cel-spec and of the tests of cel-go's
+// parser to the expression: the result files refer to those expressions by hash and hold no text of the projects. The
+// test is skipped if the sources are not fetched. conformance has the expressions of cel-spec only.
+var (
+	upstreamOnce        sync.Once
+	upstreamAll         map[string]string
+	upstreamConformance map[string]bool
+)
+
+func upstreamTexts(t testing.TB) map[string]string {
+	t.Helper()
+	spec, celgo := corporatest.Dir(t, "cel-spec"), corporatest.Dir(t, "cel-go")
+	upstreamOnce.Do(func() {
+		conf, err := upstream.ConformanceExprs(spec)
+		if err != nil {
+			t.Fatal(err)
+		}
+		goTests, err := upstream.GoTestInputs(filepath.Join(celgo, "parser"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		upstreamAll, upstreamConformance = map[string]string{}, map[string]bool{}
+		for _, s := range conf {
+			upstreamAll[upstream.Hash(s)] = s
+			upstreamConformance[upstream.Hash(s)] = true
+		}
+		for _, s := range goTests {
+			upstreamAll[upstream.Hash(s)] = s
+		}
+	})
+	if upstreamAll == nil {
+		t.Fatal("reading the fetched sources failed")
+	}
+	return upstreamAll
+}
+
+// refCase is a line of testdata/ref/*.tsv: an expression and what cel-go makes of it (see internal/refgen). The
+// expression is a Go string literal, or for text of cel-spec and cel-go the hash that upstream.Hash makes of it.
 type refCase struct {
 	src, want string
 }
@@ -42,9 +89,20 @@ func readRef(t testing.TB, name string) []refCase {
 		if !ok {
 			t.Fatalf("%s: bad line %.60q", name, sc.Text())
 		}
-		src, err := strconv.Unquote(q)
-		if err != nil {
-			t.Fatalf("%s: bad line %.60q: %v", name, sc.Text(), err)
+		var src string
+		if strings.HasPrefix(q, "sha256:") {
+			var ok bool
+			if src, ok = upstreamTexts(t)[q]; !ok {
+				t.Fatalf("%s: no expression of cel-spec or cel-go has the hash in %.60q", name, sc.Text())
+			}
+			if name == "conformance.tsv" && !upstreamConformance[q] {
+				t.Fatalf("%s: %q is not an expression of cel-spec", name, src)
+			}
+		} else {
+			var err error
+			if src, err = strconv.Unquote(q); err != nil {
+				t.Fatalf("%s: bad line %.60q: %v", name, sc.Text(), err)
+			}
 		}
 		cases = append(cases, refCase{src, want})
 	}
@@ -53,6 +111,12 @@ func readRef(t testing.TB, name string) []refCase {
 	}
 	if len(cases) == 0 {
 		t.Fatalf("%s: no cases", name)
+	}
+	if name == "conformance.tsv" && len(cases) != len(upstreamConformance) {
+		t.Fatalf("%s: %d cases, but cel-spec has %d different expressions", name, len(cases), len(upstreamConformance))
+	}
+	if want, ok := refCounts[name]; ok && os.Getenv("CEL_REF_DIR") == "" && len(cases) != want {
+		t.Fatalf("%s: %d cases, want %d", name, len(cases), want)
 	}
 	return cases
 }

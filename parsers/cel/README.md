@@ -125,7 +125,8 @@ with an error instead of exhausting the stack.
 The tests check the parser against the specification's conformance suite and against cel-go v0.32.0, the reference
 implementation (`cel.dev/cel-go`), whose parser is an ANTLR grammar:
 
-- **The conformance tests of cel-spec** (`testdata/cel-spec`, commit 40a3c900 of 2026-09-16, Apache 2.0): the 2,527
+- **The conformance tests of cel-spec** (the corpus `cel-spec`, commit 40a3c900 of 2026-09-16, Apache 2.0, fetched by `go run ./hack/corpora fetch cel-spec`
+  from the root of the repository; the tests skip without it): the 2,527
   tests of the `simple` suite, 2,263 different expressions, all parse with `ParseExpr`
   (0 failures, 0 skipped). The suite has no test that expects a parse error. `go test -run TestConformanceSuite`.
 - **Differential tests against cel-go** (`TestDifferential`, `go test -run TestDifferential -v`): for each expression of
@@ -152,13 +153,17 @@ implementation (`cel.dev/cel-go`), whose parser is an ANTLR grammar:
 [internal/refgen](internal/refgen) is a module of its own, since it depends on cel-go. It parses expressions with
 cel-go's parser (`parser.NewParser` with the optional syntax and escaped identifiers on, variadic logical operators so
 that `a || b || c` is one call, and no macros) and writes one line for each expression: the expression as a Go string
-literal, a tab, and the AST or `ERR@line:column` of the first error. `testdata/ref/*.tsv` are its output:
+literal, a tab, and the AST or `ERR@line:column` of the first error. The expressions of cel-spec and of cel-go's tests
+are not stored: their lines (`conformance.tsv`, `celgo.tsv` and the part of `macros.tsv` that they make) have the hash
+of the expression instead of the literal (`sha256:` and 32 hexadecimal digits, `internal/upstream.Hash`), and the tests
+find the text in the fetched corpora `cel-spec` and `cel-go` (the tests of cel-go's parser), skipping those files if
+they are not there. `testdata/ref/*.tsv` are its output:
 
 ```bash
-git clone https://github.com/google/cel-spec        # commit 40a3c900, for the conformance expressions
-cd internal/refgen
-go run . -spec /path/to/cel-spec -out ../../testdata/ref -deep 1000
-go run . -spec /path/to/cel-spec -out /tmp/big -seed 7 -n 150000 -literals 60000 -deep 6000 -macros 50000
+SPEC=$(go run ./hack/corpora dir cel-spec)   # from the root of the repository; the conformance expressions
+cd parsers/cel/internal/refgen
+go run . -spec $SPEC -out ../../testdata/ref -deep 1000
+go run . -spec $SPEC -out /tmp/big -seed 7 -n 150000 -literals 60000 -deep 6000 -macros 50000
 cd ../.. && CEL_REF_DIR=/tmp/big go test -run Differential .   # the tests of the module, on the large set
 ```
 

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
+	"github.com/ornew/pego/internal/corpora/corporatest"
 	"github.com/ornew/pego/parsers/cel"
 )
 
@@ -17,7 +18,7 @@ import (
 // Unlike the differential test, it needs no cel-go; the seeds are the expressions of the conformance tests and of the
 // reference corpora.
 func FuzzParse(f *testing.F) {
-	files, _ := filepath.Glob(filepath.Join("testdata", "cel-spec", "*.textproto"))
+	files, _ := filepath.Glob(filepath.Join(corporatest.Dir(f, "cel-spec"), "tests", "simple", "testdata", "*.textproto"))
 	for _, name := range files {
 		data, err := os.ReadFile(name)
 		if err != nil {

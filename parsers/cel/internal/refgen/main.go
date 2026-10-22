@@ -5,10 +5,15 @@
 //
 //	go run . -spec /path/to/cel-spec -out ../../testdata/ref
 //
+// where cel-spec is the checkout of google/cel-spec at the revision of the manifest, or the fetched corpus (print its
+// directory with "go run ./hack/corpora dir cel-spec" in the root of the repository).
+//
 // It reads the expressions of the conformance tests from cel-spec (tests/simple/testdata/*.textproto), those in the
 // tests of cel-go's parser, a list of hand-picked edge cases and random expressions, parses each with cel-go
 // (see canon.go for the settings and the form of the output) and writes one file per set. A line of a file is the
-// expression as a Go string literal, a tab, and the canonical form of its AST or ERR.
+// expression as a Go string literal, a tab, and the canonical form of its AST or ERR. In the files of expressions from
+// cel-spec and cel-go (conformance.tsv, celgo.tsv and macros.tsv) the expression is replaced by its hash
+// (upstream.Hash), so that the files hold no text of those projects.
 package main
 
 import (
@@ -20,6 +25,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	upstreampkg "github.com/ornew/pego/parsers/cel/internal/upstream"
 )
 
 func main() {
@@ -40,7 +47,10 @@ func main() {
 	}
 	p := newParser()
 	// A file of verdicts (verdict true) says OK for an expression that cel-go accepts, instead of its AST.
-	write := func(name string, inputs []string, verdict ...bool) {
+	// A file that holds expressions of cel-spec or of the tests of cel-go (upstream) refers to those by their hash
+	// instead of holding their text, so that the text is not stored; the tests find it in the fetched sources.
+	upstreamTexts := map[string]bool{}
+	write := func(name string, inputs []string, upstream bool, verdict ...bool) {
 		seen := map[string]bool{}
 		var lines []string
 		ok, bad := 0, 0
@@ -61,7 +71,11 @@ func main() {
 					res = "OK"
 				}
 			}
-			lines = append(lines, strconv.Quote(src)+"\t"+res)
+			key := strconv.Quote(src)
+			if upstream && upstreamTexts[src] {
+				key = upstreampkg.Hash(src)
+			}
+			lines = append(lines, key+"\t"+res)
 		}
 		sort.Strings(lines)
 		path := filepath.Join(*out, name)
@@ -71,26 +85,29 @@ func main() {
 		fmt.Printf("%-16s %6d inputs: %6d accepted, %6d rejected\n", name, len(lines), ok, bad)
 	}
 
-	conf, err := conformanceExprs(*spec)
+	conf, err := upstreampkg.ConformanceExprs(*spec)
 	if err != nil {
 		fatal(err)
 	}
-	write("conformance.tsv", conf)
-	celgo, err := celGoTestInputs(celGoParserDir())
+	celgo, err := upstreampkg.GoTestInputs(celGoParserDir())
 	if err != nil {
 		fatal(err)
 	}
-	write("celgo.tsv", celgo)
-	write("edge.tsv", edgeCases)
-	write("random.tsv", generate(*seed, *nrandom))
-	write("literals.tsv", generateLiterals(*seed, *nlit))
-	write("deep.tsv", generateDeep(*seed, *ndeep), true)
+	for _, src := range slices.Concat(conf, celgo) {
+		upstreamTexts[src] = true
+	}
+	write("conformance.tsv", conf, true)
+	write("celgo.tsv", celgo, true)
+	write("edge.tsv", edgeCases, false)
+	write("random.tsv", generate(*seed, *nrandom), false)
+	write("literals.tsv", generateLiterals(*seed, *nlit), false)
+	write("deep.tsv", generateDeep(*seed, *ndeep), false, true)
 	// The verdicts of the parser with the standard macros, for what the other files hold and for macro calls.
 	pm := newMacroParser()
 	macroInputs := slices.Concat(conf, celgo, edgeCases, generateMacros(*seed, *nmacros), generate(*seed+1, 3000))
 	writeLimits(p, filepath.Join(*out, "limits.tsv"))
 	p = pm
-	write("macros.tsv", macroInputs, true)
+	write("macros.tsv", macroInputs, true, true)
 }
 
 func fatal(err error) {

@@ -1,6 +1,11 @@
-package main
+// Package upstream reads the expressions out of the third-party sources whose text the reference results refer to by
+// hash: the conformance tests of cel-spec and the tests of the parser of cel-go. Both internal/refgen, which writes
+// the results, and the tests, which read them, use it.
+package upstream
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -13,9 +18,16 @@ import (
 	"unicode/utf8"
 )
 
-// conformanceExprs returns the expressions of the tests of the CEL conformance suite (tests/simple/testdata/*.textproto
+// Hash returns the key by which a result file refers to an expression: "sha256:" and the first 32 hexadecimal digits of
+// the SHA-256 of its bytes.
+func Hash(expr string) string {
+	sum := sha256.Sum256([]byte(expr))
+	return "sha256:" + hex.EncodeToString(sum[:16])
+}
+
+// ConformanceExprs returns the expressions of the tests of the CEL conformance suite (tests/simple/testdata/*.textproto
 // of cel-spec): the string of each expr field.
-func conformanceExprs(specDir string) ([]string, error) {
+func ConformanceExprs(specDir string) ([]string, error) {
 	files, err := filepath.Glob(filepath.Join(specDir, "tests", "simple", "testdata", "*.textproto"))
 	if err != nil || len(files) == 0 {
 		return nil, fmt.Errorf("no textproto files in %s: %v", specDir, err)
@@ -27,7 +39,7 @@ func conformanceExprs(specDir string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		es, err := textprotoExprs(string(data))
+		es, err := TextprotoExprs(string(data))
 		if err != nil {
 			return nil, fmt.Errorf("%s: %v", f, err)
 		}
@@ -36,9 +48,9 @@ func conformanceExprs(specDir string) ([]string, error) {
 	return out, nil
 }
 
-// textprotoExprs returns the value of each expr field of a file in the protobuf text format. A string value may be
+// TextprotoExprs returns the value of each expr field of a file in the protobuf text format. A string value may be
 // several string literals on several lines, which are concatenated.
-func textprotoExprs(data string) ([]string, error) {
+func TextprotoExprs(data string) ([]string, error) {
 	var out []string
 	lines := strings.Split(data, "\n")
 	for i := 0; i < len(lines); i++ {
@@ -160,9 +172,9 @@ func textprotoString(lit string) (string, error) {
 	return string(b), nil
 }
 
-// celGoTestInputs returns the expressions in the tests of the parser of cel-go (parser_test.go: the I fields of
+// GoTestInputs returns the expressions in the tests of the parser of cel-go (parser_test.go: the I fields of
 // the cases; unparser_test.go: the in fields; unescape_test.go: the string literals, as a string and as bytes).
-func celGoTestInputs(parserDir string) ([]string, error) {
+func GoTestInputs(parserDir string) ([]string, error) {
 	var out []string
 	fset := token.NewFileSet()
 	for _, f := range []struct{ file, key string }{{"parser_test.go", "I"}, {"unparser_test.go", "in"}, {"unescape_test.go", "in"}} {

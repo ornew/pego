@@ -5,13 +5,15 @@ each expression, written by [internal/refgen](../../internal/refgen) (`go run . 
 ../../testdata/ref -deep 1000`; see the README of the module). The tests of the module compare the parser with these
 files, so that they need no cel-go.
 
-A line is the expression as a Go string literal, a tab, and the result: the AST in the canonical form of
+A line is the expression as a Go string literal (or, for the expressions of cel-spec and cel-go, the hash of the
+expression: `sha256:` and 32 hexadecimal digits, see `internal/upstream`; the tests find the text in the fetched
+corpora), a tab, and the result: the AST in the canonical form of
 `canon_test.go`, `ERR@line:column` of the first error, or for a file of verdicts (`deep.tsv`, `macros.tsv`) `OK` where
 cel-go accepts it. `limits.tsv` has a shape of expression, a size and `ok` or `ERR` instead (see `limits_test.go`).
 
 | File | Expressions |
 |:--|:--|
-| `conformance.tsv` | The `expr` of the conformance tests of cel-spec (commit 40a3c900, in `../cel-spec`), 2,263 different ones |
+| `conformance.tsv` | The `expr` of the conformance tests of cel-spec (commit 40a3c900, the corpus `cel-spec`), 2,263 different ones |
 | `celgo.tsv` | The expressions in the tests of cel-go's parser (`parser_test.go`, `unparser_test.go`, and the strings of `unescape_test.go`, as strings and as bytes) |
 | `edge.tsv` | Hand-picked inputs at the edges of the lexical syntax and the grammar (`refgen/edge.go`) |
 | `random.tsv` | 12,000 random expressions and mutations of them (`refgen/gen.go`, seed 1) |
