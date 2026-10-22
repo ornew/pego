@@ -131,10 +131,10 @@ large operations remain indivisible or outside this control. These checks
 bound work at selected points, not total LSP cancellation latency. Suppression
 validation uses its request context before and after candidate analysis and
 lint. The VS Code
-explanation-command handler is implemented. Real-editor validation and
-full-phase resource measurements remain open; safe suppression application
-also remains open because the client API cannot atomically enforce the document
-version.
+explanation-command handler is implemented, and VS Code applies suppression and
+fix edits under the version guard described in "VS Code Suppression". The poll
+intervals across the phases are measured in "Cancellation Poll Intervals";
+validation in real editors other than Neovim remains open.
 
 References, document highlights, `prepareRename` and `rename` reuse the same
 request-local control. Polls cover full occurrence collection, unused-name
