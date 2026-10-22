@@ -193,7 +193,7 @@ if err != nil {
 	log.Fatal(err)
 }
 n, err := keyParser.Parse("abc")
-fmt.Println(n, err) // "abc"@key <nil>
+fmt.Println(n, err) // "abc" <nil>
 ```
 
 `Parser.Parse` always has to consume the whole input. The start rule does not need an `$$` of its own: if the rule matches only a

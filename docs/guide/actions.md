@@ -398,7 +398,7 @@ pego parse -g args-optional.pego -s call -i 'f(a)'
 ```
 
 ```text
-pego: args-optional.pego:3:63: cannot use *[]node[string] as []node[string] in field Args of Call
+pego: args-optional.pego:4:63: cannot use *[]ident as []node[string] in field Args of Call
 ```
 
 ### Keeping Only the AST You Need
