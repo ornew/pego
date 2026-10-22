@@ -160,7 +160,7 @@ func checkAcceptance(t *testing.T, cases []refCase, dev map[string]string, devia
 	t.Helper()
 	var (
 		bothAccept, bothReject, semantic, falseNeg, falsePos, known int
-		unitDiffers                                            int
+		unitDiffers                                                 int
 		failures                                                    []string
 	)
 	for _, c := range cases {

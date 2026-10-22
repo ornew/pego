@@ -98,4 +98,3 @@ func BenchmarkLargeParseAST(b *testing.B) {
 		}
 	}
 }
-
