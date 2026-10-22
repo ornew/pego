@@ -22,6 +22,7 @@ is recognized by the contents of a `.pegoc` and by the `.json` suffix; anything 
 | `lint` | Find likely mistakes in a grammar | [Linting Grammars](linting.md) |
 | `explain`, `trace`, `profile` | Find out why an input fails or a parse is slow | [Debugging and Profiling](debugging.md) |
 | `sample`, `edit-fuzz` | Generate inputs, check incremental parsing | [Sampling Inputs and Fuzzing](sampling-and-fuzzing.md), [Fuzzing Edits](sampling-and-fuzzing.md#fuzzing-edits) |
+| `schema`, `schema diff` | Print the output schema of a grammar, compare two schemas | [Output Schemas](output-schemas-and-queries.md#the-command-line) |
 | `lsp` | Run the language server | [Editor Support](editor-support.md) |
 
 The examples use the grammar `pairs.pego`:
@@ -302,6 +303,33 @@ types come from the dropped actions.
 
 A `.pegoc` compiled without `-default-value` cannot be used with `-default-value` in `parse` or `gen`: the command
 asks you to compile it again with `-default-value`.
+
+## `schema`
+
+```bash
+pego schema -g <grammar> [-s <rule>] [-all-rules] [-o <file>]
+pego schema diff [-s <rule>] [-all-rules] [-f text|json] <before> <after>
+```
+
+`schema` prints the [output schema](output-schemas-and-queries.md) of a grammar as JSON, without parsing an input. `-s`
+selects the start rule as it does for the other commands, and an empty name selects the default. By default the schema
+holds the start rule and the rules it calls, as `Parser.OutputSchema()` does; `-all-rules` adds the unreachable rules
+and every declared type, as `pego.WithAllSchemaRules()` does. `-o` writes the file.
+
+`schema diff` compares two schemas and prints one line per added, removed or changed type and rule, for example
+`changed rule main`. Each operand is either a schema JSON file, as written by `schema -o`, or a grammar. A file is
+recognized by its `"format": "pego-output-schema"` member, so a grammar in JSON is never mistaken for a schema. `-s` and
+`-all-rules` apply to the grammar operands only; a schema file already holds the rules it was exported with. With
+`-f json`, the output lists the changes with the entries of both sides. The command exits with status 0 whenever both
+operands are valid, even when they differ, so a script must compare the output to detect a change. The diff does not
+classify whether a change is compatible.
+
+```bash
+pego schema -g pairs.pego -o before.json
+# edit pairs.pego
+pego schema diff before.json pairs.pego        # a schema file and a grammar
+pego schema diff -all-rules -f json before.json pairs.pego
+```
 
 ## `explain`, `trace` and `profile`
 

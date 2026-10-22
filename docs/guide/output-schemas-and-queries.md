@@ -78,6 +78,19 @@ for _, change := range diff.Types {
 }
 ```
 
+## The Command Line
+
+`pego schema` prints the schema of a grammar as JSON, and `pego schema diff` compares two schemas. An operand of the
+diff is a schema file or a grammar, so a schema saved with `-o` can be compared with the grammar it came from:
+
+```bash
+pego schema -g pairs.pego -o before.json
+pego schema diff before.json pairs.pego
+pego schema diff -all-rules -f json before.json pairs.pego
+```
+
+See [the `pego` command](command-line.md#schema) for the flags.
+
 Keep in mind:
 
 - A parser restored by `LoadParser` cannot export a schema, even if its file holds the grammar AST. Store the schema

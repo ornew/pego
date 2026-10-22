@@ -15,6 +15,8 @@
 //	pego lint -g grammar.pego [-s main] [-f text|json] [-disable checks] [-strict] [-list]
 //	pego sample -g grammar.pego [-s main] [-n 10] [-seed N] [-max-depth D] [-max-repeat R] [-max-len L] [-budget B]
 //	            [-coverage] [-invalid] [-f lines|json]
+//	pego schema -g grammar.pego [-s main] [-all-rules] [-o schema.json]
+//	pego schema diff [-s main] [-all-rules] [-f text|json] before after
 //	pego edit-fuzz -g grammar.pego [-s main] [-backend names] [-unit names] [-seed N] [-corpus path] [-sequences n]
 //	               [-operations n] [-save-failures dir] [-minimize] [-max-attempts n]
 //	pego edit-fuzz -g grammar.pego -replay sequence.json [-minimize] [-save-failures dir]
@@ -164,6 +166,16 @@ Commands:
       prefers rules and alternatives not exercised yet and reports what was
       missed; -invalid generates near-miss inputs that the grammar rejects.
 
+  schema -g <grammar> [-s <rule>] [-all-rules] [-o <file>]
+  schema diff [-s <rule>] [-all-rules] [-f text|json] <before> <after>
+      Print the output schema of a grammar as JSON, without parsing an input.
+      By default the schema holds the start rule and the rules it calls;
+      -all-rules includes every rule and declared type. schema diff compares
+      two schemas and prints the added, removed and changed types and rules.
+      Each operand is a schema JSON file, as written by schema, or a grammar,
+      whose schema is exported with -s and -all-rules. The exit status is 0
+      whenever both operands are valid, whether or not they differ.
+
   edit-fuzz -g <grammar.pego> [-s <rule>] [-backend <names>] [-unit <names>] [-seed <n>]
             [-corpus <path>] [-sequences <n>] [-operations <n>] [-save-failures <dir>]
             [-minimize] [-max-attempts <n>]
@@ -244,6 +256,8 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 		return lintCmd(args[1:], stdout)
 	case "edit-fuzz":
 		return editFuzzCmd(args[1:], stdout)
+	case "schema":
+		return schemaCmd(args[1:], stdout)
 	}
 	return fmt.Errorf("%s", usage)
 }
