@@ -811,12 +811,19 @@ func (p *parser) ruleDef() (sourceResult *grammar.RuleDef) {
 
 	br := p.statementBreak()
 	attrs, attrBreaks, keywordBreak := p.declarationAttributes()
+	keyword := p.i
 	pos := p.expect("rule").pos
 	p.header, p.layout, p.layoutDepth, p.layoutStart = true, true, 0, p.i-1
 	p.headerPos = pos
 	defer func() { p.header, p.layout, p.layoutDepth = false, false, 0 }()
 	name := p.ident()
 	rd := &grammar.RuleDef{SourceInfo: grammar.SourceInfo{Pos: pos}, Attrs: attrs, Name: name.text, Break: br, AttrBreaks: attrBreaks, KeywordBreak: keywordBreak}
+	if b := p.toks[keyword].source; len(attrs) > 0 && b != nil && b.hasNext {
+		// No source-bearing node starts at "rule" after attributes, so the
+		// declaration owns the comments before it.
+		rd.KeywordComments = b.leading
+		rd.KeywordDetachedComments = append([]string(nil), b.detached...)
+	}
 	if !p.is("=") {
 		rd.Type = p.typeExpr()
 	}

@@ -404,15 +404,21 @@ func (p *printer) ruleDef(r *RuleDef) {
 		pollFormat(p.control)
 		if i > 0 {
 			b := breakAt(r.AttrBreaks, i)
-			if b == nil && owned && (trailed || a.LeadingComments != "" || len(a.LeadingDetachedComments) > 0) {
-				// An attribute that owns leading comments, or follows a
-				// trailing comment, starts a line.
-				b = ownedLeadFrom(&a.SourceInfo, false)
-			}
-			if b != nil {
-				p.lineBreak(b, "", false)
+			if inline := inlineOwnedComment(&a.SourceInfo); b == nil && owned && !trailed && inline != nil {
+				// A lone block comment between two attributes of a line is
+				// detached from both, and stays between them.
+				p.write(" " + inline.Text + " ")
 			} else {
-				p.write(" ")
+				if b == nil && owned && (trailed || a.LeadingComments != "" || len(a.LeadingDetachedComments) > 0) {
+					// An attribute that owns leading comments, or follows a
+					// trailing comment, starts a line.
+					b = ownedLeadFrom(&a.SourceInfo, false)
+				}
+				if b != nil {
+					p.lineBreak(b, "", false)
+				} else {
+					p.write(" ")
+				}
 			}
 		}
 		p.write(attributeGap(a, p.control) + indentTermLines(formatAttribute(a, p.control), "", p.control))
@@ -423,7 +429,11 @@ func (p *printer) ruleDef(r *RuleDef) {
 		}
 	}
 	if len(r.Attrs) > 0 {
-		p.lineBreak(r.KeywordBreak, "", false)
+		b := r.KeywordBreak
+		if owned && (r.KeywordComments != "" || len(r.KeywordDetachedComments) > 0) {
+			b = ownedLeadFrom(&SourceInfo{LeadingComments: r.KeywordComments, LeadingDetachedComments: r.KeywordDetachedComments}, false)
+		}
+		p.lineBreak(b, "", false)
 	}
 	p.header("rule", r.Diagnostic())
 	p.write(" " + r.Name)

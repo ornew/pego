@@ -101,3 +101,17 @@ func ownedTrailing(s *SourceInfo, b *LineBreak) *LineBreak {
 func ownsComments(s *SourceInfo, b *LineBreak) bool {
 	return b == nil && (s.LeadingComments != "" || s.TrailingComments != "" || len(s.LeadingDetachedComments) > 0)
 }
+
+// inlineOwnedComment returns the block comment that s owns when it is only one
+// detached block comment without a line break at its end, the comment that
+// the parser detaches from two tokens of one line, or nil.
+func inlineOwnedComment(s *SourceInfo) *Comment {
+	if s.LeadingComments != "" || len(s.LeadingDetachedComments) != 1 || strings.HasSuffix(s.LeadingDetachedComments[0], "\n") {
+		return nil
+	}
+	cs := ownedComments(s.LeadingDetachedComments[0])
+	if len(cs) == 0 {
+		return nil
+	}
+	return cs[0]
+}

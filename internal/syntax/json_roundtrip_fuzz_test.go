@@ -3,6 +3,7 @@ package syntax
 import (
 	"fmt"
 	"math/rand/v2"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -10,12 +11,18 @@ import (
 )
 
 // jsonRoundTripForms hold comments in the places where a declaration, a field or
-// a line of an operators rule can own them. S marks a place.
-var jsonRoundTripForms = []struct{ name, form string }{
-	{"declarations", "S\npackage p S\nS\ntype T = { S\n    A int S\n    S B string S\n} S\nS\nrule main = a:\"a\" => T{A: 1, B: \"x\"} S\nS\nrule other = \"x\" S\n"},
-	{"operators rule", "S\npackage p S\nS\nrule ops = operators { S\n    S skip \" \" S\n    S operand \"n\" S\n    S operand \"m\" => 1 S\n    S level { S\n        S infix left \"+\" S\n        S prefix \"-\" S\n    } S\n    S level L { S\n        infix right \"*\" S\n    } S\n} S\n"},
-	{"declaration attributes", "S\npackage p S\nS\n@start S @foo S\nS @bar S\nS\nrule main = \"a\" S\nS\n@start(default) S\nrule other = \"x\" S\n"},
-	{"types and variables", "S\npackage p S\nS\ntype A ~ int S\nS\ntype B = { S x int S ; S y string S } S\nS\nvar v = 1 S\nS\nrule r = \"a\" S\n"},
+// a line of an operators rule can own them. S marks a place. In a form that
+// keeps all, Format writes every comment of every place again; it has no place
+// at the end of the file, whose last comments no node owns.
+var jsonRoundTripForms = []struct {
+	name, form string
+	keepsAll   bool
+}{
+	{"declarations", "S\npackage p S\nS\ntype T = { S\n    A int S\n    S B string S\n} S\nS\nrule main = a:\"a\" => T{A: 1, B: \"x\"} S\nS\nrule other = \"x\" S\n", false},
+	{"operators rule", "S\npackage p S\nS\nrule ops = operators { S\n    S skip \" \" S\n    S operand \"n\" S\n    S operand \"m\" => 1 S\n    S level { S\n        S infix left \"+\" S\n        S prefix \"-\" S\n    } S\n    S level L { S\n        infix right \"*\" S\n    } S\n} S\n", false},
+	{"declaration attributes", "S\npackage p S\nS\n@start S @foo S\nS @bar S\nS\nrule main = \"a\" S\nS\n@start(default) S\nrule other = \"x\"\n", true},
+	{"comments before rule", "S\n@start S\nS\nS\nrule main = \"a\" S\nS\n@a S @b S @c(x) S\nS\nrule b = \"b\"\n", true},
+	{"types and variables", "S\npackage p S\nS\ntype A ~ int S\nS\ntype B = { S x int S ; S y string S } S\nS\nvar v = 1 S\nS\nrule r = \"a\" S\n", false},
 }
 
 // expandLineHoles replaces each S that stands alone between spaces or line
@@ -61,6 +68,29 @@ func jsonRoundTripProblem(ast *grammar.Grammar) string {
 	return ""
 }
 
+// commentLabel matches the label a random comment slot gives its comment.
+var commentLabel = regexp.MustCompile(`(?:/\*|//) ([a-z][0-9]+)`)
+
+// lostComments returns the label of a comment of src that the grammar decoded
+// from the JSON of ast does not write, or "".
+func lostComments(src string, ast *grammar.Grammar) string {
+	data, err := grammar.MarshalJSON(ast)
+	if err != nil {
+		return err.Error()
+	}
+	decoded, err := grammar.UnmarshalJSON(data)
+	if err != nil {
+		return err.Error()
+	}
+	out := grammar.Format(decoded)
+	for _, m := range commentLabel.FindAllStringSubmatch(src, -1) {
+		if !regexp.MustCompile(`\b` + m[1] + `\b`).MatchString(out) {
+			return m[1]
+		}
+	}
+	return ""
+}
+
 // TestFormatRandomJSONRoundTrip checks that comments survive JSON: the owned
 // comments a decoded grammar carries are written back to the same owners.
 func TestFormatRandomJSONRoundTrip(t *testing.T) {
@@ -79,6 +109,11 @@ func TestFormatRandomJSONRoundTrip(t *testing.T) {
 				if problem := jsonRoundTripProblem(ast); problem != "" {
 					failures++
 					t.Errorf("seed %d\nsource:\n%s\n%s", seed, src, problem)
+				} else if f.keepsAll {
+					if lost := lostComments(src, ast); lost != "" {
+						failures++
+						t.Errorf("seed %d\nsource:\n%s\nlost comment %s", seed, src, lost)
+					}
 				}
 			}
 			if failures == 0 && parsed < seeds/10 {

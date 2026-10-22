@@ -85,7 +85,14 @@ nodes that stand on lines of their own when the grammar has no layout, as after
 rule declarations, the fields of a struct type, and the `skip`, `operand`,
 `level` and operator lines of an operators rule. Detached paragraphs come first,
 each after a blank line, then the leading comments directly before the node; a
-trailing comment goes at the end of the node's last line. A string that ends in
+trailing comment goes at the end of the node's last line. The declaration
+attributes of a rule own comments the same way: an attribute follows the one
+before it on its line unless it owns leading or detached comments or follows a
+trailing comment, and a lone block comment detached between two attributes of a
+line stays between them. The rule declaration owns the comments on the lines
+between its last attribute and `rule`, as `keywordComments` and
+`keywordDetachedComments` (`RuleDef.KeywordComments` and
+`RuleDef.KeywordDetachedComments`), and they are written there. A string that ends in
 a line break is written as `//` lines, and any other string as a block comment,
 which is also how a trailing comment over several lines is written. A text that
 was a block comment ending in a line break therefore comes back as line

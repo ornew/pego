@@ -148,6 +148,33 @@ func TestDeclarationAttributesFormat(t *testing.T) {
 	}
 }
 
+// The comments around declaration attributes come back from JSON where they
+// were: before "rule" on lines of their own, and between two attributes of a
+// line on that line.
+func TestDeclarationAttributesJSONRoundTrip(t *testing.T) {
+	for _, src := range []string{
+		"@start\n// explains main\nrule main = \"a\"\n",
+		"package p\n\n// leading comment\n@start(default) /* inline */ @start // trailing\n/* before rule */\nrule main = \"a\"\n",
+		"@start(default) // the default\n// comment between\n@foo /* a */ @bar\n\n/* detached */\n\n// leads rule\nrule b = \"b\"\n",
+	} {
+		g, err := Parse(src)
+		if err != nil {
+			t.Fatal(err)
+		}
+		data, err := grammar.MarshalJSON(g)
+		if err != nil {
+			t.Fatal(err)
+		}
+		decoded, err := grammar.UnmarshalJSON(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := grammar.Format(decoded); got != src {
+			t.Errorf("got\n%s\nwant\n%s", got, src)
+		}
+	}
+}
+
 // A grammar built without source layout writes each attribute on the line of
 // the one before, and "rule" on a line of its own.
 func TestDeclarationAttributesFormatWithoutLayout(t *testing.T) {

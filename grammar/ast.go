@@ -158,6 +158,12 @@ type RuleDef struct {
 	// DefaultAction preserves an explicit => ...; it has the same value
 	// semantics as an omitted action.
 	DefaultAction bool `json:"defaultAction,omitempty"`
+	// KeywordComments and KeywordDetachedComments are the normalized leading
+	// and detached comments on the lines between the last attribute and
+	// "rule", which no source-bearing node starts at. They are as the
+	// comments of SourceInfo, and Format writes them when KeywordBreak is nil.
+	KeywordComments         string   `json:"keywordComments,omitempty"`
+	KeywordDetachedComments []string `json:"keywordDetachedComments,omitempty"`
 
 	// Break holds the comments before the declaration, as for TypeDef: before
 	// its first attribute, if it has any.
