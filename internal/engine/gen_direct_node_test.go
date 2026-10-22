@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -130,11 +131,21 @@ func TestGeneratedNodeDirectRoutes(t *testing.T) {
 				t.Fatalf("%s is not used by the rule-table body", body[1])
 			}
 			if name == "pair" {
-				metadata := regexp.MustCompile(`\{Id: (\d+), Name: "pair",[^\n]+Memo: true,`).FindSubmatch(code)
-				if len(metadata) != 2 {
+				// The rule table is the list of specs; the id of a rule is its position.
+				specs := regexp.MustCompile(`(?s)var rulesSpec = \[\.\.\.\]pegort\.RuleSpec\{\n(.*?)\n\}\n`).FindSubmatch(code)
+				if len(specs) != 2 {
+					t.Fatal("no rule table")
+				}
+				id, memo := -1, false
+				for i, line := range strings.Split(string(specs[1]), "\n") {
+					if strings.Contains(line, `Name: "pair",`) {
+						id, memo = i, strings.Contains(line, "RuleMemo")
+					}
+				}
+				if !memo {
 					t.Fatal("pair must retain memoization")
 				}
-				if !strings.Contains(string(code), "p.Call(rules["+string(metadata[1])+"],") {
+				if !strings.Contains(string(code), "p.Call(rules["+strconv.Itoa(id)+"],") {
 					t.Fatal("pair must use the memo-aware call route")
 				}
 			}

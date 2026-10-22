@@ -384,6 +384,77 @@ func (p *TParser) nodeValue(n TVal) any {
 
 // --- Rules ---
 
+// RuleSpec is the compact form of the analysis results of a rule, which generated parsers keep as
+// static data. Its Id is its position in the table. Scope and Vars index the string lists given to
+// NewRules, 0 for none; a nil Value is the zero Shaper.
+//
+// For generated parsers; not a stable API.
+type RuleSpec struct {
+	Name  string
+	Value *Shaper
+	Flags uint8
+	Seen  int32
+	Scope uint16
+	Vars  uint16
+}
+
+// The flags of a RuleSpec set the fields of a Rule of the same names.
+const (
+	RuleMemo uint8 = 1 << iota
+	RuleLeader
+	RuleNovalue
+	RuleDocMemo
+	RuleSplice
+)
+
+// RuleExtra holds the fields of the Rule with the Id that are rarely set.
+//
+// For generated parsers; not a stable API.
+type RuleExtra struct {
+	Id         int
+	Where      string
+	NodeType   string
+	OpNodeType string
+}
+
+// NewRules builds the rule table of the specs, with the string lists their Scope and Vars index and
+// the rare fields in extras.
+//
+// For generated parsers; not a stable API.
+func NewRules(specs []RuleSpec, strs [][]string, extras []RuleExtra) []*Rule {
+	table := make([]Rule, len(specs))
+	rules := make([]*Rule, len(specs))
+	for i, s := range specs {
+		r := &table[i]
+		rules[i] = r
+		r.Id, r.Name, r.Seen = i, s.Name, int(s.Seen)
+		if s.Value != nil {
+			r.Value = *s.Value
+		}
+		r.Memo, r.Leader, r.Novalue = s.Flags&RuleMemo != 0, s.Flags&RuleLeader != 0, s.Flags&RuleNovalue != 0
+		r.DocMemo, r.Splice = s.Flags&RuleDocMemo != 0, s.Flags&RuleSplice != 0
+		r.Scope, r.Vars = strs[s.Scope], strs[s.Vars]
+	}
+	for _, e := range extras {
+		r := rules[e.Id]
+		r.Where, r.NodeType, r.OpNodeType = e.Where, e.NodeType, e.OpNodeType
+	}
+	return rules
+}
+
+// NewTRules returns the typed rules that share the analysis results of rules, one for one.
+//
+// For generated parsers; not a stable API.
+func NewTRules(rules []*Rule) []*TRule {
+	table := make([]TRule, len(rules))
+	trules := make([]*TRule, len(rules))
+	for i, r := range rules {
+		table[i].Rule = r
+		trules[i] = &table[i]
+	}
+	return trules
+}
+
 // TRule is a rule of the typed runtime: the rule's analysis results and its typed body.
 //
 // TRule is for generated parsers; not a stable API.

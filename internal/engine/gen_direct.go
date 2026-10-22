@@ -836,9 +836,9 @@ func (d *dgen) shapeOne(e grammar.Expr, x, start string, capture bool) string {
 	}
 	v := d.decl("v", d.g.valType())
 	if capture {
-		d.line("%s = p.ShapeCapture(%s, %s, %s)", v, shaperLit(d.g.prog, e), d.rd(x), d.rd(start))
+		d.line("%s = p.ShapeCapture(%s, %s, %s)", v, d.g.shaper(e), d.rd(x), d.rd(start))
 	} else {
-		d.line("%s, _ = p.ShapeSingle(%s, %s, %s)", v, shaperLit(d.g.prog, e), d.rd(x), d.rd(start))
+		d.line("%s, _ = p.ShapeSingle(%s, %s, %s)", v, d.g.shaper(e), d.rd(x), d.rd(start))
 	}
 	return v
 }
@@ -854,7 +854,7 @@ func (d *dgen) captured(e grammar.Expr, s *dscope, fail string) string {
 // matched from start, to the scope's value.
 func (d *dgen) scopeValue(e grammar.Expr, x, start string) string {
 	v := d.decl("v", d.g.valType())
-	d.line("%s = p.ScopeValue(%s, %s, %s)", v, shaperLit(d.g.prog, e), d.rd(x), d.rd(start))
+	d.line("%s = p.ScopeValue(%s, %s, %s)", v, d.g.shaper(e), d.rd(x), d.rd(start))
 	return v
 }
 
@@ -1150,10 +1150,11 @@ type genSnapshot struct {
 	vars, methods                  string
 	n, descs, literals, methodKeys int
 	fieldTypes                     int
+	shapers                        int
 }
 
 func (g *generator) snapshot() genSnapshot {
-	return genSnapshot{workClasses: len(g.workClassKeys), vars: g.vars.String(), methods: g.methods.String(), n: g.n,
+	return genSnapshot{workClasses: len(g.workClassKeys), shapers: len(g.shaperKeys), vars: g.vars.String(), methods: g.methods.String(), n: g.n,
 		descs: len(g.descs), literals: len(g.literalKeys), methodKeys: len(g.methodKeys), fieldTypes: len(g.fieldTypeKeys)}
 }
 
@@ -1163,6 +1164,10 @@ func (g *generator) rollback(s genSnapshot) {
 	}
 	clear(g.workClassKeys[s.workClasses:])
 	g.workClassKeys = g.workClassKeys[:s.workClasses]
+	for _, key := range g.shaperKeys[s.shapers:] {
+		delete(g.shaperNames, key)
+	}
+	g.shaperKeys = g.shaperKeys[:s.shapers]
 	g.vars.Reset()
 	g.vars.WriteString(s.vars)
 	if g.methods.Len() != len(s.methods) {
@@ -1307,7 +1312,7 @@ func (d *dgen) finishValue(r *rule, s *dscope, body string) (start, ctx bool) {
 		d.line("v = %s", d.rd(body))
 		d.line("if n := AsTval(v); n != nil {\nn.TSetFresh(false)\n}")
 	default:
-		d.line("v = p.ScopeValue(%s, %s, start)", shaperLit(d.g.prog, r.bodyExpr()), d.rd(body))
+		d.line("v = p.ScopeValue(%s, %s, start)", d.g.shaper(r.bodyExpr()), d.rd(body))
 		start = true
 		if len(s.names) > 0 {
 			d.line("v = p.AttachCaptures(v, %s, %s, start, p.Pos)", d.scopeVar(s), d.vals(s))

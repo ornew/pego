@@ -490,6 +490,8 @@ type generator struct {
 	document            bool
 	workClassNames      map[string]string
 	workClassKeys       []string
+	shaperNames         map[string]string
+	shaperKeys          []string
 	// lean is set when the output has no work controls and no Documents, so each typed rule body
 	// is its ordinary form and may call the runtime's ordinary-parse helpers directly.
 	lean                            bool
@@ -675,39 +677,85 @@ func (g *generator) rules() {
 	}
 	if g.table == "trules" {
 		// The typed rules share the analysis results of the rules.
-		init.WriteString("\ttrules = []*TRule{\n")
-		for _, r := range all {
-			fmt.Fprintf(init, "\t\t{Rule: rules[%d]},\n", r.id)
-		}
-		init.WriteString("\t}\n\tdefer tinit()\n")
+		init.WriteString("\ttrules = NewTRules(rules)\n\tdefer tinit()\n")
 		g.methods.WriteString("// trules is the typed rule table.\nvar trules []*TRule\n\n")
 	} else {
-		fmt.Fprintf(init, "\t%s = []*Rule{\n", g.table)
-		for _, r := range all {
-			extra := ""
-			if g.document && (r.leader || r.memo) {
-				extra = "DocMemo: true, "
+		// The table is static data of a compact form (RuleSpec); the init function builds the rules.
+		var tab strings.Builder
+		strs := []string{"nil"}
+		strIdx := map[string]int{"nil": 0}
+		strsOf := func(xs []string) int {
+			if len(xs) == 0 {
+				return 0
 			}
-			value := shaperLit(g.prog, r.bodyExpr())
-			if _, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
-				value = "Shaper{}" // the lines build the rule's value
+			lit := goStrings(xs)
+			if k, ok := strIdx[lit]; ok {
+				return k
+			}
+			strIdx[lit] = len(strs)
+			strs = append(strs, strings.TrimPrefix(lit, "[]string"))
+			return strIdx[lit]
+		}
+		var extras []string
+		for i, r := range all {
+			if r.id != i {
+				panic("rule ids are not positions in the rule table")
+			}
+			var fields []string
+			fields = append(fields, fmt.Sprintf("Name: %q", r.name))
+			if _, ok := r.def.Expr.(*grammar.OperatorsRule); !ok { // the lines build the value of an Operators Rule
+				fields = append(fields, "Value: &"+g.shaper(r.bodyExpr()))
+			}
+			var flags []string
+			if r.memo && !r.transient {
+				flags = append(flags, "RuleMemo")
+			}
+			if r.leader {
+				flags = append(flags, "RuleLeader")
+			}
+			if r.novalue {
+				flags = append(flags, "RuleNovalue")
+			}
+			if g.document && (r.leader || r.memo) {
+				flags = append(flags, "RuleDocMemo")
 			}
 			if r.splice {
-				extra += "Splice: true, "
+				flags = append(flags, "RuleSplice")
 			}
-			if w := r.whereName(); w != r.name {
-				extra += fmt.Sprintf("Where: %q, ", w)
+			if len(flags) > 0 {
+				fields = append(fields, "Flags: "+strings.Join(flags, " | "))
 			}
-			if r.nodeType != "" {
-				extra += fmt.Sprintf("NodeType: %q, ", r.nodeType)
+			if r.seen != 0 {
+				fields = append(fields, fmt.Sprintf("Seen: %d", r.seen))
 			}
-			if r.opNodeType != "" {
-				extra += fmt.Sprintf("OpNodeType: %q, ", r.opNodeType)
+			if k := strsOf(scopes[r].names); k != 0 {
+				fields = append(fields, fmt.Sprintf("Scope: %d", k))
 			}
-			fmt.Fprintf(init, "\t\t{Id: %d, Name: %q, Scope: %s, Value: %s, Memo: %v, Leader: %v, %sSeen: %d, Novalue: %v, Vars: %s},\n",
-				r.id, r.name, goStrings(scopes[r].names), value, r.memo && !r.transient, r.leader, extra, r.seen, r.novalue, goStrings(r.vars))
+			if k := strsOf(r.vars); k != 0 {
+				fields = append(fields, fmt.Sprintf("Vars: %d", k))
+			}
+			fmt.Fprintf(&tab, "\t{%s},\n", strings.Join(fields, ", "))
+			w := r.whereName()
+			if w == r.name {
+				w = ""
+			}
+			if w != "" || r.nodeType != "" || r.opNodeType != "" {
+				extras = append(extras, fmt.Sprintf("\t{Id: %d, Where: %q, NodeType: %q, OpNodeType: %q},\n", r.id, w, r.nodeType, r.opNodeType))
+			}
 		}
-		init.WriteString("\t}\n")
+		spec, strTable, extraTable := g.table+"Spec", g.table+"Strs", g.table+"Extras"
+		fmt.Fprintf(&g.vars, "// %s is the compact form of the rule table, built by NewRules.\nvar %s = [...]RuleSpec{\n%s}\n\n", spec, spec, tab.String())
+		fmt.Fprintf(&g.vars, "var %s = [...][]string{\n", strTable)
+		for _, x := range strs {
+			if x == "nil" {
+				g.vars.WriteString("\tnil,\n")
+			} else {
+				fmt.Fprintf(&g.vars, "\t%s,\n", x)
+			}
+		}
+		g.vars.WriteString("}\n\n")
+		fmt.Fprintf(&g.vars, "var %s = [...]RuleExtra{\n%s}\n\n", extraTable, strings.Join(extras, ""))
+		fmt.Fprintf(init, "\t%s = NewRules(%s[:], %s[:], %s[:])\n", g.table, spec, strTable, extraTable)
 		fmt.Fprintf(init, "\t%s.SetRules(%s, %d)\n", g.grammarVar(), g.table, g.prog.nseen)
 	}
 	nodeCode := g.table == "rules" && g.typedOnly
@@ -1030,7 +1078,24 @@ func (g *generator) method(comment, body string) string {
 	return name
 }
 
-// shaperLit returns the runtime shaper of the expression e, its static shape (value_shape.go).
+// shaper returns the name of the package variable that holds the runtime shaper of the expression
+// e, its static shape (value_shape.go). Few distinct shapes occur, so the variables are shared.
+func (g *generator) shaper(e grammar.Expr) string {
+	lit := shaperLit(g.prog, e)
+	if g.shaperNames == nil {
+		g.shaperNames = map[string]string{}
+	}
+	if name := g.shaperNames[lit]; name != "" {
+		return name
+	}
+	name := g.name("sh")
+	g.shaperNames[lit] = name
+	g.shaperKeys = append(g.shaperKeys, lit)
+	fmt.Fprintf(&g.vars, "var %s = %s\n", name, lit)
+	return name
+}
+
+// shaperLit returns the literal of the runtime shaper of the expression e.
 func shaperLit(prog *Program, e grammar.Expr) string {
 	return fmt.Sprintf("Shaper{Elems: %v, K: %d, Mode: %d, Tuple: %v, Shared: %v}", isElems(prog, e), valuedCount(prog, e), singleModeOf(prog, e), scopeTuple(prog, e), isElems(prog, e) && sharesTuple(prog, e))
 }
@@ -1042,9 +1107,9 @@ func (g *generator) singleMethod(e grammar.Expr, m string, capture bool) string 
 	if singleModeOf(g.prog, e) == singlePass && !isElems(g.prog, e) {
 		return m
 	}
-	shape := fmt.Sprintf("\tv, _ = p.ShapeSingle(%s, v, start)\n", shaperLit(g.prog, e))
+	shape := fmt.Sprintf("\tv, _ = p.ShapeSingle(%s, v, start)\n", g.shaper(e))
 	if capture {
-		shape = fmt.Sprintf("\tv = p.ShapeCapture(%s, v, start)\n", shaperLit(g.prog, e))
+		shape = fmt.Sprintf("\tv = p.ShapeCapture(%s, v, start)\n", g.shaper(e))
 	}
 	return g.method(describe(e), fmt.Sprintf("\tstart := p.Pos\n\tv, ok := %s(p)\n\tif !ok {\n\t\treturn nil, false\n\t}\n%s\treturn v, true\n", m, shape))
 }
@@ -1345,7 +1410,7 @@ func (g *generator) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, buil
 	}
 	b.WriteString("\t\t\t\treturn nil, false\n\t\t\t}\n\t\t\tbreak\n\t\t}\n")
 	if build {
-		fmt.Fprintf(b, "\t\tv = p.ScopeValue(%s, v, m0.Pos)\n", shaperLit(g.prog, e.Expr))
+		fmt.Fprintf(b, "\t\tv = p.ScopeValue(%s, v, m0.Pos)\n", g.shaper(e.Expr))
 	}
 	if own && build {
 		fmt.Fprintf(b, "\t\tv = p.AttachCaptures(v, %s, %s, m0.Pos, p.Pos)\n", scopeVar, g.pick("f", "f.Vals"))
@@ -1584,7 +1649,7 @@ func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, opera
 		act = fmt.Sprintf("func(c *%s) any { return %s }", g.ctxType(), g.term(action, s, locals))
 		g.final = nil
 	}
-	return fmt.Sprintf("&%s{Scope: %s, M: %s, Action: %s, Value: %s}", g.pick("OperatorsRuleLine", "TOperatorsRuleLine"), goStrings(s.names), m, act, shaperLit(g.prog, e))
+	return fmt.Sprintf("&%s{Scope: %s, M: %s, Action: %s, Value: %s}", g.pick("OperatorsRuleLine", "TOperatorsRuleLine"), goStrings(s.names), m, act, g.shaper(e))
 }
 
 // term converts a value expression into a Go expression of type any. locals maps names, such as lambda

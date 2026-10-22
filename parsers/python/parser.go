@@ -2274,646 +2274,774 @@ func ParseRuleAST(name, input string, opts ...pegort.ParseOption) (any, error) {
 }
 
 var lit6 = []rune(";")
-var lit8 = []rune("\\")
+var sh8 = pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}
+var sh9 = pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}
+var lit10 = []rune("\\")
+var sh11 = pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}
+var sh14 = pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}
+var sh15 = pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}
 
-var lit34 = []rune("\f")
-var lit36 = []rune(" ")
-var lit37 = []rune("\t")
+var lit39 = []rune("\f")
+var lit41 = []rune(" ")
+var lit42 = []rune("\t")
 
-var lit41 = []rune("\r\n")
-var lit43 = []rune("#")
-var lit48 = []rune("=")
-var lit49 = []rune(":")
+var sh45 = pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}
+var lit47 = []rune("\r\n")
+var lit49 = []rune("#")
+var lit54 = []rune("=")
+var lit55 = []rune(":")
 
-var lit58 = []rune("+=")
-var lit59 = []rune("-=")
-var lit60 = []rune("*=")
-var lit61 = []rune("@=")
-var lit62 = []rune("/=")
-var lit63 = []rune("%=")
-var lit64 = []rune("&=")
-var lit65 = []rune("|=")
-var lit66 = []rune("^=")
-var lit67 = []rune("<<=")
-var lit68 = []rune(">>=")
-var lit69 = []rune("**=")
-var lit70 = []rune("//=")
-var lit79 = []rune(",")
+var lit64 = []rune("+=")
+var lit65 = []rune("-=")
+var lit66 = []rune("*=")
+var lit67 = []rune("@=")
+var lit68 = []rune("/=")
+var lit69 = []rune("%=")
+var lit70 = []rune("&=")
+var lit71 = []rune("|=")
+var lit72 = []rune("^=")
+var lit73 = []rune("<<=")
+var lit74 = []rune(">>=")
+var lit75 = []rune("**=")
+var lit76 = []rune("//=")
+var lit85 = []rune(",")
 
-var lit92 = []rune(".")
+var lit98 = []rune(".")
 
-var lit95 = []rune("...")
+var lit101 = []rune("...")
 
-var lit100 = []rune("(")
+var lit106 = []rune("(")
 
-var lit102 = []rune(")")
+var lit108 = []rune(")")
 
-var lit107 = []rune("*")
+var lit113 = []rune("*")
 
-var lit140 = []rune("@")
+var lit146 = []rune("@")
 
-var lit147 = []rune("->")
+var lit153 = []rune("->")
 
-var lit179 = []rune("|")
+var lit185 = []rune("|")
 
-var lit187 = []rune("None")
-var lit188 = []rune("True")
-var lit189 = []rune("False")
-var lit197 = []rune("-")
-var lit199 = []rune("+")
-var lit202 = []rune("_")
-var lit203 = []rune("..")
+var lit193 = []rune("None")
+var lit194 = []rune("True")
+var lit195 = []rune("False")
+var lit203 = []rune("-")
+var lit205 = []rune("+")
+var lit208 = []rune("_")
+var lit209 = []rune("..")
 
-var lit213 = []rune("[")
-var lit214 = []rune("]")
+var lit219 = []rune("[")
+var lit220 = []rune("]")
 
-var lit221 = []rune("{")
-var lit222 = []rune("**")
-var lit223 = []rune("}")
+var lit227 = []rune("{")
+var lit228 = []rune("**")
+var lit229 = []rune("}")
 
-var lit243 = []rune("/")
+var lit249 = []rune("/")
 
-var lit262 = []rune(":=")
+var sh259 = pegort.Shaper{Elems: true, K: 0, Mode: 0, Tuple: true, Shared: false}
 
-var lit287 = []rune("or")
-var lit289 = []rune("and")
-var lit293 = []rune("not")
+var lit269 = []rune(":=")
+var sh274 = pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}
 
-var lit298 = []rune("==")
-var lit299 = []rune("!=")
-var lit300 = []rune("<>")
-var lit301 = []rune("<=")
-var lit302 = []rune(">=")
-var lit303 = []rune("<")
-var lit304 = []rune(">")
-var lit305 = []rune("in")
-var lit306 = []rune("is")
-var lit309 = []rune("^")
-var lit311 = []rune("&")
-var lit313 = []rune("<<")
-var lit314 = []rune(">>")
-var lit316 = []rune("//")
-var lit317 = []rune("%")
-var lit319 = []rune("~")
+var lit295 = []rune("or")
+var lit297 = []rune("and")
+var lit301 = []rune("not")
 
-var lit415 = []rune("'''")
-var lit416 = []rune("'")
-var lit417 = []rune("\"\"\"")
-var lit418 = []rune("\"")
+var lit306 = []rune("==")
+var lit307 = []rune("!=")
+var lit308 = []rune("<>")
+var lit309 = []rune("<=")
+var lit310 = []rune(">=")
+var lit311 = []rune("<")
+var lit312 = []rune(">")
+var lit313 = []rune("in")
+var lit314 = []rune("is")
+var lit317 = []rune("^")
+var lit319 = []rune("&")
+var lit321 = []rune("<<")
+var lit322 = []rune(">>")
+var lit324 = []rune("//")
+var lit325 = []rune("%")
+var lit327 = []rune("~")
 
-var lit422 = []rune("x")
-var lit423 = []rune("u")
-var lit424 = []rune("U")
-var lit425 = []rune("0010")
-var lit426 = []rune("000")
-var lit427 = []rune("N{")
+var lit423 = []rune("'''")
+var lit424 = []rune("'")
+var lit425 = []rune("\"\"\"")
+var lit426 = []rune("\"")
 
-var lit445 = []rune("{{")
-var lit446 = []rune("}}")
+var lit430 = []rune("x")
+var lit431 = []rune("u")
+var sh432 = pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}
+var lit433 = []rune("U")
+var lit434 = []rune("0010")
+var lit435 = []rune("000")
+var sh436 = pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}
+var lit437 = []rune("N{")
 
-var lit456 = []rune("!")
-var lit465 = []rune("0")
+var lit455 = []rune("{{")
+var lit456 = []rune("}}")
 
-var lit477 = []rune("else")
-var lit478 = []rune("for")
-var lit479 = []rune("i")
-var lit485 = []rune("assert")
-var lit486 = []rune("async")
-var lit487 = []rune("as")
-var lit488 = []rune("await")
-var lit489 = []rune("break")
-var lit490 = []rune("class")
-var lit491 = []rune("continue")
-var lit492 = []rune("def")
-var lit493 = []rune("del")
-var lit494 = []rune("elif")
-var lit495 = []rune("except")
-var lit496 = []rune("finally")
-var lit497 = []rune("from")
-var lit498 = []rune("global")
-var lit499 = []rune("if")
-var lit500 = []rune("import")
-var lit501 = []rune("lambda")
-var lit502 = []rune("nonlocal")
-var lit503 = []rune("pass")
-var lit504 = []rune("raise")
-var lit505 = []rune("return")
-var lit506 = []rune("try")
-var lit507 = []rune("while")
-var lit508 = []rune("with")
-var lit509 = []rune("yield")
-var lit516 = []rune("case")
-var lit533 = []rune("match")
-var lit540 = []rune("type")
+var lit466 = []rune("!")
+var lit475 = []rune("0")
 
-var scope643 = []string{"s"}
+var lit487 = []rune("else")
+var lit488 = []rune("for")
+var lit489 = []rune("i")
+var lit495 = []rune("assert")
+var lit496 = []rune("async")
+var lit497 = []rune("as")
+var lit498 = []rune("await")
+var lit499 = []rune("break")
+var lit500 = []rune("class")
+var lit501 = []rune("continue")
+var lit502 = []rune("def")
+var lit503 = []rune("del")
+var lit504 = []rune("elif")
+var lit505 = []rune("except")
+var lit506 = []rune("finally")
+var lit507 = []rune("from")
+var lit508 = []rune("global")
+var lit509 = []rune("if")
+var lit510 = []rune("import")
+var lit511 = []rune("lambda")
+var lit512 = []rune("nonlocal")
+var lit513 = []rune("pass")
+var lit514 = []rune("raise")
+var lit515 = []rune("return")
+var lit516 = []rune("try")
+var lit517 = []rune("while")
+var lit518 = []rune("with")
+var lit519 = []rune("yield")
+var lit526 = []rune("case")
+var lit543 = []rune("match")
+var lit550 = []rune("type")
 
-var scope663 = []string{"sp"}
-var scope664 = []string{"segs", "tail"}
-var scope676 = []string{"t"}
-var scope700 = []string{"n"}
-var scope701 = []string{"f", "r"}
-var scope702 = []string{"d"}
-var scope710 = []string{"n"}
-var scope711 = []string{"f", "r"}
-var scope739 = []string{"h"}
-var scope740 = []string{"h"}
-var scope764 = []string{"e"}
+var sh648 = pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}
+var sh649 = pegort.Shaper{Elems: true, K: 8, Mode: 2, Tuple: true, Shared: false}
+var sh650 = pegort.Shaper{Elems: true, K: 9, Mode: 2, Tuple: true, Shared: false}
 
-var scope801 = []string{"x"}
-var scope802 = []string{"y"}
-var scope821 = []string{"p"}
-var scope822 = []string{"q"}
-var scope823 = []string{"f", "r", "l"}
-var scope826 = []string{"p"}
-var scope827 = []string{"rs"}
-var scope845 = []string{"n"}
-var scope852 = []string{"p"}
-var scope863 = []string{"k", "v"}
-var scope870 = []string{"p"}
-var scope872 = []string{"n", "v"}
-var scope898 = []string{"p", "d"}
-var scope899 = []string{"s"}
-var scope900 = []string{"p", "d"}
-var scope901 = []string{"va", "ko", "kw"}
-var scope906 = []string{"x"}
-var scope907 = []string{"rs", "c"}
-var scope913 = []string{"x"}
-var scope914 = []string{"rs", "c"}
-var scope926 = []string{"c", "o"}
-var scope952 = []string{"p", "d"}
-var scope953 = []string{"s"}
-var scope954 = []string{"p", "d"}
-var scope955 = []string{"va", "ko", "kw"}
-var scope959 = []string{"x"}
-var scope960 = []string{"o", "c", "rs"}
-var scope966 = []string{"x"}
-var scope967 = []string{"o", "c", "rs"}
-var scope975 = []string{"o", "x"}
-var scope976 = []string{"rs"}
-var scope985 = []string{"a"}
-var scope986 = []string{"ks", "ss"}
-var scope987 = []string{"k"}
-var scope988 = []string{"pos", "kw1", "kw2"}
-var scope994 = []string{"x"}
-var scope998 = []string{"x"}
-var scope999 = []string{"rs", "c"}
-var scope1008 = []string{"c"}
-var scope1017 = []string{"x"}
-var scope1021 = []string{"x"}
-var scope1022 = []string{"rs", "c"}
-var scope1023 = []string{"cs"}
+// rulesSpec is the compact form of the rule table, built by NewRules.
+var rulesSpec = [...]pegort.RuleSpec{
+	{Name: "main", Value: &sh14, Seen: -1, Scope: 1, Vars: 2},
+	{Name: "first_stmts", Value: &sh9, Seen: -1, Scope: 3, Vars: 2},
+	{Name: "module_end", Value: &sh274, Seen: -1, Vars: 4},
+	{Name: "stmts", Value: &sh9, Flags: pegort.RuleMemo, Scope: 5, Vars: 2},
+	{Name: "stmt_sep", Value: &sh274, Seen: -1, Scope: 6, Vars: 7},
+	{Name: "block", Value: &sh14, Flags: pegort.RuleMemo, Seen: 1, Scope: 1, Vars: 2},
+	{Name: "indented_block", Value: &sh9, Seen: -1, Scope: 3, Vars: 2},
+	{Name: "simple_stmts", Value: &sh9, Seen: -1, Scope: 5, Vars: 8},
+	{Name: "clause_sep", Value: &sh274, Flags: pegort.RuleMemo, Seen: 2, Scope: 6, Vars: 7},
+	{Name: "indentation", Value: &sh9, Flags: pegort.RuleMemo, Seen: 3, Scope: 9},
+	{Name: "blank", Value: &sh274, Flags: pegort.RuleMemo, Seen: 4},
+	{Name: "eol", Value: &sh11, Flags: pegort.RuleMemo, Seen: 5, Vars: 4},
+	{Name: "newline", Value: &sh8, Seen: -1},
+	{Name: "comment", Value: &sh9, Seen: -1},
+	{Name: "ws", Value: &sh8, Seen: -1, Vars: 4},
+	{Name: "stmt", Value: &sh8, Flags: pegort.RuleMemo, Seen: 6, Vars: 2},
+	{Name: "simple_stmt", Value: &sh8, Flags: pegort.RuleMemo, Seen: 7, Vars: 8},
+	{Name: "expr_stmt", Value: &sh14, Seen: -1, Scope: 10, Vars: 8},
+	{Name: "assignment", Value: &sh8, Seen: -1, Vars: 8},
+	{Name: "ann_simple", Value: &sh274, Seen: -1, Scope: 11, Vars: 8},
+	{Name: "ann_complex", Value: &sh274, Seen: -1, Scope: 11, Vars: 8},
+	{Name: "assign_one", Value: &sh11, Seen: -1, Scope: 12, Vars: 8},
+	{Name: "assign_chain", Value: &sh9, Seen: -1, Scope: 13, Vars: 8},
+	{Name: "aug_assign", Value: &sh11, Seen: -1, Scope: 14, Vars: 8},
+	{Name: "augassign_op", Value: &sh8, Seen: -1},
+	{Name: "annotated_rhs", Value: &sh8, Flags: pegort.RuleMemo, Seen: 8, Vars: 8},
+	{Name: "pass_stmt", Value: &sh8, Seen: -1},
+	{Name: "break_stmt", Value: &sh8, Seen: -1},
+	{Name: "continue_stmt", Value: &sh8, Seen: -1},
+	{Name: "return_stmt", Value: &sh9, Seen: -1, Scope: 10, Vars: 8},
+	{Name: "raise_stmt", Value: &sh9, Seen: -1, Scope: 15, Vars: 8},
+	{Name: "global_stmt", Value: &sh11, Seen: -1, Scope: 5, Vars: 4},
+	{Name: "nonlocal_stmt", Value: &sh11, Seen: -1, Scope: 5, Vars: 4},
+	{Name: "del_stmt", Value: &sh11, Seen: -1, Scope: 5, Vars: 8},
+	{Name: "assert_stmt", Value: &sh11, Seen: -1, Scope: 16, Vars: 8},
+	{Name: "yield_stmt", Value: &sh15, Seen: -1, Scope: 17, Vars: 8},
+	{Name: "type_alias", Value: &sh432, Seen: -1, Scope: 18, Vars: 8},
+	{Name: "import_stmt", Value: &sh11, Seen: -1, Scope: 5, Vars: 4},
+	{Name: "dotted_as_name", Value: &sh9, Flags: pegort.RuleMemo, Seen: 9, Scope: 19, Vars: 4},
+	{Name: "dotted_name", Value: &sh9, Seen: -1, Scope: 5, Vars: 4},
+	{Name: "from_stmt", Value: &sh432, Seen: -1, Scope: 20, Vars: 4},
+	{Name: "from_module", Value: &sh14, Seen: -1, Scope: 5, Vars: 4},
+	{Name: "import_from_targets", Value: &sh8, Seen: -1, Vars: 4},
+	{Name: "paren_import_names", Value: &sh274, Seen: -1, Scope: 5, Vars: 4},
+	{Name: "plain_import_names", Value: &sh9, Seen: -1, Scope: 5, Vars: 4},
+	{Name: "star_import", Value: &sh15, Seen: -1, Scope: 21},
+	{Name: "star_alias", Value: &sh8, Seen: -1},
+	{Name: "import_from_as_name", Value: &sh9, Flags: pegort.RuleMemo, Seen: 10, Scope: 22, Vars: 4},
+	{Name: "compound_stmt", Value: &sh8, Seen: -1, Vars: 2},
+	{Name: "if_stmt", Value: &sh432, Seen: -1, Scope: 23, Vars: 2},
+	{Name: "elif_part", Value: &sh14, Flags: pegort.RuleMemo, Seen: 11, Scope: 10, Vars: 2},
+	{Name: "elif_stmt", Value: &sh432, Seen: -1, Scope: 23, Vars: 2},
+	{Name: "else_part", Value: &sh11, Flags: pegort.RuleMemo, Seen: 12, Scope: 1, Vars: 2},
+	{Name: "while_stmt", Value: &sh432, Seen: -1, Scope: 23, Vars: 2},
+	{Name: "for_stmt", Value: &sh648, Seen: -1, Scope: 24, Vars: 2},
+	{Name: "async_for", Value: &sh649, Seen: -1, Scope: 24, Vars: 2},
+	{Name: "with_stmt", Value: &sh274, Seen: -1, Scope: 25, Vars: 2},
+	{Name: "async_with", Value: &sh432, Seen: -1, Scope: 25, Vars: 2},
+	{Name: "with_items", Value: &sh8, Flags: pegort.RuleMemo, Seen: 13, Vars: 8},
+	{Name: "paren_with_items", Value: &sh274, Seen: -1, Scope: 5, Vars: 8},
+	{Name: "plain_with_items", Value: &sh9, Seen: -1, Scope: 5, Vars: 8},
+	{Name: "with_item", Value: &sh8, Flags: pegort.RuleMemo, Seen: 14, Vars: 8},
+	{Name: "with_item_as", Value: &sh11, Seen: -1, Scope: 26, Vars: 8},
+	{Name: "with_item_plain", Value: &sh15, Seen: -1, Scope: 10, Vars: 8},
+	{Name: "try_stmt", Value: &sh648, Seen: -1, Scope: 27, Vars: 2},
+	{Name: "finally_part", Value: &sh11, Seen: -1, Scope: 1, Vars: 2},
+	{Name: "except_handler", Value: &sh8, Seen: -1, Vars: 2},
+	{Name: "except_as", Value: &sh436, Seen: -1, Scope: 28, Vars: 2},
+	{Name: "except_plain", Value: &sh274, Seen: -1, Scope: 29, Vars: 2},
+	{Name: "except_bare", Value: &sh11, Seen: -1, Scope: 1, Vars: 2},
+	{Name: "except_star_handler", Value: &sh8, Seen: -1, Vars: 2},
+	{Name: "except_star_as", Value: &sh648, Seen: -1, Scope: 28, Vars: 2},
+	{Name: "except_star_plain", Value: &sh432, Seen: -1, Scope: 29, Vars: 2},
+	{Name: "decorators", Value: &sh15, Flags: pegort.RuleMemo, Seen: 15, Scope: 30, Vars: 2},
+	{Name: "dec_sep", Value: &sh11, Seen: -1, Scope: 6, Vars: 7},
+	{Name: "funcdef", Value: &sh649, Seen: -1, Scope: 31, Vars: 2},
+	{Name: "async_funcdef", Value: &sh650, Seen: -1, Scope: 31, Vars: 2},
+	{Name: "def_params", Value: &sh11, Flags: pegort.RuleMemo, Seen: 16, Scope: 21, Vars: 8},
+	{Name: "classdef", Value: &sh8, Seen: -1, Vars: 2},
+	{Name: "classdef_args", Value: &sh648, Seen: -1, Scope: 32, Vars: 2},
+	{Name: "classdef_plain", Value: &sh436, Seen: -1, Scope: 33, Vars: 2},
+	{Name: "match_stmt", Value: &sh274, Seen: -1, Scope: 34, Vars: 2},
+	{Name: "subject_expr", Value: &sh8, Seen: -1, Vars: 8},
+	{Name: "subject_tuple", Value: &sh274, Seen: -1, Scope: 35, Vars: 8},
+	{Name: "case_blocks", Value: &sh11, Seen: -1, Scope: 36, Vars: 2},
+	{Name: "case_block", Value: &sh432, Flags: pegort.RuleMemo, Seen: 17, Scope: 37, Vars: 2},
+	{Name: "patterns", Value: &sh8, Seen: -1, Vars: 8},
+	{Name: "open_sequence_pattern", Value: &sh15, Seen: -1, Scope: 38, Vars: 8},
+	{Name: "open_seq_items", Value: &sh274, Flags: pegort.RuleMemo, Seen: 18, Scope: 35, Vars: 8},
+	{Name: "pattern", Value: &sh8, Flags: pegort.RuleMemo, Seen: 19, Vars: 8},
+	{Name: "as_pattern", Value: &sh11, Seen: -1, Scope: 39, Vars: 8},
+	{Name: "or_pattern", Value: &sh9, Flags: pegort.RuleMemo, Seen: 20, Scope: 40, Vars: 8},
+	{Name: "closed_pattern", Value: &sh8, Flags: pegort.RuleMemo, Seen: 21, Vars: 8},
+	{Name: "literal_pattern", Value: &sh8, Seen: -1, Vars: 8},
+	{Name: "signed_number_pattern", Value: &sh14, Seen: -1, Scope: 41, Vars: 4},
+	{Name: "complex_pattern", Value: &sh15, Seen: -1, Scope: 41, Vars: 4},
+	{Name: "string_pattern", Value: &sh15, Seen: -1, Scope: 41, Vars: 8},
+	{Name: "singleton_pattern", Value: &sh15, Seen: -1, Scope: 41},
+	{Name: "singleton", Value: &sh8, Flags: pegort.RuleMemo, Seen: 22},
+	{Name: "literal_expr", Value: &sh8, Seen: -1, Vars: 8},
+	{Name: "signed_number_lit", Value: &sh14, Seen: -1, Scope: 41, Vars: 4},
+	{Name: "signed_number", Value: &sh8, Flags: pegort.RuleMemo, Seen: 23, Vars: 4},
+	{Name: "neg_number", Value: &sh9, Seen: -1, Scope: 42, Vars: 4},
+	{Name: "complex_number", Value: &sh11, Flags: pegort.RuleMemo, Seen: 24, Scope: 43, Vars: 4},
+	{Name: "signed_real_number", Value: &sh8, Seen: -1, Vars: 4},
+	{Name: "neg_real_number", Value: &sh9, Seen: -1, Scope: 42, Vars: 4},
+	{Name: "minus_op", Value: &sh8, Seen: -1},
+	{Name: "plus_minus_op", Value: &sh8, Seen: -1},
+	{Name: "capture_pattern", Value: &sh15, Seen: -1, Scope: 44, Vars: 4},
+	{Name: "capture_name", Value: &sh14, Flags: pegort.RuleMemo, Seen: 25, Scope: 44, Vars: 4},
+	{Name: "wildcard_pattern", Value: &sh14, Seen: -1},
+	{Name: "value_pattern", Value: &sh14, Seen: -1, Scope: 21, Vars: 4},
+	{Name: "attr", Value: &sh9, Flags: pegort.RuleMemo, Seen: 26, Scope: 5, Vars: 4},
+	{Name: "name_or_attr", Value: &sh8, Seen: -1, Vars: 4},
+	{Name: "group_pattern", Value: &sh11, Seen: -1, Scope: 45, Vars: 8},
+	{Name: "sequence_pattern", Value: &sh8, Seen: -1, Vars: 8},
+	{Name: "empty_tuple_pattern", Value: &sh9, Seen: -1, Vars: 4},
+	{Name: "list_pattern", Value: &sh11, Seen: -1, Scope: 46, Vars: 8},
+	{Name: "star_patterns", Value: &sh9, Seen: -1, Scope: 5, Vars: 8},
+	{Name: "tuple_pattern", Value: &sh11, Seen: -1, Scope: 38, Vars: 8},
+	{Name: "maybe_star_pattern", Value: &sh8, Flags: pegort.RuleMemo, Seen: 27, Vars: 8},
+	{Name: "star_pattern", Value: &sh9, Seen: -1, Scope: 44, Vars: 4},
+	{Name: "mapping_pattern", Value: &sh11, Seen: -1, Scope: 47, Vars: 8},
+	{Name: "kv_patterns", Value: &sh9, Seen: -1, Scope: 5, Vars: 8},
+	{Name: "key_value_pattern", Value: &sh11, Flags: pegort.RuleMemo, Seen: 28, Scope: 48, Vars: 8},
+	{Name: "class_pattern", Value: &sh274, Seen: -1, Scope: 49, Vars: 8},
+	{Name: "positional_patterns", Value: &sh9, Seen: -1, Scope: 5, Vars: 8},
+	{Name: "keyword_patterns", Value: &sh9, Flags: pegort.RuleMemo, Seen: 29, Scope: 5, Vars: 8},
+	{Name: "keyword_pattern", Value: &sh11, Flags: pegort.RuleMemo, Seen: 30, Scope: 50, Vars: 8},
+	{Name: "type_params", Value: &sh274, Flags: pegort.RuleMemo, Seen: 31, Scope: 5, Vars: 8},
+	{Name: "type_param", Value: &sh8, Flags: pegort.RuleMemo, Seen: 32, Vars: 8},
+	{Name: "type_var", Value: &sh11, Seen: -1, Scope: 51, Vars: 8},
+	{Name: "type_var_tuple", Value: &sh11, Seen: -1, Scope: 52, Vars: 8},
+	{Name: "param_spec", Value: &sh11, Seen: -1, Scope: 52, Vars: 8},
+	{Name: "params", Value: &sh436, Seen: -1, Scope: 53, Vars: 8},
+	{Name: "param_nd", Value: &sh14, Flags: pegort.RuleMemo, Seen: 33, Scope: 45, Vars: 8},
+	{Name: "param_wd", Value: &sh11, Flags: pegort.RuleMemo, Seen: 34, Scope: 54, Vars: 8},
+	{Name: "slash", Value: &sh14, Seen: -1, Scope: 38, Vars: 4},
+	{Name: "star_etc", Value: &sh9, Seen: -1, Scope: 55, Vars: 8},
+	{Name: "kwds", Value: &sh9, Seen: -1, Scope: 45, Vars: 8},
+	{Name: "param", Value: &sh9, Flags: pegort.RuleMemo, Seen: 35, Scope: 22, Vars: 8},
+	{Name: "vararg_param", Value: &sh9, Seen: -1, Scope: 22, Vars: 8},
+	{Name: "pend", Value: &sh14, Flags: pegort.RuleMemo, Seen: 36, Vars: 4},
+	{Name: "expressions", Value: &sh9, Flags: pegort.RuleMemo, Seen: 37, Scope: 40, Vars: 8},
+	{Name: "star_expressions", Value: &sh9, Flags: pegort.RuleMemo, Seen: 38, Scope: 40, Vars: 8},
+	{Name: "star_expression", Value: &sh8, Flags: pegort.RuleMemo, Seen: 39, Vars: 8},
+	{Name: "star_named_expression", Value: &sh8, Flags: pegort.RuleMemo, Seen: 40, Vars: 8},
+	{Name: "starred_bitor", Value: &sh9, Flags: pegort.RuleMemo, Seen: 41, Scope: 41, Vars: 8},
+	{Name: "starred_expression", Value: &sh9, Flags: pegort.RuleMemo, Seen: 42, Scope: 41, Vars: 8},
+	{Name: "named_expression", Value: &sh8, Flags: pegort.RuleMemo, Seen: 43, Vars: 8},
+	{Name: "plain_named_expression", Value: &sh14, Seen: -1, Scope: 10, Vars: 8},
+	{Name: "walrus", Value: &sh11, Flags: pegort.RuleMemo, Seen: 44, Scope: 50, Vars: 8},
+	{Name: "expression", Value: &sh8, Flags: pegort.RuleMemo, Seen: 45, Vars: 8},
+	{Name: "conditional", Value: &sh9, Seen: -1, Scope: 56, Vars: 8},
+	{Name: "lambdef", Value: &sh274, Seen: -1, Scope: 57, Vars: 8},
+	{Name: "lambda_params", Value: &sh436, Seen: -1, Scope: 53, Vars: 8},
+	{Name: "lparam_nd", Value: &sh14, Flags: pegort.RuleMemo, Seen: 46, Scope: 45, Vars: 4},
+	{Name: "lparam_wd", Value: &sh11, Flags: pegort.RuleMemo, Seen: 47, Scope: 54, Vars: 8},
+	{Name: "lslash", Value: &sh14, Seen: -1, Scope: 38, Vars: 4},
+	{Name: "lstar_etc", Value: &sh9, Seen: -1, Scope: 55, Vars: 8},
+	{Name: "lkwds", Value: &sh9, Seen: -1, Scope: 45, Vars: 4},
+	{Name: "lparam", Value: &sh15, Flags: pegort.RuleMemo, Seen: 48, Scope: 44},
+	{Name: "lpend", Value: &sh14, Flags: pegort.RuleMemo, Seen: 49, Vars: 4},
+	{Name: "yield_expr", Value: &sh8, Flags: pegort.RuleMemo, Seen: 50, Vars: 8},
+	{Name: "yield_from", Value: &sh11, Seen: -1, Scope: 41, Vars: 8},
+	{Name: "yield_plain", Value: &sh9, Seen: -1, Scope: 41, Vars: 8},
+	{Name: "disjunction", Value: &sh9, Flags: pegort.RuleMemo, Seen: 51, Scope: 40, Vars: 8},
+	{Name: "conjunction", Value: &sh9, Flags: pegort.RuleMemo, Seen: 52, Scope: 40, Vars: 8},
+	{Name: "or_op", Value: &sh8, Flags: pegort.RuleMemo, Seen: 53},
+	{Name: "and_op", Value: &sh8, Flags: pegort.RuleMemo, Seen: 54},
+	{Name: "inversion", Value: &sh8, Flags: pegort.RuleMemo, Seen: 55, Vars: 8},
+	{Name: "not_expr", Value: &sh9, Seen: -1, Scope: 58, Vars: 8},
+	{Name: "not_op", Value: &sh8, Seen: -1},
+	{Name: "comparison", Value: &sh9, Seen: -1, Scope: 40, Vars: 8},
+	{Name: "comp_op", Value: &sh8, Seen: -1, Vars: 4},
+	{Name: "bitwise_or", Flags: pegort.RuleMemo, Seen: 56, Vars: 8},
+	{Name: "bor_op", Value: &sh8, Seen: -1},
+	{Name: "bxor_op", Value: &sh8, Seen: -1},
+	{Name: "band_op", Value: &sh8, Seen: -1},
+	{Name: "shift_op", Value: &sh8, Seen: -1},
+	{Name: "sum_op", Value: &sh8, Seen: -1},
+	{Name: "term_op", Value: &sh8, Seen: -1},
+	{Name: "unary_op", Value: &sh8, Seen: -1},
+	{Name: "pow_op", Value: &sh8, Seen: -1},
+	{Name: "await_expr", Value: &sh9, Seen: -1, Scope: 41, Vars: 8},
+	{Name: "primary", Value: &sh8, Flags: pegort.RuleMemo, Seen: 57, Vars: 8},
+	{Name: "atom_only", Value: &sh14, Seen: -1, Scope: 21, Vars: 8},
+	{Name: "primary_chain", Seen: -1, Vars: 8},
+	{Name: "call_args", Value: &sh432, Flags: pegort.RuleMemo, Seen: 58, Scope: 59, Vars: 8},
+	{Name: "arg_sep", Value: &sh14, Flags: pegort.RuleMemo, Seen: 59, Vars: 4},
+	{Name: "pos_arg", Value: &sh8, Seen: -1, Vars: 8},
+	{Name: "positional_named", Value: &sh14, Seen: -1, Scope: 10, Vars: 8},
+	{Name: "kwarg_list", Value: &sh15, Seen: -1, Scope: 60, Vars: 8},
+	{Name: "starred_list", Value: &sh15, Seen: -1, Scope: 38, Vars: 8},
+	{Name: "kwarg", Value: &sh11, Flags: pegort.RuleMemo, Seen: 60, Scope: 50, Vars: 8},
+	{Name: "dstar_arg", Value: &sh9, Seen: -1, Scope: 41, Vars: 8},
+	{Name: "genexp", Value: &sh274, Flags: pegort.RuleMemo, Seen: 61, Scope: 61, Vars: 8},
+	{Name: "subscript", Value: &sh11, Flags: pegort.RuleMemo, Seen: 62, Scope: 38, Vars: 8},
+	{Name: "slices", Value: &sh8, Seen: -1, Vars: 8},
+	{Name: "star_first_slices", Value: &sh9, Seen: -1, Scope: 62, Vars: 8},
+	{Name: "plain_slices", Value: &sh9, Seen: -1, Scope: 40, Vars: 8},
+	{Name: "slice_or_star", Value: &sh8, Flags: pegort.RuleMemo, Seen: 63, Vars: 8},
+	{Name: "slice", Value: &sh8, Flags: pegort.RuleMemo, Seen: 64, Vars: 8},
+	{Name: "slice_colon", Value: &sh274, Seen: -1, Scope: 63, Vars: 8},
+	{Name: "for_if_clauses", Value: &sh9, Flags: pegort.RuleMemo, Seen: 65, Scope: 5, Vars: 8},
+	{Name: "for_if_clause", Value: &sh436, Flags: pegort.RuleMemo, Seen: 66, Scope: 64, Vars: 8},
+	{Name: "atom", Value: &sh8, Flags: pegort.RuleMemo, Seen: 67, Vars: 8},
+	{Name: "name", Value: &sh15, Flags: pegort.RuleMemo, Seen: 68, Scope: 44},
+	{Name: "constant_kw", Value: &sh8, Seen: -1},
+	{Name: "ellipsis", Value: &sh8, Seen: -1},
+	{Name: "paren", Value: &sh8, Seen: -1, Vars: 8},
+	{Name: "empty_tuple", Value: &sh9, Seen: -1, Vars: 4},
+	{Name: "yield_group", Value: &sh11, Seen: -1, Scope: 17, Vars: 8},
+	{Name: "star_first_tuple", Value: &sh432, Seen: -1, Scope: 65, Vars: 8},
+	{Name: "paren_named", Value: &sh432, Seen: -1, Scope: 66, Vars: 8},
+	{Name: "list_display", Value: &sh8, Seen: -1, Vars: 8},
+	{Name: "empty_list", Value: &sh9, Seen: -1, Vars: 4},
+	{Name: "list_items", Value: &sh436, Seen: -1, Scope: 67, Vars: 8},
+	{Name: "braces", Value: &sh8, Seen: -1, Vars: 8},
+	{Name: "empty_dict", Value: &sh9, Seen: -1, Vars: 4},
+	{Name: "dict_unpack_first", Value: &sh432, Seen: -1, Scope: 62, Vars: 8},
+	{Name: "set_star_first", Value: &sh274, Seen: -1, Scope: 62, Vars: 8},
+	{Name: "brace_items", Value: &sh649, Seen: -1, Scope: 68, Vars: 8},
+	{Name: "star_targets", Value: &sh9, Flags: pegort.RuleMemo, Seen: 69, Scope: 40, Vars: 8},
+	{Name: "star_target", Value: &sh8, Flags: pegort.RuleMemo, Seen: 70, Vars: 8},
+	{Name: "starred_target", Value: &sh9, Seen: -1, Scope: 69, Vars: 8},
+	{Name: "target_with_star_atom", Value: &sh8, Flags: pegort.RuleMemo, Seen: 71, Vars: 8},
+	{Name: "attr_target", Value: &sh11, Flags: pegort.RuleMemo, Seen: 72, Scope: 70, Vars: 8},
+	{Name: "subscript_target", Value: &sh9, Flags: pegort.RuleMemo, Seen: 73, Scope: 71, Vars: 8},
+	{Name: "star_atom", Value: &sh8, Seen: -1, Vars: 8},
+	{Name: "paren_target", Value: &sh11, Seen: -1, Scope: 69, Vars: 8},
+	{Name: "empty_tuple_target", Value: &sh9, Seen: -1, Vars: 4},
+	{Name: "star_tuple_target", Value: &sh432, Seen: -1, Scope: 65, Vars: 8},
+	{Name: "empty_list_target", Value: &sh9, Seen: -1, Vars: 4},
+	{Name: "star_list_target", Value: &sh274, Seen: -1, Scope: 62, Vars: 8},
+	{Name: "single_target", Value: &sh8, Flags: pegort.RuleMemo, Seen: 74, Vars: 8},
+	{Name: "single_subscript_attribute_target", Value: &sh8, Flags: pegort.RuleMemo, Seen: 75, Vars: 8},
+	{Name: "paren_single_target", Value: &sh11, Flags: pegort.RuleMemo, Seen: 76, Scope: 69, Vars: 8},
+	{Name: "store_name", Value: &sh15, Flags: pegort.RuleMemo, Seen: 77, Scope: 44},
+	{Name: "t_primary", Flags: pegort.RuleMemo, Seen: 78, Vars: 8},
+	{Name: "t_lookahead", Value: &sh8, Seen: -1},
+	{Name: "del_target", Value: &sh8, Flags: pegort.RuleMemo, Seen: 79, Vars: 8},
+	{Name: "del_attr", Value: &sh11, Seen: -1, Scope: 70, Vars: 8},
+	{Name: "del_subscript", Value: &sh9, Seen: -1, Scope: 71, Vars: 8},
+	{Name: "del_name", Value: &sh15, Seen: -1, Scope: 44},
+	{Name: "paren_del_target", Value: &sh11, Seen: -1, Scope: 69, Vars: 8},
+	{Name: "del_tuple", Value: &sh11, Seen: -1, Scope: 72, Vars: 8},
+	{Name: "del_list", Value: &sh11, Seen: -1, Scope: 72, Vars: 8},
+	{Name: "del_targets", Value: &sh9, Flags: pegort.RuleMemo, Seen: 80, Scope: 5, Vars: 8},
+	{Name: "strings", Value: &sh14, Flags: pegort.RuleMemo, Seen: 81, Scope: 38, Vars: 8},
+	{Name: "string_start", Value: &sh9, Seen: -1},
+	{Name: "plain_strings", Value: &sh8, Seen: -1, Vars: 4},
+	{Name: "bytes_strings", Value: &sh8, Seen: -1, Vars: 4},
+	{Name: "fjoined", Value: &sh9, Seen: -1, Scope: 5, Vars: 8},
+	{Name: "fjoin_item", Value: &sh8, Flags: pegort.RuleMemo, Seen: 82, Vars: 8},
+	{Name: "str_part", Value: &sh15, Seen: -1, Scope: 73},
+	{Name: "str_constant", Value: &sh8, Seen: -1},
+	{Name: "tstrings", Value: &sh9, Seen: -1, Scope: 5, Vars: 8},
+	{Name: "str_lit", Value: &sh8, Flags: pegort.RuleMemo, Seen: 83},
+	{Name: "bytes_lit", Value: &sh8, Flags: pegort.RuleMemo, Seen: 84},
+	{Name: "str_body", Value: &sh8, Flags: pegort.RuleMemo, Seen: 85},
+	{Name: "str_esc", Value: &sh9, Flags: pegort.RuleMemo, Seen: 86},
+	{Name: "raw_str_body", Value: &sh8, Seen: -1},
+	{Name: "bytes_body", Value: &sh8, Seen: -1},
+	{Name: "bytes_esc", Value: &sh9, Flags: pegort.RuleMemo, Seen: 87},
+	{Name: "raw_bytes_body", Value: &sh8, Seen: -1},
+	{Name: "hex", Value: &sh8, Seen: -1},
+	{Name: "fstring", Value: &sh274, Seen: -1, Scope: 46, Vars: 8},
+	{Name: "tstring", Value: &sh274, Flags: pegort.RuleMemo, Seen: 88, Scope: 46, Vars: 8},
+	{Name: "fclose", Value: &sh8, Seen: -1, Vars: 4},
+	{Name: "fpart", Value: &sh8, Seen: -1, Vars: 8},
+	{Name: "tpart", Value: &sh8, Seen: -1, Vars: 8},
+	{Name: "ftext", Value: &sh8, Flags: pegort.RuleMemo, Seen: 89, Vars: 4},
+	{Name: "fraw_text", Value: &sh8, Flags: pegort.RuleMemo, Seen: 90, Vars: 4},
+	{Name: "fquote", Value: &sh8, Flags: pegort.RuleMemo, Seen: 91, Vars: 4},
+	{Name: "fesc", Value: &sh9, Flags: pegort.RuleMemo, Seen: 92},
+	{Name: "frawesc", Value: &sh9, Seen: -1},
+	{Name: "ffield", Value: &sh436, Flags: pegort.RuleMemo, Seen: 93, Scope: 74, Vars: 8},
+	{Name: "tfield", Value: &sh436, Seen: -1, Scope: 74, Vars: 8},
+	{Name: "fdebug", Value: &sh11, Flags: pegort.RuleMemo, Seen: 94, Vars: 4},
+	{Name: "fconv", Value: &sh9, Flags: pegort.RuleMemo, Seen: 95, Scope: 73, Vars: 4},
+	{Name: "fspec", Value: &sh9, Flags: pegort.RuleMemo, Seen: 96, Scope: 46, Vars: 8},
+	{Name: "fspec_part", Value: &sh8, Seen: -1, Vars: 8},
+	{Name: "fspec_text", Value: &sh8, Seen: -1, Vars: 4},
+	{Name: "fspec_raw_text", Value: &sh8, Seen: -1, Vars: 4},
+	{Name: "number", Value: &sh8, Flags: pegort.RuleMemo, Seen: 97},
+	{Name: "real_number", Value: &sh8, Flags: pegort.RuleMemo, Seen: 98},
+	{Name: "imag_number", Value: &sh8, Seen: -1},
+	{Name: "hex_lit", Value: &sh11, Seen: -1},
+	{Name: "oct_lit", Value: &sh11, Seen: -1},
+	{Name: "bin_lit", Value: &sh11, Seen: -1},
+	{Name: "dec_number", Value: &sh8, Seen: -1},
+	{Name: "dec_real", Value: &sh8, Seen: -1},
+	{Name: "pointfloat", Value: &sh8, Flags: pegort.RuleMemo, Seen: 99},
+	{Name: "exponent", Value: &sh11, Flags: pegort.RuleMemo, Seen: 100},
+	{Name: "digitpart", Value: &sh9, Seen: -1},
+	{Name: "nonzero_int", Value: &sh9, Seen: -1},
+	{Name: "zero_int", Value: &sh9, Seen: -1},
+	{Name: "num_end", Value: &sh45, Seen: -1},
+	{Name: "ident", Value: &sh8, Flags: pegort.RuleMemo, Seen: 101},
+	{Name: "identifier", Value: &sh8, Flags: pegort.RuleMemo, Seen: 102},
+	{Name: "idstart", Value: &sh8, Seen: -1},
+	{Name: "idcont", Value: &sh8, Flags: pegort.RuleMemo, Seen: 103},
+	{Name: "keyword", Value: &sh14, Seen: -1},
+	{Name: "kw_as", Value: &sh14, Flags: pegort.RuleMemo, Seen: 104},
+	{Name: "kw_assert", Value: &sh14, Seen: -1},
+	{Name: "kw_async", Value: &sh14, Flags: pegort.RuleMemo, Seen: 105},
+	{Name: "kw_await", Value: &sh14, Seen: -1},
+	{Name: "kw_break", Value: &sh14, Seen: -1},
+	{Name: "kw_case", Value: &sh14, Seen: -1},
+	{Name: "kw_class", Value: &sh14, Flags: pegort.RuleMemo, Seen: 106},
+	{Name: "kw_continue", Value: &sh14, Seen: -1},
+	{Name: "kw_def", Value: &sh14, Flags: pegort.RuleMemo, Seen: 107},
+	{Name: "kw_del", Value: &sh14, Seen: -1},
+	{Name: "kw_elif", Value: &sh14, Seen: -1},
+	{Name: "kw_else", Value: &sh14, Flags: pegort.RuleMemo, Seen: 108},
+	{Name: "kw_except", Value: &sh14, Flags: pegort.RuleMemo, Seen: 109},
+	{Name: "kw_finally", Value: &sh14, Seen: -1},
+	{Name: "kw_for", Value: &sh14, Flags: pegort.RuleMemo, Seen: 110},
+	{Name: "kw_from", Value: &sh14, Flags: pegort.RuleMemo, Seen: 111},
+	{Name: "kw_global", Value: &sh14, Seen: -1},
+	{Name: "kw_if", Value: &sh14, Flags: pegort.RuleMemo, Seen: 112},
+	{Name: "kw_import", Value: &sh14, Flags: pegort.RuleMemo, Seen: 113},
+	{Name: "kw_in", Value: &sh14, Flags: pegort.RuleMemo, Seen: 114},
+	{Name: "kw_lambda", Value: &sh14, Seen: -1},
+	{Name: "kw_match", Value: &sh14, Seen: -1},
+	{Name: "kw_nonlocal", Value: &sh14, Seen: -1},
+	{Name: "kw_pass", Value: &sh14, Seen: -1},
+	{Name: "kw_raise", Value: &sh14, Seen: -1},
+	{Name: "kw_return", Value: &sh14, Seen: -1},
+	{Name: "kw_try", Value: &sh14, Seen: -1},
+	{Name: "kw_type", Value: &sh14, Seen: -1},
+	{Name: "kw_while", Value: &sh14, Seen: -1},
+	{Name: "kw_with", Value: &sh14, Flags: pegort.RuleMemo, Seen: 115},
+	{Name: "kw_yield", Value: &sh14, Flags: pegort.RuleMemo, Seen: 116},
+	{Name: "idstart_other", Value: &sh8, Seen: -1},
+	{Name: "idcont_other", Value: &sh8, Seen: -1},
+	{Name: "blank", Value: &sh274, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 117},
+	{Name: "module_end", Value: &sh274, Flags: pegort.RuleNovalue, Seen: -1, Vars: 4},
+	{Name: "ws", Value: &sh8, Flags: pegort.RuleNovalue, Seen: -1, Vars: 4},
+	{Name: "stmt_sep", Value: &sh274, Flags: pegort.RuleNovalue, Seen: -1, Scope: 6, Vars: 7},
+	{Name: "eol", Value: &sh11, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 118, Vars: 4},
+	{Name: "newline", Value: &sh8, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "augassign_op", Value: &sh8, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "kw_pass", Value: &sh14, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "kw_break", Value: &sh14, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "kw_continue", Value: &sh14, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "kw_return", Value: &sh14, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "kw_raise", Value: &sh14, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "kw_from", Value: &sh14, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 119},
+	{Name: "kw_global", Value: &sh14, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "kw_nonlocal", Value: &sh14, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "kw_del", Value: &sh14, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "kw_assert", Value: &sh14, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "kw_type", Value: &sh14, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "kw_import", Value: &sh14, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 120},
+	{Name: "kw_as", Value: &sh14, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 121},
+	{Name: "kw_if", Value: &sh14, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 122},
+	{Name: "clause_sep", Value: &sh274, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 123, Scope: 6, Vars: 7},
+	{Name: "kw_elif", Value: &sh14, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "kw_else", Value: &sh14, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 124},
+	{Name: "kw_while", Value: &sh14, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "kw_for", Value: &sh14, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 125},
+	{Name: "kw_in", Value: &sh14, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 126},
+	{Name: "kw_async", Value: &sh14, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 127},
+	{Name: "kw_with", Value: &sh14, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 128},
+	{Name: "kw_try", Value: &sh14, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "kw_finally", Value: &sh14, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "kw_except", Value: &sh14, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 129},
+	{Name: "dec_sep", Value: &sh11, Flags: pegort.RuleNovalue, Seen: -1, Scope: 6, Vars: 7},
+	{Name: "kw_def", Value: &sh14, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 130},
+	{Name: "kw_class", Value: &sh14, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 131},
+	{Name: "kw_match", Value: &sh14, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "kw_case", Value: &sh14, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "idcont", Value: &sh8, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 132},
+	{Name: "pend", Value: &sh14, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 133, Vars: 4},
+	{Name: "kw_lambda", Value: &sh14, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "lpend", Value: &sh14, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 134, Vars: 4},
+	{Name: "kw_yield", Value: &sh14, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 135},
+	{Name: "or_op", Value: &sh8, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 136},
+	{Name: "and_op", Value: &sh8, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 137},
+	{Name: "kw_await", Value: &sh14, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "arg_sep", Value: &sh14, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 138, Vars: 4},
+	{Name: "t_lookahead", Value: &sh8, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "string_start", Value: &sh9, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "str_lit", Value: &sh8, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 139},
+	{Name: "bytes_lit", Value: &sh8, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 140},
+	{Name: "fclose", Value: &sh8, Flags: pegort.RuleNovalue, Seen: -1, Vars: 4},
+	{Name: "fquote", Value: &sh8, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 141, Vars: 4},
+	{Name: "fesc", Value: &sh9, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 142},
+	{Name: "frawesc", Value: &sh9, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "hex_lit", Value: &sh11, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "oct_lit", Value: &sh11, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "bin_lit", Value: &sh11, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "dec_number", Value: &sh8, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "num_end", Value: &sh45, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "dec_real", Value: &sh8, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "pointfloat", Value: &sh8, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 143},
+	{Name: "exponent", Value: &sh11, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 144},
+	{Name: "digitpart", Value: &sh9, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "keyword", Value: &sh14, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "idstart", Value: &sh8, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "ident", Value: &sh8, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 145},
+	{Name: "comment", Value: &sh9, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "idcont_other", Value: &sh8, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "str_body", Value: &sh8, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 146},
+	{Name: "raw_str_body", Value: &sh8, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "raw_bytes_body", Value: &sh8, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "bytes_body", Value: &sh8, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "hex", Value: &sh8, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "nonzero_int", Value: &sh9, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "zero_int", Value: &sh9, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "idstart_other", Value: &sh8, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "str_esc", Value: &sh9, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 147},
+	{Name: "bytes_esc", Value: &sh9, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 148},
+}
+
+var rulesStrs = [...][]string{
+	nil,
+	{"b"},
+	{"ind", "isdict", "lv"},
+	{"i", "s"},
+	{"lv"},
+	{"f", "r"},
+	{"i"},
+	{"ind", "lv"},
+	{"isdict", "lv"},
+	{"segs", "tail"},
+	{"e"},
+	{"t", "a", "x"},
+	{"t", "v"},
+	{"ts", "v"},
+	{"t", "o", "v"},
+	{"e", "c"},
+	{"t", "m"},
+	{"y"},
+	{"n", "p", "v"},
+	{"d", "a"},
+	{"ds", "m", "ns"},
+	{"a"},
+	{"n", "a"},
+	{"t", "b", "o"},
+	{"t", "i", "b", "o"},
+	{"is", "b"},
+	{"e", "t"},
+	{"b", "hs", "xs", "e", "f"},
+	{"t", "n", "b"},
+	{"t", "b"},
+	{"ds"},
+	{"ds", "n", "p", "a", "r", "b"},
+	{"ds", "n", "p", "c", "b"},
+	{"ds", "n", "p", "b"},
+	{"s", "cs"},
+	{"f", "r", "l"},
+	{"i", "f", "r"},
+	{"p", "g", "b"},
+	{"s"},
+	{"p", "n"},
+	{"f", "t"},
+	{"v"},
+	{"o", "n"},
+	{"r", "o", "i"},
+	{"n"},
+	{"p"},
+	{"ps"},
+	{"ks", "r"},
+	{"k", "v"},
+	{"c", "ps", "ks"},
+	{"n", "v"},
+	{"n", "b", "d"},
+	{"n", "d"},
+	{"g1nd", "g1wd", "sl", "g2nd", "g2wd", "st"},
+	{"p", "d"},
+	{"va", "ko", "kw"},
+	{"d", "t"},
+	{"a", "b"},
+	{"o", "v"},
+	{"pos", "kw1", "kw2"},
+	{"k"},
+	{"e", "g"},
+	{"f", "rs"},
+	{"l", "u", "s"},
+	{"a", "t", "i", "ifs"},
+	{"f", "rs", "c"},
+	{"e", "t", "g"},
+	{"f", "s", "rs", "c", "g"},
+	{"f", "w", "kv", "g", "dr", "sr", "c"},
+	{"t"},
+	{"t", "n"},
+	{"t", "s"},
+	{"ts"},
+	{"c"},
+	{"s", "v", "d", "c", "f"},
+}
+
+var rulesExtras = [...]pegort.RuleExtra{
+	{Id: 24, Where: "", NodeType: "Op", OpNodeType: ""},
+	{Id: 98, Where: "", NodeType: "Constant", OpNodeType: ""},
+	{Id: 106, Where: "", NodeType: "Op", OpNodeType: ""},
+	{Id: 107, Where: "", NodeType: "Op", OpNodeType: ""},
+	{Id: 168, Where: "", NodeType: "Op", OpNodeType: ""},
+	{Id: 169, Where: "", NodeType: "Op", OpNodeType: ""},
+	{Id: 172, Where: "", NodeType: "Op", OpNodeType: ""},
+	{Id: 174, Where: "", NodeType: "Op", OpNodeType: ""},
+	{Id: 176, Where: "", NodeType: "Op", OpNodeType: ""},
+	{Id: 177, Where: "", NodeType: "Op", OpNodeType: ""},
+	{Id: 178, Where: "", NodeType: "Op", OpNodeType: ""},
+	{Id: 179, Where: "", NodeType: "Op", OpNodeType: ""},
+	{Id: 180, Where: "", NodeType: "Op", OpNodeType: ""},
+	{Id: 181, Where: "", NodeType: "Op", OpNodeType: ""},
+	{Id: 182, Where: "", NodeType: "Op", OpNodeType: ""},
+	{Id: 183, Where: "", NodeType: "Op", OpNodeType: ""},
+	{Id: 208, Where: "", NodeType: "Constant", OpNodeType: ""},
+	{Id: 209, Where: "", NodeType: "Constant", OpNodeType: ""},
+	{Id: 251, Where: "", NodeType: "Constant", OpNodeType: ""},
+	{Id: 252, Where: "", NodeType: "Constant", OpNodeType: ""},
+	{Id: 256, Where: "", NodeType: "Constant", OpNodeType: ""},
+	{Id: 272, Where: "", NodeType: "FStringMiddle", OpNodeType: ""},
+	{Id: 273, Where: "", NodeType: "FStringRawMiddle", OpNodeType: ""},
+	{Id: 283, Where: "", NodeType: "FStringMiddle", OpNodeType: ""},
+	{Id: 284, Where: "", NodeType: "FStringRawMiddle", OpNodeType: ""},
+	{Id: 285, Where: "", NodeType: "Constant", OpNodeType: ""},
+	{Id: 286, Where: "", NodeType: "Constant", OpNodeType: ""},
+	{Id: 287, Where: "", NodeType: "Constant", OpNodeType: ""},
+	{Id: 300, Where: "", NodeType: "Identifier", OpNodeType: ""},
+}
+
+var scope656 = []string{"s"}
+
+var scope676 = []string{"sp"}
+var scope677 = []string{"segs", "tail"}
+var scope689 = []string{"t"}
+var scope713 = []string{"n"}
+var scope714 = []string{"f", "r"}
+var scope715 = []string{"d"}
+var scope723 = []string{"n"}
+var scope724 = []string{"f", "r"}
+var scope752 = []string{"h"}
+var scope753 = []string{"h"}
+var scope777 = []string{"e"}
+
+var scope814 = []string{"x"}
+var scope815 = []string{"y"}
+var scope834 = []string{"p"}
+var scope835 = []string{"q"}
+var scope836 = []string{"f", "r", "l"}
+var scope839 = []string{"p"}
+var scope840 = []string{"rs"}
+var scope858 = []string{"n"}
+var scope865 = []string{"p"}
+var scope876 = []string{"k", "v"}
+var scope883 = []string{"p"}
+var scope885 = []string{"n", "v"}
+var scope911 = []string{"p", "d"}
+var scope912 = []string{"s"}
+var scope913 = []string{"p", "d"}
+var scope914 = []string{"va", "ko", "kw"}
+var scope919 = []string{"x"}
+var scope920 = []string{"rs", "c"}
+var scope926 = []string{"x"}
+var scope927 = []string{"rs", "c"}
+var scope939 = []string{"c", "o"}
+var scope965 = []string{"p", "d"}
+var scope966 = []string{"s"}
+var scope967 = []string{"p", "d"}
+var scope968 = []string{"va", "ko", "kw"}
+var scope972 = []string{"x"}
+var scope973 = []string{"o", "c", "rs"}
+var scope979 = []string{"x"}
+var scope980 = []string{"o", "c", "rs"}
+var scope988 = []string{"o", "x"}
+var scope989 = []string{"rs"}
+var scope998 = []string{"a"}
+var scope999 = []string{"ks", "ss"}
+var scope1000 = []string{"k"}
+var scope1001 = []string{"pos", "kw1", "kw2"}
+var scope1007 = []string{"x"}
+var scope1011 = []string{"x"}
+var scope1012 = []string{"rs", "c"}
+var scope1021 = []string{"c"}
+var scope1030 = []string{"x"}
 var scope1034 = []string{"x"}
-var scope1035 = []string{"cs"}
-var scope1043 = []string{"v", "k"}
-var scope1048 = []string{"x"}
-var scope1051 = []string{"v"}
-var scope1052 = []string{"cs"}
-var scope1053 = []string{"v", "k"}
-var scope1054 = []string{"x"}
-var scope1072 = []string{"x"}
-var scope1073 = []string{"rs", "c"}
-var scope1088 = []string{"x"}
+var scope1035 = []string{"rs", "c"}
+var scope1036 = []string{"cs"}
+var scope1047 = []string{"x"}
+var scope1048 = []string{"cs"}
+var scope1056 = []string{"v", "k"}
+var scope1061 = []string{"x"}
+var scope1064 = []string{"v"}
+var scope1065 = []string{"cs"}
+var scope1066 = []string{"v", "k"}
+var scope1067 = []string{"x"}
+var scope1085 = []string{"x"}
+var scope1086 = []string{"rs", "c"}
+var scope1101 = []string{"x"}
 
-var scope1110 = []string{"p"}
-var scope1114 = []string{"p"}
+var scope1123 = []string{"p"}
+var scope1127 = []string{"p"}
 
-var cls1121 = pegort.Class{ASCII: [2]uint64{0xffffffffffffdbfe, 0xfedfffffffdfbfff}, Neg: true}
+var cls1134 = pegort.Class{ASCII: [2]uint64{0xffffffffffffdbfe, 0xfedfffffffdfbfff}, Neg: true}
 
-var cls1124 = pegort.Class{ASCII: [2]uint64{0xffffffffffffdbfe, 0xfeffffffffffffff}, Wide: []rune{128, 1114111}, Neg: true}
-var cls1125 = pegort.Class{ASCII: [2]uint64{0x0, 0x4000000040000}}
-var cls1126 = pegort.Class{ASCII: [2]uint64{0x0, 0x4000000040}}
-var steps1127 = []pegort.ClassStep{{C: &cls1125, ID: 116}, {C: &cls1126, ID: 142}}
-var steps1128 = []pegort.ClassStep{{C: &cls1126, ID: 142}, {C: &cls1125, ID: 116}}
-var cls1129 = pegort.Class{ASCII: [2]uint64{0x0, 0x10000000100000}}
-var steps1130 = []pegort.ClassStep{{C: &cls1125, ID: 116}, {C: &cls1129, ID: 144}}
-var steps1131 = []pegort.ClassStep{{C: &cls1129, ID: 144}, {C: &cls1125, ID: 116}}
-var cls1132 = pegort.Class{ASCII: [2]uint64{0xffffffffffffdbfe, 0xd6dfffffffdfbfff}, Neg: true}
-var cls1144 = pegort.Class{ASCII: [2]uint64{0x0, 0x100800401008004}}
-var cls1145 = pegort.Class{ASCII: [2]uint64{0x0, 0x0}, Wide: []rune{170, 170, 181, 181, 186, 186, 192, 214, 216, 246, 248, 705, 710, 721, 736, 740, 748, 748, 750, 750, 880, 884, 886, 887, 891, 893, 895, 895, 902, 902, 904, 906, 908, 908, 910, 929, 931, 1013, 1015, 1153, 1162, 1327, 1329, 1366, 1369, 1369, 1376, 1416, 1488, 1514, 1519, 1522, 1568, 1610, 1646, 1647, 1649, 1747, 1749, 1749, 1765, 1766, 1774, 1775, 1786, 1788, 1791, 1791, 1808, 1808, 1810, 1839, 1869, 1957, 1969, 1969, 1994, 2026, 2036, 2037, 2042, 2042, 2048, 2069, 2074, 2074, 2084, 2084, 2088, 2088, 2112, 2136, 2144, 2154, 2160, 2183, 2185, 2190, 2208, 2249, 2308, 2361, 2365, 2365, 2384, 2384, 2392, 2401, 2417, 2432, 2437, 2444, 2447, 2448, 2451, 2472, 2474, 2480, 2482, 2482, 2486, 2489, 2493, 2493, 2510, 2510, 2524, 2525, 2527, 2529, 2544, 2545, 2556, 2556, 2565, 2570, 2575, 2576, 2579, 2600, 2602, 2608, 2610, 2611, 2613, 2614, 2616, 2617, 2649, 2652, 2654, 2654, 2674, 2676, 2693, 2701, 2703, 2705, 2707, 2728, 2730, 2736, 2738, 2739, 2741, 2745, 2749, 2749, 2768, 2768, 2784, 2785, 2809, 2809, 2821, 2828, 2831, 2832, 2835, 2856, 2858, 2864, 2866, 2867, 2869, 2873, 2877, 2877, 2908, 2909, 2911, 2913, 2929, 2929, 2947, 2947, 2949, 2954, 2958, 2960, 2962, 2965, 2969, 2970, 2972, 2972, 2974, 2975, 2979, 2980, 2984, 2986, 2990, 3001, 3024, 3024, 3077, 3084, 3086, 3088, 3090, 3112, 3114, 3129, 3133, 3133, 3160, 3162, 3165, 3165, 3168, 3169, 3200, 3200, 3205, 3212, 3214, 3216, 3218, 3240, 3242, 3251, 3253, 3257, 3261, 3261, 3293, 3294, 3296, 3297, 3313, 3314, 3332, 3340, 3342, 3344, 3346, 3386, 3389, 3389, 3406, 3406, 3412, 3414, 3423, 3425, 3450, 3455, 3461, 3478, 3482, 3505, 3507, 3515, 3517, 3517, 3520, 3526, 3585, 3632, 3634, 3634, 3648, 3654, 3713, 3714, 3716, 3716, 3718, 3722, 3724, 3747, 3749, 3749, 3751, 3760, 3762, 3762, 3773, 3773, 3776, 3780, 3782, 3782, 3804, 3807, 3840, 3840, 3904, 3911, 3913, 3948, 3976, 3980, 4096, 4138, 4159, 4159, 4176, 4181, 4186, 4189, 4193, 4193, 4197, 4198, 4206, 4208, 4213, 4225, 4238, 4238, 4256, 4293, 4295, 4295, 4301, 4301, 4304, 4346, 4348, 4680, 4682, 4685, 4688, 4694, 4696, 4696, 4698, 4701, 4704, 4744, 4746, 4749, 4752, 4784, 4786, 4789, 4792, 4798, 4800, 4800, 4802, 4805, 4808, 4822, 4824, 4880, 4882, 4885, 4888, 4954, 4992, 5007, 5024, 5109, 5112, 5117, 5121, 5740, 5743, 5759, 5761, 5786, 5792, 5866, 5870, 5880, 5888, 5905, 5919, 5937, 5952, 5969, 5984, 5996, 5998, 6000, 6016, 6067, 6103, 6103, 6108, 6108, 6176, 6264, 6272, 6312, 6314, 6314, 6320, 6389, 6400, 6430, 6480, 6509, 6512, 6516, 6528, 6571, 6576, 6601, 6656, 6678, 6688, 6740, 6823, 6823, 6917, 6963, 6981, 6988, 7043, 7072, 7086, 7087, 7098, 7141, 7168, 7203, 7245, 7247, 7258, 7293, 7296, 7306, 7312, 7354, 7357, 7359, 7401, 7404, 7406, 7411, 7413, 7414, 7418, 7418, 7424, 7615, 7680, 7957, 7960, 7965, 7968, 8005, 8008, 8013, 8016, 8023, 8025, 8025, 8027, 8027, 8029, 8029, 8031, 8061, 8064, 8116, 8118, 8124, 8126, 8126, 8130, 8132, 8134, 8140, 8144, 8147, 8150, 8155, 8160, 8172, 8178, 8180, 8182, 8188, 8305, 8305, 8319, 8319, 8336, 8348, 8450, 8450, 8455, 8455, 8458, 8467, 8469, 8469, 8472, 8477, 8484, 8484, 8486, 8486, 8488, 8488, 8490, 8505, 8508, 8511, 8517, 8521, 8526, 8526, 8544, 8584, 11264, 11492, 11499, 11502, 11506, 11507, 11520, 11557, 11559, 11559, 11565, 11565, 11568, 11623, 11631, 11631, 11648, 11670, 11680, 11686, 11688, 11694, 11696, 11702, 11704, 11710, 11712, 11718, 11720, 11726, 11728, 11734, 11736, 11742, 12293, 12295, 12321, 12329, 12337, 12341, 12344, 12348, 12353, 12438, 12445, 12447, 12449, 12538, 12540, 12543, 12549, 12591, 12593, 12686, 12704, 12735, 12784, 12799, 13312, 19903, 19968, 42124, 42192, 42237, 42240, 42508, 42512, 42527, 42538, 42539, 42560, 42606, 42623, 42653, 42656, 42735, 42775, 42783, 42786, 42888, 42891, 42957, 42960, 42961, 42963, 42963, 42965, 42972, 42994, 43009, 43011, 43013, 43015, 43018, 43020, 43042, 43072, 43123, 43138, 43187, 43250, 43255, 43259, 43259, 43261, 43262, 43274, 43301, 43312, 43334, 43360, 43388, 43396, 43442, 43471, 43471, 43488, 43492, 43494, 43503, 43514, 43518, 43520, 43560, 43584, 43586, 43588, 43595, 43616, 43638, 43642, 43642, 43646, 43695, 43697, 43697, 43701, 43702, 43705, 43709, 43712, 43712, 43714, 43714, 43739, 43741, 43744, 43754, 43762, 43764, 43777, 43782, 43785, 43790, 43793, 43798, 43808, 43814, 43816, 43822, 43824, 43866, 43868, 43881, 43888, 44002, 44032, 55203, 55216, 55238, 55243, 55291, 63744, 64109, 64112, 64217, 64256, 64262, 64275, 64279, 64285, 64285, 64287, 64296, 64298, 64310, 64312, 64316, 64318, 64318, 64320, 64321, 64323, 64324, 64326, 64433, 64467, 64605, 64612, 64829, 64848, 64911, 64914, 64967, 65008, 65017, 65137, 65137, 65139, 65139, 65143, 65143, 65145, 65145, 65147, 65147, 65149, 65149, 65151, 65276, 65313, 65338, 65345, 65370, 65382, 65437, 65440, 65470, 65474, 65479, 65482, 65487, 65490, 65495, 65498, 65500, 65536, 65547, 65549, 65574, 65576, 65594, 65596, 65597, 65599, 65613, 65616, 65629, 65664, 65786, 65856, 65908, 66176, 66204, 66208, 66256, 66304, 66335, 66349, 66378, 66384, 66421, 66432, 66461, 66464, 66499, 66504, 66511, 66513, 66517, 66560, 66717, 66736, 66771, 66776, 66811, 66816, 66855, 66864, 66915, 66928, 66938, 66940, 66954, 66956, 66962, 66964, 66965, 66967, 66977, 66979, 66993, 66995, 67001, 67003, 67004, 67008, 67059, 67072, 67382, 67392, 67413, 67424, 67431, 67456, 67461, 67463, 67504, 67506, 67514, 67584, 67589, 67592, 67592, 67594, 67637, 67639, 67640, 67644, 67644, 67647, 67669, 67680, 67702, 67712, 67742, 67808, 67826, 67828, 67829, 67840, 67861, 67872, 67897, 67968, 68023, 68030, 68031, 68096, 68096, 68112, 68115, 68117, 68119, 68121, 68149, 68192, 68220, 68224, 68252, 68288, 68295, 68297, 68324, 68352, 68405, 68416, 68437, 68448, 68466, 68480, 68497, 68608, 68680, 68736, 68786, 68800, 68850, 68864, 68899, 68938, 68965, 68975, 68997, 69248, 69289, 69296, 69297, 69314, 69316, 69376, 69404, 69415, 69415, 69424, 69445, 69488, 69505, 69552, 69572, 69600, 69622, 69635, 69687, 69745, 69746, 69749, 69749, 69763, 69807, 69840, 69864, 69891, 69926, 69956, 69956, 69959, 69959, 69968, 70002, 70006, 70006, 70019, 70066, 70081, 70084, 70106, 70106, 70108, 70108, 70144, 70161, 70163, 70187, 70207, 70208, 70272, 70278, 70280, 70280, 70282, 70285, 70287, 70301, 70303, 70312, 70320, 70366, 70405, 70412, 70415, 70416, 70419, 70440, 70442, 70448, 70450, 70451, 70453, 70457, 70461, 70461, 70480, 70480, 70493, 70497, 70528, 70537, 70539, 70539, 70542, 70542, 70544, 70581, 70583, 70583, 70609, 70609, 70611, 70611, 70656, 70708, 70727, 70730, 70751, 70753, 70784, 70831, 70852, 70853, 70855, 70855, 71040, 71086, 71128, 71131, 71168, 71215, 71236, 71236, 71296, 71338, 71352, 71352, 71424, 71450, 71488, 71494, 71680, 71723, 71840, 71903, 71935, 71942, 71945, 71945, 71948, 71955, 71957, 71958, 71960, 71983, 71999, 71999, 72001, 72001, 72096, 72103, 72106, 72144, 72161, 72161, 72163, 72163, 72192, 72192, 72203, 72242, 72250, 72250, 72272, 72272, 72284, 72329, 72349, 72349, 72368, 72440, 72640, 72672, 72704, 72712, 72714, 72750, 72768, 72768, 72818, 72847, 72960, 72966, 72968, 72969, 72971, 73008, 73030, 73030, 73056, 73061, 73063, 73064, 73066, 73097, 73112, 73112, 73440, 73458, 73474, 73474, 73476, 73488, 73490, 73523, 73648, 73648, 73728, 74649, 74752, 74862, 74880, 75075, 77712, 77808, 77824, 78895, 78913, 78918, 78944, 82938, 82944, 83526, 90368, 90397, 92160, 92728, 92736, 92766, 92784, 92862, 92880, 92909, 92928, 92975, 92992, 92995, 93027, 93047, 93053, 93071, 93504, 93548, 93760, 93823, 93952, 94026, 94032, 94032, 94099, 94111, 94176, 94177, 94179, 94179, 94208, 100343, 100352, 101589, 101631, 101640, 110576, 110579, 110581, 110587, 110589, 110590, 110592, 110882, 110898, 110898, 110928, 110930, 110933, 110933, 110948, 110951, 110960, 111355, 113664, 113770, 113776, 113788, 113792, 113800, 113808, 113817, 119808, 119892, 119894, 119964, 119966, 119967, 119970, 119970, 119973, 119974, 119977, 119980, 119982, 119993, 119995, 119995, 119997, 120003, 120005, 120069, 120071, 120074, 120077, 120084, 120086, 120092, 120094, 120121, 120123, 120126, 120128, 120132, 120134, 120134, 120138, 120144, 120146, 120485, 120488, 120512, 120514, 120538, 120540, 120570, 120572, 120596, 120598, 120628, 120630, 120654, 120656, 120686, 120688, 120712, 120714, 120744, 120746, 120770, 120772, 120779, 122624, 122654, 122661, 122666, 122928, 122989, 123136, 123180, 123191, 123197, 123214, 123214, 123536, 123565, 123584, 123627, 124112, 124139, 124368, 124397, 124400, 124400, 124896, 124902, 124904, 124907, 124909, 124910, 124912, 124926, 124928, 125124, 125184, 125251, 125259, 125259, 126464, 126467, 126469, 126495, 126497, 126498, 126500, 126500, 126503, 126503, 126505, 126514, 126516, 126519, 126521, 126521, 126523, 126523, 126530, 126530, 126535, 126535, 126537, 126537, 126539, 126539, 126541, 126543, 126545, 126546, 126548, 126548, 126551, 126551, 126553, 126553, 126555, 126555, 126557, 126557, 126559, 126559, 126561, 126562, 126564, 126564, 126567, 126570, 126572, 126578, 126580, 126583, 126585, 126588, 126590, 126590, 126592, 126601, 126603, 126619, 126625, 126627, 126629, 126633, 126635, 126651, 131072, 173791, 173824, 177977, 177984, 178205, 178208, 183969, 183984, 191456, 191472, 192093, 194560, 195101, 196608, 201546, 201552, 205743}}
-var cls1146 = pegort.Class{ASCII: [2]uint64{0x0, 0x0}, Wide: []rune{170, 170, 181, 181, 183, 183, 186, 186, 192, 214, 216, 246, 248, 705, 710, 721, 736, 740, 748, 748, 750, 750, 768, 884, 886, 887, 891, 893, 895, 895, 902, 906, 908, 908, 910, 929, 931, 1013, 1015, 1153, 1155, 1159, 1162, 1327, 1329, 1366, 1369, 1369, 1376, 1416, 1425, 1469, 1471, 1471, 1473, 1474, 1476, 1477, 1479, 1479, 1488, 1514, 1519, 1522, 1552, 1562, 1568, 1641, 1646, 1747, 1749, 1756, 1759, 1768, 1770, 1788, 1791, 1791, 1808, 1866, 1869, 1969, 1984, 2037, 2042, 2042, 2045, 2045, 2048, 2093, 2112, 2139, 2144, 2154, 2160, 2183, 2185, 2190, 2199, 2273, 2275, 2403, 2406, 2415, 2417, 2435, 2437, 2444, 2447, 2448, 2451, 2472, 2474, 2480, 2482, 2482, 2486, 2489, 2492, 2500, 2503, 2504, 2507, 2510, 2519, 2519, 2524, 2525, 2527, 2531, 2534, 2545, 2556, 2556, 2558, 2558, 2561, 2563, 2565, 2570, 2575, 2576, 2579, 2600, 2602, 2608, 2610, 2611, 2613, 2614, 2616, 2617, 2620, 2620, 2622, 2626, 2631, 2632, 2635, 2637, 2641, 2641, 2649, 2652, 2654, 2654, 2662, 2677, 2689, 2691, 2693, 2701, 2703, 2705, 2707, 2728, 2730, 2736, 2738, 2739, 2741, 2745, 2748, 2757, 2759, 2761, 2763, 2765, 2768, 2768, 2784, 2787, 2790, 2799, 2809, 2815, 2817, 2819, 2821, 2828, 2831, 2832, 2835, 2856, 2858, 2864, 2866, 2867, 2869, 2873, 2876, 2884, 2887, 2888, 2891, 2893, 2901, 2903, 2908, 2909, 2911, 2915, 2918, 2927, 2929, 2929, 2946, 2947, 2949, 2954, 2958, 2960, 2962, 2965, 2969, 2970, 2972, 2972, 2974, 2975, 2979, 2980, 2984, 2986, 2990, 3001, 3006, 3010, 3014, 3016, 3018, 3021, 3024, 3024, 3031, 3031, 3046, 3055, 3072, 3084, 3086, 3088, 3090, 3112, 3114, 3129, 3132, 3140, 3142, 3144, 3146, 3149, 3157, 3158, 3160, 3162, 3165, 3165, 3168, 3171, 3174, 3183, 3200, 3203, 3205, 3212, 3214, 3216, 3218, 3240, 3242, 3251, 3253, 3257, 3260, 3268, 3270, 3272, 3274, 3277, 3285, 3286, 3293, 3294, 3296, 3299, 3302, 3311, 3313, 3315, 3328, 3340, 3342, 3344, 3346, 3396, 3398, 3400, 3402, 3406, 3412, 3415, 3423, 3427, 3430, 3439, 3450, 3455, 3457, 3459, 3461, 3478, 3482, 3505, 3507, 3515, 3517, 3517, 3520, 3526, 3530, 3530, 3535, 3540, 3542, 3542, 3544, 3551, 3558, 3567, 3570, 3571, 3585, 3642, 3648, 3662, 3664, 3673, 3713, 3714, 3716, 3716, 3718, 3722, 3724, 3747, 3749, 3749, 3751, 3773, 3776, 3780, 3782, 3782, 3784, 3790, 3792, 3801, 3804, 3807, 3840, 3840, 3864, 3865, 3872, 3881, 3893, 3893, 3895, 3895, 3897, 3897, 3902, 3911, 3913, 3948, 3953, 3972, 3974, 3991, 3993, 4028, 4038, 4038, 4096, 4169, 4176, 4253, 4256, 4293, 4295, 4295, 4301, 4301, 4304, 4346, 4348, 4680, 4682, 4685, 4688, 4694, 4696, 4696, 4698, 4701, 4704, 4744, 4746, 4749, 4752, 4784, 4786, 4789, 4792, 4798, 4800, 4800, 4802, 4805, 4808, 4822, 4824, 4880, 4882, 4885, 4888, 4954, 4957, 4959, 4969, 4977, 4992, 5007, 5024, 5109, 5112, 5117, 5121, 5740, 5743, 5759, 5761, 5786, 5792, 5866, 5870, 5880, 5888, 5909, 5919, 5940, 5952, 5971, 5984, 5996, 5998, 6000, 6002, 6003, 6016, 6099, 6103, 6103, 6108, 6109, 6112, 6121, 6155, 6157, 6159, 6169, 6176, 6264, 6272, 6314, 6320, 6389, 6400, 6430, 6432, 6443, 6448, 6459, 6470, 6509, 6512, 6516, 6528, 6571, 6576, 6601, 6608, 6618, 6656, 6683, 6688, 6750, 6752, 6780, 6783, 6793, 6800, 6809, 6823, 6823, 6832, 6845, 6847, 6862, 6912, 6988, 6992, 7001, 7019, 7027, 7040, 7155, 7168, 7223, 7232, 7241, 7245, 7293, 7296, 7306, 7312, 7354, 7357, 7359, 7376, 7378, 7380, 7418, 7424, 7957, 7960, 7965, 7968, 8005, 8008, 8013, 8016, 8023, 8025, 8025, 8027, 8027, 8029, 8029, 8031, 8061, 8064, 8116, 8118, 8124, 8126, 8126, 8130, 8132, 8134, 8140, 8144, 8147, 8150, 8155, 8160, 8172, 8178, 8180, 8182, 8188, 8204, 8205, 8255, 8256, 8276, 8276, 8305, 8305, 8319, 8319, 8336, 8348, 8400, 8412, 8417, 8417, 8421, 8432, 8450, 8450, 8455, 8455, 8458, 8467, 8469, 8469, 8472, 8477, 8484, 8484, 8486, 8486, 8488, 8488, 8490, 8505, 8508, 8511, 8517, 8521, 8526, 8526, 8544, 8584, 11264, 11492, 11499, 11507, 11520, 11557, 11559, 11559, 11565, 11565, 11568, 11623, 11631, 11631, 11647, 11670, 11680, 11686, 11688, 11694, 11696, 11702, 11704, 11710, 11712, 11718, 11720, 11726, 11728, 11734, 11736, 11742, 11744, 11775, 12293, 12295, 12321, 12335, 12337, 12341, 12344, 12348, 12353, 12438, 12441, 12442, 12445, 12447, 12449, 12543, 12549, 12591, 12593, 12686, 12704, 12735, 12784, 12799, 13312, 19903, 19968, 42124, 42192, 42237, 42240, 42508, 42512, 42539, 42560, 42607, 42612, 42621, 42623, 42737, 42775, 42783, 42786, 42888, 42891, 42957, 42960, 42961, 42963, 42963, 42965, 42972, 42994, 43047, 43052, 43052, 43072, 43123, 43136, 43205, 43216, 43225, 43232, 43255, 43259, 43259, 43261, 43309, 43312, 43347, 43360, 43388, 43392, 43456, 43471, 43481, 43488, 43518, 43520, 43574, 43584, 43597, 43600, 43609, 43616, 43638, 43642, 43714, 43739, 43741, 43744, 43759, 43762, 43766, 43777, 43782, 43785, 43790, 43793, 43798, 43808, 43814, 43816, 43822, 43824, 43866, 43868, 43881, 43888, 44010, 44012, 44013, 44016, 44025, 44032, 55203, 55216, 55238, 55243, 55291, 63744, 64109, 64112, 64217, 64256, 64262, 64275, 64279, 64285, 64296, 64298, 64310, 64312, 64316, 64318, 64318, 64320, 64321, 64323, 64324, 64326, 64433, 64467, 64605, 64612, 64829, 64848, 64911, 64914, 64967, 65008, 65017, 65024, 65039, 65056, 65071, 65075, 65076, 65101, 65103, 65137, 65137, 65139, 65139, 65143, 65143, 65145, 65145, 65147, 65147, 65149, 65149, 65151, 65276, 65296, 65305, 65313, 65338, 65343, 65343, 65345, 65370, 65381, 65470, 65474, 65479, 65482, 65487, 65490, 65495, 65498, 65500, 65536, 65547, 65549, 65574, 65576, 65594, 65596, 65597, 65599, 65613, 65616, 65629, 65664, 65786, 65856, 65908, 66045, 66045, 66176, 66204, 66208, 66256, 66272, 66272, 66304, 66335, 66349, 66378, 66384, 66426, 66432, 66461, 66464, 66499, 66504, 66511, 66513, 66517, 66560, 66717, 66720, 66729, 66736, 66771, 66776, 66811, 66816, 66855, 66864, 66915, 66928, 66938, 66940, 66954, 66956, 66962, 66964, 66965, 66967, 66977, 66979, 66993, 66995, 67001, 67003, 67004, 67008, 67059, 67072, 67382, 67392, 67413, 67424, 67431, 67456, 67461, 67463, 67504, 67506, 67514, 67584, 67589, 67592, 67592, 67594, 67637, 67639, 67640, 67644, 67644, 67647, 67669, 67680, 67702, 67712, 67742, 67808, 67826, 67828, 67829, 67840, 67861, 67872, 67897, 67968, 68023, 68030, 68031, 68096, 68099, 68101, 68102, 68108, 68115, 68117, 68119, 68121, 68149, 68152, 68154, 68159, 68159, 68192, 68220, 68224, 68252, 68288, 68295, 68297, 68326, 68352, 68405, 68416, 68437, 68448, 68466, 68480, 68497, 68608, 68680, 68736, 68786, 68800, 68850, 68864, 68903, 68912, 68921, 68928, 68965, 68969, 68973, 68975, 68997, 69248, 69289, 69291, 69292, 69296, 69297, 69314, 69316, 69372, 69404, 69415, 69415, 69424, 69456, 69488, 69509, 69552, 69572, 69600, 69622, 69632, 69702, 69734, 69749, 69759, 69818, 69826, 69826, 69840, 69864, 69872, 69881, 69888, 69940, 69942, 69951, 69956, 69959, 69968, 70003, 70006, 70006, 70016, 70084, 70089, 70092, 70094, 70106, 70108, 70108, 70144, 70161, 70163, 70199, 70206, 70209, 70272, 70278, 70280, 70280, 70282, 70285, 70287, 70301, 70303, 70312, 70320, 70378, 70384, 70393, 70400, 70403, 70405, 70412, 70415, 70416, 70419, 70440, 70442, 70448, 70450, 70451, 70453, 70457, 70459, 70468, 70471, 70472, 70475, 70477, 70480, 70480, 70487, 70487, 70493, 70499, 70502, 70508, 70512, 70516, 70528, 70537, 70539, 70539, 70542, 70542, 70544, 70581, 70583, 70592, 70594, 70594, 70597, 70597, 70599, 70602, 70604, 70611, 70625, 70626, 70656, 70730, 70736, 70745, 70750, 70753, 70784, 70853, 70855, 70855, 70864, 70873, 71040, 71093, 71096, 71104, 71128, 71133, 71168, 71232, 71236, 71236, 71248, 71257, 71296, 71352, 71360, 71369, 71376, 71395, 71424, 71450, 71453, 71467, 71472, 71481, 71488, 71494, 71680, 71738, 71840, 71913, 71935, 71942, 71945, 71945, 71948, 71955, 71957, 71958, 71960, 71989, 71991, 71992, 71995, 72003, 72016, 72025, 72096, 72103, 72106, 72151, 72154, 72161, 72163, 72164, 72192, 72254, 72263, 72263, 72272, 72345, 72349, 72349, 72368, 72440, 72640, 72672, 72688, 72697, 72704, 72712, 72714, 72758, 72760, 72768, 72784, 72793, 72818, 72847, 72850, 72871, 72873, 72886, 72960, 72966, 72968, 72969, 72971, 73014, 73018, 73018, 73020, 73021, 73023, 73031, 73040, 73049, 73056, 73061, 73063, 73064, 73066, 73102, 73104, 73105, 73107, 73112, 73120, 73129, 73440, 73462, 73472, 73488, 73490, 73530, 73534, 73538, 73552, 73562, 73648, 73648, 73728, 74649, 74752, 74862, 74880, 75075, 77712, 77808, 77824, 78895, 78912, 78933, 78944, 82938, 82944, 83526, 90368, 90425, 92160, 92728, 92736, 92766, 92768, 92777, 92784, 92862, 92864, 92873, 92880, 92909, 92912, 92916, 92928, 92982, 92992, 92995, 93008, 93017, 93027, 93047, 93053, 93071, 93504, 93548, 93552, 93561, 93760, 93823, 93952, 94026, 94031, 94087, 94095, 94111, 94176, 94177, 94179, 94180, 94192, 94193, 94208, 100343, 100352, 101589, 101631, 101640, 110576, 110579, 110581, 110587, 110589, 110590, 110592, 110882, 110898, 110898, 110928, 110930, 110933, 110933, 110948, 110951, 110960, 111355, 113664, 113770, 113776, 113788, 113792, 113800, 113808, 113817, 113821, 113822, 118000, 118009, 118528, 118573, 118576, 118598, 119141, 119145, 119149, 119154, 119163, 119170, 119173, 119179, 119210, 119213, 119362, 119364, 119808, 119892, 119894, 119964, 119966, 119967, 119970, 119970, 119973, 119974, 119977, 119980, 119982, 119993, 119995, 119995, 119997, 120003, 120005, 120069, 120071, 120074, 120077, 120084, 120086, 120092, 120094, 120121, 120123, 120126, 120128, 120132, 120134, 120134, 120138, 120144, 120146, 120485, 120488, 120512, 120514, 120538, 120540, 120570, 120572, 120596, 120598, 120628, 120630, 120654, 120656, 120686, 120688, 120712, 120714, 120744, 120746, 120770, 120772, 120779, 120782, 120831, 121344, 121398, 121403, 121452, 121461, 121461, 121476, 121476, 121499, 121503, 121505, 121519, 122624, 122654, 122661, 122666, 122880, 122886, 122888, 122904, 122907, 122913, 122915, 122916, 122918, 122922, 122928, 122989, 123023, 123023, 123136, 123180, 123184, 123197, 123200, 123209, 123214, 123214, 123536, 123566, 123584, 123641, 124112, 124153, 124368, 124410, 124896, 124902, 124904, 124907, 124909, 124910, 124912, 124926, 124928, 125124, 125136, 125142, 125184, 125259, 125264, 125273, 126464, 126467, 126469, 126495, 126497, 126498, 126500, 126500, 126503, 126503, 126505, 126514, 126516, 126519, 126521, 126521, 126523, 126523, 126530, 126530, 126535, 126535, 126537, 126537, 126539, 126539, 126541, 126543, 126545, 126546, 126548, 126548, 126551, 126551, 126553, 126553, 126555, 126555, 126557, 126557, 126559, 126559, 126561, 126562, 126564, 126564, 126567, 126570, 126572, 126578, 126580, 126583, 126585, 126588, 126590, 126590, 126592, 126601, 126603, 126619, 126625, 126627, 126629, 126633, 126635, 126651, 130032, 130041, 131072, 173791, 173824, 177977, 177984, 178205, 178208, 183969, 183984, 191456, 191472, 192093, 194560, 195101, 196608, 201546, 201552, 205743, 917760, 917999}}
-var cls1159 = pegort.Class{ASCII: [2]uint64{0x0, 0x400000004}}
-var steps1160 = []pegort.ClassStep{{C: &cls1159, ID: 117}, {C: &cls1125, ID: 116}}
-var steps1161 = []pegort.ClassStep{{C: &cls1125, ID: 116}, {C: &cls1159, ID: 117}}
+var cls1137 = pegort.Class{ASCII: [2]uint64{0xffffffffffffdbfe, 0xfeffffffffffffff}, Wide: []rune{128, 1114111}, Neg: true}
+var cls1138 = pegort.Class{ASCII: [2]uint64{0x0, 0x4000000040000}}
+var cls1139 = pegort.Class{ASCII: [2]uint64{0x0, 0x4000000040}}
+var steps1140 = []pegort.ClassStep{{C: &cls1138, ID: 116}, {C: &cls1139, ID: 142}}
+var steps1141 = []pegort.ClassStep{{C: &cls1139, ID: 142}, {C: &cls1138, ID: 116}}
+var cls1142 = pegort.Class{ASCII: [2]uint64{0x0, 0x10000000100000}}
+var steps1143 = []pegort.ClassStep{{C: &cls1138, ID: 116}, {C: &cls1142, ID: 144}}
+var steps1144 = []pegort.ClassStep{{C: &cls1142, ID: 144}, {C: &cls1138, ID: 116}}
+var cls1145 = pegort.Class{ASCII: [2]uint64{0xffffffffffffdbfe, 0xd6dfffffffdfbfff}, Neg: true}
+var cls1157 = pegort.Class{ASCII: [2]uint64{0x0, 0x100800401008004}}
+var cls1158 = pegort.Class{ASCII: [2]uint64{0x0, 0x0}, Wide: []rune{170, 170, 181, 181, 186, 186, 192, 214, 216, 246, 248, 705, 710, 721, 736, 740, 748, 748, 750, 750, 880, 884, 886, 887, 891, 893, 895, 895, 902, 902, 904, 906, 908, 908, 910, 929, 931, 1013, 1015, 1153, 1162, 1327, 1329, 1366, 1369, 1369, 1376, 1416, 1488, 1514, 1519, 1522, 1568, 1610, 1646, 1647, 1649, 1747, 1749, 1749, 1765, 1766, 1774, 1775, 1786, 1788, 1791, 1791, 1808, 1808, 1810, 1839, 1869, 1957, 1969, 1969, 1994, 2026, 2036, 2037, 2042, 2042, 2048, 2069, 2074, 2074, 2084, 2084, 2088, 2088, 2112, 2136, 2144, 2154, 2160, 2183, 2185, 2190, 2208, 2249, 2308, 2361, 2365, 2365, 2384, 2384, 2392, 2401, 2417, 2432, 2437, 2444, 2447, 2448, 2451, 2472, 2474, 2480, 2482, 2482, 2486, 2489, 2493, 2493, 2510, 2510, 2524, 2525, 2527, 2529, 2544, 2545, 2556, 2556, 2565, 2570, 2575, 2576, 2579, 2600, 2602, 2608, 2610, 2611, 2613, 2614, 2616, 2617, 2649, 2652, 2654, 2654, 2674, 2676, 2693, 2701, 2703, 2705, 2707, 2728, 2730, 2736, 2738, 2739, 2741, 2745, 2749, 2749, 2768, 2768, 2784, 2785, 2809, 2809, 2821, 2828, 2831, 2832, 2835, 2856, 2858, 2864, 2866, 2867, 2869, 2873, 2877, 2877, 2908, 2909, 2911, 2913, 2929, 2929, 2947, 2947, 2949, 2954, 2958, 2960, 2962, 2965, 2969, 2970, 2972, 2972, 2974, 2975, 2979, 2980, 2984, 2986, 2990, 3001, 3024, 3024, 3077, 3084, 3086, 3088, 3090, 3112, 3114, 3129, 3133, 3133, 3160, 3162, 3165, 3165, 3168, 3169, 3200, 3200, 3205, 3212, 3214, 3216, 3218, 3240, 3242, 3251, 3253, 3257, 3261, 3261, 3293, 3294, 3296, 3297, 3313, 3314, 3332, 3340, 3342, 3344, 3346, 3386, 3389, 3389, 3406, 3406, 3412, 3414, 3423, 3425, 3450, 3455, 3461, 3478, 3482, 3505, 3507, 3515, 3517, 3517, 3520, 3526, 3585, 3632, 3634, 3634, 3648, 3654, 3713, 3714, 3716, 3716, 3718, 3722, 3724, 3747, 3749, 3749, 3751, 3760, 3762, 3762, 3773, 3773, 3776, 3780, 3782, 3782, 3804, 3807, 3840, 3840, 3904, 3911, 3913, 3948, 3976, 3980, 4096, 4138, 4159, 4159, 4176, 4181, 4186, 4189, 4193, 4193, 4197, 4198, 4206, 4208, 4213, 4225, 4238, 4238, 4256, 4293, 4295, 4295, 4301, 4301, 4304, 4346, 4348, 4680, 4682, 4685, 4688, 4694, 4696, 4696, 4698, 4701, 4704, 4744, 4746, 4749, 4752, 4784, 4786, 4789, 4792, 4798, 4800, 4800, 4802, 4805, 4808, 4822, 4824, 4880, 4882, 4885, 4888, 4954, 4992, 5007, 5024, 5109, 5112, 5117, 5121, 5740, 5743, 5759, 5761, 5786, 5792, 5866, 5870, 5880, 5888, 5905, 5919, 5937, 5952, 5969, 5984, 5996, 5998, 6000, 6016, 6067, 6103, 6103, 6108, 6108, 6176, 6264, 6272, 6312, 6314, 6314, 6320, 6389, 6400, 6430, 6480, 6509, 6512, 6516, 6528, 6571, 6576, 6601, 6656, 6678, 6688, 6740, 6823, 6823, 6917, 6963, 6981, 6988, 7043, 7072, 7086, 7087, 7098, 7141, 7168, 7203, 7245, 7247, 7258, 7293, 7296, 7306, 7312, 7354, 7357, 7359, 7401, 7404, 7406, 7411, 7413, 7414, 7418, 7418, 7424, 7615, 7680, 7957, 7960, 7965, 7968, 8005, 8008, 8013, 8016, 8023, 8025, 8025, 8027, 8027, 8029, 8029, 8031, 8061, 8064, 8116, 8118, 8124, 8126, 8126, 8130, 8132, 8134, 8140, 8144, 8147, 8150, 8155, 8160, 8172, 8178, 8180, 8182, 8188, 8305, 8305, 8319, 8319, 8336, 8348, 8450, 8450, 8455, 8455, 8458, 8467, 8469, 8469, 8472, 8477, 8484, 8484, 8486, 8486, 8488, 8488, 8490, 8505, 8508, 8511, 8517, 8521, 8526, 8526, 8544, 8584, 11264, 11492, 11499, 11502, 11506, 11507, 11520, 11557, 11559, 11559, 11565, 11565, 11568, 11623, 11631, 11631, 11648, 11670, 11680, 11686, 11688, 11694, 11696, 11702, 11704, 11710, 11712, 11718, 11720, 11726, 11728, 11734, 11736, 11742, 12293, 12295, 12321, 12329, 12337, 12341, 12344, 12348, 12353, 12438, 12445, 12447, 12449, 12538, 12540, 12543, 12549, 12591, 12593, 12686, 12704, 12735, 12784, 12799, 13312, 19903, 19968, 42124, 42192, 42237, 42240, 42508, 42512, 42527, 42538, 42539, 42560, 42606, 42623, 42653, 42656, 42735, 42775, 42783, 42786, 42888, 42891, 42957, 42960, 42961, 42963, 42963, 42965, 42972, 42994, 43009, 43011, 43013, 43015, 43018, 43020, 43042, 43072, 43123, 43138, 43187, 43250, 43255, 43259, 43259, 43261, 43262, 43274, 43301, 43312, 43334, 43360, 43388, 43396, 43442, 43471, 43471, 43488, 43492, 43494, 43503, 43514, 43518, 43520, 43560, 43584, 43586, 43588, 43595, 43616, 43638, 43642, 43642, 43646, 43695, 43697, 43697, 43701, 43702, 43705, 43709, 43712, 43712, 43714, 43714, 43739, 43741, 43744, 43754, 43762, 43764, 43777, 43782, 43785, 43790, 43793, 43798, 43808, 43814, 43816, 43822, 43824, 43866, 43868, 43881, 43888, 44002, 44032, 55203, 55216, 55238, 55243, 55291, 63744, 64109, 64112, 64217, 64256, 64262, 64275, 64279, 64285, 64285, 64287, 64296, 64298, 64310, 64312, 64316, 64318, 64318, 64320, 64321, 64323, 64324, 64326, 64433, 64467, 64605, 64612, 64829, 64848, 64911, 64914, 64967, 65008, 65017, 65137, 65137, 65139, 65139, 65143, 65143, 65145, 65145, 65147, 65147, 65149, 65149, 65151, 65276, 65313, 65338, 65345, 65370, 65382, 65437, 65440, 65470, 65474, 65479, 65482, 65487, 65490, 65495, 65498, 65500, 65536, 65547, 65549, 65574, 65576, 65594, 65596, 65597, 65599, 65613, 65616, 65629, 65664, 65786, 65856, 65908, 66176, 66204, 66208, 66256, 66304, 66335, 66349, 66378, 66384, 66421, 66432, 66461, 66464, 66499, 66504, 66511, 66513, 66517, 66560, 66717, 66736, 66771, 66776, 66811, 66816, 66855, 66864, 66915, 66928, 66938, 66940, 66954, 66956, 66962, 66964, 66965, 66967, 66977, 66979, 66993, 66995, 67001, 67003, 67004, 67008, 67059, 67072, 67382, 67392, 67413, 67424, 67431, 67456, 67461, 67463, 67504, 67506, 67514, 67584, 67589, 67592, 67592, 67594, 67637, 67639, 67640, 67644, 67644, 67647, 67669, 67680, 67702, 67712, 67742, 67808, 67826, 67828, 67829, 67840, 67861, 67872, 67897, 67968, 68023, 68030, 68031, 68096, 68096, 68112, 68115, 68117, 68119, 68121, 68149, 68192, 68220, 68224, 68252, 68288, 68295, 68297, 68324, 68352, 68405, 68416, 68437, 68448, 68466, 68480, 68497, 68608, 68680, 68736, 68786, 68800, 68850, 68864, 68899, 68938, 68965, 68975, 68997, 69248, 69289, 69296, 69297, 69314, 69316, 69376, 69404, 69415, 69415, 69424, 69445, 69488, 69505, 69552, 69572, 69600, 69622, 69635, 69687, 69745, 69746, 69749, 69749, 69763, 69807, 69840, 69864, 69891, 69926, 69956, 69956, 69959, 69959, 69968, 70002, 70006, 70006, 70019, 70066, 70081, 70084, 70106, 70106, 70108, 70108, 70144, 70161, 70163, 70187, 70207, 70208, 70272, 70278, 70280, 70280, 70282, 70285, 70287, 70301, 70303, 70312, 70320, 70366, 70405, 70412, 70415, 70416, 70419, 70440, 70442, 70448, 70450, 70451, 70453, 70457, 70461, 70461, 70480, 70480, 70493, 70497, 70528, 70537, 70539, 70539, 70542, 70542, 70544, 70581, 70583, 70583, 70609, 70609, 70611, 70611, 70656, 70708, 70727, 70730, 70751, 70753, 70784, 70831, 70852, 70853, 70855, 70855, 71040, 71086, 71128, 71131, 71168, 71215, 71236, 71236, 71296, 71338, 71352, 71352, 71424, 71450, 71488, 71494, 71680, 71723, 71840, 71903, 71935, 71942, 71945, 71945, 71948, 71955, 71957, 71958, 71960, 71983, 71999, 71999, 72001, 72001, 72096, 72103, 72106, 72144, 72161, 72161, 72163, 72163, 72192, 72192, 72203, 72242, 72250, 72250, 72272, 72272, 72284, 72329, 72349, 72349, 72368, 72440, 72640, 72672, 72704, 72712, 72714, 72750, 72768, 72768, 72818, 72847, 72960, 72966, 72968, 72969, 72971, 73008, 73030, 73030, 73056, 73061, 73063, 73064, 73066, 73097, 73112, 73112, 73440, 73458, 73474, 73474, 73476, 73488, 73490, 73523, 73648, 73648, 73728, 74649, 74752, 74862, 74880, 75075, 77712, 77808, 77824, 78895, 78913, 78918, 78944, 82938, 82944, 83526, 90368, 90397, 92160, 92728, 92736, 92766, 92784, 92862, 92880, 92909, 92928, 92975, 92992, 92995, 93027, 93047, 93053, 93071, 93504, 93548, 93760, 93823, 93952, 94026, 94032, 94032, 94099, 94111, 94176, 94177, 94179, 94179, 94208, 100343, 100352, 101589, 101631, 101640, 110576, 110579, 110581, 110587, 110589, 110590, 110592, 110882, 110898, 110898, 110928, 110930, 110933, 110933, 110948, 110951, 110960, 111355, 113664, 113770, 113776, 113788, 113792, 113800, 113808, 113817, 119808, 119892, 119894, 119964, 119966, 119967, 119970, 119970, 119973, 119974, 119977, 119980, 119982, 119993, 119995, 119995, 119997, 120003, 120005, 120069, 120071, 120074, 120077, 120084, 120086, 120092, 120094, 120121, 120123, 120126, 120128, 120132, 120134, 120134, 120138, 120144, 120146, 120485, 120488, 120512, 120514, 120538, 120540, 120570, 120572, 120596, 120598, 120628, 120630, 120654, 120656, 120686, 120688, 120712, 120714, 120744, 120746, 120770, 120772, 120779, 122624, 122654, 122661, 122666, 122928, 122989, 123136, 123180, 123191, 123197, 123214, 123214, 123536, 123565, 123584, 123627, 124112, 124139, 124368, 124397, 124400, 124400, 124896, 124902, 124904, 124907, 124909, 124910, 124912, 124926, 124928, 125124, 125184, 125251, 125259, 125259, 126464, 126467, 126469, 126495, 126497, 126498, 126500, 126500, 126503, 126503, 126505, 126514, 126516, 126519, 126521, 126521, 126523, 126523, 126530, 126530, 126535, 126535, 126537, 126537, 126539, 126539, 126541, 126543, 126545, 126546, 126548, 126548, 126551, 126551, 126553, 126553, 126555, 126555, 126557, 126557, 126559, 126559, 126561, 126562, 126564, 126564, 126567, 126570, 126572, 126578, 126580, 126583, 126585, 126588, 126590, 126590, 126592, 126601, 126603, 126619, 126625, 126627, 126629, 126633, 126635, 126651, 131072, 173791, 173824, 177977, 177984, 178205, 178208, 183969, 183984, 191456, 191472, 192093, 194560, 195101, 196608, 201546, 201552, 205743}}
+var cls1159 = pegort.Class{ASCII: [2]uint64{0x0, 0x0}, Wide: []rune{170, 170, 181, 181, 183, 183, 186, 186, 192, 214, 216, 246, 248, 705, 710, 721, 736, 740, 748, 748, 750, 750, 768, 884, 886, 887, 891, 893, 895, 895, 902, 906, 908, 908, 910, 929, 931, 1013, 1015, 1153, 1155, 1159, 1162, 1327, 1329, 1366, 1369, 1369, 1376, 1416, 1425, 1469, 1471, 1471, 1473, 1474, 1476, 1477, 1479, 1479, 1488, 1514, 1519, 1522, 1552, 1562, 1568, 1641, 1646, 1747, 1749, 1756, 1759, 1768, 1770, 1788, 1791, 1791, 1808, 1866, 1869, 1969, 1984, 2037, 2042, 2042, 2045, 2045, 2048, 2093, 2112, 2139, 2144, 2154, 2160, 2183, 2185, 2190, 2199, 2273, 2275, 2403, 2406, 2415, 2417, 2435, 2437, 2444, 2447, 2448, 2451, 2472, 2474, 2480, 2482, 2482, 2486, 2489, 2492, 2500, 2503, 2504, 2507, 2510, 2519, 2519, 2524, 2525, 2527, 2531, 2534, 2545, 2556, 2556, 2558, 2558, 2561, 2563, 2565, 2570, 2575, 2576, 2579, 2600, 2602, 2608, 2610, 2611, 2613, 2614, 2616, 2617, 2620, 2620, 2622, 2626, 2631, 2632, 2635, 2637, 2641, 2641, 2649, 2652, 2654, 2654, 2662, 2677, 2689, 2691, 2693, 2701, 2703, 2705, 2707, 2728, 2730, 2736, 2738, 2739, 2741, 2745, 2748, 2757, 2759, 2761, 2763, 2765, 2768, 2768, 2784, 2787, 2790, 2799, 2809, 2815, 2817, 2819, 2821, 2828, 2831, 2832, 2835, 2856, 2858, 2864, 2866, 2867, 2869, 2873, 2876, 2884, 2887, 2888, 2891, 2893, 2901, 2903, 2908, 2909, 2911, 2915, 2918, 2927, 2929, 2929, 2946, 2947, 2949, 2954, 2958, 2960, 2962, 2965, 2969, 2970, 2972, 2972, 2974, 2975, 2979, 2980, 2984, 2986, 2990, 3001, 3006, 3010, 3014, 3016, 3018, 3021, 3024, 3024, 3031, 3031, 3046, 3055, 3072, 3084, 3086, 3088, 3090, 3112, 3114, 3129, 3132, 3140, 3142, 3144, 3146, 3149, 3157, 3158, 3160, 3162, 3165, 3165, 3168, 3171, 3174, 3183, 3200, 3203, 3205, 3212, 3214, 3216, 3218, 3240, 3242, 3251, 3253, 3257, 3260, 3268, 3270, 3272, 3274, 3277, 3285, 3286, 3293, 3294, 3296, 3299, 3302, 3311, 3313, 3315, 3328, 3340, 3342, 3344, 3346, 3396, 3398, 3400, 3402, 3406, 3412, 3415, 3423, 3427, 3430, 3439, 3450, 3455, 3457, 3459, 3461, 3478, 3482, 3505, 3507, 3515, 3517, 3517, 3520, 3526, 3530, 3530, 3535, 3540, 3542, 3542, 3544, 3551, 3558, 3567, 3570, 3571, 3585, 3642, 3648, 3662, 3664, 3673, 3713, 3714, 3716, 3716, 3718, 3722, 3724, 3747, 3749, 3749, 3751, 3773, 3776, 3780, 3782, 3782, 3784, 3790, 3792, 3801, 3804, 3807, 3840, 3840, 3864, 3865, 3872, 3881, 3893, 3893, 3895, 3895, 3897, 3897, 3902, 3911, 3913, 3948, 3953, 3972, 3974, 3991, 3993, 4028, 4038, 4038, 4096, 4169, 4176, 4253, 4256, 4293, 4295, 4295, 4301, 4301, 4304, 4346, 4348, 4680, 4682, 4685, 4688, 4694, 4696, 4696, 4698, 4701, 4704, 4744, 4746, 4749, 4752, 4784, 4786, 4789, 4792, 4798, 4800, 4800, 4802, 4805, 4808, 4822, 4824, 4880, 4882, 4885, 4888, 4954, 4957, 4959, 4969, 4977, 4992, 5007, 5024, 5109, 5112, 5117, 5121, 5740, 5743, 5759, 5761, 5786, 5792, 5866, 5870, 5880, 5888, 5909, 5919, 5940, 5952, 5971, 5984, 5996, 5998, 6000, 6002, 6003, 6016, 6099, 6103, 6103, 6108, 6109, 6112, 6121, 6155, 6157, 6159, 6169, 6176, 6264, 6272, 6314, 6320, 6389, 6400, 6430, 6432, 6443, 6448, 6459, 6470, 6509, 6512, 6516, 6528, 6571, 6576, 6601, 6608, 6618, 6656, 6683, 6688, 6750, 6752, 6780, 6783, 6793, 6800, 6809, 6823, 6823, 6832, 6845, 6847, 6862, 6912, 6988, 6992, 7001, 7019, 7027, 7040, 7155, 7168, 7223, 7232, 7241, 7245, 7293, 7296, 7306, 7312, 7354, 7357, 7359, 7376, 7378, 7380, 7418, 7424, 7957, 7960, 7965, 7968, 8005, 8008, 8013, 8016, 8023, 8025, 8025, 8027, 8027, 8029, 8029, 8031, 8061, 8064, 8116, 8118, 8124, 8126, 8126, 8130, 8132, 8134, 8140, 8144, 8147, 8150, 8155, 8160, 8172, 8178, 8180, 8182, 8188, 8204, 8205, 8255, 8256, 8276, 8276, 8305, 8305, 8319, 8319, 8336, 8348, 8400, 8412, 8417, 8417, 8421, 8432, 8450, 8450, 8455, 8455, 8458, 8467, 8469, 8469, 8472, 8477, 8484, 8484, 8486, 8486, 8488, 8488, 8490, 8505, 8508, 8511, 8517, 8521, 8526, 8526, 8544, 8584, 11264, 11492, 11499, 11507, 11520, 11557, 11559, 11559, 11565, 11565, 11568, 11623, 11631, 11631, 11647, 11670, 11680, 11686, 11688, 11694, 11696, 11702, 11704, 11710, 11712, 11718, 11720, 11726, 11728, 11734, 11736, 11742, 11744, 11775, 12293, 12295, 12321, 12335, 12337, 12341, 12344, 12348, 12353, 12438, 12441, 12442, 12445, 12447, 12449, 12543, 12549, 12591, 12593, 12686, 12704, 12735, 12784, 12799, 13312, 19903, 19968, 42124, 42192, 42237, 42240, 42508, 42512, 42539, 42560, 42607, 42612, 42621, 42623, 42737, 42775, 42783, 42786, 42888, 42891, 42957, 42960, 42961, 42963, 42963, 42965, 42972, 42994, 43047, 43052, 43052, 43072, 43123, 43136, 43205, 43216, 43225, 43232, 43255, 43259, 43259, 43261, 43309, 43312, 43347, 43360, 43388, 43392, 43456, 43471, 43481, 43488, 43518, 43520, 43574, 43584, 43597, 43600, 43609, 43616, 43638, 43642, 43714, 43739, 43741, 43744, 43759, 43762, 43766, 43777, 43782, 43785, 43790, 43793, 43798, 43808, 43814, 43816, 43822, 43824, 43866, 43868, 43881, 43888, 44010, 44012, 44013, 44016, 44025, 44032, 55203, 55216, 55238, 55243, 55291, 63744, 64109, 64112, 64217, 64256, 64262, 64275, 64279, 64285, 64296, 64298, 64310, 64312, 64316, 64318, 64318, 64320, 64321, 64323, 64324, 64326, 64433, 64467, 64605, 64612, 64829, 64848, 64911, 64914, 64967, 65008, 65017, 65024, 65039, 65056, 65071, 65075, 65076, 65101, 65103, 65137, 65137, 65139, 65139, 65143, 65143, 65145, 65145, 65147, 65147, 65149, 65149, 65151, 65276, 65296, 65305, 65313, 65338, 65343, 65343, 65345, 65370, 65381, 65470, 65474, 65479, 65482, 65487, 65490, 65495, 65498, 65500, 65536, 65547, 65549, 65574, 65576, 65594, 65596, 65597, 65599, 65613, 65616, 65629, 65664, 65786, 65856, 65908, 66045, 66045, 66176, 66204, 66208, 66256, 66272, 66272, 66304, 66335, 66349, 66378, 66384, 66426, 66432, 66461, 66464, 66499, 66504, 66511, 66513, 66517, 66560, 66717, 66720, 66729, 66736, 66771, 66776, 66811, 66816, 66855, 66864, 66915, 66928, 66938, 66940, 66954, 66956, 66962, 66964, 66965, 66967, 66977, 66979, 66993, 66995, 67001, 67003, 67004, 67008, 67059, 67072, 67382, 67392, 67413, 67424, 67431, 67456, 67461, 67463, 67504, 67506, 67514, 67584, 67589, 67592, 67592, 67594, 67637, 67639, 67640, 67644, 67644, 67647, 67669, 67680, 67702, 67712, 67742, 67808, 67826, 67828, 67829, 67840, 67861, 67872, 67897, 67968, 68023, 68030, 68031, 68096, 68099, 68101, 68102, 68108, 68115, 68117, 68119, 68121, 68149, 68152, 68154, 68159, 68159, 68192, 68220, 68224, 68252, 68288, 68295, 68297, 68326, 68352, 68405, 68416, 68437, 68448, 68466, 68480, 68497, 68608, 68680, 68736, 68786, 68800, 68850, 68864, 68903, 68912, 68921, 68928, 68965, 68969, 68973, 68975, 68997, 69248, 69289, 69291, 69292, 69296, 69297, 69314, 69316, 69372, 69404, 69415, 69415, 69424, 69456, 69488, 69509, 69552, 69572, 69600, 69622, 69632, 69702, 69734, 69749, 69759, 69818, 69826, 69826, 69840, 69864, 69872, 69881, 69888, 69940, 69942, 69951, 69956, 69959, 69968, 70003, 70006, 70006, 70016, 70084, 70089, 70092, 70094, 70106, 70108, 70108, 70144, 70161, 70163, 70199, 70206, 70209, 70272, 70278, 70280, 70280, 70282, 70285, 70287, 70301, 70303, 70312, 70320, 70378, 70384, 70393, 70400, 70403, 70405, 70412, 70415, 70416, 70419, 70440, 70442, 70448, 70450, 70451, 70453, 70457, 70459, 70468, 70471, 70472, 70475, 70477, 70480, 70480, 70487, 70487, 70493, 70499, 70502, 70508, 70512, 70516, 70528, 70537, 70539, 70539, 70542, 70542, 70544, 70581, 70583, 70592, 70594, 70594, 70597, 70597, 70599, 70602, 70604, 70611, 70625, 70626, 70656, 70730, 70736, 70745, 70750, 70753, 70784, 70853, 70855, 70855, 70864, 70873, 71040, 71093, 71096, 71104, 71128, 71133, 71168, 71232, 71236, 71236, 71248, 71257, 71296, 71352, 71360, 71369, 71376, 71395, 71424, 71450, 71453, 71467, 71472, 71481, 71488, 71494, 71680, 71738, 71840, 71913, 71935, 71942, 71945, 71945, 71948, 71955, 71957, 71958, 71960, 71989, 71991, 71992, 71995, 72003, 72016, 72025, 72096, 72103, 72106, 72151, 72154, 72161, 72163, 72164, 72192, 72254, 72263, 72263, 72272, 72345, 72349, 72349, 72368, 72440, 72640, 72672, 72688, 72697, 72704, 72712, 72714, 72758, 72760, 72768, 72784, 72793, 72818, 72847, 72850, 72871, 72873, 72886, 72960, 72966, 72968, 72969, 72971, 73014, 73018, 73018, 73020, 73021, 73023, 73031, 73040, 73049, 73056, 73061, 73063, 73064, 73066, 73102, 73104, 73105, 73107, 73112, 73120, 73129, 73440, 73462, 73472, 73488, 73490, 73530, 73534, 73538, 73552, 73562, 73648, 73648, 73728, 74649, 74752, 74862, 74880, 75075, 77712, 77808, 77824, 78895, 78912, 78933, 78944, 82938, 82944, 83526, 90368, 90425, 92160, 92728, 92736, 92766, 92768, 92777, 92784, 92862, 92864, 92873, 92880, 92909, 92912, 92916, 92928, 92982, 92992, 92995, 93008, 93017, 93027, 93047, 93053, 93071, 93504, 93548, 93552, 93561, 93760, 93823, 93952, 94026, 94031, 94087, 94095, 94111, 94176, 94177, 94179, 94180, 94192, 94193, 94208, 100343, 100352, 101589, 101631, 101640, 110576, 110579, 110581, 110587, 110589, 110590, 110592, 110882, 110898, 110898, 110928, 110930, 110933, 110933, 110948, 110951, 110960, 111355, 113664, 113770, 113776, 113788, 113792, 113800, 113808, 113817, 113821, 113822, 118000, 118009, 118528, 118573, 118576, 118598, 119141, 119145, 119149, 119154, 119163, 119170, 119173, 119179, 119210, 119213, 119362, 119364, 119808, 119892, 119894, 119964, 119966, 119967, 119970, 119970, 119973, 119974, 119977, 119980, 119982, 119993, 119995, 119995, 119997, 120003, 120005, 120069, 120071, 120074, 120077, 120084, 120086, 120092, 120094, 120121, 120123, 120126, 120128, 120132, 120134, 120134, 120138, 120144, 120146, 120485, 120488, 120512, 120514, 120538, 120540, 120570, 120572, 120596, 120598, 120628, 120630, 120654, 120656, 120686, 120688, 120712, 120714, 120744, 120746, 120770, 120772, 120779, 120782, 120831, 121344, 121398, 121403, 121452, 121461, 121461, 121476, 121476, 121499, 121503, 121505, 121519, 122624, 122654, 122661, 122666, 122880, 122886, 122888, 122904, 122907, 122913, 122915, 122916, 122918, 122922, 122928, 122989, 123023, 123023, 123136, 123180, 123184, 123197, 123200, 123209, 123214, 123214, 123536, 123566, 123584, 123641, 124112, 124153, 124368, 124410, 124896, 124902, 124904, 124907, 124909, 124910, 124912, 124926, 124928, 125124, 125136, 125142, 125184, 125259, 125264, 125273, 126464, 126467, 126469, 126495, 126497, 126498, 126500, 126500, 126503, 126503, 126505, 126514, 126516, 126519, 126521, 126521, 126523, 126523, 126530, 126530, 126535, 126535, 126537, 126537, 126539, 126539, 126541, 126543, 126545, 126546, 126548, 126548, 126551, 126551, 126553, 126553, 126555, 126555, 126557, 126557, 126559, 126559, 126561, 126562, 126564, 126564, 126567, 126570, 126572, 126578, 126580, 126583, 126585, 126588, 126590, 126590, 126592, 126601, 126603, 126619, 126625, 126627, 126629, 126633, 126635, 126651, 130032, 130041, 131072, 173791, 173824, 177977, 177984, 178205, 178208, 183969, 183984, 191456, 191472, 192093, 194560, 195101, 196608, 201546, 201552, 205743, 917760, 917999}}
+var cls1172 = pegort.Class{ASCII: [2]uint64{0x0, 0x400000004}}
+var steps1173 = []pegort.ClassStep{{C: &cls1172, ID: 117}, {C: &cls1138, ID: 116}}
+var steps1174 = []pegort.ClassStep{{C: &cls1138, ID: 116}, {C: &cls1172, ID: 117}}
 
 func init() {
-	rules = []*pegort.Rule{
-		{Id: 0, Name: "main", Scope: []string{"b"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 1, Name: "first_stmts", Scope: []string{"i", "s"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 2, Name: "module_end", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 3, Name: "stmts", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 0, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 4, Name: "stmt_sep", Scope: []string{"i"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "lv"}},
-		{Id: 5, Name: "block", Scope: []string{"b"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 6, Name: "indented_block", Scope: []string{"i", "s"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 7, Name: "simple_stmts", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 8, Name: "clause_sep", Scope: []string{"i"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 2, Novalue: false, Vars: []string{"ind", "lv"}},
-		{Id: 9, Name: "indentation", Scope: []string{"segs", "tail"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 3, Novalue: false, Vars: []string{}},
-		{Id: 10, Name: "blank", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 4, Novalue: false, Vars: []string{}},
-		{Id: 11, Name: "eol", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 5, Novalue: false, Vars: []string{"lv"}},
-		{Id: 12, Name: "newline", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 13, Name: "comment", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 14, Name: "ws", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 15, Name: "stmt", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 6, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 16, Name: "simple_stmt", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 7, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 17, Name: "expr_stmt", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 18, Name: "assignment", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 19, Name: "ann_simple", Scope: []string{"t", "a", "x"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 20, Name: "ann_complex", Scope: []string{"t", "a", "x"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 21, Name: "assign_one", Scope: []string{"t", "v"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 22, Name: "assign_chain", Scope: []string{"ts", "v"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 23, Name: "aug_assign", Scope: []string{"t", "o", "v"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 24, Name: "augassign_op", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Op", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 25, Name: "annotated_rhs", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 8, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 26, Name: "pass_stmt", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 27, Name: "break_stmt", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 28, Name: "continue_stmt", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 29, Name: "return_stmt", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 30, Name: "raise_stmt", Scope: []string{"e", "c"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 31, Name: "global_stmt", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 32, Name: "nonlocal_stmt", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 33, Name: "del_stmt", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 34, Name: "assert_stmt", Scope: []string{"t", "m"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 35, Name: "yield_stmt", Scope: []string{"y"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 36, Name: "type_alias", Scope: []string{"n", "p", "v"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 37, Name: "import_stmt", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 38, Name: "dotted_as_name", Scope: []string{"d", "a"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 9, Novalue: false, Vars: []string{"lv"}},
-		{Id: 39, Name: "dotted_name", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 40, Name: "from_stmt", Scope: []string{"ds", "m", "ns"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 41, Name: "from_module", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 42, Name: "import_from_targets", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 43, Name: "paren_import_names", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 44, Name: "plain_import_names", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 45, Name: "star_import", Scope: []string{"a"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 46, Name: "star_alias", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 47, Name: "import_from_as_name", Scope: []string{"n", "a"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 10, Novalue: false, Vars: []string{"lv"}},
-		{Id: 48, Name: "compound_stmt", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 49, Name: "if_stmt", Scope: []string{"t", "b", "o"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 50, Name: "elif_part", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 11, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 51, Name: "elif_stmt", Scope: []string{"t", "b", "o"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 52, Name: "else_part", Scope: []string{"b"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 12, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 53, Name: "while_stmt", Scope: []string{"t", "b", "o"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 54, Name: "for_stmt", Scope: []string{"t", "i", "b", "o"}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 55, Name: "async_for", Scope: []string{"t", "i", "b", "o"}, Value: pegort.Shaper{Elems: true, K: 8, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 56, Name: "with_stmt", Scope: []string{"is", "b"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 57, Name: "async_with", Scope: []string{"is", "b"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 58, Name: "with_items", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 13, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 59, Name: "paren_with_items", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 60, Name: "plain_with_items", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 61, Name: "with_item", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 14, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 62, Name: "with_item_as", Scope: []string{"e", "t"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 63, Name: "with_item_plain", Scope: []string{"e"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 64, Name: "try_stmt", Scope: []string{"b", "hs", "xs", "e", "f"}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 65, Name: "finally_part", Scope: []string{"b"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 66, Name: "except_handler", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 67, Name: "except_as", Scope: []string{"t", "n", "b"}, Value: pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 68, Name: "except_plain", Scope: []string{"t", "b"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 69, Name: "except_bare", Scope: []string{"b"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 70, Name: "except_star_handler", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 71, Name: "except_star_as", Scope: []string{"t", "n", "b"}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 72, Name: "except_star_plain", Scope: []string{"t", "b"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 73, Name: "decorators", Scope: []string{"ds"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 15, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 74, Name: "dec_sep", Scope: []string{"i"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "lv"}},
-		{Id: 75, Name: "funcdef", Scope: []string{"ds", "n", "p", "a", "r", "b"}, Value: pegort.Shaper{Elems: true, K: 8, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 76, Name: "async_funcdef", Scope: []string{"ds", "n", "p", "a", "r", "b"}, Value: pegort.Shaper{Elems: true, K: 9, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 77, Name: "def_params", Scope: []string{"a"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 16, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 78, Name: "classdef", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 79, Name: "classdef_args", Scope: []string{"ds", "n", "p", "c", "b"}, Value: pegort.Shaper{Elems: true, K: 7, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 80, Name: "classdef_plain", Scope: []string{"ds", "n", "p", "b"}, Value: pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 81, Name: "match_stmt", Scope: []string{"s", "cs"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 82, Name: "subject_expr", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 83, Name: "subject_tuple", Scope: []string{"f", "r", "l"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 84, Name: "case_blocks", Scope: []string{"i", "f", "r"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 85, Name: "case_block", Scope: []string{"p", "g", "b"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 17, Novalue: false, Vars: []string{"ind", "isdict", "lv"}},
-		{Id: 86, Name: "patterns", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 87, Name: "open_sequence_pattern", Scope: []string{"s"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 88, Name: "open_seq_items", Scope: []string{"f", "r", "l"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 18, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 89, Name: "pattern", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 19, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 90, Name: "as_pattern", Scope: []string{"p", "n"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 91, Name: "or_pattern", Scope: []string{"f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 20, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 92, Name: "closed_pattern", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 21, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 93, Name: "literal_pattern", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 94, Name: "signed_number_pattern", Scope: []string{"v"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 95, Name: "complex_pattern", Scope: []string{"v"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 96, Name: "string_pattern", Scope: []string{"v"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 97, Name: "singleton_pattern", Scope: []string{"v"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 98, Name: "singleton", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "Constant", Seen: 22, Novalue: false, Vars: []string{}},
-		{Id: 99, Name: "literal_expr", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 100, Name: "signed_number_lit", Scope: []string{"v"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 101, Name: "signed_number", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 23, Novalue: false, Vars: []string{"lv"}},
-		{Id: 102, Name: "neg_number", Scope: []string{"o", "n"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 103, Name: "complex_number", Scope: []string{"r", "o", "i"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 24, Novalue: false, Vars: []string{"lv"}},
-		{Id: 104, Name: "signed_real_number", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 105, Name: "neg_real_number", Scope: []string{"o", "n"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 106, Name: "minus_op", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Op", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 107, Name: "plus_minus_op", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Op", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 108, Name: "capture_pattern", Scope: []string{"n"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 109, Name: "capture_name", Scope: []string{"n"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 25, Novalue: false, Vars: []string{"lv"}},
-		{Id: 110, Name: "wildcard_pattern", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 111, Name: "value_pattern", Scope: []string{"a"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 112, Name: "attr", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 26, Novalue: false, Vars: []string{"lv"}},
-		{Id: 113, Name: "name_or_attr", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 114, Name: "group_pattern", Scope: []string{"p"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 115, Name: "sequence_pattern", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 116, Name: "empty_tuple_pattern", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 117, Name: "list_pattern", Scope: []string{"ps"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 118, Name: "star_patterns", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 119, Name: "tuple_pattern", Scope: []string{"s"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 120, Name: "maybe_star_pattern", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 27, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 121, Name: "star_pattern", Scope: []string{"n"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 122, Name: "mapping_pattern", Scope: []string{"ks", "r"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 123, Name: "kv_patterns", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 124, Name: "key_value_pattern", Scope: []string{"k", "v"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 28, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 125, Name: "class_pattern", Scope: []string{"c", "ps", "ks"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 126, Name: "positional_patterns", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 127, Name: "keyword_patterns", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 29, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 128, Name: "keyword_pattern", Scope: []string{"n", "v"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 30, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 129, Name: "type_params", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 31, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 130, Name: "type_param", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 32, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 131, Name: "type_var", Scope: []string{"n", "b", "d"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 132, Name: "type_var_tuple", Scope: []string{"n", "d"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 133, Name: "param_spec", Scope: []string{"n", "d"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 134, Name: "params", Scope: []string{"g1nd", "g1wd", "sl", "g2nd", "g2wd", "st"}, Value: pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 135, Name: "param_nd", Scope: []string{"p"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 33, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 136, Name: "param_wd", Scope: []string{"p", "d"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 34, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 137, Name: "slash", Scope: []string{"s"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 138, Name: "star_etc", Scope: []string{"va", "ko", "kw"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 139, Name: "kwds", Scope: []string{"p"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 140, Name: "param", Scope: []string{"n", "a"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 35, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 141, Name: "vararg_param", Scope: []string{"n", "a"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 142, Name: "pend", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 36, Novalue: false, Vars: []string{"lv"}},
-		{Id: 143, Name: "expressions", Scope: []string{"f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 37, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 144, Name: "star_expressions", Scope: []string{"f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 38, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 145, Name: "star_expression", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 39, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 146, Name: "star_named_expression", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 40, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 147, Name: "starred_bitor", Scope: []string{"v"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 41, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 148, Name: "starred_expression", Scope: []string{"v"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 42, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 149, Name: "named_expression", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 43, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 150, Name: "plain_named_expression", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 151, Name: "walrus", Scope: []string{"n", "v"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 44, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 152, Name: "expression", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 45, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 153, Name: "conditional", Scope: []string{"d", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 154, Name: "lambdef", Scope: []string{"a", "b"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 155, Name: "lambda_params", Scope: []string{"g1nd", "g1wd", "sl", "g2nd", "g2wd", "st"}, Value: pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 156, Name: "lparam_nd", Scope: []string{"p"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 46, Novalue: false, Vars: []string{"lv"}},
-		{Id: 157, Name: "lparam_wd", Scope: []string{"p", "d"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 47, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 158, Name: "lslash", Scope: []string{"s"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 159, Name: "lstar_etc", Scope: []string{"va", "ko", "kw"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 160, Name: "lkwds", Scope: []string{"p"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 161, Name: "lparam", Scope: []string{"n"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 48, Novalue: false, Vars: []string{}},
-		{Id: 162, Name: "lpend", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 49, Novalue: false, Vars: []string{"lv"}},
-		{Id: 163, Name: "yield_expr", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 50, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 164, Name: "yield_from", Scope: []string{"v"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 165, Name: "yield_plain", Scope: []string{"v"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 166, Name: "disjunction", Scope: []string{"f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 51, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 167, Name: "conjunction", Scope: []string{"f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 52, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 168, Name: "or_op", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "Op", Seen: 53, Novalue: false, Vars: []string{}},
-		{Id: 169, Name: "and_op", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "Op", Seen: 54, Novalue: false, Vars: []string{}},
-		{Id: 170, Name: "inversion", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 55, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 171, Name: "not_expr", Scope: []string{"o", "v"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 172, Name: "not_op", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Op", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 173, Name: "comparison", Scope: []string{"f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 174, Name: "comp_op", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Op", Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 175, Name: "bitwise_or", Scope: []string{}, Value: pegort.Shaper{}, Memo: true, Leader: false, Seen: 56, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 176, Name: "bor_op", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Op", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 177, Name: "bxor_op", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Op", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 178, Name: "band_op", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Op", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 179, Name: "shift_op", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Op", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 180, Name: "sum_op", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Op", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 181, Name: "term_op", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Op", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 182, Name: "unary_op", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Op", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 183, Name: "pow_op", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Op", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 184, Name: "await_expr", Scope: []string{"v"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 185, Name: "primary", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 57, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 186, Name: "atom_only", Scope: []string{"a"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 187, Name: "primary_chain", Scope: []string{}, Value: pegort.Shaper{}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 188, Name: "call_args", Scope: []string{"pos", "kw1", "kw2"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 58, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 189, Name: "arg_sep", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 59, Novalue: false, Vars: []string{"lv"}},
-		{Id: 190, Name: "pos_arg", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 191, Name: "positional_named", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 192, Name: "kwarg_list", Scope: []string{"k"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 193, Name: "starred_list", Scope: []string{"s"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 194, Name: "kwarg", Scope: []string{"n", "v"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 60, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 195, Name: "dstar_arg", Scope: []string{"v"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 196, Name: "genexp", Scope: []string{"e", "g"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 61, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 197, Name: "subscript", Scope: []string{"s"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 62, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 198, Name: "slices", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 199, Name: "star_first_slices", Scope: []string{"f", "rs"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 200, Name: "plain_slices", Scope: []string{"f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 201, Name: "slice_or_star", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 63, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 202, Name: "slice", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 64, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 203, Name: "slice_colon", Scope: []string{"l", "u", "s"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 204, Name: "for_if_clauses", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 65, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 205, Name: "for_if_clause", Scope: []string{"a", "t", "i", "ifs"}, Value: pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 66, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 206, Name: "atom", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 67, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 207, Name: "name", Scope: []string{"n"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 68, Novalue: false, Vars: []string{}},
-		{Id: 208, Name: "constant_kw", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Constant", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 209, Name: "ellipsis", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Constant", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 210, Name: "paren", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 211, Name: "empty_tuple", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 212, Name: "yield_group", Scope: []string{"y"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 213, Name: "star_first_tuple", Scope: []string{"f", "rs", "c"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 214, Name: "paren_named", Scope: []string{"e", "t", "g"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 215, Name: "list_display", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 216, Name: "empty_list", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 217, Name: "list_items", Scope: []string{"f", "s", "rs", "c", "g"}, Value: pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 218, Name: "braces", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 219, Name: "empty_dict", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 220, Name: "dict_unpack_first", Scope: []string{"f", "rs"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 221, Name: "set_star_first", Scope: []string{"f", "rs"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 222, Name: "brace_items", Scope: []string{"f", "w", "kv", "g", "dr", "sr", "c"}, Value: pegort.Shaper{Elems: true, K: 8, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 223, Name: "star_targets", Scope: []string{"f", "t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 69, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 224, Name: "star_target", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 70, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 225, Name: "starred_target", Scope: []string{"t"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 226, Name: "target_with_star_atom", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 71, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 227, Name: "attr_target", Scope: []string{"t", "n"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 72, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 228, Name: "subscript_target", Scope: []string{"t", "s"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 73, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 229, Name: "star_atom", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 230, Name: "paren_target", Scope: []string{"t"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 231, Name: "empty_tuple_target", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 232, Name: "star_tuple_target", Scope: []string{"f", "rs", "c"}, Value: pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 233, Name: "empty_list_target", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 234, Name: "star_list_target", Scope: []string{"f", "rs"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 235, Name: "single_target", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 74, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 236, Name: "single_subscript_attribute_target", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 75, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 237, Name: "paren_single_target", Scope: []string{"t"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 76, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 238, Name: "store_name", Scope: []string{"n"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 77, Novalue: false, Vars: []string{}},
-		{Id: 239, Name: "t_primary", Scope: []string{}, Value: pegort.Shaper{}, Memo: true, Leader: false, Seen: 78, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 240, Name: "t_lookahead", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 241, Name: "del_target", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 79, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 242, Name: "del_attr", Scope: []string{"t", "n"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 243, Name: "del_subscript", Scope: []string{"t", "s"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 244, Name: "del_name", Scope: []string{"n"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 245, Name: "paren_del_target", Scope: []string{"t"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 246, Name: "del_tuple", Scope: []string{"ts"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 247, Name: "del_list", Scope: []string{"ts"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 248, Name: "del_targets", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 80, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 249, Name: "strings", Scope: []string{"s"}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 81, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 250, Name: "string_start", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 251, Name: "plain_strings", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Constant", Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 252, Name: "bytes_strings", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Constant", Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 253, Name: "fjoined", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 254, Name: "fjoin_item", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 82, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 255, Name: "str_part", Scope: []string{"c"}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 256, Name: "str_constant", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Constant", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 257, Name: "tstrings", Scope: []string{"f", "r"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 258, Name: "str_lit", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 83, Novalue: false, Vars: []string{}},
-		{Id: 259, Name: "bytes_lit", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 84, Novalue: false, Vars: []string{}},
-		{Id: 260, Name: "str_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 85, Novalue: false, Vars: []string{}},
-		{Id: 261, Name: "str_esc", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 86, Novalue: false, Vars: []string{}},
-		{Id: 262, Name: "raw_str_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 263, Name: "bytes_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 264, Name: "bytes_esc", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 87, Novalue: false, Vars: []string{}},
-		{Id: 265, Name: "raw_bytes_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 266, Name: "hex", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 267, Name: "fstring", Scope: []string{"ps"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 268, Name: "tstring", Scope: []string{"ps"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 88, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 269, Name: "fclose", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 270, Name: "fpart", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 271, Name: "tpart", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 272, Name: "ftext", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "FStringMiddle", Seen: 89, Novalue: false, Vars: []string{"lv"}},
-		{Id: 273, Name: "fraw_text", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "FStringRawMiddle", Seen: 90, Novalue: false, Vars: []string{"lv"}},
-		{Id: 274, Name: "fquote", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 91, Novalue: false, Vars: []string{"lv"}},
-		{Id: 275, Name: "fesc", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 92, Novalue: false, Vars: []string{}},
-		{Id: 276, Name: "frawesc", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 277, Name: "ffield", Scope: []string{"s", "v", "d", "c", "f"}, Value: pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 93, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 278, Name: "tfield", Scope: []string{"s", "v", "d", "c", "f"}, Value: pegort.Shaper{Elems: true, K: 6, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 279, Name: "fdebug", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 94, Novalue: false, Vars: []string{"lv"}},
-		{Id: 280, Name: "fconv", Scope: []string{"c"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 95, Novalue: false, Vars: []string{"lv"}},
-		{Id: 281, Name: "fspec", Scope: []string{"ps"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 96, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 282, Name: "fspec_part", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{"isdict", "lv"}},
-		{Id: 283, Name: "fspec_text", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "FStringMiddle", Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 284, Name: "fspec_raw_text", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "FStringRawMiddle", Seen: -1, Novalue: false, Vars: []string{"lv"}},
-		{Id: 285, Name: "number", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "Constant", Seen: 97, Novalue: false, Vars: []string{}},
-		{Id: 286, Name: "real_number", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "Constant", Seen: 98, Novalue: false, Vars: []string{}},
-		{Id: 287, Name: "imag_number", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Constant", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 288, Name: "hex_lit", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 289, Name: "oct_lit", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 290, Name: "bin_lit", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 291, Name: "dec_number", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 292, Name: "dec_real", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 293, Name: "pointfloat", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 99, Novalue: false, Vars: []string{}},
-		{Id: 294, Name: "exponent", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 100, Novalue: false, Vars: []string{}},
-		{Id: 295, Name: "digitpart", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 296, Name: "nonzero_int", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 297, Name: "zero_int", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 298, Name: "num_end", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 299, Name: "ident", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 101, Novalue: false, Vars: []string{}},
-		{Id: 300, Name: "identifier", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, NodeType: "Identifier", Seen: 102, Novalue: false, Vars: []string{}},
-		{Id: 301, Name: "idstart", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 302, Name: "idcont", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 103, Novalue: false, Vars: []string{}},
-		{Id: 303, Name: "keyword", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 304, Name: "kw_as", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 104, Novalue: false, Vars: []string{}},
-		{Id: 305, Name: "kw_assert", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 306, Name: "kw_async", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 105, Novalue: false, Vars: []string{}},
-		{Id: 307, Name: "kw_await", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 308, Name: "kw_break", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 309, Name: "kw_case", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 310, Name: "kw_class", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 106, Novalue: false, Vars: []string{}},
-		{Id: 311, Name: "kw_continue", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 312, Name: "kw_def", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 107, Novalue: false, Vars: []string{}},
-		{Id: 313, Name: "kw_del", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 314, Name: "kw_elif", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 315, Name: "kw_else", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 108, Novalue: false, Vars: []string{}},
-		{Id: 316, Name: "kw_except", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 109, Novalue: false, Vars: []string{}},
-		{Id: 317, Name: "kw_finally", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 318, Name: "kw_for", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 110, Novalue: false, Vars: []string{}},
-		{Id: 319, Name: "kw_from", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 111, Novalue: false, Vars: []string{}},
-		{Id: 320, Name: "kw_global", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 321, Name: "kw_if", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 112, Novalue: false, Vars: []string{}},
-		{Id: 322, Name: "kw_import", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 113, Novalue: false, Vars: []string{}},
-		{Id: 323, Name: "kw_in", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 114, Novalue: false, Vars: []string{}},
-		{Id: 324, Name: "kw_lambda", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 325, Name: "kw_match", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 326, Name: "kw_nonlocal", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 327, Name: "kw_pass", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 328, Name: "kw_raise", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 329, Name: "kw_return", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 330, Name: "kw_try", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 331, Name: "kw_type", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 332, Name: "kw_while", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 333, Name: "kw_with", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 115, Novalue: false, Vars: []string{}},
-		{Id: 334, Name: "kw_yield", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 116, Novalue: false, Vars: []string{}},
-		{Id: 335, Name: "idstart_other", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 336, Name: "idcont_other", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 337, Name: "blank", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 117, Novalue: true, Vars: []string{}},
-		{Id: 338, Name: "module_end", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"lv"}},
-		{Id: 339, Name: "ws", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"lv"}},
-		{Id: 340, Name: "stmt_sep", Scope: []string{"i"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"ind", "lv"}},
-		{Id: 341, Name: "eol", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 118, Novalue: true, Vars: []string{"lv"}},
-		{Id: 342, Name: "newline", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 343, Name: "augassign_op", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 344, Name: "kw_pass", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 345, Name: "kw_break", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 346, Name: "kw_continue", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 347, Name: "kw_return", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 348, Name: "kw_raise", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 349, Name: "kw_from", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 119, Novalue: true, Vars: []string{}},
-		{Id: 350, Name: "kw_global", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 351, Name: "kw_nonlocal", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 352, Name: "kw_del", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 353, Name: "kw_assert", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 354, Name: "kw_type", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 355, Name: "kw_import", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 120, Novalue: true, Vars: []string{}},
-		{Id: 356, Name: "kw_as", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 121, Novalue: true, Vars: []string{}},
-		{Id: 357, Name: "kw_if", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 122, Novalue: true, Vars: []string{}},
-		{Id: 358, Name: "clause_sep", Scope: []string{"i"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 123, Novalue: true, Vars: []string{"ind", "lv"}},
-		{Id: 359, Name: "kw_elif", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 360, Name: "kw_else", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 124, Novalue: true, Vars: []string{}},
-		{Id: 361, Name: "kw_while", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 362, Name: "kw_for", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 125, Novalue: true, Vars: []string{}},
-		{Id: 363, Name: "kw_in", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 126, Novalue: true, Vars: []string{}},
-		{Id: 364, Name: "kw_async", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 127, Novalue: true, Vars: []string{}},
-		{Id: 365, Name: "kw_with", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 128, Novalue: true, Vars: []string{}},
-		{Id: 366, Name: "kw_try", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 367, Name: "kw_finally", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 368, Name: "kw_except", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 129, Novalue: true, Vars: []string{}},
-		{Id: 369, Name: "dec_sep", Scope: []string{"i"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"ind", "lv"}},
-		{Id: 370, Name: "kw_def", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 130, Novalue: true, Vars: []string{}},
-		{Id: 371, Name: "kw_class", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 131, Novalue: true, Vars: []string{}},
-		{Id: 372, Name: "kw_match", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 373, Name: "kw_case", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 374, Name: "idcont", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 132, Novalue: true, Vars: []string{}},
-		{Id: 375, Name: "pend", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 133, Novalue: true, Vars: []string{"lv"}},
-		{Id: 376, Name: "kw_lambda", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 377, Name: "lpend", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 134, Novalue: true, Vars: []string{"lv"}},
-		{Id: 378, Name: "kw_yield", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 135, Novalue: true, Vars: []string{}},
-		{Id: 379, Name: "or_op", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 136, Novalue: true, Vars: []string{}},
-		{Id: 380, Name: "and_op", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 137, Novalue: true, Vars: []string{}},
-		{Id: 381, Name: "kw_await", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 382, Name: "arg_sep", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 138, Novalue: true, Vars: []string{"lv"}},
-		{Id: 383, Name: "t_lookahead", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 384, Name: "string_start", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 385, Name: "str_lit", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 139, Novalue: true, Vars: []string{}},
-		{Id: 386, Name: "bytes_lit", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 140, Novalue: true, Vars: []string{}},
-		{Id: 387, Name: "fclose", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{"lv"}},
-		{Id: 388, Name: "fquote", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 141, Novalue: true, Vars: []string{"lv"}},
-		{Id: 389, Name: "fesc", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 142, Novalue: true, Vars: []string{}},
-		{Id: 390, Name: "frawesc", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 391, Name: "hex_lit", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 392, Name: "oct_lit", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 393, Name: "bin_lit", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 394, Name: "dec_number", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 395, Name: "num_end", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 396, Name: "dec_real", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 397, Name: "pointfloat", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 143, Novalue: true, Vars: []string{}},
-		{Id: 398, Name: "exponent", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 144, Novalue: true, Vars: []string{}},
-		{Id: 399, Name: "digitpart", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 400, Name: "keyword", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 401, Name: "idstart", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 402, Name: "ident", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 145, Novalue: true, Vars: []string{}},
-		{Id: 403, Name: "comment", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 404, Name: "idcont_other", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 405, Name: "str_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 146, Novalue: true, Vars: []string{}},
-		{Id: 406, Name: "raw_str_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 407, Name: "raw_bytes_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 408, Name: "bytes_body", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 409, Name: "hex", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 410, Name: "nonzero_int", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 411, Name: "zero_int", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 412, Name: "idstart_other", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 413, Name: "str_esc", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 147, Novalue: true, Vars: []string{}},
-		{Id: 414, Name: "bytes_esc", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 148, Novalue: true, Vars: []string{}},
-	}
+	rules = pegort.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])
 	pegoGrammar.SetRules(rules, 149)
 	pegoGrammar.StructFields["Alias"] = map[string]bool{"Name": true, "AsName": true}
 	pegoGrammar.TypeKinds["Alias"] = pegort.KindOf("Alias", "")
@@ -3076,687 +3204,271 @@ func init() {
 	pegoGrammar.DefaultStart = "main"
 	pegoGrammar.NoWorkControls = true
 	pegoGrammar.SetVars([]string{"lv", "ind", "isdict"}, []any{0, 0, false})
-	trules = []*pegort.TRule{
-		{Rule: rules[0]},
-		{Rule: rules[1]},
-		{Rule: rules[2]},
-		{Rule: rules[3]},
-		{Rule: rules[4]},
-		{Rule: rules[5]},
-		{Rule: rules[6]},
-		{Rule: rules[7]},
-		{Rule: rules[8]},
-		{Rule: rules[9]},
-		{Rule: rules[10]},
-		{Rule: rules[11]},
-		{Rule: rules[12]},
-		{Rule: rules[13]},
-		{Rule: rules[14]},
-		{Rule: rules[15]},
-		{Rule: rules[16]},
-		{Rule: rules[17]},
-		{Rule: rules[18]},
-		{Rule: rules[19]},
-		{Rule: rules[20]},
-		{Rule: rules[21]},
-		{Rule: rules[22]},
-		{Rule: rules[23]},
-		{Rule: rules[24]},
-		{Rule: rules[25]},
-		{Rule: rules[26]},
-		{Rule: rules[27]},
-		{Rule: rules[28]},
-		{Rule: rules[29]},
-		{Rule: rules[30]},
-		{Rule: rules[31]},
-		{Rule: rules[32]},
-		{Rule: rules[33]},
-		{Rule: rules[34]},
-		{Rule: rules[35]},
-		{Rule: rules[36]},
-		{Rule: rules[37]},
-		{Rule: rules[38]},
-		{Rule: rules[39]},
-		{Rule: rules[40]},
-		{Rule: rules[41]},
-		{Rule: rules[42]},
-		{Rule: rules[43]},
-		{Rule: rules[44]},
-		{Rule: rules[45]},
-		{Rule: rules[46]},
-		{Rule: rules[47]},
-		{Rule: rules[48]},
-		{Rule: rules[49]},
-		{Rule: rules[50]},
-		{Rule: rules[51]},
-		{Rule: rules[52]},
-		{Rule: rules[53]},
-		{Rule: rules[54]},
-		{Rule: rules[55]},
-		{Rule: rules[56]},
-		{Rule: rules[57]},
-		{Rule: rules[58]},
-		{Rule: rules[59]},
-		{Rule: rules[60]},
-		{Rule: rules[61]},
-		{Rule: rules[62]},
-		{Rule: rules[63]},
-		{Rule: rules[64]},
-		{Rule: rules[65]},
-		{Rule: rules[66]},
-		{Rule: rules[67]},
-		{Rule: rules[68]},
-		{Rule: rules[69]},
-		{Rule: rules[70]},
-		{Rule: rules[71]},
-		{Rule: rules[72]},
-		{Rule: rules[73]},
-		{Rule: rules[74]},
-		{Rule: rules[75]},
-		{Rule: rules[76]},
-		{Rule: rules[77]},
-		{Rule: rules[78]},
-		{Rule: rules[79]},
-		{Rule: rules[80]},
-		{Rule: rules[81]},
-		{Rule: rules[82]},
-		{Rule: rules[83]},
-		{Rule: rules[84]},
-		{Rule: rules[85]},
-		{Rule: rules[86]},
-		{Rule: rules[87]},
-		{Rule: rules[88]},
-		{Rule: rules[89]},
-		{Rule: rules[90]},
-		{Rule: rules[91]},
-		{Rule: rules[92]},
-		{Rule: rules[93]},
-		{Rule: rules[94]},
-		{Rule: rules[95]},
-		{Rule: rules[96]},
-		{Rule: rules[97]},
-		{Rule: rules[98]},
-		{Rule: rules[99]},
-		{Rule: rules[100]},
-		{Rule: rules[101]},
-		{Rule: rules[102]},
-		{Rule: rules[103]},
-		{Rule: rules[104]},
-		{Rule: rules[105]},
-		{Rule: rules[106]},
-		{Rule: rules[107]},
-		{Rule: rules[108]},
-		{Rule: rules[109]},
-		{Rule: rules[110]},
-		{Rule: rules[111]},
-		{Rule: rules[112]},
-		{Rule: rules[113]},
-		{Rule: rules[114]},
-		{Rule: rules[115]},
-		{Rule: rules[116]},
-		{Rule: rules[117]},
-		{Rule: rules[118]},
-		{Rule: rules[119]},
-		{Rule: rules[120]},
-		{Rule: rules[121]},
-		{Rule: rules[122]},
-		{Rule: rules[123]},
-		{Rule: rules[124]},
-		{Rule: rules[125]},
-		{Rule: rules[126]},
-		{Rule: rules[127]},
-		{Rule: rules[128]},
-		{Rule: rules[129]},
-		{Rule: rules[130]},
-		{Rule: rules[131]},
-		{Rule: rules[132]},
-		{Rule: rules[133]},
-		{Rule: rules[134]},
-		{Rule: rules[135]},
-		{Rule: rules[136]},
-		{Rule: rules[137]},
-		{Rule: rules[138]},
-		{Rule: rules[139]},
-		{Rule: rules[140]},
-		{Rule: rules[141]},
-		{Rule: rules[142]},
-		{Rule: rules[143]},
-		{Rule: rules[144]},
-		{Rule: rules[145]},
-		{Rule: rules[146]},
-		{Rule: rules[147]},
-		{Rule: rules[148]},
-		{Rule: rules[149]},
-		{Rule: rules[150]},
-		{Rule: rules[151]},
-		{Rule: rules[152]},
-		{Rule: rules[153]},
-		{Rule: rules[154]},
-		{Rule: rules[155]},
-		{Rule: rules[156]},
-		{Rule: rules[157]},
-		{Rule: rules[158]},
-		{Rule: rules[159]},
-		{Rule: rules[160]},
-		{Rule: rules[161]},
-		{Rule: rules[162]},
-		{Rule: rules[163]},
-		{Rule: rules[164]},
-		{Rule: rules[165]},
-		{Rule: rules[166]},
-		{Rule: rules[167]},
-		{Rule: rules[168]},
-		{Rule: rules[169]},
-		{Rule: rules[170]},
-		{Rule: rules[171]},
-		{Rule: rules[172]},
-		{Rule: rules[173]},
-		{Rule: rules[174]},
-		{Rule: rules[175]},
-		{Rule: rules[176]},
-		{Rule: rules[177]},
-		{Rule: rules[178]},
-		{Rule: rules[179]},
-		{Rule: rules[180]},
-		{Rule: rules[181]},
-		{Rule: rules[182]},
-		{Rule: rules[183]},
-		{Rule: rules[184]},
-		{Rule: rules[185]},
-		{Rule: rules[186]},
-		{Rule: rules[187]},
-		{Rule: rules[188]},
-		{Rule: rules[189]},
-		{Rule: rules[190]},
-		{Rule: rules[191]},
-		{Rule: rules[192]},
-		{Rule: rules[193]},
-		{Rule: rules[194]},
-		{Rule: rules[195]},
-		{Rule: rules[196]},
-		{Rule: rules[197]},
-		{Rule: rules[198]},
-		{Rule: rules[199]},
-		{Rule: rules[200]},
-		{Rule: rules[201]},
-		{Rule: rules[202]},
-		{Rule: rules[203]},
-		{Rule: rules[204]},
-		{Rule: rules[205]},
-		{Rule: rules[206]},
-		{Rule: rules[207]},
-		{Rule: rules[208]},
-		{Rule: rules[209]},
-		{Rule: rules[210]},
-		{Rule: rules[211]},
-		{Rule: rules[212]},
-		{Rule: rules[213]},
-		{Rule: rules[214]},
-		{Rule: rules[215]},
-		{Rule: rules[216]},
-		{Rule: rules[217]},
-		{Rule: rules[218]},
-		{Rule: rules[219]},
-		{Rule: rules[220]},
-		{Rule: rules[221]},
-		{Rule: rules[222]},
-		{Rule: rules[223]},
-		{Rule: rules[224]},
-		{Rule: rules[225]},
-		{Rule: rules[226]},
-		{Rule: rules[227]},
-		{Rule: rules[228]},
-		{Rule: rules[229]},
-		{Rule: rules[230]},
-		{Rule: rules[231]},
-		{Rule: rules[232]},
-		{Rule: rules[233]},
-		{Rule: rules[234]},
-		{Rule: rules[235]},
-		{Rule: rules[236]},
-		{Rule: rules[237]},
-		{Rule: rules[238]},
-		{Rule: rules[239]},
-		{Rule: rules[240]},
-		{Rule: rules[241]},
-		{Rule: rules[242]},
-		{Rule: rules[243]},
-		{Rule: rules[244]},
-		{Rule: rules[245]},
-		{Rule: rules[246]},
-		{Rule: rules[247]},
-		{Rule: rules[248]},
-		{Rule: rules[249]},
-		{Rule: rules[250]},
-		{Rule: rules[251]},
-		{Rule: rules[252]},
-		{Rule: rules[253]},
-		{Rule: rules[254]},
-		{Rule: rules[255]},
-		{Rule: rules[256]},
-		{Rule: rules[257]},
-		{Rule: rules[258]},
-		{Rule: rules[259]},
-		{Rule: rules[260]},
-		{Rule: rules[261]},
-		{Rule: rules[262]},
-		{Rule: rules[263]},
-		{Rule: rules[264]},
-		{Rule: rules[265]},
-		{Rule: rules[266]},
-		{Rule: rules[267]},
-		{Rule: rules[268]},
-		{Rule: rules[269]},
-		{Rule: rules[270]},
-		{Rule: rules[271]},
-		{Rule: rules[272]},
-		{Rule: rules[273]},
-		{Rule: rules[274]},
-		{Rule: rules[275]},
-		{Rule: rules[276]},
-		{Rule: rules[277]},
-		{Rule: rules[278]},
-		{Rule: rules[279]},
-		{Rule: rules[280]},
-		{Rule: rules[281]},
-		{Rule: rules[282]},
-		{Rule: rules[283]},
-		{Rule: rules[284]},
-		{Rule: rules[285]},
-		{Rule: rules[286]},
-		{Rule: rules[287]},
-		{Rule: rules[288]},
-		{Rule: rules[289]},
-		{Rule: rules[290]},
-		{Rule: rules[291]},
-		{Rule: rules[292]},
-		{Rule: rules[293]},
-		{Rule: rules[294]},
-		{Rule: rules[295]},
-		{Rule: rules[296]},
-		{Rule: rules[297]},
-		{Rule: rules[298]},
-		{Rule: rules[299]},
-		{Rule: rules[300]},
-		{Rule: rules[301]},
-		{Rule: rules[302]},
-		{Rule: rules[303]},
-		{Rule: rules[304]},
-		{Rule: rules[305]},
-		{Rule: rules[306]},
-		{Rule: rules[307]},
-		{Rule: rules[308]},
-		{Rule: rules[309]},
-		{Rule: rules[310]},
-		{Rule: rules[311]},
-		{Rule: rules[312]},
-		{Rule: rules[313]},
-		{Rule: rules[314]},
-		{Rule: rules[315]},
-		{Rule: rules[316]},
-		{Rule: rules[317]},
-		{Rule: rules[318]},
-		{Rule: rules[319]},
-		{Rule: rules[320]},
-		{Rule: rules[321]},
-		{Rule: rules[322]},
-		{Rule: rules[323]},
-		{Rule: rules[324]},
-		{Rule: rules[325]},
-		{Rule: rules[326]},
-		{Rule: rules[327]},
-		{Rule: rules[328]},
-		{Rule: rules[329]},
-		{Rule: rules[330]},
-		{Rule: rules[331]},
-		{Rule: rules[332]},
-		{Rule: rules[333]},
-		{Rule: rules[334]},
-		{Rule: rules[335]},
-		{Rule: rules[336]},
-		{Rule: rules[337]},
-		{Rule: rules[338]},
-		{Rule: rules[339]},
-		{Rule: rules[340]},
-		{Rule: rules[341]},
-		{Rule: rules[342]},
-		{Rule: rules[343]},
-		{Rule: rules[344]},
-		{Rule: rules[345]},
-		{Rule: rules[346]},
-		{Rule: rules[347]},
-		{Rule: rules[348]},
-		{Rule: rules[349]},
-		{Rule: rules[350]},
-		{Rule: rules[351]},
-		{Rule: rules[352]},
-		{Rule: rules[353]},
-		{Rule: rules[354]},
-		{Rule: rules[355]},
-		{Rule: rules[356]},
-		{Rule: rules[357]},
-		{Rule: rules[358]},
-		{Rule: rules[359]},
-		{Rule: rules[360]},
-		{Rule: rules[361]},
-		{Rule: rules[362]},
-		{Rule: rules[363]},
-		{Rule: rules[364]},
-		{Rule: rules[365]},
-		{Rule: rules[366]},
-		{Rule: rules[367]},
-		{Rule: rules[368]},
-		{Rule: rules[369]},
-		{Rule: rules[370]},
-		{Rule: rules[371]},
-		{Rule: rules[372]},
-		{Rule: rules[373]},
-		{Rule: rules[374]},
-		{Rule: rules[375]},
-		{Rule: rules[376]},
-		{Rule: rules[377]},
-		{Rule: rules[378]},
-		{Rule: rules[379]},
-		{Rule: rules[380]},
-		{Rule: rules[381]},
-		{Rule: rules[382]},
-		{Rule: rules[383]},
-		{Rule: rules[384]},
-		{Rule: rules[385]},
-		{Rule: rules[386]},
-		{Rule: rules[387]},
-		{Rule: rules[388]},
-		{Rule: rules[389]},
-		{Rule: rules[390]},
-		{Rule: rules[391]},
-		{Rule: rules[392]},
-		{Rule: rules[393]},
-		{Rule: rules[394]},
-		{Rule: rules[395]},
-		{Rule: rules[396]},
-		{Rule: rules[397]},
-		{Rule: rules[398]},
-		{Rule: rules[399]},
-		{Rule: rules[400]},
-		{Rule: rules[401]},
-		{Rule: rules[402]},
-		{Rule: rules[403]},
-		{Rule: rules[404]},
-		{Rule: rules[405]},
-		{Rule: rules[406]},
-		{Rule: rules[407]},
-		{Rule: rules[408]},
-		{Rule: rules[409]},
-		{Rule: rules[410]},
-		{Rule: rules[411]},
-		{Rule: rules[412]},
-		{Rule: rules[413]},
-		{Rule: rules[414]},
-	}
+	trules = pegort.NewTRules(rules)
 	defer tinit()
 	trules[0].Entry = u0
 
 	trules[175].OperatorsRule = &pegort.TOperatorsRule{
-		Skip: e1162,
+		Skip: e1175,
 		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1163, Action: nil, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}},
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1164, Action: nil, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}},
+			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1176, Action: nil, Value: sh8},
+			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1177, Action: nil, Value: sh8},
 		},
-		Prefix: []*pegort.TOperatorsRuleOp{{Id: 6, Kind: "prefix", Assoc: "", Level: 7, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1189, Action: func(c *pegort.TActCtx) any {
+		Prefix: []*pegort.TOperatorsRuleOp{{Id: 6, Kind: "prefix", Assoc: "", Level: 7, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1202, Action: func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return func() any {
-					f_1190 := func() any { ; return c.Cap(0) }()
-					f_1191 := func() any { ; return (c.Rhs) }()
-					return tmk_UnaryOp(c, true, f_1190, f_1191)
+					f_1203 := func() any { ; return c.Cap(0) }()
+					f_1204 := func() any { ; return (c.Rhs) }()
+					return tmk_UnaryOp(c, true, f_1203, f_1204)
 				}()
 			}()
-		}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}}},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "left", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1165, Action: func(c *pegort.TActCtx) any {
+		}, Value: sh15}}},
+		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "infix", Assoc: "left", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1178, Action: func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return func() any {
-					f_1166 := func() any { ; return (c.Lhs) }()
-					f_1167 := func() any { ; return c.Cap(0) }()
-					f_1168 := func() any { ; return (c.Rhs) }()
-					return tmk_BinOp(c, true, f_1166, f_1167, f_1168)
+					f_1179 := func() any { ; return (c.Lhs) }()
+					f_1180 := func() any { ; return c.Cap(0) }()
+					f_1181 := func() any { ; return (c.Rhs) }()
+					return tmk_BinOp(c, true, f_1179, f_1180, f_1181)
 				}()
 			}()
-		}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}},
-			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1169, Action: func(c *pegort.TActCtx) any {
+		}, Value: sh15}},
+			{Id: 1, Kind: "infix", Assoc: "left", Level: 2, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1182, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_1170 := func() any { ; return (c.Lhs) }()
-						f_1171 := func() any { ; return c.Cap(0) }()
-						f_1172 := func() any { ; return (c.Rhs) }()
-						return tmk_BinOp(c, true, f_1170, f_1171, f_1172)
+						f_1183 := func() any { ; return (c.Lhs) }()
+						f_1184 := func() any { ; return c.Cap(0) }()
+						f_1185 := func() any { ; return (c.Rhs) }()
+						return tmk_BinOp(c, true, f_1183, f_1184, f_1185)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}},
-			{Id: 2, Kind: "infix", Assoc: "left", Level: 3, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1173, Action: func(c *pegort.TActCtx) any {
+			}, Value: sh15}},
+			{Id: 2, Kind: "infix", Assoc: "left", Level: 3, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1186, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_1174 := func() any { ; return (c.Lhs) }()
-						f_1175 := func() any { ; return c.Cap(0) }()
-						f_1176 := func() any { ; return (c.Rhs) }()
-						return tmk_BinOp(c, true, f_1174, f_1175, f_1176)
+						f_1187 := func() any { ; return (c.Lhs) }()
+						f_1188 := func() any { ; return c.Cap(0) }()
+						f_1189 := func() any { ; return (c.Rhs) }()
+						return tmk_BinOp(c, true, f_1187, f_1188, f_1189)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}},
-			{Id: 3, Kind: "infix", Assoc: "left", Level: 4, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1177, Action: func(c *pegort.TActCtx) any {
+			}, Value: sh15}},
+			{Id: 3, Kind: "infix", Assoc: "left", Level: 4, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1190, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_1178 := func() any { ; return (c.Lhs) }()
-						f_1179 := func() any { ; return c.Cap(0) }()
-						f_1180 := func() any { ; return (c.Rhs) }()
-						return tmk_BinOp(c, true, f_1178, f_1179, f_1180)
+						f_1191 := func() any { ; return (c.Lhs) }()
+						f_1192 := func() any { ; return c.Cap(0) }()
+						f_1193 := func() any { ; return (c.Rhs) }()
+						return tmk_BinOp(c, true, f_1191, f_1192, f_1193)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}},
-			{Id: 4, Kind: "infix", Assoc: "left", Level: 5, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1181, Action: func(c *pegort.TActCtx) any {
+			}, Value: sh15}},
+			{Id: 4, Kind: "infix", Assoc: "left", Level: 5, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1194, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_1182 := func() any { ; return (c.Lhs) }()
-						f_1183 := func() any { ; return c.Cap(0) }()
-						f_1184 := func() any { ; return (c.Rhs) }()
-						return tmk_BinOp(c, true, f_1182, f_1183, f_1184)
+						f_1195 := func() any { ; return (c.Lhs) }()
+						f_1196 := func() any { ; return c.Cap(0) }()
+						f_1197 := func() any { ; return (c.Rhs) }()
+						return tmk_BinOp(c, true, f_1195, f_1196, f_1197)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}},
-			{Id: 5, Kind: "infix", Assoc: "left", Level: 6, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1185, Action: func(c *pegort.TActCtx) any {
+			}, Value: sh15}},
+			{Id: 5, Kind: "infix", Assoc: "left", Level: 6, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1198, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_1186 := func() any { ; return (c.Lhs) }()
-						f_1187 := func() any { ; return c.Cap(0) }()
-						f_1188 := func() any { ; return (c.Rhs) }()
-						return tmk_BinOp(c, true, f_1186, f_1187, f_1188)
+						f_1199 := func() any { ; return (c.Lhs) }()
+						f_1200 := func() any { ; return c.Cap(0) }()
+						f_1201 := func() any { ; return (c.Rhs) }()
+						return tmk_BinOp(c, true, f_1199, f_1200, f_1201)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}},
-			{Id: 7, Kind: "infix", Assoc: "right", Level: 8, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1192, Action: func(c *pegort.TActCtx) any {
+			}, Value: sh15}},
+			{Id: 7, Kind: "infix", Assoc: "right", Level: 8, Line: &pegort.TOperatorsRuleLine{Scope: []string{"o"}, M: e1205, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
-						f_1193 := func() any { ; return (c.Lhs) }()
-						f_1194 := func() any { ; return c.Cap(0) }()
-						f_1195 := func() any { ; return (c.Rhs) }()
-						return tmk_BinOp(c, true, f_1193, f_1194, f_1195)
+						f_1206 := func() any { ; return (c.Lhs) }()
+						f_1207 := func() any { ; return c.Cap(0) }()
+						f_1208 := func() any { ; return (c.Rhs) }()
+						return tmk_BinOp(c, true, f_1206, f_1207, f_1208)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}}},
+			}, Value: sh15}}},
 	}
 	trules[175].Body = func(p *pegort.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[175], min) }
 
 	trules[187].OperatorsRule = &pegort.TOperatorsRule{
-		Skip: e1162,
+		Skip: e1175,
 		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1196, Action: nil, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}},
+			&pegort.TOperatorsRuleLine{Scope: []string{}, M: e1209, Action: nil, Value: sh8},
 		},
 		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"n"}, M: e1197, Action: func(c *pegort.TActCtx) any {
+		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"n"}, M: e1210, Action: func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return func() any {
-					f_1198 := func() any { ; return (c.Lhs) }()
-					f_1199 := func() any { ; return c.Text(func() any { ; return c.Cap(0) }()) }()
-					f_1200 := func() any { ; return any("Load") }()
-					return tmk_Attribute(c, true, f_1198, f_1199, f_1200)
+					f_1211 := func() any { ; return (c.Lhs) }()
+					f_1212 := func() any { ; return c.Text(func() any { ; return c.Cap(0) }()) }()
+					f_1213 := func() any { ; return any("Load") }()
+					return tmk_Attribute(c, true, f_1211, f_1212, f_1213)
 				}()
 			}()
-		}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"g"}, M: e1201, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1202 := func() any { ; return (c.Lhs) }()
-						f_1203 := func() any { ; return c.List(func() any { ; return c.Cap(0) }()) }()
-						return tmk_Call(c, true, f_1202, f_1203, nil)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"c"}, M: e1204, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1205 := func() any { ; return (c.Lhs) }()
-						f_1206 := func() any {
-
-							return c.Concat(func() any {
-
-								return c.MapList(func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$pos") }(), func(l_1207 any) any {
-									return func() any { ; return c.Member(func() any { ; return (l_1207) }(), "$a") }()
-								})
-							}(), func() any {
-
-								return c.Fold("foldl", false, func() any { ; return c.List() }(), func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw1") }(), func(l_1208, l_1209 any) any {
-									return func() any {
-
-										return c.Concat(func() any { ; return (l_1208) }(), func() any { ; return c.Member(func() any { ; return (l_1209) }(), "$ss") }())
-									}()
-								})
-							}())
-						}()
-						f_1210 := func() any {
-
-							return c.Concat(func() any {
-
-								return c.Fold("foldl", false, func() any { ; return c.List() }(), func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw1") }(), func(l_1211, l_1212 any) any {
-									return func() any {
-
-										return c.Concat(func() any { ; return (l_1211) }(), func() any { ; return c.Member(func() any { ; return (l_1212) }(), "$ks") }())
-									}()
-								})
-							}(), func() any {
-
-								return c.MapList(func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw2") }(), func(l_1213 any) any {
-									return func() any { ; return c.Member(func() any { ; return (l_1213) }(), "$k") }()
-								})
-							}())
-						}()
-						return tmk_Call(c, true, f_1205, f_1206, f_1210)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e1214, Action: func(c *pegort.TActCtx) any {
+		}, Value: sh9}},
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"g"}, M: e1214, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
 						f_1215 := func() any { ; return (c.Lhs) }()
-						f_1216 := func() any { ; return c.Cap(0) }()
-						f_1217 := func() any { ; return any("Load") }()
-						return tmk_Subscript(c, true, f_1215, f_1216, f_1217)
+						f_1216 := func() any { ; return c.List(func() any { ; return c.Cap(0) }()) }()
+						return tmk_Call(c, true, f_1215, f_1216, nil)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}}}},
+			}, Value: sh15}},
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"c"}, M: e1217, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1218 := func() any { ; return (c.Lhs) }()
+						f_1219 := func() any {
+
+							return c.Concat(func() any {
+
+								return c.MapList(func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$pos") }(), func(l_1220 any) any {
+									return func() any { ; return c.Member(func() any { ; return (l_1220) }(), "$a") }()
+								})
+							}(), func() any {
+
+								return c.Fold("foldl", false, func() any { ; return c.List() }(), func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw1") }(), func(l_1221, l_1222 any) any {
+									return func() any {
+
+										return c.Concat(func() any { ; return (l_1221) }(), func() any { ; return c.Member(func() any { ; return (l_1222) }(), "$ss") }())
+									}()
+								})
+							}())
+						}()
+						f_1223 := func() any {
+
+							return c.Concat(func() any {
+
+								return c.Fold("foldl", false, func() any { ; return c.List() }(), func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw1") }(), func(l_1224, l_1225 any) any {
+									return func() any {
+
+										return c.Concat(func() any { ; return (l_1224) }(), func() any { ; return c.Member(func() any { ; return (l_1225) }(), "$ks") }())
+									}()
+								})
+							}(), func() any {
+
+								return c.MapList(func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw2") }(), func(l_1226 any) any {
+									return func() any { ; return c.Member(func() any { ; return (l_1226) }(), "$k") }()
+								})
+							}())
+						}()
+						return tmk_Call(c, true, f_1218, f_1219, f_1223)
+					}()
+				}()
+			}, Value: sh15}},
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e1227, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1228 := func() any { ; return (c.Lhs) }()
+						f_1229 := func() any { ; return c.Cap(0) }()
+						f_1230 := func() any { ; return any("Load") }()
+						return tmk_Subscript(c, true, f_1228, f_1229, f_1230)
+					}()
+				}()
+			}, Value: sh15}}},
 	}
 	trules[187].Body = func(p *pegort.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[187], min) }
 
 	trules[239].OperatorsRule = &pegort.TOperatorsRule{
-		Skip: e1162,
+		Skip: e1175,
 		Operands: []*pegort.TOperatorsRuleLine{
-			&pegort.TOperatorsRuleLine{Scope: []string{"a"}, M: e1218, Action: func(c *pegort.TActCtx) any { return func() any { ; return c.Cap(0) }() }, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}},
+			&pegort.TOperatorsRuleLine{Scope: []string{"a"}, M: e1231, Action: func(c *pegort.TActCtx) any { return func() any { ; return c.Cap(0) }() }, Value: sh14},
 		},
 		Prefix: []*pegort.TOperatorsRuleOp{},
-		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"n"}, M: e1219, Action: func(c *pegort.TActCtx) any {
+		Led: []*pegort.TOperatorsRuleOp{{Id: 0, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"n"}, M: e1232, Action: func(c *pegort.TActCtx) any {
 			return func() any {
 
 				return func() any {
-					f_1220 := func() any { ; return (c.Lhs) }()
-					f_1221 := func() any { ; return c.Text(func() any { ; return c.Cap(0) }()) }()
-					f_1222 := func() any { ; return any("Load") }()
-					return tmk_Attribute(c, true, f_1220, f_1221, f_1222)
+					f_1233 := func() any { ; return (c.Lhs) }()
+					f_1234 := func() any { ; return c.Text(func() any { ; return c.Cap(0) }()) }()
+					f_1235 := func() any { ; return any("Load") }()
+					return tmk_Attribute(c, true, f_1233, f_1234, f_1235)
 				}()
 			}()
-		}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"g"}, M: e1223, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1224 := func() any { ; return (c.Lhs) }()
-						f_1225 := func() any { ; return c.List(func() any { ; return c.Cap(0) }()) }()
-						return tmk_Call(c, true, f_1224, f_1225, nil)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"c"}, M: e1226, Action: func(c *pegort.TActCtx) any {
-				return func() any {
-
-					return func() any {
-						f_1227 := func() any { ; return (c.Lhs) }()
-						f_1228 := func() any {
-
-							return c.Concat(func() any {
-
-								return c.MapList(func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$pos") }(), func(l_1229 any) any {
-									return func() any { ; return c.Member(func() any { ; return (l_1229) }(), "$a") }()
-								})
-							}(), func() any {
-
-								return c.Fold("foldl", false, func() any { ; return c.List() }(), func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw1") }(), func(l_1230, l_1231 any) any {
-									return func() any {
-
-										return c.Concat(func() any { ; return (l_1230) }(), func() any { ; return c.Member(func() any { ; return (l_1231) }(), "$ss") }())
-									}()
-								})
-							}())
-						}()
-						f_1232 := func() any {
-
-							return c.Concat(func() any {
-
-								return c.Fold("foldl", false, func() any { ; return c.List() }(), func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw1") }(), func(l_1233, l_1234 any) any {
-									return func() any {
-
-										return c.Concat(func() any { ; return (l_1233) }(), func() any { ; return c.Member(func() any { ; return (l_1234) }(), "$ks") }())
-									}()
-								})
-							}(), func() any {
-
-								return c.MapList(func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw2") }(), func(l_1235 any) any {
-									return func() any { ; return c.Member(func() any { ; return (l_1235) }(), "$k") }()
-								})
-							}())
-						}()
-						return tmk_Call(c, true, f_1227, f_1228, f_1232)
-					}()
-				}()
-			}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}}},
-			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e1236, Action: func(c *pegort.TActCtx) any {
+		}, Value: sh9}},
+			{Id: 1, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"g"}, M: e1236, Action: func(c *pegort.TActCtx) any {
 				return func() any {
 
 					return func() any {
 						f_1237 := func() any { ; return (c.Lhs) }()
-						f_1238 := func() any { ; return c.Cap(0) }()
-						f_1239 := func() any { ; return any("Load") }()
-						return tmk_Subscript(c, true, f_1237, f_1238, f_1239)
+						f_1238 := func() any { ; return c.List(func() any { ; return c.Cap(0) }()) }()
+						return tmk_Call(c, true, f_1237, f_1238, nil)
 					}()
 				}()
-			}, Value: pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}}}},
+			}, Value: sh14}},
+			{Id: 2, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"c"}, M: e1239, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1240 := func() any { ; return (c.Lhs) }()
+						f_1241 := func() any {
+
+							return c.Concat(func() any {
+
+								return c.MapList(func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$pos") }(), func(l_1242 any) any {
+									return func() any { ; return c.Member(func() any { ; return (l_1242) }(), "$a") }()
+								})
+							}(), func() any {
+
+								return c.Fold("foldl", false, func() any { ; return c.List() }(), func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw1") }(), func(l_1243, l_1244 any) any {
+									return func() any {
+
+										return c.Concat(func() any { ; return (l_1243) }(), func() any { ; return c.Member(func() any { ; return (l_1244) }(), "$ss") }())
+									}()
+								})
+							}())
+						}()
+						f_1245 := func() any {
+
+							return c.Concat(func() any {
+
+								return c.Fold("foldl", false, func() any { ; return c.List() }(), func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw1") }(), func(l_1246, l_1247 any) any {
+									return func() any {
+
+										return c.Concat(func() any { ; return (l_1246) }(), func() any { ; return c.Member(func() any { ; return (l_1247) }(), "$ks") }())
+									}()
+								})
+							}(), func() any {
+
+								return c.MapList(func() any { ; return c.Member(func() any { ; return c.Cap(0) }(), "$kw2") }(), func(l_1248 any) any {
+									return func() any { ; return c.Member(func() any { ; return (l_1248) }(), "$k") }()
+								})
+							}())
+						}()
+						return tmk_Call(c, true, f_1240, f_1241, f_1245)
+					}()
+				}()
+			}, Value: sh14}},
+			{Id: 3, Kind: "postfix", Assoc: "", Level: 1, Line: &pegort.TOperatorsRuleLine{Scope: []string{"s"}, M: e1249, Action: func(c *pegort.TActCtx) any {
+				return func() any {
+
+					return func() any {
+						f_1250 := func() any { ; return (c.Lhs) }()
+						f_1251 := func() any { ; return c.Cap(0) }()
+						f_1252 := func() any { ; return any("Load") }()
+						return tmk_Subscript(c, true, f_1250, f_1251, f_1252)
+					}()
+				}()
+			}, Value: sh14}}},
 	}
 	trules[239].Body = func(p *pegort.TParser, min int) (any, bool) { return p.OperatorsRuleParse(trules[239], min) }
 
@@ -3862,8 +3574,8 @@ L17:
 	p.Where = "main"
 	v = func() any {
 		return func() any {
-			f_638 := func() any { return c.Concat(func() any { return k5 }()) }()
-			return tmk_Module(c, true, f_638)
+			f_651 := func() any { return c.Concat(func() any { return k5 }()) }()
+			return tmk_Module(c, true, f_651)
 		}()
 	}()
 	p.Where = w
@@ -3924,13 +3636,13 @@ func i1(p *pegort.TParser) (any, bool) {
 			return c.And(func() any {
 				return c.Binary("==", func() any {
 					return c.Binary("+", func() any {
-						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k1 }(), "$segs") }(), func(l_639, l_640 any) any {
+						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k1 }(), "$segs") }(), func(l_652, l_653 any) any {
 							return func() any {
 								return c.Binary("+", func() any {
 									return c.Binary("*", func() any {
 										return c.Binary("/", func() any {
-											return c.Binary("+", func() any { return l_639 }(), func() any {
-												return c.Length(func() any { return c.Member(func() any { return l_640 }(), "$sp") }())
+											return c.Binary("+", func() any { return l_652 }(), func() any {
+												return c.Length(func() any { return c.Member(func() any { return l_653 }(), "$sp") }())
 											}())
 										}(), func() any { return any(8) }())
 									}(), func() any { return any(8) }())
@@ -3945,11 +3657,11 @@ func i1(p *pegort.TParser) (any, bool) {
 				return func() any {
 					return c.Binary("==", func() any {
 						return c.Binary("+", func() any {
-							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k1 }(), "$segs") }(), func(l_641, l_642 any) any {
+							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k1 }(), "$segs") }(), func(l_654, l_655 any) any {
 								return func() any {
 									return c.Binary("+", func() any {
-										return c.Binary("+", func() any { return l_641 }(), func() any {
-											return c.Length(func() any { return c.Member(func() any { return l_642 }(), "$sp") }())
+										return c.Binary("+", func() any { return l_654 }(), func() any {
+											return c.Length(func() any { return c.Member(func() any { return l_655 }(), "$sp") }())
 										}())
 									}(), func() any { return any(1) }())
 								}()
@@ -4097,7 +3809,7 @@ func i3(p *pegort.TParser) (any, bool) {
 		k11 = v22
 		x20 = append(x20, v22)
 		v23 = p.NewNodeOrdinary("tuple", x19, p.Pos, x20)
-		v24, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v23, x13)
+		v24, _ = p.ShapeSingle(sh14, v23, x13)
 		v16 = v24
 		goto L17
 	L18:
@@ -4116,7 +3828,7 @@ func i3(p *pegort.TParser) (any, bool) {
 		k11 = v29
 		x27 = append(x27, v29)
 		v30 = p.NewNodeOrdinary("tuple", x26, p.Pos, x27)
-		v31, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v30, x13)
+		v31, _ = p.ShapeSingle(sh14, v30, x13)
 		v16 = v31
 		goto L17
 	L25:
@@ -4125,8 +3837,8 @@ func i3(p *pegort.TParser) (any, bool) {
 		k11 = x15
 		goto L12
 	L17:
-		v32 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v16, x9)
-		v33 = p.AttachCaptures(v32, scope643, []any{k11}, x9, p.Pos)
+		v32 = p.ScopeValue(sh15, v16, x9)
+		v33 = p.AttachCaptures(v32, scope656, []any{k11}, x9, p.Pos)
 		x8++
 		p.PushKid(v33)
 		if p.Pos == x9 {
@@ -4147,8 +3859,8 @@ func i3(p *pegort.TParser) (any, bool) {
 		return func() any {
 			b := len(c.P.KidStack)
 			c.PushList(func() any { return k1 }())
-			c.PushMap(func() any { return k4 }(), func(l_644 any) any {
-				return func() any { return c.Member(func() any { return l_644 }(), "$s") }()
+			c.PushMap(func() any { return k4 }(), func(l_657 any) any {
+				return func() any { return c.Member(func() any { return l_657 }(), "$s") }()
 			})
 			return c.EndList(b)
 		}()
@@ -4308,13 +4020,13 @@ func i6(p *pegort.TParser) (any, bool) {
 			return c.And(func() any {
 				return c.Binary(">", func() any {
 					return c.Binary("+", func() any {
-						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_650, l_651 any) any {
+						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_663, l_664 any) any {
 							return func() any {
 								return c.Binary("+", func() any {
 									return c.Binary("*", func() any {
 										return c.Binary("/", func() any {
-											return c.Binary("+", func() any { return l_650 }(), func() any {
-												return c.Length(func() any { return c.Member(func() any { return l_651 }(), "$sp") }())
+											return c.Binary("+", func() any { return l_663 }(), func() any {
+												return c.Length(func() any { return c.Member(func() any { return l_664 }(), "$sp") }())
 											}())
 										}(), func() any { return any(8) }())
 									}(), func() any { return any(8) }())
@@ -4331,11 +4043,11 @@ func i6(p *pegort.TParser) (any, bool) {
 				return func() any {
 					return c.Binary(">", func() any {
 						return c.Binary("+", func() any {
-							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_652, l_653 any) any {
+							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_665, l_666 any) any {
 								return func() any {
 									return c.Binary("+", func() any {
-										return c.Binary("+", func() any { return l_652 }(), func() any {
-											return c.Length(func() any { return c.Member(func() any { return l_653 }(), "$sp") }())
+										return c.Binary("+", func() any { return l_665 }(), func() any {
+											return c.Length(func() any { return c.Member(func() any { return l_666 }(), "$sp") }())
 										}())
 									}(), func() any { return any(1) }())
 								}()
@@ -4389,13 +4101,13 @@ L17:
 			return c.Binary("+", func() any {
 				return c.Binary("+", func() any {
 					return c.Binary("+", func() any {
-						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_654, l_655 any) any {
+						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_667, l_668 any) any {
 							return func() any {
 								return c.Binary("+", func() any {
 									return c.Binary("*", func() any {
 										return c.Binary("/", func() any {
-											return c.Binary("+", func() any { return l_654 }(), func() any {
-												return c.Length(func() any { return c.Member(func() any { return l_655 }(), "$sp") }())
+											return c.Binary("+", func() any { return l_667 }(), func() any {
+												return c.Length(func() any { return c.Member(func() any { return l_668 }(), "$sp") }())
 											}())
 										}(), func() any { return any(8) }())
 									}(), func() any { return any(8) }())
@@ -4408,11 +4120,11 @@ L17:
 				}(), func() any {
 					return c.Binary("*", func() any { return any(4194304) }(), func() any {
 						return c.Binary("+", func() any {
-							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_656, l_657 any) any {
+							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_669, l_670 any) any {
 								return func() any {
 									return c.Binary("+", func() any {
-										return c.Binary("+", func() any { return l_656 }(), func() any {
-											return c.Length(func() any { return c.Member(func() any { return l_657 }(), "$sp") }())
+										return c.Binary("+", func() any { return l_669 }(), func() any {
+											return c.Length(func() any { return c.Member(func() any { return l_670 }(), "$sp") }())
 										}())
 									}(), func() any { return any(1) }())
 								}()
@@ -4646,7 +4358,7 @@ func i9(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 12 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit34, "\f", 13, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit39, "\f", 13, false); !ok {
 			goto L6
 		}
 		x3++
@@ -4664,7 +4376,7 @@ func i9(p *pegort.TParser) (any, bool) {
 		x8, x9 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 			goto L10
 		}
 		if _, ok = s342(p); !ok {
@@ -4697,7 +4409,7 @@ func i9(p *pegort.TParser) (any, bool) {
 			}
 			if p.Pos < len(p.In) && p.In[p.Pos] == 12 {
 				p.Pos++
-			} else if _, ok = p.Parser.MatchLiteral(lit34, "\f", 13, false); !ok {
+			} else if _, ok = p.Parser.MatchLiteral(lit39, "\f", 13, false); !ok {
 				goto L17
 			}
 			x14++
@@ -4735,7 +4447,7 @@ func i9(p *pegort.TParser) (any, bool) {
 			x32, x33 = p.Pos, len(p.Recovered)
 			if p.Pos < len(p.In) && p.In[p.Pos] == 32 {
 				p.Pos++
-			} else if _, ok = p.Parser.MatchLiteral(lit36, " ", 14, false); !ok {
+			} else if _, ok = p.Parser.MatchLiteral(lit41, " ", 14, false); !ok {
 				goto L34
 			}
 			x31++
@@ -4754,14 +4466,14 @@ func i9(p *pegort.TParser) (any, bool) {
 		x36 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 9 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit37, "\t", 15, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit42, "\t", 15, false); !ok {
 			goto L26
 		}
 		v37 = p.NewMatchOrdinary(x36, p.Pos, "\t", true)
 		x28 = append(x28, v37)
 		v38 = p.NewNodeOrdinary("tuple", x27, p.Pos, x28)
-		v39 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v38, x23)
-		v40 = p.AttachCaptures(v39, scope663, []any{k25}, x23, p.Pos)
+		v39 = p.ScopeValue(sh9, v38, x23)
+		v40 = p.AttachCaptures(v39, scope676, []any{k25}, x23, p.Pos)
 		x22++
 		p.PushKid(v40)
 		if p.Pos == x23 {
@@ -4783,7 +4495,7 @@ func i9(p *pegort.TParser) (any, bool) {
 		x46, x47 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) && p.In[p.Pos] == 32 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit36, " ", 14, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit41, " ", 14, false); !ok {
 			goto L48
 		}
 		x45++
@@ -4804,7 +4516,7 @@ func i9(p *pegort.TParser) (any, bool) {
 		x51, x52 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 			goto L53
 		}
 		if _, ok = s342(p); !ok {
@@ -4843,8 +4555,8 @@ func i9(p *pegort.TParser) (any, bool) {
 		break
 	}
 	v57 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v57, start)
-	v = p.AttachCaptures(v, scope664, []any{k18, k42}, start, p.Pos)
+	v = p.ScopeValue(sh9, v57, start)
+	v = p.AttachCaptures(v, scope677, []any{k18, k42}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -4923,7 +4635,7 @@ func v10(p *pegort.TParser) (any, bool) {
 		x9 = p.Pos
 		p.Pos += size
 		v10 = p.NewMatchOrdinary(x9, p.Pos, p.Text(x9, p.Pos), true)
-		v11 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v10, x6)
+		v11 = p.ScopeValue(sh8, v10, x6)
 		x5++
 		p.PushKid(v11)
 		if p.Pos == x6 {
@@ -4946,7 +4658,7 @@ func v10(p *pegort.TParser) (any, bool) {
 		x21 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 			goto L18
 		}
 		v22 = p.NewMatchOrdinary(x21, p.Pos, "\\", true)
@@ -4981,7 +4693,7 @@ func v10(p *pegort.TParser) (any, bool) {
 			x33 = p.Pos
 			p.Pos += size
 			v34 = p.NewMatchOrdinary(x33, p.Pos, p.Text(x33, p.Pos), true)
-			v35 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v34, x30)
+			v35 = p.ScopeValue(sh8, v34, x30)
 			x29++
 			p.PushKid(v35)
 			if p.Pos == x30 {
@@ -4996,7 +4708,7 @@ func v10(p *pegort.TParser) (any, bool) {
 		v36 = p.NewNodeOrdinary("list", x27, p.Pos, p.Kids(x28))
 		x20 = append(x20, v36)
 		v37 = p.NewNodeOrdinary("tuple", x19, p.Pos, x20)
-		v38 = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v37, x16)
+		v38 = p.ScopeValue(sh11, v37, x16)
 		x15++
 		p.PushKid(v38)
 		if p.Pos == x16 {
@@ -5027,7 +4739,7 @@ L44:
 	}
 	x2 = append(x2, v46)
 	v47 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, v47, start)
+	v = p.ScopeValue(sh274, v47, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -5097,7 +4809,7 @@ L14:
 		p.ExpectOrdinary(p.Pos, pegort.IdEndInput)
 		goto L16
 	}
-	v17, _ = p.ShapeSingle(pegort.Shaper{Elems: false, K: 0, Mode: 0, Tuple: true, Shared: false}, nil, x10)
+	v17, _ = p.ShapeSingle(sh45, nil, x10)
 	v12 = v17
 	goto L13
 L16:
@@ -5107,7 +4819,7 @@ L16:
 L13:
 	x2 = append(x2, v12)
 	v18 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v18, start)
+	v = p.ScopeValue(sh11, v18, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -5153,7 +4865,7 @@ func s12(p *pegort.TParser) (any, bool) {
 	x9 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 13 && p.In[p.Pos+1] == 10 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit41, "\r\n", 16, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit47, "\r\n", 16, false); !ok {
 		goto L8
 	}
 	v10 = p.NewMatchOrdinary(x9, p.Pos, "\r\n", true)
@@ -5183,7 +4895,7 @@ L12:
 L11:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -5231,7 +4943,7 @@ func s13(p *pegort.TParser) (any, bool) {
 	x3 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 35 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit43, "#", 18, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit49, "#", 18, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, "#", true)
@@ -5248,7 +4960,7 @@ func s13(p *pegort.TParser) (any, bool) {
 		x11 = p.Pos
 		p.Pos += size
 		v12 = p.NewMatchOrdinary(x11, p.Pos, p.Text(x11, p.Pos), true)
-		v13 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v12, x8)
+		v13 = p.ScopeValue(sh8, v12, x8)
 		x7++
 		p.PushKid(v13)
 		if p.Pos == x8 {
@@ -5263,7 +4975,7 @@ func s13(p *pegort.TParser) (any, bool) {
 	v14 = p.NewNodeOrdinary("list", x5, p.Pos, p.Kids(x6))
 	x2 = append(x2, v14)
 	v15 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v15, start)
+	v = p.ScopeValue(sh9, v15, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -5375,7 +5087,7 @@ func s14(p *pegort.TParser) (any, bool) {
 			x18 = p.Pos
 			p.Pos += size
 			v19 = p.NewMatchOrdinary(x18, p.Pos, p.Text(x18, p.Pos), true)
-			v20 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v19, x15)
+			v20 = p.ScopeValue(sh8, v19, x15)
 			x14++
 			p.PushKid(v20)
 			if p.Pos == x15 {
@@ -5407,7 +5119,7 @@ func s14(p *pegort.TParser) (any, bool) {
 		x28 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 			goto L25
 		}
 		v29 = p.NewMatchOrdinary(x28, p.Pos, "\\", true)
@@ -5421,7 +5133,7 @@ func s14(p *pegort.TParser) (any, bool) {
 		x38 = p.Pos
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 13 && p.In[p.Pos+1] == 10 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit41, "\r\n", 16, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit47, "\r\n", 16, false); !ok {
 			goto L37
 		}
 		v39 = p.NewMatchOrdinary(x38, p.Pos, "\r\n", true)
@@ -5467,7 +5179,7 @@ func s14(p *pegort.TParser) (any, bool) {
 		p.Pos = x44
 		p.Recovered = p.Recovered[:x45]
 		v47 = p.NewNodeOrdinary("tuple", x26, p.Pos, x27)
-		v48, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v47, x7)
+		v48, _ = p.ShapeSingle(sh9, v47, x7)
 		v9 = v48
 		goto L10
 	L25:
@@ -5514,7 +5226,7 @@ func s14(p *pegort.TParser) (any, bool) {
 		x65 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 35 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit43, "#", 18, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit49, "#", 18, false); !ok {
 			goto L62
 		}
 		v66 = p.NewMatchOrdinary(x65, p.Pos, "#", true)
@@ -5531,7 +5243,7 @@ func s14(p *pegort.TParser) (any, bool) {
 			x73 = p.Pos
 			p.Pos += size
 			v74 = p.NewMatchOrdinary(x73, p.Pos, p.Text(x73, p.Pos), true)
-			v75 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v74, x70)
+			v75 = p.ScopeValue(sh8, v74, x70)
 			x69++
 			p.PushKid(v75)
 			if p.Pos == x70 {
@@ -5546,7 +5258,7 @@ func s14(p *pegort.TParser) (any, bool) {
 		v76 = p.NewNodeOrdinary("list", x67, p.Pos, p.Kids(x68))
 		x64 = append(x64, v76)
 		v77 = p.NewNodeOrdinary("tuple", x63, p.Pos, x64)
-		v78, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v77, x55)
+		v78, _ = p.ShapeSingle(sh9, v77, x55)
 		v57 = v78
 		goto L58
 	L62:
@@ -5560,7 +5272,7 @@ func s14(p *pegort.TParser) (any, bool) {
 		x81 = p.Pos
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 13 && p.In[p.Pos+1] == 10 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit41, "\r\n", 16, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit47, "\r\n", 16, false); !ok {
 			goto L80
 		}
 		v82 = p.NewMatchOrdinary(x81, p.Pos, "\r\n", true)
@@ -5592,7 +5304,7 @@ func s14(p *pegort.TParser) (any, bool) {
 	L58:
 		x51 = append(x51, v57)
 		v87 = p.NewNodeOrdinary("tuple", x50, p.Pos, x51)
-		v88, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v87, x7)
+		v88, _ = p.ShapeSingle(sh14, v87, x7)
 		v9 = v88
 		goto L10
 	L49:
@@ -5600,7 +5312,7 @@ func s14(p *pegort.TParser) (any, bool) {
 		p.Recovered = p.Recovered[:x8]
 		goto L6
 	L10:
-		v89 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, x4)
+		v89 = p.ScopeValue(sh8, v9, x4)
 		x3++
 		p.PushKid(v89)
 		if p.Pos == x4 {
@@ -5613,7 +5325,7 @@ func s14(p *pegort.TParser) (any, bool) {
 		break
 	}
 	v90 = p.NewNodeOrdinary("list", x1, p.Pos, p.Kids(x2))
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v90, start)
+	v = p.ScopeValue(sh8, v90, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -5666,7 +5378,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -5715,7 +5427,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -5953,7 +5665,7 @@ L47:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -6184,7 +5896,7 @@ L47:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -6252,14 +5964,14 @@ func i17(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L13
 	}
 	x14, x15 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L16
 	}
 	p.Silent--
@@ -6281,14 +5993,14 @@ L12:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto L18
 	}
 	x19, x20 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L21
 	}
 	p.Silent--
@@ -6326,7 +6038,7 @@ L6:
 	w = p.Where
 	p.Where = "expr_stmt"
 	v = func() any {
-		return func() any { f_665 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_665) }()
+		return func() any { f_678 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_678) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -6400,7 +6112,7 @@ L13:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -6465,14 +6177,14 @@ func i19(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x4, x5 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L6
 	}
 	p.Silent--
@@ -6498,14 +6210,14 @@ L6:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L14
 	}
 	x16, x17 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L18
 	}
 	p.Silent--
@@ -6535,11 +6247,11 @@ L15:
 	p.Where = "ann_simple"
 	v = func() any {
 		return func() any {
-			f_666 := func() any { return k1 }()
-			f_667 := func() any { return k7 }()
-			f_668 := func() any { return k12 }()
-			f_669 := func() any { return any(true) }()
-			return tmk_AnnAssign(c, true, f_666, f_667, f_668, f_669)
+			f_679 := func() any { return k1 }()
+			f_680 := func() any { return k7 }()
+			f_681 := func() any { return k12 }()
+			f_682 := func() any { return any(true) }()
+			return tmk_AnnAssign(c, true, f_679, f_680, f_681, f_682)
 		}()
 	}()
 	p.Where = w
@@ -6631,14 +6343,14 @@ L6:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x14, x15 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L16
 	}
 	p.Silent--
@@ -6664,14 +6376,14 @@ L16:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L24
 	}
 	x26, x27 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L28
 	}
 	p.Silent--
@@ -6701,11 +6413,11 @@ L25:
 	p.Where = "ann_complex"
 	v = func() any {
 		return func() any {
-			f_670 := func() any { return k1 }()
-			f_671 := func() any { return k17 }()
-			f_672 := func() any { return k22 }()
-			f_673 := func() any { return any(false) }()
-			return tmk_AnnAssign(c, true, f_670, f_671, f_672, f_673)
+			f_683 := func() any { return k1 }()
+			f_684 := func() any { return k17 }()
+			f_685 := func() any { return k22 }()
+			f_686 := func() any { return any(false) }()
+			return tmk_AnnAssign(c, true, f_683, f_684, f_685, f_686)
 		}()
 	}()
 	p.Where = w
@@ -6764,14 +6476,14 @@ func i21(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto fail
 	}
 	x4, x5 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L6
 	}
 	p.Silent--
@@ -6797,14 +6509,14 @@ L6:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L12
 	}
 	x13, x14 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L15
 	}
 	p.Silent--
@@ -6828,9 +6540,9 @@ L12:
 	p.Where = "assign_one"
 	v = func() any {
 		return func() any {
-			f_674 := func() any { return c.List(func() any { return k1 }()) }()
-			f_675 := func() any { return k7 }()
-			return tmk_Assign(c, true, f_674, f_675)
+			f_687 := func() any { return c.List(func() any { return k1 }()) }()
+			f_688 := func() any { return k7 }()
+			return tmk_Assign(c, true, f_687, f_688)
 		}()
 	}()
 	p.Where = w
@@ -6914,7 +6626,7 @@ func i22(p *pegort.TParser) (any, bool) {
 		x14 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 			goto L9
 		}
 		v15 = p.NewMatchOrdinary(x14, p.Pos, "=", true)
@@ -6923,7 +6635,7 @@ func i22(p *pegort.TParser) (any, bool) {
 		p.Silent++
 		if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 			goto L18
 		}
 		p.Silent--
@@ -6938,8 +6650,8 @@ func i22(p *pegort.TParser) (any, bool) {
 			goto L9
 		}
 		v19 = p.NewNodeOrdinary("tuple", x10, p.Pos, x11)
-		v20 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v19, x6)
-		v21 = p.AttachCaptures(v20, scope676, []any{k8}, x6, p.Pos)
+		v20 = p.ScopeValue(sh9, v19, x6)
+		v21 = p.AttachCaptures(v20, scope689, []any{k8}, x6, p.Pos)
 		x5++
 		p.PushKid(v21)
 		if p.Pos == x6 {
@@ -6969,14 +6681,14 @@ func i22(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L28
 	}
 	x29, x30 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L31
 	}
 	p.Silent--
@@ -7000,13 +6712,13 @@ L28:
 	p.Where = "assign_chain"
 	v = func() any {
 		return func() any {
-			f_677 := func() any {
-				return c.MapList(func() any { return k1 }(), func(l_678 any) any {
-					return func() any { return c.Member(func() any { return l_678 }(), "$t") }()
+			f_690 := func() any {
+				return c.MapList(func() any { return k1 }(), func(l_691 any) any {
+					return func() any { return c.Member(func() any { return l_691 }(), "$t") }()
 				})
 			}()
-			f_679 := func() any { return k23 }()
-			return tmk_Assign(c, true, f_677, f_679)
+			f_692 := func() any { return k23 }()
+			return tmk_Assign(c, true, f_690, f_692)
 		}()
 	}()
 	p.Where = w
@@ -7078,10 +6790,10 @@ func i23(p *pegort.TParser) (any, bool) {
 	p.Where = "aug_assign"
 	v = func() any {
 		return func() any {
-			f_680 := func() any { return k1 }()
-			f_681 := func() any { return k4 }()
-			f_682 := func() any { return k7 }()
-			return tmk_AugAssign(c, true, f_680, f_681, f_682)
+			f_693 := func() any { return k1 }()
+			f_694 := func() any { return k4 }()
+			f_695 := func() any { return k7 }()
+			return tmk_AugAssign(c, true, f_693, f_694, f_695)
 		}()
 	}()
 	p.Where = w
@@ -7121,7 +6833,7 @@ func s24(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 43 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit58, "+=", 36, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit64, "+=", 36, false); !ok {
 		goto L8
 	}
 	goto L4
@@ -7135,7 +6847,7 @@ L7:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 45 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit59, "-=", 37, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit65, "-=", 37, false); !ok {
 		goto L10
 	}
 	goto L4
@@ -7149,7 +6861,7 @@ L9:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit60, "*=", 38, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit66, "*=", 38, false); !ok {
 		goto L12
 	}
 	goto L4
@@ -7163,7 +6875,7 @@ L11:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 64 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit61, "@=", 39, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit67, "@=", 39, false); !ok {
 		goto L14
 	}
 	goto L4
@@ -7177,7 +6889,7 @@ L13:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit62, "/=", 40, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit68, "/=", 40, false); !ok {
 		goto L16
 	}
 	goto L4
@@ -7191,7 +6903,7 @@ L15:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 37 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit63, "%=", 41, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit69, "%=", 41, false); !ok {
 		goto L18
 	}
 	goto L4
@@ -7205,7 +6917,7 @@ L17:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 38 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit64, "&=", 42, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit70, "&=", 42, false); !ok {
 		goto L20
 	}
 	goto L4
@@ -7219,7 +6931,7 @@ L19:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 124 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit65, "|=", 43, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit71, "|=", 43, false); !ok {
 		goto L22
 	}
 	goto L4
@@ -7233,7 +6945,7 @@ L21:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 94 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit66, "^=", 44, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit72, "^=", 44, false); !ok {
 		goto L24
 	}
 	goto L4
@@ -7247,7 +6959,7 @@ L23:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 60 && p.In[p.Pos+1] == 60 && p.In[p.Pos+2] == 61 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit67, "<<=", 45, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit73, "<<=", 45, false); !ok {
 		goto L26
 	}
 	goto L4
@@ -7261,7 +6973,7 @@ L25:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 62 && p.In[p.Pos+1] == 62 && p.In[p.Pos+2] == 61 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit68, ">>=", 46, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit74, ">>=", 46, false); !ok {
 		goto L28
 	}
 	goto L4
@@ -7275,7 +6987,7 @@ L27:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 42 && p.In[p.Pos+2] == 61 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit69, "**=", 47, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit75, "**=", 47, false); !ok {
 		goto L30
 	}
 	goto L4
@@ -7289,7 +7001,7 @@ L29:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47 && p.In[p.Pos+2] == 61 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit70, "//=", 48, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit76, "//=", 48, false); !ok {
 		goto L32
 	}
 	goto L4
@@ -7301,7 +7013,7 @@ L31:
 L4:
 	v33 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v33)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v33, start)
+	v = p.ScopeValue(sh8, v33, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7360,7 +7072,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7409,7 +7121,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -7571,7 +7283,7 @@ L6:
 	w = p.Where
 	p.Where = "return_stmt"
 	v = func() any {
-		return func() any { f_683 := func() any { return k3 }(); return tmk_Return(c, true, f_683) }()
+		return func() any { f_696 := func() any { return k3 }(); return tmk_Return(c, true, f_696) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -7668,9 +7380,9 @@ L8:
 	p.Where = "raise_stmt"
 	v = func() any {
 		return func() any {
-			f_684 := func() any { return k3 }()
-			f_685 := func() any { return k5 }()
-			return tmk_Raise(c, true, f_684, f_685)
+			f_697 := func() any { return k3 }()
+			f_698 := func() any { return k5 }()
+			return tmk_Raise(c, true, f_697, f_698)
 		}()
 	}()
 	p.Where = w
@@ -7740,7 +7452,7 @@ func i31(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L11
 		}
 		if _, ok = s339(p); !ok {
@@ -7769,7 +7481,7 @@ func i31(p *pegort.TParser) (any, bool) {
 	p.Where = "global_stmt"
 	v = func() any {
 		return func() any {
-			f_686 := func() any {
+			f_699 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k1 }())
@@ -7777,7 +7489,7 @@ func i31(p *pegort.TParser) (any, bool) {
 					return c.EndList(b)
 				}()
 			}()
-			return tmk_Global(c, true, f_686)
+			return tmk_Global(c, true, f_699)
 		}()
 	}()
 	p.Where = w
@@ -7847,7 +7559,7 @@ func i32(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L11
 		}
 		if _, ok = s339(p); !ok {
@@ -7876,7 +7588,7 @@ func i32(p *pegort.TParser) (any, bool) {
 	p.Where = "nonlocal_stmt"
 	v = func() any {
 		return func() any {
-			f_687 := func() any {
+			f_700 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k1 }())
@@ -7884,7 +7596,7 @@ func i32(p *pegort.TParser) (any, bool) {
 					return c.EndList(b)
 				}()
 			}()
-			return tmk_Nonlocal(c, true, f_687)
+			return tmk_Nonlocal(c, true, f_700)
 		}()
 	}()
 	p.Where = w
@@ -7961,7 +7673,7 @@ func i33(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L11
 		}
 		if _, ok = s339(p); !ok {
@@ -7991,7 +7703,7 @@ func i33(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L17
 	}
 	goto L18
@@ -8027,7 +7739,7 @@ L27:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 35 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit43, "#", 18, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit49, "#", 18, false); !ok {
 		goto L30
 	}
 	goto L24
@@ -8066,7 +7778,7 @@ L21:
 	p.Where = "del_stmt"
 	v = func() any {
 		return func() any {
-			f_688 := func() any {
+			f_701 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k1 }())
@@ -8074,7 +7786,7 @@ L21:
 					return c.EndList(b)
 				}()
 			}()
-			return tmk_Delete(c, true, f_688)
+			return tmk_Delete(c, true, f_701)
 		}()
 	}()
 	p.Where = w
@@ -8138,7 +7850,7 @@ func i34(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L8
 	}
 	if _, ok = s339(p); !ok {
@@ -8160,9 +7872,9 @@ L9:
 	p.Where = "assert_stmt"
 	v = func() any {
 		return func() any {
-			f_689 := func() any { return k1 }()
-			f_690 := func() any { return k6 }()
-			return tmk_Assert(c, true, f_689, f_690)
+			f_702 := func() any { return k1 }()
+			f_703 := func() any { return k6 }()
+			return tmk_Assert(c, true, f_702, f_703)
 		}()
 	}()
 	p.Where = w
@@ -8211,7 +7923,7 @@ func i35(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "yield_stmt"
 	v = func() any {
-		return func() any { f_691 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_691) }()
+		return func() any { f_704 := func() any { return k1 }(); return tmk_ExprStmt(c, true, f_704) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -8294,14 +8006,14 @@ L9:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto fail
 	}
 	x12, x13 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L14
 	}
 	p.Silent--
@@ -8325,10 +8037,10 @@ L14:
 	p.Where = "type_alias"
 	v = func() any {
 		return func() any {
-			f_692 := func() any { return k1 }()
-			f_693 := func() any { return c.Concat(func() any { return k6 }()) }()
-			f_694 := func() any { return k15 }()
-			return tmk_TypeAlias(c, true, f_692, f_693, f_694)
+			f_705 := func() any { return k1 }()
+			f_706 := func() any { return c.Concat(func() any { return k6 }()) }()
+			f_707 := func() any { return k15 }()
+			return tmk_TypeAlias(c, true, f_705, f_706, f_707)
 		}()
 	}()
 	p.Where = w
@@ -8398,7 +8110,7 @@ func i37(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L11
 		}
 		if _, ok = s339(p); !ok {
@@ -8427,7 +8139,7 @@ func i37(p *pegort.TParser) (any, bool) {
 	p.Where = "import_stmt"
 	v = func() any {
 		return func() any {
-			f_695 := func() any {
+			f_708 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k1 }())
@@ -8435,7 +8147,7 @@ func i37(p *pegort.TParser) (any, bool) {
 					return c.EndList(b)
 				}()
 			}()
-			return tmk_Import(c, true, f_695)
+			return tmk_Import(c, true, f_708)
 		}()
 	}()
 	p.Where = w
@@ -8516,21 +8228,21 @@ L9:
 	p.Where = "dotted_as_name"
 	v = func() any {
 		return func() any {
-			f_696 := func() any {
+			f_709 := func() any {
 				return c.Fold("foldl", false, func() any {
 					return c.Text(func() any { return c.Member(func() any { return k1 }(), "$f") }())
-				}(), func() any { return c.Member(func() any { return k1 }(), "$r") }(), func(l_697, l_698 any) any {
+				}(), func() any { return c.Member(func() any { return k1 }(), "$r") }(), func(l_710, l_711 any) any {
 					return func() any {
 						return c.Binary("+", func() any {
-							return c.Binary("+", func() any { return l_697 }(), func() any { return any(".") }())
+							return c.Binary("+", func() any { return l_710 }(), func() any { return any(".") }())
 						}(), func() any {
-							return c.Text(func() any { return c.Member(func() any { return l_698 }(), "$n") }())
+							return c.Text(func() any { return c.Member(func() any { return l_711 }(), "$n") }())
 						}())
 					}()
 				})
 			}()
-			f_699 := func() any { return c.Text(func() any { return k6 }()) }()
-			return tmk_Alias(c, true, f_696, f_699)
+			f_712 := func() any { return c.Text(func() any { return k6 }()) }()
+			return tmk_Alias(c, true, f_709, f_712)
 		}()
 	}()
 	p.Where = w
@@ -8608,7 +8320,7 @@ func i39(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit92, ".", 50, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit98, ".", 50, false); !ok {
 			goto L14
 		}
 		if _, ok = s339(p); !ok {
@@ -8621,8 +8333,8 @@ func i39(p *pegort.TParser) (any, bool) {
 		k13 = v18
 		x16 = append(x16, v18)
 		v19 = p.NewNodeOrdinary("tuple", x15, p.Pos, x16)
-		v20 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v19, x11)
-		v21 = p.AttachCaptures(v20, scope700, []any{k13}, x11, p.Pos)
+		v20 = p.ScopeValue(sh14, v19, x11)
+		v21 = p.AttachCaptures(v20, scope713, []any{k13}, x11, p.Pos)
 		x10++
 		p.PushKid(v21)
 		if p.Pos == x11 {
@@ -8638,8 +8350,8 @@ func i39(p *pegort.TParser) (any, bool) {
 	k6 = v22
 	x2 = append(x2, v22)
 	v23 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v23, start)
-	v = p.AttachCaptures(v, scope701, []any{k3, k6}, start, p.Pos)
+	v = p.ScopeValue(sh9, v23, start)
+	v = p.AttachCaptures(v, scope714, []any{k3, k6}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -8730,7 +8442,7 @@ func i40(p *pegort.TParser) (any, bool) {
 		x21 = p.Pos
 		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 46 && p.In[p.Pos+1] == 46 && p.In[p.Pos+2] == 46 {
 			p.Pos += 3
-		} else if _, ok = p.Parser.MatchLiteral(lit95, "...", 51, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit101, "...", 51, false); !ok {
 			goto L20
 		}
 		v22 = p.NewMatchOrdinary(x21, p.Pos, "...", true)
@@ -8747,7 +8459,7 @@ func i40(p *pegort.TParser) (any, bool) {
 		x25 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit92, ".", 50, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit98, ".", 50, false); !ok {
 			goto L24
 		}
 		v26 = p.NewMatchOrdinary(x25, p.Pos, ".", true)
@@ -8762,8 +8474,8 @@ func i40(p *pegort.TParser) (any, bool) {
 		k8 = v15
 		x11 = append(x11, v15)
 		v27 = p.NewNodeOrdinary("tuple", x10, p.Pos, x11)
-		v28 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v27, x6)
-		v29 = p.AttachCaptures(v28, scope702, []any{k8}, x6, p.Pos)
+		v28 = p.ScopeValue(sh14, v27, x6)
+		v29 = p.AttachCaptures(v28, scope715, []any{k8}, x6, p.Pos)
 		x5++
 		p.PushKid(v29)
 		if p.Pos == x6 {
@@ -8814,30 +8526,30 @@ func i40(p *pegort.TParser) (any, bool) {
 	p.Where = "from_stmt"
 	v = func() any {
 		return func() any {
-			f_703 := func() any {
+			f_716 := func() any {
 				return c.Fold("foldl", false, func() any {
 					return c.Text(func() any { return c.Member(func() any { return k31 }(), "$f") }())
-				}(), func() any { return c.Member(func() any { return k31 }(), "$r") }(), func(l_704, l_705 any) any {
+				}(), func() any { return c.Member(func() any { return k31 }(), "$r") }(), func(l_717, l_718 any) any {
 					return func() any {
 						return c.Binary("+", func() any {
-							return c.Binary("+", func() any { return l_704 }(), func() any { return any(".") }())
+							return c.Binary("+", func() any { return l_717 }(), func() any { return any(".") }())
 						}(), func() any {
-							return c.Text(func() any { return c.Member(func() any { return l_705 }(), "$n") }())
+							return c.Text(func() any { return c.Member(func() any { return l_718 }(), "$n") }())
 						}())
 					}()
 				})
 			}()
-			f_706 := func() any { return k34 }()
-			f_707 := func() any {
-				return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return k1 }(), func(l_708, l_709 any) any {
+			f_719 := func() any { return k34 }()
+			f_720 := func() any {
+				return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return k1 }(), func(l_721, l_722 any) any {
 					return func() any {
-						return c.Binary("+", func() any { return l_708 }(), func() any {
-							return c.Length(func() any { return c.Member(func() any { return l_709 }(), "$d") }())
+						return c.Binary("+", func() any { return l_721 }(), func() any {
+							return c.Length(func() any { return c.Member(func() any { return l_722 }(), "$d") }())
 						}())
 					}()
 				})
 			}()
-			return tmk_ImportFrom(c, true, f_703, f_706, f_707)
+			return tmk_ImportFrom(c, true, f_716, f_719, f_720)
 		}()
 	}()
 	p.Where = w
@@ -8932,7 +8644,7 @@ func i41(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit92, ".", 50, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit98, ".", 50, false); !ok {
 			goto L23
 		}
 		if _, ok = s339(p); !ok {
@@ -8945,8 +8657,8 @@ func i41(p *pegort.TParser) (any, bool) {
 		k22 = v27
 		x25 = append(x25, v27)
 		v28 = p.NewNodeOrdinary("tuple", x24, p.Pos, x25)
-		v29 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v28, x20)
-		v30 = p.AttachCaptures(v29, scope710, []any{k22}, x20, p.Pos)
+		v29 = p.ScopeValue(sh14, v28, x20)
+		v30 = p.AttachCaptures(v29, scope723, []any{k22}, x20, p.Pos)
 		x19++
 		p.PushKid(v30)
 		if p.Pos == x20 {
@@ -8962,7 +8674,7 @@ func i41(p *pegort.TParser) (any, bool) {
 	k7 = v31
 	x13 = append(x13, v31)
 	v32 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
-	v33, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v32, x3)
+	v33, _ = p.ShapeSingle(sh9, v32, x3)
 	v9 = v33
 	goto L11
 L10:
@@ -8974,8 +8686,8 @@ L10:
 L11:
 	x2 = append(x2, v9)
 	v34 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v34, start)
-	v = p.AttachCaptures(v, scope711, []any{k5, k7}, start, p.Pos)
+	v = p.ScopeValue(sh14, v34, start)
+	v = p.AttachCaptures(v, scope724, []any{k5, k7}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -9043,7 +8755,7 @@ L13:
 L12:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -9101,7 +8813,7 @@ func i43(p *pegort.TParser) (any, bool) {
 	_, _, _ = x2, x7, x12
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -9141,7 +8853,7 @@ func i43(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L11
 		}
 		if _, ok = s339(p); !ok {
@@ -9171,7 +8883,7 @@ func i43(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L17
 	}
 	goto L18
@@ -9185,7 +8897,7 @@ L18:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -9265,7 +8977,7 @@ func i44(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L11
 		}
 		if _, ok = s339(p); !ok {
@@ -9296,7 +9008,7 @@ func i44(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L17
 	}
 	p.Silent--
@@ -9391,7 +9103,7 @@ func s46(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit107, "*", 52, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit113, "*", 52, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -9399,8 +9111,8 @@ func s46(p *pegort.TParser) (any, bool) {
 	p.Where = "star_alias"
 	v = func() any {
 		return func() any {
-			f_712 := func() any { return any("*") }()
-			return tmk_Alias(c, true, f_712, nil)
+			f_725 := func() any { return any("*") }()
+			return tmk_Alias(c, true, f_725, nil)
 		}()
 	}()
 	p.Where = w
@@ -9483,9 +9195,9 @@ L9:
 	p.Where = "import_from_as_name"
 	v = func() any {
 		return func() any {
-			f_713 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_714 := func() any { return c.Text(func() any { return k6 }()) }()
-			return tmk_Alias(c, true, f_713, f_714)
+			f_726 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_727 := func() any { return c.Text(func() any { return k6 }()) }()
+			return tmk_Alias(c, true, f_726, f_727)
 		}()
 	}()
 	p.Where = w
@@ -9658,7 +9370,7 @@ L35:
 L34:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -9729,7 +9441,7 @@ func i49(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x5 = p.Pos
@@ -9771,10 +9483,10 @@ L13:
 	p.Where = "if_stmt"
 	v = func() any {
 		return func() any {
-			f_715 := func() any { return k1 }()
-			f_716 := func() any { return k4 }()
-			f_717 := func() any { return c.Concat(func() any { return k7 }()) }()
-			return tmk_If(c, true, f_715, f_716, f_717)
+			f_728 := func() any { return k1 }()
+			f_729 := func() any { return k4 }()
+			f_730 := func() any { return c.Concat(func() any { return k7 }()) }()
+			return tmk_If(c, true, f_728, f_729, f_730)
 		}()
 	}()
 	p.Where = w
@@ -9896,7 +9608,7 @@ func i51(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x5 = p.Pos
@@ -9938,10 +9650,10 @@ L13:
 	p.Where = "elif_stmt"
 	v = func() any {
 		return func() any {
-			f_718 := func() any { return k1 }()
-			f_719 := func() any { return k4 }()
-			f_720 := func() any { return c.Concat(func() any { return k7 }()) }()
-			return tmk_If(c, true, f_718, f_719, f_720)
+			f_731 := func() any { return k1 }()
+			f_732 := func() any { return k4 }()
+			f_733 := func() any { return c.Concat(func() any { return k7 }()) }()
+			return tmk_If(c, true, f_731, f_732, f_733)
 		}()
 	}()
 	p.Where = w
@@ -9995,7 +9707,7 @@ func i52(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -10070,7 +9782,7 @@ func i53(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x5 = p.Pos
@@ -10096,10 +9808,10 @@ L13:
 	p.Where = "while_stmt"
 	v = func() any {
 		return func() any {
-			f_721 := func() any { return k1 }()
-			f_722 := func() any { return k4 }()
-			f_723 := func() any { return c.Concat(func() any { return k7 }()) }()
-			return tmk_While(c, true, f_721, f_722, f_723)
+			f_734 := func() any { return k1 }()
+			f_735 := func() any { return k4 }()
+			f_736 := func() any { return c.Concat(func() any { return k7 }()) }()
+			return tmk_While(c, true, f_734, f_735, f_736)
 		}()
 	}()
 	p.Where = w
@@ -10181,7 +9893,7 @@ func i54(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x8 = p.Pos
@@ -10207,11 +9919,11 @@ L16:
 	p.Where = "for_stmt"
 	v = func() any {
 		return func() any {
-			f_724 := func() any { return k1 }()
-			f_725 := func() any { return k4 }()
-			f_726 := func() any { return k7 }()
-			f_727 := func() any { return c.Concat(func() any { return k10 }()) }()
-			return tmk_For(c, true, f_724, f_725, f_726, f_727)
+			f_737 := func() any { return k1 }()
+			f_738 := func() any { return k4 }()
+			f_739 := func() any { return k7 }()
+			f_740 := func() any { return c.Concat(func() any { return k10 }()) }()
+			return tmk_For(c, true, f_737, f_738, f_739, f_740)
 		}()
 	}()
 	p.Where = w
@@ -10299,7 +10011,7 @@ func i55(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x8 = p.Pos
@@ -10325,11 +10037,11 @@ L16:
 	p.Where = "async_for"
 	v = func() any {
 		return func() any {
-			f_728 := func() any { return k1 }()
-			f_729 := func() any { return k4 }()
-			f_730 := func() any { return k7 }()
-			f_731 := func() any { return c.Concat(func() any { return k10 }()) }()
-			return tmk_AsyncFor(c, true, f_728, f_729, f_730, f_731)
+			f_741 := func() any { return k1 }()
+			f_742 := func() any { return k4 }()
+			f_743 := func() any { return k7 }()
+			f_744 := func() any { return c.Concat(func() any { return k10 }()) }()
+			return tmk_AsyncFor(c, true, f_741, f_742, f_743, f_744)
 		}()
 	}()
 	p.Where = w
@@ -10388,7 +10100,7 @@ func i56(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x5 = p.Pos
@@ -10401,9 +10113,9 @@ func i56(p *pegort.TParser) (any, bool) {
 	p.Where = "with_stmt"
 	v = func() any {
 		return func() any {
-			f_732 := func() any { return k1 }()
-			f_733 := func() any { return k4 }()
-			return tmk_With(c, true, f_732, f_733)
+			f_745 := func() any { return k1 }()
+			f_746 := func() any { return k4 }()
+			return tmk_With(c, true, f_745, f_746)
 		}()
 	}()
 	p.Where = w
@@ -10468,7 +10180,7 @@ func i57(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x5 = p.Pos
@@ -10481,9 +10193,9 @@ func i57(p *pegort.TParser) (any, bool) {
 	p.Where = "async_with"
 	v = func() any {
 		return func() any {
-			f_734 := func() any { return k1 }()
-			f_735 := func() any { return k4 }()
-			return tmk_AsyncWith(c, true, f_734, f_735)
+			f_747 := func() any { return k1 }()
+			f_748 := func() any { return k4 }()
+			return tmk_AsyncWith(c, true, f_747, f_748)
 		}()
 	}()
 	p.Where = w
@@ -10548,7 +10260,7 @@ L10:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -10606,7 +10318,7 @@ L10:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -10663,7 +10375,7 @@ func i59(p *pegort.TParser) (any, bool) {
 	_, _, _ = x2, x7, x12
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -10703,7 +10415,7 @@ func i59(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L11
 		}
 		if _, ok = s339(p); !ok {
@@ -10733,7 +10445,7 @@ func i59(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L17
 	}
 	goto L18
@@ -10747,7 +10459,7 @@ L18:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto fail
 	}
 	x19 = p.Pos
@@ -10757,7 +10469,7 @@ L18:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto L20
 	}
 	p.Silent--
@@ -10843,7 +10555,7 @@ func i60(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L11
 		}
 		if _, ok = s339(p); !ok {
@@ -10932,7 +10644,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -10981,7 +10693,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -11070,9 +10782,9 @@ L9:
 	p.Where = "with_item_as"
 	v = func() any {
 		return func() any {
-			f_736 := func() any { return k1 }()
-			f_737 := func() any { return k4 }()
-			return tmk_WithItem(c, true, f_736, f_737)
+			f_749 := func() any { return k1 }()
+			f_750 := func() any { return k4 }()
+			return tmk_WithItem(c, true, f_749, f_750)
 		}()
 	}()
 	p.Where = w
@@ -11122,8 +10834,8 @@ func i63(p *pegort.TParser) (any, bool) {
 	p.Where = "with_item_plain"
 	v = func() any {
 		return func() any {
-			f_738 := func() any { return k1 }()
-			return tmk_WithItem(c, true, f_738, nil)
+			f_751 := func() any { return k1 }()
+			return tmk_WithItem(c, true, f_751, nil)
 		}()
 	}()
 	p.Where = w
@@ -11218,7 +10930,7 @@ func i64(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -11244,8 +10956,8 @@ func i64(p *pegort.TParser) (any, bool) {
 		k11 = v16
 		x14 = append(x14, v16)
 		v17 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-		v18 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v17, x9)
-		v19 = p.AttachCaptures(v18, scope739, []any{k11}, x9, p.Pos)
+		v18 = p.ScopeValue(sh14, v17, x9)
+		v19 = p.AttachCaptures(v18, scope752, []any{k11}, x9, p.Pos)
 		x8++
 		p.PushKid(v19)
 		if p.Pos == x9 {
@@ -11277,8 +10989,8 @@ func i64(p *pegort.TParser) (any, bool) {
 		k28 = v33
 		x31 = append(x31, v33)
 		v34 = p.NewNodeOrdinary("tuple", x30, p.Pos, x31)
-		v35 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v34, x26)
-		v36 = p.AttachCaptures(v35, scope740, []any{k28}, x26, p.Pos)
+		v35 = p.ScopeValue(sh14, v34, x26)
+		v36 = p.AttachCaptures(v35, scope753, []any{k28}, x26, p.Pos)
 		x25++
 		p.PushKid(v36)
 		if p.Pos == x26 {
@@ -11367,28 +11079,28 @@ L58:
 	v = func() any {
 		return c.Fold("foldl", false, func() any {
 			return func() any {
-				f_741 := func() any { return k1 }()
-				f_742 := func() any {
-					return c.MapList(func() any { return k4 }(), func(l_743 any) any {
-						return func() any { return c.Member(func() any { return l_743 }(), "$h") }()
+				f_754 := func() any { return k1 }()
+				f_755 := func() any {
+					return c.MapList(func() any { return k4 }(), func(l_756 any) any {
+						return func() any { return c.Member(func() any { return l_756 }(), "$h") }()
 					})
 				}()
-				f_744 := func() any { return c.Concat(func() any { return k38 }()) }()
-				f_745 := func() any { return c.Concat(func() any { return k46 }()) }()
-				return tmk_Try(c, false, f_741, f_742, f_744, f_745)
+				f_757 := func() any { return c.Concat(func() any { return k38 }()) }()
+				f_758 := func() any { return c.Concat(func() any { return k46 }()) }()
+				return tmk_Try(c, false, f_754, f_755, f_757, f_758)
 			}()
-		}(), func() any { return k21 }(), func(l_746, l_747 any) any {
+		}(), func() any { return k21 }(), func(l_759, l_760 any) any {
 			return func() any {
 				return func() any {
-					f_748 := func() any { return k1 }()
-					f_749 := func() any {
-						return c.MapList(func() any { return k21 }(), func(l_750 any) any {
-							return func() any { return c.Member(func() any { return l_750 }(), "$h") }()
+					f_761 := func() any { return k1 }()
+					f_762 := func() any {
+						return c.MapList(func() any { return k21 }(), func(l_763 any) any {
+							return func() any { return c.Member(func() any { return l_763 }(), "$h") }()
 						})
 					}()
-					f_751 := func() any { return c.Concat(func() any { return k38 }()) }()
-					f_752 := func() any { return c.Concat(func() any { return k46 }()) }()
-					return tmk_TryStar(c, false, f_748, f_749, f_751, f_752)
+					f_764 := func() any { return c.Concat(func() any { return k38 }()) }()
+					f_765 := func() any { return c.Concat(func() any { return k46 }()) }()
+					return tmk_TryStar(c, false, f_761, f_762, f_764, f_765)
 				}()
 			}()
 		})
@@ -11442,7 +11154,7 @@ func i65(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -11527,7 +11239,7 @@ L14:
 L13:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -11605,7 +11317,7 @@ func i67(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x8 = p.Pos
@@ -11618,10 +11330,10 @@ func i67(p *pegort.TParser) (any, bool) {
 	p.Where = "except_as"
 	v = func() any {
 		return func() any {
-			f_753 := func() any { return k1 }()
-			f_754 := func() any { return c.Text(func() any { return k4 }()) }()
-			f_755 := func() any { return k7 }()
-			return tmk_ExceptHandler(c, true, f_753, f_754, f_755)
+			f_766 := func() any { return k1 }()
+			f_767 := func() any { return c.Text(func() any { return k4 }()) }()
+			f_768 := func() any { return k7 }()
+			return tmk_ExceptHandler(c, true, f_766, f_767, f_768)
 		}()
 	}()
 	p.Where = w
@@ -11680,7 +11392,7 @@ func i68(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x5 = p.Pos
@@ -11693,9 +11405,9 @@ func i68(p *pegort.TParser) (any, bool) {
 	p.Where = "except_plain"
 	v = func() any {
 		return func() any {
-			f_756 := func() any { return k1 }()
-			f_757 := func() any { return k4 }()
-			return tmk_ExceptHandler(c, true, f_756, nil, f_757)
+			f_769 := func() any { return k1 }()
+			f_770 := func() any { return k4 }()
+			return tmk_ExceptHandler(c, true, f_769, nil, f_770)
 		}()
 	}()
 	p.Where = w
@@ -11743,7 +11455,7 @@ func i69(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -11756,8 +11468,8 @@ func i69(p *pegort.TParser) (any, bool) {
 	p.Where = "except_bare"
 	v = func() any {
 		return func() any {
-			f_758 := func() any { return k1 }()
-			return tmk_ExceptHandler(c, true, nil, nil, f_758)
+			f_771 := func() any { return k1 }()
+			return tmk_ExceptHandler(c, true, nil, nil, f_771)
 		}()
 	}()
 	p.Where = w
@@ -11818,7 +11530,7 @@ L11:
 L10:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -11874,7 +11586,7 @@ func i71(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit107, "*", 52, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit113, "*", 52, false); !ok {
 		goto fail
 	}
 	if _, ok = s339(p); !ok {
@@ -11904,7 +11616,7 @@ func i71(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x8 = p.Pos
@@ -11917,10 +11629,10 @@ func i71(p *pegort.TParser) (any, bool) {
 	p.Where = "except_star_as"
 	v = func() any {
 		return func() any {
-			f_759 := func() any { return k1 }()
-			f_760 := func() any { return c.Text(func() any { return k4 }()) }()
-			f_761 := func() any { return k7 }()
-			return tmk_ExceptHandler(c, true, f_759, f_760, f_761)
+			f_772 := func() any { return k1 }()
+			f_773 := func() any { return c.Text(func() any { return k4 }()) }()
+			f_774 := func() any { return k7 }()
+			return tmk_ExceptHandler(c, true, f_772, f_773, f_774)
 		}()
 	}()
 	p.Where = w
@@ -11971,7 +11683,7 @@ func i72(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit107, "*", 52, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit113, "*", 52, false); !ok {
 		goto fail
 	}
 	if _, ok = s339(p); !ok {
@@ -11987,7 +11699,7 @@ func i72(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x5 = p.Pos
@@ -12000,9 +11712,9 @@ func i72(p *pegort.TParser) (any, bool) {
 	p.Where = "except_star_plain"
 	v = func() any {
 		return func() any {
-			f_762 := func() any { return k1 }()
-			f_763 := func() any { return k4 }()
-			return tmk_ExceptHandler(c, true, f_762, nil, f_763)
+			f_775 := func() any { return k1 }()
+			f_776 := func() any { return k4 }()
+			return tmk_ExceptHandler(c, true, f_775, nil, f_776)
 		}()
 	}()
 	p.Where = w
@@ -12071,7 +11783,7 @@ func i73(p *pegort.TParser) (any, bool) {
 		x12 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 64 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit140, "@", 64, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit146, "@", 64, false); !ok {
 			goto L9
 		}
 		v13 = p.NewMatchOrdinary(x12, p.Pos, "@", true)
@@ -12089,8 +11801,8 @@ func i73(p *pegort.TParser) (any, bool) {
 			goto L9
 		}
 		v16 = p.NewNodeOrdinary("tuple", x10, p.Pos, x11)
-		v17 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v16, x6)
-		v18 = p.AttachCaptures(v17, scope764, []any{k8}, x6, p.Pos)
+		v17 = p.ScopeValue(sh9, v16, x6)
+		v18 = p.AttachCaptures(v17, scope777, []any{k8}, x6, p.Pos)
 		x5++
 		p.PushKid(v18)
 		if p.Pos == x6 {
@@ -12108,8 +11820,8 @@ func i73(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "decorators"
 	v = func() any {
-		return c.MapList(func() any { return k1 }(), func(l_765 any) any {
-			return func() any { return c.Member(func() any { return l_765 }(), "$e") }()
+		return c.MapList(func() any { return k1 }(), func(l_778 any) any {
+			return func() any { return c.Member(func() any { return l_778 }(), "$e") }()
 		})
 	}()
 	v = c.Finish(v)
@@ -12216,7 +11928,7 @@ L12:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 45 && p.In[p.Pos+1] == 62 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit147, "->", 65, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit153, "->", 65, false); !ok {
 		goto L22
 	}
 	if _, ok = s339(p); !ok {
@@ -12239,7 +11951,7 @@ L23:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x27 = p.Pos
@@ -12252,13 +11964,13 @@ L23:
 	p.Where = "funcdef"
 	v = func() any {
 		return func() any {
-			f_771 := func() any { return c.Text(func() any { return k4 }()) }()
-			f_772 := func() any { return k15 }()
-			f_773 := func() any { return k26 }()
-			f_774 := func() any { return k1 }()
-			f_775 := func() any { return k20 }()
-			f_776 := func() any { return c.Concat(func() any { return k9 }()) }()
-			return tmk_FunctionDef(c, true, f_771, f_772, f_773, f_774, f_775, f_776)
+			f_784 := func() any { return c.Text(func() any { return k4 }()) }()
+			f_785 := func() any { return k15 }()
+			f_786 := func() any { return k26 }()
+			f_787 := func() any { return k1 }()
+			f_788 := func() any { return k20 }()
+			f_789 := func() any { return c.Concat(func() any { return k9 }()) }()
+			return tmk_FunctionDef(c, true, f_784, f_785, f_786, f_787, f_788, f_789)
 		}()
 	}()
 	p.Where = w
@@ -12373,7 +12085,7 @@ L12:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 45 && p.In[p.Pos+1] == 62 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit147, "->", 65, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit153, "->", 65, false); !ok {
 		goto L22
 	}
 	if _, ok = s339(p); !ok {
@@ -12396,7 +12108,7 @@ L23:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x27 = p.Pos
@@ -12409,13 +12121,13 @@ L23:
 	p.Where = "async_funcdef"
 	v = func() any {
 		return func() any {
-			f_777 := func() any { return c.Text(func() any { return k4 }()) }()
-			f_778 := func() any { return k15 }()
-			f_779 := func() any { return k26 }()
-			f_780 := func() any { return k1 }()
-			f_781 := func() any { return k20 }()
-			f_782 := func() any { return c.Concat(func() any { return k9 }()) }()
-			return tmk_AsyncFunctionDef(c, true, f_777, f_778, f_779, f_780, f_781, f_782)
+			f_790 := func() any { return c.Text(func() any { return k4 }()) }()
+			f_791 := func() any { return k15 }()
+			f_792 := func() any { return k26 }()
+			f_793 := func() any { return k1 }()
+			f_794 := func() any { return k20 }()
+			f_795 := func() any { return c.Concat(func() any { return k9 }()) }()
+			return tmk_AsyncFunctionDef(c, true, f_790, f_791, f_792, f_793, f_794, f_795)
 		}()
 	}()
 	p.Where = w
@@ -12462,7 +12174,7 @@ func i77(p *pegort.TParser) (any, bool) {
 	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -12498,7 +12210,7 @@ func i77(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -12553,7 +12265,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -12656,7 +12368,7 @@ L12:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x19 = p.Pos
@@ -12669,37 +12381,37 @@ L12:
 	p.Where = "classdef_args"
 	v = func() any {
 		return func() any {
-			f_783 := func() any { return c.Text(func() any { return k4 }()) }()
-			f_784 := func() any {
+			f_796 := func() any { return c.Text(func() any { return k4 }()) }()
+			f_797 := func() any {
 				return c.Concat(func() any {
-					return c.MapList(func() any { return c.Member(func() any { return k15 }(), "$pos") }(), func(l_785 any) any {
-						return func() any { return c.Member(func() any { return l_785 }(), "$a") }()
+					return c.MapList(func() any { return c.Member(func() any { return k15 }(), "$pos") }(), func(l_798 any) any {
+						return func() any { return c.Member(func() any { return l_798 }(), "$a") }()
 					})
 				}(), func() any {
-					return c.Fold("foldl", false, func() any { return c.List() }(), func() any { return c.Member(func() any { return k15 }(), "$kw1") }(), func(l_786, l_787 any) any {
+					return c.Fold("foldl", false, func() any { return c.List() }(), func() any { return c.Member(func() any { return k15 }(), "$kw1") }(), func(l_799, l_800 any) any {
 						return func() any {
-							return c.Concat(func() any { return l_786 }(), func() any { return c.Member(func() any { return l_787 }(), "$ss") }())
+							return c.Concat(func() any { return l_799 }(), func() any { return c.Member(func() any { return l_800 }(), "$ss") }())
 						}()
 					})
 				}())
 			}()
-			f_788 := func() any {
+			f_801 := func() any {
 				return c.Concat(func() any {
-					return c.Fold("foldl", false, func() any { return c.List() }(), func() any { return c.Member(func() any { return k15 }(), "$kw1") }(), func(l_789, l_790 any) any {
+					return c.Fold("foldl", false, func() any { return c.List() }(), func() any { return c.Member(func() any { return k15 }(), "$kw1") }(), func(l_802, l_803 any) any {
 						return func() any {
-							return c.Concat(func() any { return l_789 }(), func() any { return c.Member(func() any { return l_790 }(), "$ks") }())
+							return c.Concat(func() any { return l_802 }(), func() any { return c.Member(func() any { return l_803 }(), "$ks") }())
 						}()
 					})
 				}(), func() any {
-					return c.MapList(func() any { return c.Member(func() any { return k15 }(), "$kw2") }(), func(l_791 any) any {
-						return func() any { return c.Member(func() any { return l_791 }(), "$k") }()
+					return c.MapList(func() any { return c.Member(func() any { return k15 }(), "$kw2") }(), func(l_804 any) any {
+						return func() any { return c.Member(func() any { return l_804 }(), "$k") }()
 					})
 				}())
 			}()
-			f_792 := func() any { return k18 }()
-			f_793 := func() any { return k1 }()
-			f_794 := func() any { return c.Concat(func() any { return k9 }()) }()
-			return tmk_ClassDef(c, true, f_783, f_784, f_788, f_792, f_793, f_794)
+			f_805 := func() any { return k18 }()
+			f_806 := func() any { return k1 }()
+			f_807 := func() any { return c.Concat(func() any { return k9 }()) }()
+			return tmk_ClassDef(c, true, f_796, f_797, f_801, f_805, f_806, f_807)
 		}()
 	}()
 	p.Where = w
@@ -12789,7 +12501,7 @@ L12:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x16 = p.Pos
@@ -12802,11 +12514,11 @@ L12:
 	p.Where = "classdef_plain"
 	v = func() any {
 		return func() any {
-			f_795 := func() any { return c.Text(func() any { return k4 }()) }()
-			f_796 := func() any { return k15 }()
-			f_797 := func() any { return k1 }()
-			f_798 := func() any { return c.Concat(func() any { return k9 }()) }()
-			return tmk_ClassDef(c, true, f_795, nil, nil, f_796, f_797, f_798)
+			f_808 := func() any { return c.Text(func() any { return k4 }()) }()
+			f_809 := func() any { return k15 }()
+			f_810 := func() any { return k1 }()
+			f_811 := func() any { return c.Concat(func() any { return k9 }()) }()
+			return tmk_ClassDef(c, true, f_808, nil, nil, f_809, f_810, f_811)
 		}()
 	}()
 	p.Where = w
@@ -12865,7 +12577,7 @@ func i81(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x5 = p.Pos
@@ -12878,9 +12590,9 @@ func i81(p *pegort.TParser) (any, bool) {
 	p.Where = "match_stmt"
 	v = func() any {
 		return func() any {
-			f_799 := func() any { return k1 }()
-			f_800 := func() any { return k4 }()
-			return tmk_MatchStmt(c, true, f_799, f_800)
+			f_812 := func() any { return k1 }()
+			f_813 := func() any { return k4 }()
+			return tmk_MatchStmt(c, true, f_812, f_813)
 		}()
 	}()
 	p.Where = w
@@ -12928,7 +12640,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -13013,7 +12725,7 @@ func i83(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto fail
 	}
 	x5 = p.Pos
@@ -13038,12 +12750,12 @@ func i83(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L12
 		}
 		v17 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-		v18 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v17, x9)
-		v19 = p.AttachCaptures(v18, scope801, []any{k11}, x9, p.Pos)
+		v18 = p.ScopeValue(sh14, v17, x9)
+		v19 = p.AttachCaptures(v18, scope814, []any{k11}, x9, p.Pos)
 		x8++
 		p.PushKid(v19)
 		if p.Pos == x9 {
@@ -13075,8 +12787,8 @@ func i83(p *pegort.TParser) (any, bool) {
 		k29 = v34
 		x32 = append(x32, v34)
 		v35 = p.NewNodeOrdinary("tuple", x31, p.Pos, x32)
-		v36 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v35, x27)
-		v37 = p.AttachCaptures(v36, scope802, []any{k29}, x27, p.Pos)
+		v36 = p.ScopeValue(sh14, v35, x27)
+		v37 = p.AttachCaptures(v36, scope815, []any{k29}, x27, p.Pos)
 		x25++
 		p.PushKid(v37)
 		if p.Pos == x27 {
@@ -13095,21 +12807,21 @@ func i83(p *pegort.TParser) (any, bool) {
 	p.Where = "subject_tuple"
 	v = func() any {
 		return func() any {
-			f_803 := func() any {
+			f_816 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k1 }())
-					c.PushMap(func() any { return k4 }(), func(l_804 any) any {
-						return func() any { return c.Member(func() any { return l_804 }(), "$x") }()
+					c.PushMap(func() any { return k4 }(), func(l_817 any) any {
+						return func() any { return c.Member(func() any { return l_817 }(), "$x") }()
 					})
-					c.PushMap(func() any { return k21 }(), func(l_805 any) any {
-						return func() any { return c.Member(func() any { return l_805 }(), "$y") }()
+					c.PushMap(func() any { return k21 }(), func(l_818 any) any {
+						return func() any { return c.Member(func() any { return l_818 }(), "$y") }()
 					})
 					return c.EndList(b)
 				}()
 			}()
-			f_806 := func() any { return any("Load") }()
-			return tmk_Tuple(c, true, f_803, f_806)
+			f_819 := func() any { return any("Load") }()
+			return tmk_Tuple(c, true, f_816, f_819)
 		}()
 	}()
 	p.Where = w
@@ -13206,13 +12918,13 @@ func i84(p *pegort.TParser) (any, bool) {
 			return c.And(func() any {
 				return c.Binary(">", func() any {
 					return c.Binary("+", func() any {
-						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_807, l_808 any) any {
+						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_820, l_821 any) any {
 							return func() any {
 								return c.Binary("+", func() any {
 									return c.Binary("*", func() any {
 										return c.Binary("/", func() any {
-											return c.Binary("+", func() any { return l_807 }(), func() any {
-												return c.Length(func() any { return c.Member(func() any { return l_808 }(), "$sp") }())
+											return c.Binary("+", func() any { return l_820 }(), func() any {
+												return c.Length(func() any { return c.Member(func() any { return l_821 }(), "$sp") }())
 											}())
 										}(), func() any { return any(8) }())
 									}(), func() any { return any(8) }())
@@ -13229,11 +12941,11 @@ func i84(p *pegort.TParser) (any, bool) {
 				return func() any {
 					return c.Binary(">", func() any {
 						return c.Binary("+", func() any {
-							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_809, l_810 any) any {
+							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_822, l_823 any) any {
 								return func() any {
 									return c.Binary("+", func() any {
-										return c.Binary("+", func() any { return l_809 }(), func() any {
-											return c.Length(func() any { return c.Member(func() any { return l_810 }(), "$sp") }())
+										return c.Binary("+", func() any { return l_822 }(), func() any {
+											return c.Length(func() any { return c.Member(func() any { return l_823 }(), "$sp") }())
 										}())
 									}(), func() any { return any(1) }())
 								}()
@@ -13287,13 +12999,13 @@ L17:
 			return c.Binary("+", func() any {
 				return c.Binary("+", func() any {
 					return c.Binary("+", func() any {
-						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_811, l_812 any) any {
+						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_824, l_825 any) any {
 							return func() any {
 								return c.Binary("+", func() any {
 									return c.Binary("*", func() any {
 										return c.Binary("/", func() any {
-											return c.Binary("+", func() any { return l_811 }(), func() any {
-												return c.Length(func() any { return c.Member(func() any { return l_812 }(), "$sp") }())
+											return c.Binary("+", func() any { return l_824 }(), func() any {
+												return c.Length(func() any { return c.Member(func() any { return l_825 }(), "$sp") }())
 											}())
 										}(), func() any { return any(8) }())
 									}(), func() any { return any(8) }())
@@ -13306,11 +13018,11 @@ L17:
 				}(), func() any {
 					return c.Binary("*", func() any { return any(4194304) }(), func() any {
 						return c.Binary("+", func() any {
-							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_813, l_814 any) any {
+							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_826, l_827 any) any {
 								return func() any {
 									return c.Binary("+", func() any {
-										return c.Binary("+", func() any { return l_813 }(), func() any {
-											return c.Length(func() any { return c.Member(func() any { return l_814 }(), "$sp") }())
+										return c.Binary("+", func() any { return l_826 }(), func() any {
+											return c.Length(func() any { return c.Member(func() any { return l_827 }(), "$sp") }())
 										}())
 									}(), func() any { return any(1) }())
 								}()
@@ -13467,7 +13179,7 @@ L9:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x13 = p.Pos
@@ -13480,10 +13192,10 @@ L9:
 	p.Where = "case_block"
 	v = func() any {
 		return func() any {
-			f_815 := func() any { return k1 }()
-			f_816 := func() any { return k6 }()
-			f_817 := func() any { return k12 }()
-			return tmk_MatchCase(c, true, f_815, f_816, f_817)
+			f_828 := func() any { return k1 }()
+			f_829 := func() any { return k6 }()
+			f_830 := func() any { return k12 }()
+			return tmk_MatchCase(c, true, f_828, f_829, f_830)
 		}()
 	}()
 	p.Where = w
@@ -13531,7 +13243,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -13583,20 +13295,20 @@ func i87(p *pegort.TParser) (any, bool) {
 	p.Where = "open_sequence_pattern"
 	v = func() any {
 		return func() any {
-			f_818 := func() any {
+			f_831 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return c.Member(func() any { return k1 }(), "$f") }())
-					c.PushMap(func() any { return c.Member(func() any { return k1 }(), "$r") }(), func(l_819 any) any {
-						return func() any { return c.Member(func() any { return l_819 }(), "$p") }()
+					c.PushMap(func() any { return c.Member(func() any { return k1 }(), "$r") }(), func(l_832 any) any {
+						return func() any { return c.Member(func() any { return l_832 }(), "$p") }()
 					})
-					c.PushMap(func() any { return c.Member(func() any { return k1 }(), "$l") }(), func(l_820 any) any {
-						return func() any { return c.Member(func() any { return l_820 }(), "$q") }()
+					c.PushMap(func() any { return c.Member(func() any { return k1 }(), "$l") }(), func(l_833 any) any {
+						return func() any { return c.Member(func() any { return l_833 }(), "$q") }()
 					})
 					return c.EndList(b)
 				}()
 			}()
-			return tmk_MatchSequence(c, true, f_818)
+			return tmk_MatchSequence(c, true, f_831)
 		}()
 	}()
 	p.Where = w
@@ -13689,7 +13401,7 @@ func i88(p *pegort.TParser) (any, bool) {
 	x6 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto fail
 	}
 	v7 = p.NewMatchOrdinary(x6, p.Pos, ",", true)
@@ -13716,12 +13428,12 @@ func i88(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L16
 		}
 		v21 = p.NewNodeOrdinary("tuple", x17, p.Pos, x18)
-		v22 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v21, x13)
-		v23 = p.AttachCaptures(v22, scope821, []any{k15}, x13, p.Pos)
+		v22 = p.ScopeValue(sh14, v21, x13)
+		v23 = p.AttachCaptures(v22, scope834, []any{k15}, x13, p.Pos)
 		x12++
 		p.PushKid(v23)
 		if p.Pos == x13 {
@@ -13754,8 +13466,8 @@ func i88(p *pegort.TParser) (any, bool) {
 		k33 = v38
 		x36 = append(x36, v38)
 		v39 = p.NewNodeOrdinary("tuple", x35, p.Pos, x36)
-		v40 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v39, x31)
-		v41 = p.AttachCaptures(v40, scope822, []any{k33}, x31, p.Pos)
+		v40 = p.ScopeValue(sh14, v39, x31)
+		v41 = p.AttachCaptures(v40, scope835, []any{k33}, x31, p.Pos)
 		x29++
 		p.PushKid(v41)
 		if p.Pos == x31 {
@@ -13771,8 +13483,8 @@ func i88(p *pegort.TParser) (any, bool) {
 	k25 = v42
 	x2 = append(x2, v42)
 	v43 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, v43, start)
-	v = p.AttachCaptures(v, scope823, []any{k3, k8, k25}, start, p.Pos)
+	v = p.ScopeValue(sh274, v43, start)
+	v = p.AttachCaptures(v, scope836, []any{k3, k8, k25}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -13828,7 +13540,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -13877,7 +13589,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -13944,9 +13656,9 @@ func i90(p *pegort.TParser) (any, bool) {
 	p.Where = "as_pattern"
 	v = func() any {
 		return func() any {
-			f_824 := func() any { return k1 }()
-			f_825 := func() any { return c.Text(func() any { return k4 }()) }()
-			return tmk_MatchAs(c, true, f_824, f_825)
+			f_837 := func() any { return k1 }()
+			f_838 := func() any { return c.Text(func() any { return k4 }()) }()
+			return tmk_MatchAs(c, true, f_837, f_838)
 		}()
 	}()
 	p.Where = w
@@ -14042,14 +13754,14 @@ func i91(p *pegort.TParser) (any, bool) {
 			}
 			if p.Pos < len(p.In) && p.In[p.Pos] == 124 {
 				p.Pos++
-			} else if _, ok = p.Parser.MatchLiteral(lit179, "|", 66, false); !ok {
+			} else if _, ok = p.Parser.MatchLiteral(lit185, "|", 66, false); !ok {
 				goto L21
 			}
 			x24, x25 = p.Pos, len(p.Recovered)
 			p.Silent++
 			if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 				p.Pos++
-			} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+			} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 				goto L26
 			}
 			p.Silent--
@@ -14070,8 +13782,8 @@ func i91(p *pegort.TParser) (any, bool) {
 			k20 = v28
 			x23 = append(x23, v28)
 			v29 = p.NewNodeOrdinary("tuple", x22, p.Pos, x23)
-			v30 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v29, x18)
-			v31 = p.AttachCaptures(v30, scope826, []any{k20}, x18, p.Pos)
+			v30 = p.ScopeValue(sh14, v29, x18)
+			v31 = p.AttachCaptures(v30, scope839, []any{k20}, x18, p.Pos)
 			x17++
 			p.PushKid(v31)
 			if p.Pos == x18 {
@@ -14089,8 +13801,8 @@ func i91(p *pegort.TParser) (any, bool) {
 		}
 		v32 = p.NewNodeOrdinary("list", x15, p.Pos, p.Kids(x16))
 		k12 = v32
-		v33 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v32, x10)
-		v34 = p.AttachCaptures(v33, scope827, []any{k12}, x10, p.Pos)
+		v33 = p.ScopeValue(sh15, v32, x10)
+		v34 = p.AttachCaptures(v33, scope840, []any{k12}, x10, p.Pos)
 		x8++
 		p.PushKid(v34)
 		if p.Pos == x10 {
@@ -14108,20 +13820,20 @@ func i91(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "or_pattern"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_828, l_829 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_841, l_842 any) any {
 			return func() any {
 				return func() any {
-					f_830 := func() any {
+					f_843 := func() any {
 						return func() any {
 							b := len(c.P.KidStack)
 							c.PushList(func() any { return k1 }())
-							c.PushMap(func() any { return c.Member(func() any { return l_829 }(), "$rs") }(), func(l_831 any) any {
-								return func() any { return c.Member(func() any { return l_831 }(), "$p") }()
+							c.PushMap(func() any { return c.Member(func() any { return l_842 }(), "$rs") }(), func(l_844 any) any {
+								return func() any { return c.Member(func() any { return l_844 }(), "$p") }()
 							})
 							return c.EndList(b)
 						}()
 					}()
-					return tmk_MatchOr(c, false, f_830)
+					return tmk_MatchOr(c, false, f_843)
 				}()
 			}()
 		})
@@ -14255,7 +13967,7 @@ L24:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -14379,7 +14091,7 @@ L24:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -14445,7 +14157,7 @@ L11:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -14519,7 +14231,7 @@ L6:
 	w = p.Where
 	p.Where = "signed_number_pattern"
 	v = func() any {
-		return func() any { f_832 := func() any { return k1 }(); return tmk_MatchValue(c, true, f_832) }()
+		return func() any { f_845 := func() any { return k1 }(); return tmk_MatchValue(c, true, f_845) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -14567,7 +14279,7 @@ func i95(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "complex_pattern"
 	v = func() any {
-		return func() any { f_833 := func() any { return k1 }(); return tmk_MatchValue(c, true, f_833) }()
+		return func() any { f_846 := func() any { return k1 }(); return tmk_MatchValue(c, true, f_846) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -14615,7 +14327,7 @@ func i96(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "string_pattern"
 	v = func() any {
-		return func() any { f_834 := func() any { return k1 }(); return tmk_MatchValue(c, true, f_834) }()
+		return func() any { f_847 := func() any { return k1 }(); return tmk_MatchValue(c, true, f_847) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -14664,8 +14376,8 @@ func i97(p *pegort.TParser) (any, bool) {
 	p.Where = "singleton_pattern"
 	v = func() any {
 		return func() any {
-			f_835 := func() any { return k1 }()
-			return tmk_MatchSingleton(c, true, f_835)
+			f_848 := func() any { return k1 }()
+			return tmk_MatchSingleton(c, true, f_848)
 		}()
 	}()
 	p.Where = w
@@ -14715,7 +14427,7 @@ func v98(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 78 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 110 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit187, "None", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit193, "None", 70, false); !ok {
 		goto L8
 	}
 	goto L4
@@ -14729,7 +14441,7 @@ L7:
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 84 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit188, "True", 71, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit194, "True", 71, false); !ok {
 		goto L10
 	}
 	goto L4
@@ -14741,7 +14453,7 @@ L9:
 		p.ExpectOrdinary(p.Pos, 72)
 		goto L11
 	}
-	if _, ok = p.Parser.MatchLiteral(lit189, "False", 72, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit195, "False", 72, false); !ok {
 		goto L12
 	}
 	goto L4
@@ -14767,7 +14479,7 @@ L15:
 	p.Recovered = p.Recovered[:x14]
 	v16 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v16)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v16, start)
+	v = p.ScopeValue(sh8, v16, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -14811,7 +14523,7 @@ func i98(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 78 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 110 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit187, "None", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit193, "None", 70, false); !ok {
 		goto L8
 	}
 	goto L4
@@ -14825,7 +14537,7 @@ L7:
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 84 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit188, "True", 71, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit194, "True", 71, false); !ok {
 		goto L10
 	}
 	goto L4
@@ -14837,7 +14549,7 @@ L9:
 		p.ExpectOrdinary(p.Pos, 72)
 		goto L11
 	}
-	if _, ok = p.Parser.MatchLiteral(lit189, "False", 72, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit195, "False", 72, false); !ok {
 		goto L12
 	}
 	goto L4
@@ -14863,7 +14575,7 @@ L15:
 	p.Recovered = p.Recovered[:x14]
 	v16 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v16)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v16, start)
+	v = p.ScopeValue(sh8, v16, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -14930,7 +14642,7 @@ L11:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -15066,7 +14778,7 @@ L10:
 L9:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -15123,7 +14835,7 @@ L10:
 L9:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -15184,9 +14896,9 @@ func i102(p *pegort.TParser) (any, bool) {
 	p.Where = "neg_number"
 	v = func() any {
 		return func() any {
-			f_836 := func() any { return k1 }()
-			f_837 := func() any { return k4 }()
-			return tmk_UnaryOp(c, true, f_836, f_837)
+			f_849 := func() any { return k1 }()
+			f_850 := func() any { return k4 }()
+			return tmk_UnaryOp(c, true, f_849, f_850)
 		}()
 	}()
 	p.Where = w
@@ -15261,10 +14973,10 @@ func i103(p *pegort.TParser) (any, bool) {
 	p.Where = "complex_number"
 	v = func() any {
 		return func() any {
-			f_838 := func() any { return k1 }()
-			f_839 := func() any { return k4 }()
-			f_840 := func() any { return k7 }()
-			return tmk_BinOp(c, true, f_838, f_839, f_840)
+			f_851 := func() any { return k1 }()
+			f_852 := func() any { return k4 }()
+			f_853 := func() any { return k7 }()
+			return tmk_BinOp(c, true, f_851, f_852, f_853)
 		}()
 	}()
 	p.Where = w
@@ -15320,7 +15032,7 @@ L10:
 L9:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -15383,9 +15095,9 @@ func i105(p *pegort.TParser) (any, bool) {
 	p.Where = "neg_real_number"
 	v = func() any {
 		return func() any {
-			f_841 := func() any { return k1 }()
-			f_842 := func() any { return k4 }()
-			return tmk_UnaryOp(c, true, f_841, f_842)
+			f_854 := func() any { return k1 }()
+			f_855 := func() any { return k4 }()
+			return tmk_UnaryOp(c, true, f_854, f_855)
 		}()
 	}()
 	p.Where = w
@@ -15419,7 +15131,7 @@ func s106(p *pegort.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit197, "-", 73, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit203, "-", 73, false); !ok {
 		goto fail
 	}
 	x2, x3 = p.Pos, len(p.Recovered)
@@ -15440,7 +15152,7 @@ L4:
 	p.Recovered = p.Recovered[:x3]
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v5, start)
+	v = p.ScopeValue(sh8, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -15489,14 +15201,14 @@ func s107(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 43 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit199, "+", 75, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit205, "+", 75, false); !ok {
 		goto L8
 	}
 	x9, x10 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L11
 	}
 	p.Silent--
@@ -15518,7 +15230,7 @@ L7:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit197, "-", 73, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit203, "-", 73, false); !ok {
 		goto L13
 	}
 	x14, x15 = p.Pos, len(p.Recovered)
@@ -15546,7 +15258,7 @@ L12:
 L4:
 	v17 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v17)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v17, start)
+	v = p.ScopeValue(sh8, v17, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -15599,8 +15311,8 @@ func i108(p *pegort.TParser) (any, bool) {
 	p.Where = "capture_pattern"
 	v = func() any {
 		return func() any {
-			f_843 := func() any { return c.Text(func() any { return k1 }()) }()
-			return tmk_MatchAs(c, true, nil, f_843)
+			f_856 := func() any { return c.Text(func() any { return k1 }()) }()
+			return tmk_MatchAs(c, true, nil, f_856)
 		}()
 	}()
 	p.Where = w
@@ -15661,7 +15373,7 @@ func i109(p *pegort.TParser) (any, bool) {
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 95 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit202, "_", 67, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit208, "_", 67, false); !ok {
 		goto L3
 	}
 	x4, x5 = p.Pos, len(p.Recovered)
@@ -15703,14 +15415,14 @@ L3:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit92, ".", 50, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit98, ".", 50, false); !ok {
 		goto L19
 	}
 	x20, x21 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 46 && p.In[p.Pos+1] == 46 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit203, "..", 76, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit209, "..", 76, false); !ok {
 		goto L22
 	}
 	p.Silent--
@@ -15732,7 +15444,7 @@ L18:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto L24
 	}
 	goto L15
@@ -15746,14 +15458,14 @@ L23:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L26
 	}
 	x27, x28 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L29
 	}
 	p.Silent--
@@ -15811,7 +15523,7 @@ func s110(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 95 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit202, "_", 67, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit208, "_", 67, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -15898,14 +15610,14 @@ func i111(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit92, ".", 50, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit98, ".", 50, false); !ok {
 		goto L13
 	}
 	x14, x15 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 46 && p.In[p.Pos+1] == 46 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit203, "..", 76, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit209, "..", 76, false); !ok {
 		goto L16
 	}
 	p.Silent--
@@ -15927,7 +15639,7 @@ L12:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto L18
 	}
 	goto L9
@@ -15941,14 +15653,14 @@ L17:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L20
 	}
 	x21, x22 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L23
 	}
 	p.Silent--
@@ -15978,7 +15690,7 @@ L6:
 	w = p.Where
 	p.Where = "value_pattern"
 	v = func() any {
-		return func() any { f_844 := func() any { return k1 }(); return tmk_MatchValue(c, true, f_844) }()
+		return func() any { f_857 := func() any { return k1 }(); return tmk_MatchValue(c, true, f_857) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -16056,14 +15768,14 @@ func i112(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit92, ".", 50, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit98, ".", 50, false); !ok {
 			goto L12
 		}
 		x15, x16 = p.Pos, len(p.Recovered)
 		p.Silent++
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 46 && p.In[p.Pos+1] == 46 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit203, "..", 76, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit209, "..", 76, false); !ok {
 			goto L17
 		}
 		p.Silent--
@@ -16084,8 +15796,8 @@ func i112(p *pegort.TParser) (any, bool) {
 		k11 = v19
 		x14 = append(x14, v19)
 		v20 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-		v21 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v20, x9)
-		v22 = p.AttachCaptures(v21, scope845, []any{k11}, x9, p.Pos)
+		v21 = p.ScopeValue(sh14, v20, x9)
+		v22 = p.AttachCaptures(v21, scope858, []any{k11}, x9, p.Pos)
 		x8++
 		p.PushKid(v22)
 		if p.Pos == x9 {
@@ -16107,15 +15819,15 @@ func i112(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "attr"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_846, l_847 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_859, l_860 any) any {
 			return func() any {
 				return func() any {
-					f_848 := func() any { return l_846 }()
-					f_849 := func() any {
-						return c.Text(func() any { return c.Member(func() any { return l_847 }(), "$n") }())
+					f_861 := func() any { return l_859 }()
+					f_862 := func() any {
+						return c.Text(func() any { return c.Member(func() any { return l_860 }(), "$n") }())
 					}()
-					f_850 := func() any { return any("Load") }()
-					return tmk_Attribute(c, false, f_848, f_849, f_850)
+					f_863 := func() any { return any("Load") }()
+					return tmk_Attribute(c, false, f_861, f_862, f_863)
 				}()
 			}()
 		})
@@ -16166,7 +15878,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -16212,7 +15924,7 @@ func i114(p *pegort.TParser) (any, bool) {
 	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -16248,7 +15960,7 @@ func i114(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -16330,7 +16042,7 @@ L14:
 L13:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -16362,7 +16074,7 @@ func s116(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -16390,7 +16102,7 @@ func s116(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -16445,7 +16157,7 @@ func i117(p *pegort.TParser) (any, bool) {
 	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit213, "[", 77, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit219, "[", 77, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -16489,7 +16201,7 @@ L7:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit214, "]", 78, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit220, "]", 78, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -16497,8 +16209,8 @@ L7:
 	p.Where = "list_pattern"
 	v = func() any {
 		return func() any {
-			f_851 := func() any { return c.Concat(func() any { return k1 }()) }()
-			return tmk_MatchSequence(c, true, f_851)
+			f_864 := func() any { return c.Concat(func() any { return k1 }()) }()
+			return tmk_MatchSequence(c, true, f_864)
 		}()
 	}()
 	p.Where = w
@@ -16576,7 +16288,7 @@ func i118(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L12
 		}
 		if _, ok = s339(p); !ok {
@@ -16589,8 +16301,8 @@ func i118(p *pegort.TParser) (any, bool) {
 		k11 = v16
 		x14 = append(x14, v16)
 		v17 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-		v18 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v17, x9)
-		v19 = p.AttachCaptures(v18, scope852, []any{k11}, x9, p.Pos)
+		v18 = p.ScopeValue(sh14, v17, x9)
+		v19 = p.AttachCaptures(v18, scope865, []any{k11}, x9, p.Pos)
 		x8++
 		p.PushKid(v19)
 		if p.Pos == x9 {
@@ -16610,7 +16322,7 @@ func i118(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L23
 	}
 	goto L24
@@ -16625,8 +16337,8 @@ L24:
 		return func() any {
 			b := len(c.P.KidStack)
 			c.PushList(func() any { return k1 }())
-			c.PushMap(func() any { return k4 }(), func(l_853 any) any {
-				return func() any { return c.Member(func() any { return l_853 }(), "$p") }()
+			c.PushMap(func() any { return k4 }(), func(l_866 any) any {
+				return func() any { return c.Member(func() any { return l_866 }(), "$p") }()
 			})
 			return c.EndList(b)
 		}()
@@ -16673,7 +16385,7 @@ func i119(p *pegort.TParser) (any, bool) {
 	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -16709,7 +16421,7 @@ func i119(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -16717,20 +16429,20 @@ func i119(p *pegort.TParser) (any, bool) {
 	p.Where = "tuple_pattern"
 	v = func() any {
 		return func() any {
-			f_854 := func() any {
+			f_867 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return c.Member(func() any { return k1 }(), "$f") }())
-					c.PushMap(func() any { return c.Member(func() any { return k1 }(), "$r") }(), func(l_855 any) any {
-						return func() any { return c.Member(func() any { return l_855 }(), "$p") }()
+					c.PushMap(func() any { return c.Member(func() any { return k1 }(), "$r") }(), func(l_868 any) any {
+						return func() any { return c.Member(func() any { return l_868 }(), "$p") }()
 					})
-					c.PushMap(func() any { return c.Member(func() any { return k1 }(), "$l") }(), func(l_856 any) any {
-						return func() any { return c.Member(func() any { return l_856 }(), "$q") }()
+					c.PushMap(func() any { return c.Member(func() any { return k1 }(), "$l") }(), func(l_869 any) any {
+						return func() any { return c.Member(func() any { return l_869 }(), "$q") }()
 					})
 					return c.EndList(b)
 				}()
 			}()
-			return tmk_MatchSequence(c, true, f_854)
+			return tmk_MatchSequence(c, true, f_867)
 		}()
 	}()
 	p.Where = w
@@ -16797,7 +16509,7 @@ L10:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -16855,7 +16567,7 @@ L10:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -16904,7 +16616,7 @@ func i121(p *pegort.TParser) (any, bool) {
 	_ = x7
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit107, "*", 52, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit113, "*", 52, false); !ok {
 		goto fail
 	}
 	if _, ok = s339(p); !ok {
@@ -16929,7 +16641,7 @@ L6:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 95 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit202, "_", 67, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit208, "_", 67, false); !ok {
 		goto L12
 	}
 	x13, x14 = p.Pos, len(p.Recovered)
@@ -16958,8 +16670,8 @@ L5:
 	p.Where = "star_pattern"
 	v = func() any {
 		return func() any {
-			f_857 := func() any { return c.Text(func() any { return k3 }()) }()
-			return tmk_MatchStar(c, true, f_857)
+			f_870 := func() any { return c.Text(func() any { return k3 }()) }()
+			return tmk_MatchStar(c, true, f_870)
 		}()
 	}()
 	p.Where = w
@@ -17023,7 +16735,7 @@ func i122(p *pegort.TParser) (any, bool) {
 	_, _, _ = x15, x22, x28
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit221, "{", 68, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit227, "{", 68, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -17067,7 +16779,7 @@ func i122(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L20
 	}
 	if _, ok = s339(p); !ok {
@@ -17075,7 +16787,7 @@ func i122(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 42 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit222, "**", 79, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit228, "**", 79, false); !ok {
 		goto L20
 	}
 	if _, ok = s339(p); !ok {
@@ -17105,7 +16817,7 @@ L14:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 42 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit222, "**", 79, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit228, "**", 79, false); !ok {
 		goto L27
 	}
 	if _, ok = s339(p); !ok {
@@ -17139,7 +16851,7 @@ L8:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L32
 	}
 	goto L33
@@ -17153,7 +16865,7 @@ L33:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit223, "}", 80, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit229, "}", 80, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -17161,18 +16873,18 @@ L33:
 	p.Where = "mapping_pattern"
 	v = func() any {
 		return func() any {
-			f_858 := func() any {
-				return c.MapList(func() any { return k3 }(), func(l_859 any) any {
-					return func() any { return c.Member(func() any { return l_859 }(), "$k") }()
+			f_871 := func() any {
+				return c.MapList(func() any { return k3 }(), func(l_872 any) any {
+					return func() any { return c.Member(func() any { return l_872 }(), "$k") }()
 				})
 			}()
-			f_860 := func() any {
-				return c.MapList(func() any { return k3 }(), func(l_861 any) any {
-					return func() any { return c.Member(func() any { return l_861 }(), "$v") }()
+			f_873 := func() any {
+				return c.MapList(func() any { return k3 }(), func(l_874 any) any {
+					return func() any { return c.Member(func() any { return l_874 }(), "$v") }()
 				})
 			}()
-			f_862 := func() any { return c.Text(func() any { return k5 }()) }()
-			return tmk_MatchMapping(c, true, f_858, f_860, f_862)
+			f_875 := func() any { return c.Text(func() any { return k5 }()) }()
+			return tmk_MatchMapping(c, true, f_871, f_873, f_875)
 		}()
 	}()
 	p.Where = w
@@ -17238,7 +16950,7 @@ func i123(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L11
 		}
 		if _, ok = s339(p); !ok {
@@ -17354,7 +17066,7 @@ L8:
 	x13 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	v14 = p.NewMatchOrdinary(x13, p.Pos, ":", true)
@@ -17369,8 +17081,8 @@ L8:
 	k15 = v17
 	x2 = append(x2, v17)
 	v18 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v18, start)
-	v = p.AttachCaptures(v, scope863, []any{k3, k15}, start, p.Pos)
+	v = p.ScopeValue(sh11, v18, start)
+	v = p.AttachCaptures(v, scope876, []any{k3, k15}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -17443,7 +17155,7 @@ func i125(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -17487,7 +17199,7 @@ func i125(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L23
 	}
 	if _, ok = s339(p); !ok {
@@ -17537,7 +17249,7 @@ L11:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L32
 	}
 	goto L33
@@ -17551,7 +17263,7 @@ L33:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -17559,19 +17271,19 @@ L33:
 	p.Where = "class_pattern"
 	v = func() any {
 		return func() any {
-			f_864 := func() any { return k1 }()
-			f_865 := func() any { return c.Concat(func() any { return k6 }()) }()
-			f_866 := func() any {
-				return c.MapList(func() any { return k8 }(), func(l_867 any) any {
-					return func() any { return c.Member(func() any { return l_867 }(), "$n") }()
+			f_877 := func() any { return k1 }()
+			f_878 := func() any { return c.Concat(func() any { return k6 }()) }()
+			f_879 := func() any {
+				return c.MapList(func() any { return k8 }(), func(l_880 any) any {
+					return func() any { return c.Member(func() any { return l_880 }(), "$n") }()
 				})
 			}()
-			f_868 := func() any {
-				return c.MapList(func() any { return k8 }(), func(l_869 any) any {
-					return func() any { return c.Member(func() any { return l_869 }(), "$v") }()
+			f_881 := func() any {
+				return c.MapList(func() any { return k8 }(), func(l_882 any) any {
+					return func() any { return c.Member(func() any { return l_882 }(), "$v") }()
 				})
 			}()
-			return tmk_MatchClass(c, true, f_864, f_865, f_866, f_868)
+			return tmk_MatchClass(c, true, f_877, f_878, f_879, f_881)
 		}()
 	}()
 	p.Where = w
@@ -17647,7 +17359,7 @@ func i126(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L12
 		}
 		if _, ok = s339(p); !ok {
@@ -17660,8 +17372,8 @@ func i126(p *pegort.TParser) (any, bool) {
 		k11 = v16
 		x14 = append(x14, v16)
 		v17 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-		v18 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v17, x9)
-		v19 = p.AttachCaptures(v18, scope870, []any{k11}, x9, p.Pos)
+		v18 = p.ScopeValue(sh14, v17, x9)
+		v19 = p.AttachCaptures(v18, scope883, []any{k11}, x9, p.Pos)
 		x8++
 		p.PushKid(v19)
 		if p.Pos == x9 {
@@ -17682,8 +17394,8 @@ func i126(p *pegort.TParser) (any, bool) {
 		return func() any {
 			b := len(c.P.KidStack)
 			c.PushList(func() any { return k1 }())
-			c.PushMap(func() any { return k4 }(), func(l_871 any) any {
-				return func() any { return c.Member(func() any { return l_871 }(), "$p") }()
+			c.PushMap(func() any { return k4 }(), func(l_884 any) any {
+				return func() any { return c.Member(func() any { return l_884 }(), "$p") }()
 			})
 			return c.EndList(b)
 		}()
@@ -17753,7 +17465,7 @@ func i127(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L11
 		}
 		if _, ok = s339(p); !ok {
@@ -17851,7 +17563,7 @@ func i128(p *pegort.TParser) (any, bool) {
 	x6 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto fail
 	}
 	v7 = p.NewMatchOrdinary(x6, p.Pos, "=", true)
@@ -17860,7 +17572,7 @@ func i128(p *pegort.TParser) (any, bool) {
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L10
 	}
 	p.Silent--
@@ -17881,8 +17593,8 @@ L10:
 	k11 = v13
 	x2 = append(x2, v13)
 	v14 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v14, start)
-	v = p.AttachCaptures(v, scope872, []any{k3, k11}, start, p.Pos)
+	v = p.ScopeValue(sh11, v14, start)
+	v = p.AttachCaptures(v, scope885, []any{k3, k11}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -17941,7 +17653,7 @@ func i129(p *pegort.TParser) (any, bool) {
 	_, _, _ = x2, x7, x12
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit213, "[", 77, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit219, "[", 77, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -17981,7 +17693,7 @@ func i129(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L11
 		}
 		if _, ok = s339(p); !ok {
@@ -18011,7 +17723,7 @@ func i129(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L17
 	}
 	goto L18
@@ -18025,7 +17737,7 @@ L18:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit214, "]", 78, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit220, "]", 78, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -18117,7 +17829,7 @@ L13:
 L12:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -18188,7 +17900,7 @@ L13:
 L12:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -18254,7 +17966,7 @@ func i131(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto L8
 	}
 	if _, ok = s339(p); !ok {
@@ -18279,14 +17991,14 @@ L9:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L16
 	}
 	x18, x19 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L20
 	}
 	p.Silent--
@@ -18316,10 +18028,10 @@ L17:
 	p.Where = "type_var"
 	v = func() any {
 		return func() any {
-			f_873 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_874 := func() any { return k6 }()
-			f_875 := func() any { return k14 }()
-			return tmk_TypeVar(c, true, f_873, f_874, f_875)
+			f_886 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_887 := func() any { return k6 }()
+			f_888 := func() any { return k14 }()
+			return tmk_TypeVar(c, true, f_886, f_887, f_888)
 		}()
 	}()
 	p.Where = w
@@ -18371,14 +18083,14 @@ func i132(p *pegort.TParser) (any, bool) {
 	_, _ = x5, x16
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit107, "*", 52, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit113, "*", 52, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit107, "*", 52, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit113, "*", 52, false); !ok {
 		goto L3
 	}
 	p.Silent--
@@ -18404,14 +18116,14 @@ L3:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L11
 	}
 	x13, x14 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L15
 	}
 	p.Silent--
@@ -18441,9 +18153,9 @@ L12:
 	p.Where = "type_var_tuple"
 	v = func() any {
 		return func() any {
-			f_876 := func() any { return c.Text(func() any { return k4 }()) }()
-			f_877 := func() any { return k9 }()
-			return tmk_TypeVarTuple(c, true, f_876, f_877)
+			f_889 := func() any { return c.Text(func() any { return k4 }()) }()
+			f_890 := func() any { return k9 }()
+			return tmk_TypeVarTuple(c, true, f_889, f_890)
 		}()
 	}()
 	p.Where = w
@@ -18493,7 +18205,7 @@ func i133(p *pegort.TParser) (any, bool) {
 	_, _ = x2, x13
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 42 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit222, "**", 79, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit228, "**", 79, false); !ok {
 		goto fail
 	}
 	if _, ok = s339(p); !ok {
@@ -18511,14 +18223,14 @@ func i133(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L8
 	}
 	x10, x11 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L12
 	}
 	p.Silent--
@@ -18548,9 +18260,9 @@ L9:
 	p.Where = "param_spec"
 	v = func() any {
 		return func() any {
-			f_878 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_879 := func() any { return k6 }()
-			return tmk_ParamSpec(c, true, f_878, f_879)
+			f_891 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_892 := func() any { return k6 }()
+			return tmk_ParamSpec(c, true, f_891, f_892)
 		}()
 	}()
 	p.Where = w
@@ -18655,7 +18367,7 @@ func i134(p *pegort.TParser) (any, bool) {
 		if v9, ok = u135(p); !ok {
 			goto L8
 		}
-		v10 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, x6)
+		v10 = p.ScopeValue(sh8, v9, x6)
 		x5++
 		p.PushKid(v10)
 		if p.Pos == x6 {
@@ -18677,7 +18389,7 @@ func i134(p *pegort.TParser) (any, bool) {
 		if v20, ok = u136(p); !ok {
 			goto L19
 		}
-		v21 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v20, x17)
+		v21 = p.ScopeValue(sh8, v20, x17)
 		x16++
 		p.PushKid(v21)
 		if p.Pos == x17 {
@@ -18699,7 +18411,7 @@ func i134(p *pegort.TParser) (any, bool) {
 		if v32, ok = u137(p); !ok {
 			goto L31
 		}
-		v33 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v32, x29)
+		v33 = p.ScopeValue(sh8, v32, x29)
 		x27++
 		p.PushKid(v33)
 		if p.Pos == x29 {
@@ -18721,7 +18433,7 @@ func i134(p *pegort.TParser) (any, bool) {
 		if v43, ok = u135(p); !ok {
 			goto L42
 		}
-		v44 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v43, x40)
+		v44 = p.ScopeValue(sh8, v43, x40)
 		x39++
 		p.PushKid(v44)
 		if p.Pos == x40 {
@@ -18743,7 +18455,7 @@ func i134(p *pegort.TParser) (any, bool) {
 		if v54, ok = u136(p); !ok {
 			goto L53
 		}
-		v55 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v54, x51)
+		v55 = p.ScopeValue(sh8, v54, x51)
 		x50++
 		p.PushKid(v55)
 		if p.Pos == x51 {
@@ -18829,57 +18541,57 @@ L69:
 	p.Where = "params"
 	v = func() any {
 		return func() any {
-			f_880 := func() any {
-				return c.Fold("foldl", false, func() any { return c.List() }(), func() any { return k23 }(), func(l_881, l_882 any) any {
+			f_893 := func() any {
+				return c.Fold("foldl", false, func() any { return c.List() }(), func() any { return k23 }(), func(l_894, l_895 any) any {
 					return func() any {
 						return c.Concat(func() any { return k1 }(), func() any {
-							return c.MapList(func() any { return k12 }(), func(l_883 any) any {
-								return func() any { return c.Member(func() any { return l_883 }(), "$p") }()
+							return c.MapList(func() any { return k12 }(), func(l_896 any) any {
+								return func() any { return c.Member(func() any { return l_896 }(), "$p") }()
 							})
 						}())
 					}()
 				})
 			}()
-			f_884 := func() any {
+			f_897 := func() any {
 				return c.Concat(func() any {
 					return c.Fold("foldl", false, func() any {
 						return c.Concat(func() any { return k1 }(), func() any {
-							return c.MapList(func() any { return k12 }(), func(l_885 any) any {
-								return func() any { return c.Member(func() any { return l_885 }(), "$p") }()
+							return c.MapList(func() any { return k12 }(), func(l_898 any) any {
+								return func() any { return c.Member(func() any { return l_898 }(), "$p") }()
 							})
 						}())
-					}(), func() any { return k23 }(), func(l_886, l_887 any) any { return func() any { return c.List() }() })
+					}(), func() any { return k23 }(), func(l_899, l_900 any) any { return func() any { return c.List() }() })
 				}(), func() any { return k35 }(), func() any {
-					return c.MapList(func() any { return k46 }(), func(l_888 any) any {
-						return func() any { return c.Member(func() any { return l_888 }(), "$p") }()
+					return c.MapList(func() any { return k46 }(), func(l_901 any) any {
+						return func() any { return c.Member(func() any { return l_901 }(), "$p") }()
 					})
 				}())
 			}()
-			f_889 := func() any { return c.Member(func() any { return k57 }(), "$va") }()
-			f_890 := func() any {
-				return c.MapList(func() any { return c.Member(func() any { return k57 }(), "$ko") }(), func(l_891 any) any {
-					return func() any { return c.Member(func() any { return l_891 }(), "$p") }()
+			f_902 := func() any { return c.Member(func() any { return k57 }(), "$va") }()
+			f_903 := func() any {
+				return c.MapList(func() any { return c.Member(func() any { return k57 }(), "$ko") }(), func(l_904 any) any {
+					return func() any { return c.Member(func() any { return l_904 }(), "$p") }()
 				})
 			}()
-			f_892 := func() any {
-				return c.MapList(func() any { return c.Member(func() any { return k57 }(), "$ko") }(), func(l_893 any) any {
-					return func() any { return c.Member(func() any { return l_893 }(), "$d") }()
+			f_905 := func() any {
+				return c.MapList(func() any { return c.Member(func() any { return k57 }(), "$ko") }(), func(l_906 any) any {
+					return func() any { return c.Member(func() any { return l_906 }(), "$d") }()
 				})
 			}()
-			f_894 := func() any { return c.Member(func() any { return k57 }(), "$kw") }()
-			f_895 := func() any {
+			f_907 := func() any { return c.Member(func() any { return k57 }(), "$kw") }()
+			f_908 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
-					c.PushMap(func() any { return k12 }(), func(l_896 any) any {
-						return func() any { return c.Member(func() any { return l_896 }(), "$d") }()
+					c.PushMap(func() any { return k12 }(), func(l_909 any) any {
+						return func() any { return c.Member(func() any { return l_909 }(), "$d") }()
 					})
-					c.PushMap(func() any { return k46 }(), func(l_897 any) any {
-						return func() any { return c.Member(func() any { return l_897 }(), "$d") }()
+					c.PushMap(func() any { return k46 }(), func(l_910 any) any {
+						return func() any { return c.Member(func() any { return l_910 }(), "$d") }()
 					})
 					return c.EndList(b)
 				}()
 			}()
-			return tmk_Arguments(c, true, f_880, f_884, f_889, f_890, f_892, f_894, f_895)
+			return tmk_Arguments(c, true, f_893, f_897, f_902, f_903, f_905, f_907, f_908)
 		}()
 	}()
 	p.Where = w
@@ -18997,7 +18709,7 @@ func i136(p *pegort.TParser) (any, bool) {
 	x6 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto fail
 	}
 	v7 = p.NewMatchOrdinary(x6, p.Pos, "=", true)
@@ -19006,7 +18718,7 @@ func i136(p *pegort.TParser) (any, bool) {
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L10
 	}
 	p.Silent--
@@ -19030,8 +18742,8 @@ L10:
 		goto fail
 	}
 	v14 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v14, start)
-	v = p.AttachCaptures(v, scope898, []any{k3, k11}, start, p.Pos)
+	v = p.ScopeValue(sh11, v14, start)
+	v = p.AttachCaptures(v, scope911, []any{k3, k11}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -19079,7 +18791,7 @@ func i137(p *pegort.TParser) (any, bool) {
 	x5 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 47 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit243, "/", 83, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit249, "/", 83, false); !ok {
 		goto fail
 	}
 	v6 = p.NewMatchOrdinary(x5, p.Pos, "/", true)
@@ -19089,8 +18801,8 @@ func i137(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v7 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v7, start)
-	v = p.AttachCaptures(v, scope899, []any{k3}, start, p.Pos)
+	v = p.ScopeValue(sh14, v7, start)
+	v = p.AttachCaptures(v, scope912, []any{k3}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -19213,7 +18925,7 @@ func i138(p *pegort.TParser) (any, bool) {
 	x14 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit107, "*", 52, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit113, "*", 52, false); !ok {
 		goto L10
 	}
 	v15 = p.NewMatchOrdinary(x14, p.Pos, "*", true)
@@ -19251,7 +18963,7 @@ L18:
 		goto L24
 	}
 	v29 = p.NewNodeOrdinary("tuple", x25, p.Pos, x26)
-	v30, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v29, x19)
+	v30, _ = p.ShapeSingle(sh14, v29, x19)
 	v22 = v30
 	goto L23
 L24:
@@ -19268,7 +18980,7 @@ L24:
 	x37 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L34
 	}
 	v38 = p.NewMatchOrdinary(x37, p.Pos, ",", true)
@@ -19277,7 +18989,7 @@ L24:
 		goto L34
 	}
 	v39 = p.NewNodeOrdinary("tuple", x35, p.Pos, x36)
-	v40, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v39, x19)
+	v40, _ = p.ShapeSingle(sh14, v39, x19)
 	v22 = v40
 	goto L23
 L34:
@@ -19313,7 +19025,7 @@ L23:
 		x62 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 			goto L58
 		}
 		v63 = p.NewMatchOrdinary(x62, p.Pos, "=", true)
@@ -19322,7 +19034,7 @@ L23:
 		p.Silent++
 		if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 			goto L66
 		}
 		p.Silent--
@@ -19343,7 +19055,7 @@ L23:
 		k48 = v68
 		x61 = append(x61, v68)
 		v69 = p.NewNodeOrdinary("tuple", x60, p.Pos, x61)
-		v70, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v69, x54)
+		v70, _ = p.ShapeSingle(sh9, v69, x54)
 		v57 = v70
 		goto L59
 	L58:
@@ -19357,8 +19069,8 @@ L23:
 			goto L49
 		}
 		v71 = p.NewNodeOrdinary("tuple", x50, p.Pos, x51)
-		v72 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v71, x45)
-		v73 = p.AttachCaptures(v72, scope900, []any{k47, k48}, x45, p.Pos)
+		v72 = p.ScopeValue(sh9, v71, x45)
+		v73 = p.AttachCaptures(v72, scope913, []any{k47, k48}, x45, p.Pos)
 		x44++
 		p.PushKid(v73)
 		if p.Pos == x45 {
@@ -19396,7 +19108,7 @@ L78:
 	goto L10
 L79:
 	v80 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
-	v81, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v80, x3)
+	v81, _ = p.ShapeSingle(sh11, v80, x3)
 	v9 = v81
 	goto L11
 L10:
@@ -19424,8 +19136,8 @@ L87:
 L88:
 	x2 = append(x2, v86)
 	v91 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v91, start)
-	v = p.AttachCaptures(v, scope901, []any{k5, k7, k84}, start, p.Pos)
+	v = p.ScopeValue(sh9, v91, start)
+	v = p.AttachCaptures(v, scope914, []any{k5, k7, k84}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -19464,7 +19176,7 @@ func i139(p *pegort.TParser) (any, bool) {
 	_ = x2
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 42 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit222, "**", 79, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit228, "**", 79, false); !ok {
 		goto fail
 	}
 	if _, ok = s339(p); !ok {
@@ -19543,14 +19255,14 @@ func i140(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto L8
 	}
 	x10, x11 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L12
 	}
 	p.Silent--
@@ -19580,9 +19292,9 @@ L9:
 	p.Where = "param"
 	v = func() any {
 		return func() any {
-			f_902 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_903 := func() any { return k6 }()
-			return tmk_Arg(c, true, f_902, f_903)
+			f_915 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_916 := func() any { return k6 }()
+			return tmk_Arg(c, true, f_915, f_916)
 		}()
 	}()
 	p.Where = w
@@ -19642,14 +19354,14 @@ func i141(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto L8
 	}
 	x10, x11 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L12
 	}
 	p.Silent--
@@ -19679,9 +19391,9 @@ L9:
 	p.Where = "vararg_param"
 	v = func() any {
 		return func() any {
-			f_904 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_905 := func() any { return k6 }()
-			return tmk_Arg(c, true, f_904, f_905)
+			f_917 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_918 := func() any { return k6 }()
+			return tmk_Arg(c, true, f_917, f_918)
 		}()
 	}()
 	p.Where = w
@@ -19805,7 +19517,7 @@ func i143(p *pegort.TParser) (any, bool) {
 			}
 			if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 				p.Pos++
-			} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+			} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 				goto L31
 			}
 			if _, ok = s339(p); !ok {
@@ -19818,8 +19530,8 @@ func i143(p *pegort.TParser) (any, bool) {
 			k30 = v35
 			x33 = append(x33, v35)
 			v36 = p.NewNodeOrdinary("tuple", x32, p.Pos, x33)
-			v37 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v36, x28)
-			v38 = p.AttachCaptures(v37, scope906, []any{k30}, x28, p.Pos)
+			v37 = p.ScopeValue(sh14, v36, x28)
+			v38 = p.AttachCaptures(v37, scope919, []any{k30}, x28, p.Pos)
 			x27++
 			p.PushKid(v38)
 			if p.Pos == x28 {
@@ -19846,11 +19558,11 @@ func i143(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L43
 		}
 		v47 = p.NewNodeOrdinary("tuple", x45, p.Pos, x46)
-		v48, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 0, Mode: 0, Tuple: true, Shared: false}, v47, x40)
+		v48, _ = p.ShapeSingle(sh259, v47, x40)
 		v42 = v48
 		goto L44
 	L43:
@@ -19859,7 +19571,7 @@ func i143(p *pegort.TParser) (any, bool) {
 		v42 = nil
 	L44:
 		v49 = p.NewNodeOrdinary("tuple", x22, p.Pos, x23)
-		v50, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v49, x15)
+		v50, _ = p.ShapeSingle(sh14, v49, x15)
 		v19 = v50
 		goto L20
 	L21:
@@ -19876,14 +19588,14 @@ func i143(p *pegort.TParser) (any, bool) {
 		x55 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L51
 		}
 		v56 = p.NewMatchOrdinary(x55, p.Pos, ",", true)
 		k13 = v56
 		x53 = append(x53, v56)
 		v57 = p.NewNodeOrdinary("tuple", x52, p.Pos, x53)
-		v58, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v57, x15)
+		v58, _ = p.ShapeSingle(sh14, v57, x15)
 		v19 = v58
 		goto L20
 	L51:
@@ -19893,8 +19605,8 @@ func i143(p *pegort.TParser) (any, bool) {
 		k13 = x18
 		goto L14
 	L20:
-		v59 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v19, x10)
-		v60 = p.AttachCaptures(v59, scope907, []any{k12, k13}, x10, p.Pos)
+		v59 = p.ScopeValue(sh15, v19, x10)
+		v60 = p.AttachCaptures(v59, scope920, []any{k12, k13}, x10, p.Pos)
 		x8++
 		p.PushKid(v60)
 		if p.Pos == x10 {
@@ -19912,21 +19624,21 @@ func i143(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "expressions"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_908, l_909 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_921, l_922 any) any {
 			return func() any {
 				return func() any {
-					f_910 := func() any {
+					f_923 := func() any {
 						return func() any {
 							b := len(c.P.KidStack)
 							c.PushList(func() any { return k1 }())
-							c.PushMap(func() any { return c.Member(func() any { return l_909 }(), "$rs") }(), func(l_911 any) any {
-								return func() any { return c.Member(func() any { return l_911 }(), "$x") }()
+							c.PushMap(func() any { return c.Member(func() any { return l_922 }(), "$rs") }(), func(l_924 any) any {
+								return func() any { return c.Member(func() any { return l_924 }(), "$x") }()
 							})
 							return c.EndList(b)
 						}()
 					}()
-					f_912 := func() any { return any("Load") }()
-					return tmk_Tuple(c, false, f_910, f_912)
+					f_925 := func() any { return any("Load") }()
+					return tmk_Tuple(c, false, f_923, f_925)
 				}()
 			}()
 		})
@@ -20053,7 +19765,7 @@ func i144(p *pegort.TParser) (any, bool) {
 			}
 			if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 				p.Pos++
-			} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+			} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 				goto L31
 			}
 			if _, ok = s339(p); !ok {
@@ -20066,8 +19778,8 @@ func i144(p *pegort.TParser) (any, bool) {
 			k30 = v35
 			x33 = append(x33, v35)
 			v36 = p.NewNodeOrdinary("tuple", x32, p.Pos, x33)
-			v37 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v36, x28)
-			v38 = p.AttachCaptures(v37, scope913, []any{k30}, x28, p.Pos)
+			v37 = p.ScopeValue(sh14, v36, x28)
+			v38 = p.AttachCaptures(v37, scope926, []any{k30}, x28, p.Pos)
 			x27++
 			p.PushKid(v38)
 			if p.Pos == x28 {
@@ -20094,11 +19806,11 @@ func i144(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L43
 		}
 		v47 = p.NewNodeOrdinary("tuple", x45, p.Pos, x46)
-		v48, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 0, Mode: 0, Tuple: true, Shared: false}, v47, x40)
+		v48, _ = p.ShapeSingle(sh259, v47, x40)
 		v42 = v48
 		goto L44
 	L43:
@@ -20107,7 +19819,7 @@ func i144(p *pegort.TParser) (any, bool) {
 		v42 = nil
 	L44:
 		v49 = p.NewNodeOrdinary("tuple", x22, p.Pos, x23)
-		v50, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v49, x15)
+		v50, _ = p.ShapeSingle(sh14, v49, x15)
 		v19 = v50
 		goto L20
 	L21:
@@ -20124,14 +19836,14 @@ func i144(p *pegort.TParser) (any, bool) {
 		x55 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L51
 		}
 		v56 = p.NewMatchOrdinary(x55, p.Pos, ",", true)
 		k13 = v56
 		x53 = append(x53, v56)
 		v57 = p.NewNodeOrdinary("tuple", x52, p.Pos, x53)
-		v58, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v57, x15)
+		v58, _ = p.ShapeSingle(sh14, v57, x15)
 		v19 = v58
 		goto L20
 	L51:
@@ -20141,8 +19853,8 @@ func i144(p *pegort.TParser) (any, bool) {
 		k13 = x18
 		goto L14
 	L20:
-		v59 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v19, x10)
-		v60 = p.AttachCaptures(v59, scope914, []any{k12, k13}, x10, p.Pos)
+		v59 = p.ScopeValue(sh15, v19, x10)
+		v60 = p.AttachCaptures(v59, scope927, []any{k12, k13}, x10, p.Pos)
 		x8++
 		p.PushKid(v60)
 		if p.Pos == x10 {
@@ -20160,21 +19872,21 @@ func i144(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "star_expressions"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_915, l_916 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_928, l_929 any) any {
 			return func() any {
 				return func() any {
-					f_917 := func() any {
+					f_930 := func() any {
 						return func() any {
 							b := len(c.P.KidStack)
 							c.PushList(func() any { return k1 }())
-							c.PushMap(func() any { return c.Member(func() any { return l_916 }(), "$rs") }(), func(l_918 any) any {
-								return func() any { return c.Member(func() any { return l_918 }(), "$x") }()
+							c.PushMap(func() any { return c.Member(func() any { return l_929 }(), "$rs") }(), func(l_931 any) any {
+								return func() any { return c.Member(func() any { return l_931 }(), "$x") }()
 							})
 							return c.EndList(b)
 						}()
 					}()
-					f_919 := func() any { return any("Load") }()
-					return tmk_Tuple(c, false, f_917, f_919)
+					f_932 := func() any { return any("Load") }()
+					return tmk_Tuple(c, false, f_930, f_932)
 				}()
 			}()
 		})
@@ -20242,7 +19954,7 @@ L10:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20300,7 +20012,7 @@ L10:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20365,7 +20077,7 @@ L10:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20423,7 +20135,7 @@ L10:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20472,7 +20184,7 @@ func i147(p *pegort.TParser) (any, bool) {
 	_ = x5
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit107, "*", 52, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit113, "*", 52, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -20504,9 +20216,9 @@ L3:
 	p.Where = "starred_bitor"
 	v = func() any {
 		return func() any {
-			f_920 := func() any { return k4 }()
-			f_921 := func() any { return any("Load") }()
-			return tmk_Starred(c, true, f_920, f_921)
+			f_933 := func() any { return k4 }()
+			f_934 := func() any { return any("Load") }()
+			return tmk_Starred(c, true, f_933, f_934)
 		}()
 	}()
 	p.Where = w
@@ -20555,7 +20267,7 @@ func i148(p *pegort.TParser) (any, bool) {
 	_ = x5
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit107, "*", 52, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit113, "*", 52, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -20587,9 +20299,9 @@ L3:
 	p.Where = "starred_expression"
 	v = func() any {
 		return func() any {
-			f_922 := func() any { return k4 }()
-			f_923 := func() any { return any("Load") }()
-			return tmk_Starred(c, true, f_922, f_923)
+			f_935 := func() any { return k4 }()
+			f_936 := func() any { return any("Load") }()
+			return tmk_Starred(c, true, f_935, f_936)
 		}()
 	}()
 	p.Where = w
@@ -20645,7 +20357,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20694,7 +20406,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20748,7 +20460,7 @@ func i150(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 58 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit262, ":=", 86, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit269, ":=", 86, false); !ok {
 		goto L6
 	}
 	p.Silent--
@@ -20817,7 +20529,7 @@ func i151(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 58 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit262, ":=", 86, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit269, ":=", 86, false); !ok {
 		goto fail
 	}
 	if _, ok = s339(p); !ok {
@@ -20833,9 +20545,9 @@ func i151(p *pegort.TParser) (any, bool) {
 	p.Where = "walrus"
 	v = func() any {
 		return func() any {
-			f_924 := func() any { return k1 }()
-			f_925 := func() any { return k4 }()
-			return tmk_NamedExpr(c, true, f_924, f_925)
+			f_937 := func() any { return k1 }()
+			f_938 := func() any { return k4 }()
+			return tmk_NamedExpr(c, true, f_937, f_938)
 		}()
 	}()
 	p.Where = w
@@ -20899,7 +20611,7 @@ L10:
 L9:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -20956,7 +20668,7 @@ L10:
 L9:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -21065,8 +20777,8 @@ func i153(p *pegort.TParser) (any, bool) {
 		k13 = v22
 		x16 = append(x16, v22)
 		v23 = p.NewNodeOrdinary("tuple", x15, p.Pos, x16)
-		v24 = p.ScopeValue(pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, v23, x10)
-		v25 = p.AttachCaptures(v24, scope926, []any{k12, k13}, x10, p.Pos)
+		v24 = p.ScopeValue(sh274, v23, x10)
+		v25 = p.AttachCaptures(v24, scope939, []any{k12, k13}, x10, p.Pos)
 		x8++
 		p.PushKid(v25)
 		if p.Pos == x10 {
@@ -21084,13 +20796,13 @@ func i153(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "conditional"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_927, l_928 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_940, l_941 any) any {
 			return func() any {
 				return func() any {
-					f_929 := func() any { return c.Member(func() any { return l_928 }(), "$c") }()
-					f_930 := func() any { return k1 }()
-					f_931 := func() any { return c.Member(func() any { return l_928 }(), "$o") }()
-					return tmk_IfExp(c, false, f_929, f_930, f_931)
+					f_942 := func() any { return c.Member(func() any { return l_941 }(), "$c") }()
+					f_943 := func() any { return k1 }()
+					f_944 := func() any { return c.Member(func() any { return l_941 }(), "$o") }()
+					return tmk_IfExp(c, false, f_942, f_943, f_944)
 				}()
 			}()
 		})
@@ -21176,14 +20888,14 @@ L5:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x9, x10 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L11
 	}
 	p.Silent--
@@ -21207,9 +20919,9 @@ L11:
 	p.Where = "lambdef"
 	v = func() any {
 		return func() any {
-			f_932 := func() any { return k6 }()
-			f_933 := func() any { return k12 }()
-			return tmk_Lambda(c, true, f_932, f_933)
+			f_945 := func() any { return k6 }()
+			f_946 := func() any { return k12 }()
+			return tmk_Lambda(c, true, f_945, f_946)
 		}()
 	}()
 	p.Where = w
@@ -21314,7 +21026,7 @@ func i155(p *pegort.TParser) (any, bool) {
 		if v9, ok = u156(p); !ok {
 			goto L8
 		}
-		v10 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, x6)
+		v10 = p.ScopeValue(sh8, v9, x6)
 		x5++
 		p.PushKid(v10)
 		if p.Pos == x6 {
@@ -21336,7 +21048,7 @@ func i155(p *pegort.TParser) (any, bool) {
 		if v20, ok = u157(p); !ok {
 			goto L19
 		}
-		v21 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v20, x17)
+		v21 = p.ScopeValue(sh8, v20, x17)
 		x16++
 		p.PushKid(v21)
 		if p.Pos == x17 {
@@ -21358,7 +21070,7 @@ func i155(p *pegort.TParser) (any, bool) {
 		if v32, ok = u158(p); !ok {
 			goto L31
 		}
-		v33 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v32, x29)
+		v33 = p.ScopeValue(sh8, v32, x29)
 		x27++
 		p.PushKid(v33)
 		if p.Pos == x29 {
@@ -21380,7 +21092,7 @@ func i155(p *pegort.TParser) (any, bool) {
 		if v43, ok = u156(p); !ok {
 			goto L42
 		}
-		v44 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v43, x40)
+		v44 = p.ScopeValue(sh8, v43, x40)
 		x39++
 		p.PushKid(v44)
 		if p.Pos == x40 {
@@ -21402,7 +21114,7 @@ func i155(p *pegort.TParser) (any, bool) {
 		if v54, ok = u157(p); !ok {
 			goto L53
 		}
-		v55 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v54, x51)
+		v55 = p.ScopeValue(sh8, v54, x51)
 		x50++
 		p.PushKid(v55)
 		if p.Pos == x51 {
@@ -21488,57 +21200,57 @@ L69:
 	p.Where = "lambda_params"
 	v = func() any {
 		return func() any {
-			f_934 := func() any {
-				return c.Fold("foldl", false, func() any { return c.List() }(), func() any { return k23 }(), func(l_935, l_936 any) any {
+			f_947 := func() any {
+				return c.Fold("foldl", false, func() any { return c.List() }(), func() any { return k23 }(), func(l_948, l_949 any) any {
 					return func() any {
 						return c.Concat(func() any { return k1 }(), func() any {
-							return c.MapList(func() any { return k12 }(), func(l_937 any) any {
-								return func() any { return c.Member(func() any { return l_937 }(), "$p") }()
+							return c.MapList(func() any { return k12 }(), func(l_950 any) any {
+								return func() any { return c.Member(func() any { return l_950 }(), "$p") }()
 							})
 						}())
 					}()
 				})
 			}()
-			f_938 := func() any {
+			f_951 := func() any {
 				return c.Concat(func() any {
 					return c.Fold("foldl", false, func() any {
 						return c.Concat(func() any { return k1 }(), func() any {
-							return c.MapList(func() any { return k12 }(), func(l_939 any) any {
-								return func() any { return c.Member(func() any { return l_939 }(), "$p") }()
+							return c.MapList(func() any { return k12 }(), func(l_952 any) any {
+								return func() any { return c.Member(func() any { return l_952 }(), "$p") }()
 							})
 						}())
-					}(), func() any { return k23 }(), func(l_940, l_941 any) any { return func() any { return c.List() }() })
+					}(), func() any { return k23 }(), func(l_953, l_954 any) any { return func() any { return c.List() }() })
 				}(), func() any { return k35 }(), func() any {
-					return c.MapList(func() any { return k46 }(), func(l_942 any) any {
-						return func() any { return c.Member(func() any { return l_942 }(), "$p") }()
+					return c.MapList(func() any { return k46 }(), func(l_955 any) any {
+						return func() any { return c.Member(func() any { return l_955 }(), "$p") }()
 					})
 				}())
 			}()
-			f_943 := func() any { return c.Member(func() any { return k57 }(), "$va") }()
-			f_944 := func() any {
-				return c.MapList(func() any { return c.Member(func() any { return k57 }(), "$ko") }(), func(l_945 any) any {
-					return func() any { return c.Member(func() any { return l_945 }(), "$p") }()
+			f_956 := func() any { return c.Member(func() any { return k57 }(), "$va") }()
+			f_957 := func() any {
+				return c.MapList(func() any { return c.Member(func() any { return k57 }(), "$ko") }(), func(l_958 any) any {
+					return func() any { return c.Member(func() any { return l_958 }(), "$p") }()
 				})
 			}()
-			f_946 := func() any {
-				return c.MapList(func() any { return c.Member(func() any { return k57 }(), "$ko") }(), func(l_947 any) any {
-					return func() any { return c.Member(func() any { return l_947 }(), "$d") }()
+			f_959 := func() any {
+				return c.MapList(func() any { return c.Member(func() any { return k57 }(), "$ko") }(), func(l_960 any) any {
+					return func() any { return c.Member(func() any { return l_960 }(), "$d") }()
 				})
 			}()
-			f_948 := func() any { return c.Member(func() any { return k57 }(), "$kw") }()
-			f_949 := func() any {
+			f_961 := func() any { return c.Member(func() any { return k57 }(), "$kw") }()
+			f_962 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
-					c.PushMap(func() any { return k12 }(), func(l_950 any) any {
-						return func() any { return c.Member(func() any { return l_950 }(), "$d") }()
+					c.PushMap(func() any { return k12 }(), func(l_963 any) any {
+						return func() any { return c.Member(func() any { return l_963 }(), "$d") }()
 					})
-					c.PushMap(func() any { return k46 }(), func(l_951 any) any {
-						return func() any { return c.Member(func() any { return l_951 }(), "$d") }()
+					c.PushMap(func() any { return k46 }(), func(l_964 any) any {
+						return func() any { return c.Member(func() any { return l_964 }(), "$d") }()
 					})
 					return c.EndList(b)
 				}()
 			}()
-			return tmk_Arguments(c, true, f_934, f_938, f_943, f_944, f_946, f_948, f_949)
+			return tmk_Arguments(c, true, f_947, f_951, f_956, f_957, f_959, f_961, f_962)
 		}()
 	}()
 	p.Where = w
@@ -21656,7 +21368,7 @@ func i157(p *pegort.TParser) (any, bool) {
 	x6 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto fail
 	}
 	v7 = p.NewMatchOrdinary(x6, p.Pos, "=", true)
@@ -21665,7 +21377,7 @@ func i157(p *pegort.TParser) (any, bool) {
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L10
 	}
 	p.Silent--
@@ -21689,8 +21401,8 @@ L10:
 		goto fail
 	}
 	v14 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v14, start)
-	v = p.AttachCaptures(v, scope952, []any{k3, k11}, start, p.Pos)
+	v = p.ScopeValue(sh11, v14, start)
+	v = p.AttachCaptures(v, scope965, []any{k3, k11}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -21738,7 +21450,7 @@ func i158(p *pegort.TParser) (any, bool) {
 	x5 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 47 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit243, "/", 83, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit249, "/", 83, false); !ok {
 		goto fail
 	}
 	v6 = p.NewMatchOrdinary(x5, p.Pos, "/", true)
@@ -21748,8 +21460,8 @@ func i158(p *pegort.TParser) (any, bool) {
 		goto fail
 	}
 	v7 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v7, start)
-	v = p.AttachCaptures(v, scope953, []any{k3}, start, p.Pos)
+	v = p.ScopeValue(sh14, v7, start)
+	v = p.AttachCaptures(v, scope966, []any{k3}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -21872,7 +21584,7 @@ func i159(p *pegort.TParser) (any, bool) {
 	x14 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit107, "*", 52, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit113, "*", 52, false); !ok {
 		goto L10
 	}
 	v15 = p.NewMatchOrdinary(x14, p.Pos, "*", true)
@@ -21910,7 +21622,7 @@ L18:
 		goto L24
 	}
 	v29 = p.NewNodeOrdinary("tuple", x25, p.Pos, x26)
-	v30, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v29, x19)
+	v30, _ = p.ShapeSingle(sh14, v29, x19)
 	v22 = v30
 	goto L23
 L24:
@@ -21927,7 +21639,7 @@ L24:
 	x37 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L34
 	}
 	v38 = p.NewMatchOrdinary(x37, p.Pos, ",", true)
@@ -21936,7 +21648,7 @@ L24:
 		goto L34
 	}
 	v39 = p.NewNodeOrdinary("tuple", x35, p.Pos, x36)
-	v40, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v39, x19)
+	v40, _ = p.ShapeSingle(sh14, v39, x19)
 	v22 = v40
 	goto L23
 L34:
@@ -21972,7 +21684,7 @@ L23:
 		x62 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 			goto L58
 		}
 		v63 = p.NewMatchOrdinary(x62, p.Pos, "=", true)
@@ -21981,7 +21693,7 @@ L23:
 		p.Silent++
 		if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 			goto L66
 		}
 		p.Silent--
@@ -22002,7 +21714,7 @@ L23:
 		k48 = v68
 		x61 = append(x61, v68)
 		v69 = p.NewNodeOrdinary("tuple", x60, p.Pos, x61)
-		v70, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v69, x54)
+		v70, _ = p.ShapeSingle(sh9, v69, x54)
 		v57 = v70
 		goto L59
 	L58:
@@ -22016,8 +21728,8 @@ L23:
 			goto L49
 		}
 		v71 = p.NewNodeOrdinary("tuple", x50, p.Pos, x51)
-		v72 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v71, x45)
-		v73 = p.AttachCaptures(v72, scope954, []any{k47, k48}, x45, p.Pos)
+		v72 = p.ScopeValue(sh9, v71, x45)
+		v73 = p.AttachCaptures(v72, scope967, []any{k47, k48}, x45, p.Pos)
 		x44++
 		p.PushKid(v73)
 		if p.Pos == x45 {
@@ -22055,7 +21767,7 @@ L78:
 	goto L10
 L79:
 	v80 = p.NewNodeOrdinary("tuple", x12, p.Pos, x13)
-	v81, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v80, x3)
+	v81, _ = p.ShapeSingle(sh11, v80, x3)
 	v9 = v81
 	goto L11
 L10:
@@ -22083,8 +21795,8 @@ L87:
 L88:
 	x2 = append(x2, v86)
 	v91 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v91, start)
-	v = p.AttachCaptures(v, scope955, []any{k5, k7, k84}, start, p.Pos)
+	v = p.ScopeValue(sh9, v91, start)
+	v = p.AttachCaptures(v, scope968, []any{k5, k7, k84}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -22123,7 +21835,7 @@ func i160(p *pegort.TParser) (any, bool) {
 	_ = x2
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 42 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit222, "**", 79, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit228, "**", 79, false); !ok {
 		goto fail
 	}
 	if _, ok = s339(p); !ok {
@@ -22192,8 +21904,8 @@ func i161(p *pegort.TParser) (any, bool) {
 	p.Where = "lparam"
 	v = func() any {
 		return func() any {
-			f_956 := func() any { return c.Text(func() any { return k1 }()) }()
-			return tmk_Arg(c, true, f_956, nil)
+			f_969 := func() any { return c.Text(func() any { return k1 }()) }()
+			return tmk_Arg(c, true, f_969, nil)
 		}()
 	}()
 	p.Where = w
@@ -22262,7 +21974,7 @@ L11:
 L10:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -22324,7 +22036,7 @@ L11:
 L10:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -22385,7 +22097,7 @@ func i164(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "yield_from"
 	v = func() any {
-		return func() any { f_957 := func() any { return k1 }(); return tmk_YieldFrom(c, true, f_957) }()
+		return func() any { f_970 := func() any { return k1 }(); return tmk_YieldFrom(c, true, f_970) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -22450,7 +22162,7 @@ L6:
 	w = p.Where
 	p.Where = "yield_plain"
 	v = func() any {
-		return func() any { f_958 := func() any { return k3 }(); return tmk_Yield(c, true, f_958) }()
+		return func() any { f_971 := func() any { return k3 }(); return tmk_Yield(c, true, f_971) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -22585,8 +22297,8 @@ func i166(p *pegort.TParser) (any, bool) {
 			k28 = v33
 			x31 = append(x31, v33)
 			v34 = p.NewNodeOrdinary("tuple", x30, p.Pos, x31)
-			v35 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v34, x26)
-			v36 = p.AttachCaptures(v35, scope959, []any{k28}, x26, p.Pos)
+			v35 = p.ScopeValue(sh14, v34, x26)
+			v36 = p.AttachCaptures(v35, scope972, []any{k28}, x26, p.Pos)
 			x25++
 			p.PushKid(v36)
 			if p.Pos == x26 {
@@ -22602,8 +22314,8 @@ func i166(p *pegort.TParser) (any, bool) {
 		k14 = v37
 		x17 = append(x17, v37)
 		v38 = p.NewNodeOrdinary("tuple", x16, p.Pos, x17)
-		v39 = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v38, x10)
-		v40 = p.AttachCaptures(v39, scope960, []any{k12, k13, k14}, x10, p.Pos)
+		v39 = p.ScopeValue(sh11, v38, x10)
+		v40 = p.AttachCaptures(v39, scope973, []any{k12, k13, k14}, x10, p.Pos)
 		x8++
 		p.PushKid(v40)
 		if p.Pos == x10 {
@@ -22621,22 +22333,22 @@ func i166(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "disjunction"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_961, l_962 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_974, l_975 any) any {
 			return func() any {
 				return func() any {
-					f_963 := func() any { return c.Member(func() any { return l_962 }(), "$o") }()
-					f_964 := func() any {
+					f_976 := func() any { return c.Member(func() any { return l_975 }(), "$o") }()
+					f_977 := func() any {
 						return func() any {
 							b := len(c.P.KidStack)
 							c.PushList(func() any { return k1 }())
-							c.PushList(func() any { return c.Member(func() any { return l_962 }(), "$c") }())
-							c.PushMap(func() any { return c.Member(func() any { return l_962 }(), "$rs") }(), func(l_965 any) any {
-								return func() any { return c.Member(func() any { return l_965 }(), "$x") }()
+							c.PushList(func() any { return c.Member(func() any { return l_975 }(), "$c") }())
+							c.PushMap(func() any { return c.Member(func() any { return l_975 }(), "$rs") }(), func(l_978 any) any {
+								return func() any { return c.Member(func() any { return l_978 }(), "$x") }()
 							})
 							return c.EndList(b)
 						}()
 					}()
-					return tmk_BoolOp(c, false, f_963, f_964)
+					return tmk_BoolOp(c, false, f_976, f_977)
 				}()
 			}()
 		})
@@ -22775,8 +22487,8 @@ func i167(p *pegort.TParser) (any, bool) {
 			k28 = v33
 			x31 = append(x31, v33)
 			v34 = p.NewNodeOrdinary("tuple", x30, p.Pos, x31)
-			v35 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v34, x26)
-			v36 = p.AttachCaptures(v35, scope966, []any{k28}, x26, p.Pos)
+			v35 = p.ScopeValue(sh14, v34, x26)
+			v36 = p.AttachCaptures(v35, scope979, []any{k28}, x26, p.Pos)
 			x25++
 			p.PushKid(v36)
 			if p.Pos == x26 {
@@ -22792,8 +22504,8 @@ func i167(p *pegort.TParser) (any, bool) {
 		k14 = v37
 		x17 = append(x17, v37)
 		v38 = p.NewNodeOrdinary("tuple", x16, p.Pos, x17)
-		v39 = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v38, x10)
-		v40 = p.AttachCaptures(v39, scope967, []any{k12, k13, k14}, x10, p.Pos)
+		v39 = p.ScopeValue(sh11, v38, x10)
+		v40 = p.AttachCaptures(v39, scope980, []any{k12, k13, k14}, x10, p.Pos)
 		x8++
 		p.PushKid(v40)
 		if p.Pos == x10 {
@@ -22811,22 +22523,22 @@ func i167(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "conjunction"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_968, l_969 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_981, l_982 any) any {
 			return func() any {
 				return func() any {
-					f_970 := func() any { return c.Member(func() any { return l_969 }(), "$o") }()
-					f_971 := func() any {
+					f_983 := func() any { return c.Member(func() any { return l_982 }(), "$o") }()
+					f_984 := func() any {
 						return func() any {
 							b := len(c.P.KidStack)
 							c.PushList(func() any { return k1 }())
-							c.PushList(func() any { return c.Member(func() any { return l_969 }(), "$c") }())
-							c.PushMap(func() any { return c.Member(func() any { return l_969 }(), "$rs") }(), func(l_972 any) any {
-								return func() any { return c.Member(func() any { return l_972 }(), "$x") }()
+							c.PushList(func() any { return c.Member(func() any { return l_982 }(), "$c") }())
+							c.PushMap(func() any { return c.Member(func() any { return l_982 }(), "$rs") }(), func(l_985 any) any {
+								return func() any { return c.Member(func() any { return l_985 }(), "$x") }()
 							})
 							return c.EndList(b)
 						}()
 					}()
-					return tmk_BoolOp(c, false, f_970, f_971)
+					return tmk_BoolOp(c, false, f_983, f_984)
 				}()
 			}()
 		})
@@ -22869,7 +22581,7 @@ func v168(p *pegort.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 111 && p.In[p.Pos+1] == 114 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit287, "or", 90, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit295, "or", 90, false); !ok {
 		goto fail
 	}
 	x2, x3 = p.Pos, len(p.Recovered)
@@ -22887,7 +22599,7 @@ L4:
 	p.Recovered = p.Recovered[:x3]
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v5, start)
+	v = p.ScopeValue(sh8, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -22921,7 +22633,7 @@ func i168(p *pegort.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 111 && p.In[p.Pos+1] == 114 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit287, "or", 90, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit295, "or", 90, false); !ok {
 		goto fail
 	}
 	x2, x3 = p.Pos, len(p.Recovered)
@@ -22939,7 +22651,7 @@ L4:
 	p.Recovered = p.Recovered[:x3]
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v5, start)
+	v = p.ScopeValue(sh8, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -22980,7 +22692,7 @@ func v169(p *pegort.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 97 && p.In[p.Pos+1] == 110 && p.In[p.Pos+2] == 100 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit289, "and", 91, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit297, "and", 91, false); !ok {
 		goto fail
 	}
 	x2, x3 = p.Pos, len(p.Recovered)
@@ -22998,7 +22710,7 @@ L4:
 	p.Recovered = p.Recovered[:x3]
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v5, start)
+	v = p.ScopeValue(sh8, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -23032,7 +22744,7 @@ func i169(p *pegort.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 97 && p.In[p.Pos+1] == 110 && p.In[p.Pos+2] == 100 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit289, "and", 91, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit297, "and", 91, false); !ok {
 		goto fail
 	}
 	x2, x3 = p.Pos, len(p.Recovered)
@@ -23050,7 +22762,7 @@ L4:
 	p.Recovered = p.Recovered[:x3]
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v5, start)
+	v = p.ScopeValue(sh8, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -23116,7 +22828,7 @@ L10:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -23174,7 +22886,7 @@ L10:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -23235,9 +22947,9 @@ func i171(p *pegort.TParser) (any, bool) {
 	p.Where = "not_expr"
 	v = func() any {
 		return func() any {
-			f_973 := func() any { return k1 }()
-			f_974 := func() any { return k4 }()
-			return tmk_UnaryOp(c, true, f_973, f_974)
+			f_986 := func() any { return k1 }()
+			f_987 := func() any { return k4 }()
+			return tmk_UnaryOp(c, true, f_986, f_987)
 		}()
 	}()
 	p.Where = w
@@ -23269,7 +22981,7 @@ func s172(p *pegort.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 116 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit293, "not", 92, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit301, "not", 92, false); !ok {
 		goto fail
 	}
 	x2, x3 = p.Pos, len(p.Recovered)
@@ -23287,7 +22999,7 @@ L4:
 	p.Recovered = p.Recovered[:x3]
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v5, start)
+	v = p.ScopeValue(sh8, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -23399,8 +23111,8 @@ func i173(p *pegort.TParser) (any, bool) {
 			k21 = v28
 			x24 = append(x24, v28)
 			v29 = p.NewNodeOrdinary("tuple", x23, p.Pos, x24)
-			v30 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v29, x18)
-			v31 = p.AttachCaptures(v30, scope975, []any{k20, k21}, x18, p.Pos)
+			v30 = p.ScopeValue(sh9, v29, x18)
+			v31 = p.AttachCaptures(v30, scope988, []any{k20, k21}, x18, p.Pos)
 			x17++
 			p.PushKid(v31)
 			if p.Pos == x18 {
@@ -23418,8 +23130,8 @@ func i173(p *pegort.TParser) (any, bool) {
 		}
 		v32 = p.NewNodeOrdinary("list", x15, p.Pos, p.Kids(x16))
 		k12 = v32
-		v33 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v32, x10)
-		v34 = p.AttachCaptures(v33, scope976, []any{k12}, x10, p.Pos)
+		v33 = p.ScopeValue(sh15, v32, x10)
+		v34 = p.AttachCaptures(v33, scope989, []any{k12}, x10, p.Pos)
 		x8++
 		p.PushKid(v34)
 		if p.Pos == x10 {
@@ -23437,21 +23149,21 @@ func i173(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "comparison"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_977, l_978 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_990, l_991 any) any {
 			return func() any {
 				return func() any {
-					f_979 := func() any { return k1 }()
-					f_980 := func() any {
-						return c.MapList(func() any { return c.Member(func() any { return l_978 }(), "$rs") }(), func(l_981 any) any {
-							return func() any { return c.Member(func() any { return l_981 }(), "$o") }()
+					f_992 := func() any { return k1 }()
+					f_993 := func() any {
+						return c.MapList(func() any { return c.Member(func() any { return l_991 }(), "$rs") }(), func(l_994 any) any {
+							return func() any { return c.Member(func() any { return l_994 }(), "$o") }()
 						})
 					}()
-					f_982 := func() any {
-						return c.MapList(func() any { return c.Member(func() any { return l_978 }(), "$rs") }(), func(l_983 any) any {
-							return func() any { return c.Member(func() any { return l_983 }(), "$x") }()
+					f_995 := func() any {
+						return c.MapList(func() any { return c.Member(func() any { return l_991 }(), "$rs") }(), func(l_996 any) any {
+							return func() any { return c.Member(func() any { return l_996 }(), "$x") }()
 						})
 					}()
-					return tmk_Compare(c, false, f_979, f_980, f_982)
+					return tmk_Compare(c, false, f_992, f_993, f_995)
 				}()
 			}()
 		})
@@ -23512,7 +23224,7 @@ func s174(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 61 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit298, "==", 93, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit306, "==", 93, false); !ok {
 		goto L8
 	}
 	goto L4
@@ -23526,7 +23238,7 @@ L7:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 33 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit299, "!=", 94, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit307, "!=", 94, false); !ok {
 		goto L10
 	}
 	goto L4
@@ -23540,7 +23252,7 @@ L9:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 60 && p.In[p.Pos+1] == 62 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit300, "<>", 95, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit308, "<>", 95, false); !ok {
 		goto L12
 	}
 	goto L4
@@ -23554,7 +23266,7 @@ L11:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 60 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit301, "<=", 96, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit309, "<=", 96, false); !ok {
 		goto L14
 	}
 	goto L4
@@ -23568,7 +23280,7 @@ L13:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 62 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit302, ">=", 97, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit310, ">=", 97, false); !ok {
 		goto L16
 	}
 	goto L4
@@ -23582,7 +23294,7 @@ L15:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 60 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit303, "<", 98, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit311, "<", 98, false); !ok {
 		goto L18
 	}
 	x19, x20 = p.Pos, len(p.Recovered)
@@ -23612,7 +23324,7 @@ L17:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 62 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit304, ">", 100, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit312, ">", 100, false); !ok {
 		goto L23
 	}
 	x24, x25 = p.Pos, len(p.Recovered)
@@ -23642,7 +23354,7 @@ L22:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 116 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit293, "not", 92, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit301, "not", 92, false); !ok {
 		goto L28
 	}
 	x29, x30 = p.Pos, len(p.Recovered)
@@ -23663,7 +23375,7 @@ L31:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 110 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit305, "in", 102, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit313, "in", 102, false); !ok {
 		goto L28
 	}
 	x32, x33 = p.Pos, len(p.Recovered)
@@ -23690,7 +23402,7 @@ L27:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 110 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit305, "in", 102, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit313, "in", 102, false); !ok {
 		goto L36
 	}
 	x37, x38 = p.Pos, len(p.Recovered)
@@ -23717,7 +23429,7 @@ L35:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 115 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit306, "is", 103, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit314, "is", 103, false); !ok {
 		goto L41
 	}
 	x42, x43 = p.Pos, len(p.Recovered)
@@ -23738,7 +23450,7 @@ L44:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 116 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit293, "not", 92, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit301, "not", 92, false); !ok {
 		goto L41
 	}
 	x45, x46 = p.Pos, len(p.Recovered)
@@ -23765,7 +23477,7 @@ L40:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 115 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit306, "is", 103, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit314, "is", 103, false); !ok {
 		goto L49
 	}
 	x50, x51 = p.Pos, len(p.Recovered)
@@ -23790,7 +23502,7 @@ L48:
 L4:
 	v53 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v53)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v53, start)
+	v = p.ScopeValue(sh8, v53, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -23805,7 +23517,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1162(p *pegort.TParser) (any, bool) {
+func e1175(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
 	)
@@ -23818,7 +23530,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1163(p *pegort.TParser) (any, bool) {
+func e1176(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
 		v1 any
@@ -23832,7 +23544,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1164(p *pegort.TParser) (any, bool) {
+func e1177(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
 		v1 any
@@ -23846,7 +23558,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1165(p *pegort.TParser) (any, bool) {
+func e1178(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -23864,7 +23576,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1169(p *pegort.TParser) (any, bool) {
+func e1182(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -23882,7 +23594,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1173(p *pegort.TParser) (any, bool) {
+func e1186(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -23900,7 +23612,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1177(p *pegort.TParser) (any, bool) {
+func e1190(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -23918,7 +23630,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1181(p *pegort.TParser) (any, bool) {
+func e1194(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -23936,7 +23648,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1185(p *pegort.TParser) (any, bool) {
+func e1198(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -23954,7 +23666,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1189(p *pegort.TParser) (any, bool) {
+func e1202(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -23972,7 +23684,7 @@ fail:
 }
 
 // bitwise_or (typed OperatorsRule body inlined)
-func e1192(p *pegort.TParser) (any, bool) {
+func e1205(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -24010,14 +23722,14 @@ func s176(p *pegort.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 124 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit179, "|", 66, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit185, "|", 66, false); !ok {
 		goto fail
 	}
 	x2, x3 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L4
 	}
 	p.Silent--
@@ -24030,7 +23742,7 @@ L4:
 	p.Recovered = p.Recovered[:x3]
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v5, start)
+	v = p.ScopeValue(sh8, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -24065,14 +23777,14 @@ func s177(p *pegort.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 94 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit309, "^", 104, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit317, "^", 104, false); !ok {
 		goto fail
 	}
 	x2, x3 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L4
 	}
 	p.Silent--
@@ -24085,7 +23797,7 @@ L4:
 	p.Recovered = p.Recovered[:x3]
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v5, start)
+	v = p.ScopeValue(sh8, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -24120,14 +23832,14 @@ func s178(p *pegort.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 38 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit311, "&", 105, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit319, "&", 105, false); !ok {
 		goto fail
 	}
 	x2, x3 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L4
 	}
 	p.Silent--
@@ -24140,7 +23852,7 @@ L4:
 	p.Recovered = p.Recovered[:x3]
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v5, start)
+	v = p.ScopeValue(sh8, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -24187,14 +23899,14 @@ func s179(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 60 && p.In[p.Pos+1] == 60 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit313, "<<", 106, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit321, "<<", 106, false); !ok {
 		goto L8
 	}
 	x9, x10 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L11
 	}
 	p.Silent--
@@ -24216,14 +23928,14 @@ L7:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 62 && p.In[p.Pos+1] == 62 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit314, ">>", 107, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit322, ">>", 107, false); !ok {
 		goto L13
 	}
 	x14, x15 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L16
 	}
 	p.Silent--
@@ -24243,7 +23955,7 @@ L12:
 L4:
 	v17 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v17)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v17, start)
+	v = p.ScopeValue(sh8, v17, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -24292,14 +24004,14 @@ func s180(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 43 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit199, "+", 75, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit205, "+", 75, false); !ok {
 		goto L8
 	}
 	x9, x10 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L11
 	}
 	p.Silent--
@@ -24321,7 +24033,7 @@ L7:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit197, "-", 73, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit203, "-", 73, false); !ok {
 		goto L13
 	}
 	x14, x15 = p.Pos, len(p.Recovered)
@@ -24349,7 +24061,7 @@ L12:
 L4:
 	v17 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v17)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v17, start)
+	v = p.ScopeValue(sh8, v17, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -24404,7 +24116,7 @@ func s181(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit107, "*", 52, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit113, "*", 52, false); !ok {
 		goto L8
 	}
 	x9, x10 = p.Pos, len(p.Recovered)
@@ -24434,14 +24146,14 @@ L7:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit316, "//", 108, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit324, "//", 108, false); !ok {
 		goto L13
 	}
 	x14, x15 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L16
 	}
 	p.Silent--
@@ -24463,7 +24175,7 @@ L12:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 47 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit243, "/", 83, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit249, "/", 83, false); !ok {
 		goto L18
 	}
 	x19, x20 = p.Pos, len(p.Recovered)
@@ -24493,14 +24205,14 @@ L17:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 37 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit317, "%", 110, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit325, "%", 110, false); !ok {
 		goto L23
 	}
 	x24, x25 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L26
 	}
 	p.Silent--
@@ -24522,14 +24234,14 @@ L22:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 64 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit140, "@", 64, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit146, "@", 64, false); !ok {
 		goto L28
 	}
 	x29, x30 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L31
 	}
 	p.Silent--
@@ -24549,7 +24261,7 @@ L27:
 L4:
 	v32 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v32)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v32, start)
+	v = p.ScopeValue(sh8, v32, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -24598,14 +24310,14 @@ func s182(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 43 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit199, "+", 75, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit205, "+", 75, false); !ok {
 		goto L8
 	}
 	x9, x10 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L11
 	}
 	p.Silent--
@@ -24627,7 +24339,7 @@ L7:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 45 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit197, "-", 73, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit203, "-", 73, false); !ok {
 		goto L13
 	}
 	x14, x15 = p.Pos, len(p.Recovered)
@@ -24657,7 +24369,7 @@ L12:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 126 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit319, "~", 111, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit327, "~", 111, false); !ok {
 		goto L18
 	}
 	goto L4
@@ -24669,7 +24381,7 @@ L17:
 L4:
 	v19 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v19)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v19, start)
+	v = p.ScopeValue(sh8, v19, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -24704,14 +24416,14 @@ func s183(p *pegort.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 42 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit222, "**", 79, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit228, "**", 79, false); !ok {
 		goto fail
 	}
 	x2, x3 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L4
 	}
 	p.Silent--
@@ -24724,7 +24436,7 @@ L4:
 	p.Recovered = p.Recovered[:x3]
 	v5 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v5)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v5, start)
+	v = p.ScopeValue(sh8, v5, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -24782,7 +24494,7 @@ func i184(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "await_expr"
 	v = func() any {
-		return func() any { f_984 := func() any { return k1 }(); return tmk_Await(c, true, f_984) }()
+		return func() any { f_997 := func() any { return k1 }(); return tmk_Await(c, true, f_997) }()
 	}()
 	p.Where = w
 	p.Depth--
@@ -24837,7 +24549,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -24886,7 +24598,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -24969,14 +24681,14 @@ L12:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit92, ".", 50, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit98, ".", 50, false); !ok {
 		goto L15
 	}
 	x16, x17 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 46 && p.In[p.Pos+1] == 46 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit203, "..", 76, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit209, "..", 76, false); !ok {
 		goto L18
 	}
 	p.Silent--
@@ -25016,7 +24728,7 @@ fail:
 }
 
 // primary_chain (typed OperatorsRule body inlined)
-func e1196(p *pegort.TParser) (any, bool) {
+func e1209(p *pegort.TParser) (any, bool) {
 	var (
 		ok bool
 		v1 any
@@ -25030,7 +24742,7 @@ fail:
 }
 
 // primary_chain (typed OperatorsRule body inlined)
-func e1197(p *pegort.TParser) (any, bool) {
+func e1210(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -25048,7 +24760,7 @@ func e1197(p *pegort.TParser) (any, bool) {
 	x3 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit92, ".", 50, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit98, ".", 50, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, ".", true)
@@ -25057,7 +24769,7 @@ func e1197(p *pegort.TParser) (any, bool) {
 	p.Silent++
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 46 && p.In[p.Pos+1] == 46 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit203, "..", 76, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit209, "..", 76, false); !ok {
 		goto L6
 	}
 	p.Silent--
@@ -25082,7 +24794,7 @@ fail:
 }
 
 // primary_chain (typed OperatorsRule body inlined)
-func e1201(p *pegort.TParser) (any, bool) {
+func e1214(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -25100,7 +24812,7 @@ fail:
 }
 
 // primary_chain (typed OperatorsRule body inlined)
-func e1204(p *pegort.TParser) (any, bool) {
+func e1217(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -25118,7 +24830,7 @@ fail:
 }
 
 // primary_chain (typed OperatorsRule body inlined)
-func e1214(p *pegort.TParser) (any, bool) {
+func e1227(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -25240,7 +24952,7 @@ func i188(p *pegort.TParser) (any, bool) {
 	x3 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, "(", true)
@@ -25286,8 +24998,8 @@ func i188(p *pegort.TParser) (any, bool) {
 			goto L13
 		}
 		v18 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
-		v19 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v18, x10)
-		v20 = p.AttachCaptures(v19, scope985, []any{k12}, x10, p.Pos)
+		v19 = p.ScopeValue(sh14, v18, x10)
+		v20 = p.AttachCaptures(v19, scope998, []any{k12}, x10, p.Pos)
 		x9++
 		p.PushKid(v20)
 		if p.Pos == x10 {
@@ -25351,8 +25063,8 @@ func i188(p *pegort.TParser) (any, bool) {
 			goto L31
 		}
 		v49 = p.NewNodeOrdinary("tuple", x32, p.Pos, x33)
-		v50 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v49, x27)
-		v51 = p.AttachCaptures(v50, scope986, []any{k29, k30}, x27, p.Pos)
+		v50 = p.ScopeValue(sh14, v49, x27)
+		v51 = p.AttachCaptures(v50, scope999, []any{k29, k30}, x27, p.Pos)
 		x26++
 		p.PushKid(v51)
 		if p.Pos == x27 {
@@ -25407,8 +25119,8 @@ func i188(p *pegort.TParser) (any, bool) {
 			goto L61
 		}
 		v76 = p.NewNodeOrdinary("tuple", x62, p.Pos, x63)
-		v77 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v76, x58)
-		v78 = p.AttachCaptures(v77, scope987, []any{k60}, x58, p.Pos)
+		v77 = p.ScopeValue(sh14, v76, x58)
+		v78 = p.AttachCaptures(v77, scope1000, []any{k60}, x58, p.Pos)
 		x57++
 		p.PushKid(v78)
 		if p.Pos == x58 {
@@ -25426,14 +25138,14 @@ func i188(p *pegort.TParser) (any, bool) {
 	x80 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto fail
 	}
 	v81 = p.NewMatchOrdinary(x80, p.Pos, ")", true)
 	x2 = append(x2, v81)
 	v82 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 5, Mode: 2, Tuple: true, Shared: false}, v82, start)
-	v = p.AttachCaptures(v, scope988, []any{k5, k22, k53}, start, p.Pos)
+	v = p.ScopeValue(sh432, v82, start)
+	v = p.AttachCaptures(v, scope1001, []any{k5, k22, k53}, start, p.Pos)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -25492,7 +25204,7 @@ L10:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -25550,14 +25262,14 @@ func i191(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L6
 	}
 	x7, x8 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L9
 	}
 	p.Silent--
@@ -25730,14 +25442,14 @@ func i194(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto fail
 	}
 	x4, x5 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L6
 	}
 	p.Silent--
@@ -25761,9 +25473,9 @@ L6:
 	p.Where = "kwarg"
 	v = func() any {
 		return func() any {
-			f_989 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_990 := func() any { return k7 }()
-			return tmk_Keyword(c, true, f_989, f_990)
+			f_1002 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1003 := func() any { return k7 }()
+			return tmk_Keyword(c, true, f_1002, f_1003)
 		}()
 	}()
 	p.Where = w
@@ -25805,7 +25517,7 @@ func i195(p *pegort.TParser) (any, bool) {
 	_ = x2
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 42 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit222, "**", 79, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit228, "**", 79, false); !ok {
 		goto fail
 	}
 	if _, ok = s339(p); !ok {
@@ -25821,8 +25533,8 @@ func i195(p *pegort.TParser) (any, bool) {
 	p.Where = "dstar_arg"
 	v = func() any {
 		return func() any {
-			f_991 := func() any { return k1 }()
-			return tmk_Keyword(c, true, nil, f_991)
+			f_1004 := func() any { return k1 }()
+			return tmk_Keyword(c, true, nil, f_1004)
 		}()
 	}()
 	p.Where = w
@@ -25872,7 +25584,7 @@ func i196(p *pegort.TParser) (any, bool) {
 	_, _ = x2, x5
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -25916,7 +25628,7 @@ func i196(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -25924,9 +25636,9 @@ func i196(p *pegort.TParser) (any, bool) {
 	p.Where = "genexp"
 	v = func() any {
 		return func() any {
-			f_992 := func() any { return k1 }()
-			f_993 := func() any { return k4 }()
-			return tmk_GeneratorExp(c, true, f_992, f_993)
+			f_1005 := func() any { return k1 }()
+			f_1006 := func() any { return k4 }()
+			return tmk_GeneratorExp(c, true, f_1005, f_1006)
 		}()
 	}()
 	p.Where = w
@@ -25975,7 +25687,7 @@ func i197(p *pegort.TParser) (any, bool) {
 	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit213, "[", 77, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit219, "[", 77, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -26011,7 +25723,7 @@ func i197(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit214, "]", 78, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit220, "]", 78, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -26075,7 +25787,7 @@ L10:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -26153,7 +25865,7 @@ func i199(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L12
 		}
 		if _, ok = s339(p); !ok {
@@ -26166,8 +25878,8 @@ func i199(p *pegort.TParser) (any, bool) {
 		k11 = v16
 		x14 = append(x14, v16)
 		v17 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-		v18 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v17, x9)
-		v19 = p.AttachCaptures(v18, scope994, []any{k11}, x9, p.Pos)
+		v18 = p.ScopeValue(sh14, v17, x9)
+		v19 = p.AttachCaptures(v18, scope1007, []any{k11}, x9, p.Pos)
 		x8++
 		p.PushKid(v19)
 		if p.Pos == x9 {
@@ -26187,7 +25899,7 @@ func i199(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L23
 	}
 	goto L24
@@ -26200,18 +25912,18 @@ L24:
 	p.Where = "star_first_slices"
 	v = func() any {
 		return func() any {
-			f_995 := func() any {
+			f_1008 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k1 }())
-					c.PushMap(func() any { return k4 }(), func(l_996 any) any {
-						return func() any { return c.Member(func() any { return l_996 }(), "$x") }()
+					c.PushMap(func() any { return k4 }(), func(l_1009 any) any {
+						return func() any { return c.Member(func() any { return l_1009 }(), "$x") }()
 					})
 					return c.EndList(b)
 				}()
 			}()
-			f_997 := func() any { return any("Load") }()
-			return tmk_Tuple(c, true, f_995, f_997)
+			f_1010 := func() any { return any("Load") }()
+			return tmk_Tuple(c, true, f_1008, f_1010)
 		}()
 	}()
 	p.Where = w
@@ -26332,7 +26044,7 @@ func i200(p *pegort.TParser) (any, bool) {
 			}
 			if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 				p.Pos++
-			} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+			} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 				goto L31
 			}
 			if _, ok = s339(p); !ok {
@@ -26345,8 +26057,8 @@ func i200(p *pegort.TParser) (any, bool) {
 			k30 = v35
 			x33 = append(x33, v35)
 			v36 = p.NewNodeOrdinary("tuple", x32, p.Pos, x33)
-			v37 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v36, x28)
-			v38 = p.AttachCaptures(v37, scope998, []any{k30}, x28, p.Pos)
+			v37 = p.ScopeValue(sh14, v36, x28)
+			v38 = p.AttachCaptures(v37, scope1011, []any{k30}, x28, p.Pos)
 			x27++
 			p.PushKid(v38)
 			if p.Pos == x28 {
@@ -26373,11 +26085,11 @@ func i200(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L43
 		}
 		v47 = p.NewNodeOrdinary("tuple", x45, p.Pos, x46)
-		v48, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 0, Mode: 0, Tuple: true, Shared: false}, v47, x40)
+		v48, _ = p.ShapeSingle(sh259, v47, x40)
 		v42 = v48
 		goto L44
 	L43:
@@ -26386,7 +26098,7 @@ func i200(p *pegort.TParser) (any, bool) {
 		v42 = nil
 	L44:
 		v49 = p.NewNodeOrdinary("tuple", x22, p.Pos, x23)
-		v50, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v49, x15)
+		v50, _ = p.ShapeSingle(sh14, v49, x15)
 		v19 = v50
 		goto L20
 	L21:
@@ -26403,14 +26115,14 @@ func i200(p *pegort.TParser) (any, bool) {
 		x55 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L51
 		}
 		v56 = p.NewMatchOrdinary(x55, p.Pos, ",", true)
 		k13 = v56
 		x53 = append(x53, v56)
 		v57 = p.NewNodeOrdinary("tuple", x52, p.Pos, x53)
-		v58, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v57, x15)
+		v58, _ = p.ShapeSingle(sh14, v57, x15)
 		v19 = v58
 		goto L20
 	L51:
@@ -26420,8 +26132,8 @@ func i200(p *pegort.TParser) (any, bool) {
 		k13 = x18
 		goto L14
 	L20:
-		v59 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v19, x10)
-		v60 = p.AttachCaptures(v59, scope999, []any{k12, k13}, x10, p.Pos)
+		v59 = p.ScopeValue(sh15, v19, x10)
+		v60 = p.AttachCaptures(v59, scope1012, []any{k12, k13}, x10, p.Pos)
 		x8++
 		p.PushKid(v60)
 		if p.Pos == x10 {
@@ -26439,21 +26151,21 @@ func i200(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "plain_slices"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1000, l_1001 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1013, l_1014 any) any {
 			return func() any {
 				return func() any {
-					f_1002 := func() any {
+					f_1015 := func() any {
 						return func() any {
 							b := len(c.P.KidStack)
 							c.PushList(func() any { return k1 }())
-							c.PushMap(func() any { return c.Member(func() any { return l_1001 }(), "$rs") }(), func(l_1003 any) any {
-								return func() any { return c.Member(func() any { return l_1003 }(), "$x") }()
+							c.PushMap(func() any { return c.Member(func() any { return l_1014 }(), "$rs") }(), func(l_1016 any) any {
+								return func() any { return c.Member(func() any { return l_1016 }(), "$x") }()
 							})
 							return c.EndList(b)
 						}()
 					}()
-					f_1004 := func() any { return any("Load") }()
-					return tmk_Tuple(c, false, f_1002, f_1004)
+					f_1017 := func() any { return any("Load") }()
+					return tmk_Tuple(c, false, f_1015, f_1017)
 				}()
 			}()
 		})
@@ -26520,7 +26232,7 @@ L10:
 L9:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -26577,7 +26289,7 @@ L10:
 L9:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -26633,7 +26345,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -26682,7 +26394,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -26763,14 +26475,14 @@ L6:
 
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	x9, x10 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L11
 	}
 	p.Silent--
@@ -26805,14 +26517,14 @@ L17:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto L24
 	}
 	x26, x27 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L28
 	}
 	p.Silent--
@@ -26850,10 +26562,10 @@ L25:
 	p.Where = "slice_colon"
 	v = func() any {
 		return func() any {
-			f_1005 := func() any { return k3 }()
-			f_1006 := func() any { return k14 }()
-			f_1007 := func() any { return k22 }()
-			return tmk_Slice(c, true, f_1005, f_1006, f_1007)
+			f_1018 := func() any { return k3 }()
+			f_1019 := func() any { return k14 }()
+			f_1020 := func() any { return k22 }()
+			return tmk_Slice(c, true, f_1018, f_1019, f_1020)
 		}()
 	}()
 	p.Where = w
@@ -27030,7 +26742,7 @@ func i205(p *pegort.TParser) (any, bool) {
 		goto L6
 	}
 	v11 = p.NewNodeOrdinary("tuple", x8, p.Pos, x9)
-	v12, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v11, x3)
+	v12, _ = p.ShapeSingle(sh14, v11, x3)
 	v5 = v12
 	goto L7
 L6:
@@ -27089,8 +26801,8 @@ L7:
 		k26 = v32
 		x29 = append(x29, v32)
 		v33 = p.NewNodeOrdinary("tuple", x28, p.Pos, x29)
-		v34 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v33, x24)
-		v35 = p.AttachCaptures(v34, scope1008, []any{k26}, x24, p.Pos)
+		v34 = p.ScopeValue(sh9, v33, x24)
+		v35 = p.AttachCaptures(v34, scope1021, []any{k26}, x24, p.Pos)
 		x23++
 		p.PushKid(v35)
 		if p.Pos == x24 {
@@ -27109,17 +26821,17 @@ L7:
 	p.Where = "for_if_clause"
 	v = func() any {
 		return func() any {
-			f_1009 := func() any { return k13 }()
-			f_1010 := func() any { return k16 }()
-			f_1011 := func() any {
-				return c.MapList(func() any { return k19 }(), func(l_1012 any) any {
-					return func() any { return c.Member(func() any { return l_1012 }(), "$c") }()
+			f_1022 := func() any { return k13 }()
+			f_1023 := func() any { return k16 }()
+			f_1024 := func() any {
+				return c.MapList(func() any { return k19 }(), func(l_1025 any) any {
+					return func() any { return c.Member(func() any { return l_1025 }(), "$c") }()
 				})
 			}()
-			f_1013 := func() any {
+			f_1026 := func() any {
 				return c.Binary("!=", func() any { return k1 }(), func() any { return any(nil) }())
 			}()
-			return tmk_Comprehension(c, true, f_1009, f_1010, f_1011, f_1013)
+			return tmk_Comprehension(c, true, f_1022, f_1023, f_1024, f_1026)
 		}()
 	}()
 	p.Where = w
@@ -27237,7 +26949,7 @@ L22:
 L21:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -27348,7 +27060,7 @@ L22:
 L21:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -27401,9 +27113,9 @@ func i207(p *pegort.TParser) (any, bool) {
 	p.Where = "name"
 	v = func() any {
 		return func() any {
-			f_1014 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1015 := func() any { return any("Load") }()
-			return tmk_Name(c, true, f_1014, f_1015)
+			f_1027 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1028 := func() any { return any("Load") }()
+			return tmk_Name(c, true, f_1027, f_1028)
 		}()
 	}()
 	p.Where = w
@@ -27445,7 +27157,7 @@ func s208(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 84 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit188, "True", 71, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit194, "True", 71, false); !ok {
 		goto L8
 	}
 	goto L4
@@ -27457,7 +27169,7 @@ L7:
 		p.ExpectOrdinary(p.Pos, 72)
 		goto L9
 	}
-	if _, ok = p.Parser.MatchLiteral(lit189, "False", 72, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit195, "False", 72, false); !ok {
 		goto L10
 	}
 	goto L4
@@ -27471,7 +27183,7 @@ L9:
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 78 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 110 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit187, "None", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit193, "None", 70, false); !ok {
 		goto L12
 	}
 	goto L4
@@ -27497,7 +27209,7 @@ L15:
 	p.Recovered = p.Recovered[:x14]
 	v16 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v16)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v16, start)
+	v = p.ScopeValue(sh8, v16, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -27530,12 +27242,12 @@ func s209(p *pegort.TParser) (any, bool) {
 	x1 = p.Pos
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 46 && p.In[p.Pos+1] == 46 && p.In[p.Pos+2] == 46 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit95, "...", 51, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit101, "...", 51, false); !ok {
 		goto fail
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v2)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v2, start)
+	v = p.ScopeValue(sh8, v2, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -27627,7 +27339,7 @@ L17:
 L16:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -27659,7 +27371,7 @@ func s211(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -27687,7 +27399,7 @@ func s211(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -27695,8 +27407,8 @@ func s211(p *pegort.TParser) (any, bool) {
 	p.Where = "empty_tuple"
 	v = func() any {
 		return func() any {
-			f_1016 := func() any { return any("Load") }()
-			return tmk_Tuple(c, true, nil, f_1016)
+			f_1029 := func() any { return any("Load") }()
+			return tmk_Tuple(c, true, nil, f_1029)
 		}()
 	}()
 	p.Where = w
@@ -27744,7 +27456,7 @@ func i212(p *pegort.TParser) (any, bool) {
 	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -27780,7 +27492,7 @@ func i212(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -27858,7 +27570,7 @@ func i213(p *pegort.TParser) (any, bool) {
 	_, _, _, _, _ = x2, x5, x8, x15, x22
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -27902,7 +27614,7 @@ func i213(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L12
 		}
 		if _, ok = s339(p); !ok {
@@ -27915,8 +27627,8 @@ func i213(p *pegort.TParser) (any, bool) {
 		k11 = v16
 		x14 = append(x14, v16)
 		v17 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-		v18 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v17, x9)
-		v19 = p.AttachCaptures(v18, scope1017, []any{k11}, x9, p.Pos)
+		v18 = p.ScopeValue(sh14, v17, x9)
+		v19 = p.AttachCaptures(v18, scope1030, []any{k11}, x9, p.Pos)
 		x8++
 		p.PushKid(v19)
 		if p.Pos == x9 {
@@ -27940,13 +27652,13 @@ func i213(p *pegort.TParser) (any, bool) {
 	x30 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L26
 	}
 	v31 = p.NewMatchOrdinary(x30, p.Pos, ",", true)
 	x29 = append(x29, v31)
 	v32 = p.NewNodeOrdinary("tuple", x28, p.Pos, x29)
-	v33, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v32, x23)
+	v33, _ = p.ShapeSingle(sh14, v32, x23)
 	v25 = v33
 	goto L27
 L26:
@@ -27960,7 +27672,7 @@ L27:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -27981,18 +27693,18 @@ L27:
 	p.Where = "star_first_tuple"
 	v = func() any {
 		return func() any {
-			f_1018 := func() any {
+			f_1031 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k1 }())
-					c.PushMap(func() any { return k4 }(), func(l_1019 any) any {
-						return func() any { return c.Member(func() any { return l_1019 }(), "$x") }()
+					c.PushMap(func() any { return k4 }(), func(l_1032 any) any {
+						return func() any { return c.Member(func() any { return l_1032 }(), "$x") }()
 					})
 					return c.EndList(b)
 				}()
 			}()
-			f_1020 := func() any { return any("Load") }()
-			return tmk_Tuple(c, true, f_1018, f_1020)
+			f_1033 := func() any { return any("Load") }()
+			return tmk_Tuple(c, true, f_1031, f_1033)
 		}()
 	}()
 	p.Where = w
@@ -28106,7 +27818,7 @@ func i214(p *pegort.TParser) (any, bool) {
 	_, _, _, _, _, _, _, _, _, _, _ = x2, x5, x8, x24, x27, x34, v42, x54, x63, x66, x74
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -28162,7 +27874,7 @@ func i214(p *pegort.TParser) (any, bool) {
 			}
 			if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 				p.Pos++
-			} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+			} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 				goto L31
 			}
 			if _, ok = s339(p); !ok {
@@ -28175,8 +27887,8 @@ func i214(p *pegort.TParser) (any, bool) {
 			k30 = v35
 			x33 = append(x33, v35)
 			v36 = p.NewNodeOrdinary("tuple", x32, p.Pos, x33)
-			v37 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v36, x28)
-			v38 = p.AttachCaptures(v37, scope1021, []any{k30}, x28, p.Pos)
+			v37 = p.ScopeValue(sh14, v36, x28)
+			v38 = p.AttachCaptures(v37, scope1034, []any{k30}, x28, p.Pos)
 			x27++
 			p.PushKid(v38)
 			if p.Pos == x28 {
@@ -28203,11 +27915,11 @@ func i214(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L43
 		}
 		v47 = p.NewNodeOrdinary("tuple", x45, p.Pos, x46)
-		v48, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 0, Mode: 0, Tuple: true, Shared: false}, v47, x40)
+		v48, _ = p.ShapeSingle(sh259, v47, x40)
 		v42 = v48
 		goto L44
 	L43:
@@ -28216,7 +27928,7 @@ func i214(p *pegort.TParser) (any, bool) {
 		v42 = nil
 	L44:
 		v49 = p.NewNodeOrdinary("tuple", x22, p.Pos, x23)
-		v50, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v49, x15)
+		v50, _ = p.ShapeSingle(sh14, v49, x15)
 		v19 = v50
 		goto L20
 	L21:
@@ -28233,14 +27945,14 @@ func i214(p *pegort.TParser) (any, bool) {
 		x55 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L51
 		}
 		v56 = p.NewMatchOrdinary(x55, p.Pos, ",", true)
 		k13 = v56
 		x53 = append(x53, v56)
 		v57 = p.NewNodeOrdinary("tuple", x52, p.Pos, x53)
-		v58, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v57, x15)
+		v58, _ = p.ShapeSingle(sh14, v57, x15)
 		v19 = v58
 		goto L20
 	L51:
@@ -28250,8 +27962,8 @@ func i214(p *pegort.TParser) (any, bool) {
 		k13 = x18
 		goto L14
 	L20:
-		v59 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v19, x10)
-		v60 = p.AttachCaptures(v59, scope1022, []any{k12, k13}, x10, p.Pos)
+		v59 = p.ScopeValue(sh15, v19, x10)
+		v60 = p.AttachCaptures(v59, scope1035, []any{k12, k13}, x10, p.Pos)
 		x8++
 		p.PushKid(v60)
 		if p.Pos == x10 {
@@ -28283,8 +27995,8 @@ func i214(p *pegort.TParser) (any, bool) {
 		k70 = v75
 		x73 = append(x73, v75)
 		v76 = p.NewNodeOrdinary("tuple", x72, p.Pos, x73)
-		v77 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v76, x68)
-		v78 = p.AttachCaptures(v77, scope1023, []any{k70}, x68, p.Pos)
+		v77 = p.ScopeValue(sh14, v76, x68)
+		v78 = p.AttachCaptures(v77, scope1036, []any{k70}, x68, p.Pos)
 		x66++
 		p.PushKid(v78)
 		if p.Pos == x68 {
@@ -28303,7 +28015,7 @@ func i214(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -28320,30 +28032,30 @@ func i214(p *pegort.TParser) (any, bool) {
 	p.Where = "paren_named"
 	v = func() any {
 		return c.Fold("foldl", false, func() any {
-			return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1024, l_1025 any) any {
+			return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1037, l_1038 any) any {
 				return func() any {
 					return func() any {
-						f_1026 := func() any {
+						f_1039 := func() any {
 							return func() any {
 								b := len(c.P.KidStack)
 								c.PushList(func() any { return k1 }())
-								c.PushMap(func() any { return c.Member(func() any { return l_1025 }(), "$rs") }(), func(l_1027 any) any {
-									return func() any { return c.Member(func() any { return l_1027 }(), "$x") }()
+								c.PushMap(func() any { return c.Member(func() any { return l_1038 }(), "$rs") }(), func(l_1040 any) any {
+									return func() any { return c.Member(func() any { return l_1040 }(), "$x") }()
 								})
 								return c.EndList(b)
 							}()
 						}()
-						f_1028 := func() any { return any("Load") }()
-						return tmk_Tuple(c, false, f_1026, f_1028)
+						f_1041 := func() any { return any("Load") }()
+						return tmk_Tuple(c, false, f_1039, f_1041)
 					}()
 				}()
 			})
-		}(), func() any { return k62 }(), func(l_1029, l_1030 any) any {
+		}(), func() any { return k62 }(), func(l_1042, l_1043 any) any {
 			return func() any {
 				return func() any {
-					f_1031 := func() any { return k1 }()
-					f_1032 := func() any { return c.Member(func() any { return l_1030 }(), "$cs") }()
-					return tmk_GeneratorExp(c, false, f_1031, f_1032)
+					f_1044 := func() any { return k1 }()
+					f_1045 := func() any { return c.Member(func() any { return l_1043 }(), "$cs") }()
+					return tmk_GeneratorExp(c, false, f_1044, f_1045)
 				}()
 			}()
 		})
@@ -28409,7 +28121,7 @@ L11:
 L10:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -28441,7 +28153,7 @@ func s216(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit213, "[", 77, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit219, "[", 77, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -28469,7 +28181,7 @@ func s216(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit214, "]", 78, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit220, "]", 78, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -28477,8 +28189,8 @@ func s216(p *pegort.TParser) (any, bool) {
 	p.Where = "empty_list"
 	v = func() any {
 		return func() any {
-			f_1033 := func() any { return any("Load") }()
-			return tmk_ListExpr(c, true, nil, f_1033)
+			f_1046 := func() any { return any("Load") }()
+			return tmk_ListExpr(c, true, nil, f_1046)
 		}()
 	}()
 	p.Where = w
@@ -28579,7 +28291,7 @@ func i217(p *pegort.TParser) (any, bool) {
 	_, _, _, _, _, _, _, _, _ = x2, x13, x18, x21, x28, x35, x48, x51, x59
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit213, "[", 77, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit219, "[", 77, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -28651,7 +28363,7 @@ L8:
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L25
 		}
 		if _, ok = s339(p); !ok {
@@ -28664,8 +28376,8 @@ L8:
 		k24 = v29
 		x27 = append(x27, v29)
 		v30 = p.NewNodeOrdinary("tuple", x26, p.Pos, x27)
-		v31 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v30, x22)
-		v32 = p.AttachCaptures(v31, scope1034, []any{k24}, x22, p.Pos)
+		v31 = p.ScopeValue(sh14, v30, x22)
+		v32 = p.AttachCaptures(v31, scope1047, []any{k24}, x22, p.Pos)
 		x21++
 		p.PushKid(v32)
 		if p.Pos == x22 {
@@ -28689,13 +28401,13 @@ L8:
 	x43 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L39
 	}
 	v44 = p.NewMatchOrdinary(x43, p.Pos, ",", true)
 	x42 = append(x42, v44)
 	v45 = p.NewNodeOrdinary("tuple", x41, p.Pos, x42)
-	v46, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v45, x36)
+	v46, _ = p.ShapeSingle(sh14, v45, x36)
 	v38 = v46
 	goto L40
 L39:
@@ -28722,8 +28434,8 @@ L40:
 		k55 = v60
 		x58 = append(x58, v60)
 		v61 = p.NewNodeOrdinary("tuple", x57, p.Pos, x58)
-		v62 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v61, x53)
-		v63 = p.AttachCaptures(v62, scope1035, []any{k55}, x53, p.Pos)
+		v62 = p.ScopeValue(sh14, v61, x53)
+		v63 = p.AttachCaptures(v62, scope1048, []any{k55}, x53, p.Pos)
 		x51++
 		p.PushKid(v63)
 		if p.Pos == x53 {
@@ -28742,7 +28454,7 @@ L40:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit214, "]", 78, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit220, "]", 78, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -28776,25 +28488,25 @@ L40:
 	v = func() any {
 		return c.Fold("foldl", false, func() any {
 			return func() any {
-				f_1036 := func() any {
+				f_1049 := func() any {
 					return func() any {
 						b := len(c.P.KidStack)
 						c.PushList(func() any { return k1 }())
-						c.PushMap(func() any { return k17 }(), func(l_1037 any) any {
-							return func() any { return c.Member(func() any { return l_1037 }(), "$x") }()
+						c.PushMap(func() any { return k17 }(), func(l_1050 any) any {
+							return func() any { return c.Member(func() any { return l_1050 }(), "$x") }()
 						})
 						return c.EndList(b)
 					}()
 				}()
-				f_1038 := func() any { return any("Load") }()
-				return tmk_ListExpr(c, false, f_1036, f_1038)
+				f_1051 := func() any { return any("Load") }()
+				return tmk_ListExpr(c, false, f_1049, f_1051)
 			}()
-		}(), func() any { return k47 }(), func(l_1039, l_1040 any) any {
+		}(), func() any { return k47 }(), func(l_1052, l_1053 any) any {
 			return func() any {
 				return func() any {
-					f_1041 := func() any { return k1 }()
-					f_1042 := func() any { return c.Member(func() any { return l_1040 }(), "$cs") }()
-					return tmk_ListComp(c, false, f_1041, f_1042)
+					f_1054 := func() any { return k1 }()
+					f_1055 := func() any { return c.Member(func() any { return l_1053 }(), "$cs") }()
+					return tmk_ListComp(c, false, f_1054, f_1055)
 				}()
 			}()
 		})
@@ -28888,7 +28600,7 @@ L17:
 L16:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -28920,7 +28632,7 @@ func s219(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit221, "{", 68, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit227, "{", 68, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -28948,7 +28660,7 @@ func s219(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit223, "}", 80, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit229, "}", 80, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -29040,7 +28752,7 @@ func i220(p *pegort.TParser) (any, bool) {
 	_, _, _, _, _, _ = x2, x5, x8, x28, x35, x40
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit221, "{", 68, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit227, "{", 68, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -29068,7 +28780,7 @@ func i220(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 42 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit222, "**", 79, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit228, "**", 79, false); !ok {
 		goto fail
 	}
 	if _, ok = s339(p); !ok {
@@ -29093,7 +28805,7 @@ func i220(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L13
 		}
 		if _, ok = s339(p); !ok {
@@ -29111,7 +28823,7 @@ func i220(p *pegort.TParser) (any, bool) {
 		x27 = p.NewVals(1)[:0]
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 42 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit222, "**", 79, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit228, "**", 79, false); !ok {
 			goto L25
 		}
 		if _, ok = s339(p); !ok {
@@ -29124,7 +28836,7 @@ func i220(p *pegort.TParser) (any, bool) {
 		k11 = v29
 		x27 = append(x27, v29)
 		v30 = p.NewNodeOrdinary("tuple", x26, p.Pos, x27)
-		v31, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v30, x16)
+		v31, _ = p.ShapeSingle(sh14, v30, x16)
 		v20 = v31
 		goto L21
 	L25:
@@ -29147,14 +28859,14 @@ func i220(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 			goto L32
 		}
 		x37, x38 = p.Pos, len(p.Recovered)
 		p.Silent++
 		if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 			goto L39
 		}
 		p.Silent--
@@ -29175,7 +28887,7 @@ func i220(p *pegort.TParser) (any, bool) {
 		k11 = v41
 		x34 = append(x34, v41)
 		v42 = p.NewNodeOrdinary("tuple", x33, p.Pos, x34)
-		v43, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v42, x16)
+		v43, _ = p.ShapeSingle(sh9, v42, x16)
 		v20 = v43
 		goto L21
 	L32:
@@ -29187,8 +28899,8 @@ func i220(p *pegort.TParser) (any, bool) {
 	L21:
 		x15 = append(x15, v20)
 		v44 = p.NewNodeOrdinary("tuple", x14, p.Pos, x15)
-		v45 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v44, x9)
-		v46 = p.AttachCaptures(v45, scope1043, []any{k11, k12}, x9, p.Pos)
+		v45 = p.ScopeValue(sh14, v44, x9)
+		v46 = p.AttachCaptures(v45, scope1056, []any{k11, k12}, x9, p.Pos)
 		x8++
 		p.PushKid(v46)
 		if p.Pos == x9 {
@@ -29208,7 +28920,7 @@ func i220(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L50
 	}
 	goto L51
@@ -29222,7 +28934,7 @@ L51:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit223, "}", 80, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit229, "}", 80, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -29230,27 +28942,27 @@ L51:
 	p.Where = "dict_unpack_first"
 	v = func() any {
 		return func() any {
-			f_1044 := func() any {
+			f_1057 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return any(nil) }())
-					c.PushMap(func() any { return k4 }(), func(l_1045 any) any {
-						return func() any { return c.Member(func() any { return l_1045 }(), "$k") }()
+					c.PushMap(func() any { return k4 }(), func(l_1058 any) any {
+						return func() any { return c.Member(func() any { return l_1058 }(), "$k") }()
 					})
 					return c.EndList(b)
 				}()
 			}()
-			f_1046 := func() any {
+			f_1059 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k1 }())
-					c.PushMap(func() any { return k4 }(), func(l_1047 any) any {
-						return func() any { return c.Member(func() any { return l_1047 }(), "$v") }()
+					c.PushMap(func() any { return k4 }(), func(l_1060 any) any {
+						return func() any { return c.Member(func() any { return l_1060 }(), "$v") }()
 					})
 					return c.EndList(b)
 				}()
 			}()
-			return tmk_Dict(c, true, f_1044, f_1046)
+			return tmk_Dict(c, true, f_1057, f_1059)
 		}()
 	}()
 	p.Where = w
@@ -29314,7 +29026,7 @@ func i221(p *pegort.TParser) (any, bool) {
 	_, _, _, _ = x2, x5, x8, x15
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit221, "{", 68, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit227, "{", 68, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -29358,7 +29070,7 @@ func i221(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L12
 		}
 		if _, ok = s339(p); !ok {
@@ -29371,8 +29083,8 @@ func i221(p *pegort.TParser) (any, bool) {
 		k11 = v16
 		x14 = append(x14, v16)
 		v17 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-		v18 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v17, x9)
-		v19 = p.AttachCaptures(v18, scope1048, []any{k11}, x9, p.Pos)
+		v18 = p.ScopeValue(sh14, v17, x9)
+		v19 = p.AttachCaptures(v18, scope1061, []any{k11}, x9, p.Pos)
 		x8++
 		p.PushKid(v19)
 		if p.Pos == x9 {
@@ -29392,7 +29104,7 @@ func i221(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L23
 	}
 	goto L24
@@ -29406,7 +29118,7 @@ L24:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit223, "}", 80, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit229, "}", 80, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -29414,17 +29126,17 @@ L24:
 	p.Where = "set_star_first"
 	v = func() any {
 		return func() any {
-			f_1049 := func() any {
+			f_1062 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k1 }())
-					c.PushMap(func() any { return k4 }(), func(l_1050 any) any {
-						return func() any { return c.Member(func() any { return l_1050 }(), "$x") }()
+					c.PushMap(func() any { return k4 }(), func(l_1063 any) any {
+						return func() any { return c.Member(func() any { return l_1063 }(), "$x") }()
 					})
 					return c.EndList(b)
 				}()
 			}()
-			return tmk_Set(c, true, f_1049)
+			return tmk_Set(c, true, f_1062)
 		}()
 	}()
 	p.Where = w
@@ -29580,7 +29292,7 @@ func i222(p *pegort.TParser) (any, bool) {
 	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = x2, x10, x15, x18, x31, x38, x41, x49, x56, x59, x79, x86, x91, x100, x103, x110, x117
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit221, "{", 68, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit227, "{", 68, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -29646,7 +29358,7 @@ L8:
 		x26 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 			goto L23
 		}
 		v27 = p.NewMatchOrdinary(x26, p.Pos, ":", true)
@@ -29655,7 +29367,7 @@ L8:
 		p.Silent++
 		if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 			goto L30
 		}
 		p.Silent--
@@ -29676,8 +29388,8 @@ L8:
 		k22 = v32
 		x25 = append(x25, v32)
 		v33 = p.NewNodeOrdinary("tuple", x24, p.Pos, x25)
-		v34 = p.ScopeValue(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v33, x20)
-		v35 = p.AttachCaptures(v34, scope1051, []any{k22}, x20, p.Pos)
+		v34 = p.ScopeValue(sh9, v33, x20)
+		v35 = p.AttachCaptures(v34, scope1064, []any{k22}, x20, p.Pos)
 		x18++
 		p.PushKid(v35)
 		if p.Pos == x20 {
@@ -29729,8 +29441,8 @@ L8:
 		k45 = v50
 		x48 = append(x48, v50)
 		v51 = p.NewNodeOrdinary("tuple", x47, p.Pos, x48)
-		v52 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v51, x43)
-		v53 = p.AttachCaptures(v52, scope1052, []any{k45}, x43, p.Pos)
+		v52 = p.ScopeValue(sh14, v51, x43)
+		v53 = p.AttachCaptures(v52, scope1065, []any{k45}, x43, p.Pos)
 		x41++
 		p.PushKid(v53)
 		if p.Pos == x43 {
@@ -29761,7 +29473,7 @@ L8:
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L64
 		}
 		if _, ok = s339(p); !ok {
@@ -29779,7 +29491,7 @@ L8:
 		x78 = p.NewVals(1)[:0]
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 42 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit222, "**", 79, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit228, "**", 79, false); !ok {
 			goto L76
 		}
 		if _, ok = s339(p); !ok {
@@ -29792,7 +29504,7 @@ L8:
 		k62 = v80
 		x78 = append(x78, v80)
 		v81 = p.NewNodeOrdinary("tuple", x77, p.Pos, x78)
-		v82, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v81, x67)
+		v82, _ = p.ShapeSingle(sh14, v81, x67)
 		v71 = v82
 		goto L72
 	L76:
@@ -29815,14 +29527,14 @@ L8:
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 			goto L83
 		}
 		x88, x89 = p.Pos, len(p.Recovered)
 		p.Silent++
 		if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 			goto L90
 		}
 		p.Silent--
@@ -29843,7 +29555,7 @@ L8:
 		k62 = v92
 		x85 = append(x85, v92)
 		v93 = p.NewNodeOrdinary("tuple", x84, p.Pos, x85)
-		v94, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, v93, x67)
+		v94, _ = p.ShapeSingle(sh9, v93, x67)
 		v71 = v94
 		goto L72
 	L83:
@@ -29855,8 +29567,8 @@ L8:
 	L72:
 		x66 = append(x66, v71)
 		v95 = p.NewNodeOrdinary("tuple", x65, p.Pos, x66)
-		v96 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v95, x60)
-		v97 = p.AttachCaptures(v96, scope1053, []any{k62, k63}, x60, p.Pos)
+		v96 = p.ScopeValue(sh14, v95, x60)
+		v97 = p.AttachCaptures(v96, scope1066, []any{k62, k63}, x60, p.Pos)
 		x59++
 		p.PushKid(v97)
 		if p.Pos == x60 {
@@ -29890,7 +29602,7 @@ L8:
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L107
 		}
 		if _, ok = s339(p); !ok {
@@ -29903,8 +29615,8 @@ L8:
 		k106 = v111
 		x109 = append(x109, v111)
 		v112 = p.NewNodeOrdinary("tuple", x108, p.Pos, x109)
-		v113 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v112, x104)
-		v114 = p.AttachCaptures(v113, scope1054, []any{k106}, x104, p.Pos)
+		v113 = p.ScopeValue(sh14, v112, x104)
+		v114 = p.AttachCaptures(v113, scope1067, []any{k106}, x104, p.Pos)
 		x103++
 		p.PushKid(v114)
 		if p.Pos == x104 {
@@ -29928,13 +29640,13 @@ L8:
 	x125 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L121
 	}
 	v126 = p.NewMatchOrdinary(x125, p.Pos, ",", true)
 	x124 = append(x124, v126)
 	v127 = p.NewNodeOrdinary("tuple", x123, p.Pos, x124)
-	v128, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v127, x118)
+	v128, _ = p.ShapeSingle(sh14, v127, x118)
 	v120 = v128
 	goto L122
 L121:
@@ -29948,7 +29660,7 @@ L122:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit223, "}", 80, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit229, "}", 80, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -29979,60 +29691,60 @@ L122:
 		return c.Fold("foldl", false, func() any {
 			return c.Fold("foldl", false, func() any {
 				return func() any {
-					f_1055 := func() any {
+					f_1068 := func() any {
 						return func() any {
 							b := len(c.P.KidStack)
 							c.PushList(func() any { return k1 }())
-							c.PushMap(func() any { return k99 }(), func(l_1056 any) any {
-								return func() any { return c.Member(func() any { return l_1056 }(), "$x") }()
+							c.PushMap(func() any { return k99 }(), func(l_1069 any) any {
+								return func() any { return c.Member(func() any { return l_1069 }(), "$x") }()
 							})
 							return c.EndList(b)
 						}()
 					}()
-					return tmk_Set(c, false, f_1055)
+					return tmk_Set(c, false, f_1068)
 				}()
-			}(), func() any { return k14 }(), func(l_1057, l_1058 any) any {
+			}(), func() any { return k14 }(), func(l_1070, l_1071 any) any {
 				return func() any {
 					return func() any {
-						f_1059 := func() any {
+						f_1072 := func() any {
 							return func() any {
 								b := len(c.P.KidStack)
 								c.PushList(func() any { return k1 }())
-								c.PushMap(func() any { return k55 }(), func(l_1060 any) any {
-									return func() any { return c.Member(func() any { return l_1060 }(), "$k") }()
+								c.PushMap(func() any { return k55 }(), func(l_1073 any) any {
+									return func() any { return c.Member(func() any { return l_1073 }(), "$k") }()
 								})
 								return c.EndList(b)
 							}()
 						}()
-						f_1061 := func() any {
+						f_1074 := func() any {
 							return func() any {
 								b := len(c.P.KidStack)
-								c.PushList(func() any { return c.Member(func() any { return l_1058 }(), "$v") }())
-								c.PushMap(func() any { return k55 }(), func(l_1062 any) any {
-									return func() any { return c.Member(func() any { return l_1062 }(), "$v") }()
+								c.PushList(func() any { return c.Member(func() any { return l_1071 }(), "$v") }())
+								c.PushMap(func() any { return k55 }(), func(l_1075 any) any {
+									return func() any { return c.Member(func() any { return l_1075 }(), "$v") }()
 								})
 								return c.EndList(b)
 							}()
 						}()
-						return tmk_Dict(c, false, f_1059, f_1061)
+						return tmk_Dict(c, false, f_1072, f_1074)
 					}()
 				}()
 			})
-		}(), func() any { return k37 }(), func(l_1063, l_1064 any) any {
+		}(), func() any { return k37 }(), func(l_1076, l_1077 any) any {
 			return func() any {
 				return c.Fold("foldl", false, func() any {
 					return func() any {
-						f_1065 := func() any { return k1 }()
-						f_1066 := func() any { return c.Member(func() any { return l_1064 }(), "$cs") }()
-						return tmk_SetComp(c, false, f_1065, f_1066)
+						f_1078 := func() any { return k1 }()
+						f_1079 := func() any { return c.Member(func() any { return l_1077 }(), "$cs") }()
+						return tmk_SetComp(c, false, f_1078, f_1079)
 					}()
-				}(), func() any { return k14 }(), func(l_1067, l_1068 any) any {
+				}(), func() any { return k14 }(), func(l_1080, l_1081 any) any {
 					return func() any {
 						return func() any {
-							f_1069 := func() any { return k1 }()
-							f_1070 := func() any { return c.Member(func() any { return l_1068 }(), "$v") }()
-							f_1071 := func() any { return c.Member(func() any { return l_1064 }(), "$cs") }()
-							return tmk_DictComp(c, false, f_1069, f_1070, f_1071)
+							f_1082 := func() any { return k1 }()
+							f_1083 := func() any { return c.Member(func() any { return l_1081 }(), "$v") }()
+							f_1084 := func() any { return c.Member(func() any { return l_1077 }(), "$cs") }()
+							return tmk_DictComp(c, false, f_1082, f_1083, f_1084)
 						}()
 					}()
 				})
@@ -30163,7 +29875,7 @@ func i223(p *pegort.TParser) (any, bool) {
 			}
 			if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 				p.Pos++
-			} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+			} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 				goto L31
 			}
 			if _, ok = s339(p); !ok {
@@ -30176,8 +29888,8 @@ func i223(p *pegort.TParser) (any, bool) {
 			k30 = v35
 			x33 = append(x33, v35)
 			v36 = p.NewNodeOrdinary("tuple", x32, p.Pos, x33)
-			v37 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v36, x28)
-			v38 = p.AttachCaptures(v37, scope1072, []any{k30}, x28, p.Pos)
+			v37 = p.ScopeValue(sh14, v36, x28)
+			v38 = p.AttachCaptures(v37, scope1085, []any{k30}, x28, p.Pos)
 			x27++
 			p.PushKid(v38)
 			if p.Pos == x28 {
@@ -30204,11 +29916,11 @@ func i223(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L43
 		}
 		v47 = p.NewNodeOrdinary("tuple", x45, p.Pos, x46)
-		v48, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 0, Mode: 0, Tuple: true, Shared: false}, v47, x40)
+		v48, _ = p.ShapeSingle(sh259, v47, x40)
 		v42 = v48
 		goto L44
 	L43:
@@ -30217,7 +29929,7 @@ func i223(p *pegort.TParser) (any, bool) {
 		v42 = nil
 	L44:
 		v49 = p.NewNodeOrdinary("tuple", x22, p.Pos, x23)
-		v50, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v49, x15)
+		v50, _ = p.ShapeSingle(sh14, v49, x15)
 		v19 = v50
 		goto L20
 	L21:
@@ -30234,14 +29946,14 @@ func i223(p *pegort.TParser) (any, bool) {
 		x55 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L51
 		}
 		v56 = p.NewMatchOrdinary(x55, p.Pos, ",", true)
 		k13 = v56
 		x53 = append(x53, v56)
 		v57 = p.NewNodeOrdinary("tuple", x52, p.Pos, x53)
-		v58, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v57, x15)
+		v58, _ = p.ShapeSingle(sh14, v57, x15)
 		v19 = v58
 		goto L20
 	L51:
@@ -30251,8 +29963,8 @@ func i223(p *pegort.TParser) (any, bool) {
 		k13 = x18
 		goto L14
 	L20:
-		v59 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: true, Shared: false}, v19, x10)
-		v60 = p.AttachCaptures(v59, scope1073, []any{k12, k13}, x10, p.Pos)
+		v59 = p.ScopeValue(sh15, v19, x10)
+		v60 = p.AttachCaptures(v59, scope1086, []any{k12, k13}, x10, p.Pos)
 		x8++
 		p.PushKid(v60)
 		if p.Pos == x10 {
@@ -30270,21 +29982,21 @@ func i223(p *pegort.TParser) (any, bool) {
 	w = p.Where
 	p.Where = "star_targets"
 	v = func() any {
-		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1074, l_1075 any) any {
+		return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1087, l_1088 any) any {
 			return func() any {
 				return func() any {
-					f_1076 := func() any {
+					f_1089 := func() any {
 						return func() any {
 							b := len(c.P.KidStack)
 							c.PushList(func() any { return k1 }())
-							c.PushMap(func() any { return c.Member(func() any { return l_1075 }(), "$rs") }(), func(l_1077 any) any {
-								return func() any { return c.Member(func() any { return l_1077 }(), "$x") }()
+							c.PushMap(func() any { return c.Member(func() any { return l_1088 }(), "$rs") }(), func(l_1090 any) any {
+								return func() any { return c.Member(func() any { return l_1090 }(), "$x") }()
 							})
 							return c.EndList(b)
 						}()
 					}()
-					f_1078 := func() any { return any("Store") }()
-					return tmk_Tuple(c, false, f_1076, f_1078)
+					f_1091 := func() any { return any("Store") }()
+					return tmk_Tuple(c, false, f_1089, f_1091)
 				}()
 			}()
 		})
@@ -30352,7 +30064,7 @@ L10:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -30410,7 +30122,7 @@ L10:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -30458,7 +30170,7 @@ func i225(p *pegort.TParser) (any, bool) {
 	_ = x8
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit107, "*", 52, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit113, "*", 52, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -30484,7 +30196,7 @@ L3:
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit107, "*", 52, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit113, "*", 52, false); !ok {
 		goto L6
 	}
 	p.Silent--
@@ -30505,9 +30217,9 @@ L6:
 	p.Where = "starred_target"
 	v = func() any {
 		return func() any {
-			f_1079 := func() any { return k7 }()
-			f_1080 := func() any { return any("Store") }()
-			return tmk_Starred(c, true, f_1079, f_1080)
+			f_1092 := func() any { return k7 }()
+			f_1093 := func() any { return any("Store") }()
+			return tmk_Starred(c, true, f_1092, f_1093)
 		}()
 	}()
 	p.Where = w
@@ -30572,7 +30284,7 @@ L9:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -30630,7 +30342,7 @@ L9:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -30690,14 +30402,14 @@ func i227(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit92, ".", 50, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit98, ".", 50, false); !ok {
 		goto fail
 	}
 	x4, x5 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 46 && p.In[p.Pos+1] == 46 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit203, "..", 76, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit209, "..", 76, false); !ok {
 		goto L6
 	}
 	p.Silent--
@@ -30737,10 +30449,10 @@ L12:
 	p.Where = "attr_target"
 	v = func() any {
 		return func() any {
-			f_1081 := func() any { return k1 }()
-			f_1082 := func() any { return c.Text(func() any { return k7 }()) }()
-			f_1083 := func() any { return any("Store") }()
-			return tmk_Attribute(c, true, f_1081, f_1082, f_1083)
+			f_1094 := func() any { return k1 }()
+			f_1095 := func() any { return c.Text(func() any { return k7 }()) }()
+			f_1096 := func() any { return any("Store") }()
+			return tmk_Attribute(c, true, f_1094, f_1095, f_1096)
 		}()
 	}()
 	p.Where = w
@@ -30822,10 +30534,10 @@ L9:
 	p.Where = "subscript_target"
 	v = func() any {
 		return func() any {
-			f_1084 := func() any { return k1 }()
-			f_1085 := func() any { return k4 }()
-			f_1086 := func() any { return any("Store") }()
-			return tmk_Subscript(c, true, f_1084, f_1085, f_1086)
+			f_1097 := func() any { return k1 }()
+			f_1098 := func() any { return k4 }()
+			f_1099 := func() any { return any("Store") }()
+			return tmk_Subscript(c, true, f_1097, f_1098, f_1099)
 		}()
 	}()
 	p.Where = w
@@ -30937,7 +30649,7 @@ L22:
 L21:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -30983,7 +30695,7 @@ func i230(p *pegort.TParser) (any, bool) {
 	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -31019,7 +30731,7 @@ func i230(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -31056,7 +30768,7 @@ func s231(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -31084,7 +30796,7 @@ func s231(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -31092,8 +30804,8 @@ func s231(p *pegort.TParser) (any, bool) {
 	p.Where = "empty_tuple_target"
 	v = func() any {
 		return func() any {
-			f_1087 := func() any { return any("Store") }()
-			return tmk_Tuple(c, true, nil, f_1087)
+			f_1100 := func() any { return any("Store") }()
+			return tmk_Tuple(c, true, nil, f_1100)
 		}()
 	}()
 	p.Where = w
@@ -31168,7 +30880,7 @@ func i232(p *pegort.TParser) (any, bool) {
 	_, _, _, _, _ = x2, x5, x8, x15, x22
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -31212,7 +30924,7 @@ func i232(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L12
 		}
 		if _, ok = s339(p); !ok {
@@ -31225,8 +30937,8 @@ func i232(p *pegort.TParser) (any, bool) {
 		k11 = v16
 		x14 = append(x14, v16)
 		v17 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-		v18 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v17, x9)
-		v19 = p.AttachCaptures(v18, scope1088, []any{k11}, x9, p.Pos)
+		v18 = p.ScopeValue(sh14, v17, x9)
+		v19 = p.AttachCaptures(v18, scope1101, []any{k11}, x9, p.Pos)
 		x8++
 		p.PushKid(v19)
 		if p.Pos == x9 {
@@ -31250,13 +30962,13 @@ func i232(p *pegort.TParser) (any, bool) {
 	x30 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L26
 	}
 	v31 = p.NewMatchOrdinary(x30, p.Pos, ",", true)
 	x29 = append(x29, v31)
 	v32 = p.NewNodeOrdinary("tuple", x28, p.Pos, x29)
-	v33, _ = p.ShapeSingle(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v32, x23)
+	v33, _ = p.ShapeSingle(sh14, v32, x23)
 	v25 = v33
 	goto L27
 L26:
@@ -31270,7 +30982,7 @@ L27:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -31291,18 +31003,18 @@ L27:
 	p.Where = "star_tuple_target"
 	v = func() any {
 		return func() any {
-			f_1089 := func() any {
+			f_1102 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k1 }())
-					c.PushMap(func() any { return k4 }(), func(l_1090 any) any {
-						return func() any { return c.Member(func() any { return l_1090 }(), "$x") }()
+					c.PushMap(func() any { return k4 }(), func(l_1103 any) any {
+						return func() any { return c.Member(func() any { return l_1103 }(), "$x") }()
 					})
 					return c.EndList(b)
 				}()
 			}()
-			f_1091 := func() any { return any("Store") }()
-			return tmk_Tuple(c, true, f_1089, f_1091)
+			f_1104 := func() any { return any("Store") }()
+			return tmk_Tuple(c, true, f_1102, f_1104)
 		}()
 	}()
 	p.Where = w
@@ -31334,7 +31046,7 @@ func s233(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit213, "[", 77, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit219, "[", 77, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -31362,7 +31074,7 @@ func s233(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit214, "]", 78, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit220, "]", 78, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -31370,8 +31082,8 @@ func s233(p *pegort.TParser) (any, bool) {
 	p.Where = "empty_list_target"
 	v = func() any {
 		return func() any {
-			f_1092 := func() any { return any("Store") }()
-			return tmk_ListExpr(c, true, nil, f_1092)
+			f_1105 := func() any { return any("Store") }()
+			return tmk_ListExpr(c, true, nil, f_1105)
 		}()
 	}()
 	p.Where = w
@@ -31431,7 +31143,7 @@ func i234(p *pegort.TParser) (any, bool) {
 	_, _, _ = x2, x7, x12
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit213, "[", 77, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit219, "[", 77, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -31471,7 +31183,7 @@ func i234(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L11
 		}
 		if _, ok = s339(p); !ok {
@@ -31501,7 +31213,7 @@ func i234(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L17
 	}
 	goto L18
@@ -31515,7 +31227,7 @@ L18:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit214, "]", 78, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit220, "]", 78, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -31523,7 +31235,7 @@ L18:
 	p.Where = "star_list_target"
 	v = func() any {
 		return func() any {
-			f_1093 := func() any {
+			f_1106 := func() any {
 				return func() any {
 					b := len(c.P.KidStack)
 					c.PushList(func() any { return k1 }())
@@ -31531,8 +31243,8 @@ L18:
 					return c.EndList(b)
 				}()
 			}()
-			f_1094 := func() any { return any("Store") }()
-			return tmk_ListExpr(c, true, f_1093, f_1094)
+			f_1107 := func() any { return any("Store") }()
+			return tmk_ListExpr(c, true, f_1106, f_1107)
 		}()
 	}()
 	p.Where = w
@@ -31607,7 +31319,7 @@ L12:
 L11:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -31673,7 +31385,7 @@ L12:
 L11:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -31729,7 +31441,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -31778,7 +31490,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -31825,7 +31537,7 @@ func i237(p *pegort.TParser) (any, bool) {
 	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -31861,7 +31573,7 @@ func i237(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -31921,9 +31633,9 @@ func i238(p *pegort.TParser) (any, bool) {
 	p.Where = "store_name"
 	v = func() any {
 		return func() any {
-			f_1095 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1096 := func() any { return any("Store") }()
-			return tmk_Name(c, true, f_1095, f_1096)
+			f_1108 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1109 := func() any { return any("Store") }()
+			return tmk_Name(c, true, f_1108, f_1109)
 		}()
 	}()
 	p.Where = w
@@ -31935,7 +31647,7 @@ fail:
 }
 
 // t_primary (typed OperatorsRule body inlined)
-func e1218(p *pegort.TParser) (any, bool) {
+func e1231(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		ok bool
@@ -31970,7 +31682,7 @@ fail:
 }
 
 // t_primary (typed OperatorsRule body inlined)
-func e1219(p *pegort.TParser) (any, bool) {
+func e1232(p *pegort.TParser) (any, bool) {
 	var (
 		x1  int
 		x2  []any
@@ -31989,7 +31701,7 @@ func e1219(p *pegort.TParser) (any, bool) {
 	x3 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit92, ".", 50, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit98, ".", 50, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, ".", true)
@@ -31998,7 +31710,7 @@ func e1219(p *pegort.TParser) (any, bool) {
 	p.Silent++
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 46 && p.In[p.Pos+1] == 46 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit203, "..", 76, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit209, "..", 76, false); !ok {
 		goto L6
 	}
 	p.Silent--
@@ -32039,7 +31751,7 @@ fail:
 }
 
 // t_primary (typed OperatorsRule body inlined)
-func e1223(p *pegort.TParser) (any, bool) {
+func e1236(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -32081,7 +31793,7 @@ fail:
 }
 
 // t_primary (typed OperatorsRule body inlined)
-func e1226(p *pegort.TParser) (any, bool) {
+func e1239(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -32123,7 +31835,7 @@ fail:
 }
 
 // t_primary (typed OperatorsRule body inlined)
-func e1236(p *pegort.TParser) (any, bool) {
+func e1249(p *pegort.TParser) (any, bool) {
 	var (
 		x1 int
 		x2 []any
@@ -32263,7 +31975,7 @@ L20:
 L19:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -32366,7 +32078,7 @@ L20:
 L19:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -32423,14 +32135,14 @@ func i242(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit92, ".", 50, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit98, ".", 50, false); !ok {
 		goto fail
 	}
 	x4, x5 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 46 && p.In[p.Pos+1] == 46 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit203, "..", 76, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit209, "..", 76, false); !ok {
 		goto L6
 	}
 	p.Silent--
@@ -32470,10 +32182,10 @@ L12:
 	p.Where = "del_attr"
 	v = func() any {
 		return func() any {
-			f_1097 := func() any { return k1 }()
-			f_1098 := func() any { return c.Text(func() any { return k7 }()) }()
-			f_1099 := func() any { return any("Del") }()
-			return tmk_Attribute(c, true, f_1097, f_1098, f_1099)
+			f_1110 := func() any { return k1 }()
+			f_1111 := func() any { return c.Text(func() any { return k7 }()) }()
+			f_1112 := func() any { return any("Del") }()
+			return tmk_Attribute(c, true, f_1110, f_1111, f_1112)
 		}()
 	}()
 	p.Where = w
@@ -32552,10 +32264,10 @@ L9:
 	p.Where = "del_subscript"
 	v = func() any {
 		return func() any {
-			f_1100 := func() any { return k1 }()
-			f_1101 := func() any { return k4 }()
-			f_1102 := func() any { return any("Del") }()
-			return tmk_Subscript(c, true, f_1100, f_1101, f_1102)
+			f_1113 := func() any { return k1 }()
+			f_1114 := func() any { return k4 }()
+			f_1115 := func() any { return any("Del") }()
+			return tmk_Subscript(c, true, f_1113, f_1114, f_1115)
 		}()
 	}()
 	p.Where = w
@@ -32605,9 +32317,9 @@ func i244(p *pegort.TParser) (any, bool) {
 	p.Where = "del_name"
 	v = func() any {
 		return func() any {
-			f_1103 := func() any { return c.Text(func() any { return k1 }()) }()
-			f_1104 := func() any { return any("Del") }()
-			return tmk_Name(c, true, f_1103, f_1104)
+			f_1116 := func() any { return c.Text(func() any { return k1 }()) }()
+			f_1117 := func() any { return any("Del") }()
+			return tmk_Name(c, true, f_1116, f_1117)
 		}()
 	}()
 	p.Where = w
@@ -32651,7 +32363,7 @@ func i245(p *pegort.TParser) (any, bool) {
 	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -32687,7 +32399,7 @@ func i245(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -32741,7 +32453,7 @@ func i246(p *pegort.TParser) (any, bool) {
 	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit100, "(", 35, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -32785,7 +32497,7 @@ L7:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -32793,9 +32505,9 @@ L7:
 	p.Where = "del_tuple"
 	v = func() any {
 		return func() any {
-			f_1105 := func() any { return c.Concat(func() any { return k1 }()) }()
-			f_1106 := func() any { return any("Del") }()
-			return tmk_Tuple(c, true, f_1105, f_1106)
+			f_1118 := func() any { return c.Concat(func() any { return k1 }()) }()
+			f_1119 := func() any { return any("Del") }()
+			return tmk_Tuple(c, true, f_1118, f_1119)
 		}()
 	}()
 	p.Where = w
@@ -32844,7 +32556,7 @@ func i247(p *pegort.TParser) (any, bool) {
 	_ = x2
 	if p.Pos < len(p.In) && p.In[p.Pos] == 91 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit213, "[", 77, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit219, "[", 77, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -32888,7 +32600,7 @@ L7:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 93 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit214, "]", 78, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit220, "]", 78, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -32896,9 +32608,9 @@ L7:
 	p.Where = "del_list"
 	v = func() any {
 		return func() any {
-			f_1107 := func() any { return c.Concat(func() any { return k1 }()) }()
-			f_1108 := func() any { return any("Del") }()
-			return tmk_ListExpr(c, true, f_1107, f_1108)
+			f_1120 := func() any { return c.Concat(func() any { return k1 }()) }()
+			f_1121 := func() any { return any("Del") }()
+			return tmk_ListExpr(c, true, f_1120, f_1121)
 		}()
 	}()
 	p.Where = w
@@ -32969,7 +32681,7 @@ func i248(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 			goto L11
 		}
 		if _, ok = s339(p); !ok {
@@ -32999,7 +32711,7 @@ func i248(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L17
 	}
 	goto L18
@@ -33193,7 +32905,7 @@ L8:
 	p.Recovered = p.Recovered[:x7]
 	v9 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v9)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, start)
+	v = p.ScopeValue(sh8, v9, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -33270,7 +32982,7 @@ L8:
 	p.Recovered = p.Recovered[:x7]
 	v9 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v9)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, start)
+	v = p.ScopeValue(sh8, v9, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -33354,8 +33066,8 @@ func i253(p *pegort.TParser) (any, bool) {
 		k11 = v16
 		x14 = append(x14, v16)
 		v17 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-		v18 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v17, x9)
-		v19 = p.AttachCaptures(v18, scope1110, []any{k11}, x9, p.Pos)
+		v18 = p.ScopeValue(sh14, v17, x9)
+		v19 = p.AttachCaptures(v18, scope1123, []any{k11}, x9, p.Pos)
 		x8++
 		p.PushKid(v19)
 		if p.Pos == x9 {
@@ -33390,14 +33102,14 @@ L23:
 	p.Where = "fjoined"
 	v = func() any {
 		return func() any {
-			f_1111 := func() any {
-				return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1112, l_1113 any) any {
+			f_1124 := func() any {
+				return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1125, l_1126 any) any {
 					return func() any {
-						return c.Concat(func() any { return l_1112 }(), func() any { return c.Member(func() any { return l_1113 }(), "$p") }())
+						return c.Concat(func() any { return l_1125 }(), func() any { return c.Member(func() any { return l_1126 }(), "$p") }())
 					}()
 				})
 			}()
-			return tmk_JoinedStr(c, true, f_1111)
+			return tmk_JoinedStr(c, true, f_1124)
 		}()
 	}()
 	p.Where = w
@@ -33453,7 +33165,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -33502,7 +33214,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -33582,7 +33294,7 @@ func s256(p *pegort.TParser) (any, bool) {
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v2)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v2, start)
+	v = p.ScopeValue(sh8, v2, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -33666,8 +33378,8 @@ func i257(p *pegort.TParser) (any, bool) {
 		k11 = v16
 		x14 = append(x14, v16)
 		v17 = p.NewNodeOrdinary("tuple", x13, p.Pos, x14)
-		v18 = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v17, x9)
-		v19 = p.AttachCaptures(v18, scope1114, []any{k11}, x9, p.Pos)
+		v18 = p.ScopeValue(sh14, v17, x9)
+		v19 = p.AttachCaptures(v18, scope1127, []any{k11}, x9, p.Pos)
 		x8++
 		p.PushKid(v19)
 		if p.Pos == x9 {
@@ -33702,14 +33414,14 @@ L23:
 	p.Where = "tstrings"
 	v = func() any {
 		return func() any {
-			f_1115 := func() any {
-				return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1116, l_1117 any) any {
+			f_1128 := func() any {
+				return c.Fold("foldl", false, func() any { return k1 }(), func() any { return k4 }(), func(l_1129, l_1130 any) any {
 					return func() any {
-						return c.Concat(func() any { return l_1116 }(), func() any { return c.Member(func() any { return l_1117 }(), "$p") }())
+						return c.Concat(func() any { return l_1129 }(), func() any { return c.Member(func() any { return l_1130 }(), "$p") }())
 					}()
 				})
 			}()
-			return tmk_TemplateStr(c, true, f_1115)
+			return tmk_TemplateStr(c, true, f_1128)
 		}()
 	}()
 	p.Where = w
@@ -33780,7 +33492,7 @@ func i267(p *pegort.TParser) (any, bool) {
 		p.ExpectOrdinary(p.Pos, 116)
 		goto L7
 	}
-	if !p.ClassesSkip(steps1127) {
+	if !p.ClassesSkip(steps1140) {
 		goto L8
 	}
 	if !p.Bind("lv", func(c *pegort.TActCtx) any {
@@ -33802,7 +33514,7 @@ L7:
 		p.ExpectOrdinary(p.Pos, 142)
 		goto L9
 	}
-	if !p.ClassesSkip(steps1128) {
+	if !p.ClassesSkip(steps1141) {
 		goto L10
 	}
 	if !p.Bind("lv", func(c *pegort.TActCtx) any {
@@ -33855,7 +33567,7 @@ L4:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L20
 	}
 	if !p.Bind("lv", func(c *pegort.TActCtx) any {
@@ -33879,7 +33591,7 @@ L19:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L22
 	}
 	if !p.Bind("lv", func(c *pegort.TActCtx) any {
@@ -33903,7 +33615,7 @@ L21:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 		goto L24
 	}
 	if !p.Bind("lv", func(c *pegort.TActCtx) any {
@@ -33925,7 +33637,7 @@ L23:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 		goto L26
 	}
 	if !p.Bind("lv", func(c *pegort.TActCtx) any {
@@ -33954,7 +33666,7 @@ L16:
 		if v35, ok = s270(p); !ok {
 			goto L34
 		}
-		v36 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v35, x32)
+		v36 = p.ScopeValue(sh8, v35, x32)
 		x31++
 		p.PushKid(v36)
 		if p.Pos == x32 {
@@ -34058,7 +33770,7 @@ func i268(p *pegort.TParser) (any, bool) {
 		p.ExpectOrdinary(p.Pos, 116)
 		goto L7
 	}
-	if !p.ClassesSkip(steps1130) {
+	if !p.ClassesSkip(steps1143) {
 		goto L8
 	}
 	if !p.Bind("lv", func(c *pegort.TActCtx) any {
@@ -34080,7 +33792,7 @@ L7:
 		p.ExpectOrdinary(p.Pos, 144)
 		goto L9
 	}
-	if !p.ClassesSkip(steps1131) {
+	if !p.ClassesSkip(steps1144) {
 		goto L10
 	}
 	if !p.Bind("lv", func(c *pegort.TActCtx) any {
@@ -34133,7 +33845,7 @@ L4:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L20
 	}
 	if !p.Bind("lv", func(c *pegort.TActCtx) any {
@@ -34157,7 +33869,7 @@ L19:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L22
 	}
 	if !p.Bind("lv", func(c *pegort.TActCtx) any {
@@ -34181,7 +33893,7 @@ L21:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 		goto L24
 	}
 	if !p.Bind("lv", func(c *pegort.TActCtx) any {
@@ -34203,7 +33915,7 @@ L23:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 		goto L26
 	}
 	if !p.Bind("lv", func(c *pegort.TActCtx) any {
@@ -34232,7 +33944,7 @@ L16:
 		if v35, ok = s271(p); !ok {
 			goto L34
 		}
-		v36 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v35, x32)
+		v36 = p.ScopeValue(sh8, v35, x32)
 		x31++
 		p.PushKid(v36)
 		if p.Pos == x32 {
@@ -34327,7 +34039,7 @@ L12:
 L11:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -34394,7 +34106,7 @@ L12:
 L11:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -34489,7 +34201,7 @@ func v272(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 123 && p.In[p.Pos+1] == 123 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit445, "{{", 147, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit455, "{{", 147, false); !ok {
 			goto L15
 		}
 		goto L8
@@ -34503,7 +34215,7 @@ func v272(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 125 && p.In[p.Pos+1] == 125 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit446, "}}", 148, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit456, "}}", 148, false); !ok {
 			goto L17
 		}
 		goto L8
@@ -34540,7 +34252,7 @@ func v272(p *pegort.TParser) (any, bool) {
 	}
 	v20 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v20)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v20, start)
+	v = p.ScopeValue(sh8, v20, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -34627,7 +34339,7 @@ func i272(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 123 && p.In[p.Pos+1] == 123 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit445, "{{", 147, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit455, "{{", 147, false); !ok {
 			goto L15
 		}
 		goto L8
@@ -34641,7 +34353,7 @@ func i272(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 125 && p.In[p.Pos+1] == 125 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit446, "}}", 148, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit456, "}}", 148, false); !ok {
 			goto L17
 		}
 		goto L8
@@ -34678,7 +34390,7 @@ func i272(p *pegort.TParser) (any, bool) {
 	}
 	v20 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v20)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v20, start)
+	v = p.ScopeValue(sh8, v20, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -34772,7 +34484,7 @@ func v273(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 123 && p.In[p.Pos+1] == 123 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit445, "{{", 147, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit455, "{{", 147, false); !ok {
 			goto L15
 		}
 		goto L8
@@ -34786,7 +34498,7 @@ func v273(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 125 && p.In[p.Pos+1] == 125 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit446, "}}", 148, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit456, "}}", 148, false); !ok {
 			goto L17
 		}
 		goto L8
@@ -34823,7 +34535,7 @@ func v273(p *pegort.TParser) (any, bool) {
 	}
 	v20 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v20)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v20, start)
+	v = p.ScopeValue(sh8, v20, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -34910,7 +34622,7 @@ func i273(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 123 && p.In[p.Pos+1] == 123 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit445, "{{", 147, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit455, "{{", 147, false); !ok {
 			goto L15
 		}
 		goto L8
@@ -34924,7 +34636,7 @@ func i273(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 125 && p.In[p.Pos+1] == 125 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit446, "}}", 148, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit456, "}}", 148, false); !ok {
 			goto L17
 		}
 		goto L8
@@ -34961,7 +34673,7 @@ func i273(p *pegort.TParser) (any, bool) {
 	}
 	v20 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v20)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v20, start)
+	v = p.ScopeValue(sh8, v20, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -35036,7 +34748,7 @@ func i277(p *pegort.TParser) (any, bool) {
 	_, _, _, _ = x11, x16, x24, x37
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit221, "{", 68, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit227, "{", 68, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -35091,7 +34803,7 @@ L5:
 	k10 = v12
 	x9 = append(x9, v12)
 	v13 = p.NewNodeOrdinary("tuple", x8, p.Pos, x9)
-	v14 = p.ShapeCapture(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v13, x7)
+	v14 = p.ShapeCapture(sh14, v13, x7)
 	k6 = v14
 	x16 = p.Pos
 	x17, x18 = p.Pos, len(p.Recovered)
@@ -35147,7 +34859,7 @@ L35:
 
 	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit223, "}", 80, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit229, "}", 80, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -35155,12 +34867,12 @@ L35:
 	p.Where = "ffield"
 	v = func() any {
 		return func() any {
-			f_1133 := func() any { return k10 }()
-			f_1134 := func() any { return c.Text(func() any { return k6 }()) }()
-			f_1135 := func() any { return c.Text(func() any { return k15 }()) }()
-			f_1136 := func() any { return c.Text(func() any { return k23 }()) }()
-			f_1137 := func() any { return k33 }()
-			return tmk_FormattedValue(c, true, f_1133, f_1134, f_1135, f_1136, f_1137)
+			f_1146 := func() any { return k10 }()
+			f_1147 := func() any { return c.Text(func() any { return k6 }()) }()
+			f_1148 := func() any { return c.Text(func() any { return k15 }()) }()
+			f_1149 := func() any { return c.Text(func() any { return k23 }()) }()
+			f_1150 := func() any { return k33 }()
+			return tmk_FormattedValue(c, true, f_1146, f_1147, f_1148, f_1149, f_1150)
 		}()
 	}()
 	p.Where = w
@@ -35233,7 +34945,7 @@ func i278(p *pegort.TParser) (any, bool) {
 	_, _, _, _ = x11, x16, x24, x37
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit221, "{", 68, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit227, "{", 68, false); !ok {
 		goto fail
 	}
 	if !p.Predicate(func(c *pegort.TActCtx) any {
@@ -35288,7 +35000,7 @@ L5:
 	k10 = v12
 	x9 = append(x9, v12)
 	v13 = p.NewNodeOrdinary("tuple", x8, p.Pos, x9)
-	v14 = p.ShapeCapture(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v13, x7)
+	v14 = p.ShapeCapture(sh14, v13, x7)
 	k6 = v14
 	x16 = p.Pos
 	x17, x18 = p.Pos, len(p.Recovered)
@@ -35344,7 +35056,7 @@ L35:
 
 	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit223, "}", 80, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit229, "}", 80, false); !ok {
 		goto fail
 	}
 	c = p.UseCtx(pegort.TActCtx{P: p, Start: start, End: p.Pos, Cbase: len(p.Created)})
@@ -35352,12 +35064,12 @@ L35:
 	p.Where = "tfield"
 	v = func() any {
 		return func() any {
-			f_1138 := func() any { return k10 }()
-			f_1139 := func() any { return c.Text(func() any { return k6 }()) }()
-			f_1140 := func() any { return c.Text(func() any { return k15 }()) }()
-			f_1141 := func() any { return c.Text(func() any { return k23 }()) }()
-			f_1142 := func() any { return k33 }()
-			return tmk_Interpolation(c, true, f_1138, f_1139, f_1140, f_1141, f_1142)
+			f_1151 := func() any { return k10 }()
+			f_1152 := func() any { return c.Text(func() any { return k6 }()) }()
+			f_1153 := func() any { return c.Text(func() any { return k15 }()) }()
+			f_1154 := func() any { return c.Text(func() any { return k23 }()) }()
+			f_1155 := func() any { return k33 }()
+			return tmk_Interpolation(c, true, f_1151, f_1152, f_1153, f_1154, f_1155)
 		}()
 	}()
 	p.Where = w
@@ -35407,7 +35119,7 @@ func v279(p *pegort.TParser) (any, bool) {
 	x4 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto fail
 	}
 	v5 = p.NewMatchOrdinary(x4, p.Pos, "=", true)
@@ -35417,7 +35129,7 @@ func v279(p *pegort.TParser) (any, bool) {
 	}
 	x2 = append(x2, v6)
 	v7 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v7, start)
+	v = p.ScopeValue(sh11, v7, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -35458,7 +35170,7 @@ func i279(p *pegort.TParser) (any, bool) {
 	x4 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto fail
 	}
 	v5 = p.NewMatchOrdinary(x4, p.Pos, "=", true)
@@ -35468,7 +35180,7 @@ func i279(p *pegort.TParser) (any, bool) {
 	}
 	x2 = append(x2, v6)
 	v7 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, v7, start)
+	v = p.ScopeValue(sh11, v7, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -35521,7 +35233,7 @@ func i280(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 33 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit456, "!", 154, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit466, "!", 154, false); !ok {
 		goto fail
 	}
 	x2 = p.Pos
@@ -35603,7 +35315,7 @@ func i281(p *pegort.TParser) (any, bool) {
 	_, _ = x2, x5
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto fail
 	}
 	if !p.Bind("lv", func(c *pegort.TActCtx) any {
@@ -35621,7 +35333,7 @@ func i281(p *pegort.TParser) (any, bool) {
 		if v9, ok = s282(p); !ok {
 			goto L8
 		}
-		v10 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, x6)
+		v10 = p.ScopeValue(sh8, v9, x6)
 		x5++
 		p.PushKid(v10)
 		if p.Pos == x6 {
@@ -35640,8 +35352,8 @@ func i281(p *pegort.TParser) (any, bool) {
 	p.Where = "fspec"
 	v = func() any {
 		return func() any {
-			f_1143 := func() any { return c.Member(func() any { return k1 }(), "Value") }()
-			return tmk_JoinedStr(c, true, f_1143)
+			f_1156 := func() any { return c.Member(func() any { return k1 }(), "Value") }()
+			return tmk_JoinedStr(c, true, f_1156)
 		}()
 	}()
 	p.Where = w
@@ -35708,7 +35420,7 @@ L12:
 L11:
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh8, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -35818,7 +35530,7 @@ func s283(p *pegort.TParser) (any, bool) {
 	}
 	v16 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v16)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v16, start)
+	v = p.ScopeValue(sh8, v16, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -35929,7 +35641,7 @@ func s284(p *pegort.TParser) (any, bool) {
 	}
 	v16 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v16)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v16, start)
+	v = p.ScopeValue(sh8, v16, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36026,7 +35738,7 @@ L4:
 	}
 	v14 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v14)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v14, start)
+	v = p.ScopeValue(sh8, v14, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36114,7 +35826,7 @@ L4:
 	}
 	v14 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v14)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v14, start)
+	v = p.ScopeValue(sh8, v14, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36229,7 +35941,7 @@ L16:
 	}
 	v17 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v17)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v17, start)
+	v = p.ScopeValue(sh8, v17, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36337,7 +36049,7 @@ L16:
 	}
 	v17 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v17)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v17, start)
+	v = p.ScopeValue(sh8, v17, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36429,7 +36141,7 @@ L4:
 	}
 	v18 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v18)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v18, start)
+	v = p.ScopeValue(sh8, v18, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36506,7 +36218,7 @@ L4:
 		break
 	}
 	v9 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, start)
+	v = p.ScopeValue(sh8, v9, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36573,7 +36285,7 @@ L4:
 		break
 	}
 	v9 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v9, start)
+	v = p.ScopeValue(sh8, v9, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36614,7 +36326,7 @@ func v300(p *pegort.TParser) (any, bool) {
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v2)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v2, start)
+	v = p.ScopeValue(sh8, v2, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36649,7 +36361,7 @@ func i300(p *pegort.TParser) (any, bool) {
 	}
 	v2 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v2)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v2, start)
+	v = p.ScopeValue(sh8, v2, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36692,7 +36404,7 @@ func v306(p *pegort.TParser) (any, bool) {
 	x1 = p.Pos
 	x2 = p.NewVals(1)[:0]
 	x3 = p.Pos
-	if _, ok = p.Parser.MatchLiteral(lit486, "async", 59, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit496, "async", 59, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, "async", true)
@@ -36711,7 +36423,7 @@ L7:
 	p.Pos = x5
 	p.Recovered = p.Recovered[:x6]
 	v8 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v8, start)
+	v = p.ScopeValue(sh14, v8, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36746,7 +36458,7 @@ func i306(p *pegort.TParser) (any, bool) {
 	x1 = p.Pos
 	x2 = p.NewVals(1)[:0]
 	x3 = p.Pos
-	if _, ok = p.Parser.MatchLiteral(lit486, "async", 59, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit496, "async", 59, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, "async", true)
@@ -36765,7 +36477,7 @@ L7:
 	p.Pos = x5
 	p.Recovered = p.Recovered[:x6]
 	v8 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v8, start)
+	v = p.ScopeValue(sh14, v8, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36809,7 +36521,7 @@ func v315(p *pegort.TParser) (any, bool) {
 	x3 = p.Pos
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit477, "else", 166, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit487, "else", 166, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, "else", true)
@@ -36828,7 +36540,7 @@ L7:
 	p.Pos = x5
 	p.Recovered = p.Recovered[:x6]
 	v8 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v8, start)
+	v = p.ScopeValue(sh14, v8, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36865,7 +36577,7 @@ func i315(p *pegort.TParser) (any, bool) {
 	x3 = p.Pos
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit477, "else", 166, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit487, "else", 166, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, "else", true)
@@ -36884,7 +36596,7 @@ L7:
 	p.Pos = x5
 	p.Recovered = p.Recovered[:x6]
 	v8 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v8, start)
+	v = p.ScopeValue(sh14, v8, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36928,7 +36640,7 @@ func v321(p *pegort.TParser) (any, bool) {
 	x3 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit499, "if", 54, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit509, "if", 54, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, "if", true)
@@ -36947,7 +36659,7 @@ L7:
 	p.Pos = x5
 	p.Recovered = p.Recovered[:x6]
 	v8 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v8, start)
+	v = p.ScopeValue(sh14, v8, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -36984,7 +36696,7 @@ func i321(p *pegort.TParser) (any, bool) {
 	x3 = p.Pos
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit499, "if", 54, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit509, "if", 54, false); !ok {
 		goto fail
 	}
 	v4 = p.NewMatchOrdinary(x3, p.Pos, "if", true)
@@ -37003,7 +36715,7 @@ L7:
 	p.Pos = x5
 	p.Recovered = p.Recovered[:x6]
 	v8 = p.NewNodeOrdinary("tuple", x1, p.Pos, x2)
-	v = p.ScopeValue(pegort.Shaper{Elems: true, K: 1, Mode: 2, Tuple: true, Shared: false}, v8, start)
+	v = p.ScopeValue(sh14, v8, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -37058,7 +36770,7 @@ func v337(p *pegort.TParser) (any, bool) {
 		x2, x3 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 			goto L4
 		}
 		if _, ok = s342(p); !ok {
@@ -37152,7 +36864,7 @@ func i337(p *pegort.TParser) (any, bool) {
 		x2, x3 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 			goto L4
 		}
 		if _, ok = s342(p); !ok {
@@ -37275,7 +36987,7 @@ L4:
 		x10, x11 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 			goto L12
 		}
 		if _, ok = s342(p); !ok {
@@ -37387,7 +37099,7 @@ func s339(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 			goto L13
 		}
 		x14, x15 = p.Pos, len(p.Recovered)
@@ -37398,7 +37110,7 @@ func s339(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 13 && p.In[p.Pos+1] == 10 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit41, "\r\n", 16, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit47, "\r\n", 16, false); !ok {
 			goto L20
 		}
 		goto L16
@@ -37478,7 +37190,7 @@ func s339(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 35 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit43, "#", 18, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit49, "#", 18, false); !ok {
 			goto L36
 		}
 		for {
@@ -37500,7 +37212,7 @@ func s339(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 13 && p.In[p.Pos+1] == 10 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit41, "\r\n", 16, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit47, "\r\n", 16, false); !ok {
 			goto L38
 		}
 		goto L32
@@ -37620,13 +37332,13 @@ L4:
 			return c.Binary("==", func() any {
 				return c.Binary("+", func() any {
 					return c.Binary("+", func() any {
-						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k9 }(), "$segs") }(), func(l_1147, l_1148 any) any {
+						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k9 }(), "$segs") }(), func(l_1160, l_1161 any) any {
 							return func() any {
 								return c.Binary("+", func() any {
 									return c.Binary("*", func() any {
 										return c.Binary("/", func() any {
-											return c.Binary("+", func() any { return l_1147 }(), func() any {
-												return c.Length(func() any { return c.Member(func() any { return l_1148 }(), "$sp") }())
+											return c.Binary("+", func() any { return l_1160 }(), func() any {
+												return c.Length(func() any { return c.Member(func() any { return l_1161 }(), "$sp") }())
 											}())
 										}(), func() any { return any(8) }())
 									}(), func() any { return any(8) }())
@@ -37639,11 +37351,11 @@ L4:
 				}(), func() any {
 					return c.Binary("*", func() any { return any(4194304) }(), func() any {
 						return c.Binary("+", func() any {
-							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k9 }(), "$segs") }(), func(l_1149, l_1150 any) any {
+							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k9 }(), "$segs") }(), func(l_1162, l_1163 any) any {
 								return func() any {
 									return c.Binary("+", func() any {
-										return c.Binary("+", func() any { return l_1149 }(), func() any {
-											return c.Length(func() any { return c.Member(func() any { return l_1150 }(), "$sp") }())
+										return c.Binary("+", func() any { return l_1162 }(), func() any {
+											return c.Length(func() any { return c.Member(func() any { return l_1163 }(), "$sp") }())
 										}())
 									}(), func() any { return any(1) }())
 								}()
@@ -37816,7 +37528,7 @@ func s342(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 13 && p.In[p.Pos+1] == 10 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit41, "\r\n", 16, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit47, "\r\n", 16, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -37876,7 +37588,7 @@ func s343(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 43 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit58, "+=", 36, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit64, "+=", 36, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -37890,7 +37602,7 @@ L6:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 45 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit59, "-=", 37, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit65, "-=", 37, false); !ok {
 		goto L9
 	}
 	goto L3
@@ -37904,7 +37616,7 @@ L8:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit60, "*=", 38, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit66, "*=", 38, false); !ok {
 		goto L11
 	}
 	goto L3
@@ -37918,7 +37630,7 @@ L10:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 64 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit61, "@=", 39, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit67, "@=", 39, false); !ok {
 		goto L13
 	}
 	goto L3
@@ -37932,7 +37644,7 @@ L12:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit62, "/=", 40, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit68, "/=", 40, false); !ok {
 		goto L15
 	}
 	goto L3
@@ -37946,7 +37658,7 @@ L14:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 37 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit63, "%=", 41, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit69, "%=", 41, false); !ok {
 		goto L17
 	}
 	goto L3
@@ -37960,7 +37672,7 @@ L16:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 38 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit64, "&=", 42, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit70, "&=", 42, false); !ok {
 		goto L19
 	}
 	goto L3
@@ -37974,7 +37686,7 @@ L18:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 124 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit65, "|=", 43, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit71, "|=", 43, false); !ok {
 		goto L21
 	}
 	goto L3
@@ -37988,7 +37700,7 @@ L20:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 94 && p.In[p.Pos+1] == 61 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit66, "^=", 44, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit72, "^=", 44, false); !ok {
 		goto L23
 	}
 	goto L3
@@ -38002,7 +37714,7 @@ L22:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 60 && p.In[p.Pos+1] == 60 && p.In[p.Pos+2] == 61 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit67, "<<=", 45, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit73, "<<=", 45, false); !ok {
 		goto L25
 	}
 	goto L3
@@ -38016,7 +37728,7 @@ L24:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 62 && p.In[p.Pos+1] == 62 && p.In[p.Pos+2] == 61 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit68, ">>=", 46, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit74, ">>=", 46, false); !ok {
 		goto L27
 	}
 	goto L3
@@ -38030,7 +37742,7 @@ L26:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 42 && p.In[p.Pos+1] == 42 && p.In[p.Pos+2] == 61 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit69, "**=", 47, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit75, "**=", 47, false); !ok {
 		goto L29
 	}
 	goto L3
@@ -38044,7 +37756,7 @@ L28:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 47 && p.In[p.Pos+1] == 47 && p.In[p.Pos+2] == 61 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit70, "//=", 48, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit76, "//=", 48, false); !ok {
 		goto L31
 	}
 	goto L3
@@ -38081,7 +37793,7 @@ func s344(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 112 && p.In[p.Pos+1] == 97 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 115 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit503, "pass", 21, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit513, "pass", 21, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -38122,7 +37834,7 @@ func s345(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit489, "break", 22, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit499, "break", 22, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -38163,7 +37875,7 @@ func s346(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit491, "continue", 23, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit501, "continue", 23, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -38204,7 +37916,7 @@ func s347(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit505, "return", 24, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit515, "return", 24, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -38245,7 +37957,7 @@ func s348(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit504, "raise", 25, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit514, "raise", 25, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -38296,7 +38008,7 @@ func v349(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 111 && p.In[p.Pos+3] == 109 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit497, "from", 31, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit507, "from", 31, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -38336,7 +38048,7 @@ func i349(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 111 && p.In[p.Pos+3] == 109 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit497, "from", 31, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit507, "from", 31, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -38375,7 +38087,7 @@ func s350(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit498, "global", 26, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit508, "global", 26, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -38416,7 +38128,7 @@ func s351(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit502, "nonlocal", 27, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit512, "nonlocal", 27, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -38459,7 +38171,7 @@ func s352(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 100 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 108 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit493, "del", 28, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit503, "del", 28, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -38500,7 +38212,7 @@ func s353(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit485, "assert", 29, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit495, "assert", 29, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -38543,7 +38255,7 @@ func s354(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 121 && p.In[p.Pos+2] == 112 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit540, "type", 32, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit550, "type", 32, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -38592,7 +38304,7 @@ func v355(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit500, "import", 30, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit510, "import", 30, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -38630,7 +38342,7 @@ func i355(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit500, "import", 30, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit510, "import", 30, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -38679,7 +38391,7 @@ func v356(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 97 && p.In[p.Pos+1] == 115 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit487, "as", 173, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit497, "as", 173, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -38719,7 +38431,7 @@ func i356(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 97 && p.In[p.Pos+1] == 115 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit487, "as", 173, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit497, "as", 173, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -38768,7 +38480,7 @@ func v357(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit499, "if", 54, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit509, "if", 54, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -38808,7 +38520,7 @@ func i357(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit499, "if", 54, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit509, "if", 54, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -38909,13 +38621,13 @@ L4:
 			return c.Binary("==", func() any {
 				return c.Binary("+", func() any {
 					return c.Binary("+", func() any {
-						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k9 }(), "$segs") }(), func(l_1151, l_1152 any) any {
+						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k9 }(), "$segs") }(), func(l_1164, l_1165 any) any {
 							return func() any {
 								return c.Binary("+", func() any {
 									return c.Binary("*", func() any {
 										return c.Binary("/", func() any {
-											return c.Binary("+", func() any { return l_1151 }(), func() any {
-												return c.Length(func() any { return c.Member(func() any { return l_1152 }(), "$sp") }())
+											return c.Binary("+", func() any { return l_1164 }(), func() any {
+												return c.Length(func() any { return c.Member(func() any { return l_1165 }(), "$sp") }())
 											}())
 										}(), func() any { return any(8) }())
 									}(), func() any { return any(8) }())
@@ -38928,11 +38640,11 @@ L4:
 				}(), func() any {
 					return c.Binary("*", func() any { return any(4194304) }(), func() any {
 						return c.Binary("+", func() any {
-							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k9 }(), "$segs") }(), func(l_1153, l_1154 any) any {
+							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k9 }(), "$segs") }(), func(l_1166, l_1167 any) any {
 								return func() any {
 									return c.Binary("+", func() any {
-										return c.Binary("+", func() any { return l_1153 }(), func() any {
-											return c.Length(func() any { return c.Member(func() any { return l_1154 }(), "$sp") }())
+										return c.Binary("+", func() any { return l_1166 }(), func() any {
+											return c.Length(func() any { return c.Member(func() any { return l_1167 }(), "$sp") }())
 										}())
 									}(), func() any { return any(1) }())
 								}()
@@ -38976,7 +38688,7 @@ func s359(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 105 && p.In[p.Pos+3] == 102 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit494, "elif", 177, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit504, "elif", 177, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39027,7 +38739,7 @@ func v360(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit477, "else", 166, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit487, "else", 166, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39067,7 +38779,7 @@ func i360(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit477, "else", 166, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit487, "else", 166, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39106,7 +38818,7 @@ func s361(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit507, "while", 55, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit517, "while", 55, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39157,7 +38869,7 @@ func v362(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 114 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit478, "for", 56, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit488, "for", 56, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39197,7 +38909,7 @@ func i362(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 114 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit478, "for", 56, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit488, "for", 56, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39246,7 +38958,7 @@ func v363(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 110 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit305, "in", 102, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit313, "in", 102, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39286,7 +38998,7 @@ func i363(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 110 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit305, "in", 102, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit313, "in", 102, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39333,7 +39045,7 @@ func v364(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit486, "async", 59, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit496, "async", 59, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39371,7 +39083,7 @@ func i364(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit486, "async", 59, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit496, "async", 59, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39420,7 +39132,7 @@ func v365(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 119 && p.In[p.Pos+1] == 105 && p.In[p.Pos+2] == 116 && p.In[p.Pos+3] == 104 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit508, "with", 58, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit518, "with", 58, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39460,7 +39172,7 @@ func i365(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 119 && p.In[p.Pos+1] == 105 && p.In[p.Pos+2] == 116 && p.In[p.Pos+3] == 104 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit508, "with", 58, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit518, "with", 58, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39501,7 +39213,7 @@ func s366(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 121 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit506, "try", 57, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit516, "try", 57, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39542,7 +39254,7 @@ func s367(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit496, "finally", 178, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit506, "finally", 178, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39591,7 +39303,7 @@ func v368(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit495, "except", 63, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit505, "except", 63, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39629,7 +39341,7 @@ func i368(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit495, "except", 63, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit505, "except", 63, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39710,13 +39422,13 @@ func i369(p *pegort.TParser) (any, bool) {
 			return c.Binary("==", func() any {
 				return c.Binary("+", func() any {
 					return c.Binary("+", func() any {
-						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_1155, l_1156 any) any {
+						return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_1168, l_1169 any) any {
 							return func() any {
 								return c.Binary("+", func() any {
 									return c.Binary("*", func() any {
 										return c.Binary("/", func() any {
-											return c.Binary("+", func() any { return l_1155 }(), func() any {
-												return c.Length(func() any { return c.Member(func() any { return l_1156 }(), "$sp") }())
+											return c.Binary("+", func() any { return l_1168 }(), func() any {
+												return c.Length(func() any { return c.Member(func() any { return l_1169 }(), "$sp") }())
 											}())
 										}(), func() any { return any(8) }())
 									}(), func() any { return any(8) }())
@@ -39729,11 +39441,11 @@ func i369(p *pegort.TParser) (any, bool) {
 				}(), func() any {
 					return c.Binary("*", func() any { return any(4194304) }(), func() any {
 						return c.Binary("+", func() any {
-							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_1157, l_1158 any) any {
+							return c.Fold("foldl", false, func() any { return any(0) }(), func() any { return c.Member(func() any { return k5 }(), "$segs") }(), func(l_1170, l_1171 any) any {
 								return func() any {
 									return c.Binary("+", func() any {
-										return c.Binary("+", func() any { return l_1157 }(), func() any {
-											return c.Length(func() any { return c.Member(func() any { return l_1158 }(), "$sp") }())
+										return c.Binary("+", func() any { return l_1170 }(), func() any {
+											return c.Length(func() any { return c.Member(func() any { return l_1171 }(), "$sp") }())
 										}())
 									}(), func() any { return any(1) }())
 								}()
@@ -39785,7 +39497,7 @@ func v370(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 100 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 102 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit492, "def", 176, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit502, "def", 176, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39825,7 +39537,7 @@ func i370(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 100 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 102 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit492, "def", 176, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit502, "def", 176, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39872,7 +39584,7 @@ func v371(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit490, "class", 175, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit500, "class", 175, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39910,7 +39622,7 @@ func i371(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit490, "class", 175, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit500, "class", 175, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39949,7 +39661,7 @@ func s372(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit533, "match", 60, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit543, "match", 60, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -39992,7 +39704,7 @@ func s373(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 99 && p.In[p.Pos+1] == 97 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit516, "case", 179, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit526, "case", 179, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -40230,7 +39942,7 @@ func v375(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L7
 	}
 	if _, ok = s339(p); !ok {
@@ -40246,7 +39958,7 @@ L6:
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto L10
 	}
 	p.Silent--
@@ -40299,7 +40011,7 @@ func i375(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L7
 	}
 	if _, ok = s339(p); !ok {
@@ -40315,7 +40027,7 @@ L6:
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto L10
 	}
 	p.Silent--
@@ -40355,7 +40067,7 @@ func s376(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit501, "lambda", 87, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit511, "lambda", 87, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -40420,7 +40132,7 @@ func v377(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L7
 	}
 	if _, ok = s339(p); !ok {
@@ -40436,14 +40148,14 @@ L6:
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto L10
 	}
 	x12, x13 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L14
 	}
 	p.Silent--
@@ -40506,7 +40218,7 @@ func i377(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L7
 	}
 	if _, ok = s339(p); !ok {
@@ -40522,14 +40234,14 @@ L6:
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 58 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit49, ":", 34, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit55, ":", 34, false); !ok {
 		goto L10
 	}
 	x12, x13 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 61 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit48, "=", 33, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit54, "=", 33, false); !ok {
 		goto L14
 	}
 	p.Silent--
@@ -40585,7 +40297,7 @@ func v378(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit509, "yield", 89, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit519, "yield", 89, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -40623,7 +40335,7 @@ func i378(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit509, "yield", 89, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit519, "yield", 89, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -40672,7 +40384,7 @@ func v379(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 111 && p.In[p.Pos+1] == 114 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit287, "or", 90, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit295, "or", 90, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -40712,7 +40424,7 @@ func i379(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 111 && p.In[p.Pos+1] == 114 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit287, "or", 90, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit295, "or", 90, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -40761,7 +40473,7 @@ func v380(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 97 && p.In[p.Pos+1] == 110 && p.In[p.Pos+2] == 100 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit289, "and", 91, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit297, "and", 91, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -40801,7 +40513,7 @@ func i380(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 97 && p.In[p.Pos+1] == 110 && p.In[p.Pos+2] == 100 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit289, "and", 91, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit297, "and", 91, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -40840,7 +40552,7 @@ func s381(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if _, ok = p.Parser.MatchLiteral(lit488, "await", 174, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit498, "await", 174, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -40903,7 +40615,7 @@ func v382(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L7
 	}
 	if _, ok = s339(p); !ok {
@@ -40919,7 +40631,7 @@ L6:
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto L10
 	}
 	p.Silent--
@@ -40972,7 +40684,7 @@ func i382(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 44 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit79, ",", 49, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit85, ",", 49, false); !ok {
 		goto L7
 	}
 	if _, ok = s339(p); !ok {
@@ -40988,7 +40700,7 @@ L6:
 	p.Silent++
 	if p.Pos < len(p.In) && p.In[p.Pos] == 41 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit102, ")", 53, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit108, ")", 53, false); !ok {
 		goto L10
 	}
 	p.Silent--
@@ -41057,14 +40769,14 @@ L6:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit92, ".", 50, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit98, ".", 50, false); !ok {
 		goto L9
 	}
 	x10, x11 = p.Pos, len(p.Recovered)
 	p.Silent++
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 46 && p.In[p.Pos+1] == 46 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit203, "..", 76, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit209, "..", 76, false); !ok {
 		goto L12
 	}
 	p.Silent--
@@ -41329,7 +41041,7 @@ func v386(p *pegort.TParser) (any, bool) {
 		p.ExpectOrdinary(p.Pos, 117)
 		goto L10
 	}
-	if !p.ClassesSkip(steps1160) {
+	if !p.ClassesSkip(steps1173) {
 		goto L11
 	}
 	goto L7
@@ -41341,7 +41053,7 @@ L10:
 		p.ExpectOrdinary(p.Pos, 116)
 		goto L12
 	}
-	if !p.ClassesSkip(steps1161) {
+	if !p.ClassesSkip(steps1174) {
 		goto L13
 	}
 	goto L7
@@ -41417,7 +41129,7 @@ func i386(p *pegort.TParser) (any, bool) {
 		p.ExpectOrdinary(p.Pos, 117)
 		goto L10
 	}
-	if !p.ClassesSkip(steps1160) {
+	if !p.ClassesSkip(steps1173) {
 		goto L11
 	}
 	goto L7
@@ -41429,7 +41141,7 @@ L10:
 		p.ExpectOrdinary(p.Pos, 116)
 		goto L12
 	}
-	if !p.ClassesSkip(steps1161) {
+	if !p.ClassesSkip(steps1174) {
 		goto L13
 	}
 	goto L7
@@ -41505,7 +41217,7 @@ func s387(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 		goto L4
 	}
 	goto L3
@@ -41525,7 +41237,7 @@ L4:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 		goto L5
 	}
 	goto L3
@@ -41545,7 +41257,7 @@ L5:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L6
 	}
 	goto L3
@@ -41565,7 +41277,7 @@ L6:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -41633,7 +41345,7 @@ func v388(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 		goto L4
 	}
 	goto L3
@@ -41653,7 +41365,7 @@ L4:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 		goto L5
 	}
 	goto L3
@@ -41676,7 +41388,7 @@ L5:
 	p.Silent++
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L13
 	}
 	p.Silent--
@@ -41689,7 +41401,7 @@ L13:
 	p.Recovered = p.Recovered[:x12]
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 		goto L10
 	}
 	goto L9
@@ -41703,7 +41415,7 @@ L10:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 		goto L17
 	}
 	goto L9
@@ -41741,7 +41453,7 @@ L6:
 	p.Silent++
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L26
 	}
 	p.Silent--
@@ -41754,7 +41466,7 @@ L26:
 	p.Recovered = p.Recovered[:x25]
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 		goto L23
 	}
 	goto L22
@@ -41768,7 +41480,7 @@ L23:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 		goto L30
 	}
 	goto L22
@@ -41840,7 +41552,7 @@ func i388(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 		goto L4
 	}
 	goto L3
@@ -41860,7 +41572,7 @@ L4:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 		goto L5
 	}
 	goto L3
@@ -41883,7 +41595,7 @@ L5:
 	p.Silent++
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L13
 	}
 	p.Silent--
@@ -41896,7 +41608,7 @@ L13:
 	p.Recovered = p.Recovered[:x12]
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 		goto L10
 	}
 	goto L9
@@ -41910,7 +41622,7 @@ L10:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 		goto L17
 	}
 	goto L9
@@ -41948,7 +41660,7 @@ L6:
 	p.Silent++
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L26
 	}
 	p.Silent--
@@ -41961,7 +41673,7 @@ L26:
 	p.Recovered = p.Recovered[:x25]
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 		goto L23
 	}
 	goto L22
@@ -41975,7 +41687,7 @@ L23:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 		goto L30
 	}
 	goto L22
@@ -42042,7 +41754,7 @@ func v389(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -42060,7 +41772,7 @@ L4:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 120 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit422, "x", 126, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit430, "x", 126, false); !ok {
 		goto L8
 	}
 	if _, ok = s409(p); !ok {
@@ -42080,7 +41792,7 @@ L7:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 117 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit423, "u", 127, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit431, "u", 127, false); !ok {
 		goto L10
 	}
 	if _, ok = s409(p); !ok {
@@ -42106,7 +41818,7 @@ L9:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 85 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit424, "U", 128, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit433, "U", 128, false); !ok {
 		goto L12
 	}
 	x13, x14 = p.Pos, len(p.Recovered)
@@ -42117,7 +41829,7 @@ L9:
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 48 && p.In[p.Pos+2] == 49 && p.In[p.Pos+3] == 48 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit425, "0010", 129, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit434, "0010", 129, false); !ok {
 		goto L19
 	}
 	if _, ok = s409(p); !ok {
@@ -42143,7 +41855,7 @@ L18:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 48 && p.In[p.Pos+2] == 48 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit426, "000", 130, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit435, "000", 130, false); !ok {
 		goto L21
 	}
 	if _, ok = s409(p); !ok {
@@ -42179,7 +41891,7 @@ L11:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 78 && p.In[p.Pos+1] == 123 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit427, "N{", 131, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit437, "N{", 131, false); !ok {
 		goto L23
 	}
 	x24 = 0
@@ -42197,7 +41909,7 @@ L11:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit223, "}", 80, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit229, "}", 80, false); !ok {
 		goto L23
 	}
 	goto L3
@@ -42209,7 +41921,7 @@ L22:
 		p.ExpectOrdinary(p.Pos, 149)
 		goto L25
 	}
-	if !p.ClassFast(&cls1132) && !p.ClassSkip(&cls1132, 149) {
+	if !p.ClassFast(&cls1145) && !p.ClassSkip(&cls1145, 149) {
 		goto L26
 	}
 	goto L3
@@ -42274,7 +41986,7 @@ func i389(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -42292,7 +42004,7 @@ L4:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 120 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit422, "x", 126, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit430, "x", 126, false); !ok {
 		goto L8
 	}
 	if _, ok = s409(p); !ok {
@@ -42312,7 +42024,7 @@ L7:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 117 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit423, "u", 127, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit431, "u", 127, false); !ok {
 		goto L10
 	}
 	if _, ok = s409(p); !ok {
@@ -42338,7 +42050,7 @@ L9:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 85 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit424, "U", 128, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit433, "U", 128, false); !ok {
 		goto L12
 	}
 	x13, x14 = p.Pos, len(p.Recovered)
@@ -42349,7 +42061,7 @@ L9:
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 48 && p.In[p.Pos+2] == 49 && p.In[p.Pos+3] == 48 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit425, "0010", 129, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit434, "0010", 129, false); !ok {
 		goto L19
 	}
 	if _, ok = s409(p); !ok {
@@ -42375,7 +42087,7 @@ L18:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 48 && p.In[p.Pos+2] == 48 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit426, "000", 130, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit435, "000", 130, false); !ok {
 		goto L21
 	}
 	if _, ok = s409(p); !ok {
@@ -42411,7 +42123,7 @@ L11:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 78 && p.In[p.Pos+1] == 123 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit427, "N{", 131, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit437, "N{", 131, false); !ok {
 		goto L23
 	}
 	x24 = 0
@@ -42429,7 +42141,7 @@ L11:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit223, "}", 80, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit229, "}", 80, false); !ok {
 		goto L23
 	}
 	goto L3
@@ -42441,7 +42153,7 @@ L22:
 		p.ExpectOrdinary(p.Pos, 149)
 		goto L25
 	}
-	if !p.ClassFast(&cls1132) && !p.ClassSkip(&cls1132, 149) {
+	if !p.ClassFast(&cls1145) && !p.ClassSkip(&cls1145, 149) {
 		goto L26
 	}
 	goto L3
@@ -42502,7 +42214,7 @@ func s390(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -42513,7 +42225,7 @@ func s390(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 13 && p.In[p.Pos+1] == 10 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit41, "\r\n", 16, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit47, "\r\n", 16, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -42592,7 +42304,7 @@ func s391(p *pegort.TParser) (any, bool) {
 	_ = x1
 	if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit465, "0", 156, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit475, "0", 156, false); !ok {
 		goto fail
 	}
 	ch, size, ok = p.NextOrdinary()
@@ -42607,7 +42319,7 @@ func s391(p *pegort.TParser) (any, bool) {
 		x5, x6 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) && p.In[p.Pos] == 95 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit202, "_", 67, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit208, "_", 67, false); !ok {
 			goto L7
 		}
 		goto L8
@@ -42668,7 +42380,7 @@ func s392(p *pegort.TParser) (any, bool) {
 	_ = x1
 	if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit465, "0", 156, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit475, "0", 156, false); !ok {
 		goto fail
 	}
 	ch, size, ok = p.NextOrdinary()
@@ -42683,7 +42395,7 @@ func s392(p *pegort.TParser) (any, bool) {
 		x5, x6 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) && p.In[p.Pos] == 95 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit202, "_", 67, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit208, "_", 67, false); !ok {
 			goto L7
 		}
 		goto L8
@@ -42744,7 +42456,7 @@ func s393(p *pegort.TParser) (any, bool) {
 	_ = x1
 	if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit465, "0", 156, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit475, "0", 156, false); !ok {
 		goto fail
 	}
 	ch, size, ok = p.NextOrdinary()
@@ -42759,7 +42471,7 @@ func s393(p *pegort.TParser) (any, bool) {
 		x5, x6 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) && p.In[p.Pos] == 95 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit202, "_", 67, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit208, "_", 67, false); !ok {
 			goto L7
 		}
 		goto L8
@@ -42969,7 +42681,7 @@ func s395(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 97 && p.In[p.Pos+1] == 110 && p.In[p.Pos+2] == 100 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit289, "and", 91, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit297, "and", 91, false); !ok {
 		goto L14
 	}
 	goto L10
@@ -42983,7 +42695,7 @@ L13:
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit477, "else", 166, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit487, "else", 166, false); !ok {
 		goto L16
 	}
 	goto L10
@@ -42997,7 +42709,7 @@ L15:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 114 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit478, "for", 56, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit488, "for", 56, false); !ok {
 		goto L18
 	}
 	goto L10
@@ -43011,7 +42723,7 @@ L17:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 105 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit479, "i", 167, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit489, "i", 167, false); !ok {
 		goto L20
 	}
 	ch, size, ok = p.NextOrdinary()
@@ -43031,7 +42743,7 @@ L19:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 111 && p.In[p.Pos+1] == 114 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit287, "or", 90, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit295, "or", 90, false); !ok {
 		goto L22
 	}
 	goto L10
@@ -43045,7 +42757,7 @@ L21:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 116 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit293, "not", 92, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit301, "not", 92, false); !ok {
 		goto L24
 	}
 	goto L10
@@ -43225,7 +42937,7 @@ func v397(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit92, ".", 50, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit98, ".", 50, false); !ok {
 		goto L7
 	}
 	x8, x9 = p.Pos, len(p.Recovered)
@@ -43248,7 +42960,7 @@ L6:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit92, ".", 50, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit98, ".", 50, false); !ok {
 		goto L13
 	}
 	if _, ok = s399(p); !ok {
@@ -43298,7 +43010,7 @@ func i397(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit92, ".", 50, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit98, ".", 50, false); !ok {
 		goto L7
 	}
 	x8, x9 = p.Pos, len(p.Recovered)
@@ -43321,7 +43033,7 @@ L6:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 46 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit92, ".", 50, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit98, ".", 50, false); !ok {
 		goto L13
 	}
 	if _, ok = s399(p); !ok {
@@ -43476,7 +43188,7 @@ func s399(p *pegort.TParser) (any, bool) {
 		x5, x6 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) && p.In[p.Pos] == 95 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit202, "_", 67, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit208, "_", 67, false); !ok {
 			goto L7
 		}
 		goto L8
@@ -43536,7 +43248,7 @@ func s400(p *pegort.TParser) (any, bool) {
 		p.ExpectOrdinary(p.Pos, 72)
 		goto L6
 	}
-	if _, ok = p.Parser.MatchLiteral(lit189, "False", 72, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit195, "False", 72, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -43550,7 +43262,7 @@ L6:
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 78 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 110 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit187, "None", 70, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit193, "None", 70, false); !ok {
 		goto L9
 	}
 	goto L3
@@ -43564,7 +43276,7 @@ L8:
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 84 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 117 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit188, "True", 71, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit194, "True", 71, false); !ok {
 		goto L11
 	}
 	goto L3
@@ -43578,7 +43290,7 @@ L10:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 97 && p.In[p.Pos+1] == 110 && p.In[p.Pos+2] == 100 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit289, "and", 91, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit297, "and", 91, false); !ok {
 		goto L13
 	}
 	goto L3
@@ -43590,7 +43302,7 @@ L12:
 		p.ExpectOrdinary(p.Pos, 29)
 		goto L14
 	}
-	if _, ok = p.Parser.MatchLiteral(lit485, "assert", 29, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit495, "assert", 29, false); !ok {
 		goto L15
 	}
 	goto L3
@@ -43602,7 +43314,7 @@ L14:
 		p.ExpectOrdinary(p.Pos, 59)
 		goto L16
 	}
-	if _, ok = p.Parser.MatchLiteral(lit486, "async", 59, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit496, "async", 59, false); !ok {
 		goto L17
 	}
 	goto L3
@@ -43616,7 +43328,7 @@ L16:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 97 && p.In[p.Pos+1] == 115 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit487, "as", 173, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit497, "as", 173, false); !ok {
 		goto L19
 	}
 	goto L3
@@ -43628,7 +43340,7 @@ L18:
 		p.ExpectOrdinary(p.Pos, 174)
 		goto L20
 	}
-	if _, ok = p.Parser.MatchLiteral(lit488, "await", 174, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit498, "await", 174, false); !ok {
 		goto L21
 	}
 	goto L3
@@ -43640,7 +43352,7 @@ L20:
 		p.ExpectOrdinary(p.Pos, 22)
 		goto L22
 	}
-	if _, ok = p.Parser.MatchLiteral(lit489, "break", 22, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit499, "break", 22, false); !ok {
 		goto L23
 	}
 	goto L3
@@ -43652,7 +43364,7 @@ L22:
 		p.ExpectOrdinary(p.Pos, 175)
 		goto L24
 	}
-	if _, ok = p.Parser.MatchLiteral(lit490, "class", 175, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit500, "class", 175, false); !ok {
 		goto L25
 	}
 	goto L3
@@ -43664,7 +43376,7 @@ L24:
 		p.ExpectOrdinary(p.Pos, 23)
 		goto L26
 	}
-	if _, ok = p.Parser.MatchLiteral(lit491, "continue", 23, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit501, "continue", 23, false); !ok {
 		goto L27
 	}
 	goto L3
@@ -43678,7 +43390,7 @@ L26:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 100 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 102 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit492, "def", 176, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit502, "def", 176, false); !ok {
 		goto L29
 	}
 	goto L3
@@ -43692,7 +43404,7 @@ L28:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 100 && p.In[p.Pos+1] == 101 && p.In[p.Pos+2] == 108 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit493, "del", 28, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit503, "del", 28, false); !ok {
 		goto L31
 	}
 	goto L3
@@ -43706,7 +43418,7 @@ L30:
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 105 && p.In[p.Pos+3] == 102 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit494, "elif", 177, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit504, "elif", 177, false); !ok {
 		goto L33
 	}
 	goto L3
@@ -43720,7 +43432,7 @@ L32:
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 101 && p.In[p.Pos+1] == 108 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 101 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit477, "else", 166, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit487, "else", 166, false); !ok {
 		goto L35
 	}
 	goto L3
@@ -43732,7 +43444,7 @@ L34:
 		p.ExpectOrdinary(p.Pos, 63)
 		goto L36
 	}
-	if _, ok = p.Parser.MatchLiteral(lit495, "except", 63, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit505, "except", 63, false); !ok {
 		goto L37
 	}
 	goto L3
@@ -43744,7 +43456,7 @@ L36:
 		p.ExpectOrdinary(p.Pos, 178)
 		goto L38
 	}
-	if _, ok = p.Parser.MatchLiteral(lit496, "finally", 178, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit506, "finally", 178, false); !ok {
 		goto L39
 	}
 	goto L3
@@ -43758,7 +43470,7 @@ L38:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 114 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit478, "for", 56, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit488, "for", 56, false); !ok {
 		goto L41
 	}
 	goto L3
@@ -43772,7 +43484,7 @@ L40:
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 102 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 111 && p.In[p.Pos+3] == 109 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit497, "from", 31, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit507, "from", 31, false); !ok {
 		goto L43
 	}
 	goto L3
@@ -43784,7 +43496,7 @@ L42:
 		p.ExpectOrdinary(p.Pos, 26)
 		goto L44
 	}
-	if _, ok = p.Parser.MatchLiteral(lit498, "global", 26, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit508, "global", 26, false); !ok {
 		goto L45
 	}
 	goto L3
@@ -43798,7 +43510,7 @@ L44:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 102 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit499, "if", 54, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit509, "if", 54, false); !ok {
 		goto L47
 	}
 	goto L3
@@ -43810,7 +43522,7 @@ L46:
 		p.ExpectOrdinary(p.Pos, 30)
 		goto L48
 	}
-	if _, ok = p.Parser.MatchLiteral(lit500, "import", 30, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit510, "import", 30, false); !ok {
 		goto L49
 	}
 	goto L3
@@ -43824,7 +43536,7 @@ L48:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 110 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit305, "in", 102, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit313, "in", 102, false); !ok {
 		goto L51
 	}
 	goto L3
@@ -43838,7 +43550,7 @@ L50:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 105 && p.In[p.Pos+1] == 115 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit306, "is", 103, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit314, "is", 103, false); !ok {
 		goto L53
 	}
 	goto L3
@@ -43850,7 +43562,7 @@ L52:
 		p.ExpectOrdinary(p.Pos, 87)
 		goto L54
 	}
-	if _, ok = p.Parser.MatchLiteral(lit501, "lambda", 87, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit511, "lambda", 87, false); !ok {
 		goto L55
 	}
 	goto L3
@@ -43862,7 +43574,7 @@ L54:
 		p.ExpectOrdinary(p.Pos, 27)
 		goto L56
 	}
-	if _, ok = p.Parser.MatchLiteral(lit502, "nonlocal", 27, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit512, "nonlocal", 27, false); !ok {
 		goto L57
 	}
 	goto L3
@@ -43876,7 +43588,7 @@ L56:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 110 && p.In[p.Pos+1] == 111 && p.In[p.Pos+2] == 116 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit293, "not", 92, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit301, "not", 92, false); !ok {
 		goto L59
 	}
 	goto L3
@@ -43890,7 +43602,7 @@ L58:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 111 && p.In[p.Pos+1] == 114 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit287, "or", 90, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit295, "or", 90, false); !ok {
 		goto L61
 	}
 	goto L3
@@ -43904,7 +43616,7 @@ L60:
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 112 && p.In[p.Pos+1] == 97 && p.In[p.Pos+2] == 115 && p.In[p.Pos+3] == 115 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit503, "pass", 21, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit513, "pass", 21, false); !ok {
 		goto L63
 	}
 	goto L3
@@ -43916,7 +43628,7 @@ L62:
 		p.ExpectOrdinary(p.Pos, 25)
 		goto L64
 	}
-	if _, ok = p.Parser.MatchLiteral(lit504, "raise", 25, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit514, "raise", 25, false); !ok {
 		goto L65
 	}
 	goto L3
@@ -43928,7 +43640,7 @@ L64:
 		p.ExpectOrdinary(p.Pos, 24)
 		goto L66
 	}
-	if _, ok = p.Parser.MatchLiteral(lit505, "return", 24, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit515, "return", 24, false); !ok {
 		goto L67
 	}
 	goto L3
@@ -43942,7 +43654,7 @@ L66:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 116 && p.In[p.Pos+1] == 114 && p.In[p.Pos+2] == 121 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit506, "try", 57, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit516, "try", 57, false); !ok {
 		goto L69
 	}
 	goto L3
@@ -43954,7 +43666,7 @@ L68:
 		p.ExpectOrdinary(p.Pos, 55)
 		goto L70
 	}
-	if _, ok = p.Parser.MatchLiteral(lit507, "while", 55, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit517, "while", 55, false); !ok {
 		goto L71
 	}
 	goto L3
@@ -43968,7 +43680,7 @@ L70:
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 119 && p.In[p.Pos+1] == 105 && p.In[p.Pos+2] == 116 && p.In[p.Pos+3] == 104 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit508, "with", 58, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit518, "with", 58, false); !ok {
 		goto L73
 	}
 	goto L3
@@ -43980,7 +43692,7 @@ L72:
 		p.ExpectOrdinary(p.Pos, 89)
 		goto L74
 	}
-	if _, ok = p.Parser.MatchLiteral(lit509, "yield", 89, false); !ok {
+	if _, ok = p.Parser.MatchLiteral(lit519, "yield", 89, false); !ok {
 		goto L75
 	}
 	goto L3
@@ -44242,7 +43954,7 @@ func s403(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 35 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit43, "#", 18, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit49, "#", 18, false); !ok {
 		goto fail
 	}
 	for {
@@ -44275,7 +43987,7 @@ func s404(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if !p.ClassFast(&cls1146) && !p.ClassSkip(&cls1146, 181) {
+	if !p.ClassFast(&cls1159) && !p.ClassSkip(&cls1159, 181) {
 		goto fail
 	}
 	v = nil
@@ -44364,7 +44076,7 @@ func v405(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L7
 	}
 	x8 = 0
@@ -44392,7 +44104,7 @@ func v405(p *pegort.TParser) (any, bool) {
 		p.Silent++
 		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 			p.Pos += 3
-		} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 			goto L20
 		}
 		p.Silent--
@@ -44405,7 +44117,7 @@ func v405(p *pegort.TParser) (any, bool) {
 		p.Recovered = p.Recovered[:x19]
 		if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 			goto L17
 		}
 		goto L14
@@ -44439,7 +44151,7 @@ func v405(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -44453,7 +44165,7 @@ L6:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L26
 	}
 	x27 = 0
@@ -44481,7 +44193,7 @@ L6:
 		p.Silent++
 		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 			p.Pos += 3
-		} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 			goto L39
 		}
 		p.Silent--
@@ -44494,7 +44206,7 @@ L6:
 		p.Recovered = p.Recovered[:x38]
 		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 			goto L36
 		}
 		goto L33
@@ -44528,7 +44240,7 @@ L6:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L26
 	}
 	goto L3
@@ -44541,7 +44253,7 @@ L25:
 	p.Silent++
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L47
 	}
 	p.Silent--
@@ -44554,7 +44266,7 @@ L47:
 	p.Recovered = p.Recovered[:x46]
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 		goto L44
 	}
 	x48 = 0
@@ -44605,7 +44317,7 @@ L47:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 		goto L44
 	}
 	goto L3
@@ -44616,7 +44328,7 @@ L44:
 	p.Silent++
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L64
 	}
 	p.Silent--
@@ -44629,7 +44341,7 @@ L64:
 	p.Recovered = p.Recovered[:x63]
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 		goto L61
 	}
 	x65 = 0
@@ -44680,7 +44392,7 @@ L64:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 		goto L61
 	}
 	goto L3
@@ -44764,7 +44476,7 @@ func i405(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L7
 	}
 	x8 = 0
@@ -44792,7 +44504,7 @@ func i405(p *pegort.TParser) (any, bool) {
 		p.Silent++
 		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 			p.Pos += 3
-		} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 			goto L20
 		}
 		p.Silent--
@@ -44805,7 +44517,7 @@ func i405(p *pegort.TParser) (any, bool) {
 		p.Recovered = p.Recovered[:x19]
 		if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 			goto L17
 		}
 		goto L14
@@ -44839,7 +44551,7 @@ func i405(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -44853,7 +44565,7 @@ L6:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L26
 	}
 	x27 = 0
@@ -44881,7 +44593,7 @@ L6:
 		p.Silent++
 		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 			p.Pos += 3
-		} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 			goto L39
 		}
 		p.Silent--
@@ -44894,7 +44606,7 @@ L6:
 		p.Recovered = p.Recovered[:x38]
 		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 			goto L36
 		}
 		goto L33
@@ -44928,7 +44640,7 @@ L6:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L26
 	}
 	goto L3
@@ -44941,7 +44653,7 @@ L25:
 	p.Silent++
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L47
 	}
 	p.Silent--
@@ -44954,7 +44666,7 @@ L47:
 	p.Recovered = p.Recovered[:x46]
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 		goto L44
 	}
 	x48 = 0
@@ -45005,7 +44717,7 @@ L47:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 		goto L44
 	}
 	goto L3
@@ -45016,7 +44728,7 @@ L44:
 	p.Silent++
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L64
 	}
 	p.Silent--
@@ -45029,7 +44741,7 @@ L64:
 	p.Recovered = p.Recovered[:x63]
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 		goto L61
 	}
 	x65 = 0
@@ -45080,7 +44792,7 @@ L64:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 		goto L61
 	}
 	goto L3
@@ -45173,7 +44885,7 @@ func s406(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L7
 	}
 	x8 = 0
@@ -45201,7 +44913,7 @@ func s406(p *pegort.TParser) (any, bool) {
 		p.Silent++
 		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 			p.Pos += 3
-		} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 			goto L20
 		}
 		p.Silent--
@@ -45214,7 +44926,7 @@ func s406(p *pegort.TParser) (any, bool) {
 		p.Recovered = p.Recovered[:x19]
 		if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 			goto L17
 		}
 		goto L14
@@ -45228,7 +44940,7 @@ func s406(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 			goto L24
 		}
 		ch, size, ok = p.NextOrdinary()
@@ -45256,7 +44968,7 @@ func s406(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -45270,7 +44982,7 @@ L6:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L26
 	}
 	x27 = 0
@@ -45298,7 +45010,7 @@ L6:
 		p.Silent++
 		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 			p.Pos += 3
-		} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 			goto L39
 		}
 		p.Silent--
@@ -45311,7 +45023,7 @@ L6:
 		p.Recovered = p.Recovered[:x38]
 		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 			goto L36
 		}
 		goto L33
@@ -45325,7 +45037,7 @@ L6:
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 			goto L43
 		}
 		ch, size, ok = p.NextOrdinary()
@@ -45353,7 +45065,7 @@ L6:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L26
 	}
 	goto L3
@@ -45366,7 +45078,7 @@ L25:
 	p.Silent++
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L47
 	}
 	p.Silent--
@@ -45379,7 +45091,7 @@ L47:
 	p.Recovered = p.Recovered[:x46]
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 		goto L44
 	}
 	x48 = 0
@@ -45410,7 +45122,7 @@ L47:
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 			goto L60
 		}
 		x61, x62 = p.Pos, len(p.Recovered)
@@ -45421,7 +45133,7 @@ L47:
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 13 && p.In[p.Pos+1] == 10 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit41, "\r\n", 16, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit47, "\r\n", 16, false); !ok {
 			goto L67
 		}
 		goto L63
@@ -45465,7 +45177,7 @@ L47:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 		goto L44
 	}
 	goto L3
@@ -45476,7 +45188,7 @@ L44:
 	p.Silent++
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L73
 	}
 	p.Silent--
@@ -45489,7 +45201,7 @@ L73:
 	p.Recovered = p.Recovered[:x72]
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 		goto L70
 	}
 	x74 = 0
@@ -45520,7 +45232,7 @@ L73:
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 			goto L86
 		}
 		x87, x88 = p.Pos, len(p.Recovered)
@@ -45531,7 +45243,7 @@ L73:
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 13 && p.In[p.Pos+1] == 10 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit41, "\r\n", 16, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit47, "\r\n", 16, false); !ok {
 			goto L93
 		}
 		goto L89
@@ -45575,7 +45287,7 @@ L73:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 		goto L70
 	}
 	goto L3
@@ -45670,7 +45382,7 @@ func s407(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L7
 	}
 	x8 = 0
@@ -45698,7 +45410,7 @@ func s407(p *pegort.TParser) (any, bool) {
 		p.Silent++
 		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 			p.Pos += 3
-		} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 			goto L20
 		}
 		p.Silent--
@@ -45711,7 +45423,7 @@ func s407(p *pegort.TParser) (any, bool) {
 		p.Recovered = p.Recovered[:x19]
 		if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 			goto L17
 		}
 		goto L14
@@ -45725,7 +45437,7 @@ func s407(p *pegort.TParser) (any, bool) {
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 			goto L24
 		}
 		ch, size, ok = p.NextOrdinary()
@@ -45753,7 +45465,7 @@ func s407(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -45767,7 +45479,7 @@ L6:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L26
 	}
 	x27 = 0
@@ -45795,7 +45507,7 @@ L6:
 		p.Silent++
 		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 			p.Pos += 3
-		} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 			goto L39
 		}
 		p.Silent--
@@ -45808,7 +45520,7 @@ L6:
 		p.Recovered = p.Recovered[:x38]
 		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 			goto L36
 		}
 		goto L33
@@ -45822,7 +45534,7 @@ L6:
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 			goto L43
 		}
 		ch, size, ok = p.NextOrdinary()
@@ -45850,7 +45562,7 @@ L6:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L26
 	}
 	goto L3
@@ -45863,7 +45575,7 @@ L25:
 	p.Silent++
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L47
 	}
 	p.Silent--
@@ -45876,7 +45588,7 @@ L47:
 	p.Recovered = p.Recovered[:x46]
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 		goto L44
 	}
 	x48 = 0
@@ -45907,7 +45619,7 @@ L47:
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 			goto L60
 		}
 		x61, x62 = p.Pos, len(p.Recovered)
@@ -45918,7 +45630,7 @@ L47:
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 13 && p.In[p.Pos+1] == 10 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit41, "\r\n", 16, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit47, "\r\n", 16, false); !ok {
 			goto L67
 		}
 		goto L63
@@ -45962,7 +45674,7 @@ L47:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 		goto L44
 	}
 	goto L3
@@ -45973,7 +45685,7 @@ L44:
 	p.Silent++
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L73
 	}
 	p.Silent--
@@ -45986,7 +45698,7 @@ L73:
 	p.Recovered = p.Recovered[:x72]
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 		goto L70
 	}
 	x74 = 0
@@ -46017,7 +45729,7 @@ L73:
 		}
 		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 			goto L86
 		}
 		x87, x88 = p.Pos, len(p.Recovered)
@@ -46028,7 +45740,7 @@ L73:
 		}
 		if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 13 && p.In[p.Pos+1] == 10 {
 			p.Pos += 2
-		} else if _, ok = p.Parser.MatchLiteral(lit41, "\r\n", 16, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit47, "\r\n", 16, false); !ok {
 			goto L93
 		}
 		goto L89
@@ -46072,7 +45784,7 @@ L73:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 		goto L70
 	}
 	goto L3
@@ -46159,7 +45871,7 @@ func s408(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L7
 	}
 	x8 = 0
@@ -46187,7 +45899,7 @@ func s408(p *pegort.TParser) (any, bool) {
 		p.Silent++
 		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 			p.Pos += 3
-		} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 			goto L20
 		}
 		p.Silent--
@@ -46200,7 +45912,7 @@ func s408(p *pegort.TParser) (any, bool) {
 		p.Recovered = p.Recovered[:x19]
 		if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 			goto L17
 		}
 		goto L14
@@ -46234,7 +45946,7 @@ func s408(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -46248,7 +45960,7 @@ L6:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L26
 	}
 	x27 = 0
@@ -46276,7 +45988,7 @@ L6:
 		p.Silent++
 		if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 			p.Pos += 3
-		} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 			goto L39
 		}
 		p.Silent--
@@ -46289,7 +46001,7 @@ L6:
 		p.Recovered = p.Recovered[:x38]
 		if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 			goto L36
 		}
 		goto L33
@@ -46323,7 +46035,7 @@ L6:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L26
 	}
 	goto L3
@@ -46336,7 +46048,7 @@ L25:
 	p.Silent++
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 39 && p.In[p.Pos+1] == 39 && p.In[p.Pos+2] == 39 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit415, "'''", 118, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit423, "'''", 118, false); !ok {
 		goto L47
 	}
 	p.Silent--
@@ -46349,7 +46061,7 @@ L47:
 	p.Recovered = p.Recovered[:x46]
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 		goto L44
 	}
 	x48 = 0
@@ -46400,7 +46112,7 @@ L47:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 39 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit416, "'", 120, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit424, "'", 120, false); !ok {
 		goto L44
 	}
 	goto L3
@@ -46411,7 +46123,7 @@ L44:
 	p.Silent++
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 34 && p.In[p.Pos+1] == 34 && p.In[p.Pos+2] == 34 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit417, "\"\"\"", 121, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit425, "\"\"\"", 121, false); !ok {
 		goto L64
 	}
 	p.Silent--
@@ -46424,7 +46136,7 @@ L64:
 	p.Recovered = p.Recovered[:x63]
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 		goto L61
 	}
 	x65 = 0
@@ -46475,7 +46187,7 @@ L64:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 34 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit418, "\"", 123, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit426, "\"", 123, false); !ok {
 		goto L61
 	}
 	goto L3
@@ -46558,7 +46270,7 @@ func s410(p *pegort.TParser) (any, bool) {
 		x5, x6 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) && p.In[p.Pos] == 95 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit202, "_", 67, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit208, "_", 67, false); !ok {
 			goto L7
 		}
 		goto L8
@@ -46616,7 +46328,7 @@ func s411(p *pegort.TParser) (any, bool) {
 	_ = x1
 	if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit465, "0", 156, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit475, "0", 156, false); !ok {
 		goto fail
 	}
 	x1 = 0
@@ -46625,7 +46337,7 @@ func s411(p *pegort.TParser) (any, bool) {
 		x5, x6 = p.Pos, len(p.Recovered)
 		if p.Pos < len(p.In) && p.In[p.Pos] == 95 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit202, "_", 67, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit208, "_", 67, false); !ok {
 			goto L7
 		}
 		goto L8
@@ -46636,7 +46348,7 @@ func s411(p *pegort.TParser) (any, bool) {
 
 		if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 			p.Pos++
-		} else if _, ok = p.Parser.MatchLiteral(lit465, "0", 156, false); !ok {
+		} else if _, ok = p.Parser.MatchLiteral(lit475, "0", 156, false); !ok {
 			goto L4
 		}
 		x1++
@@ -46651,7 +46363,7 @@ func s411(p *pegort.TParser) (any, bool) {
 	}
 	x9, x10 = p.Pos, len(p.Recovered)
 	p.Silent++
-	if !p.ClassFast(&cls1144) && !p.ClassSkip(&cls1144, 165) {
+	if !p.ClassFast(&cls1157) && !p.ClassSkip(&cls1157, 165) {
 		goto L11
 	}
 	p.Silent--
@@ -46684,7 +46396,7 @@ func s412(p *pegort.TParser) (any, bool) {
 	if p.Depth > p.MaxDepth {
 		p.TooDeep()
 	}
-	if !p.ClassFast(&cls1145) && !p.ClassSkip(&cls1145, 180) {
+	if !p.ClassFast(&cls1158) && !p.ClassSkip(&cls1158, 180) {
 		goto fail
 	}
 	v = nil
@@ -46731,7 +46443,7 @@ func v413(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -46749,7 +46461,7 @@ L4:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 120 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit422, "x", 126, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit430, "x", 126, false); !ok {
 		goto L8
 	}
 	if _, ok = s409(p); !ok {
@@ -46769,7 +46481,7 @@ L7:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 117 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit423, "u", 127, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit431, "u", 127, false); !ok {
 		goto L10
 	}
 	if _, ok = s409(p); !ok {
@@ -46795,7 +46507,7 @@ L9:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 85 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit424, "U", 128, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit433, "U", 128, false); !ok {
 		goto L12
 	}
 	x13, x14 = p.Pos, len(p.Recovered)
@@ -46806,7 +46518,7 @@ L9:
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 48 && p.In[p.Pos+2] == 49 && p.In[p.Pos+3] == 48 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit425, "0010", 129, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit434, "0010", 129, false); !ok {
 		goto L19
 	}
 	if _, ok = s409(p); !ok {
@@ -46832,7 +46544,7 @@ L18:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 48 && p.In[p.Pos+2] == 48 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit426, "000", 130, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit435, "000", 130, false); !ok {
 		goto L21
 	}
 	if _, ok = s409(p); !ok {
@@ -46868,7 +46580,7 @@ L11:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 78 && p.In[p.Pos+1] == 123 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit427, "N{", 131, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit437, "N{", 131, false); !ok {
 		goto L23
 	}
 	x24 = 0
@@ -46886,7 +46598,7 @@ L11:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit223, "}", 80, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit229, "}", 80, false); !ok {
 		goto L23
 	}
 	goto L3
@@ -46898,7 +46610,7 @@ L22:
 		p.ExpectOrdinary(p.Pos, 133)
 		goto L25
 	}
-	if !p.ClassFast(&cls1121) && !p.ClassSkip(&cls1121, 133) {
+	if !p.ClassFast(&cls1134) && !p.ClassSkip(&cls1134, 133) {
 		goto L26
 	}
 	goto L3
@@ -46941,7 +46653,7 @@ func i413(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -46959,7 +46671,7 @@ L4:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 120 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit422, "x", 126, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit430, "x", 126, false); !ok {
 		goto L8
 	}
 	if _, ok = s409(p); !ok {
@@ -46979,7 +46691,7 @@ L7:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 117 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit423, "u", 127, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit431, "u", 127, false); !ok {
 		goto L10
 	}
 	if _, ok = s409(p); !ok {
@@ -47005,7 +46717,7 @@ L9:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 85 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit424, "U", 128, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit433, "U", 128, false); !ok {
 		goto L12
 	}
 	x13, x14 = p.Pos, len(p.Recovered)
@@ -47016,7 +46728,7 @@ L9:
 	}
 	if p.Pos+4 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 48 && p.In[p.Pos+2] == 49 && p.In[p.Pos+3] == 48 {
 		p.Pos += 4
-	} else if _, ok = p.Parser.MatchLiteral(lit425, "0010", 129, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit434, "0010", 129, false); !ok {
 		goto L19
 	}
 	if _, ok = s409(p); !ok {
@@ -47042,7 +46754,7 @@ L18:
 	}
 	if p.Pos+3 <= len(p.In) && p.In[p.Pos] == 48 && p.In[p.Pos+1] == 48 && p.In[p.Pos+2] == 48 {
 		p.Pos += 3
-	} else if _, ok = p.Parser.MatchLiteral(lit426, "000", 130, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit435, "000", 130, false); !ok {
 		goto L21
 	}
 	if _, ok = s409(p); !ok {
@@ -47078,7 +46790,7 @@ L11:
 	}
 	if p.Pos+2 <= len(p.In) && p.In[p.Pos] == 78 && p.In[p.Pos+1] == 123 {
 		p.Pos += 2
-	} else if _, ok = p.Parser.MatchLiteral(lit427, "N{", 131, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit437, "N{", 131, false); !ok {
 		goto L23
 	}
 	x24 = 0
@@ -47096,7 +46808,7 @@ L11:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 125 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit223, "}", 80, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit229, "}", 80, false); !ok {
 		goto L23
 	}
 	goto L3
@@ -47108,7 +46820,7 @@ L22:
 		p.ExpectOrdinary(p.Pos, 133)
 		goto L25
 	}
-	if !p.ClassFast(&cls1121) && !p.ClassSkip(&cls1121, 133) {
+	if !p.ClassFast(&cls1134) && !p.ClassSkip(&cls1134, 133) {
 		goto L26
 	}
 	goto L3
@@ -47153,7 +46865,7 @@ func v414(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -47171,7 +46883,7 @@ L4:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 120 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit422, "x", 126, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit430, "x", 126, false); !ok {
 		goto L8
 	}
 	if _, ok = s409(p); !ok {
@@ -47189,7 +46901,7 @@ L7:
 		p.ExpectOrdinary(p.Pos, 139)
 		goto L9
 	}
-	if !p.ClassFast(&cls1124) && !p.ClassSkip(&cls1124, 139) {
+	if !p.ClassFast(&cls1137) && !p.ClassSkip(&cls1137, 139) {
 		goto L10
 	}
 	goto L3
@@ -47225,7 +46937,7 @@ func i414(p *pegort.TParser) (any, bool) {
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit8, "\\", 9, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit10, "\\", 9, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.Pos, len(p.Recovered)
@@ -47243,7 +46955,7 @@ L4:
 	}
 	if p.Pos < len(p.In) && p.In[p.Pos] == 120 {
 		p.Pos++
-	} else if _, ok = p.Parser.MatchLiteral(lit422, "x", 126, false); !ok {
+	} else if _, ok = p.Parser.MatchLiteral(lit430, "x", 126, false); !ok {
 		goto L8
 	}
 	if _, ok = s409(p); !ok {
@@ -47261,7 +46973,7 @@ L7:
 		p.ExpectOrdinary(p.Pos, 139)
 		goto L9
 	}
-	if !p.ClassFast(&cls1124) && !p.ClassSkip(&cls1124, 139) {
+	if !p.ClassFast(&cls1137) && !p.ClassSkip(&cls1137, 139) {
 		goto L10
 	}
 	goto L3

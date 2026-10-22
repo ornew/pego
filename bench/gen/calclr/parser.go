@@ -217,24 +217,66 @@ var lit18 = []rune("^")
 var lit21 = []rune("(")
 var lit22 = []rune(")")
 var lit24 = []rune(".")
+var sh26 = pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}
+var sh29 = pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}
+var sh30 = pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}
+var sh31 = pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}
+
+// rulesSpec is the compact form of the rule table, built by NewRules.
+var rulesSpec = [...]pegort.RuleSpec{
+	{Name: "main", Value: &sh29, Seen: -1, Scope: 1},
+	{Name: "expr", Value: &sh26, Flags: pegort.RuleLeader, Seen: -1},
+	{Name: "add", Value: &sh30, Seen: -1, Scope: 2},
+	{Name: "term", Value: &sh26, Flags: pegort.RuleLeader, Seen: -1},
+	{Name: "mul", Value: &sh30, Seen: -1, Scope: 2},
+	{Name: "unary", Value: &sh26, Flags: pegort.RuleMemo},
+	{Name: "neg", Value: &sh31, Seen: -1, Scope: 3},
+	{Name: "power", Value: &sh26, Seen: -1},
+	{Name: "pow", Value: &sh30, Seen: -1, Scope: 2},
+	{Name: "primary", Value: &sh29, Flags: pegort.RuleMemo, Seen: 1, Scope: 4},
+	{Name: "group", Value: &sh30, Seen: -1, Scope: 1},
+	{Name: "number", Value: &sh26, Seen: -1},
+	{Name: "ws", Value: &sh26, Seen: -1},
+	{Name: "ws", Value: &sh26, Flags: pegort.RuleNovalue, Seen: -1},
+}
+
+var rulesStrs = [...][]string{
+	nil,
+	{"e"},
+	{"l", "op", "r"},
+	{"op", "x"},
+	{"p"},
+}
+
+var rulesExtras = [...]pegort.RuleExtra{
+	{Id: 11, Where: "", NodeType: "Number", OpNodeType: ""},
+}
+
+// recRulesSpec is the compact form of the rule table, built by NewRules.
+var recRulesSpec = [...]pegort.RuleSpec{
+	{Name: "main", Value: &sh29, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "expr", Value: &sh26, Flags: pegort.RuleLeader | pegort.RuleNovalue, Seen: -1},
+	{Name: "add", Value: &sh30, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "term", Value: &sh26, Flags: pegort.RuleLeader | pegort.RuleNovalue, Seen: -1},
+	{Name: "mul", Value: &sh30, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "unary", Value: &sh26, Flags: pegort.RuleMemo | pegort.RuleNovalue},
+	{Name: "neg", Value: &sh31, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "power", Value: &sh26, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "pow", Value: &sh30, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "primary", Value: &sh29, Flags: pegort.RuleMemo | pegort.RuleNovalue, Seen: 1},
+	{Name: "group", Value: &sh30, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "number", Value: &sh26, Flags: pegort.RuleNovalue, Seen: -1},
+	{Name: "ws", Value: &sh26, Flags: pegort.RuleNovalue, Seen: -1},
+}
+
+var recRulesStrs = [...][]string{
+	nil,
+}
+
+var recRulesExtras = [...]pegort.RuleExtra{}
 
 func init() {
-	rules = []*pegort.Rule{
-		{Id: 0, Name: "main", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 1, Name: "expr", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: true, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 2, Name: "add", Scope: []string{"l", "op", "r"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 3, Name: "term", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: true, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 4, Name: "mul", Scope: []string{"l", "op", "r"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 5, Name: "unary", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 0, Novalue: false, Vars: []string{}},
-		{Id: 6, Name: "neg", Scope: []string{"op", "x"}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 7, Name: "power", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 8, Name: "pow", Scope: []string{"l", "op", "r"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 9, Name: "primary", Scope: []string{"p"}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 1, Novalue: false, Vars: []string{}},
-		{Id: 10, Name: "group", Scope: []string{"e"}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 11, Name: "number", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, NodeType: "Number", Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 12, Name: "ws", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: false, Vars: []string{}},
-		{Id: 13, Name: "ws", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-	}
+	rules = pegort.NewRules(rulesSpec[:], rulesStrs[:], rulesExtras[:])
 	pegoGrammar.SetRules(rules, 2)
 	rules[0].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e1(p) }
 	rules[0].Action = func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
@@ -275,67 +317,38 @@ func init() {
 	rules[10].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e23(p) }
 	rules[10].Action = func(c *pegort.ActCtx) any { return func() any { c.P.StepWork(); return c.Cap(0) }() }
 	rules[11].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e25(p) }
-	rules[12].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e26(p) }
-	rules[13].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e27(p) }
+	rules[12].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e27(p) }
+	rules[13].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e28(p) }
 	pegoGrammar.StructFields["Binary"] = map[string]bool{"Left": true, "Op": true, "Right": true}
 	pegoGrammar.TypeKinds["Binary"] = pegort.KindOf("Binary", "")
 	pegoGrammar.StructFields["Unary"] = map[string]bool{"Op": true, "X": true}
 	pegoGrammar.TypeKinds["Unary"] = pegort.KindOf("Unary", "")
 	pegoGrammar.NodeTypes["Number"] = pegort.NewNodeTypeKinds("Number")
-	recRules = []*pegort.Rule{
-		{Id: 0, Name: "main", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 1, Name: "expr", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: true, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 2, Name: "add", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 3, Name: "term", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: true, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 4, Name: "mul", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 5, Name: "unary", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: true, Leader: false, Seen: 0, Novalue: true, Vars: []string{}},
-		{Id: 6, Name: "neg", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 3, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 7, Name: "power", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 8, Name: "pow", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 9, Name: "primary", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 2, Mode: 2, Tuple: true, Shared: false}, Memo: true, Leader: false, Seen: 1, Novalue: true, Vars: []string{}},
-		{Id: 10, Name: "group", Scope: []string{}, Value: pegort.Shaper{Elems: true, K: 4, Mode: 2, Tuple: true, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 11, Name: "number", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-		{Id: 12, Name: "ws", Scope: []string{}, Value: pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, Memo: false, Leader: false, Seen: -1, Novalue: true, Vars: []string{}},
-	}
+	recRules = pegort.NewRules(recRulesSpec[:], recRulesStrs[:], recRulesExtras[:])
 	pegoRecGrammar.SetRules(recRules, 2)
-	recRules[0].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e28(p) }
-	recRules[1].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e31(p) }
-	recRules[2].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e32(p) }
-	recRules[3].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e35(p) }
-	recRules[4].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e36(p) }
-	recRules[5].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e37(p) }
-	recRules[6].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e38(p) }
-	recRules[7].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e39(p) }
-	recRules[8].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e40(p) }
-	recRules[9].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e41(p) }
-	recRules[10].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e42(p) }
-	recRules[11].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e43(p) }
-	recRules[12].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e27(p) }
+	recRules[0].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e32(p) }
+	recRules[1].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e35(p) }
+	recRules[2].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e36(p) }
+	recRules[3].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e39(p) }
+	recRules[4].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e40(p) }
+	recRules[5].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e41(p) }
+	recRules[6].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e42(p) }
+	recRules[7].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e43(p) }
+	recRules[8].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e44(p) }
+	recRules[9].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e45(p) }
+	recRules[10].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e46(p) }
+	recRules[11].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e47(p) }
+	recRules[12].Body = func(p *pegort.Parser, _ int) (*pegort.Node, bool) { return e28(p) }
 	pegoGrammar.Starts = []string{"main"}
 	pegoGrammar.DefaultStart = "main"
 	pegoGrammar.Descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"+\"", "\"-\"", "\"*\"", "\"/\"", "\"%\"", "\"^\"", "\"(\"", "\")\"", "[0-9]", "\".\"", "[ \\t\\r\\n]"}
 	pegoRecGrammar.Share(pegoGrammar)
-	trules = []*pegort.TRule{
-		{Rule: rules[0]},
-		{Rule: rules[1]},
-		{Rule: rules[2]},
-		{Rule: rules[3]},
-		{Rule: rules[4]},
-		{Rule: rules[5]},
-		{Rule: rules[6]},
-		{Rule: rules[7]},
-		{Rule: rules[8]},
-		{Rule: rules[9]},
-		{Rule: rules[10]},
-		{Rule: rules[11]},
-		{Rule: rules[12]},
-		{Rule: rules[13]},
-	}
+	trules = pegort.NewTRules(rules)
 	defer tinit()
 	trules[0].Entry = u0
-	trules[1].Body = func(p *pegort.TParser, _ int) (any, bool) { return e44(p) }
+	trules[1].Body = func(p *pegort.TParser, _ int) (any, bool) { return e48(p) }
 
-	trules[3].Body = func(p *pegort.TParser, _ int) (any, bool) { return e48(p) }
+	trules[3].Body = func(p *pegort.TParser, _ int) (any, bool) { return e52(p) }
 
 }
 
@@ -1554,7 +1567,7 @@ fail:
 }
 
 // ws (Node body inlined)
-func e26(p *pegort.Parser) (*pegort.Node, bool) {
+func e27(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
 			x1   int
@@ -1582,7 +1595,7 @@ func e26(p *pegort.Parser) (*pegort.Node, bool) {
 			x6 = p.Pos
 			p.Pos += size
 			v7 = p.NewTerminalOrdinary(x6, p.Text(x6, p.Pos))
-			v8 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v7, x4.Pos)
+			v8 = p.ScopeValue(sh26, v7, x4.Pos)
 			x3++
 			p.KidStack = append(p.KidStack, v8)
 			if p.Pos == x4.Pos {
@@ -1631,7 +1644,7 @@ func e26(p *pegort.Parser) (*pegort.Node, bool) {
 		x6 = p.Pos
 		p.Pos += size
 		v7 = p.NewTerminal(x6, p.Text(x6, p.Pos))
-		v8 = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v7, x4.Pos)
+		v8 = p.ScopeValue(sh26, v7, x4.Pos)
 		x3++
 		p.KidStack = append(p.KidStack, v8)
 		if p.Pos == x4.Pos {
@@ -1647,7 +1660,7 @@ func e26(p *pegort.Parser) (*pegort.Node, bool) {
 }
 
 // ws (value-free body inlined)
-func e27(p *pegort.Parser) (*pegort.Node, bool) {
+func e28(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
 			v    *pegort.Node
@@ -1841,7 +1854,7 @@ func r13(p *pegort.Parser) (*pegort.Node, bool) {
 }
 
 // main (value-free body inlined)
-func e28(p *pegort.Parser) (*pegort.Node, bool) {
+func e32(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
 			v  *pegort.Node
@@ -1890,7 +1903,7 @@ fail:
 }
 
 // add
-func e29(p *pegort.Parser) (*pegort.Node, bool) {
+func e33(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		return q2(p)
 	}
@@ -1900,7 +1913,7 @@ func e29(p *pegort.Parser) (*pegort.Node, bool) {
 }
 
 // term
-func e30(p *pegort.Parser) (*pegort.Node, bool) {
+func e34(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		return p.Call(recRules[3], 0)
 	}
@@ -1910,13 +1923,13 @@ func e30(p *pegort.Parser) (*pegort.Node, bool) {
 }
 
 // add / term
-func e31(p *pegort.Parser) (*pegort.Node, bool) {
+func e35(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		m0 := p.Mark()
 		{
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e29(p)
+			v, ok := e33(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -1930,7 +1943,7 @@ func e31(p *pegort.Parser) (*pegort.Node, bool) {
 		{
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e30(p)
+			v, ok := e34(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -1949,7 +1962,7 @@ func e31(p *pegort.Parser) (*pegort.Node, bool) {
 	{
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e29(p)
+		v, ok := e33(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -1963,7 +1976,7 @@ func e31(p *pegort.Parser) (*pegort.Node, bool) {
 	{
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e30(p)
+		v, ok := e34(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -1978,7 +1991,7 @@ func e31(p *pegort.Parser) (*pegort.Node, bool) {
 }
 
 // add (value-free body inlined)
-func e32(p *pegort.Parser) (*pegort.Node, bool) {
+func e36(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
 			v  *pegort.Node
@@ -2109,7 +2122,7 @@ fail:
 }
 
 // mul
-func e33(p *pegort.Parser) (*pegort.Node, bool) {
+func e37(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		return q4(p)
 	}
@@ -2119,7 +2132,7 @@ func e33(p *pegort.Parser) (*pegort.Node, bool) {
 }
 
 // unary
-func e34(p *pegort.Parser) (*pegort.Node, bool) {
+func e38(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		return p.Call(recRules[5], 0)
 	}
@@ -2129,13 +2142,13 @@ func e34(p *pegort.Parser) (*pegort.Node, bool) {
 }
 
 // mul / unary
-func e35(p *pegort.Parser) (*pegort.Node, bool) {
+func e39(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		m0 := p.Mark()
 		{
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e33(p)
+			v, ok := e37(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -2149,7 +2162,7 @@ func e35(p *pegort.Parser) (*pegort.Node, bool) {
 		{
 			prevCut := p.Cut
 			p.Cut = false
-			v, ok := e34(p)
+			v, ok := e38(p)
 			cut := p.Cut
 			p.Cut = prevCut
 			if ok {
@@ -2168,7 +2181,7 @@ func e35(p *pegort.Parser) (*pegort.Node, bool) {
 	{
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e33(p)
+		v, ok := e37(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -2182,7 +2195,7 @@ func e35(p *pegort.Parser) (*pegort.Node, bool) {
 	{
 		prevCut := p.Cut
 		p.Cut = false
-		v, ok := e34(p)
+		v, ok := e38(p)
 		cut := p.Cut
 		p.Cut = prevCut
 		if ok {
@@ -2197,7 +2210,7 @@ func e35(p *pegort.Parser) (*pegort.Node, bool) {
 }
 
 // mul (value-free body inlined)
-func e36(p *pegort.Parser) (*pegort.Node, bool) {
+func e40(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
 			v  *pegort.Node
@@ -2357,7 +2370,7 @@ fail:
 }
 
 // unary (Node body inlined)
-func e37(p *pegort.Parser) (*pegort.Node, bool) {
+func e41(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
 			x1 pegort.Mark
@@ -2412,7 +2425,7 @@ fail:
 }
 
 // neg (value-free body inlined)
-func e38(p *pegort.Parser) (*pegort.Node, bool) {
+func e42(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
 			v  *pegort.Node
@@ -2535,7 +2548,7 @@ fail:
 }
 
 // power (value-free body inlined)
-func e39(p *pegort.Parser) (*pegort.Node, bool) {
+func e43(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
 			v  *pegort.Node
@@ -2600,7 +2613,7 @@ fail:
 }
 
 // pow (value-free body inlined)
-func e40(p *pegort.Parser) (*pegort.Node, bool) {
+func e44(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
 			v  *pegort.Node
@@ -2660,7 +2673,7 @@ fail:
 }
 
 // primary (Node body inlined)
-func e41(p *pegort.Parser) (*pegort.Node, bool) {
+func e45(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
 			ok bool
@@ -2745,7 +2758,7 @@ fail:
 }
 
 // group (value-free body inlined)
-func e42(p *pegort.Parser) (*pegort.Node, bool) {
+func e46(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
 			v  *pegort.Node
@@ -2807,7 +2820,7 @@ fail:
 }
 
 // number (value-free body inlined)
-func e43(p *pegort.Parser) (*pegort.Node, bool) {
+func e47(p *pegort.Parser) (*pegort.Node, bool) {
 	if p.Control == nil {
 		var (
 			v    *pegort.Node
@@ -3872,7 +3885,7 @@ func q12(p *pegort.Parser) (*pegort.Node, bool) {
 }
 
 // expr (typed LR body inlined)
-func e44(p *pegort.TParser) (any, bool) {
+func e48(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
 			x1 pegort.Mark
@@ -3937,7 +3950,7 @@ fail:
 }
 
 // term (typed LR body inlined)
-func e48(p *pegort.TParser) (any, bool) {
+func e52(p *pegort.TParser) (any, bool) {
 	if p.Control == nil {
 		var (
 			x1 pegort.Mark
@@ -4221,10 +4234,10 @@ func i2(p *pegort.TParser) (any, bool) {
 		p.Where = "add"
 		v = func() any {
 			return func() any {
-				f_45 := func() any { return k1 }()
-				f_46 := func() any { return k4 }()
-				f_47 := func() any { return k17 }()
-				return tmk_Binary(c, true, f_45, f_46, f_47)
+				f_49 := func() any { return k1 }()
+				f_50 := func() any { return k4 }()
+				f_51 := func() any { return k17 }()
+				return tmk_Binary(c, true, f_49, f_50, f_51)
 			}()
 		}()
 		p.Where = w
@@ -4334,10 +4347,10 @@ L9:
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_45 := func() any { c.P.StepWork(); return k1 }()
-			f_46 := func() any { c.P.StepWork(); return k4 }()
-			f_47 := func() any { c.P.StepWork(); return k17 }()
-			return tmk_Binary(c, true, f_45, f_46, f_47)
+			f_49 := func() any { c.P.StepWork(); return k1 }()
+			f_50 := func() any { c.P.StepWork(); return k4 }()
+			f_51 := func() any { c.P.StepWork(); return k17 }()
+			return tmk_Binary(c, true, f_49, f_50, f_51)
 		}()
 	}()
 	p.Where = w
@@ -4467,10 +4480,10 @@ func i4(p *pegort.TParser) (any, bool) {
 		p.Where = "mul"
 		v = func() any {
 			return func() any {
-				f_49 := func() any { return k1 }()
-				f_50 := func() any { return k4 }()
-				f_51 := func() any { return k19 }()
-				return tmk_Binary(c, true, f_49, f_50, f_51)
+				f_53 := func() any { return k1 }()
+				f_54 := func() any { return k4 }()
+				f_55 := func() any { return k19 }()
+				return tmk_Binary(c, true, f_53, f_54, f_55)
 			}()
 		}()
 		p.Where = w
@@ -4595,10 +4608,10 @@ L9:
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_49 := func() any { c.P.StepWork(); return k1 }()
-			f_50 := func() any { c.P.StepWork(); return k4 }()
-			f_51 := func() any { c.P.StepWork(); return k19 }()
-			return tmk_Binary(c, true, f_49, f_50, f_51)
+			f_53 := func() any { c.P.StepWork(); return k1 }()
+			f_54 := func() any { c.P.StepWork(); return k4 }()
+			f_55 := func() any { c.P.StepWork(); return k19 }()
+			return tmk_Binary(c, true, f_53, f_54, f_55)
 		}()
 	}()
 	p.Where = w
@@ -4662,7 +4675,7 @@ func v5(p *pegort.TParser) (any, bool) {
 		p.Recovered = p.Recovered[:x2]
 		goto fail_ordinary
 	L4_ordinary:
-		v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+		v = p.ScopeValue(sh26, v3, start)
 		if n := pegort.AsTval(v); n != nil {
 			n.TSetFresh(false)
 		}
@@ -4714,7 +4727,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh26, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -4764,7 +4777,7 @@ func i5(p *pegort.TParser) (any, bool) {
 		p.Recovered = p.Recovered[:x2]
 		goto fail_ordinary
 	L4_ordinary:
-		v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+		v = p.ScopeValue(sh26, v3, start)
 		if n := pegort.AsTval(v); n != nil {
 			n.TSetFresh(false)
 		}
@@ -4813,7 +4826,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh26, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -4921,9 +4934,9 @@ func i6(p *pegort.TParser) (any, bool) {
 		p.Where = "neg"
 		v = func() any {
 			return func() any {
-				f_52 := func() any { return k1 }()
-				f_53 := func() any { return k14 }()
-				return tmk_Unary(c, true, f_52, f_53)
+				f_56 := func() any { return k1 }()
+				f_57 := func() any { return k14 }()
+				return tmk_Unary(c, true, f_56, f_57)
 			}()
 		}()
 		p.Where = w
@@ -5023,9 +5036,9 @@ L6:
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_52 := func() any { c.P.StepWork(); return k1 }()
-			f_53 := func() any { c.P.StepWork(); return k14 }()
-			return tmk_Unary(c, true, f_52, f_53)
+			f_56 := func() any { c.P.StepWork(); return k1 }()
+			f_57 := func() any { c.P.StepWork(); return k14 }()
+			return tmk_Unary(c, true, f_56, f_57)
 		}()
 	}()
 	p.Where = w
@@ -5074,7 +5087,7 @@ func s7(p *pegort.TParser) (any, bool) {
 		p.Recovered = p.Recovered[:x2]
 		goto fail_ordinary
 	L4_ordinary:
-		v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+		v = p.ScopeValue(sh26, v3, start)
 		if n := pegort.AsTval(v); n != nil {
 			n.TSetFresh(false)
 		}
@@ -5126,7 +5139,7 @@ L7:
 	p.Recovered = p.Recovered[:x2]
 	goto fail
 L4:
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v3, start)
+	v = p.ScopeValue(sh26, v3, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}
@@ -5213,10 +5226,10 @@ func i8(p *pegort.TParser) (any, bool) {
 		p.Where = "pow"
 		v = func() any {
 			return func() any {
-				f_54 := func() any { return k1 }()
-				f_55 := func() any { return k4 }()
-				f_56 := func() any { return k8 }()
-				return tmk_Binary(c, true, f_54, f_55, f_56)
+				f_58 := func() any { return k1 }()
+				f_59 := func() any { return k4 }()
+				f_60 := func() any { return k8 }()
+				return tmk_Binary(c, true, f_58, f_59, f_60)
 			}()
 		}()
 		p.Where = w
@@ -5287,10 +5300,10 @@ func i8(p *pegort.TParser) (any, bool) {
 	v = func() any {
 		c.P.StepWork()
 		return func() any {
-			f_54 := func() any { c.P.StepWork(); return k1 }()
-			f_55 := func() any { c.P.StepWork(); return k4 }()
-			f_56 := func() any { c.P.StepWork(); return k8 }()
-			return tmk_Binary(c, true, f_54, f_55, f_56)
+			f_58 := func() any { c.P.StepWork(); return k1 }()
+			f_59 := func() any { c.P.StepWork(); return k4 }()
+			f_60 := func() any { c.P.StepWork(); return k8 }()
+			return tmk_Binary(c, true, f_58, f_59, f_60)
 		}()
 	}()
 	p.Where = w
@@ -5661,7 +5674,7 @@ func s11(p *pegort.TParser) (any, bool) {
 	L6_ordinary:
 		v8 = p.NewMatchOrdinary(x1, p.Pos, p.Text(x1, p.Pos), true)
 		bv = pegort.TFreshNode(v8)
-		v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v8, start)
+		v = p.ScopeValue(sh26, v8, start)
 		if n := pegort.AsTval(v); n != nil {
 			n.TSetFresh(false)
 		}
@@ -5753,7 +5766,7 @@ L5:
 L6:
 	v8 = p.NewMatch(x1, p.Pos, p.Text(x1, p.Pos), true)
 	bv = pegort.TFreshNode(v8)
-	v = p.ScopeValue(pegort.Shaper{Elems: false, K: 1, Mode: 1, Tuple: false, Shared: false}, v8, start)
+	v = p.ScopeValue(sh26, v8, start)
 	if n := pegort.AsTval(v); n != nil {
 		n.TSetFresh(false)
 	}

@@ -893,8 +893,8 @@ func TestGenerateStreamKeepsBatchBodies(t *testing.T) {
 			}
 			table := func(code []byte) string {
 				src := string(code)
-				i := strings.Index(src, "rules = []*pegort.Rule{")
-				return src[i : i+strings.Index(src[i:], "\n\t}\n")]
+				i := strings.Index(src, "var rulesSpec = [...]pegort.RuleSpec{")
+				return src[i : i+strings.Index(src[i:], "\n}\n")]
 			}
 			if table(plain) != table(stream) {
 				t.Errorf("%s: rule table differs with stream generation", c.name)
