@@ -290,6 +290,11 @@ func TestVerifyRejects(t *testing.T) {
 	}{
 		{"exit to a block that does not enclose it", newFunc(&Block{Label: inner}, &Exit{To: inner}), "does not enclose"},
 		{"continue outside its loop", newFunc(&Block{Label: outer, Body: []Stmt{&Continue{To: outer}}}), "continue"},
+		// The printer writes break and continue without labels, which reach the innermost loop only.
+		{"exit to an outer loop", newFunc(&Loop{Label: outer, Body: []Stmt{
+			&Loop{Label: inner, Body: []Stmt{&Exit{To: outer}, &Continue{To: outer}, &Exit{To: inner}}}}}), "not the innermost"},
+		{"continue of an outer loop", newFunc(&Loop{Label: outer, Body: []Stmt{
+			&Loop{Label: inner, Body: []Stmt{&Continue{To: outer}, &Exit{To: inner}}}, &Exit{To: outer}}}), "continue of a loop that is not the innermost"},
 		{"undeclared variable", newFunc(&Set{Dst: []LValue{RegPos}, X: []Expr{&Use{V: stray}}}), "not declared"},
 		{"assignment arity", newFunc(&Set{Dst: []LValue{RegPos, &Discard{}}, X: []Expr{&Int{N: 1}}}), "1 values to 2 places"},
 		{"label used twice", newFunc(&Block{Label: inner}, &Block{Label: inner}), "label of its own"},
@@ -307,9 +312,12 @@ func TestVerifyRejects(t *testing.T) {
 			}
 		})
 	}
-	// A valid function of the same parts verifies.
+	// A valid function of the same parts verifies; an Exit may leave a loop for a block that
+	// encloses it, which the printer writes as a goto.
+	block := &Label{Name: "L3"}
 	ok := newFunc(&Block{Label: inner, Body: []Stmt{&Set{Dst: []LValue{RegPos}, X: []Expr{&Int{N: 1}}}, &Exit{To: inner}}},
-		&Loop{Label: outer, Body: []Stmt{&Step{}, &Continue{To: outer}, &Exit{To: outer}}})
+		&Loop{Label: outer, Body: []Stmt{&Step{}, &Continue{To: outer}, &Exit{To: outer}}},
+		&Block{Label: block, Body: []Stmt{&Loop{Label: &Label{}, While: &Cmp{Op: "<", L: &Int{}, R: &Int{N: 1}}, Body: []Stmt{&Exit{To: block}}}}})
 	ok.Body = append(ok.Body, &Exit{To: ok.Fail})
 	if err := Verify(ok); err != nil {
 		t.Errorf("a valid function: %v", err)

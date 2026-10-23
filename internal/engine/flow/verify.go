@@ -7,8 +7,10 @@ import (
 
 // Verify checks the invariants of the function f that hold from lowering on:
 //
-//   - an Exit names an enclosing block or loop, or the function's Fail label; a Continue names an
-//     enclosing loop; every block and loop has a label of its own;
+//   - an Exit names an enclosing block, the innermost enclosing loop or the function's Fail label;
+//     a Continue names the innermost enclosing loop; every block and loop has a label of its own.
+//     A loop is left or continued only from its own body, outside nested loops, as a break or
+//     continue without a label does;
 //   - every variable read or assigned is an entry variable of f or one of its Vars, each listed
 //     once; a local function has the entry variables, a framed one none, and its Cut is one of its
 //     Vars;
@@ -127,9 +129,15 @@ func (v *verifier) stmt(s Stmt) error {
 		if s.To != v.f.Fail && !slices.Contains(v.open, s.To) {
 			return fmt.Errorf("exit to %q, which does not enclose it", s.To.Name)
 		}
+		if slices.Contains(v.loops, s.To) && s.To != v.loops[len(v.loops)-1] {
+			return fmt.Errorf("exit to a loop that is not the innermost one")
+		}
 	case *Continue:
 		if !slices.Contains(v.loops, s.To) {
 			return fmt.Errorf("continue of a loop that does not enclose it")
+		}
+		if s.To != v.loops[len(v.loops)-1] {
+			return fmt.Errorf("continue of a loop that is not the innermost one")
 		}
 	case *Set:
 		n := len(s.X)
