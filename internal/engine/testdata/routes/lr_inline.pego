@@ -1,0 +1,6 @@
+// Left-recursion leaders whose growing alternatives stay in the leader's own body: captures,
+// predicates in lookaheads, a cut, recovery and repeated captures, with no action per alternative.
+rule main string = a:a ";" b:b ";" c:c $$ => text($a) + ";" + text($b) + ";" + $c
+rule a = a "," x:[a-z] &(y:[a-z0-9] {text($y) != "q"}) !("z" {text($x) != "z"}) / "(" _|_ [0-9] ")" / [0-9]
+rule b = b "," ([a-z] #recover(skip=[^,;]*)) / b "+" (x:[a-z] y:[0-9]?)+ / [0-9]
+rule c string = (c "," x:[a-z]+ / x:[0-9]) => text($x)

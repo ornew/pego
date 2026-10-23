@@ -1,0 +1,3 @@
+// A leader with captures and predicates inside positive and negative lookaheads, and a cut.
+rule main string = e:e $$ => $e
+rule e string = (l:e &(a:[a-z] {text($a) != "z"}) !("q" {$l != "z"}) c:[a-z] => $l + text($c)) / ("(" _|_ m:[0-9] ")" => text($m)) / (d:[0-9] => text($d))

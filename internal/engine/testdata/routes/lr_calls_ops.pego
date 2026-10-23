@@ -1,0 +1,11 @@
+// A leader that calls an Operators Rule, and an Operators Rule whose operands call leaders. The
+// actions read the leaders' captures through text().
+rule main string = e:lst $$ => $e
+rule lst string = (l:lst ";" o:ops => $l + ";" + text($o)) / (o:ops => $o)
+rule ops string = operators {
+    skip " "*
+    operand "[" s:lst "]" => "[" + text($s) + "]"
+    operand p:path => text($p)
+    level { infix left "+" => $lhs + "+" + $rhs }
+}
+rule path string = (l:path "." n:[a-z]+ => $l + "." + text($n)) / (n:[a-z]+ => text($n))

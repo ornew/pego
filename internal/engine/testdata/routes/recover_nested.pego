@@ -1,0 +1,3 @@
+// Recovery bodies with repeated captures, lookaheads, a cut and nested recovery.
+rule main string = "<" s:items ">" $$ => $s
+rule items string = xs:(x:[a-z] &(y:[a-z0-9] {len($y) == 1})? ("!" _|_ [0-9] / [0-9]?) #recover(skip=[^a-z>]*))* #recover(skip=[^>]*) => "items"

@@ -1,0 +1,3 @@
+// A leader whose growing alternative repeats captures, and recovers inside the repetition.
+rule main string = e:e $$ => $e
+rule e string = (l:e "," xs:(x:[a-z] #recover(skip=[^,a-z]*))+ => $l + ",") / (t:[0-9]+ => text($t))

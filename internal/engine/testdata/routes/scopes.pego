@@ -1,0 +1,5 @@
+// Scope shapes of framed bodies: a capture used only inside a lookahead, one label in several
+// alternatives, a repetition of captures and a projection of the leader's own value.
+type P = { A string; N int }
+rule main P = p:lr $$ => $p
+rule lr P = (l:lr "," x:([a-z] &(z:"z"? {len($z) <= 1}) !"z") => P{A: $l.A + text($x), N: $l.N + 1}) / (v:[a-z] bs:(b:[0-9])* => P{A: text($v), N: len($bs)}) / ("#" #recover(skip=[^,]*) => P{A: "#", N: 0})

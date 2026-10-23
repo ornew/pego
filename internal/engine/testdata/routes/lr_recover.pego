@@ -1,0 +1,4 @@
+// A left-recursion leader whose growing alternative recovers.
+rule main string = e:e $$ => $e
+rule e string = (l:e "+" r:(t #recover(skip=[^+]*)) => $l + "+") / (t:t => $t)
+rule t string = d:[0-9]+ => text($d)
