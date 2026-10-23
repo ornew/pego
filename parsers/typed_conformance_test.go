@@ -575,10 +575,6 @@ var typedDivergence = map[string][]string{
 		// The TypeScript generator writes If.Else as TypedValue, where the join of its alternatives is
 		// a union; see the TypeScript join in internal/engine/gen_ts_types.go.
 		"TypeScript: If.Else: want members",
-		// The TypeScript generator adds TNode<unknown> to the members of these joins (the cstJoin
-		// member in internal/engine/gen_ts_types.go), so their members are not the joined types alone.
-		"TypeScript: Block.Body: want members",
-		"TypeScript: Program.Body: want members",
 	},
 }
 

@@ -433,3 +433,89 @@ check(r.value!.start === 0 && r.value!.end === 2 && stable(r.value).length > 0, 
 `
 	runTypedTSFixture(t, src, consumer, GenOptions{}, "")
 }
+
+// A join with the error member must not gain an open-node member, whether it is named by an alias
+// or inferred for a field: both forms share one TypeScript union and one recipe.
+func TestGeneratedTypedErrorJoinHasNoOpenMember(t *testing.T) {
+	if cstJoin(joinTy{alts: []ty{namedTy{name: "A", kind: 's'}, tyErr}}) {
+		t.Error("cstJoin counts the error member as an open node")
+	}
+	if !cstJoin(joinTy{alts: []ty{namedTy{name: "A", kind: 's'}, tyInt}}) {
+		t.Error("cstJoin must keep counting a scalar member as an open node")
+	}
+	// The raw spelling of node[_] is an open member, with or without error next to it.
+	if !cstJoin(joinTy{alts: []ty{namedTy{name: "A", kind: 's'}, nodeTy{value: tyTop}}}) {
+		t.Error("cstJoin does not count a raw node[_] member as an open node")
+	}
+	if !cstJoin(joinTy{alts: []ty{namedTy{name: "A", kind: 's'}, nodeTy{value: tyTop}, tyErr}}) {
+		t.Error("cstJoin does not count a raw node[_] member next to error as an open node")
+	}
+	src := `type Block = { Body []Stmt }
+type Let = { N string }
+type Stmt ~ Let | Block | error
+rule main Block = body:stmts => Block{Body: $body}
+rule stmts = ss:(s:stmt)* => map($ss, (x) => x.$s)
+rule stmt Stmt = s:(let / block) #recover(skip=[^;{}]+ ";"?) => $s
+rule block Block = "{" body:stmts "}" => Block{Body: $body}
+rule let Let = n:([a-z]+) ";" => Let{N: text($n)}`
+	g, err := parseTest(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files, err := GenerateTS(g, GenOptions{Types: true, Start: "main"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range files {
+		if f.Path == "types.ts" && strings.Contains(string(f.Content), "Block | TNode<unknown>") {
+			t.Errorf("types.ts adds an open node to the join with error:\n%s", f.Content)
+		}
+		if f.Path == "parser.ts" && strings.Contains(string(f.Content), "fallback:") {
+			t.Errorf("parser.ts has an open-node fallback for the join with error")
+		}
+	}
+	goFiles, err := Generate(g, GenOptions{Types: true, Start: "main", Module: "example.com/m", Package: "p"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range goFiles {
+		if strings.Contains(string(f.Content), "TNode[any]) isStmt") {
+			t.Errorf("%s makes the open node a member of the join with error", f.Path)
+		}
+	}
+}
+
+// A join with node[_] keeps its open member in the TypeScript union and the runtime fallback, with
+// or without error in it.
+func TestGeneratedTypedOpenJoinKeepsOpenMember(t *testing.T) {
+	src := `type Let = { N string }
+type Box = { Items []Item }
+type Item ~ Let | node[_] | error
+rule main Box = items:item* => Box{Items: $items.Value}
+rule item Item = let / any
+rule let Let = n:([a-z]+) ";" => Let{N: text($n)}
+rule any node[_] = x:[0-9]+ ";"`
+	g, err := parseTest(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files, err := GenerateTS(g, GenOptions{Types: true, Start: "main"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var types, parser string
+	for _, f := range files {
+		switch f.Path {
+		case "types.ts":
+			types = string(f.Content)
+		case "parser.ts":
+			parser = string(f.Content)
+		}
+	}
+	if !strings.Contains(types, "RecoveredError | null | Let | TNode<unknown>") {
+		t.Errorf("types.ts lacks the open member of the join:\n%s", types)
+	}
+	if !strings.Contains(parser, "fallback:") {
+		t.Error("parser.ts lacks the open-node fallback of the join")
+	}
+}

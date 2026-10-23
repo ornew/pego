@@ -442,8 +442,13 @@ func (t *typedGen) nodeJoin(u joinTy) bool {
 	return true
 }
 
-// cstJoin reports whether the join has members that stay *Node.
+// cstJoin reports whether the join has members that stay *Node. The members are read as
+// joinMembers writes them, so a join that is spelled with node[_] or error has the same answer as
+// the alias that names it: node[_] stays a node, and error converts to an Error.
 func cstJoin(u joinTy) bool {
+	if m, ok := joinMembers(u).(joinTy); ok {
+		u = m
+	}
 	for _, a := range u.alts {
 		switch a := a.(type) {
 		case namedTy:
