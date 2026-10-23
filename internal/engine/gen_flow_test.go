@@ -65,6 +65,71 @@ func flowDiff(want, got string) string {
 	return firstDiff(w, g)
 }
 
+// TestFlowDiffDetectsMutations checks that the comparison of TestFlowMatchesDirectRules reports
+// a parser printed from Flow IR that differs from dgen's in a statement, also next to the line
+// of unread variables that it leaves out, while it ignores a change of that line alone.
+func TestFlowDiffDetectsMutations(t *testing.T) {
+	opts := GenOptions{Types: true, TypedOnly: true}
+	mutations := []struct {
+		name   string
+		mutate func(string) (string, bool)
+		found  bool // whether flowDiff must report the mutated parser
+	}{
+		{"position step", func(s string) (string, bool) {
+			return strings.Replace(s, "p.Pos++\n", "p.Pos += 2\n", 1), strings.Contains(s, "p.Pos++\n")
+		}, true},
+		{"failure jump dropped", func(s string) (string, bool) {
+			i := strings.Index(s, "\t\tgoto fail\n")
+			if i < 0 {
+				return s, false
+			}
+			return s[:i] + s[i+len("\t\tgoto fail\n"):], true
+		}, true},
+		{"statement after the unread line", func(s string) (string, bool) {
+			loc := flowUnreadLine.FindStringIndex(s)
+			if loc == nil {
+				return s, false
+			}
+			return s[:loc[1]] + "\tp.Pos = 0\n" + s[loc[1]:], true
+		}, true},
+		{"unread line changed", func(s string) (string, bool) {
+			loc := flowUnreadLine.FindStringIndex(s)
+			if loc == nil {
+				return s, false
+			}
+			return s[:loc[0]] + "\t_ = zz9\n" + s[loc[1]:], true
+		}, false},
+	}
+	for _, m := range mutations {
+		t.Run(m.name, func(t *testing.T) {
+			applied := 0
+			for _, gc := range append(schemaCorpus(t), coreExtraGrammars...)[:60] {
+				want, _, _, ok := flowGenerate(gc.src, opts)
+				if !ok {
+					continue
+				}
+				flowOpts := opts
+				flowOpts.flowTyped = true
+				got, n, _, _ := flowGenerate(gc.src, flowOpts)
+				if n == 0 || flowDiff(want, got) != "" {
+					continue
+				}
+				mutated, ok := m.mutate(got)
+				if !ok {
+					continue
+				}
+				applied++
+				if found := flowDiff(want, mutated) != ""; found != m.found {
+					t.Errorf("%s: difference reported %v, want %v", gc.name, found, m.found)
+				}
+			}
+			if applied < 10 {
+				t.Errorf("mutation applied to %d grammars", applied)
+			}
+		})
+	}
+}
+
 // flowGenerate generates the parser of the grammar source with the options, joined into one
 // text, and returns the numbers of rules and of framed bodies and lines printed from Flow IR, or
 // reports false if the generator rejects the grammar.
