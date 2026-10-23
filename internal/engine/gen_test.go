@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strconv"
 	"strings"
@@ -614,6 +615,7 @@ func generatedTypesCases(t *testing.T) []genCase {
 rule main R = t:n #atomic => R{T: $t}
 rule n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2),
 		strings.Repeat("(", DefaultMaxDepth-1) + "x" + strings.Repeat(")", DefaultMaxDepth-1)}})
+	cases = append(cases, typedLeaderValueCases...)
 	cases = append(cases, genCase{"typed", typedGrammar, []string{"f(1,x)!?;[3];zz", "f(1,(;g();", "f(a);"}})
 	// The grammars written for direct rules also get mutated inputs, which reach other partial
 	// matches and failures than the written ones.
@@ -639,6 +641,8 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, refer
 	var imports, parsers, converters strings.Builder
 	var inputs [][]string
 	var wantErr []string
+	// wantValue holds the engine's values, as JSON, of the inputs of engineValueCases.
+	var wantValue []string
 	typedRuntime := 0
 	for i, c := range cases {
 		g, err := parseTest(c.src)
@@ -668,8 +672,17 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, refer
 		inputs = append(inputs, c.inputs)
 		prog := compile(t, c.src)
 		for _, in := range c.inputs {
-			_, err := prog.Parse("main", in)
+			n, err := prog.Parse("main", in)
 			wantErr = append(wantErr, fmt.Sprint(err))
+			value := ""
+			if engineValueCases[c.name] && err == nil {
+				b, err := json.Marshal(n)
+				if err != nil {
+					t.Fatalf("%s: input %q: %v", c.name, in, err)
+				}
+				value = string(b)
+			}
+			wantValue = append(wantValue, value)
 		}
 	}
 	write("main.go", `package main
@@ -798,6 +811,9 @@ func main() {
 			if got[k].Err != wantErr[k] {
 				t.Errorf("%s: input %q: error %s, want %s", c.name, in, got[k].Err, wantErr[k])
 			}
+			if wantValue[k] != "" && !sameJSON(got[k].Value, wantValue[k]) {
+				t.Errorf("%s: input %q: typed value %s, want the engine's %s", c.name, in, got[k].Value, wantValue[k])
+			}
 			if want, ok := aliasTypedGoldens[c.name]; ok && in == "éé" && string(got[k].Value) != want {
 				t.Errorf("%s: typed alias value is %s, want %s", c.name, got[k].Value, want)
 			}
@@ -841,4 +857,47 @@ func inputBytes(inputs [][]string) [][][]byte {
 		}
 	}
 	return out
+}
+
+// sameJSON reports whether the JSON texts a, of a typed value, and b, of the engine's value,
+// encode the same value. A typed tuple encodes as an object of the fields E0, E1, ..., which the
+// comparison reads as the array the engine's tuple encodes as.
+func sameJSON(a []byte, b string) bool {
+	var x, y any
+	if json.Unmarshal(a, &x) != nil || json.Unmarshal([]byte(b), &y) != nil {
+		return false
+	}
+	return reflect.DeepEqual(typedTupleArrays(x), y)
+}
+
+// typedTupleArrays returns the JSON value v with the objects of typed tuples as arrays.
+func typedTupleArrays(v any) any {
+	switch v := v.(type) {
+	case map[string]any:
+		elems := make([]any, len(v))
+		tuple := len(v) > 0
+		for k, x := range v {
+			i, err := strconv.Atoi(strings.TrimPrefix(k, "E"))
+			if !strings.HasPrefix(k, "E") || err != nil || i < 0 || i >= len(v) || fmt.Sprintf("E%d", i) != k {
+				tuple = false
+				break
+			}
+			elems[i] = typedTupleArrays(x)
+		}
+		if tuple {
+			return elems
+		}
+		out := make(map[string]any, len(v))
+		for k, x := range v {
+			out[k] = typedTupleArrays(x)
+		}
+		return out
+	case []any:
+		out := make([]any, len(v))
+		for i, x := range v {
+			out[i] = typedTupleArrays(x)
+		}
+		return out
+	}
+	return v
 }

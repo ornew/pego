@@ -1490,10 +1490,10 @@ func (p *TParser) finishValue(r *TRule, f *TCaptureFrame, v any, start int) any 
 	}
 	n := AsTval(v)
 	if n == nil {
-		if r.OperatorsRule != nil {
-			return v // the lines made the value, such as the result of an action
-		}
-		return nil
+		// A value other than a node passes through as it is: the result of an action, of an
+		// Operators Rule's lines or of a rule the body calls, such as an alternative of a
+		// left-recursion leader. The engine passes it on in a box.
+		return v
 	}
 	n.TSetFresh(false)
 	return n
