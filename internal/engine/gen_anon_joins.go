@@ -24,7 +24,7 @@ type anonJoin struct {
 // types of fields, of list elements and options inside them, of aliases, and the value types of
 // rules, in the order of the declarations of the file and of the fields in them. A join is
 // returned once for the same set of members, in the order of its first appearance there. Each has at least two distinct members, all of them declared node types (a struct or
-// a named node type), besides error; a join with a member that is not a declared node type, such as
+// a named node type), besides error, or one declared node type and error; a join with a member that is not a declared node type, such as
 // node[string] or a list, has no interface to give and keeps its Go type.
 func (r *valueResolver) anonJoins() []anonJoin {
 	aliasOf := map[string]string{} // the set of the members of an alias join -> the alias
@@ -121,11 +121,12 @@ func (r *valueResolver) anonJoins() []anonJoin {
 }
 
 // joinKey returns the members of a join as anonJoins compares them, and whether the join is one
-// that has an interface: at least two distinct members, all of them declared node types. Error is
-// no member to compare: it implements every interface of a join.
+// that has an interface: at least two distinct members, or one with error, all of them declared
+// node types. Error is no member to compare: it implements every interface of a join.
 func joinKey(u joinTy) (joinTy, bool) {
 	var alts []ty
 	seen := map[string]bool{}
+	hasError := false
 	var add func(x ty) bool
 	add = func(x ty) bool {
 		if m, ok := joinMembers(x).(joinTy); ok {
@@ -140,7 +141,8 @@ func joinKey(u joinTy) (joinTy, bool) {
 		switch a := x.(type) {
 		case namedTy:
 			if a == tyError {
-				return true // every interface of a join has the Error member
+				hasError = true // every interface of a join has the Error member
+				return true
 			}
 			if a.kind != 's' {
 				return false
@@ -158,14 +160,15 @@ func joinKey(u joinTy) (joinTy, bool) {
 		}
 		return true
 	}
-	if !add(u) || len(alts) < 2 {
+	// A declared node type with error is a join, too: the value of a rule that recovers.
+	if !add(u) || len(alts) < 2 && !(len(alts) == 1 && hasError) {
 		return joinTy{}, false
 	}
 	return joinTy{alts}, true
 }
 
 // anonJoinName returns the Go name of the interface of an undeclared join: its members in the order
-// written, joined by Or.
+// written, joined by Or; one declared node type and error is that type and Error.
 func anonJoinName(u joinTy) string {
 	parts := make([]string, len(u.alts))
 	for i, a := range u.alts {
@@ -176,7 +179,19 @@ func anonJoinName(u joinTy) string {
 			parts[i] = a.name
 		}
 	}
+	if len(parts) == 1 {
+		parts = append(parts, "Error")
+	}
 	return strings.Join(parts, "Or")
+}
+
+// anonJoinText returns the join u of anonJoins as written: one declared node type is that type and
+// error.
+func anonJoinText(u joinTy) string {
+	if len(u.alts) == 1 {
+		return u.String() + " | error"
+	}
+	return u.String()
 }
 
 // joinSetKey returns a string that is the same for joins with the same members in any order.

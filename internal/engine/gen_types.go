@@ -422,10 +422,10 @@ func (t *typedGen) name() error {
 		if _, ok := t.anon[name]; !ok && !slices.Contains(t.aliases, name) {
 			name = anonJoinName(j.members)
 			if _, ok := t.g.prog.types[name]; ok {
-				return fmt.Errorf("the join %s needs a generated interface named %s, which is also the name of a type of the grammar; rename the type", j.members, name)
+				return fmt.Errorf("the join %s needs a generated interface named %s, which is also the name of a type of the grammar; rename the type", anonJoinText(j.members), name)
 			}
 			if other, ok := t.anon[name]; ok && other.String() != j.members.String() {
-				return fmt.Errorf("the joins %s and %s need generated interfaces with the same name %s", other, j.members, name)
+				return fmt.Errorf("the joins %s and %s need generated interfaces with the same name %s", anonJoinText(other), anonJoinText(j.members), name)
 			}
 			if _, ok := t.anon[name]; !ok {
 				t.anon[name] = j.members
@@ -655,7 +655,7 @@ func (t *typedGen) decls(b *strings.Builder) {
 		u := t.joinOf(name)
 		goName := name
 		if _, anon := t.anon[name]; anon {
-			fmt.Fprintf(b, "// %s is the join type %s. Error (left by #recover) also implements it.\n", goName, u)
+			fmt.Fprintf(b, "// %s is the join type %s. Error (left by #recover) also implements it.\n", goName, anonJoinText(u))
 		} else {
 			fmt.Fprintf(b, "// %s is the join type %s ~ %s. Error (left by #recover) also implements it.\n", goName, name, u)
 		}

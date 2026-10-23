@@ -203,7 +203,7 @@ func TestNamedOptionsAndErrors(t *testing.T) {
  if v,err:=p.ParseRuleAST("abort","");!reflect.DeepEqual(v,(*g.Values)(nil))||err==nil||!strings.Contains(err.Error(),"action in") {t.Fatal(v,err)}
  for _,name:=range []string{"recoverStruct","recoverTerminal","recoverUnion","recoverList","recoveryElements"} {
   v,err:=p.ParseRuleAST(name,"?");if _,ok:=err.(p.SyntaxErrors);!ok {t.Fatalf("%s: %v",name,err)}
-  switch name {case "recoverStruct":if _,ok:=v.(*g.Error);!ok {t.Fatalf("%s: %T %v",name,v,v)};case "recoverTerminal":if _,ok:=v.(*g.Recovery).T.(*g.Error);!ok {t.Fatalf("%s: %T %v",name,v,v)};case "recoverUnion":if _,ok:=v.(*g.Error);!ok {t.Fatal(v)};case "recoverList":if _,ok:=v.(*g.Error);!ok {t.Fatal(v)};case "recoveryElements":xs:=v.([]any);if len(xs)!=1 {t.Fatal(v)};if _,ok:=xs[0].(*g.Error);!ok {t.Fatal(v)}}
+  switch name {case "recoverStruct":if _,ok:=v.(*g.Error);!ok {t.Fatalf("%s: %T %v",name,v,v)};case "recoverTerminal":if _,ok:=v.(*g.Recovery).T.(*g.Error);!ok {t.Fatalf("%s: %T %v",name,v,v)};case "recoverUnion":if _,ok:=v.(*g.Error);!ok {t.Fatal(v)};case "recoverList":if _,ok:=v.(*g.Error);!ok {t.Fatal(v)};case "recoveryElements":xs:=v.([]g.SOrError);if len(xs)!=1 {t.Fatal(v)};if _,ok:=xs[0].(*g.Error);!ok {t.Fatal(v)}}
  }
 }
 func TestStartUnchanged(t *testing.T) {
