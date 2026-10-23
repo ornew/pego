@@ -91,7 +91,7 @@ func TestGeneratedTypedDirectCuts(t *testing.T) {
 			}
 		}
 	}
-	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), typedDirectCutCases, GenOptions{})
+	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), typedDirectCutCases, GenOptions{convertTypes: true})
 }
 
 // directCuts reports whether the expression contains a cut.

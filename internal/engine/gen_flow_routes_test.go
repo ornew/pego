@@ -105,7 +105,7 @@ func TestFlowRoutesBuild(t *testing.T) {
 	for _, ordinary := range []string{"", "1"} {
 		t.Run("ordinary="+ordinary, func(t *testing.T) {
 			t.Setenv("PEGO_TEST_ORDINARY", ordinary)
-			testGeneratedTypesCorpus(t, goBin, routeCases(t), GenOptions{}, 1)
+			testGeneratedTypesCorpus(t, goBin, routeCases(t), GenOptions{convertTypes: true}, 1)
 		})
 	}
 }

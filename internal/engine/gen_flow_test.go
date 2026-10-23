@@ -222,7 +222,7 @@ func TestFlowTypedCorpus(t *testing.T) {
 	for _, ordinary := range []string{"", "1"} {
 		t.Run("ordinary="+ordinary, func(t *testing.T) {
 			t.Setenv("PEGO_TEST_ORDINARY", ordinary)
-			testGeneratedTypesCorpus(t, goBin, generatedTypesCases(t), GenOptions{})
+			testGeneratedTypesCorpus(t, goBin, generatedTypesCases(t), GenOptions{convertTypes: true})
 		})
 	}
 }
