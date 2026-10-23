@@ -105,8 +105,7 @@ type dgen struct {
 	g *generator
 	// nodeBody emits an unfinished frame-based body under the selected runtime's
 	// frame, depth, memo and finish ownership.
-	nodeBody  bool
-	localCuts bool // typed rule or unfinished frame body contains cuts
+	nodeBody bool
 	// cut is the local flag of the active choice, optional or repeat scope.
 	// An empty name discards cuts at rule entry and inside lookahead.
 	cut   string
@@ -157,23 +156,6 @@ type dscope struct {
 }
 
 func newDscope() *dscope { return &dscope{vars: map[string]string{}} }
-
-// localScope records the complete layout before structural emission can omit
-// unreachable captures. Locals are declared when matching or a term needs
-// them, preserving declaration order for already supported bodies. Their zero
-// values represent nil slots without allocating a runtime capture frame.
-func (d *dgen) localScope(names []string) *dscope {
-	s := newDscope()
-	s.names = append([]string(nil), names...)
-	return s
-}
-
-func (d *dgen) localElementScope(e grammar.Expr, build bool) *dscope {
-	if d.g.table == "trules" && !d.g.disableTypedLocalLayouts {
-		return d.localScope(d.g.typedFrameLayout(e, build).names)
-	}
-	return newDscope()
-}
 
 func (d *dgen) decl(prefix, typ string) string {
 	d.n++
@@ -360,22 +342,6 @@ func (d *dgen) mark(s *dscope, e grammar.Expr, saves bool) dmark {
 	if bindsVars(e) {
 		m.env = d.decl("x", "*Env")
 		d.line("%s = p.Env", m.env)
-	}
-	if saves && d.g.table == "trules" {
-		seen := map[string]bool{}
-		capSets(e, func(name string) {
-			if seen[name] {
-				return
-			}
-			seen[name] = true
-			k := d.capVar(s, name)
-			sv := d.decl("x", "any")
-			if d.g.goWorkControls {
-				d.step()
-			}
-			d.line("%s = %s", sv, d.rd(k))
-			m.saves = append(m.saves, [2]string{k, sv})
-		})
 	}
 	return m
 }
@@ -627,25 +593,8 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		if d.nodeBody {
 			return d.nodeCapture(e, s, build, fail)
 		}
-		if g.table != "trules" {
-			// Only value-free rules without predicates reach this emitter.
-			return d.expr(e.Expr, s, false, fail)
-		}
-		k := d.capVar(s, e.Name)
-		if _, ok := indexOf(s.names, e.Name); !ok {
-			s.names = append(s.names, e.Name)
-		}
-		var v string
-		if field := g.proj[e.Name]; field != "" {
-			v = d.projectRepeat(e.Expr.(*grammar.Repeat), field, fail)
-		} else {
-			v = d.captured(e.Expr, s, fail)
-		}
-		d.line("%s = %s", k, d.rd(v))
-		if !build {
-			return "nil"
-		}
-		return v
+		// Only value-free rules without predicates reach this emitter.
+		return d.expr(e.Expr, s, false, fail)
 	case *grammar.Top:
 		// _ matches the empty input and has no value.
 		return "nil"
@@ -653,11 +602,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		d.jump(fail)
 		return "nil"
 	case *grammar.Cut:
-		if g.table != "trules" {
-			d.bad = true
-		} else if d.cut != "" {
-			d.line("%s = true", d.cut)
-		}
+		d.bad = true
 		return "nil"
 	case *grammar.BeginInput:
 		d.failIf("p.Pos != 0", fail, "p.Expect(p.Pos, IdBeginInput)")
@@ -730,32 +675,13 @@ func (d *dgen) single(build bool) string {
 // cutExpr gives a backtracking child its own cut flag. The compile-time scope
 // is restored even when the emitted child exits through a failure label.
 func (d *dgen) cutExpr(e grammar.Expr, s *dscope, build bool, fail string) (string, string) {
-	if !d.localCuts {
-		return d.expr(e, s, build, fail), ""
-	}
-	prev := d.cut
-	cut := d.decl("cut", "bool")
-	d.line("%s = false", cut)
-	d.cut = cut
-	v := d.expr(e, s, build, fail)
-	d.cut = prev
-	return v, cut
+	return d.expr(e, s, build, fail), ""
 }
 
 func (d *dgen) cutFail(cut, fail string, cleanup ...string) {
 	if cut != "" {
 		d.failIf(d.rd(cut), fail, cleanup...)
 	}
-}
-
-func directCuts(e grammar.Expr) bool {
-	found := false
-	walkExpr(e, func(e grammar.Expr) {
-		if _, ok := e.(*grammar.Cut); ok {
-			found = true
-		}
-	})
-	return found
 }
 
 func (d *dgen) choice(e *grammar.Choice, s *dscope, build bool, fail string) string {
@@ -840,7 +766,7 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 	own := elementScoped(e.Expr)
 	es := s
 	if own {
-		es = d.localElementScope(e.Expr, build)
+		es = newDscope()
 	}
 	var start, base string
 	if build {
@@ -851,9 +777,6 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 	d.line("%s = 0", count)
 	d.loop(e.Max)
 	m := d.mark(s, e.Expr, !own)
-	if own && d.g.table == "trules" {
-		d.clearScope(es, e.Expr)
-	}
 	f := d.label()
 	v, cut := d.cutExpr(e.Expr, es, build, f)
 	if own {
@@ -998,7 +921,7 @@ func (d *dgen) scan(e *grammar.Repeat, fail string) (string, bool) {
 // projectRepeat writes a repetition that gathers the values of the capture field of its elements
 // (see generator.projectRepeat).
 func (d *dgen) projectRepeat(e *grammar.Repeat, field, fail string) string {
-	es := d.localElementScope(e.Expr, false)
+	es := newDscope()
 	start, base, count := d.decl("x", "int"), d.decl("x", "int"), d.decl("x", "int")
 	d.line("%s, %s, %s = p.Pos, len(p.KidStack), 0", start, base, count)
 	d.loop(e.Max)
@@ -1202,18 +1125,15 @@ func (d *dgen) attr(e *grammar.Attributed, i int, s *dscope, build bool, fail st
 			if a.Name == "error" {
 				d.line("p.Expect(%s, MsgBit|%d)", far, msg)
 			} else {
-				pp := "p"
-				if d.g.table == "trules" {
-					pp = "p.Parser"
-				}
-				d.line("p.MergeExpected(%s, RenamedExpected(%s, %s, %d))", far, pp, exp, msg)
+				d.line("p.MergeExpected(%s, RenamedExpected(p, %s, %d))", far, exp, msg)
 			}
 			d.jump(fail)
 			d.place(done)
 		}
 		return v
 	case "recover":
-		return d.recoverAttr(e, i, s, build, fail)
+		d.bad = true
+		return "nil"
 	}
 	return d.attr(e, i-1, s, build, fail)
 }
@@ -1291,16 +1211,13 @@ type direct struct {
 
 // directRule compiles the rule r as a direct rule, or returns nil if it keeps the general code.
 func (g *generator) directRule(r *rule) *direct {
-	if g.table == "trules" && !directEligible(r, !g.disableTypedCuts) || g.table != "trules" && !directLeanOK(r) {
+	if !directLeanOK(r) {
 		return nil
 	}
 	snap := g.snapshot()
-	d := &dgen{g: g, localCuts: g.table == "trules" && directCuts(r.bodyExpr()), reads: map[string]bool{}, used: map[string]bool{}}
+	d := &dgen{g: g, reads: map[string]bool{}, used: map[string]bool{}}
 	s := newDscope()
 	g.cur, g.proj = r, g.projections(r)
-	if g.table == "trules" && !g.disableTypedLocalLayouts {
-		s = d.localScope(g.nodeScopes[r])
-	}
 	defer func() { g.proj = nil }()
 	const fail = "fail"
 	body := d.expr(r.bodyExpr(), s, !r.lean, fail)
@@ -1330,19 +1247,7 @@ func (g *generator) directRule(r *rule) *direct {
 // finish writes what finish does for the rule r with the body's value body and the captures s,
 // leaving the rule's value in v. It reports whether the value uses start and the context c.
 func (d *dgen) finish(r *rule, s *dscope, body string) (start, ctx bool) {
-	owned := ""
-	if d.g.table == "trules" && d.g.ownsBody(r) {
-		owned = d.shared("bv", "any")
-		d.line("%s = TFreshNode(%s)", owned, d.rd(body))
-	}
-	start, ctx = d.finishValue(r, s, body)
-	if owned != "" {
-		owned = d.rd(owned)
-	}
-	if conv := d.g.typedResultConversion(r, "v", owned); conv != "" && d.g.table == "trules" && !d.bad {
-		d.line("%s", conv)
-	}
-	return start, ctx
+	return d.finishValue(r, s, body)
 }
 
 func (d *dgen) finishValue(r *rule, s *dscope, body string) (start, ctx bool) {
@@ -1481,59 +1386,6 @@ func (g *generator) directLeanBody(r *rule, d *direct) string {
 		b.WriteString("fail:\nreturn nil, false\n")
 	}
 	return g.method(r.name+" (value-free body inlined)", b.String())
-}
-
-// recoverAttr mirrors the typed runtime's full-mark recovery without general
-// matcher callbacks. Only unfinished typed bodies use runtime-owned frames.
-func (d *dgen) recoverAttr(e *grammar.Attributed, i int, s *dscope, build bool, fail string) string {
-	if !d.nodeBody || d.g.table != "trules" {
-		d.bad = true
-		return "nil"
-	}
-	d.line("// Recovery inlined under the runtime-owned frame.")
-	m := d.mark(s, e, true)
-	mark, far, expected := d.decl("x", "ExpMark"), d.decl("x", "int"), d.decl("x", "[]ExpID")
-	d.line("%s = p.Isolate(p.Pos)", mark)
-	f, done := d.label(), d.label()
-	var v string
-	if build {
-		v = d.decl("v", d.g.valType())
-	}
-	inner := d.attr(e, i-1, s, build, f)
-	if build {
-		d.line("%s = %s", v, d.rd(d.shapeOne(e.Expr, inner, m.pos, true)))
-	}
-	d.line("%s, %s = p.Unisolate(%s)", far, expected, d.rd(mark))
-	d.line("p.MergeExpected(%s, %s)", d.rd(far), d.rd(expected))
-	if d.used[f] {
-		d.jump(done)
-		d.place(f)
-		d.line("%s, %s = p.Unisolate(%s)", far, expected, mark)
-		d.line("%s = p.Keep(%s)", expected, d.rd(expected))
-		d.reset(m)
-		skipFail := d.label()
-		skip, _ := e.Attrs[i].Arg("skip")
-		d.expr(skip, s, false, skipFail)
-		d.failIf("p.Pos == "+d.rd(m.pos), skipFail)
-		err := d.decl("x", "*SyntaxError")
-		d.line("%s = p.MakeError(%s, %s)", err, d.rd(far), d.rd(expected))
-		d.line("p.Recovered = append(p.Recovered, %s)", d.rd(err))
-		if build {
-			d.line("%s = NewTError(%s, p.Pos, p.Text(%s, p.Pos), p.RecoveryErrorText(%s))", v, d.rd(m.pos), d.rd(m.pos), d.rd(err))
-		} else if build {
-			d.line("%s = nil", v)
-		}
-		d.jump(done)
-		d.place(skipFail)
-		d.reset(m)
-		d.line("p.MergeExpected(%s, %s)", d.rd(far), d.rd(expected))
-		d.jump(fail)
-		d.place(done)
-	}
-	if !build {
-		return "nil"
-	}
-	return v
 }
 
 func directHasRecovery(e grammar.Expr) bool {

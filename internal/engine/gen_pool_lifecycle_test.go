@@ -4,7 +4,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -22,45 +21,34 @@ rule repeated A = t:((x:"b") #repeat(2) #cut) => A{Text: text($t)}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, reference := range []bool{false, true} {
-		name := "direct"
-		if reference {
-			name = "general"
+	name := "direct"
+	t.Run(name, func(t *testing.T) {
+		code, err := generateCode(g, GenOptions{Package: "poolfixture", Start: "main", Types: true})
+		if err != nil {
+			t.Fatal(err)
 		}
-		t.Run(name, func(t *testing.T) {
-			code, err := generateCode(g, GenOptions{Package: "poolfixture", Start: "main", Types: true, disableTypedCuts: reference})
-			if err != nil {
+		dir := os.Getenv("PEGO_TYPED_POOL_DIR")
+		if dir == "" {
+			dir = t.TempDir()
+		} else {
+			if err := os.MkdirAll(dir, 0o755); err != nil {
 				t.Fatal(err)
 			}
-			dir := os.Getenv("PEGO_TYPED_POOL_DIR")
-			if dir == "" {
-				dir = t.TempDir()
-			} else {
-				if reference {
-					dir = filepath.Join(dir, name)
-				}
-				if err := os.MkdirAll(dir, 0o755); err != nil {
-					t.Fatal(err)
-				}
+		}
+		fixture := typedPoolFixture
+		for name, contents := range map[string][]byte{
+			"parser.go": code, "pool_test.go": []byte(fixture), "go.mod": []byte(testGoMod("poolfixture")),
+		} {
+			if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
+				t.Fatal(err)
 			}
-			fixture := typedPoolFixture
-			if reference {
-				fixture = strings.Replace(fixture, "const generalCapture = false", "const generalCapture = true", 1)
-			}
-			for name, contents := range map[string][]byte{
-				"parser.go": code, "pool_test.go": []byte(fixture), "go.mod": []byte(testGoMod("poolfixture")),
-			} {
-				if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
-					t.Fatal(err)
-				}
-			}
-			cmd := exec.Command("go", "test", "-count=1", "-run", "^TestTypedPool")
-			cmd.Dir = dir
-			if out, err := cmd.CombinedOutput(); err != nil {
-				t.Fatalf("generated typed pool: %v\n%s", err, out)
-			}
-		})
-	}
+		}
+		cmd := exec.Command("go", "test", "-count=1", "-run", "^TestTypedPool")
+		cmd.Dir = dir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("generated typed pool: %v\n%s", err, out)
+		}
+	})
 }
 
 // TestGeneratedUntypedPoolRetention verifies that the untyped generated parser

@@ -39,21 +39,19 @@ func TestGeneratedGoActionErrorWork(t *testing.T) {
 			t.Fatal(err)
 		}
 		for _, convert := range []bool{false, true} {
-			for _, general := range []bool{false, true} {
-				pkg := fmt.Sprintf("action_%s_%v_%v", c.name, convert, general)
-				code, err := generateCode(g, GenOptions{Package: pkg, Start: c.start, Types: true, Recognize: true, convertTypes: convert, disableTypedCuts: general})
-				if err != nil {
+			pkg := fmt.Sprintf("action_%s_%v", c.name, convert)
+			code, err := generateCode(g, GenOptions{Package: pkg, Start: c.start, Types: true, Recognize: true, convertTypes: convert})
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(dir, pkg)
+			if err := os.Mkdir(path, 0755); err != nil {
+				t.Fatal(err)
+			}
+			consumer := strings.NewReplacer("PACKAGE", pkg, "WANT_ERROR", fmt.Sprintf("%q", c.want), "CHECK_RECOGNIZE", fmt.Sprint(c.recognize)).Replace(generatedGoActionErrorConsumer)
+			for name, data := range map[string][]byte{"parser.go": code, "action_test.go": []byte(consumer)} {
+				if err := os.WriteFile(filepath.Join(path, name), data, 0644); err != nil {
 					t.Fatal(err)
-				}
-				path := filepath.Join(dir, pkg)
-				if err := os.Mkdir(path, 0755); err != nil {
-					t.Fatal(err)
-				}
-				consumer := strings.NewReplacer("PACKAGE", pkg, "WANT_ERROR", fmt.Sprintf("%q", c.want), "CHECK_RECOGNIZE", fmt.Sprint(c.recognize)).Replace(generatedGoActionErrorConsumer)
-				for name, data := range map[string][]byte{"parser.go": code, "action_test.go": []byte(consumer)} {
-					if err := os.WriteFile(filepath.Join(path, name), data, 0644); err != nil {
-						t.Fatal(err)
-					}
 				}
 			}
 		}

@@ -21,7 +21,7 @@ func TestGeneratedTypedLocalLayoutWorkloads(t *testing.T) {
 			testGeneratedTypedBodyWorkload(t, typedLocalLayoutWorkloadTypes+c.src,
 				typedLocalLayoutWorkloadFixture, filepath.Join(dir, c.name),
 				"// body, invoked as by invoke (body inlined)\nfunc i",
-				GenOptions{disableTypedLocalLayouts: true})
+				GenOptions{})
 		})
 	}
 }
@@ -61,8 +61,7 @@ func BenchmarkTypedLocalLayoutGeneration(b *testing.B) {
 	for _, c := range typedLocalLayoutWorkloads {
 		cases = append(cases, struct{ name, src string }{c.name, typedLocalLayoutWorkloadTypes + c.src})
 	}
-	opts := GenOptions{Package: "localfixture", Start: "main", Types: true, Recognize: true,
-		disableTypedLocalLayouts: os.Getenv("PEGO_REFERENCE_LOCAL_LAYOUTS") == "1"}
+	opts := GenOptions{Package: "localfixture", Start: "main", Types: true, Recognize: true}
 	for _, c := range cases {
 		b.Run(c.name, func(b *testing.B) {
 			g, err := parseTest(c.src)

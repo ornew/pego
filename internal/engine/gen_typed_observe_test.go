@@ -104,7 +104,7 @@ rule part WithTrace = t:("a") #atomic => WithTrace{Text: text($t)}`, input: "a",
 			if convert {
 				pkg += "_converted"
 			}
-			opts := GenOptions{Package: "reference_" + pkg, Start: "main", Types: true, Recognize: true, convertTypes: convert, disableTypedCuts: f.general, disableTypedFrameLayouts: f.general}
+			opts := GenOptions{Package: "reference_" + pkg, Start: "main", Types: true, Recognize: true, convertTypes: convert}
 			generatePackageIn(t, dir, "typedtracefixture", opts.Package, g, opts)
 			opts.Package, opts.Observability = pkg, true
 			code := generatePackageIn(t, dir, "typedtracefixture", pkg, g, opts)

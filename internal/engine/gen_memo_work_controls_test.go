@@ -37,21 +37,19 @@ rule word Word = t:(x:[a-z]+ #atomic {text($x) == v}) => Word{Text: text($t)}`
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(testGoMod("memofixture")), 0644); err != nil {
 		t.Fatal(err)
 	}
-	for _, general := range []bool{false, true} {
-		pkg := fmt.Sprintf("memo_%v", general)
-		code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, disableTypedCuts: general})
-		if err != nil {
+	pkg := "memo"
+	code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, pkg)
+	if err := os.Mkdir(path, 0755); err != nil {
+		t.Fatal(err)
+	}
+	fixture := strings.NewReplacer("PACKAGE", pkg).Replace(generatedGoMemoConsumer)
+	for name, data := range map[string][]byte{"parser.go": code, "memo_test.go": []byte(fixture)} {
+		if err := os.WriteFile(filepath.Join(path, name), data, 0644); err != nil {
 			t.Fatal(err)
-		}
-		path := filepath.Join(dir, pkg)
-		if err := os.Mkdir(path, 0755); err != nil {
-			t.Fatal(err)
-		}
-		fixture := strings.NewReplacer("PACKAGE", pkg).Replace(generatedGoMemoConsumer)
-		for name, data := range map[string][]byte{"parser.go": code, "memo_test.go": []byte(fixture)} {
-			if err := os.WriteFile(filepath.Join(path, name), data, 0644); err != nil {
-				t.Fatal(err)
-			}
 		}
 	}
 	cmd := exec.Command("go", "test", "-count=1", "./...")

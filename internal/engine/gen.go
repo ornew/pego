@@ -82,15 +82,6 @@ type GenOptions struct {
 	// disableKeepNodes leaves the Node rule functions out of a typed-only parser that needs them
 	// (a negative control for tests).
 	disableKeepNodes bool
-	// disableTypedCuts keeps the general typed cut route for differential tests
-	// and latest-generator performance controls. It adds no parser-time branch.
-	disableTypedCuts bool
-	// disableTypedFrameLayouts retains structural capture discovery for
-	// same-generator tests and measurements without a parser-time option.
-	disableTypedFrameLayouts bool
-	// disableTypedLocalLayouts retains structural discovery of Go-local captures
-	// for same-generator controls without a matching-time selector.
-	disableTypedLocalLayouts bool
 	// disableMethodSharing and disableLiteralSharing retain duplicate generated
 	// helpers and read-only tables for independent generation-time controls.
 	// Neither adds a selector to the generated parser.
@@ -207,7 +198,7 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
 		}
 	}
-	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap}
+	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap}
 	if opts.Stream {
 		gen.streamStart = start
 	}
@@ -518,12 +509,9 @@ type generator struct {
 	typedErr            error             // the first typed rule or line that Flow IR does not print
 	// lean is set when the output has no work controls and no Documents, so each typed rule body
 	// is its ordinary form and may call the runtime's ordinary-parse helpers directly.
-	lean                     bool
-	disableTypedCuts         bool
-	disableTypedFrameLayouts bool
-	disableTypedLocalLayouts bool
-	disableMethodSharing     bool
-	disableLiteralSharing    bool
+	lean                  bool
+	disableMethodSharing  bool
+	disableLiteralSharing bool
 	// Only exact emitted bodies with the same signature share a helper. Rule
 	// wrappers, memo IDs, frame layouts and expectation IDs remain in the code.
 	methodNames                 map[generatedMethod]string

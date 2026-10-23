@@ -22,24 +22,13 @@ rule row Row = "let" " " #cut key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" / 
 	if err != nil {
 		t.Fatal(err)
 	}
-	// The control must affect only the typed cut route.
-	nodeOpts := GenOptions{Package: "cutfixture", Start: "main"}
-	node, err := generateCode(g, nodeOpts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	nodeOpts.disableTypedCuts = true
-	nodeRef, err := generateCode(g, nodeOpts)
-	if err != nil || !bytes.Equal(node, nodeRef) {
-		t.Fatalf("typed cut control changed Node output: %v", err)
-	}
 	dir := os.Getenv("PEGO_TYPED_CUT_DIR")
 	if dir == "" {
 		dir = t.TempDir()
 	}
 	var want []byte
-	for _, variant := range []string{"direct", "general"} {
-		code, err := generateCode(g, GenOptions{Package: "cutfixture", Start: "main", Types: true, disableTypedCuts: variant == "general"})
+	for _, variant := range []string{"direct"} {
+		code, err := generateCode(g, GenOptions{Package: "cutfixture", Start: "main", Types: true})
 		if err != nil {
 			t.Fatal(err)
 		}

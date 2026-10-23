@@ -11,16 +11,10 @@ import (
 // match and node select the value representation without changing the typed
 // emitter's construction or ownership policy.
 func (d *dgen) match(start, text string) string {
-	if d.g.table == "trules" {
-		return fmt.Sprintf("p.NewMatch(%s, p.Pos, %s, true)", start, text)
-	}
 	return fmt.Sprintf("p.NewTerminal(%s, %s)", start, text)
 }
 
 func (d *dgen) node(typ, start, kids string) string {
-	if d.g.table == "trules" {
-		return fmt.Sprintf("p.NewNode(%q, %s, p.Pos, %s)", typ, start, kids)
-	}
 	kind := "RawKindSeq"
 	if typ == TypeList {
 		kind = "RawKindList"
@@ -78,7 +72,7 @@ func (d *dgen) nodeRepeat(e *grammar.Repeat, s *dscope, build bool, fail, field 
 	own := field != "" || elementScoped(e.Expr)
 	es := s
 	if own {
-		es = d.frameBodyScope(e.Expr, build && field == "")
+		es = newDscope()
 	}
 	var start, base, frame, prev, names string
 	if build {
@@ -123,19 +117,12 @@ func (d *dgen) nodeRepeat(e *grammar.Repeat, s *dscope, build bool, fail, field 
 			} else {
 				attached := d.decl("v", d.g.valType())
 				vals := d.rd(frame)
-				if d.g.table == "trules" {
-					vals += ".Vals"
-				}
 				d.line("%s = p.AttachCaptures(%s, %s, %s, %s, p.Pos)", attached, d.rd(v), names, vals, d.rd(m.pos))
 				v = attached
 			}
 		}
 		fmt.Fprintf(&d.g.vars, "var %s = %s\n", names, goStrings(d.frameScope(es).names))
 		d.g.decide(decScope, e.Expr, genDecision{names: d.frameScope(es).names})
-		if d.g.table == "trules" && field == "" {
-			d.line("p.DropTrail(%s.Trail)", d.rd(m.frameMark))
-			d.line("p.FreeFrame(%s)", d.rd(frame))
-		}
 	}
 	d.line("%s++", count)
 	if build {
@@ -203,22 +190,9 @@ func (g *generator) directFrameBody(r *rule, scope *scope, comment string) strin
 	d := &dgen{g: g, nodeBody: true, reads: map[string]bool{}, used: map[string]bool{}}
 	s := newDscope()
 	g.cur, g.proj = r, g.projections(r)
-	if g.table == "trules" && !g.disableTypedFrameLayouts {
-		// The Node rule owns LR frame metadata, including dead captures.
-		s.frame = newScope()
-		for _, name := range g.nodeScopes[r] {
-			s.frame.slot(name)
-		}
-	}
 	defer func() { g.proj = nil }()
-	d.frameCuts(r.bodyExpr())
 	v := d.expr(r.bodyExpr(), s, !r.lean, "fail")
 	if r.action != nil && !frameRefsKnown(r.action, d.frameScope(s)) {
-		d.bad = true
-	}
-	if g.table == "trules" && !slices.Equal(d.frameScope(s).names, g.nodeScopes[r]) {
-		// Runtime-owned frames use the Node rule's shared scope metadata.
-		// Keep the general body when structural lowering changes that layout.
 		d.bad = true
 	}
 	if d.bad {
@@ -232,16 +206,10 @@ func (g *generator) directFrameBody(r *rule, scope *scope, comment string) strin
 // action, rule finalization and recursion/depth bookkeeping.
 func (g *generator) finishFrameBody(d *dgen, s *dscope, scope *scope, v, comment string) string {
 	if !d.dead {
-		if d.localCuts {
-			d.line("p.Cut = %s", d.rd(d.cut))
-		}
 		d.line("return %s, true", d.rd(v))
 	}
 	if d.used["fail"] {
 		d.place("fail")
-		if d.localCuts {
-			d.line("p.Cut = %s", d.rd(d.cut))
-		}
 		d.line("return nil, false")
 	}
 	var b strings.Builder
@@ -258,78 +226,4 @@ func (g *generator) finishFrameBody(d *dgen, s *dscope, scope *scope, v, comment
 	b.WriteString(d.b.String())
 	*scope = *d.frameScope(s)
 	return g.method(comment, b.String())
-}
-
-// frameCuts preserves the caller's root cut scope while nested backtracking
-// constructs use their own lexical flags. Only typed unfinished bodies use it.
-func (d *dgen) frameCuts(e grammar.Expr) {
-	if d.g.table != "trules" || !directCuts(e) {
-		return
-	}
-	d.localCuts = true
-	d.cut = d.decl("cut", "bool")
-	d.line("%s = p.Cut", d.cut)
-}
-
-// frameBodyScope preserves the general emitter's layout even when
-// structural lowering omits an unreachable capture or alternative.
-func (d *dgen) frameBodyScope(e grammar.Expr, build bool) *dscope {
-	s := newDscope()
-	if d.g.table == "trules" && !d.g.disableTypedFrameLayouts {
-		s.frame = d.g.typedFrameLayout(e, build)
-	}
-	return s
-}
-
-// typedFrameLayout records frame slots without emitting general methods. It
-// follows generator.expr's build policy and visits unreachable syntax: the
-// runtime clears all slots before matching, so omitted captures remain nil.
-func (g *generator) typedFrameLayout(e grammar.Expr, build bool) *scope {
-	s := newScope()
-	var visit func(grammar.Expr, bool)
-	visit = func(e grammar.Expr, build bool) {
-		switch e := e.(type) {
-		case *grammar.Capture:
-			if !build && g.cur.predCaps != nil && !g.cur.predCaps[e.Name] {
-				visit(e.Expr, false)
-				return
-			}
-			s.slot(e.Name)
-			if g.proj[e.Name] == "" {
-				visit(e.Expr, true)
-			}
-		case *grammar.Seq:
-			for _, it := range e.Items {
-				visit(it, build)
-			}
-		case *grammar.Choice:
-			for _, alt := range e.Alts {
-				visit(alt, build)
-			}
-		case *grammar.Repeat:
-			if !elementScoped(e.Expr) {
-				visit(e.Expr, build)
-			}
-		case *grammar.Optional:
-			visit(e.Expr, build)
-		case *grammar.And:
-			visit(e.Expr, build && hasCaptures(e.Expr))
-		case *grammar.Not:
-			visit(e.Expr, false)
-		case *grammar.Atomic:
-			visit(e.Expr, false)
-		case *grammar.Discard:
-			visit(e.Expr, false)
-		case *grammar.Attributed:
-			visit(e.Expr, build)
-			for _, a := range e.Attrs {
-				if a.Name == "recover" {
-					skip, _ := a.Arg("skip")
-					visit(skip, false)
-				}
-			}
-		}
-	}
-	visit(e, build)
-	return s
 }

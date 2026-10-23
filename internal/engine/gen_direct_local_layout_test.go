@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -86,20 +85,10 @@ func TestGeneratedTypedLocalLayouts(t *testing.T) {
 		if err != nil || !strings.Contains(string(code), "rt.TParse(trules") || !localBodyInlined(code) {
 			t.Fatalf("%s: typed local body unavailable: %v", c.name, err)
 		}
-		opts.Types = false
-		nodeReference, err := generateCode(ast, opts)
-		if err != nil {
-			t.Fatal(err)
-		}
-		opts.disableTypedLocalLayouts = false
-		node, err := generateCode(ast, opts)
-		if err != nil || !bytes.Equal(nodeReference, node) {
-			t.Fatalf("%s: local layout control changes Node output: %v", c.name, err)
-		}
 	}
 	if !testing.Short() {
 		goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-		testGeneratedTypesCorpus(t, goBin, typedLocalLayoutCases, GenOptions{disableTypedLocalLayouts: true})
+		testGeneratedTypesCorpus(t, goBin, typedLocalLayoutCases, GenOptions{})
 		testGeneratedTypesCorpus(t, goBin, typedLocalLayoutCases, GenOptions{convertTypes: true})
 	}
 }
@@ -126,14 +115,8 @@ func TestGeneratedTypedLocalLayoutControls(t *testing.T) {
 			t.Fatal(err)
 		}
 		opts := GenOptions{Package: "localfixture", Start: "main", Types: true, Recognize: true}
-		code, err := generateCode(ast, opts)
-		if err != nil {
+		if _, err := generateCode(ast, opts); err != nil {
 			t.Fatal(err)
-		}
-		opts.disableTypedLocalLayouts = true
-		reference, err := generateCode(ast, opts)
-		if err != nil || !bytes.Equal(code, reference) {
-			t.Fatalf("%s: representative control output changed: %v", path, err)
 		}
 	}
 }

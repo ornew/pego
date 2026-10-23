@@ -29,7 +29,6 @@ var flowModes = []struct {
 	{"lean unguarded", GenOptions{Types: true, TypedOnly: true, disableGuardedClasses: true}, true},
 	{"lean straight terminals", GenOptions{Types: true, TypedOnly: true, disableTerminalPrograms: true}, true},
 	{"lean boxed", GenOptions{Types: true, TypedOnly: true, disableLiteralTextDispatch: true, boxedComparisons: true}, true},
-	{"lean general frame layouts", GenOptions{Types: true, TypedOnly: true, disableTypedFrameLayouts: true}, true},
 	{"controlled typed-only", GenOptions{Types: true, TypedOnly: true, WorkControls: true}, true},
 	{"controlled with nodes", GenOptions{Types: true, WorkControls: true}, true},
 	{"controlled recognizer", GenOptions{Types: true, Recognize: true, WorkControls: true}, true},
@@ -276,26 +275,4 @@ func TestFlowTypedObservable(t *testing.T) {
 // and checks them as TestGenerateDirectTypedDocument does.
 func TestFlowTypedDocument(t *testing.T) {
 	testDirectTypedDocument(t, GenOptions{})
-}
-
-func TestFlowTypedModes(t *testing.T) {
-	cases := append(schemaCorpus(t), coreExtraGrammars...)
-	for _, mode := range []coreGenMode{
-		{"general cuts", GenOptions{Types: true, TypedOnly: true, disableTypedCuts: true}},
-		{"frame layouts", GenOptions{Types: true, TypedOnly: true, disableTypedLocalLayouts: true}},
-	} {
-		t.Run(mode.name, func(t *testing.T) {
-			compared := 0
-			for _, gc := range cases {
-				if _, _, _, ok := flowGenerate(gc.src, mode.opts); !ok {
-					t.Errorf("%s: rejected", gc.name)
-					continue
-				}
-				compared++
-			}
-			if compared < 100 {
-				t.Errorf("compared %d grammars", compared)
-			}
-		})
-	}
 }

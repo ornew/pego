@@ -5,6 +5,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/grammar"
 )
 
 var typedDirectCutCases = []genCase{
@@ -72,9 +74,6 @@ func TestGeneratedTypedDirectCuts(t *testing.T) {
 			!strings.Contains(string(code), "// main, called as by invokePlain (body inlined)") {
 			t.Fatalf("%s: main must use the direct typed route", c.name)
 		}
-		if strings.Contains(string(code), "disableTypedCuts") {
-			t.Fatalf("%s: generation switch must not enter the runtime", c.name)
-		}
 		if c.name == "typed/direct_cut_callee" && !strings.Contains(string(code), "// part, called as by invokePlain (body inlined)") {
 			t.Fatal("callee containing cuts must use the direct typed route")
 		}
@@ -92,5 +91,16 @@ func TestGeneratedTypedDirectCuts(t *testing.T) {
 			}
 		}
 	}
-	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), typedDirectCutCases, GenOptions{disableTypedCuts: true})
+	testGeneratedTypesCorpus(t, filepath.Join(runtime.GOROOT(), "bin", "go"), typedDirectCutCases, GenOptions{})
+}
+
+// directCuts reports whether the expression contains a cut.
+func directCuts(e grammar.Expr) bool {
+	found := false
+	walkExpr(e, func(e grammar.Expr) {
+		if _, ok := e.(*grammar.Cut); ok {
+			found = true
+		}
+	})
+	return found
 }

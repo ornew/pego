@@ -1,14 +1,10 @@
 package engine
 
 import (
-	"bytes"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strings"
 	"testing"
-
-	"github.com/ornew/pego/grammar"
 )
 
 var typedFrameLayoutCases = []genCase{
@@ -86,53 +82,8 @@ func TestGeneratedTypedFrameLayouts(t *testing.T) {
 		if !strings.Contains(string(candidate), marker) {
 			t.Fatalf("%s: candidate route not exercised", c.name)
 		}
-		opts.disableTypedFrameLayouts = true
-		opts.Types = false
-		nodeReference, err := generateCode(g, opts)
-		if err != nil {
-			t.Fatal(err)
-		}
-		opts.disableTypedFrameLayouts = false
-		node, err := generateCode(g, opts)
-		if err != nil || !bytes.Equal(nodeReference, node) {
-			t.Fatalf("%s: typed layout control changes Node output: %v", c.name, err)
-		}
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{disableTypedFrameLayouts: true})
+	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{})
 	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true})
-}
-
-// Compare with the actual general emitter's metadata, including unused
-// captures under atomic/discard/lookahead and projected element boundaries.
-func TestTypedFrameLayoutMetadata(t *testing.T) {
-	cases := append([]genCase(nil), typedFrameLayoutCases...)
-	cases = append(cases, typedLRBodyCases...)
-	cases = append(cases, typedOperatorsRuleBodyCases...)
-	cases = append(cases, typedDirectCutCases...)
-	cases = append(cases, typedRecoveryCases...)
-	cases = append(cases, typedLocalLayoutCases...)
-	for _, c := range cases {
-		p := compile(t, c.src)
-		for _, r := range append(append([]*rule(nil), p.rules...), p.twins...) {
-			var exprs []grammar.Expr
-			walkExpr(r.def.Expr, func(e grammar.Expr) {
-				if directFrameExprOK(e, true, true) {
-					exprs = append(exprs, e)
-				}
-			})
-			for _, e := range exprs {
-				for _, build := range []bool{false, true} {
-					g := &generator{prog: p, table: "trules", cur: r}
-					g.proj = g.projections(r)
-					actual := newScope()
-					g.expr(e, actual, build)
-					layout := g.typedFrameLayout(e, build)
-					if !slices.Equal(actual.names, layout.names) {
-						t.Fatalf("%s/%s build=%v %T: general=%v layout=%v", c.name, r.name, build, e, actual.names, layout.names)
-					}
-				}
-			}
-		}
-	}
 }
