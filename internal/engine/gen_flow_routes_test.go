@@ -51,7 +51,8 @@ func routeCases(t *testing.T) []genCase {
 }
 
 // TestFlowRoutesPrinted checks that every route grammar has rules printed from Flow IR in every
-// flowModes mode, and that the modes with inlined bodies print framed bodies from Flow IR.
+// flowModes mode, and that the modes with inlined bodies print framed bodies from Flow IR. The
+// engine comparison of the route grammars is TestFlowRoutesBuild.
 func TestFlowRoutesPrinted(t *testing.T) {
 	frames := 0
 	for _, mode := range flowModes {
@@ -74,26 +75,11 @@ func TestFlowRoutesPrinted(t *testing.T) {
 	}
 }
 
-// TestFlowRoutesPrintFromFlow checks that the typed rules of every route grammar are printed from
-// Flow IR in every flowModes mode; the engine comparison of the route grammars is TestFlowRoutesBuild.
-func TestFlowRoutesPrintFromFlow(t *testing.T) {
-	for _, mode := range flowModes {
-		for _, gc := range routeCases(t) {
-			_, n, _, ok := flowGenerate(gc.src, mode.opts)
-			if !ok {
-				t.Fatalf("%s %s: rejected", mode.name, gc.name)
-			}
-			if n == 0 {
-				t.Errorf("%s %s: no rule printed from Flow IR", mode.name, gc.name)
-			}
-		}
-	}
-}
-
-// TestFlowRoutesBuild builds the route grammars with dgen and with the default Flow IR printer,
-// with and without
-// the ordinary work of the typed runtime, and checks that both parse every input the way the
-// engine does: the same values, and the same errors as the engine's.
+// TestFlowRoutesBuild builds the route grammars with the default typed output and with the
+// reference options that convert types, with and without the ordinary work of the typed runtime.
+// It checks that the generated parsers parse every input the way the engine does: the same
+// values, and the same errors as the engine's. The route grammars depend on finishValue in
+// runtime/typed.go: reverting it fails this test.
 func TestFlowRoutesBuild(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
