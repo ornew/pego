@@ -42,16 +42,14 @@ var flowModes = []struct {
 	{"observable Document", GenOptions{Types: true, Observability: true, Document: true}, true},
 }
 
-// flowUnreadLine matches the first line of a direct rule's body or matcher, also of the copy
-// that work controls specialize for parses without a control, which assigns the variables
-// that no statement reads to the blank identifier. dgen tracks reads where it writes the names
-// of variables and Flow IR where an expression uses them, which differ in a few spots (a count
-// compared with the minimum of a repetition), so the lines are left out of the comparison; the
-// compilation of the generated parsers checks them.
+// flowUnreadLine matches the line that assigns the variables no statement reads to the blank
+// identifier, at the start of a direct rule's body or matcher. flowDiff leaves that line out of
+// the comparison; the compilation of the generated parsers checks it.
 var flowUnreadLine = regexp.MustCompile(`(?m)^\t+_(, _)* = [a-z0-9]+(, [a-z0-9]+)*\n`)
 
-// flowDiff returns the lines around the first difference of the parsers want and got apart from
-// the lines of unread variables, or "" if they are the same.
+// flowDiff is the determinism check: it returns the lines around the first difference between
+// two generations of the same grammar and options, apart from the lines of unread variables, or
+// "" if they are the same.
 func flowDiff(want, got string) string {
 	w, g := flowUnreadLine.ReplaceAllString(want, ""), flowUnreadLine.ReplaceAllString(got, "")
 	if w == g {
@@ -60,8 +58,8 @@ func flowDiff(want, got string) string {
 	return firstDiff(w, g)
 }
 
-// TestFlowDiffDetectsMutations checks that flowDiff reports a parser printed from Flow IR that
-// differs from the default Flow IR parser in a statement, also next to the line of unread
+// TestFlowDiffDetectsMutations checks that flowDiff reports a parser that differs from a second
+// generation of the same options in a statement, also next to the line of unread
 // variables that it leaves out, while it ignores a change of that line alone.
 func TestFlowDiffDetectsMutations(t *testing.T) {
 	opts := GenOptions{Types: true, TypedOnly: true}

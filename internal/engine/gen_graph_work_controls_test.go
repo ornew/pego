@@ -47,7 +47,7 @@ rule rollback Bag = (x:leaf "z" / x:leaf) rest:(part:leaf "b")* last:leaf #cut =
 		if !convert {
 			check = generatedGoGraphTypedRuleCheck
 		}
-		consumer := strings.NewReplacer("TYPED_RULE_CHECK", check, "PACKAGE", pkg, "GENERAL", "false", "CONVERT", fmt.Sprint(convert)).Replace(generatedGoGraphConsumer)
+		consumer := strings.NewReplacer("TYPED_RULE_CHECK", check, "PACKAGE", pkg, "CONVERT", fmt.Sprint(convert)).Replace(generatedGoGraphConsumer)
 		for name, data := range map[string][]byte{"parser.go": code, "graph_test.go": []byte(consumer)} {
 			if err := os.WriteFile(filepath.Join(path, name), data, 0644); err != nil {
 				t.Fatal(err)
@@ -62,7 +62,7 @@ rule rollback Bag = (x:leaf "z" / x:leaf) rest:(part:leaf "b")* last:leaf #cut =
 }
 
 // generatedGoGraphTypedRuleCheck needs the typed rule table, which conversion output omits.
-const generatedGoGraphTypedRuleCheck = `for _,name:=range []string{"main","rollback"}{found:=false;for _,r:=range trules{if r.Name==name{found=true;if general && r.Body==nil{t.Fatal("fixture did not exercise a general typed body",name)};if !general && (r.Entry==nil || r.Body!=nil){t.Fatal("fixture did not exercise a direct typed body",name)}}};if !found{t.Fatal("missing typed rule",name)}}
+const generatedGoGraphTypedRuleCheck = `for _,name:=range []string{"main","rollback"}{found:=false;for _,r:=range trules{if r.Name==name{found=true;if r.Entry==nil || r.Body!=nil{t.Fatal("fixture did not exercise a direct typed body",name)}}};if !found{t.Fatal("missing typed rule",name)}}
 `
 
 const generatedGoGraphConsumer = `package PACKAGE
@@ -70,7 +70,6 @@ const generatedGoGraphConsumer = `package PACKAGE
 import pegort "github.com/ornew/pego/runtime"
 import("context";"errors";"fmt";"reflect";"strings";"testing")
 const conversion = CONVERT
-const general = GENERAL
 func graphParser(limit uint64)*pegort.Parser{p:=&pegort.Parser{Control:pegort.X_newWorkControl(nil,WorkLimits{MaxSteps:limit})};p.X_setGrammar(pegoGrammar);return p}
 func graphFatal(f func())(err error){defer func(){if x:=recover();x!=nil{v,ok:=x.(pegort.X_fatal);if !ok{panic(x)};err=v.X_err}}();f();return nil}
 func requireGraphLimit(t *testing.T,p *pegort.Parser,f func()){

@@ -16,7 +16,7 @@ func TestGeneratedTypedTrace(t *testing.T) {
 	}
 	fixtures := []struct {
 		name, grammar, input, checks string
-		fallback, general            bool
+		fallback                     bool
 	}{
 		{name: "plain", grammar: `type W = { Text string }
 rule main W = t:(part) #atomic => W{Text: text($t)}
@@ -36,7 +36,7 @@ rule part W = t:("a") #atomic => W{Text: text($t)}`, input: "a", checks: `if cou
 		{name: "general", grammar: `type W = { Text string }
 var x int
 rule main W = {x:=1} #cut p:part {x==1} => $p
-rule part W = t:("a") #atomic => W{Text: text($t)}`, input: "a", general: true, checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
+rule part W = t:("a") #atomic => W{Text: text($t)}`, input: "a", checks: `if count("part",TraceEnter)!=1 {t.Fatal(events)}`},
 		{name: "leftrec", grammar: `type W = { Text string }
 rule main W = t:(expr) #atomic => W{Text: text($t)}
 rule expr W = t:(expr "a" / "a") #atomic => W{Text: text($t)}`, input: "aaa", checks: `growth:=false;for _,e:=range events {if e.Rule=="expr"&&e.Kind==TraceExit&&e.Evals>1 {growth=true}};if !growth {t.Fatal("missing growth",events)}`},

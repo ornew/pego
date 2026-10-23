@@ -9,12 +9,13 @@ import (
 	"github.com/ornew/pego/grammar"
 )
 
-// Direct rules of the typed runtime and inlined expression bodies of the Node runtime.
+// Direct rules of the Node runtime and inlined expression bodies of the Node runtime, and the
+// direct method that wraps the Flow IR body of a typed rule (directMethod, see gen_flow.go).
 //
-// The typed runtime (runtime/typed.go) runs a rule like the Node runtime does: a method per
-// expression, captures in a frame with a trail that backtracking undoes, and an action evaluated
-// in a context that reads the frame. A rule whose body uses only the constructs handled here is
-// instead compiled into the one method that calls it (a direct rule):
+// The runtime runs a rule like this: a method per expression, captures in a frame with a trail
+// that backtracking undoes, and an action evaluated in a context that reads the frame. A rule
+// whose body uses only the constructs handled here is instead compiled into the one method that
+// calls it (a direct rule):
 //
 //   - The body is inlined: an expression jumps to a label when it fails. Every variable is
 //     declared at the top of the method, so each goto is legal.
@@ -28,39 +29,36 @@ import (
 //
 // A direct rule never reads or sets p.cut (its flags are local and callees restore it), p.frame
 // (callees set their own) or p.trail (callees truncate it to its length at the call), so it
-// leaves them alone. Typed cuts use scope-local flags. Ordinary Go-local
-// direct methods exclude recovery; eligible recovery bodies use runtime-owned
-// frames and preserve full-mark rollback. Operators Rule rules retain runtime dispatch, with eligible
-// typed line bodies inlined. Left-recursion leaders retain runtime
-// growth and finalization, with eligible typed expression bodies inlined.
-// Unfinished typed bodies keep runtime-owned capture frames and publish their
-// root cut flag when returning; nested backtracking constructs use local flags.
-// Node rules containing cuts also retain the general code. Value-free plain Node rules reuse the structural walk
-// without captures or predicates. Other Node rules inline only their expression
-// bodies, retaining runtime ownership of frames, memoization and finalization.
+// leaves them alone.
+//
+// Node rules containing cuts or Operators Rules keep the general code. A left-recursion leader
+// keeps runtime growth and finalization, and only its expression body is inlined. Value-free
+// plain Node rules reuse the structural walk without captures or predicates. Other Node rules
+// inline only their expression bodies, retaining runtime ownership of frames, memoization and
+// finalization.
 
 // directOK reports whether the rule r can be compiled as a direct rule.
 func directOK(r *rule) bool {
-	return directEligible(r, false)
+	return directEligible(r)
 }
 
 // directEligible keeps cut support local to typed direct rules. Node bodies
 // retain their existing eligibility and runtime-owned cut scopes.
-func directEligible(r *rule, cuts bool) bool {
+func directEligible(r *rule) bool {
 	if r.leader {
 		return false
 	}
-	return directExprEligible(r, cuts)
+	return directExprEligible(r)
 }
 
 // Unfinished left-recursion bodies can use the structural expression emitter
 // while retaining the runtime's seed, frame and finalization ownership.
-func directExprEligible(r *rule, cuts bool) bool {
-	return directExprOK(r.bodyExpr(), cuts)
+func directExprEligible(r *rule) bool {
+	return directExprOK(r.bodyExpr())
 }
 
-func directExprOK(expr grammar.Expr, cuts bool) bool {
-	return directFrameExprOK(expr, cuts, false)
+func directExprOK(expr grammar.Expr) bool {
+	return directFrameExprOK(expr, false, false)
 }
 
 func directFrameExprOK(expr grammar.Expr, cuts, recovery bool) bool {
