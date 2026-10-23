@@ -11,16 +11,6 @@ import (
 	"unicode/utf8"
 )
 
-type workActionFunc struct {
-	params int
-	fn     func(any, any) (any, error)
-}
-
-func (f workActionFunc) arity() int { return f.params }
-func (f workActionFunc) apply(x, y any) (any, error) {
-	return f.fn(x, y)
-}
-
 func actionWorkParser(ctx context.Context, limits WorkLimits, unit PositionUnit) *parser {
 	return &parser{input: input{unit: unit, control: newWorkControl(ctx, limits)}}
 }

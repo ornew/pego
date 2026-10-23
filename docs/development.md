@@ -143,6 +143,11 @@ Explicit expansion at the cap compacts materialized branches; paths that cannot 
 control. Controlled row-count, reference/focus and boundary tests cover these resource limits. The tree benchmark
 distinguishes equivalent small-tree work from wide-tree display reduction; real browser checks cover DOM/WASM wiring.
 
+The same-source work-control reference build compiles and tests the engine package without core work-control
+instrumentation. After changing `internal/engine` test files, check that both builds compile with
+`go vet ./internal/engine` and `go vet -tags pego_work_controls_reference ./internal/engine`; test files that use
+helpers defined in untagged files keep both builds compiling.
+
 GitHub Actions runs the root module and `parsers/test.sh` (including `go vet` for every parser module), site tests, and
 Node.js/WebAssembly/generated-TypeScript checks as separate jobs. A newer run on the same branch or pull-request
 ref cancels the superseded run. CI uses Go 1.27.1, Node.js 22.18.0, CPython 3.14.0
