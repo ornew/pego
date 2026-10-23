@@ -53,6 +53,13 @@ func (g *tsGen) typedTS(start *rule) (types, parser string, err error) {
 			t.joins[a.String()] = true
 		}
 	}
+	// A join that no alias declares is a union of its members, too.
+	for _, j := range t.anonJoins() {
+		t.joins[j.members.String()] = true
+		for _, s := range j.spellings {
+			t.joins[s] = true
+		}
+	}
 	var b strings.Builder
 	b.WriteString(tsTypedDeclarations)
 	open := []string{"RuntimeNode", "StringNode", "TNode<unknown>", "TypedValue[]", "RecoveredError", "number", "bigint", "string", "boolean", "null"}

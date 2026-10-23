@@ -142,7 +142,7 @@ func (t *typedGen) documentClone(b *strings.Builder, result ty) string {
 		}
 	}
 	for _, name := range t.aliases {
-		u := t.info.aliases[name].(joinTy)
+		u := t.joinOf(name)
 		if !t.representable(u) {
 			continue
 		}

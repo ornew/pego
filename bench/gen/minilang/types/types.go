@@ -96,7 +96,7 @@ type If struct {
 	rt.Span
 	Cond Expr
 	Then *Block
-	Else any
+	Else IfOrBlock
 }
 
 // Index is the struct type Index.
@@ -164,27 +164,33 @@ type Expr interface{ isExpr() }
 // Stmt is the join type Stmt ~ Let | Assign | If | While | Return | Func | ExprStmt | Block | error. Error (left by #recover) also implements it.
 type Stmt interface{ isStmt() }
 
-func (*ArrayLit) isExpr() {}
-func (*Assign) isStmt()   {}
-func (*Binary) isExpr()   {}
-func (*Block) isStmt()    {}
-func (*Bool) isExpr()     {}
-func (*Call) isExpr()     {}
-func (*Cond) isExpr()     {}
-func (*Error) isExpr()    {}
-func (*Error) isStmt()    {}
-func (*ExprStmt) isStmt() {}
-func (*Func) isStmt()     {}
-func (*Ident) isExpr()    {}
-func (*If) isStmt()       {}
-func (*Index) isExpr()    {}
-func (*Let) isStmt()      {}
-func (*Member) isExpr()   {}
-func (*Number) isExpr()   {}
-func (*Return) isStmt()   {}
-func (*String) isExpr()   {}
-func (*Unary) isExpr()    {}
-func (*While) isStmt()    {}
+// IfOrBlock is the join type If | Block. Error (left by #recover) also implements it.
+type IfOrBlock interface{ isIfOrBlock() }
+
+func (*ArrayLit) isExpr()   {}
+func (*Assign) isStmt()     {}
+func (*Binary) isExpr()     {}
+func (*Block) isIfOrBlock() {}
+func (*Block) isStmt()      {}
+func (*Bool) isExpr()       {}
+func (*Call) isExpr()       {}
+func (*Cond) isExpr()       {}
+func (*Error) isExpr()      {}
+func (*Error) isIfOrBlock() {}
+func (*Error) isStmt()      {}
+func (*ExprStmt) isStmt()   {}
+func (*Func) isStmt()       {}
+func (*Ident) isExpr()      {}
+func (*If) isIfOrBlock()    {}
+func (*If) isStmt()         {}
+func (*Index) isExpr()      {}
+func (*Let) isStmt()        {}
+func (*Member) isExpr()     {}
+func (*Number) isExpr()     {}
+func (*Return) isStmt()     {}
+func (*String) isExpr()     {}
+func (*Unary) isExpr()      {}
+func (*While) isStmt()      {}
 
 func (v *ArrayLit) TName() string         { return "ArrayLit" }
 func (v *ArrayLit) TText() (string, bool) { return "", false }

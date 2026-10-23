@@ -406,61 +406,75 @@ type Spec interface{ isSpec() }
 // Stmt is the join type Stmt ~ DeclStmt | EmptyStmt | LabeledStmt | ExprStmt | SendStmt | IncDecStmt | AssignStmt | GoStmt | DeferStmt | ReturnStmt | BranchStmt | BlockStmt | IfStmt | CaseClause | SwitchStmt | TypeSwitchStmt | CommClause | SelectStmt | ForStmt | RangeStmt. Error (left by #recover) also implements it.
 type Stmt interface{ isStmt() }
 
-func (*ArrayType) isExpr()      {}
-func (*AssignStmt) isStmt()     {}
-func (*BinaryExpr) isExpr()     {}
-func (*BlockStmt) isStmt()      {}
-func (*BranchStmt) isStmt()     {}
-func (*CallExpr) isExpr()       {}
-func (*CaseClause) isStmt()     {}
-func (*ChanType) isExpr()       {}
-func (*CharLit) isExpr()        {}
-func (*CommClause) isStmt()     {}
-func (*CompositeLit) isExpr()   {}
-func (*DeclStmt) isStmt()       {}
-func (*DeferStmt) isStmt()      {}
-func (*Ellipsis) isExpr()       {}
-func (*EmptyStmt) isStmt()      {}
-func (*Error) isDecl()          {}
-func (*Error) isExpr()          {}
-func (*Error) isSpec()          {}
-func (*Error) isStmt()          {}
-func (*ExprStmt) isStmt()       {}
-func (*FloatLit) isExpr()       {}
-func (*ForStmt) isStmt()        {}
-func (*FuncDecl) isDecl()       {}
-func (*FuncLit) isExpr()        {}
-func (*FuncType) isExpr()       {}
-func (*GenDecl) isDecl()        {}
-func (*GoStmt) isStmt()         {}
-func (*Ident) isExpr()          {}
-func (*IfStmt) isStmt()         {}
-func (*ImagLit) isExpr()        {}
-func (*ImportSpec) isSpec()     {}
-func (*IncDecStmt) isStmt()     {}
-func (*IndexExpr) isExpr()      {}
-func (*IndexListExpr) isExpr()  {}
-func (*IntLit) isExpr()         {}
-func (*InterfaceType) isExpr()  {}
-func (*KeyValueExpr) isExpr()   {}
-func (*LabeledStmt) isStmt()    {}
-func (*MapType) isExpr()        {}
-func (*ParenExpr) isExpr()      {}
-func (*RangeStmt) isStmt()      {}
-func (*ReturnStmt) isStmt()     {}
-func (*SelectStmt) isStmt()     {}
-func (*SelectorExpr) isExpr()   {}
-func (*SendStmt) isStmt()       {}
-func (*SliceExpr) isExpr()      {}
-func (*StarExpr) isExpr()       {}
-func (*StringLit) isExpr()      {}
-func (*StructType) isExpr()     {}
-func (*SwitchStmt) isStmt()     {}
-func (*TypeAssertExpr) isExpr() {}
-func (*TypeSpec) isSpec()       {}
-func (*TypeSwitchStmt) isStmt() {}
-func (*UnaryExpr) isExpr()      {}
-func (*ValueSpec) isSpec()      {}
+// ArrayTypeOrStructTypeOrFuncTypeOrMapType is the join type ArrayType | StructType | FuncType | MapType. Error (left by #recover) also implements it.
+type ArrayTypeOrStructTypeOrFuncTypeOrMapType interface{ isArrayTypeOrStructTypeOrFuncTypeOrMapType() }
+
+// InterfaceTypeOrChanType is the join type InterfaceType | ChanType. Error (left by #recover) also implements it.
+type InterfaceTypeOrChanType interface{ isInterfaceTypeOrChanType() }
+
+func (*ArrayType) isArrayTypeOrStructTypeOrFuncTypeOrMapType()  {}
+func (*ArrayType) isExpr()                                      {}
+func (*AssignStmt) isStmt()                                     {}
+func (*BinaryExpr) isExpr()                                     {}
+func (*BlockStmt) isStmt()                                      {}
+func (*BranchStmt) isStmt()                                     {}
+func (*CallExpr) isExpr()                                       {}
+func (*CaseClause) isStmt()                                     {}
+func (*ChanType) isExpr()                                       {}
+func (*ChanType) isInterfaceTypeOrChanType()                    {}
+func (*CharLit) isExpr()                                        {}
+func (*CommClause) isStmt()                                     {}
+func (*CompositeLit) isExpr()                                   {}
+func (*DeclStmt) isStmt()                                       {}
+func (*DeferStmt) isStmt()                                      {}
+func (*Ellipsis) isExpr()                                       {}
+func (*EmptyStmt) isStmt()                                      {}
+func (*Error) isArrayTypeOrStructTypeOrFuncTypeOrMapType()      {}
+func (*Error) isDecl()                                          {}
+func (*Error) isExpr()                                          {}
+func (*Error) isInterfaceTypeOrChanType()                       {}
+func (*Error) isSpec()                                          {}
+func (*Error) isStmt()                                          {}
+func (*ExprStmt) isStmt()                                       {}
+func (*FloatLit) isExpr()                                       {}
+func (*ForStmt) isStmt()                                        {}
+func (*FuncDecl) isDecl()                                       {}
+func (*FuncLit) isExpr()                                        {}
+func (*FuncType) isArrayTypeOrStructTypeOrFuncTypeOrMapType()   {}
+func (*FuncType) isExpr()                                       {}
+func (*GenDecl) isDecl()                                        {}
+func (*GoStmt) isStmt()                                         {}
+func (*Ident) isExpr()                                          {}
+func (*IfStmt) isStmt()                                         {}
+func (*ImagLit) isExpr()                                        {}
+func (*ImportSpec) isSpec()                                     {}
+func (*IncDecStmt) isStmt()                                     {}
+func (*IndexExpr) isExpr()                                      {}
+func (*IndexListExpr) isExpr()                                  {}
+func (*IntLit) isExpr()                                         {}
+func (*InterfaceType) isExpr()                                  {}
+func (*InterfaceType) isInterfaceTypeOrChanType()               {}
+func (*KeyValueExpr) isExpr()                                   {}
+func (*LabeledStmt) isStmt()                                    {}
+func (*MapType) isArrayTypeOrStructTypeOrFuncTypeOrMapType()    {}
+func (*MapType) isExpr()                                        {}
+func (*ParenExpr) isExpr()                                      {}
+func (*RangeStmt) isStmt()                                      {}
+func (*ReturnStmt) isStmt()                                     {}
+func (*SelectStmt) isStmt()                                     {}
+func (*SelectorExpr) isExpr()                                   {}
+func (*SendStmt) isStmt()                                       {}
+func (*SliceExpr) isExpr()                                      {}
+func (*StarExpr) isExpr()                                       {}
+func (*StringLit) isExpr()                                      {}
+func (*StructType) isArrayTypeOrStructTypeOrFuncTypeOrMapType() {}
+func (*StructType) isExpr()                                     {}
+func (*SwitchStmt) isStmt()                                     {}
+func (*TypeAssertExpr) isExpr()                                 {}
+func (*TypeSpec) isSpec()                                       {}
+func (*TypeSwitchStmt) isStmt()                                 {}
+func (*UnaryExpr) isExpr()                                      {}
+func (*ValueSpec) isSpec()                                      {}
 
 func (v *ArrayType) TName() string         { return "ArrayType" }
 func (v *ArrayType) TText() (string, bool) { return "", false }

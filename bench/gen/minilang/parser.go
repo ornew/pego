@@ -294,7 +294,7 @@ func tmk_If(c *rt.TActCtx, final bool, f0 any, f1 any, f2 any) any {
 	c.P.StepWork()
 	v.Then = rt.TAs[*types.Block](f1)
 	c.P.StepWork()
-	v.Else = rt.TPubIn(types.PegoHooks, a, f2)
+	v.Else = rt.TAs[types.IfOrBlock](rt.TPubIn(types.PegoHooks, a, f2))
 	if final {
 		v.Span = rt.Span{Start: c.Start, End: c.End}
 		return v

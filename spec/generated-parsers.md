@@ -153,10 +153,11 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
 | Tuple `(A, B, ...)` | `TupleN[A', B', ...]` with the fields `E0`, `E1`, ...; `Unit` for `()` |
 | `error` (from `#recover`) | `*Error` with `Span`, `Text` and `Message` |
 | Join `U ~ A \| B` of node types | An interface `U` implemented by `*A`, `*B` and `*Error` (and by every `*TNode[T]` if a member is a node type) |
+| Join `A \| B` of declared node types written in place (a field, a list element, a rule value) and declared by no alias | An interface named after its members in the order of their first spelling in the file (declarations in source order, then the fields of a type), `AOrB`, implemented by `*A`, `*B` and `*Error`; the same set of members in any order is one interface, and a set that an alias declares is that alias. A type of the grammar with that name is a generation error |
 | `[]T` | A slice; an empty list is an empty slice and not `nil` |
 | `*T` | `*int`, `*string` or `*bool` for basic types; otherwise the Go type of `T`, `nil` when absent |
 | A rule whose type is not declared | The Go type of its value (an action's value maps by the rows above): `*TNode[TupleN[E0, ..., En]]` for a tuple of known elements, `*TNode[[]E]` for a list, `*TNode[Unit]` for the unit `()`; `*TNode[any]` when the elements are not known; a rule with a declared type, `node[_]` included, always has the Go type of that type |
-| `_`, joins with basic members or members of different shapes, a value that closes a cycle of rules | `any`, holding the converted value |
+| `_`, joins with basic members, with node members that are not declared node types, or with members of different shapes, a value that closes a cycle of rules | `any`, holding the converted value |
 | Alias `Alias ~ T` | A Go alias to the value type of `T` |
 
 - `TNode[T]` is `struct { Span; Value T }`; `TupleN` is `struct { E0 E0; ...; En En }`
@@ -198,8 +199,8 @@ mapping is:
 | `int` | `number \| bigint`, with signed 64-bit arithmetic and safe-number canonicalization |
 | `string`, `bool` | `string`, `boolean`; an absent non-optional scalar field is `""`, `false` or `0` |
 | Declared alias | The complete target type |
-| Declared pure node join | The member interfaces, `RecoveredError` and null; tuple and list node members remain `Node` |
-| Mixed or undeclared join, `_` | `TypedValue`, following the conversion of `any` in Go |
+| Join of declared node types, declared by an alias or written in place | The member interfaces, `RecoveredError` and null; tuple and list node members remain `Node` |
+| Join with a member that is not a declared node type, `_` | `TypedValue`, following the conversion of `any` in Go |
 
 Names collide the same way as in Go, with trailing underscores. Typed parsing by
 rule name is not available in TypeScript.

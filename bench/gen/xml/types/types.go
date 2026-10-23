@@ -241,38 +241,44 @@ type Misc interface{ isMisc() }
 // Particle is the join type Particle ~ NameParticle | Choice | Sequence. Error (left by #recover) also implements it.
 type Particle interface{ isParticle() }
 
-func (*AttlistDecl) isDecl()      {}
-func (*CDSect) isContent()        {}
-func (*CharData) isContent()      {}
-func (*CharRef) isContent()       {}
-func (*Choice) isContentSpec()    {}
-func (*Choice) isParticle()       {}
-func (*Comment) isContent()       {}
-func (*Comment) isDecl()          {}
-func (*Comment) isMisc()          {}
-func (*Element) isContent()       {}
-func (*ElementDecl) isDecl()      {}
-func (*EntityDecl) isDecl()       {}
-func (*EntityRef) isContent()     {}
-func (*Enumeration) isAttType()   {}
-func (*Error) isAttType()         {}
-func (*Error) isContent()         {}
-func (*Error) isContentSpec()     {}
-func (*Error) isDecl()            {}
-func (*Error) isMisc()            {}
-func (*Error) isParticle()        {}
-func (*Keyword) isAttType()       {}
-func (*Keyword) isContentSpec()   {}
-func (*Mixed) isContentSpec()     {}
-func (*NameParticle) isParticle() {}
-func (*NotationDecl) isDecl()     {}
-func (*NotationType) isAttType()  {}
-func (*PERef) isDecl()            {}
-func (*PI) isContent()            {}
-func (*PI) isDecl()               {}
-func (*PI) isMisc()               {}
-func (*Sequence) isContentSpec()  {}
-func (*Sequence) isParticle()     {}
+// CharRefOrEntityRef is the join type CharRef | EntityRef. Error (left by #recover) also implements it.
+type CharRefOrEntityRef interface{ isCharRefOrEntityRef() }
+
+func (*AttlistDecl) isDecl()             {}
+func (*CDSect) isContent()               {}
+func (*CharData) isContent()             {}
+func (*CharRef) isCharRefOrEntityRef()   {}
+func (*CharRef) isContent()              {}
+func (*Choice) isContentSpec()           {}
+func (*Choice) isParticle()              {}
+func (*Comment) isContent()              {}
+func (*Comment) isDecl()                 {}
+func (*Comment) isMisc()                 {}
+func (*Element) isContent()              {}
+func (*ElementDecl) isDecl()             {}
+func (*EntityDecl) isDecl()              {}
+func (*EntityRef) isCharRefOrEntityRef() {}
+func (*EntityRef) isContent()            {}
+func (*Enumeration) isAttType()          {}
+func (*Error) isAttType()                {}
+func (*Error) isCharRefOrEntityRef()     {}
+func (*Error) isContent()                {}
+func (*Error) isContentSpec()            {}
+func (*Error) isDecl()                   {}
+func (*Error) isMisc()                   {}
+func (*Error) isParticle()               {}
+func (*Keyword) isAttType()              {}
+func (*Keyword) isContentSpec()          {}
+func (*Mixed) isContentSpec()            {}
+func (*NameParticle) isParticle()        {}
+func (*NotationDecl) isDecl()            {}
+func (*NotationType) isAttType()         {}
+func (*PERef) isDecl()                   {}
+func (*PI) isContent()                   {}
+func (*PI) isDecl()                      {}
+func (*PI) isMisc()                      {}
+func (*Sequence) isContentSpec()         {}
+func (*Sequence) isParticle()            {}
 
 func (v *AttDef) TName() string         { return "AttDef" }
 func (v *AttDef) TText() (string, bool) { return "", false }

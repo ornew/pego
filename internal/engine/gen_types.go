@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -48,7 +49,7 @@ func (g *generator) typedGo(start *rule, conv bool) (typedOutput, error) {
 	if info == nil {
 		return typedOutput{}, fmt.Errorf("typed values need the grammar's types (type checking did not run)")
 	}
-	t := &typedGen{g: g, info: info, joins: map[string]string{}, lists: map[string]string{}, tlists: map[string]string{}, tupleSizes: map[int]bool{}}
+	t := &typedGen{g: g, info: info, joins: map[string]string{}, anon: map[string]joinTy{}, lists: map[string]string{}, tlists: map[string]string{}, tupleSizes: map[int]bool{}}
 	t.valueResolver = newValueResolver(g.prog, func(x ty) bool { _, ok := t.joins[x.String()]; return ok })
 	if err := t.name(); err != nil {
 		return typedOutput{}, err
@@ -290,8 +291,10 @@ type typedGen struct {
 	// inTypes is set while the source of the types package is written, where the types of the
 	// grammar are named without a qualifier.
 	inTypes bool
-	// joins maps the written form of a join type to the name of the alias that declares it.
+	// joins maps the written form of a join type to the name of the alias that declares it, or to
+	// the name that anonJoinName gives an undeclared join; anon holds the latter joins by name.
 	joins map[string]string
+	anon  map[string]joinTy
 	// lists maps the Go type of a list to the name of its converter (from nodes); tlists, to the
 	// name of its converter from values of the typed runtime.
 	lists      map[string]string
@@ -303,7 +306,7 @@ type typedGen struct {
 	fieldNames  map[string]string
 	structs     []string // struct type names, sorted
 	nodeTypes   []string // named node type names, sorted
-	aliases     []string // canonical node join names, sorted
+	aliases     []string // canonical node join names, sorted, then those of the undeclared joins
 	typeAliases []string // other declared aliases, sorted
 	// valueResolver selects the rules whose Go types come from their value types.
 	valueResolver
@@ -414,6 +417,30 @@ func (t *typedGen) name() error {
 			t.typeAliases = append(t.typeAliases, name)
 		}
 	}
+	for _, j := range t.anonJoins() {
+		name := j.alias
+		if _, ok := t.anon[name]; !ok && !slices.Contains(t.aliases, name) {
+			name = anonJoinName(j.members)
+			if _, ok := t.g.prog.types[name]; ok {
+				return fmt.Errorf("the join %s needs a generated interface named %s, which is also the name of a type of the grammar; rename the type", j.members, name)
+			}
+			if other, ok := t.anon[name]; ok && other.String() != j.members.String() {
+				return fmt.Errorf("the joins %s and %s need generated interfaces with the same name %s", other, j.members, name)
+			}
+			if _, ok := t.anon[name]; !ok {
+				t.anon[name] = j.members
+				t.aliases = append(t.aliases, name)
+			}
+		}
+		for _, s := range j.spellings {
+			if _, ok := t.joins[s]; !ok {
+				t.joins[s] = name
+			}
+		}
+		if _, ok := t.joins[j.members.String()]; !ok {
+			t.joins[j.members.String()] = name
+		}
+	}
 	t.fieldNames = map[string]string{}
 	for _, name := range all {
 		for _, f := range t.info.fields[name] {
@@ -430,6 +457,15 @@ func (t *typedGen) name() error {
 		t.fieldNames[name] = goName
 	}
 	return nil
+}
+
+// joinOf returns the join that the interface name stands for: the alias that declares it, or the
+// undeclared join that it is named after.
+func (t *typedGen) joinOf(name string) joinTy {
+	if u, ok := t.anon[name]; ok {
+		return u
+	}
+	return t.info.aliases[name].(joinTy)
 }
 
 // nodeJoin reports whether every member of the join is a node type (so it can be an interface).
@@ -616,9 +652,13 @@ func (t *typedGen) decls(b *strings.Builder) {
 	// Joins: an interface with a marker method that each member (and Error) implements.
 	impl := map[string][]string{} // Go type (without *) -> markers
 	for _, name := range t.aliases {
-		u := t.info.aliases[name].(joinTy)
+		u := t.joinOf(name)
 		goName := name
-		fmt.Fprintf(b, "// %s is the join type %s ~ %s. Error (left by #recover) also implements it.\n", goName, name, u)
+		if _, anon := t.anon[name]; anon {
+			fmt.Fprintf(b, "// %s is the join type %s. Error (left by #recover) also implements it.\n", goName, u)
+		} else {
+			fmt.Fprintf(b, "// %s is the join type %s ~ %s. Error (left by #recover) also implements it.\n", goName, name, u)
+		}
 		fmt.Fprintf(b, "type %s interface{ is%s() }\n\n", goName, goName)
 		members := map[string]bool{"Error": true}
 		for _, a := range u.alts {
@@ -752,7 +792,7 @@ func (a *astConv) toError(n *Node) *Error {
 		b.WriteString("\treturn v\n}\n\n")
 	}
 	for _, name := range t.aliases {
-		u := t.info.aliases[name].(joinTy)
+		u := t.joinOf(name)
 		fmt.Fprintf(b, "func (a *astConv) %s(n *Node) %s {\n\ta.stepWork()\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type() {\n\tcase \"error\":\n\t\treturn a.toError(n)\n", convName(name), t.ref(name))
 		for _, m := range u.alts {
 			if m, ok := m.(nodeTy); ok && m.name != "" {

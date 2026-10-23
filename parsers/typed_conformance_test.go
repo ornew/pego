@@ -568,15 +568,7 @@ func checkTypedGeneration(t *testing.T, sc confSchema, g typedGeneration, src st
 // the shape, and the generated type is not what it decides. Each entry is reported as known rather than
 // hidden, and an entry that no longer has a violation fails the test, so the list stays current. A
 // divergence is a generator change to make, not a case of the mapping.
-var typedDivergence = map[string][]string{
-	"../bench/gen/minilang": {
-		// The Go generator writes any for If.Else, where the join of its alternatives is an interface.
-		"Go: If.Else: want an interface for a join, got any",
-		// The TypeScript generator writes If.Else as TypedValue, where the join of its alternatives is
-		// a union; see the TypeScript join in internal/engine/gen_ts_types.go.
-		"TypeScript: If.Else: want members",
-	},
-}
+var typedDivergence = map[string][]string{}
 
 // TestTypedConformance checks that every generated typed package of parsers and bench/gen conforms to
 // the output schema of its grammar, in Go and in TypeScript.

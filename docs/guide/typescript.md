@@ -318,8 +318,8 @@ String nodes (`StringNode`, a `TNode<string>` whose `type` is `"string"`) have `
 | declared aliases | complete target type, preserving optional, list and node representations |
 | `node[T]` | `TNode<T'>` with `T'` the TypeScript type of `T`; text is a `StringNode`, a `TNode<string>`, and `node[_]` is `TNode<unknown>` |
 | tuple `(A, B, ...)` | `readonly [A', B', ...]` |
-| canonical declared pure node join | member interfaces plus `RecoveredError` and null; node members are `TNode` values |
-| mixed/open or undeclared join, `_` | conservative `TypedValue`, following Go's any-conversion semantics |
+| join of declared node types, named by an alias or written in place | member interfaces plus `RecoveredError` and null; node members are `TNode` values |
+| join with a member that is not a declared node type, `_` | conservative `TypedValue`, following Go's any-conversion semantics |
 
 A grammar join type `T | U` becomes a TypeScript union of the converted members.
 
