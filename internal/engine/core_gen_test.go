@@ -11,7 +11,8 @@ import (
 )
 
 // The tests here compare the Core IR of the typed Go rules, after the passes of typedCore, with
-// the decisions the generator records while it writes the same parser (gen_decisions.go).
+// the typed decisions frozen in testdata/typed_decisions.golden (core_typed_decisions_test.go),
+// which the generator recorded before its typed output was printed from Flow IR.
 
 // coreGenMode is a set of generator options under which the Core passes are compared.
 type coreGenMode struct {
@@ -179,6 +180,7 @@ func coreGenerations(t *testing.T, mode coreGenMode) []coreGenerated1 {
 	var out []coreGenerated1
 	for _, gc := range append(schemaCorpus(t), coreExtraGrammars...) {
 		if dec, ok := coreGenerate(gc.src, mode.opts); ok && writesTyped(dec) {
+			loadTypedDecisions(t, mode.name, gc.name, dec)
 			out = append(out, coreGenerated1{gc.name, dec})
 		}
 	}
