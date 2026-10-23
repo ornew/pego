@@ -143,6 +143,31 @@ func TestPassesTerminalContext(t *testing.T) {
 	}
 }
 
+// TestPassesTerminalInStream checks that the passes reach the element of a #stream repetition, so
+// that a discarded expression of the element is a Terminal as it is in any repetition.
+func TestPassesTerminalInStream(t *testing.T) {
+	var alts []Node
+	for _, w := range strings.Fields("ab cd ef gh ij kl mn op") {
+		alts = append(alts, seq(lit(w[:1]), lit(w[1:])))
+	}
+	drop := &Drop{Body: choice(alts...)}
+	x := lit("x")
+	x.Attrs().Want = true
+	body := seq(drop, x)
+	body.Attrs().Want = true
+	rep := &Repeat{Max: -1, Body: body}
+	rep.Attrs().Want = true
+	st := &Stream{Repeat: rep}
+	st.Attrs().Want = true
+	m := module(rule(0, "a", st))
+	m.Rules[0].Want = true
+	m.Starts = []int{0}
+	passes(t, m, terminalsPass)
+	if _, ok := drop.Body.(*Terminal); !ok {
+		t.Errorf("discarded body in a stream element %T, want a terminal", drop.Body)
+	}
+}
+
 // TestPassesOperatorLines checks that the passes reach the lines of an Operators Rule.
 func TestPassesOperatorLines(t *testing.T) {
 	operand := choice(class('0', '9'), lit("("))

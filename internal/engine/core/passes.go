@@ -91,6 +91,9 @@ func terminals(n Node, build bool) Node {
 		x.Body = terminals(x.Body, x.attrs.Want)
 	case *Repeat:
 		x.Body = terminals(x.Body, want(x.Body))
+	case *Stream:
+		// The element of a #stream repetition is the repetition's body, as in any repetition.
+		x.Repeat.Body = terminals(x.Repeat.Body, want(x.Repeat.Body))
 	case *Look:
 		x.Body = terminals(x.Body, want(x.Body))
 	case *Nest:
