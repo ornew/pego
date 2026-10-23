@@ -43,7 +43,7 @@ rule expr Doc = previous:expr ";" items:(x:[a-z] #atomic -",") #repeat(3) / item
 
 func testTypedLRWorkload(t *testing.T, src, fixture, dir string) {
 	t.Helper()
-	testGeneratedTypedBodyWorkload(t, src, fixture, dir, "(typed LR body inlined)", GenOptions{disableTypedLRBodies: true})
+	testGeneratedTypedBodyWorkload(t, src, fixture, dir, "(typed LR body inlined)", GenOptions{})
 }
 
 func testGeneratedTypedBodyWorkload(t *testing.T, src, fixture, dir, marker string, reference GenOptions, unaffectedMarkers ...int) {

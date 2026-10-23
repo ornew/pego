@@ -150,21 +150,19 @@ type Doc = { Text Text }
 		t.Fatal(err)
 	}
 	for _, convert := range []bool{false, true} {
-		for _, general := range []bool{false, true} {
-			pkg := fmt.Sprintf("text_%v_%v", convert, general)
-			code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, convertTypes: convert, disableTypedRecoveryBodies: general})
-			if err != nil {
+		pkg := fmt.Sprintf("text_%v", convert)
+		code, err := generateCode(g, GenOptions{Package: pkg, Start: "main", Types: true, Recognize: true, convertTypes: convert})
+		if err != nil {
+			t.Fatal(err)
+		}
+		path := filepath.Join(dir, pkg)
+		if err := os.Mkdir(path, 0755); err != nil {
+			t.Fatal(err)
+		}
+		fixture := strings.NewReplacer("PACKAGE", pkg, "LONG_MESSAGE", fmt.Sprintf("%q", message)).Replace(generatedGoRecoveryTextConsumer)
+		for name, data := range map[string][]byte{"parser.go": code, "text_test.go": []byte(fixture)} {
+			if err := os.WriteFile(filepath.Join(path, name), data, 0644); err != nil {
 				t.Fatal(err)
-			}
-			path := filepath.Join(dir, pkg)
-			if err := os.Mkdir(path, 0755); err != nil {
-				t.Fatal(err)
-			}
-			fixture := strings.NewReplacer("PACKAGE", pkg, "LONG_MESSAGE", fmt.Sprintf("%q", message)).Replace(generatedGoRecoveryTextConsumer)
-			for name, data := range map[string][]byte{"parser.go": code, "text_test.go": []byte(fixture)} {
-				if err := os.WriteFile(filepath.Join(path, name), data, 0644); err != nil {
-					t.Fatal(err)
-				}
 			}
 		}
 	}

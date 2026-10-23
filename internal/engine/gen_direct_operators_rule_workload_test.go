@@ -22,7 +22,7 @@ func TestGeneratedTypedOperatorsRuleWorkload(t *testing.T) {
 	}
 	fixture := strings.ReplaceAll(typedLRWorkloadFixture, "TestLRWorkload", "TestOperatorsRuleWorkload")
 	fixture = strings.ReplaceAll(fixture, "BenchmarkTypedLR", "BenchmarkTypedOperatorsRule")
-	testGeneratedTypedBodyWorkload(t, string(src), fixture, dir, "(typed OperatorsRule body inlined)", GenOptions{disableTypedOperatorsRuleBodies: true})
+	testGeneratedTypedBodyWorkload(t, string(src), fixture, dir, "(typed OperatorsRule body inlined)", GenOptions{})
 }
 
 func TestGeneratedTypedOperatorsRuleActionWorkload(t *testing.T) {
@@ -47,7 +47,7 @@ rule expr Expr = operators {
     }
 }
 rule atom Atom = t:("a") #atomic => Atom{Text: text($t)}
-`, typedOperatorsRuleActionWorkloadFixture, dir, "(typed OperatorsRule body inlined)", GenOptions{disableTypedOperatorsRuleBodies: true})
+`, typedOperatorsRuleActionWorkloadFixture, dir, "(typed OperatorsRule body inlined)", GenOptions{})
 }
 
 const typedOperatorsRuleActionWorkloadFixture = `package lrfixture

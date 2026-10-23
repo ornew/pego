@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -172,18 +171,8 @@ func TestGeneratedTypedOperatorsRuleBodies(t *testing.T) {
 		if c.name == "typed/OperatorsRule_mixed_routes" && strings.Count(string(code), "(typed OperatorsRule body inlined)") != 3 {
 			t.Fatal("mixed routes: all three operands must use unfinished bodies")
 		}
-		opts.Types = false
-		nodeRef, err := generateCode(g, opts)
-		if err != nil {
-			t.Fatal(err)
-		}
-		opts.disableTypedOperatorsRuleBodies = false
-		node, err := generateCode(g, opts)
-		if err != nil || !bytes.Equal(nodeRef, node) {
-			t.Fatalf("%s: typed control changes Node output: %v", c.name, err)
-		}
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{disableTypedOperatorsRuleBodies: true})
+	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{})
 	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true})
 }

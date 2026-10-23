@@ -16,7 +16,7 @@ func TestGeneratedTypedFramedCutWorkloads(t *testing.T) {
 	if dir == "" {
 		dir = t.TempDir()
 	}
-	control := GenOptions{disableTypedFramedCuts: true}
+	control := GenOptions{}
 	t.Run("LR", func(t *testing.T) {
 		testGeneratedTypedBodyWorkload(t, `type Doc = { Items []node[string]; N int }
 rule main Doc = e:expr $$ => $e

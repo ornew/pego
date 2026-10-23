@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"bytes"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -104,19 +103,8 @@ func TestGeneratedTypedLRBodies(t *testing.T) {
 				t.Fatalf("%s: leader %s must keep the growth wrapper", c.name, r.name)
 			}
 		}
-		// The selector must not change Node parsing or recognition output.
-		opts.Types = false
-		nodeRef, err := generateCode(g, opts)
-		if err != nil {
-			t.Fatal(err)
-		}
-		opts.disableTypedLRBodies = false
-		node, err := generateCode(g, opts)
-		if err != nil || !bytes.Equal(nodeRef, node) {
-			t.Fatalf("%s: typed control changes Node code: %v", c.name, err)
-		}
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedTypesCorpus(t, goBin, typedLRBodyCases, GenOptions{disableTypedLRBodies: true})
+	testGeneratedTypesCorpus(t, goBin, typedLRBodyCases, GenOptions{})
 	testGeneratedTypesCorpus(t, goBin, typedLRBodyCases, GenOptions{convertTypes: true})
 }

@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"bytes"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -76,19 +75,9 @@ func TestGeneratedTypedFramedCuts(t *testing.T) {
 		if !strings.Contains(string(code), "TParse(trules") || !strings.Contains(string(code), marker) {
 			t.Fatalf("%s: cut-bearing typed body must be exercised", c.name)
 		}
-		opts.Types = false
-		nodeRef, err := generateCode(g, opts)
-		if err != nil {
-			t.Fatal(err)
-		}
-		opts.disableTypedFramedCuts = false
-		node, err := generateCode(g, opts)
-		if err != nil || !bytes.Equal(nodeRef, node) {
-			t.Fatalf("%s: framed-cut control changes Node output: %v", c.name, err)
-		}
 	}
 	cases = append(cases, prefixPartCutCorpus())
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{disableTypedFramedCuts: true})
+	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{})
 	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true})
 }

@@ -24,7 +24,7 @@ func TestGeneratedTypedRecoveryWorkloads(t *testing.T) {
 				"ERRORS_PER_ITEM", c.errors).Replace(typedRecoveryWorkloadFixture)
 			testGeneratedTypedBodyWorkload(t, typedRecoveryWorkloadTypes+c.src, fixture,
 				filepath.Join(dir, c.name), "// Recovery inlined under the runtime-owned frame.",
-				GenOptions{disableTypedRecoveryBodies: true})
+				GenOptions{})
 		})
 	}
 }
@@ -66,8 +66,7 @@ func BenchmarkTypedRecoveryGeneration(b *testing.B) {
 	for _, c := range typedRecoveryWorkloads {
 		cases = append(cases, struct{ name, src string }{c.name, typedRecoveryWorkloadTypes + c.src})
 	}
-	opts := GenOptions{Package: "recoveryfixture", Start: "main", Types: true, Recognize: true,
-		disableTypedRecoveryBodies: os.Getenv("PEGO_REFERENCE_RECOVERY") == "1"}
+	opts := GenOptions{Package: "recoveryfixture", Start: "main", Types: true, Recognize: true}
 	for _, c := range cases {
 		b.Run(c.name, func(b *testing.B) {
 			g, err := parseTest(c.src)

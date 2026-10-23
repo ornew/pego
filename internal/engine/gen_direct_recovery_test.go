@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"bytes"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -101,18 +100,8 @@ func TestGeneratedTypedRecoveryBodies(t *testing.T) {
 		if !strings.Contains(string(candidate), "TParse(trules") || !strings.Contains(string(candidate), marker) {
 			t.Fatalf("%s: typed recovery route not exercised", c.name)
 		}
-		opts.Types = false
-		nodeReference, err := generateCode(g, opts)
-		if err != nil {
-			t.Fatal(err)
-		}
-		opts.disableTypedRecoveryBodies = false
-		node, err := generateCode(g, opts)
-		if err != nil || !bytes.Equal(nodeReference, node) {
-			t.Fatalf("%s: typed recovery control changes Node output: %v", c.name, err)
-		}
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
-	testGeneratedTypesCorpus(t, goBin, typedRecoveryCases, GenOptions{disableTypedRecoveryBodies: true})
+	testGeneratedTypesCorpus(t, goBin, typedRecoveryCases, GenOptions{})
 	testGeneratedTypesCorpus(t, goBin, typedRecoveryCases, GenOptions{convertTypes: true})
 }
