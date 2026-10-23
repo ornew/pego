@@ -17,10 +17,9 @@ parsing/recognition, closure, VMs and TypeScript retain their separate routes.
 
 ## Reference Control
 
-Private generation option `disableTypedLRBodies` selects the same-source
-alternative. The reference emits per-expression bodies under the same
-left-recursion runtime; ordinary direct rules stay fixed. No generated
-matching-time option check remains.
+No generation option selects an alternative for this mechanism. Typed Go
+output comes from the Flow IR printer, and its generated parsers are compared
+with the engine oracle in the `internal/engine` tests.
 
 ## Evidence and Implementation
 
@@ -34,8 +33,7 @@ Evidence records: [079](../079-inline-eligible-typed-left-recursion-bodies.md).
 
 Source owners: [`typed structural
 emitter`](../../../internal/engine/gen_direct.go), [`framed body
-emission`](../../../internal/engine/gen_direct_node.go),
-[`GenOptions.disableTypedLRBodies`](../../../internal/engine/gen.go).
+emission`](../../../internal/engine/gen_direct_node.go).
 
 The [comparison policy](../../design/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.

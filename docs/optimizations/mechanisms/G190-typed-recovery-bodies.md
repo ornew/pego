@@ -18,10 +18,9 @@ parsing/recognition, closure, VMs and TypeScript retain their separate routes.
 
 ## Reference Control
 
-Private generation option `disableTypedRecoveryBodies` selects the same-source
-alternative. The reference emits general recovery dispatch for the selected
-group; it does not change recovery semantics or Node generation. No generated
-matching-time option check remains.
+No generation option selects an alternative for this mechanism. Typed Go
+output comes from the Flow IR printer, and its generated parsers are compared
+with the engine oracle in the `internal/engine` tests.
 
 ## Evidence and Implementation
 
@@ -36,8 +35,7 @@ Evidence records: [083](../083-inline-typed-recovery-bodies.md).
 
 Source owners: [`typed structural
 emitter`](../../../internal/engine/gen_direct.go), [`framed body
-emission`](../../../internal/engine/gen_direct_node.go),
-[`GenOptions.disableTypedRecoveryBodies`](../../../internal/engine/gen.go).
+emission`](../../../internal/engine/gen_direct_node.go).
 
 The [comparison policy](../../design/024-optimization-mechanism-controls.md)
 distinguishes same-source controls, historical changes and full checkpoints.
