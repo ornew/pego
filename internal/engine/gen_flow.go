@@ -13,13 +13,14 @@ import (
 
 // Typed Go rules printed from Flow IR.
 //
-// With GenOptions.flowTyped, in the parsers whose options flowSupported accepts, the typed rules
-// are built as Core IR (typedCore) and printed from Flow IR here. The rules that flow.LocalRule
-// accepts are lowered to local functions (flow.Lower) and printed into the direct rule that
-// typedCall and directMethod wrap. The bodies of left-recursion leaders and of rules that recover,
-// and the lines of Operators Rules, are lowered to framed functions (flow.LowerFrame) where dgen
-// inlines them, and printed into the matcher methods that the runtime calls under the frames it
-// owns (finishFrameBody). The other rules keep the direct rules of dgen and the general code.
+// In the parsers whose options flowSupported accepts, the typed rules are built as Core IR
+// (typedCore) and printed from Flow IR here, unless GenOptions.directTypedRules keeps them on
+// dgen. The rules that flow.LocalRule accepts are lowered to local functions (flow.Lower) and
+// printed into the direct rule that typedCall and directMethod wrap. The bodies of left-recursion
+// leaders and of rules that recover, and the lines of Operators Rules, are lowered to framed
+// functions (flow.LowerFrame) where dgen inlines them, and printed into the matcher methods that
+// the runtime calls under the frames it owns (finishFrameBody). The other rules keep the direct
+// rules of dgen and the general code.
 //
 // The printer follows reachability as dgen does: a statement at an unreachable point is left out,
 // but its text is still formed, so that the package variables it names (literals, expectations,
@@ -35,7 +36,7 @@ type flowState struct {
 	rules []*rule
 }
 
-// flowSupported reports whether flowTyped covers the generator's options: those with the typed
+// flowSupported reports whether Flow IR covers the generator's options: those with the typed
 // cuts and local capture layouts that dgen uses.
 func (g *generator) flowSupported() bool {
 	return !g.disableTypedCuts && !g.disableTypedLocalLayouts

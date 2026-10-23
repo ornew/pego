@@ -12,11 +12,18 @@ import (
 )
 
 // The tests here compare the typed rules printed from Flow IR (gen_flow.go) with the direct rules
-// of dgen, generating every corpus grammar with and without GenOptions.flowTyped.
+// of dgen, generating every corpus grammar with GenOptions.directTypedRules and by default.
 
-// flowModes are the generator options under which flowTyped prints rules from Flow IR, lean and
-// with work controls; frames
-// reports that it also prints the bodies and lines under runtime-owned frames.
+// directOpts returns the options o with the typed rules printed by dgen, the reference of the
+// comparisons.
+func directOpts(o GenOptions) GenOptions {
+	o.directTypedRules = true
+	return o
+}
+
+// flowModes are the generator options under which the default prints rules from Flow IR, lean and
+// with work controls; frames reports that it also prints the bodies and lines under runtime-owned
+// frames.
 var flowModes = []struct {
 	name   string
 	opts   GenOptions
@@ -104,13 +111,11 @@ func TestFlowDiffDetectsMutations(t *testing.T) {
 		t.Run(m.name, func(t *testing.T) {
 			applied := 0
 			for _, gc := range append(schemaCorpus(t), coreExtraGrammars...)[:60] {
-				want, _, _, ok := flowGenerate(gc.src, opts)
+				want, _, _, ok := flowGenerate(gc.src, directOpts(opts))
 				if !ok {
 					continue
 				}
-				flowOpts := opts
-				flowOpts.flowTyped = true
-				got, n, _, _ := flowGenerate(gc.src, flowOpts)
+				got, n, _, _ := flowGenerate(gc.src, opts)
 				if n == 0 || flowDiff(want, got) != "" {
 					continue
 				}
@@ -165,18 +170,16 @@ func TestFlowMatchesDirectRules(t *testing.T) {
 		t.Run(mode.name, func(t *testing.T) {
 			compared, grammars, printed, framed := 0, 0, 0, 0
 			for _, gc := range cases {
-				want, n, frames, ok := flowGenerate(gc.src, mode.opts)
+				want, n, frames, ok := flowGenerate(gc.src, directOpts(mode.opts))
 				if !ok {
 					continue
 				}
 				if n != 0 || frames != 0 {
-					t.Fatalf("%s: %d rules and %d framed bodies printed from Flow IR without flowTyped", gc.name, n, frames)
+					t.Fatalf("%s: %d rules and %d framed bodies printed from Flow IR with directTypedRules", gc.name, n, frames)
 				}
-				opts := mode.opts
-				opts.flowTyped = true
-				got, n, frames, ok := flowGenerate(gc.src, opts)
+				got, n, frames, ok := flowGenerate(gc.src, mode.opts)
 				if !ok {
-					t.Errorf("%s: rejected with flowTyped", gc.name)
+					t.Errorf("%s: rejected", gc.name)
 					continue
 				}
 				compared++
@@ -227,9 +230,9 @@ func firstDiff(a, b string) string {
 }
 
 // TestFlowTypedCorpus builds the parsers of the typed corpus with and without work controls, with
-// flowTyped printing rules from Flow IR, and checks that they parse every input as those of dgen
-// do: the comparison of their text leaves out the lines of unread variables, which the compiler
-// checks here.
+// the default printing rules from Flow IR, and checks that they parse every input as those of
+// dgen do: the comparison of their text leaves out the lines of unread variables, which the
+// compiler checks here.
 func TestFlowTypedCorpus(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
@@ -241,7 +244,7 @@ func TestFlowTypedCorpus(t *testing.T) {
 	for _, ordinary := range []string{"", "1"} {
 		t.Run("ordinary="+ordinary, func(t *testing.T) {
 			t.Setenv("PEGO_TEST_ORDINARY", ordinary)
-			testGeneratedTypesCorpus(t, goBin, generatedTypesCases(t), GenOptions{flowTyped: true})
+			testGeneratedTypesCorpus(t, goBin, generatedTypesCases(t), GenOptions{})
 		})
 	}
 }
@@ -270,8 +273,8 @@ func TestFlowTypedObservable(t *testing.T) {
 		name string
 		opts GenOptions
 	}{
-		{"with nodes", GenOptions{flowTyped: true, Observability: true}},
-		{"typed-only", GenOptions{flowTyped: true, Observability: true, TypedOnly: true}},
+		{"with nodes", GenOptions{Observability: true}},
+		{"typed-only", GenOptions{Observability: true, TypedOnly: true}},
 	} {
 		t.Run(mode.name, func(t *testing.T) {
 			printed, framed := 0, 0
@@ -290,14 +293,14 @@ func TestFlowTypedObservable(t *testing.T) {
 	}
 }
 
-// TestFlowTypedDocument builds typed Document parsers with flowTyped printing rules from Flow IR
+// TestFlowTypedDocument builds typed Document parsers with the default printing rules from Flow IR
 // and checks them as TestGenerateDirectTypedDocument does.
 func TestFlowTypedDocument(t *testing.T) {
-	testDirectTypedDocument(t, GenOptions{flowTyped: true})
+	testDirectTypedDocument(t, GenOptions{})
 }
 
-// TestFlowTypedModes pins the options under which flowTyped leaves every rule on dgen and the
-// general code: the parser is the one written without it.
+// TestFlowTypedModes pins the options under which Flow IR does not cover the typed rules: the
+// parser is the one dgen writes, and nothing is printed from Flow IR.
 func TestFlowTypedModes(t *testing.T) {
 	cases := append(schemaCorpus(t), coreExtraGrammars...)
 	for _, mode := range []coreGenMode{
@@ -307,13 +310,11 @@ func TestFlowTypedModes(t *testing.T) {
 		t.Run(mode.name, func(t *testing.T) {
 			compared := 0
 			for _, gc := range cases {
-				want, _, _, ok := flowGenerate(gc.src, mode.opts)
+				want, _, _, ok := flowGenerate(gc.src, directOpts(mode.opts))
 				if !ok {
 					continue
 				}
-				opts := mode.opts
-				opts.flowTyped = true
-				got, n, frames, _ := flowGenerate(gc.src, opts)
+				got, n, frames, _ := flowGenerate(gc.src, mode.opts)
 				if n != 0 || frames != 0 || got != want {
 					t.Errorf("%s: %d rules and %d framed bodies printed from Flow IR, same output %v", gc.name, n, frames, got == want)
 				}

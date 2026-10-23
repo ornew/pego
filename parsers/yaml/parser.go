@@ -50358,7 +50358,6 @@ func i1(p *rt.TParser) (any, bool) {
 		var x61 rune
 		start = p.Pos
 		p.Enter()
-		_, _ = x30, x33
 		for {
 			x2 = p.Pos
 			if _, ok = u140(p); !ok {
@@ -50564,7 +50563,6 @@ func i1(p *rt.TParser) (any, bool) {
 	var x61 rune
 	start = p.Pos
 	p.Enter()
-	_, _ = x30, x33
 	p.StepWork()
 	p.StepWork()
 	p.StepWork()
@@ -51069,7 +51067,6 @@ func i8(p *rt.TParser) (any, bool) {
 		var ok bool
 		start = p.Pos
 		p.Enter()
-		_ = x5
 		x3, x4 = p.Pos, len(p.KidStack)
 		x5 = 0
 		for {
@@ -51138,7 +51135,6 @@ func i8(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x5
 	p.StepWork()
 	p.StepWork()
 	p.StepWork()
@@ -52853,7 +52849,6 @@ func s23(p *rt.TParser) (any, bool) {
 		var ok bool
 		start = p.Pos
 		p.Enter()
-		_ = x2
 		x1 = p.Pos
 		x2 = 0
 		for {
@@ -52894,7 +52889,6 @@ func s23(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	p.StepWork()
 	x1 = p.Pos
 	p.StepWork()
@@ -52939,7 +52933,6 @@ func s24(p *rt.TParser) (any, bool) {
 		var ok bool
 		start = p.Pos
 		p.Enter()
-		_ = x2
 		x1 = p.Pos
 		x2 = 0
 		for {
@@ -52980,7 +52973,6 @@ func s24(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	p.StepWork()
 	x1 = p.Pos
 	p.StepWork()
@@ -53264,7 +53256,6 @@ func v26(p *rt.TParser) (any, bool) {
 		var x5, ok bool
 		start = p.Pos
 		p.Enter()
-		_, _ = x8, x12
 		x1 = p.Pos
 		x2 = p.Pos
 		x4, _, x5 = p.NextOrdinary()
@@ -53366,7 +53357,6 @@ func v26(p *rt.TParser) (any, bool) {
 	var x5, ok bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x8, x12
 	p.StepWork()
 	x1 = p.Pos
 	p.StepWork()
@@ -53499,7 +53489,6 @@ func v28(p *rt.TParser) (any, bool) {
 		var ok bool
 		start = p.Pos
 		p.Enter()
-		_ = x2
 		x1 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 38 {
 			p.Pos++
@@ -53545,7 +53534,6 @@ func v28(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	p.StepWork()
 	x1 = p.Pos
 	p.StepWork()
@@ -53597,7 +53585,6 @@ func s29(p *rt.TParser) (any, bool) {
 		var ok bool
 		start = p.Pos
 		p.Enter()
-		_ = x2
 		x1 = p.Pos
 		if p.Pos < len(p.In) && p.In[p.Pos] == 42 {
 			p.Pos++
@@ -53643,7 +53630,6 @@ func s29(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	p.StepWork()
 	x1 = p.Pos
 	p.StepWork()
@@ -55898,7 +55884,6 @@ func i46(p *rt.TParser) (any, bool) {
 		start = p.Pos
 		prevEnv = p.Env
 		p.Enter()
-		_ = x15
 		x1 = p.Pos
 		p.Silent++
 		x6 = p.Pos
@@ -55994,7 +55979,6 @@ func i46(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x15
 	p.StepWork()
 	p.StepWork()
 	x1 = p.Pos
@@ -56701,7 +56685,6 @@ func i51(p *rt.TParser) (any, bool) {
 		start = p.Pos
 		prevEnv = p.Env
 		p.Enter()
-		_ = x14
 		x1 = p.Pos
 		p.Silent++
 		x6 = p.Pos
@@ -56787,7 +56770,6 @@ func i51(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x14
 	p.StepWork()
 	p.StepWork()
 	x1 = p.Pos
@@ -65177,7 +65159,6 @@ func s130(p *rt.TParser) (any, bool) {
 		var ok bool
 		start = p.Pos
 		p.Enter()
-		_ = x7
 		x1 = p.Pos
 		x5, x6 = p.Pos, len(p.KidStack)
 		x7 = 0
@@ -65241,7 +65222,6 @@ func s130(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x7
 	p.StepWork()
 	x1 = p.Pos
 	p.StepWork()
@@ -65962,7 +65942,6 @@ func v140(p *rt.TParser) (any, bool) {
 		var x4, ok bool
 		start = p.Pos
 		p.Enter()
-		_ = x11
 		x1 = p.Pos
 		x3, _, x4 = p.NextOrdinary()
 		if !(x4 && (x3 == 65279)) && p.Depth <= p.MaxDepth {
@@ -66031,7 +66010,6 @@ func v140(p *rt.TParser) (any, bool) {
 	var x4, ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x11
 	p.StepWork()
 	x1 = p.Pos
 	if p.Pos < len(p.In) {
@@ -71028,7 +71006,6 @@ func v178(p *rt.TParser) (any, bool) {
 		var x3, ch rune
 		start = p.Pos
 		p.Enter()
-		_, _, _ = x9, x15, x21
 		if p.Pos < len(p.In) && p.In[p.Pos] == 92 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit174, "\\", 62, false); !ok {
@@ -71161,7 +71138,6 @@ func v178(p *rt.TParser) (any, bool) {
 	var x3, ch rune
 	start = p.Pos
 	p.Enter()
-	_, _, _ = x9, x15, x21
 	p.StepWork()
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 92) {

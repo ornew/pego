@@ -41,7 +41,7 @@ The evidence below was measured at commit `4e2f3763` with Go 1.27.1 on an Apple 
 | Closure | `compiler.expr`/`exprMatcher` and helpers in `compile.go`, attributes in `attrs.go` | 720 |
 | Bytecode, shared by the recursive and iterative VMs | `bcompiler.match`/`elems`/`leaf`/`void` and helpers in `bcompile.go` | 490 |
 | Generated Go Node and recognizer | `generator.expr` and helpers in `gen.go`, one Go function per expression | 455 |
-| Generated typed Go | `dgen` in `gen_direct.go` and `gen_direct_node.go`, falling back to `generator.expr` | 1,770 |
+| Generated typed Go | Flow IR, by default; `dgen` in `gen_direct.go` and `gen_direct_node.go` prints the typed rules only when Flow IR is off (`GenOptions.directTypedRules`), and prints the Node and recognizer tables, falling back to `generator.expr` | 1,770 |
 | Terminal programs | `terminalProgram` in `gen_terminal.go` | 260 |
 | Generated TypeScript | `tsGen.expr` and helpers in `gen_ts.go` | 400 |
 
@@ -525,7 +525,15 @@ stage of its first consumer, so its differential tests and negative controls run
    lowering until stage 2. Gate: identical results on the generated-parser tests,
    `parsers/test.sh`, the typed conformance tests and the engine differential tests; identical generated
    trace and profile event streams, apart from differences the specification allows; the comparisons in
-   [Performance and Results](#performance-and-results). Then remove `dgen`, the typed parts of
+   [Performance and Results](#performance-and-results). Flow IR prints the typed rules it covers by default;
+   the typed output no longer contains the `_ = x` lines `dgen` wrote for variables Flow reads nowhere, since
+   Flow's read accounting omits them and the Go compiler still reports unused variables. In the checked-in
+   parsers and benchmark generators, no typed rule reaches a fallback of the typed dispatch to `dgen` or
+   `generator.expr` (measured at 92050aae at the four exits: the direct rule, the framed body, the rule body
+   and the Operators Rule lines). Left-recursion leaders, `#recover`, nested calls and Operators Rules are
+   rejected by `flow.LocalRule`, but they are printed through the framed-body and Operators Rule lowering.
+   The Node and recognizer tables still print through `dgen` and `generator.expr`, which stage 2 removes.
+   `dgen` remains the reference of the differential tests (`GenOptions.directTypedRules`). Then remove `dgen`, the typed parts of
    `generator.expr` and of the Go term lowering, `gen_prune.go` and the typed uses of the ordinary-method
    passes.
 2. **Go Node, recognizer, Document and stream output**, with the recognition specialization. The terms of

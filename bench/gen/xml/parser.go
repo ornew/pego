@@ -29097,7 +29097,6 @@ func i33(p *rt.TParser) (any, bool) {
 		var ok bool
 		start = p.Pos
 		p.Enter()
-		_ = x7
 		if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 			p.Pos++
 		} else if _, ok = p.Parser.MatchLiteral(lit70, "(", 45, false); !ok {
@@ -29194,7 +29193,6 @@ func i33(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x7
 	p.StepWork()
 	p.StepWork()
 	if (!rt.WorkControlsEnabled || p.Control == nil) && (p.Pos < len(p.In) && p.In[p.Pos] == 40) {
@@ -33698,7 +33696,6 @@ func s63(p *rt.TParser) (any, bool) {
 		var ok, x10 bool
 		start = p.Pos
 		p.Enter()
-		_ = x2
 		x1 = p.Pos
 		x2 = 0
 		for {
@@ -33783,7 +33780,6 @@ func s63(p *rt.TParser) (any, bool) {
 	var ok, x10 bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	p.StepWork()
 	x1 = p.Pos
 	p.StepWork()
@@ -34632,7 +34628,6 @@ func v71(p *rt.TParser) (any, bool) {
 		var ok bool
 		start = p.Pos
 		p.Enter()
-		_ = x2
 		x1 = p.Pos
 		x2 = 0
 		for {
@@ -34673,7 +34668,6 @@ func v71(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	p.StepWork()
 	x1 = p.Pos
 	p.StepWork()

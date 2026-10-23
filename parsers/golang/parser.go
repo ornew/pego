@@ -6040,7 +6040,6 @@ func i75(p *rt.TParser) (any, bool) {
 	var x16 []any
 	start = p.Pos
 	p.Enter()
-	_ = x11
 	if v3, ok = u254(p); !ok {
 		goto fail
 	}
@@ -6582,7 +6581,6 @@ func i84(p *rt.TParser) (any, bool) {
 	var x16 []any
 	start = p.Pos
 	p.Enter()
-	_ = x11
 	if v3, ok = u85(p); !ok {
 		goto fail
 	}
@@ -7725,7 +7723,6 @@ func i102(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x7
 	if v3, ok = u254(p); !ok {
 		goto fail
 	}
@@ -8464,7 +8461,6 @@ func i115(p *rt.TParser) (any, bool) {
 	var x16 []any
 	start = p.Pos
 	p.Enter()
-	_ = x11
 	if v3, ok = u254(p); !ok {
 		goto fail
 	}
@@ -14064,7 +14060,6 @@ func i200(p *rt.TParser) (any, bool) {
 	var x13 []any
 	start = p.Pos
 	p.Enter()
-	_ = x8
 	if v3, ok = u183(p); !ok {
 		goto fail
 	}
@@ -22864,7 +22859,6 @@ func s325(p *rt.TParser) (any, bool) {
 	var x8 rt.ExpMark
 	start = p.Pos
 	p.Enter()
-	_, _ = x8, x9
 	x1 = p.Pos
 	x4 = p.Pos
 	p.Silent++
@@ -23856,7 +23850,6 @@ func s351(p *rt.TParser) (any, bool) {
 	var x8 rt.ExpMark
 	start = p.Pos
 	p.Enter()
-	_, _ = x8, x9
 	x1 = p.Pos
 	x4 = p.Pos
 	p.Silent++

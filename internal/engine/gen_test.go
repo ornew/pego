@@ -649,7 +649,7 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, refer
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code := generatePackage(t, dir, fmt.Sprintf("g%d", i), g, GenOptions{Start: "main", Types: true, SourceInfo: true})
+		code := generatePackage(t, dir, fmt.Sprintf("g%d", i), g, GenOptions{Start: "main", Types: true, SourceInfo: true, directTypedRules: true})
 		if strings.Contains(code, "TParse(trules") {
 			typedRuntime++
 		}

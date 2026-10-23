@@ -2199,7 +2199,6 @@ func i1(p *rt.TParser) (any, bool) {
 		var ok bool
 		start = p.Pos
 		p.Enter()
-		_ = x4
 		x2, x3, x4 = p.Pos, len(p.KidStack), 0
 		for {
 			x5 = p.Pos
@@ -2257,7 +2256,6 @@ func i1(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	p.StepWork()
 	x2, x3, x4 = p.Pos, len(p.KidStack), 0
 	for {

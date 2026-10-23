@@ -123,9 +123,9 @@ type GenOptions struct {
 	disableGuardedClasses bool
 	// boxedComparisons evaluates comparisons of fields as other binary operations, for tests.
 	boxedComparisons bool
-	// flowTyped prints the typed rules that the Go-local lowering covers from Flow IR
-	// (gen_flow.go), in parsers whose options it supports (generator.flowSupported).
-	flowTyped bool
+	// directTypedRules prints the typed rules with the direct generator (gen_direct.go) instead of
+	// Flow IR (gen_flow.go), as the reference of the differential tests.
+	directTypedRules bool
 	// decisions, if set, receives the lowering decisions of the generator (gen_decisions.go), for
 	// tests.
 	decisions *genDecisions
@@ -222,7 +222,7 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
 		}
 	}
-	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, flowTyped: opts.flowTyped}
+	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, directTypedRules: opts.directTypedRules}
 	if opts.Stream {
 		gen.streamStart = start
 	}
@@ -555,7 +555,7 @@ type generator struct {
 	disableTypedObjectSlabs     bool
 	disableTypedListSlabs       bool
 	disableTypedOutputBootstrap bool
-	flowTyped                   bool
+	directTypedRules            bool
 	// flow holds the Core IR of the typed rules while they are printed from Flow IR, or nil;
 	// flowRules counts the rules printed from Flow IR as direct rules and flowFrames the bodies
 	// and lines printed as matchers of runtime-owned frames.

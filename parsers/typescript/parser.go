@@ -16569,7 +16569,6 @@ func i166(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	x2, x3, x4 = p.Pos, len(p.KidStack), 0
 	for {
 		x5 = p.Pos
@@ -28192,7 +28191,6 @@ func i329(p *rt.TParser) (any, bool) {
 	var x20 []any
 	start = p.Pos
 	p.Enter()
-	_ = x15
 	if v3, ok = u330(p); !ok {
 		goto fail
 	}
@@ -28455,7 +28453,6 @@ func i332(p *rt.TParser) (any, bool) {
 	var x20 []any
 	start = p.Pos
 	p.Enter()
-	_ = x15
 	if v3, ok = u333(p); !ok {
 		goto fail
 	}
@@ -35300,7 +35297,6 @@ func s461(p *rt.TParser) (any, bool) {
 	var ch, x11, x24, x34 rune
 	start = p.Pos
 	p.Enter()
-	_ = x4
 	x1 = p.Pos
 	if p.Pos < len(p.In) && p.In[p.Pos] == 47 {
 		p.Pos++
@@ -46685,7 +46681,6 @@ func s575(p *rt.TParser) (any, bool) {
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_ = x24
 	if p.Pos < len(p.In) && p.In[p.Pos] == 123 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit66, "{", 20, false); !ok {

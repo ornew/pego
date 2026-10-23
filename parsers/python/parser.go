@@ -3425,7 +3425,6 @@ func s14(p *rt.TParser) (any, bool) {
 	var x24, x47, x60 []any
 	start = p.Pos
 	p.Enter()
-	_ = x12
 	x1, x2 = p.Pos, len(p.KidStack)
 	for {
 		x4 = p.Pos
@@ -4365,7 +4364,6 @@ func i22(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x5
 	x3, x4 = p.Pos, len(p.KidStack)
 	x5 = 0
 	for {
@@ -8947,7 +8945,6 @@ func i91(p *rt.TParser) (any, bool) {
 	var x21 []any
 	start = p.Pos
 	p.Enter()
-	_ = x16
 	if v3, ok = u92(p); !ok {
 		goto fail
 	}
@@ -10193,7 +10190,6 @@ func i112(p *rt.TParser) (any, bool) {
 	var x13 []any
 	start = p.Pos
 	p.Enter()
-	_ = x8
 	if v3, ok = u207(p); !ok {
 		goto fail
 	}
@@ -12586,7 +12582,6 @@ func i143(p *rt.TParser) (any, bool) {
 	var x21, x30, x42, x49 []any
 	start = p.Pos
 	p.Enter()
-	_ = x25
 	if v3, ok = u152(p); !ok {
 		goto fail
 	}
@@ -12745,7 +12740,6 @@ func i144(p *rt.TParser) (any, bool) {
 	var x21, x30, x42, x49 []any
 	start = p.Pos
 	p.Enter()
-	_ = x25
 	if v3, ok = u145(p); !ok {
 		goto fail
 	}
@@ -14686,7 +14680,6 @@ func i173(p *rt.TParser) (any, bool) {
 	var x22 []any
 	start = p.Pos
 	p.Enter()
-	_ = x16
 	if v3, ok = p.Call(trules[175], 0); !ok {
 		goto fail
 	}
@@ -16742,7 +16735,6 @@ func i200(p *rt.TParser) (any, bool) {
 	var x21, x30, x42, x49 []any
 	start = p.Pos
 	p.Enter()
-	_ = x25
 	if v3, ok = u202(p); !ok {
 		goto fail
 	}
@@ -17804,7 +17796,6 @@ func i214(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x25
 	if p.Pos < len(p.In) && p.In[p.Pos] == 40 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit106, "(", 35, false); !ok {
@@ -19098,7 +19089,6 @@ func i223(p *rt.TParser) (any, bool) {
 	var x21, x30, x42, x49 []any
 	start = p.Pos
 	p.Enter()
-	_ = x25
 	if v3, ok = u224(p); !ok {
 		goto fail
 	}
@@ -21840,7 +21830,6 @@ func v272(p *rt.TParser) (any, bool) {
 	var ok, x11 bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	x1 = p.Pos
 	if !p.Predicate(func(c *rt.TActCtx) any {
 		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("lv"), any(4096)), any(2)), any(0))
@@ -21955,7 +21944,6 @@ func v273(p *rt.TParser) (any, bool) {
 	var ok, x11 bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	x1 = p.Pos
 	if !p.Predicate(func(c *rt.TActCtx) any {
 		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("lv"), any(4096)), any(2)), any(1))
@@ -22524,7 +22512,6 @@ func s283(p *rt.TParser) (any, bool) {
 	var ok, x11 bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	x1 = p.Pos
 	if !p.Predicate(func(c *rt.TActCtx) any {
 		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("lv"), any(4096)), any(2)), any(0))
@@ -22605,7 +22592,6 @@ func s284(p *rt.TParser) (any, bool) {
 	var ok, x11 bool
 	start = p.Pos
 	p.Enter()
-	_ = x2
 	x1 = p.Pos
 	if !p.Predicate(func(c *rt.TActCtx) any {
 		return c.Binary("==", c.Binary("%", c.Binary("/", c.Lookup("lv"), any(4096)), any(2)), any(1))
@@ -26057,7 +26043,6 @@ func s391(p *rt.TParser) (any, bool) {
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_ = x1
 	if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit475, "0", 156, false); !ok {
@@ -26120,7 +26105,6 @@ func s392(p *rt.TParser) (any, bool) {
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_ = x1
 	if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit475, "0", 156, false); !ok {
@@ -26183,7 +26167,6 @@ func s393(p *rt.TParser) (any, bool) {
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_ = x1
 	if p.Pos < len(p.In) && p.In[p.Pos] == 48 {
 		p.Pos++
 	} else if _, ok = p.Parser.MatchLiteral(lit475, "0", 156, false); !ok {

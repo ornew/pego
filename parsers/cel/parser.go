@@ -1244,7 +1244,6 @@ func i3(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x5
 	x3, x4 = p.Pos, len(p.KidStack)
 	x5 = 0
 	for {
@@ -1316,7 +1315,6 @@ func i4(p *rt.TParser) (any, bool) {
 	var ok bool
 	start = p.Pos
 	p.Enter()
-	_ = x5
 	x3, x4 = p.Pos, len(p.KidStack)
 	x5 = 0
 	for {
@@ -5328,7 +5326,6 @@ func v57(p *rt.TParser) (any, bool) {
 	var x4, ok, x18 bool
 	start = p.Pos
 	p.Enter()
-	_, _ = x21, x27
 	x1 = p.Pos
 	x3, _, x4 = p.NextOrdinary()
 	if !(x4 && (x3 == 92)) && p.Depth+1 <= p.MaxDepth {

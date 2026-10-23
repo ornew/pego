@@ -2112,7 +2112,6 @@ func v14(p *rt.TParser) (any, bool) {
 	var ok, x20 bool
 	start = p.Pos
 	p.Enter()
-	_ = x12
 	x1, x2 = p.Pos, len(p.KidStack)
 	for {
 		x4 = p.Pos
@@ -11565,7 +11564,6 @@ func i189(p *rt.TParser) (any, bool) {
 	start = p.Pos
 	prevEnv = p.Env
 	p.Enter()
-	_ = x8
 	x2 = p.Pos
 	x3 = p.Pos
 	x4 = p.NewVals(5)[:0]
@@ -11691,7 +11689,6 @@ func v190(p *rt.TParser) (any, bool) {
 	var x21 rune
 	start = p.Pos
 	p.Enter()
-	_ = x12
 	x1, x2 = p.Pos, len(p.KidStack)
 	for {
 		x4 = p.Pos
@@ -17815,7 +17812,6 @@ func s276(p *rt.TParser) (any, bool) {
 	var x6, ch rune
 	start = p.Pos
 	p.Enter()
-	_ = x21
 	x1 = p.Pos
 	if _, ok = s287(p); !ok {
 		goto L4
@@ -17981,7 +17977,6 @@ func v278(p *rt.TParser) (any, bool) {
 	var ch rune
 	start = p.Pos
 	p.Enter()
-	_ = x8
 	x1 = p.Pos
 	x4 = p.Pos
 	p.Silent++

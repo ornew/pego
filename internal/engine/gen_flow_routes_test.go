@@ -56,11 +56,9 @@ func TestFlowRoutesPrinted(t *testing.T) {
 	frames := 0
 	for _, mode := range flowModes {
 		for _, gc := range routeCases(t) {
-			opts := mode.opts
-			opts.flowTyped = true
-			_, n, f, ok := flowGenerate(gc.src, opts)
+			_, n, f, ok := flowGenerate(gc.src, mode.opts)
 			if !ok {
-				t.Fatalf("%s %s: rejected with flowTyped", mode.name, gc.name)
+				t.Fatalf("%s %s: rejected", mode.name, gc.name)
 			}
 			if n == 0 {
 				t.Errorf("%s %s: no rule printed from Flow IR", mode.name, gc.name)
@@ -81,13 +79,11 @@ func TestFlowRoutesPrinted(t *testing.T) {
 func TestFlowRoutesMatchDirect(t *testing.T) {
 	for _, mode := range flowModes {
 		for _, gc := range routeCases(t) {
-			want, n0, f0, ok := flowGenerate(gc.src, mode.opts)
+			want, n0, f0, ok := flowGenerate(gc.src, directOpts(mode.opts))
 			if !ok || n0 != 0 || f0 != 0 {
 				t.Fatalf("%s %s: reference", mode.name, gc.name)
 			}
-			opts := mode.opts
-			opts.flowTyped = true
-			got, _, _, ok := flowGenerate(gc.src, opts)
+			got, _, _, ok := flowGenerate(gc.src, mode.opts)
 			if !ok {
 				t.Fatalf("%s %s: rejected", mode.name, gc.name)
 			}
@@ -98,7 +94,8 @@ func TestFlowRoutesMatchDirect(t *testing.T) {
 	}
 }
 
-// TestFlowRoutesBuild builds the route grammars with dgen and with flowTyped, with and without
+// TestFlowRoutesBuild builds the route grammars with dgen and with the default Flow IR printer,
+// with and without
 // the ordinary work of the typed runtime, and checks that both parse every input the way the
 // engine does: the same values, and the same errors as the engine's.
 func TestFlowRoutesBuild(t *testing.T) {
@@ -112,7 +109,7 @@ func TestFlowRoutesBuild(t *testing.T) {
 	for _, ordinary := range []string{"", "1"} {
 		t.Run("ordinary="+ordinary, func(t *testing.T) {
 			t.Setenv("PEGO_TEST_ORDINARY", ordinary)
-			testGeneratedTypesCorpus(t, goBin, routeCases(t), GenOptions{flowTyped: true}, 1)
+			testGeneratedTypesCorpus(t, goBin, routeCases(t), GenOptions{}, 1)
 		})
 	}
 }
@@ -173,7 +170,7 @@ rule o = operators {
 				seq.Items[len(seq.Items)-1] = w(op)
 			}
 		}
-		if _, err = generate(g, GenOptions{Types: true, TypedOnly: true, Module: "example.com/p", flowTyped: true}); err == nil {
+		if _, err = generate(g, GenOptions{Types: true, TypedOnly: true, Module: "example.com/p"}); err == nil {
 			t.Errorf("generate with an Operators Rule spliced into a %s inside a leader: accepted", name)
 		}
 	}
