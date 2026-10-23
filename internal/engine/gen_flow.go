@@ -321,8 +321,9 @@ func (p *flowPrinter) stmt(s flow.Stmt) {
 		if p.g.document {
 			guard = "p.Document == nil && " + guard
 		}
+		// The inlined read charges its input work and leaves a Document's examined range to Peek.
 		work := "p.InputWork(1)\n"
-		if p.g.noWork {
+		if !p.g.flow.opts.Work {
 			work = ""
 		}
 		p.write(fmt.Sprintf("if %s {\n%s%s, %s, %s = p.In[p.Pos], 1, true\n} else {\n%[3]s, %[4]s, %[5]s = p.Peek()\n}\n", guard, work, ch, size, s.OK.Name))

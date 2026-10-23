@@ -39,7 +39,9 @@ type Func struct {
 	Binds bool
 	// Frame reports a framed function. Value is the value it succeeds with, nil where it cannot
 	// succeed; Cut, if not nil, is the cut flag of its outermost scope, which it reads from the
-	// runtime on entry and publishes on return.
+	// runtime (RegCut) on entry. On both returns, success and failure, the function publishes Cut
+	// to RegCut again. The body holds no statement for the publication: the target writes it
+	// where the function returns, after the body and at Fail.
 	Frame bool
 	Value Expr
 	Cut   *Var
@@ -140,6 +142,11 @@ type Silent struct{ Delta int }
 
 // Peek reads the character at the position without consuming it: its code point into Ch, its
 // size into Size and whether there is one into OK. Ch and Size may be nil (not kept).
+//
+// Peek reads as the runtime's Peek does, which also charges the input work of the read and, in a
+// Document parse, records how far the parse examined the input. A target that inlines the read of
+// a code point in memory must do the same: charge one unit of input work unless the function is
+// lowered without work (Options.Work), and leave Document parses to the runtime's Peek.
 type Peek struct{ Ch, Size, OK *Var }
 
 // Advance moves the position forward by N.
