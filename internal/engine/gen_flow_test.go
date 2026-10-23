@@ -55,6 +55,16 @@ var flowModes = []struct {
 // compilation of the generated parsers checks them.
 var flowUnreadLine = regexp.MustCompile(`(?m)^\t+_(, _)* = [a-z0-9]+(, [a-z0-9]+)*\n`)
 
+// flowDiff returns the lines around the first difference of the parsers want and got apart from
+// the lines of unread variables, or "" if they are the same.
+func flowDiff(want, got string) string {
+	w, g := flowUnreadLine.ReplaceAllString(want, ""), flowUnreadLine.ReplaceAllString(got, "")
+	if w == g {
+		return ""
+	}
+	return firstDiff(w, g)
+}
+
 // flowGenerate generates the parser of the grammar source with the options, joined into one
 // text, and returns the numbers of rules and of framed bodies and lines printed from Flow IR, or
 // reports false if the generator rejects the grammar.
@@ -110,9 +120,8 @@ func TestFlowMatchesDirectRules(t *testing.T) {
 					printed += n
 				}
 				framed += frames
-				w, g := flowUnreadLine.ReplaceAllString(want, ""), flowUnreadLine.ReplaceAllString(got, "")
-				if w != g {
-					t.Errorf("%s: output differs:\n%s", gc.name, firstDiff(w, g))
+				if d := flowDiff(want, got); d != "" {
+					t.Errorf("%s: output differs:\n%s", gc.name, d)
 				}
 			}
 			t.Logf("compared %d grammars, %d with %d rules printed from Flow IR; %d framed bodies and lines", compared, grammars, printed, framed)
@@ -168,6 +177,50 @@ func TestFlowTypedCorpus(t *testing.T) {
 		t.Run("ordinary="+ordinary, func(t *testing.T) {
 			t.Setenv("PEGO_TEST_ORDINARY", ordinary)
 			testGeneratedTypesCorpus(t, goBin, generatedTypesCases(t), GenOptions{flowTyped: true})
+		})
+	}
+}
+
+// TestFlowTypedObservable builds observable typed parsers printed from Flow IR, with nodes and
+// typed-only, for the typed test grammars (a bounded part of the corpus), and checks them against
+// the parsers dgen prints without observability and against the engine's errors.
+func TestFlowTypedObservable(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds generated code")
+	}
+	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
+	if _, err := os.Stat(goBin); err != nil {
+		t.Skip("go command not found")
+	}
+	var cases []genCase
+	for _, c := range generatedTypesCases(t) {
+		if strings.HasPrefix(c.name, "typed/") {
+			cases = append(cases, c)
+		}
+	}
+	if len(cases) < 40 {
+		t.Fatalf("only %d typed test grammars", len(cases))
+	}
+	for _, mode := range []struct {
+		name string
+		opts GenOptions
+	}{
+		{"with nodes", GenOptions{flowTyped: true, Observability: true}},
+		{"typed-only", GenOptions{flowTyped: true, Observability: true, TypedOnly: true}},
+	} {
+		t.Run(mode.name, func(t *testing.T) {
+			printed, framed := 0, 0
+			for _, c := range cases {
+				opts := mode.opts
+				opts.Types = true
+				_, n, frames, _ := flowGenerate(c.src, opts)
+				printed, framed = printed+n, framed+frames
+			}
+			t.Logf("%d rules and %d framed bodies printed from Flow IR", printed, framed)
+			if printed < 80 || framed < 10 {
+				t.Fatalf("%d rules and %d framed bodies printed from Flow IR", printed, framed)
+			}
+			testGeneratedTypesCorpus(t, goBin, cases, mode.opts)
 		})
 	}
 }
