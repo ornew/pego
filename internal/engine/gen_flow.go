@@ -49,9 +49,15 @@ func (g *generator) startFlow() error {
 		return err
 	}
 	g.flow = &flowState{m: m, origin: origin, rules: append(append([]*rule(nil), g.prog.rules...), g.prog.twins...),
-		opts: flow.Options{Work: !g.noWork, Recovers: flow.Recovers(m), ClassTables: g.leanTyped(),
-			GuardedClasses: g.lean && !g.disableGuardedClasses, InlineLiterals: maxInlineLiteral, Observe: g.observability}}
+		opts: g.flowOptions(m)}
 	return nil
+}
+
+// flowOptions returns the options of lowering the typed rules of the Core IR m, while the typed
+// table is generated.
+func (g *generator) flowOptions(m *core.Module) flow.Options {
+	return flow.Options{Work: !g.noWork, Recovers: flow.Recovers(m), ClassTables: g.leanTyped(),
+		GuardedClasses: g.lean && !g.disableGuardedClasses, InlineLiterals: maxInlineLiteral, Observe: g.observability}
 }
 
 // flowDirectRule prints the rule r from Flow IR as a direct rule, or returns nil if r is not
