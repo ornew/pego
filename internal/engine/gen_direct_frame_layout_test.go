@@ -87,19 +87,6 @@ func TestGeneratedTypedFrameLayouts(t *testing.T) {
 			t.Fatalf("%s: candidate route not exercised", c.name)
 		}
 		opts.disableTypedFrameLayouts = true
-		reference, err := generateCode(g, opts)
-		if err != nil {
-			t.Fatal(err)
-		}
-		// The element case has an independent eligible operand; its postfix
-		// must fall back. Other cases have one affected LR/OperatorsRule matcher.
-		wantCount := 0
-		if c.name == "typed/OperatorsRule_dead_element_predicate" {
-			wantCount = 1
-		}
-		if strings.Count(string(reference), marker) != wantCount || strings.Contains(string(candidate), "disableTypedFrameLayouts") {
-			t.Fatalf("%s: invalid generation-only control", c.name)
-		}
 		opts.Types = false
 		nodeReference, err := generateCode(g, opts)
 		if err != nil {

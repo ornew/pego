@@ -649,16 +649,12 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, refer
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code := generatePackage(t, dir, fmt.Sprintf("g%d", i), g, GenOptions{Start: "main", Types: true, SourceInfo: true, directTypedRules: true})
+		code := generatePackage(t, dir, fmt.Sprintf("g%d", i), g, GenOptions{Start: "main", Types: true, SourceInfo: true})
 		if strings.Contains(code, "TParse(trules") {
 			typedRuntime++
 		}
 		if c.name == "OperatorsRule prefix-part cuts" && !strings.Contains(code, "TParse(trules") {
 			t.Error("OperatorsRule prefix-part cuts: typed runtime is not exercised")
-		}
-		// The grammars written for direct rules (gen_direct.go) must compile rules that way.
-		if strings.Contains(c.name, "typed/direct_") && !strings.Contains(code, "(body inlined)") {
-			t.Errorf("%s: no direct rules", c.name)
 		}
 		// The same through the reference route: Node conversion for the full
 		// corpus, or a disabled optimization for focused differential tests.

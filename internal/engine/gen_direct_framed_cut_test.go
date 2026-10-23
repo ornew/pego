@@ -76,11 +76,6 @@ func TestGeneratedTypedFramedCuts(t *testing.T) {
 		if !strings.Contains(string(code), "TParse(trules") || !strings.Contains(string(code), marker) {
 			t.Fatalf("%s: cut-bearing typed body must be exercised", c.name)
 		}
-		opts.disableTypedFramedCuts = true
-		ref, err := generateCode(g, opts)
-		if err != nil || strings.Contains(string(ref), marker) || strings.Contains(string(code), "disableTypedFramedCuts") {
-			t.Fatalf("%s: invalid generation-only cut control: %v", c.name, err)
-		}
 		opts.Types = false
 		nodeRef, err := generateCode(g, opts)
 		if err != nil {

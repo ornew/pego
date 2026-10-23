@@ -13,9 +13,8 @@ import (
 
 // Typed Go rules printed from Flow IR.
 //
-// In the parsers whose options flowSupported accepts, the typed rules are built as Core IR
-// (typedCore) and printed from Flow IR here, unless GenOptions.directTypedRules keeps them on
-// dgen. The rules that flow.LocalRule accepts are lowered to local functions (flow.Lower) and
+// The typed rules are built as Core IR (typedCore) and printed from Flow IR here. The rules that
+// flow.LocalRule accepts are lowered to local functions (flow.Lower) and
 // printed into the direct rule that typedCall and directMethod wrap. The bodies of left-recursion
 // leaders and of rules that recover, and the lines of Operators Rules, are lowered to framed
 // functions (flow.LowerFrame) where dgen inlines them, and printed into the matcher methods that
@@ -36,10 +35,18 @@ type flowState struct {
 	rules []*rule
 }
 
-// flowSupported reports whether Flow IR covers the generator's options: those with the typed
-// cuts and local capture layouts that dgen uses.
-func (g *generator) flowSupported() bool {
-	return !g.disableTypedCuts && !g.disableTypedLocalLayouts
+// failTyped records that Flow IR does not print a typed part, which fails the generation: the
+// typed printer has no fallback to the generator's expression lowering.
+func (g *generator) failTyped(what string) {
+	if g.table == "trules" && g.typedErr == nil {
+		g.typedErr = fmt.Errorf("Flow IR does not print %s", what)
+	}
+}
+
+// flowLineOK reports whether the Operators Rule line e is a framed body that Flow IR can print
+// inside the runtime-owned frame of its rule.
+func flowLineOK(e grammar.Expr) bool {
+	return directFrameExprOK(e, true, true)
 }
 
 // startFlow builds the Core IR of the typed rules for printing them from Flow IR.
@@ -96,9 +103,9 @@ func (g *generator) flowDirectRule(r *rule) *direct {
 }
 
 // flowFrameBody prints the body of the typed rule r from Flow IR as the matcher of its frame
-// body, as directTypedFrameBody does, or returns "" if r keeps the code of dgen.
+// body, or returns "" if Flow IR does not print r that way.
 func (g *generator) flowFrameBody(r *rule, scope *scope) string {
-	if g.flow == nil || g.table != "trules" || g.disableTypedFrameLayouts {
+	if g.flow == nil || g.table != "trules" {
 		return ""
 	}
 	comment, ok := g.typedFrameComment(r)
@@ -117,9 +124,9 @@ func (g *generator) flowFrameBody(r *rule, scope *scope) string {
 }
 
 // flowOperatorsRuleBody prints the line l of the Operators Rule g.cur, whose expression is e, from
-// Flow IR as directTypedOperatorsRuleBody does, or returns "" if the line keeps the code of dgen.
+// Flow IR, or returns "" if Flow IR does not print the line that way.
 func (g *generator) flowOperatorsRuleBody(l *core.OpLine, e grammar.Expr, scope *scope, build bool) string {
-	if g.flow == nil || l == nil || g.disableTypedFrameLayouts || !g.typedOperatorsRuleBodyOK(e) || !flow.FramedBody(l.Body) {
+	if g.flow == nil || l == nil || !flowLineOK(e) || !flow.FramedBody(l.Body) {
 		return ""
 	}
 	f, err := flow.LowerFrame(g.flow.m, g.flow.m.Rules[g.cur.id], l.Body, l.Scope, build, g.cur.name, g.flow.opts)

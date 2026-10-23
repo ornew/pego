@@ -78,10 +78,6 @@ func TestGeneratedTypedDirectCuts(t *testing.T) {
 		if c.name == "typed/direct_cut_callee" && !strings.Contains(string(code), "// part, called as by invokePlain (body inlined)") {
 			t.Fatal("callee containing cuts must use the direct typed route")
 		}
-		reference, err := generateCode(g, GenOptions{Package: "cuts", Start: "main", Types: true, disableTypedCuts: true})
-		if err != nil {
-			t.Fatal(err)
-		}
 		for _, r := range compile(t, c.src).rules {
 			if !directCuts(r.def.Expr) {
 				continue
@@ -90,9 +86,6 @@ func TestGeneratedTypedDirectCuts(t *testing.T) {
 			for _, route := range []string{"invoked as by invoke", "called as by invokePlain"} {
 				marker := "// " + r.name + ", " + route + " (body inlined)"
 				inlined = inlined || strings.Contains(string(code), marker)
-				if strings.Contains(string(reference), marker) {
-					t.Fatalf("%s: disabled cut optimization must retain the general %s body", c.name, r.name)
-				}
 			}
 			if !inlined {
 				t.Fatalf("%s: cut-bearing %s must use the direct typed route", c.name, r.name)

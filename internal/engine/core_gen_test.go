@@ -192,6 +192,9 @@ func coreGenerations(t *testing.T, mode coreGenMode) []coreGenerated1 {
 // writesTyped reports that the generator wrote the typed rules: it does not where no entry point
 // parses with them (a start rule whose value is converted from the Node tree).
 func writesTyped(dec *genDecisions) bool {
+	if dec.gen != nil && dec.gen.flowRules > 0 {
+		return true
+	}
 	for _, d := range dec.log {
 		if d.table == "trules" {
 			return true

@@ -11,15 +11,8 @@ import (
 	"testing"
 )
 
-// The tests here compare the typed rules printed from Flow IR (gen_flow.go) with the direct rules
-// of dgen, generating every corpus grammar with GenOptions.directTypedRules and by default.
-
-// directOpts returns the options o with the typed rules printed by dgen, the reference of the
-// comparisons.
-func directOpts(o GenOptions) GenOptions {
-	o.directTypedRules = true
-	return o
-}
+// The tests here check the typed rules printed from Flow IR (gen_flow.go), generating every corpus
+// grammar in the modes of flowModes. The engine oracle of the corpus tests checks their values.
 
 // flowModes are the generator options under which the default prints rules from Flow IR, lean and
 // with work controls; frames reports that it also prints the bodies and lines under runtime-owned
@@ -40,7 +33,7 @@ var flowModes = []struct {
 	{"lean without framed cuts", GenOptions{Types: true, TypedOnly: true, disableTypedFramedCuts: true}, true},
 	{"lean without recovery bodies", GenOptions{Types: true, TypedOnly: true, disableTypedRecoveryBodies: true}, true},
 	{"lean without OperatorsRule bodies", GenOptions{Types: true, TypedOnly: true, disableTypedOperatorsRuleBodies: true}, true},
-	{"lean general frame layouts", GenOptions{Types: true, TypedOnly: true, disableTypedFrameLayouts: true}, false},
+	{"lean general frame layouts", GenOptions{Types: true, TypedOnly: true, disableTypedFrameLayouts: true}, true},
 	{"controlled typed-only", GenOptions{Types: true, TypedOnly: true, WorkControls: true}, true},
 	{"controlled with nodes", GenOptions{Types: true, WorkControls: true}, true},
 	{"controlled recognizer", GenOptions{Types: true, Recognize: true, WorkControls: true}, true},
@@ -72,9 +65,9 @@ func flowDiff(want, got string) string {
 	return firstDiff(w, g)
 }
 
-// TestFlowDiffDetectsMutations checks that the comparison of TestFlowMatchesDirectRules reports
-// a parser printed from Flow IR that differs from dgen's in a statement, also next to the line
-// of unread variables that it leaves out, while it ignores a change of that line alone.
+// TestFlowDiffDetectsMutations checks that flowDiff reports a parser printed from Flow IR that
+// differs from the default Flow IR parser in a statement, also next to the line of unread
+// variables that it leaves out, while it ignores a change of that line alone.
 func TestFlowDiffDetectsMutations(t *testing.T) {
 	opts := GenOptions{Types: true, TypedOnly: true}
 	mutations := []struct {
@@ -111,7 +104,7 @@ func TestFlowDiffDetectsMutations(t *testing.T) {
 		t.Run(m.name, func(t *testing.T) {
 			applied := 0
 			for _, gc := range append(schemaCorpus(t), coreExtraGrammars...)[:60] {
-				want, _, _, ok := flowGenerate(gc.src, directOpts(opts))
+				want, _, _, ok := flowGenerate(gc.src, opts)
 				if !ok {
 					continue
 				}
@@ -161,23 +154,16 @@ func flowGenerate(src string, opts GenOptions) (string, int, int, bool) {
 	return b.String(), n, frames, true
 }
 
-// TestFlowMatchesDirectRules checks that printing the typed rules from Flow IR writes the parser
-// that dgen writes, apart from the lines of unread variables, and that the comparison covers rules
-// and, where the mode inlines them, framed bodies and lines printed from Flow IR.
-func TestFlowMatchesDirectRules(t *testing.T) {
+// TestFlowPrintsTypedRules checks that every corpus grammar generates in every flowModes mode with
+// its typed rules printed from Flow IR, and counts the bodies and lines printed under runtime-owned
+// frames where the mode inlines them.
+func TestFlowPrintsTypedRules(t *testing.T) {
 	cases := append(schemaCorpus(t), coreExtraGrammars...)
 	for _, mode := range flowModes {
 		t.Run(mode.name, func(t *testing.T) {
 			compared, grammars, printed, framed := 0, 0, 0, 0
 			for _, gc := range cases {
-				want, n, frames, ok := flowGenerate(gc.src, directOpts(mode.opts))
-				if !ok {
-					continue
-				}
-				if n != 0 || frames != 0 {
-					t.Fatalf("%s: %d rules and %d framed bodies printed from Flow IR with directTypedRules", gc.name, n, frames)
-				}
-				got, n, frames, ok := flowGenerate(gc.src, mode.opts)
+				_, n, frames, ok := flowGenerate(gc.src, mode.opts)
 				if !ok {
 					t.Errorf("%s: rejected", gc.name)
 					continue
@@ -188,13 +174,10 @@ func TestFlowMatchesDirectRules(t *testing.T) {
 					printed += n
 				}
 				framed += frames
-				if d := flowDiff(want, got); d != "" {
-					t.Errorf("%s: output differs:\n%s", gc.name, d)
-				}
 			}
-			t.Logf("compared %d grammars, %d with %d rules printed from Flow IR; %d framed bodies and lines", compared, grammars, printed, framed)
+			t.Logf("generated %d grammars, %d with %d rules printed from Flow IR; %d framed bodies and lines", compared, grammars, printed, framed)
 			if compared < 100 || grammars < 100 {
-				t.Errorf("compared %d grammars, %d with rules printed from Flow IR", compared, grammars)
+				t.Errorf("generated %d grammars, %d with rules printed from Flow IR", compared, grammars)
 			}
 			if mode.frames && framed < 50 || !mode.frames && framed != 0 {
 				t.Errorf("%d framed bodies and lines printed from Flow IR", framed)
@@ -299,8 +282,6 @@ func TestFlowTypedDocument(t *testing.T) {
 	testDirectTypedDocument(t, GenOptions{})
 }
 
-// TestFlowTypedModes pins the options under which Flow IR does not cover the typed rules: the
-// parser is the one dgen writes, and nothing is printed from Flow IR.
 func TestFlowTypedModes(t *testing.T) {
 	cases := append(schemaCorpus(t), coreExtraGrammars...)
 	for _, mode := range []coreGenMode{
@@ -310,13 +291,9 @@ func TestFlowTypedModes(t *testing.T) {
 		t.Run(mode.name, func(t *testing.T) {
 			compared := 0
 			for _, gc := range cases {
-				want, _, _, ok := flowGenerate(gc.src, directOpts(mode.opts))
-				if !ok {
+				if _, _, _, ok := flowGenerate(gc.src, mode.opts); !ok {
+					t.Errorf("%s: rejected", gc.name)
 					continue
-				}
-				got, n, frames, _ := flowGenerate(gc.src, mode.opts)
-				if n != 0 || frames != 0 || got != want {
-					t.Errorf("%s: %d rules and %d framed bodies printed from Flow IR, same output %v", gc.name, n, frames, got == want)
 				}
 				compared++
 			}

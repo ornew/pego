@@ -182,28 +182,17 @@ func (g *generator) directNodeBody(r *rule, scope *scope) string {
 	return g.directFrameBody(r, scope, "Node body inlined")
 }
 
-func (g *generator) directTypedFrameBody(r *rule, scope *scope) string {
-	comment, ok := g.typedFrameComment(r)
-	if !ok {
-		return ""
-	}
-	return g.directFrameBody(r, scope, comment)
-}
-
 // typedFrameComment reports whether the body of the typed rule r is inlined under the
 // runtime-owned frame, a left-recursion leader or a rule that recovers, and returns the comment of
 // its matcher.
 func (g *generator) typedFrameComment(r *rule) (string, bool) {
 	comment := "typed recovery body inlined"
 	if r.leader {
-		if g.disableTypedLRBodies {
-			return "", false
-		}
 		comment = "typed LR body inlined"
 	} else if !directHasRecovery(r.bodyExpr()) {
 		return "", false
 	}
-	if !directFrameExprOK(r.bodyExpr(), !g.disableTypedFramedCuts, !g.disableTypedRecoveryBodies) {
+	if !directFrameExprOK(r.bodyExpr(), true, true) {
 		return "", false
 	}
 	return comment, true

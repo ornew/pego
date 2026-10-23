@@ -123,9 +123,6 @@ type GenOptions struct {
 	disableGuardedClasses bool
 	// boxedComparisons evaluates comparisons of fields as other binary operations, for tests.
 	boxedComparisons bool
-	// directTypedRules prints the typed rules with the direct generator (gen_direct.go) instead of
-	// Flow IR (gen_flow.go), as the reference of the differential tests.
-	directTypedRules bool
 	// decisions, if set, receives the lowering decisions of the generator (gen_decisions.go), for
 	// tests.
 	decisions *genDecisions
@@ -222,7 +219,7 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
 		}
 	}
-	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, directTypedRules: opts.directTypedRules}
+	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap}
 	if opts.Stream {
 		gen.streamStart = start
 	}
@@ -530,6 +527,7 @@ type generator struct {
 	shaperKeys          []string
 	recoveryProg        map[*Program]bool // whether a program can recover from errors
 	tableErr            error             // the rule table does not fit the form of runtime.RuleSpec
+	typedErr            error             // the first typed rule or line that Flow IR does not print
 	// lean is set when the output has no work controls and no Documents, so each typed rule body
 	// is its ordinary form and may call the runtime's ordinary-parse helpers directly.
 	lean                            bool
@@ -555,7 +553,6 @@ type generator struct {
 	disableTypedObjectSlabs     bool
 	disableTypedListSlabs       bool
 	disableTypedOutputBootstrap bool
-	directTypedRules            bool
 	// flow holds the Core IR of the typed rules while they are printed from Flow IR, or nil;
 	// flowRules counts the rules printed from Flow IR as direct rules and flowFrames the bodies
 	// and lines printed as matchers of runtime-owned frames.
@@ -761,18 +758,18 @@ func (g *generator) rules() {
 	for _, r := range all {
 		s := newScope()
 		scopes[r] = s
-		if g.table == "trules" || directLeanOK(r) {
-			// Typed direct rules need no separate body. Value-free Node rules retain
-			// one for generic calls and external entry, whose caller owns depth.
-			d := g.flowDirectRule(r)
-			if d == nil {
-				d = g.directRule(r)
-			}
-			if d != nil {
+		if g.table == "trules" {
+			// Typed direct rules need no separate body; Flow IR prints every typed rule.
+			if d := g.flowDirectRule(r); d != nil {
 				directs[r] = d
-				if g.table != "trules" {
-					bodies[r] = g.directLeanBody(r, d)
-				}
+				continue
+			}
+		} else if directLeanOK(r) {
+			// Value-free Node rules retain one for generic calls and external entry, whose
+			// caller owns depth.
+			if d := g.directRule(r); d != nil {
+				directs[r] = d
+				bodies[r] = g.directLeanBody(r, d)
 				continue
 			}
 		}
@@ -785,8 +782,8 @@ func (g *generator) rules() {
 			} else if body := g.flowFrameBody(r, s); body != "" {
 				bodies[r] = body
 				continue
-			} else if body := g.directTypedFrameBody(r, s); body != "" {
-				bodies[r] = body
+			} else {
+				g.failTyped("the body of rule " + r.name)
 				continue
 			}
 			g.cur, g.proj = r, g.projections(r)
@@ -1766,9 +1763,7 @@ func (g *generator) operatorsRule(r *rule, e *grammar.OperatorsRule) {
 		}
 		m := g.flowOperatorsRuleBody(skip, e.Skip, s, false)
 		if m == "" {
-			m = g.directTypedOperatorsRuleBody(e.Skip, s, false, nil, false)
-		}
-		if m == "" {
+			g.failTyped("the skip of an Operators Rule of rule " + g.cur.name)
 			m = g.expr(e.Skip, s, false)
 		}
 		g.decide(decScope, e.Skip, genDecision{names: s.names})
@@ -1821,9 +1816,7 @@ func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, opera
 	build := !g.cur.novalue && !leanLine(action, locals)
 	m := g.flowOperatorsRuleBody(l, e, s, build)
 	if m == "" {
-		m = g.directTypedOperatorsRuleBody(e, s, build, action, operator)
-	}
-	if m == "" {
+		g.failTyped("a line of an Operators Rule of rule " + g.cur.name)
 		m = g.expr(e, s, build)
 	}
 	g.decide(decScope, e, genDecision{names: s.names})

@@ -10,7 +10,7 @@ import (
 )
 
 func TestGenerateDirectTypedDocument(t *testing.T) {
-	testDirectTypedDocument(t, GenOptions{directTypedRules: true})
+	testDirectTypedDocument(t, GenOptions{})
 }
 
 // testDirectTypedDocument builds typed Document parsers generated with the options extra, which

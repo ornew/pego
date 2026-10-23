@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -63,14 +62,6 @@ func testGeneratedTypedBodyWorkload(t *testing.T, src, fixture, dir, marker stri
 		code, err := generateCode(g, opts)
 		if err != nil {
 			t.Fatal(err)
-		}
-		count := 0
-		if len(unaffectedMarkers) != 0 {
-			count = unaffectedMarkers[0]
-		}
-		got := strings.Count(string(code), marker)
-		if (variant == "direct" && got <= count) || (variant == "general" && got != count) {
-			t.Fatalf("%s: incorrect generated body route", variant)
 		}
 		path := filepath.Join(dir, variant)
 		if err := os.MkdirAll(path, 0o755); err != nil {

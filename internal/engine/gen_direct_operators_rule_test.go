@@ -172,11 +172,6 @@ func TestGeneratedTypedOperatorsRuleBodies(t *testing.T) {
 		if c.name == "typed/OperatorsRule_mixed_routes" && strings.Count(string(code), "(typed OperatorsRule body inlined)") != 3 {
 			t.Fatal("mixed routes: all three operands must use unfinished bodies")
 		}
-		opts.disableTypedOperatorsRuleBodies = true
-		ref, err := generateCode(g, opts)
-		if err != nil || strings.Contains(string(ref), "(typed OperatorsRule body inlined)") || strings.Contains(string(code), "disableTypedOperatorsRuleBodies") {
-			t.Fatalf("%s: invalid generation-only control: %v", c.name, err)
-		}
 		opts.Types = false
 		nodeRef, err := generateCode(g, opts)
 		if err != nil {
