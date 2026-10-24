@@ -115,3 +115,14 @@ func inlineOwnedComment(s *SourceInfo) *Comment {
 	}
 	return cs[0]
 }
+
+// inlineHeaderComments returns the comments of texts, normalized comments, written to stand on
+// the line of a declaration or field with a space after each, or "". A comment that ends in a line
+// break is written as a block comment.
+func inlineHeaderComments(texts []string) string {
+	var out strings.Builder
+	for _, text := range texts {
+		out.WriteString(ownedComments(strings.TrimSuffix(text, "\n"))[0].Text + " ")
+	}
+	return out.String()
+}

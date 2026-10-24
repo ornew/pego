@@ -236,6 +236,35 @@ func (p *parser) appendComments(dst, comments []*grammar.Comment) []*grammar.Com
 	return dst
 }
 
+// headerContents returns the normalized contents of the header comments that the parser has
+// recorded since the first of them was from, the comments a declaration owns.
+func (p *parser) headerContents(from int) []string {
+	if from >= len(p.headerComments) {
+		return nil
+	}
+	out := make([]string, 0, len(p.headerComments)-from)
+	for _, c := range p.headerComments[from:] {
+		p.poll()
+		out = append(out, c.Content)
+	}
+	return out
+}
+
+// gapContents returns the normalized contents of the comments before the current token, the
+// comments of the gap that a declaration or field owns when no node starts there.
+func (p *parser) gapContents() []string {
+	t := p.toks[p.i]
+	var out []string
+	if t.lineComment != nil {
+		out = append(out, t.lineComment.Content)
+	}
+	for _, c := range t.comments {
+		p.poll()
+		out = append(out, c.Content)
+	}
+	return out
+}
+
 // boundary marks a new statement outside the current expression's delimiters.
 func (p *parser) boundary() bool {
 	return p.layout && p.layoutDepth == 0 && p.i > p.layoutStart && p.tok().lineBefore
@@ -366,8 +395,9 @@ func (p *parser) file() *grammar.Grammar {
 		g.File.Pkg.SourceInfo.Pos = p.next().pos
 		p.header = true
 		p.headerPos = g.File.Pkg.SourceInfo.Pos
+		headerFrom := len(p.headerComments)
 		func() {
-			defer func() { p.header = false }()
+			defer func() { p.header = false; g.File.Pkg.HeaderComments = p.headerContents(headerFrom) }()
 			defer p.recover() // a missing name skips to the first definition
 			g.File.Pkg.Name = p.ident().text
 		}()
@@ -511,7 +541,16 @@ func (p *parser) typeDecl() (sourceResult grammar.TypeDecl) {
 	pos := p.expect("type").pos
 	p.header = true
 	p.headerPos = pos
-	defer func() { p.header = false }()
+	headerFrom := len(p.headerComments)
+	defer func() {
+		p.header = false
+		switch d := sourceResult.(type) {
+		case *grammar.TypeDef:
+			d.HeaderComments = append(p.headerContents(headerFrom), d.HeaderComments...)
+		case *grammar.TypeAlias:
+			d.HeaderComments = append(p.headerContents(headerFrom), d.HeaderComments...)
+		}
+	}()
 	name := p.ident()
 	info := grammar.SourceInfo{Pos: pos}
 	def := func(t grammar.TypeExpr) *grammar.TypeDef {
@@ -550,18 +589,22 @@ func (p *parser) typeDecl() (sourceResult grammar.TypeDecl) {
 		// A named node type: type N = node[T].
 		p.next()
 		p.header = false
+		gap := p.gapContents()
 		app, _ := p.typeTerm().(*grammar.TypeApp)
 		if app == nil || len(app.Args) != 1 {
 			p.errorf("a node type takes one type argument: type %s = node[T]", name.text)
 			panic(bail{})
 		}
-		return def(app)
+		td := def(app)
+		td.HeaderComments = append(td.HeaderComments, gap...)
+		return td
 	case p.is("="):
 		p.errorf("expected '{' or 'node[' after '='; write type %s ~ <type> for an alias (pego fix rewrites type %s = <type>)", name.text, name.text)
 		panic(bail{})
 	case p.accept("~"):
 		p.header = false
-		return &grammar.TypeAlias{SourceInfo: info, Name: name.text, Type: p.typeExpr(), Break: br}
+		gap := p.gapContents()
+		return &grammar.TypeAlias{SourceInfo: info, Name: name.text, HeaderComments: gap, Type: p.typeExpr(), Break: br}
 	default:
 		p.errorf("expected '=' or '~', found %s", p.tok())
 		panic(bail{})
@@ -721,7 +764,8 @@ func (p *parser) structFields() (fields []*grammar.Field, closeBreak *grammar.Li
 		restore := p.statement()
 		fieldStart := p.i
 		fname := p.ident()
-		field := &grammar.Field{SourceInfo: grammar.SourceInfo{Pos: fname.pos}, Name: fname.text, Type: p.typeExpr(), Break: fb}
+		gap := p.gapContents()
+		field := &grammar.Field{SourceInfo: grammar.SourceInfo{Pos: fname.pos}, Name: fname.text, HeaderComments: gap, Type: p.typeExpr(), Break: fb}
 		p.source(field, fieldStart)
 		fields = append(fields, field)
 		restore()
@@ -784,10 +828,12 @@ func (p *parser) varDef() (sourceResult *grammar.VarDef) {
 	p.header = true
 	p.headerPos = pos
 	defer func() { p.header = false }()
+	headerFrom := len(p.headerComments)
 	name := p.ident()
 	p.header = false
-	vd := &grammar.VarDef{SourceInfo: grammar.SourceInfo{Pos: pos}, Name: name.text, Break: br}
+	vd := &grammar.VarDef{SourceInfo: grammar.SourceInfo{Pos: pos}, Name: name.text, HeaderComments: p.headerContents(headerFrom), Break: br}
 	if !p.boundary() && p.tok().kind != tEOF && !p.is("=") && !p.is(";") {
+		vd.HeaderComments = append(vd.HeaderComments, p.gapContents()...)
 		vd.Type = p.typeExpr()
 	}
 	if !p.boundary() && p.is("=") {
@@ -816,6 +862,7 @@ func (p *parser) ruleDef() (sourceResult *grammar.RuleDef) {
 	p.header, p.layout, p.layoutDepth, p.layoutStart = true, true, 0, p.i-1
 	p.headerPos = pos
 	defer func() { p.header, p.layout, p.layoutDepth = false, false, 0 }()
+	headerFrom := len(p.headerComments)
 	name := p.ident()
 	rd := &grammar.RuleDef{SourceInfo: grammar.SourceInfo{Pos: pos}, Attrs: attrs, Name: name.text, Break: br, AttrBreaks: attrBreaks, KeywordBreak: keywordBreak}
 	if b := p.toks[keyword].source; len(attrs) > 0 && b != nil && b.hasNext {
@@ -829,6 +876,7 @@ func (p *parser) ruleDef() (sourceResult *grammar.RuleDef) {
 	}
 	p.expect("=")
 	p.header = false
+	rd.HeaderComments = p.headerContents(headerFrom)
 	if !p.boundary() && p.is("operators") && p.peek(1).kind == tPunct && p.peek(1).text == "{" && !p.peek(1).lineBefore {
 		p.next()
 		// Items inside an operators block have their own separators.

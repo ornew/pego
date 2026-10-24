@@ -45,6 +45,12 @@ type Pkg struct {
 	SourceInfo `json:"source,omitempty"`
 	Name       string `json:"name,omitempty"`
 
+	// HeaderComments are the normalized contents of the comments inside the
+	// declaration header, between the keyword and the end of the header, in
+	// source order: one string per comment, a line comment ending in a line
+	// break. Format writes them after the keyword.
+	HeaderComments []string `json:"headerComments,omitempty"`
+
 	// Break holds the comments before the package clause (see LineBreak).
 	Break *LineBreak `json:"-"`
 }
@@ -127,6 +133,12 @@ type TypeDef struct {
 	Name       string   `json:"name"`
 	Type       TypeExpr `json:"type"`
 
+	// HeaderComments are the normalized contents of the comments inside the
+	// declaration header, between the keyword and the end of the header, in
+	// source order: one string per comment, a line comment ending in a line
+	// break. Format writes them after the keyword.
+	HeaderComments []string `json:"headerComments,omitempty"`
+
 	// Break holds the comments before the declaration. When it is nil,
 	// Format separates the declaration from the previous one with a blank
 	// line.
@@ -138,6 +150,12 @@ type TypeAlias struct {
 	SourceInfo `json:"source,omitempty"`
 	Name       string   `json:"name"`
 	Type       TypeExpr `json:"type"`
+
+	// HeaderComments are the normalized contents of the comments inside the
+	// declaration header, between the keyword and the end of the header, in
+	// source order: one string per comment, a line comment ending in a line
+	// break. Format writes them after the keyword.
+	HeaderComments []string `json:"headerComments,omitempty"`
 
 	// Break holds the comments before the declaration, as for TypeDef.
 	Break *LineBreak `json:"-"`
@@ -164,6 +182,12 @@ type RuleDef struct {
 	// comments of SourceInfo, and Format writes them when KeywordBreak is nil.
 	KeywordComments         string   `json:"keywordComments,omitempty"`
 	KeywordDetachedComments []string `json:"keywordDetachedComments,omitempty"`
+
+	// HeaderComments are the normalized contents of the comments inside the
+	// declaration header, between the keyword and the end of the header, in
+	// source order: one string per comment, a line comment ending in a line
+	// break. Format writes them after the keyword.
+	HeaderComments []string `json:"headerComments,omitempty"`
 
 	// Break holds the comments before the declaration, as for TypeDef: before
 	// its first attribute, if it has any.
@@ -194,6 +218,12 @@ type VarDef struct {
 	Name       string   `json:"name"`
 	Type       TypeExpr `json:"type,omitempty"`
 	Value      Term     `json:"value,omitempty"`
+
+	// HeaderComments are the normalized contents of the comments inside the
+	// declaration header, between the keyword and the end of the header, in
+	// source order: one string per comment, a line comment ending in a line
+	// break. Format writes them after the keyword.
+	HeaderComments []string `json:"headerComments,omitempty"`
 
 	// Break holds the comments before the declaration, as for TypeDef.
 	Break *LineBreak `json:"-"`
@@ -305,8 +335,11 @@ type TypeApp struct {
 // Field is a field of a struct type.
 type Field struct {
 	SourceInfo `json:"source,omitempty"`
-	Name       string   `json:"name"`
-	Type       TypeExpr `json:"type"`
+	Name       string `json:"name"`
+	// HeaderComments are the normalized contents of the comments between the
+	// name and the type, one string per comment as for TypeDef.HeaderComments.
+	HeaderComments []string `json:"headerComments,omitempty"`
+	Type           TypeExpr `json:"type"`
 
 	Break *LineBreak `json:"-"`
 }

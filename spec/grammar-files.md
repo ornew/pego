@@ -92,14 +92,20 @@ trailing comment, and a lone block comment detached between two attributes of a
 line stays between them. The rule declaration owns the comments on the lines
 between its last attribute and `rule`, as `keywordComments` and
 `keywordDetachedComments` (`RuleDef.KeywordComments` and
-`RuleDef.KeywordDetachedComments`), and they are written there. A string that ends in
+`RuleDef.KeywordDetachedComments`), and they are written there. The comments inside a declaration header, between the keyword and the end of
+the header (`rule /* c */ main /* d */ = ...`, the name, type and `~` or `=` of a
+type or variable declaration, and the package name), belong to the declaration as
+`headerComments`, one normalized string per comment in source order, and a
+struct field owns the comments between its name and its type the same way. They
+are written after the keyword, or after the field name. A string that ends in
 a line break is written as `//` lines, and any other string as a block comment,
 which is also how a trailing comment over several lines is written. A text that
 was a block comment ending in a line break therefore comes back as line
 comments, and the spacing inside a block comment is the normalized one. The
 owned comments of other nodes, such as the expressions of a rule body, are in
 the JSON but have no place in the formatted output without layout. Comments
-that no node owns are not in the JSON: those at the end of the file, between the
+that no node owns are not in the JSON: those at the end of the file, those that follow
+the trailing comment of a statement before a `;` or a closing delimiter, between the
 tokens of a rule expression and inside the lists whose layout is kept apart,
 such as attribute arguments.
 
@@ -162,7 +168,7 @@ decide it.
 | A group ends while trailing is possible | The first such group trails the previous token and later groups are detached |
 | A group ends while trailing is not possible | It is detached; the last group that no blank line ended leads the next token |
 | The next token is on the line of the previous token, or a block comment that could trail ends on the line of the next token | If exactly one group exists, it is detached and not guessed to trail or lead, unless the previous token is an opening delimiter (`(`, `[`, `{`) or a comma, when that group leads the next token. With several groups, the first trails the previous token, the groups in between are detached and the last leads the next token |
-| A closing delimiter or the end of the file | The same rules apply, except that a block comment on the line of the previous token trails the previous token. Other groups are detached even when no next token exists; they have no owner, and the formatter keeps their original tokens |
+| A closing delimiter, a statement separator `;`, or the end of the file | The same rules apply, except that a block comment on the line of the previous token trails the previous token. Other groups are detached even when no next token exists; they have no owner, and the formatter keeps their original tokens |
 
 Ownership then follows the construct:
 

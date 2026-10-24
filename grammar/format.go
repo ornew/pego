@@ -21,7 +21,7 @@ func formatGrammar(g *Grammar, control *metadataControl) string {
 	}
 	if g.File.Pkg.Name != "" {
 		p.lineBreak(ownedLead(&g.File.Pkg.SourceInfo, g.File.Pkg.Break, false), "", false)
-		p.header("package", g.File.Pkg.Pos)
+		p.header("package", g.File.Pkg.Pos, g.File.Pkg.HeaderComments)
 		p.write(" " + g.File.Pkg.Name)
 		p.inline(ownedTrailing(&g.File.Pkg.SourceInfo, g.File.Pkg.Break))
 	}
@@ -288,9 +288,18 @@ func (p *printer) closeBlock(b *LineBreak, indent string) {
 	p.inline(b)
 }
 
+// fieldComments returns the comments to write between the name and the type of a field: those that
+// it owns, when it has no layout.
+func fieldComments(f *Field) string {
+	if f.Break != nil {
+		return ""
+	}
+	return inlineHeaderComments(f.HeaderComments)
+}
+
 func (p *printer) typeDef(t *TypeDef) {
 	pollFormat(p.control)
-	p.header("type", t.Pos)
+	p.header("type", t.Pos, t.HeaderComments)
 	p.write(" " + t.Name + " ")
 	p.write("= ")
 	if t.Type != nil && t.Struct() == nil {
@@ -306,7 +315,7 @@ func (p *printer) typeDef(t *TypeDef) {
 
 func (p *printer) typeAlias(t *TypeAlias) {
 	pollFormat(p.control)
-	p.header("type", t.Pos)
+	p.header("type", t.Pos, t.HeaderComments)
 	p.write(" " + t.Name + " ~ " + formatType(t.Type, p.control))
 }
 
@@ -337,7 +346,7 @@ func (p *printer) structBody(fields []*Field, closeBreak *LineBreak, oneLine boo
 		parts := make([]string, len(fields))
 		for i, f := range fields {
 			pollFormat(p.control)
-			parts[i] = f.Name + " " + formatType(f.Type, p.control)
+			parts[i] = f.Name + " " + fieldComments(f) + formatType(f.Type, p.control)
 			if hasFormatNewline(parts[i], p.control) {
 				// A field type over several lines breaks the struct too.
 				p.structBody(fields, closeBreak, false, indent)
@@ -376,7 +385,7 @@ func (p *printer) structBody(fields []*Field, closeBreak *LineBreak, oneLine boo
 		p.cur.field = true
 		p.cur.name = f.Name
 		// A type over several lines continues at the field's indentation.
-		p.write(indentTypeLines(formatType(f.Type, p.control), indent+indentUnit, p.control))
+		p.write(indentTypeLines(fieldComments(f)+formatType(f.Type, p.control), indent+indentUnit, p.control))
 		p.inline(ownedTrailing(&f.SourceInfo, f.Break))
 	}
 	p.closeBlock(closeBreak, indent)
@@ -384,7 +393,7 @@ func (p *printer) structBody(fields []*Field, closeBreak *LineBreak, oneLine boo
 
 func (p *printer) varDef(v *VarDef) {
 	pollFormat(p.control)
-	p.header("var", v.Pos)
+	p.header("var", v.Pos, v.HeaderComments)
 	p.write(" " + v.Name)
 	if v.Type != nil {
 		p.write(" " + formatType(v.Type, p.control))
@@ -435,7 +444,7 @@ func (p *printer) ruleDef(r *RuleDef) {
 		}
 		p.lineBreak(b, "", false)
 	}
-	p.header("rule", r.Diagnostic())
+	p.header("rule", r.Diagnostic(), r.HeaderComments)
 	p.write(" " + r.Name)
 	if r.Type != nil {
 		p.write(" " + formatType(r.Type, p.control))
@@ -873,7 +882,7 @@ func (p *printer) operatorsRule(pr *OperatorsRule, indent string) {
 	for _, l := range pr.Levels {
 		pollFormat(p.control)
 		p.lineBreak(ownedLead(&l.SourceInfo, l.Break, false), inner, false)
-		p.header("level", l.Pos)
+		p.header("level", l.Pos, nil)
 		p.write(" ")
 		if l.Name != "" {
 			p.write(l.Name + " ")
@@ -2430,9 +2439,17 @@ func formatTermNode(t Term, outer int, control *metadataControl) string {
 
 // header keeps forbidden comments inside the header, so formatting never
 // changes a semantic placement error into valid source.
-func (p *printer) header(word string, pos Pos) {
+func (p *printer) header(word string, pos Pos, owned []string) {
 	p.write(word)
-	for _, comment := range p.headers[pos] {
+	comments := p.headers[pos]
+	if len(comments) == 0 {
+		// A grammar decoded from JSON has no comment tokens; its declaration owns them.
+		for _, text := range owned {
+			pollFormat(p.control)
+			comments = append(comments, ownedComments(text)...)
+		}
+	}
+	for _, comment := range comments {
 		pollFormat(p.control)
 		p.write(" " + comment.Text)
 		if strings.HasPrefix(comment.Text, "//") {
@@ -2442,7 +2459,7 @@ func (p *printer) header(word string, pos Pos) {
 }
 func (p *printer) operator(op *OperatorsRuleOperator, indent string) {
 	pollFormat(p.control)
-	p.header(op.Kind, op.Pos)
+	p.header(op.Kind, op.Pos, nil)
 	p.write(" ")
 	if op.Assoc != "" {
 		p.write(op.Assoc + " ")

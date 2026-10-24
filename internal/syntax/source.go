@@ -72,7 +72,7 @@ func collectCommentsWithCheck(previous grammar.Pos, opens bool, next token, comm
 		flush()
 		canPrevious = false
 	}
-	scopeEnd := next.kind == tEOF || next.kind == tPunct && (next.text == ")" || next.text == "]" || next.text == "}")
+	scopeEnd := next.kind == tEOF || next.kind == tPunct && (next.text == ")" || next.text == "]" || next.text == "}" || next.text == ";")
 	b.hasNext = !scopeEnd
 	if scopeEnd {
 		flush()
