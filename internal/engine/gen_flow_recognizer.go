@@ -11,7 +11,7 @@ import (
 
 // Recognizers printed from Flow IR.
 //
-// With the private flowRecognizer option, the rules of a recognizer (recRules) that recFlowEligible
+// The rules of a recognizer (recRules) that recFlowEligible
 // accepts are built as Core IR, lowered by flow.Lower and printed by flowPrinter for the untyped
 // Node runtime, in place of the direct rules of dgen. The other rules keep their printer, in the
 // same output. The ordinary passes run on the whole output afterwards, so a printed rule gets its

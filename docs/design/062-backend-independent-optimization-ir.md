@@ -70,6 +70,11 @@ more times: the closure evaluator in `eval.go`, bytecode expression code in `bco
   Guards are emitted in six places.
 - Generated typed Go is printed from Flow IR. Its rules and Operators Rule lines have no `dgen` route and no
   private switch; `dgen` prints only the Node and recognizer tables.
+- The recognizer table of an ordinary Node parser is printed from Flow IR for the rules that `recFlowEligible`
+  accepts (`startRecFlow`, `gen_flow_recognizer.go`). `dgen` prints the other recognizer rules, and every
+  recognizer rule of a work-control, Document or observability build, where the Flow route does not apply.
+  The private `directRecognizer` option makes `dgen` print all recognizer rules; the parity test uses it as the
+  oracle of the Flow route and nothing else sets it.
 - Transitional, while the Parse table is still printed by `dgen`: a recognizer rule printed from Flow IR first asks
   whether its value-free direct body is already a generated helper (`sharedDirectBody`, `gen_flow_recognizer.go`).
   The lookup prints the direct body under a snapshot and rolls it back, so it reserves no names and adds no table

@@ -20,6 +20,12 @@ present. Generated Go and TypeScript emit recognition when requested; typed Go
 packages use their generated recognition entry point rather than constructing
 typed output. The default full-parse operation remains valued.
 
+In generated Node parsers without work controls, the recognition rules that the
+Flow route accepts are printed from Flow IR; the others keep the direct printer,
+and work-control, Document and observability builds print all recognition rules
+directly. The first-character guards of the Flow copy are built after the
+`Analyze` pass, as in the table pipeline.
+
 ## Reference Control
 
 No separate same-operation all-valued recognition comparator is maintained.

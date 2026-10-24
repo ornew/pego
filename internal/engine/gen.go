@@ -77,9 +77,9 @@ type GenOptions struct {
 	// keepNodes keeps the untyped Node rule functions of a typed-only parser. generate sets it
 	// itself, when a typed entry point converts the Node result.
 	keepNodes bool
-	// flowRecognizer prints the eligible rules of the recognizer from Flow IR (startRecFlow). It is
-	// off by default: the generated output is the same without it until it is switched on.
-	flowRecognizer bool
+	// directRecognizer prints the recognizer's rules with the direct printer even where the Flow route
+	// applies (startRecFlow). The parity test uses it as the oracle of the Flow route; nothing else sets it.
+	directRecognizer bool
 	// keepComments keeps the comments of unexported generated code, which tests read as route markers.
 	keepComments bool
 	// disableKeepNodes leaves the Node rule functions out of a typed-only parser that needs them
@@ -201,7 +201,7 @@ func generate(g *grammar.Grammar, opts GenOptions) (files []GeneratedFile, err e
 			return nil, fmt.Errorf("stream generation needs a #stream repetition at the top level of the start rule %s", start.name)
 		}
 	}
-	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, flowRecognizer: opts.flowRecognizer && !opts.WorkControls && !opts.Document && !opts.Observability, prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap}
+	gen := &generator{typedOnly: opts.TypedOnly && !opts.keepNodes, observability: opts.Observability, document: opts.Document, goWorkControls: true, noWork: !opts.WorkControls && !opts.disableOrdinaryWorkSpecialization, lean: !opts.WorkControls && !opts.Document, flowRecognizer: !opts.directRecognizer && !opts.WorkControls && !opts.Document && !opts.Observability, prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTerminalPrograms: opts.disableTerminalPrograms, disableGuardedClasses: opts.disableGuardedClasses, boxedComparisons: opts.boxedComparisons, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap}
 	if opts.Stream {
 		gen.streamStart = start
 	}
