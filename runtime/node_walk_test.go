@@ -152,3 +152,22 @@ func TestWalkSliceIdentityIgnoresCapacity(t *testing.T) {
 		t.Fatalf("cycle detected after %d visits at %v, want 2 visits at %v", visits, cycle.Path, want)
 	}
 }
+
+// A capture that labels an element of a node with source information is visited as that element
+// only; a capture that is not an element is visited as a field.
+func TestWalkVisitsCapturedElementsOnce(t *testing.T) {
+	elem := &Node{RawText: "e"}
+	beside := &Node{RawText: "b"}
+	root := &Node{labeled: true, RawChildren: []*Node{elem}, RawFields: Fields{{"x", elem}, {"s", beside}}}
+	visits := map[*Node]int{}
+	err := Walk(root, func(v WalkVisit) (WalkAction, error) {
+		visits[v.Node]++
+		return WalkContinue, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if visits[elem] != 1 || visits[beside] != 1 || visits[root] != 1 {
+		t.Fatalf("visits = elem %d, beside %d, root %d, want 1 each", visits[elem], visits[beside], visits[root])
+	}
+}
