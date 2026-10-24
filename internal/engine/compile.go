@@ -119,14 +119,13 @@ type rule struct {
 	// elements are those of the sequence that calls it.
 	splice bool
 	// kinds are the node kinds the rule makes (newRuleKinds).
-	kinds     ruleKinds
-	id        int
-	name      string
-	def       *grammar.RuleDef
-	scope     *scope
-	body      func(p *parser, min int) (*Node, bool)
-	action    grammar.Term
-	bodyIsSeq bool
+	kinds  ruleKinds
+	id     int
+	name   string
+	def    *grammar.RuleDef
+	scope  *scope
+	body   func(p *parser, min int) (*Node, bool)
+	action grammar.Term
 	// nodeType, if not "", is the named node type the rule's value is converted to
 	// (Program.ruleNodeType), whose kinds are nodeKinds.
 	nodeType  string
@@ -607,7 +606,6 @@ func (c *compiler) compileRule(r *rule) {
 		return
 	}
 	body := r.bodyExpr()
-	_, r.bodyIsSeq = body.(*grammar.Seq)
 	r.stream = c.checkStream(body)
 	r.lean = r.novalue || leanBody(r)
 	c.proj = ruleProjectionsControlled(c.prog, r, control)

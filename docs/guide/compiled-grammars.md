@@ -361,7 +361,7 @@ A file carries two version numbers after its magic number:
 
 | Number | Now | Meaning |
 |:--|--:|:--|
-| Format version | 5 | The layout of the file. A runtime loads version 5 only. |
+| Format version | 6 | The layout of the file. A runtime loads version 6 only. |
 | Instruction-set version | 26 | The bytecode of the value model (see the [specification](../../spec/compiled-grammars.md#versions-and-compatibility)). Every module declares it. |
 
 The consequences:

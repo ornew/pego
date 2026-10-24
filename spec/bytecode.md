@@ -309,7 +309,7 @@ Expectation strings are those the compiler placed in the string table: literals 
 
 ## File Format
 
-A compiled grammar uses container version 5. It stores one execution-only compile result: the module of one mode and the start rule, with no grammar AST and no output schema (see [Compiled Grammars](compiled-grammars.md)). The container version and the module's instruction-set version are separate version axes. A loader accepts only container version 5. Integers are variable-length: unsigned integers use LEB128 and signed integers use zigzag-encoded LEB128. A boolean is one byte (0 or 1).
+A compiled grammar uses container version 6. It stores one execution-only compile result: the module of one mode and the start rule, with no grammar AST and no output schema (see [Compiled Grammars](compiled-grammars.md)). The container version and the module's instruction-set version are separate version axes. A loader accepts only container version 6. Integers are variable-length: unsigned integers use LEB128 and signed integers use zigzag-encoded LEB128. A boolean is one byte (0 or 1).
 
 | Part | Contents |
 |:--|:--|
@@ -331,7 +331,7 @@ The module is laid out in the following order. A *list* is a count (unsigned) fo
 5. Type table: a list of (name, list of field names, underlying node type). The underlying node type is a string index, or -1 for a struct type.
 6. Field-list table, then scope table: each a list of lists of string indices.
 7. Variable table: a list of (name, type, integer, string). The type is 0 for `int`, 1 for `string` and 2 for `bool`. The integer is the initial value of an `int` variable, and 0 or 1 for a `bool` variable. The string is the string table index of the initial value of a `string` variable, and -1 for the other types.
-8. Rule table: a list of (name, body, scope, action, body is a sequence, node type, memoize, leader, position-dependent, Operators Rule, value-free twin, transient, where, splice, variables, check).
+8. Rule table: a list of (name, body, scope, action, node type, memoize, leader, position-dependent, Operators Rule, value-free twin, transient, where, splice, variables, check).
 9. Start rules: a list of the rule table indices of the start rules, the rules marked `@start`, in increasing order, followed by the rule table index of the default start rule. Parsing begins only at these rules.
 10. Operators Rule table: a list of (skip, list of operand lines, list of prefix operators, list of infix and postfix operators). A line is (start, scope, action, body is a sequence, check); an operator is (index, kind, associativity, level, line).
 11. Match code, then expression code: each a list of instructions (opcode as 1 byte, then `A`, `B`, `C`).

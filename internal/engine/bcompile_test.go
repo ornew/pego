@@ -11,7 +11,7 @@ rule main = k:key "=" v:[0-9]+ #atomic (";" / _) => P{K: $k, N: len($v) + 1}
 rule key = [a-z]+ @error(message="expected a key") #atomic`)
 	got := prog.Module().Disassemble()
 	want := `rules:
-  0 main entry=0 scope=[k v] action=0 memo,seq,transient
+  0 main entry=0 scope=[k v] action=0 memo,transient
   1 key entry=13 scope=[] memo,transient
 code:
 main:

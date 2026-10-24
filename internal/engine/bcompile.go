@@ -139,7 +139,7 @@ func (c *bcompiler) compile() {
 	all := append(append([]*rule(nil), c.prog.rules...), c.prog.twins...)
 	for _, r := range all {
 		ri := RuleInfo{Name: int(c.str(r.name)), Entry: -1, Action: -1, NodeType: -1, OperatorsRule: -1,
-			BodyIsSeq: r.bodyIsSeq, Memo: r.memo, Leader: r.leader, Positional: r.positional, NoValue: r.novalue, Transient: r.transient, Where: -1, Splice: r.splice, Vars: c.strs2(r.vars)}
+			Memo: r.memo, Leader: r.leader, Positional: r.positional, NoValue: r.novalue, Transient: r.transient, Where: -1, Splice: r.splice, Vars: c.strs2(r.vars)}
 		if r.where != "" && r.where != r.name {
 			ri.Where = int(c.str(r.where))
 		}

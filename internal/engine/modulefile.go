@@ -74,7 +74,6 @@ func (w *encoder) module(m *Module) {
 		w.int(r.Entry)
 		w.ints(r.Scope)
 		w.int(r.Action)
-		w.bool(r.BodyIsSeq)
 		w.int(r.NodeType)
 		w.bool(r.Memo)
 		w.bool(r.Leader)
@@ -191,8 +190,8 @@ func (r *decoder) module() *Module {
 	for i := 0; i < n && r.err == nil; i++ {
 		ri := RuleInfo{
 			Name: int(r.int32()), Entry: int(r.int32()), Scope: r.ints(), Action: int(r.int32()),
-			BodyIsSeq: r.bool(), NodeType: int(r.int32()),
-			Memo: r.bool(), Leader: r.bool(), Positional: r.bool(), OperatorsRule: int(r.int32()), NoValue: r.bool(), Transient: r.bool(), Where: int(r.int32()), Splice: r.bool(), Vars: r.ints(),
+			NodeType: int(r.int32()),
+			Memo:     r.bool(), Leader: r.bool(), Positional: r.bool(), OperatorsRule: int(r.int32()), NoValue: r.bool(), Transient: r.bool(), Where: int(r.int32()), Splice: r.bool(), Vars: r.ints(),
 		}
 		m.Rules = append(m.Rules, ri)
 	}

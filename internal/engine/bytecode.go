@@ -66,11 +66,10 @@ type VarInfo struct {
 
 // RuleInfo describes a rule.
 type RuleInfo struct {
-	Name      int // string table index
-	Entry     int // start of the body code (for a OperatorsRule expression rule, a OPERATORS_RULE instruction followed by RETURN)
-	Scope     []int
-	Action    int // start of the action's expression code (-1 if none)
-	BodyIsSeq bool
+	Name   int // string table index
+	Entry  int // start of the body code (for a OperatorsRule expression rule, a OPERATORS_RULE instruction followed by RETURN)
+	Scope  []int
+	Action int // start of the action's expression code (-1 if none)
 	// NodeType is the named node type the rule's value is converted to (string table index, -1 if
 	// none).
 	NodeType      int

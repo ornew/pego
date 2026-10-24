@@ -151,7 +151,7 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 		ri := &m.Rules[i]
 		r := &rule{
 			id: i, name: m.Strings[ri.Name], scope: vm.scope(ri.Scope),
-			bodyIsSeq: ri.BodyIsSeq, memo: ri.Memo, leader: ri.Leader, positional: ri.Positional, novalue: ri.NoValue, transient: ri.Transient, splice: ri.Splice, vars: vm.names(ri.Vars),
+			memo: ri.Memo, leader: ri.Leader, positional: ri.Positional, novalue: ri.NoValue, transient: ri.Transient, splice: ri.Splice, vars: vm.names(ri.Vars),
 		}
 		if ri.Where >= 0 {
 			r.where = m.Strings[ri.Where]
