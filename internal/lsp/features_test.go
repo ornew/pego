@@ -628,10 +628,10 @@ func TestFilterBuiltinHoverAndCompletion(t *testing.T) {
 	t.Error("missing filter completion")
 }
 
-func TestSemanticTokens(t *testing.T) {
-	c := newInitialized(t)
-	uri := "file:///sem.pego"
-	src := "type N = { Text string } // c\n@start(default)\nrule ab = x:n \"s😀\" [a] #stream => P{F: len($x).Start}\nrule n N = operators {\n    operand a\n    level { infix left \"+\" }\n}\nrule bind = {v := 1}\nrule lam = xs:n* => map($xs, (e) => e)"
+// semanticTokenTexts opens src at uri and returns each semantic token as its source text, its
+// token type and its modifiers.
+func semanticTokenTexts(t *testing.T, c *testClient, uri, src string) []string {
+	t.Helper()
 	c.open(uri, src)
 	var res struct {
 		Data []int `json:"data"`
@@ -659,6 +659,14 @@ func TestSemanticTokens(t *testing.T) {
 		}
 		got = append(got, src[start:end]+" "+strings.Join(append([]string{semanticTokenTypes[res.Data[i+3]]}, mods...), "."))
 	}
+	return got
+}
+
+func TestSemanticTokens(t *testing.T) {
+	c := newInitialized(t)
+	uri := "file:///sem.pego"
+	src := "type N = { Text string } // c\n@start(default)\nrule ab = x:n \"s😀\" [a] #stream => P{F: len($x).Start}\nrule n N = operators {\n    operand a\n    level { infix left \"+\" }\n}\nrule bind = {v := 1}\nrule lam = xs:n* => map($xs, (e) => e)"
+	got := semanticTokenTexts(t, c, uri, src)
 	want := []string{
 		"type keyword", "N type.declaration", "Text property.declaration", "string type.defaultLibrary", "// c comment",
 		"start decorator", "rule keyword", "ab function.declaration", "x variable.declaration", "n function", `"s😀" string`, "[a] regexp",
@@ -673,6 +681,19 @@ func TestSemanticTokens(t *testing.T) {
 		t.Errorf("got\n%q\nwant\n%q", got, want)
 	}
 	c.exit()
+}
+
+// TestSemanticTokensCaseInsensitiveLiteral checks that the suffix of a case-insensitive literal
+// belongs to its string token, so the suffix is highlighted with the literal and no separate token
+// is emitted for it.
+func TestSemanticTokensCaseInsensitiveLiteral(t *testing.T) {
+	c := newInitialized(t)
+	defer c.exit()
+	got := semanticTokenTexts(t, c, "file:///fold.pego", "rule main = \"select\"i \"from\"")
+	want := []string{"rule keyword", "main function.declaration", `"select"i string`, `"from" string`}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got\n%q\nwant\n%q", got, want)
+	}
 }
 
 // TestExampleGrammars checks that the example grammars have no diagnostics, that every name
