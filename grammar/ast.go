@@ -358,9 +358,14 @@ type Ref struct {
 // Literal is a string literal "...". Matching uses its decoded rune sequence:
 // malformed UTF-8 bytes become U+FFFD in both position units. Compilation and
 // generation derive matching data without changing Value.
+//
+// IgnoreCase is set by the suffix i ("..."i): the ASCII letters of the literal
+// match either case. The #ignorecase pragma sets it on the literals of its
+// expression when the grammar is normalized; the source keeps the pragma.
 type Literal struct {
 	SourceInfo `json:"source,omitempty"`
 	Value      string `json:"value"`
+	IgnoreCase bool   `json:"ignoreCase,omitempty"`
 }
 
 // CharRange is a character range [Lo, Hi].

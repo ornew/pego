@@ -1591,6 +1591,9 @@ func formatExprNode(e Expr, outer int, control *metadataControl) string {
 		}
 		return finishFormat(e.Name, control)
 	case *Literal:
+		if e.IgnoreCase {
+			return finishFormat(quote(e.Value, control)+"i", control)
+		}
 		return finishFormat(quote(e.Value, control), control)
 	case *CharClass:
 		return finishFormat(formatCharClass(e, control), control)

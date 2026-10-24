@@ -1398,6 +1398,20 @@ func (p *parser) pragma(e grammar.Expr, start grammar.Pos) (sourceResult grammar
 			p.expect(")")
 		}
 		return &grammar.Stream{SourceInfo: grammar.SourceInfo{Pos: pos}, Expr: e, Break: br}
+	case "ignorecase":
+		if !p.boundary() && p.is("(") && !p.tok().spaceBefore {
+			p.errorf("#ignorecase takes no arguments")
+			panic(bail{})
+		}
+		result, ok := e.(*grammar.Attributed)
+		if !ok {
+			result = &grammar.Attributed{Expr: e}
+		}
+		if br != nil || result.Breaks != nil {
+			p.appendAttributeBreak(result, br)
+		}
+		result.Attrs = append(result.Attrs, &grammar.Attribute{SourceInfo: grammar.SourceInfo{Pos: pos}, Name: name, Pragma: true})
+		return result
 	case "missing":
 		if !p.boundary() && p.is("(") && !p.tok().spaceBefore {
 			p.errorf("#missing takes no arguments")
@@ -1612,6 +1626,12 @@ func (p *parser) primary() (sourceResult grammar.Expr) {
 	switch t.kind {
 	case tString:
 		p.next()
+		// The suffix i must follow the closing quote directly; an identifier that starts
+		// with i, such as "x"ia, is a separate token and not a suffix.
+		if p.is("i") && !p.tok().spaceBefore && p.tok().kind == tIdent {
+			p.next()
+			return &grammar.Literal{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Value: t.text, IgnoreCase: true}
+		}
 		return &grammar.Literal{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Value: t.text}
 	case tCharClass:
 		p.next()
